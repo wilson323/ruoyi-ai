@@ -37,10 +37,15 @@ import java.util.Optional;
  * <p>PERF-P2-5（B-FIX-PACK-3 治理）：Caffeine 替换 {@code ConcurrentHashMap}，加内存边界与 TTL 自动清理——
  * <ul>
  *   <li>{@code maximumSize(500)}：防 prod 部署后恶意/异常 key 推爆堆；W-TinyLFU 近似 LFU 驱逐。</li>
- *   <li>{@code expireAfterWrite(5min)}：写入后 5 分钟自动过期；写穿透失效仍走 invalidate（不等 TTL）。</li>
+ *   <li>{@code expireAfterWrite(60s)}：从原 5 分钟缩到 60 秒，SQL 直改场景走 TTL 兜底
+ *       （避免 owner 应急修库/兄弟会话跨进程写库后 stale 5min 风险）；写穿透失效仍走 invalidate（不等 TTL）。</li>
  *   <li>{@code recordStats()}：开放 Caffeine 统计，便于未来接 Micrometer。</li>
  * </ul>
  * 单 JVM 缓存（单企业私有部署单实例定位）；多实例部署时需升级 Redis 广播失效。
+ *
+ * <p>R8X-CACHE-1（W28-3 修复 SQL 直改缓存隐患）：TTL 60s 兜底是「治标」方案；
+ * 根治需要 OPS-04 调度框架合入后启 @Scheduled 轮询同步，或加 binlog 订阅。
+ * 60s 窗口内可接受（业务上 SQL 直改罕见）。
  *
  * <p>P0-3.3 参数版本持久化、不可变快照与时点解析（G-05/G-08；AC-GLB-09/10）：
  * <ul>
@@ -61,10 +66,10 @@ public class SystemConfigService {
     private final SystemConfigMapper systemConfigMapper;
     private final SystemConfigVersionMapper systemConfigVersionMapper;
 
-    /** PERF-P2-5：Caffeine 缓存——500 上限 + 5 分钟 TTL；详见类 Javadoc。 */
+    /** PERF-P2-5 + R8X-CACHE-1：Caffeine 缓存——500 上限 + 60 秒 TTL；详见类 Javadoc。 */
     private Cache<String, Optional<String>> cache = Caffeine.newBuilder()
         .maximumSize(500)
-        .expireAfterWrite(Duration.ofMinutes(5))
+        .expireAfterWrite(Duration.ofSeconds(60))
         .recordStats()
         .build();
 
