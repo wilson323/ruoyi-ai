@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.controller;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -35,8 +36,11 @@ public class IpdAuthController {
     public record WecomLoginRequest(@NotBlank @Size(max = 128) String wecomUserId) { }
     public record PasswordRequest(@NotBlank @Size(max = 72) String currentPassword,
                                   @NotBlank @Size(min = 8, max = 72) String newPassword) { }
+    /** 契约：groupId 可空且键必须存在（前端 parseIdentity 严格校验 null | string）。
+     *  全局 Jackson NON_NULL 会吞掉 null 键（无组超管如 sysadmin 登录即报「身份信息格式异常」，
+     *  2026-09-06 傅志谦同款），字段级 ALWAYS 覆盖。 */
     public record PersonView(String id, String name, String username, String personType,
-                             String groupId, String accountStatus) {
+                             @JsonInclude(JsonInclude.Include.ALWAYS) String groupId, String accountStatus) {
         public static PersonView from(Person p) {
             return new PersonView(String.valueOf(p.getId()), p.getName(), p.getUsername(), p.getPersonType(),
                 p.getGroupId() == null ? null : String.valueOf(p.getGroupId()), p.getAccountStatus());
