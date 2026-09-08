@@ -232,9 +232,13 @@ public class ContributionService {
         Contribution entity = existing != null ? existing : new Contribution();
         if (existing == null) {
             entity.setProjectId(projectId);
+            // P3-6 真活验证 2026-09-08：person_id NOT NULL 无默认值，漏设导致 INSERT 90001
+            entity.setPersonId(actor.id());
             entity.setStatus(Contribution.ST_DRAFT);
             entity.setMarketShare(new BigDecimal("0.55"));
             entity.setRdShare(new BigDecimal("0.45"));
+            // P3-6 真活验证 2026-09-08：legacy 列 NOT NULL 无默认，与 marketShare 同步
+            entity.setMarketContributionRate(new BigDecimal("0.55"));
             entity.setCreateTime(new Date());
         } else if (Contribution.ST_CONFIRMED.equals(existing.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
@@ -310,6 +314,8 @@ public class ContributionService {
         BigDecimal oldShare = entity.getMarketShare();
         entity.setMarketShare(marketShare);
         entity.setRdShare(BigDecimal.ONE.subtract(marketShare));
+        // legacy 列同步，防两列不一致（真活验证 2026-09-08）
+        entity.setMarketContributionRate(marketShare);
         entity.setUpdateTime(new Date());
         entity.setUpdateBy(actor.id());
         contributionMapper.updateById(entity);

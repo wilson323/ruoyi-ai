@@ -79,6 +79,26 @@ public class IpdServiceExceptionAdvice {
         }
     }
 
+    /**
+     * P3-6 真活验证 2026-09-08：@RequestParam 上的 Bean Validation
+     * 抛的是 ConstraintViolationException（非 MethodArgumentNotValid），
+     * 之前漏接落到 90001 兜底；现对齐 PARAM_INVALID 语义。
+     */
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleConstraintViolation(jakarta.validation.ConstraintViolationException e) {
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String msg = e.getConstraintViolations().stream()
+                .map(jakarta.validation.ConstraintViolation::getMessage)
+                .findFirst().orElse("参数校验失败");
+            log.warn("[IPD] constraint violation: {}", msg);
+            return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, msg));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiV1Response<Void>> handleNotFound(NoHandlerFoundException e) {
         MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
