@@ -1,4 +1,60 @@
 
+## 2026-09-08 05:10 PDT Qoder 接续会话：ipd-test-gate 首次 CI 实跑即抓到一条「断言指向不存在契约」的测试
+
+接上一条（04:25）。上一条记的基线 `total_tests=1909` 已由本条更新为 **1912**（红数仍 20）。
+
+### 门禁首次实跑就证明了自己不是纸面护栏
+PR #11 run `34221338056`：`ipd-compile-gate` 两个 job 全绿、`docs-link-check` / `gitleaks` 全绿，
+而 `ipd-test-gate` **阻断**——四道护栏全部通过（`total_tests=1909` 与基线精确吻合、无 SILENT 类、
+无幽灵报告），红名单差集抓到 1 条基线外新红：
+`ProjectServiceConcurrencyTest#nextCode_concurrent50_shouldReturnDistinctCodes`。
+本机上该测试 12/12 稳定绿，此前从未进过任何红名单。
+
+### 定性：不是 flaky，是断言指向了生产并不具备的契约
+- `ProjectService#create` 的 Javadoc 明写「READ_COMMITTED 下 `synchronized(nextCode)` **无法覆盖
+  『取号→提交』窗口**，HTTP 并发会撞号」；唯一性由 `uk_projects_code` 唯一键 +
+  `CODE_CONFLICT_MAX_RETRY=8` 重试兜底，**不在 `nextCode()` 这一层**。`nextCode()` 只是
+  「读当年最大号 +1」的纯读算，DB 状态不变时并发调用返回同一个号本就是正确行为。
+- 旧测试用 `sharedMax.incrementAndGet()` 在锁**外**推进模拟 DB，等于亲手把那个窗口造了出来，
+  于是断言成立与否完全取决于调度时序：本机多核稳定绿，GitHub Actions 2 vCPU runner 上
+  50 线程挤 20 池线程必红。与 04:25 修的 Caffeine flaky 不同——那条是时序抖动，
+  **这条是断言本身错了**，加锁或加 sleep 都治不好。
+
+### 顺带挖出：生产真正的收口机制在 CI 里零覆盖
+唯一验证撞号收敛的 `Qa04MysqlConcurrencyTest`（3a 线）被
+`@EnabledIfSystemProperty(ipd.scope.mysql.enabled)` 门控，CI 实跑 **4 tests / 4 skipped**。
+全仓无任何单测断言 `CODE_CONFLICT_MAX_RETRY`（「项目编码冲突」在测试源零命中）。
+即：**在跑的并发测试断言了生产没有的性质，而生产真正依赖的收口机制无人看守。**
+
+### 重写为 4 条确定性断言（不是放宽，是改指真实契约）
+1. `nextCode()` 读-算临界区互斥（50 并发 → 50 个不同编码）
+2. 反射钉：`nextCode()` 确有 `synchronized` 修饰 + `@Lock4j(keys="'ipd:project:code'")`
+3. 撞号后 `create()` **换新号**重试成功（断言第二次编码为 `-002` 而非重发 `-001`）
+4. 重试耗尽**恰好 8 次**后抛「项目编码冲突，请重试」
+
+③④ 补上了 CI 零覆盖的真实机制；①② 合起来才等价于旧版想要而没能可靠表达的 PERF-01 回归意图。
+
+### 反向验证抓到我自己写的第一版是假的（本条最重要的教训）
+第一版用 Mockito `thenAnswer` 模拟 DB，Javadoc 与断言文案都写了「摘掉 `synchronized` 会立刻重号」。
+**实测推翻**：摘掉后反射钉如期变红，但并发断言 3/3 次依旧全绿。根因是 Mockito 的
+`InvocationContainerImpl` 对 answer 调用自带 `mutex` 同步，`thenAnswer` 里的代码本就被串行化了
+——测试通过但对 PERF-01 **零回归力**。改手写 `Proxy` 假 mapper（绕开该 mutex）+ 在读改写之间夹
+`Thread.yield()` 放大竞态窗口后，反向验证 **3/3 可靠失败**（①② 同时红），正向 6/6 稳定绿。
+
+教训与 04:25 门禁自测同源：**「绿灯 ≠ 有保护」**。一条测试有没有回归力，只能用反向验证
+（把被测保护摘掉看它会不会红）证明，不能靠读代码推断；写在注释里的「这条能挡住 X」
+若未经反向验证，就是下一句「不影响 main 分支 HEAD 字节」式的不实陈述。
+
+### CI 覆盖底数（供门禁「测试总数骤降」护栏参照）
+CI 的 26 个 skipped 精确分解为三个环境门控类：`P131DatabaseIntegrationTest` 18 +
+`Qa04MysqlConcurrencyTest` 4 + `HandoverIntegrationTest` 4。已核 `acceptance-matrix.json`
+10 行无一引用这三个类，故不构成假证据，未改 matrix。
+
+### 结果
+基线 `total_tests` 1909→**1912**（红数仍 **20**，一条未增），`check` PASS，门禁自测 **13/13** 全绿。
+
+---
+
 ## 2026-09-08 04:25 PDT Qoder 会话：CI 测试门禁上线 + 治理契约生命周期修正 + pom 静默豁免勘误
 
 ### 勘误登记（G-04 要求：勘误级更新须在此登记）
