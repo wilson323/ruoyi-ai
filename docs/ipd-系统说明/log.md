@@ -1,4 +1,28 @@
 
+## 2026-09-08 04:25 PDT Qoder 会话：CI 测试门禁上线 + 治理契约生命周期修正 + pom 静默豁免勘误
+
+### 勘误登记（G-04 要求：勘误级更新须在此登记）
+1. **`治理/AC-ID-词表-20260907.md` §3.2**：原列 10 条「类FQN#方法名」映射，经核验方法名在测试源中**全部不存在**（`testACnn` 式编造，如 `P034AcceptanceTest#testAC02`，该类实际方法为 `cfg02_*`/`hr05_*`/`glb10_*`）。已剥离方法名降为类级并追加勘误说明；**不编造回填**。
+2. **`治理/acceptance-matrix.json`**：同源同错的 10 行 `unitTestClass` 一并剥离方法后缀。
+3. **`治理/acceptance-matrix.schema.json`**：`owner_decisions_needed` 原 description 称「不阻断 CI 校验，仅提示」，但 `docs-link-check.yml` 的 AJV 步骤实际**硬阻断**（main 上 acceptance-matrix 长期红即由此产生）。已按实际门禁行为更正描述。
+4. **`ruoyi-modules/ruoyi-ipd/pom.xml` `<testExcludes>` 注释**：原称「本卡仅在 worktree 内追加排除，不影响 main 分支 HEAD 字节」——**不实**。实测该段已随 `4feb8ec9` / `221f6c30` / `f1ce2db7` 进 main 并长期生效。注释已更正为可追溯的治理记录。
+
+### 工程修复
+- **撤销 3 条陈旧测试豁免**（`Api03AcceptanceTest` / `DefectBAdviceAcceptanceTest` / `IpdAuthChangePasswordExceptionTest`）：豁免理由（W20-B「兄弟会话在途编译错误」）早已消解，实测编译通过。净增 16 个测试（1893→1909）、执行类 209→212，红数未增。
+- **修 `Api03AcceptanceTest` 实现漂移假红**：stub 打在 `requireInternal()`，而 Controller 在 SEC-AUTH-DEADLOCK 修复中已改调 `requireInternalEvenIfPasswordScope()`；stub 未命中 → `actor` 为 null → Mockito `any(IpdActor.class)` 不匹配 null → `doThrow` 失效 → 3 条「应返回 400」的反例静默返回 200。仅对齐 stub 方法名，**断言一字未改**，该类 5/5 绿。
+- **根治 `SystemConfigServiceCacheTest#maximumSize_evictsOverflow` flaky**：测试自建 cache 未指定 executor，Caffeine 走 `ForkJoinPool.commonPool()` 异步维护，`estimatedSize()`/`evictionCount()` 断言读到滞后值（同一份代码 04:07 与 04:17 两次全量跑得 21 红与 20 红，差别正是本用例）。加 `.executor(Runnable::run)` 同步化，连跑 5 次 9/9 稳定绿。
+- **治理契约生命周期二态**：schema 用 `allOf` + `if/then/else` 建模「未决（必有 blocker）/ 已决（必有 decision + decided_by + decided_at + evidence_commit）」；Java 守护同步为派生校验 `open_count == 无 decision 项数`，并把 `unitTestClass` 的 `#方法名` 加固为「写了就必须真实存在」。门禁强度未降，另新增 `evidence_commit` 必填、`unitTestClass` pattern、`open_count` 派生一致性三项约束。
+
+### 新增门禁
+- `.github/workflows/ipd-test-gate.yml` + `scripts/ci/ipd-test-red-baseline.py` + 基线 `scripts/ci/ipd-test-red-baseline.txt`（20 红 / total_tests=1909 / 2 条 exempt_class）。语义为「基线冻结 + 只挡新增红」，另含四道防假绿护栏：报告不可信即阻断（不静默跳过）、mtime 离群即判幽灵残留、测试总数骤降即判套件未正常执行、**每个测试类必须产出报告否则阻断**（只有这条拦得住 pom 静默豁免）。
+- `scripts/ci/ipd-test-red-baseline-selftest.py`：门禁自测 13 用例，10 条阻断分支逐个用构造样本触发。自测本身已抓到一个真缺陷（报告全损时 `files==0` 判定先于 `bad`，会把「跑了但报告坏了」误报为「没跑」），已修。
+
+### 遗留
+- `OD-AM-05`（方法级追溯精度）、`OD-AM-06`（2 个仍真编译失败的豁免类如何收口）待 owner 决策；两者均在 `acceptance-matrix.json` 带完整 blocker 原文，`open_count=2`。
+- 剩余 20 条基线红为已知债务，清单见基线文件，只允许单调收敛（修好一条重跑 extract 覆盖，不得为过检往里加条目）。
+
+---
+
 ## 2026-09-05 22:15 PDT Qoder 接续会话（owner「1确认 2推送 3审计日志上线」）：审计链①②③上线完成 + P0-9.1 run9 79/79 ALL PASS ✅
 
 ### 三件指令执行结果
