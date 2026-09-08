@@ -200,6 +200,15 @@ public class NegativeFeedbackService {
         NegativeFeedback row = NegativeFeedback.builder()
             .projectId(req.projectId())
             .triggerType(req.triggerType())
+            // P3-8.1 真活修复 2026-09-07：legacy v1 三列（source/content/severity）NOT NULL 无默认，
+            // QA-04-B-FIX 只补了映射未补赋值，漏赋致 INSERT 报 Field doesn't have a default value。
+            // source：前端页 P0-10.36 人工录入渠道；content：触发证据兜底组合文案；
+            // severity：按 BR-INC-10 执行动作映射——主责停发+连带减半=HIGH，双 PM 全停发=CRITICAL。
+            .source("MANUAL")
+            .content(req.triggerEvidence() != null && !req.triggerEvidence().isBlank()
+                ? req.triggerEvidence()
+                : "触发情形 " + req.triggerType() + "（生效月份 " + req.triggerMonth() + "）")
+            .severity("MISSED_MARKET_WINDOW".equals(req.triggerType()) ? "CRITICAL" : "HIGH")
             .mainRole(mapping.get("mainRole"))
             .mainPersonId(mainAndRelatedIds.get(0))
             .relatedRole(mapping.get("relatedRole"))
