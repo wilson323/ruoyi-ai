@@ -9,7 +9,8 @@
 - `docs/开发说明/**` 是产品设计事实源（"圣经"，G-04）：产品业务决策不可改；owner 已授权**勘误级更新**（错字 / 失效引用 / 数字对齐），勘误须在 `docs/ipd-系统说明/log.md` 登记；工程修复与补充文档一律写到 `docs/ipd-系统说明/` 下。
 - Issue 流程：GitHub Issues（origin `wilson323/ruoyi-ai`，upstream `ageerle/ruoyi-ai`）→ `docs/agents/issue-tracker-github.md`；领域文档地图 → `docs/agents/domain.md`。
 - **假红陷阱**（假绿的镜像）：本仓常有多个智能体会话同时工作在同一工作树，并发 `-am` / `clean` 构建会交叉重写 `target/`，制造大面积 `NoClassDefFoundError` 假红（实测 85 跑 71 Error 中 ≥66 为假红；也见过兄弟会话中途删文件导致 `需要 class、interface、enum 或 record` 的瞬时编译错）。复核方一律**错峰 + 单模块 + 不带 `-am` 不带 `clean`**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Xxx test`。下结论前复查同一条命令是否已被兄弟会话改写，证据必带时间戳。
-- **并发写单一写入者**：Java 源码、SSOT 看板镜像 `docs/ipd-系统说明/开发计划-看板镜像.md` 与本地看板由主协调会话串行写，其他会话只做只读探针 + 证据交付。`manage.py` 写前重算 PLAN 哈希、中途变更即中止——触发中止时重试或让路，**不要绕过**；同一指令被多会话重复执行时先登记归属，别各自建卡（详见 OPS-09）。
+- **并发写单一写入者（OPS-09，2026-09-09 软化）**：Java 源码、SSOT 看板镜像 `docs/ipd-系统说明/开发计划-看板镜像.md` 与本地看板默认由主协调会话串行写，其他会话只做只读探针 + 证据交付。`manage.py` 写前重算 PLAN 哈希、中途变更即中止——触发中止时重试或让路，**不要绕过**；同一指令被多会话重复执行时先登记归属，别各自建卡。
+  - **软化（R25，owner 已授权「完整接手兄弟会话在途」）**：兄弟在途未提交工作不再是不可接手红线，但接手必须走三步：①接手前对兄弟 M/文件逐一评审并记录处置结论（原样入库/修改后入库/还原）；②SSOT 镜像 + log.md 登记接手事实与 commit 号；③兄弟自有编号体系（如轮次号撞号）用 `ORIGIN-` 前缀保留史实而非覆盖删除。无登记的静默接手仍视为违规。
 - 多智能体协同（Ruflo/claude-flow）的启用门槛、拓扑与命令见 `CLAUDE.md` §「Ruflo 多智能体协同底座」；单文件小改动不要上 swarm。
 
 ## 构建 / 测试（每条都吃过亏）
@@ -20,6 +21,7 @@
 - 多租户默认开启：新建"租户共享"表必须登记父 `application.yml` 的 `tenant.excludes`，否则查询被自动追加租户过滤，表现为"数据查不到"。反例同样成立：已登记的 `person_roles` 在任何库都还没建表（属"超前登记"，见 `docs/ipd-系统说明/验收/P1-项5-DDL-apply核验-20260905.md` §3）。
 - **引用配置用键名，别用行号**：本仓 yml 行号在分钟级就会漂——同一个 `application.yml` 的 `demo:` 段，20:56 实测在 :396、21:10 已到 :400（成因：多会话共工同一工作树，兄弟在途未提交编辑就会推号；`tenant.excludes` 则从早期文档的 :148 漂到 :198）。行号型断言的历史记录一律按"键名 + 当时的值"复核，而不是去对号。
 - 本机真实数据源不是 `application-dev.yml` 写的 `127.0.0.1:3306/ruoyi-ai`（3306 无监听且该库不存在）：应用实走 gitignored 的 `.codex/ipd-dev/config/application-ipd-local.yml` → MySQL 8.0.46 @ `127.0.0.1:13306`，业务库 `ipd_dev`（125 表）。只读探针复用 `.codex/ipd-dev/config/mysql-client.cnf` 的 socket 即可（socket 与 13306 是同一实例，`SELECT @@port, @@socket` 已验），凭证不上命令行。仓库无 Flyway/Liquibase，`docs/script/sql/update/**` 全靠人工/DBA apply → "SQL 已 commit"绝不等于"约束已生效"，下结论前跑 `p1-ddl-apply-check.py`。
+- **5 类病根框架（R25 全局复盘沉淀，机制化非自觉化）**：历轮异常收敛为五类——①改主代码后测试没跟上；②提交不完整（引用了 untracked 文件，fresh clone 必炸）；③规则表与接线点靠人肉对账；④前后端契约无门禁；⑤多事实源（镜像/log.md/分支）无对账。根除不靠自觉，靠会红的测试（哨兵+表驱动契约）、会拦的门禁（上线前本地实跑自证能红）、会喊对不上的对照（快照+负向验证）；五大根源的根除 commit 对照见 `docs/ipd-系统说明/验收/2026-09-05-治理轮总账.md` §7。
 - 启动入口 `RuoYiAIApplication.main()` 会先自动杀 6039 端口（Windows 风格命令；macOS/Linux 无害 no-op）。
 
 ## 依赖与代码生成
