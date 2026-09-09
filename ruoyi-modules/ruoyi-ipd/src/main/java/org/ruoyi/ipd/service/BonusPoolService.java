@@ -964,8 +964,10 @@ public class BonusPoolService {
         }
         // 区间 + 总和校验（ServiceException 抛到 Controller 由 advice 转 IpdBusinessException）
         calculateDistribution(marketShare, rdShare);
-        // ROOT-R3-P0-1：守卫 preCheck —— CONFIRMED -> DISTRIBUTED 合法（跨域→写津贴账本）
-        preCheckGuard("bonus_pool", STATUS_CONFIRMED, STATUS_DISTRIBUTED, "distribute");
+        // ROOT-R3-P0-1：守卫 preCheck —— CONFIRMED/DRAFT -> DISTRIBUTED 合法（跨域→写津贴账本）
+        // 2026-09-09 C3 缺陷修复：此前硬编码传 STATUS_CONFIRMED——DRAFT 入口时守卫收到假 from，
+        // 绕过"未登记即拒绝"语义。改传真实 from（此时 setStatus 还未执行，pool.getStatus() 是真值）
+        preCheckGuard("bonus_pool", pool.getStatus(), STATUS_DISTRIBUTED, "distribute");
         BigDecimal finalPool = pool.getFinalPool() == null ? BigDecimal.ZERO : pool.getFinalPool();
         BigDecimal marketAmount = finalPool.multiply(marketShare);
         BigDecimal rdAmount = finalPool.multiply(rdShare);

@@ -90,7 +90,8 @@ class StateMachineGuardTest {
     @Test
     @DisplayName("拒绝跨域：未登记的跨域 trigger → postCommit 不写审计不通知（仅记日志）")
     void rejectCrossDomainNoOp() {
-        // 守卫表无「DRAFT->DISTRIBUTED」登记 → postCommit 应 no-op（不发审计不发通知）
+        // 2026-09-09 C3：DRAFT->DISTRIBUTED|distribute 已补登记（BonusPool DRAFT 直分路径合法化），
+        // 但 trigger=skipSteps 未登记 → postCommit 应 no-op（不发审计不发通知）
         guard.postCommit("bonus_pool", "DRAFT", "DISTRIBUTED", "skipSteps",
             1L, 100L, new Date());
 
