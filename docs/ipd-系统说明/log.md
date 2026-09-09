@@ -3141,3 +3141,12 @@ owner「授权全部执行」指令后四连：
 - **前端契约兜底 + 基线根治（双仓 fix/gov-contract-20260909）**：da5f227（409/429 状态特化 + 403 与 30001 同源 + IPD_HTTP_STATUS_TEXTS 表 + 5 用例）→ 127445d（merge main 登录加固对齐）→ 6715012（traceId 基线不自洽根治：auth.ts 三合一 traceId+50003~50017+兜底，fix 分支 2 用例红+check:type 4 错全消）；主工作区 4 文件同步逐字节一致，定向 128/128 绿。剩余 2 错 TS2307=兄弟在途 audit/logs 页面（main HEAD 亦无）。
 - **@EnableScheduling**：代码就绪（HandoverOverdueScanner 09:05 + PersonResignEscalator），启用需重启共享 16039 授权（OPS-04 卡明示业务消费者未启用），登记待 owner。
 - **报告**：契约与遗留治理轮-20260909.md 增 §9（R23 明细）+ §0/§7 刷新；R22 报告/log.md 未提交部分一并收编入本轮提交。
+
+## R26（2026-09-09）owner 完全授权执行轮：双线合入 + origin 整合 + push 完成
+- **g1 双线合入 main**：R24 治理线（fix/state-machine-wiring）+ R25 接手线（fix/p0-r2-round1）各自 merge（08e5b20b + 6b986a65）；守卫表 auto-merge 双保留 26 块去重至并集 38 条；StateMachineGuardContractTest 删重复表驱动行 + 机器对账（36 精确 + 2 通配 = 38 vs 表驱动 38 行双向一致）59 测试绿
+- **g2/g3**：双线后全量 1755 绿（差1=删重复 CsvSource 行）；Redis 16379→6379 四文件零残留（args/yml×2/redis.conf/initialized.json，全 gitignored）
+- **g4 清理**：17 条 R25 备份 stash drop（5 个 0 字节假备份先 `git stash show -p` 重导出补齐）；2 worktree 不清（A4 早盘认定 ahead=0 错误，实测 121/73 授权前提失效）；A4/F3 勘误 afea49fd
+- **g5 origin 整合**：push 被拒（兄弟会话 05:32 已推 123 commit：merge/local-main-r15 线 + P2轮三）→ merge origin/main 14 冲突文件逐一裁决 → 全量 **2087 run / 0 失败 / 22 skip** BUILD SUCCESS → merge 2a3799d4 → **push 成功 58dea842..2a3799d4**
+- **冲突裁决要点**：IpdAudit/Aspect 双线融合（属性超集+别名、三构造器、异常旁路 catch ERROR 采纳 P2轮三裁决推翻 R22 传播、session 通道放 proceed 后）；CoefficientChangeService.decide 重构（preCheck 前移 CAS 前 + 删冗余 updateById）；HandoverService 22 块整取 origin（IDOR 守卫抽取版）；logback 取 origin 逗号语法；application.yml 取 origin MCP OFF
+- **合并后 8 失败修 4 类**：Aspect NPE（session 通道时序）/ 融合测试 record 组件名（SwitchReq）/ 裸时钟守卫（GateReview 用已有 now()、Scanner 注入 Clock）/ P361 setUp 注入 guard / P383 三用例按 2026-09-09 owner 拍板「当月退出不发」更新（P333 20 用例盯守新契约验证绿）
+- **残留**：PR #334 仍等 upstream maintainer；7 条历史 stash 保留；2 worktree 保留（勘误已登记）
