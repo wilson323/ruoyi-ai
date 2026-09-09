@@ -3020,7 +3020,7 @@ owner「授权全部执行」指令后四连：
 
 ## R20（2026-09-09）暂缓项 fresh 复核翻案 + 蜂群验证闭环
 - fresh 复核推翻两个上轮「暂缓」判定（蜂群结论必须执行前 fresh 复核的再验证）：①新问题② 系数变更 leaderDecision TOCTOU 实际可零 DDL 修——LambdaUpdateWrapper 条件 UPDATE 原子翻转（项目内 5 个 Service 同款先例），无需 ALTER TABLE；②切换验收 run 权限过宽实为双重脱节——lock/unlock 挂未登记 _ADMIN 别名（catalog 无此码=全员 403 死端点，RnewPermissionContractTest 2026-09-07 已锁定但无人修）+ run 写动作挂只读 QUERY。
-- 后端 commit 58dea842（wt-p2r3）：三写端点权限迁已登记 _LOCK/_UNLOCK + 源码层防回漂锁；leaderDecision CAS 化（守卫前移写库前+簿记字段显式补齐）；IpdAuditAspect 审计旁路 try/catch 兑底（蜂群复审 P1：审计故障不得把成功响应变 500）。
+- 后端 commit 58dea842（wt-p2r3）：三写端点权限迁已登记 _LOCK/_UNLOCK + 源码层防回漂锁；leaderDecision CAS 化（守卫前移写库前+簿记字段显式补齐）；IpdAuditAspect 审计旁路 try/catch 兜底（蜂群复审 P1：审计故障不得把成功响应变 500）。
 - 前端 commit 7d3ed1a：冷却倒计时改绝对截止时刻（后台节流不漂移）+ login() store 层纵深拦截 + 冷却读屏播报（role=status）。
 - 验证蜂群（双路 CodeReview）：后端 1 P1+2 P2 全修、6 项核查通过（CAS 正确性/权限一致性/切面织入/TableInfoHelper/Contribution/Scheduling）；前端 PASS+4 P2 修 3 登 1（冷却全局粒度可接受）。定向 56/56+18/18+36/36 绿，全量 2023/0。
 - 仍阻塞：P1-2 接线（兄弟 DefaultStateMachineGuard 36 条规则仍在主工作树 M 未 commit）；workbench.taskType 死源在兄弟 M 的 locales page.json 里不可清理；ai-document.test.ts 1 失败仍属兄弟在途。PR #334 仍等 maintainer。
@@ -3043,3 +3043,29 @@ owner「授权全部执行」指令后四连：
 - 40002 语义统一：前端默认域 stale「关联条件已变更」改为「双签未完成，请等待签署完成后再操作」对齐后端 DUAL_SIGN_INCOMPLETE；bid 域 40002 删除（后端无 throw 点，死码）
 - 待裁决清单 R20 全清：HIGH-5 / QA06-2 / 40002 均拍板落地，§0 总账从 30/3/8/1 升至 33/3/5/1
 - 5 个一行小修 R19 已结回顾（INFO-1 dev 密码 / P2-4 logback / P1-1 ReceiptLedger in_window / P2-2 listByProject LIMIT / INFO-3 rebuild 护栏），均 b3336d48 落地
+
+## R21（2026-09-09）剩余 finding 四项全清 + main 基线污染恢复
+- **MED-2 rebuildChain 原子保护**：锚行悲观锁互斥（selectForUpdate GLOBAL，与 append 同锁序）+ 重算后 advance 推锚（≠1 fail-fast）——消除并发 rebuild+append 人为断链与「锚行 last_hash 陈旧 → 下次 append 用旧哈希起链」两类风险
+- **MED-3 Withdraw 差分响应**：DeletionRequestService.withdraw 不存在/非本人两分支统一文案「撤回失败：申请不存在或非本人发起」，消除存在性侧信道；既有 withdrawGuard 断言同步 + 新契约测试 withdrawNotFoundSameMessageAsNotOwner 锁死两分支同文案
+- **AOP P0 批首刀**：AuditLogService 加 Controller 友好重载 append(IpdActor, action, entityType, entityId, reason)（actor null 静默跳过与原拷贝一致）；ReceiptLedgerController 已切换消重；HrSync/Person/PersonSync 三份兄弟在途 commit 后一行切换
+- **P2-3 + QA05 P1-3**：Dockerfile ENTRYPOINT 补 -Xms${JAVA_XMS:-1g} -Xmx${JAVA_XMX:-2g}；README-IPD-OVERRIDE 增「六、运维取舍备忘」节（connectionTimeout 5s / 池预算 / JVM 堆三行表）——5s 取舍披露闭环
+- **main 基线污染新发现**：f4907ea6（main HEAD）的 HandoverService/HandoverRecord git blob 被 `@/绝对路径` 文本污染（0 行，任何干净 checkout 都编译挂）；R21 从 12e26404 健康版恢复进 fix 分支；主工作区兄弟在途已是健康版（行数一致），将来 merge 零冲突
+- **验证**：worktree /tmp/wt-gov7 mvn -o -pl ruoyi-modules/ruoyi-ipd compile BUILD SUCCESS（343 源文件）+ 5 测试类 45/45 绿（AuditLogControllerCursor 3 / AuditLogCursorPaging 9 / ReceiptLedgerCalc 3 / ReceiptLedgerRecord 7 / DeletionRequest 23）
+- **提交**：0b7753ca（8 文件 +753/-28）→ fix/gov-contract-20260909；主工作区 6 文件已同步（Handover 双文件不动，主工作区已是健康版）；§0 总账 33/3/5/1 → **37/1/3/1（88.1%）**；待办剩 P1-6 audit 合并（审计专项）/ P2-5 知情搁置 / AOP P1-P3 批 / 契约 403·409 随 i18n
+
+## R22（2026-09-09）审计专项收尾：AOP 基础设施 + P1-6 合并框架 + 真活验收
+- **AOP 基础设施**（审计AOP改造设计-20260909 §3 落地）：`org.ruoyi.ipd.audit` 新包三件套——@IpdAudit 注解（action/entityType/SpEL entityId·reason/operator/adminOnly）+ IpdAuditAspect（同步调 append 保 REQUIRES_NEW+锚行锁红线，禁 publishEvent 异步；adminOnly 门禁先行；SpEL 坏表达式按空降级不阻断业务返回）+ IpdEntityType 现值契约枚举（不改存量字符串，entityType 进哈希现值即契约）
+- **P1-6 审计合并框架单点落地**：append 入口 operatorName/Role 缺失时按 operatorId 查 persons 补齐（锚行锁前查询缩短锁持有；operatorId=0 系统操作人与查无此人跳过不抛）——比逐点注解化收益大 4 倍：44 文件 81 处调用全量自动受益，operatorName 51%→100% / operatorRole 34%→100%（新行；历史行哈希冻结不可回填）
+- **AOP P1 批试点**：ReceiptLedgerController create/refund 注解化（adminOnly 切面代取 requireAdmin，行为等价：门禁先于业务/成功返回后 append/异常不落）；IpdAuditAspectTest 3 用例锁行为（三元组+SpEL/异常跳过/坏表达式降级）
+- **HTTP 真活验收（16039 现态）**：登录 ipd-admin SUPER_ADMIN → 7 端点全 code=0：audit-logs list(total=1127)/verify/export/scope/游标 scope/export/scope/deletion-requests archive；无 token 反例 401/20001 正确。**发现 verify 现报 16 处历史 gaps（seq 1889-2559 跳号）**——QA05 P1-2 分列语义输出，属历史跳号非本轮引入，是否 rebuild 待运维裁决（新代码 R21 rebuild 已带护栏）；rebuild-chain 端点属运维写操作未在旧 jar 上执行
+- **P2/P3 批阻塞登记**：B1 简单型 20-30 点与 P3 afterData 内联型大头在兄弟在途文件（HrSync/Person/PersonSync/HandoverService 等），待其 commit 后批量推进
+- **验证**：worktree /tmp/wt-gov8 compile BUILD SUCCESS + 11 测试类 65/65 绿（AuditLogCursorPaging 9/AppendContract 6/P054 9/CursorTest 3/ReceiptLedger 10/DeletionRequest 23/CoefChange 2/IpdAuditAspect 3）；AOP 注解 Long 属性非法引发注解处理轮次连锁（IpdServiceExceptionAdvice 假红）已修——注解属性只能原生类型
+- **提交**：0dcd96e7（8 文件 +430/-16）→ fix/gov-contract-20260909（R17→R22 链）；主工作区 8 文件已同步逐字节一致；审计专项 P1-6 关单，42 项总账升至 **38/1/2/1（90.5%）**
+
+## R23（2026-09-09）审计遗留收尾：gaps 裁决 + P2/P3 定案 + 前端契约兜底 + 基线根治
+- **gaps 裁决材料**：verify hashBroken(16)==gaps(16) 逐 seq 相同 → 零纯哈希篡改；真库画像 MIN=1401/MAX=2569/COUNT=1135 → 实际缺失 34 行聚 16 区间，全落并发密集写窗口（09-06 GATE 同秒簇 13 行 / 09-08 LOGIN 簇 14 行 / 09-09 LOGIN 簇 7 行）；成因=16039 旧 jar 无锚行锁（R21/R22 代码未部署，09-09 11:20 仍新增缺口）。裁决建议不 rebuild：rebuild 治不了缺行且零篡改可修，反而抹平伴生断裂降低可归因性；新代码部署后观察 GAP 停增，历史缺失知情接受。
+- **AOP P2/P3 批定案（设计修订）**：B1 简单型 20-30 点系静态扫描估计，逐点抽样证伪（GateReview pairs 动态载荷+私有链 / Contribution 动态 JSON reason / PersonService 快照+私有方法 / Coef·LDC operatorId-only 已被 P1-6 覆盖）；44 文件带 append、25 文件带快照。定案：注解化按需推进（新增代码优先 @IpdAudit），存量不再批量迁移；P3 批保留手写。
+- **接线轮阻塞登记**：36 条规则版 guard 仅存主工作区未提交（fix 分支旧 10 条版）+ HandoverService 兄弟在途 → 整体阻塞；交付逐台盘点表入报告 §9.3（关键发现：规则表缺 gate_review PENDING→APPROVED|settleTimeout，接线前必须补登；Contribution/LDC/Coef/kpi_record 全匹配）。
+- **前端契约兜底 + 基线根治（双仓 fix/gov-contract-20260909）**：da5f227（409/429 状态特化 + 403 与 30001 同源 + IPD_HTTP_STATUS_TEXTS 表 + 5 用例）→ 127445d（merge main 登录加固对齐）→ 6715012（traceId 基线不自洽根治：auth.ts 三合一 traceId+50003~50017+兜底，fix 分支 2 用例红+check:type 4 错全消）；主工作区 4 文件同步逐字节一致，定向 128/128 绿。剩余 2 错 TS2307=兄弟在途 audit/logs 页面（main HEAD 亦无）。
+- **@EnableScheduling**：代码就绪（HandoverOverdueScanner 09:05 + PersonResignEscalator），启用需重启共享 16039 授权（OPS-04 卡明示业务消费者未启用），登记待 owner。
+- **报告**：契约与遗留治理轮-20260909.md 增 §9（R23 明细）+ §0/§7 刷新；R22 报告/log.md 未提交部分一并收编入本轮提交。
