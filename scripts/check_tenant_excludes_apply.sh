@@ -121,9 +121,14 @@ DB_TABLES_FILE="$TMPDIR_CHECK/db_tables.txt"
 
 if [ "$SKIP_DB_CHECK" -eq 0 ]; then
   # 复用本机 mysql 客户端 + socket（参见 AGENTS.md）
+  # mysql 客户端不在 PATH：优先用仓内源码版（.codex/ipd-dev/software/），再找系统 PATH
   MYSQL_CNF="$BACKEND_ROOT/.codex/ipd-dev/config/mysql-client.cnf"
-  if [ -f "$MYSQL_CNF" ]; then
-    if mysql --defaults-file="$MYSQL_CNF" -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='ipd_dev'" 2>/dev/null > "$DB_TABLES_FILE"; then
+  MYSQL_BIN=""
+  for cand in "$BACKEND_ROOT"/.codex/ipd-dev/software/mysql-*/bin/mysql /opt/homebrew/bin/mysql /usr/local/mysql/bin/mysql mysql; do
+    if command -v "$cand" >/dev/null 2>&1 || [ -x "$cand" ]; then MYSQL_BIN="$cand"; break; fi
+  done
+  if [ -f "$MYSQL_CNF" ] && [ -n "$MYSQL_BIN" ]; then
+    if "$MYSQL_BIN" --defaults-file="$MYSQL_CNF" -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='ipd_dev'" 2>/dev/null > "$DB_TABLES_FILE"; then
       DB_AVAILABLE=1
       db_count=$(wc -l < "$DB_TABLES_FILE" | tr -d ' ')
       echo "  → 库 ipd_dev 实际表数: $db_count"
@@ -151,10 +156,13 @@ echo
 echo "[4/4] 三向对账..."
 
 # RC-3-A 配置先行（excludes 已登记但 DB 无表）
+# 注意：tenant.excludes 同时支持表名和 URL 过滤模式（如 /api/v1/**），
+# 以 / 开头的条目是 URL 白名单不是表名，跳过避免误报
 > "$TMPDIR_CHECK/rc3a_unregistered.txt"
 if [ "$DB_AVAILABLE" -eq 1 ]; then
   while IFS= read -r ex; do
     [ -z "$ex" ] && continue
+    case "$ex" in /*) continue ;; esac
     if ! grep -qx "$ex" "$DB_TABLES_FILE" 2>/dev/null; then
       echo "$ex" >> "$TMPDIR_CHECK/rc3a_unregistered.txt"
     fi
