@@ -149,11 +149,14 @@ public class DeletionRequestService {
             throw new ServiceException("已超过 " + withdrawHours + " 小时撤回时限");
         }
         // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
-        preCheckGuard("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw");
+        // 2026-09-09 C3 缺陷修复：先留存真实 from——此前 setStatus 污染后再取
+        // request.getStatus() 传给 postCommit，from 失真成 WITHDRAWN（审计链数据质量问题）
+        String fromStatus = request.getStatus();
+        preCheckGuard("deletion_request", fromStatus, DeletionRequestService.ST_WITHDRAWN, "withdraw");
         request.setStatus(ST_WITHDRAWN);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), requesterId, "DELETE_REQUEST_WITHDRAW", request.getId());
-        registerPostCommit("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
+        registerPostCommit("deletion_request", fromStatus, DeletionRequestService.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
         return request;
     }
 
@@ -238,6 +241,9 @@ public class DeletionRequestService {
         request.setStatus(ST_REJECTED);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
+        // 2026-09-09 C3 缺陷修复：R5 adminReject 标 crossDomain=true（跨域→通知申请人），
+        // 但此前驳回分支漏调 registerPostCommit → 申请人收不到驳回通知。与 adminApprove(L230) 对齐
+        registerPostCommit("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_REJECTED, "adminReject", adminId, requestId);
         return request;
     }
 
@@ -264,6 +270,10 @@ public class DeletionRequestService {
             return 0; // affected=0 短路：零 SQL 额外开销
         }
         Date adminDueAt = Workdays.add(now, adminDeadlineDays());
+        // ROOT-R3-P0-1：守卫 preCheck —— LEADER_REVIEW -> ADMIN_REVIEW 合法（升级路径）
+        // 2026-09-09 C3 缺陷修复：preCheck 语义是"迁移前拦截"，此前挂在批量 UPDATE 之后——
+        // 虽有 @Transactional 兜底回滚，但守卫应前置拒绝而非事后验证。前移到 UPDATE 前
+        preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, DeletionRequestService.ST_ADMIN_REVIEW, "escalateOverdue");
         // 步骤 ②：单 SQL 条件批量 UPDATE（PERF-P0-1：消除 N+1 写放大）
         int affected = deletionRequestMapper.update(null, new LambdaUpdateWrapper<DeletionRequest>()
             .set(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
@@ -274,8 +284,6 @@ public class DeletionRequestService {
             // 谓词扫描与 UPDATE 之间发生状态变迁（极少见——并发方抢先处置）：同样短路
             return 0;
         }
-        // ROOT-R3-P0-1：守卫 preCheck —— LEADER_REVIEW -> ADMIN_REVIEW 合法（升级路径）
-        preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, DeletionRequestService.ST_ADMIN_REVIEW, "escalateOverdue");
         // 步骤 ③：按预取行补逐条审计（G-02 语义不变：每条升级单独留痕，可被审计范围查询到）
         for (DeletionRequest request : overdue) {
             audit(request.getEntityType(), request.getEntityId(), null, "DELETE_LEADER_OVERDUE_ESCALATE", request.getId());

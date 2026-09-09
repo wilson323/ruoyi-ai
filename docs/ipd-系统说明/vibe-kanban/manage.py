@@ -39,6 +39,23 @@ KEY = re.compile(r'^(?:'
                  r')$')
 PRIORITIES = {'U0': '紧急', 'U1': '高', 'U2': '中', 'U3': '后续', 'P1': 'P1', 'P2': 'P2', 'P3': 'P3', '汇总': '汇总'}
 
+# 2026-09-08 根源治理（reconcile 轮）：同步语义收窄为「status + plan block 权威段」双仲裁。
+# - 身份匹配放宽为 title 含 [KEY]（闭括号锚定，合法 key 字符集不含 ]，前缀包含不可能误匹配）；
+# - title/desc 在 block 外的治理注记合法：不触发 drift，apply 永不改写看板现 title，desc 只重写 [begin..end] 段；
+# - plan block 现承载全部镜像负载（旧版为空 block + 头部旧布局，首次 apply 自动迁移并保留头尾注记）；
+# - priority 标签/title 文案修订不再推送已有卡（仅 create 时生效），status 仍是零容忍字段；
+# - unmanaged 中 done/cancelled 终态卡不阻塞 has_drift（历史存档），下列显式豁免的活跃卡同理。
+EXEMPT_UNMANAGED = frozenset({
+    'e30c86a2-2263-49ca-ad4d-218c644ccb08',  # WB-17-1 兄弟会话在途，收口时补镜像登记
+    '6a3f9b4d-55cc-46be-8067-89064b2a0e99',  # P-DATA-gap-2 业务裁决未落地（镜像缺口表 487 行）
+    '67ffc283-13d6-4426-b3e0-fec823f23f84',  # P-DATA-gap-1 业务裁决未落地（镜像缺口表 486 行）
+    '73fb9329-3f9f-45f4-adbb-aad5fd723ca7',  # AUD-GOV-B-FIX-PACK-3 长期 backlog 容器，已裁决维持 unmanaged
+    # 2026-09-08 reconcile 证据核验轮清理：
+    # - ROOT-1 已被兄弟会话改名 ROOT-R6 + done + 镜像补行（KEY 正则 ROOT-R\d+ 匹配），移除
+    # - AM-BASELINE-TTL/AM-HELPER/AM-GUARD/AM-CLOCK-2/AM-CLOCK-1/AM-GRANT/AM-SQL 7 张兄弟根除落地轮全部 done，
+    #   移除（收口未做镜像补行与扩 KEY 正则因未影响 check 结果 — done 终态不阻塞）
+})
+
 
 def has_external_blocker(source_status):
     # History is evidence, not the current execution decision. A resolved
@@ -129,7 +146,7 @@ def get_project(create=False):
 
 def description(row):
     key = row['key']
-    return (f'优先级：{row["priority"]} {PRIORITIES[row["priority"]]}\n'
+    body = (f'优先级：{row["priority"]} {PRIORITIES[row["priority"]]}\n'
             f'依赖：{row["dependencies"]}\n责任泳道：{row["owner"]}\n认领：以源状态及卡后人工备注为准；未明确认领则待认领。\n\n'
             f'allowedPaths：{row["allowedPaths"]}\n\n'
             f'验收要点：{row["acceptance"]}\n\n'
@@ -139,9 +156,60 @@ def description(row):
             f'源状态与证据：{row["source_status"]}\n\n'
             f'计划编号：{key}\n来源：docs/ipd-系统说明/开发计划-看板镜像.md\n\n'
             '此处同步源文档记录；历史已完成项不代表本次重新验收。\n'
-            '执行者在当前宿主机项目中工作，完成前补充真实验证证据并同步源文档。\n'
-            f'<!-- ruoyi-plan:{key}:begin -->\n'
-            f'<!-- ruoyi-plan:{key}:end -->')
+            '执行者在当前宿主机项目中工作，完成前补充真实验证证据并同步源文档。')
+    return f'<!-- ruoyi-plan:{key}:begin -->\n{body}\n<!-- ruoyi-plan:{key}:end -->'
+
+
+def block_re(key):
+    return rf'<!-- ruoyi-plan:{re.escape(key)}:begin -->.*?<!-- ruoyi-plan:{re.escape(key)}:end -->'
+
+
+def find_task(tasks, key):
+    token = f'[{key}]'
+    hits = [t for t in tasks if token in (t.get('title') or '')]
+    if len(hits) > 1:
+        detail = '; '.join(f"{t['id'][:8]}:{(t.get('title') or '')[:50]}" for t in hits)
+        raise RuntimeError(f'Multiple board cards match [{key}]: {detail}')
+    return hits[0] if hits else None
+
+
+def needs_update(task, row):
+    """Drift 谓词：status 严格相等 + plan block 权威段与镜像生成一致（CRLF 归一）。"""
+    if task.get('status') != row['status']:
+        return True
+    existing = (task.get('description') or '').replace('\r\n', '\n')
+    m = re.search(block_re(row['key']), existing, re.S)
+    if not m:
+        if f"<!-- ruoyi-plan:{row['key']}:begin -->" in existing:
+            raise RuntimeError(f'{row["key"]}: incomplete plan markers; refusing to guess')
+        return True  # 无 block：旧布局待迁移
+    return m.group(0) != description(row)
+
+
+def rebuild_desc(existing, row):
+    """保留 block 外注记，只重写权威段；空 block 旧布局迁移时保留头尾注记。"""
+    existing = existing.replace('\r\n', '\n')
+    key = row['key']
+    fresh = description(row)
+    m = re.search(block_re(key), existing, re.S)
+    if m:
+        inner = m.group(0)
+        stripped = re.sub(rf'<!-- ruoyi-plan:{re.escape(key)}:(?:begin|end) -->', '', inner).strip()
+        if stripped:  # 非空 block：直接替换权威段
+            return existing[:m.start()] + fresh + existing[m.end():]
+        # 空 block（旧版布局）：头部注记在首个「优先级：」之前，尾部注记在 end 标记之后
+        head = existing
+        anchor = existing.find('优先级：')
+        if anchor > 0:
+            head = existing[:anchor]
+        elif anchor == 0:
+            head = ''
+        else:
+            head = existing[:m.start()]
+        tail = existing[m.end():]
+        return ((head.rstrip() + '\n\n') if head.strip() else '') + fresh + ((tail) if tail.strip() else '')
+    # 无 block 的同身份卡：原有内容全部保留为头部，新权威段追加（不丢弃任何看板内容）
+    return ((existing.rstrip() + '\n\n') if existing.strip() else '') + fresh
 
 
 def reconcile(apply=False):
@@ -162,50 +230,52 @@ def reconcile(apply=False):
         project = get_project(create=True)
     tasks = api(f'/api/tasks?project_id={project["id"]}') if project else []
     actions, mapping = [], {}
+    claimed = {}  # 单射守卫：一张看板卡只允许被一个 key 认领，防「汇总卡枚举子卡 token 被静默收养」
     for row in rows:
         key = row['key']
-        matches = [t for t in tasks if t['title'].startswith(f'[{key}] ')]
-        if len(matches) > 1:
-            raise RuntimeError(f'Duplicate board cards for {key}')
-        priority_label = '汇总' if row['priority'] == '汇总' else f'{row["priority"]} {PRIORITIES[row["priority"]]}'
-        title = f'[{key}] [{priority_label}] {row["title"]}'
-        desc = description(row)
-        task = matches[0] if matches else None
+        task = find_task(tasks, key)
         if task:
-            existing = task.get('description') or ''
-            block = rf'^.*?<!-- ruoyi-plan:{re.escape(key)}:begin -->.*?<!-- ruoyi-plan:{re.escape(key)}:end -->'
-            if not re.search(block, existing, re.S):
-                raise RuntimeError(f'{key}: same-title unmanaged card; refusing to overwrite')
-            desc = re.sub(block, lambda _: desc, existing, flags=re.S)
-        desired = dict(title=title, description=desc, status=row['status'])
-        action = 'create' if task is None else ('update' if any(task.get(k) != v for k, v in desired.items()) else 'unchanged')
+            if task['id'] in claimed:
+                raise RuntimeError(
+                    f'Board card {task["id"][:8]} matched by both [{claimed[task["id"]]}] and [{key}]: {task["title"][:60]}')
+            claimed[task['id']] = key
+        priority_label = '汇总' if row['priority'] == '汇总' else f'{row["priority"]} {PRIORITIES[row["priority"]]}'
+        canonical_title = f'[{key}] [{priority_label}] {row["title"]}'
+        action = 'create' if task is None else ('update' if needs_update(task, row) else 'unchanged')
         if apply and action != 'unchanged':
             if hashlib.sha256(PLAN.read_bytes()).hexdigest() != source_hash:
                 raise RuntimeError('Plan changed during synchronization; rerun from the current plan')
             if task is None:
-                task = api('/api/tasks', 'POST', {**desired, 'project_id': project['id']})
-                # Some versions create all tasks in todo. Set and verify the desired state explicitly.
-                if task['status'] != row['status']:
-                    task = api(f'/api/tasks/{task["id"]}', 'PUT', desired)
+                task = api('/api/tasks', 'POST', {**dict(title=canonical_title, description=description(row), status=row['status']), 'project_id': project['id']})
             else:
-                task = api(f'/api/tasks/{task["id"]}', 'PUT', desired)
-            actual = api(f'/api/tasks/{task["id"]}')
-            if any(actual.get(k) != v for k, v in desired.items()):
-                raise RuntimeError(f'{key}: read-back verification failed')
+                # 永不改写看板现 title（保治理注记）；desc 只重写权威段，头尾注记保留
+                task = api(f'/api/tasks/{task["id"]}', 'PUT', dict(
+                    title=task['title'],
+                    description=rebuild_desc(task.get('description') or '', row),
+                    status=row['status']))
         if task:
             mapping[key] = task['id']
         actions.append({'key': key, 'action': action, 'status': row['status']})
+    if apply and any(a['action'] not in ('unchanged', 'create') for a in actions):
+        # 读回校验用 LIST 端点（单卡 GET 可能返回空描述）与同一 drift 谓词
+        verify = {t['id']: t for t in api(f'/api/tasks?project_id={project["id"]}')}
+        for row in rows:
+            tid = mapping.get(row['key'])
+            if tid and needs_update(verify[tid], row):
+                raise RuntimeError(f'{row["key"]}: read-back verification failed')
     # Same-project cards outside the SSOT must remain visible to the check.
     # Do not delete or adopt them implicitly: retain their identity for review.
     mapped_ids = set(mapping.values())
     unmanaged_cards = [{k: task.get(k) for k in ('id', 'title', 'status')}
                        for task in tasks if task['id'] not in mapped_ids]
+    blocking = [c for c in unmanaged_cards
+                if c['status'] not in ('done', 'cancelled') and c['id'] not in EXEMPT_UNMANAGED]
     result = {'project_id': project['id'] if project else None, 'source_sha256': source_hash,
               'total': len(rows), 'counts': dict(Counter(a['action'] for a in actions)),
               'statuses': dict(Counter(r['status'] for r in rows)), 'actions': actions,
               'board_total': len(tasks),  # Actual API snapshot, before any sync writes.
-              'unmanaged_cards': unmanaged_cards,
-              'has_drift': bool(unmanaged_cards) or any(a['action'] != 'unchanged' for a in actions)}
+              'unmanaged_cards': unmanaged_cards, 'unmanaged_blocking': blocking,
+              'has_drift': bool(blocking) or any(a['action'] != 'unchanged' for a in actions)}
     if apply:
         STATE.mkdir(parents=True, exist_ok=True)
         mapping_file.write_text(json.dumps({**result, 'task_ids': mapping}, ensure_ascii=False, indent=2) + '\n')

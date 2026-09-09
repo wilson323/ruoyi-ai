@@ -174,12 +174,14 @@ class P073BehaviorAcceptanceTest {
     void expiredToken_rejectedAsNotLogin() throws InterruptedException {
         long savedTimeout = SaManager.getConfig().getTimeout();
         try {
-            SaManager.getConfig().setTimeout(1); // 1 秒过期
+            // TTL 3s：原 1s 实测过窄——fork 启动/类装载抖动 >1s 时「未过期时可用」断言先炸
+            // （2026-09-09 同机两次全量一过一挂，时间抖动实锤），3s 窗口消除假红
+            SaManager.getConfig().setTimeout(3); // 3 秒过期
             String token = session.login(person);
             actingAs(token);
             assertThat(session.currentPerson().getId()).isEqualTo(1L); // 未过期时可用
 
-            Thread.sleep(1300); // 跨过 TTL
+            Thread.sleep(3300); // 跨过 TTL
 
             assertThatThrownBy(session::currentPerson).isInstanceOf(NotLoginException.class);
         } finally {

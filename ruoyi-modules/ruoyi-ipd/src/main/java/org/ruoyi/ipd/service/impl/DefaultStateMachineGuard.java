@@ -170,6 +170,18 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .crossDomain(true)        // 跨域：触发津贴账本写入
             .description("奖金池 distribute：CONFIRMED→DISTRIBUTED（跨域→写入 AllowanceLedger）")
             .build());
+        // 2026-09-09 C3 缺陷修复：BonusPoolService.distribute 业务上允许 DRAFT/CONFIRMED 两入口
+        // （「仅 DRAFT/CONFIRMED 可分配」），但此前只登记了 CONFIRMED 路径——DRAFT 入口时 service
+        // 硬编码传 from=CONFIRMED 绕过守卫。补登记 DRAFT 直分路径（未冻结确认即分配，同样写账本）
+        register(StateTransitionRule.builder()
+            .key("bonus_pool:DRAFT->DISTRIBUTED|distribute")
+            .entityType("bonus_pool")
+            .fromState("DRAFT")
+            .toState("DISTRIBUTED")
+            .trigger("distribute")
+            .crossDomain(true)        // 跨域：同 CONFIRMED 路径，分配即写 bonus_allocations 台账
+            .description("奖金池 distribute：DRAFT→DISTRIBUTED（未冻结直分，跨域→写台账）")
+            .build());
 
         // ---- 2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）----
         // 以下 5 台状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
@@ -197,15 +209,6 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .fromState("PENDING").toState("ABSTAINED_TIMEOUT").trigger("settleTimeout")
             .crossDomain(false)
             .description("签署超时弃权收敛")
-            .build());
-        // R24 治理轮补登：settleTimeout 触发「一方弃权按主导方意见执行」（L439）；
-        // 此前 GateReviewService 已有该转移点但规则表未登记，预接线后立即报 fail-closed。
-        register(StateTransitionRule.builder()
-            .key("gate_review:PENDING->APPROVED|settleTimeout")
-            .entityType("gate_review")
-            .fromState("PENDING").toState("APPROVED").trigger("settleTimeout")
-            .crossDomain(false)
-            .description("签署超时一方弃权按主导方意见执行（主导方已签 APPROVE）")
             .build());
         register(StateTransitionRule.builder()
             .key("gate_review:REJECTED->PENDING|reopen")
@@ -381,6 +384,26 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("任意态归档（终态收敛通配，isTerminalState 配套 KPI_RECORD_TERMINAL）")
             .build());
 
+        // ---- 2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）----
+        // 以下 5 台状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
+        // 接线时参照 KpiRecordService 的 setter 注入 + preCheckGuard/registerPostCommit 模式。
+        // crossDomain 暂全 false——待接线轮按业务逐条评估后再开启审计/通知副作用。
+
+        // R24 治理轮补登：settleTimeout 触发「一方弃权按主导方意见执行」（L439）；
+        // 此前 GateReviewService 已有该转移点但规则表未登记，预接线后立即报 fail-closed。
+        register(StateTransitionRule.builder()
+            .key("gate_review:PENDING->APPROVED|settleTimeout")
+            .entityType("gate_review")
+            .fromState("PENDING").toState("APPROVED").trigger("settleTimeout")
+            .crossDomain(false)
+            .description("签署超时一方弃权按主导方意见执行（主导方已签 APPROVE）")
+            .build());
+
+
+
+
+
+
         log.info("StateMachineGuard 种子规则注入完成：{} 条", rules.size());
     }
 
@@ -451,8 +474,12 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             return;
         }
         // 找到精确规则或通配规则（trigger 拼入 key）
+        // 2026-09-09 C3 缺陷修复：与 isAllowed(L409) 同步做 null→"INITIAL" 归一化——
+        // 此前 postCommit 直接拼 fromState，from=null 时 key 变 "...:null->..." 永远 miss，
+        // 跨域审计静默丢失（isAllowed 已放行但查不到规则的 ghost 路径）
+        String fromKey = fromState == null ? "INITIAL" : fromState;
         String trigPart = trigger == null ? "" : "|" + trigger;
-        StateTransitionRule rule = rules.get(entityType + ":" + fromState + "->" + toState + trigPart);
+        StateTransitionRule rule = rules.get(entityType + ":" + fromKey + "->" + toState + trigPart);
         if (rule == null) {
             rule = rules.get(entityType + ":*->" + toState + trigPart);
         }
@@ -467,18 +494,19 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
                 .action("CROSS_DOMAIN_TRANSITION")
                 .entityType(entityType)
                 .entityId(entityId)
-                .reason("from=" + fromState + ",to=" + toState + ",trigger=" + trigger)
+                // 审计记录语义态（fromKey）：null→INITIAL 归一化后的值，与规则表 key 一致
+                .reason("from=" + fromKey + ",to=" + toState + ",trigger=" + trigger)
                 .createTime(ts)
                 .build();
             auditLogService.append(audit);
             // FYI 通知：发给操作人自己（避免空指针，跨域触发的接收者由业务方决定；本守卫仅留痕）
             if (operatorId != null) {
-                String content = "from=" + fromState + ",to=" + toState + ",trigger=" + trigger
+                String content = "from=" + fromKey + ",to=" + toState + ",trigger=" + trigger
                     + ",entityId=" + entityId;
                 notificationService.publish(operatorId, "CROSS_DOMAIN_TRANSITION",
                     NotificationService.KIND_FYI,
                     entityType, entityId,
-                    "跨域状态机迁移：" + entityType + " " + fromState + "→" + toState,
+                    "跨域状态机迁移：" + entityType + " " + fromKey + "→" + toState,
                     content, null);
             }
         } catch (Exception ex) {

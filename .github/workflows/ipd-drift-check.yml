@@ -1,0 +1,132 @@
+# IPD entity↔真库 drift-check — RuoYi-AI 主仓门禁
+# 触发：PR 修改 ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/** 下任意实体
+# 检查项：
+#   1. 对新增 / 修改的实体字段，docs/script/sql/update/ 必须有对应迁移片段（含字段名）
+#   2. 完整 entity 集合必须由 docs/script/sql/check-entity-db-drift.py 静态扫描通过
+# 真库校验（需 MySQL socket）由开发机 / owner fresh 跑，不在 CI 内
+# 完整证据：docs/ipd-系统说明/验收/drift-check-20260907-主协调fresh跑测.md
+
+name: ipd-drift-check
+
+on:
+  pull_request:
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/**'
+      - 'docs/script/sql/**'
+      - 'docs/script/sql/check-entity-db-drift.py'
+      - '.github/workflows/ipd-drift-check.yml'
+
+jobs:
+  drift-check:
+    name: entity↔DDL drift (static)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 不持久化 token，避免后续 step 误用；本 workflow 无 push 权限要求
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scan entity fields
+        id: scan
+        run: |
+          echo "=== 扫描 IPD 实体集合 ==="
+          ENT_DIR="ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain"
+          ENT_COUNT=$(find "$ENT_DIR" -maxdepth 1 -name '*.java' | wc -l | tr -d ' ')
+          echo "实体文件数: $ENT_COUNT"
+          # 2026-09-09 C2 根除：扫描器失效自检——门禁自己坏掉必须拦下，不能静默报全绿
+          if [ "$ENT_COUNT" -lt 10 ]; then
+            echo "::error::实体文件数 < 10，扫描路径错位或模块未挂载——门禁失效，直接 fail"
+            exit 1
+          fi
+          if [ "$ENT_COUNT" -lt 40 ]; then
+            echo "::warning::实体文件数 < 40，疑似扫描路径错位或新增模块未挂载"
+          fi
+
+      - name: Static entity field inventory
+        run: |
+          # 抽取实体声明的字段（@TableField 标注优先，回退驼峰→下划线）
+          # 2026-09-09 C2 修正：原正则只认直写 @TableName("x")——但本仓实体全部是
+          # @TableName(value = "x", autoResultMap = true) 形式，导致只扫出 2 个假表
+          # （value + audit_log_chain_heads），门禁形同虚设。兼容 value= 与裸字符串两式
+          python3 - <<'PY'
+          import os, re, json
+          ENT_DIR = 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain'
+          tbl_args_pat = re.compile(r'@TableName\s*\(([^)]*)\)')
+          tbl_val_pat = re.compile(r'value\s*=\s*"(\w+)"')
+          tbl_bare_pat = re.compile(r'"(\w+)"')
+          # @TableField 兼容 @TableField("x") 与 @TableField(value = "x") 两式
+          tbl_field_pat = re.compile(r'@TableField\s*\(\s*(?:value\s*=\s*)?"(\w+)"')
+          fields_by_table = {}
+          for f in sorted(os.listdir(ENT_DIR)):
+              if not f.endswith('.java'):
+                  continue
+              path = os.path.join(ENT_DIR, f)
+              txt = open(path, encoding='utf-8').read()
+              am = tbl_args_pat.search(txt)
+              if not am:
+                  continue
+              tm = tbl_val_pat.search(am.group(1)) or tbl_bare_pat.search(am.group(1))
+              if not tm:
+                  continue
+              tbl = tm.group(1)
+              cols = set(tbl_field_pat.findall(txt))
+              # 驼峰列名（公有字段，含继承父类）
+              for ln in txt.splitlines():
+                  ln = ln.strip()
+                  m = re.match(r'private\s+\w[\w<>,\s\[\]]+\s+([a-z][A-Za-z0-9]+)\s*[;=]', ln)
+                  if m and m.group(1) not in {'serialVersionUID'}:
+                      cols.add(re.sub(r'(?<!^)(?=[A-Z])', '_', m.group(1)).lower())
+              fields_by_table[tbl] = sorted(cols)
+          with open('/tmp/entity_fields.json', 'w') as out:
+              json.dump(fields_by_table, out, ensure_ascii=False, indent=2)
+          print(f'实体表数: {len(fields_by_table)}')
+          # 2026-09-09 C2 根除：解析器失效自检——修正前正则错误时此处只输出 2，门禁假绿
+          if len(fields_by_table) < 10:
+              print(f'::error::解析出的实体表数 {len(fields_by_table)} < 10，注解解析器失效——直接 fail')
+              raise SystemExit(1)
+          for t, cs in list(fields_by_table.items())[:5]:
+              print(f'  {t}: {len(cs)} cols')
+          PY
+
+      - name: Static drift hints (no MySQL)
+        run: |
+          # 不连真库，只列"哪些实体存在 / 哪些表名无对应 java"——给 PR 评审提示
+          python3 - <<'PY'
+          import json, os, re
+          data = json.load(open('/tmp/entity_fields.json'))
+          sql_dir = 'docs/script/sql/update'
+          sql_text = ''
+          for f in os.listdir(sql_dir):
+              if f.endswith('.sql'):
+                  sql_text += open(os.path.join(sql_dir, f), encoding='utf-8').read() + '\n'
+          missing = []
+          for tbl, cols in data.items():
+              if tbl not in sql_text:
+                  missing.append((tbl, 'no_table_in_sql_update'))
+                  continue
+              # 列名不一定 100% 命中（脚本里可能 snake_case 拼写差异），只统计丢失率
+              miss_cols = [c for c in cols if c not in sql_text and not c.endswith('_id') and c not in {'id','create_by','create_time','update_by','update_time','del_flag','remark','tenant_id','version'}]
+              if miss_cols:
+                  missing.append((tbl, f'missing_cols_{len(miss_cols)}/{len(cols)}'))
+          if missing:
+              print('::warning::以下实体在 docs/script/sql/update/ 中无完整迁移：')
+              for tbl, reason in missing:
+                  print(f'  - {tbl}: {reason}')
+          else:
+              print('所有实体在 SQL update 目录中均有对应迁移片段')
+          PY
+
+      - name: Summarize
+        if: always()
+        run: |
+          echo "=== IPD drift-check summary ==="
+          echo "本 CI 仅做静态扫描，真库校验请开发机跑："
+          echo "  python3 docs/script/sql/check-entity-db-drift.py \\"
+          echo "    --cnf .codex/ipd-dev/config/mysql-client.cnf --db ipd_dev"

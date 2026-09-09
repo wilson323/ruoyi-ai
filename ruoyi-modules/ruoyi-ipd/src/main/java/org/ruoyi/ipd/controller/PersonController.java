@@ -7,9 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.service.AuditLogService;
 import org.ruoyi.ipd.service.PersonService;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +35,7 @@ public class PersonController {
 
     private final PersonService personService;
     private final IpdPermission permission;
+    private final AuditLogService auditLogService;
 
     /** 离职冻结请求（reason 必填）。 */
     public record ResignRequest(@NotBlank @Size(max = 200) String reason) { }
@@ -75,6 +78,7 @@ public class PersonController {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅 HR 或本人可触发离职");
         }
         var result = personService.resign(personId, req.reason(), operator);
+        audit(operator, "person_resign", personId, req.reason());
         return ApiV1Response.ok(ResignView.from(result));
     }
 
@@ -87,6 +91,7 @@ public class PersonController {
                                            @Valid @RequestBody RehireRequest req) {
         IpdActor operator = permission.requireLeaderOrAdmin();
         Person p = personService.rehire(personId, req == null ? null : req.note(), operator);
+        audit(operator, "person_rehire", personId, req == null ? null : req.note());
         return ApiV1Response.ok(PersonView.from(p));
     }
 
@@ -99,7 +104,23 @@ public class PersonController {
                                                  @Valid @RequestBody UnbindRequest req) {
         IpdActor operator = permission.requireLeaderOrAdmin();
         Person p = personService.unbindWecom(personId, req.reason(), operator);
+        audit(operator, "person_wecom_unbind", personId, req.reason());
         return ApiV1Response.ok(PersonView.from(p));
+    }
+
+    private void audit(IpdActor actor, String action, Long entityId, String reason) {
+        if (actor == null) {
+            return;
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action(action)
+            .entityType("persons")
+            .entityId(entityId)
+            .reason(reason)
+            .build());
     }
 
     private static boolean isHr(IpdActor actor) {
