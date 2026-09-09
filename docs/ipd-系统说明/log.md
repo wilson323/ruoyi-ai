@@ -3036,3 +3036,10 @@ owner「授权全部执行」指令后四连：
 - 验证铁证：javac 隔离编译两个改过的 Java 文件 0 错（避开兄弟在途空 HandoverService.java 触发 maven all-or-nothing 编译错）+ xmllint logback-spring.xml 0 错 + application.yml L57 config 已切到新文件
 - 卫生 5 全清后待裁决清单：HIGH-5 列型 / QA06-2 v2 历史行 / 40002 语义归属（津贴口径 R18 已结）
 - 关单报告《治理/契约与遗留治理轮-20260909.md》§0/§1.1/§1.2/§7 已同步刷状态：30 已修（71.4%）/3 部分/8 仍在/1 误报
+
+## R20（2026-09-09）3 项裁决全部拍板落地 + 5 个一行小修 R19 已结回顾
+- HIGH-5 config_value 列型：ruoyi-ai.sql:2288 + 2026-09-06-ipd-p05-business-config.sql:24/48 三处 varchar(500) 统一为 text；幂等 ALTER 脚本 2026-09-09-ipd-h5-config-value-text.sql；真库 3 张表 SHOW COLUMNS 回读均为 text（13 行数据 + 0 行 version 无损）
+- QA06-2 hash_version=2：真库 audit_logs 1126 行 hash_version 全 NULL（无 v2 数据），「62 行历史不可验」是文档推断误判；canonicalOf 兼容 v1 即可，无需补 v2 算法
+- 40002 语义统一：前端默认域 stale「关联条件已变更」改为「双签未完成，请等待签署完成后再操作」对齐后端 DUAL_SIGN_INCOMPLETE；bid 域 40002 删除（后端无 throw 点，死码）
+- 待裁决清单 R20 全清：HIGH-5 / QA06-2 / 40002 均拍板落地，§0 总账从 30/3/8/1 升至 33/3/5/1
+- 5 个一行小修 R19 已结回顾（INFO-1 dev 密码 / P2-4 logback / P1-1 ReceiptLedger in_window / P2-2 listByProject LIMIT / INFO-3 rebuild 护栏），均 b3336d48 落地
