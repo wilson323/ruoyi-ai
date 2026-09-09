@@ -43,7 +43,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_BONUS_POOL_QUERY,
         // AC-COMP-01/04/05：合规读（内部全员，角色范围 service 二次校验）
         IpdPermissionCode.OPERATION_COMPLIANCE_READ,
-        // P3-7.1：切换验收 run/get/list（内部全员可读；lock/unlock 走 ADMIN_WRITE 收口）
+        // R-NEW-SEC-5：G5 复盘待办读（对象级由 service 限定为该项目在职成员）
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_QUERY,
+        // P3-7.1：切换验收 run/get/list（内部全员可读；lock/unlock 拆细码见 BUSINESS_WRITE）
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY
     );
 
@@ -58,6 +60,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_GATE_REVIEW_INITIATE,
         IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT,
+        // SEC-MED-3：撤返码独立登记（仅申请人角色可用——与 SUBMIT 同集合，因角色级别无
+        // 法区分 actor 与资源 ownership；具体 IDOR 校验由 service 维持 + 全 NOT_FOUND 防侧信道）
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_WITHDRAW,
         IpdPermissionCode.OPERATION_COEFFICIENT_PROPOSE,
         // P1-10.1：AI 文档登记原始输出 / 人工改版 / 人工审核（BR-AI-03）
         IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE,
@@ -66,7 +71,16 @@ public final class IpdRolePermissionCatalog {
         // P3-6.2：贡献度评定保存（双 PM 自评）
         IpdPermissionCode.OPERATION_CONTRIBUTION_SAVE,
         // P3-8.2：负反馈录入（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN 均可）
-        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE
+        IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_CREATE,
+        // R-NEW-SEC-5（2026-09-07）：补齐写码。注解层先按内部全员放行，
+        // 真正的“谁能签/谁能改谁的复盘”由 service 层 IpdIdorGuard 卡（与上面各系列同构）。
+        // 特别注意：这些码一旦没登目录，就会重现 2026-09-06 “连超管都被注解拒”的 403。
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_CREATE,
+        IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_COMPLETE,
+        IpdPermissionCode.OPERATION_KPI_SHARED_CONFIRM_SIGN,
+        IpdPermissionCode.OPERATION_KPI_SHARED_COLLECT,
+        IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SUBMIT,
+        IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SIGN
     );
 
     /** 组长初审删除申请 + 系数定值确认。 */
@@ -120,8 +134,10 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
         IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
         IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE,
-        // P3-7.1：切换验收月度锁定/解锁（仅超管；service requireAdmin 兜底）
-        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_ADMIN
+        // R-NEW-SEC-5 + P3-7.1 合并裁决：锁定/解锁采用拆细码 LOCK/UNLOCK（Controller 注解实际消费）；
+        // :admin 码保留常量但无注解消费端，不登记进目录避免 CatalogDrift 守卫误报
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(

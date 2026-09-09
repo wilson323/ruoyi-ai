@@ -39,12 +39,23 @@ public class HandoverOverdueScanner {
     private final PersonMapper personMapper;
     private final NotificationService notificationService;
 
+    /** 可注入时钟（仿 GateReviewService 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() {
+        return Date.from(clock.instant());
+    }
+
     /**
      * 每日 09:05 扫描 DRAFT 移交超时并催办/升级（@EnableScheduling 启用后生效）。
      */
     @Scheduled(cron = "0 5 9 * * ?")
     public void dailyOverdueScan() {
-        Date now = new Date();
+        Date now = now();
         List<HandoverRecord> drafts = handoverMapper.selectList(
             new LambdaQueryWrapper<HandoverRecord>().eq(HandoverRecord::getStatus, "DRAFT"));
         if (drafts.isEmpty()) {

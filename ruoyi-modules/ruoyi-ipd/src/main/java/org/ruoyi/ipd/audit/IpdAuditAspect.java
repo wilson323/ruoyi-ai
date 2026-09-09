@@ -4,8 +4,11 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import cn.dev33.satoken.exception.NotLoginException;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AuditLogService;
 import org.slf4j.Logger;
@@ -30,8 +33,13 @@ import java.util.Map;
  * （REQUIRES_NEW + 锚行锁），<b>不做</b> publishEvent 异步（设计 §3.3）。
  * <p>权限：{@code adminOnly=true} 时切面在 proceed 前 {@code requireAdmin()}——
  * 门禁语义与原「方法体内先取 actor」一致（拒绝在业务执行前抛出）。
- * <p>SpEL 降级：entityId/reason 解析失败按空串落审计并 WARN，<b>不</b>让审计失败阻断业务返回
- * （append 自身的 requireJson/锚行锁异常仍会传播——那是数据正确性问题，不是表达式问题）。
+ * <p>SpEL 降级：entityId/reason 解析失败按空串落审计并 WARN，<b>不</b>让审计失败阻断业务返回。
+ * <p>操作人四通道（2026-09-09 双线合并后优先级）：adminOnly→requireAdmin()（门禁前置）＞
+ * operator SpEL ＞ systemOperatorId ＞ IpdAuthSession.currentPerson()（P2轮三通道；
+ * 无登录上下文时 WARN 跳过整条审计——受保护写端点不应出现，疑似鉴权链异常）。
+ * <p>旁路容错（P2轮三蜂群复审 P1 裁决，2026-09-09 双线合并采纳）：业务成功后审计落库失败
+ * （含 requireJson/锚行锁异常）只记 ERROR 不抛——把成功响应变 500 会误导非幂等端点重试双写；
+ * ERROR 日志含异常栈即为监控告警信号，数据正确性问题通过日志告警显性化，不再通过传播异常。
  */
 @Aspect
 @Component
@@ -41,17 +49,30 @@ public class IpdAuditAspect {
 
     private final AuditLogService auditLogService;
     private final IpdPermission ipdPermission;
+    private final IpdAuthSession ipdAuthSession;
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final ParameterNameDiscoverer paramNameDiscoverer = new DefaultParameterNameDiscoverer();
 
+    /** 兼容旧签名（R22 时代无 session 通道）；生产装配走三参构造器。 */
     public IpdAuditAspect(AuditLogService auditLogService, IpdPermission ipdPermission) {
+        this(auditLogService, ipdPermission, null);
+    }
+
+    /** 兼容旧签名（P2轮三时代无 permission/operator 通道）。 */
+    public IpdAuditAspect(AuditLogService auditLogService, IpdAuthSession ipdAuthSession) {
+        this(auditLogService, null, ipdAuthSession);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public IpdAuditAspect(AuditLogService auditLogService, IpdPermission ipdPermission, IpdAuthSession ipdAuthSession) {
         this.auditLogService = auditLogService;
         this.ipdPermission = ipdPermission;
+        this.ipdAuthSession = ipdAuthSession;
     }
 
     @Around("@annotation(ipdAudit)")
-    public Object around(ProceedingJoinPoint pjp, IpdAudit ipdAudit) throws Throwable {
+    public Object auditAround(ProceedingJoinPoint pjp, IpdAudit ipdAudit) throws Throwable {
         IpdActor actor = null;
         if (ipdAudit.adminOnly()) {
             actor = ipdPermission.requireAdmin();
@@ -59,8 +80,24 @@ public class IpdAuditAspect {
             actor = evalOperator(pjp, ipdAudit.operator());
         }
         Object result = pjp.proceed();
+        // P2轮三通道（proceed 后取操作人，与业务异常传播不交叉）：受保护写端点从会话取真实操作人。
+        if (actor == null && ipdAuthSession != null) {
+            try {
+                Person person = ipdAuthSession.currentPerson();
+                actor = new IpdActor(person.getId(), person.getName(), person.getPersonType(), person.getGroupId());
+            } catch (NotLoginException e) {
+                log.warn("[IpdAudit] {} {} 跳过：无登录上下文（写端点不应出现，疑似鉴权链异常）",
+                    ipdAudit.entityType(), ipdAudit.action());
+                return result;
+            }
+        }
         appendAfterReturn(pjp, ipdAudit, actor, result);
         return result;
+    }
+
+    /** R22 旧名委托（测试直调兼容）。 */
+    public Object around(ProceedingJoinPoint pjp, IpdAudit ipdAudit) throws Throwable {
+        return auditAround(pjp, ipdAudit);
     }
 
     /** 仅在业务成功返回后调用；SpEL 上下文含 #result 与全部具名参数。 */
@@ -81,19 +118,24 @@ public class IpdAuditAspect {
             } else if (ann.systemOperatorId() != 0L) {
                 builder.operatorId(ann.systemOperatorId());
             }
-            Long entityId = evalLong(vars, ann.entityId(), "entityId", method.getName());
+            // 双属性名兼容：entityId/reason（R22）优先，为空再看 entityIdExpr/reasonExpr（P2轮三）
+            String entityIdSpel = !ann.entityId().isBlank() ? ann.entityId() : ann.entityIdExpr();
+            String reasonSpel = !ann.reason().isBlank() ? ann.reason() : ann.reasonExpr();
+            Long entityId = evalLong(vars, entityIdSpel, "entityId", method.getName());
             if (entityId != null) {
                 builder.entityId(entityId);
             }
-            String reason = evalString(vars, ann.reason(), "reason", method.getName());
+            String reason = evalString(vars, reasonSpel, "reason", method.getName());
             if (reason != null && !reason.isBlank()) {
                 builder.reason(reason);
             }
             auditLogService.append(builder.build());
         } catch (RuntimeException e) {
-            // append 的数据正确性异常（requireJson/锚行缺失）必须传播——只有 SpEL 表达式
-            // 环节按空串降级，已在 evalXxx 内处理；到这里说明落库通道本身出错，不能吞。
-            throw e;
+            // 旁路容错（P2轮三复审 P1 裁决）：业务已成功后审计落库失败不抛——防非幂等端点
+            // 被误导重试双写；ERROR 含异常栈即监控告警信号（requireJson/锚行锁类数据正确性
+            // 问题经日志告警显性化，不靠传播异常）。
+            log.error("[IpdAudit] {} {} 审计落库失败（业务响应不受影响）",
+                ann.entityType(), ann.action(), e);
         }
     }
 

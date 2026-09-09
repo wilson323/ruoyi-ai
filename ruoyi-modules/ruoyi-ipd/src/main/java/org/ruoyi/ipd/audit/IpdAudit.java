@@ -41,8 +41,18 @@ public @interface IpdAudit {
      */
     String entityId() default "";
 
-    /** 审计理由的 SpEL，上下文同 {@link #entityId()}。返回前解析；解析失败按空串降级并 WARN。 */
+    /** 审计理由的 SpEL，上下文同 {@link #entityId()}。返回前解析；解析失败按空 串降级并 WARN。 */
     String reason() default "";
+    
+    /**
+     * 实体 ID 的 SpEL（P2轮三别名，与 {@link #entityId()} 同义）。
+     * 2026-09-09 双线合并兼容：P2轮三（SwitchingAcceptanceController 3 端点）用本属性名，
+     * R22 框架用 {@link #entityId()}；切面按 entityId 优先、为空再看 entityIdExpr 解析。
+     */
+    String entityIdExpr() default "";
+    
+    /** 审计理由的 SpEL（P2轮三别名，与 {@link #reason()} 同义；解析优先级低于 {@link #reason()}）。 */
+    String reasonExpr() default "";
 
     /**
      * 操作人 IpdActor 的 SpEL（方法参数形式，如 {@code "#actor"}）。

@@ -20,16 +20,47 @@ server:
       # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
       worker: 256
 
-# Harness 命令仍受工作区租约、执行计划和工具审批约束；开启后才能验证并运行生成的网站。
+# execute_process 只能经由固定镜像的 Docker OS sandbox；缺任一配置均 fail closed。
 coding:
   harness:
+    journal:
+      # Operator HTML projection is opt-in; production paths must be chosen by deployment config.
+      enabled: ${CODING_HARNESS_JOURNAL_ENABLED:false}
+      output-directory: ${CODING_HARNESS_JOURNAL_OUTPUT_DIRECTORY:./data/coding-harness-journal}
     budget:
       # 模型回合上限；工具额度按每回合最多 3 次保持同比例，避免工具预算先于回合耗尽。
-      max-iterations: 200
-      max-tool-calls: 600
+      # No task iteration or wall-time cutoff; context compaction supports continued work.
+      # Optional cumulative spending ceilings (0 = disabled).
+      max-tool-calls: 0
+      max-input-tokens: 0
+      max-output-tokens: 0
     tools:
       execute-process:
-        enabled: true
+        enabled: ${CODING_HARNESS_EXECUTE_PROCESS_ENABLED:false}
+        sandbox:
+          # 必须是宿主 Docker CLI 的绝对路径；不会搜索或继承宿主 PATH/HOME。
+          docker-executable: ${CODING_HARNESS_DOCKER_EXECUTABLE:}
+          # 对 CLI 文件内容做每次控制调用前复核，不能只信文件名或绝对路径。
+          docker-executable-sha256: ${CODING_HARNESS_DOCKER_EXECUTABLE_SHA256:}
+          # 必须是绝对、无链接且始终为空的专用目录，阻断宿主 config.json/proxy/credential helper。
+          docker-config-directory: ${CODING_HARNESS_DOCKER_CONFIG_DIRECTORY:}
+          # 只接受平台本地 Docker Engine（Windows named pipe / Unix socket），拒绝远端 context。
+          docker-host: ${CODING_HARNESS_DOCKER_HOST:}
+          # 仅接受 evaluator 批准的本地 sha256:<64 hex> image ID，永不 pull/build。
+          image: ${CODING_HARNESS_SANDBOX_IMAGE:}
+
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: false
+  # 路径
+  path: /resource/websocket
+  # 设置访问源地址
+  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
+  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
+  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
+  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
+  allowedOrigins: ''
 
 --- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
 chat:
@@ -54,6 +85,17 @@ logging:
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
+    # MCP traffic/stdout may contain tool arguments, results or credentials.
+    MCP: "OFF"
+    dev.langchain4j.mcp: "OFF"
+    dev.langchain4j.mcp.McpToolProvider: "OFF"
+    dev.langchain4j.mcp.client.logging.DefaultMcpLogMessageHandler: "OFF"
+    dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport: "OFF"
+    dev.langchain4j.mcp.client.transport.stdio.ProcessStderrHandler: "OFF"
+    dev.langchain4j.mcp.transport.stdio.JsonRpcIoHandler: "ERROR"
+    dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport: "OFF"
+  # 使用 logback-spring.xml 以支持 <springProfile name="dev|prod"> 切换 root level
+  # （详见 logback-spring.xml 头部注释；logback-plus.xml 已废弃仅保留向后兼容）
   config: classpath:logback-spring.xml
 
 # 用户配置
@@ -136,7 +178,7 @@ spring:
   # 此处为未显式配池的 profile（如 ipd-local）提供安全基线：
   # 缺省时 HikariCP 默认 maximumPoolSize=10 + connectionTimeout=30s，并发>10 即排队雪崩。
   # application-dev.yml / application-prod.yml 以同名键覆盖
-  # （dev 已升 80；prod 走 application-prod-batch4-bcrypt-hikari.patch 提升至 80，待用户 apply + 压测验证）。
+  # （dev 已升 80；prod 已 apply application-prod-batch4-bcrypt-hikari.patch 上浮至 80，超原 spec 60 — 同步自 SEC-HIGH-1 R9-BC-COST BCrypt cost=10 持连接时间×10 的压测；详见 Wave3-实施规格包修订 + SEC-AUD rebuttal）。
   datasource:
     dynamic:
       # 性能分析插件（有性能损耗 不建议生产环境使用）
@@ -291,6 +333,7 @@ tenant:
     - receipt_ledger
     - audit_logs
     - kpi_records
+    - kpi_shared_confirms
     - allowance_ledgers
     - bonus_pools
     - ai_documents
@@ -308,9 +351,9 @@ tenant:
     - audit_log_chain_heads
     # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
     - notification_events
-    # R11（2026-09-08，蜂群B-U0）：ipd_business_config(+versions) 存业务参数真数据且 domain 带
-    # tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers / switching_acceptance
-    # 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错——单企业部署统一排除租户过滤
+    # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
+    # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
+    # switching_acceptance 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错
     - ipd_business_config
     - ipd_business_config_versions
     - gate_review_observers
@@ -415,6 +458,9 @@ xss:
   # 排除链接
   excludeUrls:
     - /system/notice
+    # Coding prompts contain source text (for example TypeScript <T>), rendered as escaped Markdown.
+    - /coding/harness/sessions/*/runs
+    - /coding/harness/sessions/*/runs/*/inputs
 
 --- # 链路追踪配置
 trace:
@@ -453,23 +499,11 @@ sse:
   enabled: true
   path: /resource/sse
 
---- # websocket
-websocket:
-  # 如果关闭 需要和前端开关一起关闭
-  enabled: false
-  # 路径
-  path: /resource/websocket
-  # 设置访问源地址
-  # SEC-LOW-4：父基线显式空字符串（同源默认），不允许 '*' 通配。
-  # websocket.enabled=false 时此配置不生效；切到 true 时按同源匹配，避免任意源跨域访问。
-  # dev profile 在 application-dev.yml 显式覆盖 '*'（本地双端口调试便利）；
-  # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
-  allowedOrigins: ''
 
 --- # 演示模式配置
 demo:
-  # 是否开启演示模式（开启后所有写操作将被拦截）
   # R8-P0-2：默认关闭，避免误开启阻断全部 IPD 写操作；dev profile 如需演示模式请在 application-dev.yml 显式覆盖
+  # （upstream 曾 env 化 ${DEMO_ENABLED:false}，ProdConfigDeltaGuardTest 守卫要求字面 false：demo 误开会拦全部写链，不允许 env 注入旁路）
   enabled: false
   # 提示消息
   message: "演示模式，不允许操作"

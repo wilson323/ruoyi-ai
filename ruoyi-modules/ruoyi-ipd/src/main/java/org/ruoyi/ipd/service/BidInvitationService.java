@@ -34,6 +34,13 @@ public class BidInvitationService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
 
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
+
     public BidInvitationService(BidInvitationMapper bidInvitationMapper,
                                  BidResponseMapper bidResponseMapper,
                                  AuditLogService auditLogService) {
@@ -61,7 +68,7 @@ public class BidInvitationService {
     @Transactional(rollbackFor = Exception.class)
     public BidInvitation create(BidInvitation invitation) {
         invitation.setStatus("OPEN");
-        invitation.setCreateTime(new Date());
+        invitation.setCreateTime(now());
         bidInvitationMapper.insert(invitation);
         return invitation;
     }
@@ -100,7 +107,7 @@ public class BidInvitationService {
     public ConfirmTokenView issueConfirmToken(Long invitationId) {
         BidInvitation inv = requireOpen(invitationId);
         String token = newConfirmToken();
-        Date expires = new Date(System.currentTimeMillis() + CONFIRM_TOKEN_TTL_MS);
+        Date expires = new Date(now().getTime() + CONFIRM_TOKEN_TTL_MS);
         // 落库：confirm_token 与 expires_at 一起写；状态机不变（保持 OPEN）
         inv.setConfirmToken(token);
         inv.setConfirmTokenExpires(expires);
@@ -134,7 +141,7 @@ public class BidInvitationService {
             if (inv.getConfirmToken() == null || !inv.getConfirmToken().equals(confirmToken)) {
                 throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "confirmToken 不匹配，请重新拉取预演");
             }
-            if (inv.getConfirmTokenExpires() == null || inv.getConfirmTokenExpires().before(new Date())) {
+            if (inv.getConfirmTokenExpires() == null || inv.getConfirmTokenExpires().before(now())) {
                 throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "confirmToken 已过期（24h），请重新拉取预演");
             }
         }
@@ -176,7 +183,7 @@ public class BidInvitationService {
                 + ",\"selectedRdPmId\":" + resp.getRdPmId()
                 + ",\"rejectedRdPmIds\":[" + rejectedRdPmIds + "]}")
             .reason(inv.getTitle())
-            .createTime(new Date()).build());
+            .createTime(now()).build());
         // HIGH-1.2 落选通知：镜像 adminAssign 行 332-355 模式
         // 中标者 ⇒ BID_WON；其余落选 PENDING ⇒ BID_LOST（dedupKey 幂等，重复不重发）
         if (notificationService != null) {
@@ -210,16 +217,15 @@ public class BidInvitationService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int expireOverdue() {
-        Date now = new Date();
         // ZK-IPD §四.1.3：先 selectList 拿受影响行（id + createBy），update 完发通知
         List<BidInvitation> overdue = bidInvitationMapper.selectList(
             new LambdaQueryWrapper<BidInvitation>()
                 .eq(BidInvitation::getStatus, "OPEN")
-                .lt(BidInvitation::getExpireAt, now));
+                .lt(BidInvitation::getExpireAt, now()));
         int affected = bidInvitationMapper.update(null, new LambdaUpdateWrapper<BidInvitation>()
             .set(BidInvitation::getStatus, "EXPIRED")
             .eq(BidInvitation::getStatus, "OPEN")
-            .lt(BidInvitation::getExpireAt, now));
+            .lt(BidInvitation::getExpireAt, now()));
         if (affected > 0 && notificationService != null) {
             for (BidInvitation inv : overdue) {
                 if (inv.getCreateBy() == null) continue;
@@ -241,7 +247,7 @@ public class BidInvitationService {
     @Transactional(rollbackFor = Exception.class)
     public BidInvitation withdraw(Long id) {
         BidInvitation inv = requireOpen(id);
-        long millisSinceCreate = System.currentTimeMillis() - inv.getCreateTime().getTime();
+        long millisSinceCreate = now().getTime() - inv.getCreateTime().getTime();
         if (millisSinceCreate > 24 * 60 * 60 * 1000L) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "超过24小时不可撤回");
         }
@@ -288,7 +294,7 @@ public class BidInvitationService {
     }
 
     /**
-     * 查询招标单下的应标列表（P2-3.2 隐私 + MEDIUM-2.2 公开招标应标者互见）
+     * 查询招标单下的应标列表（P2-3.2 隐私 + MEDIUM-2.2 公开招标应标者互见）。
      *
      * <ul>
      *   <li>ONE_TO_ONE 模式：非发起人仅见本人应标（不变）</li>
@@ -298,6 +304,9 @@ public class BidInvitationService {
      *
      * @param invitationId    招标单 ID
      * @param currentPersonId 会话用户 ID；等于发起人（createBy）时返回全量（含 WITHDRAWN/REJECTED）
+     *
+     * <p>PERF-P1-2 兼容保留：不带分页，调用方需注意应标量过大时内存压力。
+     * 新代码请优先用 {@link #listResponsesPaged(Long, Long, Integer, Integer)}。
      */
     public List<BidResponse> listResponses(Long invitationId, Long currentPersonId) {
         BidInvitation inv = bidInvitationMapper.selectById(invitationId);
@@ -339,6 +348,75 @@ public class BidInvitationService {
         return rows;
     }
 
+    /**
+     * PERF-P1-2：分页查询招标单下的应标列表（隐私过滤不变 + IPage 物理分页）。
+     *
+     * <ul>
+     *   <li>复用既有 {@code idx_br_invitation(invitation_id)} 索引，等值过滤直接走索引</li>
+     *   <li>{@code pageSize} 上限 200 防滥用；null → 默认 20；&lt;1 → 1</li>
+     *   <li>隐私过滤与脱敏口径同 {@link #listResponses(Long, Long)}：ONE_TO_ONE 仅本人 /
+     *       PUBLIC 全员可见 + WITHDRAWN|REJECTED 仅本人 / 发起人全量 / PUBLIC 非发起人脱敏前 80 字符</li>
+     *   <li>隐私过滤在 wrapper 层完成，避免 count 查询泄露「有无应标」oracle</li>
+     * </ul>
+     *
+     * @param invitationId    招标单 ID
+     * @param currentPersonId 会话用户 ID
+     * @param pageNo   页码（从 1 开始；&lt;1 → 1）
+     * @param pageSize 每页条数（&lt;1 → 1；&gt;200 → 200；null → 20）
+     */
+    public IPage<BidResponse> listResponsesPaged(Long invitationId, Long currentPersonId,
+                                                 Integer pageNo, Integer pageSize) {
+        BidInvitation inv = bidInvitationMapper.selectById(invitationId);
+        if (inv == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + invitationId);
+        }
+        // MEDIUM-info-disclosure 修复：强制要求已登录 actor，避免 eq(field, null) IS-NULL 语义泄露遗留数据
+        if (currentPersonId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "未登录或会话失效");
+        }
+        int pNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
+        int pSize;
+        if (pageSize == null) {
+            pSize = 20;
+        } else if (pageSize < 1) {
+            pSize = 1;
+        } else if (pageSize > BidResponseService.MAX_PAGE_SIZE) {
+            pSize = BidResponseService.MAX_PAGE_SIZE;
+        } else {
+            pSize = pageSize;
+        }
+        LambdaQueryWrapper<BidResponse> qw = new LambdaQueryWrapper<BidResponse>()
+            .eq(BidResponse::getInvitationId, invitationId)
+            .orderByDesc(BidResponse::getCreateTime);
+        boolean isCreator = currentPersonId.equals(inv.getCreateBy());
+        boolean isPublic = "PUBLIC".equals(inv.getMode());
+        if (isCreator) {
+            // 发起人：全量（含 WITHDRAWN/REJECTED），不动 responseNote
+        } else if (isPublic) {
+            // MEDIUM-2.2：PUBLIC 模式下 WITHDRAWN/REJECTED 仅本人可见，其余应标者互见
+            qw.and(w -> w.notIn(BidResponse::getStatus, "WITHDRAWN", "REJECTED")
+                .or().eq(BidResponse::getRdPmId, currentPersonId));
+        } else {
+            // ONE_TO_ONE：仅本人
+            qw.eq(BidResponse::getRdPmId, currentPersonId);
+        }
+        Page<BidResponse> page = new Page<>(pNo, pSize);
+        IPage<BidResponse> result = bidResponseMapper.selectPage(page, qw);
+        // MEDIUM-2.2：PUBLIC 模式下非发起人视角脱敏解决方案摘要为前 80 字符
+        if (isPublic && !isCreator) {
+            List<BidResponse> records = result.getRecords();
+            if (records != null) {
+                for (BidResponse r : records) {
+                    if (r.getRdPmId() != null && !r.getRdPmId().equals(currentPersonId)
+                        && r.getResponseNote() != null) {
+                        r.setResponseNote(maskSummary(r.getResponseNote()));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     /** MEDIUM-2.2：解决方案摘要脱敏（互见场景下避免互抄完整方案）；超长截断并附省略号 */
     static String maskSummary(String note) {
         if (note == null) {
@@ -371,14 +449,13 @@ public class BidInvitationService {
         if (!"OPEN".equals(inv.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
-        Date now = new Date();
         StringBuilder changeLog = new StringBuilder("{");
         changeLog.append("\"before\":{\"title\":\"").append(escape(inv.getTitle()))
             .append("\",\"expireAt\":\"").append(inv.getExpireAt()).append("\"}");
         inv.setTitle(newTitle);
         inv.setContent(newContent);
         inv.setExpireAt(newExpireAt);
-        inv.setUpdateTime(now);
+        inv.setUpdateTime(now());
         bidInvitationMapper.updateById(inv);
         changeLog.append(",\"after\":{\"title\":\"").append(escape(newTitle))
             .append("\",\"expireAt\":\"").append(newExpireAt).append("\"}");
@@ -387,7 +464,7 @@ public class BidInvitationService {
             .operatorId(operatorId).action("modify_conditions").entityType("bid_invitation").entityId(id)
             .afterData(changeLog.toString())
             .reason(inv.getTitle())
-            .createTime(now).build());
+            .createTime(now()).build());
         // 通知所有 PENDING 应标者
         if (notificationService != null) {
             List<BidResponse> responders = bidResponseMapper.selectList(
@@ -442,15 +519,14 @@ public class BidInvitationService {
         if (targetPersonId == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "targetPersonId 必填");
         }
-        Date now = new Date();
         inv.setStatus("SELECTED");
-        inv.setUpdateTime(now);
+        inv.setUpdateTime(now());
         bidInvitationMapper.updateById(inv);
         auditLogService.append(AuditLog.builder()
             .operatorId(adminId).action("admin_assign").entityType("bid_invitation").entityId(id)
             .afterData("{\"targetPersonId\":" + targetPersonId + "}")
             .reason(inv.getTitle())
-            .createTime(now).build());
+            .createTime(now()).build());
         // Bug#6 中危：兄弟路径门禁对等 —— 中标者 BID_WON；其他 PENDING 应标者 BID_LOST（保持与 selectResponse 一致语义）
         if (notificationService != null) {
             notificationService.publish(targetPersonId,
@@ -483,6 +559,7 @@ public class BidInvitationService {
 
     /** Bug#4：挂起时长锚点 —— 优先 expireAt，缺失则回退到 updateTime。 */
     private static long ageOfInvitationMillis(BidInvitation inv) {
+        // static 工具方法——保留 System.currentTimeMillis()（跨实例，无 clock 注入必要）
         if (inv.getExpireAt() != null) {
             return System.currentTimeMillis() - inv.getExpireAt().getTime();
         }

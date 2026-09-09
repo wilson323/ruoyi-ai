@@ -29,6 +29,8 @@ import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.dto.ProjectListItemView;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 
 /**
  * 项目服务（核心实体）
@@ -64,6 +66,14 @@ public class ProjectService {
     private final RequirementChangeService requirementChangeService;
 
     /** 奖金池比例（BR-INC-04）：目标销售额 × 5% × 差异化系数 */
+
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
+
     public static final BigDecimal BONUS_POOL_RATE = new BigDecimal("0.05");
     private static final Set<String> TEMPLATE_TYPES = Set.of("HARDWARE", "SOFTWARE", "SOLUTION");
     private static final BigDecimal DEFAULT_COEF_S = new BigDecimal("1.5");
@@ -135,7 +145,7 @@ public class ProjectService {
         if (isBlank(project.getSource())) {
             project.setSource("NEW");
         }
-        project.setCreateTime(new Date());
+        project.setCreateTime(now());
         projectMapper.insert(project);
         // 产品回填 1:1 关联
         product.setProjectId(project.getId());
@@ -177,7 +187,8 @@ public class ProjectService {
     public Project changeStatus(Long projectId, String target, Long operatorId,
                                 Long actorGroupId, String actorRole) {
         Project project = require(projectId);
-        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁所有迁出（即使变更到 SUSPENDED/ACTIVE 也拒）
         if ("ARCHIVED".equals(project.getStatus()) && !"ARCHIVED".equals(target)) {
             throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止迁出");
@@ -208,7 +219,8 @@ public class ProjectService {
     public Project updateBaselines(Long projectId, Project patch, Long operatorId,
                                    Long actorGroupId, String actorRole) {
         Project project = require(projectId);
-        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁四基准修改
         if ("ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止修改四基准");
@@ -258,7 +270,8 @@ public class ProjectService {
     @Transactional(rollbackFor = Exception.class)
     public Project advanceStage(Long projectId, Long operatorId, Long actorGroupId, String actorRole) {
         Project project = require(projectId);
-        assertSameGroup(actorRole, actorGroupId, project.getMainGroupId(), "操作人");
+        IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
+            project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁阶段推进
         if ("ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止推进阶段");
@@ -305,7 +318,8 @@ public class ProjectService {
         if (keyword != null && !keyword.isBlank()) {
             qw.like(Project::getName, keyword);
         }
-        return projectMapper.selectList(qw.orderByDesc(Project::getId));
+        // PERF-P1-1：硬上限 1000 防 ≥10k 项目 OOM（IPD 单企业 ≥10k 项目场景）
+        return projectMapper.selectList(qw.orderByDesc(Project::getId).last("LIMIT 1000"));
     }
 
     /**
@@ -326,7 +340,6 @@ public class ProjectService {
         // 批量查 stage_action / kpi_record 的最新 update_time，按 projectId 分组
         Map<String, Date> stageActivity = batchLastStageActivity(projects);
         Map<String, Date> kpiActivity = batchLastKpiActivity(projects);
-        Date today = new Date();
         List<ProjectListItemView> out = new java.util.ArrayList<>(projects.size());
         for (Project p : projects) {
             Date lastActivity = computeLastActivity(p, stageActivity, kpiActivity);
@@ -334,7 +347,7 @@ public class ProjectService {
             Boolean critical = null;
             if ("LEGACY".equals(p.getSource()) && "IN_PROGRESS".equals(p.getCatchupStatus())) {
                 if (lastActivity != null) {
-                    long diffDays = TimeUnit.MILLISECONDS.toDays(today.getTime() - lastActivity.getTime());
+                    long diffDays = TimeUnit.MILLISECONDS.toDays(now().getTime() - lastActivity.getTime());
                     remaining = (int) Math.max(0, LEGACY_SCENARIO_DAYS - diffDays);
                     critical = remaining <= LEGACY_SCENARIO_CRITICAL_DAYS;
                 } else {
@@ -422,7 +435,7 @@ public class ProjectService {
                 batchLastStageActivity(List.of(p)),
                 batchLastKpiActivity(List.of(p)));
             if (lastActivity == null) continue;
-            long diffDays = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - lastActivity.getTime());
+            long diffDays = TimeUnit.MILLISECONDS.toDays(now().getTime() - lastActivity.getTime());
             int remaining = (int) Math.max(0, LEGACY_SCENARIO_DAYS - diffDays);
             if (remaining > LEGACY_SCENARIO_CRITICAL_DAYS) continue;
             // 通知 MARKET_PM（项目主组 GROUP_LEADER 视作 PRODUCT_LEADER 角色；
@@ -432,7 +445,7 @@ public class ProjectService {
                     .operatorId(0L).action("LEGACY_SCENARIO_CRITICAL")
                     .entityType("projects").entityId(p.getId())
                     .reason("LEGACY 场景复核临界：" + p.getName() + " 剩余 " + remaining + " 天（lastActivityAt=" + lastActivity + "）")
-                    .createTime(new Date()).build());
+                    .createTime(now()).build());
                 notified++;
             }
         }
@@ -577,7 +590,7 @@ public class ProjectService {
     private void audit(Long id, String name, Long operatorId, String action) {
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action(action).entityType("projects").entityId(id).reason(name)
-            .createTime(new Date()).build());
+            .createTime(now()).build());
     }
 
     /** R8X-CONT-1 P0-1：四基准 before/after 审计（PATCH 触发变更时镜像新旧值） */
@@ -586,7 +599,7 @@ public class ProjectService {
             .operatorId(operatorId).action("PROJECT_BASELINE_UPDATE")
             .entityType("projects").entityId(id).reason(name)
             .beforeData(before).afterData(after)
-            .createTime(new Date()).build());
+            .createTime(now()).build());
     }
 
     /** R8X-CONT-1 P0-1：阶段推进审计（含 prior + new currentStage） */
@@ -596,7 +609,7 @@ public class ProjectService {
             .entityType("projects").entityId(id).reason(name)
             .beforeData(AuditEventData.json("currentStage", prior))
             .afterData(AuditEventData.json("currentStage", next))
-            .createTime(new Date()).build());
+            .createTime(now()).build());
     }
 
     /**
@@ -623,20 +636,7 @@ public class ProjectService {
                 "currentStage", prior,
                 "attemptedNext", attemptedNext,
                 "openChangeCount", openCount))
-            .createTime(new Date()).build());
-    }
-
-    /**
-     * R8X-CONT-1 P0-1：横向越权防护——SUPER_ADMIN 一律通过；其他角色必须 actor.groupId == project.mainGroupId。
-     * 复用 {@link LaunchDateChangeService#assertSameGroup} 语义，本类独享以避免 service 间循环依赖。
-     */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
-        if ("SUPER_ADMIN".equals(actorRole)) {
-            return;
-        }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(roleLabel + "必须归属项目主组（横向越权防护）");
-        }
+            .createTime(now()).build());
     }
 
     private static boolean isBlank(String v) {

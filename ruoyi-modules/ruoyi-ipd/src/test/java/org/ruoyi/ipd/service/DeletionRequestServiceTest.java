@@ -127,13 +127,11 @@ class DeletionRequestServiceTest {
         when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);
         // W5-E-2.2：在职 ProjectMember 路径（项目 100 成员）
         when(projectMemberMapper.selectCount(any())).thenReturn(1L);
-        // 周五提交（2026-09-04 是周五）→ +2 工作日 = 下周二
-        // R14 教训 14e5d85f 根因类 1：helper date(y,m,d) 内部 m-1，调用方必须传 1-based。
-        // Calendar.SEPTEMBER=8 是 0-based → 8-1=7=8月，双重减一；改为字面量 9。
+        // 周五提交（2026-09-04 是周五）→ +2 工作日 = 下周二(8)。date() 月份 1-based：直传 9，
+        // 勿传 Calendar.SEPTEMBER（=8，helper 内 m-1 双重减一成 2026-08-04）；
+        // setClock 固定提交时刻，消除真实时钟摇摆（原断言随当天星期漂移）
         Date friday = date(2026, 9, 4);
-        // R15：注入固定时钟（周五 2026-09-04）→ 期限断言不再依赖真实日历
-        // （main 已加 withClock 注入缝，默认 Clock.systemDefaultZone；行内全限定避免 import 区变更）
-        service.withClock(java.time.Clock.fixed(friday.toInstant(), java.time.ZoneId.systemDefault()));
+        service.setClock(java.time.Clock.fixed(friday.toInstant(), java.time.ZoneId.systemDefault()));
         DeletionRequest request = service.submit(ACTOR_REQUESTER, "projects", 100L, "{}", "测试删除");
 
         assertThat(request.getStatus()).isEqualTo(DeletionRequestService.ST_LEADER_REVIEW);

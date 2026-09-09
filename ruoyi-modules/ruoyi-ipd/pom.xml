@@ -91,13 +91,25 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <testExcludes>
-                        <!-- W20-B：兄弟会话在途工作引入的测试编译错误（非本卡责任），暂排除避免阻塞本卡测试；
-                             应由原作者在并发回合收口时清理。 -->
-                        <testExclude>**/Api03AcceptanceTest.java</testExclude>
-                        <testExclude>**/DefectBAdviceAcceptanceTest.java</testExclude>
-                        <testExclude>**/IpdAuthChangePasswordExceptionTest.java</testExclude>
-                    </testExcludes>
+                    <!-- [2026-09-08 治理] 本段曾被三个卡各自「临时」追加，累积豁免 5 个测试类，
+                         且旧注释自称「仅在 worktree 内追加排除，不影响 main 分支 HEAD 字节」——实际
+                         已随 4feb8ec9 / 221f6c30 / f1ce2db7 进 main 并长期生效。后果：这 5 个类不编译、
+                         不执行、一份 surefire 报告不出，mvn 依旧 BUILD SUCCESS；214 个 *Test.java 只编出
+                         209 个 class，任何红名单比对都看不见它们（静默跳过即假绿）。
+
+                         本轮实测已撤销其中 3 条（Api03AcceptanceTest / DefectBAdviceAcceptanceTest /
+                         IpdAuthChangePasswordExceptionTest）：豁免理由（W20-B「兄弟会话在途编译错误」）
+                         早已消解，撤销后编译通过、测试回归，净增 16 个测试（1893 → 1909）且红数未增。
+                         撤销同时暴露出 Api03AcceptanceTest 的 stub 仍打在 requireInternal() 上，而
+                         Controller 在 SEC-AUTH-DEADLOCK 修复中已改调 requireInternalEvenIfPasswordScope()
+                         ——实现漂移被豁免掩盖，已修（该类 5/5 绿）。
+
+                         [2026-09-08 OD-AM-06 收尾] 最后 2 条（KpiSharedConfirmControllerTest /
+                         P312AcceptanceTest）编译错误已修复并撤销豁免，本 testExcludes 块整体删除，
+                         214 个 *Test.java 首次全部编译执行、零豁免。修复：前者对齐 MyBatis-Plus
+                         insert/updateById 重载（裸 any() → any(Entity.class)）、补 lambda 列名缓存
+                         TableInfo 引导、修 matcher 混用与一处滞后 stub；后者补 SharedKpiController
+                         构造器第三个依赖。基线 exempt_class 两行同步删除，台账 OD-AM-06 翻为已决。 -->
                 </configuration>
             </plugin>
         </plugins>

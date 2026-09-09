@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -19,11 +20,14 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -66,6 +70,18 @@ public class HandoverService {
     /** ZK-IPD 页49 原型：超管移交二次确认短语（原型按钮 disabled 直至输入与该短语一致）。 */
     private static final String CONFIRM_PHRASE = "确认移交管理员";
 
+    /** P2-7.4 AC-HAND-02：15 日截止（DRAFT 起算，调度扫描锚 deadline_at）。 */
+    private static final long DEADLINE_DAYS = 15L;
+
+    /** P2-7.4 AC-HAND-02：升级超管告警（一次性，escalated_at 守卫并发）。 */
+    private static final String EVT_OVERDUE_ESCALATION = "HANDOVER_OVERDUE_ESCALATION";
+
+    /** P2-7.4 AC-HAND-02：每日提醒（publishDaily dedupKey 自带 yyyyMMdd 同日去重）。 */
+    private static final String EVT_OVERDUE_DAILY_REMINDER = "HANDOVER_DAILY_REMINDER";
+
+    /** P2-7.4 AC-HAND-02：通知 sourceType 锚（handover 记录）。 */
+    private static final String SRC_HANDOVER = "handover";
+
     private final ProjectMemberMapper memberMapper;
     private final PersonMapper personMapper;
     private final ProjectMapper projectMapper;
@@ -75,6 +91,16 @@ public class HandoverService {
     private final PlatformTransactionManager transactionManager;
     /** HIGH-3.2：超管移交后强制下线旧 session——走 loginType=ipd 的 revokeAll。 */
     private final IpdAuthSession ipdAuthSession;
+
+    /** P2-7.4 AC-HAND-02：超期升级 + 每日提醒 outbox 发布。 */
+    private final NotificationService notificationService;
+
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+    private Date now() { return Date.from(clock.instant()); }
 
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
     public HandoverRecord initiate(Long projectId, String role, Long toPersonId, String note, IpdActor operator) {
@@ -96,7 +122,7 @@ public class HandoverService {
         if (project == null) {
             throw new ServiceException("项目不存在: " + projectId);
         }
-        assertSameGroup(leader.role(), leader.groupId(), project.getMainGroupId(), "代移交项目");
+        IpdIdorGuard.assertSameGroupIpd(leader, project.getMainGroupId());
         ProjectMember current = memberMapper.selectOne(new LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getProjectId, projectId)
             .eq(ProjectMember::getRole, role)
@@ -123,8 +149,26 @@ public class HandoverService {
 
     /**
      * 接手人确认接受：DRAFT → COMPLETED，原子转移角色绑定并联动账号禁用检查。
+     *
+     * <p>R-NEW-SEC-3 收口（2026-09-07）补三层守卫：
+     * <ol>
+     *   <li>身份兵底：{@link IpdIdorGuard#requireAuthenticated}（防 service 被内部直接传 null 调用）；</li>
+     *   <li>租户一致：按记录所属项目与会话租户比对（单企业部署恒真，真开多租户时即刻生效）；</li>
+     *   <li>接手人资格复核：建单时的三条谓词在 accept 时重新跑一次——DRAFT 最长挂
+     *       {@code DEADLINE_DAYS} 天，期间接手人可能离职/被冻结/转岗。</li>
+     * </ol>
+     *
+     * <p><b>为何不要求“接手人须为该项目在职成员”</b>：移交接手人在 accept 前恰恰还不是该项目
+     * 该角色的在任成员——绑定动作就是本方法做的（{@link ProjectMemberService#bindMember} 还显式
+     * 拒绝“已绑定此角色”的重复入组）。把“已是成员”作为前提会把正常的跨组接人移交全部拒掉，
+     * 属产品规则变更而非安全加固（SSOT 未授权）。租户与资格两条能落地的先落，
+     * 同组/跨组限制属产品口径，登记为待裁决项，不在此擅自收紧。
      */
     public HandoverRecord accept(Long handoverId, String approvalRef, IpdActor recipient) {
+        IpdIdorGuard.requireAuthenticated(recipient);
+        if (handoverId == null) {
+            throw new ServiceException("移交记录 ID 不能为空");
+        }
         HandoverRecord rec = handoverMapper.selectById(handoverId);
         if (rec == null) {
             throw new ServiceException("移交记录不存在: " + handoverId);
@@ -135,7 +179,27 @@ public class HandoverService {
         if (!recipient.id().equals(rec.getToPersonId())) {
             throw new ServiceException("仅接手人本人可确认移交");
         }
+        IpdIdorGuard.requireProjectTenantMatch(projectMapper.selectById(rec.getProjectId()));
+        assertRecipientEligible(rec.getToPersonId(), rec.getHandoverRole());
         return doAccept(rec, approvalRef, recipient);
+    }
+
+    /**
+     * 接手人资格复核：与建单时完全一致的三条谓词（不新增规则，仅防时移失效）。
+     *
+     * <p>抽自 {@code createDraft}，避免建单与接单两处文案漂移。
+     */
+    private void assertRecipientEligible(Long toPersonId, String role) {
+        Person to = personMapper.selectById(toPersonId);
+        if (to == null) {
+            throw new ServiceException("接手人不存在: " + toPersonId);
+        }
+        if ("RESIGNED".equals(to.getEmploymentStatus()) || "DISABLED".equals(to.getAccountStatus())) {
+            throw new ServiceException("接手人已离职/禁用，不可承接: " + to.getName());
+        }
+        if (!role.equals(to.getPersonType())) {
+            throw new ServiceException("角色不匹配：接手人类型 " + to.getPersonType() + " 不可承接 " + role);
+        }
     }
 
     /** 收件箱：待我接收或我发起的未完结移交。 */
@@ -243,16 +307,7 @@ public class HandoverService {
         if (project == null) {
             throw new ServiceException("项目不存在: " + projectId);
         }
-        Person to = personMapper.selectById(toPersonId);
-        if (to == null) {
-            throw new ServiceException("接手人不存在: " + toPersonId);
-        }
-        if ("RESIGNED".equals(to.getEmploymentStatus()) || "DISABLED".equals(to.getAccountStatus())) {
-            throw new ServiceException("接手人已离职/禁用，不可承接: " + to.getName());
-        }
-        if (!role.equals(to.getPersonType())) {
-            throw new ServiceException("角色不匹配：接手人类型 " + to.getPersonType() + " 不可承接 " + role);
-        }
+        assertRecipientEligible(toPersonId, role);
         Long dup = handoverMapper.selectCount(new LambdaQueryWrapper<HandoverRecord>()
             .eq(HandoverRecord::getProjectId, projectId)
             .eq(HandoverRecord::getHandoverRole, role)
@@ -260,6 +315,7 @@ public class HandoverService {
         if (dup != null && dup > 0) {
             throw new ServiceException("该项目该角色已有进行中的移交，不可重复发起");
         }
+        Date deadlineAt = new Date(now().getTime() + DEADLINE_DAYS * 24L * 3_600_000L);
         HandoverRecord rec = HandoverRecord.builder()
             .handoverType("PROJECT")
             .fromPersonId(fromId)
@@ -268,6 +324,7 @@ public class HandoverService {
             .handoverRole(role)
             .note(note)
             .status(ST_DRAFT)
+            .deadlineAt(deadlineAt)
             .build();
         handoverMapper.insert(rec);
         auditLogService.append(AuditLog.builder()
@@ -276,7 +333,7 @@ public class HandoverService {
             .reason("projectId=" + projectId + " role=" + role + " from=" + fromId)
             .afterData(AuditEventData.json("toPersonId", toPersonId, "handoverRole", role,
                 "onBehalf", !operator.id().equals(fromId)))
-            .createTime(new Date())
+            .createTime(now())
             .build());
         return rec;
     }
@@ -290,12 +347,11 @@ public class HandoverService {
         }
         ProjectMember bound = projectMemberService.bindMember(
             rec.getProjectId(), rec.getToPersonId(), rec.getHandoverRole(), approvalRef, operator);
-        Date now = new Date();
         rec.setStatus(ST_COMPLETED);
         if (rec.getConfirmedAt() == null) {
-            rec.setConfirmedAt(now);
+            rec.setConfirmedAt(now());
         }
-        rec.setCompletedAt(now);
+        rec.setCompletedAt(now());
         handoverMapper.updateById(rec);
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
@@ -303,7 +359,7 @@ public class HandoverService {
             .reason("projectId=" + rec.getProjectId() + " role=" + rec.getHandoverRole())
             .afterData(AuditEventData.json("fromPersonId", rec.getFromPersonId(),
                 "toPersonId", rec.getToPersonId(), "newMemberId", bound.getId()))
-            .createTime(now)
+            .createTime(now())
             .build());
         disableIfAllCleared(rec.getFromPersonId(), operator);
         return rec;
@@ -353,7 +409,7 @@ public class HandoverService {
             throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,
                 "移交完成时间缺失，禁止撤销（HANDOVER_LOCKED）");
         }
-        long hoursSince = (System.currentTimeMillis() - completedAt.getTime()) / 3_600_000L;
+        long hoursSince = (now().getTime() - completedAt.getTime()) / 3_600_000L;
         if (hoursSince > ROLLBACK_WINDOW_HOURS) {
             throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,
                 "已完成超过 " + ROLLBACK_WINDOW_HOURS + "h，禁止撤销（HANDOVER_LOCKED）");
@@ -375,10 +431,9 @@ public class HandoverService {
         }
         // 副作用反转：接手人 exit + 发起人 exit_date/exit_reason 复位
         restoreForRollback(rec);
-        Date now = new Date();
         rec.setStatus(ST_ROLLED_BACK);
         rec.setRollbackReason(reason);
-        rec.setRollbackAt(now);
+        rec.setRollbackAt(now());
         handoverMapper.updateById(rec);
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
@@ -390,7 +445,7 @@ public class HandoverService {
                 "rollbackReason", reason,
                 "rollbackWindowHours", ROLLBACK_WINDOW_HOURS,
                 "hoursSinceCompleted", hoursSince))
-            .createTime(now)
+            .createTime(now())
             .build());
         return rec;
     }
@@ -408,7 +463,7 @@ public class HandoverService {
             .eq(ProjectMember::getPersonId, rec.getToPersonId())
             .eq(ProjectMember::getRole, rec.getHandoverRole())
             .isNull(ProjectMember::getExitDate)
-            .set(ProjectMember::getExitDate, new Date())
+            .set(ProjectMember::getExitDate, now())
             .set(ProjectMember::getExitReason, "HANDOVER_ROLLBACK"));
         if (exited == 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
@@ -478,7 +533,6 @@ public class HandoverService {
         if ("RESIGNED".equals(newAdmin.getEmploymentStatus()) || "DISABLED".equals(newAdmin.getAccountStatus())) {
             throw new ServiceException("接手人已离职/禁用，不可承接超管权限: " + newAdmin.getName());
         }
-        Date now = new Date();
         // 1) 原超管 → DISABLED + 企微解绑（作废失效）
         personMapper.update(null, new LambdaUpdateWrapper<Person>()
             .eq(Person::getId, currentAdmin.getId())
@@ -500,7 +554,7 @@ public class HandoverService {
                 "toPersonName", newAdmin.getName(),
                 "originalAccountStatus", "DISABLED",
                 "wecomUnbound", true))
-            .createTime(now)
+            .createTime(now())
             .build());
         // 4) HIGH-3.2：强制原超管 session 失效（ipd loginType revokeAll）
         // 失败不抛业务异常：Sa-Token 故障不应阻塞主链路（DB 已提交，前端下次请求 401）。
@@ -553,21 +607,339 @@ public class HandoverService {
             .action("ACCOUNT_DISABLED_AFTER_HANDOVER").entityType("person").entityId(personId)
             .reason("名下项目全部移交完成（BR-USER-06 先移交后禁用）")
             .afterData(AuditEventData.json("accountStatus", "DISABLED", "wecomUnbound", true))
-            .createTime(new Date())
+            .createTime(now())
             .build());
     }
 
     /**
-     * SEC-REV-HANDOVER-01：横向越权防护——SUPER_ADMIN 一律通过；
-     * 其他角色必须 actor.groupId == project.mainGroupId。
-     * 语义同 ProjectService.assertSameGroup（避免跨 service 依赖）。
+     * P2-7.4 AC-HAND-02：扫描超期 DRAFT 移交——升级超管（一次性）+ 每日提醒。
+     *
+     * <p>口径：
+     * <ul>
+     *   <li>升级：status=DRAFT AND deadline_at < now AND escalated_at IS NULL ⇒ 通知超管 + 审计 + 标 escalated_at；并发守卫 isNull(escalatedAt) 仅一人生效</li>
+     *   <li>提醒：status=DRAFT AND deadline_at < now AND (last_remind_at IS NULL OR last_remind_at < today_start) ⇒ 每日 publishDaily（dedupKey 自动加 yyyyMMdd）+ 审计 + 标 last_remind_at</li>
+     *   <li>单超管不变式违反（无在任超管）⇒ 跳过扫描、warn 日志，不抛异常（避免调度挂）</li>
+     *   <li>事务：方法级 REQUIRED 加入类级事务；超期集合正常极小（单组织寥寥数个），事务时长可控</li>
+     *   <li><b>P0-共识 tenant 守卫（4 路专家共识 2026-09-08 闭环）</b>：
+     *       LambdaQueryWrapper 加 .eq(HandoverRecord::getTenantId, currentTenant)；SUPER_ADMIN 走 all-tenant 分支。
+     *       升级/提醒循环内对每条记录做 tenant 断言（非 SUPER_ADMIN 必匹配），审计 tenantId 与实体 tenantId 一致。</li>
+     * </ul>
+     *
+     * <p>触发：OPS-04 调度 cron 每日扫一次 + HandoverController.scanOverdueDrafts 端点（SUPER_ADMIN 手动）。
      */
-    private void assertSameGroup(String actorRole, Long actorGroupId, Long objectGroupId, String roleLabel) {
-        if ("SUPER_ADMIN".equals(actorRole)) {
-            return;
+    public record OverdueScanResult(int escalated, int reminded) { }
+
+    /** P0-共识 tenant 守卫：超管角色字面量（与 IpdIdorGuard.ROLE_SUPER_ADMIN 同款）。 */
+    private static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
+
+    /** P0-共识 tenant 守卫：本地安全读取当前会话租户（null/空串 = 租户上下文缺失，按"放行 all"处理）。 */
+    private String safeCurrentTenantId() {
+        // 优先 IPD Person 路径（loginType="ipd"，LoginHelper.getTenantId() 在该会话下为空）
+        try {
+            Person p = ipdAuthSession != null ? ipdAuthSession.currentPerson() : null;
+            if (p != null && p.getTenantId() != null && !p.getTenantId().isEmpty()) {
+                return p.getTenantId();
+            }
+        } catch (Exception ignored) {
+            // 兜底：未登录 / 异步线程 / 非 IPD 会话——降级到基线 LoginHelper
         }
-        if (actorGroupId == null || !actorGroupId.equals(objectGroupId)) {
-            throw new ServiceException(roleLabel + "必须归属项目主组（横向越权防护）");
+        try {
+            String t = LoginHelper.getTenantId();
+            return (t == null || t.isEmpty()) ? null : t;
+        } catch (Exception ex) {
+            return null;
         }
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    public OverdueScanResult scanOverdueDrafts(IpdActor operator) {
+        // P0-共识 tenant 守卫：解析当前 actor 租户上下文；SUPER_ADMIN 也按 session tenant 过滤（更严格、避免跨租户扫描泄漏）
+        boolean isSuperAdmin = operator != null && ROLE_SUPER_ADMIN.equals(operator.role());
+        String currentTenant = safeCurrentTenantId();
+        log.info("P0-共识 scanOverdueDrafts actor={} role={} super={} tenant={}",
+            operator != null ? operator.id() : null,
+            operator != null ? operator.role() : null,
+            isSuperAdmin, currentTenant);
+
+        // 单超管不变式（ZK-IPD §九 / AC-HAND-07；P2-7.3 数据治理后真库仅 1 名）
+        List<Person> admins = personMapper.selectList(new LambdaQueryWrapper<Person>()
+            .eq(Person::getPersonType, "SUPER_ADMIN")
+            .eq(Person::getAccountStatus, "ACTIVE"));
+        if (admins.isEmpty()) {
+            log.warn("P2-7.4 AC-HAND-02 scanOverdueDrafts: no active super admin; skip scan");
+            return new OverdueScanResult(0, 0);
+        }
+        Long superAdminId = admins.get(0).getId();
+
+        // 1) 升级候选：deadline_at < now + escalated_at IS NULL（一次性事件）
+        //    P0-共识：session tenant 非空时一律加 tenant 过滤（SUPER_ADMIN 也不例外，避免跨租户扫描泄漏）
+        LambdaQueryWrapper<HandoverRecord> escalateWrap = new LambdaQueryWrapper<HandoverRecord>()
+            .eq(HandoverRecord::getStatus, ST_DRAFT)
+            .isNotNull(HandoverRecord::getDeadlineAt)
+            .lt(HandoverRecord::getDeadlineAt, now())
+            .isNull(HandoverRecord::getEscalatedAt);
+        if (currentTenant != null) {
+            escalateWrap.eq(HandoverRecord::getTenantId, currentTenant);
+        }
+        List<HandoverRecord> toEscalate = handoverMapper.selectList(escalateWrap);
+        int escalated = 0;
+        for (HandoverRecord rec : toEscalate) {
+            // P0-共识：循环内再断言每条记录 tenant 与当前 actor 一致（防御性兜底）
+            if (currentTenant != null && !currentTenant.equals(rec.getTenantId())) {
+                log.warn("P0-共识 skip escalate handoverId={} tenantId={} (actor tenant={})",
+                    rec.getId(), rec.getTenantId(), currentTenant);
+                continue;
+            }
+            String title = "移交超期升级：项目" + rec.getProjectId() + " 角色" + rec.getHandoverRole() + " 超 " + DEADLINE_DAYS + " 日未完成";
+            String content = "handoverId=" + rec.getId() + " from=" + rec.getFromPersonId() + " to=" + rec.getToPersonId()
+                + " deadlineAt=" + rec.getDeadlineAt();
+            try {
+                notificationService.publish(superAdminId, EVT_OVERDUE_ESCALATION, NotificationService.KIND_ACTION,
+                    SRC_HANDOVER, rec.getId(), title, content, "/handover/" + rec.getId());
+            } catch (Exception e) {
+                log.warn("P2-7.4 AC-HAND-02 publish escalation failed for handoverId={}", rec.getId(), e);
+                continue;
+            }
+            // P0-共识：审计 tenantId 与实体 tenantId 一致（AuditLogService.append 仅在 null 时兜底 default）
+            String auditTenant = rec.getTenantId() != null ? rec.getTenantId() : currentTenant;
+            auditLogService.append(AuditLog.builder()
+                .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
+                .action("HANDOVER_OVERDUE_ESCALATION").entityType("handover").entityId(rec.getId())
+                .reason(DEADLINE_DAYS + " 日内未完成移交（DRAFT）⇒ 升级超管告警（AC-HAND-02）")
+                .afterData(AuditEventData.json("deadlineAt", String.valueOf(rec.getDeadlineAt()),
+                    "superAdminId", superAdminId, "tenantId", String.valueOf(auditTenant)))
+                .tenantId(auditTenant)
+                .createTime(now())
+                .build());
+            // 并发守卫：仅 first writer 生效（affected=1）；escalated_at 非空者直接跳过
+            int updated = handoverMapper.update(null, new LambdaUpdateWrapper<HandoverRecord>()
+                .eq(HandoverRecord::getId, rec.getId())
+                .eq(HandoverRecord::getStatus, ST_DRAFT)
+                .isNull(HandoverRecord::getEscalatedAt)
+                .set(HandoverRecord::getEscalatedAt, now()));
+            if (updated > 0) {
+                escalated++;
+            }
+        }
+
+        // 2) 提醒候选：deadline_at < now + (last_remind_at IS NULL OR last_remind_at < today_start)
+        //    P0-共识：session tenant 非空时一律加 tenant 过滤
+        Date todayStart = startOfDay(now());
+        LambdaQueryWrapper<HandoverRecord> remindWrap = new LambdaQueryWrapper<HandoverRecord>()
+            .eq(HandoverRecord::getStatus, ST_DRAFT)
+            .isNotNull(HandoverRecord::getDeadlineAt)
+            .lt(HandoverRecord::getDeadlineAt, now())
+            .and(w -> w.isNull(HandoverRecord::getLastRemindAt)
+                .or().lt(HandoverRecord::getLastRemindAt, todayStart));
+        if (currentTenant != null) {
+            remindWrap.eq(HandoverRecord::getTenantId, currentTenant);
+        }
+        List<HandoverRecord> toRemind = handoverMapper.selectList(remindWrap);
+        int reminded = 0;
+        for (HandoverRecord rec : toRemind) {
+            // P0-共识：循环内 tenant 断言
+            if (currentTenant != null && !currentTenant.equals(rec.getTenantId())) {
+                log.warn("P0-共识 skip remind handoverId={} tenantId={} (actor tenant={})",
+                    rec.getId(), rec.getTenantId(), currentTenant);
+                continue;
+            }
+            String title = "移交超期每日提醒：项目" + rec.getProjectId() + " 角色" + rec.getHandoverRole();
+            String content = "handoverId=" + rec.getId() + " 接手人=" + rec.getToPersonId()
+                + " 已超 deadlineAt=" + rec.getDeadlineAt() + "；请尽快接受或拒绝";
+            try {
+                notificationService.publishDaily(superAdminId, EVT_OVERDUE_DAILY_REMINDER, NotificationService.KIND_ACTION,
+                    SRC_HANDOVER, rec.getId(), title, content, "/handover/" + rec.getId(), now());
+            } catch (Exception e) {
+                log.warn("P2-7.4 AC-HAND-02 publish daily reminder failed for handoverId={}", rec.getId(), e);
+                continue;
+            }
+            String auditTenant = rec.getTenantId() != null ? rec.getTenantId() : currentTenant;
+            auditLogService.append(AuditLog.builder()
+                .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
+                .action("HANDOVER_DAILY_REMINDER").entityType("handover").entityId(rec.getId())
+                .reason("AC-HAND-02 每日提醒（同日去重由 publishDaily 幂等保证）")
+                .afterData(AuditEventData.json("deadlineAt", String.valueOf(rec.getDeadlineAt()),
+                    "lastRemindAt", String.valueOf(now()), "tenantId", String.valueOf(auditTenant)))
+                .tenantId(auditTenant)
+                .createTime(now())
+                .build());
+            int updated = handoverMapper.update(null, new LambdaUpdateWrapper<HandoverRecord>()
+                .eq(HandoverRecord::getId, rec.getId())
+                .eq(HandoverRecord::getStatus, ST_DRAFT)
+                .set(HandoverRecord::getLastRemindAt, now()));
+            if (updated > 0) {
+                reminded++;
+            }
+        }
+        return new OverdueScanResult(escalated, reminded);
+    }
+
+    /** 当日 0 点（server 时区）—用于 last_remind_at 按日去重比较。 */
+    private Date startOfDay(Date d) {
+        return Date.from(d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            .atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
+
+    // ---------- P2-7.4 AC-HAND-05 历史保全（归档已 COMPLETED 移交）----------
+
+    /** P2-7.4 AC-HAND-05：归档幂等键字段——移交记录的 archived_at（TIMESTAMP，可空）。 */
+    public static final String FIELD_ARCHIVED_AT = "archivedAt";
+
+    /**
+     * AC-HAND-05 / BR-HAND-05（历史保全）：COMPLETED 移交记录可被归档——
+     * 写 archived_at + 审计 HANDOVER_ARCHIVED（携 JSON 快照）；不删 handover_records。
+     *
+     * <p>口径：
+     * <ul>
+     *   <li>幂等：archived_at 非空 ⇒ 直接返回当前记录（不重复审计）</li>
+     *   <li>状态机：仅 status=COMPLETED 可归档；DRAFT/ROLLED_BACK 拒归档</li>
+     *   <li>权限：移交双方任一 OR 项目主组组长 OR SUPER_ADMIN（继承 rollback 同款语义）</li>
+     *   <li>审计：HANDOVER_ARCHIVED afterData 写入完整 JSON 快照（from/to/project/role/status/timestamps）</li>
+     * </ul>
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public HandoverRecord archiveCompletedHandover(Long handoverId, IpdActor actor) {
+        // 身份兵底：与 accept 同口径，防御性兜底。
+        IpdIdorGuard.requireAuthenticated(actor);
+        if (handoverId == null) {
+            throw new ServiceException("移交 ID 不能为空");
+        }
+        HandoverRecord rec = handoverMapper.selectById(handoverId);
+        if (rec == null) {
+            throw new ServiceException("移交记录不存在: " + handoverId);
+        }
+        // R-NEW-B-1 收口（2026-09-07）：鉴权必须先于幂等分支。原先“archived_at 非空
+        // 就直接 return”的逻辑位于鉴权之前——只有单测调用时不是问题，但开放为 HTTP
+        // 端点后，任何登录用户都能读已归档记录的 from/to/project/role/note，跨组越权
+        // + “是否归档”状态侧信道。现调为：鉴权 → 幂等 → 状态机 → 写。
+        assertArchivePermission(rec, actor);
+        if (rec.getArchivedAt() != null) {
+            return rec;
+        }
+        if (!ST_COMPLETED.equals(rec.getStatus())) {
+            throw new ServiceException("仅 COMPLETED 移交可归档（当前 " + rec.getStatus() + "）");
+        }
+        int updated = handoverMapper.update(null, new LambdaUpdateWrapper<HandoverRecord>()
+            .eq(HandoverRecord::getId, handoverId)
+            .eq(HandoverRecord::getStatus, ST_COMPLETED)
+            .isNull(HandoverRecord::getArchivedAt)
+            .set(HandoverRecord::getArchivedAt, now()));
+        if (updated == 0) {
+            return handoverMapper.selectById(handoverId);
+        }
+        rec.setArchivedAt(now());
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
+            .action("HANDOVER_ARCHIVED").entityType("handover").entityId(rec.getId())
+            .reason("projectId=" + rec.getProjectId() + " role=" + rec.getHandoverRole())
+            .afterData(AuditEventData.json("fromPersonId", rec.getFromPersonId(),
+                "toPersonId", rec.getToPersonId(),
+                "handoverRole", rec.getHandoverRole(),
+                "previousStatus", ST_COMPLETED,
+                "archivedAt", String.valueOf(now()),
+                "completedAt", rec.getCompletedAt() == null ? "" : String.valueOf(rec.getCompletedAt())))
+            .createTime(now())
+            .build());
+        return rec;
+    }
+
+    /**
+     * 归档参与者判定：移交双方任一 OR SUPER_ADMIN OR 项目主组组长（继承 rollback 同款语义）。
+     *
+     * <p>从原 archiveCompletedHandover 提取，以便调用方在幂等短路前先判，避免新开放 HTTP
+     * 入口被“已归档”状态短路而绕过权限。
+     */
+    private void assertArchivePermission(HandoverRecord rec, IpdActor actor) {
+        boolean isParty = actor.id() != null
+            && (actor.id().equals(rec.getFromPersonId())
+                || actor.id().equals(rec.getToPersonId()));
+        boolean isLeaderOrAdmin = "SUPER_ADMIN".equals(actor.role());
+        if (!isLeaderOrAdmin) {
+            Project project = projectMapper.selectById(rec.getProjectId());
+            if (project != null && "GROUP_LEADER".equals(actor.role())
+                && actor.groupId() != null && actor.groupId().equals(project.getMainGroupId())) {
+                isLeaderOrAdmin = true;
+            }
+        }
+        if (!isParty && !isLeaderOrAdmin) {
+            throw new ServiceException("仅移交双方、项目组长或超管可归档移交");
+        }
+    }
+
+    // ---------- P2-7.4 AC-HAND-08 月度归属（按月在任 PM）----------
+
+    /**
+     * AC-HAND-08 月度归属 view。source: BINDING（在任绑定起止） / TRANSFER（移交起止；本月从次月首日起）。
+     */
+    public record MonthlyAttributionView(Long personId, String personName, String role,
+                                         java.time.LocalDate fromDate, java.time.LocalDate toDate,
+                                         int daysInRole, String source) { }
+
+    /**
+     * AC-HAND-08：按月在任 PM 归属查询（月初 PM 领取当月全额，不按天折算；次月起归新 PM）。
+     *
+     * <p>口径：
+     * <ul>
+     *   <li>输入：projectId + month（yyyy-MM）</li>
+     *   <li>权限：该项目在职成员或 SUPER_ADMIN——归属视图含人员姓名与在任区间，
+     *       跨组可读即人员信息泄漏（R-NEW-B-1 补端点时一并收口，防止可达入口放大原缺陷）</li>
+     *   <li>BINDING 来源：ProjectMember 在任绑定（exit_date is null 或 exit_date &gt;= monthEnd）</li>
+     *   <li>TRANSFER 来源：当月 COMPLETED 移交 ⇒ 新 PM 从 month+1m 首日起享有</li>
+     *   <li>本月跨月移交：本月仍归旧 PM（不按天折算）；新 PM 计入次月 TRANSFER</li>
+     * </ul>
+     */
+    public List<MonthlyAttributionView> getMonthlyAttribution(Long projectId, String month, IpdActor actor) {
+        if (projectId == null || month == null || !month.matches("^\\d{4}-(0[1-9]|1[0-2])$")) {
+            throw new ServiceException("项目 ID 与月份（yyyy-MM）不能为空且格式正确");
+        }
+        // 参数校验后、任何 DB 读前：非成员不进归属视图（SUPER_ADMIN 在守卫内短路，不触达 DB）
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, projectId, memberMapper, projectMapper);
+        String[] parts = month.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int mon = Integer.parseInt(parts[1]);
+        java.time.LocalDate monthStart = java.time.LocalDate.of(year, mon, 1);
+        java.time.LocalDate monthEnd = monthStart.plusMonths(1).minusDays(1);
+        Date monthStartDate = Date.from(monthStart.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date monthEndDate = Date.from(monthEnd.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        List<MonthlyAttributionView> result = new java.util.ArrayList<>();
+
+        // 1) BINDING 来源：取 ProjectMember 在任绑定（exit_date is null 或 exit_date >= monthStart）
+        List<org.ruoyi.ipd.domain.ProjectMember> bindings = memberMapper.selectList(
+            new LambdaQueryWrapper<org.ruoyi.ipd.domain.ProjectMember>()
+                .eq(org.ruoyi.ipd.domain.ProjectMember::getProjectId, projectId)
+                .in(org.ruoyi.ipd.domain.ProjectMember::getRole, "MARKET_PM", "RD_PM")
+                .and(w -> w.ge(org.ruoyi.ipd.domain.ProjectMember::getExitDate, monthStartDate)
+                    .or().isNull(org.ruoyi.ipd.domain.ProjectMember::getExitDate)));
+        for (org.ruoyi.ipd.domain.ProjectMember m : bindings) {
+            org.ruoyi.ipd.domain.Person p = personMapper.selectById(m.getPersonId());
+            String name = p == null ? null : p.getName();
+            result.add(new MonthlyAttributionView(m.getPersonId(), name, m.getRole(),
+                monthStart, monthEnd, monthStart.lengthOfMonth(), "BINDING"));
+        }
+
+        // 2) TRANSFER 来源：当月 COMPLETED 移交 ⇒ 新 PM 从 month+1m 首日起享有
+        List<HandoverRecord> monthHandovers = handoverMapper.selectList(
+            new LambdaQueryWrapper<HandoverRecord>()
+                .eq(HandoverRecord::getProjectId, projectId)
+                .eq(HandoverRecord::getStatus, ST_COMPLETED)
+                .ge(HandoverRecord::getCompletedAt, monthStartDate)
+                .le(HandoverRecord::getCompletedAt, monthEndDate));
+        for (HandoverRecord rec : monthHandovers) {
+            org.ruoyi.ipd.domain.Person p = personMapper.selectById(rec.getToPersonId());
+            String name = p == null ? null : p.getName();
+            java.time.LocalDate nextStart = monthStart.plusMonths(1);
+            java.time.LocalDate nextEnd = nextStart.plusMonths(1).minusDays(1);
+            result.add(new MonthlyAttributionView(rec.getToPersonId(), name, rec.getHandoverRole(),
+                nextStart, nextEnd, nextStart.lengthOfMonth(), "TRANSFER"));
+        }
+
+        result.sort((a, b) -> {
+            int r = a.role().compareTo(b.role());
+            if (r != 0) return r;
+            return Long.compare(a.personId(), b.personId());
+        });
+        return result;
+    }
 }
+

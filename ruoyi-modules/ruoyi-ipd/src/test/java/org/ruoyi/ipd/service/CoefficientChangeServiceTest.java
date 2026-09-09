@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -18,8 +19,14 @@ import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.ruoyi.ipd.security.IpdActor;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,11 +52,24 @@ class CoefficientChangeServiceTest {
         service.setStateMachineGuard(guard);
     }
 
+    /** 系统性梳理-20260909 新②：决策 CAS 化用 LambdaUpdateWrapper，纯单测需预建实体 lambda 缓存（同 AiModelConfigSecurityRound3Test 惯例）。 */
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, CoefficientChangeRequest.class);
+    }
+
+    private IpdActor proposerActor() {
+        // 提议人=市场PM 101L，归属同组（与 sProject().mainGroupId 对齐）
+        return new IpdActor(101L, "M", "MARKET_PM", 7L);
+    }
+
     private Project sProject() {
         Project p = new Project();
         p.setId(10L);
         p.setLevel("S");
         p.setLevelCoefficient(new BigDecimal("1.5"));
+        p.setMainGroupId(7L); // 合流补参：同组守卫 assertSameGroupIpd 需与 proposerActor().groupId 一致
         p.setDelFlag("0");
         return p;
     }
@@ -67,18 +87,18 @@ class CoefficientChangeServiceTest {
 
         CoefficientChangeRequest created = service.propose(
             10L, new BigDecimal("1.8"), "旗舰溢价", 101L, 102L, 101L,
-            // R11 / A2 修复:提议时预落 leaderId（产品组长 103L，与三方独立）
-            103L);
+            // 合流对齐：第 7 参为操作人 actor（须为双 PM 之一或超管，R11/A2 同组守卫）
+            proposerActor());
         assertThat(created.getStatus()).isEqualTo(CoefficientChangeRequest.ST_PENDING_LEADER);
         assertThat(created.getProposedCoefficient()).isEqualByComparingTo("1.8");
 
         Project a = sProject();
         a.setLevel("A");
         when(projectMapper.selectById(11L)).thenReturn(a);
-        assertThatThrownBy(() -> service.propose(11L, new BigDecimal("1.0"), "x", 1L, 2L, 1L, 3L))
+        assertThatThrownBy(() -> service.propose(11L, new BigDecimal("1.0"), "x", 101L, 102L, 101L, proposerActor()))
             .isInstanceOf(ServiceException.class).hasMessageContaining("A 级");
 
-        assertThatThrownBy(() -> service.propose(10L, new BigDecimal("2.5"), "越界", 1L, 2L, 1L, 3L))
+        assertThatThrownBy(() -> service.propose(10L, new BigDecimal("2.5"), "越界", 101L, 102L, 101L, proposerActor()))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1.5–2.0");
     }
 
@@ -91,15 +111,34 @@ class CoefficientChangeServiceTest {
             .status(CoefficientChangeRequest.ST_PENDING_LEADER).build();
         when(requestMapper.selectById(99L)).thenReturn(pending);
         when(projectMapper.selectById(10L)).thenReturn(sProject());
-        when(requestMapper.updateById(any(CoefficientChangeRequest.class))).thenReturn(1);
+        // 系统性梳理-20260909 新②：决策 CAS 化后，翻转走条件 update(null, wrapper)
+        when(requestMapper.update(isNull(), any())).thenReturn(1);
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
 
-        CoefficientChangeRequest done = service.leaderDecision(99L, 900L, true, "同意");
+        CoefficientChangeRequest done = service.leaderDecision(99L, 900L, true, "同意",
+            new IpdActor(900L, "L", "GROUP_LEADER", 7L));
         assertThat(done.getStatus()).isEqualTo(CoefficientChangeRequest.ST_CONFIRMED);
 
         ArgumentCaptor<Project> cap = ArgumentCaptor.forClass(Project.class);
         verify(projectMapper).updateById(cap.capture());
         assertThat(cap.getValue().getLevelCoefficient()).isEqualByComparingTo("1.8");
         assertThat(cap.getValue().getLevelCoefficientReason()).isEqualTo("旗舰");
+    }
+
+    @Test
+    @DisplayName("并发决策：CAS 未命中（已被并发处理）抛异常且不写项目档案")
+    void leaderDecisionCasMissRejectsAndSkipsArchive() {
+        CoefficientChangeRequest pending = CoefficientChangeRequest.builder()
+            .id(99L).projectId(10L).proposedCoefficient(new BigDecimal("1.8"))
+            .reason("旗舰").marketPmId(1L).rdPmId(2L).proposerId(1L)
+            .status(CoefficientChangeRequest.ST_PENDING_LEADER).build();
+        when(requestMapper.selectById(99L)).thenReturn(pending);
+        when(projectMapper.selectById(10L)).thenReturn(sProject());
+        when(requestMapper.update(isNull(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.leaderDecision(99L, 900L, true, "同意",
+            new IpdActor(900L, "L", "GROUP_LEADER", 7L)))
+            .isInstanceOf(ServiceException.class).hasMessageContaining("并发");
+        verify(projectMapper, never()).updateById(any(Project.class));
     }
 }

@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -109,7 +110,6 @@ class P1101AcceptanceTest {
     @DisplayName("AC-AI-04：审核通过后修改 ⇒ 追加 v2（parent=HEAD、需重审、摘要不同），v1 零触碰")
     void reviseAfterReview_appendsV2KeepsV1() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
-        // P1-10.3/PERF 后 head() 改走 selectChain 递归 CTE（旧 selectById/selectOne stub 已不消费）
         when(mapper.selectChain(1L)).thenReturn(List.of(v1));
 
         AiDocument v2 = service.revise(1L, 1L, "人工改版全文 v2", null, 7L);
@@ -136,7 +136,7 @@ class P1101AcceptanceTest {
     void revise_baseNotHead_conflict() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_GENERATED);
         AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_GENERATED);
-        // selectChain 返回全链，head=链尾 v2；基准 1L 非 HEAD → STATE_CONFLICT（语义同旧 selectOne 探测）
+        // P1-10.3：head/history 统一走 selectChain 递归 CTE（升序链，链尾即 HEAD）
         when(mapper.selectChain(1L)).thenReturn(List.of(v1, v2));
 
         assertThatThrownBy(() -> service.revise(1L, 1L, "基于旧版的改版", null, 7L))
@@ -218,7 +218,6 @@ class P1101AcceptanceTest {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
         AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_REVIEWED);
         AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);
-        // selectChain 一次性返回全链（CTE 升序 v1..vN），链连续性由 service 校验
         when(mapper.selectChain(3L)).thenReturn(List.of(v1, v2, v3));
 
         List<AiDocument> chain = service.history(3L);
@@ -234,10 +233,29 @@ class P1101AcceptanceTest {
     }
 
     @Test
+    @DisplayName("AM-SQL：自中间行入参 ⇒ CTE 先向上找根再取全链，history 不误报 STATE_CONFLICT")
+    void history_fromMidRow_fullChain() {
+        AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
+        AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_REVIEWED);
+        AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);
+        // 两段 CTE 契约（真库探针 2026-09-08 已验）：入参 v2 与 v1/v3 返回同一全链（升序）；
+        // 旧版单段 CTE 从中间行只回 [v2, v3]，首行 versionNo≠1 曾误报 STATE_CONFLICT
+        when(mapper.selectChain(2L)).thenReturn(List.of(v1, v2, v3));
+
+        List<AiDocument> chain = service.history(2L);
+
+        assertThat(chain).extracting(AiDocument::getId, AiDocument::getVersionNo)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple(1L, 1),
+                org.assertj.core.groups.Tuple.tuple(2L, 2),
+                org.assertj.core.groups.Tuple.tuple(3L, 3));
+    }
+
+    @Test
     @DisplayName("链断裂（父版本被软删，向上走不到根）⇒ STATE_CONFLICT")
     void history_brokenChain_rejected() {
         AiDocument v3 = row(3L, 3, 2L, AiDocumentService.STATUS_GENERATED);
-        // v2 已软删：CTE 向上走到断点，链只含 v3 且到不了 v1 根（chain[0].versionNo != 1）
+        // v2 已软删：@TableLogic 过滤后递归 CTE 只回起点自身 [v3]，首版 versionNo≠1 ⇒ 断链
         when(mapper.selectChain(3L)).thenReturn(List.of(v3));
 
         assertThatThrownBy(() -> service.history(3L))
@@ -251,7 +269,7 @@ class P1101AcceptanceTest {
     void history_versionJump_rejected() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_GENERATED);
         AiDocument v3 = row(3L, 3, 1L, AiDocumentService.STATUS_GENERATED);
-        // CTE 返回跳号链 [v1, v3]（中间 v2 缺失）
+        // 链跳号：CTE 回 [v1, v3]，首版=1 过根校验，1→3 不连续 ⇒ STATE_CONFLICT
         when(mapper.selectChain(3L)).thenReturn(List.of(v1, v3));
 
         assertThatThrownBy(() -> service.history(3L))
@@ -263,7 +281,6 @@ class P1101AcceptanceTest {
     @Test
     @DisplayName("不存在/已删文档 ⇒ NOT_FOUND")
     void history_notFound() {
-        // CTE 无命中 → 空链 ⇒ NOT_FOUND（旧 selectById(404L) stub 已不消费）
         when(mapper.selectChain(404L)).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.history(404L))
@@ -276,7 +293,6 @@ class P1101AcceptanceTest {
     @DisplayName("根非 v1（链被截头）⇒ STATE_CONFLICT")
     void history_rootNotV1_rejected() {
         AiDocument orphan = row(9L, 2, null, AiDocumentService.STATUS_GENERATED);
-        // 链被截头：CTE 只回孤儿行自身，chain[0].versionNo=2 != 1 ⇒ STATE_CONFLICT
         when(mapper.selectChain(9L)).thenReturn(List.of(orphan));
 
         assertThatThrownBy(() -> service.history(9L))

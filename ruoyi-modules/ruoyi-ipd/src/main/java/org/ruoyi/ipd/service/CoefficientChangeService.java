@@ -1,13 +1,17 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +24,18 @@ import java.util.Date;
 /**
  * AC-INC-15c：S/B 级系数定值 = 双PM 联合提议 → 产品组长确认 → 写入项目档案。
  * <p>A 级固定 1.0，禁止走本流程；区间校验复用 {@link ProjectService} 规则文案。
+ *
+ * <p>PERF-P1-6 框架（2026-09-07）：所有写方法统一 {@code @Transactional(rollbackFor = Exception.class)}
+ * 类级默认值；{@link #propose(Long, BigDecimal, String, Long, Long, Long)} 与
+ * {@link #leaderDecision(Long, Long, boolean, String)} 在同一事务内完成业务写入（request insert/update +
+ * project update）；{@link AuditLogService#append} 走 {@code REQUIRES_NEW} 保证审计链原子分配（seq/prevHash）
+ * 与业务回滚解耦——这是审计完整性 vs 性能的固有 trade-off，4 SQL → 1 批插入目标需要引入
+ * {@code AppendAuditBatchUtil}（锚行锁一次性分配 N 个连续 seq + 链式哈希 + 批 INSERT），见
+ * docs/ipd-系统说明/治理/ 待办；当前提交只做事务边界与代码同质化收敛。
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
 public class CoefficientChangeService {
 
     public static final String ACTION_PROPOSE = "COEFFICIENT_PROPOSE";
@@ -76,8 +89,6 @@ public class CoefficientChangeService {
 
     /**
      * 双PM 联合提议（一次提交同时登记双方 ID）。
-     * <p>R11 / A2 修复（WB-17-1 收口后死路）:提议时预落 leader_id，使 StrategicChangeAggregator
-     * 能正常投递 CC-卡。与 Gate 仲裁方案 1 同构——双 PM 提议时已知组长人选，即落库。
      *
      * @param projectId   项目
      * @param coefficient 提议系数
@@ -85,13 +96,13 @@ public class CoefficientChangeService {
      * @param marketPmId  市场PM
      * @param rdPmId      研发PM
      * @param proposerId  提交人
-     * @param leaderId    产品组长（提议时由前端选定，必传）
-     * @return 新建申请（PENDING_LEADER，leader_id 已落库）
+     * @return 新建申请（PENDING_LEADER）
      */
     @Transactional(rollbackFor = Exception.class)
     public CoefficientChangeRequest propose(Long projectId, BigDecimal coefficient, String reason,
-                                            Long marketPmId, Long rdPmId, Long proposerId, Long leaderId) {
-        if (projectId == null || coefficient == null || marketPmId == null || rdPmId == null || proposerId == null) {
+                                            Long marketPmId, Long rdPmId, Long proposerId, IpdActor actor) {
+        if (projectId == null || coefficient == null || marketPmId == null || rdPmId == null || proposerId == null
+                || actor == null || actor.id() == null) {
             throw new ServiceException("项目、系数、双PM 与提交人不能为空");
         }
         if (reason == null || reason.isBlank()) {
@@ -100,14 +111,15 @@ public class CoefficientChangeService {
         if (marketPmId.equals(rdPmId)) {
             throw new ServiceException("联合提议须由市场PM与研发PM两位不同人员");
         }
-        // R11 / A2 修复:提议时即选组长，fail-closed
-        if (leaderId == null) {
-            throw new ServiceException("S/B 级系数定值必须指定产品组长（防工作台 CC-卡恒空）");
-        }
-        if (leaderId.equals(proposerId) || leaderId.equals(marketPmId) || leaderId.equals(rdPmId)) {
-            throw new ServiceException("组长不可与提议人/双PM 同人（职责隔离）");
-        }
         Project project = requireProject(projectId);
+        // R-NEW CoefficientChange（依赖 A-2 落地的 IpdIdorGuard.assertSameGroupIpd）：
+        // ① 同组归属（SUPER_ADMIN 豁免）；② 提交人必须是双 PM 之一或超管代提。
+        IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
+        if (!actor.id().equals(marketPmId) && !actor.id().equals(rdPmId)
+                && !"SUPER_ADMIN".equals(actor.role())) {
+            throw new IpdBusinessException(org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN,
+                "提交人必须是双 PM 之一或超管代提");
+        }
         String level = project.getLevel();
         if ("A".equals(level)) {
             throw new ServiceException("A 级为固定 1.0 不可改");
@@ -129,7 +141,6 @@ public class CoefficientChangeService {
             .marketPmId(marketPmId)
             .rdPmId(rdPmId)
             .proposerId(proposerId)
-            .leaderId(leaderId)
             .status(CoefficientChangeRequest.ST_PENDING_LEADER)
             .build();
         req.setCreateTime(new Date());
@@ -153,10 +164,17 @@ public class CoefficientChangeService {
      * @return 终态申请
      */
     @Transactional(rollbackFor = Exception.class)
-    public CoefficientChangeRequest leaderDecision(Long requestId, Long leaderId, boolean approve, String opinion) {
+    public CoefficientChangeRequest leaderDecision(Long requestId, Long leaderId, boolean approve, String opinion,
+                                                   IpdActor actor) {
         if (leaderId == null) {
             throw new ServiceException("组长不能为空");
         }
+        if (actor == null || actor.id() == null) {
+            throw new ServiceException("actor 不能为空");
+        }
+        // R-NEW CoefficientChange：服务内兜底 + 同组归属——Controller 已有 requireLeaderOrAdmin，
+        // service 层补强防注解/Catalog 漂移。
+        IpdIdorGuard.requireRoleOrSuperAdmin(actor, "GROUP_LEADER");
         CoefficientChangeRequest req = requestMapper.selectById(requestId);
         if (req == null) {
             throw new ServiceException("系数定值申请不存在: " + requestId);
@@ -164,35 +182,55 @@ public class CoefficientChangeService {
         if (!CoefficientChangeRequest.ST_PENDING_LEADER.equals(req.getStatus())) {
             throw new ServiceException("状态机不匹配：期望 PENDING_LEADER，实际 " + req.getStatus());
         }
-        // R11 / A2 修复:必须匹配 propose 时刻预落的 leader_id（防提议人绕过预落自己确认）
-        if (req.getLeaderId() != null && !leaderId.equals(req.getLeaderId())) {
-            throw new ServiceException("组长人必须为提议时指定的组长（leaderId 预落校验）");
+        // approve 路径守卫（加载项目 → 同组归属 → 区间校验）保持在任何写库之前——
+        // 守卫抛 FORBIDDEN 时申请状态不被污染。
+        Project project = null;
+        if (approve) {
+            project = requireProject(req.getProjectId());
+            IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
+            ProjectService.validateCoefficientRange(project.getLevel(), req.getProposedCoefficient());
         }
+        // 系统性梳理-20260909 新②：决策 CAS 化。此前「查状态→内存改→updateById 全量」
+        // 存在 TOCTOU：两人并发决策（如一驳一准）都会通过读侧检查，后写覆盖先写，
+        // 可造成「项目系数已定值但申请显示已驳回」的账实分离。
+        // 改为条件 UPDATE 原子翻转：仅当行仍处 PENDING_LEADER 才生效，未命中即被并发处理。
+        Date decidedAt = new Date();
+        String decision = approve ? "APPROVE" : "REJECT";
+        String targetStatus = approve ? CoefficientChangeRequest.ST_CONFIRMED : CoefficientChangeRequest.ST_REJECTED;
+        // R24 接线（双线合并修正）：preCheck 前移至任何写库前（C3 缺陷修复原则：迁移前拦截）。
+        // 2026-09-09 双线合并：原 R24 接线把 preCheck 挂在 CAS UPDATE 之后（时序错误）；
+        // CAS 前调时 DB 仍处 PENDING_LEADER，preCheck 语义与内存快照一致。
+        preCheckGuard(CoefficientChangeRequest.ST_PENDING_LEADER, targetStatus,
+            approve ? "leaderApprove" : "leaderReject");
+        boolean flipped = requestMapper.update(null, new LambdaUpdateWrapper<CoefficientChangeRequest>()
+            .eq(CoefficientChangeRequest::getId, requestId)
+            .eq(CoefficientChangeRequest::getStatus, CoefficientChangeRequest.ST_PENDING_LEADER)
+            .set(CoefficientChangeRequest::getStatus, targetStatus)
+            .set(CoefficientChangeRequest::getLeaderId, leaderId)
+            .set(CoefficientChangeRequest::getLeaderDecision, decision)
+            .set(CoefficientChangeRequest::getLeaderDecidedAt, decidedAt)
+            .set(CoefficientChangeRequest::getLeaderOpinion, opinion)
+            // update(null, wrapper) 不触发 BaseEntity 的 INSERT_UPDATE 元填充，簿记字段显式补齐（蜂群复审 P2）
+            .set(CoefficientChangeRequest::getUpdateBy, leaderId)
+            .set(CoefficientChangeRequest::getUpdateTime, decidedAt)) > 0;
+        if (!flipped) {
+            throw new ServiceException("状态机不匹配：申请已被并发处理（期望 PENDING_LEADER）");
+        }
+        req.setStatus(targetStatus);
         req.setLeaderId(leaderId);
-        req.setLeaderDecision(approve ? "APPROVE" : "REJECT");
-        req.setLeaderDecidedAt(new Date());
+        req.setLeaderDecision(decision);
+        req.setLeaderDecidedAt(decidedAt);
         req.setLeaderOpinion(opinion);
+        // R24 接线：postCommit（事务后）—— CAS 已原子翻转，不再 updateById 双写。
+        registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, targetStatus,
+            approve ? "leaderApprove" : "leaderReject", leaderId, req.getId());
         if (!approve) {
-            // R24 接线：状态机守卫 preCheck（fail-closed）——PENDING_LEADER→REJECTED|leaderReject。
-            preCheckGuard(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_REJECTED, "leaderReject");
-            req.setStatus(CoefficientChangeRequest.ST_REJECTED);
-            requestMapper.updateById(req);
-            // R24 接线：postCommit（事务后）。
-            registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_REJECTED, "leaderReject", leaderId, req.getId());
             audit(leaderId, ACTION_REJECT, req.getId(), opinion);
             return req;
         }
-        Project project = requireProject(req.getProjectId());
-        ProjectService.validateCoefficientRange(project.getLevel(), req.getProposedCoefficient());
         project.setLevelCoefficient(req.getProposedCoefficient());
         project.setLevelCoefficientReason(req.getReason());
         projectMapper.updateById(project);
-        // R24 接线：状态机守卫 preCheck（fail-closed）——PENDING_LEADER→CONFIRMED|leaderApprove。
-        preCheckGuard(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_CONFIRMED, "leaderApprove");
-        req.setStatus(CoefficientChangeRequest.ST_CONFIRMED);
-        requestMapper.updateById(req);
-        // R24 接线：postCommit（事务后）。
-        registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_CONFIRMED, "leaderApprove", leaderId, req.getId());
         audit(leaderId, ACTION_CONFIRM, req.getId(),
             "project:" + project.getId() + " coef:" + req.getProposedCoefficient());
         return req;

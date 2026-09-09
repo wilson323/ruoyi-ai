@@ -46,7 +46,7 @@ public class CoefficientChangeController {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(coefficientChangeService.propose(
             body.projectId(), body.proposedCoefficient(), body.reason(),
-            body.marketPmId(), body.rdPmId(), actor.id(), body.leaderId()));
+            body.marketPmId(), body.rdPmId(), actor.id(), actor));
     }
 
     /**
@@ -64,16 +64,15 @@ public class CoefficientChangeController {
                                                                   @RequestParam(required = false) String opinion) {
         IpdActor actor = ipdPermission.requireLeaderOrAdmin();
         return ApiV1Response.ok(coefficientChangeService.leaderDecision(
-            id, actor.id(), approve, opinion));
+            id, actor.id(), approve, opinion, actor));
     }
 
-    /** 联合提议入参。R11 / A2 修复:leaderId 字段（提议时前端选定组长）。 */
+    /** 联合提议入参。 */
     public record ProposeReq(
         @NotNull Long projectId,
         @NotNull BigDecimal proposedCoefficient,
         @NotBlank @Size(max = 500) String reason,
         @NotNull Long marketPmId,
-        @NotNull Long rdPmId,
-        @NotNull Long leaderId) {
+        @NotNull Long rdPmId) {
     }
 }

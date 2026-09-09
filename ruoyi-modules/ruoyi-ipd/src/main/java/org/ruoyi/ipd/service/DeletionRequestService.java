@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -66,24 +65,23 @@ public class DeletionRequestService {
     private final GateMapper gateMapper;
     private final ProductMapper productMapper;
     private final PersonMapper personMapper;
-    /** 测试口：注入固定时钟（工作日期限断言）；生产走系统时钟。对齐 AiDocumentService#withClock。 */
-    private Clock clock = Clock.systemDefaultZone();
-
-    DeletionRequestService withClock(Clock fixed) {
-        this.clock = fixed;
-        return this;
-    }
-
-    private Date currentDate() {
-        return Date.from(clock.instant());
-    }
-
-        /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
+    /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
     /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
     public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
         this.stateMachineGuard = stateMachineGuard;
+    }
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定提交时刻消除真实时钟摇摆，生产零影响）。
+     *  当前仅 submit 路径接入，其余方法的时钟接入按需扩展。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() {
+        return Date.from(clock.instant());
     }
     /** ROOT-R1 P0-7 字面量迁移：删除申请配置（冷静期/升级超时；B-RULE-05 配套）来源 */
     @Autowired(required = false)
@@ -108,10 +106,10 @@ public class DeletionRequestService {
             .reason(reason)
             .requesterId(requesterId)
             .status(ST_LEADER_REVIEW)
-            .leaderDueAt(Workdays.add(currentDate(), leaderDeadlineDays()))
+            .leaderDueAt(Workdays.add(now(), leaderDeadlineDays()))
             .build();
         // ⚠️ @Builder 只覆盖本类字段，BaseEntity 的 createTime 须走 setter
-        request.setCreateTime(currentDate());
+        request.setCreateTime(now());
         // ROOT-R3-P0-1：守卫 preCheck（跨域联动合法性校验）—— DRAFT->LEADER_REVIEW 合法
         preCheckGuard("deletion_request", "DRAFT", DeletionRequestService.ST_LEADER_REVIEW, "submit");
         deletionRequestMapper.insert(request);
@@ -145,7 +143,7 @@ public class DeletionRequestService {
             withdrawHours = systemConfigService.getIntValue("deletion.withdrawHours", 24);
         }
         Date deadline = new Date(request.getCreateTime().getTime() + withdrawHours * 3600_000L);
-        if (currentDate().after(deadline)) {
+        if (now().after(deadline)) {
             throw new ServiceException("已超过 " + withdrawHours + " 小时撤回时限");
         }
         // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
@@ -157,6 +155,59 @@ public class DeletionRequestService {
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), requesterId, "DELETE_REQUEST_WITHDRAW", request.getId());
         registerPostCommit("deletion_request", fromStatus, DeletionRequestService.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
+        return request;
+    }
+
+    /**
+     * SEC-MED-3 侧信道防御版撤返：所有失败路径统一抛 {@link ApiV1ErrorCode#NOT_FOUND}，
+     * 与 404 不存在资源错误码 + 文案 + HTTP 状态完全一致，防止攻击者基于 403/500/200
+     * 响应差异推断删除申请存在性 / 所有权 / 状态。
+     *
+     * <p>失败归一情形：
+     * <ul>
+     *   <li>申请不存在 → NOT_FOUND「资源不存在」</li>
+     *   <li>非本人申请 → NOT_FOUND「资源不存在」（不暴露所有权）</li>
+     *   <li>已终态（DELETED / REJECTED / WITHDRAWN）→ NOT_FOUND「资源不存在」</li>
+     *   <li>超过 withdrawHours 时限 → NOT_FOUND「资源不存在」（不暴露时限）</li>
+     * </ul>
+     *
+     * <p>成功路径与原 {@link #withdraw} 行为一致：状态机守卫 → 写 WITHDRAWN → 写审计 → 注册 postCommit。
+     * 单代码路径设计保证 4 类失败耗时近似，杜绝 timing 侧信道。
+     *
+     * @param actor     当前操作人（actor.id() 必须等于 request.requesterId；非本人按"不存在"处理）
+     * @param requestId 申请 ID
+     * @return 撤回后的 DeletionRequest（status=WITHDRAWN）
+     * @throws IpdBusinessException {@code NOT_FOUND} 失败归一异常
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeletionRequest withdrawIfExistsOrNotFound(IpdActor actor, Long requestId) {
+        requireAuthenticated(actor);
+        // 单次 selectById 后，所有失败统一 NOT_FOUND（防侧信道：避免差异响应暴露资源状态）
+        DeletionRequest request = deletionRequestMapper.selectById(requestId);
+        int withdrawHours;
+        // ROOT-R1 P0-7：先读 BusinessConfigService.DELETION_ESCALATE_TIMEOUT_HOURS，回退 SystemConfig
+        Integer bv = readBusinessInt(BusinessConfigKeys.DELETION_ESCALATE_TIMEOUT_HOURS);
+        if (bv != null) {
+            withdrawHours = bv;
+        } else {
+            withdrawHours = systemConfigService.getIntValue("deletion.withdrawHours", 24);
+        }
+        if (request == null
+            || !actor.id().equals(request.getRequesterId())
+            || isTerminal(request.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
+        }
+        Date deadline = new Date(request.getCreateTime().getTime() + withdrawHours * 3600_000L);
+        if (now().after(deadline)) {
+            // 超时限 → 同样 NOT_FOUND 化（不暴露时限长度 / 当前是否在窗口内）
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
+        }
+        // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
+        preCheckGuard("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw");
+        request.setStatus(ST_WITHDRAWN);
+        deletionRequestMapper.updateById(request);
+        audit(request.getEntityType(), request.getEntityId(), actor.id(), "DELETE_REQUEST_WITHDRAW", request.getId());
+        registerPostCommit("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw", actor.id(), request.getId());
         return request;
     }
 
@@ -185,14 +236,14 @@ public class DeletionRequestService {
         }
         request.setLeaderId(leaderId);
         request.setLeaderDecision(approve ? "APPROVE" : "REJECT");
-        request.setLeaderDecidedAt(currentDate());
+        request.setLeaderDecidedAt(now());
         String target = approve ? ST_ADMIN_REVIEW : ST_REJECTED;
         String trigger = approve ? "leaderApprove" : "leaderReject";
         // ROOT-R3-P0-1：守卫 preCheck（LEADER_REVIEW -> ADMIN_REVIEW/REJECTED 合法）
         preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, target, trigger);
         request.setStatus(approve ? ST_ADMIN_REVIEW : ST_REJECTED);
         if (approve) {
-            request.setAdminDueAt(Workdays.add(currentDate(), adminDeadlineDays()));
+            request.setAdminDueAt(Workdays.add(now(), adminDeadlineDays()));
         }
         deletionRequestMapper.updateById(request);
         // ROOT-R3-P0-1：postCommit 跨域副作用
@@ -237,7 +288,7 @@ public class DeletionRequestService {
         preCheckGuard("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_REJECTED, "adminReject");
         request.setAdminId(adminId);
         request.setAdminDecision("REJECT");
-        request.setAdminDecidedAt(currentDate());
+        request.setAdminDecidedAt(now());
         request.setStatus(ST_REJECTED);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
@@ -261,15 +312,14 @@ public class DeletionRequestService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int escalateOverdueLeaderReview() {
-        Date now = currentDate();
         // 步骤 ①：先用同谓词 selectList 拿受影响行的 id / entityType / entityId（供 audit 用）
         List<DeletionRequest> overdue = deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getStatus, ST_LEADER_REVIEW)
-            .lt(DeletionRequest::getLeaderDueAt, now));
+            .lt(DeletionRequest::getLeaderDueAt, now()));
         if (overdue.isEmpty()) {
             return 0; // affected=0 短路：零 SQL 额外开销
         }
-        Date adminDueAt = Workdays.add(now, adminDeadlineDays());
+        Date adminDueAt = Workdays.add(now(), adminDeadlineDays());
         // ROOT-R3-P0-1：守卫 preCheck —— LEADER_REVIEW -> ADMIN_REVIEW 合法（升级路径）
         // 2026-09-09 C3 缺陷修复：preCheck 语义是"迁移前拦截"，此前挂在批量 UPDATE 之后——
         // 虽有 @Transactional 兜底回滚，但守卫应前置拒绝而非事后验证。前移到 UPDATE 前
@@ -279,7 +329,7 @@ public class DeletionRequestService {
             .set(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
             .set(DeletionRequest::getAdminDueAt, adminDueAt)
             .eq(DeletionRequest::getStatus, ST_LEADER_REVIEW)
-            .lt(DeletionRequest::getLeaderDueAt, now));
+            .lt(DeletionRequest::getLeaderDueAt, now()));
         if (affected == 0) {
             // 谓词扫描与 UPDATE 之间发生状态变迁（极少见——并发方抢先处置）：同样短路
             return 0;
@@ -295,7 +345,7 @@ public class DeletionRequestService {
     public List<DeletionRequest> listOverdueAdminReview() {
         return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
-            .lt(DeletionRequest::getAdminDueAt, currentDate()));
+            .lt(DeletionRequest::getAdminDueAt, now()));
     }
 
     private DeletionRequest getOrThrow(Long id) {
@@ -442,7 +492,7 @@ public class DeletionRequestService {
             .entityType(entityType)
             .entityId(entityId)
             .reason("deletion_request:" + requestId)
-            .createTime(currentDate())
+            .createTime(now())
             .build();
         auditLogService.append(log);
     }
