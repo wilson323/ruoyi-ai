@@ -126,6 +126,11 @@ class P254AcceptanceTest {
     void setUp() {
         service = new GateReviewService(gateMapper, reviewMapper, memberMapper,
             personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
+        // R24：装配真实守卫实例（已 initRules 注入 37 条规则）。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, notificationService);
+        guard.initRules();
+        service.setStateMachineGuard(guard);
         gate = new Gate();
         gate.setId(601L);
         gate.setProjectId(11L);

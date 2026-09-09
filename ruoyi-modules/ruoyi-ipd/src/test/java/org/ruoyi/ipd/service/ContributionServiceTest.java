@@ -16,6 +16,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionException;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 import java.math.BigDecimal;
 
@@ -63,6 +64,10 @@ class ContributionServiceTest {
     void setUp() {
         service = new ContributionService(contributionMapper, versionMapper, projectMapper,
             productGroupMapper, auditLogService, ipdPermission);
+        // R24：装配真实守卫实例（已 initRules 注入全部 36 条规则）——测试覆盖接线路径。
+        DefaultStateMachineGuard guard = new DefaultStateMachineGuard(auditLogService, null);
+        guard.initRules();
+        service.setStateMachineGuard(guard);
     }
 
     private IpdActor marketPmActor() {

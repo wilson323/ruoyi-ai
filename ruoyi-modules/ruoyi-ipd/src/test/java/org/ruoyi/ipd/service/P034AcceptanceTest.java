@@ -140,6 +140,11 @@ class P034AcceptanceTest {
             systemConfigService, auditLogService);
         gateReviewService = new GateReviewService(gateMapper, reviewMapper, memberMapper, personMapper,
             arbitrationMapper, observerMapper, systemConfigService, auditLogService, /*notification*/ null);
+        // R24：装配真实守卫实例（已 initRules 注入 37 条规则）——notification=null 仅测试本闸不调 postCommit 跨域路径。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, null);
+        guard.initRules();
+        gateReviewService.setStateMachineGuard(guard);
         bonusPoolService = new BonusPoolService(bonusPoolMapper, projectMapper, kpiRecordMapper, new ProjectScoreService());
         bonusPoolService.setBusinessConfigService(businessConfigService);
         bonusPoolService.setAuditLogService(auditLogService);

@@ -55,6 +55,12 @@ class ContributionVersionArchiveTest {
     void setUp() {
         service = new ContributionService(contributionMapper, versionMapper, projectMapper,
             productGroupMapper, auditLogService, ipdPermission);
+        // R24：装配真实守卫实例（已 initRules 注入 37 条规则，含 contribution:* 五条）。
+        // confirm APPROVE/REJECT 都期望业务行为成功，必须装配 guard 才能过 preCheck。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, null);
+        guard.initRules();
+        service.setStateMachineGuard(guard);
     }
 
     private IpdActor leaderActor() {

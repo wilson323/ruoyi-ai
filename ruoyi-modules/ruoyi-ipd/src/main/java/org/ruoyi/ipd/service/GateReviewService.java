@@ -20,8 +20,12 @@ import org.ruoyi.ipd.mapper.GateReviewObserverMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.service.StateMachineGuard;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -101,6 +105,47 @@ public class GateReviewService {
     private final SystemConfigService systemConfigService;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+
+    /* ---------- R24 治理轮：GateReview 状态机守卫（接线） ---------- */
+    /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */
+    private StateMachineGuard stateMachineGuard;
+    /** GateReview 实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
+    static final String GATE_REVIEW_ENTITY_TYPE = "gate_review";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** R24 接线：守卫 preCheck 包装（fail-closed）。守卫 null = fail-closed 抛业务异常。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + GATE_REVIEW_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(GATE_REVIEW_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** R24 接线：注册 postCommit 副作用（事务提交后触发）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(GATE_REVIEW_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(GATE_REVIEW_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
     /** ROOT-R1 P0-7 字面量迁移：Gate 配置（双签人数/签署期限/延期上限；B-RULE-05 配套）来源 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BusinessConfigService businessConfigService;
@@ -208,10 +253,14 @@ public class GateReviewService {
     /** 落终态：更新 Gate 状态 + REJECTED 时双方 GATE_REJECTED 通知（AC-GATE-05）+ 审计。 */
     private void settle(Gate gate, String status, IpdActor actor, List<GateReview> rows) {
         if (STATUS_PENDING.equals(gate.getStatus())) {
+            // R24 接线：状态机守卫 preCheck（fail-closed）。守卫 null / 未登记迁移则抛业务异常。
+            preCheckGuard(STATUS_PENDING, status, "sign");
             gate.setStatus(status);
             gateMapper.updateById(gate);
             audit(actor, gate, "REJECTED".equals(status) ? "GATE_REJECT" : "GATE_APPROVE",
                 "终态 " + status, "round", gate.getCurrentRound());
+            // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
+            registerPostCommit(STATUS_PENDING, status, "sign", actor.id(), gate.getId());
         }
         if (STATUS_REJECTED.equals(status)) {
             notifyBothSides(gate, rows);
@@ -357,6 +406,8 @@ public class GateReviewService {
         if (!SIGNER_ROLES.contains(actor.role()) && !ROLE_SUPER_ADMIN.equals(actor.role())) {
             throw new IpdBusinessException("仅签署双方或超管可重新发起评审");
         }
+        // R24 接线：状态机守卫 preCheck（fail-closed）。本调用发起两条迁移（REJECTED→PENDING|reopen / ABSTAINED_TIMEOUT→PENDING|reopen），守卫会精准命中。
+        preCheckGuard(gate.getStatus(), STATUS_PENDING, "reopen");
         int newRound = gate.getCurrentRound() + 1;
         int days = resolveSignDeadlineDays();
         Date newDue = new Date(new Date().getTime() + TimeUnit.DAYS.toMillis(days));
@@ -369,6 +420,8 @@ public class GateReviewService {
             .set(Gate::getConcludedAt, null));
         audit(actor, gate, "GATE_REOPEN", "否决后重新发起评审（BR-GATE-05 不限次数）",
             "round", newRound, "signDueAt", newDue.toString());
+        // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
+        registerPostCommit(gate.getStatus(), STATUS_PENDING, "reopen", actor.id(), gate.getId());
 
         Gate updated = requireGate(gateId);
         if (newRound >= 3) {
@@ -816,9 +869,16 @@ public class GateReviewService {
 
     /** 超时流转落终态 + 审计（弃权事件/按主导方执行各自留痕）。 */
     private void settleTimeout(Gate gate, String status, IpdActor operator, String reason) {
-        gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
-            .eq(Gate::getId, gate.getId())
-            .set(Gate::getStatus, status));
+        // R24 接线：状态机守卫 preCheck（fail-closed）。仅当 Gate 当前仍处 PENDING 才验证迁移合法性；
+        // （护责双重设防御：双调扫描（scanTimeout）可能在主流程之后到达导致双 settle，这里仅在 PENDING 时落 UPDATE）
+        if (STATUS_PENDING.equals(gate.getStatus())) {
+            preCheckGuard(STATUS_PENDING, status, "settleTimeout");
+            gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
+                .eq(Gate::getId, gate.getId())
+                .set(Gate::getStatus, status));
+            // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
+            registerPostCommit(STATUS_PENDING, status, "settleTimeout", operator.id(), gate.getId());
+        }
         audit(operator, gate, STATUS_APPROVED.equals(status) ? "GATE_APPROVE" : "GATE_ABSTAIN_TIMEOUT",
             reason, "round", gate.getCurrentRound());
     }

@@ -48,6 +48,12 @@ class P122AcceptanceTest {
         projectService = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
         launchDateChangeService = new LaunchDateChangeService(
             launchDateChangeRequestMapper, projectMapper, auditLogService);
+        // R24：装配真实守卫实例（已 initRules 注入 37 条规则，含 launch_date_change:INITIAL->PENDING_SECOND|propose）。
+        // AC-INC-33 propose 期望走通到 ST_PENDING_SECOND，必须装配 guard 才能过 preCheck。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, null);
+        guard.initRules();
+        launchDateChangeService.setStateMachineGuard(guard);
     }
 
     /**
