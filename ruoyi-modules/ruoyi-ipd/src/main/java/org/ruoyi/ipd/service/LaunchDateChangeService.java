@@ -8,9 +8,12 @@ import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.Set;
@@ -40,6 +43,47 @@ public class LaunchDateChangeService {
     private final LaunchDateChangeRequestMapper requestMapper;
     private final ProjectMapper projectMapper;
     private final AuditLogService auditLogService;
+
+    /* ---------- R24 治理轮：LaunchDateChange 状态机守卫（接线） ---------- */
+    /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */
+    private StateMachineGuard stateMachineGuard;
+    /** LaunchDateChange 实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
+    static final String LDC_ENTITY_TYPE = "launch_date_change";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** R24 接线：守卫 preCheck 包装（fail-closed）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new ServiceException("状态机守卫未装配 entityType=" + LDC_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(LDC_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** R24 接线：注册 postCommit 副作用（事务提交后触发）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(LDC_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(LDC_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
 
     /**
      * 提议变更上市日期（第一签）。
@@ -109,6 +153,8 @@ public class LaunchDateChangeService {
             .delFlag("0")
             .build();
         req.setCreateTime(new Date());
+        // R24 接线：状态机守卫 preCheck（fail-closed）——创建迁移 INITIAL→PENDING_SECOND|propose。
+        preCheckGuard(null, LaunchDateChangeRequest.ST_PENDING_SECOND, "propose");
         try {
             requestMapper.insert(req);
         } catch (DuplicateKeyException ex) {
@@ -119,6 +165,8 @@ public class LaunchDateChangeService {
             // 预检保留：为了让正常串行路径仍返回可读的业务错而非依赖异常；两者必须同文案。
             throw new ServiceException("该项目已有待第二签确认的上市日期变更申请");
         }
+        // R24 接线：postCommit（事务后）。
+        registerPostCommit(null, LaunchDateChangeRequest.ST_PENDING_SECOND, "propose", proposerId, req.getId());
         audit(proposerId, ACTION_PROPOSE, req.getId(),
             "project:" + projectId + " date:" + proposedDate + " " + reason.trim());
         return req;
@@ -176,6 +224,8 @@ public class LaunchDateChangeService {
         req.setConfirmedAt(new Date());
         req.setDecision(approve ? "APPROVE" : "REJECT");
         req.setOpinion(opinion);
+        // R24 接线：状态机守卫 preCheck（fail-closed）——PENDING_SECOND→CONFIRMED/REJECTED|secondSign。
+        preCheckGuard(LaunchDateChangeRequest.ST_PENDING_SECOND, finalStatus, "secondSign");
         // P1（owner 2026-09-05 项1b）：状态迁移的归属权由 @Version 乐观锁担保（同 P1-4.3 / R8-P0-9 惯例）。
         // 旧实现丢弃 updateById 返回值：两个确认人并发时都读到 PENDING_SECOND，双方都写成功
         // → 同一申请留下两条 ACTION_CONFIRM 审计且 confirmer 字段被后写者覆盖，第二签到底是谁做的已不可追溯。
@@ -184,6 +234,8 @@ public class LaunchDateChangeService {
         if (requestMapper.updateById(req) == 0) {
             throw new ServiceException("该上市日期变更申请已被并发处理，本次第二签未生效");
         }
+        // R24 接线：postCommit（事务后）。
+        registerPostCommit(LaunchDateChangeRequest.ST_PENDING_SECOND, finalStatus, "secondSign", confirmerId, req.getId());
         if (!approve) {
             audit(confirmerId, ACTION_REJECT, req.getId(), opinion);
             return req;

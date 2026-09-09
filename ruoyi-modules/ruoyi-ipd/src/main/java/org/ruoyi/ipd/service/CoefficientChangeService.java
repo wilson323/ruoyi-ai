@@ -8,8 +8,11 @@ import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -29,6 +32,47 @@ public class CoefficientChangeService {
     private final CoefficientChangeRequestMapper requestMapper;
     private final ProjectMapper projectMapper;
     private final AuditLogService auditLogService;
+
+    /* ---------- R24 治理轮：CoefficientChange 状态机守卫（接线） ---------- */
+    /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */
+    private StateMachineGuard stateMachineGuard;
+    /** CoefficientChange 实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
+    static final String COEF_ENTITY_TYPE = "coefficient_change";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** R24 接线：守卫 preCheck 包装（fail-closed）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new ServiceException("状态机守卫未装配 entityType=" + COEF_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(COEF_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** R24 接线：注册 postCommit 副作用（事务提交后触发）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(COEF_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(COEF_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
 
     /**
      * 双PM 联合提议（一次提交同时登记双方 ID）。
@@ -89,7 +133,11 @@ public class CoefficientChangeService {
             .status(CoefficientChangeRequest.ST_PENDING_LEADER)
             .build();
         req.setCreateTime(new Date());
+        // R24 接线：状态机守卫 preCheck（fail-closed）——创建迁移 INITIAL→PENDING_LEADER|propose。
+        preCheckGuard(null, CoefficientChangeRequest.ST_PENDING_LEADER, "propose");
         requestMapper.insert(req);
+        // R24 接线：postCommit（事务后）。本规则 crossDomain=false。
+        registerPostCommit(null, CoefficientChangeRequest.ST_PENDING_LEADER, "propose", proposerId, req.getId());
         audit(proposerId, ACTION_PROPOSE, req.getId(),
             "project:" + projectId + " coef:" + coefficient + " " + reason.trim());
         return req;
@@ -125,8 +173,12 @@ public class CoefficientChangeService {
         req.setLeaderDecidedAt(new Date());
         req.setLeaderOpinion(opinion);
         if (!approve) {
+            // R24 接线：状态机守卫 preCheck（fail-closed）——PENDING_LEADER→REJECTED|leaderReject。
+            preCheckGuard(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_REJECTED, "leaderReject");
             req.setStatus(CoefficientChangeRequest.ST_REJECTED);
             requestMapper.updateById(req);
+            // R24 接线：postCommit（事务后）。
+            registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_REJECTED, "leaderReject", leaderId, req.getId());
             audit(leaderId, ACTION_REJECT, req.getId(), opinion);
             return req;
         }
@@ -135,8 +187,12 @@ public class CoefficientChangeService {
         project.setLevelCoefficient(req.getProposedCoefficient());
         project.setLevelCoefficientReason(req.getReason());
         projectMapper.updateById(project);
+        // R24 接线：状态机守卫 preCheck（fail-closed）——PENDING_LEADER→CONFIRMED|leaderApprove。
+        preCheckGuard(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_CONFIRMED, "leaderApprove");
         req.setStatus(CoefficientChangeRequest.ST_CONFIRMED);
         requestMapper.updateById(req);
+        // R24 接线：postCommit（事务后）。
+        registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, CoefficientChangeRequest.ST_CONFIRMED, "leaderApprove", leaderId, req.getId());
         audit(leaderId, ACTION_CONFIRM, req.getId(),
             "project:" + project.getId() + " coef:" + req.getProposedCoefficient());
         return req;

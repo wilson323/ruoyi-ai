@@ -10,6 +10,9 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AuditChainVerifyResult;
 import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
+import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -63,6 +66,7 @@ public class AuditLogService {
 
     private final AuditLogMapper auditLogMapper;
     private final AuditChainHeadMapper chainHeadMapper;
+    private final PersonMapper personMapper;
 
     /** 追加一条审计（独立事务：业务失败不回滚审计；①②③ P 变体：锚行悲观锁原子分配 seq/prevHash） */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
@@ -71,6 +75,23 @@ public class AuditLogService {
         // 必须位于锚行锁之前：畸形载荷须立即抛出回滚，不得进入任何锁/推进路径。
         AuditEventData.requireJson(draft.getBeforeData(), "before_data");
         AuditEventData.requireJson(draft.getAfterData(), "after_data");
+        // P1-6 审计合并框架单点（R22 2026-09-09）：operator 三元组缺失时按 operatorId 查 persons
+        // 补齐 name/personType——设计文档 §1.3 实测 operatorName 仅 51%/operatorRole 仅 34%，
+        // 历史行哈希已冻结不可回填，但新行在此单点补齐后全量调用点（44 文件/81 处）自动受益，
+        // 逐点注解化不必再为三元组而做。特殊操作人（operatorId=0 系统扫描/匿名）不查；
+        // 查无此人（已删号/外部 ID）留空不抛——审计行不因被删操作人丟失。必须在锚行锁前查（缩短锁持有）。
+        if (draft.getOperatorId() != null && draft.getOperatorId() != 0L
+            && (isBlank(draft.getOperatorName()) || isBlank(draft.getOperatorRole()))) {
+            Person person = personMapper.selectById(draft.getOperatorId());
+            if (person != null) {
+                if (isBlank(draft.getOperatorName())) {
+                    draft.setOperatorName(person.getName());
+                }
+                if (isBlank(draft.getOperatorRole())) {
+                    draft.setOperatorRole(person.getPersonType());
+                }
+            }
+        }
         // DEF-4：先定时间再哈希——写入与验链共用同一 Date，且毫秒必须归零后再写库：
         // datetime(0) 对毫秒四舍五入（≥.500 进位），而 secondMillis 是截断，不归零则读回 +1s 哈希失配
         Date base = draft.getCreateTime() == null ? new Date() : draft.getCreateTime();
@@ -99,6 +120,33 @@ public class AuditLogService {
         }
         auditLogMapper.insert(draft);
         return draft;
+    }
+
+    /**
+     * Controller 友好重载（AOP P0 批消重目标位，2026-09-09 治理轮 R21）：
+     * 四份 Controller 原各自拷贝同构 private audit() 方法（actor null 静默跳过 + builder 拼装），
+     * 统一收到 Service 层。语义与原拷贝完全一致：actor == null 时静默跳过（不落审计不抛错）。
+     * <p>兄弟在途 Controller（HrSync/Person/PersonSync）commit 后可一行切换到本重载。
+     *
+     * @param actor      当前操作人（null = 静默跳过，与原四份拷贝一致）
+     * @param action     动作码（如 WITHDRAW / SYNC_PULL）
+     * @param entityType 实体类型（如 receipt_ledger / person / hr_sync）
+     * @param entityId   实体 ID（可空）
+     * @param reason     理由（可空）
+     */
+    public void append(IpdActor actor, String action, String entityType, Long entityId, String reason) {
+        if (actor == null) {
+            return;
+        }
+        append(AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action(action)
+            .entityType(entityType)
+            .entityId(entityId)
+            .reason(reason)
+            .build());
     }
 
     /**
@@ -154,11 +202,20 @@ public class AuditLogService {
      * DEF-4 链重建：按现行 v1 秒级对称语义重算全链 prev/curr 哈希。
      * <p>仅触碰哈希两列，业务字段只读；幂等可重复执行——多实例旧 jar 仍可能写入毫秒污染行，
      * 全实例切新 jar 后终验前需重跑一次。调用方（Controller）负责超管门禁并为动作本身落审计。
+     * <p>MED-2（2026-09-09 治理轮 R21）：锚行悲观锁互斥 + 重算后推锚——与 append 同锁序
+     * （selectForUpdate GLOBAL → 读全链 → advance），消除并发 rebuild+append 人为断链与
+     * 「重建后锚行 last_hash 陈旧 → 下次 append 用旧哈希起链」两类风险。
      *
      * @return 修正哈希的行数
      */
     @Transactional(rollbackFor = Exception.class)
     public long rebuildChain() {
+        // MED-2：锁序与 append 一致（锁内全链读+逐行修正+推锚）；无锁并发 rebuild+append 会互踩
+        AuditChainHead head = chainHeadMapper.selectForUpdate(CHAIN_KEY_GLOBAL);
+        if (head == null) {
+            throw new IllegalStateException(
+                "audit_log_chain_heads missing GLOBAL anchor — run seed-sync before rebuild");
+        }
         List<AuditLog> all = auditLogMapper.selectList(orderBySeqAsc());
         if (all.isEmpty()) {
             return 0L;
@@ -172,6 +229,13 @@ public class AuditLogService {
                 fixed++;
             }
             prev = curr;
+        }
+        // MED-2：推锚（last_seq/last_hash/next_seq 与重算后的链尾对齐）——不推则锚行陈旧，
+        // 下次 append 会用旧 last_hash 起链导致新行 prev_hash 与链尾 curr_hash 不接。
+        // advance=1 防御断言（锁保护下正常必 1；0 = schema/chain_key 漂移，与 append 同 fail-fast）。
+        AuditLog last = all.get(all.size() - 1);
+        if (chainHeadMapper.advance(CHAIN_KEY_GLOBAL, last.getSeq(), prev, last.getSeq() + 1) != 1) {
+            throw new IllegalStateException("audit chain anchor advance missed after rebuild — schema/config drift suspected");
         }
         return fixed;
     }
@@ -250,5 +314,10 @@ public class AuditLogService {
 
     private static String nvl(String v) {
         return v == null ? "" : v;
+    }
+
+    /** P1-6 三元组补齐用：null/纯空白视为缺失（与 canonicalOf 的空串语义一致） */
+    private static boolean isBlank(String v) {
+        return v == null || v.isBlank();
     }
 }

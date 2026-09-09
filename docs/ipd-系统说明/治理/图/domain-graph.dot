@@ -1,0 +1,218 @@
+// IPD Domain 实体关系图
+// 数据源: ruoyi-ai @ 60bde6b4  /  src/main/java/org/ruoyi/ipd/domain/*.java
+// 节点: 53 业务实体 + 4 个无 @TableName 的孤儿
+// 边: 基于 *Id 字段推断的外键引用
+
+digraph IPD_Domain {
+    rankdir=LR;
+    graph [fontname="Helvetica", fontsize=12, labelloc="t", label="IPD Domain 实体关系图 (53 实体 / 4 孤儿 / ~70 外键边)"];
+    node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge  [fontname="Helvetica", fontsize=8, color="#666"];
+
+    // 节点：内存模型（无 @TableName 属正常设计，非孤儿；2026-09-09 治理轮勒误）
+    // ActionDef 被 ActionCatalog/GateEngine/ProjectBootstrapService/StageActionService 使用；
+    // NotificationChannelType 被通知分发全家桶 7 文件使用（落 notification_events.target_channel）；
+    // StateTransitionRule 被 StateMachineGuard/DefaultStateMachineGuard 使用（ROOT-R3 核心）。
+    subgraph cluster_inmemory {
+        label = "In-Memory Model（record/enum/规则对象，无需表）";
+        style=filled; fillcolor="#f4f4f4"; color="#999"; fontcolor="#555";
+        ActionDef               [fillcolor="#eee", shape=note];
+        NotificationChannelType [fillcolor="#eee", shape=note];
+        StateTransitionRule     [fillcolor="#eee", shape=note];
+        SoftDeletable           [fillcolor="#eee", shape=ellipse, label="SoftDeletable(interface)"];
+    }
+
+    // Project 核心簇
+    subgraph cluster_project {
+        label = "Project 核心";
+        style=filled; fillcolor="#eef4ff"; color="#88a";
+        Project            [fillcolor="#cdf"];
+        Product            [fillcolor="#cdf"];
+        ProductGroup       [fillcolor="#cdf"];
+        ProjectMember      [fillcolor="#def"];
+        ProjectFollower    [fillcolor="#def"];
+        ProjectStage       [fillcolor="#def"];
+        RequirementPool    [fillcolor="#def"];
+        Requirement        [fillcolor="#def"];
+        RequirementChange  [fillcolor="#def"];
+        StageAction        [fillcolor="#def"];
+        Deliverable        [fillcolor="#def"];
+        BidInvitation      [fillcolor="#def"];
+        BidResponse        [fillcolor="#def"];
+        OssFileEntity      [fillcolor="#def"];
+    }
+
+    // Person / HR
+    subgraph cluster_person {
+        label = "Person / HR";
+        style=filled; fillcolor="#fff4e6"; color="#a85";
+        Person             [fillcolor="#fed"];
+        HandoverRecord     [fillcolor="#fed"];
+        ProjectScore       [fillcolor="#fed"];
+        ProjectScoreRecord [fillcolor="#fed"];
+        ProjectScoreTask   [fillcolor="#fed"];
+        Contribution       [fillcolor="#fed"];
+        ContributionVersion[fillcolor="#fed"];
+        AllowanceLedger    [fillcolor="#fed"];
+        ReceiptLedger      [fillcolor="#fed"];
+        BonusAllocation    [fillcolor="#fed"];
+        KpiRecord          [fillcolor="#fed"];
+        NegativeFeedback   [fillcolor="#fed"];
+    }
+
+    // Gate / 评审
+    subgraph cluster_gate {
+        label = "Gate 评审";
+        style=filled; fillcolor="#f0fff4"; color="#4a4";
+        Gate               [fillcolor="#dfd"];
+        GateReview         [fillcolor="#dfd"];
+        GateElement        [fillcolor="#dfd"];
+        GateElementResult  [fillcolor="#dfd"];
+        GateReviewObserver [fillcolor="#dfd"];
+        GateArbitration    [fillcolor="#dfd"];
+    }
+
+    // Bonus / KPI
+    subgraph cluster_bonus {
+        label = "Bonus / KPI";
+        style=filled; fillcolor="#fff0f6"; color="#a4a";
+        BonusPool          [fillcolor="#fdf"];
+        CoefficientChangeRequest [fillcolor="#fdf"];
+    }
+
+    // 移交 / 变更 / 删除
+    subgraph cluster_handover {
+        label = "移交 / 变更 / 删除";
+        style=filled; fillcolor="#fdf6e3"; color="#aa4";
+        LaunchDateChangeRequest [fillcolor="#fed"];
+        DeletionRequest    [fillcolor="#fed"];
+    }
+
+    // 切换 / 证书
+    subgraph cluster_switching {
+        label = "切换 / 证书 / SOP";
+        style=filled; fillcolor="#f5e8ff"; color="#74a";
+        SwitchingAcceptance [fillcolor="#edf"];
+        ProjectCertItem    [fillcolor="#edf"];
+        CertTemplate       [fillcolor="#edf"];
+        SopTemplate        [fillcolor="#edf"];
+    }
+
+    // 系统配置
+    subgraph cluster_config {
+        label = "系统配置";
+        style=filled; fillcolor="#e8f4f8"; color="#48a";
+        SystemConfig          [fillcolor="#def"];
+        SystemConfigVersion   [fillcolor="#def"];
+        IpdBusinessConfig     [fillcolor="#def"];
+        IpdBusinessConfigVersion [fillcolor="#def"];
+    }
+
+    // 通知 / 审计
+    subgraph cluster_audit {
+        label = "通知 / 审计";
+        style=filled; fillcolor="#f4f4f4"; color="#888";
+        NotificationEvent     [fillcolor="#eee"];
+        AuditLog              [fillcolor="#ffd", color="#c80"];
+        AuditChainHead        [fillcolor="#ffd", color="#c80"];
+        AiDocument            [fillcolor="#eee"];
+        AiModelConfig         [fillcolor="#eee"];
+        LegacyImport          [fillcolor="#eee"];
+    }
+
+    // ===== 外键边 =====
+    Project          -> Product            [label="productId"];
+    Product          -> Project            [label="projectId (反范式)"];
+    Product          -> ProductGroup       [label="groupId"];
+    ProductGroup     -> ProductGroup       [label="parentId"];
+    ProductGroup     -> Person             [label="leaderPersonId"];
+    Project          -> ProductGroup       [label="mainGroupId"];
+    ProjectMember    -> Project            [label="projectId"];
+    ProjectMember    -> Person             [label="personId"];
+    ProjectFollower  -> Project            [label="projectId"];
+    ProjectStage     -> Project            [label="projectId"];
+    ProjectStage     -> Gate               [label="gateId"];
+    RequirementPool  -> Project            [label="projectId"];
+    RequirementPool  -> Person             [label="submitterId/reviewerId"];
+    Requirement      -> Product            [label="productId"];
+    Requirement      -> Project            [label="projectId"];
+    Requirement      -> Person             [label="marketPmId/rdPmId"];
+    RequirementChange-> Requirement        [label="requirementId"];
+    RequirementChange-> Project            [label="projectId"];
+    StageAction      -> Project            [label="projectId"];
+    StageAction      -> ProjectStage       [label="stageId"];
+    StageAction      -> SopTemplate        [label="sopId"];
+    Deliverable      -> StageAction        [label="actionId"];
+    Deliverable      -> Project            [label="projectId"];
+    Deliverable      -> OssFileEntity      [label="ossId"];
+    BidInvitation    -> Project            [label="projectId"];
+    BidInvitation    -> Person             [label="targetPersonId"];
+    BidInvitation    -> BidResponse        [label="selectedResponseId"];
+    BidResponse      -> BidInvitation      [label="invitationId"];
+    BidResponse      -> Person             [label="rdPmId"];
+
+    Gate             -> Project            [label="projectId"];
+    GateReview       -> Project            [label="projectId"];
+    GateReview       -> Gate               [label="gateId"];
+    GateReview       -> Person             [label="reviewerId"];
+    GateElementResult-> Gate               [label="gateId"];
+    GateElementResult-> GateElement        [label="elementId"];
+    GateElementResult-> Person             [label="responsiblePersonId"];
+    GateReviewObserver-> Gate             [label="gateId"];
+    GateReviewObserver-> Person            [label="observerId"];
+    GateArbitration  -> Gate               [label="gateId"];
+    GateArbitration  -> Person             [label="arbitratorId"];
+
+    Contribution     -> Project            [label="projectId"];
+    Contribution     -> Person             [label="personId"];
+    Contribution     -> Person             [label="leaderId"];
+    ContributionVersion-> Contribution    [label="sourceId"];
+    ContributionVersion-> Project          [label="projectId"];
+    ProjectScore     -> Project            [label="projectId"];
+    ProjectScore     -> Person             [label="personId"];
+    ProjectScore     -> Person             [label="evaluatorId"];
+    ProjectScoreRecord-> Project          [label="projectId"];
+    ProjectScoreRecord-> Person           [label="personId"];
+    ProjectScoreRecord-> Person           [label="authorId"];
+    ProjectScoreTask -> Project            [label="projectId"];
+    ProjectScoreTask -> Person             [label="personId"];
+    AllowanceLedger  -> Person             [label="personId"];
+    AllowanceLedger  -> Project            [label="projectId"];
+    ReceiptLedger    -> Project            [label="projectId"];
+    ReceiptLedger    -> BonusPool          [label="bonusPoolId"];
+    NegativeFeedback -> Project            [label="projectId"];
+    NegativeFeedback -> Person             [label="mainPersonId/relatedPersonId"];
+
+    BonusPool        -> Project            [label="projectId"];
+    BonusAllocation  -> BonusPool          [label="bonusPoolId"];
+    BonusAllocation  -> Person             [label="personId"];
+    KpiRecord        -> Project            [label="projectId"];
+    KpiRecord        -> Person             [label="personId"];
+    CoefficientChangeRequest -> Project    [label="projectId"];
+    CoefficientChangeRequest -> Person     [label="marketPmId/rdPmId/proposerId/leaderId"];
+
+    HandoverRecord   -> Project            [label="projectId"];
+    HandoverRecord   -> Person             [label="fromPersonId/toPersonId"];
+    LaunchDateChangeRequest -> Project    [label="projectId"];
+    LaunchDateChangeRequest -> Person     [label="proposerId/confirmerId"];
+    DeletionRequest  -> Person             [label="requesterId/leaderId/adminId"];
+
+    SwitchingAcceptance -> Project         [label="projectId"];
+    ProjectCertItem  -> Project            [label="projectId"];
+    ProjectCertItem  -> CertTemplate       [label="templateId"];
+
+    SystemConfigVersion   -> SystemConfig  [label="configId(推断)"];
+    IpdBusinessConfigVersion -> IpdBusinessConfig [label="configId(推断)"];
+
+    NotificationEvent -> Person            [label="receiverId"];
+    AuditLog        -> Person              [label="operatorId"];
+    AuditLog        -> AuditChainHead      [label="seq(锚行)"];
+    AiDocument      -> Project             [label="projectId"];
+
+    // 2026-09-09 治理轮修复：KpiSharedConfirm 实体+Mapper 已补齐（表 kpi_shared_confirms 由 drift-backfill A.4 铺设，
+    // 业务实现走 KpiRecord + KpiSharedCollectionService，本实体为对齐登记型，见 KpiSharedConfirm.java javadoc）
+    KpiSharedConfirm [label="KpiSharedConfirm\n(对齐登记型实体, 无业务 caller)", fillcolor="#efd", color="#6a6"];
+    KpiRecord -> KpiSharedConfirm [style=dashed, color="#6a6", label="(同域共担, 实现走 kpi_records)"];
+    Person    -> KpiSharedConfirm [color="#6a6", label="personId"];
+    Project   -> KpiSharedConfirm [color="#6a6", label="projectId"];
+}

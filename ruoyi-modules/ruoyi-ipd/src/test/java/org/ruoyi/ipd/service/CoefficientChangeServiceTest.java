@@ -13,6 +13,7 @@ import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 import java.math.BigDecimal;
 
@@ -38,6 +39,10 @@ class CoefficientChangeServiceTest {
     @BeforeEach
     void setUp() {
         service = new CoefficientChangeService(requestMapper, projectMapper, auditLogService);
+        // R24：装配真实守卫实例（已 initRules 注入全部 36 条规则）——测试覆盖接线路径。
+        DefaultStateMachineGuard guard = new DefaultStateMachineGuard(auditLogService, null);
+        guard.initRules();
+        service.setStateMachineGuard(guard);
     }
 
     private Project sProject() {

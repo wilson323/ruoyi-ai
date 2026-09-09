@@ -36,6 +36,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -243,12 +244,24 @@ class DeletionRequestServiceTest {
         when(deletionRequestMapper.selectById(9L)).thenReturn(recent);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
 
+        // MED-3（治理轮 R21）：非申请人与不存在统一文案，消除存在性侧信道
         assertThatThrownBy(() -> service.withdraw(9L, 99L))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("仅申请人");
+            .hasMessageContaining("非本人");
 
         DeletionRequest after = service.withdraw(9L, 1L);
         assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
+    }
+
+    @Test
+    @DisplayName("MED-3：不存在与非申请人文案一致，不泄露存在性")
+    void withdrawNotFoundSameMessageAsNotOwner() {
+        when(deletionRequestMapper.selectById(999L)).thenReturn(null);
+
+        String notFoundMsg = catchThrowableOfType(() -> service.withdraw(999L, 1L), ServiceException.class).getMessage();
+        assertThatThrownBy(() -> service.withdraw(9L, 99L))
+            .isInstanceOf(ServiceException.class)
+            .hasMessage(notFoundMsg);
     }
 
     @Test

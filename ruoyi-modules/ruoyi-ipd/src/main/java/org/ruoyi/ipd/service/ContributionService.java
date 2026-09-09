@@ -20,9 +20,12 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.domain.ProductGroup;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -55,6 +58,48 @@ public class ContributionService {
     private final ProductGroupMapper productGroupMapper;
     private final AuditLogService auditLogService;
     private final IpdPermission ipdPermission;
+
+    /* ---------- R24 治理轮：Contribution 状态机守卫（接线） ---------- */
+    /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */
+    private StateMachineGuard stateMachineGuard;
+    /** Contribution 实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
+    static final String CONTRIBUTION_ENTITY_TYPE = "contribution";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** R24 接线：守卫 preCheck 包装（fail-closed）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "状态机守卫未装配 entityType=" + CONTRIBUTION_ENTITY_TYPE
+                    + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(CONTRIBUTION_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** R24 接线：注册 postCommit 副作用（事务提交后触发）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(CONTRIBUTION_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(CONTRIBUTION_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
 
     public ContributionService(ContributionMapper contributionMapper,
                                 ContributionVersionMapper versionMapper,
@@ -249,6 +294,8 @@ public class ContributionService {
             entity.setMarketShare(new BigDecimal("0.55"));
             entity.setRdShare(new BigDecimal("0.45"));
             entity.setCreateTime(new Date());
+            // R24 接线：状态机守卫 preCheck（fail-closed）——创建迁移 INITIAL→DRAFT|fill。
+            preCheckGuard(null, Contribution.ST_DRAFT, "fill");
         } else if (Contribution.ST_CONFIRMED.equals(existing.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "已确认的贡献度评定不可修改");
@@ -277,6 +324,8 @@ public class ContributionService {
         boolean bothDone = isFiveDimPresent(entity.getMarketSelfInitiation())
             && isFiveDimPresent(entity.getRdSelfInitiation());
         if (bothDone && Contribution.ST_DRAFT.equals(entity.getStatus())) {
+            // R24 接线：状态机守卫 preCheck（fail-closed）——DRAFT→SUBMITTED|submit。
+            preCheckGuard(Contribution.ST_DRAFT, Contribution.ST_SUBMITTED, "submit");
             entity.setStatus(Contribution.ST_SUBMITTED);
             entity.setSubmittedAt(new Date());
             // R11 / A3 修复:预落 leader_id（项目主组组长 from product_groups.leader_person_id）
@@ -297,8 +346,15 @@ public class ContributionService {
 
         if (entity.getId() == null) {
             contributionMapper.insert(entity);
+            // R24 接线：postCommit（事务后）—— 创建迁移 INITIAL→DRAFT|fill。
+            registerPostCommit(null, Contribution.ST_DRAFT, "fill", actor.id(), entity.getId());
         } else {
             contributionMapper.updateById(entity);
+            // R24 接线：postCommit（事务后）——如果本调用既跳了 DRAFT→SUBMITTED 则一并 postCommit。
+            if (bothDone && Contribution.ST_SUBMITTED.equals(entity.getStatus())) {
+                registerPostCommit(Contribution.ST_DRAFT, Contribution.ST_SUBMITTED, "submit",
+                    actor.id(), entity.getId());
+            }
         }
 
         auditLogService.append(AuditLog.builder()
@@ -385,6 +441,10 @@ public class ContributionService {
                     + "）或超管，当前 actor=" + actor.id() + "/" + actor.role());
         }
 
+        // R24 接线：在 setStatus 之前快照当前状态——后续 preCheck 与 postCommit 都需用变更前状态，
+        // 否则 postCommit 会读到 setStatus 之后的 CONFIRMED，导致守卫表无规则 no-op（污染审计迁移）。
+        String fromStateSnapshot = entity.getStatus();
+
         if ("APPROVE".equals(decision)) {
             // 确认前再次校验市场比例
             if (entity.getMarketShare() == null) {
@@ -392,12 +452,16 @@ public class ContributionService {
                     "市场 PM 比例未填写");
             }
             validateMarketShare(entity.getMarketShare());
+            // R24 接线：状态机守卫 preCheck（fail-closed）——SUBMITTED/DRAFT→CONFIRMED|confirm。
+            preCheckGuard(fromStateSnapshot, Contribution.ST_CONFIRMED, "confirm");
             entity.setStatus(Contribution.ST_CONFIRMED);
             entity.setLeaderId(actor.id());
             entity.setLeaderDecision("APPROVE");
             entity.setLeaderDecidedAt(new Date());
             entity.setLeaderOpinion(opinion);
         } else if ("REJECT".equals(decision)) {
+            // R24 接线：状态机守卫 preCheck（fail-closed）——SUBMITTED→DRAFT|reject。
+            preCheckGuard(fromStateSnapshot, Contribution.ST_DRAFT, "reject");
             entity.setStatus(Contribution.ST_DRAFT);
             entity.setLeaderId(actor.id());
             entity.setLeaderDecision("REJECT");
@@ -410,6 +474,12 @@ public class ContributionService {
         entity.setUpdateTime(new Date());
         entity.setUpdateBy(actor.id());
         contributionMapper.updateById(entity);
+        // R24 接线：postCommit（事务后）——confirm/reject 迁移。fromState 必读变更前快照，否则会出现
+        // CONFIRMED→CONFIRMED（已变更后的状态）这种守卫表无记录的伪迁移（仅记 WARN，污染审计链）。
+        String postCommitFromState = fromStateSnapshot;
+        String postCommitTrigger = "APPROVE".equals(decision) ? "confirm" : "reject";
+        String postCommitToState = "APPROVE".equals(decision) ? Contribution.ST_CONFIRMED : Contribution.ST_DRAFT;
+        registerPostCommit(postCommitFromState, postCommitToState, postCommitTrigger, actor.id(), entity.getId());
 
         auditLogService.append(AuditLog.builder()
             .action("CONTRIBUTION_CONFIRM")

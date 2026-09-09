@@ -116,19 +116,21 @@ public class ReceiptLedgerService {
      * 达成率 = SUM(窗口内净回款) / 目标销售额
      */
     public BigDecimal calculateAchievementRate(Long projectId, BigDecimal targetSales) {
+        // 2026-09-09 治理轮 PERF-P1-1：窗口过滤从 Java 循环切到真库 STORED GENERATED 列 in_window
+        // （DDL: receipt_ledger.in_window tinyint(1) STORED GENERATED = 1 当且仅当 receiptMonth 在 6 月窗口内）。
+        // .apply() 直接拼接 SQL 避免 mybatis-plus 引入 receipt_ledger 全表 selectAll。
         List<ReceiptLedger> all = receiptLedgerMapper.selectList(
             new LambdaQueryWrapper<ReceiptLedger>()
                 .eq(ReceiptLedger::getProjectId, projectId)
                 .eq(ReceiptLedger::getSource, "RECEIPT")
+                .apply("in_window = 1")
         );
         BigDecimal totalInWindow = BigDecimal.ZERO;
         for (ReceiptLedger r : all) {
-            if (isInWindow(r)) {
-                BigDecimal net = r.getReceiptAmount().subtract(
-                    r.getRefundAmount() != null ? r.getRefundAmount() : BigDecimal.ZERO);
-                totalInWindow = totalInWindow.add(net);
-            }
-            // AC-INC-16d：窗口外数据不计入
+            BigDecimal net = r.getReceiptAmount().subtract(
+                r.getRefundAmount() != null ? r.getRefundAmount() : BigDecimal.ZERO);
+            totalInWindow = totalInWindow.add(net);
+            // AC-INC-16d：窗口外数据已被 SQL 过滤，Java 循环内不再判定
         }
         if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
@@ -141,10 +143,12 @@ public class ReceiptLedgerService {
      * 查询项目回款台账列表
      */
     public List<ReceiptLedger> listByProject(Long projectId) {
+        // 2026-09-09 治理轮 PERF-P2-2：listByProject 不分页，200 上限避免单项目历史台账过大拖慢页面（真库 uk_receipt_project_month 约束每项目每月一行，实际远小于上限）。
         return receiptLedgerMapper.selectList(
             new LambdaQueryWrapper<ReceiptLedger>()
                 .eq(ReceiptLedger::getProjectId, projectId)
                 .orderByDesc(ReceiptLedger::getReceiptMonth)
+                .last("LIMIT 200")
         );
     }
 

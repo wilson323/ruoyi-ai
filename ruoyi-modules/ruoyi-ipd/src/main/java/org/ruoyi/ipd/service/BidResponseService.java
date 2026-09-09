@@ -151,6 +151,10 @@ public class BidResponseService {
             new LambdaQueryWrapper<BidResponse>()
                 .eq(BidResponse::getRdPmId, rdPmId)
                 .orderByDesc(BidResponse::getCreateTime)
+                // PERF-P0-4（2026-09-09 契约轮）：listByRdPm 曾全量返回不分页；本方法当前零生产 caller
+                // （仅 IDOR 验收测试使用），硬上限防将来接线踩坑；配套索引见
+                // docs/script/sql/update/2026-09-09-ipd-perf04-bid-response-rdpm-index.sql（待 apply）。
+                .last("LIMIT 500")
         );
         if (actor.id().equals(rdPmId) || "SUPER_ADMIN".equals(actor.role())
             || isRelatedProjectMember(actor, rows)) {

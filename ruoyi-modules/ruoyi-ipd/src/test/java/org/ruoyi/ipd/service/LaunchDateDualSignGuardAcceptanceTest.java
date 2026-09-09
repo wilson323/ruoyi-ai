@@ -71,6 +71,12 @@ class LaunchDateDualSignGuardAcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new LaunchDateChangeService(requestMapper, projectMapper, auditLogService);
+        // R24：装配真实守卫实例（已 initRules 注入 37 条规则，含 launch_date_change:* 三条）。
+        // 1b-5/1b-6 happyPath 与 rejectPath 都期望业务行为成功，必须装配 guard 才能过 preCheck。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, null);
+        guard.initRules();
+        service.setStateMachineGuard(guard);
     }
 
     /** 主组=70 的在途项目；actor.groupId 传 70 才能过 R8X-2 横向越权防护。 */

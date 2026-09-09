@@ -18,6 +18,7 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
+import org.ruoyi.ipd.mapper.PersonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,8 @@ class AuditLogCursorPagingTest {
     private AuditLogMapper auditLogMapper;
     @Mock
     private AuditChainHeadMapper chainHeadMapper;
+    @Mock
+    private PersonMapper personMapper;
 
     private AuditLogService service;
 
@@ -63,7 +66,7 @@ class AuditLogCursorPagingTest {
 
     @BeforeEach
     void setUp() {
-        service = new AuditLogService(auditLogMapper, chainHeadMapper);
+        service = new AuditLogService(auditLogMapper, chainHeadMapper, personMapper);
     }
 
     @Test

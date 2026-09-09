@@ -323,6 +323,9 @@ public class BidInvitationService {
             // ONE_TO_ONE：仅本人
             qw.eq(BidResponse::getRdPmId, currentPersonId);
         }
+        // PERF-P1-2（2026-09-09 契约轮）：招标详情页应标列表曾全量返回不分页，
+        // 单招标应标数理论上限受 PM 人数约束，500 硬上限足够安全（真分页待后续需要时随 BidController 端点改造）。
+        qw.last("LIMIT 500");
         List<BidResponse> rows = bidResponseMapper.selectList(qw);
         // MEDIUM-2.2：PUBLIC 模式下非发起人视角脱敏解决方案摘要为前 80 字符
         if (isPublic && !isCreator) {
