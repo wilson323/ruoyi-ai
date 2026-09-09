@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+<!-- OPS-09 主协调会话标识：本机当前主协调会话在此打标，SSOT 写保护（.claude/helpers/ssot-write-guard.cjs）据此放行；非主协调会话不得打标，违规写 SSOT 会被拦 -->
+<!-- OPS-09-MAIN-COORDINATOR=true -->
+
 ## Project
 
 **本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 + Langchain4j 技术栈，叠加 11 条硬约束（G-01~G-11） + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。

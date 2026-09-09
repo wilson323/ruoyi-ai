@@ -50,6 +50,15 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/ssot-write-guard.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/ssot-write-guard.cjs\"'"
+          }
+        ]
       }
     ],
     "PostToolUse": [
