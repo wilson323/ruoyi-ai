@@ -46,7 +46,13 @@ public class IpdAuditAspect {
     @Around("@annotation(ipdAudit)")
     public Object auditAround(ProceedingJoinPoint pjp, IpdAudit ipdAudit) throws Throwable {
         Object result = pjp.proceed();
-        writeAudit(pjp, ipdAudit);
+        try {
+            writeAudit(pjp, ipdAudit);
+        } catch (Exception e) {
+            // 2026-09-09 蜂群复审 P1：审计是旁路。业务已成功后，SpEL 求值或落库故障
+            // 不得把成功响应变成 500（非幂等端点被误导重试会双写）——记 ERROR 后放行。
+            log.error("[IpdAudit] {} {} 审计落库失败（业务响应不受影响）", ipdAudit.entityType(), ipdAudit.action(), e);
+        }
         return result;
     }
 

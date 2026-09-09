@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -133,26 +134,47 @@ public class CoefficientChangeService {
         if (!CoefficientChangeRequest.ST_PENDING_LEADER.equals(req.getStatus())) {
             throw new ServiceException("状态机不匹配：期望 PENDING_LEADER，实际 " + req.getStatus());
         }
+        // approve 路径守卫（加载项目 → 同组归属 → 区间校验）保持在任何写库之前——
+        // 守卫抛 FORBIDDEN 时申请状态不被污染。
+        Project project = null;
+        if (approve) {
+            project = requireProject(req.getProjectId());
+            IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
+            ProjectService.validateCoefficientRange(project.getLevel(), req.getProposedCoefficient());
+        }
+        // 系统性梳理-20260909 新②：决策 CAS 化。此前「查状态→内存改→updateById 全量」
+        // 存在 TOCTOU：两人并发决策（如一驳一准）都会通过读侧检查，后写覆盖先写，
+        // 可造成「项目系数已定值但申请显示已驳回」的账实分离。
+        // 改为条件 UPDATE 原子翻转：仅当行仍处 PENDING_LEADER 才生效，未命中即被并发处理。
+        Date decidedAt = new Date();
+        String decision = approve ? "APPROVE" : "REJECT";
+        String targetStatus = approve ? CoefficientChangeRequest.ST_CONFIRMED : CoefficientChangeRequest.ST_REJECTED;
+        boolean flipped = requestMapper.update(null, new LambdaUpdateWrapper<CoefficientChangeRequest>()
+            .eq(CoefficientChangeRequest::getId, requestId)
+            .eq(CoefficientChangeRequest::getStatus, CoefficientChangeRequest.ST_PENDING_LEADER)
+            .set(CoefficientChangeRequest::getStatus, targetStatus)
+            .set(CoefficientChangeRequest::getLeaderId, leaderId)
+            .set(CoefficientChangeRequest::getLeaderDecision, decision)
+            .set(CoefficientChangeRequest::getLeaderDecidedAt, decidedAt)
+            .set(CoefficientChangeRequest::getLeaderOpinion, opinion)
+            // update(null, wrapper) 不触发 BaseEntity 的 INSERT_UPDATE 元填充，簿记字段显式补齐（蜂群复审 P2）
+            .set(CoefficientChangeRequest::getUpdateBy, leaderId)
+            .set(CoefficientChangeRequest::getUpdateTime, decidedAt)) > 0;
+        if (!flipped) {
+            throw new ServiceException("状态机不匹配：申请已被并发处理（期望 PENDING_LEADER）");
+        }
+        req.setStatus(targetStatus);
         req.setLeaderId(leaderId);
-        req.setLeaderDecision(approve ? "APPROVE" : "REJECT");
-        req.setLeaderDecidedAt(new Date());
+        req.setLeaderDecision(decision);
+        req.setLeaderDecidedAt(decidedAt);
         req.setLeaderOpinion(opinion);
         if (!approve) {
-            req.setStatus(CoefficientChangeRequest.ST_REJECTED);
-            requestMapper.updateById(req);
             audit(leaderId, ACTION_REJECT, req.getId(), opinion);
             return req;
         }
-        // approve 路径：加载项目 → 同组归属 → 区间校验 → 写档。
-        // 必须在状态机校验之后、任何写库之前——同组守卫抛 FORBIDDEN 不污染 REJECTED 路径。
-        Project project = requireProject(req.getProjectId());
-        IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
-        ProjectService.validateCoefficientRange(project.getLevel(), req.getProposedCoefficient());
         project.setLevelCoefficient(req.getProposedCoefficient());
         project.setLevelCoefficientReason(req.getReason());
         projectMapper.updateById(project);
-        req.setStatus(CoefficientChangeRequest.ST_CONFIRMED);
-        requestMapper.updateById(req);
         audit(leaderId, ACTION_CONFIRM, req.getId(),
             "project:" + project.getId() + " coef:" + req.getProposedCoefficient());
         return req;

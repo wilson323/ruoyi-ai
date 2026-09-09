@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,5 +156,22 @@ class RnewPermissionContractTest {
             assertThat(IpdRolePermissionCatalog.has("SUPER_ADMIN", code))
                 .as("目录必须登记 %s", code).isTrue();
         }
+    }
+
+    @Test
+    @DisplayName("switching-acceptance 注解层不再引用未登记的 :admin 别名（脱节修复回归锁）")
+    void switchingControllerDoesNotUseUnregisteredAdminAlias() throws Exception {
+        // 2026-09-09 系统性梳理：Controller 曾挂未登记的 _ADMIN 别名（catalog 无此码 ⇒
+        // 连 SUPER_ADMIN 也 403 死端点），已迁至已登记的 _LOCK/_UNLOCK；
+        // 本用例在源码层锁死回漂（与 catalog 层 switchingAcceptanceAdminAliasNotRegistered 双保险）。
+        // 相对模块根优先（surefire cwd=模块 basedir），仓根启动（IDE 非默认配置）时退回二级路径（蜂群复审 P2）
+        Path src = Path.of("src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java");
+        if (!Files.exists(src)) {
+            src = Path.of("ruoyi-modules/ruoyi-ipd").resolve(src);
+        }
+        assertThat(Files.exists(src))
+            .as("找不到 SwitchingAcceptanceController 源文件（cwd=%s）", Path.of("").toAbsolutePath()).isTrue();
+        assertThat(Files.readString(src))
+            .doesNotContain("OPERATION_SWITCHING_ACCEPTANCE_ADMIN");
     }
 }

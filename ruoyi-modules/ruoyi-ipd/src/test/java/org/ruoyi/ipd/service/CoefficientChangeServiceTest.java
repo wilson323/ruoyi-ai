@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -18,8 +19,13 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.ruoyi.ipd.security.IpdActor;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +45,13 @@ class CoefficientChangeServiceTest {
     @BeforeEach
     void setUp() {
         service = new CoefficientChangeService(requestMapper, projectMapper, auditLogService);
+    }
+
+    /** 系统性梳理-20260909 新②：决策 CAS 化用 LambdaUpdateWrapper，纯单测需预建实体 lambda 缓存（同 AiModelConfigSecurityRound3Test 惯例）。 */
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, CoefficientChangeRequest.class);
     }
 
     private IpdActor proposerActor() {
@@ -93,7 +106,8 @@ class CoefficientChangeServiceTest {
             .status(CoefficientChangeRequest.ST_PENDING_LEADER).build();
         when(requestMapper.selectById(99L)).thenReturn(pending);
         when(projectMapper.selectById(10L)).thenReturn(sProject());
-        when(requestMapper.updateById(any(CoefficientChangeRequest.class))).thenReturn(1);
+        // 系统性梳理-20260909 新②：决策 CAS 化后，翻转走条件 update(null, wrapper)
+        when(requestMapper.update(isNull(), any())).thenReturn(1);
         when(projectMapper.updateById(any(Project.class))).thenReturn(1);
 
         CoefficientChangeRequest done = service.leaderDecision(99L, 900L, true, "同意",
@@ -104,5 +118,22 @@ class CoefficientChangeServiceTest {
         verify(projectMapper).updateById(cap.capture());
         assertThat(cap.getValue().getLevelCoefficient()).isEqualByComparingTo("1.8");
         assertThat(cap.getValue().getLevelCoefficientReason()).isEqualTo("旗舰");
+    }
+
+    @Test
+    @DisplayName("并发决策：CAS 未命中（已被并发处理）抛异常且不写项目档案")
+    void leaderDecisionCasMissRejectsAndSkipsArchive() {
+        CoefficientChangeRequest pending = CoefficientChangeRequest.builder()
+            .id(99L).projectId(10L).proposedCoefficient(new BigDecimal("1.8"))
+            .reason("旗舰").marketPmId(1L).rdPmId(2L).proposerId(1L)
+            .status(CoefficientChangeRequest.ST_PENDING_LEADER).build();
+        when(requestMapper.selectById(99L)).thenReturn(pending);
+        when(projectMapper.selectById(10L)).thenReturn(sProject());
+        when(requestMapper.update(isNull(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.leaderDecision(99L, 900L, true, "同意",
+            new IpdActor(900L, "L", "GROUP_LEADER", 7L)))
+            .isInstanceOf(ServiceException.class).hasMessageContaining("并发");
+        verify(projectMapper, never()).updateById(any(Project.class));
     }
 }
