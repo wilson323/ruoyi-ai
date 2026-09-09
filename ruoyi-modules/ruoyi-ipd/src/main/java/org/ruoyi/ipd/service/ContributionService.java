@@ -296,7 +296,15 @@ public class ContributionService {
         }
 
         if (entity.getId() == null) {
-            contributionMapper.insert(entity);
+            try {
+                contributionMapper.insert(entity);
+            } catch (DuplicateKeyException ex) {
+                // 与 LaunchDateChangeService 同款并发兜底：selectOne 预检与 insert 不在同一原子临界区，
+                // 双 PM 并发首填时后到者命中唯一键 → 裸 DuplicateKeyException 500。
+                // 转为可读业务错，客户端刷新后重试（现有记录会被下次 selectOne 命中）。
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                    "贡献度自评已由并发提交创建，请刷新后重试");
+            }
         } else {
             contributionMapper.updateById(entity);
         }

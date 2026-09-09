@@ -3,6 +3,7 @@ package org.ruoyi.ipd.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.audit.IpdAudit;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceReport;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceUnlockReq;
@@ -33,6 +34,7 @@ public class SwitchingAcceptanceController {
     private final SwitchingAcceptanceService switchingAcceptanceService;
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @IpdAudit(action = "SWITCHING_RUN", entityType = "switching_acceptance", reasonExpr = "#month")
     @PostMapping("/{month}/run")
     public ApiV1Response<SwitchingAcceptanceReport> run(@PathVariable String month) {
         return ApiV1Response.ok(switchingAcceptanceService.run(month));
@@ -44,15 +46,16 @@ public class SwitchingAcceptanceController {
         return ApiV1Response.ok(switchingAcceptanceService.get(month));
     }
 
-    // R-NEW A-1：锁定动作改用专属码 lock；保留 _ADMIN 作历史别名（同字面量值不重复登记以防污染目录）。
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK, type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_ADMIN, type = IpdAuthSession.LOGIN_TYPE)
+    @IpdAudit(action = "SWITCHING_LOCK", entityType = "switching_acceptance", reasonExpr = "#month")
     @PostMapping("/{month}/lock")
     public ApiV1Response<SwitchingAcceptanceReport> lock(@PathVariable String month) {
         return ApiV1Response.ok(switchingAcceptanceService.lock(month));
     }
 
-    // R-NEW A-1：解锁动作改用专属码 unlock。
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK, type = IpdAuthSession.LOGIN_TYPE)
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_ADMIN, type = IpdAuthSession.LOGIN_TYPE)
+    @IpdAudit(action = "SWITCHING_UNLOCK", entityType = "switching_acceptance",
+        reasonExpr = "#month + ' | ' + #req.reason")
     @PostMapping("/{month}/unlock")
     public ApiV1Response<SwitchingAcceptanceReport> unlock(@PathVariable String month,
                                                           @RequestBody @Valid SwitchingAcceptanceUnlockReq req) {
