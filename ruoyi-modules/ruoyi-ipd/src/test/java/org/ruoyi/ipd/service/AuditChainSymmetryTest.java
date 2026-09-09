@@ -232,6 +232,9 @@ class AuditChainSymmetryTest {
         rows.add(r2);
 
         when(auditLogMapper.selectList(any())).thenReturn(rows, rows); // rebuild 一次 + verify 一次（行对象原地更新）
+        // MED-2（d76a6086）：rebuild 前置 GLOBAL 锚悲观锁 + 重算后推锚，锚 stub 与 append 系列一致
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor(0L, null, 1L));
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
 
         long fixed = service.rebuildChain();
         assertThat(fixed).isEqualTo(2L);
@@ -262,6 +265,9 @@ class AuditChainSymmetryTest {
         Date t0 = new Date(1788700005000L);
         AuditLog r1 = consistentRow(50L, 3L, "a".repeat(64), "LOGIN", t0);
         when(auditLogMapper.selectList(any())).thenReturn(List.of(r1));
+        // MED-2：幂等重跑同样走锚锁 + 推锚（fixed=0 但 advance 仍执行）
+        when(chainHeadMapper.selectForUpdate("GLOBAL")).thenReturn(anchor(2L, "b".repeat(64), 3L));
+        when(chainHeadMapper.advance(anyString(), anyLong(), anyString(), anyLong())).thenReturn(1);
 
         assertThat(service.rebuildChain()).isZero();
         verify(auditLogMapper, times(0)).updateChainHash(anyLong(), anyString(), anyString());

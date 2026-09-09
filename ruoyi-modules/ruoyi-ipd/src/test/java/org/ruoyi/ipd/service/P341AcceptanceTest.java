@@ -1,12 +1,18 @@
 package org.ruoyi.ipd.service;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ReceiptLedger;
@@ -40,6 +46,13 @@ class P341AcceptanceTest {
     private ReceiptLedgerMapper receiptLedgerMapper;
     @Mock
     private ProjectMapper projectMapper;
+
+    /** 纯 JVM 单测无 MP 运行时，手动初始化 lambda 列缓存（断言 wrapper SQL 片段需列名解析） */
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, ReceiptLedger.class);
+    }
 
     private ReceiptLedgerService receiptLedgerService;
 
@@ -143,21 +156,27 @@ class P341AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-INC-16d 达成率计算：窗口外数据不计入")
+    @DisplayName("AC-INC-16d 达成率计算：窗口过滤下推 DB 生成列 in_window（PERF-P1-1，2026-09-09 对齐）")
     void calculateAchievementRate_excludesOutOfWindow() {
         ReceiptLedger inWindow = ReceiptLedger.builder()
             .projectId(100L).receiptMonth("2026-03").receiptAmount(new BigDecimal("3500000.00"))
             .refundAmount(BigDecimal.ZERO).source("RECEIPT")
             .windowStart(windowStart).windowEnd(windowEnd).build();
-        ReceiptLedger outWindow = ReceiptLedger.builder()
-            .projectId(100L).receiptMonth("2026-09").receiptAmount(new BigDecimal("1000000.00"))
-            .refundAmount(BigDecimal.ZERO).source("RECEIPT")
-            .windowStart(windowStart).windowEnd(windowEnd).build();
-        when(receiptLedgerMapper.selectList(any())).thenReturn(List.of(inWindow, outWindow));
+        // PERF-P1-1（d76a6086）：窗口外行改由真库 STORED GENERATED 列 in_window=1 在 SQL 层剔除，
+        // mock 不模拟 DB 过滤，只回窗口内行（DDL 见 2026-09-06-ipd-receipt-ledger-table.sql:30）。
+        when(receiptLedgerMapper.selectList(any())).thenReturn(List.of(inWindow));
 
         // 目标销售额 500万，窗口内回款 350万 → 达成率 70%
         BigDecimal rate = receiptLedgerService.calculateAchievementRate(100L, new BigDecimal("5000000.00"));
 
+        // 契约①：查询必须下推 in_window 过滤（防回退成 Java 全量拉取后再过滤）
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<ReceiptLedger>> wrapperCap =
+            ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(receiptLedgerMapper).selectList(wrapperCap.capture());
+        assertThat(wrapperCap.getValue().getSqlSegment()).contains("in_window");
+
+        // 契约②：窗口外 100 万不计入
         assertThat(rate).isEqualByComparingTo("70.0000");
     }
 

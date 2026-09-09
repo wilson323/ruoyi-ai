@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
@@ -129,14 +130,29 @@ class P063AcceptanceTest {
     }
     @Test
 
-    @DisplayName("AC-DEL-06 反例：非申请人撤回应拒绝")
+    @DisplayName("AC-DEL-06 反例：非申请人撤回应拒绝（MED-3 统一文案）")
     void withdrawByNonRequester_rejected() {
         DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
         req.setCreateTime(new Date(System.currentTimeMillis() - 1000 * 60 * 60));
         when(deletionRequestMapper.selectById(102L)).thenReturn(req);
+        // MED-3（d76a6086）：不存在/非本人合并同一文案，消除存在性侧信道
         assertThatThrownBy(() -> deletionRequestService.withdraw(102L, 999999L))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("\u4ec5\u7533\u8bf7\u4eba");
+            .hasMessageContaining("申请不存在或非本人发起");
+    }
+
+    @Test
+    @DisplayName("AC-DEL-06 MED-3 侧信道契约：不存在与非本人响应文案逐字一致")
+    void withdrawNotFoundAndNonRequester_sameMessage() {
+        when(deletionRequestMapper.selectById(888L)).thenReturn(null);
+        String notFound = catchThrowableOfType(
+                () -> deletionRequestService.withdraw(888L, 999999L), ServiceException.class).getMessage();
+        DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
+        req.setCreateTime(new Date(System.currentTimeMillis() - 1000 * 60 * 60));
+        when(deletionRequestMapper.selectById(102L)).thenReturn(req);
+        String nonRequester = catchThrowableOfType(
+                () -> deletionRequestService.withdraw(102L, 999999L), ServiceException.class).getMessage();
+        assertThat(nonRequester).isEqualTo(notFound);
     }
     @Test
     @DisplayName("AC-DEL-06 反例：超 24h 不可撤回")
