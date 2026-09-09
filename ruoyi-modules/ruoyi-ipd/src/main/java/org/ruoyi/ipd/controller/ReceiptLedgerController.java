@@ -4,7 +4,6 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.ReceiptLedger;
 import org.ruoyi.ipd.dto.ReceiptLedgerCreateReq;
 import org.ruoyi.ipd.dto.ReceiptRefundReq;
@@ -52,7 +51,8 @@ public class ReceiptLedgerController {
         ledger.setVoucherHash(req.voucherHash());
         ledger.setSource("RECEIPT");
         ReceiptLedger saved = service.recordReceipt(ledger);
-        audit(actor, "RECEIPT_CREATE", saved.getId(),
+        // AOP P0 批消重（R21 2026-09-09）：改调 Service 公共重载，删本类 private audit() 拷贝
+        auditLogService.append(actor, "RECEIPT_CREATE", "receipt_ledger", saved.getId(),
             "回款录入 " + req.receiptMonth() + " 金额 " + req.receiptAmount());
         return ApiV1Response.ok(saved);
     }
@@ -64,7 +64,7 @@ public class ReceiptLedgerController {
                                                @Valid @RequestBody ReceiptRefundReq req) {
         IpdActor actor = permission.requireAdmin();
         ReceiptLedger saved = service.recordRefund(projectId, req.month(), req.refundAmount());
-        audit(actor, "RECEIPT_REFUND", saved.getId(),
+        auditLogService.append(actor, "RECEIPT_REFUND", "receipt_ledger", saved.getId(),
             "退款冲减 " + req.month() + " 金额 " + req.refundAmount());
         return ApiV1Response.ok(saved);
     }
@@ -75,20 +75,5 @@ public class ReceiptLedgerController {
     public ApiV1Response<List<ReceiptLedger>> listByProject(@PathVariable Long projectId) {
         permission.requireInternal();
         return ApiV1Response.ok(service.listByProject(projectId));
-    }
-
-    private void audit(IpdActor actor, String action, Long entityId, String reason) {
-        if (actor == null) {
-            return;
-        }
-        auditLogService.append(AuditLog.builder()
-            .operatorId(actor.id())
-            .operatorName(actor.name())
-            .operatorRole(actor.role())
-            .action(action)
-            .entityType("receipt_ledger")
-            .entityId(entityId)
-            .reason(reason)
-            .build());
     }
 }

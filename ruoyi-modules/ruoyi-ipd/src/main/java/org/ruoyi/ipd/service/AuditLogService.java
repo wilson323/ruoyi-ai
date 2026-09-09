@@ -10,6 +10,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AuditChainVerifyResult;
 import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -102,6 +103,33 @@ public class AuditLogService {
     }
 
     /**
+     * Controller 友好重载（AOP P0 批消重目标位，2026-09-09 治理轮 R21）：
+     * 四份 Controller 原各自拷贝同构 private audit() 方法（actor null 静默跳过 + builder 拼装），
+     * 统一收到 Service 层。语义与原拷贝完全一致：actor == null 时静默跳过（不落审计不抛错）。
+     * <p>兄弟在途 Controller（HrSync/Person/PersonSync）commit 后可一行切换到本重载。
+     *
+     * @param actor      当前操作人（null = 静默跳过，与原四份拷贝一致）
+     * @param action     动作码（如 WITHDRAW / SYNC_PULL）
+     * @param entityType 实体类型（如 receipt_ledger / person / hr_sync）
+     * @param entityId   实体 ID（可空）
+     * @param reason     理由（可空）
+     */
+    public void append(IpdActor actor, String action, String entityType, Long entityId, String reason) {
+        if (actor == null) {
+            return;
+        }
+        append(AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action(action)
+            .entityType(entityType)
+            .entityId(entityId)
+            .reason(reason)
+            .build());
+    }
+
+    /**
      * 全链校验（兼容出口）：返回断裂/缺行的 seq 合并列表（空 = 链完整）。
      *
      * <p>语义与分列改造前完全一致，供既有消费者与契约测继续使用；
@@ -154,11 +182,20 @@ public class AuditLogService {
      * DEF-4 链重建：按现行 v1 秒级对称语义重算全链 prev/curr 哈希。
      * <p>仅触碰哈希两列，业务字段只读；幂等可重复执行——多实例旧 jar 仍可能写入毫秒污染行，
      * 全实例切新 jar 后终验前需重跑一次。调用方（Controller）负责超管门禁并为动作本身落审计。
+     * <p>MED-2（2026-09-09 治理轮 R21）：锚行悲观锁互斥 + 重算后推锚——与 append 同锁序
+     * （selectForUpdate GLOBAL → 读全链 → advance），消除并发 rebuild+append 人为断链与
+     * 「重建后锚行 last_hash 陈旧 → 下次 append 用旧哈希起链」两类风险。
      *
      * @return 修正哈希的行数
      */
     @Transactional(rollbackFor = Exception.class)
     public long rebuildChain() {
+        // MED-2：锁序与 append 一致（锁内全链读+逐行修正+推锚）；无锁并发 rebuild+append 会互踩
+        AuditChainHead head = chainHeadMapper.selectForUpdate(CHAIN_KEY_GLOBAL);
+        if (head == null) {
+            throw new IllegalStateException(
+                "audit_log_chain_heads missing GLOBAL anchor — run seed-sync before rebuild");
+        }
         List<AuditLog> all = auditLogMapper.selectList(orderBySeqAsc());
         if (all.isEmpty()) {
             return 0L;
@@ -172,6 +209,13 @@ public class AuditLogService {
                 fixed++;
             }
             prev = curr;
+        }
+        // MED-2：推锚（last_seq/last_hash/next_seq 与重算后的链尾对齐）——不推则锚行陈旧，
+        // 下次 append 会用旧 last_hash 起链导致新行 prev_hash 与链尾 curr_hash 不接。
+        // advance=1 防御断言（锁保护下正常必 1；0 = schema/chain_key 漂移，与 append 同 fail-fast）。
+        AuditLog last = all.get(all.size() - 1);
+        if (chainHeadMapper.advance(CHAIN_KEY_GLOBAL, last.getSeq(), prev, last.getSeq() + 1) != 1) {
+            throw new IllegalStateException("audit chain anchor advance missed after rebuild — schema/config drift suspected");
         }
         return fixed;
     }
