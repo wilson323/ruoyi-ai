@@ -68,7 +68,7 @@ public class AllowanceService {
         List<ProjectMember> members = projectMemberMapper.selectList(
             new LambdaQueryWrapper<ProjectMember>()
                 .eq(ProjectMember::getPersonId, personId)
-                .isNull(ProjectMember::getExitDate)); // 排除已退出
+                .isNull(ProjectMember::getExitDate)); // 排除已退出（2026-09-09 owner 拍板：当月退出当月不发，当前在职过滤与此口径一致）
         if (members == null || members.isEmpty()) {
             return BigDecimal.ZERO;
         }
@@ -213,11 +213,13 @@ public class AllowanceService {
     }
 
     /**
-     * P3-3.3 AC-INC：退出次月停发。
+     * P3-3.3 AC-INC：退出当月停发。
+     * 2026-09-09 owner 拍板「当月退出不发」，原「退出次月停发」宽松口径作废（与主流程
+     * calculateMonthlyAllowance 的 isNull(exitDate) 严格口径对齐，双口径并存问题消除）。
      * <pre>
-     *   exitDate == null            ⇒ active（未退出）
-     *   exitDate's month >= month    ⇒ active（当月退或未退）
-     *   exitDate's month &lt; month   ⇒ not active（次月起停）
+     *   exitDate == null                          ⇒ active（未退出）
+     *   exitDate >= 查询月的次月月初                ⇒ active（退出发生在查询月之后，该月整月在岗）
+     *   exitDate 在查询月内或更早（含月末当天退）    ⇒ not active（当月退出当月即停）
      * </pre>
      */
     public boolean isMemberActiveInMonth(Date exitDate, String month) {
@@ -226,13 +228,28 @@ public class AllowanceService {
         }
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         String exitStr = sdf.format(exitDate);
-        String monthStart = month + "-01";
-        // 退出 ≥ 该月月初 ⇒ 该月仍 active
-        return exitStr.compareTo(monthStart) >= 0;
+        // 退出在查询月结束之后（次月月初及以后）⇒ 该月整月在岗仍 active；当月内退出（含月末当天）即停
+        return exitStr.compareTo(nextMonthStart(month)) >= 0;
     }
 
+    /** month 格式 yyyy-MM → 次月月初 yyyy-MM-01 字符串（用于字符串字典序比较）。 */
+    private static String nextMonthStart(String month) {
+        String[] parts = month.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int m = Integer.parseInt(parts[1]);
+        if (m == 12) {
+            return (year + 1) + "-01-01";
+        }
+        return String.format("%d-%02d-01", year, m + 1);
+    }
+
+    // 2026-09-09 二次勘误（当日回滚）：上轮以「全仓零 caller」为由删除本方法系误判——
+    // 验证 grep 被 head -8 截断，漏看了 P333AcceptanceTest 对它的 7 处调用（带 @Tag("dev") 真跑）。
+    // 它是 P3-3.3 AC-INC 的验收契约方法，恢复。双口径冲突已于 2026-09-09 owner 拍板解决：
+    // 「当月退出不发」——退出侧 isMemberActiveInMonth 已改为月末在岗口径，与主流程一致。
+
     /**
-     * P3-3.3 AC-INC：月中移交 + 退出月份归属综合判定。
+     * P3-3.3 AC-INC：月中移交 + 退出月份归属综合判定（验收契约，P333AcceptanceTest 盯守）。
      */
     public boolean isMemberActiveForMonth(ProjectMember member, String month) {
         if (member == null) {

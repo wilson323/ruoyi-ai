@@ -4,8 +4,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.service.AuditLogService;
 import org.ruoyi.ipd.service.PersonSyncService;
 import org.ruoyi.ipd.service.PersonSyncService.SyncJobView;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,7 @@ public class PersonSyncController {
 
     private final PersonSyncService personSyncService;
     private final IpdPermission permission;
+    private final AuditLogService auditLogService;
 
     /** 提交请求（idempotencyKey 选填；同 key 重放返原 jobId）。 */
     public record SubmitRequest(@NotBlank String employeeNo, String idempotencyKey) { }
@@ -50,6 +53,7 @@ public class PersonSyncController {
     public ApiV1Response<SubmitResponse> submit(@Valid @RequestBody SubmitRequest req) {
         IpdActor operator = permission.requireLeaderOrAdmin();
         var job = personSyncService.submit(req.employeeNo(), req.idempotencyKey(), operator);
+        audit(operator, "person_sync_submit", null, "employeeNo=" + req.employeeNo() + ", jobId=" + job.jobId);
         return ApiV1Response.ok(new SubmitResponse(job.jobId, job.status.name()));
     }
 
@@ -58,6 +62,7 @@ public class PersonSyncController {
     public ApiV1Response<SyncJobView> retry(@PathVariable("id") String jobId) {
         IpdActor operator = permission.requireLeaderOrAdmin();
         var job = personSyncService.retry(jobId, operator);
+        audit(operator, "person_sync_retry", null, "jobId=" + jobId);
         return ApiV1Response.ok(PersonSyncService.toView(job));
     }
 
@@ -66,6 +71,9 @@ public class PersonSyncController {
     public ApiV1Response<BatchRetryView> retryAll() {
         IpdActor operator = permission.requireAdmin();
         var result = personSyncService.retryAll(operator);
+        audit(operator, "person_sync_retry_all", null,
+            "retried=" + result.retried() + ", succeeded=" + result.succeeded()
+                + ", failed=" + result.failed() + ", skipped=" + result.skipped());
         return ApiV1Response.ok(BatchRetryView.from(result));
     }
 
@@ -83,5 +91,20 @@ public class PersonSyncController {
         permission.requireAdmin();
         return ApiV1Response.ok(personSyncService.listAbnormal().stream()
             .map(PersonSyncService::toView).toList());
+    }
+
+    private void audit(IpdActor actor, String action, Long entityId, String reason) {
+        if (actor == null) {
+            return;
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action(action)
+            .entityType("person_sync_jobs")
+            .entityId(entityId)
+            .reason(reason)
+            .build());
     }
 }

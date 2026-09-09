@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
+import org.ruoyi.ipd.mapper.PersonMapper;
 
 import java.util.List;
 
@@ -41,12 +42,13 @@ class P054AcceptanceTest {
 
     @Mock private AuditLogMapper auditLogMapper;
     @Mock private AuditChainHeadMapper chainHeadMapper;   // ①②③ P 变体：构造器新增依赖（本类不触 append）
+    @Mock private PersonMapper personMapper;              // R22 P1-6 三元组补齐依赖（本类不触 append）
 
     private AuditLogService service;
 
     @BeforeEach
     void setUp() {
-        service = new AuditLogService(auditLogMapper, chainHeadMapper);
+        service = new AuditLogService(auditLogMapper, chainHeadMapper, personMapper);
     }
 
     @Test

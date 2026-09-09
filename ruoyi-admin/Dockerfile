@@ -55,5 +55,6 @@ ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom \
            -Djava.io.tmpdir=/ruoyi/server/temp \
            -Dserver.port=${SERVER_PORT} \
            -Dsnail-job.port=${SNAIL_PORT} \
-           -XX:+HeapDumpOnOutOfMemoryError -XX:+UseZGC ${JAVA_OPTS} \
+           -XX:+HeapDumpOnOutOfMemoryError -XX:+UseZGC \
+           -Xms${JAVA_XMS:-1g} -Xmx${JAVA_XMX:-2g} ${JAVA_OPTS} \
            -jar app.jar

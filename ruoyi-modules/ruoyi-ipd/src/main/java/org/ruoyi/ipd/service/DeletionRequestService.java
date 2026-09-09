@@ -120,12 +120,18 @@ public class DeletionRequestService {
         return request;
     }
 
-    /** 撤回：仅申请人在 withdrawHours 内且未终态 */
+    /**
+     * 撤回：仅申请人在 withdrawHours 内且未终态。
+     * <p>MED-3（2026-09-09 治理轮 R21）：不存在与非本人统一响应文案——原实现「不存在 抛『删除申请不存在: id』/
+     * 非本人抛『仅申请人可撤回』」的差分响应可被攻击者用作存在性侧信道探测（枚举 id 区分
+     * 「有但非本人」与「无」）。统一为同一文案后不再泄露存在性。
+     */
     @Transactional(rollbackFor = Exception.class)
     public DeletionRequest withdraw(Long requestId, Long requesterId) {
-        DeletionRequest request = getOrThrow(requestId);
-        if (!request.getRequesterId().equals(requesterId)) {
-            throw new ServiceException("仅申请人可撤回");
+        DeletionRequest request = deletionRequestMapper.selectById(requestId);
+        if (request == null || !request.getRequesterId().equals(requesterId)) {
+            // MED-3：两分支合并同一文案，不区分 404/403，消除存在性侧信道
+            throw new ServiceException("撤回失败：申请不存在或非本人发起");
         }
         if (isTerminal(request.getStatus())) {
             throw new ServiceException("已终态，不可撤回");

@@ -21,7 +21,7 @@ create table if not exists ipd_business_config
 (
     id            bigint       not null comment '主键（雪花）',
     config_key    varchar(128) not null comment '参数键（如 bonus.poolRate / kpi.stopThreshold / deletion.cooldownDays / gate.dualSignCount）',
-    config_value  varchar(500) not null comment '参数值（字符串持久化，读取方按 value_type 解析）',
+    config_value  text          not null comment '参数值（字符串持久化，读取方按 value_type 解析）',
     value_type    varchar(16)  not null default 'STRING' comment 'STRING|NUMBER|JSON|BOOL',
     scope         varchar(16)  not null default 'GLOBAL' comment 'GLOBAL|GROUP|PROJECT 作用域',
     enabled       tinyint(1)   not null default 1 comment '是否启用（0=禁用读取 fallback 默认值）',
@@ -45,7 +45,7 @@ create table if not exists ipd_business_config_versions
     id            bigint       not null comment '主键',
     config_id     bigint       not null comment '业务参数ID（关联 ipd_business_config.id）',
     config_key    varchar(128) not null comment '参数键（冗余便于历史追溯）',
-    config_value  varchar(500) not null comment '历史参数值',
+    config_value  text          not null comment '历史参数值',
     version       int          not null comment '历史版本号',
     enabled       tinyint(1)   not null comment '当时是否启用',
     effective_from datetime    not null comment '生效起点',

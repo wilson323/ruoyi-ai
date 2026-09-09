@@ -5,8 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.service.AuditLogService;
 import org.ruoyi.ipd.service.HrSyncService;
 import org.ruoyi.ipd.service.PersonService;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +34,7 @@ public class HrSyncController {
 
     private final HrSyncService hrSyncService;
     private final IpdPermission permission;
+    private final AuditLogService auditLogService;
 
     public record MarkResignedRequest(@NotNull Long personId, @NotBlank String reason) { }
 
@@ -64,6 +67,7 @@ public class HrSyncController {
         IpdActor operator = permission.requireAdmin();
         PersonService.ResignResult result = hrSyncService.markResignedByHr(
             req.personId(), req.reason(), operator);
+        audit(operator, "hr_mark_resigned", req.personId(), req.reason());
         return ApiV1Response.ok(ResignView.from(result));
     }
 
@@ -87,5 +91,20 @@ public class HrSyncController {
         permission.requireLeaderOrAdmin();
         return ApiV1Response.ok(hrSyncService.listPendingHandoverEscalations(thresholdDays).stream()
             .map(PendingHandoverView::from).toList());
+    }
+
+    private void audit(IpdActor actor, String action, Long entityId, String reason) {
+        if (actor == null) {
+            return;
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id())
+            .operatorName(actor.name())
+            .operatorRole(actor.role())
+            .action(action)
+            .entityType("persons")
+            .entityId(entityId)
+            .reason(reason)
+            .build());
     }
 }

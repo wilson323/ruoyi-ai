@@ -25,13 +25,14 @@ public class PersonResignEscalator {
     private final HrSyncService hrSyncService;
 
     /**
-     * 每日 09:00 扫描并升级（生产启用 @EnableScheduling 后生效）。
-     * 当前被注释（无 @EnableScheduling）以避免无调度器时的 NoSuchMethodError；
-     * 测试覆盖走 HrSyncService.escalateStaleResignations 直接调用。
+     * 每日 09:00 扫描并升级。cron 声明已恢复（2026-09-09 治理轮）：
+     * 应用未配 @EnableScheduling 时 Spring 忽略 @Scheduled 注解，无副作用；
+     * OPS-04 scheduler 卡合入 @EnableScheduling 后本 job 与 HandoverOverdueScanner（09:05）
+     * 同日生效。测试覆盖走 HrSyncService.escalateStaleResignations 直接调用。
      *
      * <p>手动触发路径：POST /api/v1/hr-sync/escalate-stale-resignations
      */
-    // @Scheduled(cron = "0 0 9 * * ?")
+    @Scheduled(cron = "0 0 9 * * ?")
     public void dailyEscalationJob() {
         IpdActor systemActor = new IpdActor(0L, "SYSTEM", "SUPER_ADMIN", null);
         int escalated = hrSyncService.escalateStaleResignations(

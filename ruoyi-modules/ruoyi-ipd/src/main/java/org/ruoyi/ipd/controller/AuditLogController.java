@@ -183,6 +183,7 @@ public class AuditLogController {
      * DEF-4 链重建（仅超管）：按现行 v1 秒级对称语义重算全链 prev/curr 哈希，业务字段只读。
      * <p>幂等可重复执行；重建动作本身落一条 REBUILD_CHAIN 审计（独立事务，链尾自洽）。
      * <p>多实例共库运维顺序：全部实例切含修复 jar 后再执行终验重建，否则旧 jar 毫秒行会再污染。
+     * <p>2026-09-09 治理轮 SEC-INFO-3 轻量护栏：响应返回 serverBuild 供跨实例比对，跨实例版本不一致则不重建。
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_AUDIT_LOG_VERIFY, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/rebuild-chain")
@@ -197,7 +198,23 @@ public class AuditLogController {
             .entityType("audit_logs")
             .reason("DEF-4 fixed=" + fixed)
             .build());
-        return ApiV1Response.ok(Map.of("fixed", fixed));
+        return ApiV1Response.ok(Map.of(
+            "fixed", fixed,
+            "serverBuild", currentBuildVersion(),
+            "hint", "多实例部署请逐实例 curl 此端点核对 serverBuild 一致后再统一调用"));
+    }
+
+    /** 2026-09-09 治理轮 SEC-INFO-3：返回当前实例的 build 标识供运维多实例比对（jar 取 Implementation-Version；dev/IDE 模式 fallback）。 */
+    private static String currentBuildVersion() {
+        String v = AuditLogController.class.getPackage().getImplementationVersion();
+        if (v != null && !v.isBlank()) {
+            return v + "@" + System.getProperty("user.name", "host");
+        }
+        try {
+            return "dev@" + java.net.InetAddress.getLocalHost().getHostName();
+        } catch (Exception e) {
+            return "dev@unknown";
+        }
     }
 
     /**

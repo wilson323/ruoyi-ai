@@ -143,7 +143,7 @@ class P333AcceptanceTest {
         assertThat(allowanceService.isMemberEffectiveInMonth(null, "2026-09")).isFalse();
     }
 
-    // ==================== AC-INC: 退出次月停发 ====================
+    // ==================== AC-INC: 退出当月停发（2026-09-09 owner 拍板「当月退出不发」） ====================
 
     @Test
     @DisplayName("退出: exitDate=null ⇒ 活跃")
@@ -152,25 +152,25 @@ class P333AcceptanceTest {
     }
 
     @Test
-    @DisplayName("退出: exitDate=月中 (2026-09-15) ⇒ 2026-09 月仍计（次月起停）")
+    @DisplayName("退出: exitDate=月中 (2026-09-15) ⇒ 2026-09 月不活跃（当月退当月停，2026-09-09 拍板）")
     void exitedMidMonthStillActive() {
         Date exit = parseDate("2026-09-15");
-        assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-09")).isTrue();
+        assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-09")).isFalse();
     }
 
     @Test
-    @DisplayName("退出: exitDate=月末 (2026-09-30) ⇒ 2026-09 月仍计（次月起停）")
+    @DisplayName("退出: exitDate=月末 (2026-09-30) ⇒ 2026-09 月不活跃（月末当天退也停，拍板口径）")
     void exitedEndOfMonthStillActive() {
         Date exit = parseDate("2026-09-30");
-        assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-09")).isTrue();
+        assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-09")).isFalse();
     }
 
     @Test
-    @DisplayName("退出: exitDate=次月初 (2026-10-01) ⇒ 2026-09 月仍 active（10 月才停）")
+    @DisplayName("退出: exitDate=次月初 (2026-10-01) ⇒ 2026-09 月仍 active（9 月整月在岗），10 月退出当月停")
     void exitedNextMonthStartNotActive() {
         Date exit = parseDate("2026-10-01");
         assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-09")).isTrue();
-        assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-10")).isTrue();
+        assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-10")).isFalse();
         assertThat(allowanceService.isMemberActiveInMonth(exit, "2026-11")).isFalse();
     }
 
@@ -207,16 +207,16 @@ class P333AcceptanceTest {
     }
 
     @Test
-    @DisplayName("综合: 退出 (2026-09-30) ⇒ 9 月仍 active（次月 10 月起停）")
+    @DisplayName("综合: 退出 (2026-09-30) ⇒ 9 月不活跃（当月退当月停），8 月仍 active，10 月起停")
     void exitedMemberNotActive() {
         ProjectMember m = ProjectMember.builder()
             .personId(PERSON_ID).projectId(PROJECT_ID)
             .joinDate(parseDate("2026-01-15"))
             .exitDate(parseDate("2026-09-30"))
             .build();
-        // 退出当月仍 active
-        assertThat(allowanceService.isMemberActiveForMonth(m, "2026-09")).isTrue();
-        // 8 月时仍 active
+        // 退出当月即停（2026-09-09 owner 拍板）
+        assertThat(allowanceService.isMemberActiveForMonth(m, "2026-09")).isFalse();
+        // 8 月时仍 active（月末在岗）
         assertThat(allowanceService.isMemberActiveForMonth(m, "2026-08")).isTrue();
         // 10 月起停
         assertThat(allowanceService.isMemberActiveForMonth(m, "2026-10")).isFalse();
