@@ -112,6 +112,15 @@
             "timeout": 3000
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/hooks/post-ipd-entity-write.sh\" ] || D=\"${HOME}\"; exec \"$D/.claude/hooks/post-ipd-entity-write.sh\"'"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
