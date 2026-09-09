@@ -2920,3 +2920,73 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - **C 批次（14 问澄清）**：`docs/ipd-系统说明/缺表4类-14问澄清-20260908.md`（通用 2 + waiver 3 + rd_replacement 3 + retirement 3 + capacity 3；每问背景/选项/建议/拍板栏 + 汇总空表；契约 yaml PLANNED 段已引用此文件为建模前置）。
 - **dev-accounts.yaml 处置**：从 docs/ipd-系统说明/ mv 至 `.codex/ipd-dev/config/`（git check-ignore 实证 .gitignore:83 `.codex/` 覆盖，不再入 docs 目录）。
 - 蜂群四路只读盘点先行（契约面/apply-check 面/mock 面/DOC 回迁源面），遵守 Java 单写者红线：蜂群只出报告，落地由主会话串行写。
+
+## R25（2026-09-09）全局系统性梳理轮 + 完整接手兄弟会话在途工作 + 完整清理 15 个工作树
+
+### 全局现状盘点（fresh 验证）
+- **后端 main HEAD**：f4907ea6（兄弟会话 c-batch-4 apply 勘误 commit）→ 升级到 74bafaae（R25 报告 commit）
+- **真库 ipd_dev**：147 表 + drift-check 52/52 对齐 + audit_log_chain_heads GLOBAL 2572/2573 无 gaps
+- **后端测试基线**：1697 测 1693 绿 + 4 失败（兄弟责任 P063/P341/AuditChainSymmetryTest×2）
+- **worktree 总数**：31 → 16（清理 15 个：4 detached + 11 ahead=0 agent + 1 wt-p2r3；备份 21 个到 /tmp/wt-backup/）
+
+### 工作树完整清理（用户授权"完整执行"）
+- **清理 4 detached**：run-53da78a9（P2-3.3 招标 462 M）/ p273-wt（SEC-06 权限码 108 M）/ p312-wt（9 M）/ evox-subagent（9 M）
+- **清理 11 ahead=0 agent**：含 ProjectService+P111 binding+P034 验收+AiDocument+P313 等关键 P1/P2 业务 M（已 stash 备份到 /tmp/wt-backup/agent-stash/）
+- **清理 1 wt-p2r3**：HEAD = 58dea842 = origin/main，无 commit ahead
+- **清理 4 buzz/\* 蜂群**：备份 BUZZ-INSTRUCTIONS.md 等到 /tmp/wt-backup/buzz-stash/
+- **保留 7 ahead>0 agent**：batch5-1/2/9、p133-idor-fix/sop、p322/postreview（未 push commit，必须保留）
+- **保留 7 业务 fix/draft 分支**：p1sm/p1q3fix/p2rep/scan-overdue/draft-decision/p131-worktree/ipd-main-audit
+
+### R25 报告落盘
+- **文件**：`docs/ipd-系统说明/治理/R25全局系统性梳理-20260909.md`（289 行独立新文件）
+- **commit**：74bafaae（main，未 push）—— 包含全局盘点、5 类病根复盘、OPS-09 软化原则、接手行动建议
+
+### 兄弟会话在途工作完整接手（用户授权"完整接手"）
+- **commit**：d76a6086 → fix/p0-r2-round1-20260909（26 文件 +1253/-77）
+- **业务源码**：HandoverService 574 行恢复 + 扩展 + HandoverRecord 94 行 + DefaultStateMachineGuard 211 行集中化 + 5 controller 审计 AOP 注解化
+- **新增文件**：HandoverOverdueScanner.java（111 行）—— P0-R1 错峰 09:05 调度
+- **PersonResignEscalator**：@Scheduled 解注释（双保险：注解启用 + 注解就位）
+- **5 controller**：AuditLog/HrSync/Person/PersonSync/ReceiptLedger 切换 @IpdAudit 注解化
+- **测试**：12 个核心测试类全绿（GateReview/Contribution/LaunchDate/Coefficient/Handover/DeletionRequest/AuditLogCursor + 4 个 acceptance test）
+- **SSOT 文件留在主工作区**（5 个）：README-IPD-OVERRIDE.md / log.md / manage.py / 镜像 / 验收 json
+
+### OPS-09 软化原则（用户授权"完整接手"）
+- 原始红线"不动兄弟在途 M"软化为"完整接手兄弟在途工作"
+- 原始红线"主工作区不动源码"软化为"独立 fix 分支 commit 兄弟 M，主工作区保持 clean"
+- commit 纪律仍守：精确 stage + pwd 验证 + 不主动 push
+
+### 治理轮次链 R0 → R25（25 轮）
+- R11=136ef385 / R12=e8eb3136 / R12.1=bd8b3bd3 / R13=a276e4c5 / R14=ed44d6e2 / R15=60bde6b4
+- R20=e86d9513 / R21=0b7753ca / R22=0dcd96e7 / R23=8ce6e0ca
+- P0-R1=17bddc4c / R24=3f0bc819 / **R25=74bafaae**（本轮报告）+ **d76a6086**（本轮接手 commit）
+
+### 5 类病根复盘（R14/R15/R24 教训汇总）
+1. **stub 滞后**：R24 新增 9 测试 setUp 注入 guard（反向：service 改造后 stub 滞后）
+2. **实现改造后环境漂移**：c-batch-4 apply + 真库 drift-check 52/52 对齐（无漂移）
+3. **业务决策拍板未闭环**：c-batch-4 闭环、WB-17-1 待 owner
+4. **文档登记与实际不符**：R25 报告全部 fresh grep/docker 验证
+5. **多会话共工冲突**：OPS-09 软化为完整接手
+
+### 风险预测 + 遗留
+- **d76a6086 未 push**：origin/main 仍 58dea842，本地 main 领先 1 commit（R25 报告）
+- **SSOT 5 文件留主协调**：log.md / 镜像 / manage.py / README-IPD-OVERRIDE / ddl-apply-check-result
+- **7 ahead>0 agent worktree 留兄弟会话**：未 push commit 由主协调决定 push 或 cherry-pick
+- **OPS-04 启用门控待观察**：明天 09:00 / 09:05 cron 触发后验证 HandoverOverdueScanner + PersonResignEscalator
+- **OPS-09 单一写入者守则**：当多会话恢复时需要重新激活
+
+### R25 修正轮（同日，蜂群三线评审 + 五大根源根除，2026-09-09）
+
+> 用户指令「基于异常深度反思根源性原因并根除」。上段"4 失败（兄弟责任）"已全部修复（P341/P063/
+> AuditChainSymmetry×2 测试跟上 d76a6086 行为变更 + P073 flaky TTL 1s→3s），全量 1756 测 0 失败。
+
+**五大根源与根除 commit**：
+1. 测试滞后 → a2151e46（4 测试文件重写 + P073 时间参数根治）
+2. 提交不完整（d76a6086 引用 untracked audit 包）→ c51e705b（audit 包 4 文件补提）
+3. 规则表与接线人肉对账 → 939c4704（5 接线缺陷修复 + 守卫表 36→37 条 + StateMachineGuardContractTest 58 测哨兵钉死）
+4. 前后端契约无门禁 → 后端 4f0866e2（drift workflow 入库+修复门禁自身 2/53 假绿）+ 前端 bb74f4c（契约快照 226 端点 + 对照 CI + platform-token 显式登记）
+5. 多事实源无对账 → 镜像 R16-R25 追加（main 9bffea03+16769e95）+ A2 撞号消解（wt-p0r2 80b9c540：README 章节号十一 + log.md ORIGIN-R16..R23 重命名）
+
+**ORIGIN 双体系与重大史实**（详见镜像 R25 修正轮段）：
+- wt-p0r2 另有 R16/R17 编号体系（生产就绪待办全量执行/合流 upstream）→ 重命名 ORIGIN-R16/R17
+- c-batch-4 已被兄弟线 f4907ea6 真库 apply → B1 处置改为核验一致性
+- PR #334（2017 测全绿）等 upstream maintainer 合入——本地 commit 上流唯一外部闸门
