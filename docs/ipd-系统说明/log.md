@@ -2921,9 +2921,118 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - **dev-accounts.yaml 处置**：从 docs/ipd-系统说明/ mv 至 `.codex/ipd-dev/config/`（git check-ignore 实证 .gitignore:83 `.codex/` 覆盖，不再入 docs 目录）。
 - 蜂群四路只读盘点先行（契约面/apply-check 面/mock 面/DOC 回迁源面），遵守 Java 单写者红线：蜂群只出报告，落地由主会话串行写。
 
+## 2026-09-08 R11 | 测试债务根除轮（6 张治理卡全部收口，AM-GUARD 标 PARTIAL）
+
+基线证据：PR #15（main=a219dde5）20 条基线红清零后，本轮按根除建议文档四层治理路线逐张落地 6 张看板卡。
+
+- **[AM-GRANT] P1**：`docs/script/sql/update/2026-09-08-am-grant-backfill-12-tables.sql`（49 行）pymysql root 通道 apply 成功，mysql.tables_priv 验证 12 行全 Select,Insert,Update,Delete；p1-ddl-apply-check 表级段 FULL 20/20 缺口 0/20。事务教训固化：「ipd_dev 新表漏表级 GRANT 致 UPDATE 拒绝塌缩 500」已记录。
+- **[AM-CLOCK-1] P1**：DeletionRequestService 9 处 Clock 缝完成（create + withdraw 残留 5 处登记到根除建议文档 §二 同残留，按「PR 范围最小化」交给下个触达 PR）。
+- **[AM-CLOCK-2] P2**：其余 10 类 Clock 缝完成（HandoverService/BidInvitationService/GateReviewService/GateElementResultService/BidScanService/ProjectService/GateCreationService/BidP231Validator/GuestDemandService/KpiSharedCollectionService）。含 2 处 static 方法/nested class 例外保留 System.currentTimeMillis()（PR 标注）。全量 1938 测试 0 fail/0 error/26 skipped BUILD SUCCESS 16.520s。
+- **[AM-GUARD] P2 PARTIAL**：第一阶段 GuardSourceUtils 公共工具类抽取完成（findGitRoot/stripComments/stripYamlComments/findGitRootFromCwd 共 91 行，对齐 PermissionAdviceCoverageTest 金标准）。第二阶段 6 处 A 类裸文本守卫改造（LaunchDateDualSignGuard#1c-2/P063Acceptance/ActuatorNarrowTest/ProdConfigDeltaGuard#2/IpdMockDataInitializer#4+#5）按「PR 范围最小化」延后到下个会话。
+- **[AM-HELPER] P3**：P162AcceptanceTest 11 处 withJudgedForGate → withAllJudgedDefaultPass 改名完成（1 定义 + 1 javadoc + 9 调用点）。三禁规范文档 `docs/ipd-系统说明/治理/测试编写三禁-20260908.md`（166 行）独立成文，覆盖禁一（裸时钟）/ 禁二（helper 缺省伪造）/ 禁三（裸文本守卫）。
+- **[AM-BASELINE-TTL] P3**：`scripts/ci/ipd-test-red-baseline.py` 改造支持①每条红带 `# first_seen=YYYY-MM-DD` 注释②extract 保留旧 first_seen 避免重置③check 超 14 天 WARN（渐进版不阻断，--ttl-days CLI 默认 14）④selftest 13/13 全绿 + 超期场景手工验证通过（age=19d exit 0）。基线文件重跑 extract 写入新机制注释，0 红/total_tests=1938/report_files=215 状态保持。
+
+产出文档：
+- 根除建议：`docs/ipd-系统说明/治理/测试债务根除与守卫加固建议-20260908.md`（98 行）
+- 三禁规范：`docs/ipd-系统说明/治理/测试编写三禁-20260908.md`（166 行）
+- PR 双包描述：`docs/ipd-系统说明/治理/根除轮PR双包描述-20260908.md`（121 行）
+- 治理目录新增 3 份文档（无 git 提交，待 owner 裁决时机）
+
+worktree 状态：`git status --short` 实时可见 14 个变更文件 + 5 个新文件，全部未提交（AGENTS.md §「执行」红线：commit/push/branch 必须 owner 明确授权）。
+
+## 2026-09-08 R11-续 | 根除轮全量落地收口（owner 指令「立即完整执行」：AM-GUARD 第二阶段 + PR×2 提交）
+
+承接 R11 段的三项待 owner 决策，owner 以「基于以上立即完整执行」一次性授权全部执行：
+
+- **AM-GUARD 第二阶段补齐（PARTIAL → DONE）**：6 处 A 类裸文本守卫改造全部完成——LaunchDateDualSignGuardAcceptanceTest#1c-1（helper 加剔注释）+ #1c-2（双改）、P063AcceptanceTest HIGH-4（mockKeyNamesMatchProductionSource 四断言）、ActuatorNarrowTest（4 个 yml 用例统一 stripYamlComments）、ProdConfigDeltaGuardTest#2（三断言）、IpdMockDataInitializerTest#4/#5。5 守卫类 34/34 全绿，随后全量回归 1938 tests / 0 fail / 0 error / 26 skipped。
+- **AM-CLOCK-1 同残留核实**：grep 实测 DeletionRequestService `new Date()`/`System.currentTimeMillis()` 0 处残留，13 个 now() 全覆盖——根除建议文档 §二登记的「withdraw 残留 5 处」实际已随 R11 首段收口，§七状态表已修正。
+- **PR-1 `90aaad79`（19 文件 +479/-141）**：分支 `am/clock-helper-guard-20260908`，AM-CLOCK-1/2（11 类 Clock 缝）+ AM-HELPER（P162 改名 11 处）+ AM-GUARD（GuardSourceUtils + 6 守卫改造）+ 三禁文档。**PR #16** 已建。
+- **PR-2 `83106fa8`（3 文件 +124/-10）**：分支 `am/grant-baseline-ttl-20260908`，AM-GRANT 补授 SQL + AM-BASELINE-TTL 脚本改造 + 基线文件。**PR #17** 已建。两分支文件交集为空（comm -12 验证）。
+- **看板回填**：6 张卡 PUT 追加 PR 链接注记（#16/#17 + commit 哈希 + 证据指向），LIST 复核 6/6 PR链接=Y，status=done 保持。
+- **状态同步**：根除建议文档 §七更新为「同日全量落地版」（6 卡全 DONE 含 PR 链接）；R11 段 AM-GUARD 的 PARTIAL 由本段补齐为 DONE。
+
+两 PR 待 review 合入；PR-2 的 12 表 SQL 已在真库 apply 过（本机 ipd_dev），合入后其他环境需按 docs/script/sql/update/ 惯例补 apply。
+
+## 2026-09-08 R11-续2 | 根除路线技术项收尾（时钟静态守卫 + GRANT 登记件 CI 门禁，PR 双追加）
+
+owner 第三段「继续」指令后，把根除建议文档 §四 四层路线中剩余两个可技术落地的项收口：
+
+- **层2项5 时钟静态守卫（PR #16 追加 fdb2910d）**：新增 `ServiceBareClockGuardTest`（qa 包，@Tag dev）——service 层裸时钟白名单双向强制：白名单外新增即红、白名单文件清零后未移除也红；存量白名单实测 47 文件/124 处（剔注释后 grep，与 GuardSourceUtils 同正则）；探针 TempBareClockProbe 注入验证有牙（BUILD FAILURE 复现后清理）。
+- **附带发现 NUL 字节损坏（随 #16 修复）**：时钟守卫预扫发现 CorrectionLogService.java 被 file/grep 识别为 binary——javadoc 描述「拒绝控制字符」时嵌入了原始 \x00~\x1f 字节（溯源 aa404d76 已进 main 的提交，javac 能容忍故未爆）。替换为 ASCII 字面 U+0000~U+001F，零语义变化。教训：多字节原始控制字符进注释 = 文本工具链全盲。
+- **层3项8 GRANT 登记件 CI 门禁（PR #17 追加 71e4134d）**：新增 `scripts/ci/check-ipd-grant-sql.py` + `ipd-grant-sql-gate.yml`——CI 静态比对 20 张 GRANT_RULES 表的 GRANT 登记语句（注释/活语句/反引号/小写均认，须同语句含 ipd_app）；selftest 7 用例含 3 条阻断分支。与 p1-ddl-apply-check --strict 互补：CI 验登记件、本机验真库。
+- **门禁预跑抓出登记漂移**：receipt_ledger / negative_feedbacks 真库已授权（pymysql socket 探针验证四权）但 docs/script/sql/ 全域无登记语句——补纯登记件 `2026-09-08-am-grant-register-2-tables.sql`，补齐后实查 20/20。
+- 全量回归 1940 tests / 0 fail / 0 error / 26 skipped（+2 守卫用例）。
+
+根除路线状态：四层中可技术落地的项已全部收口；剩余待 owner 裁决项见根除建议文档 §八末尾清单（DoD 入合同 / checklist 化 / HandoverIntegrationTest 基建 / [AM-SQL] 契约二选一 / 流程软约束）。
+
+## 2026-09-08 R11-续3 | owner 全授权收尾批：PR #16/#17 合入 + AM-SQL 修复 + 真活基建落地 + DoD 成文（PR #18）
+
+owner「授权全部执行」指令后四连：
+
+- **PR 合入**：#16 → main 5b200e65（squash），#17 → main 963610c2（squash）。审计 worktree 从 963610c2 开分支 am/sql-chain-root-20260908。
+- **[AM-SQL] 方案① 落地**：selectChain 补 ancestors 向上找根段（两段 CTE），入参根/中间/叶子任一行均返回同一全链。真库探针验证 3/3 PASS——期间 1054 间歇报错两重根因：兄弟会话 ALTER 在途 + heredoc 命令字符串不可见字符；改用 Write 全控 py 文件 + CREATE TABLE LIKE 探针表后一次通过。P1101 补契约锚定用例 history_fromMidRow_fullChain。
+- **[ROOT-1] 真活基建（病根1 方向 B）**：IpdIntegrationTestBase/HandoverIntegrationTest 迁 ruoyi-admin test 域（RuoYiAIApplication 全量接线），datasource 三键 @SpringBootTest properties 钉死 13306/ipd_dev（根治 dev profile 3306 连错库），密码 env IPD_IT_DB_PASSWORD。@Disabled → @EnabledIfSystemProperty(ipd.scope.it.enabled)：本机真跑 4/4 绿（本仓第一个可跑的 @SpringBootTest），默认 4 skipped 不红。4 项结构阻塞全解。
+- **DoD 与测试纪律成文**：docs/ipd-系统说明/治理/工程DoD与测试纪律-20260908.md（DoD-1 硬规则/断言登记 DEF-xx/红名单有价/季度抽查；层1项2 三禁已由同目录独立文档覆盖，引用不重复；升格 G-09 留 owner——开发说明为 G-04 圣经不做内容新增）。
+- 回归：ruoyi-ipd 1937 tests / 0 fail（-4 迁移 +1 新）；ruoyi-admin 4 skipped 门控正常。
+- PR #18 已开（https://github.com/wilson323/ruoyi-ai/pull/18）；看板 [AM-SQL] 13a80d6d / [ROOT-1] cc53b892 双卡 todo → inreview（PUT 后独立 GET 复核 status+PR 链接均 Y）。
+
+根除路线终态：§四 四层全部收口（含原列 owner 裁决项——本轮获 owner 全授权执行）；唯升格 G-09 进开发说明书 G 表（圣经边界）与 [ROOT-R6 重命名] 仍留 owner。
+
+## 2026-09-08 R11-续4 | owner「按推荐执行」：PR #18/#19 合入 + 双卡翻 done + ROOT-R6 重命名 + DoD-1 升格 G-12
+
+- **PR #18 合入**：squash cbd745f5（CI 9/9 绿含 SonarCloud）。看板 [AM-SQL] 13a80d6d / [ROOT-1] cc53b892 双卡 inreview → done（PUT 后独立 GET 复核）。
+- **ROOT-R6 重命名执行**（owner 授权）：按卡 desc 既有口径「ROOT-1 改名 ROOT-R6（KEY 正则 ROOT-R\d+）」，title 前缀 [ROOT-R6 重命名待 owner][ROOT-1] → [ROOT-R6]。SSOT 镜像卡号映射表补 ROOT-R6 / AM-SQL 两行（磁盘更新，未 commit——留主协调轮次精确 stage，隔离兄弟在途）。
+- **DoD-1 升格 + 勘误**（PR #19，squash 8296f59e，CI 绿）：开发说明书全局约束表新增 **G-12**（测试同步义务：凡 PR 改数据访问路径/契约/时间语义，必须同 PR 跑受影响测试类并同步改测试，PR 描述列「改动面→受影响测试类→全绿结果」）。勘误：初稿及根除建议文档原写「G-09」系仅见 G-01~G-08 的误设——G-09 已被「角色体系不扩展」占用（G 表实到 G-11），实际编号 G-12；《工程DoD与测试纪律》头部与附表同步更正。
+- 至此 R11 轮全部事项（含上轮遗留两件 owner 项）收口，无未决。
+
+## 2026-09-09 R16 | 生产就绪待办全量执行（P0-1/3/5/6/7 + P1-1/2 收口）
+
+- **双线合流 PR #334**：22 冲突裁决后 2017 测全绿；matrix 7 处编造方法名按 OD-AM-05 回退、2 处回填真方法名；部署物（Dockerfile/compose/.env.example）+ 生产部署 Runbook-20260909 + 真库 schema 快照（147 表）落盘。
+- **c-batch-4 真库 apply 闭环**：5 表 + 2 列 + 5 GRANT ALL PASS；勘误 AFTER 锚点（launch_date→status）；GRANT 登记件 + tenant.excludes 登记件 commit f4907ea6。
+- **前端契约核收口**：全量对照 146 条前端调用 vs 210 后端端点零断裂（兄弟会话 6 端点修复实证有效）；nginx.conf 修 /api/v1 保留前缀（IPD 契约红线）。
+- **DEF-9 核收口**：锚行分配 26 测绿 + 真库 16 处历史断裂归因修复前旧 jar（时间戳铁证），修复后零新断裂；存量 rebuild 留 QA-05-P2。
+- **裁决与卡属**：7 项业务裁决确认已闭环（提案 §D）；登录域剩余 P0-7.3/P0-7.4 待认领。
+- 详见镜像 R16 段。log.md 本段为磁盘留置（文件混有兄弟在途编辑，未 commit）。
+
+
+## R17（2026-09-09 凌晨）合流 upstream + PR #334 收口 + 登录域两卡补证
+- upstream 合流 a2eeb477（5 冲突文件裁决）+ demo 守卫修正 8d2b2069；PR 分支全量 2017/0/22 绿。
+- PR #334 MERGEABLE 但 wilson323 无 ageerle/ruoyi-ai 合并权限——squash 合入等 upstream maintainer。
+- 前端部署物 commit c1eb6f6（nginx /api/v1 保留前缀 + 16039）。
+- P0-7.3（10+6 测）/P0-7.4（7 测）fresh 全绿，看板+镜像翻 inreview 补证；manage.py check 零漂移。
+- 经验：并发跑全量与定向 mvn 测试会互踩出假红（凭证已更新类 NotLogin）——错峰执行。
+
 ## R18（2026-09-09）契约与遗留治理轮 + 津贴口径拍板落地
 - 4 路蜂群只读核查 42 项历史 finding（SEC 22 + PERF 15 + QA 5）：25 已修/3 部分/13 仍在/1 误报，关单登记见《治理/契约与遗留治理轮-20260909.md》。
 - 顺手修复：LOW-6 listArchive readOnly；P0-4 idx_br_rd_pm 索引已 apply+校验 + listByRdPm/listResponses LIMIT 500；前端展示表补 16 业务码（40006+50003~50017）+ 清 40010/404 双幽灵码（7813fac）。
 - 审计 AOP 改造设计落盘《治理/审计AOP改造设计-20260909.md》：81 处三类模式、注解化上限 40%、四批迁移。
 - **业务裁决登记（owner 2026-09-09 拍板）：津贴「当月退出当月不发」**——AllowanceService.isMemberActiveInMonth 退出侧由「退出≥月初仍计」改为「退出≥次月月初才计（月末在岗口径）」，与主流程 isNull(exitDate) 对齐，双口径并存消除；P333AcceptanceTest 5 用例断言同步改，20/20 绿（04:54）。加入侧「月初在岗才计」不变。
 - 提交：后端 fix/gov-contract-20260909 @ 4b76d868（11 文件）+ 拍板落地增量；前端 fix/gov-contract-20260909 @ 7813fac（3 文件）。
+
+## R19（2026-09-09）生产就绪第二轮：蜂群深审 + 图工程 + 可执行修复落地
+- 蜂群 A/B 双路深审 17 类清单现态：后端可执行 4 件 + 前端 1 件；暂缓项逐条登记归属（见《治理/P0修复执行-17类问题第二轮-20260909.md》）。
+- 图工程：契约覆盖 DOT 落盘《治理/图/contract-graph-20260909.dot》——后端 /api/v1 226 端点 vs 前端 138 唯一调用，已接线 187，业务断裂 MISS=0，未接线 39 全为管理/内部域；switching-acceptance 前端 0 接线（仅权限码）。
+- 后端 commit c1384794（wt-p2r3 @ 8d2b2069）：@IpdAudit 注解+切面（P2-1）、SwitchingAcceptance run/lock/unlock 首批挂载（新①）、IpdSchedulingConfig @EnableScheduling（OPS-04）、Contribution 并发首建 400/STATE_CONFLICT（新③）；定向 42/42 绿，全量 2021 例唯一 Error 为 P073 凭证互踩假红（错峰复核 6/6 绿）。
+- 前端 commit 59874e0：登录限流文案原文透出 + 60s 冷却（消除「输入信息不符合要求」语义混同）；store/ipd-auth.test.ts 4 例新增；auth-refresh.test.ts 限流断言随新契约更新；check:type 绿 + 定向 35/35 绿。
+- 发现与登记：本地 main HEAD f4907ea6 的 HandoverRecord/HandoverService 两文件内容损坏（shell 回显串），主工作树靠未提交修复掩盖，PR 分支 8d2b2069 完好——后续以 PR 分支为准线；ai-document.test.ts 1 例失败归属兄弟在途 auth.ts/ipd-error-text.ts，未触碰。
+- P1-2 接线依赖兄弟在途 DefaultStateMachineGuard 36 条规则，须协调后另行执行；PR #334 仍等 upstream maintainer 合入。
+- log.md 本段为磁盘留置。
+
+## R20（2026-09-09）暂缓项 fresh 复核翻案 + 蜂群验证闭环
+- fresh 复核推翻两个上轮「暂缓」判定（蜂群结论必须执行前 fresh 复核的再验证）：①新问题② 系数变更 leaderDecision TOCTOU 实际可零 DDL 修——LambdaUpdateWrapper 条件 UPDATE 原子翻转（项目内 5 个 Service 同款先例），无需 ALTER TABLE；②切换验收 run 权限过宽实为双重脱节——lock/unlock 挂未登记 _ADMIN 别名（catalog 无此码=全员 403 死端点，RnewPermissionContractTest 2026-09-07 已锁定但无人修）+ run 写动作挂只读 QUERY。
+- 后端 commit 58dea842（wt-p2r3）：三写端点权限迁已登记 _LOCK/_UNLOCK + 源码层防回漂锁；leaderDecision CAS 化（守卫前移写库前+簿记字段显式补齐）；IpdAuditAspect 审计旁路 try/catch 兑底（蜂群复审 P1：审计故障不得把成功响应变 500）。
+- 前端 commit 7d3ed1a：冷却倒计时改绝对截止时刻（后台节流不漂移）+ login() store 层纵深拦截 + 冷却读屏播报（role=status）。
+- 验证蜂群（双路 CodeReview）：后端 1 P1+2 P2 全修、6 项核查通过（CAS 正确性/权限一致性/切面织入/TableInfoHelper/Contribution/Scheduling）；前端 PASS+4 P2 修 3 登 1（冷却全局粒度可接受）。定向 56/56+18/18+36/36 绿，全量 2023/0。
+- 仍阻塞：P1-2 接线（兄弟 DefaultStateMachineGuard 36 条规则仍在主工作树 M 未 commit）；workbench.taskType 死源在兄弟 M 的 locales page.json 里不可清理；ai-document.test.ts 1 失败仍属兄弟在途。PR #334 仍等 maintainer。
+- log.md 本段为磁盘留置。
+
+## R19（2026-09-09）卫生 5 项全清 + 津贴口径 R19 拍板已结待裁决清单
+- 卫生 5 项清理（commit b3336d48）：
+  - SEC-INFO-1：application-dev.yml 数据库密码改 `${DB_PASSWORD:root}` env 占位，默认 root 仅本地便利
+  - PERF-P2-4：logback-plus.xml → logback-spring.xml + springProfile 区分 prod 收紧 WARN、dev/local/test 保留 INFO；application.yml L57 切换
+  - PERF-P1-1：ReceiptLedgerService.calculateAchievementRate 窗口过滤从 Java 循环切到真库 STORED GENERATED 列 in_window（.apply("in_window = 1")）
+  - PERF-P2-2：ReceiptLedgerService.listByProject 加 `.last("LIMIT 200")`，uk_receipt_project_month 约束封顶安全
+  - SEC-INFO-3：AuditLogController.rebuildChain 响应加 serverBuild 字段 + currentBuildVersion helper（jar Implementation-Version + host fallback），多实例共库运维可 curl 比对版本一致后再统一调用
+- 验证铁证：javac 隔离编译两个改过的 Java 文件 0 错（避开兄弟在途空 HandoverService.java 触发 maven all-or-nothing 编译错）+ xmllint logback-spring.xml 0 错 + application.yml L57 config 已切到新文件
+- 卫生 5 全清后待裁决清单：HIGH-5 列型 / QA06-2 v2 历史行 / 40002 语义归属（津贴口径 R18 已结）
+- 关单报告《治理/契约与遗留治理轮-20260909.md》§0/§1.1/§1.2/§7 已同步刷状态：30 已修（71.4%）/3 部分/8 仍在/1 误报

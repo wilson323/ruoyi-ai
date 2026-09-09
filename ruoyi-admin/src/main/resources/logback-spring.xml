@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  logback-spring.xml（2026-09-09 治理轮 PERF-P2-4：profile 区分日志级别）
+  - 结构继承自 logback-plus.xml（不改 appender 定义，仅以文件名让 spring-boot 注入 springProfile 转换器）
+  - root 级别按 profile 收窄：prod 收紧 WARN、dev/local/test 保留 INFO 便于本地排查
+  - org.dromara / org.ruoyi 包级 INFO→WARN（仅 prod 生效）压低框架噪声
+  - 改回 logback-plus.xml 时把 application.yml 的 `logging.config: classpath:logback-plus.xml` 恢复即可
+-->
+<configuration>
+    <property name="log.path" value="./logs"/>
+    <property name="console.log.pattern"
+              value="%cyan(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- 控制台输出 -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${console.log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="file_console" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-console.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/sys-console.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>1</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/sys-info.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/sys-error.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="async_info" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="file_info"/>
+    </appender>
+
+    <appender name="async_error" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="file_error"/>
+    </appender>
+
+    <!-- dev/local/test profile：root INFO + 框架包保持 INFO（便于本地排查） -->
+    <springProfile name="dev | local | test">
+        <root level="info">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_info"/>
+            <appender-ref ref="async_error"/>
+            <appender-ref ref="file_console"/>
+        </root>
+    </springProfile>
+
+    <!-- prod profile：root 收紧 WARN，框架包级收 WARN 压低噪声 -->
+    <springProfile name="prod">
+        <logger name="org.dromara" level="warn"/>
+        <logger name="org.ruoyi" level="warn"/>
+        <root level="warn">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_info"/>
+            <appender-ref ref="async_error"/>
+            <appender-ref ref="file_console"/>
+        </root>
+    </springProfile>
+
+    <!-- 兜底（未命中上述 profile 时仍可启动）：root INFO，等同旧 plus.xml 默认 -->
+    <springProfile name="!dev &amp; !local &amp; !test &amp; !prod">
+        <root level="info">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_info"/>
+            <appender-ref ref="async_error"/>
+            <appender-ref ref="file_console"/>
+        </root>
+    </springProfile>
+
+</configuration>
