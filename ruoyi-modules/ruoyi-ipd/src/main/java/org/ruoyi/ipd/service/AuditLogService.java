@@ -10,6 +10,8 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AuditChainVerifyResult;
 import org.ruoyi.ipd.mapper.AuditChainHeadMapper;
 import org.ruoyi.ipd.mapper.AuditLogMapper;
+import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.stereotype.Service;
@@ -64,6 +66,7 @@ public class AuditLogService {
 
     private final AuditLogMapper auditLogMapper;
     private final AuditChainHeadMapper chainHeadMapper;
+    private final PersonMapper personMapper;
 
     /** 追加一条审计（独立事务：业务失败不回滚审计；①②③ P 变体：锚行悲观锁原子分配 seq/prevHash） */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
@@ -72,6 +75,23 @@ public class AuditLogService {
         // 必须位于锚行锁之前：畸形载荷须立即抛出回滚，不得进入任何锁/推进路径。
         AuditEventData.requireJson(draft.getBeforeData(), "before_data");
         AuditEventData.requireJson(draft.getAfterData(), "after_data");
+        // P1-6 审计合并框架单点（R22 2026-09-09）：operator 三元组缺失时按 operatorId 查 persons
+        // 补齐 name/personType——设计文档 §1.3 实测 operatorName 仅 51%/operatorRole 仅 34%，
+        // 历史行哈希已冻结不可回填，但新行在此单点补齐后全量调用点（44 文件/81 处）自动受益，
+        // 逐点注解化不必再为三元组而做。特殊操作人（operatorId=0 系统扫描/匿名）不查；
+        // 查无此人（已删号/外部 ID）留空不抛——审计行不因被删操作人丟失。必须在锚行锁前查（缩短锁持有）。
+        if (draft.getOperatorId() != null && draft.getOperatorId() != 0L
+            && (isBlank(draft.getOperatorName()) || isBlank(draft.getOperatorRole()))) {
+            Person person = personMapper.selectById(draft.getOperatorId());
+            if (person != null) {
+                if (isBlank(draft.getOperatorName())) {
+                    draft.setOperatorName(person.getName());
+                }
+                if (isBlank(draft.getOperatorRole())) {
+                    draft.setOperatorRole(person.getPersonType());
+                }
+            }
+        }
         // DEF-4：先定时间再哈希——写入与验链共用同一 Date，且毫秒必须归零后再写库：
         // datetime(0) 对毫秒四舍五入（≥.500 进位），而 secondMillis 是截断，不归零则读回 +1s 哈希失配
         Date base = draft.getCreateTime() == null ? new Date() : draft.getCreateTime();
@@ -294,5 +314,10 @@ public class AuditLogService {
 
     private static String nvl(String v) {
         return v == null ? "" : v;
+    }
+
+    /** P1-6 三元组补齐用：null/纯空白视为缺失（与 canonicalOf 的空串语义一致） */
+    private static boolean isBlank(String v) {
+        return v == null || v.isBlank();
     }
 }
