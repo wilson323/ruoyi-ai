@@ -43,6 +43,7 @@ public class DeletionArchiveService {
      *
      * @return 未清除的已删除申请
      */
+    @Transactional(readOnly = true)
     public List<DeletionRequest> listArchive() {
         ipdPermission.requireAdmin();
         return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()

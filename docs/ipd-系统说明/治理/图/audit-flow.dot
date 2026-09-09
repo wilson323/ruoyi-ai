@@ -1,0 +1,76 @@
+// IPD 审计数据流图 (DEF-9 修复后: seq 由 AuditChainHead 锚行原子分配)
+// 数据源: ruoyi-ai @ f4907ea6+ (2026-09-09 契约与遗留治理轮刷新)
+// 44 文件 / 81 处 auditLogService.append（蜂群 C 盘点：A 类 Controller 拷贝 4 文件 9 动作点 / B 类 Service 内联+封装 39 文件 / C 类已集中 2 文件）
+// 报障链路: 后端 MDC traceId → 错误包络 → 前端 IpdRequestError.traceId → ipdErrorWithTrace 文案尾部「（编号 xxx）」（P2-2 贯通）
+
+digraph IPD_AuditFlow {
+    rankdir=LR;
+    graph [fontname="Helvetica", fontsize=12, labelloc="t",
+           label="IPD 审计数据流图 (44 文件 / 81 写调用点 / 1 锚行 / 1 读端)\nDEF-9: seq 由锚行原子分配 · 三类写入模式（蜂群 C 2026-09-09）"];
+    node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge  [fontname="Helvetica", fontsize=9, color="#555"];
+
+    // ===== 写端：三类模式（蜂群 C 盘点 2026-09-09） =====
+    subgraph cluster_writers {
+        label = "写端三类模式 (grep auditLogService.append = 81 处 / 44 文件)";
+        style=filled; fillcolor="#eef4ff"; color="#88a";
+        W_A_CopyCat       [label="A 类·Controller 拷贝式封装\n4 文件逐字相同 audit()\n(Receipt/HrSync/Person/PersonSync)\nAOP 首批迁移目标", fillcolor="#cdf"];
+        W_B_ServiceInline [label="B 类·Service 内联+私有封装\n39 文件 / 76 处\n含 6 类不可注解化场景\n(快照/动态action/循环/系统操作人)", fillcolor="#def"];
+        W_C_Centralized   [label="C 类·已集中\nAuditLogService.append 本体\n+ StateMachineGuard postCommit\n(无需改造)", fillcolor="#dfd", color="#6a6"];
+        W_StateGuard      [label="DefaultStateMachineGuard\n(守卫跨域审计 2026-09-09\n规则表 36 条 / 8 台机器)", fillcolor="#fed", color="#c80"];
+    }
+
+    // ===== 中间：Service.append =====
+    AuditService [label="AuditLogService.append\n@Transactional REQUIRES_NEW\n独立事务", shape=component, fillcolor="#ffd", color="#c80"];
+    HashUtil     [label="AuditHashChain\nsha256Hex(prevHash+canonical)", fillcolor="#ffd", color="#c80"];
+
+    // ===== 锚行（DEF-9 核心） =====
+    subgraph cluster_chainhead {
+        label = "DEF-9 锚行 (audit_log_chain_heads, chain_key='GLOBAL')";
+        style=filled; fillcolor="#fff0e0"; color="#c80";
+        ChainHead_Anchor [label="AuditChainHead\nnext_seq / last_hash\nSELECT ... FOR UPDATE", fillcolor="#ffe", color="#c80", shape=cylinder];
+    }
+
+    // ===== 存储 =====
+    subgraph cluster_store {
+        label = "存储层";
+        style=filled; fillcolor="#f0fff4"; color="#4a4";
+        AuditLogTable [label="audit_logs\nIdType.ASSIGN_ID\n(雪花/UUID)", shape=cylinder, fillcolor="#dfd"];
+        ChainHeadTable [label="audit_log_chain_heads\nchain_key PK", shape=cylinder, fillcolor="#dfd"];
+    }
+
+    // ===== 读端：AuditLogController 查询 =====
+    subgraph cluster_readers {
+        label = "读端: AuditLogController (/api/v1/audit-logs/*)";
+        style=filled; fillcolor="#f5e8ff"; color="#74a";
+        R_List          [label="GET /\nlistByOperatorIds", fillcolor="#edf"];
+        R_Verify        [label="GET /verify\nverifyChainDetailed", fillcolor="#edf", color="#c80"];
+        R_Export        [label="GET /export\nHARD_LIMIT=50000", fillcolor="#edf"];
+        R_Scope         [label="GET /scope\nexport/scope", fillcolor="#edf"];
+        R_Rebuild       [label="POST /rebuild-chain\nrebuildChain()", fillcolor="#edf", color="#c80"];
+    }
+
+    // ===== 边：写 =====
+    W_A_CopyCat      -> AuditService [label="9 动作点"];
+    W_B_ServiceInline -> AuditService [label="76 处 append\n(29 处藏于私有方法体)"];
+    W_C_Centralized  -> AuditService [label="同步直调\n(禁仿 LogAspect 异步事件)", color="#6a6"];
+    W_StateGuard     -> AuditService [label="跨域审计", color="#c80"];
+
+    // ===== DEF-9 修复路径（高亮）=====
+    AuditService   -> HashUtil      [label="computeCurrHash", color="#c80", style=bold];
+    AuditService   -> ChainHead_Anchor [label="SELECT FOR UPDATE\n原子分配 seq/prevHash", color="#c80", style=bold];
+    ChainHead_Anchor -> ChainHeadTable [label="advance=1\n防御断言", color="#c80"];
+    AuditService   -> AuditLogTable  [label="insert(seq,currHash)", color="#c80", style=bold];
+
+    // ===== 边：读 =====
+    AuditLogTable -> R_List    [label="分页 by operatorIds"];
+    AuditLogTable -> R_Verify  [label="全链哈希校验\nDEF-9 分列报告\n(HASH断裂 / seq缺行)", color="#c80", style=bold];
+    AuditLogTable -> R_Export  [label="≤ 50000 条"];
+    AuditLogTable -> R_Scope   [label="租户/操作员范围"];
+    R_Rebuild     -> AuditService [label="rebuildChain()", style=dashed, color="#c80"];
+    R_Rebuild     -> AuditLogTable [label="回填+重算哈希", style=dashed, color="#c80"];
+
+    // ===== 缺失：AuditInterceptor / Aspect =====
+    MissingAspect [label="AuditInterceptor\n(find -name '*Interceptor*'\n返回 0 结果)", fillcolor="#fdd", color="#c00", style="dashed"];
+    AuditService -> MissingAspect [style=invis];
+}

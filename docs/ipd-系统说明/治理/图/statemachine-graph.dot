@@ -1,0 +1,96 @@
+// IPD 状态机图 (4 张子图: Gate / Handover / BonusPool / LaunchDateChange)
+// 数据源: ruoyi-ai @ 60bde6b4；2026-09-09 治理轮更新：统一规则表(DefaultStateMachineGuard)
+// 补登 5 台 ad-hoc 状态机 + KPI，共 8 台机器 36 条规则（登记不接线）
+// 抽取依据: 字段注释 + Service 方法 + STATUS_/ST_ 常量
+
+digraph IPD_StateMachine {
+    rankdir=LR;
+    graph [fontname="Helvetica", fontsize=12, labelloc="t",
+           label="IPD 状态机图 (4 子图 / 状态节点 / 转移边)\n红色虚线 = 未闭合 / 缺失回滚 / 异常态未处理\n2026-09-09: 统一规则表 8 机 36 条（见覆盖状态框）"];
+    node  [shape=ellipse, style="filled", fontname="Helvetica", fontsize=10];
+    edge  [fontname="Helvetica", fontsize=9, color="#555"];
+
+    // ===== 统一规则表覆盖状态 (2026-09-09 治理轮 P1-2) =====
+    subgraph cluster_registry {
+        label = "DefaultStateMachineGuard 统一规则表 (36 条种子, @PostConstruct 注入)";
+        style=filled; fillcolor="#f8f8ff"; color="#66c";
+        Reg_Wired   [label="真接线(产线HTTP活路径)\ndeletion_request 7条\nbonus_pool 3条", shape=box, style="rounded,filled", fillcolor="#dfd"];
+        Reg_Half    [label="半接线(守卫调用在,\n写路径无产线入口)\nkpi_record 7条(含*→ARCHIVED)\nKpiRecordController仅只读端点", shape=box, style="rounded,filled", fillcolor="#ffd"];
+        Reg_RegOnly [label="纯登记(登记不接线,\nService仍用ad-hoc守卫)\ngate_review 5 / contribution 5\ncoefficient_change 3\nhandover_record 3 / launch_date_change 3", shape=box, style="rounded,filled", fillcolor="#ffe"];
+        Reg_Wired -> Reg_Half [label="接线程度递减", color="#999", style=dashed];
+        Reg_Half -> Reg_RegOnly [label="", color="#999", style=dashed];
+    }
+
+    // ===== Gate 状态机 (BR-GATE-06) =====
+    subgraph cluster_gate {
+        label = "Gate 评审 (Gate.status: PENDING|APPROVED|REJECTED|ABSTAINED_TIMEOUT)";
+        style=filled; fillcolor="#f0fff4"; color="#4a4";
+        Gate_PENDING     [fillcolor="#ffd", shape=doublecircle, label="PENDING\n(初始)"];
+        Gate_APPROVED    [fillcolor="#dfd", shape=doublecircle, label="APPROVED\n(终态)"];
+        Gate_REJECTED    [fillcolor="#fdd", shape=doublecircle, label="REJECTED\n(终态?)"];
+        Gate_TIMEOUT     [fillcolor="#fed", shape=doublecircle, label="ABSTAINED_TIMEOUT"];
+        Gate_DRAFT       [label="DRAFT(脚本注释, 实际未启用)", fillcolor="#eee", style="dashed"];
+        Gate_APPROVED -> Gate_APPROVED [label="sign(APPROVE)\n→ 双签合议", color="#080"];
+        Gate_PENDING -> Gate_APPROVED   [label="sign(APPROVE)", color="#080"];
+        Gate_PENDING -> Gate_REJECTED   [label="sign(REJECT)", color="#800"];
+        Gate_PENDING -> Gate_TIMEOUT    [label="scanTimeout\n(双弃权超时)", color="#a80"];
+        Gate_REJECTED -> Gate_PENDING   [label="reopen(round++)\n仅 SIGNER_ROLES/SUPER_ADMIN", color="#048"];
+        Gate_TIMEOUT  -> Gate_PENDING   [label="reopen(round++)", color="#048"];
+        // 异常态
+        Gate_APPROVED -> Gate_REJECTED  [label="(无 reopen 路径)\n= 终态正确", style=dashed, color="#888"];
+        Gate_PENDING -> Gate_PENDING    [label="extendDeadline\n(仅延长 dueAt,\n不结束态)", color="#888", style=dashed];
+    }
+
+    // ===== HandoverRecord 状态机 =====
+    subgraph cluster_handover {
+        label = "Handover 移交 (status: DRAFT|CONFIRMED|COMPLETED + 隐藏 ST_ROLLED_BACK)";
+        style=filled; fillcolor="#fdf6e3"; color="#aa4";
+        Hand_DRAFT       [fillcolor="#ffd", shape=doublecircle, label="DRAFT\n(初始)"];
+        Hand_COMPLETED   [fillcolor="#dfd", shape=doublecircle, label="COMPLETED\n(终态)"];
+        Hand_ROLLED      [fillcolor="#fdd", shape=doublecircle, label="ROLLED_BACK\n(终态)"];
+        Hand_Orphan      [label="CONFIRMED?\n(注释列出, 代码无 setter)", fillcolor="#fdd", color="#c00", style="dashed"];
+        Hand_DRAFT -> Hand_COMPLETED    [label="accept\n(接手人确认)", color="#080"];
+        Hand_DRAFT -> Hand_DRAFT         [label="overdue>24h 催办 toPerson\noverdue>48h 升级 SUPER_ADMIN\n(HandoverOverdueScanner 2026-09-09 补齐,\ncron 09:05 待 @EnableScheduling)", color="#c80", style=dashed];
+        Hand_DRAFT -> Hand_Orphan       [label="(代码未走此路径)", style=dashed, color="#c00"];
+        Hand_COMPLETED -> Hand_ROLLED   [label="rollback\n(仅 24h 窗口)", color="#800"];
+        // 缺失路径
+        Hand_DRAFT -> Hand_DRAFT        [label="(无 cancel/initiator-abort)\n= 长期挂死风险", style=dashed, color="#c00"];
+    }
+
+    // ===== BonusPool 状态机 (BR-INC) =====
+    subgraph cluster_bonus {
+        label = "BonusPool 奖金池 (status: DRAFT|CONFIRMED|DISTRIBUTED)";
+        style=filled; fillcolor="#fff0f6"; color="#a4a";
+        Bns_DRAFT       [fillcolor="#ffd", shape=doublecircle, label="DRAFT\n(初始)"];
+        Bns_CONFIRMED   [fillcolor="#ffd", shape=doublecircle, label="CONFIRMED\n(冻结, 可分配)"];
+        Bns_DISTRIBUTED [fillcolor="#dfd", shape=doublecircle, label="DISTRIBUTED\n(终态)"];
+        Bns_DRAFT -> Bns_CONFIRMED     [label="freeze\n(preCheckGuard)", color="#080"];
+        Bns_CONFIRMED -> Bns_DISTRIBUTED [label="distribute\n(preCheckGuard)", color="#080"];
+        Bns_DRAFT -> Bns_DISTRIBUTED   [label="(允许跳级\nDRAFT→DISTRIBUTED)", color="#888", style=dashed];
+        // 缺失回滚
+        Bns_CONFIRMED -> Bns_DRAFT     [label="(无 unfreeze/unlock)\n= 冻结后无法回退", style=dashed, color="#c00"];
+        Bns_DISTRIBUTED -> Bns_DRAFT   [label="(无 reverse)\n= 涉钱终态, 但无审计回退", style=dashed, color="#c00"];
+    }
+
+    // ===== LaunchDateChange 状态机 =====
+    subgraph cluster_launch {
+        label = "LaunchDateChange (ST_: PENDING_SECOND|CONFIRMED|REJECTED)";
+        style=filled; fillcolor="#eef4ff"; color="#88a";
+        Ld_INIT         [label="(未列举, 隐含创建态)", fillcolor="#eee", style="dashed"];
+        Ld_PENDING      [fillcolor="#ffd", shape=doublecircle, label="PENDING_SECOND\n(初始/二签等待)"];
+        Ld_CONFIRMED    [fillcolor="#dfd", shape=doublecircle, label="CONFIRMED\n(终态)"];
+        Ld_REJECTED     [fillcolor="#fdd", shape=doublecircle, label="REJECTED\n(终态)"];
+        Ld_INIT -> Ld_PENDING          [label="propose\n(预落 confirmerId\n防绕)", color="#080"];
+        Ld_PENDING -> Ld_CONFIRMED     [label="secondDecision(approve)", color="#080"];
+        Ld_PENDING -> Ld_REJECTED      [label="secondDecision(reject)", color="#800"];
+        // 缺失
+        Ld_PENDING -> Ld_INIT          [label="(无 cancel/withdraw)\n提议人无法主动撤回", style=dashed, color="#c00"];
+        Ld_CONFIRMED -> Ld_REJECTED    [label="(无 reopen)\n= 终态正确", style=dashed, color="#888"];
+    }
+
+    // 跨机关联
+    BonusPool_distribute_edge [shape=point, width=0, label=""];
+    Receipt_ledger_node [label="ReceiptLedger\n(allowance_ledgers)", shape=box, style="rounded,filled", fillcolor="#fdf"];
+    Bns_DISTRIBUTED -> Receipt_ledger_node [label="postCommit\n跨域副作用\n(写津贴账本)", color="#a4a", style=bold];
+    Gate_APPROVED -> Bns_CONFIRMED [label="(G1 双签决定\nbonus.coefficient)", color="#048", style=dashed];
+}

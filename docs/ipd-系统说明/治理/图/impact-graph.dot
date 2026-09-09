@@ -1,0 +1,64 @@
+// IPD 治理轮修复影响传播图（2026-09-09）
+// 本轮 4 个 P0 修复 → 影响的实体 / 表 / 接口 / 前端 / 调度
+// 数据源: ruoyi-ai @ f4907ea6 + 本轮工作树修改
+
+digraph IPD_FixImpact {
+    rankdir=LR;
+    graph [fontname="Helvetica", fontsize=12, labelloc="t",
+           label="2026-09-09 治理轮修复影响传播图\n4 个 P0 修复 / 7 个改动文件 / 3 个新文件 / 双仓"];
+    node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge  [fontname="Helvetica", fontsize=9, color="#555"];
+
+    // ===== 修复源（4 个 P0）=====
+    subgraph cluster_fixes {
+        label = "修复源 (17 类问题之首轮 4 P0)";
+        style=filled; fillcolor="#eef4ff"; color="#88a";
+        F1 [label="P0-1 KpiSharedConfirm\n表↔实体对齐登记", fillcolor="#cdf"];
+        F2 [label="P0-2 移交超时漏斗\nScanner + cron 恢复", fillcolor="#cdf"];
+        F3 [label="P0-3 HR 写路径审计\n3 Controller x8 端点", fillcolor="#cdf"];
+        F4 [label="P0-4 前端业务码\n+15 条 / -40010", fillcolor="#cdf"];
+    }
+
+    // ===== 影响面：后端 =====
+    subgraph cluster_backend {
+        label = "后端 ruoyi-ai (7 文件)";
+        style=filled; fillcolor="#f0fff0"; color="#6a6";
+        B1 [label="KpiSharedConfirm.java (新)\n+ KpiSharedConfirmMapper.java (新)\ndomain 56→57 实体", fillcolor="#dfd"];
+        B2 [label="HandoverOverdueScanner.java (新)\ncron 09:05 错峰 09:00\npublishDaily 幂等", fillcolor="#dfd"];
+        B3 [label="PersonResignEscalator.java\n@Scheduled 解注释\n(待 OPS-04 @EnableScheduling)", fillcolor="#dfd"];
+        B4 [label="HrSyncController\nmark-resigned 补审计", fillcolor="#dfd"];
+        B5 [label="PersonController\nresign/rehire/unbind 补审计", fillcolor="#dfd"];
+        B6 [label="PersonSyncController\nsubmit/retry/retry-all 补审计", fillcolor="#dfd"];
+    }
+
+    // ===== 影响面：前端 =====
+    subgraph cluster_frontend {
+        label = "前端 ruoyi-ipd-web (1 文件)";
+        style=filled; fillcolor="#fff4e6"; color="#a85";
+        FE1 [label="auth.ts BUSINESS_CODE_MESSAGES\n20→35 条 (50003-50017 补齐)\n40010 死码删除", fillcolor="#fed"];
+    }
+
+    // ===== 运行时影响 =====
+    subgraph cluster_runtime {
+        label = "运行时行为变化";
+        style=filled; fillcolor="#fdf6e3"; color="#aa4";
+        R1 [label="audit_logs 表\nhr/person/sync 写操作\n留痕可溯 (entityType:\npersons / person_sync_jobs)", fillcolor="#ffd"];
+        R2 [label="notification_events 表\nHANDOVER_DUE_SOON\nHANDOVER_OVERDUE_ESCALATION\n(每日幂等)", fillcolor="#ffd"];
+        R3 [label="用户报错文案\nKPI/贡献度/负反馈/对账/移交\n15 类业务语义恢复", fillcolor="#ffd"];
+    }
+
+    // ===== 边：修复 → 影响 =====
+    F1 -> B1;
+    F2 -> B2 -> R2;
+    F2 -> B3;
+    F3 -> B4 -> R1;
+    F3 -> B5 -> R1;
+    F3 -> B6 -> R1;
+    F4 -> FE1 -> R3;
+
+    // ===== 依赖方（未动但相关）=====
+    OPS04 [label="OPS-04 scheduler 卡\n@EnableScheduling 合入后\n双 job (09:00 + 09:05) 生效",
+           fillcolor="#eee", style="dashed", shape=note];
+    B2 -> OPS04 [style=dashed, label="启用依赖"];
+    B3 -> OPS04 [style=dashed, label="启用依赖"];
+}

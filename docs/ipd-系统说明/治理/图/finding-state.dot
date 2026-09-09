@@ -1,0 +1,54 @@
+// 43+5 项历史 finding 关单核查状态图（2026-09-09 契约与遗留治理轮）
+// 数据源: 蜂群 A（SEC-AUD 22 项）+ 蜂群 B（PERF-AUD 15 + QA-05-P1 3 + QA-06 2 项）
+// 核查基线: 磁盘现态（f4907ea6 + 本轮在途修复）
+// 关单口径: 已修复=代码证据在位 / 部分修复=主缺陷消但残留 / 仍在=原样 / 误报=非缺陷
+
+digraph FindingState_20260909 {
+    rankdir=TB;
+    graph [fontname="Helvetica", fontsize=12, labelloc="t",
+           label="历史 finding 关单核查状态（2026-09-09）\nSEC 22 + PERF 15 + QA 5 = 42 项核查 → 25 已修 / 3 部分 / 13 仍在 / 1 误报"];
+    node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge  [fontname="Helvetica", fontsize=9, color="#555"];
+
+    Source [label="三份审计源 (2026-09-05)\nSEC-AUD 22 + PERF-AUD 15\nQA-05-P1 3 + QA-06 2", fillcolor="#eee"];
+
+    subgraph cluster_fixed {
+        label = "已修复 25（可关单）";
+        style=filled; fillcolor="#eef8ee"; color="#6a6";
+        F_SEC15 [label="SEC 15 项\n5 HIGH 全落（BCrypt/密码env/\nhandler全覆盖/假绿key/池80）\n+锚行锁连消3竞态\n+密钥全env化", fillcolor="#dfd"];
+        F_PERF10 [label="PERF 10 项\n3×P0 索引+批量化\n+audit锚行串行\n+bootstrap 80→3 SQL", fillcolor="#dfd"];
+        F_QA3 [label="QA 3 项\n池雪崩基座40→20\nverifyChain分列判据\n毫秒/seq根因消除", fillcolor="#dfd"];
+    }
+
+    subgraph cluster_partial {
+        label = "部分修复 3（残留待收）";
+        style=filled; fillcolor="#fffbe0"; color="#ca0";
+        P_P1_1 [label="PERF P1-1 ReceiptLedger\nDDL已落 in_window 生成列\n但Java循环未切SQL过滤", fillcolor="#ffd"];
+        P_QA13 [label="QA-05-P1 P1-3\n取舍已披露 log.md\nREADME 增补未做", fillcolor="#ffd"];
+        P_P2_3 [label="PERF P2-3 Dockerfile\nZGC+HeapDump已固定\nXms/Xmx 未显式", fillcolor="#ffd"];
+    }
+
+    subgraph cluster_open {
+        label = "仍在 13（真遗留 → 分四档处置）";
+        style=filled; fillcolor="#fdeeef"; color="#c66";
+        O_P0_4 [label="PERF P0-4 bid_responses\n缺 rd_pm_id 索引+不分页\n→ 本轮已修! 索引已apply\n+双方法 LIMIT 500", fillcolor="#dfd", color="#6a6"];
+        O_SEC6 [label="SEC 6 项\nHIGH-5 列型(裁决)\nMED-2 rebuild互斥\nMED-3 withdraw差分\nLOW-6 readOnly(本轮已修!)\nINFO-1 dev密码 / INFO-3 护栏", fillcolor="#fdd"];
+        O_PERF6 [label="PERF 5 项\nP1-2 分页(本轮已修!)\nP1-6 audit合并框架\nP2-2 达成率SQL过滤\nP2-4 logback分profile\nP2-5 单JVM缓存(知情搁置)", fillcolor="#fdd"];
+        O_QA_HV2 [label="QA-06 finding-2\nhash_version=2 历史行\n62行不可验 → owner裁决", fillcolor="#fdd"];
+    }
+
+    FalsePositive [label="误报 1：SEC INFO-4\n(对 commit 构成的元观察)", fillcolor="#eee"];
+
+    Round3 [label="本轮新修 3 项落地\n① idx_br_rd_pm 索引 apply+校验\n② listResponses/listByRdPm LIMIT 500\n③ DeletionArchive listArchive readOnly\n(前端另修: 16 码补齐+2幽灵码清除)", shape=note, fillcolor="#ffe", color="#c80"];
+
+    Source -> F_SEC15 [label="22"];
+    Source -> F_PERF10 [label="15"];
+    Source -> F_QA3 [label="5"];
+    Source -> P_P1_1 [style=dashed];
+    Source -> O_SEC6 [label="6", color="#c66"];
+    Source -> O_PERF6 [style=dashed, color="#c66"];
+    Source -> O_QA_HV2 [style=dashed, color="#c66"];
+    Source -> FalsePositive [style=dotted];
+
+    O_P0_4 -> Round3 [label="本轮闭环", color="#6a6", style=bold];
+}
