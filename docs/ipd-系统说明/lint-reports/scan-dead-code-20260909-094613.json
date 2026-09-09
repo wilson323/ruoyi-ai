@@ -1,0 +1,316 @@
+[
+  {
+    "class": "AllowanceLedgerController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AllowanceLedgerController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "AllowanceService",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AllowanceLedgerController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "BidP231Controller",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidP231Controller.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "BidScanService",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/BidScanService.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@Service"
+  }
+,
+  {
+    "class": "BonusPoolController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BonusPoolController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "BusinessConfigService",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/DeletionRequestService.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@Service"
+  }
+,
+  {
+    "class": "ComplianceController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ComplianceController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "ContributionController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ContributionController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "DeleteAuditService",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DeletionRequestController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "DemandController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DemandController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "GateElementResultController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementResultController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "GateMaterialController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateMaterialController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "GateReviewController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateReviewController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "GateSignScanController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateSignScanController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "HandoverController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "HrSyncController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "IpdSaTokenBridgeConfig",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/config/IpdSaTokenBridgeConfig.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@Configuration"
+  }
+,
+  {
+    "class": "KpiRecordController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/KpiRecordController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "LaunchDateChangeController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermissionExceptionHandler.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestControllerAdvice(basePackages = "org.ruoyi.ipd.controller")"
+  }
+,
+  {
+    "class": "LegacyScanController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementResultController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "NegativeFeedbackController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NegativeFeedbackController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "NotificationController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NotificationController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "PersonController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "PersonResignEscalator",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/PersonResignEscalator.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@Component"
+  }
+,
+  {
+    "class": "PersonSyncController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonSyncController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "PmDirectoryController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PmDirectoryController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "ProductGroupController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductGroupController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "ProductWorkspaceController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductWorkspaceController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "ProjectBootstrapService",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectBootstrapService.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@Service"
+  }
+,
+  {
+    "class": "ProjectCircleController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectCircleController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "ProjectMemberController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectMemberController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "ReceiptLedgerController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ReceiptLedgerController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "RequirementChangeController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/RequirementChangeController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "SopTemplateController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SopTemplateController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+,
+  {
+    "class": "SwitchingAcceptanceController",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java",
+    "risk": "LOW",
+    "reason": "仅有注解自发现，需人工复核业务可达性",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "@RestController"
+  }
+]

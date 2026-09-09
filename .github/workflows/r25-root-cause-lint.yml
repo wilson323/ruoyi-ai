@@ -1,0 +1,201 @@
+# R25 Root Cause Lint
+# 触发：
+#   - PR 修改 ruoyi-ai/** 或 ruoyi-ipd-web/apps/web-antd/src/**
+#   - 每周日 03:00 Asia/Shanghai 跑全量回归
+# 行为：
+#   - 默认 WARN（exit 0 + 报告归档），不阻断 PR
+#   - 可选 secret `STRICT_R25_LINT=1` 升级为 ERROR 阻断
+#
+# 对应治理卡：ROOT-R6-CONTRACT / ROOT-R6-DEADCODE / ROOT-R6-CONFIG-APPLY /
+#           ROOT-R6-DYNAMIC / ROOT-R6-DUP-SSOT / ROOT-R6-DOC-LINK /
+#           ROOT-R6-I18N-OLD / ROOT-R6-DELETION-CONSIST
+# 覆盖 R25 蜂群 A/B/C/D 4 路 564 项异常中的 8 大根因
+
+name: r25-root-cause-lint
+
+on:
+  push:
+    paths:
+      - 'scripts/scan_dead_code.sh'
+      - 'scripts/check_cross_repo_contract.sh'
+      - 'scripts/check_dynamic_loadable.sh'
+      - 'scripts/check_tenant_excludes_apply.sh'
+      - 'scripts/check_entity_complete.sh'
+      - 'scripts/check_i18n_unused_keys.sh'
+      - 'scripts/check_doc_link.sh'
+      - 'scripts/check_deletion_consistency.sh'
+      - 'scripts/check_duplicate_ssot.sh'
+      - '.github/workflows/r25-root-cause-lint.yml'
+  pull_request:
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/**'
+      - 'apps/web-antd/src/**'
+      - 'docs/ipd-系统说明/**'
+  schedule:
+    # 每周日 03:00 Asia/Shanghai = 19:00 UTC Saturday
+    - cron: '0 19 * * 6'
+  workflow_dispatch:
+
+jobs:
+  lint-r25:
+    name: R25 8 大根因全量门禁
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup jq + shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y jq shellcheck >/dev/null 2>&1 || true
+          echo "jq: $(jq --version)"
+          echo "shellcheck: $(shellcheck --version 2>/dev/null | head -1 || echo '未安装（仅警告）')"
+
+      # ---- 门禁 1：死代码扫描（RC-4） ----
+      - name: 死代码扫描（scan_dead_code.sh）
+        id: deadcode
+        run: |
+          set +e
+          bash scripts/scan_dead_code.sh
+          RC=$?
+          set -e
+          echo "scan_dead_code 退出码: $RC"
+          if [ "$RC" != "0" ]; then
+            echo "::warning::死代码扫描发现 HIGH/MEDIUM 项"
+            if [ "${{ secrets.STRICT_R25_LINT }}" = "1" ]; then
+              exit 1
+            fi
+          fi
+
+      # ---- 门禁 2：跨仓契约对账（RC-2） ----
+      - name: 跨仓契约对账（check_cross_repo_contract.sh）
+        id: contract
+        run: |
+          set +e
+          bash scripts/check_cross_repo_contract.sh
+          RC=$?
+          set -e
+          echo "check_cross_repo_contract 退出码: $RC"
+          if [ "$RC" != "0" ]; then
+            echo "::warning::跨仓契约对账发现白屏/孤儿/文档未实现"
+            if [ "${{ secrets.STRICT_R25_LINT }}" = "1" ]; then
+              exit 1
+            fi
+          fi
+
+      # ---- 门禁 3：动态加载依赖清单（RC-5） ----
+      - name: 动态加载清单（check_dynamic_loadable.sh）
+        id: dynamic
+        run: |
+          set +e
+          bash scripts/check_dynamic_loadable.sh
+          RC=$?
+          set -e
+          echo "check_dynamic_loadable 退出码: $RC"
+
+      # ---- 门禁 4：配置先行 / DDL 落地对账（RC-3） ----
+      - name: 租户白名单对账（check_tenant_excludes_apply.sh）
+        id: tenant
+        run: |
+          set +e
+          bash scripts/check_tenant_excludes_apply.sh --skip-db
+          RC=$?
+          set -e
+          echo "check_tenant_excludes_apply 退出码: $RC"
+
+      - name: 实体完整性（check_entity_complete.sh）
+        id: entity
+        run: |
+          set +e
+          bash scripts/check_entity_complete.sh
+          RC=$?
+          set -e
+          echo "check_entity_complete 退出码: $RC"
+
+      # ---- 门禁 5：重复 SSOT 扫描（RC-6） ----
+      - name: 重复 SSOT（check_duplicate_ssot.sh）
+        id: dupssot
+        run: |
+          set +e
+          bash scripts/check_duplicate_ssot.sh
+          RC=$?
+          set -e
+          echo "check_duplicate_ssot 退出码: $RC"
+
+      # ---- 门禁 6：文档链接 / 端点路径校验（RC-7） ----
+      - name: 文档链接（check_doc_link.sh）
+        id: doclink
+        run: |
+          set +e
+          bash scripts/check_doc_link.sh
+          RC=$?
+          set -e
+          echo "check_doc_link 退出码: $RC"
+
+      # ---- 门禁 7：i18n 死键扫描（RC-8） ----
+      - name: i18n 死键（check_i18n_unused_keys.sh）
+        id: i18n
+        run: |
+          set +e
+          bash scripts/check_i18n_unused_keys.sh
+          RC=$?
+          set -e
+          echo "check_i18n_unused_keys 退出码: $RC"
+          if [ "$RC" != "0" ]; then
+            echo "::warning::i18n 死键未清理（PR 前建议跑 --delete）"
+            if [ "${{ secrets.STRICT_R25_LINT }}" = "1" ]; then
+              exit 1
+            fi
+          fi
+
+      # ---- 门禁 8：删除前对账（RC-1） ----
+      - name: 删除前对账（check_deletion_consistency.sh）
+        id: deletion
+        run: |
+          set +e
+          bash scripts/check_deletion_consistency.sh --auto
+          RC=$?
+          set -e
+          echo "check_deletion_consistency 退出码: $RC"
+
+      # ---- 报告归档 ----
+      - name: 报告归档
+        if: always()
+        run: |
+          mkdir -p docs/ipd-系统说明/lint-reports
+          DATE_TAG=$(date -u +%Y-%m-%d)
+          ls docs/ipd-系统说明/lint-reports/ | grep -E "(${DATE_TAG}|today)" | head -20 > "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "📂 R25 lint 报告已写入 docs/ipd-系统说明/lint-reports/" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔗 治理索引：docs/ipd-系统说明/治理/R25根因反思与防复发建议-20260909.md" >> "$GITHUB_STEP_SUMMARY"
+
+  summary:
+    name: 总结
+    runs-on: ubuntu-latest
+    needs: lint-r25
+    if: always()
+    steps:
+      - name: 总结
+        run: |
+          echo "## R25 8 大根因 lint 结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 门禁 | 结果 |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 死代码扫描 | ${{ steps.deadcode.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 跨仓契约 | ${{ steps.contract.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 动态加载 | ${{ steps.dynamic.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 租户白名单 | ${{ steps.tenant.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 实体完整性 | ${{ steps.entity.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 重复 SSOT | ${{ steps.dupssot.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 文档链接 | ${{ steps.doclink.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| i18n 死键 | ${{ steps.i18n.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 删除前对账 | ${{ steps.deletion.outputs.* || 'see logs' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**整体状态**: ${{ needs.lint-r25.result }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,19 @@
+[
+  {
+    "class": "NotificationChannel",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/NotificationChannelHandler.java",
+    "risk": "MEDIUM",
+    "reason": "无 Spring 自发现注解，确实零引用——可能真死或 framework 遗漏",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "NO_ANN"
+  }
+,
+  {
+    "class": "RuntimeException",
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermissionException.java",
+    "risk": "MEDIUM",
+    "reason": "无 Spring 自发现注解，确实零引用——可能真死或 framework 遗漏",
+    "refs": {"import": 0, "new": 0, "extends": 0},
+    "spring_annotation": "NO_ANN"
+  }
+]

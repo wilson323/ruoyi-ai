@@ -1,0 +1,11 @@
+{
+  "timestamp": "20260909-100441",
+  "module": "ruoyi-ipd",
+  "scan_base": "ruoyi-modules/ruoyi-ipd/src/main/java",
+  "totals": {
+    "entity": 1, "mapper": 51, "service": 54, "controller": 47
+  },
+  "f1_no_mapper": ,
+  "f2_no_service": ["AuditChainHeadMapper","BonusAllocationMapper","CoefficientChangeRequestMapper","ContributionVersionMapper","DeliverableMapper","GateArbitrationMapper","GateMapper","GateReviewObserverMapper","IpdBusinessConfigMapper","IpdBusinessConfigVersionMapper","LaunchDateChangeRequestMapper","NotificationEventMapper","OssFileMapper","ProjectCertItemMapper","ProjectCircleCommentMapper","ProjectCirclePostMapper","ProjectFollowerMapper","ProjectScoreRecordMapper","ProjectScoreTaskMapper","ProjectStageMapper","RequirementMapper","SystemConfigVersionMapper"],
+  "f3_no_controller": ["AiGenerationService","AllowanceService","AuditAttemptService","BidInvitationService","BidResponseService","BidScanService","BusinessConfigService","DeleteAuditService","DeletionArchiveService","GateCreationService","GuestDemandService","KpiSharedCollectionService","LegacyImportService","OverdueReminderService","ProjectBootstrapService","ProjectCertService","ProjectScoreArchiveService","ProjectScoreScheduleService"]
+}
