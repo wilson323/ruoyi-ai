@@ -2,7 +2,7 @@
 
 ## A4：17 个 worktree fresh 处置矩阵（git worktree list + rev-list 实查）
 
-### 可安全清（2 个，ahead=0 dirty=0，删 worktree 不删分支）
+### ~~可安全清（2 个，ahead=0 dirty=0，删 worktree 不删分支）~~【勘误 2026-09-09 11:20：本节判定错误，见文末】
 | worktree | 分支 | 说明 |
 |---|---|---|
 | /private/tmp/ipd-main-audit | merge/local-main-r15 | 审计遗留，HEAD=8d2b2069 无新 commit |
@@ -38,3 +38,9 @@
    ```
    期望：出现超期移交类事件（overdue/scan 相关 event_type）≥1 条；同步核对应用日志 `logs/sys-console.log` 无 scanner 异常栈。
 4. 若零事件：先查 `@Scheduled` 是否被 `@Profile`/配置开关排除，再查 `handover_record` 是否确有超期数据（无超期数据时零事件属正常）。
+
+## 勘误（2026-09-09 11:20，主协调双线合并轮）
+
+上表"可安全清 2 个（ahead=0）"判定**错误**：执行前 fresh 复测发现 merge/local-main-r15 ahead=121（分支独有 commit，含 demo.enabled 守卫窗口等 R15 线未合内容）、fix/scan-overdue-tenant-guard ahead=73（即 D4 所指 scanner tenant 守卫分支）。两者 dirty=0 属实，但 ahead 均不为 0，**均未清、均保留**。成因：初盘时 ahead 算法口径错误（相对 origin/main 而非本地 main 的独有 commit 数）。两分支是否合入/废弃属新的 owner 裁决项。
+
+另：R24/R25 双线已于 2026-09-09 上午合入 main（08e5b20b + 6b986a65，守卫表 38 条），wt-p0r2 / wt-r24 两 worktree 的使命已完成，其 dirty（74/1）在合并后可再评估清理，但本轮未动。
