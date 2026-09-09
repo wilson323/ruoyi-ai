@@ -2920,3 +2920,10 @@ MEDIUM-1.3 worker 旁路 SKIP_CONCURRENT_WRITE=1：GateReviewService.java 被兄
 - **C 批次（14 问澄清）**：`docs/ipd-系统说明/缺表4类-14问澄清-20260908.md`（通用 2 + waiver 3 + rd_replacement 3 + retirement 3 + capacity 3；每问背景/选项/建议/拍板栏 + 汇总空表；契约 yaml PLANNED 段已引用此文件为建模前置）。
 - **dev-accounts.yaml 处置**：从 docs/ipd-系统说明/ mv 至 `.codex/ipd-dev/config/`（git check-ignore 实证 .gitignore:83 `.codex/` 覆盖，不再入 docs 目录）。
 - 蜂群四路只读盘点先行（契约面/apply-check 面/mock 面/DOC 回迁源面），遵守 Java 单写者红线：蜂群只出报告，落地由主会话串行写。
+
+## R18（2026-09-09）契约与遗留治理轮 + 津贴口径拍板落地
+- 4 路蜂群只读核查 42 项历史 finding（SEC 22 + PERF 15 + QA 5）：25 已修/3 部分/13 仍在/1 误报，关单登记见《治理/契约与遗留治理轮-20260909.md》。
+- 顺手修复：LOW-6 listArchive readOnly；P0-4 idx_br_rd_pm 索引已 apply+校验 + listByRdPm/listResponses LIMIT 500；前端展示表补 16 业务码（40006+50003~50017）+ 清 40010/404 双幽灵码（7813fac）。
+- 审计 AOP 改造设计落盘《治理/审计AOP改造设计-20260909.md》：81 处三类模式、注解化上限 40%、四批迁移。
+- **业务裁决登记（owner 2026-09-09 拍板）：津贴「当月退出当月不发」**——AllowanceService.isMemberActiveInMonth 退出侧由「退出≥月初仍计」改为「退出≥次月月初才计（月末在岗口径）」，与主流程 isNull(exitDate) 对齐，双口径并存消除；P333AcceptanceTest 5 用例断言同步改，20/20 绿（04:54）。加入侧「月初在岗才计」不变。
+- 提交：后端 fix/gov-contract-20260909 @ 4b76d868（11 文件）+ 拍板落地增量；前端 fix/gov-contract-20260909 @ 7813fac（3 文件）。
