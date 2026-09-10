@@ -157,6 +157,45 @@ public class IpdServiceExceptionAdvice {
         }
     }
 
+    /**
+     * R28.5 防线 3：配置冲突类异常不走 90001 兜底，返回 503 + code=90002 + traceId，
+     * 让运维从日志 traceId 立即定位（替代「系统内部错误」误导）。
+     *
+     * 背景：此前 ApplicationConfig 实现了 Spring 的 AsyncConfigurer 接口，与 Spring Boot 默认
+     * 的 applicationTaskExecutorAsyncConfigurer 多 Bean 冲突 → Only one AsyncConfigurer may exist
+     * 被下方 handleUnexpected 静默兜底成 code:90001，前端无法区分用户错 vs 系统错。
+     * 改造后：日志带完整堆栈 + traceId 透传响应体，运维毫秒级定位。
+     *
+     * 覆盖范围：IllegalStateException + 6 个 Spring 配置/Bean 异常；
+     * 均属"容器内部状态异常，非用户操作可解决"，前端提示「系统配置异常」即可。
+     *
+     * 作用域：仅覆盖 IPD controller 包；GlobalExceptionHandler 不在本会话范围。
+     * 规约见 docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md §六。
+     */
+    @ExceptionHandler({
+        IllegalStateException.class,
+        org.springframework.beans.factory.support.BeanDefinitionOverrideException.class,
+        org.springframework.beans.factory.NoUniqueBeanDefinitionException.class,
+        org.springframework.beans.factory.BeanCreationException.class,
+        org.springframework.beans.BeanInstantiationException.class,
+        org.springframework.beans.FatalBeanException.class,
+        org.springframework.context.ApplicationContextException.class
+    })
+    public ResponseEntity<ApiV1Response<Void>> handleIllegalState(Exception e) {
+        String traceId = UUID.randomUUID().toString().replace("-", "");
+        MDC.put("traceId", traceId);
+        try {
+            log.error("[IPD] CONFIG_CONFLICT (R28.5) traceId={} type={} msg={}",
+                traceId, e.getClass().getSimpleName(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiV1Response.fail(90002,
+                    "系统配置异常，请联系管理员（traceId=" + traceId + "）",
+                    traceId));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
     // 权限三型（IpdPermissionException / NotPermissionException / NotRoleException）不在此处理：
     // 它们由 IpdPermissionExceptionHandler（@Order(HIGHEST_PRECEDENCE)，basePackages 覆盖
     // org.ruoyi.ipd.controller 及其子包）独占。本类是 @Order(HIGHEST + 1)，一旦在此重复注册

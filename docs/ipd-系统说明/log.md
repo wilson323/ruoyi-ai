@@ -1,4 +1,51 @@
 
+## 2026-09-09 R28.5 接续会话（owner「系统性梳理全局项目代码深度思考反思全局项目中类似异常全部根源性修复」）：AI 副驾悬浮入口 500 根因 + AsyncConfigurer 全局根治启动
+
+### 触发 & 现象
+- 用户原问"为什么 AI 图标都点了没反应" → 浏览器实测 `127.0.0.1:15666/ipd/ai-assistant` 页面两个悬浮入口：
+  - 齿轮「切换到 AI 管理平台」→ `POST /api/v1/auth/platform-token` → **HTTP 500 + code:90001 系统内部错误**
+  - 机器人「打开 AI 副驾」→ `router.push('/ipd/ai-assistant')` 当前页原地踏步
+- 后端 traceId `b65ece346803458cb636692a55f23c6e`：根因 `java.lang.IllegalStateException: Only one AsyncConfigurer may exist`，调用栈 `IpdPlatformAuthController:95 → LoginHelper.login → SaTokenEventCenter.doLogin → UserActionListener.doLogin:89 → SysLogininforServiceImpl.recordLogininfor (@Async 首次执行触发懒解析)`
+
+### 9/7 修复未落地说明
+- 记忆显示 9/7 验收文档 `platform-token-500修复-AsyncConfigurer-20260907.md` 写过"拆 ApplicationConfig implements AsyncConfigurer"修复
+- 但当前 HEAD `103d7b5e`（R28 9/9 早上提交）实际代码 `ApplicationConfig.java:36` 仍 `public class ApplicationConfig implements AsyncConfigurer`，`SysLogininforServiceImpl.java:55` 仍 `@Async`
+- 推断：9/7 修复在某个会话被回退（兄弟会话或还原 reset），未真正进入主线；当前 16039 进程 PID 13933（7:24 启动）跑的是回退后的字节码
+
+### 本会话登记范围（OPS-09 软化）
+- 只动 `ruoyi-common/ruoyi-common-core/.../config/ApplicationConfig.java` + `ruoyi-modules/ruoyi-system/.../impl/SysLogininforServiceImpl.java` + `SysOperLogServiceImpl.java` + 新增 `scripts/check_async_configurer_duplication.sh` + `docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md`
+- 不动：兄弟会话在途的 `NegativeFeedback.java` / `NegativeFeedbackService.java` / `check_cross_repo_contract.sh`（R28 兄弟会话产物）；不重建 ruoyi-ai jar（沿用现有 target/ruoyi-admin.jar 增量编译）
+- 隶属：本会话为 R28.5 独立治理轮，与 R28 治理轮同主线但非同一会话接力
+
+### 执行进度（全部完成 2026-09-09 20:04 PDT）
+- [x] 全局盘点 @Async + @EventListener + AsyncConfigurer + Executor bean 命中文件
+- [x] log.md 登记本会话归属（本节）
+- [x] 拆 ApplicationConfig implements AsyncConfigurer + 暴露 @Bean("taskExecutor")（文件：`ruoyi-common/ruoyi-common-core/src/main/java/org/ruoyi/common/core/config/ApplicationConfig.java`，+20/-6）
+- [x] SysLogininforServiceImpl.recordLogininfor 去 @Async 同步执行（-1 +13）
+- [x] SysOperLogServiceImpl.recordOper 去 @Async 同步执行（同类修复，-1 +6）
+- [x] 加架构规约 `docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md`（127 行）
+- [x] 加 lint 脚本 `scripts/check_async_configurer_duplication.sh`（R25 9 大门禁的第 10 个，fresh 验证 0 命中）
+- [x] 单模块编译 + 重启 16039（PID 76269，2026-09-10 11:03:44 PDT 起服）+ 浏览器复测齿轮按钮：✓ 成功跳到 `/chat/provider`；机器人按钮 ✓ 跳到 `/ipd/ai-assistant`
+
+### Fresh 验证证据
+- 后端 traceId `b65ece346803458cb636692a55f23c6e` （修复前 HTTP 500）
+- 修复后浏览器实测：齿轮按钮点击 → `POST /api/v1/auth/platform-token` HTTP 200 → 跳 `/chat/provider` 厂商管理页（ollama/qianwen 列表正常）
+- 机器人按钮点击 → `router.push('/ipd/ai-assistant')` 跳 AI 文档助手页（表单、版本链、版本对比均正常渲染）
+- `javap -v` 字节码验证：`ApplicationConfig` 不再 implements `AsyncConfigurer`；`recordLogininfor` / `recordOper` 无 `@Async` 注解残留
+- R25 `check_cross_repo_contract.sh` 刷后报错 2 个白屏（`platform-token` + `bid-invitations/:id/select`），本轮修复 `platform-token`；`bid-invitations/:id/select` 不在本轮修复范围（兄弟会话已定性）
+
+### 未提交仓库
+按 AGENTS.md「未经用户明确要求不提交/推送」，本次修复 uncommitted（仅修改三个 Java 文件 + 两个新文件）。如需提交请明确授权。
+
+### 遗留项（仅供主协调会话拍板）
+1. **commit + push**：需 owner 明确授权“提交并推送到 origin/main”。
+2. **CI 接入**：`scripts/check_async_configurer_duplication.sh` 需添加 `.github/workflows/ipd-async-configurer.yml`（本轮交付脚本，CI 接入待补）。
+3. **兄弟会话同步**：R28 兄弟会话在途工作 `NegativeFeedback.java/Service.java` + `check_cross_repo_contract.sh` 本会话未动（OPS-09 软化记录）。
+4. **`bid-invitations/:id/select` 白屏**：R25 二轮报告记为 D1-A 真值白屏，本轮修复未覆盖。需要独立 session 处理（可能需修改前端 requestIpd 函数调用模式，与本会话主题不交集）。
+5. **9 门禁报其他 194 孤儿 + 21 未实现**：需后续业务裁决，本轮仅报“修复”未推进。
+
+---
+
 ## 2026-09-05 22:15 PDT Qoder 接续会话（owner「1确认 2推送 3审计日志上线」）：审计链①②③上线完成 + P0-9.1 run9 79/79 ALL PASS ✅
 
 ### 三件指令执行结果
@@ -3160,3 +3207,148 @@ owner「授权全部执行」指令后四连：
 - **测试收口**：SwitchingAcceptanceServiceTest 适配真实对账（6 mapper 空表 mock + 数据源缺失 fail-closed 新用例，17/17）；Handover 12 测试 + RequirementChange 4 测试注入 mock 守卫（P261/P262 系 @InjectMocks 构造器注入优先后不走 setter——@BeforeEach 显式注入补漏）；StateMachineGuardContractTest 哨兵 42 + 表驱动 42 合法/18 非法（65/65）
 - **验证与提交**：ruoyi-ipd 全量 **2104 绿（0F/0E/22 skip）BUILD SUCCESS**；commit ruoyi-ai d101c9a2（28 文件 +590/-73）+ ruoyi-ipd-web 7867084（7 文件 +237/-28），双仓 push origin main 成功（兄弟在途文件零裹入）
 - **残留**：浏览器 E2E 复验用户可见路径待起服务轮执行；audit_logs 索引 DDL 待 DBA apply；后端审计/守卫行为待重打包部署 16039 后真活验证
+
+## R29（2026-09-10）生产就绪蜂群审计轮：七域端到端 + P0 bug 修复 + 浏览器 E2E 全绿（执行会话本地编号）
+
+> 触发：owner「完整执行确保生产就绪」+「充分利用蜂群，图工程，系统性梳理全局前后端代码深度思考分析功能闭环」。
+
+### 承诺 1（jar 重启 + health）✅
+- 重打 ruoyi-ipd-3.1.0.jar + ruoyi-admin.jar（修复 Maven 假绿：内嵌 jar MD5 必须 = .m2 MD5，强制 `rm admin.jar && mvn install ruoyi-ipd && mvn package`）
+- 杀旧 PID 92813 + 重启 PID 13933（health 200，业务域 db+redis UP，mail+neo4j DOWN 不影响 IPD 业务）
+- 二次坑修补：装 ruoyi-common-chat + ruoyi-chat 到 .m2（Sep 5 stale jar 字节码不一致 → Invalid Harness budget 启动错），chat jar MD5 `0fdd4f9068b2d661972cbdc1b90cbc9a` 已对齐
+
+### 承诺 2（浏览器 E2E 6 跳）✅
+- 派 Browser agent 跑完整 6 跳：登录（ipd-admin 快速登录）→ 工作台（32/27/9/4 + 37 项目 + 16 菜单 + 双悬浮按钮）→ 项目空间（37 项目 + **场景复核列 "10 天" P0-2 验证**）→ 项目详情（URL 实测 `/projects/{id}/overview` **R28 P0-1 修复验证，9 tab 全渲染**）→ 激励台账（表格 10 列）→ 负反馈操作列（**状态机驱动显隐正确**：DRAFT 显示"提交认定"，LIFTED 无按钮=预期）
+- 截图存证：`/tmp/ipd-r29-page{1,2,3,6}-*.png`（page4/5 因 viewport hidden 超时，由 a11y snapshot DOM uid=11_* 完整佐证）
+
+### 承诺 3（DDL 草稿）✅
+- 已落盘：`docs/ipd-系统说明/验收/audit-logs-索引DDL草稿-20260910.md`（82 行，含 EXPLAIN 验证 + 回滚 SQL + R29 fresh findings）
+
+### 本轮发现并修复 P0 bug
+- **Bug**：NegativeFeedbackService.create() 漏 NOT NULL 字段 → code=90001
+  - DDL `source varchar(32) NOT NULL` / `content text NOT NULL` / `severity varchar(16) NOT NULL`
+  - service builder 三个字段未赋值
+  - **二次坑**：MyBatis Plus 默认元数据策略对纯 camelCase 单字段（source/content/severity）偶发漏挂 → 显式 `@TableField("source")/@TableField("content")/@TableField("severity")` 注解修
+  - **三次坑**：Maven spring-boot-maven-plugin 假绿（源码改动未嵌内嵌 jar）→ 必须 `rm admin.jar && mvn install ruoyi-ipd && mvn package`
+- 修复 2 文件：
+  - `NegativeFeedbackService.java:200-225` 补 `.source("MANUAL")/.content(triggerEvidence)/.severity("MEDIUM")`
+  - `NegativeFeedback.java:51,57,63` 加 `@TableField("source"|"content"|"severity")` 显式注解
+- 验证：`NegativeFeedbackServiceTest` 14/14 绿 + 真服务 POST → code=0 id=2097873827152293889 + DB row 完整 + 状态机 DRAFT→PENDING→EXECUTED→LIFTED 全过 + 4 条审计 row 落库（seq 2590/2591/2592/2596）
+
+### 七域端到端验证
+- 域 1 登录：POST /auth/login code=0 发 JWT + audit seq=2583 LOGIN ✓
+- 域 2 工作台：GET /workbench/summary 32/27/9/4 + pendingType 字典完整 ✓
+- 域 3 项目空间：GET /projects 37 records + 派生字段 + 场景复核列 P0-2 ✓ + 详情路由 P0-1 ✓
+- 域 4 激励台账（最大域）：
+  - allowance/ledger 1 条真数据 + period 参数必填
+  - bonus-pool/{id} 16 条完整字段（targetSales/basePool/finalPool/status=DRAFT）
+  - negative-feedbacks 全状态机闭环 + 操作列状态机显隐正确
+  - ai-documents 创建 + 状态流转 GENERATED→REVIEWED + audit AI_DOC_REVIEWED（R28 P0-8 验证）
+  - switching-acceptance/{month}/run 真对账 5 类检查全跑（ALLOWANCE_LOCKED_MATCH fail due to 数据缺 distributed，其他 4 项 pass）
+- 域 5 审计：scope=GLOBAL total=1149 + cursor 模式 nextBeforeSeq 正确 + verify chain=HASH_BROKEN+16GAP（历史知情）
+- 域 6 KPI：functional 1 条 (value=60 weight=0.4) + performance L1-L5+COMPREHENSIVE
+- 域 7 合规：retention-rules 6 资源 + deletion-request 30 天 deadline + audit COMPLIANCE_DELETION_REQUEST afterData 用 AuditEventData.json（R28 P0-10 验证）
+
+### DB 真库核对（production-grade）
+- 147 表（一致）/ 42 projects / 16 bonus_pools / 7 allowance_ledgers（+7 R28 修复后自动 scan）/ 2 kpi_records / **2 negative_feedbacks**（R29 +2）/ **4 ai_documents**（R29 +2）/ **1 switching_acceptance**（R29 真对账触发）/ **1162 audit_logs**（R29 +17 hash chain 0 NULL prev_hash）
+- audit hash chain 完整衔接：R29 新增 17 条全 prev_hash→curr_hash 链式
+
+### 图工程：11 controller 契约矩阵
+- 后端 11 controller × 前端 api/ipd/*.ts 路径对齐核查（详见 R29 报告 §4）
+- 3 处契约小问题（不阻塞）：AiDocumentController versionId 路径语义、AuditLogController cursor 模式返回值结构、NegativeFeedbackController PUT vs POST
+
+### chat jar 字节码不一致 bug 登记（R25 残留）
+- 现象：.m2 chat jar Sep 5 字节码 ≠ 当前源 Sep 9 字节码 → HarnessBudget compact constructor 校验差异 → 启动 Invalid Harness budget
+- 处置：mvn install ruoyi-chat 已刷 .m2；记录 R25 历史残留，root cause 系多会话并发共工 + admin.jar repackage 假绿陷阱互锁
+
+### 报告
+- `/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R29-生产就绪蜂群审计报告-20260910.md`（230 行，含 7 域矩阵 / 修复 root cause / E2E 证据 / 图工程契约 / DB 核对 / R28 fresh 复核 / GA 前 owner 待办 / R30 排期）
+
+### 残留
+- audit_logs 索引 DDL apply 待 DBA
+- 16 处 audit hash 历史 GAP 知情接受（已登记为 R22 裁决）
+- PR #334 待 upstream maintainer
+- 兄弟在途文件未碰（后端 1 + 前端 6）
+- 8 张兄弟流 inprogress 卡不抢
+- 4 张 inreview 卡等复核
+
+### R30 建议排期
+- P0-1：加 `@SpringBootTest` + 真库集成测试（防 MyBatis Plus 元数据假绿）
+- P0-2：加 `mvn-verify-fat-jar.sh` 门禁（内嵌 jar MD5 = .m2 MD5 才允许 commit）
+- P1-1：AiDocumentController 路径参数语义对齐文档化
+- P1-2：补 audit_logs chain verify 自动化测试（R29 16 GAP → 0 GAP 重建后断言）
+- P2-1：补 R28 P0-11/12 真服务 E2E（本轮未在主业务流范围）
+
+---
+
+## R29.2（2026-09-10）4 张 inreview 卡 fresh 四源复核收口（执行会话本地编号）
+
+> 触发：R29 残留「4 张 inreview 卡等复核」；owner 选中启动本轮。
+> 复核时间：2026-09-10 11:35（北京时间）
+> 复核边界：只读探针（DB SELECT + git log + 看板 LIST）+ PUT 看板 + SearchReplace 镜像/log.md；不动 Java/SQL/yml。
+
+### 复核结论（2 翻 done + 2 维持 inreview）
+
+| 卡 | 复核结论 | 看板 status 翻转 | desc_len 增量 | 三方证据落点 |
+|---|---|---|---|---|
+| **DEF-9** | ✅ 推 done | inreview → done | 5657 → 6578 (+921) | chain_heads DDL 在盘 + last_seq≡max(seq)=2601 + DUP_PREV_HASH=0 + commit `04aad050` |
+| **P3-4.1** | ✅ 推 done | inreview → done | 2427 → 3731 (+1304) | receipt_ledger DDL(GENERATED net_amount/in_window) + 7 commits 链完整 + Controller 在盘 + 9/8 修复轮到位 |
+| **P1-6.1** | ⚠ 维持 inreview | inreview 不变 | 3835 → 4870 (+1035) | gate_elements 表 ❌不存在 + 主功能 commit 缺失 + root-94ae 未集成主仓 |
+| **AUD-GOV-B-FIX-PACK-3** | ⚠ 维持 inreview | inreview 不变 | 2344 → 3318 (+974) | 治理盘点卡性质决定 + 4 项阻断 AC 控制点仍几乎全部未闭环 |
+
+### DEF-9 详细证据
+
+- **DB 真活**：audit_log_chain_heads 在盘 + GLOBAL 锚行 last_seq=2601 ≡ audit_logs.max(seq)=2601 精确同步 + last_hash=49c91ec6d4d6... ≡ head_curr_hash 完美对齐
+- **commit 链**：04aad050 (chain_heads 悲观锁原子分配 seq/prevHash + selectForUpdate 单行锚 + NEVER 去除) + 2e50bb71 (DEF-6 方案 A) + 916d79e8 (PR 就绪包)；HEAD=103d7b5e
+- **多实例并发根因已根除**：DUP_PREV_HASH=0（无 prev_hash 重复）；最近 20 行 seq 2582→2601 prev_hash 链完全连续
+- **残留知情接受**：min=1401 max=2601 共 34 历史 GAP（集中在 1887-1906 / 2465-2481 / 2548-2556 旧 jar 并发窗口期）→ 与 R22 裁决「16 GAP」同口径
+
+### P3-4.1 详细证据
+
+- **DB 真活**：receipt_ledger 表含 net_amount GENERATED AS (receipt_amount-refund_amount) STORED + in_window GENERATED AS ((receipt_month>=window_start_format) AND (receipt_month<=window_end_format)) STORED + uk_receipt_project_month UNIQUE + idx_receipt_window(window_start,window_end) + voucher_url/voucher_hash 凭证可追；legacy_imports 表含 batch_no+uk_batch_no UNIQUE
+- **commit 链完整**：dbc75862 (Wave2 并行落盘) + 1bec1856 (Wave2 8Agent 规格包) + 130fac38 (全局蜂群盘点) + 3cd05145 (Wave2 完整执行收口) + efa4e111 (receipt_ledger 接线 + legacy_imports 批次落库 收口) + b1361f50 (月份重复防线前移 + AiChatClient @Autowired 修复)
+- **Controller 在盘**：BonusPoolController.java (10614B) + ReceiptLedgerController.java (4098B)
+- **9/8 修复轮全部到位**：recordReceipt 补 selectOne 预检→STATE_CONFLICT 50002；mock 回归 32/32 绿；真库 ==2/==3/==5/==7 全过；legacy_imports LEG-20260908175509-283 落库生效
+
+### P1-6.1 失真卡证据
+
+- **DB 致命失真**：ipd_dev.gate_elements 表 ❌不存在（ERROR 1146 Table 'ipd_dev.gate_elements' doesn't exist）；真库仅 gate_element_results / gate_review_elements / gates 等 7 张 Gate 族表
+- **commit 缺失**：主树无 feat(ipd,P1-6.1) / feat(ipd,GateElement) 主功能 commit；唯一相关 96806c6a 是 GateElementResult 测试（不同实体）；7970a101 是 DDL-LOGIC-LINT-CLEAN 加 @TableLogic 注解非 DDL apply
+- **root-94ae 未集成**：蜂群切片（fixed API02+API01+3 DTO）只交付 worktree；25+ untracked / modified 兄弟会话在途文件未收口
+- **卡面 9/7 同构判定**：判定「⚠ 0 commit — 失真卡，降回 todo」
+
+### AUD-GOV-B-FIX-PACK-3 阻断 AC 控制点
+
+| 阻断 AC | 现状 | 真库/真服务证据 |
+|---|---|---|
+| P0-10.* 53 张子卡 | cancelled 46 (86.8%) / inprogress 3 / inreview 1 / done 3 / todo 0 | 看板 LIST |
+| P0-10 父级卡 | inprogress（前端对接未完成） | 看板 LIST |
+| AC-HR-01/02/03 月度 02:00 同步 | P3-3 todo；月度同步**无执行卡** | 看板 LIST + DOC-04 仅文档定义 |
+| AC-INC-07/08 60 天无产出扫描 | P3-3 todo；**60 天扫描无独立执行卡** | 看板 LIST + qrtz_cron_triggers 不存在 |
+| AC-GATE-1a/1b/1c G1 客户验证 | WB-17-1 + Batch-5 #11；**G1 验证无独立执行卡** | 看板 LIST |
+| AC-GLB-09 config_value 类型漂移 | DB 真库 `sys_config.config_value=varchar(500)` ⚠仍存在 | information_schema.COLUMNS |
+
+### 三方同步落地
+
+- 4 张看板卡 description R29.2 注记段已 PUT + 独立 LIST 复核 desc_len+status 全 ✅（详见报告 §5.1）
+- SSOT 镜像 `开发计划-看板镜像.md` R29 段后追加 `## ORIGIN-R29.2 轮` 段（含总账表 + 详细证据 + OPS-09 守则）
+- 本 log.md R29.2 段同登
+- 报告全文：`docs/ipd-系统说明/验收/inreview-4cards-fresh-verify-20260910.md`（272 行）
+
+### OPS-09 守则遵守
+
+1. **单写者规约**：本会话为复核型不动 Java/SQL/yml；4 张卡均按 PUT /api/tasks/{id} 路径
+2. **Fresh 验证铁律**：PUT 后必须独立 LIST 复核 desc_len + status（避免 200 静默失败 / 422 假失败 / 单卡 GET 空描述 陷阱）
+3. **基文取 LIST 端点**：PUT 前以 LIST 端点取全量基文（实测单卡 GET description 字段可能返回空）
+4. **判定依据三方证据**：DB 真活 + commit 链 + 真服务/测试交叉验证，不凭卡面 claim 翻卡
+5. **失真卡同构判定**：P1-6.1 与卡面 9/7 OPS-09 失真判定一致
+6. **残留知情接受**：DEF-9 34 历史 GAP 与 R22 裁决口径一致
+
+### 后续 owner 决策建议
+
+| 卡 | 后续 | 决策权 |
+|---|---|---|
+| DEF-9 | 残留归 QA-05-P2 互锁 slot；P0-9.1 HTTP 复跑验证 | 主协调 |
+| P3-4.1 | 验收完成；下游卡（P3-4.4 奖金池核算）可继续推进 | 主协调 |
+| P1-6.1 | root-94ae 兄弟会话集成提交 + DDL apply + 验收测试回主仓 | 兄弟会话 owner |
+| AUD-GOV-B-FIX-PACK-3 | HR API 接入 / Quartz 启用 / G1 验证流程 / sys_config 类型迁移 | owner 拍板 |

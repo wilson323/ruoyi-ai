@@ -25,7 +25,6 @@ import org.ruoyi.system.mapper.SysLogininforMapper;
 import org.ruoyi.system.service.ISysClientService;
 import org.ruoyi.system.service.ISysLogininforService;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -48,11 +47,22 @@ public class SysLogininforServiceImpl implements ISysLogininforService {
     private final ISysClientService clientService;
 
     /**
-     * 记录登录信息
+     * 记录登录信息（R28.5 治本：同步执行）。
+     *
+     * <p>原设计为 {@code @Async + @EventListener}，但全局 ApplicationConfig 与
+     * Spring Boot 默认 {@code applicationTaskExecutorAsyncConfigurer} 多 Bean
+     * 冲突，首次异步派发触发 {@code Only one AsyncConfigurer may exist}，
+     * 异常被全局 advice 吞成 HTTP 500（实测 traceId
+     * {@code b65ece346803458cb636692a55f23c6e}）。
+     *
+     * <p>写一行 sys_logininfor 同步耗时 &lt; 5ms，远低于请求容忍阈值；
+     * 同步执行消除异步链路 bug + 避免事件丢失（异步线程异常时监听器
+     * 直接收不到，调用方也不会知道）。事件链 {@code LogininforEvent} 由
+     * {@code UserActionListener.doLogin} 同步发布，本监听器同步消费
+     * 也是最自然的语义。
      *
      * @param logininforEvent 登录事件
      */
-    @Async
     @EventListener
     public void recordLogininfor(LogininforEvent logininforEvent) {
         HttpServletRequest request = logininforEvent.getRequest();

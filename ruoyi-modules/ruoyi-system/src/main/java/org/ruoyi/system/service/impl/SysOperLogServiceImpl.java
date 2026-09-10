@@ -16,7 +16,6 @@ import org.ruoyi.system.domain.vo.SysOperLogVo;
 import org.ruoyi.system.mapper.SysOperLogMapper;
 import org.ruoyi.system.service.ISysOperLogService;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -36,11 +35,15 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
     private final SysOperLogMapper baseMapper;
 
     /**
-     * 操作日志记录
+     * 操作日志记录（R28.5 治本：同步执行）。
+     *
+     * <p>同类风险：原 {@code @Async + @EventListener} 设计依赖全局 AsyncConfigurer，
+     * 与 Spring Boot 默认 {@code applicationTaskExecutorAsyncConfigurer} 多 Bean 冲突，
+     * 首次异步派发报 {@code Only one AsyncConfigurer may exist}。治本同步后事件链
+     * {@code OperLogEvent} 同步发布 + 同步消费，语义天然一致。
      *
      * @param operLogEvent 操作日志事件
      */
-    @Async
     @EventListener
     public void recordOper(OperLogEvent operLogEvent) {
         SysOperLogBo operLog = MapstructUtils.convert(operLogEvent, SysOperLogBo.class);
