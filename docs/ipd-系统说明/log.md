@@ -3150,3 +3150,13 @@ owner「授权全部执行」指令后四连：
 - **冲突裁决要点**：IpdAudit/Aspect 双线融合（属性超集+别名、三构造器、异常旁路 catch ERROR 采纳 P2轮三裁决推翻 R22 传播、session 通道放 proceed 后）；CoefficientChangeService.decide 重构（preCheck 前移 CAS 前 + 删冗余 updateById）；HandoverService 22 块整取 origin（IDOR 守卫抽取版）；logback 取 origin 逗号语法；application.yml 取 origin MCP OFF
 - **合并后 8 失败修 4 类**：Aspect NPE（session 通道时序）/ 融合测试 record 组件名（SwitchReq）/ 裸时钟守卫（GateReview 用已有 now()、Scanner 注入 Clock）/ P361 setUp 注入 guard / P383 三用例按 2026-09-09 owner 拍板「当月退出不发」更新（P333 20 用例盯守新契约验证绿）
 - **残留**：PR #334 仍等 upstream maintainer；7 条历史 stash 保留；2 worktree 保留（勘误已登记）
+
+## R28（2026-09-09）蜂群生产就绪轮：前端 3 项 P0 + 后端 10 项落地 + 双仓 push（执行会话本地编号）
+- **前端 P0 修复**：P0-1「进入详情」被 AI 副驾悬浮按钮遮挡（布局层 fixed 命中区问题，openDetail 路由本就正确）→ `.main-area` 补 padding-bottom: 96px 底部安全区；P0-2 项目列表派生 3 字段（ProjectListItem extends Project 平铺 + listProjectItems + 「场景复核」列 critical 红字）；P0-5 负反馈 5 API 函数 + 操作列（提交认定/认定/驳回/解除，Modal 双按钮 + actingId 防重复）；P0-6 核验为兄弟已修（前端只调 /workbench/summary）
+- **ai-document.test 404 用例根源性裁决**（owner 指令「不是你引入也要根源性解决」）：后端 ApiV1ErrorCode.NOT_FOUND=50001（HTTP 404），不存在「HTTP 200+code=404」包络；老用例（2026-09-06 引入）锚定虚构契约，改锚真实契约（404+50001→数据不存在文案；未知码→fallback）→ 51/51 绿，前端 vitest 903 过 0 败 + check:type 绿
+- **后端蜂群B方案落地**：P0-7 AllowanceService 补审计（ALLOWANCE_LEDGER_INSERT）；P0-8 AiDocumentService 补流转审计（AI_DOC_REVIEWED/ARCHIVED/REJECTED）；P0-9 SwitchingAcceptanceService runChecks 真实对账（5 校验走 6 mapper 真数据源 + 容差 0.01 + 分布式月半开区间 + 缺失 fail-closed 禁假通过）；P0-11 HandoverService 守卫接线（create/accept/rollback 三迁移点 preCheckGuard fail-closed + registerPostCommit 事务后，前置快照防「setStatus 后读 entity」时差陷阱）；P0-12 RequirementChangeService 守卫接线（4 迁移点）+ DefaultStateMachineGuard 登记 4 条 requirement_change 规则（哨兵 38→42，sign crossDomain=true）
+- **配套**：P0-10 ComplianceService afterData 改 AuditEventData.json；P0-13/14 IpdServiceExceptionAdvice 补 NotLoginException→401/20001 + ResponseStatusException 状态映射；P0-15 tenant.excludes 补登 sys_oss；P0-16 audit_logs 查询索引 DDL 落盘（幂等不 apply）
+- **裸时钟守卫合规**：AllowanceService 注入 Clock setter；AiDocumentService/HandoverService 审计时间戳改走业务时钟——ServiceBareClockGuardTest 白名单零扩张（只减不增纪律保持）
+- **测试收口**：SwitchingAcceptanceServiceTest 适配真实对账（6 mapper 空表 mock + 数据源缺失 fail-closed 新用例，17/17）；Handover 12 测试 + RequirementChange 4 测试注入 mock 守卫（P261/P262 系 @InjectMocks 构造器注入优先后不走 setter——@BeforeEach 显式注入补漏）；StateMachineGuardContractTest 哨兵 42 + 表驱动 42 合法/18 非法（65/65）
+- **验证与提交**：ruoyi-ipd 全量 **2104 绿（0F/0E/22 skip）BUILD SUCCESS**；commit ruoyi-ai d101c9a2（28 文件 +590/-73）+ ruoyi-ipd-web 7867084（7 文件 +237/-28），双仓 push origin main 成功（兄弟在途文件零裹入）
+- **残留**：浏览器 E2E 复验用户可见路径待起服务轮执行；audit_logs 索引 DDL 待 DBA apply；后端审计/守卫行为待重打包部署 16039 后真活验证
