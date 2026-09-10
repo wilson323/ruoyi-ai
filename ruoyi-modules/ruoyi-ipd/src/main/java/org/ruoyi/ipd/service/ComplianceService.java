@@ -149,8 +149,12 @@ public class ComplianceService {
             .action("COMPLIANCE_DELETION_REQUEST")
             .entityType(dto.getResourceType())
             .entityId(dto.getResourceId())
-            .afterData(String.format("{\"reason\":\"%s\",\"deadlineAt\":\"%s\",\"status\":\"PENDING\"}",
-                escapeJson(dto.getReason()), iso(deadline)))
+            // P0-10：改用 AuditEventData.json（Jackson 合法序列化，\n/\t/\r 等控制字符安全），
+            // 原 String.format + 手写 escapeJson 不处理换行 → 前端 textarea 含换行即 500
+            .afterData(AuditEventData.json(
+                "reason", dto.getReason(),
+                "deadlineAt", iso(deadline),
+                "status", "PENDING"))
             .reason("deadlineDays=" + DELETION_DEADLINE_DAYS)
             .build();
         AuditLog written = auditLogService.append(auditDraft);
@@ -252,11 +256,6 @@ public class ComplianceService {
             .entityType(log.getEntityType())
             .entityId(log.getEntityId())
             .build();
-    }
-
-    private static String escapeJson(String raw) {
-        if (raw == null) return "";
-        return raw.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private static String iso(Date d) {

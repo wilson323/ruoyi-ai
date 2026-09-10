@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,47 @@ public class AllowanceService {
 
     private final AllowanceLedgerMapper allowanceLedgerMapper;
     private final ProjectMemberMapper projectMemberMapper;
+
+    /** P0-7：写路径审计（nullable setter 注入兼容旧测试 2 参构造；生产由 Spring 装配）。 */
+    private AuditLogService auditLogService;
+
+    @Autowired(required = false)
+    public void setAuditLogService(AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
+
+    /** 可注入时钟（裸时钟守卫禁一：审计时间戳走业务时钟；测试固定时刻消除摇摆）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() { return Date.from(clock.instant()); }
+
+    /** 金额台账写入审计（无登录态上下文 → 系统操作人，与 RequirementChangeService.SYSTEM_ACTOR 同型）。 */
+    private void auditInsert(AllowanceLedger ledger, String action) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorId(0L).operatorName("system").operatorRole("SYSTEM")
+            .action(action)
+            .entityType("allowance_ledgers")
+            .entityId(ledger.getId())
+            .reason("personId=" + ledger.getPersonId() + ",projectId=" + ledger.getProjectId()
+                + ",month=" + ledger.getMonth())
+            .afterData(AuditEventData.json(
+                "personId", ledger.getPersonId(),
+                "projectId", ledger.getProjectId(),
+                "month", ledger.getMonth(),
+                "finalAmount", ledger.getFinalAmount(),
+                "lockedLevel", ledger.getLockedLevel(),
+                "baseAmount", ledger.getBaseAmount(),
+                "capApplied", ledger.getCapApplied()))
+            .createTime(now())
+            .build());
+    }
 
     /** AC-INC-03/04：默认 2 倍封顶 */
     private static final BigDecimal DEFAULT_CAP_MULTIPLIER = new BigDecimal("2");
@@ -116,6 +159,7 @@ public class AllowanceService {
         }
         ledger.setProjectId(projectId);
         allowanceLedgerMapper.insert(ledger);
+        auditInsert(ledger, "ALLOWANCE_LEDGER_INSERT");
         return ledger;
     }
 
@@ -273,6 +317,7 @@ public class AllowanceService {
             return null;
         }
         allowanceLedgerMapper.insert(ledger);
+        auditInsert(ledger, "ALLOWANCE_LEDGER_INSERT");
         return ledger;
     }
 

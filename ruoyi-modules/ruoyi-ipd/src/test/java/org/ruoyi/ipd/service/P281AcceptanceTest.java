@@ -95,6 +95,7 @@ class P281AcceptanceTest {
             handoverMapper, auditLogService, memberService, NoopTransactionManager.INSTANCE,
             org.mockito.Mockito.mock(org.ruoyi.ipd.security.IpdAuthSession.class),
             org.mockito.Mockito.mock(NotificationService.class));
+        handoverService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
         // GateCreationService 使用 @RequiredArgsConstructor 3 参
         gateCreationService = new GateCreationService(gateReviewMapper, projectMapper, auditLogService);
     }

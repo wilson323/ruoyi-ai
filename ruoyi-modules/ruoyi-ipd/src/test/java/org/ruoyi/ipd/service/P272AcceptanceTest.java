@@ -102,6 +102,7 @@ class P272AcceptanceTest {
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
             auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession,
             notificationService);
+        handoverService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
         lenient().when(projectMapper.selectById(anyLong())).thenReturn(projectWithGroup());
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(systemConfigService.getIntValue("allowance.projectCountThreshold", 3)).thenReturn(3);

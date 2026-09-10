@@ -87,6 +87,7 @@ class HandoverAcceptGuardTest {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
             null /* IpdAuthSession —— accept 不使用 */, notificationService);
+        service.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
     }
 
     /** 默认 DRAFT 移交记录：id=100，project=1，from=10，to=20，role=MARKET_PM。 */

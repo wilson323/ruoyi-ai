@@ -102,6 +102,7 @@ class P271AcceptanceTest {
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
             auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession,
             notificationService);
+        handoverService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
         // SEC-REV-HANDOVER-01 适配：assertSameGroup 需要 project.mainGroupId 与 leader.groupId 一致
         Project grouped = new Project();
         grouped.setMainGroupId(7L);

@@ -184,7 +184,7 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .build());
 
         // ---- 2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）----
-        // 以下 5 台状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
+        // 其余状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
         // 接线时参照 KpiRecordService 的 setter 注入 + preCheckGuard/registerPostCommit 模式。
         // crossDomain 暂全 false——待接线轮按业务逐条评估后再开启审计/通知副作用。
 
@@ -308,7 +308,7 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("单侧场景直接确认（Service 允许 DRAFT/SUBMITTED 双入口）")
             .build());
 
-        // ---- Handover 状态机（在途，只登记不接线）：INITIAL→DRAFT→COMPLETED→ROLLED_BACK ----
+        // ---- Handover 状态机（R28 治理轮已接线）：INITIAL→DRAFT→COMPLETED→ROLLED_BACK ----
         register(StateTransitionRule.builder()
             .key("handover_record:INITIAL->DRAFT|create")
             .entityType("handover_record")
@@ -385,9 +385,10 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .build());
 
         // ---- 2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）----
-        // 以下 5 台状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
+        // 其余状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
         // 接线时参照 KpiRecordService 的 setter 注入 + preCheckGuard/registerPostCommit 模式。
         // crossDomain 暂全 false——待接线轮按业务逐条评估后再开启审计/通知副作用。
+        // R28 治理轮：handover_record / requirement_change 两台已接线（setter 注入 + fail-closed）。
 
         // R24 治理轮补登：settleTimeout 触发「一方弃权按主导方意见执行」（L439）；
         // 此前 GateReviewService 已有该转移点但规则表未登记，预接线后立即报 fail-closed。
@@ -399,10 +400,35 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("签署超时一方弃权按主导方意见执行（主导方已签 APPROVE）")
             .build());
 
-
-
-
-
+        // ---- R28 治理轮：RequirementChange 状态机接线（create/submit/reject/sign 4 迁移点）----
+        register(StateTransitionRule.builder()
+            .key("requirement_change:INITIAL->DRAFT|create")
+            .entityType("requirement_change")
+            .fromState("INITIAL").toState("DRAFT").trigger("create")
+            .crossDomain(false)
+            .description("创建变更单草稿（from=null 映射 INITIAL）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_change:DRAFT->PENDING_SIGN|submit")
+            .entityType("requirement_change")
+            .fromState("DRAFT").toState("PENDING_SIGN").trigger("submit")
+            .crossDomain(false)
+            .description("提交双签队列")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_change:PENDING_SIGN->REJECTED|reject")
+            .entityType("requirement_change")
+            .fromState("PENDING_SIGN").toState("REJECTED").trigger("reject")
+            .crossDomain(false)
+            .description("任一方 REJECT，整体否决（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_change:PENDING_SIGN->APPROVED|sign")
+            .entityType("requirement_change")
+            .fromState("PENDING_SIGN").toState("APPROVED").trigger("sign")
+            .crossDomain(true)
+            .description("双签 APPROVE 生效并回写需求池 ADOPTED（跨域：requirements）")
+            .build());
 
         log.info("StateMachineGuard 种子规则注入完成：{} 条", rules.size());
     }

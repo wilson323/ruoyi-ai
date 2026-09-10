@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocument;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +66,34 @@ public class AiDocumentService {
 
     private final AiDocumentMapper mapper;
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    /** P0-8：状态流转审计（nullable，兼容既有单参构造；生产 Spring 装配）。 */
+    private AuditLogService auditLogService;
+
+    @Autowired(required = false)
+    public void setAuditLogService(AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
+
+    /** 仅真实流转行审计；幂等短路与并发重读分支不审计（避免同一流转双行）。 */
+    private void auditTransition(Long versionId, Long operatorId, String fromStatus,
+                                 String toStatus, String comment) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId)
+            .action("AI_DOC_" + toStatus)
+            .entityType("ai_documents")
+            .entityId(versionId)
+            .reason("from=" + fromStatus + ",to=" + toStatus)
+            .afterData(AuditEventData.json(
+                "fromStatus", fromStatus,
+                "toStatus", toStatus,
+                "reviewComment", comment))
+            .createTime(Date.from(clock.instant()))
+            .build());
+    }
 
     public AiDocumentService(AiDocumentMapper mapper) {
         this.mapper = mapper;
@@ -175,6 +205,7 @@ public class AiDocumentService {
             row.setStatus(STATUS_REVIEWED);
             row.setReviewedBy(operatorId);
             row.setReviewedAt(now);
+            auditTransition(versionId, operatorId, STATUS_GENERATED, STATUS_REVIEWED, null);
             return row;
         }
         // 并发已被他人审核：重读终态返回，不报错不覆盖
@@ -215,6 +246,7 @@ public class AiDocumentService {
             row.setStatus(STATUS_ARCHIVED);
             row.setArchivedAt(now);
             row.setArchivedBy(operatorId);
+            auditTransition(versionId, operatorId, STATUS_REVIEWED, STATUS_ARCHIVED, null);
             return row;
         }
         // 并发已被他人归档：终态自洽返回
@@ -265,6 +297,7 @@ public class AiDocumentService {
             row.setStatus(STATUS_REJECTED);
             row.setReviewComment(comment);
             row.setReviewedAt(now);
+            auditTransition(versionId, operatorId, STATUS_REVIEWED, STATUS_REJECTED, comment);
             return row;
         }
         AiDocument reread = mapper.selectById(versionId);

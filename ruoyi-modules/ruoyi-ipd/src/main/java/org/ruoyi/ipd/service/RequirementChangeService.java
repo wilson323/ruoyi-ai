@@ -15,8 +15,11 @@ import org.ruoyi.ipd.domain.RequirementChange;
 import org.ruoyi.ipd.mapper.RequirementChangeMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -74,6 +77,54 @@ public class RequirementChangeService {
     private final RequirementMapper requirementMapper;
     private final AuditLogService auditLogService;
 
+    /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；requirement_change 4 迁移点接线）。 */
+    private StateMachineGuard stateMachineGuard;
+
+    /**
+     * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（nullable 兼容旧测试）。
+     * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
+     */
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /**
+     * ROOT-R3-P0-2 修复：守卫 preCheck 包装（fail-closed 模式）。
+     * 守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass）。
+     */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "状态机守卫未装配 entityType=requirement_change from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck("requirement_change", fromState, toState, trigger);
+    }
+
+    /**
+     * ROOT-R3-P0-2：注册 postCommit 副作用（事务提交后触发，避免回滚后污染）。
+     * 无守卫注入时降级 no-op；无事务上下文时直接执行（向后兼容测试场景）。
+     */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit("requirement_change", fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit("requirement_change", fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
+
     /**
      * 创建变更单（草稿状态）。AC-REQ-08：需求转需求变更单 ⇒ 可生成。
      * 引用原需求 ID，影响评估快照由调用方提供（beforeSnapshot / afterSnapshot JSON），
@@ -103,10 +154,13 @@ public class RequirementChangeService {
         validateFourDimensionalSnapshot(change.getBeforeSnapshot(), "beforeSnapshot");
         validateFourDimensionalSnapshot(change.getAfterSnapshot(), "afterSnapshot");
 
+        // 守卫前置快照：创建迁移 fromState=null（守卫层归一化 INITIAL）
+        preCheckGuard(null, STATUS_DRAFT, "create");
         change.setStatus(STATUS_DRAFT);
         change.setCreateTime(new Date());
         change.setCreateBy(actor.id());
         requirementChangeMapper.insert(change);
+        registerPostCommit(null, STATUS_DRAFT, "create", actor.id(), change.getId());
         audit(actor, change, "REQ_CHANGE_CREATE",
             "DRAFT 创建，影响评估四维度快照已冻结");
         return change;
@@ -130,9 +184,13 @@ public class RequirementChangeService {
         }
         validateFourDimensionalSnapshot(change.getBeforeSnapshot(), "beforeSnapshot");
         validateFourDimensionalSnapshot(change.getAfterSnapshot(), "afterSnapshot");
+        // 守卫前置快照：迁移前捕获 from（setStatus 后读 entity 状态陷阱）
+        String fromStatus = change.getStatus();
+        preCheckGuard(fromStatus, STATUS_PENDING_SIGN, "submit");
         change.setStatus(STATUS_PENDING_SIGN);
         change.setUpdateTime(new Date());
         requirementChangeMapper.updateById(change);
+        registerPostCommit(fromStatus, STATUS_PENDING_SIGN, "submit", actor.id(), change.getId());
         audit(actor, change, "REQ_CHANGE_SUBMIT",
             "进入双签队列 PENDING_SIGN");
         return change;
@@ -170,8 +228,10 @@ public class RequirementChangeService {
 
         // 任何 REJECT ⇒ 整体 REJECTED（无需等另一方）
         if ("REJECT".equals(decision)) {
+            preCheckGuard(STATUS_PENDING_SIGN, STATUS_REJECTED, "reject");
             change.setStatus(STATUS_REJECTED);
             requirementChangeMapper.updateById(change);
+            registerPostCommit(STATUS_PENDING_SIGN, STATUS_REJECTED, "reject", actor.id(), change.getId());
             audit(actor, change, "REQ_CHANGE_REJECT",
                 "单方 REJECT，整体 REJECTED；意见：" + opinion);
             return change;
@@ -192,8 +252,10 @@ public class RequirementChangeService {
                 recordWriteBackFailure(change, ex);
                 throw ex;
             }
+            preCheckGuard(STATUS_PENDING_SIGN, STATUS_APPROVED, "sign");
             change.setStatus(STATUS_APPROVED);
             requirementChangeMapper.updateById(change);
+            registerPostCommit(STATUS_PENDING_SIGN, STATUS_APPROVED, "sign", actor.id(), change.getId());
             audit(actor, change, "REQ_CHANGE_APPROVE",
                 "双签 APPROVE，变更单生效");
             return change;

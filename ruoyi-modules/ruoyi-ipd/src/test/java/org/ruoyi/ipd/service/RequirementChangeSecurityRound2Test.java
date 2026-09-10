@@ -69,6 +69,7 @@ class RequirementChangeSecurityRound2Test {
         org.mockito.Mockito.lenient().when(auditLogService.append(any(AuditLog.class)))
             .thenAnswer(inv -> inv.getArgument(0));
         service = new RequirementChangeService(changeMapper, reqMapper, auditLogService);
+        service.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
     }
 
     private RequirementChange pendingChange(String signatures) {

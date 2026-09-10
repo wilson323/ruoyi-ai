@@ -7,15 +7,28 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.AllowanceLedger;
+import org.ruoyi.ipd.domain.BonusPool;
+import org.ruoyi.ipd.domain.Contribution;
+import org.ruoyi.ipd.domain.HandoverRecord;
+import org.ruoyi.ipd.domain.NegativeFeedback;
+import org.ruoyi.ipd.domain.ProjectScore;
 import org.ruoyi.ipd.domain.SwitchingAcceptance;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceReport;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceReport.CheckResult;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceUnlockReq;
+import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
+import org.ruoyi.ipd.mapper.BonusPoolMapper;
+import org.ruoyi.ipd.mapper.ContributionMapper;
+import org.ruoyi.ipd.mapper.HandoverMapper;
+import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
+import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.mapper.SwitchingAcceptanceMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +68,21 @@ public class SwitchingAcceptanceService {
     private final SwitchingAcceptanceMapper switchingAcceptanceMapper;
     private final IpdPermission ipdPermission;
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
+
+    /* ---------- P0-9：真实对账数据源（nullable setter；生产 Spring 装配，单测显式 mock） ---------- */
+    private AllowanceLedgerMapper allowanceLedgerMapper;
+    private BonusPoolMapper bonusPoolMapper;
+    private ProjectScoreMapper projectScoreMapper;
+    private NegativeFeedbackMapper negativeFeedbackMapper;
+    private ContributionMapper contributionMapper;
+    private HandoverMapper handoverMapper;
+
+    @Autowired(required = false) public void setAllowanceLedgerMapper(AllowanceLedgerMapper m) { this.allowanceLedgerMapper = m; }
+    @Autowired(required = false) public void setBonusPoolMapper(BonusPoolMapper m) { this.bonusPoolMapper = m; }
+    @Autowired(required = false) public void setProjectScoreMapper(ProjectScoreMapper m) { this.projectScoreMapper = m; }
+    @Autowired(required = false) public void setNegativeFeedbackMapper(NegativeFeedbackMapper m) { this.negativeFeedbackMapper = m; }
+    @Autowired(required = false) public void setContributionMapper(ContributionMapper m) { this.contributionMapper = m; }
+    @Autowired(required = false) public void setHandoverMapper(HandoverMapper m) { this.handoverMapper = m; }
 
     /* ===========================================================
      *  run 对账
@@ -242,65 +270,138 @@ public class SwitchingAcceptanceService {
      * =========================================================== */
 
     /**
-     * 5 类校验：本期以"格式 + 存在性"为准（不连真实 DB；P4 接入具体服务拉数）。
+     * 5 类校验（P0-9 真实对账替换桩实现；2026-09-09 R28）。
      * <ul>
-     *   <li>ALLOWANCE_LOCKED_MATCH — AllowanceLedger 锁定额匹配</li>
-     *   <li>BONUS_POOL_RATE — 奖金池比例 5%</li>
-     *   <li>CONTRIB_TIER_RANGE — 贡献度 tier ∈ [0, 1]</li>
-     *   <li>NF_REENTRY_GUARD — 负反馈去重（无重复触发）</li>
-     *   <li>KPI_BONUS_LINKAGE — KPI 与奖金分配联动</li>
+     *   <li>ALLOWANCE_LOCKED_MATCH — 月内台账 final_amount 合计 vs bonus_pools.final_pool 合计（容差 0.01）</li>
+     *   <li>KPI_FINALIZED_RATIO — project_scores 月窗口 FINALIZED 占比（无数据空过）</li>
+     *   <li>NF_CLOSED_LOOP — triggerMonth 当月 DRAFT/PENDING_DECISION 未闭环必须为 0</li>
+     *   <li>CONTRIB_COMPLETENESS — 月内提交评定须到 CONFIRMED 且 tier ∈ [0,1]</li>
+     *   <li>HANDOVER_ARCHIVE_COMPLETENESS — 月内 COMPLETED 记录 archived_at 必须全部非空</li>
      * </ul>
+     * 数据源缺失 fail-closed（禁假通过）；口径备注：bonus_pools 无 month 列，按 distributedAt 归属月。
      */
     private List<CheckResult> runChecks(String monthStr) {
         List<CheckResult> checks = new ArrayList<>(5);
-        // 1. ALLOWANCE_LOCKED_MATCH — 通过（格式 + 存在性）
-        checks.add(CheckResult.builder()
-            .name("ALLOWANCE_LOCKED_MATCH")
-            .passed(true)
-            .expected("lockedAmount 一致")
-            .actual("lockedAmount 一致")
-            .diff(BigDecimal.ZERO)
-            .note("AllowanceLedger 与 ProjectMember.lockedAmount 一致")
-            .build());
-
-        // 2. BONUS_POOL_RATE = 0.05（BR-INC-04）
-        checks.add(CheckResult.builder()
-            .name("BONUS_POOL_RATE")
-            .passed(true)
-            .expected(new BigDecimal("0.0500"))
-            .actual(new BigDecimal("0.0500"))
-            .diff(BigDecimal.ZERO)
-            .note("奖金池 = 目标销售额 × 5%（BR-INC-04）")
-            .build());
-
-        // 3. CONTRIB_TIER_RANGE — 贡献度 tier ∈ [0, 1]
-        checks.add(CheckResult.builder()
-            .name("CONTRIB_TIER_RANGE")
-            .passed(true)
-            .expected("[0.00, 1.00]")
-            .actual("[0.00, 1.00]")
-            .diff(null)
-            .note("tierCoefficient ∈ [0, 1] 区间")
-            .build());
-
-        // 4. NF_REENTRY_GUARD — 负反馈去重（uk_nf_project_trigger_active 唯一）
-        checks.add(CheckResult.builder()
-            .name("NF_REENTRY_GUARD")
-            .passed(true)
-            .duplicateCount(0)
-            .note("无重复触发（AC-INC-40）")
-            .build());
-
-        // 5. KPI_BONUS_LINKAGE — KPI 与奖金分配联动
-        checks.add(CheckResult.builder()
-            .name("KPI_BONUS_LINKAGE")
-            .passed(true)
-            .kpiScoreSum(BigDecimal.ZERO)
-            .bonusDistributionSum(BigDecimal.ZERO)
-            .note("KPI 得分聚合 + 奖金分配一致")
-            .build());
-
+        checks.add(checkAllowanceVsBonusPool(monthStr));
+        checks.add(checkKpiFinalizedRatio(monthStr));
+        checks.add(checkNegativeFeedbackClosedLoop(monthStr));
+        checks.add(checkContributionCompleteness(monthStr));
+        checks.add(checkHandoverArchiveCompleteness(monthStr));
         return checks;
+    }
+
+    private CheckResult dataSourceMissing(String name, String mappers) {
+        return CheckResult.builder().name(name).passed(false)
+            .expected("数据源装配").actual("缺失")
+            .note(mappers + " 未注入（fail-closed，禁止假通过）").build();
+    }
+
+    /** "yyyy-MM" → [月初, 次月初) 半开区间。 */
+    private static java.util.Date[] monthWindow(String month) {
+        java.time.YearMonth ym = java.time.YearMonth.parse(month);
+        java.time.ZoneId z = java.time.ZoneId.systemDefault();
+        return new java.util.Date[]{
+            java.util.Date.from(ym.atDay(1).atStartOfDay(z).toInstant()),
+            java.util.Date.from(ym.plusMonths(1).atDay(1).atStartOfDay(z).toInstant())};
+    }
+
+    /** ① 月内台账 final_amount 合计 vs bonus_pools.final_pool 合计（distributedAt 归属月，容差 0.01）。 */
+    private CheckResult checkAllowanceVsBonusPool(String month) {
+        if (allowanceLedgerMapper == null || bonusPoolMapper == null) {
+            return dataSourceMissing("ALLOWANCE_LOCKED_MATCH", "allowanceLedgerMapper/bonusPoolMapper");
+        }
+        BigDecimal ledgerSum = allowanceLedgerMapper.selectList(new LambdaQueryWrapper<AllowanceLedger>()
+                .eq(AllowanceLedger::getMonth, month)
+                .eq(AllowanceLedger::getDelFlag, "0"))
+            .stream().map(AllowanceLedger::getFinalAmount)
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        java.util.Date[] w = monthWindow(month);
+        BigDecimal poolSum = bonusPoolMapper.selectList(new LambdaQueryWrapper<BonusPool>()
+                .eq(BonusPool::getDelFlag, "0")
+                .ge(BonusPool::getDistributedAt, w[0]).lt(BonusPool::getDistributedAt, w[1]))
+            .stream().map(BonusPool::getFinalPool)
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal diff = ledgerSum.subtract(poolSum);
+        return CheckResult.builder()
+            .name("ALLOWANCE_LOCKED_MATCH")
+            .passed(diff.abs().compareTo(new BigDecimal("0.01")) < 0)
+            .expected(poolSum).actual(ledgerSum).diff(diff)
+            .note("allowance_ledgers.final_amount 合计 vs bonus_pools.final_pool 合计（distributedAt 归属月）")
+            .build();
+    }
+
+    /** ② project_scores FINALIZED 占比（scoredAt 月窗口）；无数据空过。 */
+    private CheckResult checkKpiFinalizedRatio(String month) {
+        if (projectScoreMapper == null) {
+            return dataSourceMissing("KPI_FINALIZED_RATIO", "projectScoreMapper");
+        }
+        java.util.Date[] w = monthWindow(month);
+        List<ProjectScore> rows = projectScoreMapper.selectList(new LambdaQueryWrapper<ProjectScore>()
+            .eq(ProjectScore::getDelFlag, "0")
+            .ge(ProjectScore::getScoredAt, w[0]).lt(ProjectScore::getScoredAt, w[1]));
+        int total = rows.size();
+        long finalized = rows.stream().filter(r -> "FINALIZED".equals(r.getStatus())).count();
+        BigDecimal ratio = total == 0 ? BigDecimal.ONE
+            : new BigDecimal(finalized).divide(new BigDecimal(total), 4, java.math.RoundingMode.HALF_UP);
+        return CheckResult.builder().name("KPI_FINALIZED_RATIO").passed(total == 0 || finalized == total)
+            .expected(new BigDecimal("1.0000")).actual(ratio)
+            .diff(BigDecimal.ONE.subtract(ratio))
+            .note("FINALIZED " + finalized + "/" + total).build();
+    }
+
+    /** ③ NF 闭环：triggerMonth=当月，DRAFT/PENDING_DECISION 未闭环必须为 0（EXECUTED/LIFTED/REJECTED 均闭环）。 */
+    private CheckResult checkNegativeFeedbackClosedLoop(String month) {
+        if (negativeFeedbackMapper == null) {
+            return dataSourceMissing("NF_CLOSED_LOOP", "negativeFeedbackMapper");
+        }
+        List<NegativeFeedback> rows = negativeFeedbackMapper.selectList(
+            new LambdaQueryWrapper<NegativeFeedback>()
+                .eq(NegativeFeedback::getTriggerMonth, month)
+                .eq(NegativeFeedback::getDelFlag, "0"));
+        long open = rows.stream().filter(r ->
+            "DRAFT".equals(r.getStatus()) || "PENDING_DECISION".equals(r.getStatus())).count();
+        return CheckResult.builder().name("NF_CLOSED_LOOP").passed(open == 0)
+            .expected(0).actual((int) open).duplicateCount((int) open)
+            .note("未闭环=" + open + "，已闭环=" + (rows.size() - open)).build();
+    }
+
+    /** ④ Contribution 完整度：月内 submittedAt 记录须到 CONFIRMED 且 tierCoefficient ∈ [0,1]。 */
+    private CheckResult checkContributionCompleteness(String month) {
+        if (contributionMapper == null) {
+            return dataSourceMissing("CONTRIB_COMPLETENESS", "contributionMapper");
+        }
+        java.util.Date[] w = monthWindow(month);
+        List<Contribution> rows = contributionMapper.selectList(new LambdaQueryWrapper<Contribution>()
+            .eq(Contribution::getDelFlag, "0")
+            .ge(Contribution::getSubmittedAt, w[0]).lt(Contribution::getSubmittedAt, w[1]));
+        long unconfirmed = rows.stream().filter(r ->
+            !Contribution.ST_CONFIRMED.equals(r.getStatus())).count();
+        long tierBad = rows.stream().filter(r -> r.getTierCoefficient() == null
+            || r.getTierCoefficient().compareTo(BigDecimal.ZERO) < 0
+            || r.getTierCoefficient().compareTo(BigDecimal.ONE) > 0).count();
+        return CheckResult.builder().name("CONTRIB_COMPLETENESS")
+            .passed(unconfirmed == 0 && tierBad == 0)
+            .expected("unconfirmed=0, tier∈[0,1]")
+            .actual("unconfirmed=" + unconfirmed + ", tierOutOfRange=" + tierBad)
+            .note("月内提交评定完整度").build();
+    }
+
+    /** ⑤ Handover 归档完成度：月内 COMPLETED 记录 archived_at 必须全部非空。 */
+    private CheckResult checkHandoverArchiveCompleteness(String month) {
+        if (handoverMapper == null) {
+            return dataSourceMissing("HANDOVER_ARCHIVE_COMPLETENESS", "handoverMapper");
+        }
+        java.util.Date[] w = monthWindow(month);
+        List<HandoverRecord> rows = handoverMapper.selectList(new LambdaQueryWrapper<HandoverRecord>()
+            .eq(HandoverRecord::getDelFlag, "0")
+            .eq(HandoverRecord::getStatus, "COMPLETED")
+            .ge(HandoverRecord::getCompletedAt, w[0]).lt(HandoverRecord::getCompletedAt, w[1]));
+        long unarchived = rows.stream().filter(r -> r.getArchivedAt() == null).count();
+        return CheckResult.builder().name("HANDOVER_ARCHIVE_COMPLETENESS")
+            .passed(unarchived == 0).expected(0).actual((int) unarchived)
+            .note("月内完成 " + rows.size() + " 条，未归档 " + unarchived + " 条").build();
     }
 
     /**

@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.advice;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -10,12 +11,14 @@ import org.ruoyi.ipd.service.IpdAuthInputException;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.UUID;
@@ -86,6 +89,56 @@ public class IpdServiceExceptionAdvice {
             log.warn("[IPD] not found: {}", e.getRequestURL());
             return ResponseEntity.status(ApiV1ErrorCode.NOT_FOUND.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.NOT_FOUND, "资源不存在"));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
+    /**
+     * P0-14：Sa-Token 未登录异常 → 401/20001 IPD 包络。
+     * 修复前：无 handler，被下方 {@code Exception.class} 兜底成 500/90001，
+     * 前端收到「系统内部错误」而非「登录已失效」，无法触发重登录引导。
+     */
+    @ExceptionHandler(NotLoginException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleNotLogin(NotLoginException e) {
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.warn("[IPD] not login: type={}", e.getType());
+            return ResponseEntity.status(ApiV1ErrorCode.UNAUTHORIZED.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.UNAUTHORIZED));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
+    /**
+     * P0-13：ResponseStatusException → 保留 HTTP 语义映射到最近业务码。
+     * 修复前：DemandController 等 14 处 {@code throw new ResponseStatusException(BAD_REQUEST/NOT_FOUND,...)}
+     * 被下方 {@code Exception.class} 兜底成 500/90001，参数错/资源不存在语义被压制。
+     * reason 为开发者写的业务描述（如「市场PM不存在」），透传给前端展示。
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleResponseStatus(ResponseStatusException e) {
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            int http = e.getStatusCode().value();
+            ApiV1ErrorCode mapped = switch (http) {
+                case 400 -> ApiV1ErrorCode.PARAM_INVALID;
+                case 401 -> ApiV1ErrorCode.UNAUTHORIZED;
+                case 403 -> ApiV1ErrorCode.FORBIDDEN;
+                case 404 -> ApiV1ErrorCode.NOT_FOUND;
+                case 409 -> ApiV1ErrorCode.STATE_CONFLICT;
+                case 413 -> ApiV1ErrorCode.ATTACHMENT_TOO_LARGE;
+                case 429 -> ApiV1ErrorCode.RATE_LIMITED;
+                default -> ApiV1ErrorCode.INTERNAL_ERROR;
+            };
+            HttpStatus resolved = HttpStatus.resolve(http);
+            String reason = e.getReason() != null && !e.getReason().isBlank()
+                ? e.getReason()
+                : (resolved != null ? resolved.getReasonPhrase() : mapped.getMessage());
+            log.warn("[IPD] response status exception: http={} mapped={}" , http, mapped.getCode());
+            return ResponseEntity.status(mapped.getHttpStatus())
+                .body(ApiV1Response.fail(mapped, reason));
         } finally {
             MDC.remove("traceId");
         }

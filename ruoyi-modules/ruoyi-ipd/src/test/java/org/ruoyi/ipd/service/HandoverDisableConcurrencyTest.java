@@ -79,6 +79,7 @@ class HandoverDisableConcurrencyTest {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
             ipdAuthSession, notificationService);
+        service.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
     }
 
     private IpdActor operator() {

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,8 +41,16 @@ class P262AcceptanceTest {
     @Mock private RequirementChangeMapper requirementChangeMapper;
     @Mock private RequirementMapper requirementMapper;
     @Mock private AuditLogService auditLogService;
+    /** ROOT-R3-P0-2：守卫 fail-closed 后必显式注入 mock（Mockito setter 注入按类型匹配）。 */
+    @Mock private StateMachineGuard stateMachineGuard;
 
     @InjectMocks private RequirementChangeService requirementChangeService;
+
+    @BeforeEach
+    void setUpGuard() {
+        // ROOT-R3-P0-2：Mockito 构造器注入优先后不再走 setter——守卫 fail-closed 后必须显式注入
+        requirementChangeService.setStateMachineGuard(stateMachineGuard);
+    }
 
     private static final Long MARKET_PM = 300L;
     private static final Long RD_PM = 200L;

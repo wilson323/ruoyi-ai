@@ -100,6 +100,7 @@ class ScanOverdueTenantGuardAcceptanceTest {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
             ipdAuthSession, notificationService);
+        service.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
         // 单超管不变式
         Person superAdmin = new Person();
         superAdmin.setId(900101L);

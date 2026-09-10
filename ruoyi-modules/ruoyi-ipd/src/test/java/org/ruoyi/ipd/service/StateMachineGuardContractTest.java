@@ -35,9 +35,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
  *
  * <p>覆盖维度：
  * <ol>
- *   <li>哨兵：ruleCount()==38（增删规则必须同步改此处+对应表驱动行；R24线settleTimeout-APPROVED与R25线DRAFT直分合入后 37→38）</li>
- *   <li>表驱动 38 条合法迁移全部放行（preCheck 不抛 + isAllowed=true）</li>
- *   <li>表驱动 16 条非法迁移全部拒绝（跳级/倒退/错误trigger/终态复活/跨机污染）</li>
+ *   <li>哨兵：ruleCount()==42（增删规则必须同步改此处+对应表驱动行；R24线settleTimeout-APPROVED与R25线DRAFT直分合入后 37→38；R28线requirement_change接线4条 38→42）</li>
+ *   <li>表驱动 42 条合法迁移全部放行（preCheck 不抛 + isAllowed=true）</li>
+ *   <li>表驱动 18 条非法迁移全部拒绝（跳级/倒退/错误trigger/终态复活/跨机污染）</li>
  *   <li>横向契约：fail-closed / from=null→INITIAL（isAllowed 与 postCommit 双路径）/ 未登记 postCommit no-op</li>
  * </ol>
  */
@@ -62,16 +62,17 @@ class StateMachineGuardContractTest {
     /* ====================== 0. 哨兵：规则数 ====================== */
 
     @Test
-    @DisplayName("哨兵：种子规则总数=38（8机：deletion 7+bonus 4+gate 6+launch 3+coef 3+contrib 5+handover 3+kpi 7）")
+    @DisplayName("哨兵：种子规则总数=42（9机：deletion 7+bonus 4+gate 6+launch 3+coef 3+contrib 5+handover 3+kpi 7+req_change 4）")
     void sentinelRuleCount() {
         // 增删规则必须同步修改本断言与下方表驱动行——防止规则表与测试悄然漂移
         // 2026-09-09 双线合并：R24线 settleTimeout-APPROVED（gate 5→6）+ R25线 DRAFT直分已并
+        // 2026-09-09 R28线：requirement_change 4 迁移点接线（INITIAL->DRAFT/PENDING_SIGN/REJECTED/APPROVED）
         assertThat(guard.ruleCount())
             .as("规则总数变化=契约变更，必须显式过本测试 + code review")
-            .isEqualTo(38);
+            .isEqualTo(42);
     }
 
-    /* ====================== 1. 表驱动：38 条合法迁移 ====================== */
+    /* ====================== 1. 表驱动：42 条合法迁移 ====================== */
 
     @ParameterizedTest(name = "[{index}] 合法 {0}")
     @CsvSource({
@@ -121,6 +122,11 @@ class StateMachineGuardContractTest {
         "kpi_record, EDITING, REJECTED, reject",
         "kpi_record, PENDING_REVIEW, REJECTED, reject",
         "kpi_record, EDITING, ARCHIVED, archive",
+        // ---- requirement_change（4，R28线接线：create/submit/reject/sign）----
+        "requirement_change, INITIAL, DRAFT, create",
+        "requirement_change, DRAFT, PENDING_SIGN, submit",
+        "requirement_change, PENDING_SIGN, REJECTED, reject",
+        "requirement_change, PENDING_SIGN, APPROVED, sign",
     })
     void legalTransitionAllowed(String entityType, String from, String to, String trigger) {
         assertThat(guard.isAllowed(entityType, from, to, trigger))
@@ -131,7 +137,7 @@ class StateMachineGuardContractTest {
             .doesNotThrowAnyException();
     }
 
-    /* ====================== 2. 表驱动：16 条非法迁移拒绝 ====================== */
+    /* ====================== 2. 表驱动：18 条非法迁移拒绝 ====================== */
 
     @ParameterizedTest(name = "[{index}] 非法 {0}:{1}->{2}|{3}")
     @CsvSource({
@@ -167,6 +173,10 @@ class StateMachineGuardContractTest {
         "kpi_record, APPROVED, EDITING, record",
         // 跨机污染：deletion 的规则不得套用到 kpi 机
         "kpi_record, DRAFT, LEADER_REVIEW, submit",
+        // 跳级：DRAFT 直跳 APPROVED（必须双签，绕过 PENDING_SIGN）
+        "requirement_change, DRAFT, APPROVED, sign",
+        // 终态复活：APPROVED 回 PENDING_SIGN（单方 APPROVE 不回退，变更单生效后不可逆）
+        "requirement_change, APPROVED, PENDING_SIGN, submit",
     })
     void illegalTransitionRejected(String entityType, String from, String to, String trigger) {
         assertThat(guard.isAllowed(entityType, from, to, trigger))

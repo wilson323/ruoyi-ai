@@ -97,6 +97,7 @@ class P2_6_2_DualSignStageGuardTest {
         org.mockito.Mockito.lenient().when(auditLogService.append(any(AuditLog.class)))
             .thenAnswer(inv -> inv.getArgument(0));
         reqChangeService = new RequirementChangeService(changeMapper, reqMapper, auditLogService);
+        reqChangeService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
     }
 
     /** 构造一个 PENDING_SIGN 状态的变更单（含四维度快照）。 */

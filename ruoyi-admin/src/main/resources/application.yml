@@ -283,6 +283,8 @@ tenant:
     - sys_user_role
     - sys_client
     - sys_oss_config
+    # IPD OssFileEntity(@TableName("sys_oss"))：附件元数据表，IPD 单企业部署无多租户语义（R28 补登，kpi_rule_snapshots 已在前段）
+    - sys_oss
     - flow_spel
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run

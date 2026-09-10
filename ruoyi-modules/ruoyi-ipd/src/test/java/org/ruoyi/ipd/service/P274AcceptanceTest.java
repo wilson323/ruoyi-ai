@@ -84,6 +84,7 @@ class P274AcceptanceTest {
         service = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, projectMemberService, NoopTransactionManager.INSTANCE,
             ipdAuthSession, notificationService);
+        service.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
         // 单超管不变式（P2-7.3 数据治理后真库仅 1 名）
         Person superAdmin = new Person();
         superAdmin.setId(900101L);

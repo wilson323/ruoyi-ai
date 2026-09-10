@@ -21,9 +21,12 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdIdorGuard;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
@@ -95,12 +98,62 @@ public class HandoverService {
     /** P2-7.4 AC-HAND-02：超期升级 + 每日提醒 outbox 发布。 */
     private final NotificationService notificationService;
 
+    /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；handover 三迁移点接线）。 */
+    private StateMachineGuard stateMachineGuard;
+
+    /**
+     * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（nullable 兼容旧测试）。
+     * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
+     */
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
     public void setClock(java.time.Clock clock) {
         this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
     }
     private Date now() { return Date.from(clock.instant()); }
+
+    /**
+     * ROOT-R3-P0-2 修复：守卫 preCheck 包装（fail-closed 模式）。
+     *
+     * <p>守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass）。
+     * 测试兼容：HandoverServiceTest 等通过 setStateMachineGuard(...) 注入 mock。
+     */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "状态机守卫未装配 entityType=handover_record from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck("handover_record", fromState, toState, trigger);
+    }
+
+    /**
+     * ROOT-R3-P0-2：注册 postCommit 副作用（事务提交后触发，避免回滚后污染）。
+     * 无守卫注入时降级 no-op；无事务上下文时直接执行（向后兼容测试场景）。
+     */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = now();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit("handover_record", fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit("handover_record", fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
 
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
     public HandoverRecord initiate(Long projectId, String role, Long toPersonId, String note, IpdActor operator) {
@@ -315,6 +368,8 @@ public class HandoverService {
         if (dup != null && dup > 0) {
             throw new ServiceException("该项目该角色已有进行中的移交，不可重复发起");
         }
+        // 守卫前置快照：创建迁移 fromState=null（守卫层归一化 INITIAL）
+        preCheckGuard(null, ST_DRAFT, "create");
         Date deadlineAt = new Date(now().getTime() + DEADLINE_DAYS * 24L * 3_600_000L);
         HandoverRecord rec = HandoverRecord.builder()
             .handoverType("PROJECT")
@@ -327,6 +382,7 @@ public class HandoverService {
             .deadlineAt(deadlineAt)
             .build();
         handoverMapper.insert(rec);
+        registerPostCommit(null, ST_DRAFT, "create", operator.id(), rec.getId());
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("HANDOVER_CREATE").entityType("handover").entityId(rec.getId())
@@ -347,12 +403,16 @@ public class HandoverService {
         }
         ProjectMember bound = projectMemberService.bindMember(
             rec.getProjectId(), rec.getToPersonId(), rec.getHandoverRole(), approvalRef, operator);
+        // 守卫前置快照（setStatus 后读 entity 状态陷阱：from 必须在迁移前捕获）
+        String fromStatus = rec.getStatus();
+        preCheckGuard(fromStatus, ST_COMPLETED, "accept");
         rec.setStatus(ST_COMPLETED);
         if (rec.getConfirmedAt() == null) {
             rec.setConfirmedAt(now());
         }
         rec.setCompletedAt(now());
         handoverMapper.updateById(rec);
+        registerPostCommit(fromStatus, ST_COMPLETED, "accept", operator.id(), rec.getId());
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("HANDOVER_ACCEPT").entityType("handover").entityId(rec.getId())
@@ -429,12 +489,16 @@ public class HandoverService {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
                 "仅移交发起人、项目组长或超管可撤销移交");
         }
+        // 守卫前置快照：此时 status 仍为 COMPLETED（setStatus 在下方才执行）
+        String fromStatus = rec.getStatus();
+        preCheckGuard(fromStatus, ST_ROLLED_BACK, "rollback");
         // 副作用反转：接手人 exit + 发起人 exit_date/exit_reason 复位
         restoreForRollback(rec);
         rec.setStatus(ST_ROLLED_BACK);
         rec.setRollbackReason(reason);
         rec.setRollbackAt(now());
         handoverMapper.updateById(rec);
+        registerPostCommit(fromStatus, ST_ROLLED_BACK, "rollback", actor.id(), rec.getId());
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
             .action("HANDOVER_ROLLBACK").entityType("handover").entityId(rec.getId())

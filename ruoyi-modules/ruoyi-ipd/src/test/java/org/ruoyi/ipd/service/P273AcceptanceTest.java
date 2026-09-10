@@ -101,6 +101,7 @@ class P273AcceptanceTest {
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
             auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession,
             notificationService);
+        handoverService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
 
         currentAdminPerson = personOf(900L, "现任超管", "SUPER_ADMIN", "ACTIVE", "ACTIVE", "wecom-current");
         newAdminPerson = personOf(NEW_ADMIN_ID, "新晋超管", "GROUP_LEADER", "ACTIVE", "ACTIVE", "wecom-new");
