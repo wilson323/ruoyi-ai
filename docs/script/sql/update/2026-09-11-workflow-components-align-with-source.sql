@@ -13,11 +13,12 @@
 --   MailSend           → mailSend/MailSendNode
 --   KnowledgeRetrieval → knowledgeRetrieval/KnowledgeRetrievalNode
 --   HttpRequest        → httpRequest/HttpRequestNode
+-- 注：uuid / display_order 为本地生成值（官方发布档无对应行可考）；title / remark 与现库一致。
 --
--- 明确不补（源码层断链，非本脚本遗漏）：
+-- 明确不补（后端源码层断链，非本脚本遗漏）：
 --   Dalle3 / FaqExtractor —— WfNodeFactory 无对应分支（default 返回 null），
---   node/ 下无执行器实现；枚举与前端文件仅为历史兼容残留，注册后画布可拖出
---   但运行时无法执行。
+--   node/ 下无执行器实现；前端仅有 NodeShell 转发壳（12 行，无专属实现），
+--   属官方历史预留位。组件库由本表驱动——不注册则画布不可拖出，保持现状即正确。
 --
 -- 执行方式：人工/DBA apply（仓库无 Flyway/Liquibase），可重复执行。
 

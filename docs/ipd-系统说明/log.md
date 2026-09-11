@@ -3375,3 +3375,11 @@ owner「授权全部执行」指令后四连：
 - **边界澄清**：`/system/tenant`、`/system/tenantPackage` 直访 404 = owner 2026-09-06 单企业非 SaaS 决策预期行为（`IpdMenuController.getRouters` 主动 removeIf，五处自动一致），非缺陷；非超管权限码下发（V1，log.md L2704 在案项）维持现状**不扩面**。
 - **残留**：前端 4 M + 2 新文件未提交（按 ruoyi-ipd-web AGENTS.md「未经用户明确要求不提交」，保留工作区，HEAD=3926a80）；看板 62250 不可用（curl 000 / 无进程 / 无启动脚本），卡面同步受阻，待服务恢复补登。
 - **报告全文**：`docs/ipd-系统说明/验收/AI模块完整性与权限断链修复收口-20260911.md`（含 Part A/B/C + 证据路径）。
+
+### 工作流组件前后端全量比对补充核验（2026-09-11 晚）
+
+- **触发**：owner 追问「你确定你找对了吗」「前后端都要比对」→ 后端改用 `upstream/main` 直读、前端改用仓内官方 `v3.1.0` tag 快照，做全量复核。
+- **前端基线**：ruoyi-ipd-web 的 origin 即官方前端仓 fork（wilson323/ruoyi-admin）；`workflow-designer` 与官方 `v3.1.0` 快照 diff 仅 6 文件（WfVariableSelector / AnswerNodeProperty / StartNodeProperty / GenericNodeProperty+test / store），节点组件集 / 图标 / 默认配置均为官方原版——无 IPD 引入缺口。
+- **比对矩阵**：后端可执行 9（WfNodeFactory 分支）= 现库 9 行 = 前端可渲染 9（Start/End/Answer/Switcher/Google 专属实现；Tongyiwanx 12 行转发壳；MailSend/KnowledgeRetrieval/HttpRequest 走 NodeShell 摘要），三方逐一对齐无缺口；Dalle3/FaqExtractor = 前端仅转发壳 + 后端无执行器（不可执行不注册）；TestNode 为官方调试遗留件（枚举/库/图标/默认配置四处无挂接）。
+- **机制**：`GET /workflow/public/component/list → getAllEnable()`（is_enable=1 且 is_deleted=0，按 display_order 升序）为画布组件清单唯一来源；保存节点校验（WorkflowNodeService）与运行时 `WorkflowStarter` 同源消费——库注册即准入门槛。
+- **勘误追记**：本文上两段中「未提交」状态已闭环——前端 3 commit（4d41143 / 5eca2f6 / 354806f）、后端 2 commit（177d12bf / bd10f790），两仓工作区已清空；收口文档与对齐脚本注释同步精化（Dalle3/FaqExtractor 前端表述精确为「NodeShell 转发壳」，4 行 uuid/display_order 标注本地生成值）。
