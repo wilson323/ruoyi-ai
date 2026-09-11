@@ -199,6 +199,14 @@ public class NegativeFeedbackService {
 
         NegativeFeedback row = NegativeFeedback.builder()
             .projectId(req.projectId())
+            // [R29 audit 2026-09-09] source/content/severity 是 DDL NOT NULL legacy 字段，
+            // 新版 DTO 未暴露——以 triggerEvidence 镜像 content，source 记 MANUAL，severity 兜底 MEDIUM。
+            // 真实场景应在前端表单补 3 字段后改回显式赋值；本轮以最小修复恢复 INSERT 闭环。
+            .source("MANUAL")
+            .content(req.triggerEvidence() != null && !req.triggerEvidence().isBlank()
+                ? req.triggerEvidence()
+                : "[R29-auto] trigger=" + req.triggerType() + " month=" + req.triggerMonth())
+            .severity("MEDIUM")
             .triggerType(req.triggerType())
             .mainRole(mapping.get("mainRole"))
             .mainPersonId(mainAndRelatedIds.get(0))

@@ -146,6 +146,21 @@ public class GateReviewService {
                 operatorId, entityId, occurredAt);
         }
     }
+    /**
+     * P0-10.23 补齐（R30 生产就绪）：项目维度 Gate 列表（原型 /api/key-gates?projectId= 的正式替代）。
+     *
+     * <p>按 projectId 查 gates 表未删行，id 降序（新创建在前）；空列表 = 项目尚无 Gate
+     * （真实空态，不造假数据）。前端 gates 页由此列表替代手输 Gate 编号。
+     */
+    public List<Gate> listByProject(Long projectId) {
+        if (projectId == null) {
+            throw new IpdBusinessException("项目 ID 不能为空");
+        }
+        return gateMapper.selectList(new LambdaQueryWrapper<Gate>()
+            .eq(Gate::getProjectId, projectId)
+            .orderByDesc(Gate::getId));
+    }
+
     /** ROOT-R1 P0-7 字面量迁移：Gate 配置（双签人数/签署期限/延期上限；B-RULE-05 配套）来源 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BusinessConfigService businessConfigService;

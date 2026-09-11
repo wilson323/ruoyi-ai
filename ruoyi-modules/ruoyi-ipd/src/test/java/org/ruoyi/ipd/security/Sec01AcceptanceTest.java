@@ -89,6 +89,7 @@ class Sec01AcceptanceTest {
     private LegacyImportService legacyImportService;
     @Mock private org.ruoyi.ipd.service.LaunchDateChangeService launchDateChangeService;
     @Mock private org.ruoyi.ipd.service.GateCreationService gateCreationService;
+    @Mock private org.ruoyi.ipd.service.GateReviewService gateReviewService;
     @Mock
     private CertTemplateService certTemplateService;
     @Mock
@@ -103,7 +104,7 @@ class Sec01AcceptanceTest {
     @BeforeEach
     void setUp() {
         ipdPermission = new IpdPermission(session, authService);
-        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, ipdPermission);
+        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, gateReviewService, ipdPermission);
         stageActionController = new StageActionController(stageActionService, ipdPermission);
         certTemplateController = new CertTemplateController(certTemplateService, ipdPermission);
         gateElementController = new GateElementController(gateElementService, ipdPermission);
@@ -235,7 +236,7 @@ class Sec01AcceptanceTest {
 
         assertThatThrownBy(() -> projectController.create(req))
             .satisfies(Sec01AcceptanceTest::assertForbidden);
-        verify(projectService, never()).create(any(Project.class), any());
+        verify(projectService, never()).create(any(Project.class), any(), any());
     }
 
     // ===== AC-HR-07：不存在「代理组长」设置入口（A3 决策不做） =====

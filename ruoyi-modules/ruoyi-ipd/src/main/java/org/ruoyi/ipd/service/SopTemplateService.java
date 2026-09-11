@@ -1,6 +1,5 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +11,8 @@ import org.ruoyi.ipd.domain.ActionDef;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.SopTemplate;
 import org.ruoyi.ipd.domain.SopTemplateInstance;
+import org.ruoyi.ipd.dto.SopTemplateListItem;
+import org.ruoyi.ipd.dto.SopTemplateSaveReq;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.SopTemplateInstanceMapper;
@@ -19,7 +20,6 @@ import org.ruoyi.ipd.mapper.SopTemplateMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.seed.ActionCatalog;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,14 +30,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * SOP 模板版本管理与实例快照（P1-3.3）
- * <p>BR-IPD-SOP-01：同 {@code templateCode} 下版本号自增，每次发布新版本时关闭旧 PUBLISHED
- * （effectiveTo=now + status=ARCHIVED），保持线性版本轨迹。
- * <p>BR-IPD-SOP-02：模板一经发布（含 DRAFT 上线）即不可物理删除；走 DeletionRequestService +
- * DeleteAuditService 审核流程（与其它 P0-6.2 表对齐）。
- * <p>BR-IPD-SOP-03：实例化时序列化当前动作目录（ActionCatalog）+ 责任矩阵 + 默认阶段截止日期
- * 到 {@link SopTemplateInstance#getSnapshotJson()}；实例与模板版本解耦——后续模板迭代不影响在跑实例。
- * <p>权限：发布/归档仅 SUPER_ADMIN；实例化仅 MARKET_PM/RD_PM/GROUP_LEADER。
+ * SOP 模板版本管理与实例快照（P1-3.3，BR-IPD-07）。
+ * <p>BR-IPD-07：每个深管动作（actionCode）绑定一份 SOP，同动作下版本号自增，
+ * 每次 publish 新版本时旧 PUBLISHED 关闭（effectiveTo=now + status=ARCHIVED），保持线性版本轨迹；
+ * 修改后新项目用新版，在研项目保持原版本（AC-IPD-27，快照解耦）。
+ * <p>版本机：DRAFT --publish--> PUBLISHED --被新版本替代--> ARCHIVED；
+ * 同 actionCode 至多 1 个 PUBLISHED/DRAFT；写路径全程条件 UPDATE（where status=...）守卫并发。
+ * <p>AC-IPD-20：publish 时对生物特征动作（ActionCatalog.bioFeature：V10/C12/D11）强制校验
+ * content 含「算法公平性」与「偏见测试」，缺则 400。
+ * <p>权限：copy/update/publish/revert 仅 SUPER_ADMIN（ipd:sop-template:edit）；
+ * 读=内部角色；实例化仅 MARKET_PM/RD_PM/GROUP_LEADER。
  *
  * @author ruoyi-ai
  */
@@ -55,124 +57,37 @@ public class SopTemplateService {
     /** 私有 Jackson 实例：序列化嵌套 JSON（meta/actionList/responsibilityMatrix/phaseDeadlineMap）。 */
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    // ========== 模板版本管理（SUPER_ADMIN only） ==========
+    // ========== 版本链（BR-IPD-07：actionCode 维度，读=内部角色，写=SUPER_ADMIN） ==========
 
-    /**
-     * 发布新版本（SUPER_ADMIN only，BR-IPD-SOP-01）。
-     * <p>同 templateCode 下版本号自增 1（新模板从 1 起）；
-     * 旧 PUBLISHED 模板自动 ARCHIVED + effectiveTo=now。
-     *
-     * @param template 模板入参（templateCode/templateName/description/category 必填，id/version 忽略）
-     * @param actor    操作人（必须 SUPER_ADMIN）
-     * @return 新模板 ID
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public Long publishTemplate(SopTemplate template, IpdActor actor) {
-        IpdIdorGuard.requireSuperAdmin(actor);
-        if (template == null) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "模板不能为空");
-        }
-        if (template.getTemplateCode() == null || template.getTemplateCode().isBlank()) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "templateCode 不能为空");
-        }
-        if (template.getTemplateName() == null || template.getTemplateName().isBlank()) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "templateName 不能为空");
-        }
-        String category = template.getCategory();
-        if (category == null
-            || !(SopTemplate.Category.DEEP_MGMT.equals(category)
-                || SopTemplate.Category.LIGHT_MGMT.equals(category)
-                || SopTemplate.Category.MIXED.equals(category))) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
-                "category 非法（仅 DEEP_MGMT|LIGHT_MGMT|MIXED）");
-        }
-
-        Date now = new Date();
-        // 关闭同 templateCode 下的旧 PUBLISHED
-        List<SopTemplate> existingPublished = sopTemplateMapper.selectList(
-            Wrappers.<SopTemplate>lambdaQuery()
-                .eq(SopTemplate::getTemplateCode, template.getTemplateCode())
-                .eq(SopTemplate::getStatus, SopTemplate.Status.PUBLISHED)
-                .eq(SopTemplate::getDelFlag, "0"));
-        long nextVersion = 1L;
-        for (SopTemplate old : existingPublished) {
-            old.setStatus(SopTemplate.Status.ARCHIVED);
-            old.setEffectiveTo(now);
-            sopTemplateMapper.updateById(old);
-            nextVersion = Math.max(nextVersion, old.getVersion() + 1);
-            auditLogService.append(AuditLog.builder()
-                .operatorName(actorName(actor)).operatorRole(actor.role())
-                .action("ARCHIVE").entityType("SOP_TEMPLATE").entityId(old.getId())
-                .afterData(AuditEventData.json("status", "ARCHIVED", "effectiveTo", now.getTime()))
-                .reason("P1-3.3 SOP 模板新版本发布，旧版本自动归档")
-                .build());
-        }
-
-        // 写入新 PUBLISHED
-        SopTemplate fresh = SopTemplate.builder()
-            .templateCode(template.getTemplateCode())
-            .templateName(template.getTemplateName())
-            .description(template.getDescription())
-            .version(nextVersion)
-            .effectiveFrom(now)
-            .effectiveTo(null)
-            .status(SopTemplate.Status.PUBLISHED)
-            .category(category)
-            .createdBy(actor.id() == null ? null : actor.id().toString())
-            .tenantId(template.getTenantId())
-            .delFlag("0")
-            .build();
-        try {
-            sopTemplateMapper.insert(fresh);
-        } catch (DuplicateKeyException dke) {
-            // 并发冲突：同 templateCode 同时两路 PUBLISHED 写入——后续需补 partial unique index
-            // （DDL 范围超出本修复，由 db-migration 派单落地）。当前 throw STATE_CONFLICT 让客户端可重试。
-            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
-                "同一 templateCode 仅允许一个 PUBLISHED 模板，并发冲突");
-        }
-        if (fresh.getId() == null || fresh.getId() <= 0) {
-            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "SOP 模板写入失败：未生成主键");
-        }
-        auditLogService.append(AuditLog.builder()
-            .operatorName(actorName(actor)).operatorRole(actor.role())
-            .action("PUBLISH").entityType("SOP_TEMPLATE").entityId(fresh.getId())
-            .afterData(AuditEventData.json(
-                "version", nextVersion,
-                "status", "PUBLISHED",
-                "category", category))
-            .reason("P1-3.3 SOP 模板新版本发布")
-            .build());
-        return fresh.getId();
-    }
-
-    /**
-     * 列出模板（可选 category / status 过滤）。
-     */
+    /** 版本列表轻量视图：不拉 mediumtext 正文，CHAR_LENGTH(content) 计算字数；version 倒序。 */
     @Transactional(readOnly = true)
-    public List<SopTemplate> listTemplates(String category, String status) {
-        LambdaQueryWrapper<SopTemplate> q = Wrappers.<SopTemplate>lambdaQuery()
-            .eq(SopTemplate::getDelFlag, "0");
-        if (category != null && !category.isBlank()) {
-            q.eq(SopTemplate::getCategory, category);
+    public List<SopTemplateListItem> listByActionCode(String actionCode) {
+        if (actionCode == null || actionCode.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "actionCode 不能为空");
         }
-        if (status != null && !status.isBlank()) {
-            q.eq(SopTemplate::getStatus, status);
-        }
-        return sopTemplateMapper.selectList(q.orderByDesc(SopTemplate::getVersion));
+        List<SopTemplate> rows = sopTemplateMapper.selectList(Wrappers.<SopTemplate>query()
+            .select("id", "action_code", "title", "version", "status", "CHAR_LENGTH(content) AS content_len")
+            .eq("action_code", actionCode.trim())
+            .eq("del_flag", "0")
+            .orderByDesc("version"));
+        return rows.stream()
+            .map(t -> new SopTemplateListItem(t.getId(), t.getActionCode(), t.getTitle(),
+                t.getVersion(), t.getStatus(), t.getContentLen()))
+            .toList();
     }
 
     /**
-     * 取当前生效模板（PUBLISHED + effectiveTo IS NULL，同 templateCode 下最新一条）。
+     * 当前生效 SOP（PUBLISHED + effectiveTo IS NULL，同 actionCode 下最新一条；含正文）。
      * 不存在时抛 IpdBusinessException(NOT_FOUND)。
      */
     @Transactional(readOnly = true)
-    public SopTemplate getActiveTemplate(String templateCode) {
-        if (templateCode == null || templateCode.isBlank()) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "templateCode 不能为空");
+    public SopTemplate currentForAction(String actionCode) {
+        if (actionCode == null || actionCode.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "actionCode 不能为空");
         }
         List<SopTemplate> actives = sopTemplateMapper.selectList(
             Wrappers.<SopTemplate>lambdaQuery()
-                .eq(SopTemplate::getTemplateCode, templateCode)
+                .eq(SopTemplate::getActionCode, actionCode.trim())
                 .eq(SopTemplate::getStatus, SopTemplate.Status.PUBLISHED)
                 .isNull(SopTemplate::getEffectiveTo)
                 .eq(SopTemplate::getDelFlag, "0")
@@ -180,9 +95,215 @@ public class SopTemplateService {
                 .last("LIMIT 1"));
         if (actives.isEmpty() || actives.get(0) == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND,
-                "未找到当前生效的 SOP 模板: " + templateCode);
+                "未找到当前生效的 SOP: " + actionCode);
         }
         return actives.get(0);
+    }
+
+    /**
+     * 复制 PUBLISHED/ARCHIVED 版本为新 DRAFT（仅超管）。
+     * 同 actionCode 已有 DRAFT 时 409；新草稿版本号 = 同动作 max(version)+1。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SopTemplate copyToDraft(Long id, IpdActor actor) {
+        IpdIdorGuard.requireSuperAdmin(actor);
+        SopTemplate source = getById(id);
+        if (!SopTemplate.Status.PUBLISHED.equals(source.getStatus())
+            && !SopTemplate.Status.ARCHIVED.equals(source.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "仅 PUBLISHED/ARCHIVED 版本可复制为草稿，当前状态=" + source.getStatus());
+        }
+        return duplicateAsDraft(source, actor, "COPY");
+    }
+
+    /**
+     * 历史恢复：把 ARCHIVED 版本复制为新 DRAFT（仅超管；发布后才重新生效）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SopTemplate revertToDraft(Long id, IpdActor actor) {
+        IpdIdorGuard.requireSuperAdmin(actor);
+        SopTemplate source = getById(id);
+        if (!SopTemplate.Status.ARCHIVED.equals(source.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "仅 ARCHIVED 版本可历史恢复，当前状态=" + source.getStatus());
+        }
+        return duplicateAsDraft(source, actor, "REVERT");
+    }
+
+    /**
+     * 编辑 DRAFT（仅超管；白名单 title/content；其余字段不可变）。
+     * title 去空格 2-128 字、content 非空 ≥2 字（PARAM_INVALID）；
+     * 条件 UPDATE where status=DRAFT 守卫并发（影响 0 行 → 409，零写入）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SopTemplate updateDraft(Long id, SopTemplateSaveReq req, IpdActor actor) {
+        IpdIdorGuard.requireSuperAdmin(actor);
+        if (req == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "入参不能为空");
+        }
+        String title = req.title() == null ? "" : req.title().trim();
+        String content = req.content() == null ? "" : req.content();
+        if (title.length() < 2 || title.length() > 128) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "title 去空格后须 2-128 字");
+        }
+        if (content.trim().length() < 2) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "content 至少 2 字");
+        }
+        SopTemplate draft = getById(id);
+        if (!SopTemplate.Status.DRAFT.equals(draft.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "仅 DRAFT 可编辑，当前状态=" + draft.getStatus());
+        }
+        Integer updated = sopTemplateMapper.update(null,
+            Wrappers.<SopTemplate>lambdaUpdate()
+                .set(SopTemplate::getTitle, title)
+                .set(SopTemplate::getContent, content)
+                .eq(SopTemplate::getId, id)
+                .eq(SopTemplate::getStatus, SopTemplate.Status.DRAFT));
+        if (updated == null || updated == 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "草稿已被并发修改，请刷新后重试");
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorName(actorName(actor)).operatorRole(actor.role())
+            .action("UPDATE").entityType("SOP_TEMPLATE").entityId(id)
+            .beforeData(AuditEventData.json("title", draft.getTitle(),
+                "contentLen", draft.getContent() == null ? 0 : draft.getContent().length()))
+            .afterData(AuditEventData.json("title", title, "contentLen", content.length()))
+            .reason("P1-3.3 SOP 草稿编辑（diff 不落正文）")
+            .build());
+        return getById(id);
+    }
+
+    /**
+     * 发布 DRAFT（仅超管；BR-IPD-07/AC-IPD-20/AC-IPD-27）。
+     * <p>生物特征动作（bioFeature）正文必须含「算法公平性」与「偏见测试」（缺则 400 零写入）；
+     * 同 actionCode 旧 PUBLISHED 条件 UPDATE 归档（effectiveTo=now）；
+     * DRAFT→PUBLISHED 条件 UPDATE 守卫并发（0 行 → 409）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SopTemplate publishDraft(Long id, IpdActor actor) {
+        IpdIdorGuard.requireSuperAdmin(actor);
+        SopTemplate draft = getById(id);
+        if (!SopTemplate.Status.DRAFT.equals(draft.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "仅 DRAFT 可发布，当前状态=" + draft.getStatus());
+        }
+        requireBioFeatureContent(draft);
+
+        Date now = new Date();
+        // 同动作旧 PUBLISHED 逐条条件归档（0 行=已被并发处理，跳过）
+        List<SopTemplate> oldPublished = sopTemplateMapper.selectList(
+            Wrappers.<SopTemplate>lambdaQuery()
+                .eq(SopTemplate::getActionCode, draft.getActionCode())
+                .eq(SopTemplate::getStatus, SopTemplate.Status.PUBLISHED)
+                .eq(SopTemplate::getDelFlag, "0"));
+        for (SopTemplate old : oldPublished) {
+            Integer archived = sopTemplateMapper.update(null,
+                Wrappers.<SopTemplate>lambdaUpdate()
+                    .set(SopTemplate::getStatus, SopTemplate.Status.ARCHIVED)
+                    .set(SopTemplate::getEffectiveTo, now)
+                    .eq(SopTemplate::getId, old.getId())
+                    .eq(SopTemplate::getStatus, SopTemplate.Status.PUBLISHED));
+            if (archived != null && archived > 0) {
+                auditLogService.append(AuditLog.builder()
+                    .operatorName(actorName(actor)).operatorRole(actor.role())
+                    .action("ARCHIVE").entityType("SOP_TEMPLATE").entityId(old.getId())
+                    .beforeData(AuditEventData.json("status", "PUBLISHED"))
+                    .afterData(AuditEventData.json("status", "ARCHIVED", "effectiveTo", now.getTime()))
+                    .reason("P1-3.3 SOP 新版本发布，旧版本自动归档")
+                    .build());
+            }
+        }
+
+        // DRAFT→PUBLISHED 条件 UPDATE（守卫并发，0 行 → 409）
+        Integer published = sopTemplateMapper.update(null,
+            Wrappers.<SopTemplate>lambdaUpdate()
+                .set(SopTemplate::getStatus, SopTemplate.Status.PUBLISHED)
+                .set(SopTemplate::getEffectiveFrom, now)
+                .set(SopTemplate::getEffectiveTo, null)
+                .eq(SopTemplate::getId, id)
+                .eq(SopTemplate::getStatus, SopTemplate.Status.DRAFT));
+        if (published == null || published == 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "草稿已被并发处理，发布失败");
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorName(actorName(actor)).operatorRole(actor.role())
+            .action("PUBLISH").entityType("SOP_TEMPLATE").entityId(id)
+            .beforeData(AuditEventData.json("status", "DRAFT"))
+            .afterData(AuditEventData.json("status", "PUBLISHED",
+                "version", draft.getVersion(),
+                "contentLen", draft.getContent() == null ? 0 : draft.getContent().length()))
+            .reason("P1-3.3 SOP 草稿发布，仅影响此后实例化的项目")
+            .build());
+        return getById(id);
+    }
+
+    /** 内部：AC-IPD-20 生物特征动作发布校验（缺关键词 → 400，零写入）。 */
+    private static void requireBioFeatureContent(SopTemplate draft) {
+        boolean bioFeature = ActionCatalog.ALL.stream()
+            .anyMatch(def -> def.bioFeature() && def.code().equals(draft.getActionCode()));
+        if (!bioFeature) {
+            return;
+        }
+        String content = draft.getContent() == null ? "" : draft.getContent();
+        if (!content.contains("算法公平性") || !content.contains("偏见测试")) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "生物特征动作（如 V10/C12/D11）的 SOP 正文必须包含「算法公平性」与「偏见测试」要求（AC-IPD-20）");
+        }
+    }
+
+    /** 内部：复制 PUBLISHED/ARCHIVED 为新 DRAFT（版本号=同动作 max+1；审计 COPY/REVERT）。 */
+    private SopTemplate duplicateAsDraft(SopTemplate source, IpdActor actor, String auditAction) {
+        List<SopTemplate> existingDrafts = sopTemplateMapper.selectList(
+            Wrappers.<SopTemplate>lambdaQuery()
+                .eq(SopTemplate::getActionCode, source.getActionCode())
+                .eq(SopTemplate::getStatus, SopTemplate.Status.DRAFT)
+                .eq(SopTemplate::getDelFlag, "0"));
+        if (!existingDrafts.isEmpty()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "同一动作同时只能有一个草稿，请先编辑或发布现有草稿");
+        }
+        long maxVersion = 0L;
+        List<SopTemplate> all = sopTemplateMapper.selectList(
+            Wrappers.<SopTemplate>lambdaQuery()
+                .eq(SopTemplate::getActionCode, source.getActionCode())
+                .eq(SopTemplate::getDelFlag, "0"));
+        for (SopTemplate t : all) {
+            if (t.getVersion() != null && t.getVersion() > maxVersion) {
+                maxVersion = t.getVersion();
+            }
+        }
+        SopTemplate draft = SopTemplate.builder()
+            .actionCode(source.getActionCode())
+            .title(source.getTitle())
+            .content(source.getContent())
+            .templateCode(source.getTemplateCode())
+            .templateName(source.getTemplateName())
+            .description(source.getDescription())
+            .category(source.getCategory())
+            .version(maxVersion + 1)
+            .status(SopTemplate.Status.DRAFT)
+            .createdBy(actor.id() == null ? null : actor.id().toString())
+            .tenantId(source.getTenantId())
+            .delFlag("0")
+            .build();
+        sopTemplateMapper.insert(draft);
+        if (draft.getId() == null || draft.getId() <= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "SOP 草稿写入失败：未生成主键");
+        }
+        auditLogService.append(AuditLog.builder()
+            .operatorName(actorName(actor)).operatorRole(actor.role())
+            .action(auditAction).entityType("SOP_TEMPLATE").entityId(draft.getId())
+            .beforeData(AuditEventData.json("sourceId", source.getId(),
+                "sourceVersion", source.getVersion(), "sourceStatus", source.getStatus()))
+            .afterData(AuditEventData.json("version", draft.getVersion(), "status", "DRAFT",
+                "contentLen", draft.getContent() == null ? 0 : draft.getContent().length()))
+            .reason("P1-3.3 SOP " + ("COPY".equals(auditAction) ? "复制为草稿" : "历史恢复为草稿"))
+            .build());
+        return draft;
     }
 
     /**

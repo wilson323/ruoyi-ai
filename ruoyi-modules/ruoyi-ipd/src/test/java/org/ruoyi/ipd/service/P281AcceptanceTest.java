@@ -13,12 +13,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.ruoyi.ipd.domain.GateReview;
+import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
-import org.ruoyi.ipd.mapper.GateReviewMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -61,7 +61,7 @@ class P281AcceptanceTest {
     @Mock private ProjectMemberMapper memberMapper;
     @Mock private PersonMapper personMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private GateReviewMapper gateReviewMapper;
+    @Mock private GateMapper gateMapper;
     @Mock private HandoverMapper handoverMapper;
     @Mock private SystemConfigService systemConfigService;
     @Mock private AuditLogService auditLogService;
@@ -78,7 +78,7 @@ class P281AcceptanceTest {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, Project.class);
         TableInfoHelper.initTableInfo(assistant, ProjectMember.class);
-        TableInfoHelper.initTableInfo(assistant, GateReview.class);
+        TableInfoHelper.initTableInfo(assistant, Gate.class);
         TableInfoHelper.initTableInfo(assistant, HandoverRecord.class);
         TableInfoHelper.initTableInfo(assistant, Person.class);
     }
@@ -96,8 +96,8 @@ class P281AcceptanceTest {
             org.mockito.Mockito.mock(org.ruoyi.ipd.security.IpdAuthSession.class),
             org.mockito.Mockito.mock(NotificationService.class));
         handoverService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
-        // GateCreationService 使用 @RequiredArgsConstructor 3 参
-        gateCreationService = new GateCreationService(gateReviewMapper, projectMapper, auditLogService);
+        // GateCreationService 使用 @RequiredArgsConstructor 3 参（R30：写 gates 主体表，依赖 GateMapper）
+        gateCreationService = new GateCreationService(gateMapper, projectMapper, auditLogService);
     }
 
     private Person pm(long id, String personType, String level) {
@@ -170,19 +170,19 @@ class P281AcceptanceTest {
     @DisplayName("Step 3：G1 创建 + 双签通过 ⇒ gateCode=G2 可再次创建（不限轮次，但限 14 天 / 项目）")
     void gateReviewChainG1ToG2() {
         when(projectMapper.selectById(7003L)).thenReturn(project(7003L, 7L));
-        // 14 天内未创建过 G1 / G2
-        when(gateReviewMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(gateReviewMapper.insert(any(GateReview.class))).thenReturn(1);
+        // 14 天内未创建过 G1 / G2（R30：冷却查询改 gates 主体表）
+        when(gateMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(gateMapper.insert(any(Gate.class))).thenReturn(1);
 
-        GateReview g1 = gateCreationService.autoCreateGate(7003L, "G1", 200L);
+        Gate g1 = gateCreationService.autoCreateGate(7003L, "G1", 200L);
         assertThat(g1.getGateCode()).isEqualTo("G1");
 
-        GateReview g2 = gateCreationService.autoCreateGate(7003L, "G2", 200L);
+        Gate g2 = gateCreationService.autoCreateGate(7003L, "G2", 200L);
         assertThat(g2.getGateCode()).isEqualTo("G2");
 
-        ArgumentCaptor<GateReview> gateCap = ArgumentCaptor.forClass(GateReview.class);
-        verify(gateReviewMapper, atLeastOnce()).insert(gateCap.capture());
-        assertThat(gateCap.getAllValues()).extracting(GateReview::getGateCode)
+        ArgumentCaptor<Gate> gateCap = ArgumentCaptor.forClass(Gate.class);
+        verify(gateMapper, atLeastOnce()).insert(gateCap.capture());
+        assertThat(gateCap.getAllValues()).extracting(Gate::getGateCode)
             .contains("G1", "G2");
     }
 

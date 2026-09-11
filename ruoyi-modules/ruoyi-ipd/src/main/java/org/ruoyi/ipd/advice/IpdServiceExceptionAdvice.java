@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -225,6 +226,18 @@ public class IpdServiceExceptionAdvice {
         } finally {
             MDC.remove("traceId");
         }
+    }
+
+    /**
+     * SSE/异步长连接客户端断开（AsyncRequestNotUsableException）：连接生命周期事件，非业务异常。
+     * 修复前：落入下方 handleUnexpected 兜底 → 试图序列化 ApiV1Response JSON，但响应
+     * Content-Type 已是 text/event-stream → HttpMessageNotWritableException 二次异常
+     * （2026-09-11 实测于 IpdSseController 客户端断开+心跳竞态，日志双 ERROR 噪音）。
+     * 此处静默返回 void：response 已不可写，Spring 不会再尝试序列化任何响应体。
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException e) {
+        log.debug("[IPD] async request not usable (client disconnected): {}", e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

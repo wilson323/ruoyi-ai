@@ -179,9 +179,10 @@ public class BidInvitationService {
         bidInvitationMapper.updateById(inv);
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action("select").entityType("bid_invitation").entityId(invitationId)
-            .afterData("{\"selectedResponseId\":" + responseId
-                + ",\"selectedRdPmId\":" + resp.getRdPmId()
-                + ",\"rejectedRdPmIds\":[" + rejectedRdPmIds + "]}")
+            .afterData(AuditEventData.json(
+                "selectedResponseId", responseId,
+                "selectedRdPmId", resp.getRdPmId(),
+                "rejectedRdPmIds", rejectedRdPmIds))
             .reason(inv.getTitle())
             .createTime(now()).build());
         // HIGH-1.2 落选通知：镜像 adminAssign 行 332-355 模式
@@ -524,7 +525,7 @@ public class BidInvitationService {
         bidInvitationMapper.updateById(inv);
         auditLogService.append(AuditLog.builder()
             .operatorId(adminId).action("admin_assign").entityType("bid_invitation").entityId(id)
-            .afterData("{\"targetPersonId\":" + targetPersonId + "}")
+            .afterData(AuditEventData.json("targetPersonId", targetPersonId))
             .reason(inv.getTitle())
             .createTime(now()).build());
         // Bug#6 中危：兄弟路径门禁对等 —— 中标者 BID_WON；其他 PENDING 应标者 BID_LOST（保持与 selectResponse 一致语义）

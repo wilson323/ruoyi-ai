@@ -69,10 +69,32 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- AI-STRAT-2 统一 AI 调用层：AiGateway 迁 Langchain4j（流式/重试/结构化输出基建），
+             版本与 ruoyi-chat 及父 POM 三 BOM 对齐规则一致（pom-edit-hint 5 类提醒遵守） -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
         <!-- W20-B：Notification 中间件化 WEBSOCKET 真实通道依赖 ruoyi-common-websocket -->
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-websocket</artifactId>
+        </dependency>
+
+        <!-- 任务 2（2026-09-10）：IpdSseController 复用 SseEmitterManager 做用户维度多连接管理 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-sse</artifactId>
+        </dependency>
+
+        <!-- 任务 3a-3（2026-09-10，禁止双轨）：IpdMenuController 复用基线 ISysMenuService/ISysUserService
+             查 sys_user.user_id（按 persons.username）后调 selectMenuTreeByUserId 拿前端路由；
+             ruoyi-system 是 lib module（非独立 SpringBoot），加依赖只入类路径不引启动冲突。 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-system</artifactId>
         </dependency>
 
         <dependency>

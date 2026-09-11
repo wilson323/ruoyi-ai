@@ -58,12 +58,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -344,21 +344,18 @@ class P131DatabaseIntegrationTest {
         withRollback(() -> {
             long project = project("HARDWARE");
             ProjectStageMapper failing = spy(stages);
-            AtomicInteger inserted = new AtomicInteger();
             IllegalStateException original = new IllegalStateException("P131 forced stage insertion failure");
+            // R8X-CONT-1 P0-3 批量语义（R30 重写）：原「第 3 条单条 insert 失败回滚前 2 条」
+            // 在 6 行一次 insertBatch 下无中途概念；等价改为真实批量 SQL 落库 6 行后抛异常，
+            // 验证保存点回滚撤回全部已写入 stage 行（原意图：真实 SQL 后失败不留残图）。
             doAnswer(call -> {
-                if (inserted.get() == 2) {
-                    assertThat(count("project_stages", project)).isEqualTo(2);
-                    assertThat(count("stage_actions", project)).isGreaterThan(0);
-                    throw original;
-                }
-                int rows = stages.insert((ProjectStage) call.getArgument(0));
-                inserted.incrementAndGet();
-                return rows;
-            }).when(failing).insert(any(ProjectStage.class));
+                List<ProjectStage> list = call.getArgument(0);
+                assertThat(stages.insertBatch(list, call.getArgument(1))).isTrue();
+                assertThat(count("project_stages", project)).isEqualTo(6);
+                throw original;
+            }).when(failing).insertBatch(any(), anyInt());
             ProjectBootstrapService target = proxy(new ProjectBootstrapService(failing, actions));
             assertThat(catchThrowable(() -> nested(() -> target.bootstrap(project, OPERATOR)))).isSameAs(original);
-            assertThat(inserted.get()).isEqualTo(2);
             assertEmptyGraph(project);
             assertThat(number("SELECT COUNT(*) FROM projects WHERE id=?", project)).isEqualTo(1);
         });
@@ -369,20 +366,18 @@ class P131DatabaseIntegrationTest {
         withRollback(() -> {
             long project = project("HARDWARE");
             StageActionMapper failing = spy(actions);
-            AtomicInteger inserted = new AtomicInteger();
             IllegalStateException original = new IllegalStateException("P131 forced action failure after real SQL");
+            // R30 批量语义重写：stages(6) + actions(69) 两批真实 SQL 全部落库后抛异常，
+            // 验证两类新图行整体回滚（原第 10 条单条失败语义的批量等价）。
             doAnswer(call -> {
-                int rows = actions.insert((StageAction) call.getArgument(0));
-                if (inserted.incrementAndGet() == 10) {
-                    assertThat(count("stage_actions", project)).isEqualTo(10);
-                    assertThat(count("project_stages", project)).isGreaterThan(0);
-                    throw original;
-                }
-                return rows;
-            }).when(failing).insert(any(StageAction.class));
+                List<StageAction> list = call.getArgument(0);
+                assertThat(actions.insertBatch(list, call.getArgument(1))).isTrue();
+                assertThat(count("stage_actions", project)).isEqualTo(69);
+                assertThat(count("project_stages", project)).isEqualTo(6);
+                throw original;
+            }).when(failing).insertBatch(any(), anyInt());
             ProjectBootstrapService target = proxy(new ProjectBootstrapService(stages, failing));
             assertThat(catchThrowable(() -> nested(() -> target.bootstrap(project, OPERATOR)))).isSameAs(original);
-            assertThat(inserted.get()).isEqualTo(10);
             assertEmptyGraph(project);
             assertThat(number("SELECT COUNT(*) FROM projects WHERE id=?", project)).isEqualTo(1);
         });
@@ -393,11 +388,14 @@ class P131DatabaseIntegrationTest {
         withRollback(() -> {
             long project = project("HARDWARE");
             ProjectStageMapper failing = spy(stages);
+            // R30 批量语义重写：真实 insertBatch 成功落库 6 行后谎报 false →
+            // 主代码 !insertBatch → writeFailure → INTERNAL_ERROR + 整体回滚。
             doAnswer(call -> {
-                assertThat(stages.insert((ProjectStage) call.getArgument(0))).isEqualTo(1);
-                assertThat(count("project_stages", project)).isEqualTo(1);
-                return 0;
-            }).when(failing).insert(any(ProjectStage.class));
+                List<ProjectStage> list = call.getArgument(0);
+                assertThat(stages.insertBatch(list, call.getArgument(1))).isTrue();
+                assertThat(count("project_stages", project)).isEqualTo(6);
+                return false;
+            }).when(failing).insertBatch(any(), anyInt());
             ProjectBootstrapService target = proxy(new ProjectBootstrapService(failing, actions));
             assertServiceCode(() -> nested(() -> target.bootstrap(project, OPERATOR)), ApiV1ErrorCode.INTERNAL_ERROR);
             assertEmptyGraph(project);
@@ -409,14 +407,16 @@ class P131DatabaseIntegrationTest {
         withRollback(() -> {
             long project = project("HARDWARE");
             ProjectStageMapper failing = spy(stages);
+            // R30 批量语义重写：真实 insertBatch 落库并回填主键后破坏首个实体 id，
+            // 模拟驱动未回填 → requireGeneratedId → writeFailure → INTERNAL_ERROR + 回滚。
             doAnswer(call -> {
-                ProjectStage entity = call.getArgument(0);
-                int rows = stages.insert(entity);
-                assertThat(entity.getId()).isPositive();
-                assertThat(count("project_stages", project)).isEqualTo(1);
-                entity.setId(0L);
-                return rows;
-            }).when(failing).insert(any(ProjectStage.class));
+                List<ProjectStage> list = call.getArgument(0);
+                assertThat(stages.insertBatch(list, call.getArgument(1))).isTrue();
+                assertThat(list.get(0).getId()).isPositive();
+                assertThat(count("project_stages", project)).isEqualTo(6);
+                list.get(0).setId(0L);
+                return true;
+            }).when(failing).insertBatch(any(), anyInt());
             ProjectBootstrapService target = proxy(new ProjectBootstrapService(failing, actions));
             assertServiceCode(() -> nested(() -> target.bootstrap(project, OPERATOR)), ApiV1ErrorCode.INTERNAL_ERROR);
             assertEmptyGraph(project);
@@ -441,7 +441,7 @@ class P131DatabaseIntegrationTest {
             ProjectCertService certs = mock(ProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
             ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
-            Project result = service.create(request, OPERATOR);
+            Project result = service.create(request, OPERATOR, 900001L);
             assertThat(result.getId()).isPositive();
             assertThat(observed.get()).isTrue();
             verify(audit, times(1)).append(any(AuditLog.class));
@@ -471,7 +471,7 @@ class P131DatabaseIntegrationTest {
             ProjectCertService certs = mock(ProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
             ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
-            assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR)))).isSameAs(original);
+            assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR, 900001L)))).isSameAs(original);
             assertThat(observed.get()).isTrue();
             assertThat(request.getId()).isPositive();
             assertThat(number("SELECT COUNT(*) FROM products WHERE id=?", product)).isEqualTo(1);

@@ -16,6 +16,7 @@ import org.ruoyi.ipd.dto.LegacyImportResult;
 import org.ruoyi.ipd.dto.LegacyImportRowResult;
 import org.ruoyi.ipd.dto.ProjectCertListView;
 import org.ruoyi.ipd.dto.ProjectCertManualReq;
+import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
@@ -23,7 +24,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateEngine;
 import org.ruoyi.ipd.service.LaunchDateChangeService;
 import org.ruoyi.ipd.service.GateCreationService;
-import org.ruoyi.ipd.domain.GateReview;
+import org.ruoyi.ipd.service.GateReviewService;
 import org.ruoyi.ipd.service.LegacyImportService;
 import org.ruoyi.ipd.service.ProjectCertService;
 import org.ruoyi.ipd.service.ProjectService;
@@ -54,6 +55,7 @@ public class ProjectController {
     private final LegacyImportService legacyImportService;
     private final LaunchDateChangeService launchDateChangeService;
     private final GateCreationService gateCreationService;
+    private final GateReviewService gateReviewService;
     private final IpdPermission ipdPermission;
 
     /**
@@ -97,7 +99,8 @@ public class ProjectController {
     public ApiV1Response<Project> create(@RequestBody org.ruoyi.ipd.dto.ProjectCreateReq req) {
         // CODE-01：白名单 DTO，code/currentStage/status/source 由服务端定，客户端不可注入
         IpdActor actor = ipdPermission.requireProjectCreator();
-        return ApiV1Response.ok(projectService.create(req.toEntity(), actor.id()));
+        // 主组可选（2026-09-11 owner 拍板）：未选时后端权威自动归属操作人所在产品组（BR-ORG-01）
+        return ApiV1Response.ok(projectService.create(req.toEntity(), actor.id(), actor.groupId()));
     }
 
     /** 变更项目状态，需 ipd:project:edit 权限 */
@@ -198,11 +201,25 @@ public class ProjectController {
      */
     @PostMapping("/{id}/gates")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
-    public ApiV1Response<GateReview> autoCreateGate(
+    public ApiV1Response<Gate> autoCreateGate(
             @PathVariable Long id,
             @RequestParam String gateCode) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(gateCreationService.autoCreateGate(id, gateCode, actor.id()));
+    }
+
+    /**
+     * P0-10.23 补齐（R30 生产就绪）：项目维度 Gate 列表（替代前端手输 Gate 编号；
+     * 原型 /api/key-gates?projectId= 正式落地）。与 POST /{id}/gates 对称，只读。
+     *
+     * @param id 项目 ID
+     * @return 该项目全部未删 Gate（id 降序；空列表 = 尚无 Gate）
+     */
+    @GetMapping("/{id}/gates")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<List<Gate>> listProjectGates(@PathVariable Long id) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(gateReviewService.listByProject(id));
     }
 
     /**

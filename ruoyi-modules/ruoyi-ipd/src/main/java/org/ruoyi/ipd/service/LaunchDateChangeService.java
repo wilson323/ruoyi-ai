@@ -307,7 +307,7 @@ public class LaunchDateChangeService {
             .entityType("projects")
             .entityId(projectId)
             .reason(reason.trim())
-            .afterData("{\"launchDate\":\"" + date + "\"}")
+            .afterData(AuditEventData.json("launchDate", date))
             .createTime(new Date())
             .build());
         return project;

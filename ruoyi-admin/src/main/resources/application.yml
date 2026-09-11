@@ -315,8 +315,8 @@ tenant:
     - bonus_allocations
     - project_scores
     - contributions
-    # R9 补登：person_roles / coefficient_change_requests / cms_content 为新 DDL 表，无多租户语义
-    - person_roles
+    # R9 补登：coefficient_change_requests / cms_content 为新 DDL 表，无多租户语义
+    # （person_roles 已于 2026-09-06 owner 裁决不建表，2026-09-09 清理残留登记）
     - coefficient_change_requests
     - cms_content
     - negative_feedbacks
@@ -339,13 +339,13 @@ tenant:
     - allowance_ledgers
     - bonus_pools
     - ai_documents
+    - ai_doc_embeddings
     - system_configs
     # Round 8 新增（与上方基线表统一排除租户过滤）
     - launch_date_change_requests
     - project_cert_items
 
-    # R8-P0-1 补漏：person_roles / coefficient_change_requests / cms_content
-    - person_roles
+    # R8-P0-1 补漏：coefficient_change_requests / cms_content（person_roles 裁决不建表已清理）
     - coefficient_change_requests
     - cms_content
     # ①②③（2026-09-05 晚）：审计链分配器锚表——单行 GLOBAL、无 tenant_id 列、无多租户语义；
@@ -353,6 +353,8 @@ tenant:
     - audit_log_chain_heads
     # OPS-05（2026-09-05）：站内通知与待办事件 outbox——单企业私有部署，无多租户语义
     - notification_events
+    # P2-2.3 落库（2026-09-09）：人员同步任务台账——单企业私有部署，无多租户语义
+    - person_sync_jobs
     # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
     # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
     # switching_acceptance 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错

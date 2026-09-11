@@ -70,9 +70,17 @@ public class AiDocumentService {
     /** P0-8：状态流转审计（nullable，兼容既有单参构造；生产 Spring 装配）。 */
     private AuditLogService auditLogService;
 
+    /** AI-STRAT-1（2026-09-11）：审核通过即异步向量化（nullable 同上——单测可只装配主链）。 */
+    private AiDocEmbeddingService docEmbeddingService;
+
     @Autowired(required = false)
     public void setAuditLogService(AuditLogService auditLogService) {
         this.auditLogService = auditLogService;
+    }
+
+    @Autowired(required = false)
+    public void setDocEmbeddingService(AiDocEmbeddingService docEmbeddingService) {
+        this.docEmbeddingService = docEmbeddingService;
     }
 
     /** 仅真实流转行审计；幂等短路与并发重读分支不审计（避免同一流转双行）。 */
@@ -206,6 +214,11 @@ public class AiDocumentService {
             row.setReviewedBy(operatorId);
             row.setReviewedAt(now);
             auditTransition(versionId, operatorId, STATUS_GENERATED, STATUS_REVIEWED, null);
+            // AI-STRAT-1：审核通过即触发异步向量化（RAG 资料库入库；幂等分支不重复向量化；
+            // 内部 RAG 未配置/失败均只降级不阻塞审核事务）
+            if (docEmbeddingService != null) {
+                docEmbeddingService.embedAsync(row);
+            }
             return row;
         }
         // 并发已被他人审核：重读终态返回，不报错不覆盖

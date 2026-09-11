@@ -221,7 +221,7 @@ class P231BidInvitationCreateAcceptanceTest {
         assertThat(audit.getValue().getAction()).isEqualTo("CREATE_P231");
         assertThat(audit.getValue().getEntityType()).isEqualTo("bid_invitations");
         assertThat(audit.getValue().getOperatorId()).isEqualTo(operator.id());
-        assertThat(audit.getValue().getAfterData()).contains("mode=ONE_TO_ONE");
+        assertThat(audit.getValue().getAfterData()).contains("\"mode\":\"ONE_TO_ONE\"");
     }
 
     // ============ HIGH authorization fix（10~12） ============

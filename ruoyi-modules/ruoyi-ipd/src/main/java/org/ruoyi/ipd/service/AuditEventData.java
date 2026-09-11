@@ -1,11 +1,13 @@
 package org.ruoyi.ipd.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** Explicit business fields only: never serialize a whole entity or request into an audit event. */
 final class AuditEventData {
@@ -60,4 +62,52 @@ final class AuditEventData {
             ? payload
             : payload.substring(0, GUARD_ECHO_LIMIT) + "...(共 " + payload.length() + " 字符)";
     }
+
+    /**
+     * AI-P1-3 留痕门禁：凡载荷声明 "aiAssisted": true 的审计行，必须同时携带非空
+     * "aiModel" 与白名单 "aiRole"（draft|precheck|summarize），缺一即抛——防半吊子留痕
+     * （有 AI 参与标记却查不到模型/角色，责任链还原时断片）。
+     *
+     * <p>aiRole 白名单刻意排除一切决策语义（approve/reject/decide…）：AI 只出草稿/预检/
+     * 摘要，决策动作恒为人工（《AI参与留痕规范-20260910》§1）；若某动作的载荷把 aiRole
+     * 写成决策词，即视为责任链混淆信号，在入口直接拦下。
+     *
+     * <p>异常类型与 {@link #requireJson} 对齐选 {@link DataIntegrityViolationException}，
+     * 下游全局异常处理与回滚语义不变；同样必须在重试循环之外调用（同 requireJson 注释）。
+     * 非 AI 载荷（无 aiAssisted 键或 false）零影响；JSON 合法性由 requireJson 负责，
+     * 本方法只管 AI 留痕完备性（非法 JSON 直接返回交给 requireJson 拦）。
+     */
+    static void requireAiTrail(String payload, String field) {
+        if (payload == null || payload.isEmpty()) {
+            return;
+        }
+        JsonNode root;
+        try {
+            root = JSON.readTree(payload);
+        } catch (JsonProcessingException e) {
+            return;
+        }
+        if (!root.path("aiAssisted").asBoolean(false)) {
+            return;
+        }
+        if (root.path("aiModel").asText("").isBlank()) {
+            throw new DataIntegrityViolationException(
+                "audit_logs." + field + " 声明 aiAssisted=true 但缺非空 aiModel（AI-P1-3 留痕门禁："
+                    + "AI 参与的审计必须可追溯到具体模型）：" + echo(payload));
+        }
+        String role = root.path("aiRole").asText("");
+        if (!AI_ROLES.contains(role)) {
+            throw new DataIntegrityViolationException(
+                "audit_logs." + field + " 声明 aiAssisted=true 但 aiRole 非法（\"" + role
+                    + "\"；AI-P1-3 白名单 draft|precheck|summarize——AI 不得标记为决策角色）："
+                    + echo(payload));
+        }
+    }
+
+    /**
+     * AI 参与角色的白名单：只允许「AI 出建议」语义，决策语义一概不入（见 requireAiTrail）。
+     * AI-P2-3（2026-09-11）追加 copilot_answer：副驾问答/待办建议场景，与「draft 生成文档草稿」
+     * 语义不同——副驾是「对话问答/行动建议」，故单列；决策语义（approve/reject/decide）一律不入。
+     */
+    private static final Set<String> AI_ROLES = Set.of("draft", "precheck", "summarize", "copilot_answer");
 }

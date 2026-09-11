@@ -124,7 +124,7 @@ public class AiModelConfigService {
             .modelName(req.model().trim())
             .endpointUrl(req.endpoint().trim())
             .apiKeyEncrypted(encrypt(req.apiKey()))
-            .configJson(configJsonOf(req.temperature(), req.maxTokens()))
+            .configJson(configJsonOf(req.temperature(), req.maxTokens(), req.embedEndpoint(), req.embedModel()))
             .isActive(false)
             .build();
         mapper.insert(entity);
@@ -146,7 +146,8 @@ public class AiModelConfigService {
         }
         patch.setModelName(req.model().trim());
         // P4-2.2：合并而非重建——保留 budgetTokens/generateTimeoutMs 等扩展键（页48编辑不得抹掉生成侧护栏配置）
-        patch.setConfigJson(mergeConfigJson(exists.getConfigJson(), req.temperature(), req.maxTokens()));
+        patch.setConfigJson(mergeConfigJson(exists.getConfigJson(), req.temperature(), req.maxTokens(),
+            req.embedEndpoint(), req.embedModel()));
         if (mapper.updateById(patch) != 1) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
@@ -197,7 +198,7 @@ public class AiModelConfigService {
             : "connect: fail(" + safeErrCode(result.errorCode()) + ")";
         return new AiModelView(base.id(), base.provider(), base.endpoint(), base.model(),
             base.temperature(), base.maxTokens(), base.enabled(),
-            base.maskedKey() + " | " + message);
+            base.maskedKey() + " | " + message, base.embedEndpoint(), base.embedModel());
     }
 
     /** errorCode 白名单输出，避免任意 tester 返回泄露 apiKey/请求头；errorMessage 不进 maskedKey。 */
@@ -382,6 +383,17 @@ public class AiModelConfigService {
         if (req.maxTokens() != null && (req.maxTokens() < 1 || req.maxTokens() > 200_000)) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
+        // AI-STRAT-1（2026-09-11）：embed 两键可选，填了才校验格式（SSRF 黑名单在调用时
+        // AiGateway.embed 前置，与主 endpoint 同策略——不在保存时做 DNS 解析）
+        if (!isBlank(req.embedEndpoint())) {
+            String e = req.embedEndpoint().trim();
+            if (e.length() > 255 || (!e.startsWith("http://") && !e.startsWith("https://"))) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+            }
+        }
+        if (!isBlank(req.embedModel()) && req.embedModel().trim().length() > 64) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+        }
     }
 
     private static boolean isBlank(String s) {
@@ -396,7 +408,7 @@ public class AiModelConfigService {
         return apiKey.substring(0, 4) + "****" + apiKey.substring(apiKey.length() - 4);
     }
 
-    /** 脱敏视图：maskedKey 基于密文计算（明文永不出库）；temperature/maxTokens 从 config_json 展开。 */
+    /** 脱敏视图：maskedKey 基于密文计算（明文永不出库）；temperature/maxTokens/embed 两键从 config_json 展开。 */
     static AiModelView toView(AiModelConfig config) {
         JsonNode cfg = parseConfig(config.getConfigJson());
         return new AiModelView(config.getId(), config.getProvider(), config.getEndpointUrl(),
@@ -404,33 +416,46 @@ public class AiModelConfigService {
             cfg.hasNonNull("temperature") ? cfg.get("temperature").decimalValue() : null,
             cfg.hasNonNull("maxTokens") ? cfg.get("maxTokens").asInt() : null,
             Boolean.TRUE.equals(config.getIsActive()) ? "1" : "0",
-            mask(config.getApiKeyEncrypted()));
+            mask(config.getApiKeyEncrypted()),
+            cfg.hasNonNull("embedEndpoint") ? cfg.get("embedEndpoint").asText() : null,
+            cfg.hasNonNull("embedModel") ? cfg.get("embedModel").asText() : null);
     }
 
-    /** config_json 组装：null 字段不落键（保持载荷最小，P4-2.2 可扩展键）。 */
-    private static String configJsonOf(BigDecimal temperature, Integer maxTokens) {
-        StringBuilder sb = new StringBuilder("{");
+    /**
+     * config_json 组装：null/blank 字段不落键（保持载荷最小，P4-2.2 可扩展键）。
+     * AI-STRAT-1：embed 两键字符串值经 ObjectNode 序列化（免手拼转义）。
+     */
+    private static String configJsonOf(BigDecimal temperature, Integer maxTokens,
+                                       String embedEndpoint, String embedModel) {
+        com.fasterxml.jackson.databind.node.ObjectNode out = JSON.createObjectNode();
         if (temperature != null) {
-            sb.append("\"temperature\":").append(temperature.toPlainString());
+            out.put("temperature", temperature);
         }
         if (maxTokens != null) {
-            if (sb.length() > 1) {
-                sb.append(',');
-            }
-            sb.append("\"maxTokens\":").append(maxTokens);
+            out.put("maxTokens", maxTokens);
         }
-        return sb.append('}').toString();
+        if (!isBlank(embedEndpoint)) {
+            out.put("embedEndpoint", embedEndpoint.trim());
+        }
+        if (!isBlank(embedModel)) {
+            out.put("embedModel", embedModel.trim());
+        }
+        return out.toString();
     }
 
     /**
      * P4-2.2：update 合并 config_json——temperature/maxTokens 覆盖（null 沿用旧值，防误清），
      * 其余扩展键（budgetTokens/generateTimeoutMs 等）原样保留。
+     * AI-STRAT-1：embedEndpoint/embedModel 三态——null=不动（沿用旧值）、blank=显式清除
+     * （关闭 RAG 的运营途径）、非空=覆盖。
      */
-    static String mergeConfigJson(String oldJson, BigDecimal temperature, Integer maxTokens) {
+    static String mergeConfigJson(String oldJson, BigDecimal temperature, Integer maxTokens,
+                                  String embedEndpoint, String embedModel) {
         JsonNode old = parseConfig(oldJson);
         com.fasterxml.jackson.databind.node.ObjectNode out = JSON.createObjectNode();
         old.fields().forEachRemaining(e -> {
-            if ("temperature".equals(e.getKey()) || "maxTokens".equals(e.getKey())) {
+            if ("temperature".equals(e.getKey()) || "maxTokens".equals(e.getKey())
+                || "embedEndpoint".equals(e.getKey()) || "embedModel".equals(e.getKey())) {
                 return;
             }
             out.set(e.getKey(), e.getValue());
@@ -445,7 +470,19 @@ public class AiModelConfigService {
         if (m != null) {
             out.put("maxTokens", m);
         }
+        mergeEmbedKey(out, old, "embedEndpoint", embedEndpoint);
+        mergeEmbedKey(out, old, "embedModel", embedModel);
         return out.toString();
+    }
+
+    /** AI-STRAT-1：embed 键三态合并——null=沿用旧值；blank=清除（不落键）；非空=覆盖。 */
+    private static void mergeEmbedKey(com.fasterxml.jackson.databind.node.ObjectNode out, JsonNode old,
+                                      String key, String incoming) {
+        String v = incoming != null ? incoming.trim()
+            : (old.hasNonNull(key) ? old.get(key).asText() : null);
+        if (v != null && !v.isEmpty()) {
+            out.put(key, v);
+        }
     }
 
     private static JsonNode parseConfig(String configJson) {

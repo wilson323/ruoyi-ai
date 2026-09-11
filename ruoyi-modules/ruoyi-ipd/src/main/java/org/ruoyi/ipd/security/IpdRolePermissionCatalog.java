@@ -46,7 +46,9 @@ public final class IpdRolePermissionCatalog {
         // R-NEW-SEC-5：G5 复盘待办读（对象级由 service 限定为该项目在职成员）
         IpdPermissionCode.OPERATION_POST_LAUNCH_REVIEW_QUERY,
         // P3-7.1：切换验收 run/get/list（内部全员可读；lock/unlock 拆细码见 BUSINESS_WRITE）
-        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY,
+        // AI-P2-3（2026-09-11）：AI 副驾问答（内部全员可调；对象级由 service 二次校验）
+        IpdPermissionCode.OPERATION_AI_COPILOT
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */

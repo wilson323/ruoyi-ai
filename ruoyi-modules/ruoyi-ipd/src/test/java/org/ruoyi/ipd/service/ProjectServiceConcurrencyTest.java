@@ -191,7 +191,7 @@ class ProjectServiceConcurrencyTest {
             .doReturn(1)
             .when(projectMapper).insert(any(Project.class));
 
-        Project created = service.create(base("S", null, null), 1L);
+        Project created = service.create(base("S", null, null), 1L, 7L);
 
         // 第一次取号得 001 并撞键，第二次必须换到 002 —— 证明重试真的重新取号，
         // 而不是拿同一个号反复撞。
@@ -212,7 +212,7 @@ class ProjectServiceConcurrencyTest {
         doThrow(new DuplicateKeyException("Duplicate entry for key 'uk_projects_code'"))
             .when(projectMapper).insert(any(Project.class));
 
-        assertThatThrownBy(() -> service.create(base("S", null, null), 1L))
+        assertThatThrownBy(() -> service.create(base("S", null, null), 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("项目编码冲突");
 

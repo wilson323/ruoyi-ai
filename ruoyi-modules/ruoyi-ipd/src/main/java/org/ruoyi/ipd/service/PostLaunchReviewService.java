@@ -128,7 +128,9 @@ public class PostLaunchReviewService {
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("POST_LAUNCH_REVIEW_SCHEDULED").entityType("post_launch_reviews").entityId(r.getId())
             .reason("projectId=" + projectId + " scheduledAt=" + scheduledAt)
-            .afterData("{\"scheduledAt\":\"" + scheduledAt + "\",\"assigneeId\":\"" + assigneeId + "\"}")
+            .afterData(AuditEventData.json(
+                "scheduledAt", scheduledAt,
+                "assigneeId", assigneeId))
             .createTime(new Date())
             .build());
         return r;
@@ -165,9 +167,9 @@ public class PostLaunchReviewService {
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("POST_LAUNCH_REVIEW_COMPLETED").entityType("post_launch_reviews").entityId(r.getId())
             .reason("projectId=" + r.getProjectId())
-            .afterData("{\"actualRevenue\":\"" + (data == null ? "" : data.actualRevenue())
-                + "\",\"customerFeedbackLen\":\"" + (data == null || data.customerFeedback() == null ? 0 : data.customerFeedback().length())
-                + "\"}")
+            .afterData(AuditEventData.json(
+                "actualRevenue", data == null ? "" : data.actualRevenue(),
+                "customerFeedbackLen", data == null || data.customerFeedback() == null ? 0 : data.customerFeedback().length()))
             .createTime(new Date())
             .build());
         return r;

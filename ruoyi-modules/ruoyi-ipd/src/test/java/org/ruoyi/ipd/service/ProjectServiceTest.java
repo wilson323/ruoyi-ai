@@ -105,7 +105,7 @@ class ProjectServiceTest {
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectList(any())).thenReturn(List.of());
 
-        Project created = service.create(base("S", null, null), 1L);
+        Project created = service.create(base("S", null, null), 1L, 7L);
 
         assertThat(created.getCode()).matches("PRJ-\\d{4}-\\d{3}");
         assertThat(created.getCurrentStage()).isEqualTo("CONCEPT");
@@ -119,23 +119,23 @@ class ProjectServiceTest {
     @Test
     @DisplayName("系数校验：S 越下界 1.4 / B 越上界 0.9 / A 带非 1.0 系数 → 全拒")
     void coefficientRange() {
-        assertThatThrownBy(() -> service.create(base("S", "1.4", "x"), 1L))
+        assertThatThrownBy(() -> service.create(base("S", "1.4", "x"), 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1.5");
-        assertThatThrownBy(() -> service.create(base("B", "0.9", "x"), 1L))
+        assertThatThrownBy(() -> service.create(base("B", "0.9", "x"), 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("0.8");
-        assertThatThrownBy(() -> service.create(base("A", "1.2", null), 1L))
+        assertThatThrownBy(() -> service.create(base("A", "1.2", null), 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("A 级");
     }
 
     @Test
     @DisplayName("AC-INC-15c：S 非默认须走流程；默认 1.5 可无理由")
     void reasonAndCoefficientRequired() {
-        assertThatThrownBy(() -> service.create(base("S", "1.8", "旗舰"), 1L))
+        assertThatThrownBy(() -> service.create(base("S", "1.8", "旗舰"), 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("AC-INC-15c");
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectList(any())).thenReturn(List.of());
-        assertThat(service.create(base("S", null, null), 1L).getLevelCoefficient())
+        assertThat(service.create(base("S", null, null), 1L, 7L).getLevelCoefficient())
             .isEqualByComparingTo("1.5");
     }
 
@@ -144,7 +144,7 @@ class ProjectServiceTest {
     void oneToOneGuard() {
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-        assertThatThrownBy(() -> service.create(base("S", null, null), 1L))
+        assertThatThrownBy(() -> service.create(base("S", null, null), 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("1:1");
     }
 

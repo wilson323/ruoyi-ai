@@ -10,7 +10,8 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AiGenerateReq;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.service.ai.AiChatClient;
+import org.ruoyi.ipd.service.ai.AiChatResult;
+import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.springframework.stereotype.Service;
 
@@ -61,17 +62,21 @@ public class AiGenerationService {
     private final AiDocumentService documentService;
     private final AiModelConfigService modelConfigService;
     private final AuditLogService auditLogService;
-    private final AiChatClient chatClient;
+    /** AI-STRAT-2（2026-09-10）：生成主链迁 Langchain4j 统一调用层；预算/限流/审计仍在本类。 */
+    private final AiGateway aiGateway;
+    /** AI-STRAT-1（2026-09-11）：生成前同项目历史文档检索注入（RAG 增强；降级不阻塞）。 */
+    private final AiDocEmbeddingService docEmbeddingService;
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     public AiGenerationService(AiDocumentMapper documentMapper, AiDocumentService documentService,
                                AiModelConfigService modelConfigService, AuditLogService auditLogService,
-                               AiChatClient chatClient) {
+                               AiGateway aiGateway, AiDocEmbeddingService docEmbeddingService) {
         this.documentMapper = documentMapper;
         this.documentService = documentService;
         this.modelConfigService = modelConfigService;
         this.auditLogService = auditLogService;
-        this.chatClient = chatClient;
+        this.aiGateway = aiGateway;
+        this.docEmbeddingService = docEmbeddingService;
     }
 
     /** 测试口：注入固定时钟（月度预算窗口断言）；生产走系统时钟。 */
@@ -105,7 +110,7 @@ public class AiGenerationService {
             long planMax = cfg.path("maxTokens").asInt(0) > 0
                 ? cfg.path("maxTokens").asInt(0) : DEFAULT_PLAN_MAX_TOKENS;
             if (used + req.prompt().length() + planMax > budgetOf(cfg)) {
-                failAudit(actor, config, req, "BUDGET_EXCEEDED", 0);
+                failAudit(actor, config, req, "BUDGET_EXCEEDED", 0, null);
                 throw new IpdBusinessException(ApiV1ErrorCode.AI_BUDGET_EXCEEDED);
             }
         }
@@ -114,22 +119,29 @@ public class AiGenerationService {
         try {
             acquired = gate.tryAcquire(2, TimeUnit.SECONDS);
             if (!acquired) {
-                failAudit(actor, config, req, "RATE_LIMITED", 0);
+                failAudit(actor, config, req, "RATE_LIMITED", 0, null);
                 throw new IpdBusinessException(ApiV1ErrorCode.RATE_LIMITED);
             }
             Integer maxTokens = cfg.path("maxTokens").asInt(0) > 0 ? cfg.path("maxTokens").asInt(0) : null;
             BigDecimal temperature = cfg.hasNonNull("temperature") ? cfg.get("temperature").decimalValue() : null;
-            AiChatClient.AiChatResult result = chatClient.chat(new AiTestConfig(
+            // AI-STRAT-1：同项目历史文档检索注入（RAG；任何异常/未配置返回 EMPTY，生成照常）
+            AiDocEmbeddingService.RetrievalContext ctx =
+                docEmbeddingService.retrieveContext(req.projectId(), req.prompt());
+            if (ctx == null) {
+                ctx = AiDocEmbeddingService.RetrievalContext.EMPTY;
+            }
+            String effectivePrompt = composePrompt(req.prompt(), ctx);
+            AiChatResult result = aiGateway.chat(new AiTestConfig(
                 config.getProvider(), config.getEndpointUrl(),
                 modelConfigService.decryptApiKey(config), config.getModelName(), timeoutMs),
-                req.prompt(), maxTokens, temperature);
+                effectivePrompt, maxTokens, temperature);
             if (!result.success()) {
-                failAudit(actor, config, req, result.errorCode(), result.latencyMs());
+                failAudit(actor, config, req, result.errorCode(), result.latencyMs(), ctx);
                 throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
                     "AI 生成失败: " + safeErr(result.errorCode()));
             }
             if (result.content() == null || result.content().isBlank()) {
-                failAudit(actor, config, req, "EMPTY_RESPONSE", result.latencyMs());
+                failAudit(actor, config, req, "EMPTY_RESPONSE", result.latencyMs(), ctx);
                 throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "AI 生成失败: EMPTY_RESPONSE");
             }
             AiDocument doc = documentService.createGenerated(req.projectId(), req.docType(), req.title(),
@@ -139,19 +151,23 @@ public class AiGenerationService {
                 .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
                 .action("AI_GENERATE").entityType("AI_DOCUMENT").entityId(doc.getId())
                 .afterData(AuditEventData.json(
+                    "aiAssisted", true,
+                    "aiModel", config.getModelName(),
+                    "aiRole", "draft",
                     "projectId", req.projectId(),
                     "docType", doc.getDocType() == null ? "" : doc.getDocType(),
-                    "model", config.getModelName(),
                     "promptLen", req.prompt().length(),
                     "tokenPrompt", result.promptTokens(),
                     "tokenCompletion", result.completionTokens(),
                     "latencyMs", result.latencyMs(),
+                    "contextHits", ctx.hits(),
+                    "contextChars", ctx.chars(),
                     "status", doc.getStatus()))
                 .build());
             return doc;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            failAudit(actor, config, req, "RATE_LIMITED", 0);
+            failAudit(actor, config, req, "RATE_LIMITED", 0, null);
             throw new IpdBusinessException(ApiV1ErrorCode.RATE_LIMITED);
         } finally {
             if (acquired) {
@@ -217,16 +233,41 @@ public class AiGenerationService {
         }
     }
 
-    private void failAudit(IpdActor actor, AiModelConfig config, AiGenerateReq req, String code, long latencyMs) {
+    /**
+     * RAG 注入拼装（AI-STRAT-1）：上下文块在前、需求原文在后；总长钳 MAX_PROMPT_LEN
+     * （优先保需求原文，超预算裁上下文尾）。检索无命中（EMPTY）原样返回用户 prompt。
+     */
+    static String composePrompt(String userPrompt, AiDocEmbeddingService.RetrievalContext ctx) {
+        if (ctx == null || ctx.block() == null || ctx.block().isEmpty()) {
+            return userPrompt;
+        }
+        String join = "\n（以上为同项目已审核历史文档片段，供参考；以下为本次需求）\n";
+        int room = MAX_PROMPT_LEN - userPrompt.length() - join.length();
+        String block = ctx.block();
+        if (block.length() > room) {
+            block = room > 0 ? block.substring(0, room) : "";
+        }
+        if (block.isEmpty()) {
+            return userPrompt;
+        }
+        return block + join + userPrompt;
+    }
+
+    private void failAudit(IpdActor actor, AiModelConfig config, AiGenerateReq req, String code,
+                           long latencyMs, AiDocEmbeddingService.RetrievalContext ctx) {
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
             .action("AI_GENERATE_FAILED").entityType("AI_DOCUMENT")
             .afterData(AuditEventData.json(
+                "aiAssisted", true,
+                "aiModel", config.getModelName(),
+                "aiRole", "draft",
                 "projectId", req.projectId(),
-                "model", config.getModelName(),
                 "promptLen", req.prompt().length(),
                 "errorCode", code,
-                "latencyMs", latencyMs))
+                "latencyMs", latencyMs,
+                "contextHits", ctx == null ? 0 : ctx.hits(),
+                "contextChars", ctx == null ? 0 : ctx.chars()))
             .build());
     }
 

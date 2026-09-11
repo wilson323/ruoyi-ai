@@ -114,7 +114,8 @@ public class LegacyImportService {
             .mainGroupId(req.mainGroupId())
             .source("LEGACY")
             .build();
-        Project created = projectService.create(draft, operatorId);
+        // 主组可选改造（2026-09-11）：存量导入主组仍显式必填，原样传给 create 作权威值
+        Project created = projectService.create(draft, operatorId, req.mainGroupId());
         List<String> marked = markPastStages(created.getId(), declared, req.alternativeEvidence());
         created.setDeclaredStage(declared);
         created.setLegacyEffectiveAt(truncateSeconds(req.legacyEffectiveAt()));
