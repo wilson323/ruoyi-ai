@@ -1,11 +1,14 @@
 package org.ruoyi.ipd.service;
 
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.domain.PersonSyncJob;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.mapper.PersonSyncJobMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,11 +35,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>本卡为 mock 同步（HR API 模拟），接入 HR API 真源在 P2-2.2。同步处理器按 personNo 主键 upsert，
  * 异常分两类：TRANSIENT（网络/超时）→ 重试；PERMANENT（校验失败）→ 不重试。Mock 模式下随机注入 TRANSIENT 错误用于测试重试链。
  *
- * <p>线程安全：任务表（ConcurrentHashMap）按 syncJobId 索引；每个任务独立 retry 计数。
+ * <p>线程安全：内存缓存（ConcurrentHashMap）按 syncJobId 索引，同时 write-through 台账表
+ * person_sync_jobs（重启后按 jobId/复合幂等键惰性回读，任务不丢）；每个任务独立 retry 计数。
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(rollbackFor = Exception.class)
 public class PersonSyncService {
 
@@ -60,9 +64,26 @@ public class PersonSyncService {
     private final PersonMapper personMapper;
     private final AuditLogService auditLogService;
 
-    /** 任务表：jobId → SyncJob（线程安全）。 */
+    /** 任务台账 Mapper（生产注入；单测两参构造传 null → 纯内存模式）。 */
+    private final PersonSyncJobMapper jobMapper;
+
+    /** 任务表：jobId → SyncJob（写穿缓存；重启后台账惰性回读补齐）。 */
     private final ConcurrentHashMap<String, SyncJob> jobs = new ConcurrentHashMap<>();
     private final AtomicLong jobSeq = new AtomicLong(0);
+
+    /** 两参构造：单测兼容入口（jobMapper=null，纯内存模式；SEC 场景测试依赖此形态）。 */
+    public PersonSyncService(PersonMapper personMapper, AuditLogService auditLogService) {
+        this(personMapper, auditLogService, null);
+    }
+
+    /** Spring 主构造器（多构造器必须显式标注 @Autowired，否则启动失败——R29 实测教训）。 */
+    @Autowired
+    public PersonSyncService(PersonMapper personMapper, AuditLogService auditLogService,
+                             PersonSyncJobMapper jobMapper) {
+        this.personMapper = personMapper;
+        this.auditLogService = auditLogService;
+        this.jobMapper = jobMapper;
+    }
 
     /**
      * 同步处理器注入点（test 时可替换为 lambda；生产在 P2-2.2 真源切换时由 HR 适配器注入）。
@@ -70,8 +91,10 @@ public class PersonSyncService {
      * <p>SEC 闭环：无默认实现 —— 早期版本提供的 {@code defaultProcess} 直接 {@code personMapper.insert}
      * 新人，绕过 groupId/HR 授权即把 account_status 置 ACTIVE，是 P2-2.3 上线初期的默认 bypass。
      * 删除后 {@link #attempt} 在 {@code processor==null} 时显式抛 {@link IllegalStateException}，
-     * 拒绝任何「未配置就误开绿灯」的路径。生产由配置 bean 在启动时注入。
+     * 拒绝任何「未配置就误开绿灯」的路径。dev 环境由 MockHrAdapter（@Profile("dev")）注入；
+     * 生产在 P2-2.2 真源切换时由真 HR 适配器经 {@code @Autowired(required=false)} 按类型自动装配注入。
      */
+    @Autowired(required = false)
     private volatile SyncProcessor processor;
 
     /**
@@ -82,22 +105,18 @@ public class PersonSyncService {
      * 防止「admin 用同 key 重放覆盖组长重试进度」之类的串号）。
      */
     public SyncJob submit(String employeeNo, String idempotencyKey, IpdActor operator) {
-        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-            for (SyncJob existing : jobs.values()) {
-                if (idempotencyKey.equals(existing.idempotencyKey)
-                    && java.util.Objects.equals(existing.operatorId, operator.id())
-                    && java.util.Objects.equals(existing.groupId, operator.groupId())) {
-                    log.info("P2-2.1 idempotent replay: key={} operatorId={} groupId={} → jobId={}",
-                        maskKey(idempotencyKey), operator.id(), operator.groupId(), existing.jobId);
-                    return existing;
-                }
-            }
+        SyncJob replay = findIdempotentReplay(idempotencyKey, operator);
+        if (replay != null) {
+            log.info("P2-2.1 idempotent replay: key={} operatorId={} groupId={} → jobId={}",
+                maskKey(idempotencyKey), operator.id(), operator.groupId(), replay.jobId);
+            return replay;
         }
         String jobId = "sync-" + UUID.randomUUID().toString().substring(0, 8) + "-" + jobSeq.incrementAndGet();
         SyncJob job = new SyncJob(jobId, employeeNo, idempotencyKey,
             JobStatus.PENDING, 0, DEFAULT_MAX_ATTEMPTS, null, null,
             Instant.now(), Instant.now(), operator.id(), operator.groupId());
         jobs.put(jobId, job);
+        insertRow(job);
         auditLogService.append(AuditLog.builder()
             .entityType("person_sync_jobs")
             .action("SUBMIT")
@@ -153,7 +172,7 @@ public class PersonSyncService {
      */
     public BatchRetryResult retryAll(IpdActor operator) {
         int retried = 0, succeeded = 0, failed = 0, skipped = 0;
-        for (SyncJob job : new ArrayList<>(jobs.values())) {
+        for (SyncJob job : listAll()) {
             if (job.status == JobStatus.SUCCESS || job.status == JobStatus.RETRYING) {
                 skipped++;
                 continue;
@@ -188,8 +207,14 @@ public class PersonSyncService {
         return require(jobId);
     }
 
-    /** 列出所有任务（按 createdAt 倒序；用于 admin 视图）。 */
+    /** 列出所有任务（按 createdAt 倒序；DB 模式先惰性回读台账补齐重启后缺失的缓存）。 */
     public List<SyncJob> listAll() {
+        if (jobMapper != null) {
+            for (PersonSyncJob row : jobMapper.selectList(new LambdaQueryWrapper<PersonSyncJob>()
+                .orderByDesc(PersonSyncJob::getCreatedAt))) {
+                jobs.computeIfAbsent(row.getJobId(), k -> fromRow(row));
+            }
+        }
         List<SyncJob> all = new ArrayList<>(jobs.values());
         all.sort((a, b) -> b.createdAt.compareTo(a.createdAt));
         return Collections.unmodifiableList(all);
@@ -255,33 +280,106 @@ public class PersonSyncService {
                 log.warn("P2-2.3 sync FAIL: jobId={} kind={} reason={} nextRetry={}",
                     job.jobId, ex.kind, ex.getMessage(), job.nextRetryAt);
             }
+            persistRow(job);
         }
     }
 
-    /** 默认 mock 处理器：未注册时走人员表更新（幂等 upsert by employeeNo）。 */
-    private void defaultProcess(SyncJob job) {
-        Person p = personMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Person>()
-            .eq(Person::getEmployeeNo, job.employeeNo)
-            .last("LIMIT 1"));
-        if (p == null) {
-            // 新人：插入
-            p = Person.builder()
-                .employeeNo(job.employeeNo)
-                .name("Mock-" + job.employeeNo)
-                .personType("MARKET_PM")
-                .level("L3")
-                .employmentStatus(PersonService.EM_ACTIVE)
-                .accountStatus(PersonService.AC_ACTIVE)
-                .username("u_" + job.employeeNo)
-                .delFlag("0")
-                .build();
-            personMapper.insert(p);
+    // ============================================================
+    // 台账落库（P2-2.3 落库改造；jobMapper==null 时为单测内存模式，全部跳过）
+    // ============================================================
+
+    /** P2-2.1 幂等重放查找：先扫内存缓存，未命中且台账在位时按复合键查库并回填缓存。 */
+    private SyncJob findIdempotentReplay(String idempotencyKey, IpdActor operator) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return null;
         }
-        // 正常路径不抛异常；测试中通过 setProcessor 注入失败
+        for (SyncJob existing : jobs.values()) {
+            if (idempotencyKey.equals(existing.idempotencyKey)
+                && java.util.Objects.equals(existing.operatorId, operator.id())
+                && java.util.Objects.equals(existing.groupId, operator.groupId())) {
+                return existing;
+            }
+        }
+        if (jobMapper == null) {
+            return null;
+        }
+        PersonSyncJob row = jobMapper.selectOne(new LambdaQueryWrapper<PersonSyncJob>()
+            .eq(PersonSyncJob::getIdempotencyKey, idempotencyKey)
+            .eq(PersonSyncJob::getOperatorId, operator.id())
+            .eq(operator.groupId() != null, PersonSyncJob::getGroupId, operator.groupId())
+            .isNull(operator.groupId() == null, PersonSyncJob::getGroupId)
+            .last("LIMIT 1"));
+        if (row == null) {
+            return null;
+        }
+        SyncJob loaded = fromRow(row);
+        jobs.put(loaded.jobId, loaded);
+        return loaded;
+    }
+
+    /** submit 时写入台账（write-through 初始行）。 */
+    private void insertRow(SyncJob job) {
+        if (jobMapper == null) {
+            return;
+        }
+        jobMapper.insert(toRow(job));
+    }
+
+    /** attempt 状态变更后回写台账（显式 set 全字段，覆盖 failure 字段清空的语义）。 */
+    private void persistRow(SyncJob job) {
+        if (jobMapper == null) {
+            return;
+        }
+        jobMapper.update(null, new LambdaUpdateWrapper<PersonSyncJob>()
+            .eq(PersonSyncJob::getJobId, job.jobId)
+            .set(PersonSyncJob::getStatus, job.status.name())
+            .set(PersonSyncJob::getAttempts, job.attempts)
+            .set(PersonSyncJob::getFailureKind, job.failureKind == null ? null : job.failureKind.name())
+            .set(PersonSyncJob::getFailureReason, job.failureReason)
+            .set(PersonSyncJob::getNextRetryAt, job.nextRetryAt == null ? null : Date.from(job.nextRetryAt))
+            .set(PersonSyncJob::getUpdatedAt, Date.from(job.updatedAt)));
+    }
+
+    private PersonSyncJob toRow(SyncJob j) {
+        return PersonSyncJob.builder()
+            .jobId(j.jobId)
+            .employeeNo(j.employeeNo)
+            .idempotencyKey(j.idempotencyKey)
+            .operatorId(j.operatorId)
+            .groupId(j.groupId)
+            .status(j.status.name())
+            .attempts(j.attempts)
+            .maxAttempts(j.maxAttempts)
+            .failureKind(j.failureKind == null ? null : j.failureKind.name())
+            .failureReason(j.failureReason)
+            .nextRetryAt(j.nextRetryAt == null ? null : Date.from(j.nextRetryAt))
+            .createdAt(Date.from(j.createdAt))
+            .updatedAt(Date.from(j.updatedAt))
+            .build();
+    }
+
+    private SyncJob fromRow(PersonSyncJob r) {
+        return new SyncJob(r.getJobId(), r.getEmployeeNo(), r.getIdempotencyKey(),
+            JobStatus.valueOf(r.getStatus()), r.getAttempts(), r.getMaxAttempts(),
+            r.getFailureKind() == null ? null : FailureKind.valueOf(r.getFailureKind()),
+            r.getFailureReason(),
+            r.getCreatedAt() == null ? Instant.now() : r.getCreatedAt().toInstant(),
+            r.getUpdatedAt() == null ? Instant.now() : r.getUpdatedAt().toInstant(),
+            r.getOperatorId(), r.getGroupId());
     }
 
     private SyncJob require(String jobId) {
         SyncJob job = jobs.get(jobId);
+        if (job == null && jobMapper != null) {
+            // 重启后内存缓存为空：按 jobId 从台账惰性回读并回填缓存
+            PersonSyncJob row = jobMapper.selectOne(new LambdaQueryWrapper<PersonSyncJob>()
+                .eq(PersonSyncJob::getJobId, jobId)
+                .last("LIMIT 1"));
+            if (row != null) {
+                job = fromRow(row);
+                jobs.put(job.jobId, job);
+            }
+        }
         if (job == null) {
             throw new org.ruoyi.ipd.common.IpdBusinessException(
                 org.ruoyi.ipd.common.ApiV1ErrorCode.NOT_FOUND, "同步任务不存在: " + jobId);

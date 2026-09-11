@@ -140,7 +140,7 @@ class P111AcceptanceTest {
         Product product = aliveProduct(50L, Product.SRC_PM_NEW, 88L);
         when(productMapper.selectById(50L)).thenReturn(product);
 
-        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L))
+        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("一个产品仅对应一个项目");
     }
@@ -151,7 +151,7 @@ class P111AcceptanceTest {
         when(productMapper.selectById(50L)).thenReturn(aliveProduct(50L, Product.SRC_PM_NEW, null));
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
 
-        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L))
+        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("1:1");
     }
@@ -269,7 +269,7 @@ class P111AcceptanceTest {
             return 1;
         });
 
-        Project created = projectService.create(newProjectDraft(), 1L);
+        Project created = projectService.create(newProjectDraft(), 1L, 7L);
 
         assertThat(created.getId()).isEqualTo(501L);
         assertThat(product.getProjectId()).isEqualTo(501L);
@@ -279,12 +279,43 @@ class P111AcceptanceTest {
     }
 
     @Test
+    @DisplayName("主组可选（2026-09-11 owner 拍板）：未选时权威填充 fallback 组（BR-ORG-01）")
+    void mainGroupFallbackToActorGroup() {
+        Product product = aliveProduct(50L, Product.SRC_PM_NEW, null);
+        when(productMapper.selectById(50L)).thenReturn(product);
+        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(projectMapper.selectList(any())).thenReturn(java.util.List.of());
+        when(projectMapper.insert(any(Project.class))).thenAnswer(inv -> {
+            Project p = inv.getArgument(0);
+            p.setId(502L);
+            return 1;
+        });
+
+        Project draft = newProjectDraft();
+        draft.setMainGroupId(null);
+        Project created = projectService.create(draft, 1L, 77L);
+
+        assertThat(created.getMainGroupId()).isEqualTo(77L);
+    }
+
+    @Test
+    @DisplayName("主组缺失：未选且无 fallback → 拒绝（不落 null 污染 SEC-02 按组链）")
+    void mainGroupMissingWhenNoFallback() {
+        Project draft = newProjectDraft();
+        draft.setMainGroupId(null);
+        assertThatThrownBy(() -> projectService.create(draft, 1L, null))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("主组缺失");
+        verify(projectMapper, never()).insert(any(Project.class));
+    }
+
+    @Test
     @DisplayName("创建入口拒绝 GUEST_OTHER 占位产品（与 bind 入口一致）")
     void createProjectRejectsGuestOtherProduct() {
         Product guest = aliveProduct(50L, Product.SRC_GUEST_OTHER, null);
         when(productMapper.selectById(50L)).thenReturn(guest);
 
-        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L))
+        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("其他");
         verify(projectMapper, never()).insert(any(Project.class));

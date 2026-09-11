@@ -50,13 +50,13 @@ public class IpdWebSecurityConfig implements WebMvcConfigurer {
                 return true;
             }
         }).addPathPatterns("/api/v1/**")
-            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**")
+            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**", "/api/v1/resource/**")
             .order(Ordered.HIGHEST_PRECEDENCE);
 
         // 注解鉴权：依赖上一层已完成 ipd 登录；type=ipd 的 @SaCheckPermission 在此生效
         registry.addInterceptor(new SaInterceptor().isAnnotation(true))
             .addPathPatterns("/api/v1/**")
-            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**")
+            .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**", "/api/v1/resource/**")
             .order(Ordered.HIGHEST_PRECEDENCE + 1);
     }
 }

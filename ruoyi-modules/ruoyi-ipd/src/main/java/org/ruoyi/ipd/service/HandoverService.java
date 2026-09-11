@@ -255,12 +255,20 @@ public class HandoverService {
         }
     }
 
-    /** 收件箱：待我接收或我发起的未完结移交。 */
+    /**
+     * 收件箱：与我相关的活移交（DRAFT 待办 + COMPLETED 已生效但 24h 内可撤销）。
+     *
+     * <p>R30 修正（2026-09-11）：原 {@code ne(status, COMPLETED)} 把 COMPLETED 也排除，
+     * 但 {@link #rollback} 只接受 COMPLETED 记录——撤销入口在收件箱里永远选不到目标
+     * （前端契约断层）。改为白名单 {@code in(DRAFT, COMPLETED)}：DRAFT 是待办，
+     * COMPLETED 在 ROLLBACK_WINDOW_HOURS 窗口内仍是可操作活记录；ROLLED_BACK 为
+     * 显式终态（幂等拒绝重复撤销）不再返回；存量 CONFIRMED（本状态机未使用）同样不入箱。
+     */
     public List<HandoverRecord> inbox(IpdActor me) {
         return handoverMapper.selectList(new LambdaQueryWrapper<HandoverRecord>()
             .and(w -> w.eq(HandoverRecord::getToPersonId, me.id())
                 .or().eq(HandoverRecord::getFromPersonId, me.id()))
-            .ne(HandoverRecord::getStatus, ST_COMPLETED)
+            .in(HandoverRecord::getStatus, ST_DRAFT, ST_COMPLETED)
             .orderByAsc(HandoverRecord::getId));
     }
 

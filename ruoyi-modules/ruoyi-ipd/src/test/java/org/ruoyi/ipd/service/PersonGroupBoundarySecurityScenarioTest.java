@@ -106,8 +106,8 @@ class PersonGroupBoundarySecurityScenarioTest {
         assertThat(audit.getAction()).isEqualTo("REHIRE");
         assertThat(audit.getEntityId()).isEqualTo(1L);
         assertThat(audit.getOperatorId()).isEqualTo(101L);
-        assertThat(audit.getBeforeData()).contains("emp=RESIGNED", "acc=FROZEN_PENDING_HANDOVER");
-        assertThat(audit.getAfterData()).contains("emp=ACTIVE", "acc=ACTIVE");
+        assertThat(audit.getBeforeData()).contains("\"emp\":\"RESIGNED\"", "\"acc\":\"FROZEN_PENDING_HANDOVER\"");
+        assertThat(audit.getAfterData()).contains("\"emp\":\"ACTIVE\"", "\"acc\":\"ACTIVE\"");
         assertThat(audit.getBeforeData() + audit.getAfterData())
             .as("审计快照不携带凭据字段")
             .doesNotContain("passwordHash");

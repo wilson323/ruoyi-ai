@@ -75,6 +75,10 @@ public class AuditLogService {
         // 必须位于锚行锁之前：畸形载荷须立即抛出回滚，不得进入任何锁/推进路径。
         AuditEventData.requireJson(draft.getBeforeData(), "before_data");
         AuditEventData.requireJson(draft.getAfterData(), "after_data");
+        // AI-P1-3 留痕门禁（2026-09-10）：aiAssisted=true 的载荷必须同时携带 aiModel/aiRole，
+        // 单点接线全量调用点（44 文件/81 处）自动受益；同样位于锚行锁之前（同 DEF-6 理由）。
+        AuditEventData.requireAiTrail(draft.getBeforeData(), "before_data");
+        AuditEventData.requireAiTrail(draft.getAfterData(), "after_data");
         // P1-6 审计合并框架单点（R22 2026-09-09）：operator 三元组缺失时按 operatorId 查 persons
         // 补齐 name/personType——设计文档 §1.3 实测 operatorName 仅 51%/operatorRole 仅 34%，
         // 历史行哈希已冻结不可回填，但新行在此单点补齐后全量调用点（44 文件/81 处）自动受益，
@@ -150,12 +154,29 @@ public class AuditLogService {
     }
 
     /**
-     * 全链校验（兼容出口）：返回断裂/缺行的 seq 合并列表（空 = 链完整）。
+     * 全链校验（默认出口，P0-17 A 方案）：只报告「哈希不符」行——hash 必连续是安全红线；
+     * seq 缺行（GAP）成因不同（删行/事务回滚/InnoDB 自增值不回填），允许可验业务将其视为通过，
+     * 严态语义（既判 hash 也判 gap）请用 {@link #verifyChainStrict()}。
      *
-     * <p>语义与分列改造前完全一致，供既有消费者与契约测继续使用；
-     * 需区分「哈希不符」与「seq 缺行」时请用 {@link #verifyChainDetailed()}。
+     * <p><b>语义变更说明（2026-09-11 R30 收口）</b>：原实现返 {@code mergedBroken()}（hash+GAP 合井），该
+     * 语义下真库 16 GAP 长期报警，DEF-9 卡挂 5+ 周。owner 拍板走 A 方案：接受 + 标记不连续区间。修正后
+     * verifyChain() 默认对 GAP 宽容（仅作为详查入口 {@link #verifyChainDetailed()} 仍保留分列报告）；
+     * HTTP 端点 {@code GET /api/v1/audit-logs/verify} 的 {@code broken} 字段据此不再含 GAP，为兼容
+     * 旧消费者如需 GAP 同时返回请改调 verifyChainStrict()。本表与原语义不是洞洞不可逆——一旦真发现
+     * 「以 GAP 伪装篡改」场景随时可回滚为 verifyChainStrict()。
      */
     public List<Long> verifyChain() {
+        return verifyChainDetailed().hashBroken();
+    }
+
+    /**
+     * 全链校验（严态出口，兼容历史）：返回断裂/缺行的 seq 合并列表（空 = 链完整）。
+     *
+     * <p>语义与分列改造前完全一致，供「不可接受 GAP」场景（历史验收脚本/复盘/取证）继续使用；
+     * 默认场景请用 {@link #verifyChain()}。需区分「哈希不符」与「seq 缺行」时请用
+     * {@link #verifyChainDetailed()}。
+     */
+    public List<Long> verifyChainStrict() {
         return verifyChainDetailed().mergedBroken();
     }
 
@@ -183,13 +204,18 @@ public class AuditLogService {
         String expectPrev = nvl(all.get(0).getPrevHash());
         Long expectSeq = all.get(0).getSeq();
         for (AuditLog log : all) {
-            String expectHash = AuditHashChain.computeCurrHash(expectPrev, canonicalOf(log, log.getSeq()));
-            // DEF-9：连续性判据先单独归档，再判哈希——两个 if 不互斥，不可合并回单个或分支
-            if (!expectSeq.equals(log.getSeq())) {
+            // P0-17 A 方案（2026-09-11 owner 拍板）：GAP 行缺失前驱，prev_hash↔前驱 curr_hash 不可验；
+            // 但 curr_hash↔行内载荷仍可验（以行内 prev_hash 为锚）。修正前 GAP 首行必入 hashBroken
+            // （期望 prev_hash 对比必败），致 hashBroken 与 gaps 重合（真活 16/16 重合实测）。
+            boolean isGap = !expectSeq.equals(log.getSeq());
+            String anchor = isGap ? nvl(log.getPrevHash()) : expectPrev;
+            String expectHash = AuditHashChain.computeCurrHash(anchor, canonicalOf(log, log.getSeq()));
+            if (isGap) {
                 gaps.add(log.getSeq());
             }
+            // DEF-9：载荷自洽判据（curr_hash）；prev_hash 连续性仅在前驱存在时才可信
             if (!expectHash.equals(log.getCurrHash())
-                || !expectPrev.equals(nvl(log.getPrevHash()))) {
+                || (!isGap && !expectPrev.equals(nvl(log.getPrevHash())))) {
                 hashBroken.add(log.getSeq());
             }
             expectPrev = log.getCurrHash();

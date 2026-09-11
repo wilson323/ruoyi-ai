@@ -193,7 +193,12 @@ class P213PersonStateAcceptanceTest {
         ArgumentCaptor<AuditLog> audit = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(audit.capture());
         assertThat(audit.getValue().getAction()).isEqualTo("WECOM_UNBIND");
-        assertThat(audit.getValue().getBeforeData()).contains("wecom=***");  // snapshot() 屏蔽实际值；pre-existing 测断言 wc_999 错
+        // 2026-09-10 snapshot 改合法 JSON（原 toString 风格被 DEF-6 护栏拒收 → unbind 恒 500）：
+        // 断言对齐新契约：beforeData 可解析为 JSON 且 wecom 字段脱敏为 ***
+        org.assertj.core.api.Assertions.assertThatCode(
+                () -> new com.fasterxml.jackson.databind.ObjectMapper().readTree(audit.getValue().getBeforeData()))
+            .doesNotThrowAnyException();
+        assertThat(audit.getValue().getBeforeData()).contains("\"wecom\":\"***\"");
     }
 
     @Test

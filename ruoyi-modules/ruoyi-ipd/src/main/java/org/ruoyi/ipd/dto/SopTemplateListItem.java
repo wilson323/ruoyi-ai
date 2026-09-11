@@ -1,9 +1,9 @@
 package org.ruoyi.ipd.dto;
 
 /**
- * P1-3.3 SOP 模板轻量视图（保留必要字段供前端版本列表展示）。
+ * P1-3.3 SOP 版本列表轻量视图（对齐前端 IpdSopTemplateItem；
+ * 不含 mediumtext 正文，仅 contentLen 字符数）。
  */
-public record SopTemplateListItem(Long id, String templateCode, String templateName,
-                                  Long version, String status, String category,
-                                  java.util.Date effectiveFrom, java.util.Date effectiveTo) {
+public record SopTemplateListItem(Long id, String actionCode, String title,
+                                  Long version, String status, Long contentLen) {
 }

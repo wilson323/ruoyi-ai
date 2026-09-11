@@ -8,6 +8,7 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.HandoverRecord;
@@ -84,6 +85,26 @@ public class SwitchingAcceptanceService {
     @Autowired(required = false) public void setContributionMapper(ContributionMapper m) { this.contributionMapper = m; }
     @Autowired(required = false) public void setHandoverMapper(HandoverMapper m) { this.handoverMapper = m; }
 
+    /* ---------- P0-9：月度账务 run/lock/unlock 写路径审计（nullable setter；生产 Spring 装配，单测显式 mock） ---------- */
+    private AuditLogService auditLogService;
+
+    @Autowired(required = false)
+    public void setAuditLogService(AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
+
+    /* ---------- 可注入时钟（裸时钟守卫禁一：审计/报告时间戳走业务时钟；测试可固定） ---------- */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    @Autowired(required = false)
+    public void setClock(java.time.Clock clock) {
+        this.clock = clock;
+    }
+
+    private java.util.Date now() {
+        return java.util.Date.from(clock.instant());
+    }
+
     /* ===========================================================
      *  run 对账
      * =========================================================== */
@@ -110,7 +131,7 @@ public class SwitchingAcceptanceService {
 
         SwitchingAcceptanceReport report = SwitchingAcceptanceReport.builder()
             .month(monthStr)
-            .ranAt(new java.util.Date())
+            .ranAt(now())
             .ranBy(actor.id())
             .isLocked(false)
             .diffRate(diffRate)
@@ -145,6 +166,8 @@ public class SwitchingAcceptanceService {
 
         log.info("[{}] run 月度对账 month={} passed={} diffRate={} totalChecks={}",
             actor.id(), monthStr, passed, diffRate, checks.size());
+        auditSwitching(actor, "SWITCHING_RUN", entity,
+            "run 月度对账 month=" + monthStr + " diffRate=" + diffRate + " passed=" + passed);
         return toReport(entity);
     }
 
@@ -173,12 +196,14 @@ public class SwitchingAcceptanceService {
         }
 
         entity.setIsLocked(true);
-        entity.setLockedAt(new java.util.Date());
+        entity.setLockedAt(now());
         entity.setLockedBy(actor.id());
         entity.setUpdateBy(actor.id());
         switchingAcceptanceMapper.updateById(entity);
 
         log.info("[{}] 锁定月份 {} diffRate={}", actor.id(), monthStr, entity.getDiffRate());
+        auditSwitching(actor, "SWITCHING_LOCK", entity,
+            "锁定月份 month=" + monthStr + " diffRate=" + entity.getDiffRate());
         return toReport(entity);
     }
 
@@ -202,12 +227,14 @@ public class SwitchingAcceptanceService {
 
         entity.setIsLocked(false);
         entity.setUnlockReason(req.reason());
-        entity.setUnlockedAt(new java.util.Date());
+        entity.setUnlockedAt(now());
         entity.setUnlockedBy(actor.id());
         entity.setUpdateBy(actor.id());
         switchingAcceptanceMapper.updateById(entity);
 
         log.warn("[{}] 解锁月份 {} reason={}", actor.id(), monthStr, req.reason());
+        auditSwitching(actor, "SWITCHING_UNLOCK", entity,
+            "解锁月份 month=" + monthStr + " reason=" + req.reason());
         return toReport(entity);
     }
 
@@ -424,6 +451,41 @@ public class SwitchingAcceptanceService {
     /* ===========================================================
      *  辅助
      * =========================================================== */
+
+    /**
+     * P0-9：月度账务写路径审计（run / lock / unlock 三动作全部留痕）。actor 可空（系统路径，强制 null 跳过）。
+     * <p>审计字段映射：{@code entityType="switching_acceptance"} + {@code entityId=month hash code}（month 非数字取 hashCode 强转 Long）。
+     * <p>审计独立性：业务事务失败不会回滚审计（AuditLogService.append 用 REQUIRES_NEW 独立事务）。
+     */
+    private void auditSwitching(IpdActor actor, String action, SwitchingAcceptance entity, String reason) {
+        if (auditLogService == null) {
+            return;
+        }
+        try {
+            auditLogService.append(AuditLog.builder()
+                .operatorId(actor == null ? 0L : actor.id())
+                .operatorName(actor == null ? "system" : actor.name())
+                .operatorRole(actor == null ? "SYSTEM" : actor.role())
+                .action(action)
+                .entityType("switching_acceptance")
+                .entityId((long) (entity.getMonth() == null ? 0L : Math.abs(entity.getMonth().hashCode())))
+                .reason(reason)
+                .afterData(AuditEventData.json(
+                    "month", entity.getMonth(),
+                    "passed", Boolean.TRUE.equals(entity.getPassed()),
+                    "isLocked", Boolean.TRUE.equals(entity.getIsLocked()),
+                    "diffRate", entity.getDiffRate(),
+                    "ranBy", entity.getRanBy(),
+                    "lockedBy", entity.getLockedBy(),
+                    "unlockedBy", entity.getUnlockedBy()))
+                .createTime(now())
+                .build());
+        } catch (Exception e) {
+            // 审计失败不应阻断业务（与 AllowanceService.auditInsert 同型 fail-soft）；日志告警即可
+            log.warn("[{}] P0-9 切换验收审计写入失败 action={} month={} err={}",
+                actor == null ? 0L : actor.id(), action, entity.getMonth(), e.getMessage());
+        }
+    }
 
     private void validateMonth(String monthStr) {
         if (monthStr == null || !MONTH_PATTERN.matcher(monthStr).matches()) {

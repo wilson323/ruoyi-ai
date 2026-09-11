@@ -20,6 +20,7 @@ IPD 全局完整性审计脚本（病根 1+2+3 综合诊断）
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -118,37 +119,54 @@ def scan_acceptance_reports():
 
 
 def probe_business_tables():
-    """病根 6：业务表 0 行探测（docker exec mysql）"""
-    try:
-        root_pwd = subprocess.check_output(
-            ["docker", "exec", "ruoyi-ai-mysql", "printenv", "MYSQL_ROOT_PASSWORD"],
-            stderr=subprocess.DEVNULL,
-            timeout=5,
-        ).decode().strip()
-    except Exception as e:
-        return {"error": f"docker mysql 不可达: {e}"}
+    """病根 6：业务表 0 行探测。
 
-    sql_parts = [f"SELECT '{t}' AS tbl, COUNT(*) AS rows_count FROM {t}" for t in BUSINESS_TABLES]
+    重要修正（2026-09-09）：必须查后端真正连的 13306 原生实例，不能用
+    docker exec ruoyi-ai-mysql——那是 3306 独立实例，与 13306 数据完全不同
+    （实测 13306 有 contributions=2 / allowance_ledgers=7 / bonus_pools=16 /
+    projects=42 / audit_logs=1170，3306 全报 0 或个位数），用错库会把有数据
+    的表误报成 0 行，污染生产就绪判断。socket 见 .codex/ipd-dev/config/
+    mysql-client.cnf（连 13306 原生 mysqld，与 application-ipd-local.yml 同库）。
+    """
+    mysql_bin = shutil.which("mysql")
+    if not mysql_bin:
+        for cand in (
+            "/opt/homebrew/opt/mysql-client/bin/mysql",
+            "/usr/local/mysql/bin/mysql",
+            "/opt/homebrew/bin/mysql",
+        ):
+            if os.path.exists(cand):
+                mysql_bin = cand
+                break
+    cnf = REPO_ROOT / ".codex/ipd-dev/config/mysql-client.cnf"
+    if not mysql_bin or not cnf.exists():
+        return {"error": f"mysql 客户端或 cnf 不可达: bin={mysql_bin}, cnf_exists={cnf.exists()}"}
+
+    sql_parts = [f"SELECT '{t}' AS tbl, COUNT(*) AS rows_count FROM ipd_dev.{t}" for t in BUSINESS_TABLES]
     sql = " UNION ALL ".join(sql_parts) + ";"
     try:
         out = subprocess.check_output(
-            ["docker", "exec", "ruoyi-ai-mysql", "mysql", "-uroot", f"-p{root_pwd}", "ipd_dev", "-e", sql],
+            [mysql_bin, f"--defaults-extra-file={cnf}", "-N", "-e", sql],
             stderr=subprocess.DEVNULL,
             timeout=15,
         ).decode()
     except Exception as e:
-        return {"error": f"mysql 查询失败: {e}"}
+        return {"error": f"mysql 查询失败(13306 原生): {e}"}
 
     rows = {}
-    for line in out.strip().split("\n")[1:]:  # 跳过表头
+    for line in out.strip().split("\n"):
         parts = line.split("\t")
         if len(parts) == 2:
-            rows[parts[0]] = int(parts[1])
+            try:
+                rows[parts[0]] = int(parts[1])
+            except ValueError:
+                continue
     zero_tables = [t for t, c in rows.items() if c == 0]
     return {
         "rows": rows,
         "zero_count": len(zero_tables),
         "zero_tables": zero_tables,
+        "instance": "13306-native (backend real db)",
     }
 
 

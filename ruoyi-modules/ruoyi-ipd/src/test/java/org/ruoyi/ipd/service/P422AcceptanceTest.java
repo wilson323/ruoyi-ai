@@ -15,7 +15,8 @@ import org.ruoyi.ipd.dto.AiGenerateReq;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.ai.AiChatClient;
+import org.ruoyi.ipd.service.ai.AiChatResult;
+import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,7 +48,8 @@ class P422AcceptanceTest {
     private AiDocumentService documentService;
     private AiModelConfigService modelConfigService;
     private AuditLogService auditLogService;
-    private AiChatClient chatClient;
+    private AiGateway aiGateway;
+    private AiDocEmbeddingService docEmbeddingService;
     private AiGenerationService service;
 
     @BeforeEach
@@ -57,9 +59,13 @@ class P422AcceptanceTest {
         modelConfigService = mock(AiModelConfigService.class);
         auditLogService = mock(AuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        chatClient = mock(AiChatClient.class);
+        aiGateway = mock(AiGateway.class);
+        // AI-STRAT-1：默认 RAG 未命中（EMPTY）——旧用例语义不变；命中注入见 ragContextInjectedAndAudited
+        docEmbeddingService = mock(AiDocEmbeddingService.class);
+        when(docEmbeddingService.retrieveContext(any(), anyString()))
+            .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiGenerationService(documentMapper, documentService,
-            modelConfigService, auditLogService, chatClient);
+            modelConfigService, auditLogService, aiGateway, docEmbeddingService);
     }
 
     private static AiGenerateReq req() {
@@ -79,8 +85,8 @@ class P422AcceptanceTest {
     }
 
     private void stubChatOk() {
-        when(chatClient.chat(any(AiTestConfig.class), anyString(), any(), any()))
-            .thenReturn(AiChatClient.AiChatResult.ok("生成的 PRD 正文", 120, 480, 1500));
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), any(), any()))
+            .thenReturn(AiChatResult.ok("生成的 PRD 正文", 120, 480, 1500));
     }
 
     private static AiDocument generatedDoc() {
@@ -114,8 +120,40 @@ class P422AcceptanceTest {
         assertEquals("AI_DOCUMENT", log.getEntityType());
         assertTrue(log.getAfterData().contains("\"tokenPrompt\":120"), "AC-AI-09 token 消耗入审计: " + log.getAfterData());
         assertTrue(log.getAfterData().contains("latencyMs"));
+        // AI-P1-3 留痕三件套（2026-09-10）：aiAssisted/aiModel/aiRole 缺一不可（门禁 AuditEventData.requireAiTrail）
+        assertTrue(log.getAfterData().contains("\"aiAssisted\":true"), "AI-P1-3 aiAssisted 标记: " + log.getAfterData());
+        assertTrue(log.getAfterData().contains("\"aiModel\":\"gpt-4o-mini\""), "AI-P1-3 aiModel 可追溯: " + log.getAfterData());
+        assertTrue(log.getAfterData().contains("\"aiRole\":\"draft\""), "AI-P1-3 aiRole=draft: " + log.getAfterData());
+        assertTrue(log.getAfterData().contains("\"contextHits\":0"), "AI-STRAT-1 未命中也记 contextHits: " + log.getAfterData());
         assertFalse(log.getAfterData().contains("原始资料"), "prompt 全文不入审计（敏感资料）");
         assertFalse(log.getAfterData().contains(PLAIN_KEY), "明文密钥绝不入审计");
+    }
+
+    @Test
+    @DisplayName("AI-STRAT-1：检索命中注入 prompt（上下文块在前+原文在后）且审计只记 contextHits/不记原文")
+    void ragContextInjectedAndAudited() {
+        stubEnabled("{}");
+        String block = "【相关历史文档片段 1｜PRD｜旧需求】\n历史片段正文";
+        when(docEmbeddingService.retrieveContext(eq(77L), anyString()))
+            .thenReturn(new AiDocEmbeddingService.RetrievalContext(2, block.length(), block));
+        stubChatOk();
+        when(documentService.createGenerated(any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(generatedDoc());
+
+        service.generate(ACTOR, req());
+
+        ArgumentCaptor<String> promptCap = ArgumentCaptor.forClass(String.class);
+        verify(aiGateway).chat(any(), promptCap.capture(), any(), any());
+        assertTrue(promptCap.getValue().contains("相关历史文档片段"), "注入上下文块");
+        assertTrue(promptCap.getValue().contains("原始资料"), "需求原文保留");
+        assertTrue(promptCap.getValue().indexOf("相关历史文档片段") < promptCap.getValue().indexOf("原始资料"),
+            "上下文在前、需求在后");
+        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(auditCap.capture());
+        assertTrue(auditCap.getValue().getAfterData().contains("\"contextHits\":2"),
+            "contextHits 入审计: " + auditCap.getValue().getAfterData());
+        assertFalse(auditCap.getValue().getAfterData().contains("历史片段正文"),
+            "上下文原文不入审计（BR-AI-04）");
     }
 
     @Test
@@ -127,7 +165,7 @@ class P422AcceptanceTest {
         IpdBusinessException ex = assertThrows(IpdBusinessException.class,
             () -> service.generate(ACTOR, req()));
         assertEquals(ApiV1ErrorCode.AI_BUDGET_EXCEEDED, ex.getErrorCode());
-        verify(chatClient, never()).chat(any(), anyString(), any(), any());
+        verify(aiGateway, never()).chat(any(), anyString(), any(), any());
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
         assertEquals("AI_GENERATE_FAILED", cap.getValue().getAction());
@@ -144,7 +182,7 @@ class P422AcceptanceTest {
             .thenReturn(generatedDoc());
 
         assertDoesNotThrow(() -> service.generate(ACTOR, req()));
-        verify(chatClient).chat(any(), anyString(), any(), any());
+        verify(aiGateway).chat(any(), anyString(), any(), any());
     }
 
     @Test
@@ -163,11 +201,11 @@ class P422AcceptanceTest {
     @DisplayName("失败释放配额：连续 MAX_CONCURRENT 次模型失败后仍可生成（零许可泄漏）")
     void failureReleasesGatePermit() {
         stubEnabled("{}");
-        when(chatClient.chat(any(AiTestConfig.class), anyString(), any(), any()))
-            .thenReturn(AiChatClient.AiChatResult.fail("HTTP_429", "HTTP 429", 30))
-            .thenReturn(AiChatClient.AiChatResult.fail("HTTP_429", "HTTP 429", 30))
-            .thenReturn(AiChatClient.AiChatResult.fail("HTTP_429", "HTTP 429", 30))
-            .thenReturn(AiChatClient.AiChatResult.ok("正文", 10, 20, 40));
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), any(), any()))
+            .thenReturn(AiChatResult.fail("HTTP_429", "HTTP 429", 30))
+            .thenReturn(AiChatResult.fail("HTTP_429", "HTTP 429", 30))
+            .thenReturn(AiChatResult.fail("HTTP_429", "HTTP 429", 30))
+            .thenReturn(AiChatResult.ok("正文", 10, 20, 40));
         when(documentService.createGenerated(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(generatedDoc());
 
@@ -191,7 +229,7 @@ class P422AcceptanceTest {
             IpdBusinessException ex = assertThrows(IpdBusinessException.class,
                 () -> service.generate(ACTOR, req()));
             assertEquals(ApiV1ErrorCode.RATE_LIMITED, ex.getErrorCode());
-            verify(chatClient, never()).chat(any(), anyString(), any(), any());
+            verify(aiGateway, never()).chat(any(), anyString(), any(), any());
             ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
             verify(auditLogService).append(cap.capture());
             assertTrue(cap.getValue().getAfterData().contains("RATE_LIMITED"));
@@ -209,7 +247,7 @@ class P422AcceptanceTest {
             .thenReturn(generatedDoc());
         service.generate(ACTOR, req());
         ArgumentCaptor<AiTestConfig> cfgCap = ArgumentCaptor.forClass(AiTestConfig.class);
-        verify(chatClient).chat(cfgCap.capture(), anyString(), any(), any());
+        verify(aiGateway).chat(cfgCap.capture(), anyString(), any(), any());
         assertEquals(60_000, cfgCap.getValue().timeoutMs(), "缺省 60s 基线");
     }
 
@@ -222,7 +260,7 @@ class P422AcceptanceTest {
             .thenReturn(generatedDoc());
         service.generate(ACTOR, req());
         ArgumentCaptor<AiTestConfig> cfgCap = ArgumentCaptor.forClass(AiTestConfig.class);
-        verify(chatClient).chat(cfgCap.capture(), anyString(), any(), any());
+        verify(aiGateway).chat(cfgCap.capture(), anyString(), any(), any());
         assertEquals(120_000, cfgCap.getValue().timeoutMs(), "上界钳制 120s");
     }
 
@@ -235,7 +273,7 @@ class P422AcceptanceTest {
             .thenReturn(generatedDoc());
         service.generate(ACTOR, req());
         ArgumentCaptor<AiTestConfig> cfgCap = ArgumentCaptor.forClass(AiTestConfig.class);
-        verify(chatClient).chat(cfgCap.capture(), anyString(), any(), any());
+        verify(aiGateway).chat(cfgCap.capture(), anyString(), any(), any());
         assertEquals(10_000, cfgCap.getValue().timeoutMs(), "下界拾到 10s");
     }
 
@@ -248,15 +286,15 @@ class P422AcceptanceTest {
         IpdBusinessException ex = assertThrows(IpdBusinessException.class,
             () -> service.generate(ACTOR, req()));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, ex.getErrorCode());
-        verify(chatClient, never()).chat(any(), anyString(), any(), any());
+        verify(aiGateway, never()).chat(any(), anyString(), any(), any());
     }
 
     @Test
     @DisplayName("空内容防线：模型返回空白 → INTERNAL_ERROR + EMPTY_RESPONSE 审计，不落版本链")
     void emptyContentRejected() {
         stubEnabled("{}");
-        when(chatClient.chat(any(AiTestConfig.class), anyString(), any(), any()))
-            .thenReturn(AiChatClient.AiChatResult.ok("", 0, 0, 10));
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), any(), any()))
+            .thenReturn(AiChatResult.ok("", 0, 0, 10));
 
         IpdBusinessException ex = assertThrows(IpdBusinessException.class,
             () -> service.generate(ACTOR, req()));
@@ -265,6 +303,8 @@ class P422AcceptanceTest {
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
         assertTrue(cap.getValue().getAfterData().contains("EMPTY_RESPONSE"));
+        assertTrue(cap.getValue().getAfterData().contains("\"contextHits\":0"),
+            "AI-STRAT-1 失败路径同样记 contextHits: " + cap.getValue().getAfterData());
     }
 
     @Test
@@ -295,7 +335,7 @@ class P422AcceptanceTest {
         IpdBusinessException ex = assertThrows(IpdBusinessException.class,
             () -> service.generate(ACTOR, fat));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, ex.getErrorCode());
-        verifyNoInteractions(modelConfigService, chatClient);
+        verifyNoInteractions(modelConfigService, aiGateway);
     }
 
     @Test

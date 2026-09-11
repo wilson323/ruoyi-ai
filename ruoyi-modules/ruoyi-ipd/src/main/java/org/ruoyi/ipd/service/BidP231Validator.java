@@ -124,11 +124,14 @@ public class BidP231Validator {
             .action("CREATE_P231")
             .operatorId(operator.id())
             .beforeData(null)
-            .afterData("{id=" + inv.getId() + ",projectId=" + inv.getProjectId()
-                + ",mode=" + mode + ",targetPersonId=" + inv.getTargetPersonId()
-                + ",expireAt=" + inv.getExpireAt()
-                + (req.getRequiredLevel() == null ? "" : ",requiredLevel=" + req.getRequiredLevel())
-                + (req.getSlaDays() == null ? "" : ",slaDays=" + req.getSlaDays()) + "}")
+            .afterData(AuditEventData.json(
+                "id", inv.getId(),
+                "projectId", inv.getProjectId(),
+                "mode", mode,
+                "targetPersonId", inv.getTargetPersonId(),
+                "expireAt", inv.getExpireAt(),
+                "requiredLevel", req.getRequiredLevel(),
+                "slaDays", req.getSlaDays()))
             .build());
         log.info("P2-3.1 createValidated: invitationId={} mode={} operator={}",
             inv.getId(), mode, operator.id());

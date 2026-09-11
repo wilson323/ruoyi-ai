@@ -38,7 +38,14 @@ import java.util.Set;
  */
 @Slf4j
 @Component
+@Deprecated
 public class AiChatClient {
+
+    /**
+     * AI-STRAT-2（2026-09-10）：生成主链已迁 {@link AiGateway}（Langchain4j）。
+     * 本类保留一个版本周期：① ssrfCheck 供 AiGateway 复用（SSRF 黑名单/双解析/allowlist 唯一实现）；
+     * ② 单测拦截桩 (HttpClient) 构造器仍在用。新代码禁止直接注入本类做生成调用。
+     */
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -92,26 +99,8 @@ public class AiChatClient {
         this.bucketLogger = new PromptLenBucketLogger();
     }
 
-    /**
-     * 生成结果。
-     *
-     * @param content          模型全文（原样透传）
-     * @param promptTokens     usage.prompt_tokens（响应缺失记 0）
-     * @param completionTokens usage.completion_tokens（响应缺失记 0）
-     * @param errorCode        失败类别（成功时 null）
-     */
-    public record AiChatResult(boolean success, String content, int promptTokens, int completionTokens,
-                               long latencyMs, String errorCode, String errorMessage) {
-
-        public static AiChatResult ok(String content, int promptTokens, int completionTokens, long latencyMs) {
-            return new AiChatResult(true, content, Math.max(0, promptTokens), Math.max(0, completionTokens),
-                Math.max(0, latencyMs), null, null);
-        }
-
-        public static AiChatResult fail(String code, String message, long latencyMs) {
-            return new AiChatResult(false, null, 0, 0, Math.max(0, latencyMs), code, message);
-        }
-    }
+    /** AI-STRAT-2：嵌套 record 已提取为顶层 {@link AiChatResult}（避免 Deprecated 类连带告警），
+     * 旧引用 AiChatClient.AiChatResult 同包内自动解析到顶层（同名字段遮蔽已删）。 */
 
     /**
      * 单轮生成。cfg 复用 P4-2.1 的 {@link AiTestConfig}（provider/endpoint/key/model/timeoutMs）；
@@ -201,6 +190,15 @@ public class AiChatClient {
         return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
     }
 
+
+    /**
+     * AI-STRAT-2：SSRF 校验复用口（package-private）——AiGateway 发起 Langchain4j 调用前
+     * 必须过本方法（与原生成链同一道防御，含 DNS rebinding 双解析 + allowlist）。
+     * 校验失败抛 IpdBusinessException（与原链同语义，由 controller 层统一处理）。
+     */
+    void ssrfCheck(String baseUrl) {
+        validateEndpoint(baseUrl);
+    }
 
     /**
      * SSRF 防御（SEC P1-3/P1-15 + R-NEW S-6）：
@@ -314,7 +312,7 @@ public class AiChatClient {
     }
 
     /** SHA-256 短指纹（16 hex chars ≈ 64 bit），用于日志中请求/响应配对，不暴露原文。 */
-    private static String shortHash(String s) {
+    static String shortHash(String s) {
         if (s == null || s.isEmpty()) return "0";
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")

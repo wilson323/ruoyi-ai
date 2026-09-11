@@ -131,7 +131,7 @@ public class PersonService {
             .action("RESIGN")
             .operatorId(operator.id())
             .beforeData(snapshot(before))
-            .afterData(snapshot(person) + " | pendingProjects=" + pending + " | reason=" + safe(reason))
+            .afterData(snapshot(person, "pendingProjects", pending, "reason", safe(reason)))
             .build());
 
         // P2-2.2 联动 — 企微自动解绑（不动 accountStatus；保留 FROZEN_PENDING_HANDOVER）
@@ -172,8 +172,10 @@ public class PersonService {
             .action("UNBIND_WECHAT")
             .operatorId(operator.id())
             .reason("离职冻结自动解绑企微（AC-AUTH-06）")
-            .beforeData("{wecom=" + beforeWecom + "}")
-            .afterData("{wecom=null, accountStatus=" + person.getAccountStatus() + "}")
+            .beforeData(AuditEventData.json("wecom", beforeWecom))
+            .afterData(AuditEventData.json(
+                "wecom", "null",
+                "accountStatus", person.getAccountStatus()))
             .build());
         return true;
     }
@@ -331,7 +333,7 @@ public class PersonService {
             .action("REHIRE")
             .operatorId(operator.id())
             .beforeData(snapshot(before))
-            .afterData(snapshot(person) + " | note=" + safe(note))
+            .afterData(snapshot(person, "note", safe(note)))
             .build());
         log.info("P2-1.3 rehire: personId={} operator={}", personId, operator.id());
         return person;
@@ -374,7 +376,7 @@ public class PersonService {
             .action("WECOM_UNBIND")
             .operatorId(operator.id())
             .beforeData(snapshot(before))
-            .afterData(snapshot(person) + " | reason=" + safe(reason))
+            .afterData(snapshot(person, "reason", safe(reason)))
             .build());
         log.info("P2-1.3 wecomUnbind: personId={} operator={}", personId, operator.id());
         return person;
@@ -430,11 +432,25 @@ public class PersonService {
     }
 
     /** 审计快照（最小化字段；不写 passwordHash）。 */
-    private String snapshot(Person p) {
-        return "{id=" + p.getId()
-            + ",emp=" + p.getEmploymentStatus()
-            + ",acc=" + p.getAccountStatus()
-            + ",wecom=" + (p.getWecomUserId() == null ? "null" : "***") + "}";
+    /**
+     * 人员状态快照（合法 JSON；DEF-6 护栏 fail-fast）。
+     *
+     * <p>2026-09-10 修复：原实现输出 {@code {id=...,emp=ACTIVE}} Java toString 风格非 JSON，
+     * 被 {@code AuditEventData.requireJson} 拦截 → resign/rehire/wecomUnbind 三接口恒 500，
+     * 人员操作审计因此零记录（闭环实测撞出）。可变参数扩展额外字段，替代原 afterData 字符串拼接。
+     */
+    private String snapshot(Person p, Object... extraPairs) {
+        Object[] pairs = new Object[8 + extraPairs.length];
+        pairs[0] = "id";
+        pairs[1] = p.getId() == null ? "null" : p.getId();
+        pairs[2] = "emp";
+        pairs[3] = p.getEmploymentStatus();
+        pairs[4] = "acc";
+        pairs[5] = p.getAccountStatus();
+        pairs[6] = "wecom";
+        pairs[7] = p.getWecomUserId() == null ? null : "***";
+        System.arraycopy(extraPairs, 0, pairs, 8, extraPairs.length);
+        return AuditEventData.json(pairs);
     }
 
     private static String safe(String s) {

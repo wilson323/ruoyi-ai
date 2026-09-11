@@ -109,7 +109,7 @@ class P191AcceptanceTest {
         when(projectMapper.selectCount(any())).thenReturn(0L);
         Project created = Project.builder().id(50L).name("存量导入项目甲").source("NEW")
             .currentStage("CONCEPT").status("DRAFT").level("B").build();
-        when(projectService.create(any(Project.class), anyLong())).thenAnswer(inv -> {
+        when(projectService.create(any(Project.class), anyLong(), any())).thenAnswer(inv -> {
             Project p = inv.getArgument(0);
             assertThat(p.getSource()).isEqualTo("LEGACY");
             return created;
@@ -178,7 +178,7 @@ class P191AcceptanceTest {
     @DisplayName("批量：错误行隔离，成功行保留")
     void batchIsolatesErrors() {
         when(projectMapper.selectCount(any())).thenReturn(0L);
-        when(projectService.create(any(Project.class), anyLong())).thenAnswer(inv -> {
+        when(projectService.create(any(Project.class), anyLong(), any())).thenAnswer(inv -> {
             Project in = inv.getArgument(0);
             return Project.builder().id(88L).name(in.getName()).source("LEGACY")
                 .currentStage("CONCEPT").build();

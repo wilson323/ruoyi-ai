@@ -12,9 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.GateReview;
+import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.mapper.GateReviewMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 
 import java.util.Date;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GateAutoCreateAcceptanceTest {
 
-    @Mock private GateReviewMapper gateReviewMapper;
+    @Mock private GateMapper gateMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private AuditLogService auditLogService;
 
@@ -52,13 +52,13 @@ class GateAutoCreateAcceptanceTest {
     @BeforeAll
     static void initTableInfo() {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
-        TableInfoHelper.initTableInfo(assistant, GateReview.class);
+        TableInfoHelper.initTableInfo(assistant, Gate.class);
         TableInfoHelper.initTableInfo(assistant, Project.class);
     }
 
     @BeforeEach
     void setUp() {
-        service = new GateCreationService(gateReviewMapper, projectMapper, auditLogService);
+        service = new GateCreationService(gateMapper, projectMapper, auditLogService);
     }
 
     private Project activeProject(long id) {
@@ -66,19 +66,22 @@ class GateAutoCreateAcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC#1 G3 合法创建 ⇒ 成功 + 审计")
+    @DisplayName("AC#1 G3 合法创建 ⇒ 成功 + 审计（R30：写 gates 主体表）")
     void createG3_succeeds() {
         when(projectMapper.selectById(700L)).thenReturn(activeProject(700L));
-        when(gateReviewMapper.selectCount(any())).thenReturn(0L);
-        GateReview r = service.autoCreateGate(700L, "G3", 999L);
-        assertThat(r.getGateCode()).isEqualTo("G3");
-        assertThat(r.getProjectId()).isEqualTo(700L);
-        assertThat(r.getRound()).isEqualTo(1);
-        // R11 / A4 修复:决策字段必须 NULL（待决语义），不得预设哨兵值破坏 KeyGateAggregator 锚点。
-        // 死路源头:GateCreationService L72 原 .decision("PENDING")，不在 GateReview.decision 值域（APPROVE|REJECT|ABSTAIN），
-        // 导致 KeyGateAggregator 的 .isNull(GateReview::getDecision) 永不可命中，工作台 key_gate 卡恒空。
-        assertThat(r.getDecision()).as("A4 修复:决策字段保持 NULL").isNull();
-        verify(gateReviewMapper, times(1)).insert(any(GateReview.class));
+        when(gateMapper.selectCount(any())).thenReturn(0L);
+        Gate g = service.autoCreateGate(700L, "G3", 999L);
+        assertThat(g.getGateCode()).isEqualTo("G3");
+        assertThat(g.getProjectId()).isEqualTo(700L);
+        assertThat(g.getCurrentRound()).isEqualTo(1);
+        assertThat(g.getStatus()).isEqualTo("PENDING");
+        // R30 修复（E2E 抓获 P0）：创建写 gates 主体表，startedAt 必须留 NULL——
+        // GateReviewService.requireSubmitted 据此拦 sign（"评审尚未提交，请先完成要素判定并提交（P2-5.1）"），
+        // submit 置位 startedAt=要素判定冻结。decision/reviewer 归属签署表 gate_reviews（sign 流写入），
+        // KeyGateAggregator 的 .isNull(GateReview::getDecision) 待决锚点保持命中。
+        assertThat(g.getStartedAt()).as("R30:创建时 startedAt 必须为 NULL（尚未提交要素判定）").isNull();
+        assertThat(g.getSignDueAt()).as("R30:默认 3 天签署期").isNotNull();
+        verify(gateMapper, times(1)).insert(any(Gate.class));
         verify(auditLogService, times(1)).append(any());
     }
 
@@ -105,7 +108,7 @@ class GateAutoCreateAcceptanceTest {
     @DisplayName("AC#4 14 天冷却：最近 14 天已有同 gateCode ⇒ 拒")
     void cooldown_rejected() {
         when(projectMapper.selectById(700L)).thenReturn(activeProject(700L));
-        when(gateReviewMapper.selectCount(any())).thenReturn(1L);
+        when(gateMapper.selectCount(any())).thenReturn(1L);
         assertThatThrownBy(() -> service.autoCreateGate(700L, "G3", 999L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("14");
@@ -124,9 +127,9 @@ class GateAutoCreateAcceptanceTest {
     void allGateCodes_accepted() {
         for (String code : GateCreationService.ALLOWED_GATE_CODES) {
             when(projectMapper.selectById(700L)).thenReturn(activeProject(700L));
-            when(gateReviewMapper.selectCount(any())).thenReturn(0L);
-            GateReview r = service.autoCreateGate(700L, code, 999L);
-            assertThat(r.getGateCode()).isEqualTo(code);
+            when(gateMapper.selectCount(any())).thenReturn(0L);
+            Gate g = service.autoCreateGate(700L, code, 999L);
+            assertThat(g.getGateCode()).isEqualTo(code);
         }
     }
 }

@@ -87,16 +87,29 @@ public class ProjectService {
     private static final int CODE_CONFLICT_MAX_RETRY = 8;
 
     /**
-     * 创建项目（P1-2.1：四基准 + 模板/市场/主组必填；系数默认/区间；状态强制 DRAFT）。
+     * 创建项目（P1-2.1：四基准 + 模板/市场必填；系数默认/区间；状态强制 DRAFT）。
+     * <p>2026-09-11 owner 拍板：主组可选——客户端未选时服务端权威自动归属
+     * {@code fallbackMainGroupId}（页08 传操作人所在产品组，即 BR-ORG-01 字面语义），
+     * 避免 null mainGroupId 污染下游 SEC-02 按组归属校验链（changeStatus /
+     * updateBaselines / advanceStage / bindProject / CoefficientChange / Handover /
+     * LaunchDateChange / RequirementStateMachine 全链 assertSameGroupIpd）。
      * <p>对 {@code uk_projects_code} 冲突做独立事务重试：READ_COMMITTED 下
      * synchronized(nextCode) 无法覆盖「取号→提交」窗口，HTTP 并发会撞号。
      *
-     * @param project    客户端白名单字段已映射的实体
-     * @param operatorId 操作人
+     * @param project             客户端白名单字段已映射的实体
+     * @param operatorId          操作人
+     * @param fallbackMainGroupId 客户端未选主组时的缺省归属组
      * @return 落库后的项目（含编码与 CONCEPT/DRAFT）
      */
-    public Project create(Project project, Long operatorId) {
+    public Project create(Project project, Long operatorId, Long fallbackMainGroupId) {
         validateBaselinesAndTemplate(project);
+        // 主组可选：未选时权威填充，双空才拒（存量导入显式必填语义不变）
+        if (project.getMainGroupId() == null) {
+            project.setMainGroupId(fallbackMainGroupId);
+        }
+        if (project.getMainGroupId() == null) {
+            throw new ServiceException("主组缺失：未选产品组且操作人无所属产品组，无法自动归属（BR-ORG-01）");
+        }
         applyLevelCoefficientDefaults(project);
         validateLevelAndCoefficient(project);
         if (project.getProductId() == null) {
@@ -480,7 +493,8 @@ public class ProjectService {
     }
 
     /**
-     * P1-2.1：模板类型 / 目标市场 / 主组 / 四基准值必填与范围。
+     * P1-2.1：模板类型 / 目标市场 / 四基准值必填与范围。
+     * 主组校验不在其中：2026-09-11 起主组可选，由 {@link #create} 权威填充（BR-ORG-01）。
      *
      * @param project 待校验项目
      */
@@ -493,9 +507,6 @@ public class ProjectService {
         }
         if (isBlank(project.getTargetMarkets())) {
             throw new ServiceException("目标市场必填（驱动认证清单 M1）");
-        }
-        if (project.getMainGroupId() == null) {
-            throw new ServiceException("主组必填（BR-ORG-01：市场PM 所在产品组）");
         }
         if (project.getTargetSalesAmount() == null
             || project.getTargetSalesAmount().compareTo(BigDecimal.ZERO) <= 0) {

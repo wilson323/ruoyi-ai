@@ -73,7 +73,9 @@ for ctrl in "$BACKEND_ROOT/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/c
   # 形式1：@GetMapping("/path")
   # 形式2：@GetMapping(value = "/path")
   # 形式3：@GetMapping(path = "/path")
-  grep -E '^[[:space:]]*@(Get|Post|Put|Delete|Patch)Mapping' "$ctrl" 2>/dev/null \
+  # 【精度修复】必须含 (，否则 bare 注解（如 `@PostMapping` 单独占一行）会被 sed 漏过滤，
+  #        原样输出后拼接成 "/api/v1/xxx@ControllerMapping" 这种怪路径。
+  grep -E '^[[:space:]]*@(Get|Post|Put|Delete|Patch)Mapping[[:space:]]*\(' "$ctrl" 2>/dev/null \
     | sed -E 's/.*@(Get|Post|Put|Delete|Patch)Mapping[[:space:]]*\(//' \
     | sed -E 's/^[[:space:]]*"([^"]*)".*/\1/' \
     | sed -E 's/.*value[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/' \
@@ -89,13 +91,16 @@ for ctrl in "$BACKEND_ROOT/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/c
       esac
     done >> "$TMPDIR_CHECK/backend_endpoints.txt"
 
-  # 4) bare @GetMapping() 无参 —— 映射到 class_mapping 本身（根路径）
-  grep -E '^[[:space:]]*@(Get|Post|Put|Delete|Patch)Mapping[[:space:]]*\(\)' "$ctrl" 2>/dev/null \
-    | while IFS= read -r ln; do
-        if [ -n "$class_mapping" ]; then
-          echo "$class_mapping"
-        fi
-      done >> "$TMPDIR_CHECK/backend_endpoints.txt"
+  # 4) bare 注解（@PostMapping 无任何参数）和空括号注解（@PostMapping()）——
+  #    两者都映射到 class_mapping 本身（根路径）。
+  # 【精度修复】原 grep 仅匹配空括号，bare 注解漏网后会污染主流水线（见上）。
+  # 【兼容修复】macOS BSD grep 不接受空子表达式 `(\(\)|)`，拆成两条独立 grep。
+  for ln in $(grep -E '^[[:space:]]*@(Get|Post|Put|Delete|Patch)Mapping[[:space:]]*$' "$ctrl" 2>/dev/null) \
+            $(grep -E '^[[:space:]]*@(Get|Post|Put|Delete|Patch)Mapping[[:space:]]*\([[:space:]]*\)[[:space:]]*$' "$ctrl" 2>/dev/null); do
+    if [ -n "$class_mapping" ]; then
+      echo "$class_mapping"
+    fi
+  done >> "$TMPDIR_CHECK/backend_endpoints.txt"
 done
 
 sort -u "$TMPDIR_CHECK/backend_endpoints.txt" > "$TMPDIR_CHECK/be.uniq.txt"
@@ -329,16 +334,18 @@ fi
 cat >> "$REPORT_MD" <<EOF
 
 ## 重跑命令
+EOF
+echo '```bash' >> "$REPORT_MD"
+echo "cd ${BACKEND_ROOT}" >> "$REPORT_MD"
+echo './scripts/check_cross_repo_contract.sh' >> "$REPORT_MD"
+echo '```' >> "$REPORT_MD"
 
-`bash
-cd ${BACKEND_ROOT}
-./scripts/check_cross_repo_contract.sh
-`
+cat >> "$REPORT_MD" <<EOF
 
 ## 排除范围
 
 - 框架自带端点（actuator/swagger）
-- 路径变量差异：后端 `{id}` ↔ 前端 `:id` 自动归一化
+- 路径变量差异：后端 \`{id}\` ↔ 前端 \`:id\` 自动归一化
 EOF
 
 echo

@@ -2173,7 +2173,7 @@ CREATE TABLE `project_members` (
   `locked_amount` decimal(10,2) NOT NULL COMMENT '锁定月度津贴额',
   `join_date` datetime NOT NULL COMMENT '加入日期',
   `exit_date` datetime DEFAULT NULL COMMENT '退出日期',
-  `exit_reason` varchar(16) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '退出原因 TRANSFER|VOLUNTARY|LOW_PERF',
+  `exit_reason` varchar(32) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '退出原因 TRANSFER|VOLUNTARY|LOW_PERF|HANDOVER|HANDOVER_ROLLBACK（2026-09-11 R30 加宽：原 varchar(16) 装不下 HANDOVER_ROLLBACK 17 字符，撤销链真库 500；见 update/2026-09-11-ipd-p0-exit-reason-widen.sql）',
   `bonus_eligible` char(1) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '奖金资格（放弃置 0，BR-INC-09）',
   `create_dept` bigint DEFAULT NULL,
   `create_by` bigint DEFAULT NULL,

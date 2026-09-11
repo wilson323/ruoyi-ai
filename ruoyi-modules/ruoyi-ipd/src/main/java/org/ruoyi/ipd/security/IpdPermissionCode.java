@@ -69,6 +69,8 @@ public interface IpdPermissionCode {
     String OPERATION_AI_MODEL = "ipd:ai-model:list";
     /** P4-2.1：AI 模型配置写（仅超管） */
     String OPERATION_AI_MODEL_EDIT = "ipd:ai-model:edit";
+    /** AI-P2-3（2026-09-11）：AI 副驾问答（内部全员；BR-AI-05 内部角色对等，不教 AI 编数据）。 */
+    String OPERATION_AI_COPILOT = "ipd:ai-copilot:chat";
 
     /** SOP 模板写（仅超管） */
     String OPERATION_SOP_TEMPLATE_EDIT = "ipd:sop-template:edit";

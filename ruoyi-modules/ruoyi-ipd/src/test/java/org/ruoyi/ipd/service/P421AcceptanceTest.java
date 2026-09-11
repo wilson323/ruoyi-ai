@@ -62,7 +62,7 @@ class P421AcceptanceTest {
 
     private static AiModelSaveReq req(String apiKey) {
         return new AiModelSaveReq("openai", "https://api.openai.com/v1", apiKey,
-            "gpt-4o-mini", new BigDecimal("0.70"), 4096);
+            "gpt-4o-mini", new BigDecimal("0.70"), 4096, null, null);
     }
 
     private static AiModelConfig stored(Long id, String cipher) {
@@ -171,15 +171,15 @@ class P421AcceptanceTest {
     void parameterBounds() {
         IpdBusinessException hot = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                "m", new BigDecimal("2.50"), 100), "9"));
+                "m", new BigDecimal("2.50"), 100, null, null), "9"));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, hot.getErrorCode());
         IpdBusinessException ftp = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "ftp://a.b", "sk-1234567890",
-                "m", null, null), "9"));
+                "m", null, null, null, null), "9"));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, ftp.getErrorCode());
         IpdBusinessException shortKey = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "short",
-                "m", null, null), "9"));
+                "m", null, null, null, null), "9"));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, shortKey.getErrorCode());
         // 边界内合法：temperature 0 与 2
         AtomicReference<AiModelConfig> saved = new AtomicReference<>();
@@ -188,7 +188,7 @@ class P421AcceptanceTest {
             return 1;
         });
         assertDoesNotThrow(() -> service.create(new AiModelSaveReq("openai", "https://a.b",
-            "sk-1234567890", "m", BigDecimal.ZERO, 1), "9"));
+            "sk-1234567890", "m", BigDecimal.ZERO, 1, null, null), "9"));
     }
 
     @Test
@@ -247,10 +247,10 @@ class P421AcceptanceTest {
         AiModelConfigService svc = mock(AiModelConfigService.class);
         when(svc.create(any(), anyString())).thenReturn(new AiModelView(1L, "openai",
             "https://api.openai.com/v1", "gpt-4o-mini", new BigDecimal("0.70"), 4096, "0",
-            "ciph****tail"));
+            "ciph****tail", null, null));
         when(svc.list()).thenReturn(List.of(new AiModelView(1L, "openai",
             "https://api.openai.com/v1", "gpt-4o-mini", new BigDecimal("0.70"), 4096, "0",
-            "ciph****tail")));
+            "ciph****tail", null, null)));
         IpdPermission permission = mock(IpdPermission.class);
         IpdActor actor = mock(IpdActor.class);
         when(actor.id()).thenReturn(9L);

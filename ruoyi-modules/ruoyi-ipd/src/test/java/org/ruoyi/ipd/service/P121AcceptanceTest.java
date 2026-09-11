@@ -91,7 +91,7 @@ class P121AcceptanceTest {
     @DisplayName("AC-INC-12 S 级默认 1.5；奖金池 = 实际回款 500万×5%×1.5 = 37.5万；状态强制 DRAFT（ZK 实际回款口径）")
     void acInc12SDefaultAndBonusPool() {
         stubCreateHappyPath();
-        Project created = service.create(draft("S", null, "5000000"), 1L);
+        Project created = service.create(draft("S", null, "5000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
         assertThat(created.getStatus()).isEqualTo("DRAFT");
         assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
@@ -102,7 +102,7 @@ class P121AcceptanceTest {
     @DisplayName("AC-INC-13 A 级默认 1.0；奖金池 = 实际回款 500万×5%×1.0 = 25万（ZK 实际回款口径）")
     void acInc13ADefault() {
         stubCreateHappyPath();
-        Project created = service.create(draft("A", null, "5000000"), 1L);
+        Project created = service.create(draft("A", null, "5000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.0");
         assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
             .isEqualByComparingTo("250000");
@@ -112,7 +112,7 @@ class P121AcceptanceTest {
     @DisplayName("AC-INC-14 B 级默认 0.8；奖金池 = 实际回款 200万×5%×0.8 = 8万（ZK 实际回款口径）")
     void acInc14BDefault() {
         stubCreateHappyPath();
-        Project created = service.create(draft("B", null, "2000000"), 1L);
+        Project created = service.create(draft("B", null, "2000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("0.8");
         assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
             .isEqualByComparingTo("80000");
@@ -121,7 +121,7 @@ class P121AcceptanceTest {
     @Test
     @DisplayName("AC-INC-15 S 级系数 2.5 拒绝，提示区间 1.5–2.0")
     void acInc15SOutOfRange() {
-        assertThatThrownBy(() -> service.create(draft("S", "2.5", "5000000"), 1L))
+        assertThatThrownBy(() -> service.create(draft("S", "2.5", "5000000"), 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("S 级系数区间为 1.5–2.0");
     }
@@ -129,32 +129,33 @@ class P121AcceptanceTest {
     @Test
     @DisplayName("AC-INC-15b A 级录入 1.2 拒绝")
     void acInc15bARejectCustom() {
-        assertThatThrownBy(() -> service.create(draft("A", "1.2", "5000000"), 1L))
+        assertThatThrownBy(() -> service.create(draft("A", "1.2", "5000000"), 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("A 级为固定 1.0 不可改");
     }
 
     @Test
-    @DisplayName("P1-2.1 缺模板/市场/主组/四基准任一 → 拒绝")
+    @DisplayName("P1-2.1 缺模板/市场/四基准任一 → 拒绝；主组缺失且无 fallback 组 → 拒绝（可选改造后）")
     void baselinesRequired() {
         Project missingMarket = draft("S", null, "5000000");
         missingMarket.setTargetMarkets(" ");
-        assertThatThrownBy(() -> service.create(missingMarket, 1L))
+        assertThatThrownBy(() -> service.create(missingMarket, 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("目标市场");
 
+        // 主组可选改造（2026-09-11）：仅当未选且无 fallback 时才拒；有 fallback 则权威填充
         Project missingGroup = draft("S", null, "5000000");
         missingGroup.setMainGroupId(null);
-        assertThatThrownBy(() -> service.create(missingGroup, 1L))
+        assertThatThrownBy(() -> service.create(missingGroup, 1L, null))
             .isInstanceOf(ServiceException.class).hasMessageContaining("主组");
 
         Project badTpl = draft("S", null, "5000000");
         badTpl.setTemplateType("UNKNOWN");
-        assertThatThrownBy(() -> service.create(badTpl, 1L))
+        assertThatThrownBy(() -> service.create(badTpl, 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("模板类型");
 
         Project noSales = draft("S", null, "5000000");
         noSales.setTargetSalesAmount(BigDecimal.ZERO);
-        assertThatThrownBy(() -> service.create(noSales, 1L))
+        assertThatThrownBy(() -> service.create(noSales, 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("目标销售额");
     }
 
@@ -162,7 +163,7 @@ class P121AcceptanceTest {
     @DisplayName("AC-INC-15c：立项非默认系数拒绝，须走双PM+组长流程")
     void sbNonDefaultMustUseWorkflow() {
         Project custom = draft("S", "1.8", "5000000");
-        assertThatThrownBy(() -> service.create(custom, 1L))
+        assertThatThrownBy(() -> service.create(custom, 1L, 7L))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("AC-INC-15c");
     }
