@@ -29,7 +29,8 @@ IPD 项目踩坑防御技能包的入口路由。
 | 改前端 API / 错误码文件 | `ipd-guard-frontend-drift` | `scripts/check-ipd-frontend-drift.sh` |
 | 接兄弟会话在途 / 切分支 | `ipd-guard-multi-session-handoff` | 隔离 worktree，不在主树 commit |
 | 引用别人结论（hash/端口/段号） | `ipd-guard-five-must-verify` | 五类事实源现查现写 |
-| 起 vite dev server / 排查端口 LISTEN 但 HTTP 超时 | `ipd-guard-vite-startup` | `node node_modules/vite/bin/vite.js` 直起 + 活 pty |
+
+注：vite 启动规约的权威在 ruoyi-ipd-web 仓 AGENTS.md（前端仓负责前端工具链），后端仓不再维护 vite-startup 子技能（owner 2026-09-11 删除路由行）。
 
 ## 设计原则（DisCo 派生）
 
