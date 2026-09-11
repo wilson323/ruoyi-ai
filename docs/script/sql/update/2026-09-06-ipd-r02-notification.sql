@@ -13,17 +13,33 @@
 -- [idem-guard: ALTER notification_events.target_channel]
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND COLUMN_NAME='target_channel');
+
 SET @ddl := IF(@col_exists=0,
-  'ALTER TABLE notification_events
-    ADD COLUMN target_channel VARCHAR(16) NULL
+  'ALTER TABLE notification_events ADD COLUMN target_channel VARCHAR(16) NULL
         COMMENT ''路由通道：INBOX|EMAIL|WEBSOCKET（新增 ROOT-R2-P0-2；既有 NULL=未指定）''
-        AFTER channel,
-    ADD COLUMN locale VARCHAR(8) NULL
+        AFTER channel',
+  'SELECT ''notification_events.target_channel exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER notification_events.locale]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND COLUMN_NAME='locale');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE notification_events ADD COLUMN locale VARCHAR(8) NULL
         COMMENT ''国际化区域：zh-CN|en-US（新增 ROOT-R2-P0-2；既有 NULL=默认 zh-CN）''
         AFTER target_channel',
-  'SELECT ''notification_events.target_channel exists, skip'' AS msg');
+  'SELECT ''notification_events.locale exists, skip'' AS msg');
+
 PREPARE stmt FROM @ddl;
+
 EXECUTE stmt;
+
 DEALLOCATE PREPARE stmt;
 
 -- 可选索引：按 target_channel 过滤的 inbox 查询加速（nullable 列 BTREE 索引有效）
@@ -31,11 +47,23 @@ DEALLOCATE PREPARE stmt;
 -- [idem-guard: CREATE INDEX idx_notify_target ON notification_events]
 SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND INDEX_NAME='idx_notify_target');
+
+-- [idem-guard: CREATE INDEX idx_notify_target ON notification_events]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND INDEX_NAME='idx_notify_target');
 SET @ddl := IF(@idx_exists=0,
-  'CREATE INDEX idx_notify_target ON notification_events (receiver_id, target_channel, delivery_status)',
+  'SET @ddl := IF(@idx_exists=0,
+  ''CREATE INDEX idx_notify_target ON notification_events (receiver_id, target_channel, delivery_status)'',
+  ''SELECT ''''notification_events.idx_notify_target exists, skip'''' AS msg'')',
   'SELECT ''notification_events.idx_notify_target exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
 DEALLOCATE PREPARE stmt;
 
 -- 租户共享登记已在 2026-09-05-ipd-notification-events.sql 备注；本变更不新增共享表

@@ -6,8 +6,7 @@
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gates' AND COLUMN_NAME='element_snapshot');
 SET @ddl := IF(@col_exists=0,
-  'alter table gates
-    add column element_snapshot longtext null comment ''P2-5.1 提交时冻结的要素定义快照 JSON（后续编辑/停用不影响在途评审）'' after gate_coefficient',
+  'ALTER TABLE gates add column element_snapshot longtext null comment ''P2-5.1 提交时冻结的要素定义快照 JSON（后续编辑/停用不影响在途评审）'' after gate_coefficient',
   'SELECT ''gates.element_snapshot exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
@@ -19,8 +18,7 @@ DEALLOCATE PREPARE stmt;
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_element_results' AND COLUMN_NAME='evidence_ref');
 SET @ddl := IF(@col_exists=0,
-  'alter table gate_element_results
-    add column evidence_ref varchar(500) null comment ''判定证据附件引用（FAIL 必填 AC-GATE-02）'' after condition_note',
+  'ALTER TABLE gate_element_results add column evidence_ref varchar(500) null comment ''判定证据附件引用（FAIL 必填 AC-GATE-02）'' after condition_note',
   'SELECT ''gate_element_results.evidence_ref exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;

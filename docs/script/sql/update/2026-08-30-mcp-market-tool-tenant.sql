@@ -20,13 +20,48 @@ WHERE `market`.`id` IS NULL
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND COLUMN_NAME='tenant_id');
 SET @ddl := IF(@col_exists=0,
-  'ALTER TABLE `mcp_market_tool`
-    ADD COLUMN `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT ''租户编号'' AFTER `local_tool_id`,
-    ADD COLUMN `create_dept` bigint NULL DEFAULT NULL COMMENT ''创建部门'' AFTER `tenant_id`,
-    ADD COLUMN `create_by` bigint NULL DEFAULT NULL COMMENT ''创建者'' AFTER `create_dept`,
-    ADD COLUMN `update_by` bigint NULL DEFAULT NULL COMMENT ''更新者'' AFTER `create_time`,
-    ADD COLUMN `update_time` datetime NULL DEFAULT NULL COMMENT ''更新时间'' AFTER `update_by`',
+  'ALTER TABLE mcp_market_tool ADD COLUMN `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT ''租户编号'' AFTER `local_tool_id`',
   'SELECT ''mcp_market_tool.tenant_id exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER mcp_market_tool.create_dept]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND COLUMN_NAME='create_dept');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE mcp_market_tool ADD COLUMN `create_dept` bigint NULL DEFAULT NULL COMMENT ''创建部门'' AFTER `tenant_id`',
+  'SELECT ''mcp_market_tool.create_dept exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER mcp_market_tool.create_by]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND COLUMN_NAME='create_by');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE mcp_market_tool ADD COLUMN `create_by` bigint NULL DEFAULT NULL COMMENT ''创建者'' AFTER `create_dept`',
+  'SELECT ''mcp_market_tool.create_by exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER mcp_market_tool.update_by]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND COLUMN_NAME='update_by');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE mcp_market_tool ADD COLUMN `update_by` bigint NULL DEFAULT NULL COMMENT ''更新者'' AFTER `create_time`',
+  'SELECT ''mcp_market_tool.update_by exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER mcp_market_tool.update_time]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND COLUMN_NAME='update_time');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE mcp_market_tool ADD COLUMN `update_time` datetime NULL DEFAULT NULL COMMENT ''更新时间'' AFTER `update_by`',
+  'SELECT ''mcp_market_tool.update_time exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -35,9 +70,17 @@ UPDATE `mcp_market_tool` AS `tool`
 INNER JOIN `mcp_market_info` AS `market` ON `market`.`id` = `tool`.`market_id`
 SET `tool`.`tenant_id` = `market`.`tenant_id`;
 
-ALTER TABLE `mcp_market_tool`
-    MODIFY COLUMN `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-    ADD INDEX `idx_tenant_market` (`tenant_id`, `market_id`);
+ALTER TABLE mcp_market_tool MODIFY COLUMN `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号';
+
+-- [idem-guard: ADD INDEX idx_tenant_market ON mcp_market_tool]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND INDEX_NAME='idx_tenant_market');
+SET @ddl := IF(@idx_exists=0,
+  'ALTER TABLE mcp_market_tool ADD INDEX `idx_tenant_market` (`tenant_id`, `market_id`)',
+  'SELECT ''mcp_market_tool.idx_tenant_market exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- 上线前应确认结果为 0；统计覆盖父市场缺失、子表租户为空、父子租户为空或不一致。
 SELECT COUNT(*) AS `invalid_market_tool_tenant_count`

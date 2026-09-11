@@ -67,6 +67,21 @@ while IFS= read -r f; do
   TOTAL_NON_IDEM=$((HAS_NON_IDEM_ALTER + HAS_CREATE_TBL + HAS_CREATE_IDX + HAS_INSERT))
   [ "$TOTAL_NON_IDEM" -eq 0 ] && continue
 
+  # Class-level guard check (v2, dry-run feedback): index-targeting actions
+  # (DROP INDEX/KEY, ADD [UNIQUE] INDEX/KEY/CONSTRAINT) require an
+  # information_schema.STATISTICS guard specifically — a file-level COLUMNS
+  # guard must NOT mask an unguarded DROP INDEX (false-green, p333 lesson).
+  NEEDS_IDX_GUARD_DROP=$(printf '%s' "$CONTENT" | grep -cE 'DROP[[:space:]]+(INDEX|KEY)' || true)
+  NEEDS_IDX_GUARD_ADD=$(printf '%s' "$CONTENT" | grep -cE 'ADD[[:space:]]+((UNIQUE|FULLTEXT|SPATIAL)[[:space:]]+)?(INDEX|KEY|CONSTRAINT)' || true)
+  HAS_IDX_GUARD=0
+  printf '%s' "$CONTENT" | grep -qiE 'information_schema\.STATISTICS' && HAS_IDX_GUARD=1
+  if [ $((NEEDS_IDX_GUARD_DROP + NEEDS_IDX_GUARD_ADD)) -gt 0 ] && [ "$HAS_IDX_GUARD" -eq 0 ]; then
+    echo "  FAIL: $f"
+    echo "    Index action (DROP/ADD INDEX) without information_schema.STATISTICS guard (file-level other guard is NOT enough)"
+    problems=$((problems + 1))
+    continue
+  fi
+
   # Check for guard
   HAS_GUARD=0
   for gpat in "${GUARD_PATTERNS[@]}"; do

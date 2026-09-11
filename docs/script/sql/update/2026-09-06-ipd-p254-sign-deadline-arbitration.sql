@@ -11,10 +11,18 @@
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gates' AND COLUMN_NAME='sign_due_at');
 SET @ddl := IF(@col_exists=0,
-  'alter table gates
-    add column sign_due_at datetime null comment ''签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21）'' after started_at,
-    add column sign_extension_count int not null default 0 comment ''签署期限已延长次数（AC-GATE-21 上限 3）'' after sign_due_at',
+  'ALTER TABLE gates add column sign_due_at datetime null comment ''签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21）'' after started_at',
   'SELECT ''gates.sign_due_at exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER gates.sign_extension_count]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gates' AND COLUMN_NAME='sign_extension_count');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gates add column sign_extension_count int not null default 0 comment ''签署期限已延长次数（AC-GATE-21 上限 3）'' after sign_due_at',
+  'SELECT ''gates.sign_extension_count exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

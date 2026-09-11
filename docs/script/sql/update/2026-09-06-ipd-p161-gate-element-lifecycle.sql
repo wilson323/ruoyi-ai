@@ -7,33 +7,78 @@
 -- [idem-guard: ALTER gate_review_elements.status]
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_review_elements' AND COLUMN_NAME='status');
+
 SET @ddl := IF(@col_exists=0,
-  'ALTER TABLE gate_review_elements
-    ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT ''published''
-        COMMENT ''生命周期: draft/published/archived（页47）；draft 与 archived 对业务不可见'' AFTER enabled,
-    ADD COLUMN version INT NOT NULL DEFAULT 1
-        COMMENT ''发布版本号：新建草稿=0，每次 publish 递增'' AFTER status,
-    ADD COLUMN veto_dual_required CHAR(1) NOT NULL DEFAULT ''0''
-        COMMENT ''双否决位：1=该否决项命中需双签确认（定义层标记，评审侧 P2-5.2 消费）'' AFTER is_veto,
-    ADD COLUMN threshold_json VARCHAR(512) NULL
-        COMMENT ''阈值配置 JSON 对象（键非空、值均为整数），如 {"minCustomerVerifications":3}'' AFTER pass_standard',
+  'ALTER TABLE gate_review_elements ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT ''published''
+        COMMENT ''生命周期: draft/published/archived（页47）；draft 与 archived 对业务不可见'' AFTER enabled',
   'SELECT ''gate_review_elements.status exists, skip'' AS msg');
+
 PREPARE stmt FROM @ddl;
+
 EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER gate_review_elements.version]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_review_elements' AND COLUMN_NAME='version');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gate_review_elements ADD COLUMN version INT NOT NULL DEFAULT 1
+        COMMENT ''发布版本号：新建草稿=0，每次 publish 递增'' AFTER status',
+  'SELECT ''gate_review_elements.version exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER gate_review_elements.veto_dual_required]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_review_elements' AND COLUMN_NAME='veto_dual_required');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gate_review_elements ADD COLUMN veto_dual_required CHAR(1) NOT NULL DEFAULT ''0''
+        COMMENT ''双否决位：1=该否决项命中需双签确认（定义层标记，评审侧 P2-5.2 消费）'' AFTER is_veto',
+  'SELECT ''gate_review_elements.veto_dual_required exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER gate_review_elements.threshold_json]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_review_elements' AND COLUMN_NAME='threshold_json');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gate_review_elements ADD COLUMN threshold_json VARCHAR(512) NULL
+        COMMENT ''阈值配置 JSON 对象（键非空、值均为整数），如 {"minCustomerVerifications":3}'' AFTER pass_standard',
+  'SELECT ''gate_review_elements.threshold_json exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
 DEALLOCATE PREPARE stmt;
 
 -- 2) element_code 全局唯一（并发唯一兜底；服务层已有预检）
 --    前置核验：element_code 现存 43 行（33 正牌 + 10 已停用测试残留）零重复后本索引方可建
 
--- [idem-guard: ALTER gate_review_elements.UNIQUE]
-SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_review_elements' AND COLUMN_NAME='UNIQUE');
-SET @ddl := IF(@col_exists=0,
-  'ALTER TABLE gate_review_elements
-    ADD UNIQUE INDEX uk_gate_element_code (element_code)',
-  'SELECT ''gate_review_elements.UNIQUE exists, skip'' AS msg');
+-- [idem-guard: ADD INDEX uk_gate_element_code ON gate_review_elements]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_review_elements' AND INDEX_NAME='uk_gate_element_code');
+
+SET @ddl := IF(@idx_exists=0,
+  'ALTER TABLE gate_review_elements ADD UNIQUE INDEX uk_gate_element_code (element_code)',
+  'SELECT ''gate_review_elements.uk_gate_element_code exists, skip'' AS msg');
+
 PREPARE stmt FROM @ddl;
+
 EXECUTE stmt;
+
 DEALLOCATE PREPARE stmt;
 
 -- 3) G2-6 语义按 DOC-05（外部资源/IPD系统_五大Gate评审要素_v1.md L103）翻正：

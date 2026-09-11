@@ -22,28 +22,37 @@
 -- =====================================================================
 
 -- 步骤 1: 删除旧非唯一索引（被新 UNIQUE 替代时无重复，索引更精准）
-ALTER TABLE allowance_ledgers DROP INDEX idx_al_person_month;
+
+-- [idem-guard: DROP INDEX idx_al_person_month ON allowance_ledgers]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND INDEX_NAME='idx_al_person_month');
+SET @ddl := IF(@idx_exists=1,
+  'ALTER TABLE allowance_ledgers DROP INDEX idx_al_person_month',
+  'SELECT ''allowance_ledgers.idx_al_person_month absent, skip drop'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- 步骤 2: 加 UNIQUE 索引（DB 层兜底）
 
--- [idem-guard: ALTER allowance_ledgers.UNIQUE]
-SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND COLUMN_NAME='UNIQUE');
-SET @ddl := IF(@col_exists=0,
+-- [idem-guard: ADD INDEX uk_al_person_project_month ON allowance_ledgers]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND INDEX_NAME='uk_al_person_project_month');
+SET @ddl := IF(@idx_exists=0,
   'ALTER TABLE allowance_ledgers ADD UNIQUE KEY uk_al_person_project_month (person_id, project_id, month)',
-  'SELECT ''allowance_ledgers.UNIQUE exists, skip'' AS msg');
+  'SELECT ''allowance_ledgers.uk_al_person_project_month exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- 步骤 3: 同时保留单 person 单 month 普通索引（按月查询津贴总额）
 
--- [idem-guard: ALTER allowance_ledgers.KEY]
-SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND COLUMN_NAME='KEY');
-SET @ddl := IF(@col_exists=0,
+-- [idem-guard: ADD INDEX idx_al_month ON allowance_ledgers]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND INDEX_NAME='idx_al_month');
+SET @ddl := IF(@idx_exists=0,
   'ALTER TABLE allowance_ledgers ADD KEY idx_al_month (month)',
-  'SELECT ''allowance_ledgers.KEY exists, skip'' AS msg');
+  'SELECT ''allowance_ledgers.idx_al_month exists, skip'' AS msg');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

@@ -7,12 +7,15 @@
 -- [idem-guard: ALTER stage_actions.version]
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='stage_actions' AND COLUMN_NAME='version');
+
 SET @ddl := IF(@col_exists=0,
-  'ALTER TABLE stage_actions
-    ADD COLUMN version INT NOT NULL DEFAULT 0 COMMENT ''乐观锁版本号（P1-4.3 状态机并发控制）'' AFTER sop_id',
+  'ALTER TABLE stage_actions ADD COLUMN version INT NOT NULL DEFAULT 0 COMMENT ''乐观锁版本号（P1-4.3 状态机并发控制）'' AFTER sop_id',
   'SELECT ''stage_actions.version exists, skip'' AS msg');
+
 PREPARE stmt FROM @ddl;
+
 EXECUTE stmt;
+
 DEALLOCATE PREPARE stmt;
 
 -- 兼容可能已存在的历史实例：补默认值（NOT NULL DEFAULT 0 已在列定义兜底，此 UPDATE 仅做明示归一）
