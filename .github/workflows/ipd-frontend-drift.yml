@@ -1,0 +1,64 @@
+# IPD 前端工程漂移门禁 — check-ipd-frontend-drift.sh 4 项检查接入 CI
+# 规约：docs/ipd-系统说明/前端架构规约-20260906.md §5.2（推荐接入位置即本文件）
+# 检查项：
+#   1. api/ipd/*.ts 同名导出冲突（阻断）
+#   2. views/ipd/<domain>/<domain>-error.ts 残留实函数（应迁 _shared，阻断）
+#   3. api/ipd/product-group.ts 兼容层 @deprecated 标注（阻断）
+#   4. 手写"待后端"占位未引用 _shared/backend-pending.vue（警告）
+# 设计：
+#   - 前端仓独立于本仓（wilson323/ruoyi-admin，本地 ruoyi-ipd-web），需跨仓 checkout
+#   - 脚本硬编码本机路径 /Users/mac/Documents/ruoyi-ipd-web（保持零改动，
+#     参数化方案已被 owner 还原），CI 用 symlink 把 checkout 子目录映射到该路径
+#   - 不开 --strict：第 4 项命中的多为「后端未交付不做假数据」类诚实声明文案，
+#     升级为阻断会误伤；strict 留作治理轮（Vibe Kanban AUD-GOV 卡）清完警告后的目标
+# 真值来源：.claude/helpers/ipd-frontend-drift-guard.cjs（写时阻断，本 workflow 为异步兜底）
+
+name: ipd-frontend-drift
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check-ipd-frontend-drift.sh'
+      - '.github/workflows/ipd-frontend-drift.yml'
+  pull_request:
+    paths:
+      - 'scripts/check-ipd-frontend-drift.sh'
+      - '.github/workflows/ipd-frontend-drift.yml'
+  workflow_dispatch:
+
+jobs:
+  frontend-drift:
+    name: 前端 4 项漂移检查
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 主仓（脚本所在仓）
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout 前端仓（ruoyi-ipd-web → wilson323/ruoyi-admin）
+        uses: actions/checkout@v4
+        with:
+          repository: wilson323/ruoyi-admin
+          ref: main
+          path: ipd-web
+          persist-credentials: false
+
+      - name: Map hardcoded frontend path (脚本保持零改动)
+        run: |
+          sudo mkdir -p /Users/mac/Documents
+          sudo ln -s "$GITHUB_WORKSPACE/ipd-web" /Users/mac/Documents/ruoyi-ipd-web
+
+      - name: Run 4-item drift check
+        run: |
+          chmod +x scripts/check-ipd-frontend-drift.sh
+          ./scripts/check-ipd-frontend-drift.sh
+
+      - name: Summarize
+        if: always()
+        run: |
+          echo "=== ipd-frontend-drift summary ==="
+          echo "阻断口径：1/2/3 项任一漂移 exit 1；第 4 项仅警告（--strict 时升级）"
+          echo "处置指引：docs/ipd-系统说明/前端架构规约-20260906.md §6 违规处置"
