@@ -18,16 +18,23 @@ SET @idx_exists := (
     SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'projects'
       AND index_name = 'uk_projects_code');
+
 SET @idx_is_code := (
     SELECT COUNT(*) FROM information_schema.statistics
     WHERE table_schema = DATABASE() AND table_name = 'projects'
       AND index_name = 'uk_projects_code' AND column_name = 'code');
+
 SET @ddl := IF(@idx_exists > 0 AND @idx_is_code = 0,
     'SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ''uk_projects_code already exists with different column set, manual check required''',
     IF(@idx_exists = 0,
        'ALTER TABLE projects ADD UNIQUE KEY uk_projects_code (code)',
        'SELECT 1 AS skip_uk_projects_code'));
-PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
 
 -- =====================================================================
 -- 2) 产品:项目 1:1（Q5）——【owner 裁决项，本脚本不执行】
@@ -60,4 +67,4 @@ PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 --   而 A 的占坑释放责任集中且已实现，冲突异常语义单一，无须触碰 ProjectService。
 --   若 owner 选 B：需同步 2026-09-04-ipd-p0-tables.sql 建表键定义 + 本脚本追加
 --   幂等 DROP/ADD 迁移 + PERF-04 冲突语义评估，三处一起改，不接受只改一处。
--- =====================================================================
+-- =====================================================================;

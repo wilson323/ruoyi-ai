@@ -10,16 +10,62 @@
 -- 日期：2026-09-06
 -- =====================================================================
 
-ALTER TABLE notification_events
-    ADD COLUMN error_count INT NULL
-        COMMENT '已失败次数（与 retry_count 同步镜像；运维可观测）'
-        AFTER retry_count,
-    ADD COLUMN last_error_message VARCHAR(500) NULL
-        COMMENT '最近一次失败原因（截断 500 字符；死信定位）'
-        AFTER error_count;
+
+-- [idem-guard: ALTER notification_events.error_count]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND COLUMN_NAME='error_count');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE notification_events ADD COLUMN error_count INT NULL
+        COMMENT ''已失败次数（与 retry_count 同步镜像；运维可观测）''
+        AFTER retry_count',
+  'SELECT ''notification_events.error_count exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER notification_events.last_error_message]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND COLUMN_NAME='last_error_message');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE notification_events ADD COLUMN last_error_message VARCHAR(500) NULL
+        COMMENT ''最近一次失败原因（截断 500 字符；死信定位）''
+        AFTER error_count',
+  'SELECT ''notification_events.last_error_message exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
 
 -- 可选索引：按 error_count / last_error_message 加速死信排查（nullable 列 BTREE 索引有效）
-CREATE INDEX idx_notify_error ON notification_events (delivery_status, error_count);
+
+-- [idem-guard: CREATE INDEX idx_notify_error ON notification_events]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND INDEX_NAME='idx_notify_error');
+
+-- [idem-guard: CREATE INDEX idx_notify_error ON notification_events]
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_events' AND INDEX_NAME='idx_notify_error');
+SET @ddl := IF(@idx_exists=0,
+  'SET @ddl := IF(@idx_exists=0,
+  ''CREATE INDEX idx_notify_error ON notification_events (delivery_status, error_count)'',
+  ''SELECT ''''notification_events.idx_notify_error exists, skip'''' AS msg'')',
+  'SELECT ''notification_events.idx_notify_error exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
 
 -- 租户共享登记已在 2026-09-05-ipd-notification-events.sql 备注；本变更不新增共享表
--- 真库最小权限（与 ipd_app@127.0.0.1 表级 GRANT 模型对齐，无需变更）
+-- 真库最小权限（与 ipd_app@127.0.0.1 表级 GRANT 模型对齐，无需变更）;

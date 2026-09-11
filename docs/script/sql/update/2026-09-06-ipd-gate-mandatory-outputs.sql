@@ -7,5 +7,31 @@
 -- 提交 Gate 时必须有评审材料 URL 与会议纪要 URL，否则阻断。
 
 -- 兼容已有 gates 表结构（idempotent ADD COLUMN via IF NOT EXISTS）
-ALTER TABLE gates ADD COLUMN materials_url varchar(500) null comment '[SEC-FIX-HIGH-1.1] 评审材料 URL（会前 2 工作日发出）';
-ALTER TABLE gates ADD COLUMN meeting_minutes_url varchar(500) null comment '[SEC-FIX-HIGH-1.1] 会议纪要 URL（含遗留项清单）';
+
+-- [idem-guard: ALTER gates.materials_url]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gates' AND COLUMN_NAME='materials_url');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gates ADD COLUMN materials_url varchar(500) null comment ''[SEC-FIX-HIGH-1.1] 评审材料 URL（会前 2 工作日发出）''',
+  'SELECT ''gates.materials_url exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER gates.meeting_minutes_url]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gates' AND COLUMN_NAME='meeting_minutes_url');
+
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gates ADD COLUMN meeting_minutes_url varchar(500) null comment ''[SEC-FIX-HIGH-1.1] 会议纪要 URL（含遗留项清单）''',
+  'SELECT ''gates.meeting_minutes_url exists, skip'' AS msg');
+
+PREPARE stmt FROM @ddl;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;

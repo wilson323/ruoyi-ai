@@ -7,9 +7,26 @@
 -- leftover_status 取值：OPEN（未关闭）/ CLOSED（已关闭）；遗留查询只依赖本表，
 -- 要素后续停用/删除不消除遗留（AC-GATE-17 防线）。
 
-alter table gate_element_results
-    add column responsible_person_id bigint null comment '条件遗留责任人（AC-GATE-16 CONDITIONAL 必填）' after leftover_item,
-    add column closed_evidence varchar(500) null comment '遗留关闭凭证（close 必填）' after leftover_due_at;
+
+-- [idem-guard: ALTER gate_element_results.responsible_person_id]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_element_results' AND COLUMN_NAME='responsible_person_id');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gate_element_results add column responsible_person_id bigint null comment ''条件遗留责任人（AC-GATE-16 CONDITIONAL 必填）'' after leftover_item',
+  'SELECT ''gate_element_results.responsible_person_id exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- [idem-guard: ALTER gate_element_results.closed_evidence]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gate_element_results' AND COLUMN_NAME='closed_evidence');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE gate_element_results add column closed_evidence varchar(500) null comment ''遗留关闭凭证（close 必填）'' after leftover_due_at',
+  'SELECT ''gate_element_results.closed_evidence exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- 既有 CONDITIONAL 历史行（无责任人）保持 NULL：老数据不回填，提交阻断按逾期口径只拦
--- leftover_due_at 已过且未关闭的行，与新判定必填口径不冲突。
+-- leftover_due_at 已过且未关闭的行，与新判定必填口径不冲突。;

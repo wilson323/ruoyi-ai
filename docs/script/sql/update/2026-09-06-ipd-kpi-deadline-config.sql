@@ -7,7 +7,8 @@
 -- 日期：2026-09-06
 -- =====================================================================
 
-INSERT INTO system_configs (
+
+INSERT IGNORE INTO system_configs (
     config_key, config_value, value_type, default_value,
     description, tenant_id, del_flag, create_time, update_time
 ) VALUES (
