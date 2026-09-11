@@ -170,9 +170,8 @@ public class AiCopilotService {
             long latency = clock.millis() - start;
             auditCopilot(actor, req, intent, latency, 0, 0,
                 "FAIL:" + (ex.getErrorCode() == null ? "UNKNOWN" : ex.getErrorCode().name()), null);
-            String tip = req.projectId() == null
-                ? "AI 副驾暂未启用：未配置生效的 AI 模型。请联系超管在「AI 模型配置」启用。"
-                : "AI 副驾暂未启用：未配置生效的 AI 模型。请联系超管在「AI 模型配置」启用。";
+            // S3923 修复：原三元两分支文案相同（冗余拷贝粘贴），统一为单一提示语，行为零变更。
+            String tip = "AI 副驾暂未启用：未配置生效的 AI 模型。请联系超管在「AI 模型配置」启用。";
             return new AiCopilotResp(intent, tip, List.of(), List.of("config.disabled"),
                 0, 0, latency);
         }
