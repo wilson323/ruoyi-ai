@@ -5,7 +5,9 @@ import cn.dev33.satoken.jwt.StpLogicJwtForSimple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.sse.core.SseEmitterManager;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,31 +49,36 @@ public class IpdSseController {
     /**
      * 建立 IPD 业务 SSE 连接。
      *
+     * <p>2026-09-11：认证失败从「return null（200 + 空体、无 Content-Type）」改为 401——
+     * 浏览器 EventSource 对无 Content-Type 的空 200 按默认 text/plain 解析，报
+     * 「MIME type ("text/plain") is not "text/event-stream"」并盲目重试；401 让其直接走 error，
+     * 对脚本调用方语义也正确（curl -i 可见）。
+     *
      * @param clientid      客户端 UUID（前端 useAppConfig 注入）
      * @param authorization Bearer token，从 URL query 取（EventSource 不支持 header）
-     * @return SseEmitter 实例；token 无效返回 null
+     * @return 200 + SseEmitter；未带 token 或 token 无效/过期 401；服务端异常 500
      */
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter connect(
+    public ResponseEntity<SseEmitter> connect(
         @RequestParam(value = "clientid", required = false) String clientid,
         @RequestParam(value = "Authorization", required = false) String authorization) {
         String token = stripBearer(authorization);
         if (token == null || token.isBlank()) {
             log.warn("ipd_sse_connect status=REJECTED reason=NO_TOKEN clientid={}", clientid);
-            return null;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         try {
             Object loginIdObj = IPD_LOGIC.getLoginIdByToken(token);
             if (loginIdObj == null) {
                 log.warn("ipd_sse_connect status=REJECTED reason=TOKEN_INVALID_OR_EXPIRED clientid={}", clientid);
-                return null;
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             long userId = Long.parseLong(loginIdObj.toString());
             log.info("ipd_sse_connect status=ACCEPTED userId={} clientid={}", userId, clientid);
-            return sseEmitterManager.connect(userId, token);
+            return ResponseEntity.ok(sseEmitterManager.connect(userId, token));
         } catch (Exception e) {
             log.error("ipd_sse_connect status=FAILED errorType={}", e.getClass().getName(), e);
-            return null;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
