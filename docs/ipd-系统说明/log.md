@@ -3383,3 +3383,12 @@ owner「授权全部执行」指令后四连：
 - **比对矩阵**：后端可执行 9（WfNodeFactory 分支）= 现库 9 行 = 前端可渲染 9（Start/End/Answer/Switcher/Google 专属实现；Tongyiwanx 12 行转发壳；MailSend/KnowledgeRetrieval/HttpRequest 走 NodeShell 摘要），三方逐一对齐无缺口；Dalle3/FaqExtractor = 前端仅转发壳 + 后端无执行器（不可执行不注册）；TestNode 为官方调试遗留件（枚举/库/图标/默认配置四处无挂接）。
 - **机制**：`GET /workflow/public/component/list → getAllEnable()`（is_enable=1 且 is_deleted=0，按 display_order 升序）为画布组件清单唯一来源；保存节点校验（WorkflowNodeService）与运行时 `WorkflowStarter` 同源消费——库注册即准入门槛。
 - **勘误追记**：本文上两段中「未提交」状态已闭环——前端 3 commit（4d41143 / 5eca2f6 / 354806f）、后端 2 commit（177d12bf / bd10f790），两仓工作区已清空；收口文档与对齐脚本注释同步精化（Dalle3/FaqExtractor 前端表述精确为「NodeShell 转发壳」，4 行 uuid/display_order 标注本地生成值）。
+
+### AI 能力前后端三方对齐补强（2026-09-11 晚，owner「确保前后端AI能力完整」）
+
+- **方法**：后端 `upstream/main` 直读（落后 1 / 领先 568）+ 前端官方管理端远端 `5155f438`（本地 `v3.1.0` 共同基线）三方对齐。
+- **后端补强（11 文件：4 改 + 2 新生产 + 5 新测试）**：移植 cca30905——`MediaContentController`（GET /media/content 媒体预览）+ `AtlasMediaContentService`（CDN 白名单/64MiB/MIME 校验）+ MediaGenerationController atlas 异步分支 + AtlasPredictionService mimeType/audio + ChatModelCredentialPolicy（ATLAS 白名单 + env:ATLAS_API_KEY）+ ChatModelSecretReference；`git show upstream/main:` 还原 11/11 diff -q 零差异；单模块测试 common-chat 3/3 + ruoyi-chat 4 类 10/10 全绿。
+- **前端补强（18 文件：1 新 17 改）**：官方 5155f438 AI 部分合并——workflow-designer 5（appendChunk chunks 分离修复 / WfVariableSelector watch uuid + Start 默认输出 / EndNodeProperty.vue 新建 / RunDetail / RuntimeNodes）+ chat/model-modal + chat/provider 3（custom_anthropic + status 过滤 + cloneDeep）+ mcp api 4 + mcp views 4 + agent api；16 直取与 FETCH_HEAD 零差异、2 手合（store/index.ts 4 处 TS 修复、provider-modal 2 处 TS 修复）恰为预期 6 处差异；三门禁全绿（check:type 1 successful / vitest 907 passed / build 11 successful，无 TS 诊断）。
+- **浏览器真链路**：/aiflow/edit 拖出 End 节点 → EndNodeProperty「最终结果模板」挂载 ✓、变量下拉「开始 · 默认输出」✓；/chat/model 新增弹窗供应商下拉数据完整 ✓；/mcp/tool 9 行 ✓；/mcp/market 0 行（上游态）；0 console 错误。
+- **不吸收**：README/nginx.conf/vite.config.mts/system-url（非 AI 能力）；官方管理端无 media UI（消费方在用户端线），本地零消费为预期。
+- **报告**：`docs/ipd-系统说明/验收/AI模块完整性与权限断链修复收口-20260911.md` Part D。
