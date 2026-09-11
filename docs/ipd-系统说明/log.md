@@ -3365,3 +3365,13 @@ owner「授权全部执行」指令后四连：
 - **PR#23 真相修订**：`gh pr view 23` 默认跨仓库查询显示「ageerle/ruoyi-ai PR#23 = 本地向量化 docker镜像」（upstream 老 PR）是 gh CLI 跨仓库默认行为误导。`gh pr view 23 --repo wilson323/ruoyi-ai` 确认实际状态：state=OPEN、head=feature/ai-native-sdlc-v2-base-r31→base=main、url=https://github.com/wilson323/ruoyi-ai/pull/23、创建 2026-09-11T18:53:01Z。**最终验证：PR#23 是我创建的、状态 open、已就位**。
 - **后续处理入口**：①兄弟会话随时可 `git stash pop` 恢复 stash@{0}（27 文件 338+/121- 改动 + .harness/.backup）；②PR#23 等待 owner 合并（与 origin/main 拉平后，base 是 main 含 PR#9 + PR#22 + PR#21，无冲突）；③origin/main `1299939e` 即为后续会话起点。
 - **生产事实源最终态**：origin/main `1299939e` + PR#23 远端 `feature/ai-native-sdlc-v2-base-r31` 690a5ed5（待合并）；本地工作树干净，ahead/behind=0/0；后端 java 13070 @16039 + 前端 vite 19594 @15666 仍存活；stash@{0} 守护 27 文件兄弟 R31 后在途工作。
+
+### AI 模块完整性 + 权限断链根修（2026-09-11，前端会话，无 Java 改动）
+
+- **指令**：owner「当然要来必须要确保AI各个模块完整」→ AI 模块盘点/补齐/实测 + 过程中根修权限断链。
+- **AI 模块完整性**：19 Controller / 8 视图组盘点齐备（ai1/ai2）；`t_workflow_component` 5 → 9 行（新增 Tongyiwanx/MailSend/KnowledgeRetrieval/HttpRequest，id=38~41 全 enable，DB 终态 9 行探针已复核），并**落盘幂等 update 脚本** `docs/script/sql/update/2026-09-11-workflow-components-align-with-source.sql`（事务内重放零变更自证，fresh 环境 apply 可复现）；Dalle3/FaqExtractor **后端 WfNodeFactory 无执行器分支不补**（源码层断链）；上游 GitHub 核验：最新版该表仍 5 行、KnowledgeRetrieval 全史 0 注册，对齐基准=源码执行器 9 个；graph 知识图谱三层断链（前端无页面/后端无接口/菜单无入口）判定**上游废弃不补**（n2）；sys_config 13 条种子恢复（w5）；节点管理菜单挂载（menu_id=2099111100000000001，path=node-manage）+ 共0条记录修复（n1）。
+- **权限断链根修（前端仓 ruoyi-ipd-web，4 改 2 新，未提交）**：vben 遗留语义（小写 `'superadmin'` / `'*:*:*'` 全通码）与 IPD 通道（大写 personType / `[scope, personType:xxx]`）脱节 → ① 超管 `/system/menu` 整页 403；② **任何完整登录后 46 个页面（含 AI 平台约 15 个）v-access:code 按钮全消失**（本机 localStorage 残留旧 RuoYi 通道 `*:*:*` 此前掩盖，可逆实验按钮消失→恢复实锤）。修复：新建 `store/vben-identity.ts` 映射纯函数（+5 条单测），三处身份安装点（auth.ts / ipd-auth.ts / ipd-guard.ts）统一消费。
+- **验证矩阵全绿**：check:type 1 successful / vitest 907 passed（81 files，+5 用例）/ build:antd 11 successful；`/system/menu` 403 → 正常（0 console 异常，v-access:role 按钮全在）；清票重签路径 accessCodes 内存 + LS 均为 `['*:*:*']`（修复前为 `['FULL','personType:SUPER_ADMIN']`）。
+- **边界澄清**：`/system/tenant`、`/system/tenantPackage` 直访 404 = owner 2026-09-06 单企业非 SaaS 决策预期行为（`IpdMenuController.getRouters` 主动 removeIf，五处自动一致），非缺陷；非超管权限码下发（V1，log.md L2704 在案项）维持现状**不扩面**。
+- **残留**：前端 4 M + 2 新文件未提交（按 ruoyi-ipd-web AGENTS.md「未经用户明确要求不提交」，保留工作区，HEAD=3926a80）；看板 62250 不可用（curl 000 / 无进程 / 无启动脚本），卡面同步受阻，待服务恢复补登。
+- **报告全文**：`docs/ipd-系统说明/验收/AI模块完整性与权限断链修复收口-20260911.md`（含 Part A/B/C + 证据路径）。
