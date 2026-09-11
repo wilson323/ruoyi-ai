@@ -59,6 +59,24 @@
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/ssot-write-guard.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/ssot-write-guard.cjs\"'"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'INPUT=$(cat); FP=$(printf \"%s\" \"$INPUT\" | python3 -c \"import sys,json\ntry:\n  d=json.load(sys.stdin).get(\\\"tool_input\\\",{})\n  print(d.get(\\\"file_path\\\",\\\"\\\"))\nexcept Exception:\n  print(\\\"\\\")\" 2>/dev/null); case \"$FP\" in /etc/*|*/.ssh/*|*/.aws/*|*/.env|*/.env.production) echo \"[BLOCKED by Layer 3] 受保护路径不可写: $FP\" >&2; exit 2;; esac; exit 0'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'INPUT=$(cat); CMD=$(printf \"%s\" \"$INPUT\" | python3 -c \"import sys,json\ntry:\n  print(json.load(sys.stdin).get(\\\"tool_input\\\",{}).get(\\\"command\\\",\\\"\\\"))\nexcept Exception:\n  print(\\\"\\\")\" 2>/dev/null); if printf \"%s\" \"$CMD\" | grep -qE \"rm[[:space:]]+-rf[[:space:]]+/|DROP[[:space:]]+(TABLE|DATABASE)|TRUNCATE[[:space:]]+TABLE|git[[:space:]]+push[[:space:]].*--force\"; then echo \"[BLOCKED by Layer 3] 危险命令需要人工授权: $CMD\" >&2; exit 2; fi; if printf \"%s\" \"$CMD\" | grep -qE \"kubectl[[:space:]]+(apply|delete|set)|helm[[:space:]]+(install|upgrade)|docker[[:space:]]+(push|stack deploy)|npm[[:space:]]+publish|pnpm[[:space:]]+publish|yarn[[:space:]]+publish|mvn[[:space:]].*deploy|gradle[[:space:]].*(publish|deploy)|twine[[:space:]]+upload|vercel[[:space:]].*(--prod|deploy)|netlify[[:space:]]+deploy.*--prod|wrangler[[:space:]]+(deploy|publish)|aws[[:space:]]+s3[[:space:]]+sync.*s3://|eb[[:space:]]+deploy|flyctl[[:space:]]+deploy|rails[[:space:]]+db:migrate.*RAILS_ENV=production\"; then echo \"[BLOCKED by Layer 3] 发布/上线命令需要具名负责人授权（Anthropic Deploy 闸门）: $CMD\" >&2; echo \"  授权方式：把命令写进 deploy.md 并由负责人签字后，人工执行。\" >&2; exit 2; fi; exit 0'"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -130,6 +148,24 @@
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/hooks/post-ipd-entity-write.sh\" ] || D=\"${HOME}\"; exec \"$D/.claude/hooks/post-ipd-entity-write.sh\"'"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[Layer 1 提醒] 变更已落盘。请确认：① 证据已写入 plan.md ② 文档已同步 ③ 本单元已验证\" >&2; exit 0'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/audit-log.py\" post 2>/dev/null || exit 0"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -157,6 +193,15 @@
             "timeout": 8000
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -f docs/api.md ]; then cat docs/api.md 2>/dev/null; fi; if [ -f docs/database.md ]; then cat docs/database.md 2>/dev/null; fi; exit 0'"
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -177,6 +222,15 @@
             "type": "command",
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/auto-memory-hook.mjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/auto-memory-hook.mjs\" sync'",
             "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[Layer 1 收口清单] 说\\\"完成\\\"前逐条过：构建通过 / 检查通过 / 测试通过（真实执行有输出）/ 范围未越界 / 文档已同步 / 证据已入 plan.md / 遗留问题已列出 / 交接文件已写。依据 Skill session-finalization-gate。\" >&2; exit 0'"
           }
         ]
       }
@@ -370,5 +424,6 @@
       "cveCheck": true,
       "threatModel": true
     }
-  }
+  },
+  "_comment": "Layer 3 — 硬闸门。Anthropic: 前两层告诉 AI 该怎么做，hooks 守住不能越过的红线。hooks 是确定性脚本，每次必跑，不依赖模型自觉。v2：新增发布命令闸门（Deploy 阶段人授权）+ 审计日志（可归因）；移除 git add -A 拦截（owner 工作流为自动 commit）。"
 }
