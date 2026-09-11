@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * P0-8 种子 SQL 一致性断言：33 要素 / 15 否决位 / G1..G5 分布 7/6/5/8/7 / 17 认证模板
  * （防种子文件与 v1 要素文档、v3 BR-IPD-05b 清单漂移；文件即事实，行数即口径）
+ * R31 适配 PR#21 幂等化：种子 SQL 逐条 INSERT 已改 INSERT IGNORE 形态，计数 regex 兼容两种写法（口径不变）。
  */
 @Tag("dev")
 class IpdSeedConsistencyTest {
@@ -31,7 +32,7 @@ class IpdSeedConsistencyTest {
     @DisplayName("要素总数 = 33，G1..G5 = 7/6/5/8/7")
     void elementCounts() throws IOException {
         String sql = seed();
-        Matcher m = Pattern.compile("INSERT INTO gate_review_elements").matcher(sql);
+        Matcher m = Pattern.compile("INSERT (?:IGNORE )?INTO gate_review_elements").matcher(sql);
         int total = 0;
         while (m.find()) {
             total++;
@@ -48,7 +49,7 @@ class IpdSeedConsistencyTest {
     @DisplayName("否决位 = 15（按要素表逐项 ❌；原文汇总行 14 与逐项表不一致，以逐项为准）")
     void vetoCount() throws IOException {
         String sql = seed();
-        Matcher m = Pattern.compile("INSERT INTO gate_review_elements[^;]*?, '1', [0-9]+, '1',").matcher(sql);
+        Matcher m = Pattern.compile("INSERT (?:IGNORE )?INTO gate_review_elements[^;]*?, '1', [0-9]+, '1',").matcher(sql);
         int veto = 0;
         while (m.find()) {
             veto++;
@@ -60,7 +61,7 @@ class IpdSeedConsistencyTest {
     @DisplayName("认证模板 = 21 项（P1-3 增补拉美/国际后）")
     void certCount() throws IOException {
         String sql = seed();
-        Matcher m = Pattern.compile("INSERT INTO cert_templates").matcher(sql);
+        Matcher m = Pattern.compile("INSERT (?:IGNORE )?INTO cert_templates").matcher(sql);
         int total = 0;
         while (m.find()) {
             total++;
