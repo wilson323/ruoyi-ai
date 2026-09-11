@@ -3352,3 +3352,16 @@ owner「授权全部执行」指令后四连：
 | P3-4.1 | 验收完成；下游卡（P3-4.4 奖金池核算）可继续推进 | 主协调 |
 | P1-6.1 | root-94ae 兄弟会话集成提交 + DDL apply + 验收测试回主仓 | 兄弟会话 owner |
 | AUD-GOV-B-FIX-PACK-3 | HR API 接入 / Quartz 启用 / G1 验证流程 / sys_config 类型迁移 | owner 拍板 |
+
+### 阶段 6：C' 方案 reset 收口（2026-09-11 下午，owner 拍板 C 改 C'）
+
+- **背景**：本地 main 领先 origin/main 41 commit（R31 期间兄弟会话并行完成、已等价合并到 origin/main）。P2「本地治理线 41 commit PR 化」已实际过半：体检发现 35 commit 代码 100% 已被兄弟会话等价合并；仅 PR-α (9f231e29) 19 个 .harness/.claude 文件有独占新内容，已开 PR#23。
+- **C 方案连环陷阱**（`de47f1e0` 红线）：直接 `git reset --hard origin/main` 会同时丢 2 样——①本地 41 commit（设计内） ②**兄弟会话当前在主工作树改的 66 个 M 文件**（意外，触犯「main 直提被 reset 孤儿化」红线，owner 2026-09-08 因此发火过）。`7bf840f6` 三步法要求：兄弟在途工作未评审前不能丢。
+- **C' 方案**：`git stash push -u` 暂存 66 M + untracked → `git reset --hard origin/main` → 41 commit 丢、66 M 暂存不丢。
+- **执行**：
+  - stash：`Saved working directory and index state On main: R32-brother-on-the-way-preserve-20260911-pre-reset`（stash@{0}，含 27 文件 338+/121- 改动 + .harness/.backup/ 备份目录）
+  - reset：`HEAD is now at 1299939e`（origin/main 最新，merge: PR#9）
+  - 验证：本地 HEAD `1299939e` = origin/main HEAD `1299939e`，ahead/behind = `0 0`（完美拉平）
+- **PR#23 真相修订**：`gh pr view 23` 默认跨仓库查询显示「ageerle/ruoyi-ai PR#23 = 本地向量化 docker镜像」（upstream 老 PR）是 gh CLI 跨仓库默认行为误导。`gh pr view 23 --repo wilson323/ruoyi-ai` 确认实际状态：state=OPEN、head=feature/ai-native-sdlc-v2-base-r31→base=main、url=https://github.com/wilson323/ruoyi-ai/pull/23、创建 2026-09-11T18:53:01Z。**最终验证：PR#23 是我创建的、状态 open、已就位**。
+- **后续处理入口**：①兄弟会话随时可 `git stash pop` 恢复 stash@{0}（27 文件 338+/121- 改动 + .harness/.backup）；②PR#23 等待 owner 合并（与 origin/main 拉平后，base 是 main 含 PR#9 + PR#22 + PR#21，无冲突）；③origin/main `1299939e` 即为后续会话起点。
+- **生产事实源最终态**：origin/main `1299939e` + PR#23 远端 `feature/ai-native-sdlc-v2-base-r31` 690a5ed5（待合并）；本地工作树干净，ahead/behind=0/0；后端 java 13070 @16039 + 前端 vite 19594 @15666 仍存活；stash@{0} 守护 27 文件兄弟 R31 后在途工作。
