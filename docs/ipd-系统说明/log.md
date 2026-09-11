@@ -3392,3 +3392,9 @@ owner「授权全部执行」指令后四连：
 - **浏览器真链路**：/aiflow/edit 拖出 End 节点 → EndNodeProperty「最终结果模板」挂载 ✓、变量下拉「开始 · 默认输出」✓；/chat/model 新增弹窗供应商下拉数据完整 ✓；/mcp/tool 9 行 ✓；/mcp/market 0 行（上游态）；0 console 错误。
 - **不吸收**：README/nginx.conf/vite.config.mts/system-url（非 AI 能力）；官方管理端无 media UI（消费方在用户端线），本地零消费为预期。
 - **报告**：`docs/ipd-系统说明/验收/AI模块完整性与权限断链修复收口-20260911.md` Part D。
+
+### SSE 端点认证失败响应形态修复（2026-09-11 晚，owner 贴 /mcp/market console 报错）
+
+- **现象**：EventSource 报「MIME type ("text/plain") is not "text/event-stream"」×3 + sse重连失败，伴 /api/v1/auth/logout、/auth/refresh 401。
+- **根因（日志+curl 实锤）**：IpdSseController 认证失败 `return null` → Spring 写 200 + 空体（无 Content-Type），EventSource 按默认 text/plain 解析报 MIME 错并盲目重连 3 次；昨晚 23:32 密集 `TOKEN_INVALID_OR_EXPIRED` 与用户报错时段吻合——本质是会话过期伴生噪音，非功能断裂（今天 13:02-14:23 多次 ACCEPTED，token 有效时链路正常）；StandaloneWorkflowDesigner 渲染日志为官方 v3.1.0 自带 debug 输出（本地未改，渲染成功），非错误。
+- **修复（commit 7992c386）**：认证失败改 401（NO_TOKEN / TOKEN_INVALID_OR_EXPIRED），异常 500，成功 200 + SseEmitter；新增 IpdSseControllerTest（@Tag dev，standalone MockMvc）1/1 绿。**待后端重启生效**（不擅自打断使用中服务）。
