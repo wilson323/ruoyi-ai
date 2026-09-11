@@ -25,10 +25,28 @@
 ALTER TABLE allowance_ledgers DROP INDEX idx_al_person_month;
 
 -- 步骤 2: 加 UNIQUE 索引（DB 层兜底）
-ALTER TABLE allowance_ledgers ADD UNIQUE KEY uk_al_person_project_month (person_id, project_id, month);
+
+-- [idem-guard: ALTER allowance_ledgers.UNIQUE]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND COLUMN_NAME='UNIQUE');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE allowance_ledgers ADD UNIQUE KEY uk_al_person_project_month (person_id, project_id, month)',
+  'SELECT ''allowance_ledgers.UNIQUE exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- 步骤 3: 同时保留单 person 单 month 普通索引（按月查询津贴总额）
-ALTER TABLE allowance_ledgers ADD KEY idx_al_month (month);
+
+-- [idem-guard: ALTER allowance_ledgers.KEY]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='allowance_ledgers' AND COLUMN_NAME='KEY');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE allowance_ledgers ADD KEY idx_al_month (month)',
+  'SELECT ''allowance_ledgers.KEY exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- 备注：DDL 落库前应用须先跑：
 --   SELECT person_id, project_id, month, COUNT(*) c
@@ -36,4 +54,4 @@ ALTER TABLE allowance_ledgers ADD KEY idx_al_month (month);
 --   WHERE del_flag = '0'
 --   GROUP BY person_id, project_id, month
 --   HAVING c > 1;
--- 返回空集才能 apply 本 DDL，否则先合并历史重复。
+-- 返回空集才能 apply 本 DDL，否则先合并历史重复。;

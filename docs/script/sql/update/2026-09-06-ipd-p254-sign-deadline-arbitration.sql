@@ -6,11 +6,20 @@
 --    仲裁意见按人去重(gate_id, round, arbitrator_id) 走本表。
 -- apply 后核对：show columns from gates like 'sign_%'; show columns from gate_arbitrations;
 
-alter table gates
-    add column sign_due_at datetime null comment '签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21）' after started_at,
-    add column sign_extension_count int not null default 0 comment '签署期限已延长次数（AC-GATE-21 上限 3）' after sign_due_at;
 
-create table gate_arbitrations (
+-- [idem-guard: ALTER gates.sign_due_at]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='gates' AND COLUMN_NAME='sign_due_at');
+SET @ddl := IF(@col_exists=0,
+  'alter table gates
+    add column sign_due_at datetime null comment ''签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21）'' after started_at,
+    add column sign_extension_count int not null default 0 comment ''签署期限已延长次数（AC-GATE-21 上限 3）'' after sign_due_at',
+  'SELECT ''gates.sign_due_at exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS gate_arbitrations (
     id               bigint       not null comment '主键（雪花算法）',
     gate_id          bigint       not null comment 'Gate 实例ID',
     round            int          not null comment '评审轮次（与冲突发生轮对齐）',

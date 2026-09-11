@@ -16,12 +16,20 @@ LEFT JOIN `mcp_market_info` AS `market` ON `market`.`id` = `tool`.`market_id`
 WHERE `market`.`id` IS NULL
    OR `market`.`tenant_id` IS NULL;
 
-ALTER TABLE `mcp_market_tool`
-    ADD COLUMN `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '租户编号' AFTER `local_tool_id`,
-    ADD COLUMN `create_dept` bigint NULL DEFAULT NULL COMMENT '创建部门' AFTER `tenant_id`,
-    ADD COLUMN `create_by` bigint NULL DEFAULT NULL COMMENT '创建者' AFTER `create_dept`,
-    ADD COLUMN `update_by` bigint NULL DEFAULT NULL COMMENT '更新者' AFTER `create_time`,
-    ADD COLUMN `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间' AFTER `update_by`;
+-- [idem-guard: ALTER mcp_market_tool.tenant_id]
+SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mcp_market_tool' AND COLUMN_NAME='tenant_id');
+SET @ddl := IF(@col_exists=0,
+  'ALTER TABLE `mcp_market_tool`
+    ADD COLUMN `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT ''租户编号'' AFTER `local_tool_id`,
+    ADD COLUMN `create_dept` bigint NULL DEFAULT NULL COMMENT ''创建部门'' AFTER `tenant_id`,
+    ADD COLUMN `create_by` bigint NULL DEFAULT NULL COMMENT ''创建者'' AFTER `create_dept`,
+    ADD COLUMN `update_by` bigint NULL DEFAULT NULL COMMENT ''更新者'' AFTER `create_time`,
+    ADD COLUMN `update_time` datetime NULL DEFAULT NULL COMMENT ''更新时间'' AFTER `update_by`',
+  'SELECT ''mcp_market_tool.tenant_id exists, skip'' AS msg');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 UPDATE `mcp_market_tool` AS `tool`
 INNER JOIN `mcp_market_info` AS `market` ON `market`.`id` = `tool`.`market_id`

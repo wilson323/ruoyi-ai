@@ -14,7 +14,8 @@
 -- ---------------------------------------------------------------------
 -- 1. persons 人员（v3 TS-06 全字段；角色固定不可跨 B7；组长随 API 同步 A3）
 -- ---------------------------------------------------------------------
-create table persons
+
+CREATE TABLE IF NOT EXISTS persons
 (
     id               bigint       not null                comment '主键（雪花）',
     name             varchar(64)  not null                comment '姓名',
@@ -46,7 +47,8 @@ create table persons
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 人员（市场PM/研发PM/产品组长/超管）';
 
 -- 2. product_groups 产品组
-create table product_groups
+
+CREATE TABLE IF NOT EXISTS product_groups
 (
     id               bigint       not null                comment '主键（雪花）',
     group_name       varchar(64)  not null                comment '产品组名称',
@@ -63,7 +65,8 @@ create table product_groups
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 产品组（组织架构）';
 
 -- 3. products 产品（与项目 1:1，BR-PROD-01/Q5；三路来源）
-create table products
+
+CREATE TABLE IF NOT EXISTS products
 (
     id               bigint       not null                comment '主键（雪花）',
     product_code     varchar(64)  null                    comment '产品编码',
@@ -84,7 +87,8 @@ create table products
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 产品（项目与需求上层实体）';
 
 -- 4. projects 项目（v3 TS-06 全字段）
-create table projects
+
+CREATE TABLE IF NOT EXISTS projects
 (
     id                       bigint        not null       comment '主键（雪花）',
     code                     varchar(32)   not null       comment '项目编码 PRJ-YYYY-NNN 自动生成',
@@ -117,7 +121,8 @@ create table projects
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 项目（核心实体）';
 
 -- 5. project_members 项目成员（双PM 绑定 + 评级快照；v3 TS-06）
-create table project_members
+
+CREATE TABLE IF NOT EXISTS project_members
 (
     id             bigint        not null       comment '主键（雪花）',
     project_id     bigint        not null       comment '项目',
@@ -141,7 +146,8 @@ create table project_members
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 项目成员（双PM 绑定+评级快照）';
 
 -- 6. project_stages 六阶段实例
-create table project_stages
+
+CREATE TABLE IF NOT EXISTS project_stages
 (
     id            bigint      not null comment '主键（雪花）',
     project_id    bigint      not null comment '项目',
@@ -163,7 +169,8 @@ create table project_stages
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 项目六阶段实例';
 
 -- 7. stage_actions 阶段动作实例（69 动作；v3 TS-06 全字段）
-create table stage_actions
+
+CREATE TABLE IF NOT EXISTS stage_actions
 (
     id             bigint        not null comment '主键（雪花）',
     project_id     bigint        not null comment '项目',
@@ -196,7 +203,8 @@ create table stage_actions
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 阶段动作实例（69 动作，深管/轻管）';
 
 -- 8. deliverables 交付物
-create table deliverables
+
+CREATE TABLE IF NOT EXISTS deliverables
 (
     id           bigint       not null comment '主键（雪花）',
     action_id    bigint       not null comment '所属动作实例',
@@ -218,7 +226,8 @@ create table deliverables
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 交付物（附件关联）';
 
 -- 9. sop_templates SOP 模板
-create table sop_templates
+
+CREATE TABLE IF NOT EXISTS sop_templates
 (
     id           bigint        not null comment '主键（雪花）',
     action_code  varchar(8)    not null comment '绑定动作编号（深管 42 动作）',
@@ -237,7 +246,8 @@ create table sop_templates
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD SOP 模板（标准作业程序+版本）';
 
 -- 10. gate_review_elements Gate 评审要素定义（33 项，超管可增删改）
-create table gate_review_elements
+
+CREATE TABLE IF NOT EXISTS gate_review_elements
 (
     id               bigint       not null comment '主键（雪花）',
     gate_code        varchar(8)   not null comment '适用 Gate G1..G5',
@@ -258,7 +268,8 @@ create table gate_review_elements
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD Gate 评审要素定义（33 项+14 否决项）';
 
 -- 11. gate_element_results Gate 要素判定
-create table gate_element_results
+
+CREATE TABLE IF NOT EXISTS gate_element_results
 (
     id               bigint       not null comment '主键（雪花）',
     gate_id          bigint       not null comment 'Gate 实例',
@@ -279,7 +290,8 @@ create table gate_element_results
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD Gate 要素逐项判定（含遗留项跟踪）';
 
 -- 12. cert_templates 国别认证清单模板库（M1）
-create table cert_templates
+
+CREATE TABLE IF NOT EXISTS cert_templates
 (
     id              bigint       not null comment '主键（雪花）',
     country_code    varchar(8)   not null comment '国家/地区代码（如 SA）',
@@ -299,7 +311,8 @@ create table cert_templates
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 国别认证清单模板库（目标市场自动带出）';
 
 -- 13. gates Gate 实例（五大联合 Gate）
-create table gates
+
+CREATE TABLE IF NOT EXISTS gates
 (
     id               bigint        not null comment '主键（雪花）',
     project_id       bigint        not null comment '项目',
@@ -321,7 +334,8 @@ create table gates
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD Gate 实例（五大联合评审）';
 
 -- 14. gate_reviews Gate 双签记录（v3 TS-06 全字段）
-create table gate_reviews
+
+CREATE TABLE IF NOT EXISTS gate_reviews
 (
     id            bigint       not null comment '主键（雪花）',
     gate_id       bigint       not null comment 'Gate 实例',
@@ -343,7 +357,8 @@ create table gate_reviews
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD Gate 评审双签记录（每方一条）';
 
 -- 15. requirements 需求池
-create table requirements
+
+CREATE TABLE IF NOT EXISTS requirements
 (
     id             bigint        not null comment '主键（雪花）',
     product_id     bigint        null     comment '产品（游客「其他」可空路由）',
@@ -370,7 +385,8 @@ create table requirements
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 需求池（免登录提交+查询码）';
 
 -- 16. requirement_changes 需求变更单（双签否决对象 BR-GATE-07）
-create table requirement_changes
+
+CREATE TABLE IF NOT EXISTS requirement_changes
 (
     id             bigint       not null comment '主键（雪花）',
     requirement_id bigint       not null,
@@ -391,7 +407,8 @@ create table requirement_changes
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 需求变更单（双签否决）';
 
 -- 17. bid_invitations 招标单（BR-TEAM）
-create table bid_invitations
+
+CREATE TABLE IF NOT EXISTS bid_invitations
 (
     id                  bigint       not null comment '主键（雪花）',
     project_id          bigint       not null,
@@ -413,7 +430,8 @@ create table bid_invitations
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 招标单（组队招标）';
 
 -- 18. bid_responses 应标记录（不留痕的拒绝不记录）
-create table bid_responses
+
+CREATE TABLE IF NOT EXISTS bid_responses
 (
     id             bigint       not null comment '主键（雪花）',
     invitation_id  bigint       not null,
@@ -432,7 +450,8 @@ create table bid_responses
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 应标记录（研发PM 应标）';
 
 -- 19. deletion_requests 删除申请（差异化审核 BR-DEL，2+2 工作日）
-create table deletion_requests
+
+CREATE TABLE IF NOT EXISTS deletion_requests
 (
     id                bigint       not null comment '主键（雪花）',
     entity_type       varchar(32)  not null comment '目标实体类型',
@@ -461,7 +480,8 @@ create table deletion_requests
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 删除申请（两级审核，禁直接物理删除 G-02）';
 
 -- 20. handover_records 移交记录（项目移交+超管移交 BR-HAND/BR-ADM）
-create table handover_records
+
+CREATE TABLE IF NOT EXISTS handover_records
 (
     id              bigint       not null comment '主键（雪花）',
     handover_type   varchar(16)  not null comment '类型 PROJECT|SUPER_ADMIN|BATCH',
@@ -484,7 +504,8 @@ create table handover_records
 
 -- 21. audit_logs 审计日志（只追加 + hash 链，v3 TS-06/TS-08）
 -- ⚠️ 例外：无 update_time / 无 del_flag / 无业务更新（只追加，破坏即校验失败 AC-AUD-01）
-create table audit_logs
+
+CREATE TABLE IF NOT EXISTS audit_logs
 (
     id            bigint      not null comment '主键（雪花）',
     seq           bigint      not null comment '全局递增序号（hash 链顺序锚；①②③ 由 audit_log_chain_heads 原子分配，非 DB 自增）',
@@ -519,7 +540,8 @@ create table audit_logs
 -- 单行 GLOBAL 锚：append 事务内 SELECT ... FOR UPDATE 锁锚行 → 原子分配 seq/prevHash → advance 前移。
 -- 表本身可变（transaction-locked allocator），audit_logs 仍只追加（G-02 不变）；无 tenant_id 列，
 -- 须登记 tenant.excludes（未登记则多租户插件追加 tenant_id 过滤 → 锚行读不到，append 全断）。
-create table audit_log_chain_heads
+
+CREATE TABLE IF NOT EXISTS audit_log_chain_heads
 (
     chain_key      varchar(32) collate utf8mb4_bin not null,
     last_seq       bigint      not null,
@@ -532,11 +554,13 @@ create table audit_log_chain_heads
   comment='Mutable transaction-locked allocator; audit_logs itself remains append-only';
 
 -- 空库种子：链首 prev=GENESIS（64 个 0）、下一序号 1；既有库的陈旧 seed 修复走停写窗口 sync-seed（PR就绪包 §4.3）
-insert into audit_log_chain_heads (chain_key, last_seq, last_hash, next_seq)
+
+INSERT IGNORE INTO audit_log_chain_heads (chain_key, last_seq, last_hash, next_seq)
 values ('GLOBAL', 0, '0000000000000000000000000000000000000000000000000000000000000000', 1);
 
 -- 22. kpi_records KPI 记录
-create table kpi_records
+
+CREATE TABLE IF NOT EXISTS kpi_records
 (
     id                  bigint        not null comment '主键（雪花）',
     project_id          bigint        null,
@@ -561,7 +585,8 @@ create table kpi_records
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD KPI 记录（功能+共担）';
 
 -- 23. allowance_ledgers 月度津贴台账（BR-INC-02/03）
-create table allowance_ledgers
+
+CREATE TABLE IF NOT EXISTS allowance_ledgers
 (
     id             bigint        not null comment '主键（雪花）',
     person_id      bigint        not null,
@@ -584,7 +609,8 @@ create table allowance_ledgers
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 月度津贴台账（锁定评级/叠加/封顶/停发）';
 
 -- 24. bonus_pools 项目奖金池（BR-INC-04~09，涉钱必须 TDD）
-create table bonus_pools
+
+CREATE TABLE IF NOT EXISTS bonus_pools
 (
     id                bigint        not null comment '主键（雪花）',
     project_id        bigint        not null comment '项目（1:1）',
@@ -610,7 +636,8 @@ create table bonus_pools
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 项目奖金池（目标销售额×5%×系数→6档阶梯→分配）';
 
 -- 25. ai_documents AI 文档（BR-AI，版本链）
-create table ai_documents
+
+CREATE TABLE IF NOT EXISTS ai_documents
 (
     id                bigint       not null comment '主键（雪花）',
     project_id        bigint       not null,
@@ -636,7 +663,8 @@ create table ai_documents
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD AI 文档（生成+人工审核+版本链+token 统计）';
 
 -- 26. system_configs 系统参数（G-05 全部可配置，禁止硬编码；种子见同目录 seed 脚本）
-create table system_configs
+
+CREATE TABLE IF NOT EXISTS system_configs
 (
     id            bigint       not null comment '主键（雪花）',
     config_key    varchar(64)  not null comment '参数键（如 bonus.salesSource / allowance.L3 / gate.signDeadlineDays）',

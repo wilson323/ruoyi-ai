@@ -8,55 +8,56 @@
 -- 关联：docs/ipd-系统说明/前端对接/AI平台功能回归-设计-20260906.md §遗留登记 1
 
 -- A. 补按钮菜单
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813447, '知识库列表', 2006681261898813441, 6, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:info:list', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补：列表接口权限码' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:info:list' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813448, '知识文档列表', 2006681261898813441, 7, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:list', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:attach:list' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813449, '知识文档查询', 2006681261898813441, 8, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:query', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:attach:query' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813450, '知识文档新增', 2006681261898813441, 9, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:add', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:attach:add' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813451, '知识文档修改', 2006681261898813441, 10, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:edit', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:attach:edit' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813452, '知识文档删除', 2006681261898813441, 11, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:remove', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:attach:remove' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813453, '知识文档导出', 2006681261898813441, 12, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:attach:export', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:attach:export' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813454, '知识片段列表', 2006681261898813441, 13, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:list', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:fragment:list' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813455, '知识片段查询', 2006681261898813441, 14, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:query', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:fragment:query' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813456, '知识片段新增', 2006681261898813441, 15, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:add', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:fragment:add' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813457, '知识片段修改', 2006681261898813441, 16, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:edit', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:fragment:edit' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813458, '知识片段删除', 2006681261898813441, 17, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:remove', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:fragment:remove' AND parent_id=2006681261898813441);
 
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
+INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 SELECT 2006681261898813459, '知识片段导出', 2006681261898813441, 18, '#', '', NULL, 1, 0, 'F', '0', '0', 'system:fragment:export', '#', 103, 1, NOW(), 'AI-REG-01 遗留①补' FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='system:fragment:export' AND parent_id=2006681261898813441);
 
@@ -70,7 +71,7 @@ WHERE rm.role_id IN (900201, 900202)
       2006681261898813452, 2006681261898813453, 2006681261898813454, 2006681261898813455, 2006681261898813456,
       2006681261898813457, 2006681261898813458, 2006681261898813459);
 
-INSERT INTO sys_role_menu (role_id, menu_id)
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
 SELECT r.role_id, m.menu_id
 FROM sys_role r
 JOIN sys_menu m ON (

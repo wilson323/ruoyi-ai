@@ -11,7 +11,7 @@ SET `title` = '网络搜索',
 WHERE `name` = 'Google'
   AND `tenant_id` = '000000';
 
-INSERT INTO `t_workflow_component`
+INSERT IGNORE INTO `t_workflow_component`
     (`uuid`, `name`, `title`, `remark`, `display_order`, `is_enable`,
      `create_time`, `update_time`, `is_deleted`, `tenant_id`)
 SELECT
@@ -40,7 +40,7 @@ SET `config_name` = '网络搜索节点响应模板',
 WHERE `config_key` = 'node.googleSearch.template'
   AND `tenant_id` = '000000';
 
-INSERT INTO `sys_config`
+INSERT IGNORE INTO `sys_config`
     (`config_id`, `tenant_id`, `config_name`, `config_key`, `config_value`,
      `config_type`, `create_dept`, `create_by`, `create_time`, `update_by`,
      `update_time`, `remark`)
