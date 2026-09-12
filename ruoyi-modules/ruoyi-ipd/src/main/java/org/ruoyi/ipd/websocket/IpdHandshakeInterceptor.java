@@ -122,6 +122,12 @@ public class IpdHandshakeInterceptor implements HandshakeInterceptor {
             log.warn("ipd_websocket_handshake_failed reason=not_login exceptionType={} path={}",
                 e.getClass().getName(), request.getURI().getPath());
             return false;
+        } catch (cn.dev33.satoken.exception.SaTokenException e) {
+            // 无效/过期 JWT 会抛 SaTokenException（含 NotLoginException 子类之外的变体）；
+            // 与 NotLoginException 同为凭证类拒绝，不打 full stack 避免日志噪音
+            log.warn("ipd_websocket_handshake_failed reason=invalid_token exceptionType={} path={}",
+                e.getClass().getName(), request.getURI().getPath());
+            return false;
         } catch (Exception e) {
             log.error("ipd_websocket_handshake_failed reason=unexpected exceptionType={} path={}",
                 e.getClass().getName(), request.getURI().getPath(), e);
