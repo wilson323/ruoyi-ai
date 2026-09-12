@@ -10,6 +10,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * {@code SnailJobConfig} 的 @EnableScheduling 因依赖缺失 + snail-job.enabled=false 双重不生效，
  * 导致 IPD 的 @Scheduled 任务（离职升级 09:00 / 移交超时 09:05，错峰 5 分钟）静默不跑。
  * 本配置类显式开启后双 job 生效；后续新增调度任务须在此登记错峰时刻。
+ *
+ * <p>任务登记（错峰表）：PersonResignEscalator 09:00 / HandoverOverdueScanner 09:05 /
+ * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
+ * 间隔可配 ipd.notification.dispatch.interval-ms）。
  */
 @Configuration
 @EnableScheduling

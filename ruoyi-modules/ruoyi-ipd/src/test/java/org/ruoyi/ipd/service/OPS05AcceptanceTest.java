@@ -101,7 +101,7 @@ class OPS05AcceptanceTest {
     }
 
     @Test
-    @DisplayName("发布：落 PENDING 行，dedup=source:event:sourceId:receiver，channel=MOCK，kind 分流")
+    @DisplayName("发布：落 PENDING 行，dedup=source:event:sourceId:receiver，channel=MOCK，target_channel=WEBSOCKET，kind 分流")
     void publish_insertsPendingRowWithMockChannel() {
         NotificationEvent inserted = service.publish(9L, NotificationService.Types.DEL_CROSS_GROUP_CC,
             NotificationService.KIND_FYI, "deletion_requests", 7L, "跨组删除知会", "协同组组长知会", null);
@@ -112,6 +112,7 @@ class OPS05AcceptanceTest {
         assertThat(row.getDedupKey()).isEqualTo("deletion_requests:DEL_CROSS_GROUP_CC:7:9");
         assertThat(row.getDeliveryStatus()).isEqualTo("PENDING");
         assertThat(row.getChannel()).isEqualTo("MOCK");
+        assertThat(row.getTargetChannel()).isEqualTo("WEBSOCKET");
         assertThat(row.getKind()).isEqualTo("FYI");
         assertThat(row.getReadFlag()).isEqualTo("0");
         assertThat(row.getRetryCount()).isZero();

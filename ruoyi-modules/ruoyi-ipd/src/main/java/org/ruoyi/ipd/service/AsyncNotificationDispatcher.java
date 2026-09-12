@@ -101,19 +101,25 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
         }
         RBlockingQueue<Long> blocking = redissonClient.getBlockingQueue(QUEUE_KEY);
         RDelayedQueue<Long> delayed = redissonClient.getDelayedQueue(blocking);
-        // 聚合窗口：dedupKey 命中既有 PENDING 事件则不重复入队（消费端按 status 翻 SENT）
+        // 聚合节流：仅当 60s 窗口内存在「更早创建的」同 receiver+type 未投递事件时延后入队
+        // （让最早一条先作代表投递，其余等其翻 SENT 后由下一轮扫描补发，不吞事件）。
+        // 2026-09-11 修正：原判定「窗口内存在任意 PENDING」未排除事件自身——真库中刚发布的
+        // 事件自身即 PENDING，计数恒 >0 导致所有事件永不被入队（mock 假绿 → 真活恒空）；
+        // 现排除自身（ne id）并限定「更早」（lt createTime）——单事件恒可入队。
         Long eventId = event.getId();
         long windowStart = clock.millis() - AGGREGATE_WINDOW_MS;
-        Long pendingDup = mapper.selectCount(
+        Long earlierPending = mapper.selectCount(
             Wrappers.<NotificationEvent>lambdaQuery()
                 .eq(NotificationEvent::getReceiverId, event.getReceiverId())
                 .eq(NotificationEvent::getEventType, event.getEventType())
                 .eq(NotificationEvent::getDeliveryStatus, "PENDING")
                 .gt(NotificationEvent::getCreateTime, new Date(windowStart))
+                .ne(NotificationEvent::getId, eventId)
+                .lt(event.getCreateTime() != null, NotificationEvent::getCreateTime, event.getCreateTime())
         );
-        if (pendingDup != null && pendingDup > 0) {
-            log.info("[dispatchAsync] 聚合命中 receiver={} type={} pendingCount={} → 跳过入队",
-                event.getReceiverId(), event.getEventType(), pendingDup);
+        if (earlierPending != null && earlierPending > 0) {
+            log.info("[dispatchAsync] 聚合节流 receiver={} type={} earlierPending={} → 延后入队（等更早一条投递）",
+                event.getReceiverId(), event.getEventType(), earlierPending);
             return false;
         }
         delayed.offer(eventId, 0, TimeUnit.MILLISECONDS);

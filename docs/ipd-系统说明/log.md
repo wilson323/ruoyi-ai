@@ -3434,3 +3434,19 @@ owner「授权全部执行」指令后四连：
 - **端到端验证 7 环全绿**：① 浏览器登录 → 后端日志 `ipd_websocket_handshake_ok personId=900101` + `[connect] userId:900101,userType:ipd`（session 注册）；② SQL 造 PENDING 行（id=2098578589082546179，target_channel=WEBSOCKET）；③ RPUSH `ipd-local:ipd:notify:dispatch:async`（keyPrefix=ipd-local；裸数字被 TypedJsonJacksonCodec 正常 decode）；④ `POST /notifications/async-dispatch` → `sent=1`；⑤ 日志 `[WEBSOCKET-SENT] eventId=... receiver=900101 bytes=237`（在线分支）；⑥ DB 行翻 SENT；⑦ 浏览器通知弹层显示「WebSocket 端到端验证」+ localStorage notificationList 落数据（截图 /tmp/ipd-ws-e2e-proof.png）。
 - **重要发现（新缺口，未修，建议立卡）**：WS 推送链消费侧可用，但**生产侧未接线**——① `NotificationService.doPublish` 不写 target_channel（存量 65 行全 NULL → fromCode 兜底 INBOX）；② `dispatchAsync`（入队）与 `consumeOnce`（消费）生产代码 0 调用者（仅单测）；③ 无调度器（@Scheduled 仅两个业务扫描）；④ 存量 65 行 notification_events **全为 PENDING 从未投递**（旧 outbox 消费端 dispatchPending 仅有 HTTP 手动入口无轮询调度——业务事件到通知投递链路从未跑通过）。本次验证以「手动喂队列」模拟调度器合入后的行为，证明消费侧（handler→WS→浏览器）完整可用；接线卡（publish 写 target_channel + scheduler 调 dispatchAsync/consumeOnce）为后续工作。
 - **残留**：测试行 id=2098578589082546179（dedup_key=e2e:ws:verify:...）保留为证据；`.codex/ipd-dev/config/application-ipd-local.yml` 加 ipd.websocket 段（gitignored）；/tmp 临时脚本清理（截图保留）。
+
+### 通知生产链接线修复——outbox 全自动闭环（2026-09-12，owner「立即执行」）
+
+- **触发**：承接上条「重要发现（新缺口，未修，建议立卡）——生产侧未接线」，owner 指令「立即执行」落实修复。
+- **三处断环修复**（ruoyi-ipd，6 files：4 改 + 2 新）：
+  1. `NotificationService.doPublish` 补写 `target_channel`（新增 `DEFAULT_TARGET_CHANNEL=WEBSOCKET` 常量）——此前恒 NULL，`NotificationChannelType.fromCode(NULL)` 兜底 INBOX，WEBSOCKET 分支永不命中。语义：新事件默认 WS 在线实时弹层 + 离线兜底 INBOX；存量 NULL 行走 INBOX 兜底不变；EMAIL 等未来由调用点显式声明。
+  2. `AsyncNotificationDispatcher.dispatchAsync` 聚合条件修真活死锁——原「窗口内存在任意 PENDING」未排除自身（真库中刚发布事件自身即 PENDING → selectCount 恒 ≥1 → 所有事件永不被入队；单测 mock selectCount=0 属真库不可能输入的假绿，与 BW-17-1 同类）。改为「存在更早创建的（ne id + lt createTime）同 receiver+type PENDING」：最早者先入队，其余等其翻 SENT 后逐轮补发，保留 60s 节流不吞事件。
+  3. 新建 `NotificationOutboxScanner`（@Scheduled fixedDelay 30s，可配 `ipd.notification.dispatch.interval-ms`）：扫到期行（PENDING 或 FAILED 退避期满）→ dispatchAsync 入队 → consumeOnce 消费。补上「dispatchAsync/consumeOnce 生产代码 0 调用者」缺口。任务登记见 `IpdSchedulingConfig` 注释（错峰表：PersonResignEscalator 09:00 / HandoverOverdueScanner 09:05 / 本扫描器常驻 30s）。
+- **单测**（@Tag dev）：NotificationOutboxScannerTest 4/4（逐行入队计数 / 单行异常不阻断 / 先入队后消费 / 空表零触达）+ NotificationDispatcherTest 7/7 + OPS05AcceptanceTest 15/15（新增断言 `target_channel=WEBSOCKET` 钉死发布默认通道防回归）= **26/26 绿**；install + package BUILD SUCCESS（forceCreation=true）。
+- **真库 E2E 全自动闭环**（16039 重启加载新 fat jar，**造行不喂队列、不调 async-dispatch**）：
+  - **存量清账**：重启后首轮调度 `[notify-outbox] enqueued=65 sent=65 failed=0 dead=0` —— 存量 65 行 PENDING（全 NULL 通道）自动流转 SENT，`[INBOX]` ×65 → 库内 66 行全 SENT。
+  - **造行探针**（id …180/…181/…182/…183，全部显式雪花 id）：WEBSOCKET 离线行 → `[WEBSOCKET-OFFLINE] → dispatcher 兜底 INBOX`（SENT 标记防重）翻 SENT；NULL 行 → `[INBOX]` 翻 SENT；**在线行 → `[WEBSOCKET-SENT] bytes=215/204` 实时推送**。
+  - **浏览器侧三重证据**：Console `[WS] 接收到消息 {"eventId":"2098578589082546182",…}` JSON 文本帧完整；`ant-notification-notice` 弹层 DOM 出现（MutationObserver 记录 ts=1789194924182）；截图捕捉右上角弹层「收到新消息 / E2E弹层捕获：实时通知」（/tmp/ipd-ws-e2e-proof.png 同目录侧另有 C2 截图）。
+- **遗留观察（非阻断，未修）**：① 16039 日志偶发 `NoClassDefFoundError: com.mysql.cj.protocol.ExportControlled`——出现在 Hikari `quietlyCloseConnection` 关闭连接路径（业务请求全部正常：14:33 请求 127ms/136ms，存量 65 行投递成功），属关闭路径噪音非业务故障；② Redisson `RDelayedQueue deprecated`（建议 RReliableQueue，github issues #3020/#2998/#1057），本轮未迁移。
+- **残留**：E2E 探针行 id=2098578589082546180～183（dedup_key=e2e_probe:…，source_type=e2e_probe）保留为证据；测试行 id=2098578589082546179 同前保留。
+- **commit**：见本轮 ruoyi-ai 提交（fix(ipd): 通知生产链接线修复）。

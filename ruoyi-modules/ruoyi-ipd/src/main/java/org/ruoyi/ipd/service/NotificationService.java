@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.NotificationChannelType;
 import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.mapper.NotificationEventMapper;
 import org.springframework.dao.DuplicateKeyException;
@@ -43,6 +44,17 @@ public class NotificationService {
     static final int MAX_RETRIES = 3;
     /** 退避基数（分钟）：第 n 次失败后等待 5·2^(n-1) 分钟 */
     static final long BACKOFF_BASE_MINUTES = 5;
+
+    /**
+     * 新事件默认路由通道（2026-09-11 生产链接线）：WEBSOCKET 实时推送。
+     *
+     * <p>语义=「在线实时弹层 + 离线站内信兜底」：{@code WebSocketChannelHandler} 在线直推
+     * （本实例 + Redis pub/sub 跨实例）；离线按 offline-fallback-to-inbox 记 OFFLINE 日志
+     * 视为送达，用户上线后从收件箱读到（收件箱查询不筛投递通道，站内可见性不受影响）。
+     * 历史存量行 target_channel=NULL 仍走 INBOX 默认兜底（fromCode 语义不变）；
+     * 未来 EMAIL 等通道由调用点显式声明（暂不开放参数，避免过度设计）。
+     */
+    static final String DEFAULT_TARGET_CHANNEL = NotificationChannelType.WEBSOCKET.getCode();
 
     /**
      * 事件类型目录（与验收清单 AC 对齐；实际发布接线在各业务下游卡）：
@@ -159,6 +171,7 @@ public class NotificationService {
             .sourceType(sourceType).sourceId(sourceId).dedupKey(dedupKey)
             .title(title).content(content).actionUrl(actionUrl)
             .channel(channel.code()).deliveryStatus("PENDING")
+            .targetChannel(DEFAULT_TARGET_CHANNEL)
             .retryCount(0).readFlag("0")
             .build();
         try {
