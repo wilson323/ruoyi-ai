@@ -3413,3 +3413,15 @@ owner「授权全部执行」指令后四连：
 - **反思（之前为什么没查出来）**：见 `docs/ipd-系统说明/反思/SSE端点同类异常全局反思-20260911.md`——8 大治理根因（测试盲区 / 只看正面 / EventSource 隐藏行为 / 治理门禁无 SSE 条款 / return null 反模式 / SSE 协议错误无标准 / advice 策略不统一 / ACCEPTED 认知陷阱）。
 - **沉淀记忆**：common_pitfalls_experience × 3（详见对应 memory id）。
 - **待后端重启生效**——不擅自打断用户使用中服务。
+
+### SSE 端点二轮运行时验证（2026-09-11 深夜，owner「自行验证确保百分百 0 异常」）
+
+- **勘误追记**：本篇此前两处「待后端重启生效」状态已闭环——16039 已于本轮重启并复验 4/4（见下），「不擅自打断用户使用中服务」的推迟项解除。
+- **门禁自身 3 bug 修复**（`scripts/check_sse_contract.sh`，全部由负向验证「故意弄红」发现）：①覆盖缺口——原只扫 produces 声明，漏掉 ChatController / ShortDramaController（无 produces，靠 SseEmitter 返回类型产出）→ 改「produces ∪ SseEmitter」双通道并集，8 个全纳入，输入层基线 6→8；②注释假绿——grep 命中注释行内字面量（调用行改 `// NEGATIVE-TEST SseErrorEmitter...` 后仍绿）→ 先过滤注释行（行首 `//` `*` `/*`）再匹配；③SIGPIPE 竞态误报——`grep -v | grep -q` 在 `set -o pipefail` 下偶发退出码 141（20 次复现混合）→ 命令替换独占读取 + herestring 去管道。三连：正向 8/8 绿 → 负向稳定红 ×3 → 恢复绿（与 HEAD diff 空）。
+- **运行时全矩阵**（16040 临时实例，新 fat jar）：8 SSE 端点未登录形态——/api/v1/resource/sse 401 空体 ✅、/resource/sse 401 空体 ✅、/api/v1/ai-copilot/chat/stream 401 JSON（IPD 拦截层，未 exclude）、/workflow/run 200+SSE error 帧 ✅、/chat/send + /short-drama + /coding ×3 = 框架 200+JSON（SaTokenExceptionHandler 无 @ResponseStatus，已知边界，本机零消费者）。
+- **认知修正**：MIME 错只在「200 + 非 text/event-stream」出现；401/403/500 是标准 HTTP error 不报 MIME 错——原反思文档「advice JSON 401 也 MIME 错」表述已勘误（bb40fa28）。
+- **拦截层次对照**：模式 B（controller 内 error 帧）只在请求能进 controller 时生效；被 IPD 拦截器（/api/v1/** exclude 仅 login/wecom/public/resource）或框架 SaInterceptor 拦下的端点轮不到模式 B，形态由 advice/框架层决定（401 JSON 可接受；200+JSON 为已知边界）。
+- **16039 重启 + 复验 4/4**：旧 PID 13070 优雅关闭被 SSE 长连接阻塞（端口已释放但进程 13 分钟不退）→ 宽限约 80s 后 kill -9 收尾；nohup 起新实例 PID 20001。复验：resource/sse 无 token→401、坏 token→401、SseController 无 token→401、workflow/run→200+text/event-stream+error 帧。
+- **前端降噪**（ruoyi-ipd-web 48a346c）：message.ts onFailed `console.error('sse重连失败.')` → `console.info('[SSE] 重连未成功（会话可能已过期，重新登录后自动恢复）。')`；type-check 1 successful。消费面复核：EventSource 全仓仅 message.ts 一处、fetch 流仅 runtime.ts（/workflow/run，自带 !res.ok/contentType 防御），其余端点零消费者。
+- **编译/测试**：4 模块 compile exit=0；SseControllerTest 1/1 + IpdSseControllerTest 1/1 绿；16040 已停（2s 优雅退出）；前端 15666 未动。
+- **commit**：bb40fa28（门禁加固 + 反思文档二轮勘误）+ 48a346c（前端降噪）。
