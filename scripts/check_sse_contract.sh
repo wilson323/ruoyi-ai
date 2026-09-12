@@ -3,8 +3,13 @@
 #
 # 背景：SSE 端点认证失败 / 业务异常时不能用 return null（200 空体 → EventSource MIME 错）
 # 或 advice JSON 响应（同样 MIME 错），必须走 SseErrorEmitter 推 error 帧。
-# 本脚本扫所有 @GetMapping/@PostMapping produces=text/event-stream 的 controller 方法，
-# 验证它们调了 SseErrorEmitter.completeWithError（入口 try-catch 保护）。
+#
+# 扫描条件（双通道并集，2026-09-11 修正覆盖缺口）：
+#   通道 1：produces = MediaType.TEXT_EVENT_STREAM_VALUE（显式声明 SSE）
+#   通道 2：*Controller.java 中引用 SseEmitter（隐式 SSE——无 produces，靠方法返回类型
+#           产出，实测漏网：ChatController / ShortDramaController 两个 stream 端点）
+# 每个命中的 controller 必须满足「模式 A（返回 ResponseEntity<SseEmitter>）」或
+# 「模式 B（调 SseErrorEmitter.<方法>( ）」二者其一。
 #
 # 三层哨兵（自证能红）：
 #   1. 输入层：SSE controller 扫描数量 < 下限 → fail（防 grep 路径错位）
@@ -22,29 +27,40 @@ SCAN_PATHS="${1:-ruoyi-common/ruoyi-common-sse ruoyi-modules/ruoyi-aiflow ruoyi-
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT" || exit 2
 
-# 输入层哨兵：至少 1 个 SSE 端点（SseErrorEmitter 已有调用方证明）
-SSE_ENDPOINTS=$(grep -rl "produces.*MediaType\.TEXT_EVENT_STREAM_VALUE" --include="*.java" \
-    $SCAN_PATHS 2>/dev/null | sort -u | wc -l | tr -d ' ')
+# 扫描模式：显式 produces 声明 ∪ Controller 文件中的 SseEmitter 引用
+SSE_SCAN_PATTERN='(produces.*MediaType\.TEXT_EVENT_STREAM_VALUE|SseEmitter)'
 
-if [ "$SSE_ENDPOINTS" -lt 1 ]; then
+# 输入层哨兵：SSE controller 数量不得低于基线 8（2026-09-11 实测值）。
+# 数量下降 = 扫描路径错位或条件退化 → fail；端点合法增减须显式更新本基线。
+SSE_ENDPOINTS=$(grep -rlE "$SSE_SCAN_PATTERN" --include="*Controller.java" \
+    $SCAN_PATHS 2>/dev/null | grep -v "/target/" | grep -v "/test/" | sort -u | wc -l | tr -d ' ')
+
+if [ "$SSE_ENDPOINTS" -lt 8 ]; then
     echo "⛔ FAIL (输入层哨兵)"
-    echo "  未发现任何 produces=text/event-stream 端点（grep 路径错位？）"
+    echo "  SSE controller 数量 $SSE_ENDPOINTS < 基线 8（grep 路径错位或扫描条件退化？）"
     echo "  扫描路径: $SCAN_PATHS"
     exit 1
 fi
 
 # 找出所有 SSE controller 文件
-SSE_FILES=$(grep -rl "produces.*MediaType\.TEXT_EVENT_STREAM_VALUE" --include="*.java" \
-    $SCAN_PATHS 2>/dev/null | sort -u)
+SSE_FILES=$(grep -rlE "$SSE_SCAN_PATTERN" --include="*Controller.java" \
+    $SCAN_PATHS 2>/dev/null | grep -v "/target/" | grep -v "/test/" | sort -u)
 
 # 解析层哨兵：每个 SSE controller 必须满足以下两种合法模式之一：
 #   模式 A（同步拒绝）：方法返回 ResponseEntity<SseEmitter>（如 SseController / IpdSseController）
 #   模式 B（异步错误帧）：方法体调 SseErrorEmitter.<方法>(（其他 6 个 controller）
 # 检测精确到调用语句（SseErrorEmitter.xxx(），不依赖 import 声明——
-# 否则只注释调用行 import 仍在仍会假绿。
+# 且先过滤注释行（行首 // / * / /*）再匹配，防「注释掉调用」/「import 声明」两种假绿
+# （2026-09-11 负向验证实测：注释行内调用字面量曾被误认为有效保护）。
+COMMENT='^[[:space:]]*(//|\*|/\*)'
 UNGUARDED=()
 for f in $SSE_FILES; do
-    if ! grep -qE "SseErrorEmitter\.[a-zA-Z]+\(" "$f" && ! grep -q "ResponseEntity<SseEmitter>" "$f"; then
+    # 先剥离注释行再匹配。用命令替换独占读取（不用管道）——直接
+    # grep -v | grep -q 会因 grep -q 提前退出触发上游 SIGPIPE，在 set -o pipefail
+    # 下变成偶发退出码 141 → 误报文件未保护（2026-09-11 负向验证实测 20 次竞态）。
+    NON_COMMENT=$(grep -vE "$COMMENT" "$f")
+    if ! grep -qE "SseErrorEmitter\.[a-zA-Z]+\(" <<<"$NON_COMMENT" \
+        && ! grep -q "ResponseEntity<SseEmitter>" <<<"$NON_COMMENT"; then
         UNGUARDED+=("$f")
     fi
 done
