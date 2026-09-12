@@ -3398,3 +3398,18 @@ owner「授权全部执行」指令后四连：
 - **现象**：EventSource 报「MIME type ("text/plain") is not "text/event-stream"」×3 + sse重连失败，伴 /api/v1/auth/logout、/auth/refresh 401。
 - **根因（日志+curl 实锤）**：IpdSseController 认证失败 `return null` → Spring 写 200 + 空体（无 Content-Type），EventSource 按默认 text/plain 解析报 MIME 错并盲目重连 3 次；昨晚 23:32 密集 `TOKEN_INVALID_OR_EXPIRED` 与用户报错时段吻合——本质是会话过期伴生噪音，非功能断裂（今天 13:02-14:23 多次 ACCEPTED，token 有效时链路正常）；StandaloneWorkflowDesigner 渲染日志为官方 v3.1.0 自带 debug 输出（本地未改，渲染成功），非错误。
 - **修复（commit 7992c386）**：认证失败改 401（NO_TOKEN / TOKEN_INVALID_OR_EXPIRED），异常 500，成功 200 + SseEmitter；新增 IpdSseControllerTest（@Tag dev，standalone MockMvc）1/1 绿。**待后端重启生效**（不擅自打断使用中服务）。
+
+### SSE 端点同类异常全局反思与修复（2026-09-11 晚，owner「深度反思 + 全局类似异常全部修复」）
+
+- **触发**：owner 深度追问「为什么之前没查出来」→ 把 IpdSseController 同款问题抽象为「SSE 端点响应契约缺失」模式样本，全仓扫描。
+- **范围（8 处同类异常 + 1 处 IPD 早修）**：SseController（return null 同模式）+ AiCopilotController + WorkflowController + ChatController + CodingController + CodingHarnessController + ShortDramaController（两个 stream 端点），均通过 `advice` 层 JSON 401 / 500 暴露（EventSource 同样报 MIME 错）；IpdSseController 已在 7992c386 修过。
+- **统一工具类**：新建 `ruoyi-common-sse/src/main/java/org/ruoyi/common/sse/core/SseErrorEmitter.java`——把「推 error 帧 + complete() + 处理 IOException/IllegalStateException」抽成 `completeWithError(emitter, code, message, log)` 静态方法，6 个 controller 复用。
+- **两种合法修复模式**：
+  - 模式 A（同步拒绝）：方法返回 `ResponseEntity<SseEmitter>`，未鉴权直接 401——适用「连接建立前鉴权」（SseController）
+  - 模式 B（异步错误帧）：先 `new SseEmitter` 返回，鉴权/业务异常在 try-catch 中 `SseErrorEmitter.completeWithError(...)` 推 error 帧——适用「连接建立后业务异步执行」（其余 6 个）
+- **门禁**：`scripts/check_sse_contract.sh`（R30+ 三层哨兵自证能红）——输入层（防 grep 路径错位）+ 解析层（必须模式 A 或 B 任一）+ 负向验证（撤调用→红、恢复→绿）；grep 精确到 `SseErrorEmitter\.[a-zA-Z]+\(` 调用语句而非 import（自检第一版踩坑：只 grep 字面量会被 import 假绿）。
+- **验证**：4 模块编译 BUILD SUCCESS；SseControllerTest 1/1 绿（MockedStatic StpUtil.isLogin=false→401）；IpdSseControllerTest 1/1 绿；门禁自检三连（正向绿、负向红、恢复绿）。
+- **commit**：2425c719（fix 主修复 10 files +338/-19）+ 9b250ca9（反思文档 164 行）。
+- **反思（之前为什么没查出来）**：见 `docs/ipd-系统说明/反思/SSE端点同类异常全局反思-20260911.md`——8 大治理根因（测试盲区 / 只看正面 / EventSource 隐藏行为 / 治理门禁无 SSE 条款 / return null 反模式 / SSE 协议错误无标准 / advice 策略不统一 / ACCEPTED 认知陷阱）。
+- **沉淀记忆**：common_pitfalls_experience × 3（详见对应 memory id）。
+- **待后端重启生效**——不擅自打断用户使用中服务。
