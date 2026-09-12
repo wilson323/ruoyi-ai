@@ -3449,4 +3449,4 @@ owner「授权全部执行」指令后四连：
   - **浏览器侧三重证据**：Console `[WS] 接收到消息 {"eventId":"2098578589082546182",…}` JSON 文本帧完整；`ant-notification-notice` 弹层 DOM 出现（MutationObserver 记录 ts=1789194924182）；截图捕捉右上角弹层「收到新消息 / E2E弹层捕获：实时通知」（/tmp/ipd-ws-e2e-proof.png 同目录侧另有 C2 截图）。
 - **遗留观察（非阻断，未修）**：① 16039 日志偶发 `NoClassDefFoundError: com.mysql.cj.protocol.ExportControlled`——出现在 Hikari `quietlyCloseConnection` 关闭连接路径（业务请求全部正常：14:33 请求 127ms/136ms，存量 65 行投递成功），属关闭路径噪音非业务故障；② Redisson `RDelayedQueue deprecated`（建议 RReliableQueue，github issues #3020/#2998/#1057），本轮未迁移。
 - **残留**：E2E 探针行 id=2098578589082546180～183（dedup_key=e2e_probe:…，source_type=e2e_probe）保留为证据；测试行 id=2098578589082546179 同前保留。
-- **commit**：见本轮 ruoyi-ai 提交（fix(ipd): 通知生产链接线修复）。
+- **commit**：6e4bee82（fix 主修复 6 files +253/-6：4 改 + 2 新；本卡已含 log.md 登记）。
