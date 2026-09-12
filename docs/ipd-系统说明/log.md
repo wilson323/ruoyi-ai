@@ -3446,7 +3446,7 @@ owner「授权全部执行」指令后四连：
 - **真库 E2E 全自动闭环**（16039 重启加载新 fat jar，**造行不喂队列、不调 async-dispatch**）：
   - **存量清账**：重启后首轮调度 `[notify-outbox] enqueued=65 sent=65 failed=0 dead=0` —— 存量 65 行 PENDING（全 NULL 通道）自动流转 SENT，`[INBOX]` ×65 → 库内 66 行全 SENT。
   - **造行探针**（id …180/…181/…182/…183，全部显式雪花 id）：WEBSOCKET 离线行 → `[WEBSOCKET-OFFLINE] → dispatcher 兜底 INBOX`（SENT 标记防重）翻 SENT；NULL 行 → `[INBOX]` 翻 SENT；**在线行 → `[WEBSOCKET-SENT] bytes=215/204` 实时推送**。
-  - **浏览器侧三重证据**：Console `[WS] 接收到消息 {"eventId":"2098578589082546182",…}` JSON 文本帧完整；`ant-notification-notice` 弹层 DOM 出现（MutationObserver 记录 ts=1789194924182）；截图捕捉右上角弹层「收到新消息 / E2E弹层捕获：实时通知」（/tmp/ipd-ws-e2e-proof.png 同目录侧另有 C2 截图）。
+  - **浏览器侧三重证据**：Console `[WS] 接收到消息 {"eventId":"2098578589082546182",…}` JSON 文本帧完整；`ant-notification-notice` 弹层 DOM 出现（MutationObserver 记录 ts=1789194924182）；会话内截图捕捉右上角弹层「收到新消息 / E2E弹层捕获：实时通知」（本轮弹层落盘证据 = observer 记录 + Console，C2 轮截图 /tmp/ipd-ws-e2e-proof.png 仍在盘）。
 - **遗留观察（非阻断，未修）**：① 16039 日志偶发 `NoClassDefFoundError: com.mysql.cj.protocol.ExportControlled`——出现在 Hikari `quietlyCloseConnection` 关闭连接路径（业务请求全部正常：14:33 请求 127ms/136ms，存量 65 行投递成功），属关闭路径噪音非业务故障；② Redisson `RDelayedQueue deprecated`（建议 RReliableQueue，github issues #3020/#2998/#1057），本轮未迁移。
 - **残留**：E2E 探针行 id=2098578589082546180～183（dedup_key=e2e_probe:…，source_type=e2e_probe）保留为证据；测试行 id=2098578589082546179 同前保留。
 - **commit**：6e4bee82（fix 主修复 6 files +253/-6：4 改 + 2 新；本卡已含 log.md 登记）。
