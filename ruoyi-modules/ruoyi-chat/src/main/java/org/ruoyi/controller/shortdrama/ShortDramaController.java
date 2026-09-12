@@ -6,11 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.entity.media.MediaGenerationResponse;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.OssService;
 import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.common.sse.core.SseErrorEmitter;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaCharacterBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaCharacterAppearanceBo;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaComposeVideoBo;
@@ -51,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+@Slf4j
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -80,10 +83,22 @@ public class ShortDramaController {
         return R.ok(shortDramaService.createFromIdea(bo, LoginHelper.getUserId()));
     }
 
-    /** SSE 流式创建：逐阶段推送进度，避免用户等待焦虑 */
+    /**
+     * SSE 流式创建：逐阶段推送进度，避免用户等待焦虑。
+     *
+     * <p>2026-09-11：入口鉴权 / 业务异常不再走 advice 返回 JSON（fetch + ReadableStream
+     * 收到 JSON 响应同样无法解析为 SSE 帧），改为推 error 帧 + complete()。
+     */
     @PostMapping("/create-from-idea/stream")
     public SseEmitter createFromIdeaStream(@Valid @RequestBody ShortDramaIdeaBo bo) {
-        return shortDramaService.createFromIdeaStream(bo, LoginHelper.getUserId());
+        SseEmitter emitter = new SseEmitter(60_000L);
+        try {
+            return shortDramaService.createFromIdeaStream(bo, LoginHelper.getUserId());
+        } catch (Exception e) {
+            log.warn("[SHORT-DRAMA-SSE] createFromIdeaStream rejected: {}", e.getMessage());
+            SseErrorEmitter.completeWithError(emitter, "AUTH_REQUIRED", e.getMessage(), log);
+            return emitter;
+        }
     }
 
     @PostMapping("/project")
@@ -197,12 +212,23 @@ public class ShortDramaController {
         return R.ok(shortDramaService.planStoryboard(projectId, scriptId, model, LoginHelper.getUserId()));
     }
 
-    /** Phase 3-6: SSE 流式生成分镜，持续推送规划和细化进度 */
+    /**
+     * Phase 3-6: SSE 流式生成分镜，持续推送规划和细化进度。
+     *
+     * <p>2026-09-11：入口鉴权 / 业务异常不再走 advice 返回 JSON，改为推 error 帧 + complete()。
+     */
     @PostMapping("/{projectId}/plan-storyboard/stream")
     public SseEmitter planStoryboardStream(@NotNull @PathVariable Long projectId,
                                             @NotNull @RequestParam Long scriptId,
                                             @RequestParam(required = false) String model) {
-        return shortDramaService.planStoryboardStream(projectId, scriptId, model, LoginHelper.getUserId());
+        SseEmitter emitter = new SseEmitter(60_000L);
+        try {
+            return shortDramaService.planStoryboardStream(projectId, scriptId, model, LoginHelper.getUserId());
+        } catch (Exception e) {
+            log.warn("[SHORT-DRAMA-SSE] planStoryboardStream rejected: {}", e.getMessage());
+            SseErrorEmitter.completeWithError(emitter, "AUTH_REQUIRED", e.getMessage(), log);
+            return emitter;
+        }
     }
 
     /** Phase 4: 重新生成摄影规则 */

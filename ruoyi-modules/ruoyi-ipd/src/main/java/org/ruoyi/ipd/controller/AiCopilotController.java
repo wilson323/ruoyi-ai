@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.common.sse.core.SseErrorEmitter;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.dto.AiCopilotReq;
 import org.ruoyi.ipd.dto.AiCopilotResp;
 import org.ruoyi.ipd.security.IpdActor;
@@ -90,9 +92,22 @@ public class AiCopilotController {
     public SseEmitter stream(@RequestParam(required = false) Long projectId,
                              @RequestParam @jakarta.validation.constraints.NotBlank
                              @jakarta.validation.constraints.Size(max = 2000) String message) {
-        IpdActor actor = ipdPermission.requireInternal();
-        AiCopilotReq req = new AiCopilotReq(projectId, message, java.util.List.of());
+        // 2026-09-11：入口鉴权异常（requireInternal 抛 IpdBusinessException / NotLoginException）
+        // 不再走 advice 返回 JSON——EventSource 收到 JSON 响应同样报 MIME 错误；
+        // 改为推 error 帧 + complete()，前端按事件名识别业务错误（event=error）。
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        IpdActor actor;
+        try {
+            actor = ipdPermission.requireInternal();
+        } catch (IpdBusinessException ibe) {
+            log.warn("[AI-COPILOT-SSE] auth rejected: code={} msg={}",
+                ibe.getErrorCode() == null ? "" : ibe.getErrorCode().getCode(), ibe.getMessage());
+            SseErrorEmitter.completeWithError(emitter,
+                ibe.getErrorCode() == null ? "AUTH_REQUIRED" : String.valueOf(ibe.getErrorCode().getCode()),
+                ibe.getMessage(), log);
+            return emitter;
+        }
+        AiCopilotReq req = new AiCopilotReq(projectId, message, java.util.List.of());
         SSE_EXECUTOR.execute(() -> pushChunks(emitter, actor, req));
         return emitter;
     }

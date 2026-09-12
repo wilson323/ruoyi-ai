@@ -3,6 +3,8 @@ package org.ruoyi.controller.coding;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.sse.core.SseErrorEmitter;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -52,6 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Durable coding-agent Harness API. Authentication is mandatory for every endpoint. */
+@Slf4j
 @Validated
 @RestController
 @RequestMapping("/coding/harness")
@@ -153,6 +156,13 @@ public class CodingHarnessController {
         return R.ok(applicationService.readEvents(owner(), sessionId, runId, afterSequence, limit));
     }
 
+    /**
+     * 流式推送会话运行事件（SSE）。
+     *
+     * <p>2026-09-11：入口鉴权/参数/业务异常（{@code owner()} / {@code applicationService.getRun} /
+     * {@code resolveCursor} 抛 RuntimeException）不再走 advice 返回 JSON——EventSource 收到 JSON
+     * 响应同样报 MIME 错误；改为推 error 帧 + complete()。
+     */
     @GetMapping(value = "/sessions/{sessionId}/runs/{runId}/events/stream",
         produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(
@@ -160,10 +170,18 @@ public class CodingHarnessController {
         @PathVariable String runId,
         @RequestParam(required = false) Long afterSequence,
         @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId) {
-        HarnessOwner owner = owner();
-        applicationService.getRun(owner, sessionId, runId);
-        long cursor = resolveCursor(afterSequence, lastEventId);
         SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MILLIS);
+        HarnessOwner owner;
+        long cursor;
+        try {
+            owner = owner();
+            applicationService.getRun(owner, sessionId, runId);
+            cursor = resolveCursor(afterSequence, lastEventId);
+        } catch (Exception e) {
+            log.warn("[CODING-HARNESS-SSE] streamEvents rejected: {}", e.getMessage());
+            SseErrorEmitter.completeWithError(emitter, "AUTH_REQUIRED", e.getMessage(), log);
+            return emitter;
+        }
         AtomicReference<HarnessEventSubscription> subscription = new AtomicReference<>();
         AtomicBoolean transportClosed = new AtomicBoolean(false);
 

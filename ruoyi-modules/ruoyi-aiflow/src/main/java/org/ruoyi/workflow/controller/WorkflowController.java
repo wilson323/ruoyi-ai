@@ -5,8 +5,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.base.ThreadContext;
 import org.ruoyi.common.core.domain.R;
+import org.ruoyi.common.sse.core.SseErrorEmitter;
 import org.ruoyi.workflow.dto.workflow.*;
 import org.ruoyi.workflow.entity.WorkflowComponent;
 import org.ruoyi.workflow.service.WorkflowComponentService;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/workflow")
 @Validated
@@ -69,10 +72,25 @@ public class WorkflowController {
         return R.ok(workflowService.updateBaseInfo(req.getUuid(), req.getTitle(), req.getRemark(), req.getIsPublic()));
     }
 
+    /**
+     * 流式执行工作流的 SSE 端点。
+     *
+     * <p>2026-09-11：入口鉴权/参数异常（{@code ThreadContext.getCurrentUser()} 抛 RuntimeException，
+     * 或 {@code workflowStarter.streaming} 抛业务异常）不再走 advice 返回 JSON——
+     * EventSource 收到 JSON 响应同样报 MIME 错误；改为在控制器内推 error 帧 + complete()。
+     */
     @Operation(summary = "流式响应")
     @PostMapping(value = "/run", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter sseAsk(@RequestBody WorkflowRunReq runReq) {
-        return workflowStarter.streaming(ThreadContext.getCurrentUser(), runReq.getUuid(), runReq.getInputs(),runReq.getSessionId());
+        SseEmitter emitter = new SseEmitter(60_000L);
+        try {
+            return workflowStarter.streaming(ThreadContext.getCurrentUser(),
+                runReq.getUuid(), runReq.getInputs(), runReq.getSessionId());
+        } catch (Exception e) {
+            log.warn("[WORKFLOW-SSE] sseAsk rejected: {}", e.getMessage());
+            SseErrorEmitter.completeWithError(emitter, "AUTH_REQUIRED", e.getMessage(), log);
+            return emitter;
+        }
     }
 
     @GetMapping("/mine/search")

@@ -8,7 +8,9 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -27,15 +29,24 @@ public class SseController implements DisposableBean {
 
     /**
      * 建立 SSE 连接
+     *
+     * <p>2026-09-11：认证失败从「return null（200 + 空体、无 Content-Type）」改为 401——
+     * 浏览器 EventSource 对无 Content-Type 的空 200 按默认 text/plain 解析，报
+     * 「MIME type ("text/plain") is not "text/event-stream"」并盲目重连；401 让其直接走
+     * error 事件，curl -i 可见语义化状态码。
+     *
+     * <p>注：本类走默认 sa-token 登录态（loginType=""），认不出 IPD Person 的 JWT；IPD 业务
+     * 走 {@code IpdSseController}（{@code /api/v1/resource/sse}）。本类仅服务使用默认登录态的
+     * 非 IPD 业务（如 RuoYi 平台通知）。
      */
     @GetMapping(value = "${sse.path}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter connect() {
+    public ResponseEntity<SseEmitter> connect() {
         if (!StpUtil.isLogin()) {
-            return null;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         String tokenValue = StpUtil.getTokenValue();
         Long userId = LoginHelper.getUserId();
-        return sseEmitterManager.connect(userId, tokenValue);
+        return ResponseEntity.ok(sseEmitterManager.connect(userId, tokenValue));
     }
 
     /**

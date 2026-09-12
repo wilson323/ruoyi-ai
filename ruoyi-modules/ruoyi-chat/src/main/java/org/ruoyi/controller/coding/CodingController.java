@@ -3,10 +3,12 @@ package org.ruoyi.controller.coding;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.sse.core.SseErrorEmitter;
 import org.ruoyi.domain.bo.coding.CodingRequestBo;
 import org.ruoyi.enums.ModelType;
 import org.ruoyi.service.coding.CodingWorkspaceService;
@@ -35,6 +37,7 @@ import java.util.List;
  *
  * @author ageerle
  */
+@Slf4j
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -56,16 +59,27 @@ public class CodingController {
     /**
      * 编程对话（SSE 流式）
      *
+     * <p>2026-09-11：入口鉴权 / 业务异常（{@code requireLegacyEnabled} 抛 ResponseStatusException、
+     * {@code LoginHelper.getUserId()} 抛 NotLoginException、{@code codingService.chat} 抛业务异常）
+     * 不再走 advice 返回 JSON——EventSource 收到 JSON 响应同样报 MIME 错误；改为推 error 帧 + complete()。
+     *
      * @param bo 请求参数（prompt / model / workspacePath）
      * @return SseEmitter
      */
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @SaCheckPermission({"coding:harness:write", "coding:harness:legacy-command"})
     public SseEmitter chat(@Valid @RequestBody CodingRequestBo bo) {
-        requireLegacyEnabled();
-        // 在进入异步执行前于已鉴权的 HTTP 线程取 userId。
-        Long userId = LoginHelper.getUserId();
-        return codingService.chat(bo, userId);
+        SseEmitter emitter = new SseEmitter(60_000L);
+        try {
+            requireLegacyEnabled();
+            // 在进入异步执行前于已鉴权的 HTTP 线程取 userId。
+            Long userId = LoginHelper.getUserId();
+            return codingService.chat(bo, userId);
+        } catch (Exception e) {
+            log.warn("[CODING-SSE] chat rejected: {}", e.getMessage());
+            SseErrorEmitter.completeWithError(emitter, "AUTH_REQUIRED", e.getMessage(), log);
+            return emitter;
+        }
     }
 
     @GetMapping("/workspace")
