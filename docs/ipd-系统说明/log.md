@@ -5469,3 +5469,46 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 | A3 清理 not_a_real_table 污染(R46-A1) | 低(24 行 SQL DELETE) | ★★★★★ |
 | A4 统一命名不一致(6 组) | 中(撞车 0 风险,但破坏契约) | ★ |
 | A5 全 49 张表统一补 audit | 高(可能撞车风险 + 工程量大) | ★★★ |
+
+## Loop 第 5 轮 — PLAN-AI-FULL 子任务 1+2(2026-09-18)
+
+**触发**:R45 路线图 P4 AI 阶段,撞车 0 + 纯静态分析 + 不擅自动代码。
+**模式**:loop 第 5 轮 — 后端 grep + Read 穿透 + 49 页 × AI 现状盘点 + 6 业务环节接入方案。
+**产出**:`docs/ipd-系统说明/PLAN-AI-FULL-49页AI融合现状与接入方案-20260918.md`(322 行,8 节)。
+
+### 关键数据(R13 五必现查)
+
+- 后端 AI 组件 8 个:AiCopilotController(160 行)/ AiCopilotService(342 行,3 路径)/ AiGateway(208 行)/ AiChatClient + AiGenerationService(279 行)+ AiDocEmbeddingService(RAG)+ AiDocumentController + AiModelConfigController
+- 端口现查:后端 16039 (PID 79305) / 看板 62250 (PID 67105) / 前端 vite 15666 (PID 70554)
+
+### 49 页 × AI 融合现状矩阵
+
+- 49 页 = 30 PASS + 5 PARTIAL + 14 PLACEHOLDER
+- 14 PLACEHOLDER 中 13 个有 AI 融合价值,按业务逻辑排序
+- 高 ROI 4 个:Gate 评审要素(★★★★★)/ 产品需求录入(★★★★)/ 奖金池核算(★★★★)/ 激励台账(★★★)
+- 中 ROI 5 个:KPI 解读(★★★)/ 贡献度归因(★★)/ 项目命名复制(★★)/ 移交清单(中)/ 组织优化(低)
+- 低 ROI 4 个:需求分类 / 查询摘要 / 人员匹配 / 参数影响
+
+### 6 业务环节 × AI 副驾接入方案
+
+1. **Gate 评审要素 AI 判定建议**(★★★★★)— 数据:33 项要素 + 项目历史 + 国别上下文 / Prompt 骨架 / JSON 留痕
+2. **产品需求录入助手**(★★★★)— 数据:历史产品 RAG top-5 / Prompt 骨架 / JSON 留痕
+3. **KPI 考核 AI 解读**(★★★)— 数据:功能/共担 KPI + 同级别均值 + 历史趋势 / Prompt 骨架 / JSON 留痕
+4. **激励台账金额合理性检查**(★★★)— 数据:同级别均值/中位数 + 标准津贴 / Prompt 骨架 / JSON 留痕
+5. **项目命名/复制辅助**(★★)— 数据:源项目版本号 + 命名规范 / Prompt 骨架
+6. **协作圈问答机器人**(低)— 数据:依赖 ProjectCircle + AiCopilotService 已就位
+
+### 撞车 0 守则严守
+
+- 纯静态分析(grep + Read + 后端源码穿透),零代码改动
+- 不擅自扩展 AiCopilotService 路径(撞车 0 + 单会话能力边界)
+- 不擅自接前端 AI 集成入口(前端仓兄弟会话 M 改动不碰)
+- 不擅自改 RAG top-K 排序(撞车 0 + IPD 业务影响大)
+- 6 业务环节接入方案完整写出来待 owner 拍板,撞车 0 不擅自开工
+
+### 撞车 0 后续推进
+
+- 子任务 3:撞车 0 让路 owner 派单 worktree(后续)— 17 张 owner 派单卡 + 后续增量卡
+- 子任务 4:AiCopilotService 路径扩展(后续)— 等 owner 拍板接哪个业务环节
+- 子任务 5:RAG top-K 排序优化(后续)— 撞车 0 不擅自动 RAG
+- 子任务 6:前端 AI 集成入口组件库(后续)— 撞车 0 不擅自动前端
