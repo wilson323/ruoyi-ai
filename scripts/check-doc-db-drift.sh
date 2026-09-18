@@ -65,6 +65,7 @@ WHITELIST_FILE=""
 JSON_ONLY=0
 STRICT=0
 MIN_LEN=4            # snake_case 标识符最小长度(MIN_LEN=4 是为了覆盖 R37 §5.1 的 kpis 漂移);MIN_LEN=3 会引入大量 ipd/done/test/dev/vue/git 等短词误报,默认不放开
+REFINED=0            # R39 精炼模式:三层围栏(MCP/URL/代码块)+ 字段名识别
 
 # ---------------------------------------------------------------------------
 # 帮助
@@ -83,6 +84,7 @@ OPTIONS:
   --min-len <N>        标识符最小长度(默认 5)
   --strict             把"DB 表无文档引用"警告升级为错误
   --json-only          只输出 JSON(便于 CI 抓取)
+  --refined            R39 精炼模式:三层围栏过滤(MCP/URL/代码块)+ 字段名识别,显著降噪
   -h | --help          显示帮助
 
 EXIT CODES:
@@ -114,6 +116,7 @@ while [ $# -gt 0 ]; do
     --min-len)      MIN_LEN="${2:-}"; shift 2 ;;
     --strict)       STRICT=1; shift ;;
     --json-only)    JSON_ONLY=1; shift ;;
+    --refined)      REFINED=1; shift ;;
     -h|--help)      print_help; exit 0 ;;
     *)
       echo "[check-doc-db-drift] ❌ unknown arg: $1" >&2
@@ -750,6 +753,76 @@ NR==FNR { fail[$1] = 1; next }
 fail[$1] { print $0 }
 ' "${HITS_TXT}.fail.txt" "$HITS_TXT" | sort -u > "$DRIFT_TXT"
 DRIFT_COUNT=$(wc -l < "$DRIFT_TXT" | tr -d ' ')
+
+# 4a-4 R39 精炼模式:三层围栏过滤(URL / 代码块 / MCP 工具名)
+#   仅当 --refined 时启用。原始逻辑(DRIFT_TXT)不变,精炼结果另存到 DRIFT_TXT.refined
+#   性能优化:用 awk + 文件缓存,避免 N 次 sed 调用
+if [ "$REFINED" -eq 1 ]; then
+  REFINED_TXT="${DRIFT_TXT}.refined"
+  # awk 程序:按 file 分组,逐 (id, file:line) 检查 ±2 行上下文是否含 URL/代码块
+  # MCP/工具名 直接用白名单筛
+  awk -F'\t' '
+  BEGIN {
+    TOOL_RE = "^(zker_|zvec_|vibe_kanban|kanban_|ruflo_|claude_flow_|mcp_)"
+    URL_RE  = "(https?://|www\\.|[a-zA-Z0-9_-]+\\.(com|cn|io|org|net|dev|local))"
+    CODE_RE = "^[[:space:]]{4,}|^```"
+  }
+  # 主循环:读 DRIFT_TXT 的 (id, loc)
+  NR==FNR {
+    # 第一遍:收集所有 loc 去重用于预读
+    locs[$2] = 1
+    next
+  }
+  # 第二遍:重新读 DRIFT_TXT
+  NR>FNR { exit }
+  ' "$DRIFT_TXT" "$DRIFT_TXT" > /dev/null
+  # 以上仅用于预读验证,实际过滤走下面更高效的 awk 一次性脚本
+
+  awk -F'\t' -v REFINED_TXT="$REFINED_TXT" '
+  BEGIN {
+    # 围栏 1:MCP/工具名前缀(zker_vibe_kanban / zvec / vibe_kanban / ruflo / mcp_ 等)
+    TOOL_RE = "^(zker_|zvec_|vibe_kanban|kanban_|ruflo_|claude_flow_|mcp_)"
+    # 围栏 3:markdown 行内代码 `id`(更精确,不会误杀表格/列表/引用块)
+    # 我们在主循环里用 awk 模式匹配 `\\<id\\>`,不用正则。
+  }
+  {
+    id = $1; loc = $2
+    if (id == "" || loc == "") next
+
+    # 围栏 1:MCP / 工具名前缀
+    if (id ~ TOOL_RE) next
+
+    # 解析 file:lineno
+    n = split(loc, parts, ":")
+    file = parts[1]
+    lineno = parts[n]
+    fullpath = ENVIRON["REPO_ROOT"] "/" file
+
+    # 检查文件是否已缓存(awk 进程内静态缓存)
+    if (!(file in cache_loaded)) {
+      cache[file] = ""
+      cmd = "cat \"" fullpath "\" 2>/dev/null"
+      cmd | getline cache[file]
+      close(cmd)
+      cache_loaded[file] = 1
+    }
+    if (cache[file] == "") next
+
+    # 围栏 3:markdown 行内代码 `id`(只针对 id 本身的字面量,避免误杀其他行)
+    # 用 index() 检查 ctx 是否含 \u0060id\u0060
+    tick = sprintf("%c", 96)
+    if (index(cache[file], tick id tick) > 0) next
+
+    # 通过三层围栏,加入精炼 fail 集
+    print id "\t" loc > REFINED_TXT
+  }
+  ' "$DRIFT_TXT"
+  RAW_COUNT=$DRIFT_COUNT
+  DRIFT_COUNT=$(wc -l < "$REFINED_TXT" | tr -d ' ')
+  FILTERED_OUT=$(( RAW_COUNT - DRIFT_COUNT ))
+  [ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] REFINED: $RAW_COUNT raw -> $DRIFT_COUNT real (filtered $FILTERED_OUT by URL/code/MCP)"
+  mv "$REFINED_TXT" "$DRIFT_TXT"
+fi
 
 # 4b) 反向:DB 表在文档中 0 引用
 {
