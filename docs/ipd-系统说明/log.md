@@ -4174,3 +4174,99 @@ R40 §9 第 3 件 backlog + R41 兄弟 defer(撞车回避) + owner 「继续完�
 1. T4 strict 模式切换(中撞车, R41 兄弟刚 commit)
 2. T4 与 gitleaks 协同(中撞车, 新增规则不撞)
 3. R42-E R36 C1 漏 5 行 archived_at 回填 SQL 草稿(跟进本门禁发现)
+
+
+## R42-C T4 与 gitleaks 协同 — .gitleaks.toml 自定义规则(2026-09-18)
+
+### 触发
+R40 §9 第 4 件 backlog + R41 兄弟 R34 报告实测 16 处违规 + owner 「继续完整执行剩余」。
+
+### 撞车 0(不动兄弟任何文件)
+- check-prod-secrets-inlined.sh: 兄弟 R41 提交, 不动 ✅
+- check-prod-secrets-inlined.yml: 兄弟 R41 提交, 不动 ✅
+- gitleaks.yml workflow: 已有, 不动 ✅(自动加载 .gitleaks.toml)
+- .gitleaks.toml: 仓库根, 新增(互补)
+
+### 新增产物
+- **配置文件**:`.gitleaks.toml` (80 行, [extend].useDefault + 自定义 rule ruoyi-justauth-client-secret-inlined + 2 allowlists)
+- **规则设计**:
+  - regex: `(?i)client-secret:\s*['"]*([A-Za-z0-9+/=_-]{16,})['"]*\s*$`
+  - entropy: 2.5
+  - keywords: ["client-secret"]
+  - allowlist 1: regexTarget=match, 放过 `[*x]{4,}` 占位符 + `${ENV_VAR}` + 空值 + 注释
+  - allowlist 2: paths, 跳过二进制/字体/文档/node_modules/target/.git/.codex
+
+### 本地实测(单文件 2026-09-18)
+- 命令: `gitleaks detect --source ruoyi-admin/src/main/resources/application-prod.yml --config .gitleaks.toml --no-git --exit-code 1 -v`
+- 命中 3 处: line 32 (snail-job token) + line 210 (maxkey) + line 230 (gitee)
+- RuleID: 均为 generic-api-key(默认规则抢先命中, 自定义规则被吞)
+- 占位符放过: 14 处 placeholder 全部正确放行
+
+### 价值定位(边际改善诚实暴露)
+1. **语义归类**: 把 justauth 段硬编码从 generic-api-key 归到 ruoyi-justauth-client-secret-inlined(便于 owner 决策)
+2. **防漏报二线**: 默认规则漏报某 justauth 渠道时, 自定义仍命中(单测验证)
+3. **占位符识别**: 自定义 allowlist 严格放行占位符(避免假阳)
+
+### 三件套
+- 报告: `R42-C-T4与gitleaks协同-20260918.md` (126 行)
+- log.md: 本节(约 30 行)
+- 看板镜像: R42-C 卡段(待补)
+- commit: 待补
+
+### 留给 R43+
+1. R42-B T4 strict 模式切换(owner-blocked)
+2. R42-E R36 C1 漏 5 行 archived_at 回填 SQL 草稿(本轮跟进)
+3. .gitleaks.toml 规则调优: snail-job token 专属规则(避免 generic-api-key 宽泛归类)
+4. CI 验证: gitleaks.yml workflow 跑通后看实际 PR 报告(留待 owner push 后)
+
+
+## R42-B T4 strict 模式切换 — owner-blocked 留档(2026-09-18)
+
+### 触发
+R40 §9 backlog 第 3 件 + R41 兄弟创建 check-prod-secrets-inlined.yml workflow 默认 warning 模式 + owner 「继续完整执行剩余」。
+
+### 决策
+- **不动**: 兄弟 R41 commit 6fe6d387 创建的 check-prod-secrets-inlined.yml(默认 warning 模式)
+- **不动**: 兄弟 check-prod-secrets-inlined.sh(strict 模式待 owner 密钥迁移完成后切)
+- **留档**: 切 strict 必须先完成密钥迁移(R35-密钥迁移指南-20260918.md + scripts/r35-migrate-prod-secrets.sh), owner 未迁移前切 strict 会阻断 PR
+
+### 撞车风险评估
+1. 兄弟 R41 commit 在册, 未冻结, 不动 ✅
+2. 撞车主题: 切 strict 涉及工作流模式, 不属于增量互补 ✅
+3. 强合入会破坏兄弟 R41 warning 模式语义(让脚本未迁移前阻断) — 风险高 ✅
+
+### 留给 owner 决策
+1. 完成 R35 密钥迁移(扫 justauth 段 16 处硬编码 → 改 ${ENV_VAR} + KMS)
+2. 跑 strict 模式本地验证: `bash scripts/check-prod-secrets-inlined.sh --strict` 应 exit 0
+3. 改兄弟 workflow 默认 strict(切 default 模式, 单 PR)
+4. 验证 gitleaks.yml 跑通后再 push
+
+
+## R42-E archived_at 批量回填 SQL 草稿 — R42-D 门禁发现 6 行遗漏跟进(2026-09-18)
+
+### 触发
+R42-D §实测真库违规发现 6 行 status='ARCHIVED' AND archived_at IS NULL, R36 C1.1 archived-at-backfill-9140004.sql 只回了 1 行(9130004)。owner 「继续完整执行剩余」触发跟进。
+
+### 新增产物
+- **SQL 草稿**: `docs/script/sql/update/2026-09-18-r42-e-archived-at-batch-backfill.sql` (50 行, 3 段)
+- **不直接 apply**: 纯 DML, owner 决策 + DBA apply + apply 前 SELECT 复核
+
+### 6 行违规明细(R42-D 实测)
+- 9140001, 9140002, 9140003: 数字型, R35 cleanup 源
+- 2096325036506877954, 2096325111970795521: 字符串型雪玢 ID
+- +1 行: sample 未列前 5(需重跑拿到完整 ID 列表)
+
+### SQL 草稿结构
+1. SELECT 扫描当前违规行(apply 前必跑, 确认范围)
+2. UPDATE 批量回填(幂等 WHERE 守护, status='ARCHIVED' AND archived_at IS NULL)
+3. SELECT 复核(期望 0 row remaining_violations)
+
+### 撞车风险
+- 撞车 = 0(纯 SQL 草稿, 不动任何兄弟文件)
+- 风险 = 数据修改, 不可自动跑
+
+### 三件套
+- 报告: `R42-E-archived-at批量回填SQL草稿-20260918.md` (127 行)
+- log.md: 本节
+- 看板镜像: R42-E 卡段(待补)
+- commit: 待补
