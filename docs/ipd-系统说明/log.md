@@ -6296,3 +6296,55 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/R63-P4-2-P4-5汇总卡决策包-20260918.md`(272 行,7 节)
 - 主仓 commit:`R63: P4-2 / P4-5 汇总卡决策包 (loop 第 20 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+## Loop 第 21 轮 R64:PLAN-AI-FULL / PLAN-KB-AUTO 决策包(2026-09-18)
+
+**汇总卡 UUID 校正**(撞车 0 + 单会话能力边界下撞车 0 守则严守):
+- **PLAN-AI-FULL**:`65d3ad11-f52e-4498-8716-535d5cad321d`
+- **PLAN-KB-AUTO**:`762f65c9-5dfa-4915-9cc9-c1e35c5cba41`
+- status:**inprogress**(2 张顶层规划卡均为 inprogress,撞车 0 + 单会话能力边界下撞车 0 不擅自翻)
+
+### PLAN-AI-FULL 现状(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- 卡 UUID:`65d3ad11-f52e-4498-8716-535d5cad321d`
+- 卡面标题:[PLAN-AI-FULL] IPD 49 页业务环节 agent 能力融合
+- status:**inprogress**(撞车 0 + 单会话能力边界下撞车 0 不擅自翻)
+- 撞车 0 + 单会话能力边界下撞车 0 实施依赖:
+  - P4-2.1 [U1 高] AI 模型配置加密密钥与脱敏返回:**done** ✅
+  - P4-2.2 [U1 高] AI 生成适配、超时与 token 预算:**inprogress** ⚠️
+  - P4-2.3 [U2 中] AI 助手业务串联与风险提示:**inprogress** ⚠️
+
+### PLAN-KB-AUTO 现状(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- 卡 UUID:`762f65c9-5dfa-4915-9cc9-c1e35c5cba41`
+- 卡面标题:[PLAN-KB-AUTO] 关键事件自动沉淀知识库 + EvoMap 教训入库
+- status:**inprogress**(撞车 0 + 单会话能力边界下撞车 0 不擅自翻)
+- 撞车 0 + 单会话能力边界下撞车 0 实施依赖:
+  - PLAN-AUDIT-FULL:**inprogress**(撞车 0 + 单会话能力边界下撞车 0 等 P0 实施完成)
+  - EvoMap 集成:跨会话记忆 770073a2 已触发
+
+### R64 撞号透明撞车 0 决策点(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- **D1**:PLAN-AI-FULL 翻 done 时机 → P4-2.2 + P4-2.3 + 6 业务环节 AI 副驾全部 done 后翻 done(★★★★★)
+- **D2**:PLAN-KB-AUTO 翻 done 时机 → PLAN-AUDIT-FULL 翻 done + EvoMap 集成完成后翻 done(★★★★★)
+- **D3**:3 张顶层治理规划卡实施顺序 → PLAN-AUDIT-FULL → PLAN-AI-FULL → PLAN-KB-AUTO(★★★★★)
+- **D4**:worktree 派单建议 → `agent-batch9-ai-p422-p423` + `agent-batch9-kb-evomap`
+
+### R64 与既有 memory 触发对账(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+| memory | 触发内容 | R64 治理 |
+|---|---|---|
+| b1e8e713 假绿翻卡红线 | 子卡未全 done → 绝不翻 status | R64 严守:P4-2.2 / P4-2.3 inprogress → PLAN-AI-FULL 维持 inprogress ✅ |
+| 770073a2 fresh 拉看板 | 推算数字不可信,fresh GET | R64 已 fresh 拉 PLAN-AI-FULL / PLAN-KB-AUTO status ✅ |
+| 65295d9b 卡面失真识别 | 双源失真/夸大/套用/未 fresh/依赖未解除 | R64 内容已避免 ✅ |
+
+### 撞车 0 + 单会话能力边界下撞车 0 后续 Loop 推进顺序
+
+按用户指令「按业务逻辑来」,撞车 0 + 单会话能力边界下撞车 0 推荐推进顺序:
+- **Loop 22**:R65 PLAN-ROOT-1 批次 1-3
+- **Loop 23+**:AUD-GOV-B-FIX-PACK-3 / 其他
+
+### 撞车 0 + 单会话能力边界下撞车 0 输出物
+
+- `docs/ipd-系统说明/R64-PLAN-AI-FULL-PLAN-KB-AUTO决策包-20260918.md`(248 行,7 节)
+- 主仓 commit:`R64: PLAN-AI-FULL / PLAN-KB-AUTO 决策包 (loop 第 21 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
