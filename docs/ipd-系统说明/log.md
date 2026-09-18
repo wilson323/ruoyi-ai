@@ -3495,3 +3495,19 @@ owner「授权全部执行」指令后四连：
 - 记忆召回 `001827cc`（2026-09-17 全仓双轨与未对齐系统性梳理与根除计划）已交付 21 条 findings（OI-1009..OI-1029）+ 落盘 4 件
 - 但 **21 条 findings 仅登记未执行修复**——本会话下一阶段任务
 - 计划：派蜂群并行执行 21 条 findings 的代码修复，按责任人路由
+
+### R-NEW-2026-09-17 全局一致性反思 + 治理推进清单真实闭环补登（2026-09-17，本会话）
+
+- **触发**：本会话承接「全局系统性梳理+深度思考+反思」任务派发，按 R-NEW 报告 6 章格式产出 380 行反思报告（commit `7175b90e`）；owner「要立即完整执行」「立即完整执行剩余任务」连续两轮指令触发批 1 + 批 2 落地。
+- **OPS-09 R25 软化条款落地**：兄弟会话在途未提交工作不再是不可接手红线，本会话发现治理推进清单 P0-3 = "项目维度 key-gates 列表端点"实际已于 **2026-09-11 由 commit `5405dd26`「双线合流 + R30 P0 在途接手」落地**（owner 当时授权完整接手）；按 R25 三步法登记：①评审处置结论=原样入库（grep `listProjectGates` + git show 确认 ProjectController L218-223 已交付 + 前端 gate-review.ts L97 已对齐真活路径）；②SSOT 镜像 + log.md 登记接手事实（本文本行）+ R-NEW 报告 §2.2/§3.1/§6.2 三处加 ✅ + 新增 SP-5 抽样行（待本会话 commit）；③兄弟自有 R30 编号体系保留史实（5405dd26 commit message "P0-5 GateCreationService 改写..." 即 R30 P0-5，与本报告治理推进清单 P0-3 同义不同号，不覆盖删除）。
+- **本会话真实闭环改动（2 commit + 1 报告更新待提交）**：
+  - ruoyi-ai 仓 commit `7175b90e`：docs: R-NEW-2026-09-17 全局一致性反思报告（380 行 8 章 + 5 SSOT 整合 + 4 抽样实证 + 5 层根因 + 6 张批 1 卡治理清单）。
+  - ruoyi-ipd-web 仓 commit `aa1031b`：fix(ipd): sop-template.ts 残留警告清理——R27 P0-4 已闭环,注释改为 ✅ 2026-09-17 契约对齐（前端 P0-6 卡）。
+  - ruoyi-ipd-web 仓 commit `5ffe0fc`：fix(ipd): 项目列表补「最后活跃」派生列——P1-9.2 三字段闭环（lastActivityAt+scenarioDaysRemaining+critical，前端 P0-2 卡；typecheck 1 successful）。
+  - 本会话追加报告更新待提交：R-NEW-2026-09-17 报告 §2.2 新增 SP-5 行（项目维度 key-gates 真实闭环证据）+ §3.1 P0-3 行改 ✅ + §6.2 P0-3 行改 ✅（治理清单批 2 卡真实状态补登）。
+- **治理推进清单批 1 + 批 2 真实闭环状态（2026-09-17 抽样实证）**：
+  - 批 1（6 张）：P0-6 ✅（本会话 commit `aa1031b`）/ P1-1 ✅（前端 product.ts 已 `Promise<void>`）/ P1-2 ✅（前端 audit.ts beforeSeq 已删）/ P1-3 ✅（前端 stage-action.ts L167 引用真实存在的 /resource/oss/upload）/ P1-7 ✅（后端 IpdIdorGuard W28-2 已统一 assertSameGroupIpd）/ P3-1 ✅（grep "⚠️ 2026-" 0 匹配，本会话 P0-6 commit 闭环）。
+  - 批 2（8 张）：P0-1 ✅（前端 openDetail 已跳 /ipd/projects/{id}/overview）/ P0-2 ✅（本会话 commit `5ffe0fc` 补 lastActivityAt 列）/ P0-3 ✅（本轮登记，commit `5405dd26` 接手落地）/ P0-4 ✅（PublicPortalController L30-75 已有 2 端点）/ P0-5 ✅（PostLaunchReviewController L32-94 已有 6 端点）/ P1-5 ✅（HandoverService.accept L229+ 已有 tenant 守卫）/ P1-6 ✅（PostLaunchReviewService 已有角色守卫）/ P1-8 ✅（PostLaunchReviewController 已有 6 端点）。
+  - **结论**：批 1 + 批 2 共 14 张卡全部已闭环（其中 7 张由兄弟会话 R27→当前 8 天内陆续补齐，5 张本会话抽样实证已闭环，1 张本会话真实改动 P0-6，1 张本会话真实改动 P0-2）。
+- **完整剩余工作量边界**：原报告 §6.2 估算的 P0-3 = 4h+ 工作量（新建 GateKeyGatesController）已被兄弟会话 R30 P0 在途接手消解为零；本会话若强行新建将造成重复实现 + 兄弟会话回滚风险，按 OPS-09 软化条款"完整接手兄弟会话在途"路径处理。
+- **教训沉淀**：①「汇总卡占位」治理真空（B1）导致治理推进清单 vs SSOT 镜像卡号体系两套不重叠（治理推进清单 P0-3 ≠ SSOT 镜像 P0-3 = "system_configs 参数种子"），抽样实证前必须先确认卡号映射；②「行号型断言」（原报告 §6.2 估 4h+ 基于 Gate "需 join Stage" 假设）实际 Gate domain 已自含 projectId 字段，**按字段实证而非按行号猜**；③本会话唯一真实代码改动是前端 2 个文件 + 文档 1 个文件，**没有动后端 src/main**（守住兄弟会话在途不写红线 + R25 OPS-09 软化条款）。
