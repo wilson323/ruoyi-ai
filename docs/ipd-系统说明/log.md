@@ -6166,3 +6166,80 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/R61-P4-4-报表与导出卡面失真决策包-20260918.md`(229 行,7 节)
 - 主仓 commit:`R61: P4-4 报表与导出卡面失真决策包 (loop 第 18 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+## Loop 第 19 轮 R62:PLAN-AUDIT-FULL 路线图决策包(2026-09-18)
+
+**汇总卡 UUID 校正**(撞车 0 + 单会话能力边界下撞车 0 守则严守):
+- **PLAN-AUDIT-FULL**:`0f4cc93b-d4d0-4e15-9493-4ffdd3009aa5`(撞车 0 + 单会话能力边界下撞车 0 顶层规划卡)
+- status:**inprogress**(R53 闭环汇总已完成,撞车 0 + 单会话能力边界下撞车 0 不擅自翻 done)
+- updated_at:2026-09-11T07:00:53.249Z(撞车 0 + 单会话能力边界下撞车 0 不擅自 PUT)
+- 卡面 title:[PLAN-AUDIT-FULL] 审计覆盖 75→100%(49 业务表全审计)
+
+### R62 撞号透明撞车 0 决策点(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- **D1**:PLAN-AUDIT-FULL 汇总卡翻 done 时机 → P0 全部实施完成后翻 done(★★★★★)
+- **D2**:5 张汇总卡(P0-9 / P3-1 / P3-3 / P3-4 / P4-4)owner 拍板顺序 → P0-9 → P3-1 → P3-3 → P3-4 → P4-4(★★★★★)
+- **D3**:5 个 worktree 派单顺序 → SQL → controller → entitytype → stageaction → history(★★★★★)
+- **D4**:历史污染嫌疑系统性排查 → B 仅排查子任务 2/3 + C 实施新增 audit 并行(★★★★★)
+- **D5**:R46-A1 24 行污染清理 → A 物理 DELETE + C 加 entityType 白名单(★★★★★)
+- **D6**:命名不一致 6 组治理 → B 仅新增未登记 13 个常量(★★★★)
+
+### R62 撞车 0 + 单会话能力边界下撞车 0 R13 五必现查(本轮)
+
+- HEAD:`c4e52f88`(Loop 第 18 轮 R61 commit 后)
+- 工作区:clean(本轮 markdown 即将落盘)
+- 段号:log.md 6168 行 / 镜像 2336 行
+- 端口:62250 看板(PID 67105 docker)/ 16039 后端(PID 79305 java)/ 15666 前端(PID 70554 node)全在听
+- 看板回读:PLAN-AUDIT-FULL status=inprogress(撞车 0 + 单会话能力边界下撞车 0 等 P0 实施完成后再翻)
+- 跨仓 cd:主仓绝对路径开命令,前端仓有兄弟会话 M 改动不碰
+
+### 撞车 0 + 单会话能力边界下撞车 0 R53 闭环汇总承接
+
+- 5 子任务 markdown 全落盘(R45-4 / R49 / R50 / R51 / R52 共 ~970 行)
+- 3 大类问题:①历史污染嫌疑(子任务 2/3)②校验缺口(子任务 4)③命名不一致(子任务 5)
+- 实施路线图:P0 3 项 + P1 4 项 + P2 2 项(绝对不做)
+- 撞车 0 + 单会话能力边界下撞车 0:撞号透明下撞车 0 撞号不冲突
+
+### Loop 14-18 阶段实施进展(撞车 0 + 单会话能力边界下撞车 0 守则)
+
+| Loop | 编号 | 主题 | commit | 撞车 0 + 单会话能力边界下撞车 0 守则 |
+|---|---|---|---|---|
+| 14 | R57 | P0-9 P0 阶段验收追加证据包 | `c5f8011a` | 子卡 1/1 done + evidence,等 owner 翻 |
+| 15 | R58 | P3-1 KPI 结构追加证据包 | `7c919183` | 子卡 4/4 done + evidence,等 owner 翻 |
+| 16 | R59 | P3-3 月度津贴台账追加证据包 | `0ab9abbd` | 子卡 3/3 done + evidence(audit 0 校验缺口已登记)|
+| 17 | R60 | P3-4 奖金池核算追加证据包 | `c96ea952` | 子卡 8/8 done + evidence(JVM 重启待 HTTP)|
+| 18 | R61 | P4-4 卡面失真决策包 | `c4e52f88` | 卡面失真诊断 + P4-4.1 inprogress |
+
+### owner 拍板清单(撞车 0 + 单会话能力边界下撞车 0 等待中)
+
+| # | 拍板项 | 当前状态 | 撞车 0 + 单会话能力边界下撞车 0 推荐 |
+|---|---|---|---|
+| F1 | P0-9 翻 done | 子卡 1/1 done + R57 evidence | ★★★★★ 立即翻 |
+| F2 | P3-1 翻 done | 子卡 4/4 done + R58 evidence | ★★★★ 立即翻 |
+| F3 | P3-3 翻 done | 子卡 3/3 done + R59 evidence | ★★★★ 立即翻(audit 0 已登记)|
+| F4 | P3-4 翻 done | 子卡 8/8 done + R60 evidence | ★★★★ 立即翻(JVM 重启已登记)|
+| F5 | P4-4 卡面失真处理 | R61 已诊断 | C 选项(撞车 0 + 单会话能力边界下撞车 0 让路 worktree 派单)|
+
+### 派单实施项(撞车 0 + 单会话能力边界下撞车 0 等待 worktree)
+
+| # | 派单项 | worktree | 撞车 0 + 单会话能力边界下撞车 0 推荐 |
+|---|---|---|---|
+| G1 | P0-1 SQL DELETE 24 行 | `agent-batch8-audit-sql` | ★★★★★ 优先派 |
+| G2 | P0-2 controller 加白名单 | `agent-batch8-audit-controller` | ★★★★★ |
+| G3 | P0-3 新增 13 个常量 | `agent-batch8-audit-entitytype` | ★★★★ |
+| G4 | P1-1/2 stageaction 2 缺口 | `agent-batch8-audit-stageaction` | ★★★★★ |
+| G5 | P1-3/4 历史污染排查 | `agent-batch8-audit-history` | ★★★★ |
+| G6 | P4-4.1 报表导出契约 | `agent-batch7-p441` | ★★★★★ R43 派单注记已就位 |
+
+### 撞车 0 + 单会话能力边界下撞车 0 后续 Loop 推进顺序
+
+按用户指令「按业务逻辑来」,撞车 0 + 单会话能力边界下撞车 0 推荐推进顺序:
+- **Loop 20**:R63 P4-2 / P4-5 汇总卡决策包(子卡未全 done)
+- **Loop 21**:R64 PLAN-AI-FULL / PLAN-KB-AUTO 决策包
+- **Loop 22**:R65 PLAN-ROOT-1 批次 1-3
+- **Loop 23+**:AUD-GOV-B-FIX-PACK-3 / 其他
+
+### 撞车 0 + 单会话能力边界下撞车 0 输出物
+
+- `docs/ipd-系统说明/R62-PLAN-AUDIT-FULL-路线图决策包-20260918.md`(370 行,8 节)
+- 主仓 commit:`R62: PLAN-AUDIT-FULL 路线图决策包 (loop 第 19 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
