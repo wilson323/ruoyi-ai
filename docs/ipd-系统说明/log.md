@@ -5292,3 +5292,48 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - pnpm 三条 fresh:`vitest 912 passed` / `check:type 1/1` / `build:antd 11/11`
 - 看板回读:GET + LIST 双复核 desc_len=10046 一致
 - 跨仓 cd 现查:`/Users/mac/Documents/ruoyi-ipd-web` 绝对路径开头
+
+## 2026-09-18 R45 全局业务推进路线图(loop 第 2 轮,撞车 0 + 全局治理)
+
+### 触发 & 模式
+- owner 指令「充分利用 loop 工程完整执行以上内容后持续用 loop 依次完整实现所有待办事项所有功能最好按照业务逻辑来」
+- 进入 loop 第 2 轮:撞车 0 + 全局治理 — 输出业务推进路线图 + 让路表 + 可推进候选
+- 本会话撞车 0 + 单会话能力边界 + 跨仓限制下,**撞车 0 让路 17 张 owner 派单 worktree 卡**
+
+### 执行进度
+- [x] 拉看板 466 卡最新状态(total=466 / done=355 / todo=23 / inprogress=28 / inreview=6)
+- [x] 按业务逻辑分桶:P0 入口 → P1 执行 → P2 流程 → P3 绩效 → P4 AI → 验收/OPS → 统筹/治理
+- [x] 输出 `docs/ipd-系统说明/R45-业务推进路线图-20260918.md`(126 行)
+- [x] 撞车 0 让路表:17 张 owner 派单 worktree(`agent-batch7/8/9-*`)一律让路
+- [x] 可推进候选清单:9 张(主仓 allowedPaths + 无兄弟 M 改动)
+- [x] 子卡已全 done 待 owner 翻汇总卡:5 张(b1e8e713 红线不擅自翻)
+- [x] 主仓 commit 落地(R45 治理闭环同步登记)
+
+### 业务逻辑推进顺序(撞车 0 主仓可独立实施候选)
+| 优先级 | 卡号 | 业务位置 | 规模 |
+|---|---|---|---|
+| 1 | P3-LOW | 字符集治理 | 小(可快速闭环) |
+| 2 | P1-4.2 | 附件上传核心 | 大(258 测试已交付) |
+| 3 | P4-2.2 | AI 生成核心 | 中(后端全链已交付) |
+| 4 | P4-2.3 | AI 业务串联 | 中 |
+| 5 | PLAN-ROOT-1 | 全局统筹 | 大 |
+| 6 | PLAN-AUDIT-FULL | 审计覆盖 | 大 |
+| 7 | PLAN-AI-FULL | 49 页 agent 融合 | 大 |
+| 8 | PLAN-KB-AUTO | 知识库沉淀 | 大 |
+
+### 撞车 0 让路红线
+- 17 张 owner 派单卡(`agent-batch7/8/9-*`)一律让路,不擅自接管
+- 主仓 working tree 完全干净(刚才 `git status --short` 返空),无兄弟会话 M 改动
+- 前端仓(ruoyi-ipd-web)有兄弟会话 M 改动(`vben.ts` + `social-callback/index.vue`),本会话不碰
+
+### Loop 第 3-N 轮候选
+- Loop 第 3 轮:P3-LOW 字符集治理(快速闭环)
+- Loop 第 4 轮:P1-4.2 整理 + 验收 + 文档同步
+- Loop 第 5 轮起:按业务逻辑顺序推进其他撞车 0 可独立候选卡
+
+### 五必现查(R13)证据时间戳
+- HEAD 现查:主仓 `e3179a95` → 本轮 commit 后;前端仓 `4f5cc78`
+- 端口现查:后端 16039 / DB socket 13306 / 看板 62250 / 前端 vite 15666
+- 看板回读:total=466 / done=355 / todo=23 / inprogress=28 / inreview=6
+- 主仓 working tree:完全干净
+- 前端仓 working tree:兄弟会话 M 改动 2 个
