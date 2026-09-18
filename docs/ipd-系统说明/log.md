@@ -5154,3 +5154,94 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - ✅ 看板 fresh 拉
 - ✅ 跨仓 cd 绝对路径开头(本会话涉及 2 仓:ruoyi-ai + ruoyi-ipd-web)
 
+
+## R44-fix-2 owner 决策 + 同类审计(2026-09-18,主协调)
+
+**触发**:owner 指令「决定 A1/A2/A3 + B1/B2 + C1 中选哪个 / 开新 session 专门处理(避免本仓+前端仓同时改撞车)/ 同时审计 KnowledgeAttachController 等同类问题」。
+
+**撞车 0 + 单会话能力边界 + 跨仓限制**下唯一安全的「决策+审计」= 不修代码 + 完整登记 + 移到看板待 owner 后续 session 实施。
+
+### R44-fix-2-decision: 决策选项组合 A2 + B2 + C1
+
+- **A2(前端调用方式)**:前端 `listStageActions(projectId: string)` 改为先按 code 查 id 再传 id。
+  - 改前端仓 1 个文件(`stage-action.ts:142`)调用方式,加 1 个 helper(`codeToId`),
+    调用方 2 个 Vue 组件(`flow.vue:60` + `action-detail/index.vue:190`)无需大改。
+- **B2(后端 API 契约)**:后端 `StageActionController.list` 维持 `@RequestParam Long projectId`,
+  不改后端契约(零代码变更,无 breaking change,撞车 0)。
+- **C1(立即修)**:在新前端 session 立即修,本会话撞车 0 不实施。
+
+**为什么不是其他组合**:
+- A1:后端新增 byCode 端点 → 改两端,撞车风险高,违反「开新 session 避免撞车」。
+- A3:后端改 `@RequestParam String` → 改后端契约,触发连带影响(R 系列服务 + 现有测试 + 假绿风险)。
+- B1:同 A3,改后端,API breaking change。
+- B3:维持 + 新增 byCode → 双契约并存,长期维护负担。
+- C2:延后修 → owner 明确要求「立即」+ 同类问题(KnowledgeAttachController)继续累积。
+
+### R44-fix-2-audit-1/2/3: 同类问题完整审计
+
+**实测触发的 2 个端点**(sys-error.log 全量,2026-09-18 12:35:46 → 23:27:38 共 461 行):
+
+| # | 端点 | 触发机制 | 触发次数 | 触发字符串 | 前端调用方 | DB schema |
+|---|---|---|---|---|---|---|
+| 1 | `GET /api/v1/stage-actions?projectId=` | `@RequestParam Long` → MethodArgumentTypeMismatchException | 4 条 | "PRJ-2026-001"(业务编号) | flow.vue:60 + action-detail/index.vue:190 | projects.code=varchar(32),id=bigint |
+| 2 | `GET /api/v1/knowledge/attach/list?knowledgeId=` | BO 字段 Long + Spring 自动 bind → BindException | 1 条 | "TEST-ID-123"(业务编号) | **前端仓未调用(0 命中)** | knowledge_attach.doc_id=varchar(32),knowledge_id=bigint |
+
+**潜在风险清点**(未触发但同结构):
+
+| 类别 | 数量 | 说明 |
+|---|---|---|
+| @RequestParam Long 端点(ruoyi-ipd) | 38 | 含 stage-actions 子端点 |
+| @PathVariable Long 端点(ruoyi-ipd) | 125 | URL 路径变量 |
+| @RequestParam/@PathVariable Long 端点(ruoyi-chat) | 60 | 含 KnowledgeAttachController 子端点 |
+| BO 字段 Long(ruoyi-chat) | 52 | Spring 自动 bind 触发 BindException 风险 |
+| **全仓 controller 总 Long 端点** | **217** | 均潜在 type mismatch 风险,目前实际触发 2 个 |
+| **全仓 BO Long 字段** | **52** | 均潜在 BindException 风险,目前实际触发 1 个 |
+
+**重点潜在风险**(同结构,待前端 session 复核):
+- `KnowledgeFragmentController.list`(与 KnowledgeAttachController.list 同结构,接收 KnowledgeFragmentBo + PageQuery)
+  - `KnowledgeFragmentBo.knowledgeId: Long`(line 55)
+  - 当前前端仓**未调用**(0 命中),但同结构待观察。
+
+### R44-fix-2-register: STG-501-1 卡 PUT + 双复核
+
+- 卡号:STG-501-1
+- uuid:`e7b9289c-8670-48da-af86-84a3821c741d`
+- old desc_len:**4365**(LIST 取基文,避免单卡 GET 偶发空描述)
+- new desc_len:**8382**(追加 +4017 字符决策+审计块)
+- PUT 响应:**200** ✓
+- 独立 GET 回读:desc_len=8382 + 4 标志位全 True(end_marker/R44-fix-2/同类问题审计/子卡清单)✓
+- 独立 LIST 回读(双复核):GET=8382, LIST=8382, **一致=True** ✓(R13 铁律:GET+LIST 一致=PUT 真正成功)
+- 最终看板计数:total=466 / done=355 / todo=24 / inprogress=28 / inreview=5 / cancelled=54(撞车 0 不翻 status)
+- 撞车 0:本会话没改任何 Java/TS/yml,只写 markdown + 更新看板卡 description
+
+### 子卡清单(STG-501 拆分,留给 owner 后续 session 实施)
+
+| 卡号 | 标题 | 文件 | 改/查 | 仓 | 状态 |
+|---|---|---|---|---|---|
+| STG-501-A | listStageActions 接受 id 而非 code | stage-action.ts:142 | 改 | ruoyi-ipd-web | todo |
+| STG-501-A1 | codeToId helper(查 projects 表 by code) | project.ts(新增) | 改 | ruoyi-ipd-web | todo |
+| STG-501-A2 | flow.vue 调用方适配 | flow.vue:60 | 查(可能不用改) | ruoyi-ipd-web | todo |
+| STG-501-A3 | action-detail/index.vue 调用方适配 | index.vue:190 | 查(可能不用改) | ruoyi-ipd-web | todo |
+| STG-501-B1 | 验证 type=id 浏览器实跑 | stage-action.test.ts(新增) | 改 | ruoyi-ipd-web | todo |
+| STG-501-B2 | pnpm 三条 green | - | 查(自动) | ruoyi-ipd-web | todo |
+| STG-501-C | KnowledgeAttachController 同类预防 | - | 查 | ruoyi-web(第三方) | todo |
+| STG-501-C1 | KnowledgeFragmentController 同类预防 | - | 查 | 同上 | todo |
+| STG-501-D | 后端 269 风险点统一防御(可选) | - | 查 | ruoyi-ai | todo |
+
+### owner 后续 session 必读(撞车 0 交接)
+
+1. 必须先认领 allowedPaths(Ruflo / ruoyi-vibe-kanban 技能)
+2. **只开前端仓 session**(本会话撞车 0 + 跨仓限制,禁止改后端仓)
+3. 实施前必读 STG-501-1 + STG-501-A~D 子卡清单
+4. 提交前必跑 `pnpm run check:type / vitest / build:antd` 三条(README-IPD.md 红线)
+5. commit message 必须引用 STG-501-1 uuid(`e7b9289c-8670-48da-af86-84a3821c741d`)便于审计追溯
+6. 完事 log.md 追加实施结果(撞车 0 模式下 owner 已授权「完整接手兄弟会话在途」三步登记)
+
+### 五必现查(R13)证据时间戳
+
+- HEAD 现查:`50d8d7f1`(R44-fix-3 起点)
+- 端口现查:后端 16039 / DB socket 13306 / 看板 62250 / 前端 vite 15666
+- sys-error.log 行数现查:461(总)/ 11 小时时间窗(2026-09-18 12:35:46 → 23:27:38)
+- 端点/字段现查:`@RequestParam Long` 共 217 个 / BO 字段 Long 共 52 个
+- 触发字符串现查:`"PRJ-2026-001"` 4 次 / `"TEST-ID-123"` 1 次
+- DB schema 现查:`projects.code=varchar(32)` / `knowledge_attach.doc_id=varchar(32)`(均为业务编号字段)
