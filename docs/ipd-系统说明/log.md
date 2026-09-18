@@ -3559,3 +3559,35 @@ owner「授权全部执行」指令后四连：
   1. **R-NEW 报告是时点快照**：新会话必须 fresh 验证再引用——本会话"check_cross_repo_contract 未接入 CI"教训 9-09 已闭环，盲信报告会变成"重做 r25 工作"。
   2. **抽测边界纪律**：bug-magnet 5 模块在 src/main 撞车红线内，本会话不抽测；5 张 ◐ 业务卡让路给兄弟会话，按 OPS-09 软化条款处理。
   3. **CI 接入 ROI**：r30-done-gate.yml 单会话成本低（1 个 workflow + 自证能红），但未来 6 个月每次 DDL 提交都自动验，长期价值高。
+
+---
+
+## 2026-09-17 续轮 — owner 抽测「基于剩余事项结合产品文档系统性梳理分析深度思考反思完整实现」
+
+- **触发**：owner「基于剩余事项结合产品文档系统性梳理分析深度思考反思完整实现」——读产品圣经 `docs/开发说明/开发说明书.md` §11（构建顺序）/§12.1（BR-AUD-01）/§13（演示数据），结合 R-NEW 报告 §5/§6 留给下轮清单 + 兄弟会话在途撞车红线约束，**找撞车风险 0 的可独立闭环项**并完整落地。
+- **产品圣经 fresh 抽测真问题（1 项）**（详 `docs/全局梳理-2026-09-17-续轮.md`）：
+  1. **BR-AUD-01 静态门禁盲点**：产品圣经 §12.1 明确要求 `ipd_app` 对 `audit_logs` 仅 INSERT 权限（UPDATE/DELETE 应被拒，1142 SQL 错误）。
+     DEF-5 治理报告 2026-09-07 owner 已拍板 PROPOSAL-01 脚本兜底（task_id=`081fbd58-de76-4222-a7ae-22b59faa464f`），DCL 草稿在
+     `docs/ipd-系统说明/治理轮/DEF-5/PROPOSAL-01-脚本兜底.sql`（commit 时入 git，**未 apply 真库**）。
+     **但仓库无任何自动化门禁验证 BR-AUD-01 登记件完整性**——R-NEW 反思报告 §5/§6 未识别这条产品圣经红线盲点。
+     **本轮动作**：
+     - 新建 `docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql`（+103 行，正式化 PROPOSAL-01 草稿为可 apply 幂等迁移，含 audit_logs + audit_log_chain_heads 库级 INSERT/UPDATE/DELETE 收回、自校验、回滚预案）
+     - 新建 `scripts/ci/check-braud01-audit-grant.sh`（+151 行，静态门禁：①必须有 REVOKE INSERT 活语句；②必须有 REVOKE UPDATE/DELETE 活语句；③禁止 GRANT UPDATE/DELETE TO ipd_app 复原授权）
+     - 新建 `.github/workflows/braud01-audit-grant.yml`（+76 行，CI 独立 workflow，触发 `docs/script/sql/**` 改动）
+- **自证能红门禁通过**：移走 `2026-09-17-ipd-braud01-audit-grant-restrict.sql` → `check-braud01-audit-grant.sh` EXIT=1，加回 → EXIT=0。反向证明脚本不是"假绿"。
+- **bash 正则教训**：`[\x27\x22]` / `\x27` 在 bash POSIX ERE 中**不解析**（hex escape），必须用字面 `\'` 单引号。脚本 L92/L107/L117 三处均踩过，已修正。
+- **撞车红线严守**：不写 src/main 业务代码 / 不跑 mvn test / 不重启实例 / 不改前端仓 / 不擅自动真库 DCL（PROPOSAL-01 §6 已标注「等 owner 现场授权」，本轮不 apply）。
+- **本会话真实改动（3 文件）**：
+  - `scripts/ci/check-braud01-audit-grant.sh`（+151 行，新增 BR-AUD-01 静态门禁）
+  - `docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql`（+103 行，新增 DCL 迁移）
+  - `.github/workflows/braud01-audit-grant.yml`（+76 行，新增 CI workflow）
+  - `docs/ipd-系统说明/log.md`（本条目）
+  - `docs/全局梳理-2026-09-17-续轮.md`（新增汇总）
+- **留给下轮清单 3 项**：
+  1. **DBA 在 OPS-04 维护窗口 apply 本轮 DCL**（4 条 REVOKE + 自校验 + 回滚预案），apply 后跑 `p1-ddl-apply-check.py --strict` 验真库残留权限 0 行
+  2. **owner 拍板 PROPOSAL-01 收口**：DEF-5 task_id=`081fbd58-de76-4222-a7ae-22b59faa464f` 卡面目前 inreview，DCL 已 commit 到 `docs/script/sql/update/` 后可推 inreview → done
+  3. **扩建 BR-AUD-01 门禁到其它受限制表**：产品圣经 §12.1 只要求 audit_logs，但 DEF-5 PROPOSAL-01 §3 已同步收紧 audit_log_chain_heads（脚本已覆盖）；其它 BR-AUD-* 业务约束（如 BR-AUD-03 分层导出）暂无需额外自动化
+- **教训沉淀**：
+  1. **R-NEW 反思盲点**：反思报告只覆盖工程域（9 大根因 + 5 类病根），产品圣经级红线（合规/审计/权限）未系统盘点；后续 R-NEW+ 轮次应增「产品圣经红线扫描」章节
+  2. **bash POSIX ERE 字符类**：避免使用 `\xNN` hex escape 与 `[\xNN\xNN]` 字符类，直接写字面字符（`\'` / `\"`）最稳
+  3. **PROPOSAL-01 终稿转 production DDL**：治理报告里的 SQL 草稿是「不 apply 文档、最终版」，本轮把它正式化为 `docs/script/sql/update/` 体系内的可 apply 迁移 + 静态门禁联动 + CI 闭环，三件套缺一不可
