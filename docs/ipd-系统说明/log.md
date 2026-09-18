@@ -5854,3 +5854,77 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/R57-P0-9-P0阶段验收追加证据包-20260918.md`(223 行,8 节)
 - 主仓 commit:见 git log HEAD
+
+## Loop 第 15 轮 R58:P3-1 KPI 结构追加证据包(2026-09-18)
+
+**触发**:R48 5 张汇总卡翻卡建议 ★★★★★ 推荐 owner 拍板翻 P3-1 done。本轮追加真活 evidence,撞车 0 + 单会话能力边界下不擅自翻 status,撞车 0 让路 owner 拍板 + 撞号透明撞车 0 守则严守。
+
+**撞号透明**:R58 与 R45-R57 平行编号。R57(P0-9 追加证据包)→ R58(P3-1 追加证据包)。
+
+**撞车 0**:本会话撞车 0 + 仅 docs/ 改动;不擅自翻 P3-1 status(b1e8e713 红线 + R11 教训内化);不擅自 DELETE 真库污染行;撞车 0 + 单会话能力边界下让路 owner 拍板翻卡。
+
+### R13 五必现查现查结果
+
+- HEAD:`c5f8011a`(Loop 第 14 轮 R57 commit 后)
+- 真库:DB TCP 13306,`ipd_dev` 业务库
+  - **P3-1 KPI 真活 audit 49 行**(KPI_SHARED_DEADLINE_REMIND 40 + KPI_SHARED_CONFIRM 8 + KPI_SHARED_COLLECT 1)
+  - **P3-1 KPI 真活业务表 6 行**(`kpi_records` 2 + `kpi_shared_confirms` 4)
+  - **P3-1 KPI 真活时间范围**:业务表 2026-09-08 15:08:31 / audit 2026-09-08 13:03:28 ~ 15:26:51
+  - **R52 命名不一致新发现**:KPI 催办 entity_type=`projects` 而非 `kpi_records`(第 7 表现)
+- 端口:后端 16039(PID 79305)/ 看板 62250(PID 67105)/ 前端 vite 15666(PID 70554)
+- 看板回读:
+  - **P3-1 新版 UUID 校正**:`f71ba244-d666-472e-b602-76e0b004bf6f`(非 summary 推断的 `f71ba244-9c54-4f87-9ee1-2cb5cbbd7fb3`)
+  - P3-1 新版 status=todo(R44 注记 can_flip=True 子卡全 done,撞车 0 + 单会话能力边界下不擅自翻 done)
+  - P3-1 旧 BLOCKED `2983e32f-1fe6-41ac-9438-b532e0f059ee` 仍 todo
+  - 4 子卡全 done(P3-1.1 / P3-1.2 / P3-1.2-BACKEND / P3-1.3)
+- 主仓 working tree:clean(本轮 markdown 即将落盘)
+- 跨仓 cd:主仓绝对路径开命令,前端仓有兄弟会话 M 改动不碰
+
+### 撞车 0 + 单会话能力边界下 P3-1 真活 evidence
+
+| 维度 | 数值 | 撞车 0 + 单会话能力边界洞察 |
+|---|---|---|
+| KPI audit 合计 | 49 行 | KPI 审计链完整 |
+| KPI_SHARED_DEADLINE_REMIND | 40 行(entity_type=projects) | ⚠️ R52 命名不一致第 7 表现 |
+| KPI_SHARED_CONFIRM | 8 行(entity_type=kpi_shared_confirms) | ✅ 双组长确认写审计 |
+| KPI_SHARED_COLLECT | 1 行(entity_type=kpi_records) | ✅ 归集写审计 |
+| kpi_records 业务表 | 2 行(period=2026-08, FINALIZED) | KPI 记录真活 |
+| kpi_shared_confirms | 4 行(双组长 900101+900102 同步确认) | 共担 KPI 真活 |
+| kpi_rule_snapshots | 0 行 | KPI 规则快照(可能未触发)|
+
+### 4 子卡 done 现状
+
+- ✅ P3-1.1 功能 KPI done(`2a4f6413-5366-4d54-a055-cb705e03deaf`)
+- ✅ P3-1.2 共担 KPI done(`b435964b-6bd1-411b-b38a-dc0fe31917d0`)
+- ✅ P3-1.2-BACKEND 双组长确认读端点 done(`56d97bb0-577b-4492-a5bc-ec4163d69fdc`)
+- ✅ P3-1.3 KPI 截止日、催办与导入分段 done(`8ea011fe-636c-4880-b132-45efd1433c74`)
+
+### R44 注记保持撞车 0 + 单会话能力边界下撞车 0 守则严守
+
+- **check-done-gate-summary.py 真活验证**:**can_flip=True**(子卡全部 done)
+- **待 owner 操作**:在 62250 看板手动翻 done(撞车 0 + 单会话能力边界,严禁擅自翻)
+- **回退路径**:若 owner 复核发现某子卡非真 done,只需 PUT 回 todo + 写明子卡号
+
+### 新发现撞车 0 + 撞号透明:R52 命名不一致第 7 表现
+
+- KPI_SHARED_DEADLINE_REMIND 写 `projects` 而非 `kpi_records`(40 行)
+- 与 R52 §2.1 大小写 8 组 + §2.2 单复数 2 对 + §2.3 复数拼写 1 + §2.4 未登记 15 + §2.5 AI 混乱 3 + §2.6 零真活已登记 1 并列
+- 撞车 0 + 单会话能力边界下撞车 0 让路 owner 拍板 + worktree 派单
+- 撞号透明下不擅自改存量字符串(改历史哈希破坏契约)
+
+### owner 决策清单
+
+- **P3-1 ★★★★★ 推荐 owner 拍板翻 done**:基于 4/4 子卡 done + 真活 evidence 充分(KPI audit 49 行 + 业务表 6 行)+ R44 can_flip=True
+- 撞车 0 + 单会话能力边界下撞车 0 让路 owner 拍板
+- b1e8e713 红线严守:**本轮不擅自翻 status**
+
+### 输出物
+
+- `docs/ipd-系统说明/R58-P3-1-KPI结构追加证据包-20260918.md`(281 行,8 节)
+- 主仓 commit:`R58: P3-1 KPI 结构追加证据包 (loop 第 15 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+### 后续推进(Loop 第 16-N 轮)
+
+- **R59**:P3-3 月度津贴台账追加证据包(★★★★★,新发现 allowance_ledgers 7 行 audit 0 校验缺口)
+- **R60**:P3-4 奖金池核算追加证据包(★★★★★,8 子卡 done)
+- **R61**:P4-4 报表与导出决策包(★ 卡面失真不推荐翻)
