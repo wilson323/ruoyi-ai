@@ -5737,3 +5737,41 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务4-R46-A1污染修复现状-20260918.md`(202 行,7 节)
 - 主仓 commit:见 git log HEAD
+
+---
+
+## R52:PLAN-AUDIT-FULL 子任务 5 — 6 组命名不一致治理现状(2026-09-18)
+
+**Loop 第 12 轮,撞号透明 R52 与 R45-R51 平行**
+
+### 关键发现
+
+1. **audit_logs 真活 30 个 distinct entity_type**(已登记 7 + 1 零真活 + 22 未登记)
+2. **撞号透明下不擅自改存量字符串**(改历史哈希破坏契约)
+3. **至少 6 组命名不一致**(R45-4 报告"6 组"完全命中):
+   - 大小写 8 组(SYSTEM_CONFIG / Contribution / AI_COPILOT / NEGATIVE_FEEDBACK / AI_MODEL_CONFIG / STAGE_ACTION / AI_DOCUMENT / PROJECT)
+   - 单复数 2 对(bonus_pools vs bonus_pool / ai_documents vs AI_DOCUMENT)
+   - 复数拼写 1 组(kpi_shared_confirms 推测应为单数)
+   - 未登记但有真活 15 组(gates / cert_templates / handover / project_members 等)
+   - AI 实体命名混乱 3 个(AI_COPILOT / AI_DOCUMENT / AI_MODEL_CONFIG)
+   - 零真活已登记 1 个(coefficient_change_requests R50 关联历史污染)
+
+### 撞号透明 + 撞车 0 决策
+
+- **A2(新增 13 个未登记 entity_type 到 IpdEntityType)★★★★★** 撞车 0 让路 worktree 派单(新增不改存量)
+- **A3(全量统一 6 组命名不一致)** ★ **绝对不做**(改历史哈希破坏契约)
+- **A4(R46-A1 SQL DELETE not_a_real_table 24 行)★★★★★** 撞车 0 让路 owner 派单 worktree
+- **撞车 0 + 单会话能力边界下维持 inprogress**,不擅自翻 status
+
+### PLAN-AUDIT-FULL 5 子任务全部完成现状评估
+
+- ✅ 子任务 1:审计覆盖缺口清单(Loop 4 R45-4)
+- ✅ 子任务 2:stage_actions 审计补齐现状评估(Loop 9 R49)
+- ✅ 子任务 3:coefficient_change_requests 审计补齐现状评估(Loop 10 R50)
+- ✅ 子任务 4:R46-A1 not_a_real_table 污染修复现状(Loop 11 R51)
+- ✅ 子任务 5:6 组命名不一致治理现状(Loop 12 R52,本轮)
+
+### 输出物
+
+- `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务5-6组命名不一致治理现状-20260918.md`(235 行,7 节)
+- 主仓 commit:见 git log HEAD
