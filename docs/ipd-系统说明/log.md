@@ -5512,3 +5512,40 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - 子任务 4:AiCopilotService 路径扩展(后续)— 等 owner 拍板接哪个业务环节
 - 子任务 5:RAG top-K 排序优化(后续)— 撞车 0 不擅自动 RAG
 - 子任务 6:前端 AI 集成入口组件库(后续)— 撞车 0 不擅自动前端
+
+## Loop 第 6 轮 — PLAN-KB-AUTO 子任务 1:知识库自动化接入现状盘点 + 4 组件方案(2026-09-18)
+
+**触发**:R45 路线图统筹治理段,撞车 0 + 纯静态分析 + 不擅自动代码。
+**模式**:loop 第 6 轮 — 真活 SELECT + grep + Read 穿透 + 4 组件接入方案。
+**产出**:`docs/ipd-系统说明/PLAN-KB-AUTO-知识库自动化接入现状与方案-20260918.md`(223 行,8 节)。
+
+### 关键真活数据(R13 五必现查)
+
+- ai_documents 表 4 行(全是手工创建)
+- ai_doc_embeddings 表 **0 行** ⚠️ — RAG 知识库真活未触发
+- audit_logs 表 1538 行(关键事件流完整)
+- AiDocEmbeddingService 274 行(embedAsync + retrieveContext 已就位)
+- AiDocumentService 424 行(4 status + "AI 文档须人工审核"门槛)
+
+### audit_logs 关键事件分类(top 20 action 分布)
+
+- 高价值自动归档:GATE_ELEMENT_JUDGE(33)/ GATE_SIGN(32)/ GATE_APPROVE(8)/ GATE_REJECT(10)/ BONUS_POOL_COMPUTE(22)/ KPI_SHARED_*(48)
+- 中价值异步归档:AI_COPILOT_CHAT(8)/ SYSTEM_CONFIG_UPDATE(27)/ DELETE_*(60)
+- 低价值不归档:LOGIN(747)/ LOGIN_FAIL(305)/ WECOM_MOCK_*(42)/ EXPORT(34)/ PASSWORD_CHANGE(13)
+- 撞车 0 真活洞察:1538 行中约 280 行(18%)有归档价值,其余 75% 低归档价值
+
+### 4 组件 × AI 知识库自动化接入方案
+
+1. **AuditLogEventListener**(★★★★)— 监听 audit_logs INSERT,自动提取关键事件 → ai_doc_embeddings(路径 A 无须人工审核)/ ai_documents(路径 B 须人工审核,双轨设计)
+2. **KnowledgeAutoArchiver**(★★★)— 项目结项 / KPI 考核 / Gate APPROVE 后自动归档项目摘要 → ai_documents(状态=GENERATED,沿用现有审核门槛)
+3. **EvoMap 自动接入**(★★★★)— 卡翻 done 后自动提取 ## Lessons Learned → 调 EvoMap SDK 入库(gene + capsule + provenance schema 草稿)
+4. **RAG 增量同步 cron**(★★)— 夜间扫描新增审计行 → 批量 embedAsync(沿用单线程反压 + 撞车 0 不擅自改多线程)
+
+### 撞车 0 守则严守
+
+- 本子任务纯静态分析(grep + Read + 真活 SELECT),零代码改动
+- 不擅自写 EventListener(撞车 0 + 单会话能力边界)
+- 不擅自降"AI 文档须人工审核"门槛(撞车 0 + 现有设计有意)
+- 不擅自接 EvoMap SDK(撞车 0 + 外部依赖授权)
+- 不擅自加 unique 索引(撞车 0 + 待 owner 拍板)
+- 不擅自改成多线程(撞车 0 + IPD 业务影响大)
