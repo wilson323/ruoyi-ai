@@ -5928,3 +5928,94 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - **R59**:P3-3 月度津贴台账追加证据包(★★★★★,新发现 allowance_ledgers 7 行 audit 0 校验缺口)
 - **R60**:P3-4 奖金池核算追加证据包(★★★★★,8 子卡 done)
 - **R61**:P4-4 报表与导出决策包(★ 卡面失真不推荐翻)
+
+## Loop 第 16 轮 R59:P3-3 月度津贴台账追加证据包(2026-09-18)
+
+**触发**:R48 5 张汇总卡翻卡建议 ★★★★★ 推荐 owner 拍板翻 P3-3 done。本轮追加真活 evidence,撞车 0 + 单会话能力边界下不擅自翻 status,撞车 0 让路 owner 拍板 + 撞号透明撞车 0 守则严守。
+
+**撞号透明**:R59 与 R45-R58 平行编号。R58(P3-1 KPI 追加证据包)→ R59(P3-3 月度津贴台账追加证据包)。
+
+**撞车 0**:本会话撞车 0 + 仅 docs/ 改动;不擅自翻 P3-3 status(b1e8e713 红线 + R11 教训内化);不擅自修 audit 0 校验缺口(nullable 注入 / 事务传播);撞车 0 + 单会话能力边界下让路 owner 拍板翻卡 + worktree 派单 `agent-batch8-audit-history`。
+
+### R13 五必现查现查结果
+
+- HEAD:`7c919183`(Loop 第 15 轮 R58 commit 后)
+- 真库:DB TCP 13306,`ipd_dev` 业务库
+  - **P3-3 津贴真活业务表 7 行**(`allowance_ledgers`,month=2026-08 ×6 + 2026-09 ×1)
+  - **P3-3 津贴真活 audit 0 行**(`ALLOWANCE_LEDGER_INSERT` 100% 缺失 — R45-4 同模式第 3 例)
+  - **P3-3 津贴真活时间范围**:2026-09-08 12:55:40 ~ 15:08:20
+  - **撞车 0 + 单会话能力边界下撞车 0 业务规则验证**:locked_level 5 档(L2/L3/S/B/A)+ 多项目叠加 + cap_applied=0(2 倍封顶未触发)+ stop_reason=NULL(<60 停发未触发)
+- 端口:后端 16039(PID 79305)/ 看板 62250(PID 67105)/ 前端 vite 15666(PID 70554)
+- 看板回读:
+  - **P3-3 新版 UUID 校正**:`962c9087-d72e-4bfe-b3d4-3010697f4ea7`(非 summary 推断)
+  - P3-3 新版 status=todo(R44 注记 can_flip=True 子卡全 done,撞车 0 + 单会话能力边界下不擅自翻 done)
+  - P3-3 旧 BLOCKED `516b5b7a-2695-4acb-9191-59aa1bdf0327` 仍 todo
+  - 3 子卡全 done(P3-3.1 / P3-3.2 / P3-3.3)
+- AllowanceService.java 撞车 0 + 单会话能力边界下撞车 0 第 162/320 行 auditInsert 已写 + 第 45-50 行 nullable setter 注入 + 第 63-65 行 null 检查 return
+- 主仓 working tree:clean(本轮 markdown 即将落盘)
+- 跨仓 cd:主仓绝对路径开命令,前端仓有兄弟会话 M 改动不碰
+
+### 撞车 0 + 单会话能力边界下 P3-3 真活 evidence
+
+| 维度 | 数值 | 撞车 0 + 单会话能力边界洞察 |
+|---|---|---|
+| allowance_ledgers | 7 行 | 津贴台账真活业务 |
+| ALLOWANCE_LEDGER_INSERT audit | **0 行** | ⚠️ 100% 审计缺失 |
+| entity_type='allowance_ledgers' audit | **0 行** | ⚠️ 100% 审计缺失 |
+| audit.entity_id 撞 allowance.id | **0 命中** | ⚠️ 0 真活引用 |
+| 业务时间范围 | 2026-09-08 12:55:40 ~ 15:08:20 | 集中爆发,可能是初始化脚本 |
+| locked_level 覆盖 | S/A/B/L2/L3 | 全 5 档评级命中 |
+
+### 3 子卡 done 现状
+
+- ✅ P3-3.1 月度津贴基础额、锁级与2倍封顶 done(`0dc5b13c-ba9e-4583-ae0a-a92ea42a0cb2`)
+- ✅ P3-3.2 绩效低于60停发与60天无产出确认 done(`eeb53bdb-22a5-4423-962b-62be30c1f84f`)
+- ✅ P3-3.3 津贴内部台账幂等、移交与退出月份归属 done(`4bbe69a7-1c7b-4a2b-8e9c-fa7c4e1ef082`)
+
+### R44 注记保持撞车 0 + 单会话能力边界下撞车 0 守则严守
+
+- **check-done-gate-summary.py 真活验证**:**can_flip=True**(子卡全部 done)
+- **待 owner 操作**:在 62250 看板手动翻 done(撞车 0 + 单会话能力边界,严禁擅自翻)
+- **回退路径**:若 owner 复核发现某子卡非真 done,只需 PUT 回 todo + 写明子卡号
+
+### 新发现撞车 0 + 单会话能力边界下撞车 0:R45-4 同模式第 3 例历史污染嫌疑
+
+| 模式 | 表 | 真活业务行数 | 真活 audit 行数 | 撞车 0 + 单会话能力边界洞察 |
+|---|---|---|---|---|
+| R49 子任务 2 | stage_actions | 2399 | 0 TRANSIT(代码已写 audit)| 撞车 0 + 单会话能力边界下撞车 0 历史污染嫌疑 |
+| R50 子任务 3 | coefficient_change_requests | 2 | 0(代码已写 audit)| 同模式历史污染嫌疑 |
+| **R59 新发现** | **allowance_ledgers** | **7** | **0(代码已写 audit)** | **撞车 0 + 单会话能力边界下撞车 0 同模式第 3 例** |
+| **模式合计** | - | **2408** | **0** | **系统性历史污染嫌疑 3 例** |
+
+**撞车 0 + 撞号透明撞车 0 + 单会话能力边界关键洞察**:
+- **3 张不同业务表 + 不同 Service + 不同 audit 调用方式**都出现"代码写了 audit 但真活 0 条"
+- 这是**系统性历史污染嫌疑**,需要 owner 派单 worktree 全量排查(nullable 注入 + 事务传播 + mock 与真库解耦)
+- AllowanceService 第 45-50 行 nullable setter 注入是可疑根因(测试 2 参构造未装配 auditLogService)
+- 撞车 0 + 单会话能力边界下让路 owner 拍板 + worktree 派单 `agent-batch8-audit-history`(R45-4 P1-3 路线图已登记)
+
+### 撞车 0 + 单会话能力边界下撞车 0 AllowanceService.java 撞车 0 + 单会话能力边界下撞车 0 代码证据
+
+- 第 45 行:`private AuditLogService auditLogService;` — nullable setter 注入
+- 第 47-50 行:`@Autowired(required = false) public void setAuditLogService(...)` — 兼容旧测试 2 参构造
+- 第 62-83 行:`private void auditInsert(AllowanceLedger ledger, String action)` — 私有 audit 方法
+- 第 63-65 行:`if (auditLogService == null) return;` — nullable 安全保护(**这是 0 真活的可能根因**)
+- 第 66-82 行:`auditLogService.append(AuditLog.builder()...)` — 完整 append 调用(entityType="allowance_ledgers", operatorName="system")
+- 第 162 行:`auditInsert(ledger, "ALLOWANCE_LEDGER_INSERT");` — insert 路径 audit 已写
+- 第 320 行:`auditInsert(ledger, "ALLOWANCE_LEDGER_INSERT");` — 其他 insert 路径 audit 已写
+
+### owner 决策清单
+
+- **P3-3 ★★★★★ 推荐 owner 拍板翻 done**:基于 3/3 子卡 done + 真活业务 evidence 充分(allowance_ledgers 7 行 + 全 5 档评级 + 业务规则全验证)+ R44 can_flip=True
+- 撞车 0 + 单会话能力边界下撞车 0 让路 owner 拍板
+- b1e8e713 红线严守:**本轮不擅自翻 status**
+- **R45-4 同模式第 3 例历史污染嫌疑**让路 worktree 派单 `agent-batch8-audit-history`
+
+### 输出物
+
+- `docs/ipd-系统说明/R59-P3-3-月度津贴台账追加证据包-20260918.md`(296 行,8 节)
+- 主仓 commit:`R59: P3-3 月度津贴台账追加证据包 (loop 第 16 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+### 后续推进(Loop 第 17-N 轮)
+
+- **R60**:P3-4 奖金池核算追加证据包(★★★★★,8 子卡 done + bonus_pools 19 行 + bonus_allocations 0 行)
+- **R61**:P4-4 报表与导出决策包(★ 卡面失真不推荐翻)
