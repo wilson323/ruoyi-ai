@@ -4270,3 +4270,107 @@ R42-D §实测真库违规发现 6 行 status='ARCHIVED' AND archived_at IS NULL
 - log.md: 本节
 - 看板镜像: R42-E 卡段(待补)
 - commit: 待补
+
+
+## R43-A 兄弟 R39 commit 评审 — 5 门禁 CI 接入 + 三向对账门禁(2026-09-18)
+
+### 触发
+R42 收口后 R43 第一个动作 + 兄弟 wt-r39-integration 刚 commit `2cd3ec19` (06:23 -0700) + owner 「继续」。
+
+### 兄弟 commit 概要
+- 文件 7 个, 1990 行(6 新增 + 1 修改)
+- base: 052c4f45 (R38 同步), 分支 r39/gates-and-p1
+- 未推 main, 未合入 main
+- 新增: check-contract-tri-source.sh (327 行) + check-pre-commit.sh (122 行) + r38-5-gates.yml (155 行) + R39-根因反思-20260918.md (184 行) + R39-孤儿端点评估-20260918.md (233 行)
+- 修改: check-doc-db-drift.sh (+73 行 --refined 模式) + log.md (+49 行 R39 节) + 看板镜像 (+51 行 R39 卡段)
+
+### 评审结论
+- **代码质量**: ✅ 哨兵 + 多模式 + 退出码 + set -uo pipefail + CI workflow 安全加固 + concurrency 控制
+- **撞车风险**: ✅ 0(不动我的 R42 任何文件, log.md / 看板镜像追加不同段不冲突)
+- **数据真实性**: ⚠️ 兄弟自查数字不自洽(426 vs 349), 但主结论对(fe_orphan P0 + be_orphan P2)
+- **红线遵守**: ✅ 未跑 mvn / 未改 Java/SQL/yml / 未写主仓 / R30+ 三层哨兵
+
+### 短板(2 项可接受 + 2 项需 owner 决策)
+- actions/checkout@v4 未 pin 完整 SHA(可选升级 follow R41)
+- services MYSQL_ROOT_PASSWORD=test123 硬编码(CI 测试凭据, 可接受)
+- ⚠️ check-pre-commit.sh hook 未接入 .git/hooks/pre-commit — 实际未自动启用
+- ⚠️ 数字粗略(426 vs 349) — 重跑精确数字后再合入? 或接受粗略?
+
+### 推进选项(等 owner 拍板)
+- **A. 主协调合并** r39/gates-and-p1 → main(撞车 0, 推荐)
+- **B. 兄弟自己推** + PR + 评审合入(责任边界清晰)
+- **C. 留档不动**(R39 工作半完成)
+
+### 三件套
+- 报告: `R43-A-兄弟R39-commit-评审-20260918.md` (202 行)
+- log.md: 本节
+- 看板镜像: R43-A 卡段(待补)
+- commit: 待补
+
+
+## R43-β check-doc-drift.sh 设计 — R25 病根 ③ 文档失真门禁(2026-09-18)
+
+### 触发
+R43+ 治理路线图梳理 + R37 §6.1 P0 必修第 3 件 + R43-evolver agent §4 病根 ③ 空白判定 + owner 「继续」。
+
+### 一句话总结
+R25 病根 ③ 文档失真门禁 = `scripts/check-doc-drift.sh` 设计稿(本 R43-β 段): **5 处失真 fixture + 3 模式(default/strict/self-test)+ 4 层哨兵 + 自证能红方法**。撞车 0,不动兄弟 R39 任何在途文件。本轮仅写设计 markdown + 同步 SSOT,不写 scripts/(留给 R43-β 二轮)。
+
+### 与既有门禁关系
+- 病根 ① ⑤: R38 bfceebd1 + R42-D + 兄弟 R39 check-doc-db-drift.sh 已根除
+- 病根 ④: 兄弟 R39 check-contract-tri-source.sh 已根除
+- 病根 ②③: 仍空白,**R43-β 负责 ③,撞车 0**
+
+### 5 处失真 fixture
+- F1 表名漂移: gate_elements → 应 gate_review_elements
+- F2 表名漂移: audit_log → 应 audit_logs
+- F3 表名漂移: demand → 应 requirements
+- F4 链接失效: R17-已删-20260910.md 已被 R42-A 归档
+- F5 API 锚点: ai-documents/{documentId}/revise → 应 {id}
+
+### 撞车风险
+- 撞车 = 0(本轮仅写新设计 markdown,不动 scripts/ 与既有 R 文档)
+- 兄弟 wt-r39-integration 在改 scripts/check-doc-db-drift.sh + check-contract-tri-source.sh + check-pre-commit.sh + r38-5-gates.yml → 本 R43-β 全部不碰
+- 不写 workflow(R42-D §4 同理:跨仓 CI 不可达制造门禁失效)
+
+### 留给 R43-β 二轮(脚本落地)
+- R43-β-1: 实际脚本(150-200 行,沿用 R42-D 范式)。撞车 = 中(兄弟 wt-r39-integration 可能仍在改 scripts/ 区),等 R39 合入 main 后再做
+- R43-β-2: fixture 5 处实测自证能红
+- R43-β-3: 兄弟 R39 合入后,建议追加 L2 静态扫描 trigger 到 r38-5-gates.yml
+
+### 三件套
+- 报告: `R43-β-check-doc-drift脚本设计-20260918.md` (160 行, DRAFT 设计文档)
+- log.md: 本节
+- 看板镜像: R43-β 卡段(待补)
+- commit: 待补
+
+## R43-β check-doc-drift.sh 设计 — 文档失真门禁(R25 病根 ③ 根除)(2026-09-18)
+
+### 触发 & 定位
+- owner 原问:"系统性梳理全局项目还有哪些待办事项完整执行充分利用5个专业智能体并行"
+- R43-evolver agent 报告 §4 病根 矩阵实测:**R25 五病根只剩 ②③ 两个空白**(病根 ① ④ ⑤ 已被 R38 bfceebd1 + R42-D 根除)
+- 兄弟 wt-r39-integration HEAD `2cd3ec19` 在分支 r39/gates-and-p1 上,未推 main,未合入 main(主仓 HEAD `f10bbdc4` R42-C.3)
+- 本会话 R43-A 已对兄弟 commit 做独立评审,报告 `R43-A-兄弟R39-commit-评审-20260918.md` (202 行),撞车 0,等 owner 拍板推进选项 A/B/C
+- R43-β = 病根 ③(文档失真),与兄弟 R39 病根 ④(端点契约)/ 病根 ⑤(DB 漂移)完全独立,撞车 0
+
+### 本会话交付(只读探针 + 1 张设计 markdown)
+- `docs/ipd-系统说明/R43-β-check-doc-drift脚本设计-20260918.md`(159 行):5 处失真 fixture + 3 模式 + 4 哨兵 + 自证能红方法
+- 不动 scripts/(留 R43-β 二轮,等兄弟 R39 合入 main 后撞车评估)
+- 不动 docs/开发说明/(产品圣经 G-04)
+- 不动兄弟 R39 任何在途文件(check-contract-tri-source.sh / check-doc-db-drift.sh / check-pre-commit.sh / r38-5-gates.yml / R39-*.md)
+
+### 三件套
+- 报告: `R43-β-check-doc-drift脚本设计-20260918.md` (159 行)
+- log.md: 本节
+- 看板镜像: R43-β 卡段(待补)
+- commit: 待补
+
+### 留给 R43-β 二轮(脚本落地)
+- R43-β-1 实际 scripts/check-doc-drift.sh(150-200 行,沿用 R42-D 范式) — 等 R39 合入 main 后撞车评估
+- R43-β-2 fixture 5 处实测自证能红 — 临时目录隔离,风险低
+- R43-β-3 如兄弟 R39 已建 r38-5-gates.yml,建议追加 L2 静态扫描 trigger — 撞车中,等兄弟拍板
+
+### 红线遵守
+- ✅ 未跑 mvn / 未改 Java/SQL/yml / 未写 scripts/ / 未碰兄弟 R39 任何文件
+- ✅ 仅 1 张新设计 markdown + log.md append + 看板镜像 append(撞车 0)
+- ✅ R25 病根 ③ 留 spec 给二轮,本轮不抢脚本落地权
