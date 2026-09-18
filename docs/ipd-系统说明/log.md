@@ -4473,3 +4473,67 @@ R25 病根 ③ 文档失真门禁 = `scripts/check-doc-drift.sh` 设计稿(本 R
 3. `endpoint_inventory.sql` 数据层沉淀(让 SSOT 看板能拉失衡比)
 4. 合同含 URL 字面量(改 DOC-05 模板为“业务名 + URL + 状态机 + 字段”四段式)
 5. 测试基线锚点改为契约(不再走实现断言)
+
+## R41 治理轮 — 39 张 todo 派单 + 5 智能体并行汇总(2026-09-18)
+
+### 触发 & 校准
+- owner 原问:**「充分利用5个专业智能体并行执行 todo39」**(2026-09-18)
+- **现实校准**(5 agent 并行期间发生):主仓 HEAD 已变 `9f6477be`(**merge(r39)按 R43-A 选项 A + owner「A」授权合并兄弟 R39 commit 2cd3ec19 到 main**)
+- 承接:R40 commit `6ce8aad5`(57 张未完成卡全景 + PUT 404 blocker 锁定)+ R39 已合入 main
+- worktree r39/gates-and-p1 落后 main **8 commit**(兄弟会话需拉 main)
+
+### 5 智能体并发派单(2026-09-18 13:30~13:38)
+- **ioedream-pm**(368 行):派单方案 + 4 批次 + 7 项 owner 决策
+- **ioedream-evolver**(255 行):反脆弱指针 #119~#122 + 8 项进化基因 + 3 条进化策略
+- **ioedream-qa-gatekeeper**(224 行):39 张卡门禁矩阵 + GSP 五视角 + harness-gates 四哨兵
+- **agency-harness**(242 行):6 主力 + 1 元层 agent 选型 + 39 张卡映射矩阵
+- **ruflo-harness**(319 行):Swarm 拓扑 + 3 层路由 + 双模式 Claude+Codex + Hive-Mind 共识
+- **5 子报告共 1408 行,落 `/tmp/R41-*.md`**(sub-agent 红线遵守,不入工作树)
+
+### 4 批次派单方案整合
+| 批次 | 张数 | 类型 | 里程碑 | 触发条件 |
+|---|---:|---|---|---|
+| **批次 0** | 17 | 14 汇总 + 3 数据缺口/裁决 | 本轮(9/18)清零 | owner 拍板 3 张裁决卡 |
+| **批次 1** | 6 | U1 高(后端+单测) | R42(9/19-9/25)收口 | **R40 PUT 404 blocker 必须先修** |
+| **批次 2** | 6 | U2 中(后端+QA) | R43(9/26-10/02)落地 | QA-08 收口触发整个项目验收 |
+| **批次 3** | 15 | AI 5 + 阻断汇总 4 + WB-17-1 | R44(10/03-10/15)落地 | AI 融合 + WB-17-1 跨多会话错峰 |
+
+### 7 项 owner 决策清单
+1. 🔴 R40 P0 blocker 修复路径 A/B/C/D(PM 建议:A 修 nginx → C 看板双源)
+2. 数据缺口 2 张(P-DATA-gap-1/2)— 选 a/b/c
+3. P3-LOW 字符集统一时机 — Q3/Q4/不处理
+4. AI 融合 5 张派单顺序 — 串行/双轨/三轨(PM 建议:b 双轨)
+5. 🔴 R41 三件套是否合入 main — 即合/留 worktree/owner 评审后
+6. R40/R41 看板镜像精简方向 — A/B/C(PM 建议:C 全保留+TOC)
+7. R42 启动时间窗口 — 9/19 / 9/22 / 9/25(PM 建议:b 预留 3 天决策缓冲)
+
+### 6 主力 + 1 元层 agent(agency-harness 选型)
+- ① engineering-backend-architect(12 卡,U1+U2 写码+AI 协作)
+- ② engineering-multi-agent-systems-architect(5 卡,AI 融合)
+- ③ testing-api-tester(12 卡,跟随 ① 串行)
+- ④ project-manager-senior(18 卡,汇总+阻断)
+- ⑤ engineering-ai-data-remediation-engineer(3 卡,数据缺口)
+- ⑥ testing-reality-checker(6 卡,QA+收口)
+- ⑦ specialized-agents-orchestrator(元层 R41 流水线)
+
+### 3 项 P0 blocker(R41 锁定)
+- **🔴 看板 PUT 404 blocker**(nginx 1.28.3 反代)— R40 已锁定,等 owner 拍板
+- **🔴 GEP 基础设施缺失** `.harness/evolve/`(Evolver 发现,R42 P0 装)
+- **🔴 sandbox DNS 污染**(github.com → 198.18.0.5)— 环境层,留 sandbox 外 push
+
+### 留给 R42+
+1. R42 P0 — 修 PUT 404 blocker(等 owner)
+2. R42 P0 — 装 GEP 基础设施 `.harness/evolve/`
+3. R42 P1 — 批次 0 清零(17 张汇总 + 数据缺口 3)
+4. R42 P2 — 批次 1 (U1 高 6 张)启动
+5. R43 P0 — 批次 2 (U2 中 6 张)启动
+6. R44 P0 — 批次 3 (AI + 阻断 + WB)启动
+
+### 红线遵守
+- ✅ 未跑 mvn / 未改 Java/SQL/yml
+- ✅ 未碰兄弟 R39 在途(R39 已合入 main,R41+ 直接在 main 工作)
+- ✅ 5 智能体 sub-agent 输出落 /tmp/(不 commit 到工作树,sub-agent 红线遵守)
+- ✅ 主协调整合精简版落 docs/(本文件 297 行,引用 5 份 /tmp 子报告)
+- ✅ R30+ 三层哨兵 + 负向验证方法论
+- ✅ 五必现查规约(hash / 端口 / 段号 / 看板回读 / 跨仓 cd)
+- ✅ 现实校准显式披露(R39 已 merge,主仓 HEAD 9f6477be)
