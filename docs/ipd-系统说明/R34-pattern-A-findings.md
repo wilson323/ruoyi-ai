@@ -99,7 +99,8 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
   2098389746999926785  R30上市日期变更E2E-0911       DRAFT      -1
   2098461345195323393  R31-P0-3存量导入验收          DRAFT      -1
   ```
-- **总数**:**11 条**(原报告 10,勘误:漏算 P132-HARDWARE-1788637764;现态 `SELECT COUNT(*)` = 11)
+- **总数**:**11 条**(原报告 10，勘误:漏算 P132-HARDWARE-1788637764;现态 `SELECT COUNT(*)` = 11)
+- **R36 inline 勘误(2026-09-18)**:实测 apply `2026-09-18-r35-data-cleanup-batch.sql` 时,上述 11 条均已被某次中间治理提前处理为 `status='ARCHIVED' + del_flag=1`,SQL apply 命中 0 rows。R35 cleanup 对 projects 表执行 0 次成功 update,但回读校验状态全部正确。详见 R35-数据治理实操报告 §3 关键反转。**本段 P0-3 数字(11 条待清理)为历史快照,不代表当前真库状态。**
 - **影响**:项目下拉/看板仍能看到 R30/R31/QA03 历史探针,业务方误以为是真实项目
 - **修复路径**:`UPDATE projects SET del_flag=1 WHERE create_by=-1 AND name REGEXP 'QA03|R30|R31|HARDWARE|矩阵|探针';`(实测命中 11 条,与本报告勘误后数字一致)
 
