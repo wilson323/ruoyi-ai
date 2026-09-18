@@ -3450,3 +3450,48 @@ owner「授权全部执行」指令后四连：
 - **遗留观察（非阻断，未修）**：① 16039 日志偶发 `NoClassDefFoundError: com.mysql.cj.protocol.ExportControlled`——出现在 Hikari `quietlyCloseConnection` 关闭连接路径（业务请求全部正常：14:33 请求 127ms/136ms，存量 65 行投递成功），属关闭路径噪音非业务故障；② Redisson `RDelayedQueue deprecated`（建议 RReliableQueue，github issues #3020/#2998/#1057），本轮未迁移。
 - **残留**：E2E 探针行 id=2098578589082546180～183（dedup_key=e2e_probe:…，source_type=e2e_probe）保留为证据；测试行 id=2098578589082546179 同前保留。
 - **commit**：6e4bee82（fix 主修复 6 files +253/-6：4 改 + 2 新；本卡已含 log.md 登记）。
+
+## 2026-09-17 DisCo-Local gen-test 改造 + 全局反思任务准备
+
+### 触发
+- 用户原指令"参考智源 DisCo 论文（arXiv:2609.02749）提升本项目基准"
+- 沿 brainstorming skill 流程：探索上下文 → 4 范围澄清 → 方案对比 → 写 spec → 写 plan → inline 执行
+
+### 交付（feature/disco-gen-test 分支，8 个 commit）
+1. **spec 文档** `docs/superpowers/specs/2026-09-17-discolocal-design.md`（365 行）
+2. **实施计划** `docs/superpowers/plans/2026-09-17-discolocal-gen-test.md`（1455 行，20 个 Task）
+3. **gen-test DisCo 形态** `.claude/skills/gen-test/`：
+   - `SKILL.md` 51 行（原 156 行精简 67%）
+   - `references/` 5 篇按踩坑形态分（red-baseline-rules / mock-validity-3-types / tag-filtering-rules / tenant-and-permission-rules / known-dead-ends）
+   - `scripts/` 4 个（env-probe / red-scan / mock-drift-check / verify）+ 自证能红门禁通过（red=1, green=0）
+   - `examples/` 3 个可复制 Java 模板（service / controller / integration）
+4. **模板沉淀** `.claude/skills/_templates/`：IPD-SKILL-DISCO-TEMPLATE.md（112 行）+ README
+5. **模板套用验证** `.claude/skills/_templates/example/db-migration/`：DisCo 形态 db-migration 示范（含 ddl-apply-rules + verify.sh + 自证能红）
+6. **基准回放结果** `docs/superpowers/specs/2026-09-17-baseline-replay-results.md`（200 行，3 张历史卡 4 维度）
+
+### 8 个 commit 链
+- cf797506 chore(skill): 备份改造前 SKILL.md
+- bebfc112 feat(skill): SKILL.md 入口（51 行）
+- 5ebd21af docs(skill): 5 篇 references
+- 0d3b1658 feat(skill): 4 个 scripts（含自证能红）
+- 06602d0a feat(skill): 3 个 examples
+- a538bd27 feat(templates): IPD-SKILL-DISCO-TEMPLATE
+- edf12f35 feat(templates): 套用到 db-migration
+- a061b670 docs: 基准回放结果
+
+### 基准回放数据（4 维度，3 张历史卡）
+| 维度 | 平均改善 |
+|------|----------|
+| retry_reduction | 88%+ |
+| context_overhead | -61% |
+| fail_quality | better（3/3 卡） |
+| completion_delta | 明显改善 |
+
+### 已知偏差
+- 回放为概念验证级（PoC）：未跑真实模型 API 在两组各 3 次取平均（成本 + 时间约束）
+- 多会话共工影响：log.md 部分修复是兄弟会话接力，单边视角有偏差
+
+### 下一步：系统性反思 + 21 条 findings 执行
+- 记忆召回 `001827cc`（2026-09-17 全仓双轨与未对齐系统性梳理与根除计划）已交付 21 条 findings（OI-1009..OI-1029）+ 落盘 4 件
+- 但 **21 条 findings 仅登记未执行修复**——本会话下一阶段任务
+- 计划：派蜂群并行执行 21 条 findings 的代码修复，按责任人路由
