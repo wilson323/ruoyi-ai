@@ -3511,3 +3511,18 @@ owner「授权全部执行」指令后四连：
   - **结论**：批 1 + 批 2 共 14 张卡全部已闭环（其中 7 张由兄弟会话 R27→当前 8 天内陆续补齐，5 张本会话抽样实证已闭环，1 张本会话真实改动 P0-6，1 张本会话真实改动 P0-2）。
 - **完整剩余工作量边界**：原报告 §6.2 估算的 P0-3 = 4h+ 工作量（新建 GateKeyGatesController）已被兄弟会话 R30 P0 在途接手消解为零；本会话若强行新建将造成重复实现 + 兄弟会话回滚风险，按 OPS-09 软化条款"完整接手兄弟会话在途"路径处理。
 - **教训沉淀**：①「汇总卡占位」治理真空（B1）导致治理推进清单 vs SSOT 镜像卡号体系两套不重叠（治理推进清单 P0-3 ≠ SSOT 镜像 P0-3 = "system_configs 参数种子"），抽样实证前必须先确认卡号映射；②「行号型断言」（原报告 §6.2 估 4h+ 基于 Gate "需 join Stage" 假设）实际 Gate domain 已自含 projectId 字段，**按字段实证而非按行号猜**；③本会话唯一真实代码改动是前端 2 个文件 + 文档 1 个文件，**没有动后端 src/main**（守住兄弟会话在途不写红线 + R25 OPS-09 软化条款）。
+
+### R-NEW 治理推进清单批 3 + 下批承接清单派单收口（2026-09-17，本会话续）
+
+- **触发**：owner 列清单「批 3 (5 张)+ 下批承接清单 (8 项 U0/U1/U2 待派发)」，要求立即完整执行。
+- **真实状态抽样（2026-09-17 磁盘实证）**：
+  - P2-1 产品组 CRUD ✅：ProductGroupController 81 行 5 端点齐 + SSOT 镜像 P2-1 已 ✅ 保留。
+  - **P2-3 招标组队 ◐**：BidController 197 行 11 端点齐（createInvitation/listInvitations/getInvitation/publish/select/preSelectToken/withdraw/close/modify/admin-assign/listResponses/byRdPm/submitResponse/withdrawResponse）+ BidP231Controller 48 行补齐；Service 端 BidInvitationService.issueConfirmToken/adminAssign/modifyInvitation/listResponsesPaged 已就绪；权限闸 ⛒ @SaCheckPermission 全覆盖（OPERATION_MODULE_PROJECT_STATUS_CHANGE/QUERY/OPERATION_BID_INVITATION_ADMIN_ASSIGN）。**但真库 DDL apply 未验**：本会话抽测 13306 socket 不通（实例未启动），不能验证 bid_invitations/bid_responses/product_groups 表结构与索引约束生效；**SSOT 镜像 P2-3 行 ⬜ → ◐ 防假绿翻卡**（依"禁止假绿翻卡：汇总卡子卡未完成时 title 加注记而非 status 翻 done"红线）。
+  - P2-5 五大 Gate 双签 ◐：GateReview sign/view/listByProject 已有，双签全流程 E2E 未跑；SSOT 镜像原 41 项 P2-5 已 ✅（2026-09-08 reconcile 翻 done）但 R-NEW 治理推进清单 P2-5 需独立全流程 E2E，超出本会话能力。
+  - P0-9 P0 阶段验收 ◐：SSOT 镜像 P0-9 仍 ◐（依赖所有 ◐ 全部 ✅ + 全模块 compile + 启动自检 + 249 AC + 浏览器视觉对照），超出本会话能力。
+  - **P0-10.1 前端目标仓确认 ✅ 本会话闭环**：写 `docs/ipd-系统说明/前端目标仓确认-20260917.md` 91 行决策文档；结论 = `ruoyi-ipd-web` 独立仓（基于既有 31 api + 44 vue + AGENTS.md 第 1 段明示归属 + 单事项源已锁定）；owner 签字记录 = R-NEW 报告 §6.3 + AGENTS.md 双向交叉。
+- **下批承接清单（10 项）派单最终态**：
+  - 9 项已闭环（详 P0-10.1 文档 §6 + R-NEW 报告 §9.3 14 张卡真实闭环状态表）：P0-6 / P1-1 / P1-2 / P1-3 / P1-7 / P0-1 / P0-4 / P0-10.1 / P3-1。
+  - 1 项超出本会话边界待 owner：typecheck 红基线 21 错误 owner 决策 A/B/C（待 owner 拍板，不擅自动 tsconfig 或放宽跳过）。
+- **工作量边界守规**：本会话不做 mvn test（避免兄弟会话共工假红）+ 不重启 13306 实例（避免打断用户使用中服务）+ 不建前端仓会话（前端仓任务归属前端独立会话）；按 OPS-09 软化条款 + 单写者约束串行写后端仓 SSOT 镜像与 log.md。
+- **变更**：SSOT 镜像 P2-3 行 ⬜ → ◐（单行）+ 新建 P0-10.1 文档 91 行 + 本 log 条。
