@@ -4952,3 +4952,132 @@ owner 触发"立即完整执行",5 项 todo 全部落地:
 等待 owner 决策 A1/A2/A3 + B1/B2/B3 选哪一项。
 本会话撞车 0 + 单会话能力边界,后续 commit 继续用 `--no-verify` 绕门禁 + 显式说明根因。
 
+
+## stage-actions 500 根因诊断 + 拍板请求(2026-09-18,主协调)
+
+**触发**:owner 贴 pastied-text.txt 4344 行浏览器控制台日志,确认查 stage-actions 500 根因。
+**根因完全确认(代码 + DB + 后端日志三方证据)**。
+
+### 现象
+
+浏览器控制台(从 ruoyi-ipd-web 前端 dev server :15666 抓):
+```
+:15666/api/v1/stage-actions?projectId=PRJ-2026-001:1
+  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+```
+
+### 根因(代码 + DB + 日志三方证据)
+
+**1. 前端调用源头**(`/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/stage-action.ts`):
+
+```ts
+// line 141-143
+/** 阶段动作列表(GET /api/v1/stage-actions?projectId=)。后端无单查端点,按 id 客户端筛。 */
+export function listStageActions(projectId: string): Promise<StageAction[]> {
+  return ipdGet<unknown>('/stage-actions', { projectId }).then(normalizeActionList);
+}
+```
+
+**2. 前端调用方**(两个 Vue 组件):
+- `views/ipd/project/detail/flow.vue:60` — `listStageActions(projectId.value)`,projectId 从路由参数取(业务编号字符串)
+- `views/ipd/project/action-detail/index.vue:190` — 同上
+
+**3. 后端 controller 期望**(`/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java`):
+
+```java
+// line 37-42
+@GetMapping
+@SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION, type = IpdAuthSession.LOGIN_TYPE)
+public ApiV1Response<List<StageAction>> list(@RequestParam Long projectId) {
+    ipdPermission.requireInternal();
+    return ApiV1Response.ok(stageActionService.listByProject(projectId));
+}
+```
+
+**4. DB 字段类型**(已 fresh 查 ipd_dev @ 127.0.0.1:13306):
+
+```sql
+SHOW COLUMNS FROM projects WHERE Field='id';
+-- id  bigint  NO  PRI  NULL  -- 主键 = Long 类型
+
+SHOW COLUMNS FROM projects WHERE Field='code';
+-- code  varchar(32)  NO  UNI  NULL  -- 业务编号 = String 类型(前端实际用的)
+```
+
+`stage_actions.project_id` 也是 `bigint`,与 `projects.id` 一致。
+
+**5. DB 真实数据**:
+- `PRJ-2026-001` 在 projects 表真实存在,对应 `id=2096235170527993857`
+- 前端发的是 `code`(业务编号字符串),后端期望 `id`(Long)
+
+**6. 后端日志证据**(`/Users/mac/Documents/ruoyi-ai/logs/sys-error.log`):
+
+```text
+2026-09-18 23:21:04 [XNIO-1 task-4] ERROR o.r.i.a.IpdServiceExceptionAdvice - [IPD] unexpected exception
+org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
+  Method parameter 'projectId':
+  Failed to convert value of type 'java.lang.String' to required type 'java.lang.Long';
+  For input string: "PRJ-2026-001"
+  at AbstractNamedValueMethodArgumentResolver.convertIfNecessary(:301)
+  ...
+  at Long.parseLong(Long.java:711)
+  at Long.valueOf(Long.java:1163)
+```
+
+**完整异常链**:
+- 前端 `ipdGet('/stage-actions', { projectId: 'PRJ-2026-001' })`
+- Spring MVC 参数绑定阶段 → `Long.parseLong("PRJ-2026-001")` 抛 NumberFormatException
+- 包装为 `MethodArgumentTypeMismatchException`
+- `IpdServiceExceptionAdvice` 捕获 → 返 500 Internal Server Error
+
+### 同类历史案例
+
+- `logs/sys-error.log:236` — `KnowledgeAttachController.list` 的 `knowledgeId` 字段也因字符串 `TEST-ID-123` → Long 转换失败 → 同样的 `MethodArgumentTypeMismatchException`
+- 这是项目级普遍问题:**前端用业务编号(code),后端期望主键 id**
+
+### owner 拍板项(3 个独立决策)
+
+**A. 前端调用方式**(修 API 契约调用点)
+
+- 选项 A1:改前端 — `listStageActions(projectId)` 调用前先查 `getProjectByCode(code)` 拿 id 再传
+  - 改动:`views/ipd/project/detail/flow.vue:60` + `action-detail/index.vue:190`
+  - 风险:跨仓(ruoyi-ipd-web 不在本会话主仓),撞车风险中
+- 选项 A2:前端 API 函数签名保留 string,但内部自动用 `getProjectByCode` 转换
+  - 改动:仅 `stage-action.ts:142`,`listStageActions(projectId)` 内调 `getProjectByCode` 后取 id
+  - 风险:低(单文件),但 N+1 查询问题
+- 选项 A3:前端发业务编号,后端接受 string + 内部解析(改后端 controller)
+  - 改动:`StageActionController.java:39` `@RequestParam Long projectId` → 接受 String 内部查 code 转 id
+  - 风险:中(撞车多会话,需 owner 决策)
+
+**B. 后端 API 契约**(改接口设计)
+
+- 选项 B1:新增 `/api/v1/stage-actions/by-code/{code}` 端点
+  - 改动:StageActionController 新增 `@GetMapping("/by-code/{code}")` 方法
+- 选项 B2:同时支持 `projectId`(数字)和 `projectCode`(字符串)双入参
+  - 改动:同一个 list 端点接受任一种
+
+**C. 接受现状 owner-blocked**(撞车 0 + 单会话能力边界)
+
+- 选项 C1:登记已知 owner-blocked 项,前端临时改为不调该端点,或显示"项目编号查询功能暂不可用"
+
+### 本会话撞车 0 + 单会话能力边界 + 跨仓限制,不擅自修
+
+跨仓涉及 `/Users/mac/Documents/ruoyi-ipd-web/`,本会话主仓 `/Users/mac/Documents/ruoyi-ai/`,本会话撞车 0 + 单会话能力边界,不擅自修代码。
+后续如 owner 拍板,需开新会话专门处理(避免本仓 + 前端仓同时改的撞车风险)。
+
+### 五类病根(R25)
+
+1. 看板数字 ✅(无关本轮)
+2. 提交完整性 ✅(本轮仅 log.md 登记)
+3. 文档失真 ✅(本轮完整证据化登记)
+4. 契约无门禁 ❌(**A/B/C 决策项,owner 拍板**)
+5. 多事实源 ✅(代码 + DB + 日志三方同源)
+
+### 五必现查(R13)
+
+- ✅ HEAD `e005a024` 无漂移
+- ✅ 端口 16039 (后端) + 13306 (DB socket) + 15666 (前端 vite dev)
+- ✅ 段号 本会话 log.md §「stage-actions 500 根因诊断」
+- ✅ DB fresh 查 ipd_dev (projects + stage_actions schema + PRJ-2026-001 真实数据)
+- ✅ 跨仓 cd 绝对路径开头(本会话涉及 2 仓:ruoyi-ai + ruoyi-ipd-web)
+
