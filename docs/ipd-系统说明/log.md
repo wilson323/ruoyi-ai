@@ -3635,3 +3635,56 @@ Fresh 验证：脚本真的能抓住违规（不是吓唬自己）。把第一�
 - **留给 owner 决策 2 项**:
   1. 若 owner 想验证"21 错误"出处:提供具体 TS 错误代码 + 文件路径 + 行号,本会话可立刻定位并按诊断清单分类
   2. 若 owner 想立"红基线门禁":建议在 `apps/web-antd/package.json` 加 `check:type:strict` 脚本(强制 `rm -rf node_modules/.cache/turbo && vue-tsc --noEmit --skipLibCheck`),接 CI 卡死 turbo 缓存假绿
+### R34 系统性扫描(2026-09-17 22:50~23:50 PDT,本会话)
+
+- **触发**:owner「基于以上异常系统性梳理全局项目代码是否存在类似的异常」+「充分利用多个专业智能体并行执行」。撞车反转:R33 节异常 1~4 已暴露 R25 五类病根只触及冰山一角,本会话按蜂群形态派 4 路专业智能体并行扫描 + 我做反转校正 + 真活验证。
+- **执行模式**:
+  1. **派单 4 个专业智能体**:ioedream-qa-gatekeeper × 2 + CodeReview × 1 + agency-harness × 1,全部 read-only 扫描,4 路独立产出 Pattern A/B/C/D 报告
+  2. **本会话做 spot check + 真活验证 + 反转校正**:对每个 Pattern 抽样验证关键 finding,纠正初判错位
+  3. **总报告归并**:产出 R34 系统性扫描报告作为总纲,内含 owner 3 决策点
+- **核心发现**:跨 4 Pattern 无去重共 **100+ 条同类异常**(10 P0 + 45 P1 + 45+ P2):
+  - Pattern A `R34-pattern-A-findings.md`(464 行,脏数据污染):**5 P0 + 9 P1 + 6 P2**——种子测试数据污染真活(Mock-QA-SYNC-20260910B、not_a_real_table #999999999 等)
+  - Pattern B `R34-pattern-B-findings.md`(530 行,配置漂移):**2 P0 + 8 P1 + 27+ P2**——allowance.L3=1500 ≠ 默认值 2000 等配置表双体系(system_configs + ipd_business_config)未合并
+  - Pattern C `R34-pattern-C-findings.md`(192 行,API 契约错位):**1 P0 + 19 P1 + 5 P2**——/api/v1/bid/invitations(文档) vs /api/v1/bid-invitations(后端短横线)等文档 ≠ 代码
+  - Pattern D `R34-pattern-D-findings.md`(527 行,UI disabled + DTO 错位):**2 P0 + 9 P1 + 7 P2**——5 处前端 disabled 诚实暴露后端未交付(/api/collaboration 等),DTO 字段错位
+- **Spot check 关键反转**(本会话核心价值):
+  - Agent C 初判「`/auth/platform-token` 端点缺失」**错位** → 我做真活验证:`curl /api/v1/auth/platform-token` HTTP 200 → 端点存在;改找更深 P0:`IpdPlatformAuthController.java` 在 8 个兄弟 worktree 独有,主仓 main HEAD `b1f443d8` 源码树缺失(孤儿 Controller)
+  - 反转证据:R34 worktree `git log main -- IpdPlatformAuthController.java` 0 commit,8 个 worktree 各自持有不同版本
+- **R33 异常反转校正**(复用 R33 spot check 原始素材):
+  - **异常 2 反转**:KPI 月数 disabled 实为 loading 状态(`kpi/index.vue:129`),非永久禁用——前端 loading 守卫位而非功能残缺
+  - **异常 4 反转**:allowance.L3=1500 是 P0-3.3 验收套件高频震荡(2026-09-06~08 改了 19 次),非无意漂移;审计完整 27 条 SYSTEM_CONFIG_UPDATE 记录可还原决策史
+- **5 类病根框架(R25 全局复盘)归因**:
+  1. **改主代码后测试没跟上**:R33 异常 2 反转即为反例——loading 状态无测试覆盖,Agent C 误判为永久禁用
+  2. **提交不完整(fresh clone 必炸)**:`IpdPlatformAuthController.java` 即典型——8 个 worktree 各自持有版本,主仓缺位
+  3. **规则表与接线点靠人肉对账**:allowance.L3 19 次高频震荡无 SSOT 钉死
+  4. **前后端契约无门禁**:Pattern C 19 P1 中 12 条是文档 ≠ 后端 ≠ 前端三向不齐
+  5. **多事实源无对账**:system_configs + ipd_business_config 双体系未合并
+- **撞车红线反转执行**(接 R33 节撞车=接手原则):
+  - R25 OPS-09 软化条款升格到「撞车必接」级
+  - 兄弟会话在途接手三步法:① 评审处置结论=原样入库(Spot check 反转证据登记) ② SSOT 镜像 + log.md 登记接手事实(本节) ③ 隔离落地到 R34 takeover worktree
+- **隔离落地**(本会话真实边界):
+  - **worktree 绝对路径**:`/private/tmp/r34-takeover-ipd`
+  - **git 分支**:`r34/takeover-20260917`(基于 main HEAD `b1f443d8`)
+  - **主仓**:`/Users/mac/Documents/ruoyi-ai` main HEAD `b1f443d8` 未动(`git status --short` 实测零变更)
+  - **未跑**:`git commit` / `git add` / `git push`(待 owner 决策后再执行)
+- **0 个未授权修改**:仅 `docs/ipd-系统说明/` 下 append 5 个新报告文件 + 本节 log.md,无业务代码改动,无 mvn test,无服务重启
+- **owner 决策 3 项**(详 `R34-系统性扫描报告-20260917.md` §5):
+  1. **5.1** `IpdPlatformAuthController.java` 8 个 worktree 哪个权威版本?需 owner 选定一个 worktree 的版本 cherry-pick 到 main 并 verify 编译/测试
+  2. **5.2** 配置表双体系(system_configs + ipd_business_config)如何合并?需 owner 拍板迁移路径(单向吸收 vs 双写兼容 vs 全新 SSOT 表)
+  3. **5.3** Controller 改白名单 record 工作量 vs owner 是否接受 status 注入风险?需 owner 评估 5 处前端 disabled 是否要走 Controller 白名单 record 改造(估 2~3 天工作量),还是接受 status 注入(false positive 风险)
+- **留给 R35**:
+  - owner 决策 5.1~5.3 后开干
+  - **推荐优先 P0**:① P0-1 `IpdPlatformAuthController.java` 孤儿落地(决策 5.1 闭环) ② P0-5 密钥泄露(Pattern A 5 P0 中任一条)
+  - 次优 P0:Pattern C 1 P0 文档契约修正(零工作量,纯文档 sync)
+- **本会话真实改动(6 文件,预计 1 commit)**:
+  1. `docs/ipd-系统说明/R34-pattern-A-findings.md`(464 行,新增)
+  2. `docs/ipd-系统说明/R34-pattern-B-findings.md`(530 行,新增)
+  3. `docs/ipd-系统说明/R34-pattern-C-findings.md`(192 行,新增)
+  4. `docs/ipd-系统说明/R34-pattern-D-findings.md`(527 行,新增)
+  5. `docs/ipd-系统说明/R34-系统性扫描报告-20260917.md`(190 行,新增)
+  6. `docs/ipd-系统说明/log.md`(本节 append)
+- **教训沉淀**:
+  1. **专业智能体派单必须配 spot check + 真活验证**:Agent C 初判端点缺失错位,本会话真活 HTTP 200 反转校正——派单不是甩锅,反转校正才是质量守门人价值
+  2. **反转校正闭环**:5 个 Pattern 报告中的 P0 finding 必须逐条真活验证(curl + DB 回读 + git log 三证),不接受「静态扫描 → 报告 → 翻卡」的快速通道
+  3. **撞车红线反转的执行边界**:撞车=接手,但接手≠重写——本会话只 append 文档 + log.md,不碰 P0-1 Controller 落地本身,留给 owner 决策 5.1 后 R35 执行
+  4. **工作树隔离纪律**:r34/takeover-20260917 分支独立 commit,主仓 main HEAD `b1f443d8` 零变更(`git status --short` 验证),撞车风险 = 0
