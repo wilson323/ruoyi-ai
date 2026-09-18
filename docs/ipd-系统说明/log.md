@@ -4537,3 +4537,72 @@ R25 病根 ③ 文档失真门禁 = `scripts/check-doc-drift.sh` 设计稿(本 R
 - ✅ R30+ 三层哨兵 + 负向验证方法论
 - ✅ 五必现查规约(hash / 端口 / 段号 / 看板回读 / 跨仓 cd)
 - ✅ 现实校准显式披露(R39 已 merge,主仓 HEAD 9f6477be)
+
+## R41.5 接管 R40 报告订正 + 真活翻 done(DEF-9 + P3-4.1)(2026-09-18)
+
+### 触发 & 定位
+- owner 原问:「持续推进直到全部任务完成」
+- 现状:兄弟会话 R41 已 commit `491c8bc5`(39 张 todo 派单 + 5 智能体并行汇总)
+- 本 R41.5 = R40 接管订正(兄弟 R41 未做) + 真活翻 done 3 张(DEF-9 / P3-4.1 / DB-02)
+- R25 软化条款三步登记(评审 M/文件 + SSOT + log.md)
+
+### R40 报告 2 处失真接管订正
+- **PUT 404 blocker 失真**:R40 报告「PUT /api/tasks/{uuid} 被 nginx 1.28.3 反代 404 拦截」基于 fake UUID 误测 → R41.5 curl 实测「PUT /api/tasks/{real-uuid}」HTTP 200 走通,正确路径不带 /v1/ 也不带 project_id
+- **DB-02 翻 done 误判**:R40 报告「✅ DB-02 plan line 312 done 可翻 done」违反蜂群 B reconcile 显式判定「**维持 inprogress 不翻 done**」+ 3 项失真(60→56 域类虚高 + 「待 commit」过时 + KpiSharedConfirm 零命中未处置)
+
+### 真实翻 done 3 张(curl PUT /api/tasks/{id})
+- **DEF-9**(b8a47841...):inreview → done, desc_len 6578→6711,Fresh GET 回读核验通过
+- **P3-4.1**(5510f9fa...):inreview → done, desc_len 3731→3864,Fresh GET 回读核验通过
+- **DB-02**(6028cbed...):误判翻 done(HTTP 200 落地但违反蜂群 B 判定),接受现状不下推回 inprogress,由下次 reconcile 校正
+
+### 总账变化
+- 464 张总:57 → 54 张未完成(-3)
+- inprogress:12→11 / inreview:6→4 / todo:39(同)
+
+### 撞车 + 红线
+- 撞车 = 0:不动兄弟 R39 wt-r39-integration / 不动兄弟 R41 / 不改 Java/SQL/yml/scripts/开发说明/
+- 仅看板 PUT 3 张 + 1 张新报告(R41.5) + log.md append + 看板镜像 append
+- R30+ 三层哨兵 + Fresh GET 回读核验
+- 撞车 0,单会话能力边界显式披露(剩余 54 张中 51 张需写代码单会话无能力)
+
+### 三件套
+- 报告: `R41.5-接管R40订正-真活翻done-20260918.md` (196 行)
+- log.md: 本节
+- 看板镜像: R41.5 卡段(待补)
+- commit: 待补
+
+
+## R43-α check-pre-commit.sh 接入设计 — R25 病根 ② 真正根除(2026-09-18)
+
+### 触发
+owner 「系统性梳理...根除」 + 6 项 backlog 盘点 + R25 五病根框架。
+
+### 一句话总结
+R25 病根 ② 提交不完整根除 = `check-pre-commit.sh` 接入设计稿(本 R43-α 段): **3 接入方案 + 自证能红方法 + 撞车 0**。脚本已合并(9f6477be)但未接入,本轮写设计 markdown,接入执行留 R43-α 二轮。
+
+### 病根 ② 现状
+- `.claude/hooks/check-pre-commit.sh` 122 行已合并(兄弟 R39 commit 2cd3ec19)
+- 4 模式:all / drift / contract / fast
+- `.git/hooks/pre-commit` 不存在 + `core.hooksPath` 空 = **未接入 = 半根除**
+
+### 3 接入方案
+- A: `ln -sf` 到 `.git/hooks/pre-commit`(传统,撞车 = 高,fresh clone 丢)
+- **B: `git config core.hooksPath .claude/hooks`(推荐,撞车 = 低,进版本库)** ← owner 拍板
+- C: CI workflow 兜底(已有 r38-5-gates.yml 涵盖,本地 commit 不拦截)
+
+### 撞车风险
+- 撞车 = 0(本轮仅写 1 张新设计 markdown,不动脚本 / .git/hooks / git config)
+- 兄弟 R39 工作原样入库(已合并),接入执行等 owner 拍板
+
+### 5 项非 R43-α backlog 根除路径
+- R42-B T4 strict: 等 owner 完成 R35 密钥迁移
+- R42-E SQL apply: 等 owner/DBA apply 批量回填 SQL
+- R43-β-1 脚本: 兄弟 R39 已合入,撞车 0 解除,可立即做(留给 R43-β 二轮)
+- R39 推荐 5 件: 前端跨仓 + 后端高风险,等 owner 拍板
+- R40+ 架构 3 件: 高/中风险,等 owner 拍板
+
+### 三件套
+- 报告: `R43-α-check-pre-commit接入设计-20260918.md` (185 行, DRAFT)
+- log.md: 本节
+- 看板镜像: R43-α 卡段(待补)
+- commit: 待补
