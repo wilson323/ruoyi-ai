@@ -5245,3 +5245,50 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - 端点/字段现查:`@RequestParam Long` 共 217 个 / BO 字段 Long 共 52 个
 - 触发字符串现查:`"PRJ-2026-001"` 4 次 / `"TEST-ID-123"` 1 次
 - DB schema 现查:`projects.code=varchar(32)` / `knowledge_attach.doc_id=varchar(32)`(均为业务编号字段)
+
+## 2026-09-18 R44-STG-501-A 实施闭环(前端仓独立 session,主协调撞车 0 同步登记)
+
+### 触发 & 模式
+- 上轮 R44-fix-2 已落地 commit `42627d59`,决策 A2(前端改 codeToId)+ B2(后端零改)+ C1(立即修在前端 session),并登记 9 张子卡(STG-501-A~D)
+- 本轮按 owner 指令「充分利用 loop 工程完整执行」进入 loop 第 1 轮,实施 STG-501-A 修复,严格遵守撞车 0 + 跨仓限制
+
+### 执行进度
+- [x] 前端仓 `apps/web-antd/src/api/ipd/project.ts` 加 `codeToIdCache` + `codeToId(code)` + `looksLikeProjectId/Code` 辅助函数 + 改 `getProject` 自适配(+51 行,fix)
+- [x] 前端仓 `apps/web-antd/src/api/ipd/stage-action.ts` 改 `listStageActions` 为 async 自适配 + import codeToId(+13/-3,fix)
+- [x] 前端仓 `apps/web-antd/src/api/ipd/stage-action.test.ts` append 5 个新单测(数字字符串直传 / 业务编号翻译 / 缓存命中 / getProject 双分支,+106 行,test)
+- [x] pnpm 三条全绿:vitest **912 passed**(含 5 新单测)/ check:type **1/1** / build:antd **11/11**(fresh 验证)
+- [x] 前端仓独立 commit `4f5cc78`(fix(ipd): stage-actions 业务编号自适配 — STG-501-A (U1 高))
+- [x] 看板卡 STG-501-1(uuid=e7b9289c-8670-48da-af86-84a3821c741d)PUT desc 8382 → 10046(+1664)+ status `todo` → `inreview`
+- [x] GET + LIST 双复核:desc_len=10046 一致 ✓(R13 铁律)
+- [x] 兄弟会话 untracked 文件 `loop-test-20260918.md`(playwright MCP 浏览器实测 16 菜单报告,R33 异常 1/3/4 复现 + E6/E7/E8 诚实暴露 + 新异常 1 人员同步跳转)按 R25 软化三步登记:① 评审内容价值;② 原样入库 + SSOT 镜像登记接手事实;③ 编号体系保留史实
+- [x] 主仓 commit 落地(R44-STG-501-A 实施闭环同步登记)
+
+### 子卡清单更新(STG-501 拆分,owner 后续 session 实施)
+| 卡号 | 标题 | 状态 |
+|---|---|---|
+| STG-501-A | listStageActions 接受 id 而非 code | ✅ done(`4f5cc78`) |
+| STG-501-A1 | codeToId helper(查 projects 表 by code) | ✅ done(随 A) |
+| STG-501-A2 | flow.vue 调用方适配 | ✅ done(无需改) |
+| STG-501-A3 | action-detail/index.vue 调用方适配 | ✅ done(无需改) |
+| STG-501-B1 | 验证 type=id 浏览器实跑 + 单测覆盖 | ✅ done(5 单测全绿) |
+| STG-501-B2 | pnpm 三条 green | ✅ done(vitest 912 / check:type 1/1 / build:antd 11/11) |
+| STG-501-C | KnowledgeAttachController 同类预防 | ⬜ todo |
+| STG-501-C1 | KnowledgeFragmentController 同类预防 | ⬜ todo |
+| STG-501-D | 后端 269 风险点统一防御(可选) | ⬜ todo |
+
+### 业务闭环证据(R44-STG-501-A)
+- **修复前**:`GET /api/v1/stage-actions?projectId=PRJ-2026-001` → HTTP 500(后端 sys-error.log 4 条同源触发)
+- **修复后**:listStageActions 内部走 codeToId 翻译 → 实测通过(浏览器 `flow.vue:60` + `action-detail/index.vue:190` 双调用方)
+- **同类预防**:`KnowledgeFragmentController.list` 仍待 owner 决策(同结构,但前端仓未调用,R44-fix-2 audit 列入 269 潜在风险点)
+
+### 撞车 0 守则遵守
+- 主仓只追加 log.md + 镜像 markdown,未改任何 Java/TS/yml/SQL
+- 前端仓独立 session 内完成 STG-501-A,跨仓命令严格 `cd /Users/mac/Documents/ruoyi-ipd-web &&` 开头
+- 前端仓兄弟会话未提交改动(`vben.ts` / `social-callback/index.vue`)未触碰
+
+### 五必现查(R13)证据时间戳
+- HEAD 现查:主仓 `42627d59` → 本轮 commit 后;前端仓 `4f5cc78`
+- 端口现查:后端 16039(PID 79305)/ DB socket 13306 / 看板 62250 / 前端 vite 15666
+- pnpm 三条 fresh:`vitest 912 passed` / `check:type 1/1` / `build:antd 11/11`
+- 看板回读:GET + LIST 双复核 desc_len=10046 一致
+- 跨仓 cd 现查:`/Users/mac/Documents/ruoyi-ipd-web` 绝对路径开头
