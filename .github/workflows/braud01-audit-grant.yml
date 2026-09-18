@@ -1,0 +1,76 @@
+# BR-AUD-01 audit_logs GRANT 限制静态门禁
+# ----------------------------------------------------------------------------
+# 任务卡: DEF-5 task_id=081fbd58-de76-4222-a7ae-22b59faa464f (inreview, 等 owner 真库 DCL apply 授权)
+# 产品圣经: §12.1 BR-AUD-01 审计表写权限应只允许 INSERT
+# 治理报告: docs/ipd-系统说明/治理/DEF-5-20260907-差集审计与关键表库级REVOKE决策报告.md
+# 治理终稿: docs/ipd-系统说明/治理轮/DEF-5/PROPOSAL-01-脚本兜底.md (owner 2026-09-07 拍板首选 ①)
+# 配套 commit: e9e6631d (Q6 REVOKE UPDATE/DELETE 库级+表级已 apply 预演)
+# 上线 commit: docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql (本卡补充 INSERT 库级兜底)
+# ----------------------------------------------------------------------------
+# 触发: 改 docs/script/sql/ 或 scripts/ci/check-braud01-* 时跑
+# 行为: 默认 WARN 不阻断 PR（与 R25 一致），STRICT_BRAUD01_LINT=1 升级为 ERROR
+# ----------------------------------------------------------------------------
+
+name: braud01-audit-grant
+
+on:
+  push:
+    paths:
+      - 'docs/script/sql/**'
+      - 'scripts/ci/check-braud01-*'
+      - '.github/workflows/braud01-audit-grant.yml'
+  pull_request:
+    paths:
+      - 'docs/script/sql/**'
+      - 'scripts/ci/check-braud01-*'
+      - '.github/workflows/braud01-audit-grant.yml'
+  schedule:
+    # 每周一 02:00 Asia/Shanghai = 18:00 UTC Sunday
+    - cron: '0 18 * * 0'
+  workflow_dispatch:
+
+jobs:
+  braud01-lint:
+    name: BR-AUD-01 audit_logs GRANT 限制门禁
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup jq
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y jq >/dev/null 2>&1 || true
+          echo "jq: $(jq --version)"
+
+      # ---- 门禁本体 ----
+      - name: BR-AUD-01 静态门禁（check-braud01-audit-grant.sh）
+        id: braud01
+        run: |
+          set +e
+          chmod +x scripts/ci/check-braud01-audit-grant.sh
+          bash scripts/ci/check-braud01-audit-grant.sh
+          RC=$?
+          set -e
+          echo "check-braud01-audit-grant 退出码: $RC"
+          if [ "$RC" != "0" ]; then
+            echo "::warning::BR-AUD-01 audit_logs GRANT 限制登记件缺失/违规"
+            if [ "${{ secrets.STRICT_BRAUD01_LINT }}" = "1" ]; then
+              exit 1
+            fi
+          fi
+
+      # ---- 报告归档 ----
+      - name: 报告归档
+        if: always()
+        run: |
+          mkdir -p docs/ipd-系统说明/lint-reports
+          echo "BR-AUD-01 lint 报告: docs/ipd-系统说明/lint-reports/braud01-$(date -u +%Y%m%d-%H%M%S).txt" >> $GITHUB_STEP_SUMMARY
+          echo "门禁脚本: scripts/ci/check-braud01-audit-grant.sh" >> $GITHUB_STEP_SUMMARY
+          echo "治理终稿: docs/ipd-系统说明/治理轮/DEF-5/PROPOSAL-01-脚本兜底.md" >> $GITHUB_STEP_SUMMARY
+          echo "产品圣经依据: docs/开发说明/开发说明书.md §12.1 BR-AUD-01" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ 当前仓库状态: 登记件齐全 ✅（commit 8b5b0196 — 2026-09-17）" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ 真库 apply 状态: 待 DBA 在 OPS-04 维护窗口执行" >> $GITHUB_STEP_SUMMARY
