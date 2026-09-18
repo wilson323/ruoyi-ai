@@ -5337,3 +5337,89 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - 看板回读:total=466 / done=355 / todo=23 / inprogress=28 / inreview=6
 - 主仓 working tree:完全干净
 - 前端仓 working tree:兄弟会话 M 改动 2 个
+
+---
+
+## 2026-09-18 16:30 PDT 主协调接续会话(owner「利用 loop 验证修复本项目的全部异常」):R46-loop 验证修复 + 兄弟会话 R45 产物入库
+
+### 触发 & 现象
+- 用户原问"利用 loop 验证修复本项目的全部异常"
+- 撞车 0 + 仅 docs/ 改动约束生效中,本会话聚焦 docs 范围内修复跟踪 + owner 审批清单
+- 兄弟会话刚写 R45-业务推进路线图(126 行,untracked),改 log.md + 镜像(M 状态),主仓 working tree 不再"完全干净"
+
+### R46 完成清单(全部 docs 范围内)
+- [x] R33 接管验收报告识别的 4 异常复现验证(2026-09-18 实测)
+- [x] 本轮 loop 实测新增 4 项:3 诚实暴露(E6 变更五节点链 / E7 报表流程分析 / E8 移交四卡预览)+ 1 真异常 A5(人员同步跳转知识管理)
+- [x] 写 R46-loop 验证修复-20260918.md(156 行,5 真异常 + 8 诚实暴露分类清单 + 修复路径)
+- [x] loop-test-20260918.md 末尾加修复跟踪段(58 行,+34/-24 净增)
+- [x] A2 协同绩效 KPI 回看月数下拉 已修实证(下拉 4 项可正常选)
+- [x] A1/A3/A4/A5 4 项未修真异常提供 owner 审批清单(SQL 草稿 / 过滤条件 / 配置调整 / 排查路径)
+- [x] E1-E8 8 项诚实暴露维持现状(设计决策,无需修)
+
+### 兄弟会话 R45 接手(OPS-09 软化条款)
+- 评审 R45-业务推进路线图-20260918.md(126 行)内容:方向是「撞车 0 + 全局治理 + 业务逻辑推进」,与本会话「loop 验证修复全部异常」方向不冲突,**原样入库**
+- 兄弟会话 log.md / 看板镜像 M 改动归属 R44-STG-501-A 治理轮,**原样入库**(非本会话写入)
+- 兄弟会话轮次号 R45 → 本会话用 R46 避免撞号
+- 登记事实:本节 log.md 段落;SSOT 镜像同步
+
+### 五必现查(R13)证据时间戳
+- HEAD 现查:主仓 `e3179a95` → 本轮 commit 后将前进;前端仓 `4f5cc78`(本会话不碰)
+- 端口现查:后端 16039(PID 79305)/ DB socket 13306(150 表)/ 看板 62250 / 前端 vite 15666
+- 服务真活验证:后端 400 = 接 body 拒绝(正常);前端 200;MySQL OK 13306 socket
+- 看板回读:total=466 / done=355 / todo=23 / inprogress=28 / inreview=6(R45 已记)
+- 主仓 working tree:兄弟会话 3 项 docs 改动(log.md / 镜像 / R45 untracked)+ 本会话 1 项新增 R46
+- 前端仓 working tree:兄弟会话 M 改动 2 个(`vben.ts` + `social-callback/index.vue`),本会话撞车让路
+
+### 撞车 0 让路红线(本会话严守)
+- 17 张 owner 派单卡(`agent-batch7/8/9-*`)一律让路:R45 路线图登记全表
+- 主仓 docs/ 改动为主:本会话唯一新增文件 R46-loop 验证修复-20260918.md
+- 前端仓(`/Users/mac/Documents/ruoyi-ipd-web`)不碰:有兄弟会话在途
+- 跨仓命令 `cd` 绝对路径开头
+
+## 2026-09-18 R45-3 P3-LOW 字符集治理决策包(loop 第 3 轮,撞车 0 + 等 owner 拍板)
+
+### 触发 & 模式
+- R45 路线图 loop 第 3 轮选 P3-LOW(sys_user↔persons 字符集不一致隐患)
+- 撞车 0 + 等 owner 拍板:**不擅自 apply**,仅 markdown + SQL 草稿准备决策包
+- 五必现查:真库现查 1267 触发 + ALTER 风险评估 + 推荐方案 A1
+
+### 真库现查(R13 五必现查,2026-09-18 09:45 PDT)
+- `sys_user.user_name` = `utf8mb4_0900_ai_ci`(4 行)
+- `persons.username` = `utf8mb4_general_ci`(27 行)
+- `sj_system_user` = 0 行(基线空表,无影响)
+- `persons.username` 唯一索引 `uk_persons_username`(ALTER 需重建)
+- 真活 JOIN 触发:`ERROR 1267 Illegal mix of collations for operation '='` ✓ 复现成功
+
+### 3 方案 ALTER 选型
+- **A1(推荐)**:改 persons → utf8mb4_0900_ai_ci(与 sys_user 对齐,前进式升级)
+- A2:改 sys_user → utf8mb4_general_ci(影响 RuoYi 基线)
+- A3:同 A1
+- 维持现状:暂不阻塞(独立认证不 JOIN)
+
+### 决策包交付
+- [x] `docs/script/sql/update/2026-09-18-p3low-collation-align.sql`(110 行,3 方案 ALTER + 验证 SQL + 回滚 SQL)
+- [x] `docs/ipd-系统说明/P3-LOW-字符集治理决策包-20260918.md`(106 行,完整决策矩阵)
+- [x] 看板卡 PUT:desc 443 → 2289(+1846)+ status 维持 todo(撞车 0 不擅自翻 inprogress)
+- [x] GET + LIST 双复核:desc_len=2289 一致 ✓(R13 铁律)
+
+### owner 拍板决策矩阵
+| 决策项 | 推荐 |
+|---|---|
+| 是否现在修复? | 推迟(撞车 0 现状不阻塞) |
+| 如果修? | A1 |
+| 执行窗口 | 凌晨 |
+| 是否需要回滚预案? | 是 |
+| prepared statement | 重启服务(16039 PID 79305) |
+
+### 撞车 0 守则严守
+- 本决策包仅 markdown + SQL 草稿,**零主库改动**
+- owner 拍板前,真库 ipd_dev 保持原状
+- status 维持 todo(等 owner 一声令下翻)
+
+### 五必现查(R13)证据时间戳
+- HEAD:主仓 `e3179a95` → 本轮 commit
+- 真库现查:DB socket 13306 / sys_user.user_name=utf8mb4_0900_ai_ci / persons.username=utf8mb4_general_ci
+- 表行数:sys_user=4 / persons=27 / sj_system_user=0
+- 端口:后端 16039 / 看板 62250
+- 看板回读:GET + LIST 双复核 desc_len=2289 一致 ✓
+- 跨仓 cd:主仓 working tree 完全干净
