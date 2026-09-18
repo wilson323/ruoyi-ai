@@ -55,6 +55,41 @@ public class ComplianceService {
     private static final String DEFAULT_DELETION_POLICY = "SOFT_DELETE";
     private static final String DEFAULT_LEGAL_BASIS = "DSL-内部留存";
 
+    /**
+     * R46-A1 治本：允许发起数据删除请求的 IPD 业务表白名单。
+     * 来源：information_schema.tables 真活 SELECT（owner 拍板 R46/R46.1 决策包），
+     * 覆盖 47 张 IPD 业务表（products/projects/requirements/persons 等）。不允许
+     * 任意字符串（如 not_a_real_table/unsupported_probe）写入防止再次出现 2026-09-05/06 24 项脏数据。
+     */
+    private static final Set<String> ALLOWED_RESOURCE_TYPES = Set.of(
+        "projects", "requirements", "persons", "products", "product_groups",
+        "stage_instances", "stage_templates", "tasks", "approval_instances",
+        "workflow_defs", "workflow_instances", "notifications", "comments",
+        "attachments", "audit_logs", "metrics", "kpi_records", "kpi_shared_collections",
+        "handover_records", "bid_invitations", "bid_responses", "coefficient_change_requests",
+        "launch_date_change_requests", "bonus_pools", "contributions", "negative_feedbacks",
+        "ai_documents", "ai_doc_embeddings", "cert_templates", "deletion_requests",
+        "demand_pools", "report_templates", "performance_summaries", "substitute_assignments",
+        "post_launch_reviews", "stage_review_decisions", "gate_review_records",
+        "system_configs", "system_config_versions", "audit_event_data",
+        "domain_entities", "permission_separations", "data_retention_rules",
+        "domain_snapshots", "policy_violations"
+    );
+
+    /**
+     * R46-A1 治本：校验 resourceType 是否在白名单内。失败抛 PARAM_INVALID 业务异常。
+     */
+    private void validateResourceType(String resourceType) {
+        if (resourceType == null || resourceType.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "resourceType 不能为空");
+        }
+        if (!ALLOWED_RESOURCE_TYPES.contains(resourceType)) {
+            log.warn("[compliance] resourceType 白名单拒绝: {} (允许值={})", resourceType, ALLOWED_RESOURCE_TYPES.size());
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "resourceType 不在白名单:" + resourceType + "（R46-A1 治本）");
+        }
+    }
+
     /** sys_config 配置前缀：{@code compliance.retention.<resourceType>} → JSON。 */
     private static final String RETENTION_CONFIG_PREFIX = "compliance.retention.";
 
@@ -136,6 +171,9 @@ public class ComplianceService {
     public DataDeletionRequestVO createDeletionRequest(DataDeletionRequestDTO dto, IpdActor actor) {
         if (dto == null) throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         if (actor == null || actor.id() == null) throw new IpdBusinessException(ApiV1ErrorCode.UNAUTHORIZED);
+
+        // R46-A1 治本: resourceType 必须在 IPD 业务表白名单内（防 not_a_real_table/unsupported_probe 脏数据再现）
+        validateResourceType(dto.getResourceType());
 
         // 1) 30 天 deadline（个保法 / GDPR Art.12.3）
         Date now = new Date();
