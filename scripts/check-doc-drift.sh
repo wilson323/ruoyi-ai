@@ -67,8 +67,11 @@ for cmd in grep awk find; do
   fi
 done
 
-# 哨兵 5:表名白名单(4 张核心表)必须能加载
-WHITELIST_TABLES="gate_review_elements|audit_logs|requirements|change_requests"
+# 哨兵 5:表名白名单 — ipd_dev 真库 60 张业务表(2026-09-18 扩,by 主协调会话)
+# 源码生成: mysql --defaults-extra-file=.codex/ipd-dev/config/mysql-client.cnf
+#             -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='ipd_dev' AND TABLE_TYPE='BASE TABLE'"
+#             | grep -E '(s|ies|ions|ses)$' | grep -v '^_ipd' | sort -u
+WHITELIST_TABLES="gate_review_elements|audit_logs|requirements|change_requests|ai_doc_embeddings|ai_documents|ai_model_configs|allowance_ledgers|audit_log_chain_heads|bid_invitations|bid_responses|bonus_allocations|bonus_pools|cert_templates|coefficient_change_requests|contribution_versions|contributions|correction_logs|deletion_requests|deliverables|gate_arbitrations|gate_element_results|gate_review_observers|gate_reviews|gate_waivers|gates|handover_records|ipd_business_config_versions|kpi_records|kpi_rule_snapshots|kpi_shared_confirms|launch_date_change_requests|legacy_imports|multi_project_capacity_approvals|negative_feedbacks|notification_events|person_sync_jobs|persons|post_launch_reviews|product_groups|product_retirements|products|project_cert_items|project_circle_comments|project_circle_posts|project_followers|project_members|project_score_records|project_score_tasks|project_scores|project_stages|projects|rd_replacement_approvals|rd_replacements|requirement_changes|sop_template_instances|sop_templates|stage_actions|sys_oss|system_config_versions|system_configs"
 WHITELIST_COUNT=$(echo "$WHITELIST_TABLES" | tr '|' '\n' | wc -l | tr -d ' ')
 if [ "${WHITELIST_COUNT:-0}" -lt 4 ]; then
   echo "::error::表名白名单条目数异常($WHITELIST_COUNT < 4)——门禁失效"
