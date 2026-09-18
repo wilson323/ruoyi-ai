@@ -42,7 +42,11 @@ public class PmDirectoryController {
     public ApiV1Response<Map<String, Object>> directory() {
         List<Person> people = personMapper.selectList(new LambdaQueryWrapper<Person>()
             .eq(Person::getAccountStatus, "ACTIVE")
+// R113-A: 保留 main 状态过滤 + R46-A3 治本 前缀过滤(双保险)
             .ne(Person::getAccountStatus, "MOCK")
+            // R46-A3 治本: 排除 Mock 测试数据 (name 前缀 Mock- 或 username 前缀 u_QA-SYNC-)
+            .notLike(Person::getName, "Mock-%")
+            .notLike(Person::getUsername, "u_QA-SYNC-%")
             .orderByAsc(Person::getId));
         Map<Long, String> groupNames = productGroupMapper.selectList(null).stream()
             .filter(g -> g.getGroupName() != null)

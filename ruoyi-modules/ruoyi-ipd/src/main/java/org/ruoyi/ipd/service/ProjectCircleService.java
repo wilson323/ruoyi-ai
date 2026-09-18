@@ -149,6 +149,9 @@ public class ProjectCircleService {
             .stream().map(ProjectFollower::getUserId).collect(Collectors.toSet());
         List<Person> pool = personMapper.selectList(new LambdaQueryWrapper<Person>()
             .eq(Person::getAccountStatus, ST_ACTIVE_PERSON)
+            // R46-A3 治本: 排除 Mock 测试数据 (name 前缀 Mock- 或 username 前缀 u_QA-SYNC-)
+            .notLike(Person::getName, "Mock-%")
+            .notLike(Person::getUsername, "u_QA-SYNC-%")
             .orderByAsc(Person::getId));
         List<Map<String, Object>> result = new ArrayList<>();
         for (Person p : pool) {
