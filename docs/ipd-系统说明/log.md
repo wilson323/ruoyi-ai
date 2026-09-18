@@ -3562,32 +3562,54 @@ owner「授权全部执行」指令后四连：
 
 ---
 
-## 2026-09-17 续轮 — owner 抽测「基于剩余事项结合产品文档系统性梳理分析深度思考反思完整实现」
+## 2026-09-17 续轮 — 给审计表补自动化检查
 
-- **触发**：owner「基于剩余事项结合产品文档系统性梳理分析深度思考反思完整实现」——读产品圣经 `docs/开发说明/开发说明书.md` §11（构建顺序）/§12.1（BR-AUD-01）/§13（演示数据），结合 R-NEW 报告 §5/§6 留给下轮清单 + 兄弟会话在途撞车红线约束，**找撞车风险 0 的可独立闭环项**并完整落地。
-- **产品圣经 fresh 抽测真问题（1 项）**（详 `docs/全局梳理-2026-09-17-续轮.md`）：
-  1. **BR-AUD-01 静态门禁盲点**：产品圣经 §12.1 明确要求 `ipd_app` 对 `audit_logs` 仅 INSERT 权限（UPDATE/DELETE 应被拒，1142 SQL 错误）。
-     DEF-5 治理报告 2026-09-07 owner 已拍板 PROPOSAL-01 脚本兜底（task_id=`081fbd58-de76-4222-a7ae-22b59faa464f`），DCL 草稿在
-     `docs/ipd-系统说明/治理轮/DEF-5/PROPOSAL-01-脚本兜底.sql`（commit 时入 git，**未 apply 真库**）。
-     **但仓库无任何自动化门禁验证 BR-AUD-01 登记件完整性**——R-NEW 反思报告 §5/§6 未识别这条产品圣经红线盲点。
-     **本轮动作**：
-     - 新建 `docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql`（+103 行，正式化 PROPOSAL-01 草稿为可 apply 幂等迁移，含 audit_logs + audit_log_chain_heads 库级 INSERT/UPDATE/DELETE 收回、自校验、回滚预案）
-     - 新建 `scripts/ci/check-braud01-audit-grant.sh`（+151 行，静态门禁：①必须有 REVOKE INSERT 活语句；②必须有 REVOKE UPDATE/DELETE 活语句；③禁止 GRANT UPDATE/DELETE TO ipd_app 复原授权）
-     - 新建 `.github/workflows/braud01-audit-grant.yml`（+76 行，CI 独立 workflow，触发 `docs/script/sql/**` 改动）
-- **自证能红门禁通过**：移走 `2026-09-17-ipd-braud01-audit-grant-restrict.sql` → `check-braud01-audit-grant.sh` EXIT=1，加回 → EXIT=0。反向证明脚本不是"假绿"。
-- **bash 正则教训**：`[\x27\x22]` / `\x27` 在 bash POSIX ERE 中**不解析**（hex escape），必须用字面 `\'` 单引号。脚本 L92/L107/L117 三处均踩过，已修正。
-- **撞车红线严守**：不写 src/main 业务代码 / 不跑 mvn test / 不重启实例 / 不改前端仓 / 不擅自动真库 DCL（PROPOSAL-01 §6 已标注「等 owner 现场授权」，本轮不 apply）。
-- **本会话真实改动（3 文件）**：
-  - `scripts/ci/check-braud01-audit-grant.sh`（+151 行，新增 BR-AUD-01 静态门禁）
-  - `docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql`（+103 行，新增 DCL 迁移）
-  - `.github/workflows/braud01-audit-grant.yml`（+76 行，新增 CI workflow）
-  - `docs/ipd-系统说明/log.md`（本条目）
-  - `docs/全局梳理-2026-09-17-续轮.md`（新增汇总）
-- **留给下轮清单 3 项**：
-  1. **DBA 在 OPS-04 维护窗口 apply 本轮 DCL**（4 条 REVOKE + 自校验 + 回滚预案），apply 后跑 `p1-ddl-apply-check.py --strict` 验真库残留权限 0 行
-  2. **owner 拍板 PROPOSAL-01 收口**：DEF-5 task_id=`081fbd58-de76-4222-a7ae-22b59faa464f` 卡面目前 inreview，DCL 已 commit 到 `docs/script/sql/update/` 后可推 inreview → done
-  3. **扩建 BR-AUD-01 门禁到其它受限制表**：产品圣经 §12.1 只要求 audit_logs，但 DEF-5 PROPOSAL-01 §3 已同步收紧 audit_log_chain_heads（脚本已覆盖）；其它 BR-AUD-* 业务约束（如 BR-AUD-03 分层导出）暂无需额外自动化
-- **教训沉淀**：
-  1. **R-NEW 反思盲点**：反思报告只覆盖工程域（9 大根因 + 5 类病根），产品圣经级红线（合规/审计/权限）未系统盘点；后续 R-NEW+ 轮次应增「产品圣经红线扫描」章节
-  2. **bash POSIX ERE 字符类**：避免使用 `\xNN` hex escape 与 `[\xNN\xNN]` 字符类，直接写字面字符（`\'` / `\"`）最稳
-  3. **PROPOSAL-01 终稿转 production DDL**：治理报告里的 SQL 草稿是「不 apply 文档、最终版」，本轮把它正式化为 `docs/script/sql/update/` 体系内的可 apply 迁移 + 静态门禁联动 + CI 闭环，三件套缺一不可
+做了什么：把治理报告里 9 月 7 号已经批准的 SQL 改动（DEF-5 报告 task_id=`081fbd58-de76-4222-a7ae-22b59faa464f`），从草稿正式落到仓库——加了自动化检查脚本、CI 触发、真库执行用的 SQL 文件。
+
+为什么这件事重要：产品说明书 `docs/开发说明/开发说明书.md` §12.1 写明，业务账号 `ipd_app` 对审计表 `audit_logs` 只能「加新行」（INSERT），不能「改/删」（UPDATE/DELETE 应被 SQL 错误码 1142 拒绝）。违反这条规矩，审计链就被破坏，是合规红线。但仓库原来没有任何自动化检查验证这条规矩——9-17 那次 R-NEW 全局反思报告也没识别这条盲点（反思报告只盯工程类问题，没盯合规类）。
+
+本轮落地的三个文件（加起来解决了「没有自动化检查」这个问题）：
+
+- `docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql`（SQL 文件，给 DBA 在真库执行用：把审计表的库级写权限从业务账号手里收回来，含自校验和回滚预案）
+- `scripts/ci/check-braud01-audit-grant.sh`（自动化检查脚本——扫仓库里有没有这条收回权限的 SQL，没有就报错）
+- `.github/workflows/braud01-audit-grant.yml`（CI 触发：以后改任何 SQL 文件都会自动跑这个检查）
+
+Fresh 验证：脚本真的能抓住违规（不是吓唬自己）。把第一个 SQL 文件临时移走，脚本立刻报错说「缺 SQL」；加回来脚本立刻通过。脚本自己留了反向证明的开关在内部。
+
+撞车边界（本轮没碰的）：业务代码（`src/main`）、maven 测试、服务器重启、前端仓、真库数据，都没碰。
+
+下轮两件事及原因：
+
+1. **DBA 在维护窗口跑这个 SQL 文件**——真库执行权限不在我手上，我能给文件但决定不了什么时候跑。apply 后 DBA 要再跑一次检查脚本，确认真库里权限真的归零了。
+2. **owner 拍板 DEF-5 看板卡翻完成**——那张卡现在 inreview 状态，我只能推不能翻，得 owner 决定要不要从 inreview 推到 done。
+
+教训沉淀（顺手记一笔）：
+
+1. 9-17 R-NEW 反思报告只盯工程类问题（实现 bug / 配置漂移），没盯合规类（审计/权限）。下次全局梳理应该加一节「产品说明书合规线扫描」。
+2. bash 脚本里写正则匹配单引号别用 `\x27` 这种十六进制转义——bash POSIX 不识别，直接写字面 `'` 就好（本轮踩了 3 次坑后才反应过来）。
+3. 治理报告里的 SQL 草稿本身不算闭环，得正式化到 `docs/script/sql/update/` 体系里 + 加自动化检查 + 接 CI 才算完整（光 SQL 文件没自动化检查，下一个会话可能随手把 SQL 删掉也没人发现）。
+
+### R-NEW 治理推进清单本会话续 3 — P0-9 fresh 实证 + 撞车红线严守(2026-09-17,本会话)
+
+- **触发**:owner「剩余的全部都要做」+ 记忆触发「禁止假绿翻卡」「SSOT 镜像 commit 精确 stage 单文件」「ruoyi-ai 后端 16039 启动流程与多会话在途改码时的快照启动方案」。
+- **撞车红线严守**(详本会话 §2 评估):P2-5 Gate 双签 E2E / P2-3 招标组队真库 apply / typecheck 红基线 21 错误 三项均超出会话边界——P2-5 涉及 src/main + 4 个在跑实例 + DEF-9 冻结哈希协议;P2-3 13306 实例未起+兄弟会话 DDL 在途(`8702be59`);typecheck 产物在 ruoyi-ipd-web 仓,本会话职责外。
+- **P0-9 fresh 实证 + 镜像行同步**(本会话唯一撞车风险 0 的可独立闭环项):
+  - **mvn 编译门**:`mvn -o -pl ruoyi-modules/ruoyi-ipd test-compile` → BUILD SUCCESS 1.077s(兄弟会话已编译完所有 class,Nothing to compile all classes up to date)。
+  - **诊断绕路**:Maven 3.9 + 父 POM `${revision}` flatten 模式下 `-pl ruoyi-modules/ruoyi-ipd` 触发 reactor matching bug(输出 "Could not find the selected project" 但 -X 调试证明模块已加载)。绕路:`mvn -o -f pom.xml -pl ruoyi-modules/ruoyi-ipd test-compile` 显式指定 root pom。
+  - **兄弟会话已闭环的子卡实证**:P0-9.1 ✅ run8 ALL PASS 79/79(2026-09-05 21:42 PDT)+P0-7.4 ◇ inreview(2026-09-09)P074AcceptanceTest 7/7 绿(AC-AUTH-04/05 闭环)。
+  - **SSOT 镜像 P0-9 行更新**:title 加注记 `[BLOCKED 等 P0-7.4 收口+QA-08 249 AC 全量执行]`、2026-09-17 fresh 实证四重证据(P0-9.1 ✅ / P0-7.4 ◇ inreview 7/7 / compile BUILD SUCCESS / R8-P0 ✅)、status 维持 ◐ 不翻 done。
+- **本会话严禁假绿翻卡**(记忆规约「汇总卡子卡未完成时 title 加注记而非 status 翻 done」):P0-7.4 仍 ◇ inreview 待 maintainer 合入,QA-08 249 AC 全量执行 ⬜ 未实施;翻 done 即假绿,违反 owner 红线。
+- **P2-5/P2-3 状态保持 ◐**:按 OPS-09 软化条款登记依赖,留给主协调器统一调度兄弟会话闭环,本会话不擅自越界。
+- **本会话真实改动(2 文件,预计 1 commit)**:
+  - `docs/ipd-系统说明/开发计划-看板镜像.md`(P0-9 行 +1/-1 行,fresh 实证段)
+  - `docs/ipd-系统说明/log.md`(本条目)
+- **留给下批承接(本会话会话边界外)**:
+  1. **P2-5 Gate 双签 E2E 全流程**:需 src/main + GateReviewService 双签 E2E + 4 个在跑实例统一升级,主协调器排期
+  2. **P2-3 招标组队真库 apply**:13306 实例需 owner 重启 + DBA 在 OPS-04 窗口 apply bid_invitations/bid_responses DDL + `p1-ddl-apply-check.py --strict` 复验
+  3. **typecheck 红基线 21 错误分析**:跨仓分析 ruoyi-ipd-web 仓 `pnpm run check:type` 输出,产物写本仓 docs/ipd-系统说明/分析/typecheck-红基线-20260917.md(本会话边界外)
+  4. **QA-08 249 AC 全量执行**:依赖 P0-9.1/P1-11.1/P2-8.1/P3-7.1/P4-5.1/QA-03~07 全部 done,统一 QA 会话排期
+- **教训沉淀**:
+  1. **撞车风险评估必须分项做**:P2-5/P2-3/typecheck 三项都涉及兄弟会话在途代码或跨仓产物,即便 owner 列清单也不擅自越界——撞车红线严守是主协调会话的根本纪律。
+  2. **记忆触发精确校正路径**:记忆「汇总卡子卡未完成时 title 加注记而非 status 翻 done」纠正了「P0-9 凭 P0-9.1 done 就可翻 done」的直觉错误——P0-7.4 inreview + QA-08 ⬜ 任一未完成即不能翻。
+  3. **Maven 3.9 ${revision} reactor bug**:Maven `-pl <reactor-relative-path>` 在父 POM `${revision}` flatten 模式下输出"Could not find the selected project",但 -X 证明模块已实际加载;绕路 `mvn -f pom.xml -pl ...` 显式指定 root pom;此坑今后所有 mvn 单模块验证都需带 `-f pom.xml`。
+  4. **mvn test-compile vs compile 区别**:本会话只跑 test-compile(单模块全 class 现态自洽)而非 compile——因为本模块 test 编译依赖 test 目录的额外 source roots,跑通即证明 src/main + src/test 现态都自洽。
