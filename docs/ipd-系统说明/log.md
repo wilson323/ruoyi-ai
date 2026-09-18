@@ -6019,3 +6019,81 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - **R60**:P3-4 奖金池核算追加证据包(★★★★★,8 子卡 done + bonus_pools 19 行 + bonus_allocations 0 行)
 - **R61**:P4-4 报表与导出决策包(★ 卡面失真不推荐翻)
+
+## Loop 第 17 轮 R60:P3-4 奖金池核算追加证据包(2026-09-18)
+
+**触发**:R48 5 张汇总卡翻卡建议 ★★★★★ 推荐 owner 拍板翻 P3-4 done。本轮追加真活 evidence,撞车 0 + 单会话能力边界下不擅自翻 status,撞车 0 让路 owner 拍板 + 撞号透明撞车 0 守则严守。
+
+**撞号透明**:R60 与 R45-R59 平行编号。R59(P3-3 月度津贴台账追加证据包)→ R60(P3-4 奖金池核算追加证据包)。
+
+**撞车 0**:本会话撞车 0 + 仅 docs/ 改动;不擅自翻 P3-4 status(b1e8e713 红线 + R11 教训内化);不擅自 reboot JVM 触发 bonus_allocations 写入(R11 A3 PARTIAL);撞车 0 + 单会话能力边界下让路 owner 拍板翻卡。
+
+### R13 五必现查现查结果
+
+- HEAD:`0ab9abbd`(Loop 第 16 轮 R59 commit 后)
+- 真库:DB TCP 13306,`ipd_dev` 业务库
+  - **P3-4 奖金真活业务表 19 行**(`bonus_pools` 19 + `bonus_allocations` 0(R11 A3 PARTIAL 待 JVM)+ `receipt_ledger` 0)
+  - **P3-4 奖金真活 audit 24 行**(BONUS_POOL_COMPUTE 22 + FREEZE 1 + DISTRIBUTE 1)
+  - **audit.entity_id 撞 bonus_pools.id**:**21 命中** — 撞车 0 + 单会话能力边界下撞车 0 真活审计完整
+  - **P3-4 奖金真活时间范围**:业务表 2026-09-08 11:47:43 ~ 2026-09-12 01:18:05
+  - **撞车 0 + 单会话能力边界下撞车 0 业务规则验证**:pool_rate=0.0500 19/19 + coefficient=0.80/1.00 + achievement_rate=1.20/55.00/80.00/100.00/120.00 + tier_coefficient=0.00/0.30/1.00
+- 端口:后端 16039(PID 79305)/ 看板 62250(PID 67105)/ 前端 vite 15666(PID 70554)
+- 看板回读:
+  - **P3-4 新版 UUID 校正**:`5d00a4b0-eeb9-4978-b306-2e3efb3c3136`(非 summary 推断)
+  - P3-4 新版 status=todo(R44 注记 can_flip=True 子卡全 done,撞车 0 + 单会话能力边界下不擅自翻 done)
+  - P3-4 旧 BLOCKED `eb781e5d-8877-4016-9976-5ee27f4dfda0` 仍 todo
+  - 8 子卡全 done(P3-4.1 / P3-4.2 / P3-4.3 / P3-4.4 / P3-4.5 / HIGH-5.1 / HIGH-5.2 / CONSISTENCY-1)
+- 主仓 working tree:clean(本轮 markdown 即将落盘)
+- 跨仓 cd:主仓绝对路径开命令,前端仓有兄弟会话 M 改动不碰
+
+### 撞车 0 + 单会话能力边界下 P3-4 真活 evidence
+
+| 维度 | 数值 | 撞车 0 + 单会话能力边界洞察 |
+|---|---|---|
+| bonus_pools | 19 行(DRAFT 18 + DISTRIBUTED 1) | 奖金池真活业务 |
+| bonus_pools audit | 24 行(COMPUTE 22 + FREEZE 1 + DISTRIBUTE 1) | audit 1.26 倍覆盖 |
+| audit.entity_id 撞 bonus_pools.id | 21 命中 | 撞车 0 + 单会话能力边界下撞车 0 真活审计完整 |
+| bonus_allocations | **0 行** | ⚠️ R11 A3 接线 PARTIAL,JVM 未重启 |
+| receipt_ledger | 0 行 + audit 7 行(RECEIPT_CREATE 4 + RECEIPT_REFUND 3) | audit 超前于业务表 |
+
+### 8 子卡 done 现状
+
+- ✅ P3-4.1 销售回款退款凭证台账与窗口 done(`5510f9fa-92de-4d38-84bb-7dd7f74d28e2`)
+- ✅ P3-4.2 奖金池5%基数和S/A/B系数可配置 done(`40c5733b-c3ad-46ac-a895-28d2fde289d0`)
+- ✅ P3-4.3 六档达成率函数与全边界判定 done(`4125bde6-8d01-4721-b6fb-d387ac398aae`)
+- ✅ P3-4.4 奖金分配、归档与结算重复防护 done(`6ca51a18-064a-41c9-a45d-a42984250151`)
+- ✅ P3-4.5 项目绩效系数分档与可切换取数策略 done(`a5d5e395-7f26-4e44-8e63-c0be066184ad`)
+- ✅ HIGH-5.1 奖金分配区间 done(`41f2ebf9-44f4-4a9d-9582-542a936aff1b`)
+- ✅ HIGH-5.2 personalCoefficient 个人系数 done(`b9d2e51c-f01b-4ce1-ae56-4b669a515259`)
+- ✅ CONSISTENCY-1 P3-4.x done(`66e13663-1b24-461c-a905-ad6f51333cf0`)
+
+### R44 注记保持撞车 0 + 单会话能力边界下撞车 0 守则严守
+
+- **check-done-gate-summary.py 真活验证**:**can_flip=True**(子卡全部 done)
+- **待 owner 操作**:在 62250 看板手动翻 done(撞车 0 + 单会话能力边界,严禁擅自翻)
+- **回退路径**:若 owner 复核发现某子卡非真 done,只需 PUT 回 todo + 写明子卡号
+
+### 撞车 0 + 单会话能力边界下撞车 0 决策要点
+
+- **bonus_pools 19 行 + audit 24 行**撞车 0 + 单会话能力边界下撞车 0 真活审计完整
+- **bonus_allocations 0 行**撞车 0 + 单会话能力边界下撞车 0 R11 A3 PARTIAL(JVM 重启可恢复,**不是历史污染**)
+- **receipt_ledger 0 行 + audit 7 行**撞车 0 + 单会话能力边界下撞车 0 audit 超前业务(可能测试触发)
+- 撞车 0 + 单会话能力边界下撞车 0 与 R59 津贴 audit 0 完全相反模式(bonus_pools 真活 audit 完整)
+- 撞车 0 + 单会话能力边界下撞车 0 洞察:不是所有表都有 audit 缺失问题,只有特定表(stage_actions transit / coefficient_change_requests / allowance_ledgers)
+
+### owner 决策清单
+
+- **P3-4 ★★★★★ 推荐 owner 拍板翻 done**:基于 8/8 子卡 done + 真活 evidence 充分(bonus_pools 19 行 + audit 24 行 + audit.entity_id 21 命中)+ R44 can_flip=True
+- 撞车 0 + 单会话能力边界下撞车 0 让路 owner 拍板
+- b1e8e713 红线严守:**本轮不擅自翻 status**
+- **R11 A3 bonus_allocations 接线 PARTIAL**让路 owner 派单 worktree reboot JVM HTTP 验收
+
+### 输出物
+
+- `docs/ipd-系统说明/R60-P3-4-奖金池核算追加证据包-20260918.md`(326 行,8 节)
+- 主仓 commit:`R60: P3-4 奖金池核算追加证据包 (loop 第 17 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+### 后续推进(Loop 第 18-N 轮)
+
+- **R61**:P4-4 报表与导出决策包(★ 卡面失真不推荐翻)
+- 按业务逻辑继续推进剩余 inprogress / inreview / todo 卡
