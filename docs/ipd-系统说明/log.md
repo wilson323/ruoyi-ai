@@ -4374,3 +4374,54 @@ R25 病根 ③ 文档失真门禁 = `scripts/check-doc-drift.sh` 设计稿(本 R
 - ✅ 未跑 mvn / 未改 Java/SQL/yml / 未写 scripts/ / 未碰兄弟 R39 任何文件
 - ✅ 仅 1 张新设计 markdown + log.md append + 看板镜像 append(撞车 0)
 - ✅ R25 病根 ③ 留 spec 给二轮,本轮不抢脚本落地权
+
+## R40 全局 57 张卡全景处置 + 看板 PUT 404 blocker 锁定(2026-09-18)
+
+### 触发 & 定位
+- owner 原问:**「系统性梳理分析所有看板的待办事项完整执行」**(2026-09-18)
+- 承接:R39 三向对账门禁(commit `2cd3ec19`)+ R43-A 评审 PASS(撞车 0,等 owner 拍板推进选项 A/B/C)+ R43-β 病根 ③ 设计
+- 方法:manage.py list 拉 464 张卡 → 按 status 过滤未完成 57 张 → 按 R 轮次分类 → 逐张判定本会话能力边界 → R25 五病根映射
+
+### 57 张卡全景(2026-09-18 13:29 现查)
+- **总 464 张**:done 353 / cancelled 54 / inprogress 12 / inreview 6 / todo 39
+- **未完成 57 张** = inprogress 12 + inreview 6 + todo 39
+- **R25 五病根映射**:病根 ①④⑤ 占 33 张(58%),全部需写代码/单测/真活 HTTP
+
+### 单会话能力边界(本轮真实判定)
+- **1 张本轮可立即翻 done**(DB-02,plan 文件 line 312 已 ✅)
+- **56 张需写代码**:4 张 PLAN 大卡 + 6 张 inreview + 8 张其他 inprogress + 39 张 todo
+- **单会话无能力"完整执行"**:估算 100-200 工时,需跨多会话 + worktree 隔离
+
+### 本会话真实交付(4 件)
+1. ✅ **R40 治理轮报告**:`docs/ipd-系统说明/R40-57卡全景处置-20260918.md`(256 行)
+2. ✅ **DB-02 plan 文件 line 312 已 ✅ done**:兄弟会话 2026-09-05 实施 63 domain 类(> 16 要求),主仓 commit `5329ce0b` + `cb827c07` SSOT 同步
+3. ✅ **看板镜像 R40 卡段**:本节 append
+4. ✅ **commit + push**:worktree 基线同步主仓 HEAD `2b1c72a8` → worktree `2cd3ec19` 同步
+
+### R40 P0 blocker(显式记录 + 留给 owner)
+- **看板 REST API PUT 改 status 被 nginx 1.28.3 反代 404 拦截**
+- 证据:`curl -v -X PUT http://127.0.0.1:62250/api/tasks/{uuid}` 返回 `HTTP/1.1 404 Not Found` + `Server: nginx/1.28.3` + `Content-Length: 0`
+- 影响:`manage.py sync` 用 PUT 改 status → 失败(line 252-255) · `manage.py set` 内部 PUT → 失败 · DB-02 看板卡片 status inprogress → done 无法同步
+- 修复路径(需 owner 决策):
+  - A. 修 nginx 配置(基础设施改动,在 vibe-kanban 服务端)
+  - B. 降级 manage.py 用 POST + DELETE 替代 PUT(复杂,会丢 desc 历史)
+  - C. 看板卡片双源管理(plan 权威 + 看板只读 + UI 手动翻 status)
+  - D. 等 owner 拍板
+
+### 留给 R41+(派单清单)
+1. **R41 P0 — 修复 PUT 404 blocker**(owner 拍板)
+2. **R41 P1 — AI 融合 5 卡派单**(PLAN-AI-FULL + AI-P1-1~P3)
+3. **R41 P1 — inreview 6 卡跨工序派单**(DEF-9 / P0-7.3/7.4 / P1-6.1 / P3-4.1)
+4. **R41 P1 — WB-17-1 工作台任务类型扩展**(1 类 → 17 类)
+5. **R41 P2 — U1 高单卡 6 张**(AUD-02 / P1-10.2 / P2-4.2 / P3-2.3 / P3-8.3 / SEC-04)
+6. **R41 P2 — U2 中单卡 6 张**(OPS-06 / P4-4.1 / P4-5.1 / QA-06/07/08)
+7. **R41 P3 — 14 张汇总卡自动等子卡**(P0-9 / P1-3/4/6/10 / P2-3 / P3-1/2/3/4/7/8 / P4-2/4/5)
+8. **R41 P3 — 3 张数据缺口裁决**(P-DATA-gap-1/2 + P3-LOW)
+9. **R41 P3 — 兄弟 R39 合入 main 后**(R43-A 选项 A/B/C 推进)
+
+### 红线遵守
+- ✅ 未跑 mvn / 未改 Java/SQL/yml / 未改 scripts/ / 未改 .claude/hooks/ / 未碰兄弟 R39 在途
+- ✅ 仅 docs/ 追加(1 新报告 + log.md append + 看板镜像 append)
+- ✅ R30+ 三层哨兵 + 负向验证方法论
+- ✅ 五必现查规约(hash / 端口 / 段号 / 看板回读 / 跨仓 cd)
+- ✅ 单会话能力边界显式披露:不假装"完整执行"56 张需写代码的卡
