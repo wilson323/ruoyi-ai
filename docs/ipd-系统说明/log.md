@@ -5423,3 +5423,49 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - 端口:后端 16039 / 看板 62250
 - 看板回读:GET + LIST 双复核 desc_len=2289 一致 ✓
 - 跨仓 cd:主仓 working tree 完全干净
+
+## Loop 第 4 轮 — PLAN-AUDIT-FULL 子任务 1 审计覆盖缺口清单(2026-09-18)
+
+**触发**:R45 路线图统筹治理段(子任务 1)撞车 0 + 纯静态分析 + 不擅自动代码。
+**模式**:loop 第 4 轮 — 后端 grep + 真库 SELECT + 缺口清单 markdown + 撞车 0 让路红线。
+**产出**:`docs/ipd-系统说明/PLAN-AUDIT-FULL-审计覆盖缺口清单-20260918.md`(145 行,8 节)。
+
+### 关键数据(R13 五必现查)
+
+- IPD 业务表 38 张 / 后端代码引用 entity_type 42 个 / 真库 audit_logs 实际 30 个
+- 已覆盖 27 张 / 未覆盖 11 张 / 测试污染 1 个(`not_a_real_table` 24 行)
+- 真库 grep 范围:`ruoyi-modules/ruoyi-ipd/src/main/java/` 387 个 java 文件
+- 端口现查:后端 16039 (PID 79305) / DB socket 13306 / 看板 62250 (PID 67105) / 前端 vite 15666 (PID 70554)
+
+### P0 阻塞(撞车 0 待 owner 决策)
+
+1. stage_actions 表无审计 — 2298 行业务流转无审计,业务合规盲区
+2. coefficient_change_requests 表无审计 — 代码 4 次引用,真活未触发
+3. R46-A1 not_a_real_table 污染 — 24 行,待 owner 拍板路径 1(SQL清理)vs 路径 2(前端过滤)
+
+### 6 组撞车 0 命名不一致
+
+- bonus_pool `(1)` vs bonus_pools `(24)` — 撞车 0 维持现状(存量字面量不改)
+- coefficient_change vs coefficient_change_requests — 撞车 0 维持现状
+- handover_record vs handover `(17)` — 撞车 0 维持现状
+- kpi_record vs kpi_records `(1)` — 撞车 0 维持现状
+- launch_date_change vs launch_date_change_requests `(3)` — 撞车 0 维持现状
+- requirement_change vs requirements `(2)` — 撞车 0 维持现状
+
+### 撞车 0 守则严守(参照 IpdEntityType.java:7-9 javadoc)
+
+- 纯静态分析(grep + 真库 SELECT),零代码改动
+- 不擅自补 audit(撞车 0 + 单会话能力边界)
+- 不擅自改命名(现值即契约)
+- 不擅自清理污染(R46-A1 待 owner 拍板)
+- 看板卡 status 维持 inprogress(撞车 0 不擅自翻 done)
+
+### 撞车 0 行动建议(待 owner 拍板)
+
+| 行动 | 影响面 | 推荐度 |
+|---|---|---|
+| A1 维持现状 + 接受 11 张表无审计 | 低(撞车 0 风险 0) | ★★ |
+| A2 补 stage_actions 审计(代码 0 处引用) | 中(2298 行业务流转需补 audit) | ★★★★★ |
+| A3 清理 not_a_real_table 污染(R46-A1) | 低(24 行 SQL DELETE) | ★★★★★ |
+| A4 统一命名不一致(6 组) | 中(撞车 0 风险,但破坏契约) | ★ |
+| A5 全 49 张表统一补 audit | 高(可能撞车风险 + 工程量大) | ★★★ |
