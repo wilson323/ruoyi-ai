@@ -3804,3 +3804,56 @@ Fresh 验证：脚本真的能抓住违规（不是吓唬自己）。把第一�
 2. **多事实源必须对账**(R25 病根 ⑤):R34 报告数字与真库状态不一致,实测 COUNT 立即反证
 3. **轻量 merge gate 替代 mvn compile**(避假红):不跑 mvn,跑工作树状态 + DB 真活校验
 5. **撞车红线未触发**:R35 takeover 隔离 commit,主仓 main HEAD `d88c7aef` 单次 merge commit
+
+
+## R37 全局梳理(2026-09-18)— 蜂群并行 4 Agent + 致命 P0 修复
+
+### 触发
+owner 指令"系统性梳理分析深度思考反思全局项目依次前后端梳理分析挨个模块用户可见性验证确保百分白各个模块测试头通过"。
+
+### 派单(并行)
+1. Agent A R1(前端 21 视图 HTTP + UI 静态)— 发现**致命 P0**:vite dev server PID 84577 STAT=TN 挂死 6h+,所有 HTTP 000
+2. Agent B(API 契约 diff 前端 56 vs 后端 51)— 生产 **0 真 P0 孤儿路径** + 10 字段错位 + 101 孤儿端点
+3. Agent C(DB schema 抽样 + 测试头 + 文档失真)— **238 测试类 100% @Tag("dev") 假绿陷阱确认** + 8 表名漂移 + 5 文档失真
+
+### 致命 P0 修复时间线
+| 时间 | 事件 |
+|---|---|
+| 03:49 | Agent A R1 报告 vite 挂死 |
+| 03:50 | kill -9 PID 84577 |
+| 03:50 | vite 启动 PID 20215 但 HTTP 404(size 0)— root 没指向 apps/web-antd |
+| 03:52 | **正确启动** PID 21436:`node node_modules/vite/bin/vite.js apps/web-antd --config apps/web-antd/vite.config.mts`(nohup + disown) |
+| 03:52 | HTTP 200 size 1039,21 个 /ipd/* 路由全部 200 |
+| 03:55 | Agent A R2 报告 **0 P0 + 3 P1** |
+
+### R37 关键数据(实测)
+| 维度 | 数量 |
+|---|---|
+| 后端 IPD Controller | 51 |
+| 前端 IPD .vue | 61 |
+| 前端 IPD 视图子模块 | 21(100% HTTP 200) |
+| 前端 api/ipd/*.ts | 56 |
+| DB 表(ipd_dev) | 150 |
+| 测试类总数 | 238(100% @Tag("dev") = 假绿陷阱) |
+| 文档失真点 | 5(开发说明书 audit_log 单复数 / gate_elements 实际是 gate_review_elements 等) |
+
+### R25 五病根反证命中
+- **病根 ① 测试没跟上 → 真**:238 测试类 100% @Tag dev + Surefire 默认 profile=local = 假绿
+- **病根 ④ 契约无门禁 → 真**:字段错位 10 处 + IpdPlatformAuthController 跨模块边界不一致
+- **病根 ⑤ 多事实源无对账 → 真**:开发说明书表名漂移 8 处
+
+### R37 三件套
+- 报告:docs/ipd-系统说明/R37-*.md × 5
+- log.md:本节
+- 看板镜像:开发计划-看板镜像.md R37 节(本轮新增)
+
+### 红线遵守
+- ✅ 未跑 mvn -am clean / mvn test / mvn install(避假红/假绿)
+- ✅ 未改 Java / SQL / yml / 文档失真源
+- ✅ kill 死进程 PID 84577(STAT=TN 6h+ 锁死)
+- ✅ vite CLI 启动绕开 vite.config.mts root 缺失
+
+### 阻塞项(待 R38)
+1. owner 拍板 R38 门禁范围:`check-api-contract-fe-be.mjs` + `check-doc-db-drift.sh` 入 CI
+2. browser MCP 接入补齐 R2 降级方案
+3. vite 重启监控(STAT=TN 自动守护)
