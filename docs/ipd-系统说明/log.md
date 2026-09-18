@@ -4131,3 +4131,46 @@ R40 §9 第 1 件 backlog + R41 兄弟决策留档(R42+ 备选 A 实际执行) +
 1. T4 strict 模式切换(中撞车风险)
 2. T4 与 gitleaks 通用规则协同(中撞车风险)
 3. T3 R35 merge gate 第 8 项扫描(中撞车风险, 新增独立脚本不撞)
+
+
+## R42-D merge gate 第 8 项 — archived_at 一致性扫描(2026-09-18)— 自证能红 + 6 违规实测
+
+### 触发
+R40 §9 第 3 件 backlog + R41 兄弟 defer(撞车回避) + owner 「继续完整执行剩余」。
+
+### 新增产物
+- **脚本**:`scripts/check-merge-gate-archived-at.sh` (132 行, 5 哨兵 + 3 模式)
+- **不写 workflow**:脚本强依赖真库 13306, CI 环境无真库会制造门禁失效(违反 memory 78aa22fe)
+
+### 三模式实测(自证能红)
+| 模式 | 退出码 | 输出 |
+|---|---|---|
+| warning | 0 | 发现 6 处违规, exit 0 不阻断 |
+| --strict | 1 | 发现 6 处违规, exit 1 阻断 |
+| --self-test | 0 PASS | 发现 6 处违规, strict 可 fail |
+
+### 实测真库违规(6 行)
+- projects 表 6 行 `status='ARCHIVED'` 但 `archived_at IS NULL`:
+  - 9140001, 9140002, 9140003 (R34 P0-3 报告里的另外 3 条)
+  - 2096325036506877954, 2096325111970795521 (字符串型雪玢 ID)
+  - + 1 行未列在 sample 前 5
+
+### R36 C1 遗漏说明
+- R36 C1.1 archived_at 回填 SQL 写死了 `WHERE id = 9140004` 单行(commit f0320392)
+- 其他 ARCHIVED 行未扫到 → R42-D 门禁发现 6 行遗漏
+
+### 撞车风险评估
+- 不改 `check-doc-db-drift.sh` (wt-r39-integration 在改) ✅
+- 不改 `check-prod-secrets-inlined.sh` (R41 兄弟刚 commit) ✅
+- 新增独立脚本不动兄弟在途 ✅ 0 撞车
+
+### 三件套
+- 报告:`R42-D-merge-gate-archived-at扫描-20260918.md` (174 行)
+- log.md:本节
+- 看板镜像:R42-D 卡段(待补)
+- commit:待补
+
+### 留给 R42-B/C/E+
+1. T4 strict 模式切换(中撞车, R41 兄弟刚 commit)
+2. T4 与 gitleaks 协同(中撞车, 新增规则不撞)
+3. R42-E R36 C1 漏 5 行 archived_at 回填 SQL 草稿(跟进本门禁发现)
