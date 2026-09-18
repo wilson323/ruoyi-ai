@@ -5701,3 +5701,39 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务3-coefficient_change_requests审计补齐现状评估-20260918.md`(198 行,8 节)
 - 主仓 commit:见 git log HEAD
+
+---
+
+## R51:PLAN-AUDIT-FULL 子任务 4 — R46-A1 not_a_real_table 污染修复现状(2026-09-18)
+
+**Loop 第 11 轮,撞号透明 R51 与 R45-R50 平行**
+
+### 关键发现
+
+1. **deletion_requests 表 52 行**(真活业务 28 / 测试污染 24 行 **46%**)
+2. **R13 五必现查复测结果与 R46 兄弟会话在途报告完全一致**(R25 软化三步登记 → 评审完成)
+3. **污染 24 行**:`not_a_real_table` 23 行 + `unsupported_probe` 1 行
+4. **entity_id=999999999 + entity_snapshot.title=NULL + 集中爆发 2026-09-06 07:38~13:13**(典型测试脏数据)
+5. **DeletionRequestService.submit 第 100 行 `requireSubmitTargetAllowed` 只校验 actor + 资源归属,无 entityType 白名单校验** ⚠️
+6. **撞车 0 + 单会话能力边界下 A2(SQL DELETE)★★★★★ + A3(后端 submit 加 entityType 白名单)★★★★★ 让路 owner 派单 worktree**
+
+### R46 兄弟会话报告真实可信(撞车 0 + 撞号透明下撞车 0 让路提交)
+
+| 维度 | R46 报告 | 本轮复测 | 一致性 |
+|---|---|---|---|
+| not_a_real_table 行数 | 23 | 23 | ✅ |
+| unsupported_probe 行数 | 1 | 1 | ✅ |
+| 集中爆发 | 09-06 07:38 ~ 13:13 | 09-06 07:38 ~ 13:13 | ✅ |
+| entity_id | 999999999 | 999999999 | ✅ |
+| title | NULL | NULL | ✅ |
+
+### 撞号透明 + 撞车 0 决策
+
+- **撞车 0 + 单会话能力边界下维持 inprogress**,不擅自翻 status
+- **R46 兄弟会话在途 4 项改动继续 unstaged,撞号透明撞车 0 守则严守**
+- 撞车 0 让路 owner 拍板 A2(SQL DELETE)+ A3(后端 entityType 白名单)派单 worktree
+
+### 输出物
+
+- `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务4-R46-A1污染修复现状-20260918.md`(202 行,7 节)
+- 主仓 commit:见 git log HEAD
