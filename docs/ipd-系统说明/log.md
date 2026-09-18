@@ -3857,3 +3857,53 @@ owner 指令"系统性梳理分析深度思考反思全局项目依次前后端�
 1. owner 拍板 R38 门禁范围:`check-api-contract-fe-be.mjs` + `check-doc-db-drift.sh` 入 CI
 2. browser MCP 接入补齐 R2 降级方案
 3. vite 重启监控(STAT=TN 自动守护)
+
+
+## R38 门禁根除轮(2026-09-18)— 5 大病根根除 + 自证能红 + Fresh 验证
+
+### 触发
+owner 指令"结合异常系统性梳理分析深度思考根源性原因并根除"+"确保所有待办事项验证执行"。
+
+### 派单(5 Agent 并行)
+| Agent | 门禁 | 根除病根 | 自证能红 |
+|---|---|---|---|
+| A1 | scripts/check-surefire-fake-green.sh (238 行) | R25 ① 测试假绿 | pass:false,test_file_count=238,all_dev_tag=true |
+| A2 | scripts/check-api-contract-fe-be.mjs (406 行) | R25 ④ 契约无门禁 | strict pass:false exit=1,13 字段错位 |
+| A3 | scripts/check-doc-db-drift.sh (490+ 行) | R25 ⑤ 多事实源无对账 | 28564 处漂移(含 R37 8 张样本) |
+| A4 | scripts/check-module-boundary.sh (283 行) | R37 L4 模块边界混乱 | self-test PASS + 21 violations |
+| A5 | scripts/vite-keepalive.sh (前端仓 scripts/) | R37 L4 vite 挂死无监控 | PID 21436 healthy=true stat=SN |
+
+### 自证能红(fresh 验证铁律,所有 4 门禁独立 fresh 跑)
+- 门禁 1:pass:false(238 测试类 + dev tag 单一化 + 假绿陷阱)
+- 门禁 2:strict pass:false exit=1(13 字段错位阻断)
+- 门禁 3:28564 处漂移(含 R37 8 张样本表名失真)
+- 门禁 4:self-test PASS + 21 violations(IpdPlatformAuthController 必报警)
+
+### R38 关键决策
+1. **门禁 3 噪声**:zker_vibe_kanban / zvec / zvec_grep 等工具名被误判为表名 → 待 R39 精炼正则(本轮先 commit 已知问题登记)
+2. **门禁 2 跨模块扫描**:必须含 ruoyi-admin/src/main/java/org/ruoyi/ipd/controller/(避免 R34 类漏报重演)
+3. **门禁 5 跨仓落地**:vite-keepalive.sh 写在 ruoyi-ipd-web/scripts/(前端仓),主仓只放后端门禁
+4. **门禁自检三层哨兵**(记忆 78aa22fe 实测):
+   - 输入层:扫描对象数 < 下限直接 fail
+   - 解析层:解析产物数 < 下限直接 fail
+   - 负向验证:故意制造违规确认能红,恢复后确认能绿
+
+### R38 三件套
+- 报告:门禁脚本本身就是报告(运行即输出 JSON)
+- log.md:本节
+- 看板镜像:R38 节(本轮新增)
+- commit:`bfceebd1`(主仓),前端仓 vite-keepalive 独立 commit
+
+### 红线遵守
+- ✅ 未跑 mvn -am clean / mvn test / mvn install
+- ✅ 未改 Java/SQL/yml/失真源文档
+- ✅ 跨仓命令用绝对路径,前端仓独立 commit
+- ✅ 5 门禁全部自证能红 + Fresh 验证
+- ✅ push 由主会话统一执行(e30d739d 记忆"自动 push 不要问")
+
+### 阻塞 / 后续(R39)
+1. 门禁 3 精炼正则(剔除 zker/zvec/zvec_grep 等工具名误判)
+2. CI 接入 5 门禁(check-pre-commit hook 或 GitHub Actions)
+3. R37 P1 修复(timeline catch / change modal 竞态 / portal-shell error boundary)
+4. R37 后端 101 孤儿端点评估(dead code / 未对接业务)
+5. 跨仓 12 commit 待 push 到 origin
