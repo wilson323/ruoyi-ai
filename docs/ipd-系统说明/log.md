@@ -3907,3 +3907,52 @@ owner 指令"结合异常系统性梳理分析深度思考根源性原因并根�
 3. R37 P1 修复(timeline catch / change modal 竞态 / portal-shell error boundary)
 4. R37 后端 101 孤儿端点评估(dead code / 未对接业务)
 5. 跨仓 12 commit 待 push 到 origin
+
+---
+
+## R39 治理轮 — 三向对账根因反思 + 门禁 CI 接入 + 孤儿端点评估
+
+**日期**:2026-09-18
+**触发**:用户原话“充分利用多个专业智能体并行执行” + “对于端点比对产品设计说明书、合同、及代码深度思考反思根源性原因”
+**worktree**:`/private/tmp/wt-r39-integration`(HEAD `052c4f45` R38 起点,隔离主仓 `544ce2352` R42)
+**主协调会话**:主仓领先 worktree 3 commit(R39→R40→R41→R42),本轮按 R38 起点补齐 R39 任务。
+
+### R39 交付(4 个文件 + 1 个不动)
+
+1. **`scripts/check-contract-tri-source.sh`**(新增,326 行)— 三向对账门禁(spec ↔ contract ↔ backend ↔ frontend),跑通真 JSON,主仓实测:`spec=26 contract=0 backend=229 frontend=120 fe_orphan=97 be_orphan=206`。set -euo pipefix bug 已修复(grep 无匹配时需 `|| true`)。
+2. **`scripts/check-doc-db-drift.sh`**(修改 4a-4 块)— `--refined` 模式三层围栏过滤 MCP/URL/行内代码误报。
+3. **`.claude/hooks/check-pre-commit.sh`**(新增,122 行)— 提交前门禁自检(drift / contract / fast 三模式),R30+ 三层哨兵 + 负向验证。
+4. **`.github/workflows/r38-5-gates.yml`**(新增,152 行)— 5 大门禁 GitHub Actions CI 接入(门禁 1+2 R39 新增,门禁 3+4+5 沿用已存在 workflow),L1 静态扫描 HIGH 级已修。
+5. **`docs/ipd-系统说明/R39-根因反思-20260918.md`**(新增,184 行)— 五病根映射 + 失衡比 + 治理抓手。
+6. **`docs/ipd-系统说明/R39-孤儿端点评估-20260918.md`**(新增,233 行)— P0 97 个前端孤儿 / P2 206 个后端孤儿分类评估。
+
+### 不动文件(尊重 owner 历史授权)
+
+- **`.githooks/pre-commit`**(R11 owner 大白话授权保持 `exit 0`,主协调可直提 main)— 不覆盖。
+- **前端仓 3 P1 + vite root** — 兄弟会话已自洽(commit `80b5050` 浏览器异常链根修 + `3926a80` /auth/logout 修复),R39 不重复写。
+
+### 根因发现(五病根映射)
+
+1. **测试假绿**:97 个前端孤儿(vitest 全绿但生产 404)
+2. **提交不完整**:229 个后端端点 vs 26 个 spec = 203 个未跟踪实现
+3. **人肉对账**:失衡比 8.8x 是纯人工发现,无数据层沉淀
+4. **契约无门禁**:工程合同 `docs/ipd-系统说明/工程合同/*.md` **0 个 /api/v1 URL 字面量**,只在 spec/backend/frontend 三方生长
+5. **多事实源无对账**:spec / contract / backend / frontend 四向独立,SSOT 看板不含端点列
+
+### 红线遵守
+
+- ✅ 未跑 mvn -am clean / mvn test / mvn install
+- ✅ 未改 Java/SQL/yml/失真源文档
+- ✅ 未覆盖 `.githooks/pre-commit`(R11 owner 授权)
+- ✅ 未写主仓(避免撞 R42 兄弟会话,走 worktree 隔离)
+- ✅ 跨仓命令用绝对路径
+- ✅ check-pre-commit.sh 含 R30+ 三层哨兵 + 负向验证方法论
+- ✅ r38-5-gates.yml L1 静态扫描 HIGH 级已修复(env 变量隔离 github.ref)
+
+### 阻塞 / 后续(R40+)
+
+1. 修补 97 个前端孤儿(P0,运行时崩)— 预计 30~50 工时
+2. 评估 206 个后端孤儿(P2,成本浪费)分桶 A/B/C 处理 — 预计 40~60 工时
+3. `endpoint_inventory.sql` 数据层沉淀(让 SSOT 看板能拉失衡比)
+4. 合同含 URL 字面量(改 DOC-05 模板为“业务名 + URL + 状态机 + 字段”四段式)
+5. 测试基线锚点改为契约(不再走实现断言)

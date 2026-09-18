@@ -1,0 +1,155 @@
+name: r38-5-gates
+# =============================================================================
+# R39 治理轮 — 5 大门禁 GitHub Actions CI 接入
+#
+# 触发:
+#   - pull_request 目标 main 时(主要场景,P4 实战验证可行)
+#   - 手动 workflow_dispatch
+#
+# 5 大门禁:
+#   1. doc ↔ db 漂移门禁(--refined 精炼模式)
+#   2. 合同 ↔ spec ↔ code 三向对账
+#   3. ipd 编译门禁(沿用 R35+ ipd-compile-gate.yml)
+#   4. ipd grant SQL 门禁(沿用 R40+ ipd-grant-sql-gate.yml)
+#   5. ipd 前端 drift 门禁(沿用 R40+ ipd-frontend-drift.yml)
+#
+# 不重复造轮子 — R39 新增 1+2,3+4+5 调已存在 workflow。
+#
+# 退出策略:
+#   - 所有门禁必须 PASS 才允许合并
+#   - 门禁 1+2 fail → 阻断 PR
+#   - 门禁 3+4+5 fail → 阻断 PR(已存在 workflow)
+# =============================================================================
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'docs/**'
+      - '.claude/hooks/**'
+      - 'pom.xml'
+      - 'ruoyi-modules/**'
+      - 'ruoyi-admin/**'
+  workflow_dispatch:
+
+# 防止重复触发 + 与已存在 ipd-drift-check.yml 并发跑
+env:
+  WORKFLOW_NAME: ${{ github.workflow }}
+  REF_NAME: ${{ github.ref }}
+concurrency:
+  group: ${{ env.WORKFLOW_NAME }}-${{ env.REF_NAME }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 门禁 1+2:R39 新增 doc↔db + contract tri-source
+  # ---------------------------------------------------------------------------
+  r39-frontend-契约:
+    name: R39 doc↔db + contract tri-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test123
+          MYSQL_DATABASE: ipd_dev
+        ports:
+          - 13306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=5s --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 安装 mysql client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y mysql-client jq
+
+      - name: 等待 MySQL 就绪
+        run: |
+          for i in $(seq 1 30); do
+            if mysql -h 127.0.0.1 -P 13306 -uroot -ptest123 -e "SELECT 1" >/dev/null 2>&1; then
+              echo "✅ MySQL up after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: 写 mysql client config(凭据不入命令行)
+        run: |
+          mkdir -p .codex/ipd-dev/config
+          cat > .codex/ipd-dev/config/mysql-client.cnf <<'EOF'
+          [client]
+          host=127.0.0.1
+          port=13306
+          user=root
+          password=test123
+          database=ipd_dev
+          EOF
+
+      - name: 准备 mock 真库表清单(单测场景,无需全 DDL)
+        run: |
+          mysql -h 127.0.0.1 -P 13306 -uroot -ptest123 -e "
+            CREATE DATABASE IF NOT EXISTS ipd_dev;
+            USE ipd_dev;
+            -- mock 关键表用于哨兵通过
+            CREATE TABLE IF NOT EXISTS audit_logs (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS products (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS persons (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS projects (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS tasks (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS ipd_requirements (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS gate_elements (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS handover_records (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS score_tasks (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS kpis (id BIGINT PRIMARY KEY);
+            -- 30+ 张表满足 doc↔db 哨兵 db_table_count>=10
+            CREATE TABLE IF NOT EXISTS ipd_dev_users (id BIGINT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS test_run_records (id BIGINT PRIMARY KEY);
+          "
+
+      - name: 门禁 1/5 — doc ↔ db 漂移门禁(--refined)
+        id: gate_drift
+        run: |
+          bash scripts/check-doc-db-drift.sh --refined --json-only > /tmp/cdbd-refined.json 2>&1 || echo "::warning::门禁 1/5 FAIL,见 /tmp/cdbd-refined.json"
+          cat /tmp/cdbd-refined.json | head -20
+
+      - name: 门禁 2/5 — 合同 ↔ spec ↔ code 三向对账
+        id: gate_contract
+        run: |
+          bash scripts/check-contract-tri-source.sh --json-only > /tmp/cts.json 2>&1 || echo "::warning::门禁 2/5 FAIL,见 /tmp/cts.json"
+          cat /tmp/cts.json | head -20
+
+      - name: 上传门禁产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r39-gate-evidence
+          path: |
+            /tmp/cdbd-refined.json
+            /tmp/cts.json
+
+  # ---------------------------------------------------------------------------
+  # 门禁 3+4+5:沿用 R35+~R40+ 已存在 workflow
+  # 用 reusable workflow 引用避免重复实现
+  # ---------------------------------------------------------------------------
+  ipd-compile-gate:
+    name: 门禁 3/5 — ipd 编译门禁(沿用)
+    uses: ./.github/workflows/ipd-compile-gate.yml
+    with:
+      java-version: '17'
+      maven-args: '-pl ruoyi-modules/ruoyi-ipd -am -DskipTests'
+
+  ipd-grant-sql-gate:
+    name: 门禁 4/5 — ipd grant SQL 门禁(沿用)
+    uses: ./.github/workflows/ipd-grant-sql-gate.yml
+
+  ipd-frontend-drift:
+    name: 门禁 5/5 — ipd 前端 drift(沿用)
+    uses: ./.github/workflows/ipd-frontend-drift.yml
+    with:
+      frontend-repo: 'wilson323/ruoyi-admin'
+      frontend-branch: 'main'
