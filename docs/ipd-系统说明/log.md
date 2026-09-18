@@ -3987,3 +3987,46 @@ D 唯一优势是老版进 git,但 v1 决策草稿是历史档案不是活跃编
 2. R34-pattern-A 其他 P0/P1/P2 段同步勘误
 3. R35 merge gate 加第 8 项扫描(archived_at 一致性)
 4. check-prod-secrets-inlined.sh CI 门禁
+
+
+## R40 老版代码强隔离 — 三重防线(2026-09-18)— 撞车 0
+
+### 触发
+R39 只改了顶层名字,但**真正的干扰源是老版内部的 `ipd-pm-system/`(42M NestJS + Prisma 早期后端原型,占老版 98%)**。owner 「立即完整执行尤其确保老版本代码不要成为干扰本项目的因素」。
+
+### 认知修正
+R39 误判:「老版 = 决策草稿集」——只看了顶层 14 份 md。R40 探查发现:
+- 顶层 14 md + PDF + txt = ~400KB(决策草稿,干扰小)
+- devtoolsminio-data = < 1MB(已废数据)
+- **`ipd-pm-system/` = 42M NestJS + Prisma 工程(占 98%,真实代码干扰源)**
+
+老版是 NestJS 工程不是文档:package.json (name=api, nest/prisma scripts) + nest-cli.json + src/main.ts + app.module.ts + modules/ + prisma/schema.prisma + migrations/ + apps/api/node_modules/。
+
+### 三重防线
+| 防线 | 动作 | 产物 |
+|---|---|---|
+| 1 子目录改名 | mv `ipd-pm-system/` → `__ARCHIVED_v1_ipd-pm-system_NestJS早期原型_20260918/` | 42M 名字三重提示(冻结+版本+角色) |
+| 2 老版顶层 README | 42 行冻结说明(`__README_冻结说明.md`) | 人/AI 都读得到 |
+| 3 ZK-IPD 顶层 NOTICE | 64 行 ZK-IPD 导航(`_ARCHIVED_NOTICE.md`) | 任何会话进入 ZK-IPD 先看到 |
+
+### 三证律
+- 老版大小:43M → 43M 一致 ✅
+- 子目录大小:42M → 42M 一致 ✅
+- 当前进程与老版无关(mysqld 13306 / minio 19000 / java 16039 / vite 15666 均与老版无关) ✅
+
+### 为什么不动 ZK-IPD/CLAUDE.md
+- CLAUDE.md 是团队基线 Layer 1,sync-harness.sh 会覆盖
+- 业务项目特有内容应写在 §0 项目档案区或项目自有 README
+- R40 改用 ZK-IPD 顶层 `_ARCHIVED_NOTICE.md`(项目自有,不会被覆盖)
+
+### 三件套
+- 报告:`R40-老版代码强隔离-20260918.md`(148 行)
+- log.md:本节
+- 看板镜像:R40 卡段(待补)
+- commit:待补
+
+### 留给 R41+
+1. 看板镜像 1470 行精简
+2. R34-pattern-A 其他 P0/P1/P2 段同步勘误
+3. R35 merge gate 第 8 项(archived_at 一致性)
+4. check-prod-secrets-inlined.sh CI 门禁
