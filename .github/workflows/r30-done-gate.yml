@@ -1,0 +1,117 @@
+# R30+ 治理门禁：DDL 静态扫描 + 翻 done 硬门禁（病根 3 根治）
+#
+# 为什么必须有这道门（2026-09-17 抽样实证）：
+#   1. DDL commit ≠ 真库生效：基线已有 R-NEW 教训"实体已加字段但 DDL 漏迁移"，
+#      单靠人肉对账必漏。check-ddl-applied.sh --static 提供 CI 友好静态扫描。
+#   2. 翻 done = 5 件套：验收报告 / 业务表非 0 / DDL apply / HTTP 200 / 测试类型——
+#      R-NEW 反思 §3.1 P0-3 教训"mock 单测绿 ≠ 真活闭环"已硬要求硬门禁。
+#
+# 与 r25-root-cause-lint.yml 关系：r25 覆盖 8 大根因；本 workflow 专攻 R30+ 治理门禁（病根 3）。
+# 不重叠、不重复触发；PR 同时改 R25 脚本 + DDL 时两道门都跑。
+#
+# 为什么门禁脚本自己要先被自测：
+#   check-done-gate.py 的 CARD_TO_TABLES / CARD_TO_ENDPOINTS 映射若漂，CI 也会假绿。
+#   故先跑一个无卡号 dry-run（脚本 usage 自检），确保脚本自身可用。
+
+name: r30-done-gate
+
+on:
+  pull_request:
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/**'
+      - 'docs/script/sql/**'
+      - 'docs/script/sql/update/**'
+      - 'scripts/check-done-gate.py'
+      - 'scripts/check-ddl-applied.sh'
+      - '.github/workflows/r30-done-gate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/**'
+      - 'docs/script/sql/**'
+      - 'docs/script/sql/update/**'
+      - 'scripts/check-done-gate.py'
+      - 'scripts/check-ddl-applied.sh'
+      - '.github/workflows/r30-done-gate.yml'
+  schedule:
+    # 每周一 04:00 Asia/Shanghai = 20:00 UTC Sunday（全量回归）
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+
+jobs:
+  ddl-gate:
+    name: DDL 静态扫描（entity ↔ DDL 覆盖对账）
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 门禁 1：entity↔DDL 静态扫描
+        id: ddl
+        run: |
+          set +e
+          bash scripts/check-ddl-applied.sh --static
+          RC=$?
+          set -e
+          echo "check-ddl-applied --static 退出码: $RC"
+          if [ "$RC" != "0" ]; then
+            echo "::error::DDL 静态扫描发现 entity 在 DDL update 目录中无迁移片段（修复后重跑）"
+            exit 1
+          fi
+
+  done-gate-dryrun:
+    name: 翻 done 硬门禁脚本自检
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 门禁 2：check-done-gate.py 脚本自检（usage 必读）
+        run: |
+          # dry-run：无卡号参数应输出 usage 并 exit 1，证明脚本能跑
+          set +e
+          python3 scripts/check-done-gate.py
+          RC=$?
+          set -e
+          echo "check-done-gate (无卡号) 退出码: $RC"
+          if [ "$RC" != "1" ]; then
+            echo "::error::check-done-gate.py 自检失败——无卡号时应 exit 1 提示 usage，实际 exit=$RC"
+            exit 1
+          fi
+          echo "✅ check-done-gate.py 脚本可用（无卡号 dry-run 通过）"
+          echo "  说明：本 workflow 仅做脚本自检 + DDL 静态扫描"
+          echo "  卡号级真活验证由人工跑 'python3 scripts/check-done-gate.py <卡号>'，"
+          echo "  因卡号需真活后端实例（16049/16040/16099/16039）CI 不可达"
+
+  summary:
+    name: 总结
+    runs-on: ubuntu-latest
+    needs: [ddl-gate, done-gate-dryrun]
+    if: always()
+    steps:
+      - name: 总结
+        run: |
+          echo "## R30+ 治理门禁结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 门禁 | 结果 |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| DDL 静态扫描 | ${{ needs.ddl-gate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 翻 done 脚本自检 | ${{ needs.done-gate-dryrun.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**整体状态**: ${{ needs.ddl-gate.result == 'success' && needs.done-gate-dryrun.result == 'success' && 'PASS' || 'FAIL' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📘 详细规约：.claude/skills/ipd-guard-ddl-apply/SKILL.md" >> $GITHUB_STEP_SUMMARY
+          echo "📘 翻 done 门禁：scripts/check-done-gate.py（卡号级真活验证由本地会话跑）" >> $GITHUB_STEP_SUMMARY

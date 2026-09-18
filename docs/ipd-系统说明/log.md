@@ -3526,3 +3526,36 @@ owner「授权全部执行」指令后四连：
   - 1 项超出本会话边界待 owner：typecheck 红基线 21 错误 owner 决策 A/B/C（待 owner 拍板，不擅自动 tsconfig 或放宽跳过）。
 - **工作量边界守规**：本会话不做 mvn test（避免兄弟会话共工假红）+ 不重启 13306 实例（避免打断用户使用中服务）+ 不建前端仓会话（前端仓任务归属前端独立会话）；按 OPS-09 软化条款 + 单写者约束串行写后端仓 SSOT 镜像与 log.md。
 - **变更**：SSOT 镜像 P2-3 行 ⬜ → ◐（单行）+ 新建 P0-10.1 文档 91 行 + 本 log 条。
+
+### 全局项目深度梳理汇总收口（2026-09-17，本会话）
+
+- **触发**：owner「继续，结束后系统性梳理全局项目深度思考反思还有哪些待办事项完整执行」——按 R-NEW-2026-09-17 报告 §5/§6 列举的待办做 fresh 抽测，**只挑撞车风险 0 的安全动作落地**。
+- **fresh 抽测发现 4 项真问题**（详 `docs/全局梳理-2026-09-17.md` §1）：
+  1. **`check-ddl-applied.sh` 误报 sys_oss**：脚本只扫 `docs/script/sql/update/`，未扫基座 `docs/script/sql/ruoyi-ai.sql`。
+     sys_oss 真实在基座中已 CREATE → 误报。**本会话修脚本双扫**（基座 + update 增量），python 段 L88-108，误报消除。
+  2. **`ai_doc_embeddings` 真漂移（DDL 漏迁移）**：`AiDocEmbedding.java`（P1-10.2 / AI-STRAT-1，2026-09-11 落地）声明 `@TableName("ai_doc_embeddings")`，
+     但 `docs/script/sql/update/` 0 个 DDL 片段提到；`docs/script/sql/ruoyi-ai.sql` 基座也无。R-NEW 根因 B2"实现优先于 API 暴露"典型反例。
+     **本会话写 `2026-09-17-ipd-ai-doc-embeddings.sql`**（40 行，幂等 CREATE IF NOT EXISTS + `idx_ai_emb_project_model` + `idx_ai_emb_doc` 索引 + BR-AI-04 红线注释）。
+     **tenant.excludes 已在 `application.yml` L342 登记**（无需补登）。**DBA apply 必跑**（本会话不擅动生产 DDL）。
+  3. **R30+ 治理门禁 CI 缺失**：r25-root-cause-lint.yml 已接入 8 大根因门禁，但 R30+ 治理门禁（DDL apply + 翻 done 硬门禁）**无 CI 入口**。
+     R-NEW 报告 §5.3 第 5 项写的"check_cross_repo_contract.sh（R25 已写）未接入 CI"是**历史快照**（实际 r25 已在 2026-09-09 接入）。
+     **本会话写 `.github/workflows/r30-done-gate.yml`**（117 行，3 jobs：ddl-gate / done-gate-dryrun / summary），与 r25 不重叠不重复触发。
+  4. **治理清单"过时快照"**：R-NEW §5.3 第 5 项已闭环（见本条 3），未改 R-NEW 报告本体（**反思报告只做证据登记，不做修正**——owner 决定），本汇总文档显式记录。
+- **自证能红门禁通过**：`check-ddl-applied.sh --static` 移走 `2026-09-17-ipd-ai-doc-embeddings.sql` → EXIT=1，加回 → EXIT=0。
+  反向验证证明脚本不是"假绿"——DisCo 形态符合。
+- **撞车红线严守**（详 `docs/全局梳理-2026-09-17.md` §2）：
+  - 不写 `ruoyi-modules/ruoyi-ipd/src/main/**` 任何业务代码（兄弟会话 7+ 个 worktree 在途）
+  - 不跑 mvn test / -am / clean（避免 target/ 假红）
+  - 不重启 13306/16039 实例（用户使用中）
+  - 不改前端仓 ruoyi-ipd-web（P0-10.1 决策红线）
+- **本会话真实改动（4 文件，预计 1-2 commit）**：
+  - `scripts/check-ddl-applied.sh`（+17/-7 行，基座 DDL 纳入扫描）
+  - `docs/script/sql/update/2026-09-17-ipd-ai-doc-embeddings.sql`（+40 行，新增 DDL 迁移）
+  - `.github/workflows/r30-done-gate.yml`（+117 行，新增 CI workflow）
+  - `docs/全局梳理-2026-09-17.md`（+189 行，新增汇总文档）
+  - `docs/ipd-系统说明/log.md`（本条目）
+- **留给下轮清单（10 项，按可独立闭环性排序）**（详 §6）：P0-9 P0 阶段验收 / P2-5 Gate 双签 E2E / P2-3 Caffeine / P3-2 promptLen 离散化 / P2-5 DEFAULT_TENANT_ID / typecheck 红基线 owner 决策 / CI 端到端验证 / 实战抽测报告 / compare-vs-zk-ipd.py / R-NEW §5.3 修正。
+- **教训沉淀**：
+  1. **R-NEW 报告是时点快照**：新会话必须 fresh 验证再引用——本会话"check_cross_repo_contract 未接入 CI"教训 9-09 已闭环，盲信报告会变成"重做 r25 工作"。
+  2. **抽测边界纪律**：bug-magnet 5 模块在 src/main 撞车红线内，本会话不抽测；5 张 ◐ 业务卡让路给兄弟会话，按 OPS-09 软化条款处理。
+  3. **CI 接入 ROI**：r30-done-gate.yml 单会话成本低（1 个 workflow + 自证能红），但未来 6 个月每次 DDL 提交都自动验，长期价值高。
