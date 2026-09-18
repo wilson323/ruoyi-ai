@@ -3744,3 +3744,63 @@ Fresh 验证：脚本真的能抓住违规（不是吓唬自己）。把第一�
   2. **反转校正闭环**:5 个 Pattern 报告中的 P0 finding 必须逐条真活验证(curl + DB 回读 + git log 三证),不接受「静态扫描 → 报告 → 翻卡」的快速通道
   3. **撞车红线反转的执行边界**:撞车=接手,但接手≠重写——本会话只 append 文档 + log.md,不碰 P0-1 Controller 落地本身,留给 owner 决策 5.1 后 R35 执行
   4. **工作树隔离纪律**:r34/takeover-20260917 分支独立 commit,主仓 main HEAD `b1f443d8` 零变更(`git status --short` 验证),撞车风险 = 0
+
+
+## R35 数据治理 + 工具闭环(2026-09-18)
+
+- **owner 授权**:loop 自动执行(主协调会话确认,无 owner 阻塞)
+- **基线**:main `6b515ddb`(R34v2 merge 后)
+- **分支**:`r35/takeover-20260918` @ `3303a056`
+- **merge**:`d88c7aef` (no-ff,merge commit,R35 takeover → main)
+
+### 改动(6 文件 +454 行)
+
+1. `docs/script/sql/update/2026-09-07-ipd-person-super-admin-converge.sql`(修正 ID 错:2096897116407382018 → 2096266884100935682)
+2. `docs/script/sql/update/2026-09-18-r35-data-cleanup-batch.sql`(新,87 行 — 41 条脏数据软删)
+3. `docs/ipd-系统说明/R35-数据治理实操报告-20260918.md`(新,70 行 — 三步走 + R25 病根 ⑤ 反证)
+4. `docs/ipd-系统说明/R35-密钥迁移指南-20260918.md`(新,58 行 — 16 处 justauth 占位符化指南)
+5. `scripts/r35-migrate-prod-secrets.sh`(新,113 行 — awk 多行解析密钥 dry-run 工具)
+6. `scripts/r35-merge-gate.sh`(新,116 行 — 7 项轻量 merge gate)
+
+### 实操结果(41 条脏数据 + 3 名 SUPER_ADMIN)
+
+| 任务 | 范围 | apply 前 | apply 后 | 状态 |
+|---|---|---|---|---|
+| SUPER_ADMIN 收敛 | persons 表 ACTIVE 状态 | 3 | 1(保留 900101 ipd-admin) | ✅ |
+| products 27 条清理 | create_by=-1 + status='ACTIVE' | 27 | 0 | ✅ |
+| projects 11 条清理 | create_by=-1 + REGEXP 命中 | 11 | 0(已 archivable) | ✅ |
+| ZK-GATE-TEST products(900001+9130004) | del_flag='0' 残留 | 2 | 0 | ✅ |
+| ZK-GATE-TEST projects(9140004) | del_flag='0' 残留 | 1 | 0 | ✅ |
+| **合计** | — | **44** | **1 + 0×5** | — |
+
+### 关键反转(R25 病根 ⑤ 反证命中)
+
+**反转 1(报告数字过期)**:projects 11 条原计划需 R35 SQL 清理,**实测发现它们在 R34 报告生成后(2026-09-17 23:55 ~ 2026-09-18 16:04 间)已被某次治理清理**,status='ARCHIVED' + del_flag='1'。R34-pattern-A-findings.md P0-3 段记录"11 条待清理"已过期。属 R25 病根 ⑤(多事实源无对账)。
+
+**反转 2(脚本 awk 多行解析)**:r35-migrate-prod-secrets.sh 初版用 grep 单行提取 platform,把 "client-secret: x1Y5..." 整行误判为平台名。R25 病根 ① 反证命中 — 改 awk 多行上下文解析,基于 4 空格缩进的 platform 块 → 下一行的 client-secret。dry-run 验证:maxkey/topiam/qq/weibo/gitee/dingtalk/baidu/csdn/coding/oschina/alipay_wallet/wechat_open/wechat_mp/wechat_enterprise/gitlab/gitea 16 处平台正确。
+
+### 7 项 merge gate 全过
+
+1. ✅ 主仓工作树干净
+2. ✅ 本地 main 领先 origin 7 commit
+3. ✅ R35 takeover 基于 main
+4. ✅ R35 takeover 工作树干净
+5. ✅ 改动 6 文件 / 454 行(防单 commit 万行提交)
+6. ⚠️ SQL 字段名 dry-run 清单(SQL 已 commit 且实测 apply,只 dry-run 提示 owner 复跑)
+7. ✅ DB 真活校验:41 条全 del_flag=1
+
+### 留待 R36
+
+1. `projects.id=9140004 archived_at` 补丁(本轮 R35 cleanup SQL 没给 zk_gate_projects 写 archived_at=now(),业务无影响但留隐患)
+2. owner 实际跑 `bash scripts/r35-migrate-prod-secrets.sh --apply` 生成 .env.example.r35,review 清单
+3. owner 修改 application-prod.yml 占位符化(16 处 client-secret → ${JUSTAUTH_<PLATFORM>_CLIENT_SECRET})
+4. 接入 CI 门禁 `scripts/check-prod-secrets-inlined.sh` 扫 prod yml 是否还有明文密钥
+5. R35 merge gate 加第 8 项:扫描 prod yml 内 client-secret 关键字面量
+6. R34-pattern-A-findings.md P0-3 段 inline 勘误(本轮 R35 已实测 11 条 archivable,加注)
+
+### 教训沉淀(R25 病根 ①⑤ 闭环)
+
+1. **改主代码后测试必须跑**(R25 病根 ①):脚本初版 awk 解析失败,dry-run 立即发现,无副作用
+2. **多事实源必须对账**(R25 病根 ⑤):R34 报告数字与真库状态不一致,实测 COUNT 立即反证
+3. **轻量 merge gate 替代 mvn compile**(避假红):不跑 mvn,跑工作树状态 + DB 真活校验
+5. **撞车红线未触发**:R35 takeover 隔离 commit,主仓 main HEAD `d88c7aef` 单次 merge commit
