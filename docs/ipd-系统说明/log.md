@@ -5632,3 +5632,38 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - 看板回读:5 张汇总卡 status=todo(撞车 0 + 单会话能力边界不擅自翻 done)
 - 主仓 working tree:1 个新文件(本轮 markdown)
 - 跨仓 cd:主仓绝对路径开命令,前端仓有兄弟会话 M 改动不碰
+
+---
+
+## R49:PLAN-AUDIT-FULL 子任务 2 — stage_actions 审计补齐现状评估(2026-09-18)
+
+**Loop 第 9 轮,撞号透明 R49 与 R45-R48 平行**
+
+### 关键发现
+
+1. **真活表 stage_actions 2399 行**(R45-4 报告 2298 行,现 +101 行)
+2. **状态分布**:NOT_STARTED 2145(89.4%)/ NA 183 / DONE 64 / IN_PROGRESS 6 / DELAYED 1
+3. **走过状态合计 254 行**(NA + DONE + IN_PROGRESS + DELAYED),应该有 TRANSIT 审计,但**真活 0 条** ⚠️
+
+### StageActionService 5 写路径 audit 覆盖现状(R13 五必现查)
+
+| # | 写路径 | 代码 audit | 真活 audit | 评估 |
+|---|---|---|---|---|
+| 1 | transit (P1-4.3) | ✅ 已调 | **0** | 历史污染嫌疑 |
+| 2 | recordFields | ✅ 已调 | 3 | 唯一真活有审计 ✅ |
+| 3 | addDeliverable | ✅ 已调 | **0** | 项目阶段无交付物(非缺口) |
+| 4 | **instantiate** | ❌ 未调 | 0 | **真实审计缺口** ⚠️ |
+| 5 | **ensureBioComplianceMount** | ❌ 未调 | 0 | **真实审计缺口** ⚠️ |
+
+### 撞号透明 + 撞车 0 决策
+
+- **真实撞车 0 缺口** = instantiate + ensureBioComplianceMount 2 个方法
+- R45-4 报告"stage_actions 2298 行无审计"**完全矛盾** — R45-4 只看 audit_logs.entity_type=stage_actions 总数,未深入写路径
+- **撞车 0 + 单会话能力边界下 A2(补 instantiate + ensureBioComplianceMount)★★★★★ 但本轮不做,让路 worktree 派单**
+- **A4 历史 audit 回填**:撞车 0 + 撞号透明下绝对不做(改历史哈希破坏契约)
+- **A3 IpdEntityType 补常量**:撞车 0 + 单会话能力边界下不擅自补,撞号透明下不动存量字符串
+
+### 输出物
+
+- `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务2-stage_actions审计补齐现状评估-20260918.md`(188 行,8 节)
+- 主仓 commit:见 git log HEAD
