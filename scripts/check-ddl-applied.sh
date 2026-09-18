@@ -83,12 +83,26 @@ if [ "$MODE" = "static" ]; then
     exit 1
   fi
 
-  # 简易 DDL 覆盖检查
-  if [ -d "docs/script/sql/update" ]; then
+  # 简易 DDL 覆盖检查（基座 DDL + update 增量都纳入——2026-09-17 fix 修 sys_oss 误报）
+  if [ -d "docs/script/sql" ]; then
     MISSING=$(python3 - <<PY
 import os, re
 ent_dir = "$ENT_DIR"
-sql_dir = "docs/script/sql/update"
+sql_text = ''
+# 1) 扫描基座 DDL（ruoyi-ai.sql / schema-snapshot-*.sql）
+for root in ('docs/script/sql',):
+    if os.path.isdir(root):
+        for f in os.listdir(root):
+            p = os.path.join(root, f)
+            if os.path.isfile(p) and f.endswith('.sql'):
+                sql_text += open(p, encoding='utf-8').read() + '\n'
+# 2) 扫描 update 增量
+update_dir = 'docs/script/sql/update'
+if os.path.isdir(update_dir):
+    for f in os.listdir(update_dir):
+        p = os.path.join(update_dir, f)
+        if os.path.isfile(p) and f.endswith('.sql'):
+            sql_text += open(p, encoding='utf-8').read() + '\n'
 tbl_pat = re.compile(r'@TableName\s*\(([^)]*)\)')
 val_pat = re.compile(r'value\s*=\s*"(\w+)"')
 bare_pat = re.compile(r'"(\w+)"')
@@ -99,10 +113,6 @@ for f in os.listdir(ent_dir):
         if am:
             tm = val_pat.search(am.group(1)) or bare_pat.search(am.group(1))
             if tm: tables.add(tm.group(1))
-sql_text = ''
-for f in os.listdir(sql_dir):
-    if f.endswith('.sql'):
-        sql_text += open(os.path.join(sql_dir, f), encoding='utf-8').read() + '\n'
 missing = [t for t in tables if t not in sql_text]
 print('\n'.join(missing) if missing else '')
 PY
