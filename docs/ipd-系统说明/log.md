@@ -5819,3 +5819,38 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/PLAN-AUDIT-FULL-闭环汇总-5子任务实施路线图-20260918.md`(228 行,8 节)
 - 主仓 commit:见 git log HEAD
+
+---
+
+## R57:P0-9 P0 阶段验收追加证据包(2026-09-18)
+
+**Loop 第 14 轮,撞号透明 R57 与 R45-R53 平行**
+
+### 关键发现
+
+1. **P0-9.1 子卡真正 done**(2026-09-05 21:42 run8 ALL PASS 79/79)
+2. **P0-9 汇总卡 status=todo**(被蜂群 2026-09-08 从 done 回退,因 P0-7.4 等 owner 复核)
+3. **真活 evidence 充分**:
+   - P0 登录链 1094 行(LOGIN 747 + LOGIN_FAIL 305 + WECOM_MOCK 42)
+   - P0 删除链 60 行(SUBMIT 24 + APPROVE 24 + EXECUTE 12)
+   - P0 审计链 1538 行(persons 1130 + projects 44 + audit_logs 35)
+4. **P0 业务表行数**:persons 27 / projects 45 / deletion_requests 52 / stage_actions 2399 / coefficient_change_requests 2
+
+### R48 翻卡建议落地
+
+- **P0-9 ★★★★★ 推荐 owner 拍板翻 done**(基于 P0-9.1 done + 真活 evidence 充分)
+- 撞车 0 + 单会话能力边界下不擅自翻 status(b1e8e713 红线严守)
+- 撞车 0 让路 owner 拍板
+
+### DEF-* 债务清单
+
+- ✅ DEF-6 载荷断裂(已收口)
+- ✅ DEF-7 假红定性(已定性)
+- ✅ DEF-8 归档区(已修)
+- ⚠️ DEF-9 历史空洞(降级为告警,业务影响 0)
+- ✅ 启动链故障三层根因(已修复)
+
+### 输出物
+
+- `docs/ipd-系统说明/R57-P0-9-P0阶段验收追加证据包-20260918.md`(223 行,8 节)
+- 主仓 commit:见 git log HEAD
