@@ -1,6 +1,6 @@
-# RuoYi-AI 扩展 gitleaks 配置 — 补 justauth-client-secret 内联检测
+# RuoYi-AI 扩展 gitleaks 配置 — 补 justauth-client-secret + snail-job-token 内联检测
 # ====================================================================
-# 动机:R41 兄弟 commit 6fe6d387 创建了 scripts/check-prod-secrets-inlined.sh
+# 动机 v1:R41 兄弟 commit 6fe6d387 创建了 scripts/check-prod-secrets-inlined.sh
 #       + workflow,在 CI 侧精准扫描 application-prod.yml justauth 段
 #       client-secret 内联硬编码(实测 16 处违规,2 真硬编码 + 14 placeholder)。
 #       但 gitleaks.yml workflow 走的是 gitleaks 默认规则(基于 entropy + 通用
@@ -8,6 +8,10 @@
 #       规则抢先命中。本 .gitleaks.toml 加自定义规则 ruoyi-justauth-client-
 #       secret-inlined,精准识别 application-prod*.yml 的 client-secret 字段
 #       内联硬编码 + 占位符识别。
+#
+# 动机 v2:R42-C followup 实测发现 snail-job 段 token (line 32) 也被 generic-api-key
+#       抢先命中,语义被吞。R42-C.3 加 snail-job token 专属规则,让 line 32 归到
+#       ruoyi-snail-job-token-inlined 而非泛 generic-api-key(便于 owner 决策)。
 #
 # 协同关系:
 #   - gitleaks.yml workflow: 通用规则 + 本自定义规则(自动加载 .gitleaks.toml)
@@ -62,6 +66,41 @@ keywords = ["client-secret"]
     '''\$\{[A-Z_]+\}''',    # ${ENV_VAR} 占位符
     '''^\s*$''',            # 空值
     '''^\s*#''',            # 注释行
+  ]
+
+  # allowlist: 跳过非 yml 资源文件(避免误报)
+  [[rules.allowlists]]
+  description = "跳过非 yml 资源文件(避免误报)"
+  paths = [
+    '''(?i)\.(?:bmp|gif|jpe?g|png|svg|tiff?)$''',
+    '''(?i)\.(?:eot|[ot]tf|woff2?)$''',
+    '''(?i)\.(?:docx?|xlsx?|pdf|bin|socket|vsidx|v2|suo|wsuo|.dll|pdb|exe|gltf)$''',
+    '''(?:^|/)node_modules(?:/.*)?$''',
+    '''(?:^|/)target(?:/.*)?$''',
+    '''(?:^|/)\.git(?:/.*)?$''',
+    '''(?:^|/)\.codex(?:/.*)?$''',
+  ]
+
+# 自定义规则 v2: snail-job token 内联硬编码(精准补 snail-job 段)
+# R42-C.3 followup:line 32 snail-job 段 token 被 generic-api-key 抢先命中,语义被吞。
+#   加专属规则让 line 32 归到 ruoyi-snail-job-token-inlined(便于 owner 决策)。
+#   SJ_ 是 token 字面前缀(line 32 token: "SJ_cKq..."), keywords 中 SJ_ 必命中。
+[[rules]]
+id = "ruoyi-snail-job-token-inlined"
+description = "RuoYi-AI snail-job 段 token 内联硬编码"
+regex = '''(?i)(?:['"]|.*?token.*?)SJ_([A-Za-z0-9_]{30,50})['"]*\s*$'''
+entropy = 4.0
+keywords = ["SJ_", "snail-job"]
+
+  # allowlist: 放过占位符 + 环境变量引用
+  [[rules.allowlists]]
+  description = "放过占位符与环境变量引用"
+  regexTarget = "match"
+  regexes = [
+    '''[*x]{4,}''',
+    '''\$\{[A-Z_]+\}''',
+    '''^\s*$''',
+    '''^\s*#''',
   ]
 
   # allowlist: 跳过非 yml 资源文件(避免误报)
