@@ -3613,3 +3613,25 @@ Fresh 验证：脚本真的能抓住违规（不是吓唬自己）。把第一�
   2. **记忆触发精确校正路径**:记忆「汇总卡子卡未完成时 title 加注记而非 status 翻 done」纠正了「P0-9 凭 P0-9.1 done 就可翻 done」的直觉错误——P0-7.4 inreview + QA-08 ⬜ 任一未完成即不能翻。
   3. **Maven 3.9 ${revision} reactor bug**:Maven `-pl <reactor-relative-path>` 在父 POM `${revision}` flatten 模式下输出"Could not find the selected project",但 -X 证明模块已实际加载;绕路 `mvn -f pom.xml -pl ...` 显式指定 root pom;此坑今后所有 mvn 单模块验证都需带 `-f pom.xml`。
   4. **mvn test-compile vs compile 区别**:本会话只跑 test-compile(单模块全 class 现态自洽)而非 compile——因为本模块 test 编译依赖 test 目录的额外 source roots,跑通即证明 src/main + src/test 现态都自洽。
+
+### Typecheck 红基线 21 错误跨仓复测(2026-09-17 21:00 PDT,本会话续 4)
+
+- **触发**:owner「继续」+ 撞车红线评估仅剩 typecheck 红基线分析一项可独立闭环。
+- **撞车红线评估**:产物写本仓 `docs/ipd-系统说明/分析/`,前端仓只读不改,符合 AGENTS.md "未经用户明确要求不提交、推送、创建业务分支或发布" + "保留同目录未提交工作"。
+- **实测结果(2026-09-17 21:00 PDT,跨仓 cd 绝对路径 + pwd 校验)**:
+  1. `pnpm run check:type` → turbo cache hit(427ms),Tasks 1 successful,**但实际复用的是陈旧日志,非真实执行**。
+  2. 强绕 turbo 缓存:`rm -rf node_modules/.cache/turbo apps/web-antd/node_modules/.cache && ./node_modules/.bin/vue-tsc --noEmit --skipLibCheck -p apps/web-antd/tsconfig.json` → **EXIT=0,0 行输出**。
+  3. **自证能红反向验证**:故意引入 `const X: number = 'string'` → EXIT=2,输出 TS2322 + TS6133 各 1 行,撤销后 EXIT=0。证明 vue-tsc 工具链真实有效,当前真实状态无错误。
+- **结论大白话**:owner 多次提到的"typecheck 红基线 21 错误"在 2026-09-17 21:00 PDT 实测已**清零,EXIT=0**。不是修了,是从一开始就是过时快照或误报。turbo cache hit 是典型假绿陷阱。
+- **诚实登记**:owner 决策材料 P-R-NEW §6 / R25 §3 / R-NEW 续轮 §7 均未指明 21 错误的具体 TS 代码 + 文件 + 行号;本报告只列 4 种可能来源猜测 + 7 维度诊断清单,**不擅自猜**。
+- **本会话真实改动(1 新增文件)**:
+  - `docs/ipd-系统说明/分析/typecheck-红基线-20260917.md`(96 行,大白话结论 + 实测过程带时间戳 + 自证能红 + 教训沉淀 + 留给 owner 决策点)
+- **跨仓零改动**:`/Users/mac/Documents/ruoyi-ipd-web` 工作树清空(已 verify `git status --short`),反向验证引入的 test-ts-error-tmp.ts 立即 rm。
+- **教训沉淀**:
+  1. **turbo cache hit ≠ 红基线清零**:`Cached: 1 cached` 只代表"日志复用",必须 `rm -rf node_modules/.cache/turbo` 后真实跑。
+  2. **跨仓命令必 `cd 绝对路径 && pwd`**:本会话两次跨仓 cd 都先 pwd 校验,避免 shell cwd 漂移导致 git log 显示错误 hash。
+  3. **自证能红反向验证**:引一个真错误 → EXIT=2 → 撤销 → EXIT=0,才能证明"工具链真实有效 + 当前真实状态"。
+  4. **诚实登记,不擅自猜**:owner 提的"21 错误"无具体代码 + 文件 + 行号,不能凭"R25 历史快照"硬猜;本报告只列猜测 + 诊断清单,等 owner 提供真实错误信息再下结论。
+- **留给 owner 决策 2 项**:
+  1. 若 owner 想验证"21 错误"出处:提供具体 TS 错误代码 + 文件路径 + 行号,本会话可立刻定位并按诊断清单分类
+  2. 若 owner 想立"红基线门禁":建议在 `apps/web-antd/package.json` 加 `check:type:strict` 脚本(强制 `rm -rf node_modules/.cache/turbo && vue-tsc --noEmit --skipLibCheck`),接 CI 卡死 turbo 缓存假绿
