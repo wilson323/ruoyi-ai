@@ -5549,3 +5549,47 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 - 不擅自接 EvoMap SDK(撞车 0 + 外部依赖授权)
 - 不擅自加 unique 索引(撞车 0 + 待 owner 拍板)
 - 不擅自改成多线程(撞车 0 + IPD 业务影响大)
+
+## Loop 第 7 轮 — P-DATA-gap-1 真活 HTTP 验收决策包 + 撞车 0 让路(2026-09-18)
+
+**触发**:R45 路线图 P3 阶段真活验收,撞车 0 + 单会话能力边界 + 不擅自 kill JVM。
+**模式**:loop 第 7 轮 — 真活 SELECT + grep + Read 穿透 + 撞车 0 决策包。
+**产出**:`docs/ipd-系统说明/P-DATA-gap-1-真活HTTP验收决策包-20260918.md`(190 行,6 节)。
+**撞号透明**:R47 与 R45-R46 平行编号,撞号不冲突(R45 是路线图/R46 是异常修复/R47 是 P-DATA-gap-1 决策包)。
+
+### 关键真活数据(R13 五必现查)
+
+- 真库:bonus_allocations **0 行**(目标待写表)/ bonus_pools 19 行(已有真活池)/ project_score_records 0 行(P3-2.2 records-only 已验收)
+- 后端代码:BonusPoolController 210 行(4 POST 端点,无 GET)+ BonusAllocationMapper 12 行(新建)+ BonusPoolService A3 接线已落地
+- 单测:BonusPoolAllocationWriteTest **3/3 绿** ✅ / BonusPoolServiceTest **16/16 绿** ✅
+- 后端 PID 79305 监听 16039,加载的代码是 A3 接线**之前**的版本
+- 端口:后端 16039 / 看板 62250 / 前端 vite 15666
+
+### PARTIAL 状态声明(R11 教训内化)
+
+- **撞车 0 + 单会话能力边界**:本会话撞车 0 + 仅 docs/ 改动,不擅自 kill PID 79305
+- **JVM 重启是 owner 派单 worktree 范畴**(撞车 0 红线)
+- **mock 全绿 ≠ 真活全绿**(b1e8e713 红线)— 必须真活验证才能翻 done
+- **status 维持 todo 不假绿**(撞车 0 + 单会话能力边界)
+
+### 真活验收 4 步(待 owner 派单 worktree 执行)
+
+1. 登录获取 token(超管账号)
+2. SELECT bonus_pools.pool_status='DRAFT' LIMIT 1 获取 bonus_pool_id
+3. curl POST /api/v1/bonus-pool/{id}/distribute
+4. SELECT bonus_allocations 验证行数 = 项目 PM 数(通常 2,MARKET_PM + RD_PM)
+
+### 撞车 0 行动建议(待 owner 派单)
+
+- A1 维持现状(★★,撞车 0 风险 0)
+- A2 owner 派单 agent-batch7-pdata1(★★★★★,worktree 隔离 + 三证律)
+- A3 撞车 0 + 单会话能力边界下补 GET 端点(★,撞车 0 风险高)
+- A4 撞车 0 改 records-only 方案(★,撞车 0 风险高)
+
+### 撞车 0 守则严守
+
+- 本子任务纯静态分析(grep + Read + 真活 SELECT),零代码改动
+- 不擅自 kill PID 79305(撞车 0 + 单会话能力边界)
+- 不擅自补 GET 端点(撞车 0 + 单会话能力边界)
+- 不擅自改 records-only 方案(撞车 0 + 单会话能力边界)
+- 不擅自翻 status(撞车 0 + 撞号透明 + 撞车 0 + 单会话能力边界)
