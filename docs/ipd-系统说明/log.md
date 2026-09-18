@@ -3948,3 +3948,42 @@ owner 指令"结合异常系统性梳理分析深度思考根源性原因并根�
 3. R37 P1 修复(timeline catch / change modal 竞态 / portal-shell error boundary)
 4. R37 后端 101 孤儿端点评估(dead code / 未对接业务)
 5. 跨仓 12 commit 待 push 到 origin
+
+
+## R39 ZK-IPD 双版本命名歧义消除(2026-09-18)— 1 个 mv 收口
+
+### 触发
+R36 §5.2 留待「真双版本」候选 + owner 选项 B 拍板(老版改名归档,新版不动)。
+
+### 执行(撞车 = 0)
+- **改前**:`/Users/mac/Documents/ZK-IPD/产品流程细化管理工具/` (43M,15 个一级文件 + 2 子目录)
+- **改后**:`/Users/mac/Documents/ZK-IPD/_ARCHIVED_v1_产品流程细化管理工具_决策草稿_20260918/`
+- **命令**:`mv` 1 个, < 5 秒
+- **新版不动**:`/Users/mac/Documents/ZK-IPD/产品流程细化管理工具 2/` (792M,ZK-IPD 一致性红线认定的 UI/字段/演示数据对照基准)
+
+### 三证律
+- 老版大小:43M → 43M 一致 ✅
+- 新版大小:792M → 792M 一致 ✅
+- 老版一级文件数:15 → 15 一致 ✅
+
+### 为什么 B 不 D
+| 维度 | B 改名 | D 搬迁 |
+|---|---|---|
+| 改动面积 | 1 个 mv | 14 文件跨仓 + 删老目录 |
+| 撞车风险 | 0 | 中(ruoyi-ai/docs 兄弟在改) |
+| 保留现场 | 决策+原型在 ZK-IPD 并列 | 拆走老版失去并列对比 |
+| 撤销难度 | 改名字(1 秒) | git revert 或反向搬运 |
+
+D 唯一优势是老版进 git,但 v1 决策草稿是历史档案不是活跃编辑对象;真要 git 化,B 改名后 `git init` 老版目录即可。
+
+### 三件套
+- 报告:`R39-ZK-IPD双版本命名歧义消除-20260918.md`(105 行)
+- log.md:本节
+- 看板镜像:R39 卡段(待补)
+- commit:待补
+
+### 留给 R40+
+1. 看板镜像 308KB 精简(B1 按 R 历史归档)
+2. R34-pattern-A 其他 P0/P1/P2 段同步勘误
+3. R35 merge gate 加第 8 项扫描(archived_at 一致性)
+4. check-prod-secrets-inlined.sh CI 门禁
