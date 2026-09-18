@@ -4606,3 +4606,105 @@ R25 病根 ② 提交不完整根除 = `check-pre-commit.sh` 接入设计稿(本
 - log.md: 本节
 - 看板镜像: R43-α 卡段(待补)
 - commit: 待补
+
+## R42 治理轮 — P0/P1/P2 治理落地 + R43/R44 跨多会话指南(2026-09-18)
+
+### 触发 & 承接
+- owner 触发:R41 治理轮"留给 R42+"清单 6 项
+- 承接:R40 (PUT 404 blocker) + R41 (5 智能体并行派单 1408 行)
+- 基线:主仓 HEAD `491c8bc5`(R41)/ worktree `2cd3ec19`(R39 落后 8 commit)
+
+### R42 P0-1 PUT 404 blocker(L1 自动 ✅)
+- 新文件:`.harness/rules/external-services-blocklist.md`(102 行)
+- HTTP 探测矩阵现查(GET 200 / POST 200 / PUT 404 / PATCH 404 / DELETE 404)
+- 修复路径 A/B/C/D 评估(本仓可做性 + Layer 分级)
+- 五必现查规约新增第 6 项:PUT 探测前置
+
+### R42 P0-2 GEP 基础设施(L1 自动 ✅)
+- 新文件 3 个:`.harness/loop.sh`(95 行)+ `.harness/gate.sh`(117 行)+ `.harness/evolve/failures.jsonl`(12 行)
+- 8 个 gate 可执行:drift_1 / contract_2 / compile_3 / grantsql_4 / frontend_5 / done_6 / failblank_7 / archived_8
+- 验证:`bash .harness/gate.sh --list` 8 gate 全部正常列出 ✅
+
+### R42 P1 批次 0 显式登记
+- 14 张汇总卡(自动等子卡):P0-9 / P1-3/4/6/10 / P2-3 / P3-1/2/3/4/7/8 / P4-2/4/5
+- 3 张数据缺口裁决卡(EXEMPT_UNMANAGED,等 owner):P-DATA-gap-1 / P-DATA-gap-2 / P3-LOW
+- owner 选项:接真库/改设计/废弃(Q3/Q4/不处理)
+- 本轮不动 plan 文件表格(避免破坏 Vibe Kanban 唯一事实源)
+
+### R42 P2 批次 1 启动指南(6 U1 高)
+- 6 张卡:AUD-02 / P1-10.2 / P2-4.2 / P3-2.3 / P3-8.3 / SEC-04
+- 启动模板:worktree `agent-batch6-{card}` + commit + push
+- 验收门禁:QA 矩阵 R41 子报告(5 视角 + 负向验证 + 自证能红)
+- 风险预警:PUT 404 blocker / 撞车 / sandbox DNS / 单会话能力
+
+### R43/R44 跨多会话启动指南
+- **R43 P0 — 批次 2(6 U2 中)**:OPS-06 / P4-4.1 / P4-5.1 / QA-06/07/08,`agent-batch7-{card}`
+- **R44 P0 — 批次 3(15 AI/阻断/WB)**:AI 融合 5 + 阻断汇总 4 + WB-17-1 + inreview 5,`agent-batch8-{card}`
+- **多会话错峰原则**(R25+R41 软化):worktree list 自查 + 独立 worktree + commit 通知兄弟 + 撞车 0 优先 + 失败重试 ≤ 2
+
+### 限制与风险
+- 本会话无能力执行 6 张 U1 高的 Java 代码(需后续多会话 + worktree)
+- GEP 基础设施是"骨架"(loop.sh 阶段 2-4 占位),实际跑通需 R43+ 验证
+- failures.jsonl 首次创建,无真实失败事件
+
+### 红线遵守
+- ✅ 未跑 mvn / 未改 Java/SQL/yml / 未改 scripts/
+- ✅ GEP 基础设施是 Layer 1 自动(L1 不引入新框架,.harness/ 已存在)
+- ✅ R30+ 三层哨兵 + 负向验证方法论
+- ✅ 五必现查规约(hash / 端口 / 段号 / 看板回读 / 跨仓 cd + 新增 PUT 探测)
+- ✅ 单会话能力边界显式披露(6 张 U1 高留给后续会话)
+
+## R42 接管订正 — 外部服务 PUT 真相实测 + 规则文件重写(2026-09-18)
+
+### 触发 & 承接
+- owner 触发:R42 P0 — 修 PUT 404 blocker + 装 GEP 基础设施
+- 承接:R40 报告「PUT 404 blocker 锁定」+ R41 沿用 → **R41.5 兄弟接管订正** 为 PUT 真 UUID HTTP 200
+- 基线:主仓 HEAD `08ff092a`(R43-α)/ worktree `2cd3ec19`(R39 落后 10 commit)
+
+### 接管兄弟会话产物(撞车 0 优先)
+- ✅ loop.sh / gate.sh / failures.jsonl 兄弟 R42 P0-2 已落,接管 = 不重写
+- ✅ R42-治理轮汇总 / R41.5-接管R40订正 / R43-α/β / R42-A/C/D/E 兄弟 commit,接管 = 不重写
+- ❌ .harness/rules/external-services-blocklist.md 上一轮本会话基于 R40 误测证据,本轮**整文重写**
+
+### PUT 真相实测(2026-09-18 现查)
+- 真 UUID PUT → **HTTP 200** ✅(实测把 DB-02 从 done 改回 inreview)
+- 错路径(/v1/) → HTTP 405(不是 404)
+- 假 UUID → HTTP 400 UUID parsing failed(不是 404)
+- **结论**:R40 报告「PUT/PATCH/DELETE 被 nginx 1.28.3 拦截 404」是误测,**没有 nginx 拦截**
+
+### DB-02 误判翻 done 订正
+- R41.5 兄弟误判翻 done(HTTP 200 落地,违反蜂群 B "维持 inprogress")
+- 本轮接管处置:实测 PUT 改回 inreview ✅ + Fresh GET 回读 status=inreview
+
+### 五必现查规约新增 2 项
+- #6 PUT 探测前置必用真 UUID(防 R40 误测)
+- #7 路径无 /v1/ 前缀(防 405 误读)
+
+### 防误测规约 6 条
+1. PUT/PATCH/DELETE 探测前置必用真 UUID + 真路径
+2. 路径用 `/api/tasks/{uuid}`,不要带 /v1/
+3. 400 ≠ 404 / 405 ≠ 404 / 先看 HTTP 状态码再看 body
+4. 响应头 Server: nginx/1.28.3 是无信息量(所有响应都有)
+5. 推荐做法:直接 PUT `/api/tasks/{uuid}`(manage.py set 撞 reconcile 79 mapped IDs)
+6. 看板外部直投卡翻状态走 PUT 而非 manage.py set(OPS-09 守则补充)
+
+### 真实风险清单(非误测)
+- L2 manage.py set reconcile 撞 79 mapped IDs → 改用直接 PUT
+- L1 假 UUID 误测返 400 → 五必现查第 6 项
+- L1 /v1/ 路径错返 405 → 五必现查第 7 项
+- ❌ nginx 反代 PUT 拦截(已证伪)
+
+### 三件套
+- 报告:`R42-接管订正-外部服务PUT真相-20260918.md`(239 行)
+- log.md:本节(预计 60 行)
+- 看板镜像:R42-接管订正 卡段(预计 50 行)
+- 规则文件:external-services-blocklist.md 整文重写(134 行)
+- commit:待补
+
+### 红线遵守
+- ✅ 未跑 mvn / 未改 Java/SQL/yml / 未改 scripts/
+- ✅ 仅重写本会话上一轮自产失真文件,不撞兄弟 R39/R40/R41/R42 commit
+- ✅ R30+ 三层哨兵 + 负向验证(真 UUID + 假 UUID + 错路径三对照)
+- ✅ R13 五必现查规约(hash / 端口 / 段号 / 看板回读 / 跨仓 cd + 新增 PUT 用真 UUID)
+- ✅ R25 软化条款三步登记接管 R41.5 兄弟
+

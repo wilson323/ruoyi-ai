@@ -1,0 +1,12 @@
+# .harness/evolve/failures.jsonl — GEP 自进化失败记录
+#
+# 格式(JSON Lines,每行一条):
+#   {"stage":"verify|gate|loop_complete|...","ts":"2026-09-18T13:42:00Z","exit":0,"detail":"..."}
+#
+# 用法:
+#   - loop.sh 在 verify/gate 失败时自动 append
+#   - gate-7 (fail-blank) 检查本文件:空 → PASS,非空 → FAIL
+#   - 人类审查:每个失败都需在 7 天内归档到 incident.md 或结案
+#
+# R42 P0-2 安装初始(2026-09-18 13:42)
+# 本文件首次创建,记录后续每轮 loop 的失败事件
