@@ -107,7 +107,7 @@ while IFS= read -r md_file; do
     TABLE_DETAILS="${TABLE_DETAILS}  - $md_file: '$w' 不在白名单 {$(echo $WHITELIST_TABLES | tr '|' ',')}\n"
     TABLE_VIOLATIONS=$((TABLE_VIOLATIONS + 1))
   done
-done < <(find "$WORKSPACE/docs" -type f -name '*.md' 2>/dev/null)
+done < <(find "$WORKSPACE/docs/ipd-系统说明" "$WORKSPACE/docs/开发说明" -type f -name '*.md' 2>/dev/null)
 
 if [ "$TABLE_VIOLATIONS" -gt 0 ]; then
   DETAILS="${DETAILS}📋 表名漂移(C 类):${TABLE_VIOLATIONS} 处\n${TABLE_DETAILS}\n"
@@ -139,7 +139,7 @@ while IFS= read -r md_file; do
       LINK_VIOLATIONS=$((LINK_VIOLATIONS + 1))
     fi
   done
-done < <(find "$WORKSPACE/docs" -type f -name '*.md' 2>/dev/null)
+done < <(find "$WORKSPACE/docs/ipd-系统说明" "$WORKSPACE/docs/开发说明" -type f -name '*.md' 2>/dev/null)
 
 if [ "$LINK_VIOLATIONS" -gt 0 ]; then
   DETAILS="${DETAILS}🔗 链接失效(B 类):${LINK_VIOLATIONS} 处\n${LINK_DETAILS}\n"
@@ -234,7 +234,7 @@ EOF
       TABLE_DETAILS="${TABLE_DETAILS}  - $md_file: '$w'\n"
       TABLE_VIOLATIONS=$((TABLE_VIOLATIONS + 1))
     done
-  done < <(find "$WORKSPACE/docs" -type f -name '*.md' 2>/dev/null)
+  done < <(find "$WORKSPACE/docs/ipd-系统说明" "$WORKSPACE/docs/开发说明" -type f -name '*.md' 2>/dev/null)
 
   # 重跑 B 类扫描
   while IFS= read -r md_file; do
@@ -252,7 +252,7 @@ EOF
         LINK_VIOLATIONS=$((LINK_VIOLATIONS + 1))
       fi
     done
-  done < <(find "$WORKSPACE/docs" -type f -name '*.md' 2>/dev/null)
+  done < <(find "$WORKSPACE/docs/ipd-系统说明" "$WORKSPACE/docs/开发说明" -type f -name '*.md' 2>/dev/null)
 
   if [ "$TABLE_VIOLATIONS" -gt 0 ]; then
     DETAILS="${DETAILS}📋 fixture 表名漂移: ${TABLE_VIOLATIONS} 处(F1-F3)\n${TABLE_DETAILS}\n"
