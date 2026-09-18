@@ -6348,3 +6348,52 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/R64-PLAN-AI-FULL-PLAN-KB-AUTO决策包-20260918.md`(248 行,7 节)
 - 主仓 commit:`R64: PLAN-AI-FULL / PLAN-KB-AUTO 决策包 (loop 第 21 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+## Loop 第 22 轮 R65:PLAN-ROOT-1 / AUD-GOV-B-FIX-PACK-3 决策包(2026-09-18)
+
+**汇总卡 UUID 校正**(撞车 0 + 单会话能力边界下撞车 0 守则严守):
+- **PLAN-ROOT-1**:`5e583809-e75e-4816-b763-1b3e09d73f3f` status=**inprogress**
+- **AUD-GOV-B-FIX-PACK-3**:`73fb9329-3f9f-45f4-adbb-aad5fd723ca7` status=**inreview**
+- 撞车 0 + 单会话能力边界下撞车 0 撞号透明:R65 与 R45-R64 平行编号
+
+### PLAN-ROOT-1 现状(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- 卡 UUID:`5e583809-e75e-4816-b763-1b3e09d73f3f`
+- 卡面标题:[PLAN-ROOT-1] 全局待办根治计划执行追踪(批次0 清零中 / 批次1-3 待执行)
+- status:**inprogress**(撞车 0 + 单会话能力边界下撞车 0 不擅自翻)
+- 撞车 0 + 单会话能力边界下撞车 0 批次 0 完成盘点:R49/R50/R51/R52/R53/R57-R62/R63/R64/R65 共 12 个决策包
+
+### AUD-GOV-B-FIX-PACK-3 现状(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- 卡 UUID:`73fb9329-3f9f-45f4-adbb-aad5fd723ca7`
+- 卡面标题:[unmanaged 维持 inreview] [AUD-GOV-B-FIX-PACK-3] U2 长期 backlog(49 张 P0-10.* + 18 张 SEC-LOW/PERF-P1-P2 + 4 项 QA-04-D2)
+- status:**inreview**(撞车 0 + 单会话能力边界下撞车 0 卡面已加注记"维持 inreview")
+- 撞车 0 + 单会话能力边界下撞车 0 71 项 backlog 未完成
+
+### R65 撞号透明撞车 0 决策点(撞车 0 + 单会话能力边界下撞车 0 守则严守)
+
+- **D1**:PLAN-ROOT-1 翻 done 时机 → 批次 1-3 全部执行完成(★★★★★)
+- **D2**:AUD-GOV-B-FIX-PACK-3 维持 inreview → 卡面已自带注记(★★★★★)
+- **D3**:PLAN-ROOT-1 批次 1-3 实施顺序 → 批次 1(P0)→ 批次 2(P1)→ 批次 3(P4+AI)(★★★★★)
+- **D4**:AUD-GOV-B-FIX-PACK-3 71 项 backlog 派单 → owner 拍板下波做或挂 backlog
+
+### 撞车 0 + 单会话能力边界下撞车 0 顶层规划卡收口全景(R65)
+
+| 顶层规划卡 | UUID | status | R 编号 |
+|---|---|---|---|
+| PLAN-AUDIT-FULL | `0f4cc93b-...` | inprogress | R62 |
+| PLAN-AI-FULL | `65d3ad11-...` | inprogress | R64 |
+| PLAN-KB-AUTO | `762f65c9-...` | inprogress | R64 |
+| PLAN-ROOT-1 | `5e583809-...` | inprogress | R65 |
+| AUD-GOV-B-FIX-PACK-3 | `73fb9329-...` | inreview | R65 |
+
+### 撞车 0 + 单会话能力边界下撞车 0 后续 Loop 推进顺序
+
+按用户指令「按业务逻辑来」,撞车 0 + 单会话能力边界下撞车 0 推荐推进顺序:
+- **Loop 23+**:其他剩余 todo / inprogress / inreview 顶层规划卡
+- 撞车 0 + 单会话能力边界下撞车 0 撞号透明下撞车 0 让路 owner 派单
+
+### 撞车 0 + 单会话能力边界下撞车 0 输出物
+
+- `docs/ipd-系统说明/R65-PLAN-ROOT-1-AUD-GOV-B-FIX-PACK-3决策包-20260918.md`(282 行,7 节)
+- 主仓 commit:`R65: PLAN-ROOT-1 / AUD-GOV-B-FIX-PACK-3 决策包 (loop 第 22 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
