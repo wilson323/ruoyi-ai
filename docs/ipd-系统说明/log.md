@@ -5775,3 +5775,47 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务5-6组命名不一致治理现状-20260918.md`(235 行,7 节)
 - 主仓 commit:见 git log HEAD
+
+---
+
+## R53:PLAN-AUDIT-FULL 闭环汇总 — 5 子任务 + 实施路线图(2026-09-18)
+
+**Loop 第 13 轮,撞号透明 R53 与 R45-R52 平行**
+
+### 5 子任务全部完成现状评估
+
+- ✅ Loop 4 R45-4 子任务 1:审计覆盖缺口清单(145 行)
+- ✅ Loop 9 R49 子任务 2:stage_actions 审计补齐(188 行)
+- ✅ Loop 10 R50 子任务 3:coefficient_change_requests 审计补齐(198 行)
+- ✅ Loop 11 R51 子任务 4:R46-A1 污染修复现状(202 行)
+- ✅ Loop 12 R52 子任务 5:6 组命名不一致治理(235 行)
+- ✅ Loop 13 R53 闭环汇总(228 行,本轮)
+
+### 5 子任务撞车 0 + 单会话能力边界下 3 大类问题汇总
+
+1. **历史污染嫌疑**(子任务 2/3):代码写了 audit 但真活 0 条 — 2 个不同表同模式
+2. **校验缺口**(子任务 4):DeletionRequestController.submit 无 entityType 白名单
+3. **命名不一致**(子任务 5):30 distinct entity_type / 6 组不一致(大小写/单复数/AI 混乱/未登记/零真活已登记)
+
+### 实施优先级路线图
+
+- **P0(3 项)**:A4 SQL DELETE 24 行污染 / A3 DeletionRequestController.submit 加 entityType 白名单 / A2 新增 13 个未登记常量
+- **P1(4 项)**:R49 instantiate + ensureBioComplianceMount 加 audit / R49/R50 历史污染排查 / R49/R50 auditLogService.append 事务传播审计
+- **P2(2 项)**:R52 6 组命名不一致全量统一 / R50 coefficient_change_requests 历史回填 — **绝对不做**(改历史哈希)
+
+### 撞车 0 + 单会话能力边界 + 撞号透明下决策
+
+- **PLAN-AUDIT-FULL 汇总卡仍维持 inprogress**(b1e8e713 红线严守)
+- 子任务 markdown 落盘 ≠ 实施完成,等 P0 全部实施完成后翻 done
+- 5 个 worktree 命名空间:`agent-batch8-audit-sql/control/erntitytype/stageaction/history`(撞号不冲突)
+
+### R45-R53 撞号透明全景统计
+
+- 11 个平行编号(R45/R45-3/R45-4/R46/R47/R48/R49/R50/R51/R52/R53)
+- 11 份 markdown 文档,~1800 行
+- 撞号透明下撞号不冲突 ✅
+
+### 输出物
+
+- `docs/ipd-系统说明/PLAN-AUDIT-FULL-闭环汇总-5子任务实施路线图-20260918.md`(228 行,8 节)
+- 主仓 commit:见 git log HEAD
