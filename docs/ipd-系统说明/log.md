@@ -4708,3 +4708,47 @@ R25 病根 ② 提交不完整根除 = `check-pre-commit.sh` 接入设计稿(本
 - ✅ R13 五必现查规约(hash / 端口 / 段号 / 看板回读 / 跨仓 cd + 新增 PUT 用真 UUID)
 - ✅ R25 软化条款三步登记接管 R41.5 兄弟
 
+
+## R43-α/β 二轮 + R43 P0/P1 + R44 P0/P2 启动指南(2026-09-18)
+
+### 触发 & 承接
+- owner 触发:R43/R44 跨多会话清单 6 项
+- 承接:R42 兄弟报告 + R41 5 智能体并行派单 + R41.5 接管订正
+- 基线:主仓 HEAD `2c0ced77`(R42 接管订正)/ worktree `2cd3ec19`(R39 落后 10 commit)
+
+### R43-α 二轮 — core.hooksPath 接入(✅ 撞车 0)
+- 扩展兄弟 R39 `check-pre-commit.sh` 122 → 205 行(补 untracked 引用检测门禁 0)
+- 新建 `.claude/hooks/pre-commit` wrapper(git 只找 `<hooksPath>/<hook-name>`)
+- 新建 `init-hooks.sh` 57 行(一键 set core.hooksPath,fresh clone 引导)
+- 主仓根 set `core.hooksPath = .claude/hooks`(兄弟 worktree 各自 local 不受影响)
+- **自证能红**:E2E 临时 git 仓 + 故意 untracked 引用 commit → ❌ FAIL exit 1 拦截 ✅
+
+### R43-β 二轮 — check-doc-drift.sh 验证(✅)
+- 兄弟 310 行 3 模式实测:default 2379 失真 warning / strict 同 2379 失真未阻断 / self-test 19 fixture ✅
+- 白名单过严(只 4 张表),2375/2379 = 误报,本轮**不动**(撞车 0),留 R44 P2
+
+### R43 P1 — 汇总卡门禁矩阵落地(✅)
+- 新建 `scripts/check-done-gate-summary.py` 297 行(15 张汇总卡白名单)
+- **自证能红 5/5**:看板不可达/未知卡号/空子卡/子卡非 done/全 done
+- **真活 6/15 PASS**:P3-1/3/3-4/3-7/3-3/2-3 + P4-4 全 can_flip
+- 不动兄弟 `check-done-gate.py` 343 行(撞车 0)
+
+### R43 P0 / R44 P0 / R44 P2 启动指南(留后续多会话)
+- 报告:`R43-R44-跨多会话启动指南-20260918.md` 241 行
+- R43 P0 批次 2(6 U2 中):OPS-06 / P4-4.1 / P4-5.1 / QA-06/07/08
+- R44 P0 批次 3(15 AI/阻断/WB):AI 融合 5 + 阻断汇总 4 + WB-17-1 + inreview 5
+- R44 P2 AI Gateway 准入 + SSE 流式 + promptType 模板
+- worktree 命名:`agent-batch7-{card}` / `agent-batch8-{card}`
+
+### 三件套
+- 报告:`R43-R44-跨多会话启动指南-20260918.md`(241 行)
+- log.md:本节(预计 40 行)
+- 看板镜像:R43/R44 启动指南 卡段(预计 40 行)
+- commit:待补
+
+### 红线遵守
+- ✅ 未跑 mvn / 未改 Java/SQL/yml / 未改 docs/开发说明/
+- ✅ 仅扩展兄弟 R39 check-pre-commit.sh(主体不动)+ 新增 3 文件 + 不动兄弟其他脚本
+- ✅ 撞车 = 0 优先:不动兄弟 worktree,只 set 主仓根 local config
+- ✅ R30+ 三层哨兵 + 负向验证(check-done-gate-summary.py 5/5 + check-pre-commit.sh untracked mode 临时仓 E2E FAIL)
+- ✅ R13 五必现查规约

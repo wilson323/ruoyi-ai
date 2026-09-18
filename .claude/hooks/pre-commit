@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# pre-commit wrapper — git 只找 hooksPath/<hook-name>, 自动 exec check-pre-commit.sh
+# R43-α 二轮: 让 check-pre-commit.sh 通过 core.hooksPath 接入
+exec "$(dirname "$0")/check-pre-commit.sh" "$@"

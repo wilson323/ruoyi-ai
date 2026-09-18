@@ -2,12 +2,14 @@
 # =============================================================================
 # check-pre-commit.sh
 # R39 治理轮 — 提交前门禁自检
+# R43-α 二轮接管扩展 — 补 untracked 引用检测门禁(病根 ② 实质化)
 #
 # 用法:
-#   .claude/hooks/check-pre-commit.sh          # 默认:跑全部
+#   .claude/hooks/check-pre-commit.sh          # 默认:跑全部(快速路径跳过 drift)
 #   .claude/hooks/check-pre-commit.sh drift     # 仅跑 doc↔db drift
 #   .claude/hooks/check-pre-commit.sh contract  # 仅跑 contract tri-source
-#   .claude/hooks/check-pre-commit.sh fast      # 跳过 doc↔db(--refined 模式也跳过)
+#   .claude/hooks/check-pre-commit.sh untracked # 仅跑 untracked 引用检测(R43-α 二轮新增)
+#   .claude/hooks/check-pre-commit.sh fast      # 跳过 doc↔db 与 contract(untracked 仍跑,病根 ② 实质化)
 #
 # 退出码:
 #   0 = PASS
@@ -28,7 +30,7 @@ SKIPPED=0
 # ---------------------------------------------------------------------------
 # 哨兵:R39 自检必须有 git repo + 关键脚本存在
 # ---------------------------------------------------------------------------
-if [[ ! -d "$REPO_ROOT/.git" ]]; then
+if [[ ! -e "$REPO_ROOT/.git" ]]; then
     echo "[check-pre-commit] ❌ not a git repo: $REPO_ROOT" >&2
     exit 2
 fi
@@ -42,6 +44,75 @@ if [[ ! -x "$REPO_ROOT/scripts/check-contract-tri-source.sh" ]]; then
     echo "[check-pre-commit] ❌ scripts/check-contract-tri-source.sh missing or not executable" >&2
     exit 2
 fi
+
+# ---------------------------------------------------------------------------
+# 门禁 0:R43-α 二轮新增 — untracked 引用检测(病根 ② 实质化)
+# 扫描 staged 内容是否引用了 untracked 文件 — 例如 .md 写了 `see foo.md` 但 foo.md 未 git add
+# 快速、便宜(<1s)、所有 hook 模式默认跑
+# ---------------------------------------------------------------------------
+run_untracked_gate() {
+    local start_time
+    start_time=$(date +%s)
+    echo "[check-pre-commit] → 门禁 0: untracked 引用检测(R43-α 二轮新增)"
+
+    # 取所有 staged 文件名
+    local staged_files
+    staged_files=$(git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null)
+
+    # 取所有 untracked 文件名
+    local untracked_files
+    untracked_files=$(git -C "$REPO_ROOT" ls-files --others --exclude-standard 2>/dev/null)
+
+    if [[ -z "$untracked_files" ]]; then
+        local elapsed=$(( $(date +%s) - start_time ))
+        echo "[check-pre-commit] ✅ 门禁 0 PASS: 无 untracked 文件 (elapsed=${elapsed}s)"
+        PASSED=$((PASSED + 1))
+        return 0
+    fi
+
+    # 拼接 untracked 文件名为 regex(纯 basename,不要求完整路径)
+    local untracked_names=()
+    while IFS= read -r f; do
+        [[ -n "$f" ]] && untracked_names+=("$f")
+    done <<< "$untracked_files"
+
+    # 在 staged 文件内容里 grep 每个 untracked 文件名(basename)
+    local hits=()
+    local staged_count=0
+    while IFS= read -r staged_file; do
+        [[ -z "$staged_file" || ! -f "$REPO_ROOT/$staged_file" ]] && continue
+        staged_count=$((staged_count + 1))
+        # 只查文本类文件(避免 binary 读不出来)
+        case "$staged_file" in
+            *.md|*.txt|*.java|*.yml|*.yaml|*.xml|*.json|*.sh|*.py|*.js|*.ts|*.tsx|*.vue|*.sql|*.md) ;;
+            *) continue ;;
+        esac
+        for untracked in "${untracked_names[@]}"; do
+            # 用 basename 做引用匹配(避免路径噪音)
+            local basename_untracked
+            basename_untracked=$(basename "$untracked")
+            # 跳过 .gitignore / 临时文件
+            [[ "$basename_untracked" == ".gitignore" ]] && continue
+            [[ "$basename_untracked" == *.swp ]] && continue
+            if grep -qF "$basename_untracked" "$REPO_ROOT/$staged_file" 2>/dev/null; then
+                hits+=("$staged_file → 引用 untracked 文件 '$untracked'")
+            fi
+        done
+    done <<< "$staged_files"
+
+    local elapsed=$(( $(date +%s) - start_time ))
+    if [[ ${#hits[@]} -gt 0 ]]; then
+        echo "[check-pre-commit] ❌ 门禁 0 FAIL: ${#hits[@]} 处 untracked 引用 (elapsed=${elapsed}s)"
+        for hit in "${hits[@]}"; do
+            echo "[check-pre-commit]   - $hit"
+        done
+        echo "[check-pre-commit]   提示: 这些文件还没 git add,会被 git commit 漏掉 → 兄弟会话 fresh clone 炸"
+        FAILED=$((FAILED + 1))
+    else
+        echo "[check-pre-commit] ✅ 门禁 0 PASS: ${staged_count} staged 文件,无 untracked 引用 (elapsed=${elapsed}s)"
+        PASSED=$((PASSED + 1))
+    fi
+}
 
 # ---------------------------------------------------------------------------
 # 门禁 1:doc ↔ db 漂移门禁(--refined 精炼模式)
@@ -98,21 +169,31 @@ run_contract_gate() {
 # ---------------------------------------------------------------------------
 case "$MODE" in
     all)
+        # R43-α 二轮: 所有 hook 模式默认跑门禁 0(untracked 引用检测) < 1s
+        run_untracked_gate
         run_drift_gate
         run_contract_gate
         ;;
     drift)
+        run_untracked_gate
         run_drift_gate
         ;;
     contract)
+        run_untracked_gate
         run_contract_gate
         ;;
+    untracked)
+        # R43-α 二轮新增独立模式:仅跑 untracked 引用检测(为快速预检)
+        run_untracked_gate
+        ;;
     fast)
+        # R43-α 二轮: fast 模式仍跑 untracked 门禁 0(快速 < 1s,病根 ② 实质化)
+        run_untracked_gate
         SKIPPED=2
-        echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁"
+        echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 仍跑)"
         ;;
     *)
-        echo "[check-pre-commit] ❌ unknown mode: $MODE (支持: all|drift|contract|fast)" >&2
+        echo "[check-pre-commit] ❌ unknown mode: $MODE (支持: all|drift|contract|untracked|fast)" >&2
         exit 2
         ;;
 esac
