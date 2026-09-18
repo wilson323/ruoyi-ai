@@ -49,6 +49,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 ### 2.1 P0 级(阻塞业务)
 
 #### P0-1 【治理盲区】超级用户不收敛 — 3 名 SUPER_ADMIN 同时 ACTIVE
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`persons` 表 person_type='SUPER_ADMIN'
 - **实证**:
   ```
@@ -62,6 +63,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:重放 `2026-09-07-ipd-person-super-admin-converge.sql`(注意此脚本头部防呆:种子被重建过需 owner 重裁决),或新建专用收敛 SQL
 
 #### P0-2 【下拉污染】products 表 27 条 ACTIVE 测试夹具残留
+- **R41 inline 勘误(2026-09-18)**:本段数字已被 R35 数据治理实操报告(03971edc)处理,apply `2026-09-18-r35-data-cleanup-batch.sql` 后 27 条 ACTIVE 已全部 del_flag=1 + status 改 RETIRED,详见 R35 §2.3 后置验证。引用时请以 R35 报告数字为准
 - **位置**:`products.status='ACTIVE' AND create_by=-1`
 - **实证总数**:**27 条** 占 products 表 ACTIVE 总数(34)的 **79.4%**
 - **前缀分布**:
@@ -105,6 +107,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE projects SET del_flag=1 WHERE create_by=-1 AND name REGEXP 'QA03|R30|R31|HARDWARE|矩阵|探针';`(实测命中 11 条,与本报告勘误后数字一致)
 
 #### P0-4 【schema 违反】projects 表 4 条 status='G1' 异常枚举值
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`projects.status='G1'`
 - **实证**:
   ```
@@ -119,6 +122,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:清退或加 CHECK 约束 (`CHECK (status IN ('DRAFT','ACTIVE','ARCHIVED','SUSPENDED','LIFECYCLE'))`)
 
 #### P0-5 【下拉污染 + 跨表】1 条 `ZK-GATE-TEST / 如门禁测试` 同时写入 products + projects 双表
+- **R41 inline 勘误(2026-09-18)**:本段数字已被 R35 数据治理实操报告(03971edc)处理,zk_gate_products 2 条 (id=900001+9130004) + zk_gate_projects 1 条 (id=9140004) 全部 del_flag=1 + 软删,详见 R35 §2.3 + R36 §2.2 C1.1 archived_at 一致性回填(9140004 单独 SQL apply 1 row affected)
 - **位置**:`products(9130004)` AND `projects(9140004)`
 - **实证**:
   ```
@@ -134,6 +138,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 ### 2.2 P1 级(污染业务下拉)
 
 #### P1-1 【下拉污染】deletion_requests 表 51/52 条 create_by=-1(98%)+ 3 类异常 entity_type
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`deletion_requests` 表
 - **实证**:
   ```
@@ -147,6 +152,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE deletion_requests SET del_flag=1 WHERE create_by=-1 AND reason REGEXP '探针|验收|fail-path|HTTP' AND status IN ('ADMIN_REVIEW','LEADER_REVIEW');`
 
 #### P1-2 【行为路径】1 条 handover_records ROLLED_BACK create_by=-1
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`handover_records(2098381563761827841)`
 - **实证**:`handover_type=PROJECT, from_person_id=900104, to_person_id=900105, project_id=9150001, status=ROLLED_BACK, rollback_reason='R30 E2E 撤销验证：接任人安排有变，责任回转原研发PM', create_by=-1`
 - **冲突**:handover 流程是真实业务行为,但这条显然是 E2E 撤销验证的副作用数据
@@ -154,6 +160,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:rollback_reason 已含 "R30 E2E",可按文本匹配清理
 
 #### P1-3 【隔离失效】stage_actions 7 条 create_by=-1 + 47 条 create_by=NULL
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`stage_actions` 表
 - **实证**:
   - create_by=-1:7 条,其中 6 条为 project_id 9140001-9140003(ENT-AC-100/ZK-IAT-ATT/VIS-RD-100),1 条 C12 生物特征合规审查(id=2096320617618931713)
@@ -163,6 +170,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE stage_actions SET create_by=-1 WHERE create_by IS NULL AND action_code IN ('A1','A2') AND project_id BETWEEN 9140001 AND 9140005;`(统一为系统用户)
 
 #### P1-4 【下拉污染】bid_responses 3 条 create_by=-1(75%)+ 字段污染
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`bid_responses(2096473726085361666/8270594050, 2096473743223287810)`
 - **实证**:全部 `responded_at='-1-'`(字符串污染时间字段)、`create_by=-1` / `update_by=-1`
 - **冲突**:`responded_at` 应为 DATETIME,但写入 `-1`(字符串),违反字段类型语义
@@ -170,6 +178,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE bid_responses SET create_by=900101 WHERE responded_at='-1-';`(但 `-1-` 是脏数据,需先清空字段)
 
 #### P1-5 【运维盲区】4 个 ApplicationRunner 写 ACTIVE 数据到生产共用表
+- **R41 inline 勘误(2026-09-18)**:本段指 Runner 源(代码指针),不是数据,无勘误需求,但 Runner 是否在 R38/R39 后已加固请参见 docs/ipd-系统说明/R37-全局梳理汇总-20260918.md §3 R25 病根反证命中
 - **位置**:
   - `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/config/IpdMockDataInitializer.java`
   - `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/config/IpdZkScenarioInitializer.java`
@@ -181,6 +190,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:SQL 文件头部加 `-- profile=dev-only` 守卫,让 mysql-migrator 过滤
 
 #### P1-6 【sql 文件无守卫】`2026-09-06-ipd-zk-scenario-seed.sql` 跨环境种子源
+- **R41 inline 勘误(2026-09-18)**:本段指 SQL 源文件位置,守卫加固状态请参见 docs/ipd-系统说明/R37-全局梳理汇总-20260918.md §4 R37 反证命中 + docs/script/sql/update/ 目录下各幂等 DDL 加固情况
 - **位置**:`docs/script/sql/update/2026-09-06-ipd-zk-scenario-seed.sql`
 - **实证**(行 40-92):
   ```
@@ -194,6 +204,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:1) 加 `WHERE @@global.read_only = 0 AND DATABASE() LIKE '%dev%'` 守卫;2) 拆分 `2026-09-06-ipd-zk-scenario-seed.dev.sql` 与空 `.prod.sql`
 
 #### P1-7 【数据完整性】3 条 projects ARCHIVED 但 lifecycle_status IS NULL(不一致)
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`projects.status='ARCHIVED' AND lifecycle_status IS NULL`
 - **实证**:
   ```
@@ -206,6 +217,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE projects SET lifecycle_status='ARCHIVED' WHERE status='ARCHIVED' AND lifecycle_status IS NULL;`
 
 #### P1-8 【孤立枚举】1 条 projects status='LIFECYCLE' 应为阶段名非状态
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`projects(9150001) status='LIFECYCLE', current_stage='LIFECYCLE'`
 - **实证**:`PRJ-ACC-G5 / P3验收种子-G5上市后项目`,name 含 "种子"
 - **冲突**:`LIFECYCLE` 是阶段名(`current_stage` 字段含义),被误填入 `status` 字段;同时 `current_stage` 也设为 LIFECYCLE,语义重叠
@@ -213,6 +225,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE projects SET status='ACTIVE', current_stage='LIFECYCLE' WHERE id=9150001;` 或清退
 
 #### P1-9 【命名法违规】1 条 projects status='SUSPENDED' create_by=-1
+- **R41 inline 勘误(2026-09-18)**:本段数字已被 R35 数据治理(03971edc)处理,与 P0-3 同批 11 条 cleanup SQL 一并 del_flag=1 + status='ARCHIVED',详见 R35 §2.3
 - **位置**:`projects(2096324843405316098) status='SUSPENDED'`
 - **实证**:`PRJ-2026-018 / P122-HARDWARE-1788637765`,create_by=-1
 - **冲突**:SUSPENDED 是真实业务状态,但 create_by=-1 + 名字"P122-HARDWARE"是 P1-2.2 探针命名
@@ -224,10 +237,12 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 ### 2.3 P2 级(审计隐患)
 
 #### P2-1 【审计盲点】stage_actions 47 条 create_by=NULL(action_code='A1'/'A2')
+- **R41 inline 勘误(2026-09-18)**:本段已计入 P1-3,修复路径同 P1-3,引用时以 P1-3 勘误为准
 - 已计入 P1-3,审计维度单独记录:**A1/A2 阶段动作为 CONCEPT/PLAN/DEV/VALID/LAUNCH 阶段标准动作**,create_by 不为空应是项目 mock 起始语义(空时审计无法追溯)
 - 修复路径同 P1-3
 
 #### P2-2 【无来源追溯】gate_review_elements 43/76 条 create_by=-1 或 IS NULL
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`gate_review_elements`
 - **实证**:total=76,create_by=-1/IS NULL=43/76=57%
 - **冲突**:33 项种子要素由 `IpdGateElementSeedInitializer` 写入,但 SQL 文件 `2026-09-05-ipd-p0-seed-elements.sql` 也写(可能重复/部分)
@@ -235,6 +250,7 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE gate_review_elements SET create_by=1 WHERE create_by IS NULL;`(与 SQL 文件 create_by=1 一致)
 
 #### P2-3 【字段语义模糊】deletion_requests 1 条 entity_type='unsupported_probe' create_by=NULL
+- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令
 - **位置**:`deletion_requests(2096269990000000001)`
 - **实证**:`entity_type='unsupported_probe', entity_id=1, status='ADMIN_REVIEW', reason='P062 fail-path probe', requester_id=900101, create_by=NULL`
 - **冲突**:其他 51 条 create_by=-1,这条 create_by=NULL — 孤儿数据,可能是手工 SQL 写入
@@ -242,17 +258,20 @@ R33 已知异常 1+3 全部复测仍存在(23+1),本次新发现 **P0×5 / P1×9
 - **修复路径**:`UPDATE deletion_requests SET create_by=-1 WHERE id=2096269990000000001;`
 
 #### P2-4 【孤儿数据】projects 1 条 lifecycle_status='ARCHIVED' 但 status='ACTIVE'(不一致)
+- **R41 inline 勘误(2026-09-18)**:本段已扫描验证,本库无实例,作为前瞻性检查项保留,无勘误需求
 - **位置**:无具体 ID(查询 `status='ACTIVE' AND lifecycle_status='ARCHIVED'` 应返回 0 条)
 - **实证**:已扫描 projects 表 `status × lifecycle_status` 矩阵,**所有 ARCHIVED 行均 status=ARCHIVED** — 这条 P2-4 在本库无实例
 - **备注**:作为前瞻性检查项记录,避免 Runner 写脏导致不一致
 
 #### P2-5 【seed 一致性】SQL 种子 vs Runner 写库 create_by 不统一
+- **R41 inline 勘误(2026-09-18)**:本段指 UNFIED-RULES 规范化建议,不是数据,统一规范落实情况请参见 docs/superpowers/specs/2026-09-17-discolocal-design.md + R37 §5 R25 病根⑤多事实源无对账
 - **实证**:SQL 文件用 `create_by` 省略或写特定值,Runner 写 `-1`
 - **冲突**:同一份语义数据(create_by 应代表系统用户)在 SQL 路径为 NULL/N,在 Runner 路径为 -1
 - **影响**:审计/排查时按 create_by 过滤断裂
 - **修复路径**:统一规范:`system_user_id = -1` 在 SQL 与 Runner 都使用,文档化在 UNIFIED-RULES
 
 #### P2-6 【测试裸跑】test/java 写真库 + 无 cleanup
+- **R41 inline 勘误(2026-09-18)**:本段指测试代码位置,test/java 文件现状请参见 docs/superpowers/skills/gen-test/SKILL.md + R37 §4 R25 病根①测试假绿 + R38 check-surefire-fake-green.sh 门禁脚本
 - **位置**:
   - `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/qa/Qa04MysqlConcurrencyTest.java` — `tryInsertProject` / `seedProduct` 直接 `Connection.exec("INSERT INTO projects/products ...")` 固定 fixture 命名 `QA-04 并发夹具` / `QA-04 乐观锁夹具` / `QA-04 软删正反例`
   - `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P131DatabaseIntegrationTest.java` — `product()` / `project()` 函数直插真库,fixture 命名 `P131-product-*` / `P131-project-*`

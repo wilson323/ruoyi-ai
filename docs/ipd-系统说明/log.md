@@ -4030,3 +4030,74 @@ R39 误判:「老版 = 决策草稿集」——只看了顶层 14 份 md。R40 �
 2. R34-pattern-A 其他 P0/P1/P2 段同步勘误
 3. R35 merge gate 第 8 项(archived_at 一致性)
 4. check-prod-secrets-inlined.sh CI 门禁
+
+
+## R41 整合收口 — R40 §9 4 件收口(2026-09-18)— T3 撞车回避
+
+### 触发
+R40 §9 给 R41 留 4 件 backlog(看板镜像精简 / R34 19 段勘误 / R35 merge gate 第 8 项 / prod-secrets-inlined CI)+ owner 「完整执行剩余事项确保全局一致性」。
+
+### 4 件处置总览
+| # | R40 §9 backlog | R41 处置 | 状态 |
+|---|---|---|---|
+| T1 | 看板镜像 1470 行精简 | 决策留档,不实质精简 | ✅ done |
+| T2 | R34-pattern-A 其他 P0/P1/P2 段同步勘误 | 19 段加 R41 inline 勘误注记 | ✅ done |
+| T3 | R35 merge gate 第 8 项扫描 | 撞车回避,留 R42+ | ⚠️ deferred |
+| T4 | check-prod-secrets-inlined.sh CI 门禁 | 脚本 + workflow + self-test PASS | ✅ done |
+
+### T1 决策留档
+- **不删任何 R 历史段 / 不改格式 / 不拆文件**(撞车风险高,留 R42+ 处置)
+- append R41 卡段(本节 ~15 行),把"未精简 + 留给 R42"显式登记
+- 留 R42+ 备选:A.按 R 历史归档 / B.按主题归档 / C.全保留 + 顶层 TOC
+
+### T2 R34 19 段 inline 勘误
+- R34-pattern-A-findings.md:472 行 → 491 行(+19 行)
+- 19 段统一格式:`- **R41 inline 勘误(2026-09-18)**:本段数字为 R34 2026-09-17 扫描快照,未经 R35/R36 fresh 实证,引用前请重跑 §5.1 命令`
+- 覆盖:P0-1/P0-2/P0-4/P0-5 + P1-1~9 + P2-1~6(P0-3 已 R34 时勘误,R41 跳过)
+- 特殊注记:P0-2/P0-5/P1-9 标 "R35 cleanup 已处理";P1-5/P1-6/P2-1/P2-4/P2-5/P2-6 指向规范类文档
+
+### T3 撞车回避决策(R25 软化条款检查)
+- **撞车事实**:兄弟会话 `wt-r39-integration` 当前未提交改动 `scripts/check-doc-db-drift.sh`(4 分钟前 mtime)
+- **不接手三步评估**:
+  1. 兄弟会话未提交 / 未冻结 / 未声明放弃 → 不满足接手前提
+  2. 撞车主题不同(兄弟改 doc-db-drift,R41 要加 merge gate 第 8 项) → 不属于同主题撞车
+  3. 强评审/合入会破坏兄弟会话正在做的工作 → 风险高
+- **决策**:本轮不实施 T3;留 R42+ 等兄弟会话 commit 后单独小轮做(预计 1 个脚本改动 + 5 行测试)
+- **诚实暴露**:本节在交付报告 + 本日志同步登记,不在交付时说"T3 完成"
+
+### T4 check-prod-secrets-inlined.sh CI
+- **脚本**:`scripts/check-prod-secrets-inlined.sh`(124 行)— 三模式:default(warning) / `--strict` / `--self-test`
+- **workflow**:`.github/workflows/check-prod-secrets-inlined.yml`(46 行)— PR 触发 + warning + self-test sanity
+- **actions/checkout pin** `b4ffde65...` v4.1.1(防 supply-chain-unpinned-action);persist-credentials: false
+- **self-test 实测**:发现 16 处违规(2 真硬编码 + 14 placeholder)→ PASS(strict 模式可 fail)
+- **2 处真硬编码位置**:`application-prod.yml:210` maxkey `'x1Y5MTMwNzIwMjMxNTM4NDc3Mzche8'` + `:230` gitee `'02c6fcfd...e915ac'`
+- **与既有 CI 关系**:仅新增,不修改 gitleaks.yml / ipd-drift-check.yml / r25-root-cause-lint.yml / r30-done-gate.yml / wiki-lint.yml
+- **互补 gitleaks**:通用规则基于 entropy/正则可能漏 justauth 专属字段,本门禁精准补
+
+### 三证律
+- main HEAD:`4ec4d3fe` → `4ec4d3fe`(commit 不 push)✅
+- wt-r41-integrity HEAD:`4ec4d3fe` → `4ec4d3fe` + 1 commit(R41)✅
+- 主工作树 modified/untracked:0 / 0(0 改动)✅
+- 看板镜像 1535 行未删 + append R41 卡段(约 30 行)✅
+- R34-pattern-A-findings.md:472 → 491 行(+19 行)✅
+- T4 self-test PASS(16 处硬编码可 fail)✅
+- T3 merge gate 改动:0(撞车回避诚实暴露)✅
+
+### 为什么用 worktree 隔离
+- OPS-09 红线:Java 源码 / SSOT 看板镜像 / 本地看板默认由主协调会话串行写
+- R41 跨文档改动(报告 + log.md + 看板镜像 + 脚本 + workflow)严格符合"主协调会话串行写"
+- `git worktree add /tmp/wt-r41-integrity` 在 main HEAD `4ec4d3fe` 上拉分支 `fix/r41-integrity-20260918`
+- 所有改动在 worktree 内,主工作树 0 改动(commit 后才同步)
+- commit 不 push,等 owner 决策合入 main
+
+### 三件套
+- 报告:`R41-整合收口-20260918.md`(222 行)
+- log.md:本节
+- 看板镜像:R41 卡段
+- commit:R41 一并 commit(不 push)
+
+### 留给 R42+
+1. 看板镜像精简(A/B/C 选一)
+2. T3 R35 merge gate 第 8 项扫描(兄弟会话 commit 后做)
+3. T4 strict 模式切换(owner 完成密钥迁移后)
+4. T4 与 gitleaks 通用规则协同(去掉漏报风险)
