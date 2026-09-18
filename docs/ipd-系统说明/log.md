@@ -5667,3 +5667,37 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务2-stage_actions审计补齐现状评估-20260918.md`(188 行,8 节)
 - 主仓 commit:见 git log HEAD
+
+---
+
+## R50:PLAN-AUDIT-FULL 子任务 3 — coefficient_change_requests 审计补齐现状评估(2026-09-18)
+
+**Loop 第 10 轮,撞号透明 R50 与 R45-R49 平行**
+
+### 关键发现
+
+1. **真活表 coefficient_change_requests 2 行**(全部 CONFIRMED + APPROVE)
+2. **3 个 audit 调用点** (propose / leaderDecision approve / leaderDecision reject) 全部代码已调 audit
+3. **真活 audit_logs 0 条** (entity_type / action LIKE 'COEFFICIENT_%' / entity_id 全部 0 条)
+4. **应该至少有 4 条 audit** (2 PROPOSE + 2 CONFIRM),实际 0 条 → 历史污染嫌疑严重
+5. **与 R49 stage_actions transit 同模式** — 不同表不同 service,都出现"代码写了 audit 但真活 0 条"
+
+### CoefficientChangeService 3 写路径 audit 现状
+
+| # | 写路径 | 代码 audit | 真活 audit | 评估 |
+|---|---|---|---|---|
+| 1 | propose (双PM 联合提议) | ✅ 已调 | **0** | 历史污染嫌疑 |
+| 2 | leaderDecision approve (组长确认) | ✅ 已调 | **0** | 历史污染嫌疑 |
+| 3 | leaderDecision reject (组长驳回) | ✅ 已调 | **0** | 历史污染嫌疑 |
+
+### 撞号透明 + 撞车 0 决策
+
+- **2 个不同业务表 + 不同 Service + 不同 audit 调用方式**都出现"代码写了但真活 0 条" — 系统性历史污染嫌疑
+- **A2 全量审计历史污染排查**★★★ + **A3 auditLogService.append 事务传播审计**★★★★ — 让路 worktree 派单
+- **A4 历史 audit 回填** ★ — 绝对不做(改历史哈希破坏契约)
+- **撞车 0 + 单会话能力边界下维持 inprogress**,不擅自翻 status
+
+### 输出物
+
+- `docs/ipd-系统说明/PLAN-AUDIT-FULL-子任务3-coefficient_change_requests审计补齐现状评估-20260918.md`(198 行,8 节)
+- 主仓 commit:见 git log HEAD
