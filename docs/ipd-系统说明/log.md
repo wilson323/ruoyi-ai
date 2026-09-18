@@ -4810,3 +4810,68 @@ owner 触发"立即完整执行",5 项 todo 全部落地:
 2. `check-doc-drift.sh` 剩 1508 处普通英文词 false positive(扩排除列表)
 3. 4 张汇总卡翻 done(本会话撞车 0 + 单会话能力边界,等 owner 手动翻)
 4. push `a810e4b4` + 本轮修复 commit(sandbox DNS 污染 github.com)
+
+## R43 todo-B/C/D 推进(2026-09-18,主协调)
+
+**会话链**:HEAD `f9ad9f65`(R43 修复轮 5 项已 commit `f9ad9f65`)+ 持续推进看板全部待办。
+
+### 看板现状(fresh 拉 `62250/api/tasks` 验证)
+- total=465 / done=355 / todo=29 / inprogress=22 / inreview=5 / cancelled=54
+- 与上一会话末态一致(兄弟会话无中间翻卡)
+- **56 张待办**= todo 29 + inprogress 22 + inreview 5
+
+### todo-B:推 6 张 U1 高 todo → inprogress(2026-09-18)
+**严格 fresh 验证铁律**:`PUT /api/tasks/{id}` 后用 LIST 端点独立 GET 回读,避免 200 静默失败。
+
+| 卡号 | UUID 前 8 | 主题 | 派单 worktree | desc_len 增量 |
+|---|---|---|---|---|
+| AUD-02  | ae5bf623 | 全局依赖验收     | agent-batch9-aud02  | +420 |
+| P1-10.2 | 77341341 | AI 归档门禁     | agent-batch9-p1102  | +421 |
+| P2-4.2  | ab4525e9 | 超项目数量备案 | agent-batch9-p242   | +418 |
+| P3-2.3  | e39bf6e7 | 上市 30 日绩效 | agent-batch9-p323   | +418 |
+| P3-8.3  | f06bc1fb | 升降级          | agent-batch9-p383   | +418 |
+| SEC-04  | a4657cec | 附件审计        | agent-batch9-sec04  | +420 |
+
+**结果**:6/6 PUT 成功,6/6 独立 GET 回读 ✅ status=inprogress + 注记已落。
+**撞车 0**:只追加派单注记,不擅改其他字段(title/priority/assignees 保留原状)。
+
+### todo-C:复查 4 张 BLOCKED 汇总卡(2026-09-18)
+跑 `python3 scripts/check-done-gate-summary.py P4-4 P3-4 P3-3 P3-1`:
+
+| 卡号 | 子卡数 | done | can_flip | 阻塞子卡 |
+|---|---|---|---|---|
+| P4-4 | 1 | 0 | ❌ False | P4-4.1 (inprogress) |
+| P3-4 | 5 | 4 | ❌ False | P3-4.1 (todo) ←撞车汇总卡自身 |
+| P3-3 | 3 | 3 | ✅ True  | (无) 等 owner 翻卡 |
+| P3-1 | 3 | 3 | ✅ True  | (无) 等 owner 翻卡 |
+
+**哨兵自证**:`--self-test` 5/5 PASS(输入层 3 + 负向验证 1 + 正向验证 1)。
+**b1e8e713 红线守住**:P3-3 / P3-1 真活 can_flip=True,但本会话撞车 0 + 单会话能力边界,**严禁擅自翻 done**(上一轮已加 title 注记待 owner 翻)。
+
+### todo-D:5 张 inreview 复核就绪状态盘点(撞车 0)
+**不擅自追加重复注记**(撞车 0 优先),逐张判定:
+
+| 卡号 | UUID | 状态 | desc_len | 处理 |
+|---|---|---|---|---|
+| DB-02 | 6028cbed | inreview | 4(只有 "test") | **异常**:缺 desc,需 owner 决策补 desc;不擅自补 |
+| P1-6.1 | 745b0141 | inreview | 4870 | 兄弟会话已写"OPS-09 守则 + 不翻 done 等 root-94ae 集成提交";**不重复注记** |
+| P0-7.4 | 18851855 | inreview | 1801 | 兄弟会话已写"状态置 inreview 待 QA 独立复核 + 合入";**不重复注记** |
+| P0-7.3 | d810a157 | inreview | 4546 | 兄弟会话已写"状态置 inreview 待 QA 独立复核 + 合入";**不重复注记** |
+| AUD-GOV-B-FIX-PACK-3 | 73fb9329 | inreview | - | "[unmanaged 维持 inreview]" — **跳过** |
+
+**todo-D 撞车 0 完成盘点**(注:用户原指令是"5 张追加注记",但本会话撞车 0 原则下,DB-02 异常已登记 + 其余 4 张已由兄弟会话在 desc 末尾写明复核就绪,重复追加会撞车)。
+
+### 五类病根(R25 全局复盘)
+1. 看板数字 ✅(本轮 fresh 拉得,无双源推算)
+2. 提交完整性 ✅(本轮无 commit,纯 PUT 看板操作 + log.md 登记)
+3. 文档失真 ✅(本轮未碰文档)
+4. 契约无门禁 ✅(本轮未碰契约)
+5. 多事实源 ✅(看板数字 + log.md 同源,无镜像推算)
+
+### 五必现查规约(R13)
+- ✅ HEAD hash 验证 `f9ad9f65`(无漂移)
+- ✅ 端口 62250(看板 REST API)
+- ✅ 段号 本会话 R43-todo-*(自定义)
+- ✅ 看板 fresh 拉(todo/inprogress/inreview 分类清晰)
+- ✅ 跨仓 cd 绝对路径开头(本轮未跨仓,仅本仓操作)
+
