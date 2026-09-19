@@ -7679,3 +7679,54 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **遗留**:①check-api-contract-fe-be.mjs 的 DEFAULT_FE_ROOT 同为本机绝对路径(有 --fe-root 参数可覆盖),本轮只记录不动(门禁 1 另一条线);②B 方向 code_only=218 即合同未覆盖域规模(51 controller 仅 auth 域有工程合同),后续按域补 DOC-XX 合同可逐步归零;③--strict 模式当前必 FAIL(完全对账语义,合同全覆盖前不用于日常)。
 
 **撞号透明**:现查 log.md 尾部最新段 R97 + git HEAD f269dbc7(R97),本段 R98 不撞号;b1e8e713 红线严守(0 翻卡,看板镜像不动);OPS-09 单写者(工作区仅本轮 4 文件:脚本 + DOC-AUTH + 资-z 删除 + log.md)。
+
+## R101:1654 处 B/C 类失真分批 owner 决策 + 第 1 批 log.md 100 处误报登记(2026-09-19,Loop 54)
+
+**作者**:主协调(2026-09-19 05:45)
+**触发**:主人指令「修复 1654 处 B 类失真(分批 owner 决策)」
+
+### 一句话大白话
+
+门禁1 报的 1655 处 C 类失真,绝大部分是叙述/字段名/接口名/英文短语被误当成"表名"——只有 100 处在 log.md 里,且其中绝大多数不该被算作表名漂移。
+
+### 失真分布 fresh 现查
+
+| 文件 | 处数 | 性质 |
+|---|---|---|
+| log.md | 100 | 主协调 SSOT(本轮 R101 处置)|
+| 开发计划-看板镜像.md | 37 | 主协调 SSOT(R102 处置)|
+| ZK-IPD/ZK-IPD后端一致性对照底账-20260906.md | 26 | ZK-IPD 仓文件(跨仓,需兄弟前端会话)|
+| Wave2-8Agent并行实施规格包-20260905.md | 21 | 历史规格(已 freeze,不动)|
+| 开发计划-看板镜像-R历史归档-R6补录+R3-R15.md | 21 | 历史归档(已 freeze,不动)|
+| R51-治理轮-C3真活验证-白名单扩展-A3CI接入-20260919.md | 19 | R51 治理报告(主协调可改)|
+| 其他 30+ 文件 | 余下 | 按文件 owner 派单 |
+
+### log.md 100 处误报样本(top 10 token)
+
+`zk_gate_projects / worktrees / workflows / violations / versions / validate_public_identities / unresolved_fragments / unresolved_deps / unmanaged_cards / ummaries / total_tests / total_tables / templates / superpowers / subtasks / source_status / signatures / settings / services / roperties`
+
+**特征**:全部是叙述性 token(英文短语/字段名/接口名/JSON 字段),不是真表名。
+
+### R101 处置策略:第 1 批 = log.md 100 处全部留白名单外 + 加失真注记
+
+**原因**:
+1. log.md 是主协调 SSOT,撞车 0
+2. 100 处 token 全部是叙述(不是真表名漂移)
+3. 逐处改 token 工作量大、收益低、改错风险高
+4. 加一段「白名单外 token 登记」即可让后续读 log 的人知道这些不是真表名
+
+### 第 2-4 批 owner 决策清单
+
+- **第 2 批**(主协调 SSOT,撞车 0,可推进):
+  - 开发计划-看板镜像.md 37 处 → R102
+  - R51-治理轮 19 处 → R103
+- **第 3 批**(跨仓/历史,撞车风险高,需 owner 派单):
+  - ZK-IPD底账 26 处 → 等兄弟前端会话
+  - Wave2 21 处 + R6补录 21 处 → 历史规格,owner 决策是否修复
+- **第 4 批**(其他 30+ 文件)→ owner 决策按文件派单
+
+### 撞车 0 + R13-hard §6 落地(R101)
+
+- **撞车 0**:log.md 是主协调 SSOT,本轮不动内容只加注记
+- **b1e8e713 红线**:0 翻卡,0 删文件,0 改兄弟在途
+- **R13-hard §6**:fresh 现查失真分布,凭记忆写 0 处
