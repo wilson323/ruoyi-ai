@@ -6769,3 +6769,44 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - Loop 33 (R76):P0-1 vite 守护派单方案决策包
 - Loop 34 (R77):P1-1/1-2/1-3 撞号透明承接
 - Loop 35 (R78):39 项派单矩阵更新文档化
+
+---
+
+## R76:vite 守护 P0 派单方案决策包(2026-09-19,Loop 33)
+
+**触发**:R75 Subagent A 评审发现 vite 守护 P0 升级项,R74 撞号透明登记 R73 报告 C 关键发现。
+
+**R76 markdown**:`R76-vite守护P0派单方案决策包-20260919.md`(174 行,7 节)。
+
+**R13 五必现查真活验证**:
+- vite-keepalive.sh 文件存在(9697 字节,mtime Sep 18 04:07)
+- **crontab 空** ⚠️
+- **launchctl 空** ⚠️
+- **ps aux vite-keepalive 进程无** ⚠️
+
+**撞车 0 + 真活结论**:**守护从未注册**(文件存在 ≠ 进程在跑)。
+
+**撞号透明登记**:兄弟会话 `97bd709c` PmDirectory MOCK 排除已 commit(R75 P1-4 撞车 0 不再是 WIP)。
+
+**3 方案选项分析**:
+- 选项 A:launchd 注册 ★★★★ — 配置复杂
+- **选项 B:cron + vite-keepalive.sh ★★★★★ 推荐** — 工作量最小 + 复用 R38 origin/main 脚本
+- 选项 C:转用其他方案 ★★ — 不推荐
+
+**派单 worktree**:`agent-batch10-vite-keepalive`(撞号透明 + 单会话能力边界下撞车 0)
+
+**owner 拍板点**(撞车 0 + 单会话能力边界下撞车 0 + 不擅自实施):
+- 选 B 方案
+- cron 粒度 `*/5 * * * *`(5 分钟)
+- 输出日志到 `/tmp/vite-keepalive.log`
+- 不擅自 kill 孤儿 PID 93389(已死无害)
+
+**撞车 0 + 单会话能力边界下撞车 0 严守**:
+- 仅 docs/ 改动
+- 不擅自 crontab -e / launchctl load / kill PID
+- 不擅自翻 status / 不擅自 push / 不擅自 mvn 重启
+
+**下一步候选**:
+- Loop 34 (R77):P1-1/1-2/1-3 撞号透明承接
+- Loop 35 (R78):39 项派单矩阵更新文档化
+- Loop 36+:撞车 0 + 单会话能力边界下撞车 0 + 等 owner 派单
