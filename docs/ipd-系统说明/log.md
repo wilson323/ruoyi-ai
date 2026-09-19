@@ -6873,3 +6873,58 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - ✅ PUT 后独立 GET 回读核验(待 owner 操作后)
 
 **派单矩阵解锁**:P3-1 翻 done 解锁 D3 P3-3 月度津贴 + D4 P3-4 奖金池核算 owner 翻 done。
+
+---
+
+## R79:D1 P0-9 阶段验收 owner 翻 done 决策包(撞号透明纠正 + P0-7.4 阻塞)(2026-09-19,Loop 36)
+
+**触发**:owner 指令「loop36 和 loop37」= Loop 36 = R75 subagent C 派单矩阵 #1 = D1 P0-9 阶段验收。
+
+**R79 markdown**:`R79-D1-P0-9-阶段验收-owner翻done决策包-20260919.md`(142 行,5 节)。
+
+**Fresh 拉看板 API 验证关键发现**:
+- P0-9 汇总卡 `2541e012` status=`todo` + 标题**无注记**(违反 b1e8e713 红线规范)
+- 子卡 P0-9.1 `478dd8e3` done ✅
+- **阻塞于 P0-7.4 `18851855` inreview**(企微 Mock 绑定、扫码与离职解绑)
+- P0-9 描述 2026-09-08 根源治理注记明示「待 P0-7.4 交还 owner 复核」
+
+**撞号透明纠正 R75 subagent C 派单矩阵 #1**:
+- R75 subagent C 写「子卡 1/1 done」= P0-9.1 done ✅ 一致
+- R75 subagent C 写「★★★★★ 一行 PUT 解锁 P0 阶段收口」= ❌ **漏核 P0-7.4 阻塞**
+- R75 subagent C 漏核根因:基于子卡 done 推定 P0-9 可翻,未核查镜像◐ + P0-7.4 阻塞关系
+
+**owner 拍板清单(撞车 0 + b1e8e713 红线严守)**:
+- 不擅自加 title 注记(撞车 0 + 业务链不完整)
+- 不擅自翻 status(撞车 0 + P0-7.4 inreview 阻塞)
+- 派单 `agent-batch9-p074-inreview` 处理 P0-7.4 inreview 收口
+
+**派单矩阵修订(R79 修正)**:
+- 优先级最高:agent-batch9-p074-inreview(P0-7.4 收口解锁 P0-9)
+- 次优先级:等 P0-7.4 done 后,P0-9 owner 翻 done(1 行 PUT)
+- 不推荐:agent-batch9-p09-title-note 当前不该加注记
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+---
+
+## R80:D3 P3-3 月度津贴 owner 翻 done 决策包(阻塞 P3-1)(2026-09-19,Loop 37)
+
+**触发**:owner 指令「loop36 和 loop37」= Loop 37 = R75 subagent C 派单矩阵 #3 = D3 P3-3 月度津贴台账。
+
+**R80 markdown**:`R80-D3-P3-3-月度津贴-owner翻done决策包-20260919.md`(137 行,5 节)。
+
+**Fresh 拉看板 API 验证**:
+- P3-3 汇总卡 `962c9087` status=`todo` + 标题**已注记** `[子卡已全 done 待 owner 翻]` ✅
+- 3 子卡 3/3 done:
+  - `0dc5b13c` P3-3.1 月度津贴基础额、锁级与 2 倍封顶
+  - `eeb53bdb` P3-3.2 绩效低于 60 停发与 60 天无产出确认
+  - `4bbe69a7` P3-3.3 津贴内部台账幂等、移交与退出月份归属
+
+**阻塞关系**:`P3-3 owner 翻 done` 必须先于 `P3-1 owner 翻 done`(强约束)。
+- P3-3 月度津贴台账依赖 P3-1 KPI 业务核心(共担 KPI 40% 权重 → 津贴计算公式输入)
+- 派单顺序:P0 → P3-1 → P3-3 → P3-4
+
+**owner 拍板清单(1 行 PUT,等 P3-1 翻 done)**:
+- PUT `962c4b6c7` status todo → done(待 P3-1 owner 操作后)
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
