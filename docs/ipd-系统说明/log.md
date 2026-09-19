@@ -6518,3 +6518,80 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **下一步候选**:
 - Loop 26 (R69):C4/C5 owner 决策包(R39 推荐 5 件 + R40+ 架构 3 件)
 - Loop 27 (R70):跨仓前端仓 ruoyi-ipd-web 收口
+
+---
+
+## R69:C4/C5 owner 决策包(2026-09-19,Loop 26)
+
+**触发**:R67 owner 拍板清单中 11 项的 C 类 2 项(C4 R39 推荐 5 件 + C5 R40+ 架构 3 件)。
+
+**R69 markdown**:`R69-C4C5-owner决策包-20260919.md`(253 行,9 节)。
+
+**撞号透明纠正 R49 失真**(3 件):
+1. **C4-P1-1~3 前端**:R49 兄弟会话误列为 backlog,撞号透明 R13 现查看板镜像已 done(round12 撞车期对账 ✅)。
+2. **C5 第 1 件 IpdPlatformAuthController 迁移**:R49 报告是幻觉,代码 grep 0 命中,该 Controller 不存在。
+3. **C5 第 3 件 vite 挂死监控**:兄弟会话 R38(commit `98b28ee`)已合入 `vite-keepalive.sh`,撞号透明登记。
+
+**撞号透明纠正后真实 C4/C5 backlog**(5 项):
+| # | 主题 | 撞车 0 洞察 |
+|---|---|---|
+| C4-1 | 孤儿评估修补 | 派单 worktree `agent-batchX-orphan-patch` |
+| C4-2 | 跨仓 push | 等兄弟会话合并 + owner 决策 |
+| C5-1 | IpdPlatformAuthController(R49 幻觉)| owner 决策是否新建 |
+| C5-2 | vite root 显式 | 等兄弟会话 vite.config.mts 合并后审查 |
+| C5-3 | vite-keepalive 启动 | 兄弟 R38 已合入,等 owner 决策启动时机 |
+
+**撞车 0 + 单会话能力边界严守**:
+- 仅 docs/ 改动
+- 撞号透明纠正 R49 C4/C5 失真
+- 不擅自写 scripts/(撞号透明下撞车 0 + 单会话能力边界)
+- 不擅自翻 status(b1e8e713 红线)
+- 不擅自 push 跨仓
+- 不擅自接管兄弟前端会话 M 改动
+
+**下一步候选**:Loop 27 (R70)跨仓前端仓收口。
+
+---
+
+## R70:跨仓前端仓 ruoyi-ipd-web 收口决策包(2026-09-19,Loop 27)
+
+**触发**:R66 §六 Loop 27 候选 = "跨仓前端仓收口撞号透明"。R67 §四 A1(前端仓 `/ipd/admin/config` 加 lastChange 列)= 跨仓让路。
+
+**R70 markdown**:`R70-跨仓前端仓收口-20260919.md`(173 行,8 节)。
+
+**撞号透明登记前端仓兄弟会话 3 commit**:
+| commit | 主题 | 改动文件数 |
+|---|---|---:|
+| `c4a2ee7` | fix(web): 清浏览器控制台 15 条残留 ERR | 4 |
+| `4f5cc78` | fix(ipd): stage-actions 业务编号自适配 STG-501-A | 3 |
+| `c2ee1a2` | fix(web): 清浏览器控制台 24 条 iconify CDN ERR | 16 |
+
+**撞号透明纠正 M 假象**:
+- R45 / R67 报告时看到 4 个 M 文件 = 兄弟会话的 `c4a2ee7` commit 未 push
+- 本轮 R13 现查:`git status` 返 `working tree clean`
+- 兄弟会话 3 commit 已落地本地 main,仅缺 push
+
+**撞车 0 真活发现**:
+- 前端仓领先 origin/main 3 commits
+- vite-keepalive.sh 已落盘但**未在 cron / launchd 注册**(实测 0 命中)— 脚本存在 ≠ 守护运行
+- 前端 vite dev server 在跑(node PID 70554),但守护未启动,挂死不会自动拉起
+
+**owner 拍板清单 6 项**(全部撞车 0 让路):
+1. A1 `/ipd/admin/config` 加 lastChange 列
+2. 前端 push(兄弟 3 commit)
+3. vite-keepalive 启动
+4. vite root 显式
+5. P1-1~3 前端 UI 收敛(撞号透明纠正 R49 误列,看板上 done)
+6. 孤儿评估修补(R69 C4-1 撞号透明承接)
+
+**撞车 0 + 单会话能力边界严守**:
+- 仅 docs/ 改动(主仓 1 文件)
+- 不擅自 push 跨仓
+- 不擅自接管前端仓 commit
+- 不擅自翻 status(b1e8e713 红线)
+- 不擅自注册 cron / launchd
+- R13 五必现查完整复测
+
+**下一步候选**:
+- Loop 28+:17 张 owner 派单撞号透明让路表
+- R49 D1-D4 翻 done:P0-9 / P3-1 / P3-3 / P3-4 四张汇总卡 owner 拍板
