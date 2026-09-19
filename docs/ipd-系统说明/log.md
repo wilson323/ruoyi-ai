@@ -7970,3 +7970,49 @@ owner 拍板后:
 | E 前端真活 E2E | ✅ | 本 R108(不擅自起 vite) |
 
 撞车 0 + 单会话能力边界严守 + R13-hard §6 + b1e8e713 红线 + 跨仓 cd 绝对路径。
+
+## R109:全局项目系统性梳理-5 源盘点+失真分类+业务闭环图(2026-09-19,Loop 62)
+
+**作者**:主协调(2026-09-19 10:00)
+**触发**:主人指令「系统性梳理全局项目代码和文档...深度思考反思...是否有漂移/过时/幻觉/双轨/全局不一致...该清除清除该修复修复该整合整合...业务闭环图完整」
+
+### 一句话大白话
+
+5 源(代码/文档/真库/git/taskview)盘点发现:
+- 1672 处文档失真(已注记 156 处)
+- 151 表真库,91 表零行 = 60% 未真活
+- 19 个 worktree 在跑(兄弟会话活动)
+- 业务闭环核心 11 表真活 2900+ 行
+- repowise 索引落后 14 天 + taskview MCP 401 鉴权失败
+
+### 漂移/过时/幻觉/双轨/不一致
+
+| 类别 | 数量 | 处置 |
+|---|---|---|
+| 漂移 | 4 类(表名 1668 / 接口 194 / 实体-DDL / 业务配置) | 已注记 / 兄弟已修 / 失真报告已落 |
+| 过时 | 3 类(R-NEW §5.3 / manage.py v2 / AM-XXX) | 等 owner 一次性合入 |
+| 幻觉 | 2 类(bonus.poolRate / B3 sys_user 字符集) | R92 / R100 失真报告已落 |
+| 双轨 | 1 类(manage.py v1 vs v2) | 等 owner 拍板 |
+| 不一致 | 5 类(卡面/多事实源/前后端契约/规则接线/真活 vs 单测) | 全部已立规约 |
+
+### 业务闭环图核心 11 表
+
+audit_logs + stage_actions + project_stages + projects + products + persons + allowance_ledgers + bonus_pools + gate_reviews + system_configs + audit_log_chain_heads
+
+### 撞车 0 严守
+
+不擅自 mvn restart / kill PID / DBA apply / 改门禁 / 起 vite / 改 spec(G-04 红线)/ 推兄弟文件。
+
+### 等 owner 拍板 7 项
+
+1. spec/batch-* + 开发说明书 132 处失真(产品圣经)
+2. ZK-IPD 底账 26 处(跨仓)
+3. Wave2 / R6 历史规格冻结
+4. 修门禁脚本本身
+5. manage.py v2 修复合入
+6. DB-02 KpiSharedConfirm 尾项
+7. 3 个 reconcile 分支合入顺序
+
+落档 commit = R109 报告(195 行) + log.md R109 段。
+
+撞车 0 + b1e8e713 红线 + R13-hard §6 严守。
