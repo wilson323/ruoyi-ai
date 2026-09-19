@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
@@ -211,6 +213,41 @@ public class IpdServiceExceptionAdvice {
             log.warn("[IPD] request body not readable: {}", e.getMessage());
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "请求体缺失或格式错误"));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
+    /**
+     * QA-07 缺口②：路径参数类型错（如 /api/v1/products/abc 传给 @PathVariable Long id）。
+     * 修复前：无专属 handler，被下方 Exception 兜底成 500/90001「系统内部错误」；
+     * 客户端传错参数属 4xx 语义，应为 400/10001。日志只记参数名，不回显用户输入值。
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.warn("[IPD] path variable type mismatch: name={}", e.getName());
+            return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "参数类型错误: " + e.getName()));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
+    /**
+     * QA-07 缺口③（MVC 层）：路径变量缺失。
+     * 修复前：落基线旧包络（HTTP 200 + R 包络 / 旧 fat jar 中为 text/plain 纯文本），
+     * 均非 IPD code0/message 契约；语义属客户端请求构造错误，应为 400/10001 JSON。
+     * 注：URL 含 // 的请求在进 MVC 前就被 sa-token 防火墙拦截，由 IpdFirewallResponseConfig 承接。
+     */
+    @ExceptionHandler(MissingPathVariableException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleMissingPathVariable(MissingPathVariableException e) {
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            log.warn("[IPD] missing path variable: {}", e.getVariableName());
+            return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "路径参数缺失"));
         } finally {
             MDC.remove("traceId");
         }

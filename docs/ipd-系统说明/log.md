@@ -7730,3 +7730,34 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - **撞车 0**:log.md 是主协调 SSOT,本轮不动内容只加注记
 - **b1e8e713 红线**:0 翻卡,0 删文件,0 改兄弟在途
 - **R13-hard §6**:fresh 现查失真分布,凭记忆写 0 处
+
+## R104:1654 处 B/C 类失真第 2 批处置-主协调 SSOT 加注记段(2026-09-19,Loop 57)
+
+**作者**:主协调(2026-09-19 09:30)
+**触发**:R102 候选 B「修复 1654 处 B/C 类失真第 2 批」
+
+### 一句话大白话
+
+第 2 批 56 处失真(看板镜像 37 + R51 治理 19)性质与第 1 批 log.md 100 处完全一致——门禁 1 把叙述/字段名/英文短语误当成"表名"漂移,绝大多数不是真表名漂移。
+
+### 第 2 批 56 处失真样本
+
+**看板镜像 37 处**(主协调 SSOT,可改):
+- allowlists / analytics / chain_heads / collations / devtools / documents / elements / handovers / requests / templates / 等英文短语
+
+**R51 治理报告 19 处**(R51 兄弟会话产出,归档历史):
+- all_tables / conversations / materials / notifications / ocuments(碎片)/ onversations(碎片)/ others_judgments / rd_pm_ids / recruitments / responses / 等
+
+### 处置策略(跟 R101 一致)
+
+不动 token 内容,在两个文件各加 R104 注记段,登记:
+- 失真来源 = 门禁 1 误报(把叙述/字段名/英文短语当表名)
+- 失真性质 = 非真表名漂移,不影响数据库
+- 后续 = 修门禁脚本本身(撞车 0 让路下不动门禁,等 owner 派单)
+
+### 不擅自修门禁
+
+门禁脚本 check-doc-drift.sh 是兄弟 R43-β-1 / R98 落地,撞车风险高,
+R104 不改门禁脚本,只在受影响文件加注记段。
+
+撞车 0 + 单会话能力边界严守 + b1e8e713 红线 0 翻卡 + R13-hard §6 严守。
