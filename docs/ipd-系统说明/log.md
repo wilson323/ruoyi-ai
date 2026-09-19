@@ -7033,3 +7033,25 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **解除依赖图完整**:P0-7.4 → P0-9 收口 + P3-1 → P3-3 → P3-4 收口 + P3-4 旧卡关闭。
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+
+---
+
+## R84:dev profile seed 兼容性 独立卡 fresh 复核(2026-09-19,Loop 41)
+
+**触发**:owner 选项「dev seed 兼容性 独立卡」续做(P2-1 失真收口后第二项)。
+
+**R33「dev profile seed 兼容性」失真点**(证据三链):
+- **Initializer 已齐备**:3 个 Initializer 共 526 行,全部已含 `@Profile(\"dev\")` + `@Transactional(rollbackFor = Exception.class)` + 完整 selectOne/selectCount 幂等保护(6+1+2=9 处)+ BCrypt 密码走 `${ipd.security.initial-password}` 注入(SEC-HIGH-2 合规,源码无字面量)
+- **ZK-GATE-TEST 冲突真实层** = HTTP API 层(兄弟会话 `POST /api/v1/projects/create` 撞 `UNIQUE(code)`),**非 Initializer 层**:`IpdZkScenarioInitializer.seedActiveProject` line 139-143 `selectOne(eq code)` 判存在直接 return,不可能 insert 重复行
+- **locked_level NOT NULL 真实层** = schema 迁移层(兄弟会话 DDL `ALTER TABLE project_members ADD COLUMN locked_level INT NOT NULL` 漏默认值),**非 Initializer 层**:`IpdZkScenarioInitializer.member()` 写 projectId/personId/role/memberType/joinDate/bonusEligible + BaseEntity,**无 locked_level 字段**
+
+**收口**:不修 Initializer 代码,PARTIAL 收口;SSOT 镜像新增 R84 段(Loop 41)。
+
+**真实问题(非本卡范围,建议另立新卡)**:
+- P-Seed-01:HTTP API 层 `ProjectController.create` 加 `selectOne(eq code) → exists 409 ALREADY_EXISTS` 预检
+- P-Seed-02:Schema `ALTER TABLE project_members MODIFY locked_level INT NOT NULL DEFAULT 0`
+
+**R84 报告**:`docs/ipd-系统说明/验收/R84-dev-seed-Initializer-失真fresh复核-20260919.md`(86 行,3 节,1 关联卡清单)
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
