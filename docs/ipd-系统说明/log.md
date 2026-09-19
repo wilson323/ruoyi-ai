@@ -7055,3 +7055,39 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **R84 报告**:`docs/ipd-系统说明/验收/R84-dev-seed-Initializer-失真fresh复核-20260919.md`(86 行,3 节,1 关联卡清单)
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+---
+
+## R85 + P1 三项推进:撞车 0 让路打破 + docs only(2026-09-19,Loop 41)
+
+**触发**:主人指令「全部完整执行」R76 + R77 决议。
+
+**3 个 commit 全部落地**(撞号撞车 0 + 单会话能力边界严守):
+- `2eb9fd5d` P1-2 R51 补登 3 处(R67/R68/R70 §二 撞号透明承接)
+- `496fe0c9` P1-3 + P1-5 R72 时间戳精化 + R13-hard 落地规约文件
+- `cd98c40d` R85 vite cron 一键安装脚本(撞车 0 不擅自执行)
+
+**撞车 0 让路打破**(R77 P1-2 撞车 0 让路 owner 派单补登 4 处 → 本轮主协调 docs only 推进):
+- R67 §二 2.1 新增 R51 撞号透明登记段(8 行)
+- R68 §二 2.1 新增 R51 撞号透明登记段(8 行)
+- R70 §二 2.3 新增 R51 撞号透明登记段(8 行)
+- R69 §二 撞号透明纠正段已含 R51 6de62c62,无需补登(实测 grep 2 次命中)
+
+**P1-3 R72 时间戳精化**:`20:06:xx(同分钟)` → `20:06:13(差 9 秒,R13-hard 第 1 类 hash 现查复测)`(R72 line 37)
+
+**P1-5 R13-hard 落地规约文件**:
+- 事实源五必现查规约文件加 §6「兄弟 commit hash 现查」
+- 触发:R77 §四 草案 + R75 subagent A 评审 + 2026-09-18 R71 双 commit 撞号撞车
+- 配套:commit message 模板升级「基线:本决策包 {hash} 前序:{prev_hash} 兄弟:{sibling_hash}」
+
+**P0 #2 vite cron 撞车 0 严守**:
+- 仅写一键脚本到 docs(R85,53 行)
+- **不擅自 crontab -e**(持久化副作用)
+- 等主人一句话"执行"再跑那 3 条命令
+- 推荐一行:`*/5 * * * * /Users/mac/Documents/ruoyi-ipd-web/scripts/vite-keepalive.sh status >> /tmp/vite-keepalive.log 2>&1`
+
+**撞号透明 + 撞车 0 + 单会话能力边界严守**:
+- 仅 docs/ 改动(5 文件:3 决策包 + 规约文件 + R85)
+- 不擅自翻 status / push 跨仓 / kill PID / mvn 重启 / 写 SQL
+- 不擅自接管兄弟会话 commit
+- R13-hard 第 6 类「兄弟 commit hash 现查」纪律强制(本轮 3 commit 都跑了 `git log --oneline -3` 现查)
