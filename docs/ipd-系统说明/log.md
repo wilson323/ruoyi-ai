@@ -7403,3 +7403,40 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **4 个 fix-* worktree 严守不接管**(OPS-09 单写者纪律)。
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线 + R13-hard §6 严守声明**:✅
+
+---
+
+## R90:STG-501-1 owner 派单 3 决策项梳理 + R44-fix-2 决策落地撞号透明承接(2026-09-19,Loop 47)
+
+**触发**:主人指令「要」= 继续推进 R90 = STG-501-1 owner 派单 3 决策项梳理。
+
+**看板 fresh 拉 STG-501-1**:`e7b9289c-8670-48da-af86-84a3821c741d` status=inreview title=`[STG-501-1] [U1 高] stage-actions 500 修复 (代码+DB+日志三方证据, owner-blocked 3 决策项)`。
+
+**3 owner-blocked 决策项撞号透明承接 R44-fix-2**:
+- A 选项(前端调用方式):A1/A2/A3 三选一 → R44-fix-2 选 **A2**(前端改 listStageActions 接受 id 而非 code + codeToId helper)
+- B 选项(后端 API 契约):B1/B2/B3 三选一 → R44-fix-2 选 **B2**(后端维持 `@RequestParam Long projectId`,零代码变更)
+- C 选项(立即修 vs 延后修):C1/C2 二选一 → R44-fix-2 选 **C1**(立即修在新前端 session)
+
+**R44-fix-2 决策落地组合**:**A2 + B2 + C1** 已 100% 实施。
+
+**R44-STG-501-A 前端仓 commit `4f5cc78`**:`fix(ipd): stage-actions 业务编号自适配 — STG-501-A (U1 高)`,3 文件 / +170 / -3:
+- `apps/web-antd/src/api/ipd/project.ts`(+51)— codeToId helper(含 codeToIdCache)
+- `apps/web-antd/src/api/ipd/stage-action.ts`(+16/-3)— listStageActions 自适配
+- `apps/web-antd/src/api/ipd/stage-action.test.ts`(+106)— 5 个新单测
+
+**pnpm 三条验证证据**(README-IPD.md 红线):
+- `pnpm exec vitest run --config vitest.ipd.config.mts` → 912 passed | 37 skipped (949) | 0 failed
+- `pnpm run check:type` → 1 successful, 1 total
+- `pnpm run build:antd` → 11 successful, 11 total | ✓ built in 21.23s
+
+**9 子卡清单 = 6/6 ✅ done + 3/3 ⏸ 留观察**:
+- ✅ A/A1/A2/A3/B1/B2 全部 done
+- ⏸ C/C1/D **留观察**(非"未完成",而是"决策下不修代码只登记")
+
+**owner 浏览器实测确认 + 1 行 PUT 翻 done 操作模板就位**:
+- Step 1:独立 GET 复核(memory `770073a2` Fresh 验证铁律)
+- Step 2:PUT 翻 done(等 owner 浏览器实测确认无 500 后)
+- Step 3:独立 GET 复核 PUT 落库(memory `ca6d55aa` 看板及时同步)
+- Step 4:title 注记移除
+
+**撞号透明 + 撞车 0 + b1e8e713 红线严守声明**:✅
