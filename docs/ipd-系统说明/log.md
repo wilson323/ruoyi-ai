@@ -6698,3 +6698,34 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - 不擅自翻 status / push / kill PID / 注册 launchd / mvn 重启 / 写 SQL
 
 **下一步候选**:owner 拍板 38 项派单 / owner 派 worktree 实施 / 兄弟会话继续推进 → R74 撞号透明承接。
+
+---
+
+## R74:兄弟会话 R72/R73 撞号透明登记 + 在盘 WIP 评审(2026-09-19,Loop 31)
+
+**触发**:兄弟会话推 R72(`b69a66b1` SSOT 同步)+ R73(`7fced67a` 多 subagent 评审 + `bf2c948e` SSOT 同步)。
+
+**R74 markdown**:`R74-兄弟会话撞号透明登记-WIP评审-20260919.md`(160 行,7 节)。
+
+**撞号透明登记兄弟会话 3 commit**:log.md + 镜像 SSOT 同步 + 4 个 CodeReview subagent 并行评审。
+
+**R25 软化三步登记兄弟会话在盘 WIP**:
+- `M PmDirectoryController.java`:加 `.ne("MOCK")` 过滤测试种子账号(R46.2 WT-2 治本延续)
+- `?? docs/script/sql/update/2026-09-18-pm-directory-mock-filter/01-mark-mock-accounts.sql`:把测试种子账号标记 MOCK
+- 撞号透明 + 撞车 0 + 单会话能力边界下撞车 0 不擅自 commit 兄弟会话改动
+
+**CodeReview subagent 发现整合**:
+- 协同点 1:R66-R70 基线声明系统性错位(撞号透明 + 撞车 0 处置:不擅自改既有决策包,撞号透明登记)
+- 协同点 2:vite 守护已死(P0 升级项,撞号透明 + 撞车 0 不擅自注册 launchd,等 owner)
+- 协同点 3:R72 时间戳精化(微小项,撞号透明 + 撞车 0 + 撞号透明下撞车 0 不擅自改 R72)
+
+**撞车 0 + 单会话能力边界下撞车 0 严守**:
+- 仅 docs/ 改动
+- 不擅自 commit 兄弟会话 Java/SQL 改动(R25 OPS-09 单写者纪律)
+- 不擅自注册 launchd / 不擅自 kill PID(撞号透明 + 撞车 0 + 守护 P0 升级项等 owner)
+- 不擅自 mvn 重启
+
+**下一步候选**:
+- Loop 32 (R75):撞号透明 + 派单矩阵 P0 升级项决策
+- Loop 33 (R76):撞号透明 + R51 漏登记决策包补写
+- Loop 34+:撞号透明 + 17 张 owner 派单让路
