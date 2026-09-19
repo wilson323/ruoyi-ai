@@ -6947,3 +6947,22 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **收口**:不修代码;line 437 + 449 注记 PARTIAL + 引用验收目录;R33 报告保留为「兄弟会话判断失误」证据。
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+
+---
+
+## R82-P2-1 allowance 审计 fresh 复核(2026-09-19 03:35,owner 选项续做)
+
+**触发**:owner 选项「P2-1 allowance 审计钩子」续做。
+
+**R33 异常 4 失真点**(证据四链):
+- **AllowanceService.auditInsert 已存在**:`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AllowanceService.java` line 45-83,`recordOrSkip()` line 162 + `idempotentInsert()` line 320 双入口调用
+- **BR-AUD-01 DCL 已落地**:`docs/script/sql/update/2026-09-17-ipd-braud01-audit-grant-restrict.sql` (commit c86e20a5),`audit_logs` 仅 SELECT+INSERT,UPDATE/DELETE 收回
+- **BusinessConfigService 版本链审计已存在**:每次 `update(key, newValue, op)` 落 `ipd_business_config_versions` 表(effective_from/to/version),`allowance.L3` 漂移可追溯
+- **AllowanceLedger Controller 无 UPDATE/DELETE**:`AllowanceLedgerController.java` 仅 `@PostMapping("/auto-scan")`,台账是只插入,不需要审计 UPDATE/DELETE
+
+**真实成因**:`allowance.L3` 1500 ≠ 2000 是业务数据漂移,不是审计缺位。运营 09-09 改了一次值(可能符合业务调整),版本链有完整留痕。
+
+**收口**:不修代码;line 443 + 451 注记 PARTIAL + 引用验收目录 R82 报告;运营拍板 1500 vs 2000 谁对,如要回滚 2000 调 `BusinessConfigService.update(\"allowance.L3\", \"2000\", superAdminId)` 自动留痕。
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
