@@ -7555,3 +7555,33 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **OPS-09 单写者纪律**:4 fix-* worktree(`c83215f9` / `0edd0ba4` / `feec82d2` / `2fc588a6`)+ 2 batchX-* 兄弟会话 worktree(`2b280b65` / `fa6527ce`)+ 13 其他 worktree 严守不接管。
 
 **撞号透明 + 撞车 0 + b1e8e713 红线 + R13-hard §6 严守声明**:✅
+
+---
+
+## R94.5:owner 授权看板收口翻卡 9 张 + 镜像权威段 5 行对齐(2026-09-19)
+
+**触发**:owner 本轮明确授权「把只差翻卡的翻卡」——活已干完、只等 owner 拍板的卡直接翻。
+
+**翻 done 6 张**(每张 LIST 取基文 → 整体 PUT → 独立 LIST 回读 VERIFIED):
+- **P3-1** `f71ba244`:子卡 P3-1.1/1.2/1.3 LIST 全 done；title 注记「[子卡已全 done 待 owner 翻]」同次 PUT 移除
+- **P3-3** `962c9087`:子卡 P3-3.1/3.2/3.3 全 done；R89 六步链 D2→D3→D4 依序翻
+- **P3-4** `5d00a4b0`:子卡 P3-4.1 至 P3-4.5 全 done；依赖 P3-1+P3-3 已先 done
+- **P0-7.4** `18851855`:实施 merge `42cf99cf`+回归修复 `737845b7` 均在 main(merge-base --is-ancestor 验证)+P074AcceptanceTest 219 行在仓+卡载 7/7 绿(2026-09-09)；PR #334 squash 形式未在 GitHub 发生(已不可查)但内容已以 merge 形式全部落地 main、合入实质达成，owner 授权翻
+- **P0-9** `2541e012`:阻塞源 P0-7.4 已翻 done；唯一子卡 P0-9.1 done(run8 79/79)；QA-08 249 AC 全量执行为独立 QA 事项非子卡、owner 拍板放行
+- **STG-501-1** `e7b9289c`:前端 `4f5cc78` 在 ruoyi-ipd-web main(merge-base 验证)；A2+B2+C1 已实施、STG-501-C/C1/D 为决策登记项；R90 等 owner 浏览器实测以本轮授权视为拍板放行
+
+**关 cancelled 3 张旧版平行卡**(title 前缀改「[旧版平行卡，已由新卡承接并 done，关闭]」+desc 追加依据):P3-4 旧卡 `eb781e5d` / P3-3 旧卡 `516b5b7a` / P3-1 旧卡 `2983e32f`。
+
+**镜像权威段 5 行同步**:P0-9◐→✅、P3-1/P3-3/P3-4 ⬜→✅、P0-7.4◇→✅(保留前态记录、无半角竖线、10 列结构不变)；看板 vs 镜像 ZERO-DRIFT 自证通过。
+
+**不动卡**:P4-4 旧卡 `728b1113` 保持 BLOCKED(子卡 P4-4.1 仍 inprogress、无新卡承接)；AUD-GOV-B-FIX-PACK-3 维持 unmanaged backlog。
+
+**既有损坏登记(非本轮引入，供主协调会话修复)**:看板镜像历史记录表区(约 1326 行起)有 31 行 5 列历史行(如 `| AUD-02 | 卡ID | 旧态 | 新态 | 说明 |`)被 manage.py plan() 的 KEY 正则误匹配且不在合法列数(4/10)内，HEAD(`fc7b9044`)与工作区坏行集合完全一致——plan()/check/sync 全被阻塞；本轮未修(修复涉兄弟历史记录区，超授权)，对账改用自写只读解析脚本完成。
+
+**本轮 commit 走 --no-verify 登记(leader 已授权，登记不修复)**:门禁 2/2(合同↔spec↔code 三向对账)为既有失败——HEAD(`fc7b9044`)干干净净复跑即 FAIL，缺口源于 d4365d6a(2026-09-06 蜂群归仓)引入的 `/api/v1/auth` vs `/platform-token` 对账不一致，与本轮 docs-only 改动零相关；门禁 0(untracked)与门禁 1/2(doc↔db drift)对本轮实证 PASS。缺口登记给后续治理轮：须在工程合同与 spec 间对齐 `/api/v1/auth`、`/platform-token` 端点登记(修合同/spec 属产品事实源范围，本轮不动)。
+
+**遗留缺口(供 R95 排序)**:QA-08 249 AC 全量执行仍未实施(pass 55/partial 149/fail 1/blocked 44)；P0-7.3 仍 ◇ inreview 等 squash 合入(不在本轮授权范围)。
+
+**OPS-09 单写者纪律**:4 fix-* worktree + 2 batchX-* 兄弟 worktree(app-prod-yaml-secrets / b1-bonus-allocations-http)+ 前端仓 vite.config.mts 兄弟 M 改动，0 接管 0 触碰。
+
+**撞号透明**:R92 已由 R93 撞号透明承接，本轮编 R94.5 避让 R95；撞车 0；b1e8e713 假绿翻卡红线严守(每卡 fresh 验证子卡态后才翻)。
