@@ -6844,3 +6844,32 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **派单矩阵更新**:5 项 P1 整理为 2 项主协调可立即推进 + 3 项让路 owner。
 
 **撞车 0 + 单会话能力边界 + docs only 严守声明**:仅 docs/ 改动 / 不擅自回填既有 / 不擅自 commit 兄弟会话改动 / 不擅自注册 launchd / kill PID / mvn 重启 / 不擅自翻 status / 不擅自 push 跨仓。
+
+---
+
+## R78:D2 P3-1 KPI 结构 owner 翻 done 决策包(2026-09-19,Loop 35)
+
+**触发**:owner 指令「持续推进 1.2」= R75 subagent C 派单矩阵 #2 = D2 P3-1 KPI 结构。
+
+**R78 markdown**:`R78-D2-P3-1-KPI结构-owner翻done决策包-20260919.md`(118 行,5 节)。
+
+**Fresh 拉看板 API 验证**(R13 五必现查 + memory `770073a2` Fresh 验证铁律):
+- P3-1 汇总卡 `f71ba244` status=`todo`
+- 标题已注记 `[子卡已全 done 待 owner 翻]`(符合 b1e8e713 红线)
+- 4 子卡 4/4 done:
+  - `2a4f6413` P3-1.1 功能 KPI 指标来源与计算
+  - `b435964b` P3-1.2 共担 KPI 归集、样本与 40% 权重
+  - `56d97bb0` P3-1.2-BACKEND 共担 KPI 双组长确认读端点
+  - `8ea011fe` P3-1.3 KPI 截止日、催办与导入分段
+
+**owner 拍板清单**:1 行 PUT(`f71ba244` status `todo` → `done`)。
+
+**撞车 0 + b1e8e713 红线 + docs only 严守**:
+- ✅ 不擅自翻 status(撞车 0)
+- ✅ 仅 docs/ 改动
+- ✅ 不擅自 commit 兄弟会话改动
+- ✅ 不擅自注册 launchd / kill PID / mvn 重启
+- ✅ Fresh 验证 + 不擅自推算总账数字
+- ✅ PUT 后独立 GET 回读核验(待 owner 操作后)
+
+**派单矩阵解锁**:P3-1 翻 done 解锁 D3 P3-3 月度津贴 + D4 P3-4 奖金池核算 owner 翻 done。
