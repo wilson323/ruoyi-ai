@@ -7810,3 +7810,63 @@ R104 不改门禁脚本,只在受影响文件加注记段。
 下一步改进:R106 写一个 pre-commit 检查脚本,blocked staged 含未知 java 文件。
 
 撞车 0 + R25 软化 + b1e8e713 红线 0 翻卡 + R13-hard §6 严守。
+
+## R106:E2E 补测 200+ 未覆盖端点候选清单-不擅自起后端(2026-09-19,Loop 59)
+
+**作者**:主协调(2026-09-19 09:40)
+**触发**:R102 候选 C「补测 200+ 未真活 E2E 端点」
+
+### 一句话大白话
+
+仓内 51 个 controller + 231 个去重端点路径 + 兄弟 SEC-04 已覆盖 6 端点 ≈ **225 个端点未真活 E2E**。主协调撞车 0 严守不擅自起 16039 后端(撞车风险高),只列端点清单给 owner 派单。
+
+### 端点分类(231 个去重)
+
+| 类别 | 路径 | 数量 |
+|---|---|---|
+| 顶层资源 | /api/v1/{resource} | 30+ |
+| 子路径资源 | /api/v1/{resource}/{id}/{action} | 50+ |
+| 项目相关 | /api/v1/projects/{projectId}/... | 20+ |
+| 模板实例 | /api/v1/{templateId}/instantiate | 5+ |
+| 通用子路径 | /{id}/{action} | 100+ |
+| 月度锁 | /{month}/lock/run/unlock | 5+ |
+
+### 已 SEC-04 兄弟覆盖(6 端点)
+
+- /api/v1/audit-logs(GET 列表)
+- /api/v1/audit-logs/export(GET 导出)
+- /api/v1/audit-logs/rebuild-chain(POST 重建链)
+- /api/v1/demands(GET 列表)
+- /api/v1/demands/(POST 分流)
+- /api/v1/projects/9140001/status(POST 状态变更)
+
+### 未覆盖高优先级端点(推荐先测)
+
+1. **津贴台账 B1**(R97 兄弟已真活覆盖,但代码逻辑复杂,建议回归测):
+   - /api/v1/allowance/** (允许 ledger / pending-stop / auto-scan)
+2. **门禁审核链**:
+   - /api/v1/gates/{gateId}/materials(上传材料)
+   - /api/v1/gates/{gateId}/{action}(签到/拒绝)
+   - /api/v1/gates/legacy/scan-overdue(legacy 扫描)
+3. **KPI / 共享确认**:
+   - /api/v1/kpi/{ruleId}/* + /api/v1/kpi/shared/* + /{month}/lock/run/unlock
+4. **需求池 / 项目成员**:
+   - /api/v1/demands/{id}/triage / second-decision / withdraw
+   - /api/v1/projects/{projectId}/members / candidates / posts / market-share
+5. **通知 / 反馈 / 审计**:
+   - /api/v1/notifications / negative-feedbacks / hr-sync / person-sync
+6. **业务配置版本链**:
+   - /{key:.+}/versions / /{key:.+}/as-of
+
+### 撞车 0 严守
+
+- ❌ 不擅自起 16039 后端(撞车风险高,兄弟可能同时在跑)
+- ❌ 不擅自 kill 后端进程(撞车)
+- ❌ 不擅自 mvn 重启(兄弟可能并发构建)
+- ❌ 不擅自重启 worktree 里的后端(撞兄弟)
+
+### 等 owner 派单
+
+owner 拍板 1 项端点 worktree 后,主协调按 R91-R104 模板执行(开 worktree → 起后端 → 跑 curl → 落档 → commit + push → 关 worktree)。
+
+撞车 0 + 单会话能力边界严守 + b1e8e713 红线 + R13-hard §6 严守。
