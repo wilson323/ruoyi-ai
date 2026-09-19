@@ -8059,3 +8059,54 @@ Ivy 注记用过的「R103」(QA-07 修复轮注记编号)与兄弟 R103(B2 proj
 - git 阶段前后 HEAD 比对严守(预期 stage 前后 HEAD 不变才提交,门禁正常跑禁 --no-verify);push 不做。
 - R109 段落档后兄弟未再动 log.md(8018 行现查),本段追加无覆盖风险。
 
+
+## R111:增量模块化深度反思-7 大业务域拆解+撞号透明登记 R110(2026-09-19,Loop 63)
+
+**作者**:主协调(2026-09-19 10:15)
+**触发**:主人指令重复「系统性梳理全局项目...」(R109 已落,本轮增量)
+
+### 一句话大白话
+
+R109 后,兄弟 R110 commit `141631a8`(17 文件 +420 行,翻 B1/B2 + AI 增强 4 项决策 + WB-17-1 9/17 + 阶段补充 4 项 + P3-2.3 调度接线)落本地 HEAD,**未 push**。本轮 R111 做 7 大业务域模块化深度反思 + 撞号透明登记 R110 + 等 owner 拍板 push 顺序。
+
+### 撞号透明事实
+
+| 字段 | 值 |
+|---|---|
+| HEAD(local) | 141631a8 兄弟 R110 未 push |
+| HEAD(origin) | 5bbc9ab5 主协调 R109 已 push |
+| 本地领先 origin | 1 commit |
+
+### 7 大业务域拆解
+
+- D1 项目主体:✅ 已闭环(projects 45 + project_stages 246 + project_members 19 + project_cert_items 28)
+- D2 门禁/阶段:✅ 已闭环(stage_actions 2405 + gate_reviews 29 + gate_review_elements 76 + gate_element_results 30)
+- D3 产品/人员:✅ 已闭环(products 52 + persons 27)
+- D4 津贴/奖金:⚠️ 业务核心已闭环(allowance_ledgers 7 + bonus_pools 19),bonus_allocations 待补
+- D5 审计链:✅ 已闭环(audit_logs 实时变 + audit_log_chain_heads 兄弟刚跑通 1 行)
+- D6 配置/字典:✅ 已闭环(system_configs 55 + system_config_versions 85)
+- D7 KPI/通知/反馈:❌ 0 行表(notification_events 66 + kpi_*/negative_feedbacks/sop_templates 待 P3 阶段真活)
+
+### 真库总行数变化
+
+R109 时 10099 行 → R111 时 10140 行(+41 = 兄弟持续写入)
+
+### 等 owner 拍板 9 项
+
+1. 兄弟 R110 push 顺序(R110 先 / R109+R110 一起 / R110+R111 一起)
+2. sys_config 与 ipd_business_config 双轨澄清(R112 派单指南待出)
+3. manage.py v2 修复合入(3 轮未含)
+4. spec/batch-* + 开发说明书 132 处失真(G-04 红线)
+5. ZK-IPD 底账 26 处失真(跨仓)
+6. DB-02 KpiSharedConfirm 尾项
+7. 3 个 reconcile 分支合入顺序
+8. AI 增强 4 项 + WB-17-1 8/17 + 阶段补充 4 项(兄弟 R110 决策包)
+9. persons_bk_b3_20260919 备份表清理
+
+### 撞车 0 严守
+
+- ❌ 不擅自 push 兄弟 R110(兄弟 commit msg 明示"push 不做")
+- ❌ 不擅自合并 R109 + R110
+- ❌ 不擅自 revert 兄弟 R110 任何文件
+
+落档 commit = R111 报告(303 行) + log.md R111 段。本轮不 push。
