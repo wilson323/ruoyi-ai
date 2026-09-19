@@ -6810,3 +6810,37 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - Loop 34 (R77):P1-1/1-2/1-3 撞号透明承接
 - Loop 35 (R78):39 项派单矩阵更新文档化
 - Loop 36+:撞车 0 + 单会话能力边界下撞车 0 + 等 owner 派单
+
+---
+
+## R77:5 项 P1 修复综合处理决策包(2026-09-19,Loop 34)
+
+**触发**:R75 subagent A 评审发现 5 项 P1 修复建议(R74/R73 错位矛盾 + R51 漏登 + R72 时间戳精化 + PmDirectory WIP + R13 撞号根除)。
+
+**R77 markdown**:`R77-5项P1修复综合处理决策包-20260919.md`(187 行,7 节)。
+
+**撞号透明**:R77 与 R45-R76 平行,撞号不冲突。
+
+**R13 五必现查真活验证**:
+- HEAD `1c93b67b`(R76 主协调,前序)
+- 工作区干净
+- 兄弟在途 `97bd709c` PmDirectory MOCK 排除已入库(R33 撞车接管 P1-1)
+
+**R13-hard 升级草案**(主协调可推进 docs only):
+- R13 五必现查规约新增第 6 类「兄弟 commit hash 现查」(commit 前必跑 `git fetch && git log --oneline -5`)
+- commit message 模板新增基线声明行(本决策包 + 前序 + 兄弟三 hash)
+- 既有 R66-R76 决策包撞车 0 不擅自回填
+
+**PmDirectory WIP 入库撞号透明承接**:
+- 兄弟会话 `97bd709c` 已入库撞号透明
+- R74 §三 R25 软化三步登记闭环
+- R77 §五 撞号透明承接
+
+**3 项让路 owner 派单 worktree**(撞车 0 不擅自改既有):
+- R67/R68/R69/R70 §二 R51 漏登补登(4 行 docs only)
+- R72 §二 2.1 时间戳精化(1 行 docs only)
+- R73+R74 错位判定合并(docs only)
+
+**派单矩阵更新**:5 项 P1 整理为 2 项主协调可立即推进 + 3 项让路 owner。
+
+**撞车 0 + 单会话能力边界 + docs only 严守声明**:仅 docs/ 改动 / 不擅自回填既有 / 不擅自 commit 兄弟会话改动 / 不擅自注册 launchd / kill PID / mvn 重启 / 不擅自翻 status / 不擅自 push 跨仓。
