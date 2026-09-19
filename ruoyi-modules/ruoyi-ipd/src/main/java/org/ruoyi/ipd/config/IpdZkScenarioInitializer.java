@@ -18,6 +18,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.service.SystemConfigService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -61,6 +62,7 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
     private final ProjectStageMapper projectStageMapper;
     private final StageActionMapper stageActionMapper;
     private final ProjectMemberMapper projectMemberMapper;
+    private final SystemConfigService systemConfigService;
 
     private static final List<String> SIX_STAGES = List.of("CONCEPT", "PLAN", "DEV", "VALID", "LAUNCH", "LIFECYCLE");
 
@@ -182,9 +184,24 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         if (exists > 0) {
             return;
         }
+        // BR-INC-02：绑定成员必须落评级快照（locked_level NOT NULL 无默认值，fail-fast 设计）。
+        // 缺此赋值时，一旦 seed 项目行被清（如测试清理）重 seed 即炸启动
+        // （2026-09-19 实测 Field 'locked_level' doesn't have a default value → Application run failed）。
+        Person person = personMapper.selectById(personId);
+        if (person == null || person.getLevel() == null || person.getLevel().isBlank()) {
+            throw new IllegalStateException(
+                "ZK seed member: person " + personId + " missing level for locked_level snapshot (BR-INC-02)");
+        }
+        // BR-INC-02：锁定额与 P2-4.1 绑定流程同源（system_configs allowance.<level>），非硬编码
+        int amount = systemConfigService.getIntValue("allowance." + person.getLevel(), -1);
+        if (amount <= 0) {
+            throw new IllegalStateException("ZK seed member: 津贴参数缺失 allowance." + person.getLevel());
+        }
         ProjectMember m = ProjectMember.builder()
             .projectId(projectId).personId(personId).role(role)
             .memberType("PRIMARY").joinDate(new Date()).bonusEligible("1")
+            .lockedLevel(person.getLevel())
+            .lockedAmount(BigDecimal.valueOf(amount))
             .build();
         m.setCreateTime(new Date());
         projectMemberMapper.insert(m);

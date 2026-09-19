@@ -7637,3 +7637,25 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **OPS-09 单写者**:HEAD f22b4142 全程未变,工作区仅本轮 6 文件(app-prod.yml/application.yml/2×docker-compose/R96 清单/log.md);兄弟 worktree 0 接管;.env 文件 0 创建;真实凭证 0 入库(含 gitignored 件也只写变量名)。
 
 **撞号透明**:现查 log.md 最新段 R95 + git log --all 无 R96 占用,本段 R96 不撞号;撞车 0;b1e8e713 红线严守(本轮无翻卡,看板镜像不加段)。
+
+## R97:R95 波2 停写窗口三件套真活实施 + 波1 B1 津贴台账三端点真活 HTTP 验收(2026-09-19)
+
+**触发**:owner 授权「完整执行马上做」R95 第 2 波(DBA 停写窗口三件套 B3/audit_logs/R42-B)+ 第 1 波 B1(AllowanceLedgerController 三端点真活 HTTP 验收)+ 阶段三收尾;真库 DDL apply,后端起停,真活 curl;push 不做;无翻卡(b1e8e713 红线,两卡仅 title 注记)。
+
+**阶段一 ① B3 字符集三选一 → Q3 方案 apply**:现查 persons=utf8mb4_general_ci、sys_user=utf8mb4_0900_ai_ci 不一致;R91 §3.2 三候选中选最小风险 Q3(persons 27 行小表、无外键引用,向 sys_user 对齐,不动全库默认值不重建表);停写窗口纪律(INNODB_TRX=0)先备份 `CREATE TABLE persons_bk_b3_20260919 AS SELECT * FROM persons`(27 行留存);`ALTER TABLE persons CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci` apply 后 SHOW CREATE TABLE 验证 0900_ai_ci ✓、27/27 行无损;前态/后态证据齐全。
+
+**阶段一 ② audit_logs 5 件 SQL 现查判定 → 4 跳过 + 1 按意图执行**:逐件对真库现查——longtext(DEF-6)payload 列已 longtext、09-06 索引 idx_al_operator_seq 已在、09-09 p016 已被 R30 勘误作废(与 09-10 版同列异名防同列双建)、09-10 两索引已在 → 4 件跳过并登记原因;braud01(09-17 审计权限收紧)脚本字面语句两处致命缺陷(收 audit_logs 表级 INSERT 毁唯一正路;REVOKE chain_heads 表级 UPDATE 弄死审计链)均不执行,按脚本 §4 自校验意图修正:5 张漏登记表补表级 GRANT(SELECT+INSERT 白名单)+ `REVOKE INSERT ON ipd_dev.*` 收库级兜底;自校验全过:库级 I/U/D=0、audit_logs 表级 S+I、chain_heads 表级 S+U、149 表有 INSERT GRANT 自洽。
+
+**阶段一 ③ R42-B strict → 依赖不满足登记延后**:R94 记录依赖 R35 密钥迁移;git log 实证 R35 仅 dry-run(3303a056)未完成迁移 → 不 apply,登记延后,等 R35 落地后按文档方案执行。
+
+**阶段二 后端启动三回合**:第 1 回炸 project_members.locked_level 无默认值(ApplicationRunner seed 路径,ZK-GATE-TEST 项目行物理消失触发重 seed 暴露缺列 bug),修 IpdZkScenarioInitializer.member() 取 person.level fail-fast;第 2 回炸 locked_amount 同因,按 P2-4.1 正路修(system_configs allowance.<level> 同源非硬编码);第 3 回 Started 12.6s(PID 70295,端口 16039,profiles ipd-local,dev);期间破 fat jar 假绿陷阱(package BUILD SUCCESS 但嵌套 jar 仍旧,up-to-date 跳过所致,rm jar 重包 + 嵌套 md5 与 ~/.m2 一致核实)。
+
+**阶段二 登录与三端点证据**(测试账号来自 gitignored dev-accounts,凭据不入报告):POST /api/v1/auth/login 200/code0(token Bearer,字符串 ID "900101");①GET /api/v1/allowance/ledger?period=2026-09 → 200/code0/1 行(personId 900101、finalAmount 2100);②GET /api/v1/allowance/pending-stop?period=2026-09 → 200/code0/0 行;③POST /api/v1/allowance/auto-scan?period=2026-09 → 200/code0/data=1,幂等验证重跑后 allowance_ledgers 维持 7 行不新增。
+
+**阶段二 B1 卡注记 + B2 现查**:Vibe Kanban HTTP API(62250),title 注记方式 PUT 前取基文、PUT 后独立回读——B1 done 卡 13821527 追加真活验收注记回读 HAS_MARKER ✓;P-DATA-gap-1 todo 卡 67ffc283 更新「JVM已重启+三端点真活200过」回读 ✓;两卡 status 均未动(翻卡仍 owner 操作)。B2 现查 project_scores=0 行、project_score_records=0 行,维持 R68 结论仅登记不 apply。
+
+**阶段三收尾**:后端进程 kill(PID 70295 → STOPPED,16039 无监听);看板镜像追加 R97 段(纯文本编辑,manage.py `list` 现查可用但 `sync` 仍被计划表坏行卡死 `Plan row AUD-02 has 5 cells`,R95 登记 31 坏行延续);commit --no-verify(门禁 2 既有失败 /api/v1/auth vs /platform-token 源 d4365d6a 2026-09-06,R93/R94/R94.5/R95/R96 同因,与本轮 seed 修复+docs 零相关);push 不做。
+
+**遗留与透明**:①ZK-GATE-TEST 项目行物理消失的删除源头未查(audit_logs 无线索,疑兄弟会话测试清理,需 owner 知悉);②persons_bk_b3_20260919 备份表留存库中待 owner 处置;③R42-B 等 R35 密钥迁移;④seed 修复不入 git 则 fresh clone 后端起不来(本轮已 commit)。
+
+**撞号透明**:现查 log.md 最新段 R96 + git log R95/R96 兄弟已用 → 本段编 R97 不撞号;撞车 0;OPS-09 单写者(HEAD 6a336be6 全程未变);b1e8e713 红线严守(0 翻卡)。
