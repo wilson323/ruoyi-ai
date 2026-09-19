@@ -7477,3 +7477,39 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - `fix/A4-seed-script-repair-20260919` (`2fc588a6`)
 
 **撞号透明 + 撞车 0 + b1e8e713 红线严守声明**:✅
+
+---
+
+## R93:R92 撞号透明承接 3 兄弟 commit + 5 项派单进展收口报告(2026-09-19,Loop 49)
+
+**触发**:主人指令「继续」= R93 = R92 后续收口 + 撞号透明承接 3 兄弟 commit + 5 项派单进展收口报告。
+
+**git fresh 拉 5 commit(2026-09-19 03:20 PT)**:
+- `3a0fb556` 主协调 merge `agent/batchX-app-prod-yaml-secrets` into main
+- `2b280b65` fix(ipd): application-prod.yml 硬编码替换为 ENV_VAR 引用
+- `fa6527ce` docs(ipd): R42-E archived_at 回填 SQL 草稿 + bonus.poolRate 失真报告
+- `966f882e` docs(ipd): R92 5 项高优派单决策包
+- `a1d019c2` docs(ipd): R86-R91 系统性梳理整合报告
+
+**撞号透明登记兄弟会话 5 commit**:`a1d019c2` / `966f882e` / `fa6527ce` / `2b280b65` / `3a0fb556`。
+
+**5 项派单进展汇总**:
+- **[1] R76 vite 守护**(★★★★★ crontab):⏸ 未装,等 owner 装 crontab
+- **[2] R42-E archived_at**(★★★★ DBA):⏸ SQL 草稿就位,等 owner DBA apply
+- **[3] B1 bonus_allocations**(★★★★):⏸ W3-Backend-B1 done + worktree 在,等 owner 真活 HTTP 验收
+- **[4] application-prod.yml ENV_VAR 引用**(★★★★):✅ `2b280b65` 实质化 + `3a0fb556` merge main + SEC-NEW-MED-3 done
+- **[5] bonus.poolRate 漂移**(★★★★):❌ R89 报告失真,根本不存在,已取消
+
+**bonus.poolRate 失真报告(R89 报告纠正)**:兄弟会话真库 fresh 现查发现 sys_config 表**没有 default_value 列**(R89 报告幻觉)+ **没有 config_key='bonus.poolRate' 行**(R89 报告幻觉)= bonus.poolRate 漂移根本不存在。
+
+**owner 操作模板就位**:
+- R76 3 步 crontab(备份 → `crontab -e` → `crontab -l | grep vite-keepalive`)
+- R42-E 4 步 SQL(SELECT 复核 → UPDATE → SELECT 验证)
+- B1 真活 HTTP(worktree 启动 + mvn test)
+- application-prod.yml ENV_VAR 配名称 + 部署环境
+
+**OPS-09 单写者纪律**:
+- 4 fix-* worktree 严守不接管(`fix-a1-whitelist` / `fix-a3-mock-filter` / `fix-a4-audit-log` / `fix-a4-seed-repair`)
+- 2 batchX-* 兄弟会话 worktree 不擅自接管
+
+**撞号透明 + 撞车 0 + b1e8e713 红线严守声明**:✅
