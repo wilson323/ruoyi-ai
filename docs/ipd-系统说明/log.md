@@ -6966,3 +6966,70 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **收口**:不修代码;line 443 + 451 注记 PARTIAL + 引用验收目录 R82 报告;运营拍板 1500 vs 2000 谁对,如要回滚 2000 调 `BusinessConfigService.update(\"allowance.L3\", \"2000\", superAdminId)` 自动留痕。
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+---
+
+## R81:D4 P3-4 奖金池核算 owner 翻 done 决策包(撞号透明登记兄弟 R81 + 阻塞 P3-1 + P3-3)(2026-09-19,Loop 38)
+
+**触发**:owner 指令「Loop 38 (R81) — D4 P3-4 奖金池核算 owner 翻 done 决策包」。
+
+**R81 markdown**:`R81-D4-P3-4-奖金池核算-owner翻done决策包-20260919.md`(184 行,6 节)。
+
+**撞号透明登记**:兄弟会话 `f522c5d9` R81 P0-2 KPI disabled fresh 复核(主题不同不冲突)。
+
+**Fresh 拉看板 API 验证**:
+- P3-4 汇总卡 `5d00a4b0` status=`todo` + 标题**已注记** ✅
+- **5 子卡 5/5 done**(非 R75 subagent C 写「8/8 done」,撞号透明纠正)
+- 第 2 张 P3-4 汇总卡 `eb781e5d` BLOCKED 旧版平行存在(2026-09-08 时点)
+
+**阻塞关系**:P3-4 等 P3-1 + P3-3 翻 done 后,owner 1 行 PUT 翻 done(撞车 0 + b1e8e713 红线严守)。
+
+**owner 拍板清单**:1 行 PUT `{"status": "done"}`(等 P3-1 + P3-3)。
+
+---
+
+## R82:agent-batch9-p074-inreview P0-7.4 inreview 收口派单决策包(2026-09-19,Loop 39)
+
+**触发**:owner 指令「Loop 39 (R82) — agent-batch9-p074-inreview P0-7.4 inreview 收口派单决策包」。
+
+**R82 markdown**:`R82-agent-batch9-p074-inreview-P0-7-4-收口派单决策包-20260919.md`(160 行,5 节)。
+
+**Fresh 拉看板 API 验证 P0-7.4 `18851855`**:
+- status=`inreview`
+- 代码已实现(P074AcceptanceTest 7/7 全绿,代码 PR #334 分支 `merge/local-main-r15`)
+- 状态置 inreview 待 QA 独立复核 + squash 合入
+
+**派单 worktree 命名**:`agent-batch9-p074-inreview`
+
+**worktree 工作范围**(撞车 0 + 不擅自 + docs only 严守):
+1. QA 独立复核(P074AcceptanceTest 7/7 全绿)
+2. squash 合入 PR #334(需 upstream maintainer 授权)
+3. 看板 PUT done(撞车 0 不擅自翻 status)
+
+**撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+---
+
+## R83:R75 subagent C 派单矩阵 v2 修订(整合 R79/R80/R81/R82 撞号透明纠正)(2026-09-19,Loop 40)
+
+**触发**:owner 指令「Loop 40 (R83) — R75 subagent C 派单矩阵 v2 修订(整合 R79/R80 撞号透明纠正)」。
+
+**R83 markdown**:`R83-R75-subagent-C-派单矩阵-v2-修订-20260919.md`(151 行,6 节)。
+
+**R75 subagent C 派单矩阵错位纠正累计**:
+- R79:P0-9 阻塞 P0-7.4 inreview(阻塞关系漏核)
+- R80:P3-3 等 P3-1 强约束(阻塞关系补强)
+- R81:P3-4 子卡 8/8 → 5/5 + 第 2 张汇总卡(计数错位 + 漏核)
+- R82:派单 P0-7.4 inreview 收口(派单让路 worktree)
+- R83:派单矩阵 v2 整合(本轮)
+
+**v2 派单矩阵 7 项**(聚焦 P0/P3 重点):
+1. D1 P0-9(阻塞 P0-7.4) + R82 派单
+2. D2 P3-1 KPI 结构
+3. D3 P3-3 月度津贴
+4. D4 P3-4 奖金池核算(5/5 done 非 8/8)
+4.1 P3-4 旧卡 `eb781e5d` BLOCKED 旧版关闭(不阻塞主路径)
+
+**解除依赖图完整**:P0-7.4 → P0-9 收口 + P3-1 → P3-3 → P3-4 收口 + P3-4 旧卡关闭。
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
