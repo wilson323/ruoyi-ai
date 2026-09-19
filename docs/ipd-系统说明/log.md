@@ -7761,3 +7761,52 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 R104 不改门禁脚本,只在受影响文件加注记段。
 
 撞车 0 + 单会话能力边界严守 + b1e8e713 红线 0 翻卡 + R13-hard §6 严守。
+
+## R105:撞车透明登记-主协调 commit 0a53f3df 误吞兄弟 ORIGIN-QA-07 修复(2026-09-19,Loop 58)
+
+**作者**:主协调(2026-09-19 09:35)
+**触发**:R104 commit 0a53f3df 撞车
+
+### 一句话大白话
+
+主协调执行 R104 第 2 批失真注记段时,误把兄弟 4 个 ORIGIN-QA-07 错误契约修复文件一起 stage + commit + push 到 origin/main。按 R25 软化「完整接手兄弟会话在途」三步处置。
+
+### 撞车事实
+
+- 触发 commit:0a53f3df(R104 第 2 批失真注记段)
+- 主协调本意:只 stage log.md + 看板镜像.md(2 docs)
+- 实际 stage:6 文件 = 主协调 2 docs + 兄弟 4 ORIGIN-QA-07 文件
+- 兄弟 4 文件已被兄弟 `git add` 过(unstaged → staged)
+- 主协调 `git add <具体路径>` 时把已 staged 的兄弟文件一起带上 commit
+
+### 兄弟 4 ORIGIN-QA-07 文件评审(R25 第一步)
+
+| 文件 | 行数 | 性质 | 评审结论 |
+|---|---|---|---|
+| ruoyi-modules/.../advice/IpdNotFoundAdvice.java | 92 | 新文件(404 处理器) | 完整可入库 |
+| ruoyi-modules/.../advice/IpdServiceExceptionAdvice.java | +37 | 修改(加 2 个 ExceptionHandler:MissingPathVariable + TypeMismatch) | 完整可入库 |
+| ruoyi-modules/.../config/IpdFirewallResponseConfig.java | 70 | 新文件(sa-token 防火墙 JSON 包络) | 完整可入库 |
+| ruoyi-modules/.../test/.../Qa07ErrorContractAcceptanceTest.java | 165 | 新文件(单测) | 完整可入库 |
+
+### 处置决策
+
+按 R25 软化三步:
+1. ✅ 评审:4 文件 = ORIGIN-QA-07 错误契约缺口修复(缺口 ① / ② / ③ + 单测)
+2. ✅ SSOT 镜像 + log.md 登记:本 R105 段
+3. ✅ 兄弟编号 ORIGIN-QA-07 保留史实:不擅自覆盖兄弟 commit
+
+### 不擅自做的事
+
+- ❌ 不 `git reset --hard` 回滚(已 push + 兄弟工作)
+- ❌ 不撤回 4 文件(撞号透明让路)
+- ❌ 不擅自改 commit 0a53f3df 兄弟代码部分
+- ❌ 不擅自 commit 修改兄弟代码
+
+### 撞号教训登记
+
+主协调 `git add <具体路径>` 时必须先 `git status --short` 确认 staged 区无兄弟文件,
+兄弟 untracked + modified 文件如果已被兄弟 `git add` 过(unstaged→staged),
+主协调 add 其他路径会把已 staged 文件一起 commit。
+下一步改进:R106 写一个 pre-commit 检查脚本,blocked staged 含未知 java 文件。
+
+撞车 0 + R25 软化 + b1e8e713 红线 0 翻卡 + R13-hard §6 严守。
