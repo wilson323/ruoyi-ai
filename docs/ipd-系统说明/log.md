@@ -7513,3 +7513,45 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - 2 batchX-* 兄弟会话 worktree 不擅自接管
 
 **撞号透明 + 撞车 0 + b1e8e713 红线严守声明**:✅
+
+---
+
+## R94:16 项后端派单 worktree 系统性梳理 + 全局项目深度反思(2026-09-19,Loop 50)
+
+**触发**:主人指令「Loop 50 (R94):剩余 16 项后端派单 worktree 系统性梳理全局项目深度思考反思并充分利用多个专业的智能体并行执行」。
+
+**4 个 CodeReview subagent 并行执行总览(1491 行)**:
+- **A** `/tmp/r94-subagent-A-java.md`(211 行):Java 业务逻辑 7 项派单(R42-B / B2 / SEC-04 / AUD-02 / P4-5.1 / P4-4.1 / WB-17-1)
+- **B** `/tmp/r94-subagent-B-ai-qa.md`(264 行):AI 系列 + QA 7 项派单(AI-P1-1 / P2-1 / P2-2 / P3 + QA-06 / QA-07 / QA-08)
+- **C** `/tmp/r94-subagent-C-dba-config.md`(336 行):DBA + SQL + 配置 8 项派单(audit_logs / nginx / docker-compose / tenant.excludes / P1-10.2 / P2-4.2 / P3-2.3 / P3-8.3)
+- **D** `/tmp/r94-subagent-D-global-reflect.md`(680 行):全局项目深度反思(9 大章节 + 5 大根因 + 5 大反思)
+
+**实际 22 项后端派单 worktree 8 字段派单指南整合**(主人指令 16 项 + R91 §二 新增 6 项):
+- **2 项已落地 100%**:P4-5.1(79/79 单测绿)/ P4-4.1(10/10 单测绿)
+- **4 项 AI 增强完全 0 落地**(架构性问题):AI-P1-1 / P2-1 / P2-2 / P3
+- **3 项主线 PASS 集成验收 BLOCKED**:SEC-04 / QA-06 / WB-17-1(9/17)
+- **2 项 warning 已落 strict 待密钥迁移**:R42-B / B2
+- **3 项主体已落小处待修**:AUD-02 / P1-10.2 / P3-2.3
+- **3 项缺实体端**:P2-4.2 / P3-8.3 / tenant.excludes
+- **1 项物理缺失**:`docs/nginx/` 目录(`ls` 报 No such file or directory)
+- **2 项 SQL 已 commit 待 owner apply**:audit_logs / docker-compose
+- **1 项卡面失真识别**:QA-07(BLOCKED_DEPENDENCY 49 卡 误读为"被 49 卡阻塞")
+- **1 项 QA 全卡通过率 ~55%**:QA-08(249 AC = pass 55 / partial 149 / fail 1 / blocked 44)
+
+**强约束依赖总图 7 链完整**:部署链 / 应用链 / 业务链 / 审计链 / AI 链 / 阶段链 / 技术债。
+
+**R13-hard §6 升级建议 3 条**(给 R95+):
+- **§7 真库字段必现查**(`DESCRIBE <table>` + `SELECT <key>` 前置)覆盖 R89 + R92 失真
+- **§8 sub-task LIST 端点必现查**(`GET /api/tasks/<id>/subtasks`)覆盖 R75 失真
+- **§9 上一轮结论引用必 fresh 复核**(`git log --oneline -1 -- <报告文件>`)覆盖 R92 失真
+
+**全局反思 5 大根因 + 5 大反思**(Subagent D 680 行):
+- ① 当前项目健康度 4 类分类:owner 真活待拍板 24 项 + 兄弟会话在途 5 commit + 主协调撞车 0 边界内 6 项 docs only + 幻觉失真 1 项
+- ② 撞号透明下撞车 0 守则 3 大机制(OPS-09 单写者 + R13-hard §6 文档 SSOT 同步 + 4 fix-* worktree 严守不接管)
+- ③ 汇总卡失真频发 R75 + R89 + R92 三次发现 3 大根因(R13-hard §6 凭记忆写 / 模型幻觉 / 子卡计数错位)
+- ④ 前后端契约缺口全局梳理(STG-501-1 + A1 lastChange + IpdPlatformAuthController 真活在主仓)
+- ⑤ 后续 owner 拍板清单优先级 24 项分 4 波
+
+**OPS-09 单写者纪律**:4 fix-* worktree(`c83215f9` / `0edd0ba4` / `feec82d2` / `2fc588a6`)+ 2 batchX-* 兄弟会话 worktree(`2b280b65` / `fa6527ce`)+ 13 其他 worktree 严守不接管。
+
+**撞号透明 + 撞车 0 + b1e8e713 红线 + R13-hard §6 严守声明**:✅
