@@ -33,12 +33,16 @@ public class PmDirectoryController {
     private final PersonMapper personMapper;
     private final ProductGroupMapper productGroupMapper;
 
-    /** 在职（ACTIVE）人员目录：id/姓名/工号/角色/等级/所属组。 */
+    /** 在职（ACTIVE 且非 MOCK）人员目录：id/姓名/工号/角色/等级/所属组。
+     * 2026-09-18 补丁：R33 撞车接管验收 P1-1，实测项目移交接任人下拉出现 Mock-QA-SYNC-20260910B
+     * （该账号也是 ACTIVE 状态，被原 .eq("ACTIVE") 过滤漏过）。
+     * 加 .ne("MOCK") 排除测试种子账号；配套真库 SQL 见 docs/script/sql/update/2026-09-18-pm-directory-mock-filter/。 */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/pm-directory")
     public ApiV1Response<Map<String, Object>> directory() {
         List<Person> people = personMapper.selectList(new LambdaQueryWrapper<Person>()
             .eq(Person::getAccountStatus, "ACTIVE")
+            .ne(Person::getAccountStatus, "MOCK")
             .orderByAsc(Person::getId));
         Map<Long, String> groupNames = productGroupMapper.selectList(null).stream()
             .filter(g -> g.getGroupName() != null)
