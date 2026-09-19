@@ -6928,3 +6928,22 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - PUT `962c4b6c7` status todo → done(待 P3-1 owner 操作后)
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
+
+
+---
+
+## R81-P0-2 KPI disabled fresh 复核(2026-09-19 03:05,owner 选项 A 续做)
+
+**触发**:owner 选项 A = 「PARTIAL 收口,留 P0-2 为非 bug」
+
+**R33 异常 2 失真点**(证据闭环):
+- 前端:`apps/web-antd/src/views/ipd/kpi/index.vue` line 127-134,4 个 `<option>` 无 `:disabled` 属性;仅 `<select :disabled=\"loading\">` 在请求中禁用
+- 后端:`KpiRecordController.java` 只有 `/functional` `/performance` `/trend` 3 个端点,**无 `/months`**
+- 前端 API:`kpi.ts` getKpiTrend() 调 `/kpi/trend?periods=N`,**从不调用 `/kpi/months`**
+- 真库:`kpi_records` 2 行,数据稀少
+
+**真实成因(推断)**:R33 chrome-devtools 截图大概率在 `loading=true` 状态下抓,看到 `<select>` 整体灰态误读为「4 个 option 全 disabled」。DOM 整体禁用 vs option 元素被锁 ≠ 同一件事。
+
+**收口**:不修代码;line 437 + 449 注记 PARTIAL + 引用验收目录;R33 报告保留为「兄弟会话判断失误」证据。
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守声明**:✅
