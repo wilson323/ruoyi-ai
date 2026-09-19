@@ -7870,3 +7870,61 @@ R104 不改门禁脚本,只在受影响文件加注记段。
 owner 拍板 1 项端点 worktree 后,主协调按 R91-R104 模板执行(开 worktree → 起后端 → 跑 curl → 落档 → commit + push → 关 worktree)。
 
 撞车 0 + 单会话能力边界严守 + b1e8e713 红线 + R13-hard §6 严守。
+
+## R107:前段仓合并 4 文件报告-实际只有兄弟 1 modified 文件(2026-09-19,Loop 60)
+
+**作者**:主协调(2026-09-19 09:45)
+**触发**:R102 候选 D「前端仓合并 4 文件」
+
+### 一句话大白话
+
+前端仓 HEAD=c4a2ee7=origin/main,没有 4 文件待合并,只有兄弟 1 modified 文件 vite.config.mts(09:25 删 unused import),撞号透明让路不擅自 commit。
+
+### 前端仓状态 fresh 现查(2026-09-19 09:45)
+
+```
+$ cd /Users/mac/Documents/ruoyi-ipd-web
+$ git status --short
+ M apps/web-antd/vite.config.mts
+
+$ git worktree list
+/Users/mac/Documents/ruoyi-ipd-web  c4a2ee7 [main]
+/private/tmp/wt-p2trace             15c5ae5 [fix/p2-traceid-20260909] prunable
+
+$ git log --oneline -3
+c4a2ee7 (HEAD -> main, origin/main, origin/HEAD) fix(web): 清浏览器控制台 15 条残留 ERR
+4f5cc78 fix(ipd): stage-actions 业务编号自适配 — STG-501-A (U1 高)
+c2ee1a2 fix(web): 清浏览器控制台 24 条 iconify CDN ERR + 1 条 unpkg avatar 残留
+```
+
+### 兄弟 1 modified 文件评审
+
+| 文件 | 改动 | 时间 | 评审 |
+|---|---|---|---|
+| apps/web-antd/vite.config.mts | -import { resolve } from 'node:path'; +空行 | 2026-09-19 09:25 | 删 unused import,可入库 |
+
+### 撞车 0 严守
+
+- ❌ 不擅自 commit 兄弟未提交的 vite.config.mts 改动
+- ❌ 不 stash 兄弟修改(撞车)
+- ❌ 不 checkout 还原(兄弟可能需要这个改动)
+- ✅ 撞号透明登记在本 R107 段
+- ✅ 等兄弟 commit 这个改动后,再做合并 / 真活 E2E
+
+### 前段仓无 4 文件合并原因
+
+前面 R102 候选 D 是基于"兄弟前端会话已 commit 4 文件待合并"的预期,
+但 fresh 现查前端仓:
+- HEAD = c4a2ee7 已与 origin/main 同步
+- 没有 untracked 文件
+- 没有落后分支
+- 兄弟 1 modified 文件未 commit = 兄弟工作中
+
+### 等 owner 派单
+
+owner 拍板后:
+- 选项 1:等兄弟 vite.config.mts commit 后,主协调 fetch + merge --ff-only + push
+- 选项 2:派单主协调 commit 兄弟 vite.config.mts + push(撞号透明,需兄弟授权)
+- 选项 3:跑前端真活 E2E(vite 起冲突,不擅自做)
+
+撞车 0 + 跨仓 cd 绝对路径 + R13-hard §6 + b1e8e713 红线 + R13-hard §6 严守。
