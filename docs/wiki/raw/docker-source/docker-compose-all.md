@@ -30,7 +30,7 @@ services:
     container_name: ruoyi-ai-mysql
     restart: always
     ports:
-      - "23306:3306"
+      - "13306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: ruoyi-ai-agent

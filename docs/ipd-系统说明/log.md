@@ -8016,3 +8016,46 @@ audit_logs + stage_actions + project_stages + projects + products + persons + al
 落档 commit = R109 报告(195 行) + log.md R109 段。
 
 撞车 0 + b1e8e713 红线 + R13-hard §6 严守。
+
+## R110:最后一棒——B1/B2 翻卡 + 三批工作 SSOT 补登 + AI/WB-17-1/阶段补充决策包 + P3-2.3 调度接线小修(2026-09-19)
+
+**作者**:最后一棒会话(2026-09-19 09:40-10:10)
+**触发**:owner 指令「执行任务(最后一棒:翻卡 + 方案文档 + 文档同步 + SSOT 统一登记 + git 提交)」;owner 已授权「只差翻卡的翻卡」。
+**基线现查**:开工时 HEAD `1bdd3bce`,执行中兄弟推到 `5bbc9ab5`(R109 已入库),本段编号 R110 现查 log.md 尾部 R109 不撞号;全程不 push、不碰库、不起后端、前端仓只读、19 个兄弟 worktree 0 接管。
+
+### 一、SSOT 补登对账结论(先对账再补登,兄弟已登记的不重复写)
+
+| 待补登工作 | 对账结果 | 处置 |
+|---|---|---|
+| Hunk 波 3 五项(nginx 配置 docs/nginx/ipd.conf / SEC-04 15 项真活全过-附件项阻塞 / AUD-02 基线重跑 0 冲突 / QA-06/07/08 推进+3 个错误码缺口发现 / B2 表注释) | **兄弟 R101 已收编**(commit `59f6e544`,"R101 1654 处 B/C 类失真分批 owner 决策+第 1 批 log.md 100 处误报登记"连带收编波 3 产出文件) | 本段只登记归属事实,不重复展开内容 |
+| Ivy QA-07 三缺口修复(4 文件) | **兄弟 R104 已入库** `0a53f3df`(修复本体),证据链由 `1bdd3bce`(ORIGIN-QA-07 空 commit 补真活 curl 复验 404/50001、400/10001、400/10001 + Qa07ErrorContractAcceptanceTest 8/8)补齐 | 同上,登记归属 |
+| Ivy P0-7.3 不合判定 | 兄弟 1bdd3bce 已注记(Vue 实联未闭环,维持 inreview 待 owner 拍板) | 不重复登记 |
+| Ivy P1-4.2 孤儿登记 | 兄弟 1bdd3bce 已注记(Codex/swarm_doc03 无进程无分支,等 owner 指派) | 不重复登记 |
+| **本轮翻卡结果(B1/B2)** | 兄弟未登记(本轮新活) | 本段补登(见下) |
+| **撞号勘误(Ivy「R103」)** | 无任何会话登记过 | 本段补登(见下) |
+
+### 二、本轮翻卡结果(HTTP API PUT 前取基文,PUT 后独立回读,均 PASS)
+
+1. **B1 卡 `13821527`(done)**:R97 波 1 真活 HTTP 验收三端点 200+code0(ledger 1 行/pending-stop 0 行/auto-scan data=1 幂等)早已翻 done;本轮清理标题里残留的【✅真活HTTP验收2026-09-19 R95波2:...】临时注记(证据已由 log.md R97 段承载),标题恢复干净,回读 title_has_marker=False ✓。
+2. **B2 卡 `6a3f9b4d`(P-DATA-gap-2,project_scores):todo → done**。活齐判定:①owner 拍板已落(A4 裁决 2026-09-08,保留表+实体+注释,spec _公共规范:148 Q3);②表注释在位(ProjectScore.java javadoc 用途裁决注释本轮 fresh 现查);③不修码契约未破(records-only);④真库双 0 行维持 R97 现查;R103 兄弟 `a686f332` 系 B2 派单执行文档。回读 status=done ✓。
+3. **P0-7.3 `d810a157` 不翻**:inreview 维持(Vue 实联+shared 合并收口未闭环,merge 口径 owner 拍板)。
+4. **QA-06 `ecdd3444` / QA-07 `655f45e0` / QA-08 `3ba1f028` 不翻**:inprogress 维持(Hunk 已注记推进中)。
+5. **P1-4.2 `fde68b8c` 不翻**:inprogress 维持(孤儿等 owner 指派)。
+
+### 三、撞号勘误
+
+Ivy 注记用过的「R103」(QA-07 修复轮注记编号)与兄弟 R103(B2 project_scores 加注释派单执行,`a686f332`,2026-09-19 09:20)撞号——属注记编号失真,不影响证据本体(修复文件随 R104 `0a53f3df` 入库,证据随 `1bdd3bce` 补齐);在此勘误:Ivy 该轮改称 ORIGIN-QA-07(与 `1bdd3bce` commit 前缀一致),历史注记不回改。
+
+### 四、本轮其他产出
+
+1. **决策包 `R110-AI增强4项与WB-17-1与阶段补充4项owner拍板决策包-20260919.md`**(201 行):AI 增强 4 项逐项现状/缺口/双方案/推荐/工作量(地基全齐增强 0 落地现查实锤:promptType 0 命中、SSE 生成端点 0 命中、自动重试 0);WB-17-1 现查 9/17(9 个 Aggregator 实体)+8/17 PLANNED(其中 4 类域未建模),推荐冻结登记分批解冻;阶段补充 4 项逐项评估,P2-4.2/P3-8.3 派单指南(worktree 模板+验收标准)已写。
+2. **P3-2.3 调度接线小修(唯一满足「小且自洽直接修」项,3 文件)**:ProjectScoreScheduleService 新增 dailyScanScheduled(@Scheduled 09:15 错峰+@Transactional 入口声明)+IpdSchedulingConfig 错峰表登记+新增 ProjectScoreScheduleCronTest(@Tag dev,4 用例:注解契约/错峰契约/EnableScheduling/委托冒烟);`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProjectScoreScheduleCronTest test` → 4/4 绿 BUILD SUCCESS(09:38,单模块错峰未起后端)。
+3. **23306→13306 文字叙述同步 18 处 10 文件**(README.md 3 / README_ZH.md 3 / CLAUDE.md 1 / docs/wiki/** 11):wiki-lint 通过 121/失败 0/孤立 raw 0;docker-compose yaml 本体端口映射未动(属 R95 波 4 项[23] 待办)。
+4. **scripts/check-api-contract-fe-be.mjs 前端根参数化**(对齐 tri-source R98 修法):IPD_FE_API_DIR 环境变量(前端 src/api/ipd 目录,剥三层还原 feRoot)>仓库同级 ../ruoyi-ipd-web 推断>本机默认值;默认与 env 两路实跑均 PASS(exit 0),tri-source 回归 pass=true exit=0。
+
+### 五、边界与透明
+
+- manage.py set/sync/plan/check 全程未用(镜像 AUD-02 坏行仍在,R95 登记延续);翻卡走 HTTP API 直 PUT;镜像本轮登记段纯文本追加。
+- git 阶段前后 HEAD 比对严守(预期 stage 前后 HEAD 不变才提交,门禁正常跑禁 --no-verify);push 不做。
+- R109 段落档后兄弟未再动 log.md(8018 行现查),本段追加无覆盖风险。
+

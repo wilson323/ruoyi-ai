@@ -137,7 +137,7 @@ docker compose --env-file docs\docker\ruoyi-ai\.env `
   -f docs\docker\ruoyi-ai\docker-compose-all.yaml ps
 ```
 
-The default Compose file also publishes MySQL (`23306`), Redis (`26379`),
+The default Compose file also publishes MySQL (`13306`), Redis (`26379`),
 Weaviate (`28080`), and MinIO (`29000`/`29090`). For production deployments,
 change the default MySQL and MinIO passwords and expose only the application
 ports through the firewall or a reverse proxy.
@@ -197,7 +197,7 @@ docker-compose up -d --build
 | Admin Panel | 25666 | 5666 | Admin backend access |
 | User Frontend | 25137 | 5137 | User frontend access |
 | Backend Service | 26039 | 6039 | Backend API service |
-| MySQL | 23306 | 23306 | Database service |
+| MySQL | 13306 | 13306 | Database service |
 | Redis | 26379 | 6379 | Cache service |
 | Weaviate | 28080 | 28080 | Vector database |
 | MinIO API | 29000 | 9000 | Object storage API |

@@ -52,7 +52,7 @@ docker compose --env-file docs/docker/ruoyi-ai/.env \
 | Admin Panel | `25666` | 管理后台 |
 | User Frontend | `25137` | 用户端 |
 | Backend API | `26039` | 后端 API |
-| MySQL | `23306` | 数据库 |
+| MySQL | `13306` | 数据库 |
 | Redis | `26379` | 缓存 |
 | Weaviate | `28080` | 向量库 |
 | MinIO API | `29000` | 对象存储 |

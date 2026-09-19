@@ -21,6 +21,11 @@
  *   node scripts/check-api-contract-fe-be.mjs --json           # JSON 输出（CI 友好）
  *   node scripts/check-api-contract-fe-be.mjs --json --strict  # 组合
  *
+ * 前端根解析(R110,对齐 tri-source R98 修法):
+ *   IPD_FE_API_DIR 环境变量（前端 <fe-root>/src/api/ipd 目录）
+ *   > 仓库同级 ../ruoyi-ipd-web/apps/web-antd 自动推断
+ *   > 本机默认值。--fe-root 参数仍可显式覆盖以上三者。
+ *
  * 退出码:
  *   0 = 无 P0 孤儿路径（默认）；无任何问题（--strict）
  *   1 = 发现 P0 孤儿路径；或 --strict 时发现字段错位
@@ -35,11 +40,31 @@
 
 import { readFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { dirname, join, basename, resolve as resolvePath } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // ---------- 默认扫描路径(R37 实测工作区) ----------
 const DEFAULT_FE_ROOT  = '/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd';
 const DEFAULT_BE_ROOT  = '/Users/mac/Documents/ruoyi-ai';
+
+// R110:前端根参数化(对齐 check-contract-tri-source.sh R98 修法)
+// 优先级:IPD_FE_API_DIR 环境变量(语义:前端 api/ipd 目录) > 仓库同级 ruoyi-ipd-web 推断 > 本机默认值
+// 本地与 CI 均可跑,不再硬绑定本机绝对路径。
+const REPO_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), '..');
+
+function resolveFeRoot() {
+  // IPD_FE_API_DIR 与 tri-source 同语义:指向前端 <fe-root>/src/api/ipd 目录,
+  // 此处剥离 src/api/ipd 三层还原 feRoot(内部 feApiDir = join(feRoot, FE_API_DIR) 还原回同一目录)。
+  const envDir = process.env.IPD_FE_API_DIR;
+  if (envDir && existsSync(envDir)) {
+    return dirname(dirname(dirname(envDir)));
+  }
+  const sibling = resolvePath(REPO_ROOT, '..', 'ruoyi-ipd-web', 'apps', 'web-antd');
+  if (existsSync(sibling)) {
+    return sibling;
+  }
+  return DEFAULT_FE_ROOT;
+}
 
 const FE_API_DIR      = 'src/api/ipd';
 const BE_CTRL_DIRS    = [
@@ -53,7 +78,7 @@ const CANONICAL_PLACEHOLDER = '{VAR}';
 
 // ---------- CLI ----------
 function parseArgs(argv) {
-  const opts = { strict: false, json: false, feRoot: DEFAULT_FE_ROOT, beRoot: DEFAULT_BE_ROOT };
+  const opts = { strict: false, json: false, feRoot: resolveFeRoot(), beRoot: DEFAULT_BE_ROOT };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--strict')      opts.strict = true;

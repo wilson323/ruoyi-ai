@@ -118,7 +118,7 @@ docker compose --env-file docs/docker/ruoyi-ai/.env \
   -f docs/docker/ruoyi-ai/docker-compose-all.yaml up -d
 ```
 
-Compose ports: MySQL `23306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29090`, backend `26039`. Override MySQL/MinIO passwords before any non-local deploy.
+Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29090`, backend `26039`. Override MySQL/MinIO passwords before any non-local deploy.
 
 ## Related Repositories (not in this repo)
 

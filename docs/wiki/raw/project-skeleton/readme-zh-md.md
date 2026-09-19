@@ -115,7 +115,7 @@ docker compose --env-file docs/docker/ruoyi-ai/.env \
 # 后端API: http://SERVER_IP:26039
 ```
 
-默认 Compose 还会发布 MySQL（`23306`）、Redis（`26379`）、Weaviate（`28080`）和
+默认 Compose 还会发布 MySQL（`13306`）、Redis（`26379`）、Weaviate（`28080`）和
 MinIO（`29000`/`29090`）端口。生产环境请修改 MySQL 和 MinIO 默认密码，并通过防火墙或反向代理只开放应用端口。
 
 升级到其他已发布版本时，修改 `docs/docker/ruoyi-ai/.env` 中的 `RUIYI_VERSION`，然后使用相同的
@@ -172,7 +172,7 @@ docker-compose up -d --build
 | 管理端 | 25666 | 5666 | 管理后台访问地址 |
 | 用户端 | 25137 | 5137 | 用户前端访问地址 |
 | 后端服务 | 26039 | 6039 | 后端 API 服务 |
-| MySQL | 23306 | 23306 | 数据库服务 |
+| MySQL | 13306 | 13306 | 数据库服务 |
 | Redis | 26379 | 6379 | 缓存服务 |
 | Weaviate | 28080 | 28080 | 向量数据库 |
 | MinIO API | 29000 | 9000 | 对象存储 API |

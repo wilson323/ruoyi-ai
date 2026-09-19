@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -18,6 +19,7 @@ import org.ruoyi.ipd.mapper.ProjectScoreTaskMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +37,12 @@ import java.util.stream.Collectors;
 /**
  * 上市 30 日双 PM 自评、90 日两组长评定的待办调度器（P3-2.3）。
  * 上市日期变化通过更新既有任务重排，任务表不新增第二行。
+ *
+ * <p>调度入口 {@link #dailyScanScheduled()}（2026-09-19 接线补齐）：此前仅
+ * {@code ProjectScoreTaskController} HTTP 手动触发，@Scheduled 定时入口缺失。
+ * OPS-04 错峰表登记见 {@code IpdSchedulingConfig}（09:15，避开 09:00/09:05）。
  */
+@Slf4j
 @Service
 public class ProjectScoreScheduleService {
 
@@ -142,6 +149,20 @@ public class ProjectScoreScheduleService {
             }
         }
         return new ScheduleScanResult(created, self, leader, reminders, escalations, updated);
+    }
+
+    /**
+     * 每日 09:15 自动扫描（P3-2.3 调度入口，@EnableScheduling 已由
+     * {@code IpdSchedulingConfig} 启用）。内部调用不经过代理，事务语义由本入口
+     * 声明，与 {@link #scanLaunchedProjects(LocalDate)} 同一事务边界；手动验证
+     * 仍可直调本方法或 HTTP 端点。同日重跑幂等（ensureTask 更新重排不新增第二行）。
+     */
+    @Scheduled(cron = "0 15 9 * * ?")
+    @Transactional(rollbackFor = Exception.class)
+    public void dailyScanScheduled() {
+        ScheduleScanResult result = scanLaunchedProjects(LocalDate.now());
+        log.info("ProjectScoreScheduleService dailyScanScheduled: createdTasks={} selfTasks={} leaderTasks={} reminders={} escalations={} updatedTasks={}",
+            result.createdTasks(), result.selfTasks(), result.leaderTasks(), result.reminders(), result.escalations(), result.updatedTasks());
     }
 
     private boolean ensureTask(Project project, ProjectMember member, String targetType, LocalDate due,
