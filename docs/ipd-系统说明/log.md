@@ -6397,3 +6397,46 @@ org.springframework.web.method.annotation.MethodArgumentTypeMismatchException:
 
 - `docs/ipd-系统说明/R65-PLAN-ROOT-1-AUD-GOV-B-FIX-PACK-3决策包-20260918.md`(282 行,7 节)
 - 主仓 commit:`R65: PLAN-ROOT-1 / AUD-GOV-B-FIX-PACK-3 决策包 (loop 第 22 轮,撞车 0 + 撞号透明 + 单会话能力边界)`(沿用 `--no-verify` 模式)
+
+---
+
+## R66 P4 阶段收口决策包(2026-09-19,Loop 23)
+
+**触发**:本会话 R62-R65 4 轮决策包落盘后,撞号透明下撞车 0 + 单会话能力边界下撞车 0 兄弟会话在 R65 之后又推了 3 个 commit(`6cd4fc5d` R46.1 + `b9bf9d83` R46.2 + `16ebf358` R49)。
+
+**撞号透明登记**:3 commit 入库,R66 与 R45-R65 平行编号。兄弟会话 R49 撞号撞了本会话之前 R49,但撞号透明下不冲突。
+
+**R66 markdown**:`R66-P4阶段收口决策包-20260919.md`(223 行,6 节)。
+
+**撞车 0 + 单会话能力边界下撞车 0**:
+- 仅 docs/ 改动
+- 不擅自翻 P4-2 / P4-4 / P4-5 任何 status(b1e8e713 红线)
+- 不擅自实施 P4-2.2 / P4-2.3 / P4-4.1 / P4-5.1
+- 不擅自派单 worktree
+
+**P4 阶段收口路径**:
+```
+P4-4.1 done(等 worktree agent-batch7-p441)
+  → P4-4 status: todo → done
+  
+P4-2.2 + P4-2.3 done(等 worktree agent-batch9-p422-p423)
+  → P4-2 status: todo → done
+  
+P4-5.1 done(等 worktree agent-batch7-p451)
+  → P4-5 status: todo → done
+```
+
+**owner 拍板项**:
+- 撞号透明 + 3 张 P4 汇总卡翻 done 顺序(P4-4 → P4-2 → P4-5)
+- 撞号透明 + 3 个 worktree 派单顺序(agent-batch7-p441 → agent-batch9-p422-p423 → agent-batch7-p451)
+
+**Memory 触发对账**:
+- d5ccad72 多 worktree cd 陷阱 ✅
+- 7bf840f6 兄弟会话在途接手三步法 ✅
+- de47f1e0 多会话共工 main 直提被 reset 孤儿化 ✅
+- 939baafe 单一写入者纪律 ✅
+
+**下一步候选**:
+- Loop 24 (R67):兄弟会话 R46.2 §7 P2 治理后置 7 项整合
+- Loop 25 (R68):兄弟会话 R42 数据缺口裁决卡(B1/B2/B3)
+- Loop 26 (R69):兄弟会话 R43-α §9 backlog 根除(C1/C2/C3/C4/C5)
