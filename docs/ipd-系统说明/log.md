@@ -7440,3 +7440,40 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - Step 4:title 注记移除
 
 **撞号透明 + 撞车 0 + b1e8e713 红线严守声明**:✅
+
+---
+
+## R91:21 项 owner 派单 worktree 派单指南(基于 R89 §四 派单清单整合 + 看板 fresh 拉分类)(2026-09-19,Loop 48)
+
+**触发**:主人指令「Loop 48 (R91):剩余 21 项 owner 派单 worktree 派单指南」+「Loop 49+:等 owner 浏览器实测 + 拍板 7 张卡 基于以上全部任务完整的实际执行」。
+
+**看板 fresh 拉 21 项现状**:total=466(部分已 done / 部分 inprogress / 部分 todo)。
+
+**21 项分 4 类**:
+- **17 项后端 Java 派单**(主仓 ruoyi-ai,撞车 0 + 单会话能力边界让路)
+- **2 项前端仓派单**(R40+ vite.config.mts + A1 lastChange 等兄弟前端会话合并)
+- **1 项 DBA apply**(audit_logs DDL + R42-E archived_at,等 owner 拍板 + DBA 维护窗口)
+- **1 项 crontab -e**(R76 vite 守护,owner 派单)
+
+**6 字段派单模板**(每项通用):
+1. 主题:卡号 + 业务目标
+2. owner 拍板点:决策选项 / DBA apply / worktree 启动
+3. worktree 命名:`agent-batchX-<主题>` 形式
+4. 命令模板:撞车 0 + 不擅自启动,只写命令
+5. 阻塞关系:强约束依赖图
+6. 优先级:★★★★★ / ★★★★ / ★★★ / ★★ / ★
+
+**强约束依赖总图**(17 项后端 + 7 张 D 类汇总卡 + STG-501-1):
+- ★★★★★ R76 vite 守护(阻塞前端所有调试)
+- ★★★★ application-prod.yml secrets + R42-E archived_at + B1 真活 HTTP 验收
+- ★★★ SEC-04 + nginx + B2 + B3 + AUD-02 + R42-B + QA-06/07/08 + bonus.poolRate
+- ★★ audit_logs DDL + docker-compose + tenant.excludes + P4-5.1/4.1 + AI 系列 + WB-17-1 + R40+ + A1
+- ★ P1-10.2 / P2-4.2 / P3-2.3 / P3-8.3 阶段补充
+
+**4 个 fix-* worktree 严守不接管**(OPS-09 单写者):
+- `fix/A1-controller-whitelist-20260919` (`c83215f9`)
+- `fix/A3-mock-global-filter-20260919` (`0edd0ba4`)
+- `fix/A4-param-audit-log-20260919` (`feec82d2`)
+- `fix/A4-seed-script-repair-20260919` (`2fc588a6`)
+
+**撞号透明 + 撞车 0 + b1e8e713 红线严守声明**:✅
