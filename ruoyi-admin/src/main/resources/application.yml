@@ -345,9 +345,6 @@ tenant:
     - launch_date_change_requests
     - project_cert_items
 
-    # R8-P0-1 补漏：coefficient_change_requests / cms_content（person_roles 裁决不建表已清理）
-    - coefficient_change_requests
-    - cms_content
     # ①②③（2026-09-05 晚）：审计链分配器锚表——单行 GLOBAL、无 tenant_id 列、无多租户语义；
     # 不登记则多租户插件对其追加 tenant_id 过滤 → append 锁读不到锚行全断（与 chain_heads Java 同批上线）
     - audit_log_chain_heads
@@ -373,7 +370,6 @@ tenant:
     - rd_replacement_approvals
     - rd_replacements
     - multi_project_capacity_approvals
-    - kpi_shared_confirms
     - kpi_rule_snapshots
     - product_retirements
 # MyBatisPlus配置
