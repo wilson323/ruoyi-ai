@@ -6482,3 +6482,39 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - Loop 25 (R68):B 类 3 项 owner 拍板决策包
 - Loop 26 (R69):C4/C5 owner 决策包
 - Loop 27 (R70):跨仓前端仓收口撞号透明
+
+---
+
+## R68:B 类 3 项数据缺口裁决决策包(2026-09-19,Loop 25)
+
+**触发**:R67 owner 拍板清单中 11 项的 B 类 3 项(B1 bonus_allocations + B2 project_scores + B3 sys_user 字符集)。
+
+**撞号透明登记**:R47 `P-DATA-gap-1` 决策包已写 + P3-LOW 决策包已写。本轮补写 P-DATA-gap-2。
+
+**R68 markdown**:`R68-B类3项数据缺口裁决决策包-20260919.md`(178 行,9 节)。
+
+**R13 真活实测**(2026-09-19):
+- bonus_allocations = 0 行
+- bonus_pools = 19 行
+- project_scores = 0 行
+- project_score_records = 0 行 ⚠️
+
+**关键发现**:project_score_records 也 0 行 — R49 兄弟会话以为 records-only 已验收,实测 records 表从未落过任何真活。这是 records-only 决策本身的盲点。
+
+**B 类 3 项推荐方案**:
+| # | 卡号 | 推荐 | 工作量 |
+|---|---|---|---|
+| B1 | P-DATA-gap-1 | A 真活 HTTP 验收 | 中(worktree + JVM 重启) |
+| B2 | P-DATA-gap-2 | **B 保留表 + 加注释**(承接 R11 A4) | 小(ALTER comment + Java 注释) |
+| B3 | P3-LOW | **A1 ALTER persons.username → utf8mb4_0900_ai_ci** | 小(SQL + 索引重建) |
+
+**撞车 0 + 单会话能力边界下撞车 0 严守**:
+- 仅 docs/ 改动
+- 不擅自 SQL UPDATE / ALTER / DROP
+- 不擅自 mvn 重启 JVM
+- 不擅自翻 status(b1e8e713 红线)
+- 撞号透明承接 R47 / P3-LOW 决策包
+
+**下一步候选**:
+- Loop 26 (R69):C4/C5 owner 决策包(R39 推荐 5 件 + R40+ 架构 3 件)
+- Loop 27 (R70):跨仓前端仓 ruoyi-ipd-web 收口
