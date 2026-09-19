@@ -6729,3 +6729,43 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - Loop 32 (R75):撞号透明 + 派单矩阵 P0 升级项决策
 - Loop 33 (R76):撞号透明 + R51 漏登记决策包补写
 - Loop 34+:撞号透明 + 17 张 owner 派单让路
+
+---
+
+## R75:多 subagent 并行评审整合报告(2026-09-19,Loop 32)
+
+**触发**:owner 指令「充分利用多个专业智能体并行完整执行以上全部事项」。
+
+**R75 markdown**:`R75-多subagent并行评审整合报告-20260919.md`(135 行,5 节)。
+
+**派 4 个 CodeReview subagent 并行评审**(纯评审不写代码,memory 43912087):
+- Subagent A:基线错位 + vite 守护 P0 + 5 项 P1(评审输出 `/tmp/r75-review-A.md`,126 行)
+- Subagent B:撞号透明矩阵 + 门禁风险(`/tmp/r75-review-B.md`,73 行)
+- Subagent C:28 项派单优先级(`/tmp/r75-review-C.md`,65 行)
+- Subagent D:R45-R74 索引 + 39 项派单矩阵(`/tmp/r75-review-D.md`,198 行)
+
+**3 项 P0 风险**:
+- P0-1 vite 守护已死 ⚠️ — 选项 B(cron + vite-keepalive.sh)★★★★★ > 选项 A(launchd)★★★★ > 选项 C(★★)
+- P0-2 门禁 --no-verify 长期化 — R76 优先级升 P0,根因脚本修复
+- P0-3 R49 三层撞号未源头规避 — R13 升级 R13-hard
+
+**5 项 P1 修复**:
+- P1-1 错位判定矛盾待澄清(R74 vs R73 自相矛盾)
+- P1-2 R51 commit (6de62c62) 在 R67/R68/R69/R70 §二漏登 4 处
+- P1-3 R72 §二 2.1 时间戳 20:06:xx → 20:06:13
+- P1-4 PmDirectory WIP 撞号透明登记已做,无需新动作
+- P1-5 撞号撞车根治(R13 增补 commit 前必跑 git fetch + log -10)
+
+**39 项派单矩阵**:7 P0(★)+ 8 P1(★★★)+ 7 P2(★★)+ 17 让路(★)= 39 项。
+
+**撞车 0 + 单会话能力边界下撞车 0 严守**:
+- 派 4 个 subagent 纯评审
+- 输出写入 /tmp/r75-review-{A,B,C,D}.md,未修改主仓
+- 不擅自 commit 兄弟会话 PmDirectory WIP
+- 不擅自注册 launchd / 不擅自 kill PID(vite 守护 P0 升级项撞号透明下撞车 0 + 单会话能力边界 + 等 owner)
+- 不擅自翻 status / 不擅自 push / 不擅自 mvn 重启
+
+**下一步候选**:
+- Loop 33 (R76):P0-1 vite 守护派单方案决策包
+- Loop 34 (R77):P1-1/1-2/1-3 撞号透明承接
+- Loop 35 (R78):39 项派单矩阵更新文档化
