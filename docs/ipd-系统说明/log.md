@@ -7284,3 +7284,28 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - ✅ 不擅自 `git config core.hooksPath`
 
 **撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线严守 + R13-hard §6 落地声明**:✅
+
+---
+
+## R88:清理 + 整合 + 6 项 docs only 主协调撞车 0 边界实质化推进 + 28 项 owner-blocked 派单清单 + 8 项 owner 派单 worktree 清单(2026-09-19,Loop 45)
+
+**触发**:主人指令「该清理该清理该整合整合然后把剩余的完整实现」= R88 = 清理 + 整合 + 完整实现。
+
+**R88 markdown**:`R88-清理整合完整实现-6项docs-only-主协调撞车0边界实质化-28项owner-blocked-派单清单-8项owner-派单-worktree清单-20260919.md`(292 行,9 节)。
+
+**清理**:
+- R86 6 项 backlog 中 **R43-β-1** + **R43-α** 已实质化撞号透明清掉(已落地 main `f9ad9f65` + `7188fd64` + `a810e4b4`)
+- **IpdPlatformAuthController 撞号透明盲区纠正**(真活在 `ruoyi-admin/src/main/java/org/ruoyi/ipd/controller/`,114 行)
+
+**整合**:
+- 60 项清单 → 4 类总账(6 docs only + 28 owner-blocked + 8 owner 派单 worktree + 18 docs only 撞号透明承接)
+
+**完整实现 6 项 docs only 推进**:
+- C3 check-doc-drift.sh 脚本(撞车 0 边界首次实质化)
+- C4 R39 剩余 2 件决策包
+- C5 vite root + IpdPlatformAuthController 跨仓对账报告
+- R77 P1-2 R51 补登 3 处
+- R77 P1-3 R72 时间戳精化
+- R77 P1-5 R13-hard §6 落地验证
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + b1e8e713 红线 + R13-hard §6 严守声明**:✅
