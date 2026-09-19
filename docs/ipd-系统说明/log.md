@@ -7091,3 +7091,27 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - 不擅自翻 status / push 跨仓 / kill PID / mvn 重启 / 写 SQL
 - 不擅自接管兄弟会话 commit
 - R13-hard 第 6 类「兄弟 commit hash 现查」纪律强制(本轮 3 commit 都跑了 `git log --oneline -3` 现查)
+
+
+---
+
+## 主协调接手 R85 + P1 三项推进 push(2026-09-19 01:05,Loop 41 续)
+
+**触发**:主人指令「全部执行」+ 兄弟会话 `6f86ad6c` R85 SSOT 同步 commit 已落但未 push。
+
+**兄弟会话在途 4 commit 评审**:
+- `2eb9fd5d` P1-2 R51 补登 3 处(R67/R68/R70 §二 撞号透明承接)—— docs only
+- `496fe0c9` P1-3 + P1-5 R72 时间戳精化(20:06:xx → 20:06:13) + R13-hard 落地规约文件 —— docs only
+- `cd98c40d` R85 vite cron 一键安装脚本(撞车 0 让路待执行)—— 仅写 markdown,不擅自 crontab -e
+- `6f86ad6c` R85 log.md + 看板镜像 SSOT 同步 —— docs only
+
+**零代码改动 + 撞号透明 + 撞车 0**:
+- 兄弟 R85 不撞主协调 R84
+- 不擅自 crontab -e / 不擅自翻 status / 不擅自 push 跨仓 / 不擅自 kill PID / 不擅自 mvn 重启
+- R13-hard 第 6 类「兄弟 commit hash 现查」纪律强制(已 git log --oneline -3 现查)
+
+**R85 vite cron 风险边界**:撞车 0 让路待主人点头才执行 3 条命令(备份 + 写 + 验证),推荐一行 `*/5 * * * * /Users/mac/Documents/ruoyi-ipd-web/scripts/vite-keepalive.sh status >> /tmp/vite-keepalive.log 2>&1`。
+
+**主协调接手 push**(本轮唯一动作):不重写兄弟内容,只 push `50bb54c5..6f86ad6c` 4 commit 到 origin/main。
+
+**撞号透明 + 撞车 0 + 单会话能力边界严守**:✅
