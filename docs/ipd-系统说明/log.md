@@ -7584,4 +7584,34 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 
 **OPS-09 单写者纪律**:4 fix-* worktree + 2 batchX-* 兄弟 worktree(app-prod-yaml-secrets / b1-bonus-allocations-http)+ 前端仓 vite.config.mts 兄弟 M 改动，0 接管 0 触碰。
 
-**撞号透明**:R92 已由 R93 撞号透明承接，本轮编 R94.5 避让 R95；撞车 0；b1e8e713 假绿翻卡红线严守(每卡 fresh 验证子卡态后才翻)。
+**撞号透明**:R92 已由 R93 撞号透明承接,本轮编 R94.5 避让 R95;撞车 0;b1e8e713 假绿翻卡红线严守(每卡 fresh 验证子卡态后才翻)。
+
+---
+
+## R95:24 项 owner 拍板清单 4 波排序决策包(2026-09-19,Loop 51)
+
+**触发**:主人指令「24 项 owner 拍板清单分 4 波排序」;Loop 52+ 方向 = 等 owner 拍板 + 装 cron + DBA apply + 真活 HTTP 验收 + 配 ENV_VAR + 启动 22 项后端 worktree。
+
+**口径裁决**:24 项枚举以 /tmp/r94-subagent-D-global-reflect.md(05:24,681 行)§5.2 分波枚举为准(1+6+11+6=24);三口径差逐条注明——§5.1 独有 application-prod.yml(核心活已 merge main,残留 ENV_VAR 配置,补回进波 1)+ bonus.poolRate(已证伪取消);§5.2 独有 docker-compose + tenant.excludes(纳入波 4);R94 主文档 §7.2 摘要 1+4+5+6+5=21 为第三口径,不采。
+
+**28→24 对账链落档**:28(R89)−2 前端让路(vite.config.mts/A1 lastChange)−1 取消(bonus.poolRate 幻觉,`fa6527ce` 真库证伪)−1 已实质化(application-prod.yml 核心活,残留 ENV_VAR)= 24。
+
+**/tmp 权威源固化**:§5.1/§5.2 权威内容已完整固化进 `docs/ipd-系统说明/R95-24项owner拍板清单4波排序决策包-20260919.md` §2 权威总表(24 项逐项:编号/内容/阻塞类型/依赖/现态,212 行),/tmp 被清理不再构成信息丢失风险。
+
+**重排后 4 波(剔除 R94.5 已完成 9 项,活跃 18 项 = 原 15 编号 + application-prod.yml 补回 + P0-7.3/P0-7.4 尾差新增)**:
+- 第 1 波(2 项,立即可做):B1 真活 HTTP 验收(worktree `/tmp/agent-batchX-b1-bonus-allocations-http` HEAD `fa6527ce` 已建好就差跑 B1AcceptanceTest)+ application-prod.yml ENV_VAR 残留(owner 亲自,敏感)
+- 第 2 波(3 项,DBA 三件套合并 1 个停写维护窗口):B3 字符集三选一 + audit_logs DDL apply(DEF-6 停写窗口+DEF-1 护栏)+ R42-B T4 strict(前置 R35 密钥迁移)
+- 第 3 波(10 项,后端 worktree 派单主体):P0-7.4 收口尾差 + P0-7.3(inreview 等 squash)+ P4-4/P4-4.1 + nginx(目录物理缺失)+ SEC-04 + AUD-02 + QA-06/07/08 + B2
+- 第 4 波(5 组,不阻塞):AI 系列 4 子项 + WB-17-1 + 阶段补充 4 子项(P1-10.2/P2-4.2/P3-2.3/P3-8.3)+ docker-compose 端口(23306→13306)+ tenant.excludes 去重
+
+**强约束链保持声明**:部署链(波 2→3→4)/应用链(全波 4)/业务链(全波 4)/审计链(SEC-04→AUD-02→QA-06→QA-08 全波 3 内序不变)/AI 链(全波 4)/阶段链(P4-4.1 波 3 先于 WB-17-1 波 4)/技术债链(R42-B 波 2 先于 B2·QA-07 波 3)/D 卡链(已于 R94.5 全部完成)——先后关系全部不破。
+
+**Loop 52+ 路线**:R95 文档 §4.1 owner 拍板清单 10 项每项 1 行操作模板(B1 mvn test / ENV_VAR 命名 / B3 三选一 / DBA 窗口 / R42-B 时机 / P0-7.3 squash / P4-4 关卡 / AI 架构拍板 / WB-17-1 取舍 / 配置小改);§4.2 22 项后端 worktree 启动 5 批次(审计链→应用/业务链→阶段补充→AI 链→部署配置收尾),命名沿用 agent/batchX-* 规范,启动前现查 worktree list 避让 6 兄弟在途。
+
+**本轮新发现登记 4 条**:①pre-commit 门禁 2 既有缺口(/api/v1/auth vs /platform-token,源 `d4365d6a` 2026-09-06 蜂群归仓,R93/R94/R94.5 均 --no-verify,与 docs-only 零相关);②看板镜像历史记录区 31 行 5 列坏行致 manage.py plan/check/sync 不可用(HEAD 与工作区坏行集合一致,非本轮引入);③QA-08 249 AC 全量未实施(pass 55/partial 149/fail 1/blocked 44,193 条未闭环);④P3-4 旧卡关前状态漂移 BLOCKED→todo(已随关闭 `eb781e5d` 消解)。
+
+**看板镜像本轮不动**:R95 无翻卡/看板操作,镜像权威段已由 R94.5 对齐(P0-9◐→✅、P3-1/P3-3/P3-4 ⬜→✅、P0-7.4◇→✅);且 manage.py 因 31 坏行不可用,纯文本追加风险大于收益,按最小干预只在 log.md 登记、镜像不加段。
+
+**OPS-09 单写者**:4 fix-*(`c83215f9`/`0edd0ba4`/`feec82d2`/`2fc588a6`)+ 2 batchX-*(`fa6527ce`/`2b280b65`)兄弟 worktree 0 接管;ZKER-staff 看板项目 0 碰。
+
+**撞号透明**:编号检查 log.md 最新段 R94.5,本段 R95 不撞号;撞车 0;b1e8e713 红线严守(本轮无翻卡);R13-hard §6 现查严守(git HEAD/段号/镜像尾部均现查现写)。
