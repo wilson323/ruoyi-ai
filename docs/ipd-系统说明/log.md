@@ -6440,3 +6440,45 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - Loop 24 (R67):兄弟会话 R46.2 §7 P2 治理后置 7 项整合
 - Loop 25 (R68):兄弟会话 R42 数据缺口裁决卡(B1/B2/B3)
 - Loop 26 (R69):兄弟会话 R43-α §9 backlog 根除(C1/C2/C3/C4/C5)
+
+---
+
+## R67:C3 文档漂移脚本设计 + owner 拍板清单(2026-09-19,Loop 24)
+
+**触发**:兄弟会话 R50 `157df0d6` 已做 7 项 docs only(A2/A3/A4/A5/A7/C1/C2),剩 C3 `check-doc-drift.sh` 脚本未写。
+
+**R67 markdown**:`R67-C3文档漂移脚本设计-owner拍板清单-20260919.md`(183 行,6 节)。
+
+**撞号透明承接 R50**:
+- A2 update_by=-1 漂移溯源:grep 命中 SystemConfigController.java:88
+- A3 check-param-drift.sh CI 接入方案:推荐 A+B 双接入
+- A4 bonus.poolRate 三选一:推荐 A+C(立即闭环 + 长期防再现)
+- A5 4 worktree 合并 main 策略:3 选 1 等 owner
+- A7 NUMERIC_TOLERANCE 设计:阈值 0.0001
+- C1 R42-B T4 strict 改 workflow:推荐 A 向后兼容
+- C2 R42-E SQL apply archived_at 回填:3 步 apply 流程
+
+**C3 文档漂移脚本设计**(本轮新增):
+- 三层对账架构(L1 总数 / L2 子卡状态 / L3 commit hash)
+- 自证能红方法(3 个哨兵 + 负向验证)
+- 输出格式 + 修复建议
+
+**owner 拍板清单 11 项**:
+- B1 P-DATA-gap-1 (bonus_allocations 实体零引用)
+- B2 P-DATA-gap-2 (project_scores 表 0 行)
+- B3 P3-LOW (sys_user↔persons 字符集不一致)
+- C3 check-doc-drift.sh (本设计已就位,等 owner 拍板写脚本)
+- C4 R39 推荐 5 件
+- C5 R40+ 架构 3 件
+- D1 P0-9 / D2 P3-1 / D3 P3-3 / D4 P3-4 四张汇总卡翻 done
+
+**撞车 0 + 单会话能力边界下撞车 0**:
+- 仅 docs/ 改动
+- 不擅自写 scripts/(脚本不算 docs)
+- 不擅自翻任何卡 status(b1e8e713 红线)
+- D1-D4 翻 done 必须 owner 操作(撞号透明下撞车 0 + 单会话能力边界严守)
+
+**下一步候选**:
+- Loop 25 (R68):B 类 3 项 owner 拍板决策包
+- Loop 26 (R69):C4/C5 owner 决策包
+- Loop 27 (R70):跨仓前端仓收口撞号透明
