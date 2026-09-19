@@ -8,7 +8,7 @@
 
 IPD 系统两类会话:
 
-1. **IPD 会话**(`loginType=ipd`,独立 StpLogic)— 由 `IpdAuthController` 提供,作用域是 IPD 业务(`/api/v1/projects` `/api/v1/requirements` 等)。
+1. **IPD 会话**(`loginType=ipd`,独立 StpLogic)— 由 `IpdAuthController` 提供,作用域是 IPD 业务(`/api/v1/projects` `/api/v1/demands` 等)。(勘误 R98:原文误写 requirements 域路径,后端无该域,需求走 DemandController `/api/v1/demands`)
 2. **基线平台会话**(`loginType` 默认)— RuoYi-AI 原平台基线,由 `SysLoginService` 提供,作用域是 `/chat/**` `/system/menu` 等。
 
 两者票互相独立。`IpdPlatformAuthController` 是会话桥,把 IPD 票转换为基线平台票。
@@ -56,7 +56,7 @@ IPD 系统两类会话:
 
 ## 5. 不在本合同范围
 
-- 业务接口(`/api/v1/projects` `/api/v1/requirements` 等)— 其它 DOC-XX 合同
+- 业务接口(`/api/v1/projects` `/api/v1/demands` 等)— 其它 DOC-XX 合同(勘误 R98:原文误写 requirements 域路径→demands,同 §1)
 - 基线平台登录页(走 `SysLoginService`,不在本工程合同)
 
 ---
