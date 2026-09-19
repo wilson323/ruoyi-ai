@@ -6663,3 +6663,38 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 **撞车 0 + 单会话能力边界严守**:仅 docs/ 改动(1 新文件)/ 不擅自删除 / 不擅自 push / 不擅自翻 status。
 
 **后续治理建议**:commit 前必 `git fetch && git log --oneline -5`,R13 增补"兄弟 commit hash 现查"。
+
+---
+
+## R73:多 subagent 并行评审报告(2026-09-19,Loop 30)
+
+**触发**:主人指令「充分利用多个专业智能体并行完整执行以上全部事项」。本会话派 4 个 CodeReview subagent 并行评审,纯评审不写代码(memory `43912087` 纪律:不派 domain-mismatched 自定义智能体进入写操作踩 SSOT/台账/harness 红线)。
+
+**R73 markdown**:`R73-多subagent并行评审报告-20260919.md`(155 行,8 节)。
+
+**4 个 CodeReview subagent 并行评审**:
+
+| # | subagent | 评审范围 | 评分 |
+|---|---|---|---|
+| A | CodeReview #1 | R66-R70 决策包 | 4.0 / 5 |
+| B | CodeReview #2 | R71+R72 撞号透明 | 4.5 / 5 |
+| C | CodeReview #3 | 前端仓收口摸底 | 3.0 / 5 |
+| D | CodeReview #4 | 3 报告整合 | 3.83 / 5 等权 / 3.5 / 5 加权 |
+
+**整合 2 大协同点**:
+1. **协同点 1**:R66-R70 基线声明系统性错位(A 报告 P0)— 整批决策包都按"上次入库"写基线,而不是"本决策包前序 commit"
+2. **协同点 2**:vite 守护孤儿化 P0 运行时风险(C 报告 A/B 视野盲区)— 当前 PID 70554 vite 活但守护已死(孤儿 PID 93389)
+
+**派单矩阵更新**:R71 36 项 + R73 新发现 2 项 = **38 项总待派单**
+
+**P0 修复清单**(owner 拍板):
+- R66-R70 基线声明 5 处全量回填
+- vite 守护接管(进程级 P0 风险)
+- vite root 显式化决策
+
+**撞车 0 + 单会话能力边界严守**:
+- 仅 docs/ 改动(1 新文件)
+- 4 个 subagent 纯评审,主会话只整理整合
+- 不擅自翻 status / push / kill PID / 注册 launchd / mvn 重启 / 写 SQL
+
+**下一步候选**:owner 拍板 38 项派单 / owner 派 worktree 实施 / 兄弟会话继续推进 → R74 撞号透明承接。
