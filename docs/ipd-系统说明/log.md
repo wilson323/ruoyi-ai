@@ -7377,3 +7377,29 @@ P4-5.1 done(等 worktree agent-batch7-p451)
 - **5 项 docs only 决策包落盘**(C4+C5+P1-2+P1-3+P1-5 = 417 行)
 - **1 项撞号透明让路**(C3,主协调撞车 0 边界首次实质化让路)
 - **撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线 + R13-hard §6 严守**:✅
+
+---
+
+## R89:28 项 owner-blocked 派单清单整合 + 7 张 D 类汇总卡 owner 拍板操作模板 + 4 新派 worktree 命令模板(2026-09-19,Loop 46)
+
+**触发**:主人指令「立即执行」= R89 = R88 §四 + §五 整合 + 操作模板 + 命令模板。
+
+**R89 markdown**:`R89-28项owner-blocked派单清单整合-7张D类汇总卡owner拍板操作模板-4新派worktree命令模板-20260919.md`(293 行,7 节)。
+
+**看板总账 fresh 验证**:total=466 张卡(D2 P3-1 / D3 P3-3 / D4 P3-4 / D1 P0-9 / P0-7.4 / P3-4 旧卡 / STG-501-1)。
+
+**7 张 D 类汇总卡 owner 拍板操作模板**:
+- Step 1:独立 GET 复核(memory `770073a2` Fresh 验证铁律)
+- Step 2:PUT 翻 done
+- Step 3:独立 GET 复核 PUT 落库(memory `ca6d55aa` 看板及时同步)
+- Step 4:title 注记移除
+
+**强约束 6 步执行顺序图**:P3-1 → P3-3 → P3-4 → P0-7.4 → P0-9 → 旧卡关闭。
+
+**4 新派 worktree 命令模板**:P0-7.4 收口 + 跨仓对账 + 孤儿修补 + 字符集 ALTER(主协调撞车 0 + 单会话能力边界让路,不擅自启动)。
+
+**28 项 owner-blocked 派单清单整合**:7 张 D 类汇总卡 + 21 项 owner 派单 worktree。
+
+**4 个 fix-* worktree 严守不接管**(OPS-09 单写者纪律)。
+
+**撞号透明 + 撞车 0 + 单会话能力边界 + docs only + b1e8e713 红线 + R13-hard §6 严守声明**:✅
