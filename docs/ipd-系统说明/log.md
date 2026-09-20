@@ -9806,3 +9806,67 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ✅ A 智能体独占段号严守：BCP-Registry §六 + §十七 + BCP-Closure-Log §三.3.21 + §四
 
 **下次刷新触发**：owner 拍板 R142-P1（跨仓 commit 并行授权）后由后续 R 轮推进 9 个新门禁脚本实装 + 跨仓穿透 + 三源对账 + commit；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
+
+---
+
+## R143 — 跨会话异常根因反思 + 根除最佳实践（2026-09-20）
+
+**用户指令**：“待拍板的完整系统性梳理分析并完整按照最佳实践来系统性梳理分析并完整执行”（用户拍板：**R143.5 收尾推荐** — 撞车 0 严守，仅 11 R143 文件入库 + 三源对账 + commit --no-verify）
+
+**R143 范围**：在 R142 11 元根因（M-Root-1~11）之上深化跨会话异常根因反思 + 根除最佳实践；R143 不新增 M-Root，复用 R142；R143 不新增 BCP，仍维持 13/13
+
+**R143 子任务**：
+- R143.1 cross-session-isolation → 设计文档 97 行 + 脚本骨架 22 行（chmod +x）→ FAIL_SEED=1 EXIT=1 PASS
+- R143.2 collision-drift → 设计文档 98 行 + 脚本骨架 22 行（chmod +x）→ FAIL_SEED=1 EXIT=1 PASS
+- R143.3 paiban-deadline → 设计文档 99 行 + 脚本骨架 23 行（chmod +x）→ FAIL_SEED=1 EXIT=1 PASS
+- R143.4 five-bores-stagnation → 设计文档 98 行 + 脚本骨架 22 行（chmod +x）→ FAIL_SEED=1 EXIT=1 PASS
+- R143.5 主报告 132 行 + pointer-143.md 反脆弱指针 57 行 + 三源对账同步 + commit --no-verify
+
+**R143 设计稿**：`docs/superpowers/specs/2026-09-20-r143-cross-session-root-cause-design.md`（228 行，brainstorming skill 产出；5 决策点用户拍板批准；设计稿自检 4 项全 PASS：placeholder / internal consistency / scope / ambiguity）
+
+**撞号避让**：
+- BCP-Registry §二十二（R143 独占）
+- BCP-Closure-Log §三.3.26 + §四 R143 度量（R143 独占）
+- log.md R143 段（本段）
+- 不抢 R142 §十七 + R141 4 智能体穿透 §十八/§十九/§二十/§二十一（commit `ae990549`）+ R142 §三.3.21
+
+**撞车 0 让路 8 红线严守**：
+- ✅ 仅 `docs/ipd-系统说明/` + `scripts/` + `.harness/memory/` + `docs/superpowers/specs/` 白名单
+- ❌ 未动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified
+- ❌ 未实装 hook / CI / 跨仓实质（仅 4 脚本骨架设计 + docs-only 落档，等 owner 拍板 R143-P1）
+- ❌ 未跨仓（仅在 `ruoyi-ai/` 落档）
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+- ✅ A 智能体独占段号严守：BCP-Registry §六 + §十七 + §二十二 + BCP-Closure-Log §三.3.21 + §三.3.26 + §四
+
+**三源对账同步完成**：
+- ✅ `BCP-Registry.md` §二十二 R143 反思段（209 行新增；22.1-22.7 子节）
+- ✅ `BCP-Closure-Log.md` §三.3.26 R143 闭环段 + §四 R143 度量更新（92 行新增）
+- ✅ `log.md` R143 段（本段）
+- ✅ `R143-跨会话异常根因反思+根除最佳实践-20260920.md`（132 行 5 阶段框架）
+- ✅ `.harness/memory/pointer-143.md`（57 行反脆弱指针）
+- ✅ `docs/superpowers/specs/2026-09-20-r143-cross-session-root-cause-design.md`（228 行设计稿）
+- ✅ 4 子任务 docs（共 392 行）+ 4 脚本骨架（共 89 行 chmod +x）
+
+**闭环数**：13/13（R142 后）→ **13/13 不变**（R143 不新增 BCP；不出现 BCP-015）
+
+**5 钻撞根因覆盖率**：39/80（48.75%）→ 预估 **70-80%**（R142 新增 4 钻 R-8~11 + R143 复用；实证需 9 个新脚本实装 + grep 验证后补入）
+
+**停滞率**：1/13（R142 后）→ **1/13 不变**（R143 不新增 BCP）
+
+**M-Root 元根因覆盖**：11/11（R142 后）→ **11/11 不变**（R143 不新增 M-Root，复用 R142）
+
+**跨仓可移植性矩阵**：3 仓（主仓 + 前端 + 基线）→ **3 仓不变**（R143 不新增跨仓项）
+
+**撞号预防映射表**：10 段（R137~R142）→ **11 段**（新增 §二十二 + §三.3.26 + §四 R143 度量）
+
+**撞车 0 严守边界**：
+- ✅ 仅 `docs/ipd-系统说明/` + `scripts/` + `.harness/memory/` + `docs/superpowers/specs/` 强推进白名单
+- ❌ 未动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified
+- ❌ 未实装 4 个新门禁脚本（仅骨架设计 + docs-only 落档，等 owner 拍板 R143-P1 后由后续 R 轮实装）
+- ❌ 未实跑 t2-paiban-sla.sh（避免污染 log.md）
+- ❌ 未修改 `scripts/t2-paiban-sla.sh`（避免误改 7d 自动 sign-off 逻辑）
+- ❌ 未跨仓（仅在 `ruoyi-ai/docs/ipd-系统说明/` 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+- ✅ A 智能体独占段号严守：BCP-Registry §六 + §十七 + §二十二 + BCP-Closure-Log §三.3.21 + §三.3.26 + §四
+
+**下次刷新触发**：owner 拍板 R143-P1（4 脚本主逻辑实装授权）后由后续 R 轮推进 4 子任务脚本主逻辑实装 + 跨仓穿透 + grep 验证 5 钻覆盖率实证；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
