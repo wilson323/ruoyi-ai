@@ -9434,7 +9434,7 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **撞车 0 严守累计 100%**：4 commit 全部 docs-only，无 Java/SQL/PID/端口/兄弟会话 modified 改动。
 
 **R138 全轮收口**：
-- 12/13 BCP CLOSED（剩余 1 项 = BCP-013 F-GREEN 假绿改造 5 类实装仍等 #4+#6 owner 拍板解锁）
+- **12 BCP CLOSED**（= 12/13，剩余 1 项 = BCP-013 F-GREEN 假绿改造 5 类实装仍等 #4+#6 owner 拍板解锁）
 - 38/80 (47.5%) 5 钻撞根因覆盖率
 - 撞号预防 100% PASS 第四轮 + 撞车 0 让路严守 100%
 
