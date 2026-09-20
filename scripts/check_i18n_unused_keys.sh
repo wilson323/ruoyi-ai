@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
 done
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-OUTPUT_DIR="${BACKEND_ROOT:-/Users/mac/Documents/ruoyi-ai}/docs/ipd-系统说明/lint-reports"
+OUTPUT_DIR="${BACKEND_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/docs/ipd-系统说明/lint-reports"
 mkdir -p "$OUTPUT_DIR"
 REPORT_MD="${OUTPUT_DIR}/i18n-unused-keys-${TIMESTAMP}.md"
 REPORT_JSON="${OUTPUT_DIR}/i18n-unused-keys-${TIMESTAMP}.json"

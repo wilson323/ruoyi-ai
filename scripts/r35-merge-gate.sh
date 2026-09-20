@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-MAIN_REPO="${MAIN_REPO:-/Users/mac/Documents/ruoyi-ai}"
+MAIN_REPO="${MAIN_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 TAKEOVER_WORKTREE="${TAKEOVER_WORKTREE:-/private/tmp/r35-takeover-ipd}"
 EXPECTED_BRANCH="${EXPECTED_BRANCH:-r35/takeover-20260918}"
 MYSQL_CNF="${MYSQL_CNF:-$MAIN_REPO/.codex/ipd-dev/config/mysql-client.cnf}"

@@ -9,7 +9,8 @@
 
 set -euo pipefail
 
-PROD_YML="${PROD_YML:-/Users/mac/Documents/ruoyi-ai/ruoyi-admin/src/main/resources/application-prod.yml}"
+DEFAULT_PROD_YML="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/ruoyi-admin/src/main/resources/application-prod.yml"
+PROD_YML="${PROD_YML:-$DEFAULT_PROD_YML}"
 ENV_EXAMPLE="${ENV_EXAMPLE:-./.env.example.r35}"
 DRY_RUN=1
 APPLY=0

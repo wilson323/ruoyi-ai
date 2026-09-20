@@ -28,7 +28,7 @@
 
 set -u  # 不开 -e：grep 找不到匹配时返回 1 是正常的
 
-BACKEND_ROOT="${BACKEND_ROOT:-/Users/mac/Documents/ruoyi-ai}"
+BACKEND_ROOT="${BACKEND_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 MODULE="ruoyi-ipd"
 OUTPUT_DIR=""
 STRICT=0

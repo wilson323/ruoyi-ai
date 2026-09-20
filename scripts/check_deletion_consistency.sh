@@ -19,7 +19,7 @@
 
 set -u
 
-BACKEND_ROOT="${BACKEND_ROOT:-/Users/mac/Documents/ruoyi-ai}"
+BACKEND_ROOT="${BACKEND_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FRONTEND_ROOT="${FRONTEND_ROOT:-/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd}"
 DOCS_ROOT="${DOCS_ROOT:-/Users/mac/Documents/ZK-IPD}"
 

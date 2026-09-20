@@ -17,7 +17,7 @@
 
 set -eo pipefail
 
-REPO="/Users/mac/Documents/ruoyi-ai"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG="$REPO/docs/ipd-系统说明/log.md"
 MIRROR="$REPO/docs/ipd-系统说明/开发计划-看板镜像.md"
 REG="$REPO/docs/ipd-系统说明/BCP-Registry.md"

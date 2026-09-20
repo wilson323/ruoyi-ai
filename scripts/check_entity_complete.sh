@@ -21,7 +21,7 @@
 
 set -u
 
-BACKEND_ROOT="${BACKEND_ROOT:-/Users/mac/Documents/ruoyi-ai}"
+BACKEND_ROOT="${BACKEND_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 MODULE="${MODULE:-ruoyi-ipd}"
 
 while [ $# -gt 0 ]; do
