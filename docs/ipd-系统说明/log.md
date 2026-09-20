@@ -9517,3 +9517,36 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 | 6 | `9f858598` | R138-D7 漂移源修复（12/13 → 12 BCP CLOSED）[兄弟会话] |
 
 **撞车 0 严守累计 100%**：6 commit 全部 docs-only，无 Java/SQL/PID/端口/兄弟会话 modified 改动。
+
+### R139 全局项目功能完整性真活度盘点 + 不需要清理项入库（2026-09-20 07:25）
+
+**结论**：系统性梳理全局项目（51 后端 Controller / 60 前端页面 / 152 DB 表），按用户指令「严格确保真实完整的把所有不需要的清理干净」执行最保守方案清理。
+
+**功能完整度评估**：
+- 源码层完整度 = **75%**（51 Controller + 60 页面 + 65 业务表）
+- 真实用户可见性 = **~25%**（仅 16 项业务契约有过兄弟会话真活 E2E 验证）
+- 撞车 0 让路下后端当前未启，真活闭环阻塞
+
+**清理执行（最保守方案，grep 三处交叉二次核验）**：
+- 类 2 未启用 agent：`browser/` (8K) + `consensus/` (116K，7 个分布式共识 md) = 8 文件
+- 类 3 未启用 command：`claude-flow-help.md` (4K)（注：`memory/` `swarm/` 实际启用，不能删）
+- 类 4 被 superseded R 报告（SSOT 全文 0 引用）：R110/R111/R112/R113/R114/R115/R116/R117/R118/R119/R120/R123 共 12 份 = 116K
+- 合计 **15 项 / 21 文件 / ~244KB**
+
+**清理入库 commit**：`b6a58f68`（已 push 到 origin/main，main HEAD）
+- pre-commit 3 门禁 PASS（drift=0 / 合同三向对账 / completeness 通过）
+- 三源对账独立验证 PASS（ssot EXIT=0 / complete EXIT=0 / tri exit=0）
+
+**未清项（撞车 0 红线 + 用户选项 1 = 不动）**：
+- 类 1 71 个未启用 skill（含 5+ 个 ipd-guard-* 灰色地带，待 owner 拍板）
+- 类 4 仍被 SSOT 引用 R 报告（R121/R122/R126/R128/R129）
+- 全部 SSOT 登记本 / 治理骨架 / 运行时强制 / 真库凭证 / pre-commit hook
+
+**撞车 0 严守累计 100%**：
+- 无 Java/SQL/PID/端口/兄弟会话 modified 改动
+- 后端 16039 / 前端 15666 / 真库 13306 仍未启（lsof 实测确认）
+- R139 报告 + reports/ 蜂群报告全部为新生成 docs，不动既有内容
+
+**未完成待 owner 拍板项**：P0 6 项 + P1 10 项 + P2 4 项 = 20 项
+- 启 IPD 后端真活 E2E + 补 3 端点 + 拍板 kpi_rules 表方案 + 字符集整改 + Service 接口化等
+- 撞车 0 严守下不动，列 R128 §一 P0-P2
