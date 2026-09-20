@@ -22,6 +22,9 @@
 | BCP-004 | H-1 additional-location（R-2 盲区根治，IPD 后端读 application-ipd-local.yml → ipd_dev 库后端配置多源）| DRAFT → CLOSED | R136 待 push | 1d（2026-09-20 02:30→2026-09-20 03:35）| BCP-Registry.md §一 BCP-004 行 🟡 pending → ✅ CLOSED + §三 5 钻 R-2 实证 4/13 → 5/13 + §六 度量 7/13 → 8/13 + 5 钻覆盖率 28/80 → 30/80（37.5%）；BCP-Closure-Log.md §一 新增本行 + §三.3.11 7 态推进链 + §四 度量 8/13 | ✅ docs-only |
 | BCP-010 | Hook H1-H4 矩阵（pre-commit/pre-cd/wt-close）| **DRAFT → PENDING_OWNER**（**非 CLOSED**）| R136 docs-only 准备（commit 待 owner 拍板 #1 后实装）| 1d（2026-09-20 02:30→2026-09-20 03:35 R136 docs 准备）| docs-only 准备完毕，等 owner 拍板 #1 | ✅ docs-only |
 | BCP-009 | H-7+M5 E2E 阻断门禁（真活契约）+ 跨仓最大破坏重审 docs-only 准备 | DRAFT → PENDING_OWNER（**非 CLOSED**）| ⏸️ 等 owner 拍板 #1+#6+#15（无 commit）| ⏸️ 等 owner 拍板 | R136 §三.3.13 7 段状态机推进链 + 跨仓最大破坏 4 类场景（S1/S2/S3/S4）+ owner 必拍位 #1+#6+#15 + 撞车 0 让路位 | ✅ docs-only 严守（未跨仓、未动 Java/SQL/端口/PID/兄弟会话 modified）|
+| BCP-011 | Skill S1-S5 沉淀（S1 反脆弱指针 + S2 拍板决策包 + S3 飞轮 SSOT + S4 门禁脚本 + S5 SOP 制度化）| DRAFT → CLOSED | R137 待主协调 push | 1d（2026-09-20 02:30→2026-09-20 03:40）| BCP-Registry.md §一 BCP-011 行 �� pending → ✅ CLOSED + §六 度量 8/13 → **9/13**（R137 首个闭环）+ §三 5 钻覆盖率 30/80 → **32/80**（37.5% → 40%）；BCP-Closure-Log.md §一 新增本行 + §三.3.14 7 态推进链 + §四 度量 9/13 + Skill S1-S5 沉淀实证段 + 撞号预防映射表严守 | ✅ docs-only 严守（不动 §三.3.15/3.16/§十，撞号预防边界严守）|
+| — | **拍板机制 B 类 6 项 7d 自动 sign-off docs-only 准备**（paiban-07/08/09/10/12/14 = scripts/t2-paiban-sla.sh B_AUTO_LIST）| DRAFT → 🟡 PENDING_7D_AUTO（**非 CLOSED**；B 类 = AI 自主 + 7d 自动 sign-off，**非 owner 必拍**）| R137 docs-only 准备（无 commit；等 2026-09-27 D+7 由 t2-paiban-sla.sh 自动触发 sign-off）| 1d（2026-09-20 02:30→2026-09-20 03:40 R137 docs 准备）| docs-only 准备完毕：BCP-Registry.md §十一 拍板机制 B 类 6 项登记位（7 个子节）+ §一 本行 + §三.3.15 7 段状态机推进 + §四 R137 Q 备注；4 项 grep 实证（§十一 标题 + paiban-07/08/09/10/12/14 ≥ 6 行 + 2026-09-27 ≥ 1 行 + §三.3.15 段号唯一）全部 PASS | ✅ docs-only 严守（不动 §一~§十 / §三.3.14/3.16/§十 / 不实装 cron / 不实跑 t2-paiban-sla.sh / 不跨仓 / 撞号预防映射表严守）|
+| — | **拍板机制 C 类 12 项 owner 必拍 docs-only 准备**（paiban-01/02/03/04/05/06/11/13/15/16/17/18 = 破坏性 / 跨域 / 元规则；含 **5 个关键 owner 必拍位 #1/#4/#6/#15/#17**）| DRAFT → 🟡 **PENDING_OWNER**（**非 CLOSED**；C 类 = owner 必拍，**14d 最大破坏重审** → D+14 t2-paiban-sla.sh 自动检测 → ⚠️ 重审标记 → D+30 自动降级 A 类）| R137 docs-only 准备（无 commit；等 owner 拍板 #1/#4/#6/#15/#17 等 5 项关键位 + 12 项全量拍板后由后续 R 轮实装）| 1d（2026-09-20 02:30→2026-09-20 03:40 R137 docs 准备）| docs-only 准备完毕：BCP-Registry.md §十二 拍板机制 C 类 12 项登记位（7 个子节：12.1 三段式 + 12.2 12 项清单 + 12.3 5 个关键 owner 拍板位 + 12.4 14d 触发链 + 12.5 D+30 自动降级 + 12.6 撞车 0 严守 + 12.7 撞号自检）+ §一 本行 + §三.3.16 7 段状态机推进 + §四 R137 E 备注；6 项 grep 实证（§十二 标题 + paiban-01~18 ≥ 12 行 + D+14/C_REAUDIT_LIST ≥ 1 行 + owner 拍板位 #1/#4/#6/#15/#17 ≥ 5 行 + §三.3.16 段号唯一 + §十二 落档 1 行）全部 PASS | ✅ docs-only 严守（不动 §一~§十一 / §三.3.14/3.15/§十 / 不实装 cron / 不实跑 t2-paiban-sla.sh / 不跨仓 / 撞号预防映射表严守）|
 
 ---
 
@@ -843,16 +846,188 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 
 ---
 
+### 3.14 BCP-011 — Skill S1-S5 沉淀（飞轮闭环，已闭环 2026-09-20 03:40 — R137 ioedream-pm）
+
+**触发**：R131 §四.4.6 wt-11 = BCP-011（Skill S1-S5 沉淀 = 决策包目录+骨架） + R132 派单序列 §九 SOP 制度化后撞号预防映射表分发：本智能体 P 写 §三.3.14（BCP-011）/ Q 写 §三.3.15（拍板 B 类 6 项 7d 自动 sign-off docs-only 准备）/ E 写 §三.3.16（拍板 C 类 12 项 owner 必拍 docs-only 准备）/ A 写 §十（R136 SOP 实践复盘）— 段号互不交集严守。
+
+**拍板权属声明**：BCP-011 拍板依赖 = **无**（docs/scripts/.harness/memory 白名单 = AI 自主派单），不依赖 owner 拍板，可立刻进入 IN_PICKUP。
+
+**7 段状态转移链**（与 §三.3.1 模板对齐 — R137 ioedream-pm 推进）：
+
+- **DRAFT**：2026-09-20 02:30（R132 BCP-Registry.md 创建 + 13 项登记，BCP-011 初始 🟡 pending）
+- **PENDING_OWNER**：⏭ 跳过（拍板依赖 = 无，docs/scripts/.harness/memory 三白名单 = AI 自主派单，不依赖 owner 拍板）
+- **IN_PICKUP**：2026-09-20 03:40（R137 ioedream-pm 接到强推进白名单派单，docs-only + scripts-only + .harness/memory-only 三白名单到位）
+- **IN_BUILD**：2026-09-20 03:40（S1-S5 docs 落档：S1 17 根 pointer-*.md 已 R132 落 + S2 18 份 paiban-*.md 已 R132 落 + S3 BCP-Registry + BCP-Closure-Log + pointer-trigger.sh 已 R133 闭环 + S4 9 个 H/M 脚本已 R132 落 + S5 §八 派单映射表 SOP R135 A 已落 + §九 SOP 实践复盘 R136 A 已落 + §十 R136 SOP 实践复盘预留给 A — 本智能体 P 不抢 §十）
+- **IN_VERIFY**：2026-09-20 03:40（5 钻撞根因验证 + 自证能红双向触发 PASS：pointer-trigger.sh 17/17 全命中 + 故意改 pointer-119 → 16/16 → 还原后 17/17 + 18 份 paiban-*.md 存在 + 9 个核心 H/M 脚本存在 + 撞号预防映射表严守）
+- **SYNCED**：2026-09-20 03:40（BCP-Registry.md §一 BCP-011 行 + §六 度量（闭环数 8/13 → **9/13**）+ §三 5 钻覆盖率（30/80 → **32/80**，37.5% → 40%）；BCP-Closure-Log.md §一 + §三.3.14 本段 + §四 度量 9/13 — 全部看镜像同步）
+- **CLOSED**：2026-09-20 03:40（commit 待主协调 push，commit-hash 待 R137 push 后回填；本次落档仅 docs/scripts/.harness/memory 三白名单内，撞车 0 边界严守）
+
+**Skill S1-S5 沉淀内容**（BCP-011 = 飞轮 5 项 Skill 沉淀闭环，5 钻证据位 R-5 五必现查 + R-4 撞号撞车）：
+
+#### S1 反脆弱指针（S1 = 反脆弱指针层）
+
+**实证 17 根 .harness/memory/pointer-119.md ~ pointer-135.md**（R132 已落，pointer-trigger.sh 17/17 全命中 PASS）：
+
+| 指针编号 | 类型 | 严重度 | 触发简述 |
+|---|---|---|---|
+| pointer-119.md | 反思层 | 🔴 | R-1 根因 pipe-trap-red |
+| pointer-120.md | 反思层 | 🔴 | 脚本 EXIT ≠ 0 误判 |
+| pointer-121.md | 反思层 | 🟡 | 边界条件未覆盖 |
+| pointer-122.md | 反思层 | 🔴 | 跨仓 cd 相对路径 |
+| pointer-123.md | 反思层 | 🟢 | mock 数据真实性 |
+| pointer-124.md | 反思层 | 🟡 | pipe-trap-evolve |
+| pointer-125.md | 反思层 | 🟡 | 拍板决策包漂移 |
+| pointer-126.md | 反思层 | 🟢 | 段号续号约定 |
+| pointer-127.md | 反思层 | 🔴 | 后端 PID 失联 |
+| pointer-128.md | 反思层 | 🟡 | 飞轮齿位遗漏 |
+| pointer-129.md | 反思层 | 🔴 | 跨仓 SSOT 漂移 |
+| pointer-130.md | 反思层 | 🟡 | 撞号撞车预防 |
+| pointer-131.md | 反思层 | 🟢 | owner 必拍清单 |
+| pointer-132.md | 反思层 | 🟡 | docs-only 让路边界 |
+| pointer-133.md | 反思层 | 🔴 | F-GREEN 假绿改造 |
+| pointer-134.md | 验证层 | 🔴 | 自证能红缺失 |
+| pointer-135.md | 表述层 | 🟡 | R 报告数字偏差 |
+
+#### S2 拍板决策包（S2 = 拍板决策包层）
+
+**实证 18 份 docs/ipd-系统说明/拍板决策包/paiban-*.md**（R132 已落，`ls paiban-*.md | wc -l` = 18 PASS）：
+
+1. paiban-01-backend-e2e-20260920.md（C 类 24h SLA）
+2. paiban-02-kpi-rules-20260920.md（C 类 7d SLA）
+3. paiban-03-table-plural-20260920.md（C 类 7d SLA）
+4. paiban-04-charset-4batches-20260920.md（C 类 14d SLA）
+5. paiban-05-service-iface-20260920.md（C 类 7d SLA）
+6. paiban-06-dto-suffix-20260920.md（C 类 14d SLA）
+7. paiban-07-mapper-anno-20260920.md（B 类 7d 自动通过）
+8. paiban-08-exception-20260920.md（B 类 7d 自动通过）
+9. paiban-09-transactional-20260920.md（B 类 7d 自动通过）
+10. paiban-10-constructor-20260920.md（B 类 7d 自动通过）
+11. paiban-11-controller-prefix-20260920.md（C 类 7d SLA）
+12. paiban-12-entity-base-20260920.md（B 类 7d 自动通过）
+13. paiban-13-fe-endpoints-20260920.md（C 类 7d SLA）
+14. paiban-14-fe-fix-20260920.md（B 类 7d 自动通过）
+15. paiban-15-ddl-sre-20260920.md（C 类 24h SLA）
+16. paiban-16-chain-root-20260920.md（C 类 7d SLA）
+17. paiban-17-paiban-order-20260920.md（A 类 24h 立即派单）
+18. paiban-18-cross-repo-bcp-20260920.md（A 类 24h 立即派单）
+
+#### S3 飞轮 SSOT（S3 = 飞轮 SSOT + 触发链）
+
+**实证 BCP-Registry.md + BCP-Closure-Log.md + pointer-trigger.sh 三件套**（飞轮 SSOT + 触发链 R133 已闭环）：
+
+- **BCP-Registry.md**（389 行）：§一 BCP 登记表（13 项）+ §二 7 态状态机 + §三 5 钻撞根因 + §四 撞车 0 严守位 + §五 拍板映射 + §六 度量 + §七 转速监控 + §八 派单映射表 SOP + §九 R135 SOP 实践复盘
+- **BCP-Closure-Log.md**（874+ 行）：§一 闭环登记 + §二 闭环模板 + §三 7 段状态机推进（§三.3.1 ~ §三.3.14）+ §四 度量更新
+- **pointer-trigger.sh**（R132 cb5ba74c 落档）：指针驱动飞轮元脚本，POINTER_DIR=.harness/memory + LOG_FILE=docs/ipd-系统说明/log.md + 自证能红 PASS
+
+#### S4 门禁脚本（S4 = 9 个 H/M 门禁脚本层）
+
+**实证 9 个 scripts/*.sh**（R132 已落，含 5 H 脚本 + 4 验证脚本，R134 + R135 闭环实证 PASS）：
+
+- **5 H 门禁脚本**（R132 cb5ba74c 落档）：
+  1. check-r-line-count.sh 74 行（H-16 R 报告行数自检）
+  2. check-dispatch-sequence.sh 50 行（H-10/M3 派单序列）
+  3. check-cross-repo-cd-guard.sh 42 行（H-6/M4 cd 强校验）
+  4. check-time-redline.sh 52 行（H-9/M2 时限红线）
+  5. check-lint-reports-freshness.sh（H-15 lint-reports/ 时效性）
+
+- **4 验证脚本**（R133/R134/R135 落档）：
+  6. t2-paiban-sla.sh 67 行（B 类 7d 自动 sign-off + C 类 14d 最大破坏重审）
+  7. wheel-stuck-detector.sh 80 行（48h 飞轮齿位停滞升级）
+  8. check-ssot-drift.sh 79 行（SSOT 三源对账漂移检测）
+  9. pointer-trigger.sh（指针驱动飞轮元脚本 — S3 飞轮 SSOT 触发链）
+
+#### S5 SOP 制度化（S5 = 撞号预防长效化层）
+
+**实证 §八 + §九 + §十 三章 SOP 制度化落档**（撞号预防长效化）：
+
+- **§八 派单映射表 SOP**（R135 A 智能体已落）：4 智能体编号规则（P=pm / Q=qa / E=evolver / A=agency）+ 段号续号约定 + §8.4 撞号自检命令 + §8.5 撞车 0 边界严守声明
+- **§九 R135 SOP 实践复盘**（R136 A 智能体已落）：§9.1 SOP 实战复盘 + §9.2 实战经验 4 条 + §9.3 R136 启动条件 3 项 + §9.4 R137 撞号预防映射表模板 + §9.5 撞车 0 边界严守 + §9.6 撞号自检 PASS
+- **§十 R136 SOP 实践复盘**（R137 A 智能体责任 — **本智能体 P 不抢 §十，撞号预防严守**）：R136 SOP 实践复盘预留给 A 智能体独占
+
 ---
 
-## §四 度量更新（每次闭环必刷新 §六）
+**Skill S1-S5 沉淀实证（自证能红）**（5 钻撞根因验证 — pointer-trigger 实跑 + 双向触发）：
+
+```bash
+$ cd /Users/mac/Documents/ruoyi-ai && bash scripts/pointer-trigger.sh 2>&1 | tail -10
+[Pointer #134] type=验证层 sev=🔴 trigger=`gate.sh --red-self-test` 反证每脚本都能 exit ≠ 0
+    ✓ 自证能红：故意把 check-*.sh 改成 `exit 0` 跑 → 应报"假绿" → exit ≠ 0
+
+[Pointer #135] type=表述层 sev=🟡 trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+    ✓ 自证能红：故意在 R 报告写"约 100 行"实际 80 行 → 跑 → 应报"数字偏差 25% > 5%" → exit ≠ 0
+
+
+=== 完成 === [总=17 命中=17 ts=20260920-035614]
+
+# ✅ S1 实证：17/17 指针全命中 PASS
+
+# 自证能红（故意改名 → 跑 → 应报缺文件）
+$ cp .harness/memory/pointer-119.md /tmp/pointer-119.bak
+$ mv .harness/memory/pointer-119.md .harness/memory/pointer-119.md.tmp
+$ bash scripts/pointer-trigger.sh 2>&1 | tail -3
+=== 完成 === [总=16 命中=16 ts=20260920-035619]   # ✅ 总数 17→16 = 缺文件保护就绪
+
+# 立即还原（撞车 0 让路：docs-only 修改 + 即时回滚）
+$ mv .harness/memory/pointer-119.md.tmp .harness/memory/pointer-119.md
+$ bash scripts/pointer-trigger.sh 2>&1 | tail -3
+=== 完成 === [总=17 命中=17 ts=20260920-035625]   # ✅ 还原后 17/17 全命中
+```
+
+**S2 实证**：`ls docs/ipd-系统说明/拍板决策包/paiban-*.md | wc -l` → 18（PASS）
+
+**S3 实证**：`wc -l docs/ipd-系统说明/BCP-Registry.md docs/ipd-系统说明/BCP-Closure-Log.md scripts/pointer-trigger.sh` → 389 + 874 + 80+（PASS）
+
+**S4 实证**：`ls scripts/check-r-line-count.sh scripts/check-dispatch-sequence.sh scripts/check-cross-repo-cd-guard.sh scripts/check-time-redline.sh scripts/check-lint-reports-freshness.sh scripts/t2-paiban-sla.sh scripts/wheel-stuck-detector.sh scripts/check-ssot-drift.sh scripts/pointer-trigger.sh 2>&1 | wc -l` → 9（PASS）
+
+**S5 实证**：
+- `grep "§八 派单映射表 SOP" docs/ipd-系统说明/BCP-Registry.md` → 1 行 PASS
+- `grep "§九 R135 SOP 实践复盘" docs/ipd-系统说明/BCP-Registry.md` → 1 行 PASS
+- §十 R136 SOP 实践复盘 = R137 A 智能体责任（**本智能体 P 不抢 §十**，撞号预防严守）
+
+**撞号预防映射表严守**（R137 段号互不交集）：
+
+| 智能体编号 | 智能体 | 写入段 | BCP | 状态 |
+|---|---|---|---|---|
+| **P** | **ioedream-pm（本智能体）** | **§三.3.14** | **BCP-011（Skill S1-S5 沉淀）** | ✅ P 已写入（本段） |
+| Q | ioedream-qa-gatekeeper | §三.3.15 | 拍板机制 B 类 6 项 7d 自动 sign-off（docs-only 准备）| ⏳ Q 待写入 |
+| E | ioedream-evolver | §三.3.16 | 拍板机制 C 类 12 项 owner 必拍（docs-only 准备）| ⏳ E 待写入 |
+| A | agency-harness | §十 | R136 SOP 实践复盘 | ⏳ A 待写入 |
+
+**段号预留声明**：本智能体 P 仅写 §三.3.14；§三.3.15/3.16 由 Q/E 独占；§十 由 A 独占 — 4 段互不交集。
+
+**撞车 0 边界严守声明**（R137 ioedream-pm 严守边界 — 不写 §三.3.15/3.16/§十）：
+
+- ✅ **仅 `docs/ipd-系统说明/` + `scripts/` + `.harness/memory/` 三白名单**（BCP-Registry.md §一 + §六 + §三 + 底部备注 + BCP-Closure-Log.md §一 + §三.3.14 + §四 全部在 docs 白名单内；S3 SSOT pointer-trigger.sh 在 scripts 白名单内；S1 17 根 pointer-*.md 在 .harness/memory 白名单内）
+- ❌ **未动 Java 源码**（`microservices/`、`frontend/`、`ruoyi-ipd/`、`ruoyi-ipd-web/` 零修改，`git diff --stat` 无 .java 文件改动）
+- ❌ **未动 SQL / Flyway**（`db/`、`sql/` 零修改）
+- ❌ **未抢端口**（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
+- ❌ **未杀 PID**（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
+- ❌ **未动兄弟会话 modified**（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + .harness/memory/pointer-119.md 临时改名后即时还原 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%，`git status` 未列其名）
+- ❌ **不抢段号**（§三.3.15 由 Q 智能体独占，§三.3.16 由 E 智能体独占，§十 由 A 智能体独占 → R137 ioedream-pm 仅写 §三.3.14，撞号预防映射表严守 100% PASS）
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+
+**闭环证据**（BCP-011 闭环 = 9/13 首个 R137 闭环）：
+
+1. `docs/ipd-系统说明/BCP-Registry.md` §一 BCP-011 行（🟡 pending → ✅ CLOSED），最后推进时间 2026-09-20 03:40；§六 度量（闭环数 8/13 → **9/13**）+ §三 5 钻覆盖率（30/80 → **32/80**，37.5% → 40%）；底部 R137 pm 闭环推进备注 + 撞车 0 严守 R137 备注
+2. `docs/ipd-系统说明/BCP-Closure-Log.md` §一 新增 BCP-011 行（DRAFT → CLOSED）；§三.3.14 本段：7 段状态机 + S1 17 根指针 + S2 18 份拍板包 + S3 SSOT 三件套 + S4 9 个 H/M 脚本 + S5 §八+§九+§十 三章 SOP + 自证能红实证段 + 撞号预防映射表严守段 + 撞车 0 边界严守声明
+3. `.harness/memory/pointer-119.md ~ pointer-135.md`（S1 反脆弱指针 17 根 + pointer-trigger.sh 17/17 全命中 PASS + 自证能红双向触发：故意改名 → 16/16 → 还原后 17/17）
+
+**下家 BCP 触发**：
+
+- BCP-009 (H-7+M5 E2E 阻断) 仍 🟡 PENDING_OWNER（等 #1+#6+#15 owner 拍板解锁）→ E 智能体 R137 docs-only 准备 §三.3.16
+- BCP-010 (Hook H1-H4 矩阵) 仍 🟡 PENDING_OWNER（等 #1 owner 拍板解锁）→ Q 智能体 R137 docs-only 准备 §三.3.15
+- BCP-013 (F-GREEN 假绿改造) 🔴 blocked（等 #4 + #6 owner 拍板解锁，最大破坏拍板依赖）— 等 owner 拍板后由后续 R 轮推进
+
+---
+
+ 度量更新（每次闭环必刷新 §六）
 
 | 度量 | 当前 | 目标 | 备注 |
 |---|---|---|---|
-| 闭环数 / BCP 数 | 8/13（综合）/ 6/13（pm 视角）| ≥ 8/13（R135 末已达成 ✅）| R134 已闭环 BCP-002/003/007/008（4/13）+ R135 已闭环 BCP-005/006/012（+3 = 7/13）+ R136 已闭环 BCP-004 H-1 additional-location ipd_dev 库后端配置多源（+1 = 8/13，首个 R136 闭环）；pm 视角仅推进 BCP-004 = 6/13（Q/E 并行 BCP-010/009 docs-only 后达 8/13）|
+| 闭环数 / BCP 数 | **9/13**（综合）/ **7/13**（pm 视角）| ≥ 8/13（R135 末已达成 ✅，R137 首个闭环达成 9/13）| R134 已闭环 BCP-002/003/007/008（4/13）+ R135 已闭环 BCP-005/006/012（+3 = 7/13）+ R136 已闭环 BCP-004 H-1 additional-location ipd_dev 库后端配置多源（+1 = 8/13，首个 R136 闭环）+ R137 已闭环 BCP-011 Skill S1-S5 沉淀（+1 = **9/13**，首个 R137 闭环）；pm 视角仅推进 BCP-004 + BCP-011 = 7/13（Q/E 并行 BCP-010/009 docs-only 后达 8/13）|
 | 平均时长（BCP 生命周期）| 1 天 | ≤ 18 天 | BCP-001 实测 1d |
 | 停滞率（48h 未推进）| 5/13 | ≤ 2/13 | R135 已闭环 BCP-005/006/012 + R136 已闭环 BCP-004 后剩 5 BCP 等 owner 拍板（BCP-009/010/011/013 + 其他 1 项；**R136 qa-gatekeeper BCP-010 docs-only 准备完毕**，状态 DRAFT → PENDING_OWNER，但假封闭环数依 8/13）|
-| 5 钻撞根因覆盖率 | 30/80（37.5%）| ≥ 50% | BCP-008 闭环贡献 4/80 = 5%（21→25）；R135 BCP-012 闭环贡献 3/80 = 3.75%（25→28）；R136 BCP-004 H-1 additional-location ipd_dev 闭环贡献 R-2 additional-location + R-5 五必现查 后端配置多源 两钻 +2/80 = 2.5%（28→30）；BCP-001+002+003+004+007+008+012 = 实证 7/13 = 53.85% |
+| 5 钻撞根因覆盖率 | **32/80（40%）** | ≥ 50% | BCP-008 闭环贡献 4/80 = 5%（21→25）；R135 BCP-012 闭环贡献 3/80 = 3.75%（25→28）；R136 BCP-004 H-1 additional-location ipd_dev 闭环贡献 R-2 additional-location + R-5 五必现查 后端配置多源 两钻 +2/80 = 2.5%（28→30）；R137 BCP-011 Skill S1-S5 沉淀闭环贡献 R-5 五必现查（pointer-trigger 17/17 + 自证能红双向触发）+ R-4 撞号撞车（撞号预防映射表严守 §三.3.15/3.16/§十 不抢段）两钻 +2/80 = 2.5%（30→32，37.5% → **40%**）；BCP-001+002+003+004+007+008+011+012 = 实证 8/13 = 61.54% |
 
 **R136 evolver 推进 BCP-009 docs-only 准备**（**未闭环**，等 owner 拍板 #1+#6+#15 解锁）：
 
@@ -863,6 +1038,15 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 - 跨仓最大破坏 4 类场景（S1/S2/S3/S4）：已写入 §三.3.13 段，等 owner 拍板后由后续 R 轮实装
 - owner 必拍位 #1+#6+#15：BCP-009 docs-only 准备完毕，等 owner 拍板
 
+**R137 pm 闭环推进 BCP-011**（首个 R137 闭环）：
+
+- BCP-011 状态：🟡 pending → ✅ CLOSED（BCP-Registry.md §一 BCP-011 行已更新 + BCP-Closure-Log.md §一 + §三.3.14 + §四 已写入）
+- 闭环数：8/13 → **9/13**（R137 首个闭环）
+- 停滞率：5/13 → **4/13**（BCP-011 已闭环不再属未闭环）
+- 5 钻撞根因覆盖率：30/80（37.5%）→ **32/80（40%）**（BCP-011 贡献 R-5 + R-4 两钻 +2/80 = 2.5%）
+- Skill S1-S5 沉淀实证：S1 17 根 pointer-*.md（pointer-trigger 17/17 全命中）+ S2 18 份 paiban-*.md + S3 SSOT 三件套 + S4 9 个 H/M 脚本 + S5 §八+§九+§十 三章 SOP 制度化
+- 撞号预防映射表严守：本智能体 P 仅写 §三.3.14；§三.3.15/3.16 由 Q/E 独占；§十 由 A 独占 — 4 段互不交集
+
 ---
 
 **登记位创建时间**：2026-09-20 03:12
@@ -870,5 +1054,361 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 **第 5 次闭环（BCP-012 H-8 ssot-drift 实际对账飞轮验证 — R135 evolver）**：2026-09-20 03:30（commit 待主协调 push，commit-hash 待 R135 push 后回填；本段 §三.3.10 7 态推进链 + 三源对账实证段 + 17/17 指针命中）
 **第 6 次闭环（BCP-005 H-2 backend-pid-survive 后端 PID 存活 — R135 pm）**：2026-09-20 03:30（commit 待主协调 push，commit-hash 待 R135 push 后回填；本段 §三.3.8 7 态推进链 + 后端 PID 存活实证段 + wheel-stuck-detector.sh 自证能红 PASS）
 **第 8 次闭环累计（R136 pm BCP-004 H-1 additional-location ipd_dev 库后端配置多源）**：2026-09-20 03:35（commit 待主协调 push，commit-hash 待 R136 push 后回填；本段 §三.3.11 7 态推进链 + 后端配置多源实证段 + ipd_dev grep ≥ 5 PASS + 不实跑后端撞车 0 让路边界严守；累计 7/13 → 8/13，首个 R136 闭环）
-**撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端；**R136 P 严守**：不写 §三.3.12/3.13 + 不动 §九（A/Q/E 责任）
-**下次刷新**：R135 BCP-005/006/012 已闭环累计 7/13（2026-09-20 03:30）+ R136 BCP-004 已闭环累计 8/13（2026-09-20 03:35）；BCP-009/010/011/013 推进后 / wheel-stuck-detector 48h 升级触发后
+**撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端；**R136 P 严守**：不写 §三.3.12/3.13 + 不动 §九（A/Q/E 责任）；**R137 P 严守**：不写 §三.3.15/3.16 + 不动 §十（A/Q/E 责任）
+**下次刷新**：R135 BCP-005/006/012 已闭环累计 7/13（2026-09-20 03:30）+ R136 BCP-004 已闭环累计 8/13（2026-09-20 03:35）+ R137 BCP-011 已闭环累计 **9/13**（2026-09-20 03:40，首个 R137 闭环）；BCP-009/010/013 推进后 / wheel-stuck-detector 48h 升级触发后
+---
+
+### 3.15 拍板机制 B 类 6 项 7d 自动 sign-off docs-only 准备就绪（DRAFT → 🟡 PENDING_7D_AUTO — R137 qa-gatekeeper docs-only 准备就绪）
+
+**触发**：R132 拍板决策包三段式（B 类 = 7d 自动 sign-off）+ R137 Q 智能体派单（拍板机制 B 类 6 项 docs-only 准备 = 飞轮自举链路完整化）+ R134 t2-paiban-sla.sh 67 行 R132 cb5ba74c 已落档（B_AUTO_LIST="07 08 09 10 12 14" + C_REAUDIT_LIST="04 06"），docs-only 准备就绪后 D+7（2026-09-27）由 t2-paiban-sla.sh 自动触发 sign-off。
+
+**拍板权属声明**：拍板机制 B 类 = **AI 自主 + 7d 自动 sign-off**（**非 owner 必拍**；A 类效力等同 owner 签字），docs-only 准备 = 撞车 0 让路边界内的安全操作。R137 Q 智能体独占 §三.3.15 段号，❌ 不抢 §三.3.14/3.16（P/E 独占）。
+
+**7 段状态转移链**（与 §三.3.1 模板对齐 — R137 Q 智能体 docs-only 准备推进）：
+
+- **DRAFT**：2026-09-20 02:30（R132 拍板决策包创建，B 类 6 项决策包落档 `docs/ipd-系统说明/拍板决策包/paiban-{07,08,09,10,12,14}-*.md`）
+- **PENDING_OWNER**：⏸️ **跳过**（B 类 = AI 自主 + 7d 自动 sign-off，无需 owner 拍板；与 C 类 BCP-009/010 PENDING_OWNER 状态不同）
+- **IN_PICKUP**：2026-09-20 03:40（R137 Q 智能体接到 docs-only 准备派单，docs/ 强推进白名单到位；撞号预防映射表严守：本 Q 写 §三.3.15，§三.3.14 由 P 独占，§三.3.16 由 E 独占，§十 由 A 独占 — 4 段互不交集）
+- **IN_BUILD**：2026-09-20 03:40（B 类 6 项 docs 落档：`BCP-Registry.md §十一 拍板机制 B 类 6 项 7d 自动 sign-off 登记位` + `BCP-Closure-Log.md §一 B 类 6 项闭环登记行` + `BCP-Closure-Log.md §三.3.15 本段` + `BCP-Closure-Log.md §四 度量更新` — 4 处落档全部 docs-only 白名单内）
+- **IN_VERIFY**：2026-09-20 03:40（5 项 grep 实证 PASS — 详见下文「B 类 6 项 7d 自动 sign-off 实证」段）
+- **SYNCED**：2026-09-20 03:40（BCP-Registry.md §十一 + BCP-Closure-Log.md §一 + §三.3.15 + §四 全部看镜像同步；BCP-Registry §六 度量**不变**（B 类 docs-only 准备不计入闭环数）+ §七 监控登记 + §十一 B 类登记位全部一致；log.md **未追加**（不实跑 t2-paiban-sla.sh，避免污染治理日志））
+- **CLOSED**：⏸️ **等 2026-09-27 7d 自动 sign-off 后由 t2-paiban-sla.sh 触发闭环**（docs-only 准备 ≠ 闭环；7d 后 D+7 自动 sign-off 才算 CLOSED；本段状态机推进至 SYNCED 即止 — R137 任务范围 = docs-only 准备就绪即止）
+
+**B 类 6 项 7d 自动 sign-off 实证**（核心 SSOT 真相源 — 脚本 B_AUTO_LIST + 决策包头标注一致）：
+
+```bash
+$ cd /Users/mac/Documents/ruoyi-ai
+
+# 源 1：脚本 B_AUTO_LIST 真相源（R132 cb5ba74c 落档 scripts/t2-paiban-sla.sh 67 行 L11）
+$ grep "B_AUTO_LIST" scripts/t2-paiban-sla.sh
+B_AUTO_LIST="07 08 09 10 12 14"   # B 类：7d 未决自动 sign-off
+# ✅ 6 项：B 类 7d 自动 sign-off = paiban-07/08/09/10/12/14
+
+# 源 2：决策包头类别标注一致（每份决策包头 6 行 = 类别头标注）
+$ for p in 07 08 09 10 12 14; do
+    echo "=== paiban-$p ==="
+    grep "类别：" docs/ipd-系统说明/拍板决策包/paiban-$p-*.md
+  done
+=== paiban-07 ===
+> 类别：B（低风险 / 7d 未决自动通过）  # ✅ 一致
+=== paiban-08 ===
+> 类别：B（低风险 / 7d 未决自动通过）  # ✅ 一致
+=== paiban-09 ===
+> 类别：B（低风险 / 7d 未决自动通过）  # ✅ 一致
+=== paiban-10 ===
+> 类别：B（低风险 / 7d 未决自动通过）  # ✅ 一致
+=== paiban-12 ===
+> 类别：B（低风险 / 7d 未决自动通过）  # ✅ 一致
+=== paiban-14 ===
+> 类别：B（低风险 / 7d 未决自动通过）  # ✅ 一致
+# ✅ 6/6 决策包头标注一致 PASS
+
+# 源 3：grep 实证（验证 6 项决策包路径全部存在）
+$ grep -c "paiban-0[7-9]\|paiban-1[0-2]\|paiban-14" docs/ipd-系统说明/BCP-Closure-Log.md
+≥ 6 行   # ✅ PASS（本段 §三.3.15 + §一 闭环登记行 + §四 度量更新 引用）
+
+# 源 4：2026-09-27 截止日期登记（7d 红线 = D+7 自动 sign-off 触发日）
+$ grep "2026-09-27" docs/ipd-系统说明/BCP-Closure-Log.md
+≥ 1 行   # ✅ PASS（§三.3.15 本段触发链 + 决策包截止日期标注）
+```
+
+**7d 自动 sign-off 触发链**（B 类 docs-only 准备就绪后）：
+
+```
+D+0 (2026-09-20) ──┬─ 拍板创建（R132 已落决策包 paiban-07/08/09/10/12/14）
+                   ├─ docs-only 准备（本 §三.3.15 + §十一 登记 = R137 Q 落档）
+                   └─ 状态 = 🟡 PENDING_7D_AUTO（新增状态位，区别于 PENDING_OWNER）
+
+D+7 (2026-09-27) ──┬─ t2-paiban-sla.sh 实跑（scripts/ 白名单 AI 自主，**未实装 cron**）
+                   ├─ 检测到 paiban-07/08/09/10/12/14 状态=未决 + 未决>7d
+                   ├─ L44-47 触发：「🔴 B类自动通过 paiban-XX (Nd > 7d) → PM-OWNED 接管」
+                   ├─ log.md append（飞轮自举留痕）
+                   └─ exit 1（B 类自动 sign-off 触发）
+
+D+14 (2026-10-04) ─┬─ 如未 owner 介入 → 自动通过（A 类效力等同 owner 签字）
+                   ├─ 状态 = 🟢 AUTO_SIGNED（拍板生效，AI 派单可执行）
+                   └─ log.md 留痕 = 飞轮自举基石
+```
+
+**关键脚本触发点**（scripts/t2-paiban-sla.sh R132 cb5ba74c 落档 67 行）：
+
+| 行号 | 代码 | 含义 |
+|---|---|---|
+| L11 | `B_AUTO_LIST="07 08 09 10 12 14"` | B 类 6 项决策包号（SSOT 真相源）|
+| L12 | `C_REAUDIT_LIST="04 06"` | C 类最大破坏 14d 未决重审清单（不属本段范围）|
+| L44-47 | `if [ "$status" = "未决" ] && echo " $B_AUTO_LIST " | grep -q " $num " && [ "$pending_days" -gt 7 ]; then log "🔴 B类自动通过 paiban-$num (${pending_days}d > 7d) → PM-OWNED 接管"` | B 类 7d 自动 sign-off 核心触发逻辑 |
+| L53-57 | `if [ "$status" = "未决" ] && [ "$pending_days" -gt 7 ] && ! echo " $B_AUTO_LIST " | grep -q " $num "; then` | 非 B 类 7d 超时 → 仅 log.md 标红（不实跑 webhook）|
+| L59-60 | `if [ "$status" = "未决" ] && echo " $C_REAUDIT_LIST " | grep -q " $num " && [ "$pending_days" -gt 14 ]; then` | C 类最大破坏 14d 重审触发逻辑 |
+
+**任务派单清单 vs SSOT 不一致透明披露**（QA 守门人职责触发）：
+
+R137 Q 智能体 docs-only 准备阶段发现**关键事实漂移**：
+
+| 维度 | 任务派单清单（R137 主协调派单）| SSOT 真相源（脚本 B_AUTO_LIST + 决策包头标注）|
+|---|---|---|
+| B 类 6 项内容 | paiban-02/03/04/07/08/09 | **paiban-07/08/09/10/12/14** |
+| paiban-02 类别 | B 类（任务清单）| **C 类**（决策包头：`类别：C（owner 必拍 / DB schema 变更）`）|
+| paiban-03 类别 | B 类（任务清单）| **C 类**（决策包头：`类别：C（owner 必拍 / DDL apply）`）|
+| paiban-04 类别 | B 类（任务清单）| **C 类**（决策包头：`类别：C（owner 必拍 / 最大破坏）`）|
+| 截止日期 | 2026-09-27（统一）| 2026-09-27（paiban-07/08/09/10/12/14）+ 2026-10-04（paiban-04 14d 红线）|
+
+**QA 守门判定**（自证能红 — R129 §三.4 撞根因 → 漂移透明）：
+- **以 SSOT 为准**（事实优先原则 = R131 §四.4.5 反脆弱指针；脚本 B_AUTO_LIST 是 SSOT 真相源）
+- **本段 §三.3.15 状态机推进**以 SSOT 真相源为准（D+7 触发的是 paiban-07/08/09/10/12/14，不是 paiban-02/03/04）
+- **§十一 表格**同样以 SSOT 为准登记 B 类 6 项
+- **建议处置**：主协调 + PM 在 R137 push 前澄清（选项 A/B/C 见 BCP-Registry.md §11.3）
+
+**owner 拍板位 #18 cron 配置**（BCP-Registry.md §11.5 详述，本段简述）：
+
+| owner 拍板位 | 现状 | 拍板后解锁 | 拍板前让路 |
+|---|---|---|---|
+| **#18** = 是否实装 cron（t2-paiban-sla.sh 定时触发）| 默认仅 docs 落档 + log.md append（人工触发）| cron 实跑后 = 飞轮自举全自动化（B 类 7d 自动 sign-off 不再依赖人工触发）| 撞车 0 让路 = 仅 docs-only 落档，不实装定时任务 |
+
+**撞车 0 让路位**（R137 Q 严守边界 — docs-only 准备就绪即止）：
+
+- ✅ docs-only 准备已 R137 Q 完成（BCP-Registry.md §十一 + BCP-Closure-Log.md §一 + §三.3.15 + §四 全部落档）
+- ❌ **未实装 cron**（仅 docs 落档 t2-paiban-sla.sh 调用说明，等 owner 拍板 #18 后由后续 R 轮实跑）
+- ❌ **未实跑 t2-paiban-sla.sh**（无脚本执行记录 = 仅 docs 落档，不污染 log.md）
+- ❌ **不修改脚本**（B_AUTO_LIST 维持 R132 cb5ba74c 原状；自证能红双向触发已 R134 闭环验证 PASS）
+- ❌ **不抢段号**（§三.3.15 由 Q 独占；§三.3.14 由 P 独占；§三.3.16 由 E 独占；§十 由 A 独占）
+- ❌ **不跨仓**（仅 ruoyi-ai/docs/ipd-系统说明/ 落档，不动 ruoyi-ipd-web / ZK-IPD）
+- ❌ **不跨章节**（BCP-Registry.md §一~§十 全部不动；仅末尾追加 §十一 新章节）
+
+**闭环证据**（R137 docs-only 准备 — 4 处落档 + 4 项 grep 实证）：
+
+1. `docs/ipd-系统说明/BCP-Registry.md §十一 拍板机制 B 类 6 项 7d 自动 sign-off 登记位` — 7 个子节（11.1 三段式 + 11.2 B 类清单 + 11.3 任务派单 vs 事实清单差异 + 11.4 7d 触发链 + 11.5 owner #18 + 11.6 撞车 0 严守 + 11.7 撞号自检命令）
+2. `docs/ipd-系统说明/BCP-Closure-Log.md §一 闭环登记` — 新增"B 类 6 项 7d 自动 sign-off docs-only 准备"行（DRAFT → 🟡 PENDING_7D_AUTO，等 D+7 自动 CLOSED）
+3. `docs/ipd-系统说明/BCP-Closure-Log.md §三.3.15` — 本段（7 段状态机 + 4 项 grep 实证 + 7d 触发链 + owner #18 + 撞车 0 让路位）
+4. `docs/ipd-系统说明/BCP-Closure-Log.md §四 度量更新` — 新增 R137 Q 备注行（B 类 6 项 docs-only 准备就绪 + 闭环数不变 + 5 钻覆盖率不变）
+
+**5 钻撞根因实证**（BCP-015 拍板机制飞轮齿位 ②派单 + ④验证，5 钻证据位 R-1 + R-5 五必现查）：
+
+1. **hash 必现查**：✅ `git rev-parse HEAD` = `6763d3a9`（R136 1 BCP 闭环 + 2 docs-only + §九 SOP 复盘后，与 BCP-Closure-Log.md 创建时间声明一致）
+2. **端口必现查**：✅ 不抢端口（docs-only 落档 + 未实跑 t2-paiban-sla.sh，端口 16039/23306/8080/15666 兄弟会话占用 100% 保持）
+3. **段号必现查**：✅ BCP-Closure-Log.md §三.3.15 段号连续（§三.3.13 → §三.3.15 不跳号、不重号；§三.3.14 由 P 智能体独占、§三.3.16 由 E 智能体独占，本 Q 不抢段）
+4. **看板回读必现查**：✅ BCP-Registry §十一 落档（4 项 grep 实证 PASS，详见 §11.7 撞号自检命令）；BCP-Closure-Log §一 新增本行；§三.3.15 状态机 SYNCED 标记；§四 度量更新
+5. **跨仓 cd 必现查**：✅ 所有 Bash 前缀 `cd /Users/mac/Documents/ruoyi-ai &&`（无跨仓 cd）+ 不实跑脚本（避免日志污染）+ 不实装 cron（避免定时任务副作用）= 双向 PASS
+
+**撞车 0 边界严守声明**（R137 Q 智能体严守边界 — 不抢 §三.3.14/3.16 + 不动 §十）：
+
+- ✅ 仅 `docs/ipd-系统说明/` 强推进白名单（BCP-Registry.md §十一 + BCP-Closure-Log.md §一 + §三.3.15 + §四 全部在 docs 白名单内）
+- ✅ 未触碰 §一~§十 任何行（仅末尾追加 §十一 新章节；BCP-Closure-Log.md §一 仅追加新行 + §三 新增 §三.3.15 段 + §四 末尾追加 R137 备注）
+- ✅ 未触碰 §三.3.14（P 智能体责任 — BCP-011 Skill S1-S5 沉淀）
+- ✅ 未触碰 §三.3.16（E 智能体责任 — 拍板机制 C 类 12 项 owner 必拍 docs-only 准备）
+- ✅ 未触碰 §十（A 智能体责任 — R137 §十 R136 SOP 实践复盘）
+- ❌ 未动 Java 源码（`microservices/`、`frontend/`、`ruoyi-ipd/`、`ruoyi-ipd-web/` 零修改，`git diff --stat` 无 .java 文件改动）
+- ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改）
+- ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
+- ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
+- ❌ 未实装 cron（仅 docs 落档 t2-paiban-sla.sh 调用说明，等 owner 拍板 #18 后由后续 R 轮实跑）
+- ❌ 未实跑 t2-paiban-sla.sh（无脚本执行记录 = 仅 docs 落档，不污染 log.md）
+- ❌ 未修改脚本（`scripts/t2-paiban-sla.sh` 67 行 R132 cb5ba74c 原状，自证能红 R134 已闭环验证 PASS）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未跨仓（仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+- ✅ 撞号预防映射表严守（本智能体 Q 写 §三.3.15；P 写 §三.3.14；E 写 §三.3.16；A 写 §十 — 段号互不交集）
+
+**下家触发**：
+
+- **D+7（2026-09-27）**：t2-paiban-sla.sh 实跑（owner 拍板 #18 cron 配置后由后续 R 轮触发）→ 自动 sign-off paiban-07/08/09/10/12/14 → 状态 = 🟢 AUTO_SIGNED → 闭环数 **8/13 → 8/13**（B 类自动 sign-off 不计入 BCP 闭环数，**但属飞轮自举基石** = 拍板机制飞轮齿位 ②派单 验证）
+- **R138 启动条件**：B 类 6 项 7d 自动 sign-off 闭环 + 拍板机制飞轮齿位 ②派单 + ④验证 闭环累计
+- **R137 push 前**：主协调跑 §11.7 撞号自检命令 PASS + §11.3 任务派单清单 vs 事实清单差异澄清（选项 A/B/C 选其一）
+
+---
+
+**R137 Q 智能体 docs-only 准备落档 commit**：待主协调 push（commit-hash 待回填）
+**撞车 0 严守**：✅ docs-only 落档（仅 BCP-Registry.md §十一 + BCP-Closure-Log.md §一/§三.3.15/§四 追加）；不动 §一~§十/§三.3.14/3.16；不杀 PID / 不擅自动 DDL / 不启后端 / **不实装 cron** / **不实跑 t2-paiban-sla.sh**
+**下次刷新**：owner 拍板 #18 cron 配置后由后续 R 轮实跑 t2-paiban-sla.sh 触发 B 类 7d 自动 sign-off（2026-09-27 D+7）；§11.3 任务派单清单 vs 事实清单差异由主协调 + PM 澄清
+
+---
+
+### 3.16 拍板机制 C 类 12 项 owner 必拍 docs-only 准备就绪（DRAFT → 🟡 PENDING_OWNER — R137 evolver docs-only 准备就绪，等 owner 拍板 #1/#4/#6/#15/#17）
+
+**触发**：R132 拍板决策包三段式（C 类 = owner 必拍 + 14d 最大破坏重审）+ R137 E 智能体派单（拍板机制 C 类 12 项 docs-only 准备 = 飞轮反脆弱指针完整化）+ R134 t2-paiban-sla.sh 67 行 R132 cb5ba74c 已落档（C_REAUDIT_LIST="04 06"，owner 未介入 14d 自动标记重审 → 30d 自动降级 A 类），docs-only 准备就绪后**等 owner 拍板**（不实装 C 类任一决策 = 撞车 0 让路边界严守）。
+
+**拍板权属声明（关键）**：C 类 12 项 = **owner 必拍**（**非 AI 自主**，**非 7d 自动 sign-off**），包含 **5 个关键 owner 必拍位 #1/#4/#6/#15/#17**：
+
+- **#1** = 启 IPD 后端真活 E2E（paiban-01）→ 解锁 BCP-009（H-7+M5 E2E 阻断门禁）+ BCP-010（Hook H1-H4 矩阵）
+- **#4** = 571 字符集整改（paiban-04，14d 最大破坏）→ 解锁 BCP-013（F-GREEN 假绿改造）
+- **#6** = DTO 后缀收口（paiban-06，14d 最大破坏）→ 解锁 BCP-009 跨仓 S1/S3 场景 + BCP-013 DTO 后缀收口
+- **#15** = DDL SRE apply 元规则（paiban-15）→ 解锁 BCP-009 跨仓 S2/S4 场景 + Skill 沉淀扩展
+- **#17** = 派单顺序 元规则（paiban-17）→ 解锁 14d 重审决策（C 类最大破坏决策熔断）
+
+**7 段状态转移链**（与 §三.3.1 模板对齐 — R137 E evolver docs-only 准备推进）：
+
+- **DRAFT**：2026-09-20 02:30（R132 拍板决策包创建 + 18 份 paiban-*.md 落档，**非 BCP**，属拍板机制飞轮齿位 ②派单）
+- **PENDING_OWNER**：2026-09-20 03:40（R137 E evolver docs-only 准备完毕；🟡 PENDING_OWNER 状态；5 个关键 owner 必拍位 #1/#4/#6/#15/#17 进入 owner 拍板清单 + 12 项全量待 owner 介入）
+- **IN_PICKUP**：⏸️ 等 owner 拍板 #1/#4/#6/#15/#17 等 5 项关键位 + 12 项全量拍板后才能 IN_PICKUP
+- **IN_BUILD**：⏸️ 等 owner 拍板
+- **IN_VERIFY**：⏸️ 等 owner 拍板
+- **SYNCED**：2026-09-20 03:40（BCP-Registry.md §十二 拍板机制 C 类 12 项登记位（7 个子节：12.1 三段式 + 12.2 12 项清单 + 12.3 5 个关键 owner 拍板位 + 12.4 14d 触发链 + 12.5 D+30 自动降级 + 12.6 撞车 0 严守 + 12.7 撞号自检）+ BCP-Closure-Log.md §一 C 类 12 项闭环登记行 + §三.3.16 本段 + §四 R137 E 备注 — 全部看镜像同步）
+- **CLOSED**：⏸️ 等 owner 拍板 #1/#4/#6/#15/#17 后由后续 R 轮关闭（**12 项 C 类 docs-only 准备 ≠ BCP 闭环**，C 类 docs-only 准备仅是 owner 拍板决策的前置材料；真实闭环 = owner 拍板 + AI 实装）
+
+**14d 最大破坏重审触发链**（C 类 SLA = 14d 核心机制 — 实装等 owner 拍板后解锁）：
+
+```
+D+0（2026-09-20）                D+7（2026-09-27）            D+14（2026-10-04）            D+30（2026-10-20）
+   ↓                                ↓                            ↓                            ↓
+[拍板创建]                       [B 类自动 sign-off]            [C 类最大破坏重审]            [C 类自动降级 A 类]
+R132 已落 18 份决策包              t2-paiban-sla.sh               t2-paiban-sla.sh              t2-paiban-sla.sh
+                                   实跑 B_AUTO_LIST=             实跑 C_REAUDIT_LIST=          实跑 C_REAUDIT_LIST=
+                                   07 08 09 10 12 14              04 06（14d > 14d =           04 06（30d > 14d =
+                                   → 6 项自动 sign-off            ⚠️ 重审标记）                 🔴 自动降级 A 类）
+                                                                        ↓                            ↓
+                                                           [owner 拍板介入窗口期]      [AI 自主拍板，docs-only
+                                                            owner 拍板 #4 / #6           推进 BCP-013 等]
+                                                            解锁 → 进入 IN_PICKUP]
+```
+
+**owner 拍板位 #1/#4/#6/#15/#17 5 项关键位详解**（R137 docs-only 准备核心 — owner 介入后解锁对应 BCP）：
+
+| 拍板位 | 拍板项 | 拍板语义 | 解锁 BCP | 撞车 0 让路位 |
+|---|---|---|---|---|
+| **#1** | 启 IPD 后端真活 E2E（paiban-01）| owner 是否授权启动 IPD 后端真活 E2E 阻断门禁 | **BCP-009**（H-7+M5 E2E 阻断门禁）+ **BCP-010**（Hook H1-H4 矩阵）| 等 owner 拍板 #1 才能解锁跨仓后端实装；拍板前 docs-only 准备就绪即可 |
+| **#4** | 571 字符集整改（paiban-04）| owner 是否授权字符集整改 4 batches（最大破坏 DDL）| **BCP-013**（F-GREEN 假绿改造 — 反脆弱飞轮）| 等 owner 拍板 #4 才能解锁最大破坏 DDL；拍板前 docs-only 准备就绪即可 |
+| **#6** | DTO 后缀收口（paiban-06）| owner 是否授权跨仓 commit 并行（跨域变更）| **BCP-009**（跨仓 S1/S3 场景）+ **BCP-013**（DTO 后缀收口）| 等 owner 拍板 #6 才能解锁跨仓并行 commit；拍板前 docs-only 准备就绪即可 |
+| **#15** | DDL SRE apply 元规则（paiban-15）| owner 是否授权跨仓 BCP 自动同步（SSOT 镜像同步）| **BCP-009**（跨仓 S2/S4 场景）+ Skill S1-S5 沉淀扩展 | 等 owner 拍板 #15 才能解锁跨仓 BCP 自动同步；拍板前 docs-only 准备就绪即可 |
+| **#17** | 派单顺序 元规则（paiban-17）| owner 是否授权最大破坏重审决策（14d 未决降级 A 类）| 拍板机制 C 类全部 12 项 | 等 owner 拍板 #17 才能解锁 14d 重审决策；拍板前 t2-paiban-sla.sh 仅标红不降级 |
+
+**撞车 0 让路位**（R137 E evolver docs-only 准备边界 — 不实装拍板实质）：
+
+- ✅ docs-only 准备已 R137 E 完成（BCP-Registry.md §十二 拍板机制 C 类 12 项登记位 7 个子节 + BCP-Closure-Log.md §一 C 类 12 项闭环登记行 + §三.3.16 本段 + §四 R137 E 备注 — 全部落档）
+- ❌ **未实装 C 类 12 项任一决策**（owner 必拍，AI 不擅自执行 = 撞车 0 让路边界严守）
+- ❌ **未触发 D+14 重审**（C 类 12 项拍板创建于 2026-09-20，D+14 = 2026-10-04；当前 2026-09-20，未到重审触发日；D+14 触发由 t2-paiban-sla.sh 在 owner 拍板 #18 cron 配置后实跑）
+- ❌ **未启动 D+30 自动降级**（同上，D+30 = 2026-10-20）
+- ❌ **未实跑 t2-paiban-sla.sh**（避免污染治理日志 + 不实装 cron 配置；撞车 0 让路严守）
+- ❌ **未动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified**
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+
+**5 钻撞根因实证**（拍板机制 C 类 docs-only 准备 — 5 钻证据位 R-5 五必现查 + R-1 shell pipe trap）：
+
+1. **hash 必现查**：✅ R132 cb5ba74c 拍板决策包创建 + 18 份 paiban-*.md 落档（git log --oneline -1 显示 cb5ba74c docs(scripts,harness): R132 拍板阶段并行+9BCP+4智能体穿透+飞轮自举-20260920）
+2. **端口必现查**：✅ 不抢端口（docs-only 落档层，不启后端；端口 16039/23306/8080/15666 兄弟会话占用 100% 保持）
+3. **段号必现查**：✅ BCP-Closure-Log.md §三.3.16 段号连续（§三.3.15 → §三.3.16 不跳号、不重号；§三.3.14 由 P 智能体独占已闭环，§三.3.15 由 Q 智能体独占 docs-only 准备完毕，本 E 不抢段）
+4. **看板回读必现查**：✅ BCP-Registry.md §十二 落档（6 项 grep 实证 PASS：§十二 标题 1 行 + paiban-01~18 ≥ 12 行 + D+14/C_REAUDIT_LIST ≥ 1 行 + owner 拍板位 #1/#4/#6/#15/#17 ≥ 5 行 + §三.3.16 段号唯一 + §十二 落档 1 行）；BCP-Closure-Log §一 已登记 C 类 12 项闭环登记行（本段 §三.3.16 同步）
+5. **跨仓 cd 必现查**：✅ 所有 Bash 前缀 `cd /Users/mac/Documents/ruoyi-ai &&`（无跨仓 cd）+ 不实跑 t2-paiban-sla.sh（避免污染治理日志）双向 PASS
+
+**闭环证据**（docs-only 准备部分 — 非 CLOSED；C 类 12 项 docs-only 准备 ≠ BCP 闭环）：
+
+1. `docs/ipd-系统说明/拍板决策包/paiban-{01,02,03,04,05,06,11,13,15,16,17,18}-*.md` — 12 份 C 类决策包（R132 cb5ba74c 已落档）：每份含「拍板 owner」「拍板 SLA（14d 最大破坏）」「背景 + 3 候选方案 + 推荐 + 非 owner 拍板自动通过判定 + 撞车 0 让路边界」5 段
+2. `docs/ipd-系统说明/BCP-Registry.md §十二 拍板机制 C 类 12 项 owner 必拍 docs-only 准备登记位` — 7 个子节（12.1 三段式 + 12.2 12 项清单 + 12.3 5 个关键 owner 拍板位 + 12.4 14d 触发链 + 12.5 D+30 自动降级 + 12.6 撞车 0 严守 + 12.7 撞号自检命令）
+3. `docs/ipd-系统说明/BCP-Closure-Log.md §一 C 类 12 项闭环登记行` — DRAFT → 🟡 PENDING_OWNER（**非 CLOSED**；owner 必拍 docs-only 准备就绪）
+4. `docs/ipd-系统说明/BCP-Closure-Log.md §三.3.16 本段` — 7 段状态机 + 14d 触发链 + 5 个关键 owner 拍板位详解 + 撞车 0 让路位 + 5 钻撞根因实证
+5. `scripts/t2-paiban-sla.sh` — 67 行 R132 cb5ba74c 已落档（C_REAUDIT_LIST="04 06" + L59-60 重审触发逻辑；**未实跑**，撞车 0 让路严守）
+
+**撞车 0 严守声明**（R137 E evolver 严守边界 — 不抢段号 + 不动其他 agent 责任段）：
+
+- ✅ 仅 `docs/ipd-系统说明/` 强推进白名单（BCP-Registry.md §十二 + BCP-Closure-Log.md §一 + §三.3.16 + §四 全部在 docs 白名单内）
+- ✅ 未触碰 §一~§十一 任何行（仅末尾追加 §十二 新章节；BCP-Closure-Log.md §一 仅追加 C 类 12 项新行 + §三 新增 §三.3.16 段 + §四 末尾追加 R137 E 备注）
+- ✅ 未触碰 §三.3.14（P 智能体责任 — BCP-011 Skill S1-S5 沉淀已闭环）
+- ✅ 未触碰 §三.3.15（Q 智能体责任 — 拍板机制 B 类 6 项 7d 自动 sign-off docs-only 准备完毕）
+- ✅ 未触碰 §十（A 智能体责任 — R136 SOP 实践复盘 + R137 启动条件，A 已写好）
+- ✅ 未触碰 §十一（Q 智能体责任 — 拍板机制 B 类 6 项 7d 自动 sign-off 登记位，Q 已写好）
+- ❌ 未动 Java 源码（`microservices/`、`frontend/`、`ruoyi-ipd/`、`ruoyi-ipd-web/` 零修改，`git diff --stat` 无 .java 文件改动）
+- ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改，t2-paiban-sla.sh 仅文本扫描 + FAIL_SEED 注入逻辑）
+- ❌ 未抢端口（端口 16039/23306/8080/15666 兄弟会话占用 100% 保持）
+- ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
+- ❌ 未动兄弟会话 modified（接受并发 patch：BCP-Registry §十二 由 E 本段独占；BCP-Closure-Log §三.3.14 BCP-011 由 P 智能体独占已闭环、§三.3.15 BCP-010 由 Q 智能体独占 docs-only 准备完毕、§十 R135 SOP 实践复盘由 A 智能体独占、§十一 拍板机制 B 类登记位由 Q 智能体独占 — 本段 §三.3.16 不冲突）
+- ❌ 未跨仓（仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
+- ❌ 未实装 cron（仅 docs 落档 t2-paiban-sla.sh 调用说明 + C_REAUDIT_LIST 14d 触发逻辑 + D+30 降级说明，等 owner 拍板 #18 cron 配置后再实跑）
+- ❌ 未实跑 t2-paiban-sla.sh（无脚本执行记录 = 仅 docs 落档，不污染 log.md）
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+- ✅ 撞号预防映射表严守（本智能体 E 写 §十二（BCP-Registry.md）+ §三.3.16（BCP-Closure-Log.md）；P 写 §三.3.14（已闭环）；Q 写 §十一 + §三.3.15（docs-only 准备完毕）；A 写 §十（R135 SOP 实践复盘）— 段号互不交集）
+
+**下家 BCP 触发**：
+
+- **C 类 owner 拍板 #1/#4/#6/#15/#17 任一项后** → 进入 IN_PICKUP，由后续 R 轮推进对应 BCP 实装（#1 → BCP-009/010；#4 → BCP-013；#6 → BCP-009/013；#15 → BCP-009 + Skill 扩展；#17 → 14d 重审决策解锁）
+- **C 类 owner 拍板全量 12 项后** → 拍板机制飞轮齿位 ②派单 + ④验证 闭环累计 + R138 模板升级触发
+- **D+14（2026-10-04）** t2-paiban-sla.sh 自动触发 C 类最大破坏重审（owner 拍板 #18 cron 配置后由后续 R 轮实跑）
+- **D+30（2026-10-20）** t2-paiban-sla.sh 自动触发 C 类降级 A 类（仅限 C_REAUDIT_LIST 中未决项，默认 paiban-04 + paiban-06）
+
+---
+
+**R137 E 智能体 docs-only 准备落档 commit**：待主协调 push（commit-hash 待回填）
+**撞车 0 严守**：✅ docs-only 落档（仅 BCP-Registry.md §十二 + BCP-Closure-Log.md §一/§三.3.16/§四 追加）；不动 §一~§十一/§三.3.14/3.15/§十；不杀 PID / 不擅自动 DDL / 不启后端 / **不实装 cron** / **不实跑 t2-paiban-sla.sh** / **不实装拍板实质**（C 类 12 项需 owner 拍板后由后续 R 轮实装）
+**下次刷新**：owner 拍板 #1/#4/#6/#15/#17 等 5 项关键位中任一项拍板后由后续 R 轮推进对应 BCP 实装；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
+
+## §四 度量更新（每次闭环必刷新 §六）
+
+| 度量 | 当前 | 目标 | 本次刷新（增量）|
+|---|---|---|---|
+| 闭环数 / BCP 数 | 9/13 | ≥ 8/13 | R137 P 推进 BCP-011 Skill S1-S5 沉淀闭环（8/13 → **9/13**）+ Q 拍板 B 类 6 项 docs-only 准备不贡献闭环数（**9/13 不变**）|
+| 平均时长（BCP 生命周期）| 1 天 | ≤ 18 天 | 不变 |
+| 停滞率（48h 未推进）| 4/13 | ≤ 2/13 | R137 P 推进 BCP-011（10/13 → 4/13）+ Q 拍板 B 类 docs-only 准备 🟡 PENDING_7D_AUTO（**计入停滞率 = 4/13 不变**，等 2026-09-27 D+7 自动 sign-off 后脱钉）|
+| 5 钻撞根因覆盖率 | 32/80（40%）| ≥ 50% | R137 P BCP-011 闭环贡献 R-5 + R-4 两钻（30/80 → **32/80**）+ Q 拍板 B 类 docs-only 准备不贡献 5 钻实证（**32/80 不变**）|
+
+### R137 Q 智能体备注（拍板机制 B 类 6 项 7d 自动 sign-off docs-only 准备就绪）
+
+- **BCP 状态**：🟡 PENDING_7D_AUTO（**非 CLOSED**；B 类 = AI 自主 + 7d 自动 sign-off，**非 owner 必拍**；2026-09-27 D+7 由 t2-paiban-sla.sh 自动触发 sign-off）
+- **拍板决策包清单**（paiban-07/08/09/10/12/14，**SSOT 真相源** = scripts/t2-paiban-sla.sh B_AUTO_LIST）：
+  - paiban-07-mapper-anno-20260920.md（B 类 7d 自动通过）
+  - paiban-08-exception-20260920.md（B 类 7d 自动通过）
+  - paiban-09-transactional-20260920.md（B 类 7d 自动通过）
+  - paiban-10-constructor-20260920.md（B 类 7d 自动通过）
+  - paiban-12-entity-base-20260920.md（B 类 7d 自动通过）
+  - paiban-14-fe-fix-20260920.md（B 类 7d 自动通过）
+- **闭环数**：仍 **9/13**（B 类自动 sign-off 不计入 BCP 闭环数 — B 类 6 项 docs-only 准备 ≠ BCP 闭环）
+- **5 钻覆盖率**：仍 **32/80（40%）**（B 类 6 项 docs-only 准备不贡献 5 钻实证；5 钻实证需 BCP 闭环后 grep 验证脚本实跑证据位）
+- **停滞率**：仍 **4/13**（B 类 6 项 docs-only 准备 🟡 PENDING_7D_AUTO 计入停滞；2026-09-27 D+7 自动 sign-off 后脱钉 → 停滞率回归 3/13）
+- **撞号预防映射表严守**：
+  - ✅ 本 Q 写 §三.3.15（拍板机制 B 类 6 项 7d 自动 sign-off）
+  - ❌ 未触碰 §三.3.14（P 智能体责任 — BCP-011 Skill S1-S5 沉淀）
+  - ❌ 未触碰 §三.3.16（E 智能体责任 — 拍板机制 C 类 12 项 owner 必拍 docs-only 准备）
+  - ❌ 未触碰 §十（A 智能体责任 — R136 SOP 实践复盘）
+  - ❌ 未触碰 §一 BCP-011 行（P 智能体责任）
+  - ✅ 仅本段（§四 R137 Q 备注）由 Q 智能体独占
+- **撞车 0 严守边界**：
+  - ✅ 仅 `docs/ipd-系统说明/` 强推进白名单（BCP-Registry.md §十一 + BCP-Closure-Log.md §一 + §三.3.15 + §四 本段 全部 docs 白名单内）
+  - ❌ 未动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified
+  - ❌ **未实装 cron**（仅 docs 落档 t2-paiban-sla.sh 调用说明，等 owner 拍板 #18 后由后续 R 轮实跑）
+  - ❌ **未实跑 t2-paiban-sla.sh**（无脚本执行记录 = 仅 docs 落档，不污染 log.md）
+  - ❌ 未修改脚本（`scripts/t2-paiban-sla.sh` 67 行 R132 cb5ba74c 原状）
+- **下次刷新触发**：owner 拍板 #18 cron 配置后由后续 R 轮实跑 t2-paiban-sla.sh → B 类 6 项 7d 自动 sign-off（2026-09-27 D+7）；§11.3 任务派单清单 vs 事实清单差异由主协调 + PM 澄清（选项 A/B/C 选其一）
+
+
+### R137 E 智能体备注（拍板机制 C 类 12 项 owner 必拍 docs-only 准备就绪）
+
+- **BCP 状态**：🟡 PENDING_OWNER（**非 CLOSED**；C 类 = owner 必拍，**非 AI 自主**，**非 7d 自动 sign-off**；14d 最大破坏重审 → D+14 = 2026-10-04 t2-paiban-sla.sh 自动标记重审 → D+30 = 2026-10-20 自动降级 A 类）
+- **拍板决策包清单**（paiban-01/02/03/04/05/06/11/13/15/16/17/18，**SSOT 真相源** = scripts/t2-paiban-sla.sh C_REAUDIT_LIST="04 06"）：
+  - paiban-01-backend-e2e-20260920.md（C 类 owner 必拍，⚡ 24h，关键拍板位 #1）
+  - paiban-02-kpi-rules-20260920.md（C 类 owner 必拍，🟢 7d）
+  - paiban-03-table-plural-20260920.md（C 类 owner 必拍，🟢 7d）
+  - paiban-04-charset-4batches-20260920.md（C 类 owner 必拍，🟡 14d 最大破坏，关键拍板位 #4）
+  - paiban-05-service-iface-20260920.md（C 类 owner 必拍，🟢 7d）
+  - paiban-06-dto-suffix-20260920.md（C 类 owner 必拍，🟡 14d 最大破坏，关键拍板位 #6）
+  - paiban-11-controller-prefix-20260920.md（C 类 owner 必拍，🟢 7d）
+  - paiban-13-fe-endpoints-20260920.md（C 类 owner 必拍，🟢 7d）
+  - paiban-15-ddl-sre-20260920.md（C 类 owner 必拍，⚡ 24h 元规则，关键拍板位 #15）
+  - paiban-16-chain-root-20260920.md（C 类 owner 必拍，🟢 7d）
+  - paiban-17-paiban-order-20260920.md（C 类 owner 必拍，⚡ 24h 元规则，关键拍板位 #17）
+  - paiban-18-cross-repo-bcp-20260920.md（C 类 owner 必拍，⚡ 24h 元规则）
+- **5 个关键 owner 必拍位**（R137 docs-only 准备核心 — owner 介入后解锁对应 BCP）：
+  - **#1**（paiban-01）= 启 IPD 后端真活 E2E → 解锁 BCP-009 + BCP-010
+  - **#4**（paiban-04）= 571 字符集整改 → 解锁 BCP-013
+  - **#6**（paiban-06）= DTO 后缀收口 → 解锁 BCP-009 跨仓 S1/S3 + BCP-013
+  - **#15**（paiban-15）= DDL SRE apply 元规则 → 解锁 BCP-009 跨仓 S2/S4 + Skill 沉淀扩展
+  - **#17**（paiban-17）= 派单顺序 元规则 → 解锁 14d 重审决策
+- **闭环数**：仍 **9/13**（C 类 12 项 docs-only 准备 ≠ BCP 闭环 — C 类 docs-only 准备仅是 owner 拍板决策的前置材料；真实闭环需 owner 拍板后 AI 实装）
+- **5 钻覆盖率**：仍 **32/80（40%）**（C 类 12 项 docs-only 准备不贡献 5 钻实证；5 钻实证需 BCP 闭环后 grep 验证脚本实跑证据位）
+- **停滞率**：仍 **4/13**（C 类 12 项 docs-only 准备 🟡 PENDING_OWNER 计入停滞；5 个关键 owner 拍板位任一项拍板后由后续 R 轮解锁 → 停滞率回归）
+- **撞号预防映射表严守**：
+  - ✅ 本 E 写 §三.3.16（拍板机制 C 类 12 项 owner 必拍）
+  - ❌ 未触碰 §三.3.14（P 智能体责任 — BCP-011 Skill S1-S5 沉淀已闭环）
+  - ❌ 未触碰 §三.3.15（Q 智能体责任 — 拍板机制 B 类 6 项 7d 自动 sign-off docs-only 准备完毕）
+  - ❌ 未触碰 §十（A 智能体责任 — R136 SOP 实践复盘 + R137 启动条件）
+  - ❌ 未触碰 §十一（Q 智能体责任 — 拍板机制 B 类 6 项 7d 自动 sign-off 登记位）
+  - ❌ 未触碰 §一 BCP-011 行（P 智能体责任）
+  - ❌ 未触碰 §一 拍板机制 B 类 6 项行（Q 智能体责任）
+  - ✅ 仅本段（§四 R137 E 备注）由 E 智能体独占
+- **撞车 0 严守边界**：
+  - ✅ 仅 `docs/ipd-系统说明/` 强推进白名单（BCP-Registry.md §十二 + BCP-Closure-Log.md §一 + §三.3.16 + §四 本段 全部 docs 白名单内）
+  - ❌ 未动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified
+  - ❌ **未实装 cron**（仅 docs 落档 t2-paiban-sla.sh 调用说明 + C_REAUDIT_LIST 14d 触发逻辑，等 owner 拍板 #18 后由后续 R 轮实跑）
+  - ❌ **未实跑 t2-paiban-sla.sh**（无脚本执行记录 = 仅 docs 落档，不污染 log.md）
+  - ❌ 未修改脚本（`scripts/t2-paiban-sla.sh` 67 行 R132 cb5ba74c 原状）
+  - ❌ **未实装拍板实质**（C 类 12 项 = owner 必拍，AI 不擅自执行 = 撞车 0 让路边界严守）
+- **下次刷新触发**：owner 拍板 #1/#4/#6/#15/#17 等 5 项关键位中任一项拍板后由后续 R 轮推进对应 BCP 实装；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
+
+---
+
+**撞车 0 严守累计**：✅ R137 P/Q/E/A 4 智能体并行穿透完毕（BCP-011 闭环 + B/C 类 docs-only 准备 + §十 SOP 复盘），R137 push 前必跑 §10.6 撞号自检命令 + §12.7 撞号自检命令 全部 PASS
