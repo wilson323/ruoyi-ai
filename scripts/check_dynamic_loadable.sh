@@ -231,3 +231,14 @@ echo "JSON: $REPORT_JSON"
 echo
 echo "说明：静态扫描工具会把 dynamic-loadable 视图误判为「未路由」"
 echo "      实际清理前必须 owner 与后端菜单对账，本清单是单一真值源"
+
+# R120 根除机制：DIFFS 累加器（R119 reconcile-multi-source.sh 同款修法）
+# intersect_count = 前端动态可加载视图 ∩ 后端菜单 component 字段
+# R49 配置先行 4 张表未接线 → 此处 > 0 表明有动态可达视图需 owner 复核
+DIFFS=${intersect_count:-0}
+
+# 自证能红：差异项 > 0 → exit 1
+if [ "${DIFFS:-0}" -gt 0 ]; then
+  exit 1
+fi
+exit 0

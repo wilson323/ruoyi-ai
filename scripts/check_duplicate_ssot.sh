@@ -256,7 +256,12 @@ echo "🟡 一致但冗余: $dup_consistent"
 echo "📄 文档副本 md5 相同: $dup_same / 内容漂移: $dup_diff"
 echo "报告: $REPORT_MD"
 
-if [ "$dup_inconsistent" -gt 0 ]; then
+# R120 根除机制：DIFFS 累加器（R119 reconcile-multi-source.sh 同款修法）
+# 重复 SSOT 4 类差异：不一致常量 + 一致但冗余常量 + 副本 md5 相同 + 副本内容漂移
+DIFFS=$((dup_inconsistent + dup_consistent + dup_same + dup_diff))
+
+# 自证能红：差异项 > 0 → exit 1
+if [ "${DIFFS:-0}" -gt 0 ]; then
   exit 1
 fi
 exit 0

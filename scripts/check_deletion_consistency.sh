@@ -39,7 +39,8 @@ MODULE="${MODULE:-ruoyi-ipd}"
 if [ "$MODE" = "manual" ] && [ "${#TARGETS[@]}" -eq 0 ]; then
   echo "用法: $0 <ClassName1> [ClassName2 ...]" >&2
   echo "      $0 --auto   # 自动扫 scan_dead_code.sh 输出" >&2
-  exit 2
+  # R120 根除机制：exit 2 不标准，改为 exit 1（与 R119 reconcile-multi-source.sh 一致）
+  exit 1
 fi
 
 # --auto 模式：从最新 scan-dead-code 报告读 HIGH 项
@@ -47,7 +48,8 @@ if [ "$MODE" = "auto" ]; then
   latest=$(ls -t "${BACKEND_ROOT}/docs/ipd-系统说明/lint-reports/scan-dead-code-"*.json 2>/dev/null | head -1)
   if [ -z "$latest" ]; then
     echo "[deletion] ❌ --auto 模式需要 scan_dead_code.sh 已跑过" >&2
-    exit 2
+    # R120 根除机制：exit 2 不标准，改为 exit 1（与 R119 reconcile-multi-source.sh 一致）
+    exit 1
   fi
   echo "[deletion] --auto 从 $latest 抽取 HIGH 项..."
   TARGETS=($(python3 -c "

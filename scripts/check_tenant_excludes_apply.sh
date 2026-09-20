@@ -309,7 +309,12 @@ echo "RC-3-B Entity 缺表（致命）: $rc3b_count"
 echo "RC-3-C 重叠: $rc3c_count"
 echo "报告: $REPORT_MD"
 
-if [ "$rc3b_count" -gt 0 ]; then
+# R120 根除机制：DIFFS 累加器（R119 reconcile-multi-source.sh 同款修法）
+# RC-3-A 配置先行（excludes 已登记但 DB 无表）+ RC-3-B 实体缺表（致命）+ RC-3-C 重叠（需复核）
+DIFFS=$((rc3a_count + rc3b_count + rc3c_count))
+
+# 自证能红：差异项 > 0 → exit 1
+if [ "${DIFFS:-0}" -gt 0 ]; then
   exit 1
 fi
 exit 0
