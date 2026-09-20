@@ -8186,3 +8186,51 @@ memory 19a719fc 记录 R46 治本工程(2026-09-19)已合并到 main。但 R112 
 - ❌ 不擅自 reset / cherry-pick
 
 落档 commit = R112 报告(190 行) + log.md R112 段。本轮不 push(兄弟 R110 未 push,等 owner 拍板顺序)。
+
+## R113:完整接手-19wt 清理+R46 治本 4 工程救回+7 派单 ahead 登记(2026-09-19,Loop 65)
+
+**作者**:主协调(2026-09-19 10:35)
+**触发**:主人指令「接手所有工作树该执行执行该整合整合该清理清理」+「授权给你」
+
+### 一句话大白话
+
+5 个已合并 wt 清掉 222M,R46 治本 4 工程救回 main (PR #24 + squash 0b0c67ab),7 个派单 wt 的 ahead commit 因为 log.md/镜像频繁冲突没强求,保留 wt 不丢 commit。
+
+### 5 个已合并 wt 清理(t2)✓
+
+| Worktree | 释放 |
+|---|---|
+| agent-batchX-app-prod-yaml-secrets | 43M |
+| agent-batchX-b1-bonus-allocations-http | 54M |
+| r34-takeover-ipd | 41M |
+| r35-takeover-ipd | 42M |
+| wt-r39-integration | 42M |
+| **小计** | **222M** |
+
+yml.bak 备份到 `docs/ipd-系统说明/backup/`, .codex 兄弟运行数据直接删。
+
+### R46 治本 4 工程救回(t5)✓
+
+隔离 wt + cherry-pick 4 commit + 修冲突 (双保险 Mock 过滤) + push + curl REST API 创建 PR #24 + 本地 squash merge → commit `0b0c67ab` 落地 main。
+
+R46 治本 4 工程现在在 main:
+- ✅ ComplianceService 白名单(47 项 IPD 业务表)
+- ✅ PmDirectory+ProjectCircle Mock 全局过滤(双保险)
+- ✅ SystemConfigController GET /{key} 返回 lastChange
+- ✅ scripts/check-param-drift.sh 自动门禁脚本
+
+### 7 派单 + 2 takeover wt ahead commit 登记(t3)⚠️ 保留 wt 不丢
+
+按 R25 教训"ahead>0 必须保留防丢"+ 撞车 0:不强求 cherry-pick,保留 9 个 wt 让兄弟自己 cherry-pick。
+
+高价值 ahead commit 等 owner 拍板:
+- agent-batch5-2 Withdraw 独立权限码(安全)
+- agent-p133-idor-fix IDOR 4 项修复(安全)
+- agent-p322-postreview-fix postreview 3 项修复(安全)
+- r32-takeover Layer 3 硬闸门(治理基础设施)
+
+### Push 进展
+
+HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
+
+落档 commit = R113 报告(103 行) + log.md R113 段。
