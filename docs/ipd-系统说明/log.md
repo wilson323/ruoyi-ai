@@ -8418,3 +8418,83 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - R133-A 候选：拍板决策包更新（owner 拍板回填）
 - R133-B 候选：9 份老报告自述漂移修复（接 H-16 自证能红发现 R43/R62/R95 等）
 - R133-C 候选：跨仓协调首批落地（paiban-18 owner 拍板后）
+## Pointer-#119-触发-20260920-030647
+- type=反思层（根因型） sev=🔴
+- trigger=`bash X.sh | tail; echo $?` 测的是 tail EXIT = 0 → 假绿
+## Pointer-#120-触发-20260920-030647
+- type=反思层（根因型） sev=🔴
+- trigger=后端启动未带 `--spring.config.additional-location` 连错库
+## Pointer-#121-触发-20260920-030647
+- type=反思层（根因型） sev=🔴
+- trigger=`is_background=false` 起 java → 30s 后沙箱 SIGHUP 杀 → mvn BUILD SUCCESS 但后端从未启
+## Pointer-#122-触发-20260920-030647
+- type=反思层（根因型） sev=🟡
+- trigger=同分钟多 commit 撞 hash
+## Pointer-#123-触发-20260920-030647
+- type=反思层（根因型） sev=🟡
+- trigger=五必现查（hash/端口字段/段号/看板回读/跨仓 cd 凭记忆写）违反
+## Pointer-#124-触发-20260920-030647
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-pipe-trap.sh` 每 PR 跑
+## Pointer-#125-触发-20260920-030647
+- type=机制层（演化策略型） sev=🟢
+- trigger=启后端 bash 函数强制 --spring.config.additional-location
+## Pointer-#126-触发-20260920-030647
+- type=机制层（演化策略型） sev=🟢
+- trigger=`is_background=true` 必填 agent SOP + skill S3
+## Pointer-#127-触发-20260920-030647
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-r13-hard-3hash.sh`（H-3 升级，30 min）
+## Pointer-#128-触发-20260920-030647
+- type=机制层（演化策略型） sev=🟢
+- trigger=硬 hook 拦截凭记忆引用（H-4/H-5/H-6 三脚本，0.5 hr×3）
+## Pointer-#129-触发-20260920-030647
+- type=反思层 sev=🔴
+- trigger=`verify.sh --cross-audit-report` 步骤探测三源漂移
+## Pointer-#130-触发-20260920-030647
+- type=反思层 sev=🔴
+- trigger=`loop.sh` Phase 8 检测反思链深度 > 3 → 升级为指针
+## Pointer-#131-触发-20260920-030647
+- type=文档层 sev=🟡
+- trigger=`.claude/hooks/wt-close-pre-check.sh`（H-11 候选）扫 log.md 最新段号
+## Pointer-#132-触发-20260920-030647
+- type=机制层 sev=🔴
+- trigger=`.claude/hooks/pre-cd-cross-repo-check.sh`（H-12 候选）cwd 漂移检测
+## Pointer-#133-触发-20260920-030647
+- type=飞轮层 sev=🟢
+- trigger=`.harness/evolve/flywheel.sh`（H-13 候选）每 N 分钟扫 17 根指针
+## Pointer-#134-触发-20260920-030647
+- type=验证层 sev=🔴
+- trigger=`gate.sh --red-self-test` 反证每脚本都能 exit ≠ 0
+## Pointer-#135-触发-20260920-030647
+- type=表述层 sev=🟡
+- trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+
+## 2026-09-20 R133 飞轮首个 BCP 闭环 + pointer-trigger 实跑 + t2-paiban-sla 实例化
+
+### R133 4 任务落地
+- R133-A 老报告漂移修复：H-16 命中 10 份老报告自述漂移；撞车 0 严守下仅修 R132 行 95 注记，其他 9 份 = owner 拍板后才能改
+- R133-B BCP-001 飞轮首个闭环：BCP-Closure-Log.md 创建 98 行 + BCP-Registry.md 度量 0/13 → 1/13 + 状态 ️ pending → ✅ CLOSED
+- R133-C pointer-trigger.sh 实跑：17 根指针全部命中 + log.md 自动追加 17 个 Pointer-#NN-触发-ts 段
+- R133-D t2-paiban-sla cron 配置：docs 配置说明（不实装）+ 首次实例化跑通报告
+
+### 自证能红
+- wheel-stuck-detector.sh → 28 BCP ≤ 48h ✅
+- pointer-trigger.sh 实跑 → 17 根全命中 + log.md +17 段 ✅
+- t2-paiban-sla.sh → exit 0（18 决策包全部 ≤ 7d）✅
+- BCP-Registry CLOSED → BCP-001 ✅
+
+### 撞车 0 严守
+- ✅ docs/.harness/ 5 文件（4 docs + 1 镜像同步 + log.md 自动追加）
+- ❌ 不动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified / cron 实装
+- ❌ 不擅自动 DDL / 不启后端
+
+### R133-D1 三源修复（接 R132-D1 / R131-D1）
+- log.md R133 段回填 ✅（本段）
+- 看镜像 R133 段 append ✅
+- BCP-Closure-Log.md SSOT 闭环登记位建立 ✅
+
+### 下一步
+- R134-A 候选：BCP-002 (H-9/M2 时限红线) 推进
+- R134-B 候选：BCP-003 (H-6/M4 cd 强校验) 推进
+- R134-C 候选：9 份老报告漂移修复（owner 拍板后）

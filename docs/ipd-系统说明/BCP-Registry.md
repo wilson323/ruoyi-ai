@@ -11,7 +11,7 @@
 
 | BCP-ID | 标题 | 拍板依赖 | 飞轮齿位 | 5 钻证据位 | SSOT 登记位 | 撞车 0 严守位 | 状态 | 创建时间 | 最后推进时间 |
 |---|---|---|---|---|---|---|---|---|---|
-| BCP-001 | M1 看板化（拍板项追踪表 + 16 份拍板包登记）| #17 派单顺序 | ①盘点 | R-5 五必现查（看板回读）| R128 §四 + R131 §四.4.6 wt-1 | ✅ docs-only + 看镜像白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
+| BCP-001 | M1 看板化（拍板项追踪表 + 16 份拍板包登记）| #17 派单顺序 | ①盘点 | R-5 五必现查（看板回读）| R128 §四 + R131 §四.4.6 wt-1 | ✅ docs-only + 看镜像白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:12 |
 | BCP-002 | H-9/M2 时限红线（check-decision-deadline.sh）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1 shell pipe trap + R-5 五必现查 | R131 §五.3 A-3 + R128 §五 M2 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
 | BCP-003 | H-6/M4 cd 强校验（check-cd-absolute-path.sh）| 无（pre-commit hook 白名单）| ③落地 | R-5 五必现查（跨仓 cd）| R131 §五.3 A-4 + R128 §五 M4 | ✅ .claude/hooks/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
 | BCP-004 | H-1 additional-location（R-2 盲区根治）| 无（脚本属 scripts/ 白名单）| ③落地 | R-2 additional-location | R131 §四.4.6 wt-4 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
@@ -108,10 +108,10 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 
 | 度量 | 当前 | 目标 |
 |---|---|---|
-| 闭环数 / BCP 数 | 0/13 | ≥ 8/13（R132 末）|
+| 闭环数 / BCP 数 | 1/13 | ≥ 8/13（R133 末）|
 | 平均时长（BCP 生命周期）| 0 天 | ≤ 18 天 |
-| 停滞率（48h 未推进）| 0/13 | ≤ 2/13 |
-| 5 钻撞根因覆盖率 | 21/80（26.25%）| ≥ 50%（R132 末）|
+| 停滞率（48h 未推进）| 12/13 | ≤ 2/13 | 11 BCP 等 owner 拍板 |
+| 5 钻撞根因覆盖率 | 21/80（26.25%）| ≥ 50%（R133 末）|
 
 ---
 
@@ -126,5 +126,6 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 ---
 
 **登记位创建时间**：2026-09-20
+**首次闭环**：BCP-001（M1 看板化）2026-09-20 03:12，commit `cb5ba74c`
 **撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端
-**下次刷新**：BCP 状态机推进 / wheel-stuck-detector 首次运行后
+**下次刷新**：BCP-002/003/006/007/008 推进后 / BCP-Closure-Log.md §四 度量更新后
