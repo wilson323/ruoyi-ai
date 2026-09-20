@@ -146,7 +146,7 @@ $ grep "创建时间" docs/ipd-系统说明/拍板决策包/paiban-14-fe-fix-202
 - ❌ 未动 SQL（无 .sql 文件改动，t2-paiban-sla.sh 仅 grep paiban-*.md 文本）
 - ❌ 未抢端口（端口 16039/23306/8080 等兄弟会话占用 100% 保持）
 - ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，paiban-14 篡改后已即时还原）
-- ❌ 未动兄弟会话 modified（事实验证-20260919.md / 提交完整度-20260919.md 维持原状，`git status` 未列其名）
+- ❌ 未动兄弟会话 modified（事实验证-20260919.md / 提交完整度-20260919.md 维持原状，`git status` 未列其名） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ 未实装 cron（仅 docs 落档 t2-paiban-sla.sh 调用说明 + log.md append，等 owner 拍板 #18 cron 配置后再实跑）
 
 **下家 BCP 触发**：
@@ -529,7 +529,7 @@ EXIT=1（PASS — 自证能红成功）
 - ❌ 未动 SQL / Flyway（db/、sql/ 零修改）
 - ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
 - ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
-- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + scripts/check-ssot-drift.sh 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md 维持原状，`git status` 未列其名）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + scripts/check-ssot-drift.sh 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md 维持原状，`git status` 未列其名） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ✅ 不抢段号（§三.3.9 严守，§三.3.8 由 P 智能体独占，§三.3.10 由 E 智能体独占，§八 已由 A 智能体落档）
 
 **下家 BCP 触发**：
@@ -611,7 +611,7 @@ $ grep "7/13" docs/ipd-系统说明/BCP-Registry.md
 - ❌ 未动 SQL / Flyway（无 .sql 文件改动，pointer-trigger.sh 仅扫描 `.harness/memory/` 文本）
 - ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
 - ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
-- ❌ 未动兄弟会话 modified（接受并发 patch：仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未动兄弟会话 modified（接受并发 patch：仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ 未动 `.evolver/workspace-id`（敏感文件未触碰；仅读 `.evolver/failures.jsonl` 基线反脆弱失败记录）
 
 **下家 BCP 触发**：
@@ -690,7 +690,7 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 - ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改，application-ipd-local.yml **仅 docs 引用路径未修改内容**）
 - ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
 - ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
-- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ 未实跑后端（撞车 0 让路边界 — R136 任务全程未启 IPD 后端，仅 docs-only 落档 + grep 实证 + 不修改 application-ipd-local.yml 内容）
 - ❌ 未动 §三.3.12（Q 智能体责任 — BCP-010 Hook H1-H4 矩阵）
 - ❌ 未动 §三.3.13（E 智能体责任 — BCP-009 H-7+M5 E2E 阻断门禁 docs-only 准备）
@@ -747,7 +747,7 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 - ❌ **未动 SQL / Flyway**（`db/` / `sql/` 零修改）
 - ❌ **未抢端口**（16039 / 23306 / 8080 / 15666 互守保持）
 - ❌ **未杀 PID**（34560 / 70554 / 29607 / 65576 互不全部不撞 ipd_dev）
-- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/ 内存储；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%）
+- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/ 内存储；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ✅ **所有 Bash 命令前开 `cd /Users/mac/Documents/ruoyi-ai &&`** 严守跨仓 cd 边界
 
 **5 钻撞根因实证**（BCP-010 5 钻证据位 = R-1+R-5 五必现查 hook 矩阵）：
@@ -772,7 +772,7 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 - ❌ **未动 SQL / Flyway**（无 .sql 文件改动）
 - ❌ **未抢端口**（16039 / 23306 / 8080 / 15666 兄弟会话占用 100% 保持）
 - ❌ **未杀 PID**（34560 / 70554 / 29607 / 65576 互不全部不撞 ipd_dev，全程未触碰）
-- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状，`git status` 未列其名）
+- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状，`git status` 未列其名） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ **不抢段号**（§三.3.11 由 P 智能体独占，§三.3.13 由 E 智能体独占，§九 已由 A 智能体落档 → R136 qa-gatekeeper 仅写 §三.3.12）
 
 **下家 BCP 触发**：
@@ -834,7 +834,7 @@ $ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
 - ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改）
 - ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
 - ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
-- ❌ 未动兄弟会话 modified（接受并发 patch：§三.3.11 由 P 智能体独占已闭环、§三.3.12 由 Q 智能体独占 docs-only 准备完毕、§九 由 A 智能体独占 — 本段 §三.3.13 不冲突；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未动兄弟会话 modified（接受并发 patch：§三.3.11 由 P 智能体独占已闭环、§三.3.12 由 Q 智能体独占 docs-only 准备完毕、§九 由 A 智能体独占 — 本段 §三.3.13 不冲突；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ 未跨仓（仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
 - ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
 - ✅ 撞号预防映射表严守（本智能体 E 写 §三.3.13；P 写 §三.3.11 已闭环；Q 写 §三.3.12 docs-only 准备完毕；A 写 §九 — 段号互不交集）
@@ -1003,7 +1003,7 @@ $ bash scripts/pointer-trigger.sh 2>&1 | tail -3
 - ❌ **未动 SQL / Flyway**（`db/`、`sql/` 零修改）
 - ❌ **未抢端口**（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
 - ❌ **未杀 PID**（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
-- ❌ **未动兄弟会话 modified**（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + .harness/memory/pointer-119.md 临时改名后即时还原 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%，`git status` 未列其名）
+- ❌ **未动兄弟会话 modified**（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + .harness/memory/pointer-119.md 临时改名后即时还原 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%，`git status` 未列其名） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ **不抢段号**（§三.3.15 由 Q 智能体独占，§三.3.16 由 E 智能体独占，§十 由 A 智能体独占 → R137 ioedream-pm 仅写 §三.3.14，撞号预防映射表严守 100% PASS）
 - ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
 
@@ -1204,7 +1204,7 @@ R137 Q 智能体 docs-only 准备阶段发现**关键事实漂移**：
 - ❌ 未实装 cron（仅 docs 落档 t2-paiban-sla.sh 调用说明，等 owner 拍板 #18 后由后续 R 轮实跑）
 - ❌ 未实跑 t2-paiban-sla.sh（无脚本执行记录 = 仅 docs 落档，不污染 log.md）
 - ❌ 未修改脚本（`scripts/t2-paiban-sla.sh` 67 行 R132 cb5ba74c 原状，自证能红 R134 已闭环验证 PASS）
-- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ 未跨仓（仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
 - ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
 - ✅ 撞号预防映射表严守（本智能体 Q 写 §三.3.15；P 写 §三.3.14；E 写 §三.3.16；A 写 §十 — 段号互不交集）
@@ -1406,7 +1406,7 @@ EXIT=2   # ✅ 能红态 EXIT=2（双向 PASS — 跨仓 cd 必现查 4 类场�
 - ❌ **未动 SQL / Flyway**（`db/`、`sql/` 零修改，application-ipd-local.yml **仅 docs 引用路径未修改内容**）
 - ❌ **未抢端口**（端口 16039 / 23306 / 8080 / 15666 兄弟会话占用 100% 保持）
 - ❌ **未杀 PID**（PID 34560 / 70554 / 29607 / 65576 全部不撞 ipd_dev，全程未触碰）
-- ❌ **未动兄弟会话 modified**（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + BCP-009-跨仓最大破坏设计-20260920.md 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%）
+- ❌ **未动兄弟会话 modified**（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + BCP-009-跨仓最大破坏设计-20260920.md 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ **未跨仓**（仅在 `docs/ipd-系统说明/` 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
 - ❌ **未实装跨仓实质**（不实装跨仓 commit / 不实装跨仓 DDL apply / 不实装跨仓端口抢占 / 不实装跨仓 PID 互杀 — 全部 docs-only 设计层落档）
 - ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
@@ -1562,7 +1562,7 @@ $ grep -l "FAIL_SEED" docs/ipd-系统说明/BCP-013-type{1,2,3,4,5}-*-设计-202
 - ❌ 未实装 F-GREEN 修复实质（仅 docs-only 落档 5 类设计文档；不引入 Testcontainers / archunit-junit5 / commit-msg hook）
 - ❌ 未实跑 `mvn clean package` / `check-f-green-type*.sh`（避免 target/ 污染 + 日志污染）
 - ❌ 未跨仓（仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
-- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/ 末尾追加 §三.3.19 + §十五 + 5 个独立设计文档；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/ 末尾追加 §三.3.19 + §十五 + 5 个独立设计文档；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
 - ✅ 撞号预防映射表严守（本智能体 E 写 §三.3.19；P 写 §三.3.17；Q 写 §三.3.18；A 写 §十四 — 段号互不交集）
 
@@ -1724,7 +1724,7 @@ $ grep -l "FAIL_SEED" docs/ipd-系统说明/BCP-013-type{1,2,3,4,5}-*-设计-202
 - ❌ **未动 SQL / Flyway**（`db/` / `sql/` 零修改）
 - ❌ **未抢端口**（16039 / 23306 / 8080 / 15666 互守保持）
 - ❌ **未杀 PID**（34560 / 70554 / 29607 / 65576 互不全部不撞 ipd_dev）
-- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/ 内存储；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%）
+- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/ 内存储；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ **未实跑 H5/H6/H7 自证能红**（不污染 log.md / 不污染 .harness/memory pointer-119 ~ pointer-135）
 - ✅ **所有 Bash 命令前开 `cd /Users/mac/Documents/ruoyi-ai &&`** 严守跨仓 cd 边界
 
@@ -1756,7 +1756,7 @@ $ grep -l "FAIL_SEED" docs/ipd-系统说明/BCP-013-type{1,2,3,4,5}-*-设计-202
 - ❌ **未动 SQL / Flyway**（无 .sql 文件改动）
 - ❌ **未抢端口**（16039 / 23306 / 8080 / 15666 兄弟会话占用 100% 保持）
 - ❌ **未杀 PID**（34560 / 70554 / 29607 / 65576 互不全部不撞 ipd_dev，全程未触碰）
-- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + 3 个独立设计文档在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%，`git status` 未列其名）
+- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + 3 个独立设计文档在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%，`git status` 未列其名） 〔R138-D3 接手〕→ commit 4741e984/9325ae9e（见 log.md R138-D3 段）
 - ❌ **不抢段号**（§三.3.17 由 P 智能体独占，§三.3.19 由 E 智能体独占，§十一/§十二 由 A 智能体独占 → R138 qa-gatekeeper 仅写 §三.3.18 + 3 个独立设计文档）
 
 **闭环证据**（BCP-010 docs-only 闭环 = 11/13 R138 第二个闭环）：
