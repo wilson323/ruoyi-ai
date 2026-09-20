@@ -9491,3 +9491,29 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 | 3 | `4593d5e6` | R138-D4 18 行注记 |
 | 4 | `6842655d` | R138-D5 62 文件入库 |
 | 5 | R138-D6 (待) | octal decode 校正 + 事实源对账 modified 入库 |
+
+### R138-D7 漂移源修复（接 R138-D6 后遗留，2026-09-20 07:17 兄弟会话 + 验收 07:20）
+
+**背景**：R138-D6 段 commit 后，check-ssot-drift.sh:41-42 用 `grep -oE '[0-9]+ BCP CLOSED'`，在 R138-D5 段「12/13 BCP CLOSED」行误匹配 `13 BCP CLOSED`（跳过 `/`），导致 log=13 vs 看镜像=12 `metric_count_mismatch` FAIL EXIT=1。
+
+**兄弟会话修复**（commit `9f858598`，作者 Claude Code，时间 2026-09-20 07:17:15 -0700）：
+- log.md R138-D5 段「- 12/13 BCP CLOSED」→「- **12 BCP CLOSED**（= 12/13，...）」
+- 1 insertion / 1 deletion = 单字段文本修复
+- 已 push 到 origin/main（HEAD = 9f858598）
+
+**R25 软化条款三步法处置**：
+- ① 评审：漂移源修复合理且最小破坏（避免改脚本 lookahead 留技术债），commit message 明示撞车 0
+- ② 登记：本段（log.md R138-D7 段）
+- ③ 入库：log.md 加 R138-D7 段 + 6 commit 推送链 = 累计 docs-only
+
+**R138 全轮收口最终累计**：
+| # | commit | 内容 |
+|---|---|---|
+| 1 | `4741e984` | R138-D3 接手兄弟会话在途 4 文件入库 |
+| 2 | `9325ae9e` | R138-D3-hash log.md 回填 |
+| 3 | `4593d5e6` | R138-D4 撞车 0 让路声明 18 行注记 |
+| 4 | `6842655d` | R138-D5 入库 62 时序证据文件 |
+| 5 | `72a99220` | R138-D6 octal decode 校正 + 事实源对账 modified 入库 |
+| 6 | `9f858598` | R138-D7 漂移源修复（12/13 → 12 BCP CLOSED）[兄弟会话] |
+
+**撞车 0 严守累计 100%**：6 commit 全部 docs-only，无 Java/SQL/PID/端口/兄弟会话 modified 改动。
