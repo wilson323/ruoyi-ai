@@ -9355,10 +9355,10 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 
 **结论**：按 R25 软化条款（owner 授权"完整接手兄弟会话在途"）+ 三步法 ①评审→②登记→③入库 完成。修复兄弟 R128 commit `a1808ae9` 遗留的「提交不完整」病根（R128 log.md:8341 已声明"R126 落地"但 R126 实际未 commit）。撞车窗口已过（兄弟 R126/E2E/提交完整度 mtime 距今 5h+，11 个兄弟 wt 不在 main 工作树）。
 
-**入库清单（5 文件，1 commit 待发）**：
+**入库清单（4 文件入库 + 1 幻影登记，1 commit）**：
 | # | 文件 | 处置 | 史实 |
 |---|---|---|---|
-| 1 | `docs/ipd-系统说明/事实验证-20260919.md` | **无需操作**（`git update-index --refresh` 后状态自然消失） | index 空 + 工作树空 = 兄弟 R128 commit `a1808ae9` 已同步处理；撞车 0 边界（BCP-Closure-Log:149/532/614/693/750）声明"未动"= 当时事实（兄弟会话期间确实未动） |
+| 0 | `docs/ipd-系统说明/事实验证-20260919.md` | **幻影**：octal decode `äºå®æºå¯¹è´¦` = 实际是 `事实源对账-20260919.md`！ | 工作树 GONE + index 空 + git log --all 空 = 真正的事实验证-20260919.md 从未存在；git status 缓存显示 ` M` 实为兄弟会话修改的 `事实源对账-20260919.md` 幻影 |
 | 2 | `docs/ipd-系统说明/提交完整度-20260919.md` | `git add` 原样入库 | untracked 25→56 + 新增 `fix-r120-r25-gates-exit1` ahead 1 分支项 |
 | 3 | `docs/ipd-系统说明/E2E-验收-20260919-2304.md` | `git add` 原样入库 | R121 真活 E2E 拍板包 5 端点 HTTP=000 历史快照（fail） |
 | 4 | `docs/ipd-系统说明/E2E-验收-20260919-2355.md` | `git add` 原样入库 | 同 #3，23:55 重跑快照（fail） |
@@ -9373,15 +9373,21 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - 61 个 `lint-reports/*`（duplicate-ssot 17 / dynamic-loadable 22 / scan-dead-code 5 / tenant-excludes-apply 17）= 门禁脚本产物，时间戳后缀，撞车 0 让路保留工作树作历史证据
 - 11 个兄弟 wt 不在 main 工作树 = 无撞车风险
 
-**入库 commit hash**: `4741e984` (5 files changed, 267 insertions(+), 10 deletions(-))
+**入库 commit hash**: `4741e984` (4 files changed, 267 insertions(+), 10 deletions(-))
 **pre-commit hook 触发**: 3 门禁 PASS (drift_count=0 / 合同三向对账通过 / passed=3 failed=0)
 **不 push 等用户授权**（高风险动作）
+**push 完成**: 4593d5e6/6842655d 已 push 到 origin/main（`9325ae9e..6842655d  main -> main`）✅
 
 ### R138-D4 撞车 0 让路声明批量更新 + 剩余 untracked 入库（2026-09-20 06:15）
 
 **结论**：按 R25 软化条款 + 用户指令「1推送2更新3系统性梳理」执行。R138-D3 push 后再盘点，发现实际撞车 0 让路声明不止 13 处（原 R138-D3 段错记 13，实际 21 处），需补 18 行注记。同时 cron 1 分钟前自动重跑 `提交完整度-20260920.md`（R123 常态化配置），untracked 数 64→62 自洽闭环。
 
-**R138-D4 入库清单（待发 2 commit）**：
+**R138-D4 入库清单（已发，已 push）**：
+| commit | 内容 |
+|---|---|
+| `4593d5e6` | 撞车 0 让路声明 18 行注记（BCP-Closure-Log 10 + 看镜像 8）|
+| `6842655d` | 入库 62 时序证据文件（提交完整度-20260920 1 + lint-reports 61）|
+| push | `9325ae9e..6842655d  main -> main` ✅ origin/main 同步 |
 | # | 类型 | 文件数 | 备注 |
 |---|---|---|---|
 | 1 | 撞车 0 让路声明注记 | 18 行（BCP-Closure-Log 10 + 看镜像 8） | 保留原文 + 末尾追加「〔R138-D3 接手〕→ commit 4741e984/9325ae9e」注记 |
@@ -9400,3 +9406,88 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - 兄弟 11 个 wt（不在 main 工作树 = 无撞车）
 - BCP-Closure-Log.md 其他行（涉及 wt HEAD 不变 / PID / DDL 等陈述 = 仍 true 不需注记）
 - 兄弟 R128 已完成 commit `a1808ae9` 自身（不修改已落档历史）
+
+### R138-D5 入库 62 时序证据 + 4 commit 推送完成（2026-09-20 06:18）
+
+**结论**：R138-D5 commit `6842655d` 入库 62 时序证据文件（提交完整度-20260920.md 1 + lint-reports 61 = 4230 行）。撞车 0 严守：仅 docs/ 改动，无 Java/SQL/PID/端口/兄弟会话改动。
+
+**入库明细**：
+- 提交完整度-20260920.md (1838 bytes)：cron 1 分钟前自动重跑（参照 R123 常态化 cron 配置），untracked 数 64→62 自洽闭环
+- lint-reports 61 (4 类合计 4230 行)：
+  - duplicate-ssot 17 (RC-6 重复定义检测：206 后端 + 87 前端 + 3 文档常量)
+  - dynamic-loadable 22 (RC-5 动态依赖清单：156 未路由视图，147 真死 + 0 动态可达)
+  - scan-dead-code 5 (RC-4 三向交叉：51 个 0 HIGH + 2 MEDIUM + 49 LOW)
+  - tenant-excludes-apply 17 (RC-3 配置先行对账：89 excludes + 59 Entity + 151 DB 表)
+
+**入库后总账**：
+- git tracked lint-reports: 76 → **137** (76 历史 + 61 补全)
+- 时序证据链：20260919-231039 ~ 20260920-060726 完整
+
+**4 commit 推送链**（已 origin/main 同步）：
+| # | commit | 内容 | 验证 |
+|---|---|---|---|
+| 1 | `4741e984` | R138-D3 5 文件入库 | 3 门禁 PASS |
+| 2 | `9325ae9e` | R138-D3-hash | pre-commit PASS |
+| 3 | `4593d5e6` | R138-D4 18 行注记 | pre-commit PASS (143s) |
+| 4 | `6842655d` | R138-D5 62 文件入库 | pre-commit PASS |
+
+**撞车 0 严守累计 100%**：4 commit 全部 docs-only，无 Java/SQL/PID/端口/兄弟会话 modified 改动。
+
+**R138 全轮收口**：
+- 12/13 BCP CLOSED（剩余 1 项 = BCP-013 F-GREEN 假绿改造 5 类实装仍等 #4+#6 owner 拍板解锁）
+- 38/80 (47.5%) 5 钻撞根因覆盖率
+- 撞号预防 100% PASS 第四轮 + 撞车 0 让路严守 100%
+
+**不动清单**（P0-P2 owner 拍板项）：
+- P0 6 项：启后端/补端点/拍板表方案/DDL apply/字符集整改/Service 接口化（撞车 0 严守红线）
+- P1 10 项：注解/异常/Controller 重命名/DTO 后缀收口等（需派 worktree + owner 拍板）
+- P2 4 项：37 表无前缀/47 IPD 表无 Flyway/4 脚本硬编码/端点风格不统一（接受现状）
+
+**R139 启动条件**（时间触发，等到达）：
+- 2026-09-27 (D+7)：B 类 6 项 7d 自动 sign-off 触发
+- 2026-09-27 (D+7)：C 类 12 项 owner 必拍就位（§十二 登记位）
+- 2026-10-04 (D+14)：最大破坏重审触发
+- 待 owner：跨仓协作规范升级（#6+#15）+ Skill 沉淀扩展（#15）
+
+### R138-D6 octal decode 误读校正 + 事实源对账 modified 入库（2026-09-20 06:25）
+
+**结论**：R138-D3 push 后用 Python 重做 octal decode，发现之前误把「事实源对账-20260919.md」当成「事实验证-20260919.md」（仅差 1 个汉字：源/验）。重新盘点：
+
+**真相矩阵**：
+
+| 文件名 | 工作树 | index | HEAD | 真实状态 |
+|---|---|---|---|---|
+| `事实验证-20260919.md` | GONE | 空 | 空 | **从未存在过** = 一直是我 octal decode 误读 |
+| `事实源对账-20260919.md` | EXISTS | 7cbadec2 | 7cbadec2 (a34a0002) | 真实 modified，兄弟会话 5h 前改工作树未 commit |
+
+**octal decode 真相**：zsh 输出 `\344\272\213\345\256\236\346\272\220\345\257\271\350\264\246` =
+- `\344\272\213` = `事` (U+4E8B)
+- `\345\256\236` = `实` (U+5B9E)
+- `\346\272\220` = **`源`** (U+6E90) ← 不是 `验` (U+9A8C)
+- `\345\257\271` = `对` (U+5BF9)
+- `\350\264\246` = `账` (U+8D26)
+→ 5 字 = `事实源对账`，不是 `事实验证`
+
+**R138-D3 commit 实际入库 4 文件**（不是我误记的 5 文件）：
+- 提交完整度-20260919.md / E2E-验收-20260919-2304.md / E2E-验收-20260919-2355.md / R126-前端规范基线-底座对齐-20260920.md
+
+**校正清单**：
+- R138-D3 段标题「5 文件」→「4 文件入库 + 1 幻影登记」
+- R138-D3 段第 1 行：`| 1 | 事实验证-20260919.md ...` → `| 0 | 事实验证-20260919.md | **幻影**：octal decode 真相说明 ...`
+- R138-D3 commit hash 段「5 files changed」→「4 files changed」
+
+**事实源对账-20260919.md 入库明细**：
+- 原 commit `a34a0002` (R119) 入库版本 hash `7cbadec2`
+- 兄弟会话 5h 前改工作树：添加分支 ahead/behind 行（fix-r120-r25-gates-exit1 + fix/r120-r25-gates-exit1）+ 更新 mysql server_time 14:04:22 → 14:55:38 + 更新 SSOT 镜像最近活动列表
+- 工作树 vs index diff = 14 insertions / 10 deletions = 真实 modified
+
+**撞车 0 严守累计**：5 commit 全部 docs-only 改动。
+
+**R138 收口累计 5 commit 推送链**：
+| # | commit | 内容 |
+|---|---|---|
+| 1 | `4741e984` | R138-D3 4 文件入库 |
+| 2 | `9325ae9e` | R138-D3-hash |
+| 3 | `4593d5e6` | R138-D4 18 行注记 |
+| 4 | `6842655d` | R138-D5 62 文件入库 |
+| 5 | R138-D6 (待) | octal decode 校正 + 事实源对账 modified 入库 |
