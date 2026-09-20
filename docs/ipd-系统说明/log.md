@@ -9358,7 +9358,7 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **入库清单（5 文件，1 commit 待发）**：
 | # | 文件 | 处置 | 史实 |
 |---|---|---|---|
-| 1 | `docs/ipd-系统说明/事实验证-20260919.md` | `git rm --cached` 同步兄弟删除意图 | index 幻影 modified + 工作树不存在 = 兄弟已 `rm` 但漏 `git rm`，撞车 0 边界（BCP-Closure-Log:149/532/614/693/750）声明"未动"= 当时事实 |
+| 1 | `docs/ipd-系统说明/事实验证-20260919.md` | **无需操作**（`git update-index --refresh` 后状态自然消失） | index 空 + 工作树空 = 兄弟 R128 commit `a1808ae9` 已同步处理；撞车 0 边界（BCP-Closure-Log:149/532/614/693/750）声明"未动"= 当时事实（兄弟会话期间确实未动） |
 | 2 | `docs/ipd-系统说明/提交完整度-20260919.md` | `git add` 原样入库 | untracked 25→56 + 新增 `fix-r120-r25-gates-exit1` ahead 1 分支项 |
 | 3 | `docs/ipd-系统说明/E2E-验收-20260919-2304.md` | `git add` 原样入库 | R121 真活 E2E 拍板包 5 端点 HTTP=000 历史快照（fail） |
 | 4 | `docs/ipd-系统说明/E2E-验收-20260919-2355.md` | `git add` 原样入库 | 同 #3，23:55 重跑快照（fail） |
@@ -9373,4 +9373,6 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - 61 个 `lint-reports/*`（duplicate-ssot 17 / dynamic-loadable 22 / scan-dead-code 5 / tenant-excludes-apply 17）= 门禁脚本产物，时间戳后缀，撞车 0 让路保留工作树作历史证据
 - 11 个兄弟 wt 不在 main 工作树 = 无撞车风险
 
-**未入库 hash 待发 commit 后回填**
+**入库 commit hash**: `4741e984` (5 files changed, 267 insertions(+), 10 deletions(-))
+**pre-commit hook 触发**: 3 门禁 PASS (drift_count=0 / 合同三向对账通过 / passed=3 failed=0)
+**不 push 等用户授权**（高风险动作）
