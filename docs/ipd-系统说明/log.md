@@ -8270,3 +8270,24 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **撞车 0 严守**：当前跑的后端进程（PID 34560）连的是兄弟会话 ry-vue 库（不是 ipd_dev），不擅杀兄弟进程起 IPD 后端。
 
 **待 owner 拍板**：bonus.poolRate = 0.0500（spec 应为 0.05），update_by=-1（系统默认），R49 报告已登记三选项 A/B/C。
+
+### R119 系统性根因反思+R25 9 大门禁常态化+R119 5 补缺（2026-09-19）
+
+**结论**：R118 真库健康检查（151 表/+26）+ R113-R117 5 轮清理（refs 164→4）+ R25 9 大门禁（88KB）已基本覆盖 8 大根因 RC-2~RC-8，但 **3 个不自证能红（tenant_excludes_apply / dynamic_loadable / duplicate_ssot EXIT=0）+ 1 个 EXIT=2 不标准（deletion_consistency）+ 1 个未验证（scan_dead_code 卡超时）= 5 失效/未验证**。
+
+**R119 定位**：R25 9 大门禁（症状层）+ R119 5 补缺（机制层 5 类病根）正交覆盖。R119 新增 5 脚本全部自证能红 EXIT=1：
+- #1 check-test-coverage-by-domain.sh（覆盖率 55% < 60% 触发）
+- #2 check-commit-completeness.sh（撞车兄弟会话 ry-vue 触发）
+- #3 check-rule-wiring.sh（system_config_versions vs configs diff 触发）
+- #4 check-e2e-fe-be.sh（5 项业务契约失败触发）
+- #5 reconcile-multi-source.sh（DIFFS=3 触发）
+
+**16 脚本矩阵自证能红 11/16（69%）**，5 失效/未验证为 R120+ 候选。
+
+**关键根因反思**：
+1. 机制失效 = 假绿的镜像（脚本存在 ≠ 真自证能红）
+2. shell pipe trap（`bash X.sh | tail; echo $?` 测的是 tail EXIT 不是脚本 EXIT）
+3. R25 + R119 正交不包含（症状层 vs 机制层）
+4. 撞车兄弟会话是治理层问题非脚本能解决
+
+**撞车 0 严守**：不杀 PID 34560 兄弟会话后端，R121 跑真活 E2E 闭环待 owner 拍板。

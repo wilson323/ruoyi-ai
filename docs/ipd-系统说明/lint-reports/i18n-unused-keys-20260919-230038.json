@@ -1,0 +1,8 @@
+{
+  "timestamp": "20260919-230038",
+  "baseline_locale": "",
+  "total_keys": 70,
+  "live_keys": 67,
+  "dead_keys": 3,
+  "dead_keys_list": ["page.dashboard.analytics","page.dashboard.title","page.dashboard.workspace"]
+}

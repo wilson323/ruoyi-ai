@@ -1,0 +1,11 @@
+{
+  "timestamp": "20260919-230043",
+  "module": "ruoyi-ipd",
+  "scan_base": "ruoyi-modules/ruoyi-ipd/src/main/java",
+  "totals": {
+    "entity": 1, "mapper": 58, "service": 61, "controller": 51
+  },
+  "f1_no_mapper": ,
+  "f2_no_service": ["AuditChainHeadMapper","BonusAllocationMapper","CoefficientChangeRequestMapper","ContributionVersionMapper","DeliverableMapper","GateArbitrationMapper","GateReviewObserverMapper","IpdBusinessConfigMapper","IpdBusinessConfigVersionMapper","KpiRuleSnapshotMapper","LaunchDateChangeRequestMapper","NotificationEventMapper","OssFileMapper","PersonSyncJobMapper","ProjectCertItemMapper","ProjectCircleCommentMapper","ProjectCirclePostMapper","ProjectFollowerMapper","ProjectScoreRecordMapper","ProjectScoreTaskMapper","ProjectStageMapper","RequirementMapper","SopTemplateInstanceMapper","SystemConfigVersionMapper"],
+  "f3_no_controller": ["AiDocEmbeddingService","AiGenerationService","AllowanceService","AuditAttemptService","BidInvitationService","BidResponseService","BidScanService","BusinessConfigService","CorrectionLogService","DeleteAuditService","DeletionArchiveService","GateCreationService","GateService","GuestDemandService","KpiRecordRuleVersionService","KpiSharedCollectionService","KpiSharedConfirmService","LegacyImportService","OverdueReminderService","ProjectBootstrapService","ProjectCertService","ProjectScoreArchiveService","ProjectScoreScheduleService"]
+}
