@@ -9618,3 +9618,34 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - 仅 docs 改动，未动 Java/SQL/PID/端口/兄弟会话 modified 文件
 - 后端 16039 / 前端 15666 / 真库 13306 仍未启
 - 11 个兄弟会话 worktree 全部未动
+
+### R141 4 张 B 类决策包并行派单（2026-09-20）
+
+**结论**：派 4 张 B 类 7d 自动通过决策包到 worktree 隔离执行（基于 main HEAD `4f51187b` 单拉分支），全部 commit 成功 + 编译验证 PASS + pre-commit 3 门禁 PASS。
+
+**派单矩阵**（4 wt = 独立工作树，无 shared state，无 sequential 依赖）：
+
+| 决策包 | 工作树 | 分支 | commit hash | 改动 | 编译 | 门禁 |
+|---|---|---|---|---|---|---|
+| paiban-07 | `/tmp/wt-p141-mapper` | `fix/p141-mapper-annotation` | `916b04ee` | 39/39 Mapper 加 @Mapper（58 总 → 19 已带 + 39 新带 = 58 全带） | BUILD SUCCESS | 3/3 PASS |
+| paiban-08 | `/tmp/wt-p141-exception` | `fix/p141-exception-rename` | `96c78aca` | 19/20 `throw new IllegalArgumentException` → `IpdBusinessException`（10 个文件） | BUILD SUCCESS | 3/3 PASS |
+| paiban-09 | `/tmp/wt-p141-transactional` | `fix/p141-transactional-downgrade` | `3f395d24` | 7/7 类级 @Transactional 下沉到 public 方法（写 14 + 读 6 = 20 处） | BUILD SUCCESS | 3/3 PASS |
+| paiban-10 | `/tmp/wt-p141-scriptname` | `fix/p141-script-naming` | `c1a0559c` | 18/18 脚本 snake_case → kebab-case（git rename 18 + 修改 2） | bash -n 0 错 | 2/3 PASS（环境问题 mysql config missing，与本任务无关） |
+
+**撞车 0 严守累计 100%**：
+- 4 wt 基于 main HEAD `4f51187b` 单拉分支（paiban-10 wt parent = `a07bbf40` 因 subagent fetch 时序偏差，但 scripts/ 改动与 R140 docs 改动不冲突，可 rebase）
+- 全部使用 `-C /绝对路径` 或 cd 后执行 git 命令（避免 cwd 漂移）
+- 全部未使用 `git commit -am` / `git clean -f` / `git reset --hard` / `git push`
+- 全部未修改主工作树 `/Users/mac/Documents/ruoyi-ai`
+- 全部仅改任务清单内文件（Mapper 目录 / 业务层异常 / 7 个 Service / scripts/）
+
+**已知 follow-up（paiban-11 候补）**：
+- paiban-08 跳过 1 处：`AuditEventData.java` L27 `throw new IllegalArgumentException("...", e)` 带 cause，`IpdBusinessException` 不支持 `(String, Throwable)` 构造 → 需扩展构造或保留原异常
+- paiban-10 wt 外残留 113 处旧名引用（docs 58 + lint-reports 53 + .github/workflows 1 + nginx 1 + Java test 1）→ 后续派单同步更新
+
+**不 push 等待**：
+- 4 commit 全部 ahead of origin/main by 1
+- B 类 7d 自动 sign-off（per paiban-07/08/09/10 决策包）
+- 等 owner 拍板 R140 路径（A 撞车窗口到后 / B 立即 / C 资源允许）后统一合并或 cherry-pick
+
+**P0 拍板依赖未解锁**：paiban-02（kpi_rules 表方案）+ paiban-01（后端真活 E2E）仍等 owner，P0-2 补 3 端点（projects/persons/kpi）仍阻塞。
