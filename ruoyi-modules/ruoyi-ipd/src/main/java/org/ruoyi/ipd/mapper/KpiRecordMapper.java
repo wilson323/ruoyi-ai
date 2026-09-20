@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.KpiRecord;
 
@@ -9,5 +10,6 @@ import org.ruoyi.ipd.domain.KpiRecord;
  * <p>复用 MyBatis-Plus {@link BaseMapperPlus} 提供默认 CRUD；
  * 复杂聚合查询走 Service 层 {@code LambdaQueryWrapper} 组装，不在本接口额外声明。
  */
+@Mapper
 public interface KpiRecordMapper extends BaseMapperPlus<KpiRecord, KpiRecord> {
 }

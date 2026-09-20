@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.KpiSharedConfirm;
 
@@ -9,5 +10,6 @@ import org.ruoyi.ipd.domain.KpiSharedConfirm;
  * <p>复用 MyBatis-Plus {@link BaseMapperPlus} 提供默认 CRUD；
  * 查询组装走 Service 层 {@code LambdaQueryWrapper}，不在本接口额外声明。
  */
+@Mapper
 public interface KpiSharedConfirmMapper extends BaseMapperPlus<KpiSharedConfirm, KpiSharedConfirm> {
 }

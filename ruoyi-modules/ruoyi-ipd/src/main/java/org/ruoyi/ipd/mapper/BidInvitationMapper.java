@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -9,6 +10,7 @@ import org.ruoyi.ipd.domain.BidInvitation;
 /**
  * 招标单 Mapper（P2-3.1 BR-TEAM）
  */
+@Mapper
 public interface BidInvitationMapper extends BaseMapperPlus<BidInvitation, BidInvitation> {
 
     /**

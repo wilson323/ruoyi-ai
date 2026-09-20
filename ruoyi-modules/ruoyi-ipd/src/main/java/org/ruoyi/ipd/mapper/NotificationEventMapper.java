@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.NotificationEvent;
 
@@ -8,5 +9,6 @@ import org.ruoyi.ipd.domain.NotificationEvent;
  * 纪律：投递状态/已读流转仅经 service 内受控 lambdaUpdate（条件 UPDATE 乐观守卫），
  * 不提供 updateById(entity) 业务调用通道，防止并发双发/覆盖他人已读态。
  */
+@Mapper
 public interface NotificationEventMapper extends BaseMapperPlus<NotificationEvent, NotificationEvent> {
 }

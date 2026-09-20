@@ -1,11 +1,13 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.AuditLog;
 
 /** AuditLog mapper */
+@Mapper
 public interface AuditLogMapper extends BaseMapperPlus<AuditLog, AuditLog> {
 
     /**

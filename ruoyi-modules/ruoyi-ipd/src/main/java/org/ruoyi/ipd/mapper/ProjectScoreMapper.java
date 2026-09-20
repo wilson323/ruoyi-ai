@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.ProjectScore;
 
@@ -11,6 +12,7 @@ import java.util.List;
  * <p>P3-4.5 扩展：取数策略 PROJECT_SCORE / LAST_QUARTER 需按项目查档；ProjectScore 实体
  * 不含 period 字段（当前架构按维度/角色归档），按 projectId 倒序取最近一条即可。
  */
+@Mapper
 public interface ProjectScoreMapper extends BaseMapperPlus<ProjectScore, ProjectScore> {
 
     /**
