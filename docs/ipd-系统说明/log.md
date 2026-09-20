@@ -8234,3 +8234,13 @@ R46 治本 4 工程现在在 main:
 HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 
 落档 commit = R113 报告(103 行) + log.md R113 段。
+
+### R114 ahead commit 吸收体检（2026-09-19）
+
+**结论**：R113 列出的 14 ahead commit 全部已被 main 吸收或超越，0 可救。
+
+**9 分支 14 commit 吸收矩阵**：Withdraw(404→main 403 更优)、IDOR(已含 IpdIdorGuard 9 处)、SOP/CorrectionLog/KpiRuleSnapshot/ProjectScoreArchive(全实体已含)、AiChatClient SSRF(6 处 try/catch 全覆盖)、postreview tenant.excludes(main 用 `correction_logs` 复数 ahead 用单数)、Hikari/R33/R32 全部归档。
+
+**处置**：ahead 9 分支保留作历史归档，不再 cherry-pick 防冲突回退。
+
+**证据**：wt-r114-b1 已清，main HEAD=4079bb1f 未变，mvn -o -pl ruoyi-modules/ruoyi-ipd compile EXIT 0。
