@@ -8291,3 +8291,35 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 4. 撞车兄弟会话是治理层问题非脚本能解决
 
 **撞车 0 严守**：不杀 PID 34560 兄弟会话后端，R121 跑真活 E2E 闭环待 owner 拍板。
+
+### R121 真活 E2E 闭环 owner 拍板决策包（2026-09-19）
+
+**结论**：R119 已 commit（`a34a0002`），R119 报告 §R120+ 候选 B「跑真活 E2E 闭环」需 owner 拍板才能执行。**撞车 0 实测**：16039/15666 无监听 / PID 34560+23306 均不存在 / 真库 ipd_dev@13306 可连。
+
+**三案**：
+- **A（推荐）**：owner ping 兄弟会话 → 确认不在跑 → 起 IPD 后端连 ipd_dev@13306 + 起前端 15666 → 跑 `bash scripts/check-e2e-fe-be.sh` → 收 `docs/ipd-系统说明/E2E-验收-<ts>.md`（5 项业务契约真活绿）。**1 hr**
+- **B**：跳过撞车兄弟会话，接受 check-e2e-fe-be.sh 永远 EXIT=1（撞车 0 永久化）。**0 min**
+- **C**：改 check-e2e-fe-be.sh 为「撞车 0 软 FAIL」（违反 R119 自证能红纪律，治理倒退）。**10 min**
+
+**推荐 A**：R119 病根 #4 必须真活闭环 + 撞车 0 红线可 owner 协调解除 + 14 天撞车 0 持续是治理恶化信号。
+
+**落地**：拍板包路径 `docs/ipd-系统说明/R121-真活E2E-拍板包-20260919.md`（214 行 / 含现状 + 三案 + 推荐）。
+
+### R122 治理轮剩余 D1+D2+D3 owner 拍板决策包（2026-09-19）
+
+**结论**：R119 报告 §R120+ 候选表 P2 三项治理轮剩余事项待 owner 拍板。**三项 fresh 实测**：
+
+| 项 | 现状（fresh 2026-09-19） | 推荐案 | 工作量 |
+|---|---|---|---|
+| **D1 sys_user↔persons 字符集** | sys_user 全部 utf8mb4 + persons utf8mb4 | **B：加 check-charset-consistency.sh 巡检脚本**（预防未来回退） | 5 min |
+| **D2 bonus.poolRate 漂移** | current="0.0500" / default="0.05"（字符串不等，数值等） | **A：超管登录 /ipd/admin/config 编辑回 0.05** | 5 min |
+| **D3 SQL chain root 排程** | audit_log_chain_heads 1 行 GLOBAL（last_seq=2990，14 天初始化） | **B：先出评估报告再拍板**（seq=2990 远未触达上限，非紧急） | 1 hr 评估 |
+
+**关键发现**：
+- **D1 字符集已是 utf8mb4**（不需要 DDL 修复，方案 A 是 noop），但 RuoYi-Vue-Plus 升级史上有过回退，需方案 B 防护
+- **D2 bonus.poolRate 是字符串格式漂移**（0.0500 vs 0.05 trailing zeros），不是真漂移，A4 报告已详述三案
+- **D3 chain root last_seq=2990 远未触达 bigint 上限**（9.2e18），但重置 = 审计历史断链，需先评估法律合规
+
+**落地**：拍板包路径 `docs/ipd-系统说明/R122-治理轮剩余-D1+D2+D3-拍板包-20260919.md`（395 行 / 含现状 + 三案 + 推荐）。
+
+**commit 登记**：R121 + R122 拍板包 commit 待 owner 拍板后另起 commit（拍板包登记，不是拍板动作）。

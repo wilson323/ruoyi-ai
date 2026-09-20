@@ -1,0 +1,26 @@
+# /etc/cron.d/ruoyi-ai-reconcile-weekly
+# R123 常态化:R119 病根 #5 多事实源对账 → 每周日 02:00 跑一次
+#
+# 安装方式(二选一):
+#   1) 推荐系统级:bash scripts/install-cron-reconcile.sh
+#      → 自动 install -m 0644 到 /etc/cron.d/ruoyi-ai-reconcile-weekly
+#   2) 用户级:crontab -e 然后加:
+#      0 2 * * 0 cd /Users/mac/Documents/ruoyi-ai && bash scripts/reconcile-multi-source.sh >> /var/log/ruoyi-ai-cron.log 2>&1
+#
+# 卸载方式:
+#   sudo rm /etc/cron.d/ruoyi-ai-reconcile-weekly
+#   或:bash scripts/install-cron-reconcile.sh --uninstall
+#
+# 日志:tail -f /var/log/ruoyi-ai-cron.log
+# 报告:docs/ipd-系统说明/事实源对账-YYYYMMDD.md(脚本自动生成)
+#
+# OPS-09 撞车 0:
+#   - 这条 cron 不写业务文件、不杀进程、不改 SSOT 镜像,只读对账
+#   - 周末 02:00 跑,避开工作日并发窗口
+#   - 自证能红:差异项 > 0 → reconcile-multi-source.sh exit 1,cron 会发邮件提醒 root
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# m h dom mon dow user  command
+0 2 * * 0 root cd /Users/mac/Documents/ruoyi-ai && bash scripts/reconcile-multi-source.sh >> /var/log/ruoyi-ai-cron.log 2>&1
