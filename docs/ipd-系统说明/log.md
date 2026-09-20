@@ -8110,3 +8110,79 @@ R109 时 10099 行 → R111 时 10140 行(+41 = 兄弟持续写入)
 - ❌ 不擅自 revert 兄弟 R110 任何文件
 
 落档 commit = R111 报告(303 行) + log.md R111 段。本轮不 push。
+
+## R112:工作树整合清理-19 worktree+154 分支+R46 治本 4 工程孤儿化发现(2026-09-19,Loop 64)
+
+**作者**:主协调(2026-09-19 10:25)
+**触发**:主人指令「先梳理工作树整合清理」
+
+### 一句话大白话
+
+19 个 worktree + 154 分支看着吓人,实际只有 5 个 worktree 已合入 main 没用可清,剩下 13 个(含 4 个 R46 治本工程的孤儿化撞车)都还卡在分支上。**R46 治本 4 工程我以为是合并好了,刚才查 origin/main 祖先链一看,根本没合进去**!
+
+### 现状 fresh 现查
+
+| 维度 | 数值 |
+|---|---|
+| 本地 HEAD | 9c6353fd(R111) |
+| origin/main HEAD | 5bbc9ab5(R109) |
+| 本地领先 origin | 2 commit |
+| 总 worktree | 19 |
+| 总分支 | 154 |
+| untracked | 0 |
+| prunable | 0 |
+| locked | 0 |
+
+### 19 worktree 合并状态分类
+
+**5 个已合并 main+origin(候选可清)**:
+- agent-batchX-app-prod-yaml-secrets(2b280b65)
+- agent-batchX-b1-bonus-allocations-http(fa6527ce)
+- r34-takeover-ipd(6291caf8)
+- r35-takeover-ipd(3303a056)
+- wt-r39-integration(2cd3ec19)
+
+**⚠️ 13 个未合并 = 撞车孤儿化**:
+- **R46 治本 4 工程(⚠️ 重大失真发现)**:
+  - c83215f9 R46-A1 ComplianceService 白名单 → **不在 main 祖先链上!**
+  - 0edd0ba4 R46-A3 PmDirectory+ProjectCircle Mock 过滤 → **不在 main 链上!**
+  - feec82d2 R46-A4-1 SystemConfigController lastChange → **不在 main 链上!**
+  - 2fc588a6 R46-A4-2 check-param-drift.sh 门禁 → **不在 main 链上!**
+- r33-takeover-ipd(c86d0068 历史 takeover 2026-09-17)
+- agent-batch5-1/2/9(1449c359/6e1c3f11/035b6480 待 owner 派单合入)
+- agent-p133-idor-fix/sop(57795ee6/2c0f0d6e 待 owner 派单合入)
+- agent-p322-archive/postreview-fix(ea7d3872/60844abf 待 owner 派单合入)
+- r32-takeover(c67e0fa5 历史 takeover 2026-09-11)
+
+### ⚠️ 重大发现:R46 治本 4 工程孤儿化
+
+memory 19a719fc 记录 R46 治本工程(2026-09-19)已合并到 main。但 R112 fresh merge-base --is-ancestor 核对:**这 4 个 commit 不在 main 祖先链上!**
+
+推断根因:reflog 显示历史 10+ 次 reset 痕迹,按 memory de47f1e0 教训,兄弟会话某次 `git reset main→origin/main` 把 R46 治本 4 工程孤儿化。
+
+**R46 治本 4 工程在 main 上线缺位**:
+- A1 白名单没合入 → 47 项 IPD 业务表保护缺位
+- A3 Mock 过滤没合入 → PmDirectory/ProjectCircle 真活被 Mock 污染
+- A4 lastChange 没合入 → GET /{key} 返回缺字段
+- A4-2 门禁没合入 → bonus.poolRate 漂移检测缺门禁
+
+### 工作树空间
+
+~780M 总占用。清理 5 已合并 wt 可释放 ~228M;清理 4 历史 takeover 可释放 ~165M。
+
+### 撞号透明 5 项(等 owner 拍板)
+
+1. R46 治本 4 工程孤儿化处置(优先级 P0:A 选项 cherry-pick+PR / B 选项弃用重做 / C 选项确认作废)
+2. 5 个已合并 worktree 清理顺序
+3. 13 个未合并兄弟 worktree 处置顺序
+4. 兄弟 R110 push 顺序
+5. 154 分支批量清理
+
+### 撞车 0 严守
+
+- ❌ 不擅自 push 兄弟 R110
+- ❌ 不擅自合并 R46 治本 4 工程
+- ❌ 不擅自清理任何兄弟 worktree / 分支
+- ❌ 不擅自 reset / cherry-pick
+
+落档 commit = R112 报告(190 行) + log.md R112 段。本轮不 push(兄弟 R110 未 push,等 owner 拍板顺序)。
