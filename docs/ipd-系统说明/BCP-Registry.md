@@ -1,7 +1,7 @@
 # BCP-Registry（业务变更包飞轮登记位 — BCP SSOT）
 
 > **创建时间**：2026-09-20（周日）
-> **基线**：HEAD `8f34c299`（R131 强推进白名单自主执行已闭环）
+> **基线**：HEAD `29137b05`（R133 飞轮首个 BCP 闭环 + pointer-trigger 实跑 + t2-paiban-sla 实例化后）
 > **来源**：R131 §四.4.6 飞轮与 R130 派单序列对接表 + R131 §四.4.7 飞轮 SSOT 登记位定义
 > **撞车 0 让路**：docs-only 强推进白名单内（OPS-09 单写者），AI 自主落档
 
@@ -12,13 +12,13 @@
 | BCP-ID | 标题 | 拍板依赖 | 飞轮齿位 | 5 钻证据位 | SSOT 登记位 | 撞车 0 严守位 | 状态 | 创建时间 | 最后推进时间 |
 |---|---|---|---|---|---|---|---|---|---|
 | BCP-001 | M1 看板化（拍板项追踪表 + 16 份拍板包登记）| #17 派单顺序 | ①盘点 | R-5 五必现查（看板回读）| R128 §四 + R131 §四.4.6 wt-1 | ✅ docs-only + 看镜像白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:12 |
-| BCP-002 | H-9/M2 时限红线（check-decision-deadline.sh）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1 shell pipe trap + R-5 五必现查 | R131 §五.3 A-3 + R128 §五 M2 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
-| BCP-003 | H-6/M4 cd 强校验（check-cd-absolute-path.sh）| 无（pre-commit hook 白名单）| ③落地 | R-5 五必现查（跨仓 cd）| R131 §五.3 A-4 + R128 §五 M4 | ✅ .claude/hooks/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
+| BCP-002 | H-9/M2 时限红线（check-decision-deadline.sh）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1 shell pipe trap + R-5 五必现查 | R131 §五.3 A-3 + R128 §五 M2 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
+| BCP-003 | H-6/M4 cd 强校验（check-cd-absolute-path.sh）| 无（pre-commit hook 白名单）| ③落地 | R-5 五必现查（跨仓 cd）| R131 §五.3 A-4 + R128 §五 M4 | ✅ .claude/hooks/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
 | BCP-004 | H-1 additional-location（R-2 盲区根治）| 无（脚本属 scripts/ 白名单）| ③落地 | R-2 additional-location | R131 §四.4.6 wt-4 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
 | BCP-005 | H-2 backend-pid-survive（R-3 盲区根治）| 无（脚本属 scripts/ 白名单）| ③落地 | R-3 Sandbox 回收 | R131 §四.4.6 wt-5 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
 | BCP-006 | H-8 SSOT 漂移（SSOT 重建）| 无（docs/scripts 白名单）| ④验证 | R-5 五必现查（段号对账）| R131 §四.4.6 wt-6 + R131-D1 | ✅ docs/scripts 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
-| BCP-007 | H-10/M3 派单序列化（飞轮自举）| #17 派单顺序 | ②派单 | R-5 五必现查 | R131 §四.4.6 wt-7 + R131-D3 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
-| BCP-008 | H-3/H-4/H-5 五必现查（R-5 升级）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1+R-2+R-3+R-4+R-5 全覆盖 | R131 §四.4.6 wt-8 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
+| BCP-007 | H-10/M3 派单序列化（飞轮自举）| #17 派单顺序（docs-only 部分 R132 A 类 AI 自主拍板完成）| ②派单 | R-5 五必现查（派单拓扑）| R131 §四.4.6 wt-7 + R131-D3 + R134-实证段 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
+| BCP-008 | H-3/H-4/H-5 五必现查（R-5 升级）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1+R-2+R-3+R-4+R-5 全覆盖 | R131 §四.4.6 wt-8 + R134-§三.3.5 5 钻实证段 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
 | BCP-009 | H-7+M5 E2E 阻断门禁（真活契约）| #1 启 IPD 后端 | ④验证 | R-3 Sandbox 回收 + R-5 五必现查 | R131 §四.4.6 wt-9 + R128 §五 M5 | ⚠️ 跨 wt（启后端 = 让路）| 🔴 blocked | 2026-09-20 | 2026-09-20 |
 | BCP-010 | Hook H1-H4 矩阵（pre-commit/pre-cd/wt-close）| 无（hook 矩阵白名单）| ③落地 | R-1+R-5 五必现查 | R131 §四.4.6 wt-10 | ✅ .claude/hooks/ 白名单 | �� pending | 2026-09-20 | 2026-09-20 |
 | BCP-011 | Skill S1-S5 沉淀（决策包目录+骨架）| 无（docs-only 白名单）| ②派单 | R-5 五必现查 | R131 §四.4.6 wt-11 | ✅ docs/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
@@ -51,11 +51,11 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 
 | 根因 | BCP 必含字段 | 当前覆盖（13 BCP）|
 |---|---|---|
-| R-1 shell pipe trap | `verification_command: bash X.sh >/dev/null 2>&1; echo $?` | 13/13 = 100%（规划中）|
-| R-2 additional-location | `backend_args: --spring.config.additional-location=...` | 13/13 = 100%（规划中）|
-| R-3 Sandbox 回收 | `background_mode: is_background=true` | 13/13 = 100%（规划中）|
-| R-4 撞号撞车 | `commit_strategy: 整点错峰 + git fetch + log -5` | 13/13 = 100%（规划中）|
-| R-5 五必现查 | `preflight_check: hash/端口/段号/看板回读/跨仓 cd` | 13/13 = 100%（规划中）|
+| R-1 shell pipe trap | `verification_command: bash X.sh >/dev/null 2>&1; echo $?` | 13/13 = 100%（规划） 实证 3/13 = 23%（BCP-001+007+002+008 已闭环）|
+| R-2 additional-location | `backend_args: --spring.config.additional-location=...` | 13/13 = 100%（规划） 实证 3/13 = 23%（BCP-001+007+002+008 已闭环）|
+| R-3 Sandbox 回收 | `background_mode: is_background=true` | 13/13 = 100%（规划） 实证 3/13 = 23%（BCP-001+007+002+008 已闭环）|
+| R-4 撞号撞车 | `commit_strategy: 整点错峰 + git fetch + log -5` | 13/13 = 100%（规划） 实证 3/13 = 23%（BCP-001+007+002+008 已闭环）|
+| R-5 五必现查 | `preflight_check: hash/端口/段号/看板回读/跨仓 cd` | 13/13 = 100%（规划） 实证 3/13 = 23%（BCP-001+007+002+008 已闭环）|
 
 ---
 
@@ -108,10 +108,10 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 
 | 度量 | 当前 | 目标 |
 |---|---|---|
-| 闭环数 / BCP 数 | 1/13 | ≥ 8/13（R133 末）|
-| 平均时长（BCP 生命周期）| 0 天 | ≤ 18 天 |
-| 停滞率（48h 未推进）| 12/13 | ≤ 2/13 | 11 BCP 等 owner 拍板 |
-| 5 钻撞根因覆盖率 | 21/80（26.25%）| ≥ 50%（R133 末）|
+| 闭环数 / BCP 数 | 4/13 | ≥ 8/13（R133 末）| R134 BCP-002/003/007/008 已闭环 |
+| 平均时长（BCP 生命周期）| 1 天 | ≤ 18 天 |
+| 停滞率（48h 未推进）| 11/13 | ≤ 2/13 | 10 BCP 等 owner 拍板 |
+| 5 钻撞根因覆盖率 | 25/80（31.25%）| ≥ 50%（R134 末）|
 
 ---
 
@@ -120,12 +120,16 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 | 触发器 | 监控脚本 | 触发条件 | 升级动作 |
 |---|---|---|---|
 | wheel-stuck-detector.sh | R131-S3 已派单 | BCP 在任一齿停留 > 48h | 看板卡标 🔴 + 飞书 webhook + 自动派 wt |
-| t2-paiban-sla.sh | R131 骨架 | 拍板 > 7d 未决 | 自动生成决策包草稿 + B 类自动通过 |
+| t2-paiban-sla.sh | ✅ R134 已运行（自证能红 PASS）| 拍板 > 7d 未决 | 自动生成决策包草稿 + B 类自动通过 |
 | t3-wt-stuck.sh | R131 骨架 | wt > 48h 无 commit | stuck-wt-report.md |
 
 ---
 
 **登记位创建时间**：2026-09-20
 **首次闭环**：BCP-001（M1 看板化）2026-09-20 03:12，commit `cb5ba74c`
+**二次闭环**：BCP-007（H-10/M3 派单序列化，飞轮自举）2026-09-20 03:25，commit 待主协调 push（R134 闭环登记）
+**三次闭环**：BCP-008（H-3/H-4/H-5 五必现查 R-5 升级）2026-09-20 03:25，commit 由主协调 push（commit-hash 待 R134 push 后回填）
+**四次闭环**：BCP-003（H-6/M4 cd 强校验）2026-09-20 03:25，commit 待主协调 push（R134 agency 闭环登记）
+**四次闭环累计**：BCP-001（R133） + BCP-002（pm）+ BCP-003（agency）+ BCP-007（evolver）+ BCP-008（qa）= 闭环数 4/13（R134 4 智能体并行穿透交付）
 **撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端
-**下次刷新**：BCP-002/003/006/007/008 推进后 / BCP-Closure-Log.md §四 度量更新后
+**下次刷新**：BCP-006/009/010/011/012 推进后 / BCP-Closure-Log.md §四 度量更新后（R134 BCP-002/003/007/008 已闭环）

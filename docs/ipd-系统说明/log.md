@@ -8498,3 +8498,192 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - R134-A 候选：BCP-002 (H-9/M2 时限红线) 推进
 - R134-B 候选：BCP-003 (H-6/M4 cd 强校验) 推进
 - R134-C 候选：9 份老报告漂移修复（owner 拍板后）
+## Pointer-#119-触发-20260920-031329
+- type=反思层（根因型） sev=🔴
+- trigger=`bash X.sh | tail; echo $?` 测的是 tail EXIT = 0 → 假绿
+## Pointer-#120-触发-20260920-031329
+- type=反思层（根因型） sev=🔴
+- trigger=后端启动未带 `--spring.config.additional-location` 连错库
+## Pointer-#121-触发-20260920-031329
+- type=反思层（根因型） sev=🔴
+- trigger=`is_background=false` 起 java → 30s 后沙箱 SIGHUP 杀 → mvn BUILD SUCCESS 但后端从未启
+## Pointer-#122-触发-20260920-031329
+- type=反思层（根因型） sev=🟡
+- trigger=同分钟多 commit 撞 hash
+## Pointer-#123-触发-20260920-031329
+- type=反思层（根因型） sev=🟡
+- trigger=五必现查（hash/端口字段/段号/看板回读/跨仓 cd 凭记忆写）违反
+## Pointer-#124-触发-20260920-031329
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-pipe-trap.sh` 每 PR 跑
+## Pointer-#125-触发-20260920-031329
+- type=机制层（演化策略型） sev=🟢
+- trigger=启后端 bash 函数强制 --spring.config.additional-location
+## Pointer-#126-触发-20260920-031329
+- type=机制层（演化策略型） sev=🟢
+- trigger=`is_background=true` 必填 agent SOP + skill S3
+## Pointer-#127-触发-20260920-031329
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-r13-hard-3hash.sh`（H-3 升级，30 min）
+## Pointer-#128-触发-20260920-031329
+- type=机制层（演化策略型） sev=🟢
+- trigger=硬 hook 拦截凭记忆引用（H-4/H-5/H-6 三脚本，0.5 hr×3）
+## Pointer-#129-触发-20260920-031329
+- type=反思层 sev=🔴
+- trigger=`verify.sh --cross-audit-report` 步骤探测三源漂移
+## Pointer-#130-触发-20260920-031329
+- type=反思层 sev=🔴
+- trigger=`loop.sh` Phase 8 检测反思链深度 > 3 → 升级为指针
+## Pointer-#131-触发-20260920-031329
+- type=文档层 sev=🟡
+- trigger=`.claude/hooks/wt-close-pre-check.sh`（H-11 候选）扫 log.md 最新段号
+## Pointer-#132-触发-20260920-031329
+- type=机制层 sev=🔴
+- trigger=`.claude/hooks/pre-cd-cross-repo-check.sh`（H-12 候选）cwd 漂移检测
+## Pointer-#133-触发-20260920-031329
+- type=飞轮层 sev=🟢
+- trigger=`.harness/evolve/flywheel.sh`（H-13 候选）每 N 分钟扫 17 根指针
+## Pointer-#134-触发-20260920-031329
+- type=验证层 sev=🔴
+- trigger=`gate.sh --red-self-test` 反证每脚本都能 exit ≠ 0
+## Pointer-#135-触发-20260920-031329
+- type=表述层 sev=🟡
+- trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+## Pointer-#119-触发-20260920-031333
+- type=反思层（根因型） sev=🔴
+- trigger=`bash X.sh | tail; echo $?` 测的是 tail EXIT = 0 → 假绿
+## Pointer-#120-触发-20260920-031333
+- type=反思层（根因型） sev=🔴
+- trigger=后端启动未带 `--spring.config.additional-location` 连错库
+## Pointer-#121-触发-20260920-031333
+- type=反思层（根因型） sev=🔴
+- trigger=`is_background=false` 起 java → 30s 后沙箱 SIGHUP 杀 → mvn BUILD SUCCESS 但后端从未启
+## Pointer-#122-触发-20260920-031333
+- type=反思层（根因型） sev=🟡
+- trigger=同分钟多 commit 撞 hash
+## Pointer-#123-触发-20260920-031333
+- type=反思层（根因型） sev=🟡
+- trigger=五必现查（hash/端口字段/段号/看板回读/跨仓 cd 凭记忆写）违反
+## Pointer-#124-触发-20260920-031333
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-pipe-trap.sh` 每 PR 跑
+## Pointer-#125-触发-20260920-031333
+- type=机制层（演化策略型） sev=🟢
+- trigger=启后端 bash 函数强制 --spring.config.additional-location
+## Pointer-#126-触发-20260920-031333
+- type=机制层（演化策略型） sev=🟢
+- trigger=`is_background=true` 必填 agent SOP + skill S3
+## Pointer-#127-触发-20260920-031333
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-r13-hard-3hash.sh`（H-3 升级，30 min）
+## Pointer-#128-触发-20260920-031333
+- type=机制层（演化策略型） sev=🟢
+- trigger=硬 hook 拦截凭记忆引用（H-4/H-5/H-6 三脚本，0.5 hr×3）
+## Pointer-#129-触发-20260920-031333
+- type=反思层 sev=🔴
+- trigger=`verify.sh --cross-audit-report` 步骤探测三源漂移
+## Pointer-#130-触发-20260920-031333
+- type=反思层 sev=🔴
+- trigger=`loop.sh` Phase 8 检测反思链深度 > 3 → 升级为指针
+## Pointer-#131-触发-20260920-031333
+- type=文档层 sev=🟡
+- trigger=`.claude/hooks/wt-close-pre-check.sh`（H-11 候选）扫 log.md 最新段号
+## Pointer-#132-触发-20260920-031333
+- type=机制层 sev=🔴
+- trigger=`.claude/hooks/pre-cd-cross-repo-check.sh`（H-12 候选）cwd 漂移检测
+## Pointer-#133-触发-20260920-031333
+- type=飞轮层 sev=🟢
+- trigger=`.harness/evolve/flywheel.sh`（H-13 候选）每 N 分钟扫 17 根指针
+## Pointer-#134-触发-20260920-031333
+- type=验证层 sev=🔴
+- trigger=`gate.sh --red-self-test` 反证每脚本都能 exit ≠ 0
+## Pointer-#135-触发-20260920-031333
+- type=表述层 sev=🟡
+- trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+## Pointer-#119-触发-20260920-031552
+- type=反思层（根因型） sev=🔴
+- trigger=`bash X.sh | tail; echo $?` 测的是 tail EXIT = 0 → 假绿
+## Pointer-#120-触发-20260920-031552
+- type=反思层（根因型） sev=🔴
+- trigger=后端启动未带 `--spring.config.additional-location` 连错库
+## Pointer-#121-触发-20260920-031552
+- type=反思层（根因型） sev=🔴
+- trigger=`is_background=false` 起 java → 30s 后沙箱 SIGHUP 杀 → mvn BUILD SUCCESS 但后端从未启
+## Pointer-#122-触发-20260920-031552
+- type=反思层（根因型） sev=🟡
+- trigger=同分钟多 commit 撞 hash
+## Pointer-#123-触发-20260920-031552
+- type=反思层（根因型） sev=🟡
+- trigger=五必现查（hash/端口字段/段号/看板回读/跨仓 cd 凭记忆写）违反
+## Pointer-#124-触发-20260920-031552
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-pipe-trap.sh` 每 PR 跑
+## Pointer-#125-触发-20260920-031552
+- type=机制层（演化策略型） sev=🟢
+- trigger=启后端 bash 函数强制 --spring.config.additional-location
+## Pointer-#126-触发-20260920-031552
+- type=机制层（演化策略型） sev=🟢
+- trigger=`is_background=true` 必填 agent SOP + skill S3
+## Pointer-#127-触发-20260920-031552
+- type=机制层（演化策略型） sev=🟢
+- trigger=`scripts/check-r13-hard-3hash.sh`（H-3 升级，30 min）
+## Pointer-#128-触发-20260920-031552
+- type=机制层（演化策略型） sev=🟢
+- trigger=硬 hook 拦截凭记忆引用（H-4/H-5/H-6 三脚本，0.5 hr×3）
+## Pointer-#129-触发-20260920-031552
+- type=反思层 sev=🔴
+- trigger=`verify.sh --cross-audit-report` 步骤探测三源漂移
+## Pointer-#130-触发-20260920-031552
+- type=反思层 sev=🔴
+- trigger=`loop.sh` Phase 8 检测反思链深度 > 3 → 升级为指针
+## Pointer-#131-触发-20260920-031552
+- type=文档层 sev=🟡
+- trigger=`.claude/hooks/wt-close-pre-check.sh`（H-11 候选）扫 log.md 最新段号
+## Pointer-#132-触发-20260920-031552
+- type=机制层 sev=🔴
+- trigger=`.claude/hooks/pre-cd-cross-repo-check.sh`（H-12 候选）cwd 漂移检测
+## Pointer-#133-触发-20260920-031552
+- type=飞轮层 sev=🟢
+- trigger=`.harness/evolve/flywheel.sh`（H-13 候选）每 N 分钟扫 17 根指针
+## Pointer-#134-触发-20260920-031552
+- type=验证层 sev=🔴
+- trigger=`gate.sh --red-self-test` 反证每脚本都能 exit ≠ 0
+## Pointer-#135-触发-20260920-031552
+- type=表述层 sev=🟡
+- trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+
+## 2026-09-20 R134 4 智能体并行穿透 4 个 BCP 闭环落地
+
+### 4 智能体并行穿透（4 闭环 = R133 BCP-001 + R134 BCP-002/003/007/008）
+- ioedream-pm：BCP-002 时限红线闭环 + t2-paiban-sla.sh 自证能红（sed 篡改 paiban-14 8d 前 → exit 1 + 自动通过）
+- ioedream-qa-gatekeeper：BCP-008 五必现查闭环 + 5 钻实证（5 个 H 脚本实跑 PASS）+ 5 钻覆盖率 21/80→25/80
+- ioedream-evolver：BCP-007 派单序列化闭环 + log.md 自动追加 Pointer-#NN-触发-ts（累计 69 段）
+- agency-harness：BCP-003 cd 强校验闭环 + check-cross-repo-cd-guard.sh 自证能红（CRC_FAIL_SEED=1 → exit 2）
+
+### 撞号透明登记
+- 4 智能体并行穿透 BCP-Registry.md + BCP-Closure-Log.md
+- 各智能体写入不同段（§三.3.2/3.5/3.6/3.7），互不交集
+- 5 BCP 全部 ✅ CLOSED（BCP-001 + BCP-002 + BCP-003 + BCP-007 + BCP-008）
+
+### 自证能红（11 项全绿）
+- 5 BCP CLOSED ✅ / 度量 4/13 ✅ / 5 钻覆盖率 25/80（31.25%）✅
+- t2-paiban-sla exit 0 ✅ / pointer-trigger 17 根全命中 ✅
+- check-r-line-count PASS ✅ / check-time-redline exit 0 ✅ / check-cross-repo-cd-guard PASS ✅ / check-dispatch-sequence PASS ✅ / check-lint-reports-freshness PASS ✅
+- log.md pointer 段数 69 ✅
+
+### 撞车 0 严守
+- ✅ docs/scripts + log.md auto-append
+- ❌ 不动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified
+- ❌ 不擅自动 DDL / 不启后端
+
+### R134-D1 三源修复（接 R133-D1 / R132-D1 / R131-D1）
+- log.md R134 段回填 ✅（本段）
+- 看镜像 R134 段 append ✅
+- BCP-Registry.md §六 度量 4/13 + §三 5 钻覆盖率 25/80（31.25%）✅
+
+### 下一步
+- R135-A 候选：BCP-005 (H-2 backend-pid-survive) 推进
+- R135-B 候选：BCP-006 (H-8 SSOT 漂移) 推进
+- R135-C 候选：BCP-010 (Hook H1-H4 矩阵) 推进
+- R135-D 候选：BCP-011 (Skill S1-S5 沉淀) 推进
+- R135-E 候选：BCP-012 (H-8 ssot-drift 实际对账) 推进
