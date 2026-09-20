@@ -9550,3 +9550,29 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **未完成待 owner 拍板项**：P0 6 项 + P1 10 项 + P2 4 项 = 20 项
 - 启 IPD 后端真活 E2E + 补 3 端点 + 拍板 kpi_rules 表方案 + 字符集整改 + Service 接口化等
 - 撞车 0 严守下不动，列 R128 §一 P0-P2
+
+### R139 蜂群并行 4 路收口（2026-09-20 09:00-09:15）
+
+**结论**：按 R25 + 用户指令「基于以上剩余事项并行执行」开 4 蜂群同时跑：
+- 蜂群 A：scripts/ 12 脚本硬编码绝对路径修复（实际改了 12 个，比 R128 估的 4 个多 8 个，因后续新增）
+- 蜂群 B：71 skill 二次核验清单（仅报告，不真删）→ reports/skill-cleanup-v2.md
+- 蜂群 C：lint-reports stale 清理 64 文件（>7 天 + 已入库）
+- 蜂群 D：5 份 R 报告引用真伪核验（仅报告）→ reports/r-report-refs-audit.md
+
+**撞号合并事实**：蜂群 A + C 在同 commit `57d046be` 合并提交（scripts/ 12 修 + lint-reports 64 删 = 76 files / +13 / -3594）。**不是撞号错**（多 commit 改同文件冲突），是**撞号合并**（同 worker 并发操作合并到一 commit）。撞号透明登记不抢归属。
+
+**commit 链**（按时间）：
+| commit | 内容 | 蜂群 |
+|---|---|---|
+| `57d046be` | scripts/ 12 修 + lint-reports 64 删（撞号合并 commit） | A+C |
+| `515363f6` | R139-scripts-硬编码路径修复-20260920.md（1 文件 25 行） | A |
+| 本 commit | 2 份 reports + log.md R139-D2 段登记 | 主协调 |
+
+**未做项（待 owner 拍板 / 撞车 0 红线）**：
+- 类 1 skill 二次核验：64 个绝对可删 + 12 个灰色地带（含 ipd-guard-* 7 + agentdb-* 5）+ 10 个启用 → 详见 reports/skill-cleanup-v2.md
+- 类 4 R 报告：5 份全部 ≥7 处真引用 → 全部不能删，详见 reports/r-report-refs-audit.md
+
+**撞车 0 严守累计 100%**：
+- scripts/ 不在红线，12 脚本硬编码自解析（dirname 替代绝对路径），bash -n 12/12 PASS
+- 后端 16039 / 前端 15666 / 真库 13306 仍未启（lsof 实测）
+- 无 Java/Vue/SQL/PID/端口/兄弟会话 modified 改动
