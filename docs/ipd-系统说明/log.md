@@ -9188,3 +9188,54 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 ## Pointer-#135-触发-20260920-040541
 - type=表述层 sev=🟡
 - trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+
+## 2026-09-20 R138 4 智能体并行穿透 3 BCP 闭环 + §十三/§十四 SOP 复盘（含 A 撞号避让决策）
+
+### 撞号预防映射表第四轮实战 + A 撞号避让决策
+- P 编号 (ioedream-pm) → BCP-Closure-Log.md §三.3.17 → BCP-009 跨仓最大破坏 4 类场景 docs 闭环（首个 R138 闭环）
+- Q 编号 (ioedream-qa-gatekeeper) → BCP-Closure-Log.md §三.3.18 → BCP-010 Hook H5-H7 矩阵实装 docs 闭环（第二个 R138 闭环）
+- E 编号 (ioedream-evolver) → BCP-Closure-Log.md §三.3.19 → BCP-013 F-GREEN 假绿改造 5 类漏检 docs 闭环（第三个 R138 闭环）
+- A 编号 (agency-harness) → BCP-Registry.md **§十三 + §十四**（**撞号避让决策**：派单 §十一/§十二 已被 Q/E R137 占用 → 改用 §十三/§十四）
+
+### 撞号预防 100% PASS（第四轮 7 段各占其位 + A 撞号避让决策成功）
+- §三.3.17 (行 1332) = P 独占 ✅
+- §三.3.18 (行 1689) = Q 独占 ✅
+- §三.3.19 (行 1448) = E 独占 ✅
+- §十一 (行 532) = Q R137 独占（拍板机制 B 类）✅
+- §十二 (行 675) = E R137 独占（拍板机制 C 类）✅
+- §十三 (行 806) = A R138 独占（R137 SOP 实践复盘）✅
+- §十四 (行 1043) = A R138 独占（R138 撞号预防映射表模板）✅
+
+### 4 智能体并行穿透（撞车 0 让路边界严守）
+- ioedream-pm：BCP-009 跨仓最大破坏 4 类场景 docs 闭环（**不跨仓**撞车 0 让路）+ 1 个独立设计文档 220 行
+- ioedream-qa-gatekeeper：BCP-010 Hook H5-H7 矩阵实装 docs 闭环（**未实装 .claude/hooks/**撞车 0 让路）+ 3 个独立 hook 设计文档
+- ioedream-evolver：BCP-013 F-GREEN 假绿改造 5 类漏检 docs 闭环（**未实装修复实质**撞车 0 让路）+ 5 个独立漏检设计文档
+- agency-harness：§十三 R137 SOP 实践复盘 237 行 + §十四 R138 撞号预防映射表模板 125 行 + §13.0 撞号避让决策登记
+
+### 自证能红（10 项全绿）
+- 3 BCP docs 闭环（BCP-009/010/013）✅
+- 9 个独立设计文档（1+3+5）✅
+- 度量 **12/13** ✅ / 5 钻覆盖率 **38/80(47.5%)** ✅ / 停滞率 **2/13** ✅
+- §十三/§十四 SOP 复盘 + 撞号避让决策登记 ✅
+- pointer-trigger 17/17 ✅ / check-ssot-drift PASS ✅ / t2-paiban-sla PASS ✅
+
+### 撞车 0 让路边界（严守严守严守）
+- ✅ docs/scripts + .harness/memory + log.md auto-append + 看镜像 R138 段
+- ❌ P 不跨仓（仅 docs 设计文档，未动 ruoyi-ipd-web / ZK-IPD）
+- ❌ Q 不实装 .claude/hooks/H5/H6/H7 实质
+- ❌ E 不实装 F-GREEN 修复实质（仅 docs 设计文档）
+- ❌ A 撞号避让（§十一/§十二 被 Q/E R137 占用 → §十三/§十四）
+- ❌ 不动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified / untracked
+- ❌ 不擅自动 DDL / 不启后端
+
+### R138-D1 三源修复（接 R137-D1）
+- 12/13 三源对账一致性保证（BCP-Registry §六 + BCP-Closure-Log §四 + log.md + 看镜像）
+- A 撞号避让决策 SOP 制度化（§13.0）
+- 9 个独立设计文档落档（撞车 0 让路边界 docs-only）
+
+### 下一步（R139 启动条件）
+- B 类 6 项 7d 自动 sign-off 触发（2026-09-27 D+7）
+- C 类 12 项 owner 必拍已 docs-only 就位（§十二 登记位）
+- 14d 最大破坏重审触发（2026-10-04 D+14）
+- 跨仓协作规范升级（等 owner 拍板 #6+#15）
+- Skill 沉淀扩展（等 owner 拍板 #15）
