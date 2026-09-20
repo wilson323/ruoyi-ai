@@ -286,3 +286,129 @@ GitHub Issues（gh CLI）—— origin 是 `wilson323/ruoyi-ai`，upstream 是 `
 ### Domain docs
 
 Single-context 布局（仓库根）。当前未创建 `CONTEXT.md`（按 mattpocock skill 「proceed silently」原则懒加载）。engineering skills 通过 `docs/agents/domain.md` 的「文档地图」了解仓库。详见 `docs/agents/domain.md`。
+
+## 最佳实践应用 SOP（R141 A 智能体落档 · 2026-09-20）
+
+> **来源**：`/Users/mac/Documents/最佳实践/考拉搞AI/` 下两份公众号 SKILL 介绍文（frontend-code-review 7 维度 + webapp-testing 4 字诀）→ R141 系统性梳理后适配到本项目开发体系。
+> **闭环状态**：✅ R141 docs 闭环（BCP-014，第 13 BCP 全部 docs-only 闭环达成 100%）。
+> **使用要求**：任何 AI 智能体开工前必读本段；提交前必跑主门禁 + 撞号自检 + 自证能红。
+
+### SOP-1 开工前必读（3 件套）
+
+1. **`docs/ipd-系统说明/最佳实践应用登记位-20260920.md`** —— BP-001~015 条目清单（8 字段：编号 / 来源 / 维度 / 摘要 / 适配层级 / 落地方式 / 拍板位 / 自证能红方式）
+2. **`docs/ipd-系统说明/BCP-Registry.md §六` + `§十六`** —— 飞轮闭环度量（13/13 = 100%）+ 5 钻撞根因覆盖率（39/80 = 48.75%）+ R141 SOP 复盘
+3. **`docs/ipd-系统说明/R141-最佳实践系统性梳理+完整充分应用到本项目开发体系-20260920.md`** —— 治理报告主体（5 阶段 + 三源对账实证段 + 撞车 0 + 撞号预防）
+
+### SOP-2 提交前必跑（5 门禁脚本）
+
+```bash
+cd /Users/mac/Documents/ruoyi-ai
+
+# 1. 主门禁：最佳实践应用覆盖度（≥ 80% PASS）
+bash scripts/check-best-practices-coverage.sh
+
+# 2. 命名规范（BP-001）
+bash scripts/check-naming-convention.sh
+
+# 3. 注释与代码一致（BP-002）
+bash scripts/check-doc-code-sync.sh
+
+# 4. 内存泄漏模式（BP-008）
+bash scripts/check-memory-leak-pattern.sh
+
+# 5. 可访问性 a11y（BP-009）
+bash scripts/check-a11y-basics.sh
+```
+
+任何 1 项非零退出 = FAIL；修复后重试。**跳出门禁 = 撞车 0 让路边界严守破例**。
+
+### SOP-3 自证能红 + FAIL_SEED 双向触发（5 脚本标配）
+
+提交前除正常态 PASS 外，必跑 FAIL_SEED 注入验证（避开单绿恐惧）：
+
+```bash
+cd /Users/mac/Documents/ruoyi-ai
+
+BP_FAIL_SEED=1 bash scripts/check-best-practices-coverage.sh     # EXIT=1
+NAMING_FAIL_SEED=1 bash scripts/check-naming-convention.sh        # EXIT=1
+DOCSYNC_FAIL_SEED=1 bash scripts/check-doc-code-sync.sh          # EXIT=1
+LEAK_FAIL_SEED=1 bash scripts/check-memory-leak-pattern.sh       # EXIT=1
+A11Y_FAIL_SEED=1 bash scripts/check-a11y-basics.sh               # EXIT=1
+```
+
+5/5 EXIT=1 = FAIL_SEED 双向触发 PASS（单绿恐惧 = 误报；双绿才算真绿）。
+
+### SOP-4 撞号预防映射表严守（主协调 push 前必跑）
+
+```bash
+cd /Users/mac/Documents/ruoyi-ai
+
+# 检查 §十六 落档（仅 R141 A 智能体独占）
+grep "^## §十六" docs/ipd-系统说明/BCP-Registry.md  # 1 行
+
+# 检查 §三.3.20 段号唯一（A 独占）
+grep -E "^### 3\.20" docs/ipd-系统说明/BCP-Closure-Log.md | sort | uniq -c  # 1 行
+
+# 检查 13/13 闭环数（避开正则误匹配陷阱：必须用「13 BCP CLOSED」格式）
+grep "13 BCP CLOSED" docs/ipd-系统说明/BCP-Registry.md  # ≥ 1 行
+
+# 检查 R-7 新钻命中（系统性梳理认知失真）
+grep "R-7 系统性梳理认知失真" docs/ipd-系统说明/BCP-Registry.md  # ≥ 2 行（§六 + §十六）
+```
+
+任一项 FAIL = 撞号 / 漂移阻断 → 协调 A 智能体修复后重跑。
+
+### SOP-5 撞车 0 让路边界严守（8 红线 100%）
+
+- ✅ 仅 `docs/ipd-系统说明/` + `scripts/` + `.claude/hooks/`（docs 设计）+ `.harness/memory/` 强推进白名单
+- ❌ 不动 Java 源码（`microservices/` / `frontend/` / `ruoyi-ipd/` / `ruoyi-ipd-web/` 零修改）
+- ❌ 不动 SQL / Flyway（`db/` / `sql/` 零修改）
+- ❌ 不抢端口（16039 / 23306 / 8080 / 15666 全部保持）
+- ❌ 不杀 PID（34560 / 70554 / 29607 / 65576 全部不撞 ipd_dev）
+- ❌ 不动兄弟会话 modified
+- ✅ Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&`
+- ✅ A 智能体独占段号（BCP-Registry §十六 + BCP-Closure-Log §三.3.20）
+
+### SOP-6 拍板位三段式（A/B/C 分类基线）
+
+| 类别 | 拍板权属 | SLA | 撞车 0 让路位 | 拍板决策包 |
+|---|---|---|---|---|
+| **A 类** | AI 自主 | 0d 立即生效 | docs-only 白名单 | paiban-01~06 + 自证能红 PASS 即生效 |
+| **B 类** | AI 自主 + 7d 自动 sign-off | D+7 自动（2026-09-27） | docs-only + scripts/ | paiban-07/08/09/10/12/14 |
+| **C 类** | **owner 必拍** | D+14 最大破坏重审（2026-10-04） | docs-only 白名单 | paiban-01/02/03/04/05/06/11/13/15/16/17/18 |
+
+### SOP-7 BP-013/014/015 三件套（撞车 0 边界外，等 owner 必拍）
+
+| BP | 实质实装内容 | 拍板位 | docs-only 设计文档 |
+|---|---|---|---|
+| **BP-013** | `.claude/hooks/pre-commit-best-practices-check.sh` 实质 | **#1 启 IPD 后端真活 E2E** | `BCP-014-pre-commit-best-practices-hook-设计-20260920.md` |
+| **BP-014** | `.github/workflows/best-practices-check.yml` 实质 | **#4 DTO 后缀收口** | `BCP-014-pre-commit-best-practices-hook-设计-20260920.md` |
+| **BP-015** | ruoyi-ai + ruoyi-ipd-web + ZK-IPD 三仓 pre-commit 共享 | **#6 跨仓 commit 并行授权** | `BCP-014-browser-business-testing-适配设计-20260920.md` |
+
+**owner 拍板前 = 不实装 hook/CI/跨仓实质**，仅 docs-only 落档。撞车 0 让路边界的工程铁律。
+
+### SOP-8 新增/修改 docs 必跑三源对账
+
+```bash
+cd /Users/mac/Documents/ruoyi-ai
+
+# 1. log.md R 段（飞轮自举留痕）—— 必须在 R141 段记录本轮变更
+grep -A3 "R141" docs/ipd-系统说明/log.md | tail -20  # 应有 R141 段
+
+# 2. BCP-Registry §六 + §十六（飞轮闭环度量 + R141 反思段）
+grep "13 BCP CLOSED" docs/ipd-系统说明/BCP-Registry.md  # ≥ 1 行
+
+# 3. BCP-Closure-Log §一 + §三.3.20 + §四（飞轮闭环记录表 + R141 闭环段 + 度量更新）
+grep "BCP-014" docs/ipd-系统说明/BCP-Closure-Log.md | head -3  # ≥ 3 行
+
+# 4. 看镜像（如有）—— 4 源全刷同步（避开三源对账漂移）
+```
+
+### 登记位引用（SSOT 单一事实源）
+
+- **BP-001~015 条目清单**：`docs/ipd-系统说明/最佳实践应用登记位-20260920.md`
+- **R141 治理报告**：`docs/ipd-系统说明/R141-最佳实践系统性梳理+完整充分应用到本项目开发体系-20260920.md`
+- **3 个 BCP-014 docs-only 设计文档**：`BCP-014-{frontend-code-review-适配设计,browser-business-testing-适配设计,pre-commit-best-practices-hook-设计}-20260920.md`
+- **5 个门禁脚本**：`scripts/check-{best-practices-coverage,naming-convention,doc-code-sync,memory-leak-pattern,a11y-basics}.sh`
+- **BCP-Registry 反思段**：`docs/ipd-系统说明/BCP-Registry.md §十六`
+- **BCP-Closure-Log 闭环段**：`docs/ipd-系统说明/BCP-Closure-Log.md §三.3.20`

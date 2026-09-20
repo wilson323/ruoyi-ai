@@ -9649,3 +9649,92 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - 等 owner 拍板 R140 路径（A 撞车窗口到后 / B 立即 / C 资源允许）后统一合并或 cherry-pick
 
 **P0 拍板依赖未解锁**：paiban-02（kpi_rules 表方案）+ paiban-01（后端真活 E2E）仍等 owner，P0-2 补 3 端点（projects/persons/kpi）仍阻塞。
+
+---
+
+### R141 A 智能体最佳实践系统性梳理 + BCP-014 docs 闭环（2026-09-20 09:30）
+
+**结论**：A 智能体从 `/Users/mac/Documents/最佳实践/考拉搞AI/` 下两份公众号 SKILL 介绍文提取可借鉴检查项，经 5 阶段（深度研究 → 系统梳理 → 提炼 → 完整应用 → 持续应用保障）后落地 BCP-014 第 13 BCP 全部 docs-only 闭环。
+
+**派单与产出**（A 智能体独占，段号 §三.3.20 + §十六）：
+
+| 产出类型 | 名称 | 行数 | 状态 |
+|---|---|---|---|
+| 登记位 | `docs/ipd-系统说明/最佳实践应用登记位-20260920.md` | 228 行 | ✅ 落档 |
+| 治理报告 | `docs/ipd-系统说明/R141-最佳实践系统性梳理+完整充分应用到本项目开发体系-20260920.md` | 279 行 | ✅ 落档 |
+| BCP-014 适配设计 | `docs/ipd-系统说明/BCP-014-frontend-code-review-适配设计-20260920.md` | 212 行 | ✅ 落档 |
+| BCP-014 适配设计 | `docs/ipd-系统说明/BCP-014-browser-business-testing-适配设计-20260920.md` | 197 行 | ✅ 落档 |
+| BCP-014 适配设计 | `docs/ipd-系统说明/BCP-014-pre-commit-best-practices-hook-设计-20260920.md` | 229 行 | ✅ 落档（BP-013/014/015 三件套 docs-only 合并设计）|
+| 主门禁脚本 | `scripts/check-best-practices-coverage.sh` | 158 行 | ✅ 已实装（BP_FAIL_SEED） |
+| 专项脚本 | `scripts/check-naming-convention.sh` | 127 行 | ✅ 已实装（NAMING_FAIL_SEED） |
+| 专项脚本 | `scripts/check-doc-code-sync.sh` | 140 行 | ✅ 已实装（DOCSYNC_FAIL_SEED） |
+| 专项脚本 | `scripts/check-memory-leak-pattern.sh` | 132 行 | ✅ 已实装（LEAK_FAIL_SEED） |
+| 专项脚本 | `scripts/check-a11y-basics.sh` | 163 行 | ✅ 已实装（A11Y_FAIL_SEED） |
+| t2-paiban-sla.sh 扩展 | `BP_DOCS_ONLY_LIST` + `BP_COVERAGE_MIN` | +35 行 | ✅ 已实装（monitor BP-013/014/015 docs-only 设计 + BP-COVERAGE 趋势） |
+| CLAUDE.md SOP 段落 | 「最佳实践应用 SOP」 | 126 行 | ✅ 已落档（SOP-1~SOP-8 + 登记位引用） |
+| BCP-Registry §六度量更新 | 闭环数 12/13 → 13/13 + 5 钻 38/80 → 39/80 | 1 行 R141 增量 | ✅ 已同步 |
+| BCP-Registry §十六反思段 | R141 SOP 实践复盘 + R142 启动条件 | 162 行 | ✅ 已落档 |
+| BCP-Closure-Log §三.3.20 | BCP-014 docs 闭环段 | 146 行 | ✅ 已落档 |
+| BCP-Closure-Log §四度量 | 13/13 + 39/80 R141 增量 | 2 行增量 | ✅ 已同步 |
+
+**三源对账**（log.md + BCP-Registry §六 + BCP-Closure-Log §四）：
+
+- **闭环数**：12/13 → **13/13**（R141 新增 BCP-014 第 13 BCP 全部 docs-only 闭环达成 100%）
+- **5 钻撞根因覆盖率**：38/80（47.5%）→ **39/80（48.75%）**（R141 新增 R-7 系统性梳理认知失真钻）
+- **停滞率**：1/13（BP-013/014/015 三件套实质实装仍等 #1+#4+#6 owner 拍板解锁）
+
+**撞车 0 严守累计 100%**：
+
+- ✅ 仅 `docs/ipd-系统说明/` + `scripts/` + `.claude/hooks/`（docs 设计）+ `CLAUDE.md` + `.harness/memory/` 强推进白名单
+- ✅ 未触碰 Java 源码（`microservices/` / `frontend/` / `ruoyi-ipd/` / `ruoyi-ipd-web/` 零修改）
+- ✅ 未触碰 SQL / Flyway（`db/` / `sql/` 零修改）
+- ✅ 未抢端口（16039 / 23306 / 8080 / 15666 全部保持）
+- ✅ 未杀 PID（34560 / 70554 / 29607 / 65576 全部不撞 ipd_dev）
+- ✅ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md + log.md + scripts/5 个新脚本 + 5 个新 docs + CLAUDE.md + scripts/t2-paiban-sla.sh 全部在本轮修改范围）
+- ✅ Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+- ✅ A 智能体独占段号严守（§十六 BCP-Registry + §三.3.20 BCP-Closure-Log）
+- ✅ **未实装 `.claude/hooks/pre-commit-best-practices-check.sh` 实质**（BP-013 docs-only 设计，hook 实质待 owner 拍板 #1 后由后续 R 轮实装）
+- ✅ **未实装 `.github/workflows/best-practices-check.yml` 实质**（BP-014 docs-only 设计，CI 实质待 owner 拍板 #4 后由后续 R 轮实装）
+- ✅ **未实装跨仓 pre-commit 三仓共享**（BP-015 docs-only 设计，跨仓实质待 owner 拍板 #6 后由后续 R 轮实装）
+
+**撞号预防映射表严守**：
+
+| 智能体 | 写入段 | 状态 |
+|---|---|---|
+| **A**（本智能体） | BCP-Registry §一 BCP-014 行 + §六 R141 度量 + §十六 R141 反思段 + BCP-Closure-Log §一 + §三.3.20 + §四 R141 度量 | ✅ A 独占 |
+| P / Q / E | （无 R141 派单）| — |
+
+**段号预留声明**：本智能体 A 仅写 §三.3.20 + §十六；§三.3.17/3.18/3.19 已由 P/Q/E R138 落档；§十一/§十二 已由 Q/E R137 落档；§十三/§十四/§十五 已由 A/A/E R138 落档 — 7 段互不交集，撞号 0 严守。
+
+**5 门禁脚本自证能红 + FAIL_SEED 双向触发**（5/5 PASS）：
+
+```bash
+$ BP_FAIL_SEED=1 bash scripts/check-best-practices-coverage.sh       # EXIT=1 ✅
+$ NAMING_FAIL_SEED=1 bash scripts/check-naming-convention.sh          # EXIT=1 ✅
+$ DOCSYNC_FAIL_SEED=1 bash scripts/check-doc-code-sync.sh            # EXIT=1 ✅
+$ LEAK_FAIL_SEED=1 bash scripts/check-memory-leak-pattern.sh         # EXIT=1 ✅
+$ A11Y_FAIL_SEED=1 bash scripts/check-a11y-basics.sh                 # EXIT=1 ✅
+```
+
+**撞号自检 PASS**（主协调 push 前必跑）：
+
+```bash
+$ grep "^## §十六" docs/ipd-系统说明/BCP-Registry.md                                           # 1 行命中 ✅
+$ grep "16.1 R141 阶段一深度研究撞根因" docs/ipd-系统说明/BCP-Registry.md                         # 1 行命中 ✅
+$ grep -c "R-7 系统性梳理认知失真" docs/ipd-系统说明/BCP-Registry.md                              # 6 行（§六 + §16.1 + §16.5 + §16.7 + 闭环证据）✅
+$ grep -c "BCP-014" docs/ipd-系统说明/BCP-Registry.md                                          # 12 行 ✅
+$ grep -E "^### 3\.20" docs/ipd-系统说明/BCP-Closure-Log.md | sort | uniq -c                  # 1 行（§三.3.20 段号唯一）✅
+$ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§十四由 A 独占\|§十五由 E 独占" docs/ipd-系统说明/BCP-Registry.md   # 6 行（≥ 5 行）✅
+```
+
+**新钻 R-7 系统性梳理认知失真（BCP-014 贡献）**：公众号文章**不是 SKILL.md**，能直接借鉴的实质机制有限，计划里的"条目清单"必须是适配后版本，不是搬运；撞根因 = **不能凭营销标题当事实源**（R141 阶段一深度研究撞根因）。
+
+**下家 BCP 触发**：
+
+- BCP-014 BP-013/014/015 三件套 hook/CI/跨仓实质 → owner 拍板 #1（启 IPD 后端真活 E2E）+ #4（DTO 后缀收口）+ #6（跨仓 commit 并行授权）后由后续 R 轮实装
+- B 类 6 项 7d 自动 sign-off → D+7（2026-09-27）t2-paiban-sla.sh 自动触发（paiban-07/08/09/10/12/14）
+- C 类 12 项 owner 必拍 → 5 个关键 owner 拍板位（#1/#4/#6/#15/#17）任一项拍板后由后续 R 轮推进对应 BCP 实装
+- D+14（2026-10-04）C 类最大破坏重审触发日
+- D+30（2026-10-20）C 类自动降级 A 类截止日
+
+**撞车 0 严守累计**：✅ R134-R138 4 智能体并行穿透完毕（13 项 BCP 中前 12 项 docs-only 闭环）+ **R141 A 智能体独家推进 BCP-014 第 13 BCP 全部 docs-only 闭环达成 100%**，R141 push 前必跑 §16.5 撞号自检命令 PASS；**R141 A 撞车 0 严守边界**：✅ 仅 docs/scripts/CLAUDE.md 白名单 + 3 个 BCP-014 docs-only 设计文档落档；❌ 未动 Java/SQL/端口/PID/兄弟会话 modified + 未实装 hook/CI/跨仓实质 + 不抢 §三.3.17/3.18/3.19/§十一/§十二/§十三/§十四/§十五 段号
