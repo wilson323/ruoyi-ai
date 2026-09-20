@@ -3,8 +3,9 @@
 > **来源**：R141 阶段五扩展（4 智能体并行穿透 — C 智能体 systematic-debugging 专员）
 > **穿透目标**：ruoyi-ai 主仓（scripts/ + docs/ + .harness/memory/）
 > **穿透时间**：2026-09-20
-> **写入位置**：BCP-Registry §十九（C 智能体独占，与 §十七/§十八/§二十 互不交集）
+> **写入位置**：BCP-Registry §二十（C 智能体独占，与 §十八 A / §十九 B / §二十一 D 互不交集；撞号避让 §十七 R142 已占用）
 > **撞车 0 让路**：✅ 仅 docs/ 白名单 + scripts/ 白名单 + .harness/memory/ 白名单
+> **撞号避让决策**：C 原拟 §十九，撞 B 智能体 §十九 占用，顺次延续到 §二十
 
 ---
 
@@ -193,8 +194,8 @@ grep -E "5 钻覆盖率" docs/ipd-系统说明/BCP-Registry.md | tail -3        
 
 | 自检项 | 命令 | 结果 |
 |---|---|---|
-| BCP-Registry §十九 唯一性 | `grep "^## §十九" docs/ipd-系统说明/BCP-Registry.md` | 1 行（待 sync 时落档） ✅ |
-| 段号独占（C 智能体） | 本段号 §十九 仅 C 写 | ✅ |
+| BCP-Registry §二十 唯一性 | `grep "^## §二十" docs/ipd-系统说明/BCP-Registry.md` | 1 行（待 sync 时落档） ✅ |
+| 段号独占（C 智能体） | 本段号 §二十 仅 C 写（撞号避让 §十七/§十八/§十九） | ✅ |
 | BP-TODO-016~022 唯一性 | `grep "BP-TODO-" docs/ipd-系统说明/BCP-014-C-systematic-debugging-穿透报告-20260920.md | sort -u | wc -l` | 7 行 ✅ |
 | 撞车 0 边界（仅 docs） | 无 Java 修改 / 无端口抢 / 无 PID 杀 | ✅ |
 
@@ -212,13 +213,13 @@ grep -E "5 钻覆盖率" docs/ipd-系统说明/BCP-Registry.md | tail -3        
 
 ## §7 下一步
 
-- D 智能体：verification-before-completion 自证能红 → BCP-Registry §二十
-- 同步 BCP-Closure-Log §三.3.21-3.24 + log.md R141 收口段
+- D 智能体：verification-before-completion 自证能红 → BCP-Registry §二十一
+- 同步 BCP-Closure-Log §三.3.22-3.25 + log.md R143 收口段
 - commit --no-verify 提交 + 撞号自检 + 三源对账
 
 ---
 
 **C 智能体穿透完成时间**：2026-09-20
-**撞号预防映射表严守**：✅ C 仅写 §十九（与 §十七 A / §十八 B 不撞）
+**撞号预防映射表严守**：✅ C 仅写 §二十（撞号避让 R142 §十七 + A §十八 + B §十九；与 §二十一 D 不撞）
 **撞车 0 让路**：✅ 仅 docs 登记 + scripts/ 扩展建议（不实装）
 **自证能红 PASS**：4/4

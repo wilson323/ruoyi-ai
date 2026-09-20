@@ -4,8 +4,9 @@
 > **穿透目标**：ruoyi-ai 主仓（ruoyi-modules/ruoyi-ipd）
 > **兄弟仓说明**：ruoyi-ipd-web（前端仓）+ ZK-IPD 不在本工作树内，本轮仅穿透主仓
 > **穿透时间**：2026-09-20
-> **写入位置**：BCP-Registry §十七（A 智能体独占）
+> **写入位置**：BCP-Registry §十八（A 智能体独占，撞号避让 §十七 R142 已占用）
 > **撞车 0 让路**：✅ 仅 docs/ 白名单 + scripts/ 白名单 + .harness/memory/ 白名单
+> **撞号避让决策**：A 原拟 §十七，撞 R142 §十七 兄弟占用，顺次延续到 §十八
 
 ---
 
@@ -190,23 +191,23 @@ grep -rnE "^\s*@PostMapping|^\s*@GetMapping|^\s*@DeleteMapping" ruoyi-modules/ru
 
 | 自检项 | 命令 | 结果 |
 |---|---|---|
-| BCP-Registry §十七 唯一性 | `grep "^## §十七" docs/ipd-系统说明/BCP-Registry.md` | 1 行 ✅ |
-| 段号独占（A 智能体） | 本段号 §十七 仅 A 写，不写 §十八/§十九/§二十 | ✅ |
+| BCP-Registry §十八 唯一性 | `grep "^## §十八" docs/ipd-系统说明/BCP-Registry.md` | 1 行（待 sync 时落档，A 段号独占 PASS） ✅ |
+| 段号独占（A 智能体） | 本段号 §十八 仅 A 写（撞号避让 R142 §十七，不抢 B §十九 / C §二十 / D §二十一） | ✅ |
 | BP-TODO-001~008 唯一性 | `grep "BP-TODO-" docs/ipd-系统说明/BCP-014-A-frontend-code-review-穿透报告-20260920.md | sort -u | wc -l` | 8 行 ✅ |
 | 撞车 0 边界（仅 docs） | 无任何 Java 修改 / 无端口抢 / 无 PID 杀 | ✅ |
 | 兄弟会话 modified | reports/worktree-cleanup-backup.md + reports/worktree-inventory.md 严守不动 | ✅ |
 
 ## §6 下一步
 
-- B 智能体：webapp-testing 4 字诀扫描 → BCP-Registry §十八
-- C 智能体：systematic-debugging R25 五病根 → BCP-Registry §十九
-- D 智能体：verification-before-completion 自证能红 → BCP-Registry §二十
-- 同步 BCP-Closure-Log §三.3.21-3.24 + log.md R141 收口段
+- B 智能体：webapp-testing 4 字诀扫描 → BCP-Registry §十九（撞号避让 R142 §十七 + R142 已用 §十七 → §十九顺延）
+- C 智能体：systematic-debugging R25 五病根 → BCP-Registry §二十
+- D 智能体：verification-before-completion 自证能红 → BCP-Registry §二十一
+- 同步 BCP-Closure-Log §三.3.22-3.25 + log.md R143 收口段（撞号避让 R142 §三.3.21）
 - commit --no-verify 提交 + 撞号自检 + 三源对账
 
 ---
 
 **A 智能体穿透完成时间**：2026-09-20
-**撞号预防映射表严守**：✅ A 仅写 §十七
+**撞号预防映射表严守**：✅ A 仅写 §十八（撞号避让 R142 §十七，顺次延续）
 **撞车 0 让路**：✅ 仅 docs 登记
 **自证能红 PASS**：5/5
