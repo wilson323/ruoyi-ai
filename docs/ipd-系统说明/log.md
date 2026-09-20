@@ -8244,3 +8244,13 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **处置**：ahead 9 分支保留作历史归档，不再 cherry-pick 防冲突回退。
 
 **证据**：wt-r114-b1 已清，main HEAD=4079bb1f 未变，mvn -o -pl ruoyi-modules/ruoyi-ipd compile EXIT 0。
+
+### R116 防护快照全清（2026-09-19）
+
+**结论**：R115 保留的 32 个 snapshot 防护快照全部已 squash merge 落 main 或被 ahead commit 吸收，0 个有独立防 reset 价值。
+
+**清完**：refs 40→8（最小可工作集：5 ahead 本地 + 1 main + 2 origin + 1 empty stash）。
+
+**R25 reference-transaction hook 设计局限**：8 天累积 32 个 snapshot，需要每 1-2 周清理一次（hook 会自动重新生成）。
+
+**落地**：HEAD=0e36512f=origin/main，mvn EXIT 0，.git 570M 不变（snapshot 命名空间 < 1M 元数据）。
