@@ -42,7 +42,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(rollbackFor = Exception.class)
 public class PersonService {
 
     /** 账户状态常量（与 persons.account_status DDL 枚举对齐）。 */
@@ -100,6 +99,7 @@ public class PersonService {
      * @param operator 操作者（需 HR 角色或本人）
      * @return 影响 1 条 + 待移交项目数 + 联动副作用标记
      */
+    @Transactional(rollbackFor = Exception.class)
     public ResignResult resign(Long personId, String reason, IpdActor operator) {
         Person person = requirePerson(personId);
         // SEC-RESIGN-GROUP: 与 rehire/unbindWecom 同款跨组守卫；controller 语义为"HR 或本人"，
@@ -309,6 +309,7 @@ public class PersonService {
      * @param note 复职说明
      * @param operator 操作者（需 HR 角色）
      */
+    @Transactional(rollbackFor = Exception.class)
     public Person rehire(Long personId, String note, IpdActor operator) {
         Person person = requirePerson(personId);
         assertSameGroupOrAdmin(person, operator, "复职");
@@ -350,6 +351,7 @@ public class PersonService {
      * SEC-02b/MEDIUM 在职守卫：在职（employment_status=ACTIVE）员工被解绑企微将级联为 account=DISABLED
      * 阻断登录，要求 HR 先触发离职冻结；SUPER_ADMIN 例外可强制解绑（合规/账号封禁场景）。
      */
+    @Transactional(rollbackFor = Exception.class)
     public Person unbindWecom(Long personId, String reason, IpdActor operator) {
         Person person = requirePerson(personId);
         assertSameGroupOrAdmin(person, operator, "解绑企微");
@@ -391,6 +393,7 @@ public class PersonService {
     }
 
     /** 列出该人员的所有活跃项目成员绑定（用于前端展示+提示待移交）。 */
+    @Transactional(readOnly = true)
     public List<ProjectMember> listActiveMemberships(Long personId) {
         return memberMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getPersonId, personId)

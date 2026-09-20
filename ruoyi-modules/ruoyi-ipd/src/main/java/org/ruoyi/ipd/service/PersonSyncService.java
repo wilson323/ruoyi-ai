@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 @Service
-@Transactional(rollbackFor = Exception.class)
 public class PersonSyncService {
 
     /** 任务状态。 */
@@ -104,6 +103,7 @@ public class PersonSyncService {
      * 不同 operator 或 group ⇒ 即使原始 idempotencyKey 相同也创建独立任务（隔离不同主体的命名空间，
      * 防止「admin 用同 key 重放覆盖组长重试进度」之类的串号）。
      */
+    @Transactional(rollbackFor = Exception.class)
     public SyncJob submit(String employeeNo, String idempotencyKey, IpdActor operator) {
         SyncJob replay = findIdempotentReplay(idempotencyKey, operator);
         if (replay != null) {
@@ -139,6 +139,7 @@ public class PersonSyncService {
      *
      * <p>守卫：status == FAILED && attempts < maxAttempts；否则返 422。
      */
+    @Transactional(rollbackFor = Exception.class)
     public SyncJob retry(String jobId, IpdActor operator) {
         SyncJob job = require(jobId);
         if (job.status != JobStatus.FAILED) {
@@ -170,6 +171,7 @@ public class PersonSyncService {
      *
      * @return 统计（重试数/成功数/失败数/跳过数）
      */
+    @Transactional(rollbackFor = Exception.class)
     public BatchRetryResult retryAll(IpdActor operator) {
         int retried = 0, succeeded = 0, failed = 0, skipped = 0;
         for (SyncJob job : listAll()) {
@@ -203,11 +205,13 @@ public class PersonSyncService {
     }
 
     /** 查询任务详情。 */
+    @Transactional(readOnly = true)
     public SyncJob get(String jobId) {
         return require(jobId);
     }
 
     /** 列出所有任务（按 createdAt 倒序；DB 模式先惰性回读台账补齐重启后缺失的缓存）。 */
+    @Transactional(readOnly = true)
     public List<SyncJob> listAll() {
         if (jobMapper != null) {
             for (PersonSyncJob row : jobMapper.selectList(new LambdaQueryWrapper<PersonSyncJob>()
@@ -221,6 +225,7 @@ public class PersonSyncService {
     }
 
     /** 列出指定状态的异常项（admin 异常项视图）。 */
+    @Transactional(readOnly = true)
     public List<SyncJob> listAbnormal() {
         return listAll().stream()
             .filter(j -> j.status == JobStatus.FAILED)

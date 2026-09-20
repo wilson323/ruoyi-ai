@@ -33,7 +33,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(rollbackFor = Exception.class)
 public class HrSyncService {
 
     /** 15 日升级阈值（AC-HAND-01：15 日倒计时超时升级超管）。 */
@@ -52,6 +51,7 @@ public class HrSyncService {
      *
      * @return PersonService.ResignResult（含 wecomUnbound / sessionsRevoked / notificationsSent）
      */
+    @Transactional(rollbackFor = Exception.class)
     public PersonService.ResignResult markResignedByHr(Long personId, String reason, IpdActor operator) {
         // [SEC-LOG-PII] 2026-09-07 push 后台安全审查：reason 是离职原因可能含 PII/劳资争议/纪律处分
         // 不写 info 级日志，仅 debug 时输出，且 hash 化 reason 长度避免反向推断
@@ -68,6 +68,7 @@ public class HrSyncService {
      * 查询当前所有 FROZEN_PENDING_HANDOVER 人员，附加其名下待移交项目数。
      * 用于前端"待移交"列表与管理员视图；测试亦用于断言升级前的快照。
      */
+    @Transactional(readOnly = true)
     public List<PendingHandover> listPendingHandoverEscalations(int thresholdDays) {
         // 注：FROZEN_PENDING_HANDOVER + employmentStatus=RESIGNED 双条件锁定；employmentStatus 仍
         // 为 RESIGNED 是因 resign 仅切 account_status，未回切 employment_status（BR-USER-06 守恒）。
@@ -106,6 +107,7 @@ public class HrSyncService {
      *
      * @return 升级条数（成功发 ACTION 通知的 person 数；幂等命中不计）
      */
+    @Transactional(rollbackFor = Exception.class)
     public int escalateStaleResignations(int thresholdDays, IpdActor operator) {
         List<PendingHandover> stale = listPendingHandoverEscalations(thresholdDays).stream()
             .filter(p -> p.escalate).toList();

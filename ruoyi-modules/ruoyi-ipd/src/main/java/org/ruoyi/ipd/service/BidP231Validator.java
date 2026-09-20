@@ -36,7 +36,6 @@ import java.util.Objects;
  */
 @Slf4j
 @Service
-@Transactional(rollbackFor = Exception.class)
 public class BidP231Validator {
 
     private final BidInvitationMapper bidInvitationMapper;
@@ -74,6 +73,7 @@ public class BidP231Validator {
     public static final String MODE_ONE_TO_ONE = "ONE_TO_ONE";
     public static final String MODE_PUBLIC = "PUBLIC";
 
+    @Transactional(rollbackFor = Exception.class)
     public BidInvitation createValidated(CreateBidInvitationRequest req, IpdActor operator) {
         if (req == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "请求体不能为空");

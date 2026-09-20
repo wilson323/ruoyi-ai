@@ -55,7 +55,6 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(rollbackFor = Exception.class)
 public class HandoverService {
 
     /** 与 ProjectMemberService.ROLES 同源：移交只在这两个角色维度。 */
@@ -156,6 +155,7 @@ public class HandoverService {
     }
 
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
+    @Transactional(rollbackFor = Exception.class)
     public HandoverRecord initiate(Long projectId, String role, Long toPersonId, String note, IpdActor operator) {
         return createDraft(projectId, role, operator.id(), toPersonId, note, operator);
     }
@@ -167,6 +167,7 @@ public class HandoverService {
      * 仅接受 employmentStatus=RESIGNED 或 accountStatus=FROZEN_PENDING_HANDOVER 的代办对象。
      * approvalRef：接手后达到项目数上限阈值时必填（AC-TEAM-11，与普通移交同规则）。
      */
+    @Transactional(rollbackFor = Exception.class)
     public HandoverRecord initiateOnBehalf(Long projectId, String role, Long toPersonId,
                                            String note, String approvalRef, IpdActor leader) {
         // SEC-REV-HANDOVER-01：入口加项目归属校验——SUPER_ADMIN 豁免；其他角色必须
@@ -217,6 +218,7 @@ public class HandoverService {
      * 属产品规则变更而非安全加固（SSOT 未授权）。租户与资格两条能落地的先落，
      * 同组/跨组限制属产品口径，登记为待裁决项，不在此擅自收紧。
      */
+    @Transactional(rollbackFor = Exception.class)
     public HandoverRecord accept(Long handoverId, String approvalRef, IpdActor recipient) {
         IpdIdorGuard.requireAuthenticated(recipient);
         if (handoverId == null) {
@@ -264,6 +266,7 @@ public class HandoverService {
      * COMPLETED 在 ROLLBACK_WINDOW_HOURS 窗口内仍是可操作活记录；ROLLED_BACK 为
      * 显式终态（幂等拒绝重复撤销）不再返回；存量 CONFIRMED（本状态机未使用）同样不入箱。
      */
+    @Transactional(readOnly = true)
     public List<HandoverRecord> inbox(IpdActor me) {
         return handoverMapper.selectList(new LambdaQueryWrapper<HandoverRecord>()
             .and(w -> w.eq(HandoverRecord::getToPersonId, me.id())
@@ -456,6 +459,7 @@ public class HandoverService {
      *
      * <p>事务：方法级 REQUIRED 加入类级事务；与 disableIfAllCleared 不冲突（撤销不触发禁用检查）。
      */
+    @Transactional(rollbackFor = Exception.class)
     public HandoverRecord rollback(Long handoverId, String reason, IpdActor actor) {
         HandoverRecord rec = handoverMapper.selectById(handoverId);
         if (rec == null) {
@@ -960,6 +964,7 @@ public class HandoverService {
      *   <li>本月跨月移交：本月仍归旧 PM（不按天折算）；新 PM 计入次月 TRANSFER</li>
      * </ul>
      */
+    @Transactional(readOnly = true)
     public List<MonthlyAttributionView> getMonthlyAttribution(Long projectId, String month, IpdActor actor) {
         if (projectId == null || month == null || !month.matches("^\\d{4}-(0[1-9]|1[0-2])$")) {
             throw new ServiceException("项目 ID 与月份（yyyy-MM）不能为空且格式正确");

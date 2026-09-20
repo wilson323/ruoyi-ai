@@ -36,7 +36,6 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(rollbackFor = Exception.class)
 public class LaunchDateChangeService {
 
     public static final String ACTION_PROPOSE = "LAUNCH_DATE_PROPOSE";
