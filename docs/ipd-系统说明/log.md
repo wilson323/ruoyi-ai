@@ -8254,3 +8254,11 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **R25 reference-transaction hook 设计局限**：8 天累积 32 个 snapshot，需要每 1-2 周清理一次（hook 会自动重新生成）。
 
 **落地**：HEAD=0e36512f=origin/main，mvn EXIT 0，.git 570M 不变（snapshot 命名空间 < 1M 元数据）。
+
+### R117 ahead 历史快照全清（2026-09-19）
+
+**结论**：R115 保留的 4 ahead 本地分支共 7 ahead commit（6 unique），0 在 main 祖先链 + 0 内容未在 main 吸收，ahead 是早期版本被 main 后续 SQL+文档+治理超越。
+
+**清完**：refs 8→4（最小可工作集：1 main + 2 origin + 1 empty stash），ahead commit 6/6 SHA 备份在 `/tmp/r117-backup/ahead-commits.txt` 防 reflog 过期丢。
+
+**R113 起总清理**：refs 164→4，-160（-97.6%）。
