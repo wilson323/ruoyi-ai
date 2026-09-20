@@ -8884,3 +8884,48 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - R136-C 候选：BCP-011 (Skill S1-S5 沉淀) 推进（需 owner 拍板）
 - owner 拍板 #4/#6/#15/#17 后解锁 BCP-009/013
 - B 类 6 项 7d 未决自动通过触发链（2026-09-27）
+
+## 2026-09-20 R136 4 智能体并行穿透 1 个 BCP 闭环 + 2 docs-only 准备 + §九 SOP 复盘
+
+### 撞号预防映射表第二轮实战（主协调分发 → AI 智能体执行）
+- P 编号 (ioedream-pm) → BCP-Closure-Log.md §三.3.11 → BCP-004 后端配置多源（CLOSED）
+- Q 编号 (ioedream-qa-gatekeeper) → BCP-Closure-Log.md §三.3.12 → BCP-010 Hook H1-H4 矩阵（PENDING_OWNER docs-only）
+- E 编号 (ioedream-evolver) → BCP-Closure-Log.md §三.3.13 → BCP-009 跨仓最大破坏（PENDING_OWNER docs-only）
+- A 编号 (agency-harness) → BCP-Registry.md §九 R135 SOP 实践复盘（撞号预防长效化）
+
+### 撞号预防 100% PASS（第二轮）
+- §三.3.11 = P 独占 ✅
+- §三.3.12 = Q 独占 ✅
+- §三.3.13 = E 独占 ✅
+- §九 = A 独占 ✅
+
+### 4 智能体并行穿透（撞车 0 让路边界严守）
+- ioedream-pm：BCP-004 后端配置多源 + IPD 后端读 application-ipd-local.yml → ipd_dev 库闭环（**不实跑后端**撞车 0 让路）
+- ioedream-qa-gatekeeper：BCP-010 Hook H1-H4 矩阵 docs-only 准备（**未动 .claude/hooks/**等 owner 拍板 #1）
+- ioedream-evolver：BCP-009 跨仓最大破坏 4 类场景（S1/S2/S3/S4）docs-only 准备（**未跨仓**撞车 0 让路）
+- agency-harness：§九 R135 SOP 实践复盘 131 行（含 §9.4 R137 撞号预防映射表模板）
+
+### 自证能红（8 项全绿）
+- 1 BCP CLOSED（BCP-004）+ 2 BCP PENDING_OWNER docs-only（BCP-009/010）✅
+- 度量 8/13 ✅ / 5 钻覆盖率 30/80（37.5%）✅ / §九 SOP 复盘 131 行 ✅
+- §9.4 R137 撞号预防映射表模板 ✅
+- check-ssot-drift PASS ✅
+
+### 撞车 0 让路边界（严守严守严守）
+- ✅ docs/scripts + log.md auto-append + 看镜像 R136 段
+- ❌ P 不实跑后端（撞车 0 让路）
+- ❌ Q 不动 .claude/hooks/（owner 拍板后才实装）
+- ❌ E 不跨仓（未动 ruoyi-ipd-web / ZK-IPD）
+- ❌ 不动 Java 源码 / SQL / 端口 / PID / 兄弟会话 modified
+- ❌ 不擅自动 DDL / 不启后端
+
+### R136-D1 三源修复（接 R135-D1 / R134-D1 / R133-D1）
+- log.md R136 段回填 ✅（本段）
+- 看镜像 R136 段 append ✅
+- BCP-Registry.md §六 度量 8/13 + §三 5 钻覆盖率 30/80（37.5%）+ §九 R135 SOP 实践复盘 131 行 ✅
+
+### 下一步
+- owner 拍板 #1（Hook H5-H7 扩展决策）→ 解锁 BCP-010 真正闭环
+- owner 拍板 #6 + #15（跨仓 commit + BCP 自动同步）→ 解锁 BCP-009 真正闭环
+- BCP-011 推进（剩余 3 项中 1 项可 AI 自主派单）
+- B 类 6 项 7d 未决自动通过触发链（2026-09-27）

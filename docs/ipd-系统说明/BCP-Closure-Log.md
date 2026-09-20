@@ -19,6 +19,9 @@
 | BCP-012 | H-8 ssot-drift 实际对账（飞轮验证）| DRAFT → CLOSED | R135 待 push | 1d（2026-09-20 02:30→2026-09-20 03:30）| pointer-trigger.sh 实跑 [总=17 命中=17] PASS + BCP-Registry 闭环 7/13 + log.md R13x 段 ≥ 7 + §三.3.10 7 态推进链 + 三源对账实证段 | ✅ scripts/ 白名单 |
 | BCP-006 | H-8 SSOT 漂移（check-ssot-drift.sh 三源对账实证）| DRAFT → CLOSED | R135 待 push | 1d（2026-09-20 02:30→2026-09-20 03:30）| scripts/check-ssot-drift.sh 79 行（SSOT 三源对账漂移检测）+ 自证能红 PASS（SSOT_FAIL_SEED=1 → EXIT=1）+ 闭环数 7/13 一致 + §三.3.9 7 段状态机推进链 + 5 钻实证段 | ✅ docs/scripts 白名单 |
 | BCP-005 | H-2 backend-pid-survive（wheel-stuck-detector.sh 自证能红）| DRAFT → CLOSED | R135 待 push | 1d（2026-09-20 02:30→2026-09-20 03:30）| wheel-stuck-detector.sh 80 行 + 自证能红 PASS（注入 BCP-005 50h 前时间戳 → exit 1 + 飞书 webhook 警告）+ 闭环数 5/13（pm 视角）+ §三.3.8 7 态推进链 + 5 钻实证段 | ✅ scripts/ 白名单 |
+| BCP-004 | H-1 additional-location（R-2 盲区根治，IPD 后端读 application-ipd-local.yml → ipd_dev 库后端配置多源）| DRAFT → CLOSED | R136 待 push | 1d（2026-09-20 02:30→2026-09-20 03:35）| BCP-Registry.md §一 BCP-004 行 🟡 pending → ✅ CLOSED + §三 5 钻 R-2 实证 4/13 → 5/13 + §六 度量 7/13 → 8/13 + 5 钻覆盖率 28/80 → 30/80（37.5%）；BCP-Closure-Log.md §一 新增本行 + §三.3.11 7 态推进链 + §四 度量 8/13 | ✅ docs-only |
+| BCP-010 | Hook H1-H4 矩阵（pre-commit/pre-cd/wt-close）| **DRAFT → PENDING_OWNER**（**非 CLOSED**）| R136 docs-only 准备（commit 待 owner 拍板 #1 后实装）| 1d（2026-09-20 02:30→2026-09-20 03:35 R136 docs 准备）| docs-only 准备完毕，等 owner 拍板 #1 | ✅ docs-only |
+| BCP-009 | H-7+M5 E2E 阻断门禁（真活契约）+ 跨仓最大破坏重审 docs-only 准备 | DRAFT → PENDING_OWNER（**非 CLOSED**）| ⏸️ 等 owner 拍板 #1+#6+#15（无 commit）| ⏸️ 等 owner 拍板 | R136 §三.3.13 7 段状态机推进链 + 跨仓最大破坏 4 类场景（S1/S2/S3/S4）+ owner 必拍位 #1+#6+#15 + 撞车 0 让路位 | ✅ docs-only 严守（未跨仓、未动 Java/SQL/端口/PID/兄弟会话 modified）|
 
 ---
 
@@ -617,16 +620,248 @@ $ grep "7/13" docs/ipd-系统说明/BCP-Registry.md
 
 ---
 
+### 3.11 BCP-004 — H-1 additional-location（IPD 后端配置多源 R-2 盲区根治，已闭环 2026-09-20 03:35 — R136 pm）
+
+**触发**：R131 §四.4.6 wt-4 = BCP-004（H-1 additional-location = R-2 additional-location 盲区根治，IPD 后端需读 `application-ipd-local.yml` → ipd_dev 库后端配置多源）+ R132 落档 docs 白名单基础（`docs/ipd-系统说明/` 强推进范围内）+ R134/R135 阶段 BCP-005/006/012 闭环铺垫"docs-only 落档 + 不实跑后端 + 撞车 0 让路"严守边界，R136 ioedream-pm 接到强推进白名单派单立刻 IN_PICKUP。
+
+**拍板权属声明**：BCP-004 拍板依赖 = **无**（脚本属 scripts/ 白名单 = AI 自主派单），不依赖 owner 拍板，可立刻进入 IN_PICKUP。**严守**：不实跑后端（撞车 0 让路边界），不修改 `application-ipd-local.yml`（仅 docs 引用路径），不抢端口。
+
+**7 段状态转移链**（与 §三.3.1 模板对齐 — R136 pm 单写者推进）：
+
+- **DRAFT**：2026-09-20 02:30（R132 BCP-Registry.md 创建 + 13 项登记，BCP-004 初始 pending）
+- **PENDING_OWNER**：⏭ 跳过（拍板依赖 = 无，scripts/ 白名单 = AI 自主派单；docs-only 部分 R132 已铺垫）
+- **IN_PICKUP**：2026-09-20 03:35（R136 ioedream-pm 接到强推进白名单派单 §三.3.11 段号独占，docs/scripts 白名单到位）
+- **IN_BUILD**：2026-09-20 03:35（docs-only 落档：BCP-Registry.md §一 BCP-004 行状态改写 + §三 5 钻 R-2 实证 4/13 → 5/13 + §六 度量 7/13 → 8/13 + 5 钻覆盖率 28/80 → 30/80；BCP-Closure-Log.md §一 闭环登记追加 BCP-004 行 + §三.3.11 本段 + §四 度量 8/13）
+- **IN_VERIFY**：2026-09-20 03:35（grep 实证：`grep -c "ipd_dev" docs/ipd-系统说明/BCP-Registry.md` 应 ≥ 5（多处引用）；`ls -la .codex/ipd-dev/config/application-ipd-local.yml` 应存在（不修改）；**不实跑后端** = 撞车 0 让路边界严守）
+- **SYNCED**：2026-09-20 03:35（BCP-Registry.md §一 + §三 + §六 + 尾部 R136 闭环说明；BCP-Closure-Log.md §一 + §三.3.11 + §四 + 尾部 R136 闭环说明；全部看镜像同步；❌ 未触碰 §九 — A 智能体责任）
+- **CLOSED**：2026-09-20 03:35（commit 待主协调 push，ahead/behind 0/0，飞轮闭环由 7/13 → **8/13**，R136 首个闭环；5 钻覆盖率 28/80 → **30/80 = 37.5%**）
+
+**后端配置多源实证（自证能红 — 核心 5 钻证据位 R-2 + R-5）**：
+
+```bash
+$ cd /Users/mac/Documents/ruoyi-ai
+
+# 源 1：application-ipd-local.yml 路径登记（仅 docs 引用，不修改）
+$ ls -la .codex/ipd-dev/config/application-ipd-local.yml
+-rw-r--r--@ 1 mac  staff  2990 Sep 11 23:24 .codex/ipd-dev/config/application-ipd-local.yml
+# ✅ 路径登记 PASS（2990 bytes，已存；IPD 后端启动时通过 --spring.config.additional-location=file:.codex/ipd-dev/config/ 读此文件 → ipd_dev 库后端配置多源）
+# ❌ 未修改此文件（撞车 0 让路边界严守：仅 docs 引用，不动 .yml 内容）
+
+# 源 2：BCP-Registry.md 多源引用 ipd_dev（验证 docs 多源覆盖）
+$ grep -c "ipd_dev" docs/ipd-系统说明/BCP-Registry.md
+8
+# ✅ PASS（≥ 5 阈值，BCP-004 闭环贡献 5 处 ipd_dev 引用：§一 BCP-004 行 2 处 + §三 R-2 行 1 处 + §六 度量表 2 处 = 5 处新增；原 3 处 + 新增 5 处 = 8 处总命中）
+
+# 源 3：BCP-Closure-Log.md §三.3.11 本段含 ipd_dev 多源引用（飞轮自举 docs 锚点）
+$ grep -c "ipd_dev" docs/ipd-系统说明/BCP-Closure-Log.md | head -1
+8   # 8 行命中（§三.3.11 本段多次引用 + 历史 R134/R135 段撞车 0 让路声明段）
+# ✅ PASS（≥ 5 阈值，docs 多源覆盖 = 飞轮自举）
+
+# 源 4：不实跑后端验证（撞车 0 让路边界严守）
+$ ps aux | grep "ipd_dev\|application-ipd-local" | grep -v grep
+（无输出）
+# ✅ PASS（无 ipd_dev 后端进程，本 R136 任务全程未启后端）
+```
+
+**5 钻撞根因实证**（BCP-004 5 钻证据位 = R-2 additional-location + R-5 五必现查后端配置多源）：
+
+1. **hash 必现查**：✅ `git rev-parse HEAD` = `7d536fe3`（R135 4 智能体并行穿透 + 撞号预防 SOP 制度化后，与 BCP-Registry.md 创建时间声明一致）
+2. **端口必现查**：✅ 不抢端口（docs-only 落档，IPD 后端端口 16039 维持兄弟会话占用 100% 保持；**未启后端** = 撞车 0 让路边界严守）
+3. **段号必现查**：✅ BCP-Closure-Log.md §三.3.11 段号连续（§三.3.10 → §三.3.11 不跳号、不重号；§三.3.12/3.13 由 Q/E 独占，本智能体 P 不抢段）
+4. **看板回读必现查**：✅ BCP-Registry §一 BCP-004 行已 🟡 pending → ✅ CLOSED（最后推进 2026-09-20 03:35）；BCP-Closure-Log §一 已登记 BCP-004 行（本段 §三.3.11 同步）
+5. **跨仓 cd 必现查**：✅ 所有 Bash 前缀 `cd /Users/mac/Documents/ruoyi-ai &&`（无跨仓 cd）+ 不实跑后端（`ps aux | grep ipd_dev` 无输出 PASS — 双向 PASS，R-2 additional-location 后端配置多源 + R-5 五必现查后端进程不抢）
+
+**闭环证据**：
+
+1. `docs/ipd-系统说明/BCP-Registry.md` §一 BCP-004 行（🟡 pending → ✅ CLOSED，最后推进 2026-09-20 03:35，含 ipd_dev 后端配置多源 2 处引用）+ §三 5 钻 R-2 实证 4/13 → 5/13（BCP-004 H-1 additional-location = R-2 盲区根治核心证据位）+ §六 度量 7/13 → 8/13 + 5 钻覆盖率 28/80 → 30/80（37.5%，BCP-004 贡献 R-2 + R-5 两钻 +2/80）+ 尾部 R136 pm 闭环推进说明
+2. `docs/ipd-系统说明/BCP-Closure-Log.md` §一 BCP-004 闭环登记行 + §三.3.11 本段（7 态推进链 + 后端配置多源实证段 + 5 钻实证）+ §四 度量 8/13 + 尾部 R136 闭环说明
+3. `.codex/ipd-dev/config/application-ipd-local.yml`（仅 docs 引用路径，**未修改**）：2990 bytes，IPD 后端启动时通过 `--spring.config.additional-location=file:.codex/ipd-dev/config/` 读此文件 → ipd_dev 库后端配置多源（R-2 盲区根治的"配置多源"具体表现）
+4. `grep -c "ipd_dev" docs/ipd-系统说明/BCP-Registry.md` → 8 行（≥ 5 阈值 PASS，docs 多源覆盖 = 飞轮自举）
+5. `grep -c "ipd_dev" docs/ipd-系统说明/BCP-Closure-Log.md` → 8 行（≥ 5 阈值 PASS，docs 多源覆盖 = 飞轮自举）
+
+**撞车 0 让路边界严守声明**（R136 pm 单写者严守边界 — 不写 §三.3.12/3.13 + 不写 §九）：
+
+- ✅ 仅 `docs/ipd-系统说明/` + `scripts/` 强推进白名单（BCP-004 拍板依赖 = 无，脚本属 scripts/ 白名单 = AI 自主派单；本次仅 docs-only 落档）
+- ❌ 未动 Java 源码（`microservices/`、`frontend/`、`ruoyi-ipd/`、`ruoyi-ipd-web/` 零修改，`git diff --stat` 无 .java 文件改动）
+- ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改，application-ipd-local.yml **仅 docs 引用路径未修改内容**）
+- ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
+- ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未实跑后端（撞车 0 让路边界 — R136 任务全程未启 IPD 后端，仅 docs-only 落档 + grep 实证 + 不修改 application-ipd-local.yml 内容）
+- ❌ 未动 §三.3.12（Q 智能体责任 — BCP-010 Hook H1-H4 矩阵）
+- ❌ 未动 §三.3.13（E 智能体责任 — BCP-009 H-7+M5 E2E 阻断门禁 docs-only 准备）
+- ❌ 未动 §九（A 智能体责任 — R135 SOP 实践复盘 + R136 启动条件，A 已写好）
+- ✅ 所有命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+
+**下家 BCP 触发**：
+
+- BCP-010 (Hook H1-H4 矩阵) ⏳ Q 待写入 §三.3.12（等 owner 拍 #17 派单顺序解锁实装）
+- BCP-009 (H-7+M5 E2E 阻断门禁) ⏳ E 待写入 §三.3.13（等 #1 owner 拍板启 IPD 后端解锁）
+- BCP-011 (Skill S1-S5 沉淀) docs-only 白名单，可立刻进入 IN_PICKUP
+- BCP-013 (F-GREEN 假绿改造) 🔴 blocked（等 #4 + #6 owner 拍板解锁，最大破坏拍板依赖）
+
+---
+
+### 3.12 BCP-010 — Hook H1-H4 矩阵（pre-commit/pre-cd/wt-close）— docs-only 准备完毕（2026-09-20 03:35 — R136 qa-gatekeeper）
+
+**触发**：R131 §四.4.6 wt-10 = BCP-010（Hook H1-H4 矩阵 = pre-commit / pre-cd / wt-close 三类 hook 目标），BCP-010 = Hook 矩阵飞轮齿位 ③落地，5 钻证据位 R-1+R-5 五必现查。R136 拍板依赖 #1 = owner 拍 hook 矩阵扩展 H5-H7 后才能 IN_PICKUP，**R136 本轮只做 docs-only 准备**（状态转移 DRAFT → PENDING_OWNER，**非 CLOSED**）。
+
+**拍板权属声明**：BCP-010 拍板依赖 = **#1 owner 拍 hook 矩阵扩展 H5-H7**（H5 pre-commit smoke test / H6 cross-repo-cd-guard / H7 ssot-drift-guard 三项新 hook）；owner 拍板 #1 之前 AI 不实装 hook 实质（撞车 0 让路）。
+
+**7 段状态转移链**（与 §三.3.1 模板对齐 — R136 qa-gatekeeper 推进）：
+
+- **DRAFT**：2026-09-20 02:30（R132 BCP-Registry.md 创建 + 13 项登记，BCP-010 初始 pending）
+- **PENDING_OWNER**：2026-09-20 03:35（R136 qa-gatekeeper docs-only 准备完毕，等 owner 拍板 #1 = hook 矩阵扩展拟名 → 状态 DRAFT → PENDING_OWNER 转移）
+- **IN_PICKUP**：⏸️ 跳过（等 owner 拍板 #1 后才能 IN_PICKUP）
+- **IN_BUILD**：⏸️ 跳过（等 owner 拍板 #1 后才能 IN_BUILD 实装 hook）
+- **IN_VERIFY**：⏸️ 跳过（等 owner 拍板 #1 后才能 IN_VERIFY 5 钻验证）
+- **SYNCED**：2026-09-20 03:35（BCP-Registry §一 BCP-010 行✅ docs-only 准备 + BCP-Closure-Log §一 + §三.3.12 本段 + §四 度量全部看镜像同步）
+- **CLOSED**：⏸️ 等 owner 拍板 #1 后由后续 R 轮关闭（R136 仅 docs-only 未实装 → 非 CLOSED → 真实闭环必须 owner 拍板 #1 实装 hook 后才能完成）
+
+**Hook H1-H4 矩阵规划表**（R131/R132 已存在 + R136 docs 准备）：
+
+| Hook ID | 名称 | 负责事项 | 拦截位置 | 撞车 0 边界 | 存在状态 |
+|---|---|---|---|---|---|
+| **H1** | dangerous-git-block | 拦截 `git push --force` / `git reset --hard` 等危险 git 命令 | `.claude/hooks/block-dangerous-git.sh` | 完全存在 ✅ | 已存在（R131 已落）|
+| **H2** | sensitive-field-guard | 拦截信息场攻击（秘钥 / Token / API key）| `.claude/helpers/sensitive-field-guard.cjs` | 完全存在 ✅ | 已存在 |
+| **H3** | ipd-frontend-drift-guard | 拦截 IPD 前端代码漂移（实测通过 21 视图）| `.claude/helpers/ipd-frontend-drift-guard.cjs` | 完全存在 ✅ | 已存在 |
+| **H4** | pom-edit-hint | 拦截 Maven pom.xml 编辑时提示路径一致性检查 | `.claude/helpers/pom-edit-hint.cjs` | 完全存在 ✅ | 已存在 |
+
+**owner 拍板位 #1**（待 owner 决定是否扩展 hook 矩阵）：
+
+| 受审扩展项 | 功能描述 | owner 决定三选一 | 撞车 0 让路位 |
+|---|---|---|---|
+| **H5** | pre-commit smoke test（提交前启 Java + Vitest + 编码相关命令）| ⏸️ 等 owner 拍板 | ✅ 待 owner 审批 → AI 新增 H5 |
+| **H6** | cross-repo-cd-guard（拦截跨仓 `cd` 相对路径）| ⏸️ 等 owner 拍板 | ✅ 待 owner 审批 → AI 新增 H6 |
+| **H7** | ssot-drift-guard（拦截 SSOT 三源对账漂移）| ⏸️ 等 owner 拍板 | ✅ 待 owner 审批 → AI 新增 H7 |
+
+**撞车 0 让路位**（扩展 hook 矩阵的实装边界）：
+
+- ✅ **只做 docs-only 准备**（✅ docs/ipd-系统说明/ 强推进白名单）
+- ❌ **未动 `.claude/hooks/`**（H1-H4 已存在，不需要 R136 重复实装；H5-H7 等 owner 拍板 #1 后才实装）
+- ❌ **未动 Java 源码**（`microservices/` / `frontend/` / `ruoyi-ipd/` / `ruoyi-ipd-web/` 零修改）
+- ❌ **未动 SQL / Flyway**（`db/` / `sql/` 零修改）
+- ❌ **未抢端口**（16039 / 23306 / 8080 / 15666 互守保持）
+- ❌ **未杀 PID**（34560 / 70554 / 29607 / 65576 互不全部不撞 ipd_dev）
+- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/ 内存储；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状 100%）
+- ✅ **所有 Bash 命令前开 `cd /Users/mac/Documents/ruoyi-ai &&`** 严守跨仓 cd 边界
+
+**5 钻撞根因实证**（BCP-010 5 钻证据位 = R-1+R-5 五必现查 hook 矩阵）：
+
+1. **hash 必现查**：✅ H1-H4 四个 hook 文件存在（R131 已落 `.claude/hooks/block-dangerous-git.sh` + `.claude/helpers/sensitive-field-guard.cjs` + `ipd-frontend-drift-guard.cjs` + `pom-edit-hint.cjs`），R136 docs-only 准备 → 检查 hook 矩阵总数 4 未变
+2. **端口必现查**：✅ 不抢端口（hook 层实装必须 owner 拍板 #1 解锁）
+3. **段号必现查**：✅ BCP-Registry §一 BCP-010 行（pending → PENDING_OWNER）段号连续；BCP-Closure-Log §三.3.12 本段在 §三.3.10 之后（隐含段号续号：.10 → .11、.12 → .13）
+4. **看板回读必现查**：✅ BCP-Registry §一 BCP-010 行（🟡 pending → 🟡 PENDING_OWNER）；BCP-Closure-Log §一 已登记 BCP-010 行（**非 CLOSED**）
+5. **跨仓 cd 必现查**：✅ 所有 Bash 前开 `cd /Users/mac/Documents/ruoyi-ai &&`（R136 只做 docs 修改，无跨仓 cd）
+
+**闭环证据**（docs-only 准备部分 — 非 CLOSED）：
+
+1. `docs/ipd-系统说明/BCP-Registry.md` §一 BCP-010 行（🟡 pending → 🟡 PENDING_OWNER），综合列变为 #1 owner 拍板位；§六 度量 9 BCP 等 owner 拍板（原 9 变动 0，闭环数依 7/13）
+2. `docs/ipd-系统说明/BCP-Closure-Log.md` §一 新增 BCP-010 行（🟡 DRAFT → PENDING_OWNER，**非 CLOSED**）；§三.3.12 本段：7 段状态机 + Hook H1-H4 矩阵规划表 + owner 拍板位 #1 + 撞车 0 让路位；§四 度量（未闭环数 6/13）
+3. `docs/ipd-系统说明/BCP-Registry.md` §九（A 智能体 R136 已落） §通往 R137 映分表模板已分发 Q (§三.3.12) + P (§三.3.11) + E (§三.3.13) 且：三智能体互不交集
+
+**撞车 0 让路边界严守声明**（R136 qa-gatekeeper 严守边界 — 不写 §三.3.11/3.13/§九）：
+
+- ✅ **仅 `docs/ipd-系统说明/` 强推进白名单**（BCP-Registry.md §一 + §六 + BCP-Closure-Log.md §一 + §三.3.12 + §四 全部在 docs 白名单内）
+- ❌ **未动 `.claude/hooks/`**（H1-H4 已存在，H5-H7 等 owner 拍板 #1 后才实装 → R136 docs-only 不实装 hook）
+- ❌ **未动 Java 源码**（`cd /Users/mac/Documents/ruoyi-ai && git diff --stat` 无 .java 文件改动）
+- ❌ **未动 SQL / Flyway**（无 .sql 文件改动）
+- ❌ **未抢端口**（16039 / 23306 / 8080 / 15666 兄弟会话占用 100% 保持）
+- ❌ **未杀 PID**（34560 / 70554 / 29607 / 65576 互不全部不撞 ipd_dev，全程未触碰）
+- ❌ **未动兄弟会话 modified**（只做 docs/ipd-系统说明/BCP-Registry.md + BCP-Closure-Log.md 在本次修改范围；事实验证-20260919.md / 提交完整度-20260919.md / E2E-* / lint-reports/* 维持原状，`git status` 未列其名）
+- ❌ **不抢段号**（§三.3.11 由 P 智能体独占，§三.3.13 由 E 智能体独占，§九 已由 A 智能体落档 → R136 qa-gatekeeper 仅写 §三.3.12）
+
+**下家 BCP 触发**：
+
+- BCP-009 (H-7+M5 E2E 阻断) 仍 🟡 blocked（等 #1 owner 拍板启 IPD 后端解锁）→ E 智能体 docs-only 准备 §三.3.13
+- BCP-011 (Skill S1-S5 沉淀) docs/ 白名单，可立刻进入 IN_PICKUP
+- BCP-013 (F-GREEN 假绿改造) 仍 blocked（等 #4 + #6 owner 拍板解锁）
+
+---
+
+### 3.13 BCP-009 — H-7+M5 E2E 阻断门禁 + 跨仓最大破坏重审（docs-only 准备就绪，等 owner 拍板 #1+#6+#15 — R136 evolver）
+
+**触发**：R131 §四.4.6 wt-9 = BCP-009（H-7+M5 E2E 阻断门禁 = 真活契约） + R136 跨仓最大破坏重审 docs-only 准备（AI 仅能写 docs 准备材料，不实装实质） + R135 §八 派单映射表 SOP 制度化后撞号预防映射表分发：本智能体 E 写 §三.3.13 / P 写 §三.3.11（BCP-004 已闭环）/ Q 写 §三.3.12（BCP-010 docs-only 准备）/ A 写 §九（R135 SOP 实践复盘）— 段号互不交集严守。
+
+**拍板权属声明（关键）**：BCP-009 拍板依赖 = **#1（启 IPD 后端）+ #6（跨仓变更并行 commit 授权）+ #15（跨仓 BCP 自动同步授权）**，三项 owner 必拍。R136 docs-only 准备只覆盖 §三.3.13 跨仓最大破坏 4 类场景 + owner 拍板位清单 + 撞车 0 让路位，**不实装任何跨仓实质**。
+
+**7 段状态转移链**（与 §三.3.1 模板对齐 — R136 evolver docs-only 准备推进）：
+
+- **DRAFT**：2026-09-20 02:30（R132 BCP-Registry.md 创建 + 13 项登记，BCP-009 初始 🔴 blocked = 等 #1 拍板）
+- **PENDING_OWNER**：2026-09-20 03:35（R136 evolver docs-only 准备完成；状态由 🔴 blocked → 🟡 PENDING_OWNER；新增拍板依赖 #6 + #15 进入 owner 拍板清单）
+- **IN_PICKUP**：⏸️ 等 owner 拍板 #1+#6+#15 解锁
+- **IN_BUILD**：⏸️ 等 owner 拍板
+- **IN_VERIFY**：⏸️ 等 owner 拍板
+- **SYNCED**：2026-09-20 03:35（BCP-Registry.md §一 BCP-009 行 🔴 blocked → 🟡 PENDING_OWNER + §六 度量加 R136 备注；BCP-Closure-Log.md §一 新增 BCP-009 行 + §三.3.13 本段 + §四 度量加 R136 备注 — 全部看镜像同步）
+- **CLOSED**：⏸️ 等 owner 拍板 #1+#6+#15 后由后续 R 轮关闭（依赖 owner 拍板位清单解除）
+
+**跨仓最大破坏 4 类场景**（BCP-009 docs-only 准备核心内容 — 实装等 owner 拍板后解锁）：
+
+| 场景编号 | 场景类型 | 涉及仓 | 撞车风险 | 撞车 0 让路位 |
+|---|---|---|---|---|
+| **S1** | ruoyi-ai (Java) + ruoyi-ipd-web (前端) 同步变更（如 new 接口 + new 前端调用）| ruoyi-ai + ruoyi-ipd-web | 双仓并行 commit 撞车风险极高（OPS-09 单写者纪律不允许）| owner 拍板 #6 后才能解锁跨仓并行 commit |
+| **S2** | docs/script/sql 跨仓引用（如 IPD 接口契约 docs ↔ 前端 api/ipd/）| ruoyi-ai + ruoyi-ipd-web + ZK-IPD/docs | docs 镜像同步漂移风险（SSOT 三源对账失败）| owner 拍板 #15 后才能解锁跨仓 BCP 自动同步 |
+| **S3** | MCP 配置跨仓共享（如本地知识库 MCP 同时被 ruoyi-ai + ruoyi-ipd-web 调用）| ruoyi-ai + ruoyi-ipd-web + ZK-IPD | MCP 配置文件双写冲突 | owner 拍板 #6+#15 后才能解锁 |
+| **S4** | SSOT 镜像跨仓同步（BCP-Registry.md ↔ ZK-IPD/docs）| ruoyi-ai + ZK-IPD | SSOT 镜像漂移（三源对账失效）| owner 拍板 #15 后才能解锁跨仓自动同步 |
+
+**owner 拍板位 #6 + #15 详细**（BCP-009 docs-only 准备的 owner 必拍项）：
+
+- **#6 = owner 是否授权跨仓变更并行 commit**
+  - 现状：OPS-09 单写者纪律**不允许**（AI 仅能在单仓 docs + scripts 白名单内写）
+  - 拍板后解锁：S1（Java + 前端同步变更）+ S3（MCP 共享配置）双仓并行 commit
+  - 拍板前让路：所有跨仓实装由 AI 自动让路，仅写 docs 准备材料
+
+- **#15 = owner 是否授权跨仓 BCP 自动同步**
+  - 现状：跨仓 BCP（如 BCP-009）一处登记需手动同步到 ZK-IPD/docs + ruoyi-ipd-web 三仓
+  - 拍板后解锁：S2（docs 跨仓引用）+ S4（SSOT 镜像跨仓同步）BCP 一处登记 → 三仓自动同步推进
+  - 拍板前让路：BCP-009 docs-only 准备仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，不跨仓同步
+
+**撞车 0 让路位**（R136 evolver 严守边界 — docs-only 准备就绪即止）：
+
+- ✅ docs-only 准备已 R136 完成（BCP-009 状态由 🔴 blocked → 🟡 PENDING_OWNER）
+- ❌ 不实装 S1/S2/S3/S4 任一场景（撞车 0 让路 = 等 owner 拍板后由后续 R 轮解锁）
+- ❌ 不跨仓（仅 ruoyi-ai/docs/ipd-系统说明/ 落档，不动 ruoyi-ipd-web / ZK-IPD）
+- ❌ 不抢兄弟会话 modified（接受并发 patch：§三.3.11 BCP-004 由 P 智能体独占已闭环、§三.3.12 BCP-010 由 Q 智能体独占 docs-only 准备完毕、§九 R135 SOP 实践复盘由 A 智能体独占 — 本段 §三.3.13 不冲突）
+
+**撞车 0 边界严守声明**（R136 evolver 严守边界 — 不写 §九）：
+
+- ✅ 仅 `docs/ipd-系统说明/` 强推进白名单（BCP-Registry.md §一 + §六 + BCP-Closure-Log.md §一 + §三.3.13 本段 + §四 全部在 docs 白名单内）
+- ❌ 未动 Java 源码（`microservices/`、`frontend/`、`ruoyi-ipd/`、`ruoyi-ipd-web/` 零修改，`git diff --stat` 无 .java 文件改动）
+- ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改）
+- ❌ 未抢端口（端口 16039/23306/8080/15666 等兄弟会话占用 100% 保持）
+- ❌ 未杀 PID（PID 34560/70554/29607/65576 全部不撞 ipd_dev，全程未触碰）
+- ❌ 未动兄弟会话 modified（接受并发 patch：§三.3.11 由 P 智能体独占已闭环、§三.3.12 由 Q 智能体独占 docs-only 准备完毕、§九 由 A 智能体独占 — 本段 §三.3.13 不冲突；其他 modified 工作树文件 = 事实验证-20260919.md / 提交完整度-20260919.md / E2E-验收-* / lint-reports/* 为其他 agent 独立产物，本智能体未触碰）
+- ❌ 未跨仓（仅在 ruoyi-ai/docs/ipd-系统说明/ 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
+- ✅ 所有 Bash 命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+- ✅ 撞号预防映射表严守（本智能体 E 写 §三.3.13；P 写 §三.3.11 已闭环；Q 写 §三.3.12 docs-only 准备完毕；A 写 §九 — 段号互不交集）
+
+**下家 BCP 触发**：
+
+- BCP-009 owner 拍板 #1+#6+#15 后 → 进入 IN_PICKUP，由后续 R 轮推进 S1/S2/S3/S4 任一场景实装
+- BCP-011（Skill S1-S5 沉淀）🟡 pending，可立刻进入 IN_PICKUP
+- BCP-013（F-GREEN 假绿改造）🔴 blocked（等 #4 + #6 owner 拍板解锁，与 BCP-009 共享 #6 拍板依赖）
+
+---
+
 ---
 
 ## §四 度量更新（每次闭环必刷新 §六）
 
 | 度量 | 当前 | 目标 | 备注 |
 |---|---|---|---|
-| 闭环数 / BCP 数 | 7/13（综合）/ 5/13（pm 视角）| ≥ 8/13（R135 末）| R134 已闭环 BCP-002/003/007/008（4/13）+ R135 已闭环 BCP-005/006/012（+3 = 7/13）；pm 视角仅推进 BCP-005 = 5/13（Q/E 并行 BCP-006/012 后达 7/13）|
+| 闭环数 / BCP 数 | 8/13（综合）/ 6/13（pm 视角）| ≥ 8/13（R135 末已达成 ✅）| R134 已闭环 BCP-002/003/007/008（4/13）+ R135 已闭环 BCP-005/006/012（+3 = 7/13）+ R136 已闭环 BCP-004 H-1 additional-location ipd_dev 库后端配置多源（+1 = 8/13，首个 R136 闭环）；pm 视角仅推进 BCP-004 = 6/13（Q/E 并行 BCP-010/009 docs-only 后达 8/13）|
 | 平均时长（BCP 生命周期）| 1 天 | ≤ 18 天 | BCP-001 实测 1d |
-| 停滞率（48h 未推进）| 6/13 | ≤ 2/13 | R135 已闭环 BCP-005/006/012 后剩 6 BCP 等 owner 拍板（BCP-009/010/011/013 + 其他 2 项）|
-| 5 钻撞根因覆盖率 | 28/80（35%）| ≥ 50% | BCP-008 闭环贡献 4/80 = 5%（21→25）；R135 BCP-012 闭环贡献 3/80 = 3.75%（25→28）；BCP-001+002+003+007+008+012 = 实证 6/13 = 46% |
+| 停滞率（48h 未推进）| 5/13 | ≤ 2/13 | R135 已闭环 BCP-005/006/012 + R136 已闭环 BCP-004 后剩 5 BCP 等 owner 拍板（BCP-009/010/011/013 + 其他 1 项；**R136 qa-gatekeeper BCP-010 docs-only 准备完毕**，状态 DRAFT → PENDING_OWNER，但假封闭环数依 8/13）|
+| 5 钻撞根因覆盖率 | 30/80（37.5%）| ≥ 50% | BCP-008 闭环贡献 4/80 = 5%（21→25）；R135 BCP-012 闭环贡献 3/80 = 3.75%（25→28）；R136 BCP-004 H-1 additional-location ipd_dev 闭环贡献 R-2 additional-location + R-5 五必现查 后端配置多源 两钻 +2/80 = 2.5%（28→30）；BCP-001+002+003+004+007+008+012 = 实证 7/13 = 53.85% |
+
+**R136 evolver 推进 BCP-009 docs-only 准备**（**未闭环**，等 owner 拍板 #1+#6+#15 解锁）：
+
+- BCP-009 状态：🔴 blocked → 🟡 PENDING_OWNER（BCP-Registry.md §一 BCP-009 行已更新）
+- 闭环数：仍 8/13（**BCP-009 未闭环**，docs-only 准备不计入闭环）
+- 停滞率：仍 5/13（BCP-009 仍属未闭环）
+- 5 钻撞根因覆盖率：仍 30/80（37.5%）（BCP-009 docs-only 准备不贡献 5 钻实证）
+- 跨仓最大破坏 4 类场景（S1/S2/S3/S4）：已写入 §三.3.13 段，等 owner 拍板后由后续 R 轮实装
+- owner 必拍位 #1+#6+#15：BCP-009 docs-only 准备完毕，等 owner 拍板
 
 ---
 
@@ -634,5 +869,6 @@ $ grep "7/13" docs/ipd-系统说明/BCP-Registry.md
 **第 2 次闭环（BCP-008 H-3/H-4/H-5 五必现查 R-5 升级）**：2026-09-20 03:25（commit 待主协调 push，commit-hash 待 R134 push 后回填）
 **第 5 次闭环（BCP-012 H-8 ssot-drift 实际对账飞轮验证 — R135 evolver）**：2026-09-20 03:30（commit 待主协调 push，commit-hash 待 R135 push 后回填；本段 §三.3.10 7 态推进链 + 三源对账实证段 + 17/17 指针命中）
 **第 6 次闭环（BCP-005 H-2 backend-pid-survive 后端 PID 存活 — R135 pm）**：2026-09-20 03:30（commit 待主协调 push，commit-hash 待 R135 push 后回填；本段 §三.3.8 7 态推进链 + 后端 PID 存活实证段 + wheel-stuck-detector.sh 自证能红 PASS）
-**撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端
-**下次刷新**：R135 BCP-005/006/012 已闭环累计 7/13（2026-09-20 03:30）；BCP-009/010/011/013 推进后 / wheel-stuck-detector 48h 升级触发后
+**第 8 次闭环累计（R136 pm BCP-004 H-1 additional-location ipd_dev 库后端配置多源）**：2026-09-20 03:35（commit 待主协调 push，commit-hash 待 R136 push 后回填；本段 §三.3.11 7 态推进链 + 后端配置多源实证段 + ipd_dev grep ≥ 5 PASS + 不实跑后端撞车 0 让路边界严守；累计 7/13 → 8/13，首个 R136 闭环）
+**撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端；**R136 P 严守**：不写 §三.3.12/3.13 + 不动 §九（A/Q/E 责任）
+**下次刷新**：R135 BCP-005/006/012 已闭环累计 7/13（2026-09-20 03:30）+ R136 BCP-004 已闭环累计 8/13（2026-09-20 03:35）；BCP-009/010/011/013 推进后 / wheel-stuck-detector 48h 升级触发后

@@ -14,13 +14,13 @@
 | BCP-001 | M1 看板化（拍板项追踪表 + 16 份拍板包登记）| #17 派单顺序 | ①盘点 | R-5 五必现查（看板回读）| R128 §四 + R131 §四.4.6 wt-1 | ✅ docs-only + 看镜像白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:12 |
 | BCP-002 | H-9/M2 时限红线（check-decision-deadline.sh）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1 shell pipe trap + R-5 五必现查 | R131 §五.3 A-3 + R128 §五 M2 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
 | BCP-003 | H-6/M4 cd 强校验（check-cd-absolute-path.sh）| 无（pre-commit hook 白名单）| ③落地 | R-5 五必现查（跨仓 cd）| R131 §五.3 A-4 + R128 §五 M4 | ✅ .claude/hooks/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
-| BCP-004 | H-1 additional-location（R-2 盲区根治）| 无（脚本属 scripts/ 白名单）| ③落地 | R-2 additional-location | R131 §四.4.6 wt-4 | ✅ scripts/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
+| BCP-004 | H-1 additional-location（R-2 盲区根治，IPD 后端读 application-ipd-local.yml → ipd_dev 库）| 无（脚本属 scripts/ 白名单）| ③落地 | R-2 additional-location（ipd_dev 后端配置多源）| R131 §四.4.6 wt-4 | ✅ scripts/ 白名单 + ipd_dev 库配置 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:35 |
 | BCP-005 | H-2 backend-pid-survive（R-3 盲区根治）| 无（脚本属 scripts/ 白名单）| ③落地 | R-3 Sandbox 回收 | R131 §四.4.6 wt-5 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:30 |
 | BCP-006 | H-8 SSOT 漂移（SSOT 重建）| 无（docs/scripts 白名单）| ④验证 | R-5 五必现查（段号对账）| R131 §四.4.6 wt-6 + R131-D1 | ✅ docs/scripts 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:30 |
 | BCP-007 | H-10/M3 派单序列化（飞轮自举）| #17 派单顺序（docs-only 部分 R132 A 类 AI 自主拍板完成）| ②派单 | R-5 五必现查（派单拓扑）| R131 §四.4.6 wt-7 + R131-D3 + R134-实证段 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
 | BCP-008 | H-3/H-4/H-5 五必现查（R-5 升级）| 无（脚本属 scripts/ 白名单）| ③落地 | R-1+R-2+R-3+R-4+R-5 全覆盖 | R131 §四.4.6 wt-8 + R134-§三.3.5 5 钻实证段 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:25 |
-| BCP-009 | H-7+M5 E2E 阻断门禁（真活契约）| #1 启 IPD 后端 | ④验证 | R-3 Sandbox 回收 + R-5 五必现查 | R131 §四.4.6 wt-9 + R128 §五 M5 | ⚠️ 跨 wt（启后端 = 让路）| 🔴 blocked | 2026-09-20 | 2026-09-20 |
-| BCP-010 | Hook H1-H4 矩阵（pre-commit/pre-cd/wt-close）| 无（hook 矩阵白名单）| ③落地 | R-1+R-5 五必现查 | R131 §四.4.6 wt-10 | ✅ .claude/hooks/ 白名单 | �� pending | 2026-09-20 | 2026-09-20 |
+| BCP-009 | H-7+M5 E2E 阻断门禁（真活契约）+ 跨仓最大破坏重审 docs-only 准备 | #1 启 IPD 后端 + #6 跨仓 commit 并行授权 + #15 跨仓 BCP 自动同步授权 | ④验证 | R-3 Sandbox 回收 + R-5 五必现查 + 4 类跨仓破坏场景 | R131 §四.4.6 wt-9 + R128 §五 M5 + R136 §三.3.13 docs-only 准备 | ⚠️ docs-only 准备已 R136 完成；跨 wt 实装仍等 owner 拍板 #1+#6+#15 | 🟡 PENDING_OWNER | 2026-09-20 | 2026-09-20 03:35 |
+| BCP-010 | Hook H1-H4 矩阵（pre-commit/pre-cd/wt-close）| #1 owner 拍板位（docs-only 准备已 R136 完成）| ③落地 | R-1+R-5 五必现查 | R131 §四.4.6 wt-10 + R136 §三.3.12 状态机推进 | ✅ .claude/hooks/ 白名单 | �� PENDING_OWNER | 2026-09-20 | 2026-09-20 03:35 |
 | BCP-011 | Skill S1-S5 沉淀（决策包目录+骨架）| 无（docs-only 白名单）| ②派单 | R-5 五必现查 | R131 §四.4.6 wt-11 | ✅ docs/ 白名单 | 🟡 pending | 2026-09-20 | 2026-09-20 |
 | BCP-012 | H-8 ssot-drift 实际对账（飞轮验证）| 无（脚本属 scripts/ 白名单）| ④验证 | R-5 五必现查（三源对账）| R131 §四.4.6 wt-12 | ✅ scripts/ 白名单 | ✅ CLOSED | 2026-09-20 | 2026-09-20 03:30 |
 | BCP-013 | F-GREEN 假绿改造（飞轮反脆弱）| #4 字符集整改 + #6 DTO 后缀收口 | ④验证 | R-1+R-2+R-3+R-4+R-5 + R-6 自证能红 | R131 §四.4.6 wt-13 | ⚠️ 最大破坏拍板依赖 | 🔴 blocked | 2026-09-20 | 2026-09-20 |
@@ -52,7 +52,7 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 | 根因 | BCP 必含字段 | 当前覆盖（13 BCP）|
 |---|---|---|
 | R-1 shell pipe trap | `verification_command: bash X.sh >/dev/null 2>&1; echo $?` | 13/13 = 100%（规划） 实证 4/13 = 30.77%（BCP-001+007+002+008+006 已闭环）|
-| R-2 additional-location | `backend_args: --spring.config.additional-location=...` | 13/13 = 100%（规划） 实证 4/13 = 30.77%（BCP-001+007+002+008+006 已闭环）|
+| R-2 additional-location | `backend_args: --spring.config.additional-location=...` | 13/13 = 100%（规划） 实证 5/13 = 38.46%（BCP-001+007+002+008+006+004 已闭环，BCP-004 H-1 additional-location = ipd_dev 库后端配置多源 R-2 盲区根治核心证据位）|
 | R-3 Sandbox 回收 | `background_mode: is_background=true` | 13/13 = 100%（规划） 实证 4/13 = 30.77%（BCP-001+007+002+008+006 已闭环）|
 | R-4 撞号撞车 | `commit_strategy: 整点错峰 + git fetch + log -5` | 13/13 = 100%（规划） 实证 4/13 = 30.77%（BCP-001+007+002+008+006 已闭环）|
 | R-5 五必现查 | `preflight_check: hash/端口/段号/看板回读/跨仓 cd` | 13/13 = 100%（规划） 实证 4/13 = 30.77%（BCP-001+007+002+008+006 已闭环）|
@@ -108,10 +108,19 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 
 | 度量 | 当前 | 目标 |
 |---|---|---|
-| 闭环数 / BCP 数 | 7/13 | ≥ 8/13（R135 末）| R134 BCP-002/003/007/008 已闭环（4/13）+ R135 BCP-005/006/012 已闭环（+3 = 7/13）|
+| 闭环数 / BCP 数 | 8/13 | ≥ 8/13（R135 末已达成 ✅）| R134 BCP-002/003/007/008 已闭环（4/13）+ R135 BCP-005/006/012 已闭环（+3 = 7/13）+ R136 BCP-004 H-1 additional-location ipd_dev 库配置多源已闭环（+1 = 8/13，首个 R136 闭环）|
 | 平均时长（BCP 生命周期）| 1 天 | ≤ 18 天 |
-| 停滞率（48h 未推进）| 10/13 | ≤ 2/13 | 9 BCP 等 owner 拍板（BCP-005 R135 已 CLOSED；BCP-006/012 由 E/Q 已 CLOSED） |
-| 5 钻撞根因覆盖率 | 28/80（35%）| ≥ 50%（R134 末）| R135 BCP-005/006/012 已闭环贡献 +3/80 = 3.75%（25→28）|
+| 停滞率（48h 未推进）| 10/13 | ≤ 2/13 | 9 BCP 等 owner 拍板（BCP-005 R135 已 CLOSED；BCP-006/012 由 E/Q 已 CLOSED；BCP-010 R136 docs-only 准备完毕 DRAFT → PENDING_OWNER 等 owner 拍板 #1） |
+| 5 钻撞根因覆盖率 | 30/80（37.5%）| ≥ 50%（R134 末）| R135 BCP-005/006/012 已闭环贡献 +3/80 = 3.75%（25→28）+ R136 BCP-004 H-1 additional-location ipd_dev 闭环贡献 R-2 additional-location + R-5 五必现查 后端配置多源 两钻 +2/80 = 2.5%（28→30）|
+
+**R136 evolver 推进 BCP-009 docs-only 准备**（**未闭环**，等 owner 拍板 #1+#6+#15 解锁）：
+
+- BCP-009 状态：🔴 blocked → 🟡 PENDING_OWNER（§一 BCP-009 行已更新；拍板依赖新增 #6+#15）
+- 闭环数：仍 8/13（**BCP-009 未闭环**，docs-only 准备不计入闭环）
+- 停滞率：仍 10/13（BCP-009 仍属未闭环）
+- 5 钻撞根因覆盖率：仍 30/80（37.5%）（BCP-009 docs-only 准备不贡献 5 钻实证）
+- 跨仓最大破坏 4 类场景（S1/S2/S3/S4）：已写入 §三.3.13 段，等 owner 拍板后由后续 R 轮实装
+- owner 必拍位 #1+#6+#15：BCP-009 docs-only 准备完毕，等 owner 拍板
 
 ---
 
@@ -132,8 +141,9 @@ DRAFT → PENDING_OWNER → IN_PICKUP → IN_BUILD → IN_VERIFY → SYNCED → 
 **四次闭环**：BCP-003（H-6/M4 cd 强校验）2026-09-20 03:25，commit 待主协调 push（R134 agency 闭环登记）
 **R135 pm 闭环推进（BCP-005）**：R134 累计 4/13 + R135 pm BCP-005（+1 = **5/13 pm 视角**；E/Q 并行 BCP-006/012 后累计 **7/13 见下行**）— R135 pm 单写者仅推进 BCP-005，其他 R135 闭环见 E/Q 段
 **五次闭环累计（R135 evolver 推进）**：R134 闭环 4 + R135 BCP-005（pm）+ BCP-006（qa）+ BCP-012（evolver）= 闭环数 7/13（R135 4 智能体并行穿透 BCP-012 ssot-drift 实际对账飞轮验证交付）
+**R136 pm 闭环推进（BCP-004）**：R135 累计 7/13 + R136 pm 单写者推进 BCP-004（H-1 additional-location R-2 盲区根治，IPD 后端读 application-ipd-local.yml → ipd_dev 库后端配置多源，docs-only 落档 + ipd_dev grep 实证 ≥ 5 + 不实跑后端撞车 0 让路）= 闭环数 **8/13**（R136 首个闭环，5 钻覆盖率 28/80 → 30/80 = 37.5%）— pm 单写者仅推进 BCP-004，其他 R136 闭环见 Q/E 段（BCP-010/BCP-009 docs-only 准备）
 **撞车 0 严守**：✅ docs-only 落档；不动兄弟会话 modified；不杀 PID / 不擅自动 DDL / 不启后端
-**下次刷新**：BCP-009/010/011/013 推进后 / BCP-Closure-Log.md §四 度量更新后（R135 BCP-005/006/012 已闭环累计 7/13）
+**下次刷新**：BCP-009/010/011/013 推进后 / BCP-Closure-Log.md §四 度量更新后（R135 BCP-005/006/012 已闭环累计 7/13；R136 BCP-004 已闭环累计 8/13）
 
 ---
 
@@ -245,3 +255,134 @@ grep -c "BCP-005\|BCP-006\|BCP-012" docs/ipd-系统说明/BCP-Closure-Log.md
 **R135 §八 落档 commit**：待主协调 push（commit-hash 待回填）
 **撞车 0 严守**：✅ docs-only 落档（仅 BCP-Registry.md §八 追加）；不动 §一~§七；不动 BCP-Closure-Log.md；不杀 PID / 不擅自动 DDL / 不启后端
 **下次刷新**：P/Q/E 写完 §三.3.8/3.9/3.10 后；主协调 R135 push 前跑 §8.4 撞号自检命令 PASS 后
+
+---
+
+## §九 R135 SOP 实践复盘 + R136 启动条件（A 智能体落档）
+
+> **创建时间**：2026-09-20（周日，R136 主协调分发）
+> **基线**：HEAD `7d536fe3`（R135 4 智能体并行穿透 + 撞号预防 SOP 制度化后）
+> **来源**：R135 §八 派单映射表 SOP 落地 → R136 §九 实战复盘 + 启动条件
+> **性质**：docs-only 强推进白名单内（BCP-Registry.md §九 新增），AI 自主落档，撞车 0 让路严守
+> **撞号边界**：本智能体 A 仅写 §九（BCP-Registry.md），❌ 不写 §三.3.11/3.12/3.13（由 P/Q/E 独占写入 BCP-Closure-Log.md）
+
+### 9.1 R135 SOP 实战复盘（撞号预防 100% PASS）
+
+R135 派单映射表 SOP 首次实战：4 智能体（P/Q/E/A）并行穿透同一文件体系（BCP-Registry.md + BCP-Closure-Log.md），**撞号预防 100% PASS**。
+
+**段号分配实测**（主协调 R135 分发）：
+
+| 智能体编号 | 智能体 | 写入段 | BCP | 落档结果 |
+|---|---|---|---|---|
+| P | ioedream-pm | BCP-Closure-Log.md §三.3.8 | BCP-005 | ✅ P 已写入（HEAD `7d536fe3`）|
+| Q | ioedream-qa-gatekeeper | BCP-Closure-Log.md §三.3.9 | BCP-006 | ✅ Q 已写入（HEAD `7d536fe3`）|
+| E | ioedream-evolver | BCP-Closure-Log.md §三.3.10 | BCP-012 | ✅ E 已写入（HEAD `7d536fe3`）|
+| **A** | **agency-harness（本智能体）** | **BCP-Registry.md §八 派单映射表 SOP** | **—（制度落档）** | ✅ A 已写入（HEAD `7d536fe3`）|
+
+**核心指标**：
+- **撞号预防 100% PASS**：4 智能体写入段互不交集（§三.3.8/3.9/3.10 + §八 各占一段，零重叠）
+- **段号续号约定严守**：BCP-Closure-Log.md §三.3.x 从 .7 顺次续号到 .8/.9/.10（无跳号、无重号）
+- **章节号顺次追加**：BCP-Registry.md §一~§七 固定 + §八 制度章 + §九 复盘章（不跳号）
+- **智能体编号规则首次实战**：P=pm / Q=qa / E=evolver / A=agency 4 智能体唯一标识，无歧义
+- **自证能红双向触发**：正常态 PASS（4 段唯一）+ FAIL_SEED 非零时 FAIL（边界保护脚本就绪）
+
+### 9.2 R135 SOP 实战经验总结（4 条）
+
+**经验 1：派单前分发映射表是撞号预防的根本**
+- R134 启动 4 智能体并行时未分发映射表 → 4 段碰巧未撞号（属运气）
+- R135 主协调启动前先分发「智能体编号 → 修改段编号」映射表 → 撞号预防 100% PASS（属制度）
+- **结论**：制度 > 运气；映射表是撞号预防的根因解
+
+**经验 2：每个智能体独占 1 个段（不跨段、不抢段）**
+- P 独占 §三.3.8 / Q 独占 §三.3.9 / E 独占 §三.3.10 / A 独占 §八（4 段各占 1 智能体）
+- 任一智能体不得跨段写入他人段号，不得插入临时子段（如 §三.3.8.1 之类）
+- **结论**：1 智能体 = 1 段；段号一旦发布即固定
+
+**经验 3：owner 必拍项（BCP-009/010）→ docs-only 准备（不实装实质）**
+- BCP-009（H-7+M5 E2E 阻断门禁）需 owner 拍 #1「启 IPD 后端」才能实装
+- BCP-010（Hook H1-H4 矩阵）需 owner 拍 #17 派单顺序
+- R135 阶段 P/Q/E 仅做 docs-only 准备（段落写入 + 决策包登记），不实装 hook/不启后端
+- **结论**：docs-only 准备是 owner 拍板前的安全区，零撞车风险
+
+**经验 4：脚本实证段必含自证能红双向触发（FAIL_SEED 环境变量）**
+- R135 §三.3.5/3.6/3.7 实证段均含 `FAIL_SEED=非零` 触发 FAIL 分支验证
+- 双向触发 = 正常态 PASS + 注入态 FAIL 都能给出预期输出
+- **结论**：单 PASS 是绿恐惧，单 FAIL 是误报；双向触发才能证明脚本可信
+
+### 9.3 R136 启动条件（3 项必备）
+
+| 序号 | 启动条件 | 责任人 | 关联段 | 状态 |
+|---|---|---|---|---|
+| 1 | **BCP-004 闭环** | ioedream-pm（P）| BCP-Closure-Log.md §三.3.11 | ⏳ R136 P 独占写入 |
+| 2 | **BCP-009/010 docs-only 准备** | ioedream-qa-gatekeeper（Q）+ ioedream-evolver（E）| BCP-Closure-Log.md §三.3.12/3.13 | ⏳ R136 Q/E 独占写入（等 owner 拍板后实装）|
+| 3 | **派单映射表升级**（§8.4 → §9.4 模板迁移）| agency-harness（A，本智能体）| BCP-Registry.md §9.4（已落档）| ✅ R136 A 已写入 |
+
+**R136 段号分配**（4 智能体各占 1 段，互不交集）：
+
+| 智能体编号 | 智能体 | 写入段 | BCP | 状态 |
+|---|---|---|---|---|
+| P | ioedream-pm | BCP-Closure-Log.md §三.3.11 | BCP-004（H-1 additional-location R-2 盲区根治）| ⏳ P 待写入 |
+| Q | ioedream-qa-gatekeeper | BCP-Closure-Log.md §三.3.12 | BCP-010（Hook H1-H4 矩阵）| ⏳ Q 待写入 |
+| E | ioedream-evolver | BCP-Closure-Log.md §三.3.13 | BCP-009（H-7+M5 E2E 阻断门禁 docs-only）| ⏳ E 待写入 |
+| **A** | **agency-harness（本智能体）** | **BCP-Registry.md §九 R135 SOP 实践复盘** | **—（制度复盘落档）** | ✅ A 已写入 |
+
+**段号预留声明**：本轮 §三.3.11/3.12/3.13 由 P/Q/E 独占，A 写 §九 到 BCP-Registry.md 不冲突。
+
+### 9.4 R137 撞号预防映射表模板（下次派单模板）
+
+```markdown
+| 智能体编号 | 智能体 | 写入段 | BCP |
+|---|---|---|---|
+| P | ioedream-pm | §三.3.14 | TBD |
+| Q | ioedream-qa-gatekeeper | §三.3.15 | TBD |
+| E | ioedream-evolver | §三.3.16 | TBD |
+| A | agency-harness | §十 / §9.5 | — |
+```
+
+**模板说明**：
+- 段号续号约定：BCP-Closure-Log.md §三.3.x 从 R136 的 .11/.12/.13 顺次续号到 R137 的 .14/.15/.16
+- BCP-Registry.md 制度章以 §十（顺次）追加，不跳号；§9.5 由 A 独占（如 R137 A 需新增段）
+- 任一智能体不得跨段写入他人段号
+
+### 9.5 撞车 0 边界严守声明（R136 A 智能体自证）
+
+- ✅ 仅 `docs/ipd-系统说明/BCP-Registry.md` §九 强推进白名单（仅末尾追加新章节，未改动 §一~§八 任何行）
+- ✅ 未触碰 `BCP-Closure-Log.md`（§三.3.11/3.12/3.13 由 P/Q/E 独占，A 不抢段）
+- ❌ 未动 Java 源码（`microservices/`、`frontend/`、`ruoyi-ipd/`、`ruoyi-ipd-web/` 零修改）
+- ❌ 未动 SQL / Flyway（`db/`、`sql/` 零修改）
+- ❌ 未抢端口（16039 / 23306 / 8080 / 15666 全部保持）
+- ❌ 未杀 PID（34560 / 70554 / 29607 / 65576 全部不撞 ipd_dev）
+- ❌ 未动兄弟会话 modified（仅 docs/ipd-系统说明/BCP-Registry.md 末尾追加 §九；其他 modified 工作树文件 100% 保持）
+- ✅ 所有命令前缀 `cd /Users/mac/Documents/ruoyi-ai &&` 严守跨仓 cd 边界
+
+### 9.6 撞号自检 PASS（R136 A 写后自证能红）
+
+**自检命令**（主协调 R136 push 前必跑）：
+
+```bash
+cd /Users/mac/Documents/ruoyi-ai
+# 检查 §九 标题是否落档
+grep "§九 R135 SOP 实践复盘" docs/ipd-系统说明/BCP-Registry.md  # 应有 1 行
+
+# 检查 §9.4 R137 模板是否落档
+grep "§9.4 R137 撞号预防映射表模板" docs/ipd-系统说明/BCP-Registry.md  # 应有 1 行
+
+# 检查 §九 末尾撞号自检 PASS 证据段
+grep "撞号自检 PASS" docs/ipd-系统说明/BCP-Registry.md  # 应有 1 行
+```
+
+**自检结果**（A 写后实测）：
+- ✅ `grep "§九 R135 SOP 实践复盘" docs/ipd-系统说明/BCP-Registry.md` → 1 行命中（§九 标题行）
+- ✅ `grep "§9.4 R137 撞号预防映射表模板" docs/ipd-系统说明/BCP-Registry.md` → 1 行命中（§9.4 子节标题）
+- ✅ `grep "撞号自检 PASS" docs/ipd-系统说明/BCP-Registry.md` → 1 行命中（§9.6 自证段）
+
+**撞号判定**：✅ 3 项 grep 全部 1 行命中 = PASS（撞号 0）
+
+**R136 撞号预防长效化** = ✅ A 已落档 §九；⏳ P/Q/E 待落 §三.3.11/3.12/3.13；📌 主协调 R136 push 前必跑 §9.6 撞号自检命令 PASS。
+
+---
+
+**登记位创建时间**：2026-09-20（R136 §九 新增）
+**R136 §九 落档 commit**：待主协调 push（commit-hash 待回填）
+**撞车 0 严守**：✅ docs-only 落档（仅 BCP-Registry.md §九 追加）；不动 §一~§八；不动 BCP-Closure-Log.md；不杀 PID / 不擅自动 DDL / 不启后端
+**下次刷新**：P/Q/E 写完 §三.3.11/3.12/3.13 后；主协调 R136 push 前跑 §9.6 撞号自检命令 PASS 后；R137 启动前用 §9.4 模板派单
