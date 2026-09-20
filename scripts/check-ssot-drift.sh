@@ -37,9 +37,9 @@ GIT_HASH=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo "")
 echo "[hash] log.md 最新 R 段: ${LOG_HASH:0:60}"
 echo "[hash] git HEAD:        $GIT_HASH"
 
-# 3) 三源闭环数提取
-LOG_CLOSED=$(grep -oE "[56] BCP CLOSED" "$LOG" 2>/dev/null | tail -1 || echo "")
-MIRROR_CLOSED=$(grep -oE "[56] BCP CLOSED" "$MIRROR" 2>/dev/null | tail -1 || echo "")
+# 3) 三源闭环数提取（R137 SOP 进化：grep 模式 [56] → [0-9]+ 支持任意数字闭环数）
+LOG_CLOSED=$(grep -oE "[0-9]+ BCP CLOSED" "$LOG" 2>/dev/null | tail -1 || echo "")
+MIRROR_CLOSED=$(grep -oE "[0-9]+ BCP CLOSED" "$MIRROR" 2>/dev/null | tail -1 || echo "")
 REG_METRIC=$(grep -E "闭环数 / BCP 数" "$REG" | head -1 | awk -F'|' '{print $3}' | tr -d ' ' || echo "")
 
 echo "[metric] log.md 闭环数:    ${LOG_CLOSED:-未检出}"
