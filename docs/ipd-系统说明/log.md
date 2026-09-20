@@ -8262,3 +8262,11 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **清完**：refs 8→4（最小可工作集：1 main + 2 origin + 1 empty stash），ahead commit 6/6 SHA 备份在 `/tmp/r117-backup/ahead-commits.txt` 防 reflog 过期丢。
 
 **R113 起总清理**：refs 164→4，-160（-97.6%）。
+
+### R118 真库健康检查（2026-09-19）
+
+**结论**：真库 ipd_dev@13306 已自洽运行 14+ 天，**151 张表（+26）/ projects 29 / stages 246 / actions 2405 / real_persons 25 / correction_logs+kpi_rule_snapshots+sop_template_instances 表已建**。R46 治本 4 工程 DDL 全 in-place，无需 apply。
+
+**撞车 0 严守**：当前跑的后端进程（PID 34560）连的是兄弟会话 ry-vue 库（不是 ipd_dev），不擅杀兄弟进程起 IPD 后端。
+
+**待 owner 拍板**：bonus.poolRate = 0.0500（spec 应为 0.05），update_by=-1（系统默认），R49 报告已登记三选项 A/B/C。
