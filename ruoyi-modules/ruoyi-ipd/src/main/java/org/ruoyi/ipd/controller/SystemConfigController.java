@@ -67,9 +67,22 @@ public class SystemConfigController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_READ, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{key:.+}")
     public ApiV1Response<Map<String, String>> get(@PathVariable @NotBlank String key) {
+        // R46-A4 治本: 返回 lastChange（最新版本变更人 + 时间），供超管页面显示漂移信息
+        List<SystemConfigVersion> latest = systemConfigService.listVersions(key, 1);
+        String lastChangeBy = "";
+        String lastChangeAt = "";
+        if (!latest.isEmpty()) {
+            SystemConfigVersion v = latest.get(0);
+            lastChangeBy = v.getChangedBy() != null ? String.valueOf(v.getChangedBy()) : "0";
+            lastChangeAt = v.getEffectiveFrom() != null
+                ? String.valueOf(v.getEffectiveFrom().getTime())
+                : (v.getCreateTime() != null ? String.valueOf(v.getCreateTime().getTime()) : "");
+        }
         return ApiV1Response.ok(Map.of(
             "key", key,
-            "value", systemConfigService.getValue(key, "")));
+            "value", systemConfigService.getValue(key, ""),
+            "lastChangeBy", lastChangeBy,
+            "lastChangeAt", lastChangeAt));
     }
 
     /** 更新某参数值（仅超管；写后立即失效缓存，PERF-02 强约束；P0-3.3 同事务写版本链，changed_by 绑会话；BUG-P0-3.2-AUDIT-MISSING：调 auditLogService.append 写 audit_logs） */
