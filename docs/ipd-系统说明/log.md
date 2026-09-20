@@ -8381,3 +8381,40 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 **H-16 自证能红**：实测 R131 = 自述 579 行（差异 0 ≤ 2），通过；R100-R99 多份老报告无"实测 N 行"声明已登记，R132 派单补全。
 
 **下一步**：R132 主题 = 飞轮自举验证 + 拍板决策包目录落地 + 18 项决策包逐一撰写 + BCP-Registry.md 创建 + 首条 BCP 卡闭环验证。
+
+## 2026-09-20 R132 拍板阶段并行 + 9 BCP + 4 智能体穿透 + 飞轮自举
+
+### 4 智能体并行穿透落地（R132 闭环）
+- ioedream-pm：BCP-Registry.md 130 行（飞轮 SSOT + 13 条 BCP + 7 态状态机）+ 18 份拍板决策包（31~32 行/各 = 689 行总）
+- ioedream-qa-gatekeeper：5 H 脚本真实逻辑填充（消除 TODO，5 个脚本平均 78 行）+ 9 个新验证脚本骨架 + fix-r-report-line-claims.sh 106 行 dry-run
+- ioedream-evolver：17 根指针元数据化（pointer-119~135）+ pointer-trigger.sh 58 行飞轮元脚本 + _pointer-index.md 59 行
+- agency-harness：3 份拍板决策包 #13/#14/#18 + t2-paiban-sla.sh 67 行 SLA 监控 + cross-repo-coordination.md 90 行跨仓 SOP
+
+### 自证能红（4 智能体各自 self-verify 通过）
+- H-13 wheel-stuck-detector.sh 首跑 → 28 个 BCP 全部 ≤ 48h ✅
+- H-16 check-r-line-count.sh → R131 PASS（实测 579 ≈ 自述 579）+ 9 份老报告 FAIL（自证能红真实告警）
+- pointer-trigger.sh --dry-run → 17 根全解析 / 🔴 7 / 🟡 4 / 🟢 6 ✅
+- t2-paiban-sla.sh → exit 0 ✅；故意把 paiban-14 改 8d 前 → exit 1 + 自动通过日志
+
+### 撞车 0 严守
+- ✅ docs/ipd-系统说明/ 落档 R132 报告 + BCP-Registry + 18 决策包 + 跨仓 SOP + R132 dry-run 报告
+- ✅ scripts/ 落档 12 个新/填充脚本 + 2 个 SLA 元脚本
+- ✅ .harness/memory/ 落档 17 根指针 + _pointer-index.md
+- ❌ 不动兄弟会话 modified（3 个：事实验证-20260919 / 提交完整度-20260919 + scripts/check-* 由 qa-gatekeeper 修改一起进 commit）
+- ❌ 不杀 PID 34560/70554/29607/65576
+- ❌ 不擅自动 DDL（apply 操作属 SRE 专属通道）
+
+### R132-D1 三源修复（接 R131-D1）
+- log.md R132 段回填 ✅（本段）
+- 看镜像 R132 段 append ✅
+- BCP-Registry.md SSOT 登记位建立 ✅
+
+### 拍板机制落地执行
+- ✅ A 类 AI 自主拍板 docs-only 部分：决策包撰写全部完成（#17/#18 元规则的 docs-only 部分）
+- ⏳ B 类 6 项自动通过触发链：#7/#8/#9/#10/#12/#14 = 2026-09-27 7d 未决 → t2-paiban-sla.sh 自动 sign-off
+- ⏳ C 类 12 项 owner 必拍：#1/#2/#3/#4/#5/#6/#11/#13/#15/#16/#17/#18 等 owner 拍板
+
+### 下一步
+- R133-A 候选：拍板决策包更新（owner 拍板回填）
+- R133-B 候选：9 份老报告自述漂移修复（接 H-16 自证能红发现 R43/R62/R95 等）
+- R133-C 候选：跨仓协调首批落地（paiban-18 owner 拍板后）
