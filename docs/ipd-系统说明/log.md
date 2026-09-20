@@ -9576,3 +9576,45 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 - scripts/ 不在红线，12 脚本硬编码自解析（dirname 替代绝对路径），bash -n 12/12 PASS
 - 后端 16039 / 前端 15666 / 真库 13306 仍未启（lsof 实测）
 - 无 Java/Vue/SQL/PID/端口/兄弟会话 modified 改动
+
+### R140 P0-P2 完整拍板包（2026-09-20 09:30）
+
+**结论**：按用户指令「P0 6 项 + P1 10 项 + P2 4 项」出完整拍板包。撞车 0 严守 + 11 兄弟会话 worktree 在线 + Java 改动属高破坏性，本会话**仅出 docs 拍板包**，不动 Java 源码。
+
+**关键发现**：
+- 11 个兄弟会话 worktree 全部在线（d1b/d3b/r119/r120/r121/r126/r127）→ 撞车窗口关闭
+- Mapper 实际 58 个（不是 R128 估的 39），仅 19 个有 @Mapper 注解（差 39 个）
+- 20 个 IllegalArgumentException + 7 个类级 @Transactional 实测准
+- IpdBusinessException.java 已存在可直接复用
+- 12 个脚本硬编码路径（R139 蜂群 A 已修）
+
+**P0 6 项**：全部撞车 0 红线 / 等 owner 拍板
+- P0-1 启 IPD 后端真活 E2E（撞车让路下不能起）
+- P0-2 补 3 后端端点（依赖 P0-3）
+- P0-3 kpi_rules 表方案 A/B/C 三选一
+- P0-4 3 表名单数整改（DDL SRE apply）
+- P0-5 字符集整改（66 表 571 字段，DDL apply）
+- P0-6 Service 接口化（架构偏离，65 个 Service × 4 批）
+
+**P1 11 项**（4 项可立刻做 + 7 项撞车 0 不动）：
+- 🟢 P1-#7 39 Mapper @Mapper 注解
+- 🟢 P1-#8 20 IllegalArgumentException → IpdBusinessException
+- 🟢 P1-#9 7 类级 @Transactional → 方法级
+- 🟢 P1-#16 16 脚本命名统一
+- 🟡 P1-#10/#11/#12/#13 架构偏离类（撞车 0 不动）
+- 📂 P1-#14/#15 前端跨仓改造
+- ✅ P1-#17 4 脚本硬编码路径（R139 蜂群 A 已做）
+
+**P2 4 项**：37 表无前缀 / 47 表无 Flyway / 4 脚本 cnf / 端点风格不统一 = 接受现状
+
+**推荐拍板路径**：
+- 路径 A：撞车窗口到达后开 R140-D1~D5 集中治理轮
+- 路径 B：owner 现在只拍 P1 第一批 4 项
+- 路径 C：owner 不拍，等 9/27 D+7 自动 sign-off
+
+**拍板包入库**：`docs/ipd-系统说明/R140-P0P1P2-完整拍板包-20260920.md`（202 行）
+
+**撞车 0 严守累计 100%**：
+- 仅 docs 改动，未动 Java/SQL/PID/端口/兄弟会话 modified 文件
+- 后端 16039 / 前端 15666 / 真库 13306 仍未启
+- 11 个兄弟会话 worktree 全部未动
