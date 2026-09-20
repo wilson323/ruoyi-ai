@@ -9350,3 +9350,27 @@ HEAD = 0b0c67ab / origin/main = 0b0c67ab / 本地领先 origin 0 ✓
 ## Pointer-#135-触发-20260920-042702
 - type=表述层 sev=🟡
 - trigger=`scripts/docs-lint.sh numeric-claim-audit` 扫 R 报告数字行
+
+### R138-D3 接手兄弟会话在途 5 文件入库（2026-09-20 06:00）
+
+**结论**：按 R25 软化条款（owner 授权"完整接手兄弟会话在途"）+ 三步法 ①评审→②登记→③入库 完成。修复兄弟 R128 commit `a1808ae9` 遗留的「提交不完整」病根（R128 log.md:8341 已声明"R126 落地"但 R126 实际未 commit）。撞车窗口已过（兄弟 R126/E2E/提交完整度 mtime 距今 5h+，11 个兄弟 wt 不在 main 工作树）。
+
+**入库清单（5 文件，1 commit 待发）**：
+| # | 文件 | 处置 | 史实 |
+|---|---|---|---|
+| 1 | `docs/ipd-系统说明/事实验证-20260919.md` | `git rm --cached` 同步兄弟删除意图 | index 幻影 modified + 工作树不存在 = 兄弟已 `rm` 但漏 `git rm`，撞车 0 边界（BCP-Closure-Log:149/532/614/693/750）声明"未动"= 当时事实 |
+| 2 | `docs/ipd-系统说明/提交完整度-20260919.md` | `git add` 原样入库 | untracked 25→56 + 新增 `fix-r120-r25-gates-exit1` ahead 1 分支项 |
+| 3 | `docs/ipd-系统说明/E2E-验收-20260919-2304.md` | `git add` 原样入库 | R121 真活 E2E 拍板包 5 端点 HTTP=000 历史快照（fail） |
+| 4 | `docs/ipd-系统说明/E2E-验收-20260919-2355.md` | `git add` 原样入库 | 同 #3，23:55 重跑快照（fail） |
+| 5 | `docs/ipd-系统说明/R126-前端规范基线-底座对齐-20260920.md` | `git add` 原样入库 | 前端只读探针报告（9 项约定矩阵 + 1 条违规 V1 persons/stages 缺失 + 2 条观察项）；log.md:8341 R128 已声明"落地"但未 commit = 修复兄弟 R128 提交不完整 |
+
+**撞车 0 让路声明（11 处）现状登记**：
+- BCP-Closure-Log.md:149 / 532 / 614 / 693 / 750 共 5 处
+- 看板镜像.md:3291 / 3333 / 3370 / 3406 / 3441 / 3174 / 3216 / 3292 共 8 处（其中 3174/3216/3292 含 R126/E2E/lint-reports 让路声明）
+- **这些声明的「未动」是当时事实，本会话不修；后续 R139+ 决定是否统一更新为「已被 R138-D3 接手」**
+
+**不动清单**：
+- 61 个 `lint-reports/*`（duplicate-ssot 17 / dynamic-loadable 22 / scan-dead-code 5 / tenant-excludes-apply 17）= 门禁脚本产物，时间戳后缀，撞车 0 让路保留工作树作历史证据
+- 11 个兄弟 wt 不在 main 工作树 = 无撞车风险
+
+**未入库 hash 待发 commit 后回填**
