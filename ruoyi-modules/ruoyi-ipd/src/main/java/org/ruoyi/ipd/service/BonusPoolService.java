@@ -159,7 +159,7 @@ public class BonusPoolService {
      */
     public BigDecimal tierCoefficientOf(BigDecimal achievementRate) {
         if (achievementRate == null) {
-            throw new IllegalArgumentException("达成率不能为空");
+            throw new IpdBusinessException("达成率不能为空");
         }
         if (achievementRate.compareTo(DEFAULT_THRESHOLDS[0]) > 0) {
             return TOP_COEFFICIENT;

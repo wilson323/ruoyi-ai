@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Locale;
 
+
+import org.ruoyi.ipd.common.IpdBusinessException;
 /**
  * P4-2.1 Provider 派发器（BR-AI-PROV-01：未匹配走 DefaultTester，不阻断）。
  * <p>
@@ -17,7 +19,7 @@ public final class ProviderRegistry {
 
     public ProviderRegistry(List<AiProviderTester> testers) {
         if (testers == null || testers.isEmpty()) {
-            throw new IllegalArgumentException("At least one tester required");
+            throw new IpdBusinessException("At least one tester required");
         }
         this.testers = List.copyOf(testers);
         AiProviderTester def = null;

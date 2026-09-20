@@ -2,6 +2,7 @@ package org.ruoyi.ipd.service;
 
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -34,7 +35,7 @@ public class AuditAttemptService {
         Objects.requireNonNull(actor.id(), "actor.id");
         Objects.requireNonNull(outcome, "outcome");
         if (attemptedAction == null || attemptedAction.isBlank()) {
-            throw new IllegalArgumentException("attemptedAction is required");
+            throw new IpdBusinessException("attemptedAction is required");
         }
         return independent.execute(status -> audit.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())

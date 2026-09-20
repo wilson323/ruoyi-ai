@@ -161,7 +161,7 @@ public class KpiRecordService {
             } else if ("RD_PM".equalsIgnoreCase(pmRole)) {
                 KpiScoreCalculator.validateRdPmFunctionalWeights(weights);
             } else {
-                throw new IllegalArgumentException("pmRole 必须为 MARKET_PM 或 RD_PM");
+                throw new IpdBusinessException("pmRole 必须为 MARKET_PM 或 RD_PM");
             }
         } catch (IllegalArgumentException e) {
             throw new IpdBusinessException(e.getMessage());

@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+
+import org.ruoyi.ipd.common.IpdBusinessException;
 /**
  * 审计日志 hash 链纯函数（v3 TS-08 / AC-AUD-01 / RISK-04 方案 A）。
  * <p>currHash = SHA256( prevHash + canonical(本条内容) )；链首 prevHash = 64 个 '0'。
@@ -98,7 +100,7 @@ public final class AuditHashChain {
                 beforeData, afterData, reason, createTimeMillis);
             case 2 -> canonicalV2(seq, operatorId, operatorName, operatorRole, action, entityType, entityId,
                 beforeData, afterData, reason, createTimeMillis, extensionJson);
-            default -> throw new IllegalArgumentException("不支持的 canonical 版本: " + version);
+            default -> throw new IpdBusinessException("不支持的 canonical 版本: " + version);
         };
     }
 

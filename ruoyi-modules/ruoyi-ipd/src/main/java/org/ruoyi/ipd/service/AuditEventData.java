@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+
+import org.ruoyi.ipd.common.IpdBusinessException;
 /** Explicit business fields only: never serialize a whole entity or request into an audit event. */
 final class AuditEventData {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -19,7 +21,7 @@ final class AuditEventData {
     private AuditEventData() { }
 
     static String json(Object... pairs) {
-        if (pairs.length % 2 != 0) { throw new IllegalArgumentException("Audit fields require key/value pairs"); }
+        if (pairs.length % 2 != 0) { throw new IpdBusinessException("Audit fields require key/value pairs"); }
         Map<String, Object> fields = new LinkedHashMap<>();
         for (int i = 0; i < pairs.length; i += 2) { fields.put((String) pairs[i], pairs[i + 1]); }
         try { return JSON.writeValueAsString(fields); }

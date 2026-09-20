@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.domain.NotificationChannelType;
 import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.service.NotificationChannelHandler;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,10 +26,10 @@ public class InAppChannelHandler implements NotificationChannelHandler {
     @Override
     public void deliver(NotificationEvent event) {
         if (event == null || event.getId() == null) {
-            throw new IllegalArgumentException("INBOX 事件必须有 id（落库后由 publish 生成）");
+            throw new IpdBusinessException("INBOX 事件必须有 id（落库后由 publish 生成）");
         }
         if (event.getReceiverId() == null) {
-            throw new IllegalArgumentException("INBOX 事件必须有 receiverId");
+            throw new IpdBusinessException("INBOX 事件必须有 receiverId");
         }
         log.info("[INBOX] receiver={} eventId={} type={} title={}",
             event.getReceiverId(), event.getId(), event.getEventType(), event.getTitle());
