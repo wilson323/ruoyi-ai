@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# scripts/check_async_configurer_duplication.sh
+# scripts/check-async-configurer-duplication.sh
 # ----------------------------------------------------------------------
 # R28.5 治理门禁：扫描业务代码 implements/extends AsyncConfigurer。
 # 规约见 docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md
 #
 # 命中即 exit 1，并打印命中行号 + 文件 + 排除例外清单（当前无白名单）。
-# 用法：在 ruoyi-ai 仓根目录执行 ./scripts/check_async_configurer_duplication.sh
+# 用法：在 ruoyi-ai 仓根目录执行 ./scripts/check-async-configurer-duplication.sh
 # ----------------------------------------------------------------------
 set -uo pipefail
 

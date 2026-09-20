@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_cross_repo_contract.sh
+# check-cross-repo-contract.sh
 # R25 P0-2 根因 RC-2 治理：跨仓契约对账
 #
 # 三向对账：
@@ -19,7 +19,7 @@
 #   2  = 脚本错误
 #
 # 用法:
-#   ./scripts/check_cross_repo_contract.sh
+#   ./scripts/check-cross-repo-contract.sh
 
 set -u
 
@@ -252,7 +252,7 @@ DOC_IMPL_DRIFT=$(wc -l < "$TMPDIR_CHECK/d4a_unimplemented.txt" | tr -d ' ')
 cat > "$REPORT_MD" <<EOF
 # R25 P0-2 跨仓契约对账报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_cross_repo_contract.sh\`（RC-2 三向对账）
+> 自动门禁：\`scripts/check-cross-repo-contract.sh\`（RC-2 三向对账）
 > 后端基线：\`$(cd "$BACKEND_ROOT" && git rev-parse --short HEAD 2>/dev/null)\`
 > 前端基线：\`$(cd "$FRONTEND_ROOT/../.." 2>/dev/null && git rev-parse --short HEAD 2>/dev/null || echo N/A)\`
 
@@ -337,7 +337,7 @@ cat >> "$REPORT_MD" <<EOF
 EOF
 echo '```bash' >> "$REPORT_MD"
 echo "cd ${BACKEND_ROOT}" >> "$REPORT_MD"
-echo './scripts/check_cross_repo_contract.sh' >> "$REPORT_MD"
+echo './scripts/check-cross-repo-contract.sh' >> "$REPORT_MD"
 echo '```' >> "$REPORT_MD"
 
 cat >> "$REPORT_MD" <<EOF

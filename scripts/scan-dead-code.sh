@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scan_dead_code.sh
+# scan-dead-code.sh
 # R25 P0-1 根因 RC-4 治理：死代码三向交叉扫描
 #
 # 设计要点（避免 R14 AllowanceService 误删教训）：
@@ -21,10 +21,10 @@
 #   2  = 脚本错误
 #
 # 用法:
-#   ./scripts/scan_dead_code.sh                          # 后端默认扫描
-#   ./scripts/scan_dead_code.sh --module ruoyi-ipd       # 指定模块
-#   ./scripts/scan_dead_code.sh --output docs/治理/...   # 指定报告路径
-#   ./scripts/scan_dead_code.sh --strict                 # 把中风险也升为高风险
+#   ./scripts/scan-dead-code.sh                          # 后端默认扫描
+#   ./scripts/scan-dead-code.sh --module ruoyi-ipd       # 指定模块
+#   ./scripts/scan-dead-code.sh --output docs/治理/...   # 指定报告路径
+#   ./scripts/scan-dead-code.sh --strict                 # 把中风险也升为高风险
 
 set -u  # 不开 -e：grep 找不到匹配时返回 1 是正常的
 
@@ -257,7 +257,7 @@ echo "[4/4] 生成 Markdown 报告..."
 cat > "$REPORT_MD" <<EOF
 # R25 P0-1 死代码扫描报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/scan_dead_code.sh\`（RC-4 三向交叉）
+> 自动门禁：\`scripts/scan-dead-code.sh\`（RC-4 三向交叉）
 > 模块：\`${MODULE}\`
 > 后端基线：\`$(cd "$BACKEND_ROOT" && git rev-parse --short HEAD 2>/dev/null)\`
 
@@ -290,14 +290,14 @@ cat >> "$REPORT_MD" <<EOF
 
 1. **🔴 HIGH 项**：必须人工复核 Lombok 注入字段，验证业务可达性
 2. 删除前必跑 \`mvn -o -pl <module> test-compile\`（主代码 compile 绿不等于测试编译绿）
-3. 删除前必跑 \`scripts/check_deletion_consistency.sh\` 检查 \`IpdPermissionCode\` / \`BusinessConfigKeys\` / i18n 联动
+3. 删除前必跑 \`scripts/check-deletion-consistency.sh\` 检查 \`IpdPermissionCode\` / \`BusinessConfigKeys\` / i18n 联动
 4. 判死刑前必跑本模块 \`mvn -o -pl ruoyi-modules/${MODULE} -Dtest=Xxx test\`（dev profile 真跑测试）
 
 ## 重跑命令
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/scan_dead_code.sh --module ${MODULE} --strict
+./scripts/scan-dead-code.sh --module ${MODULE} --strict
 \`\`\`
 
 ## 排除范围

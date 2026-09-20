@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_async_eventlistener.sh
+# scripts/check-async-eventlistener.sh
 # ----------------------------------------------------------------------
 # R28.5 治理门禁：扫描 @Async + @EventListener 同方法组合。
 # 规约见 docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md §四

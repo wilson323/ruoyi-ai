@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_demo_default_off.sh
+# scripts/check-demo-default-off.sh
 # R30+ 治理门禁：demo 模式默认必须关闭，否则拦全部写操作。
 # 一次 demo 误开启 -> 全部 IPD 写操作返回 "演示模式，不允许操作"。
 

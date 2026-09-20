@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_tenant_excludes_apply.sh
+# check-tenant-excludes-apply.sh
 # R25 P0-4 根因 RC-3 治理：租户白名单配置先行 / DDL 未落地对账
 #
 # 设计要点（避免 R24 person_roles 超前登记教训）：
@@ -17,8 +17,8 @@
 #   2  = 脚本错误
 #
 # 用法:
-#   ./scripts/check_tenant_excludes_apply.sh
-#   ./scripts/check_tenant_excludes_apply.sh --module ruoyi-ipd
+#   ./scripts/check-tenant-excludes-apply.sh
+#   ./scripts/check-tenant-excludes-apply.sh --module ruoyi-ipd
 
 set -u
 
@@ -209,7 +209,7 @@ EOF
 cat > "$REPORT_MD" <<EOF
 # R25 P0-4 租户白名单配置/DDL 对账报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_tenant_excludes_apply.sh\`（RC-3 配置先行对账）
+> 自动门禁：\`scripts/check-tenant-excludes-apply.sh\`（RC-3 配置先行对账）
 > 模块：\`${MODULE}\`
 > 配置源：\`${APP_YML#${BACKEND_ROOT}/}\`
 > 后端基线：\`$(cd "$BACKEND_ROOT" && git rev-parse --short HEAD 2>/dev/null)\`
@@ -283,9 +283,9 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/check_tenant_excludes_apply.sh
-./scripts/check_tenant_excludes_apply.sh --module ${MODULE}
-./scripts/check_tenant_excludes_apply.sh --skip-db   # 仅静态扫描
+./scripts/check-tenant-excludes-apply.sh
+./scripts/check-tenant-excludes-apply.sh --module ${MODULE}
+./scripts/check-tenant-excludes-apply.sh --skip-db   # 仅静态扫描
 \`\`\`
 
 ## CI 接入
@@ -293,7 +293,7 @@ cd ${BACKEND_ROOT}
 \`\`\`yaml
 # .github/workflows/tenant-excludes.yml
 - name: 租户白名单 + DDL 对账
-  run: ./scripts/check_tenant_excludes_apply.sh
+  run: ./scripts/check-tenant-excludes-apply.sh
 \`\`\`
 
 ## 排除范围

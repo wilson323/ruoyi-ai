@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# scripts/run_async_smoke_test.sh
+# scripts/run-async-smoke-test.sh
 # ----------------------------------------------------------------------
 # R28.5 防线 4 配套脚本：用 javac 编译 + java 跑 ApplicationConfigSmokeTest
 # 不依赖 JUnit/spring-boot-starter-test，避开改已跟踪 pom.xml 与兄弟会话联测冲突。
 #
 # 用法：
-#   bash scripts/run_async_smoke_test.sh
+#   bash scripts/run-async-smoke-test.sh
 # 返回：0 全绿；非 0 有失败
 # ----------------------------------------------------------------------
 set -uo pipefail

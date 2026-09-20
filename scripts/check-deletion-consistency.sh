@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_deletion_consistency.sh
+# check-deletion-consistency.sh
 # R25 P1-4 删除前对账：影响扩散分析
 #
 # 设计要点（避免 R14 AllowanceService 误删教训 + IpdPermissionCode 4 孤儿教训）：
@@ -13,9 +13,9 @@
 #     7. 测试（单测 / 集成测试）
 #
 # 用法:
-#   ./scripts/check_deletion_consistency.sh FooService
-#   ./scripts/check_deletion_consistency.sh FooService FooController
-#   ./scripts/check_deletion_consistency.sh --auto   # 扫所有 scan_dead_code.sh 输出的 HIGH 项
+#   ./scripts/check-deletion-consistency.sh FooService
+#   ./scripts/check-deletion-consistency.sh FooService FooController
+#   ./scripts/check-deletion-consistency.sh --auto   # 扫所有 scan-dead-code.sh 输出的 HIGH 项
 
 set -u
 
@@ -38,7 +38,7 @@ MODULE="${MODULE:-ruoyi-ipd}"
 
 if [ "$MODE" = "manual" ] && [ "${#TARGETS[@]}" -eq 0 ]; then
   echo "用法: $0 <ClassName1> [ClassName2 ...]" >&2
-  echo "      $0 --auto   # 自动扫 scan_dead_code.sh 输出" >&2
+  echo "      $0 --auto   # 自动扫 scan-dead-code.sh 输出" >&2
   # R120 根除机制：exit 2 不标准，改为 exit 1（与 R119 reconcile-multi-source.sh 一致）
   exit 1
 fi
@@ -47,7 +47,7 @@ fi
 if [ "$MODE" = "auto" ]; then
   latest=$(ls -t "${BACKEND_ROOT}/docs/ipd-系统说明/lint-reports/scan-dead-code-"*.json 2>/dev/null | head -1)
   if [ -z "$latest" ]; then
-    echo "[deletion] ❌ --auto 模式需要 scan_dead_code.sh 已跑过" >&2
+    echo "[deletion] ❌ --auto 模式需要 scan-dead-code.sh 已跑过" >&2
     # R120 根除机制：exit 2 不标准，改为 exit 1（与 R119 reconcile-multi-source.sh 一致）
     exit 1
   fi
@@ -155,7 +155,7 @@ done
 cat > "$REPORT_MD" <<EOF
 # R25 P1-4 删除前对账报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_deletion_consistency.sh\`（避免 R14 AllowanceService / IpdPermissionCode 误删）
+> 自动门禁：\`scripts/check-deletion-consistency.sh\`（避免 R14 AllowanceService / IpdPermissionCode 误删）
 > 待审目标：\`${TARGETS[*]}\`
 > 模式：\`$MODE\`
 
@@ -185,8 +185,8 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/check_deletion_consistency.sh ${TARGETS[0]:-FooService}
-./scripts/check_deletion_consistency.sh --auto   # 自动扫 scan_dead_code.sh HIGH 项
+./scripts/check-deletion-consistency.sh ${TARGETS[0]:-FooService}
+./scripts/check-deletion-consistency.sh --auto   # 自动扫 scan-dead-code.sh HIGH 项
 \`\`\`
 
 ## 排除范围

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_entity_complete.sh
+# check-entity-complete.sh
 # R25 P0-4 根因 RC-3 治理：实体完整性对账（Entity ↔ Mapper ↔ Service ↔ Controller ↔ DB）
 #
 # 设计要点：
@@ -17,7 +17,7 @@
 #   - F1 Entity 无 Mapper（最常见 — 蜂群 A 报告 AllowanceService 同型）
 #   - F2 Mapper 无 Service
 #   - F3 Service 无 Controller（业务可达性受限）
-#   - F4 Controller 端点全无前端调用（参考 check_cross_repo_contract.sh D1-B）
+#   - F4 Controller 端点全无前端调用（参考 check-cross-repo-contract.sh D1-B）
 
 set -u
 
@@ -147,7 +147,7 @@ EOF
 cat > "$REPORT_MD" <<EOF
 # R25 P0-4 实体完整性对账报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_entity_complete.sh\`（RC-3 残废检查）
+> 自动门禁：\`scripts/check-entity-complete.sh\`（RC-3 残废检查）
 > 模块：\`${MODULE}\`
 > 扫描基：\`${SCAN_BASE#${BACKEND_ROOT}/}\`
 > 后端基线：\`$(cd "$BACKEND_ROOT" && git rev-parse --short HEAD 2>/dev/null)\`
@@ -223,7 +223,7 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/check_entity_complete.sh --module ${MODULE}
+./scripts/check-entity-complete.sh --module ${MODULE}
 \`\`\`
 
 ## 排除范围

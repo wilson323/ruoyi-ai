@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_duplicate_ssot.sh
+# check-duplicate-ssot.sh
 # R25 P1-1 根因 RC-6 治理：重复 SSOT 检测
 #
 # 设计要点：
@@ -162,7 +162,7 @@ echo "  → 副本文件: md5 相同 $dup_same / 内容漂移 $dup_diff"
 cat > "$REPORT_MD" <<EOF
 # R25 P1-1 重复 SSOT 检测报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_duplicate_ssot.sh\`（RC-6 重复定义检测）
+> 自动门禁：\`scripts/check-duplicate-ssot.sh\`（RC-6 重复定义检测）
 > 后端基线：\`$(cd "$BACKEND_ROOT" && git rev-parse --short HEAD 2>/dev/null)\`
 
 ## 汇总
@@ -239,7 +239,7 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/check_duplicate_ssot.sh
+./scripts/check-duplicate-ssot.sh
 \`\`\`
 
 ## 排除范围
