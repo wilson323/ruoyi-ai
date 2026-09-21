@@ -118,3 +118,4 @@ agentdb.rvf.lock
 .claude/settings.json.proposed
 .claude/settings.json.*.bak
 .harness/.backup/
+.vite/
