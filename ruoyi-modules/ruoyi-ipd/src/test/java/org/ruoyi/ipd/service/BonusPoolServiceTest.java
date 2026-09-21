@@ -56,6 +56,9 @@ class BonusPoolServiceTest {
     /** ROOT-R3-P0-1 修复：跨状态机守卫 mock（fail-closed 改造后必显式注入，否则 preCheckGuard 抛 IpdBusinessException） */
     @Mock
     private StateMachineGuard stateMachineGuard;
+    /** R149 A1：注入 mock 读取 {@code bonus.windowMonths}（默认 6） */
+    @Mock
+    private SystemConfigService systemConfigService;
 
     private BonusPoolService service;
 
@@ -65,6 +68,8 @@ class BonusPoolServiceTest {
         service.setAuditLogService(auditLogService);
         // ROOT-R3-P0-1 修复：注入 mock 守卫（fail-closed 改造后，preCheckGuard 必显式 fail-fast）
         service.setStateMachineGuard(stateMachineGuard);
+        // R149 A1：注入 mock SystemConfigService（默认未 stub 时回退 DEFAULT_WINDOW_MONTHS=6）
+        service.setSystemConfigService(systemConfigService);
     }
 
     /** 测试用 actor（SUPER_ADMIN，涉钱审批权） */
@@ -405,5 +410,42 @@ class BonusPoolServiceTest {
             .hasMessageContaining("poolRate");
         verify(auditLogService, never()).append(any(AuditLog.class));
         verify(bonusPoolMapper, never()).insert(any(BonusPool.class));
+    }
+
+    /* ====================== R149 A1：奖金池窗口月数配置 ====================== */
+
+    @Test
+    @DisplayName("[R149-A1] readWindowMonths() 默认值（systemConfigService 未注入）= 6")
+    void readWindowMonths_defaultReturnsSix() {
+        // 解除 SystemConfigService 注入（模拟 legacy 路径）
+        service.setSystemConfigService(null);
+        assertThat(service.readWindowMonths()).isEqualTo(6);
+        assertThat(service.readWindowMonths()).isEqualTo(BonusPoolService.DEFAULT_WINDOW_MONTHS);
+        // 恢复 mock，避免污染后续测试
+        service.setSystemConfigService(systemConfigService);
+    }
+
+    @Test
+    @DisplayName("[R149-A1] readWindowMonths() 配置键 bonus.windowMonths=12 ⇒ 读 12")
+    void readWindowMonths_configuredReturnsConfigured() {
+        when(systemConfigService.getIntValue("bonus.windowMonths", 6)).thenReturn(12);
+        assertThat(service.readWindowMonths()).isEqualTo(12);
+    }
+
+    @Test
+    @DisplayName("[R149-A1] readWindowMonths() 配置 0/负值 ⇒ 回退默认 6（非法值防护）")
+    void readWindowMonths_invalidConfigFallsBackToDefault() {
+        when(systemConfigService.getIntValue("bonus.windowMonths", 6)).thenReturn(0);
+        assertThat(service.readWindowMonths()).isEqualTo(6);
+        when(systemConfigService.getIntValue("bonus.windowMonths", 6)).thenReturn(-1);
+        assertThat(service.readWindowMonths()).isEqualTo(6);
+    }
+
+    @Test
+    @DisplayName("[R149-A1] readWindowMonths() 配置服务抛异常 ⇒ 回退默认 6（不阻塞业务）")
+    void readWindowMonths_serviceExceptionFallsBackToDefault() {
+        when(systemConfigService.getIntValue("bonus.windowMonths", 6))
+            .thenThrow(new RuntimeException("mock db error"));
+        assertThat(service.readWindowMonths()).isEqualTo(6);
     }
 }

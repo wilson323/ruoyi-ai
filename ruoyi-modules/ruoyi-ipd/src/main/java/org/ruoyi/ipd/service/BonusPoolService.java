@@ -37,7 +37,7 @@ import java.util.Map;
 /**
  * 奖金池服务（P3-4.2/4.3/4.4；AC-INC-16/17/18/19/20/21；BR-INC-04/05/06；ZK-IPD-2026-09-06-补）
  *
- * <p><b>口径裁决（2026-09-06 owner 拍板，[CONSISTENCY-1]）</b>：奖金池基数 = <b>上市后连续 6 个月实际回款净额</b> × 5% × S/A/B 系数。
+ * <p><b>口径裁决（2026-09-06 owner 拍板，[CONSISTENCY-1]）</b>：奖金池基数 = <b>上市后连续 N 个月实际回款净额</b> × 5% × S/A/B 系数（N 默认 6；R149 A1 起改由 {@code system_configs.config_key='bonus.windowMonths'} 实时控制）。
  * ZK-IPD 完整版 Prompt §三.2 vs 主Prompt Q1+AC-INC-16b 文档分裂结论：取 ZK 口径作为权威（与 owner「严格禁止与 ZK-IPD 不一致」红线一致），
  * Controller {@link #compute(Long, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, java.math.BigDecimal, IpdActor)}
  * 入口即用 {@link #calculateBonusPoolByZkFormulaWithModifiers}。{@code targetSales} 字段在 BonusPool 实体层仅作历史兼容保留，
@@ -51,7 +51,7 @@ import java.util.Map;
  *   <li>AC-INC-17h：默认六档 [{Infinity,1.2},{120,1.0},{100,1.0},{85,0.8},{70,0.6},{50,0.3},{0,0.0}]</li>
  *   <li>AC-INC-20：达成率 60% 命中 0.3 档，触发复盘检讨提醒（reviewRequired=true）</li>
  *   <li>AC-INC-21：达成率 45% 命中 0 档，不发放；已发月度津贴不追回（独立规则）</li>
- *   <li><b>ZK-IPD §三.2.1</b>：奖金池 = 上市后连续 6 个月<b>实际回款</b>金额 × 5% × <b>项目 S/A/B 差异化系数</b>（coefficient，非 tierCoefficient）</li>
+ *   <li><b>ZK-IPD §三.2.1</b>：奖金池 = 上市后连续 N 个月（N 默认 6，R149 A1 起由 {@code system_configs.config_key='bonus.windowMonths'} 控制）<b>实际回款</b>金额 × 5% × <b>项目 S/A/B 差异化系数</b>（coefficient，非 tierCoefficient）</li>
  *   <li><b>ZK-IPD §三.2.5</b>：可叠加 销售达成率阶梯系数 + 个人绩效系数（4 因子全叠加）</li>
  *   <li><b>ZK-IPD §三.2.4</b>：市场 PM 40-65% / 研发 PM 35-60%，上市 90 天复盘三方评定</li>
  *   <li><b>P3-4.4</b>：状态机 DRAFT → CONFIRMED → DISTRIBUTED；HTTP 端点收口（compute / freeze / distribute / getById / listByProject）</li>
@@ -92,6 +92,16 @@ public class BonusPoolService {
     /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
     public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
         this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /**
+     * R149 A1：注入 SystemConfigService（nullable，兼容旧测试）以读取奖金池窗口月数配置。
+     * 配置键：{@code bonus.windowMonths}（system_configs 表），缺省 {@link #DEFAULT_WINDOW_MONTHS}=6。
+     * 走 setter 模式，与 {@link #setStateMachineGuard} / {@link #setBusinessConfigService} 同型。
+     */
+    private SystemConfigService systemConfigService;
+    public void setSystemConfigService(SystemConfigService systemConfigService) {
+        this.systemConfigService = systemConfigService;
     }
 
     /**
@@ -306,10 +316,38 @@ public class BonusPoolService {
 
     /**
      * [SEC-FIX-HIGH-5.2-FOLLOWUP] actualReceipts 合理上限。
-     * 单项目上市后连续 6 个月实际回款净额，按行业天花板取 1 万亿元（10^12）。
-     * 超出此值即视为参数异常（注入/笔误），拒绝计算。
+     * 单项目上市后连续 N 个月实际回款净额（N 默认 6，R149 A1 起由 {@code system_configs.config_key='bonus.windowMonths'} 控制），
+     * 按行业天花板取 1 万亿元（10^12）。超出此值即视为参数异常（注入/笔误），拒绝计算。
      */
     public static final BigDecimal ACTUAL_RECEIPTS_MAX = new BigDecimal("1000000000000");
+
+    /**
+     * R149 A1：奖金池基数采样窗口（上市后连续 N 个月实际回款），默认 6 个月。
+     * 历史口径：ZK-IPD §三.2.1 写死为 6；本次升级为可配置——经 {@link SystemConfigService}
+     * 读 {@code system_configs.config_key='bonus.windowMonths'}，配置缺省/读取失败时回退本常量。
+     * 注：本类不直接消费窗口数（实际回款由上游系统按本窗口聚合写入 actualReceipts），
+     * 本方法暴露给后续业务逻辑与接审计上下文使用，配套测试见 BonusPoolServiceTest。
+     */
+    public static final int DEFAULT_WINDOW_MONTHS = 6;
+
+    /**
+     * R149 A1：读取奖金池窗口月数（上市后连续多少个月的实际回款计入基数）。
+     * <p>配置键：{@code bonus.windowMonths}（Integer）；配置缺省/解析失败/服务未注入 ⇒ 回退 {@link #DEFAULT_WINDOW_MONTHS}。
+     *
+     * @return 窗口月数；保证 ≥ 1（非法值回退默认）
+     */
+    public int readWindowMonths() {
+        if (systemConfigService == null) {
+            return DEFAULT_WINDOW_MONTHS;
+        }
+        try {
+            int v = systemConfigService.getIntValue("bonus.windowMonths", DEFAULT_WINDOW_MONTHS);
+            return v >= 1 ? v : DEFAULT_WINDOW_MONTHS;
+        } catch (Exception ex) {
+            // 配置读取失败静默回退默认（与 readActivePoolRate / readPoolRateZk 同严，不阻塞业务）
+            return DEFAULT_WINDOW_MONTHS;
+        }
+    }
 
     /**
      * ROOT-R1 P0-7：业务参数读取服务（奖金池比例/阶梯系数；B-RULE-01 配套）。
@@ -428,7 +466,7 @@ public class BonusPoolService {
 
     /**
      * @deprecated 口径废弃（[CONSISTENCY-1] 2026-09-06 owner 裁决）：
-     * 旧 P3-4.2「targetSales × poolRate」被 ZK 完整版 Prompt「actualReceipts × poolRate」覆盖（奖金池基数 = 上市后连续 6 个月实际回款）。
+     * 旧 P3-4.2「targetSales × poolRate」被 ZK 完整版 Prompt「actualReceipts × poolRate」覆盖（奖金池基数 = 上市后连续 N 个月实际回款，N 默认 6）。
      * 计算逻辑保留以便 P342 测试回归；新代码请改用 {@link #calculateBonusPoolByZkFormula}。
      */
     @Deprecated
@@ -586,7 +624,7 @@ public class BonusPoolService {
      *   <li>乘数：项目 S/A/B 差异化系数（coefficient），不是达成率阶梯（tierCoefficient）</li>
      * </ul>
      *
-     * @param actualReceipts   上市后连续 6 个月实际回款净额
+     * @param actualReceipts   上市后连续 N 个月实际回款净额（N 由 {@code system_configs.config_key='bonus.windowMonths'} 控制，默认 6 个月，见 {@link #DEFAULT_WINDOW_MONTHS}/{@link #readWindowMonths()}）
      * @param levelCoefficient 项目 S/A/B 差异化系数（S 1.5–2.0 / B 0.6–0.8 / A 固定 1.0）
      * @return 奖金池金额；回款 ≤ 0 返回 ZERO；入参空抛 ServiceException
      */
@@ -669,7 +707,7 @@ public class BonusPoolService {
      *   <li>personalCoefficient：个人绩效系数，缺省 = 1.0（中性）</li>
      * </ul>
      *
-     * @param actualReceipts     上市后连续 6 个月实际回款净额
+     * @param actualReceipts     上市后连续 N 个月实际回款净额（N 由 {@code system_configs.config_key='bonus.windowMonths'} 控制，默认 6）
      * @param levelCoefficient   项目 S/A/B 差异化系数
      * @param tierCoefficient    销售达成率阶梯系数（AC-INC-17h，0~1.2；null = 1.0）
      * @param personalCoefficient 个人绩效系数（null = 1.0）

@@ -9,6 +9,7 @@ import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -24,10 +25,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.dto.ProjectListItemView;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
@@ -57,6 +60,15 @@ public class ProjectService {
     private final ProductMapper productMapper;
     private final StageActionMapper stageActionMapper;
     private final KpiRecordMapper kpiRecordMapper;
+    /** R149 B2：PM 维度项目列表角色过滤（在职 MARKET_PM/RD_PM）所需 mapper。
+     * 走 setter 模式（仿 BonusPoolService.setProjectMemberMapper），
+     * nullable 兼容 P122AcceptanceTest / P131DatabaseIntegrationTest 等
+     * 旧 10 参构造器入口（不破坏既有兄弟测试）。 */
+    @Autowired(required = false)
+    private ProjectMemberMapper projectMemberMapper;
+    public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
+        this.projectMemberMapper = projectMemberMapper;
+    }
     private final AuditLogService auditLogService;
     private final GateEngine gateEngine;
     private final ProjectBootstrapService projectBootstrapService;
@@ -337,16 +349,38 @@ public class ProjectService {
 
     /**
      * P1-9.2：项目列表（含 scenarioDaysRemaining 派生字段 + 临界告警标记）。
-     *
-     * <p>仅 LEGACY 且 catchupStatus=IN_PROGRESS 的项目计算剩余天数；
-     * 其它项目 scenarioDaysRemaining=null。前端按 critical=true 展示横幅告警，
-     * 后端 scanLegacyCriticalProjects() 同步发通知 MARKET_PM + PRODUCT_LEADER。
+     * <p>R149 B2 升级：新增 {@link #listWithScenario(String, IpdActor)} 按角色硬过滤版本；
+     * 本单参签名 <b>保留向后兼容</b>（P192AcceptanceTest 等历史测试入口），
+     * 内部委派给双参版本并传 {@code actor=null}（等价于全量，不做角色过滤）。
      *
      * @param keyword 项目名关键字
-     * @return 列表视图（含派生字段）
+     * @return 列表视图（含派生字段；全量）
      */
     public List<ProjectListItemView> listWithScenario(String keyword) {
-        List<Project> projects = list(keyword);
+        return listWithScenario(keyword, null);
+    }
+
+    /**
+     * R149 B2：项目列表（按角色硬过滤 + 派生字段）。
+     *
+     * <p>角色过滤矩阵（前后端对齐）：
+     * <ul>
+     *   <li>SUPER_ADMIN：全量（无过滤）</li>
+     *   <li>GROUP_LEADER：本组（{@code projects.main_group_id = actor.groupId()}）</li>
+     *   <li>MARKET_PM / RD_PM：本人负责的（{@code project_members.person_id = actor.id()
+     *       AND role IN (MARKET_PM, RD_PM) AND exit_date IS NULL AND del_flag='0'}）</li>
+     *   <li>其他角色 / null actor：空列表（安全默认，避免泄漏全量）</li>
+     * </ul>
+     *
+     * <p>提示横幅由前端维持（前端不改）；本方法只负责<b>权威服务端硬过滤</b>，
+     * 即使前端绕过横幅直接调接口也只能取到授权范围内的项目。
+     *
+     * @param keyword 项目名关键字（可空）
+     * @param actor   当前操作人；null ⇒ 等价于全量（向后兼容）
+     * @return 列表视图（含 scenarioDaysRemaining / critical 派生字段）
+     */
+    public List<ProjectListItemView> listWithScenario(String keyword, IpdActor actor) {
+        List<Project> projects = listProjectsForActor(keyword, actor);
         if (projects.isEmpty()) {
             return List.of();
         }
@@ -372,6 +406,77 @@ public class ProjectService {
             out.add(new ProjectListItemView(p, lastActivity, remaining, critical));
         }
         return out;
+    }
+
+    /**
+     * R149 B2：按 actor 角色从 projects 取数（不过滤 delFlag=0 已统一在外层 where）。
+     * SUPER_ADMIN 走全量 {@link #list}；GROUP_LEADER 按 {@code main_group_id}；
+     * PM 按 {@code project_members} 在职 role 匹配。
+     */
+    private List<Project> listProjectsForActor(String keyword, IpdActor actor) {
+        if (actor == null) {
+            return list(keyword);
+        }
+        String role = actor.role();
+        if ("SUPER_ADMIN".equals(role)) {
+            return list(keyword);
+        }
+        if ("GROUP_LEADER".equals(role)) {
+            return listByGroup(keyword, actor.groupId());
+        }
+        if ("MARKET_PM".equals(role) || "RD_PM".equals(role)) {
+            return listByActorPm(keyword, actor.id());
+        }
+        // 未知角色 / 无 GROUP_LEADER 维度以外的中间角色 ⇒ 空列表（fail-closed）
+        return List.of();
+    }
+
+    /** R149 B2：组长维度 —— 按 {@code projects.main_group_id} 过滤。null groupId ⇒ 空列表。 */
+    private List<Project> listByGroup(String keyword, Long groupId) {
+        if (groupId == null) {
+            return List.of();
+        }
+        LambdaQueryWrapper<Project> qw = new LambdaQueryWrapper<Project>()
+            .eq(Project::getDelFlag, "0")
+            .eq(Project::getMainGroupId, groupId);
+        if (keyword != null && !keyword.isBlank()) {
+            qw.like(Project::getName, keyword);
+        }
+        // PERF-P1-1：硬上限 1000 防 ≥10k 项目 OOM
+        return projectMapper.selectList(qw.orderByDesc(Project::getId).last("LIMIT 1000"));
+    }
+
+    /**
+     * R149 B2：双 PM 维度 —— 取 actor 在职 MARKET_PM/RD_PM 角色对应的项目 ID 集合，
+     * 再按 ID 列表 + 关键字 + delFlag=0 过滤。actorId null 或 无在职项目 ⇒ 空列表。
+     */
+    private List<Project> listByActorPm(String keyword, Long actorId) {
+        if (actorId == null) {
+            return List.of();
+        }
+        List<Long> pmProjectIds = projectMemberMapper.selectList(
+            new LambdaQueryWrapper<ProjectMember>()
+                .eq(ProjectMember::getPersonId, actorId)
+                .in(ProjectMember::getRole, List.of("MARKET_PM", "RD_PM"))
+                .isNull(ProjectMember::getExitDate)
+                .eq(ProjectMember::getDelFlag, "0")
+                .select(ProjectMember::getProjectId))
+            .stream()
+            .map(ProjectMember::getProjectId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .toList();
+        if (pmProjectIds.isEmpty()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<Project> qw = new LambdaQueryWrapper<Project>()
+            .eq(Project::getDelFlag, "0")
+            .in(Project::getId, pmProjectIds);
+        if (keyword != null && !keyword.isBlank()) {
+            qw.like(Project::getName, keyword);
+        }
+        // PERF-P1-1：硬上限 1000 防 ≥10k 项目 OOM
+        return projectMapper.selectList(qw.orderByDesc(Project::getId).last("LIMIT 1000"));
     }
 
     /**

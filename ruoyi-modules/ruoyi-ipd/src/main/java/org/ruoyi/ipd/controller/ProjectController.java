@@ -60,13 +60,20 @@ public class ProjectController {
 
     /**
      * 查询项目列表（P1-9.2：含 scenarioDaysRemaining + critical 派生字段）。
-     * 需 ipd:project:list 权限
+     * <p>R149 B2 升级：按角色硬过滤（服务端权威）
+     * <ul>
+     *   <li>SUPER_ADMIN：全部</li>
+     *   <li>GROUP_LEADER：本组（{@code projects.main_group_id = actor.groupId}）</li>
+     *   <li>MARKET_PM / RD_PM：本人负责的（{@code project_members} 在职 role=MARKET_PM/RD_PM）</li>
+     * </ul>
+     * 提示横幅由前端维持（前端不改）；即使前端绕过横幅，本接口只返回授权范围。
+     * 需 ipd:project:list 权限。
      */
     @GetMapping
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<org.ruoyi.ipd.dto.ProjectListItemView>> list(@RequestParam(required = false) String keyword) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.listWithScenario(keyword));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(projectService.listWithScenario(keyword, actor));
     }
 
     /** 查询项目详情，需 ipd:project:query 权限 */

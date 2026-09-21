@@ -46,7 +46,8 @@ import java.util.Set;
  * K01-K04 共担 KPI 归集（P3-1.2）。
  *
  * <p>产品组长录入后按项目内双 PM 各追加一条不可变版本，相同业务得分保证
- * AC-KPI-11；NPS 有效样本不足 30 时只标记待补充、不进入分母。
+ * AC-KPI-11；NPS 有效样本不足阈值（默认 30，R149 A3 起由 {@code system_configs.config_key='nps.minSample'} 实时控制）
+ * 时只标记待补充、不进入分母。
  */
 @Service
 public class KpiSharedCollectionService {
@@ -117,6 +118,27 @@ public class KpiSharedCollectionService {
         this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
     }
     private Date now() { return Date.from(clock.instant()); }
+
+    /**
+     * R149 A3：读取 NPS 最小有效样本阈值（{@code npsSampleSize < 该值 ⇒ 不计入 NPS 分母}）。
+     * <p>配置键：{@code nps.minSample}（Integer，{@link SystemConfigService}）；配置缺省/解析失败/服务未注入
+     * ⇒ 回退 {@link #NPS_MIN_SAMPLE}=30。读取策略与 {@code kpi.monthlyDeadlineDay}（HIGH-4.1）同型——
+     * 走 {@code system_configs} 表、Caffeine 缓存、不阻塞业务。
+     *
+     * @return 最小有效样本数；保证 ≥ 1（非法值回退默认）
+     */
+    public int readMinSample() {
+        if (systemConfigService == null) {
+            return NPS_MIN_SAMPLE;
+        }
+        try {
+            int v = systemConfigService.getIntValue("nps.minSample", NPS_MIN_SAMPLE);
+            return v >= 1 ? v : NPS_MIN_SAMPLE;
+        } catch (Exception ex) {
+            // 配置读取失败静默回退默认（与 scanMonthlyDeadlines 同严）
+            return NPS_MIN_SAMPLE;
+        }
+    }
 
     /** K01-K04 月度归集；同一请求为项目双 PM 原子追加相同版本。 */
     @Transactional(rollbackFor = Exception.class)
@@ -632,12 +654,15 @@ public class KpiSharedCollectionService {
             K01_WEIGHT, true, "销量/出货量达成率");
         MetricResult channel = MetricResult.of(K02, "CHANNEL_CRM", actualChannels, targetChannels,
             K02_WEIGHT, true, "渠道商覆盖达成率");
-        boolean npsIncluded = request.npsSampleSize() >= NPS_MIN_SAMPLE;
+        // R149 A3：NPS 最小样本阈值改由 system_configs.nps.minSample 实时控制；缺省 30。
+        int minSample = readMinSample();
+        boolean npsIncluded = request.npsSampleSize() >= minSample;
         BigDecimal npsTarget = BigDecimal.valueOf(project.getTargetNps());
         BigDecimal npsScore = npsIncluded ? calculateNpsTargetScore(nps, npsTarget) : BigDecimal.ZERO;
         MetricResult npsMetric = MetricResult.custom(K03, "NPS_SURVEY", nps, npsTarget,
             npsScore.setScale(2, RoundingMode.HALF_UP), K03_WEIGHT, npsIncluded,
-            npsIncluded ? "NPS=" + nps.toPlainString() : "样本不足 30，结果不计入，待补充");
+            npsIncluded ? "NPS=" + nps.toPlainString()
+                : "样本不足 " + minSample + "（nps.minSample），结果不计入，待补充");
         MetricResult scenario = MetricResult.of(K04, "SALES_ACCEPTANCE", landed, planned,
             K04_WEIGHT, true, "场景覆盖率");
         return new ArrayList<>(List.of(sales, channel, npsMetric, scenario));
