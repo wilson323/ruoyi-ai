@@ -160,4 +160,122 @@ class BusinessConfigServiceTest {
         assertThatThrownBy(() -> service.update(BusinessConfigKeys.BONUS_POOL_RATE, "0.0700", 1L))
                 .isInstanceOf(RuntimeException.class);
     }
+
+    // ==================================================================
+    // R149 batch2b A5：scope+scopeId 维度测试
+    // ==================================================================
+
+    @Test
+    @DisplayName("⑪ getConfig GROUP 维度：命中返回 DB 值")
+    void getConfig_groupHit() {
+        IpdBusinessConfig c = cfg(BusinessConfigKeys.KPI_APPROVAL_ROLE, "GROUP_LEADER", "STRING");
+        c.setScope("GROUP"); c.setEnabled(1);
+        when(configMapper.selectOne(any())).thenReturn(c);
+
+        String v = service.getConfig("GROUP", "1001", BusinessConfigKeys.KPI_APPROVAL_ROLE, "DEFAULT");
+        assertThat(v).isEqualTo("GROUP_LEADER");
+    }
+
+    @Test
+    @DisplayName("⑫ getConfig GROUP 维度：未命中返回 fallback")
+    void getConfig_groupFallback() {
+        when(configMapper.selectOne(any())).thenReturn(null);
+        String v = service.getConfig("GROUP", "1001", "not.exist.key", "DEFAULT_ROLE");
+        assertThat(v).isEqualTo("DEFAULT_ROLE");
+    }
+
+    @Test
+    @DisplayName("⑬ getConfig 缓存命中：5 分钟内不重读 DB")
+    void getConfig_caches() {
+        IpdBusinessConfig c = cfg(BusinessConfigKeys.KPI_APPROVAL_ROLE, "GROUP_LEADER", "STRING");
+        c.setScope("GROUP"); c.setEnabled(1);
+        when(configMapper.selectOne(any())).thenReturn(c);
+
+        service.getConfig("GROUP", "1001", BusinessConfigKeys.KPI_APPROVAL_ROLE, "X");
+        service.getConfig("GROUP", "1001", BusinessConfigKeys.KPI_APPROVAL_ROLE, "X");
+        // 第二次走缓存，DB 只读 1 次
+        verify(configMapper, times(1)).selectOne(any());
+    }
+
+    @Test
+    @DisplayName("⑭ getConfig scope=GROUP 缺 scopeId 抛 PARAM_INVALID")
+    void getConfig_groupRequiresScopeId() {
+        assertThatThrownBy(() -> service.getConfig("GROUP", null,
+                BusinessConfigKeys.KPI_APPROVAL_ROLE, "DEFAULT"))
+            .isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> service.getConfig("GROUP", "",
+                BusinessConfigKeys.KPI_APPROVAL_ROLE, "DEFAULT"))
+            .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("⑮ getConfig scope 非法值抛异常")
+    void getConfig_invalidScope() {
+        assertThatThrownBy(() -> service.getConfig("WRONG_SCOPE", null,
+                BusinessConfigKeys.KPI_APPROVAL_ROLE, "DEFAULT"))
+            .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("⑯ upsert 新增：返回新行 id")
+    void upsert_insert() {
+        when(configMapper.selectOne(any())).thenReturn(null);
+        when(configMapper.insert(any(IpdBusinessConfig.class))).thenAnswer(inv -> {
+            IpdBusinessConfig arg = inv.getArgument(0);
+            arg.setId(500L);
+            return 1;
+        });
+        Long id = service.upsert("GROUP", "1001", BusinessConfigKeys.KPI_APPROVAL_ROLE,
+            "GROUP_LEADER", "STRING", 1, "测试", 1L);
+        assertThat(id).isEqualTo(500L);
+        verify(configMapper).insert(any(IpdBusinessConfig.class));
+    }
+
+    @Test
+    @DisplayName("⑰ upsert 更新：命中已存在行")
+    void upsert_update() {
+        IpdBusinessConfig existing = cfg(BusinessConfigKeys.KPI_APPROVAL_ROLE, "OLD", "STRING");
+        existing.setScope("GROUP");
+        when(configMapper.selectOne(any())).thenReturn(existing);
+        when(configMapper.update(any(), any())).thenReturn(1);
+        Long id = service.upsert("GROUP", "1001", BusinessConfigKeys.KPI_APPROVAL_ROLE,
+            "NEW", "STRING", 1, null, 1L);
+        assertThat(id).isEqualTo(existing.getId());
+        verify(configMapper).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("⑱ upsert scope=GLOBAL 带 scopeId 自动忽略 scopeId")
+    void upsert_globalScopeIdIgnored() {
+        when(configMapper.selectOne(any())).thenReturn(null);
+        when(configMapper.insert(any(IpdBusinessConfig.class))).thenAnswer(inv -> {
+            IpdBusinessConfig arg = inv.getArgument(0);
+            arg.setId(600L);
+            return 1;
+        });
+        Long id = service.upsert("GLOBAL", "1001", "global.key", "value",
+            "STRING", 1, null, 1L);
+        assertThat(id).isEqualTo(600L);
+    }
+
+    @Test
+    @DisplayName("⑲ softDelete 命中：返回 true")
+    void softDelete_hit() {
+        IpdBusinessConfig existing = cfg(BusinessConfigKeys.KPI_APPROVAL_ROLE, "X", "STRING");
+        existing.setScope("GROUP");
+        when(configMapper.selectOne(any())).thenReturn(existing);
+        when(configMapper.update(any(), any())).thenReturn(1);
+        boolean ok = service.softDelete("GROUP", "1001", BusinessConfigKeys.KPI_APPROVAL_ROLE, 1L);
+        assertThat(ok).isTrue();
+    }
+
+    @Test
+    @DisplayName("⑳ softDelete 未命中：返回 false")
+    void softDelete_miss() {
+        when(configMapper.selectOne(any())).thenReturn(null);
+        boolean ok = service.softDelete("GROUP", "1001", "not.exist", 1L);
+        assertThat(ok).isFalse();
+        verify(configMapper, never()).update(any(), any());
+    }
+
 }

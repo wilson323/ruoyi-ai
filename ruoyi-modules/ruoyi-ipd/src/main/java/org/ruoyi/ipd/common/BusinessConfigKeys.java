@@ -47,4 +47,14 @@ public final class BusinessConfigKeys {
 
     /** 项目绩效系数取数策略（PROJECT_SCORE / WEIGHTED_AVG / LAST_QUARTER；P3-4.5 BR-INC-07） */
     public static final String BONUS_PERFORMANCE_STRATEGY = "bonus.performance.strategy";
+
+    // ------------------------------------------------------------------
+    // R149 batch2b A5：GROUP 维度审批人配置（按产品组覆盖 GLOBAL 默认）
+    // ------------------------------------------------------------------
+
+    /** KPI 月度录入审批人角色（GROUP_LEADER|SUPER_ADMIN；GROUP 维度覆盖 R149-A5 决策） */
+    public static final String KPI_APPROVAL_ROLE = "kpi.approvalRole";
+
+    /** 场景种子审批人角色（GROUP_LEADER|SUPER_ADMIN；GROUP 维度覆盖） */
+    public static final String SCENARIO_APPROVAL_ROLE = "scenario.approvalRole";
 }

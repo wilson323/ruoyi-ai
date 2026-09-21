@@ -168,6 +168,7 @@ public interface IpdPermissionCode {
     String OPERATION_SWITCHING_ACCEPTANCE_LOCK = "ipd:switching-acceptance:lock";
     /** 五、P3-7.1：切换验收月结解锁（仅超管；:admin 作为历史别名保留，不破坏现有注解） */
     String OPERATION_SWITCHING_ACCEPTANCE_UNLOCK = "ipd:switching-acceptance:unlock";
+
     // ------------------------------------------------------------------
     // R149 batch2a 后端 DDL 改造配套权限码（2026-09-20）
     // 缺口卡点：8 项 KPI 仅窗口命中率有算法、7 项无录入入口；
@@ -190,4 +191,18 @@ public interface IpdPermissionCode {
     /** R149-C1：90 日回款预警列表查询（内部四角色） */
     String OPERATION_RECOVERY_WARNINGS_QUERY = "ipd:recovery:warnings:query";
 
+    // ------------------------------------------------------------------
+    // R149 batch2b：A5/C3/C4 新增权限码（2026-09-20）
+    // ------------------------------------------------------------------
+
+    /** A5：业务参数读（按 scope 维度；内部全员；AC-A5 治理配置可视） */
+    String OPERATION_BUSINESS_CONFIG_READ = "ipd:business-config:read";
+    /** A5：业务参数写（仅组长/超管；AC-A5 治理参数变更受控） */
+    String OPERATION_BUSINESS_CONFIG_WRITE = "ipd:business-config:write";
+
+    /** C3：永久清除（仅超管；二次确认 + 审计；AC-C3 数据治理底座） */
+    String OPERATION_PERMANENT_DELETE = "ipd:permanent-delete:execute";
+
+    /** C4：P0 升级链查询（组长/超管） */
+    String OPERATION_P0_ESCALATION_READ = "ipd:p0-escalation:read";
 }
