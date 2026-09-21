@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_sse_contract.sh — SSE 端点响应契约门禁（2026-09-11）
+# check-sse-contract.sh — SSE 端点响应契约门禁（2026-09-11）
 #
 # 背景：SSE 端点认证失败 / 业务异常时不能用 return null（200 空体 → EventSource MIME 错）
 # 或 advice JSON 响应（同样 MIME 错），必须走 SseErrorEmitter 推 error 帧。
@@ -16,7 +16,7 @@
 #   2. 解析层：未配 SSE 错误帧保护的 SSE controller > 0 → fail
 #   3. 负向验证：故意撤掉一个 SseErrorEmitter.completeWithError 调用 → fail；恢复 → OK
 #
-# 用法：bash scripts/check_sse_contract.sh（默认扫 ruoyi-common/ruoyi-common-sse、
+# 用法：bash scripts/check-sse-contract.sh（默认扫 ruoyi-common/ruoyi-common-sse、
 # ruoyi-modules/ruoyi-aiflow、ruoyi-modules/ruoyi-chat、ruoyi-modules/ruoyi-ipd）
 
 set -uo pipefail

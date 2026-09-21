@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R119 病根 #4 根除：真活 fe/be 端到端契约验证
-# R25 check_cross_repo_contract.sh 是静态代码扫描（路径对账），不跑真活 HTTP
+# R25 check-cross-repo-contract.sh 是静态代码扫描（路径对账），不跑真活 HTTP
 # R119 补缺：启后端 16039 + 前端 15666 + 跑 5 项业务契约 → exit 1 阻断
 #
 # 5 项业务契约（P0-9 / P3-6.1 / R108 / R118 / R109）：

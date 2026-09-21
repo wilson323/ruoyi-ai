@@ -20,10 +20,10 @@ v2（2026-09-11，dry-run 反馈修复）：
 
 用法（在 ruoyi-ai 仓根）：
   python3 scripts/make_sql_idempotent.py docs/script/sql/update/<file>.sql   # 单文件
-  python3 scripts/make_sql_idempotent.py --all-fail                           # 跑 check_ddl_idempotent.sh FAIL 清单
+  python3 scripts/make_sql_idempotent.py --all-fail                           # 跑 check-ddl-idempotent.sh FAIL 清单
   python3 scripts/make_sql_idempotent.py --dry-run <file>                     # 仅预览不写
 
-依赖：scripts/check_ddl_idempotent.sh（--all-fail 模式）。
+依赖：scripts/check-ddl-idempotent.sh（--all-fail 模式）。
 不做的事：UPDATE / DELETE / MODIFY / CHANGE（本身幂等）；存储过程内部语句。
 """
 import re
@@ -436,14 +436,14 @@ def main():
         sys.exit(2)
 
     if args[0] == "--all-fail":
-        # 跑 check_ddl_idempotent.sh 拿 FAIL 清单
-        script = os.path.join(os.path.dirname(__file__), "check_ddl_idempotent.sh")
+        # 跑 check-ddl-idempotent.sh 拿 FAIL 清单
+        script = os.path.join(os.path.dirname(__file__), "check-ddl-idempotent.sh")
         out = subprocess.run(["bash", script], capture_output=True, text=True).stdout
         for line in out.splitlines():
             if line.strip().startswith("FAIL: "):
                 files.append(line.strip().split("FAIL: ", 1)[1].strip())
         if not files:
-            print("check_ddl_idempotent.sh reported no FAIL — nothing to transform")
+            print("check-ddl-idempotent.sh reported no FAIL — nothing to transform")
             sys.exit(0)
     else:
         if args[0] == "--dry-run":

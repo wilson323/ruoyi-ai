@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_ddl_idempotent.sh
+# scripts/check-ddl-idempotent.sh
 # R30+ 治理门禁：DDL 迁移脚本必须幂等，否则多会话共工重放会漏对象。
 # 背景：仓库无 Flyway/Liquibase，"兄弟会话已 apply"导致裸 ALTER/CREATE 重放即 1050/1060 报错，
 #      后续语句全部失效（含真正缺的对象）。

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_doc_link.sh
+# check-doc-link.sh
 # R25 P1-2 根因 RC-7 治理：文档死链检测
 #
 # 设计要点：
@@ -127,7 +127,7 @@ EOF
 cat > "$REPORT_MD" <<EOF
 # R25 P1-2 文档死链检测报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_doc_link.sh\`（RC-7 死链检测）
+> 自动门禁：\`scripts/check-doc-link.sh\`（RC-7 死链检测）
 > 文档基线：\`$(cd "$DOCS_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo "N/A(uncommitted)")\`
 
 ## 汇总
@@ -183,7 +183,7 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/check_doc_link.sh
+./scripts/check-doc-link.sh
 \`\`\`
 
 ## 排除范围

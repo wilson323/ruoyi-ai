@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_i18n_unused_keys.sh
+# check-i18n-unused-keys.sh
 # R25 P1-3 根因 RC-8 治理：i18n 死键扫描
 #
 # 设计要点：
@@ -175,7 +175,7 @@ EOF
 cat > "$REPORT_MD" <<EOF
 # R25 P1-3 i18n 死键扫描报告（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_i18n_unused_keys.sh\`（RC-8 死键扫描）
+> 自动门禁：\`scripts/check-i18n-unused-keys.sh\`（RC-8 死键扫描）
 > 基准：\`${ZH_FILE#${FRONTEND_ROOT}/}\`
 > 前端基线：\`$(cd "$FRONTEND_ROOT/../.." 2>/dev/null && git rev-parse --short HEAD 2>/dev/null || echo "N/A")\`
 
@@ -217,7 +217,7 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${FRONTEND_ROOT}/../..
-./scripts/check_i18n_unused_keys.sh
+./scripts/check-i18n-unused-keys.sh
 \`\`\`
 
 ## CI 接入
@@ -225,7 +225,7 @@ cd ${FRONTEND_ROOT}/../..
 \`\`\`yaml
 # .github/workflows/i18n-unused.yml
 - name: i18n 死键扫描
-  run: ./scripts/check_i18n_unused_keys.sh
+  run: ./scripts/check-i18n-unused-keys.sh
 \`\`\`
 
 新加 key 但未引用 → PR 自动评论 + 阻断合入（待配置）

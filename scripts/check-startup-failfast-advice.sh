@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_startup_failfast_advice.sh
+# scripts/check-startup-failfast-advice.sh
 # ----------------------------------------------------------------------
 # R28.5 治理门禁：扫描全局 @ExceptionHandler(Exception.class) 兜底 advice
 # 是否对"配置冲突类异常"做了专门处理或豁免。

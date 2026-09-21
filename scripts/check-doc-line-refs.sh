@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# scripts/check_doc_line_refs.sh
+# scripts/check-doc-line-refs.sh
 # R30+ 治理门禁：docs 文档不应引用 yml 行号（行号会因兄弟会话在途编辑漂移）。
 # AGENTS.md §构建/测试：「引用配置用键名，别用行号」——同一个 application.yml 的 demo:
 # 段，20:56 实测在 :396、21:10 已到 :400。行号型断言历史记录可保留，
 # 新写文档再写 yml 行号引用 → 必须标 WARNING + 推荐改为"键名 + 值"格式。
 #
 # 用法（在 ruoyi-ai 仓根目录）：
-#   ./scripts/check_doc_line_refs.sh                # 扫所有 docs/ 下 .md
-#   ./scripts/check_doc_line_refs.sh --scope=ipd    # 只扫 docs/ipd-系统说明/
-#   ./scripts/check_doc_line_refs.sh --strict       # 任何 yml 行号引用 → FAIL
+#   ./scripts/check-doc-line-refs.sh                # 扫所有 docs/ 下 .md
+#   ./scripts/check-doc-line-refs.sh --scope=ipd    # 只扫 docs/ipd-系统说明/
+#   ./scripts/check-doc-line-refs.sh --strict       # 任何 yml 行号引用 → FAIL
 #
 # 退出码：
 #   0 = 没有新的 yml 行号引用

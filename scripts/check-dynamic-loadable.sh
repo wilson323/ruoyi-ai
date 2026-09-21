@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_dynamic_loadable.sh
+# check-dynamic-loadable.sh
 # R25 P0-3 根因 RC-5 治理：动态加载依赖清单
 #
 # 设计要点：
@@ -14,8 +14,8 @@
 #   2  = 脚本错误
 #
 # 用法:
-#   ./scripts/check_dynamic_loadable.sh
-#   ./scripts/check_dynamic_loadable.sh --output path/to/manifest.json
+#   ./scripts/check-dynamic-loadable.sh
+#   ./scripts/check-dynamic-loadable.sh --output path/to/manifest.json
 
 set -u
 
@@ -154,7 +154,7 @@ echo "  → 真正 dynamic-loadable 视图数: $intersect_count"
 cat > "$REPORT_MD" <<EOF
 # R25 P0-3 动态加载依赖清单（${TIMESTAMP}）
 
-> 自动门禁：\`scripts/check_dynamic_loadable.sh\`（RC-5 动态依赖清单）
+> 自动门禁：\`scripts/check-dynamic-loadable.sh\`（RC-5 动态依赖清单）
 > 维护：每周日 02:00 自动重生成 + 每次菜单 schema 变更手动重跑
 
 ## 汇总
@@ -196,8 +196,8 @@ cat >> "$REPORT_MD" <<EOF
 
 \`\`\`bash
 cd ${BACKEND_ROOT}
-./scripts/check_dynamic_loadable.sh
-./scripts/check_dynamic_loadable.sh --output /path/to/manifest.json
+./scripts/check-dynamic-loadable.sh
+./scripts/check-dynamic-loadable.sh --output /path/to/manifest.json
 \`\`\`
 
 ## CI 接入
@@ -205,7 +205,7 @@ cd ${BACKEND_ROOT}
 \`\`\`yaml
 # .github/workflows/dynamic-loadable.yml
 - name: 重生成动态依赖清单
-  run: ./scripts/check_dynamic_loadable.sh --output docs/ipd-系统说明/lint-reports/dynamic-loadable-manifest.json
+  run: ./scripts/check-dynamic-loadable.sh --output docs/ipd-系统说明/lint-reports/dynamic-loadable-manifest.json
 \`\`\`
 
 清单变化 > 0 时自动开 PR，owner 审核后合入。

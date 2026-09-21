@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_async_unused_bean.sh
+# scripts/check-async-unused-bean.sh
 # ----------------------------------------------------------------------
 # R28.5 治理门禁：扫描"自定义 @Bean(name="taskExecutor") 与 implements AsyncConfigurer 同一文件"
 # 规约见 docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md §三
