@@ -35,7 +35,6 @@ import java.util.Date;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(rollbackFor = Exception.class)
 public class CoefficientChangeService {
 
     public static final String ACTION_PROPOSE = "COEFFICIENT_PROPOSE";
