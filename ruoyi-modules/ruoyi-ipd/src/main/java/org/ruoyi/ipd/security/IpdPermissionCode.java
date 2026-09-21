@@ -168,4 +168,26 @@ public interface IpdPermissionCode {
     String OPERATION_SWITCHING_ACCEPTANCE_LOCK = "ipd:switching-acceptance:lock";
     /** 五、P3-7.1：切换验收月结解锁（仅超管；:admin 作为历史别名保留，不破坏现有注解） */
     String OPERATION_SWITCHING_ACCEPTANCE_UNLOCK = "ipd:switching-acceptance:unlock";
+    // ------------------------------------------------------------------
+    // R149 batch2a 后端 DDL 改造配套权限码（2026-09-20）
+    // 缺口卡点：8 项 KPI 仅窗口命中率有算法、7 项无录入入口；
+    //          落地场景完全无登记入口；90 日回款预警完全无实现。
+    // 设计：写操作独立成码（不挂在 :query 上），符合 R-NEW-SEC-5 治理。
+    // ------------------------------------------------------------------
+
+    /** R149-A2：KPI 原始数据录入（GROUP_LEADER / SUPER_ADMIN，按月录入） */
+    String OPERATION_KPI_RAW_CREATE = "ipd:kpi:raw:create";
+    /** R149-A2：KPI 原始数据查询（内部四角色可读） */
+    String OPERATION_KPI_RAW_QUERY = "ipd:kpi:raw:query";
+
+    /** R149-A4：落地场景登记（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN） */
+    String OPERATION_SCENARIO_LANDED_CREATE = "ipd:scenario:landed:create";
+    /** R149-A4：落地场景查询（内部四角色） */
+    String OPERATION_SCENARIO_LANDED_QUERY = "ipd:scenario:landed:query";
+
+    /** R149-C1：90 日回款预警扫描触发（GROUP_LEADER / SUPER_ADMIN） */
+    String OPERATION_RECOVERY_CHECK_90D = "ipd:recovery:check-90d";
+    /** R149-C1：90 日回款预警列表查询（内部四角色） */
+    String OPERATION_RECOVERY_WARNINGS_QUERY = "ipd:recovery:warnings:query";
+
 }
