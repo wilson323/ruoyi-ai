@@ -6,6 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.springframework.stereotype.Component;
+
 /**
  * HR 平台签名工具（FA-HR-Sync·2026-09-21 R149）。
  *
@@ -18,6 +20,7 @@ import java.util.TreeMap;
  *
  * <p>{@code data} 字段需先用 {@link JsonUtil} 序列化为 JSON 字符串后再走字典序拼接。
  */
+@Component
 public class HrSignatureUtil {
 
     public String sign(Map<String, Object> params, String secretKey) {

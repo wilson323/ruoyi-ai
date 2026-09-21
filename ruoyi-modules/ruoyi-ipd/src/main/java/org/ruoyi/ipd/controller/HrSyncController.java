@@ -4,7 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.hr.HrSyncJob;
 import org.ruoyi.ipd.hr.RealHrSyncAdapter;
@@ -13,6 +15,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AuditLogService;
 import org.ruoyi.ipd.service.HrSyncService;
 import org.ruoyi.ipd.service.PersonService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,8 +44,16 @@ public class HrSyncController {
     private final HrSyncService hrSyncService;
     private final IpdPermission permission;
     private final AuditLogService auditLogService;
-    private final HrSyncJob hrSyncJob;
-    private final RealHrSyncAdapter realHrSyncAdapter;
+
+    /**
+     * R149-v1 装配闸门：{@code HrSyncJob} / {@code RealHrSyncAdapter} 仅在
+     * {@code ipd.hr.enabled=true} 时装配（见两类上的 {@code @ConditionalOn*}）。
+     * <p>用 {@link ObjectProvider} 延迟解析：HR 同步关闭时应用仍可启动，手动同步
+     * 端点优雅降级返回 {@link ApiV1ErrorCode#HR_SYNC_NOT_ENABLED}；
+     * last-run 返回 null（表示从未运行）。
+     */
+    private final ObjectProvider<HrSyncJob> hrSyncJobProvider;
+    private final ObjectProvider<RealHrSyncAdapter> realHrSyncAdapterProvider;
 
     public record MarkResignedRequest(@NotNull Long personId, @NotBlank String reason) { }
 
@@ -150,8 +161,9 @@ public class HrSyncController {
     @PostMapping("/sync-now")
     public ApiV1Response<SyncStatsResponse> syncNow() {
         IpdActor operator = permission.requireAdmin();
+        HrSyncJob job = requireHrSyncJob();
         String triggerBy = "MANUAL:" + operator.id();
-        HrSyncJob.LastRun lr = hrSyncJob.runOnce(triggerBy);
+        HrSyncJob.LastRun lr = job.runOnce(triggerBy);
         audit(operator, "hr_sync_now", null, triggerBy);
         if (!lr.isOk()) {
             return ApiV1Response.ok(new SyncStatsResponse(0, 0, 0, 1, 0, 0, lr.costMs()));
@@ -165,10 +177,25 @@ public class HrSyncController {
     @PostMapping("/sync-one")
     public ApiV1Response<SyncStatsResponse> syncOne(@Valid @RequestBody SyncOneRequest req) {
         IpdActor operator = permission.requireAdmin();
+        RealHrSyncAdapter adapter = realHrSyncAdapterProvider.getIfAvailable();
+        if (adapter == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.HR_SYNC_NOT_ENABLED);
+        }
         String triggerBy = "MANUAL_ONE:" + operator.id() + ":" + req.employeeNo();
-        RealHrSyncAdapter.SyncStats stats = realHrSyncAdapter.syncOne(req.employeeNo(), triggerBy);
+        RealHrSyncAdapter.SyncStats stats = adapter.syncOne(req.employeeNo(), triggerBy);
         audit(operator, "hr_sync_one", null, triggerBy);
         return ApiV1Response.ok(SyncStatsResponse.from(stats));
+    }
+
+    /**
+     * R149-v1 装配闸门：解析 HrSyncJob；未装配（HR 同步关闭）时返回业务错误而非 NPE。
+     */
+    private HrSyncJob requireHrSyncJob() {
+        HrSyncJob job = hrSyncJobProvider.getIfAvailable();
+        if (job == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.HR_SYNC_NOT_ENABLED);
+        }
+        return job;
     }
 
     /**
@@ -177,6 +204,8 @@ public class HrSyncController {
     @GetMapping("/last-run")
     public ApiV1Response<LastRunResponse> lastRun() {
         permission.requireAdmin();
-        return ApiV1Response.ok(LastRunResponse.from(hrSyncJob.lastResult()));
+        HrSyncJob job = hrSyncJobProvider.getIfAvailable();
+        // HR 同步未启用（未装配）时返回 null，表示「从未运行」而非报错——看板可正常渲染空态
+        return ApiV1Response.ok(job == null ? null : LastRunResponse.from(job.lastResult()));
     }
 }
