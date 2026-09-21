@@ -348,6 +348,60 @@ public class DeletionRequestService {
             .lt(DeletionRequest::getAdminDueAt, now()));
     }
 
+    /**
+     * P1-1（R25 真白屏修复）：「我的申请」列表——按申请人 actor.id 过滤的全状态删除申请。
+     * <p>设计：server-side 取 {@code requesterId}（防前端伪造）；排除 MyBatis-Plus
+     * {@code @TableLogic} 自动加上的 {@code del_flag='1'} 行；按 createTime DESC 让最新申请在前。
+     * 申请人本人可见自己发起的全部申请（含 LEADER_REVIEW / ADMIN_REVIEW / REJECTED / WITHDRAWN / DELETED）。
+     *
+     * @param applicantId 当前会话人 ID
+     * @return 申请人发起的删除申请列表
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<DeletionRequest> listByApplicant(Long applicantId) {
+        if (applicantId == null) {
+            return List.of();
+        }
+        return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
+            .eq(DeletionRequest::getRequesterId, applicantId)
+            .orderByDesc(DeletionRequest::getCreateTime));
+    }
+
+    /**
+     * P1-1（R25 真白屏修复）：「待我审核」列表——按当前会话人角色分流。
+     * <ul>
+     *   <li>{@code SUPER_ADMIN} → {@code ADMIN_REVIEW}（终审待办；超管可兼任初审，
+     *       但「待我审核」列表先聚焦终审队列，避免与组长视角的初审重叠）</li>
+     *   <li>{@code GROUP_LEADER} → {@code LEADER_REVIEW}（初审待办）</li>
+     *   <li>{@code MARKET_PM / RD_PM} → 空集（不持审核权，不应承担审核入口）</li>
+     * </ul>
+     * 设计：actor 从 controller 透传，service 内做角色→状态映射，避免 controller 出现
+     * 「角色→状态」散落硬编码；按 createTime DESC 让最新申请在前。
+     *
+     * @param actor 当前会话人
+     * @return 待当前人审核的删除申请列表
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<DeletionRequest> listForReview(IpdActor actor) {
+        if (actor == null || actor.role() == null) {
+            return List.of();
+        }
+        switch (actor.role()) {
+            case "SUPER_ADMIN":
+                return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
+                    .eq(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
+                    .orderByDesc(DeletionRequest::getCreateTime));
+            case "GROUP_LEADER":
+                return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
+                    .eq(DeletionRequest::getStatus, ST_LEADER_REVIEW)
+                    .orderByDesc(DeletionRequest::getCreateTime));
+            default:
+                // MARKET_PM / RD_PM / 其他：不持审核权，返回空集
+                return List.of();
+        }
+    }
+
+
     private DeletionRequest getOrThrow(Long id) {
         DeletionRequest request = deletionRequestMapper.selectById(id);
         if (request == null) {
