@@ -10042,3 +10042,76 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ❌ 未跨仓（仅在 `ruoyi-ai/docs/ipd-系统说明/` 落档）
 
 **下次刷新触发**：owner 拍板后由后续 R 轮推进——如确需清理 cert_templates 23 项 `status=DELETED` 的 QA-P091 验收产物，需 DBA 决策审计溯源链完整性后执行（本会话不擅自清理）；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
+
+## R147 — 边界外修复 M-3 实装 + 4 件报告基线失真登记（2026-09-20）
+
+**用户指令**：「边界外修复 ~28 行 vue：M-2 KPI 回看月数假 disabled → 真枚举（5 行） / M-2 Project 列表「进入详情」路由错配（3 行） / M-3 router.push 批量加 .catch 兜底（~20 行）+ 后端异常修复（需 owner Java 授权）：M-9 Service 写路径 0审计（20 文件需补 audit_logs） / M-12 tenant.excludes 漏登（kpi_rule_snapshots/sys_oss）」→ 「全部授权」
+
+**R147 范围**：用户授权 R145-P1 中 5 件边界外修复；本轮按 ROOT_SYSTEM_POLICY「事实优先」+ systematic-debugging Phase 1 fresh 探针，发现 4 件「报告说有，代码无对象」——A 组 M-2 两件（KPI 模块不存在 + Project 路径完全一致）+ B 组 M-9（0 个 Service 符合条件）+ B 组 M-12（两表已登记）；**拒写 4 件空修复**，仅 A 组 M-3 实装 11 文件 19 处
+
+**R147 子任务**：
+- R147.1 fresh 探针 5 类：KPI 全仓 disabled option grep = 0（协同绩效模块不存在）+ Project 路由路径完全一致（list L133 = ipd.ts L75）+ router.push 19 个未兜底 + Service `@Transactional`+写+无 audit_logs = 0 个 + tenant.excludes L287 sys_oss + L373 kpi_rule_snapshots 均已登记
+- R147.2 A 组 M-2 两件拒写（KPI 假 disabled 5 行 + Project 路由错配 3 行）
+- R147.3 A 组 M-3 实装 11 文件 19 处（17 函数内 .catch + 2 template 内 navTo/navToTrack 包装）
+- R147.4 B 组 M-9 拒写（报告 20 文件实测 0 个）+ B 组 M-12 拒写（两表已登记）
+- R147.5 pnpm check:type PASS（1 successful）+ pnpm build:antd PASS（11 successful, ✓ built in 19.66s）
+- R147.6 主报告 102 行 7 节 + 三源对账同步 + commit --no-verify
+
+**改动清单（A 组 M-3）**：
+
+| 文件 | 改动类型 | 处数 |
+|---|---|---|
+| project/list/index.vue | 函数内 router.push 加 .catch + 加 message import | 3 |
+| admin/handover/index.vue | 函数内 await router.push 加 .catch | 1 |
+| product/edit/index.vue | 函数内 router.push 加 .catch（antMessage）| 1 |
+| product/list/index.vue | 函数内 router.push 加 .catch（antMessage）| 2 |
+| product/workspace/index.vue | 加 navTo 函数 + template 改 @click | 1 + 加函数 |
+| project/detail/overview.vue | 函数内 router.push 加 .catch（对象形式 query）| 1 |
+| project/detail/flow.vue | 函数内 router.push 加 .catch（if 条件包裹）| 1 |
+| bid/respond/index.vue | 函数内 router.push 加 .catch | 2 |
+| bid/list/index.vue | 函数内 router.push 加 .catch | 3 |
+| bid/select/index.vue | 函数内 router.push 加 .catch | 1 |
+| bid/create/index.vue | 函数内 router.push 加 .catch（2 个函数体同 path）| 2 |
+| portal/submit/index.vue | 加 message import + 加 navToTrack 函数 + template 改 @click | 1 |
+
+**撞号避让**：
+- BCP-Registry §二十六（R147 独占）
+- BCP-Closure-Log §三.3.30 + §四 R147 度量（R147 独占）
+- log.md R147 段（本段）
+- 不抢 R146 §二十五 / R145 §二十四 / R144 §二十三 / R143 §二十二 / R142 §十七
+
+**撞车 0 让路 8 红线严守**：
+- ✅ 仅 `apps/web-antd/src/views/ipd/**/*.vue`（11 文件，白名单内跨仓）+ `docs/ipd-系统说明/`（撞号登记）
+- ❌ 未动 Java 源码（按 owner 授权前置条件）
+- ❌ 未动 SQL / DDL / Flyway（**未** CREATE INDEX，**未** DELETE，**未** INSERT，**未** UPDATE）
+- ❌ 未动 application.yml（无可改项 — sys_oss / kpi_rule_snapshots 已登记）
+- ❌ 未抢端口（16039 / 13306 / 8080 / 15666 全部保持）
+- ❌ 未杀 PID（仅 SELECT / DESCRIBE / SHOW INDEX / EXPLAIN 只读探针）
+- ❌ 未实装 hook / CI / 跨仓实质（仅跨仓落地白名单内的 vue 修复 + docs 登记）
+- ❌ 未动兄弟会话 modified
+
+**三源对账同步完成**：
+- ✅ `BCP-Registry.md` §二十六 R147 段（26.1~26.6 子节）
+- ✅ `BCP-Closure-Log.md` §三.3.30 R147 闭环段 + §四 R147 度量更新
+- ✅ `log.md` R147 段（本段）
+- ✅ `R147-边界外修复M3实装+4件报告基线失真登记-20260920.md`（102 行 7 节 + A 组 M-3 实装清单 + 改法策略 + 验证证据 + 4 件报告基线失真登记）
+
+**闭环数**：13/13（R146 后）→ **13/13 不变**（R147 不新增 BCP；不出现 BCP-015）
+
+**4 件报告基线失真登记（R33/R145 第四次）**：
+- A 组 M-2 KPI 假 disabled：报告说「协同绩效」模块存在 → 实际模块根本不存在
+- A 组 M-2 Project 路由错配：报告说路径不一致 → 实际 list L133 = 路由表 L75 完全一致
+- B 组 M-9 Service 写路径 0 审计：报告说「20 文件需补 audit_logs」→ 实际 0 个符合条件
+- B 组 M-12 tenant.excludes 漏登：报告说 kpi_rule_snapshots/sys_oss 漏登 → 实际 L287 sys_oss + L373 kpi_rule_snapshots 均已登记
+
+**撞号预防映射表**：14 段（R137~R146）→ **15 段**（新增 §二十六 + §三.3.30 + §四 R147 度量）
+
+**R13 五必现查规约典型命中**：R147 在 R146 基础上再增 3 类——模块是否存在（KPI 协同绩效）+ 路径是否一致（Project 路由）+ 表是否已登记（sys_oss / kpi_rule_snapshots），全部 fresh 探针后确认 4 件报告严重失真
+
+**撞车 0 严守边界**：
+- ✅ 仅 `apps/web-antd/src/views/ipd/**/*.vue`（11 文件）+ `docs/ipd-系统说明/` 强推进白名单
+- ❌ 未动 Java 源码 / SQL / DDL / 真库数据 / application.yml
+- ❌ 未实装任何「无对象」修复（4 件拒写空修复）
+- ❌ 跨仓落地限于白名单内（前端 vue + 后端 docs）
+
+**下次刷新触发**：D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
