@@ -3,6 +3,7 @@ package org.ruoyi.ipd.util;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.ruoyi.ipd.common.IpdBusinessException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -108,7 +109,7 @@ class AuditHashChainTest {
         assertThat(v2).startsWith(AuditHashChain.V2_PREFIX);
         assertThatThrownBy(() ->
                 AuditHashChain.canonicalByVersion(9, 1L, null, null, null, "X", "y", null, null, null, null, T0, null))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("不支持的 canonical 版本");
     }
 }
