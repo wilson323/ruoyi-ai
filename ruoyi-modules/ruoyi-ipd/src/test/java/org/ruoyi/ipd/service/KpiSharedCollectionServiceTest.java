@@ -224,4 +224,41 @@ class KpiSharedCollectionServiceTest {
         r.setSegment("FULL_SHARED");
         return r;
     }
+
+    /* ====================== R149 A3：NPS 最小样本配置 ====================== */
+
+    @Test
+    @DisplayName("[R149-A3] readMinSample() 默认值（systemConfigService 未注入）= 30")
+    void readMinSample_defaultReturnsThirty() {
+        // 通过构造器 null 注入路径模拟（与 BonusPoolService 语义一致：service 未装配时回退常量）
+        KpiSharedCollectionService s = new KpiSharedCollectionService(
+            kpiRecordMapper, projectMapper, projectMemberMapper, personMapper,
+            null, auditLogService, productGroupMapper, null, null);
+        assertThat(s.readMinSample()).isEqualTo(30);
+        assertThat(s.readMinSample()).isEqualTo(KpiSharedCollectionService.NPS_MIN_SAMPLE);
+    }
+
+    @Test
+    @DisplayName("[R149-A3] readMinSample() 配置键 nps.minSample=50 ⇒ 读 50")
+    void readMinSample_configuredReturnsConfigured() {
+        when(systemConfigService.getIntValue("nps.minSample", 30)).thenReturn(50);
+        assertThat(service.readMinSample()).isEqualTo(50);
+    }
+
+    @Test
+    @DisplayName("[R149-A3] readMinSample() 配置 0/负值 ⇒ 回退默认 30（非法值防护）")
+    void readMinSample_invalidConfigFallsBackToDefault() {
+        when(systemConfigService.getIntValue("nps.minSample", 30)).thenReturn(0);
+        assertThat(service.readMinSample()).isEqualTo(30);
+        when(systemConfigService.getIntValue("nps.minSample", 30)).thenReturn(-3);
+        assertThat(service.readMinSample()).isEqualTo(30);
+    }
+
+    @Test
+    @DisplayName("[R149-A3] readMinSample() 配置服务抛异常 ⇒ 回退默认 30（不阻塞业务）")
+    void readMinSample_serviceExceptionFallsBackToDefault() {
+        when(systemConfigService.getIntValue("nps.minSample", 30))
+            .thenThrow(new RuntimeException("mock db error"));
+        assertThat(service.readMinSample()).isEqualTo(30);
+    }
 }
