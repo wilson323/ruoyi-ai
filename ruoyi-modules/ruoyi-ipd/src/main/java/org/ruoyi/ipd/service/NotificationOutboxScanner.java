@@ -43,6 +43,16 @@ public class NotificationOutboxScanner {
 
     private final NotificationEventMapper mapper;
     private final AsyncNotificationDispatcher dispatcher;
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() {
+        return Date.from(clock.instant());
+    }
 
     /**
      * 每 30s 一轮（间隔可配）：先扫到期行入队，再消费队列投递。
@@ -63,7 +73,7 @@ public class NotificationOutboxScanner {
 
     /** 扫描到期 PENDING/FAILED 行并逐条入队；返回本轮入队成功数（包内可见供测试直调）。 */
     int enqueueDue() {
-        Date now = new Date();
+        Date now = now();
         List<NotificationEvent> due = mapper.selectList(
             new LambdaQueryWrapper<NotificationEvent>()
                 .in(NotificationEvent::getDeliveryStatus, "PENDING", "FAILED")

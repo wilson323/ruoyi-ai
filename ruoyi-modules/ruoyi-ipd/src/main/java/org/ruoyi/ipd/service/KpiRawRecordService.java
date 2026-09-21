@@ -68,6 +68,16 @@ public class KpiRawRecordService {
     );
 
     private final KpiRawRecordMapper kpiRawRecordMapper;
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() {
+        return Date.from(clock.instant());
+    }
 
     /**
      * 录入 KPI 原始值。
@@ -110,7 +120,7 @@ public class KpiRawRecordService {
         }
 
         draft.setRecordedBy(actor != null ? actor.id() : null);
-        draft.setRecordedAt(new Date());
+        draft.setRecordedAt(now());
         kpiRawRecordMapper.insert(draft);
         log.debug("KPI 原始数据录入 id={} kpiType={} projectId={} period={} rawValue={}",
             draft.getId(), draft.getKpiType(), draft.getProjectId(),

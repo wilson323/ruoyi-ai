@@ -66,6 +66,16 @@ public class P0EscalationService {
     private final PersonMapper personMapper;
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private Date now() {
+        return Date.from(clock.instant());
+    }
 
     /**
      * 记录一次 P0 超期未升级（幂等 upsert）。
@@ -85,7 +95,7 @@ public class P0EscalationService {
         if (p0EventId == null || p0EventId <= 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "p0EventId 必填且 > 0");
         }
-        Date now = new Date();
+        Date now = now();
 
         // 查找现有 PENDING 行
         QueryWrapper<P0EscalationChain> q = new QueryWrapper<>();
@@ -203,7 +213,7 @@ public class P0EscalationService {
         uw.eq("id", chain.getId())
           .set("status", STATUS_ESCALATED)
           .set("remark", "已升级到双方组长，count=" + chain.getEscalationCount())
-          .set("update_time", new Date());
+          .set("update_time", now());
         chainMapper.update(null, uw);
         log.warn("R149 batch2b P0 ESCALATED projectId={} p0EventId={} count={} leaders={}",
             chain.getProjectId(), chain.getP0EventId(), chain.getEscalationCount(), leaders.size());
@@ -234,7 +244,7 @@ public class P0EscalationService {
         uw.eq("id", id)
           .set("status", STATUS_RESOLVED)
           .set("remark", remark == null ? "" : remark)
-          .set("update_time", new Date());
+          .set("update_time", now());
         int rows = chainMapper.update(null, uw);
         return rows > 0;
     }
