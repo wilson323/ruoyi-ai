@@ -361,6 +361,27 @@ public class AiDocumentService {
     }
 
     /**
+     * P1-3：按项目 ID 列 AI 文档链头（页14 项目详情-文档与交付物列表区）。
+     * <p>仅返回每个文档链的最新版本（HEAD）行；按 create_time DESC 排序便于列表展示最新动态。
+     * 与 {@link #history} 错位：列表区不展开每条链的全版本，由前端调 versions 端点按需加载。
+     * <p>只读事务；{@code currentPersonId} 入参预留审计追踪位（与 controller 端 actor.id() 对齐），
+     * 暂不做 IDOR 过滤（项目级查询码已限制为内部四角色，SEC-02 由 controller 注解拦截）。
+     *
+     * @param projectId      项目 ID（必填；由 controller 注解保证必填）
+     * @param currentPersonId 当前会话人 ID（审计追踪位；预留后续接审计日志）
+     * @return 项目下 AI 文档链头列表（按 create_time DESC）
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<AiDocument> listByProject(Long projectId, String currentPersonId) {
+        requireArg(projectId != null, "projectId 必填");
+        return mapper.selectList(Wrappers.<AiDocument>lambdaQuery()
+            .eq(AiDocument::getProjectId, projectId)
+            // 只取链头（parent_version_id IS NULL 即 v1），与 history 的全链视图错位
+            .isNull(AiDocument::getParentVersionId)
+            .orderByDesc(AiDocument::getCreateTime));
+    }
+
+    /**
      * 完整版本链（AC-AI-06：AI 原始输出 v1 + 全部人工修改版本，无一缺失）。
      * 自起点向上走到根（根必须 v1），再自根按父指针逐环下探，校验版本号连续；
      * 链断/跳号/起点不在链上（软删分支）→ STATE_CONFLICT。
