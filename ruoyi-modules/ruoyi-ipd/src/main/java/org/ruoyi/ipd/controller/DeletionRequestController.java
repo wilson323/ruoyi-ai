@@ -180,6 +180,38 @@ public class DeletionRequestController {
         return ApiV1Response.ok(deletionRequestService.listOverdueAdminReview());
     }
 
+    /**
+     * 我的申请列表：当前会话人作为申请人的删除申请全集（含全状态）。
+     * <p>P1-1（R25 真白屏修复）：此前两页「我的申请 / 待我审核」只能手填申请 ID，
+     * 真白屏无法自纠；本接口把 actor.id() 作为服务端权威过滤条件透传 service，
+     * 内部角色（含 GROUP_LEADER / SUPER_ADMIN）一律可见本人发起的全部申请，
+     * 排除已软删（MyBatis-Plus {@code @TableLogic} 默认 {@code del_flag='0'}）。
+     *
+     * @return 当前人作为申请人的删除申请列表（按创建时间倒序）
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/my-requests")
+    public ApiV1Response<List<DeletionRequest>> myRequests() {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(deletionRequestService.listByApplicant(actor.id()));
+    }
+
+    /**
+     * 待我审核列表：按当前会话人角色分流——组长看 {@code LEADER_REVIEW} 待初审，超管看
+     * {@code ADMIN_REVIEW} 待终审；其他内部角色（MARKET_PM / RD_PM）不持审核权，返回空集。
+     * <p>P1-1（R25 真白屏修复）：与 my-requests 同源——把 actor 推入 service 做角色分流，
+     * 避免 controller 出现「角色→状态」散落硬编码。SUPER_ADMIN 兼任初审+终审，
+     * 因此待审清单需并集两段状态，GROUP_LEADER 仅看 {@code LEADER_REVIEW}。
+     *
+     * @return 待当前人审核的删除申请列表
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/review-queue")
+    public ApiV1Response<List<DeletionRequest>> reviewQueue() {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(deletionRequestService.listForReview(actor));
+    }
+
     /** 提交删除申请入参。 */
     public record SubmitReq(String entityType, Long entityId, String reason, String snapshot) {
     }
