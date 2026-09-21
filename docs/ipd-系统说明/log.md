@@ -10183,3 +10183,64 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 撞号避让段号现查 — §二十七继 §二十六 R147（commit `c3bd120a`），不抢段 PASS
 
 **下次刷新触发**：owner 拍板后由 R149 启动 worktree 实施 5+2=7 项；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日
+
+## R148b — 报告基线失真机制化根除:check-report-baseline-drift.sh 上岗（2026-09-20）
+
+**撞号避让**：本段追加在兄弟 R148「业务规则 7 条真缺口拍板包 + 7 条过度设计丢弃清单」之后。两议题互不重叠，按 R25 软化「撞号让路 8 红线」用 **R148b 后缀**避让，兄弟议题原样保留不覆盖删除。
+
+**任务背景**：用户指令「基于以上失真的先系统性梳理分析深度思考反思并根源性修复然后继续执行剩余任务」= R148b = 报告基线失真机制化根除。
+
+承接 R146（首次发现报告基线失真 2 件 M-17/M-13）+ R147（再发现 4 件 M-2×2/M-9/M-12），fresh 探针发现「**报告与现态靠人肉对账**」是 R 报告维度从未门禁化的根因。
+
+**根因反思（R25 治理 5 类病根 ⑤）**：
+- R 报告写完即视为 SSOT——SSOT = 「谁写的最后一份」而不是「与现态对齐的最后一份」
+- 报告 vs 现态校验靠人脑记忆——单会话内不重现则失真永远不被发现
+- 跨会话传递无校验——R145 写完 M-17/M-9/M-12 的数字后，R147 引用时已经偏离现态，R147 又写错（沿用了 R145 的数字）
+- 没有机制化断言——「25 项」「0 索引」「20 文件」「2 表漏登」全是凭印象，无一被自动校验过
+
+**修复：scripts/check-report-baseline-drift.sh（198 行 9 件 fixture）**
+
+| ID | 报告断言 | 现态实测 | 真库结果 |
+|---|---|---|---|
+| F001 | R147「25 项」| `COUNT(*) FROM deletion_requests` 期望 28 | **28** ✅ |
+| F002 | R147「字段名错」| `SHOW COLUMNS LIKE entity_type` 期望命中 | **命中** ✅ |
+| F003 | R147「18 脏」| `COUNT(*) ... LIKE %not_a_real%` 期望 0 | **0** ✅ |
+| F004 | R146「0 索引」| `SHOW INDEX FROM audit_logs \| wc -l` 期望 ≥2 | **8** ✅ |
+| F005 | R147「20 文件」| ServiceImpl + @Transactional + 写 + 无 audit_logs 期望 0/1 | **0** ✅ |
+| F006 | R147「sys_oss 漏登」| application.yml tenant.excludes grep 期望 ≥1 | **已登** ✅ |
+| F007 | R147「kpi_rule_snapshots 漏登」| application.yml tenant.excludes grep 期望 ≥1 | **已登** ✅ |
+| F008 | R145「KPI 假 disabled」| 协同绩效 grep 期望 0 | **0 命中** ✅ |
+| F009 | R145「路由错配」| projects/${id}/overview 模板字符串 grep 期望 0 | **0 命中** ✅ |
+
+**自证能红三层验证**：
+- ✅ 真库跑 + warning 模式：9 件全 PASS，exit 0
+- ✅ 真库跑 + strict 模式：9 件全 PASS，exit 0（无失真）
+- ✅ self-test 故意 FAIL：real=28 不匹配 ^999$，识别失真
+- ✅ SKIP_DB 跑：F001-F004 SKIP-DB / F005-F009 PASS，exit 0
+
+**撞号避让详情**：
+- ✅ BCP-Registry §二十七 27.7-27.9 子节追加在兄弟 §二十七 R148 之后
+- ✅ BCP-Closure-Log §四 R148b 度量追加在兄弟 §四 R148 之后
+- ✅ log.md R148b 段追加在兄弟 R148 段之后
+- ✅ 兄弟议题原样保留，不覆盖删除（业务规则拍板包 vs 报告基线失真机制化 = 不同议题）
+- ✅ 不抢 §二十七段号、不抢 §四 R148 度量段号
+
+**三源对账同步完成**：
+- ✅ `BCP-Registry.md` §二十七 27.7-27.9 子节（R148b 子节）
+- ✅ `BCP-Closure-Log.md` §四 R148b 度量（本节后）
+- ✅ `log.md` R148b 段（本段）
+- ✅ `R148b-报告基线失真机制化根除check-report-baseline-drift-sh上岗-20260920.md`（193 行 9 节）
+- ✅ `scripts/check-report-baseline-drift.sh`（198 行 9 件 fixture + 5 哨兵 + 3 模式）
+
+**撞号预防映射表**：15 段 → **16 段**（新增 §二十七 27.7-27.9 子节 + §四 R148b 度量 + log.md R148b 段）
+
+**撞车 0 严守边界**：
+- ✅ 仅 `scripts/` + `docs/ipd-系统说明/` 白名单
+- ❌ 未动 Java 源码 / SQL / DDL / 真库数据 / application.yml / 进程 / 端口（撞车 0 让路 8 红线严守）
+- ❌ 未动前端仓（撞车 0 让路 8 红线严守）
+- ❌ 未抢兄弟段位（撞号避让）
+
+**R13 五必现查规约命中 + 1 维度**：
+- hash / 端口字段 / 段号 / 看板回读 / 跨仓 cd 五类必现查 + **新增第 6 类「报告 vs 现态」门禁化**
+
+**下次刷新触发**：R 报告新增/修改后必跑 `scripts/check-report-baseline-drift.sh`；D+30（2026-10-20）fixture 关键字核对 + 扩 fixture；R149 fresh 探针 R33 报告中其他真实异常（cert_templates 23 项 / M-18 业务未交付 5 端点等）
