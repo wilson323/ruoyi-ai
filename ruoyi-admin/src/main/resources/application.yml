@@ -372,6 +372,11 @@ tenant:
     - multi_project_capacity_approvals
     - kpi_rule_snapshots
     - product_retirements
+    # R152 A1（2026-09-20）：R149 batch2a 新增 3 张 DDL 表——含 tenant_id 列但单企业语义，
+    # 未登记则租户拦截器追加 WHERE tenant_id=?，非 000000 会话会读不到数据
+    - kpi_raw_records
+    - landed_scenarios
+    - recovery_warnings
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

@@ -48,7 +48,16 @@ public final class IpdRolePermissionCatalog {
         // P3-7.1：切换验收 run/get/list（内部全员可读；lock/unlock 拆细码见 BUSINESS_WRITE）
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_QUERY,
         // AI-P2-3（2026-09-11）：AI 副驾问答（内部全员可调；对象级由 service 二次校验）
-        IpdPermissionCode.OPERATION_AI_COPILOT
+        IpdPermissionCode.OPERATION_AI_COPILOT,
+        // R152 A1（2026-09-20）：补登记 R149 后端新增读码——之前未登导致 4 角色全员 403
+        // 业务参数读（AC-A5 治理配置可视；写入仅组长/超管）
+        IpdPermissionCode.OPERATION_BUSINESS_CONFIG_READ,
+        // KPI 原始数据查询（内部四角色可读）
+        IpdPermissionCode.OPERATION_KPI_RAW_QUERY,
+        // 落地场景查询（内部四角色）
+        IpdPermissionCode.OPERATION_SCENARIO_LANDED_QUERY,
+        // 90 日回款预警列表查询（内部四角色）
+        IpdPermissionCode.OPERATION_RECOVERY_WARNINGS_QUERY
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -82,7 +91,16 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_KPI_SHARED_CONFIRM_SIGN,
         IpdPermissionCode.OPERATION_KPI_SHARED_COLLECT,
         IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SUBMIT,
-        IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SIGN
+        IpdPermissionCode.OPERATION_REQUIREMENT_CHANGE_SIGN,
+        // R152 A1（2026-09-20）：补登记 R149 后端新增写码——之前未登导致 4 角色全员 403
+        // 业务参数写（仅组长/超管；AC-A5 治理参数变更受控）
+        IpdPermissionCode.OPERATION_BUSINESS_CONFIG_WRITE,
+        // KPI 原始数据录入（组长/超管按月录入）
+        IpdPermissionCode.OPERATION_KPI_RAW_CREATE,
+        // 落地场景登记（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN）
+        IpdPermissionCode.OPERATION_SCENARIO_LANDED_CREATE,
+        // 90 日回款预警扫描触发（组长/超管）
+        IpdPermissionCode.OPERATION_RECOVERY_CHECK_90D
     );
 
     /** 组长初审删除申请 + 系数定值确认。 */
@@ -94,7 +112,9 @@ public final class IpdRolePermissionCatalog {
         // P3-8.2：负反馈认定/解除（仅 GROUP_LEADER / SUPER_ADMIN）
         IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE,
         // AC-COMP-02/03：创建数据删除请求（GROUP_LEADER + SUPER_ADMIN，对齐 service ROLES_WITH_WRITE）
-        IpdPermissionCode.OPERATION_COMPLIANCE_WRITE
+        IpdPermissionCode.OPERATION_COMPLIANCE_WRITE,
+        // R152 A1（2026-09-20）：补登记 C4 P0 升级链查询（组长/超管）
+        IpdPermissionCode.OPERATION_P0_ESCALATION_READ
     );
 
     /** 仅市场侧可建项（对齐 requireProjectCreator）。 */
@@ -139,7 +159,9 @@ public final class IpdRolePermissionCatalog {
         // R-NEW-SEC-5 + P3-7.1 合并裁决：锁定/解锁采用拆细码 LOCK/UNLOCK（Controller 注解实际消费）；
         // :admin 码保留常量但无注解消费端，不登记进目录避免 CatalogDrift 守卫误报
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
-        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK
+        IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK,
+        // R152 A1（2026-09-20）：补登记 C3 永久清除（仅超管；二次确认 + 审计；AC-C3 数据治理底座）
+        IpdPermissionCode.OPERATION_PERMANENT_DELETE
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
