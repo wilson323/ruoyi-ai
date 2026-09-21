@@ -119,3 +119,6 @@ agentdb.rvf.lock
 .claude/settings.json.*.bak
 .harness/.backup/
 .vite/
+
+# R157-E-A: 兄弟会话 session 数据（不入库）
+.harness/audit/

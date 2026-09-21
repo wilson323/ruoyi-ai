@@ -10436,3 +10436,12 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ✅ 撞号避让段号现查 → §二十八 已被 R148.1 占用，本段用 §二十九 + R149 docs 后缀避让
 
 **下次刷新触发**：owner 拍板 13 项后由 R150 启动 5 批 worktree 实施（4-5 worktree-day）；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日
+
+## R157-E-A 兄弟会话工作处置（R25 软化）
+- 时间：2026-09-21
+- 兄弟会话：ORIGIN-（R157-tmp-stash on main + R157-E-B 暂存的 AGENTS.md 微调）
+- 工作类型：AGENTS.md REPOWISE_DISTILL 段 + 提交完整度报告 + .harness/audit/ + R157 系统性根因反思设计 doc
+- 处置：原样入库（兄弟会话在 stash@{0} + stash@{1} 暂存的两段 AGENTS.md 改动合并入库，REPOWISE_DISTILL 段保留，提交完整度报告加 ORIGIN 注记，R157 design doc 入库作为历史存档）
+- 注记：保留兄弟会话工作痕迹，不覆盖删除。AGENTS.md 头部已加 ORIGIN HTML 注释；R157 design doc（114 行）随本次 commit 入库（HEAD c3ce4d3d 已含 R157-A/B1-B7 9 commit 实装记录，本 doc 落档为执行回顾）。
+- 排除：`.harness/audit/` 通过 .gitignore 第 124 行排除（兄弟会话 session 数据不入库）
+- 兄弟 stash：stash@{0}（R157-E-B "正式前端"段）已合并应用、stash@{1}（R157-tmp-stash REPOWISE_DISTILL + R157 design doc）已合并应用；按 owner 授权保留不 drop，留待 main 端清理
