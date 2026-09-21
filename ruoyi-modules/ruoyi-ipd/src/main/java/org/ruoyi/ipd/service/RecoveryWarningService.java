@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -58,6 +59,17 @@ public class RecoveryWarningService {
     private final ReceiptLedgerMapper receiptLedgerMapper;
     private final SystemConfigService systemConfigService;
 
+    /** 可注入时钟（R156-A 根除债，仿 KpiRawRecordService 模式）。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock);
+    }
+
     /**
      * 扫描所有上市后未满 90 日的项目，回款比例低于阈值的写入预警表。
      *
@@ -66,7 +78,7 @@ public class RecoveryWarningService {
      */
     @Transactional(rollbackFor = Exception.class)
     public int checkAndGenerate(LocalDate today) {
-        LocalDate scanDate = today != null ? today : LocalDate.now();
+        LocalDate scanDate = today != null ? today : today();
         BigDecimal threshold = readThreshold();
         log.info("90日回款预警扫描开始 scanDate={} threshold={}", scanDate, threshold);
 
