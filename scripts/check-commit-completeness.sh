@@ -75,7 +75,8 @@ if lsof -i :16039 >/dev/null 2>&1; then
   PID=$(echo "$PROC" | awk '{print $2}')
   CMD=$(ps -p "$PID" -o command= 2>/dev/null | head -c 200 || echo "?")
   # 检查 command 是否含 RuoYiAI 或 ipd 字样（撞车兄弟会话的 ry-vue 后端）
-  if echo "$CMD" | grep -qiE "ry-vue|ruoyi(?!.*ipd)"; then
+  # 用 awk 替代 grep -P（macOS BSD grep 无 PCRE）
+  if echo "$CMD" | awk 'BEGIN{IGNORECASE=1} /ry-vue/{exit 0} /ruoyi/ && !/ipd/{exit 0} {exit 1}'; then
     echo "| 撞车兄弟会话 | PID=$PID, CMD=$CMD | ❌ 撞车兄弟会话 ry-vue 后端 |" >> "$REPORT"
     FAIL=1
   else
