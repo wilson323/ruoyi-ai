@@ -7,16 +7,20 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.KpiRecord;
+import org.ruoyi.ipd.domain.LandedScenario;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.ProductGroup;
+import org.ruoyi.ipd.domain.SwitchingAcceptance;
 import org.ruoyi.ipd.dto.SharedKpiCollectReq;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
+import org.ruoyi.ipd.mapper.LandedScenarioMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProductGroupMapper;
+import org.ruoyi.ipd.mapper.SwitchingAcceptanceMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.vo.SharedKpiCollectView;
@@ -48,6 +52,19 @@ import java.util.Set;
  * <p>产品组长录入后按项目内双 PM 各追加一条不可变版本，相同业务得分保证
  * AC-KPI-11；NPS 有效样本不足阈值（默认 30，R149 A3 起由 {@code system_configs.config_key='nps.minSample'} 实时控制）
  * 时只标记待补充、不进入分母。
+ *
+ * <p>P2-1 K04 双认定：K04 场景覆盖率来源由写死 {@code SALES_ACCEPTANCE} 改为双来源判定——
+ * <ul>
+ *   <li>销售报备：{@code landed_scenarios}（按 projectId 存在判定）</li>
+ *   <li>交付验收：{@code switching_acceptance}（按 projectId 存在判定）</li>
+ * </ul>
+ * 三种组合对应 K04 source：
+ * <ol>
+ *   <li>仅有销售报备 → {@code SALES_ACCEPTANCE}</li>
+ *   <li>仅有交付验收 → {@code DELIVERY_ACCEPTANCE}</li>
+ *   <li>两者都有 → {@code DUAL_ACCEPTANCE}</li>
+ * </ol>
+ * 当两个 Mapper 依赖都未注入（早期测试/legacy 路径）时回退 {@code SALES_ACCEPTANCE} 单来源。
  */
 @Service
 public class KpiSharedCollectionService {
@@ -62,7 +79,9 @@ public class KpiSharedCollectionService {
         AuditLogService auditLogService,
         ProductGroupMapper productGroupMapper,
         SystemConfigService systemConfigService,
-        NotificationService notificationService) {
+        NotificationService notificationService,
+        LandedScenarioMapper landedScenarioMapper,
+        SwitchingAcceptanceMapper switchingAcceptanceMapper) {
         this.kpiRecordMapper = kpiRecordMapper;
         this.projectMapper = projectMapper;
         this.projectMemberMapper = projectMemberMapper;
@@ -72,9 +91,27 @@ public class KpiSharedCollectionService {
         this.productGroupMapper = productGroupMapper;
         this.systemConfigService = systemConfigService;
         this.notificationService = notificationService;
+        this.landedScenarioMapper = landedScenarioMapper;
+        this.switchingAcceptanceMapper = switchingAcceptanceMapper;
     }
 
-    /** 兼容 P3-1.2 早期测试/调用方；生产 Spring 使用完整构造器。 */
+    /** 兼容 P3-1.2 早期测试/调用方；生产 Spring 使用完整构造器（landedScenarioMapper/switchingAcceptanceMapper 传 null）。 */
+    public KpiSharedCollectionService(
+        KpiRecordMapper kpiRecordMapper,
+        ProjectMapper projectMapper,
+        ProjectMemberMapper projectMemberMapper,
+        PersonMapper personMapper,
+        IpdPermission permission,
+        AuditLogService auditLogService,
+        ProductGroupMapper productGroupMapper,
+        SystemConfigService systemConfigService,
+        NotificationService notificationService) {
+        this(kpiRecordMapper, projectMapper, projectMemberMapper, personMapper, permission,
+            auditLogService, productGroupMapper, systemConfigService, notificationService,
+            null, null);
+    }
+
+    /** 兼容更早期测试（P3-1.2 6 参数入口）；新增 K04 双认定 mapper 传 null → K04 source 回退 SALES_ACCEPTANCE。 */
     public KpiSharedCollectionService(
         KpiRecordMapper kpiRecordMapper,
         ProjectMapper projectMapper,
@@ -83,13 +120,18 @@ public class KpiSharedCollectionService {
         IpdPermission permission,
         AuditLogService auditLogService) {
         this(kpiRecordMapper, projectMapper, projectMemberMapper, personMapper, permission,
-            auditLogService, null, null, null);
+            auditLogService, null, null, null, null, null);
     }
 
     static final String K01 = "K01";
     static final String K02 = "K02";
     static final String K03 = "K03";
     static final String K04 = "K04";
+
+    /** P2-1 K04 双认定：K04 source 三种取值（按双来源存在性组合判定）。 */
+    static final String K04_SOURCE_SALES_ONLY = "SALES_ACCEPTANCE";
+    static final String K04_SOURCE_DELIVERY_ONLY = "DELIVERY_ACCEPTANCE";
+    static final String K04_SOURCE_DUAL = "DUAL_ACCEPTANCE";
     static final String TYPE_SHARED = "SHARED";
     static final String SEGMENT_FULL_SHARED = "FULL_SHARED";
 
@@ -111,6 +153,10 @@ public class KpiSharedCollectionService {
     private final ProductGroupMapper productGroupMapper;
     private final SystemConfigService systemConfigService;
     private final NotificationService notificationService;
+    /** P2-1 K04 双认定：销售报备表 landed_scenarios（项目下存在落地场景记录 ⇒ 销售认定）。 */
+    private final LandedScenarioMapper landedScenarioMapper;
+    /** P2-1 K04 双认定：交付验收表 switching_acceptance（项目下存在切换验收记录 ⇒ 交付认定）。 */
+    private final SwitchingAcceptanceMapper switchingAcceptanceMapper;
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -663,9 +709,50 @@ public class KpiSharedCollectionService {
             npsScore.setScale(2, RoundingMode.HALF_UP), K03_WEIGHT, npsIncluded,
             npsIncluded ? "NPS=" + nps.toPlainString()
                 : "样本不足 " + minSample + "（nps.minSample），结果不计入，待补充");
-        MetricResult scenario = MetricResult.of(K04, "SALES_ACCEPTANCE", landed, planned,
+        // P2-1 K04 双认定：source 改为动态判定（销售报备 / 交付验收 / 双来源）
+        String k04Source = resolveK04Source(request.projectId());
+        MetricResult scenario = MetricResult.of(K04, k04Source, landed, planned,
             K04_WEIGHT, true, "场景覆盖率");
         return new ArrayList<>(List.of(sales, channel, npsMetric, scenario));
+    }
+
+    /**
+     * P2-1 K04 双认定：根据项目下两个来源表的存在性组合判定 K04 source。
+     * <ul>
+     *   <li>两个 Mapper 都未注入（legacy/早期测试）→ 回退 {@link #K04_SOURCE_SALES_ONLY}</li>
+     *   <li>仅销售报备（landed_scenarios 有项目记录）→ {@link #K04_SOURCE_SALES_ONLY}</li>
+     *   <li>仅交付验收（switching_acceptance 有项目记录）→ {@link #K04_SOURCE_DELIVERY_ONLY}</li>
+     *   <li>两者都有 → {@link #K04_SOURCE_DUAL}</li>
+     * </ul>
+     * Mapper 默认 {@code @TableLogic} 已过滤软删数据；存在性判定走 {@code selectCount > 0}。
+     *
+     * @param projectId 项目主键（必非 null，由 {@link #collectSharedKpi} 守门）
+     * @return K04 source 标签
+     */
+    String resolveK04Source(Long projectId) {
+        if (projectId == null) {
+            return K04_SOURCE_SALES_ONLY;
+        }
+        if (landedScenarioMapper == null && switchingAcceptanceMapper == null) {
+            return K04_SOURCE_SALES_ONLY;
+        }
+        boolean hasSales = landedScenarioMapper != null && landedScenarioMapper.selectCount(
+            Wrappers.<LandedScenario>lambdaQuery()
+                .eq(LandedScenario::getProjectId, projectId)) > 0;
+        boolean hasDelivery = switchingAcceptanceMapper != null && switchingAcceptanceMapper.selectCount(
+            Wrappers.<SwitchingAcceptance>lambdaQuery()
+                .eq(SwitchingAcceptance::getProjectId, projectId)) > 0;
+        if (hasSales && hasDelivery) {
+            return K04_SOURCE_DUAL;
+        }
+        if (hasSales) {
+            return K04_SOURCE_SALES_ONLY;
+        }
+        if (hasDelivery) {
+            return K04_SOURCE_DELIVERY_ONLY;
+        }
+        // 两者都没有：保持历史 source 语义（不抛错；K04 仍按 landed/planned 计算得分）
+        return K04_SOURCE_SALES_ONLY;
     }
 
     private BigDecimal weightedScore(List<MetricResult> metrics) {
