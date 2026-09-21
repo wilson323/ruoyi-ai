@@ -251,6 +251,27 @@ ipd:
       destination-prefix: /topic/notifications/
       # 用户离线时是否落库（与 InApp 一致）：true=入 INBOX 兜底
       offline-fallback-to-inbox: true
+  # HR 同步真源（FA-HR-Sync·2026-09-21 R149；对接 信息集成平台接口文档-EHR.docx）
+  # 全部分项可由 application-{profile}.yml 或环境变量覆盖；
+  # 真实凭据（appId/secretKey/baseUrl）一律走 .codex/ipd-dev/config/application-ipd-local.yml
+  # 本仓不落任何字面量（sensitive-field-guard hook 也会阻断硬编码）。
+  hr:
+    # 总开关；dev 默认 true（本地 MockHrAdapter 仍优先装配于 dev profile）；
+    # prod 必须显式覆盖 ipd.hr.enabled=true 并完成真实凭据注入后才允许 true。
+    enabled: ${IPD_HR_ENABLED:false}
+    app-id: ${IPD_HR_APP_ID:}
+    secret-key: ${IPD_HR_SECRET_KEY:}
+    base-url: ${IPD_HR_BASE_URL:}
+    sync:
+      # cron 表达式；默认 0 0 2 * * ?（每天 02:00，错峰 09:00/09:05 的兄弟调度）
+      cron: ${IPD_HR_SYNC_CRON:0 0 2 * * ?}
+      # 启动时是否立即全量一次（true=启动后先全量第一次再走定时）
+      full-on-startup: ${IPD_HR_FULL_ON_STARTUP:false}
+      page-size: ${IPD_HR_PAGE_SIZE:500}
+    http:
+      connect-timeout-ms: ${IPD_HR_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${IPD_HR_READ_TIMEOUT_MS:30000}
+      retry-count: ${IPD_HR_RETRY_COUNT:2}
 
 # security配置
 security:
