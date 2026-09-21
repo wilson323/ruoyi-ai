@@ -11,6 +11,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.StageAction;
+import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
+import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
@@ -50,6 +53,12 @@ class WorkbenchServiceTest {
     private StageSignAggregator stageAgg;
     @Mock
     private DeletionReviewAggregator deletionAgg;
+    @Mock
+    private DeletionRequestMapper deletionRequestMapper;
+    @Mock
+    private CoefficientChangeRequestMapper coefficientChangeRequestMapper;
+    @Mock
+    private LaunchDateChangeRequestMapper launchDateChangeRequestMapper;
 
     private WorkbenchService service;
 
@@ -58,7 +67,8 @@ class WorkbenchServiceTest {
         List<WorkbenchAggregator> aggregators = List.of(stageAgg, deletionAgg);
         service = new WorkbenchService(
             projectMapper, projectMemberMapper, stageActionMapper,
-            notificationService, aggregators);
+            notificationService, aggregators,
+            deletionRequestMapper, coefficientChangeRequestMapper, launchDateChangeRequestMapper);
         // 调度器对每个聚合器都调用 collect + completedCount：默认空投递，个别用例覆盖
         lenient().when(stageAgg.collect(any(IpdActor.class), any(), any(Date.class))).thenReturn(List.of());
         lenient().when(deletionAgg.collect(any(IpdActor.class), any(), any(Date.class))).thenReturn(List.of());
@@ -66,6 +76,10 @@ class WorkbenchServiceTest {
         lenient().when(deletionAgg.completedCount(any(IpdActor.class), any())).thenReturn(0);
         lenient().when(stageAgg.taskType()).thenReturn("stage_sign");
         lenient().when(deletionAgg.taskType()).thenReturn("deletion_review");
+        // P1-4「我发起的」三个 mapper：默认返回 0L，个别用例覆盖
+        lenient().when(deletionRequestMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        lenient().when(coefficientChangeRequestMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        lenient().when(launchDateChangeRequestMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
     }
 
     private Project project(long id, String code, String name, String currentStage) {

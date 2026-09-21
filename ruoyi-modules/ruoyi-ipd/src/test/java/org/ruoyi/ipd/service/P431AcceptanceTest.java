@@ -122,6 +122,11 @@ class P431AcceptanceTest {
         when(launchDateChangeMapper.selectList(any())).thenReturn(List.of());
         when(coefficientChangeMapper.selectList(any())).thenReturn(List.of());
         when(kpiRecordMapper.selectList(any())).thenReturn(List.of());
+        // P1-4:WorkbenchService.countMyInitiated 用三张表 create_by 计数,验收测试不去校验 myInitiated 数字,
+        // 给三表 selectCount 默认 0L,保证不抛 NPE
+        when(deletionRequestMapper.selectCount(any())).thenReturn(0L);
+        when(coefficientChangeMapper.selectCount(any())).thenReturn(0L);
+        when(launchDateChangeMapper.selectCount(any())).thenReturn(0L);
         workbenchService = new WorkbenchService(
             projectMapper, projectMemberMapper, stageActionMapper, notificationService,
             List.of(new StageSignAggregator(stageActionMapper),
@@ -132,7 +137,8 @@ class P431AcceptanceTest {
                 new ContributionConfirmAggregator(contributionMapper),
                 new CloseoutAggregator(projectScoreTaskMapper),
                 new StrategicChangeAggregator(launchDateChangeMapper, coefficientChangeMapper),
-                new KpiFillAggregator(kpiRecordMapper)));
+                new KpiFillAggregator(kpiRecordMapper)),
+            deletionRequestMapper, coefficientChangeMapper, launchDateChangeMapper);
         controller = new WorkbenchController(ipdPermission, workbenchService);
         mvc = MockMvcBuilders
             .standaloneSetup(controller)

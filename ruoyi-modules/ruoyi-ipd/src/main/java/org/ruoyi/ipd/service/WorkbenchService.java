@@ -2,10 +2,16 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.domain.CoefficientChangeRequest;
+import org.ruoyi.ipd.domain.DeletionRequest;
+import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.StageAction;
+import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
+import org.ruoyi.ipd.mapper.DeletionRequestMapper;
+import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
@@ -54,6 +60,20 @@ public class WorkbenchService {
     private final NotificationService notificationService;
     /** 按域聚合器列表（Spring 注入全部 WorkbenchAggregator 实现，@Order 决定 stage 先 deletion 后）。 */
     private final List<WorkbenchAggregator> aggregators;
+    /**
+     * 「我发起的」计数的数据源 mapper（P1-4）：
+     * <ul>
+     *   <li>{@link DeletionRequestMapper}：deletion_requests.create_by = 当前人</li>
+     *   <li>{@link CoefficientChangeRequestMapper}：coefficient_change_requests.create_by = 当前人</li>
+     *   <li>{@link LaunchDateChangeRequestMapper}：launch_date_change_requests.create_by = 当前人</li>
+     * </ul>
+     * 三类业务单据由当前人发起的总数（del_flag='0' 软过滤）= stats.myInitiated。
+     * 注意：{@code requester_id / proposer_id} 是领域字段；{@code create_by} 来自 BaseEntity 自动填充，
+     * 才是"由我发起的"权威口径（领域字段可能与创建人分离）。
+     */
+    private final DeletionRequestMapper deletionRequestMapper;
+    private final CoefficientChangeRequestMapper coefficientChangeRequestMapper;
+    private final LaunchDateChangeRequestMapper launchDateChangeRequestMapper;
 
     /**
      * 工作台总览。
@@ -89,6 +109,9 @@ public class WorkbenchService {
         stats.put("overdue", (int) overdue);
         stats.put("unread", (int) notificationService.unreadCount(actor.id()));
         stats.put("completed", (int) completed);
+        // 我发起的（P1-4）：deletion_requests + coefficient_change_requests + launch_date_change_requests
+        // 三张业务单据表 create_by = 当前人 的总数（跨聚合「我发起的」徽标）
+        stats.put("myInitiated", countMyInitiated(actor.id()));
         // 按类型计数（设计 §5）：17 类 key 预置 0（无数据类也返回），供前端按类型过滤/展示
         Map<String, Integer> pendingType = new LinkedHashMap<>();
         for (String taskType : ALL_TASK_TYPES) {
@@ -108,6 +131,29 @@ public class WorkbenchService {
             .count());
         result.put("currentAdvance", currentAdvance(actor, projectId, byId));
         return result;
+    }
+
+    /**
+     * 「我发起的」聚合（P1-4）：三张业务单据表（删除申请/系数变更/上市日期变更）按 create_by 计数。
+     * <p>三表均继承 BaseEntity，{@code create_by} 由 MyBatis-Plus MetaObjectHandler 在插入时填充当前人 ID，
+     * 与 requester_id / proposer_id 等领域字段可能分离；以 create_by 为权威「由我发起」口径。
+     *
+     * @param actorId 当前登录人 ID（来自 IpdActor.id()）
+     * @return 三个表 count 之和；actorId 为空时返回 0（防御性，避免 SQL 拼接 NULL）
+     */
+    private int countMyInitiated(Long actorId) {
+        if (actorId == null) {
+            return 0;
+        }
+        long deletion = deletionRequestMapper.selectCount(new LambdaQueryWrapper<DeletionRequest>()
+            .eq(DeletionRequest::getCreateBy, actorId));
+        long coefficient = coefficientChangeRequestMapper.selectCount(new LambdaQueryWrapper<CoefficientChangeRequest>()
+            .eq(CoefficientChangeRequest::getCreateBy, actorId));
+        long launchDate = launchDateChangeRequestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
+            .eq(LaunchDateChangeRequest::getCreateBy, actorId));
+        // 防御性截断到 int 范围（实际业务不可能超 int 上限）
+        long total = deletion + coefficient + launchDate;
+        return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
     }
 
     /** 项目可见范围：超管全部，其余按成员关系。 */
