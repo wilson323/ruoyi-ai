@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.StageAction;
@@ -103,7 +104,7 @@ class P182AcceptanceTest {
     void algoTypeValidation() {
         StageAction a = seed("D11", "LIGHT");
         assertThatThrownBy(() -> service.recordFields(1L, null, null, null, null, null, "IRIS", "9"))
-            .isInstanceOf(ServiceException.class)
+            .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("算法分类非法");
         service.recordFields(1L, null, null, null, null, null, "fingerprint", "9");
         assertThat(a.getAlgoType()).isEqualTo("FINGERPRINT");

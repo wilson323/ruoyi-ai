@@ -2,6 +2,7 @@ package org.ruoyi.ipd.seed;
 
 import org.ruoyi.ipd.domain.ActionDef;
 
+import org.ruoyi.ipd.common.IpdBusinessException;
 import java.util.List;
 
 /**
@@ -147,7 +148,7 @@ public final class ActionCatalog {
         }
         String t = algoType.trim().toUpperCase();
         if (!ALGO_TYPES.contains(t)) {
-            throw new IllegalArgumentException(
+            throw new IpdBusinessException(
                 "算法分类非法，允许: " + String.join("|", ALGO_TYPES));
         }
         return t;

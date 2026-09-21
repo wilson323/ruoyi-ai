@@ -448,7 +448,7 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     @Override
     public void registerRule(StateTransitionRule rule) {
         if (rule == null || rule.getKey() == null) {
-            throw new IllegalArgumentException("规则或 key 不可为空");
+            throw new IpdBusinessException("规则或 key 不可为空");
         }
         rules.put(rule.getKey(), rule);
     }

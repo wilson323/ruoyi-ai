@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+
+import org.ruoyi.ipd.common.IpdBusinessException;
 /**
  * P3-1.1 KPI 得分纯函数计算器（不依赖 mapper / DB，便于单测）
  *
@@ -64,7 +66,7 @@ public final class KpiScoreCalculator {
      */
     public static BigDecimal comprehensive(BigDecimal functional, BigDecimal shared, BigDecimal w) {
         if (functional == null || shared == null) {
-            throw new IllegalArgumentException("功能 / 共担得分不能为空");
+            throw new IpdBusinessException("功能 / 共担得分不能为空");
         }
         BigDecimal weight = w == null ? DEFAULT_FUNCTIONAL_WEIGHT : w;
         validateFunctionalWeight(weight);
@@ -81,14 +83,14 @@ public final class KpiScoreCalculator {
      */
     public static void validateFunctionalWeight(BigDecimal w) {
         if (w == null) {
-            throw new IllegalArgumentException("功能 KPI 权重不能为空");
+            throw new IpdBusinessException("功能 KPI 权重不能为空");
         }
         if (w.compareTo(BigDecimal.ZERO) <= 0 || w.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalArgumentException("功能 KPI 权重必须在 (0, 1] 区间");
+            throw new IpdBusinessException("功能 KPI 权重必须在 (0, 1] 区间");
         }
         BigDecimal sharedWeight = BigDecimal.ONE.subtract(w);
         if (sharedWeight.compareTo(MIN_SHARED_WEIGHT) < 0) {
-            throw new IllegalArgumentException(
+            throw new IpdBusinessException(
                 "共担 KPI 权重不得低于 30%（当前共担=" + sharedWeight + "）");
         }
     }
@@ -111,20 +113,20 @@ public final class KpiScoreCalculator {
 
     private static void validateFourFieldWeights(List<BigDecimal> weights, List<String> fields) {
         if (weights == null || weights.size() != 4) {
-            throw new IllegalArgumentException(
+            throw new IpdBusinessException(
                 fields.get(0).substring(0, 1).toUpperCase() + " PM 功能 KPI 必须录入四项（" + fields + "）");
         }
         BigDecimal sum = BigDecimal.ZERO;
         for (BigDecimal w : weights) {
             if (w == null || w.compareTo(BigDecimal.ZERO) < 0 || w.compareTo(BigDecimal.ONE) > 0) {
-                throw new IllegalArgumentException("单项权重必须在 [0, 1] 区间");
+                throw new IpdBusinessException("单项权重必须在 [0, 1] 区间");
             }
             sum = sum.add(w);
         }
         // 四项总和应等于功能 KPI 总权重（默认 60%）；允许 ±0.01 容差避免浮点累计误差
         BigDecimal diff = sum.subtract(DEFAULT_FUNCTIONAL_WEIGHT).abs();
         if (diff.compareTo(new BigDecimal("0.01")) > 0) {
-            throw new IllegalArgumentException(
+            throw new IpdBusinessException(
                 "四项功能 KPI 总权重必须等于功能 KPI 总权重（" + DEFAULT_FUNCTIONAL_WEIGHT + "），当前=" + sum);
         }
     }
@@ -139,7 +141,7 @@ public final class KpiScoreCalculator {
      */
     public static int deviationDays(long actualLaunchDate, long plannedWindowStart, long plannedWindowEnd) {
         if (plannedWindowStart > plannedWindowEnd) {
-            throw new IllegalArgumentException("计划窗口起始不能晚于截止");
+            throw new IpdBusinessException("计划窗口起始不能晚于截止");
         }
         if (actualLaunchDate < plannedWindowStart) {
             return (int) ((plannedWindowStart - actualLaunchDate) / 86400_000L);
@@ -160,7 +162,7 @@ public final class KpiScoreCalculator {
      */
     public static BigDecimal windowHitRate(int deviationDays) {
         if (deviationDays < 0) {
-            throw new IllegalArgumentException("偏差天数不能为负");
+            throw new IpdBusinessException("偏差天数不能为负");
         }
         if (deviationDays == 0) {
             return new BigDecimal("100");
