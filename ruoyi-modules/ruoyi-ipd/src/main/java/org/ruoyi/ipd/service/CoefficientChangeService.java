@@ -20,6 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * AC-INC-15c：S/B 级系数定值 = 双PM 联合提议 → 产品组长确认 → 写入项目档案。
@@ -252,5 +253,44 @@ public class CoefficientChangeService {
             .reason(reason)
             .createTime(new Date())
             .build());
+    }
+
+    /**
+     * P1-2：按项目 ID 列系数变更单（{@code projectId=null} 返回全库，按创建时间倒序）。
+     * <p>只读事务；{@code currentPersonId} 入参预留审计追踪位（与 controller 端 actor.id() 对齐），
+     * 暂不做 IDOR 过滤（项目级查询码已限制为内部角色；projectId 维度由 controller 决定）。
+     * 与 RequirementChangeService.listByProject 同型。
+     *
+     * @param projectId      可选项目 ID 过滤
+     * @param currentPersonId 当前会话人 ID（审计追踪位）
+     * @return 系数变更单列表
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<CoefficientChangeRequest> listByProject(Long projectId, String currentPersonId) {
+        LambdaQueryWrapper<CoefficientChangeRequest> q = new LambdaQueryWrapper<>();
+        if (projectId != null) {
+            q.eq(CoefficientChangeRequest::getProjectId, projectId);
+        }
+        q.orderByDesc(CoefficientChangeRequest::getCreateTime);
+        return requestMapper.selectList(q);
+    }
+
+    /**
+     * P1-2：按 ID 取系数变更单详情；id 缺失或不存在直接 fail-fast（service 层兜底，不依赖 controller）。
+     *
+     * @param id             申请 ID
+     * @param currentPersonId 当前会话人 ID（审计追踪位）
+     * @return 单条系数变更单
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public CoefficientChangeRequest getByIdForReview(Long id, String currentPersonId) {
+        if (id == null) {
+            throw new ServiceException("系数定值申请 ID 不能为空");
+        }
+        CoefficientChangeRequest req = requestMapper.selectById(id);
+        if (req == null) {
+            throw new ServiceException("系数定值申请不存在: " + id);
+        }
+        return req;
     }
 }
