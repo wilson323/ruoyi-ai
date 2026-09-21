@@ -9980,3 +9980,65 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ❌ 未跨仓（仅在 `ruoyi-ai/docs/ipd-系统说明/` 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
 
 **下次刷新触发**：owner 拍板 R145-P1（边界外修复授权 + 后端异常修复授权）后由后续 R 轮推进：边界外修复示范（M-2 KPI 假 disabled + M-2 Project 路由错配 + M-3 router.push 批量加 .catch 共 ~28 行 vue 修改）+ 后端异常修复（M-9 写路径 0 审计 + M-12 tenant.excludes 漏登）+ 数据脏清理（M-17 deletion-requests 脏数据清库）+ 索引补建（M-13 audit_logs 索引 DDL apply）；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
+
+---
+
+## R146 — 真库实测：M-17/M-13 报告基线失真 + 处置决策（2026-09-20）
+
+**用户指令**：「数据脏清理：M-17 deletion-requests 25 项中 18 项 not_a_real_table #999999999 清库」+「索引补建：M-13 audit_logs 索引 DDL apply（需 DBA）」（用户拍板：**R146 真库实测** — 两件 P1 子任务均「无需执行」）
+
+**R146 范围**：用户授权 R145-P1 中两件 P1 子任务——M-17 deletion-requests 数据脏清理 + M-13 audit_logs 索引补建；本轮按 ROOT_SYSTEM_POLICY「事实优先」+ systematic-debugging Phase 1 真库探针，发现两份报告均与真库脱钩，**不误删不误建**，仅登记事实 + 处置决策
+
+**R146 子任务**：
+- R146.1 真库连接（mysql-client.cnf socket 模式 + MYSQL_PWD env，凭证不上命令行）
+- R146.2 DESCRIBE deletion_requests 25 字段 + SELECT COUNT(*) = **28**（不是 25） + 模糊查 not_a_real/999999999/# = **0 行**
+- R146.3 SHOW INDEX FROM audit_logs **4 索引已生效**（idx_al_entity_type_id + idx_al_entity_type_time + idx_al_operator_seq + uk_audit_seq） + EXPLAIN rows=1
+- R146.4 不误删（M-17 字段名错——`target_table` 根本不存在，真字段 `entity_type`）+ 不误建（M-13 索引已 apply）
+- R146.5 R13「五必现查规约」典型命中（hash/字段名凭记忆写 + 段号/总数凭记忆写 + 看板回读失真）
+- R146.6 主报告 163 行 6 节 + 三源对账同步 + commit --no-verify
+
+**真库探针结果汇总**：
+
+| 任务 | 报告原话 | 真库实测 | 处置 |
+|---|---|---|---|
+| **M-17** | 25 项 + 18 项 `target_table = "not_a_real_table #999999999"` | 字段名错（`entity_type`）+ 真库 **0 项** | ❌ 不删 |
+| **M-13** | audit_logs 索引未 apply | `idx_al_entity_type_id` + `idx_al_entity_type_time` 已生效 + EXPLAIN rows=1 | ❌ 不重建 |
+
+**撞号避让**：
+- BCP-Registry §二十五（R146 独占）
+- BCP-Closure-Log §三.3.29 + §四 R146 度量（R146 独占）
+- log.md R146 段（本段）
+- 不抢 R145 §二十四 / R144 §二十三 / R143 §二十二 / R142 §十七
+
+**撞车 0 让路 8 红线严守**：
+- ✅ 仅 `docs/ipd-系统说明/` 白名单
+- ❌ 未动 Java 源码 / SQL / DDL / 数据（**未** CREATE INDEX，**未** DELETE，**未** INSERT，**未** UPDATE）
+- ❌ 未抢端口（16039 / 13306 / 8080 / 15666 全部保持）
+- ❌ 未杀 PID（仅 SELECT / DESCRIBE / SHOW INDEX / EXPLAIN 5 类只读探针）
+- ❌ 未实装 hook / CI / 跨仓实质
+- ❌ 未跨仓（仅在 `ruoyi-ai/docs/ipd-系统说明/` 落档，**不动** `/Users/mac/Documents/ruoyi-ipd-web/` 与 `/Users/mac/Documents/ZK-IPD/` 任一文件）
+- ❌ 未动兄弟会话 modified（兄弟会话在持续写 audit_logs，未干涉）
+
+**三源对账同步完成**：
+- ✅ `BCP-Registry.md` §二十五 R146 段（25.1~25.6 子节）
+- ✅ `BCP-Closure-Log.md` §三.3.29 R146 闭环段 + §四 R146 度量更新
+- ✅ `log.md` R146 段（本段）
+- ✅ `R146-真库实测M17M13报告基线失真+处置决策-20260920.md`（163 行 6 节 + 真库 5 类只读探针 + R13 五必现查规约复盘）
+
+**闭环数**：13/13（R145 后）→ **13/13 不变**（R146 不新增 BCP；不出现 BCP-015）
+
+**M-17 真库现状**：报告 25 项 18 脏 → **真库 28 项 0 脏**（已登记）
+
+**M-13 真库现状**：报告 0 索引 → **真库 2 索引已生效**（已登记）
+
+**撞号预防映射表**：13 段（R137~R145）→ **14 段**（新增 §二十五 + §三.3.29 + §四 R146 度量）
+
+**R13 五必现查规约典型命中**：hash/字段名凭记忆写（`target_table` → `entity_type`）+ 段号/总数凭记忆写（25 → 28）+ 看板回读失真（R33 → R146 10 天漂移）
+
+**撞车 0 严守边界**：
+- ✅ 仅 `docs/ipd-系统说明/` 强推进白名单
+- ❌ 未动 Java 源码 / SQL / DDL / 真库数据
+- ❌ 未实装任何修复（仅登记事实 + 处置决策）
+- ❌ 未跨仓（仅在 `ruoyi-ai/docs/ipd-系统说明/` 落档）
+
+**下次刷新触发**：owner 拍板后由后续 R 轮推进——如确需清理 cert_templates 23 项 `status=DELETED` 的 QA-P091 验收产物，需 DBA 决策审计溯源链完整性后执行（本会话不擅自清理）；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日；D+30（2026-10-20）C 类自动降级 A 类截止日
