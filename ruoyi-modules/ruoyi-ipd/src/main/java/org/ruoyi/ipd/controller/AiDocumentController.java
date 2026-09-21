@@ -86,6 +86,22 @@ public class AiDocumentController {
     }
 
     /**
+     * P1-3：按项目 ID 列 AI 文档（页14 项目详情-文档与交付物列表区）。
+     * 权限码沿用 OPERATION_AI_DOCUMENT（ipd:ai-document:list，READ_SET 全员可见，对齐 versions/history/diff）。
+     * 仅返回各链 HEAD 行（每个 projectId × docType 一行），按 create_time DESC 排序，
+     * 与 versions/history 的全链视图错位：此处只挂"哪个文档有哪些版本链"，版本链深度由 versions 端点承担。
+     *
+     * @param projectId 项目 ID（必填；与 versions/history/diff 同源读码，内部四角色全员可读）
+     * @return 项目下 AI 文档链头列表
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping
+    public ApiV1Response<List<AiDocument>> listByProject(@RequestParam Long projectId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiDocumentService.listByProject(projectId, String.valueOf(actor.id())));
+    }
+
+    /**
      * 完整版本链 v1..vN（AC-AI-06：无一缺失；链断裂按 409 报出）。
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
