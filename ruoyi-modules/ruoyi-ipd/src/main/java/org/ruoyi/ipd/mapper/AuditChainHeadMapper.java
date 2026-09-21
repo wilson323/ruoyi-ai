@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -11,6 +12,7 @@ import org.ruoyi.ipd.domain.AuditChainHead;
  * <p>注解 SQL + FOR UPDATE 风格对齐 ProjectStageMapper 先例；锁定读仅需 SELECT 权限
  * （chain_heads 表级已授 SELECT,UPDATE，Q6 REVOKE 后库级仅剩 SELECT,INSERT 不构成阻碍）。
  */
+@Mapper
 public interface AuditChainHeadMapper extends BaseMapperPlus<AuditChainHead, AuditChainHead> {
 
     /**

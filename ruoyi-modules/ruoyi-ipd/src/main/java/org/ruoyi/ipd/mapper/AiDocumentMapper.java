@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
@@ -15,6 +16,7 @@ import java.util.List;
  * 经 service 内受控 lambdaUpdate），不提供 updateById(entity) 业务调用通道，
  * 防止并发覆盖历史版本。
  */
+@Mapper
 public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument> {
 
     /**

@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.AiDocEmbedding;
 
@@ -8,5 +9,6 @@ import org.ruoyi.ipd.domain.AiDocEmbedding;
  * 写通道纪律：doc 级重导向量化 = 先 delete(doc_id) 再 insert（{@code AiDocEmbeddingService}
  * 受控），切片行不支持业务 update；检索读按 (project_id, embed_model) 走 idx_emb_project。
  */
+@Mapper
 public interface AiDocEmbeddingMapper extends BaseMapperPlus<AiDocEmbedding, AiDocEmbedding> {
 }

@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.BonusAllocation;
 
@@ -8,5 +9,6 @@ import org.ruoyi.ipd.domain.BonusAllocation;
  *
  * <p>distribute 落台账批量写入口；注解 SQL 风格对齐 BonusPoolMapper（不依赖 XML）。
  */
+@Mapper
 public interface BonusAllocationMapper extends BaseMapperPlus<BonusAllocation, BonusAllocation> {
 }
