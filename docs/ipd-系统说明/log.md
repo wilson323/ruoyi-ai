@@ -10345,3 +10345,94 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ✅ 撞号避让段号现查 → §二十七 27.7-27.9 已被 R148b 占用，本报告用 §二十八 + R148.1 后缀避让
 
 **下次刷新触发**：owner 拍板 13 项后由 R149 启动 5 批 worktree 实施（5-7 worktree-day）
+
+## R149 — docs-only 13 项业务规则缺口实装决策包 + 3 项 docs-only 注解（2026-09-20）
+
+**撞号避让**：本段追加在兄弟 R148.1 段之后。兄弟 R148.1 是「业务规则 7 条真缺口实施路径细化 + D 路兜底 6 条真业务规则缺口登记」；本段是「R149 docs 决策包 + 3 项 docs-only 注解」。两议题互不重叠，按 R25 软化「撞号让路 8 红线」用 R149 docs 段号避让，兄弟议题原样保留不覆盖删除。
+
+**任务背景**：用户指令「R149 docs 实施智能体」= 在 `/tmp/wt-r149-docs` worktree（git branch `fix/r149-docs`）下做 3 项 docs-only 修复 + 1 项决策包落档 + 三源对账。撞车 0 让路 8 红线严守：仅 docs/ 白名单；不动 Java / SQL / yml / 真库 / 进程 / 端口 / PID。
+
+**承接**：R148（业务规则 7 条真缺口拍板包 + 7 条过度设计丢弃清单，commit `4010be6c`）+ R148b（报告基线失真机制化根除，commit `0c013674`）+ R148.1（业务规则 7 条真缺口实施路径细化 + D 路兜底 6 条真缺口登记，commit `e9333e4b`）+ DOC-01 §3.1-§3.2（奖金公式与档位）+ 业务决策确认 18 项。
+
+**5 项任务**：
+
+| 任务 | 状态 | 文件 |
+|---|---|---|
+| 任务 1（C2 CLOSED 字面失真注解）| ✅ 完成 | `docs/ipd-系统说明/工程合同/业务决策确认-20260905.md` |
+| 任务 2（C5 奖金档位描述对齐注解）| ✅ 完成 | `docs/ipd-系统说明/工程合同/DOC-01.md §3.2` |
+| 任务 3（C6 个人奖金公式语义对齐注解）| ✅ 完成 | `docs/ipd-系统说明/工程合同/DOC-01.md §3.1` + `业务决策确认-20260905.md` |
+| 任务 4（R149 决策包落档）| ✅ 完成 | `docs/ipd-系统说明/R149-13项业务规则缺口实装决策包-20260920.md`（176 行 10 节）|
+| 任务 5（三源对账）| ✅ 完成 | BCP-Registry.md §二十九 + BCP-Closure-Log.md §三.3.33 + §四 R149 度量 + 本段 |
+
+**13 项决策表（缺口 / 现在 / 实装方式 / 工作量）**：
+
+| # | 缺口 | 现在 | 实装方式 | 工作量 |
+|---|---|---|---|---|
+| **A1** | 奖金池 ACTUAL_SALES 窗口 | BonusPoolService.java:589 硬编码注释「上市后连续 6 个月」 | ④ 上市后 6 个月 | ≤1 hr |
+| **A2** | KPI 8 项功能指标量表 | KpiScoreCalculator 2 个 compute 方法 | ② P1+P2 分期 | P1 ≤4 hr / P2 ≤6 hr |
+| **A3** | NPS K03 有效样本 | NPS_MIN_SAMPLE=30 硬编码 | ① 30 份即通过 + system_configs | 0.5 hr |
+| **A4** | 场景覆盖 K04 | K04 source 硬编码「SALES_ACCEPTANCE」 | ① 销售报备+交付验收双认定 | 6~8 hr |
+| **A5** | 审批人按节点配置 | R148 描述「approval_node_config 表（待建）」**失真** | 🚨 **② 复用 ipd_business_config GROUP scope** | 4~5 hr（**节省 ≥8 hr**）|
+| **B1** | 法定节假日日历 | Workdays.add() 只排除周末 | ② system_configs 新增 calendar.holidays | 1.0 hr |
+| **B2** | BR-ORG-06 角色范围硬过滤 | ProjectController.list 全员可见 | ② 后端硬过滤（复用 SEC-02）| 1.75 hr |
+| **C1** | 决策 #4 90 日回款 25% 预警线 | 代码无「90 日回款预警」入口 | ② 加预警端点 + 比例可配置 | 2 hr |
+| **C2** | 决策 #13 CLOSED 字面失真 | RequirementStateMachine 仍用 CLOSED 作终态 | ① **接受代码现状（仅 docs）** | 仅 docs |
+| **C3** | 决策 #14 永久清除入口 | 无 hardDelete/purgeData 入口 | ② 加超管 hardDelete 端点 | 3 hr |
+| **C4** | 决策 #3 连续两次 P0 未升级 | 无「连续 P0」计数机制 | ② 加 P0 计数 + 升级双方组长 | 2 hr |
+| **C5** | BR-INC-06 七档 vs 六档字面 | 代码硬编码 7 元素（含 TOP_COEFFICIENT）| ① **接受代码现状（仅 docs）** | 仅 docs |
+| **C6** | BR-INC-08 个人奖金公式语义 | 文档每人独立 f_market/f_rd；代码奖金池级 | ① **接受代码现状（仅 docs）** | 仅 docs |
+
+**合计工程实现 ~25 hr ≈ 4-5 worktree-day**（不含 A2 P2 = ~32.75 hr 含 P2 ≈ 5-6 worktree-day）+ 3 项 docs-only 注解
+
+**5 路 subagent 分工**：
+
+| 路 | 范围 | 子报告 |
+|---|---|---|
+| **A** | A1 + A2 实施细节 | `/tmp/r148-subagent-A-bonus-kpi-20260920.md`（388 行） |
+| **B** | A3 + A4 + A5 实施细节 | `/tmp/r148-subagent-B-nps-scene-approval-20260920.md`（434 行） |
+| **C** | B1 + B2 实施细节 | `/tmp/r148-subagent-C-holiday-brgorg-20260920.md`（644 行） |
+| **D** | R148 漏项兜底扫描 | `/tmp/r148-subagent-D-missed-rules-scan-20260920.md`（302 行） |
+| **R149 docs** | 3 项 docs-only 注解 + R149 决策包 | 本段 + 主报告 176 行 |
+
+**A5 重大优化说明（节省 ≥8 hr）**：
+
+| 维度 | 原 R148 路径 | R148.1 优化路径 | 节省 |
+|---|---|---|---|
+| 表 | 新建 approval_node_config | **复用 ipd_business_config（已存在 13 行 GLOBAL）** | DDL 0 |
+| 字段 | 全新设计 scope 字段 | **复用现成 scope 字段** | 0 |
+| 数据 | 从 0 开始 | 13 行示例可参考 | ~3 hr |
+| Service | 新建 ApprovalNodeConfigService | **复用 SystemConfigService（已存在）** | ~1 hr |
+| Controller | 新建 ApprovalNodeConfigController | **复用 SystemConfigController（已存在）** | ~1 hr |
+| 前端 CRUD | 新建页面 | **复用 IpdAdminConfig + 增 GROUP scope filter** | ~3 hr |
+| **节省合计** | — | — | **≥8 hr** |
+
+**D 路兜底 6 条真缺口全部纳入**：C1 决策 #4 90 日回款 / C2 决策 #13 CLOSED 字面失真（**仅 docs 已落档**）/ C3 决策 #14 永久清除入口 / C4 决策 #3 连续 P0 计数 / C5 BR-INC-06 七档 vs 六档（**仅 docs 已落档**）/ C6 BR-INC-08 个人奖金公式（**仅 docs 已落档**）。
+
+**5 条部分覆盖/失真（C7-C11）也已登记**：C7 决策 #1 G2 33 项要素清单（seed 验证 1 hr）/ C8 决策 #1 P10 同一未完成原因不复拦 / C9 决策 #6 主导方缺位升级（与 A5 合并）/ C10 决策 #14 引用检查（与 C3 合并）/ C11 决策 #18 原稿对账表（仅 docs）。
+
+**工作量精算**：R148 七条工程实现（A1 1 + A2 10 + A3 0.5 + A4 7 + A5 4.5 + B1 1 + B2 1.75）+ D 路 4 条（C1 2 + C3 3 + C4 2）+ 3 项注解 docs-only = 工程 ~25 hr + 3 docs-only ≈ 4-5 worktree-day（含 P2 ~32.75 hr ≈ 5-6 worktree-day）
+
+**撞号避让**：✅ §二十九 + §三.3.33 + §四 R149 度量 + log.md R149 段均不抢段号
+
+**撞号段累计**：17 段 → **18 段**（新增 §二十九 + §三.3.33 + §四 R149 度量）
+
+**撞车 0 让路 8 红线严守**：
+
+- ✅ 仅 docs/ 白名单
+- ✅ 0 Java 改动
+- ✅ 0 SQL/DDL 改动
+- ✅ 0 真库 INSERT/UPDATE/DELETE
+- ✅ 0 端口 / 0 杀 PID
+- ✅ 0 实装 hook
+- ✅ 0 跨仓
+- ✅ 13 项均「**建议**」未「拍板」（R149 docs 不擅自决策）
+
+**R13 五必现查规约命中**：
+
+- ✅ hash / 路径 / 模块存不存在凭记忆写 → 全部 fresh 探针（BonusPoolService / DOC-01 §3.1-§3.2 / 业务决策确认 18 项）
+- ✅ 段号 / 现状凭记忆写 → §二十六~§二十八 + §三.3.17~3.32 均现查 BCP-Registry 确认
+- ✅ 业务决策原文现查 → 18 项业务决策 + DOC-01 §3.1-§3.2 全部原文摘录
+- ✅ 过度设计识别 → C2/C5/C6 仅 docs（接受代码现状）；其他 7 条工程实现拍板选项明确
+- ✅ 撞号避让段号现查 → §二十八 已被 R148.1 占用，本段用 §二十九 + R149 docs 后缀避让
+
+**下次刷新触发**：owner 拍板 13 项后由 R150 启动 5 批 worktree 实施（4-5 worktree-day）；D+7（2026-09-27）B 类 6 项自动 sign-off 触发；D+14（2026-10-04）C 类最大破坏重审触发日
