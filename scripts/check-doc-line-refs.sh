@@ -45,7 +45,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-echo "[check_doc_line_refs] scope=$SCOPE strict=$STRICT snapshot_exempt=$SNAPSHOT_EXEMPT"
+echo "[check-doc-line-refs] scope=$SCOPE strict=$STRICT snapshot_exempt=$SNAPSHOT_EXEMPT"
 
 # Sentinel 1: scan path integrity
 case "$SCOPE" in

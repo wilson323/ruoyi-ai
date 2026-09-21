@@ -11,7 +11,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$REPO_ROOT" || exit 2
 
-echo "[check_ddl_idempotent]"
+echo "[check-ddl-idempotent]"
 
 # Sentinel: scan path integrity
 SQL_FILES=$(find docs/script/sql/update -name "*.sql" -not -path "*/.claude/worktrees/*" 2>/dev/null)

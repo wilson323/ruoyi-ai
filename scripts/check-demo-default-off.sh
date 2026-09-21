@@ -19,7 +19,7 @@ done
 
 cd "$REPO_ROOT" || exit 2
 
-echo "[check_demo_default_off] strict=$STRICT"
+echo "[check-demo-default-off] strict=$STRICT"
 
 # Sentinel: scan path integrity
 APP_FILES=$(find ruoyi-admin/src/main/resources ruoyi-extend -name "application*.yml" \
