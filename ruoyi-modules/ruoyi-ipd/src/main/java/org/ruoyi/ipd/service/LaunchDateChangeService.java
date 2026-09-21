@@ -20,6 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -327,5 +328,42 @@ public class LaunchDateChangeService {
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action(action).entityType("launch_date_change_requests")
             .entityId(entityId).reason(reason).createTime(new Date()).build());
+    }
+
+    /**
+     * P1-2：按项目 ID 列上市日期变更单（{@code projectId=null} 返回全库，按创建时间倒序）。
+     * 只读事务；{@code currentPersonId} 入参预留审计追踪位。
+     *
+     * @param projectId      可选项目 ID 过滤
+     * @param currentPersonId 当前会话人 ID（审计追踪位）
+     * @return 上市日期变更单列表
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public List<LaunchDateChangeRequest> listByProject(Long projectId, String currentPersonId) {
+        LambdaQueryWrapper<LaunchDateChangeRequest> q = new LambdaQueryWrapper<>();
+        if (projectId != null) {
+            q.eq(LaunchDateChangeRequest::getProjectId, projectId);
+        }
+        q.orderByDesc(LaunchDateChangeRequest::getCreateTime);
+        return requestMapper.selectList(q);
+    }
+
+    /**
+     * P1-2：按 ID 取上市日期变更单详情；id 缺失或不存在直接 fail-fast。
+     *
+     * @param id             申请 ID
+     * @param currentPersonId 当前会话人 ID（审计追踪位）
+     * @return 单条上市日期变更单
+     */
+    @Transactional(readOnly = true, rollbackFor = Exception.class)
+    public LaunchDateChangeRequest getByIdForReview(Long id, String currentPersonId) {
+        if (id == null) {
+            throw new ServiceException("上市日期变更申请 ID 不能为空");
+        }
+        LaunchDateChangeRequest req = requestMapper.selectById(id);
+        if (req == null) {
+            throw new ServiceException("上市日期变更申请不存在: " + id);
+        }
+        return req;
     }
 }

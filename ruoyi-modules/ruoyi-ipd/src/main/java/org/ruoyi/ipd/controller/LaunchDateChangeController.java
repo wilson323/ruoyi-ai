@@ -14,6 +14,7 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.LaunchDateChangeService;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,11 +25,16 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 上市日期双签 API（AC-INC-33 / P1-2.2）。
  * Round 8 / R8-P0-11：proposedLaunchDate 用 LocalDate + @JsonFormat 避免 Date 反序列化踩坑，
  *                  Controller 层转 java.util.Date 传给 Service（Service 签名保留 Date，最小化改动面）。
+ *
+ * <p>P1-2：补 2 个只读 GET 端点（按项目列表 + 按 ID 详情）—— 前端 {@code changes.vue}
+ * Tab2「上市日期变更」原本挂着 {@code backend-pending} 占位，本轮接上后即可展示本项目全部
+ * 上市日期变更单（pending_second / confirmed / rejected 全状态可查）。
  */
 @RestController
 @RequestMapping("/api/v1/launch-date-change-requests")
@@ -75,6 +81,36 @@ public class LaunchDateChangeController {
         // R8X-2 P0-1：传 actor.groupId 给 Service 做横向越权防护
         return ApiV1Response.ok(launchDateChangeService.secondDecision(
             id, actor.id(), actor.role(), actor.groupId(), approve, opinion));
+    }
+
+    /**
+     * P1-2：本项目上市日期变更单列表（按 {@code projectId} 过滤；缺省返回全量，按创建时间倒序）。
+     * 权限口径与 CoefficientChangeController.listByProject 对齐，使用项目级普通查询码。
+     *
+     * @param projectId 可选；缺省返回全库
+     * @return 项目下上市日期变更单列表
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping
+    public ApiV1Response<List<LaunchDateChangeRequest>> listByProject(
+        @RequestParam(required = false) Long projectId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(launchDateChangeService.listByProject(
+            projectId, String.valueOf(actor.id())));
+    }
+
+    /**
+     * P1-2：按 ID 取上市日期变更单详情。权限码沿用项目级查询码。
+     *
+     * @param id 申请 ID
+     * @return 单条上市日期变更单
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/{id}")
+    public ApiV1Response<LaunchDateChangeRequest> getById(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(launchDateChangeService.getByIdForReview(
+            id, String.valueOf(actor.id())));
     }
 
     /** 提议入参。Round 8：proposedLaunchDate 改 LocalDate + @JsonFormat("yyyy-MM-dd") 解决 Date 反序列化不一致。
