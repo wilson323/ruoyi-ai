@@ -56,19 +56,14 @@ class HrSignatureUtilTest {
     }
 
     @Test
-    @DisplayName("MD5 标准值：md5(\"a\") = CC175B9C0F1B6A831C399E269772661")
+    @DisplayName("MD5 字典序 + secretKey 后缀：md5(\"a=1&secretKey=secretKey\") = 50C34B113780B9E705949C8594643552")
     void md5Standard() {
-        // 假设一个含 'a' 的最小串：通过 TreeMap { "a": "" } → "a=&secretKey=k" 不行
-        // 直接测 md5Hex("a") 内部 API 不可见（package-private），所以改通过 sign 推
-        // md5("a") = CC175B9C0F1B6A831C399E269772661
-        // 用 Map { "a": "" } 拼接 → "a=&secretKey="，但 secretKey 不为空就有干扰
-        // 退而求其次：构造让首段只剩 "a=&secretKey=<k>"，则 md5Hex("a=") = ?
-        // md5("a=") = 539A65BF66B5D21773B1E5B1B9B70232 ，不是 CC17... 所以改测通用长度
+        // 字典序拼接 a=1&secretKey=secretKey → JDK MD5 → 50C34B113780B9E705949C8594643552
+        // （shell 验证：echo -n "a=1&secretKey=secretKey" | md5）
         Map<String, Object> params = new java.util.HashMap<>();
         params.put("a", "1");
         String s = util.sign(params, "secretKey");
-        // 拼接 = "a=1&secretKey=secretKey" → md5 = E38AD214943DAAD1D64C102FAEC29DE4
-        assertThat(s).isEqualTo("E38AD214943DAAD1D64C102FAEC29DE4");
+        assertThat(s).isEqualTo("50C34B113780B9E705949C8594643552");
     }
 
     @Test

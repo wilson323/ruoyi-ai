@@ -23,32 +23,34 @@
 --           产品组↔HR 部门映射由 HrOrgMappingService 维护（不在本 DDL）。
 --
 -- 主键: BIGINT 雪花（与 persons 主键策略一致，MyBatis-Plus ASSIGN_ID）
--- 唯一键: (orgeh, begda, endda) 复合 —— HR 同组织允许多次有效段
+-- 唯一键: (orgeh) 单列 —— 一份组织一个现行记录（同 org 多版由 is_current+有效段标识）
 DROP TABLE IF EXISTS `hr_organizations`;
 CREATE TABLE `hr_organizations` (
   `id`                bigint        NOT NULL                COMMENT '主键（雪花）',
   `orgeh`             varchar(64)   COLLATE utf8mb4_general_ci NOT NULL COMMENT 'HR 组织编码（业务键）',
   `stext`             varchar(255)  COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '组织全称',
   `short_name`        varchar(128)  COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '组织简称',
-  `orgeh_pup`         varchar(64)   COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '上级组织编码（根节点为空字符串）',
+  `parent_orgeh`      varchar(64)   COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '上级组织编码（根节点为空字符串）',
   `zbmcj`             varchar(8)    COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '层级 1=总部 N=末级',
-  `begda`             date          NOT NULL                COMMENT '有效起 yyyy-MM-dd',
-  `endda`             date          NOT NULL DEFAULT '2099-12-31' COMMENT '有效止 yyyy-MM-dd（HR 默认 2099-12-31）',
+  `begda`             varchar(10)   COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '有效起 yyyy-MM-dd（HR 原始字符串）',
+  `endda`             varchar(10)   COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '有效止 yyyy-MM-dd（HR 原始字符串）',
   `bmfzr`             varchar(64)   COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '部门负责人 PERNR（软引用 persons.employee_no）',
-  `del_flag`          char(1)       COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT 'HR 失效 X=失效',
+  `hr_del_flag`       varchar(8)    COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'HR 失效 X=失效',
   `expiration_flag`   varchar(8)    COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'HR 失效细分（备用）',
-  `last_synced_at`    datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最近同步时间（HR→本地）',
+  `last_sync_at`      datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最近同步时间（HR→本地）',
+  `trigger_by`        varchar(64)   COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '同步触发者 CRON_DAILY/MANUAL_xxx/INITIAL_seed',
   `tenant_id`         varchar(20)   COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept`       bigint        DEFAULT NULL            COMMENT '创建部门',
   `create_by`         bigint        DEFAULT NULL            COMMENT '创建人',
   `create_time`       datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by`         bigint        DEFAULT NULL            COMMENT '更新人',
   `update_time`       datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag`          char(1)       COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_hr_org_orgeh_begda_endda` (`orgeh`, `begda`, `endda`),
-  KEY `idx_hr_org_orgeh_pup` (`orgeh_pup`),
+  UNIQUE KEY `uk_hr_org_orgeh` (`orgeh`),
+  KEY `idx_hr_org_parent_orgeh` (`parent_orgeh`),
   KEY `idx_hr_org_bmfzr` (`bmfzr`),
-  KEY `idx_hr_org_last_synced` (`last_synced_at`)
+  KEY `idx_hr_org_last_sync_at` (`last_sync_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='HR 组织树（HR 真源，与 product_groups 弱关联，不双轨）';
 
 
@@ -71,8 +73,8 @@ CREATE TABLE `hr_organizations` (
 
 -- ──────────────────────── 验收脚本（owner apply 后跑） ────────────────────────
 -- 1) SELECT COUNT(*) AS cnt FROM hr_organizations;          -- 期望 ≥ 0
--- 2) SHOW INDEX FROM hr_organizations WHERE Key_name='uk_hr_org_orgeh_begda_endda';
---    -- 期望 1 行（HR 同一组织允许多次有效段）
+-- 2) SHOW INDEX FROM hr_organizations WHERE Key_name='uk_hr_org_orgeh';
+--    -- 期望 1 行（HR 组织编码唯一；同 org 多版由 begda/endda 区分，不进 DDL 唯一约束）
 -- 3) SHOW CREATE TABLE hr_organizations\G
 --    -- 期望 CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci（与 persons 对齐）
 -- 4) 不期望出现表：hr_sync_runs / hr_person_profiles / hr_person_mirror（避免冗余）

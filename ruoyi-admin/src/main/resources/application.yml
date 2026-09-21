@@ -251,13 +251,11 @@ ipd:
       destination-prefix: /topic/notifications/
       # 用户离线时是否落库（与 InApp 一致）：true=入 INBOX 兜底
       offline-fallback-to-inbox: true
-  # HR 真源配置（FA-HR-Sync·2026-09-21 R149；对接 信息集成平台接口文档-EHR.docx）
-  # 本 Properties 只配真源 HTTP 调用参数；调度策略（cron/fullOnStartup）由 FA-HR-Sync-v1-D3
-  # 在主协调会话引入 ipd.hr.sync.* 子段（避免本 Properties 与调度职责混）。
+  # HR 真源配置（FA-HR-Sync·2026-09-21 R149-v1；对接 信息集成平台接口文档-EHR.docx ）
   # 真凭据（appId/secretKey/baseUrl）一律走 .codex/ipd-dev/config/application-ipd-local.yml
   # 本仓不落任何字面量（sensitive-field-guard hook 会阻断）。
   hr:
-    enabled: ${IPD_HR_ENABLED:false}                  # 默认关闭（prod 必须显式开）
+    enabled: ${IPD_HR_ENABLED:false}                  # 默认关闭（prod 必须显式 开）
     app-id: ${IPD_HR_APP_ID:}
     secret-key: ${IPD_HR_SECRET_KEY:}
     base-url: ${IPD_HR_BASE_URL:}
@@ -265,6 +263,13 @@ ipd:
       connect-timeout-ms: ${IPD_HR_CONNECT_TIMEOUT_MS:5000}
       read-timeout-ms: ${IPD_HR_READ_TIMEOUT_MS:30000}
       retry-count: ${IPD_HR_RETRY_COUNT:2}
+    # 调度策略（R149-v1 D1.5/D3）；错峰 02:00（与既有 09:00/09:05 不冲突）
+    # cron 为空 ⇒ HrSyncJob 不装配（不空跑）
+    sync:
+      enabled: ${IPD_HR_SYNC_ENABLED:true}
+      cron: ${IPD_HR_SYNC_CRON:0 0 2 * * ?}
+      timeout-ms: ${IPD_HR_SYNC_TIMEOUT_MS:600000}
+      scope: ${IPD_HR_SYNC_SCOPE:ALL}        # ALL=全量 / INCREMENTAL=仅 NEW（R149-v1 仅 ALL 实现）
 
 # security配置
 security:
@@ -366,6 +371,8 @@ tenant:
     - notification_events
     # P2-2.3 落库（2026-09-09）：人员同步任务台账——单企业私有部署，无多租户语义
     - person_sync_jobs
+    # R149-v1（2026-09-21）：HR 真源公司组织树——全公司范围数据，与 product_groups 业务语义不同
+    - hr_organizations
     # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
     # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
     # switching_acceptance 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错

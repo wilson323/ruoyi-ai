@@ -1,7 +1,8 @@
 package org.ruoyi.ipd.hr;
 
-import cn.hutool.json.JSONUtil;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,11 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class HrApiClient {
+
+    /** HR 文档为大写驼峰（PERNR/BASIC_INFO/ORGEH），反序列化为 camelCase POJO。 */
+    /** HR POJO 字段已加 @JsonProperty 显式标注 HR 文档字段名；策略默认即可。 */
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final HrSyncProperties props;
     private final HrSignatureUtil signatureUtil;
@@ -85,11 +91,12 @@ public class HrApiClient {
         List<T> result = new ArrayList<>();
         if (bodyArray == null || bodyArray.isMissingNode() || bodyArray.isNull()) return result;
         if (!bodyArray.isArray()) {
-            throw new HrApiException(-1, "HR 响应 BODY 非数组", bodyArray.toString());
+            throw new HrApiException(HrApiException.PERMANENT, "-1",
+                "HR 响应 BODY 非数组", bodyArray.toString());
         }
         for (JsonNode node : bodyArray) {
             try {
-                result.add(JSONUtil.toBean(node.toString(), klass));
+                result.add(MAPPER.treeToValue(node, klass));
             } catch (Exception e) {
                 log.warn("ipd_hr_row_parse_skip err={} node={}",
                     e.getMessage(),

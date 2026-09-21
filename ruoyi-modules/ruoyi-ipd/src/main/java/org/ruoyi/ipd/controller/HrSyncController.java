@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.hr.HrSyncJob;
+import org.ruoyi.ipd.hr.RealHrSyncAdapter;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AuditLogService;
@@ -16,16 +18,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * HR 同步事件接入端点（P2-2.2；AC-AUTH-06/AC-HAND-01）。
+ * HR 同步事件接入端点（P2-2.2；AC-AUTH-06/AC-HAND-01）+ HR 真源同步端点（R149-v1）。
  *
  * <p>端点：
  * <ul>
  *   <li>{@code POST /api/v1/hr-sync/mark-resigned} HR 系统上报离职 → 联动冻结 + 撤销会话 + 企微解绑 + 通知</li>
  *   <li>{@code POST /api/v1/hr-sync/escalate-stale-resignations} 管理员手动触发 15 日倒计时升级</li>
  *   <li>{@code GET /api/v1/hr-sync/pending-handovers} 列出当前所有 FROZEN_PENDING_HANDOVER 人员</li>
+ *   <li>{@code POST /api/v1/hr-sync/sync-now} 管理员手动触发 HR 真源全量同步（R149-v1 D4）</li>
+ *   <li>{@code POST /api/v1/hr-sync/sync-one} 管理员按工号触发单人同步</li>
+ *   <li>{@code GET /api/v1/hr-sync/last-run} 上一次同步结果（看板 / 管理员视图）</li>
  * </ul>
  *
- * <p>权限：mark-resigned + escalate 限 SUPER_ADMIN；pending-handovers 限 GROUP_LEADER + SUPER_ADMIN。
+ * <p>权限：mark-resigned / escalate / sync-now / sync-one / last-run 限 SUPER_ADMIN；
+ * pending-handovers 限 GROUP_LEADER + SUPER_ADMIN。
  */
 @RestController
 @RequestMapping("/api/v1/hr-sync")
@@ -35,6 +41,8 @@ public class HrSyncController {
     private final HrSyncService hrSyncService;
     private final IpdPermission permission;
     private final AuditLogService auditLogService;
+    private final HrSyncJob hrSyncJob;
+    private final RealHrSyncAdapter realHrSyncAdapter;
 
     public record MarkResignedRequest(@NotNull Long personId, @NotBlank String reason) { }
 
@@ -57,6 +65,31 @@ public class HrSyncController {
     }
 
     public record EscalateResponse(int escalated, int thresholdDays) { }
+
+    /** R149-v1 D4：sync-one 入参（按工号单人同步）。 */
+    public record SyncOneRequest(@NotBlank String employeeNo) { }
+
+    /** R149-v1 D4：sync-now/sync-one 出参。 */
+    public record SyncStatsResponse(int personsFetched, int personsUpserted, int personsSkipped,
+                                    int failures, int orgsFetched, int orgsUpserted, long costMs) {
+        public static SyncStatsResponse from(RealHrSyncAdapter.SyncStats s) {
+            return new SyncStatsResponse(s.personsFetched(), s.personsUpserted(),
+                s.personsSkipped(), s.failures(), s.orgsFetched(), s.orgsUpserted(), s.costMs());
+        }
+    }
+
+    /** R149-v1 D4：last-run 出参（nullable 各字段）。 */
+    public record LastRunResponse(long startedAt, long finishedAt, long costMs,
+                                  String triggerBy, boolean ok, SyncStatsResponse stats,
+                                  String errorMessage) {
+        public static LastRunResponse from(HrSyncJob.LastRun r) {
+            if (r == null) return null;
+            return new LastRunResponse(r.startedAt(), r.finishedAt(), r.costMs(),
+                r.triggerBy(), r.isOk(),
+                r.stats() == null ? null : SyncStatsResponse.from(r.stats()),
+                r.errorMessage());
+        }
+    }
 
     /**
      * HR 系统上报离职 → PersonService.resign 完整联动链路（AC-AUTH-06）。
@@ -106,5 +139,44 @@ public class HrSyncController {
             .entityId(entityId)
             .reason(reason)
             .build());
+    }
+
+    /**
+     * R149-v1 D4：管理员手动触发 HR 真源全量同步（异步执行，秒级响应返回 last-run 占位）。
+     *
+     * <p>权限：SUPER_ADMIN。生产由 cron 每日 02:00 自动跑；本端点是 admin 应急入口（HR 紧急
+     * 增删人后立刻触发，避免等到次日凌晨 02:00）。
+     */
+    @PostMapping("/sync-now")
+    public ApiV1Response<SyncStatsResponse> syncNow() {
+        IpdActor operator = permission.requireAdmin();
+        String triggerBy = "MANUAL:" + operator.id();
+        HrSyncJob.LastRun lr = hrSyncJob.runOnce(triggerBy);
+        audit(operator, "hr_sync_now", null, triggerBy);
+        if (!lr.isOk()) {
+            return ApiV1Response.ok(new SyncStatsResponse(0, 0, 0, 1, 0, 0, lr.costMs()));
+        }
+        return ApiV1Response.ok(SyncStatsResponse.from(lr.stats()));
+    }
+
+    /**
+     * R149-v1 D4：管理员按工号触发单人同步（HR 紧急给某人开账号 / 关账号用）。
+     */
+    @PostMapping("/sync-one")
+    public ApiV1Response<SyncStatsResponse> syncOne(@Valid @RequestBody SyncOneRequest req) {
+        IpdActor operator = permission.requireAdmin();
+        String triggerBy = "MANUAL_ONE:" + operator.id() + ":" + req.employeeNo();
+        RealHrSyncAdapter.SyncStats stats = realHrSyncAdapter.syncOne(req.employeeNo(), triggerBy);
+        audit(operator, "hr_sync_one", null, triggerBy);
+        return ApiV1Response.ok(SyncStatsResponse.from(stats));
+    }
+
+    /**
+     * R149-v1 D4：上一次 HR 同步结果（看板 / 管理员视图）。
+     */
+    @GetMapping("/last-run")
+    public ApiV1Response<LastRunResponse> lastRun() {
+        permission.requireAdmin();
+        return ApiV1Response.ok(LastRunResponse.from(hrSyncJob.lastResult()));
     }
 }

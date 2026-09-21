@@ -37,10 +37,34 @@ public class HrSyncProperties {
     /** HTTP 客户端参数。 */
     private Http http = new Http();
 
+    /**
+     * HR 真源调度策略（R149-v1 D1.5）。{@code cron} 留空 ⇒ 由 Spring 跳过 @Scheduled 注解应用，
+     * 避免 hr.enabled=false 时仍空跑调度入口。
+     */
+    private Sync sync = new Sync();
+
     @Data
     public static class Http {
         private int connectTimeoutMs = 5000;
         private int readTimeoutMs = 30000;
         private int retryCount = 2;
+    }
+
+    /**
+     * HR 真源定时同步配置（默认每日凌晨 02:00；与既有 09:00/09:05 错峰）。
+     * <ul>
+     *   <li>{@code enabled}：全局闸门；ipd.hr.enabled=false ⇒ 本 cron 不装配（防错位）</li>
+     *   <li>{@code cron}：Spring cron 6 字段表达式；空串 ⇒ 不启用 @Scheduled</li>
+     *   <li>{@code timeoutMs}：单次同步全链路超时（含 HTTP + DB 写入），超时即放弃本次</li>
+     *   <li>{@code scope}：ALL（拿全公司人员 + 组织） / INCREMENTAL（仅 NEW = 当日变更）</li>
+     * </ul>
+     */
+    @Data
+    public static class Sync {
+        private boolean enabled = true;
+        private String cron = "0 0 2 * * ?";
+        private long timeoutMs = 600_000L;
+        /** ALL（默认）= 全量；INCREMENTAL = 仅 NEW。 */
+        private String scope = "ALL";
     }
 }

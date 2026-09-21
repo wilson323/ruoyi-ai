@@ -2,6 +2,8 @@ package org.ruoyi.ipd.hr;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -56,7 +58,7 @@ class HrApiClientTest {
         assertThat(rows).hasSize(1);
         HrResponse.PersonRow row = rows.get(0);
         assertThat(row.pernr).isEqualTo("00000017");
-        assertThat(row.basicInfo.orgEh).isEqualTo("10000342"); // snake→camel 转换后字段名
+        assertThat(row.basicInfo.orgeh).isEqualTo("10000342"); // HR BasicInfo.orgeh 字段（部门编码）
         assertThat(row.basicInfo.stat2).isEqualTo("3");
         assertThat(row.basicInfo.positionname).isEqualTo("M5总经理");
     }
@@ -94,10 +96,15 @@ class HrApiClientTest {
         assertThat(inc.body.get(0).begda).isEqualTo("20260921");
     }
 
-    private <T> List<T> parse(JsonNode array, Class<T> klass) {
+    private <T> List<T> parse(JsonNode array, Class<T> klass) throws Exception {
+        // HR 文档字段为大写驼峰（PERNR/BASIC_INFO/ORGEH），Hutool toBean 默认不转小写
+        // 改用 Jackson + PropertyNamingStrategies.UPPER_CAMEL_CASE 解析
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.UPPER_CAMEL_CASE);
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         java.util.List<T> out = new java.util.ArrayList<>();
         for (JsonNode node : array) {
-            out.add(cn.hutool.json.JSONUtil.toBean(node.toString(), klass));
+            out.add(mapper.treeToValue(node, klass));
         }
         return out;
     }
