@@ -10244,3 +10244,104 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - hash / 端口字段 / 段号 / 看板回读 / 跨仓 cd 五类必现查 + **新增第 6 类「报告 vs 现态」门禁化**
 
 **下次刷新触发**：R 报告新增/修改后必跑 `scripts/check-report-baseline-drift.sh`；D+30（2026-10-20）fixture 关键字核对 + 扩 fixture；R149 fresh 探针 R33 报告中其他真实异常（cert_templates 23 项 / M-18 业务未交付 5 端点等）
+
+---
+
+## R148.1 — 业务规则 7 条真缺口并行细化子报告 + 6 条 R148 漏项登记（2026-09-20）
+
+**撞号避让**：本段追加在兄弟 R148b 段之后。兄弟 R148b 是「报告基线失真机制化根除」；本段是「业务规则 7 条真缺口实施路径细化 + D 路兜底 6 条真业务规则缺口登记」。两议题互不重叠，按 R25 软化「撞号让路 8 红线」用 R148.1 子报告后缀避让，兄弟议题原样保留不覆盖删除。
+
+**任务背景**：用户指令「基于以上充分利用多个专业智能体并行执行」= 派 4 路 subagent 并行扫描 R148 拍板包 7 条真缺口的实施路径 + 兜底扫描 R148 漏掉的业务规则模糊点。
+
+**承接**：R148（业务规则 7 条真缺口拍板包 + 7 条过度设计丢弃清单，commit `4010be6c`）+ R148b（报告基线失真机制化根除，commit `0c013674`）+ R139（功能真活度盘点 75%）+ DOC-01（奖金公式 20001 阶梯复算 PASS）+ 业务决策确认 18 项 + 开发说明书 §5 BR 系列 + 开发说明书 §10.2 权限矩阵 + spec/_导航地图.md §四。
+
+**4 路 subagent 并行扫描**（全部 CodeReview 只读探针，撞车 0 严守）：
+
+| 路 | 范围 | 子报告路径 | 关键发现 |
+|---|---|---|---|
+| **A** | A1 奖金池 ACTUAL_SALES 窗口 + A2 KPI 8 项功能指标量表 | `/tmp/r148-subagent-A-bonus-kpi-20260920.md`（388 行）| A1 是「配置孤儿」（27 个 bonus/kpi 配置键中 24 个未被代码读取，窗口 6 月硬编码于 BonusPoolService.java:589 注释）；A2 是「8 项 7 个无 compute 方法」+ kpi_records 表 2 行（SHARED，无 FUNCTIONAL）|
+| **B** | A3 NPS K03 + A4 场景 K04 + A5 审批人按节点配置 | `/tmp/r148-subagent-B-nps-scene-approval-20260920.md`（434 行）| 🚨 **A5 重大优化**：`ipd_business_config` 表已存在（13 行 GLOBAL scope 示例）+ scope 字段已设计 GLOBAL/GROUP/PROJECT 三档——R148 描述「approval_node_config 表（待建）」实际可降级为「在 ipd_business_config 启用 GROUP scope」——**节省 ≥8 hr** |
+| **C** | B1 法定节假日日历 + B2 BR-ORG-06 角色范围硬过滤 | `/tmp/r148-subagent-C-holiday-brgorg-20260920.md`（644 行）| B1 需新增 system_configs calendar.holidays 配置项 + Workdays.add() 扩展法定节假日（仅影响 3 处「工作日」窗口：删除 2+2 + 游客 5）；B2 复用 SEC-02 canReadProject + projects.main_group_id 已存在（无 DDL）|
+| **D** | R148 漏掉的业务规则模糊点穷尽性扫描 | `/tmp/r148-subagent-D-missed-rules-scan-20260920.md`（302 行）| **R148 完全漏掉 6 条真业务规则缺口（C1-C6）** + 5 条失真/部分覆盖（C7-C11）；R148 完整性评估 B+ 级 |
+
+**🚨 A5 重大优化**：R148 描述「approval_node_config 表（待建）」是 R148 fresh 探针不足产生的失真。实际 `ipd_business_config` 表已存在且 scope 字段已支持 GLOBAL/GROUP/PROJECT 三档——R149 实施 A5 时直接复用现表启用 GROUP scope 即可，节省 ≥8 hr（原新建表+UI 36+ hr 路径废止）。
+
+**🚨 D 路兜底扫描结果（R148 完全漏掉的 6 条真业务规则缺口）**：
+
+| # | 规则名 | 性质 | 工作量 |
+|---|---|---|---|
+| **C1** | 决策 #4 90 日回款 25% 预警线 | 真缺口（决策明文要求，代码无实现）| 2 hr worktree |
+| **C2** | 决策 #13 CLOSED 字面失真 | 失真（RequirementStateMachine.java 仍用 CLOSED 作终态）| 仅 docs |
+| **C3** | 决策 #14 永久清除入口缺失 | 真缺口（无 hardDelete/purgeData）| 3 hr worktree |
+| **C4** | 决策 #3 连续两次 P0 未升级 | 真缺口（无 P0 计数机制）| 2 hr worktree |
+| **C5** | BR-INC-06 七档 vs 六档 | 失真（代码硬编码 7 元素，DOC-01 §3.2 字面 6 档）| 1 hr / 仅 docs |
+| **C6** | BR-INC-08 个人奖金公式语义 | 失真（文档每人独立 f_market，代码奖金池级 personalCoefficient）| 2 hr worktree |
+
+**D 路 5 条部分覆盖/失真（C7-C11）**：C7 决策 #1 G2 33 项要素清单（seed 验证）/ C8 决策 #1 P10 同一未完成原因不复拦 / C9 决策 #6 主导方缺位升级（与 A5 合并）/ C10 决策 #14 引用检查（与 C3 合并）/ C11 决策 #18 原稿对账表（BR vs ZK 系统性对账缺失）。
+
+**R148.1 关键推荐**（与 R148 对比）：
+
+| 待办 | R148 推荐 | R148.1 细化推荐 | 差异 |
+|---|---|---|---|
+| A1 | ④ 上市后 6 个月 | **④ 上市后 6 个月**（≤1 hr）| 同 |
+| A2 | ② 逐项业务给规则后落地 | **② P1+P2 分期**（P1 ≤4 hr 立即可上线 + P2 ≤6 hr 等 owner 业务规则）| 新增分期建议 |
+| A3 | ① 不区分渠道 | **① 30 份即通过**（0.5 hr）| 同 |
+| A4 | ① 双认定 | **① 销售报备+交付验收双认定**（6~8 hr）| 同 |
+| A5 | ② 组长后台 | **② ipd_business_config GROUP scope（重大优化）**（4~5 hr）| 🚨 节省 ≥8 hr |
+| B1 | ② 加配置项 | **② 实现日历配置项**（1.0 hr）| 同 |
+| B2 | ② 后端硬过滤 | **② 后端硬过滤（复用 SEC-02 canReadProject）**（1.75 hr）| 复用现成实现 |
+
+**R148.1 综合工作量精算**：
+
+- R148 七条工程实现：A1 1 + A2 P1 4 + A2 P2 6 + A3 0.5 + A4 6-8 + A5 4-5 + B1 1 + B2 1.75 = 24.25-28.25 hr
+- D 路新增六条工程实现：C1 2 + C3 3 + C4 2 + C6 2 = 9 hr
+- D 路新增五条（C2/C5/C11 docs-only + C7 seed 1 hr + C9/C10 合并）= 3 项 docs + 1 hr seed
+- **工程实现合计：33.25~37.25 hr ≈ 5-7 worktree-day**
+- **需 owner 拍板 13 项**
+
+**R149 启动建议**（按依赖关系分 5 批）：
+
+- 第 1 批（独立可立即启动）：R149-A1 ≤1 hr / R149-A3 0.5 hr / R149-B1 1.0 hr
+- 第 2 批（依赖 DDL）：R149-A2-P1 ≤4 hr / R149-A4 6~8 hr
+- 第 3 批（依赖 A2 P1）：R149-A2-P2 ≤6 hr
+- 第 4 批（依赖前端联调）：R149-A5 4~5 hr / R149-B2 1.75 hr
+- 第 5 批（D 路治理）：R149-C1/C3/C4/C6 工程实现 9 hr / R149-C2/C5/C11 docs-only / R149-C7 seed 1 hr
+
+**互锁关系关键结论**：
+
+- **A1 ④ + A2 K01**：完全对齐（同一 actualReceipts 聚合期 6 个月）
+- **A5 ② + 决策 #5/#6**：完全对齐（GROUP scope 启用 + 主导方提前确定）
+- **B1 + BR-INC 6 月 / Gate 90 日 / KPI 30 日**：✅ 全部不互锁（calendar day 计数）
+- **B2 + IpdIdorGuard.assertSameGroupIpd**：✅ 协同（写路径已保护，B2 补读路径组成完整 SEC-02 防护链）
+
+**fresh 探针记录**：
+
+- A 路：BonusPoolService 1248 行 / KpiScoreCalculator 175 行 / system_configs 27 条 bonus/kpi 配置键 / kpi_records 表 2 行
+- B 路：14 条 mysql 命令只读 + 7 个 .java 文件 Read / `ipd_business_config` 13 行 + scope 字段验证 / `SharedKpiCollectReq` DTO 字段枚举 / KpiSharedCollectionService.java:101 `NPS_MIN_SAMPLE=30` 硬编码 / K04 source `SALES_ACCEPTANCE` 硬编码
+- C 路：system_configs 55 行 0 条 holiday / Workdays.add() 15-27 行只排除周末 / ProjectController.java:65-70 / IpdPermission.canReadProject 已存在 / projects.main_group_id 字段已存在 / project_members exit_date 字段已存在
+- D 路：业务决策 18 项逐项核对 / DOC-01 U01-U05 全部确认 / BR 系列 80 条扫描 47 个唯一编号引用 / 5 处 @deprecated 业务规则相关 / 1 处 TODO / 44 处 IpdBusinessException
+
+**撞车 0 让路 8 红线严守**：
+
+- ✅ 仅 docs/ + /tmp/ 子报告落档
+- ✅ 0 Java 改动（仅 Read 15+ 个 .java 文件）
+- ✅ 0 SQL/DDL 改动（仅 SELECT COUNT / DESCRIBE / SHOW TABLES / SHOW COLUMNS 只读）
+- ✅ 0 真库 INSERT/UPDATE/DELETE
+- ✅ 0 端口 / 0 杀 PID
+- ✅ 0 实装 hook
+- ✅ 0 跨仓（仅 ruoyi-ai/ + ruoyi-ipd-web/apps/web-antd/ 只读）
+- ✅ 13 项均「**建议**」未「拍板」
+
+**撞号避让**：✅ §二十八 + §三.3.32 + §四 R148.1 度量 + log.md R148.1 段均不抢段号
+
+**撞号段累计**：16 段 → **17 段**（新增 §二十八 + §三.3.32 + §四 R148.1 度量）
+
+**R13 五必现查规约命中**：
+
+- ✅ hash / 路径 / 模块存不存在凭记忆写 → 4 路全部 fresh 探针（system_configs / ipd_business_config / projects / project_members / kpi_records 等）
+- ✅ 段号 / 现状凭记忆写 → R148/R148b 段号均现查 BCP-Registry 确认
+- ✅ 业务决策原文现查 → 18 项业务决策 + DOC-01 §3-§6 + 开发说明书 §5/§10.2 + spec §四 全部原文摘录
+- ✅ 过度设计识别 → B1 ③ / B2 ① / A3 ② / A4 ③ / A5 ③ 全部明确列为过度设计或现状对齐
+- ✅ 撞号避让段号现查 → §二十七 27.7-27.9 已被 R148b 占用，本报告用 §二十八 + R148.1 后缀避让
+
+**下次刷新触发**：owner 拍板 13 项后由 R149 启动 5 批 worktree 实施（5-7 worktree-day）
