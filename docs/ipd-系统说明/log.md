@@ -11101,3 +11101,40 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ⏸ 浏览器实测 P0-1/2/3/4/5/6 闭环
 - ⏸ R170 13 项 6 项 owner 拍板
 
+---
+
+## 2026-09-22 R177 全量真实业务落地闭环启动（接管会话）
+
+**背景**：用户授权启动 R177 计划（`docs/superpowers/plans/2026-09-22-r177-全量真实业务落地闭环.md`），用 6 路并行 subagent 把 R175-A 真活验证未决项 + R27 17P0 未实测项全量跑完真实业务落地闭环，每个 P0 都要 HTTP + DB 回读 + 浏览器截图三证齐发。
+
+### 环境快照（fresh 实证 · 2026-09-22 22:10 PDT）
+| 项 | 值 |
+|---|---|
+| 后端 HEAD | `e5793809`（= origin/main，含 R176 本会话 R27 17P0 对账 + 兄弟 fc99646c + 兄弟 a2684ccd 镜像修复 + 兄弟 e28930ab R175-A 报告） |
+| 前端 HEAD | `707a2c5`（R175-A 评审要素 9 按钮接入，已推 origin） |
+| 后端服务 | **活**（java PID 70725 @ 127.0.0.1:16039，HTTP 200） |
+| 前端服务 | **活**（node PID 85166 @ 127.0.0.1:15666，HTTP 200） |
+| 真库 | **活**（mysqld PID 93301 @ 127.0.0.1:13306/ipd_dev，socket 模式） |
+| 看板 | **活**（com.docke PID 28346 @ 127.0.0.1:62250） |
+| 登录端点 | `POST /api/v1/auth/login` 返回 `code:0` + JWT token（username=ipd-admin/password=Ipd@123456） |
+| gate_review_elements 总行数 | **77 行**（old_pub=76 + new_pub=76 待迁移 + old_en=33 待 R177-A3 迁移） |
+
+### 6 路 Agent 并行分工
+- **A1** UI 实测：R27 P0-1/2/3/4 用 chrome-devtools MCP 三证齐发
+- **A2** 状态机：R27 P0-5 负反馈 5 函数 + P0-6 Workbench 2 函数 TDD 红→绿→浏览器
+- **A3** normalize 修复：前端兼容老格式 status/enabled + 33 条 PUBLISHED/Y 老数据迁移
+- **A4** 造数据：DRAFT 5 条 + ARCHIVED 3 条真活造数据 + 36 决策点全覆盖
+- **A5** button-policy 推广：7 个 admin 模块复制 gate-elements 模式
+- **A6** Gate 详情页 button-policy + typecheck 21 错误收口（禁 `as any`）
+
+### 撞号必接严守（R25 软化三步法）
+- ✅ 兄弟会话 `fc99646c` + `a2684ccd` + `e28930ab` + `70477349` 已入库，本会话接管
+- ✅ 主工作树 dirty：3 文件（R177 计划 A + 兄弟 AiModelConfigService M + 兄弟 P421AcceptanceTest M），精确 stage 仅 R177 计划 + log.md，**不动兄弟 2 个 Java 文件**
+- ✅ 6 个 subagent 隔离 worktree：`/private/tmp/r177-a1-ui` / `r177-a2-sm` / `r177-a3-norm` / `r177-a4-data` / `r177-a5-spread` / `r177-a6-type`
+- ✅ 写库操作（A2/A3/A4）需 owner 显式授权
+- ✅ push origin 严格按 AGENTS.md「未经 owner 明确授权不推」
+
+### 启动 commit 计划
+- 仅 stage `docs/superpowers/plans/2026-09-22-r177-全量真实业务落地闭环.md`（已 A）+ `docs/ipd-系统说明/log.md`（本次追加 R177 启动段）
+- 不捎带兄弟 2 个 Java 修改
+
