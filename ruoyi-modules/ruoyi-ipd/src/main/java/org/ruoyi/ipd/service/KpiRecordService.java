@@ -202,9 +202,9 @@ public class KpiRecordService {
     }
 
     // ============================================================
-    //  P2 七项功能指标 compute 包装方法（A2 R149 §A2 拍板：等 owner 业务规则）
-    //  - 对应 KpiScoreCalculator 七项静态方法，统一 try-catch 转 IpdBusinessException
-    //  - 业务规则（公式/阈值/默认分）由业务 owner 拍板后替换默认实现
+    //  P2 七项功能指标 compute 包装方法（R167 默认值公式落地版）
+    //  - 对应 KpiScoreCalculator 七项静态方法（含重载）
+    //  - 业务规则（公式/阈值/默认分）按 R167 §三 默认值实装，owner 拍板后可调常量
     // ============================================================
 
     /**
@@ -220,6 +220,8 @@ public class KpiRecordService {
 
     /**
      * AC-KPI-P2-SCENE：场景竞争力得分（MKT_SCENARIO_COMPETITIVENESS）。
+     * <p>默认便捷重载：传入 (matched, planned) 自动映射到 5 维评分。
+     * 需传入 5 维评分的精准控制版本调 {@link KpiScoreCalculator#scenarioCompetitiveness(BigDecimal[])}。
      */
     public BigDecimal computeScenarioCompetitiveness(Long matchedScenarios, Long plannedScenarios) {
         try {
@@ -230,11 +232,34 @@ public class KpiRecordService {
     }
 
     /**
+     * AC-KPI-P2-SCENE 精准控制版：接收 5 维评分（市场规模/竞争烈度/差异化/可落地/可衡量）。
+     */
+    public BigDecimal computeScenarioCompetitiveness(BigDecimal[] dimensionScores) {
+        try {
+            return KpiScoreCalculator.scenarioCompetitiveness(dimensionScores);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
      * AC-KPI-P2-COMPETITOR：竞品情报得分（MKT_COMPETITOR_INTELLIGENCE）。
+     * <p>默认便捷重载：传入 (intel, planned) 自动映射到 5 维评分。
      */
     public BigDecimal computeCompetitorIntelligence(Long intelCount, Long plannedCount) {
         try {
             return KpiScoreCalculator.competitorIntelligence(intelCount, plannedCount);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-COMPETITOR 精准控制版：接收 5 维评分（产品/价格/渠道/促销/技术）。
+     */
+    public BigDecimal computeCompetitorIntelligence(BigDecimal[] dimensionScores) {
+        try {
+            return KpiScoreCalculator.competitorIntelligence(dimensionScores);
         } catch (IllegalArgumentException e) {
             throw new IpdBusinessException(e.getMessage());
         }
@@ -253,10 +278,22 @@ public class KpiRecordService {
 
     /**
      * AC-KPI-P2-DEFECT：质量缺陷率得分（RD_QUALITY_DEFECT_RATE）。
+     * <p>便捷重载：所有缺陷按轻微(系数 1) 计算。
      */
     public BigDecimal computeQualityDefectRate(Long defectCount, Long totalUnits) {
         try {
             return KpiScoreCalculator.qualityDefectRate(defectCount, totalUnits);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-DEFECT 精准控制版：按严重/一般/轻微三级分别计数。
+     */
+    public BigDecimal computeQualityDefectRate(Long criticalCount, Long majorCount, Long minorCount, Long totalUnits) {
+        try {
+            return KpiScoreCalculator.qualityDefectRate(criticalCount, majorCount, minorCount, totalUnits);
         } catch (IllegalArgumentException e) {
             throw new IpdBusinessException(e.getMessage());
         }
@@ -275,10 +312,22 @@ public class KpiRecordService {
 
     /**
      * AC-KPI-P2-FPY：一次性实现率得分（RD_FIRST_PASS_YIELD）。
+     * <p>便捷重载：默认 reworkCount = 0。
      */
     public BigDecimal computeFirstPassYield(Long firstPassCount, Long totalCycles) {
         try {
             return KpiScoreCalculator.firstPassYield(firstPassCount, totalCycles);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-FPY 精准控制版：传入重工次数。
+     */
+    public BigDecimal computeFirstPassYield(Long firstPassCount, Long totalCycles, Long reworkCount) {
+        try {
+            return KpiScoreCalculator.firstPassYield(firstPassCount, totalCycles, reworkCount);
         } catch (IllegalArgumentException e) {
             throw new IpdBusinessException(e.getMessage());
         }

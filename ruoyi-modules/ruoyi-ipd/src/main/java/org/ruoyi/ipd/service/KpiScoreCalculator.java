@@ -54,6 +54,46 @@ public final class KpiScoreCalculator {
     /** 每超过 1 天扣 1 分（窗口命中率 0~100） */
     public static final BigDecimal WINDOW_HIT_PENALTY_PER_DAY = BigDecimal.ONE;
 
+    // ============================================================
+    //  P2 七项功能指标业务规则常量（R167 默认值建议落地）
+    //  - 业务 owner 拍板后可调整；当前为工程安全默认（标 R167-DEFAULT）
+    // ============================================================
+
+    /** 需求准确率 PPM 目标值（R167 §3.1 默认值 85） */
+    public static final BigDecimal REQ_ACCURACY_PPM_TARGET = new BigDecimal("85");
+
+    /** 场景竞争力评分维度数（R167 §3.3 等权 5 维） */
+    public static final int SCENARIO_COMPETE_DIMENSION_COUNT = 5;
+
+    /** 单维评分最大值（场景竞争力 5 维，每维 0~20 = 100 总） */
+    public static final BigDecimal SCENARIO_COMPETE_DIMENSION_MAX = new BigDecimal("20");
+
+    /** 竞品情报评分维度数（R167 §3.4 等权 5 维） */
+    public static final int COMPETITOR_INTEL_DIMENSION_COUNT = 5;
+
+    /** 单维评分最大值（竞品情报 5 维，每维 0~20） */
+    public static final BigDecimal COMPETITOR_INTEL_DIMENSION_MAX = new BigDecimal("20");
+
+    /** 上市准时率偏差容忍（天，R167 §3.5 与 windowHitRate 同口径 30 天） */
+    public static final int LAUNCH_ON_TIME_TOLERANCE_DAYS = 30;
+
+    /** 上市准时率每偏差 1 天扣 1 分（R167 §3.5） */
+    public static final BigDecimal LAUNCH_ON_TIME_PENALTY_PER_DAY = BigDecimal.ONE;
+
+    /** 质量缺陷率严重度系数（R167 §3.6 严重/一般/轻微 = 3/2/1） */
+    public static final BigDecimal DEFECT_SEVERITY_CRITICAL = new BigDecimal("3");
+    public static final BigDecimal DEFECT_SEVERITY_MAJOR = new BigDecimal("2");
+    public static final BigDecimal DEFECT_SEVERITY_MINOR = BigDecimal.ONE;
+
+    /** 技术创新度上限封顶 100 分 */
+    public static final BigDecimal TECH_INNOVATION_SCORE_CAP = new BigDecimal("100");
+
+    /** 一次性实现率每重工 1 次扣 5 分（R167 §3.8） */
+    public static final BigDecimal FPY_REWORK_PENALTY = new BigDecimal("5");
+
+    /** 安全 BigDecimal 比较容差（避免浮点累计误差） */
+    private static final BigDecimal SCORE_COMPARE_TOLERANCE = new BigDecimal("0.01");
+
     private KpiScoreCalculator() {}
 
     /**
@@ -175,25 +215,20 @@ public final class KpiScoreCalculator {
     }
 
     // ============================================================
-    //  P2 七项功能指标 compute 方法（A2 R149 §A2 拍板：等 owner 业务规则）
-    //  - 现状：方法签名稳定 + 默认占位（返回 0）+ TODO 业务规则拍板点
-    //  - 业务规则（公式/阈值/默认分）由业务 owner 拍板后由 R166 子任务替换默认实现
-    //  - 接口契约不依赖业务规则：null/empty 输入校验、返回值类型、scale 统一
-    //  - 拍板记录：docs/ipd-系统说明/R166-kpi2b-p2-7compute-实装-20260921.md
+    //  P2 七项功能指标 compute 方法（R167 默认值建议落地版）
+    //  - 公式按 docs/ipd-系统说明/R167-W2-KPI2B-P2-七项业务规则拍板请求包-20260921.md §三
+    //  - 业务 owner 拍板后可调整（PPM 目标 / 阈值分段 / 严重度系数 等）
+    //  - 现版本：重载保留二元入参调用 + 重载方法接收入参维度（5 维评分 / 严重度计数 / 重工次数）
     // ============================================================
-
-    /** 默认占位分（业务 owner 未拍板前的安全默认值 = 0） */
-    private static final BigDecimal P2_PLACEHOLDER_SCORE = BigDecimal.ZERO;
 
     /**
      * AC-KPI-P2-REQ：需求准确率得分（MKT_REQUIREMENT_ACCURACY）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：分子/分母取值范围、阈值分段（≥X=100 / ≥Y=80 / ≥Z=60 / <Z=0）、
-     * 量表版本配套、PPM 目标值、返工率分母。
+     * <p>R167 §3.1 公式：返工率 = (1 − accurateCount/totalCount) × 100；
+     * score = max(0, 100 − 返工率/PPM × 100)；PPM 目标默认 85。
      *
      * @param accurateCount 需求确认通过数（≥ 0，null 视为 0）
-     * @param totalCount    需求总数（> 0，null/0 抛 IpdBusinessException）
+     * @param totalCount    需求总数（> 0）
      * @return 需求准确率得分（0~100），scale=2，HALF_UP
      */
     public static BigDecimal requirementAccuracy(Long accurateCount, Long totalCount) {
@@ -203,20 +238,57 @@ public final class KpiScoreCalculator {
         if (accurateCount != null && (accurateCount < 0 || accurateCount > totalCount)) {
             throw new IpdBusinessException("需求准确率分子必须在 [0, totalCount] 区间");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
-        return P2_PLACEHOLDER_SCORE;
+        long accurate = accurateCount == null ? 0L : accurateCount;
+        // 返工率百分比（0~100）：(1 - accurate/total) × 100
+        BigDecimal reworkRate = BigDecimal.ONE.subtract(
+                new BigDecimal(accurate).divide(new BigDecimal(totalCount), 4, RoundingMode.HALF_UP))
+            .multiply(new BigDecimal("100"));
+        // score = max(0, 100 - 返工率/PPM × 100)
+        BigDecimal penalty = reworkRate.divide(REQ_ACCURACY_PPM_TARGET, 4, RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
+        BigDecimal score = new BigDecimal("100").subtract(penalty);
+        if (score.compareTo(BigDecimal.ZERO) < 0) {
+            score = BigDecimal.ZERO;
+        }
+        return score.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
      * AC-KPI-P2-SCENE：场景竞争力得分（MKT_SCENARIO_COMPETITIVENESS）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：场景评分维度（功能匹配度/差异化优势/市场份额影响）、
-     * 加权公式、阈值分段。
+     * <p>R167 §3.3 公式：5 维评分等权（市场规模/竞争烈度/差异化/可落地/可衡量），
+     * 每维 0~20 分，总分 0~100；阈值分段：≥80 优秀 / 60-79 良好 / 40-59 一般 / <40 弱。
      *
-     * @param matchedScenarios 已匹配场景数（≥ 0）
-     * @param plannedScenarios 规划场景数（> 0）
+     * @param dimensionScores 5 维评分数组（每维 0~20，必须 5 个）
      * @return 场景竞争力得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal scenarioCompetitiveness(BigDecimal[] dimensionScores) {
+        if (dimensionScores == null || dimensionScores.length != SCENARIO_COMPETE_DIMENSION_COUNT) {
+            throw new IpdBusinessException(
+                "场景竞争力必须传入 " + SCENARIO_COMPETE_DIMENSION_COUNT + " 维评分");
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (int i = 0; i < dimensionScores.length; i++) {
+            BigDecimal s = dimensionScores[i];
+            if (s == null) {
+                throw new IpdBusinessException("场景竞争力第 " + (i + 1) + " 维评分不能为空");
+            }
+            if (s.compareTo(BigDecimal.ZERO) < 0 || s.compareTo(SCENARIO_COMPETE_DIMENSION_MAX) > 0) {
+                throw new IpdBusinessException(
+                    "场景竞争力第 " + (i + 1) + " 维评分必须在 [0, " + SCENARIO_COMPETE_DIMENSION_MAX + "] 区间");
+            }
+            sum = sum.add(s);
+        }
+        return sum.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 场景竞争力便捷重载：从 (matchedScenarios, plannedScenarios) 映射到 5 维评分。
+     * 默认每维评分 = matched/planned × 单维满分（等权5维场景适配）。
+     *
+     * @param matchedScenarios  已匹配场景数（≥ 0）
+     * @param plannedScenarios 规划场景数（> 0）
+     * @return 场景竞争力得分（0~100）
      */
     public static BigDecimal scenarioCompetitiveness(Long matchedScenarios, Long plannedScenarios) {
         if (plannedScenarios == null || plannedScenarios <= 0) {
@@ -225,20 +297,48 @@ public final class KpiScoreCalculator {
         if (matchedScenarios != null && (matchedScenarios < 0 || matchedScenarios > plannedScenarios)) {
             throw new IpdBusinessException("场景竞争力分子必须在 [0, plannedScenarios] 区间");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
-        return P2_PLACEHOLDER_SCORE;
+        long matched = matchedScenarios == null ? 0L : matchedScenarios;
+        BigDecimal ratio = new BigDecimal(matched).divide(new BigDecimal(plannedScenarios), 4, RoundingMode.HALF_UP);
+        BigDecimal perDim = ratio.multiply(SCENARIO_COMPETE_DIMENSION_MAX);
+        BigDecimal[] dims = new BigDecimal[SCENARIO_COMPETE_DIMENSION_COUNT];
+        for (int i = 0; i < SCENARIO_COMPETE_DIMENSION_COUNT; i++) {
+            dims[i] = perDim.setScale(4, RoundingMode.HALF_UP);
+        }
+        return scenarioCompetitiveness(dims);
     }
 
     /**
      * AC-KPI-P2-COMPETITOR：竞品情报得分（MKT_COMPETITOR_INTELLIGENCE）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：情报完整度（覆盖率/及时性/差异化建议数）、
-     * 加权公式、阈值分段。
+     * <p>R167 §3.4 公式：5 维评分等权（产品/价格/渠道/促销/技术），每维 0~20，
+     * 总分 0~100；阈值分段：≥80 优秀 / 60-79 良好 / 40-59 一般 / <40 弱。
      *
-     * @param intelCount 有效情报条数（≥ 0）
-     * @param plannedCount 计划情报条数（> 0）
+     * @param dimensionScores 5 维评分数组（每维 0~20，必须 5 个）
      * @return 竞品情报得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal competitorIntelligence(BigDecimal[] dimensionScores) {
+        if (dimensionScores == null || dimensionScores.length != COMPETITOR_INTEL_DIMENSION_COUNT) {
+            throw new IpdBusinessException(
+                "竞品情报必须传入 " + COMPETITOR_INTEL_DIMENSION_COUNT + " 维评分");
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (int i = 0; i < dimensionScores.length; i++) {
+            BigDecimal s = dimensionScores[i];
+            if (s == null) {
+                throw new IpdBusinessException("竞品情报第 " + (i + 1) + " 维评分不能为空");
+            }
+            if (s.compareTo(BigDecimal.ZERO) < 0 || s.compareTo(COMPETITOR_INTEL_DIMENSION_MAX) > 0) {
+                throw new IpdBusinessException(
+                    "竞品情报第 " + (i + 1) + " 维评分必须在 [0, " + COMPETITOR_INTEL_DIMENSION_MAX + "] 区间");
+            }
+            sum = sum.add(s);
+        }
+        return sum.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 竞品情报便捷重载：从 (intelCount, plannedCount) 映射到 5 维评分。
+     * 默认每维评分 = intel/planned × 单维满分。
      */
     public static BigDecimal competitorIntelligence(Long intelCount, Long plannedCount) {
         if (plannedCount == null || plannedCount <= 0) {
@@ -247,16 +347,22 @@ public final class KpiScoreCalculator {
         if (intelCount != null && (intelCount < 0 || intelCount > plannedCount)) {
             throw new IpdBusinessException("竞品情报分子必须在 [0, plannedCount] 区间");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
-        return P2_PLACEHOLDER_SCORE;
+        long intel = intelCount == null ? 0L : intelCount;
+        BigDecimal ratio = new BigDecimal(intel).divide(new BigDecimal(plannedCount), 4, RoundingMode.HALF_UP);
+        BigDecimal perDim = ratio.multiply(COMPETITOR_INTEL_DIMENSION_MAX);
+        BigDecimal[] dims = new BigDecimal[COMPETITOR_INTEL_DIMENSION_COUNT];
+        for (int i = 0; i < COMPETITOR_INTEL_DIMENSION_COUNT; i++) {
+            dims[i] = perDim.setScale(4, RoundingMode.HALF_UP);
+        }
+        return competitorIntelligence(dims);
     }
 
     /**
      * AC-KPI-P2-LAUNCH：上市准时率得分（RD_LAUNCH_ON_TIME_RATE）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：与 K01-K04 共担窗口对齐（上市后 6 个月窗口）、准时判定标准、
-     * 偏差容忍区间、阈值分段。
+     * <p>R167 §3.5 公式：偏差 = totalLaunches − onTimeLaunches（平均偏差天数），
+     * score = max(0, 100 − 偏差 × LAUNCH_ON_TIME_PENALTY_PER_DAY)；
+     * 偏差 > 30 天一律 0。与 windowHitRate 同口径。
      *
      * @param onTimeLaunches 准时上市次数（≥ 0）
      * @param totalLaunches  总上市次数（> 0）
@@ -269,39 +375,72 @@ public final class KpiScoreCalculator {
         if (onTimeLaunches != null && (onTimeLaunches < 0 || onTimeLaunches > totalLaunches)) {
             throw new IpdBusinessException("上市准时率分子必须在 [0, totalLaunches] 区间");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
-        return P2_PLACEHOLDER_SCORE;
+        long onTime = onTimeLaunches == null ? 0L : onTimeLaunches;
+        // 平均偏差天数 = (total - onTime) / total × 100 → 以“每偏差1天扣1分”为例
+        long deviationDays = totalLaunches - onTime;
+        if (deviationDays <= 0) {
+            return new BigDecimal("100").setScale(2, RoundingMode.HALF_UP);
+        }
+        if (deviationDays > LAUNCH_ON_TIME_TOLERANCE_DAYS) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal score = new BigDecimal("100").subtract(
+            new BigDecimal(deviationDays).multiply(LAUNCH_ON_TIME_PENALTY_PER_DAY));
+        if (score.compareTo(BigDecimal.ZERO) < 0) {
+            score = BigDecimal.ZERO;
+        }
+        return score.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
      * AC-KPI-P2-DEFECT：质量缺陷率得分（RD_QUALITY_DEFECT_RATE）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：缺陷严重度分级（P0/P1/P2/P3）、缺陷率阈值、
-     * 缺陷来源过滤（排除/纳入）、权重公式。
-     * <p>语义：缺陷率越低分越高（与"高 = 好"的其他 6 项反向），公式替换时须显式翻转。
+     * <p>R167 §3.6 公式：score = max(0, 100 − 缺陷率 × 严重度系数 × 100)，
+     * 严重度系数 = 严重×3 + 一般×2 + 轻微×1；缺陷率越低分越高（反向语义）。
      *
-     * @param defectCount  缺陷数（≥ 0）
-     * @param totalUnits   投产单位数（> 0）
+     * @param criticalCount 严重缺陷数（≥ 0）
+     * @param majorCount    一般缺陷数（≥ 0）
+     * @param minorCount    轻微缺陷数（≥ 0）
+     * @param totalUnits    投产单位数（> 0）
      * @return 质量缺陷率得分（0~100），scale=2，HALF_UP
      */
-    public static BigDecimal qualityDefectRate(Long defectCount, Long totalUnits) {
+    public static BigDecimal qualityDefectRate(Long criticalCount, Long majorCount, Long minorCount, Long totalUnits) {
         if (totalUnits == null || totalUnits <= 0) {
             throw new IpdBusinessException("质量缺陷率分母必须 > 0");
         }
-        if (defectCount != null && (defectCount < 0 || defectCount > totalUnits)) {
-            throw new IpdBusinessException("质量缺陷率分子必须在 [0, totalUnits] 区间");
+        long critical = criticalCount == null ? 0L : criticalCount;
+        long major = majorCount == null ? 0L : majorCount;
+        long minor = minorCount == null ? 0L : minorCount;
+        if (critical < 0 || major < 0 || minor < 0) {
+            throw new IpdBusinessException("质量缺陷率各项缺陷数不能为负");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式（注意反向语义）
-        return P2_PLACEHOLDER_SCORE;
+        // 加权缺陷总数 = critical×3 + major×2 + minor×1
+        BigDecimal weightedDefects = new BigDecimal(critical).multiply(DEFECT_SEVERITY_CRITICAL)
+            .add(new BigDecimal(major).multiply(DEFECT_SEVERITY_MAJOR))
+            .add(new BigDecimal(minor).multiply(DEFECT_SEVERITY_MINOR));
+        // 缺陷率(加权) × 100
+        BigDecimal defectRatePct = weightedDefects.divide(new BigDecimal(totalUnits), 4, RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
+        BigDecimal score = new BigDecimal("100").subtract(defectRatePct);
+        if (score.compareTo(BigDecimal.ZERO) < 0) {
+            score = BigDecimal.ZERO;
+        }
+        return score.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 质量缺陷率便捷重载：从 (defectCount, totalUnits) 按默认轻度缺陷计算（不区分严重度）。
+     * 默认所有缺陷按轻微(系数 1)计算。
+     */
+    public static BigDecimal qualityDefectRate(Long defectCount, Long totalUnits) {
+        return qualityDefectRate(0L, 0L, defectCount, totalUnits);
     }
 
     /**
      * AC-KPI-P2-INNOVATION：技术创新度得分（RD_TECH_INNOVATION）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：创新项类型（专利/标准/技术突破/架构创新）、
-     * 加权公式、阈值分段、专家评审维度。
+     * <p>R167 §3.7 公式：score = min(100, innovationPoints/targetPoints × 100)；
+     * 阈值分段：≥70 优秀 / 50-69 良好 / 30-49 一般 / <30 弱。
      *
      * @param innovationPoints 创新点加权得分（≥ 0，由评审委员会打分）
      * @param targetPoints     目标创新点得分（> 0）
@@ -314,29 +453,55 @@ public final class KpiScoreCalculator {
         if (innovationPoints != null && (innovationPoints < 0 || innovationPoints > targetPoints * 10)) {
             throw new IpdBusinessException("技术创新度分子超出合理范围（允许 ≤ targetPoints × 10）");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
-        return P2_PLACEHOLDER_SCORE;
+        long innovation = innovationPoints == null ? 0L : innovationPoints;
+        BigDecimal score = new BigDecimal(innovation)
+            .divide(new BigDecimal(targetPoints), 4, RoundingMode.HALF_UP)
+            .multiply(TECH_INNOVATION_SCORE_CAP);
+        if (score.compareTo(TECH_INNOVATION_SCORE_CAP) > 0) {
+            score = TECH_INNOVATION_SCORE_CAP;
+        }
+        return score.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
      * AC-KPI-P2-FPY：一次性实现率得分（RD_FIRST_PASS_YIELD）。
      *
-     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
-     * 业务规则 TODO @owner：FPY 判定标准（首次通过/首次提交/首次集成）、
-     * 重工扣分项、阈值分段。
+     * <p>R167 §3.8 公式：base = firstPassCount/totalCycles × 100；
+     * score = max(0, base − reworkCount × FPY_REWORK_PENALTY)；
+     * 阈值分段：≥90 优秀 / 75-89 良好 / 60-74 一般 / <60 弱。
      *
      * @param firstPassCount 一次性通过次数（≥ 0）
      * @param totalCycles     总交付周期数（> 0）
+     * @param reworkCount     重工次数（≥ 0）
      * @return 一次性实现率得分（0~100），scale=2，HALF_UP
      */
-    public static BigDecimal firstPassYield(Long firstPassCount, Long totalCycles) {
+    public static BigDecimal firstPassYield(Long firstPassCount, Long totalCycles, Long reworkCount) {
         if (totalCycles == null || totalCycles <= 0) {
             throw new IpdBusinessException("一次性实现率分母必须 > 0");
         }
         if (firstPassCount != null && (firstPassCount < 0 || firstPassCount > totalCycles)) {
             throw new IpdBusinessException("一次性实现率分子必须在 [0, totalCycles] 区间");
         }
-        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
-        return P2_PLACEHOLDER_SCORE;
+        if (reworkCount != null && reworkCount < 0) {
+            throw new IpdBusinessException("一次性实现率重工次数不能为负");
+        }
+        long firstPass = firstPassCount == null ? 0L : firstPassCount;
+        long rework = reworkCount == null ? 0L : reworkCount;
+        BigDecimal base = new BigDecimal(firstPass)
+            .divide(new BigDecimal(totalCycles), 4, RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
+        BigDecimal penalty = new BigDecimal(rework).multiply(FPY_REWORK_PENALTY);
+        BigDecimal score = base.subtract(penalty);
+        if (score.compareTo(BigDecimal.ZERO) < 0) {
+            score = BigDecimal.ZERO;
+        }
+        return score.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 一次性实现率便捷重载：从 (firstPassCount, totalCycles) 默认 reworkCount=0。
+     */
+    public static BigDecimal firstPassYield(Long firstPassCount, Long totalCycles) {
+        return firstPassYield(firstPassCount, totalCycles, 0L);
     }
 }
