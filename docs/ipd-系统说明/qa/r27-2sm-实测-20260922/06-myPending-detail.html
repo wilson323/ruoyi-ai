@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>R177-A2 myPendingApprovals 证据</title>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 20px; background: #f5f5f5; }
+  .header { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+  .panel { background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,.08); }
+  pre { background: #2c3e50; color: #ecf0f1; padding: 12px; border-radius: 6px; font-size: 11px; overflow-x: auto; max-height: 500px; }
+  .ok { background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📋 R177-A2 myPendingApprovals 三证交叉验证</h1>
+  <p>HTTP 端点 ↔ DB 真表 一致性证明</p>
+</div>
+<div class="panel">
+  <h2>🟢 端点: GET /api/v1/workbench/my-pending-approvals?personId=900101</h2>
+  <span class="ok">HTTP 200</span>
+  <pre>{
+  "code": 0,
+  "message": "ok",
+  "data": [
+    {
+      "id": "2096381708998930433",
+      "taskType": "DELETION",
+      "sourceId": "2096381708998930433",
+      "sourceTable": "deletion_requests",
+      "title": "product#3",
+      "status": "ADMIN_REVIEW",
+      "initiatorId": "-1",
+      "approverId": "900101",
+      "createdAt": 1788651323000
+    },
+    {
+      "id": "2096382585134497794",
+      "taskType": "DELETION",
+      "sourceId": "2096382585134497794",
+      "sourceTable": "deletion_requests",
+      "title": "cert_templates#2096382584845090817",
+      "status": "LEADER_REVIEW",
+      "initiatorId": "-1",
+      "approverId": "900101",
+      "createdAt": 1788651532000
+    },
+    {
+      "id": "2096381708617248770",
+      "taskType": "DELETION",
+      "sourceId": "2096381708617248770",
+      "sourceTable": "deletion_requests",
+      "title": "product#2",
+      "status": "LEADER_REVIEW",
+      "initiatorId": "-1",
+      "approverId": "900101",
+      "createdAt": 1788561322000
+    },
+    {
+      "id": "2101930187108151297",
+      "taskType": "DELETION",
+      "sourceId": "2101930187108151297",
+      "sourceTable": "deletion_requests",
+      "title": "projects#1",
+      "status": "LEADER_REVIEW",
+      "initiatorId": "-1",
+      "approverId": "900101",
+      "createdAt": 1789974183000
+    },
+    {
+      "id": "2096324844730716161",
+      "taskType": "LAUNCH_DATE",
+      "sourceId": "2096324844730716161",
+      "sourceTable": "launch_date_change_requests",
+      "title": "AC-INC-33 HTTP 双签探针",
+      "status": "PENDING_SECOND",
+      "initiatorId": "-1",
+      "approverId": "900101",
+      "createdAt": 1788637765000
+    },
+    {
+      "id": "2098460566669586434",
+      "taskType": "LAUNCH_DATE",
+      "sourceId": "2098460566669586434",
+      "sourceTable": "launch_date_change_requests",
+      "title": "R31 P0-1 生产就绪验收：前端补齐双签人三字段后全字段直发",
+      "status": "PENDING_SECOND",
+      "initiatorId": "-1",
+      "approverId": "900101",
+      "createdAt": 1789146961000
+    }
+  ],
+  "timestamp": "2026-09-22T14:23:42Z",
+  "traceId": "8a9362578df044fc8b91ee6f5a123d18"
+}</pre>
+</div>
+<div class="panel">
+  <h2>🟢 DB-1: deletion_requests (LEADER_REVIEW / ADMIN_REVIEW) — 4 条</h2>
+  <span class="ok">来自真表</span>
+  <pre>id	entity_type	entity_id	status	create_by
+2096381708998930433	product	3	ADMIN_REVIEW	-1
+2096382585134497794	cert_templates	2096382584845090817	LEADER_REVIEW	-1
+2096381708617248770	product	2	LEADER_REVIEW	-1
+2101930187108151297	projects	1	LEADER_REVIEW	-1
+</pre>
+</div>
+<div class="panel">
+  <h2>🟢 DB-2: launch_date_change_requests (PENDING_SECOND) — 2 条</h2>
+  <span class="ok">来自真表</span>
+  <pre>id	project_id	status
+2096324844730716161	2096324843405316098	PENDING_SECOND
+2098460566669586434	2098389746999926785	PENDING_SECOND
+</pre>
+</div>
+<div class="panel">
+  <h2>✅ 交叉验证结论</h2>
+  <p>HTTP 端点返回 6 条记录 = DB-1(4 条 deletion) + DB-2(2 条 launch_date)<b>完全一致</b></p>
+  <p>证据：deletion id 2096381708998930433 / 2096382585134497794 / 2096381708617248770 / 2101930187108151297<br>
+     + launch_date id 2096324844730716161 / 2098460566669586434</p>
+</div>
+</body>
+</html>

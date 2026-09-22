@@ -78,4 +78,24 @@ public interface INegativeFeedbackService {
     /** 兼容旧测试口 */
     List<NegativeFeedback> listByProject(Long projectId, String status);
 
+
+    /* ========================================================================
+     *  R27 P0-5：状态机 5 函数补全（无 actor / 无权限校验的简化口；用于 Controller 路径透传）
+     * ======================================================================== */
+
+    /** 项目维度列表（不带 actor 校验；按 create_time 倒序；projectId=null 返空列表防御性）。 */
+    List<NegativeFeedback> getByProjectId(Long projectId);
+
+    /** 简化版提交：传入 row（DRAFT）→ updateById 设 PENDING_DECISION，返 true 成功 / false 失败（非 DRAFT 或受影响行数=0）。 */
+    boolean submit(NegativeFeedback fb);
+
+    /** 按 id 更新 status 字段；affected>0 返 true。 */
+    boolean updateStatus(Long id, String status);
+
+    /** 按 id 软删除（del_flag=1）；affected>0 返 true。 */
+    boolean deleteById(Long id);
+
+    /** 按 severity 过滤列表（LOW|MEDIUM|HIGH|CRITICAL）。 */
+    List<NegativeFeedback> listBySeverity(String severity);
+
 }

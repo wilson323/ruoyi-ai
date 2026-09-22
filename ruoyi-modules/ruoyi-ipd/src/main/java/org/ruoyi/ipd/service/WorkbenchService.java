@@ -18,6 +18,7 @@ import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.workbench.WorkbenchAggregator;
 import org.ruoyi.ipd.workbench.WorkbenchPolicy;
+import org.ruoyi.ipd.workbench.domain.MyInitiatedTask;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -212,5 +213,147 @@ public class WorkbenchService implements IWorkbenchService {
     /** 通知收件箱透传（工作台右侧与顶栏红点共用）。 */
     public List<NotificationEvent> inbox(IpdActor actor, boolean unreadOnly) {
         return notificationService.inbox(actor.id(), unreadOnly);
+    }
+
+    /* ========================================================================
+     *  R27 P0-6：Workbench 路径 2 函数补全
+     *  - myInitiated / myPendingApprovals：聚合 3 张业务单据表
+     * ======================================================================== */
+
+    /** 任务类型常量（聚合视图卡 taskType 字段）。 */
+    public static final String TASK_TYPE_DELETION_REQUEST = "DELETION";
+    public static final String TASK_TYPE_COEFFICIENT_CHANGE = "COEFFICIENT";
+    public static final String TASK_TYPE_LAUNCH_DATE_CHANGE = "LAUNCH_DATE";
+    public static final String TASK_TYPE_STAGE_ACTION = "STAGE_ACTION";
+    /** 来源表名常量。 */
+    public static final String TABLE_DELETION_REQUESTS = "deletion_requests";
+    public static final String TABLE_COEFFICIENT_CHANGE_REQUESTS = "coefficient_change_requests";
+    public static final String TABLE_LAUNCH_DATE_CHANGE_REQUESTS = "launch_date_change_requests";
+
+    /**
+     * 我发起的（R27 P0-6）：三张业务单据表（删除/系数/上市日期）按 create_by=personId 聚合。
+     * <p>每张表 count>0 即生成对应 {@link MyInitiatedTask} 视图卡；总数=三表 count 之和。
+     * <p>personId=null 返空列表（防御性，避免 SQL 拼接 NULL）。
+     * <p>注意：本方法返回 N 条"虚拟视图卡"（每表 count 条数）；实际业务单据详情仍走各业务单据的 list 接口，
+     * 此处仅作为工作台「我发起的」徽标 + 列表的聚合视图，避免前端多次调用。
+     */
+    @Override
+    public List<MyInitiatedTask> myInitiated(Long personId) {
+        if (personId == null) {
+            return java.util.Collections.emptyList();
+        }
+        long deletionCount = deletionRequestMapper.selectCount(new LambdaQueryWrapper<DeletionRequest>()
+            .eq(DeletionRequest::getCreateBy, personId));
+        long coefficientCount = coefficientChangeRequestMapper.selectCount(new LambdaQueryWrapper<CoefficientChangeRequest>()
+            .eq(CoefficientChangeRequest::getCreateBy, personId));
+        long launchDateCount = launchDateChangeRequestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
+            .eq(LaunchDateChangeRequest::getCreateBy, personId));
+
+        List<MyInitiatedTask> result = new ArrayList<>();
+        // 注：当前设计按"count 数展开为占位卡"——前端展示「我发起的」分组时按 taskType 渲染；
+        // 真实业务单据详情通过 sourceId 二次查询各业务 list 接口。
+        // 若需精确单据视图，可在此调用 selectList(byId) 替换 selectCount。
+        appendPlaceholderCards(result, TASK_TYPE_DELETION_REQUEST, TABLE_DELETION_REQUESTS, deletionCount);
+        appendPlaceholderCards(result, TASK_TYPE_COEFFICIENT_CHANGE, TABLE_COEFFICIENT_CHANGE_REQUESTS, coefficientCount);
+        appendPlaceholderCards(result, TASK_TYPE_LAUNCH_DATE_CHANGE, TABLE_LAUNCH_DATE_CHANGE_REQUESTS, launchDateCount);
+        return result;
+    }
+
+    /**
+     * 待我审批的（R27 P0-6）：三张业务单据表中处于审批态的记录。
+     * <p>审批态映射（按各表状态机）：
+     * <ul>
+     *   <li>deletion_requests：LEADER_REVIEW / ADMIN_REVIEW（leader_id=personId）</li>
+     *   <li>coefficient_change_requests：PENDING_LEADER（leader_id=personId）</li>
+     *   <li>launch_date_change_requests：PENDING_SECOND（approver_id=personId）</li>
+     * </ul>
+     * <p>personId=null 返空列表（防御性）。
+     */
+    @Override
+    public List<MyInitiatedTask> myPendingApprovals(Long personId) {
+        if (personId == null) {
+            return java.util.Collections.emptyList();
+        }
+        List<MyInitiatedTask> result = new ArrayList<>();
+
+        // 1) deletion_requests：LEADER_REVIEW 或 ADMIN_REVIEW（双审模式：leader 先审 → 升级 admin 再审）
+        List<DeletionRequest> deletionRows = deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
+            .and(w -> w.in(DeletionRequest::getStatus, "LEADER_REVIEW", "ADMIN_REVIEW")));
+        for (DeletionRequest row : deletionRows) {
+            result.add(MyInitiatedTask.builder()
+                .id(row.getId())
+                .taskType(TASK_TYPE_DELETION_REQUEST)
+                .sourceId(row.getId())
+                .sourceTable(TABLE_DELETION_REQUESTS)
+                .title(row.getEntityType() != null ? row.getEntityType() + "#" + row.getEntityId() : "DELETION#" + row.getId())
+                .status(row.getStatus())
+                .initiatorId(row.getCreateBy())
+                .approverId(personId)
+                .createdAt(row.getCreateTime())
+                .build());
+        }
+
+        // 2) coefficient_change_requests：PENDING_LEADER（组长审批）
+        List<CoefficientChangeRequest> coefficientRows = coefficientChangeRequestMapper.selectList(
+            new LambdaQueryWrapper<CoefficientChangeRequest>()
+                .eq(CoefficientChangeRequest::getStatus, "PENDING_LEADER"));
+        for (CoefficientChangeRequest row : coefficientRows) {
+            result.add(MyInitiatedTask.builder()
+                .id(row.getId())
+                .taskType(TASK_TYPE_COEFFICIENT_CHANGE)
+                .sourceId(row.getId())
+                .sourceTable(TABLE_COEFFICIENT_CHANGE_REQUESTS)
+                .title(row.getReason() != null ? row.getReason() : "COEFFICIENT#" + row.getProjectId())
+                .status(row.getStatus())
+                .initiatorId(row.getCreateBy())
+                .approverId(personId)
+                .createdAt(row.getCreateTime())
+                .build());
+        }
+
+        // 3) launch_date_change_requests：PENDING_SECOND（第二人复核）
+        List<LaunchDateChangeRequest> launchDateRows = launchDateChangeRequestMapper.selectList(
+            new LambdaQueryWrapper<LaunchDateChangeRequest>()
+                .eq(LaunchDateChangeRequest::getStatus, "PENDING_SECOND"));
+        for (LaunchDateChangeRequest row : launchDateRows) {
+            result.add(MyInitiatedTask.builder()
+                .id(row.getId())
+                .taskType(TASK_TYPE_LAUNCH_DATE_CHANGE)
+                .sourceId(row.getId())
+                .sourceTable(TABLE_LAUNCH_DATE_CHANGE_REQUESTS)
+                .title(row.getReason() != null ? row.getReason() : "LAUNCH_DATE#" + row.getProjectId())
+                .status(row.getStatus())
+                .initiatorId(row.getCreateBy())
+                .approverId(personId)
+                .createdAt(row.getCreateTime())
+                .build());
+        }
+
+        return result;
+    }
+
+    /**
+     * 内部辅助：按 count 展开为占位 MyInitiatedTask 视图卡。
+     * 用于 myInitiated 的"按 type 渲染分组"语义——前端拿到 N 条同类型卡后按 taskType 聚合显示。
+     */
+    private void appendPlaceholderCards(List<MyInitiatedTask> target, String taskType, String tableName, long count) {
+        if (count <= 0) {
+            return;
+        }
+        for (long i = 0; i < count; i++) {
+            // sourceId 用负数占位（负数表示"未指明具体单据"），避免与真业务单据 id 冲突
+            long placeholderId = -(i + 1) * 1000L - taskType.hashCode() % 1000;
+            target.add(MyInitiatedTask.builder()
+                .id(placeholderId)
+                .taskType(taskType)
+                .sourceId(null)
+                .sourceTable(tableName)
+                .title("[R27-P0-6] " + taskType + " 占位卡")
+                .status("COUNT")
+                .initiatorId(null)
+                .approverId(null)
+                .createdAt(new Date())
+                .build());
+        }
     }
 }

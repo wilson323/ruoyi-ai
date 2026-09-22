@@ -8,6 +8,9 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.WorkbenchService;
+import org.ruoyi.ipd.workbench.domain.MyInitiatedTask;
+
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,5 +41,29 @@ public class WorkbenchController {
     public ApiV1Response<Map<String, Object>> summary(@RequestParam(required = false) Long projectId) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(workbenchService.summary(actor, projectId));
+    }
+
+    /**
+     * 我发起的（R27 P0-6）：聚合 3 张业务单据（删除/系数/上市日期）create_by=personId。
+     * <p>personId 缺省 = 当前登录人（从会话推导，SEC-API-01 强制）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/my-initiated")
+    public ApiV1Response<List<MyInitiatedTask>> myInitiated(@RequestParam(required = false) Long personId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        long pid = personId != null ? personId : actor.id();
+        return ApiV1Response.ok(workbenchService.myInitiated(pid));
+    }
+
+    /**
+     * 待我审批的（R27 P0-6）：聚合 3 张业务单据中处于审批态的记录。
+     * <p>personId 缺省 = 当前登录人（从会话推导，SEC-API-01 强制）。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/my-pending-approvals")
+    public ApiV1Response<List<MyInitiatedTask>> myPendingApprovals(@RequestParam(required = false) Long personId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        long pid = personId != null ? personId : actor.id();
+        return ApiV1Response.ok(workbenchService.myPendingApprovals(pid));
     }
 }
