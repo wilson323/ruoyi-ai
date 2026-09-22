@@ -29,8 +29,9 @@ UPDATE gate_review_elements SET enabled = '1' WHERE enabled = 'Y';
 UPDATE gate_review_elements SET enabled = '0' WHERE enabled = 'N';
 
 -- 4) 验证：迁移完成后预期分布
---    status=published + enabled='1' 应有 33 条（迁移前误识别为停用）
---    status=published + enabled='0' 应有 10 条（真停用，R175-A 真活验证结果）
+--    status=published + enabled='1' 应有 66 条（33 老格式 + 33 新格式）
+--    status=draft + enabled='0' 应有 1 条
+--    status=published + enabled='0'  = 真停用数（待 owner apply 后统计复核）
 SELECT status, enabled, COUNT(*) AS cnt
 FROM gate_review_elements
 GROUP BY status, enabled
