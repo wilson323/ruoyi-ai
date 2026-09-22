@@ -107,4 +107,62 @@ class GateElementServiceTest {
         assertThat(out.getEnabled()).isEqualTo("0");
         Mockito.verify(auditLogService).append(any(AuditLog.class));
     }
+
+    @Test
+    @DisplayName("创建含 vetoDualRequired + thresholdJson：草稿不直接生效")
+    void createWithVetoDualAndThreshold() {
+        when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(mapper.insert(any(GateElement.class))).thenAnswer(inv -> {
+            GateElement x = inv.getArgument(0);
+            x.setId(10L);
+            return 1;
+        });
+        GateElement patch = GateElement.builder().gateCode("G1").elementCode("G1-99")
+            .elementName("毛利率达标").isVeto("1").sortOrder(99)
+            .vetoDualRequired("1").thresholdJson("{\"minCustomerVerifications\":3}")
+            .build();
+        GateElement out = service.create(patch, ACTOR);
+        assertThat(out.getEnabled()).isEqualTo("0");
+        assertThat(out.getStatus()).isEqualTo("draft");
+        assertThat(out.getVetoDualRequired()).isEqualTo("1");
+        assertThat(out.getThresholdJson()).isEqualTo("{\"minCustomerVerifications\":3}");
+        Mockito.verify(auditLogService).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("thresholdJson 非法拒绝：必须为键非空、值均为整数的 JSON 对象")
+    void thresholdJsonInvalid() {
+        when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        GateElement patch = GateElement.builder().gateCode("G1").elementCode("G1-100")
+            .elementName("x").isVeto("0").thresholdJson("not-json").build();
+        assertThatThrownBy(() -> service.create(patch, ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("JSON");
+    }
+
+    @Test
+    @DisplayName("vetoDualRequired='1' 但 isVeto='0' 拒绝：仅否决项可双签")
+    void vetoDualRequiresIsVeto() {
+        when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        GateElement patch = GateElement.builder().gateCode("G1").elementCode("G1-101")
+            .elementName("x").isVeto("0").vetoDualRequired("1").build();
+        assertThatThrownBy(() -> service.create(patch, ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("vetoDualRequired");
+    }
+
+    @Test
+    @DisplayName("更新部分字段含 thresholdJson：仅 patch 非空字段生效")
+    void updateThresholdJson() {
+        GateElement exist = e("G1-01");
+        exist.setId(3L);
+        exist.setStatus("draft");
+        when(mapper.selectById(3L)).thenReturn(exist);
+        when(mapper.updateById(any(GateElement.class))).thenReturn(1);
+        GateElement patch = GateElement.builder()
+            .id(3L).thresholdJson("{\"minRevenue\":1000}").build();
+        GateElement out = service.update(patch, ACTOR);
+        assertThat(out.getThresholdJson()).isEqualTo("{\"minRevenue\":1000}");
+        assertThat(out.getElementName()).isEqualTo("市场吸引力");
+    }
 }
