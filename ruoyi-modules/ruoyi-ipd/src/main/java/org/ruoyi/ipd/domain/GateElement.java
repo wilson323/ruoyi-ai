@@ -46,6 +46,9 @@ public class GateElement extends BaseEntity {
     private String vetoDualRequired;
 
     /** 阈值配置 JSON 对象（键非空、值均为整数），如 {"minCustomerVerifications":3} */
+    // updateStrategy=ALWAYS：全局 NOT_NULL 会让 updateById 跳过 null 列，导致「清空 thresholdJson」
+    // （update() 空串→null）静默不落库、接口却返回已清空。ALWAYS 强制回写该列（含 null）根治数据不一致。
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String thresholdJson;
 
     /** 签署期限（BR-GATE-04 3 自然日；submit/reopen 起算，超管可延长 AC-GATE-21） */

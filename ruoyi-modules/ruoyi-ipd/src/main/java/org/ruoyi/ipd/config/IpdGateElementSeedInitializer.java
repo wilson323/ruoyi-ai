@@ -96,12 +96,13 @@ public class IpdGateElementSeedInitializer implements ApplicationRunner {
                 .elementCode(elementCode)
                 .elementName(def[2])
                 .passStandard(def[3])
-                .isVeto(def[4])
+                .isVeto("Y".equals(def[4]) ? "1" : "0")
                 .sortOrder(Integer.parseInt(def[5]))
-                .enabled("Y")
-                .status("PUBLISHED")
-                .version(0)
-                .vetoDualRequired("N")
+                .enabled("1")
+                .status("published")
+                .version(1)
+                .vetoDualRequired("0")
+                .thresholdJson(null)
                 .build();
             gateElementMapper.insert(e);
             inserted++;
