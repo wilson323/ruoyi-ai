@@ -22,6 +22,7 @@ set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:16039}"
 MYSQL_CNF="${MYSQL_CNF:-/private/tmp/r172-takeover/.codex/ipd-dev/config/mysql-client.cnf}"
+WORKTREE="${WORKTREE:-/private/tmp/r172-takeover}"
 PID_FILE="/tmp/ruoyi-admin.pid"
 DRILL_DIR="/tmp/drill-$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$DRILL_DIR/drill.log"
@@ -71,12 +72,15 @@ mkdir -p "$DRILL_DIR"
 log "INFO" "Drill start: scenarios=${SCENARIOS[*]}, dangerous=$DANGEROUS, dry_run=$DRY_RUN"
 log "INFO" "Drill dir: $DRILL_DIR"
 
-# 拿后端 PID
+# 拿后端 PID（只匹配自己 worktree 的 ruoyi-admin.jar，避免误杀兄弟会话）
 get_pid() {
     if [[ -f "$PID_FILE" ]]; then
         cat "$PID_FILE"
     else
-        ps -ef | grep "ruoyi-admin.jar" | grep -v grep | awk '{print $2}' | head -1
+        # 用 lsof 查 jar 路径，比 ps + grep 更精确
+        local jar_path
+        jar_path="$(cd "$WORKTREE" 2>/dev/null && pwd)/ruoyi-admin/target/ruoyi-admin.jar"
+        ps -ef | grep "$jar_path" | grep -v grep | awk '{print $2}' | head -1
     fi
 }
 
@@ -90,17 +94,22 @@ get_actuator_auth() {
 
 # 通用：HTTP 探活（status code 之外还看 body）
 # 用法：probe <url> <expected_code> [auth_required: yes|no]
+# 默认 max-time 15s（actuator/health 要遍历所有组件，mail/neo4j 默认各 5s timeout）
 probe() {
     local url="$1"
     local expect="${2:-200}"
     local auth="${3:-yes}"
+    local max_time="${4:-15}"
     local code
     if [[ "$auth" == "yes" ]]; then
         get_actuator_auth
-        code=$(curl -sS -o "$DRILL_DIR/last_body.txt" -w "%{http_code}" --max-time 5 -u "$MON_USER:$MON_PASS" "$url" 2>/dev/null || echo "000")
+        code=$(curl -sS -o "$DRILL_DIR/last_body.txt" -w "%{http_code}" --max-time "$max_time" -u "$MON_USER:$MON_PASS" "$url" 2>/dev/null)
     else
-        code=$(curl -sS -o "$DRILL_DIR/last_body.txt" -w "%{http_code}" --max-time 5 "$url" 2>/dev/null || echo "000")
+        code=$(curl -sS -o "$DRILL_DIR/last_body.txt" -w "%{http_code}" --max-time "$max_time" "$url" 2>/dev/null)
     fi
+    # default = "000"（curl timeout/exit non-zero 时 -w 已写 "000"）
+    [[ -z "$code" ]] && code="000"
+    code="${code:0:3}"
     if [[ "$code" == "$expect" ]]; then
         echo "PASS"
     else
@@ -140,10 +149,10 @@ scenario_s1() {
     # kill -STOP 后进程冻结，servlet 不响应 basic auth challenge，curl 会 timeout
     # 用 echo -n + newlines 隔离，避免 fallback "000" 在变量展开时被串联
     local liveness_after readiness_after
-    liveness_after=$(curl -sS --retry 0 --max-time 3 -o /dev/null -w "%{http_code}" -u "$MON_USER:$MON_PASS" "$BASE_URL/actuator/health/livenessState" 2>/dev/null; echo)
+    liveness_after=$(curl -sS --retry 0 --max-time 15 -o /dev/null -w "%{http_code}" -u "$MON_USER:$MON_PASS" "$BASE_URL/actuator/health/livenessState" 2>/dev/null; echo)
     liveness_after="${liveness_after:0:3}"  # 取前 3 字符避免 curl 写入多份
     [[ -z "$liveness_after" ]] && liveness_after="000"
-    readiness_after=$(curl -sS --retry 0 --max-time 3 -o /dev/null -w "%{http_code}" -u "$MON_USER:$MON_PASS" "$BASE_URL/actuator/health/readinessState" 2>/dev/null; echo)
+    readiness_after=$(curl -sS --retry 0 --max-time 15 -o /dev/null -w "%{http_code}" -u "$MON_USER:$MON_PASS" "$BASE_URL/actuator/health/readinessState" 2>/dev/null; echo)
     readiness_after="${readiness_after:0:3}"
     [[ -z "$readiness_after" ]] && readiness_after="000"
     local any_down=0
