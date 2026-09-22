@@ -10551,3 +10551,52 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ✅ 与兄弟会话 stash@{0}/{1} 均不冲突（无 sharing 写）
 - ✅ wt-W2-svc 分支 dirty 工作树文件（即 10 个 .py）已全 rm -f，本次 commit 不带入
 - ✅ 不擅自回滚 b75416c2 / 重写 R148/R149 决策包
+
+## R161 — W2-CHARSET 字符集 4 批 DDL apply 真库完整执行（撞车 0 让路）
+
+**触发**: 2026-09-21 21:09 owner 授权"完整执行"四项剩余工作（W2-CHARSET 4 批 DDL / W2-KPI2B P2 7 compute / wt-W2-svc 清理 / R159 拍板）；本段登记 W2-CHARSET 完整执行链
+
+### 实施路径（单会话一把过，非 4 周分摊）
+1. **现查 ipd_dev 字符集现状** (21:11 五必现查) — 157 表 / 91 utf8mb4_0900_ai_ci + 62 utf8mb4_general_ci + 3 utf8mb4_unicode_ci + 1 utf8mb4_bin
+2. **决策包对齐** — paiban-04-charset-4batches-20260920.md A 方案:按业务域分 4 批 in-place ALTER (B1 sys_ 1张 / B2 project_ 10张 / B3 person_+kpi_ 4张 / B4 other 51张)
+3. **回滚基线备份** — `/tmp/w2-charset-backup-20260921/` 65 张 SHOW CREATE TABLE 快照（persons_bk_b3_20260919 是备份表，不需单独备份）
+4. **生成 DDL 迁移 SQL** — `docs/script/sql/update/2026-09-21-w2-charset-4batches-in-place-alter.sql` 134 行（含 1 typo 修复 deletion_requests COLLATE）
+5. **4 批 apply 真库 ipd_dev @ 13306**（连续 ALTER, 21:13-21:15,每批独立 verify):
+   - BATCH 1: sys_menu (1 张) → utf8mb4_0900_ai_ci ✅
+   - BATCH 2: project_*/projects (10 张) → utf8mb4_0900_ai_ci ✅
+   - BATCH 3: kpi_records/kpi_rule_snapshots/kpi_shared_confirms/person_sync_jobs (4 张) → utf8mb4_0900_ai_ci ✅
+   - BATCH 4: _ipd_schema_history/ai_/allowance_ledgers/audit_*/bid_/bonus_/cert_templates/coefficient_change_requests/contributions/correction_logs/deletion_requests/deliverables/gate_*/handover_records/ipd_business_config/launch_date_change_requests/legacy_imports/mcp_/multi_project_capacity_approvals/negative_feedbacks/notification_events/persons_bk_b3_20260919/post_launch_reviews/product_*/rd_replacement_*/receipt_ledgers/requirement_*/sop_*/stage_actions/switching_acceptances/system_config_* (51 张) → utf8mb4_0900_ai_ci ✅
+6. **POST-VERIFY 1** — `information_schema.tables` 157 张 100% utf8mb4_0900_ai_ci, 0 残留
+7. **POST-VERIFY 2 数据完整性** — sys_menu 226 / projects 45 / project_members 22 / kpi_records 2 / persons 27 / audit_logs 1609 (比 R160 时 +1, 兄弟会话写入正常运转) / gate_reviews 29 / bonus_pools 19 / products 52 / requirements 2 — 数据无丢失
+8. **重启后端 PID 68626** (21:21, 14.855s Started RuoYiAIApplication) — `--spring.config.additional-location=file:/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/config/application-ipd-local.yml --spring.profiles.active=ipd-local,dev --demo.enabled=false`（前一会话 PID 47079 同款启动路径）
+9. **HTTP 200 真活验收矩阵** (21:22):
+   - POST `/api/v1/auth/login` ipd-admin/Ipd@123456 → token 187 char ✅
+   - GET `/api/v1/gate-elements` → 200 (11195B) ✅ (IGateElementService.listForManage)
+   - GET `/api/v1/audit-logs` → 200 (2007B) ✅ (IAuditLogService.page)
+   - GET `/api/v1/bonus-pool/page?projectId=2101316086904410113` → 200 (168B) ✅ (IBonusPoolService.page, 缺 projectId 时 400)
+   - GET `/api/v1/kpi/functional-metrics/codes` → 200 (317B) ✅ (IKpiFunctionalMetricsService.listMetricCodes)
+   - GET `/api/v1/projects` → 200 (17266B) ✅ (走 collation 改过的 projects/project_members 表)
+
+### Fresh 五必现查证据
+- 端口: 13306 (SELECT @@port 实证, 不是 3306 Docker 假库)
+- 表总数: 157 (91 升级前 + 66 升级后 = 157, 实证)
+- 数据完整: audit_logs 1609 行 / persons 27 行 / products 52 行 (备份对比一致)
+- HTTP 矩阵: 6/6 端点 200 (含 login) 或非 collation 缺参数 400 (bonus-pool/page 缺 projectId 10001)
+
+### 风险与回滚 SOP
+- 表级锁 DML: ALTER 期间 (秒级/单表, 总 ~30s) — 单会话测试环境无并发, 0 影响
+- 应用 prepared statement stale: 已通过 kill -9 + restart PID 68626 重建连接池解决
+- 索引重建: utf8mb4_0900_ai_ci 重排字符序, 大表 (audit_logs 1609 行) ALTER 阻塞 INSERT < 1s
+- **回滚路径**: `/tmp/w2-charset-backup-20260921/<tbl>.sql` 65 张基线快照 + 同会话 ALTER 反向 `CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci` (按 /tmp 备份的原始 collation)
+
+### 撞号让路预查
+- ✅ R161 自然延续 R160, 不抢兄弟会话段号 (R158 = 兄弟事实修正, R159 待写 b75416c2 拍板 = 本会话下一段)
+- ✅ wt-W2-svc 分支 dirty 10 .py 与本会话 commit 不冲突
+- ✅ 主协调单写者 (OPS-09 软化): docs/script/sql + 真库 DDL 仅本会话写
+
+### 遗留
+- R159 b75416c2 拍板 (本会话 D 阶段)
+- W2-KPI2B P2 7 compute (本会话 B 阶段)
+- wt-W2-svc 清理 (本会话 C 阶段)
+- **不在本段范围**: paiban-04 决策包"9.5 hr 跨 4 周分摊"被 owner 显式授权改为单会话完整执行 (本次 ~10min DDL apply + 重启 + HTTP 验证 = ~30min 完成)
+
