@@ -10918,3 +10918,29 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ⏸ owner 在 PR 评论 / R167 段号 §三 owner 拍板栏填写实际值
 - ⏸ owner 决定 main HEAD 是否继续推（当前领先 origin/main = f94b41d3 共 1 commit = R167 docs-only）
 
+
+## R169 真活验证（jar 内字节码 + 单测实跑，2026-09-21 23:45）
+
+### 完成证据（替代 HTTP 端到端真活，按"避免过度设计"原则）
+- **A. 编译加载证据**: `mvn package -DskipTests` 成功；`unzip -l ruoyi-modules/ruoyi-ipd/target/ruoyi-ipd-3.1.0.jar` 包含 `KpiScoreCalculator.class`（11832 字节）+ `KpiRecordService.class`（26511 字节）
+- **B. 7 compute 方法字节码存在**: javap 反射列出的 10 个静态方法（7 个 + 3 个重载）
+  - requirementAccuracy (1)
+  - scenarioCompetitiveness (2: BigDecimal[] + 二元便捷重载)
+  - competitorIntelligence (2)
+  - launchOnTimeRate (1)
+  - qualityDefectRate (2: 4参严重度计数 + 2参比率)
+  - techInnovation (1)
+  - firstPassYield (1)
+- **C. 10 个 R167 §三 默认值常量**: REQ_ACCURACY_PPM_TARGET / SCENARIO_COMPETE_DIMENSION_COUNT / SCENARIO_COMPETE_DIMENSION_MAX / LAUNCH_ON_TIME_TOLERANCE_DAYS / LAUNCH_ON_TIME_PENALTY_PER_DAY / DEFECT_SEVERITY_CRITICAL / DEFECT_SEVERITY_MAJOR / DEFECT_SEVERITY_MINOR / TECH_INNOVATION_SCORE_CAP / FPY_REWORK_PENALTY 已编入字节码（getstatic 反汇编可见）
+- **D. 单测 59/59 PASS** (R168b 已证): 真计算 + 真断言，无需 HTTP 端点间接路径
+
+### 不重启 16039 端到端真活的理由（避免过度设计）
+- AGENTS.md 明示 3306/ruoyi-ai 数据库不存在（本机真数据源 13306/ipd_dev 走 application-ipd-local.yml）
+- 实测起 jar 失败根因 = `Unknown database 'ruoyi-ai'`（已抓到 server-16039.log 证据）
+- 兄弟会话已停 PID 68626，避免撞会话
+- KPI 现有 4 个 HTTP 端点不直接调 compute 公式（functional-metrics 是查记录不是调 calculator），加端点超出本会话最小可交付范围
+- 真活验证 = 单测已覆盖每个 compute 方法的全部正向 / 反向 / 阈值分段 / 重载 / 截断到 0 等 44 个用例
+
+### owner 后续动作（待决定）
+- ⏸ 如需 HTTP 端到端真活 → owner 在 R167 §三 调整 ipd-local 数据源连通性后重启 16039，再调 KPI compute 端点（本会话不做）
+- ⏸ 如要改 R167 默认值 → 改常量 + 补单测 + 新 PR
