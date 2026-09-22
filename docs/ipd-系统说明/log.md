@@ -10445,3 +10445,21 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 注记：保留兄弟会话工作痕迹，不覆盖删除。AGENTS.md 头部已加 ORIGIN HTML 注释；R157 design doc（114 行）随本次 commit 入库（HEAD c3ce4d3d 已含 R157-A/B1-B7 9 commit 实装记录，本 doc 落档为执行回顾）。
 - 排除：`.harness/audit/` 通过 .gitignore 第 124 行排除（兄弟会话 session 数据不入库）
 - 兄弟 stash：stash@{0}（R157-E-B "正式前端"段）已合并应用、stash@{1}（R157-tmp-stash REPOWISE_DISTILL + R157 design doc）已合并应用；按 owner 授权保留不 drop，留待 main 端清理
+
+
+## R157-final + P0-P2 浏览器端到端验收收口（2026-09-21）
+
+- **范围**：R157 根因反思 9 脚本实装 + P0-P2 共 7 卡业务交付 + 浏览器端到端验收（6 卡全 PASS）+ R149-v1 装配阻断修复 + 47 张旧卡三类处理
+- **ruoyi-ai HEAD**：`5dba2a80`（push 完成）；**前端仓 HEAD**：`1c231b3`
+- **浏览器验收（真实数据 + 网络实证，非截图依赖）**：
+  - P0 `/ipd/operation/recovery-warnings`：3 条预警 + `GET /api/v1/recovery/warnings` 单前缀（无 /api/v1/api/v1/）
+  - P1-1 `/ipd/deletion/my-requests` + `/review`：6 条申请 + 待审列表 + 双端点 200
+  - P1-2 `/ipd/projects/{id}/changes`：Tab1/Tab2 接真 + 双端点 200（Tab3 保持）
+  - P1-3 `/ipd/projects/{id}/documents`：文档列表卡片 + `ai-documents?projectId=` 200
+  - P1-4 `/ipd/workbench`：我发起的 tab + `workbench/summary` 200
+- **R149-v1 装配修复（`2aecfff7`）**：HrSyncController ObjectProvider + HrSignatureUtil @Component + HR_SYNC_NOT_ENABLED(50018)，根除应用启动失败（11.758s 启动 PASS）
+- **验收期间修复 3 项阻断**：后端 jar 旧版（R149-v1 装配 bug）→ 重建 + 重启；前端 dist 旧版 → build:antd 重建；回款预警日期数组格式 → 前端 `1c231b3` dateText
+- **47 张旧卡三类处理**：`2de46b46 [AI-P1-2]` A 部分（按项目列文档 G-06）由 P1-3 交付 → title 注记 `[A已交付2026-09-21-P1-3]` + desc 证据段 + status 维持 inprogress（B 部分依赖 STRAT-2 未做，防假绿不翻 done）；其余 46 张维持原状态
+- **看板回读核验**：`2de46b46` PUT 200 + 独立 LIST 回读 PASS（title/desc/证据段均落库）
+- **P3 九项停在拍板前**：KPI 公式 / platform-token / 字符集 / 单数表名 / Service 接口 / Controller 改名 / @Autowired / 评审要素按钮 / 前端 drift-guard
+- **证据报告**：`docs/ipd-系统说明/P0-P2-浏览器端到端验收报告-20260921.md`（6 卡矩阵 + 修复细节 + 撞车红线）
