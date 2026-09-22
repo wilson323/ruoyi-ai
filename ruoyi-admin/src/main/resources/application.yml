@@ -398,6 +398,9 @@ tenant:
     - kpi_raw_records
     - landed_scenarios
     - recovery_warnings
+    # W2-KPI2A（2026-09-21）：A2 P1 功能指标量表——含 tenant_id 列但单企业私有部署语义，
+    # 未登记则租户拦截器追加 WHERE tenant_id=?，非 000000 会话读不到数据
+    - kpi_functional_metrics
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

@@ -57,7 +57,9 @@ public final class IpdRolePermissionCatalog {
         // 落地场景查询（内部四角色）
         IpdPermissionCode.OPERATION_SCENARIO_LANDED_QUERY,
         // 90 日回款预警列表查询（内部四角色）
-        IpdPermissionCode.OPERATION_RECOVERY_WARNINGS_QUERY
+        IpdPermissionCode.OPERATION_RECOVERY_WARNINGS_QUERY,
+        // W2-KPI2A（2026-09-21）：功能指标量表查询（内部四角色可读）
+        IpdPermissionCode.OPERATION_KPI_CONFIG_QUERY
     );
 
     /** 内部角色可写的业务操作（不含超管专属配置/归档）。 */
@@ -164,11 +166,22 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_PERMANENT_DELETE
     );
 
+    /**
+     * W2-KPI2A（2026-09-21）：功能指标量表写（SUPER_ADMIN / MARKET_PM / RD_PM）。
+     *
+     * <p>独立成集合（不进 BUSINESS_WRITE）：A2 P1 授权口径为「超管 + 双 PM 可写、
+     * 组长/PM 可读」——若并入 BUSINESS_WRITE 会把写权限一并授予 GROUP_LEADER，
+     * 与授权口径不符。读码 OPERATION_KPI_CONFIG_QUERY 归 READ_SET（四角色可读）。
+     */
+    private static final Set<String> KPI_CONFIG_WRITE = unique(
+        IpdPermissionCode.OPERATION_KPI_CONFIG
+    );
+
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
-        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE),
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE),
         "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER),
-        "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE),
-        "RD_PM", merge(READ_SET, BUSINESS_WRITE)
+        "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, KPI_CONFIG_WRITE),
+        "RD_PM", merge(READ_SET, BUSINESS_WRITE, KPI_CONFIG_WRITE)
     );
 
     private IpdRolePermissionCatalog() {
