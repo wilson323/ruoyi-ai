@@ -10684,3 +10684,37 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - OWNER 拍板 b75416c2 → 登记 R164 段号说明处置
 - wt-W2-svc 远端分支清理 → 启动 `git push --force` 链路
 
+
+## R164 — 误操作透明披露 + wt-W2-svc 远端清理受阻登记（2026-09-21 21:42）
+
+### 误操作事件链（透明披露）
+1. **目标**：执行"wt-W2-svc 远端分支清理"（剥离 10 .py 残留，push --force 链路，owner 已授权完整执行）
+2. **错误执行**：在 main 分支上执行 `git reset --hard f987e028`，本应先 `git checkout wt-W2-svc` 切换到该分支
+3. **触发根因**：`git checkout wt-W2-svc` 报 `fatal: 'wt-W2-svc' is already used by worktree at '/private/tmp/wt-W2-svc'` —— 该分支被兄弟会话创建的 `/private/tmp/wt-W2-svc` worktree 占用（之前 git worktree list 显示"无 wt-W2-svc"是误判，实际是兄弟会话在 /private/tmp/ 而非 ~/.claude/worktrees/ 路径）
+4. **影响范围**（本地指针错位）：本地 main HEAD 从 03c4f486 → f987e028，丢失 5 个兄弟会话 commit（指针视图层丢失，commit 对象仍存在于 .git/objects）
+5. **未污染 origin**：`git push --force origin wt-W2-svc` 输出 `Everything up-to-date`（本地落后于 origin），未对 origin/main 造成破坏
+6. **立即恢复**：`git reset --hard origin/main` 把本地 main 指针恢复到 03c4f486，**兄弟会话 5 个 commit 全部保留**（003 8adb1a3ac9cd50decaa6a15336d224c2 → 33553701 / 004890c9 / 541a7dee / c3e69481 / a6fc0aba / fe5c4a8c 链完整）
+
+### 经验教训
+1. **跨 worktree 切分支必查占用**：`git worktree list | grep -i <branch>` 前置确认，本会话曾误以为兄弟会话 `git worktree remove` 清掉了 wt-W2-svc，实际只是删了 `~/.claude/worktrees/wt-W2-svc` 子目录，`/private/tmp/wt-W2-svc` worktree 仍持有该分支占用
+2. **reset --hard 前必查当前分支**：`git rev-parse --abbrev-ref HEAD` 应为 wt-W2-svc 而非 main，本会话跳过此步直接 reset 导致 5 commit 指针错位（origin 未污染是唯一保险）
+3. **push --force 落地之前必查 fetch-first**：`git fetch origin <branch>` + `git log origin/<branch> -3` 验证预期推送目标
+4. **撞号让路 8 红线严守** —— 本次误操作属于"reset --hard 在错分支"，符合 R25 §9 高风险副作用范畴，按"立即回滚 + docs 透明披露 + 不隐瞒"处置
+
+### wt-W2-svc 远端清理正确路径（待执行）
+1. 在 `/private/tmp/wt-W2-svc` worktree 目录内（已是 wt-W2-svc 分支）执行 `git reset --hard f987e028`
+2. 在该目录内执行 `git push --force origin wt-W2-svc`
+3. 远端 wt-W2-svc 变成 f987e028（已无 10 .py 残留，文件 tree 与 f987e028 一致）
+4. 验收：远端 `git ls-remote origin refs/heads/wt-W2-svc` = f987e028
+
+### 当前状态
+- main HEAD = 03c4f486（origin/main 同步）
+- wt-W2-svc 远端 = 8659289c（仍 dirty 10 .py，待执行正确清理路径）
+- 本会话在 21:42 已透明披露误操作 + 恢复本地 main + 列出后续正确路径
+
+### 撞车 0 让路 8 红线严守
+- ✅ 未污染 origin（push 显示 Everything up-to-date）
+- ✅ 兄弟会话 5 commit 全部保留（reset --hard origin/main 完整恢复）
+- ✅ 工作树 clean（reset --hard 自身完成清理）
+- ✅ docs 透明披露（R164 段登记本次误操作 + 恢复路径）
+
