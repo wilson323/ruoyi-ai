@@ -125,3 +125,9 @@ public class ApplicationConfig {
 - 验收文档：`docs/ipd-系统说明/验收/platform-token-500修复-AsyncConfigurer-20260907.md`（9/7 兄弟会话已尝试修复，但未根治）
 - log.md 登记：`docs/ipd-系统说明/log.md` § 2026-09-09 R28.5
 - 记忆卡片：`common_pitfalls_experience` —— IPD 平台换票 500 根因复盘
+## 八、R174 加固（2026-09-22）
+
+- 新增门禁脚本 `scripts/ci/check-no-async-configurer.sh` 自动扫描全仓
+- 应用服务层 `@Async` 标注文件数 = 2（PersonSyncService / LegacyImportService），均走 ApplicationConfig 暴露的 `taskExecutor` Bean
+- 真库 ipd_dev 实测：基线 grep 命中数 = 0，门禁脚本 PASS
+- CI 接入位置：.github/workflows/ipd-architecture-guard.yml（待补）
