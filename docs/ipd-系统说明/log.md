@@ -11008,3 +11008,15 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 根因：镜像映射段第 1326 行（AUD-02）/ 第 1337 行（P1-6.1）为 5 格 id 映射行，parts[0] 命中 plan() 的 KEY.fullmatch 被误当正式计划行解析。
 - 影响：manage.py 的 check/set/sync 全线不可用；本会话因此改走「外部直投 PUT /api/tasks + 手工镜像单元格同步」完成登记，两通道内容一致。
 - 处置：映射行属兄弟会话/owner 结构域，本会话按 R19 未擅改，留待镜像 owner 修复映射段与 KEY 正则冲突后统一 reconcile。
+
+### 2026-09-22 R175-A 真活验证收口（接管会话）
+- commit：e28930ab docs(R175-A): 真活验证报告 + 7 张浏览器截图 + R174 总账 §11/§12 收口
+- 三证齐发：HTTP（curl /api/v1/auth/login + /gate-elements/manage）+ DB（gate_review_elements 真表 33+10+33）+ 浏览器（chrome-devtools 5 张关键截图）
+- 36 决策点真活覆盖：18/36 真活命中（PUBLISHED+1: 33 条 + PUBLISHED+0: 33 条含兼容老格式）+ 18/36 button-policy.test.ts 单测覆盖
+- 7 张截图存 docs/ipd-系统说明/qa/r175-a-真活验证-20260922/（1.0 MB）
+- 真活附带发现 2 项（移交 R175-B+，不在 R175-A 范围）：
+  1. 前端 normalize 函数不兼容老格式 status=PUBLISHED/enabled=Y，误识别为「已停用」（计数 33 而真库仅 10 条真停用）
+  2. 兄弟会话 2026-09-22 03:27 落盘 ddl-apply-check-result-20260922.json（已随本 commit 一并入库撞号必接）
+- 撞号透明：前端仓 main 工作树干净（无兄弟会话在盘）；后端仓仅本会话改动
+- 推 origin main：01125fea..e28930ab
+- 同步 r172-takeover-20260922：ef873d42..e28930ab（fast-forward）
