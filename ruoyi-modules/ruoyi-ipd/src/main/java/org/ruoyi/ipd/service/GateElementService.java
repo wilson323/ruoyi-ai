@@ -316,6 +316,113 @@ public class GateElementService {
         return exist;
     }
 
+    private static final String DUP_CODE_SUFFIX = "-DUP";
+    private static final String DUP_NAME_SUFFIX = "（副本）";
+    private static final int DUP_MAX = 99;
+
+    /**
+     * 复制为副本草稿（P2-5.x「复制」按钮后端）：编码自动生成、名称追加「（副本）」，
+     * status=draft / version=0 / enabled='0'；源要素零改动，每次调用产生一行新副本。
+     */
+    public GateElement duplicate(Long id, IpdActor actor) {
+        requireId(id);
+        GateElement source = requireExisting(id);
+        String code = source.getElementCode() == null ? "" : source.getElementCode().trim();
+        String name = source.getElementName() == null ? "" : source.getElementName().trim();
+        GateElement clone = GateElement.builder()
+            .gateCode(source.getGateCode())
+            .elementCode(nextDuplicateCode(code))
+            .elementName(nextDuplicateName(name))
+            .passStandard(source.getPassStandard())
+            .isVeto(source.getIsVeto() == null ? "0" : source.getIsVeto())
+            .sortOrder(source.getSortOrder() == null ? 0 : source.getSortOrder())
+            .vetoDualRequired(source.getVetoDualRequired() == null ? "0" : source.getVetoDualRequired())
+            .thresholdJson(source.getThresholdJson())
+            .build();
+        validateDefinition(clone);
+        requireUniqueCode(clone.getElementCode());
+        clone.setEnabled("0");
+        clone.setStatus(STATUS_DRAFT);
+        clone.setVersion(0);
+        clone.setCreateBy(actor.id());
+        clone.setUpdateBy(actor.id());
+        clone.setCreateDept(null);
+        clone.setCreateTime(null);
+        clone.setUpdateTime(null);
+        if (gateElementMapper.insert(clone) != 1) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR);
+        }
+        audit(actor, "DUPLICATE", clone, null,
+            source.getElementCode() + " → " + clone.getElementCode() + " 复制为副本草稿");
+        return clone;
+    }
+
+    /** 副本编码：源编码 + "-DUP"，被占用则 -DUP2/-DUP3…；总长恒 ≤ CODE_MAX（超长截断头部）。 */
+    private String nextDuplicateCode(String base) {
+        for (int i = 1; i <= DUP_MAX; i++) {
+            String tail = DUP_CODE_SUFFIX + (i == 1 ? "" : String.valueOf(i));
+            int room = CODE_MAX - tail.length();
+            String head = base.length() > room ? base.substring(0, room) : base;
+            String candidate = head + tail;
+            Long used = gateElementMapper.selectCount(
+                new LambdaQueryWrapper<GateElement>().eq(GateElement::getElementCode, candidate));
+            if (used == null || used == 0) {
+                return candidate;
+            }
+        }
+        throw conflict("副本编码生成超上限（" + DUP_MAX + " 次），请先清理同名副本: " + base);
+    }
+
+    /** 副本名称：源名称 + 「（副本）」，重名则（副本）2/（副本）3…；总长恒 ≤ NAME_MAX。 */
+    private String nextDuplicateName(String base) {
+        for (int i = 1; i <= DUP_MAX; i++) {
+            String tail = DUP_NAME_SUFFIX + (i == 1 ? "" : String.valueOf(i));
+            int room = NAME_MAX - tail.length();
+            String head = base.length() > room ? base.substring(0, room) : base;
+            String candidate = head + tail;
+            Long used = gateElementMapper.selectCount(
+                new LambdaQueryWrapper<GateElement>().eq(GateElement::getElementName, candidate));
+            if (used == null || used == 0) {
+                return candidate;
+            }
+        }
+        throw conflict("副本名称生成超上限（" + DUP_MAX + " 次）: " + base);
+    }
+
+    /**
+     * 归档恢复（P2-5.x「恢复」按钮后端）：archived → draft，enabled='0'，version 保留
+     * （版本号是该要素身份的单调发布计数，再次 publish 得 version+1）。恢复落草稿而非
+     * 直接上线，避免绕过发布评审；仅归档态可恢复，其余状态 409（同态重放第二次即 409）。
+     */
+    public GateElement restore(Long id, IpdActor actor) {
+        requireId(id);
+        GateElement exist = requireExisting(id);
+        if (!STATUS_ARCHIVED.equals(exist.getStatus())) {
+            throw conflict("仅已归档要素可恢复，当前状态: " + exist.getStatus());
+        }
+        GateElement before = snapshotCopy(exist);
+        exist.setStatus(STATUS_DRAFT);
+        exist.setEnabled("0");
+        exist.setUpdateBy(actor.id());
+        exist.setUpdateTime(null);
+        if (gateElementMapper.updateById(exist) != 1) {
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR);
+        }
+        audit(actor, "RESTORE", exist, before, exist.getElementCode() + " archived → draft 恢复");
+        return exist;
+    }
+
+    /** 管理视图：返回全部生命周期状态（含草稿/归档/停用），仅供超管后台要素管理页。 */
+    public List<GateElement> listForManage(String gateCode) {
+        if (gateCode != null && !gateCode.isBlank() && !GATES.contains(gateCode)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+        }
+        return gateElementMapper.selectList(new LambdaQueryWrapper<GateElement>()
+            .eq(gateCode != null && !gateCode.isBlank(), GateElement::getGateCode, gateCode)
+            .orderByAsc(GateElement::getSortOrder)
+            .orderByAsc(GateElement::getId));
+    }
+
     private GateElement applyHistorySnapshot(GateElement exist, String beforeData) {
         JsonNode node;
         try {

@@ -33,6 +33,8 @@ public interface IpdPermissionCode {
     String OPERATION_GATE_ELEMENT_ARCHIVE = "ipd:gate-element:archive";
     String OPERATION_GATE_ELEMENT_COPY = "ipd:gate-element:copy";
     String OPERATION_GATE_ELEMENT_REVERT = "ipd:gate-element:revert";
+    /** P2-5.x：归档要素恢复为草稿（archived → draft；与 copy 不同：不新建行、保留版本号） */
+    String OPERATION_GATE_ELEMENT_RESTORE = "ipd:gate-element:restore";
 
     String OPERATION_DELETION_REQUEST_ARCHIVE = "ipd:deletion-request:archive";
     String OPERATION_DELETION_REQUEST_PURGE = "ipd:deletion-request:purge";

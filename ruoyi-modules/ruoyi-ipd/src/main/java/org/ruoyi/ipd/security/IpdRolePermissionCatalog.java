@@ -133,6 +133,7 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_GATE_ELEMENT_ARCHIVE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT_COPY,
         IpdPermissionCode.OPERATION_GATE_ELEMENT_REVERT,
+        IpdPermissionCode.OPERATION_GATE_ELEMENT_RESTORE,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE_CREATE,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE_DELETE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_ARCHIVE,
