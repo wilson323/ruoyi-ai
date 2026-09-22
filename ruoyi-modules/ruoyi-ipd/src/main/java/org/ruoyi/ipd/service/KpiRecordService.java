@@ -201,6 +201,89 @@ public class KpiRecordService {
         }
     }
 
+    // ============================================================
+    //  P2 七项功能指标 compute 包装方法（A2 R149 §A2 拍板：等 owner 业务规则）
+    //  - 对应 KpiScoreCalculator 七项静态方法，统一 try-catch 转 IpdBusinessException
+    //  - 业务规则（公式/阈值/默认分）由业务 owner 拍板后替换默认实现
+    // ============================================================
+
+    /**
+     * AC-KPI-P2-REQ：需求准确率得分（MKT_REQUIREMENT_ACCURACY）。
+     */
+    public BigDecimal computeRequirementAccuracy(Long accurateCount, Long totalCount) {
+        try {
+            return KpiScoreCalculator.requirementAccuracy(accurateCount, totalCount);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-SCENE：场景竞争力得分（MKT_SCENARIO_COMPETITIVENESS）。
+     */
+    public BigDecimal computeScenarioCompetitiveness(Long matchedScenarios, Long plannedScenarios) {
+        try {
+            return KpiScoreCalculator.scenarioCompetitiveness(matchedScenarios, plannedScenarios);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-COMPETITOR：竞品情报得分（MKT_COMPETITOR_INTELLIGENCE）。
+     */
+    public BigDecimal computeCompetitorIntelligence(Long intelCount, Long plannedCount) {
+        try {
+            return KpiScoreCalculator.competitorIntelligence(intelCount, plannedCount);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-LAUNCH：上市准时率得分（RD_LAUNCH_ON_TIME_RATE）。
+     */
+    public BigDecimal computeLaunchOnTimeRate(Long onTimeLaunches, Long totalLaunches) {
+        try {
+            return KpiScoreCalculator.launchOnTimeRate(onTimeLaunches, totalLaunches);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-DEFECT：质量缺陷率得分（RD_QUALITY_DEFECT_RATE）。
+     */
+    public BigDecimal computeQualityDefectRate(Long defectCount, Long totalUnits) {
+        try {
+            return KpiScoreCalculator.qualityDefectRate(defectCount, totalUnits);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-INNOVATION：技术创新度得分（RD_TECH_INNOVATION）。
+     */
+    public BigDecimal computeTechInnovation(Long innovationPoints, Long targetPoints) {
+        try {
+            return KpiScoreCalculator.techInnovation(innovationPoints, targetPoints);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * AC-KPI-P2-FPY：一次性实现率得分（RD_FIRST_PASS_YIELD）。
+     */
+    public BigDecimal computeFirstPassYield(Long firstPassCount, Long totalCycles) {
+        try {
+            return KpiScoreCalculator.firstPassYield(firstPassCount, totalCycles);
+        } catch (IllegalArgumentException e) {
+            throw new IpdBusinessException(e.getMessage());
+        }
+    }
+
     /**
      * P3-1.1：录入功能 KPI 草稿（仅占位，DB 写入由 P3-1.2 完成）。
      */

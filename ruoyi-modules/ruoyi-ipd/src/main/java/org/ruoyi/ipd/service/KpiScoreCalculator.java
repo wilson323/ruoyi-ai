@@ -173,4 +173,170 @@ public final class KpiScoreCalculator {
         // 偏差 d 在 (0, 30]：100 − d × 1
         return BigDecimal.valueOf(100L - deviationDays);
     }
+
+    // ============================================================
+    //  P2 七项功能指标 compute 方法（A2 R149 §A2 拍板：等 owner 业务规则）
+    //  - 现状：方法签名稳定 + 默认占位（返回 0）+ TODO 业务规则拍板点
+    //  - 业务规则（公式/阈值/默认分）由业务 owner 拍板后由 R166 子任务替换默认实现
+    //  - 接口契约不依赖业务规则：null/empty 输入校验、返回值类型、scale 统一
+    //  - 拍板记录：docs/ipd-系统说明/R166-kpi2b-p2-7compute-实装-20260921.md
+    // ============================================================
+
+    /** 默认占位分（业务 owner 未拍板前的安全默认值 = 0） */
+    private static final BigDecimal P2_PLACEHOLDER_SCORE = BigDecimal.ZERO;
+
+    /**
+     * AC-KPI-P2-REQ：需求准确率得分（MKT_REQUIREMENT_ACCURACY）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：分子/分母取值范围、阈值分段（≥X=100 / ≥Y=80 / ≥Z=60 / <Z=0）、
+     * 量表版本配套、PPM 目标值、返工率分母。
+     *
+     * @param accurateCount 需求确认通过数（≥ 0，null 视为 0）
+     * @param totalCount    需求总数（> 0，null/0 抛 IpdBusinessException）
+     * @return 需求准确率得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal requirementAccuracy(Long accurateCount, Long totalCount) {
+        if (totalCount == null || totalCount <= 0) {
+            throw new IpdBusinessException("需求准确率分母必须 > 0");
+        }
+        if (accurateCount != null && (accurateCount < 0 || accurateCount > totalCount)) {
+            throw new IpdBusinessException("需求准确率分子必须在 [0, totalCount] 区间");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
+        return P2_PLACEHOLDER_SCORE;
+    }
+
+    /**
+     * AC-KPI-P2-SCENE：场景竞争力得分（MKT_SCENARIO_COMPETITIVENESS）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：场景评分维度（功能匹配度/差异化优势/市场份额影响）、
+     * 加权公式、阈值分段。
+     *
+     * @param matchedScenarios 已匹配场景数（≥ 0）
+     * @param plannedScenarios 规划场景数（> 0）
+     * @return 场景竞争力得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal scenarioCompetitiveness(Long matchedScenarios, Long plannedScenarios) {
+        if (plannedScenarios == null || plannedScenarios <= 0) {
+            throw new IpdBusinessException("场景竞争力分母必须 > 0");
+        }
+        if (matchedScenarios != null && (matchedScenarios < 0 || matchedScenarios > plannedScenarios)) {
+            throw new IpdBusinessException("场景竞争力分子必须在 [0, plannedScenarios] 区间");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
+        return P2_PLACEHOLDER_SCORE;
+    }
+
+    /**
+     * AC-KPI-P2-COMPETITOR：竞品情报得分（MKT_COMPETITOR_INTELLIGENCE）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：情报完整度（覆盖率/及时性/差异化建议数）、
+     * 加权公式、阈值分段。
+     *
+     * @param intelCount 有效情报条数（≥ 0）
+     * @param plannedCount 计划情报条数（> 0）
+     * @return 竞品情报得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal competitorIntelligence(Long intelCount, Long plannedCount) {
+        if (plannedCount == null || plannedCount <= 0) {
+            throw new IpdBusinessException("竞品情报分母必须 > 0");
+        }
+        if (intelCount != null && (intelCount < 0 || intelCount > plannedCount)) {
+            throw new IpdBusinessException("竞品情报分子必须在 [0, plannedCount] 区间");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
+        return P2_PLACEHOLDER_SCORE;
+    }
+
+    /**
+     * AC-KPI-P2-LAUNCH：上市准时率得分（RD_LAUNCH_ON_TIME_RATE）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：与 K01-K04 共担窗口对齐（上市后 6 个月窗口）、准时判定标准、
+     * 偏差容忍区间、阈值分段。
+     *
+     * @param onTimeLaunches 准时上市次数（≥ 0）
+     * @param totalLaunches  总上市次数（> 0）
+     * @return 上市准时率得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal launchOnTimeRate(Long onTimeLaunches, Long totalLaunches) {
+        if (totalLaunches == null || totalLaunches <= 0) {
+            throw new IpdBusinessException("上市准时率分母必须 > 0");
+        }
+        if (onTimeLaunches != null && (onTimeLaunches < 0 || onTimeLaunches > totalLaunches)) {
+            throw new IpdBusinessException("上市准时率分子必须在 [0, totalLaunches] 区间");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
+        return P2_PLACEHOLDER_SCORE;
+    }
+
+    /**
+     * AC-KPI-P2-DEFECT：质量缺陷率得分（RD_QUALITY_DEFECT_RATE）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：缺陷严重度分级（P0/P1/P2/P3）、缺陷率阈值、
+     * 缺陷来源过滤（排除/纳入）、权重公式。
+     * <p>语义：缺陷率越低分越高（与"高 = 好"的其他 6 项反向），公式替换时须显式翻转。
+     *
+     * @param defectCount  缺陷数（≥ 0）
+     * @param totalUnits   投产单位数（> 0）
+     * @return 质量缺陷率得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal qualityDefectRate(Long defectCount, Long totalUnits) {
+        if (totalUnits == null || totalUnits <= 0) {
+            throw new IpdBusinessException("质量缺陷率分母必须 > 0");
+        }
+        if (defectCount != null && (defectCount < 0 || defectCount > totalUnits)) {
+            throw new IpdBusinessException("质量缺陷率分子必须在 [0, totalUnits] 区间");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式（注意反向语义）
+        return P2_PLACEHOLDER_SCORE;
+    }
+
+    /**
+     * AC-KPI-P2-INNOVATION：技术创新度得分（RD_TECH_INNOVATION）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：创新项类型（专利/标准/技术突破/架构创新）、
+     * 加权公式、阈值分段、专家评审维度。
+     *
+     * @param innovationPoints 创新点加权得分（≥ 0，由评审委员会打分）
+     * @param targetPoints     目标创新点得分（> 0）
+     * @return 技术创新度得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal techInnovation(Long innovationPoints, Long targetPoints) {
+        if (targetPoints == null || targetPoints <= 0) {
+            throw new IpdBusinessException("技术创新度目标分必须 > 0");
+        }
+        if (innovationPoints != null && (innovationPoints < 0 || innovationPoints > targetPoints * 10)) {
+            throw new IpdBusinessException("技术创新度分子超出合理范围（允许 ≤ targetPoints × 10）");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
+        return P2_PLACEHOLDER_SCORE;
+    }
+
+    /**
+     * AC-KPI-P2-FPY：一次性实现率得分（RD_FIRST_PASS_YIELD）。
+     *
+     * <p>P2 阶段（待 owner 拍板业务规则）：默认返回 0。
+     * 业务规则 TODO @owner：FPY 判定标准（首次通过/首次提交/首次集成）、
+     * 重工扣分项、阈值分段。
+     *
+     * @param firstPassCount 一次性通过次数（≥ 0）
+     * @param totalCycles     总交付周期数（> 0）
+     * @return 一次性实现率得分（0~100），scale=2，HALF_UP
+     */
+    public static BigDecimal firstPassYield(Long firstPassCount, Long totalCycles) {
+        if (totalCycles == null || totalCycles <= 0) {
+            throw new IpdBusinessException("一次性实现率分母必须 > 0");
+        }
+        if (firstPassCount != null && (firstPassCount < 0 || firstPassCount > totalCycles)) {
+            throw new IpdBusinessException("一次性实现率分子必须在 [0, totalCycles] 区间");
+        }
+        // TODO @owner: P2 业务规则拍板后，替换默认占位为实际公式
+        return P2_PLACEHOLDER_SCORE;
+    }
 }
