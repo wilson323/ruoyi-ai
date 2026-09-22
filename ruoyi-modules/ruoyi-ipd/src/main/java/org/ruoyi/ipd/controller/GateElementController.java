@@ -96,4 +96,40 @@ public class GateElementController {
         IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(GateElementVO.from(gateElementService.revert(id, auditLogId, actor)));
     }
+    /**
+     * 管理视图：返回全部生命周期状态（含草稿/归档/停用），供超管后台要素管理页
+     * 按状态显隐生命周期按钮；业务侧列表仍走 {@link #list(String)}（仅 enabled='1'）。
+     * 需 ipd:gate-element:list 权限
+     */
+    @GetMapping("/manage")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<List<GateElementVO>> listForManage(@RequestParam(required = false) String gate) {
+        ipdPermission.requireAdmin();
+        return ApiV1Response.ok(gateElementService.listForManage(gate).stream().map(GateElementVO::from).toList());
+    }
+
+    /**
+     * 复制为副本草稿：编码自动生成（源编码 + "-DUP"）、名称追加「（副本）」，
+     * 源要素零改动。P2-5.x 评审要素「复制」按钮后端；需 ipd:gate-element:copy 权限
+     * （与 {@link #copy(Long, String)} 同语义共用一码：copy 指定新编码，duplicate 自动生成）。
+     */
+    @PostMapping("/{id}/duplicate")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_COPY, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateElementVO> duplicate(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(GateElementVO.from(gateElementService.duplicate(id, actor)));
+    }
+
+    /**
+     * 归档恢复：archived → draft（需人工复核后重新 publish），P2-5.x 评审要素
+     * 「恢复」按钮后端；与 {@link #revert(Long, Long)} 不同（revert 是回滚到审计快照）。
+     * 需 ipd:gate-element:restore 权限
+     */
+    @PostMapping("/{id}/restore")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_ELEMENT_RESTORE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<GateElementVO> restore(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        return ApiV1Response.ok(GateElementVO.from(gateElementService.restore(id, actor)));
+    }
 }
+
