@@ -20,7 +20,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "receipt_ledger", autoResultMap = true)
+@TableName(value = "receipt_ledgers", autoResultMap = true)
 public class ReceiptLedger extends BaseEntity implements SoftDeletable {
 
     /** 主键（雪花算法） */

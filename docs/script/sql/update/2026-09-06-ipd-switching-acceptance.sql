@@ -4,7 +4,7 @@
 ALTER TABLE switching_acceptance ADD COLUMN IF NOT EXISTS id bigint not null comment '主键（雪花）';
 -- 注：表本身不存在于仓库任何 SQL 文件，本 ALTER 会失败——但 idempotent ADD COLUMN 在 MySQL 8 不支持跨表
 -- 真实落地：CREATE TABLE（如已存在会因 IF NOT EXISTS 跳过）
-CREATE TABLE IF NOT EXISTS switching_acceptance (
+CREATE TABLE IF NOT EXISTS switching_acceptances (
     id                bigint        not null comment '主键（雪花）',
     project_id        bigint        not null comment '项目 ID',
     month             varchar(7)    not null comment '账务月 YYYY-MM',

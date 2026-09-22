@@ -14,7 +14,7 @@
 --   docs/script/sql/update/receipt_ledger.sql（Wave2 dbc75862 落盘，无日期前缀）
 --   本文件为 B-FIX-PACK-1 卡面显式化补齐，结构与既有 DDL 字段一致，含 IF NOT EXISTS
 
-CREATE TABLE IF NOT EXISTS `receipt_ledger` (
+CREATE TABLE IF NOT EXISTS `receipt_ledgers` (
   `id` bigint NOT NULL COMMENT '主键（雪花）',
   `project_id` bigint NOT NULL COMMENT '项目ID（关联 projects.id）',
   `bonus_pool_id` bigint DEFAULT NULL COMMENT '奖金池ID（关联 bonus_pools.id）',

@@ -22,7 +22,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "switching_acceptance", autoResultMap = true)
+@TableName(value = "switching_acceptances", autoResultMap = true)
 public class SwitchingAcceptance extends BaseEntity implements SoftDeletable {
 
     /** 月份 YYYY-MM */
