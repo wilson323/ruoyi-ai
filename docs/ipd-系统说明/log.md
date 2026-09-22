@@ -11101,3 +11101,41 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ⏸ 浏览器实测 P0-1/2/3/4/5/6 闭环
 - ⏸ R170 13 项 6 项 owner 拍板
 
+---
+
+## 2026-09-22 P47 Gate 要素两字段贯通 — 三证闭环收口（fix/p47-gate-element-closure）
+
+> 事故全文见 `docs/ipd-系统说明/P47-Gate要素两字段贯通-事故梳理与三证闭环-20260922.md`（INC-20260922-P47）
+
+### 完成项（w1–w16 + ws1–ws3 + cr1–cr3）
+- **两字段贯通**：vetoDualRequired（双签否决）+ thresholdJson（阈值 JSON）后端 DTO 白名单 + 前端表单/校验全链路补齐。
+- **三证齐全**（生产就绪金标准）：
+  - HTTP 证 ✅ 直连 16050 create/clear + 5 拒绝路径全中
+  - DB 证 ✅ ipd_dev@13306 回读：ZPA 持久化 / **ZCL threshold_json=NULL**（@TableField ALWAYS 生效铁证）/ BAD 零污染
+  - Browser 证 ✅ 15667 UI A–E 全 PASS，创建 ZUI483920 落库，校验文案逐字吻合 W3-a/W3-b
+- **Warning#1 根治**：GateElement.thresholdJson 加 `@TableField(updateStrategy=ALWAYS)`，修复全局 NOT_NULL 策略下清空静默不落库（S2 数据不一致）。
+- **门禁全绿**：CodeReview PASSED（4 关注点逐一安全）+ empty-commit 非空证 + jar-source-drift 语义铁证 + 后端 13 单测绿 + 前端 typecheck exit0 / vitest 19 绿。
+
+### 关键诚实纠错
+1. **空 commit 695214e6（假绿）**：message 声称补两字段，`git show --name-only` 实测 **0 文件改动**，且已污染扩散到 main + 十余分支。
+2. **孤儿 commit ed997168**：真实 message，但仅在侧支 fix/gate-element-dto-closure，非当前 HEAD 祖先（reset 甩出提交链）。
+3. **分裂态**：后端真实 6 文件改动全在工作区未提交；前端两字段主体已被兄弟 0f896cc 抢先提交，我 delta 仅 W2/W3/W4/S5 精修 3 文件。
+4. **vite 挂起误诊为浏览器僵尸**：真根因是 `nohup pnpm vite` 未重定向 stdin → SIGTTIN → 进程 T(stopped) 态 → curl 000 → CDP 超时。修：`< /dev/null` 后 SN 态 + curl 200 in 0.02s。
+5. **脏 DB 取值域污染**：is_veto 有 Y(14)/N(19)、veto_dual_required 有 N(33) 未归一历史脏值（我的 Seed 修复只归一新 seed）；88 行 vs 官方 33；今日新建 gate_review_elements_backup_20260922(76 行) 来源待查。
+
+### 撞车 0 让路严守（OPS-09）
+- ✅ 后端只在 worktree 分支 fix/p47-gate-element-closure 精确 stage 6 文件，不直提 main
+- ✅ 前端 main 精确 stage 3 文件，排除临时 vite.config.p47.mts
+- ✅ 不删 DB 数据（G-02 禁删）/ 不改写已扩散 commit history / 不碰共享后端 websocket / 不杀兄弟进程
+
+### 限制与未验证项
+1. elementCode 前端 maxlength=64 vs 后端 CODE_MAX=16 错配（存量），本次未扩范围修，用短码绕过。
+2. 脏 DB Y/N 归一 + 备份表去留 + 空commit 污染清理均登记留证，处置权交 owner（单开卡）。
+3. ws4（WS 后端 session 身份删除）用户拍板走前端 guard，后端共享高危条件性挂起。
+
+### 等 owner 决定
+- ⏸ 脏 DB 清理卡（Y/N→1/0 归一 33+ 行 / 备份表来源 / 测试要素 ZCL·ZPA·ZUI 留存期满后删）
+- ⏸ 空 commit 695214e6 污染 main + 十余分支的 history 清理（高风险，禁自动改写）
+- ⏸ elementCode 长度对齐卡（前端 64→16 或后端放宽，需产品确认）
+- ⏸ push fix/p47-gate-element-closure + 前端 main commit
+
