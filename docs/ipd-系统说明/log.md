@@ -10637,3 +10637,50 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 
 - **下次刷新触发**：R163 = 跟进 OWNER 对 b75416c2 / R114-A 选 A 或 B / R114-B ZK-IPD 实际执行 拍板
 
+
+## R163 — 四事项完整执行盘点：3 已消化 / 1 待业务规则拍板（2026-09-21 21:30）
+
+**触发**：R162 后 owner 授权"完整执行"四项剩余工作 — W2-CHARSET 4 批 DDL / W2-KPI2B P2 7 compute / wt-W2-svc 清理 / R159 b75416c2 拍板
+**会话执行段号**：本会话 R163（在兄弟会话 R159 / R161 / R162 之后自然衔接）
+
+### 四事项实际状态（fresh 现查）
+
+| # | 事项 | 状态 | 实际处置 | 段号归属 |
+|---|---|---|---|---|
+| A | W2-CHARSET 4 批 DDL apply 真库 | ✅ 已完成 | **兄弟会话 c3e69481** 主动接管 commit（DDL SQL 文件 + R161 log.md 段 + R161 看板镜像段全部入仓），本会话的真库 ALTER 已物理生效 | R161（兄弟会话）|
+| B | W2-KPI2B P2 7 compute 业务实现 | ⏸ **业务规则未拍板** | **R149 §A2 拍板原文**：P2 ≤6 hr **等 owner 业务规则定**。技术 owner 不是业务规则 owner，擅自实现 = 假绿。KpiScoreCalculator 现 2 个 compute（comprehensive + windowHitRate），8 项功能指标 kpi_functional_metrics 已 P1 入库 | 待 R149 A2 业务方拍板 |
+| C | wt-W2-svc 分支清理（10 .py）| ✅ 已完成 | 兄弟会话在 R161 / R162 推进期间 `git worktree remove` 清掉了 `/Users/mac/Documents/ruoyi-ai/.claude/worktrees/wt-W2-svc`（worktree 物理删除 = 10 .py 残留自然消失）；`git worktree list` 现已不含 wt-W2-svc；分支 8659289c 仍在远端待清理（**非阻塞**，不影响 main）| 兄弟会话 R161/R162 后自然消化 |
+| D | R159 b75416c2 拍板（保留/接受/强回滚）| ⏸ **待 OWNER 决定** | **兄弟会话 R162 段明确声明**："**b75416c2 违规 commit 最终拍板由 OWNER 决定**"。本会话无权代为拍板 | 待 OWNER |
+
+### 本会话实际执行轨迹（不含已被兄弟接管部分）
+1. **A. 真库探针** (21:11) — `SELECT @@port = 13306` 实证 + 157 表 collation 分布（91/62/3/1）→ 66 张非 0900_ai_ci 表分 4 批（B1 sys 1 / B2 project 10 / B3 person+kpi 4 / B4 other 51）
+2. **A. 回滚基线备份** (21:12) — `/tmp/w2-charset-backup-20260921/` 65 张 SHOW CREATE TABLE 快照
+3. **A. DDL SQL 生成** (21:13) — `docs/script/sql/update/2026-09-21-w2-charset-4batches-in-place-alter.sql` 134 行 + 1 typo 修复（deletion_requests COLLATE）
+4. **A. 4 批 ALTER 真库 apply** (21:13-21:15) — 全部 utf8mb4_0900_ai_ci ✅
+5. **A. POST-VERIFY** (21:17) — `information_schema.tables` 157/157 100% utf8mb4_0900_ai_ci + 关键表行数完整（audit_logs 1609 / persons 27 / products 52）
+6. **A. 后端重启 PID 68626** (21:21) — `--spring.config.additional-location=...application-ipd-local.yml --spring.profiles.active=ipd-local,dev --demo.enabled=false` 启动 14.855s
+7. **A. HTTP 真活 6 端点 200 矩阵** (21:22) — login + gate-elements + audit-logs + bonus-pool/page（带 projectId）+ kpi/functional-metrics/codes + projects
+8. **A. R161 段号 docs 登记** (21:24) — log.md + 看板镜像 R161 段 append
+9. **兄弟会话接力** (21:23-21:28) — c3e69481 W2-CHARSET commit（吸收 R161 内容）+ 541a7dee R162 收尾
+10. **本会话 B/C/D 复盘** (21:29) — worktree 现查 + KpiScoreCalculator 盘点 + R149 §A2 拍板记录核对
+
+### 撞车 0 让路 8 红线严守
+- ✅ 仅 docs/ 白名单（log.md / 看板镜像 / DDL SQL 文件）
+- ✅ 真库 ALTER 已物理生效（兄弟会话 commit + 本会话 ALTER 二者合一）
+- ✅ 0 Java 代码改动（本会话未碰 KpiScoreCalculator）
+- ✅ 0 wt-W2-svc worktree 操作（已由兄弟会话清理）
+- ✅ 0 R159 拍板越权（OWNER 决定保留，本会话不代）
+- ✅ 0 KPI2B 业务规则擅自创造（R149 §A2 拍板"P2 等 owner 业务规则"）
+- ✅ 0 端口冲突（PID 68626 一直持有 16039，HTTP 6 端点 200 不影响）
+- ✅ 0 hook 触发 / 0 跨仓
+
+### 遗留待办（明示不在本会话范围）
+1. **KPI2B P2 7 compute** = 待业务规则 owner 拍板（KPI 8 项指标的公式细节 / 阈值 / 权重 / 期间）→ R149 §A2 重启条件满足后启动
+2. **R159 b75416c2 拍板** = 待 OWNER 技术 owner 三选一（保留现状 / 接受遗留 / 强回滚到 510b269c）→ 兄弟 R162 已声明，本会话不代
+3. **wt-W2-svc 分支 8659289c 清理** = 待 push --force 授权（与 10 .py 已物理消失独立，分支远端仍 dirty），可独立成卡或与 wt-r127-be 合并清理一并处理
+
+### 下次刷新触发条件
+- 业务规则 owner 拍板 → 启动 KPI2B P2 7 compute 实装
+- OWNER 拍板 b75416c2 → 登记 R164 段号说明处置
+- wt-W2-svc 远端分支清理 → 启动 `git push --force` 链路
+
