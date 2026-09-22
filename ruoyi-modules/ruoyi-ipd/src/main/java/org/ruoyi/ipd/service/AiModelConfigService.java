@@ -365,34 +365,53 @@ public class AiModelConfigService implements IAiModelConfigService {
     }
 
     private static void validate(AiModelSaveReq req, boolean requireApiKey) {
-        if (req == null || isBlank(req.provider()) || req.provider().length() > 32
-            || isBlank(req.endpoint()) || req.endpoint().length() > 255
-            || isBlank(req.model()) || req.model().length() > 64) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+        // P0 修复（R177-A，2026-09-22）：每条抛错带具体字段名，前端能看到「温度必须在 0-2 之间」
+        // 这类定向文案，而不是笼统的「参数校验失败」。align SopTemplateService 的好实践（9 处带 message）。
+        if (req == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "请求体不能为空");
+        }
+        if (isBlank(req.provider())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "提供商不能为空");
+        }
+        if (req.provider().length() > 32) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "提供商长度不能超过 32 字符");
+        }
+        if (isBlank(req.endpoint())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "接口地址不能为空");
+        }
+        if (req.endpoint().length() > 255) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "接口地址长度不能超过 255 字符");
         }
         if (!req.endpoint().startsWith("http://") && !req.endpoint().startsWith("https://")) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "接口地址必须以 http:// 或 https:// 开头");
+        }
+        if (isBlank(req.model())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "模型名称不能为空");
+        }
+        if (req.model().length() > 64) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "模型名称长度不能超过 64 字符");
         }
         if (requireApiKey && (isBlank(req.apiKey()) || req.apiKey().length() < 8)) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "API 密钥不能为空且至少 8 个字符");
         }
         if (req.temperature() != null
             && (req.temperature().compareTo(BigDecimal.ZERO) < 0 || req.temperature().compareTo(new BigDecimal("2")) > 0)) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "温度必须在 0-2 之间");
         }
         if (req.maxTokens() != null && (req.maxTokens() < 1 || req.maxTokens() > 200_000)) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "最大 Token 必须在 1-200000 之间");
         }
         // AI-STRAT-1（2026-09-11）：embed 两键可选，填了才校验格式（SSRF 黑名单在调用时
         // AiGateway.embed 前置，与主 endpoint 同策略——不在保存时做 DNS 解析）
         if (!isBlank(req.embedEndpoint())) {
             String e = req.embedEndpoint().trim();
             if (e.length() > 255 || (!e.startsWith("http://") && !e.startsWith("https://"))) {
-                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                    "RAG 向量化端点格式错误（必须 http:// 或 https:// 开头，长度 ≤ 255 字符）");
             }
         }
         if (!isBlank(req.embedModel()) && req.embedModel().trim().length() > 64) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "RAG 向量化模型名称长度不能超过 64 字符");
         }
     }
 

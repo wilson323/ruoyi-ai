@@ -12,6 +12,8 @@ import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.NegativeFeedbackService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.util.List;
 
@@ -91,5 +93,40 @@ public class NegativeFeedbackController {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(negativeFeedbackService.effectiveByProject(projectId, actor).stream()
             .map(NegativeFeedbackService::toView).toList());
+    }
+
+    /* ========================================================================
+     *  R27 P0-5：状态机 5 函数补全对应 API 端点
+     * ======================================================================== */
+
+    /** 按 projectId 查所有非软删负反馈（R27 P0-5#1：getByProjectId）。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/by-project/{projectId}")
+    public ApiV1Response<List<NegativeFeedbackView>> getByProjectId(@PathVariable Long projectId) {
+        return ApiV1Response.ok(negativeFeedbackService.getByProjectId(projectId).stream()
+            .map(NegativeFeedbackService::toView).toList());
+    }
+
+    /** 按 severity 过滤列表（R27 P0-5#5：listBySeverity）。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/by-severity/{severity}")
+    public ApiV1Response<List<NegativeFeedbackView>> listBySeverity(@PathVariable String severity) {
+        return ApiV1Response.ok(negativeFeedbackService.listBySeverity(severity).stream()
+            .map(NegativeFeedbackService::toView).toList());
+    }
+
+    /** 按 id 更新 status 字段（R27 P0-5#3：updateStatus）。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE, type = IpdAuthSession.LOGIN_TYPE)
+    @PutMapping("/{id}/status")
+    public ApiV1Response<Boolean> updateStatus(@PathVariable Long id,
+                                               @RequestParam String status) {
+        return ApiV1Response.ok(negativeFeedbackService.updateStatus(id, status));
+    }
+
+    /** 按 id 软删除（R27 P0-5#4：deleteById）。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE, type = IpdAuthSession.LOGIN_TYPE)
+    @DeleteMapping("/{id}")
+    public ApiV1Response<Boolean> deleteById(@PathVariable Long id) {
+        return ApiV1Response.ok(negativeFeedbackService.deleteById(id));
     }
 }

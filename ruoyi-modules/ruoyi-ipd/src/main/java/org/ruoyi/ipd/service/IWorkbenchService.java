@@ -24,7 +24,10 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.workbench.WorkbenchAggregator;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.workbench.WorkbenchAggregator;
 import org.ruoyi.ipd.workbench.WorkbenchPolicy;
+import org.ruoyi.ipd.workbench.domain.MyInitiatedTask;
 import org.springframework.stereotype.Service;
 
 /**
@@ -42,4 +45,16 @@ public interface IWorkbenchService {
     /** 通知收件箱透传（工作台右侧与顶栏红点共用）。 */
     List<NotificationEvent> inbox(IpdActor actor, boolean unreadOnly);
 
+
+    /* ========================================================================
+     *  R27 P0-6：Workbench 路径 2 函数补全
+     *  - myInitiated：聚合 3 张业务单据（删除/系数/上市日期）create_by=personId
+     *  - myPendingApprovals：聚合三表中待当前人审批的记录
+     * ======================================================================== */
+
+    /** 我发起的（3 张业务单据 create_by 聚合；按 taskType 拆分明细，前端按组渲染）。 */
+    List<MyInitiatedTask> myInitiated(Long personId);
+
+    /** 待我审批的（业务单据 + 阶段动作的聚合视图）。 */
+    List<MyInitiatedTask> myPendingApprovals(Long personId);
 }

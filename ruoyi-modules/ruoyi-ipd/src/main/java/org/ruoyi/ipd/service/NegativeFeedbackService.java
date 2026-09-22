@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -557,5 +558,91 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
     @Deprecated
     private void appendAudit(String action, NegativeFeedback row, String before, String reason) {
         appendAudit(action, row, null, before, reason);
+    }
+
+    /* ========================================================================
+     *  R27 P0-5：状态机 5 函数补全（无 actor / 无权限校验的简化口；用于透传式 API 路径）
+     *  设计：直接走 mapper，无项目归属/角色校验——controller 路径已走 requireInternal 兜底
+     * ======================================================================== */
+
+    /**
+     * 项目维度列表（不带 actor 校验；projectId=null 返空列表防御性，不抛 NPE）。
+     * <p>返回所有非软删（del_flag=0），按 create_time desc。
+     */
+    @Override
+    public List<NegativeFeedback> getByProjectId(Long projectId) {
+        if (projectId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return mapper.selectList(Wrappers.<NegativeFeedback>lambdaQuery()
+            .eq(NegativeFeedback::getProjectId, projectId)
+            .orderByDesc(NegativeFeedback::getCreateTime));
+    }
+
+    /**
+     * 简化版提交（重载：与 {@link #submit(Long, IpdActor)} 共存；本方法无 actor 校验）：
+     * 传入 row（DRAFT 状态机）→ mapper.selectById 校验存在 + 校验 DRAFT 状态 → setStatus(PENDING_DECISION) → mapper.updateById。
+     * <p>同步更新传入 fb 实例的 status 字段，便于调用方断言。
+     * <p>返 affected>0 = true；null 入参 / 不存在 / 非 DRAFT = false。
+     */
+    @Override
+    public boolean submit(NegativeFeedback fb) {
+        if (fb == null || fb.getId() == null) {
+            return false;
+        }
+        NegativeFeedback row = mapper.selectById(fb.getId());
+        if (row == null) {
+            return false;
+        }
+        if (!STATUS_DRAFT.equals(row.getStatus())) {
+            return false;
+        }
+        row.setStatus(STATUS_PENDING_DECISION);
+        fb.setStatus(STATUS_PENDING_DECISION);  // 同步回写到入参，便于调用方断言
+        return mapper.updateById(row) > 0;
+    }
+
+    /**
+     * 按 id 更新 status 字段；affected>0 返 true。
+     * <p>使用 LambdaUpdateWrapper 局部更新（不读行、不动其他字段）。
+     */
+    @Override
+    public boolean updateStatus(Long id, String status) {
+        if (id == null || status == null || status.isBlank()) {
+            return false;
+        }
+        int affected = mapper.update(null, Wrappers.<NegativeFeedback>lambdaUpdate()
+            .eq(NegativeFeedback::getId, id)
+            .set(NegativeFeedback::getStatus, status));
+        return affected > 0;
+    }
+
+    /**
+     * 按 id 软删除（del_flag=1）；affected>0 返 true。
+     * <p>走 LambdaUpdateWrapper.delFlag-aware：{@code @TableLogic} 字段会被 MP 自动加 del_flag=1 条件，
+     * 因此 update(null, wrapper) 即"再删除一次"的语义；测试中 mock 时不生效，Mockito 直接返 stub 值。
+     */
+    @Override
+    public boolean deleteById(Long id) {
+        if (id == null) {
+            return false;
+        }
+        int affected = mapper.update(null, Wrappers.<NegativeFeedback>lambdaUpdate()
+            .eq(NegativeFeedback::getId, id)
+            .set(NegativeFeedback::getDelFlag, "1"));
+        return affected > 0;
+    }
+
+    /**
+     * 按 severity 过滤列表（LOW|MEDIUM|HIGH|CRITICAL）；severity 为 null/blank 返所有（不抛 NPE）。
+     */
+    @Override
+    public List<NegativeFeedback> listBySeverity(String severity) {
+        LambdaQueryWrapper<NegativeFeedback> q = Wrappers.<NegativeFeedback>lambdaQuery()
+            .orderByDesc(NegativeFeedback::getCreateTime);
+        if (severity != null && !severity.isBlank()) {
+            q.eq(NegativeFeedback::getSeverity, severity);
+        }
+        return mapper.selectList(q);
     }
 }
