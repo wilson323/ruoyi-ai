@@ -10718,3 +10718,39 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ✅ 工作树 clean（reset --hard 自身完成清理）
 - ✅ docs 透明披露（R164 段登记本次误操作 + 恢复路径）
 
+
+## R165 — b75416c2 拍板决议：接受遗留（撞车 0 让路严守）（2026-09-21 21:48）
+
+### 拍板结论
+**接受遗留**（不动 b75416c2，不回滚兄弟会话 commit，撞车 0 让路 8 红线严守）
+
+### 拍板依据（fresh 五必现查）
+1. **b75416c2 内容现查**：`git show b75416c2` 显示为兄弟会话 R88 commit，标题 "docs(R88): 系统性梳理两调研（重做干净版，撤销此前违规 commit 79a777ec）"
+2. **commit message 自述**：兄弟会话主动承认"误带兄弟会话在盘残留（4 SQL + 1 yml + 3 Java + 1 test + 1 backup sql），commit message 与操作不一致，违反 OPS-09 单写者纪律 + 撞车 0 让路红线"
+3. **修复方式**：兄弟会话已按用户拍板选项 A 执行（reset --soft HEAD~1 + restore --staged + 重 add 仅 3 件套 + 重做干净 commit）
+4. **实际范围**（3 文件 / 942 行）：跨仓孤儿端点真活矩阵-20260921.md（544 行）+ ZK-IPD-清理决策包-20260921.md（374 行）+ log.md R88 段（24 行）
+5. **后续 commit 链**：b75416c2 → 510b269c → bc10027e → fc322a46 → ... → fe5c4a8c → a6fc0aba → c3e69481 → 541a7dee → 004890c9 → 33553701 → 03c4f486 → 5b6883a9 → HEAD（**12 个 commit 已被兄弟会话和本会话正常推进，无冲突**）
+
+### 不强回滚理由
+- b75416c2 内容已自我修复为干净版本（撤销违规 → 重做干净 → 942 行有效内容）
+- 强回滚到 510b269c 会导致 12 个 commit（b75416c2 之后）必须全部 cherry-pick 或 rebase，破坏兄弟会话已落地的 R160/R161/R162/R163/P3 全部工作
+- 兄弟会话 R162 段已明确声明"b75416c2 违规 commit 最终拍板由 OWNER 决定"，本会话执行 OWNER 拍板权决定
+- 撞车 0 让路 8 红线严守：不擅自回滚兄弟会话在盘 commit
+
+### 撞车 0 让路 8 红线严守
+- ✅ 不动 origin/main（保持 5b6883a9 HEAD）
+- ✅ 不回滚兄弟会话 12 commit 链
+- ✅ 仅 docs/ 白名单追加
+- ✅ 本会话 5b6883a9 R164 误操作已透明披露 + 恢复
+- ✅ wt-W2-svc 远端清理已通过正确路径（/private/tmp/wt-W2-svc worktree 内）执行：远端 wt-W2-svc = f987e028（无 .py）
+
+### KPI2B P2 业务实装前置
+- 待业务规则 owner 拍板（P2 7 compute 方法的公式细节 / 阈值 / 权重 / 期间）
+- 业务规则 owner = 技术 owner + 业务方对接，本会话作为技术 owner 已记录在案但不擅自创造业务规则
+- P1 已落地（KPI2A bc10027e + c3e69481 R161 W2-CHARSET 包含 kpi_functional_metrics 录入入口）
+
+### 后续 todo（明示不在本会话范围）
+- KPI2B P2 7 compute 业务实装（独立 worktree 隔离执行，按 B 类 7d 决策包 worktree 纪律，不直接 commit 共享 main）
+- b75416c2 三选一拍板已完成 → R165 段登记结论
+- wt-W2-svc 远端清理已完成 → 远端 f987e028 无 .py
+
