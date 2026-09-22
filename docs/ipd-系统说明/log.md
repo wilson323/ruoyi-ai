@@ -12576,3 +12576,41 @@ mvn -o -pl ruoyi-common/ruoyi-common-trace -Dprofiles.active= test    # Tests ru
 - 2026-09-27 R232 CopilotKit 三能力落地全局执行计划落仓 + b62a99e6 错账回退登记（协调会话，marker r232-plan-and-repair-20260927）：①【计划】owner 拍板开工（原话「第 3 步直接开工」「充分利用多个专业的智能体并行执行」）后，三路专业智能体并行盘点（ioedream-pm 任务图 / agency-harness 现状 / ioedream-qa-gatekeeper 红线门禁）修正提案与代码现状 7 处出入（ai_agent_tasks 无 GENERATED/PENDING_REVIEW 态、pageContext 前端 0 命中、ai_agent_tasks 无 REST 查询端点等），产出 docs/ipd-系统说明/CopilotKit三项能力落地-全局执行计划-20260927.md（17 节点/11 批次任务图 + 功能达成基线 + 红线 DoD + 多智能体执行纪律）。撞号透明：兄弟 b15655c3 先占 R231，本计划改 R232。②【错账与收编】b62a99e6 文不对账——message 写「R232 计划」实装 15 个 Java 文件（AuditAnomalyScan*/PromptType/PromptTemplates/AuditLogEventListener 等，为 aip3/aip11/kbauto 三路兄弟在途工作；逐文件 8+5+2=15 对上）。经 ioedream-qa-gatekeeper 评审（三步法①）处置结论「应还原」；回退已执行（reset --mixed b15655c3 + 5 已跟踪文件 checkout 还原 + 10 新文件移入 .codex/cleanup-quarantine-20260927-b62a99e6/，含 b62a99e6-full.patch 全量留档），但提交前并发会话（疑似三路交付通道，R230「Java 改动由主会话统一收口」同源）将 15 文件恢复并 stage，最终于 ce8a213f 与计划文档同批一次性入库——不再拉锯，按 R25 接手三步法收编：评审已做（结论见③）+ 本登记 + 兄弟自有编号以 ORIGIN-AI-P1-1 / ORIGIN-AI-P3#7 / ORIGIN-PLAN-KB-AUTO 保留史实。③【评审结论与挂账】代码本体编译绿+38 测试真绿（4/4 带 @Tag("dev")）+接线自洽（AiGenerateReq 兼容构造器/AuditLogMapper 纯新增/NotificationService 常量），但 AuditLogEventListener 为半成品（archiveIfKey 未接线）且带真活死路：projectId(null) 插入 ai_documents.project_id NOT NULL 表，mock 把该死路呑成绿（另 2 处 mock B 类违规）。挂账待正主卡修：①projectId 死路 ②mock B 类 ×2 ③半成品接线。三路 worktree（.claude/worktrees/aip3|aip11|kbauto）仍有同内容 staged 副本，feat 分支收口/合并时以 main ce8a213f 为准防重复入库。④【边界】看板 3 张执行卡撞号改 R232 系列另行登记。
 - 2026-09-27 R231-B2 owner 四指令执行轮：字符集归零 + 5 僵尸卡蜂群派单 + M1-M5 整体处置 + 双待拍卡翻 done（本会话主协调，marker r231-b2-owner-commands）。owner 原话「1revive真实派单2批准执行窗口3按照建议执行4按照建议执行」「2、要3要4要」。①【指令2 字符集】apply 前 fresh 现查：官方巡检 14 项=ai_agent_tasks 11 列+表默认 + bonus_pools_backup_20260926 / gate_review_elements_backup_20260926 表默认，根因=库默认 utf8mb4_general_ci；ALTER DATABASE + CONVERT ai_agent_tasks + 2 backup 表 DEFAULT COLLATE → 回读仍漂=0、check-charset-consistency PASS inconsistent=0、ai_agent_tasks 4 行数据完好；源头 DDL 20260926-ai-agent-tasks.sql 补显式 COLLATE；commit b15655c3（门禁 4/4 全绿 drift_count=0）。坑：mysql 真身 /opt/homebrew/bin/mysql（/Users/mac/tools/mysql 不存在 RC=127）。②【指令1 五僵尸卡派单】先磁盘现查证伪上轮「零实现」判定（SSE/aiexec/precheck case/aiRole 白名单/ai_doc_embeddings 全在盘），5 路 agency-harness 并行独立 worktree 交付：AI-P1-1 promptType 21 测、AI-P2-1 GatePrecheck 10 测、AI-P3#7 AuditAnomalyScan 13 测、AI-P2-2 BidAiCompare 8 测+98 回归（confirmToken 零碰）、KB① AuditLogEventListener 7 测；单写者 /tmp 补丁整合构建 56 测全绿（读 surefire XML 核验）+ 存量回归安全。孤儿棘轮预跑：P2-1/P2-2 新端点 exit 4 → 不白名单洗白，补丁撤出留已验 worktree feat/aip21-precheck/feat/aip22-bidcompare 等前端同批。并发事故：主会话 git add 15 文件先后被兄弟 b62a99e6（错账，后 reset 丢弃）与 ce8a213f（已 push）卷入——归属脏、内容安全在 origin，处置遵循 R25「不撕已推历史+如实登记」，收编细节见兄弟 r232-plan-and-repair-20260927 段（含 AuditLogEventListener 三挂账：projectId 死路/mock B 类×2/archiveIfKey 未接线，正主=KB-AUTO 卡）。③【指令3 M1-M5】ioedream-qa-gatekeeper（worktree feat/m1m5-gates）按设计 B 整体处置 7 脚本 +397/-196：M1 修（KANBAN_FILE 路径键名化+U0/U1/U2 判据对齐+缺失 exit 2）、M2 修（mtime→pending 解析，normal=1 属真实红——明晚起 8 项 09-27 截止拍板卡超期将集中报红，门禁说真话，处置权在 owner）、M3 修（缺失红+乱码 ${} 化）、M4 文档化废弃（DEPRECATED 头部，意图观测对象结构不可达）、M5 修（四分类终态）、check-m1m5-landed 改三探针（normal rc 词表/输入缺失必红/FAIL_SEED 必红），main 亲跑 LANDED_RC=0。④【指令4 双卡】8500d227 三待拍闭环（E2E=(c) 路线补 2 提前退出分支终态行；M1-M5=③；测试标签=R222 C 路线既有）→ done；b4da8962 待拍3 按建议=不改 pom（R226-B1 smoke PASSED=5 定性刻意设计）→ done。⑤【看板+镜像】7 卡 PUT+GET 回读 7/7 OK（5 僵尸卡保 inprogress 附派单证据，不假 done）；镜像 5 行注记 + 8500d227/b4da8962 两行新增 done。⑥【遗留】aip21/aip22 端点等前端同批；KB-AUTO 生产挂点待 owner 拍（publishEvent 禁用）；E2E 全绿实跑需后端+凭证环境补；3 已整合 worktree（aip3/aip11/kbauto）可按 ce8a213f 收编结论清理；M2 真红海啸待 owner 推拍板卡。
 - 2026-09-27 R233 蜂群并行执行轮（owner 指令『继续冲·多智能体并行执行剩余全部工作计划·严格一致性·避免冗余·避免双轨』，本会话主协调，marker r233-swarm-parallel）：① 28 张非终态卡 fresh 盘点分类（禁碰兄弟 CopilotKit R232 车道 e5c36c70/b72aa97d/f0c4ffa6/09cb52dc + owner 拍板阻塞 + 前端阻塞 + 汇总/追踪伞形 + 后端可做），三路 agency-harness 蜂群（swarmA AI 场景/重试、swarmB 工作台/门禁/ops06/P3-LOW、swarmC 11 卡分类账）全程 worktree 隔离零兄弟冲突。② 假缺口×2 证伪防冗余：WB-17-1 卡面「L94 硬编码」滞后（磁盘 ALL_TASK_TYPES 17 类+aggregator 分域已在）；P3-LOW 字符集隐患已被 09-21 w2 批扫消解（persons/sys_user 均 0900_ai_ci，真 JOIN 实跑 4 行无 1267，未执行任何 ALTER，翻 done）。③ 单写者整合 0b636722（11 文件 +907/-37，GIT_INDEX_FILE 临时索引法绕共享 index 与兄弟 staged 碰撞）：AI-P1-1 失败重试 1 次（20 测绿）、RETROSPECTIVE 模板+PromptType 扩展、AuditAnomalyScanScheduler 裸时钟债清偿（Clock 注入仿 P0EscalationScanScheduler，ServiceBareClockGuardTest 2/2 绿）、check-done-gate.py 三层判定（GATE-CL-01 短期方案）、ops06 交付物 sha256 逐字节回泊；安全子集独立复验 58/0/0/0。④ 防撞拆分：AI-P3 四场景撞兄弟在途未提交 AiSuggestionService.java → 留 feat/swarmA-ai 二波；GET /workbench/tasks 孤儿棘轮 exit 4（前端零消费）→ 留 feat/swarmB-wb 等前端同批，不白名单洗白；P144AcceptanceTest 断链（import 已删 OverdueReminderService@de52088d）→ P1-4.4 子卡 b828c017 done→inprogress 退回执行。⑤ 看板 18 卡 PUT+回读全 OK：4 翻 done（2de46b46 AI-P1-2、6028cbed DB-02、98586804 P4-2 汇总、639de2c8 P3-LOW，均主协调独立复验 85/0/0/0 后翻卡）+ b828c017 退回 inprogress + 13 注记；镜像 9 处对账回写（含 GATE-CL-01/WB-17-1 补四格行）。⑥ 遗留待拍（owner 菜单）：P1-6 清理 SQL、SEC-04 载体二选一、AUD-02 签注方式、M2 真红海啸、AI-P3 删除预评估范围、ops03_backup.py 佚失口径；兄弟 CopilotKit Phase1 活跃中，二波整合等其落地。
+---
+
+## 2026-09-22 P47 Gate 要素两字段贯通 — 三证闭环收口（fix/p47-gate-element-closure）
+
+> 事故全文见 `docs/ipd-系统说明/P47-Gate要素两字段贯通-事故梳理与三证闭环-20260922.md`（INC-20260922-P47）
+
+### 完成项（w1–w16 + ws1–ws3 + cr1–cr3）
+- **两字段贯通**：vetoDualRequired（双签否决）+ thresholdJson（阈值 JSON）后端 DTO 白名单 + 前端表单/校验全链路补齐。
+- **三证齐全**（生产就绪金标准）：
+  - HTTP 证 ✅ 直连 16050 create/clear + 5 拒绝路径全中
+  - DB 证 ✅ ipd_dev@13306 回读：ZPA 持久化 / **ZCL threshold_json=NULL**（@TableField ALWAYS 生效铁证）/ BAD 零污染
+  - Browser 证 ✅ 15667 UI A–E 全 PASS，创建 ZUI483920 落库，校验文案逐字吻合 W3-a/W3-b
+- **Warning#1 根治**：GateElement.thresholdJson 加 `@TableField(updateStrategy=ALWAYS)`，修复全局 NOT_NULL 策略下清空静默不落库（S2 数据不一致）。
+- **门禁全绿**：CodeReview PASSED（4 关注点逐一安全）+ empty-commit 非空证 + jar-source-drift 语义铁证 + 后端 13 单测绿 + 前端 typecheck exit0 / vitest 19 绿。
+
+### 关键诚实纠错
+1. **空 commit 695214e6（假绿）**：message 声称补两字段，`git show --name-only` 实测 **0 文件改动**，且已污染扩散到 main + 十余分支。
+2. **孤儿 commit ed997168**：真实 message，但仅在侧支 fix/gate-element-dto-closure，非当前 HEAD 祖先（reset 甩出提交链）。
+3. **分裂态**：后端真实 6 文件改动全在工作区未提交；前端两字段主体已被兄弟 0f896cc 抢先提交，我 delta 仅 W2/W3/W4/S5 精修 3 文件。
+4. **vite 挂起误诊为浏览器僵尸**：真根因是 `nohup pnpm vite` 未重定向 stdin → SIGTTIN → 进程 T(stopped) 态 → curl 000 → CDP 超时。修：`< /dev/null` 后 SN 态 + curl 200 in 0.02s。
+5. **脏 DB 取值域污染**：is_veto 有 Y(14)/N(19)、veto_dual_required 有 N(33) 未归一历史脏值（我的 Seed 修复只归一新 seed）；88 行 vs 官方 33；今日新建 gate_review_elements_backup_20260922(76 行) 来源待查。
+
+### 撞车 0 让路严守（OPS-09）
+- ✅ 后端只在 worktree 分支 fix/p47-gate-element-closure 精确 stage 6 文件，不直提 main
+- ✅ 前端 main 精确 stage 3 文件，排除临时 vite.config.p47.mts
+- ✅ 不删 DB 数据（G-02 禁删）/ 不改写已扩散 commit history / 不碰共享后端 websocket / 不杀兄弟进程
+
+### 限制与未验证项
+1. elementCode 前端 maxlength=64 vs 后端 CODE_MAX=16 错配（存量），本次未扩范围修，用短码绕过。
+2. 脏 DB Y/N 归一 + 备份表去留 + 空commit 污染清理均登记留证，处置权交 owner（单开卡）。
+3. ws4（WS 后端 session 身份删除）用户拍板走前端 guard，后端共享高危条件性挂起。
+
+### 等 owner 决定
+- ⏸ 脏 DB 清理卡（Y/N→1/0 归一 33+ 行 / 备份表来源 / 测试要素 ZCL·ZPA·ZUI 留存期满后删）
+- ⏸ 空 commit 695214e6 污染 main + 十余分支的 history 清理（高风险，禁自动改写）
+- ⏸ elementCode 长度对齐卡（前端 64→16 或后端放宽，需产品确认）
+- ⏸ push fix/p47-gate-element-closure + 前端 main commit
+
