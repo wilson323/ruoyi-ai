@@ -10978,3 +10978,33 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 本会话触发 d5ccad72 教训：shell sandbox 重置 PATH + cwd 飘到 wt-r157-e-b
 - 修复: 后续命令全用绝对路径（/usr/bin/git /bin/cat /usr/bin/wc）
 - 教训: 多 worktree 项目下 cwd 必须每次 pwd && git rev-parse --show-toplevel 复核
+
+---
+
+## 2026-09-22 Gate 评审要素页47 两仓闭环交付登记（会话 bd2c8cca）
+
+### 交付物（两 PR，均已 push 待 owner review）
+- 后端 PR #26（wilson323/ruoyi-ai，分支 fix/gate-element-dto-closure，commit ed997168）：
+  GateElementCreateReq/UpdateReq 补 vetoDualRequired + thresholdJson 入参封口 + SeedInitializer 修值 + GateElementServiceTest 4 新测。
+- 前端 PR #1（wilson323/ruoyi-admin，分支 feat/gate-elements-closure，commit 6827017）：
+  页47 B 段半截补口（双签/阈值 UI 采集 + JSON 校验）+ C 段软实施（复制 Gate 弹窗 / 历史恢复下拉 / 判定分布卡）+ 三列布局重构。
+
+### 自检证据
+- 后端：mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=GateElementServiceTest test = 9/9 PASS。
+- 前端：pnpm run check:type = 0 error；vitest = 963/963 PASS；drift-guard = 0 blocker（21 警告均为「待后端交付」诚实声明）。
+
+### 关联看板卡（外部直投 PUT /api/tasks + 独立 LIST 回读核验通过）
+- P1-6.1（Gate 要素定义管理，id 745b0141）：追加 2026-09-22 PR#26 关联注记，状态保持 inreview 不翻 done（未 merge + 未真库 HTTP 实测）。
+- P0-10.47（前端页47，id 9b9f09d1）：追加 2026-09-22 PR#1 关联注记，状态保持 cancelled（本仓不建 Vue，页47 闭环由前端仓会话维护至 merge + 浏览器实测）。
+- SSOT 镜像两行（128/253）source_status 单元格末尾同步同注记，10 格结构与首状态符号（◇/⊘）均未变。
+
+### 配套 OI（见 PR 描述）
+- OI-2026-09-22-GE-01：结构性 DDL（多 Gate 关联 gateCodes[] / 快照表 / evidenceRequired）本轮按 owner 决策未做，只留接口口子。
+- OI-2026-09-22-GE-02：历史恢复依赖后端 /gate-elements/audit/logs 批量端点（未实现），前端下拉暂显「暂无变更记录」。
+- OI-2026-09-22-GE-03：判定分布依赖后端 /gate-element-results/stats 端点（未实现），卡片暂优雅降级显「-」。
+
+### ⚠️ 暴露：manage.py reconcile 被既有畸变行阻塞（非本会话引入，未擅动）
+- 现象：python3 manage.py check → ValueError: Plan row AUD-02 has 5 cells。
+- 根因：镜像映射段第 1326 行（AUD-02）/ 第 1337 行（P1-6.1）为 5 格 id 映射行，parts[0] 命中 plan() 的 KEY.fullmatch 被误当正式计划行解析。
+- 影响：manage.py 的 check/set/sync 全线不可用；本会话因此改走「外部直投 PUT /api/tasks + 手工镜像单元格同步」完成登记，两通道内容一致。
+- 处置：映射行属兄弟会话/owner 结构域，本会话按 R19 未擅改，留待镜像 owner 修复映射段与 KEY 正则冲突后统一 reconcile。
