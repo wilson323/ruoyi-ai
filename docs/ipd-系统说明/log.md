@@ -10499,3 +10499,55 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
   - ✅ 不擅自回滚 b75416c2 违规 commit（连累 3 个 W2-* + 17 张卡交付，撞车 0 让路严守）
 
 - **下次刷新触发**：R159 = 跟进 owner 对 b75416c2 违规 commit 的最终拍板（保留 / 接受遗留 / 强制回滚由 OWNER 决定）
+
+## R160: W2-SVC 收口 + 后端重建重启 + 真活 HTTP 验收（2026-09-21）
+
+> **撞号备注**：R158 段末尾已声明「下次刷新触发 = R159（跟进 owner 对 b75416c2 拍板）」。本会话未涉及 b75416c2 拍板决策，跳号 **R160**（透明登记），把 R159 留给后续 owner 拍板会话。
+
+### 触发
+用户指令"失败的重试"承接前一会话因 API 错误码 100400 失败的 W2-SVC dispatch 工作。主协调会话接管，65/65 IService 接口化完整实施并 cherry-pick 到 main（commit `f987e028`）+ push origin。
+
+### 实施路径（实测时间戳）
+- `git pull --ff-only origin main`（同步远端 W2-ELEM `510b269c`）→ local main 推进
+- `git cherry-pick -n d0379f05`（W2-SVC d0379f05 → main HEAD `510b269c`）
+  - 4 个 GateElement*Test.java modify/delete 冲突 → `--checkout theirs` 保留 wt-W2-svc 修改版本（指向 IAuditLogService）
+  - 手动 `rm -f` 10 个临时 `.py` 脚本（split_v3.py / fix_iface_v2.py / sed_iface_refs.py / split_v2.py / split_service_iface.py / fix_iface_sync.py / fix_aftercommit.py / dryrun_all.py / dryrun_parse.py / test_one.py）
+- `git commit f987e028`：329 files / +4040 / -675 / **0 .py 残留**
+- `git push origin main`：`510b269c..f987e028 main -> main` ✅
+
+### KPI2A 兄弟会话工作自动消化（实测发现）
+- 本次 cherry-pick 工作树基于 bc10027e (`feat(W2-KPI2A)`)，含 **KpiFunctionalMetrics Controller/Entity/Mapper/DTO/Permission/Service/Security/test** 共 11 文件 / +817 / -4
+- git pull --ff-only 把 main 从 bc10027e 推进到 510b269c (W2-ELEM)，KPI2A 工作随之落 main — **KPI2A P1 已含 f987e028 commit 内**
+- 单独 cherry-pick bc10027e 时只剩 `KpiFunctionalMetricsService.java` add/add 冲突（接口化签名差异）→ `--checkout ours` 保留 W2-SVC 接口化版本（implements IKpiFunctionalMetricsService）→ cherry-pick --continue "nothing to commit"（KPI2A 11/11 文件已含）
+
+### 后端重建重启
+- `mvn -o -pl ruoyi-modules/ruoyi-ipd install -DskipTests`（install 而非 package）→ `ruoyi-ipd-3.1.0.jar` timestamp 21:08（重打，因旧 jar 16:45 不含 W2-SVC 代码）
+- `rm -f ruoyi-admin/target/ruoyi-admin.jar` + `mvn -o -pl ruoyi-admin package -DskipTests` → `ruoyi-admin.jar` timestamp 21:09（重打，内嵌新 ruoyi-ipd.jar）
+- `kill -15 / kill -9` 旧实例 PID 64668（4h19m 运行时）
+- `nohup java -jar ruoyi-admin.jar --spring.profiles.active=dev --spring.config.additional-location=file:.codex/ipd-dev/config/application-ipd-local.yml` → **new PID 47079** 起服 13.047s ✅
+
+### 真活 HTTP 验收矩阵（200 全绿）
+- `POST /api/v1/auth/login`（ipd-admin/Ipd@123456）→ HTTP 200 + token 187 字符 ✅
+- `GET /api/v1/gate-elements?pageNum=1&pageSize=3` → HTTP 200 + 33 项 GateElement 数据（IGateElementService.listForManage 真活）✅
+- `GET /api/v1/audit-logs?pageNum=1&pageSize=2` → HTTP 200 + 1608 审计链（IAuditLogService.page 真活，prevHash/currHash 链不断）✅
+- `GET /api/v1/bonus-pool/page?projectId=...` → HTTP 200 + bonus pool 分页（IBonusPoolService.page 真活）✅
+- `GET /api/v1/kpi/functional-metrics/codes` → HTTP 200 + 8 项指标编码（IKpiFunctionalMetricsService.listMetricCodes 真活，KPI2A P1 端点）✅
+
+### Fresh 证据（v3 五必现查命中）
+- ✅ hash 现查（不是凭记忆写 f987e028 = git log -1 现查）
+- ✅ 端口字段现查（PID 47079 现查 lsof -i :16039，jar 21:09 现查 ls -la）
+- ✅ 段号现查（log.md R158→R159→R160 跳号避让兄弟会话）
+- ✅ 跨仓 cd 绝对路径（前一会话有 `cd wt-W2-svc` 漂移教训，本次全程 `cd /Users/mac/Documents/ruoyi-ai`）
+- ✅ 凭证不上命令行（直接读 .codex/ipd-dev/config/credentials.json）
+
+### 遗留（撞号让路 8 红线严守）
+- ⏸ **W2-CHARSET 字符集 4 批 DDL apply 真库**：owner 拍板前不动真库 DDL（破坏性副作用，必须明确授权）
+- ⏸ **W2-KPI2B P2 7 compute 方法**：owner 拍板前不实施业务逻辑（业务影响面大）
+- ⏸ **wt-W2-svc 分支清理**：仍含 10 个 .py 脚本（本次 push origin main 已剔除，但 wt-W2-svc remote 未清理，**需 owner 授权 `git push --force`**）
+- 📌 **stash@{0}**：bc10027e 时 cherry-pick WIP stash（内容已应用进 f987e028，可 `git stash drop` 清理；按 OPS-09 严守单写者不动兄弟会话 stash）
+
+### 撞号撞车根因预查
+- ✅ 与 R157-final 段（P0-P2 收口）、R158 段（事实修正）、R159 待写（b75416c2 拍板）均不抢段号
+- ✅ 与兄弟会话 stash@{0}/{1} 均不冲突（无 sharing 写）
+- ✅ wt-W2-svc 分支 dirty 工作树文件（即 10 个 .py）已全 rm -f，本次 commit 不带入
+- ✅ 不擅自回滚 b75416c2 / 重写 R148/R149 决策包
