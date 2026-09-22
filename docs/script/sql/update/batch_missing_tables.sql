@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS `negative_feedbacks` (
   KEY `idx_feedback_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='负面反馈台账';
 
--- 5. requirement_pool（P2-6.x 需求池）
-CREATE TABLE IF NOT EXISTS `requirement_pool` (
+-- 5. requirement_pools（P2-6.x 需求池）
+CREATE TABLE IF NOT EXISTS `requirement_pools` (
   `id` bigint NOT NULL,
   `project_id` bigint DEFAULT NULL COMMENT '关联项目（可为空=未立项需求）',
   `title` varchar(256) COLLATE utf8mb4_general_ci NOT NULL,

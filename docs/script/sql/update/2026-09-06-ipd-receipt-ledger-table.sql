@@ -14,7 +14,7 @@
 --   docs/script/sql/update/receipt_ledger.sql（Wave2 dbc75862 落盘，无日期前缀）
 --   本文件为 B-FIX-PACK-1 卡面显式化补齐，结构与既有 DDL 字段一致，含 IF NOT EXISTS
 
-CREATE TABLE IF NOT EXISTS `receipt_ledger` (
+CREATE TABLE IF NOT EXISTS `receipt_ledgers` (
   `id` bigint NOT NULL COMMENT '主键（雪花）',
   `project_id` bigint NOT NULL COMMENT '项目ID（关联 projects.id）',
   `bonus_pool_id` bigint DEFAULT NULL COMMENT '奖金池ID（关联 bonus_pools.id）',
@@ -42,11 +42,11 @@ CREATE TABLE IF NOT EXISTS `receipt_ledger` (
   KEY `idx_receipt_window` (`window_start`, `window_end`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='销售回款台账（P3-4.1 / AC-INC-16b）';
 
--- 执行后校验（期望返回 1 行：receipt_ledger）
+-- 执行后校验（期望返回 1 行：receipt_ledgers）
 SELECT table_name, table_comment
 FROM information_schema.tables
 WHERE table_schema = DATABASE()
-  AND table_name = 'receipt_ledger';
+  AND table_name = 'receipt_ledgers';
 
 -- ROLLBACK（环境异常回滚用）
--- DROP TABLE IF EXISTS `receipt_ledger`;
+-- DROP TABLE IF EXISTS `receipt_ledgers`;

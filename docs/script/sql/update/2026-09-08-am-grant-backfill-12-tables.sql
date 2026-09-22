@@ -26,7 +26,7 @@ SET @grant_db = 'ipd_dev';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.contribution_versions TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.sop_template_instances TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.post_launch_reviews TO 'ipd_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.switching_acceptance TO 'ipd_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.switching_acceptances TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.project_score_records TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.project_score_tasks TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.gate_review_observers TO 'ipd_app'@'127.0.0.1';
@@ -43,7 +43,7 @@ SELECT table_name, table_priv AS granted
 FROM mysql.tables_priv
 WHERE user = @grant_user AND host = @grant_host AND db = @grant_db
   AND table_name IN (
-    'contribution_versions','sop_template_instances','post_launch_reviews','switching_acceptance',
+    'contribution_versions','sop_template_instances','post_launch_reviews','switching_acceptances',
     'project_score_records','project_score_tasks','gate_review_observers','correction_logs',
     'kpi_rule_snapshots','ipd_business_config','ipd_business_config_versions','notification_events')
 ORDER BY table_name;

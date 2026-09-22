@@ -2436,13 +2436,13 @@ CREATE TABLE `rd_replacements` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `receipt_ledger`
+-- Table structure for table `receipt_ledgers`
 --
 
-DROP TABLE IF EXISTS `receipt_ledger`;
+DROP TABLE IF EXISTS `receipt_ledgers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `receipt_ledger` (
+CREATE TABLE `receipt_ledgers` (
   `id` bigint NOT NULL,
   `project_id` bigint NOT NULL,
   `bonus_pool_id` bigint DEFAULT NULL,
@@ -2502,13 +2502,13 @@ CREATE TABLE `requirement_changes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `requirement_pool`
+-- Table structure for table `requirement_pools`
 --
 
-DROP TABLE IF EXISTS `requirement_pool`;
+DROP TABLE IF EXISTS `requirement_pools`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `requirement_pool` (
+CREATE TABLE `requirement_pools` (
   `id` bigint NOT NULL,
   `project_id` bigint DEFAULT NULL,
   `title` varchar(256) COLLATE utf8mb4_general_ci NOT NULL,
@@ -3555,13 +3555,13 @@ CREATE TABLE `stage_actions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `switching_acceptance`
+-- Table structure for table `switching_acceptances`
 --
 
-DROP TABLE IF EXISTS `switching_acceptance`;
+DROP TABLE IF EXISTS `switching_acceptances`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `switching_acceptance` (
+CREATE TABLE `switching_acceptances` (
   `id` bigint NOT NULL,
   `project_id` bigint DEFAULT NULL,
   `month` varchar(7) COLLATE utf8mb4_general_ci DEFAULT NULL,

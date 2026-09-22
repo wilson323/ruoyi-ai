@@ -10,7 +10,7 @@
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.contribution_versions TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.sop_template_instances TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.post_launch_reviews TO 'ipd_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.switching_acceptance TO 'ipd_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.switching_acceptances TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.project_score_records TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.project_score_tasks TO 'ipd_app'@'127.0.0.1';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.gate_review_observers TO 'ipd_app'@'127.0.0.1';

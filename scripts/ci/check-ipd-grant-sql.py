@@ -40,8 +40,8 @@ TABLES = [
     # 2026-09-06 后新建表
     "contributions", "contribution_versions",
     "sop_template_instances", "post_launch_reviews",
-    "switching_acceptance", "project_score_records",
-    "project_score_tasks", "receipt_ledger",
+    "switching_acceptances", "project_score_records",
+    "project_score_tasks", "receipt_ledgers",
     "gate_review_observers", "correction_logs", "kpi_rule_snapshots",
     "ipd_business_config", "ipd_business_config_versions",
     "negative_feedbacks", "launch_date_change_requests",
@@ -101,11 +101,11 @@ def selftest() -> int:
         d.mkdir()
         (d / "partial.sql").write_text(
             "".join("-- GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.{t} TO 'ipd_app'@'127.0.0.1';\n"
-                    .format(t=t) for t in TABLES if t != "receipt_ledger"),
+                    .format(t=t) for t in TABLES if t != "receipt_ledgers"),
             encoding="utf-8")
         got = check_sql_tree(d)
-        if got != ["receipt_ledger"]:
-            failures.append(f"阻断分支单表缺失: 期望 ['receipt_ledger'], 实得 {got}")
+        if got != ["receipt_ledgers"]:
+            failures.append(f"阻断分支单表缺失: 期望 ['receipt_ledgers'], 实得 {got}")
 
         # 阻断分支：授权给别的账号不算 ipd_app 白名单登记
         d = root / "wrong_user"

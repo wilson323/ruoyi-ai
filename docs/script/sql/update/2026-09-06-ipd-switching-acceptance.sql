@@ -1,10 +1,10 @@
 -- [SEC-FIX-SWITCHING-ORPHAN] SwitchingAcceptance 孤儿表 DDL——Entity 已实现但 DDL 缺失
 -- 业务链路：P3-7.1 月度账务切换验收 BR-INC-12
 -- 字段映射：SwitchingAcceptance entity 13 字段 + BaseEntity 6 字段
-ALTER TABLE switching_acceptance ADD COLUMN IF NOT EXISTS id bigint not null comment '主键（雪花）';
+ALTER TABLE switching_acceptances ADD COLUMN IF NOT EXISTS id bigint not null comment '主键（雪花）';
 -- 注：表本身不存在于仓库任何 SQL 文件，本 ALTER 会失败——但 idempotent ADD COLUMN 在 MySQL 8 不支持跨表
 -- 真实落地：CREATE TABLE（如已存在会因 IF NOT EXISTS 跳过）
-CREATE TABLE IF NOT EXISTS switching_acceptance (
+CREATE TABLE IF NOT EXISTS switching_acceptances (
     id                bigint        not null comment '主键（雪花）',
     project_id        bigint        not null comment '项目 ID',
     month             varchar(7)    not null comment '账务月 YYYY-MM',

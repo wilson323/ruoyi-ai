@@ -65,8 +65,8 @@ GRANT_RULES = [
         # 2026-09-06 后新建表（仅 3 张建表 SQL 带 GRANT 注释块）
         "contributions", "contribution_versions",
         "sop_template_instances", "post_launch_reviews",
-        "switching_acceptance", "project_score_records",
-        "project_score_tasks", "receipt_ledger",
+        "switching_acceptances", "project_score_records",
+        "project_score_tasks", "receipt_ledgers",
         "gate_review_observers", "correction_logs", "kpi_rule_snapshots",
         "ipd_business_config", "ipd_business_config_versions",
         "negative_feedbacks", "launch_date_change_requests",

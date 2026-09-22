@@ -91,8 +91,8 @@ class TenantExcludesConsistencyTest {
         Set<String> excluded = excludedTables();
         Set<String> required = new HashSet<>(Arrays.asList(
             "bonus_allocations", "project_scores", "contributions",
-            "negative_feedbacks", "requirement_pool", "ai_model_configs",
-            "system_config_versions", "legacy_imports", "receipt_ledger"
+            "negative_feedbacks", "requirement_pools", "ai_model_configs",
+            "system_config_versions", "legacy_imports", "receipt_ledgers"
         ));
         Set<String> notFound = new HashSet<>(required);
         notFound.removeAll(excluded);

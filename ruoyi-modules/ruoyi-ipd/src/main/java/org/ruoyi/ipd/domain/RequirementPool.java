@@ -30,7 +30,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @AllArgsConstructor
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "requirement_pool", autoResultMap = true)
+@TableName(value = "requirement_pools", autoResultMap = true)
 public class RequirementPool extends BaseEntity implements SoftDeletable {
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
