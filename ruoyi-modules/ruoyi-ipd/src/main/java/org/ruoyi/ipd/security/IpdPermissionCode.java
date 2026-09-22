@@ -205,4 +205,15 @@ public interface IpdPermissionCode {
 
     /** C4：P0 升级链查询（组长/超管） */
     String OPERATION_P0_ESCALATION_READ = "ipd:p0-escalation:read";
+
+    // ------------------------------------------------------------------
+    // W2-KPI2A（2026-09-21）：A2 P1 功能指标量表配套权限码
+    // 授权：OWNER-拍板登记-20260921.md（P3 九项全部完整执行 → 第 2 项）
+    // 语义：写码（录入/更新/软删）与读码分离，符合 R-NEW-SEC-5「写操作不挂 :query」。
+    // ------------------------------------------------------------------
+
+    /** A2 P1：功能指标量表录入 / 更新 / 软删（SUPER_ADMIN / MARKET_PM / RD_PM） */
+    String OPERATION_KPI_CONFIG = "ipd:kpi:config";
+    /** A2 P1：功能指标量表查询（内部四角色可读） */
+    String OPERATION_KPI_CONFIG_QUERY = "ipd:kpi:config:query";
 }
