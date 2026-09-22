@@ -42,11 +42,11 @@ CREATE TABLE IF NOT EXISTS `receipt_ledgers` (
   KEY `idx_receipt_window` (`window_start`, `window_end`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='销售回款台账（P3-4.1 / AC-INC-16b）';
 
--- 执行后校验（期望返回 1 行：receipt_ledger）
+-- 执行后校验（期望返回 1 行：receipt_ledgers）
 SELECT table_name, table_comment
 FROM information_schema.tables
 WHERE table_schema = DATABASE()
-  AND table_name = 'receipt_ledger';
+  AND table_name = 'receipt_ledgers';
 
 -- ROLLBACK（环境异常回滚用）
--- DROP TABLE IF EXISTS `receipt_ledger`;
+-- DROP TABLE IF EXISTS `receipt_ledgers`;

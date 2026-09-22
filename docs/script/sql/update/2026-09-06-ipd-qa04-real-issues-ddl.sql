@@ -8,7 +8,7 @@
 --     project_scores      + pm_role / self_score / market_leader_score / rd_leader_score / weighted_score / scored_at
 --     requirements        + accepted_at / element_snapshot
 --     requirement_changes + signatures
---     switching_acceptance + ran_at / ran_by
+--     switching_acceptances + ran_at / ran_by
 --   注：negative_feedbacks.trigger_evidence P3-8.2 文件未补，本卡一并补齐 ALTER；
 --       project_members.handover_role/note 字段语义在 HandoverRecord（不在 project_members），本次走 entity 端删除，不动 DDL。
 --   注：gates.sign_due_at / sign_extension_count 已在 P2-5.4 (2026-09-06-ipd-p254-sign-deadline-arbitration.sql) ALTER；
@@ -179,22 +179,22 @@ SET @ddl := IF(
     'SELECT 1 AS skip_rc_signatures');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- ===== switching_acceptance =====
+-- ===== switching_acceptances =====
 -- 18) ran_at
 SET @ddl := IF(
     (SELECT COUNT(*) FROM information_schema.columns
-      WHERE table_schema = DATABASE() AND table_name = 'switching_acceptance'
+      WHERE table_schema = DATABASE() AND table_name = 'switching_acceptances'
         AND column_name = 'ran_at') = 0,
-    'ALTER TABLE switching_acceptance ADD COLUMN ran_at datetime NULL COMMENT ''运行时间'' AFTER month',
+    'ALTER TABLE switching_acceptances ADD COLUMN ran_at datetime NULL COMMENT ''运行时间'' AFTER month',
     'SELECT 1 AS skip_sa_ran_at');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 19) ran_by
 SET @ddl := IF(
     (SELECT COUNT(*) FROM information_schema.columns
-      WHERE table_schema = DATABASE() AND table_name = 'switching_acceptance'
+      WHERE table_schema = DATABASE() AND table_name = 'switching_acceptances'
         AND column_name = 'ran_by') = 0,
-    'ALTER TABLE switching_acceptance ADD COLUMN ran_by bigint NULL COMMENT ''运行人 personId'' AFTER ran_at',
+    'ALTER TABLE switching_acceptances ADD COLUMN ran_by bigint NULL COMMENT ''运行人 personId'' AFTER ran_at',
     'SELECT 1 AS skip_sa_ran_by');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

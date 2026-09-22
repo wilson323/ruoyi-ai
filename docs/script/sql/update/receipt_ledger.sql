@@ -1,5 +1,5 @@
 -- P3-4.1 销售回款台账（AC-INC-16b/16c/16d/31/31b/32）
--- 执行前确认：SHOW TABLES LIKE 'receipt_ledger' → 空
+-- 执行前确认：SHOW TABLES LIKE 'receipt_ledgers' → 空
 CREATE TABLE IF NOT EXISTS `receipt_ledgers` (
   `id` bigint NOT NULL COMMENT '主键（雪花）',
   `project_id` bigint NOT NULL COMMENT '项目ID（关联 projects.id）',
