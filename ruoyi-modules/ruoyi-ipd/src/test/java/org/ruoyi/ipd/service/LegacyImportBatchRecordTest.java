@@ -52,7 +52,7 @@ class LegacyImportBatchRecordTest {
     @Mock
     private LegacyImportMapper legacyImportMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private ObjectProvider<LegacyImportService> self;
 

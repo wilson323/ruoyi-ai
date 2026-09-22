@@ -39,7 +39,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class StageActionService {
+public class StageActionService implements IStageActionService {
 
     private static final Set<String> LIGHT_STATUSES = Set.of("NOT_STARTED", "IN_PROGRESS", "DONE", "NA");
     private static final Set<String> DEEP_EXTRA_STATUSES = Set.of("DELAYED");
@@ -47,7 +47,7 @@ public class StageActionService {
 
     private final StageActionMapper stageActionMapper;
     private final DeliverableMapper deliverableMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ProjectStageMapper projectStageMapper;
     private final ProjectMapper projectMapper;
 

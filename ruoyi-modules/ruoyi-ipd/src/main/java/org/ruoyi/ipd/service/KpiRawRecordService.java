@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KpiRawRecordService {
+public class KpiRawRecordService implements IKpiRawRecordService {
 
     /** 8 项 KPI 类型白名单（R149 拍板） */
     public static final Set<String> KPI_TYPES = Set.of(

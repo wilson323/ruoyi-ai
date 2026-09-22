@@ -47,7 +47,7 @@ class P413AcceptanceTest {
     @Mock private RequirementMapper requirementMapper;
     @Mock private ProductMapper productMapper;
     @Mock private ProjectMemberMapper projectMemberMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private GuestDemandService.GuestRateLimiter rateLimiter;
 
     private GuestDemandService service;

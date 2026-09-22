@@ -28,13 +28,13 @@ class GateElementDuplicateTest {
 
     private GateElementMapper mapper;
     private AuditLogMapper auditLogMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private GateElementService service;
 
     @BeforeEach
     void setUp() {
         mapper = mock(GateElementMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         auditLogMapper = mock(AuditLogMapper.class);
         service = new GateElementService(mapper, auditLogService, auditLogMapper);

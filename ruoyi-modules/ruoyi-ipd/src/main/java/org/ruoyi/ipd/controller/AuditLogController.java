@@ -15,7 +15,7 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,7 +53,7 @@ import java.util.Map;
 public class AuditLogController {
 
     private final AuditLogMapper auditLogMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final IpdPermission ipdPermission;
     private final PersonMapper personMapper;
 

@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * IPD 需求池（免登录提交+查询码；v3 TS-06）
  * 游客通过 PORTAL_GUEST 来源提交，内部用户通过 INTERNAL 来源提交
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

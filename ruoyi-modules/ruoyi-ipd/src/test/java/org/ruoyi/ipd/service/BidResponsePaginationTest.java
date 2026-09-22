@@ -56,7 +56,7 @@ class BidResponsePaginationTest {
     @Mock private BidResponseMapper bidResponseMapper;
     @Mock private BidInvitationMapper bidInvitationMapper;
     @Mock private ProjectMemberMapper projectMemberMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private NotificationService notificationService;
 
     private BidResponseService bidResponseService;

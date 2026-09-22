@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  */
 @Service
-public class AiGenerationService {
+public class AiGenerationService implements IAiGenerationService {
 
     /** 生成默认超时 60s（卡 P4-2.2 基线） */
     static final int DEFAULT_TIMEOUT_MS = 60_000;
@@ -61,7 +61,7 @@ public class AiGenerationService {
     private final AiDocumentMapper documentMapper;
     private final AiDocumentService documentService;
     private final AiModelConfigService modelConfigService;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     /** AI-STRAT-2（2026-09-10）：生成主链迁 Langchain4j 统一调用层；预算/限流/审计仍在本类。 */
     private final AiGateway aiGateway;
     /** AI-STRAT-1（2026-09-11）：生成前同项目历史文档检索注入（RAG 增强；降级不阻塞）。 */
@@ -69,7 +69,7 @@ public class AiGenerationService {
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     public AiGenerationService(AiDocumentMapper documentMapper, AiDocumentService documentService,
-                               AiModelConfigService modelConfigService, AuditLogService auditLogService,
+                               AiModelConfigService modelConfigService, IAuditLogService auditLogService,
                                AiGateway aiGateway, AiDocEmbeddingService docEmbeddingService) {
         this.documentMapper = documentMapper;
         this.documentService = documentService;

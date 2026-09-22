@@ -18,7 +18,7 @@ import org.ruoyi.ipd.service.GateEngine;
 import org.ruoyi.ipd.service.GateReviewService;
 import org.ruoyi.ipd.service.LaunchDateChangeService;
 import org.ruoyi.ipd.service.LegacyImportService;
-import org.ruoyi.ipd.service.ProjectCertService;
+import org.ruoyi.ipd.service.IProjectCertService;
 import org.ruoyi.ipd.service.ProjectService;
 
 import java.util.Date;
@@ -57,7 +57,7 @@ class ProjectControllerTest {
     @Mock
     private GateEngine gateEngine;
     @Mock
-    private ProjectCertService projectCertService;
+    private IProjectCertService projectCertService;
     @Mock
     private LegacyImportService legacyImportService;
     @Mock

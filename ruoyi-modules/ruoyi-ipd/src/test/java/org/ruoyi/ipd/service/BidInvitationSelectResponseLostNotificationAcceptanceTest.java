@@ -45,7 +45,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
 
     @Mock private BidInvitationMapper bidInvitationMapper;
     @Mock private BidResponseMapper bidResponseMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private NotificationService notificationService;
 
     @InjectMocks private BidInvitationService bidInvitationService;

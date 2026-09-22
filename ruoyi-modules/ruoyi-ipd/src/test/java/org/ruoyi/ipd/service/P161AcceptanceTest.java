@@ -57,7 +57,7 @@ class P161AcceptanceTest {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private GateElementMapper mapper;
-    private AuditLogService audit;
+    private IAuditLogService audit;
     private AuditLogMapper auditLogMapper;
     private GateElementService service;
 
@@ -69,7 +69,7 @@ class P161AcceptanceTest {
     @BeforeEach
     void setUp() {
         mapper = mock(GateElementMapper.class);
-        audit = mock(AuditLogService.class);
+        audit = mock(IAuditLogService.class);
         auditLogMapper = mock(AuditLogMapper.class);
         service = new GateElementService(mapper, audit, auditLogMapper);
     }

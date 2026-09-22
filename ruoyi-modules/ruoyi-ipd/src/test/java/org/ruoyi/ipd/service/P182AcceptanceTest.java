@@ -37,7 +37,7 @@ class P182AcceptanceTest {
 
     @Mock private StageActionMapper actionMapper;
     @Mock private DeliverableMapper deliverableMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProjectStageMapper projectStageMapper;
     @Mock private ProjectMapper projectMapper;
 
@@ -126,7 +126,7 @@ class P182AcceptanceTest {
     void c12InBlockingSet() {
         assertThat(ActionCatalog.B_LEVEL_BLOCKING_CODES).contains("C12");
         assertThat(ActionCatalog.resolveCode("Z03")).isEqualTo("C12");
-        SystemConfigService configs = org.mockito.Mockito.mock(SystemConfigService.class);
+        ISystemConfigService configs = org.mockito.Mockito.mock(ISystemConfigService.class);
         GateEngine engine = new GateEngine(actionMapper, configs);
         when(actionMapper.selectList(any())).thenReturn(List.of(
             StageAction.builder().actionCode("C12").status("NOT_STARTED").build()));

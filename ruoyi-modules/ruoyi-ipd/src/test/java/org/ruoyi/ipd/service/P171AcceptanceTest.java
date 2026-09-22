@@ -46,13 +46,13 @@ class P171AcceptanceTest {
     @Mock private ProjectCertItemMapper itemMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private CertTemplateService certTemplateService;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
-    private ProjectCertService service;
+    private IProjectCertService service;
 
     @BeforeAll
     static void initMeta() {
-        // ProjectCertService 内联构造 LambdaQueryWrapper<ProjectCertItem>，纯 Mockito 环境需预初始化
+        // IProjectCertService 内联构造 LambdaQueryWrapper<ProjectCertItem>，纯 Mockito 环境需预初始化
         // TableInfo 元数据（lambda cache），否则运行时抛 "can not find lambda cache for this entity"。
         // 模式对齐同包 P062AcceptanceTest.initMeta()。
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "P171-test");
@@ -62,7 +62,7 @@ class P171AcceptanceTest {
     @BeforeEach
     void setUp() {
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        service = new ProjectCertService(itemMapper, projectMapper, certTemplateService, auditLogService);
+        service = new ProjectCertServiceImpl(itemMapper, projectMapper, certTemplateService, auditLogService);
     }
 
     private Project project(Long id, String markets) {

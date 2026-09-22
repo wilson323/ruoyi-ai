@@ -29,7 +29,7 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdRolePermissionCatalog;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.PostLaunchReviewService;
 
 import java.io.IOException;
@@ -80,7 +80,7 @@ class PostLaunchReviewAccessTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private ProjectMemberMapper memberMapper;
     @Mock private PersonMapper personMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission permission;
 
     private PostLaunchReviewService reviewService;

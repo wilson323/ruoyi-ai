@@ -65,7 +65,7 @@ public class GuestDemandService {
         this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
     }
     private Date now() { return Date.from(clock.instant()); }
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final GuestRateLimiter rateLimiter;
 
     /** 限流抽象：默认内存滑动窗口（单实例）；多实例部署时替换为 Redis 实现，勿动调用方。 */
@@ -78,14 +78,14 @@ public class GuestDemandService {
     public GuestDemandService(RequirementMapper requirementMapper,
                               ProductMapper productMapper,
                               ProjectMemberMapper projectMemberMapper,
-                              AuditLogService auditLogService) {
+                              IAuditLogService auditLogService) {
         this(requirementMapper, productMapper, projectMemberMapper, auditLogService, new InMemoryHourRateLimiter());
     }
 
     public GuestDemandService(RequirementMapper requirementMapper,
                               ProductMapper productMapper,
                               ProjectMemberMapper projectMemberMapper,
-                              AuditLogService auditLogService,
+                              IAuditLogService auditLogService,
                               GuestRateLimiter rateLimiter) {
         this.requirementMapper = requirementMapper;
         this.productMapper = productMapper;

@@ -9,7 +9,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AiModelView;
 import org.ruoyi.ipd.mapper.AiModelConfigMapper;
 import org.ruoyi.ipd.service.AiModelConfigService;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 
 import java.util.List;
 import java.util.Set;
@@ -34,13 +34,13 @@ class AiModelConfigServiceProviderTest {
     private static final String PLAIN_KEY = "sk-live-very-secret-12345";
 
     private AiModelConfigMapper mapper;
-    private AuditLogService audit;
+    private IAuditLogService audit;
     private ProviderRegistry registry;
 
     @BeforeEach
     void setUp() {
         mapper = mock(AiModelConfigMapper.class);
-        audit = mock(AuditLogService.class);
+        audit = mock(IAuditLogService.class);
         when(audit.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         registry = new ProviderRegistry(List.of(
             new CapturingTester("openai", Set.of("openai"), AiTestResult.ok(7), "fakeApiKey-LEAK-XXX"),

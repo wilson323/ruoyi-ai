@@ -37,13 +37,13 @@ class ProjectServiceTest {
     @Mock
     private ProductMapper productMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private GateEngine gateEngine;
     @Mock
     private ProjectBootstrapService projectBootstrapService;
     @Mock
-    private ProjectCertService projectCertService;
+    private IProjectCertService projectCertService;
     @Mock
     private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;
     @Mock

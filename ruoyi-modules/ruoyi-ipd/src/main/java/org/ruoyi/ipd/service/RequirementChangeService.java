@@ -48,7 +48,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class RequirementChangeService {
+public class RequirementChangeService implements IRequirementChangeService {
 
     /** 状态常量 */
     public static final String STATUS_DRAFT = "DRAFT";
@@ -75,7 +75,7 @@ public class RequirementChangeService {
 
     private final RequirementChangeMapper requirementChangeMapper;
     private final RequirementMapper requirementMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；requirement_change 4 迁移点接线）。 */
     private StateMachineGuard stateMachineGuard;
@@ -248,7 +248,7 @@ public class RequirementChangeService {
             try {
                 applyApprovedToRequirement(change);
             } catch (RuntimeException ex) {
-                // 失败审计独立落库（AuditLogService.append REQUIRES_NEW），随后 rethrow 让 change 不会变成 APPROVED
+                // 失败审计独立落库（IAuditLogService.append REQUIRES_NEW），随后 rethrow 让 change 不会变成 APPROVED
                 recordWriteBackFailure(change, ex);
                 throw ex;
             }

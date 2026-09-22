@@ -13,7 +13,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +48,7 @@ class AuditLogControllerCursorTest {
     @Mock
     private org.ruoyi.ipd.mapper.AuditLogMapper auditLogMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private IpdPermission ipdPermission;
     @Mock

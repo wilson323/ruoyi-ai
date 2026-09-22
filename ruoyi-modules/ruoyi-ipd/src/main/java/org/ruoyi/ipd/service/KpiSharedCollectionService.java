@@ -76,9 +76,9 @@ public class KpiSharedCollectionService {
         ProjectMemberMapper projectMemberMapper,
         PersonMapper personMapper,
         IpdPermission permission,
-        AuditLogService auditLogService,
+        IAuditLogService auditLogService,
         ProductGroupMapper productGroupMapper,
-        SystemConfigService systemConfigService,
+        ISystemConfigService systemConfigService,
         NotificationService notificationService,
         LandedScenarioMapper landedScenarioMapper,
         SwitchingAcceptanceMapper switchingAcceptanceMapper) {
@@ -102,9 +102,9 @@ public class KpiSharedCollectionService {
         ProjectMemberMapper projectMemberMapper,
         PersonMapper personMapper,
         IpdPermission permission,
-        AuditLogService auditLogService,
+        IAuditLogService auditLogService,
         ProductGroupMapper productGroupMapper,
-        SystemConfigService systemConfigService,
+        ISystemConfigService systemConfigService,
         NotificationService notificationService) {
         this(kpiRecordMapper, projectMapper, projectMemberMapper, personMapper, permission,
             auditLogService, productGroupMapper, systemConfigService, notificationService,
@@ -118,7 +118,7 @@ public class KpiSharedCollectionService {
         ProjectMemberMapper projectMemberMapper,
         PersonMapper personMapper,
         IpdPermission permission,
-        AuditLogService auditLogService) {
+        IAuditLogService auditLogService) {
         this(kpiRecordMapper, projectMapper, projectMemberMapper, personMapper, permission,
             auditLogService, null, null, null, null, null);
     }
@@ -149,9 +149,9 @@ public class KpiSharedCollectionService {
     private final ProjectMemberMapper projectMemberMapper;
     private final PersonMapper personMapper;
     private final IpdPermission permission;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ProductGroupMapper productGroupMapper;
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
     private final NotificationService notificationService;
     /** P2-1 K04 双认定：销售报备表 landed_scenarios（项目下存在落地场景记录 ⇒ 销售认定）。 */
     private final LandedScenarioMapper landedScenarioMapper;
@@ -167,7 +167,7 @@ public class KpiSharedCollectionService {
 
     /**
      * R149 A3：读取 NPS 最小有效样本阈值（{@code npsSampleSize < 该值 ⇒ 不计入 NPS 分母}）。
-     * <p>配置键：{@code nps.minSample}（Integer，{@link SystemConfigService}）；配置缺省/解析失败/服务未注入
+     * <p>配置键：{@code nps.minSample}（Integer，{@link ISystemConfigService}）；配置缺省/解析失败/服务未注入
      * ⇒ 回退 {@link #NPS_MIN_SAMPLE}=30。读取策略与 {@code kpi.monthlyDeadlineDay}（HIGH-4.1）同型——
      * 走 {@code system_configs} 表、Caffeine 缓存、不阻塞业务。
      *

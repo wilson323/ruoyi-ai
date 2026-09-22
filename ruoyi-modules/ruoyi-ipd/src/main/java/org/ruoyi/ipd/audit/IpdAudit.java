@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 /**
  * IPD 审计注解（审计 AOP 改造设计-20260909 §3.2，R22 落地）。
  * 标注在 Spring bean 公有方法上，方法<b>成功返回后</b>由 {@link IpdAuditAspect} 同步落一条审计。
- * <p>红线（设计 §3.3）：切面<b>同步</b>调用 {@code AuditLogService.append}（保 REQUIRES_NEW +
+ * <p>红线（设计 §3.3）：切面<b>同步</b>调用 {@code IAuditLogService.append}（保 REQUIRES_NEW +
  * 锚行锁 seq 串行语义），<b>禁止</b>仿 ruoyi-common-log LogAspect 的 publishEvent 异步——
  * 异步会吞掉 requireJson 校验失败信号，且与 verifyChain 验链时序冲突。
  * <p>适用边界（设计 §2 六类不可注解化之外的子集）：action/entityType 静态常量、无

@@ -44,7 +44,7 @@ class P213PersonStateAcceptanceTest {
 
     @Mock PersonMapper personMapper;
     @Mock ProjectMemberMapper memberMapper;
-    @Mock AuditLogService auditLogService;
+    @Mock IAuditLogService auditLogService;
     /** P2-2.2 联动新增：session revoke（默认 doNothing — 仅在测联动行为时显式 stub）。 */
     @Mock IpdAuthSession ipdAuthSession;
     /** P2-2.2 联动新增：通知派发（默认 null 返 — 联动副作用调用走 try/catch 兜底）。 */

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 class DeleteAuditConcurrencyTest {
 
     @Mock private DeletionRequestMapper deletionRequestMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProjectMapper projectMapper;
     @Mock private ProductMapper productMapper;
 
@@ -95,7 +95,7 @@ class DeleteAuditConcurrencyTest {
             .id(10L).entityType("projects").entityId(100L).reason("并发测试")
             .requesterId(1L).leaderId(2L).leaderDecision("APPROVE").leaderDecidedAt(new Date())
             .adminDueAt(new Date(System.currentTimeMillis() + 86_400_000))
-            .status(DeletionRequestService.ST_ADMIN_REVIEW)
+            .status(DeletionRequestServiceImpl.ST_ADMIN_REVIEW)
             .build();
     }
 }

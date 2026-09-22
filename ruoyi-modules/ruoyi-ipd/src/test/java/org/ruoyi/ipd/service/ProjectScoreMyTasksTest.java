@@ -45,7 +45,7 @@ class ProjectScoreMyTasksTest {
     @Mock private ProductGroupMapper groupMapper;
     @Mock private ProjectScoreTaskMapper taskMapper;
     @Mock private NotificationService notificationService;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission permission;
 
     private ProjectScoreScheduleService service;

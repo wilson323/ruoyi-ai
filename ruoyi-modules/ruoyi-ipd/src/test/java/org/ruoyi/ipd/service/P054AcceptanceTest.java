@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
  * <p>AC-AUD-04：普通 PM 导出审计日志 ⇒ 仅能导出与本人相关的日志
  * <br>AC-AUD-05：组长导出 / 超管导出 ⇒ 分别为本组 / 全局
  * <br>AC-AUD-06：未登录游客访问审计接口 ⇒ 返回 2xxxx，无任何数据（由 IpdWebSecurityConfig 拦截，单元层不重复覆盖）
- * <p>本类只覆盖 {@link AuditLogService#listByOperatorIds} / {@link AuditLogService#countByOperatorIds}
+ * <p>本类只覆盖 {@link IAuditLogService#listByOperatorIds} / {@link IAuditLogService#countByOperatorIds}
  * 的接口契约：page 范围透传 + scope 解析（null=全局 / ids=限定）。
  * <p>HTTP 层真库验收另见 evidence-p054-http-acceptance-*.json。
  * <p>形态为 Mockito 单元验收；不得据此标 done（BR-真库）。
@@ -44,11 +44,11 @@ class P054AcceptanceTest {
     @Mock private AuditChainHeadMapper chainHeadMapper;   // ①②③ P 变体：构造器新增依赖（本类不触 append）
     @Mock private PersonMapper personMapper;              // R22 P1-6 三元组补齐依赖（本类不触 append）
 
-    private AuditLogService service;
+    private IAuditLogService service;
 
     @BeforeEach
     void setUp() {
-        service = new AuditLogService(auditLogMapper, chainHeadMapper, personMapper);
+        service = new AuditLogServiceImpl(auditLogMapper, chainHeadMapper, personMapper);
     }
 
     @Test

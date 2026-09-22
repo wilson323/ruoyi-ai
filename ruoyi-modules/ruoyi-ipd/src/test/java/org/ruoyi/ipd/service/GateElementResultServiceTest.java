@@ -63,8 +63,8 @@ class GateElementResultServiceTest {
     @Mock private GateMapper gateMapper;
     @Mock private GateElementMapper elementMapper;
     @Mock private GateElementResultMapper resultMapper;
-    @Mock private SystemConfigService systemConfigService;
-    @Mock private AuditLogService auditLogService;
+    @Mock private ISystemConfigService systemConfigService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private NotificationService notificationService;
     @Mock private OssFileMapper ossFileMapper;
 

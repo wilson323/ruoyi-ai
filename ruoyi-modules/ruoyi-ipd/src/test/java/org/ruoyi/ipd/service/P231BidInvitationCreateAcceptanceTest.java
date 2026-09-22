@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 class P231BidInvitationCreateAcceptanceTest {
 
     @Mock BidInvitationMapper bidInvitationMapper;
-    @Mock AuditLogService auditLogService;
+    @Mock IAuditLogService auditLogService;
     /** HIGH authorization fix：project 可见性校验 */
     @Mock ProjectMapper projectMapper;
     @Mock IpdPermission ipdPermission;

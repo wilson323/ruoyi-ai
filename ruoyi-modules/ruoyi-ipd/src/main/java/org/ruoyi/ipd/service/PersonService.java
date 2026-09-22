@@ -55,7 +55,7 @@ public class PersonService {
 
     private final PersonMapper personMapper;
     private final ProjectMemberMapper memberMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     /** P2-2.2 离职冻结撤销会话（ipd loginType revokeAll；不改基线 sys_user）。 */
     private final IpdAuthSession ipdAuthSession;
     /** P2-2.2 离职通知派发（outbox 模式；NotificationChannel 仅留痕不外送）。 */

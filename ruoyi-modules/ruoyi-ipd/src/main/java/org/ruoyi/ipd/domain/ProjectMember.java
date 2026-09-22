@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * IPD 项目成员（双PM 绑定 + 评级快照；v3 TS-06）
  * 市场PM和研发PM各一条记录，锁定评级用于津贴计算 BR-INC-02
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

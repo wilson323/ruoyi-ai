@@ -48,7 +48,7 @@ class StageActionServiceInstantiateBatchTest {
     @Mock
     private DeliverableMapper deliverableMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private org.ruoyi.ipd.mapper.ProjectStageMapper projectStageMapper;
     @Mock

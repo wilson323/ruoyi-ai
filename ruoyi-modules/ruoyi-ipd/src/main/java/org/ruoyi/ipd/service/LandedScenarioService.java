@@ -38,7 +38,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class LandedScenarioService {
+public class LandedScenarioService implements ILandedScenarioService {
 
     /** 批量导入上限（防误传百万行打爆 DB；按 PM 实际使用场景，200 条足够一个月补登） */
     public static final int BATCH_IMPORT_MAX = 200;

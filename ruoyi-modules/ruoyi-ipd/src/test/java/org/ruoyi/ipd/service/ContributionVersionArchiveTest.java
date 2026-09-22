@@ -42,7 +42,7 @@ class ContributionVersionArchiveTest {
     @Mock private ContributionMapper contributionMapper;
     @Mock private ContributionVersionMapper versionMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
     @Mock private ProductGroupMapper productGroupMapper;
 

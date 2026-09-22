@@ -64,7 +64,7 @@ class P441AcceptanceTest {
     private ProjectMapper projectMapper;
     private ProjectMemberMapper projectMemberMapper;
     private PersonMapper personMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private IpdPermission ipdPermission;
     private IpdReportService ipdReportService;
     private ReportController controller;
@@ -79,7 +79,7 @@ class P441AcceptanceTest {
         projectMapper = mock(ProjectMapper.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
         personMapper = mock(PersonMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         ipdPermission = mock(IpdPermission.class);
         ipdReportService = new IpdReportService(
             allowanceLedgerMapper, bonusPoolMapper, projectScoreMapper,
@@ -321,7 +321,7 @@ class P441AcceptanceTest {
     // ========================================================================
 
     @Test
-    @DisplayName("⑥ 导出审计：津贴导出后 AuditLogService.append 被调用（EXPORT_REPORT + entityType=ALLOWANCE_LEDGER）")
+    @DisplayName("⑥ 导出审计：津贴导出后 AuditLogServiceImpl.append 被调用（EXPORT_REPORT + entityType=ALLOWANCE_LEDGER）")
     void exportAllowance_auditAppended() throws Exception {
         IpdActor actor = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
         when(ipdPermission.requireInternal()).thenReturn(actor);

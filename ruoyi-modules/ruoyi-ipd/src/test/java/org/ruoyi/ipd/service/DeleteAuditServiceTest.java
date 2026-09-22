@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 class DeleteAuditServiceTest {
 
     @Mock private DeletionRequestMapper deletionRequestMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProjectMapper projectMapper;
     @Mock private ProductMapper productMapper;
     @Mock private PersonMapper personMapper;
@@ -84,7 +84,7 @@ class DeleteAuditServiceTest {
             .id(id).entityType(entityType).entityId(entityId).reason("测试删除")
             .requesterId(1L).leaderId(2L).leaderDecision("APPROVE").leaderDecidedAt(new Date())
             .adminDueAt(new Date(System.currentTimeMillis() + 86_400_000))
-            .status(DeletionRequestService.ST_ADMIN_REVIEW)
+            .status(DeletionRequestServiceImpl.ST_ADMIN_REVIEW)
             .build();
     }
 
@@ -100,7 +100,7 @@ class DeleteAuditServiceTest {
 
         DeletionRequest after = service.approveAndExecute(10L, 99L);
 
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_DELETED);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_DELETED);
         verify(projectMapper).updateById(any(Project.class));
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
@@ -159,7 +159,7 @@ class DeleteAuditServiceTest {
     @DisplayName("P0-6.2.5 状态机守卫：LEADER_REVIEW → 抛异常，无副作用")
     void leaderReviewRejected() {
         DeletionRequest req = pending(15L, "projects", 600L);
-        req.setStatus(DeletionRequestService.ST_LEADER_REVIEW);
+        req.setStatus(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         when(deletionRequestMapper.selectById(15L)).thenReturn(req);
 
         assertThatThrownBy(() -> service.approveAndExecute(15L, 99L))

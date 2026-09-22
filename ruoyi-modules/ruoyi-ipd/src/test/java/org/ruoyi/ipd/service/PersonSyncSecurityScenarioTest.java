@@ -56,7 +56,7 @@ class PersonSyncSecurityScenarioTest {
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private PersonSyncService service;
 

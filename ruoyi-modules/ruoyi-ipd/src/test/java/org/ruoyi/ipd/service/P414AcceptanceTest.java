@@ -55,7 +55,7 @@ class P414AcceptanceTest {
     @Mock private RequirementChangeMapper requirementChangeMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private ProjectMemberMapper projectMemberMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private RequirementStateMachine service;
 

@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * IPD Gate 实例（五大联合 Gate；v3 TS-06）
  * G1..G5 对应六阶段出口评审，双签机制由 GateReviewService 实现
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

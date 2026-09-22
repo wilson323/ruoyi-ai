@@ -26,10 +26,10 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class ProductGroupService {
+public class ProductGroupService implements IProductGroupService {
 
     private final ProductGroupMapper productGroupMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 列出所有非删除产品组（按名称升序） */
     public List<ProductGroup> listAll() {

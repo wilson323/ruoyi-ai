@@ -58,7 +58,7 @@ import java.util.Map;
  * </ul>
  */
 @Service
-public class BonusPoolService {
+public class BonusPoolService implements IBonusPoolService {
 
     private final BonusPoolMapper bonusPoolMapper;
     private final ProjectMapper projectMapper;
@@ -95,12 +95,12 @@ public class BonusPoolService {
     }
 
     /**
-     * R149 A1：注入 SystemConfigService（nullable，兼容旧测试）以读取奖金池窗口月数配置。
+     * R149 A1：注入 ISystemConfigService（nullable，兼容旧测试）以读取奖金池窗口月数配置。
      * 配置键：{@code bonus.windowMonths}（system_configs 表），缺省 {@link #DEFAULT_WINDOW_MONTHS}=6。
      * 走 setter 模式，与 {@link #setStateMachineGuard} / {@link #setBusinessConfigService} 同型。
      */
-    private SystemConfigService systemConfigService;
-    public void setSystemConfigService(SystemConfigService systemConfigService) {
+    private ISystemConfigService systemConfigService;
+    public void setSystemConfigService(ISystemConfigService systemConfigService) {
         this.systemConfigService = systemConfigService;
     }
 
@@ -294,7 +294,7 @@ public class BonusPoolService {
     /* BR-INC-04：bonus.poolRate 实时读；非法拒绝；计算记录参数版本/输入/Decimal 舍入。 */
     /* BR-INC-05：项目 S/A/B 系数（coefficient）：S=1.5~2.0；A=1.0；B=0.6~0.8。 */
 
-    /** P3-4.2 BR-INC-04：默认 poolRate = 5%（保留兼容；运行时由 BusinessConfigService.BONUS_POOL_RATE 覆盖） */
+    /** P3-4.2 BR-INC-04：默认 poolRate = 5%（保留兼容；运行时由 IBusinessConfigService.BONUS_POOL_RATE 覆盖） */
     public static final BigDecimal DEFAULT_CONFIG_POOL_RATE = new BigDecimal("0.0500");
 
     /** P3-4.2 BR-INC-05：项目 S/A/B 系数合法区段 */
@@ -323,7 +323,7 @@ public class BonusPoolService {
 
     /**
      * R149 A1：奖金池基数采样窗口（上市后连续 N 个月实际回款），默认 6 个月。
-     * 历史口径：ZK-IPD §三.2.1 写死为 6；本次升级为可配置——经 {@link SystemConfigService}
+     * 历史口径：ZK-IPD §三.2.1 写死为 6；本次升级为可配置——经 {@link ISystemConfigService}
      * 读 {@code system_configs.config_key='bonus.windowMonths'}，配置缺省/读取失败时回退本常量。
      * 注：本类不直接消费窗口数（实际回款由上游系统按本窗口聚合写入 actualReceipts），
      * 本方法暴露给后续业务逻辑与接审计上下文使用，配套测试见 BonusPoolServiceTest。
@@ -353,13 +353,13 @@ public class BonusPoolService {
      * ROOT-R1 P0-7：业务参数读取服务（奖金池比例/阶梯系数；B-RULE-01 配套）。
      * 通过 setter 注入（兼容旧测试构造器），Spring 自动装配。
      */
-    private BusinessConfigService businessConfigService;
+    private IBusinessConfigService businessConfigService;
 
     /**
-     * ROOT-R1 P0-7：Spring 注入 BusinessConfigService（nullable 兼容旧测试）。
+     * ROOT-R1 P0-7：Spring 注入 IBusinessConfigService（nullable 兼容旧测试）。
      */
     @Autowired(required = false)
-    public void setBusinessConfigService(BusinessConfigService businessConfigService) {
+    public void setBusinessConfigService(IBusinessConfigService businessConfigService) {
         this.businessConfigService = businessConfigService;
     }
 
@@ -375,7 +375,7 @@ public class BonusPoolService {
     }
 
     /**
-     * ROOT-R1 P0-7：读取奖金池比例（poolRate）。优先 BusinessConfigService.BONUS_POOL_RATE，回退 DEFAULT_CONFIG_POOL_RATE。
+     * ROOT-R1 P0-7：读取奖金池比例（poolRate）。优先 IBusinessConfigService.BONUS_POOL_RATE，回退 DEFAULT_CONFIG_POOL_RATE。
      */
     public BigDecimal readActivePoolRate() {
         if (businessConfigService != null) {
@@ -870,12 +870,12 @@ public class BonusPoolService {
     public static final String STATUS_CONFIRMED = "CONFIRMED";
     public static final String STATUS_DISTRIBUTED = "DISTRIBUTED";
 
-    /** 审计事件 action 命名（与 AuditLogService.append 约定） */
+    /** 审计事件 action 命名（与 IAuditLogService.append 约定） */
     public static final String ACTION_COMPUTE = "BONUS_POOL_COMPUTE";
     public static final String ACTION_FREEZE = "BONUS_POOL_FREEZE";
     public static final String ACTION_DISTRIBUTE = "BONUS_POOL_DISTRIBUTE";
 
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     /**
      * P3-4.4：注入审计服务（Spring 装配入口）。
@@ -883,7 +883,7 @@ public class BonusPoolService {
      * 维持不变，新 auditLogService 默认 null——审计相关测试需用 setAuditLogService 注入 mock。
      */
     @Autowired(required = false)
-    public void setAuditLogService(AuditLogService auditLogService) {
+    public void setAuditLogService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
     }
 

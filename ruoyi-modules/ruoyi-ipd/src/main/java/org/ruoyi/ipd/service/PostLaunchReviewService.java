@@ -32,7 +32,7 @@ import java.util.List;
  *   <li>completeReview：填入复盘数据 + status=COMPLETED + completedAt=now；写审计 POST_LAUNCH_REVIEW_COMPLETED</li>
  *   <li>复用项目成员：assigneeId 由 ProjectMember 在任 MARKET_PM 反查（移交后接续到新 PM）</li>
  *   <li>幂等：同 projectId 已有 PENDING ⇒ 直接返回旧记录（多触发源兼容）</li>
- *   <li>删除走 DeletionRequestService 软删除（暂未启用）</li>
+ *   <li>删除走 IDeletionRequestService 软删除（暂未启用）</li>
  * </ul>
  *
  * <p><b>入口守卫（R-NEW-SEC-1 收口，2026-09-07）</b>：本服务三个公开写/读入口此前接受
@@ -74,7 +74,7 @@ public class PostLaunchReviewService {
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper memberMapper;
     private final PersonMapper personMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 复盘数据 record（与 PostLaunchReview 字段对齐，避免 DTO 爆炸）。 */
     public record ReviewData(BigDecimal actualRevenue, String customerFeedback,

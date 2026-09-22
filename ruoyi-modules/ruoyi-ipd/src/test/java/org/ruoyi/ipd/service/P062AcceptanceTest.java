@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 class P062AcceptanceTest {
 
     @Mock private DeletionRequestMapper deletionRequestMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProjectMapper projectMapper;
     @Mock private ProductMapper productMapper;
     @Mock private PersonMapper personMapper;
@@ -96,7 +96,7 @@ class P062AcceptanceTest {
             Long targetId = (long) (1000 + i);
             DeletionRequest req = DeletionRequest.builder()
                 .id((long) (i + 1)).entityType(type).entityId(targetId).reason("AC")
-                .requesterId(1L).status(DeletionRequestService.ST_ADMIN_REVIEW)
+                .requesterId(1L).status(DeletionRequestServiceImpl.ST_ADMIN_REVIEW)
                 .adminDueAt(new Date()).build();
             when(deletionRequestMapper.selectById(req.getId())).thenReturn(req);
             when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
@@ -137,7 +137,7 @@ class P062AcceptanceTest {
     void targetEntityFlaggedAfterExecute() {
         DeletionRequest req = DeletionRequest.builder()
             .id(1L).entityType("projects").entityId(2000L).requesterId(1L)
-            .status(DeletionRequestService.ST_ADMIN_REVIEW).build();
+            .status(DeletionRequestServiceImpl.ST_ADMIN_REVIEW).build();
         when(deletionRequestMapper.selectById(1L)).thenReturn(req);
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Project project = Project.builder().id(2000L).code("P").delFlag("0").build();
@@ -156,7 +156,7 @@ class P062AcceptanceTest {
     void alreadyDeletedIsNoop() {
         DeletionRequest req = DeletionRequest.builder()
             .id(1L).entityType("projects").entityId(2000L).requesterId(1L)
-            .status(DeletionRequestService.ST_ADMIN_REVIEW).build();
+            .status(DeletionRequestServiceImpl.ST_ADMIN_REVIEW).build();
         when(deletionRequestMapper.selectById(1L)).thenReturn(req);
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Project project = Project.builder().id(2000L).code("P").delFlag("1").build();
@@ -175,7 +175,7 @@ class P062AcceptanceTest {
     void missingTargetIsNoop() {
         DeletionRequest req = DeletionRequest.builder()
             .id(2L).entityType("products").entityId(3000L).requesterId(1L)
-            .status(DeletionRequestService.ST_ADMIN_REVIEW).build();
+            .status(DeletionRequestServiceImpl.ST_ADMIN_REVIEW).build();
         when(deletionRequestMapper.selectById(2L)).thenReturn(req);
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         when(productMapper.selectById(3000L)).thenReturn(null);

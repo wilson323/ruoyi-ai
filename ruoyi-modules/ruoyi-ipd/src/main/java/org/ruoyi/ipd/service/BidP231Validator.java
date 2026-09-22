@@ -39,7 +39,7 @@ import java.util.Objects;
 public class BidP231Validator {
 
     private final BidInvitationMapper bidInvitationMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     /** P2-3.1 SECURITY-FIX：project 可见性校验（high authorization） */
     private final ProjectMapper projectMapper;
     private final IpdPermission ipdPermission;
@@ -53,14 +53,14 @@ public class BidP231Validator {
     }
     private Date now() { return Date.from(clock.instant()); }
 
-    public BidP231Validator(BidInvitationMapper bidInvitationMapper, AuditLogService auditLogService) {
+    public BidP231Validator(BidInvitationMapper bidInvitationMapper, IAuditLogService auditLogService) {
         this(bidInvitationMapper, auditLogService, null, null);
     }
 
     /** Spring 装配入口（新增 ProjectMapper + IpdPermission 注入；HIGH 授权修复） */
     @Autowired
     public BidP231Validator(BidInvitationMapper bidInvitationMapper,
-                            AuditLogService auditLogService,
+                            IAuditLogService auditLogService,
                             ProjectMapper projectMapper,
                             IpdPermission ipdPermission) {
         this.bidInvitationMapper = bidInvitationMapper;

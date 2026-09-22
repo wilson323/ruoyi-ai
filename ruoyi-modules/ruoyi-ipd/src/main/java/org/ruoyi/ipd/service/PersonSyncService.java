@@ -61,7 +61,7 @@ public class PersonSyncService {
     private static final Duration BASE_BACKOFF = Duration.ofSeconds(2);
 
     private final PersonMapper personMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 任务台账 Mapper（生产注入；单测两参构造传 null → 纯内存模式）。 */
     private final PersonSyncJobMapper jobMapper;
@@ -71,13 +71,13 @@ public class PersonSyncService {
     private final AtomicLong jobSeq = new AtomicLong(0);
 
     /** 两参构造：单测兼容入口（jobMapper=null，纯内存模式；SEC 场景测试依赖此形态）。 */
-    public PersonSyncService(PersonMapper personMapper, AuditLogService auditLogService) {
+    public PersonSyncService(PersonMapper personMapper, IAuditLogService auditLogService) {
         this(personMapper, auditLogService, null);
     }
 
     /** Spring 主构造器（多构造器必须显式标注 @Autowired，否则启动失败——R29 实测教训）。 */
     @Autowired
-    public PersonSyncService(PersonMapper personMapper, AuditLogService auditLogService,
+    public PersonSyncService(PersonMapper personMapper, IAuditLogService auditLogService,
                              PersonSyncJobMapper jobMapper) {
         this.personMapper = personMapper;
         this.auditLogService = auditLogService;

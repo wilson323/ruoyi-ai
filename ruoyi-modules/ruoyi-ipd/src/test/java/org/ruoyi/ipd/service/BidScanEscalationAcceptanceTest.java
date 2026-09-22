@@ -55,7 +55,7 @@ class BidScanEscalationAcceptanceTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private PersonMapper personMapper;
     @Mock private NotificationService notificationService;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private BidInvitationService bidService;
     private BidScanService scanService;

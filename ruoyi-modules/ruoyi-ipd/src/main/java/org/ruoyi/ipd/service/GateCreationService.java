@@ -35,7 +35,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class GateCreationService {
+public class GateCreationService implements IGateCreationService {
 
     /** §5.3 / ZK-IPD §三.1：合法 gateCode 枚举 */
     public static final Set<String> ALLOWED_GATE_CODES = Set.of("G1", "G2", "G3", "G4", "G5");
@@ -45,7 +45,7 @@ public class GateCreationService {
 
     private final GateMapper gateMapper;
     private final ProjectMapper projectMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();

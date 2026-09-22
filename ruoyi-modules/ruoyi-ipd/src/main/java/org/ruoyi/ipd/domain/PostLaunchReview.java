@@ -18,7 +18,7 @@ import java.util.Date;
  * <p>G5 通过 + launchDate 入参 ⇒ 生成 scheduled_at = launchDate + 90d 的 PENDING 待办；
  * assigneeId 默认取项目当前主 MARKET_PM（移交后跟随），状态机 PENDING → COMPLETED/OVERDUE。
  *
- * <p>删除走 DeletionRequestService + DeleteAuditService（暂未启用，与其他业务表保持同款）。
+ * <p>删除走 IDeletionRequestService + DeleteAuditService（暂未启用，与其他业务表保持同款）。
  */
 @Data
 @Builder

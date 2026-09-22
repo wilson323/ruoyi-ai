@@ -10,7 +10,7 @@ import java.util.stream.Stream;
  * <ul>
  *   <li>{@code hashBroken}——{@code curr_hash} 重算不符或 {@code prev_hash} 链接不符：
  *       成因为篡改、哈希协议/算法不一致、或 DEF-6 那类「写入侧与读回侧载荷形态不对称」；
- *       可由 {@code AuditLogService.rebuildChain()} 重算哈希两列修复。</li>
+ *       可由 {@code IAuditLogService.rebuildChain()} 重算哈希两列修复。</li>
  *   <li>{@code gaps}——seq 不严格连续：成因为删行、事务回滚，或 InnoDB 自增值在
  *       DELETE/回滚后不回填留下的空洞；{@code rebuildChain()} 只重算哈希两列、
  *       <b>治不了缺行</b>，须补齐行或调整判据语义。</li>

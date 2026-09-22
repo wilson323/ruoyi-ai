@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * IPD KPI 记录（功能+共担；v3 TS-06）
  * 功能KPI归个人，共担KPI归产品组长（kpi.functionalWeight=0.6/0.4）
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

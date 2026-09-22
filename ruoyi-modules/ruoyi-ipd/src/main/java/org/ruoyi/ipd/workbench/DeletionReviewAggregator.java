@@ -6,7 +6,8 @@ import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.service.DeletionRequestService;
+import org.ruoyi.ipd.service.IDeletionRequestService;
+import org.ruoyi.ipd.service.DeletionRequestServiceImpl;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -37,10 +38,10 @@ public class DeletionReviewAggregator implements WorkbenchAggregator {
         String reviewStatus;
         boolean adminSide;
         if ("SUPER_ADMIN".equals(actor.role())) {
-            reviewStatus = DeletionRequestService.ST_ADMIN_REVIEW;
+            reviewStatus = DeletionRequestServiceImpl.ST_ADMIN_REVIEW;
             adminSide = true;
         } else if ("GROUP_LEADER".equals(actor.role())) {
-            reviewStatus = DeletionRequestService.ST_LEADER_REVIEW;
+            reviewStatus = DeletionRequestServiceImpl.ST_LEADER_REVIEW;
             adminSide = false;
         } else {
             return List.of();

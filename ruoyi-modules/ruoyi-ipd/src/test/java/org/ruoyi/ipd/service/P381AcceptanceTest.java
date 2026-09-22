@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 class P381AcceptanceTest {
 
     @Mock private NegativeFeedbackMapper negativeFeedbackMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private NotificationService notificationService;
 
     private NegativeFeedbackService service;

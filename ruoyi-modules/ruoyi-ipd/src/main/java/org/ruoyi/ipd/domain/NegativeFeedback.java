@@ -22,7 +22,7 @@ import java.util.Date;
  * <p>状态机：DRAFT → PENDING_DECISION → EXECUTED → LIFTED；任意阶段可 REJECTED。
  * <p>AC-INC-40：同项目同 triggerType 唯一（uk_nf_project_trigger_active），重复事件不重复扣减。
  *
- * <p>删除走 DeletionRequestService + DeleteAuditService（软删除，del_flag='0'/'1'）。
+ * <p>删除走 IDeletionRequestService + DeleteAuditService（软删除，del_flag='0'/'1'）。
  */
 @Data
 @Builder

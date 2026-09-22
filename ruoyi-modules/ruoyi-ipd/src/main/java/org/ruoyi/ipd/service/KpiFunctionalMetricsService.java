@@ -34,7 +34,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KpiFunctionalMetricsService {
+public class KpiFunctionalMetricsService implements IKpiFunctionalMetricsService {
 
     /**
      * 8 项功能指标编码（有序；前端下拉 / 校验白名单同源）。

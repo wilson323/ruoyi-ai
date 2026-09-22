@@ -54,7 +54,7 @@ class NegativeFeedbackServiceTest {
     @Mock
     private ProjectMemberMapper projectMemberMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
 

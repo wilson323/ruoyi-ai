@@ -52,8 +52,8 @@ class P322AcceptanceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ProductGroupMapper groupMapper;
     @Mock private IpdPermission permission;
-    @Mock private AuditLogService auditLogService;
-    @Mock private SystemConfigService configService;
+    @Mock private IAuditLogService auditLogService;
+    @Mock private ISystemConfigService configService;
     @Mock private SystemConfigVersionMapper versionMapper;
 
     private ProjectScoreArchiveService service;

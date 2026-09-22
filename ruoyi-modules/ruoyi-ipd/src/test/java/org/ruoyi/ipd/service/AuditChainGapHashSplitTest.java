@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * DEF-9 / 审计链顶层设计稿 T-2：{@link AuditLogService#verifyChainDetailed()} 的 HASH/GAP 分列契约。
+ * DEF-9 / 审计链顶层设计稿 T-2：{@link IAuditLogService#verifyChainDetailed()} 的 HASH/GAP 分列契约。
  *
  * <p>与 {@link AuditChainSymmetryTest}（锁合并出口 {@code verifyChain()} 的自洽语义）互补：
  * 本测锁「三条判据按成因分列」的四态诊断，确保 {@code chain} 字段能区分
@@ -40,7 +40,7 @@ class AuditChainGapHashSplitTest {
     private AuditLogMapper auditLogMapper;
 
     @InjectMocks
-    private AuditLogService service;
+    private AuditLogServiceImpl service;
 
     /** 构造一行「按秒级对称语义自洽」的链行（与 AuditChainSymmetryTest 同款 helper）。 */
     private static AuditLog consistentRow(long id, long seq, String prevHash, String action, Date createTime) {
@@ -54,7 +54,7 @@ class AuditChainGapHashSplitTest {
         return log;
     }
 
-    /** 秒级截断的 canonical（与 AuditLogService.canonicalOf 语义一致）。 */
+    /** 秒级截断的 canonical（与 IAuditLogService.canonicalOf 语义一致）。 */
     private static String canonicalSecond(AuditLog log) {
         return AuditHashChain.canonical(log.getSeq(), log.getOperatorId(), log.getOperatorName(),
             log.getOperatorRole(), log.getAction(), log.getEntityType(), log.getEntityId(),

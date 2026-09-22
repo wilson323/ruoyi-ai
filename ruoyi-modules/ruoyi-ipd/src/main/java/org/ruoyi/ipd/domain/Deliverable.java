@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 import java.util.Date;
 
 /** IPD 交付物（附件关联，深管完成校验 BR-IPD-03：至少 1 条未删记录方可标已完成）
- *  删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除；del_flag 列已存在于 P0 schema）。 */
+ *  删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除；del_flag 列已存在于 P0 schema）。 */
 @Data
 @Builder
 @NoArgsConstructor

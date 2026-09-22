@@ -63,7 +63,7 @@ class P222AcceptanceTest {
 
     @Mock PersonMapper personMapper;
     @Mock ProjectMemberMapper memberMapper;
-    @Mock AuditLogService auditLogService;
+    @Mock IAuditLogService auditLogService;
     @Mock IpdAuthSession ipdAuthSession;
     @Mock NotificationService notificationService;
 

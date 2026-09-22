@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class LegacyImportService {
+public class LegacyImportService implements ILegacyImportService {
 
     public static final String HISTORY_MISSING = "HISTORICAL_MISSING";
     public static final String CATCHUP_IN_PROGRESS = "IN_PROGRESS";
@@ -80,7 +80,7 @@ public class LegacyImportService {
     private final ProjectMapper projectMapper;
     private final StageActionMapper stageActionMapper;
     private final LegacyImportMapper legacyImportMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ObjectProvider<LegacyImportService> self;
     /** R8-P0-10：并行导入执行器。2026-09-05 修正：必须具名 mainExecutor——上下文存在多个
      * @Primary 的 Executor 子类型 bean（aiflow mainExecutor + common-core scheduledExecutorService），

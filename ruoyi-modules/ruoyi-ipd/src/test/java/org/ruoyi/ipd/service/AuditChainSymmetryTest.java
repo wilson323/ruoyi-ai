@@ -52,7 +52,7 @@ class AuditChainSymmetryTest {
     private AuditChainHeadMapper chainHeadMapper;
 
     @InjectMocks
-    private AuditLogService service;
+    private AuditLogServiceImpl service;
 
     /** ①②③ P 变体锚行（append 从 chain_heads 原子分配 seq/prevHash）。 */
     private static AuditChainHead anchor(Long lastSeq, String lastHash, long nextSeq) {
@@ -84,7 +84,7 @@ class AuditChainSymmetryTest {
         return log;
     }
 
-    /** 秒级截断的 canonical（与 AuditLogService.canonicalOf 语义一致）。 */
+    /** 秒级截断的 canonical（与 IAuditLogService.canonicalOf 语义一致）。 */
     private static String canonicalSecond(AuditLog log) {
         return AuditHashChain.canonical(log.getSeq(), log.getOperatorId(), log.getOperatorName(),
             log.getOperatorRole(), log.getAction(), log.getEntityType(), log.getEntityId(),

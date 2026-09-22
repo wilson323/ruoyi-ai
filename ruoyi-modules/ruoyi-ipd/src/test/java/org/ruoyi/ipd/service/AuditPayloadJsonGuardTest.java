@@ -62,7 +62,7 @@ class AuditPayloadJsonGuardTest {
     private AuditChainHeadMapper chainHeadMapper;
 
     @InjectMocks
-    private AuditLogService service;
+    private AuditLogServiceImpl service;
 
     /** ①②③ P 变体锚行（append 从 chain_heads 原子分配；旧 selectLast 路径已删）。 */
     private static AuditChainHead anchor() {

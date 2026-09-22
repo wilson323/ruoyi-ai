@@ -44,7 +44,7 @@ class P411AcceptanceTest {
     private RequirementMapper requirementMapper;
     private ProductMapper productMapper;
     private ProjectMemberMapper projectMemberMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private GuestDemandService.GuestRateLimiter limiter;
     private GuestDemandService service;
 
@@ -53,7 +53,7 @@ class P411AcceptanceTest {
         requirementMapper = mock(RequirementMapper.class);
         productMapper = mock(ProductMapper.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         limiter = mock(GuestDemandService.GuestRateLimiter.class);
         when(limiter.tryAcquire(anyString())).thenReturn(true);

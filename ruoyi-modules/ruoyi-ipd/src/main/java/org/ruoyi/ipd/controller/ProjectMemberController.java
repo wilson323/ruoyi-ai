@@ -8,7 +8,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.ProjectMemberService;
+import org.ruoyi.ipd.service.IProjectMemberService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,14 +17,14 @@ import java.util.List;
  * P2-4.1 项目成员绑定与评级快照（/api/v1/projects/{projectId}/members）。
  *
  * <p>绑定发起沿用组队口径（requireProjectCreator：市场PM/组长/超管，页08 研发PM 不可发起）；
- * 快照锁定与幂等规则见 {@link ProjectMemberService}。
+ * 快照锁定与幂等规则见 {@link IProjectMemberService}。
  */
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/members")
 @RequiredArgsConstructor
 public class ProjectMemberController {
 
-    private final ProjectMemberService memberService;
+    private final IProjectMemberService memberService;
     private final IpdPermission permission;
 
     /** P2-4.2：approvalRef 可选——绑第 threshold 个项目时必填（服务端强制，不信任前端提示）。 */

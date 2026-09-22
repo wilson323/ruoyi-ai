@@ -67,7 +67,7 @@ public final class AuditHashChain {
 
     /**
      * 预留 v2：在 v1 载荷前加 {@link #V2_PREFIX}，末尾追加扩展 JSON 段。
-     * <p><b>禁止</b>在 ACTIVE_CANONICAL_VERSION 仍为 1 时由 {@code AuditLogService} 调用本方法写库，
+     * <p><b>禁止</b>在 ACTIVE_CANONICAL_VERSION 仍为 1 时由 {@code IAuditLogService} 调用本方法写库，
      * 否则新旧行混用会导致验链策略歧义。
      *
      * @param extensionJson 扩展字段 JSON（业务自定义，null→空串）；不得回填进 v1 字段位

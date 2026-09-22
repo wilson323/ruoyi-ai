@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductService {
+public class ProductService implements IProductService {
 
     private static final Set<String> SOURCES = Set.of(Product.SRC_ADMIN_IMPORT, Product.SRC_PM_NEW, Product.SRC_GUEST_OTHER);
 
@@ -48,7 +48,7 @@ public class ProductService {
 
     private final ProductMapper productMapper;
     private final ProjectMapper projectMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     @Transactional(rollbackFor = Exception.class)
     public Product create(Product product, Long operatorId) {

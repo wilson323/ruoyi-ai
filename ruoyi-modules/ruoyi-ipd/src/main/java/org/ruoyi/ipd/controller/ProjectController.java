@@ -26,7 +26,7 @@ import org.ruoyi.ipd.service.LaunchDateChangeService;
 import org.ruoyi.ipd.service.GateCreationService;
 import org.ruoyi.ipd.service.GateReviewService;
 import org.ruoyi.ipd.service.LegacyImportService;
-import org.ruoyi.ipd.service.ProjectCertService;
+import org.ruoyi.ipd.service.IProjectCertService;
 import org.ruoyi.ipd.service.ProjectService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,7 +51,7 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final GateEngine gateEngine;
-    private final ProjectCertService projectCertService;
+    private final IProjectCertService projectCertService;
     private final LegacyImportService legacyImportService;
     private final LaunchDateChangeService launchDateChangeService;
     private final GateCreationService gateCreationService;

@@ -34,14 +34,14 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class ProjectCertService {
+public class ProjectCertServiceImpl implements IProjectCertService {
 
     private static final Set<String> STATUSES = Set.of("PENDING", "IN_PROGRESS", "DONE", "NA");
 
     private final ProjectCertItemMapper projectCertItemMapper;
     private final ProjectMapper projectMapper;
     private final CertTemplateService certTemplateService;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * 按项目当前目标市场同步 AUTO 项（批量化版本）。

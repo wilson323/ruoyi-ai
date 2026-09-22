@@ -32,7 +32,7 @@ class IpdAuthServiceTest {
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private IpdAuthService service;
 

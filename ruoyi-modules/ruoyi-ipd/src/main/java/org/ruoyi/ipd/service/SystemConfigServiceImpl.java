@@ -56,7 +56,7 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
-public class SystemConfigService {
+public class SystemConfigServiceImpl implements ISystemConfigService {
 
     private final SystemConfigMapper systemConfigMapper;
     private final SystemConfigVersionMapper systemConfigVersionMapper;

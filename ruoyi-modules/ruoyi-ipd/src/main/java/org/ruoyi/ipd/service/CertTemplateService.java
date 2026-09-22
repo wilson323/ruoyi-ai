@@ -21,10 +21,10 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
-public class CertTemplateService {
+public class CertTemplateService implements ICertTemplateService {
 
     private final CertTemplateMapper certTemplateMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 按目标市场国家代码数组解析认证清单（如 ["SA","AE"]）；未匹配国别返回空表由前端提示手工补充 */
     public List<CertTemplate> resolve(String[] targetMarkets) {

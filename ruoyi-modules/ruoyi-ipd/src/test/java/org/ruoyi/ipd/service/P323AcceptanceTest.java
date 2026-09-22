@@ -51,7 +51,7 @@ class P323AcceptanceTest {
     @Mock private ProjectScoreTaskMapper taskMapper;
     @Mock private NotificationEventMapper notificationEventMapper;
     @Mock private org.ruoyi.ipd.service.NotificationService notificationService;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission permission;
 
     private ProjectScoreScheduleService service;

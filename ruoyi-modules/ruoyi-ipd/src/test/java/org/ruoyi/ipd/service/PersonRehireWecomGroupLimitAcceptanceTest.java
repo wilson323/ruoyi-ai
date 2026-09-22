@@ -42,7 +42,7 @@ class PersonRehireWecomGroupLimitAcceptanceTest {
 
     @Mock PersonMapper personMapper;
     @Mock ProjectMemberMapper memberMapper;
-    @Mock AuditLogService auditLogService;
+    @Mock IAuditLogService auditLogService;
 
     @InjectMocks PersonService personService;
 

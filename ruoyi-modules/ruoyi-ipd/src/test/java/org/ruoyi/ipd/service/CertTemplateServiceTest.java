@@ -30,7 +30,7 @@ class CertTemplateServiceTest {
     @Mock
     private CertTemplateMapper mapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private CertTemplateService service;
 

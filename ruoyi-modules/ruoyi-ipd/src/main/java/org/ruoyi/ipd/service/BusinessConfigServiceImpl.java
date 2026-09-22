@@ -31,8 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * IPD 业务参数读取服务（ROOT-R1 P0-6）
  *
- * <p>与 SystemConfigService 解耦：本服务只管理 ipd_business_config（业务规则参数），
- * SystemConfigService 管理 system_configs（系统参数）。两者通过 {@code config_key} 前缀区分。
+ * <p>与 ISystemConfigService 解耦：本服务只管理 ipd_business_config（业务规则参数），
+ * ISystemConfigService 管理 system_configs（系统参数）。两者通过 {@code config_key} 前缀区分。
  *
  * <p>缓存（PERF-02 同型设计）：
  * <ul>
@@ -54,7 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BusinessConfigService {
+public class BusinessConfigServiceImpl implements IBusinessConfigService {
 
     private final IpdBusinessConfigMapper businessConfigMapper;
     private final IpdBusinessConfigVersionMapper businessConfigVersionMapper;

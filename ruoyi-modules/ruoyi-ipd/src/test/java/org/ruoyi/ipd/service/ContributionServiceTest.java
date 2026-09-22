@@ -49,7 +49,7 @@ class ContributionServiceTest {
     @Mock private ContributionMapper contributionMapper;
     @Mock private org.ruoyi.ipd.mapper.ContributionVersionMapper versionMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
     @Mock private ProductGroupMapper productGroupMapper;
 

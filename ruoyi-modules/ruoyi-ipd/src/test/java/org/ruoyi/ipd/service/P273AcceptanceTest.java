@@ -66,13 +66,13 @@ class P273AcceptanceTest {
     @Mock
     private HandoverMapper handoverMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private IpdAuthSession ipdAuthSession;
     @Mock
     private NotificationService notificationService;
 
-    private ProjectMemberService projectMemberService;
+    private IProjectMemberService projectMemberService;
     private HandoverService handoverService;
 
     private static final IpdActor CURRENT_ADMIN = new IpdActor(900L, "现任超管", "SUPER_ADMIN", null);
@@ -96,8 +96,8 @@ class P273AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
-            org.mockito.Mockito.mock(SystemConfigService.class), auditLogService);
+        projectMemberService = new ProjectMemberServiceImpl(memberMapper, personMapper, projectMapper,
+            org.mockito.Mockito.mock(ISystemConfigService.class), auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper, handoverMapper,
             auditLogService, projectMemberService, NoopTransactionManager.INSTANCE, ipdAuthSession,
             notificationService);

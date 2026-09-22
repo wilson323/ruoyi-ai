@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class BidResponseService {
+public class BidResponseService implements IBidResponseService {
 
     /** 方案摘要（solution_summary）承载列 response_note 的最小长度，spec 页21：accept 必填 ≥40 字 */
     static final int SOLUTION_SUMMARY_MIN_CHARS = 40;
@@ -39,7 +39,7 @@ public class BidResponseService {
     private final BidResponseMapper bidResponseMapper;
     private final BidInvitationMapper bidInvitationMapper;
     private final ProjectMemberMapper projectMemberMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * W5-E-2.4 件 1.2：actor 入口校验——service 层不信任 controller 必传（防御性兜底）。

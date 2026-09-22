@@ -61,10 +61,10 @@ class ProjectServiceListFilterTest {
     @Mock private StageActionMapper stageActionMapper;
     @Mock private KpiRecordMapper kpiRecordMapper;
     @Mock private ProjectMemberMapper projectMemberMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private GateEngine gateEngine;
     @Mock private ProjectBootstrapService projectBootstrapService;
-    @Mock private ProjectCertService projectCertService;
+    @Mock private IProjectCertService projectCertService;
     @Mock private PlatformTransactionManager transactionManager;
     @Mock private RequirementChangeService requirementChangeService;
 

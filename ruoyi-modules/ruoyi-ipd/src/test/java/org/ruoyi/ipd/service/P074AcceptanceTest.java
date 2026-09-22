@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 class P074AcceptanceTest {
 
     @Mock PersonMapper personMapper;
-    @Mock AuditLogService auditLogService;
+    @Mock IAuditLogService auditLogService;
     @Mock IpdAuthSession session;
 
     private IpdAuthService authService;

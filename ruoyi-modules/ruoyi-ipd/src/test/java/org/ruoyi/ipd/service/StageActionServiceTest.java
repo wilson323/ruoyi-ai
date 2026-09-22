@@ -16,7 +16,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.domain.AuditLog;
 
 import java.util.Date;
@@ -37,7 +37,7 @@ class StageActionServiceTest {
 
     private StageActionMapper actionMapper;
     private DeliverableMapper deliverableMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private ProjectStageMapper projectStageMapper;
     private StageActionService service;
 
@@ -45,7 +45,7 @@ class StageActionServiceTest {
     void setUp() {
         actionMapper = mock(StageActionMapper.class);
         deliverableMapper = mock(DeliverableMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         projectStageMapper = mock(ProjectStageMapper.class);
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         when(projectMapper.selectById(any())).thenReturn(

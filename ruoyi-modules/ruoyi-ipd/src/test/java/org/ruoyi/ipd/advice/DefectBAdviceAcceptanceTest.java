@@ -16,7 +16,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionExceptionHandler;
 import org.ruoyi.ipd.security.IpdPermissionException;
 import org.ruoyi.ipd.service.AuditAttemptService;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.IpdAuthService;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -83,7 +83,7 @@ class DefectBAdviceAcceptanceTest {
     @BeforeEach
     void setup() {
         AuditLogMapper auditLogMapper = mock(AuditLogMapper.class);
-        AuditLogService auditLogService = mock(AuditLogService.class);
+        IAuditLogService auditLogService = mock(IAuditLogService.class);
         ipdPermission = mock(IpdPermission.class);
         PersonMapper personMapper = mock(PersonMapper.class);
         // 受试者 = 真实 AuditLogController + 生产 advice 链：证明权限三型在生产链上确实返回 4xx，非孤立 mock。

@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * IPD 项目奖金池（BR-INC-04~09，涉钱必须 TDD）
  * 目标销售额×5%×系数→6档阶梯→分配，回款口径 salesSource=RECEIPT
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

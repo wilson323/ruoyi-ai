@@ -35,7 +35,7 @@ import java.util.concurrent.Executor;
  * 线程池行为不变。
  *
  * <p>若未来需要写审计日志（IPD audit_logs.async_failure），只需在本 bean 内
- * 注入 AuditLogService 后调用即可，无需散落到各 @Async 方法。
+ * 注入 IAuditLogService 后调用即可，无需散落到各 @Async 方法。
  *
  * @author Lion Li (PERF-P0-3 修复)
  * @author R28.5 会话（AsyncConfigurer 多 Bean 冲突根治）

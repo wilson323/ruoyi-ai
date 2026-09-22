@@ -12,7 +12,7 @@ import java.util.Date;
  * IPD 销售回款台账（P3-4.1 AC-INC-16b/16c/16d/31/31b/32）
  * 月度回款/退款冲减/6自然月窗口/凭证可追
  * 回款口径 salesSource=RECEIPT（不是出库/开票）
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

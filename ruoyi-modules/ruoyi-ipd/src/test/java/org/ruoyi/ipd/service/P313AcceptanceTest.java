@@ -49,8 +49,8 @@ class P313AcceptanceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ProductGroupMapper productGroupMapper;
     @Mock private IpdPermission permission;
-    @Mock private AuditLogService auditLogService;
-    @Mock private SystemConfigService systemConfigService;
+    @Mock private IAuditLogService auditLogService;
+    @Mock private ISystemConfigService systemConfigService;
     @Mock private NotificationService notificationService;
 
     private KpiSharedCollectionService service;

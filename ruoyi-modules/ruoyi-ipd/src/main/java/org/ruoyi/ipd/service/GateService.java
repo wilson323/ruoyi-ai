@@ -33,7 +33,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class GateService {
+public class GateService implements IGateService {
 
     /** P2-5.6 AC-GATE-26：上市日期单次变更幅度上限（天）— 超过则拒绝；超管豁免。 */
     private static final long MAX_SHIFT_DAYS = 30L;
@@ -42,7 +42,7 @@ public class GateService {
     private static final Set<String> DOWNSTREAM_GATES = Set.of("G3", "G4", "G5");
 
     private final GateMapper gateMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * AC-GATE-26：上市日期变更 → 下游 G3/G4/G5 截止日重排。

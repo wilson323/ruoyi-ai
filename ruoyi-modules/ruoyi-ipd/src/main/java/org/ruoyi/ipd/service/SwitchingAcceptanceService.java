@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
  */
 @Service
 @RequiredArgsConstructor
-public class SwitchingAcceptanceService {
+public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
 
     private static final Logger log = LoggerFactory.getLogger(SwitchingAcceptanceService.class);
 
@@ -86,10 +86,10 @@ public class SwitchingAcceptanceService {
     @Autowired(required = false) public void setHandoverMapper(HandoverMapper m) { this.handoverMapper = m; }
 
     /* ---------- P0-9：月度账务 run/lock/unlock 写路径审计（nullable setter；生产 Spring 装配，单测显式 mock） ---------- */
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Autowired(required = false)
-    public void setAuditLogService(AuditLogService auditLogService) {
+    public void setAuditLogService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
     }
 
@@ -455,7 +455,7 @@ public class SwitchingAcceptanceService {
     /**
      * P0-9：月度账务写路径审计（run / lock / unlock 三动作全部留痕）。actor 可空（系统路径，强制 null 跳过）。
      * <p>审计字段映射：{@code entityType="switching_acceptance"} + {@code entityId=month hash code}（month 非数字取 hashCode 强转 Long）。
-     * <p>审计独立性：业务事务失败不会回滚审计（AuditLogService.append 用 REQUIRES_NEW 独立事务）。
+     * <p>审计独立性：业务事务失败不会回滚审计（IAuditLogService.append 用 REQUIRES_NEW 独立事务）。
      */
     private void auditSwitching(IpdActor actor, String action, SwitchingAcceptance entity, String reason) {
         if (auditLogService == null) {

@@ -53,7 +53,7 @@ class PersonGroupBoundarySecurityScenarioTest {
     @Mock
     private ProjectMemberMapper memberMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     /** P2-2.2 联动新增：session revoke mock。 */
     @Mock
     private IpdAuthSession ipdAuthSession;

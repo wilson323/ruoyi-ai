@@ -13,7 +13,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdPermissionException;
 import org.ruoyi.ipd.service.DeletionArchiveService;
-import org.ruoyi.ipd.service.DeletionRequestService;
+import org.ruoyi.ipd.service.IDeletionRequestService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,7 +40,7 @@ import java.util.List;
 public class DeletionRequestController {
 
     private final DeletionArchiveService archiveService;
-    private final DeletionRequestService deletionRequestService;
+    private final IDeletionRequestService deletionRequestService;
     private final IpdPermission ipdPermission;
 
     /**
@@ -122,7 +122,7 @@ public class DeletionRequestController {
     /**
      * 申请人撤回：限申请人本人在 24h 内、未终态；超 24h 不可撤回（AC-DEL-06）。
      * <p>SEC-MED-3：权限码改为独立 {@link IpdPermissionCode#OPERATION_DELETION_REQUEST_WITHDRAW}（与 SUBMIT 解耦），
-     * 委托 {@link DeletionRequestService#withdrawIfExistsOrNotFound(IpdActor, Long)} 单代码路径，
+     * 委托 {@link IDeletionRequestService#withdrawIfExistsOrNotFound(IpdActor, Long)} 单代码路径，
      * 不存在 / 非本人 / 终态 / 超时限 → 统一 404 NOT_FOUND「资源不存在」防侧信道。
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_WITHDRAW, type = IpdAuthSession.LOGIN_TYPE)

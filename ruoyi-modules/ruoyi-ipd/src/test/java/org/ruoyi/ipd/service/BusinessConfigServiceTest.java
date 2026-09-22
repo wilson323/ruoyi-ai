@@ -17,7 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * ROOT-R1 业务参数配置化根治：BusinessConfigService 单测（10 测覆盖 6 维度）
+ * ROOT-R1 业务参数配置化根治：IBusinessConfigService 单测（10 测覆盖 6 维度）
  *
  * <p>覆盖：
  * <ul>
@@ -34,7 +34,7 @@ class BusinessConfigServiceTest {
 
     private IpdBusinessConfigMapper configMapper;
     private IpdBusinessConfigVersionMapper versionMapper;
-    private BusinessConfigService service;
+    private IBusinessConfigService service;
 
     @BeforeAll
     static void initTableInfo() {
@@ -50,7 +50,7 @@ class BusinessConfigServiceTest {
     void setUp() {
         configMapper = mock(IpdBusinessConfigMapper.class);
         versionMapper = mock(IpdBusinessConfigVersionMapper.class);
-        service = new BusinessConfigService(configMapper, versionMapper);
+        service = new BusinessConfigServiceImpl(configMapper, versionMapper);
     }
 
     private IpdBusinessConfig cfg(String key, String value, String type) {

@@ -33,7 +33,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class GateElementService {
+public class GateElementService implements IGateElementService {
 
     private static final Set<String> GATES = Set.of("G1", "G2", "G3", "G4", "G5");
     private static final Set<String> FLAGS = Set.of("0", "1");
@@ -55,7 +55,7 @@ public class GateElementService {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final GateElementMapper gateElementMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final AuditLogMapper auditLogMapper;
 
     /** 业务/超管列表：仅启用要素；草稿与归档天然不可见（enabled='0'）。 */

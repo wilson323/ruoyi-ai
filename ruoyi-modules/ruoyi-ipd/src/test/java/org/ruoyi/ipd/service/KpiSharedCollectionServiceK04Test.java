@@ -46,9 +46,9 @@ class KpiSharedCollectionServiceK04Test {
     @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private PersonMapper personMapper;
     @Mock private IpdPermission permission;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProductGroupMapper productGroupMapper;
-    @Mock private SystemConfigService systemConfigService;
+    @Mock private ISystemConfigService systemConfigService;
     @Mock private NotificationService notificationService;
     @Mock private LandedScenarioMapper landedScenarioMapper;
     @Mock private SwitchingAcceptanceMapper switchingAcceptanceMapper;

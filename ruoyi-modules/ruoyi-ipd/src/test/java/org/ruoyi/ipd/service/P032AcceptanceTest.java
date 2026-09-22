@@ -28,14 +28,14 @@ class P032AcceptanceTest {
 
     private SystemConfigMapper mapper;
     private SystemConfigVersionMapper versionMapper;
-    private SystemConfigService service;
+    private ISystemConfigService service;
 
     @BeforeEach
     void setup() {
         mapper = mock(SystemConfigMapper.class);
         // P0-3.3 版本链依赖（P0-3.2 契约测试不触及，仅满足构造器）
         versionMapper = mock(SystemConfigVersionMapper.class);
-        service = new SystemConfigService(mapper, versionMapper);
+        service = new SystemConfigServiceImpl(mapper, versionMapper);
     }
 
     @Test

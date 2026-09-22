@@ -10,7 +10,7 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.DefaultParameterNameDiscoverer;
@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * IPD 审计切面（审计 AOP 改造设计-20260909 §3，R22 落地）。
  * <p>语义：方法<b>成功返回后</b>同步落一条审计；业务异常时不落（与手写 append 位于
- * return 前的既有语义一致）。落库通道红线：直接调 {@link AuditLogService#append}
+ * return 前的既有语义一致）。落库通道红线：直接调 {@link IAuditLogService#append}
  * （REQUIRES_NEW + 锚行锁），<b>不做</b> publishEvent 异步（设计 §3.3）。
  * <p>权限：{@code adminOnly=true} 时切面在 proceed 前 {@code requireAdmin()}——
  * 门禁语义与原「方法体内先取 actor」一致（拒绝在业务执行前抛出）。
@@ -47,7 +47,7 @@ public class IpdAuditAspect {
 
     private static final Logger log = LoggerFactory.getLogger(IpdAuditAspect.class);
 
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final IpdPermission ipdPermission;
     private final IpdAuthSession ipdAuthSession;
 
@@ -55,17 +55,17 @@ public class IpdAuditAspect {
     private final ParameterNameDiscoverer paramNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     /** 兼容旧签名（R22 时代无 session 通道）；生产装配走三参构造器。 */
-    public IpdAuditAspect(AuditLogService auditLogService, IpdPermission ipdPermission) {
+    public IpdAuditAspect(IAuditLogService auditLogService, IpdPermission ipdPermission) {
         this(auditLogService, ipdPermission, null);
     }
 
     /** 兼容旧签名（P2轮三时代无 permission/operator 通道）。 */
-    public IpdAuditAspect(AuditLogService auditLogService, IpdAuthSession ipdAuthSession) {
+    public IpdAuditAspect(IAuditLogService auditLogService, IpdAuthSession ipdAuthSession) {
         this(auditLogService, null, ipdAuthSession);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
-    public IpdAuditAspect(AuditLogService auditLogService, IpdPermission ipdPermission, IpdAuthSession ipdAuthSession) {
+    public IpdAuditAspect(IAuditLogService auditLogService, IpdPermission ipdPermission, IpdAuthSession ipdAuthSession) {
         this.auditLogService = auditLogService;
         this.ipdPermission = ipdPermission;
         this.ipdAuthSession = ipdAuthSession;

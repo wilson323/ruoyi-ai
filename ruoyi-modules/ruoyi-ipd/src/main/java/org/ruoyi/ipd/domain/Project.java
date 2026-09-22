@@ -20,7 +20,7 @@ import java.util.Date;
 /**
  * IPD 项目（核心实体）——TS-05 projects
  * 阶段 CONCEPT→PLAN→DEV→VALID→LAUNCH→LIFECYCLE（Gate 门禁在阶段推进时校验，P1-5）
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

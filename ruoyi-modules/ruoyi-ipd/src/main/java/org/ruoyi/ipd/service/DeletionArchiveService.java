@@ -22,13 +22,13 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class DeletionArchiveService {
+public class DeletionArchiveService implements IDeletionArchiveService {
 
     /** remark 前缀；列表查询过滤掉已 PURGED 的条目，避免重复清除。 */
     public static final String PURGED_MARK = "PURGED_BY_SUPER_ADMIN:";
 
     private final DeletionRequestMapper deletionRequestMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final IpdPermission ipdPermission;
 
     /**
@@ -49,7 +49,7 @@ public class DeletionArchiveService {
     public List<DeletionRequest> listArchive() {
         ipdPermission.requireAdmin();
         return deletionRequestMapper.selectList(new LambdaQueryWrapper<DeletionRequest>()
-            .eq(DeletionRequest::getStatus, DeletionRequestService.ST_DELETED)
+            .eq(DeletionRequest::getStatus, DeletionRequestServiceImpl.ST_DELETED)
             // DEF-8：NULL 安全——notLike 单独用会把 remark IS NULL 的行整条排除
             .and(w -> w.isNull(DeletionRequest::getRemark)
                 .or().notLike(DeletionRequest::getRemark, PURGED_MARK))
@@ -70,7 +70,7 @@ public class DeletionArchiveService {
         if (request == null) {
             throw new ServiceException("删除申请不存在: " + requestId, ApiV1ErrorCode.NOT_FOUND.getCode());
         }
-        if (!DeletionRequestService.ST_DELETED.equals(request.getStatus())) {
+        if (!DeletionRequestServiceImpl.ST_DELETED.equals(request.getStatus())) {
             throw new ServiceException("仅 DELETED 终态可清除：当前 " + request.getStatus(),
                 ApiV1ErrorCode.STATE_CONFLICT.getCode());
         }
@@ -81,7 +81,7 @@ public class DeletionArchiveService {
         String purgeMark = PURGED_MARK + adminId + "@" + ts;
         int updated = deletionRequestMapper.update(null, new LambdaUpdateWrapper<DeletionRequest>()
             .eq(DeletionRequest::getId, requestId)
-            .eq(DeletionRequest::getStatus, DeletionRequestService.ST_DELETED)
+            .eq(DeletionRequest::getStatus, DeletionRequestServiceImpl.ST_DELETED)
             .notLike(DeletionRequest::getRemark, PURGED_MARK)
             .set(DeletionRequest::getRemark, purgeMark)
             .set(DeletionRequest::getUpdateBy, adminId)

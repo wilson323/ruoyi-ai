@@ -45,7 +45,7 @@ import org.ruoyi.ipd.security.IpdIdorGuard;
  */
 @Service
 @RequiredArgsConstructor
-public class ProjectService {
+public class ProjectService implements IProjectService {
 
     public static final Map<String, String> NEXT_STAGE = Map.of(
         "CONCEPT", "PLAN", "PLAN", "DEV", "DEV", "VALID", "VALID", "LAUNCH", "LAUNCH", "LIFECYCLE");
@@ -69,10 +69,10 @@ public class ProjectService {
     public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
         this.projectMemberMapper = projectMemberMapper;
     }
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final GateEngine gateEngine;
     private final ProjectBootstrapService projectBootstrapService;
-    private final ProjectCertService projectCertService;
+    private final IProjectCertService projectCertService;
     private final PlatformTransactionManager transactionManager;
     /** P2-6.2：阶段门禁 —— 跳阶前查询未闭环需求变更单（含 DRAFT / PENDING_SIGN）。 */
     private final RequirementChangeService requirementChangeService;
@@ -732,7 +732,7 @@ public class ProjectService {
      * P2-6.2：阶段门禁拒绝审计（未闭环需求变更单导致跳阶被拒）。
      *
      * <p>审计链需在 {@code IpdBusinessException} 抛出之前落库 —— 由于 advanceStage 整体被
-     * {@code @Transactional} 包裹，audit 写入走 {@code AuditLogService} 的 REQUIRES_NEW 通道
+     * {@code @Transactional} 包裹，audit 写入走 {@code IAuditLogService} 的 REQUIRES_NEW 通道
      * （基线约定），主事务回滚不影响审计可见性。
      *
      * <p>字段约定：

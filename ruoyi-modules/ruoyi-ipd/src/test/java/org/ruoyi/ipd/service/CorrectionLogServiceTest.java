@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * P3-2.2 CorrectionLogService 单测（5 测覆盖 4 维度）。
+ * P3-2.2 ICorrectionLogService 单测（5 测覆盖 4 维度）。
  *
  * <p>R-P3-2.2-POSTREVIEW：新增 6 测覆盖 security review 修复：
  * <ol>
@@ -51,9 +51,9 @@ class CorrectionLogServiceTest {
 
     @Mock private CorrectionLogMapper correctionLogMapper;
     @Mock private IpdPermission permission;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
-    private CorrectionLogService service;
+    private ICorrectionLogService service;
 
     @BeforeAll
     static void initTableInfo() {
@@ -64,7 +64,7 @@ class CorrectionLogServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CorrectionLogService(correctionLogMapper, permission, auditLogService);
+        service = new CorrectionLogServiceImpl(correctionLogMapper, permission, auditLogService);
     }
 
     private IpdActor actor() {

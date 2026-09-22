@@ -45,10 +45,10 @@ import java.util.Set;
  *   <li>入口仅在 G5 上市后 90 天复盘阶段开放；评定人 = 双 PM 自评 + 各自产品组长</li>
  * </ul>
  *
- * <p>依赖：复用 {@link AuditLogService} / {@link IpdPermission} / {@link ProjectService}。
+ * <p>依赖：复用 {@link IAuditLogService} / {@link IpdPermission} / {@link ProjectService}。
  */
 @Service
-public class ContributionService {
+public class ContributionService implements IContributionService {
 
     private static final Logger log = LoggerFactory.getLogger(ContributionService.class);
 
@@ -56,7 +56,7 @@ public class ContributionService {
     private final ContributionVersionMapper versionMapper;
     private final ProjectMapper projectMapper;
     private final ProductGroupMapper productGroupMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final IpdPermission ipdPermission;
 
     /* ---------- R24 治理轮：Contribution 状态机守卫（接线） ---------- */
@@ -105,7 +105,7 @@ public class ContributionService {
                                 ContributionVersionMapper versionMapper,
                                 ProjectMapper projectMapper,
                                 ProductGroupMapper productGroupMapper,
-                                AuditLogService auditLogService,
+                                IAuditLogService auditLogService,
                                 IpdPermission ipdPermission) {
         this.contributionMapper = contributionMapper;
         this.versionMapper = versionMapper;

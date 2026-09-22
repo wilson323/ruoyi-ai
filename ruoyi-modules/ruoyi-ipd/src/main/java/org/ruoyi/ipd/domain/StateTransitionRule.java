@@ -15,7 +15,7 @@ import java.io.Serializable;
  * 经某触发动作（trigger）可向目标状态（toState）迁移」的合法性。守卫层
  * {@link org.ruoyi.ipd.service.StateMachineGuard} 在写入前/提交后据此判定。
  *
- * <p><b>为何独立于具体状态机实现：</b>DeletionRequestService / BonusPoolService 各自内嵌状态机
+ * <p><b>为何独立于具体状态机实现：</b>IDeletionRequestService / BonusPoolService 各自内嵌状态机
  * （DRAFT→LEADER_REVIEW→ADMIN_REVIEW→DELETED/REJECTED 与 DRAFT→CONFIRMED→DISTRIBUTED），
  * 跨服务协同时存在「删一条 DeletionRequest 即冻结其关联 BonusPool」等联动场景。
  * 守卫层把这些跨域联动收敛到一张规则表，避免各服务互相感知具体状态枚举。

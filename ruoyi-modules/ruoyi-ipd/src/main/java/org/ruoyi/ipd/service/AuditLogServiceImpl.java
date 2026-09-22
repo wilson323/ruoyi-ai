@@ -59,7 +59,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class AuditLogService {
+public class AuditLogServiceImpl implements IAuditLogService {
 
     /** ①②③：审计链分配器锚行键（audit_log_chain_heads 单行 GLOBAL）。 */
     private static final String CHAIN_KEY_GLOBAL = "GLOBAL";

@@ -63,9 +63,9 @@ class HandoverTransferSuperAdminForceLogoutAcceptanceTest {
     @Mock
     private HandoverMapper handoverMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
-    private ProjectMemberService projectMemberService;
+    private IProjectMemberService projectMemberService;
     @Mock
     private IpdAuthSession ipdAuthSession;
     @Mock

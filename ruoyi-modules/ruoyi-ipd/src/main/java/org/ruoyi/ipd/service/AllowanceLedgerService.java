@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AllowanceLedgerService {
+public class AllowanceLedgerService implements IAllowanceLedgerService {
 
     /** W4-D：允许 SELECT/COUNT 的 Mapper（之前仅 AllowanceService 注入，本卡补齐）。 */
     private final AllowanceLedgerMapper allowanceLedgerMapper;

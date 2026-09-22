@@ -62,7 +62,7 @@ class P256AcceptanceTest {
     @Mock private LaunchDateChangeRequestMapper changeRequestMapper;
     @Mock private GateMapper gateMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private PostLaunchReviewMapper postLaunchReviewMapper;
     @Mock private PersonMapper personMapper;
     @Mock private ProjectMemberMapper memberMapper;

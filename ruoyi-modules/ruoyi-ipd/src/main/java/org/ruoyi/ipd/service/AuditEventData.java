@@ -41,7 +41,7 @@ final class AuditEventData {
      * <p>异常类型故意选 {@link DataIntegrityViolationException}：与 MySQL 截断错误经 Spring
      * 翻译后的类型一致，下游全局异常处理与回滚语义保持原样（不新增异常类型，避免掉进
      * advice 白名单缺口）。注意它是 {@code DuplicateKeyException} 的父类，故调用方必须
-     * <b>在重试循环之外</b>校验，否则会被当成唯一键冲突吞掉（见 {@code AuditLogService.append}）。
+     * <b>在重试循环之外</b>校验，否则会被当成唯一键冲突吞掉（见 {@code IAuditLogService.append}）。
      *
      * @param payload 待校验载荷；{@code null} 或空串视为合法（两列可空，多数审计行无载荷）
      * @param field   列名，仅用于报错定位

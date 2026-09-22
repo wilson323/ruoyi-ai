@@ -40,8 +40,8 @@ class AutoComputePersonalCoefficientAcceptanceTest {
     @org.mockito.Mock private ProjectMapper projectMapper;
     @org.mockito.Mock private KpiRecordMapper kpiRecordMapper;
     @org.mockito.Mock private ProjectScoreService projectScoreService;
-    @org.mockito.Mock private org.ruoyi.ipd.service.SystemConfigService systemConfigService;
-    @org.mockito.Mock private org.ruoyi.ipd.service.AuditLogService auditLogService;
+    @org.mockito.Mock private org.ruoyi.ipd.service.ISystemConfigService systemConfigService;
+    @org.mockito.Mock private org.ruoyi.ipd.service.IAuditLogService auditLogService;
     @org.mockito.Mock private org.ruoyi.ipd.service.NotificationService notificationService;
 
     @org.mockito.InjectMocks private BonusPoolService service;

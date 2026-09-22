@@ -12,7 +12,7 @@ import org.ruoyi.ipd.hr.HrSyncJob;
 import org.ruoyi.ipd.hr.RealHrSyncAdapter;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.HrSyncService;
 import org.ruoyi.ipd.service.PersonService;
 import org.springframework.beans.factory.ObjectProvider;
@@ -43,7 +43,7 @@ public class HrSyncController {
 
     private final HrSyncService hrSyncService;
     private final IpdPermission permission;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * R149-v1 装配闸门：{@code HrSyncJob} / {@code RealHrSyncAdapter} 仅在

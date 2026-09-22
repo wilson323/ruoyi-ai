@@ -29,7 +29,7 @@ class P112AcceptanceTest {
 
     @Mock private ProductMapper productMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private ProductService service;
 

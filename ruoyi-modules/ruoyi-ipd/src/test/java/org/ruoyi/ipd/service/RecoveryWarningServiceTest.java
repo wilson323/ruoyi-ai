@@ -51,7 +51,7 @@ class RecoveryWarningServiceTest {
     @Mock
     private ReceiptLedgerMapper receiptLedgerMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
 
     private RecoveryWarningService service;
 

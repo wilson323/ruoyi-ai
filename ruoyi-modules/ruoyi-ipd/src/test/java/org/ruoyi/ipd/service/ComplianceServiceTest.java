@@ -40,8 +40,8 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 class ComplianceServiceTest {
 
-    private SystemConfigService systemConfigService;
-    private AuditLogService auditLogService;
+    private ISystemConfigService systemConfigService;
+    private IAuditLogService auditLogService;
     private AuditLogMapper auditLogMapper;
     private PersonMapper personMapper;
     private ObjectMapper objectMapper;
@@ -49,8 +49,8 @@ class ComplianceServiceTest {
 
     @BeforeEach
     void setUp() {
-        systemConfigService = mock(SystemConfigService.class);
-        auditLogService = mock(AuditLogService.class);
+        systemConfigService = mock(ISystemConfigService.class);
+        auditLogService = mock(IAuditLogService.class);
         auditLogMapper = mock(AuditLogMapper.class);
         personMapper = mock(PersonMapper.class);
         objectMapper = new ObjectMapper();
@@ -145,7 +145,7 @@ class ComplianceServiceTest {
         Assertions.assertEquals("requirements", written.getEntityType());
         Assertions.assertEquals(11L, written.getEntityId());
         Assertions.assertEquals(7L, written.getOperatorId());
-        // 审计载荷必须经 AuditLogService.append 单点收口（不可绕过）
+        // 审计载荷必须经 IAuditLogService.append 单点收口（不可绕过）
         Assertions.assertNotNull(written.getAfterData());
         Assertions.assertTrue(written.getAfterData().contains("deadlineAt"));
     }

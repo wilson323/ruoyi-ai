@@ -46,11 +46,11 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SopTemplateService {
+public class SopTemplateService implements ISopTemplateService {
 
     private final SopTemplateMapper sopTemplateMapper;
     private final SopTemplateInstanceMapper sopTemplateInstanceMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ProjectMemberMapper projectMemberMapper;
     private final ProjectMapper projectMapper;
 

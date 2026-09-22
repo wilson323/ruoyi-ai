@@ -46,7 +46,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class StateMachineGuardTest {
 
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
 

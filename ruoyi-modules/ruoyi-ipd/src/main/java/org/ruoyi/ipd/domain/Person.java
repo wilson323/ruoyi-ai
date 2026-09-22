@@ -8,7 +8,7 @@ import java.util.Date;
 /**
  * IPD 人员（v3 TS-06 全字段）
  * 角色固定不可跨（B7）；等级仅 HR API 权威源（B6）；组长随 API 同步（A3）
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @TableName(value = "persons", autoResultMap = true)
 @Data @Builder @NoArgsConstructor @AllArgsConstructor

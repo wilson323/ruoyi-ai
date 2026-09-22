@@ -50,7 +50,7 @@ class AiModelConfigSecurityRound3Test {
     private AiModelConfigMapper mapper;
 
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private ProviderRegistry registry;
     private CapturingTester openaiTester;

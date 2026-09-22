@@ -45,7 +45,7 @@ class GateAutoCreateAcceptanceTest {
 
     @Mock private GateMapper gateMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private GateCreationService service;
 

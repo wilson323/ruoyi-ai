@@ -33,7 +33,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class KpiRecordRuleVersionService {
+public class KpiRecordRuleVersionService implements IKpiRecordRuleVersionService {
 
     /** kpi_rule_snapshots 治理元数据表统一租户 ID（与 system_config_versions 对齐）。 */
     private static final String GOVERNANCE_TENANT_ID = "000000";

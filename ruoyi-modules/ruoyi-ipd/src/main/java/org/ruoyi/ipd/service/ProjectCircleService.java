@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class ProjectCircleService {
+public class ProjectCircleService implements IProjectCircleService {
 
     private static final String ST_ARCHIVED = "ARCHIVED";
     private static final String ST_ACTIVE_PERSON = "ACTIVE";

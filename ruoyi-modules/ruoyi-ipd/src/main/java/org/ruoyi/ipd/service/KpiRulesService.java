@@ -32,7 +32,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
-public class KpiRulesService {
+public class KpiRulesService implements IKpiRulesService {
 
     private static final Logger log = LoggerFactory.getLogger(KpiRulesService.class);
 
@@ -48,7 +48,7 @@ public class KpiRulesService {
     private static final String KPI_CONFIG_PREFIX = "kpi.";
 
     private final KpiRuleSnapshotMapper snapshotMapper;
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
 
     /**
      * 读取当前生效的 KPI 规则清单（快照优先，system_configs 回退；纯读，不写审计）。

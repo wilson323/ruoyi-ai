@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>规则（双向强制，白名单与实测必须完全一致）：
  * <ul>
  *   <li>白名单外文件出现裸时钟 → 红。新代码的业务时钟一律走注入 Clock
- *       （范本 DefaultStateMachineGuard / DeletionRequestService，规范见
+ *       （范本 DefaultStateMachineGuard / IDeletionRequestService，规范见
  *       docs/ipd-系统说明/治理/测试编写三禁-20260908.md 禁一）。</li>
  *   <li>白名单文件裸时钟清零后未从白名单移除 → 红（逼白名单只减不增）。</li>
  * </ul>
@@ -53,10 +53,10 @@ class ServiceBareClockGuardTest {
      * 须登记本白名单并在 PR 描述注明理由。
      */
     private static final Set<String> LEGACY_WHITELIST = Set.of(
-        "AiChatClient", "AuditLogService", "BaiduTester", "BidInvitationService",
-        "BidResponseService", "BonusPoolService", "BusinessConfigService",
+        "AiChatClient", "AuditLogServiceImpl", "BaiduTester", "BidInvitationService",
+        "BidResponseService", "BonusPoolService", "BusinessConfigServiceImpl",
         "CertTemplateService", "CoefficientChangeService", "ComplianceService",
-        "ContributionService", "CorrectionLogService", "DefaultStateMachineGuard",
+        "ContributionService", "CorrectionLogServiceImpl", "DefaultStateMachineGuard",
         "DefaultTester", "DeleteAuditService", "DeletionArchiveService", "GateService",
         "GuestDemandService", "HrSyncService", "IpdAuthService", "IpdReportService",
         "KpiRecordRuleVersionService", "KpiRecordService", "KpiSharedCollectionService",
@@ -64,10 +64,10 @@ class ServiceBareClockGuardTest {
         "NegativeFeedbackService",
         "OllamaTester", "OpenAiCompatibleTester", "PersonSyncService",
         "PostLaunchReviewService", "ProductGroupService", "ProductService",
-        "ProjectBootstrapService", "ProjectCertService", "ProjectMemberService",
+        "ProjectBootstrapService", "ProjectCertServiceImpl", "ProjectMemberServiceImpl",
         "ProjectScoreArchiveService", "ProjectScoreScheduleService", "ReceiptLedgerService",
         "RequirementChangeService", "RequirementStateMachine", "SopTemplateService",
-        "StageActionService", "SystemConfigService", "WebSocketChannelHandler",
+        "StageActionService", "SystemConfigServiceImpl", "WebSocketChannelHandler",
         "WorkbenchService", "ZhipuTester");
 
     private static final Path SERVICE_ROOT = Paths.get("src/main/java/org/ruoyi/ipd/service");

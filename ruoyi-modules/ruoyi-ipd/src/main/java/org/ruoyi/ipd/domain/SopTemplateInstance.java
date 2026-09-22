@@ -13,7 +13,7 @@ import java.util.Date;
  * 实现「实例与模板版本解耦」——后续模板迭代不影响已在跑实例（P1-3.3 BR-IPD-SOP-03）。
  * <p>同一项目同一 templateCode 仅允许一条 ACTIVE；新版本发布时旧实例自动 SUPERSEDED
  * （{@link org.ruoyi.ipd.service.SopTemplateService#supersedeInstance}）。
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）。
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）。
  */
 @Data
 @Builder

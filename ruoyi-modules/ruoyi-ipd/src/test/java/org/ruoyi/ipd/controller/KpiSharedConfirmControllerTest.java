@@ -27,10 +27,10 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.KpiSharedCollectionService;
 import org.ruoyi.ipd.service.KpiSharedConfirmService;
-import org.ruoyi.ipd.service.SystemConfigService;
+import org.ruoyi.ipd.service.ISystemConfigService;
 import org.ruoyi.ipd.vo.KpiSharedConfirmView;
 import org.ruoyi.ipd.vo.SharedKpiCollectView;
 
@@ -442,8 +442,8 @@ class KpiSharedConfirmControllerTest {
         final ProjectMapper projectMapper = org.mockito.Mockito.mock(ProjectMapper.class);
         final ProjectMemberMapper memberMapper = org.mockito.Mockito.mock(ProjectMemberMapper.class);
         final PersonMapper personMapper = org.mockito.Mockito.mock(PersonMapper.class);
-        final AuditLogService auditLogService = org.mockito.Mockito.mock(AuditLogService.class);
-        final SystemConfigService systemConfigService = null; // 默认 5 工作日
+        final IAuditLogService auditLogService = org.mockito.Mockito.mock(IAuditLogService.class);
+        final ISystemConfigService systemConfigService = null; // 默认 5 工作日
         final KpiSharedConfirmService service = new KpiSharedConfirmService(
             confirmMapper, projectMapper, memberMapper, personMapper, auditLogService, systemConfigService);
     }

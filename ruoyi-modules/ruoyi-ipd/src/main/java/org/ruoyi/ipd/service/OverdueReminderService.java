@@ -41,7 +41,7 @@ public class OverdueReminderService {
     private final StageActionService stageActionService;
     private final ProjectMemberMapper projectMemberMapper;
     private final NotificationService notificationService;
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
 
     /** 扫描结果计数（验收与运营观测用）。 */
     public record ScanResult(int scanned, int deepMarked, int deepReminded, int lightSkipped, int markSkipped) {

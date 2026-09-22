@@ -68,13 +68,13 @@ public class AiDocumentService {
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     /** P0-8：状态流转审计（nullable，兼容既有单参构造；生产 Spring 装配）。 */
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     /** AI-STRAT-1（2026-09-11）：审核通过即异步向量化（nullable 同上——单测可只装配主链）。 */
     private AiDocEmbeddingService docEmbeddingService;
 
     @Autowired(required = false)
-    public void setAuditLogService(AuditLogService auditLogService) {
+    public void setAuditLogService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
     }
 

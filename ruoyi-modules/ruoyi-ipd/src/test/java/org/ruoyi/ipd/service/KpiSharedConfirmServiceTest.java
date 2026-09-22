@@ -51,8 +51,8 @@ class KpiSharedConfirmServiceTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private PersonMapper personMapper;
-    @Mock private AuditLogService auditLogService;
-    @Mock private SystemConfigService systemConfigService;
+    @Mock private IAuditLogService auditLogService;
+    @Mock private ISystemConfigService systemConfigService;
 
     private KpiSharedConfirmService service;
 

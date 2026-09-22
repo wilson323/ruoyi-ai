@@ -33,7 +33,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class CorrectionLogService {
+public class CorrectionLogServiceImpl implements ICorrectionLogService {
 
     /** entityType 长度上限（DB 列宽与可读性折中）。 */
     private static final int ENTITY_TYPE_MAX = 64;
@@ -46,7 +46,7 @@ public class CorrectionLogService {
 
     private final CorrectionLogMapper correctionLogMapper;
     private final IpdPermission permission;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * 写入一条字段更正留痕。
@@ -140,7 +140,7 @@ public class CorrectionLogService {
      *
      * <p>R-P3-2.2-POSTREVIEW：超管读审计链本身也需落 meta-audit（SEC-AUD-02 同严），
      * 防止「读审计」游离在审计链外。所有 listByEntity 调用必须传入当前操作人；
-     * 读取前先在 {@link AuditLogService#append} 中追加一条 READ 动作。
+     * 读取前先在 {@link IAuditLogService#append} 中追加一条 READ 动作。
      */
     @Transactional(readOnly = true, rollbackFor = Exception.class)
     public List<CorrectionLog> listByEntity(String entityType, Long entityId, IpdActor actor) {

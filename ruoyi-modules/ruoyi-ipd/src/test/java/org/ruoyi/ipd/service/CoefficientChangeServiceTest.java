@@ -39,7 +39,7 @@ class CoefficientChangeServiceTest {
 
     @Mock private CoefficientChangeRequestMapper requestMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private CoefficientChangeService service;
 

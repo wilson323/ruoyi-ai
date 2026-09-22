@@ -56,7 +56,7 @@ public class ProjectScoreScheduleService {
     private final ProductGroupMapper groupMapper;
     private final ProjectScoreTaskMapper taskMapper;
     private final NotificationService notificationService;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final IpdPermission permission;
 
     public ProjectScoreScheduleService(ProjectMapper projectMapper,
@@ -65,7 +65,7 @@ public class ProjectScoreScheduleService {
                                        ProductGroupMapper groupMapper,
                                        ProjectScoreTaskMapper taskMapper,
                                        NotificationService notificationService,
-                                       AuditLogService auditLogService,
+                                       IAuditLogService auditLogService,
                                        IpdPermission permission) {
         this.projectMapper = projectMapper;
         this.memberMapper = memberMapper;

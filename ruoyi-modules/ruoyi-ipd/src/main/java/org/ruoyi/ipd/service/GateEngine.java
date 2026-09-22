@@ -42,7 +42,7 @@ public class GateEngine {
     public static final String A_LEVEL_CONFIG_KEY = "gate.a_level_block_codes";
 
     private final StageActionMapper stageActionMapper;
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
 
     /**
      * 校验当前阶段门禁：未完成或未实例化的必做动作非空即拒绝。
@@ -236,7 +236,7 @@ public class GateEngine {
     }
 
     /**
-     * 写配置前校验并返回规范化 CSV（供 SystemConfigService 使用）。
+     * 写配置前校验并返回规范化 CSV（供 ISystemConfigService 使用）。
      *
      * @param raw 原始值
      * @return 规范化逗号串；空输入返回 ""

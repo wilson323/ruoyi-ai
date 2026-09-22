@@ -48,7 +48,7 @@ import java.util.Set;
  *   <li>AC-HAND-03：代办发起即把在任账号置 FROZEN_PENDING_HANDOVER（移交完成前冻结窗口，
  *       仅保留移交相关权限）；HTTP 层读/写分离映射超出本卡 PATHS，验收登记 PARTIAL</li>
  *   <li>AC-HAND-06：按 handoverRole 维度移交，只动目标角色绑定，另一侧 PM 不受影响</li>
- *   <li>接手绑定复用 {@link ProjectMemberService#bindMember} 五参重载：
+ *   <li>接手绑定复用 {@link IProjectMemberService#bindMember} 五参重载：
  *       重复/超项备案/角色互斥/津贴快照校验全量继承（与 AC-TEAM-11 链贯通）</li>
  * </ul>
  */
@@ -57,7 +57,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class HandoverService {
 
-    /** 与 ProjectMemberService.ROLES 同源：移交只在这两个角色维度。 */
+    /** 与 IProjectMemberService.ROLES 同源：移交只在这两个角色维度。 */
     private static final Set<String> HANDOVER_ROLES = Set.of("MARKET_PM", "RD_PM");
 
     /** 状态机适配既有 DDL 枚举（DRAFT|CONFIRMED|COMPLETED|ROLLED_BACK），本卡用 DRAFT→COMPLETED→ROLLED_BACK。 */
@@ -88,8 +88,8 @@ public class HandoverService {
     private final PersonMapper personMapper;
     private final ProjectMapper projectMapper;
     private final HandoverMapper handoverMapper;
-    private final AuditLogService auditLogService;
-    private final ProjectMemberService projectMemberService;
+    private final IAuditLogService auditLogService;
+    private final IProjectMemberService projectMemberService;
     private final PlatformTransactionManager transactionManager;
     /** HIGH-3.2：超管移交后强制下线旧 session——走 loginType=ipd 的 revokeAll。 */
     private final IpdAuthSession ipdAuthSession;
@@ -213,7 +213,7 @@ public class HandoverService {
      * </ol>
      *
      * <p><b>为何不要求“接手人须为该项目在职成员”</b>：移交接手人在 accept 前恰恰还不是该项目
-     * 该角色的在任成员——绑定动作就是本方法做的（{@link ProjectMemberService#bindMember} 还显式
+     * 该角色的在任成员——绑定动作就是本方法做的（{@link IProjectMemberService#bindMember} 还显式
      * 拒绝“已绑定此角色”的重复入组）。把“已是成员”作为前提会把正常的跨组接人移交全部拒掉，
      * 属产品规则变更而非安全加固（SSOT 未授权）。租户与资格两条能落地的先落，
      * 同组/跨组限制属产品口径，登记为待裁决项，不在此擅自收紧。
@@ -776,7 +776,7 @@ public class HandoverService {
                 log.warn("P2-7.4 AC-HAND-02 publish escalation failed for handoverId={}", rec.getId(), e);
                 continue;
             }
-            // P0-共识：审计 tenantId 与实体 tenantId 一致（AuditLogService.append 仅在 null 时兜底 default）
+            // P0-共识：审计 tenantId 与实体 tenantId 一致（IAuditLogService.append 仅在 null 时兜底 default）
             String auditTenant = rec.getTenantId() != null ? rec.getTenantId() : currentTenant;
             auditLogService.append(AuditLog.builder()
                 .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())

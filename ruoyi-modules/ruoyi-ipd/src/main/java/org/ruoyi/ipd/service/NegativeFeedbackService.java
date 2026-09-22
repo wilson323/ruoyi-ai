@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Service
-public class NegativeFeedbackService {
+public class NegativeFeedbackService implements INegativeFeedbackService {
 
     /** BR-INC-10 四种触发情形白名单 */
     public static final Set<String> TRIGGER_TYPES = Set.of(
@@ -70,7 +70,7 @@ public class NegativeFeedbackService {
 
     private final NegativeFeedbackMapper mapper;
     private final ProjectMemberMapper memberMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final NotificationService notificationService;
     /** SEC-REV-round3 Bug#4：项目归属校验——非超管仅可访问本人所在 group 的项目 */
     private final ProjectMapper projectMapper;
@@ -84,7 +84,7 @@ public class NegativeFeedbackService {
     /** 兼容测试口：mapper + memberMapper */
     public NegativeFeedbackService(NegativeFeedbackMapper mapper,
                                    ProjectMemberMapper memberMapper,
-                                   AuditLogService auditLogService,
+                                   IAuditLogService auditLogService,
                                    NotificationService notificationService) {
         this(mapper, memberMapper, auditLogService, notificationService, null, null);
     }
@@ -93,7 +93,7 @@ public class NegativeFeedbackService {
     @Autowired
     public NegativeFeedbackService(NegativeFeedbackMapper mapper,
                                    ProjectMemberMapper memberMapper,
-                                   AuditLogService auditLogService,
+                                   IAuditLogService auditLogService,
                                    NotificationService notificationService,
                                    ProjectMapper projectMapper,
                                    IpdPermission ipdPermission) {

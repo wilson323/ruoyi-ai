@@ -35,7 +35,7 @@ class GateElementAuditBindingTest {
     private static final Long IMPERSONATED_USER = 999L;
 
     private GateElementMapper mapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private AuditLogMapper auditLogMapper;
     private GateElementService service;
 
@@ -48,7 +48,7 @@ class GateElementAuditBindingTest {
     @BeforeEach
     void setUp() {
         mapper = mock(GateElementMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         auditLogMapper = mock(AuditLogMapper.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         when(mapper.insert(any(GateElement.class))).thenAnswer(inv -> {

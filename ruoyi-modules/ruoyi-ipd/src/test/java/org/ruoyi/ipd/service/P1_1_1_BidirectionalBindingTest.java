@@ -61,7 +61,7 @@ class P1_1_1_BidirectionalBindingTest {
     @Mock
     private ProjectMapper projectMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private ProductService service;
 

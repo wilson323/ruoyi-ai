@@ -97,7 +97,7 @@ public class KpiRecordService {
     private final AllowanceLedgerMapper allowanceLedgerMapper;
     private final BonusPoolMapper bonusPoolMapper;
     /** ROOT-R1 P0-7 字面量迁移：KPI 默认值（停发阈值 60；B-RULE-02 配套）来源 */
-    private final BusinessConfigService businessConfigService;
+    private final IBusinessConfigService businessConfigService;
     /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；Wave17 KPI 状态机接入） */
     private StateMachineGuard stateMachineGuard;
 
@@ -114,12 +114,12 @@ public class KpiRecordService {
         this(null, null, null, null, null);
     }
 
-    /** ROOT-R1 P0-7：注入 BusinessConfigService（Spring 装配入口） */
+    /** ROOT-R1 P0-7：注入 IBusinessConfigService（Spring 装配入口） */
     public KpiRecordService(KpiRecordMapper kpiRecordMapper,
                             ProjectScoreMapper projectScoreMapper,
                             AllowanceLedgerMapper allowanceLedgerMapper,
                             BonusPoolMapper bonusPoolMapper,
-                            BusinessConfigService businessConfigService) {
+                            IBusinessConfigService businessConfigService) {
         this.kpiRecordMapper = kpiRecordMapper;
         this.projectScoreMapper = projectScoreMapper;
         this.allowanceLedgerMapper = allowanceLedgerMapper;
@@ -127,7 +127,7 @@ public class KpiRecordService {
         this.businessConfigService = businessConfigService;
     }
 
-    /** 旧测试兼容构造器：4 依赖，不带 BusinessConfigService */
+    /** 旧测试兼容构造器：4 依赖，不带 IBusinessConfigService */
     public KpiRecordService(KpiRecordMapper kpiRecordMapper,
                             ProjectScoreMapper projectScoreMapper,
                             AllowanceLedgerMapper allowanceLedgerMapper,
@@ -486,7 +486,7 @@ public class KpiRecordService {
     }
 
     private BigDecimal _queryCalculatorValue(IpdActor actor, String period) {
-        // ROOT-R1 P0-7：纯函数返回值（中性态）从 BusinessConfigService 读（KPI_STOP_THRESHOLD 默认 60；B-RULE-02 配套）
+        // ROOT-R1 P0-7：纯函数返回值（中性态）从 IBusinessConfigService 读（KPI_STOP_THRESHOLD 默认 60；B-RULE-02 配套）
         if (businessConfigService != null) {
             try {
                 return businessConfigService.getBigDecimal(BusinessConfigKeys.KPI_STOP_THRESHOLD);

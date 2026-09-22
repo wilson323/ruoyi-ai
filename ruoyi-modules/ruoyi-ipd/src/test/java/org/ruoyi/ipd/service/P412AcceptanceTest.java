@@ -50,7 +50,7 @@ class P412AcceptanceTest {
     @Mock private RequirementMapper requirementMapper;
     @Mock private ProductMapper productMapper;
     @Mock private ProjectMemberMapper projectMemberMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private GuestDemandService service;
 

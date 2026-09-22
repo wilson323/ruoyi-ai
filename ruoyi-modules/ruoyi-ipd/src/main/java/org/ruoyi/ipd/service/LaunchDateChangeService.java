@@ -30,14 +30,14 @@ import java.util.Set;
  *
  * <p>PERF-P1-6 框架（2026-09-07）：所有写方法统一 {@code @Transactional(rollbackFor = Exception.class)}
  * 类级默认值；{@link #propose}/{@link #secondDecision}/{@link #initialRecord} 在同一事务内完成业务写入，
- * {@link AuditLogService#append} 走 {@code REQUIRES_NEW} 与业务回滚解耦——审计完整性 vs 性能 trade-off。
+ * {@link IAuditLogService#append} 走 {@code REQUIRES_NEW} 与业务回滚解耦——审计完整性 vs 性能 trade-off。
  * 当前 {@link LaunchDateChangeRequest} 已带 {@code @Version} 乐观锁（{@code secondDecision} 用
  * {@code updateById==0} 判定并发失败、阻止重复审计写入，幂等性已闭合）。4 SQL → 1 批插入目标需
  * 引入 {@code AppendAuditBatchUtil}（见 docs/ipd-系统说明/治理/ 待办），当前提交只做事务边界同质化收敛。
  */
 @Service
 @RequiredArgsConstructor
-public class LaunchDateChangeService {
+public class LaunchDateChangeService implements ILaunchDateChangeService {
 
     public static final String ACTION_PROPOSE = "LAUNCH_DATE_PROPOSE";
     public static final String ACTION_CONFIRM = "LAUNCH_DATE_CONFIRM";
@@ -54,7 +54,7 @@ public class LaunchDateChangeService {
 
     private final LaunchDateChangeRequestMapper requestMapper;
     private final ProjectMapper projectMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /* ---------- R24 治理轮：LaunchDateChange 状态机守卫（接线） ---------- */
     /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */

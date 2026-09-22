@@ -21,7 +21,7 @@ import java.util.Date;
  *   <li>市场 PM 比例 ∈ [0.40, 0.65]；研发 PM 比例 ∈ [0.35, 0.60]；两者之和 = 1.0</li>
  * </ul>
  *
- * <p>删除走 DeletionRequestService + DeleteAuditService（软删除）。
+ * <p>删除走 IDeletionRequestService + DeleteAuditService（软删除）。
  */
 @Data
 @Builder

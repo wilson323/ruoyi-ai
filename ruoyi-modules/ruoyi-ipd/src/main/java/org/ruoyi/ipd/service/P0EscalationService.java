@@ -45,7 +45,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class P0EscalationService {
+public class P0EscalationService implements IP0EscalationService {
 
     /** 触发升级的连续未升级次数阈值（AC-C4 决策） */
     public static final int ESCALATION_THRESHOLD = 2;

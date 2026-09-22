@@ -47,7 +47,7 @@ class P144AcceptanceTest {
     private StageActionService actionService;
     private ProjectMemberMapper memberMapper;
     private NotificationService notificationService;
-    private SystemConfigService configService;
+    private ISystemConfigService configService;
     private OverdueReminderService service;
 
     private final Date now = new Date();
@@ -58,7 +58,7 @@ class P144AcceptanceTest {
         actionService = mock(StageActionService.class);
         memberMapper = mock(ProjectMemberMapper.class);
         notificationService = mock(NotificationService.class);
-        configService = mock(SystemConfigService.class);
+        configService = mock(ISystemConfigService.class);
         when(configService.getBoolValue(anyString(), anyBoolean())).thenReturn(true);
         service = new OverdueReminderService(actionMapper, actionService,
             memberMapper, notificationService, configService);

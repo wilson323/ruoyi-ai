@@ -54,9 +54,9 @@ class DeletionRequestServiceTest {
     @Mock
     private DeletionRequestMapper deletionRequestMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private DeleteAuditService deleteAuditService;
     /** ROOT-R3-P0-1 修复：跨状态机守卫 mock（fail-closed 改造后必显式注入，否则 preCheckGuard 抛 IpdBusinessException） */
@@ -74,7 +74,7 @@ class DeletionRequestServiceTest {
     @Mock
     private PersonMapper personMapper;
 
-    private DeletionRequestService service;
+    private IDeletionRequestService service;
 
     /**
      * W5-E-2.2：actor 身份常量（id, name, role, groupId）。
@@ -98,7 +98,7 @@ class DeletionRequestServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DeletionRequestService(
+        service = new DeletionRequestServiceImpl(
             deletionRequestMapper, systemConfigService, auditLogService, deleteAuditService,
             projectMemberMapper, projectMapper, gateMapper, productMapper, personMapper);
         // ROOT-R3-P0-1 修复：注入 mock 守卫（fail-closed 改造后，preCheckGuard 必显式 fail-fast）
@@ -134,7 +134,7 @@ class DeletionRequestServiceTest {
         service.setClock(java.time.Clock.fixed(friday.toInstant(), java.time.ZoneId.systemDefault()));
         DeletionRequest request = service.submit(ACTOR_REQUESTER, "projects", 100L, "{}", "测试删除");
 
-        assertThat(request.getStatus()).isEqualTo(DeletionRequestService.ST_LEADER_REVIEW);
+        assertThat(request.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         Calendar due = Calendar.getInstance();
         due.setTime(request.getLeaderDueAt());
         // 周五 +1 工作日 = 周一(7)，+2 = 周二(8)
@@ -147,14 +147,14 @@ class DeletionRequestServiceTest {
     @DisplayName("组长通过 → ADMIN_REVIEW 并设终审期限；审计写入")
     void leaderApproveMovesToAdminReview() {
         when(systemConfigService.getIntValue("deletion.adminDeadlineDays", 2)).thenReturn(2);
-        DeletionRequest request = saved(9L, DeletionRequestService.ST_LEADER_REVIEW, new Date(), null);
+        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
         // W5-E-2.2：目标项目 100 主组 20，本组组长（groupId=20）匹配
         when(projectMapper.selectById(100L)).thenReturn(projectOfGroup(20L));
 
         DeletionRequest after = service.leaderDecision(ACTOR_LEADER, 9L, true, "同意");
 
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_ADMIN_REVIEW);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
         assertThat(after.getLeaderDecision()).isEqualTo("APPROVE");
         assertThat(after.getAdminDueAt()).isNotNull();
     }
@@ -162,21 +162,21 @@ class DeletionRequestServiceTest {
     @Test
     @DisplayName("组长否决 → 终态 REJECTED，不设终审期限")
     void leaderRejectIsTerminal() {
-        DeletionRequest request = saved(9L, DeletionRequestService.ST_LEADER_REVIEW, new Date(), null);
+        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
         // W5-E-2.2：本组组长（groupId=20）匹配目标项目主组
         when(projectMapper.selectById(100L)).thenReturn(projectOfGroup(20L));
 
         DeletionRequest after = service.leaderDecision(ACTOR_LEADER, 9L, false, "不同意");
 
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_REJECTED);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_REJECTED);
         assertThat(after.getAdminDueAt()).isNull();
     }
 
     @Test
     @DisplayName("状态机不匹配：REJECTED 单不可再终审")
     void stateMachineGuardsWrongTransition() {
-        DeletionRequest request = saved(9L, DeletionRequestService.ST_REJECTED, new Date(), null);
+        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_REJECTED, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
 
         assertThatThrownBy(() -> service.adminDecision(ACTOR_ADMIN, 9L, true, "x"))
@@ -187,16 +187,16 @@ class DeletionRequestServiceTest {
     @Test
     @DisplayName("超管通过 → 委托 DeleteAuditService.approveAndExecute（P0-6.2 原子软删）")
     void adminApproveExecutes() {
-        DeletionRequest request = saved(9L, DeletionRequestService.ST_ADMIN_REVIEW, new Date(), null);
+        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_ADMIN_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
-        DeletionRequest executed = saved(9L, DeletionRequestService.ST_DELETED, new Date(), null);
+        DeletionRequest executed = saved(9L, DeletionRequestServiceImpl.ST_DELETED, new Date(), null);
         executed.setExecutedAt(new Date());
         executed.setAdminDecision("APPROVE");
         when(deleteAuditService.approveAndExecute(9L, 2L)).thenReturn(executed);
 
         DeletionRequest after = service.adminDecision(ACTOR_ADMIN, 9L, true, "同意删除");
 
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_DELETED);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_DELETED);
         assertThat(after.getExecutedAt()).isNotNull();
         assertThat(after.getAdminDecision()).isEqualTo("APPROVE");
         verify(deleteAuditService).approveAndExecute(9L, 2L);
@@ -205,7 +205,7 @@ class DeletionRequestServiceTest {
     @Test
     @DisplayName("PERF-P0-1 逾期升级：单 SQL 条件 UPDATE + 补逐条审计（不被逐条 updateById）")
     void escalateOverdue() {
-        DeletionRequest overdue = saved(11L, DeletionRequestService.ST_LEADER_REVIEW, new Date(), new Date(System.currentTimeMillis() - 86400_000L));
+        DeletionRequest overdue = saved(11L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), new Date(System.currentTimeMillis() - 86400_000L));
         when(deletionRequestMapper.selectList(any())).thenReturn(List.of(overdue));
         when(deletionRequestMapper.update(any(), any(LambdaUpdateWrapper.class))).thenReturn(1);
         when(systemConfigService.getIntValue("deletion.adminDeadlineDays", 2)).thenReturn(2);
@@ -238,7 +238,7 @@ class DeletionRequestServiceTest {
     @Test
     @DisplayName("撤回时限：24h 内可撤回，非申请人不可撤")
     void withdrawGuard() {
-        DeletionRequest recent = saved(9L, DeletionRequestService.ST_LEADER_REVIEW, new Date(), null);
+        DeletionRequest recent = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(recent);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
 
@@ -248,7 +248,7 @@ class DeletionRequestServiceTest {
             .hasMessageContaining("非本人");
 
         DeletionRequest after = service.withdraw(9L, 1L);
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_WITHDRAWN);
     }
 
     @Test
@@ -266,7 +266,7 @@ class DeletionRequestServiceTest {
     @DisplayName("撤回时限：超 24h 拒绝")
     void withdrawAfterDeadlineRejected() {
         Date old = new Date(System.currentTimeMillis() - 25 * 3600_000L);
-        DeletionRequest oldRequest = saved(9L, DeletionRequestService.ST_LEADER_REVIEW, old, null);
+        DeletionRequest oldRequest = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, old, null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(oldRequest);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
 
@@ -336,7 +336,7 @@ class DeletionRequestServiceTest {
     @DisplayName("IDOR-S5：submit SUPER_ADMIN 对 cert_templates 豁免（全局参考数据仅超管，归属 mapper 零交互）")
     void submitSuperAdminBypassesScope() {
         DeletionRequest request = service.submit(ACTOR_ADMIN, "cert_templates", 500L, "{}", "清理废弃模板");
-        assertThat(request.getStatus()).isEqualTo(DeletionRequestService.ST_LEADER_REVIEW);
+        assertThat(request.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         assertThat(request.getRequesterId()).isEqualTo(2L);
         verify(deletionRequestMapper).insert(any(DeletionRequest.class));
         verifyNoInteractions(projectMapper, projectMemberMapper, gateMapper, productMapper, personMapper);
@@ -350,7 +350,7 @@ class DeletionRequestServiceTest {
         when(personMapper.selectById(300L)).thenReturn(member);
         DeletionRequest request = service.submit(ACTOR_LEADER, "persons", 300L, "{}", "离职清理");
         assertThat(request.getRequesterId()).isEqualTo(5L);
-        assertThat(request.getStatus()).isEqualTo(DeletionRequestService.ST_LEADER_REVIEW);
+        assertThat(request.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         verify(deletionRequestMapper).insert(any(DeletionRequest.class));
         // persons 无项目维度：不走成员判定（selectCount 零调用）
         verify(projectMemberMapper, never()).selectCount(any());
@@ -399,7 +399,7 @@ class DeletionRequestServiceTest {
     @Test
     @DisplayName("IDOR-L3：leaderDecision 外组组长（组 99 ≠ 目标主组 20）→ FORBIDDEN，零写入")
     void leaderDecisionForeignGroupLeaderForbidden() {
-        DeletionRequest request = saved(9L, DeletionRequestService.ST_LEADER_REVIEW, new Date(), null);
+        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
         when(projectMapper.selectById(100L)).thenReturn(projectOfGroup(20L));
         assertThatThrownBy(() -> service.leaderDecision(ACTOR_FOREIGN_LEADER, 9L, true, "越权初审"))
@@ -414,10 +414,10 @@ class DeletionRequestServiceTest {
     @Test
     @DisplayName("IDOR-L4：leaderDecision SUPER_ADMIN 跳过组匹配直批 → ADMIN_REVIEW（无需目标行 stub）")
     void leaderDecisionSuperAdminSkipsGroupCheck() {
-        DeletionRequest request = saved(9L, DeletionRequestService.ST_LEADER_REVIEW, new Date(), null);
+        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), null);
         when(deletionRequestMapper.selectById(9L)).thenReturn(request);
         DeletionRequest after = service.leaderDecision(ACTOR_ADMIN, 9L, true, "超管直批");
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_ADMIN_REVIEW);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
         assertThat(after.getLeaderId()).isEqualTo(2L);
         verifyNoInteractions(projectMapper);
     }

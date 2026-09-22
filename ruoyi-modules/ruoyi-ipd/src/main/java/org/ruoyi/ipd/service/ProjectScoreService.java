@@ -27,7 +27,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class ProjectScoreService {
+public class ProjectScoreService implements IProjectScoreService {
 
     /** AC-KPI-16b 默认权重：自评/市场组长/研发组长 = 20%/40%/40% */
     public static final BigDecimal WEIGHT_SELF = new BigDecimal("0.20");

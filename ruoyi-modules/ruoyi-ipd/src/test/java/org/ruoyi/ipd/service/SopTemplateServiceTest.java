@@ -44,7 +44,7 @@ class SopTemplateServiceTest {
 
     private SopTemplateMapper templateMapper;
     private SopTemplateInstanceMapper instanceMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private ProjectMemberMapper projectMemberMapper;
     private ProjectMapper projectMapper;
     private SopTemplateService service;
@@ -63,7 +63,7 @@ class SopTemplateServiceTest {
 
         templateMapper = mock(SopTemplateMapper.class);
         instanceMapper = mock(SopTemplateInstanceMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
         projectMapper = mock(ProjectMapper.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));

@@ -36,16 +36,16 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class AllowanceService {
+public class AllowanceService implements IAllowanceService {
 
     private final AllowanceLedgerMapper allowanceLedgerMapper;
     private final ProjectMemberMapper projectMemberMapper;
 
     /** P0-7：写路径审计（nullable setter 注入兼容旧测试 2 参构造；生产由 Spring 装配）。 */
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Autowired(required = false)
-    public void setAuditLogService(AuditLogService auditLogService) {
+    public void setAuditLogService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
     }
 

@@ -39,14 +39,14 @@ class P143AcceptanceTest {
 
     private StageActionMapper actionMapper;
     private DeliverableMapper deliverableMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private StageActionService service;
 
     @BeforeEach
     void setUp() {
         actionMapper = mock(StageActionMapper.class);
         deliverableMapper = mock(DeliverableMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         when(projectMapper.selectById(any())).thenReturn(

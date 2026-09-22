@@ -41,14 +41,14 @@ class PortalDemandTraceTest {
     private static final String ISO_PATTERN = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$";
 
     private RequirementMapper requirementMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private GuestDemandService.GuestRateLimiter limiter;
     private GuestDemandService service;
 
     @BeforeEach
     void setUp() {
         requirementMapper = mock(RequirementMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         limiter = mock(GuestDemandService.GuestRateLimiter.class);
         when(limiter.tryAcquire(anyString())).thenReturn(true);

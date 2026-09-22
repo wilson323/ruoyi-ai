@@ -36,7 +36,7 @@ class GateElementAuditJsonTest {
     @Mock
     private GateElementMapper gateElementMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private AuditLogMapper auditLogMapper;
 

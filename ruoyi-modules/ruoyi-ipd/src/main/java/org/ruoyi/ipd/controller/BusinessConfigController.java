@@ -14,7 +14,7 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
-import org.ruoyi.ipd.service.BusinessConfigService;
+import org.ruoyi.ipd.service.IBusinessConfigService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,7 +48,7 @@ import java.util.Map;
 @Slf4j
 public class BusinessConfigController {
 
-    private final BusinessConfigService businessConfigService;
+    private final IBusinessConfigService businessConfigService;
     private final IpdPermission ipdPermission;
 
     /**

@@ -18,7 +18,7 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("IpdAuditAspect 审计切面（R22+P2轮三双线合并）")
 class IpdAuditAspectTest {
 
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission permission;
     @Mock private IpdAuthSession session;
     @Mock private ProceedingJoinPoint pjp;

@@ -68,9 +68,9 @@ class P252AcceptanceTest {
     @Mock
     private org.ruoyi.ipd.mapper.GateReviewObserverMapper observerMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
 

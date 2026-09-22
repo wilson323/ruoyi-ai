@@ -51,7 +51,7 @@ class P312AcceptanceTest {
     @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private PersonMapper personMapper;
     @Mock private IpdPermission permission;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     /**
      * SharedKpiController 在 P3-1.2-BACKEND 后多了第三个依赖（双组长确认链），
      * 本类只验归集算分与 HTTP 包装，故用 mock 让 ensurePendingRows 成为空操作。

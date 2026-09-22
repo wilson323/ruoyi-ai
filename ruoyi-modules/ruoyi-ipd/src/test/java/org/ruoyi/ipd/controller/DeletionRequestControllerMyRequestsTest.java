@@ -13,8 +13,9 @@ import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.DeletionArchiveService;
-import org.ruoyi.ipd.service.DeletionRequestService;
+import org.ruoyi.ipd.service.IDeletionRequestService;
 
+import org.ruoyi.ipd.service.DeletionRequestServiceImpl;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +42,7 @@ class DeletionRequestControllerMyRequestsTest {
     @Mock
     private DeletionArchiveService archiveService;
     @Mock
-    private DeletionRequestService deletionRequestService;
+    private IDeletionRequestService deletionRequestService;
     @Mock
     private IpdPermission ipdPermission;
 
@@ -58,12 +59,12 @@ class DeletionRequestControllerMyRequestsTest {
         r1.setId(1L);
         r1.setEntityType("products");
         r1.setEntityId(42L);
-        r1.setStatus(DeletionRequestService.ST_LEADER_REVIEW);
+        r1.setStatus(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         DeletionRequest r2 = new DeletionRequest();
         r2.setId(2L);
         r2.setEntityType("projects");
         r2.setEntityId(99L);
-        r2.setStatus(DeletionRequestService.ST_DELETED);
+        r2.setStatus(DeletionRequestServiceImpl.ST_DELETED);
         when(deletionRequestService.listByApplicant(8001L)).thenReturn(List.of(r1, r2));
 
         ApiV1Response<List<DeletionRequest>> resp = controller.myRequests();
@@ -71,7 +72,7 @@ class DeletionRequestControllerMyRequestsTest {
         assertThat(resp.getCode()).isEqualTo(ApiV1Response.CODE_SUCCESS);
         assertThat(resp.getData()).hasSize(2);
         assertThat(resp.getData().get(0).getId()).isEqualTo(1L);
-        assertThat(resp.getData().get(1).getStatus()).isEqualTo(DeletionRequestService.ST_DELETED);
+        assertThat(resp.getData().get(1).getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_DELETED);
 
         // 验证 actor.id 透传到 service（不允许漏 actor.id → null 透传）
         ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);

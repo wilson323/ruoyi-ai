@@ -37,7 +37,7 @@ class KpiRulesServiceTest {
     private KpiRuleSnapshotMapper snapshotMapper;
 
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
 
     private KpiRulesService service;
 

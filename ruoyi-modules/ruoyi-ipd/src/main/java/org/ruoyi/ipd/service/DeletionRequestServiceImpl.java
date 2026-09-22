@@ -42,7 +42,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class DeletionRequestService {
+public class DeletionRequestServiceImpl implements IDeletionRequestService {
 
     public static final String ST_DRAFT = "DRAFT";
     public static final String ST_LEADER_REVIEW = "LEADER_REVIEW";
@@ -52,8 +52,8 @@ public class DeletionRequestService {
     public static final String ST_WITHDRAWN = "WITHDRAWN";
 
     private final DeletionRequestMapper deletionRequestMapper;
-    private final SystemConfigService systemConfigService;
-    private final AuditLogService auditLogService;
+    private final ISystemConfigService systemConfigService;
+    private final IAuditLogService auditLogService;
     private final DeleteAuditService deleteAuditService;
     /**
      * W5-E-2.2（P0 #2）IDOR 修复：删除目标归属解析所需只读 mapper。
@@ -85,7 +85,7 @@ public class DeletionRequestService {
     }
     /** ROOT-R1 P0-7 字面量迁移：删除申请配置（冷静期/升级超时；B-RULE-05 配套）来源 */
     @Autowired(required = false)
-    private BusinessConfigService businessConfigService;
+    private IBusinessConfigService businessConfigService;
 
     /**
      * 提交删除申请：存快照、进组长初审、算期限、写审计。
@@ -111,10 +111,10 @@ public class DeletionRequestService {
         // ⚠️ @Builder 只覆盖本类字段，BaseEntity 的 createTime 须走 setter
         request.setCreateTime(now());
         // ROOT-R3-P0-1：守卫 preCheck（跨域联动合法性校验）—— DRAFT->LEADER_REVIEW 合法
-        preCheckGuard("deletion_request", "DRAFT", DeletionRequestService.ST_LEADER_REVIEW, "submit");
+        preCheckGuard("deletion_request", "DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit");
         deletionRequestMapper.insert(request);
         audit(entityType, entityId, requesterId, "DELETE_REQUEST_SUBMIT", request.getId());
-        registerPostCommit("deletion_request", "DRAFT", DeletionRequestService.ST_LEADER_REVIEW, "submit", requesterId, request.getId());
+        registerPostCommit("deletion_request", "DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit", requesterId, request.getId());
         return request;
     }
 
@@ -135,7 +135,7 @@ public class DeletionRequestService {
             throw new ServiceException("已终态，不可撤回");
         }
         int withdrawHours;
-        // ROOT-R1 P0-7：先读 BusinessConfigService.DELETION_ESCALATE_TIMEOUT_HOURS，回退 SystemConfig
+        // ROOT-R1 P0-7：先读 IBusinessConfigService.DELETION_ESCALATE_TIMEOUT_HOURS，回退 SystemConfig
         Integer bv = readBusinessInt(BusinessConfigKeys.DELETION_ESCALATE_TIMEOUT_HOURS);
         if (bv != null) {
             withdrawHours = bv;
@@ -150,11 +150,11 @@ public class DeletionRequestService {
         // 2026-09-09 C3 缺陷修复：先留存真实 from——此前 setStatus 污染后再取
         // request.getStatus() 传给 postCommit，from 失真成 WITHDRAWN（审计链数据质量问题）
         String fromStatus = request.getStatus();
-        preCheckGuard("deletion_request", fromStatus, DeletionRequestService.ST_WITHDRAWN, "withdraw");
+        preCheckGuard("deletion_request", fromStatus, DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw");
         request.setStatus(ST_WITHDRAWN);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), requesterId, "DELETE_REQUEST_WITHDRAW", request.getId());
-        registerPostCommit("deletion_request", fromStatus, DeletionRequestService.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
+        registerPostCommit("deletion_request", fromStatus, DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
         return request;
     }
 
@@ -185,7 +185,7 @@ public class DeletionRequestService {
         // 单次 selectById 后，所有失败统一 NOT_FOUND（防侧信道：避免差异响应暴露资源状态）
         DeletionRequest request = deletionRequestMapper.selectById(requestId);
         int withdrawHours;
-        // ROOT-R1 P0-7：先读 BusinessConfigService.DELETION_ESCALATE_TIMEOUT_HOURS，回退 SystemConfig
+        // ROOT-R1 P0-7：先读 IBusinessConfigService.DELETION_ESCALATE_TIMEOUT_HOURS，回退 SystemConfig
         Integer bv = readBusinessInt(BusinessConfigKeys.DELETION_ESCALATE_TIMEOUT_HOURS);
         if (bv != null) {
             withdrawHours = bv;
@@ -203,11 +203,11 @@ public class DeletionRequestService {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
         }
         // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
-        preCheckGuard("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw");
+        preCheckGuard("deletion_request", request.getStatus(), DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw");
         request.setStatus(ST_WITHDRAWN);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), actor.id(), "DELETE_REQUEST_WITHDRAW", request.getId());
-        registerPostCommit("deletion_request", request.getStatus(), DeletionRequestService.ST_WITHDRAWN, "withdraw", actor.id(), request.getId());
+        registerPostCommit("deletion_request", request.getStatus(), DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw", actor.id(), request.getId());
         return request;
     }
 
@@ -240,14 +240,14 @@ public class DeletionRequestService {
         String target = approve ? ST_ADMIN_REVIEW : ST_REJECTED;
         String trigger = approve ? "leaderApprove" : "leaderReject";
         // ROOT-R3-P0-1：守卫 preCheck（LEADER_REVIEW -> ADMIN_REVIEW/REJECTED 合法）
-        preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, target, trigger);
+        preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger);
         request.setStatus(approve ? ST_ADMIN_REVIEW : ST_REJECTED);
         if (approve) {
             request.setAdminDueAt(Workdays.add(now(), adminDeadlineDays()));
         }
         deletionRequestMapper.updateById(request);
         // ROOT-R3-P0-1：postCommit 跨域副作用
-        registerPostCommit("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, target, trigger, leaderId, request.getId());
+        registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger, leaderId, request.getId());
         audit(request.getEntityType(), request.getEntityId(), leaderId, approve ? "DELETE_LEADER_APPROVE" : "DELETE_LEADER_REJECT", request.getId());
         return request;
     }
@@ -277,15 +277,15 @@ public class DeletionRequestService {
         requireStatus(request, ST_ADMIN_REVIEW);
         if (approve) {
             // ROOT-R3-P0-1：守卫 preCheck —— ADMIN_REVIEW -> DELETED 合法（跨域→触发原子软删）
-            preCheckGuard("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_DELETED, "adminApprove");
+            preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_DELETED, "adminApprove");
             // P0-6.2 / AC-DEL-02：必须走原子软删，禁止只改申请态
             DeletionRequest deleted = deleteAuditService.approveAndExecute(requestId, adminId);
             // ROOT-R3-P0-1：postCommit 跨域副作用（事务提交后触发）
-            registerPostCommit("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_DELETED, "adminApprove", adminId, requestId);
+            registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_DELETED, "adminApprove", adminId, requestId);
             return deleted;
         }
         // ROOT-R3-P0-1：守卫 preCheck —— ADMIN_REVIEW -> REJECTED 合法
-        preCheckGuard("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_REJECTED, "adminReject");
+        preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_REJECTED, "adminReject");
         request.setAdminId(adminId);
         request.setAdminDecision("REJECT");
         request.setAdminDecidedAt(now());
@@ -294,7 +294,7 @@ public class DeletionRequestService {
         audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
         // 2026-09-09 C3 缺陷修复：R5 adminReject 标 crossDomain=true（跨域→通知申请人），
         // 但此前驳回分支漏调 registerPostCommit → 申请人收不到驳回通知。与 adminApprove(L230) 对齐
-        registerPostCommit("deletion_request", DeletionRequestService.ST_ADMIN_REVIEW, DeletionRequestService.ST_REJECTED, "adminReject", adminId, requestId);
+        registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_REJECTED, "adminReject", adminId, requestId);
         return request;
     }
 
@@ -323,7 +323,7 @@ public class DeletionRequestService {
         // ROOT-R3-P0-1：守卫 preCheck —— LEADER_REVIEW -> ADMIN_REVIEW 合法（升级路径）
         // 2026-09-09 C3 缺陷修复：preCheck 语义是"迁移前拦截"，此前挂在批量 UPDATE 之后——
         // 虽有 @Transactional 兜底回滚，但守卫应前置拒绝而非事后验证。前移到 UPDATE 前
-        preCheckGuard("deletion_request", DeletionRequestService.ST_LEADER_REVIEW, DeletionRequestService.ST_ADMIN_REVIEW, "escalateOverdue");
+        preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, DeletionRequestServiceImpl.ST_ADMIN_REVIEW, "escalateOverdue");
         // 步骤 ②：单 SQL 条件批量 UPDATE（PERF-P0-1：消除 N+1 写放大）
         int affected = deletionRequestMapper.update(null, new LambdaUpdateWrapper<DeletionRequest>()
             .set(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
@@ -514,21 +514,21 @@ public class DeletionRequestService {
     }
 
     private int leaderDeadlineDays() {
-        // ROOT-R1 P0-7：先读 BusinessConfigService.DELETION_COOLDOWN_DAYS，回退 SystemConfig
+        // ROOT-R1 P0-7：先读 IBusinessConfigService.DELETION_COOLDOWN_DAYS，回退 SystemConfig
         Integer v = readBusinessInt(BusinessConfigKeys.DELETION_COOLDOWN_DAYS);
         if (v != null) return v;
         return systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2);
     }
 
     private int adminDeadlineDays() {
-        // ROOT-R1 P0-7：先读 BusinessConfigService.DELETION_COOLDOWN_DAYS，回退 SystemConfig
+        // ROOT-R1 P0-7：先读 IBusinessConfigService.DELETION_COOLDOWN_DAYS，回退 SystemConfig
         Integer v = readBusinessInt(BusinessConfigKeys.DELETION_COOLDOWN_DAYS);
         if (v != null) return v;
         return systemConfigService.getIntValue("deletion.adminDeadlineDays", 2);
     }
 
     /**
-     * ROOT-R1 P0-7：读 BusinessConfigService 整数；未注入或抛错返回 null（让调用方走 SystemConfig 回退）。
+     * ROOT-R1 P0-7：读 IBusinessConfigService 整数；未注入或抛错返回 null（让调用方走 SystemConfig 回退）。
      */
     private Integer readBusinessInt(String key) {
         if (businessConfigService == null) return null;

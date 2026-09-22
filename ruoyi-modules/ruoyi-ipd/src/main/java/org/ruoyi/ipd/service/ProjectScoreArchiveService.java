@@ -52,7 +52,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class ProjectScoreArchiveService {
+public class ProjectScoreArchiveService implements IProjectScoreArchiveService {
 
     private static final String DEFAULT_RULE_JSON =
         "{\"self\":0.2,\"marketLeader\":0.4,\"rdLeader\":0.4}";
@@ -66,9 +66,9 @@ public class ProjectScoreArchiveService {
     private final PersonMapper personMapper;
     private final ProductGroupMapper groupMapper;
     private final IpdPermission permission;
-    private final SystemConfigService configService;
+    private final ISystemConfigService configService;
     private final SystemConfigVersionMapper versionMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ObjectMapper objectMapper;
 
     /** 独立提交一个评分组件；ARCHIVED 状态后再次提交只能产生新版本。 */

@@ -31,7 +31,7 @@ class ProductGroupServiceTest {
     @Mock
     private ProductGroupMapper mapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private ProductGroupService service;
 

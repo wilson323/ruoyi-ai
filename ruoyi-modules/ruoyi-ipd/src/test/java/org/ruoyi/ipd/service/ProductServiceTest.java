@@ -39,7 +39,7 @@ class ProductServiceTest {
     @Mock
     private ProjectMapper projectMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private ProductService service;
 

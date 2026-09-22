@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 class DeletionArchiveServiceReadOnlyTest {
 
     @Mock private DeletionRequestMapper deletionRequestMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
 
     private DeletionArchiveService service;
@@ -137,12 +137,12 @@ class DeletionArchiveServiceReadOnlyTest {
 
         DeletionRequest r1 = new DeletionRequest();
         r1.setId(101L);
-        r1.setStatus(DeletionRequestService.ST_DELETED);
+        r1.setStatus(DeletionRequestServiceImpl.ST_DELETED);
         r1.setRemark(null); // DEF-8：remark IS NULL 必须被放行
 
         DeletionRequest r2 = new DeletionRequest();
         r2.setId(102L);
-        r2.setStatus(DeletionRequestService.ST_DELETED);
+        r2.setStatus(DeletionRequestServiceImpl.ST_DELETED);
         r2.setRemark("manual-remark-not-purged"); // 非 PURGED 前缀，正常展示
 
         when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class)))

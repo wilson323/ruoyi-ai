@@ -58,7 +58,7 @@ class NegativeFeedbackSecurityRound3Test {
     @Mock private NegativeFeedbackMapper mapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private ProjectMemberMapper memberMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private NegativeFeedbackService service;
 

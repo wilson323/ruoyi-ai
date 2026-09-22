@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class GateElementResultService {
+public class GateElementResultService implements IGateElementResultService {
 
     /** G1-1 客户一手验证要素（量化阈值裁决，I3 衍生参数） */
     static final String G1_CUSTOMER_ELEMENT = "G1-1";
@@ -52,8 +52,8 @@ public class GateElementResultService {
     private final GateMapper gateMapper;
     private final GateElementMapper elementMapper;
     private final GateElementResultMapper resultMapper;
-    private final SystemConfigService systemConfigService;
-    private final AuditLogService auditLogService;
+    private final ISystemConfigService systemConfigService;
+    private final IAuditLogService auditLogService;
     private final NotificationService notificationService;
     /** [SEC-FIX-HIGH-1.1-FOLLOWUP] 注入本地 OssFileMapper 解析 ossId → URL（IPD 模块不依赖 system 模块）。 */
     private final org.ruoyi.ipd.mapper.OssFileMapper ossFileMapper;
@@ -66,7 +66,7 @@ public class GateElementResultService {
     private Date now() { return Date.from(clock.instant()); }
     /** ROOT-R1 P0-7 字面量迁移：Gate 评审配置（G1 客户验证阈值/签署期限；B-RULE-05 配套）来源 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private BusinessConfigService businessConfigService;
+    private IBusinessConfigService businessConfigService;
 
     /** 要素清单（含当前判定）：33 要素按 Gate 展示，未判定项 result=null 供前端高亮缺失。 */
     public List<Map<String, Object>> checklist(Long gateId) {
@@ -207,7 +207,7 @@ public class GateElementResultService {
     }
 
     /**
-     * ROOT-R1 P0-7：读取 G1-1 客户一手验证阈值。优先 BusinessConfigService，回退 SystemConfigService。
+     * ROOT-R1 P0-7：读取 G1-1 客户一手验证阈值。优先 IBusinessConfigService，回退 ISystemConfigService。
      */
     private int resolveMinCustomerVerifications() {
         if (businessConfigService != null) {
@@ -460,7 +460,7 @@ public class GateElementResultService {
     }
 
     /**
-     * ROOT-R1 P0-7：读取 Gate 签署期限天数。优先 BusinessConfigService.GATE_SIGN_DEADLINE_DAYS，回退 SystemConfig。
+     * ROOT-R1 P0-7：读取 Gate 签署期限天数。优先 IBusinessConfigService.GATE_SIGN_DEADLINE_DAYS，回退 SystemConfig。
      */
     private int resolveSignDeadlineDays() {
         if (businessConfigService != null) {

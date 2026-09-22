@@ -74,7 +74,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class GateReviewService {
+public class GateReviewService implements IGateReviewService {
 
     static final String STATUS_PENDING = "PENDING";
     static final String STATUS_APPROVED = "APPROVED";
@@ -83,14 +83,14 @@ public class GateReviewService {
     static final String STATUS_ABSTAINED_TIMEOUT = "ABSTAINED_TIMEOUT";
     private static final Set<String> DECISIONS = Set.of("APPROVE", "REJECT");
     private static final Set<String> ARBITRATION_DECISIONS = Set.of("APPROVE", "REJECT");
-    /** AC-GATE-21：签署期限最多延长 3 次（默认；运行时由 BusinessConfigService.GATE_EXTENSION_MAX_COUNT 覆盖） */
+    /** AC-GATE-21：签署期限最多延长 3 次（默认；运行时由 IBusinessConfigService.GATE_EXTENSION_MAX_COUNT 覆盖） */
     static final int DEFAULT_MAX_SIGN_EXTENSIONS = 3;
     private static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
     private static final String ROLE_GROUP_LEADER = "GROUP_LEADER";
 
-    /** 签署期限参数（BR-GATE-04 3 个自然日；运行时由 BusinessConfigService.GATE_SIGN_DEADLINE_DAYS 覆盖） */
+    /** 签署期限参数（BR-GATE-04 3 个自然日；运行时由 IBusinessConfigService.GATE_SIGN_DEADLINE_DAYS 覆盖） */
     static final String SIGN_DEADLINE_KEY = BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS;
-    /** G1/G5 双签最低人数（运行时由 BusinessConfigService.GATE_DUAL_SIGN_COUNT 覆盖；当前仅 1-2 个角色值，参与兜底） */
+    /** G1/G5 双签最低人数（运行时由 IBusinessConfigService.GATE_DUAL_SIGN_COUNT 覆盖；当前仅 1-2 个角色值，参与兜底） */
     static final String DUAL_SIGN_COUNT_KEY = BusinessConfigKeys.GATE_DUAL_SIGN_COUNT;
     private static final Set<String> SIGNER_ROLES = Set.of("MARKET_PM", "RD_PM");
     /** MEDIUM-1.3：列席人员角色（销售/供应/售后/品质/合规）。 */
@@ -102,8 +102,8 @@ public class GateReviewService {
     private final PersonMapper personMapper;
     private final GateArbitrationMapper arbitrationMapper;
     private final GateReviewObserverMapper observerMapper;
-    private final SystemConfigService systemConfigService;
-    private final AuditLogService auditLogService;
+    private final ISystemConfigService systemConfigService;
+    private final IAuditLogService auditLogService;
     private final NotificationService notificationService;
 
     /* ---------- R24 治理轮：GateReview 状态机守卫（接线） ---------- */
@@ -163,7 +163,7 @@ public class GateReviewService {
 
     /** ROOT-R1 P0-7 字面量迁移：Gate 配置（双签人数/签署期限/延期上限；B-RULE-05 配套）来源 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private BusinessConfigService businessConfigService;
+    private IBusinessConfigService businessConfigService;
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -377,7 +377,7 @@ public class GateReviewService {
     }
 
     /**
-     * ROOT-R1 P0-7：读取签署期限天数。先读 BusinessConfigService.GATE_SIGN_DEADLINE_DAYS，回退 SystemConfig。
+     * ROOT-R1 P0-7：读取签署期限天数。先读 IBusinessConfigService.GATE_SIGN_DEADLINE_DAYS，回退 SystemConfig。
      */
     private int resolveSignDeadlineDays() {
         if (businessConfigService != null) {

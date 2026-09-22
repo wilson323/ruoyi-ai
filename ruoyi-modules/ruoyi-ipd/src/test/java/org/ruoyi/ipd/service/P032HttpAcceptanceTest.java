@@ -25,16 +25,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("P032 SystemConfigController HTTP 端点验收")
 class P032HttpAcceptanceTest {
 
-    private SystemConfigService configService;
+    private ISystemConfigService configService;
     private IpdPermission ipdPermission;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private MockMvc mvc;
 
     @BeforeEach
     void setup() {
-        configService = mock(SystemConfigService.class);
+        configService = mock(ISystemConfigService.class);
         ipdPermission = mock(IpdPermission.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         mvc = MockMvcBuilders
             .standaloneSetup(new SystemConfigController(
                 configService, ipdPermission, auditLogService, new ObjectMapper()))

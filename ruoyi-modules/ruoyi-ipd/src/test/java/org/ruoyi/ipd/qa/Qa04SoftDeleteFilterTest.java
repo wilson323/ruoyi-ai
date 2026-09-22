@@ -13,7 +13,7 @@ import org.ruoyi.ipd.mapper.DeliverableMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.StageActionService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,7 +48,7 @@ class Qa04SoftDeleteFilterTest {
     private DeliverableMapper deliverableMapper;
     private ProjectStageMapper projectStageMapper;
     private ProjectMapper projectMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private StageActionService service;
 
     @BeforeAll
@@ -65,7 +65,7 @@ class Qa04SoftDeleteFilterTest {
         deliverableMapper = Mockito.mock(DeliverableMapper.class);
         projectStageMapper = Mockito.mock(ProjectStageMapper.class);
         projectMapper = Mockito.mock(ProjectMapper.class);
-        auditLogService = Mockito.mock(AuditLogService.class);
+        auditLogService = Mockito.mock(IAuditLogService.class);
         service = new StageActionService(stageActionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
     }

@@ -55,7 +55,7 @@ class AuditLogCursorPagingTest {
     @Mock
     private PersonMapper personMapper;
 
-    private AuditLogService service;
+    private IAuditLogService service;
 
     /** 纯 JVM 单测无 MP 运行时：手动初始化 lambda 列缓存（LambdaQueryWrapper.in/lt/.in 需列名解析） */
     @BeforeAll
@@ -66,7 +66,7 @@ class AuditLogCursorPagingTest {
 
     @BeforeEach
     void setUp() {
-        service = new AuditLogService(auditLogMapper, chainHeadMapper, personMapper);
+        service = new AuditLogServiceImpl(auditLogMapper, chainHeadMapper, personMapper);
     }
 
     @Test
@@ -173,7 +173,7 @@ class AuditLogCursorPagingTest {
     @DisplayName("QA-05-P3 #5：导出超 5 万行 — countByOperatorIds 抛 ServiceException（防全量物化 OOM）")
     void exportHardLimitRejectsOver50000Rows() {
         when(auditLogMapper.selectCount(any(LambdaQueryWrapper.class)))
-            .thenReturn(AuditLogService.EXPORT_HARD_LIMIT + 1);
+            .thenReturn(AuditLogServiceImpl.EXPORT_HARD_LIMIT + 1);
 
         assertThatThrownBy(() -> service.countByOperatorIds(List.of(900101L)))
             .isInstanceOf(ServiceException.class)
@@ -186,11 +186,11 @@ class AuditLogCursorPagingTest {
     @DisplayName("QA-05-P3 #6：导出 = 5 万行（含边界）— 不抛，正常返回 count")
     void exportHardLimitAllowsExactlyLimit() {
         when(auditLogMapper.selectCount(any(LambdaQueryWrapper.class)))
-            .thenReturn(AuditLogService.EXPORT_HARD_LIMIT);
+            .thenReturn(AuditLogServiceImpl.EXPORT_HARD_LIMIT);
 
         long count = service.countByOperatorIds(List.of(900101L));
 
-        assertThat(count).isEqualTo(AuditLogService.EXPORT_HARD_LIMIT);
+        assertThat(count).isEqualTo(AuditLogServiceImpl.EXPORT_HARD_LIMIT);
     }
 
     @Test

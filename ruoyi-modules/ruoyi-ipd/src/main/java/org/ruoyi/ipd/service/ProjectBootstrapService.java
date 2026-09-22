@@ -37,7 +37,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class ProjectBootstrapService {
+public class ProjectBootstrapService implements IProjectBootstrapService {
     public static final String[][] STAGES = {
         {"CONCEPT", "概念", "10"}, {"PLAN", "计划", "20"},
         {"DEV", "开发", "30"}, {"VALID", "验证", "40"},

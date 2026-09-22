@@ -30,7 +30,7 @@ import org.ruoyi.ipd.service.GateElementService;
 import org.ruoyi.ipd.service.GateEngine;
 import org.ruoyi.ipd.service.IpdAuthService;
 import org.ruoyi.ipd.service.LegacyImportService;
-import org.ruoyi.ipd.service.ProjectCertService;
+import org.ruoyi.ipd.service.IProjectCertService;
 import org.ruoyi.ipd.service.ProjectService;
 import org.ruoyi.ipd.service.StageActionService;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -84,7 +84,7 @@ class Sec01AcceptanceTest {
     @Mock
     private GateEngine gateEngine;
     @Mock
-    private ProjectCertService projectCertService;
+    private IProjectCertService projectCertService;
     @Mock
     private LegacyImportService legacyImportService;
     @Mock private org.ruoyi.ipd.service.LaunchDateChangeService launchDateChangeService;

@@ -16,7 +16,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 /**
  * IPD 产品——TS-05 products；BR-PROD-01 三路来源（超管导入在售型号 / PM 新增 / 游客「其他」占位）
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

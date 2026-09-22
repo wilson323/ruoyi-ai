@@ -63,11 +63,11 @@ class P281AcceptanceTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private GateMapper gateMapper;
     @Mock private HandoverMapper handoverMapper;
-    @Mock private SystemConfigService systemConfigService;
-    @Mock private AuditLogService auditLogService;
-    @Mock private IpdAuthService ipdAuthService; // 兼容 mock，ProjectMemberService 不直接依赖
+    @Mock private ISystemConfigService systemConfigService;
+    @Mock private IAuditLogService auditLogService;
+    @Mock private IpdAuthService ipdAuthService; // 兼容 mock，IProjectMemberService 不直接依赖
 
-    private ProjectMemberService memberService;
+    private IProjectMemberService memberService;
     private ProjectService projectService;
     private GateCreationService gateCreationService;
     private HandoverService handoverService;
@@ -89,7 +89,7 @@ class P281AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        memberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
+        memberService = new ProjectMemberServiceImpl(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         handoverService = new HandoverService(memberMapper, personMapper, projectMapper,
             handoverMapper, auditLogService, memberService, NoopTransactionManager.INSTANCE,

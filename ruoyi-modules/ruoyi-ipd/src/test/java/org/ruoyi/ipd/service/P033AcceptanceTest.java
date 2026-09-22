@@ -50,7 +50,7 @@ class P033AcceptanceTest {
     private SystemConfigVersionMapper systemConfigVersionMapper;
 
     @InjectMocks
-    private SystemConfigService service;
+    private SystemConfigServiceImpl service;
 
     private SystemConfig configRow;
 

@@ -44,8 +44,8 @@ class GateMandatoryOutputsAcceptanceTest {
     @Mock private GateElementMapper elementMapper;
     @Mock private GateElementResultMapper resultMapper;
     @Mock private OssFileMapper ossFileMapper;
-    @Mock private org.ruoyi.ipd.service.SystemConfigService systemConfigService;
-    @Mock private org.ruoyi.ipd.service.AuditLogService auditLogService;
+    @Mock private org.ruoyi.ipd.service.ISystemConfigService systemConfigService;
+    @Mock private org.ruoyi.ipd.service.IAuditLogService auditLogService;
     @Mock private org.ruoyi.ipd.service.NotificationService notificationService;
 
     @InjectMocks private GateElementResultService service;

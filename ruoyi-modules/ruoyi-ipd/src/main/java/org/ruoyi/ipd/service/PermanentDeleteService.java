@@ -43,7 +43,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PermanentDeleteService {
+public class PermanentDeleteService implements IPermanentDeleteService {
 
     /** 二次确认码（必须等于此字面量，否则拒） */
     public static final String REQUIRED_CONFIRM_CODE = "PERMANENT_DELETE_CONFIRMED";

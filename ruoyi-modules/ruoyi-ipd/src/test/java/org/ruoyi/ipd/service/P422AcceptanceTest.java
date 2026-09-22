@@ -47,7 +47,7 @@ class P422AcceptanceTest {
     private AiDocumentMapper documentMapper;
     private AiDocumentService documentService;
     private AiModelConfigService modelConfigService;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private AiGateway aiGateway;
     private AiDocEmbeddingService docEmbeddingService;
     private AiGenerationService service;
@@ -57,7 +57,7 @@ class P422AcceptanceTest {
         documentMapper = mock(AiDocumentMapper.class);
         documentService = mock(AiDocumentService.class);
         modelConfigService = mock(AiModelConfigService.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         aiGateway = mock(AiGateway.class);
         // AI-STRAT-1：默认 RAG 未命中（EMPTY）——旧用例语义不变；命中注入见 ragContextInjectedAndAudited

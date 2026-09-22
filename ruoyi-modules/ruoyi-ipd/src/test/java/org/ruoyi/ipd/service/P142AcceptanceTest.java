@@ -23,7 +23,7 @@ import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +42,7 @@ class P142AcceptanceTest {
     @Mock
     private org.ruoyi.ipd.mapper.ProjectMapper projectMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @InjectMocks
     private StageActionService service;

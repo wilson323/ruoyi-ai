@@ -57,9 +57,9 @@ class ProjectScoreArchiveServiceListArchiveTest {
     @Mock private PersonMapper personMapper;
     @Mock private ProductGroupMapper productGroupMapper;
     @Mock private IpdPermission permission;
-    @Mock private SystemConfigService configService;
+    @Mock private ISystemConfigService configService;
     @Mock private SystemConfigVersionMapper versionMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private ProjectScoreArchiveService service;
 

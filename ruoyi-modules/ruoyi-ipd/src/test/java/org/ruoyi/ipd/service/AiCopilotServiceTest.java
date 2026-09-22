@@ -50,7 +50,7 @@ class AiCopilotServiceTest {
     private AiModelConfigService modelConfigService;
     private WorkbenchService workbenchService;
     private AiGateway aiGateway;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private ProjectMapper projectMapper;
     private ProjectMemberMapper projectMemberMapper;
     private AiCopilotService service;
@@ -63,7 +63,7 @@ class AiCopilotServiceTest {
         modelConfigService = mock(AiModelConfigService.class);
         workbenchService = mock(WorkbenchService.class);
         aiGateway = mock(AiGateway.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         projectMapper = mock(ProjectMapper.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,

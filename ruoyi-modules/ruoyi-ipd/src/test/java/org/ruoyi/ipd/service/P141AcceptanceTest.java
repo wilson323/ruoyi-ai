@@ -36,7 +36,7 @@ class P141AcceptanceTest {
 
     @Mock private StageActionMapper actionMapper;
     @Mock private DeliverableMapper deliverableMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProjectStageMapper projectStageMapper;
     @Mock private ProjectMapper projectMapper;
 

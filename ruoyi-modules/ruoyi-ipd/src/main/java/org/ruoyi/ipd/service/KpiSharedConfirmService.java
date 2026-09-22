@@ -71,15 +71,15 @@ public class KpiSharedConfirmService {
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
     private final PersonMapper personMapper;
-    private final AuditLogService auditLogService;
-    private final SystemConfigService systemConfigService;
+    private final IAuditLogService auditLogService;
+    private final ISystemConfigService systemConfigService;
 
     public KpiSharedConfirmService(KpiSharedConfirmMapper confirmMapper,
                                    ProjectMapper projectMapper,
                                    ProjectMemberMapper projectMemberMapper,
                                    PersonMapper personMapper,
-                                   AuditLogService auditLogService,
-                                   SystemConfigService systemConfigService) {
+                                   IAuditLogService auditLogService,
+                                   ISystemConfigService systemConfigService) {
         this.confirmMapper = confirmMapper;
         this.projectMapper = projectMapper;
         this.projectMemberMapper = projectMemberMapper;

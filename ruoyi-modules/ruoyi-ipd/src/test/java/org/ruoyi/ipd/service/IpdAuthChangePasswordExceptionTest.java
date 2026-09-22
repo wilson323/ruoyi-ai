@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 class IpdAuthChangePasswordExceptionTest {
 
     private final PersonMapper personMapper = mock(PersonMapper.class);
-    private final AuditLogService auditLogService = mock(AuditLogService.class);
+    private final IAuditLogService auditLogService = mock(IAuditLogService.class);
     private final IpdAuthService service = new IpdAuthService(personMapper, auditLogService);
 
     /** W5-E-2.1：自改密码场景 actor=自己=personId=1，本测试专注异常分支，全部走自改路径 */

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
  *   <li>DISABLED 账号</li>
  * </ul>
  * 修复前：失败分支仅 throw ServiceException，auditLogService.append 0 次调用。
- * 修复后：失败分支走 auditLogService.append（AuditLogService 内部 REQUIRES_NEW 提交）。
+ * 修复后：失败分支走 auditLogService.append（IAuditLogService 内部 REQUIRES_NEW 提交）。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ class IpdAuthLoginAuditTest {
     @Mock
     private PersonMapper personMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private IpdAuthService service;
 

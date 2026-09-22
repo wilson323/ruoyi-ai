@@ -11,7 +11,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.PersonService;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +35,7 @@ public class PersonController {
 
     private final PersonService personService;
     private final IpdPermission permission;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 离职冻结请求（reason 必填）。 */
     public record ResignRequest(@NotBlank @Size(max = 200) String reason) { }

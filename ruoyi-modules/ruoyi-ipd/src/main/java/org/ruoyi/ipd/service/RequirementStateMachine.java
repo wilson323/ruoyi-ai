@@ -122,7 +122,7 @@ public class RequirementStateMachine {
     private final RequirementChangeMapper requirementChangeMapper;
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * 查询 (from → to) 是否为合法迁移。

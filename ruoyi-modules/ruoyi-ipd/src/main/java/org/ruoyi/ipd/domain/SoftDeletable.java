@@ -2,7 +2,7 @@ package org.ruoyi.ipd.domain;
 
 /**
  * 软删除契约（G-02：禁物理 DELETE，仅 UPDATE del_flag）。
- * 任何允许走 DeletionRequestService 审核删除流程的目标实体必须实现本接口；
+ * 任何允许走 IDeletionRequestService 审核删除流程的目标实体必须实现本接口；
  * 执行器通过 entity_type 查找并调用，实现与审核引擎解耦。
  *
  * <p>实现规范：del_flag 取值 "0"=正常 / "1"=已删；执行器调用 {@code setDelFlag("1")} 即视为软删除。

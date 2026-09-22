@@ -32,7 +32,7 @@ import java.util.Set;
  * 收件箱按 receiver_id 强隔离（AC-TEAM-01：未被邀标的研发 PM 看不到该通知）。
  */
 @Service
-public class NotificationService {
+public class NotificationService implements INotificationService {
 
     /** 跨组知会 */
     public static final String KIND_FYI = "FYI";

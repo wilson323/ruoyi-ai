@@ -43,7 +43,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RecoveryWarningService {
+public class RecoveryWarningService implements IRecoveryWarningService {
 
     /** 90 日窗口（自上市日起 90 个自然日内） */
     public static final int WINDOW_DAYS = 90;
@@ -57,7 +57,7 @@ public class RecoveryWarningService {
     private final RecoveryWarningMapper recoveryWarningMapper;
     private final ProjectMapper projectMapper;
     private final ReceiptLedgerMapper receiptLedgerMapper;
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
 
     /** 可注入时钟（R156-A 根除债，仿 KpiRawRecordService 模式）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();

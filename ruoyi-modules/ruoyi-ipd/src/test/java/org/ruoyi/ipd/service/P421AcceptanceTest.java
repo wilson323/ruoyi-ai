@@ -48,14 +48,14 @@ class P421AcceptanceTest {
     private static final String ENV_KEY = "unit-test-master-key-32bytes!!!!";
 
     private AiModelConfigMapper mapper;
-    private AuditLogService audit;
+    private IAuditLogService audit;
     private AiModelConfigService service;
 
     @BeforeEach
     void setUp() {
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), AiModelConfig.class);
         mapper = mock(AiModelConfigMapper.class);
-        audit = mock(AuditLogService.class);
+        audit = mock(IAuditLogService.class);
         when(audit.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         service = new AiModelConfigService(mapper, audit, ENV_KEY);
     }

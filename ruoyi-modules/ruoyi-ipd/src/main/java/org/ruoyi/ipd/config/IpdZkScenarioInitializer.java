@@ -18,7 +18,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
-import org.ruoyi.ipd.service.SystemConfigService;
+import org.ruoyi.ipd.service.ISystemConfigService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -62,7 +62,7 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
     private final ProjectStageMapper projectStageMapper;
     private final StageActionMapper stageActionMapper;
     private final ProjectMemberMapper projectMemberMapper;
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
 
     private static final List<String> SIX_STAGES = List.of("CONCEPT", "PLAN", "DEV", "VALID", "LAUNCH", "LIFECYCLE");
 

@@ -68,7 +68,7 @@ import static org.mockito.Mockito.when;
  * <ol>
  *   <li><b>[AC-CFG-02 正例]</b> 双签期限改 3 天后：reopen 重算路径走当前 config（3 天）</li>
  *   <li><b>[AC-CFG-02 反例]</b> 改 3 天后：既有 Gate signDueAt 不会被回填修改</li>
- *   <li><b>[AC-CFG-03]</b> SystemConfigService.update 后下一次消费者立即命中新值（无 stale）</li>
+ *   <li><b>[AC-CFG-03]</b> ISystemConfigService.update 后下一次消费者立即命中新值（无 stale）</li>
  *   <li><b>[AC-HR-05]</b> L3 月度津贴改 2200 后，新绑定按 2200 计（lockedAmount 快照）</li>
  *   <li><b>[AC-HR-05 既有]</b> 已绑定记录锁定原金额（L2=1500 → HR 升 L3 后旧绑定仍 1500）</li>
  *   <li><b>[AC-GLB-10]</b> bonus.salesSource 改 SHIPMENT 后：当前 consumer 行为不变（实情记报告）</li>
@@ -96,7 +96,7 @@ class P034AcceptanceTest {
     @Mock private ProjectMemberMapper memberMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private PersonMapper personMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private GateMapper gateMapper;
     @Mock private GateReviewMapper reviewMapper;
     @Mock private GateArbitrationMapper arbitrationMapper;
@@ -106,9 +106,9 @@ class P034AcceptanceTest {
     @Mock private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
 
     /* ============== Services ============== */
-    private SystemConfigService systemConfigService;
-    private BusinessConfigService businessConfigService;
-    private ProjectMemberService projectMemberService;
+    private ISystemConfigService systemConfigService;
+    private IBusinessConfigService businessConfigService;
+    private IProjectMemberService projectMemberService;
     private GateReviewService gateReviewService;
     private BonusPoolService bonusPoolService;
 
@@ -134,9 +134,9 @@ class P034AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        systemConfigService = new SystemConfigService(systemConfigMapper, systemConfigVersionMapper);
-        businessConfigService = new BusinessConfigService(businessConfigMapper, businessConfigVersionMapper);
-        projectMemberService = new ProjectMemberService(memberMapper, personMapper, projectMapper,
+        systemConfigService = new SystemConfigServiceImpl(systemConfigMapper, systemConfigVersionMapper);
+        businessConfigService = new BusinessConfigServiceImpl(businessConfigMapper, businessConfigVersionMapper);
+        projectMemberService = new ProjectMemberServiceImpl(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         gateReviewService = new GateReviewService(gateMapper, reviewMapper, memberMapper, personMapper,
             arbitrationMapper, observerMapper, systemConfigService, auditLogService, /*notification*/ null);
@@ -213,7 +213,7 @@ class P034AcceptanceTest {
     /* ========================== 3. AC-CFG-03 ========================== */
 
     @Test
-    @DisplayName("[AC-CFG-03] SystemConfigService.update 同事务 invalidate → 下一次消费者立即命中新值")
+    @DisplayName("[AC-CFG-03] SystemConfigServiceImpl.update 同事务 invalidate → 下一次消费者立即命中新值")
     void cfg03_immediateEffect_afterUpdate() {
         // arrange: 初次读取返旧值 1500
         when(systemConfigMapper.selectOne(any())).thenReturn(row("1500"));

@@ -50,7 +50,7 @@ class P064AcceptanceTest {
 
     private final ObjectMapper json = new ObjectMapper();
     private DeletionRequestMapper deletionRequestMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private IpdPermission ipdPermission;
     private MockMvc mvc;
     private DeletionArchiveService service;
@@ -67,19 +67,19 @@ class P064AcceptanceTest {
             DeletionRequest.class);
 
         deletionRequestMapper = mock(DeletionRequestMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         ipdPermission = mock(IpdPermission.class);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(call -> call.getArgument(0));
         when(ipdPermission.requireAdmin()).thenReturn(ADMIN);
 
         DeletionRequest deleted = DeletionRequest.builder()
             .id(11L).entityType("projects").entityId(99L)
-            .status(DeletionRequestService.ST_DELETED)
+            .status(DeletionRequestServiceImpl.ST_DELETED)
             .executedAt(new java.util.Date())
             .remark("软删除完成").build();
         DeletionRequest purged = DeletionRequest.builder()
             .id(12L).entityType("products").entityId(88L)
-            .status(DeletionRequestService.ST_DELETED)
+            .status(DeletionRequestServiceImpl.ST_DELETED)
             .executedAt(new java.util.Date())
             .remark(DeletionArchiveService.PURGED_MARK + "7@1000").build();
         when(deletionRequestMapper.selectList(any(Wrapper.class))).thenReturn(List.of(deleted, purged));
@@ -88,7 +88,7 @@ class P064AcceptanceTest {
         when(deletionRequestMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(1);
 
         service = new DeletionArchiveService(deletionRequestMapper, auditLogService, ipdPermission);
-        DeletionRequestService deletionRequestService = mock(DeletionRequestService.class);
+        IDeletionRequestService deletionRequestService = mock(IDeletionRequestService.class);
         mvc = MockMvcBuilders.standaloneSetup(
                 new DeletionRequestController(service, deletionRequestService, ipdPermission))
             .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(json))
@@ -175,7 +175,7 @@ class P064AcceptanceTest {
     void purgeFailsWhenStatusIsNotDeleted() throws Exception {
         DeletionRequest draft = DeletionRequest.builder()
             .id(20L).entityType("projects").entityId(50L)
-            .status(DeletionRequestService.ST_DRAFT).build();
+            .status(DeletionRequestServiceImpl.ST_DRAFT).build();
         when(deletionRequestMapper.selectById(20L)).thenReturn(draft);
         mvc.perform(post("/api/v1/deletion-requests/20/purge"))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));

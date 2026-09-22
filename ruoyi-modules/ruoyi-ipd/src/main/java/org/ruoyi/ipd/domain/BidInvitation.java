@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * IPD 招标单（BR-TEAM）
  * 支持一对一指定研发PM或公开征集，支持状态机 OPEN→SELECTED/EXPIRED→CLOSED
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

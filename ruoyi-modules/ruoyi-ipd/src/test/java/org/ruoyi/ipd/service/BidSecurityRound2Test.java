@@ -51,7 +51,7 @@ class BidSecurityRound2Test {
     @Mock
     private BidResponseMapper bidResponseMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
 

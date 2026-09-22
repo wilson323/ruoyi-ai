@@ -40,7 +40,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
-public class ProjectMemberService {
+public class ProjectMemberServiceImpl implements IProjectMemberService {
 
     private static final Set<String> ROLES = Set.of("MARKET_PM", "RD_PM");
 
@@ -51,8 +51,8 @@ public class ProjectMemberService {
     private final ProjectMemberMapper memberMapper;
     private final PersonMapper personMapper;
     private final ProjectMapper projectMapper;
-    private final SystemConfigService systemConfigService;
-    private final AuditLogService auditLogService;
+    private final ISystemConfigService systemConfigService;
+    private final IAuditLogService auditLogService;
 
     /** 绑定成员（P2-4.1 四参兼容入口，未携带备案编号）：等价于 approvalRef=null 的五参重载。 */
     @Transactional(rollbackFor = Exception.class)

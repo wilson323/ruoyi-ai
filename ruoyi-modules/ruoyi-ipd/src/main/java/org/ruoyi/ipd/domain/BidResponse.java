@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * IPD 应标记录（研发PM 应标；不留痕的拒绝不记录）
  * 研发PM对招标单提交应标，支持 ACCEPTED/REJECTED/WITHDRAWN 状态
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

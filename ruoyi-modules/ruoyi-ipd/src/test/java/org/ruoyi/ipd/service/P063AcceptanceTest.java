@@ -65,10 +65,10 @@ class P063AcceptanceTest {
     private DeletionRequestMapper deletionRequestMapper;
 
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
 
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Mock
     private DeleteAuditService deleteAuditService;
@@ -93,7 +93,7 @@ class P063AcceptanceTest {
     @Mock
     private StateMachineGuard stateMachineGuard;
 
-    private DeletionRequestService deletionRequestService;
+    private IDeletionRequestService deletionRequestService;
 
     private static final Long TEST_REQUESTER = 900101L;
     private static final Long TEST_LEADER = 900102L;
@@ -101,13 +101,13 @@ class P063AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        deletionRequestService = new DeletionRequestService(deletionRequestMapper, systemConfigService,
+        deletionRequestService = new DeletionRequestServiceImpl(deletionRequestMapper, systemConfigService,
             auditLogService, deleteAuditService, projectMemberMapper, projectMapper, gateMapper,
             productMapper, personMapper);
         // ROOT-R3-P0-1：fail-closed 守卫必显式注入（预存红修复）
         deletionRequestService.setStateMachineGuard(stateMachineGuard);
         lenient().when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
-        // HIGH-4: 驼峰键名必须与生产 DeletionRequestService.java:166/170 一致
+        // HIGH-4: 驼峰键名必须与生产 IDeletionRequestService.java:166/170 一致
         lenient().when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);
         lenient().when(systemConfigService.getIntValue("deletion.adminDeadlineDays", 2)).thenReturn(2);
     }
@@ -116,24 +116,24 @@ class P063AcceptanceTest {
     @DisplayName("AC-DEL-06 正例：24h 内的申请可撤回 + 状态变 WITHDRAWN")
     void withdrawWithin24h_succeeds() {
         // 准备
-        DeletionRequest before = sampleReq(101L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
+        DeletionRequest before = sampleReq(101L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         before.setCreateTime(new Date(System.currentTimeMillis() - 1000 * 60 * 60)); // 1h 前提交
         when(deletionRequestMapper.selectById(101L)).thenReturn(before);
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         // 跑
         DeletionRequest after = deletionRequestService.withdraw(101L, TEST_REQUESTER);
         // 验
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_WITHDRAWN);
 
         ArgumentCaptor<DeletionRequest> captor = ArgumentCaptor.forClass(DeletionRequest.class);
         org.mockito.Mockito.verify(deletionRequestMapper).updateById(captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
+        assertThat(captor.getValue().getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_WITHDRAWN);
     }
     @Test
 
     @DisplayName("AC-DEL-06 反例：非申请人撤回应拒绝（MED-3 统一文案）")
     void withdrawByNonRequester_rejected() {
-        DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
+        DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         req.setCreateTime(new Date(System.currentTimeMillis() - 1000 * 60 * 60));
         when(deletionRequestMapper.selectById(102L)).thenReturn(req);
         // MED-3（d76a6086）：不存在/非本人合并同一文案，消除存在性侧信道
@@ -148,7 +148,7 @@ class P063AcceptanceTest {
         when(deletionRequestMapper.selectById(888L)).thenReturn(null);
         String notFound = catchThrowableOfType(
                 () -> deletionRequestService.withdraw(888L, 999999L), ServiceException.class).getMessage();
-        DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
+        DeletionRequest req = sampleReq(102L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         req.setCreateTime(new Date(System.currentTimeMillis() - 1000 * 60 * 60));
         when(deletionRequestMapper.selectById(102L)).thenReturn(req);
         String nonRequester = catchThrowableOfType(
@@ -158,7 +158,7 @@ class P063AcceptanceTest {
     @Test
     @DisplayName("AC-DEL-06 反例：超 24h 不可撤回")
     void withdrawAfter24h_rejected() {
-        DeletionRequest req = sampleReq(103L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
+        DeletionRequest req = sampleReq(103L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         req.setCreateTime(new Date(System.currentTimeMillis() - 25L * 3600_000L));
         when(deletionRequestMapper.selectById(103L)).thenReturn(req);
         assertThatThrownBy(() -> deletionRequestService.withdraw(103L, TEST_REQUESTER))
@@ -168,7 +168,7 @@ class P063AcceptanceTest {
     @Test
     @DisplayName("AC-DEL-06 守卫：已终态不可撤回")
     void withdrawTerminal_rejected() {
-        DeletionRequest req = sampleReq(104L, TEST_REQUESTER, DeletionRequestService.ST_REJECTED);
+        DeletionRequest req = sampleReq(104L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_REJECTED);
         when(deletionRequestMapper.selectById(104L)).thenReturn(req);
         assertThatThrownBy(() -> deletionRequestService.withdraw(104L, TEST_REQUESTER))
             .isInstanceOf(ServiceException.class)
@@ -177,7 +177,7 @@ class P063AcceptanceTest {
     @Test
     @DisplayName("AC-DEL-07 组长升级：逾期 LEADER_REVIEW → ADMIN_REVIEW")
     void escalateOverdueLeaderReview() {
-        DeletionRequest overdue1 = sampleReq(201L, TEST_REQUESTER, DeletionRequestService.ST_LEADER_REVIEW);
+        DeletionRequest overdue1 = sampleReq(201L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         overdue1.setLeaderDueAt(new Date(System.currentTimeMillis() - 3600_000L));
         when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(Arrays.asList(overdue1));
@@ -203,7 +203,7 @@ class P063AcceptanceTest {
     @Test
     @DisplayName("AC-DEL-07 超期清单：ADMIN_REVIEW 状态 + adminDueAt 已过的能被 list 出来")
     void listOverdueAdminReview() {
-        DeletionRequest overdue = sampleReq(301L, TEST_REQUESTER, DeletionRequestService.ST_ADMIN_REVIEW);
+        DeletionRequest overdue = sampleReq(301L, TEST_REQUESTER, DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
         overdue.setAdminDueAt(new Date(System.currentTimeMillis() - 3600_000L));
         when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(Arrays.asList(overdue));
@@ -212,17 +212,17 @@ class P063AcceptanceTest {
         assertThat(result.get(0).getId()).isEqualTo(301L);
     }
     /**
-     * HIGH-4 防漂移反向用例：直接读生产源码 DeletionRequestService.java，验证 setUp() 中 mock 用的键名
+     * HIGH-4 防漂移反向用例：直接读生产源码 IDeletionRequestService.java，验证 setUp() 中 mock 用的键名
      * 与生产 getIntValue() 调用键名一致（驼峰 deletion.leaderDeadlineDays / deletion.adminDeadlineDays）。
      * <p>历史教训：原 mock 键名为旧版点分格式，与生产驼峰不一致，但因 lenient().when()
      * 的 default fallback 不报错导致假绿。本用例用静态 grep 锁死键名一致性，未来生产键名变更时
      * 本测试会失败提醒同步 mock 键名（避免再次漂移）。
      */
     @Test
-    @DisplayName("HIGH-4 防漂移：mock 键名必须与生产 DeletionRequestService.getIntValue 调用键名一致（驼峰）")
+    @DisplayName("HIGH-4 防漂移：mock 键名必须与生产 DeletionRequestServiceImpl.getIntValue 调用键名一致（驼峰）")
     void mockKeyNamesMatchProductionSource() throws Exception {
         java.nio.file.Path prodSrc = java.nio.file.Paths.get(
-            "src/main/java/org/ruoyi/ipd/service/DeletionRequestService.java");
+            "src/main/java/org/ruoyi/ipd/service/DeletionRequestServiceImpl.java");
         assertThat(java.nio.file.Files.exists(prodSrc))
             .as("生产源码存在: " + prodSrc.toAbsolutePath()).isTrue();
         String content = java.nio.file.Files.readString(prodSrc);

@@ -7,7 +7,7 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.StateTransitionRule;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.NotificationService;
 import org.ruoyi.ipd.service.StateMachineGuard;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>规则元数据全部在内存（ConcurrentHashMap），无新增表（与任务「不动 DDL」一致）</li>
  *   <li>种子规则由 {@link #initRules()} 在 Spring {@code @PostConstruct} 阶段注入，覆盖：
- *       DeletionRequestService 6 条合法迁移 + BonusPoolService 3 条合法迁移 + 4 条终态收敛通配；
+ *       IDeletionRequestService 6 条合法迁移 + BonusPoolService 3 条合法迁移 + 4 条终态收敛通配；
  *       2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）补登 5 台 ad-hoc 状态机 19 条
  *       + KpiRecordService 7 条（含 *→ARCHIVED 通配），共 8 台机器 36 条单一事实源</li>
  *   <li>preCheck 三段判定：① 精确匹配 ② 通配「*」+ 已知终态收敛 ③ 其余非法抛 IpdBusinessException</li>
@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>并发安全：ConcurrentHashMap + 不可变 StateTransitionRule（lombok @Data 但注册前 builder
  *       已固化；不修改既有规则）</li>
- *   <li>零依赖循环：构造函数注入只接 AuditLogService + NotificationService（两个底层组件），
+ *   <li>零依赖循环：构造函数注入只接 IAuditLogService + NotificationService（两个底层组件），
  *       不反向依赖任何上层业务 Service</li>
  *   <li>测试隔离：单元测试在 {@code @BeforeEach} 调用 {@link #resetRules()} 清空后再种</li>
  * </ul>
@@ -59,11 +59,11 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     /** 规则表：key = "{entityType}:{fromState}->{toState}" */
     private final Map<String, StateTransitionRule> rules = new ConcurrentHashMap<>();
 
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final NotificationService notificationService;
 
     @Autowired
-    public DefaultStateMachineGuard(AuditLogService auditLogService,
+    public DefaultStateMachineGuard(IAuditLogService auditLogService,
                                     NotificationService notificationService) {
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;

@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * AI-P1-3 留痕门禁单测（《AI参与留痕规范-20260910》§4）：
  * aiAssisted=true 的审计载荷必须同时携带非空 aiModel + 白名单 aiRole（draft|precheck|summarize），
  * 缺一即拒写（防半吊子留痕）；决策语义 aiRole 一概拦下（责任链红线：AI 只出建议，决策恒为人工）。
- * 门禁接线点：AuditLogService.append 入口（单点，44 文件/81 处调用自动受益）。
+ * 门禁接线点：IAuditLogService.append 入口（单点，44 文件/81 处调用自动受益）。
  */
 @Tag("dev")
 @DisplayName("AI-P1-3 留痕门禁：aiAssisted 三件套完备性")

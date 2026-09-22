@@ -24,14 +24,14 @@ import java.util.stream.Collectors;
 /**
  * 招标单服务（P2-3.1 BR-TEAM-03/05）
  * 状态机：OPEN → SELECTED / EXPIRED → CLOSED
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2 软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2 软删除）
  */
 @Service
 public class BidInvitationService {
 
     private final BidInvitationMapper bidInvitationMapper;
     private final BidResponseMapper bidResponseMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final NotificationService notificationService;
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
@@ -43,7 +43,7 @@ public class BidInvitationService {
 
     public BidInvitationService(BidInvitationMapper bidInvitationMapper,
                                  BidResponseMapper bidResponseMapper,
-                                 AuditLogService auditLogService) {
+                                 IAuditLogService auditLogService) {
         this(bidInvitationMapper, bidResponseMapper, auditLogService, null);
     }
 
@@ -53,7 +53,7 @@ public class BidInvitationService {
     @Autowired
     public BidInvitationService(BidInvitationMapper bidInvitationMapper,
                                  BidResponseMapper bidResponseMapper,
-                                 AuditLogService auditLogService,
+                                 IAuditLogService auditLogService,
                                  NotificationService notificationService) {
         this.bidInvitationMapper = bidInvitationMapper;
         this.bidResponseMapper = bidResponseMapper;

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  *   <li>分档边界：95/85/70/60 四档上下端点（AC-INC-22/23/24 + 邻值 96/88/55/69/59）</li>
  *   <li>三种取数策略：PROJECT_SCORE / WEIGHTED_AVG / LAST_QUARTER（BR-INC-07）</li>
  *   <li>能力等级不得代替项目绩效（AC-INC-22b：L1–L5 与 weightedScore 独立）</li>
- *   <li>策略配置从 system_configs 读取（BusinessConfigService）</li>
+ *   <li>策略配置从 system_configs 读取（IBusinessConfigService）</li>
  *   <li>score 为 null / 越界 → IpdBusinessException</li>
  *   <li>55 分系数 = 0 取消奖金资格（AC-INC-24）</li>
  *   <li>preview 仅做查表/计算，不写 audit、不落库</li>
@@ -59,7 +59,7 @@ class P345AcceptanceTest {
     @Mock
     private ProjectScoreRecordMapper projectScoreRecordMapper;
     @Mock
-    private BusinessConfigService businessConfigService;
+    private IBusinessConfigService businessConfigService;
     @Mock
     private StateMachineGuard stateMachineGuard;
 

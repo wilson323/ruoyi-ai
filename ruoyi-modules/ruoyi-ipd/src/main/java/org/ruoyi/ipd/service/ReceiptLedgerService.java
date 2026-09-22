@@ -34,7 +34,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class ReceiptLedgerService {
+public class ReceiptLedgerService implements IReceiptLedgerService {
 
     private final ReceiptLedgerMapper receiptLedgerMapper;
     private final ProjectMapper projectMapper;

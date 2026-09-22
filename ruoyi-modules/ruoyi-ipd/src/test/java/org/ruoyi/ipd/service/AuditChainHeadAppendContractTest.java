@@ -51,7 +51,7 @@ class AuditChainHeadAppendContractTest {
     private AuditChainHeadMapper chainHeadMapper;
 
     @InjectMocks
-    private AuditLogService service;
+    private AuditLogServiceImpl service;
 
     private static AuditChainHead anchor(Long lastSeq, String lastHash, long nextSeq) {
         AuditChainHead head = new AuditChainHead();

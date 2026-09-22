@@ -45,7 +45,7 @@ import java.util.List;
  * </ul>
  */
 @Service
-public class AiModelConfigService {
+public class AiModelConfigService implements IAiModelConfigService {
 
     /** config_json 解析（温度/token 数对外仍为独立视图字段，仅持久层合并存储）；
      *  开启大十进制解析，保留用户配置的字面精度（0.70 不退化为 0.7） */
@@ -53,7 +53,7 @@ public class AiModelConfigService {
         .enable(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     private final AiModelConfigMapper mapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     /** AES 主密钥（环境变量注入；测试直传） */
     private final String encryptKey;
     /** 多协议派发器（BR-AI-PROV-01/02） */
@@ -62,13 +62,13 @@ public class AiModelConfigService {
     /** 3 参构造（保留向后兼容：现有单测与生产 wiring 沿用） */
     // 2026-09-06 第六批：双构造器需显式指定 Spring 注入入口（多构造器无 @Autowired 启动失败，踩过两次）
     @Autowired
-    public AiModelConfigService(AiModelConfigMapper mapper, AuditLogService auditLogService,
+    public AiModelConfigService(AiModelConfigMapper mapper, IAuditLogService auditLogService,
                                 @Value("${IPD_AIMODEL_ENCRYPT_KEY:}") String encryptKey) {
         this(mapper, auditLogService, encryptKey, defaultRegistry());
     }
 
     /** 4 参构造（测试可注入自定义 registry；生产走 3 参 + 默认 registry） */
-    public AiModelConfigService(AiModelConfigMapper mapper, AuditLogService auditLogService,
+    public AiModelConfigService(AiModelConfigMapper mapper, IAuditLogService auditLogService,
                                 @Value("${IPD_AIMODEL_ENCRYPT_KEY:}") String encryptKey,
                                 ProviderRegistry providerRegistry) {
         this.mapper = mapper;

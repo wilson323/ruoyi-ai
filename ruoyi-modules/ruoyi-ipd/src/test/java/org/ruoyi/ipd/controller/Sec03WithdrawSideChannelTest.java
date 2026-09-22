@@ -24,11 +24,12 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdRolePermissionCatalog;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.DeleteAuditService;
-import org.ruoyi.ipd.service.DeletionRequestService;
+import org.ruoyi.ipd.service.IDeletionRequestService;
+import org.ruoyi.ipd.service.DeletionRequestServiceImpl;
 import org.ruoyi.ipd.service.StateMachineGuard;
-import org.ruoyi.ipd.service.SystemConfigService;
+import org.ruoyi.ipd.service.ISystemConfigService;
 
 import java.lang.reflect.Method;
 import java.util.Date;
@@ -76,9 +77,9 @@ class Sec03WithdrawSideChannelTest {
     @Mock
     private DeletionRequestMapper deletionRequestMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private DeleteAuditService deleteAuditService;
     @Mock
@@ -94,7 +95,7 @@ class Sec03WithdrawSideChannelTest {
     @Mock
     private PersonMapper personMapper;
 
-    private DeletionRequestService service;
+    private IDeletionRequestService service;
 
     @BeforeAll
     static void initTableInfo() {
@@ -104,7 +105,7 @@ class Sec03WithdrawSideChannelTest {
 
     @BeforeEach
     void setUp() {
-        service = new DeletionRequestService(
+        service = new DeletionRequestServiceImpl(
             deletionRequestMapper, systemConfigService, auditLogService, deleteAuditService,
             projectMemberMapper, projectMapper, gateMapper, productMapper, personMapper);
         service.setStateMachineGuard(stateMachineGuard);
@@ -137,7 +138,7 @@ class Sec03WithdrawSideChannelTest {
     @Test
     @DisplayName("2) 非本人申请撤返 → 统一 404 NOT_FOUND（防'非本人'侧信道）")
     void withdrawOtherOwnerReturnsUniformNotFound() {
-        DeletionRequest owned = savedRequest(REQUEST_ID, DeletionRequestService.ST_LEADER_REVIEW,
+        DeletionRequest owned = savedRequest(REQUEST_ID, DeletionRequestServiceImpl.ST_LEADER_REVIEW,
             OTHER_USER_ID, new Date());
         when(deletionRequestMapper.selectById(REQUEST_ID)).thenReturn(owned);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
@@ -152,7 +153,7 @@ class Sec03WithdrawSideChannelTest {
     @Test
     @DisplayName("3) 已终态申请撤返 → 统一 404 NOT_FOUND（防'已终态'侧信道）")
     void withdrawTerminalStateReturnsUniformNotFound() {
-        DeletionRequest deleted = savedRequest(REQUEST_ID, DeletionRequestService.ST_DELETED,
+        DeletionRequest deleted = savedRequest(REQUEST_ID, DeletionRequestServiceImpl.ST_DELETED,
             REQUESTER_ID, new Date());
         when(deletionRequestMapper.selectById(REQUEST_ID)).thenReturn(deleted);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
@@ -162,7 +163,7 @@ class Sec03WithdrawSideChannelTest {
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.NOT_FOUND);
 
-        DeletionRequest rejected = savedRequest(REQUEST_ID, DeletionRequestService.ST_REJECTED,
+        DeletionRequest rejected = savedRequest(REQUEST_ID, DeletionRequestServiceImpl.ST_REJECTED,
             REQUESTER_ID, new Date());
         when(deletionRequestMapper.selectById(REQUEST_ID)).thenReturn(rejected);
         assertThatThrownBy(() -> service.withdrawIfExistsOrNotFound(ACTOR_REQUESTER, REQUEST_ID))
@@ -170,7 +171,7 @@ class Sec03WithdrawSideChannelTest {
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.NOT_FOUND);
 
-        DeletionRequest alreadyWithdrawn = savedRequest(REQUEST_ID, DeletionRequestService.ST_WITHDRAWN,
+        DeletionRequest alreadyWithdrawn = savedRequest(REQUEST_ID, DeletionRequestServiceImpl.ST_WITHDRAWN,
             REQUESTER_ID, new Date());
         when(deletionRequestMapper.selectById(REQUEST_ID)).thenReturn(alreadyWithdrawn);
         assertThatThrownBy(() -> service.withdrawIfExistsOrNotFound(ACTOR_REQUESTER, REQUEST_ID))
@@ -183,7 +184,7 @@ class Sec03WithdrawSideChannelTest {
     @DisplayName("4) 超 24h 时限撤返 → 统一 404 NOT_FOUND（防'超时限'侧信道）")
     void withdrawOverDeadlineReturnsUniformNotFound() {
         Date old = new Date(System.currentTimeMillis() - 25 * 3600_000L);
-        DeletionRequest oldRequest = savedRequest(REQUEST_ID, DeletionRequestService.ST_LEADER_REVIEW,
+        DeletionRequest oldRequest = savedRequest(REQUEST_ID, DeletionRequestServiceImpl.ST_LEADER_REVIEW,
             REQUESTER_ID, old);
         when(deletionRequestMapper.selectById(REQUEST_ID)).thenReturn(oldRequest);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
@@ -198,14 +199,14 @@ class Sec03WithdrawSideChannelTest {
     @Test
     @DisplayName("5) 本人申请 24h 内撤返 → 200 成功 + WITHDRAWN 状态 + 审计写入")
     void withdrawOwnerWithinDeadlineSucceeds() {
-        DeletionRequest recent = savedRequest(REQUEST_ID, DeletionRequestService.ST_LEADER_REVIEW,
+        DeletionRequest recent = savedRequest(REQUEST_ID, DeletionRequestServiceImpl.ST_LEADER_REVIEW,
             REQUESTER_ID, new Date());
         when(deletionRequestMapper.selectById(REQUEST_ID)).thenReturn(recent);
         when(systemConfigService.getIntValue("deletion.withdrawHours", 24)).thenReturn(24);
 
         DeletionRequest after = service.withdrawIfExistsOrNotFound(ACTOR_REQUESTER, REQUEST_ID);
 
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestService.ST_WITHDRAWN);
+        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_WITHDRAWN);
         verify(deletionRequestMapper).updateById(any(DeletionRequest.class));
         verify(auditLogService).append(any());
     }
@@ -221,20 +222,20 @@ class Sec03WithdrawSideChannelTest {
         IpdBusinessException exNotExist = capture(() ->
             service.withdrawIfExistsOrNotFound(ACTOR_REQUESTER, 1001L));
 
-        DeletionRequest notOwned = savedRequest(1002L, DeletionRequestService.ST_LEADER_REVIEW,
+        DeletionRequest notOwned = savedRequest(1002L, DeletionRequestServiceImpl.ST_LEADER_REVIEW,
             OTHER_USER_ID, new Date());
         when(deletionRequestMapper.selectById(1002L)).thenReturn(notOwned);
         IpdBusinessException exNotOwner = capture(() ->
             service.withdrawIfExistsOrNotFound(ACTOR_REQUESTER, 1002L));
 
-        DeletionRequest deleted = savedRequest(1003L, DeletionRequestService.ST_DELETED,
+        DeletionRequest deleted = savedRequest(1003L, DeletionRequestServiceImpl.ST_DELETED,
             REQUESTER_ID, new Date());
         when(deletionRequestMapper.selectById(1003L)).thenReturn(deleted);
         IpdBusinessException exTerminal = capture(() ->
             service.withdrawIfExistsOrNotFound(ACTOR_REQUESTER, 1003L));
 
         Date old = new Date(System.currentTimeMillis() - 25 * 3600_000L);
-        DeletionRequest overdue = savedRequest(1004L, DeletionRequestService.ST_LEADER_REVIEW,
+        DeletionRequest overdue = savedRequest(1004L, DeletionRequestServiceImpl.ST_LEADER_REVIEW,
             REQUESTER_ID, old);
         when(deletionRequestMapper.selectById(1004L)).thenReturn(overdue);
         IpdBusinessException exOverdue = capture(() ->

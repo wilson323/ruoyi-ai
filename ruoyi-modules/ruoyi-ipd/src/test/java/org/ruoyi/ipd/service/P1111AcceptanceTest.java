@@ -56,20 +56,20 @@ class P1111AcceptanceTest {
 
     @Mock private StageActionMapper actionMapper;
     @Mock private DeliverableMapper deliverableMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ProjectStageMapper projectStageMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private SystemConfigService configService;
+    @Mock private ISystemConfigService configService;
     @Mock private ProjectCertItemMapper certItemMapper;
     @Mock private CertTemplateService certTemplateService;
 
     private GateEngine gateEngine;
     private StageActionService stageActionService;
-    private ProjectCertService projectCertService;
+    private IProjectCertService projectCertService;
 
     @BeforeAll
     static void initMeta() {
-        // ProjectCertService 内联构造 LambdaQueryWrapper<ProjectCertItem>，纯 Mockito 环境需预初始化
+        // IProjectCertService 内联构造 LambdaQueryWrapper<ProjectCertItem>，纯 Mockito 环境需预初始化
         // TableInfo 元数据（lambda cache），否则运行时抛 "can not find lambda cache for this entity"。
         // 模式对齐同包 P062AcceptanceTest.initMeta()。
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "P1111-test");
@@ -84,7 +84,7 @@ class P1111AcceptanceTest {
         gateEngine = new GateEngine(actionMapper, configService);
         stageActionService = new StageActionService(actionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
-        projectCertService = new ProjectCertService(certItemMapper, projectMapper, certTemplateService, auditLogService);
+        projectCertService = new ProjectCertServiceImpl(certItemMapper, projectMapper, certTemplateService, auditLogService);
     }
 
     @Test

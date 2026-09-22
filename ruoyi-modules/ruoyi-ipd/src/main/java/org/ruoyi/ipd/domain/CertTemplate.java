@@ -15,7 +15,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 /**
  * 国别认证清单模板库（v3 BR-IPD-05b / 补漏表 M1）
  * 项目选定目标市场后按 country_code 自动带出认证项；超管可维护。
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

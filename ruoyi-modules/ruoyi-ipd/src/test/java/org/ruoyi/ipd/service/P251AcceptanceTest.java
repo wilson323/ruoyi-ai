@@ -60,9 +60,9 @@ class P251AcceptanceTest {
     @Mock
     private GateElementResultMapper resultMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
     @Mock

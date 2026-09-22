@@ -39,13 +39,13 @@ import java.util.Set;
  *   <li>R/W 权限分离判定（{@link #checkPermissionSeparation}）—— AC-COMP-05</li>
  * </ul>
  *
- * <p>约束（G-02 / BR-COMP-AUDIT）：写操作必审计；本服务对 {@link AuditLogService#append} 单点收口，
+ * <p>约束（G-02 / BR-COMP-AUDIT）：写操作必审计；本服务对 {@link IAuditLogService#append} 单点收口，
  * 不接受任何「绕过审计」的写路径。
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ComplianceService {
+public class ComplianceService implements IComplianceService {
 
     /** 个保法 / GDPR Art.12.3 默认响应时限：30 自然日（owner 拍板，写死常量）。 */
     public static final int DELETION_DEADLINE_DAYS = 30;
@@ -108,8 +108,8 @@ public class ComplianceService {
     private static final Set<String> ROLES_WITH_WRITE = Set.of("SUPER_ADMIN", "GROUP_LEADER");
     private static final Set<String> ROLES_WITH_READ = Set.of("SUPER_ADMIN", "GROUP_LEADER", "MARKET_PM", "RD_PM");
 
-    private final SystemConfigService systemConfigService;
-    private final AuditLogService auditLogService;
+    private final ISystemConfigService systemConfigService;
+    private final IAuditLogService auditLogService;
     private final AuditLogMapper auditLogMapper;
     private final PersonMapper personMapper;
     private final ObjectMapper objectMapper;
@@ -179,7 +179,7 @@ public class ComplianceService {
         Date now = new Date();
         Date deadline = new Date(now.getTime() + DELETION_DEADLINE_DAYS * 86_400_000L);
 
-        // 2) 落审计（写操作必走 AuditLogService，不可绕过）
+        // 2) 落审计（写操作必走 IAuditLogService，不可绕过）
         AuditLog auditDraft = AuditLog.builder()
             .operatorId(actor.id())
             .operatorName(actor.name())

@@ -14,7 +14,7 @@ import java.util.Date;
  * <p>每月一条对账记录；含 run 报告 JSON + 锁定状态 + 解锁理由。
  * <p>锁定月份所有账务写操作（含 Allowance / Bonus / NegativeFeedback / Contribution）须先检查此表。
  *
- * <p>删除走 DeletionRequestService + DeleteAuditService（软删除，del_flag='0'/'1'）。
+ * <p>删除走 IDeletionRequestService + DeleteAuditService（软删除，del_flag='0'/'1'）。
  */
 @Data
 @Builder

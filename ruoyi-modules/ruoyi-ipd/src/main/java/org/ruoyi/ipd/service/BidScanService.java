@@ -34,7 +34,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class BidScanService {
+public class BidScanService implements IBidScanService {
 
     /** AC-TEAM-06：到期前 N 天提醒 */
     static final int EXPIRING_SOON_DAYS = 3;
@@ -46,7 +46,7 @@ public class BidScanService {
     private final ProjectMapper projectMapper;
     private final PersonMapper personMapper;
     private final NotificationService notificationService;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();

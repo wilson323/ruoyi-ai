@@ -48,13 +48,13 @@ class P111AcceptanceTest {
     @Mock
     private ProjectMapper projectMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private GateEngine gateEngine;
     @Mock
     private ProjectBootstrapService projectBootstrapService;
     @Mock
-    private ProjectCertService projectCertService;
+    private IProjectCertService projectCertService;
 
     @Mock
     private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;

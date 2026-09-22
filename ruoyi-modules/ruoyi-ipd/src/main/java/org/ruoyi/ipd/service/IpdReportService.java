@@ -80,7 +80,7 @@ public class IpdReportService {
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
     private final PersonMapper personMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final IpdPermission ipdPermission;
 
     /**

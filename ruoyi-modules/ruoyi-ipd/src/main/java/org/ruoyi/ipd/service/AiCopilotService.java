@@ -42,7 +42,7 @@ import java.util.Map;
  */
 @Slf4j
 @Service
-public class AiCopilotService {
+public class AiCopilotService implements IAiCopilotService {
 
     /** 多轮历史最大条数（防 prompt 爆炸；超长由前端分页截断）。 */
     static final int MAX_HISTORY = 8;
@@ -54,7 +54,7 @@ public class AiCopilotService {
     private final AiModelConfigService modelConfigService;
     private final WorkbenchService workbenchService;
     private final AiGateway aiGateway;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -62,7 +62,7 @@ public class AiCopilotService {
     public AiCopilotService(AiModelConfigService modelConfigService,
                             WorkbenchService workbenchService,
                             AiGateway aiGateway,
-                            AuditLogService auditLogService,
+                            IAuditLogService auditLogService,
                             ProjectMapper projectMapper,
                             ProjectMemberMapper projectMemberMapper) {
         this.modelConfigService = modelConfigService;

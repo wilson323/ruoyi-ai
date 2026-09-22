@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-public class DeleteAuditService {
+public class DeleteAuditService implements IDeleteAuditService {
 
     /** 审计 action：审核通过且目标行已被软删 */
     public static final String ACTION_DELETE_EXECUTE = "DELETE_EXECUTE";
@@ -51,11 +51,11 @@ public class DeleteAuditService {
     public static final String ACTION_DELETE_NOOP = "DELETE_NOOP";
 
     private final DeletionRequestMapper deletionRequestMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final Map<String, SoftDeleteExecutor<?>> executorsByType;
 
     public DeleteAuditService(DeletionRequestMapper deletionRequestMapper,
-                              AuditLogService auditLogService,
+                              IAuditLogService auditLogService,
                               List<SoftDeleteExecutor<?>> executors) {
         this.deletionRequestMapper = deletionRequestMapper;
         this.auditLogService = auditLogService;
@@ -82,7 +82,7 @@ public class DeleteAuditService {
         if (request == null) {
             throw new ServiceException("删除申请不存在: " + requestId);
         }
-        if (!DeletionRequestService.ST_ADMIN_REVIEW.equals(request.getStatus())) {
+        if (!DeletionRequestServiceImpl.ST_ADMIN_REVIEW.equals(request.getStatus())) {
             throw new ServiceException("状态机不匹配：期望 ADMIN_REVIEW，实际 " + request.getStatus());
         }
 
@@ -92,7 +92,7 @@ public class DeleteAuditService {
         }
 
         // 步骤 1：标记申请终态 DELETED（update 提交时刻受事务管辖）
-        request.setStatus(DeletionRequestService.ST_DELETED);
+        request.setStatus(DeletionRequestServiceImpl.ST_DELETED);
         request.setAdminId(adminId);
         request.setAdminDecision("APPROVE");
         request.setAdminDecidedAt(new Date());

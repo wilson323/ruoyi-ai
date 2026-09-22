@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * IPD Gate 评审双签记录（每方一条；v3 TS-06）
  * 市场PM、研发PM、组长、超管四方评审，双签通过方可放行
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

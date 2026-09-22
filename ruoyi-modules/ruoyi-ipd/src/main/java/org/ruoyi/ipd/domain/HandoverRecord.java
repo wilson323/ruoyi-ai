@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * IPD 移交记录（项目移交+超管移交 BR-HAND/BR-ADM）
  * 先移交后禁用，支持 PROJECT/SUPER_ADMIN/BATCH 三种移交类型
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

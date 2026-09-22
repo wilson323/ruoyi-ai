@@ -34,7 +34,7 @@ class P231AcceptanceTest {
 
     @Mock private BidInvitationMapper bidInvitationMapper;
     @Mock private BidResponseMapper bidResponseMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     @InjectMocks private BidInvitationService bidInvitationService;
 

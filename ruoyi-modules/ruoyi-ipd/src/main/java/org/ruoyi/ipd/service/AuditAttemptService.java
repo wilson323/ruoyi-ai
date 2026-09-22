@@ -16,10 +16,10 @@ import java.util.Objects;
 public class AuditAttemptService {
     public enum Outcome { ATTEMPT, FAILURE, DENIED }
 
-    private final AuditLogService audit;
+    private final IAuditLogService audit;
     private final TransactionTemplate independent;
 
-    public AuditAttemptService(AuditLogService audit, PlatformTransactionManager transactions) {
+    public AuditAttemptService(IAuditLogService audit, PlatformTransactionManager transactions) {
         this.audit = audit;
         independent = new TransactionTemplate(transactions);
         independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);

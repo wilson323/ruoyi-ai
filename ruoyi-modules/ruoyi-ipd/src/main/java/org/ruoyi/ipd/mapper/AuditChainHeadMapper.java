@@ -8,7 +8,7 @@ import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.AuditChainHead;
 
 /**
- * audit_log_chain_heads mapper（分配器锚行；仅 AuditLogService.append 事务内使用，P 悲观锁变体）。
+ * audit_log_chain_heads mapper（分配器锚行；仅 IAuditLogService.append 事务内使用，P 悲观锁变体）。
  * <p>注解 SQL + FOR UPDATE 风格对齐 ProjectStageMapper 先例；锁定读仅需 SELECT 权限
  * （chain_heads 表级已授 SELECT,UPDATE，Q6 REVOKE 后库级仅剩 SELECT,INSERT 不构成阻碍）。
  */

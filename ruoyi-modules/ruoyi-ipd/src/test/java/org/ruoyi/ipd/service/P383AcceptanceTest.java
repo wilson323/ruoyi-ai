@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>BR-INC-13 升降级：常规评级仅新项目，在研 lockedLevel/lockedAmount 不被覆盖；重大失误即时降级次月生效（次月起新绑定用新级，已绑定 locked 不变）。
  *
- * <p>实现见 {@link AllowanceService}、{@link ProjectMemberService}（P3-3.3 + P2-7.1）；本卡只验收、不可改业务代码。
+ * <p>实现见 {@link AllowanceService}、{@link IProjectMemberService}（P3-3.3 + P2-7.1）；本卡只验收、不可改业务代码。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -156,8 +156,8 @@ class P383AcceptanceTest {
         String m2 = allowanceService.determineLowScoreStop(new BigDecimal("58"));
         assertThat(m1).isEqualTo("STOP_SCORE_BELOW_60");
         assertThat(m2).isEqualTo("STOP_SCORE_BELOW_60");
-        // 业务约定：连续两月同原因 ⇒ ProjectMemberService.triggerAutoExitForLowScore(...)
-        // 本测试仅断言单月判定可被连续调用，触发退出由业务侧 ProjectMemberService 串联（详见 P383 卡实施）
+        // 业务约定：连续两月同原因 ⇒ IProjectMemberService.triggerAutoExitForLowScore(...)
+        // 本测试仅断言单月判定可被连续调用，触发退出由业务侧 IProjectMemberService 串联（详见 P383 卡实施）
     }
 
     /* ============================================================
@@ -168,7 +168,7 @@ class P383AcceptanceTest {
     @Test
     @DisplayName("[AC-INC-30] 退出后 bonusEligible 由 1 置 0（奖金资格作废）")
     void AC_INC_30_退出奖金资格作废() {
-        // 业务约定：ProjectMemberService.bind 默认 bonusEligible="1"
+        // 业务约定：IProjectMemberService.bind 默认 bonusEligible="1"
         // exitForHandover 串联设置 bonusEligible="0"
         // 本卡只验证字段语义：0 ⇒ 不参与分配
         ProjectMember exitedDualPm = ProjectMember.builder()

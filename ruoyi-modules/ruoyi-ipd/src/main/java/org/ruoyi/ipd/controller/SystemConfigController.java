@@ -18,8 +18,8 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
-import org.ruoyi.ipd.service.SystemConfigService;
+import org.ruoyi.ipd.service.IAuditLogService;
+import org.ruoyi.ipd.service.ISystemConfigService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -49,10 +49,10 @@ import java.util.Objects;
 @Slf4j
 public class SystemConfigController {
 
-    private final SystemConfigService systemConfigService;
+    private final ISystemConfigService systemConfigService;
     private final IpdPermission ipdPermission;
     /** BUG-P0-3.2-AUDIT-MISSING：参数变更审计写入 audit_logs */
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
     private final ObjectMapper objectMapper;
 
     /** 查询所有参数（鉴权：超管） */
@@ -107,7 +107,7 @@ public class SystemConfigController {
 
     /**
      * BUG-P0-3.2-AUDIT-MISSING：参数变更写 audit_logs（独立事务。
-     * 业务失败时 audit 已独立提交 — 这是 AuditLogService.append REQUIRES_NEW 的预期行为，
+     * 业务失败时 audit 已独立提交 — 这是 IAuditLogService.append REQUIRES_NEW 的预期行为，
      * 审计框架保 AC-AUD-01 不可篡改 + hash 链连续，胜过「业务回滚跟审计回滚」的次优选。
      * 审计写失败仅记 warn 日志，不阻断业务响应——业务主链（参数变更 + 版本链）不挂审计。
      */

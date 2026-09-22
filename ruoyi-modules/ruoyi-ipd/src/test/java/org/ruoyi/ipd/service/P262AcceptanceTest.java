@@ -40,7 +40,7 @@ class P262AcceptanceTest {
 
     @Mock private RequirementChangeMapper requirementChangeMapper;
     @Mock private RequirementMapper requirementMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     /** ROOT-R3-P0-2：守卫 fail-closed 后必显式注入 mock（Mockito setter 注入按类型匹配）。 */
     @Mock private StateMachineGuard stateMachineGuard;
 

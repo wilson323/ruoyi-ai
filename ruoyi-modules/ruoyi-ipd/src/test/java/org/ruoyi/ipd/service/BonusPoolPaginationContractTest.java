@@ -51,7 +51,7 @@ class BonusPoolPaginationContractTest {
 
     @Mock private BonusPoolMapper bonusPoolMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
 
     private BonusPoolService service;

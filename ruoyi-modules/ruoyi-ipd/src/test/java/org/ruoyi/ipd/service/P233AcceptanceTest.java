@@ -57,7 +57,7 @@ class P233AcceptanceTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private PersonMapper personMapper;
     @Mock private NotificationService notificationService;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     @InjectMocks private BidScanService bidScanService;
     @InjectMocks private BidInvitationService bidInvitationService;

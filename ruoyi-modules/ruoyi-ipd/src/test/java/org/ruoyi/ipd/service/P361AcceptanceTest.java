@@ -55,7 +55,7 @@ class P361AcceptanceTest {
     @Mock private ContributionVersionMapper contributionVersionMapper;
     @Mock private ProductGroupMapper productGroupMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private IpdPermission ipdPermission;
 
     private ContributionService service;

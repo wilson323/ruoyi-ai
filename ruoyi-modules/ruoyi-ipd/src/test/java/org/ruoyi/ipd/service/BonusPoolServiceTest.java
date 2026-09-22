@@ -52,13 +52,13 @@ class BonusPoolServiceTest {
     @Mock
     private ProjectMapper projectMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     /** ROOT-R3-P0-1 修复：跨状态机守卫 mock（fail-closed 改造后必显式注入，否则 preCheckGuard 抛 IpdBusinessException） */
     @Mock
     private StateMachineGuard stateMachineGuard;
     /** R149 A1：注入 mock 读取 {@code bonus.windowMonths}（默认 6） */
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
 
     private BonusPoolService service;
 
@@ -68,7 +68,7 @@ class BonusPoolServiceTest {
         service.setAuditLogService(auditLogService);
         // ROOT-R3-P0-1 修复：注入 mock 守卫（fail-closed 改造后，preCheckGuard 必显式 fail-fast）
         service.setStateMachineGuard(stateMachineGuard);
-        // R149 A1：注入 mock SystemConfigService（默认未 stub 时回退 DEFAULT_WINDOW_MONTHS=6）
+        // R149 A1：注入 mock ISystemConfigService（默认未 stub 时回退 DEFAULT_WINDOW_MONTHS=6）
         service.setSystemConfigService(systemConfigService);
     }
 
@@ -417,7 +417,7 @@ class BonusPoolServiceTest {
     @Test
     @DisplayName("[R149-A1] readWindowMonths() 默认值（systemConfigService 未注入）= 6")
     void readWindowMonths_defaultReturnsSix() {
-        // 解除 SystemConfigService 注入（模拟 legacy 路径）
+        // 解除 ISystemConfigService 注入（模拟 legacy 路径）
         service.setSystemConfigService(null);
         assertThat(service.readWindowMonths()).isEqualTo(6);
         assertThat(service.readWindowMonths()).isEqualTo(BonusPoolService.DEFAULT_WINDOW_MONTHS);

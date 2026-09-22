@@ -8,7 +8,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 /**
  * IPD 需求变更单（双签否决对象 BR-GATE-07）
  * 每个变更单需经双PM 签署批准方可生效，拒绝则退回
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

@@ -11,7 +11,7 @@ import java.util.Date;
  * <p>以 {@link #actionCode} 为版本序列维度（同动作下 {@link #version} 自增）；
  * 新版本发布时旧 PUBLISHED 自动 ARCHIVED（BR-IPD-07：修改后新项目用新版，在研项目保持原版）。
  * 实例化快照走 {@code SopTemplateInstance}（stage_actions.sop_id 绑定当时 PUBLISHED 的模板 id）。
- * <p>删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）。
+ * <p>删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）。
  */
 @Data
 @Builder

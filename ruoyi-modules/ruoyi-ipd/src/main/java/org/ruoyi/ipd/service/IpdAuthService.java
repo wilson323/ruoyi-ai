@@ -35,7 +35,7 @@ public class IpdAuthService {
     }
 
     private final PersonMapper personMapper;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 授权范围判定（IpdPermission 拦截器 / IpdAuthController me+refresh 复用）。
      * <p>映射：DISABLED/RESIGNED/状态异常→NONE；ACTIVE+mustChangePwd=1→PASSWORD_CHANGE_REQUIRED；

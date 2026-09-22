@@ -428,7 +428,7 @@ class P131DatabaseIntegrationTest {
         withRollback(() -> {
             long product = product();
             Project request = createRequest(product, "SOLUTION");
-            AuditLogService audit = mock(AuditLogService.class);
+            IAuditLogService audit = mock(IAuditLogService.class);
             GateEngine gates = mock(GateEngine.class);
             AtomicBoolean observed = new AtomicBoolean();
             doAnswer(call -> {
@@ -438,7 +438,7 @@ class P131DatabaseIntegrationTest {
                 observed.set(true);
                 return null;
             }).when(audit).append(any(AuditLog.class));
-            ProjectCertService certs = mock(ProjectCertService.class);
+            IProjectCertService certs = mock(IProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
             ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
             Project result = service.create(request, OPERATOR, 900001L);
@@ -455,7 +455,7 @@ class P131DatabaseIntegrationTest {
             long product = product();
             Project request = createRequest(product, "HARDWARE");
             assertThat(scalar("SELECT project_id FROM products WHERE id=?", product)).isNull();
-            AuditLogService audit = mock(AuditLogService.class);
+            IAuditLogService audit = mock(IAuditLogService.class);
             GateEngine gates = mock(GateEngine.class);
             AtomicBoolean observed = new AtomicBoolean();
             IllegalStateException original = new IllegalStateException("P131 forced audit failure after complete project graph");
@@ -468,7 +468,7 @@ class P131DatabaseIntegrationTest {
                 observed.set(true);
                 throw original;
             }).when(audit).append(any(AuditLog.class));
-            ProjectCertService certs = mock(ProjectCertService.class);
+            IProjectCertService certs = mock(IProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
             ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
             assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR, 900001L)))).isSameAs(original);

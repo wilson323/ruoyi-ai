@@ -65,9 +65,9 @@ class GateReviewObserverAcceptanceTest {
     @Mock
     private GateReviewObserverMapper observerMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
 

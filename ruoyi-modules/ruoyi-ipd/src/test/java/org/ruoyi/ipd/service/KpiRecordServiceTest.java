@@ -311,11 +311,11 @@ class KpiRecordServiceTest {
     }
 
     // ============================================================
-    //  ROOT-R1 P0-7 字面量迁移：BusinessConfigService 验证
+    //  ROOT-R1 P0-7 字面量迁移：IBusinessConfigService 验证
     // ============================================================
 
     @Test
-    @DisplayName("ROOT-R1 P0-7: 注入 BusinessConfigService → 聚合 KPI 用 config 阈值 75（覆盖硬编码 60）")
+    @DisplayName("ROOT-R1 P0-7: 注入 BusinessConfigServiceImpl → 聚合 KPI 用 config 阈值 75（覆盖硬编码 60）")
     void businessConfigService_overridesHardcodedKpiDefault() {
         // 津贴路径走 selectOne（LIMIT 1），对齐 L100 绿测试模式；旧 selectList stub 属聚合路径，在本用例零消费
         when(allowanceLedgerMapper.selectOne(any(LambdaQueryWrapper.class)))
@@ -323,9 +323,9 @@ class KpiRecordServiceTest {
         when(projectScoreMapper.selectOne(any(LambdaQueryWrapper.class)))
             .thenReturn(projectScoreOf("85.00"));
 
-        // 注入 BusinessConfigService（mock）返回 75 覆盖硬编码 60
-        org.ruoyi.ipd.service.BusinessConfigService businessConfigService =
-            org.mockito.Mockito.mock(org.ruoyi.ipd.service.BusinessConfigService.class);
+        // 注入 IBusinessConfigService（mock）返回 75 覆盖硬编码 60
+        org.ruoyi.ipd.service.IBusinessConfigService businessConfigService =
+            org.mockito.Mockito.mock(org.ruoyi.ipd.service.IBusinessConfigService.class);
         when(businessConfigService.getBigDecimal(org.ruoyi.ipd.common.BusinessConfigKeys.KPI_STOP_THRESHOLD))
             .thenReturn(new BigDecimal("75"));
 
@@ -334,7 +334,7 @@ class KpiRecordServiceTest {
 
         // 触发 _queryCalculatorValue 的间接路径：calculateFunctionalKpi
         List<KpiSourceItem> items = serviceWithConfig.calculateFunctionalKpi(actor, PERIOD);
-        // 3 数据源聚合中 SRC_KPI_CALCULATOR 项的 value 应来自 BusinessConfigService (=75)
+        // 3 数据源聚合中 SRC_KPI_CALCULATOR 项的 value 应来自 IBusinessConfigService (=75)
         KpiSourceItem calcItem = items.stream()
             .filter(i -> KpiRecordService.SRC_KPI_CALCULATOR.equals(i.source()))
             .findFirst().orElseThrow();
@@ -342,7 +342,7 @@ class KpiRecordServiceTest {
     }
 
     @Test
-    @DisplayName("ROOT-R1 P0-7: BusinessConfigService 未注入 → 回退硬编码 60（兼容旧测试）")
+    @DisplayName("ROOT-R1 P0-7: BusinessConfigServiceImpl 未注入 → 回退硬编码 60（兼容旧测试）")
     void businessConfigService_nullFallsBackToHardcoded() {
         when(allowanceLedgerMapper.selectOne(any(LambdaQueryWrapper.class)))
             .thenReturn(allowanceOf("3000.00", "L3"));

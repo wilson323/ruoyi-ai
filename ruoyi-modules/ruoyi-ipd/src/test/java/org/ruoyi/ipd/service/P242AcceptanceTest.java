@@ -59,11 +59,11 @@ class P242AcceptanceTest {
     @Mock
     private ProjectMapper projectMapper;
     @Mock
-    private SystemConfigService systemConfigService;
+    private ISystemConfigService systemConfigService;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
-    private ProjectMemberService service;
+    private IProjectMemberService service;
 
     private static final IpdActor MARKET_LEAD = new IpdActor(900L, "市场PM发起人", "MARKET_PM", 7L);
 
@@ -74,7 +74,7 @@ class P242AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectMemberService(memberMapper, personMapper, projectMapper,
+        service = new ProjectMemberServiceImpl(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
         lenient().when(projectMapper.selectById(anyLong())).thenReturn(new Project());
         lenient().when(systemConfigService.getIntValue("allowance.projectCountThreshold", 3)).thenReturn(3);

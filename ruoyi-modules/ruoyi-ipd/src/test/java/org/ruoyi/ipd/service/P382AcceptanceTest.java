@@ -77,7 +77,7 @@ class P382AcceptanceTest {
 
     private NegativeFeedbackMapper mapper;
     private ProjectMemberMapper memberMapper;
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     private NotificationService notificationService;
     private ProjectMapper projectMapper;
     private IpdPermission ipdPermission;
@@ -105,7 +105,7 @@ class P382AcceptanceTest {
     void setUp() {
         mapper = mock(NegativeFeedbackMapper.class);
         memberMapper = mock(ProjectMemberMapper.class);
-        auditLogService = mock(AuditLogService.class);
+        auditLogService = mock(IAuditLogService.class);
         notificationService = mock(NotificationService.class);
         projectMapper = mock(ProjectMapper.class);
         ipdPermission = mock(IpdPermission.class);

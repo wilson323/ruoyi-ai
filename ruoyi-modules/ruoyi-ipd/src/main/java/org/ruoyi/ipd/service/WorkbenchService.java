@@ -43,7 +43,7 @@ import java.util.Objects;
  */
 @Service
 @RequiredArgsConstructor
-public class WorkbenchService {
+public class WorkbenchService implements IWorkbenchService {
 
     private static final String ST_ACTIVE_PROJECT = "ACTIVE";
 

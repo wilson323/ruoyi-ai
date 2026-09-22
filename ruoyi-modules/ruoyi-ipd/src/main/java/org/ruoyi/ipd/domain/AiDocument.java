@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * IPD AI 文档（BR-AI，版本链）
  * 生成+人工审核+版本链+token 统计，未审核不可归档
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

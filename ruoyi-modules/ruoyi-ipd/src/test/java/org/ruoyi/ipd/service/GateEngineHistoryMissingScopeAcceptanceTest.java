@@ -43,13 +43,13 @@ class GateEngineHistoryMissingScopeAcceptanceTest {
     private static final String MISSING = LegacyImportService.HISTORY_MISSING;
 
     private StageActionMapper actionMapper;
-    private SystemConfigService configService;
+    private ISystemConfigService configService;
     private GateEngine engine;
 
     @BeforeEach
     void setUp() {
         actionMapper = mock(StageActionMapper.class);
-        configService = mock(SystemConfigService.class);
+        configService = mock(ISystemConfigService.class);
         engine = new GateEngine(actionMapper, configService);
     }
 

@@ -49,10 +49,10 @@ class P192AcceptanceTest {
     @Mock private ProductMapper productMapper;
     @Mock private StageActionMapper stageActionMapper;
     @Mock private KpiRecordMapper kpiRecordMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private GateEngine gateEngine;
     @Mock private ProjectBootstrapService projectBootstrapService;
-    @Mock private ProjectCertService projectCertService;
+    @Mock private IProjectCertService projectCertService;
     @Mock private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @InjectMocks private ProjectService projectService;

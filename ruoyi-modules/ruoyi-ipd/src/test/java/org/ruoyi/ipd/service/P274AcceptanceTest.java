@@ -62,8 +62,8 @@ class P274AcceptanceTest {
     @Mock private PersonMapper personMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private HandoverMapper handoverMapper;
-    @Mock private AuditLogService auditLogService;
-    @Mock private ProjectMemberService projectMemberService;
+    @Mock private IAuditLogService auditLogService;
+    @Mock private IProjectMemberService projectMemberService;
     @Mock private IpdAuthSession ipdAuthSession;
     @Mock private NotificationService notificationService;
 

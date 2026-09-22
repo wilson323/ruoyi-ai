@@ -7,7 +7,7 @@ import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
-import org.ruoyi.ipd.service.AuditLogService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.PersonSyncService;
 import org.ruoyi.ipd.service.PersonSyncService.SyncJobView;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +33,7 @@ public class PersonSyncController {
 
     private final PersonSyncService personSyncService;
     private final IpdPermission permission;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /** 提交请求（idempotencyKey 选填；同 key 重放返原 jobId）。 */
     public record SubmitRequest(@NotBlank String employeeNo, String idempotencyKey) { }

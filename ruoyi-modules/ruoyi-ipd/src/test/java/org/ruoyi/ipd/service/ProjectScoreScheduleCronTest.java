@@ -43,7 +43,7 @@ class ProjectScoreScheduleCronTest {
     @Mock private ProductGroupMapper groupMapper;
     @Mock private ProjectScoreTaskMapper taskMapper;
     @Mock private org.ruoyi.ipd.service.NotificationService notificationService;
-    @Mock private org.ruoyi.ipd.service.AuditLogService auditLogService;
+    @Mock private org.ruoyi.ipd.service.IAuditLogService auditLogService;
     @Mock private IpdPermission permission;
 
     private ProjectScoreScheduleService service() {

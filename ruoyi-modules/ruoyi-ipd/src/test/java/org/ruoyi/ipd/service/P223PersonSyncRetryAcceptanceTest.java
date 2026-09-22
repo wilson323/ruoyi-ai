@@ -48,7 +48,7 @@ import static org.mockito.Mockito.*;
 class P223PersonSyncRetryAcceptanceTest {
 
     @Mock PersonMapper personMapper;
-    @Mock AuditLogService auditLogService;
+    @Mock IAuditLogService auditLogService;
 
     @InjectMocks PersonSyncService service;
 
@@ -281,7 +281,7 @@ class P223PersonSyncRetryAcceptanceTest {
         verify(auditLogService, atLeast(3)).append(captor.capture());
         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         for (AuditLog log : captor.getAllValues()) {
-            // DEF-6：beforeData/afterData 列类型已 longtext，护栏复刻在 AuditLogService 入口；
+            // DEF-6：beforeData/afterData 列类型已 longtext，护栏复刻在 IAuditLogService 入口；
             // 这里反向验证 PersonSyncService 写入的就是合法 JSON 字符串，避免重现原始 bug
             // （"jobId=xxx" 不带引号 ⇒ DB JSON 列截断）
             if (log.getAfterData() != null && !log.getAfterData().isEmpty()) {

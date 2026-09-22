@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * IPD 月度津贴台账（BR-INC-02/03）
  * 锁定评级/叠加/封顶/停发机制，多项目叠加最高2倍封顶 capMultiplier
- * 删除走 DeletionRequestService + DeleteAuditService（P0-6.2，软删除）
+ * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @Data
 @Builder

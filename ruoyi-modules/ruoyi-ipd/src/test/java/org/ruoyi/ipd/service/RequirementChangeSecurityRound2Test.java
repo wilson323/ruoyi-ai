@@ -53,7 +53,7 @@ class RequirementChangeSecurityRound2Test {
     @Mock
     private RequirementMapper reqMapper;
     @Mock
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     private RequirementChangeService service;
 
@@ -150,7 +150,7 @@ class RequirementChangeSecurityRound2Test {
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("DB 连接失败");
 
-        // 失败审计独立落库（AuditLogService.append REQUIRES_NEW）
+        // 失败审计独立落库（IAuditLogService.append REQUIRES_NEW）
         verify(auditLogService, atLeastOnce()).append(any(AuditLog.class));
         // change 状态没变 APPROVED（无 updateById 写入 —— 因为 transaction rollback）
         verify(changeMapper, never()).updateById(any(RequirementChange.class));

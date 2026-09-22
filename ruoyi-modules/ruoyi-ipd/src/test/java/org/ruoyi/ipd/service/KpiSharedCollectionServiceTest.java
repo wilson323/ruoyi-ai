@@ -54,8 +54,8 @@ class KpiSharedCollectionServiceTest {
     @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private PersonMapper personMapper;
     @Mock private ProductGroupMapper productGroupMapper;
-    @Mock private AuditLogService auditLogService;
-    @Mock private SystemConfigService systemConfigService;
+    @Mock private IAuditLogService auditLogService;
+    @Mock private ISystemConfigService systemConfigService;
     @Mock private NotificationService notificationService;
 
     private KpiSharedCollectionService service;

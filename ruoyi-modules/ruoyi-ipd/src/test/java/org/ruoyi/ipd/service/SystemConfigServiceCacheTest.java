@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * PERF-02（立即生效方案）：SystemConfigService 只读缓存 + 写穿透失效。
+ * PERF-02（立即生效方案）：ISystemConfigService 只读缓存 + 写穿透失效。
  *
  * <p>背景：KPI/奖金/Gate 热路径每次 getValue 都 selectOne，日均 10 万+ 次 DB 读。
  * <p>语义（用户裁决：配置变更立即生效，不允许 TTL 窗口）：
@@ -51,11 +51,11 @@ class SystemConfigServiceCacheTest {
     @Mock
     private SystemConfigVersionMapper systemConfigVersionMapper;
 
-    private SystemConfigService service;
+    private SystemConfigServiceImpl service; // 白盒：直取 impl 以访问包级私有测试缝 setCache
 
     @BeforeEach
     void setUp() {
-        service = new SystemConfigService(systemConfigMapper, systemConfigVersionMapper);
+        service = new SystemConfigServiceImpl(systemConfigMapper, systemConfigVersionMapper);
     }
 
     private SystemConfig row(String key, String value) {

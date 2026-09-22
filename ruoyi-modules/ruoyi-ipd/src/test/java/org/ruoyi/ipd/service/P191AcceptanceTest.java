@@ -49,9 +49,9 @@ class P191AcceptanceTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private StageActionMapper stageActionMapper;
     @Mock private LegacyImportMapper legacyImportMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
     @Mock private ObjectProvider<LegacyImportService> self;
-    @Mock private SystemConfigService configService;
+    @Mock private ISystemConfigService configService;
 
     private LegacyImportService legacyImportService;
     private GateEngine gateEngine;

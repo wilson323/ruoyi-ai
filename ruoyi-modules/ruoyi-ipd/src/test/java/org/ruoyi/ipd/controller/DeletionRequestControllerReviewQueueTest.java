@@ -13,8 +13,9 @@ import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.DeletionArchiveService;
-import org.ruoyi.ipd.service.DeletionRequestService;
+import org.ruoyi.ipd.service.IDeletionRequestService;
 
+import org.ruoyi.ipd.service.DeletionRequestServiceImpl;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.when;
  *   <li>未登录 → IpdPermissionException 透传，不调 service</li>
  * </ol>
  *
- * <p>角色→状态分流在 {@link DeletionRequestService#listForReview} 内部做，本端点只负责
+ * <p>角色→状态分流在 {@link IDeletionRequestService#listForReview} 内部做，本端点只负责
  * 透传 actor；service 单测（DeletionRequestServiceListForReviewTest 等）独立覆盖
  * 分流逻辑，本类仅校验 controller 不丢 actor、不绕鉴权。
  */
@@ -44,7 +45,7 @@ class DeletionRequestControllerReviewQueueTest {
     @Mock
     private DeletionArchiveService archiveService;
     @Mock
-    private DeletionRequestService deletionRequestService;
+    private IDeletionRequestService deletionRequestService;
     @Mock
     private IpdPermission ipdPermission;
 
@@ -61,14 +62,14 @@ class DeletionRequestControllerReviewQueueTest {
         r.setId(11L);
         r.setEntityType("products");
         r.setEntityId(33L);
-        r.setStatus(DeletionRequestService.ST_LEADER_REVIEW);
+        r.setStatus(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
         when(deletionRequestService.listForReview(actor)).thenReturn(List.of(r));
 
         ApiV1Response<List<DeletionRequest>> resp = controller.reviewQueue();
 
         assertThat(resp.getCode()).isEqualTo(ApiV1Response.CODE_SUCCESS);
         assertThat(resp.getData()).hasSize(1);
-        assertThat(resp.getData().get(0).getStatus()).isEqualTo(DeletionRequestService.ST_LEADER_REVIEW);
+        assertThat(resp.getData().get(0).getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
 
         // 验证 actor 完整透传（id/name/role/groupId 都不丢；防止 controller 漏字段导致 service 分流失败）
         ArgumentCaptor<IpdActor> actorCaptor = ArgumentCaptor.forClass(IpdActor.class);
@@ -89,14 +90,14 @@ class DeletionRequestControllerReviewQueueTest {
         r.setId(22L);
         r.setEntityType("projects");
         r.setEntityId(77L);
-        r.setStatus(DeletionRequestService.ST_ADMIN_REVIEW);
+        r.setStatus(DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
         when(deletionRequestService.listForReview(actor)).thenReturn(List.of(r));
 
         ApiV1Response<List<DeletionRequest>> resp = controller.reviewQueue();
 
         assertThat(resp.getCode()).isEqualTo(ApiV1Response.CODE_SUCCESS);
         assertThat(resp.getData()).hasSize(1);
-        assertThat(resp.getData().get(0).getStatus()).isEqualTo(DeletionRequestService.ST_ADMIN_REVIEW);
+        assertThat(resp.getData().get(0).getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
 
         ArgumentCaptor<IpdActor> actorCaptor = ArgumentCaptor.forClass(IpdActor.class);
         verify(deletionRequestService).listForReview(actorCaptor.capture());

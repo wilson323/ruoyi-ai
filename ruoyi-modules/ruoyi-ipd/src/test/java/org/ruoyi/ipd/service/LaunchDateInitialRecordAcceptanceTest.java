@@ -40,7 +40,7 @@ class LaunchDateInitialRecordAcceptanceTest {
 
     @Mock private LaunchDateChangeRequestMapper requestMapper;
     @Mock private ProjectMapper projectMapper;
-    @Mock private AuditLogService auditLogService;
+    @Mock private IAuditLogService auditLogService;
 
     private LaunchDateChangeService service;
 
