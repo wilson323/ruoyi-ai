@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/report")
 @RequiredArgsConstructor
-public class IpdReportController {
+public class ReportController {
 
     /** 列表查询内部权限码（仅作 @SaCheckPermission 兜底；service 二次校验 actor 范围） */
     public static final String PERM_QUERY = "ipd:report:query";

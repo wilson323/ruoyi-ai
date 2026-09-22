@@ -41,7 +41,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/system/menu")
-public class IpdMenuController {
+public class MenuController {
 
     private final IpdAuthSession ipdAuthSession;
     private final ISysMenuService menuService;

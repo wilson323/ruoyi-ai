@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.advice.IpdServiceExceptionAdvice;
-import org.ruoyi.ipd.controller.IpdReportController;
+import org.ruoyi.ipd.controller.ReportController;
 import org.ruoyi.ipd.domain.*;
 import org.ruoyi.ipd.dto.ReportExportResult;
 import org.ruoyi.ipd.dto.ReportSummaryRow;
@@ -67,7 +67,7 @@ class P441AcceptanceTest {
     private AuditLogService auditLogService;
     private IpdPermission ipdPermission;
     private IpdReportService ipdReportService;
-    private IpdReportController controller;
+    private ReportController controller;
     private MockMvc mvc;
     private final ObjectMapper json = new ObjectMapper();
 
@@ -85,7 +85,7 @@ class P441AcceptanceTest {
             allowanceLedgerMapper, bonusPoolMapper, projectScoreMapper,
             projectMapper, projectMemberMapper, personMapper,
             auditLogService, ipdPermission);
-        controller = new IpdReportController(ipdPermission, ipdReportService);
+        controller = new ReportController(ipdPermission, ipdReportService);
         mvc = MockMvcBuilders
             .standaloneSetup(controller)
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
