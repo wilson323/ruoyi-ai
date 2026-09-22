@@ -123,6 +123,13 @@
 <!--            <version>${与你的agent探针版本保持一致}</version>-->
 <!--        </dependency>-->
 
+        <!-- R174-P1.5 OPS-06 可观测性接入（Actuator + Micrometer + Prometheus） -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <version>1.15.10</version>  <!-- R174 锁本地仓库版本（避免 BOM 默认 1.15.6 离线模式拉不到） -->
+        </dependency>
+
     </dependencies>
 
     <build>

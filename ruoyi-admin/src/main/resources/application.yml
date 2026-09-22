@@ -515,13 +515,28 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus  # R174-P1.5 加 prometheus 端点（Micrometer 抓取）
   endpoint:
     health:
       # SEC-NEW-MED-1: show-details 从 ALWAYS 改 WHEN_AUTHORIZED（未授权用户只看到 UP/DOWN 状态，不暴露 DB/磁盘详情）
       show-details: WHEN_AUTHORIZED
+      probes:
+        enabled: true  # R174-P1.5 启用 livenessState / readinessState 健康探针
+      livenessstate:
+        enabled: true
+      readinessstate:
+        enabled: true
+    prometheus:
+      access: read_only  # R174-P1.5 只读 metrics（不可改）
     logfile:
       external-file: ./logs/sys-console.log
+  metrics:
+    tags:
+      application: ${spring.application.name}  # R174-P1.5 Prometheus tag
+  prometheus:
+    metrics:
+      export:
+        enabled: true  # R174-P1.5 启用 Prometheus exporter
 
 --- # 默认/推荐使用sse推送
 sse:

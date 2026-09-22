@@ -94,16 +94,22 @@ public class SecurityConfig implements WebMvcConfigurer {
 
     /**
      * 对 actuator 健康检查接口 做账号密码鉴权
+     * <p>
+     * R174-P1.5 OPS-06 修复：原实现用 {@code SpringUtils.getProperty(...)} 在 @Bean 构建阶段读不到值，
+     * 导致 username/password 为 null，SaHttpBasicUtil.check 报 "no basic auth"。
+     * 改用 {@code @Value} 注入（编译期绑定，容器就绪前即可用）。
+     * check(realm, expectedDecodedAuth) 的语义（SaHttpBasicTemplate.check 反编译核实）：第二个参数
+     * 是「期望的 Authorization 头 base64 解码值」，因此传 username+":"+password（base64 解码后会还原）。
      */
     @Bean
-    public SaServletFilter getSaServletFilter() {
-        String username = SpringUtils.getProperty("spring.boot.admin.client.username");
-        String password = SpringUtils.getProperty("spring.boot.admin.client.password");
+    public SaServletFilter getSaServletFilter(
+        @Value("${spring.boot.admin.client.username}") String username,
+        @Value("${spring.boot.admin.client.password}") String password) {
+        String realm = "Sa-Token";
+        String expectedAuthValue = username + ":" + password;
         return new SaServletFilter()
             .addInclude("/actuator", "/actuator/**")
-            .setAuth(obj -> {
-                SaHttpBasicUtil.check(username + ":" + password);
-            })
+            .setAuth(obj -> SaHttpBasicUtil.check(realm, expectedAuthValue))
             .setError(e -> {
                 HttpServletResponse response = ServletUtils.getResponse();
                 response.setContentType(SaTokenConsts.CONTENT_TYPE_APPLICATION_JSON);
