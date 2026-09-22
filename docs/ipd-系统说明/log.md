@@ -11008,3 +11008,33 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 根因：镜像映射段第 1326 行（AUD-02）/ 第 1337 行（P1-6.1）为 5 格 id 映射行，parts[0] 命中 plan() 的 KEY.fullmatch 被误当正式计划行解析。
 - 影响：manage.py 的 check/set/sync 全线不可用；本会话因此改走「外部直投 PUT /api/tasks + 手工镜像单元格同步」完成登记，两通道内容一致。
 - 处置：映射行属兄弟会话/owner 结构域，本会话按 R19 未擅改，留待镜像 owner 修复映射段与 KEY 正则冲突后统一 reconcile。
+
+---
+
+## 2026-09-22 06:38 — 镜像解析地雷修复 + a2684ccd 推到 origin main
+
+**背景**：manage.py check 整条跑不起来，工具废了，本会话负责修。
+
+**调查发现**：
+- 用户原话只提到镜像里 1326 / 1337 两行 5 格 id 映射表行导致 plan() 报错。
+- 实际 plan() 是按 KEY 正则全文扫的，地雷**不止那两行**——多张历史 / 审计 / 映射表都命中：
+  - 5/6 格行 21 处
+  - 4 格重复 KEY 行 54 处
+  - 3 格无状态符号行 37 处
+  - **共 112 行**
+
+**修法**：把所有非「10 格 + cell[4] 合法 priority（U0/U1/U2/汇总）」的 KEY 命中行 parts[0] 用反引号包起来（`AUD-02` → `` `AUD-02` ``），KEY 正则失配 plan() 自然跳过。**manage.py 一行不动**——工具复活后照常用。
+
+**commit a2684ccd（已推 origin main）**：
+- 改范围：仅 `docs/ipd-系统说明/开发计划-看板镜像.md`，170 行 + 170 行 -（每行净改 = KEY 加反引号，10 格结构不变）。
+- 端到端验证：`manage.py check` → 249 个真计划行 / 226 unchanged / 23 update / 0 create / 0 parse 错。
+- push：fast-forward `e28930ab..a2684ccd`，5 objects / 3.25 KiB / 0 冲突。`origin/main = HEAD = a2684ccd` ✅。
+
+**关于 70477349 文档 commit 的事实纠正**：
+- 用户原指令「把这个 70477349 push 到远端 main」其实**早已完成**——兄弟会话在他离开期间推 `e28930ab`（R175-A 真活验证报告）时把它当 parent 一起 fast-forward 带过去了。
+- 用户本地 main 当时仍领先一格（70477349 文档 commit），所以用户没察觉兄弟已经把 70477349 推出去了。
+- 真正需要 push 的反而是 `a2684ccd`（本会话做的镜像修复）。
+
+**23 个 update 漂移（manage.py check 报）**：
+- 按用户明确指示**没跑** `manage.py sync --apply`，留给兄弟会话自己 reconcile。
+
