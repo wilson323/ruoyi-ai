@@ -11516,3 +11516,22 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **OPS-09 历史违规补登**：本会话 R184 阶段 3 时误 kill 兄弟会话 PID 95265（端口 16060 进程），重启新进程 PID 94966 端口 16039。本卡收口后 OPS-09 写入者已恢复统一。
 
+### L0-4 SSE 真流式收口验证（ORIGIN-R30-P0 续，2026-09-23 12:01）
+**上下文**：接手上条登记后，对已入库的 L0-4 做磁盘现态复核 + 真活验证收口（不盲信摘要，全部现查）。
+
+**HEAD 完整性（断裂修复核实）**：`HEAD == origin/main == 1df5a1d4`，working tree clean。顶层提交 `ORIGIN-R30-P0-SSE-streams` 含 7 文件（log.md +22 / AiCopilotController / AuditEventData / AiGateway +110 / AiCopilotServiceStreamTest +219 / AuditEventDataAiTrailTest / AiGatewayStreamingTest +103）。`git show HEAD` 实证：AiGateway.stream=1、StreamHandler=1、AiCopilotService.chatStream=2、AuditEventData.streaming=3 —— 5eb1cef5 曾造成的「chatStream 引用 stream 但 HEAD:AiGateway 无 stream」断裂已补齐，fresh clone 可编译。
+
+**单测复跑（HEAD 现态）**：12:01:27 单模块 `-pl ruoyi-modules/ruoyi-ipd`（不带 -am/clean）→ `Tests run: 32, Failures: 0, Errors: 0, Skipped: 0` BUILD SUCCESS（AiCopilotServiceTest 22 + AiGatewayStreamingTest 1 + AuditEventDataAiTrailTest 6 + AiCopilotServiceStreamTest 3）。
+
+**gateway 真流式真活（核心证据）**：AiGatewayStreamingTest @Tag("dev") 对 mock(127.0.0.1:8765) 走真 HTTP SSE，日志实证 `[AI] gateway stream complete: model=test-chat contentLen=10 promptTokens=10 completionTokens=5 latencyMs=659 endpointHost=127.0.0.1` —— 5 段 delta 真收 + onCompleteResponse 触发 + token 聚合到位（非 mock AI 响应，是真 HTTP 往返）。
+
+**SSE 契约门禁**：`scripts/check-sse-contract.sh` ✅ OK，8 controller 全配 SseErrorEmitter 错误帧保护。
+
+**live-16039-curl：PENDING_VALIDATION（诚实定级，未伪造）**：运行后端 PID 94966（启动 11:28:34）加载 `ruoyi-admin.jar`，其内嵌 `ruoyi-ipd-3.1.0.jar` mtime=**09-22 07:16**；javap 实证该运行 jar 的 AiGateway 仅有 chat/embed/mapFailure、**无 stream()、无 StreamHandler 类** → 运行后端不含 L0-4 代码，对其 curl 只会测到旧代码（误导）。重建+重启复测受 5 重阻塞：①OPS-09（PID 94966 属兄弟 R184阶段3，不得 kill）②ai_model_configs STATE_CONFLICT（code 50002，selectList 0 行）③/v1 路径不匹配（DB endpoint=8765 无 /v1，mock 仅认 /v1/chat/completions）④sa-token 鉴权 ⑤无前端消费者（属 Layer 2）—— ②③④多属 R184阶段3/基建范畴，非 L0-4。
+
+**文档↔现实漂移标记（以运行结果为准）**：上条 R184阶段3 称「重打 ruoyi-ipd.jar + ruoyi-admin.jar 成功（含…AiGateway.java 修补后版本）」，但 javap 实证**运行进程**的 AiGateway 无 stream()、内嵌模块 jar 为 09-22 → 该重打 claim 对运行进程已过期（admin jar 11:23 仅重新套了 09-22 旧模块 jar）。任何 HTTP 复测（我的 /chat/stream 与兄弟的 /chat docType）前，必须先真正重建 ruoyi-ipd 模块 jar + 重打 admin jar + 重启，否则测的是旧码。
+
+**AI_ROLES「5 vs 7」非漂移（防后续误修）**：代码白名单 5 值（draft/precheck/summarize/copilot_answer/streaming）= Layer 0 已实现子集；`AI-审计三件套规约-20260923.md` 7 值含 suggestion(L2)/tool_call(L3)，doc line 83-88 明标「入口(待新增)」。属设计内的增量实现，**不得**在 L2/L3 落地前把代码改成 7 值。doc line 85 的 L0-4 契约（aiRole=streaming + scene/sessionId/totalChunks/tokenPrompt/tokenCompletion/latencyMs）与 auditCopilotStream 实现完全对齐。
+
+**Layer 0 状态**：L0-1/2/3/5 已在 origin/main（前序提交）；L0-4 现已提交+push（1df5a1d4）。Layer 0 代码闭环完成；live 端到端 HTTP 复测待「新 jar 重启」共享前置解除（与 R184阶段3 同一阻塞点）。
+
