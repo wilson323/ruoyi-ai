@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.GuestDemandSubmitReq;
 import org.ruoyi.ipd.dto.GuestDemandSubmittedView;
@@ -35,7 +36,7 @@ public class PublicPortalController {
     }
 
     @PostMapping("/demands")
-    public ApiV1Response<GuestDemandSubmittedView> submit(@RequestBody GuestDemandSubmitReq req,
+    public ApiV1Response<GuestDemandSubmittedView> submit(@Valid @RequestBody GuestDemandSubmitReq req,
                                                           HttpServletRequest http) {
         return ApiV1Response.ok(guestDemandService.submit(req, clientIp(http), http.getHeader("User-Agent")));
     }
