@@ -11121,3 +11121,22 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
   - 推荐处理顺序：P0-1 closed → P0-13 fresh → P0-11 定位 → P0-3+12 多实例策略 → P0-7 架构改造 → P0-10 DDL → P0-8 UI 稿
 - **撞号透明**：本段接续 5310f551 E2E 收口段；与兄弟 R179-P0 收口段平行不冲突
 - **本会话未做**：任何 P0 实际代码改动（owner 拍板 + AI 推进均不在本轮范围），仅事实修正 + 派单材料落档
+
+## 2026-09-23 00:50 P0-10.2 [强制改密] 端到端闭环(本会话续作)
+- 触发：用户「前端待办完整完成」+ P0-10.2 验收「完整正向浏览器改密未验」必须实质性闭环。
+- **可逆 DB write**：临时设 `persons.must_change_pwd=1` for username=ipd-admin → 浏览器实测 → 状态完全还原。
+- **端到端 5 步验证**（chrome-devtools 真实交互）：
+  1. 路由守卫：login Ipd@123456（must_change_pwd=1）→ 前端立即重定向 `/auth/change-password`（`ipd-guard.ts:13 IPD_PASSWORD='/auth/change-password'` 生效）
+  2. 页面渲染：title「首次登录安全设置」+ 3 字段（当前临时密码 / 新密码 / 确认新密码，maxlength=72）+ submit「设置密码并进入工作台」（截图 evidence-r179-p0-change-password-page-rendered-20260923.png）
+  3. 正向提交：currentPassword=Ipd@123456 + newPassword=Ipd@654321 → 后端 200 → 前端 alert「密码已修改，请使用新密码重新登录」+ 自动跳回 /auth/login
+  4. 后端自动还原：DB SELECT 验证 must_change_pwd 1→0 自动归位（无前端介入）
+  5. 状态完全还原：再设 must_change_pwd=1 → login Ipd@654321 → 改密回 Ipd@123456 → DB 终态 must_change_pwd=0 + curl Ipd@123456 登录拿 token mustChangePwd:false ✅（零污染）
+- **看板同步**：PUT P0-10.2（task_id=`79605b29-...`）desc_len 1018 → **1994**（独立 GET 回读 Δ=976 ✓），status 维持 inprogress（仍 PARTIAL「企微扫码/完整密码策略/加载断网」3 项）
+- **报告沉淀**：`R179-P0-基础盘收口-20260922.md` §10.4b 追加（11 行），§10.5 P0 判定强化为「100% 全绿 + 根因B 闭环 + P0-10.2 端到端闭环」
+- **不推送**：按 AGENTS.md 未经 owner 明确推送授权仅本地落盘
+
+## 2026-09-23 P0-1 双线合流 FULL CLOSED
+- **现查**：后端 HEAD=78c04ff4 = origin/main，差异 0/0；前端 HEAD=3264ac5 = origin/main，差异 0/0
+- **事实修正**：R170 记忆的「本地 main 落后 origin/main」已过期——双仓完全同步，无需任何合流动作
+- **closed 报告**：`docs/ipd-系统说明/验收/p0-1-closed-report-20260923.md`（41 行）
+- **撞号透明**：本段接续 78c04ff4 P0 派单段，登记 P0-1 closed
