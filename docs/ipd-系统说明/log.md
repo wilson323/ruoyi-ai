@@ -11151,3 +11151,13 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - B2：P1-2 三证 4/49（+项目空间/需求管理 2 页，截图 2 张）；勘误：需求管理路由实为 /ipd/requirements。
 - C1：7 卡处置注记 + 回读全过，status 全维持零假绿；P1-4.2 孤儿卡登记性接手（R25 三步法）；WB-17-1 等 17 类字段级 spec（业务决策）待 owner。
 - 遗留：P1-2 剩 45 页三证（多天）；products/1 HTTP 500→403 语义修正；兄弟在途 3 处未动。
+
+## 2026-09-23 02:2x R179-P2 业务流真活验证首批（页31+页35）
+- **触发**：owner 选 A「跑 R179-P2 业务流真活验证」；与兄弟在途 404 契约治理（96fdfc22，products/project/bid/bonus 域）并行避让，本批全落 score/contribution 域。
+- **页31 项目绩效评定**（`/ipd/kpi/project-score`，vue-router 实锤隐藏路由）：HTTP /project-score-tasks/my 200+空数组；DB 16 任务 900101 零任务；浏览器空态渲染 ✓——空态为正确业务态（超管无评分任务）。
+- **页35 贡献度评定**（`/ipd/incentive/contribution`）：HTTP /contributions/9150001 200 真活 CONFIRMED 55/45 系数0.8；DB contributions 9150001 一行 market_self=85,80,75,90,88 / rd_self=80,85,80,75,82 leader APPROVE；浏览器填 9150001 查询真活卡片全渲染 ✓。
+- **五维澄清（非缺陷）**：HTTP 显示 85/85/80/90/88 = `ContributionService.toView():653` maxOrNull(market,rd) 双 PM 逐维取最大（代码注释明确设计），分侧真值在 DB 两列；前端忠实渲染 API。
+- **方法论**：路由先 `router.getRoutes()` 实锤（源码嵌套层级会骗人）；先 DB 找有数项目再进页面（9150001 唯一有贡献度）；fetch 探针必须 Bearer（cookie 401 非缺陷）。
+- **进度**：P1-2 三证 6/49（剩 43 页多天工程）。
+- **产物**：`验收/e2e-p2-business-flow-20260923/`（REPORT.md + 2 截图）。
+- **撞号透明**：兄弟同期收口 96fdfc22（404 契约治理 6 controller，本地领先未推，由兄弟自行 push）；本段与本会话 P2 首批平行不冲突。
