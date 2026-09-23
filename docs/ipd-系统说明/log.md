@@ -11020,4 +11020,14 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 撞号透明：前端仓 main 工作树干净（无兄弟会话在盘）；后端仓仅本会话改动
 - 推 origin main：01125fea..e28930ab
 - 同步 r172-takeover-20260922：ef873d42..e28930ab（fast-forward）
-- **撞号必接**：本段由兄弟会话 r172-takeover-20260922 (d38acb96) 推到 R175-A 报告 commit 后的 log.md 登记，本接管会话 (R177) merge 进来时撞号必接保留双段号
+- **撞号必接**：本段由兄弟会话 r172-takeover-20260922 (d38acb96) 推到 R175-A 报 告 commit 后的 log.md 登记，本接管会话 (R177) merge 进来时撞号必接保留双段号
+
+## 2026-09-22 R179-P0 阻塞修复收口（主协调会话，worktree r179-p0-backend/-frontend）
+- 背景：R179-P0 双 subagent 验证暴露 4 项阻塞，本轮系统性修复后提交。
+- 阻塞①三源 hash 恒 FAIL：check-three-source-hash.sh 原版要求三源提取集合完全相等，但 log.md 是全量日志天然超集（实测 log.md vs Registry 差 150 行，误报 BCP-014）；修复为子集校验（Registry⊆log.md ∧ Closure⊆log.md）+ 提取规则收敛为标识符（R 号归一化 + 40 位 hash，移除「闭环数|覆盖率」噪声行）；三连验证：真实数据 PASS / FAIL_SEED 红 / 孤儿注入 R999 精确报。
+- 阻塞②22 skipped 双重门控：@Tag("dev") + @EnabledIfSystemProperty(ipd.scope.mysql.enabled) + qa04.db.password 三重门从未同开；本轮补齐三参数真跑：Qa04 4/4 全绿（含 1 个真缺陷修复）、P131 16/18（2 个失败为 W2-SVC 接口化 f987e028 后的真回归，历史 18/18 全绿佐证，移交 R179-P1 专项）。
+- 阻塞②附带真缺陷（skip 掩盖 16 天）：Deliverable 自 e388b7f8（2026-09-06）起带 @TableLogic，MP selectList 自动追加 del_flag='0'，Qa04「无过滤列表」断言自此必挂；修复：正反对照片改原生 JDBC scalar（语义不变：软删行物理仍在 + MP 读路径已过滤）。
+- 阻塞③158 表≠125 基准：DROP 两张已收口备份表（gate_review_elements_backup_20260922 76 行 + persons_bk_b3_20260919 27 行，dump 留档 .codex/ipd-dev/backup-archive/），新基准 156；AGENTS.md「125 表」勘误同步。
+- 阻塞④前端 subagent 篡改：还原 5 个 live.test.ts 的 skipIf 门移除 + pnpm-lock 漂移；真因是 live 套件 30+ 处真登录打爆后端同IP同账号 60s/5 次限流（IpdAuthController @RateLimiter）；修复（前端仓）：live-http.ts 新增 loginPersonaWithBackoff（限流退避 15s×8）+ loginPersonaShared（文件级 token TTL 复用，project-live 19 次登录→1 次）。
+- 附带运维：磁盘满（140Mi）引发 SearchReplace 缓存写失败；清理已并入 main 的 r172-takeover worktree 回收 18G；qa04_runner 口令重置（/tmp/qa04_db_password 0600，不入仓）；umask 177 残留导致 surefire 临时目录只读已修复。
+- 真库变更：ipd_dev DROP 2 备份表（158→156，数据 dump 留档）；ipd_qa04 无残留（测试自清理验证）。
