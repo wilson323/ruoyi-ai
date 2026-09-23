@@ -11171,3 +11171,10 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - **方法论**：IPD 页内 fetch 探针 token 在 `sessionStorage['ruoyi-ipd.session'].accessToken`（core-access 是框架端 JWT 对 /api/v1 无效）；源码 grep 参数名不可靠，Network 面板抓真实 URL 最快。
 - **进度**：P1-2 三证累计 8/49。
 - **产物**：`验收/e2e-p2b-incentive-20260923/`（REPORT.md 63 行 + 3 截图）。
+
+## 2026-09-23 03:1x R179-P2b-fix advice 第 9 类漏网修复（待重启 16039）
+- **触发**：owner 选 B「修问题1」。
+- **改动**：`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/advice/IpdServiceExceptionAdvice.java` 加 `import jakarta.validation.ConstraintViolationException` + 新增 `@ExceptionHandler(ConstraintViolationException.class)`：取首条 violation 的 path + message → ApiV1Response.fail(PARAM_INVALID)，与 handleValidation 同构、不回显用户输入值、与 handleTypeMismatch 同口径。
+- **验证**：错峰 `mvn -o -pl ruoyi-modules/ruoyi-ipd compile` BUILD SUCCESS（485 源文件，8.8s，无 ERROR）。
+- **限制（诚实暴露）**：未重启 16039 跑运行时实测；兄弟会话可能正在用旧 jar 跑验证，强重启会打断——commit message 标「待重启 16039 后生效」，运行中 JVM 仍是旧代码（period=bad 仍 500/90001）。验证需 owner/兄弟拍板重启时机后跑同探针确认。
+- **撞号透明**：advice mtime 09-19 + 自 09-22 起 git log 无 advice commit，兄弟没动；本会话期间兄弟新推 452d6ca0/192444db（docs 类）与本改动 0 交集。

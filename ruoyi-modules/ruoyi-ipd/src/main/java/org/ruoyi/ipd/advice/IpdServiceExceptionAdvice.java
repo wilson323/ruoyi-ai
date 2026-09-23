@@ -2,6 +2,7 @@ package org.ruoyi.ipd.advice;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
@@ -78,6 +79,32 @@ public class IpdServiceExceptionAdvice {
                 .map(org.springframework.context.support.DefaultMessageSourceResolvable::getDefaultMessage)
                 .findFirst().orElse("参数校验失败");
             log.warn("[IPD] validation failed: {}", msg);
+            return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, msg));
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
+    /**
+     * R179-P2b 缺口④：方法级参数校验失败（@RequestParam @NotBlank @Pattern 等 ruoyi 框架
+     * AOP 路径抛 jakarta.validation.ConstraintViolationException）。
+     * 修复前：无专属 handler，被下方 {@code Exception.class} 兜底成 500/90001「系统内部错误」，
+     * 前端无法区分「用户传错参」与「系统故障」，告警被误导。日志只取首条 violation 的 path + 消息，
+     * 不回显用户输入值（与 handleTypeMismatch 同口径）。
+     * 实测入口：{@code GET /api/v1/allowance/ledger?period=bad} 由 ALIVE(500) 降为 PARAM_INVALID(400/10001)。
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleConstraintViolation(ConstraintViolationException e) {
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        try {
+            String msg = e.getConstraintViolations().stream()
+                .map(v -> {
+                    String path = v.getPropertyPath() != null ? v.getPropertyPath().toString() : "";
+                    return (path.isEmpty() ? "" : path + ": ") + v.getMessage();
+                })
+                .findFirst().orElse("参数校验失败");
+            log.warn("[IPD] constraint violation: {}", msg);
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, msg));
         } finally {
