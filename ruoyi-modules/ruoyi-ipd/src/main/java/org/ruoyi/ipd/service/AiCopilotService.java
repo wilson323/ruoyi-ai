@@ -36,8 +36,9 @@ import java.util.Map;
  *       + intent + token 用量 + latencyMs；只记数量不记对话原文（BR-AI-04）；</li>
  *   <li>SSE 流式：{@code /ai-copilot/chat/stream} 控制器层把同步结果分片推流（观感达成；
  *       真流式 AI-STRAT-3 接入 Langchain4j streaming）；</li>
- *   <li>未来接 RAG：复用 AI-STRAT-1 {@code AiDocEmbeddingService.retrieveContext} 作为第三档上下文，
- *       本卡 MVP 先打通项目/个人两档。</li>
+ *   <li>已接 RAG（AI-STRAT-1 Phase 2，2026-09-23）：复用 {@code AiDocEmbeddingService.retrieveContext}
+ *       作为第三档上下文（项目历史已审核文档）；本卡 MVP 打通项目/个人/RAG 三档。
+ *       docType=null 不过滤类型（前端 UI 让用户选 docType 是后续任务）。</li>
  * </ul>
  */
 @Slf4j
@@ -57,6 +58,8 @@ public class AiCopilotService implements IAiCopilotService {
     private final IAuditLogService auditLogService;
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
+    /** AI-STRAT-1 Phase 2（2026-09-23）：RAG 第三档上下文（项目历史已审核文档）；nullable 用于降级 */
+    private final AiDocEmbeddingService docEmbeddingService;
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     public AiCopilotService(AiModelConfigService modelConfigService,
@@ -64,13 +67,15 @@ public class AiCopilotService implements IAiCopilotService {
                             AiGateway aiGateway,
                             IAuditLogService auditLogService,
                             ProjectMapper projectMapper,
-                            ProjectMemberMapper projectMemberMapper) {
+                            ProjectMemberMapper projectMemberMapper,
+                            AiDocEmbeddingService docEmbeddingService) {
         this.modelConfigService = modelConfigService;
         this.workbenchService = workbenchService;
         this.aiGateway = aiGateway;
         this.auditLogService = auditLogService;
         this.projectMapper = projectMapper;
         this.projectMemberMapper = projectMemberMapper;
+        this.docEmbeddingService = docEmbeddingService;
     }
 
     /** 测试口：注入固定时钟。 */
@@ -178,7 +183,10 @@ public class AiCopilotService implements IAiCopilotService {
         Map<String, Object> summary = workbenchService.summary(actor, req.projectId());
         String projectCtx = renderProjectContext(summary);
         String personalCtx = renderPersonalContext(summary);
-        String prompt = composePrompt(req, projectCtx, personalCtx);
+        // AI-STRAT-1 Phase 2（2026-09-23）：RAG 第三档上下文（项目历史已审核文档）。
+        // docType=null 不过滤类型，向后兼容；前端 UI 让用户选 docType 是后续任务。
+        String ragCtx = ragContextBlock(req);
+        String prompt = composePrompt(req, projectCtx, personalCtx, ragCtx);
 
         AiChatResult result = aiGateway.chat(
             new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
@@ -198,24 +206,43 @@ public class AiCopilotService implements IAiCopilotService {
         List<String> sources = new ArrayList<>();
         if (!projectCtx.isEmpty()) sources.add("project.advance");
         if (!personalCtx.isEmpty()) sources.add("workbench.tasks");
+        // AI-STRAT-1 Phase 2：RAG 命中时标注 project.history_docs 源（供前端标识与门禁审计）
+        if (ragCtx != null && !ragCtx.isEmpty()) sources.add("project.history_docs");
         return new AiCopilotResp(intent, answer, List.of(), sources,
             result.promptTokens(), result.completionTokens(), latency);
+    }
+
+    /**
+     * AI-STRAT-1 Phase 2（2026-09-23）：RAG 第三档上下文 = 拉同项目已审核历史文档片段。
+     * docType=null 不过滤类型（向后兼容；前端 UI 让用户选 docType 是后续任务）。
+     * 失败/未配置/无命中返回 ""（降级不阻塞）。
+     */
+    private String ragContextBlock(AiCopilotReq req) {
+        if (docEmbeddingService == null || req.projectId() == null) {
+            return "";
+        }
+        AiDocEmbeddingService.RetrievalContext ctx =
+            docEmbeddingService.retrieveContext(req.projectId(), null, req.message());
+        return ctx == null ? "" : ctx.block();
     }
 
     // ---- Prompt 拼装（项目+个人在前、需求在后；总长钳 MAX_PROMPT_LEN 解耦为本地常量） ----
 
     static final int COPILOT_PROMPT_MAX = 8_000;
 
-    static String composePrompt(AiCopilotReq req, String projectCtx, String personalCtx) {
+    static String composePrompt(AiCopilotReq req, String projectCtx, String personalCtx, String ragCtx) {
         StringBuilder sb = new StringBuilder();
         sb.append("你是 IPD 产品经理系统的 AI 副驾，负责回答工作台相关的短问题。\n");
         sb.append("- 回答 ≤200 字，分点列出；不要编数据，未确认的字段说「未确认」。\n");
-        sb.append("- 用户问项目情况时，仅基于下方「项目上下文」与「个人上下文」回答；越权信息一律拒答。\n\n");
+        sb.append("- 用户问项目情况时，仅基于下方「项目上下文」「个人上下文」「项目历史文档」回答；越权信息一律拒答。\n\n");
         if (projectCtx != null && !projectCtx.isBlank()) {
             sb.append("【项目上下文】\n").append(projectCtx).append("\n\n");
         }
         if (personalCtx != null && !personalCtx.isBlank()) {
             sb.append("【个人上下文（待办/临期）】\n").append(personalCtx).append("\n\n");
+        }
+        if (ragCtx != null && !ragCtx.isBlank()) {
+            sb.append("【项目历史文档（RAG，仅供参考）】\n").append(ragCtx).append("\n\n");
         }
         sb.append("【历史对话】\n");
         List<AiCopilotReq.CopilotTurn> history = req.history();

@@ -124,9 +124,11 @@ public class AiGenerationService implements IAiGenerationService {
             }
             Integer maxTokens = cfg.path("maxTokens").asInt(0) > 0 ? cfg.path("maxTokens").asInt(0) : null;
             BigDecimal temperature = cfg.hasNonNull("temperature") ? cfg.get("temperature").decimalValue() : null;
-            // AI-STRAT-1：同项目历史文档检索注入（RAG；任何异常/未配置返回 EMPTY，生成照常）
+            // AI-STRAT-1：同项目历史文档检索注入（RAG；任何异常/未配置返回 EMPTY，生成照常）。
+            // AI-STRAT-1 Phase 2（2026-09-23）：docType 非空时按类型过滤（PRD/MRD…），
+            // docType 为空保持向后兼容。
             AiDocEmbeddingService.RetrievalContext ctx =
-                docEmbeddingService.retrieveContext(req.projectId(), req.prompt());
+                docEmbeddingService.retrieveContext(req.projectId(), req.docType(), req.prompt());
             if (ctx == null) {
                 ctx = AiDocEmbeddingService.RetrievalContext.EMPTY;
             }

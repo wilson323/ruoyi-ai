@@ -251,6 +251,16 @@ public class AiModelConfigService implements IAiModelConfigService {
 
     /** 内部：解密 api_key 供 AI 调用方使用（严禁出现在任何响应/日志）。 */
     public String decryptApiKey(AiModelConfig config) {
+        // R184-A（2026-09-23）：null/空白密文 = 未上送（如 mock embed 服务器、纯本地测试场景），
+        // 返回空串而非拼 STATE_CONFLICT——decryptByAes(null) 会抛 IllegalArgumentException，
+        // 但「未配置密钥」不是冲突状态，是产品允许的初始/测试状。
+        // 加密密钥缺失/格式错仍是 STATE_CONFLICT（fail-fast）。
+        if (config == null || config.getApiKeyEncrypted() == null || config.getApiKeyEncrypted().isBlank()) {
+            return "";
+        }
+        if (encryptKey == null || encryptKey.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+        }
         try {
             return EncryptUtils.decryptByAes(config.getApiKeyEncrypted(), encryptKey);
         } catch (Exception e) {

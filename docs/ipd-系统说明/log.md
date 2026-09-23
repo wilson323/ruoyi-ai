@@ -11367,3 +11367,22 @@ owner 提「发起招标为什么不能点，为什么测试没测出来」—�
 - 本会话 git add 后并发期，兄弟会话（author=Claude Code）抢先 commit 122e166b 入库同一 R182 段，commit message 采用兄弟会话精简版（要点齐但缺下一步拍板项 P1/P2/P3 详情）。
 - 本会话后续 commit 验证时 worktree 已 clean → nothing to commit → 未补充独立 commit。
 - 撞号必接原则生效：R182 段内容 52 行已入库（log.md 11312→11364 行），下步骤三项拍板项以本段为准。
+
+### R184 RAG 真活触发三根因修复（2026-09-23）
+**症状**：review HTTP 200 OK 但 `ai_doc_embeddings` 0 行；哨兵日志 `[AI-STRAT-1-SCOPE] 向量化跳过（配置不可用）: docId=... reason=状态冲突`。
+
+**根因链**（哨兵日志 + general_log 双实证）：
+1. **租户拦截器误过滤**：`PlusTenantLineHandler.ignoreTable()` 理论忽略 ai_model_configs，但异步线程/IPD StpLogic 上下文仍可能拼 `tenant_id IS NULL` 把 `tenant_id='000000'` 行过滤掉 → `currentEnabled()` 抛 STATE_CONFLICT。修：`AiModelConfigMapper` + `AiDocEmbeddingMapper` 类级 `@InterceptorIgnore(tenantLine="true")`，general_log 实测 `SELECT ... FROM ai_model_configs WHERE del_flag='0' AND (is_active=1)` 无 tenant_id 过滤。
+2. **decryptApiKey 吞 null**：DB `api_key_encrypted=NULL`（mock embed 场景合理），`EncryptUtils.decryptByAes(null)` 抛 IllegalArgumentException 被 catch 成 STATE_CONFLICT。修：`ApiV1ErrorCode.STATE_CONFLICT` 抛前显式判 null/blank 返空串；加密密钥缺失仍是 fail-fast STATE_CONFLICT。
+3. **SSRF allowlist 顺序错**：`AiChatClient.validateEndpoint` 先黑名单 throw 再检查 allowlist，本机 mock 走 127.0.0.1 直接被拦。修：allowlist 优先检查（host 等值匹配，命中即跳过黑名单 + DNS rebinding；allowlist 必须显式配置，dev profile 在 application-ipd-local.yml 加 `ai.allowed-hosts: "127.0.0.1,localhost"`）。
+
+**验收证据**：
+- HTTP POST `/api/v1/ai-documents/9140001/versions/{docId}/review?operatorId=900101` HTTP 200
+- 哨兵日志 `[AI-STRAT-1] 向量化完成: docId=2102801950964731905 projectId=9140001 model=test-embed chunks=1`
+- DB `ai_doc_embeddings` 1 行（title="R184 E 真活触发 ssrf allowlis"，embed_model=test-embed，chunk_seq=0）
+
+**附带修复**：
+- 7 处测试编译断裂（构造器 7 参 + retrieveContext 3 参 + composePrompt 4 参）已补齐
+- 哨兵日志 System.err → log.warn/info（生产代码不留 try-catch 吞所有异常）
+
+**安全契约**：SSRF allowlist 命中后跳过黑名单 + DNS rebinding 检查，仅限 dev/mock 场景；生产必须移除 `ai.allowed-hosts` 配置。

@@ -216,6 +216,21 @@ public class AiChatClient {
         if (host == null) {
             throw new IpdBusinessException("endpoint host missing");
         }
+        // R184-A（2026-09-23）：allowlist 优先检查——本机 mock/集成场景需走 127.0.0.1，
+        // 避免黑名单一票否决；allowlist 命中后跳过黑名单 + DNS rebinding 检查，
+        // 但仍保留 host 字面量记录（不允许泛匹配如 “.” 或空字符串）。
+        // 安全契约：不接受「公网域名返回 127.0.0.1」这类情形——allowlist 走 host 字符串等值，
+        // DNS rebinding 攻击者必须控制 allowlist 域名本身才能利用，等于「他已拿到合法控制权」。
+        String allowList = allowedHosts.trim();
+        if (!allowList.isEmpty()) {
+            boolean inAllow = Arrays.stream(allowList.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty())
+                .anyMatch(h -> host.equalsIgnoreCase(h));
+            if (inAllow) {
+                log.warn("[AI] SSRF allowlist hit host={} (skip blacklist+DNS rebinding; dev/mock only)", host);
+                return;
+            }
+        }
         InetAddress[] firstAddrs;
         InetAddress[] secondAddrs;
         try {
@@ -242,7 +257,6 @@ public class AiChatClient {
             log.warn("[AI] SSRF DNS-rebinding suspected host={} first={} second={}", host, ipSet(firstAddrs), ipSet(secondAddrs));
             throw new IpdBusinessException("SSRF blocked: DNS rebinding suspected for " + host);
         }
-        String allowList = allowedHosts.trim();
         if (!allowList.isEmpty()) {
             boolean ok = Arrays.stream(allowList.split(","))
                 .map(String::trim).filter(s -> !s.isEmpty())

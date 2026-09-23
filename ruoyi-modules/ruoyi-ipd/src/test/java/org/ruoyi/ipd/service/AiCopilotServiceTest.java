@@ -53,6 +53,7 @@ class AiCopilotServiceTest {
     private IAuditLogService auditLogService;
     private ProjectMapper projectMapper;
     private ProjectMemberMapper projectMemberMapper;
+    private AiDocEmbeddingService docEmbeddingService;
     private AiCopilotService service;
 
     private static final IpdActor SA = new IpdActor(1L, "sa", "SUPER_ADMIN", null);
@@ -66,8 +67,11 @@ class AiCopilotServiceTest {
         auditLogService = mock(IAuditLogService.class);
         projectMapper = mock(ProjectMapper.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
+        docEmbeddingService = mock(AiDocEmbeddingService.class);
+        when(docEmbeddingService.retrieveContext(any(), any(), any()))
+            .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper);
+            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService);
         // 固定时钟便于断言 latencyMs
         service.withClock(Clock.fixed(Instant.parse("2026-09-10T19:00:00Z"), ZoneId.of("UTC")));
         // auditLogService.append 透传捕获
@@ -335,7 +339,7 @@ class AiCopilotServiceTest {
         String projectCtx = "项目：P1\n当前阶段：TR2\n下一步动作：评审";
         String personalCtx = "1. [stage_sign] 阶段签署 — TR2 待签\n2. [deletion_review] 归档复核 — 限 24h";
 
-        String prompt = AiCopilotService.composePrompt(req, projectCtx, personalCtx);
+        String prompt = AiCopilotService.composePrompt(req, projectCtx, personalCtx, null);
         assertTrue(prompt.startsWith("你是 IPD"), "system 指令在前");
         assertTrue(prompt.contains("【项目上下文】"));
         assertTrue(prompt.contains("【个人上下文"));
@@ -345,7 +349,7 @@ class AiCopilotServiceTest {
 
         // 超 MAX 钳制：构造极大 projectCtx 看是否能钳到 COPILOT_PROMPT_MAX
         String hugeProjectCtx = "P".repeat(20_000);
-        String prompt2 = AiCopilotService.composePrompt(req, hugeProjectCtx, null);
+        String prompt2 = AiCopilotService.composePrompt(req, hugeProjectCtx, null, null);
         assertEquals(AiCopilotService.COPILOT_PROMPT_MAX, prompt2.length(), "总长必钳到 COPILOT_PROMPT_MAX");
     }
 
@@ -353,7 +357,7 @@ class AiCopilotServiceTest {
     @DisplayName("composePrompt：contexts 空白 → 跳过对应块；history 为空 → 仅 system + 需求")
     void composePromptWithEmptyContexts() {
         AiCopilotReq req = new AiCopilotReq(null, "问题", null);
-        String prompt = AiCopilotService.composePrompt(req, "", "");
+        String prompt = AiCopilotService.composePrompt(req, "", "", null);
         assertFalse(prompt.contains("【项目上下文】"));
         assertFalse(prompt.contains("【个人上下文"));
         assertTrue(prompt.contains("【本次问题】"));
@@ -368,7 +372,7 @@ class AiCopilotServiceTest {
             hist.add(new AiCopilotReq.CopilotTurn("user", "round-" + i));
         }
         AiCopilotReq req = new AiCopilotReq(null, "今问", hist);
-        String prompt = AiCopilotService.composePrompt(req, null, null);
+        String prompt = AiCopilotService.composePrompt(req, null, null, null);
         // 末尾 8 轮 = round-12..round-19
         assertTrue(prompt.contains("round-19"));
         assertTrue(prompt.contains("round-12"));

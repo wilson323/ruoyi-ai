@@ -3,6 +3,7 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.ipd.domain.AiDocEmbedding;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.mapper.AiDocEmbeddingMapper;
@@ -65,6 +66,27 @@ public class AiDocEmbeddingService {
         this.embeddingMapper = embeddingMapper;
         this.modelConfigService = modelConfigService;
         this.aiGateway = aiGateway;
+        // IPD 单企业私有部署（2026-09-23）：启动主线程 setDynamic('000000') 让 PlusTenantLineHandler.ignoreTable() 走 excludes 匹配分支。
+        // HTTP 线程独立 ThreadLocal，需 @PostConstruct 预热（见 warmupTenantContext）。
+        // R184-A：哨兵日志改 log.warn；不再用 System.err（不进 ELK）；try 范围缩到 Exception。
+        try {
+            org.ruoyi.common.tenant.helper.TenantHelper.setDynamic("000000");
+        } catch (Exception e) {
+            log.warn("[AI-STRAT-1-SCOPE] 构造器 setDynamic 跳过: {}", e.getMessage());
+        }
+    }
+
+    @jakarta.annotation.PostConstruct
+    void warmupTenantContext() {
+        // IPD 单企业私有部署（2026-09-23）：预热租户上下文为 '000000'，使 HTTP 线程（继承启动上下文）
+        // 与新启动线程都能拿到正确租户；TenantHelper.setDynamic(tenantId, global=true) 走 SaStorage 跨线程生效。
+        try {
+            org.ruoyi.common.tenant.helper.TenantHelper.setDynamic("000000");
+            log.info("[AI-STRAT-1-SCOPE] PostConstruct warmupTenantContext getTenantId={}",
+                org.ruoyi.common.tenant.helper.TenantHelper.getTenantId());
+        } catch (Exception e) {
+            log.warn("[AI-STRAT-1-SCOPE] PostConstruct 预热失败: {}", e.getMessage());
+        }
     }
 
     /** 检索结果（hits=命中片段数；chars=上下文块字符数；block=拼接好的注入块，EMPTY 时为 ""）。 */
@@ -82,9 +104,15 @@ public class AiDocEmbeddingService {
         }
         EmbedEndpoint cfg;
         try {
+            // IPD 单企业私有部署（2026-09-23）：TenantHelper.getTenantId() 在 IPD 会话中可能为 null，
+            // PlusTenantLineHandler 返回 NullValue → SQL 追加 tenant_id IS NULL → ai_model_configs 走不到。
+            // 启动时已 setDynamic('000000') 让 PlusTenantLineHandler.ignoreTable() 走 excludes 匹配分支。
             cfg = resolveEmbedConfig();
         } catch (Exception e) {
-            log.debug("[AI-STRAT-1] 向量化跳过（配置不可用）: docId={} reason={}", doc.getId(), e.getMessage());
+            // R184-A（2026-09-23）：输出完整堆栈便于定位根因（之前只 warn message 丢真相）
+            log.warn("[AI-STRAT-1-SCOPE] 向量化跳过（配置不可用）: docId={} reason={} exClass={} exMsg={}",
+                doc.getId(), e.getMessage(), e.getClass().getName(), e.getMessage());
+            log.warn("[AI-STRAT-1-SCOPE] 向量化跳过堆栈", e);
             return;
         }
         if (cfg == null) {
@@ -135,10 +163,14 @@ public class AiDocEmbeddingService {
     /**
      * 同项目检索 top-K 相关片段并拼上下文块。异常一律 EMPTY（调用方 contextHits=0 生成照常）。
      * 块格式（来源标注 + 片段原文），供 generate 拼进 prompt。
+     *
+     * @param projectId 项目 ID（检索范围锚）
+     * @param docType 文档类型过滤（nullable；null = 不过滤；非空按 doc_type 等值过滤，索引 idx_emb_doctype）
+     * @param query 查询原文（裁 QUERY_MAX_CHARS）
      */
-    public RetrievalContext retrieveContext(Long projectId, String query) {
+    public RetrievalContext retrieveContext(Long projectId, String docType, String query) {
         try {
-            EmbedEndpoint cfg = resolveEmbedConfig();
+            EmbedEndpoint cfg = TenantHelper.ignore(() -> resolveEmbedConfig());
             if (cfg == null || query == null || query.isBlank()) {
                 return RetrievalContext.EMPTY;
             }
@@ -149,9 +181,15 @@ public class AiDocEmbeddingService {
             if (queryVec == null || queryVec.isEmpty() || queryVec.get(0) == null) {
                 return RetrievalContext.EMPTY;
             }
-            List<AiDocEmbedding> candidates = embeddingMapper.selectList(new LambdaQueryWrapper<AiDocEmbedding>()
+            // AI-STRAT-1 Phase 2（2026-09-23）：docType 非空时按类型过滤，索引 idx_emb_doctype 走
+            // 普通索引；docType 为空/null 时保留历史「同项目全类型」语义，向后兼容。
+            LambdaQueryWrapper<AiDocEmbedding> wrapper = new LambdaQueryWrapper<AiDocEmbedding>()
                 .eq(AiDocEmbedding::getProjectId, projectId)
-                .eq(AiDocEmbedding::getEmbedModel, cfg.embedModel()));
+                .eq(AiDocEmbedding::getEmbedModel, cfg.embedModel());
+            if (docType != null && !docType.isBlank()) {
+                wrapper.eq(AiDocEmbedding::getDocType, docType.trim());
+            }
+            List<AiDocEmbedding> candidates = embeddingMapper.selectList(wrapper);
             if (candidates.isEmpty()) {
                 return RetrievalContext.EMPTY;
             }

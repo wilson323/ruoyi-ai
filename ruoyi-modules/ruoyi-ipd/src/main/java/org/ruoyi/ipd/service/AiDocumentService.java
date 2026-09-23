@@ -2,18 +2,20 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.extern.slf4j.Slf4j;
+import org.ruoyi.common.core.constant.CacheNames;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.ruoyi.common.core.constant.CacheNames;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -42,6 +44,7 @@ import java.util.List;
  * 按父指针逐环下探，校验版本号连续 v1..vN 无缺失、父链接无断点；任一断点即 STATE_CONFLICT。
  */
 @Service
+@Slf4j
 public class AiDocumentService {
 
     /** AI 原始输出/人工改版后待审 */
@@ -216,8 +219,16 @@ public class AiDocumentService {
             auditTransition(versionId, operatorId, STATUS_GENERATED, STATUS_REVIEWED, null);
             // AI-STRAT-1：审核通过即触发异步向量化（RAG 资料库入库；幂等分支不重复向量化；
             // 内部 RAG 未配置/失败均只降级不阻塞审核事务）
+            // R184-A（2026-09-23）：哨兵日志改用 log.warn/info 级别；System.err 不进 ELK、不分级别。
+            // AiModelConfigMapper / AiDocEmbeddingMapper 已加 @InterceptorIgnore(tenantLine="true")
+            // 修 tenant_id IS NULL 误过滤；此处只观察 embedAsync 是否被调用即可。
             if (docEmbeddingService != null) {
+                log.info("[AI-STRAT-1-SCOPE] review触发embedAsync docId={} status={} embeddingService={}",
+                    row.getId(), row.getStatus(), docEmbeddingService.getClass().getSimpleName());
                 docEmbeddingService.embedAsync(row);
+            } else {
+                log.warn("[AI-STRAT-1-SCOPE] docEmbeddingService 未注入，embedAsync 跳过 reviewDocId={} status={}",
+                    row.getId(), row.getStatus());
             }
             return row;
         }

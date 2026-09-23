@@ -161,14 +161,14 @@ class AiDocEmbeddingServiceTest {
     @DisplayName("检索：query 空白/RAG 关/embed 失败 → EMPTY（生成照常）")
     void retrieveContextDegradations() {
         stubEmbedEnabled(EMBED_CFG);
-        AiDocEmbeddingService.RetrievalContext empty = service.retrieveContext(9L, "  ");
+        AiDocEmbeddingService.RetrievalContext empty = service.retrieveContext(9L, null, "  ");
         assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, empty);
-        assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null));
-        assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, "查询"),
+        assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null, null));
+        assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null, "查询"),
             "mock 默认 embed 返回 null → EMPTY（不抛）");
 
         stubEmbedEnabled("{}");
-        AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, "查询");
+        AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, null, "查询");
         assertEquals(0, ctx.hits());
         assertEquals("", ctx.block());
     }
@@ -188,14 +188,14 @@ class AiDocEmbeddingServiceTest {
             .embedModel("emb-1").vectorJson("[0.0,1.0]").build();
         when(embeddingMapper.selectList(any())).thenReturn(List.of(similar, orthogonal));
 
-        AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, "查询");
+        AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, null, "查询");
         assertEquals(1, ctx.hits(), "正交片（cos=0）不入选");
         assertTrue(ctx.block().contains("旧需求"), "块含来源标注（docType/title）");
         assertTrue(ctx.block().contains("相似片段正文"));
         assertTrue(ctx.chars() > 0);
 
         when(embeddingMapper.selectList(any())).thenReturn(List.of());
-        assertEquals(0, service.retrieveContext(9L, "查询").hits(), "候选空 → EMPTY");
+        assertEquals(0, service.retrieveContext(9L, null, "查询").hits(), "候选空 → EMPTY");
     }
 
     @Test
@@ -209,7 +209,7 @@ class AiDocEmbeddingServiceTest {
         AiDocEmbedding bad = AiDocEmbedding.builder().docId(4L).projectId(9L).docType("PRD")
             .title("坏片").chunkSeq(0).chunkText("坏").embedModel("emb-1").vectorJson("not-json").build();
         when(embeddingMapper.selectList(any())).thenReturn(List.of(bad, good));
-        assertEquals(1, service.retrieveContext(9L, "查询").hits());
+        assertEquals(1, service.retrieveContext(9L, null, "查询").hits());
     }
 
     // ---- composePrompt（AiGenerationService 静态拼装） ----

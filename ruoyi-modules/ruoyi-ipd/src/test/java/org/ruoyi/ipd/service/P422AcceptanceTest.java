@@ -62,7 +62,7 @@ class P422AcceptanceTest {
         aiGateway = mock(AiGateway.class);
         // AI-STRAT-1：默认 RAG 未命中（EMPTY）——旧用例语义不变；命中注入见 ragContextInjectedAndAudited
         docEmbeddingService = mock(AiDocEmbeddingService.class);
-        when(docEmbeddingService.retrieveContext(any(), anyString()))
+        when(docEmbeddingService.retrieveContext(any(), any(), any()))
             .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiGenerationService(documentMapper, documentService,
             modelConfigService, auditLogService, aiGateway, docEmbeddingService);
@@ -134,7 +134,7 @@ class P422AcceptanceTest {
     void ragContextInjectedAndAudited() {
         stubEnabled("{}");
         String block = "【相关历史文档片段 1｜PRD｜旧需求】\n历史片段正文";
-        when(docEmbeddingService.retrieveContext(eq(77L), anyString()))
+        when(docEmbeddingService.retrieveContext(eq(77L), eq("PRD"), anyString()))
             .thenReturn(new AiDocEmbeddingService.RetrievalContext(2, block.length(), block));
         stubChatOk();
         when(documentService.createGenerated(any(), any(), any(), any(), any(), any(), any(), any()))
