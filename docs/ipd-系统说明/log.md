@@ -11161,3 +11161,13 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - **进度**：P1-2 三证 6/49（剩 43 页多天工程）。
 - **产物**：`验收/e2e-p2-business-flow-20260923/`（REPORT.md + 2 截图）。
 - **撞号透明**：兄弟同期收口 96fdfc22（404 契约治理 6 controller，本地领先未推，由兄弟自行 push）；本段与本会话 P2 首批平行不冲突。
+
+## 2026-09-23 02:4x R179-P2b 业务流真活验证第二批（页33 津贴台账+页36 负反馈执行）
+- **触发**：owner 选 A「继续跑 P2 第二批」；兄弟 404 契约治理已收口（96fdfc22 已随 19c2b12e 推上），双仓同步无在途撞号，本批仍避让 products/project/bid/bonus 域。
+- **页33 津贴台账**（`/ipd/incentive/allowance`）：HTTP ledger?period=2026-09 → 200 n=1、?period=2026-08 → 200 n=6、pending-stop 两月均 200 n=0；DB allowance_ledgers 7 行逐字段一致（含两批 create_time 21:55×4 + 00:08×2 吻合）；浏览器两月份渲染 + 待停发空态 ✓。真实参数名 `period` 由 Network 面板抓包实锤（非 month）。
+- **页36 负反馈执行**（`/ipd/incentive/negative-feedback`）：HTTP by-project/9140001 → 200 n=1 LIFTED、?projectId=9140002 → 200 n=1 DRAFT、by-severity/MEDIUM → 200 n=2；DB negative_feedbacks 2 行逐字段一致；浏览器空态→9140001 查询渲染「错过市场窗口/9110003（停发）/取消资格/已解除」✓。
+- **问题1（登记不修）**：`?period=bad` → 500/90001 而非 400/10001；铁证 sys-error.log 02:36:29 堆栈 `ConstraintViolationException: listLedger.period`（MethodValidationInterceptor AOP 路径）——IpdServiceExceptionAdvice 第 9 类漏网，兄弟 02:36 踩过未修；修复建议已写报告，需重启 16039 故本批不动。
+- **问题2（环境异常待查）**：JVM 79717 服务正常但 logs/sys-*.log + server-16039.log mtime 冻结在 02:39:42（websocket 心跳停更 = 全量停更），日志审计链路盲 7h+。
+- **方法论**：IPD 页内 fetch 探针 token 在 `sessionStorage['ruoyi-ipd.session'].accessToken`（core-access 是框架端 JWT 对 /api/v1 无效）；源码 grep 参数名不可靠，Network 面板抓真实 URL 最快。
+- **进度**：P1-2 三证累计 8/49。
+- **产物**：`验收/e2e-p2b-incentive-20260923/`（REPORT.md 63 行 + 3 截图）。
