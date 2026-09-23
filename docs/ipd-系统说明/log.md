@@ -11244,3 +11244,32 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
   - `p2d-page31-queried.png`（146KB, fullPage）— 页31 触发查询后（项目 9140001 + 人员 9110003）评分视图完整呈现。
 - **进度**：P1-2 累计 12/49（P2a 4 + P2b 2 + P2c 2 + P2d 2）。
 - **撞号透明**：双仓同步 0f598947 一致，工作树 clean，untracked 仅本会话 e2e-p2d 目录。
+
+## 2026-09-23 08:2x R180 ZK-IPD 原型 vs 后端 59 Controller 差集梳理：CapacityApproval / SavedItem 双双不建
+
+### 触发
+owner 提「待后端补齐的能力 / 原型 12 项 KPI 表格 + 共担 KPI 确认链后端尚未交付，登记不假绿」三段描述，本会话先核对三段是否属实——发现其中两条已交付（PUT /api/v1/kpi/functional-metrics 已有 upsert；GET /api/v1/kpi/shared 与 /confirms 已交付），误报源于 9 月初治理会旧口径未刷新。owner 选 A「系统性梳理 /Users/mac/Documents/ZK-IPD 中没有的 IPD 相关功能 + 是否有过度设计」后深挖两条典型差集，给「做/不做」决策，本轮登记决策结论。
+
+### 现状（原型端点 vs 后端覆盖）
+| 原型端点（ZK-IPD 产品流程细化管理工具 2/src/*） | 后端 Controller | 评估 |
+|---|---|---|
+| `POST/GET /api/saved-items`（App.jsx:160 / ClosurePages.jsx:24） | 无 SavedItemController，ruoyi-ipd 全仓 grep `SavedItem\|saved_item\|savedItem` 0 命中 | **真缺 + 高过度设计风险** |
+| `POST /api/performance/capacity-approvals` + `/{id}/decision`（FinalRulesPages.jsx:36-37） | 无 CapacityApprovalController；`ProjectMemberController.java:31` BindRequest 已有 `approvalRef` 字段；line 48 注释明确「AC-TEAM-11 超额须备案，服务端强制，不信任前端提示」 | **真缺 + 已被覆盖 + 中过度设计风险** |
+
+### 决策
+1. **CapacityApproval 不建，建议前端面板降级或砍**——
+   - 后置覆盖：`ProjectMember.bind` 第 N 个项目时强制 `approvalRef`，服务端兜底（比前端"主动备案"更刚性，没空子可钻）
+   - 字段语义不符：原型接口 body `{userId, contextRef, reason}` **没有 projectId**，根本不知道批的是"哪几个项目超员"——典型抽象字段无业务语义
+   - 前端建议：去掉独立 CapacityApprovalPanel；超额提示挪到项目组队页 bind 时必填 approvalRef；如 PM 想告知组长在管项目数，归日报/通知流而非审批流
+2. **SavedItem 不建，前端改 localStorage**——
+   - 全仓零代码（grep 0 命中），纯个人收藏（不跨用户/不跨设备/不进审计/不进报表）
+   - localStorage 一行代码：`useLocalStorage('ipd.savedItems', [])` 即满足
+   - 多设备同步需求待用户实际反馈再起最小表（id / user_id / object_type / object_id / label / deep_link）—— YAGNI
+
+### 节省
+- CapacityApproval：1 Controller + 1 capacity_approvals 表 + Service + 2 端点 + 单测 + DDL apply + 前端面板 + 状态机
+- SavedItem：1 Controller + 1 saved_items 表 + Service + 2 端点 + 单测 + DDL apply
+
+### 限定
+- docs-only：未改 Java/Vue/yml/SQL；未动 SSOT 镜像主表（仅追加 log.md 末尾条目）；未重启 16039；未翻看板卡 status
+- 撞号透明：双仓同步 7f11de14 一致，本会话期间工作树 clean，兄弟最近 7f11de14 (e2e-p2d 验收目录补登) 0 交集；本决策无归属会话依赖，无撞号风险
