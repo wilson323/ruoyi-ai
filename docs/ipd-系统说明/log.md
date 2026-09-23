@@ -11194,3 +11194,23 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - **根因**（非 bug）：磁盘 98% 满（460G/419G/9.6G free）→ macOS APFS 高水位 → fdatasync 偶发慢 → logback async worker 偶发卡盘 → 队列自然排空后批量回写，mtime 跳跃更新。完全不影响业务（请求走 XNIO worker，与 logback 异步写盘路径解耦）。
 - **结论**：不需改代码、不需重启；磁盘清理属本机环境治理，不在仓内职责。可选加固：监控 sys-info.log mtime > 10min 未更新即告警（devops 范畴）。
 - **R179-P2b 问题2 关闭**。当前 local=remote=3aae38d8（advice 修复 commit），工作树 clean，兄弟 staged 文件 0。
+
+## 2026-09-23 03:5x R179-P2b advice 修复实测验证 PASS（5 探针全通）
+- **触发**：owner 选 A「现在重启 16039 + 立即跑验证」。
+- **重启动作**：
+  1. 撞号：双仓同步、工作树 clean、兄弟最近 e44c0d70 单文件无交集
+  2. jar 重打：`mvn -o -pl ruoyi-admin -am -DskipTests=true -T 1C package` BUILD SUCCESS 20.7s；javap 验证 jar 内 `IpdServiceExceptionAdvice.handleConstraintViolation(jakarta.validation.ConstraintViolationException)` 已注入 + lambda 内部类齐全；advice class size 新 jar=本仓编译产物=16437 bytes 三方一致
+  3. 杀旧 JVM PID 79717 (SIGTERM) → 端口释放
+  4. `bash .codex/ipd-dev/start-16039.sh` → 新 PID 38584 → 2 秒后 PORT_UP
+  5. 探活 `/api/v1/auth/me` 401+traceId=30415382db74465984ef340cea137de7 → 包络正常
+- **验证探针**（浏览器 fetch 走 vite proxy 同源，dev 演示账号 ipd-admin 登录后拿 JWT）：
+  | 探针 | 期望 | 实际 |
+  |---|---|---|
+  | FIX_TARGET period=bad | 400/10001 | ✅ HTTP 400 code=10001 msg=`listLedger.period: period 必须为 YYYY-MM`（与 javadoc 描述 100% 一致）|
+  | REG period=2026-09 | 200 | ✅ 200 code=0 n=1 |
+  | REG period=2026-08 | 200 | ✅ 200 code=0 n=6 |
+  | REG pending-stop 2026-09 | 200 | ✅ 200 code=0 n=0 |
+  | REG nf by-project/9140001 | 200 | ✅ 200 code=0 n=1 |
+- **R179-P2b 问题1 验证 PASS**：handler 修复生效、4 回归无塌陷。
+- **撞号透明**：兄弟 e44c0d70 (WB-17-1 spec 填实) 单文件 0 交集；本会话期间工作树 clean，本改动 0 staged。
+- **新 JVM 状态**：PID 38584 elapsed 00:20+ RSS 1GB 服务正常；本地 16039 重启无副作用。
