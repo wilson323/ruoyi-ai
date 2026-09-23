@@ -11386,3 +11386,86 @@ owner 提「发起招标为什么不能点，为什么测试没测出来」—�
 - 哨兵日志 System.err → log.warn/info（生产代码不留 try-catch 吞所有异常）
 
 **安全契约**：SSRF allowlist 命中后跳过黑名单 + DNS rebinding 检查，仅限 dev/mock 场景；生产必须移除 `ai.allowed-hosts` 配置。
+
+### R184 阶段 2：AI 副驾接 RAG 真活验证（2026-09-23）
+**上下文**：R184 阶段 1 已验证 `ai_doc_embeddings` 真活写入 1 行（docId=2102801950964731905，title="R184 E 真活触发 ssrf allowlis"）。阶段 2 验证 `AiCopilotService` 真活接入 RAG：检索块进 prompt + sources 含 `project.history_docs` 标签。
+
+**代码现状**（已就位）：
+- `AiCopilotService.ragContextBlock(req)` 调 `docEmbeddingService.retrieveContext(req.projectId(), null, req.message())`
+- `composePrompt(req, projectCtx, personalCtx, ragCtx)` 第 4 参已加，块头【项目历史文档（RAG，仅供参考）】
+- `sources` 添加 `project.history_docs`（RAG 命中时）
+- `docType=null` 不过滤（向后兼容；前端 UI 让用户选 docType 是后续任务）
+
+**单测验证**（21 tests 全绿，0 失败）：
+- `composePromptRagContextPresent`：ragCtx 非空 → 拼入块头 + 检索原文；ragCtx null/blank → 跳过块
+- `ragContextBlockWiredIntoChat`：端到端 `service.chat()`，capture 进 `aiGateway.chat()` 的 prompt 必须含 mock RetrievalContext 内容，响应 `sources` 必含 `project.history_docs`
+
+**撞号必接披露**（软化接手）：
+- 兄弟会话 R30 P0 / AI-STRAT-3 在 `AiGateway.stream()` 加了 +93 行调用 `OpenAiStreamingChatModel.chat(ChatRequest, StreamingResponseHandler<AiMessage>)`，但 Langchain4j 1.17.2 的 `StreamingChatModel.chat(ChatRequest, ...)` 要求的是新接口 `StreamingChatResponseHandler`（`onPartialResponse`/`onCompleteResponse`），旧接口 `StreamingResponseHandler<T>`（`onNext`/`onComplete`）与新模型不兼容 → `mvn test` 编译挂掉。
+- 评审结论：`stream()` 暂无任何生产调用方（grep 全仓仅 import 行），是孤立未上线代码。处置：本会话为验证 R184 阶段 2 临时 `git stash` 暂存（`stash@{0}: R30-P0-brother-stream-uncommitted`），待兄弟会话改用 `StreamingChatResponseHandler` 后再 `git stash pop` 回归。
+- 本次 commit 不动 AiGateway.java，兄弟会话工作保留 stash 完整可恢复。
+
+## 2026-09-23 08:3x R185 元根因深化：R182 三套体系 + R184 三根因同构模式 → M-Root-12 多套闸不同步
+
+### 触发
+owner 指令「系统性梳理分析深度思考反思根源性修复」——不是局部补丁，是把 R182（权限三套体系）+ R184（RAG 真活触发三根因）两个独立事件合并深化，抓共同元根因，给机制化修复方向。
+
+### 核心发现：R182 + R184 同构元模式
+
+两个事件表面无关（一个是前端权限，一个是后端 RAG），但深挖发现**同构元模式**：「配置/契约的隐式依赖被掩盖在 try-catch / 拦截器 / 守卫之后，运行态无信号、无门禁、无测试断言」。
+
+#### 元根因框架（R142 M-Root-1~11 扩展 + 新增 M-Root-12）
+
+| 元根因 | R182 表现 | R184 表现 | 修复模式 |
+|---|---|---|---|
+| **M-Root-11 配置存在但无消费者**（工具链假设漂移） | `meta.access` 无消费者（装饰性） | `ai.allowed-hosts` 黑名单先于 allowlist（配置存在但优先级错） | drift-guard 检查孤悬配置 + 优先级声明 |
+| **M-Root-9 隐式上下文丢失**（跨会话身份隔离盲区扩展） | `accessCodes` 非超管丢业务码（vbenCodesOf 只发 `[scope, 'personType:xxx']`） | 异步线程丢租户上下文（PlusTenantLineHandler 拼 `tenant_id IS NULL`） | 上下文显式传递 + 哨兵日志 |
+| **M-Root-8 防御性 catch 掩盖真问题**（反思主体缺乏自我应用约束） | 无（R182 未涉及） | `decryptApiKey` 吞 null（IllegalArgumentException 被 catch 成 STATE_CONFLICT） | fail-fast + 错误码细分 |
+| **M-Root-12 多套闸不同步**（R182+R184 共同揭示的新元根因） | `meta.authority` / `meta.access` / `v-access:code` 三套各自为政 | 黑名单 / allowlist / DNS rebinding 三套优先级未对齐 | 单一事实源 + 优先级声明 + 会红的测试 |
+
+#### M-Root-12 详解（新元根因）
+
+**定义**：系统同时存在多套校验闸（路由级 / 按钮级 / 拦截器级 / 黑名单级），但各闸之间**无单一事实源、无优先级声明、无同步测试**，导致：
+- 闸 A 放行但闸 B 拦截（R182：路由级 `meta.authority` 空数组放行，但按钮级 `canCreateBid` 拦截）
+- 闸 A 拦截但闸 B 放行（R184：黑名单先拦截 127.0.0.1，但 allowlist 后检查已晚）
+- 闸 A 配置存在但无消费者（R182：`meta.access` 装饰性）
+- 闸 A 配置被消费但内容缺失（R182：`accessCodes` 非超管丢业务码）
+
+**修复模式**：
+1. **单一事实源**：所有闸共用同一份权限码常量（如 `permissions.ts`），不允许各闸自定义
+2. **优先级声明**：多闸并存时显式声明优先级（如 allowlist > 黑名单 > DNS rebinding）
+3. **会红的测试**：每个闸必须有正例 + 反例测试，闸间同步测试（如「路由级放行 + 按钮级拦截」必须有用例覆盖）
+
+### R182-P1/P2/P3 阶跃依赖与本轮决策
+
+| 拍板项 | 工作量 | 阻塞条件 | 本轮决策 |
+|---|---|---|---|
+| **R182-P1** 路由守卫扩展 + 后端鉴权接口契约改造 | 前端 0.5d + 后端 1d | 需 owner 拍板契约（accessCodes 应该发什么权限码） | **docs-only 契约提案**（本轮落档，等 owner 拍板后实装） |
+| **R182-P2** 抽 permissions.ts + 改 canCreateBid 为 v-access:code 标准模式 | 前端 1d | 依赖 P1（v-access:code 必须能消费真实权限码） | **本轮不做**（P1 不完成做 P2 会引入更大问题：所有按钮全不显示） |
+| **R182-P3** drift-guard 加 meta.access 孤悬检查 | 0.5d | 动共享 hook 需 owner 拍板（OPS-09） | **docs-only 设计稿**（本轮落档，等 owner 拍板后实装） |
+
+### 本轮交付（docs-only，不动后端代码 / 不动前端业务代码 / 不动共享 hook）
+
+1. **R185 元根因深化段**（log.md，本段）：M-Root-12 新元根因 + R182/R184 同构模式 + 阶跃依赖评估
+2. **隐式依赖三反模式登记文档**（前端仓 `docs/ipd-系统说明/隐式依赖三反模式-20260923.md`）：R182 + R184 元模式合并 + 修复模式 + 证据索引
+3. **3 个门禁脚本骨架设计**（FAIL_SEED 双向触发标配，docs-only 不实装）：
+   - `check-meta-access-orphan.sh`（M-Root-11 配置存在但无消费者）
+   - `check-accesscodes-coverage.sh`（M-Root-9 隐式上下文丢失）
+   - `check-multi-gate-sync.sh`（M-Root-12 多套闸不同步）
+4. **owner 拍板清单**（R182-P1/P2/P3 + R185-M-Root-12）：契约提案 + 设计稿 + 实装条件
+
+### 度量 / 限定
+- **不新增 BCP**：本轮是元根因深化 + docs-only 设计稿，不闭环新功能；闭环数 13/13 不变。
+- **M-Root 元根因**：11/11 → 12/12（新增 M-Root-12 多套闸不同步）。
+- **本会话不动**：Java/Vue 业务代码 / 后端 yml/SQL / SSOT 镜像主表 / 看板卡 status / 16039 / 共享 hook。
+- **R 轮登记**：R185；不抢 R183（兄弟会话在 git log 但不在 log.md）/ R184（已占用）。
+
+### 撞号透明
+- 后端仓 HEAD=b529c56f（R184），兄弟最近 b529c56f 0 交集；本会话期间**未动后端任何代码文件**（仅 log.md docs-only 追加）。
+- 前端仓 HEAD=c6c257b（A3），兄弟最近 c6c257b 0 交集；本会话期间**未动前端任何文件**（仅 docs-only 新文档）。
+- R183 段号在 git log 里（21844113 / 69e2da11）但不在 log.md 里（兄弟会话可能在其他文档），本会话用 R185 避让。
+
+### 下一步（待 owner 拍板）
+1. **R185-P1 拍板**：是否启动 R182-P1 路由守卫扩展 + 后端鉴权接口契约改造（契约提案见前端仓 docs）
+2. **R185-P2 拍板**：是否启用 3 个门禁脚本骨架实装（FAIL_SEED 双向触发，动共享 hook 需 owner）
+3. **R185-P3 拍板**：是否把 M-Root-12 多套闸不同步纳入 R142 元根因体系（更新 BCP-Registry / BCP-Closure-Log）

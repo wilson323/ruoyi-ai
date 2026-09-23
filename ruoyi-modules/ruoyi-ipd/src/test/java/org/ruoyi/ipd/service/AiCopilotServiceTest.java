@@ -365,6 +365,72 @@ class AiCopilotServiceTest {
     }
 
     @Test
+    @DisplayName("composePrompt：ragCtx 非空 → 拼入「项目历史文档」块；ragCtx=null/空 → 跳过")
+    void composePromptRagContextPresent() {
+        // R184 阶段 2 真活验证：RAG 检索块必须真进 prompt（不是只挂在 sources 标签上）
+        AiCopilotReq req = new AiCopilotReq(9140001L, "SSRF 黑名单与 allowlist 谁先生效", null);
+        String projectCtx = "项目：R184\n当前阶段：TR4\n下一步：真活验证";
+        String personalCtx = "1. [review_sign] 评审签署 — 待办";
+
+        // 1) ragCtx 非空 → 必拼入【项目历史文档】块
+        String ragContent = "R184 E：allowlist 优先于黑名单生效。命中 host=127.0.0.1 跳过黑名单+DNS rebinding。";
+        String prompt = AiCopilotService.composePrompt(req, projectCtx, personalCtx, ragContent);
+        assertTrue(prompt.contains("【项目历史文档（RAG，仅供参考）】"),
+            "RAG 块头必出现（前置 prompt 标识）");
+        assertTrue(prompt.contains(ragContent),
+            "RAG 检索原文必须真拼进 prompt（不能仅挂在 sources 标签）");
+        // 顺序：项目上下文 → 个人上下文 → 项目历史文档 → 历史对话 → 本次问题
+        int idxProject = prompt.indexOf("【项目上下文】");
+        int idxPersonal = prompt.indexOf("【个人上下文");
+        int idxRag = prompt.indexOf("【项目历史文档");
+        int idxQuestion = prompt.indexOf("【本次问题】");
+        assertTrue(idxProject < idxPersonal, "项目上下文 < 个人上下文");
+        assertTrue(idxPersonal < idxRag, "个人上下文 < RAG");
+        assertTrue(idxRag < idxQuestion, "RAG < 本次问题");
+
+        // 2) ragCtx null → 跳过 RAG 块
+        String promptNull = AiCopilotService.composePrompt(req, projectCtx, personalCtx, null);
+        assertFalse(promptNull.contains("【项目历史文档"),
+            "ragCtx=null → 不应出现 RAG 块头");
+        // 3) ragCtx blank → 同样跳过
+        String promptBlank = AiCopilotService.composePrompt(req, projectCtx, personalCtx, "   ");
+        assertFalse(promptBlank.contains("【项目历史文档"),
+            "ragCtx=blank → 不应出现 RAG 块头");
+    }
+
+    @Test
+    @DisplayName("composePrompt：RAG 块上游 → ragContextBlock 拿到 mock RetrievalContext 后注入 composePrompt")
+    void ragContextBlockWiredIntoChat() {
+        // R184 阶段 2 真活验证：端到端 chat() 调用，ragContextBlock 必须调 retrieveContext 并把 block 拼进 prompt
+        when(docEmbeddingService.retrieveContext(any(), any(), any()))
+            .thenReturn(new AiDocEmbeddingService.RetrievalContext(1, 64,
+                "R184 单元测试注入的 RAG 内容"));
+        stubEnabledConfig();
+        when(workbenchService.summary(any(), any(Long.class))).thenReturn(Map.of(
+            "projectAdvance", Map.of("stageCode", "TR4", "currentAdvance", "待真活验证")
+        ));
+        when(aiGateway.chat(any(), any(), any(), any(BigDecimal.class)))
+            .thenAnswer(inv -> {
+                // 关键断言：capture 进 chat() 的 prompt 必须含 RAG 内容
+                String promptArg = inv.getArgument(1);
+                assertTrue(promptArg.contains("R184 单元测试注入的 RAG 内容"),
+                    "chat() 收到的 prompt 必须真拼入 RAG 内容");
+                assertTrue(promptArg.contains("【项目历史文档（RAG，仅供参考）】"),
+                    "RAG 块头必出现");
+                return AiChatResult.ok("ok", 10, 20, 50L);
+            });
+        when(projectMapper.selectById(9140001L)).thenReturn(project(9140001L));
+        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
+
+        AiCopilotReq req = new AiCopilotReq(9140001L, "RAG 是否进 prompt", List.of());
+        AiCopilotResp resp = service.chat(RD_PM, req);
+        assertEquals("ok", resp.answer());
+        // 来源必带 history_docs（Phase 2 契约）
+        assertTrue(resp.sources().contains("project.history_docs"),
+            "RAG 命中时 sources 必含 project.history_docs");
+    }
+
+    @Test
     @DisplayName("composePrompt：history 超 MAX_HISTRY=8 → 仅取末尾 8 轮")
     void composePromptHistoryCap() {
         List<AiCopilotReq.CopilotTurn> hist = new java.util.ArrayList<>();
