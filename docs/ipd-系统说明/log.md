@@ -11040,3 +11040,9 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 前端验证：typecheck PASS；双文件 live 23/23（auth 8 + project 15，958ms，消除全部退避等待）；全量默认 982 passed / 0 failed（37 skipped 为 live 文件 skipIf 正常形态）。
 - 仍开口：根因B（限流消息契约——限流落 400+10001+「频繁」文案被前端 code 表映射成「输入信息不符合要求」）owner 定只登记不修（b957c182 §9，3 种修法待拍板），本轮修复不触及限流路径。
 - 环境残留：探针项目 2102608334472392706（PRJ-2026-035）占 uk，不影响 nextCode 单调取号。
+
+## 2026-09-22 R179-P0 尾项收口：根因B 闭环拍板 + 探针残留清理（主协调会话复核）
+- 根因B（限流消息契约）：兄弟会话 3264ac5（swarm-w4f-rescue，基于本会话 1fc4b8d 之上）已落地修法③精确变体——login 路径 400+code=10001 非凭证时尊重 envelope.message（判别条件 message!==fromCode 精确差异，非子串匹配），链式插入 loginCredential ?? loginSpecific10001Message ?? fromCode；auth.test.ts +2 测试（限流/离职透传+负面断言防退化）。本会话独立复核：typecheck PASS + 全量 984 passed/0 failed（982+2 吻合）+ 双文件 live 23/23（与 live 基建零冲突——坏凭据用例走 loginCredential 特化，退避判定走 envelopeMessage 均不变）。
+- 拍板：修法①（后端限流改 HTTP 429）不做。理由：前端透传修复已根治「真实用户限流看到错误提示」的生产 bug；改 429 会连锁打破 store 层 rateLimited 判定（cause.code===10001）、既有 mock 测试（auth-refresh/ipd-auth store 测试均锁 400+10001）与监控基线，收益为零、破坏面大。修法②（独立业务码）同理不做。§9.4 的「3 种修法待拍板」就此关闭。
+- 探针残留清理（ipd_dev 真库）：物理 DELETE 探针项目三表行——stage_actions 69 + project_stages 6 + projects 1（事务内，projects 加 name='live-verify-r179-final' 双条件锁定防误删）；uk_projects_product 释放，产品 2096324839605276674「在售导入A」恢复完全空闲（project_id=NULL/ON_SALE/del_flag=0，live 测试 1:1 稀缺资源回收）。audit_logs 保留 1 行探针审计（entity_type=projects/PROJECT_CREATE）——哈希链 append-only，删行断裂整链，指向已删实体与软删同语义可接受。
+- 附注：uk_projects_code 与 uk_projects_product 均为单列物理 uk（软删不释放），与 nextCode 缺陷同族设计事实；1:1 终身物理约束维持「登记不修」（产品级设计决策，非缺陷）。
