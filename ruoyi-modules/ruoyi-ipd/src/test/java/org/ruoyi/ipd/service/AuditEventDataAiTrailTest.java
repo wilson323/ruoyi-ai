@@ -53,9 +53,9 @@ class AuditEventDataAiTrailTest {
     }
 
     @Test
-    @DisplayName("合法三件套放行：draft / precheck / summarize 三角色全通过")
+    @DisplayName("合法三件套放行：draft / precheck / summarize / copilot_answer / streaming 全通过")
     void legalTrailPasses() {
-        for (String role : new String[] {"draft", "precheck", "summarize"}) {
+        for (String role : new String[] {"draft", "precheck", "summarize", "copilot_answer", "streaming"}) {
             String payload = AuditEventData.json(
                 "aiAssisted", true, "aiModel", "gpt-4o-mini", "aiRole", role,
                 "tokenPrompt", 120, "latencyMs", 900);

@@ -32,8 +32,9 @@ import java.util.concurrent.Executors;
  * <ul>
  *   <li>{@code POST /api/v1/ai-copilot/chat}：同步，注解层 IpdPermissionCode.OPERATION_AI_COPILOT
  *       把住「内部角色可调」，对象级（项目可见性 / 越权）由 service 二次校验；</li>
- *   <li>{@code GET /api/v1/ai-copilot/chat/stream}：SSE 流式——MVP 把同步结果分片推达成观感，
- *       避免调研 Langchain4j streaming API 阻塞 MVP 上线；真流式 AI-STRAT-3 留续；</li>
+ *   <li>{@code GET /api/v1/ai-copilot/chat/stream}：SSE 真流式（AI-STRAT-3 / L0-4，2026-09-23）——
+ *       走 {@link AiCopilotService#chatStream} + {@link org.ruoyi.ipd.service.ai.AiGateway#stream}
+ *       异步 token 推送，逐段送 delta 帧（不再是同步结果分片的伪流式）；</li>
  *   <li>两端的审计 / 越权 / 意图分类 / 上下文注入 / 三件套全在 service 集中处理，Controller 不掺业务；</li>
  *   <li>SSE 端不复读 token 进 URL query——同步端点走 IpdPermission.requireInternal 读 sa-token 上下文即可；
  *       真流式 EventSource 场景再补 IpdSseController 同款的 URL token 模式（本次非阻塞项）。</li>
@@ -45,11 +46,7 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class AiCopilotController {
 
-    /** 流式分片大小（字符）——MVP 取 30 字 / 50ms 间隔，肉眼可见逐字出现。 */
-    static final int SSE_CHUNK_SIZE = 30;
-    /** 流式分片间隔（毫秒）。 */
-    static final long SSE_CHUNK_INTERVAL_MS = 50L;
-    /** SSE 连接超时（默认 30s 已能覆盖最长 chitchat 30s+分片延迟）。 */
+    /** SSE 连接超时（覆盖最长 chitchat 30s + 流式推送延迟）。 */
     static final long SSE_TIMEOUT_MS = 60_000L;
 
     private final AiCopilotService service;
@@ -73,16 +70,15 @@ public class AiCopilotController {
     }
 
     /**
-     * SSE 流式问答端点：MVP 实现 = 同步调 {@link AiCopilotService#chat} 后把 answer 分片推流，
-     * 推送节奏 {@link #SSE_CHUNK_SIZE} 字符 / {@link #SSE_CHUNK_INTERVAL_MS} 毫秒，
-     * 末帧 {@code [DONE]} 表示服务端生成结束。
+     * SSE 真流式问答端点（AI-STRAT-3 / L0-4，2026-09-23）：调 {@link AiCopilotService#chatStream}
+     * 走 {@link org.ruoyi.ipd.service.ai.AiGateway#stream} 异步 token 推送，逐段送 delta 帧。
      *
-     * <p>事件契约：
+     * <p>事件契约（与旧伪流式一致，前端零改造）：
      * <ul>
-     *   <li>{@code event=meta}：首帧（intent / data / sources / token / latencyMs）——前端用来先渲染结构化数据；</li>
-     *   <li>{@code event=delta}：answer 分片（多次）；</li>
-     *   <li>{@code event=done}：末帧（status=ok | fail）；</li>
-     *   <li>{@code event=error}：业务异常（仅在 service 抛 IpdBusinessException 时一次推送）。</li>
+     *   <li>{@code event=meta}：首帧（intent / data / sources；真流式时 answer 空、token 0）——前端先渲染结构化数据；</li>
+     *   <li>{@code event=delta}：answer 增量 token（真流式多次；意图兜底路径一次整段）；</li>
+     *   <li>{@code event=done}：末帧（status=ok + 聚合 tokenPrompt/tokenCompletion/latencyMs）；</li>
+     *   <li>{@code event=error}：错误（同步前置 IpdBusinessException 或异步 AI 流式失败时推送）。</li>
      * </ul>
      *
      * @param projectId 可空（与同步端同语义）
@@ -114,47 +110,55 @@ public class AiCopilotController {
 
     private void pushChunks(SseEmitter emitter, IpdActor actor, AiCopilotReq req) {
         try {
-            AiCopilotResp resp = service.chat(actor, req);
-            // 1) meta 帧：先送结构化 + 元数据（前端可立即渲染 data 列表 + token）
-            emitter.send(SseEmitter.event().name("meta").data(resp));
-            // 2) delta 帧：answer 按 30 字符/片分推
-            String answer = resp.answer() == null ? "" : resp.answer();
-            for (int i = 0; i < answer.length(); i += SSE_CHUNK_SIZE) {
-                int end = Math.min(answer.length(), i + SSE_CHUNK_SIZE);
-                emitter.send(SseEmitter.event().name("delta").data(answer.substring(i, end)));
-                if (end < answer.length()) {
-                    try {
-                        Thread.sleep(SSE_CHUNK_INTERVAL_MS);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+            service.chatStream(actor, req, new AiCopilotService.CopilotStreamSink() {
+                @Override
+                public void meta(AiCopilotResp resp) {
+                    sendFrame(emitter, "meta", resp);
                 }
-            }
-            // 3) done 帧：服务端生成结束
-            emitter.send(SseEmitter.event().name("done").data(java.util.Map.of("status", "ok")));
-            emitter.complete();
-        } catch (org.ruoyi.ipd.common.IpdBusinessException biz) {
-            // 业务异常：直接推 error 帧，让前端按 status=ok 但带 error 事件渲染（业务兜底）
-            try {
-                emitter.send(SseEmitter.event().name("error").data(java.util.Map.of(
-                    "code", biz.getErrorCode() == null ? "" : String.valueOf(biz.getErrorCode().getCode()),
-                    "message", biz.getMessage() == null ? "" : biz.getMessage())));
-            } catch (IOException ignored) {
-                // 客户端已断
-            }
-            emitter.complete();
+
+                @Override
+                public void delta(String token) {
+                    sendFrame(emitter, "delta", token);
+                }
+
+                @Override
+                public void done(AiCopilotResp resp) {
+                    sendFrame(emitter, "done", java.util.Map.of(
+                        "status", "ok",
+                        "tokenPrompt", resp.tokenPrompt(),
+                        "tokenCompletion", resp.tokenCompletion(),
+                        "latencyMs", resp.latencyMs()));
+                    emitter.complete();
+                }
+
+                @Override
+                public void error(String code, String message) {
+                    sendFrame(emitter, "error", java.util.Map.of(
+                        "code", code == null ? "" : code,
+                        "message", message == null ? "" : message));
+                    emitter.complete();
+                }
+            });
+        } catch (IpdBusinessException biz) {
+            // 同步前置错误（message 空 / 项目不可见）：推 error 帧 + complete（SSE 契约模式 B）
+            log.warn("[AI-COPILOT-SSE] stream rejected: code={} msg={}",
+                biz.getErrorCode() == null ? "" : biz.getErrorCode().getCode(), biz.getMessage());
+            SseErrorEmitter.completeWithError(emitter,
+                biz.getErrorCode() == null ? "PARAM_INVALID" : String.valueOf(biz.getErrorCode().getCode()),
+                biz.getMessage(), log);
         } catch (Exception e) {
-            log.error("[AI-COPILOT-SSE] push failed: actor={} messageLen={}", actor.id(),
+            log.error("[AI-COPILOT-SSE] stream failed: actor={} messageLen={}", actor.id(),
                 req.message() == null ? 0 : req.message().length(), e);
-            try {
-                emitter.send(SseEmitter.event().name("error").data(java.util.Map.of(
-                    "code", "INTERNAL_ERROR",
-                    "message", "AI 副驾流式推送失败")));
-            } catch (IOException ignored) {
-                // 客户端已断
-            }
-            emitter.completeWithError(e);
+            SseErrorEmitter.completeWithError(emitter, "INTERNAL_ERROR", "AI 副驾流式推送失败", log);
+        }
+    }
+
+    /** 推一帧 SSE；客户端已断（IOException / IllegalStateException）静默吞——与 SseErrorEmitter 同款防御。 */
+    private static void sendFrame(SseEmitter emitter, String event, Object data) {
+        try {
+            emitter.send(SseEmitter.event().name(event).data(data));
+        } catch (IOException | IllegalStateException e) {
+            // 客户端已断开，静默（不再重复推 error，避免 SIGPIPE 噪声）
         }
     }
 }

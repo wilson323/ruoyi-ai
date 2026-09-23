@@ -67,7 +67,7 @@ final class AuditEventData {
 
     /**
      * AI-P1-3 留痕门禁：凡载荷声明 "aiAssisted": true 的审计行，必须同时携带非空
-     * "aiModel" 与白名单 "aiRole"（draft|precheck|summarize），缺一即抛——防半吊子留痕
+     * "aiModel" 与白名单 "aiRole"（见 {@link #AI_ROLES}：draft|precheck|summarize|copilot_answer|streaming），缺一即抛——防半吊子留痕
      * （有 AI 参与标记却查不到模型/角色，责任链还原时断片）。
      *
      * <p>aiRole 白名单刻意排除一切决策语义（approve/reject/decide…）：AI 只出草稿/预检/
@@ -101,15 +101,18 @@ final class AuditEventData {
         if (!AI_ROLES.contains(role)) {
             throw new DataIntegrityViolationException(
                 "audit_logs." + field + " 声明 aiAssisted=true 但 aiRole 非法（\"" + role
-                    + "\"；AI-P1-3 白名单 draft|precheck|summarize——AI 不得标记为决策角色）："
+                    + "\"；AI-P1-3 白名单见 AuditEventData.AI_ROLES——AI 不得标记为决策角色）："
                     + echo(payload));
         }
     }
 
     /**
-     * AI 参与角色的白名单：只允许「AI 出建议」语义，决策语义一概不入（见 requireAiTrail）。
+     * AI 参与角色的白名单：只允许「AI 出建议/输出」语义，决策语义一概不入（见 requireAiTrail）。
      * AI-P2-3（2026-09-11）追加 copilot_answer：副驾问答/待办建议场景，与「draft 生成文档草稿」
      * 语义不同——副驾是「对话问答/行动建议」，故单列；决策语义（approve/reject/decide）一律不入。
+     * L0-4（AI-STRAT-3，2026-09-23）追加 streaming：SSE 真流式输出完成事件（单 session 一行、
+     * 不逐 chunk 落审计），仍是「AI 输出」语义、非决策角色。规约其余值（suggestion/summary/
+     * copilot_intent/tool_call）待各自 Layer 落地、有真实写入方时再追加（不超前登记）。
      */
-    private static final Set<String> AI_ROLES = Set.of("draft", "precheck", "summarize", "copilot_answer");
+    private static final Set<String> AI_ROLES = Set.of("draft", "precheck", "summarize", "copilot_answer", "streaming");
 }

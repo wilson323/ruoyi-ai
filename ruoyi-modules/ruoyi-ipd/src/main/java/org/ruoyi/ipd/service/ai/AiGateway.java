@@ -1,14 +1,17 @@
 package org.ruoyi.ipd.service.ai;
 
 import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.exception.HttpException;
 import dev.langchain4j.exception.TimeoutException;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.model.output.Response;
 import dev.langchain4j.model.output.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
@@ -142,6 +145,113 @@ public class AiGateway {
                 cfg.modelName(), texts.size(), fail.errorCode(), fail.latencyMs());
             return null;
         }
+    }
+
+    /**
+     * 流式生成（AI-STRAT-3 / L0-4 SSE 真流式，2026-09-23）：Langchain4j {@link OpenAiStreamingChatModel}
+     * 异步 token-by-token 推送，调用方通过 {@link StreamHandler} 接收 onDelta/onComplete/onError。
+     *
+     * <p>安全契约与 {@link #chat} 同源：
+     * <ul>
+     *   <li>SSRF 前置校验（黑名单 + DNS rebinding + allowlist），失败同步抛 {@link IpdBusinessException}；</li>
+     *   <li>apiKey 仅进 builder 内存消费，不进日志/审计/异常消息（BR-AI-PROV-02）；</li>
+     *   <li>prompt/响应原文一律不落日志（BR-AI-04），观测走长度分桶 + SHA-256 短指纹；</li>
+     *   <li>错误码白名单与 chat 同源（{@link #mapFailure} 单一出口）。</li>
+     * </ul>
+     *
+     * <p>与 {@link #chat} 区别：chat 同步返回 {@link AiChatResult}（含完整 content）；stream 异步推送，
+     * 调用方在 {@code onDelta} 逐段收 token、{@code onComplete} 收聚合 tokenUsage（OpenAI SSE 末帧 usage）、
+     * {@code onError} 收白名单错误码——本方法无返回值（异步语义）。
+     *
+     * @param cfg         模型配置（provider/endpoint/key/model/timeoutMs）
+     * @param prompt      用户输入原文（不落日志，仅记长度分桶 + 短指纹）
+     * @param maxTokens   最大生成 token 数（null = 服务端默认）
+     * @param temperature 采样温度（null = 服务端默认）
+     * @param handler     流式回调（onDelta 收增量 token、onComplete 收 tokenUsage、onError 收白名单错误码）
+     */
+    public void stream(AiTestConfig cfg, String prompt, Integer maxTokens,
+                       BigDecimal temperature, StreamHandler handler) {
+        long start = clock.millis();
+        // SSRF 前置（与 chat 同款；失败同步抛 IpdBusinessException 直通调用方）
+        legacyClient.ssrfCheck(cfg.baseUrl());
+        int promptLen = prompt == null ? 0 : prompt.length();
+        OpenAiStreamingChatModel model;
+        try {
+            model = OpenAiStreamingChatModel.builder()
+                .baseUrl(stripTrailingSlash(cfg.baseUrl()))
+                .apiKey(cfg.apiKey())
+                .modelName(cfg.modelName())
+                .timeout(Duration.ofMillis(cfg.timeoutMs()))
+                .temperature(temperature == null ? null : temperature.doubleValue())
+                .maxTokens(maxTokens)
+                .build();
+        } catch (Exception e) {
+            // builder 构建失败（配置非法等）：走 onError，不抛（异步语义统一）
+            AiChatResult fail = mapFailure(e, elapsed(start));
+            log.warn("[AI] gateway stream build fail: model={} promptLenBucket={} errorCode={}",
+                cfg.modelName(), PromptLenBucket.of(promptLen).label(), fail.errorCode());
+            handler.onError(fail);
+            return;
+        }
+        // Langchain4j 1.17.2：StreamingChatModel.chat(ChatRequest, StreamingChatResponseHandler)
+        // 异步推送——onPartialResponse 每段一次，onCompleteResponse 聚合（含 tokenUsage），onError 失败。
+        model.chat(ChatRequest.builder()
+                .messages(UserMessage.from(prompt))
+                .build(),
+            new StreamingChatResponseHandler() {
+                @Override
+                public void onPartialResponse(String partialResponse) {
+                    // 透传增量 token 给调用方（SseEmitter delta 帧）；空段跳过
+                    if (partialResponse != null && !partialResponse.isEmpty()) {
+                        handler.onDelta(partialResponse);
+                    }
+                }
+
+                @Override
+                public void onCompleteResponse(ChatResponse response) {
+                    long latency = elapsed(start);
+                    TokenUsage usage = response == null ? null : response.tokenUsage();
+                    int promptTokens = usage == null || usage.inputTokenCount() == null ? 0 : usage.inputTokenCount();
+                    int completionTokens = usage == null || usage.outputTokenCount() == null ? 0 : usage.outputTokenCount();
+                    logAiStreamComplete(cfg, promptLen, response, latency);
+                    handler.onComplete(promptTokens, completionTokens, latency);
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    // 错误映射到白名单错误码（mapFailure 单一出口），透传给调用方
+                    AiChatResult fail = mapFailure(error, elapsed(start));
+                    log.warn("[AI] gateway stream fail: model={} promptLenBucket={} errorCode={} latencyMs={} promptHash={}",
+                        cfg.modelName(), PromptLenBucket.of(promptLen).label(), fail.errorCode(),
+                        fail.latencyMs(), AiChatClient.shortHash(prompt));
+                    handler.onError(fail);
+                }
+            });
+    }
+
+    /** 流式回调（项目级，解耦 Langchain4j 类型；调用方 = AiCopilotService）。 */
+    public interface StreamHandler {
+        /** 每收到一段增量 token 触发（可能多次；调用方推 SSE delta 帧）。 */
+        void onDelta(String token);
+
+        /** 流正常结束：聚合 token 用量 + 端到端延迟（调用方推 done 帧 + 审计 streaming）。 */
+        void onComplete(int promptTokens, int completionTokens, long latencyMs);
+
+        /** 流失败：白名单错误码（mapFailure 同源；调用方推 error 帧 + 审计 FAIL）。 */
+        void onError(AiChatResult failure);
+    }
+
+    /** 流式完成观测日志：长度分桶 + tokenUsage 聚合（BR-AI-04 prompt 原文不落）。 */
+    private void logAiStreamComplete(AiTestConfig cfg, int promptLen, ChatResponse response, long latencyMs) {
+        boolean transitioned = bucketLogger.record(promptLen);
+        TokenUsage usage = response == null ? null : response.tokenUsage();
+        int promptTokens = usage == null || usage.inputTokenCount() == null ? 0 : usage.inputTokenCount();
+        int completionTokens = usage == null || usage.outputTokenCount() == null ? 0 : usage.outputTokenCount();
+        AiMessage msg = response == null ? null : response.aiMessage();
+        int contentLen = msg == null || msg.text() == null ? 0 : msg.text().length();
+        log.info("[AI] gateway stream complete: model={} promptLenBucket={} bucketTransitioned={} contentLen={} promptTokens={} completionTokens={} latencyMs={} endpointHost={}",
+            cfg.modelName(), PromptLenBucket.of(promptLen).label(), transitioned,
+            contentLen, promptTokens, completionTokens, latencyMs, hostOf(cfg.baseUrl()));
     }
 
     /**

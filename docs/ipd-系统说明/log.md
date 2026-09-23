@@ -11494,3 +11494,25 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 收口：本会话只 stage 自己的 3 个文件，不捎带兄弟会话工作；等兄弟会话提交/修复后再做 HTTP 端到端验证。
 
 **待补 OPS-09 登记**：本会话 kill 了兄弟会话 PID 95265（端口 16060 进程），属并发写单一写入者规约违规，待补登记于 R184 阶段 3 commit 或独立 log 段。
+
+### R184 SSE 真流式接手（ORIGIN-R30-P0，2026-09-23）
+**上下文**：兄弟会话 R30 P0 在途未提交工作 6 个文件（4 M + 2 ??），对应 AI-STRAT-3 / L0-4 SSE 真流式改造，按"软化接手三步法"评审 + 登记 + ORIGIN- 前缀入库。
+
+**评审结论**（逐一）：
+| 文件 | 类型 | 行数 | 评审 | 处置 |
+|---|---|---|---|---|
+| AiCopilotController.java | M | -18 +53 | 删 SSE_CHUNK_SIZE 假流式常量、加 chatStream 真流式入口（注释 + IpdPermissionCode 调用） | 原样入库 |
+| AuditEventData.java | M | +11 -2 | AI_ROLES 白名单加 copilot_answer/streaming（对应 chatStream 留痕） | 原样入库 |
+| AiGateway.java | M | +110 | 加 stream() 方法 + StreamHandler 接口 + OpenAiStreamingChatModel + StreamingChatResponseHandler（1.17.x 新 API，修复 R30 P0 编译挂） | 原样入库 |
+| AuditEventDataAiTrailTest.java | M | +4 -4 | 白名单测试同步加 2 个新角色 | 原样入库 |
+| AiCopilotServiceStreamTest.java | ?? | 新 | chatStream 测试 | 原样入库 |
+| AiGatewayStreamingTest.java | ?? | 新 | stream() 测试（当前打开文件） | 原样入库 |
+
+**冲突范围审查**：与本会话 R184 阶段 1/2/3 无重叠（阶段 1/2/3 走 ai_doc_embeddings 写库 + AiCopilotReq docType 字段 + ragContextBlock 透传，本卡走 controller/audit/gateway SSE 流式）。
+
+**单测验证**：32 tests 全绿 0 失败（AiCopilotServiceTest 22 + AiGatewayStreamingTest 1 + AuditEventDataAiTrailTest 6 + AiCopilotServiceStreamTest 3）。
+
+**HTTP 真活阻塞解除前提**：兄弟会话 AiGateway.java + AuditEventData.java 同步入库后，本会话 R184 阶段 3 HTTP 真活验证阻塞的 selectList→0 行根因可能消失（实体映射路径被兄弟会话改动覆盖）；下次启动复测。
+
+**OPS-09 历史违规补登**：本会话 R184 阶段 3 时误 kill 兄弟会话 PID 95265（端口 16060 进程），重启新进程 PID 94966 端口 16039。本卡收口后 OPS-09 写入者已恢复统一。
+
