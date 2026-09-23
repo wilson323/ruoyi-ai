@@ -11214,3 +11214,13 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - **R179-P2b 问题1 验证 PASS**：handler 修复生效、4 回归无塌陷。
 - **撞号透明**：兄弟 e44c0d70 (WB-17-1 spec 填实) 单文件 0 交集；本会话期间工作树 clean，本改动 0 staged。
 - **新 JVM 状态**：PID 38584 elapsed 00:20+ RSS 1GB 服务正常；本地 16039 重启无副作用。
+
+## 2026-09-23 03:3x R179-P2c 业务流真活验证第三批（页34 奖金池核算 + 页35 贡献度评定）
+- **触发**：owner 选 A「继续跑第三批」。前序选项「页34 收入台账+页32 职级评定」实际是「页34 奖金池核算(P0-10.34) + 页32 KPI 考核(P0-10.32 hidden)」。本批跑同激励域且未跑过的「页34 + 页35 贡献度评定(P0-10.35)」。
+- **数据锚点**：DB bonus_pools 19 行（含 9140001/9140002/9140004/9140005 数字 project_id），contributions 2 行（9140004/900103 + 9150001/900103），contribution_versions 0 行。
+- **HTTP 探针 11/11 PASS**：6 bonus-pool 探针（list/page/getById real/getById 0/TypeMismatch）+ 5 contributions 探针（含业务 404 门禁真活：contributions/9140004 表里有行但 project 表无 → 业务校验 50001「项目不存在或已删除」）。
+- **advice 修复间接实测**：bonus-pool/list?projectId=bad → HTTP 400 code=10001「参数类型错误: projectId」= advice 第 8 类 handler 健康。本会话 5 探针实测的 period=bad + bonus-pool/projectId=bad 都 400/10001，覆盖两种 @RequestParam 校验失败路径。
+- **浏览器**：chrome-devtools 填表 click 登录（之前 click 超时是因为前 16039 重启后第一发请求慢），bonus-pool 完整 UI 渲染（191KB）+ contribution 触发查询后「当前贡献度视图」全维度真实数据呈现（159KB，含状态/权重合法性/市场55%/研发45%/5维度/贡献度系数0.8/组长决策通过）。
+- **三证全 PASS**：DB 字段逐列 = HTTP 字段逐列 = 浏览器渲染字段逐列（contributions/9150001 9 个核心字段全对齐）。
+- **进度**：P1-2 累计 10/49（P2b 2页 + P2c 2页 + 首批 6页）。
+- **撞号透明**：双仓同步 03893091 一致，untracked 仅本会话 e2e-p2c 目录，兄弟最近 e44c0d70 0 交集。
