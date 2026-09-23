@@ -24,8 +24,12 @@
 --
 -- 主键: BIGINT 雪花（与 persons 主键策略一致，MyBatis-Plus ASSIGN_ID）
 -- 唯一键: (orgeh) 单列 —— 一份组织一个现行记录（同 org 多版由 is_current+有效段标识）
-DROP TABLE IF EXISTS `hr_organizations`;
-CREATE TABLE `hr_organizations` (
+--
+-- 幂等保护（R180-P0 修复，2026-09-23）：用 CREATE TABLE IF NOT EXISTS，
+-- 严禁 DROP TABLE IF EXISTS —— 表已于 2026-09-23 11:37 apply 到真库，
+-- 重放 DROP 会直接删除 hr_organizations 全部数据。
+-- check-ddl-idempotent.sh 门禁已要求此形式。
+CREATE TABLE IF NOT EXISTS `hr_organizations` (
   `id`                bigint        NOT NULL                COMMENT '主键（雪花）',
   `orgeh`             varchar(64)   COLLATE utf8mb4_general_ci NOT NULL COMMENT 'HR 组织编码（业务键）',
   `stext`             varchar(255)  COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '组织全称',
