@@ -11031,3 +11031,12 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 阻塞④前端 subagent 篡改：还原 5 个 live.test.ts 的 skipIf 门移除 + pnpm-lock 漂移；真因是 live 套件 30+ 处真登录打爆后端同IP同账号 60s/5 次限流（IpdAuthController @RateLimiter）；修复（前端仓）：live-http.ts 新增 loginPersonaWithBackoff（限流退避 15s×8）+ loginPersonaShared（文件级 token TTL 复用，project-live 19 次登录→1 次）。
 - 附带运维：磁盘满（140Mi）引发 SearchReplace 缓存写失败；清理已并入 main 的 r172-takeover worktree 回收 18G；qa04_runner 口令重置（/tmp/qa04_db_password 0600，不入仓）；umask 177 残留导致 surefire 临时目录只读已修复。
 - 真库变更：ipd_dev DROP 2 备份表（158→156，数据 dump 留档）；ipd_qa04 无残留（测试自清理验证）。
+
+## 2026-09-22 R179-P0 终收口：nextCode 生产级缺陷修复 + 前端 live 全绿（主协调会话）
+- 缺陷：创建项目 API 整体不可用——POST /api/v1/projects 恒 400「项目编码冲突」。根因链（general_log 实锤 8 次 INSERT 全撞）：PRJ-2026-033 已软删但物理 uk_projects_code 仍占用；Project 实体带 @TableLogic 使 nextCode 的 selectList 只见活行（max=32→生成 033）→ INSERT 撞物理 uk → 8 次重试确定性全败。与 P131 登记的 2 个失败同源（W2-SVC 接口化 f987e028 只是暴露者非引入者），**R179-P1 移交项就此关闭**。
+- 修复（a7e3540a，worktree r179-p0-backend，已推 origin main）：ProjectMapper 新增 @Select 原生方法 selectMaxCodeSeqByYear（绕 @TableLogic 含软删行取号，保证序号单调只增）；nextCode() 改调新方法；catch DuplicateKeyException 加 log.warn 不再静默；ProjectServiceTest/ConcurrencyTest mock 同步。
+- 后端验证：P131 18/18（R179-P1 关闭）+ Qa04 4/4 + ServiceTest 10/10 + ConcurrencyTest 4/4；mvn -o package EXIT 0；重启 16039 后探针 HTTP 200 + code=0 + PRJ-2026-035（创建项目恢复可用）。
+- 前端修复（1fc4b8d，worktree r179-p0-frontend，rebase 22390ad 后已推 origin main）：① auth.ts loginCredential 特化——后端坏凭据真实形态 400+10001+固定枚举文案，原 401 条件从未生效（探针实测直调 loginIpd 拿到「输入信息不符合要求」而非凭据文案）；改 400+IPD_LOGIN_CREDENTIAL_ERROR 精确比对为主路径（离职/禁用/限流同落 400+10001 但 message 不同不误报），401+10001 保留网关改写防御。② live-http.ts 退避（15s×8）+ shared（文件级 token TTL 15min）+ allowlist basePath 匹配。③ auth-live 坏凭据用例改假用户名（防枚举同文案探针实测 400+10001+「用户名或密码错误」逐字一致；限流按 username 分桶不耗真 persona 配额）+ 可复用 token 用例 shared 化（真登录 6→3 次，消除 60s/5 次桶打爆的连带限流——上轮「envelope 完整性」用例 6ms 限流失败 + allowlist 用例 60s 退避的根因；三步序列用例保持 withBackoff 因断言 events 含真 login）。④ project-live 三用例改型：真外键（9130006）过 Jackson 白名单 DTO 后被业务 1:1 真实拒绝 + 假外键（g-1/p-001）Jackson 层拒绝（字母串→Long 反序列化失败），双层拒绝路径对照；1:1 为终身物理约束（products.product_id NOT NULL + uk 双向占用 + 无项目删除 API，空闲产品每用一次永久失效），「每轮真创建」不可持续。
+- 前端验证：typecheck PASS；双文件 live 23/23（auth 8 + project 15，958ms，消除全部退避等待）；全量默认 982 passed / 0 failed（37 skipped 为 live 文件 skipIf 正常形态）。
+- 仍开口：根因B（限流消息契约——限流落 400+10001+「频繁」文案被前端 code 表映射成「输入信息不符合要求」）owner 定只登记不修（b957c182 §9，3 种修法待拍板），本轮修复不触及限流路径。
+- 环境残留：探针项目 2102608334472392706（PRJ-2026-035）占 uk，不影响 nextCode 单调取号。
