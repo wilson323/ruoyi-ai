@@ -11224,3 +11224,23 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - **三证全 PASS**：DB 字段逐列 = HTTP 字段逐列 = 浏览器渲染字段逐列（contributions/9150001 9 个核心字段全对齐）。
 - **进度**：P1-2 累计 10/49（P2b 2页 + P2c 2页 + 首批 6页）。
 - **撞号透明**：双仓同步 03893091 一致，untracked 仅本会话 e2e-p2c 目录，兄弟最近 e44c0d70 0 交集。
+
+## 2026-09-23 07:4x R179-P2d 业务流真活验证第四批（页30 共担 KPI 归集 + 页31 项目绩效评定）
+- **触发**：owner 选 A「继续跑第三批（前序选项里说页34+页32，实际本批跑的是页34 奖金池核算+页35 贡献度评定，已收口）后接 A 跑 P0-10.30 共担 KPI 归集 + P0-10.31 项目绩效评定」。本批跑 KPI 域独立路由，避开激励域（兄弟会话已在 P2c 跑过）和负反馈域。
+- **路由真相**：P0-10.30 = `/ipd/kpi/functional`（独立路由），P0-10.31 = `/ipd/kpi/project-score`（独立路由）。用户前批提的「P0-10.32 职级评定」实际是 hidden 路由「KPI 考核」（activePath='/ipd/projects', hideInMenu=true），已登记。
+- **端点真相**：前端 `kpi.ts:65 'GET /kpi/functional'` 实际后端在 KpiRecordController（`@RequestMapping("/api/v1/kpi")`）`@GetMapping("/functional")`，不是 KpiFunctionalMetricsController（`/api/v1/kpi/functional-metrics`）。前端/后端路径对齐通过 KpiRecordController 中转。
+- **数据锚点**：kpi_records 2 行（9140004/9110003+9110009, SHARED, 2026-08, comprehensive=96.00, FULL_SHARED, FINALIZED）、kpi_shared_confirms 4 行（9140004/2026-08, K01-K04 销量/渠道/NPS/场景 全 CONFIRMED）、kpi_raw_records 3 行、project_score_tasks 16 行（4 项目 × 2 人 × 2 任务类型 SELF_SCORING/LEADER_REVIEW 全 PENDING）、kpi_functional_metrics / kpi_rule_snapshots / project_scores / project_score_records 全 0 行（合理——评分未提交 + 指标未初始化）。
+- **HTTP 探针 19/19 PASS**：10 页30 探针（functional 08/09/period=bad + performance 08 + trend 12 + shared 9140004/999 + rules + functional-metrics + raw-records）+ 9 页31 探针（view 9140001_9110003/9140004/999/abc/xyz + settle 9140001_9110003/9140004 + tasks_my + submit 缺参）。
+- **advice 修复跨 Controller 实测 5 探针全 PASS**：KpiRecordController `/kpi/functional?period=bad` → ConstraintViolation 400/10001「functional.period: period 必须为 YYYY-MM」（path 精准）；ProjectScoreController `/project-scores/abc/999` → TypeMismatch 400/10001「参数类型错误: projectId」（字段名精准）；`/project-scores/9140001/xyz` → TypeMismatch 400/10001「参数类型错误: personId」（字段名精准）。advice 修复贯通全仓跨 5 Controller（AllowanceLedger + BonusPool + KpiRecord + ProjectScore ×2）全部正确分流。
+- **业务门禁真活铁证**：
+  - GET /project-scores/9140001/9110003/settle → 409/50002「项目评分三组件尚未全部归档，不能结算」—— 结算前置校验生效。
+  - GET /project-scores/9140004/9110003 → 404/50001「项目不存在」—— kpi_records/kpi_shared_confirms 表有 9140004 数据但 project 表无，业务层校验生效（与 P2c contributions/9140004 业务 404 同款）。
+  - GET /kpi/shared?projectId=9140004&period=2026-08 → 403/30001「无权访问该项目」—— ipd-admin 非项目成员，强制 member 校验生效。
+- **PM 角色推断真活**：GET /project-scores/9140001/9110003 → pmRole=MARKET_PM（9110003 是 9140001 项目 MARKET_PM 角色，来自 person_roles 推断，非 DB project_scores 主表，因为主表 0 行）。
+- **三证全 PASS（10 字段全对齐）**：DB project_scores 0 行 → HTTP 全 null/默认（projectId:9140001 personId:9110003 pmRole:MARKET_PM versionNo:0 ruleVersion:0 settled:false 三 score 全 null weightedScore null）→ 浏览器评分视图「项目编号 9140001 | 被评 PM 9110003 | PM 角色 MARKET_PM | 自评/市场组长评/研发组长评 全未提交 | 加权得分 — | 评分版本 v0（规则 v0）| 结算状态 未结算」。
+- **截图 3 张**：
+  - `p2d-page30-functional.png`（250KB, fullPage）— 页30 完整 UI 真活渲染（面包屑 + 月份/回看月数 + 绩效聚合 6 卡 + KPI 指标来源 + 趋势 12 月 + 待补齐登记）。
+  - `p2d-page31-empty.png`（125KB, fullPage）— 页31 输入框未填的空态。
+  - `p2d-page31-queried.png`（146KB, fullPage）— 页31 触发查询后（项目 9140001 + 人员 9110003）评分视图完整呈现。
+- **进度**：P1-2 累计 12/49（P2a 4 + P2b 2 + P2c 2 + P2d 2）。
+- **撞号透明**：双仓同步 0f598947 一致，工作树 clean，untracked 仅本会话 e2e-p2d 目录。
