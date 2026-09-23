@@ -11310,3 +11310,55 @@ R181 仅登记不裁决，归属会话由 owner 拍板后接续。
 ### 节省 / 限定
 - docs-only：仅追加 log.md 末尾条目；未改 Java/Vue/yml/SQL/SSOT 镜像主表/看板卡 status/16039
 - 撞号透明：双仓同步 fab37910 一致，工作树 clean，兄弟最近 fab37910 (R180 决策) 0 交集；本决策无归属会话依赖，无撞号风险
+
+## 2026-09-23 08:19 R182 前端仓「研发招募/发起招标」按钮不能点——系统性梳理 + 权限三套体系边界探针
+
+### 触发
+owner 提「发起招标为什么不能点，为什么测试没测出来」——表面是单点 bug，深挖发现是**前端权限三套体系（meta.access / meta.authority / v-access:code）边界不清 + 测试覆盖残缺**的复合病灶。本轮系统性梳理 + 给根源性修复方向，不在本会话实装。
+
+### 现状（5 类病灶拆解）
+
+#### 病灶 ① 表面按钮不可点
+- 实证: `apps/web-antd/src/views/ipd/bid/list/index.vue:194` `canCreateBid = computed(() => ['MARKET_PM', 'SUPER_ADMIN'].includes(personType))` → 非市场 PM/超管按钮 disabled + Tooltip「请联系超级管理员」——属**设计正确**，但 Tooltip 文案把授权路径写成"联系超管"而不是"超管指派端点"，用户找不到超管。
+- 现状文案 + 现状机制都是合理的，文案**透明化授权路径**后即可（已 A1 修复 b2476f8）。
+
+#### 病灶 ② 测试覆盖残缺
+- 原 `bid/list/index.test.ts` 11 用例只有 RD_PM disabled 负例，**0 个正例**（MARKET_PM / SUPER_ADMIN enabled）。
+- 后果：任何把 `canCreateBid` 误改为 `false` 的回归都会被测试盲签「绿」。
+- 已补 3 用例（MARKET_PM 可见 + 点击跳 create / SUPER_ADMIN 可见 / GROUP_LEADER disabled）——c811fd6。
+- 中途翻车：新增用例首次跑挂 `TypeError: Cannot read properties of undefined (reading 'catch')` ——根因 `routerMock.push.mockReset()` 清空了 `mockResolvedValue(undefined)` 配置 → push 返回 undefined → 链 `.catch` 抛 TypeError。
+- 修法：把 `mockReset() + mockResolvedValue(undefined)` 抽成 `resetRouterMock()` 辅助函数 + JSDoc 警示——b2476f8。
+- 验证：14/14 PASS（happy-dom + vitest.ipd.config.mts）。
+
+#### 病灶 ③ 路由级 `meta.access` 装饰性
+- 实证：`apps/web-antd/src/router/ipd-guard.ts:55-59 hasAuthority()` 只读 `meta.authority`，**不读 `meta.access`**。
+- `/ipd/bids` 路由 `meta.authority = []`（空数组）+ `meta.access = ['BID_INVITATION_ADMIN_ASSIGN', ...]` ——空数组 ⇒ `hasAuthority` return true ⇒ **任何登录用户都能进路由**。
+- `meta.access` 当前**完全无消费者**，是装饰性元数据。所有「路由有 meta.access 就安全」的假设是假绿。
+- 详细边界清单见前端仓 `apps/web-antd/docs/ipd-系统说明/权限三套体系边界-20260923.md`（A3 落档 c6c257b，133 行）。
+
+#### 病灶 ④ 按钮级 `v-access:code` 仅超管生效
+- 实证：`apps/web-antd/src/store/vben-identity.ts:34-37 vbenCodesOf()` ——SUPER_ADMIN 返回 `['*:*:*']`（全通），其余返回 `[scope, 'personType:xxx']`（**无 IPD 业务权限码**）。
+- 后果：非超管的 `v-access:code="['BID_XXX']"` **全判否**，46 个页面 add/edit/delete/export/import 按钮全部不显示。
+- IPD 现状：用组件内 `auth.identity?.person.personType === 'XXX'` 自定义判定绕开 v-access:code 缺陷（**应改不规范，已记 P2**）。
+
+#### 病灶 ⑤ 修复方向需 owner 拍板
+- P1: 路由守卫补 `hasAccess()` 读 `meta.access` + 后端鉴权接口产出真实 `ipd:bid:*` 进 accessCodes（owner 拍板契约）
+- P2: 抽 `permissions.ts` 集中常量 + 把 `canCreateBid` 改 v-access:code 标准模式
+- P3: drift-guard 加 `meta.access` 孤悬检查 + 真活 e2e RD_PM curl POST 必须 403
+
+### 度量 / 限定
+- **本会话动前端仓 3 commit**：c811fd6（测试补 3 用例 + 修 mock）+ b2476f8（A1+A2 收口文案 + resetRouterMock 辅助）+ c6c257b（A3 docs-only 边界清单 133 行）。
+- **本会话不动**：Java/Vue 业务代码（仅改 Tooltip 文案）/ 后端 yml/SQL/SSOT 镜像主表/看板卡 status/16039。
+- **不新增 BCP**：本轮是边界探针 + 最小修复，不闭环新功能；闭环数 13/13 不变。
+- **R 轮登记**：R182；不抢 R180/R181 段号（时间序 08:19 在 08:5x 之后但同日同主题方向不同）。
+
+### 撞号透明
+- 双仓同步 c6c257b（前端仓最新）/ 367549bb（后端仓 HEAD）。
+- 后端仓工作树 clean，兄弟最近 367549bb (R181) 0 交集；本会话期间**未动后端任何文件**。
+- 前端仓兄弟最近 7eb82fb 0 交集；3 commit 均为本会话独立产出。
+- 前端仓 untracked 仅本地复现 e2e 目录等兄弟在途，未被本会话 stage。
+
+### 下一步（待 owner 拍板）
+1. R182-P1 拍板：是否启动 P1 路由守卫扩展 + 后端鉴权接口契约改造
+2. R182-P2 拍板：是否统一改 `canCreateBid` 等组件内自判定为 v-access:code 标准模式
+3. R182-P3 拍板：是否启用 drift-guard meta.access 孤悬检查（动共享 hook，需 owner）
