@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -58,7 +59,7 @@ public class AiDocumentController {
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/generate")
-    public ApiV1Response<AiDocument> generate(@RequestBody AiGenerateReq body) {
+    public ApiV1Response<AiDocument> generate(@RequestBody @Valid AiGenerateReq body) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(aiGenerationService.generate(actor, body));
     }
