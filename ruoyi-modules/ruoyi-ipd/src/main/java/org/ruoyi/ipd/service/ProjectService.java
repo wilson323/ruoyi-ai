@@ -3,6 +3,7 @@ package org.ruoyi.ipd.service;
 import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Product;
@@ -43,6 +44,7 @@ import org.ruoyi.ipd.security.IpdIdorGuard;
  * - 状态机 DRAFT→TEAMING→ACTIVE→SUSPENDED/ARCHIVED（迁移表守卫）
  * - 阶段线性推进 CONCEPT→PLAN→DEV→VALID→LAUNCH→LIFECYCLE；Gate 硬门禁由 P1-5 GateEngine 接管
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectService implements IProjectService {
@@ -132,6 +134,10 @@ public class ProjectService implements IProjectService {
             try {
                 return tx.execute(status -> insertNewProject(project, operatorId));
             } catch (DuplicateKeyException ex) {
+                // R179-P0：不再静默——DuplicateKeyException 可能来自任何物理 uk（非只有
+                // code）；无日志曾让「软删行占号」问题排查成本极高（靠 general_log 才定位）。
+                log.warn("[IPD] project create DuplicateKey (attempt {}/{}): {}",
+                    attempt, CODE_CONFLICT_MAX_RETRY, ex.getMessage());
                 project.setId(null);
                 project.setCode(null);
             }
@@ -583,18 +589,13 @@ public class ProjectService implements IProjectService {
     public synchronized String nextCode() {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String prefix = "PRJ-" + year + "-";
-        List<Project> sameYear = projectMapper.selectList(new LambdaQueryWrapper<Project>()
-            .likeRight(Project::getCode, prefix));
-        int max = 0;
-        for (Project p : sameYear) {
-            try {
-                int seq = Integer.parseInt(p.getCode().substring(prefix.length()));
-                max = Math.max(max, seq);
-            } catch (NumberFormatException ignored) {
-                // 编码尾缀非数字（脏数据）跳过
-            }
-        }
-        return prefix + String.format("%03d", max + 1);
+        // R179-P0（2026-09-22）：改原生 SQL 取号（selectMaxCodeSeqByYear，绕过 @TableLogic）。
+        // 根因：MP selectList 自动追加 del_flag='0'，软删行不可见，序号回退到已软删但
+        // 物理 uk_projects_code 仍占用的编码——实测软删 PRJ-2026-033 后 nextCode 恒生成
+        // 033，INSERT 撞物理 uk，8 次重试确定性全败，创建项目 API 整体不可用
+        // （HTTP 400「项目编码冲突」，P131 集成测试 2 失败同源）。
+        Integer max = projectMapper.selectMaxCodeSeqByYear(year);
+        return prefix + String.format("%03d", (max == null ? 0 : max) + 1);
     }
 
     /**

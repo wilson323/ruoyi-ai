@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -174,19 +175,13 @@ class ProjectServiceConcurrencyTest {
     void create_retriesOnDuplicateKey_andSucceedsWithNewCode() {
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        // 忠实模拟 DB：撞号意味着该号已被并发事务提交，重试时 selectList 必须能读到它，
-        // 否则 nextCode() 会算出同一个号，重试永远撞同一堵墙（这也是 create() 里
-        // project.setCode(null) 的意义——强制重新取号）。
+        // 忠实模拟 DB：撞号意味着该号已被并发事务提交，重试时取号必须能读到它（R179-P0
+        // 起 nextCode 走原生 SQL selectMaxCodeSeqByYear），否则 nextCode() 会算出同一个号，
+        // 重试永远撞同一堵墙（这也是 create() 里 project.setCode(null) 的意义——强制重新取号）。
         AtomicInteger committed = new AtomicInteger(0);
-        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenAnswer(inv -> {
-            int cur = committed.getAndIncrement();
-            if (cur == 0) {
-                return List.<Project>of();
-            }
-            Project p = new Project();
-            p.setCode(PREFIX + String.format("%03d", cur));
-            return List.of(p);
-        });
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenAnswer(inv ->
+            // 首次返回 0（空年）→ 取号 001 撞 uk；撞号后 001 已提交可见 → 返回 1 → 取号 002。
+            committed.getAndIncrement());
         doThrow(new DuplicateKeyException("Duplicate entry for key 'uk_projects_code'"))
             .doReturn(1)
             .when(projectMapper).insert(any(Project.class));
@@ -208,7 +203,7 @@ class ProjectServiceConcurrencyTest {
     void create_givesUpAfterMaxRetry() {
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(0);
         doThrow(new DuplicateKeyException("Duplicate entry for key 'uk_projects_code'"))
             .when(projectMapper).insert(any(Project.class));
 
@@ -239,16 +234,14 @@ class ProjectServiceConcurrencyTest {
             new Class<?>[]{ProjectMapper.class},
             (proxy, method, args) -> {
                 switch (method.getName()) {
-                    case "selectList": {
+                    // R179-P0（2026-09-22）：nextCode 改调原生 SQL selectMaxCodeSeqByYear
+                    // （绕 @TableLogic，软删行仍占物理 uk，取号必须含软删行）；
+                    // 模拟语义不变：「读当年最大号 + 新号落库占位」两步都在被测锁内。
+                    case "selectMaxCodeSeqByYear": {
                         int cur = dbMaxSeq.get();
                         Thread.yield();
                         dbMaxSeq.set(cur + 1);
-                        if (cur == 0) {
-                            return List.of();
-                        }
-                        Project p = new Project();
-                        p.setCode(PREFIX + String.format("%03d", cur));
-                        return List.of(p);
+                        return cur;
                     }
                     case "toString":
                         return "racingMapper";
@@ -259,7 +252,7 @@ class ProjectServiceConcurrencyTest {
                     default:
                         throw new UnsupportedOperationException(
                             "racingMapper 未实现 " + method.getName()
-                                + "（nextCode() 只应调 selectList，多调即实现漂移）");
+                                + "（nextCode() 只应调 selectMaxCodeSeqByYear，多调即实现漂移）");
                 }
             });
     }

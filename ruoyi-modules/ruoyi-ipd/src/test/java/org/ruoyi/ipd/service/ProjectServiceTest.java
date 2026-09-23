@@ -21,6 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,16 +86,16 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("编码生成：年内最大序号 +1，空年为 001")
+    @DisplayName("编码生成：年内最大序号 +1（含软删行，绕 @TableLogic），空年为 001")
     void nextCode() {
-        Project p1 = new Project();
-        p1.setCode("PRJ-2026-001");
-        Project p3 = new Project();
-        p3.setCode("PRJ-2026-003");
-        when(projectMapper.selectList(any())).thenReturn(List.of(p1, p3));
-        assertThat(service.nextCode()).isEqualTo("PRJ-2026-004");
+        // R179-P0（2026-09-22）：nextCode 改调原生 SQL selectMaxCodeSeqByYear——
+        // MP selectList 受 @TableLogic 拦截对软删行不可见，序号回退撞物理 uk_projects_code
+        // （实测软删 PRJ-2026-033 后创建项目 API 整体不可用）；取号必须含软删行。
+        String prefix = "PRJ-" + java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) + "-";
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(3);
+        assertThat(service.nextCode()).isEqualTo(prefix + "004");
 
-        when(projectMapper.selectList(any())).thenReturn(List.of());
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
         assertThat(service.nextCode()).endsWith("-001");
     }
 
@@ -103,7 +104,7 @@ class ProjectServiceTest {
     void createOk() {
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(projectMapper.selectList(any())).thenReturn(List.of());
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
 
         Project created = service.create(base("S", null, null), 1L, 7L);
 
@@ -134,7 +135,7 @@ class ProjectServiceTest {
             .isInstanceOf(ServiceException.class).hasMessageContaining("AC-INC-15c");
         when(productMapper.selectById(50L)).thenReturn(product50());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(projectMapper.selectList(any())).thenReturn(List.of());
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
         assertThat(service.create(base("S", null, null), 1L, 7L).getLevelCoefficient())
             .isEqualByComparingTo("1.5");
     }
