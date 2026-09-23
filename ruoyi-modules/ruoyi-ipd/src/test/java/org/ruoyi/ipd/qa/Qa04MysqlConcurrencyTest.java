@@ -410,10 +410,13 @@ class Qa04MysqlConcurrencyTest {
                         .eq(Deliverable::getActionId, actionId)
                         .eq(Deliverable::getDelFlag, "0"));
                 assertThat(visible).as("del_flag='0' 过滤计数只应看到未删交付物").isEqualTo(1L);
-                java.util.List<Deliverable> rows = mapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Deliverable>()
-                        .eq(Deliverable::getActionId, actionId));
-                assertThat(rows).as("无过滤列表包含两行（正反例对照）").hasSize(2);
+                // R179 修复（2026-09-22）：Deliverable 自 e388b7f8（2026-09-06）超带 @TableLogic，
+                // MP selectList/selectCount 自动追加 del_flag='0'，「无过滤列表」断言自此必挂——
+                // 被三重门控（@Tag dev + enabled + 口令）的 skip 状态掩盖 16 天，R179 打开门控后暴露。
+                // 「物理两行」正反对照片改用原生 JDBC scalar（不经 MP wrapper），验证语义不变：
+                // 软删行物理仍在（供审计/恢复），MP 读路径已被 @TableLogic 过滤（上一个断言）。
+                long physicalRows = scalar(c, "SELECT COUNT(*) FROM deliverables WHERE action_id=?", actionId);
+                assertThat(physicalRows).as("无过滤（原生 JDBC）物理包含两行（正反例对照）").isEqualTo(2L);
             }
         }
     }
