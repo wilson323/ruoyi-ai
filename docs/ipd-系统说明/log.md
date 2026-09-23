@@ -11065,3 +11065,18 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
   - /private/tmp/ipd-new.jar / ipd-in-jar.jar / ipd-cookie.txt / check-ipd-frontend-drift.wt.sh.bak / check-log.sh / check-drift.sh：早期 jar 比对与脚本备份，非本会话创建，保留
   - /private/tmp/ipd-cookies.txt（Sep 22 17:48）：live 测试 cookie 残留，按撞号透明保留（cookie 不可给其他会话用，但 24h 后自然过期）
 - **撞号必接**：本段接续 e244bfee 后，登记本会话全局收口动作。兄弟 24 个 worktree 状态快照保留，待各自 owner 评估是否清理。
+
+## 2026-09-23 生产就绪 E2E 真活验证 — 登录链路三证律 FULL PASS
+- **目标**：用户指令「确保本项目生产就绪」，本会话先做最小三证律真活验证（残留三件第 2 项）+ 全 P0 缺口盘点。
+- **环境 fresh 现查**：后端 16039 jar PID 49049 ipd-local,dev profile / 前端 15666 vite dev PID 85166 / MySQL 13306 真库 157 表 / drift-check 0。
+- **三证齐全**：
+  - HTTP：`POST /auth/login` 200 + 5 字段包络 + token 187 + scope=FULL + person=900101；`GET /projects` 200 + 28 行真实业务
+  - DB：`audit_logs` seq=3370→3374 哈希链连续 5 行（3374 是浏览器真活点击登录的审计，时间 15:43:17）；`projects` 表 45 行
+  - 浏览器：chromium `GET /login`（清 cookie 后）→ fill_form 填 ipd-admin/Ipd@123456 → click 登录 → 跳转 `/ipd/workbench` → 15 菜单模块 + 29 项目下拉 + 8 责任任务 + 4 统计卡全可见
+- **截图与报告**：`docs/ipd-系统说明/验收/e2e-prod-readiness-20260923/` 4 张截图 + REPORT.md（74 行）
+- **R28 残留三件更新**：
+  - ① audit_logs 索引 apply：**未 apply**（DDL 高风险，需用户点头）
+  - ② E2E：**本轮 FULL PASS** ✓
+  - ③ 重启 16039：事实 closed
+- **R170 P0 清单**：8 项 owner 拍板待推（P0-1/3/7/8/10/11/12/13）
+- **责任边界**：本会话不擅自 DDL / 不擅自推 owner 拍板项；撞号透明登记，待用户分批授权
