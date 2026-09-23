@@ -11046,3 +11046,22 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - 拍板：修法①（后端限流改 HTTP 429）不做。理由：前端透传修复已根治「真实用户限流看到错误提示」的生产 bug；改 429 会连锁打破 store 层 rateLimited 判定（cause.code===10001）、既有 mock 测试（auth-refresh/ipd-auth store 测试均锁 400+10001）与监控基线，收益为零、破坏面大。修法②（独立业务码）同理不做。§9.4 的「3 种修法待拍板」就此关闭。
 - 探针残留清理（ipd_dev 真库）：物理 DELETE 探针项目三表行——stage_actions 69 + project_stages 6 + projects 1（事务内，projects 加 name='live-verify-r179-final' 双条件锁定防误删）；uk_projects_product 释放，产品 2096324839605276674「在售导入A」恢复完全空闲（project_id=NULL/ON_SALE/del_flag=0，live 测试 1:1 稀缺资源回收）。audit_logs 保留 1 行探针审计（entity_type=projects/PROJECT_CREATE）——哈希链 append-only，删行断裂整链，指向已删实体与软删同语义可接受。
 - 附注：uk_projects_code 与 uk_projects_product 均为单列物理 uk（软删不释放），与 nextCode 缺陷同族设计事实；1:1 终身物理约束维持「登记不修」（产品级设计决策，非缺陷）。
+
+## 2026-09-22 全局工作树盘点与收口（主协调会话）
+- **三仓盘点范围**：后端 ruoyi-ai、前端 ruoyi-ipd-web、文档 ZK-IPD（顶层非 git 仓，目录下 .claude/.harness/.remember 工作区结构，跳过 git 操作）。
+- **主仓状态**：
+  - ruoyi-ai：HEAD=e244bfee（origin/main 同步，git status 空，clean）
+  - ruoyi-ipd-web：HEAD=3264ac5（origin/main 同步，git status 空，clean）
+- **本会话 worktree 清理**（已合 main，分支无未推）：
+  - /private/tmp/r179-p0-backend：HEAD=a7e3540a（合 main 后的 36d3c66b→5d1a9361→d6453b36→e244bfee 包含它）；worktree remove + branch -D r179-p0-backend ✓
+  - /private/tmp/r179-p0-frontend：HEAD=1fc4b8d（推 origin main，兄弟 3264ac5 在其上接手根因B）；worktree remove + branch -D r179-p0-frontend ✓
+- **兄弟会话 worktree 状态盘点（撞号透明登记，24 个不擅动）**：
+  - 后端 16 个：r174-p03-platform-token-20260922（8b11c582）、r177-a1-ui（0961a07c）、r177-a2-sm（8e0d30ec）、r177-a3-norm（3e1a0bf1）、r177-a4-data（f6dda38d）、r177-a5-spread（afde3123）、r177-a6-type（05616382）、ruoyi-ai-wt-p47/fix/p47-gate-element-closure（425393b8）、ruoyi-ai-wt-r120-v2/fix-r120-r25-gates-exit1（81120047）、ruoyi-ai-wt-r121-eval/fix/r125-r121-eval（084b89af）、ruoyi-ai-wt-r126-audit/fix/r126-audit（c7833943）、ruoyi-ai-wt-r126-backend/fix/r126-backend-rule（5e77c3a8）、ruoyi-ai-wt-r127-blindspot/fix/r127-blindspot（80d993c1）、ruoyi-ai-wt-r127-db/fix/r127-db-paiban（b7f0131a）、.claude/worktrees/wt-r127-be/fix/r127-be-paiban（c6e84356）、.claude/worktrees/wt-r157-e-b/wt-r157-e-b（88dd9d63）
+  - 前端 8 个（全部标 prunable，git 自动检测失去引用）：wt-P0-recovery（371de93）、wt-p1-1~4-frontend（68dc925/6ce5c93/ad40edc/6237129）、wt-p2trace/fix/p2-traceid-20260909（15c5ae5）、wt-W2-elem-fe（d72a62d）、wt-W2-kpi2a-fe（997fbc7）
+- **临时文件清理**：
+  - /tmp/probe_r179_live.sh：R179 探针脚本，本会话上一轮已删除 ✓
+  - /tmp/qa04_db_password：qa04 凭据文件，0600 模式，按 OPS-09 凭据不入版本控制保留
+  - /private/tmp/ipd-verify-*.png（8 张）：R178 真活验证截图，Sep 22 10:34-10:41 早于本会话 R179 工作（21:06 起），非本会话创建，撞号透明原则保留
+  - /private/tmp/ipd-new.jar / ipd-in-jar.jar / ipd-cookie.txt / check-ipd-frontend-drift.wt.sh.bak / check-log.sh / check-drift.sh：早期 jar 比对与脚本备份，非本会话创建，保留
+  - /private/tmp/ipd-cookies.txt（Sep 22 17:48）：live 测试 cookie 残留，按撞号透明保留（cookie 不可给其他会话用，但 24h 后自然过期）
+- **撞号必接**：本段接续 e244bfee 后，登记本会话全局收口动作。兄弟 24 个 worktree 状态快照保留，待各自 owner 评估是否清理。
