@@ -11362,3 +11362,8 @@ owner 提「发起招标为什么不能点，为什么测试没测出来」—�
 1. R182-P1 拍板：是否启动 P1 路由守卫扩展 + 后端鉴权接口契约改造
 2. R182-P2 拍板：是否统一改 `canCreateBid` 等组件内自判定为 v-access:code 标准模式
 3. R182-P3 拍板：是否启用 drift-guard meta.access 孤悬检查（动共享 hook，需 owner）
+
+### 撞号必接透明披露
+- 本会话 git add 后并发期，兄弟会话（author=Claude Code）抢先 commit 122e166b 入库同一 R182 段，commit message 采用兄弟会话精简版（要点齐但缺下一步拍板项 P1/P2/P3 详情）。
+- 本会话后续 commit 验证时 worktree 已 clean → nothing to commit → 未补充独立 commit。
+- 撞号必接原则生效：R182 段内容 52 行已入库（log.md 11312→11364 行），下步骤三项拍板项以本段为准。
