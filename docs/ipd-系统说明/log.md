@@ -11273,3 +11273,40 @@ owner 提「待后端补齐的能力 / 原型 12 项 KPI 表格 + 共担 KPI 确
 ### 限定
 - docs-only：未改 Java/Vue/yml/SQL；未动 SSOT 镜像主表（仅追加 log.md 末尾条目）；未重启 16039；未翻看板卡 status
 - 撞号透明：双仓同步 7f11de14 一致，本会话期间工作树 clean，兄弟最近 7f11de14 (e2e-p2d 验收目录补登) 0 交集；本决策无归属会话依赖，无撞号风险
+
+## 2026-09-23 08:5x R181 ZK-IPD §三.1.x 津贴风控 vs 后端 P3-3.2 口径对照：§三.1.5 前半已交付 / §三.1.4 与 AC-INC-07 口径冲突待 owner 拍板
+
+### 触发
+owner 贴 ZK-IPD 津贴风控规则 §三.1.2/§三.1.4/§三.1.5 三条，要求对照后端实现。本会话先 grep 后端风控现状 + 深挖 §三.1.5 前半（<60 停发）服务联动。发现三条规则的覆盖度与上轮 R180 同款——二条失真（原文说“未交付”/“半缺”实际已交付）、一条口径冲突。
+
+### 现状（ZK-IPD §三.1.x vs 后端 P3-3.2）
+
+| ZK-IPD 规则 | 后端实现 | 状态 |
+|---|---|---|
+| §三.1.2 多项目叠加封顶 2 倍等级额度（L1=1000..L5=3000） | `AllowanceLedgerService.java:55,97` `DEFAULT_CAP_MULTIPLIER=2.0`；`AllowanceService.java:85,127` AC-INC-03/04；金额走 `system_configs` 的 `allowance.L1..L5`（`ProjectMemberServiceImpl.java:28` 注释） | ✅ 已交付 |
+| §三.1.4 连续 2 个月无实质产出 → 提醒管理员复核（仅提醒不自动停发） | `AllowanceService.java:31` AC-INC-07：附加项目连续 60 天无产出（四类并集）→ 触发**待确认停发单**；`:178,208,213` 返回 `STOP_NO_OUTPUT_60_DAYS` | ❌ **口径冲突** |
+| §三.1.5 < 60 分当月停发 | `AllowanceService.java:89` `SCORE_STOP_THRESHOLD=60`；`:174-175` `if (<60) return "SCORE_BELOW_60"`；`:186-194` `determineLowScoreStop` 专用；`:221-232` P3-3.2 入口 `determineStopReasonP332` 已实装 | ✅ 已交付 |
+| §三.1.5 PM 中途移交不追溯重算 | `HandoverService.java:955,963-964` AC-HAND-08 按月在任归属；`ProjectMemberServiceImpl.java:27` 等级不追溯 | ✅ 已交付 |
+
+### 口径冲突详情（§三.1.4 vs AC-INC-07）
+
+| 维度 | ZK-IPD §三.1.4 | 后端 AC-INC-07/08 |
+|---|---|---|
+| 窗口 | 连续 2 个月 | 连续 60 天（`NO_OUTPUT_DAYS_THRESHOLD=60` AllowanceService.java:92） |
+| 触发动作 | **提醒管理员复核（仅提醒不自动停发）** | **写入 stopReason 触发待确认停发** |
+| 判定 | 无实质产出 | 无产出（动作/交付物/记录/Gate 四类并集） |
+| 主项目豁免 | 未限定 | AC-INC-08：主项目不触发停发 |
+
+**核心冲突**：ZK-IPD 明确「仅提醒不自动停发」，后端 AC-INC-07 实际是「停发流程入审计」。不是后端 bug，是业务口径定义冲突——两份文档说的不是同一件事。
+
+### 决策
+**§三.1.4 待 owner 拍板**——三种走向：
+- 走向 A：ZK-IPD 文档胜出 → 后端需加「提醒管理员」面（不动 stopReason 语义，另起 advisory_reason 字段 + NotificationController 推送 + 后台提醒页）；预计 1 Controller 补丁 + 1 字段 + 推送
+- 走向 B：后端 AC-INC-07 胜出 → ZK-IPD 文档改为「待确认停发」（产品侧不推荐）
+- 走向 C：双向调合 → AC-INC-07 不变，ZK-IPD 改为「连续 3 个月提醒 + 连续 4 个月停发」分级（两阶段）
+
+R181 仅登记不裁决，归属会话由 owner 拍板后接续。
+
+### 节省 / 限定
+- docs-only：仅追加 log.md 末尾条目；未改 Java/Vue/yml/SQL/SSOT 镜像主表/看板卡 status/16039
+- 撞号透明：双仓同步 fab37910 一致，工作树 clean，兄弟最近 fab37910 (R180 决策) 0 交集；本决策无归属会话依赖，无撞号风险
