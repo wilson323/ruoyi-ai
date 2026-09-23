@@ -1,0 +1,2274 @@
+[
+ {
+  "file": "AdminPermanentDelete",
+  "method": "POST",
+  "path": "/api/v1/admin/permanent-delete/1/1",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AdminPermanentDelete",
+  "method": "GET",
+  "path": "/api/v1/admin/permanent-delete/audit",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AiCopilot",
+  "method": "POST",
+  "path": "/api/v1/ai-copilot/chat",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiCopilot",
+  "method": "GET",
+  "path": "/api/v1/ai-copilot/chat/stream",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AiDocument",
+  "method": "POST",
+  "path": "/api/v1/ai-documents",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiDocument",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/generate",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiDocument",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/1/revise",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiDocument",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/1/versions/1/review",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiDocument",
+  "method": "GET",
+  "path": "/api/v1/ai-documents",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AiDocument",
+  "method": "GET",
+  "path": "/api/v1/ai-documents/1/versions",
+  "verdict": "ALIVE",
+  "http": "500",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AiDocument",
+  "method": "GET",
+  "path": "/api/v1/ai-documents/1/history",
+  "verdict": "ALIVE",
+  "http": "500",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AiDocument",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/1/versions/1/archive",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiDocument",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/1/versions/1/reject",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiDocument",
+  "method": "GET",
+  "path": "/api/v1/ai-documents/1/diff",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AiModelConfig",
+  "method": "GET",
+  "path": "/api/v1/ai-models",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AiModelConfig",
+  "method": "GET",
+  "path": "/api/v1/ai-models/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "AiModelConfig",
+  "method": "POST",
+  "path": "/api/v1/ai-models",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiModelConfig",
+  "method": "POST",
+  "path": "/api/v1/ai-models/1/update",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiModelConfig",
+  "method": "POST",
+  "path": "/api/v1/ai-models/1/enable",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AiModelConfig",
+  "method": "POST",
+  "path": "/api/v1/ai-models/1/test",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AllowanceLedger",
+  "method": "GET",
+  "path": "/api/v1/allowance/ledger",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AllowanceLedger",
+  "method": "GET",
+  "path": "/api/v1/allowance/pending-stop",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "AllowanceLedger",
+  "method": "POST",
+  "path": "/api/v1/allowance/auto-scan",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "AuditLog",
+  "method": "GET",
+  "path": "/api/v1/audit-logs",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AuditLog",
+  "method": "GET",
+  "path": "/api/v1/audit-logs/verify",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AuditLog",
+  "method": "GET",
+  "path": "/api/v1/audit-logs/export",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AuditLog",
+  "method": "GET",
+  "path": "/api/v1/audit-logs/scope",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AuditLog",
+  "method": "GET",
+  "path": "/api/v1/audit-logs/export/scope",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "AuditLog",
+  "method": "POST",
+  "path": "/api/v1/audit-logs/rebuild-chain",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "POST",
+  "path": "/api/v1/bid-invitations",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "GET",
+  "path": "/api/v1/bid-invitations",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Bid",
+  "method": "GET",
+  "path": "/api/v1/bid-invitations/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 招标单不存在: 1"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-invitations/1/publish",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-invitations/1/select",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "POST",
+  "path": "/api/v1/bid-invitations/1/pre-select-token",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-invitations/1/withdraw",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-invitations/1/close",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-invitations/1/modify",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-invitations/1/admin-assign",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "GET",
+  "path": "/api/v1/bid-invitations/1/responses",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 招标单不存在: 1"
+ },
+ {
+  "file": "Bid",
+  "method": "GET",
+  "path": "/api/v1/bid-responses/by-rd-pm/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Bid",
+  "method": "POST",
+  "path": "/api/v1/bid-responses",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Bid",
+  "method": "PUT",
+  "path": "/api/v1/bid-responses/1/withdraw",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BidP231",
+  "method": "POST",
+  "path": "/api/v1/bid-invitations/p231-create",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BonusPool",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BonusPool",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/auto-compute",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BonusPool",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/1/freeze",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BonusPool",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/1/distribute",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BonusPool",
+  "method": "GET",
+  "path": "/api/v1/bonus-pool/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 奖金池不存在: 1"
+ },
+ {
+  "file": "BonusPool",
+  "method": "GET",
+  "path": "/api/v1/bonus-pool/list",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "BonusPool",
+  "method": "GET",
+  "path": "/api/v1/bonus-pool/page",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "BonusPool",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/coefficient/preview",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BusinessConfig",
+  "method": "GET",
+  "path": "/api/v1/business-config",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "BusinessConfig",
+  "method": "POST",
+  "path": "/api/v1/business-config",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "BusinessConfig",
+  "method": "DELETE",
+  "path": "/api/v1/business-config",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "CertTemplate",
+  "method": "GET",
+  "path": "/api/v1/cert-templates/resolve",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "CertTemplate",
+  "method": "GET",
+  "path": "/api/v1/cert-templates",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "CertTemplate",
+  "method": "GET",
+  "path": "/api/v1/cert-templates/country-counts",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "CertTemplate",
+  "method": "POST",
+  "path": "/api/v1/cert-templates",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "CertTemplate",
+  "method": "POST",
+  "path": "/api/v1/cert-templates/1/remove",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "CoefficientChange",
+  "method": "POST",
+  "path": "/api/v1/coefficient-change-requests",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "CoefficientChange",
+  "method": "POST",
+  "path": "/api/v1/coefficient-change-requests/1/leader-decision",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "CoefficientChange",
+  "method": "GET",
+  "path": "/api/v1/coefficient-change-requests",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "CoefficientChange",
+  "method": "GET",
+  "path": "/api/v1/coefficient-change-requests/1",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Compliance",
+  "method": "GET",
+  "path": "/api/v1/compliance/data-retention-rules",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Compliance",
+  "method": "POST",
+  "path": "/api/v1/compliance/data-deletion-request",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Compliance",
+  "method": "GET",
+  "path": "/api/v1/compliance/audit-trail/1/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Compliance",
+  "method": "GET",
+  "path": "/api/v1/compliance/permission-separation/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "Contribution",
+  "method": "GET",
+  "path": "/api/v1/contributions/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在或已删除"
+ },
+ {
+  "file": "Contribution",
+  "method": "GET",
+  "path": "/api/v1/contributions/1/versions",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在或已删除"
+ },
+ {
+  "file": "Contribution",
+  "method": "POST",
+  "path": "/api/v1/contributions/1/preview",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Contribution",
+  "method": "POST",
+  "path": "/api/v1/contributions/1/save",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Contribution",
+  "method": "POST",
+  "path": "/api/v1/contributions/1/market-share",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Contribution",
+  "method": "POST",
+  "path": "/api/v1/contributions/1/confirm",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests/1/leader-decision",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests/1/admin-decision",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "GET",
+  "path": "/api/v1/deletion-requests/archive",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests/1/purge",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests/1/withdraw",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests/escalate-overdue",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "GET",
+  "path": "/api/v1/deletion-requests/overdue-admin-review",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "GET",
+  "path": "/api/v1/deletion-requests/my-requests",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "DeletionRequest",
+  "method": "GET",
+  "path": "/api/v1/deletion-requests/review-queue",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Demand",
+  "method": "GET",
+  "path": "/api/v1/demands",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Demand",
+  "method": "POST",
+  "path": "/api/v1/demands/1/triage",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Demand",
+  "method": "POST",
+  "path": "/api/v1/demands/1/link-project",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "GET",
+  "path": "/api/v1/gate-elements",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/update",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/disable",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/publish",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/archive",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/copy",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/revert",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "GET",
+  "path": "/api/v1/gate-elements/manage",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/duplicate",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElement",
+  "method": "POST",
+  "path": "/api/v1/gate-elements/1/restore",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElementResult",
+  "method": "GET",
+  "path": "/api/v1/gates/1/elements",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "GateElementResult",
+  "method": "POST",
+  "path": "/api/v1/gates/1/element-results",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElementResult",
+  "method": "GET",
+  "path": "/api/v1/gates/1/legacy",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "GateElementResult",
+  "method": "POST",
+  "path": "/api/v1/gates/1/element-results/1/close",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateElementResult",
+  "method": "POST",
+  "path": "/api/v1/gates/1/submit",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateMaterial",
+  "method": "GET",
+  "path": "/api/v1/gates/1/materials",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/sign",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "GET",
+  "path": "/api/v1/gates/1/review",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/reopen",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/extend-deadline",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/arbitrate",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/final-ruling",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/observers/invite",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "POST",
+  "path": "/api/v1/gates/1/observers/1/opinion",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateReview",
+  "method": "GET",
+  "path": "/api/v1/gates/1/observers",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "GateSignScan",
+  "method": "POST",
+  "path": "/api/v1/gates/sign/scan-timeout",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "GateSignScan",
+  "method": "POST",
+  "path": "/api/v1/gates/sign/scan-remind",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers/batch",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers/1/accept",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers/1/cancel",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "GET",
+  "path": "/api/v1/handovers/inbox",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers/super-admin",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers/scan-overdue",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "POST",
+  "path": "/api/v1/handovers/1/archive",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Handover",
+  "method": "GET",
+  "path": "/api/v1/handovers/monthly-attribution",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "HrSync",
+  "method": "POST",
+  "path": "/api/v1/hr-sync/mark-resigned",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "HrSync",
+  "method": "POST",
+  "path": "/api/v1/hr-sync/escalate-stale-resignations",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "HrSync",
+  "method": "GET",
+  "path": "/api/v1/hr-sync/pending-handovers",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "HrSync",
+  "method": "POST",
+  "path": "/api/v1/hr-sync/sync-now",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "HrSync",
+  "method": "POST",
+  "path": "/api/v1/hr-sync/sync-one",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "HrSync",
+  "method": "GET",
+  "path": "/api/v1/hr-sync/last-run",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "IpdAuth",
+  "method": "POST",
+  "path": "/api/v1/auth/login",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "IpdAuth",
+  "method": "POST",
+  "path": "/api/v1/auth/wecom/qr-login",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "IpdAuth",
+  "method": "GET",
+  "path": "/api/v1/auth/me",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "IpdAuth",
+  "method": "POST",
+  "path": "/api/v1/auth/logout",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "IpdAuth",
+  "method": "POST",
+  "path": "/api/v1/auth/refresh",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "IpdAuth",
+  "method": "POST",
+  "path": "/api/v1/auth/change-password",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "IpdSse",
+  "method": "GET",
+  "path": "/api/v1/resource/sse",
+  "verdict": "ALIVE",
+  "http": "401",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "KpiFunctionalMetrics",
+  "method": "GET",
+  "path": "/api/v1/kpi/functional-metrics",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "KpiFunctionalMetrics",
+  "method": "GET",
+  "path": "/api/v1/kpi/functional-metrics/codes",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "KpiFunctionalMetrics",
+  "method": "PUT",
+  "path": "/api/v1/kpi/functional-metrics",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "KpiFunctionalMetrics",
+  "method": "DELETE",
+  "path": "/api/v1/kpi/functional-metrics/1",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "KpiRawRecord",
+  "method": "POST",
+  "path": "/api/v1/kpi/raw-records",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "KpiRawRecord",
+  "method": "GET",
+  "path": "/api/v1/kpi/raw-records",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "KpiRawRecord",
+  "method": "GET",
+  "path": "/api/v1/kpi/raw-records/types",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "KpiRecord",
+  "method": "GET",
+  "path": "/api/v1/kpi/functional",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "KpiRecord",
+  "method": "GET",
+  "path": "/api/v1/kpi/performance",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "KpiRecord",
+  "method": "GET",
+  "path": "/api/v1/kpi/trend",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "KpiRules",
+  "method": "GET",
+  "path": "/api/v1/kpi/rules",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "LandedScenario",
+  "method": "POST",
+  "path": "/api/v1/scenarios/landed",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "LandedScenario",
+  "method": "POST",
+  "path": "/api/v1/scenarios/landed/import",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "LandedScenario",
+  "method": "GET",
+  "path": "/api/v1/scenarios/landed",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "LaunchDateChange",
+  "method": "POST",
+  "path": "/api/v1/launch-date-change-requests",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "LaunchDateChange",
+  "method": "POST",
+  "path": "/api/v1/launch-date-change-requests/1/second-decision",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "LaunchDateChange",
+  "method": "GET",
+  "path": "/api/v1/launch-date-change-requests",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "LaunchDateChange",
+  "method": "GET",
+  "path": "/api/v1/launch-date-change-requests/1",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "LegacyScan",
+  "method": "POST",
+  "path": "/api/v1/gates/legacy/scan-overdue",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Menu",
+  "method": "GET",
+  "path": "/api/v1/system/menu/getRouters",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "POST",
+  "path": "/api/v1/negative-feedbacks",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "PUT",
+  "path": "/api/v1/negative-feedbacks/1/submit",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "PUT",
+  "path": "/api/v1/negative-feedbacks/1/decide",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "PUT",
+  "path": "/api/v1/negative-feedbacks/1/lift",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "GET",
+  "path": "/api/v1/negative-feedbacks/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "GET",
+  "path": "/api/v1/negative-feedbacks",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "GET",
+  "path": "/api/v1/negative-feedbacks/by-project/1/effective",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "GET",
+  "path": "/api/v1/negative-feedbacks/by-project/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "GET",
+  "path": "/api/v1/negative-feedbacks/by-severity/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "PUT",
+  "path": "/api/v1/negative-feedbacks/1/status",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "NegativeFeedback",
+  "method": "DELETE",
+  "path": "/api/v1/negative-feedbacks/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "Notification",
+  "method": "GET",
+  "path": "/api/v1/notifications",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Notification",
+  "method": "GET",
+  "path": "/api/v1/notifications/unread-count",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Notification",
+  "method": "POST",
+  "path": "/api/v1/notifications/1/read",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Notification",
+  "method": "POST",
+  "path": "/api/v1/notifications/read-all",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Notification",
+  "method": "POST",
+  "path": "/api/v1/notifications/dispatch-pending",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Notification",
+  "method": "POST",
+  "path": "/api/v1/notifications/async-dispatch",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "P0Escalation",
+  "method": "GET",
+  "path": "/api/v1/p0/escalation-chain",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "P0Escalation",
+  "method": "POST",
+  "path": "/api/v1/p0/escalation-chain/check",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "P0Escalation",
+  "method": "POST",
+  "path": "/api/v1/p0/escalation-chain/1/resolve",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Person",
+  "method": "POST",
+  "path": "/api/v1/persons/1/resign",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Person",
+  "method": "POST",
+  "path": "/api/v1/persons/1/rehire",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Person",
+  "method": "POST",
+  "path": "/api/v1/persons/1/wecom/unbind",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "PersonSync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "PersonSync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs/1/retry",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "PersonSync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs/retry-all",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "PersonSync",
+  "method": "GET",
+  "path": "/api/v1/person-sync/jobs",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "PersonSync",
+  "method": "GET",
+  "path": "/api/v1/person-sync/jobs/abnormal",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "PmDirectory",
+  "method": "GET",
+  "path": "/api/v1/pm-directory",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "PostLaunchReview",
+  "method": "GET",
+  "path": "/api/v1/post-launch-reviews/pending",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "PostLaunchReview",
+  "method": "POST",
+  "path": "/api/v1/post-launch-reviews",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "PostLaunchReview",
+  "method": "POST",
+  "path": "/api/v1/post-launch-reviews/1/complete",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Product",
+  "method": "GET",
+  "path": "/api/v1/products",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Product",
+  "method": "GET",
+  "path": "/api/v1/products/1",
+  "verdict": "ALIVE",
+  "http": "500",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Product",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Product",
+  "method": "PUT",
+  "path": "/api/v1/products/1",
+  "verdict": "CHECK",
+  "http": "500",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Product",
+  "method": "POST",
+  "path": "/api/v1/products/batch-import",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Product",
+  "method": "POST",
+  "path": "/api/v1/products/1/bind-project",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Product",
+  "method": "POST",
+  "path": "/api/v1/products/1/unbind-project",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Product",
+  "method": "POST",
+  "path": "/api/v1/products/1/status",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProductGroup",
+  "method": "GET",
+  "path": "/api/v1/product-groups",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "ProductGroup",
+  "method": "GET",
+  "path": "/api/v1/product-groups/1",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "ProductGroup",
+  "method": "POST",
+  "path": "/api/v1/product-groups",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProductGroup",
+  "method": "POST",
+  "path": "/api/v1/product-groups/1/leader",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProductGroup",
+  "method": "POST",
+  "path": "/api/v1/product-groups/1/remove",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProductWorkspace",
+  "method": "GET",
+  "path": "/api/v1/products/1/workspace",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 产品不存在"
+ },
+ {
+  "file": "ProjectCircle",
+  "method": "GET",
+  "path": "/api/v1/project-circle/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在"
+ },
+ {
+  "file": "ProjectCircle",
+  "method": "GET",
+  "path": "/api/v1/project-circle/1/candidates",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在"
+ },
+ {
+  "file": "ProjectCircle",
+  "method": "POST",
+  "path": "/api/v1/project-circle/1/members",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在"
+ },
+ {
+  "file": "ProjectCircle",
+  "method": "POST",
+  "path": "/api/v1/project-circle/1/posts",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProjectCircle",
+  "method": "POST",
+  "path": "/api/v1/project-circle/posts/1/comments",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProjectCircle",
+  "method": "GET",
+  "path": "/api/v1/project-circle/1/members",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在"
+ },
+ {
+  "file": "Project",
+  "method": "GET",
+  "path": "/api/v1/projects",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Project",
+  "method": "GET",
+  "path": "/api/v1/projects/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Project",
+  "method": "GET",
+  "path": "/api/v1/projects/1/gate-checklist",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/status",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/advance-stage",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/baselines",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/legacy-import",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/legacy-import/batch",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/launch-date",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/gates",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "GET",
+  "path": "/api/v1/projects/1/gates",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Project",
+  "method": "GET",
+  "path": "/api/v1/projects/1/cert-items",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/cert-items/sync",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/cert-items",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "Project",
+  "method": "POST",
+  "path": "/api/v1/projects/1/cert-items/1/status",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProjectMember",
+  "method": "POST",
+  "path": "/api/v1/projects/1/members",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProjectMember",
+  "method": "GET",
+  "path": "/api/v1/projects/1/members",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "ProjectScore",
+  "method": "POST",
+  "path": "/api/v1/project-scores",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProjectScore",
+  "method": "GET",
+  "path": "/api/v1/project-scores/1/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在"
+ },
+ {
+  "file": "ProjectScore",
+  "method": "GET",
+  "path": "/api/v1/project-scores/1/1/settle",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 项目不存在"
+ },
+ {
+  "file": "ProjectScoreTask",
+  "method": "POST",
+  "path": "/api/v1/project-score-tasks/scan",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ProjectScoreTask",
+  "method": "GET",
+  "path": "/api/v1/project-score-tasks/my",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "PublicPortal",
+  "method": "POST",
+  "path": "/api/v1/public/demands",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "PublicPortal",
+  "method": "GET",
+  "path": "/api/v1/public/products",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "PublicPortal",
+  "method": "GET",
+  "path": "/api/v1/public/demands/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "ReceiptLedger",
+  "method": "POST",
+  "path": "/api/v1/receipt-ledgers",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ReceiptLedger",
+  "method": "POST",
+  "path": "/api/v1/receipt-ledgers/1/refunds",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "ReceiptLedger",
+  "method": "GET",
+  "path": "/api/v1/receipt-ledgers/by-project/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "RecoveryWarning",
+  "method": "POST",
+  "path": "/api/v1/recovery/check-90d",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "RecoveryWarning",
+  "method": "GET",
+  "path": "/api/v1/recovery/warnings",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Report",
+  "method": "GET",
+  "path": "/api/v1/report/project-summary",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Report",
+  "method": "GET",
+  "path": "/api/v1/report/export/allowance",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Report",
+  "method": "GET",
+  "path": "/api/v1/report/export/bonus",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Report",
+  "method": "GET",
+  "path": "/api/v1/report/export/project",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "RequirementChange",
+  "method": "POST",
+  "path": "/api/v1/requirement-changes",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "RequirementChange",
+  "method": "PUT",
+  "path": "/api/v1/requirement-changes/1/submit",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "RequirementChange",
+  "method": "PUT",
+  "path": "/api/v1/requirement-changes/1/sign",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "RequirementChange",
+  "method": "GET",
+  "path": "/api/v1/requirement-changes/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 资源不存在"
+ },
+ {
+  "file": "RequirementChange",
+  "method": "GET",
+  "path": "/api/v1/requirement-changes",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "RequirementChange",
+  "method": "GET",
+  "path": "/api/v1/requirement-changes/open",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "SharedKpi",
+  "method": "POST",
+  "path": "/api/v1/kpi/shared",
+  "verdict": "PATH_OK",
+  "http": "400",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SharedKpi",
+  "method": "POST",
+  "path": "/api/v1/kpi/shared/deadline-scan",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SharedKpi",
+  "method": "GET",
+  "path": "/api/v1/kpi/shared",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "SharedKpi",
+  "method": "GET",
+  "path": "/api/v1/kpi/shared/deadline-config",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "SharedKpi",
+  "method": "GET",
+  "path": "/api/v1/kpi/shared/confirms",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "SharedKpi",
+  "method": "POST",
+  "path": "/api/v1/kpi/shared/1/confirm",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "GET",
+  "path": "/api/v1/sop-templates",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "GET",
+  "path": "/api/v1/sop-templates/current",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "GET",
+  "path": "/api/v1/sop-templates/1",
+  "verdict": "ALIVE",
+  "http": "404",
+  "note": "业务404 code=50001 SOP 模板不存在: 1"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "POST",
+  "path": "/api/v1/sop-templates/1/copy",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "POST",
+  "path": "/api/v1/sop-templates/1/update",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "POST",
+  "path": "/api/v1/sop-templates/1/publish",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "POST",
+  "path": "/api/v1/sop-templates/1/revert",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "POST",
+  "path": "/api/v1/sop-templates/1/instantiate",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SopTemplate",
+  "method": "GET",
+  "path": "/api/v1/sop-templates/instances",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "StageAction",
+  "method": "GET",
+  "path": "/api/v1/stage-actions",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "StageAction",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/1/transit",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "StageAction",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/1/fields",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "StageAction",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/1/deliverables",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "StageAction",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/instantiate",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "StageAction",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/ensure-bio-compliance",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SwitchingAcceptance",
+  "method": "POST",
+  "path": "/api/v1/switching-acceptance/1/run",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SwitchingAcceptance",
+  "method": "GET",
+  "path": "/api/v1/switching-acceptance/1",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "SwitchingAcceptance",
+  "method": "POST",
+  "path": "/api/v1/switching-acceptance/1/lock",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SwitchingAcceptance",
+  "method": "POST",
+  "path": "/api/v1/switching-acceptance/1/unlock",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SwitchingAcceptance",
+  "method": "GET",
+  "path": "/api/v1/switching-acceptance",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "SystemConfig",
+  "method": "GET",
+  "path": "/api/v1/system-configs",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "SystemConfig",
+  "method": "GET",
+  "path": "/api/v1/system-configs/1",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "SystemConfig",
+  "method": "PUT",
+  "path": "/api/v1/system-configs/1",
+  "verdict": "PATH_OK",
+  "http": "200",
+  "note": "GET探得非405,人工复核"
+ },
+ {
+  "file": "SystemConfig",
+  "method": "GET",
+  "path": "/api/v1/system-configs/1/versions",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "SystemConfig",
+  "method": "GET",
+  "path": "/api/v1/system-configs/1/as-of",
+  "verdict": "ALIVE",
+  "http": "400",
+  "note": "活(业务校验/权限)"
+ },
+ {
+  "file": "Workbench",
+  "method": "GET",
+  "path": "/api/v1/workbench/summary",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Workbench",
+  "method": "GET",
+  "path": "/api/v1/workbench/my-initiated",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ },
+ {
+  "file": "Workbench",
+  "method": "GET",
+  "path": "/api/v1/workbench/my-pending-approvals",
+  "verdict": "ALIVE",
+  "http": "200",
+  "note": "真活"
+ }
+]
