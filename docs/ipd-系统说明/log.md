@@ -11177,4 +11177,20 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - **改动**：`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/advice/IpdServiceExceptionAdvice.java` 加 `import jakarta.validation.ConstraintViolationException` + 新增 `@ExceptionHandler(ConstraintViolationException.class)`：取首条 violation 的 path + message → ApiV1Response.fail(PARAM_INVALID)，与 handleValidation 同构、不回显用户输入值、与 handleTypeMismatch 同口径。
 - **验证**：错峰 `mvn -o -pl ruoyi-modules/ruoyi-ipd compile` BUILD SUCCESS（485 源文件，8.8s，无 ERROR）。
 - **限制（诚实暴露）**：未重启 16039 跑运行时实测；兄弟会话可能正在用旧 jar 跑验证，强重启会打断——commit message 标「待重启 16039 后生效」，运行中 JVM 仍是旧代码（period=bad 仍 500/90001）。验证需 owner/兄弟拍板重启时机后跑同探针确认。
-- **撞号透明**：advice mtime 09-19 + 自 09-22 起 git log 无 advice commit，兄弟没动；本会话期间兄弟新推 452d6ca0/192444db（docs 类）与本改动 0 交集。
+- **撞号透明**：advice mtime 09-19 + 自 09-22 起 git log 无 advice commit，兄弟 没动；本会话期间兄弟新推 452d6ca0/192444db（docs 类）与本改动 0 交集。
+
+## 2026-09-23 04:xx R179-P1 治理收口补登（事项 ① 三证方法学 + 事项 ③ WB-17-1 spec 模板）
+
+- **触发**：上一会话交付 3 件 commit（事项 ② 96fdfc22 / 事项 ③ 452d6ca0 / 事项 ① 192444db），本会话核查发现 log.md + 看板镜像双双漏登 452d6ca0 与 192444db 两件，仅 96fdfc22 由兄弟收口时连带登记（11163/11166 行）；违反 R25 五类病根 ⑤「多事实源无对账」+ OPS-09「主协调会话写 SSOT」原则，owner 授权「继续」后立刻补登。
+- **事项 ③ 详情**：commit 452d6ca0（docs(R179-P1): WB-17-1 taskType 字段级 spec 填写模板）；新增 `docs/ipd-系统说明/WB-17-1-tasktype字段级spec填写模板-20260923.md`；不动现有 `workbench-tasktype-契约登记.yaml`（避免与兄弟会话 `agent-batch8-wb171` 撞号）；owner 可直接编辑该 MD 文档填 8 类 PLANNED 字段定义；填完后由后续 R 轮合并回契约登记 + 同步扩展 `WorkbenchTaskContractDriftTest` 门禁。
+- **事项 ① 详情**：commit 192444db（docs(R179-P1): P1-2 三证方法学与模板）；新增 `docs/ipd-系统说明/P1-2-三证方法学与模板-20260923.md`；关键发现：49 张 P0-10.x 页面三证卡**全部标 ⊘ 移出待办池：整体移交前端仓库会话**——主责归前端仓 `ruoyi-ipd-web`，本仓不主动跑前端页面（避免撞号）；方法学含三件套产出格式（截图 + API trace + DB SQL）+ 5 步操作流程 + 剩余 45 页清单 + L2 模板化推进估算 + 风险红线。
+- **接力链条**：① owner 填事项 ③ 8 类字段级 spec；② 前端仓会话按事项 ① 方法学跑剩余 37 张页面；③ 本仓后续会话等 owner spec 后做 8 类 PLANNED 聚合器扩展（不抢 agent-batch8-wb171 兄弟会话派单）。
+- **限定**：本会话未改 Java/Vue/yml/SQL；未动 SSOT 镜像主表（仅追加末尾条目）；未重启 16039；兄弟 3aae38d8（fix(advice) handler）已在 HEAD 一致，撞号 0。
+
+## 2026-09-23 03:2x R179-P2b 问题2 只读诊断结论：非缺陷，环境诱因自动恢复
+- **触发**：owner 选 B「排查问题2（日志冻结，只读诊断）」。
+- **诊断动作**（全程只读，零重启/零改动）：stat 日志文件 + lsof fd offset + jstack 线程 + ps JVM + df 磁盘。
+- **真相**：02:39~03:1x 的低写入窗口是真实事件，但 03:1x 后**日志系统已自动恢复**——现在 sys-info.log mtime 03:21:21、fd offset 与磁盘 size 一致，写入健康。jstack 验证 logback AsyncAppender-Worker 2 个线程均 WAITING(parking) 标准 idle，无 BLOCKED 无死锁；13 XNIO worker 全活跃。
+- **根因**（非 bug）：磁盘 98% 满（460G/419G/9.6G free）→ macOS APFS 高水位 → fdatasync 偶发慢 → logback async worker 偶发卡盘 → 队列自然排空后批量回写，mtime 跳跃更新。完全不影响业务（请求走 XNIO worker，与 logback 异步写盘路径解耦）。
+- **结论**：不需改代码、不需重启；磁盘清理属本机环境治理，不在仓内职责。可选加固：监控 sys-info.log mtime > 10min 未更新即告警（devops 范畴）。
+- **R179-P2b 问题2 关闭**。当前 local=remote=3aae38d8（advice 修复 commit），工作树 clean，兄弟 staged 文件 0。
