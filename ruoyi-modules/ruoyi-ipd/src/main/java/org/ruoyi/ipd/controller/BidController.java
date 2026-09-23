@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.domain.Person;
@@ -70,7 +71,7 @@ public class BidController {
     @GetMapping("/bid-invitations/{id}")
     public ApiV1Response<BidInvitation> getInvitation(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(bidInvitationService.getById(id));
+        return ApiV1Response.ok(IpdResources.requireOrNotFound(bidInvitationService.getById(id), id, "招标邀请"));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)

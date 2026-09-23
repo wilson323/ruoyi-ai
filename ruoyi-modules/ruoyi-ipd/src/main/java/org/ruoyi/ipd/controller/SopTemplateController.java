@@ -3,6 +3,7 @@ package org.ruoyi.ipd.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.SopTemplate;
 import org.ruoyi.ipd.domain.SopTemplateInstance;
 import org.ruoyi.ipd.dto.SopTemplateListItem;
@@ -60,7 +61,7 @@ public class SopTemplateController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_SOP_TEMPLATE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<SopTemplate> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(sopTemplateService.getById(id));
+        return ApiV1Response.ok(IpdResources.requireOrNotFound(sopTemplateService.getById(id), id, "SOP模板"));
     }
 
     /** 复制 PUBLISHED/ARCHIVED 为新草稿（仅超管；已有草稿时 409） */

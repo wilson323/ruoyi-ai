@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.dto.ProductGroupLeaderReq;
 import org.ruoyi.ipd.security.IpdActor;
@@ -48,7 +49,7 @@ public class ProductGroupController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProductGroup> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(productGroupService.getById(id));
+        return ApiV1Response.ok(IpdResources.requireOrNotFound(productGroupService.getById(id), id, "产品组"));
     }
 
     /** 新建产品组，需 ipd:product:add 权限 */

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.dto.ComputeBonusPoolReq;
 import org.ruoyi.ipd.dto.AutoComputeBonusPoolReq;
@@ -142,7 +143,7 @@ public class BonusPoolController {
     @GetMapping("/{id}")
     public ApiV1Response<BonusPoolVO> getById(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.getById(id)));
+        return ApiV1Response.ok(BonusPoolVO.from(IpdResources.requireOrNotFound(bonusPoolService.getById(id), id, "奖金池")));
     }
 
     /**

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectCertItem;
 import org.ruoyi.ipd.dto.GateChecklistView;
@@ -81,7 +82,7 @@ public class ProjectController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(projectService.getById(id));
+        return ApiV1Response.ok(IpdResources.requireOrNotFound(projectService.getById(id), id, "项目"));
     }
 
     /**
