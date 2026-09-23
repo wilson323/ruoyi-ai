@@ -11469,3 +11469,9 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 1. **R185-P1 拍板**：是否启动 R182-P1 路由守卫扩展 + 后端鉴权接口契约改造（契约提案见前端仓 docs）
 2. **R185-P2 拍板**：是否启用 3 个门禁脚本骨架实装（FAIL_SEED 双向触发，动共享 hook 需 owner）
 3. **R185-P3 拍板**：是否把 M-Root-12 多套闸不同步纳入 R142 元根因体系（更新 BCP-Registry / BCP-Closure-Log）
+
+### 撞号必接透明披露
+- 本会话 git add 后并发期，兄弟会话（author=Claude Code）抢先 commit 3a61c8e5 入库 R184 阶段 2 段（18 行）+ 本会话 R185 段（65 行），合计 83 行。
+- 兄弟 commit message 采用 R184(B) 标题，未提及 R185 段；本会话后续 commit 验证时 worktree 已 clean → nothing to commit → 未补充独立 commit。
+- 撞号必接原则生效：R185 段内容 65 行已入库（log.md 11408→11471 行），下步骤三项拍板项以本段为准。
+- 前端仓 2 个 docs-only 新文档（隐式依赖三反模式 166 行 + 门禁脚本骨架设计 288 行）待本会话独立 commit。
