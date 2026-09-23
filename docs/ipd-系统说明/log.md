@@ -11139,3 +11139,29 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
 - ⏸ elementCode 长度对齐卡（前端 64→16 或后端放宽，需产品确认）
 - ⏸ push fix/p47-gate-element-closure + 前端 main commit
 
+---
+
+## 2026-09-22 P47 续轮 — 未完成事项系统性梳理与根源性修复
+
+> 承接上节「等 owner 决定」，owner 要「结合未完成事项系统性梳理分析根源性修复」。事故文档 §9 同步。
+
+### 根源分析（三向对账：前端 maxlength ↔ 后端常量 ↔ DB 列宽）
+- **elementCode 错配真根因**：前端硬编码 maxlength=64，后端 CODE_MAX=16、DB varchar(16)，超 4 倍；复制弹窗 copyNewCode 同样 64（第二处）。深层＝病根④「前后端长度契约无门禁」，check-contract-tri-source.sh 只对账端点/权限不查长度，64 溜过。
+- **脏 DB Y/N 真根因**：历史 seed 初始化器把数组 "Y"/"N" 字面量直插 is_veto（未归一）；代码侧上轮已修（插入时转 1/0），新库干净，存量 33+ 脏行需迁移。
+- **备份表来源查明**：gate_review_elements_backup_20260922 ＝兄弟会话 R177 计划 L471 CREATE TABLE AS SELECT（仅 PUBLISHED 行局部备份），非我建，登记不碰。
+
+### 本轮根源修复（已落地+验证）
+1. **前端 maxlength 对齐**：index.vue elementCode(L583)+copyNewCode(L649) 两处 64→16 + 防漂移注释。验证 typecheck exit0 / vitest 14 绿 / CodeReview PASS。
+2. **幂等迁移 SQL**：docs/script/sql/update/2026-09-22-ipd-gate-element-value-domain-normalize.sql，归一 is_veto/veto_dual_required Y/N→1/0。事务干跑：归一后 is_veto={0:55,1:33}、vdr={0:81,1:7} 纯净，ROLLBACK 证零持久化；CodeReview PASS。**待 owner/DBA apply**（批量更新属副作用，不擅自执行）。
+
+### 门禁缺口（深层根因，登记交 owner；动共享 hook 影响兄弟会话，本轮不擅自加）
+- 病根④：无前后端字段长度契约门禁 → 建议扩展 check-contract-tri-source.sh 或新增长度哨兵。
+- 无 empty-commit 门禁 → 建议 pre-commit 加 git diff --cached --quiet 检测。
+
+### 等 owner 决定（更新：elementCode 已修，移出待办）
+- ✅ elementCode 长度对齐：本轮已根源修复（前端两处对齐 16）
+- ⏸ 脏 DB 迁移 SQL apply（已写+验证，待 owner/DBA 执行；测试要素 ZCL·ZPA·ZUI 留存期满后删）
+- ⏸ 空 commit 695214e6 history 清理（高风险，禁自动改写）
+- ⏸ 门禁扩展（长度契约哨兵 + empty-commit 检测，动共享 hook 需授权）
+- ⏸ push fix/p47-gate-element-closure（后端）+ 前端 main commit
+
