@@ -431,6 +431,58 @@ class AiCopilotServiceTest {
     }
 
     @Test
+    @DisplayName("ragContextBlock：docType 非空 → retrieveContext 第 2 参透传为 docType（PRD/MRD/技术方案/...）")
+    void ragContextBlockDocTypePassedThrough() {
+        // R184 阶段 3：前端 UI 让用户选 docType，后端必须把 docType 透传到 retrieveContext
+        // 让 SQL 按 idx_emb_doctype 走「仅该类型」语义，不是「同项目全类型」
+        stubEnabledConfig();
+        when(workbenchService.summary(any(), any(Long.class))).thenReturn(Map.of(
+            "projectAdvance", Map.of("stageCode", "TR4", "currentAdvance", "docType 过滤验证")
+        ));
+        when(projectMapper.selectById(9140001L)).thenReturn(project(9140001L));
+        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
+        // capture 进 retrieveContext 的第 2 参
+        ArgumentCaptor<String> docTypeCap = ArgumentCaptor.forClass(String.class);
+        when(docEmbeddingService.retrieveContext(any(), docTypeCap.capture(), any()))
+            .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
+        when(aiGateway.chat(any(), any(), any(), any(BigDecimal.class)))
+            .thenReturn(AiChatResult.ok("ok", 5, 10, 30L));
+
+        // 1) docType="PRD" → retrieveContext 第 2 参 = "PRD"
+        AiCopilotReq reqPrd = new AiCopilotReq(9140001L, "PRD 类文档怎么说", List.of(), "PRD");
+        service.chat(RD_PM, reqPrd);
+        assertEquals("PRD", docTypeCap.getValue(),
+            "docType=PRD 时 retrieveContext 第 2 参必为 \"PRD\"（不能丢成 null）");
+
+        // 2) docType=" MRD " 带空格 → trim 后 = "MRD"
+        docTypeCap = ArgumentCaptor.forClass(String.class);
+        when(docEmbeddingService.retrieveContext(any(), docTypeCap.capture(), any()))
+            .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
+        AiCopilotReq reqMrd = new AiCopilotReq(9140001L, "MRD 类", List.of(), " MRD ");
+        service.chat(RD_PM, reqMrd);
+        assertEquals("MRD", docTypeCap.getValue(),
+            "docType=\" MRD \" 必 trim 成 \"MRD\" 再透传");
+
+        // 3) docType=null（向后兼容） → 第 2 参 = null（不过滤）
+        docTypeCap = ArgumentCaptor.forClass(String.class);
+        when(docEmbeddingService.retrieveContext(any(), docTypeCap.capture(), any()))
+            .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
+        AiCopilotReq reqNull = new AiCopilotReq(9140001L, "不限定类型", List.of(), null);
+        service.chat(RD_PM, reqNull);
+        assertNull(docTypeCap.getValue(),
+            "docType=null → retrieveContext 第 2 参必为 null（兼容历史「全类型」语义）");
+
+        // 4) docType=blank → null（blank = 没选）
+        docTypeCap = ArgumentCaptor.forClass(String.class);
+        when(docEmbeddingService.retrieveContext(any(), docTypeCap.capture(), any()))
+            .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
+        AiCopilotReq reqBlank = new AiCopilotReq(9140001L, "blank", List.of(), "   ");
+        service.chat(RD_PM, reqBlank);
+        assertNull(docTypeCap.getValue(),
+            "docType=blank → 视同 null（不传 docType 过滤）");
+    }
+
+    @Test
     @DisplayName("composePrompt：history 超 MAX_HISTRY=8 → 仅取末尾 8 轮")
     void composePromptHistoryCap() {
         List<AiCopilotReq.CopilotTurn> hist = new java.util.ArrayList<>();

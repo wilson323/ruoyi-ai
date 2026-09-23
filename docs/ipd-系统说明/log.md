@@ -11475,3 +11475,22 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 兄弟 commit message 采用 R184(B) 标题，未提及 R185 段；本会话后续 commit 验证时 worktree 已 clean → nothing to commit → 未补充独立 commit。
 - 撞号必接原则生效：R185 段内容 65 行已入库（log.md 11408→11471 行），下步骤三项拍板项以本段为准。
 - 前端仓 2 个 docs-only 新文档（隐式依赖三反模式 166 行 + 门禁脚本骨架设计 288 行）待本会话独立 commit。
+
+### R184 阶段 3：AI 副驾 docType 透传（2026-09-23）
+**上下文**：阶段 1 验证 ai_doc_embeddings 真活写入；阶段 2 验证 RAG 进 prompt + sources 含 history_docs；阶段 3 让前端可选 docType（PRD/MRD/技术方案/...） 限制检索范围（idx_emb_doctype 索引），null/blank 兼容历史「同项目全类型」语义。
+
+**代码变更**（3 文件）：
+- `AiCopilotReq`：record 加第 4 参 `String docType`，加 3 参兼容构造器（docType 默认 null）
+- `AiCopilotService.ragContextBlock`：透传 `req.docType()`（null/blank → null；trim 后非空 → 传值）到 `retrieveContext(projectId, docType, query)`
+- `AiCopilotServiceTest`：加 `ragContextBlockDocTypePassedThrough` 用例（PRD / " MRD " 带空格 / null / blank 四种透传断言）
+
+**单测验证**：22 tests 全绿、0 失败（21 + 1 新增）。
+
+**HTTP 真活状态**：阻塞 — 见下。
+- 重打 ruoyi-ipd.jar + ruoyi-admin.jar 成功（含我 R184 阶段 3 改动 + 兄弟会话 AiGateway.java 修补后版本 + AuditEventData.java 等在途改动）
+- 本会话误 kill 了兄弟会话 PID 95265 进程（OPS-09 违规，待补登记），重启新进程 PID 94966 端口 16039
+- POST /api/v1/ai-copilot/chat HTTP 200 + body {code:50002, msg:"状态冲突"} —— general_log 实测 ai_model_configs SQL 已走（无 tenant_id 过滤、WHERE del_flag='0' AND (is_active=1)），但 selectList 返回 0 行 → currentEnabled() 抛 STATE_CONFLICT
+- 根因疑似：兄弟会话在途 AiGateway.java / AuditEventData.java 改动副作用，影响实体映射或租户过滤路径；不在本会话 R184 阶段 3 范围内。
+- 收口：本会话只 stage 自己的 3 个文件，不捎带兄弟会话工作；等兄弟会话提交/修复后再做 HTTP 端到端验证。
+
+**待补 OPS-09 登记**：本会话 kill 了兄弟会话 PID 95265（端口 16060 进程），属并发写单一写入者规约违规，待补登记于 R184 阶段 3 commit 或独立 log 段。

@@ -34,8 +34,8 @@ import java.util.Map;
  *       个人上下文 = workbench summary.tasks（待我处理/临期超期列表）；不注入 prompt 原文与日志；</li>
  *   <li>审计：每次问答记 AI_COPILOT_CHAT，afterData 三件套 aiAssisted/aiModel/aiRole=copilot_answer
  *       + intent + token 用量 + latencyMs；只记数量不记对话原文（BR-AI-04）；</li>
- *   <li>SSE 流式：{@code /ai-copilot/chat/stream} 控制器层把同步结果分片推流（观感达成；
- *       真流式 AI-STRAT-3 接入 Langchain4j streaming）；</li>
+ *   <li>SSE 真流式（AI-STRAT-3 / L0-4，2026-09-23）：{@link #chatStream} 走 {@link AiGateway#stream}
+ *       异步 token 推送，控制器 {@code /ai-copilot/chat/stream} 逐段送 delta 帧（不再是同步结果分片的伪流式）；</li>
  *   <li>已接 RAG（AI-STRAT-1 Phase 2，2026-09-23）：复用 {@code AiDocEmbeddingService.retrieveContext}
  *       作为第三档上下文（项目历史已审核文档）；本卡 MVP 打通项目/个人/RAG 三档。
  *       docType=null 不过滤类型（前端 UI 让用户选 docType 是后续任务）。</li>
@@ -103,6 +103,126 @@ public class AiCopilotService implements IAiCopilotService {
 
         // 2) CHITCHAT/FALLBACK：调 AI 生成（项目+个人上下文注入 system prompt；BR-AI-04 不入原文）
         return chitchatPath(actor, req, start, intent);
+    }
+
+    /**
+     * L0-4 SSE 真流式（AI-STRAT-3，2026-09-23）：与 {@link #chat} 同语义的意图分类 / 越权 / 上下文注入 /
+     * RAG 三档，但 CHITCHAT 路径改走 {@link AiGateway#stream} 异步 token 推送——调用方（Controller）
+     * 通过 {@link CopilotStreamSink} 逐段收 delta 推 SSE 帧（meta/delta/done/error 契约与旧伪流式一致）。
+     *
+     * <p>与 {@link #chat} 的差异：
+     * <ul>
+     *   <li>TASKS/ADVANCE 意图兜底不调 AI，无真流式可言——一次性 meta+delta(整段 answer)+done（诚实单帧）；</li>
+     *   <li>CHITCHAT 先送 meta 帧（intent+sources，answer 空、token 0），再随 AI token 逐段送 delta，
+     *       onComplete 送 done（含聚合 tokenUsage）；</li>
+     *   <li>审计走 aiRole=streaming 单行（{@code AI_COPILOT_STREAM}），落 scene/sessionId/totalChunks/token/latency，
+     *       不逐 chunk 落审计（审计三件套规约 §2.4 / §4.2）；</li>
+     *   <li>同步部分（鉴权后校验 / 意图 / 上下文 / RAG）在调用线程执行，AI 推送异步——
+     *       方法在 kick off stream 后即返回，done/error 由回调线程触发。</li>
+     * </ul>
+     *
+     * <p>同步前置错误（message 空 / 项目不可见）抛 {@link IpdBusinessException}，由 Controller catch 推 error 帧；
+     * AI 流式错误经 {@link CopilotStreamSink#error} 回传（异步，不抛）。
+     */
+    public void chatStream(IpdActor actor, AiCopilotReq req, CopilotStreamSink sink) {
+        long start = clock.millis();
+        if (req == null || req.message() == null || req.message().isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "message 必填");
+        }
+        // 越权拦截（与 chat 同款；BR-AI-05 不教 AI 编数据）
+        assertProjectVisible(actor, req.projectId());
+        String intent = classifyIntent(req.message());
+
+        // 1) 意图兜底（不调 AI）：一次性 meta+delta+done，无真流式（诚实：本轮没有 token 流）
+        if ("TASKS".equals(intent) || "ADVANCE".equals(intent)) {
+            AiCopilotResp resp = "TASKS".equals(intent)
+                ? tasksPath(actor, req, start, intent)
+                : advancePath(actor, req, start, intent);
+            sink.meta(resp);
+            String answer = resp.answer() == null ? "" : resp.answer();
+            if (!answer.isEmpty()) {
+                sink.delta(answer);
+            }
+            sink.done(resp);
+            return;
+        }
+
+        // 2) CHITCHAT：真流式（AI 未配置走友好兜底，与 chitchatPath 同语义）
+        AiModelConfig config;
+        try {
+            config = modelConfigService.currentEnabled();
+        } catch (IpdBusinessException ex) {
+            long latency = clock.millis() - start;
+            auditCopilot(actor, req, intent, latency, 0, 0,
+                "FAIL:" + (ex.getErrorCode() == null ? "UNKNOWN" : ex.getErrorCode().name()), null);
+            String tip = "AI 副驾暂未启用：未配置生效的 AI 模型。请联系超管在「AI 模型配置」启用。";
+            AiCopilotResp resp = new AiCopilotResp(intent, tip, List.of(), List.of("config.disabled"), 0, 0, latency);
+            sink.meta(resp);
+            sink.delta(tip);
+            sink.done(resp);
+            return;
+        }
+        Map<String, Object> summary = workbenchService.summary(actor, req.projectId());
+        String projectCtx = renderProjectContext(summary);
+        String personalCtx = renderPersonalContext(summary);
+        // AI-STRAT-1 Phase 2：RAG 第三档上下文（与 chat 同源，docType=null 不过滤）
+        String ragCtx = ragContextBlock(req);
+        String prompt = composePrompt(req, projectCtx, personalCtx, ragCtx);
+        List<String> sources = new ArrayList<>();
+        if (!projectCtx.isEmpty()) sources.add("project.advance");
+        if (!personalCtx.isEmpty()) sources.add("workbench.tasks");
+        if (ragCtx != null && !ragCtx.isEmpty()) sources.add("project.history_docs");
+
+        // 首帧 meta：先送结构化（intent+sources），answer 空 / token 0——前端立即渲染，delta 随后逐段填 answer
+        String sessionId = java.util.UUID.randomUUID().toString();
+        sink.meta(new AiCopilotResp(intent, "", List.of(), sources, 0, 0, 0L));
+
+        AiTestConfig cfg = new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
+            modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS);
+        String modelName = config.getModelName();
+        final int[] totalChunks = {0};
+        aiGateway.stream(cfg, prompt, MAX_TOKENS, new BigDecimal("0.50"), new AiGateway.StreamHandler() {
+            @Override
+            public void onDelta(String token) {
+                totalChunks[0]++;
+                sink.delta(token);
+            }
+
+            @Override
+            public void onComplete(int promptTokens, int completionTokens, long latencyMs) {
+                auditCopilotStream(actor, req, intent, sessionId, totalChunks[0],
+                    promptTokens, completionTokens, latencyMs, modelName, "ok");
+                sink.done(new AiCopilotResp(intent, "", List.of(), sources,
+                    promptTokens, completionTokens, latencyMs));
+            }
+
+            @Override
+            public void onError(AiChatResult failure) {
+                long latency = clock.millis() - start;
+                String code = failure == null || failure.errorCode() == null ? "AI_STREAM_FAILED" : failure.errorCode();
+                auditCopilotStream(actor, req, intent, sessionId, totalChunks[0],
+                    0, 0, latency, modelName, "FAIL:" + code);
+                sink.error(code, "AI 副驾流式生成失败");
+            }
+        });
+    }
+
+    /**
+     * L0-4 SSE 真流式回调（Controller 实现，把语义事件翻成 SSE 帧）。
+     * 事件契约与既有 {@code /chat/stream} 一致：meta（首帧结构化）/ delta（增量）/ done（末帧）/ error（错误）。
+     */
+    public interface CopilotStreamSink {
+        /** 首帧：意图 + 结构化数据 + sources（真流式时 answer 空、token 0，随后 delta 填充）。 */
+        void meta(AiCopilotResp resp);
+
+        /** 增量帧：一段 answer token（真流式多次；意图兜底路径一次整段）。 */
+        void delta(String token);
+
+        /** 末帧：生成结束（含聚合 token 用量 + latency）。 */
+        void done(AiCopilotResp resp);
+
+        /** 错误帧：AI 流式失败（白名单错误码 + 文案）。 */
+        void error(String code, String message);
     }
 
     // ---- 意图分类（关键字命中；ML 分类留后续） ----
@@ -214,15 +334,17 @@ public class AiCopilotService implements IAiCopilotService {
 
     /**
      * AI-STRAT-1 Phase 2（2026-09-23）：RAG 第三档上下文 = 拉同项目已审核历史文档片段。
-     * docType=null 不过滤类型（向后兼容；前端 UI 让用户选 docType 是后续任务）。
+     * docType 非空时按类型过滤（idx_emb_doctype 索引，R184 阶段 3）；null/blank = 不过滤（向后兼容）。
      * 失败/未配置/无命中返回 ""（降级不阻塞）。
      */
     private String ragContextBlock(AiCopilotReq req) {
         if (docEmbeddingService == null || req.projectId() == null) {
             return "";
         }
+        // R184 阶段 3：前端 UI 让用户选 docType（PRD/MRD/技术方案/...），非空时仅检索该类型
+        String docType = req.docType() == null || req.docType().isBlank() ? null : req.docType().trim();
         AiDocEmbeddingService.RetrievalContext ctx =
-            docEmbeddingService.retrieveContext(req.projectId(), null, req.message());
+            docEmbeddingService.retrieveContext(req.projectId(), docType, req.message());
         return ctx == null ? "" : ctx.block();
     }
 
@@ -351,6 +473,33 @@ public class AiCopilotService implements IAiCopilotService {
                 "aiAssisted", true,
                 "aiModel", aiCalled ? aiModel : "intent_match",
                 "aiRole", "copilot_answer",
+                "intent", intent,
+                "projectId", req.projectId(),
+                "status", status,
+                "tokenPrompt", tokenPrompt,
+                "tokenCompletion", tokenCompletion,
+                "latencyMs", latencyMs,
+                "promptLen", req.message() == null ? 0 : req.message().length()))
+            .build());
+    }
+
+    /**
+     * L0-4 流式完成审计（{@code AI_COPILOT_STREAM}，aiRole=streaming，单 session 一行；
+     * 审计三件套规约 §2.4 / §4.2：不逐 chunk 落审计，只记数量与 sessionId/totalChunks，不记对话原文）。
+     */
+    private void auditCopilotStream(IpdActor actor, AiCopilotReq req, String intent, String sessionId,
+                                    int totalChunks, int tokenPrompt, int tokenCompletion, long latencyMs,
+                                    String aiModel, String status) {
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
+            .action("AI_COPILOT_STREAM").entityType("AI_COPILOT")
+            .afterData(AuditEventData.json(
+                "aiAssisted", true,
+                "aiModel", aiModel == null || aiModel.isBlank() ? "intent_match" : aiModel,
+                "aiRole", "streaming",
+                "scene", "ai_copilot",
+                "sessionId", sessionId,
+                "totalChunks", totalChunks,
                 "intent", intent,
                 "projectId", req.projectId(),
                 "status", status,
