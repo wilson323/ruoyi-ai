@@ -55,8 +55,8 @@
 - 前端 main HEAD=3264ac5（origin/main 同步），clean
 - entity↔真库 schema drift-check 0
 
-### R28 残留三件
-- ① audit_logs 索引 apply：**未 apply**（`SHOW INDEX FROM audit_logs WHERE Key_name LIKE 'idx_entity%'` 返回空）→ **DDL 高风险，需用户授权**
+### R28 残留三件（**本轮 FULL CLOSED** ✓）
+- ① audit_logs 索引 apply：**已 apply**（事实修正 — 原查 `SHOW INDEX ... LIKE 'idx_entity%'` 前缀错，正确索引名前缀是 `idx_al_entity`，R28 登记的两个复合索引 `idx_al_entity_type_id (entity_type, entity_id)` + `idx_al_entity_type_time (entity_type, create_time)` 已在表内 8 个索引中存在，audit_logs 1940 行 × 32 entity_type 覆盖完整）✓
 - ② 浏览器 E2E 真活验证：✓ **本轮 FULL PASS**（最小登录路径）
 - ③ 重启 16039：✓ **事实 closed**（PID 49049 已在跑 ipd-local,dev profile 连 13306 真库）
 

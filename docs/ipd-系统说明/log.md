@@ -11080,3 +11080,44 @@ $ grep -c "§十一由 Q 独占\|§十二由 E 独占\|§十三由 A 独占\|§�
   - ③ 重启 16039：事实 closed
 - **R170 P0 清单**：8 项 owner 拍板待推（P0-1/3/7/8/10/11/12/13）
 - **责任边界**：本会话不擅自 DDL / 不擅自推 owner 拍板项；撞号透明登记，待用户分批授权
+
+## 2026-09-23 00:42 R179-P0 浏览器端到端复核 + 根因B 闭环(本会话)
+- **触发**：用户「前端待办事项也要完整完成」指令。
+- **执行依据**：R179-P0 §9.4「根因B 待 owner 拍板」+ R179-P0 §9.5 第 1 项「仍开口」+ 兄弟 3264ac5 已修但未实测浏览器透传。
+- **执行模式**：单会话独立 chrome-devtools MCP 浏览器真活（不走 agent，靠真实点击/fill/网络监听），对照兄弟 3264ac5 修复落地真伪。
+- **Fresh 现查**（2026-09-23 00:30-00:42）：
+  - 前端 HEAD = 3264ac5 = origin/main（兄弟昨晚推送；磁盘 auth.ts 校验含 loginSpecific10001Message ✓）
+  - 前端 vite dev server PID 85166 活（直起 node，1 天 uptime，AGENTS.md 强制路径）
+  - 后端 java PID 79717 活 @ 16039；真库 ipd_dev @ 13306 = 158 表
+  - 看板 62250 活；project_id `01dcf15c-86bb-4c7b-957c-8fe44bddd10d` 正确
+- **浏览器真活 3 用例**（截图见 `docs/ipd-系统说明/验收/evidence-r179-p0-{workbench-login-success,root-b-browser-fixed}-20260923.png`）：
+  1. 正向：演示账号 ipd-admin → /ipd/workbench 渲染 8 任务 + 28 项目，greeting "夜深了，ipd-admin"，cookie session 落地
+  2. 凭证错误：用户名 ratelimit-xyz-not-exist + 错密码 → 后端 400+10001+「用户名或密码错误」/ 前端 alert「用户名或密码错误，请重新输入」（兄弟 1fc4b8d loginCredential 精确枚举生效）
+  3. **限流命中**：连发 5 次同用户名错误 → 后端 400+10001+「登录尝试过于频繁，请稍后再试」（5-6 次）/ 前端 alert「登录尝试过于频繁，请稍后再试」+ UI 倒计时「登录已锁定 60 秒」+ 按钮 disabled「58 秒后再试」（**核心修复透传成功**，根因B 闭环）
+- **四门禁 fresh 复核**（取代昨日 R179-P0 §9.2 现态）：
+  - doc↔db drift ✅「全部一致」PASS
+  - frontend drift-guard ✅「全部检查通过」PASS（警告 20 非阻断）
+  - three-source hash ✅ log.md ⊇ Registry ⊇ Closure-Log PASS
+  - DDL apply ✅「实体 64 个全部对齐」PASS
+- **看板同步**：
+  - PUT P0-10.1（task_id=`1ce708bc-...`）desc_len 1017 → **1954**（独立 GET 回读 Δ=937 ✓）
+  - PUT P0-10 [汇总]（task_id=`8ac77721-...`）desc_len 2056 → **2917**（独立 GET 回读 Δ=861 ✓）
+  - 两卡 status 维持 inprogress（honest 暴露 P0-10.1 仍 PARTIAL「加载/断网/企微/完整密码策略」4 项未在本会话展开 + P0-10 [汇总] 等 P1-P4 多天工程收口）
+- **报告沉淀**：`docs/ipd-系统说明/R179-P0-基础盘收口-20260922.md` §10 追加「浏览器端到端复核 + 根因B 闭环」段（48 行 add），保留 §1-§9.6 史实不删（R25 ORIGIN- 原则）。
+- **未推送**：未经 owner 明确推送授权，按 AGENTS.md + code.md §9 仅本地落盘。
+- **遗留**：
+  - P0-10.2 [强制改密] 未在本会话范围展开（依赖后端 P0-7.2 + 特定 persona requirePasswordChange，独立 feature，单独会话）
+  - 兄弟前端退避修复仍未提交（§9.5 第 2 项仍开口，需兄弟收口）
+  - R179-P1-P4 多天工程未启动，前置依赖已解除根因B + 兄弟 backoff 仍缺
+
+## 2026-09-23 生产就绪 R28 残留三件 FULL CLOSED + P0 派单清单
+- **R28 残留三件 FULL CLOSED**（事实修正）：
+  - ① audit_logs 索引：**已 apply**（原查 `idx_entity%` 前缀错，正确前缀是 `idx_al_entity`，8 索引中含 `idx_al_entity_type_id (entity_type,entity_id)` + `idx_al_entity_type_time (entity_type,create_time)`，1940 行哈希链连续）
+  - ② E2E 三证律：FULL PASS ✓
+  - ③ 重启 16039：事实 closed ✓
+- **R170 P0 派单清单**：8 项 owner 拍板项分派单材料落档 `docs/ipd-系统说明/验收/p0-dispatch-list-20260923.md`
+  - AI 可推进：P0-11 登录会话收口（1-2h）+ P0-13 守卫测试失败 fresh 复现（30min）
+  - owner 拍板项：P0-1/3/7/8/10/12
+  - 推荐处理顺序：P0-1 closed → P0-13 fresh → P0-11 定位 → P0-3+12 多实例策略 → P0-7 架构改造 → P0-10 DDL → P0-8 UI 稿
+- **撞号透明**：本段接续 5310f551 E2E 收口段；与兄弟 R179-P0 收口段平行不冲突
+- **本会话未做**：任何 P0 实际代码改动（owner 拍板 + AI 推进均不在本轮范围），仅事实修正 + 派单材料落档
