@@ -11843,3 +11843,33 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 主工作区剩 1 modified = 兄弟会话 ddl-apply-check-result-20260923.json，未捎带
 
 **下一步刷新**：owner 拍板方案甲/乙/丙 → 主协调 R199 实装 W3（按拍板方案落地 hook + workflow）
+
+## R198 §A5 R25 owner-blocked 5 项拍板矩阵落档（2026-09-24）
+
+**用户指令**：「要」（承接 R198 R197-W3 拍板材料落档后继续 docs-only 推进）
+
+**R198 §A5 主体 commit**：本 commit `<待定>`（待 push origin/main）
+
+**撞号透明登记**：本盘与已 push `852992ef R198 R197-W3 CI 集成拍板材料` 同编号 R198 但分主题（W3 CI 集成 vs §A5 拍板矩阵）。按"撞号透明协议" + R195 §六 顺序（第 3 项 = §A5），两盘主题可分辨；BCP §三十六透明登记。
+
+**R198 §A5 范围**：按 R94「主协调不替 owner 拍板」+ R195 §六 第 3 项 §A5，落档 docs-only 拍板矩阵：
+1. ✅ `docs/ipd-系统说明/调研/R198-§A5-R25-owner-blocked拍板矩阵-20260924.md`（+158 行）—— 5 项 × 3 选项 + 工作量 + 撞车风险 + 验证 + 推荐
+2. ✅ BCP-Registry §三十六 R198 §A5 撞号透明登记（+35 行）
+3. ✅ 看板镜像 R198 §A5 段补登
+
+**5 项 × 3 选项矩阵速览**：
+- 项 1 AllowanceService：保留（取消失真）/ 删 + 改 test / @Deprecated — **推荐 A**
+- 项 2 RequirementPool Entity：删 Entity 不 drop / 改对齐真库 / 删 + drop — **推荐 B**
+- 项 3 PersonResignEscalator：保留（取消失真）/ 删 + 删注释 / @Deprecated — **推荐 A**
+- 项 4 KPI_REVISION_MODE：保留（默认挂 B-RULE-02）/ 删 + 改 test / 保留 + test 移除引用 — **推荐 A**
+- 项 5 POST_LAUNCH_REVIEW_* 3 常量：保留（取消失真）/ 删 + 改链路 / 工作树外链清理 — **推荐 A**
+
+**4/5 推荐 A（取消 R25 失真）**，1/5 推荐 B（真库对齐）。
+
+**撞车 0 兑现**：
+- docs/ipd-系统说明/调研/ 新增 1 文件（不动既有调研）
+- 不动 Java/SQL/yml/真库/端口/PID/看板卡 status（拍板后由 R199+ 实装）
+- 17 兄弟 worktree 完整保留
+- 主工作区剩 1 modified = 兄弟会话 ddl-apply-check-result-20260923.json，未捎带
+
+**下一步刷新**：owner 拍板 5 项 → 主协调 R199 docs-only 落档"接受失真"决议 + R200 实装（推荐路径：4 项 docs-only + 1 项 Java 改 RequirementPool Entity @TableName）

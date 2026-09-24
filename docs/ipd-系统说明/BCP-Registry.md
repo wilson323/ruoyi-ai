@@ -2398,3 +2398,42 @@ R198 仅落档摆选项，**3 选 1 等 owner 在 R199 拍板**：
 - 甲（推荐）：软拦 + CI + MG-1 SKIP + 中路径
 - 乙：仅 CI + 中路径
 - 丙：硬拦 + 全开 + 中路径
+
+## §三十六 R198 §A5 拍板矩阵落档（撞号透明登记）（2026-09-24）
+
+> **本段为后续状态更新，不修改原 §三十五 R198-W3 内容以保留决策可追溯性。**
+> **来源**：R198 §A5 治理轮实拍（commit `<待定>`，待 push origin/main）
+
+### 撞号透明登记
+
+- **已 push** `852992ef R198 R197-W3 CI 集成拍板材料落档`（commit `c9b4a098`）—— R198 主题 = W3 CI 集成
+- **本盘** R198 §A5 拍板矩阵 —— R198 主题 = §A5 R25 owner-blocked 5 项拍板
+- 按"撞号透明协议" + R195 §六 顺序（第 3 项 = §A5），两盘主题可分辨，与 BCP §三十五并列
+
+### 触发
+
+- **owner 拍板权**：R195 §六 第 3 项 §A5 = R25 owner-blocked 5 项拍板
+- **R194 §A5 调研报告 §七**「5 项汇总拍板点」 → R198 §A5 拍板矩阵 3 选项展开
+
+### 5 项 × 3 选项矩阵（docs-only 落档，不替 owner 选）
+
+| 项 | A 选项 | B 选项 | C 选项 | 默认推荐 |
+|---|---|---|---|---|
+| 1 AllowanceService | 保留（取消失真）| 删 + 改 test | @Deprecated + 留 | **A** |
+| 2 RequirementPool Entity | 删 Entity 不 drop | 改 Entity 对齐真库 | 删 Entity + drop | **B** |
+| 3 PersonResignEscalator | 保留（取消失真）| 删 + 删注释 | @Deprecated + 保留 | **A** |
+| 4 KPI_REVISION_MODE | 保留（默认挂 B-RULE-02）| 删 + 改 test | 保留 + test 移除引用 | **A** |
+| 5 POST_LAUNCH_REVIEW_* | 保留（取消失真）| 删 + 改链路 | 工作树外链清理 | **A** |
+
+### 撞车 0 兑现
+
+- docs/ipd-系统说明/调研/ 新增 +1 文件（拍板矩阵）
+- 不动 Java/SQL/yml/真库/端口/PID/看板卡 status（拍板后由 R199+ 实装）
+- 17 兄弟 worktree 完整保留（含本会话新增 wt-r198b 待 cleanup）
+
+### 主协调能力边界（按 R94「不替 owner 拍板」）
+
+R198 §A5 仅落档摆 5 项 × 3 选项，**不替 owner 选**。3 拍板路径：
+- 全 A（4 项取消失真 + 1 项真库对齐）
+- 全 B（5 项全删）
+- 项 2 走 C（DBA apply DROP TABLE）
