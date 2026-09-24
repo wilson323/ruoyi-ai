@@ -2358,3 +2358,43 @@ R148 描述「approval_node_config 表（待建）」实际可降级为「在 ip
 - 是否挂入 `.claude/hooks/` pre-commit（动共享 hook 需 owner OPS-09 授权）
 - 是否挂入 `.github/workflows/` CI yml
 - 默认 MG_TARGETS 全开 vs MG-1/3 先开（怕首跑红太多）
+
+## §三十五 R198 轮：R197-W3 CI 集成拍板材料落档（2026-09-24）
+
+> **本段为后续状态更新，不修改原 §三十四 R197 内容以保留决策可追溯性。**
+> **来源**：R198 治理轮实拍（commit `<待定>`，待 push origin/main）
+
+### 触发
+
+- **owner 拍板权**：R195 §六 第 2 项 W3 = CI 集成 1h
+- **R197 §五 已留 W3 待 OPS-09 拍板** → R198 docs-only 落档拍板材料**摆选项不替选**
+
+### 4 个核心决策点 + 3 套方案
+
+| 决策点 | 方案甲（首次默认）| 方案乙（保守）| 方案丙（激进）|
+|---|---|---|---|
+| DP-1 pre-commit | B 软拦 warn-only | A 不挂 | C 硬拦 exit 1 |
+| DP-2 CI workflow | B 限 path 触发 | B 限 path 触发 | B 限 path 触发 |
+| DP-3 默认 MG | D MG-2/3/4 + MG-1 SKIP | D MG-2/3/4 + MG-1 SKIP | A 全开 MG-1~5 |
+| DP-4 触发路径 | B 中（IpdAudit/Interceptor/AI）| B 中 | B 中 |
+
+### 拍板材料落档（3 文件）
+
+- `docs/ipd-系统说明/调研/R198-R197W3-CI集成拍板材料-20260924.md`（159 行）
+- `docs/ipd-系统说明/调研/R198-pre-commit-hook-template.sh`（32 行）
+- `docs/ipd-系统说明/调研/R198-multigates-ci-workflow.yml`（82 行）
+
+### 撞车 0 兑现
+
+- **不动 .claude/hooks/**（pre-commit hook 模板仅落档调研目录，W3 实装待 owner OPS-09 拍板）
+- **不动 .github/workflows/**（yml 模板仅落档调研目录，W3 实装待 owner 拍板）
+- 不动 scripts/（R197 已落档 261 行，本轮不重复）
+- 不动 Java/SQL/yml/真库/端口/PID/看板卡 status
+- 18 兄弟 worktree 完整保留
+
+### 主协调能力边界（按 R94「不替 owner 拍板」）
+
+R198 仅落档摆选项，**3 选 1 等 owner 在 R199 拍板**：
+- 甲（推荐）：软拦 + CI + MG-1 SKIP + 中路径
+- 乙：仅 CI + 中路径
+- 丙：硬拦 + 全开 + 中路径

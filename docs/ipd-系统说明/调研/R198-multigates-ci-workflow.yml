@@ -1,0 +1,82 @@
+# R198 拍板方案甲/乙 CI workflow 模板（references only — DO NOT INSTALL）
+# 仅供 R199 拍板后由 owner 复制到 .github/workflows/ipd-multigates-sync.yml
+# 设计依据: docs/ipd-系统说明/调研/R198-R197W3-CI集成拍板材料-20260924.md DP-2 B
+
+name: ipd-multigates-sync
+
+on:
+  pull_request:
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/audit/**'
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/interceptor/**'
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ai/**'
+      - 'scripts/check-multigates-sync.sh'
+      - 'scripts/selftest-check-multigates-sync.sh'
+      - '.github/workflows/ipd-multigates-sync.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/audit/**'
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/interceptor/**'
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ai/**'
+      - 'scripts/check-multigates-sync.sh'
+      - 'scripts/selftest-check-multigates-sync.sh'
+      - '.github/workflows/ipd-multigates-sync.yml'
+
+jobs:
+  # === 1. 门禁自测（先跑 selftest，验脚本能跑能红；R197 §三 + R134 自证能红纪律）===
+  selftest:
+    name: gate selftest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run selftest
+        run: bash scripts/selftest-check-multigates-sync.sh
+
+  # === 2. 默认扫描（DP-3 D：MG-2/3/4 + MG-1 SKIP）===
+  multigates-scan:
+    name: multi-gates sync check
+    needs: selftest  # 自测不过不跑主检（撞车 0：门禁失效自检）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 默认扫描
+        env:
+          MG_TARGETS: '2,3,4'
+        run: bash scripts/check-multigates-sync.sh
+
+      # DP-3 D 默认扫描预期: MG-2/3 PASS + MG-4 FAIL（TenantInterceptor 缺）→ exit 1
+      # 此步骤仅警告不阻断（DP-1 B 对齐 + 与 CI 阻断分层）
+      # 实际阻断策略: 由 owner 在 PR review 时人工 ack M-Root-12 待修项
+
+  # === 3. FAIL_SEED 验红（CI 自身能红性测试，每月一次）===
+  fail-seed-smoke:
+    name: fail-seed smoke (quarterly)
+    if: github.event_name == 'push'  # 仅 main push 跑（频次控制）
+    needs: selftest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: FAIL_SEED 必红测试
+        run: |
+          set -uo pipefail
+          MULTIGATES_FAIL_SEED=1 bash scripts/check-multigates-sync.sh
+          if [ "$?" = "2" ]; then
+            echo "✅ FAIL_SEED 验红成功（脚本能拦）"
+          else
+            echo "::error::FAIL_SEED 验红失败（脚本不能拦，禁 = 失效）"
+            exit 1
+          fi
