@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.BonusAllocation;
 import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Contribution;
@@ -23,7 +24,9 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,8 +37,10 @@ import static org.mockito.Mockito.when;
  * contribution_rate = 五维加权分（tierCoefficient）× 本方占比（marketShare/rdShare），
  * allocated_amount = finalPool × 本方占比，status = DRAFT。
  *
- * <p>幂等：DISTRIBUTED 终态直接返回不重复写台账；贡献度未评定时台账照写、
- * contribution_rate 置 null（不阻断已验收的分配主契约）。
+ * <p>幂等：DISTRIBUTED 终态直接返回不重复写台账。
+ * R213-M1.1 owner 拍板（2026-09-24，卡 15d5e689）：贡献度未评定/未确认 →
+ * distribute 业务拒绝（STATE_CONFLICT），不再存在“照写 null”路径，
+ * 对齐 bonus_allocations.contribution_rate DDL NOT NULL 与 BR-INC-08。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -120,25 +125,63 @@ class BonusPoolAllocationWriteTest {
     }
 
     @Test
-    @DisplayName("distribute：贡献度未评定 → 台账照写 2 条，contributionRate=null 不阻断分配")
-    void distribute_contribution_missing_still_writes_with_null_rate() {
+    @DisplayName("distribute 门禁：无贡献度评定记录 → STATE_CONFLICT 拒绝，不翻状态不写台账")
+    void distribute_contribution_missing_rejected() {
         BonusPool pool = new BonusPool();
         pool.setId(601L);
         pool.setProjectId(201L);
         pool.setStatus(BonusPoolService.STATUS_CONFIRMED);
         pool.setFinalPool(new BigDecimal("50000"));
         when(bonusPoolMapper.selectById(601L)).thenReturn(pool);
-        when(projectMemberMapper.selectList(any())).thenReturn(List.of(
-            pm(900103L, "MARKET_PM"), pm(900104L, "RD_PM")));
         when(contributionMapper.selectOne(any())).thenReturn(null);
 
-        BonusPool result = service.distribute(601L, new BigDecimal("0.55"), new BigDecimal("0.45"), actor());
+        assertThatThrownBy(() -> service.distribute(601L, new BigDecimal("0.55"), new BigDecimal("0.45"), actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("不允许分配奖金");
 
-        assertThat(result.getStatus()).isEqualTo(BonusPoolService.STATUS_DISTRIBUTED);
-        ArgumentCaptor<BonusAllocation> captor = ArgumentCaptor.forClass(BonusAllocation.class);
-        verify(bonusAllocationMapper, times(2)).insert(captor.capture());
-        assertThat(captor.getAllValues().get(0).getContributionRate()).isNull();
-        assertThat(captor.getAllValues().get(1).getContributionRate()).isNull();
+        assertThat(pool.getStatus()).isEqualTo(BonusPoolService.STATUS_CONFIRMED);
+        verify(bonusAllocationMapper, never()).insert(any(BonusAllocation.class));
+        verify(bonusPoolMapper, never()).updateById(any(BonusPool.class));
+    }
+
+    @Test
+    @DisplayName("distribute 门禁：最新评定 SUBMITTED 未确认 → STATE_CONFLICT 拒绝")
+    void distribute_contribution_not_confirmed_rejected() {
+        BonusPool pool = new BonusPool();
+        pool.setId(603L);
+        pool.setProjectId(203L);
+        pool.setStatus(BonusPoolService.STATUS_DRAFT);
+        pool.setFinalPool(new BigDecimal("50000"));
+        when(bonusPoolMapper.selectById(603L)).thenReturn(pool);
+        Contribution submitted = confirmedContribution();
+        submitted.setStatus(Contribution.ST_SUBMITTED);
+        when(contributionMapper.selectOne(any())).thenReturn(submitted);
+
+        assertThatThrownBy(() -> service.distribute(603L, new BigDecimal("0.55"), new BigDecimal("0.45"), actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("未 CONFIRMED");
+
+        verify(bonusAllocationMapper, never()).insert(any(BonusAllocation.class));
+    }
+
+    @Test
+    @DisplayName("distribute 门禁：CONFIRMED 但 tierCoefficient 缺失 → STATE_CONFLICT 拒绝")
+    void distribute_contribution_missing_tierCoefficient_rejected() {
+        BonusPool pool = new BonusPool();
+        pool.setId(604L);
+        pool.setProjectId(204L);
+        pool.setStatus(BonusPoolService.STATUS_DRAFT);
+        pool.setFinalPool(new BigDecimal("50000"));
+        when(bonusPoolMapper.selectById(604L)).thenReturn(pool);
+        Contribution noTier = confirmedContribution();
+        noTier.setTierCoefficient(null);
+        when(contributionMapper.selectOne(any())).thenReturn(noTier);
+
+        assertThatThrownBy(() -> service.distribute(604L, new BigDecimal("0.55"), new BigDecimal("0.45"), actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("tierCoefficient");
+
+        verify(bonusAllocationMapper, never()).insert(any(BonusAllocation.class));
     }
 
     @Test

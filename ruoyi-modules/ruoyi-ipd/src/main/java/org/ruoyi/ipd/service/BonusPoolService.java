@@ -1083,6 +1083,10 @@ public class BonusPoolService implements IBonusPoolService {
         }
         // 区间 + 总和校验（ServiceException 抛到 Controller 由 advice 转 IpdBusinessException）
         calculateDistribution(marketShare, rdShare);
+        // R213-M1.1 owner 拍板（2026-09-24，卡 15d5e689）：分配前置业务门禁——
+        // 项目必须存在 CONFIRMED 评定且 tierCoefficient 有效，否则 409/50002 业务拒绝；
+        // bonus_allocations.contribution_rate 保持 DDL NOT NULL，不再出现 null 台账。
+        Contribution contribution = requireConfirmedContribution(pool);
         // ROOT-R3-P0-1：守卫 preCheck —— CONFIRMED/DRAFT -> DISTRIBUTED 合法（跨域→写津贴账本）
         // 2026-09-09 C3 缺陷修复：此前硬编码传 STATUS_CONFIRMED——DRAFT 入口时守卫收到假 from，
         // 绕过"未登记即拒绝"语义。改传真实 from（此时 setStatus 还未执行，pool.getStatus() 是真值）
@@ -1106,7 +1110,7 @@ public class BonusPoolService implements IBonusPoolService {
         }
         bonusPoolMapper.updateById(pool);
         // A3 接线（P-DATA-gap-1）：翻状态后批量写 bonus_allocations 台账（双 PM 行）
-        writeBonusAllocations(pool, marketShare, rdShare, marketAmount, rdAmount);
+        writeBonusAllocations(pool, contribution, marketShare, rdShare, marketAmount, rdAmount);
         // ROOT-R3-P0-1：postCommit 跨域副作用（事务提交后触发）
         registerPostCommit("bonus_pool", before, STATUS_DISTRIBUTED, "distribute",
             actor != null ? actor.id() : null, pool.getId());
@@ -1138,11 +1142,13 @@ public class BonusPoolService implements IBonusPoolService {
      * exit_date IS NULL）；contribution_rate = 贡献度五维加权分（contributions 最新一行
      * tierCoefficient）× 本方占比（marketShare/rdShare）；allocated_amount = finalPool × 本方占比；
      * performanceCoefficient 沿用奖金池项目差异化系数（coefficient）；status = DRAFT。
-     * 贡献度未评定时台账照写、contribution_rate 置 null（不阻断已验收的分配主契约）。
+     * R213-M1.1 拍板后：贡献度由 {@link #requireConfirmedContribution} 门禁保证非空，
+     * 不再存在“未评定照写 null”路径（DDL contribution_rate NOT NULL 对齐）。
      *
      * <p>mapper 为 null（旧单测）时静默跳过，对齐 auditLogService 可选注入模式。
      */
-    private void writeBonusAllocations(BonusPool pool, BigDecimal marketShare, BigDecimal rdShare,
+    private void writeBonusAllocations(BonusPool pool, Contribution contribution,
+                                       BigDecimal marketShare, BigDecimal rdShare,
                                        BigDecimal marketAmount, BigDecimal rdAmount) {
         if (bonusAllocationMapper == null || projectMemberMapper == null) {
             return;
@@ -1154,22 +1160,14 @@ public class BonusPoolService implements IBonusPoolService {
         if (pms == null || pms.isEmpty()) {
             return;
         }
-        Contribution contribution = null;
-        if (contributionMapper != null) {
-            contribution = contributionMapper.selectOne(new LambdaQueryWrapper<Contribution>()
-                .eq(Contribution::getProjectId, pool.getProjectId())
-                .eq(Contribution::getDelFlag, "0")
-                .orderByDesc(Contribution::getId)
-                .last("limit 1"));
-        }
         for (ProjectMember pm : pms) {
             boolean isMarket = Contribution.ROLE_MARKET.equals(pm.getRole());
             BigDecimal share = isMarket ? marketShare : rdShare;
             BigDecimal amount = isMarket ? marketAmount : rdAmount;
-            BigDecimal contributionRate = null;
-            if (contribution != null && contribution.getTierCoefficient() != null) {
-                contributionRate = contribution.getTierCoefficient().multiply(share);
-            }
+            // 门禁已保证 contribution 非空且 tierCoefficient 有效；null 仅作防御兜底
+            BigDecimal contributionRate =
+                contribution != null && contribution.getTierCoefficient() != null
+                    ? contribution.getTierCoefficient().multiply(share) : null;
             BonusAllocation row = BonusAllocation.builder()
                 .bonusPoolId(pool.getId())
                 .personId(pm.getPersonId())
@@ -1181,6 +1179,39 @@ public class BonusPoolService implements IBonusPoolService {
                 .build();
             bonusAllocationMapper.insert(row);
         }
+    }
+
+    /**
+     * R213-M1.1 业务门禁（owner 拍板 2026-09-24，卡 15d5e689）：distribute 要求项目
+     * 存在最新未删且 status=CONFIRMED、tierCoefficient 有效的贡献度评定，
+     * 否则 STATE_CONFLICT（409/50002）业务拒绝，对齐 BR-INC-08 公式与
+     * bonus_allocations.contribution_rate NOT NULL。
+     *
+     * <p>contributionMapper 未注入（旧单测构造器）时跳过门禁，对齐台账写入的
+     * 可选注入模式；生产环境 Spring 必注入 mapper，不存在绕过路径。
+     */
+    private Contribution requireConfirmedContribution(BonusPool pool) {
+        if (contributionMapper == null) {
+            return null;
+        }
+        Contribution contribution = contributionMapper.selectOne(new LambdaQueryWrapper<Contribution>()
+            .eq(Contribution::getProjectId, pool.getProjectId())
+            .eq(Contribution::getDelFlag, "0")
+            .orderByDesc(Contribution::getId)
+            .last("limit 1"));
+        if (contribution == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目尚无贡献度评定记录，不允许分配奖金（请先完成页 35 贡献度评定并确认）");
+        }
+        if (!Contribution.ST_CONFIRMED.equals(contribution.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "最新贡献度评定状态为 " + contribution.getStatus() + "，未 CONFIRMED 不允许分配奖金");
+        }
+        if (contribution.getTierCoefficient() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "已确认的贡献度缺少修正因子 tierCoefficient，不允许分配奖金");
+        }
+        return contribution;
     }
 
     /**

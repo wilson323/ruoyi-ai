@@ -13,9 +13,11 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +70,13 @@ public class AiGenerationService implements IAiGenerationService {
     private final AiDocEmbeddingService docEmbeddingService;
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
+    /**
+     * R213（2026-09-24）：与 AiChatClient SSRF allowlist 同一配置键（R184-A 本机 mock
+     * 验收窗口显式开窗，生产默认空串=行为不变）；字段注入，单测不走 Spring 时为 null。
+     */
+    @Value("${ai.allowed-hosts:}")
+    private String allowedHosts;
+
     public AiGenerationService(AiDocumentMapper documentMapper, AiDocumentService documentService,
                                AiModelConfigService modelConfigService, IAuditLogService auditLogService,
                                AiGateway aiGateway, AiDocEmbeddingService docEmbeddingService) {
@@ -98,9 +107,13 @@ public class AiGenerationService implements IAiGenerationService {
         JsonNode cfg = parseConfigJson(config.getConfigJson());
         int timeoutMs = clampTimeout(cfg.path(EXT_TIMEOUT).asInt(0));
 
-        // SEC-REV-04 同源 SSRF 前置：端点解析落入黑名单直接拒（不发起任何出站请求）
-        String blocked = AiModelConfigService.ssrfBlockReason(hostOf(config.getEndpointUrl()));
-        if (blocked != null) {
+        // SEC-REV-04 同源 SSRF 前置：端点解析落入黑名单直接拒（不发起任何出站请求）。
+        // R213（2026-09-24）：对齐 R184-A allowlist 语义——ai.allowed-hosts 命中的 host
+        //（本机 mock 验收窗口）豁免黑名单拒绝，与 gateway ssrfCheck 同一白名单、
+        // 同一优先级；生产白名单为空时行为不变。
+        String host = hostOf(config.getEndpointUrl());
+        String blocked = AiModelConfigService.ssrfBlockReason(host);
+        if (blocked != null && !allowListed(host)) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "模型端点不可用: " + blocked);
         }
 
@@ -217,6 +230,17 @@ public class AiGenerationService implements IAiGenerationService {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    /** allowlist 命中判定（host 字面等值，与 AiChatClient R184-A 同口径，不允许泛匹配）。 */
+    private boolean allowListed(String host) {
+        String list = allowedHosts == null ? "" : allowedHosts.trim();
+        if (list.isEmpty() || host == null || host.isEmpty()) {
+            return false;
+        }
+        return Arrays.stream(list.split(","))
+            .map(String::trim).filter(s -> !s.isEmpty())
+            .anyMatch(h -> h.equalsIgnoreCase(host));
     }
 
     /** errorCode 已是白名单类别（Tester 风格），此处仅兜空值。 */

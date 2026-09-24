@@ -12223,3 +12223,15 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - **门禁草案**：孤儿"只减不增"白名单+baseline 棘轮（影响面实测零、path 主键口径地雷、exit code 冲突须拍板），待 owner 拍 4 项后另立卡实施。
 
 **看板**：477→**481**，建 4 张 todo 卡 `9d50c5fd`（U0 安全）/ `dbe1b6a7`（U1 越权打包）/ `b4be8fa5`（A 类伞卡）/ `7b76b7cd`（门禁实施），全部 POST + 独立 GET 回读通过；只建卡不翻卡。Java/Vue/SQL/yml 零改动，真库零写，16039 零请求。
+
+## R213 拍板执行轮（2026-09-24，主协调会话）
+
+**拍板四题（owner AskUserQuestion）**：奖金=业务门禁（第三路，非A列可空/非B跳过写）；字符集=推迟互通窗口；16039=立即重载验收；QA-06 多环境=推迟、RAG 模型=用现有 mock 走通。
+
+**执行与证据**：
+- 门禁：BonusPoolService.requireConfirmedContribution（无 CONFIRMED/缺 tierCoefficient → 409/50002），BonusPoolAllocationWriteTest 改写 3 拒绝用例，模块回归 94/94 绿；HTTP 负向 409/50002 ✓、正向 CONFIRMED 池 distribute 200 → bonus_allocations 2 行双PM rate 0.44/0.36 非空 ✓（池 2097170037453479938 真发放，测试副作用已披露）。
+- 重载：16039 换带新字节码 jar；rd 登录 /auth/me permissionCodes 52 个 ipd: 码 HTTP ✓（浏览器无码负向证据未补，17324373 维持 inreview）。
+- R183（mock 127.0.0.1:8765，自建 mock-embed-server-8765.py）：S1 review→embedAsync→向量行 2103133448251113473 落库、二次 generate 审计 contextHits=1/contextChars=57 ✓；S2 copilot sources 含 project.history_docs ✓；S3 SHOW INDEX 现查 idx_emb_doctype 已存在（盘点勘误）+ 三参透传单测绿 ✓。
+- 缺陷修复：AiGenerationService SSRF 前置检查不认 ai.allowed-hosts（与 AiChatClient R184-A 双轨不一致）→ Service 层 allowlist 命中豁免；第一版委托 gateway 方案因 P422 mock 契约回退；Ai*/P422 回归 91 全绿。
+
+**看板**：481 = todo 18/inprogress 21/inreview 4/done 380/cancelled 58。翻 done 5：15d5e689/67ffc283/3280f1e2/a1af61b7/5a2eedd3（Summary 53576dd5 随 push 后翻）；注记保留 3：17324373（inreview 待浏览器负向）/639de2c8（todo 推迟）/ecdd3444（inprogress 演练推迟）。全部 PUT 前 LIST 取基文、PUT 后独立 GET 回读复核通过。详见 R213-剩余开放卡建议与计划-20260924.md §八。
