@@ -62,6 +62,9 @@ public enum ApiV1ErrorCode {
     /** R149-v1 装配闸门：HR 真源同步未启用（ipd.hr.enabled=false 时 HrSyncJob/RealHrSyncAdapter 不装配） */
     HR_SYNC_NOT_ENABLED(50018, "HR 真源同步未启用（需 ipd.hr.enabled=true）"),
 
+    /** R214/U0 安全闸门：企微 Mock 扫码登录端点未启用（ipd.auth.qr-login.enabled=false 时拒绝，默认关闭） */
+    QR_LOGIN_NOT_ENABLED(50019, "企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true）"),
+
     INTERNAL_ERROR(90001, "系统内部错误");
 
     private final int code;
@@ -97,7 +100,7 @@ public enum ApiV1ErrorCode {
                 DELETE_NOT_ALLOWED_DIRECT, HANDOVER_REQUIRED_BEFORE_DISABLE, STATE_CONFLICT,
                 AI_BUDGET_EXCEEDED, CONTRIB_NOT_G5_STAGE, NF_REENTRY_NOT_ALLOWED, NF_STATE_INVALID,
                 SWITCHING_LOCKED, SWITCHING_DIFF_TOO_LARGE, SWITCHING_NOT_RUN,
-                HANDOVER_LOCKED, HR_SYNC_NOT_ENABLED -> 409;
+                HANDOVER_LOCKED, HR_SYNC_NOT_ENABLED, QR_LOGIN_NOT_ENABLED -> 409;
             case RATE_LIMITED -> 429;
             case ATTACHMENT_TOO_LARGE -> 413;
             case PRODUCT_INACTIVE, NOT_FOUND -> 404;

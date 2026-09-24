@@ -16,6 +16,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -62,6 +63,9 @@ class P074AcceptanceTest {
     void setUp() {
         authService = new IpdAuthService(personMapper, auditLogService);
         controller = new IpdAuthController(authService, session, null, null);
+        // R214/U0：新增 ipd.auth.qr-login.enabled 开关；本类验证「开启态」既有 Mock 行为，故显式置 true。
+        // 关闭态（默认 false → 409 拒绝）由 QrLoginSecurityGateTest 覆盖。
+        ReflectionTestUtils.setField(controller, "qrLoginEnabled", true);
     }
 
     /** 构造 Person：避免 lastLoginAt 在构造期被 Mockito 默认 null 干扰。 */
