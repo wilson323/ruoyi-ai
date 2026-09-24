@@ -12157,3 +12157,13 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 **报告追加**：R211 增 §八执行记录 + §六 脚本勘误 + 15666 状态刷新（已起；须从 apps/web-antd 目录直 node 拉起，根目录起全 404）
 
 **仍未验证（不假绿）**：distribute/奖金池全链真活（写操作未触发）；其余 51 路由未遍历；249 AC 矩阵；C1~C9/N1~N7 拍板项零推进（owner 未拍）
+
+## R211c 奖金池发放真活验证（2026-09-24 晚，owner 把"你说跑我就跑"贴回 = 授权执行）
+
+**环境恢复**：13306 mysqld（.codex/ipd-dev 独立实例）/ 6379 redis / 16039 后端 jar / 15666 vite 四件全掉线，逐一拉起。新坑：nohup 起的 vite 会卡死事件循环（监听但不应答，SIGTERM 无效需 -9），前台终端方式重起正常。
+
+**主链三证全绿（池 2097169984949182465）**：freeze→CONFIRMED，distribute(0.6/0.4)→DISTRIBUTED；DB 回读 distributions JSON 正确、**bonus_allocations 历史首批 2 行**（双 PM 25200/16800，贡献率 0.48/0.32 = tier0.80×share，与 A3 裁决口径一致）、审计两行带 reason；幂等负向重跑不重复写；浏览器实拍"已分配"行（验收/R211c-distribute真活-20260924/）。
+
+**真活抓出两缺陷（建卡 15d5e689 todo）**：①无贡献度评定时 distribute 必 500（contribution_rate NOT NULL 真库 vs Service:1141 "置 null 不阻断"注释矛盾，修法 A 列改可空/B 跳过台账待裁决）；②bonus_pools.project_id=9140004 悬空（projects 无此行，页面选不到本池）。
+
+**看板**：fresh 总账 476=474+2；d9bd1477 done（三证）· 15d5e689 todo（缺陷）· 8e751acf 追加双下拉不联动第 4 项观感。报告增 §九 + §8.5 W1 状态翻转待验→已验证。
