@@ -11787,3 +11787,34 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 自动 push（按 b4824066 收口三步法 + e30d739d 自动 commit/push 纪律）
 
 **下次刷新**：owner 拍板 R195 §六 第 2 项 → 启动 R197 实装
+
+## R197 R195 §六 第 2 项 §A4 M-Root-12 脚本骨架实装（2026-09-23）
+
+**用户指令**：「R195 §六 第 2 项（§A4 M-Root-12 脚本骨架 5h）→ 启动 R197 实装」
+
+**R197 主体 commit**：本 commit `<待定>`（待 push origin/main）
+
+**R197 范围**：按 R194 §A4 设计稿 §四骨架 + §五 selftest 5 用例实装：
+1. ✅ `scripts/check-multigates-sync.sh`（173 行）—— 5 类多套闸检测 + FAIL_SEED 双向触发 + 子集 + DRY_RUN
+2. ✅ `scripts/selftest-check-multigates-sync.sh`（92 行）—— T1-T5 5 用例全过（exit=0）
+3. ✅ BCP-Registry §三十四 R197 轮登记（2300 → 2344，+44 行）
+4. ✅ 看板镜像 R197 段补登
+5. ✅ R197-M-Root-12脚本实装-20260923.md 收口报告新建
+
+**R197 工作量**：W1 骨架（2h）+ W2 selftest（2h）= 4h，W3 CI 集成留待 owner OPS-09 拍板
+
+**实测真活证据**（R134 自证能红纪律）：
+- 默认扫描 → exit=1（MG-4 TenantInterceptor.java 缺失 + MG-5 前端仓闸间测试缺失，2 项 FAIL）
+- FAIL_SEED → exit=2（验脚本能拦）
+- DRY_RUN + FAIL_SEED → exit=0（验 dry-run 旁路）
+- 子集 MG_TARGETS=1,2 → exit=1（验子集限定）
+- selftest 汇总 PASS=5 / FAIL=0 / TOTAL=5 → exit=0
+
+**撞车 0 兑现**：
+- scripts/ +261 行（check 173 + selftest 92），新增未触既有脚本
+- 不动 .claude/hooks/（pre-commit 接入需 owner OPS-09 拍板）
+- 不动 Java/SQL/yml/真库/端口/PID/看板卡 status
+- 13 兄弟 worktree 完整保留
+- 主工作区剩 1 modified json（兄弟会话的，未捎带）
+
+**下一步刷新**：owner 拍板 R197-W3（CI 集成 / MG_TARGETS 默认范围 / 挂入 pre-commit）
