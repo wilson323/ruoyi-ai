@@ -12235,3 +12235,17 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 缺陷修复：AiGenerationService SSRF 前置检查不认 ai.allowed-hosts（与 AiChatClient R184-A 双轨不一致）→ Service 层 allowlist 命中豁免；第一版委托 gateway 方案因 P422 mock 契约回退；Ai*/P422 回归 91 全绿。
 
 **看板**：481 = todo 18/inprogress 21/inreview 4/done 380/cancelled 58。翻 done 5：15d5e689/67ffc283/3280f1e2/a1af61b7/5a2eedd3（Summary 53576dd5 随 push 后翻）；注记保留 3：17324373（inreview 待浏览器负向）/639de2c8（todo 推迟）/ecdd3444（inprogress 演练推迟）。全部 PUT 前 LIST 取基文、PUT 后独立 GET 回读复核通过。详见 R213-剩余开放卡建议与计划-20260924.md §八。
+
+### R213-B 孤儿拍板执行轮（2026-09-24T16:13Z）
+
+**owner 拍板（AskUserQuestion 四题全选推荐项）**：①47 真缺口一次建 13 卡；②5 条存疑按暂定建议走（permanent-delete/audit 与 P0升级链×2 按内部口登记、rehire 不建前端页、负反馈×3 待 [P3-8] 98db7e00 落地复核、ai-copilot/chat 随 R183 定性）；③门禁 exit code 位掩码方案 A（0/1/2 不动，新增 4=新孤儿未白名单）；④存量 96 条先分诊再入库（~25 白名单 + 其余 baseline）；另默认为 method 首版不收紧、FE 侧接闸二期。
+
+**执行**：POST 建 13 张 ORPHAN-A 子卡（d9225d0b/23693709/69d89d47/ac46043e/ab1fb0bd/8338f2fa/670aecdf/786da825/c79c26d2/0f35d16e/211e689a/be9a3017/eace4648，全 todo，逐张 LIST 独立回读 OK；A12 扫码卡面注明依赖 U0 9d50c5fd 先修）；PUT 改面 b4be8fa5（伞卡收敛为进度卡）与 7b76b7cd（拍板前置解除，S1→S5 可执行）。看板 **481→494**，todo 17→30（本轮前兄弟已翻 53576dd5 致 done 380→381，已现查对账）。零翻卡、零代码、真库零写。
+
+**坑位登记**：本看板版本 PUT 端点为 `/api/tasks/{id}`（`PUT /api/tasks` 返 405；早前记忆里的裸 PUT 写法已过期）；只传 title 的 PUT 不会清空 description（实测 257 字保留）。
+
+**落盘**：主文 R212后续-…-20260924.md 新增 §八拍板结果；镜像同日期段。
+
+## R213 遗留清单收口轮（2026-09-24，owner 六项答复）
+
+owner 对 6 项遗留逐条拍板并全部落地：①17324373 选「认可现有证据」→ done（浏览器负向并入安全波次统一补）；②ai_model_configs 保留 mock + 重启约定（python3 .codex/ipd-dev/mock-embed-server-8765.py &），allowlist 门禁正反例测试并入 dbe1b6a7 第⑧条；③测试数据接受留库（验收依据，ipd_dev 无财务影响）；④9140004 悬空外键建只读调查卡 5d5c4fcc（U3，处置待拍板不直接改库）；⑤b9ab3425 P4-4 owner 手翻授权，翻前复跑 check-done-gate-summary can_flip=True → done（manage.py set_status 镜像 L64 已写，reconcile 因历史 86-ID 欠账拒同步，看板改直投 PUT）；⑥e30c86a2 维持 inprogress 等字段级模板。全部 PUT/POST 后独立 GET 回读复核通过。
