@@ -2252,3 +2252,49 @@ R148 描述「approval_node_config 表（待建）」实际可降级为「在 ip
 **段号撞号避让**：§三十二 顺次延续避免与 §三十一 撞号
 
 **下次刷新**：owner 拍板本 commit 是否 push → merge 后启动 R190 doc sweep（R25 清单 + 镜像 + log.md 完整收口）+ 等 owner 拍板 R25 剩余 5 项 owner-blocked 项
+
+## §三十三 R196 轮：R195 §六 第 1 项 §A1 拍板 + R186 §三 #3 闭合收口（2026-09-23）
+
+> **本段为后续状态更新，不修改原 R186 §三 #3 内容以保留决策可追溯性。**
+> **来源**：R196 治理轮实装（commit `<待定>`，待 push origin/main）
+
+### 触发
+
+- **owner 拍板 R195 §六 14 项第 1 项**（§A1 5 文件私有 audit 抽取）→ 启动 R196 实装
+- **R194 §A1 调研报告 §四 推荐** 方案 D（不变）+ 文档化闭合 R186 §三 #3
+- **R194 §A1 §六 实施步骤** BCP-Registry R194 工作会话登记项勘误栏标注「§三 R186 #3 已闭合」
+
+### 拍板结论
+
+按 R194 §A1 §七 owner 拍板点结论：**✅ 同意关闭 R186 §三 #3 剩余工作量**
+
+| 范围 | 状态 | 来源 commit |
+|---|---|---|
+| 3 个 Controller（HrSyncController / PersonController / PersonSyncController）| ✅ 已落地收敛（删 16 行 + 改 1 行委托）| 兄弟会话 `e19857ea` ORIGIN-R186-CONVERGE（2026-09-23 18:09 -0700，已 merge main）|
+| 2 个 Service（PersonResignEscalator / AllowanceService）| ✅ 维持不变（R194 §A1 §四 推荐方案 D）| R196 拍板 |
+
+### 工作量
+
+**= 0 行 java 改动 / 0 单测补充 / 1 个 docs 文件**（即本文）
+
+### R186 §三 #3 闭合证据链
+
+| 证据 | 来源 |
+|---|---|
+| 5 文件 74 处 audit() 调用分布 | R186 §A4.5（commit `3c533031`）|
+| 3 Controller 接手段（删 16 行）| 兄弟会话 `e19857ea` |
+| 2 Service 维持现状判定 | R194 §A1 §四 推荐 D |
+| owner 拍板 ✅ 同意 | R196（本文）|
+
+### 撞车 0 严守
+
+- 仅 docs/ipd-系统说明/ 落档（不动 Java/SQL/yml/真库/端口/PID）
+- 不抢 13 兄弟 worktree + 4 java in-flight
+- 不捎带兄弟会话 untracked json 改动
+- worktree 隔离（/tmp/wt-r196，分支 docs/r196-a1-close-20260923，基于 origin/main bdd5ca00）
+- 自动 push（按 b4824066 收口三步法 + e30d739d 自动 commit/push 纪律）
+
+### 后续
+
+- owner 拍板 R195 §六 第 2 项 → 启动 R197 实装
+- 或 owner 浏览器实测 R189-R196 后翻 done 收口
