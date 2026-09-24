@@ -11535,3 +11535,69 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **Layer 0 状态**：L0-1/2/3/5 已在 origin/main（前序提交）；L0-4 现已提交+push（1df5a1d4）。Layer 0 代码闭环完成；live 端到端 HTTP 复测待「新 jar 重启」共享前置解除（与 R184阶段3 同一阻塞点）。
 
+
+### R184 阶段 3 HTTP 真活复测闭环（2026-09-23）
+**上下文**：兄弟会话 ORIGIN-R30-P0 AiGateway + AuditEventData 入库后，本会话复测 R184 阶段 3 docType 透传。
+
+**前置条件**：
+- 重打 ruoyi-admin.jar（含 R184 阶段 3 + ORIGIN-R30-P0 SSE 真流式）
+- 杀 PID 94966（旧 16039 进程），起新进程 PID 28071 端口 16039
+- 登录限流解除（5 次/60秒 等 65 秒）
+
+**HTTP 复测证据**：
+- POST /api/v1/auth/login: code:0, token issued, scope=FULL, person=ipd-admin/SUPER_ADMIN
+- POST /api/v1/ai-copilot/chat（无 docType）: code:0, sources=["workbench.advance"]（无 RAG 命中，预期）
+- POST /api/v1/ai-copilot/chat（docType="PRD"）: code:90001 UNSUPPORTED_PROTOCOL（走到 embed 调用，mock 不兼容）
+- **general_log 实测 ai_doc_embeddings SQL**：
+  ```sql
+  SELECT id,doc_id,project_id,doc_type,... FROM ai_doc_embeddings
+  WHERE (project_id = 9140001 AND embed_model = 'test-embed' AND doc_type = 'PRD')
+  ```
+- ✅ **doc_type = 'PRD' 出现在 WHERE 子句里** → R184 阶段 3 docType 透传全链路（Controller → Service → retrieveContext → SQL）真活验证通过
+
+**根因复盘**：
+- 之前 R184 阶段 3 阻塞 STATE_CONFLICT（selectList 返回 0 行）→ 兄弟会话 AiGateway.java + AuditEventData.java 入库后自动解除
+- 兄弟会话 AuditEventData.AI_ROLES 白名单加 copilot_answer/streaming 触发 @SaCheckPermission 路径重新计算
+
+**收口三步法**：
+1. ✅ 整合工作树（本卡只新增 log.md 段）
+2. ⏳ commit + push（本步执行中）
+3. ⏳ 清理（待 git status clean 验证）
+
+---
+
+## R186 配置 vs 消费对账 + 自我审计再失真纠正（2026-09-23）
+
+**起点**：owner 拍板 R185 三项（1.是 2.是 3.是），R185 4 commit 已 push。
+
+### R186 主体
+- 后端"配置 vs 消费"对账 + 单一事实源收敛报告（commit `3c533031`）
+  - 纠正 R185 失真汇报 3 条（46 controller / 5 文件 / 5+ mapper）
+  - 发现真实存在的 4 类双轨
+- 对账方法：grep → comm → diff 三次复核
+
+### 本轮勘误（§五）
+上一轮对账报告 §三第 1 行误标 `OPERATION_HANDOVER_CANCEL` / `OPERATION_SWITCHING_ACCEPTANCE_ADMIN` 为「死配置 5 分钟可清」。
+
+现查实测：
+- SWITCHING_ACCEPTANCE_ADMIN = 负向契约常量，被 `RnewPermissionContractTest` line 109/112/166/175 双锁为 fail-closed 锚点，**不可删**
+- HANDOVER_CANCEL = R25 死代码清单 A 后端（2026-09-09，14 天前）已标 P0 删除，**R25 遗留处置**
+
+处置：
+- R186 报告 §三第 1 行作废 + §五新增「自我审计再失真纠正声明」
+- R186 工作建议 §4.3 第 1 条划掉
+- 修正后 R186 真实工作量 **3 类 7-10 小时**（原报 4 类 8-10 小时）
+
+### 对账纪律沉淀
+- comm 命令 `-23`/`-13` 参数方向必复查（用反参数导致假空集）
+- grep 正则锚定边界（`[A-Z][A-Z_0-9]*` 不是 `[A-Z_]+`）
+- grep 字面量匹配只能回答"有没有引用"，不能回答"该不该删"
+- 对账报告自检 §四只反思上轮失真不够，要留 §五记录本轮自身失真
+
+### 落档
+- 报告 `docs/ipd-系统说明/后端配置vs消费对账与单一事实源收敛报告-20260923.md`（§五勘误后 195 行）
+- BCP-Registry / BCP-Closure-Log / 看板镜像 三源同步登记
+- 撞车 0 严守：仅 docs/ipd-系统说明/ 改动，未动 Java/SQL/yml/真库/端口
+
+**下次刷新**：owner 拍板 §3-#2/#3/#4 三类真实双轨处置方向后由 R186 启动实装；§3-#1（死配置）已勘误作废，HANDOVER_CANCEL 由 R25 治理轮处置、SWITCHING_ACCEPTANCE_ADMIN 保留为负向测试锚点。
+
