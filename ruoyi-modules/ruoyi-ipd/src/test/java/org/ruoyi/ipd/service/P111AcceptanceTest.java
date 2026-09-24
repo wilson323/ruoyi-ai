@@ -262,7 +262,7 @@ class P111AcceptanceTest {
         Product product = aliveProduct(50L, Product.SRC_PM_NEW, null);
         when(productMapper.selectById(50L)).thenReturn(product);
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(projectMapper.selectList(any())).thenReturn(java.util.List.of());
+        // R214 死桩清理：a7e3540a 取号已改 selectMaxCodeSeqByYear 原生 SQL，selectList 桩不再被触达（UnnecessaryStubbing）
         when(projectMapper.insert(any(Project.class))).thenAnswer(inv -> {
             Project p = inv.getArgument(0);
             p.setId(501L);
@@ -284,7 +284,7 @@ class P111AcceptanceTest {
         Product product = aliveProduct(50L, Product.SRC_PM_NEW, null);
         when(productMapper.selectById(50L)).thenReturn(product);
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(projectMapper.selectList(any())).thenReturn(java.util.List.of());
+        // R214 死桩清理：a7e3540a 取号已改 selectMaxCodeSeqByYear 原生 SQL，selectList 桩不再被触达（UnnecessaryStubbing）
         when(projectMapper.insert(any(Project.class))).thenAnswer(inv -> {
             Project p = inv.getArgument(0);
             p.setId(502L);

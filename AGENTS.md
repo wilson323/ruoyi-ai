@@ -46,9 +46,11 @@
 - 全局梳理 / 治理类任务：要用专业智能体与工具做蜂群并行，走「盘点 → 实施 → 验证 → 文档/看板同步」闭环，不要只给建议。
 - 执行中必须及时更新看板卡片状态（待办 / 进行中 / 阻塞 / 待审核 / 已完成）；证据不足时标 PARTIAL，不得提前标 done。
 - 选定方案后用「继续 / A / 指定卡号」直接落地推进，少停在方案对比。
+- 收口三步法扩为四步（R214 建议5，2026-09-24）：①整合工作树 ②commit+push ③验证 clean ④**验收完成即更新看板卡面**——补注记、翻状态，不许卡面滞后于事实（f42d37dd 类「假缺口」的根源就是第④步缺失）。
 
 ## Learned Workspace Facts
 
+- **测试数据政策（R214，owner 2026-09-24 拍板）**：ipd_dev 验收写入的测试数据默认留库并在 log.md 登记，不必逐轮确认清理；长期 mock server 与 `ai_model_configs` 指向 mock 的配置同理保留，重启约定写在对应卡面（3280f1e2）。
 - 本工作区是 `ruoyi-ai`（IPD 后端）；正式前端是 `/Users/mac/Documents/ruoyi-ipd-web`，原型图与业务说明在 `/Users/mac/Documents/ZK-IPD`。前后端看板待办与功能闭环必须一起核对。勿与 `ZKER-staff`（`/Users/mac/Documents/ChatGPT/ZKER- staff`）或用户规则里的 IOE-DREAM 一卡通内容混淆。
 - 看板操作走 `user-zker_vibe_kanban` MCP，并与 SSOT 镜像 `docs/ipd-系统说明/开发计划-看板镜像.md` 对齐；Mock/单测绿不等于业务闭环，真库或 HTTP 未过不得伪完成。
 - 多会话并行时同一 Controller/测试签名会被兄弟会话改写；验收前以磁盘现态重编译，假红/假绿规则见上文「构建 / 测试」。

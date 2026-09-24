@@ -84,7 +84,7 @@ class P121AcceptanceTest {
     private void stubCreateHappyPath() {
         when(productMapper.selectById(50L)).thenReturn(productOk());
         when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(projectMapper.selectList(any())).thenReturn(List.of());
+        // R214 死桩清理：a7e3540a 取号已改 selectMaxCodeSeqByYear 原生 SQL，selectList 桩不再被触达（UnnecessaryStubbing）
     }
 
     @Test
