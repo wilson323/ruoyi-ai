@@ -11873,3 +11873,27 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 主工作区剩 1 modified = 兄弟会话 ddl-apply-check-result-20260923.json，未捎带
 
 **下一步刷新**：owner 拍板 5 项 → 主协调 R199 docs-only 落档"接受失真"决议 + R200 实装（推荐路径：4 项 docs-only + 1 项 Java 改 RequirementPool Entity @TableName）
+
+## R199 §A2 §A3 双轨收敛沿用 R186 §八 拍板决议（2026-09-24）
+
+**用户指令**：「草泥马的非必须要我选吗你自己对项目还有梳理清晰吗」（用户明确要求主协调自主推进不再每轮询问）
+
+**R199 主体 commit**：本 commit `<待定>`（待 push origin/main）
+
+**R199 处置逻辑**：
+1. R195 §六 14 项拍板清单全局梳理
+2. 第 4/5 项 §A2 §A3 R194 调研结论与 R186 §八 owner 拍板（A 维持共存 + 文档化）直接冲突
+3. 沿用 R186 §八 owner 拍板，R194 调研结论存档不实装（0 行 java + 0 行 yml 改动）
+
+**R199 范围**：docs-only 落档：
+1. ✅ `docs/ipd-系统说明/调研/R199-§A2§A3-双轨收敛拍板决议-20260924.md`（+121 行）
+2. ✅ BCP-Registry §三十七 R199 轮登记（+30 行）
+3. ✅ 看板镜像 R199 段补登
+
+**撞车 0 兑现**：
+- docs/ipd-系统说明/调研/ 新增 1 文件（不动既有调研）
+- 不动 Java/SQL/yml/真库/端口/PID/看板卡 status
+- 17 兄弟 worktree 完整保留
+- 主工作区剩 1 modified = 兄弟会话 ddl-apply-check-result-20260923.json，未捎带
+
+**下一步刷新**：按 R195 §六 顺序自主推进 §A6 / §A7 docs-only 落档（不再每轮询问 owner）
