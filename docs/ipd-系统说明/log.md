@@ -11601,3 +11601,20 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **下次刷新**：owner 拍板 §3-#2/#3/#4 三类真实双轨处置方向后由 R186 启动实装；§3-#1（死配置）已勘误作废，HANDOVER_CANCEL 由 R25 治理轮处置、SWITCHING_ACCEPTANCE_ADMIN 保留为负向测试锚点。
 
+
+### R184 阶段 3 HTTP 真活复测撞号透明登记（2026-09-23）
+**事件**：commit 0319b608 在 stage log.md 时意外捎带了兄弟会话 4 个 docs-only 文件：
+- BCP-Closure-Log.md (+28/-2)
+- BCP-Registry.md (+46/-1)
+- 后端配置 vs 消费对账与单一事实源收敛报告-20260923.md (+56/-8)
+- R185 元根因深化与撞号透明登记-20260923.md (+37/-2)
+
+**根因**：兄弟会话在我 add log.md 前已修改这些 docs（处于 git index 暂存区），本会话 `git add docs/ipd-系统说明/log.md` 时实际把所有 docs 都 stage 了，commit 落地时一并入库。
+
+**OPS-09 影响评估**：
+- 兄弟会话 docs 内容已多次在其他 commit 中提到（P3 SSOT 同步 3db72420 / 后端对账 3c533031 / L0-4 收口 b2fa62a7 / L0-4 SSE 真流式登记 77592bb5），本卡 commit 0319b608 是兄弟会话工作首次实质入库的合并点。
+- 无生产代码 / DDL / 配置改动，docs-only 撞车 0 严守。
+- 兄弟会话 4 个 java M（HrSyncController / PersonController / PersonSyncController / IpdPermissionCode）仍 in progress，未 stage。
+
+**撞号处置**：已 push 无 amend 改 hash 风险，保留原 commit 0319b608 + log.md 撞号透明登记。下次兄弟会话 commit 时可基于 0319b608 继续推进，无需 reset / revert。
+
