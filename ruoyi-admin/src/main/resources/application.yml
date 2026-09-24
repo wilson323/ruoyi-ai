@@ -251,6 +251,12 @@ ipd:
       destination-prefix: /topic/notifications/
       # 用户离线时是否落库（与 InApp 一致）：true=入 INBOX 兜底
       offline-fallback-to-inbox: true
+  # R214/U0 安全闸门：企微 Mock 扫码登录端点（POST /api/v1/auth/wecom/qr-login）
+  # 该端点匿名可达（IpdWebSecurityConfig 双豁免），Mock 能力默认关闭；仅 dev 显式置 true 联调。
+  # 关闭时统一返回 409 + QR_LOGIN_NOT_ENABLED(50019)，不查库、不签发 FULL JWT。
+  auth:
+    qr-login:
+      enabled: ${IPD_AUTH_QR_LOGIN_ENABLED:false}      # 默认关闭（prod 保持关闭；dev 需显式开）
   # HR 真源配置（FA-HR-Sync·2026-09-21 R149-v1；对接 信息集成平台接口文档-EHR.docx ）
   # 真凭据（appId/secretKey/baseUrl）一律走 .codex/ipd-dev/config/application-ipd-local.yml
   # 本仓不落任何字面量（sensitive-field-guard hook 会阻断）。

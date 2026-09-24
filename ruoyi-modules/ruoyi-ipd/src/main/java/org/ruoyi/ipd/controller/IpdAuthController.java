@@ -6,7 +6,10 @@ import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.ratelimiter.annotation.RateLimiter;
 import org.ruoyi.common.ratelimiter.enums.LimitType;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdBusinessException;
+import org.springframework.beans.factory.annotation.Value;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
@@ -28,6 +31,14 @@ public class IpdAuthController {
     private final IpdAuthSession session;
     private final AuditAttemptService auditAttempt;
     private final IpdPermission permission;
+
+    /**
+     * R214/U0 安全开关：企微 Mock 扫码登录端点是否启用（生产默认 false）。
+     * <p>该端点为匿名可达（{@code IpdWebSecurityConfig} 双豁免），历史上 Mock 固定启用即可换 FULL JWT，
+     * 属认证绕过级高危。此开关令 Mock 能力跟随配置，默认关闭 → 关闭时统一返回 4xx 业务拒绝。
+     */
+    @Value("${ipd.auth.qr-login.enabled:false}")
+    private boolean qrLoginEnabled;
 
     public record LoginRequest(@NotBlank @Size(max = 64) String username,
                                @NotBlank @Size(max = 72) String password) { }
@@ -78,8 +89,14 @@ public class IpdAuthController {
      *
      * <p>⚠ Mock 实现：未来真实企微接入应替换此端点为 OAuth2 code → userInfo 换取流程，本端点移除。
      */
+    @RateLimiter(key = "#{#request.wecomUserId()}", time = 60, count = 5, limitType = LimitType.IP,
+        message = "扫码登录尝试过于频繁，请稍后再试")
     @PostMapping("/wecom/qr-login")
     public ApiV1Response<LoginView> wecomQrLogin(@Valid @RequestBody WecomLoginRequest request) {
+        // R214/U0：端点默认关闭时先行拒绝（不查库、不签发 JWT），复用 IpdBusinessException + ApiV1ErrorCode 包络
+        if (!qrLoginEnabled) {
+            throw new IpdBusinessException(ApiV1ErrorCode.QR_LOGIN_NOT_ENABLED);
+        }
         IpdAuthService.LoginResult result = authService.wecomMockLogin(request.wecomUserId());
         String token = session.login(result.person());
         return ApiV1Response.ok(new LoginView(token, "Bearer", session.timeout(), result.scope().name(),
