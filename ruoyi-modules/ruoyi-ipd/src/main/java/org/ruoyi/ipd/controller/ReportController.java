@@ -37,15 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReportController {
 
-    /** 列表查询内部权限码（仅作 @SaCheckPermission 兜底；service 二次校验 actor 范围） */
-    public static final String PERM_QUERY = "ipd:report:query";
-    /** 津贴导出内部权限码（service 二次校验 actor 范围） */
-    public static final String PERM_EXPORT_ALLOWANCE = "ipd:report:export-allowance";
-    /** 奖金导出内部权限码（仅 GROUP_LEADER + SUPER_ADMIN） */
-    public static final String PERM_EXPORT_BONUS = "ipd:report:export-bonus";
-    /** 项目汇总导出内部权限码 */
-    public static final String PERM_EXPORT_PROJECT = "ipd:report:export-project";
-
     private final IpdPermission ipdPermission;
     private final IpdReportService ipdReportService;
 

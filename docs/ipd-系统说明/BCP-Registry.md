@@ -2204,3 +2204,51 @@ R148 描述「approval_node_config 表（待建）」实际可降级为「在 ip
 **段号撞号避让**：§三十一 顺次延续避免与 §三十 撞号
 
 **下次刷新**：owner 拍板 §3-#2 tenant.excludes ↔ @InterceptorIgnore 双轨收敛 / §3-#3 抽 AuditHelper / §3-#4 决策 AOP vs 工具调用 走向后由 R186 启动实装；§3-#1 死配置已勘误作废
+
+---
+
+## §三十二 R189 轮：R25 死代码实装收口（2026-09-23）
+
+**触发**：owner 拍板「按照建议依次执行」执行 R189 启动决策包 5 步全部。
+
+**commit hash**：`de52088dac38fd89cc8cb47b4c8e7d13d0baa3f3`（分支 `cleanup/r189-r25-deadcode-20260923`，基于 main HEAD `30f876f6`）
+
+**实装变更**：
+
+| 范围 | 文件数 | 净行数 |
+|---|---|---|
+| 6 孤儿 DTO 删除 | 6 | ~250 |
+| BidScanService 全链路（main+interface+2 test）| 4 | ~600 |
+| OverdueReminderService 全链路（main+test）| 2 | ~450 |
+| ReportController.PERM_* 4 常量 | 1 (edit) | -9 |
+| BusinessConfigKeys.BONUS_TIER_* 4 常量 | 1 (edit) | -6 |
+| **合计** | **14 文件** | **~1315 行** |
+
+**验证证据**：
+- `mvn -o -pl ruoyi-modules/ruoyi-ipd -am compile` BUILD SUCCESS
+- `mvn test`（排除 3 已删 + 5 pre-existing P111/P121 UnnecessaryStubbingException）：**2366 PASS / 0 FAIL / 0 ERR / 22 Skipped**
+- baseline 对比：`git stash` 暂存后跑同一命令同样 5 Errors，确认与本次删除无关
+- `python3 docs/ipd-系统说明/验收/p1-ddl-apply-check.py`：ipd_dev + ipd_restore 双库 6 项全 APPLIED + GRANT FULL 20/20
+
+**R25 清单失真登记**：
+- §A7.3 IpdReportController.java → 实际名 ReportController.java
+- §A7.4 BusinessConfigKeys 路径 → 实际 `org.ruoyi.ipd.common`
+- §A7.1 tenant.excludes person_roles → 已于 2026-09-09 清理，无对象
+- BidScanService 删除 → 连带 IBidScanService + 2 test
+- OverdueReminderService 删除 → 连带 P144AcceptanceTest
+- §A7.4 BONUS_TIER_* 清单写 3 项 → 实为 4 项（KPI_REVISION_MODE 1 处 test 引用保留）
+
+**撞车 0 严守**：
+- 仅 `/tmp/wt-r189-r25` worktree 改动，主工作区 0 M / 0 ??
+- 不抢 13 兄弟 worktree + 4 java in-flight
+- 不动真库 / 端口 / PID / 看板 status
+- 不主动 push（B 类本地 commit，等 owner 拍板 push）
+
+**R25 现状更新**：
+- ✅ DONE（7 项）：BidScanService / OverdueReminderService / 6 DTO / 4 PERM_* / 4 BONUS_TIER_*
+- ⏸ 等 owner 拍板（5 项）：AllowanceService / RequirementPool / POST_LAUNCH_REVIEW_* / KPI_REVISION_MODE / PersonResignEscalator
+- ❌ 不建议（2 项）：qa04d2-*.sql / tenant.excludes 重复登记
+
+**段号撞号避让**：§三十二 顺次延续避免与 §三十一 撞号
+
+**下次刷新**：owner 拍板本 commit 是否 push → merge 后启动 R190 doc sweep（R25 清单 + 镜像 + log.md 完整收口）+ 等 owner 拍板 R25 剩余 5 项 owner-blocked 项

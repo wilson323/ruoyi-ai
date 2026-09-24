@@ -27,12 +27,6 @@ public final class BusinessConfigKeys {
     /** Gate 双签最低人数（默认 3；B-RULE-05） */
     public static final String GATE_DUAL_SIGN_COUNT = "gate.dualSignCount";
 
-    /** 奖金池阶梯系数（达成率区间→系数；ZK-14） */
-    public static final String BONUS_TIER_50  = "bonus.tierCoefficient_50";
-    public static final String BONUS_TIER_80  = "bonus.tierCoefficient_80";
-    public static final String BONUS_TIER_100 = "bonus.tierCoefficient_100";
-    public static final String BONUS_TIER_120 = "bonus.tierCoefficient_120";
-
     /** KPI 修订模式（append/replace；B-RULE-02 配套） */
     public static final String KPI_REVISION_MODE = "kpi.revision.mode";
 
