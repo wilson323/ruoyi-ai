@@ -11964,3 +11964,22 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 **撞车 0**：不动 Java/Vue/SQL/yml/真库/端口/PID/看板卡 status；18 兄弟 worktree 完整保留
 
 **下一步刷新**：R203 起按阶段 1 docs-only 收口启动主协调可独立完成项（~9h）
+
+## R203 docker-compose 端口 1XXXX 调研（2026-09-24）
+
+**主协调处置**：
+1. R202 飞手计划 done
+2. R202 阶段 1 docs-only 收口启动 R203 docker 端口调研
+
+**R203 主体 commit**：`<待定>`（待 push origin/main）
+
+**范围**：
+- `docs/ipd-系统说明/调研/R203-docker-compose-1XXXX端口前缀调研-20260924.md`（+172 行）
+- `docs/ipd-系统说明/BCP-Registry.md`（追加 §四十一 +42 行）
+- `docs/ipd-系统说明/开发计划-看板镜像.md`（追加 R203 段 +18 行）
+
+**工作量**：2h（docs-only 调研）
+
+**撞车 0**：不动 yml/Dockerfile/CI/.env；18 兄弟 worktree 完整保留
+
+**下一步刷新**：R204 权限收敛脚本骨架 + R205 Redis 切流飞手计划
