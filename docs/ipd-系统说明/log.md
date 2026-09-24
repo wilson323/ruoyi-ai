@@ -11618,3 +11618,25 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **撞号处置**：已 push 无 amend 改 hash 风险，保留原 commit 0319b608 + log.md 撞号透明登记。下次兄弟会话 commit 时可基于 0319b608 继续推进，无需 reset / revert。
 
+
+### R186 双轨收敛接手段 1（ORIGIN-R186-CONVERGE，2026-09-23）
+**上下文**：兄弟会话 R186 配置 vs 消费对账（commit 3c533031）识别出 4 类真实双轨，本卡接手第 1 类（A1 死配置负向契约 + A4.5 audit 5 份重复收敛）的部分修复。
+
+**评审结论**（4 文件）：
+| 文件 | 评审 | 处置 |
+|---|---|---|
+| HrSyncController.java | -16，删 AuditLog.builder() 私有 audit()，改用 audit 工具类（A4.5 收敛） | 原样入库 |
+| PersonController.java | -16，同上（A4.5 收敛） | 原样入库 |
+| PersonSyncController.java | -16，同上（A4.5 收敛） | 原样入库 |
+| IpdPermissionCode.java | +12，给 OPERATION_SWITCHING_ACCEPTANCE_ADMIN 加"负向契约常量·禁止删除"注释（A1 双锁） | 原样入库 |
+
+**负向契约测试双锁**（RnewPermissionContractTest 兄弟会话已加）：
+- `switchingAcceptanceAdminAliasNotRegistered`：catalog 层断言任何内部角色都不持有未登记别名（fail-closed）
+- `switchingControllerDoesNotUseUnregisteredAdminAlias`：源码层锁死 Controller 不再引用别名
+
+**测试**：28 tests 全绿 0 失败（IpdPermissionPasswordScopeTest 7 + ControllerPermissionAnnotationContractTest 4 + RnewPermissionContractTest 17 等）。
+
+**冲突范围审查**：与本会话 R184 系列无重叠（R184 走 ai_doc_embeddings + AiCopilotReq docType + ragContextBlock，本卡走 R186 双轨收敛）。
+
+**OPS-09 历史违规登记**：本卡评审 + 登记 + 隔离落地全闭环，无兄弟会话 mtime 误杀。
+

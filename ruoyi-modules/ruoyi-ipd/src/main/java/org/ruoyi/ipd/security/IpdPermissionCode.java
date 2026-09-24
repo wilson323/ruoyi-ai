@@ -114,7 +114,14 @@ public interface IpdPermissionCode {
 
     /** P3-7.1：切换验收 run / get / list（内部全员可读；写操作 service 二次校验） */
     String OPERATION_SWITCHING_ACCEPTANCE_QUERY = "ipd:switching-acceptance:query";
-    /** P3-7.1：切换验收 lock / unlock（仅 SUPER_ADMIN，走 requireAdmin） */
+    /**
+     * P3-7.1 历史别名（lock/unlock 已于 R-NEW-SEC-5 拆为 {@code _LOCK}/{@code _UNLOCK} 并登记 catalog；本 _ADMIN 别名故意不登记）。
+     * <p><b>负向契约常量·禁止删除</b>（R186 双轨收敛核实）：被 RnewPermissionContractTest 双锁——
+     * {@code switchingAcceptanceAdminAliasNotRegistered}（断言任何内部角色都不持有该未登记别名，fail-closed）+
+     * {@code switchingControllerDoesNotUseUnregisteredAdminAlias}（断言 Controller 源码不再引用它），
+     * 防止注解层回漂到未登记别名导致连 SUPER_ADMIN 也 403 死端点。删除本常量会使两条契约测试编译失败；
+     * owner 若决定正式启用别名，需手动补登 catalog 并同步改这两条契约。
+     */
     String OPERATION_SWITCHING_ACCEPTANCE_ADMIN = "ipd:switching-acceptance:admin";
 
     /** SEC-02：审计日志 */
@@ -140,9 +147,6 @@ public interface IpdPermissionCode {
     String OPERATION_BID_INVITATION_CREATE = "ipd:bid-invitation:create";
     /** P2-3.3：超管指派 */
     String OPERATION_BID_INVITATION_ADMIN_ASSIGN = "ipd:bid-invitation:admin-assign";
-
-    /** HIGH-3.1：撤销已接受移交（24h 内；RLD_BACK 终态 + 副作用回滚） */
-    String OPERATION_HANDOVER_CANCEL = "ipd:handover:cancel";
 
     // ------------------------------------------------------------------
     // R-NEW-SEC-5（2026-09-07）：补齐五类业务权限码。

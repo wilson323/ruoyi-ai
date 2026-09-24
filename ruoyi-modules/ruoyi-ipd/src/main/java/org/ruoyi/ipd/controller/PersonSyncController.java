@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.IAuditLogService;
@@ -94,17 +93,8 @@ public class PersonSyncController {
     }
 
     private void audit(IpdActor actor, String action, Long entityId, String reason) {
-        if (actor == null) {
-            return;
-        }
-        auditLogService.append(AuditLog.builder()
-            .operatorId(actor.id())
-            .operatorName(actor.name())
-            .operatorRole(actor.role())
-            .action(action)
-            .entityType("person_sync_jobs")
-            .entityId(entityId)
-            .reason(reason)
-            .build());
+        // R186 消重：委托 IAuditLogService.append(IpdActor,...) 共享重载（R21 已建、接口已声明），
+        // 消除四份 Controller 同构 builder 拷贝；actor==null 静默跳过语义由重载内部保证，行为等价。
+        auditLogService.append(actor, action, "person_sync_jobs", entityId, reason);
     }
 }
