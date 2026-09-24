@@ -2726,3 +2726,52 @@ P0-10 / P1-3 / P1-4 / P1-6 / P1-10 / P2-3 / P3-2 / P3-7 / P3-8 / P4-2 / P4-4 / P
 - R206 实装：前端仓 1 个 meta.access 文件 accessCodes 字段补齐
 - R207 实装：meta.authority 9 文件 @deprecated 收敛
 - R208+ 实装：R201 §A7 #9/#11/#13/#14
+
+## §四十三 R205 Redis 多实例切流飞手计划（2026-09-24）
+
+> **本段为后续状态更新，不修改原 §四十二 R204 内容以保留决策可追溯性。**
+
+> **来源**：R205 治理轮实拍（commit `<待定>`，待 push origin/main）
+
+### 撞号透明登记
+
+- **已 push** `1f7d3f9a R204 权限收敛脚本`（已 merge `65f9b62a`）—— R204 主题 = 权限收敛
+- **本盘** R205 = Redis 多实例切流飞手计划
+
+### 触发
+
+- **R202 阶段 1 docs-only 收口** 主协调能立即做项（最后 1 项）
+- R201 §A7 #13 DBA 部署 Redis + 26h 切流拍板 A 路径
+
+### P0-12 现状盘点
+
+- ruoyi-common-redis 模块已就位（KeyPrefixHandler / RedisExceptionHandler / CacheConfig / RedisConfig / RedissonProperties）
+- **0 项新增依赖**（redisson-spring-boot-starter 3.51.0 + lock4j-redisson-spring-boot-starter 已依赖）
+- HrTokenClient 现内存缓存 → 切 `ipd:hr:token:{tokenId}` Redis
+- BusinessConfigService 单实例 → 多实例 pub/sub `ipd:business-config:invalidate:{configKey}`
+- 4 个 yml 待补 `spring.data.redis` + `redisson.config` 段
+
+### 26h 5 阶段飞手计划
+
+- 阶段 1：HrTokenClient 切 Redis（4h，撞车低）
+- 阶段 2：BusinessConfigService pub/sub（8h，撞车中）
+- 阶段 3：4 个 yml + Redis 配置（2h，撞车低）
+- 阶段 4：Testcontainers 多实例 IT（8h，撞车中）
+- 阶段 5：联调 + 看板同步（4h，撞车低）
+
+### DBA 单方行动
+
+- 三套 Redis 部署（dev=16379/staging=16380/prod=16390）
+- 维护窗口合并（Redis + persons 字符集 + 验证 = 4h）
+- 切换前后回滚路径保留
+
+### 撞车 0 兑现
+
+- 不动 Java/yml/真库/端口/PID（仅 docs 落档飞手计划）
+- 18 兄弟 worktree 完整保留
+- 本盘 worktree：`/tmp/wt-r205` 基于 `origin/main = 65f9b62a`
+
+### 下一步
+
+- DBA 排维护窗口
+- R206-R210 实装启动（撞车 0 严守外，错峰 + 单 worktree）
