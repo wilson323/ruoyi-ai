@@ -82,7 +82,7 @@ public class IpdMockDataInitializer implements ApplicationRunner {
         if (g != null) {
             return g.getId();
         }
-        ProductGroup fresh = ProductGroup.builder().groupName(name).description("Mock 初始化").build();
+        ProductGroup fresh = ProductGroup.builder().groupName(name).description("LOCAL_FIXTURE").build();
         // ⚠️ @Builder 不覆盖 BaseEntity 字段，createTime 走 setter
         fresh.setCreateTime(new Date());
         productGroupMapper.insert(fresh);

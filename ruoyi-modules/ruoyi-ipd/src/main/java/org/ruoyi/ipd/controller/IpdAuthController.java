@@ -11,10 +11,13 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.security.IpdRolePermissionCatalog;
 import org.ruoyi.ipd.service.AuditAttemptService;
 import org.ruoyi.ipd.service.IpdAuthInputException;
 import org.ruoyi.ipd.service.IpdAuthService;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /** IPD认证边界；请求只接受凭据，不接受人员ID、角色或scope。 */
 @RestController
@@ -36,10 +39,17 @@ public class IpdAuthController {
     public record PasswordRequest(@NotBlank @Size(max = 72) String currentPassword,
                                   @NotBlank @Size(min = 8, max = 72) String newPassword) { }
     public record PersonView(String id, String name, String username, String personType,
-                             String groupId, String accountStatus) {
+                             String groupId, String accountStatus, List<String> permissionCodes) {
+        /**
+         * 将领域 Person 转为 API 视图，并附带该角色目录权限码（供前端 accessCodes / 路由闸）。
+         *
+         * @param p 当前会话人员
+         * @return 含 permissionCodes 的人员视图
+         */
         public static PersonView from(Person p) {
+            List<String> codes = IpdRolePermissionCatalog.permissionsOf(p.getPersonType());
             return new PersonView(String.valueOf(p.getId()), p.getName(), p.getUsername(), p.getPersonType(),
-                p.getGroupId() == null ? null : String.valueOf(p.getGroupId()), p.getAccountStatus());
+                p.getGroupId() == null ? null : String.valueOf(p.getGroupId()), p.getAccountStatus(), codes);
         }
     }
     public record LoginView(String token, String tokenType, long expiresIn, String scope,
