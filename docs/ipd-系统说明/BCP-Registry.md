@@ -2298,3 +2298,63 @@ R148 描述「approval_node_config 表（待建）」实际可降级为「在 ip
 
 - owner 拍板 R195 §六 第 2 项 → 启动 R197 实装
 - 或 owner 浏览器实测 R189-R196 后翻 done 收口
+
+## §三十四 R197 轮：R195 §六 第 2 项 §A4 M-Root-12 脚本骨架实装（2026-09-23）
+
+> **本段为后续状态更新，不修改原 §三十 M-Root-12 内容以保留决策可追溯性。**
+> **来源**：R197 治理轮实装（commit `<待定>`，待 push origin/main）
+
+### 触发
+
+- **owner 拍板 R195 §六 14 项第 2 项**（§A4 M-Root-12 脚本骨架 5h）→ 启动 R197 实装
+- **R194 §A4 调研报告** + §四骨架代码 → §五 selftest 5 用例设计稿落地
+
+### 实装交付（W1 + W2 = 4h，W3 CI 集成待 owner OPS-09 拍板）
+
+| 范围 | 状态 | 行数 | 自证能红 |
+|---|---|---|---|
+| `scripts/check-multigates-sync.sh` | ✅ 实装 | 173 行 | FAIL_SEED + 子集 + DRY_RUN 双向触发 |
+| `scripts/selftest-check-multigates-sync.sh` | ✅ 实装 | 92 行 | T1-T5 5 用例全过（exit=0） |
+| `docs/ipd-系统说明/R197-M-Root-12脚本实装-20260923.md` | ✅ 新建 | — | 收口报告 |
+
+### 5 类多套闸检测（脚本骨架设计）
+
+- **MG-1** 权限注解三套闸（meta.authority / meta.access / v-access:code）
+- **MG-2** @IpdAudit 三套闸执行顺序（AOP 切面已声明 @Order/优先级/priority）
+- **MG-3** SSRF allowlist > 黑名单 > DNS 优先级链（AiChatClient 已声明）
+- **MG-4** 租户拦截器 / decryptApiKey / @InterceptorIgnore OR/AND 语义（待 TenantInterceptor 落档）
+- **MG-5** 闸间同步测试 ≥ 1 个（前端仓独立，待 permissions.ts 抽 + 闸间测试）
+
+### 当前仓实测真活（脚本默认扫描）
+
+| MG | 结果 | 来源文件 |
+|---|---|---|
+| MG-1 | SKIP（前端仓独立，不在本仓）| 路径：`/Users/mac/Documents/ruoyi-ipd-web` |
+| MG-2 | ✅ PASS（IpdAuditAspect 已声明 @Order/优先级/priority） | `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/audit/IpdAuditAspect.java` |
+| MG-3 | ✅ PASS（AiChatClient 已声明 allowlist 优先级） | `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ai/AiChatClient.java` |
+| MG-4 | ❌ FAIL（TenantInterceptor.java 文件缺失） | 期望路径：`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/interceptor/TenantInterceptor.java` |
+| MG-5 | ❌ FAIL（前端仓闸间同步测试未覆盖） | 期望路径：`apps/web-antd/src/views/ipd/*.test.ts`（前端仓独立） |
+
+**汇总**：默认扫描 → `❌ FAIL: 2 项多套闸不同步（M-Root-12 未根除）`（exit=1）。脚本验红成功（M-Root-12 自证能红纪律 R134）。
+
+### selftest 5 用例全过（exit=0）
+
+- **T1** 默认扫描 → exit=1（脚本可执行 + 真活 FAIL）
+- **T2** FAIL_SEED → exit=2（验脚本能拦）
+- **T3** DRY_RUN + FAIL_SEED → exit=0（验 dry-run 旁路）
+- **T4** MG_TARGETS=1,2 子集 → exit=1（验子集限定动作）
+- **T5** 性能 0s ≤ 60s（5 类闸 × find/grep）
+
+### 撞车 0 兑现
+
+- **scripts/ +261 行**（check-multigates-sync.sh 173 + selftest 92），新增未触既有脚本
+- **不动 .claude/hooks/**（pre-commit 接入需 owner OPS-09 拍板 → R197-W3 留待 owner）
+- **不动 Java/SQL/yml/真库/端口/PID**（撞车 0 严守）
+- **不动兄弟会话 modified json**（主工作区剩 1 modified = 兄弟会话 ddl-apply-check-result-20260923.json，未捎带）
+- **13 兄弟 worktree 完整保留**
+
+### W3 待 owner 拍板（OPS-09）
+
+- 是否挂入 `.claude/hooks/` pre-commit（动共享 hook 需 owner OPS-09 授权）
+- 是否挂入 `.github/workflows/` CI yml
+- 默认 MG_TARGETS 全开 vs MG-1/3 先开（怕首跑红太多）
