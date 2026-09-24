@@ -2555,3 +2555,65 @@ P0-10 / P1-3 / P1-4 / P1-6 / P1-10 / P2-3 / P3-2 / P3-7 / P3-8 / P4-2 / P4-4 / P
 - owner 拍板 6 子项 → 回写推荐段
 - R202 docs-only 落档实装计划 → R203+ 启动分阶段
 - 撞车 0 持续严守
+
+## §四十 R202 11 项推荐路径合并实装飞手计划（2026-09-24）
+
+> **本段为后续状态更新，不修改原 §三十九 R201 §A7 内容以保留决策可追溯性。**
+
+> **来源**：R202 治理轮实拍（commit `<待定>`，待 push origin/main）
+
+### 撞号透明登记
+
+- **已 push** `356fde4f R201 §A7`（已 merge `e640a0d3`）—— R201 主题 = 6 子项 × 3 选项矩阵
+- **已 push** `f65bc376 R198 §A5`（已 merge `e9c58d3a`）—— R198 主题 = 5 项 × 3 选项矩阵
+- **本盘** R202 = 11 项推荐路径合并实装飞手计划
+
+### 触发
+
+- **owner 拍板「按推荐走」** = R198 §A5 5 项 + R201 §A7 6 子项 = 11 项推荐路径全选
+- 主协调 docs-only 落档实装飞手计划，区分能力边界
+
+### 11 项推荐路径汇总
+
+| 项 | 推荐 | 撞车 0 严守类型 |
+|---|---|---|
+| R198-1 AllowanceService | A 保留 | docs-only 翻历史层 |
+| R198-2 RequirementPool Entity | B 改对齐真库 | 需 OPS-09 拍板动 Java |
+| R198-3 PersonResignEscalator | A 保留 | docs-only 翻历史层 |
+| R198-4 KPI_REVISION_MODE | A 保留 / B 删 | 需 OPS-09 拍板动 Java |
+| R198-5 POST_LAUNCH_REVIEW_* | A 保留 | docs-only 翻历史层 |
+| R201-9 KPI 公式派单 | A 全量拍 + 联调 | 阻塞业务 owner + 前端 owner + evolver |
+| R201-10 AllowanceService | A 保留 | docs-only 翻历史层（同 R198-1）|
+| R201-11 docker 端口 | B 全仓推 1XXXX | 阻塞 DevOps + 前端 owner + evolver |
+| R201-12 DBA 窗口合并 | A 2-3h 一刀 | 阻塞 DBA 单方 |
+| R201-13 DBA Redis + 26h | A 三套 + 26h 切流 | 阻塞 DBA + evolver |
+| R201-14 权限三套收敛 | A meta.authority → v-access | 阻塞前端 owner + evolver |
+
+### 主协调能力边界
+
+- ✅ 可立即做（撞车 0 严守）：~9h docs-only（R198-1/3/5/10 + R201-9/11/14 调研）
+- ⚠️ 需 OPS-09 拍板（动 Java）：~3h（R198-2/4）
+- ⚠️ 阻塞 owner/DBA/业务 owner/前端 owner/DevOps：~55h + DBA 5-6h
+
+### 阶段拆分
+
+- 阶段 1 docs-only 收口：~9h
+- 阶段 2 OPS-09 拍板动 Java：~3h
+- 阶段 3 evolver 实装：~50h（错峰 + 单 worktree）
+- 阶段 4 DBA 单方：~5-6h
+
+### 撞车 0 兑现
+
+- 不动 Java/Vue/SQL/yml/真库/端口/PID（仅 docs 落档飞手计划）
+- 18 兄弟 worktree 完整保留
+- 本盘 worktree：`/tmp/wt-r202` 基于 `origin/main = e640a0d3`
+
+### 下一步
+
+1. owner 在场翻 R198 §A5 3 项 done
+2. OPS-09 拍 R198 §A5 项 2/4
+3. 业务 owner 拍 R201 §A7 #9 KPI 边界
+4. DevOps + 前端 owner 摸 R201 §A7 #11 docker
+5. DBA 排 R201 §A7 #12/#13 维护窗口
+6. 前端 owner 摸 R201 §A7 #14 权限收敛启动
+7. R203+ 按阶段 3 启动 evolver
