@@ -12168,16 +12168,47 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **看板**：fresh 总账 476=474+2；d9bd1477 done（三证）· 15d5e689 todo（缺陷）· 8e751acf 追加双下拉不联动第 4 项观感。报告增 §九 + §8.5 W1 状态翻转待验→已验证。
 
-## R212 全局闭环梳理增量轮（2026-09-24，R211 三大限制补齐）
+## R212 全局闭环梳理增量轮（2026-09-24，含 13:01Z 现查复核）
 
-**定位**：R211（同日、12/12 复核 PASS）增量轮，只补 R211 自我声明的三大限制（端点级逐条 / 65 路由全遍历 / 测试结果回填），不重做已通过的产品域级清单。撞车 0：仅动 docs + 只读脚本 + 真库零写 + 端口/PID 零触碰 + 看板只建卡不翻卡。
+**定位**：R211 增量轮（端点级对账 / 路由可见性 / 测试回填）。撞车 0：仅 docs + 只读探针；不动 Java/Vue/SQL/yml；真库零写；不杀端口；不拉 Redis；不 commit；不翻看板 status。
 
-**fresh 基线复算**：后端 HEAD ebcfa3d6 / 前端 59f0a85 / Controller 59+1 / 285 唯一端点 / @Test 2239 类 271 / vue 66 / api-ipd **60**（36 业务，R211 记 68 失真→勘误 D6）/ 真库 160 表 / 端口 16039·15666·13306 UP、**Redis 6379 再度 DOWN**（实测登录链仍正常=缓存非阻塞路径，不重启）。脏数据三探针 dirty=0/dead_path=0/mock=1 全吻合。ddl json 残留仅 checkedAt 一行，登记不裹挟。
+**本轮复核（相对初稿草稿）关键纠偏**：
+- 后端 HEAD 草稿 `ebcfa3d6` → 现查 **`7868a26a`**；前端 `59f0a85` → **`a0f0b48`**
+- T-V1 草稿「62 干净」→ 本轮复跑 **52 ok / 12 withErrors / 0 白屏**（`traverse-result-rerun.json`）；11 条为 projectId 兜底 9140004 + projects API code=20001，1 条 landed 400 真缺陷
+- 门禁现查 orphan_endpoints=**98** / field_mismatches=**15**；**0921 worktree 差集未复算**（不沿用「115→98」）
+- 真库 160 表 / 0 行 86；bonus_pools 19 池 1 悬空 / allocations 0 孤儿；5 表无 Entity 仍成立
+- 五连无 token：`401 401 404 401 404`；端口 16039/15666/13306/62250 UP，6379 DOWN
+- 看板 477（367/24/25/4/57）；卡 **`0ddd9f67-542f-4d64-8131-880b1734c4e5`** status=todo **已存在**，本轮未重建未改 status
+- project_id MCP 核验：`01dcf15c-86bb-4c7b-957c-8fe44bddd10d` = ruoyi-ai
 
-**逐条矩阵三大增量（附录 R212-全量对账明细矩阵 564 行）**：L1 端点 285 条 = ✅双契约通 173 + 🔴BE孤儿 96 + ⚠️字段错位 16；与 0921 diff：孤儿 115→98，净消亡 7 条全在 gate-elements 域（已接前端），0 新增孤儿。L2 真库 160 表逐表（0 行 86：框架 47+IPD 业务 39）；5 张表建了无 Entity（gate_waivers/multi_project_capacity_approvals/product_retirements/rd_replacement*）；**bonus_pools 外键扫描补 R211c 待扫项**：19 池 1 悬空（=已建卡 15d5e689 那条）/ 台账 0 孤儿。L3 静态 66 条零缺 vue + **playwright 全遍历 65 条**（补齐 R211b 只人工 14 页）：62 干净 / 0 白屏 / 0 死链 / 1 预期拦截 / 2 有错。
+**落档**：
+- `docs/ipd-系统说明/R212-全局项目闭环梳理与全量计划矩阵-20260924.md`（canonical）
+- `docs/ipd-系统说明/R212-全量对账明细矩阵-20260924.md`（L1/L2/L3；头+L3 浏览段已勘误）
+- `docs/ipd-系统说明/R212-全局闭环梳理与全量计划矩阵V2-20260924.md`（指针，非第二事实源）
+- `docs/ipd-系统说明/验收/R212-可见性-20260924/`（verify-baseline / contract-verify-rerun / mysql-readonly-summary / traverse-result-rerun）
+- 前端仓既有 `scripts/r212-route-visibility-traverse.mjs`（只读使用，未改逻辑）
 
-**测试回填**：T-V1 从"待建脚本"→建成跑通（最大增量）；T-I4 补 bonus_pools 外键扫描；后端/前端单测不重跑（无源码改动+假红风险，遵 R211 §4.0）。
+**未做（禁止假绿）**：T-V2 四角色、E2E 五路径、单测全量重跑、0921 worktree 契约差集
 
-**新发现建卡（看板 476→477，todo 23→24）**：`0ddd9f67` — landed-scenarios 页进入即 400（`GET /api/v1/scenarios/landed` projectId 后端必填 `@RequestParam Long projectId` 无 required=false vs 前端 landed-scenarios.vue:147 无参调用），POST 后独立 GET 回读核验，不翻任何兄弟卡。change/:changeId 的 404 系脚本兜底 changeId=1 而 requirement_changes 表 0 行，非页面缺陷不建卡。
+**撞车 0 确认**：未改 Java/Vue/SQL；未 stage ddl-apply-check-result / .qoder-cn；无 git commit/push
 
-**报告落档**：主报告 R212-全局闭环梳理与全量计划矩阵V2-20260924.md（五大交付摘要 + 与 R211 diff 视图）+ 明细附录 + 验收/R212-可见性-20260924/（脚本/JSON/日志）；前端仓新增 scripts/r212-route-visibility-traverse.mjs + r212-traverse-result.json。
+### R212-根因 偏差根因提炼与机制根除（2026-09-24T13:17Z）
+
+**12 条 err 定性（未钉参复跑 13:03:29Z）**：11 条 `/ipd/projects/:projectId/*` = `GET /api/v1/projects/9140004` 404 → **a 脚本参数兜底**（projects 无 9140004 行；同 id bonus_pools 悬空，卡 15d5e689）；1 条 landed-scenarios = `GET /api/v1/scenarios/landed` 400 → **c 契约缺陷**（卡 `0ddd9f67` 已存在 todo，回读核验，未重建）。钉参另见 1 条 `change/:changeId` → `requirement-changes/1` 404 = **b 空表**（requirement_changes 0 行）。本轮**无新 c/d 缺陷**，未建卡。
+
+**2→12 原因（证据）**：首跑 12:38Z 日志 `projectId=2098349974990389250`（非脚本兜底常量 → env 注入）；复跑日志 `projectId=9140004`（兜底）；两次均 `[resolveParams] projects code=20001 lst=0`（脚本取 localStorage token 非 IPD 会话 token，自动取参从未成功）；`git diff ebcfa3d6 523e4670 -- '*.java'` 0 行排除回归；钉参复跑 13:17Z = **62 ok / 2 err**（`验收/R212-可见性-20260924/traverse-pinned-20260924.json`）→ 结论：**参数不可复现**，非回归/非环境/非账号。
+
+**根因 → 机制**：
+- RC-1 数字凭记忆/旧快照（「孤儿 115」，证据 105）→ `scripts/check-round-doc-evidence.mjs` 证据块逐项比对（EVIDENCE_MISMATCH）
+- RC-2 结论未绑定证据路径与采集时间（HEAD 被自身提交推过即误判「过时」）→ 证据块 `at` 必填 + HEAD 只比证据记录值（EVIDENCE_NO_TIMESTAMP）+ 正文 `ev:` 标记绑定（INLINE_MISMATCH / CLAIM_UNBOUND）
+- RC-3 同轮同主题多文件（V2/非 V2）→ DUP_TOPIC（round≥212 FAIL；历史 7 对仅 WARN）
+- RC-4 遍历参数不钉、无元数据 → `scripts/run-route-traverse-with-meta.sh`（缺参 exit 2 / 真库预检 exit 2 / 结果带 meta）
+- RC-5 「全部补齐 / 100%」无判定规则 → COMPLETION_NO_EVIDENCE
+- RC-6 证据文件在目录却未登记消费（主文误写「0921 未复算」）→ ROUND_NO_EVIDENCE_BLOCK（每轮必须有证据块主文）+ 规约 §7「证据文件须登记来源命令」
+- 既有门禁为何没拦：`check-report-baseline-drift.sh` 9 条硬编码 fixture 对现态、默认 warning、不扫新轮；`check-doc-drift.sh` / `check-duplicate-ssot.sh` 管别的层；五必现查 §1~§6 只要求现查，不要求可机器回溯
+
+**落档**：`scripts/check-round-doc-evidence.mjs`（新）、`scripts/run-route-traverse-with-meta.sh`（新）、`事实源五必现查规约-20260908.md` §7（扩展，不新开规约）、R212 主文补证据块 + 勘误（撤回「否决 62」、115→105、HEAD 口径）、明细矩阵 L3/0921 勘误、证据 `traverse-pinned-20260924.json/.log`
+
+**验证**：门禁对 R212 EXIT=0；加证据块前 EXIT=1（ROUND_NO_EVIDENCE_BLOCK）；`ROUNDDOC_FAIL_SEED=1` EXIT=1；/tmp 篡改副本 EXIT=1；既有 5 门禁 EXIT=0
+
+**遗留 owner 裁决**：前端遍历脚本 token 取法（改读 sessionStorage `ruoyi-ipd.session`，属行为修改，本轮未动）；7868a26a / a0f0b48 提交信息残留错误数字（不改写历史）；0921 基线来源命令登记

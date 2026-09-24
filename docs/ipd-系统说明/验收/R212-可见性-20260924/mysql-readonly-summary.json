@@ -1,0 +1,26 @@
+{
+  "tables": 160,
+  "zero_row_exact": 86,
+  "zero_row_fw": 47,
+  "zero_row_ipd": 39,
+  "bonus_pools": 19,
+  "bonus_pools_dangling": 1,
+  "bonus_allocations_orphan": 0,
+  "named_zero_tables": {
+    "gate_waivers": 0,
+    "multi_project_capacity_approvals": 0,
+    "product_retirements": 0,
+    "rd_replacement_approvals": 0,
+    "rd_replacements": 0
+  },
+  "entities_missing_java": [
+    "gate_waivers",
+    "multi_project_capacity_approvals",
+    "product_retirements",
+    "rd_replacement_approvals",
+    "rd_replacements"
+  ],
+  "mock_persons": 1,
+  "dead_path_launch": 0,
+  "dirty_deletion": 0
+}
