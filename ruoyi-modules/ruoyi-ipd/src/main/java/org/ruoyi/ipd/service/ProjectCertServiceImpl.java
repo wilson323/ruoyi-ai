@@ -111,6 +111,36 @@ public class ProjectCertServiceImpl implements IProjectCertService {
     }
 
     /**
+     * R212-⑤（看板卡 dbe1b6a7）：HTTP re-sync 入口专用重载——补操作人组归属断言。
+     *
+     * <p>命名：刻意不叫 {@code syncFromProject} 重载——(Project, IpdActor) 与 (Project, Long)
+     * 同 arity 重载会让既有 {@code when(certs.syncFromProject(any(), any()))} 桩位产生
+     * 编译期歧义（P131 集成测试），异名即零波及。
+     *
+     * <p>原两参 {@link #syncFromProject(Project, Long)} 只用 operatorId 落审计、不做任何
+     * 归属校验，控制器 {@code projectService.getById(id)} 可取任意项目 ⇒ 跨组写入认证清单。
+     * 本重载把「操作人组 == 项目主组」断言前置到任何写入之前（SUPER_ADMIN 豁免）。
+     *
+     * <p>为什么不把断言塞进两参版本：两参版还有第二个生产调用方
+     * {@code ProjectService.insertNewProject}（立项 bootstrap），彼处的组语义由
+     * {@code Project.create} 的 fallbackMainGroupId 规则（BR-ORG-01：组长可代本组立项、
+     * 客户端可显式选主组）单独负责，混入断言会改变立项语义。故两参版保持原样并退化为
+     * 「内部/已鉴权上下文」专用，HTTP 面一律走本重载。
+     *
+     * @param project 已加载项目（为 null 时由被委托方按既有「项目不存在」抛出，文案不变）
+     * @param actor   操作人会话身份（必填）
+     * @return 新增条数
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int syncFromProjectAuthorized(Project project, org.ruoyi.ipd.security.IpdActor actor) {
+        org.ruoyi.ipd.security.IpdIdorGuard.requireAuthenticated(actor);
+        if (project != null) {
+            org.ruoyi.ipd.security.IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
+        }
+        return syncFromProject(project, actor.id());
+    }
+
+    /**
      * R8-P0-6：一次性 selectList 取出该项目全部已存在的 (countryCode|certName) 集合。
      * @TableLogic 启用后 delFlag=1 自动过滤，无需手写。
      */

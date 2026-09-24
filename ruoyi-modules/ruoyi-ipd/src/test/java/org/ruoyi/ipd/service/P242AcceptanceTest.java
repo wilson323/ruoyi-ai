@@ -76,7 +76,10 @@ class P242AcceptanceTest {
     void setUp() {
         service = new ProjectMemberServiceImpl(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
-        lenient().when(projectMapper.selectById(anyLong())).thenReturn(new Project());
+        // R212-① 配套（看板卡 dbe1b6a7）：main_group_id 非空是真库不变量（Project.create 强制，
+        // BR-ORG-01）；与 MARKET_LEAD.groupId=7 同组 ⇒ 组归属守卫放行，本类既有断言语义不变。
+        lenient().when(projectMapper.selectById(anyLong()))
+            .thenReturn(Project.builder().mainGroupId(7L).build());
         lenient().when(systemConfigService.getIntValue("allowance.projectCountThreshold", 3)).thenReturn(3);
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
     }

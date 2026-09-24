@@ -48,12 +48,18 @@ class StageActionServiceTest {
         auditLogService = mock(IAuditLogService.class);
         projectStageMapper = mock(ProjectStageMapper.class);
         ProjectMapper projectMapper = mock(ProjectMapper.class);
+        // R212-②③ 配套：mainGroupId 非空是真库不变量（Project.create 强制，BR-ORG-01），
+        // 与下方 IN_GROUP actor 同组 ⇒ 既有正向断言语义不变。
         when(projectMapper.selectById(any())).thenReturn(
-            Project.builder().id(100L).status("ACTIVE").delFlag("0").build());
+            Project.builder().id(100L).status("ACTIVE").delFlag("0").mainGroupId(900001L).build());
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         service = new StageActionService(actionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
     }
+
+    /** R212-②③：instantiate / ensureBioComplianceMount 现要求组归属，与本类项目 fixture 同组。 */
+    private static final org.ruoyi.ipd.security.IpdActor IN_GROUP =
+        new org.ruoyi.ipd.security.IpdActor(11L, "市场PM-甲", "MARKET_PM", 900001L);
 
     private StageAction seed(String code, String depth) {
         StageAction a = StageAction.builder()
@@ -148,7 +154,7 @@ class StageActionServiceTest {
             .map(def -> StageAction.builder().projectId(100L).actionCode(def.code()).build())
             .toList();
         when(actionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(existing);
-        int created = service.instantiate(100L, 10L, "CONCEPT");
+        int created = service.instantiate(100L, 10L, "CONCEPT", IN_GROUP);
         assertThat(created).isZero(); // 幂等：全跳过
         Mockito.verify(actionMapper, Mockito.times(1)).selectList(any(LambdaQueryWrapper.class)); // 查重 1 IO
         Mockito.verify(actionMapper, Mockito.never()).insertBatch(any(java.util.Collection.class), any(Integer.class)); // 零插入
@@ -163,7 +169,7 @@ class StageActionServiceTest {
             a.setId(99L);
             return 1;
         });
-        int created = service.instantiate(100L, 10L, "CONCEPT");
+        int created = service.instantiate(100L, 10L, "CONCEPT", IN_GROUP);
         assertThat(created).isEqualTo(12); // 阶段分布锚：CONCEPT=12
     }
 
@@ -193,7 +199,7 @@ class StageActionServiceTest {
             a.setId(55L);
             return 1;
         });
-        assertThat(service.ensureBioComplianceMount(100L)).isEqualTo(1);
+        assertThat(service.ensureBioComplianceMount(100L, IN_GROUP)).isEqualTo(1);
         Mockito.verify(actionMapper).insert(Mockito.argThat((StageAction a) ->
             "C12".equals(a.getActionCode())
                 && "1".equals(a.getIsBlocking())
@@ -204,10 +210,10 @@ class StageActionServiceTest {
     @DisplayName("C12 联动：无涉生物动作不补挂；C12 已挂不重复补挂")
     void c12MountGuards() {
         when(actionMapper.selectCount(any())).thenReturn(0L);
-        assertThat(service.ensureBioComplianceMount(100L)).isZero();
+        assertThat(service.ensureBioComplianceMount(100L, IN_GROUP)).isZero();
         Mockito.verify(actionMapper, Mockito.never()).insert(org.mockito.ArgumentMatchers.<StageAction>any());
         when(actionMapper.selectCount(any())).thenReturn(1L, 1L);
-        assertThat(service.ensureBioComplianceMount(100L)).isZero();
+        assertThat(service.ensureBioComplianceMount(100L, IN_GROUP)).isZero();
     }
 
     @Test

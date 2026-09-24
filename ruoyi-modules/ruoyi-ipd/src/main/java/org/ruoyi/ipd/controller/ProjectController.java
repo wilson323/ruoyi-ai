@@ -254,7 +254,8 @@ public class ProjectController {
     public ApiV1Response<Integer> syncCertItems(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         Project project = projectService.getById(id);
-        return ApiV1Response.ok(projectCertService.syncFromProject(project, actor.id()));
+        // R212-⑤（看板卡 dbe1b6a7）：下传 actor，由服务层做组归属断言（跨组 → 30001/403）
+        return ApiV1Response.ok(projectCertService.syncFromProjectAuthorized(project, actor));
     }
 
     /**

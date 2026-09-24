@@ -13,6 +13,8 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -272,13 +274,19 @@ public class StageActionService implements IStageActionService {
      * 幂等：无涉生物 / 已有 C12 → 返回 0；新挂返回 1。
      *
      * @param projectId 项目主键
+     * @param actor     操作人（R212-③：必填；组归属断言主体）
      * @return 新建 C12 条数（0 或 1）
      */
     @Transactional(rollbackFor = Exception.class)
-    public int ensureBioComplianceMount(Long projectId) {
+    public int ensureBioComplianceMount(Long projectId, IpdActor actor) {
+        // R212-③（看板卡 dbe1b6a7）：补 actor 形参与组归属断言——原方法无 actor，
+        // 控制器仅 requireInternal 宽角色门 ⇒ 任意内部 PM 可跨组挂载 C12 合规动作。
+        // 顺序：actor 必填 → 参数正数（既有语义不变，各角色一致）→ 状态门禁 → 组归属。
+        IpdIdorGuard.requireAuthenticated(actor);
         if (projectId == null || projectId <= 0) {
             throw new ServiceException("项目ID必须为正数");
         }
+        assertProjectWritableInGroup(projectId, actor);
         if (!hasBioFeatureActions(projectId)) {
             return 0;
         }
@@ -372,9 +380,11 @@ public class StageActionService implements IStageActionService {
      * 69 动作 CONCEPT 阶段 = 138 IO → 2 IO，P99 下降 ~250ms → ~20ms。
      */
     @Transactional(rollbackFor = Exception.class)
-    public int instantiate(Long projectId, Long stageId, String stage) {
+    public int instantiate(Long projectId, Long stageId, String stage, IpdActor actor) {
         // Round 8 / 后台安全审查 sibling-path-gate-parity：加项目状态门禁
-        assertProjectWritable(projectId);
+        // R212-②（看板卡 dbe1b6a7）：状态门禁之上叠加组归属断言（原方法无 actor 入参
+        // ⇒ 任意内部 PM 可向任意项目批量物化 69 项阶段动作）。
+        assertProjectWritableInGroup(projectId, actor);
         Set<String> existingCodes = stageActionMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
                 .eq(StageAction::getProjectId, projectId))
@@ -425,11 +435,16 @@ public class StageActionService implements IStageActionService {
     /**
      * P1-2.2：暂停/归档项目只读——禁止动作状态迁移。
      *
+     * <p>R212-②③ 改造：返回已加载的 {@link Project}，供 {@link #assertProjectWritableInGroup}
+     * 复用同一次 DB 读（不新增查询次数）；既有调用方（transit / addDeliverable / 本方法）
+     * 忽略返回值，判定语义完全不变。
+     *
      * @param projectId 项目 ID
+     * @return 项目实体；{@code projectId == null} 时返回 null（沿用既有「null 跳过状态门禁」口径）
      */
-    private void assertProjectWritable(Long projectId) {
+    private Project assertProjectWritable(Long projectId) {
         if (projectId == null) {
-            return;
+            return null;
         }
         Project project = projectMapper.selectById(projectId);
         if (project == null || "1".equals(project.getDelFlag())) {
@@ -438,5 +453,23 @@ public class StageActionService implements IStageActionService {
         if ("SUSPENDED".equals(project.getStatus()) || "ARCHIVED".equals(project.getStatus())) {
             throw new ServiceException("暂停/归档项目禁止变更动作状态");
         }
+        return project;
+    }
+
+    /**
+     * R212-②③（看板卡 dbe1b6a7）：HTTP 批量物化 / C12 合规补挂入口的对象级归属守卫。
+     *
+     * <p>三段式（与 {@link IpdIdorGuard} 范式一致，任何一环不满足即 fail-closed）：
+     * ① actor 必填（缺失 → UNAUTHORIZED 20001/401）；② 复用既有状态门禁
+     * （项目不存在/软删/暂停归档 → ServiceException，行为不变）；
+     * ③ 操作人组 == 项目主组（跨组 → FORBIDDEN 30001/403，SUPER_ADMIN 运维豁免）。
+     *
+     * <p>组断言排在状态门禁之后：跨组者无法借「暂停/归档」与「不存在」的文案差异探测
+     * 他组项目状态；而存在性文案（ServiceException）本就对同/跨组一致，未新增泄露面。
+     */
+    private void assertProjectWritableInGroup(Long projectId, IpdActor actor) {
+        IpdIdorGuard.requireAuthenticated(actor);
+        Project project = assertProjectWritable(projectId);
+        IpdIdorGuard.assertSameGroupIpd(actor, project == null ? null : project.getMainGroupId());
     }
 }

@@ -94,7 +94,11 @@ public interface IStageActionService {
     /** * */
     /** * @param projectId 项目主键 */
     /** * @return 新建 C12 条数（0 或 1） */
-    int ensureBioComplianceMount(Long projectId);
+    /**
+     * R212-③（看板卡 dbe1b6a7）：新增 {@code actor} 形参——HTTP 入口必须下传会话身份，
+     * 服务内做「操作人组 == 项目主组」断言（SUPER_ADMIN 豁免），消除跨组挂载 C12 的横向越权面。
+     */
+    int ensureBioComplianceMount(Long projectId, org.ruoyi.ipd.security.IpdActor actor);
 
     /** * 是否存在未删的涉生物动作（is_bio_feature=1）。 */
     /** * */
@@ -111,6 +115,10 @@ public interface IStageActionService {
     /** * PERF-03：批量实例化阶段动作，从 N 次 selectCount + N 次 insert 优化为 */
     /** * 1 次 selectList（取项目所有已有 action codes）+ 1 次 insertBatch（批量插入剩余）。 */
     /** * 69 动作 CONCEPT 阶段 = 138 IO → 2 IO，P99 下降 ~250ms → ~20ms。 */
-    int instantiate(Long projectId, Long stageId, String stage);
+    /**
+     * R212-②（看板卡 dbe1b6a7）：新增 {@code actor} 形参——HTTP 入口必须下传会话身份，
+     * 服务内做「操作人组 == 项目主组」断言（SUPER_ADMIN 豁免），消除跨组批量物化阶段动作的横向越权面。
+     */
+    int instantiate(Long projectId, Long stageId, String stage, org.ruoyi.ipd.security.IpdActor actor);
 
 }

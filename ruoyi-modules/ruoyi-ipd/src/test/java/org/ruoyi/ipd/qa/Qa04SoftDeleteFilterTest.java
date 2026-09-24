@@ -83,8 +83,9 @@ class Qa04SoftDeleteFilterTest {
     }
 
     private static Project activeProject(Long id) {
+        // R212-③ 配套：mainGroupId 非空是真库不变量（Project.create 强制，BR-ORG-01）
         Project p = Project.builder().id(id).name("QA-04").templateType("HARDWARE")
-            .level("A").currentStage("CONCEPT").status("ACTIVE").build();
+            .level("A").currentStage("CONCEPT").status("ACTIVE").mainGroupId(900001L).build();
         p.setDelFlag("0");
         return p;
     }
@@ -140,7 +141,8 @@ class Qa04SoftDeleteFilterTest {
             return 1;
         });
 
-        int mounted = service.ensureBioComplianceMount(881100L);
+        int mounted = service.ensureBioComplianceMount(881100L,
+            new org.ruoyi.ipd.security.IpdActor(42L, "市场PM-甲", "MARKET_PM", 900001L));
 
         assertThat(mounted).isEqualTo(1);
         ArgumentCaptor<LambdaQueryWrapper<ProjectStage>> captor =
