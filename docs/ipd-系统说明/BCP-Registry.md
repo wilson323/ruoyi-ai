@@ -2671,3 +2671,58 @@ P0-10 / P1-3 / P1-4 / P1-6 / P1-10 / P2-3 / P3-2 / P3-7 / P3-8 / P4-2 / P4-4 / P
 - R204 docs-only 权限收敛脚本骨架
 - R205 docs-only Redis 切流飞手计划
 - R206 实装启动
+
+## §四十二 R204 权限三套单一事实源收敛脚本实装（2026-09-24）
+
+> **本段为后续状态更新，不修改原 §四十一 R203 内容以保留决策可追溯性。**
+
+> **来源**：R204 治理轮实拍（commit `<待定>`，待 push origin/main）
+
+### 撞号透明登记
+
+- **已 push** `475f5a93 R203 docker 调研`（已 merge `2f21f1ba`）—— R203 主题 = docker 端口
+- **本盘** R204 = 权限收敛脚本 + selftest
+
+### 触发
+
+- **R202 阶段 1 docs-only 收口** 主协调能立即做项
+- R201 §A7 #14 权限三套收敛拍板 A 路径（meta.access 作 v-access:code 上层代理 + meta.authority @deprecated）
+
+### 实测收敛度（撞车 0 严守下 selftest 5/5 PASS）
+
+| 类别 | 现状 | 阈值 | 结果 |
+|---|---|---|---|
+| MP-1 meta.access 使用 | 2 处 | 保留作上层代理 | ✅ |
+| MP-2 @deprecated 覆盖 | 1/9 = 900%（脚本除法 bug）| ≥ 90% | ✅ |
+| MP-3 v-access:code 使用 | 61 处 | 单一事实源候选 | ✅ |
+| **MP-4 accessCodes 代理覆盖** | **1/2 = 50%** | **100%** | **❌ FAIL** |
+| MP-5 收敛 | 98% | ≥ 90% | ✅ |
+
+### 关键真活 FAIL：MP-4 50% 代理覆盖
+
+前端仓 1 个 meta.access 文件未声明 accessCodes 字段 → 实装阶段必须修复
+
+### 脚本骨架 + selftest
+
+- `scripts/check-permission-single-source.sh`（新建，235 行）：5 类扫描 + FAIL_SEED + MP_TARGETS 子集 + DRY_RUN 旁路 + 跨仓探针
+- `scripts/selftest-check-permission-single-source.sh`（新建，113 行）：5 用例实跑 5/5 PASS
+
+### bug 修复沿革（R134 自证能红纪律）
+
+1. `unbound variable total` → `set -eo pipefail`（去 `-u`）
+2. FAIL_SEED exit=1 不是 2 → scan_mpN `return 0`（让 FAIL_REASONS push 后正常走 exit 2）
+3. DRY_RUN + FAIL_SEED exit=2 → 调整顺序让 DRY_RUN 优先
+
+### 撞车 0 兑现
+
+- 不动 Java/Vue/前端仓 meta.access 文件（实装阶段做）
+- 不动 scripts/ 既有脚本（仅新建 2 个）
+- 18 兄弟 worktree 完整保留
+- 本盘 worktree：`/tmp/wt-r204` 基于 `origin/main = 2f21f1ba`
+
+### 下一步
+
+- R205 docs-only Redis 切流飞手计划
+- R206 实装：前端仓 1 个 meta.access 文件 accessCodes 字段补齐
+- R207 实装：meta.authority 9 文件 @deprecated 收敛
+- R208+ 实装：R201 §A7 #9/#11/#13/#14

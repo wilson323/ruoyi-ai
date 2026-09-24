@@ -11983,3 +11983,29 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 **撞车 0**：不动 yml/Dockerfile/CI/.env；18 兄弟 worktree 完整保留
 
 **下一步刷新**：R204 权限收敛脚本骨架 + R205 Redis 切流飞手计划
+
+## R204 权限三套收敛脚本实装 + selftest 5/5 PASS（2026-09-24）
+
+**主协调处置**：
+1. R202 飞手计划 / R203 docker 调研 done
+2. R202 阶段 1 docs-only 收口启动 R204 权限收敛脚本
+3. 脚本实装 + selftest + bug 修复 + 实测收敛度
+
+**R204 主体 commit**：`<待定>`（待 push origin/main）
+
+**范围**：
+- `scripts/check-permission-single-source.sh`（新建 235 行）
+- `scripts/selftest-check-permission-single-source.sh`（新建 113 行）
+- `docs/ipd-系统说明/调研/R204-权限三套单一事实源收敛调研-20260924.md`（+131 行）
+- `docs/ipd-系统说明/BCP-Registry.md`（追加 §四十二 +50 行）
+- `docs/ipd-系统说明/开发计划-看板镜像.md`（追加 R204 段 +20 行）
+
+**工作量**：4h（脚本 + selftest + 调研）
+
+**撞车 0**：不动 Java/Vue/前端仓 meta.access；不动 scripts/ 既有脚本；18 兄弟 worktree 完整保留
+
+**selftest 5/5 PASS**：T1 默认扫描 exit=1 真活 FAIL / T2 FAIL_SEED exit=2 / T3 DRY_RUN exit=0 / T4 子集 exit=0 / T5 性能 1s
+
+**关键真活 FAIL**：MP-4 meta.access → accessCodes 代理覆盖 50% < 100% → 实装阶段必须修复
+
+**下一步刷新**：R205 Redis 切流飞手计划 → R206 实装启动
