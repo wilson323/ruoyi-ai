@@ -82,14 +82,16 @@ while IFS= read -r f; do
   TOTAL_METHODS=$(echo "$PUBLIC_METHODS" | grep -c "." 2>/dev/null || echo 0)
 
   # 检查方法上方 5 行内是否有 /** ... */
+  # 注意：禁止用 bash 保留变量 LINENO 存方法行号——赋值后下一条命令会把它重置为
+  # 「脚本自身行号」，导致 sed 窗口永远扫错文件位置，产生大面积假红（2026-09-24 实证）。
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
-    LINENO=$(echo "$line" | cut -d: -f1)
-    [[ -z "$LINENO" ]] && continue
-    PREV_START=$((LINENO - 5))
+    METHOD_LINE=$(echo "$line" | cut -d: -f1)
+    [[ -z "$METHOD_LINE" ]] && continue
+    PREV_START=$((METHOD_LINE - 5))
     [[ $PREV_START -lt 1 ]] && PREV_START=1
 
-    if sed -n "${PREV_START},$((LINENO-1))p" "$f" 2>/dev/null | grep -qE "/\*\*|\*/"; then
+    if sed -n "${PREV_START},$((METHOD_LINE-1))p" "$f" 2>/dev/null | grep -qE "/\*\*|\*/"; then
       :
     else
       JAVADOC_MISS=$((JAVADOC_MISS + 1))

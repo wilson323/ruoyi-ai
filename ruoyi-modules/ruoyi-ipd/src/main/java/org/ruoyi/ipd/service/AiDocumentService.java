@@ -81,6 +81,11 @@ public class AiDocumentService {
         this.auditLogService = auditLogService;
     }
 
+    /**
+     * 可选注入文档向量化服务：审核通过后异步写向量；未装配时主链仍可运行。
+     *
+     * @param docEmbeddingService 向量化服务，可为 null（单测 / 降级）
+     */
     @Autowired(required = false)
     public void setDocEmbeddingService(AiDocEmbeddingService docEmbeddingService) {
         this.docEmbeddingService = docEmbeddingService;

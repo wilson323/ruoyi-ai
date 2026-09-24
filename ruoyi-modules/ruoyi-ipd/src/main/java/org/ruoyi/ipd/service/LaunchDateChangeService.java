@@ -85,6 +85,7 @@ public class LaunchDateChangeService implements ILaunchDateChangeService {
         Date occurredAt = new Date();
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                /** 事务提交成功后调用守卫 postCommit，登记上市日变更状态机副作用。 */
                 @Override
                 public void afterCommit() {
                     stateMachineGuard.postCommit(LDC_ENTITY_TYPE, fromState, toState, trigger,
