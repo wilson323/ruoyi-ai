@@ -12167,3 +12167,17 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 **真活抓出两缺陷（建卡 15d5e689 todo）**：①无贡献度评定时 distribute 必 500（contribution_rate NOT NULL 真库 vs Service:1141 "置 null 不阻断"注释矛盾，修法 A 列改可空/B 跳过台账待裁决）；②bonus_pools.project_id=9140004 悬空（projects 无此行，页面选不到本池）。
 
 **看板**：fresh 总账 476=474+2；d9bd1477 done（三证）· 15d5e689 todo（缺陷）· 8e751acf 追加双下拉不联动第 4 项观感。报告增 §九 + §8.5 W1 状态翻转待验→已验证。
+
+## R212 全局闭环梳理增量轮（2026-09-24，R211 三大限制补齐）
+
+**定位**：R211（同日、12/12 复核 PASS）增量轮，只补 R211 自我声明的三大限制（端点级逐条 / 65 路由全遍历 / 测试结果回填），不重做已通过的产品域级清单。撞车 0：仅动 docs + 只读脚本 + 真库零写 + 端口/PID 零触碰 + 看板只建卡不翻卡。
+
+**fresh 基线复算**：后端 HEAD ebcfa3d6 / 前端 59f0a85 / Controller 59+1 / 285 唯一端点 / @Test 2239 类 271 / vue 66 / api-ipd **60**（36 业务，R211 记 68 失真→勘误 D6）/ 真库 160 表 / 端口 16039·15666·13306 UP、**Redis 6379 再度 DOWN**（实测登录链仍正常=缓存非阻塞路径，不重启）。脏数据三探针 dirty=0/dead_path=0/mock=1 全吻合。ddl json 残留仅 checkedAt 一行，登记不裹挟。
+
+**逐条矩阵三大增量（附录 R212-全量对账明细矩阵 564 行）**：L1 端点 285 条 = ✅双契约通 173 + 🔴BE孤儿 96 + ⚠️字段错位 16；与 0921 diff：孤儿 115→98，净消亡 7 条全在 gate-elements 域（已接前端），0 新增孤儿。L2 真库 160 表逐表（0 行 86：框架 47+IPD 业务 39）；5 张表建了无 Entity（gate_waivers/multi_project_capacity_approvals/product_retirements/rd_replacement*）；**bonus_pools 外键扫描补 R211c 待扫项**：19 池 1 悬空（=已建卡 15d5e689 那条）/ 台账 0 孤儿。L3 静态 66 条零缺 vue + **playwright 全遍历 65 条**（补齐 R211b 只人工 14 页）：62 干净 / 0 白屏 / 0 死链 / 1 预期拦截 / 2 有错。
+
+**测试回填**：T-V1 从"待建脚本"→建成跑通（最大增量）；T-I4 补 bonus_pools 外键扫描；后端/前端单测不重跑（无源码改动+假红风险，遵 R211 §4.0）。
+
+**新发现建卡（看板 476→477，todo 23→24）**：`0ddd9f67` — landed-scenarios 页进入即 400（`GET /api/v1/scenarios/landed` projectId 后端必填 `@RequestParam Long projectId` 无 required=false vs 前端 landed-scenarios.vue:147 无参调用），POST 后独立 GET 回读核验，不翻任何兄弟卡。change/:changeId 的 404 系脚本兜底 changeId=1 而 requirement_changes 表 0 行，非页面缺陷不建卡。
+
+**报告落档**：主报告 R212-全局闭环梳理与全量计划矩阵V2-20260924.md（五大交付摘要 + 与 R211 diff 视图）+ 明细附录 + 验收/R212-可见性-20260924/（脚本/JSON/日志）；前端仓新增 scripts/r212-route-visibility-traverse.mjs + r212-traverse-result.json。
