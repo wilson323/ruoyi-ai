@@ -2617,3 +2617,57 @@ P0-10 / P1-3 / P1-4 / P1-6 / P1-10 / P2-3 / P3-2 / P3-7 / P3-8 / P4-2 / P4-4 / P
 5. DBA 排 R201 §A7 #12/#13 维护窗口
 6. 前端 owner 摸 R201 §A7 #14 权限收敛启动
 7. R203+ 按阶段 3 启动 evolver
+
+## §四十一 R203 docker-compose 端口 1XXXX 调研（2026-09-24）
+
+> **本段为后续状态更新，不修改原 §四十 R202 内容以保留决策可追溯性。**
+
+> **来源**：R203 治理轮实拍（commit `<待定>`，待 push origin/main）
+
+### 撞号透明登记
+
+- **已 push** `8931d75f R202 飞手计划`（已 merge `86163e88`）—— R202 主题 = 11 项合并飞手计划
+- **本盘** R203 = docker-compose 端口 1XXXX 调研
+
+### 触发
+
+- **R202 阶段 1 docs-only 收口** 主协调能立即做项
+- R201 §A7 #11 docker 端口拍板 B 全仓推 1XXXX
+
+### 现状盘点（基线 2026-09-24 现查）
+
+- 后端 Dockerfile：5 个（根 + ruoyi-admin + monitor-admin + snailjob-server + sandbox）
+- **docker-compose yml 完全缺失**（无任何 yml 文件）
+- CI yml：5 个相关（无 docker-publish / compose-deploy）
+- 前端仓 vite env：4 个（跨仓）
+- 当前应用端口：16039（后端）+ 13306（MySQL ipd_dev）
+
+### 端口前缀约定 1XXXX
+
+| 环境 | MySQL | 后端 | 前端 | Redis |
+|---|---|---|---|---|
+| dev | 13306 | 16039 | 15666 | 16379 |
+| staging | 15306 | 16040 | 15667 | 16380 |
+| prod | 17306 | 16060 | 15680 | 16390 |
+
+### 三套 compose 拆分 + 4 个 CI yml 补齐
+
+- 4 个 compose yml + 3 个 up shell + Dockerfile ENV_PROFILE build-arg + 跨仓前端 .env + 4 个 CI yml
+
+### 工作量与撞车
+
+- 实装合计 13h ≈ 1.6 人日
+- 撞车点 4 项触碰（Dockerfile / 跨仓 .env / CI yml / compose yml）
+
+### 撞车 0 兑现
+
+- 不动 yml/Dockerfile/CI/.env（仅 docs 落档调研计划）
+- 18 兄弟 worktree 完整保留
+- 本盘 worktree：`/tmp/wt-r203` 基于 `origin/main = 86163e88`
+
+### 下一步
+
+- DevOps + 前端 owner 摸启动条件
+- R204 docs-only 权限收敛脚本骨架
+- R205 docs-only Redis 切流飞手计划
+- R206 实装启动
