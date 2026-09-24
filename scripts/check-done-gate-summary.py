@@ -118,12 +118,14 @@ def check_one_summary(card_id, all_tasks, strict=True):
     children = parse_sub_cards_status(all_tasks, parent_prefix)
 
     total = len(children)
+    # R214 门禁语义修正（2026-09-24 owner 拍板）：cancelled 也是终态，不得计入 not_done
+    # （P3-4 教训：唯一 blocker 是已 cancelled 的旧版平行卡，导致汇总卡永远翻不了）
     not_done_list = [
         {"card_id": k, **v}
         for k, v in children.items()
-        if v["status"] != "done"
+        if v["status"] not in ("done", "cancelled")
     ]
-    done_count = total - len(not_done_list)
+    done_count = sum(1 for v in children.values() if v["status"] == "done")
 
     can_flip = (len(not_done_list) == 0 and total > 0) if strict else (done_count >= total)
 
@@ -208,6 +210,19 @@ def self_test():
         failures.append(f"哨兵 5 FAIL: 全 done 却 can_flip=False: {result}")
     else:
         print(f"  ✅ 全 done pass (can_flip=True, total=2)")
+
+    # --- 哨兵 6:cancelled 子卡不得阻塞翻牌（R214 语义修正，P3-4 场景）---
+    print("\n[哨兵 6] done+cancelled 混合必须 can_flip=True（cancelled 计入终态）")
+    fake_tasks = [
+        {"id": "uuid-1", "title": "[P3-4.1] 子卡 1", "status": "cancelled"},
+        {"id": "uuid-2", "title": "[P3-4.2] 子卡 2", "status": "done"},
+        {"id": "uuid-3", "title": "[P3-4.3] 子卡 3", "status": "done"},
+    ]
+    result = check_one_summary("P3-4", fake_tasks)
+    if result.get("can_flip") is not True or result.get("not_done") != 0 or result.get("done") != 2:
+        failures.append(f"哨兵 6 FAIL: done+cancelled 混合未放行: {result}")
+    else:
+        print(f"  ✅ cancelled 不阻塞 (can_flip=True, not_done=0, done=2)")
 
     # --- 总结 ---
     print("\n" + "=" * 70)
