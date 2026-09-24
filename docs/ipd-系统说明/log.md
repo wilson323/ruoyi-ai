@@ -11705,3 +11705,35 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **下次刷新**：owner 拍板 P0-7 / P0-11 / P0-12 / P0-13 任一项后启动 R188 实装
 
+
+## R189 R25 死代码实装收口（2026-09-23）
+
+**起点**：owner 拍板「按照建议依次执行」执行 R189 启动决策包全部 5 步。
+
+**commit hash**：`de52088dac38fd89cc8cb47b4c8e7d13d0baa3f3`（分支 `cleanup/r189-r25-deadcode-20260923`）
+
+**实装变更（14 文件 / ~1315 行）**：
+- ✅ 删 6 孤儿 DTO（AllowanceExportRow / BonusExportRow / CertTemplateCreateReq / DetectionCommitReq / DetectionResult / GateElementLifecycleReq）
+- ✅ 删 BidScanService 全链路（BidScanService + IBidScanService + BidScanEscalationAcceptanceTest + P233AcceptanceTest）
+- ✅ 删 OverdueReminderService 全链路（OverdueReminderService + P144AcceptanceTest）
+- ✅ 删 ReportController.PERM_* 4 常量（PERM_QUERY / PERM_EXPORT_ALLOWANCE / PERM_EXPORT_BONUS / PERM_EXPORT_PROJECT）
+- ✅ 删 BusinessConfigKeys.BONUS_TIER_* 4 常量（BONUS_TIER_50/80/100/120，保留 KPI_REVISION_MODE）
+- ⏸ Step 3 yml 改动：person_roles 已清（2026-09-09 owner 拍板后已落地），重复登记已无残留，0 行 yml 可删
+
+**验证链**：
+- `mvn -o -pl ruoyi-modules/ruoyi-ipd -am compile` BUILD SUCCESS
+- `mvn test`（排除 3 已删 + 5 pre-existing P111/P121 UnnecessaryStubbingException）：**2366 PASS / 0 FAIL / 0 ERR / 22 Skipped**
+- baseline 对比：`git stash` 暂存后跑同一命令同样 5 Errors，确认与本次删除无关（防假红）
+- `python3 docs/ipd-系统说明/验收/p1-ddl-apply-check.py` 双库 6 项 APPLIED + GRANT FULL 20/20
+
+**R25 清单失真登记**（commit message 透明记录）：
+- §A7.3 IpdReportController.java → 实际名 ReportController.java
+- §A7.4 BusinessConfigKeys 路径 → 实际 `org.ruoyi.ipd.common`
+- BidScanService 删 → 连带 IBidScanService + 2 test（R25 漏列）
+- OverdueReminderService 删 → 连带 P144AcceptanceTest（R25 漏列）
+
+**撞车 0 严守**：仅 `/tmp/wt-r189-r25` worktree 改动，主工作区 0 M / 0 ??；不抢 13 兄弟 worktree + 4 java in-flight；不动真库/端口/看板 status；不抢 submit 权限
+
+**R25 现状更新**：✅ 7 项 DONE / ⏸ 5 项等 owner 拍板 / ❌ 2 项不建议（详见 BCP-Registry §三十二）
+
+**下次刷新**：owner 拍板本 commit 是否 push → 合并后启动 R190 doc sweep；或拍板 P0-7/11/12/13 任一项启动 R190 实装
