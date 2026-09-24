@@ -11818,3 +11818,28 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 - 主工作区剩 1 modified json（兄弟会话的，未捎带）
 
 **下一步刷新**：owner 拍板 R197-W3（CI 集成 / MG_TARGETS 默认范围 / 挂入 pre-commit）
+
+## R198 R197-W3 CI 集成拍板材料落档（2026-09-24）
+
+**用户指令**：3 个候选——R197-W3 拍板 / R198 §A5 拍板 / 跨仓 R199 浏览器实测（皆 owner 拍板权）
+
+**R198 主体 commit**：本 commit `<待定>`（待 push origin/main）
+
+**R198 范围**：按 R94「主协调不替 owner 拍板」+ R197 §五 W3 留待 OPS-09 拍板，落档 docs-only 拍板材料 + 2 模板（不挂 hook 不挂 yml）：
+1. ✅ `docs/ipd-系统说明/调研/R198-R197W3-CI集成拍板材料-20260924.md`（+159 行）—— 4 决策点 × 3 套方案矩阵
+2. ✅ `docs/ipd-系统说明/调研/R198-pre-commit-hook-template.sh`（+32 行）—— DP-1 B 软拦模板
+3. ✅ `docs/ipd-系统说明/调研/R198-multigates-ci-workflow.yml`（+82 行）—— DP-2 B CI 模板（含 selftest + 默认扫描 + FAIL_SEED smoke）
+4. ✅ BCP-Registry §三十五 R198 轮登记
+5. ✅ 看板镜像 R198 段补登
+
+**R198 工作量**：docs-only 落档（摆选项不替 owner 选）
+
+**撞车 0 兑现**：
+- docs/ipd-系统说明/调研/ 新增 3 文件（不动既有调研）
+- 不动 .claude/hooks/（W3 留待 OPS-09 拍板）
+- 不动 .github/workflows/（W3 留待 owner 拍板）
+- 不动 scripts/Java/SQL/yml/真库/端口/PID/看板卡 status
+- 18 兄弟 worktree 完整保留（含本会话新增 wt-r198 待 cleanup）
+- 主工作区剩 1 modified = 兄弟会话 ddl-apply-check-result-20260923.json，未捎带
+
+**下一步刷新**：owner 拍板方案甲/乙/丙 → 主协调 R199 实装 W3（按拍板方案落地 hook + workflow）
