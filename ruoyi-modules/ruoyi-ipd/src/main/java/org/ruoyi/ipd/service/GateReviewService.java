@@ -11,7 +11,9 @@ import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.GateReviewObserver;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.GateArbitrationMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
@@ -20,6 +22,7 @@ import org.ruoyi.ipd.mapper.GateReviewObserverMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.service.StateMachineGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -164,6 +167,23 @@ public class GateReviewService implements IGateReviewService {
     /** ROOT-R1 P0-7 字面量迁移：Gate 配置（双签人数/签署期限/延期上限；B-RULE-05 配套）来源 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private IBusinessConfigService businessConfigService;
+
+    /**
+     * R212-④（看板卡 dbe1b6a7）：gate → 项目 → 组 归属链路校验所需 ProjectMapper。
+     *
+     * <p>刻意沿用本类既有 {@code businessConfigService}/{@code stateMachineGuard} 的
+     * {@code @Autowired(required = false)} 字段注入范式而非新增构造器形参——避免改动
+     * {@code @RequiredArgsConstructor} 生成的构造签名而波及 4 个既有测试构造点（最小侵入）。
+     * 缺失即 fail-closed（见 {@link #assertGateProjectSameGroup}），不放行；生产由 Spring
+     * 注入（ProjectMapper 与本模块同扫描域，必存在）。测试通过 {@link #setProjectMapper} 注入。
+     */
+    private org.ruoyi.ipd.mapper.ProjectMapper projectMapper;
+
+    /** 测试口/可选注入：装配 gate→项目→组 归属链路所需的 ProjectMapper（null 表示未装配 → fail-closed）。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setProjectMapper(org.ruoyi.ipd.mapper.ProjectMapper projectMapper) {
+        this.projectMapper = projectMapper;
+    }
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -665,6 +685,9 @@ public class GateReviewService implements IGateReviewService {
         if (!"SUPER_ADMIN".equals(actor.role()) && !"GROUP_LEADER".equals(actor.role())) {
             throw new IpdBusinessException("仅超管/产品组长可邀请列席人员");
         }
+        // R212-④（看板卡 dbe1b6a7）：角色复检之后补对象级归属断言——此前任一组长可向他组
+        // gate 邀请列席人并触发通知（跨组写 + 骚扰）。
+        assertGateProjectSameGroup(actor, gate);
         if (role == null || !OBSERVER_ROLE_WHITELIST.contains(role)) {
             throw new IpdBusinessException("列席角色仅允许 SALES|SUPPLY|AFTERSALES|QUALITY|COMPLIANCE");
         }
@@ -709,6 +732,34 @@ public class GateReviewService implements IGateReviewService {
             "邀请列席人员（" + role + "，" + invited + " 人）",
             "role", role, "count", invited);
         return invited;
+    }
+
+    /**
+     * R212-④（看板卡 dbe1b6a7）：gate → 项目 → 组 链路归属断言。
+     *
+     * <p>SUPER_ADMIN 豁免且<b>不触达任何 DB 读</b>（{@link IpdIdorGuard} 守卫 3/6 同口径，
+     * 冒充者在触碰数据前即被拒）；非超管必须满足「操作人组 == gate 所属项目主组」。
+     * 任何一环不满足即 fail-closed 抛 {@link IpdBusinessException}
+     * （{@link ApiV1ErrorCode#FORBIDDEN} → HTTP 403），且项目不存在与无权限统一文案，
+     * 不向他组泄漏「该 gate 指向的项目是否存在」。
+     *
+     * @param actor 邀请人会话身份（调用方已保证非空角色门通过）
+     * @param gate  已加载的 Gate 实例（提供 projectId 链路起点）
+     */
+    private void assertGateProjectSameGroup(IpdActor actor, Gate gate) {
+        if (ROLE_SUPER_ADMIN.equals(actor.role())) {
+            return;
+        }
+        org.ruoyi.ipd.mapper.ProjectMapper mapper = this.projectMapper;
+        if (mapper == null || gate == null || gate.getProjectId() == null) {
+            // 归属链路不可解析 ⇒ 拒绝（fail-closed），不放行
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
+        }
+        Project project = mapper.selectById(gate.getProjectId());
+        if (project == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
+        }
+        IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
     }
 
     /**

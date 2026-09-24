@@ -56,6 +56,10 @@ class StageActionServiceInstantiateBatchTest {
 
     private StageActionService service;
 
+    /** R212-②：与上方 fixture 项目同组的合法操作人。 */
+    private static final org.ruoyi.ipd.security.IpdActor IN_GROUP =
+        new org.ruoyi.ipd.security.IpdActor(11L, "市场PM-甲", "MARKET_PM", 900001L);
+
     @BeforeEach
     void setUp() {
         service = new StageActionService(stageActionMapper, deliverableMapper, auditLogService,
@@ -63,8 +67,10 @@ class StageActionServiceInstantiateBatchTest {
         // Round 8 sibling-path-gate-parity：instantiate 入口新增 assertProjectWritable 门禁，
         // 必须让 projectMapper.selectById(1L) 返回可写项目（未删 + 非 SUSPENDED/ARCHIVED），
         // 否则 mock 默认返回 null → ServiceException("项目不存在: 1")
+        // R212-② 配套：mainGroupId 非空是真库不变量（Project.create 强制，BR-ORG-01）；
+        // instantiate 现要求「操作人组 == 项目主组」，本类一律用同组 actor。
         lenient().when(projectMapper.selectById(any())).thenReturn(
-            Project.builder().id(1L).status("ACTIVE").delFlag("0").build());
+            Project.builder().id(1L).status("ACTIVE").delFlag("0").mainGroupId(900001L).build());
     }
 
     @Test
@@ -74,7 +80,7 @@ class StageActionServiceInstantiateBatchTest {
         when(stageActionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
         lenient().when(stageActionMapper.insertBatch(any(java.util.Collection.class), any(Integer.class))).thenReturn(true);
 
-        int created = service.instantiate(1L, 10L, "CONCEPT");
+        int created = service.instantiate(1L, 10L, "CONCEPT", IN_GROUP);
 
         // 12 个 CONCEPT 动作全部新建
         assertThat(created).isEqualTo(12);
@@ -103,7 +109,7 @@ class StageActionServiceInstantiateBatchTest {
             .thenReturn(List.of(existing1, existing2, existing3));
         lenient().when(stageActionMapper.insertBatch(any(java.util.Collection.class), any(Integer.class))).thenReturn(true);
 
-        int created = service.instantiate(1L, 10L, "CONCEPT");
+        int created = service.instantiate(1L, 10L, "CONCEPT", IN_GROUP);
 
         // 已存在 3 个，新建 12-3=9 个
         assertThat(created).isEqualTo(9);
@@ -126,7 +132,7 @@ class StageActionServiceInstantiateBatchTest {
             .toList();
         when(stageActionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(all12);
 
-        int created = service.instantiate(1L, 10L, "CONCEPT");
+        int created = service.instantiate(1L, 10L, "CONCEPT", IN_GROUP);
 
         assertThat(created).isZero();
         verify(stageActionMapper, never()).insertBatch(any(java.util.Collection.class), any(Integer.class));

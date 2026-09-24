@@ -76,7 +76,11 @@ class P241AcceptanceTest {
     void setUp() {
         service = new ProjectMemberServiceImpl(memberMapper, personMapper, projectMapper,
             systemConfigService, auditLogService);
-        lenient().when(projectMapper.selectById(anyLong())).thenReturn(new Project());
+        // R212-① 配套（看板卡 dbe1b6a7）：main_group_id 非空是真库不变量（Project.create 强制，
+        // BR-ORG-01），原 new Project() 属真库不可能状态；与 MARKET_LEAD.groupId=7 同组，
+        // 组归属守卫走「同组放行」分支，本类既有断言语义不变。
+        lenient().when(projectMapper.selectById(anyLong()))
+            .thenReturn(Project.builder().mainGroupId(7L).build());
         lenient().when(memberMapper.selectCount(any())).thenReturn(0L);
         // P2-4.2 叠加适配：bindMember 新增 allowance.projectCountThreshold 查询（活跃计数 0 时阈值分支不触发）
         lenient().when(systemConfigService.getIntValue("allowance.projectCountThreshold", 3)).thenReturn(3);

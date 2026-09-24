@@ -12,6 +12,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +74,11 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
         if (project == null) {
             throw new ServiceException("项目不存在: " + projectId);
         }
+        // R212-① （看板卡 dbe1b6a7）孤儿写端点越权处置：项目↔操作人组归属断言。
+        // 此前仅有 Controller 角色门（requireProjectCreator=MARKET_PM/GROUP_LEADER/SUPER_ADMIN），
+        // 不校验该 projectId 归属 ⇒ 任意内部 PM 可跨组绑定成员并锁定评级快照/津贴基数（财务影响）。
+        // SUPER_ADMIN 运维豁免由守卫 6 内部承担；失败抛 IpdBusinessException(FORBIDDEN=30001→HTTP 403)。
+        IpdIdorGuard.assertSameGroupIpd(operator, project.getMainGroupId());
         Person person = personMapper.selectById(personId);
         if (person == null) {
             throw new ServiceException("人员不存在: " + personId);

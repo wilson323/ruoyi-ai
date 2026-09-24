@@ -89,8 +89,8 @@ public class StageActionController {
     public ApiV1Response<Integer> instantiate(@RequestParam Long projectId,
                                               @RequestParam Long stageId,
                                               @RequestParam String stage) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(stageActionService.instantiate(projectId, stageId, stage));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(stageActionService.instantiate(projectId, stageId, stage, actor));
     }
 
     /**
@@ -100,7 +100,7 @@ public class StageActionController {
     @PostMapping("/ensure-bio-compliance")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Integer> ensureBioCompliance(@RequestParam Long projectId) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(stageActionService.ensureBioComplianceMount(projectId));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(stageActionService.ensureBioComplianceMount(projectId, actor));
     }
 }
