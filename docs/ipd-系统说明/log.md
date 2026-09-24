@@ -11640,3 +11640,24 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **OPS-09 历史违规登记**：本卡评审 + 登记 + 隔离落地全闭环，无兄弟会话 mtime 误杀。
 
+
+### R186 段2 #2/#4 文档化收口（owner 拍板，2026-09-23）
+
+**上下文**：R186 段1（#1 死配置 + #3 audit 重复）已由兄弟会话接手我验证过的 4 java 编辑并落库 `e19857ea`（ORIGIN-R186-CONVERGE，已 push，逐字一致）。段2 处置 owner 拍板的 #2/#4。
+
+**owner 拍板**（本会话 AskUserQuestion）：
+- #2 tenant.excludes ↔ @InterceptorIgnore：**A 维持共存 + 文档化**
+- #4 @IpdAudit AOP ↔ 手写 audit()：**A 接受设计两层共存 + 文档化**
+
+**现查结论**（详见报告 §八）：
+- **#2 非双轨**：@InterceptorIgnore 是 R184-A bug 必需更强修复（yml 单独不够，异步/无登录上下文误过滤 tenant_id='000000'→数据查不到）；yml=通用白名单单一源，@InterceptorIgnore=2 张全局配置表必需例外。收敛回 yml-only 会 regress。不做 31 表迁移（避 AGENTS.md 红线）。
+- **#4 非双轨**：设计档 审计AOP改造设计-20260909.md §2 明确「注解化上限 ~40%，60% 永久手写」（六类不可注解化）；@IpdAudit(简单)+手写(复杂)=R22 预期两层架构。「全覆盖」设计上不可能。
+- **现查修正报告 #3**：称「5 份相同模板」实为 17 个 private audit()/12 种签名 + 50+ 文件 AuditLog.builder()；仅 3 Controller 真重复（已收敛 e19857ea），余 14 领域特化非冗余。
+- **doc↔code drift 消除**：HANDOVER_CANCEL 报告称「R25 保留」，实际已删于 e19857ea（执行 R25 P0），报告 §八 已 supersede。
+
+**验证**：#1/#3 代码 test-compile PASS + 48 tests 0F0E0S（RnewPermissionContractTest 11 + PersonSyncSecurityScenarioTest 7 + PersonGroupBoundarySecurityScenarioTest 12 + P223PersonSyncRetryAcceptanceTest 18）BUILD SUCCESS。#2/#4 文档化无代码改动。
+
+**接手三步法**：①评审兄弟 e19857ea（含我 4 java，逐字一致，ORIGIN- 前缀保留史实）；②本段 + 报告 §八 登记接手事实与 commit 号；③兄弟「段1」编号保留，本段为「段2」不覆盖。
+
+**落档**：报告 §八（+32/-2）+ 本 log 段。R186 4 类全部闭合。
+
