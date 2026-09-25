@@ -1,6 +1,20 @@
 -- =====================================================================
--- [数据治理] R217 悬空外键僵尸行清洗方案（草稿）
--- 状态: ⚠️ 待 owner 拍板不 apply ⚠️
+-- [数据治理] R217 悬空外键僵尸行清洗方案
+-- 状态: ✅ 2026-09-25 owner 拍板并已执行（见下方各段执行记录；备份同目录 a2-backup-*.sql / c-backup-legacy-group.sql）
+-- 拍板结果: deletion_requests 取 A′ 折中（兄弟先行软删5行 + 本会话物理删 2 终态行，保留 3 在途僵尸作 fail-closed 回归样本）；
+--           bonus_pools 遗产组取方案 C 整组保留 + remark 白名单标注 8 行（contributions/kpi_shared_confirms 无 remark 列，
+--           由本文件登记口径追溯）；配套 freeze/distribute + SUPER_ADMIN submit 实体存在性校验修复另批入库。
+-- ⚠️ 清理轮注记（20260925 调查文档域清理·owner 拍板）：本文件已自 docs/script/sql/update/ 移出至本目录。
+--   移出理由：该目录经 docs/script/sql/README.md L17 定义为「按文件名升序执行的迁移队列」（L25 命名约定、
+--   L45 须同步主 SQL 与清单），而本文件 0 条活 DDL/DML（UPDATE 全注释、仅 SELECT 探针）不属迁移；留置会持续
+--   污染两个不剥注释的对账器（scripts/check-ddl-applied.sh L104-108、.claude/helpers/ipd-drift-scan.py L41-44）。
+--   同目录已有执行备份 a2-backup-deletion_requests-2-rows.sql / c-backup-legacy-group.sql（随 025e5ac0 入库）。
+--
+--   【单一口径】执行状态与余量以下方文末「✅ 2026-09-25 拍板落实终态」块为唯一权威，本注记不另立行数口径：
+--     · deletion_requests 第一类 5 行僵尸：已处置完毕（A′ 折中＝软删留痕 + 2 终态行物理删，alive_dangling 现查=0），
+--       勿按本草稿重复执行；软删证据另见 docs/ipd-系统说明/log.md L12335 第⑥条。
+--     · bonus_pools 真悬空 9140004：已按方案 C 处置（遗产组 remark 标注 8 行、零删零改指向）。
+--     · 余量待后续：bonus_pools 逻辑孤儿池 2098460715223445505 + 幻影 DELETED 行（详见终态块）。
 -- 日期: 2026-09-25
 -- 调查人: IPD 工具/数据治理专员
 -- 关联卡: 8a088a71 (R215-DATA) / 5d5c4fcc (DATA-CLEAN-9140004)
@@ -206,7 +220,16 @@ WHERE dr.entity_type = 'products'
 -- | bonus_pools 真悬空 (9140004)  |   1  | 软删       |
 -- | bonus_pools 逻辑孤儿          |   1  | 软删       |
 -- | 幻影 DELETED (方案 A 或 B)    |   1  | 二选一     |
--- | 合计最大影响                  |   8  |            |
+-- | 合计最大影响（历史口径注记）    |   8  | ⚠️ 仅原草稿历史口径，勿据此判断待执行量 |
+-- | 余量待后续（以文末终态块为准）  |   2  | = bonus_pools 逻辑孤儿池 2098460715223445505 + 幻影 DELETED 各 1 行；deletion_requests(A′ 5 行) 与 bonus_pools 真悬空 9140004(C 方案) 均已执行完毕，勿重复执行 |
+-- =====================================================================
+-- ✅ 2026-09-25 拍板落实终态（本会话主协调，与上方「清理轮注记」对账一致（单一口径，无第二套行数账））：
+--    deletion_requests：A′ 已执行——2 终态行（999 REJECTED / 1 WITHDRAWN）物理 DELETE
+--    （备份 a2-backup-deletion_requests-2-rows.sql），3 在途僵尸保留 del_flag='1'+remark
+--    白名单作 fail-closed 回归样本；alive_dangling 现查=0。
+--    bonus_pools：C 已执行——池+台账+关联遗产组 remark 标注 8 行（备份 c-backup-legacy-group.sql），
+--    零删零改指向；配套 freeze/distribute + SUPER_ADMIN submit 存在性守卫已由 r217/gate 车道交付。
+--    逻辑孤儿池 2098460715223445505 与幻影 DELETED 行不在本次拍板范围，维持待后续。
 -- =====================================================================
 -- ⚠️ 再次强调: 本文件为草稿，所有 UPDATE 已注释。
 --    执行前须: 1) owner 拍板  2) 逐段跑 SELECT 核对  3) 备份  4) 单段执行+回读

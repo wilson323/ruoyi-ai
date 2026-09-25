@@ -43,7 +43,7 @@
 | **操作步骤** | 打开 /auth/login → 填入 ipd-admin/Ipd@123456 → 点击「登录工作台」→ 等待跳转 |
 | **网络请求** | 18 个 /api/v1/ 请求全部 HTTP 200 + code=0（含 /auth/login, /auth/me, /auth/platform-token, 菜单, 工作台数据） |
 | **界面结果** | 跳转至 `/ipd/workbench`，工作台完整渲染（待我处理 9 / 临期 6 / 未读通知 41 / 已完成 4） |
-| **截图** | p073-01a-login-page.png / p073-01b-login-filled.png / p073-01c-login-success.png / p073-01d-workbench-ok.png |
+| **截图** | p073-01a-login-page.png / p073-01b-login-filled.png / p073-01c-login-success.png |
 | **verdict** | ✅ **PASS** |
 
 ### 场景 2：AC-AUTH-07 核心 — Token 失效后前端自动跳登录页
@@ -64,7 +64,7 @@
 | **操作步骤** | 登录 → 记录当前 token → 通过页面上下文调 `POST /api/v1/auth/logout`（服务端撤票）+ 清除 sessionStorage → 用旧 token 直接请求 `GET /api/v1/auth/me` |
 | **网络请求** | logout → HTTP 200 code=0；旧 token 请求 /auth/me → **HTTP 401** `{"code":20001,"message":"未认证或凭证失效","traceId":"ffc25df3..."}` |
 | **界面结果** | 会话清除，后续导航将回登录页 |
-| **截图** | p073-03a-logged-in.png / p073-03b-after-logout.png / p073-03c-old-token-rejected.png |
+| **截图** | N/A（UI 退出按钮定位失败，回退 API 层 logout，不触发页面导航）；证据以 `evidence-results.json` 场景3 的 `oldTokenResponseStatus=401`、`oldTokenResponseBody` 内 `code=20001`、`traceId=ffc25df3aab14a78b1541d39b01167e3` 为准 |
 | **verdict** | ✅ **PASS** — 服务端真失效（非仅前端清除） |
 
 ### 场景 4：Refresh 轮换 — 旧票立即失效 + 重放拒绝
@@ -74,7 +74,7 @@
 | **操作步骤** | 登录拿 tokenA → `POST /auth/refresh`(Bearer tokenA) 拿 tokenB → 用 tokenA 请求 /auth/me → 用 tokenA 再次 refresh（重放） → 用 tokenB 请求 /auth/me |
 | **网络请求** | refresh(tokenA) → HTTP 200, tokenB ≠ tokenA；/auth/me(tokenA) → **HTTP 401** code=20001；refresh(tokenA) 重放 → **HTTP 401** code=20001；/auth/me(tokenB) → HTTP 200 |
 | **界面结果** | N/A（API 层验证） |
-| **截图** | p073-04-refresh-rotation.png |
+| **截图** | N/A（API 层验证） |
 | **verdict** | ✅ **PASS** — 单 token 轮换语义完整：旧票即废、重放拒绝、新票有效 |
 
 ---
@@ -109,11 +109,9 @@
 | p073-01a-login-page.png | 登录页初始状态 |
 | p073-01b-login-filled.png | 凭据填入后 |
 | p073-01c-login-success.png | 登录成功→工作台 |
-| p073-01d-workbench-ok.png | 工作台完整渲染 |
 | p073-02-token-invalid-redirect.png | token 失效→自动回登录页+错误提示 |
-| p073-03a-logged-in.png | logout 前已登录状态 |
-| p073-03b-after-logout.png | logout 后 |
-| p073-03c-old-token-rejected.png | 旧 token 被拒证据截取时界面 |
-| p073-04-refresh-rotation.png | refresh 轮换验证时界面 |
 | evidence-results.json | 4 场景结构化证据（含网络响应体、状态码、URL） |
-| run-evidence.mjs | Playwright 验证脚本（可复跑） |
+
+> **JSON 字段名失真说明**：场景3 的 `uiLogoutDone: true` 系脚本 fallback 分支（API 层 logout）也置 true 所致，字段名与「UI 退出成功」语义不符；实际 UI 退出按钮定位失败，详见本报告观察项③。
+>
+> **复跑脚本删除说明**：run-evidence.mjs 已于 R217 清理轮删除：场景 1/3/4 与前端仓 auth-live.test.ts 逐条同断言构成双轨（既有版断言更强），场景 2 证据以 evidence-results.json + p073-02-token-invalid-redirect.png 留存；如需复现真浏览器地址栏跳转，走前端仓 `npx vitest run --config vitest.ipd-live.config.mts`。

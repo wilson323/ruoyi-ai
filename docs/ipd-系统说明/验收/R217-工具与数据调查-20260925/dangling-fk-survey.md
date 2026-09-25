@@ -13,6 +13,8 @@
 
 ## 一、deletion_requests 悬空外键分析
 
+> **⚠️ 执行状态指引（20260925 清理轮追加）**：本节 5 条僵尸行的处置结论已执行完毕（软删，ipd_dev alive 5→0，见 docs/ipd-系统说明/log.md L12335 第⑥条）；单轨口径以 R215《cleanup-and-triage-20260925.md》任务2a 为准（owner 只拍板一次）；§1.6 幻影 DELETED 为另型异常、仍待 owner 拍板（SQL 草稿已移至同目录 `dangling-fk-cleanup-draft.sql`），不在本行覆盖范围。本节以下仅作调查记录保留。
+
 ### 1.1 表结构关键字段
 
 | 字段 | 类型 | 说明 |
@@ -238,7 +240,7 @@ if (project == null) throw new ServiceException("项目不存在: " + projectId)
 
 ## 四、清洗方案概要
 
-详见 SQL 草稿文件：`docs/script/sql/update/ipd_r217_dangling_fk_cleanup_draft_20260925.sql`
+详见 SQL 草稿文件：`docs/ipd-系统说明/验收/R217-工具与数据调查-20260925/dangling-fk-cleanup-draft.sql`
 
 | 类别 | 行数 | 建议处置 |
 |------|------|---------|

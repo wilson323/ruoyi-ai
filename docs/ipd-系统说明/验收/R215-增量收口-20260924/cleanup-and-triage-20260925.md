@@ -77,7 +77,7 @@
 
 ### 清理方案建议（⚠️ 待 owner 拍板，本轮不执行任何写操作）
 
-> **交叉印证**：并行会话已产出同题草稿 `docs/script/sql/update/ipd_r217_dangling_fk_cleanup_draft_20260925.sql`
+> **交叉印证**：并行会话已产出同题草稿 `docs/ipd-系统说明/验收/R217-工具与数据调查-20260925/dangling-fk-cleanup-draft.sql`
 > （关联卡 8a088a71 R215-DATA / 5d5c4fcc），其 5 条 id 清单与本报告**逐条一致**、计数一致。
 > **全局一致性建议：owner 只拍板一次，以 R217 草稿的软删口径为准执行**，本报告 DELETE 草稿仅作任务字面要求的备选留档。
 
@@ -139,6 +139,33 @@ serde 对未知 query 字段默认忽略（无 `deny_unknown_fields`），故 `?
 - **A（零改动，当前可用）**：调用方拿全量后本地按 `status` 过滤（与官方前端一致）。
 - **B（上游式补丁）**：按上述 3 处补服务端过滤（若挂卡，建议同步评估升级——上游新版已将 task 域重构为 issue 域，API 形态有变）。
 - **C（升级 vibe-kanban）**：项目已宣告 sunsetting（仓库公告），升级需迁移评估，单独挂卡。
+
+### 对账脚本注意事项与复现命令（R217 只读调查补充，原独立报告 kanban-list-status-bug.md 已按防双轨原则并入本节并删除）
+
+- **禁止**在 URL 中追加 `&status=xxx` 并期望服务端过滤（会产生“已过滤”假象）
+- 如需统计各状态数量，必须全量拉取后 `collections.Counter(t['status'] for t in tasks)`
+- `updated_at` 不可作为“最近变更”排序依据（恒等于 `created_at`）
+
+复现命令（可直接重跑）：
+
+```bash
+PID=01dcf15c-86bb-4c7b-957c-8fe44bddd10d
+for st in "" "status=todo" "status=done" "statuses=todo" "state=todo"; do
+  sep=$([ -z "$st" ] && echo "" || echo "&")
+  n=$(curl -s "http://127.0.0.1:62250/api/tasks?project_id=$PID$sep$st" | python3 -c "import json,sys;d=json.load(sys.stdin);t=d.get('data',d);print(len(t) if isinstance(t,list) else len(t.get('tasks',[])))")
+  echo "${st:-<none>} -> $n"
+done
+```
+
+预期输出（全部 529）：
+
+```
+<none> -> 529
+status=todo -> 529
+status=done -> 529
+statuses=todo -> 529
+state=todo -> 529
+```
 
 ---
 

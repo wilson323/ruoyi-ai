@@ -57,7 +57,7 @@ deletion_requests 共 **32 行**，entity_type 分布：cert_templates=23 / prod
 2. 2 行已终态（REJECTED/WITHDRAWN）的无回归价值，可按 R46.1 先例申请 owner 授权物理 DELETE；
 3. 无论选哪种，**先落代码根因修复**（submit 处对全角色加实体存在性校验），否则新僵尸还会产生。
 
-配套：`DeletionRequestServiceImpl` 根因修法、DB 层防呆（多态 FK 无法加约束，应用层守）见兄弟会话 `docs/script/sql/update/ipd_r217_dangling_fk_cleanup_draft_20260925.sql`（草稿，未 apply）。
+配套：`DeletionRequestServiceImpl` 根因修法、DB 层防呆（多态 FK 无法加约束，应用层守）见兄弟会话 `docs/ipd-系统说明/验收/R217-工具与数据调查-20260925/dangling-fk-cleanup-draft.sql`（草稿，未 apply）。
 
 ## ⚠️ 待 owner 拍板标记
 - [ ] 处置方案选择：A / B / **A′（本调查推荐）** —— **本 lane 零写库，任何 DELETE 未执行**
