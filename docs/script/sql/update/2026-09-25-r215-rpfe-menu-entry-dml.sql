@@ -8,15 +8,17 @@
 -- 性质：纯配置数据登记（RBAC 授权表即事实源，可经「角色管理→菜单权限」界面再配置）；
 --       不动代码、不动业务表、不动其他菜单行。
 -- 影响：新增 1 行 sys_menu + 1 行 sys_role_menu；仅超级管理员(role_id=1)可见。
--- 幂等：先 DELETE 同 id（重复执行安全）。
+-- 幂等：先 DELETE 同 id + INSERT IGNORE（20260925 清理轮经官方工具 scripts/make_sql_idempotent.py 模板 G 转换，
+--       check-ddl-idempotent.sh 由 FAIL 转 OK；语义不变——原已 DELETE-first，IGNORE 仅使重复执行不报 1062）。
 -- 回滚：见文件尾。
 
 START TRANSACTION;
 
 DELETE FROM sys_role_menu WHERE menu_id = 2099010200000000033;
+
 DELETE FROM sys_menu WHERE menu_id = 2099010200000000033;
 
-INSERT INTO sys_menu
+INSERT IGNORE INTO sys_menu
   (menu_id, menu_name, parent_id, order_num, path, component, query_param,
    is_frame, is_cache, menu_type, visible, status, perms, icon,
    create_dept, create_by, create_time, update_by, update_time, remark)
@@ -27,7 +29,7 @@ VALUES
    103, 1, NOW(), NULL, NULL,
    '角色权限配置 - 角色→权限码 GRANT/REVOKE 覆盖层（超管；R215-RPFE，前端 3764830）');
 
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 2099010200000000033);
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 2099010200000000033);
 
 COMMIT;
 

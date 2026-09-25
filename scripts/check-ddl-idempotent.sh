@@ -97,7 +97,7 @@ while IFS= read -r f; do
   if [ "$HAS_GUARD" -eq 0 ]; then
     echo "  FAIL: $f"
     echo "    DDL without idempotent guard. First hit: $(echo "$DDL_HITS" | head -c 200)"
-    echo "    Fix: wrap with information_schema.* check + prepare stmt (see docs/script/sql/update/2026-09-07-ipd-drift-backfill-entity-gap.sql)"
+    echo "    Fix: python3 scripts/make_sql_idempotent.py <file>（范式见 docs/script/sql/update/2026-09-05-ipd-launch-date-pending-unique.sql）"
     problems=$((problems + 1))
   else
     echo "  OK: $f (guarded)"
