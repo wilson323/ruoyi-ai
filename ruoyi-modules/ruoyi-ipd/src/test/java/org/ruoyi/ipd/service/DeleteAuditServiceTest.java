@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,6 +39,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -66,6 +68,11 @@ class DeleteAuditServiceTest {
         // 让 MyBatis-Plus LambdaUpdateWrapper 能识别 Person 实体
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-test"), Person.class);
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-gate"), Gate.class);
+        // R216：4 个 executor 软删改 LambdaUpdateWrapper 显式 SET del_flag，wrapper 构造即解析
+        // lambda 列名，需补齐实体 TableInfo（此前依赖 P062AcceptanceTest 先跑留下的全局缓存，跨类顺序脆弱）。
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-product"), Product.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-project"), Project.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-cert"), CertTemplate.class);
     }
 
     @BeforeEach
@@ -96,12 +103,12 @@ class DeleteAuditServiceTest {
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Project project = Project.builder().id(100L).code("P").name("T").delFlag("0").build();
         when(projectMapper.selectById(100L)).thenReturn(project);
-        when(projectMapper.updateById(any(Project.class))).thenReturn(1);
+        when(projectMapper.update(isNull(), any())).thenReturn(1);
 
         DeletionRequest after = service.approveAndExecute(10L, 99L);
 
         assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_DELETED);
-        verify(projectMapper).updateById(any(Project.class));
+        verify(projectMapper).update(isNull(), any());
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
         assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_EXECUTE);
@@ -115,11 +122,11 @@ class DeleteAuditServiceTest {
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Product product = Product.builder().id(200L).productCode("P1").productName("T").delFlag("0").build();
         when(productMapper.selectById(200L)).thenReturn(product);
-        when(productMapper.updateById(any(Product.class))).thenReturn(1);
+        when(productMapper.update(isNull(), any())).thenReturn(1);
 
         service.approveAndExecute(11L, 99L);
 
-        verify(productMapper).updateById(any(Product.class));
+        verify(productMapper).update(isNull(), any());
         verify(auditLogService).append(any(AuditLog.class));
     }
 
@@ -147,11 +154,11 @@ class DeleteAuditServiceTest {
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         CertTemplate cert = CertTemplate.builder().id(400L).countryCode("SA").certName("SABER").delFlag("0").build();
         when(certTemplateMapper.selectById(400L)).thenReturn(cert);
-        when(certTemplateMapper.updateById(any(CertTemplate.class))).thenReturn(1);
+        when(certTemplateMapper.update(isNull(), any())).thenReturn(1);
 
         service.approveAndExecute(13L, 99L);
 
-        verify(certTemplateMapper).updateById(any(CertTemplate.class));
+        verify(certTemplateMapper).update(isNull(), any());
         verify(auditLogService).append(any(AuditLog.class));
     }
 
@@ -167,7 +174,7 @@ class DeleteAuditServiceTest {
             .hasMessageContaining("状态机不匹配");
 
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
-        verify(projectMapper, never()).updateById(any(Project.class));
+        verify(projectMapper, never()).update(isNull(), any());
         verify(auditLogService, never()).append(any(AuditLog.class));
     }
 
@@ -226,13 +233,16 @@ class DeleteAuditServiceTest {
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Gate gate = Gate.builder().id(500L).gateCode("G1").delFlag("0").build();
         when(gateMapper.selectById(500L)).thenReturn(gate);
-        when(gateMapper.updateById(any(Gate.class))).thenReturn(1);
+        when(gateMapper.update(isNull(), any())).thenReturn(1);
 
         service.approveAndExecute(30L, 99L);
 
-        ArgumentCaptor<Gate> cap = ArgumentCaptor.forClass(Gate.class);
-        verify(gateMapper).updateById(cap.capture());
-        assertThat(cap.getValue().getDelFlag()).isEqualTo("1");
+        // R216：Gate 软删改 LambdaUpdateWrapper 显式 SET del_flag='1'，捕 wrapper 断言 SET 子句含 del_flag
+        //（del_flag='1' 语义由 GateSoftDeleteExecutor 实现覆盖）。
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaUpdateWrapper<Gate>> cap = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(gateMapper).update(isNull(), cap.capture());
+        assertThat(cap.getValue().getSqlSet()).contains("del_flag");
         verify(auditLogService).append(any(AuditLog.class));
     }
 
@@ -244,7 +254,7 @@ class DeleteAuditServiceTest {
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Product product = Product.builder().id(1200L).productCode("P-X").delFlag("0").build();
         when(productMapper.selectById(1200L)).thenReturn(product);
-        when(productMapper.updateById(any(Product.class))).thenReturn(1);
+        when(productMapper.update(isNull(), any())).thenReturn(1);
 
         service.approveAndExecute(21L, 42L);
 
@@ -269,7 +279,7 @@ class DeleteAuditServiceTest {
 
         service.approveAndExecute(22L, 99L);
 
-        verify(projectMapper, never()).updateById(any(Project.class));
+        verify(projectMapper, never()).update(isNull(), any());
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
         assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
@@ -285,7 +295,7 @@ class DeleteAuditServiceTest {
 
         service.approveAndExecute(23L, 99L);
 
-        verify(projectMapper, never()).updateById(any(Project.class));
+        verify(projectMapper, never()).update(isNull(), any());
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());
         assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);

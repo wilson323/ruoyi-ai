@@ -121,12 +121,17 @@ public class DemandController {
         return ApiV1Response.ok(Map.of("id", id, "status", requirement.getStatus()));
     }
 
-    /** 关联项目（原型 POST /api/demands/:id/link-project；绑定后置 SCHEDULED）。 */
+    /** 关联项目（原型 POST /api/demands/:id/link-project；绑定后置 SCHEDULED；前置：双 PM 已分派）。 */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/link-project")
     public ApiV1Response<Map<String, Object>> linkProject(@PathVariable Long id,
                                                           @RequestBody LinkProjectRequest request) {
         Requirement requirement = requireDemand(id);
+        // R215-P2：未分诊（双 PM 未分派）的需求不得关联项目，避免跳过 triage 直接 SCHEDULED
+        if (requirement.getMarketPmId() == null || requirement.getRdPmId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "需求未完成分诊（双PM未分派），不能关联项目");
+        }
         Project project = projectMapper.selectById(request.projectId());
         if (project == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "项目不存在");

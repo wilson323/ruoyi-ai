@@ -135,8 +135,12 @@ public class KpiFunctionalMetricsService implements IKpiFunctionalMetricsService
         if (existed == null || "1".equals(existed.getDelFlag())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "功能指标量表记录不存在：id=" + id);
         }
-        existed.setDelFlag("1");
-        int rows = kpiFunctionalMetricMapper.updateById(existed);
+        // 实体带 @TableLogic，updateById 会把逻辑删除字段从 SET 子句剔除致静默失效（R216 实测回归，
+        // 同轮 Agent-N 重放抓出），与软删 executor 同款显式 UPDATE 保证 del_flag 真实落库。
+        int rows = kpiFunctionalMetricMapper.update(null, Wrappers.<KpiFunctionalMetric>lambdaUpdate()
+            .eq(KpiFunctionalMetric::getId, id)
+            .eq(KpiFunctionalMetric::getDelFlag, "0")
+            .set(KpiFunctionalMetric::getDelFlag, "1"));
         if (rows != 1) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "功能指标量表软删除未更新唯一记录：id=" + id);
         }

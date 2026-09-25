@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,6 +47,12 @@ class DeleteAuditConcurrencyTest {
     @Mock private ProjectMapper projectMapper;
     @Mock private ProductMapper productMapper;
 
+    @BeforeAll
+    static void initMybatisMeta() {
+        // R216：ProjectSoftDeleteExecutor 软删改 LambdaUpdateWrapper，wrapper 构造即解析 lambda 列名，需 TableInfo
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "P062-concurrency"), Project.class);
+    }
+
     @Test
     @DisplayName("P0-6.2.C1 两个超管并发 approveAndExecute：恰好 1 成功 + 1 抛异常")
     void concurrentApprovalSingleWinner() throws InterruptedException {
@@ -58,7 +69,7 @@ class DeleteAuditConcurrencyTest {
         });
         Project project = Project.builder().id(100L).code("PRJ").delFlag("0").build();
         when(projectMapper.selectById(100L)).thenReturn(project);
-        when(projectMapper.updateById(any(Project.class))).thenReturn(1);
+        when(projectMapper.update(isNull(), any())).thenReturn(1);
 
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch done = new CountDownLatch(2);

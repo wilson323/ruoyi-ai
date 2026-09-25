@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -17,6 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,6 +50,13 @@ class KpiFunctionalMetricsServiceTest {
     private static final Long PROJECT_ID = 100L;
     private static final String METRIC = "MKT_REQUIREMENT_ACCURACY";
     private static final String PERIOD = "2026-09";
+
+    @BeforeAll
+    static void initMeta() {
+        // lambdaUpdate 构造时即解析 lambda 列名，需 TableInfo 缓存（R216 软删适配同款）
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "kpi-functional-test");
+        TableInfoHelper.initTableInfo(assistant, KpiFunctionalMetric.class);
+    }
 
     @BeforeEach
     void setup() {
@@ -204,12 +216,12 @@ class KpiFunctionalMetricsServiceTest {
             .setId(9L).setProjectId(PROJECT_ID).setMetricCode(METRIC).setPeriod(PERIOD);
         existed.setDelFlag("0");
         when(mapper.selectById(9L)).thenReturn(existed);
-        when(mapper.updateById(any(KpiFunctionalMetric.class))).thenReturn(1);
+        when(mapper.update(isNull(), any())).thenReturn(1);
 
         service.delete(9L);
 
-        assertThat(existed.getDelFlag()).isEqualTo("1");
-        verify(mapper).updateById(existed);
+        // R216 软删改显式 UPDATE（@TableLogic 剔除病根），不再碰实体
+        verify(mapper).update(isNull(), any());
     }
 
     @Test

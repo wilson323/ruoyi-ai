@@ -35,6 +35,9 @@
 
 - `.claude/hooks/block-dangerous-git.sh` 阻断 `git push` / `git reset --hard` / `git clean -f` / `git branch -D` / `git checkout .` / `git restore .`——push 被拦是预期行为，需要用户明确授权，不要绕过。
 - `.claude/helpers/sensitive-field-guard.cjs` 阻断写 `.env*` / `application-prod.yml` / PEM 私钥内容；警告 JWT secret、明文 password 字面量。
+- `.claude/helpers/ratchet-data-guard.cjs`（R212 卡 7b76b7cd）阻断 agent 直接编辑 `scripts/baselines/*.json`（baseline 只允许 `node scripts/check-api-contract-fe-be.mjs --update-baseline` 脚本独占写）与 `docs/ipd-系统说明/api-internal-whitelist.json`（白名单变更须挂看板卡人审）。
+- API 契约孤儿棘轮门禁（R212，2026-09-24 owner 拍板）：`node scripts/check-api-contract-fe-be.mjs` 默认 `ratchet=fail`，孤儿端点「只减不增」——存量分诊为白名单 25 条（内部/运维口，六条防伪校验）+ baseline 22 条老账（`scripts/baselines/`，sha256 自洽 + `git show HEAD` 硬闸防手工编辑）。**退出码位掩码**：`0` 通过 / `1` P0 孤儿路径（或 strict）/ `2` 环境或输入错（含白名单防伪失败、baseline 被改）/ `4` 新孤儿未白名单，可叠加（如 `6=2|4`）；既有 1/2 语义不变。已接入 `.claude/hooks/check-pre-commit.sh` 门禁 3（fast 模式也跑）。逃生阀 `--ratchet=off`。
+
 - `.claude/helpers/ipd-frontend-drift-guard.cjs` 阻断 IPD 前端工程（`/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/`）写入"漂移产物"——创建 `views/ipd/<domain>/<domain>-error.ts`、重写 `api/ipd/product-group.ts`、在 `api/ipd/*.ts` 新增与既有文件冲突的 export 都会 exit 2。完整规约见 `docs/ipd-系统说明/前端架构规约-20260906.md`。
 - `scripts/check-ipd-frontend-drift.sh` 是上述 hook 的 CI/手动版：4 项检查（同名导出 / 错误码文件 / product-group 兼容层 / 手写 BackendPending）。CI 接入位置 `.github/workflows/ipd-frontend-drift.yml`（待补）。
 - 改 `pom.xml` 会触发 `pom-edit-hint.cjs` 的非阻断同步提醒（BOM 对齐 / 注解处理器 / gRPC 版本等 5 类）。

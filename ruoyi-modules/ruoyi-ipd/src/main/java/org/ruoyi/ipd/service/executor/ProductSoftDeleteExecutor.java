@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service.executor;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.Product;
@@ -43,8 +44,12 @@ public class ProductSoftDeleteExecutor implements SoftDeleteExecutor<Product> {
         if (product == null || "1".equals(product.getDelFlag())) {
             return;
         }
-        product.setDelFlag("1");
-        int rows = productMapper.updateById(product);
+        // 实体带 @TableLogic，updateById 会把逻辑删除字段从 SET 子句剔除致静默失效（R216 实测回归），
+        // 与 PersonSoftDeleteExecutor 同款显式 UPDATE 保证 del_flag 真实落库。
+        int rows = productMapper.update(null, new LambdaUpdateWrapper<Product>()
+            .eq(Product::getId, id)
+            .eq(Product::getDelFlag, "0")
+            .set(Product::getDelFlag, "1"));
         if (rows != 1) {
             throw new ServiceException("产品软删除未更新唯一记录: id=" + id);
         }

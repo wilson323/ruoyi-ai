@@ -16,20 +16,31 @@
  *                  默认警告（exit 0），加 `--strict` 时 exit 1
  *
  * 用法:
- *   node scripts/check-api-contract-fe-be.mjs                 # 默认: 仅孤儿路径阻断
+ *   node scripts/check-api-contract-fe-be.mjs                 # 默认: 孤儿路径阻断 + 孤儿棘轮门禁(ratchet=fail)
  *   node scripts/check-api-contract-fe-be.mjs --strict         # 字段错位也阻断
  *   node scripts/check-api-contract-fe-be.mjs --json           # JSON 输出（CI 友好）
  *   node scripts/check-api-contract-fe-be.mjs --json --strict  # 组合
+ *   node scripts/check-api-contract-fe-be.mjs --update-baseline # 生成/收缩 baseline（脚本独占写,只减不增）
+ *   node scripts/check-api-contract-fe-be.mjs --ratchet=off    # 逃生阀:关闭孤儿棘轮门禁(恢复 R212 前行为)
+ *
+ * 孤儿棘轮门禁(R212 / 卡 7b76b7cd API-GATE-RATCHET, owner 2026-09-24 拍板):
+ *   --whitelist <p>   白名单文件(默认 docs/ipd-系统说明/api-internal-whitelist.json)
+ *   --baseline <p>    baseline 文件(默认 scripts/baselines/api-contract-orphan-baseline.json)
+ *   --update-baseline 以当前扫描结果收缩 baseline(只减不增,新孤儿拒绝入账)
+ *   --ratchet=off|fail  默认 fail;off=跳过门禁(逃生阀)
+ *   --min-fe-files N / --min-be-files N  输入哨兵阈值(默认 56/52, S1 参数化)
  *
  * 前端根解析(R110,对齐 tri-source R98 修法):
  *   IPD_FE_API_DIR 环境变量（前端 <fe-root>/src/api/ipd 目录）
  *   > 仓库同级 ../ruoyi-ipd-web/apps/web-antd 自动推断
  *   > 本机默认值。--fe-root 参数仍可显式覆盖以上三者。
  *
- * 退出码:
- *   0 = 无 P0 孤儿路径（默认）；无任何问题（--strict）
- *   1 = 发现 P0 孤儿路径；或 --strict 时发现字段错位
- *   2 = 脚本/输入错误（缺路径/解析异常）
+ * 退出码（R212 方案 A 位掩码, 2026-09-24 owner 拍板; 既有 1/2 语义不变, 4 为新增位, 可叠加）:
+ *   0 = PASS
+ *   1 = 发现 P0 孤儿路径；或 --strict 时发现字段错位/白名单漂移(stale)
+ *   2 = 脚本/输入错误（缺路径/解析异常/白名单防伪失败/baseline 被手工编辑）
+ *   4 = 新增孤儿端点未在白名单/baseline 内（棘轮只减不增被破坏）
+ *   叠加示例: 1|4=5 (P0+新孤儿)  2|4=6 (环境错+新孤儿)  判定优先级 ENV(2) > BLOCK(1) > NEW_ORPHAN(4)
  *
  * 自证能红(R37 数据):
  *   - 0 孤儿路径
@@ -40,23 +51,39 @@
 
 import { readFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, join, basename, resolve as resolvePath } from 'node:path';
+import { dirname, join, basename, relative, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// ---------- 默认扫描路径(R37 实测工作区) ----------
+// R212 孤儿棘轮门禁核心库（与扫描逻辑解耦；卡 7b76b7cd API-GATE-RATCHET）
+import {
+  EXIT_BITS, GateEnvError, gitHead, gitShowHeadFile,
+  loadJsonFile, loadBaseline, validateWhitelist, classifyOrphans, writeBaseline, todayStr,
+} from './api-contract/orphan-gate-lib.mjs';
+
+// ---------- 默认扫描路径(R37 实测工作区; R212-S1: beRoot 由 REPO_ROOT 推断,去本机绝对路径硬编码) ----------
 const DEFAULT_FE_ROOT  = '/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd';
-const DEFAULT_BE_ROOT  = '/Users/mac/Documents/ruoyi-ai';
 
 // R110:前端根参数化(对齐 check-contract-tri-source.sh R98 修法)
 // 优先级:IPD_FE_API_DIR 环境变量(语义:前端 api/ipd 目录) > 仓库同级 ruoyi-ipd-web 推断 > 本机默认值
 // 本地与 CI 均可跑,不再硬绑定本机绝对路径。
 const REPO_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), '..');
+const DEFAULT_BE_ROOT = REPO_ROOT; // R212-S1: 脚本自身就在 BE 仓内,默认后端根 = REPO_ROOT
+
+// R212 孤儿棘轮门禁数据文件（r212-gate-design.md §3/§4.1 指定位置）
+const DEFAULT_WHITELIST_REL = 'docs/ipd-系统说明/api-internal-whitelist.json'; // 相对 REPO_ROOT
+const DEFAULT_BASELINE_REL  = 'scripts/baselines/api-contract-orphan-baseline.json'; // 相对 REPO_ROOT
 
 function resolveFeRoot() {
   // IPD_FE_API_DIR 与 tri-source 同语义:指向前端 <fe-root>/src/api/ipd 目录,
   // 此处剥离 src/api/ipd 三层还原 feRoot(内部 feApiDir = join(feRoot, FE_API_DIR) 还原回同一目录)。
+  // R212-S1 验收③: 显式设置但目录不存在 → exit 2 指名缺失目录(不再静默 fallback;
+  //   静默回退会让 CI「以为在测 A 前端实际测了 B」。未设置时的同级推断/默认值链路保持不变)。
   const envDir = process.env.IPD_FE_API_DIR;
-  if (envDir && existsSync(envDir)) {
+  if (envDir) {
+    if (!existsSync(envDir)) {
+      process.stderr.write(`[check-api-contract-fe-be] ❌ IPD_FE_API_DIR 指向的目录不存在: ${envDir}\n`);
+      process.exit(2);
+    }
     return dirname(dirname(dirname(envDir)));
   }
   const sibling = resolvePath(REPO_ROOT, '..', 'ruoyi-ipd-web', 'apps', 'web-antd');
@@ -81,15 +108,40 @@ const CANONICAL_PLACEHOLDER = '{VAR}';
 
 // ---------- CLI ----------
 function parseArgs(argv) {
-  const opts = { strict: false, json: false, feRoot: resolveFeRoot(), beRoot: DEFAULT_BE_ROOT };
+  // R212 改动点 A: 新增棘轮门禁参数（白名单/baseline 路径、--update-baseline、--ratchet 三态逃生阀、
+  // 哨兵阈值参数化 S1）。默认 ratchet=fail（owner 拍板②：棘轮门禁默认生效）。
+  const opts = {
+    strict: false, json: false,
+    feRoot: resolveFeRoot(), beRoot: DEFAULT_BE_ROOT,
+    whitelist: join(DEFAULT_BE_ROOT, DEFAULT_WHITELIST_REL),
+    baseline: join(DEFAULT_BE_ROOT, DEFAULT_BASELINE_REL),
+    updateBaseline: false,
+    ratchet: 'fail',
+    minFeFiles: 56, minBeFiles: 52, // R37 基线阈值（S1 参数化,默认值不变）
+  };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--strict')      opts.strict = true;
     else if (a === '--json')   opts.json = true;
     else if (a === '--fe-root' && argv[i + 1]) { opts.feRoot = argv[++i]; }
     else if (a === '--be-root' && argv[i + 1]) { opts.beRoot = argv[++i]; }
+    else if (a === '--whitelist' && argv[i + 1]) { opts.whitelist = argv[++i]; }
+    else if (a === '--baseline' && argv[i + 1]) { opts.baseline = argv[++i]; }
+    else if (a === '--update-baseline') { opts.updateBaseline = true; }
+    else if (a === '--no-ratchet') { opts.ratchet = 'off'; }
+    else if (a.startsWith('--ratchet=')) {
+      const v = a.slice('--ratchet='.length);
+      if (v !== 'off' && v !== 'fail') {
+        process.stderr.write(`[check-api-contract-fe-be] ❌ --ratchet 仅支持 off|fail,收到: ${v}\n`);
+        process.exit(2);
+      }
+      opts.ratchet = v;
+    }
+    else if (a === '--min-fe-files' && argv[i + 1]) { opts.minFeFiles = Number(argv[++i]); }
+    else if (a === '--min-be-files' && argv[i + 1]) { opts.minBeFiles = Number(argv[++i]); }
     else if (a === '-h' || a === '--help') {
-      process.stdout.write('Usage: node scripts/check-api-contract-fe-be.mjs [--strict] [--json] [--fe-root <p>] [--be-root <p>]\n');
+      process.stdout.write('Usage: node scripts/check-api-contract-fe-be.mjs [--strict] [--json] [--fe-root <p>] [--be-root <p>]\n' +
+        '  [--whitelist <p>] [--baseline <p>] [--update-baseline] [--ratchet=off|fail] [--min-fe-files N] [--min-be-files N]\n');
       process.exit(0);
     }
     else {
@@ -380,14 +432,14 @@ async function main() {
   const { files: feFiles, calls: feCalls }     = await scanFrontend(feApiDirs);
   const { files: beFiles, endpoints: beEps }   = await scanBackend(opts.beRoot, BE_CTRL_DIRS);
 
-  // 输入层哨兵（R37 基线）
+  // 输入层哨兵（R37 基线; R212-S1 阈值参数化 --min-fe-files/--min-be-files, 默认 56/52 不变）
   const feNonTest = feFiles.filter(f => !basename(f).endsWith('.test.ts')).length;
-  if (feFiles.length < 56) {
-    process.stderr.write(`[check-api-contract-fe-be] ❌ 前端 .ts 文件 ${feFiles.length} < 56（R37 基线，扫描路径错位？）\n`);
+  if (feFiles.length < opts.minFeFiles) {
+    process.stderr.write(`[check-api-contract-fe-be] ❌ 前端 .ts 文件 ${feFiles.length} < ${opts.minFeFiles}（R37 基线，扫描路径错位？）\n`);
     process.exit(2);
   }
-  if (beFiles.length < 52) {
-    process.stderr.write(`[check-api-contract-fe-be] ❌ 后端 controller ${beFiles.length} < 52（R37 基线 + ruoyi-admin 跨模块，扫描路径错位？）\n`);
+  if (beFiles.length < opts.minBeFiles) {
+    process.stderr.write(`[check-api-contract-fe-be] ❌ 后端 controller ${beFiles.length} < ${opts.minBeFiles}（R37 基线 + ruoyi-admin 跨模块，扫描路径错位？）\n`);
     process.exit(2);
   }
 
@@ -448,11 +500,136 @@ async function main() {
   // (c) 字段错位
   const { mismatches: fieldMismatches, nameDiffs: pathVarNameDiffs } = detectFieldMismatches(feCanonicalList, beByCanonical);
 
-  // ---------- 判定 ----------
+  // ---------- (d) R212 孤儿棘轮门禁（改动点 B: classifyOrphans; ratchet=off 时跳过,恢复旧口径仅警告） ----------
+  const gitHeadVal = gitHead(opts.beRoot);
+  const genCmd = 'node ' + [relative(process.cwd(), fileURLToPath(import.meta.url)) || 'scripts/check-api-contract-fe-be.mjs', ...process.argv.slice(2)].join(' ');
+  let exitBits = EXIT_BITS.PASS;
+  let orphanGate = { ratchet: opts.ratchet, skipped: true };
+  let envErrors = [];   // 可恢复环境错(bit 2): 白名单防伪失败 / baseline 损坏 —— 不硬退,可与 bit 4 叠加(exit 6)
+
+  if (opts.ratchet === 'off') {
+    orphanGate = { ratchet: 'off', skipped: true, note: '逃生阀已启用(--ratchet=off/--no-ratchet): 孤儿端点退回仅警告口径' };
+  } else {
+    // ① 白名单加载 + 六条防伪校验（§3.2）
+    const beCanonicalSet = new Set(beEps.map(e => e.canonical));
+    const beFilesContent = new Map(); // basename → 行数组（evidence 第3条机械校验）
+    for (const f of beFiles) {
+      const srcTxt = await readFile(f, 'utf8');
+      beFilesContent.set(basename(f), srcTxt.split('\n'));
+    }
+    const mirrorPath = join(opts.beRoot, 'docs/ipd-系统说明/开发计划-看板镜像.md');
+    let mirrorText = '';
+    try { mirrorText = await readFile(mirrorPath, 'utf8'); }
+    catch { envErrors.push(`看板镜像文件不可读(卡号防伪降级): ${mirrorPath}`); }
+
+    const wlDoc = await loadJsonFile(opts.whitelist, { required: true, label: '白名单' });
+    const wl = validateWhitelist(wlDoc, { beCanonicalSet, beFilesContent, mirrorText, today: todayStr() });
+    if (wl.errors.length > 0) {
+      // 防伪失败: bit 2 叠加 + 该文件不作为豁免来源(全部豁免失效,继续分类让问题全量暴露)
+      envErrors.push(`白名单六条防伪校验失败 ${wl.errors.length} 条:`, ...wl.errors);
+    }
+    for (const w of wl.warnings) process.stderr.write(`[check-api-contract-fe-be] ⚠ ${w}\n`);
+
+    // ② baseline 加载 + 双层防篡改（sha256 自洽 + git show HEAD 硬闸）
+    let baselineDoc = null, baselineInfo = { valid: false, warnings: [], hardFail: null, checked_against_head: false };
+    const baselineRel = relative(opts.beRoot, opts.baseline);
+    if (!opts.updateBaseline) {
+      try {
+        const lb = await loadBaseline(opts.baseline, { repoRoot: opts.beRoot, relPath: baselineRel });
+        baselineDoc = lb.doc;
+        baselineInfo = { valid: !lb.hardFail, warnings: lb.warnings, hardFail: lb.hardFail, checked_against_head: lb.checkedAgainstHead };
+        if (lb.hardFail) envErrors.push(lb.hardFail);
+        for (const w of lb.warnings) process.stderr.write(`[check-api-contract-fe-be] ⚠ baseline: ${w}\n`);
+      } catch (e) {
+        if (e instanceof GateEnvError) { envErrors.push(e.message, ...(e.detail || [])); }
+        else throw e;
+      }
+    }
+
+    // ③ --update-baseline: 唯一合法写入口（防伪失败时拒绝生成,写入口必须干净）
+    if (opts.updateBaseline) {
+      if (wl.errors.length > 0) {
+        process.stderr.write(`[check-api-contract-fe-be] ❌ --update-baseline 拒绝: 白名单防伪未通过,先修复再生成\n`);
+        process.exit(EXIT_BITS.ENV);
+      }
+      let prevDoc = null;
+      if (existsSync(opts.baseline)) {
+        try { prevDoc = JSON.parse(await readFile(opts.baseline, 'utf8')); }
+        catch { prevDoc = null; } // 损坏的旧文件不阻塞首写,但 growth_log 从零计
+      }
+      const headRaw = gitShowHeadFile(opts.beRoot, baselineRel);
+      let headDoc = null;
+      if (headRaw !== null) { try { headDoc = JSON.parse(headRaw); } catch { headDoc = null; } }
+      try {
+        const { doc, delta } = await writeBaseline(opts.baseline, {
+          orphanEndpoints, whitelistActive: wl.activeMap, prevDoc, headDoc,
+          generatedAt: new Date().toISOString(), gitHeadVal, genCmd, feRoot: opts.feRoot,
+        });
+        baselineDoc = doc;
+        baselineInfo = { valid: true, warnings: [], hardFail: null, checked_against_head: headDoc !== null };
+        process.stderr.write(`[check-api-contract-fe-be] 📝 baseline 已更新: count=${doc.count} (Δ${delta >= 0 ? '+' : ''}${delta}) → ${opts.baseline}\n`);
+      } catch (e) {
+        if (e instanceof GateEnvError) {
+          process.stderr.write(`[check-api-contract-fe-be] ❌ ${e.message}\n`);
+          for (const d of e.detail || []) process.stderr.write(`    - ${d}\n`);
+          process.exit(EXIT_BITS.ENV);
+        }
+        throw e;
+      }
+    }
+
+    // ④ 分诊 classifyOrphans（改动点 B 核心）
+    const baselinePaths = new Set(baselineDoc && Array.isArray(baselineDoc.paths) ? baselineDoc.paths : []);
+    const classified = classifyOrphans(orphanEndpoints, baselinePaths, wl.activeMap, wl.entriesByCanonical);
+
+    // ⑤ baseline 无效时其豁免不可信 → 相关条目视为未覆盖,全量暴露为 violations(不静默放行)
+    let violations = classified.violations;
+    if (baselineInfo.hardFail && baselineDoc) {
+      const demoted = classified.exempt_baseline;
+      if (demoted.length > 0) {
+        violations = [...violations, ...demoted];
+        process.stderr.write(`[check-api-contract-fe-be] ⚠ baseline 无效: ${demoted.length} 条 baseline 豁免降级为待处置(不静默放行)\n`);
+      }
+    }
+
+    // vs baseline 方向行（R212「105→98 净消亡」同口径）
+    const curSet = new Set(orphanEndpoints.map(o => o.path));
+    const resolved = [...baselinePaths].filter(x => !curSet.has(x)).length;   // 消亡(baseline 有/现非孤儿)
+    const added = [...curSet].filter(x => !baselinePaths.has(x)).length;      // 豁免外新增
+
+    orphanGate = {
+      ratchet: 'fail',
+      skipped: false,
+      whitelist: {
+        path: opts.whitelist, entries: wlDoc.entries.length, active: wl.activeMap.size,
+        expired: wl.expiredEntries.length, validation_errors: wl.errors.length,
+      },
+      baseline: {
+        path: opts.baseline, count: baselineDoc ? baselineDoc.count : null,
+        git_head_ref: baselineDoc ? baselineDoc.git_head : null,
+        generated_at: baselineDoc ? baselineDoc.generated_at : null,
+        checked_against_head: baselineInfo.checked_against_head,
+        valid: baselineInfo.valid,
+      },
+      exempt_baseline_count: classified.exempt_baseline.length,
+      exempt_whitelist_count: classified.exempt_whitelist.length,
+      violations,
+      expired_orphans: classified.expired_orphans,
+      stale_whitelist: classified.stale_whitelist,
+      vs_baseline: { resolved, added },
+      env_errors: envErrors,
+    };
+    if (violations.length > 0) exitBits |= EXIT_BITS.NEW_ORPHAN;
+    if (envErrors.length > 0) exitBits |= EXIT_BITS.ENV;
+    // §3.2-5 反向清账: strict 模式下白名单漂移(stale)也阻断(bit 1)
+    if (opts.strict && classified.stale_whitelist.length > 0) exitBits |= EXIT_BITS.BLOCK;
+  }
+
+  // ---------- 判定（改动点 C: pass 语义扩展,既有 1/2 不动） ----------
   const hasP0  = orphanPaths.length > 0;
   const hasP1  = fieldMismatches.length > 0;
   const failByStrict = opts.strict && hasP1;
-  const pass = !hasP0 && !failByStrict;
+  const pass = !hasP0 && !failByStrict && exitBits === EXIT_BITS.PASS;
 
   const report = {
     check: 'api-contract-fe-be',
@@ -464,19 +641,26 @@ async function main() {
       backend_files_total: beFiles.length,
       backend_dirs: BE_CTRL_DIRS,
       timestamp: new Date().toISOString(),
+      // R212-S1 自证字段（堵 P4 溯源缺口: 无 git HEAD / 无生成命令）
+      git_head: gitHeadVal,
+      cmd: genCmd,
+      fe_root: opts.feRoot,
+      be_root: opts.beRoot,
     },
     orphan_paths: orphanPaths,
     orphan_endpoints: orphanEndpoints,
     field_mismatches: fieldMismatches,
     path_var_name_diffs: pathVarNameDiffs,
+    orphan_gate: orphanGate, // R212 棘轮门禁段（ratchet=off 时仅含 skipped 标记）
     summary: {
       orphan_paths_count: orphanPaths.length,
       orphan_endpoints_count: orphanEndpoints.length,
       field_mismatches_count: fieldMismatches.length,
       path_var_name_diffs_count: pathVarNameDiffs.length,
+      new_orphan_violations_count: (orphanGate.violations || []).length, // R212: 未白名单新孤儿数
     },
     pass,
-    mode: { strict: opts.strict, json: opts.json },
+    mode: { strict: opts.strict, json: opts.json, ratchet: opts.ratchet },
   };
 
   if (opts.json) {
@@ -493,6 +677,10 @@ async function main() {
     for (const o of orphanEndpoints.slice(0, 20)) {
       process.stdout.write(`  [${o.method}] ${o.path}  ← ${o.file}:${o.line}\n`);
     }
+    if (!orphanGate.skipped && orphanGate.baseline && orphanGate.baseline.count !== null) {
+      const vb = orphanGate.vs_baseline;
+      process.stdout.write(`  vs baseline: -${vb.resolved} / +${vb.added}  (baseline=${orphanGate.baseline.count}, 白名单豁免=${orphanGate.exempt_whitelist_count}, 老账豁免=${orphanGate.exempt_baseline_count})\n`);
+    }
     process.stdout.write(`\n-- (c) 字段名错位 (P1${opts.strict ? ',strict 阻断' : ',警告'}) -- ${fieldMismatches.length}\n`);
     for (const m of fieldMismatches) {
       process.stdout.write(`  ${m.canonical}\n    FE vars: [${m.feVars.join(', ')}]  ← ${m.feFile}:${m.feLine}\n    BE vars: [${m.beVars.join(', ')}]  ← ${m.beFile}:${m.beLine}\n`);
@@ -501,10 +689,49 @@ async function main() {
     for (const m of pathVarNameDiffs) {
       process.stdout.write(`  ${m.canonical}  FE:${m.feVars.join('/')} vs BE:${m.beVars.join('/')}  ← ${m.feFile}:${m.feLine}\n`);
     }
-    process.stdout.write(`\n${pass ? '✅ PASS' : '❌ FAIL'}  (strict=${opts.strict})\n`);
+    // -- (e) R212 孤儿棘轮门禁 --
+    if (orphanGate.skipped) {
+      process.stdout.write(`\n-- (e) 孤儿棘轮门禁 (R212) -- SKIPPED  (${orphanGate.note || 'ratchet=off'})\n`);
+    } else {
+      process.stdout.write(`\n-- (e) 孤儿棘轮门禁 (R212, 只减不增) --\n`);
+      process.stdout.write(`  白名单: ${orphanGate.whitelist.entries} 条登记 / ${orphanGate.whitelist.active} 条生效 / 防伪错误 ${orphanGate.whitelist.validation_errors}\n`);
+      process.stdout.write(`  baseline: ${orphanGate.baseline.count} 条老账 (HEAD 硬闸=${orphanGate.baseline.checked_against_head ? '已比对' : '未生效(未提交)'}, 有效=${orphanGate.baseline.valid})\n`);
+      if ((orphanGate.env_errors || []).length > 0) {
+        process.stdout.write(`  ❌ 环境错(bit2) ${orphanGate.env_errors.length} 条:\n`);
+        for (const e2 of orphanGate.env_errors.slice(0, 8)) process.stdout.write(`    - ${e2}\n`);
+      }
+      if ((orphanGate.violations || []).length > 0) {
+        process.stdout.write(`  ❌ 新孤儿未白名单(bit4) ${orphanGate.violations.length} 条:\n`);
+        for (const v of orphanGate.violations.slice(0, 20)) process.stdout.write(`    [${v.method}] ${v.path}  ← ${v.file}:${v.line}\n`);
+        process.stdout.write(`    处置: 补前端消费 / 删除端点 / 白名单登记(卡号+reason+expire, 须看板卡)\n`);
+      }
+      if ((orphanGate.expired_orphans || []).length > 0) {
+        process.stdout.write(`  ⚠ 白名单过期回落(WARN,首版不阻断) ${orphanGate.expired_orphans.length} 条:\n`);
+        for (const v of orphanGate.expired_orphans.slice(0, 10)) process.stdout.write(`    [${v.method}] ${v.path} (expire=${v.expire})\n`);
+      }
+      if ((orphanGate.stale_whitelist || []).length > 0) {
+        process.stdout.write(`  ⚠ 白名单漂移 stale(前端已接线,应清账${opts.strict ? ',strict 下阻断' : ''}) ${orphanGate.stale_whitelist.length} 条:\n`);
+        for (const s of orphanGate.stale_whitelist.slice(0, 10)) process.stdout.write(`    ${s.path} (${s.owner_card})\n`);
+      }
+    }
+    process.stdout.write(`\n${pass ? '✅ PASS' : '❌ FAIL'}  (strict=${opts.strict}, ratchet=${opts.ratchet})\n`);
   }
 
-  if (!pass) process.exit(1);
+  // 出口（R212 改动点 E: 方案 A 位掩码; 既有 1(P0/strict)=bit1、2(输入错)=bit2 语义不变, 新增 bit4=新孤儿）
+  let exitCode = EXIT_BITS.PASS;
+  if (hasP0) exitCode |= EXIT_BITS.BLOCK;              // 1: P0 孤儿路径（原语义）
+  if (failByStrict) exitCode |= EXIT_BITS.BLOCK;       // 1: strict 字段错位（原语义）
+  exitCode |= exitBits;                                // 2/4: 棘轮门禁段结论（可叠加: 5/6/7）
+  if (exitCode !== EXIT_BITS.PASS) {
+    if (!opts.json) {
+      const parts = [];
+      if (exitCode & EXIT_BITS.BLOCK) parts.push('1=阻断(P0孤儿路径/strict)');
+      if (exitCode & EXIT_BITS.ENV) parts.push('2=环境或输入错');
+      if (exitCode & EXIT_BITS.NEW_ORPHAN) parts.push('4=新孤儿未白名单');
+      process.stdout.write(`exit code = ${exitCode} (${parts.join(' | ')})\n`);
+    }
+    process.exit(exitCode);
+  }
 }
 
 main().catch(err => {

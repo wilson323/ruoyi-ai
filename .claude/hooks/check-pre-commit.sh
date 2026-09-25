@@ -5,11 +5,11 @@
 # R43-α 二轮接管扩展 — 补 untracked 引用检测门禁(病根 ② 实质化)
 #
 # 用法:
-#   .claude/hooks/check-pre-commit.sh          # 默认:跑全部(快速路径跳过 drift)
+#   .claude/hooks/check-pre-commit.sh          # 默认:跑全部(含孤儿棘轮门禁3)
 #   .claude/hooks/check-pre-commit.sh drift     # 仅跑 doc↔db drift
 #   .claude/hooks/check-pre-commit.sh contract  # 仅跑 contract tri-source
 #   .claude/hooks/check-pre-commit.sh untracked # 仅跑 untracked 引用检测(R43-α 二轮新增)
-#   .claude/hooks/check-pre-commit.sh fast      # 跳过 doc↔db 与 contract(untracked 仍跑,病根 ② 实质化)
+#   .claude/hooks/check-pre-commit.sh fast      # 跳过 doc↔db 与 contract(untracked 与孤儿棘轮门禁3 仍跑,病根 ② 实质化)
 #
 # 退出码:
 #   0 = PASS
@@ -165,6 +165,42 @@ run_contract_gate() {
 }
 
 # ---------------------------------------------------------------------------
+# 门禁 3:R212 孤儿端点「只减不增」棘轮门禁(卡 7b76b7cd API-GATE-RATCHET)
+# node scripts/check-api-contract-fe-be.mjs 默认 ratchet=fail;exit 位掩码 0/1/2/4 可叠加
+# 单跑 ~0.1s;照 R43-α untracked 先例,fast 模式也跑(设计文档 §5-A 推荐组合 A+D)
+# node 不可用时 SKIP 不误报(设计 §5-A: 哨兵段须防无 node 环境 env error)
+# ---------------------------------------------------------------------------
+run_ratchet_gate() {
+    local start_time
+    start_time=$(date +%s)
+    echo "[check-pre-commit] → 门禁 3: API 契约孤儿棘轮 R212(只减不增)"
+    if ! command -v node >/dev/null 2>&1; then
+        echo "[check-pre-commit] ⚠ 门禁 3 SKIP: node 不可用(跳过而非误报 env error;本仓脚本依赖 node)"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+    if [[ ! -f "$REPO_ROOT/scripts/check-api-contract-fe-be.mjs" ]]; then
+        echo "[check-pre-commit] ⚠ 门禁 3 SKIP: scripts/check-api-contract-fe-be.mjs 不存在"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+    local out rc
+    out=$(node "$REPO_ROOT/scripts/check-api-contract-fe-be.mjs" 2>&1)
+    rc=$?
+    local elapsed=$(( $(date +%s) - start_time ))
+    if [[ "$rc" -eq 0 ]]; then
+        echo "[check-pre-commit] ✅ 门禁 3 PASS: 孤儿棘轮无新孤儿/白名单防伪通过 (elapsed=${elapsed}s)"
+        echo "$out" | grep -E "vs baseline" || true
+        PASSED=$((PASSED + 1))
+    else
+        echo "[check-pre-commit] ❌ 门禁 3 FAIL: exit=$rc (位掩码: 1=P0孤儿路径/strict, 2=环境错/防伪失败/基线被改, 4=新孤儿未白名单; elapsed=${elapsed}s)"
+        echo "$out" | grep -E "^\s*(❌|\[|exit code)" | tail -25 || echo "$out" | tail -15
+        echo "[check-pre-commit]   处置: 新孤儿→补前端消费/删端点/白名单登记(卡号+reason+expire); 基线→--update-baseline"
+        FAILED=$((FAILED + 1))
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # 路由
 # ---------------------------------------------------------------------------
 case "$MODE" in
@@ -173,6 +209,7 @@ case "$MODE" in
         run_untracked_gate
         run_drift_gate
         run_contract_gate
+        run_ratchet_gate
         ;;
     drift)
         run_untracked_gate
@@ -188,9 +225,11 @@ case "$MODE" in
         ;;
     fast)
         # R43-α 二轮: fast 模式仍跑 untracked 门禁 0(快速 < 1s,病根 ② 实质化)
+        # R212: fast 模式也跑门禁 3(孤儿棘轮,单跑 ~0.1s,同 untracked 实质化先例)
         run_untracked_gate
+        run_ratchet_gate
         SKIPPED=2
-        echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 仍跑)"
+        echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"
         ;;
     *)
         echo "[check-pre-commit] ❌ unknown mode: $MODE (支持: all|drift|contract|untracked|fast)" >&2

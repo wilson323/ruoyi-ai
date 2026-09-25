@@ -1,0 +1,306 @@
+{
+  "$schema_version": 1,
+  "notice": "API 内部/运维口白名单（R212 卡 7b76b7cd API-GATE-RATCHET, owner 2026-09-24 拍板）。主键=path(canonical, {VAR} 归一)；methods 仅提示不参与豁免判定。六条防伪校验由 scripts/api-contract/orphan-gate-lib.mjs validateWhitelist 强制: ①owner_card 须在看板镜像 | KEY | 命中 ②path 须在后端扫描集 ③evidence File.java:NN 须 ≤ 行数且该行含 Mapping ④expire 过期即失效(回落 WARN) ⑤前端已接线条目报 stale(strict 阻断) ⑥reason≥12 字且 review_date 近 90 天。新增/变更须挂看板卡执行。",
+  "entries": [
+    {
+      "path": "/api/v1/gates/sign/scan-remind",
+      "methods": [
+        "POST"
+      ],
+      "reason": "签到提醒扫描手动触发，@Scheduled 日扫的运维兜底入口，无 UI 消费",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "GateSignScanController.java:38"
+    },
+    {
+      "path": "/api/v1/gates/sign/scan-timeout",
+      "methods": [
+        "POST"
+      ],
+      "reason": "签到超时扫描手动触发，scheduler 配套运维入口，无 UI 消费",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "GateSignScanController.java:32"
+    },
+    {
+      "path": "/api/v1/handovers/scan-overdue",
+      "methods": [
+        "POST"
+      ],
+      "reason": "移交超期扫描手动补跑：HandoverOverdueScanner @Scheduled cron 0 5 9 已自动执行，端点仅运维兜底",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "HandoverController.java:156"
+    },
+    {
+      "path": "/api/v1/hr-sync/sync-now",
+      "methods": [
+        "POST"
+      ],
+      "reason": "HR 全量同步手动兜底：HrSyncJob @Scheduled cron 已自动跑，端点为运维手动触发入口",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "HrSyncController.java:151"
+    },
+    {
+      "path": "/api/v1/hr-sync/sync-one",
+      "methods": [
+        "POST"
+      ],
+      "reason": "HR 单人同步运维回补（P2-2.3 异常项回补卡 bee81fc9 交付），无产品页入口",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "HrSyncController.java:167"
+    },
+    {
+      "path": "/api/v1/hr-sync/last-run",
+      "methods": [
+        "GET"
+      ],
+      "reason": "HR 同步链路 last-run 状态查询，运维排障端点，无产品页对应",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "HrSyncController.java:194"
+    },
+    {
+      "path": "/api/v1/hr-sync/mark-resigned",
+      "methods": [
+        "POST"
+      ],
+      "reason": "HR 真源标记离职：数据同步链运维动作，产品侧离职操作走页 27/49 另一组端点",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "HrSyncController.java:108"
+    },
+    {
+      "path": "/api/v1/hr-sync/escalate-stale-resignations",
+      "methods": [
+        "POST"
+      ],
+      "reason": "离职逾期升级扫描：PersonResignEscalator @Scheduled cron 0 0 9 自动执行，端点仅手动兜底",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "HrSyncController.java:120"
+    },
+    {
+      "path": "/api/v1/gates/legacy/scan-overdue",
+      "methods": [
+        "POST"
+      ],
+      "reason": "legacy Gate 超期扫描手动触发，同扫描系运维模式，无 UI 消费",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "LegacyScanController.java:27"
+    },
+    {
+      "path": "/api/v1/notifications/async-dispatch",
+      "methods": [
+        "POST"
+      ],
+      "reason": "通知异步派发手动补跑：NotificationOutboxScanner @Scheduled fixedDelay 30s 自动消费，端点仅运维兜底",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "NotificationController.java:103"
+    },
+    {
+      "path": "/api/v1/notifications/dispatch-pending",
+      "methods": [
+        "POST"
+      ],
+      "reason": "通知 pending 派发手动补跑，与 async-dispatch 同域同模式运维口",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "NotificationController.java:89"
+    },
+    {
+      "path": "/api/v1/p0/escalation-chain/check",
+      "methods": [
+        "POST"
+      ],
+      "reason": "P0 升级链手动扫描触发，Controller 注释自证「仅超管；运维/测试用；正常轮询待 scheduler 合入」",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "P0EscalationController.java:58"
+    },
+    {
+      "path": "/api/v1/person-sync/jobs",
+      "methods": [
+        "POST"
+      ],
+      "reason": "创建 person-sync 同步任务：HR 系统间回调入口，非浏览器消费",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "PersonSyncController.java:51"
+    },
+    {
+      "path": "/api/v1/person-sync/jobs/{VAR}/retry",
+      "methods": [
+        "POST"
+      ],
+      "reason": "同步单任务重试：告警自动化/运维调用，前端全仓 person-sync 零调用",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "PersonSyncController.java:60"
+    },
+    {
+      "path": "/api/v1/person-sync/jobs/retry-all",
+      "methods": [
+        "POST"
+      ],
+      "reason": "同步全量重试运维口，与单任务 retry 同域",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "PersonSyncController.java:69"
+    },
+    {
+      "path": "/api/v1/person-sync/jobs/abnormal",
+      "methods": [
+        "GET"
+      ],
+      "reason": "同步异常项回查：系统间回调/运维排障口（PERSON-SYNC-P0 9a38b8d8 链路配套）",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "PersonSyncController.java:88"
+    },
+    {
+      "path": "/api/v1/project-score-tasks/scan",
+      "methods": [
+        "POST"
+      ],
+      "reason": "项目评分任务扫描手动补扫：ProjectScoreScheduleService @Scheduled cron 0 15 9 已自动",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "ProjectScoreTaskController.java:27"
+    },
+    {
+      "path": "/api/v1/kpi/shared/deadline-scan",
+      "methods": [
+        "POST"
+      ],
+      "reason": "共担 KPI 截止扫描手动补跑：batch-03 D.6.6 cron kpi_monthly_collect_cron 服务端自动",
+      "owner_card": "OPS-06",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "SharedKpiController.java:74"
+    },
+    {
+      "path": "/api/v1/compliance/audit-trail/{VAR}/{VAR}",
+      "methods": [
+        "GET"
+      ],
+      "reason": "owner 裁决卡 d81af12c(2026-09-07)：合规审计 4 端点整体判 B 预留能力，保留不建前端不删除",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "ComplianceController.java:65"
+    },
+    {
+      "path": "/api/v1/compliance/data-retention-rules",
+      "methods": [
+        "GET"
+      ],
+      "reason": "owner 裁决卡 d81af12c：数据保留规则属 B 预留能力，ZK-IPD spec 49 页无合规页",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "ComplianceController.java:50"
+    },
+    {
+      "path": "/api/v1/compliance/permission-separation/{VAR}",
+      "methods": [
+        "GET"
+      ],
+      "reason": "owner 裁决卡 d81af12c：权限分离查询属 B 预留能力，AC-COMP spec 零命中",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "ComplianceController.java:77"
+    },
+    {
+      "path": "/api/v1/compliance/data-deletion-request",
+      "methods": [
+        "POST"
+      ],
+      "reason": "owner 裁决卡 d81af12c：数据删除请求属 B 预留能力，同批 4 端点整体裁决",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "ComplianceController.java:58"
+    },
+    {
+      "path": "/api/v1/product-groups/{VAR}/remove",
+      "methods": [
+        "POST"
+      ],
+      "reason": "删除入口被产品规则主动关闭：Controller 注释「须走删除审核（P0-6.2）」，前端不接是设计约束",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "ProductGroupController.java:74"
+    },
+    {
+      "path": "/api/v1/stage-actions/instantiate",
+      "methods": [
+        "POST"
+      ],
+      "reason": "阶段动作实例化由建项目流程服务端自动生成（P1-3.1 0288ffad：六阶段+69 动作 instances），非前端手动动作",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "StageActionController.java:87"
+    },
+    {
+      "path": "/api/v1/stage-actions/ensure-bio-compliance",
+      "methods": [
+        "POST"
+      ],
+      "reason": "生物特征合规自动挂载：验收清单 C12 服务端自动触发，前端零调用为预期",
+      "owner_card": "7b76b7cd",
+      "review_date": "2026-09-24",
+      "expire": "2026-12-31",
+      "added_by": "7b76b7cd",
+      "evidence": "StageActionController.java:100"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,6 +38,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,6 +68,7 @@ class P062AcceptanceTest {
         TableInfoHelper.initTableInfo(assistant, Product.class);
         TableInfoHelper.initTableInfo(assistant, Project.class);
         TableInfoHelper.initTableInfo(assistant, Gate.class);
+        TableInfoHelper.initTableInfo(assistant, CertTemplate.class);
     }
 
     @BeforeEach
@@ -104,12 +108,12 @@ class P062AcceptanceTest {
                 case "projects" -> {
                     Project p = Project.builder().id(targetId).code("C").delFlag("0").build();
                     when(projectMapper.selectById(targetId)).thenReturn(p);
-                    when(projectMapper.updateById(any(Project.class))).thenReturn(1);
+                    when(projectMapper.update(isNull(), any())).thenReturn(1);
                 }
                 case "products" -> {
                     Product p = Product.builder().id(targetId).productCode("X").delFlag("0").build();
                     when(productMapper.selectById(targetId)).thenReturn(p);
-                    when(productMapper.updateById(any(Product.class))).thenReturn(1);
+                    when(productMapper.update(isNull(), any())).thenReturn(1);
                 }
                 case "persons" -> {
                     Person p = Person.builder().id(targetId).name("n").delFlag("0").build();
@@ -119,12 +123,12 @@ class P062AcceptanceTest {
                 case "cert_templates" -> {
                     CertTemplate c = CertTemplate.builder().id(targetId).countryCode("SA").certName("X").delFlag("0").build();
                     when(certTemplateMapper.selectById(targetId)).thenReturn(c);
-                    when(certTemplateMapper.updateById(any(CertTemplate.class))).thenReturn(1);
+                    when(certTemplateMapper.update(isNull(), any())).thenReturn(1);
                 }
                 case "gates" -> {
                     Gate g = Gate.builder().id(targetId).gateCode("G1").delFlag("0").build();
                     when(gateMapper.selectById(targetId)).thenReturn(g);
-                    when(gateMapper.updateById(any(Gate.class))).thenReturn(1);
+                    when(gateMapper.update(isNull(), any())).thenReturn(1);
                 }
             }
             service.approveAndExecute(req.getId(), 99L);
@@ -133,7 +137,7 @@ class P062AcceptanceTest {
     }
 
     @Test
-    @DisplayName("P0-6.2.A3 软删除执行后实体 del_flag='1'")
+    @DisplayName("P0-6.2.A3 软删 UPDATE 显式 SET del_flag='1'（R216）")
     void targetEntityFlaggedAfterExecute() {
         DeletionRequest req = DeletionRequest.builder()
             .id(1L).entityType("projects").entityId(2000L).requesterId(1L)
@@ -142,13 +146,17 @@ class P062AcceptanceTest {
         when(deletionRequestMapper.updateById(any(DeletionRequest.class))).thenReturn(1);
         Project project = Project.builder().id(2000L).code("P").delFlag("0").build();
         when(projectMapper.selectById(2000L)).thenReturn(project);
-        when(projectMapper.updateById(any(Project.class))).thenReturn(1);
+        when(projectMapper.update(isNull(), any())).thenReturn(1);
 
         service.approveAndExecute(1L, 99L);
 
-        ArgumentCaptor<Project> cap = ArgumentCaptor.forClass(Project.class);
-        verify(projectMapper).updateById(cap.capture());
-        assertThat(cap.getValue().getDelFlag()).isEqualTo("1");
+        // R216：@TableLogic 下 updateById 会把逻辑删除字段从 SET 子句剔除致静默失效，软删已改
+        // LambdaUpdateWrapper 显式 SET del_flag='1'；wrapper 为运行时构造，此处捕 wrapper 断言
+        // SET 子句含 del_flag（同 P421AcceptanceTest 先例），del_flag='1' 语义由 executor 实现覆盖。
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaUpdateWrapper<Project>> cap = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(projectMapper).update(isNull(), cap.capture());
+        assertThat(cap.getValue().getSqlSet()).contains("del_flag");
     }
 
     @Test
@@ -164,7 +172,7 @@ class P062AcceptanceTest {
 
         service.approveAndExecute(1L, 99L);
 
-        verify(projectMapper, times(0)).updateById(any(Project.class));
+        verify(projectMapper, never()).update(isNull(), any());
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(auditCap.capture());
         assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
@@ -182,7 +190,7 @@ class P062AcceptanceTest {
 
         service.approveAndExecute(2L, 99L);
 
-        verify(productMapper, times(0)).updateById(any(Product.class));
+        verify(productMapper, never()).update(isNull(), any());
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(auditCap.capture());
         assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
