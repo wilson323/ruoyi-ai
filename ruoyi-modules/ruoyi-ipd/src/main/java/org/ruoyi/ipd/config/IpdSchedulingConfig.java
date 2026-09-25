@@ -14,6 +14,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * <p>任务登记（错峰表）：PersonResignEscalator 09:00 / HandoverOverdueScanner 09:05 /
  * KpiSharedDeadlineScheduler 09:10（共担 KPI 月度截止催办，R215-GAP-B1 接线补齐 2026-09-25）/
  * ProjectScoreScheduleService 09:15（P3-2.3 上市评分待办扫描，2026-09-19 接线补齐）/
+ * GateSignScanScheduler 09:20 签署期限提醒 + 09:25 超时弃权折算（R215-GAP-B4 接线补齐 2026-09-25）/
+ * GateLegacyScanScheduler 09:30（条件遗留逾期提醒，R215-GAP-B4）/
+ * P0EscalationScanScheduler 09:35（P0 升级链阈值检查，R215-GAP-B4）/
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
  * 间隔可配 ipd.notification.dispatch.interval-ms）。
  */
