@@ -35,7 +35,7 @@ import java.util.Objects;
  * 真实数据源（无任何 mock）：
  * - 待我处理 / 临期超期 / 已完成：WorkbenchAggregator 聚合器列表统一投递
  *   （P1 方向 B：taskType 按域拆分到 org.ruoyi.ipd.workbench 各实现，summary() 只做调度；
- *   现有 stage_sign / deletion_review 两类，后续 7 类已就绪域按 P1.2-P1.4 接力）；
+ *   WB-17-1 现态已实现 9 类（清单见 ALL_TASK_TYPES javadoc），剩余 8 类登记同下）；
  * - 未读通知：notification_events（receiver = 当前人，unread）；
  * - 我的当前推进：当前项目 currentStage 的第一个未完成动作（stageActionMapper 仅剩此职责 + completed 已移入 StageSignAggregator）。
  *
@@ -48,7 +48,34 @@ public class WorkbenchService implements IWorkbenchService {
 
     private static final String ST_ACTIVE_PROJECT = "ACTIVE";
 
-    /** spec 页03:165 权威 17 类全集（与前端 WORKBENCH_TASK_TYPE_TEXT 同序同值，勿漂移）。 */
+    /**
+     * spec 页03:165 权威 17 类全集（与前端 WORKBENCH_TASK_TYPE_TEXT 同序同值，勿漂移）。
+     *
+     * <p><b>WB-17-1 已实现 9 类</b>（各自 Aggregator 投递，契约见
+     * docs/ipd-系统说明/workbench-tasktype-契约登记.yaml）：
+     * stage_sign / key_gate / key_gate_arbitration / deletion_review / handover /
+     * contribution_confirm / strategic_change / closeout / kpi_fill。
+     *
+     * <p><b>剩余 8 类登记（R217-B4 现查 2026-09-25：数据源缺失或口径待 owner 拍板，
+     * 纪律=不发明新表新机制、不擅定业务字段，禁止在拍板前写聚合器——
+     * 见 WB-17-1-tasktype字段级spec填写模板-20260923.md 风险红线「owner 未拍板的 ⚠️ AI 初稿
+     * 字段不得动 Java 代码」）</b>：
+     * <ul>
+     *   <li>缺表 4 类（DDL 仅草案 2026-09-08-ipd-c-batch-4-tables-draft.sql 未 apply，
+     *     Java 实体/Mapper 零）：waiver_review（gate_waivers 待建，14 问 Q1-Q3）；
+     *     rd_replacement（双表 vs project_members 扩展 Q4-Q6 未定）；
+     *     retirement_review（新表 vs 复用 deletion_requests Q7-Q9 未定）；
+     *     capacity_approval（multi_project_capacity_approvals 未 apply，Q10-Q12）</li>
+     *   <li>表已建但口径待拍板 4 类（字段级 spec pending_expr/state_machine 全部仍 ⚠️ AI 初稿）：
+     *     receipt_review——receipt_ledgers 实为销售回款台账，无 status/reviewer 字段，「收据待审」单据态不存在；
+     *     change_implementation / change_verify——requirement_changes 仅
+     *     DRAFT/PENDING_SIGN/APPROVED/REJECTED，无 implementer_id/verifier_id/planned_date 责任人字段，
+     *     投递锚不存在（spec batch-03 L107 自登记 v3 要求但代码未存储 4 字段）；
+     *     bonus_lock——bonus_pools 状态机仅 DRAFT→CONFIRMED→DISTRIBUTED，freeze 为人触发主动动作，
+     *     无「待锁定」前置态（AI 初稿 pending_expr status='PENDING_LOCK' 无写入路径生产者，
+     *     违反 mock 规约硬规约②状态可达）</li>
+     * </ul>
+     */
     private static final List<String> ALL_TASK_TYPES = List.of(
         "bonus_lock", "capacity_approval", "change_implementation", "change_verify",
         "closeout", "contribution_confirm", "deletion_review", "handover",
