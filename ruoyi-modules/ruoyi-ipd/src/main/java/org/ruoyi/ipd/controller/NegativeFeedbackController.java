@@ -30,6 +30,9 @@ import java.util.List;
  *   <li>GET    /api/v1/negative-feedbacks                          项目下状态过滤</li>
  *   <li>GET    /api/v1/negative-feedbacks/by-project/{projectId}/effective  当前生效</li>
  * </ul>
+ *
+ * <p>状态迁移唯一入口为 submit/decide/lift 三端点（各自内含 from 态校验 + 项目归属校验 + 副作用补齐 + 审计 + 通知），
+ * 不提供按 id 直改 status 的裸口——对齐 StageActionController「状态迁移唯一入口 /transit，禁止 PATCH status 字段」范式。
  */
 @RestController
 @RequestMapping("/api/v1/negative-feedbacks")
@@ -113,24 +116,6 @@ public class NegativeFeedbackController {
     public ApiV1Response<List<NegativeFeedbackView>> listBySeverity(@PathVariable String severity) {
         return ApiV1Response.ok(negativeFeedbackService.listBySeverity(severity).stream()
             .map(NegativeFeedbackService::toView).toList());
-    }
-
-    /**
-     * 按 id 更新 status 字段（R27 P0-5#3：updateStatus）。
-     *
-     * <p>R215-GAP-B3 状态机守卫：原实现为裸 setter，绕过 submit/decide/lift 状态机且无
-     * requireLeaderOrAdmin 二次校验。修复：
-     * <ol>
-     *   <li>Controller 层加 {@code requireLeaderOrAdmin()}（与 decide/lift 对齐）</li>
-     *   <li>Service 层 {@code updateStatusGuarded} 加状态转移白名单 + 项目归属校验</li>
-     * </ol>
-     */
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE, type = IpdAuthSession.LOGIN_TYPE)
-    @PutMapping("/{id}/status")
-    public ApiV1Response<Boolean> updateStatus(@PathVariable Long id,
-                                               @RequestParam String status) {
-        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
-        return ApiV1Response.ok(negativeFeedbackService.updateStatusGuarded(id, status, actor));
     }
 
     /** 按 id 软删除（R27 P0-5#4：deleteById）。 */

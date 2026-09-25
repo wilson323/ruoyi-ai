@@ -554,14 +554,8 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         }
     }
 
-    /** 旧签名兼容：保留 appendAudit(action, row, before, reason) 用于未传 actor 的调用点（已无调用方，本方法 deprecated）。 */
-    @Deprecated
-    private void appendAudit(String action, NegativeFeedback row, String before, String reason) {
-        appendAudit(action, row, null, before, reason);
-    }
-
     /* ========================================================================
-     *  R27 P0-5：状态机 5 函数补全（无 actor / 无权限校验的简化口；用于透传式 API 路径）
+     *  R27 P0-5：状态机 4 函数补全（updateStatus 已按 owner 2026-09-25 拍板删除：与 submit/decide/lift 状态机构成双轨）（无 actor / 无权限校验的简化口；用于透传式 API 路径）
      *  设计：直接走 mapper，无项目归属/角色校验——controller 路径已走 requireInternal 兜底
      * ======================================================================== */
 
@@ -600,128 +594,6 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         row.setStatus(STATUS_PENDING_DECISION);
         fb.setStatus(STATUS_PENDING_DECISION);  // 同步回写到入参，便于调用方断言
         return mapper.updateById(row) > 0;
-    }
-
-    /**
-     * 按 id 更新 status 字段；affected>0 返 true。
-     * <p>使用 LambdaUpdateWrapper 局部更新（不读行、不动其他字段）。
-     *
-     * @deprecated R215-GAP-B3 后无生产调用方（Controller 已改走 {@link #updateStatusGuarded}）；
-     *             裸 setter 无状态机守卫无归属校验，新调用方一律用 guarded 版本。仅供 R27 存量测试兼容，
-     *             该测试改指 guarded 后本方法删除。
-     */
-    @Deprecated
-    @Override
-    public boolean updateStatus(Long id, String status) {
-        if (id == null || status == null || status.isBlank()) {
-            return false;
-        }
-        int affected = mapper.update(null, Wrappers.<NegativeFeedback>lambdaUpdate()
-            .eq(NegativeFeedback::getId, id)
-            .set(NegativeFeedback::getStatus, status));
-        return affected > 0;
-    }
-
-    /* ========================================================================
-     *  R215-GAP-B3：带状态机守卫的 updateStatus（Controller 专用入口）
-     * ======================================================================== */
-
-    /**
-     * 状态转移白名单（与 submit/decide/lift 状态机对齐）：
-     * <ul>
-     *   <li>DRAFT → PENDING_DECISION</li>
-     *   <li>PENDING_DECISION → EXECUTED</li>
-     *   <li>PENDING_DECISION → REJECTED</li>
-     *   <li>EXECUTED → LIFTED</li>
-     * </ul>
-     */
-    private static final Map<String, Set<String>> ALLOWED_STATUS_TRANSITIONS = Map.of(
-        STATUS_DRAFT, Set.of(STATUS_PENDING_DECISION),
-        STATUS_PENDING_DECISION, Set.of(STATUS_EXECUTED, STATUS_REJECTED),
-        STATUS_EXECUTED, Set.of(STATUS_LIFTED)
-    );
-
-    /**
-     * R215-GAP-B3：带状态机守卫 + 项目归属校验的 updateStatus。
-     *
-     * <p>替代原裸 setter {@link #updateStatus(Long, String)}（保留供 R27 测试兼容），
-     * 本方法为 Controller 唯一入口：
-     * <ol>
-     *   <li>requireRow：id 非空 + 行存在</li>
-     *   <li>assertProjectReadable：actor 对项目归属校验（SUPER_ADMIN 豁免）</li>
-     *   <li>状态转移白名单：current → target 必须在 {@link #ALLOWED_STATUS_TRANSITIONS} 中</li>
-     *   <li>按目标态补齐副作用（与 submit/decide/lift 对齐）：EXECUTED/REJECTED 写 decidedBy+decidedAt、
-     *       LIFTED 写 liftedBy+liftedAt；转移命中（affected&gt;0）后追加审计日志并触发对应通知，
-     *       避免 guarded 路径产生「EXECUTED 但 decidedAt=NULL」的半行（listActiveExecuted 按 decidedAt 排序会漏/乱序）</li>
-     *   <li>返回更新是否命中</li>
-     * </ol>
-     *
-     * @param id     负反馈记录 ID
-     * @param status 目标状态
-     * @param actor  操作人（由 Controller requireLeaderOrAdmin 获取）
-     * @return true 更新成功
-     * @throws IpdBusinessException PARAM_INVALID / NOT_FOUND / FORBIDDEN / NF_STATE_INVALID
-     */
-    public boolean updateStatusGuarded(Long id, String status, IpdActor actor) {
-        if (id == null || status == null || status.isBlank()) {
-            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
-        }
-        NegativeFeedback row = requireRow(id);
-        assertProjectReadable(row, actor);
-        String current = row.getStatus();
-        Set<String> allowed = ALLOWED_STATUS_TRANSITIONS.get(current);
-        if (allowed == null || !allowed.contains(status)) {
-            throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID,
-                "状态转移不合法：" + current + " → " + status);
-        }
-        // R215-GAP-B3：按目标态补齐与 submit/decide/lift 一致的副作用字段，避免半行
-        Date now = new Date();
-        LambdaUpdateWrapper<NegativeFeedback> upd = Wrappers.<NegativeFeedback>lambdaUpdate()
-            .eq(NegativeFeedback::getId, id)
-            // TOCTOU 防线：仅当行仍处于刚校验的 current 态才更新，并发转移时 affected=0 而非静默互覆
-            .eq(NegativeFeedback::getStatus, current)
-            .set(NegativeFeedback::getStatus, status);
-        String auditAction;
-        String auditReason;
-        if (STATUS_EXECUTED.equals(status)) {
-            upd.set(NegativeFeedback::getDecidedBy, actor.id())
-               .set(NegativeFeedback::getDecidedAt, now);
-            auditAction = "DECIDE_EXECUTE";
-            auditReason = "R215-GAP-B3 手工状态转移（对齐 decide APPROVE 副作用）";
-        } else if (STATUS_REJECTED.equals(status)) {
-            upd.set(NegativeFeedback::getDecidedBy, actor.id())
-               .set(NegativeFeedback::getDecidedAt, now);
-            auditAction = "DECIDE_REJECT";
-            auditReason = "R215-GAP-B3 手工状态转移（对齐 decide REJECT 副作用）";
-        } else if (STATUS_LIFTED.equals(status)) {
-            upd.set(NegativeFeedback::getLiftedBy, actor.id())
-               .set(NegativeFeedback::getLiftedAt, now);
-            auditAction = "LIFT";
-            auditReason = "R215-GAP-B3 手工状态转移（对齐 lift 副作用）";
-        } else {
-            // DRAFT → PENDING_DECISION：仅审计，无决策人/通知（对齐 submit）
-            auditAction = "SUBMIT";
-            auditReason = "R215-GAP-B3 手工状态转移（对齐 submit 副作用）";
-        }
-        int affected = mapper.update(null, upd);
-        if (affected > 0) {
-            // 回写内存态：使 appendAudit 的 afterData 与 notify 读到新状态/新决策字段（否则审计记旧态）
-            row.setStatus(status);
-            if (STATUS_EXECUTED.equals(status) || STATUS_REJECTED.equals(status)) {
-                row.setDecidedBy(actor.id());
-                row.setDecidedAt(now);
-            } else if (STATUS_LIFTED.equals(status)) {
-                row.setLiftedBy(actor.id());
-                row.setLiftedAt(now);
-            }
-            appendAudit(auditAction, row, actor, current, auditReason);
-            if (STATUS_EXECUTED.equals(status)) {
-                notifyExecuted(row);
-            } else if (STATUS_LIFTED.equals(status)) {
-                notifyLifted(row);
-            }
-        }
-        return affected > 0;
     }
 
     /**

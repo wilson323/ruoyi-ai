@@ -26,11 +26,10 @@ import static org.mockito.Mockito.when;
 /**
  * R27 P0-5：NegativeFeedbackService 状态机 5 函数补全 单测（TDD 红→绿）。
  *
- * <p>本类守「5 个新增方法签名 + 基本行为契约」：
+ * <p>本类守「4 个新增方法签名 + 基本行为契约」（原 #3 updateStatus 已按 owner 2026-09-25 拍板删除：与 submit/decide/lift 状态机构成双轨）：
  * <ul>
  *   <li>{@link NegativeFeedbackService#getByProjectId(Long)}：项目维度列表</li>
  *   <li>{@link NegativeFeedbackService#submit(NegativeFeedback)}：简化版提交（已存在 row）</li>
- *   <li>{@link NegativeFeedbackService#updateStatus(Long, String)}：状态更新</li>
  *   <li>{@link NegativeFeedbackService#deleteById(Long)}：软删除（del_flag=1）</li>
  *   <li>{@link NegativeFeedbackService#listBySeverity(String)}：按 severity 过滤</li>
  * </ul>
@@ -98,28 +97,6 @@ class NegativeFeedbackServiceR27Test {
 
         assertThat(ok).isTrue();
         assertThat(fb.getStatus()).isEqualTo("PENDING_DECISION");
-    }
-
-    /* ====================== 3. updateStatus ====================== */
-
-    @Test
-    @DisplayName("[R27-P0-5#3] updateStatus：按 id 更新 status 字段，affected>0 返 true")
-    void updateStatus_returnsTrueOnSuccess() {
-        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(1);
-
-        boolean ok = service.updateStatus(33L, "EXECUTED");
-
-        assertThat(ok).isTrue();
-    }
-
-    @Test
-    @DisplayName("[R27-P0-5#3] updateStatus：affected=0 返 false")
-    void updateStatus_returnsFalseOnZeroAffected() {
-        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(0);
-
-        boolean ok = service.updateStatus(33L, "EXECUTED");
-
-        assertThat(ok).isFalse();
     }
 
     /* ====================== 4. deleteById 软删除 ====================== */

@@ -1,19 +1,18 @@
 {
   "$schema_version": 1,
-  "generated_at": "2026-09-25T15:28:24.181Z",
-  "git_head": "e0fe1c428479f681eb36eb7ddab6943a4f2cead0",
+  "generated_at": "2026-09-25T15:59:21.974Z",
+  "git_head": "025e5ac06cb1d55ca04a80923e65ada103243bf7",
   "gen_cmd": "node scripts/check-api-contract-fe-be.mjs --update-baseline",
   "fe_root": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd",
-  "count": 6,
+  "count": 5,
   "paths": [
     "/api/v1/audit-logs",
     "/api/v1/audit-logs/export",
     "/api/v1/negative-feedbacks/by-project/{VAR}",
     "/api/v1/negative-feedbacks/by-severity/{VAR}",
-    "/api/v1/negative-feedbacks/{VAR}/status",
     "/api/v1/sop-templates/{VAR}/instantiate"
   ],
-  "paths_sha256": "b19232a79ddddc5e6022019a6b1514f651e7205cba625df2bbc3e80582f1a31a",
+  "paths_sha256": "945f067ea821b8cebb60018d58ada666283581dd50e9ecc12d65a32faa1c22ff",
   "growth_log": [
     {
       "at": "2026-09-25T13:41:57.131Z",
@@ -26,6 +25,12 @@
       "from": 9,
       "to": 6,
       "delta": -3
+    },
+    {
+      "at": "2026-09-25T15:59:21.974Z",
+      "from": 6,
+      "to": 5,
+      "delta": -1
     }
   ],
   "notice": "脚本独占写（node scripts/check-api-contract-fe-be.mjs --update-baseline）。人工编辑必被 sha256 自洽 + git HEAD 硬闸拦截。棘轮只减不增；新孤儿豁免一律走 docs/ipd-系统说明/api-internal-whitelist.json（卡号+reason+expire）。"
