@@ -650,7 +650,10 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
      *   <li>requireRow：id 非空 + 行存在</li>
      *   <li>assertProjectReadable：actor 对项目归属校验（SUPER_ADMIN 豁免）</li>
      *   <li>状态转移白名单：current → target 必须在 {@link #ALLOWED_STATUS_TRANSITIONS} 中</li>
-     *   <li>执行更新</li>
+     *   <li>按目标态补齐副作用（与 submit/decide/lift 对齐）：EXECUTED/REJECTED 写 decidedBy+decidedAt、
+     *       LIFTED 写 liftedBy+liftedAt；转移命中（affected&gt;0）后追加审计日志并触发对应通知，
+     *       避免 guarded 路径产生「EXECUTED 但 decidedAt=NULL」的半行（listActiveExecuted 按 decidedAt 排序会漏/乱序）</li>
+     *   <li>返回更新是否命中</li>
      * </ol>
      *
      * @param id     负反馈记录 ID
@@ -671,11 +674,53 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID,
                 "状态转移不合法：" + current + " → " + status);
         }
-        int affected = mapper.update(null, Wrappers.<NegativeFeedback>lambdaUpdate()
+        // R215-GAP-B3：按目标态补齐与 submit/decide/lift 一致的副作用字段，避免半行
+        Date now = new Date();
+        LambdaUpdateWrapper<NegativeFeedback> upd = Wrappers.<NegativeFeedback>lambdaUpdate()
             .eq(NegativeFeedback::getId, id)
             // TOCTOU 防线：仅当行仍处于刚校验的 current 态才更新，并发转移时 affected=0 而非静默互覆
             .eq(NegativeFeedback::getStatus, current)
-            .set(NegativeFeedback::getStatus, status));
+            .set(NegativeFeedback::getStatus, status);
+        String auditAction;
+        String auditReason;
+        if (STATUS_EXECUTED.equals(status)) {
+            upd.set(NegativeFeedback::getDecidedBy, actor.id())
+               .set(NegativeFeedback::getDecidedAt, now);
+            auditAction = "DECIDE_EXECUTE";
+            auditReason = "R215-GAP-B3 手工状态转移（对齐 decide APPROVE 副作用）";
+        } else if (STATUS_REJECTED.equals(status)) {
+            upd.set(NegativeFeedback::getDecidedBy, actor.id())
+               .set(NegativeFeedback::getDecidedAt, now);
+            auditAction = "DECIDE_REJECT";
+            auditReason = "R215-GAP-B3 手工状态转移（对齐 decide REJECT 副作用）";
+        } else if (STATUS_LIFTED.equals(status)) {
+            upd.set(NegativeFeedback::getLiftedBy, actor.id())
+               .set(NegativeFeedback::getLiftedAt, now);
+            auditAction = "LIFT";
+            auditReason = "R215-GAP-B3 手工状态转移（对齐 lift 副作用）";
+        } else {
+            // DRAFT → PENDING_DECISION：仅审计，无决策人/通知（对齐 submit）
+            auditAction = "SUBMIT";
+            auditReason = "R215-GAP-B3 手工状态转移（对齐 submit 副作用）";
+        }
+        int affected = mapper.update(null, upd);
+        if (affected > 0) {
+            // 回写内存态：使 appendAudit 的 afterData 与 notify 读到新状态/新决策字段（否则审计记旧态）
+            row.setStatus(status);
+            if (STATUS_EXECUTED.equals(status) || STATUS_REJECTED.equals(status)) {
+                row.setDecidedBy(actor.id());
+                row.setDecidedAt(now);
+            } else if (STATUS_LIFTED.equals(status)) {
+                row.setLiftedBy(actor.id());
+                row.setLiftedAt(now);
+            }
+            appendAudit(auditAction, row, actor, current, auditReason);
+            if (STATUS_EXECUTED.equals(status)) {
+                notifyExecuted(row);
+            } else if (STATUS_LIFTED.equals(status)) {
+                notifyLifted(row);
+            }
+        }
         return affected > 0;
     }
 

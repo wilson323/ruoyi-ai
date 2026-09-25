@@ -12,11 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.NegativeFeedback;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
@@ -29,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -122,6 +125,99 @@ class NegativeFeedbackUpdateStatusGuardTest {
         boolean result = service.updateStatusGuarded(33L, "PENDING_DECISION", ADMIN);
 
         assertThat(result).isTrue();
+    }
+
+    /* ====================== 副作用：补齐与 submit/decide/lift 一致 ====================== */
+
+    @Test
+    @DisplayName("[B3-副作用] PENDING_DECISION→EXECUTED 写 decidedBy/decidedAt + DECIDE_EXECUTE 审计 + 通知双PM")
+    void updateStatusGuarded_toExecuted_completesDecisionSideEffects() {
+        NegativeFeedback row = NegativeFeedback.builder()
+            .id(33L).projectId(7L).status("PENDING_DECISION")
+            .mainPersonId(50L).relatedPersonId(60L).build();
+        when(mapper.selectById(33L)).thenReturn(row);
+        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertThat(service.updateStatusGuarded(33L, "EXECUTED", LEADER)).isTrue();
+        // 内存态回写：不再产生 EXECUTED 但 decidedAt=NULL 的半行
+        assertThat(row.getStatus()).isEqualTo("EXECUTED");
+        assertThat(row.getDecidedBy()).isEqualTo(99L);
+        assertThat(row.getDecidedAt()).isNotNull();
+        // 审计动作与正式审批路径一致
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertThat(cap.getValue().getAction()).isEqualTo("DECIDE_EXECUTE");
+        // 主责+连带双PM各一条执行通知
+        verify(notificationService, times(2)).publish(any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("[B3-副作用] PENDING_DECISION→REJECTED 写 decidedBy/decidedAt + DECIDE_REJECT 审计，不发执行通知")
+    void updateStatusGuarded_toRejected_writesDecisionAndAudits() {
+        NegativeFeedback row = NegativeFeedback.builder()
+            .id(33L).projectId(7L).status("PENDING_DECISION")
+            .mainPersonId(50L).relatedPersonId(60L).build();
+        when(mapper.selectById(33L)).thenReturn(row);
+        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertThat(service.updateStatusGuarded(33L, "REJECTED", LEADER)).isTrue();
+        assertThat(row.getDecidedBy()).isEqualTo(99L);
+        assertThat(row.getDecidedAt()).isNotNull();
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertThat(cap.getValue().getAction()).isEqualTo("DECIDE_REJECT");
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("[B3-副作用] EXECUTED→LIFTED 写 liftedBy/liftedAt + LIFT 审计 + 解除通知")
+    void updateStatusGuarded_toLifted_completesLiftSideEffects() {
+        NegativeFeedback row = NegativeFeedback.builder()
+            .id(33L).projectId(7L).status("EXECUTED")
+            .mainPersonId(50L).relatedPersonId(60L).build();
+        when(mapper.selectById(33L)).thenReturn(row);
+        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertThat(service.updateStatusGuarded(33L, "LIFTED", LEADER)).isTrue();
+        assertThat(row.getLiftedBy()).isEqualTo(99L);
+        assertThat(row.getLiftedAt()).isNotNull();
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertThat(cap.getValue().getAction()).isEqualTo("LIFT");
+        verify(notificationService, times(2)).publish(any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("[B3-副作用] DRAFT→PENDING_DECISION 仅 SUBMIT 审计，无决策人、无通知")
+    void updateStatusGuarded_toPendingDecision_auditOnly() {
+        NegativeFeedback row = NegativeFeedback.builder()
+            .id(33L).projectId(7L).status("DRAFT").build();
+        when(mapper.selectById(33L)).thenReturn(row);
+        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        assertThat(service.updateStatusGuarded(33L, "PENDING_DECISION", LEADER)).isTrue();
+        assertThat(row.getDecidedBy()).isNull();
+        assertThat(row.getDecidedAt()).isNull();
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertThat(cap.getValue().getAction()).isEqualTo("SUBMIT");
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("[B3-TOCTOU] 并发转移命中失败(affected=0) → 不审计不通知、不改内存态、返回 false")
+    void updateStatusGuarded_concurrentMiss_noSideEffects() {
+        NegativeFeedback row = NegativeFeedback.builder()
+            .id(33L).projectId(7L).status("PENDING_DECISION")
+            .mainPersonId(50L).relatedPersonId(60L).build();
+        when(mapper.selectById(33L)).thenReturn(row);
+        when(mapper.update(any(), ArgumentMatchers.any(LambdaUpdateWrapper.class))).thenReturn(0);
+
+        assertThat(service.updateStatusGuarded(33L, "EXECUTED", LEADER)).isFalse();
+        assertThat(row.getStatus()).isEqualTo("PENDING_DECISION");
+        assertThat(row.getDecidedAt()).isNull();
+        verify(auditLogService, never()).append(ArgumentMatchers.any(AuditLog.class));
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     /* ====================== 负例：非法状态转移 ====================== */
