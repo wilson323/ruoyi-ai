@@ -51,3 +51,14 @@ runtime 生效: 需下次后端重启（16039 现进程为兄弟轮次起的旧 
 
 状态: E2E=VERIFIED（需求链路+WS链路+HTTP读/写腿）；单测重跑=VERIFIED；N6=代码级修复+DB实证，runtime 待重启
 KANBAN_TOTAL=504 (fresh GET /api/tasks 回读 2026-09-25T04:19Z，含本追加轮 6650b179/f962ad81 两卡与兄弟会话并行增量)
+
+== 6. runtime 销账（同会话续跑，2026-09-25T05:45Z local 21:38~21:45）==
+N6 重启生效闭环：
+- 重打产物：ruoyi-ipd install(21:38) + 删旧 fat jar 重 package（R157 坑复现实证：
+  首次 package 被 maven 跳过 mtime 停留 12:40；rm 后重打 21:38）
+- 产物自证：从 fat jar 抽出嵌套 ruoyi-ipd-3.1.0.jar → AiDocumentMapper.class 字节
+  含 "INNER JOIN ancestors a ON d.id = a.id"（FIX_IN_FATJAR=True）
+- 重启：kill 旧 1645 → start-16039.sh（首次撞旧进程未死透端口自杀，二次拉起成功 PID=88948）
+- 实测：GET /api/v1/ai-documents/2103336401281048578/versions → HTTP 200
+- 整跑 e2e-http.py：Phase B verdict=PASS, versions_http={status:200,count:1}, sha_match=true
+N6 状态：VERIFIED（runtime 生效，卡 f962ad81 可翻 done）
