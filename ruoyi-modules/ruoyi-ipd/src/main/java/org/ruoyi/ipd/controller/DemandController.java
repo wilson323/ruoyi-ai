@@ -71,27 +71,26 @@ public class DemandController {
 
         List<Map<String, Object>> demands = new ArrayList<>();
         for (Requirement r : requirements) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", r.getId());
-            m.put("productId", r.getProductId());
-            m.put("productName", r.getProductId() != null ? productNames.get(r.getProductId()) : null);
-            m.put("projectId", r.getProjectId());
-            m.put("source", r.getSource());
-            m.put("submitterName", r.getSubmitterName());
-            m.put("customerName", r.getCustomerName());
-            m.put("title", r.getTitle());
-            m.put("status", r.getStatus());
-            m.put("marketPmId", r.getMarketPmId());
-            m.put("marketPmName", r.getMarketPmId() != null ? personNames.get(r.getMarketPmId()) : null);
-            m.put("rdPmId", r.getRdPmId());
-            m.put("rdPmName", r.getRdPmId() != null ? personNames.get(r.getRdPmId()) : null);
-            m.put("createdAt", r.getCreateTime());
-            demands.add(m);
+            demands.add(toDemandMap(r, productNames, personNames));
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("demands", demands);
         result.put("total", demands.size());
         return ApiV1Response.ok(result);
+    }
+
+    /**
+     * 需求详情（R215-E2E-C 看板卡 f4445a05 补缺口：此前仅 list/triage/link-project 三端点）。
+     * 权限码与 list 同款（OPERATION_PRODUCT_GROUP 读码）；字段集与 list 共用 toDemandMap 防漂移；
+     * 不存在时复用 requireDemand 的既有 NOT_FOUND，不自造错误码。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/{id}")
+    public ApiV1Response<Map<String, Object>> detail(@PathVariable Long id) {
+        Requirement requirement = requireDemand(id);
+        return ApiV1Response.ok(toDemandMap(requirement,
+            namesOfProducts(List.of(requirement)),
+            namesOfPeople(List.of(requirement))));
     }
 
     /** 分流：设定状态 + 分派双PM（原型 POST /api/demands/:id/triage）。 */
@@ -143,6 +142,28 @@ public class DemandController {
         requirementMapper.updateById(requirement);
         return ApiV1Response.ok(Map.of("id", id, "projectId", project.getId(),
             "status", requirement.getStatus()));
+    }
+
+    /** 单条需求 → 输出 Map（list/detail 共用同一字段集，防两端点字段漂移）。 */
+    private Map<String, Object> toDemandMap(Requirement r,
+                                             Map<Long, String> productNames,
+                                             Map<Long, String> personNames) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", r.getId());
+        m.put("productId", r.getProductId());
+        m.put("productName", r.getProductId() != null ? productNames.get(r.getProductId()) : null);
+        m.put("projectId", r.getProjectId());
+        m.put("source", r.getSource());
+        m.put("submitterName", r.getSubmitterName());
+        m.put("customerName", r.getCustomerName());
+        m.put("title", r.getTitle());
+        m.put("status", r.getStatus());
+        m.put("marketPmId", r.getMarketPmId());
+        m.put("marketPmName", r.getMarketPmId() != null ? personNames.get(r.getMarketPmId()) : null);
+        m.put("rdPmId", r.getRdPmId());
+        m.put("rdPmName", r.getRdPmId() != null ? personNames.get(r.getRdPmId()) : null);
+        m.put("createdAt", r.getCreateTime());
+        return m;
     }
 
     private Requirement requireDemand(Long id) {

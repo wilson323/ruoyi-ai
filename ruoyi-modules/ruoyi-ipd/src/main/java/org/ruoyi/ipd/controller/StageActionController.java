@@ -83,13 +83,20 @@ public class StageActionController {
         return ApiV1Response.ok(stageActionService.addDeliverable(id, fileName, ossId, String.valueOf(actor.id())));
     }
 
-    /** 从目录实例化某阶段动作（幂等），返回新建数量，需 ipd:stage-action:add 权限 */
+    /**
+     * 从目录实例化某阶段动作（幂等），返回新建数量。
+     *
+     * <p>R215-GAP-B2 触发方收口：项目阶段初始化已由 {@code ProjectBootstrapService.bootstrap()}
+     * 在项目创建时同事务自动完成（{@code ProjectService.create()} 内联调用），本端点无内部调用方、
+     * 无前端调用方（前端 flow.vue 注释"instantiate 归 GAP-B2 等 owner 拍板，本页不接按钮"）。
+     * 保留为运维补物化工具（与 ensure-bio-compliance 同性质），权限收口为仅 SUPER_ADMIN。
+     */
     @PostMapping("/instantiate")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Integer> instantiate(@RequestParam Long projectId,
                                               @RequestParam Long stageId,
                                               @RequestParam String stage) {
-        IpdActor actor = ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireAdmin();
         return ApiV1Response.ok(stageActionService.instantiate(projectId, stageId, stage, actor));
     }
 

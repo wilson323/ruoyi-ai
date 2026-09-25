@@ -115,12 +115,22 @@ public class NegativeFeedbackController {
             .map(NegativeFeedbackService::toView).toList());
     }
 
-    /** 按 id 更新 status 字段（R27 P0-5#3：updateStatus）。 */
+    /**
+     * 按 id 更新 status 字段（R27 P0-5#3：updateStatus）。
+     *
+     * <p>R215-GAP-B3 状态机守卫：原实现为裸 setter，绕过 submit/decide/lift 状态机且无
+     * requireLeaderOrAdmin 二次校验。修复：
+     * <ol>
+     *   <li>Controller 层加 {@code requireLeaderOrAdmin()}（与 decide/lift 对齐）</li>
+     *   <li>Service 层 {@code updateStatusGuarded} 加状态转移白名单 + 项目归属校验</li>
+     * </ol>
+     */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_DECIDE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/{id}/status")
     public ApiV1Response<Boolean> updateStatus(@PathVariable Long id,
                                                @RequestParam String status) {
-        return ApiV1Response.ok(negativeFeedbackService.updateStatus(id, status));
+        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
+        return ApiV1Response.ok(negativeFeedbackService.updateStatusGuarded(id, status, actor));
     }
 
     /** 按 id 软删除（R27 P0-5#4：deleteById）。 */

@@ -1,0 +1,70 @@
+[
+  {
+    "scenario": "1. AC-AUTH-07 正例：正常登录后浏览",
+    "verdict": "PASS",
+    "evidence": {
+      "loginUrl": "http://127.0.0.1:15666/ipd/workbench",
+      "workbenchUrl": "http://127.0.0.1:15666/ipd/workbench",
+      "apiCalls": 18,
+      "successCalls": 18,
+      "sampleResponse": "{\"code\":0,\"message\":\"ok\",\"data\":{\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpblR5cGUiOiJpcGQiLCJsb2dpbklkIjo5MDAxMDEsInJuU3RyIjoib3BKcW4waUxiWHJhdllKUnVXWFNuUENEYThiV3JOT28ifQ.jdwx8lkYqoaQTO",
+      "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ..."
+    }
+  },
+  {
+    "scenario": "2. AC-AUTH-07 核心：Token 失效 → 自动跳登录",
+    "verdict": "PASS",
+    "evidence": {
+      "urlBefore": "http://127.0.0.1:15666/ipd/workbench",
+      "urlAfter": "http://127.0.0.1:15666/auth/login",
+      "got401": true,
+      "got20001": true,
+      "redirectToLogin": true,
+      "networkSample": [
+        {
+          "url": "http://127.0.0.1:15666/api/v1/auth/me",
+          "status": 401,
+          "body": "{\"code\":20001,\"message\":\"未认证或凭证失效\",\"data\":null,\"timestamp\":\"2026-09-25T13:09:35Z\",\"traceId\":\"66ce90793a15441e9fc0aaeb668b19e1\"}"
+        },
+        {
+          "url": "http://127.0.0.1:15666/api/v1/auth/refresh",
+          "status": 401,
+          "body": "{\"code\":20001,\"message\":\"未认证或凭证失效\",\"data\":null,\"timestamp\":\"2026-09-25T13:09:35Z\",\"traceId\":\"af4aaf75f3e645c3a70d598968d24a22\"}"
+        },
+        {
+          "url": "127.0.0.1:15666/src/views/ipd/auth/login.vue?t=1790341716173",
+          "status": 200,
+          "body": "import { createHotContext as __vite__createHotContext } from \"/@vite/client\";import.meta.hot = __vite__createHotContext(\"/src/views/ipd/auth/login.vue"
+        }
+      ]
+    }
+  },
+  {
+    "scenario": "3. Logout 旧 token 服务端真失效",
+    "verdict": "PASS",
+    "evidence": {
+      "tokenBefore": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ...",
+      "uiLogoutDone": true,
+      "afterLogoutUrl": "http://127.0.0.1:15666/ipd/workbench",
+      "oldTokenResponseStatus": 401,
+      "oldTokenResponseBody": "{\"code\":20001,\"message\":\"未认证或凭证失效\",\"data\":null,\"timestamp\":\"2026-09-25T13:09:47Z\",\"traceId\":\"ffc25df3aab14a78b1541d39b01167e3\"}"
+    }
+  },
+  {
+    "scenario": "4. Refresh 轮换：旧票失效 + 重放拒绝",
+    "verdict": "PASS",
+    "evidence": {
+      "refreshStatus": 200,
+      "tokensDifferent": true,
+      "oldTokenAfterRefresh": {
+        "status": 401,
+        "body": "{\"code\":20001,\"message\":\"未认证或凭证失效\",\"data\":null,\"timestamp\":\"2026-09-25T13:09:47Z\",\"traceId\":\"f4505a83a6b34309882ff4c375875125\"}"
+      },
+      "newTokenWorks": true,
+      "replayRejected": {
+        "status": 401,
+        "body": "{\"code\":20001,\"message\":\"未认证或凭证失效\",\"data\":null,\"timestamp\":\"2026-09-25T13:09:48Z\",\"traceId\":\"79a2385700494dfb9d6784af50d676f1\"}"
+      }
+    }
+  }
+]

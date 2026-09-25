@@ -605,7 +605,12 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
     /**
      * 按 id 更新 status 字段；affected>0 返 true。
      * <p>使用 LambdaUpdateWrapper 局部更新（不读行、不动其他字段）。
+     *
+     * @deprecated R215-GAP-B3 后无生产调用方（Controller 已改走 {@link #updateStatusGuarded}）；
+     *             裸 setter 无状态机守卫无归属校验，新调用方一律用 guarded 版本。仅供 R27 存量测试兼容，
+     *             该测试改指 guarded 后本方法删除。
      */
+    @Deprecated
     @Override
     public boolean updateStatus(Long id, String status) {
         if (id == null || status == null || status.isBlank()) {
@@ -613,6 +618,63 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         }
         int affected = mapper.update(null, Wrappers.<NegativeFeedback>lambdaUpdate()
             .eq(NegativeFeedback::getId, id)
+            .set(NegativeFeedback::getStatus, status));
+        return affected > 0;
+    }
+
+    /* ========================================================================
+     *  R215-GAP-B3：带状态机守卫的 updateStatus（Controller 专用入口）
+     * ======================================================================== */
+
+    /**
+     * 状态转移白名单（与 submit/decide/lift 状态机对齐）：
+     * <ul>
+     *   <li>DRAFT → PENDING_DECISION</li>
+     *   <li>PENDING_DECISION → EXECUTED</li>
+     *   <li>PENDING_DECISION → REJECTED</li>
+     *   <li>EXECUTED → LIFTED</li>
+     * </ul>
+     */
+    private static final Map<String, Set<String>> ALLOWED_STATUS_TRANSITIONS = Map.of(
+        STATUS_DRAFT, Set.of(STATUS_PENDING_DECISION),
+        STATUS_PENDING_DECISION, Set.of(STATUS_EXECUTED, STATUS_REJECTED),
+        STATUS_EXECUTED, Set.of(STATUS_LIFTED)
+    );
+
+    /**
+     * R215-GAP-B3：带状态机守卫 + 项目归属校验的 updateStatus。
+     *
+     * <p>替代原裸 setter {@link #updateStatus(Long, String)}（保留供 R27 测试兼容），
+     * 本方法为 Controller 唯一入口：
+     * <ol>
+     *   <li>requireRow：id 非空 + 行存在</li>
+     *   <li>assertProjectReadable：actor 对项目归属校验（SUPER_ADMIN 豁免）</li>
+     *   <li>状态转移白名单：current → target 必须在 {@link #ALLOWED_STATUS_TRANSITIONS} 中</li>
+     *   <li>执行更新</li>
+     * </ol>
+     *
+     * @param id     负反馈记录 ID
+     * @param status 目标状态
+     * @param actor  操作人（由 Controller requireLeaderOrAdmin 获取）
+     * @return true 更新成功
+     * @throws IpdBusinessException PARAM_INVALID / NOT_FOUND / FORBIDDEN / NF_STATE_INVALID
+     */
+    public boolean updateStatusGuarded(Long id, String status, IpdActor actor) {
+        if (id == null || status == null || status.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+        }
+        NegativeFeedback row = requireRow(id);
+        assertProjectReadable(row, actor);
+        String current = row.getStatus();
+        Set<String> allowed = ALLOWED_STATUS_TRANSITIONS.get(current);
+        if (allowed == null || !allowed.contains(status)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID,
+                "状态转移不合法：" + current + " → " + status);
+        }
+        int affected = mapper.update(null, Wrappers.<NegativeFeedback>lambdaUpdate()
+            .eq(NegativeFeedback::getId, id)
+            // TOCTOU 防线：仅当行仍处于刚校验的 current 态才更新，并发转移时 affected=0 而非静默互覆
+            .eq(NegativeFeedback::getStatus, current)
             .set(NegativeFeedback::getStatus, status));
         return affected > 0;
     }
