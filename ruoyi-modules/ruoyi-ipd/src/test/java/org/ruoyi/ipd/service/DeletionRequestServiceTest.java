@@ -343,6 +343,33 @@ class DeletionRequestServiceTest {
     }
 
     @Test
+    @DisplayName("R217-GATE：submit SUPER_ADMIN 对不存在实体（projects/999）→ NOT_FOUND，零写入（僵尸行根因封堵）")
+    void submitSuperAdminEntityMissingRejected() {
+        // R217 拍板C 配套：超管权限豁免保留，但实体存在性必查——修复前可对不存在 entity_id 建申请
+        when(projectMapper.selectById(999L)).thenReturn(null);
+        assertThatThrownBy(() -> service.submit(ACTOR_ADMIN, "projects", 999L, "{}", "幽灵实体清理"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("目标实体不存在: projects/999")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.NOT_FOUND);
+        verify(deletionRequestMapper, never()).insert(any(DeletionRequest.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("R217-GATE：submit SUPER_ADMIN 对存在实体（projects/100）→ 权限仍豁免归属校验，正常进入 LEADER_REVIEW")
+    void submitSuperAdminEntityPresentStillAllowed() {
+        when(projectMapper.selectById(100L)).thenReturn(projectOfGroup(20L));
+        when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);
+        DeletionRequest request = service.submit(ACTOR_ADMIN, "projects", 100L, "{}", "超管清理本组项目");
+        assertThat(request.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_LEADER_REVIEW);
+        assertThat(request.getRequesterId()).isEqualTo(2L);
+        verify(deletionRequestMapper).insert(any(DeletionRequest.class));
+        // 权限豁免语义保留：超管不走进成员判定
+        verify(projectMemberMapper, never()).selectCount(any());
+    }
+
+    @Test
     @DisplayName("IDOR-S6：submit 本组组长对本组成员（persons）发起 → 通过（PersonService 本组员工口径）")
     void submitGroupLeaderSameGroupPersonAllowed() {
         Person member = new Person();

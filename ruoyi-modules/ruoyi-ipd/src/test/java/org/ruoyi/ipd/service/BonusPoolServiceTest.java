@@ -9,6 +9,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BonusPool;
@@ -120,6 +121,8 @@ class BonusPoolServiceTest {
         existing.setStatus(BonusPoolService.STATUS_DRAFT);
         existing.setFinalPool(new BigDecimal("500000"));
         when(bonusPoolMapper.selectById(500L)).thenReturn(existing);
+        // R217 拍板C 配套守卫：freeze 前置校验池关联项目（projectId=200）存在
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
 
         BonusPool result = service.freeze(500L, "审批通过", actor());
 
@@ -145,6 +148,8 @@ class BonusPoolServiceTest {
         existing.setStatus(BonusPoolService.STATUS_DRAFT);
         existing.setFinalPool(new BigDecimal("1000000"));
         when(bonusPoolMapper.selectById(600L)).thenReturn(existing);
+        // R217 拍板C 配套守卫：distribute 前置校验池关联项目（projectId=200）存在
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
 
         BonusPool result = service.distribute(
             600L,
@@ -276,6 +281,68 @@ class BonusPoolServiceTest {
 
         assertThatThrownBy(() -> service.getById(404L))
             .isInstanceOf(IpdBusinessException.class);
+    }
+
+    /* ====================== R217 拍板C 配套：freeze/distribute 项目存在性守卫 ====================== */
+
+    @Test
+    @DisplayName("[R217-GATE] freeze：池关联项目物理不存在（幽灵 9140004）→ STATE_CONFLICT 拒绝，零状态写入")
+    void freeze_projectMissing_rejected() {
+        BonusPool existing = new BonusPool();
+        existing.setId(910L);
+        existing.setProjectId(9140004L);
+        existing.setStatus(BonusPoolService.STATUS_DRAFT);
+        existing.setFinalPool(new BigDecimal("42000"));
+        when(bonusPoolMapper.selectById(910L)).thenReturn(existing);
+        when(projectMapper.selectById(9140004L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.freeze(910L, "幽灵项目池", actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("奖金池关联项目不存在或已归档")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+        verify(bonusPoolMapper, never()).updateById(any(BonusPool.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("[R217-GATE] distribute：池关联项目不存在 → STATE_CONFLICT 拒绝，不写台账/审计")
+    void distribute_projectMissing_rejected() {
+        BonusPool existing = new BonusPool();
+        existing.setId(911L);
+        existing.setProjectId(9140004L);
+        existing.setStatus(BonusPoolService.STATUS_CONFIRMED);
+        existing.setFinalPool(new BigDecimal("1000000"));
+        when(bonusPoolMapper.selectById(911L)).thenReturn(existing);
+        when(projectMapper.selectById(9140004L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.distribute(911L,
+            new BigDecimal("0.55"), new BigDecimal("0.45"), actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("奖金池关联项目不存在或已归档")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+        verify(bonusPoolMapper, never()).updateById(any(BonusPool.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("[R217-GATE] freeze：项目已软删（del_flag='1'，逻辑孤儿 §2.5 型）→ 同样拒绝")
+    void freeze_projectSoftDeleted_rejected() {
+        BonusPool existing = new BonusPool();
+        existing.setId(912L);
+        existing.setProjectId(2098389746999926785L);
+        existing.setStatus(BonusPoolService.STATUS_DRAFT);
+        existing.setFinalPool(new BigDecimal("500000"));
+        when(bonusPoolMapper.selectById(912L)).thenReturn(existing);
+        Project archived = sLevelProject();
+        archived.setDelFlag("1");
+        when(projectMapper.selectById(2098389746999926785L)).thenReturn(archived);
+
+        assertThatThrownBy(() -> service.freeze(912L, "软删项目池", actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("奖金池关联项目不存在或已归档");
+        verify(bonusPoolMapper, never()).updateById(any(BonusPool.class));
     }
 
     /* ====================== 幂等 / 审计 ====================== */

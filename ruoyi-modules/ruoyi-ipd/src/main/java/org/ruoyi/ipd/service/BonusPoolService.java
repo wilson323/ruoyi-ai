@@ -1043,6 +1043,9 @@ public class BonusPoolService implements IBonusPoolService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "当前状态 " + pool.getStatus() + " 不可冻结（仅 DRAFT 可冻结）");
         }
+        // R217 拍板C 配套守卫（dangling-fk-survey.md §2.4/§3.2，幽灵项目 9140004 运行时暴露根因）：
+        // 此前仅 compute 路径（buildPoolFromProjectWithAchievement）校验项目存在，freeze 未校验
+        requirePoolProjectPresent(pool);
         // ROOT-R3-P0-1：守卫 preCheck —— DRAFT -> CONFIRMED 合法
         preCheckGuard("bonus_pool", STATUS_DRAFT, STATUS_CONFIRMED, "freeze");
         pool.setStatus(STATUS_CONFIRMED);
@@ -1083,6 +1086,9 @@ public class BonusPoolService implements IBonusPoolService {
         }
         // 区间 + 总和校验（ServiceException 抛到 Controller 由 advice 转 IpdBusinessException）
         calculateDistribution(marketShare, rdShare);
+        // R217 拍板C 配套守卫（dangling-fk-survey.md §2.4/§3.2，幽灵项目 9140004 运行时暴露根因）：
+        // 项目不存在的池禁止分配（同 freeze，写法参照 compute 路径 L763-765 的存在性判定）
+        requirePoolProjectPresent(pool);
         // R213-M1.1 owner 拍板（2026-09-24，卡 15d5e689）：分配前置业务门禁——
         // 项目必须存在 CONFIRMED 评定且 tierCoefficient 有效，否则 409/50002 业务拒绝；
         // bonus_allocations.contribution_rate 保持 DDL NOT NULL，不再出现 null 台账。
@@ -1212,6 +1218,30 @@ public class BonusPoolService implements IBonusPoolService {
                 "已确认的贡献度缺少修正因子 tierCoefficient，不允许分配奖金");
         }
         return contribution;
+    }
+
+    /**
+     * R217 拍板C 配套守卫：freeze/distribute 流转前校验关联项目存在（幽灵项目 9140004 根因修复，
+     * 调查文档 docs/ipd-系统说明/验收/R217-工具与数据调查-20260925/dangling-fk-survey.md §3.2）。
+     *
+     * <p>判定写法对齐 compute 路径 {@link #buildPoolFromProjectWithAchievement}：
+     * projectMapper.selectById 查不到（物理不存在；Project.delFlag 为 @TableLogic，软删行同样返回 null，
+     * del_flag 显式双判仅作防御冗余）→ 拒绝流转。
+     *
+     * <p>projectMapper 未注入（本文件单/双参兼容构造器旧测试装配，先例见
+     * {@link #requireConfirmedContribution} 的 contributionMapper==null 放行）时跳过校验——
+     * Spring 装配走 4 参 @Autowired 构造器恒注入，生产路径守卫必生效。
+     * 仅防未来再发，不做历史数据回填（owner 拍板：9140004 遗产组整组保留）。
+     */
+    private void requirePoolProjectPresent(BonusPool pool) {
+        if (projectMapper == null) {
+            return;
+        }
+        Project poolProject = projectMapper.selectById(pool.getProjectId());
+        if (poolProject == null || "1".equals(poolProject.getDelFlag())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "奖金池关联项目不存在或已归档: projectId=" + pool.getProjectId());
+        }
     }
 
     /**

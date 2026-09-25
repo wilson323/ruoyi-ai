@@ -14,6 +14,7 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.mapper.CertTemplateMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
@@ -65,6 +66,17 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
     private final GateMapper gateMapper;
     private final ProductMapper productMapper;
     private final PersonMapper personMapper;
+    /**
+     * R217 拍板C 配套：cert_templates 实体存在性校验所需只读 mapper。
+     * 可选注入（setter 模式与 stateMachineGuard 同型）：9 参构造的存量测试未注入时该类型跳过存在性判定，
+     * 生产 Spring 装配恒注入。
+     */
+    @Autowired(required = false)
+    private CertTemplateMapper certTemplateMapper;
+
+    public void setCertTemplateMapper(CertTemplateMapper certTemplateMapper) {
+        this.certTemplateMapper = certTemplateMapper;
+    }
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
@@ -452,7 +464,13 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "不支持的 entity_type: " + entityType);
         }
         if ("SUPER_ADMIN".equals(actor.role())) {
-            return; // 超管豁免（终审另有 SUPER_ADMIN 硬校验）
+            // R217 拍板C 配套（dangling-fk-survey.md §1.7/§3.1 根因修复）：超管豁免资源归属校验，
+            // 但实体存在性必查——此前超管可对任意不存在的 entity_id 建删除申请（deletion_requests 5 僵尸行根因）
+            if (!entityExists(entityType, entityId)) {
+                throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND,
+                    "目标实体不存在: " + entityType + "/" + entityId);
+            }
+            return;
         }
         TargetScope scope = resolveScope(entityType, entityId);
         // ① 资源 owner：persons 允许本人对本人记录发起
@@ -510,6 +528,30 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
             }
             default:
                 return new TargetScope(null, null);
+        }
+    }
+
+    /**
+     * R217 拍板C 配套：按 entity_type 判定目标实体是否存在（仅复用本文件既有只读 mapper，
+     * 与 {@link #resolveScope} 同型 switch 分发；软删实体经 @TableLogic 过滤后 selectById 返回 null，视为不存在）。
+     *
+     * <p>cert_templates 走可选注入的 {@link #certTemplateMapper}：未注入（旧测试 9 参构造）时放行，
+     * 与本文件 stateMachineGuard==null 兼容先例同口径；其余四类为 final 构造注入，必查。
+     */
+    private boolean entityExists(String entityType, Long entityId) {
+        switch (entityType) {
+            case "projects":
+                return projectMapper.selectById(entityId) != null;
+            case "gates":
+                return gateMapper.selectById(entityId) != null;
+            case "products":
+                return productMapper.selectById(entityId) != null;
+            case "persons":
+                return personMapper.selectById(entityId) != null;
+            case "cert_templates":
+                return certTemplateMapper == null || certTemplateMapper.selectById(entityId) != null;
+            default:
+                return false; // 白名单外类型 fail-closed（理论上已被 SUPPORTED_ENTITY_TYPES 拦截）
         }
     }
 
