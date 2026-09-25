@@ -38,6 +38,12 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
      * versionNo != 1 误报 STATE_CONFLICT。现两段 CTE：ancestors 自
      * 入参向上走到根（parent_version_id IS NULL），chain 自根向下取全链；
      * 入参为根/中间/叶子任一行均返回同一全链（升序）。
+     *
+     * <p>R215-E2E 修复（PERF-02 40a84615 遗留 bug）：chain anchor 段旧版直接
+     * {@code FROM ancestors} 取 26 列，而 ancestors CTE 只投影 4 列，必现
+     * SQLSyntaxError 1054（Unknown column 'project_id'），导致
+     * GET /ai-documents/&#42;/versions 全量 500。改为 anchor 回 JOIN 原表取全行，
+     * 语义不变；真库对照验证见 docs/ipd-系统说明/验收/R215-增量验证-20260924/。
      */
     @Select("""
         WITH RECURSIVE ancestors AS (
@@ -50,13 +56,14 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
             WHERE d.del_flag = '0'
         ),
         chain AS (
-            SELECT id, project_id, doc_type, title, content, model,
-                   token_prompt, token_completion, content_sha256, status,
-                   parent_version_id, version_no, reviewed_by, reviewed_at,
-                   review_comment, archived_at, archived_by,
-                   create_dept, create_by, create_time, update_by, update_time,
-                   tenant_id, del_flag, remark
-            FROM ancestors WHERE parent_version_id IS NULL
+            SELECT d.id, d.project_id, d.doc_type, d.title, d.content, d.model,
+                   d.token_prompt, d.token_completion, d.content_sha256, d.status,
+                   d.parent_version_id, d.version_no, d.reviewed_by, d.reviewed_at,
+                   d.review_comment, d.archived_at, d.archived_by,
+                   d.create_dept, d.create_by, d.create_time, d.update_by, d.update_time,
+                   d.tenant_id, d.del_flag, d.remark
+            FROM ai_documents d INNER JOIN ancestors a ON d.id = a.id
+            WHERE a.parent_version_id IS NULL AND d.del_flag = '0'
             UNION ALL
             SELECT d.id, d.project_id, d.doc_type, d.title, d.content, d.model,
                    d.token_prompt, d.token_completion, d.content_sha256, d.status,

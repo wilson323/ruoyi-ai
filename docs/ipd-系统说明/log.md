@@ -12307,3 +12307,7 @@ owner AskUserQuestion 四题全选推荐项并逐项落地：**①5 张 can_flip
 **双下拉修复实证**：admin 顶栏切 VIS-RD-100 → 表单 ant Select 自动同步 → 刷新出真数据行（9140003 | ¥1,000,000 | 已确认），前端 `3316e56` 机制生效（销 R211c 卡 8e751acf 第 4 项观感）。**环境**：IPD 基础服务隔离落地——Redis 16379（redis.conf + start-16039.sh CLI 覆盖，6379 脱钩）、base-services.sh 统一启停；端口矩阵 16039/15666/13306/16379/62250 全 UP。看板：建 R215 done 卡 `2a02dffd` + todo 卡 `e48bf56a`（中途首跑 KeyError 崩出的重名卡 15ea2220 与形状探针卡 0e5a30d0 均已 DELETE，最终 fresh 497：done 383/todo 33/inprogress 17/inreview 5/cancelled 59）。
 
 **R215 轮内撞号登记**：收口时发现并行兄弟会话同以 R215 取号（其证据目录 `验收/R215-增量收口-20260924/` 收口时仍在写入，本会话未触碰未 stage）；两执行体产物独立互补，归属以 commit 号区分，详见报告 §〇 登记段。
+
+## 2026-09-24 深夜 R215 追加轮（owner 开窗销 🕐 两笔）
+
+**单测全量重跑**：`mvn -o -pl ruoyi-modules/ruoyi-ipd test`（错峰单模块）→ **2419/0失败/0错/23跳 BUILD SUCCESS**（EXIT=0，21:09:05 -07:00；R212 的 2239 为旧快照）。**E2E 全链路**：①gov6 HTTP 脚本复跑（修 bootstrap 明文治理后凭据源漂移）——读腿 6/10、写腿登记+sha 比对+DB 回读全对；②WS 通知链（修 charset/Redis 16379/密码硬编码三处脚本漂移）——造行→RPUSH→dispatch sent:1→DB 翻 SENT→清理；③浏览器需求域四视图闭环——超管登录→工作台→游客门户提交（下拉联动带型号）→DB SUBMITTED/PORTAL_GUEST→track 脱敏回查→需求池卡片+双PM 已路由。**新缺陷 N6（建卡 f962ad81）**：E2E 写腿抓出 `GET /ai-documents/{id}/versions` 全量 500——PERF-02(40a84615) selectChain chain CTE anchor 从 4 列 ancestors 取 26 列必现 1054（日志+真库双实锤）；本会话已修（anchor 回 JOIN 原表）+修复串三场景真库验证（含双版本链叶子/根入参均返回全链）+模块编译绿；runtime 生效待下次后端重启（未抢占兄弟会话旧 jar 进程）。看板：建 `6650b179`(done)+`f962ad81`(todo)，fresh 回读 504（含兄弟并行建卡增量）。证据 `验收/R215-增量验证-20260924/e2e-appendix-r215.txt`。

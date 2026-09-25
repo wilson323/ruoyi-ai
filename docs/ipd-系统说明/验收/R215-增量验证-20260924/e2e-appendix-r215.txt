@@ -1,0 +1,53 @@
+R215 追加轮：E2E 全链路 + 单测全量重跑 证据清单
+采集时间: 2026-09-25T04:08~04:20Z (local 09-24 21:08~21:20 -07:00)
+执行人: 主协调会话（R215 同会话续跑）
+
+== 1. 单测全量重跑（R212 遗留 🕐 销账）==
+命令: mvn -o -pl ruoyi-modules/ruoyi-ipd test   （错峰+单模块+无 -am/无 clean）
+日志: /tmp/r216-unit-full.log
+结果: Tests run: 2419, Failures: 0, Errors: 0, Skipped: 23 → BUILD SUCCESS
+EXIT=0, Finished at 2026-09-24T21:09:05-07:00, Total time 21.4s
+说明: R212 记录的 2239 为早期快照，兄弟轮次新增测试后自然增长到 2419；Skipped 23 为 @Tag 门禁过滤（已知行为）。
+
+== 2. HTTP E2E（gov6/e2e-http.py 复跑，脚本已修两处漂移）==
+修复①: bootstrap-accounts.json 已治理移除明文(_passwordRemovedForSecurity)，
+       登录凭据回退 auth-*-current.json 单一权威源（本轮实证的新漂移）。
+Phase A 只读冒烟: 登录 200 ok(ipd-admin)；6/10 端点 200，
+       3 个 404 为脚本旧路径(/persons /kpi /workbench 已知契约漂移，非应用缺陷)。
+Phase B 写腿: POST /ai-documents 登记成功 doc=2103336401281048578
+       sha_http == sha_local_calc (match=true)，DB 行回读一致。
+       ★ GET /ai-documents/{id}/versions → HTTP 500 （新缺陷 N6，见 §4）
+Phase C: BLOCKED_NEED_KEY（本机无云 key，与 R213 挂账一致，非回归）
+结果文件: .codex/ipd-dev/gov6/e2e-result.json
+
+== 3. WS 通知链路 E2E（ipd-ws-e2e-verify.sh，修 3 处环境漂移后手动分步执行）==
+修复: mysql client 加 --default-character-set=utf8mb4（中文列 1366）；
+      Redis 6379→16379（隔离迁移）；admin 密码硬编码→auth-admin-current.json。
+链路: INSERT PENDING(id=2098580379392281302) → RPUSH ipd-local:ipd:notify:dispatch:async=:1
+      → POST /notifications/async-dispatch {"sent":1,"failed":0,"skipped":0}
+      → DB 行 delivery_status=SENT, target_channel=WEBSOCKET ✅
+      → 测试行已 DELETE 清理（ROW_COUNT=1）
+
+== 4. 新缺陷 N6：AI 文档版本链查询全量 500（P1，已修复待重启生效）==
+根因: AiDocumentMapper.selectChain (PERF-02 commit 40a84615 引入) chain CTE 的
+      anchor 段 FROM ancestors 取 26 列，而 ancestors CTE 仅投影 4 列
+      → SQLSyntaxError 1054 Unknown column 'project_id'（日志 sys-error.log 21:10:50 实锤）。
+修复: anchor 改回 JOIN ai_documents 原表取全行（语义不变），ruoyi-ipd 编译绿。
+真库对照验证: 原结构复现 1054；修复后精确串返回 doc 全链；
+      双版本链(REVIEWED→ARCHIVED) 从叶子/根两种入参均返回升序全链（满足 AM-SQL 契约）。
+runtime 生效: 需下次后端重启（16039 现进程为兄弟轮次起的旧 jar，未抢占重启）。
+
+== 5. 浏览器用户可见 E2E 主链路（需求域全链四视图闭环）==
+① admin 快捷登录 → /ipd/workbench 渲染正常（待我处理 9 / 临期超期 6 / 项目切换器）
+② 游客门户 /portal/submit: 填表+产品情形下拉（如门禁测试）→ 型号自动带入联动验证 →
+   提交成功，查询码 URSKOCJ7
+③ DB 回读: requirements id=2103338131276259329, status=SUBMITTED, source=PORTAL_GUEST,
+   title="如门禁测试 - E2E-R215验证客户", create_time=2026-09-25 12:17:43
+④ /portal/track 凭码回查: 状态"已提交待受理"，客户名脱敏 E***********，
+   时间线含"已按产品路由至双 PM"事件
+⑤ /ipd/requirements 管理端需求池"新提交"tab: 卡片可见
+   #2103338131276259329 · 市场PM 段进科 · 研发PM 程龙 · [开始分析] 动作可用
+（截图接口两次超时——页面持续重绘；以渲染文本证据为准，测试数据按 owner 批准留库作验收凭证）
+
+状态: E2E=VERIFIED（需求链路+WS链路+HTTP读/写腿）；单测重跑=VERIFIED；N6=代码级修复+DB实证，runtime 待重启
+KANBAN_TOTAL=504 (fresh GET /api/tasks 回读 2026-09-25T04:19Z，含本追加轮 6650b179/f962ad81 两卡与兄弟会话并行增量)
