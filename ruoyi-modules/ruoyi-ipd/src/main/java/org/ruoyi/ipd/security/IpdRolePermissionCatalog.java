@@ -155,10 +155,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_SOP_TEMPLATE_EDIT,
         IpdPermissionCode.OPERATION_AI_MODEL_EDIT,
         IpdPermissionCode.OPERATION_BID_INVITATION_ADMIN_ASSIGN,
-        // P3-4.4：奖金池计算/冻结/分配（资金敏感操作仅超管；service 无二次校验，注解即终审）
+        // P3-4.4：奖金池核算（资金敏感；R215-N1 拍板后 freeze/distribute 拆出归组长+超管，
+        // compute 仍仅超管；service 无二次校验，注解即终审）
         IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
-        IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
-        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE,
         // R-NEW-SEC-5 + P3-7.1 合并裁决：锁定/解锁采用拆细码 LOCK/UNLOCK（Controller 注解实际消费）；
         // :admin 码保留常量但无注解消费端，不登记进目录避免 CatalogDrift 守卫误报
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
@@ -178,9 +177,20 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_KPI_CONFIG
     );
 
+    /**
+     * R215-N1 拍板（owner 2026-09-24：「组长可以操作，超管全部完整有权可用」）：
+     * 奖金池冻结/分配为涉钱审批动作，授予 GROUP_LEADER + SUPER_ADMIN；
+     * 不授予 MARKET_PM / RD_PM（compute 仍归 ADMIN_WRITE 仅超管）。
+     * 独立成集合不进 BUSINESS_WRITE，避免双 PM 误继承。
+     */
+    private static final Set<String> BONUS_APPROVAL_WRITE = unique(
+        IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
+        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE
+    );
+
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
-        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE),
-        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER),
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE, BONUS_APPROVAL_WRITE),
+        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, BONUS_APPROVAL_WRITE),
         "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, KPI_CONFIG_WRITE),
         "RD_PM", merge(READ_SET, BUSINESS_WRITE, KPI_CONFIG_WRITE)
     );

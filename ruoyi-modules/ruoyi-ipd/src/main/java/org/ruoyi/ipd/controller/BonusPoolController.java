@@ -45,10 +45,12 @@ import java.util.List;
  *   <li>{@code POST /api/v1/bonus-pool/coefficient/preview} — 项目绩效系数试算（P3-4.5），权限 ipd:bonus-pool:compute</li>
  * </ul>
  *
- * <p>权限梯度：
+ * <p>权限梯度（R215-N1 owner 拍板 2026-09-24：「组长可以操作，超管全部完整有权可用」）：
  * <ul>
- *   <li>compute / query / list / preview → {@code ipd:bonus-pool:compute|query}（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN）</li>
- *   <li>freeze / distribute → {@code ipd:bonus-pool:freeze|distribute}（GROUP_LEADER / SUPER_ADMIN 涉钱审批）</li>
+ *   <li>compute / coefficient-preview → {@code ipd:bonus-pool:compute}（仅 SUPER_ADMIN，ADMIN_WRITE 登记 + requireAdmin 兜底同严）</li>
+ *   <li>freeze / distribute → {@code ipd:bonus-pool:freeze|distribute}（GROUP_LEADER / SUPER_ADMIN 涉钱审批；
+ *       BONUS_APPROVAL_WRITE 集合 + requireLeaderOrAdmin 兜底同严）</li>
+ *   <li>query / list / page → {@code ipd:bonus-pool:query}（内部四角色可读，requireInternal）</li>
  * </ul>
  */
 @RestController
@@ -116,8 +118,8 @@ public class BonusPoolController {
     @PostMapping("/{id}/freeze")
     public ApiV1Response<BonusPoolVO> freeze(@PathVariable Long id,
                                            @RequestBody(required = false) FreezeBonusPoolReq req) {
-        // 兕底与注解同严（第六批判例）
-        IpdActor actor = ipdPermission.requireAdmin();
+        // 兕底与注解同严（第六批判例）；R215-N1 拍板：冻结为涉钱审批，组长+超管可用
+        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
         String reason = (req == null) ? null : req.reason();
         return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.freeze(id, reason, actor)));
     }
@@ -130,8 +132,8 @@ public class BonusPoolController {
     @PostMapping("/{id}/distribute")
     public ApiV1Response<BonusPoolVO> distribute(@PathVariable Long id,
                                                @Valid @RequestBody DistributeBonusPoolReq req) {
-        // 兕底与注解同严（第六批判例）
-        IpdActor actor = ipdPermission.requireAdmin();
+        // 兕底与注解同严（第六批判例）；R215-N1 拍板：分配为涉钱审批，组长+超管可用
+        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
         return ApiV1Response.ok(BonusPoolVO.from(bonusPoolService.distribute(
             id, req.marketShare(), req.rdShare(), actor)));
     }

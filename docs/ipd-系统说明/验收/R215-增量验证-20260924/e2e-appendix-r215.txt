@@ -62,3 +62,15 @@ N6 重启生效闭环：
 - 实测：GET /api/v1/ai-documents/2103336401281048578/versions → HTTP 200
 - 整跑 e2e-http.py：Phase B verdict=PASS, versions_http={status:200,count:1}, sha_match=true
 N6 状态：VERIFIED（runtime 生效，卡 f962ad81 可翻 done）
+
+== 7. N1 拍板落地（owner 2026-09-24：组长可以操作，超管全部完整有权可用）==
+[代码] IpdRolePermissionCatalog: 新增 BONUS_APPROVAL_WRITE={FREEZE,DISTRIBUTE}，merge 进 GROUP_LEADER+SUPER_ADMIN；
+       ADMIN_WRITE 仅剩 COMPUTE。BonusPoolController: freeze/distribute 兜底 requireAdmin→requireLeaderOrAdmin；javadoc 权限梯度对齐。
+[单测] BonusPoolApprovalPermissionContractTest 3/0/0（新契约）；回归 Rnew 11/0、BonusPoolService 20/0、Sec01 13/0、Sec02 7/0（22:02 实跑）
+[产物] fat jar 22:02 重打（rm 旧+install ipd 模块）；字节自证 CATALOG_HAS_BONUS_APPROVAL_WRITE=True / CONTROLLER_HAS_REQUIRE_LEADER_OR_ADMIN=True
+[重启] PID 37105 @16039，Started RuoYiAIApplication 14.8s（/tmp/ipd-16039-ws-c1.log）
+[实测] POST /bonus-pool/999999999/freeze（2026-09-25T05:04:56Z 批次）：
+  admin=50001透闸 | leader=50001透闸（改前403）| market=30001 | rd=30001
+  distribute: admin=10001透闸 | leader=10001透闸 | market=30001 | rd=30001
+  compute 防误放开: leader=30001 ✓
+[前端] bonus-pool 按钮无角色闸（N2 现状），组长无需前端改动即可操作；N2/N3 仍留卡 e48bf56a
