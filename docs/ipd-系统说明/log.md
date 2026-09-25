@@ -12297,3 +12297,13 @@ owner AskUserQuestion 四题全选推荐项并逐项落地：**①5 张 can_flip
 **P0-10 卡面核对注记**：8ac77721 desc 尾追加三源核对一致说明（4376→4551 回读 ✓，status 保持 inprogress）；「⚠️ owner 强推」标题披露按史实透明保留不改写；P0-7.3 经 fresh 复核状态本就一致（inreview=◇）无需动作。
 
 **磁盘**：现查 /System/Volumes/Data 已 90%（可用 45G，昨晚 96%/5.7G）——~/.npm 仅剩 36K、~/.ollama 15G→3.4G（非本会话所为，如实登记），~/.workbuddy 24G 未动；清理项解除。check-mirror-vs-board.py 回归仍 ✓ 一致。
+
+### R215 全局闭环增量验证轮（2026-09-24 深夜，用户请求与 R212 同源同文，撞号避让取 R215）
+
+**增量不重复**：全量矩阵以 R211/R212/R213/R214 为准，本轮 fresh 复核 + 补跑 R212 遗留 🕐 项。基线现查：BE `48f23bcb`=origin/main、FE `3316e56`、门禁孤儿 98→**96**（净消亡 2 无新增）/字段错位 **15** 持平、五连 `401 401 404 401 404` 吻合、看板 **495**（本轮收口后 497）。报告 `R215-全局闭环增量验证报告-20260924.md`，证据 `验收/R215-增量验证-20260924/`（基线 txt + 契约 json + 6 探针响应 + 3 截图）。
+
+**T-V2 四角色矩阵补齐**（R212 §四 🕐→✅）：四角色快捷登录 + 侧栏展开采集 + 奖金池安全负向探针（id=999999999 零写入，DB 回读 bonus_pools 19→19、audit 无 probe 痕迹）。实证：后端 `@SaCheckPermission`+requireAdmin 双闸有效（market compute/freeze/distribute 全 403/30001；admin 穿透 404/50001）；数据权限 45→1 收窄生效；「超级管理」菜单对内部角色正确隐藏。**新缺口 N1-N4 建卡 e48bf56a（todo）**：N1 BonusPoolController javadoc 授权梯度与 IpdRolePermissionCatalog（三写码仅 ADMIN_WRITE）漂移 + leader freeze 403 待 owner 拍板；N2 bonus-pool/index.vue 按钮无 hasAccess 闸（死按钮可见）；N3 内部三角色外露框架「用户管理/角色管理」菜单待核查；N4 ipd-market 凭证两登记源（auth-market-current.json/credentials.json）均失真——已真库 hash 对拷（rd→market）恢复并回登，五病根之⑤活例。
+
+**双下拉修复实证**：admin 顶栏切 VIS-RD-100 → 表单 ant Select 自动同步 → 刷新出真数据行（9140003 | ¥1,000,000 | 已确认），前端 `3316e56` 机制生效（销 R211c 卡 8e751acf 第 4 项观感）。**环境**：IPD 基础服务隔离落地——Redis 16379（redis.conf + start-16039.sh CLI 覆盖，6379 脱钩）、base-services.sh 统一启停；端口矩阵 16039/15666/13306/16379/62250 全 UP。看板：建 R215 done 卡 `2a02dffd` + todo 卡 `e48bf56a`（中途首跑 KeyError 崩出的重名卡 15ea2220 与形状探针卡 0e5a30d0 均已 DELETE，最终 fresh 497：done 383/todo 33/inprogress 17/inreview 5/cancelled 59）。
+
+**R215 轮内撞号登记**：收口时发现并行兄弟会话同以 R215 取号（其证据目录 `验收/R215-增量收口-20260924/` 收口时仍在写入，本会话未触碰未 stage）；两执行体产物独立互补，归属以 commit 号区分，详见报告 §〇 登记段。
