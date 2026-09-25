@@ -36,6 +36,13 @@ KEY = re.compile(r'^(?:'
                  r'|GUARD-\d+'
                  r'|WAVE\d+(?:-[A-Z0-9]+)*'
                  r'|AI-REG-\d+'
+                 # R214 纳管轮（owner 授权）：26 张在途卡 + 6 张 done 正主卡纳管登记，新增 6 命名空间
+                 r'|ORPHAN-A\d*'
+                 r'|PLAN-[A-Z0-9]+(?:-[A-Z0-9]+)*'
+                 r'|AI-P\d+(?:-\d+)?'
+                 r'|API-GATE-RATCHET'
+                 r'|DATA-CLEAN-\d+'
+                 r'|P[0-4]-LOW'
                  r')$')
 PRIORITIES = {'U0': '紧急', 'U1': '高', 'U2': '中', 'U3': '后续', 'P1': 'P1', 'P2': 'P2', 'P3': 'P3', '汇总': '汇总'}
 

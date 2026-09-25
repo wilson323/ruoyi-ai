@@ -12289,3 +12289,11 @@ owner AskUserQuestion 四题全选推荐项并逐项落地：**①5 张 can_flip
 **新工具事实（回灌五必现查）**：看板 tasks 端点必带 project_id（旧 ?limit=1 探针 400）；manage.py 无 main-guard，借其 KEY/plan 做离线对账须 exec 到 `if __name__` 前并注入 `__file__`。
 
 **遗留 owner 裁决（本轮零越权）**：26 张 unmanaged 活跃卡纳管或豁免（ORPHAN-A 系 14/PLAN-* 4/AI-P* 5/API-GATE-RATCHET/DATA-CLEAN-9140004/P3-LOW）→ 不处理则 check 持续红（语义＝合法在途未登记，非欠账）；P0-10「⚠️ owner 强推」标题定性与 P0-7.3 卡面补注；磁盘 ~/.npm 7.3G/~/.ollama 15G/~/.workbuddy 20G 未点名未动。看板 API 脚本适配项经现查**无需改**——仓内全部调用方（check-done-gate-summary/check-mirror-vs-board/audit-ipd-completeness/manage.py/check-commit-truthfulness.sh）已内建 project_id，400 只发生在交互手敲 curl。
+
+### R214 纳管轮（2026-09-24 深夜，owner「按照建议执行」授权）
+
+**26 张在途卡纳管 + check 首次全绿**：探针全量复核新命名空间看板命中实为 **32 张**（26 blocking + 6 张 done 正主卡：AI-P1-3/AI-P2-3/P2-1.3/PLAN-P0-17/PLAN-ROOT-2/PLAN-ROOT-3）→ ①manage.py KEY 正则扩 6 命名空间（ORPHAN-A\d*／PLAN-[A-Z0-9-]+／AI-P\d+(?:-\d+)?／API-GATE-RATCHET／DATA-CLEAN-\d+／P[0-4]-LOW）；②镜像主表尾部（L399 qa04-F 后）插 4 格纳管块 32 行，状态列以看板现态回填（todo 17／inprogress 9／done 6）；③sync --apply 写 32 个权威段 → 终验 **plan 281 keys、actions 281/281 unchanged、unmanaged_blocking 0、has_drift=False（exit 0）**——manage.py check 自 v2 仲裁以来首次全绿。P2-1.3/PLAN-P0-17 昨晚按 D16「不补行账面收口」的方向随本轮纳管授权升级为正式补行（owner 建议 = 纳管）。
+
+**P0-10 卡面核对注记**：8ac77721 desc 尾追加三源核对一致说明（4376→4551 回读 ✓，status 保持 inprogress）；「⚠️ owner 强推」标题披露按史实透明保留不改写；P0-7.3 经 fresh 复核状态本就一致（inreview=◇）无需动作。
+
+**磁盘**：现查 /System/Volumes/Data 已 90%（可用 45G，昨晚 96%/5.7G）——~/.npm 仅剩 36K、~/.ollama 15G→3.4G（非本会话所为，如实登记），~/.workbuddy 24G 未动；清理项解除。check-mirror-vs-board.py 回归仍 ✓ 一致。
