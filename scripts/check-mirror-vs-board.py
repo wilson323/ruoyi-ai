@@ -32,6 +32,9 @@ STATUS_SYMBOLS = {
     "▶": "inprogress",
     "✗": "cancelled",
     "✓": "done",
+    "⊘": "cancelled",  # D17 修正 R214：manage.py STATES 的 cancelled 真符号，缺它会把 ⊘ 行误判成历史文本里的 ⬜/✅
+    "◐": None,  # 「复核中/部分完成」歧义态：无法映射看板五态，显式跳过比对（P1-4 实证 2026-09-24）
+    "⛔": None,  # 同上：阻塞标记非看板态
 }
 
 
@@ -53,12 +56,10 @@ def parse_mirror_status():
         if not m:
             continue
         card_id = m.group(1)
-        # 找状态符号（✅ / ⬜ / ◇ / ▶ / ✗ / ✓）
-        status = None
-        for symbol, s in STATUS_SYMBOLS.items():
-            if symbol in line:
-                status = s
-                break
+        # D17 修正 R214：取行内位置最先的状态符号（主表状态列在历史「前态记录」证据列之前），
+        # 避免 dict 遍历顺序先命中后文里的 ✅/⬜ 造成假红
+        found = [(line.find(sym), sym) for sym in STATUS_SYMBOLS if sym in line]
+        status = STATUS_SYMBOLS[min(found)[1]] if found else None
         if status:
             cards[card_id] = {
                 "line": i,
@@ -79,24 +80,27 @@ def fresh_board_status():
         return {"error": f"看板不可达: {e}", "cards": {}}
 
     cards = {}
+    conflicts = []
     for t in data:
-        # 看板卡 id 字段可能是 UUID，ref 字段可能是 P*-*
-        # 或 title 字段含 [P*-*]
-        card_id = None
-        for field in ["ref", "id", "title"]:
-            val = t.get(field) or ""
-            m = re.search(r"(P\d+-\d+(?:\.\d+)?)", str(val))
-            if m:
-                card_id = m.group(1)
-                break
-        if card_id:
-            cards[card_id] = {
-                "status": t.get("status", "?"),
-                "title": (t.get("title") or "")[:80],
-                "uuid": t.get("id", "?"),
-            }
+        # R214 D17 修正：只认 title 里的 [P*-*] 方括号 marker（与 manage.py find_task 同口径）。
+        # 旧逻辑对 ref/id/title 做无括号模糊匹配，导致标题尾部提到 P3-1 等字样的
+        # cancelled 旧版平行卡覆盖正主卡，产生假红（实测 2026-09-24）。
+        title = t.get("title") or ""
+        m = re.search(r"\[(P\d+-\d+(?:\.\d+)?)\]", title)
+        if not m:
+            continue
+        card_id = m.group(1)
+        if card_id in cards:
+            # 同号多卡（撞号）：不静默覆盖，保留首张并记入冲突警告
+            conflicts.append(card_id)
+            continue
+        cards[card_id] = {
+            "status": t.get("status", "?"),
+            "title": title[:80],
+            "uuid": t.get("id", "?"),
+        }
 
-    return {"count": len(cards), "cards": cards}
+    return {"count": len(cards), "cards": cards, "conflicts": conflicts}
 
 
 def diff_mirror_vs_board(mirror, board):

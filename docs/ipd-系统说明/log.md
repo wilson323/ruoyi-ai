@@ -12242,6 +12242,8 @@ owner 指令「系统性梳理分析深度思考反思根源性修复」——�
 
 **执行**：POST 建 13 张 ORPHAN-A 子卡（d9225d0b/23693709/69d89d47/ac46043e/ab1fb0bd/8338f2fa/670aecdf/786da825/c79c26d2/0f35d16e/211e689a/be9a3017/eace4648，全 todo，逐张 LIST 独立回读 OK；A12 扫码卡面注明依赖 U0 9d50c5fd 先修）；PUT 改面 b4be8fa5（伞卡收敛为进度卡）与 7b76b7cd（拍板前置解除，S1→S5 可执行）。看板 **481→494**，todo 17→30（本轮前兄弟已翻 53576dd5 致 done 380→381，已现查对账）。零翻卡、零代码、真库零写。
 
+> **D7 勘误（R214 夜间三源复审发现，2026-09-24 追加）**：上段「零翻卡」对看板层属实，但同批兄弟会话 commit `cdec0305` 实含镜像 L64（P4-4 行 ⬜→✅ owner 手翻授权注记）写入，message「零代码零翻卡」表述失真；历史 commit 不改写，本行为史实更正登记。
+
 **坑位登记**：本看板版本 PUT 端点为 `/api/tasks/{id}`（`PUT /api/tasks` 返 405；早前记忆里的裸 PUT 写法已过期）；只传 title 的 PUT 不会清空 description（实测 257 字保留）。
 
 **落盘**：主文 R212后续-…-20260924.md 新增 §八拍板结果；镜像同日期段。
@@ -12275,3 +12277,15 @@ owner AskUserQuestion 四题全选推荐项并逐项落地：**①5 张 can_flip
 **测试副作用登记（政策=留库，ipd_dev 无财务影响）**：persons 2114000000000000001（R214市场PM/MARKET_PM/组900001/wecom_R214_swarm_mkt）、project_members 2103216737611800577（活体绑定正例）、audit LOGIN_FAIL/WECOM_MOCK_LOGIN 若干条。16039 实例（PID 59244）当前处 qr-login 开启态，收口后须复位默认关闭态重启。
 
 **补录·flip 链解锁与收口完成（同日 2026-09-24 晚间）**：①真库回读确认：project_members 2103216737611800577（9150001/900105/RD_PM/PRIMARY）存在，跨组反例零写入 count=0。②16039 复位：kill 开启态实例（59244）后以默认参数重启（新 PID 1645，Started in 11.4s），实测 POST /api/v1/auth/wecom/qr-login 回到 `HTTP 409/50019 企微扫码登录未启用`——临时取证口子已关。③磁盘清理（owner 点名纯缓存项）：npm cache clean --force + 清 ~/.cache(9.2G)+~/Library/Caches(4.8G)+~/.Trash，可用 5.7G→20G；kill 卡死的 com.docker.backend(72622) 冷启后 Docker v29.7.2 就绪、vibe-kanban 容器 healthy（实测新事实：tasks 列表端点现需 project_id 参数，`?limit=1` 返 400）。④flip 执行：翻牌前逐张复验门禁 P1-3/P2-3/P3-2/P3-7/P3-8 均 can_flip=True（真看板数据 495 张），PUT 前 LIST 取基文，7 张（53ecc543/7ad0b052/51738b8a/0d4b9ea4/98db7e00/9d50c5fd/dbe1b6a7）全部 status=done + 证据注记，PUT 后独立 GET 回读 7/7 done ✓。镜像 D3 五张父行 + 两张 SEC 行同步回写 ✅ done（历史证据保留）。至此 owner 四拍板①②③④全部闭环。
+
+### R214 建议6 镜像还债轮（2026-09-24 深夜，owner 点名遗留清单授权）
+
+**目标**：把上轮四条遗留（看板 API 适配、D 系列漂移、建议6 欠债、磁盘）逐项落地。两专业智能体只读探针（agency-harness 还债盘点 + qa-gatekeeper 三源复审）并行，主会话单写者实施。
+
+**还债链闭环（manage.py 双通道恢复）**：①崩溃根因＝P3-6.2 撞号——67ffc283 曾被人工改名误染 marker（正主 5da0b29f，mapping 实锤；manage.py L51 EXEMPT 注释与镜像 L3059 双登记其真身 P-DATA-gap-1）→ 看板 PUT 还原身份，**教训：勘误注记文本里不能再含 `[P3-6.2]` 字面**（find_task 是子串匹配，首 PUT 后 marker 仍双命中，二 PUT 改写措辞后复验唯一）；②mapping.json（335 task_ids 含 86 陈旧 ID）→ `.bak-20260924` 存档，sync 重建 249 键新映射，「Plan omits 86」写封锁解除；③`sync --apply` 一次消 32 block drift → 复验 **249/249 unchanged**，check 不崩且结果可信。**89 张孤儿 marker 卡全部 done 终态**，按「终态不阻塞」不补 plan 行（避免为历史卡重建 SSOT），镜像末尾归档登记表账面收口（首列已 `[X]` 括号化防 plan 误认领——append 首版 4 列行曾炸 `Unknown status in CONSISTENCY-1`，现查 plan 249 恢复后入库）。D10/D11 原始明细因 QA 报告当时未落盘已不可还原，由 D12-D17 全集扫描覆盖（教训回灌：QA 守门报告必须落盘 验收/ 目录）。
+
+**QA 系列处置（fresh 实测收窄）**：D6/D12 状态类「镜像滞后」多数现查已对齐（77341341 现 todo 与镜像一致、P2-4.2 看板实为 todo 非 done），不做无中生有的回写；D9/D13 指针勘误（e94d8d8a 纯 docs ≠ P1-3.3 落码 2769e801 ≠ P2-4.2 落码 d4365d6a）与 D16 覆盖缺口（P2-1.3/PLAN-P0-17）以镜像还债段 append-only 登记；D7 勘误行已插 R213-B 段下。**D17 工具修复**：check-mirror-vs-board.py 假红 63→0（补 ⊘=cancelled；◐/⛔ 歧义态显式跳过；board 侧收紧只认 title [KEY] 方括号 marker——旧模糊匹配被 cancelled 旧卡标题尾部覆盖正主，P3-1/3-3/3-4/P4-4 四例实锤）。
+
+**新工具事实（回灌五必现查）**：看板 tasks 端点必带 project_id（旧 ?limit=1 探针 400）；manage.py 无 main-guard，借其 KEY/plan 做离线对账须 exec 到 `if __name__` 前并注入 `__file__`。
+
+**遗留 owner 裁决（本轮零越权）**：26 张 unmanaged 活跃卡纳管或豁免（ORPHAN-A 系 14/PLAN-* 4/AI-P* 5/API-GATE-RATCHET/DATA-CLEAN-9140004/P3-LOW）→ 不处理则 check 持续红（语义＝合法在途未登记，非欠账）；P0-10「⚠️ owner 强推」标题定性与 P0-7.3 卡面补注；磁盘 ~/.npm 7.3G/~/.ollama 15G/~/.workbuddy 20G 未点名未动。看板 API 脚本适配项经现查**无需改**——仓内全部调用方（check-done-gate-summary/check-mirror-vs-board/audit-ipd-completeness/manage.py/check-commit-truthfulness.sh）已内建 project_id，400 只发生在交互手敲 curl。
