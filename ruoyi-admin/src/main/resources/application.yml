@@ -407,6 +407,9 @@ tenant:
     # W2-KPI2A（2026-09-21）：A2 P1 功能指标量表——含 tenant_id 列但单企业私有部署语义，
     # 未登记则租户拦截器追加 WHERE tenant_id=?，非 000000 会话读不到数据
     - kpi_functional_metrics
+    # R215 权限可配置化（2026-09-24）：角色权限码 DB 覆盖层——含 tenant_id 列但单企业语义；
+    # 未登记则启动加载（@PostConstruct 无会话上下文）被拦截器追加过滤，覆盖层永远读空
+    - ipd_role_permission
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

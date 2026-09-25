@@ -74,3 +74,45 @@ N6 状态：VERIFIED（runtime 生效，卡 f962ad81 可翻 done）
   distribute: admin=10001透闸 | leader=10001透闸 | market=30001 | rd=30001
   compute 防误放开: leader=30001 ✓
 [前端] bonus-pool 按钮无角色闸（N2 现状），组长无需前端改动即可操作；N2/N3 仍留卡 e48bf56a
+
+== 8. N2/N3 前端小卡点收口（2026-09-24 深夜~09-25 同会话）==
+N2 奖金池按钮权限闸（死按钮修复）：
+- [代码] bonus-pool/index.vue 三按钮加 v-access:code（compute/freeze/distribute 各挂 IPD_PERMISSION_CODES 对应码），
+  import _shared/ipd-permission-codes；vue 侧随兄弟会话 commit f51ef20 入库（R25 软化②登记：内容为本会话 N2 落码，
+  兄弟打包时原样入库，非改写）
+- [通道] /auth/me person.permissionCodes 实测 leader 61 码（freeze/distribute 有、compute 无）→ vbenCodesOf 透传
+  → accessStore → v-access 指令无码即 remove；旧记忆"非超管拿不到业务码"已过期（R211b 后接通）
+- [测试] index.test.ts 新增 mountWithAccess 2 用例（stub 与生产 directive 同语义）：vitest 11/11 EXIT=0；
+  typecheck 回收 /tmp/n2-typecheck2.log（turbo run typecheck 经根 pnpm run check:type）
+N3 框架菜单外露（配置越权，非代码缺陷）：
+- [根因] sys_role_menu 把 menu 1/100/101（系统管理/用户/角色）越权授给 ipd 角色 900201/900202
+- [修复] 事务 DELETE 6 行（ROW_COUNT=6，remaining=0）；SQL 留档 ipd_r215n3_role_menu_dedupe_20260924.sql（含回滚 INSERT）
+- [复测] getRouters（平台票+ClientID）：leader/market 侧栏无系统管理三件套；admin 保留
+
+== 9. 权限可配置化（owner 指令 2026-09-24「确保权限可配置化」）==
+[架构] 三层：①菜单=sys_role_menu RBAC 配置表（N3 即配置修正）②前端闸=后端下发权限码通道（N2）
+      ③ipd 域角色→权限码矩阵=DB 覆盖层（本轮新建）：有效集 = Java 默认(BY_ROLE) ∪ GRANT − REVOKE；
+      表空/缺行 ⇒ 纯 Java 行为（fail-closed 零漂移）；元权限码 ipd:role-permission:* 固定 ADMIN_WRITE
+      不可进 DB（loader+service 双重拒绝，防管理员自锁）；volatile Map 整体替换；启动 @PostConstruct
+      加载异常降级不阻断；create/delete 自动 reload 即时生效（StpInterfaceBridge//auth/me 实时无缓存）
+[代码] 7 文件：catalog 覆盖层+defaultPermissionsOf/knownRoles；IpdPermissionCode +2 元码；
+  IpdRolePermission(domain)/Mapper/RolePermissionReq(dto)/ConfigService/Controller(5端点仅超管+审计)；
+  tenant.excludes 登记 ipd_role_permission；DDL ipd_role_permission_config_20260924.sql +
+  GRANT 登记件 2026-09-24-ipd-grant-ipd-role-permission-dml.sql（ipd_app 表级 CRUD）
+[单测] IpdRolePermissionDbOverrideContractTest 6/0/0 + IpdRolePermissionConfigServiceTest 8/0/0（23:10 实跑）；
+  回归 BonusPoolApproval 3/0、Rnew 11/0、ControllerPermAnnotation 4/0、SecApi02 4/0 全绿
+[产物] install ipd + rm 重打 fat jar（23:11，286MB）；字节自证：Controller class 含 role-permissions×4、
+  service 含 ipd:role-permission、catalog 含 applyDbOverrides/dbGrants、jar 内 application.yml :412 含 ipd_role_permission
+[重启] 首启撞旧进程端口未死透 bind 自杀（PID 16153 亡）→ 二次拉起 PID 23727，Started 17.5s，
+  日志 "[R215] ipd 权限覆盖层启动加载完成：grants=0 revokes=0"（表可读=GRANT 生效）
+[真库 apply] CREATE TABLE 核验 11 列+uk_ipd_role_perm+空表；GRANT 后 mysql.tables_priv 回读 Select,Insert,Update,Delete
+[e2e 矩阵]（16039 实跑，code=0 为成功）：
+  [1] admin GET /effective=0 四层快照齐 | [2] 基线 leader freeze(id=1)=50001 透闸 | [3] leader 61 码无 compute
+  [4] GRANT leader compute=0 → [5] 新会话 /auth/me 含 compute=True（即时生效）
+  [6] REVOKE leader freeze=0 → [7] leader freeze=30001（注解层拒，REVOKE 即时生效）
+  [8-9] 删行=0（注：首轮脚本按码排序误删 GRANT 行，[9] 仍 30001 属脚本缺陷非产品缺陷）→ 终态补验：
+      表 count=0、leader 61 码 freeze=True compute=False、freeze(id=1) 回 50001 基线 ✓
+  [10] POST 元码=10001 拒 | [11] POST 未知角色=10001 拒 | [15] leader GET /role-permissions=30001（元权限仅超管）
+  审计 audit_logs 4 行 ROLE_PERMISSION_GRANT_CREATE×2（reason 含 remark 依据）+ DELETE×2
+[边界披露] 方法内 require* 兜底为独立第二层（角色判断，非权限码），DB 配置只作用于注解层——GRANT compute 后
+  leader 透注解仍被 requireAdmin 兜底拒（纵深防御设计意图）；放开需同步改兜底代码（N1 判例）。

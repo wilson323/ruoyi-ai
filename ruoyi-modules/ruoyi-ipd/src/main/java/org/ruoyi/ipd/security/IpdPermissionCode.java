@@ -209,6 +209,16 @@ public interface IpdPermissionCode {
     /** C3：永久清除（仅超管；二次确认 + 审计；AC-C3 数据治理底座） */
     String OPERATION_PERMANENT_DELETE = "ipd:permanent-delete:execute";
 
+    // ------------------------------------------------------------------
+    // R215 权限可配置化（owner 指令 2026-09-24）：角色→权限码运行时配置（元权限）
+    // 自举设计：本域码不参与 DB 配置自身（防止把管理员锁在门外），永远登记在 ADMIN_WRITE 仅超管。
+    // ------------------------------------------------------------------
+
+    /** 角色权限配置：查看目录/覆盖行/有效快照（仅 SUPER_ADMIN） */
+    String OPERATION_ROLE_PERMISSION_CONFIG_QUERY = "ipd:role-permission:query";
+    /** 角色权限配置：增删改覆盖行 + reload（仅 SUPER_ADMIN；变更留 remark 依据 + 审计） */
+    String OPERATION_ROLE_PERMISSION_CONFIG_EDIT = "ipd:role-permission:edit";
+
     /** C4：P0 升级链查询（组长/超管） */
     String OPERATION_P0_ESCALATION_READ = "ipd:p0-escalation:read";
 

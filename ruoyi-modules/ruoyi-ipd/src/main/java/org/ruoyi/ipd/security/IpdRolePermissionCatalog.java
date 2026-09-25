@@ -163,7 +163,10 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_UNLOCK,
         // R152 A1（2026-09-20）：补登记 C3 永久清除（仅超管；二次确认 + 审计；AC-C3 数据治理底座）
-        IpdPermissionCode.OPERATION_PERMANENT_DELETE
+        IpdPermissionCode.OPERATION_PERMANENT_DELETE,
+        // R215 权限可配置化：元权限不参与 DB 覆盖自身（防管理员被锁在门外），固定仅超管
+        IpdPermissionCode.OPERATION_ROLE_PERMISSION_CONFIG_QUERY,
+        IpdPermissionCode.OPERATION_ROLE_PERMISSION_CONFIG_EDIT
     );
 
     /**
@@ -198,21 +201,65 @@ public final class IpdRolePermissionCatalog {
     private IpdRolePermissionCatalog() {
     }
 
+    // ------------------------------------------------------------------
+    // R215 权限可配置化（owner 指令 2026-09-24）：DB 覆盖层
+    // 语义：有效码集 = Java 默认集（BY_ROLE） ∪ GRANT − REVOKE；
+    //       无覆盖行时行为与纯 Java 目录完全一致（fail-closed 兜底，零漂移）；
+    //       未知 personType 仍返回空（DB 配置不能造新角色）；
+    //       元权限码（role-permission:*）由 loader 拒绝写入覆盖集，不参与配置。
+    // 填充方：IpdRolePermissionConfigService（启动加载 + reload 端点）；volatile 整体替换保线程安全。
+    // ------------------------------------------------------------------
+
+    private static volatile Map<String, Set<String>> dbGrants = Map.of();
+    private static volatile Map<String, Set<String>> dbRevokes = Map.of();
+
+    /** 用 DB 配置整体替换运行时覆盖层（入参 null 视同清空）。 */
+    public static void applyDbOverrides(Map<String, Set<String>> grants, Map<String, Set<String>> revokes) {
+        dbGrants = grants == null ? Map.of() : Map.copyOf(grants);
+        dbRevokes = revokes == null ? Map.of() : Map.copyOf(revokes);
+    }
+
+    /** 清空覆盖层（回到纯 Java 默认；单测/降级路径用）。 */
+    public static void clearDbOverrides() {
+        applyDbOverrides(null, null);
+    }
+
+    /** 当前覆盖快照（审计/展示用，不可变）。 */
+    public static Map<String, Set<String>> currentGrants() {
+        return dbGrants;
+    }
+
+    /** 当前收回快照（审计/展示用，不可变）。 */
+    public static Map<String, Set<String>> currentRevokes() {
+        return dbRevokes;
+    }
+
+    /** Java 默认集（不含 DB 覆盖；配置界面展示基准线用）。 */
+    public static List<String> defaultPermissionsOf(String personType) {
+        Set<String> set = personType == null ? null : BY_ROLE.get(personType);
+        return set == null ? List.of() : List.copyOf(set);
+    }
+
+    /** 已知角色集（DB 配置仅允许作用于这些角色，不可造新角色）。 */
+    public static Set<String> knownRoles() {
+        return BY_ROLE.keySet();
+    }
+
     /**
-     * 按人员类型解析权限码列表；未知类型返回空列表（拒绝一切注解权限）。
+     * 按人员类型解析权限码列表（Java 默认 ∪ DB GRANT − DB REVOKE）；
+     * 未知类型返回空列表（拒绝一切注解权限，DB 配置不可造新角色）。
      *
      * @param personType Person.personType，如 MARKET_PM
      * @return 不可变权限码列表
      */
     public static List<String> permissionsOf(String personType) {
-        if (personType == null || personType.isBlank()) {
+        if (personType == null || personType.isBlank() || !BY_ROLE.containsKey(personType)) {
             return List.of();
         }
-        Set<String> set = BY_ROLE.get(personType);
-        if (set == null) {
-            return List.of();
-        }
-        return List.copyOf(set);
+        Set<String> merged = new LinkedHashSet<>(BY_ROLE.get(personType));
+        merged.addAll(dbGrants.getOrDefault(personType, Set.of()));
+        merged.removeAll(dbRevokes.getOrDefault(personType, Set.of()));
+        return List.copyOf(merged);
     }
 
     /**
