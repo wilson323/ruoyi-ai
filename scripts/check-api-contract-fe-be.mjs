@@ -176,9 +176,15 @@ function normalizePath(rawPath, opts) {
   const keepVarNames = !!(opts && opts.keepVarNames);
   const noQuery = rawPath.split('?')[0];
   const varNames = [];
+  // R215 采集盲区修正：模板里紧贴字面段（前导非 `/`）的 `${...}` 是 query/fragment 拼接
+  // （如 `/bid-invitations/${id}/modify${query}` 尾部），非 path 段变量，应剔除而非归一成
+  // {VAR}——旧版无条件下式把 `${query}` 换成 {VAR} 制造假孤儿 `PUT .../modify{VAR}`。
+  // 真正的 path 段变量必然以 `/` 前导（`/${encodeURIComponent(id)}`），据此结构不变量区分。
   let s = noQuery
     // 1) ${var} / ${encodeURIComponent(var)}
-    .replace(/\$\{([^}]+)\}/g, (_m, inner) => {
+    .replace(/\$\{([^}]+)\}/g, (m, inner, offset, whole) => {
+      const prev = offset > 0 ? whole[offset - 1] : '';
+      if (prev && prev !== '/') return ''; // query/fragment 拼接 → 剔除
       const id = inner.split(/[().]/).filter(Boolean).pop();
       if (keepVarNames) varNames.push(id);
       return INTERNAL_PLACEHOLDER;
