@@ -1,0 +1,11 @@
+=== T-I3 项目/Gate 链抽验（项目 2098349974990389250）===
+--- 1) 已知缺端点复核: GET /projects/{id}/stages ---
+http=404 (P1-2 缺端点现状)
+--- 2) stage-actions 链（前端实际走的链路）---
+结构不同
+--- 3) Gate 材料就绪查询 ---
+code: 50001 | null
+--- 4) Gate sign 负例（不存在 gateId=999 签署应拒）---
+http=400
+--- 5) DB: 该项目 gate_reviews 现状 ---
+ERROR 1054 (42S22) at line 1: Unknown column 'status' in 'field list'

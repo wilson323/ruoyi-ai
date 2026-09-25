@@ -1,0 +1,821 @@
+{
+  "check": "api-contract-fe-be",
+  "scan": {
+    "fe_files_total": 75,
+    "fe_files_non_test": 49,
+    "fe_calls_total": 234,
+    "fe_calls_non_test": 198,
+    "backend_files_total": 60,
+    "backend_dirs": [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller",
+      "ruoyi-admin/src/main/java/org/ruoyi/ipd/controller"
+    ],
+    "timestamp": "2026-09-25T04:18:24.770Z"
+  },
+  "orphan_paths": [],
+  "orphan_endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/permanent-delete/{VAR}/{VAR}",
+      "rawPath": "/api/v1/admin/permanent-delete/{entityType}/{id}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AdminPermanentDeleteController.java",
+      "line": 57
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/permanent-delete/audit",
+      "rawPath": "/api/v1/admin/permanent-delete/audit",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AdminPermanentDeleteController.java",
+      "line": 76
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ai-copilot/chat",
+      "rawPath": "/api/v1/ai-copilot/chat",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiCopilotController.java",
+      "line": 65
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai-copilot",
+      "rawPath": "/api/v1/ai-copilot",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiCopilotController.java",
+      "line": 87
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ai-documents/{VAR}/history",
+      "rawPath": "/api/v1/ai-documents/{id}/history",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "line": 120
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/audit-logs",
+      "rawPath": "/api/v1/audit-logs",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AuditLogController.java",
+      "line": 62
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/audit-logs/export",
+      "rawPath": "/api/v1/audit-logs/export",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AuditLogController.java",
+      "line": 97
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/bid-invitations/{VAR}/modify",
+      "rawPath": "/api/v1/bid-invitations/{id}/modify",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+      "line": 125
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/bid-invitations/{VAR}/admin-assign",
+      "rawPath": "/api/v1/bid-invitations/{id}/admin-assign",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+      "line": 140
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bid-responses/by-rd-pm/{VAR}",
+      "rawPath": "/api/v1/bid-responses/by-rd-pm/{rdPmId}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+      "line": 170
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/bid-invitations/p231-create",
+      "rawPath": "/api/v1/bid-invitations/p231-create",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidP231Controller.java",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/bonus-pool/auto-compute",
+      "rawPath": "/api/v1/bonus-pool/auto-compute",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BonusPoolController.java",
+      "line": 94
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bonus-pool/page",
+      "rawPath": "/api/v1/bonus-pool/page",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BonusPoolController.java",
+      "line": 178
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/bonus-pool/coefficient/preview",
+      "rawPath": "/api/v1/bonus-pool/coefficient/preview",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BonusPoolController.java",
+      "line": 196
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/compliance/data-retention-rules",
+      "rawPath": "/api/v1/compliance/data-retention-rules",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ComplianceController.java",
+      "line": 50
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/compliance/data-deletion-request",
+      "rawPath": "/api/v1/compliance/data-deletion-request",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ComplianceController.java",
+      "line": 58
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/compliance/audit-trail/{VAR}/{VAR}",
+      "rawPath": "/api/v1/compliance/audit-trail/{resourceType}/{resourceId}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ComplianceController.java",
+      "line": 65
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/compliance/permission-separation/{VAR}",
+      "rawPath": "/api/v1/compliance/permission-separation/{userId}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ComplianceController.java",
+      "line": 77
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/gates/{VAR}/legacy",
+      "rawPath": "/api/v1/gates/{gateId}/legacy",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementResultController.java",
+      "line": 90
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/gates/{VAR}/submit",
+      "rawPath": "/api/v1/gates/{gateId}/submit",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementResultController.java",
+      "line": 127
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/gates/{VAR}/observers/invite",
+      "rawPath": "/api/v1/gates/{gateId}/observers/invite",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateReviewController.java",
+      "line": 131
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/gates/{VAR}/observers/{VAR}/opinion",
+      "rawPath": "/api/v1/gates/{gateId}/observers/{observerId}/opinion",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateReviewController.java",
+      "line": 143
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/gates/{VAR}/observers",
+      "rawPath": "/api/v1/gates/{gateId}/observers",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateReviewController.java",
+      "line": 153
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/gates/sign/scan-timeout",
+      "rawPath": "/api/v1/gates/sign/scan-timeout",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateSignScanController.java",
+      "line": 32
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/gates/sign/scan-remind",
+      "rawPath": "/api/v1/gates/sign/scan-remind",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateSignScanController.java",
+      "line": 38
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/handovers/scan-overdue",
+      "rawPath": "/api/v1/handovers/scan-overdue",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+      "line": 156
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/handovers/{VAR}/archive",
+      "rawPath": "/api/v1/handovers/{id}/archive",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+      "line": 165
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/handovers/monthly-attribution",
+      "rawPath": "/api/v1/handovers/monthly-attribution",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+      "line": 191
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hr-sync/mark-resigned",
+      "rawPath": "/api/v1/hr-sync/mark-resigned",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+      "line": 108
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hr-sync/escalate-stale-resignations",
+      "rawPath": "/api/v1/hr-sync/escalate-stale-resignations",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+      "line": 120
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/hr-sync/pending-handovers",
+      "rawPath": "/api/v1/hr-sync/pending-handovers",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+      "line": 131
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hr-sync/sync-now",
+      "rawPath": "/api/v1/hr-sync/sync-now",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+      "line": 151
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hr-sync/sync-one",
+      "rawPath": "/api/v1/hr-sync/sync-one",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+      "line": 167
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/hr-sync/last-run",
+      "rawPath": "/api/v1/hr-sync/last-run",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HrSyncController.java",
+      "line": 194
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/wecom/qr-login",
+      "rawPath": "/api/v1/auth/wecom/qr-login",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdAuthController.java",
+      "line": 94
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/resource",
+      "rawPath": "/api/v1/resource",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdSseController.java",
+      "line": 61
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/kpi/functional-metrics/{VAR}",
+      "rawPath": "/api/v1/kpi/functional-metrics/{id}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/KpiFunctionalMetricsController.java",
+      "line": 102
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/kpi/raw-records/types",
+      "rawPath": "/api/v1/kpi/raw-records/types",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/KpiRawRecordController.java",
+      "line": 82
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/kpi/rules",
+      "rawPath": "/api/v1/kpi/rules",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/KpiRulesController.java",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/gates/legacy/scan-overdue",
+      "rawPath": "/api/v1/gates/legacy/scan-overdue",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/LegacyScanController.java",
+      "line": 27
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/negative-feedbacks/by-project/{VAR}",
+      "rawPath": "/api/v1/negative-feedbacks/by-project/{projectId}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NegativeFeedbackController.java",
+      "line": 104
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/negative-feedbacks/by-severity/{VAR}",
+      "rawPath": "/api/v1/negative-feedbacks/by-severity/{severity}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NegativeFeedbackController.java",
+      "line": 112
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/negative-feedbacks/{VAR}/status",
+      "rawPath": "/api/v1/negative-feedbacks/{id}/status",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NegativeFeedbackController.java",
+      "line": 120
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/dispatch-pending",
+      "rawPath": "/api/v1/notifications/dispatch-pending",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NotificationController.java",
+      "line": 89
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/async-dispatch",
+      "rawPath": "/api/v1/notifications/async-dispatch",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NotificationController.java",
+      "line": 103
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/p0/escalation-chain",
+      "rawPath": "/api/v1/p0/escalation-chain",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/P0EscalationController.java",
+      "line": 48
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/p0/escalation-chain/check",
+      "rawPath": "/api/v1/p0/escalation-chain/check",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/P0EscalationController.java",
+      "line": 58
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/p0/escalation-chain/{VAR}/resolve",
+      "rawPath": "/api/v1/p0/escalation-chain/{id}/resolve",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/P0EscalationController.java",
+      "line": 69
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/persons/{VAR}/resign",
+      "rawPath": "/api/v1/persons/{id}/resign",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonController.java",
+      "line": 71
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/persons/{VAR}/rehire",
+      "rawPath": "/api/v1/persons/{id}/rehire",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonController.java",
+      "line": 88
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/persons/{VAR}/wecom/unbind",
+      "rawPath": "/api/v1/persons/{id}/wecom/unbind",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonController.java",
+      "line": 101
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/person-sync/jobs",
+      "rawPath": "/api/v1/person-sync/jobs",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonSyncController.java",
+      "line": 51
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/person-sync/jobs/{VAR}/retry",
+      "rawPath": "/api/v1/person-sync/jobs/{id}/retry",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonSyncController.java",
+      "line": 60
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/person-sync/jobs/retry-all",
+      "rawPath": "/api/v1/person-sync/jobs/retry-all",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonSyncController.java",
+      "line": 69
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/person-sync/jobs/abnormal",
+      "rawPath": "/api/v1/person-sync/jobs/abnormal",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PersonSyncController.java",
+      "line": 88
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/post-launch-reviews/pending",
+      "rawPath": "/api/v1/post-launch-reviews/pending",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PostLaunchReviewController.java",
+      "line": 83
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/post-launch-reviews",
+      "rawPath": "/api/v1/post-launch-reviews",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PostLaunchReviewController.java",
+      "line": 93
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/post-launch-reviews/{VAR}/complete",
+      "rawPath": "/api/v1/post-launch-reviews/{id}/complete",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PostLaunchReviewController.java",
+      "line": 105
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/products/{VAR}/unbind-project",
+      "rawPath": "/api/v1/products/{id}/unbind-project",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+      "line": 100
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/product-groups/{VAR}/remove",
+      "rawPath": "/api/v1/product-groups/{id}/remove",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductGroupController.java",
+      "line": 74
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/{VAR}/baselines",
+      "rawPath": "/api/v1/projects/{id}/baselines",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "line": 137
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/legacy-import/batch",
+      "rawPath": "/api/v1/projects/legacy-import/batch",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "line": 178
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/{VAR}/launch-date",
+      "rawPath": "/api/v1/projects/{id}/launch-date",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "line": 190
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/{VAR}/cert-items",
+      "rawPath": "/api/v1/projects/{id}/cert-items",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "line": 239
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/{VAR}/cert-items/sync",
+      "rawPath": "/api/v1/projects/{id}/cert-items/sync",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "line": 252
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/{VAR}/cert-items/{VAR}/status",
+      "rawPath": "/api/v1/projects/{id}/cert-items/{itemId}/status",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "line": 284
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/projects/{VAR}/members",
+      "rawPath": "/api/v1/projects/{projectId}/members",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectMemberController.java",
+      "line": 49
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/project-score-tasks/scan",
+      "rawPath": "/api/v1/project-score-tasks/scan",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectScoreTaskController.java",
+      "line": 27
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/receipt-ledgers",
+      "rawPath": "/api/v1/receipt-ledgers",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ReceiptLedgerController.java",
+      "line": 46
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/receipt-ledgers/{VAR}/refunds",
+      "rawPath": "/api/v1/receipt-ledgers/{projectId}/refunds",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ReceiptLedgerController.java",
+      "line": 68
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/receipt-ledgers/by-project/{VAR}",
+      "rawPath": "/api/v1/receipt-ledgers/by-project/{projectId}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ReceiptLedgerController.java",
+      "line": 76
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/kpi/shared/deadline-scan",
+      "rawPath": "/api/v1/kpi/shared/deadline-scan",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SharedKpiController.java",
+      "line": 74
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/kpi/shared/deadline-config",
+      "rawPath": "/api/v1/kpi/shared/deadline-config",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SharedKpiController.java",
+      "line": 116
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/kpi/shared/confirms",
+      "rawPath": "/api/v1/kpi/shared/confirms",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SharedKpiController.java",
+      "line": 131
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/kpi/shared/{VAR}/confirm",
+      "rawPath": "/api/v1/kpi/shared/{id}/confirm",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SharedKpiController.java",
+      "line": 153
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sop-templates/{VAR}/instantiate",
+      "rawPath": "/api/v1/sop-templates/{templateId}/instantiate",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SopTemplateController.java",
+      "line": 97
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sop-templates/instances",
+      "rawPath": "/api/v1/sop-templates/instances",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SopTemplateController.java",
+      "line": 106
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/stage-actions/instantiate",
+      "rawPath": "/api/v1/stage-actions/instantiate",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/stage-actions/ensure-bio-compliance",
+      "rawPath": "/api/v1/stage-actions/ensure-bio-compliance",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java",
+      "line": 100
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/switching-acceptance/{VAR}/run",
+      "rawPath": "/api/v1/switching-acceptance/{month}/run",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java",
+      "line": 42
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/switching-acceptance/{VAR}",
+      "rawPath": "/api/v1/switching-acceptance/{month}",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java",
+      "line": 48
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/switching-acceptance/{VAR}/lock",
+      "rawPath": "/api/v1/switching-acceptance/{month}/lock",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/switching-acceptance/{VAR}/unlock",
+      "rawPath": "/api/v1/switching-acceptance/{month}/unlock",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java",
+      "line": 63
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/switching-acceptance",
+      "rawPath": "/api/v1/switching-acceptance",
+      "file": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/SwitchingAcceptanceController.java",
+      "line": 70
+    }
+  ],
+  "field_mismatches": [],
+  "path_var_name_diffs": [
+    {
+      "canonical": "/api/v1/ai-documents/{VAR}/revise",
+      "feVars": [
+        "documentId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/ai-document.ts",
+      "feLine": 183,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "beLine": 72
+    },
+    {
+      "canonical": "/api/v1/ai-documents/{VAR}/versions/{VAR}/review",
+      "feVars": [
+        "documentId",
+        "versionId"
+      ],
+      "beVars": [
+        "id",
+        "versionId"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/ai-document.ts",
+      "feLine": 192,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "beLine": 83
+    },
+    {
+      "canonical": "/api/v1/ai-documents/{VAR}/versions/{VAR}/archive",
+      "feVars": [
+        "documentId",
+        "versionId"
+      ],
+      "beVars": [
+        "id",
+        "versionId"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/ai-document.ts",
+      "feLine": 200,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "beLine": 134
+    },
+    {
+      "canonical": "/api/v1/ai-documents/{VAR}/versions/{VAR}/reject",
+      "feVars": [
+        "documentId",
+        "versionId"
+      ],
+      "beVars": [
+        "id",
+        "versionId"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/ai-document.ts",
+      "feLine": 208,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "beLine": 145
+    },
+    {
+      "canonical": "/api/v1/ai-documents/{VAR}/versions",
+      "feVars": [
+        "documentId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/ai-document.ts",
+      "feLine": 230,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "beLine": 109
+    },
+    {
+      "canonical": "/api/v1/ai-documents/{VAR}/diff",
+      "feVars": [
+        "documentId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/ai-document.ts",
+      "feLine": 252,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+      "beLine": 158
+    },
+    {
+      "canonical": "/api/v1/bid-invitations/{VAR}/pre-select-token",
+      "feVars": [
+        "invitationId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/bid.ts",
+      "feLine": 135,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+      "beLine": 101
+    },
+    {
+      "canonical": "/api/v1/bid-invitations/{VAR}/select",
+      "feVars": [
+        "invitationId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/bid.ts",
+      "feLine": 144,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+      "beLine": 85
+    },
+    {
+      "canonical": "/api/v1/bid-invitations/{VAR}/responses",
+      "feVars": [
+        "invitationId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/bid.ts",
+      "feLine": 168,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+      "beLine": 154
+    },
+    {
+      "canonical": "/api/v1/coefficient-change-requests/{VAR}/leader-decision",
+      "feVars": [
+        "requestId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/change.ts",
+      "feLine": 161,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CoefficientChangeController.java",
+      "beLine": 67
+    },
+    {
+      "canonical": "/api/v1/launch-date-change-requests/{VAR}/second-decision",
+      "feVars": [
+        "requestId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/change.ts",
+      "feLine": 184,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/LaunchDateChangeController.java",
+      "beLine": 76
+    },
+    {
+      "canonical": "/api/v1/coefficient-change-requests/{VAR}",
+      "feVars": [
+        "requestId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/change.ts",
+      "feLine": 216,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CoefficientChangeController.java",
+      "beLine": 101
+    },
+    {
+      "canonical": "/api/v1/launch-date-change-requests/{VAR}",
+      "feVars": [
+        "requestId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/change.ts",
+      "feLine": 236,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/LaunchDateChangeController.java",
+      "beLine": 109
+    },
+    {
+      "canonical": "/api/v1/projects/{VAR}/gates",
+      "feVars": [
+        "projectId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/gate-review.ts",
+      "feLine": 97,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+      "beLine": 210
+    },
+    {
+      "canonical": "/api/v1/project-circle/posts/{VAR}/comments",
+      "feVars": [
+        "postId"
+      ],
+      "beVars": [
+        "id"
+      ],
+      "feFile": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/api/ipd/project-circle.ts",
+      "feLine": 113,
+      "beFile": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectCircleController.java",
+      "beLine": 74
+    }
+  ],
+  "summary": {
+    "orphan_paths_count": 0,
+    "orphan_endpoints_count": 84,
+    "field_mismatches_count": 0,
+    "path_var_name_diffs_count": 15
+  },
+  "pass": true,
+  "mode": {
+    "strict": false,
+    "json": true
+  }
+}

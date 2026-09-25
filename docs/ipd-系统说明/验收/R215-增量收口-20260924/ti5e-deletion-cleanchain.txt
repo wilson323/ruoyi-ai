@@ -1,0 +1,12 @@
+--- A) cert_templates 行初审（leader）---
+code: 30001 仅目标所属组组长可初审删除申请
+--- B) 超管新建申请（豁免归属）目标=900001组的真实产品 ---
+ERROR 1054 (42S22) at line 1: Unknown column 'main_group_id' in 'where clause'
+目标产品 id=
+code: 10001 请求体缺失或格式错误 | 新申请id: None | status: None
+--- C) leader 初审新申请 ---
+code: 10001 非法请求路径 | status: None
+--- D) admin 终审 ---
+code: 10001 非法请求路径 | status: None | executed: None
+--- E) DB 回读全链 ---
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1

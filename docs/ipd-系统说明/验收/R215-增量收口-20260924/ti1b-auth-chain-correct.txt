@@ -1,0 +1,40 @@
+=== T-I1b 正确顺序（单token轮换契约验证）===
+1) login ok, tokenA_len=187
+2) me(tokenA) 原始结构:
+{
+    "code": 0,
+    "message": "ok",
+    "data": {
+        "person": {
+            "id": "900104",
+            "name": "ipd-rd",
+            "username": "ipd-rd",
+            "personType": "RD_PM",
+            "groupId": "900001",
+            "accountStatus": "ACTIVE",
+            "permissionCodes": [
+                "ipd:project:list",
+                "ipd:project:query",
+                "ipd:product:list",
+                "ipd:product:query",
+                "ipd:stage-action:list",
+                "ipd:cert-template:list",
+                "ipd:gate-element:list",
+                "ipd:gate-review:list",
+                "ipd:system-config:read",
+                "ipd:notification:read",
+                "ipd:ai-document:list",
+                "ipd:sop-template:list",
+                "ipd:ai-model:list",
+3) workbench(tokenA):
+   http=200
+4) refresh(tokenA):
+   tokenB_len=187
+5) workbench(tokenA 轮换后旧token):
+   http=401 (期望401=旧token作废)
+6) workbench(tokenB):
+   http=200 (期望200)
+7) logout(tokenB):
+   code: 0 ok
+8) workbench(tokenB 登出后):
+   http=401 (期望401=即时撤销)

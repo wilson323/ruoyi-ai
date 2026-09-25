@@ -1,0 +1,16 @@
+目标产品(group_id=900001) id=2096362860161597441
+--- B) 超管新建申请 ---
+code: 0 ok | id: 2103331996020334593 | status: LEADER_REVIEW
+--- C) leader(900001组长) 初审 ---
+code: 0 ok | status: ADMIN_REVIEW
+--- D) admin 终审 ---
+code: 90001 系统内部错误 | status: None | executed: None
+--- E) DB 回读全链（申请 DELETED + 产品软删 del_flag=2）---
+2103331996020334593	ADMIN_REVIEW	APPROVE	NULL	0
+2096362860161597441	P182P171-46829	0
+--- F) 审计落行（audit_logs 列名适配）---
+id seq operator_id operator_name operator_role action entity_type entity_id before_data after_data reason prev_hash curr_hash ip_address tenant_id create_time hash_version 
+CROSS_DOMAIN_TRANSITION
+DELETE_LEADER_APPROVE
+DELETE_REQUEST_SUBMIT
+LOGIN

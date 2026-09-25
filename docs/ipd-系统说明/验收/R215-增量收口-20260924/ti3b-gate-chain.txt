@@ -1,0 +1,10 @@
+=== T-I3b 校准重验 ===
+--- 1) stage-actions 列表（正确路径）---
+{"code":0,"message":"ok","data":[{"createBy":"900101","createTime":1789120594000,"updateBy":"900101","updateTime":1789120594000,"id":"2098349975208493058","projectId":"2098349974990389250","stageId":"2098349975132995586","actionCode":"C01","actionName":"市场机会与痛点调研","ownerRole":"MARK
+--- 2) DB: 项目真实 stage_actions 计数对照 ---
+69
+--- 3) 项目当前阶段推进查询（workbench currentAdvance 已见）---
+--- 4) Gate 负例集（正确路径 /gates/{gateId}/sign）---
+{"code":10001,"message":"Gate 不存在","data":null,"timestamp":"2026-09-25T03:50:18Z","traceId":"159ed94806024aadbcdda7898504e362"}
+--- 5) 真实 gate 行的 review 查询（gate_id 取 DB 现值）---
+zsh: failed to change group ID: operation not permitted

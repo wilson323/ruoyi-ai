@@ -1,0 +1,9 @@
+=== T-I8b 导出三报表（校准路径 /api/v1/report/export/*）===
+/report/export/project -> http=400 type=application/json size=144
+/report/export/allowance -> http=400 type=application/json size=144
+/report/export/bonus -> http=400 type=application/json size=148
+=== T-I6 移交链（精简：收件箱+超管视图探针）===
+handovers/inbox -> 200
+handovers/admin/all -> 404
+=== T-I7 附件（精简：gate materials 上传端点存在性探针）===
+zsh: failed to change group ID: operation not permitted

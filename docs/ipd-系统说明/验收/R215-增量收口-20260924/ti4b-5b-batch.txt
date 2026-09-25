@@ -1,0 +1,17 @@
+=== T-I4b allowance（period=2026-08）===
+code: 0 | 条数: 6
+  首行: {"createDept": "1", "createBy": "900101", "createTime": 1788843340000, "updateBy": "900101", "updateTime": 1788843340000, "id": "2058038583361618616", "personId": "900101", "projectId": "9140001", "mo
+--- DB 金额对账（列名校准后）---
+id person_id project_id month locked_level base_amount final_amount cap_applied stop_reason stop_start_date create_dept create_by create_time update_by update_time tenant_id del_flag remark 
+ERROR 1054 (42S22) at line 1: Unknown column 'period' in 'field list'
+=== T-I5b 删除终审链（ADMIN_REVIEW 行）===
+待终审行: 2096381708998930433|product|3
+--- 终审前审计链 verify ---
+{"code":0,"message":"ok","data":{"genesis":"0000000000000000000000000000000000000000000000000000000000000000","total":2159,"chain":"GAP","hashBroken":
+--- admin 终审 approve ---
+53:    @PostMapping
+70:    @PostMapping("/{id}/leader-decision")
+88:    @PostMapping("/{id}/admin-decision")
+116:    @PostMapping("/{id}/purge")
+129:    @PostMapping("/{id}/withdraw")
+165:    @PostMapping("/escalate-overdue")

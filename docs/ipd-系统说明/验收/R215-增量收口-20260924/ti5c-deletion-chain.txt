@@ -1,0 +1,19 @@
+=== T-I5c 删除终审全链（行 2096381708998930433 product#3）===
+--- 1) admin-decision approve=true ---
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,sys;d=json.load(sys.stdin);dd=d.get('data',{});print('code:',d.get('code'),'| status:',dd.get('status'),'| adminDecision:',dd.get('adminDecision'))
+                                                                                                       ^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+--- 2) DB 回读 deletion_requests ---
+ERROR 1054 (42S22) at line 1: Unknown column 'admin_opinion' in 'field list'
+--- 3) DB 回读 products #3 软删 ---
+ERROR 1054 (42S22) at line 1: Unknown column 'name' in 'field list'
+--- 4) 审计落行核验 ---
+0
+--- 5) purge 硬删（白名单表验证）---
+code: 50002 仅 DELETED 终态可清除：当前 ADMIN_REVIEW | status: None
+--- 6) DB 回读 purge 后 ---
+ERROR 1054 (42S22) at line 1: Unknown column 'purged_at' in 'field list'
+--- 7) 工作台待办复核（deletion_review 应从 1 → 0）---
+pending: 8 | deletion_review: 1

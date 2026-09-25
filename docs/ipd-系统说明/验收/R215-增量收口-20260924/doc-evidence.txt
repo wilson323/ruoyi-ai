@@ -1,0 +1,5 @@
+ROUNDDOC|FAIL|COMPLETION_NO_EVIDENCE|R213-剩余开放卡建议与计划-20260924.md|完成断言未引用证据：AiGenerationService 生成链前置 SSRF 检查另抄了一份纯黑名单（AiModelConfigService.ssrfBlockReason）
+ROUNDDOC|FAIL|ROUND_NO_EVIDENCE_BLOCK|R213|R213 无任何带 round-evidence 证据块的主文
+ROUNDDOC|FAIL|ROUND_NO_EVIDENCE_BLOCK|R214|R214 无任何带 round-evidence 证据块的主文
+=== 轮次文档证据门禁：FAIL=3 WARN=0 rounds=120 legacyDupWarn=8
+[FAIL] 轮次文档与证据不一致

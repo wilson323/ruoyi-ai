@@ -1,0 +1,17 @@
+== login ok (ipd-admin)
+== GET /post-launch-reviews/pending?projectId=9140001: {"code": 10001, "message": "项目无待完成复盘: 9140001", "data": null, "timestamp": "2026-09-25T04:58:39Z", "traceId": "a51dc53681d84070a1765dbde536744d"}
+== POST /post-launch-reviews (launchDate=2026-06-25): {"code": 0, "message": "ok", "data": {"id": "2103348431572488194", "projectId": "9140001", "scheduledAt": "Wed Sep 23 00:00:00 CST 2026", "status": "PENDING", "assigneeId": "9110003"}, "timestamp": "2026-09-25T04:58:39Z", "traceId": "0a5f83279375469e9056d2a514dba5c1"}
+== pending after schedule: {"code": 0, "message": "ok", "data": {"id": "2103348431572488194", "projectId": "9140001", "scheduledAt": "Wed Sep 23 00:00:00 CST 2026", "status": "PENDING", "assigneeId": "9110003"}, "timestamp": "2026-09-25T04:58:39Z", "traceId": "0d062fddc10646f7b611d8aff89c3bc3"}
+== complete: {"code": 0, "message": "ok", "data": {"id": "2103348431572488194", "projectId": "9140001", "scheduledAt": "Wed Sep 23 00:00:00 CST 2026", "status": "COMPLETED", "assigneeId": "9110003", "actualRevenue": 880000, "customerFeedback": "R215-A9 真活验证", "kpiAchievement": "达标", "lessons": "验证留库", "completedAt": "Fri Sep 25 12:
+== complete again (终态负例): {"code": 10001, "message": "复盘已完成（COMPLETED），不可重复完成", "data": null, "timestamp": "2026-09-25T04:58:39Z", "traceId": "f823cde56be742ed9002046a6f0a6fe7"}
+== resign 不存在人员负例: {"code": 50001, "message": "人员不存在: id=999", "data": null, "timestamp": "2026-09-25T04:58:39Z", "traceId": "582d88d2eeef46dbb98d0ccf9cb365e2"}
+== unbind 空 reason 负例: {"code": 10001, "message": "不能为空", "data": null, "timestamp": "2026-09-25T04:58:39Z", "traceId": "aca61b5831bb492db2729a5478501892"}
+
+========== A11 正例（对象=2114000000000000001 R214市场PM，蜂群测试数据）==========
+== unbind 正例: {"code": 0, "message": "ok", "data": {"id": "2114000000000000001", "name": "R214市场PM", "employmentStatus": "ACTIVE", "accountStatus": "DISABLED"}, "timestamp": "2026-09-25T04:59:23Z", "traceId": "7aacb894de894373ac50bcc385454b94"}
+== resign 正例: {"code": 50002, "message": "当前账户状态不允许离职冻结: DISABLED", "data": null, "timestamp": "2026-09-25T04:59:23Z", "traceId": "739563322a1e4245af149fac2a3914fc"}
+== resign 幂等: {"code": 50002, "message": "当前账户状态不允许离职冻结: DISABLED", "data": null, "timestamp": "2026-09-25T04:59:23Z", "traceId": "8a9b80399bc24353bcfc8f2cc5d1abd5"}
+
+========== A11 resign 正例补跑（对象=2096266884247736321 赵市场，R214 蜂群测试人员，ACTIVE）==========
+== resign 正例: {"code": 0, "message": "ok", "data": {"idempotent": false, "pendingProjects": 0, "message": "冻结成功", "wecomUnbound": false, "sessionsRevoked": true, "notificationsSent": 11}, "timestamp": "2026-09-25T05:00:13Z", "traceId": "864cbe3ca4db4441acd9b7980899e028"}
+== resign 幂等: {"code": 0, "message": "ok", "data": {"idempotent": true, "pendingProjects": 0, "message": "已离职，幂等返回", "wecomUnbound": false, "sessionsRevoked": false, "notificationsSent": 0}, "timestamp": "2026-09-25T05:00:13Z", "traceId": "8664095e8daf4ff4a83185b153052412"}

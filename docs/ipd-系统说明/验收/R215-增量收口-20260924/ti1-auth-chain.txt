@@ -1,0 +1,15 @@
+=== T-I1 登录链（ipd-rd）===
+login token_len=187
+--- /auth/me ---
+code: 0 | user: None | role: None | permissionCodes 数: 0 | ipd: 前缀码数: 0
+--- me 里的 ipd: 码样本 ---
+[]
+--- refresh ---
+refresh http=200
+--- 业务端点（登出前）---
+workbench http=401
+--- logout ---
+logout code: 20001 未认证或凭证失效
+--- 登出后旧 token 再调业务端点（应 401）---
+workbench-after-logout http=401
+me-after-logout http=401

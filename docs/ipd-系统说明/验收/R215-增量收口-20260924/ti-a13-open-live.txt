@@ -1,0 +1,5 @@
+== login ok (ipd-admin)
+== POST /requirement-changes: {"code": 0, "message": "ok", "data": {"createBy": "900101", "createTime": 1790311848402, "updateTime": 1790311848402, "id": "2103346457456201730", "requirementId": "2103330885699985410", "projectId": "9140001", "changeType": "SCOPE", "beforeSnapshot": "{\"范围\": \"无变化（R215-A13 验证造数）\", \"成本\": \"无变化\", \"时限\": \"无变化\", \"质量\": \"无变化\"}", "
+== GET /open?projectId=9140001 → code 0 | rows: 1
+   id=2103346457456201730 status=DRAFT changeType=SCOPE
+== GET /open 无 projectId → HTTP 400 {"code":10001,"message":"缺少必需参数: projectId","data":null,"timestamp":"2026-09-25T04:50:48Z","traceId":"6cd7255bd703410481

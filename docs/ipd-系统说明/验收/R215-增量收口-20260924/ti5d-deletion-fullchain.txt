@@ -1,0 +1,15 @@
+=== T-I5d 数据修复 + 完整双审链 ===
+--- 0) 脏数据修复登记（product→products 4行）---
+4
+--- 1) leader 登录 + leader-decision approve（projects #1 行 2101930187108151297）---
+code: 30001 仅目标所属组组长可初审删除申请 | status: None
+--- 2) DB 回读初审后 ---
+2101930187108151297	projects	LEADER_REVIEW	NULL
+--- 3) admin 终审（行应到 ADMIN_REVIEW）---
+code: 10001 状态机不匹配：期望 ADMIN_REVIEW，实际 LEADER_REVIEW | status: None | executedAt: None
+--- 4) DB 回读终审后（DELETED + projects#1 软删）---
+2101930187108151297	LEADER_REVIEW	NULL	0
+--- 5) 审计落行 ---
+ERROR 1054 (42S22) at line 1: Unknown column 'create_by' in 'field list'
+--- 6) 修后单数残留=0 确认 ---
+0

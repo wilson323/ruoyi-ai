@@ -1,0 +1,16 @@
+=== T-I4 激励链对账（allowance vs bonus）===
+--- allowance ledger 端点 ---
+code: 10001 | 条数: 0
+  首行: 空
+--- DB: allowance_ledgers 与 bonus_allocations 金额对账 ---
+ERROR 1054 (42S22) at line 2: Unknown column 'amount' in 'field list'
+
+=== T-I5 删除链（找待终审行）===
+
+=== T-I8 导出三报表 ===
+/api/v1/reports/project/export -> 404 (content-type:application/json size:134)
+/api/v1/reports/allowance/export -> 404 (content-type:application/json size:134)
+/api/v1/reports/bonus/export -> 404 (content-type:application/json size:134)
+
+=== T-I9 通知 ===
+{"code":0,"message":"ok","data":{"count":"37"},"timestamp":"2026-09-25T03:50:38Z","traceId":"c5cf1d1a810d4e2bb73b7fbabd781cb1"}

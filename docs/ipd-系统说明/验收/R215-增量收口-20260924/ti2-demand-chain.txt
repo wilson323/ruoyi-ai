@@ -1,0 +1,23 @@
+=== T-I2 需求链（游客提交→分诊→关联）===
+admin token ok len=187
+--- 1) 游客提交(无token) ---
+code: 0 | data: {"code": "SAB8B9KB", "status": "SUBMITTED"}
+traceCode=SAB8B9KB
+--- 2) 游客 trace 查询(无token) ---
+code: 0 | status: SUBMITTED | title: None
+--- 3) 内部需求列表(找新行 id) ---
+new demand id=2103330885699985410
+--- 4) 分诊 triage ---
+code: 10001 非法需求状态：TRIAGED
+--- 5) 关联项目 link-project ---
+code: 0 ok
+--- 6) DB 回读 ---
+2103330885699985410	R215验收客户	SCHEDULED	NULL	NULL	9140001	PORTAL_GUEST
+--- triage 正例（ACCEPTED + 双PM）---
+code: 0 ok
+--- DB 回读 triage 后 ---
+2103330885699985410	ACCEPTED	900103	900104	9140001
+--- 负向：非法状态被拒（契约负例已验 10001）---
+--- 工作台待办核验（admin summary 中需求相关计数）---
+code: 0 | keys: ['stats', 'tasks', 'deletionPending', 'currentAdvance']
+{"stats": {"pending": 8, "overdue": 6, "unread": 37, "completed": 4, "myInitiated": 0, "pendingType": {"bonus_lock": 0, "capacity_approval": 0, "change_implementation": 0, "change_verify": 0, "closeout": 0, "contribution_confirm": 0, "deletion_review": 1, "handover": 0, "key_gate": 0, "key_gate_arbitration": 0, "kpi_fill": 0, "rd_replacement": 0, "receipt_review": 0, "retirement_review": 0, "stage

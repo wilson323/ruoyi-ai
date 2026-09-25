@@ -1,0 +1,7 @@
+== login ok (ipd-admin)
+== chat: code 0 | intent TASKS | answer_len 19 | data_items 9 | sources 1 | latencyMs 69 | tok 0 + 0
+== sse status 200 | content-type text/event-stream
+  meta : {"intent": "TASKS", "answer": "你有 9 项待办，下方按类型排序展示。", "data": [{"type": "stage_sign", "title": "智能锁通信协议评审", "hint": "", "url": ""}, {"type": "stage_sign", "title
+  delta: '你有 9 项待办，下方按类型排序展示。'
+  done : {"status": "ok", "latencyMs": "23", "tokenPrompt": 0, "tokenCompletion": 0}
+== sse no-token: HTTP 500 | body: 
