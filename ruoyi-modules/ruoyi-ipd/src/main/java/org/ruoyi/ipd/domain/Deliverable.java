@@ -28,6 +28,8 @@ public class Deliverable extends BaseEntity implements SoftDeletable {
     private Long fileSize;
     private Long uploadedBy;
     private Date uploadedAt;
+    /** P1-4.2（卡 fde68b8c）AC3「上传者/大小/hash入库」：服务端上传时对文件字节计算 SHA-256 hex；历史行为 NULL */
+    private String contentHash;
     /** 软删除标志（0正常 1已删；P1-4.3 已删附件不计 DONE 计数；删除走两级审核，禁物理 DELETE） */
     @TableLogic
     @TableField("del_flag")
