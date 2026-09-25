@@ -135,66 +135,6 @@
       "evidence": "NotificationController.java:89"
     },
     {
-      "path": "/api/v1/p0/escalation-chain/check",
-      "methods": [
-        "POST"
-      ],
-      "reason": "P0 升级链手动扫描触发，Controller 注释自证「仅超管；运维/测试用；正常轮询待 scheduler 合入」",
-      "owner_card": "OPS-06",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "P0EscalationController.java:58"
-    },
-    {
-      "path": "/api/v1/person-sync/jobs",
-      "methods": [
-        "POST"
-      ],
-      "reason": "创建 person-sync 同步任务：HR 系统间回调入口，非浏览器消费",
-      "owner_card": "OPS-06",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "PersonSyncController.java:51"
-    },
-    {
-      "path": "/api/v1/person-sync/jobs/{VAR}/retry",
-      "methods": [
-        "POST"
-      ],
-      "reason": "同步单任务重试：告警自动化/运维调用，前端全仓 person-sync 零调用",
-      "owner_card": "OPS-06",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "PersonSyncController.java:60"
-    },
-    {
-      "path": "/api/v1/person-sync/jobs/retry-all",
-      "methods": [
-        "POST"
-      ],
-      "reason": "同步全量重试运维口，与单任务 retry 同域",
-      "owner_card": "OPS-06",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "PersonSyncController.java:69"
-    },
-    {
-      "path": "/api/v1/person-sync/jobs/abnormal",
-      "methods": [
-        "GET"
-      ],
-      "reason": "同步异常项回查：系统间回调/运维排障口（PERSON-SYNC-P0 9a38b8d8 链路配套）",
-      "owner_card": "OPS-06",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "PersonSyncController.java:88"
-    },
-    {
       "path": "/api/v1/project-score-tasks/scan",
       "methods": [
         "POST"
@@ -253,6 +193,30 @@
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
       "evidence": "StageActionController.java:107"
+    },
+    {
+      "path": "/api/v1/deliverables/upload",
+      "methods": [
+        "POST"
+      ],
+      "reason": "P1-4.2 真实附件服务端可信链上传口（对象存在才登记/100MB/格式策略/hash 入库）；UI 消费在 ruoyi-ipd-web 独立仓树，本仓 FE 扫描不可见",
+      "owner_card": "P1-4.2",
+      "review_date": "2026-09-25",
+      "expire": "2026-12-31",
+      "added_by": "fde68b8c",
+      "evidence": "DeliverableController.java:50"
+    },
+    {
+      "path": "/api/v1/deliverables/{VAR}/download",
+      "methods": [
+        "GET"
+      ],
+      "reason": "P1-4.2 交付物下载口（项目在职成员/SUPER_ADMIN 归属鉴权 fail-closed）；UI 消费在 ruoyi-ipd-web 独立仓树，本仓 FE 扫描不可见",
+      "owner_card": "P1-4.2",
+      "review_date": "2026-09-25",
+      "expire": "2026-12-31",
+      "added_by": "fde68b8c",
+      "evidence": "DeliverableController.java:60"
     }
   ]
 }

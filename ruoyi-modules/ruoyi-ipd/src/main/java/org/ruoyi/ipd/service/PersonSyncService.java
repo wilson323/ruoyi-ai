@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -48,11 +50,16 @@ public class PersonSyncService {
     /** 异常分类。 */
     public enum FailureKind { TRANSIENT, PERMANENT }
 
-    /** 同步任务视图（HTTP 出参）。 */
+    /**
+     * 同步任务视图（HTTP 出参）。
+     * <p>时间字段一律 String（UTC ISO-8601 'Z' 秒级），与 {@code ApiV1Response.timestamp} 同构（P0-4.1 惯例）：
+     * 全局 Jackson JavaTimeModule 把 {@code Instant} 序列化为 epoch 数字（16039 联调实测
+     * {@code "createdAt":1789022866.000000000}），字段级注解盖不住 module 路径，故 Service 层先行格式化。
+     */
     public record SyncJobView(String jobId, String employeeNo, JobStatus status,
                               int attempts, int maxAttempts, String failureKind,
-                              String failureReason, Instant nextRetryAt, Instant createdAt,
-                              Instant updatedAt) { }
+                              String failureReason, String nextRetryAt, String createdAt,
+                              String updatedAt) { }
 
     /** 批量回补结果视图。 */
     public record BatchRetryResult(int retried, int succeeded, int failed, int skipped) { }
@@ -458,10 +465,15 @@ public class PersonSyncService {
         }
     }
 
-    /** 视图转 SyncJobView。 */
+    /** UTC ISO-8601 秒级格式化（与 ApiV1Response.nowIsoUtc 同 pattern；withZone 使 Instant 直接可格式）。 */
+    private static final DateTimeFormatter VIEW_TIME_FMT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
+
+    /** 视图转 SyncJobView（Instant 域内保留，出口按 P0-4.1 惯例格式化为 String，null 安全）。 */
     public static SyncJobView toView(SyncJob j) {
         return new SyncJobView(j.jobId, j.employeeNo, j.status, j.attempts, j.maxAttempts,
             j.failureKind == null ? null : j.failureKind.name(), j.failureReason,
-            j.nextRetryAt, j.createdAt, j.updatedAt);
+            j.nextRetryAt == null ? null : VIEW_TIME_FMT.format(j.nextRetryAt),
+            VIEW_TIME_FMT.format(j.createdAt), VIEW_TIME_FMT.format(j.updatedAt));
     }
 }

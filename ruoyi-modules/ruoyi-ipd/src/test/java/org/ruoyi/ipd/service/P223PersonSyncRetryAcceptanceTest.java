@@ -123,6 +123,23 @@ class P223PersonSyncRetryAcceptanceTest {
     }
 
     @Test
+    @DisplayName("SyncJobView 时间契约：出口格式化 UTC ISO-8601 'Z' 串（P0-4.1 惯例，钉死防 Instant epoch 数字回流）")
+    void toView_timeFields_iso8601String() {
+        service.setProcessor(transientFailProcessor("view format probe"));
+        var job = service.submit("E098", "key-view-transient", admin);
+        var view = PersonSyncService.toView(job);
+
+        String iso = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z";
+        assertThat(view.createdAt()).matches(iso);
+        assertThat(view.updatedAt()).matches(iso);
+        assertThat(view.nextRetryAt()).matches(iso); // TRANSIENT 已排程 → 非空同格式
+
+        service.setProcessor(permanentFailProcessor("view format probe 2"));
+        var permJob = service.submit("E099", "key-view-permanent", admin);
+        assertThat(PersonSyncService.toView(permJob).nextRetryAt()).isNull(); // null 安全透传
+    }
+
+    @Test
     @DisplayName("P2-2.1 幂等键：同 idempotencyKey 重放返原 jobId 不创建新任务")
     void idempotencyKey_replayReturnsSameJob() {
         service.setProcessor(okProcessor());
