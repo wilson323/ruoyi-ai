@@ -193,7 +193,9 @@ public class AiDocumentService {
 
     /**
      * 人工审核通过（BR-AI-03）。仅流转 status + 审核落名三列，内容零触碰；
-     * 已审核行幂等返回（不覆盖首位审核人）；ARCHIVED 行拒绝（需走归档流程）。
+     * 已审核行幂等返回（不覆盖首位审核人）；ARCHIVED 行拒绝（需走归档流程）；
+     * R218-D1 修复：REJECTED 行可重新审核通过（reject() javadoc 契约「拒绝后必须重新走
+     * 审核流才能归档」；此前条件更新仅匹配 GENERATED，REJECTED 行静默 0 行永久死态）。
      *
      * @return 审核后（或幂等时既有）行
      */
@@ -211,9 +213,10 @@ public class AiDocumentService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
         Date now = Date.from(clock.instant());
+        String from = row.getStatus(); // R218-D1：审计 before 记真实来源态（GENERATED 或 REJECTED）
         int updated = mapper.update(null, Wrappers.<AiDocument>lambdaUpdate()
             .eq(AiDocument::getId, versionId)
-            .eq(AiDocument::getStatus, STATUS_GENERATED)
+            .in(AiDocument::getStatus, STATUS_GENERATED, STATUS_REJECTED)
             .set(AiDocument::getStatus, STATUS_REVIEWED)
             .set(AiDocument::getReviewedBy, operatorId)
             .set(AiDocument::getReviewedAt, now));
@@ -221,7 +224,7 @@ public class AiDocumentService {
             row.setStatus(STATUS_REVIEWED);
             row.setReviewedBy(operatorId);
             row.setReviewedAt(now);
-            auditTransition(versionId, operatorId, STATUS_GENERATED, STATUS_REVIEWED, null);
+            auditTransition(versionId, operatorId, from, STATUS_REVIEWED, null);
             // AI-STRAT-1：审核通过即触发异步向量化（RAG 资料库入库；幂等分支不重复向量化；
             // 内部 RAG 未配置/失败均只降级不阻塞审核事务）
             // R184-A（2026-09-23）：哨兵日志改用 log.warn/info 级别；System.err 不进 ELK、不分级别。

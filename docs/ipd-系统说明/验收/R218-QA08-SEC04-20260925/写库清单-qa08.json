@@ -1,0 +1,11 @@
+[
+ "stage_actions id=9160044 (D02 推进到 IN_PROGRESS, transit 状态流转)",
+ "project_members id=918000000000000001 (赵市场2096266884247736321 @9140005 MARKET_PM 在任绑定, HAND-01c夹具, 故意保留:移交成功即被系统改写)",
+ "kpi_functional_metrics (projectId=9140005 metric=MKT_REQUIREMENT_ACCURACY period=2026-Q3 value=88.8, market 录入)",
+ "kpi_functional_metrics (projectId=9140005 metric=MKT_REQUIREMENT_ACCURACY period=2026-Q3 value=88.8, rd 录入)",
+ "products id=2103548560187371521 (R218-QA08软件产品,PM_NEW,配套验证项目)",
+ "projects id=2103548719877107713 (R218-QA08-软件模板验证项目R3 +全套stages/actions)",
+ "stage_actions id=2103548719990353924 (LIGHT动作 2103548719877107713 项目轻管完成流转,status=NOT_STARTED)",
+ "products id=2103548720397201410 (R218-QA08存量产品)",
+ "projects id=2103550173220220929 (R218-QA08-存量导入项目R4, LEGACY, 挂产品2103548720397201410) + 全套stages/actions"
+]

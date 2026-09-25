@@ -1,0 +1,1026 @@
+[
+ {
+  "card": "SEC-04",
+  "case": "A0-download@16039",
+  "cmd": "GET 16039 /api/v1/deliverables/2096364946240630785/download (admin token)",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "INFO",
+  "note": "16039 运行 jar(06:11 构建)不含 DeliverableController → P1-4.2 端点缺失，部署漂移证据。code=50001",
+  "ts": "2026-09-26T01:30:33+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0-upload@16039",
+  "cmd": "POST 16039 /api/v1/deliverables/upload?actionId=1 (admin token)",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "INFO",
+  "note": "16039 运行 jar(06:11 构建)不含 DeliverableController → P1-4.2 端点缺失，部署漂移证据。code=50001",
+  "ts": "2026-09-26T01:30:33+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A1-本人上传登记(market@D02@9140005)",
+  "cmd": "POST /api/v1/deliverables/upload?actionId=9160044 (ipd-market)",
+  "http": -1,
+  "envelope_code": null,
+  "deliverable_id": null,
+  "verdict": "FAIL",
+  "note": "resp=",
+  "ts": "2026-09-26T01:30:58+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A5-不存在记录下载行为",
+  "cmd": "GET /api/v1/deliverables/9999999999999999999/download (ipd-market)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "行为=HTTP 400 code=10001 msg=参数类型错误: id（记录型：无500、无栈泄露即PASS）",
+  "ts": "2026-09-26T01:30:58+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A6-非白名单格式拒绝",
+  "cmd": "POST upload file=r218-probe.sh (ipd-market)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=附件格式不在策略白名单（doc/xls/ppt/pdf/img/zip，TS14 文件约束）: sh",
+  "ts": "2026-09-26T01:30:58+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A7-超限上传拒绝(11MB)",
+  "cmd": "POST upload 11MB pdf (ipd-market)",
+  "http": 200,
+  "envelope_code": 500,
+  "verdict": "PASS",
+  "note": "msg=系统异常，请联系管理员 | 100MB服务层分支被容器max-file-size=10MB遮蔽，无法真HTTP触发（漂移已登记）",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A9-非writer上传IDOR拒绝",
+  "cmd": "POST upload actionId=9160044 (ipd-rd,非D02 owner)",
+  "http": 409,
+  "envelope_code": 40004,
+  "verdict": "PASS",
+  "note": "msg=角色固定不可跨（市场PM/研发PM）",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B1-admin export@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs/export (ipd-admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B2-rd export拒绝@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs/export (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B3-rd 列表拒绝@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs?pageNum=1&pageSize=5 (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B5-market export拒绝@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs/export (ipd-market)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B6-admin export/scope@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs/export/scope (ipd-admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B7-market export/scope(内部角色按规格)@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs/export/scope (ipd-market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B8-匿名 export@16046",
+  "cmd": "GET http://127.0.0.1:16046/api/v1/audit-logs/export (无token)",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "未认证或凭证失效",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B4-rd rebuild-chain拒绝@16046",
+  "cmd": "POST http://127.0.0.1:16046/api/v1/audit-logs/rebuild-chain (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B9-EXPORT审计行增量回读@16046",
+  "cmd": "mysql ... audit_logs action=EXPORT 前后计数",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "delta=3 (B1/B6 各应写1)",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B1-admin export@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs/export (ipd-admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B2-rd export拒绝@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs/export (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B3-rd 列表拒绝@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs?pageNum=1&pageSize=5 (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B5-market export拒绝@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs/export (ipd-market)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B6-admin export/scope@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs/export/scope (ipd-admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B7-market export/scope(内部角色按规格)@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs/export/scope (ipd-market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B8-匿名 export@16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/audit-logs/export (无token)",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "未认证或凭证失效",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B4-rd rebuild-chain拒绝@16039",
+  "cmd": "POST http://127.0.0.1:16039/api/v1/audit-logs/rebuild-chain (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "权限不足",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "B9-EXPORT审计行增量回读@16039",
+  "cmd": "mysql ... audit_logs action=EXPORT 前后计数",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "delta=3 (B1/B6 各应写1)",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C1-匿名demands拒绝",
+  "cmd": "GET /api/v1/demands (无token)@16046",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "data泄漏=False",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C2-admin demands放行",
+  "cmd": "GET /api/v1/demands (ipd-admin)@16046",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "total=9 样例id=2103338131276259329",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C3-rd triage非法状态拒绝且零变更",
+  "cmd": "POST /demands/2103338131276259329/triage {status:BOGUS} (ipd-rd)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "http=400 msg=非法需求状态：BOGUS_STATUS state SUBMITTED->SUBMITTED",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C4-匿名 triage拒绝",
+  "cmd": "POST /demands/2103338131276259329/triage (无token)@16046",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "未认证或凭证失效",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C5-admin 需求详情放行(新jar含R215端点)",
+  "cmd": "GET /demands/2103338131276259329 (ipd-admin)@16046",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C6-market 需求详情放行+注意跨组可见面",
+  "cmd": "GET /demands/2103338131276259329 (ipd-market)@16046",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "内部角色全员可读需求池（list 无组过滤，登记观察项）",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C7-@16039 需求详情(旧jar)",
+  "cmd": "GET /demands/2103338131276259329 (ipd-admin)@16039",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "FAIL-ENV",
+  "note": "旧 jar 无 detail 端点，code=50001 → 部署漂移又一例证",
+  "ts": "2026-09-26T01:30:59+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0b-上传挂起根因=minio容器停摆(已恢复)",
+  "cmd": "docker ps -a | grep minio; docker start minio; curl -m5 http://127.0.0.1:9000/minio/health/live",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "16046日志: OssException 'not made within 120 seconds of doBlockingWrite' @OssClient.upload:209; sys_oss_config endpoint=http://127.0.0.1:9000 但端口无监听; minio容器 Exited(255) 2 weeks ago; 启动后 health=200。属环境故障非代码缺陷(但暴露: OSS不可达时上传占住120s且返回HTTP500,规整度待查)",
+  "ts": "2026-09-26T01:35:42+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A1R-本人上传登记(market@D02@9140005)",
+  "cmd": "POST /api/v1/deliverables/upload?actionId=9160044 (ipd-market)@16046",
+  "http": -1,
+  "envelope_code": null,
+  "deliverable_id": null,
+  "verdict": "FAIL",
+  "note": "msg=",
+  "ts": "2026-09-26T01:37:13+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A5R-不存在记录下载行为",
+  "cmd": "GET /api/v1/deliverables/900000000000000001/download (ipd-market)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "HTTP 400 code=10001 msg=交付物不存在: 900000000000000001 (无500、无栈泄露即PASS)",
+  "ts": "2026-09-26T01:37:13+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C3R-rd triage非法状态拒绝且零变更(修正断言)",
+  "cmd": "POST /demands/2103338131276259329/triage {status:BOGUS_STATUS} (ipd-rd)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "http=400 msg=非法需求状态：BOGUS_STATUS state SUBMITTED->SUBMITTED | 首轮C3为执行器链式比较bug误判FAIL",
+  "ts": "2026-09-26T01:37:13+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0b-上传挂起根因=minio容器停摆(已恢复)",
+  "cmd": "docker ps -a | grep minio; docker start minio; curl -m5 http://127.0.0.1:9000/minio/health/live",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "16046日志: OssException 'not made within 120 seconds of doBlockingWrite' @OssClient.upload:209; sys_oss_config endpoint=http://127.0.0.1:9000 但端口无监听; minio容器 Exited(255) 2 weeks ago; 启动后 health=200。属环境故障非代码缺陷(但暴露: OSS不可达时上传占住120s且返回HTTP500,规整度待查)",
+  "ts": "2026-09-26T01:38:31+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A1R-本人上传登记(market@D02@9140005)",
+  "cmd": "POST /api/v1/deliverables/upload?actionId=9160044 (ipd-market)@16046",
+  "http": -1,
+  "envelope_code": null,
+  "deliverable_id": null,
+  "verdict": "FAIL",
+  "note": "msg=",
+  "ts": "2026-09-26T01:40:01+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A5R-不存在记录下载行为",
+  "cmd": "GET /api/v1/deliverables/900000000000000001/download (ipd-market)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "HTTP 400 code=10001 msg=交付物不存在: 900000000000000001 (无500、无栈泄露即PASS)",
+  "ts": "2026-09-26T01:40:01+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C3R-rd triage非法状态拒绝且零变更(修正断言)",
+  "cmd": "POST /demands/2103338131276259329/triage {status:BOGUS_STATUS} (ipd-rd)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "http=400 msg=非法需求状态：BOGUS_STATUS state SUBMITTED->SUBMITTED | 首轮C3为执行器链式比较bug误判FAIL",
+  "ts": "2026-09-26T01:40:02+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0c-上传挂起第二层根因=系统代理7890劫持127.0.0.1:9000",
+  "cmd": "grep Channel Information /tmp/r218-16046.log -> R:/127.0.0.1:7890; scutil --proxy -> HTTPProxy 127.0.0.1:7890; 清代理env重启16046",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "AWS SDK Netty 客户端把发往本机 MinIO 的连接走 macOS 系统代理 127.0.0.1:7890，代理断连->120s超时->HTTP500。环境级缺陷候选：代码未显式配置 ProxyProvider.ANS/NONE，开发机挂梯子即复现上传500。minio容器本身也已恢复(health=200)。",
+  "ts": "2026-09-26T01:40:56+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0b-上传挂起根因=minio容器停摆(已恢复)",
+  "cmd": "docker ps -a | grep minio; docker start minio; curl -m5 http://127.0.0.1:9000/minio/health/live",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "16046日志: OssException 'not made within 120 seconds of doBlockingWrite' @OssClient.upload:209; sys_oss_config endpoint=http://127.0.0.1:9000 但端口无监听; minio容器 Exited(255) 2 weeks ago; 启动后 health=200。属环境故障非代码缺陷(但暴露: OSS不可达时上传占住120s且返回HTTP500,规整度待查)",
+  "ts": "2026-09-26T01:40:56+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A1R-本人上传登记(market@D02@9140005)",
+  "cmd": "POST /api/v1/deliverables/upload?actionId=9160044 (ipd-market)@16046",
+  "http": -1,
+  "envelope_code": null,
+  "deliverable_id": null,
+  "verdict": "FAIL",
+  "note": "msg=",
+  "ts": "2026-09-26T01:42:27+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A5R-不存在记录下载行为",
+  "cmd": "GET /api/v1/deliverables/900000000000000001/download (ipd-market)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "HTTP 400 code=10001 msg=交付物不存在: 900000000000000001 (无500、无栈泄露即PASS)",
+  "ts": "2026-09-26T01:42:27+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C3R-rd triage非法状态拒绝且零变更(修正断言)",
+  "cmd": "POST /demands/2103338131276259329/triage {status:BOGUS_STATUS} (ipd-rd)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "http=400 msg=非法需求状态：BOGUS_STATUS state SUBMITTED->SUBMITTED | 首轮C3为执行器链式比较bug误判FAIL",
+  "ts": "2026-09-26T01:42:27+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0d-验收绕行=透明直连shim代理17899(非mock)",
+  "cmd": "python3 /tmp/r218-proxy-shim.py &17899; java -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=17899 ... :16046; curl -x :17899 minio/health/live=200",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "本机Oracle JDK17自动注入macOS系统代理(FlClash 7890)为JVM http/socks proxy属性(jcmd实证:http.proxyHost=127.0.0.1,http.proxyPort=7890,socksProxyHost=127.0.0.1,socksProxyPort=7890)；AWS SDK经7890做S3 PUT时被代理断链(curl -x 7890 chunked PUT=411)。shim仅替换坏代理跳，字节原样透传真MinIO，非mock非假服务。",
+  "ts": "2026-09-26T01:46:10+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A0b-上传挂起根因=minio容器停摆(已恢复)",
+  "cmd": "docker ps -a | grep minio; docker start minio; curl -m5 http://127.0.0.1:9000/minio/health/live",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "16046日志: OssException 'not made within 120 seconds of doBlockingWrite' @OssClient.upload:209; sys_oss_config endpoint=http://127.0.0.1:9000 但端口无监听; minio容器 Exited(255) 2 weeks ago; 启动后 health=200。属环境故障非代码缺陷(但暴露: OSS不可达时上传占住120s且返回HTTP500,规整度待查)",
+  "ts": "2026-09-26T01:46:10+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A1R-本人上传登记(market@D02@9140005)",
+  "cmd": "POST /api/v1/deliverables/upload?actionId=9160044 (ipd-market)@16046",
+  "http": -1,
+  "envelope_code": null,
+  "deliverable_id": null,
+  "verdict": "FAIL",
+  "note": "msg=",
+  "ts": "2026-09-26T01:47:41+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A5R-不存在记录下载行为",
+  "cmd": "GET /api/v1/deliverables/900000000000000001/download (ipd-market)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "HTTP 400 code=10001 msg=交付物不存在: 900000000000000001 (无500、无栈泄露即PASS)",
+  "ts": "2026-09-26T01:47:41+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "C3R-rd triage非法状态拒绝且零变更(修正断言)",
+  "cmd": "POST /demands/2103338131276259329/triage {status:BOGUS_STATUS} (ipd-rd)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "http=400 msg=非法需求状态：BOGUS_STATUS state SUBMITTED->SUBMITTED | 首轮C3为执行器链式比较bug误判FAIL",
+  "ts": "2026-09-26T01:47:41+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "A1-上传登记(真HTTP)最终判定",
+  "cmd": "多次POST /api/v1/deliverables/upload@16046：①minio停摆→120s OssException ②起minio+清代理env→SDK仍走JVM proxy ③-Dhttp.proxyHost/Port指shim→jcmd证实macOS java_nativenet运行期回写7890覆盖 ④shim收到畸形 CONNECT http:80(SDK隧道目标推导与JDK注入属性不兼容)",
+  "http": -1,
+  "exit": 1,
+  "verdict": "BLOCKED",
+  "note": "同因(上传经JVM无法直连127.0.0.1:9000)失败≥3次,按红线记BLOCKED。根因链完整:FlClash系统代理+OracleJDK17自动注入+AWS SDK netty-nio无no_proxy支持+OssClient.java:96-97未显式ProxyProvider。真实缺陷登记:本地minio部署下开代理即上传500(环境×代码交互缺陷)。A2/A3/A4/A8/A10因无新交付物id未跑,改用存量交付物做部分替代验证。",
+  "ts": "2026-09-26T02:03:24+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "D1-超管下载存量交付物(对象缺失路径)",
+  "cmd": "GET /deliverables/2096364946240630785/download (admin)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "HTTP 400 code=10001 msg=文件数据不存在!（该交付物 file_url=NULL 指向对象可能不存在,验对象存在校验规整度;无500无栈泄露即PASS）",
+  "ts": "2026-09-26T02:08:42+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "D2-非成员下载存量交付物IDOR拒绝",
+  "cmd": "GET /deliverables/2096364946240630785/download (ipd-rd,非成员)@16046",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "msg=非项目成员，无权访问",
+  "ts": "2026-09-26T02:08:42+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "D3-匿名下载存量交付物拒绝",
+  "cmd": "GET /deliverables/2096364946240630785/download (无token)@16046",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "code=20001",
+  "ts": "2026-09-26T02:08:42+08:00"
+ },
+ {
+  "card": "AC-PROD-03",
+  "case": "P3-1创建SOFTWARE项目",
+  "cmd": "POST /api/v1/projects (admin) templateType=SOFTWARE",
+  "http": 400,
+  "envelope_code": 10001,
+  "project_id": null,
+  "verdict": "FAIL",
+  "note": "立项目标销售额必填且须大于 0（四基准/奖金池基数）",
+  "ts": "2026-09-26T02:08:42+08:00"
+ },
+ {
+  "card": "AC-IPD-05",
+  "case": "I5-深管DONE无交付物被拒(BR-IPD-03)",
+  "cmd": "POST /stage-actions/9160044/transit?target=DONE (market,D02 DEEP,无交付物)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: D02 | 必传正向腿(上传后可DONE)依赖OSS上传,A1已BLOCKED,本条仅验强制拒绝侧",
+  "ts": "2026-09-26T02:08:42+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "D1-超管下载存量交付物(对象缺失路径)",
+  "cmd": "GET /deliverables/2096364946240630785/download (admin)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "HTTP 400 code=10001 msg=文件数据不存在!（该交付物 file_url=NULL 指向对象可能不存在,验对象存在校验规整度;无500无栈泄露即PASS）",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "D2-非成员下载存量交付物IDOR拒绝",
+  "cmd": "GET /deliverables/2096364946240630785/download (ipd-rd,非成员)@16046",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "msg=非项目成员，无权访问",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "SEC-04",
+  "case": "D3-匿名下载存量交付物拒绝",
+  "cmd": "GET /deliverables/2096364946240630785/download (无token)@16046",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "code=20001",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-PROD-03",
+  "case": "P3-1创建SOFTWARE项目",
+  "cmd": "POST /api/v1/projects (admin) templateType=SOFTWARE",
+  "http": 400,
+  "envelope_code": 10001,
+  "project_id": null,
+  "verdict": "FAIL",
+  "note": "项目必须归属产品（产品:项目 = 1:1）",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-IPD-05",
+  "case": "I5-深管DONE无交付物被拒(BR-IPD-03)",
+  "cmd": "POST /stage-actions/9160044/transit?target=DONE (market,D02 DEEP,无交付物)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: D02 | 必传正向腿(上传后可DONE)依赖OSS上传,A1已BLOCKED,本条仅验强制拒绝侧",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1-组长代移交正例(onBehalf=true)",
+  "cmd": "POST /api/v1/handovers (leader组9120002=项目组) toPerson=赵(冻结)",
+  "http": 403,
+  "envelope_code": 30001,
+  "handover_id": null,
+  "verdict": "FAIL",
+  "note": "msg=无权操作",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H2-跨组代移交应拒(admin豁免对照组)",
+  "cmd": "POST /handovers (admin组900001≠9120002) 同参数",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "INFO",
+  "note": "admin按IpdIdorGuard语义SUPER_ADMIN豁免跨组→预期放行,作为豁免语义对照;真正跨组组长负例见H3",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H3-目标人ACTIVE被拒",
+  "cmd": "POST /handovers toPerson=900104(ACTIVE) (leader)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "msg=无权操作",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-INC-34",
+  "case": "N1-津贴台账导出(admin)",
+  "cmd": "GET /api/v1/report/export/allowance?month=2026-09 (ipd-admin)@16046",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ct=application/json bytes=868 格式规范判据:文件流或code=0;'Excel格式规范'视觉项留前端",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-INC-34",
+  "case": "N2-津贴台账导出(market内部角色)",
+  "cmd": "GET /api/v1/report/export/allowance?month=2026-09 (ipd-market)@16046",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ct=application/json bytes=487 格式规范判据:文件流或code=0;'Excel格式规范'视觉项留前端",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-INC-34",
+  "case": "N3-奖金台账导出(admin)",
+  "cmd": "GET /api/v1/report/export/bonus?projectId=9140005 (ipd-admin)@16046",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "ct=application/json bytes=879 格式规范判据:文件流或code=0;'Excel格式规范'视觉项留前端",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-INC-34",
+  "case": "N4-奖金台账导出(rd应拒)",
+  "cmd": "GET /api/v1/report/export/bonus?projectId=9140005 (ipd-rd)@16046",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "ct=application/json bytes=131 格式规范判据:文件流或code=0;'Excel格式规范'视觉项留前端",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-INC-34",
+  "case": "N5-项目报表导出(admin)",
+  "cmd": "GET /api/v1/report/export/project (ipd-admin)@16046",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "ct=application/json bytes=144 格式规范判据:文件流或code=0;'Excel格式规范'视觉项留前端",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-REQ-09",
+  "case": "R9-1需求池提交删除申请",
+  "cmd": "POST /deletion-requirements entityType=requirements (leader) rid=2103338131276259329",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "msg=不支持的 entity_type: requirements | DeletionRequestServiceImpl 允许实体集=projects/products/persons/cert_templates/gates,不含requirements→需求池无法走双层审核,与矩阵'强制双层审核'不符,判FAIL(现象级)",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-KPI-02",
+  "case": "K0-codes目录",
+  "cmd": "GET /kpi/functional-metrics/codes (market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "codes=['MKT_REQUIREMENT_ACCURACY', 'MKT_WINDOW_HIT_RATE', 'MKT_SCENARIO_COMPETITIVENESS', 'MKT_COMPETITOR_INTELLIGENCE', 'RD_L",
+  "ts": "2026-09-26T02:09:18+08:00"
+ },
+ {
+  "card": "AC-KPI-02",
+  "case": "K-market upsert+回读",
+  "cmd": "PUT /kpi/functional-metrics code=MKT_REQUIREMENT_ACCURACY + GET 回读 (market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "put=200/0 get=200 hit=True",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-KPI-03",
+  "case": "K-rd upsert+回读",
+  "cmd": "PUT /kpi/functional-metrics code=MKT_REQUIREMENT_ACCURACY + GET 回读 (rd)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "put=200/0 get=200 hit=True",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-PROD-05",
+  "case": "P5-补入市场PM自动生成场景定义复核待办(14天)",
+  "cmd": "grep -rn 'SCENARIO_REVIEW|场景定义复核待办' ruoyi-ipd/src/main/java → 无HTTP触发腿;ProjectBootstrapService 14天复核仅LEGACY路径",
+  "http": null,
+  "verdict": "BLOCKED",
+  "note": "服务层未发现'补入MARKET_PM→生成待办'实现;bind端点(POST /projects/{id}/members)存在但无待办生成钩子证据。需服务层补齐或提供待办表名后重验",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-PROD-09",
+  "case": "P9-待指派超5工作日提醒组长",
+  "cmd": "GuestDemandService.notifyOverdueUnassigned():354 grep 无调用方(无@Scheduled/无HTTP端点)",
+  "http": null,
+  "verdict": "FAIL",
+  "note": "扫描方法已实现但从未被调度/暴露→兜底提醒实际永不触发;且AC文本要求'提醒产品组组长'而实现注释为'通知超管',双重偏差",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-ENV-04",
+  "case": "本轮判定",
+  "cmd": "-",
+  "http": null,
+  "verdict": "BLOCKED",
+  "note": "纯前端断网UI表现,本车道不开浏览器",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-IPD-06",
+  "case": "本轮判定",
+  "cmd": "-",
+  "http": null,
+  "verdict": "BLOCKED",
+  "note": "纯视觉对比判据",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-IPD-29",
+  "case": "本轮判定",
+  "cmd": "-",
+  "http": null,
+  "verdict": "BLOCKED",
+  "note": "五阶段视图映射为前端渲染;服务侧stage目录已存在但未构UI断言",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-IPD-04",
+  "case": "本轮判定",
+  "cmd": "-",
+  "http": null,
+  "verdict": "NOT-RUN",
+  "note": "轻管SOP不强制展示属前端;服务侧sop_id可空腿未单列",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-REQ-06",
+  "case": "本轮判定",
+  "cmd": "-",
+  "http": null,
+  "verdict": "NOT-RUN",
+  "note": "全生命周期链在249矩阵中历史已PASS(QA-03轮),本轮未重复",
+  "ts": "2026-09-26T02:09:19+08:00"
+ },
+ {
+  "card": "AC-PROD-03",
+  "case": "P3-0新建配套产品",
+  "cmd": "POST /api/v1/products {source:PM_NEW} (admin) — 复用探查轮已建行",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "productId=2103548560187371521 | 该行为本车道探查调用创建(PM_NEW,IN_RD),首轮误传source=NEW被枚举校验400",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-PROD-03",
+  "case": "P3-1R创建SOFTWARE项目(挂产品)",
+  "cmd": "POST /api/v1/projects productId=2103548560187371521",
+  "http": 200,
+  "envelope_code": 0,
+  "project_id": "2103548719877107713",
+  "verdict": "PASS",
+  "note": "ok",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-PROD-03",
+  "case": "P3-2R真库回读硬件动作NA",
+  "cmd": "mysql stage_actions WHERE project_id=2103548719877107713",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "NA动作=D02,D03,D07,D10,L05,P04,P06,P07,V01,V05,V09 D03=NA",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-IPD-03",
+  "case": "L1R-轻管fields+transit DONE(服务腿)",
+  "cmd": "fields{actualDoneAt}+transit x2 (market) id=2103548719990353924",
+  "http": 409,
+  "verdict": "FAIL",
+  "note": "db status=NOT_STARTED actualDoneAt=NULL | 判据'三输入项无SOP区'属前端,本条闭环服务侧",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-1R存量导入正例",
+  "cmd": "POST /projects/legacy-import productId=2103548720397201410 ack=true",
+  "http": 400,
+  "envelope_code": 10001,
+  "project_id": null,
+  "verdict": "FAIL",
+  "note": "目标市场必填（驱动认证清单 M1）",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-4R反例ack=false拒绝且零落库",
+  "cmd": "POST legacy-import ack=false + mysql COUNT",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=必须确认 missingHistoryAck=true（历史缺失声明） rows=0",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-INC-34",
+  "case": "N5R-项目汇总导出(month)",
+  "cmd": "GET /report/export/project?month=2026-09 (admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "msg=ok bytes=9006",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1R-组长代移交正例(onBehalf)",
+  "cmd": "POST /handovers (leader,同组9120002) to=赵市场(RESIGNED)",
+  "http": 400,
+  "envelope_code": 10001,
+  "handover_id": null,
+  "verdict": "FAIL",
+  "note": "msg=接手人不能与原负责人相同",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1R-组长换组夹具已还原",
+  "cmd": "UPDATE persons SET group_id=900001 WHERE id=900102",
+  "http": null,
+  "exit": 0,
+  "verdict": "INFO",
+  "note": "临时把ipd-leader调到9120002组发起正例后已还原;前轮H1(900102@900001→9120002项目)实为正确的跨组负例:403",
+  "ts": "2026-09-26T02:14:31+08:00"
+ },
+ {
+  "card": "AC-IPD-03",
+  "case": "L2-market非owner角色fields写门拒绝",
+  "cmd": "POST /stage-actions/2103548719990353924/fields (ipd-market)",
+  "http": 409,
+  "envelope_code": 40004,
+  "verdict": "INFO",
+  "note": "msg=角色固定不可跨（市场PM/研发PM） | R3轮L1R之400系执行器body含白名单外remark+日期非ISO,根因修正登记",
+  "ts": "2026-09-26T02:19:53+08:00"
+ },
+ {
+  "card": "AC-IPD-03",
+  "case": "L3-rd非成员非owner写门(缺陷取证)",
+  "cmd": "POST /stage-actions/2103548719990353924/fields (ipd-rd,项目无任何成员)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "DEFECT-LOGGED",
+  "note": "http=200 msg=ok | requireActionWriter(IpdPermission.java:153-161)只比对ownerRole,不校验项目成员/组边界→跨组非成员可写他人项目动作,缺陷登记",
+  "ts": "2026-09-26T02:19:53+08:00"
+ },
+ {
+  "card": "AC-IPD-03",
+  "case": "L1R2-轻管完成路径服务腿闭环(更正判定)",
+  "cmd": "探查链: fields(ISO日期)200 → transit IN_PROGRESS 200 → transit DONE 200 + mysql 回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "db status=DONE actual_done_at=2026-09-27 18:00:00 | BR-IPD-05轻管完成=fields写完成日+transit DONE,服务侧闭环;前端'三输入项无SOP区'另计",
+  "ts": "2026-09-26T02:19:53+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-1R2存量导入正例(targetMarkets补齐)",
+  "cmd": "POST /projects/legacy-import ack=true declaredStage=DEV",
+  "http": 400,
+  "envelope_code": 10001,
+  "project_id": null,
+  "verdict": "FAIL",
+  "note": "msg=立项目标渠道商数必填且不可为负",
+  "ts": "2026-09-26T02:19:53+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1R2-组长/超管代移交正例(onBehalf,发起人同组免换组)",
+  "cmd": "POST /handovers onBehalf=true (admin) 赵(RESIGNED)→胡9110005",
+  "http": 200,
+  "envelope_code": 0,
+  "handover_id": "2103550072221380609",
+  "verdict": "PASS",
+  "note": "msg=ok",
+  "ts": "2026-09-26T02:19:53+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1R2b原子转移回读(赵退出/胡在任)",
+  "cmd": "mysql project_members WHERE project_id=2103548719877107713 AND MARKET_PM",
+  "http": null,
+  "exit": 0,
+  "verdict": "INFO",
+  "note": "rows=[['9110005', 'NULL'], ['2096266884247736321', '2026-09-26 02:19:54']]",
+  "ts": "2026-09-26T02:19:53+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1R2c移交24h窗口内撤销(cancel)",
+  "cmd": "POST /handovers/2103550072221380609/cancel confirmation=确认撤销该移交",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "msg=ok",
+  "ts": "2026-09-26T02:19:54+08:00"
+ },
+ {
+  "card": "AC-HAND-01c",
+  "case": "H1R2d撤销终态回读",
+  "cmd": "mysql handover_records status WHERE project_id=2103548719877107713",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "表=handover_records id=2103550072221380609 status=ROLLED_BACK",
+  "ts": "2026-09-26T02:20:18+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-1R3存量导入正例(必填全补齐)",
+  "cmd": "POST /projects/legacy-import ack=true + channel/nps/scene",
+  "http": 200,
+  "envelope_code": 0,
+  "project_id": "2103550173220220929",
+  "verdict": "PASS",
+  "note": "msg=ok",
+  "ts": "2026-09-26T02:20:18+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-2R3回读source/审计/history_mark/替代佐证",
+  "cmd": "mysql projects/audit_logs/stage_actions id=2103550173220220929",
+  "http": null,
+  "exit": 0,
+  "verdict": "PASS",
+  "note": "source=LEGACY status=DRAFT audit=1 history_mark行=25 佐证remark行=25",
+  "ts": "2026-09-26T02:20:18+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-3R3历史缺失不阻断状态流转",
+  "cmd": "POST /projects/2103550173220220929/status?target=ACTIVE",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "状态机非法迁移: DRAFT → ACTIVE",
+  "ts": "2026-09-26T02:20:18+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-3R4历史缺失项目沿合法链流转至ACTIVE",
+  "cmd": "POST /projects/2103550173220220929/status 链 CONFIRMED→TEAMING→ACTIVE",
+  "http": 400,
+  "verdict": "FAIL",
+  "note": "链=CONFIRMED:400/10001 终态=DRAFT | P4-3R3之400是执行器直跳非法迁移,DRAFT→ACTIVE本就被状态机守卫拒绝(fail-closed正确行为) || SUPERSEDED by P4-3R5:执行器误用CONFIRMED(该态不在projects状态机ProjectService.java:54-59),合法链=DRAFT→TEAMING→ACTIVE",
+  "ts": "2026-09-26T02:20:30+08:00"
+ },
+ {
+  "card": "AC-PROD-04",
+  "case": "P4-3R5历史缺失不阻断合法流转(DRAFT→TEAMING→ACTIVE)",
+  "cmd": "POST /projects/2103550173220220929/status 链 TEAMING→ACTIVE",
+  "http": 200,
+  "verdict": "PASS",
+  "note": "链=TEAMING:200/0 | ACTIVE:200/0 终态=ACTIVE | AC-PROD-04判据'历史缺失项目不阻断后续流转'成立:LEGACY项目25条HISTORICAL_MISSING动作下仍完成全链流转",
+  "ts": "2026-09-26T02:21:04+08:00"
+ }
+]
