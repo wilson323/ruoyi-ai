@@ -69,9 +69,6 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT,
         IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE,
         IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE,
-        IpdPermissionCode.OPERATION_STAGE_ACTION_INSTANTIATE,
-        IpdPermissionCode.OPERATION_GATE_REVIEW_INITIATE,
-        IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT,
         // SEC-MED-3：撤返码独立登记（仅申请人角色可用——与 SUBMIT 同集合，因角色级别无
         // 法区分 actor 与资源 ownership；具体 IDOR 校验由 service 维持 + 全 NOT_FOUND 防侧信道）

@@ -19,7 +19,6 @@ public interface IpdPermissionCode {
     String OPERATION_STAGE_ACTION = "ipd:stage-action:list";
     String OPERATION_STAGE_ACTION_EXECUTE = "ipd:stage-action:edit";
     String OPERATION_STAGE_ACTION_DELIVERABLE = "ipd:stage-action:add";
-    String OPERATION_STAGE_ACTION_INSTANTIATE = "ipd:stage-action:add";
 
     String OPERATION_CERT_TEMPLATE = "ipd:cert-template:list";
     String OPERATION_CERT_TEMPLATE_CREATE = "ipd:cert-template:add";
@@ -45,8 +44,6 @@ public interface IpdPermissionCode {
     String OPERATION_DELETION_REQUEST_WITHDRAW = "ipd:deletion-request:withdraw";
 
     String OPERATION_GATE_REVIEW = "ipd:gate-review:list";
-    String OPERATION_GATE_REVIEW_INITIATE = "ipd:gate-review:add";
-    String OPERATION_GATE_REVIEW_APPROVE = "ipd:gate-review:edit";
 
     /** AC-INC-15c：双PM 联合提议系数 */
     String OPERATION_COEFFICIENT_PROPOSE = "ipd:coefficient:propose";

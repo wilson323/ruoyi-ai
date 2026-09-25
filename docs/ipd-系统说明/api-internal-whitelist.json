@@ -219,54 +219,6 @@
       "evidence": "SharedKpiController.java:74"
     },
     {
-      "path": "/api/v1/compliance/audit-trail/{VAR}/{VAR}",
-      "methods": [
-        "GET"
-      ],
-      "reason": "owner 裁决卡 d81af12c(2026-09-07)：合规审计 4 端点整体判 B 预留能力，保留不建前端不删除",
-      "owner_card": "7b76b7cd",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "ComplianceController.java:65"
-    },
-    {
-      "path": "/api/v1/compliance/data-retention-rules",
-      "methods": [
-        "GET"
-      ],
-      "reason": "owner 裁决卡 d81af12c：数据保留规则属 B 预留能力，ZK-IPD spec 49 页无合规页",
-      "owner_card": "7b76b7cd",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "ComplianceController.java:50"
-    },
-    {
-      "path": "/api/v1/compliance/permission-separation/{VAR}",
-      "methods": [
-        "GET"
-      ],
-      "reason": "owner 裁决卡 d81af12c：权限分离查询属 B 预留能力，AC-COMP spec 零命中",
-      "owner_card": "7b76b7cd",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "ComplianceController.java:77"
-    },
-    {
-      "path": "/api/v1/compliance/data-deletion-request",
-      "methods": [
-        "POST"
-      ],
-      "reason": "owner 裁决卡 d81af12c：数据删除请求属 B 预留能力，同批 4 端点整体裁决",
-      "owner_card": "7b76b7cd",
-      "review_date": "2026-09-24",
-      "expire": "2026-12-31",
-      "added_by": "7b76b7cd",
-      "evidence": "ComplianceController.java:58"
-    },
-    {
       "path": "/api/v1/product-groups/{VAR}/remove",
       "methods": [
         "POST"

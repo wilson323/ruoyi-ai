@@ -226,10 +226,15 @@ async function scanFrontend(feApiDirs) {
     const src = await readFile(file, 'utf8');
 
     // 模式 1: ipdGet / ipdPost / ipdPut / ipdDelete / ipdPatch (camelCase 或大写都可)
-    //   - 可选泛型: <T> / <T = unknown> / 嵌套一层 <Record<string, unknown>>（R215 修正：
-    //     旧版 <[^>]*> 遇嵌套泛型只吞一半，残留 ">(" 导致整条调用被跳过 → as-of 端点假孤儿）
+    //   - 可选泛型: <T> / <T = unknown> / 任意层嵌套（R215 采集盲区②修正：旧版
+    //     (?:<(?:[^<>]|<[^<>]*>)*>)? 枚举式仅覆盖两层尖括号嵌套，三层形态
+    //     ipdGet<Partial<IpdPage<Record<string, unknown>>>>（compliance.ts fetchAuditTrail）
+    //     只吞外两层、残留 ">>(" 使整条调用漏扫 → GET /api/v1/compliance/audit-trail/{VAR}/{VAR}
+    //     假孤儿。改为 <[^()]*>：结构不变量是泛型段右边界必为紧邻调用开括号 ( 前的最后一个 >，
+    //     贪婪 [^()]* 吃到本调用首个 ( 前、回溯后 > 恰匹配最外层闭角括号，任意层嵌套通吃；
+    //     泛型内含圆括号的函数类型写法本仓为零，若失败可选组回退空匹配，不产生误采）
     //   - 字符串参数: '..' | ".." | `..`
-    const reIpdCall = /ipd(GET|POST|PUT|DELETE|PATCH)\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*\(\s*([`'"])(.+?)\2/gi;
+    const reIpdCall = /ipd(GET|POST|PUT|DELETE|PATCH)\s*(?:<[^()]*>)?\s*\(\s*([`'"])(.+?)\2/gi;
     let m;
     while ((m = reIpdCall.exec(src)) !== null) {
       calls.push({
