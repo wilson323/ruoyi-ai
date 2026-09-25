@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * 本配置类显式开启后双 job 生效；后续新增调度任务须在此登记错峰时刻。
  *
  * <p>任务登记（错峰表）：PersonResignEscalator 09:00 / HandoverOverdueScanner 09:05 /
+ * KpiSharedDeadlineScheduler 09:10（共担 KPI 月度截止催办，R215-GAP-B1 接线补齐 2026-09-25）/
  * ProjectScoreScheduleService 09:15（P3-2.3 上市评分待办扫描，2026-09-19 接线补齐）/
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
  * 间隔可配 ipd.notification.dispatch.interval-ms）。
