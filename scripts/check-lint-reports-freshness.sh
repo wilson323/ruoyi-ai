@@ -75,7 +75,7 @@ main() {
   # 5. 更新快照
   echo "$current_count" > "$SNAPSHOT_FILE"
 
-  echo "✅ lint-reports freshness PASS（1h delta=$delta, cross-commit delta=$cross_commit_delta）"
+  echo "✅ lint-reports freshness PASS（1h delta=$delta, cross-commit delta=${cross_commit_delta}）"
   exit 0
 }
 

@@ -52,7 +52,7 @@ while IFS= read -r f; do
   fi
 done <<< "$TODO_FILES"
 
-echo "  TODO/FIXME 标记总数: $TODO_COUNT（INFO 级，仅记录）"
+echo "  TODO/FIXME 标记总数: ${TODO_COUNT}（INFO 级，仅记录）"
 
 # === 2. @deprecated 扫描 ===
 echo "[STEP 2] @deprecated 注释扫描..."
@@ -66,7 +66,7 @@ while IFS= read -r f; do
   DEP_COUNT=$((DEP_COUNT + CNT))
 done <<< "$DEP_FILES"
 
-echo "  @deprecated 标记数: $DEP_COUNT（INFO 级）"
+echo "  @deprecated 标记数: ${DEP_COUNT}（INFO 级）"
 
 # === 3. public 方法 JavaDoc 覆盖率启发式 ===
 echo "[STEP 3] public 方法 JavaDoc 启发式扫描..."
@@ -100,7 +100,7 @@ while IFS= read -r f; do
 
 done <<< "$JAVA_FILES"
 
-echo "  Service 类 public 方法 JavaDoc 疑似缺失: $JAVADOC_MISS（WARN 级）"
+echo "  Service 类 public 方法 JavaDoc 疑似缺失: ${JAVADOC_MISS}（WARN 级）"
 
 # === 4. 注释与签名不一致（参数列表）启发式 ===
 echo "[STEP 4] 注释与签名参数列表不一致检测..."
@@ -120,17 +120,17 @@ while IFS= read -r f; do
   fi
 done <<< "$SAMPLE_FILES"
 
-echo "  参数注释疑似不完整 Controller: $PARAM_MISMATCH（INFO 级）"
+echo "  参数注释疑似不完整 Controller: ${PARAM_MISMATCH}（INFO 级）"
 
 # === 总结 ===
 VIOLATIONS=$JAVADOC_MISS
 
 echo ""
 echo "=== 注释与代码一致性检测总结 (BP-002) ==="
-echo "  TODO/FIXME: $TODO_COUNT（INFO）"
-echo "  @deprecated: $DEP_COUNT（INFO）"
-echo "  JavaDoc 疑似缺失: $JAVADOC_MISS（WARN→VIOLATION）"
-echo "  参数注释疑似不完整: $PARAM_MISMATCH（INFO）"
+echo "  TODO/FIXME: ${TODO_COUNT}（INFO）"
+echo "  @deprecated: ${DEP_COUNT}（INFO）"
+echo "  JavaDoc 疑似缺失: ${JAVADOC_MISS}（WARN→VIOLATION）"
+echo "  参数注释疑似不完整: ${PARAM_MISMATCH}（INFO）"
 echo ""
 
 if [[ $VIOLATIONS -eq 0 ]]; then

@@ -12372,7 +12372,7 @@ marker: r220-orphan-gate-live-run
 
 ② check-kanban-section-shape.sh 是死件：默认路径写成 docs/ipd-系统说明/看镜像.md（真实文件名是 开发计划-看板镜像.md），文件缺失即 exit 0 → 永远绿。补上正确路径后 RC=2，因其判据 §一/§二/§三 与镜像实际结构（## U0/U1/U2/当前状态表）从未对齐 —— 改一行只是把永远绿换成永远红，故本轮已 git checkout 回退，待按现镜像结构重设判据。
 
-③ check-time-redline.sh / check-dispatch-sequence.sh：FAIL_SEED 能红（RC=1 / RC=2 真分支在），但数据源缺失即 exit 0（实测 PAIBAN_DIR=/nonexistent → RC=0「目录缺失=不阻断」）→ 属条件性假绿，处置是改「缺失即放行」而非删。另 dispatch-sequence 输出 last_wt= 后带乱码（编码 bug）。
+③ check-time-redline.sh / check-dispatch-sequence.sh：FAIL_SEED 能红（RC=1 / RC=2 真分支在），但数据源缺失即 exit 0（实测 PAIBAN_DIR=/nonexistent → RC=0「目录缺失=不阻断」）→ 属条件性假绿，处置是改「缺失即放行」而非删。另 dispatch-sequence 输出 last_wt= 后带乱码（编码 bug）。〔R224 勘误：真因不是编码，见下文 R224 ①〕
 
 ④ check-m1m5-landed.sh 现报「5/5 命中，M1-M5 验证脚本全部实装 ✅」，但它只做 find -name 存在性检查，而其中 M1 就是②的死件 → 存在性 ≠ 有效性。R142 §17.3「七项全部真装」据此需降级为「4/7 经实测可信」（其余 3 件本轮未跑）。
 
@@ -12399,7 +12399,7 @@ owner 就 R220 ⑤ 拍 A：先把 4 个红灯背后的真问题修掉，再接�
 - 生成这 3 份报告的 check-e2e-fe-be.sh 全部业务请求**不带任何认证**（grep token/login/Authorization 零命中），而 IPD /api/v1 需真实 Person 会话 → 现测无凭证结果：/api/v1/kpi/rules 与 /api/v1/projects/{id} 均 401 code=20001。该脚本对这两项**设计上必然失败**。
 - /api/v1/persons/active 现测 404 code=50001「资源不存在」；代码侧确证：PersonController 只有类级 @RequestMapping("/api/v1/persons") + 3 个 @PostMapping（{id}/resign、{id}/rehire、{id}/wecom/unbind），controller 目录全量搜 active 零命中；前端 ruoyi-ipd-web/apps/web-antd/src 搜 persons/active 亦零命中 → **R118 契约要求的端点从未实现，且无调用方**。补该端点会立即被 R212 孤儿端点棘轮记为新孤儿，自相矛盾。
 - /api/v1/deletion-requests 无凭证 GET 返回 HTTP 200 但 body code=405「请求方式不支持」→ HTTP 层与包络层语义不一致（应 405）。
-- 3 份报告头部端口号呈乱码（「## ✅ 后端存活（:??」），与 check-dispatch-sequence.sh 的 last_wt= 乱码同型，属生成侧编码 bug。
+- 3 份报告头部端口号呈乱码（「## ✅ 后端存活（:??」），与 check-dispatch-sequence.sh 的 last_wt= 乱码同型，属生成侧编码 bug。〔R224 勘误：与编码无关，真因是 bash $VAR 紧跟全角标点吞字节，见下文 R224 ①〕
 - 待拍三选：(a) 把 R118 契约改指向实际存在的端点（=改需求，需 owner）；(b) 后端补 /persons/active（会触发孤儿棘轮，需同时登记白名单）；(c) 给 check-e2e-fe-be.sh 加登录取 token，并把「契约未实现」与「服务不可达」分成两类结论显式记账。
 
 ### 3. M4 check-cross-repo-cd-guard.sh 确诊为双向坏（建议删，本轮未动）
@@ -12445,3 +12445,60 @@ owner 就 R220 ⑤ 拍 A：先把 4 个红灯背后的真问题修掉，再接�
 - 结论：**门禁窗口 ≥280s 时，"提交前核对暂存区"不足以保证归属**，核对与提交之间存在可被写入的时间窗。
 - 修法（已验证有效）：`git commit --only -- <明确路径>` 走 pathspec 提交，只取指定路径，天然免疫兄弟中途 add；兄弟 c0b57167 用的正是此形式（它还自注携带了我的 log.md R222 段）。
 - 附带事实：本卡 R222 段因此先随兄弟提交入库，归属以本节与 commit message 注记为准，不重复改写历史。
+
+## 2026-09-25 21:20 | R224（owner「基于待拍输出完整建议」+「继续」：三项待拍的无需授权部分落地；推翻 2 处入库定性；新增 1 个上游 P0 待拍）
+
+### ① 两处定性推翻（含本会话自己上一轮写进 log.md 的错结论）
+- 「生成侧编码 bug」是错的。真因：bash 变量名解析会吞掉紧随其后的多字节字符首字节 → 变量名变成「原名 + 1 字节」未定义而展开为空，该字符只剩残缺后缀字节。字节级实测（bash 3.2.57 本机）：`printf "（:$B）"` → `efbc88 3a bc89`（16039 整个消失、「）」缺 ef）；`printf "（:${B}）"` → `efbc88 3136303339 efbc89` 正常。修法：一律 `${VAR}`（单引号内也不展开，对任意上下文无害）。
+- 受害面与清零：tracked shell 共 146 个（*.sh + 无后缀 hook 脚本），实测 16 文件 38 行，已全量机械修正并复扫为 0；修后行为证据：check-dispatch-sequence.sh 现输出 `last_wt=11`（此前 `last_wt=` + 残缺字节）。
+- **扫面口径本身也是一处坑**：首轮用 `git ls-files '*.sh'` + python `.split()` 得到「140 文件 / 37 行且复扫为 0」，漏了 docs 中文路径下的 1 处——默认 core.quotePath 会把中文路径引号化，`open()` 抛错被 `except: continue` 静默吞掉（本仓已登记的 quotePath 坑第三次现形）。新门禁用 `git ls-files -z` 才抓全。
+- 防再犯：新增 scripts/check-shell-var-multibyte.sh（--self-test 4 夹具全过：违例被拦 / 正确写法+注释零误报 / 多文件不串味 / 位置参数 `$1（` 被拦）；接 .github/workflows/r25-root-cause-lint.yml 门禁 9 为**硬阻断**（违例必是 bug 且修法机械，无“容忍存量”理由）；接 .claude/hooks/check-pre-commit.sh 门禁 4，只扫 staged *.sh，fast 模式也跑。端到端取证用**临时 GIT_INDEX_FILE** 跑 hook（不动共享索引），实测违例探针 → 门禁 4 FAIL exit=1，真 index mtime 前后不变。
+- 连带勘误（R222 段机制描述不精确）：该段写「`set -e` 下 `[ 条件 ] && 动作` 条件为假时整个 AND 列表失败即静默 exit 1」。四例实测（bash 3.2.57）修正为：条件假的 AND 列表**不会**中断后续语句；但它把 rc=1 传染给所在脚本/函数的**尾行**——脚本尾行→整体 rc=1 误红；函数尾行→函数返回 1，调用点在 set -e 下直接终止。landed v2 的两处循环因此改用 `if` 而非 `&&`。
+
+### ② 待拍 3（测试静默不跑）无需授权部分已落地
+- 3 个安全类补 `@Tag("dev")`：TraceContextTest / MinimaxEmbeddingProviderTest / AliBaiLianRerankModelServiceTest，**默认 dev profile、不覆盖 groups** 下实测执行且全绿（trace Tests run: 2；chat Tests run: 7）。
+- 基线 6→3，逐条标归因（不再是一枚平铺名单）：common-core 1 条 = 模块无 JUnit 引擎，groups+excludedGroups 全置空仍 BUILD FAILURE，需加 test 依赖（待授权）；Minimax 2 条 = 阻塞于 ④ 所述上游策略缺陷。
+- 复跑门禁：`total=319 unselected=3 baseline=3 fresh_violations=0 stale_baseline=0 pass:true RC=0`，`--self-test` 仍 7/7。
+- 执行方自查（本轮自身踩到，且 30 秒内复现了本轮治理的病根）：验证 Minimax 时漏传 `-Dprofiles.active=`，得到 `MVN_RC=0` + `Tests run: 0` + `BUILD SUCCESS`。纪律：**mvn 验证必须显式带 `-Dprofiles.active=` 且核对 Tests run 计数 > 0**，否则“绿”没有含义。
+
+### ③ Minimax 24 错：两层堆叠，修复生效但未清零
+- 第 1 层（已修）：consumer ≠ provider 触发凭据策略拦截。两个 Minimax 测试构造 ChatModelVo 时都没 setProviderCode；按仓库既有正确参照（Dify/Coze/Atlas 等 5+ 处）各补 1 行 `modelVo.setProviderCode(ChatModeType.MINIMAX.getCode())`。
+- 第 2 层（修完第 1 层才暴露，24 错现全为同因）：`DeepSeek model provider is not trusted`。
+
+### ④ 新发现：上游凭据策略 else 分支缺守卫（安全策略级，本会话未改，立待拍卡）
+- 位置：ruoyi-common/ruoyi-common-chat/.../ChatModelCredentialPolicy.java `requireTrustedConfiguration()` 第 148–157 行——`isCustomProvider`(openai/anthropic) / ppio / atlas 三个分支后的 **else 无条件**调 `requireDeepSeekConfiguration`，而后者第一句就要求 provider==deepseek（:107）。即：任何 provider ∉ {openai, anthropic, ppio, atlas, deepseek} 的配置在构建客户端时必抛。
+- 同文件 `requirePersistableConfiguration()` 第 97–99 行**有**守卫（`if (isDeepSeekConfiguration(...))` 才调）——两处写法不一致本身即证据；建议修法就是把 else 换成同型守卫。
+- 归属：`git blame` 146–157 行 → 有问题的 else 分支 = 上游 ageerle `bcff4fd9e 2026-09-08`（atlas 分支才是本仓 eda850c03）。
+- 生产调用面：AbstractChatService / OpenAI / Atlas / Minimax×4 / qianwen / siliconflow / zhipu 等 11+ 处，加上 ChatModelServiceImpl:263。
+- 真库影响面（现查）：`ai_model_configs` 仅 1 条 provider=TEST、`chat_model` 仅 vector 1 + chat 1 → 本机踩不到，但任何新 provider 接入（含二开扩展）都会在运行期撞上。属安全策略变更，需 owner 拍后方可动。
+
+### ⑤ 待拍 1（E2E 5 契约）：脚本分类记账已落地
+- scripts/check-e2e-fe-be.sh 加 `POST /api/v1/auth/login` 取 token：凭据优先 `E2E_PASSWORD`，否则读 gitignored 的 `.codex/ipd-dev/config/credentials.json → accounts.<user>.password`（`git check-ignore` 已验），报告只写 token_len=187、永不落凭据。
+- 四类分流取代原来“全记同一个 ❌”：真跑结论（16039 活体）——P0-9 与 R108 带 token 即 **200 code=0/IPD 包络 PASS**（此前因无认证恒红）；`/projects/{id}/stages` 与 `/persons/active` 404 → **NOT_IMPLEMENTED**；`/deletion-requests` 200 但返 `code=405/msg` 框架包络 → **ENVELOPE_MISMATCH**。产物 docs/ipd-系统说明/E2E-验收-20260925-2111.md（含分类汇总 + 机器可读 `STATUS:` 行）。
+- 自证能红：`E2E_SIM_UNREACHABLE=1` → UNREACHABLE=5 RC=1。
+- 本轮再踩一次证据污染：sim 跑与真跑同分钟→报告同名互盖（留下的文件实际是 sim 内容）。已加 `-SIM` 后缀隔离并删除被污产物；教训：**任何自测产物不得与真证据同名**。
+- 仍待拍：那 3 个非-PASS 端点是产品真需求还是契约写错（零调用方者建议删而非补；补 `/persons/active` 会被孤儿棘轮记成新孤儿）。
+
+### ⑥ 待拍 2（M1–M5 门禁群）：M5 判据 + landed 有效性已落地（未删任何文件）
+- M5 check-e2e-block-gate.sh：旧正则不认实际产物措辞，把 3 份**有结论（失败）**的报告误报为“缺终态”。现按“实际措辞 + `^STATUS:` 机器行”双口径认定，并额外报 PASSED/FAILED 份数——当前输出「终态标记齐全（PASSED=0 / FAILED=4）」，✅ 不再能被读成“E2E 已闭环”。EBG_FAIL_SEED=1 仍 RC=1。
+- M-Root-4 check-m1m5-landed.sh：从 `find -name` 存在性升级为逐脚本四验（存在 → `bash -n` → 实跑 rc ∈ 该脚本自己声明的词表 → 宿主接线数），rc=0 但输入不存在记“空跑”。立即测出两件真话：M1 rc=0 属**空跑**（默认路径从未存在）、M4 rc=1 **不在自身词表(0 2)** → landed 现报 RED（旧版对同样的仓态报“5/5 全部实装 ✅”）。
+- 接线硬事实：M1–M5 + landed 宿主接线总数 = **0**（grep .claude/hooks / .githooks / .github/workflows / package.json 零引用）→ “要不要让从没上岗的死件上岗”才是待拍 2 的真命题。删 M1/M4 仍待 owner 拍（本轮未删）。
+
+### ⑦ 门禁 4 抓到它自己：自指夹具冲突（21:29 复跑取证）
+- R224 首次 pathspec 提交 COMMIT_RC=1：门禁 0/1/2 PASS，**门禁 3 FAIL exit=4 + 门禁 4 FAIL exit=1**。门禁 4 报的两行正是它自己 `--self-test` 的 heredoc 夹具（旧 :86 `echo "后端存活（:$B）"`、旧 :112 `echo "用法 $1（必填）"`）——不是误报，是夹具写法与规则互斥：门禁脚本自身也是 tracked *.sh，字面复现了它要拦的形态。
+- 修法（不弱化规则）：夹具内容改为运行时拼接（`rparen='）'` / `hint='（必填）'` + printf），源码里不再出现 `$VAR` 紧跟非 ASCII；修后实测 `--self-test` 仍 4/4（T1/T4 证明生成出的夹具确实会被拦），全仓扫描违例 0 行。
+- 教训入规：**任何门禁的自测夹具都不得字面包含自己判为违例的内容**；「自证能红」不能以「红在自己身上」为代价，否则门禁上线的第一次提交就会被自己拦停。
+- 门禁 3 的另 1 条红与本会话无关（现查证据）：bit4 唯一新孤儿 = `POST /api/v1/guest-demands/overdue-scan`，来源是兄弟会话在途的 untracked Controller（具体文件与行号见本轮 commit message，不写在本文档里是为了不撞门禁 0 的 untracked 引用检测——该文件尚未入库）。已验：该文件 `exists on disk, but not in HEAD`，mtime 2026-09-25 20:17:16，且本会话对 `ruoyi-ipd/**` 零改动 → 按 OPS-09 只做只读探针不接手，端点处置（补前端消费/删/白登记）归其看板卡。白名单登记需人审（ratchet-data-guard），故该红无法由本会话合法消除。
+
+复现（全为只读，除报告产物）：
+```bash
+bash scripts/check-shell-var-multibyte.sh --self-test; echo RC=$?   # 4/4 PASS
+bash scripts/check-shell-var-multibyte.sh; echo RC=$?               # 违例 0 行
+bash scripts/check-e2e-fe-be.sh; echo RC=$?                         # RC=1：2 PASS / 2 NOT_IMPLEMENTED / 1 ENVELOPE_MISMATCH
+E2E_SIM_UNREACHABLE=1 bash scripts/check-e2e-fe-be.sh; echo RC=$?    # RC=1：UNREACHABLE=5（产物带 -SIM 后缀）
+bash scripts/check-e2e-block-gate.sh; echo RC=$?                     # RC=0（PASSED=0/FAILED=4）
+bash scripts/check-m1m5-landed.sh; echo RC=$?                        # RC=1（M4 退出码越词表 + M1 空跑）
+bash scripts/check-test-selection-fake-green.sh; echo RC=$?           # RC=0：unselected=3 baseline=3
+export PATH="$HOME/tools/maven/bin:$PATH" JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"
+mvn -o -pl ruoyi-common/ruoyi-common-trace -Dprofiles.active= test    # Tests run: 2（必带 -Dprofiles.active= 并核对计数>0）
+```

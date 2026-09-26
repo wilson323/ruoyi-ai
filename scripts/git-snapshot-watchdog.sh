@@ -34,7 +34,7 @@ while :; do
         snap="refs/snapshot/$br-wd-$ts"
         git update-ref "$snap" "$last" 2>/dev/null || true
         git update-ref "refs/backup/$br" "$tip" 2>/dev/null || true
-        echo "$(date '+%F %T') [watchdog] $br 回退检测: $last -> $tip；移动前 tip 已快照 -> $snap" >&2
+        echo "$(date '+%F %T') [watchdog] $br 回退检测: $last -> ${tip}；移动前 tip 已快照 -> $snap" >&2
       fi
     elif [ -z "$last" ] || [ "$last" = "$ZERO" ]; then
       # 首次记录基线，同时建立滚动备份

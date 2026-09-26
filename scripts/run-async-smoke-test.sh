@@ -51,6 +51,6 @@ echo "----------------------------------------"
 if [ $RC -eq 0 ]; then
     echo "✅ ApplicationConfigSmokeTest 全绿（防线 4 通过）"
 else
-    echo "❌ ApplicationConfigSmokeTest 失败（exit $RC）"
+    echo "❌ ApplicationConfigSmokeTest 失败（exit ${RC}）"
 fi
 exit $RC

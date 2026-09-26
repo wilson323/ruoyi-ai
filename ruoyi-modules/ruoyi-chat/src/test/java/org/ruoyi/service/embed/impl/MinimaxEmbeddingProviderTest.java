@@ -1,6 +1,7 @@
 package org.ruoyi.service.embed.impl;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ModalityType;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for MinimaxEmbeddingProvider
  */
+@Tag("dev")
 class MinimaxEmbeddingProviderTest {
 
     private MinimaxEmbeddingProvider provider;

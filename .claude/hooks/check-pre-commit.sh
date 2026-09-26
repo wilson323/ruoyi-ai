@@ -201,6 +201,54 @@ run_ratchet_gate() {
 }
 
 # ---------------------------------------------------------------------------
+# 门禁 4：R224 shell 变量吞字节（$VAR 紧跟非 ASCII）
+# 病根：bash 变量名解析会吃掉紧随的多字节字符首字节 → 变量展开为空 + 输出乱码
+#   （实测 printf "（:$B）" → efbc88 3a bc89，16039 整个消失）
+# 只扫 staged *.sh（读工作树内容），单跑 ~0.2s；fast 模式同 untracked/棘轮先例仍跑
+# 修法和上下文一样无害：改写为 ${VAR}
+# ---------------------------------------------------------------------------
+run_shell_var_gate() {
+    local start_time
+    start_time=$(date +%s)
+    echo "[check-pre-commit] → 门禁 4: shell 变量吞字节 R224(\$VAR 紧跟非 ASCII)"
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "[check-pre-commit] ⚠ 门禁 4 SKIP: python3 不可用(跳过而非误报 env error)"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+    if [[ ! -f "$REPO_ROOT/scripts/check-shell-var-multibyte.sh" ]]; then
+        echo "[check-pre-commit] ⚠ 门禁 4 SKIP: scripts/check-shell-var-multibyte.sh 不存在"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+
+    local sh_files=()
+    while IFS= read -r p; do
+        [[ -n "$p" ]] && sh_files+=("$p")
+    done < <(git -C "$REPO_ROOT" -c core.quotePath=false diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.sh$' || true)
+
+    local elapsed=$(( $(date +%s) - start_time ))
+    if [[ "${#sh_files[@]}" -eq 0 ]]; then
+        echo "[check-pre-commit] ⚠ 门禁 4 SKIP: staged 无 *.sh (elapsed=${elapsed}s)"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+    local out rc
+    out=$(bash "$REPO_ROOT/scripts/check-shell-var-multibyte.sh" "${sh_files[@]}" 2>&1)
+    rc=$?
+    elapsed=$(( $(date +%s) - start_time ))
+    if [[ "$rc" -eq 0 ]]; then
+        echo "[check-pre-commit] ✅ 门禁 4 PASS: staged ${#sh_files[@]} 个 .sh 无变量吞字节违例 (elapsed=${elapsed}s)"
+        PASSED=$((PASSED + 1))
+    else
+        echo "[check-pre-commit] ❌ 门禁 4 FAIL: exit=$rc (elapsed=${elapsed}s)"
+        echo "$out" | tail -25
+        echo '[check-pre-commit]   处置: 把 $NAME 改写为 ${NAME}（整行注释不计违例）'
+        FAILED=$((FAILED + 1))
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # 路由
 # ---------------------------------------------------------------------------
 case "$MODE" in
@@ -210,6 +258,7 @@ case "$MODE" in
         run_drift_gate
         run_contract_gate
         run_ratchet_gate
+        run_shell_var_gate
         ;;
     drift)
         run_untracked_gate
@@ -226,8 +275,10 @@ case "$MODE" in
     fast)
         # R43-α 二轮: fast 模式仍跑 untracked 门禁 0(快速 < 1s,病根 ② 实质化)
         # R212: fast 模式也跑门禁 3(孤儿棘轮,单跑 ~0.1s,同 untracked 实质化先例)
+        # R224: fast 模式也跑门禁 4(shell 变量吞字节,单跑 ~0.2s,同为实质化先例)
         run_untracked_gate
         run_ratchet_gate
+        run_shell_var_gate
         SKIPPED=2
         echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"
         ;;

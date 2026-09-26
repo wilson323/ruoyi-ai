@@ -43,7 +43,7 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   exit 2
 fi
 [[ -f "$TRAVERSE" ]] || { echo "[ERROR] 遍历脚本不存在: $TRAVERSE" >&2; exit 2; }
-[[ -f "$ROUTES_FILE" ]] || { echo "[ERROR] 路由清单不存在: $ROUTES_FILE（先跑 r212_l3.py 生成）" >&2; exit 2; }
+[[ -f "$ROUTES_FILE" ]] || { echo "[ERROR] 路由清单不存在: ${ROUTES_FILE}（先跑 r212_l3.py 生成）" >&2; exit 2; }
 [[ "$R212_PROJECT_ID" =~ ^[0-9]+$ && "$R212_PRODUCT_ID" =~ ^[0-9]+$ ]] || { echo "[ERROR] id 必须为纯数字" >&2; exit 2; }
 
 sql_count() {

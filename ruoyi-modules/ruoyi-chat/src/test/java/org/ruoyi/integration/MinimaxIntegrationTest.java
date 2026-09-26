@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
+import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.service.chat.impl.provider.MinimaxServiceImpl;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,6 +42,7 @@ class MinimaxIntegrationTest {
     void buildStreamingChatModel_withConfiguredApiKey(
         String apiHost, String modelName, boolean enableThinking) {
         ChatModelVo modelVo = new ChatModelVo();
+        modelVo.setProviderCode(ChatModeType.MINIMAX.getCode());
         modelVo.setApiHost(apiHost);
         modelVo.setApiKey(apiKey);
         modelVo.setModelName(modelName);

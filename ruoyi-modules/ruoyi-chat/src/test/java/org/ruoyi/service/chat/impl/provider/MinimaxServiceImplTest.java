@@ -162,6 +162,7 @@ class MinimaxServiceImplTest {
 
     private static ChatModelVo modelVo(String apiHost, String modelName) {
         ChatModelVo modelVo = new ChatModelVo();
+        modelVo.setProviderCode(ChatModeType.MINIMAX.getCode());
         modelVo.setApiHost(apiHost);
         modelVo.setApiKey("test-api-key");
         modelVo.setModelName(modelName);

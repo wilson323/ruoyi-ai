@@ -87,7 +87,7 @@ while IFS= read -r f; do
   fi
 done <<< "$BTN_FILES"
 
-echo "  <button> 无 aria-label 疑似: $BTN_NO_LABEL（INFO 级）"
+echo "  <button> 无 aria-label 疑似: ${BTN_NO_LABEL}（INFO 级）"
 INFO=$((INFO + BTN_NO_LABEL))
 
 # === 3. <input> label 关联检测 ===
@@ -107,7 +107,7 @@ while IFS= read -r f; do
   fi
 done <<< "$INP_FILES"
 
-echo "  <input> 无 label 关联疑似: $INP_NO_LABEL（INFO 级）"
+echo "  <input> 无 label 关联疑似: ${INP_NO_LABEL}（INFO 级）"
 INFO=$((INFO + INP_NO_LABEL))
 
 # === 4. ARIA 属性误用检测 ===
@@ -142,7 +142,7 @@ while IFS= read -r f; do
   fi
 done <<< "$KB_FILES"
 
-echo "  交互元素无键盘事件疑似: $KB_MISS（INFO 级）"
+echo "  交互元素无键盘事件疑似: ${KB_MISS}（INFO 级）"
 INFO=$((INFO + KB_MISS))
 
 # === 总结 ===

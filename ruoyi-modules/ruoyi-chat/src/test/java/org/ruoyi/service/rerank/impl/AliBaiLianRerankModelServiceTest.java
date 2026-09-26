@@ -1,6 +1,7 @@
 package org.ruoyi.service.rerank.impl;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.domain.bo.rerank.RerankRequest;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 阿里百炼重排序模型测试类
  * 运行前请设置环境变量 DASHSCOPE_API_KEY 或直接修改 apiKey
  */
+@Tag("dev")
 class AliBaiLianRerankModelServiceTest {
 
     private AliBaiLianRerankModelService service;

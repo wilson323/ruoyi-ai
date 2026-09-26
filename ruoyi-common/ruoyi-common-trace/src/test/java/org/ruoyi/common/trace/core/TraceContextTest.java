@@ -1,11 +1,13 @@
 package org.ruoyi.common.trace.core;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@Tag("dev")
 class TraceContextTest {
 
     @AfterEach

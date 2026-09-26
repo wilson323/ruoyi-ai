@@ -42,7 +42,7 @@ T1_ACTUAL=$(bash "$TARGET" > /tmp/t1.out 2>&1; echo $?)
 if [ "$T1_ACTUAL" = "2" ] || [ "$T1_ACTUAL" = "3" ]; then
   assert_exit "T1 默认扫描" "0_or_1" "$T1_ACTUAL"
 else
-  echo "  [OK] T1 默认扫描（exit=$T1_ACTUAL，脚本可执行）"
+  echo "  [OK] T1 默认扫描（exit=${T1_ACTUAL}，脚本可执行）"
   PASS_COUNT=$((PASS_COUNT + 1))
 fi
 
@@ -62,7 +62,7 @@ T4_ACTUAL=$(MG_TARGETS=1,2 bash "$TARGET" > /tmp/t4.out 2>&1; echo $?)
 if [ "$T4_ACTUAL" = "2" ] || [ "$T4_ACTUAL" = "3" ]; then
   assert_exit "T4 子集限定" "0_or_1" "$T4_ACTUAL"
 else
-  echo "  [OK] T4 子集 MG=1,2 (exit=$T4_ACTUAL，子集限定工作)"
+  echo "  [OK] T4 子集 MG=1,2 (exit=${T4_ACTUAL}，子集限定工作)"
   PASS_COUNT=$((PASS_COUNT + 1))
 fi
 

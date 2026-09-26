@@ -85,7 +85,7 @@ while IFS= read -r f; do
   done
 done <<< "$CONST_FILES"
 
-echo "  常量命名疑似违规: $CONST_VIOL（WARN 级，仅提示）"
+echo "  常量命名疑似违规: ${CONST_VIOL}（WARN 级，仅提示）"
 
 # === 3. 前端文件名 kebab-case 检测 ===
 echo "[STEP 3] 前端文件名 kebab-case 检测..."
@@ -108,7 +108,7 @@ if [[ -d "$REPO/../ruoyi-ipd-web/apps/web-antd/src" ]]; then
     fi
   done <<< "$FRONT_FILES"
 
-  echo "  前端文件名疑似违规: $FRONT_VIOL（WARN 级，仅提示）"
+  echo "  前端文件名疑似违规: ${FRONT_VIOL}（WARN 级，仅提示）"
 fi
 
 # === 总结 ===

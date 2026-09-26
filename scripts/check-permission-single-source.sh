@@ -88,7 +88,7 @@ scan_mp2() {
     if [ "$coverage" -ge 90 ]; then
       PASS_REASONS+=("[MP-2] meta.authority 残余 = $count 处 / @deprecated 覆盖 = ${coverage}%（≥ 90%）")
     else
-      FAIL_REASONS+=("[MP-2] meta.authority @deprecated 覆盖 = ${coverage}%（应 ≥ 90%；当前 $deprecated_count/$count）")
+      FAIL_REASONS+=("[MP-2] meta.authority @deprecated 覆盖 = ${coverage}%（应 ≥ 90%；当前 $deprecated_count/${count}）")
       EXIT_CODE=1
     fi
   else
@@ -139,7 +139,7 @@ scan_mp4() {
     if [ "$coverage" -eq 100 ]; then
       PASS_REASONS+=("[MP-4] meta.access → accessCodes 代理覆盖 = ${coverage}%（100%）")
     else
-      FAIL_REASONS+=("[MP-4] meta.access → accessCodes 代理覆盖 = ${coverage}%（应 100%；当前 $proxied/$total）")
+      FAIL_REASONS+=("[MP-4] meta.access → accessCodes 代理覆盖 = ${coverage}%（应 100%；当前 $proxied/${total}）")
       EXIT_CODE=1
     fi
   else
@@ -166,9 +166,9 @@ scan_mp5() {
   if [ "$total" -gt 0 ]; then
     local converge_pct=$((vaccess_count * 100 / total))
     if [ "$converge_pct" -ge 90 ]; then
-      PASS_REASONS+=("[MP-5] meta.authority → v-access:code 收敛 = ${converge_pct}%（≥ 90%；v-access=$vaccess_count/authority=$authority_count）")
+      PASS_REASONS+=("[MP-5] meta.authority → v-access:code 收敛 = ${converge_pct}%（≥ 90%；v-access=$vaccess_count/authority=${authority_count}）")
     else
-      FAIL_REASONS+=("[MP-5] 收敛 = ${converge_pct}%（应 ≥ 90%；当前 $vaccess_count/$total）")
+      FAIL_REASONS+=("[MP-5] 收敛 = ${converge_pct}%（应 ≥ 90%；当前 $vaccess_count/${total}）")
       EXIT_CODE=1
     fi
   else

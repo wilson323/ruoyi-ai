@@ -89,7 +89,7 @@ run_fixture() {
     return 0
   fi
   if ! grep -q -- "$kw" "$rfile" 2>/dev/null; then
-    echo "  [SKIP] $fid: 报告未含「$kw」"
+    echo "  [SKIP] $fid: 报告未含「${kw}」"
     return 0
   fi
   if [ "$actual" = "SKIP-DB" ]; then
@@ -97,10 +97,10 @@ run_fixture() {
     return 0
   fi
   if [[ "$actual" =~ $expected ]]; then
-    echo "  [PASS] $fid: 报告「$kw」→ 现态「$actual」(符合 $expected)"
+    echo "  [PASS] $fid: 报告「${kw}」→ 现态「${actual}」(符合 $expected)"
     return 0
   else
-    echo "  [FAIL] $fid: 报告「$kw」→ 现态「$actual」(不符合 $expected) ——报告基线失真"
+    echo "  [FAIL] $fid: 报告「${kw}」→ 现态「${actual}」(不符合 $expected) ——报告基线失真"
     return 1
   fi
 }

@@ -112,7 +112,7 @@ echo "[STEP 4] window 全局挂载检测..."
 if [[ -d "$FRONT_DIR" ]]; then
   WIN_FILES=$(grep -rlE "window\.[a-zA-Z]+\s*=" "$FRONT_DIR" 2>/dev/null | head -10)
   WIN_COUNT=$(echo "$WIN_FILES" | grep -c "." 2>/dev/null || echo 0)
-  echo "  window 全局挂载文件数: $WIN_COUNT（INFO 级，不计入违规）"
+  echo "  window 全局挂载文件数: ${WIN_COUNT}（INFO 级，不计入违规）"
 fi
 
 # === 总结 ===

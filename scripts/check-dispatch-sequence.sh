@@ -43,7 +43,7 @@ main() {
     exit 2
   fi
 
-  echo "✅ 派单序列单调（last_wt=$last_wt）"
+  echo "✅ 派单序列单调（last_wt=${last_wt}）"
   exit 0
 }
 

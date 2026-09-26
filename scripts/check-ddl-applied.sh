@@ -134,7 +134,7 @@ DRIFT_ARGS=(--db "$DB")
 case "$MODE" in
   cnf)
     if [ ! -f "$CNF" ]; then
-      echo "ERROR: cnf 文件不存在: $CNF（不在 ipd-dev 配置下无法连接真库）" >&2
+      echo "ERROR: cnf 文件不存在: ${CNF}（不在 ipd-dev 配置下无法连接真库）" >&2
       exit 3
     fi
     DRIFT_ARGS+=(--cnf "$CNF")
@@ -170,7 +170,7 @@ fi
 
 # 区分"真库不可达"与"真有漂移"
 if echo "$OUT" | grep -qiE "can't connect|Access denied|Unknown MySQL server|Connection refused|timeout"; then
-  echo "❌ 真库不可达（mode=$MODE）。检查 cnf / docker 服务后再跑"
+  echo "❌ 真库不可达（mode=${MODE}）。检查 cnf / docker 服务后再跑"
   exit 3
 fi
 

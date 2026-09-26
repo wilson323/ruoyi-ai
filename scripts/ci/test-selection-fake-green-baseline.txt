@@ -4,9 +4,15 @@
 # 来源：2026-09-25 本机实测（git ls-files 与 find 两种口径各数一次，均为 6 个）。
 # 机制证据：mvn -o -pl ruoyi-common/ruoyi-common-trace test → RC=0 BUILD SUCCESS，
 #           Tests run: 8，仅 2 份 XML，无 @Tag 的 TraceContextTest 零报告（静默不跑）。
+# R224 收敛 6→3：TraceContextTest / MinimaxEmbeddingProviderTest /
+#   AliBaiLianRerankModelServiceTest 已补 @Tag("dev")，默认 dev 下实测执行且全绿
+#   （trace Tests run: 2；chat Tests run: 7）。
+# 剩余 3 条各自的阻塞原因（不是同一件事，勿一并处理）：
+#   common-core 1 条 → 该模块 classpath 无 JUnit 引擎，补 tag 也跑不了，
+#     实测 groups+excludedGroups 全置空仍 BUILD FAILURE，需加 test 依赖（待 owner 授权）；
+#   Minimax 2 条 → 阻塞于上游缺陷 ChatModelCredentialPolicy
+#     .requireTrustedConfiguration():154 的 else 分支缺 isDeepSeekConfiguration 守卫，
+#     非 deepseek/ppio/atlas/openai/anthropic 的 provider 一律被误判，实测 24 Errors。
 ruoyi-common/ruoyi-common-core/src/test/java/org/ruoyi/common/core/config/ApplicationConfigSmokeTest.java
-ruoyi-common/ruoyi-common-trace/src/test/java/org/ruoyi/common/trace/core/TraceContextTest.java
 ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/integration/MinimaxIntegrationTest.java
 ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/chat/impl/provider/MinimaxServiceImplTest.java
-ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/embed/impl/MinimaxEmbeddingProviderTest.java
-ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/rerank/impl/AliBaiLianRerankModelServiceTest.java

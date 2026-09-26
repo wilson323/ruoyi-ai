@@ -16,7 +16,7 @@ GATE="${REPO_ROOT}/scripts/check-multigates-sync.sh"
 MG_TARGETS="${MG_TARGETS:-2,3,4}"  # R198 DP-3 D 推荐：MG-2/3/4 + MG-1 SKIP
 
 if [ ! -x "$GATE" ]; then
-  echo "[ipd-multigates-pre-commit] 闸门脚本不可执行: $GATE（撞车 0 软化：跳过）"
+  echo "[ipd-multigates-pre-commit] 闸门脚本不可执行: ${GATE}（撞车 0 软化：跳过）"
   exit 0
 fi
 

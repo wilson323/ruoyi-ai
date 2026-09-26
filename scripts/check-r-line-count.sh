@@ -54,10 +54,10 @@ main() {
     local abs_diff=${diff#-}
 
     if [ "$abs_diff" -gt "$TOLERANCE" ]; then
-      echo "❌ $filename 自述 $claim 行 vs 实测 $actual 行（差异 $diff > $TOLERANCE）"
+      echo "❌ $filename 自述 $claim 行 vs 实测 $actual 行（差异 $diff > ${TOLERANCE}）"
       exit_code=2
     else
-      echo "✅ $filename 自述 $claim 行 ≈ 实测 $actual 行（差异 $diff ≤ $TOLERANCE）"
+      echo "✅ $filename 自述 $claim 行 ≈ 实测 $actual 行（差异 $diff ≤ ${TOLERANCE}）"
     fi
   done
 

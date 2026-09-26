@@ -25,7 +25,7 @@ main() {
     echo "[H-17] FAIL_SEED=1 → 故意跑 check-r-line-count.sh 注入 RLC_FAIL_SEED=1"
     set +e; RLC_FAIL_SEED=1 bash scripts/check-r-line-count.sh >/dev/null 2>&1; rc=$?; set -e
     if [ "$rc" -ne 0 ]; then
-      echo "🔴 注入后子脚本 exit $rc（确认 FAIL_SEED=1 → 子脚本非零退出）"
+      echo "🔴 注入后子脚本 exit ${rc}（确认 FAIL_SEED=1 → 子脚本非零退出）"
       echo "✅ 自证能红：子脚本在 FAIL_SEED=1 下能红，PASS"
       exit 1
     fi
@@ -49,7 +49,7 @@ main() {
     case "$rc" in
       0) echo "  ✅ 正常情况 PASS（exit 0）"; pass=$((pass + 1)) ;;
       2) echo "  ⚠️  正常情况 exit 2（用户错误，可能是缺 fixture）"; pass=$((pass + 1)) ;;
-      *) echo "  ❌ 正常情况 FAIL（exit $rc）"; exit_code=1 ;;
+      *) echo "  ❌ 正常情况 FAIL（exit ${rc}）"; exit_code=1 ;;
     esac
 
     # 2. 注入 FAIL_SEED=1
@@ -58,7 +58,7 @@ main() {
       echo "  ❌ FAIL_SEED=1 未非零退出（自证能红缺失 = 假绿！）"
       exit_code=1
     else
-      echo "  ✅ FAIL_SEED=1 非零退出（exit $rc2，自证能红 OK）"
+      echo "  ✅ FAIL_SEED=1 非零退出（exit ${rc2}，自证能红 OK）"
       pass=$((pass + 1))
     fi
   done

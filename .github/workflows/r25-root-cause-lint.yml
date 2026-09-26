@@ -25,6 +25,7 @@ on:
       - 'scripts/check_doc_link.sh'
       - 'scripts/check_deletion_consistency.sh'
       - 'scripts/check_duplicate_ssot.sh'
+      - 'scripts/check-shell-var-multibyte.sh'
       - '.github/workflows/r25-root-cause-lint.yml'
   pull_request:
     paths:
@@ -164,6 +165,15 @@ jobs:
           RC=$?
           set -e
           echo "check_deletion_consistency 退出码: $RC"
+
+      # ---- 门禁 9：shell 变量吞字节（R224，$VAR 紧跟非 ASCII） ----
+      # 不同于上例的 WARN 惯例：本项硬阻断——违例必定是 bug 且修法是机械的
+      # ${VAR}，没有"暂时容忍存量"的理由（存量已于 R224 一次性清零 16 文件 38 行）
+      - name: shell 变量吞字节（check-shell-var-multibyte.sh）
+        id: shellvar
+        run: |
+          bash scripts/check-shell-var-multibyte.sh --self-test
+          bash scripts/check-shell-var-multibyte.sh
 
       # ---- 报告归档 ----
       - name: 报告归档
