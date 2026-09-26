@@ -6,12 +6,14 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.SystemConfig;
 import org.ruoyi.ipd.domain.SystemConfigVersion;
 import org.ruoyi.ipd.mapper.SystemConfigMapper;
 import org.ruoyi.ipd.mapper.SystemConfigVersionMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * 系统参数读取服务（v3 §7 参数表 / 开发说明书 D.0.7；种子见 2026-09-04-ipd-p0-config-seed.sql）
@@ -66,6 +69,28 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
     /** R219 台账③（lane3 D-1）：KPI 权重两键在通用写面也要过 30% 共担下限（对齐 GateEngine A 级键先例） */
     static final String KPI_FUNCTIONAL_WEIGHT_KEY = "kpi.functionalWeight";
     static final String KPI_SHARED_WEIGHT_KEY = "kpi.sharedWeight";
+
+    /**
+     * R219 台账②（AC-CFG-02）：双配置源漂移两键。运行态消费方（GateElementResultService /
+     * GateReviewService 的 resolveSignDeadlineDays、BonusPoolService 的 readActivePoolRate）
+     * 优先读 ipd_business_config，异常才回退本表——PUT /system-configs 只写 system 行会形成
+     * 「API 200 + invalidated=true 但实际生效值不变」黑洞。本集合内的键写代理同步两源。
+     */
+    static final Set<String> DUAL_SOURCE_KEYS = Set.of(
+        BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS,
+        BusinessConfigKeys.BONUS_POOL_RATE);
+
+    /**
+     * R219 台账②：解析源服务。setter + {@code required=false} 注入（对齐 BonusPoolService
+     * 先例），避免波及 3 个 {@code new SystemConfigServiceImpl(mapper, versionMapper)} 测试构造点；
+     * 单测未注入时写代理静默跳过，行为与修复前一致。
+     */
+    private IBusinessConfigService businessConfigService;
+
+    @Autowired(required = false)
+    public void setBusinessConfigService(IBusinessConfigService businessConfigService) {
+        this.businessConfigService = businessConfigService;
+    }
 
     /** PERF-P2-5：Caffeine 缓存——500 上限 + 5 分钟 TTL；详见类 Javadoc。 */
     private Cache<String, Optional<String>> cache = Caffeine.newBuilder()
@@ -167,14 +192,100 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
         }
         String oldValue = existing.getConfigValue();
         // CodeReview L-1：同值短路——不写本体、不写版本链，避免回放/重复提交膨胀不可变版本链
-        if (Objects.equals(normalized, oldValue)) {
+        // R219 台账②：双源键按数值相等比较（真库两源 scale 不同：'3' vs '3'、'0.05' vs '0.0500'），
+        // 否则字面量差异会绕过短路、且 scale 漂移会让 business 侧写代理永不被触发
+        if (isSameValue(key, normalized, oldValue)) {
             invalidate(key);
+            // R219 台账②：system 行已等于新值但 business 行漂移 → 短路分支内也要走代理收敛（自愈）
+            syncResolvingSourceIfDual(key, normalized, operatorId);
             return;
         }
         existing.setConfigValue(normalized);
         systemConfigMapper.updateById(existing);
         recordVersion(existing, oldValue, normalized, operatorId);
         invalidate(key);
+        // R219 台账②：双源键写代理——同事务内把实际生效源（ipd_business_config）也收敛到新值
+        syncResolvingSourceIfDual(key, normalized, operatorId);
+    }
+
+    /**
+     * R219 台账②：写代理。仅对 {@link #DUAL_SOURCE_KEYS} 生效；已一致则跳过（幂等，不膨胀 business 版本链）。
+     * business 侧抛错（含行缺失）时翻译为 STATE_CONFLICT 包络并随同一事务把 system 本体写一并回滚
+     * （fail-closed，防半同步）。
+     */
+    private void syncResolvingSourceIfDual(String key, String value, Long operatorId) {
+        if (!DUAL_SOURCE_KEYS.contains(key) || businessConfigService == null) {
+            return;
+        }
+        String biz = currentBusinessValue(key);
+        if (biz != null && isSameValue(key, biz, value)) {
+            return; // 两源已一致，无需再写
+        }
+        try {
+            businessConfigService.update(key, value, operatorId != null ? operatorId : 0L);
+        } catch (ServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ServiceException("双配置源同步失败 key=" + key + "：" + ex.getMessage(),
+                ApiV1ErrorCode.STATE_CONFLICT.getCode());
+        }
+    }
+
+    /**
+     * R219 台账②：实际生效源（真值链观测）——镜像 resolveSignDeadlineDays 消费优先级：
+     * 双源键且 business 行存在且可解析 → BUSINESS_CONFIG，否则 SYSTEM_CONFIGS。
+     * 非双源键一律 SYSTEM_CONFIGS。
+     */
+    @Override
+    public String resolvingSourceFor(String key) {
+        return currentBusinessValue(key) != null ? "BUSINESS_CONFIG" : "SYSTEM_CONFIGS";
+    }
+
+    /**
+     * R219 台账②：两源是否都已等于 {@code value}。供 Controller 同值短路前复核实际生效源，
+     * 消掉「system 行恰好等于新值、business 行漂移 → 短路后永不收敛」的黑洞分支。
+     * business 行缺失/非法时消费方回退 system 源，不视为漂移（与 {@link #resolvingSourceFor} 同口径）。
+     */
+    @Override
+    public boolean isConsistentWithResolvingSource(String key, String value) {
+        if (!DUAL_SOURCE_KEYS.contains(key)) {
+            return true;
+        }
+        String biz = currentBusinessValue(key);
+        if (biz == null) {
+            return isSameValue(key, value, getValue(key, null));
+        }
+        return isSameValue(key, biz, value) && isSameValue(key, value, getValue(key, null));
+    }
+
+    /** 同值判定：双源键数值语义（0.05 == 0.0500），其余键保持字面量相等（不破 CodeReview L-1 契约） */
+    private static boolean isSameValue(String key, String a, String b) {
+        if (!DUAL_SOURCE_KEYS.contains(key)) {
+            return Objects.equals(a, b);
+        }
+        if (Objects.equals(a, b)) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        try {
+            return new BigDecimal(a.trim()).compareTo(new BigDecimal(b.trim())) == 0;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
+    private String currentBusinessValue(String key) {
+        if (!DUAL_SOURCE_KEYS.contains(key) || businessConfigService == null) {
+            return null;
+        }
+        try {
+            return businessConfigService.getString(key);
+        } catch (Exception ex) {
+            // business 行缺失/服务异常 → 消费方回退 system 源
+            return null;
+        }
     }
 
     /**

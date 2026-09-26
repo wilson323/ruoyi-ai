@@ -78,11 +78,14 @@ public class SystemConfigController {
                 ? String.valueOf(v.getEffectiveFrom().getTime())
                 : (v.getCreateTime() != null ? String.valueOf(v.getCreateTime().getTime()) : "");
         }
-        return ApiV1Response.ok(Map.of(
-            "key", key,
-            "value", systemConfigService.getValue(key, ""),
-            "lastChangeBy", lastChangeBy,
-            "lastChangeAt", lastChangeAt));
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put("key", key);
+        data.put("value", systemConfigService.getValue(key, ""));
+        // R219 台账②（AC-CFG-02）：回显实际生效源，漂移可观测（双源键 business 行存在时写代理已收敛两源）
+        data.put("source", systemConfigService.resolvingSourceFor(key));
+        data.put("lastChangeBy", lastChangeBy);
+        data.put("lastChangeAt", lastChangeAt);
+        return ApiV1Response.ok(data);
     }
 
     /** 更新某参数值（仅超管；写后立即失效缓存，PERF-02 强约束；P0-3.3 同事务写版本链，changed_by 绑会话；BUG-P0-3.2-AUDIT-MISSING：调 auditLogService.append 写 audit_logs） */
@@ -94,15 +97,25 @@ public class SystemConfigController {
         // BUG-P0-3.2-AUDIT-MISSING：取变更前的值，供 audit before_data + 同值短路
         String oldValue = systemConfigService.getValue(key, null);
         // BUG-P0-3.2-AUDIT-MISSING：值未变不调用 service.update（避免版本链污染），也不写 audit
-        if (Objects.equals(oldValue, req.value())) {
-            return ApiV1Response.ok(Map.of("key", key, "value",
-                systemConfigService.getValue(key, req.value()), "invalidated", "true"));
+        // R219 台账②：短路前复核实际生效源——双源键若 business 行漂移，即便 system 行恰好相等也要走代理收敛
+        if (Objects.equals(oldValue, req.value())
+                && systemConfigService.isConsistentWithResolvingSource(key, req.value())) {
+            return ApiV1Response.ok(updateResponse(key, req.value()));
         }
         systemConfigService.update(key, req.value(), actor.id());
         // BUG-P0-3.2-AUDIT-MISSING：变更审计（独立事务 REQUIRES_NEW；AuditEventData.requireJson 保证 before/after 合法 JSON）
         appendConfigUpdateAudit(actor, key, oldValue, req.value(), req.reason());
-        return ApiV1Response.ok(Map.of("key", key, "value",
-            systemConfigService.getValue(key, req.value()), "invalidated", "true"));
+        return ApiV1Response.ok(updateResponse(key, req.value()));
+    }
+
+    /** R219 台账②：PUT 回显带实际生效源（lane1 修复建议：响应体暴露真值链） */
+    private Map<String, String> updateResponse(String key, String newValue) {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put("key", key);
+        data.put("value", systemConfigService.getValue(key, newValue));
+        data.put("invalidated", "true");
+        data.put("source", systemConfigService.resolvingSourceFor(key));
+        return data;
     }
 
     /**

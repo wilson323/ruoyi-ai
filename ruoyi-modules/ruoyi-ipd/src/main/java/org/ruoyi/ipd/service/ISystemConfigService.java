@@ -62,6 +62,19 @@ public interface ISystemConfigService {
     public void update(String key, String value, Long operatorId);
 
     /**
+     * R219 台账②（AC-CFG-02）：该键当前实际生效的配置源（镜像运行态消费优先级）。
+     *
+     * @return BUSINESS_CONFIG（ipd_business_config 行存在且生效）| SYSTEM_CONFIGS（其余情形）
+     */
+    public String resolvingSourceFor(String key);
+
+    /**
+     * R219 台账②：两源是否都已等于 {@code value}。供写面同值短路前复核实际生效源，
+     * 消掉「system 行恰好相等但 business 行漂移 → 短路后永不收敛」的黑洞分支。
+     */
+    public boolean isConsistentWithResolvingSource(String key, String value);
+
+    /**
      * 取指定时间点生效的配置值（按时点版本回溯，非当前行）。
      *
      * @param key  配置键
