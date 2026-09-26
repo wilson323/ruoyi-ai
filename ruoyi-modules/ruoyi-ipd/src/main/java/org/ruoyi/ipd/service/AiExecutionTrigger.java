@@ -55,10 +55,17 @@ public class AiExecutionTrigger {
             return inflight.get(0);
         }
         ActionDef def = ActionCatalog.byCode(actionCode);
+        // R221 WARNING#2 修复：CHAT 行是「对话填表建议记录」而非引擎工作项——dispatchCycle 已排除 CHAT。
+        // 若置 PENDING 则永不进终态 → 生成列 active_dedup 恒非空 → 同一动作实例的后续填表被 dedup 守卫
+        // 吞掉、新 fill_payload 永不落库（违背 spec §3.5「全程可追溯可重放」）。故 CHAT 行插入即置终态
+        // SUCCEEDED：active_dedup 落 NULL（终态不参与唯一约束）→ 每次填表都能新落一行，且永不被引擎派发。
+        boolean chatRecord = AiAgentTask.TRIGGER_CHAT.equals(triggerType);
         AiAgentTask t = AiAgentTask.builder()
             .projectId(projectId).actionCode(def.code()).stageActionId(stageActionId)
             .triggerType(triggerType).execMode(def.execMode())
-            .status(AiAgentTask.STATUS_PENDING).dedupKey(dedupKey)
+            .status(chatRecord ? AiAgentTask.STATUS_SUCCEEDED : AiAgentTask.STATUS_PENDING)
+            .resultSummary(chatRecord ? "suggest-only（对话填表建议记录，不派发执行）" : null)
+            .dedupKey(dedupKey)
             .attempt(0).fillPayload(fillPayloadJson).inputDigest(inputDigest)
             .triggeredBy(triggeredBy)
             .build();

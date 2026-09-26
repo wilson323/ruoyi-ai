@@ -313,12 +313,21 @@ public class AiCopilotService implements IAiCopilotService {
                 JsonNode node = JSON.readTree(pageCtx);
                 if (node.hasNonNull("scene")) { scene = node.get("scene").asText(); }
                 if (node.hasNonNull("actionCode")) { actionCode = node.get("actionCode").asText(); }
-                if (node.hasNonNull("stageActionId")) { stageActionId = node.get("stageActionId").asLong(); }
+                // R221 WARNING#4 修复：asLong() 对非数值/对象节点静默返回 0，会落 stage_action_id=0（指向不存在的
+                // 动作实例）并污染 dedupKey。仅当可转 long 且 >0 才采纳，否则保持 null。
+                JsonNode sid = node.get("stageActionId");
+                if (sid != null && sid.canConvertToLong() && sid.asLong() > 0) { stageActionId = sid.asLong(); }
             } catch (Exception e) {
                 log.warn("[R221] pageContext 解析失败，降级普通问答: {}", e.getMessage());
             }
         }
         if (scene == null || !FILL_FIELD_WHITELIST.containsKey(scene)) {
+            // R221 WARNING#3 修复：拒绝路径（客户端探测 scene / 越白名单）是最该被观测的安全事件，
+            // 补一条 AI_FILL 审计（status=REJECTED:*，keptCount=0）再诚实降级普通问答，事后可区分
+            // 「正常闲聊」与「填表请求被白名单拒绝」。
+            long latencyReject = clock.millis() - start;
+            String rejectStatus = (scene == null) ? "REJECTED:bad_page_context" : "REJECTED:unknown_scene";
+            auditFill(actor, req, scene, actionCode, stageActionId, 0, List.of(), latencyReject, 0, 0, null, rejectStatus);
             return chitchatPath(actor, req, start, "CHITCHAT");
         }
 
@@ -366,18 +375,23 @@ public class AiCopilotService implements IAiCopilotService {
             fillPayloadJson = null;
         }
 
-        // 落 CHAT 任务行（可追溯可重放；引擎不派发 CHAT 行——dispatchCycle 已排除 trigger_type=CHAT）
-        if (actionCode != null && !actionCode.isBlank()) {
+        // 落 CHAT 任务行（可追溯可重放；引擎不派发 CHAT 行——dispatchCycle 已排除 trigger_type=CHAT）。
+        // R221 WARNING#2 修复：project_id 是 NOT NULL 列，副驾允许全局提问（projectId=null）——
+        // 此时显式跳过落行并记 WARN，而非让 NOT NULL 违例被 catch 静默吞成“落行失败”。
+        if (req.projectId() != null && actionCode != null && !actionCode.isBlank()) {
             try {
                 aiExecutionTrigger.triggerChat(req.projectId(), actionCode, stageActionId, actor.id(),
                     fillPayloadJson, GuestDemandService.sha256Short(req.message()));
             } catch (Exception e) {
                 log.warn("[R221] FILL_PAGE 落 CHAT 任务行失败（不阻断响应）: {}", e.getMessage());
             }
+        } else {
+            log.warn("[R221] FILL_PAGE 跳过落 CHAT 行（projectId/actionCode 缺失，建议记录不落库）: projectId={} actionCode={}",
+                req.projectId(), actionCode);
         }
 
-        auditFill(actor, req, scene, kept.size(), dropped, latency,
-            result.promptTokens(), result.completionTokens(), config.getModelName());
+        auditFill(actor, req, scene, actionCode, stageActionId, kept.size(), dropped, latency,
+            result.promptTokens(), result.completionTokens(), config.getModelName(), "ok");
 
         String answer = kept.isEmpty()
             ? "未能从对话中提取可填充的白名单字段，请补充信息或手工填写。"
@@ -420,10 +434,11 @@ public class AiCopilotService implements IAiCopilotService {
         }
     }
 
-    /** AI_FILL 审计（aiRole=agent_exec 已白名单化）：只记丢弃键名不记值（BR-AI-04 不存原文/敏感值）。 */
-    private void auditFill(IpdActor actor, AiCopilotReq req, String scene, int keptCount,
-                           List<String> droppedKeys, long latencyMs, int tokenPrompt, int tokenCompletion,
-                           String aiModel) {
+    /** AI_FILL 审计（aiRole=agent_exec 已白名单化）：只记丢弃键名不记值（BR-AI-04 不存原文/敏感值）。
+     *  R221 SUGGESTION#8：补 actionCode/stageActionId（非敏感标识）使两条痕迹可关联；status 支持 ok/REJECTED:*。 */
+    private void auditFill(IpdActor actor, AiCopilotReq req, String scene, String actionCode, Long stageActionId,
+                           int keptCount, List<String> droppedKeys, long latencyMs, int tokenPrompt, int tokenCompletion,
+                           String aiModel, String status) {
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
             .action("AI_FILL").entityType("AI_COPILOT")
@@ -432,11 +447,13 @@ public class AiCopilotService implements IAiCopilotService {
                 "aiModel", aiModel == null || aiModel.isBlank() ? "intent_match" : aiModel,
                 "aiRole", "agent_exec",
                 "scene", scene,
+                "actionCode", actionCode,
+                "stageActionId", stageActionId,
                 "projectId", req.projectId(),
                 "mode", "suggest",
                 "keptCount", keptCount,
                 "droppedKeys", droppedKeys,
-                "status", "ok",
+                "status", status,
                 "tokenPrompt", tokenPrompt,
                 "tokenCompletion", tokenCompletion,
                 "latencyMs", latencyMs,

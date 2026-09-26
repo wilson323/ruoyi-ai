@@ -93,6 +93,10 @@ class AiExecutionTriggerTest {
         assertThat(cap.getValue().getTriggerType()).isEqualTo(AiAgentTask.TRIGGER_CHAT);
         assertThat(cap.getValue().getFillPayload()).contains("stage-action-fields");
         assertThat(cap.getValue().getInputDigest()).isEqualTo("digest-abc");
+        // R221 WARNING#2：CHAT 行插入即终态 SUCCEEDED（suggest-only）——使生成列 active_dedup 落 NULL，
+        // 同一动作实例的后续填表不被 dedup 吞、新 fill_payload 能逐次落库，且永不被引擎派发。
+        assertThat(cap.getValue().getStatus()).isEqualTo(AiAgentTask.STATUS_SUCCEEDED);
+        assertThat(cap.getValue().getResultSummary()).contains("suggest-only");
     }
 
     /** #4：INSERT 撞 DB 唯一兜底 uk_active_dedup（并发双插）时重查返回既有在途行，保证幂等。 */

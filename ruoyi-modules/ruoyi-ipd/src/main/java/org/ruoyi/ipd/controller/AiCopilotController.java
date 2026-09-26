@@ -83,11 +83,15 @@ public class AiCopilotController {
      *
      * @param projectId 可空（与同步端同语义）
      * @param message   必填，URL query 上限 2000（与 DTO @Size 对齐）
+     * @param pageContext 可空（R221 对话即填表，spec §3.5）：宿主页面注册的填表上下文 JSON，上限 4000（与 DTO @Size 对齐）；
+     *                    非空且 message 含「填」类关键字才命中 FILL_PAGE，done 帧携 fillPayload。
      */
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@RequestParam(required = false) Long projectId,
                              @RequestParam @jakarta.validation.constraints.NotBlank
-                             @jakarta.validation.constraints.Size(max = 2000) String message) {
+                             @jakarta.validation.constraints.Size(max = 2000) String message,
+                             @RequestParam(required = false)
+                             @jakarta.validation.constraints.Size(max = 4000) String pageContext) {
         // 2026-09-11：入口鉴权异常（requireInternal 抛 IpdBusinessException / NotLoginException）
         // 不再走 advice 返回 JSON——EventSource 收到 JSON 响应同样报 MIME 错误；
         // 改为推 error 帧 + complete()，前端按事件名识别业务错误（event=error）。
@@ -103,7 +107,7 @@ public class AiCopilotController {
                 ibe.getMessage(), log);
             return emitter;
         }
-        AiCopilotReq req = new AiCopilotReq(projectId, message, java.util.List.of());
+        AiCopilotReq req = new AiCopilotReq(projectId, message, java.util.List.of(), null, pageContext);
         SSE_EXECUTOR.execute(() -> pushChunks(emitter, actor, req));
         return emitter;
     }

@@ -303,6 +303,68 @@ class AiCopilotServiceTest {
         assertTrue(after.contains("\"aiModel\":\"gpt-x\""), "失败也记 aiModel（白名单可通过）");
     }
 
+    // ============ R221 对话即填表（FILL_PAGE 端到端：白名单强校验 + suggest + 落行 + 审计） ============
+
+    @Test
+    @DisplayName("R221 FILL_PAGE：白名单只留 farValue、丢弃 salary，mode=suggest，落 CHAT 行 + AI_FILL 审计不记值")
+    void fillPagePathSuggestsOnlyWhitelistedFields() {
+        stubEnabledConfig();
+        when(projectMapper.selectById(100L)).thenReturn(project(100L));
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class)))
+            .thenReturn(AiChatResult.ok("{\"farValue\":\"0.002\",\"salary\":\"99999\"}", 10, 20, 50L));
+        AiCopilotReq req = new AiCopilotReq(100L, "帮我把基准值填了", List.of(), null,
+            "{\"scene\":\"stage-action-fields\",\"actionCode\":\"C08\",\"stageActionId\":9003}");
+
+        AiCopilotResp resp = service.chat(SA, req);
+
+        assertEquals("FILL_PAGE", resp.intent());
+        assertNotNull(resp.fillPayload());
+        assertEquals("suggest", resp.fillPayload().get("mode")); // 敏感字段红线：永远 suggest 非 auto
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fields = (Map<String, Object>) resp.fillPayload().get("fields");
+        assertTrue(fields.containsKey("farValue"));
+        assertFalse(fields.containsKey("salary")); // 白名单外字段后端强校验丢弃
+        // 落 CHAT 行（可追溯可重放；projectId=100 非空、actionCode=C08、stageActionId=9003、触发人 SA.id=1）
+        verify(aiExecutionTrigger).triggerChat(eq(100L), eq("C08"), eq(9003L), eq(1L), any(), any());
+        // AI_FILL 审计：aiRole=agent_exec、status=ok、actionCode 关联、只记丢弃键名 salary 不记其值 99999
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        AuditLog fill = cap.getValue();
+        assertEquals("AI_FILL", fill.getAction());
+        String after = fill.getAfterData();
+        assertTrue(after.contains("\"aiRole\":\"agent_exec\""));
+        assertTrue(after.contains("\"status\":\"ok\""));
+        assertTrue(after.contains("\"actionCode\":\"C08\""));
+        assertTrue(after.contains("\"keptCount\":1"));
+        assertTrue(after.contains("salary"), "丢弃键名入审计");
+        assertFalse(after.contains("99999"), "丢弃字段的值绝不入审计（BR-AI-04）");
+    }
+
+    @Test
+    @DisplayName("R221 WARNING#3：未登记 scene 拒绝 → 补 AI_FILL(REJECTED) 留痕 + 降级闲聊 + 不落 CHAT 行 + 无 fillPayload")
+    void fillPageRejectsUnknownSceneWithAuditTrail() {
+        stubEnabledConfig();
+        when(projectMapper.selectById(100L)).thenReturn(project(100L));
+        when(workbenchService.summary(any(), eq(100L))).thenReturn(Map.of(
+            "currentAdvance", Map.of(), "tasks", List.of()));
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class)))
+            .thenReturn(AiChatResult.ok("闲聊回答", 5, 10, 30L));
+        AiCopilotReq req = new AiCopilotReq(100L, "帮我填金额", List.of(), null,
+            "{\"scene\":\"bonus-pool\",\"actionCode\":\"X99\"}");
+
+        AiCopilotResp resp = service.chat(SA, req);
+
+        assertNull(resp.fillPayload()); // 拒绝：无填充载荷
+        assertEquals("CHITCHAT", resp.intent()); // 诚实降级普通问答
+        verify(aiExecutionTrigger, never()).triggerChat(any(), any(), any(), any(), any(), any()); // 不落行
+        // 两次审计：AI_FILL(REJECTED:unknown_scene) + 降级的 AI_COPILOT_CHAT
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService, times(2)).append(cap.capture());
+        assertTrue(cap.getAllValues().stream().anyMatch(l ->
+            "AI_FILL".equals(l.getAction()) && l.getAfterData().contains("REJECTED:unknown_scene")),
+            "拒绝路径必留 AI_FILL(REJECTED) 安全痕迹");
+    }
+
     @Test
     @DisplayName("CHITCHAT 路径：未启用 AI 模型（currentEnabled STATE_CONFLICT）→ 友好兜底，不抛 50002")
     void chitchatPathNoEnabledConfig() {

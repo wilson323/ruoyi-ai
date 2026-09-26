@@ -22,7 +22,7 @@ public record AiCopilotReq(Long projectId,
                            @NotBlank @Size(max = 2000) String message,
                            List<CopilotTurn> history,
                            String docType,
-                           String pageContext) {
+                           @Size(max = 4000) String pageContext) {
 
     /** 兼容 3 参历史调用（docType/pageContext 默认 null）。 */
     public AiCopilotReq(Long projectId, String message, List<CopilotTurn> history) {
