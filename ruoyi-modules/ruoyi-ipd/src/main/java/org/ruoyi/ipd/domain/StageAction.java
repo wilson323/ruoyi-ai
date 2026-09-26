@@ -31,6 +31,10 @@ public class StageAction extends BaseEntity {
     private String ownerRole;
     private String depth;
     private String status;
+    /** 完成确认时间（confirm() 落库；AC-INC-07 四类并集活动信号之一，R219 收尾波补映射） */
+    private Date confirmedAt;
+    /** 完成确认人（同上，只读映射，DDL 列既有） */
+    private Long confirmedBy;
     /**
      * P1-9.1 / BR-PROD-03：HISTORICAL_MISSING=历史缺失（不伪造 DONE，门禁视为已满足）。
      */

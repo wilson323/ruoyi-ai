@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
+import org.ruoyi.ipd.domain.Deliverable;
+import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
@@ -16,6 +18,7 @@ import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
+import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -59,11 +62,14 @@ import static org.mockito.Mockito.when;
  * ③ notifyOverdueActions 接收人映射：MARKET_PM/RD_PM/BOTH→在职成员、GROUP_LEADER→主组组长、
  *    可选项缺失优雅降级返回 0；
  * ④ generateMonthlyLedgers：幂等跳过、2×cap 标记、低分腿停发（FINALIZED 且 &lt;60）、
+ *    NO_OUTPUT_60_DAYS 腿停发（附加项目四类并集活动空/超 60 天，AC-INC-07；主项目不触发 AC-INC-08）、
  *    kpiRecordMapper 缺失不误停、month 格式守卫。
  *
  * <p>mock 合法性：全部 fixture 字段组合对齐真库写入路径——MARKET_PM 开放动作带 dueDate 是
  * instantiate+transit(IN_PROGRESS)+PATCH dueDate 的正常产物；project_members 在职行（exitDate NULL）
- * 是 bindMember 正常产物；KPI FINALIZED 行是真库 kpi_records 现状（全量 FINALIZED）。
+ * 是 bindMember 正常产物；KPI FINALIZED 行是真库 kpi_records 现状（全量 FINALIZED）；
+ * ADDITIONAL member 是 bindMember 真库值域（project_members.member_type 实测 64 行）；
+ * stage_actions.confirmed_at/by 是 confirm() 正常产物，deliverables.uploaded_at/by 是上传正常产物。
  */
 @Tag("dev")
 class R219SchedulerWiringTest {
@@ -77,6 +83,8 @@ class R219SchedulerWiringTest {
         TableInfoHelper.initTableInfo(assistant, ProductGroup.class);
         TableInfoHelper.initTableInfo(assistant, AllowanceLedger.class);
         TableInfoHelper.initTableInfo(assistant, KpiRecord.class);
+        TableInfoHelper.initTableInfo(assistant, Deliverable.class);
+        TableInfoHelper.initTableInfo(assistant, GateReview.class);
     }
 
     // ===== 契约①：三链调度接线（委托 + cron 错峰锁定） =====
@@ -263,9 +271,17 @@ class R219SchedulerWiringTest {
     private AllowanceLedgerMapper ledgerMapper;
     private ProjectMemberMapper allowanceMemberMapper;
     private KpiRecordMapper kpiRecordMapper;
+    private StageActionMapper stageActionMapper;
+    private DeliverableMapper deliverableMapper;
+    private GateReviewMapper gateReviewMapper;
     private AllowanceService allowanceService;
 
     private AllowanceService ledgerService(boolean withKpi) {
+        return ledgerService(withKpi, true);
+    }
+
+    /** withActivity=false：活动类 mapper 全不装配（四类并集数据源缺失 ⇒ 不判 NO_OUTPUT 腿）。 */
+    private AllowanceService ledgerService(boolean withKpi, boolean withActivity) {
         if (allowanceService == null) {
             ledgerMapper = mock(AllowanceLedgerMapper.class);
             allowanceMemberMapper = mock(ProjectMemberMapper.class);
@@ -273,14 +289,27 @@ class R219SchedulerWiringTest {
             allowanceService = new AllowanceService(ledgerMapper, allowanceMemberMapper);
         }
         allowanceService.setKpiRecordMapper(withKpi ? kpiRecordMapper : null);
+        if (stageActionMapper == null) {
+            stageActionMapper = mock(StageActionMapper.class);
+            deliverableMapper = mock(DeliverableMapper.class);
+            gateReviewMapper = mock(GateReviewMapper.class);
+        }
+        allowanceService.setActivityMappers(
+            withActivity ? stageActionMapper : null,
+            withActivity ? deliverableMapper : null,
+            withActivity ? gateReviewMapper : null);
         return allowanceService;
     }
 
     private static ProjectMember bound(Long personId, Long projectId, String amount) {
+        return bound(personId, projectId, amount, null);
+    }
+
+    private static ProjectMember bound(Long personId, Long projectId, String amount, String memberType) {
         return ProjectMember.builder()
             .projectId(projectId).personId(personId).role("RD_PM")
             .lockedLevel("L3").lockedAmount(new BigDecimal(amount))
-            .joinDate(new Date(0L)).exitDate(null).build();
+            .joinDate(new Date(0L)).exitDate(null).memberType(memberType).build();
     }
 
     @Test
@@ -368,6 +397,73 @@ class R219SchedulerWiringTest {
             .isInstanceOf(IpdBusinessException.class);
         assertThatThrownBy(() -> svc.generateMonthlyLedgers(null))
             .isInstanceOf(IpdBusinessException.class);
+    }
+
+    @Test
+    @DisplayName("R219-④g NO_OUTPUT 腿：ADDITIONAL 成员四类信号全空 → STOP_NO_OUTPUT_60_DAYS 且实发 0（AC-INC-07）")
+    void generateAppliesNoOutputStopForAdditionalMember() {
+        AllowanceService svc = ledgerService(true);
+        when(allowanceMemberMapper.selectList(any())).thenReturn(List.of(
+            bound(1L, 10L, "2000", "ADDITIONAL")));
+        when(ledgerMapper.selectCount(any())).thenReturn(0L);
+        // 四类 mapper 默认 mock：selectOne 均返回 null（该人该项目从未活动）
+
+        assertThat(svc.generateMonthlyLedgers("2026-08")).isEqualTo(1);
+        var captor = org.mockito.ArgumentCaptor.forClass(AllowanceLedger.class);
+        verify(ledgerMapper).insert(captor.capture());
+        assertThat(captor.getValue().getStopReason()).isEqualTo("STOP_NO_OUTPUT_60_DAYS");
+        assertThat(captor.getValue().getFinalAmount()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    @DisplayName("R219-④h 主项目不触发：PRIMARY 成员同样四类全空 → 不停发（AC-INC-08）")
+    void generateNeverStopsNoOutputForPrimaryMember() {
+        AllowanceService svc = ledgerService(true);
+        when(allowanceMemberMapper.selectList(any())).thenReturn(List.of(
+            bound(1L, 10L, "2000", "PRIMARY")));
+        when(ledgerMapper.selectCount(any())).thenReturn(0L);
+
+        assertThat(svc.generateMonthlyLedgers("2026-08")).isEqualTo(1);
+        var captor = org.mockito.ArgumentCaptor.forClass(AllowanceLedger.class);
+        verify(ledgerMapper).insert(captor.capture());
+        assertThat(captor.getValue().getStopReason()).isNull();
+        assertThat(captor.getValue().getFinalAmount()).isEqualByComparingTo("2000");
+    }
+
+    @Test
+    @DisplayName("R219-④i 四类并集取最近：61天前动作+30天前交付物 → 30 天不停发；并集全空才停")
+    void generateTakesLatestOfFourSignals() {
+        AllowanceService svc = ledgerService(true);
+        when(allowanceMemberMapper.selectList(any())).thenReturn(List.of(
+            bound(1L, 10L, "2000", "ADDITIONAL")));
+        when(ledgerMapper.selectCount(any())).thenReturn(0L);
+        Date daysAgo61 = new Date(System.currentTimeMillis() - 61L * 24 * 3600 * 1000);
+        Date daysAgo30 = new Date(System.currentTimeMillis() - 30L * 24 * 3600 * 1000);
+        when(stageActionMapper.selectOne(any())).thenReturn(
+            StageAction.builder().projectId(10L).confirmedBy(1L).confirmedAt(daysAgo61).build());
+        when(deliverableMapper.selectOne(any())).thenReturn(
+            Deliverable.builder().projectId(10L).uploadedBy(1L).uploadedAt(daysAgo30).build());
+
+        assertThat(svc.generateMonthlyLedgers("2026-08")).isEqualTo(1);
+        var captor = org.mockito.ArgumentCaptor.forClass(AllowanceLedger.class);
+        verify(ledgerMapper).insert(captor.capture());
+        assertThat(captor.getValue().getStopReason()).isNull();
+        assertThat(captor.getValue().getFinalAmount()).isEqualByComparingTo("2000");
+    }
+
+    @Test
+    @DisplayName("R219-④j 活动类 mapper 全不装配：ADDITIONAL 成员 → 不判 NO_OUTPUT 腿（少算不误停）")
+    void generateWithoutActivityMappersNeverStopsNoOutput() {
+        AllowanceService svc = ledgerService(true, false);
+        when(allowanceMemberMapper.selectList(any())).thenReturn(List.of(
+            bound(1L, 10L, "2000", "ADDITIONAL")));
+        when(ledgerMapper.selectCount(any())).thenReturn(0L);
+
+        assertThat(svc.generateMonthlyLedgers("2026-08")).isEqualTo(1);
+        var captor = org.mockito.ArgumentCaptor.forClass(AllowanceLedger.class);
+        verify(ledgerMapper).insert(captor.capture());
+        assertThat(captor.getValue().getStopReason()).isNull();
+        assertThat(captor.getValue().getFinalAmount()).isEqualByComparingTo("2000");
     }
 
     // ===== 契约②'：autoScan 编排「先生成后计数」 =====

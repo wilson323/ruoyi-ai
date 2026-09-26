@@ -5,11 +5,17 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Deliverable;
+import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
+import org.ruoyi.ipd.mapper.DeliverableMapper;
+import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +68,24 @@ public class AllowanceService implements IAllowanceService {
     @Autowired(required = false)
     public void setKpiRecordMapper(KpiRecordMapper kpiRecordMapper) {
         this.kpiRecordMapper = kpiRecordMapper;
+    }
+
+    /**
+     * R219 收尾波（2026-09-26 owner 授权三项落地）：AC-INC-07 NO_OUTPUT_60_DAYS 腿的
+     * 四类并集活动数据源（动作/交付物/记录/Gate，可选注入，同 kpiRecordMapper 保守口径
+     * ——任一缺失跳过该类信号，少算不误停）。
+     */
+    private StageActionMapper stageActionMapper;
+    private DeliverableMapper deliverableMapper;
+    private GateReviewMapper gateReviewMapper;
+
+    @Autowired(required = false)
+    public void setActivityMappers(StageActionMapper stageActionMapper,
+                                   DeliverableMapper deliverableMapper,
+                                   GateReviewMapper gateReviewMapper) {
+        this.stageActionMapper = stageActionMapper;
+        this.deliverableMapper = deliverableMapper;
+        this.gateReviewMapper = gateReviewMapper;
     }
 
     /** 可注入时钟（裸时钟守卫禁一：审计时间戳走业务时钟；测试固定时刻消除摇摆）。 */
@@ -231,6 +255,80 @@ public class AllowanceService implements IAllowanceService {
     }
 
     /**
+     * AC-INC-07 主/附加项目判定：member_type=ADDITIONAL 为附加；
+     * null/PRIMARY/CORE/FORMAL 均视为主项目（保守不误停，AC-INC-08）。
+     */
+    static boolean isAdditionalMember(ProjectMember m) {
+        return m != null && "ADDITIONAL".equals(m.getMemberType());
+    }
+
+    /**
+     * R219 收尾波：三类活动专用 mapper（动作/交付物/Gate）至少装配一个才判 NO_OUTPUT 腿——
+     * 全缺失 ⇒ 数据源不可用，整腿跳过（同 kpiRecordMapper 缺失不判低分腿的保守口径，AC-INC-07）。
+     */
+    boolean hasAnyActivitySource() {
+        return stageActionMapper != null || deliverableMapper != null || gateReviewMapper != null;
+    }
+
+    /**
+     * R219 收尾波：AC-INC-07 四类并集活动数据源——该人该项目在
+     * 动作确认（confirmed_at）/交付物上传（uploaded_at）/KPI 评分（scored_at）/Gate 签署（signed_at）
+     * 四类信号上的最近时间。任一 mapper 未装配则跳过该类（少算一类 ⇒ 更少停发，保守方向）。
+     * 全未装配时本方法返回 null，但 "null=从未活动" 仅在数据源可用时有意义——
+     * 调用方必须先过 {@link #hasAnyActivitySource()} 守卫，防把 "查不到" 误判为 "从未活动" 而停发。
+     */
+    Date resolveLastActivityDate(Long personId, Long projectId) {
+        Date last = null;
+        if (stageActionMapper != null) {
+            StageAction sa = stageActionMapper.selectOne(new LambdaQueryWrapper<StageAction>()
+                .eq(StageAction::getProjectId, projectId)
+                .eq(StageAction::getConfirmedBy, personId)
+                .isNotNull(StageAction::getConfirmedAt)
+                .orderByDesc(StageAction::getConfirmedAt)
+                .last("LIMIT 1"));
+            last = maxDate(last, sa == null ? null : sa.getConfirmedAt());
+        }
+        if (deliverableMapper != null) {
+            Deliverable d = deliverableMapper.selectOne(new LambdaQueryWrapper<Deliverable>()
+                .eq(Deliverable::getProjectId, projectId)
+                .eq(Deliverable::getUploadedBy, personId)
+                .isNotNull(Deliverable::getUploadedAt)
+                .orderByDesc(Deliverable::getUploadedAt)
+                .last("LIMIT 1"));
+            last = maxDate(last, d == null ? null : d.getUploadedAt());
+        }
+        if (kpiRecordMapper != null) {
+            KpiRecord k = kpiRecordMapper.selectOne(new LambdaQueryWrapper<KpiRecord>()
+                .eq(KpiRecord::getProjectId, projectId)
+                .eq(KpiRecord::getPersonId, personId)
+                .isNotNull(KpiRecord::getScoredAt)
+                .orderByDesc(KpiRecord::getScoredAt)
+                .last("LIMIT 1"));
+            last = maxDate(last, k == null ? null : k.getScoredAt());
+        }
+        if (gateReviewMapper != null) {
+            GateReview g = gateReviewMapper.selectOne(new LambdaQueryWrapper<GateReview>()
+                .eq(GateReview::getProjectId, projectId)
+                .eq(GateReview::getReviewerId, personId)
+                .isNotNull(GateReview::getSignedAt)
+                .orderByDesc(GateReview::getSignedAt)
+                .last("LIMIT 1"));
+            last = maxDate(last, g == null ? null : g.getSignedAt());
+        }
+        return last;
+    }
+
+    private static Date maxDate(Date a, Date b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        return a.after(b) ? a : b;
+    }
+
+    /**
      * P3-3.2：判定停发原因（综合绩效分 + 无产出 + 主/附加）三层合一。
      */
     public String determineStopReasonP332(BigDecimal comprehensiveScore,
@@ -353,9 +451,10 @@ public class AllowanceService implements IAllowanceService {
      *   <li>幂等：{@link #existsByKey} 命中则跳过，重复扫描不重复成账（P3-3.3）；</li>
      *   <li>金额：per-project 行记各自 lockedAmount；capApplied 按人当月维度判定
      *       （Σ > 2×最高锁定额时该人所有行标 1，实发封顶语义由 calculateMonthlyAllowance 承担）；</li>
-     *   <li>停发腿：仅低分腿（当月 FINALIZED KPI 综合分 < 60 → STOP_SCORE_BELOW_60，finalAmount=0）；
-     *       NO_OUTPUT_60_DAYS 腿缺四类并集活动数据源，本波不接（诚实登记 PARTIAL，待后续卡）；</li>
-     *   <li>kpiRecordMapper 未注入时不判停发腿，防误停发。</li>
+     *   <li>停发腿：低分腿（当月 FINALIZED KPI 综合分 < 60 → STOP_SCORE_BELOW_60）+
+     *       NO_OUTPUT_60_DAYS 腿（附加项目四类并集活动空/超 60 天 → STOP_NO_OUTPUT_60_DAYS，
+     *       AC-INC-07/08），低分优先；停发行 finalAmount=0（R219 收尾波 2026-09-26 接线，原 PARTIAL 清账）；</li>
+     *   <li>kpiRecordMapper 未注入不判低分腿；活动类 mapper 未注入跳过该类信号，防误停发。</li>
      * </ul>
      *
      * @param month 账期 yyyy-MM
@@ -403,11 +502,19 @@ public class AllowanceService implements IAllowanceService {
             boolean capApplied = sb != null && amt.signum() > 0
                 && sb[0].compareTo(sb[1].multiply(DEFAULT_CAP_MULTIPLIER)) > 0;
             boolean lowScore = isLowScoreForMonth(m.getPersonId(), month, lowScoreByPerson);
+            // R219 收尾波：NO_OUTPUT_60_DAYS 腿（低分已停则不再查四类并集——省扫描且低分优先；
+            // 活动数据源全缺失 ⇒ 整腿跳过，防 "查不到" 被误判 "从未活动" 而停发）
+            String noOutputStop = null;
+            if (!lowScore && isAdditionalMember(m) && hasAnyActivitySource()) {
+                noOutputStop = determineNoOutput60DaysStop(
+                    resolveLastActivityDate(m.getPersonId(), m.getProjectId()), now(), true);
+            }
+            boolean stopped = lowScore || noOutputStop != null;
 
-            AllowanceLedger ledger = buildLedger(m.getPersonId(), month, lowScore ? BigDecimal.ZERO : amt,
+            AllowanceLedger ledger = buildLedger(m.getPersonId(), month, stopped ? BigDecimal.ZERO : amt,
                 m.getLockedLevel(), amt, capApplied);
-            if (lowScore) {
-                ledger.setStopReason("STOP_SCORE_BELOW_60");
+            if (stopped) {
+                ledger.setStopReason(lowScore ? "STOP_SCORE_BELOW_60" : noOutputStop);
                 ledger.setStopStartDate(now());
             }
             if (recordOrSkip(ledger, m.getProjectId()) != null) {
