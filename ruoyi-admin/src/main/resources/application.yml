@@ -416,6 +416,8 @@ tenant:
     - saved_items
     - change_implementations
     - change_implementation_evidence
+    # R221（2026-09-26）：AI 代理执行任务队列——单企业私有部署语义，调度线程无会话上下文须豁免租户过滤
+    - ai_agent_tasks
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

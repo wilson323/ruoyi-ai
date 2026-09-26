@@ -21,4 +21,6 @@ public final class IpdEntityType {
     public static final String LAUNCH_DATE_CHANGE_REQUESTS = "launch_date_change_requests";
     public static final String PROJECTS = "projects";
     public static final String AUDIT_LOGS = "audit_logs";
+    /** R221（2026-09-26）：AI 代理执行任务队列实体类型（ai_agent_tasks 表）。 */
+    public static final String AI_AGENT_TASK = "ai_agent_task";
 }
