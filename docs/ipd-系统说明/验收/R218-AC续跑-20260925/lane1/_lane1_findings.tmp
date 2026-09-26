@@ -1,0 +1,14 @@
+{
+ "defects": [
+  "AUTH-09 真缺陷候选: 同组PM间项目详情零隔离,GET /api/v1/projects/{id} 对非成员PM返回全量数据(含名称)。",
+  "AUTH-06 派生: persons 状态机存在不可恢复组合 DISABLED+ACTIVE (r214-mkt id=2114000000000000001) —— rehire 要 employment=RESIGNED 返 50002/当前雇佣状态不允许复职: ACTIVE, resign 要 account=ACTIVE 返 50002/当前账户状态不允许离职冻结: DISABLED, 两路互斥拒绝, 该人员永久卡死且无任何 HTTP 出口(无启用/解冻端点)。",
+  "TEAM-08 真缺陷候选: 招标到期自动关闭/挂起未接线——expireOverdue 无调度与端点调用方,过期邀标永驻 OPEN(实测 INVX=2103694600123232258 到期后仍OPEN)。TEAM-06/07 同源。"
+ ],
+ "attribution": [
+  "ENV-01: 验收清单(Windows/PG/Redis/MinIO) 与实际部署(MySQL@13306/Redis@16379, 免Docker) 存在技术栈基线漂移; ENV-01/03 前提不成立。",
+  "AUTH-02: fixture假红风险——首登账号密码不可知;非缺陷。",
+  "AUTH-04/05: qr-login 端点默认关闭(R214/U0)。若要完整验证需专用环境开 ipd.auth.qr-login.enabled=true 重跑,共享实例禁改配置(禁重启)。",
+  "AUTH-06: 离职联动主链(冻结+撤销会话+审计)在车道自有夹具上真执行成功; '拒登录'与'企微自动解绑'两半边受 fixture 限制不可观测 → PARTIAL。",
+  "AUTH-03: 端点不收 personId → 服务层 SUPER_ADMIN 代改豁免在 HTTP 面不可达(无越权改密面, 正向安全结论); 正向轮换需专用单实例环境补跑。"
+ ]
+}

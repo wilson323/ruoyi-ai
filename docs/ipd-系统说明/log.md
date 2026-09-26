@@ -1061,7 +1061,7 @@ v7 矩阵 verify 端点返回 chain=BROKEN、断裂 368/381。SQL 定性（15:48
     - `GET /api/v1/deletion-requests/archive` → 200 []（REJECTED 不入归档）
   - 写 evidence JSON；manage.py set P0-6.1 done
 - **AC 验收裁决**：
-  - AC-REQ-09 ✅ 需求池双层（组长初审 + 超管终审）真实业务流验证
+  - AC-REQ-09 ✅ 需求池双层（组长初审 + 超管终审）真实业务流验证 [ORIGIN-R17误标勘误 R218：requirements 不在 DeletionRequest 白名单，当时仅通用 entityType 走通，真缺陷 2026-09-26 修复见 e256007b]
   - AC-DEL-01 ✅ 无直删入口（只 deletion-requests 申请路径）
   - AC-DEL-03 ✅ 普通业务一级（submit→leader→admin）
   - AC-DEL-04 ✅ 跨组项目由主组长初审（IpdPermission 守卫）
@@ -12516,3 +12516,5 @@ bash scripts/check-test-selection-fake-green.sh; echo RC=$?           # RC=0：u
 export PATH="$HOME/tools/maven/bin:$PATH" JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"
 mvn -o -pl ruoyi-common/ruoyi-common-trace -Dprofiles.active= test    # Tests run: 2（必带 -Dprofiles.active= 并核对计数>0）
 ```
+
+- 2026-09-26 R218-AC续跑波（协调会话，marker r218-acrun-wave）：①[续跑执行] 147 条口径续跑完成——四 agency-harness 车道并行真执行（lane1 AUTH/TEAM/HR/CFG/ENV 41 条、lane2 GATE/IPD 64 条、lane3 KPI/DEL/HAND/REQ/PROD 157 条、lane4 INC/GLB/AUD/AI 90 条），终态合计 352 条记录：PASS 232 / FAIL 24 / PARTIAL 59 / FAIL-ENV 17 / BLOCKED 5 / NOT-RUN 15，账本 R218-AC续跑-20260925/lane*/执行清单-lane*.json，写库全部 LANE{n}- 前缀登记各车道写库清单（16039 基线全程未轮换，车道只读探针）。②[真缺陷分诊立卡] 四车道 ~36 条候选去重分诊：新立 6 张 U1（a995a9e3 GATE双seed+isVeto混存 / e697a401 G5状态字段错配阻塞贡献度 / b494f56e purge三值逻辑守卫塌缩 / 96b7b157 AUTH-09同组越权读 / 2bef6e0e 奖金池freeze后compute撞唯一键500 / ef20c06a 零触发调度器接线批三条）+ 1 张 U3 台账卡 a946ab28（15 条中低项含码位错位/无路由/硬编码等，明细在卡面）。③[L5修复+部署+复测] 两既有缺陷卡修复落地：DeletionRequest 白名单补 requirements+RequirementSoftDeleteExecutor+entityExists 三分量（12 例契约红→绿，59/59 回归）；notifyOverdueUnassigned 接线 @Scheduled 09:40+超管手动端点+publish 组长/超管兜底。install ruoyi-ipd→重打 fat jar（forceCreation+内嵌 sha256 比对一致）→16039 轮换（新 PID 39098，v2 基线脚本）。真机复测 9/9 过（defect-fix/retest-final-deployed.json）：删除链 提交200→外组组长403防冒充生效→超管初审终审 DELETED→del_flag=1+DELETE_EXECUTE 审计→已删实体复申请404；overdue-scan 200 notifiedCount=1、非超管403、audit overdue_unassigned 2行+DEMAND_OVERDUE_UNASSIGNED 通知真发出。两卡翻 inreview 待 owner。④[勘误] log.md:1064 R17 误标 AC-REQ-09 ✅ 已按 R25 软化三步法加 ORIGIN- 前缀注记（保留史实）。⑤[sysadmin 处置] 249 验收清单零引用该账号+库内从未创建→dev-accounts.yaml 死行已删除（文件 gitignored）。⑥[遗留] 24 FAIL 中归因真缺陷部分已入卡、其余为车道判据待 owner 复核；59 PARTIAL 修复腿与调度次日 09:40 观察腿留后续波次；QA-08 维持 todo。

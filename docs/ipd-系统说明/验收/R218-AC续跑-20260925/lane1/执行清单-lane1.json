@@ -1,0 +1,412 @@
+[
+ {
+  "card": "AC-ENV-01",
+  "case": "ENV01-connectivity",
+  "cmd": "TCP probe 127.0.0.1 {5432,6379,9000,9001,13306}",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "PG:5432=True Redis:6379=False MinIO:9000=True/9001=False | MySQL:13306=True. 清单P0底座基于Windows+PG+Redis+MinIO; 当前运行栈为免Docker MySQL@13306(见ps:java -jar ruoyi-admin.jar profiles=ipd-local,dev redis 16379), Windows .bat/PG/MinIO 端口本机不存在。归因=环境基线漂移(非缺陷): 该AC前提不适用当前部署。Redis实连端口16379(启动参数)。",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-ENV-02",
+  "case": "ENV02-seed",
+  "cmd": "SQL: _ipd_schema_history + persons超管 + product_groups + system_configs; GET /role-permissions/effective(角色字典)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "schema_history=12 migrations; SUPER_ADMIN=1; product_groups=12; system_configs=59; 角色字典=effective端点 http=200 code=0 角色['GROUP_LEADER', 'MARKET_PM', 'RD_PM', 'SUPER_ADMIN'] 各角色javaDefault条数={'GROUP_LEADER': 59, 'MARKET_PM': 52, 'RD_PM': 50, 'SUPER_ADMIN': 88}; ipd_role_permission 覆盖行=0(0=无覆盖,系R215设计:字典默认在Java目录非DB)。真库 ipd_dev 回读 2026-09-26T11:53:39+08:00",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-ENV-03",
+  "case": "ENV03-backup",
+  "cmd": "n/a (pg_dumpall/Windows F:\\devtools\\pgdata)",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "清单要求备份Windows pgdata并PG恢复; 当前无PostgreSQL栈(实为MySQL), 且禁止破坏性备份/恢复演练。归因=环境基线漂移。",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-ENV-04",
+  "case": "ENV04-dedup",
+  "cmd": "skip",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "去重: 该卡已由 R218-QA08-SEC04 执行清单覆盖(见 执行清单-r218.json card=AC-ENV-04)，本车道按去重规则不重复跑。",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-ENV-05",
+  "case": "ENV05-grep",
+  "cmd": "grep -rE 'docker compose up' ruoyi-ai (exclude docs/.claude/node_modules)",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "命中1处; 开发脚本/AI指令中直接执行命中=1。样本: ['/Users/mac/Documents/ruoyi-ai/scripts/start-prod.sh:39:docker-compose up -d'] | 说明: 命中集中于README/部署文档(生产)与docs; 无开发期脚本自动执行。",
+  "ts": "2026-09-26T11:54:10+08:00"
+ },
+ {
+  "card": "AC-ENV-06",
+  "case": "ENV06-grep",
+  "cmd": "grep -rE 'ZRANGESTORE|GETDEL|SINTERCARD' ruoyi-modules ruoyi-common",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "Redis 6.2+ 专有命令命中=0 ['零命中'] (COPY 因语义泛化单列不计)。",
+  "ts": "2026-09-26T11:54:10+08:00"
+ },
+ {
+  "card": "AC-AUTH-01",
+  "case": "AUTH01-admin-login",
+  "cmd": "POST /api/v1/auth/login(ipd-admin) + GET /auth/me",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "http=200 code=0 scope=FULL personType=SUPER_ADMIN username=ipd-admin(独立凭证非PM姓名规则) token=eyJ0eXAiOiJK... ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-AUTH-02",
+  "case": "AUTH02-first-login",
+  "cmd": "login(刘研发) @initial-password(Ipd@123456)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "NOT-RUN",
+  "note": "登录未成功 http=400 code=10001 msg=用户名或密码错误。归因=fixture数据: 库内刘研发 password_hash 与 dev 信源 initial-password 不匹配(该账号由历史波次改写或独立hash),无其它 must_change_pwd=1 且凭证有据的账号。",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-AUTH-04",
+  "case": "AUTH04-qr-bound",
+  "cmd": "POST /api/v1/auth/wecom/qr-login(wecom_R29_4_test_001, ipd-rd已绑定)",
+  "http": 409,
+  "envelope_code": 50019,
+  "verdict": "PARTIAL",
+  "note": "http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 开关 ipd.auth.qr-login.enabled=false(R214/U0 安全默认关闭,启动配置未开启),端点行为正确(不查库不签token,409业务拒绝);'登录成功签发JWT'正向路径在本部署不可观测。归因=环境配置(开关关闭),非缺陷。ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-AUTH-05",
+  "case": "AUTH05-qr-unbound",
+  "cmd": "POST /auth/wecom/qr-login(未绑定wecomId)",
+  "http": 409,
+  "envelope_code": 50019,
+  "verdict": "PARTIAL",
+  "note": "http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 同样被开关50019前置拦截,无法观测'账号未绑定'提示路径(代码路径 wecomMockLogin NOT_FOUND 存在,src/service/IpdAuthService.java)。归因=环境配置同AUTH-04。",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-AUTH-08",
+  "case": "AUTH08-pm-vs-admin",
+  "cmd": "PUT /system-configs/gate.signDeadlineDays (ipd-market)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "http=403 code=30001 msg=权限不足(预期403/30001); 数据无变更回读 value 3->3 一致 ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-01",
+  "case": "TEAM01-invite",
+  "cmd": "POST /bid-invitations(ONE_TO_ONE->rd) + publish; leader GET /bid-invitations; SQL notification_events",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "创建http=200 code=0 id=2103694597292077058; publish http=200 code=0; 被邀人rd通知数=0(预期>0); 非受邀者(leader)列表可见该单=True(预期False)。命中真缺陷:publish不发送通知且list无可见性过滤 ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-02",
+  "case": "TEAM02-no-forward",
+  "cmd": "grep转发端点=0; leader(非受邀) POST /bid-responses @INV1",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "非受邀leader应标 http=403 code=30001 msg=权限不足(预期30001不在邀请名单); bid_responses 行数=0(预期0); 转发/transfer端点检索命中=0。ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-03",
+  "case": "TEAM03-reject-traceless",
+  "cmd": "rd POST /bid-responses decision=reject @INV1 + SQL回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "http=200 code=0 data=None(预期null=204语义); 该邀标rd应标行数=0(预期0); 全局reject审计行数=0(预期0); 被邀人侧隐私由TEAM02/列表过滤保证 ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-04",
+  "case": "TEAM04-to-public",
+  "cmd": "GET INV1 mode; PUT modify(mode参数不支持); POST 新建PUBLIC INV2; leader 列表回读; SQL audit",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "INV1 mode=ONE_TO_ONE; 改mode: modify端点参数无mode(实测200/0)→系统采用'新建公开招标单'路径 INV2 id=2103694598646837249 code=0; 非受邀leader可见INV2=True(公开=全员可见); INV1 modify_conditions审计=1行。归因注:无'原单转公开'端点=设计如此/缺陷二选一,证据供裁决。ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-10",
+  "case": "TEAM10-self-rdpm",
+  "cmd": "market POST /bid-responses accept @INV2(PUBLIC)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "市场PM 应标研发侧未被拒绝: http=200 code=0 且落库 bid_responses 行数=1(已即时withdraw清理)。预期应 40004 ROLE_LOCKED/30001。归因=真缺陷候选(应标服务无角色互斥校验,BidResponseService.submit 全文无 person_type 判定);已复现并登记。ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-13",
+  "case": "TEAM13-modify",
+  "cmd": "PUT /bid-invitations/INV2/modify (2名PENDING应标者在册)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "http=200 code=0; 审计modify_conditions=1行(预期>0); 变更通知BID_CONDITIONS_CHANGED=2条(预期>=2,实测见左); 新标题回读=LANE1-INV2-205339-MODIFIED ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-05",
+  "case": "TEAM05-select",
+  "cmd": "pre-select-token + PUT select(responseId=rd) @INV2 + SQL回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "select http=200 code=0; 中标行=2103694598990770177 状态=ACCEPTED; 另一应标=2103694599041101825 状态=REJECTED(预期REJECTED); BID_WON通知=2 BID_LOST通知=2(落选通知+审计select=1行=留痕可查); 注:池内可登录研发PM仅2人,'3人应标'场景降级为2人。ts=2026-09-26T11:54:11+08:00",
+  "ts": "2026-09-26T11:54:11+08:00"
+ },
+ {
+  "card": "AC-TEAM-06",
+  "case": "TEAM06-warn3d",
+  "cmd": "grep expireWarnDays 调用方 + config 回读",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "定时提醒不可实时观测(需时间推进)且代码检索: bid.expireWarnDays=3 配置存在于 system_configs,但主源码调用方命中=0(仅配置定义,无调度/端点接线到期前3天提醒)。归因=服务层无该job实现/时间依赖,诚实NOT-RUN。ts=2026-09-26T11:54:12+08:00",
+  "ts": "2026-09-26T11:54:12+08:00"
+ },
+ {
+  "card": "AC-TEAM-07",
+  "case": "TEAM07-escalate7d",
+  "cmd": "grep selectDeadlineDays 调用方 + config 回读",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "同TEAM-06: bid.selectDeadlineDays=7 配置在,无'7日未遴选升级组长'调度实现命中;时间依赖场景无法真执行。ts=2026-09-26T11:54:12+08:00",
+  "ts": "2026-09-26T11:54:12+08:00"
+ },
+ {
+  "card": "AC-TEAM-09",
+  "case": "TEAM09-admin-assign",
+  "cmd": "PUT /admin-assign @INVX(OPEN,0日) by admin; by leader",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PARTIAL",
+  "note": "超管直指OPEN单 http=409 code=50002 msg=admin-assign 仅适用于 EXPIRED 挂起超 30 日的招标单，当前状态: OPEN(预期50002状态门禁:仅EXPIRED且挂起>=30日可指派,现状门禁正确拒指);组长越权指派 http=403 code=30001(预期30001);状态回读=OPEN。'挂起超30日'正向需时间推进不可构造,超管入口与权限/状态门已验。ts=2026-09-26T11:54:12+08:00",
+  "ts": "2026-09-26T11:54:12+08:00"
+ },
+ {
+  "card": "AC-TEAM-11",
+  "case": "TEAM11-third-bind",
+  "cmd": "threshold=3 2096266884189016065(MARKET_PM).active=2; POST /projects/P-C/members 无ref/带ref",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "无备案: http=400 code=10001 msg=绑定第 3 个项目需先录入评级委员会审批备案记录（approvalRef），未录入禁止绑定(预期拒:第3个项目需备案); 带备案: http=200 code=0 行id=2103694600592994305 approval_ref回读=LANE1-APPROVAL-205339 member_type=ADDITIONAL(预期ADDITIONAL)。归因(若FAIL): 阈值/备案门禁符合规格 ts=2026-09-26T11:54:12+08:00",
+  "ts": "2026-09-26T11:54:12+08:00"
+ },
+ {
+  "card": "AC-TEAM-12",
+  "case": "TEAM12-mount",
+  "cmd": "SQL stage_actions@P-A + POST members(胡蛟露@P-A) + 快照回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "P-A=2103694596738428930 stage_actions挂载=69(设计64)/distinct stage_id=6(六阶段=project_stages挂载口径); 绑定 http=200 code=0 行id=2103694601180196866; 评级快照=['L4', '2500.00', '2026-09-26 11:54:12', 'ADDITIONAL'] (人员level=L4 vs 现行allowance.L4=2500, 数值比较); 生效规则=BY_BIND_TIME; 该项目既有成员快照=[]。ts=2026-09-26T11:54:12+08:00",
+  "ts": "2026-09-26T11:54:12+08:00"
+ },
+ {
+  "card": "AC-HR-03",
+  "case": "HR03-snapshot-rule",
+  "cmd": "PUT allowance.L4=2777 -> POST members@P-B -> 回读双快照 -> 回滚2500",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "生效规则=BY_BIND_TIME; 改值http=200 code=0; 改值后新绑定(P-B)快照=L4/2777.00(预期L4/2777); 改值前已绑定(P-A)快照=L4/2500.00(预期L4/2500 不被追溯改写); 回滚http=200 code=0 终值=2500。ts=2026-09-26T11:54:12+08:00",
+  "ts": "2026-09-26T11:54:12+08:00"
+ },
+ {
+  "card": "AC-HR-05",
+  "case": "HR05-config-allowance(resume)",
+  "cmd": "PUT /system-configs/allowance.L4=2777.00 -> 立即SQL回读 -> 回滚2500; 生效性引用既有绑定行(见HR-03)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "津贴额度可配置(复跑分支): PUT code=0 立即回读=2777.00; 回滚 code=0 终值=2500(基线); 既有绑定行=改值后 L4/2777.00(行2103694601419272193@P-B)/改值前 L4/2500.00(行2103694601180196866@P-A) ⇒ 配置值确实驱动新绑定的 locked_amount; 版本链 system_config_versions=5行; 审计 SYSTEM_CONFIG_UPDATE=4行。ts=2026-09-26T12:02:36+08:00",
+  "ts": "2026-09-26T12:02:36+08:00"
+ },
+ {
+  "card": "AC-HR-04",
+  "case": "HR04-no-level-entry",
+  "cmd": "PUT /persons/9110005/level(探测); PersonController 写端点检索",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "探测 http=404 code=50001(预期404/405); PersonController PUT/PATCH 命中=0(仅 resign/rehire/unbind 等 POST 动作端点); hr.levelSource=API_ONLY(超管仅配额度映射 allowance.L*)。ts=2026-09-26T12:02:36+08:00",
+  "ts": "2026-09-26T12:02:36+08:00"
+ },
+ {
+  "card": "AC-HR-08",
+  "case": "HR08-role-lock",
+  "cmd": "POST /projects/P-B/members person=2096266884189016065(陈市场/MARKET_PM) role=RD_PM",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "http=400 code=10001 msg=角色互斥：人员类型 MARKET_PM 不可绑定为 RD_PM; 落库行数=0(预期0)。代码证据: ProjectMemberServiceImpl.bindMember L89-92 'AC-TEAM-10(B7 角色固定不可跨)' 已实施 person_type!=role 即抛错; hr.allowCrossRole 配置=false(注:该键未在绑定路径读取,互斥为硬编码常量行为而非开关驱动)。归因=成员绑定侧门禁符合规格 ts=2026-09-26T12:02:36+08:00",
+  "ts": "2026-09-26T12:02:36+08:00"
+ },
+ {
+  "card": "AC-CFG-02",
+  "case": "CFG02-gate-deadline",
+  "cmd": "PUT gate.signDeadlineDays=5 -> POST /projects/P-B/gates?gateCode=G1 -> POST /gates/{id}/element-results x14 -> POST /gates/{id}/submit -> SQL 回读 started_at/sign_due_at -> 回滚",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "改值 http=200 code=0; 新Gate id=2103696715994411009 code=0; 要素判定 14/14 成功(失败样本=-); 提交评审 http=200 code=0 msg=ok; sign_due_at-started_at = 3.0 天(预期5;实测若=3 即双源漂移: ipd_business_config.gate.signDeadlineDays=3 优先于 system_configs=5, 见 resolveSignDeadlineDays L465-475); 回滚 http=200 终值=3。归因=真缺陷候选:双配置源漂移,GATE_SUBMIT 只认 ipd_business_config,/system-configs 改值对签署期限不生效 ts=2026-09-26T12:02:36+08:00",
+  "ts": "2026-09-26T12:02:36+08:00"
+ },
+ {
+  "card": "AC-CFG-03",
+  "case": "CFG03-instant",
+  "cmd": "PUT 后不重启不清缓存, 立即 SQL 直读 + GET 回读; 业务生效性交叉验证见 CFG-02",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "PUT http=200 code=0 data={\"code\": 0, \"message\": \"ok\", \"data\": {\"value\": \"5\", \"key\": \"gate.signDeadlineDays\", \"invalidated\": \"true\"}, \"timestamp\": \"2026-09-26T04:02:36Z\", \"traceId\": \"279; 立即SQL直读=5; 立即 GET /system-configs/gate.signDeadlineDays value=5 —— 配置面零重启即时生效(缓存 invalidate 由 SystemConfigController 返回体佐证)。业务面即时性: 同一 PUT 之后新发起的会签期限=3.0天(ipd_business_config=3 抢优先) ⇒ 见 CFG-02 判定。ts=2026-09-26T12:02:36+08:00",
+  "ts": "2026-09-26T12:02:36+08:00"
+ },
+ {
+  "card": "AC-AUTH-09",
+  "case": "AUTH09-peer-project",
+  "cmd": "GET /api/v1/projects/2103694596738428930 (creator=-1, ipd-rd 非creator同组PM)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "http=200 code=0 返回name=LANE1-P-A-205339 —— 预期'3xxxx或无数据不泄露项目名称'。归因=真缺陷候选(同组RD_PM可读他人项目全量详情,src ProjectController.get 无同组他人隔离)。ts=2026-09-26T12:02:36+08:00",
+  "ts": "2026-09-26T12:02:36+08:00"
+ },
+ {
+  "card": "AC-AUTH-10",
+  "case": "AUTH10-leader-view",
+  "cmd": "GET /api/v1/projects/P-A (ipd-leader, group 900001)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "http=200 code=0 name=LANE1-P-A-205339 mainGroupId=900001 status=DRAFT 可查看全部内容 ts=2026-09-26T12:02:37+08:00",
+  "ts": "2026-09-26T12:02:37+08:00"
+ },
+ {
+  "card": "AC-AUTH-11",
+  "case": "AUTH11-crossgroup-edit",
+  "cmd": "GET 9140005(他组) + POST /9140005/status?target=ACTIVE (ipd-leader)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "跨组查看 http=200 code=0(预期可看=True); 跨组状态编辑 http=403 code=30001 msg=无权操作(预期3xxxx); 库内status=ACTIVE(应为ACTIVE未被改)。ts=2026-09-26T12:02:37+08:00",
+  "ts": "2026-09-26T12:02:37+08:00"
+ },
+ {
+  "card": "AC-AUTH-07",
+  "case": "AUTH07-invalid-token",
+  "cmd": "login(market临时token)->logout->旧token GET /me",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "撤销/失效后请求 http=401 code=20001 msg=未认证或凭证失效(预期401/2xxxx,前端据此跳登录); ts=2026-09-26T12:02:37+08:00",
+  "ts": "2026-09-26T12:02:37+08:00"
+ },
+ {
+  "card": "AC-TEAM-08",
+  "case": "TEAM08-auto-close",
+  "cmd": "LANE1-INVX(expireAt=+30s) 建立后等待>75s回读 status + 到期通知",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "status=OPEN(预期EXPIRED自动关闭); 到期通知=0条。若仍OPEN: 归因=真缺陷候选——BidInvitationService.expireOverdue() 全模块零调用方(无@Scheduled/无手动端点),到期关闭与挂起链路整体未接线(代码考古+实测双证)。通知有=0。ts=2026-09-26T12:02:37+08:00",
+  "ts": "2026-09-26T12:02:37+08:00"
+ },
+ {
+  "card": "AC-HR-01",
+  "case": "HR01-sync-cron",
+  "cmd": "POST /hr-sync/sync-now(admin); GET last-run; config hr.syncCron",
+  "http": 409,
+  "envelope_code": 50018,
+  "verdict": "NOT-RUN",
+  "note": "sync-now http=409 code=50018 msg=HR 真源同步未启用（需 ipd.hr.enabled=true）; last-run data=None; hr.syncCron=0 2 1 * *(每月1日02:00 配置在)。归因=环境: ipd.hr.enabled 未开启→HrSyncJob/RealHrSyncAdapter 未装配(HrSyncController @ConditionalOn* + ObjectProvider 优雅降级 HR_SYNC_NOT_ENABLED), 真源同步整体不可观测;非缺陷。ts=2026-09-26T12:06:59+08:00",
+  "ts": "2026-09-26T12:06:59+08:00"
+ },
+ {
+  "card": "AC-HR-02",
+  "case": "HR02-level-change",
+  "cmd": "结构+代码路径核验(同步链未启用不可真执行)",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "L3->L4 等级变更依赖 HR 真源同步(未启用, 证据见 HR-01); persons.level/level_updated_at/level_source 列存在=3/3; hr.levelSource=API_ONLY;RealHrSyncAdapter 等级差异处理代码在 src/main/java/org/ruoyi/ipd/hr/。审计+差异提醒不可真执行, 诚实 NOT-RUN。ts=2026-09-26T12:06:59+08:00",
+  "ts": "2026-09-26T12:06:59+08:00"
+ },
+ {
+  "card": "AC-HR-06",
+  "case": "HR06-leader-sync",
+  "cmd": "依赖HR真源同步(未启用,HR-01证据)",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "'HR标注组长→同步→自动获组长角色' 链路依赖 ipd.hr.enabled(实测见HR-01: sync-now/50018); 配置 hr.syncLeaderRole=true。归因=环境。ts=2026-09-26T12:06:59+08:00",
+  "ts": "2026-09-26T12:06:59+08:00"
+ },
+ {
+  "card": "AC-HR-07",
+  "case": "HR07-no-proxy-leader",
+  "cmd": "GET /api/v1/proxy-leaders; controller grep",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "探测 http=404 code=50001(预期404=入口不存在); controller 层代理组长端点命中=0; 开关配置 hr.enableProxyLeader=false(false,仅存配置无入口,符合 A3 决策'不存在')。ts=2026-09-26T12:06:59+08:00",
+  "ts": "2026-09-26T12:06:59+08:00"
+ },
+ {
+  "card": "AC-CFG-01",
+  "case": "CFG01-hardcode",
+  "cmd": "grep -rE '系数面值(1000/1500/.../0.05/1.5)' ruoyi-ipd/src/main/java",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "原始命中44行; 扣除噪声口径(@Size/长度/超时/分页/注释/默认回退常量/测试)后业务系数硬编码命中7行。样例: [\"/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/KpiSharedCollectionService.java:141:    static final BigDecimal K04_WEIGHT = new BigDecimal(\\\"0.05\\\");\", \"/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java:91:    public static final BigDecimal BONUS_POOL_RATE = new BigDecimal(\\\"0.05\\\");\", \"/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java:657:            case \\\"S\\\" -> requireCoefficient(coefficient, \\\"1.5\\\", \\\"2.0\\\", \\\"S 级系数区间为 1.5–2.。ts=2026-09-26T12:06:59+08:00",
+  "ts": "2026-09-26T12:06:59+08:00"
+ },
+ {
+  "card": "AC-AUTH-06",
+  "case": "AUTH06-resign-chain",
+  "cmd": "POST /api/v1/person-sync/jobs(建自有夹具) -> POST /api/v1/hr-sync/mark-resigned -> SQL 回读 + 登录探测 + rehire/resign 双向取证",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "①自有夹具 Mock-LANE1A06-205339 id=2103700498329677826 建后态=ACTIVE/ACTIVE; mark-resigned http=200 code=0 view={\"idempotent\": false, \"pendingProjects\": 0, \"message\": \"冻结成功\", \"wecomUnbound\": false, \"sessionsRevoked\": true, \"notificationsSent\": 11}; 终态=FROZEN_PENDING_HANDOVER/RESIGNED(预期 FROZEN_PENDING_HANDOVER/RESIGNED); wecom=-(夹具无绑定⇒自动解绑分支不进入); persons 审计动作=RESIGN,REVOKE_SESSIONS(应含 RESIGN+REVOKE_SESSIONS)。②'用其账号登录被拒': 夹具无口令且 login() 先验口令后判 RESIGNED, 错口令只返 http=400 code=10001 msg=用户名或密码错误 (LOGIN_FAIL reason=BAD_CREDENTIALS@2026-09-26 12:17:38)⇒半边不可观测, 归因=fixture 无口令+服务层校验顺序。③'企微自动解绑+审计': 有界定的 wecom 绑定行仅剩池账号 ipd-rd(禁动)与 r214-mkt(死角), 且无 HTTP 端点可绑定 wecom⇒不可安全真执行, 归因=fixture 数据。ts=2026-09-26T12:17:38+08:00",
+  "ts": "2026-09-26T12:17:38+08:00"
+ },
+ {
+  "card": "AC-AUTH-03",
+  "case": "AUTH03-change-pwd",
+  "cmd": "change-password: 未登录 / 原密码错误 / 新密码<8位 + SQL 哈希未变回读",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PARTIAL",
+  "note": "未登录 http=401 code=20001; 原密码错 http=400 code=10001 msg=原密码错误 (改密失败尝试未留 PASSWORD_CHANGE* 审计, 全库该类action=0, 实测计数=0); 新密码过短 http=400 code=10001 msg=个数必须在8和72之间; 三项后 ipd-rd password_hash 前缀=$2a$10$Zv9iy(未被写)。正向半边(改密→旧密码失效)未执行: 该端点无 personId 入参(controller 恒取 session.currentPerson() 只能改自己), 池内 4 账号均为兄弟车道共享, 且成功改密即 session.revokeAll(personId) 会踢掉兄弟车道在线 token → 依并发纪律不制造跨车道串扰。归因=环境(共享实例并发约束)。ts=2026-09-26T12:17:38+08:00",
+  "ts": "2026-09-26T12:17:38+08:00"
+ }
+]

@@ -1,0 +1,28 @@
+[PARTIAL] AC-ENV-01 ENV01-connectivity -> http=- PG:5432=True Redis:6379=False MinIO:9000=True/9001=False | MySQL:13306=True. 清单P0底座基于Windows+PG+Redis+MinIO; 当
+[PASS] AC-ENV-02 ENV02-seed -> http=200 schema_history=12 migrations; SUPER_ADMIN=1; product_groups=12; system_configs=59; 角色字典=effective端点 http=200 c
+[NOT-RUN] AC-ENV-03 ENV03-backup -> http=- 清单要求备份Windows pgdata并PG恢复; 当前无PostgreSQL栈(实为MySQL), 且禁止破坏性备份/恢复演练。归因=环境基线漂移。
+[NOT-RUN] AC-ENV-04 ENV04-dedup -> http=- 去重: 该卡已由 R218-QA08-SEC04 执行清单覆盖(见 执行清单-r218.json card=AC-ENV-04)，本车道按去重规则不重复跑。
+[PARTIAL] AC-ENV-05 ENV05-grep -> http=- 命中1处; 开发脚本/AI指令中直接执行命中=1。样本: ['/Users/mac/Documents/ruoyi-ai/scripts/start-prod.sh:39:docker-compose up -d'] |
+[PASS] AC-ENV-06 ENV06-grep -> http=- Redis 6.2+ 专有命令命中=0 ['零命中'] (COPY 因语义泛化单列不计)。
+[PASS] AC-AUTH-01 AUTH01-admin-login -> http=200 http=200 code=0 scope=FULL personType=SUPER_ADMIN username=ipd-admin(独立凭证非PM姓名规则) token=eyJ0eXAiOiJK... ts=202
+[NOT-RUN] AC-AUTH-02 AUTH02-first-login -> http=400 登录未成功 http=400 code=10001 msg=用户名或密码错误。归因=fixture数据: 库内刘研发 password_hash 与 dev 信源 initial-password 不匹配(该账号由历史波
+[PARTIAL] AC-AUTH-04 AUTH04-qr-bound -> http=409 http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 开关 ipd.auth.qr-login.enabled=false(R214
+[PARTIAL] AC-AUTH-05 AUTH05-qr-unbound -> http=409 http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 同样被开关50019前置拦截,无法观测'账号未绑定'提示路径(代码路径 wec
+[PASS] AC-AUTH-08 AUTH08-pm-vs-admin -> http=403 http=403 code=30001 msg=权限不足(预期403/30001); 数据无变更回读 value 3->3 一致 ts=2026-09-26T11:37:47+08:00
+Traceback (most recent call last):
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 612, in <module>
+    main()
+    ~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 603, in main
+    env(); auth_core(); make_projects(); team_upper(); team_lower(); team_timers_and_admin()
+                                         ~~~~~~~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 218, in team_upper
+    s3, b3, _, _ = call("GET", "/api/v1/bid-invitations?pageNo=1&pageSize=100", u="ipd-rd2")
+                   ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 41, in call
+    t = token if token is not None else (tok(u) if u else None)
+                                         ~~~^^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 33, in tok
+    if not t: raise RuntimeError("login fail " + u)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: login fail ipd-rd2

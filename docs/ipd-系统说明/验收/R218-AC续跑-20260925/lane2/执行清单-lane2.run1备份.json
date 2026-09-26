@@ -1,0 +1,522 @@
+[
+ {
+  "card": "AC-GATE-01",
+  "case": "五Gate挂载位+五实例创建",
+  "cmd": "POST gates G1..G5 + SQL stage_actions x project_stages",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "5 gate 创建成功 ids=['2103693547038355458', '2103693547113852929', '2103693547180961793', '2103693547260653569', '2103693547541671938']; 动作→阶段映射 {'C11': 'CONCEPT', 'D05': 'DEV', 'L07': 'LAUNCH', 'LC02': 'LIFECYCLE', 'P13': 'PLAN'} vs 期望 {'C11': 'CONCEPT', 'P13': 'PLAN', 'D05': 'DEV', 'L07': 'LAUNCH', 'LC02': 'LIFECYCLE'}",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-14",
+  "case": "五Gate要素计数 vs 33",
+  "cmd": "GET /gates/{id}/elements x5 + SQL catalog",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "期望 {'G1': 7, 'G2': 6, 'G3': 5, 'G4': 8, 'G5': 7}(=33) 实测 {'G1': 14, 'G2': 14, 'G3': 10, 'G4': 16, 'G5': 14}(=68); 目录 published+enabled 计数=[['G1', '14'], ['G2', '12'], ['G3', '10'], ['G4', '16'], ['G5', '14']]; is_veto='Y' 行数=14(服务层只认 '1'→新套否决位失效)",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-02",
+  "case": "缺材料提交被拒",
+  "cmd": "POST /gates/2103693548439252994/submit {}",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "envelope=10001 msg=materialsOssId 不能为空",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-1a",
+  "case": "G1-1 五家一手验证判PASS",
+  "cmd": "POST /gates/2103693548439252994/element-results G1-1 v=5",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "G1-1 PASS@5 受理; judge_all 其余失败=[]",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-02",
+  "case": "假ossId材料被拒",
+  "cmd": "POST /gates/2103693548439252994/submit fakeOss",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "envelope=10001 msg=OSS 文件不存在或无权访问（[SEC-FIX-HIGH-1.1-FOLLOWUP]）",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-02",
+  "case": "真ossId提交成功",
+  "cmd": "POST /gates/2103693548439252994/submit",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "gate=PENDING msg=ok",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-03",
+  "case": "市场已签-研发视角盲签",
+  "cmd": "GET /gates/2103693548439252994/review (rd)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "otherSubmitted=True other.decision=None hint=对方已提交，等待您签署",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-04",
+  "case": "双签同意→APPROVED+揭示",
+  "cmd": "sign(rd APPROVE)+GET review",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "gates.status=APPROVED round=1 rd视角other=APPROVE",
+  "ts": "2026-09-26T11:50:01+08:00"
+ },
+ {
+  "card": "AC-GATE-05",
+  "case": "任一否决→驳回+双方通知",
+  "cmd": "sign(rd REJECT)+SQL notification_events",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=REJECTED 通知(market=1,rd=1)",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-10",
+  "case": "分歧自动仲裁+组长落裁+终裁门",
+  "cmd": "arbitrate(ldr)+final-ruling(admin)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "预落待裁行=[]; 组长仲裁 code=10001; 终裁被拒(组长仲裁尚未形成两组对立意见，暂无需超管终裁) — 两组不一致→自动升级腿在本库单组长(persons GROUP_LEADER 组900001 仅 900102)环境结构性不可测",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-06",
+  "case": "驳回后重发起 round+1",
+  "cmd": "POST /reopen",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp={'status': 'PENDING', 'round': 2, 'signDueAt': 'Tue Sep 29 11:50:02 CST 2026', 'id': '2103693550679011329'}",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-07",
+  "case": "第3轮组长列席通知",
+  "cmd": "sign+reopen 至 r3 + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "round=3 组长(900102)列席通知=0",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-07b",
+  "case": "第5轮超管介入通知",
+  "cmd": "reopen 至 r5 + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "round=5 超管(900101)介入通知=1",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-16",
+  "case": "带条件通过缺责任人拒",
+  "cmd": "POST element-results COND",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=带条件通过必须指定责任人: G1-01",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-16",
+  "case": "带条件通过齐备受理",
+  "cmd": "POST element-results COND full",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resultId=2103693554374193154 leftover=OPEN due=Wed Sep 30 23:59:59 CST 2026",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-20",
+  "case": "否决项FAIL阻断提交(判定驱动)",
+  "cmd": "POST /submit",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "envelope=10001 msg=命中否决项无法提交通过: G1-2; 注:G1-2 与 C08 基准录入为判定驱动联动而非自动侦测",
+  "ts": "2026-09-26T11:50:03+08:00"
+ },
+ {
+  "card": "AC-GATE-15",
+  "case": "否决命中服务端硬阻断",
+  "cmd": "同上 submit",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PARTIAL",
+  "note": "服务端硬阻断=是(无法提交通过,列出 G1-2 等命中项); UI 置灰/高亮为前端项本车道 NOT-RUN 口径并入 PARTIAL",
+  "ts": "2026-09-26T11:50:03+08:00"
+ },
+ {
+  "card": "AC-GATE-19",
+  "case": "G4-6 FAIL 阻断提交",
+  "cmd": "judge FAIL(G4-6)+submit",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "envelope=10001 msg=命中否决项无法提交通过: G4-6; 注:V12 交付物→G4-6 为人工判定联动",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-17",
+  "case": "逾期未关闭→下一Gate提交阻断",
+  "cmd": "G5 submit while OPEN",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "envelope=10001 msg=前序 Gate 存在 1 项逾期未关闭的条件遗留（关闭后才能提交本 Gate）: 首项遗留=L2 遗留 judge_all_fails=[]",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-17b",
+  "case": "逾期扫描提醒",
+  "cmd": "POST /gates/legacy/scan-overdue",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "overdueCount=1 责任人通知=0(全局扫描,含兄弟车道贡献)",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-17c",
+  "case": "关闭后下一Gate放行",
+  "cmd": "close+G5 submit",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "close code=0, G5 submit code=0 msg=ok",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-1b",
+  "case": "3家无书面意向不放行",
+  "cmd": "POST element-results v=3",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "resp code=10001 msg=需 ≥5 家一手验证，或 ≥1 家书面意向（当前 3 家/0 份）; 落库=[] (期望拒绝PASS判定或自动判不通过并提示阈值)",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-1c",
+  "case": "1家书面意向替代路径PASS",
+  "cmd": "POST element-results w=1",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "code=0 落库=[['PASS']]",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-1d",
+  "case": "阈值改3即时生效",
+  "cmd": "config=3 + judge v=3",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "code=0 msg=ok (参数可配置非硬编码)",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "case": "游客需求",
+  "cmd": "POST /public/demands",
+  "http": 404,
+  "envelope_code": 40401,
+  "verdict": "FAIL-ENV",
+  "note": "产品已下架",
+  "ts": "2026-09-26T11:50:05+08:00"
+ },
+ {
+  "card": "AC-GATE-08",
+  "case": "超期弃权按主导方放行",
+  "cmd": "POST /gates/sign/scan-timeout + SQL",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "abstainCount=1 status=APPROVED 弃权行=[['RD_PM', 'ABSTAIN', '900105']] 审计=1 通知rd2=1 due=2026-09-26 11:50:05",
+  "ts": "2026-09-26T11:50:05+08:00"
+ },
+ {
+  "card": "AC-GATE-09",
+  "case": "期限前24h提醒未签方",
+  "cmd": "POST /gates/sign/scan-remind + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "remindCount=0 在册市场侧(2114…001)通知=0 due=2026-09-27 11:50:06; 研发侧成员因绑定容量满未绑(仅市场侧实测)",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-GATE-21",
+  "case": "延期3次第4拒+计数",
+  "cmd": "POST /extend-deadline x4",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "4次调用(code,extCount,msg)=[(0, 1, 'ok'), (0, 2, 'ok'), (0, 3, 'ok'), (10001, None, '签署期限最多延长 3 次，已达上限（AC-GATE-21）')]; 测后 gate.extension.maxCount 还原=1",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-GATE-18",
+  "case": "要素增改发布归档(全程enabled=0防污染)",
+  "cmd": "CRUD /gate-elements",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "create=10001 update=10001 publish=10001 list命中v2=False archive=10001; 三车道并发期保持 enabled=0,清单可见性以管理列表为准",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-08",
+  "case": "S级阻断未完成跳阶拒+清单",
+  "cmd": "POST /advance-stage",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "envelope=10001 msg 含C01/C12清单=True: 阶段门禁（BR-IPD-06）：阻断性动作未完成，禁止进入下一阶段 —— C01 市场机会与痛点调研；C02 竞品分析；C03 目标客户与细分市场定义；C06 产品概念与差异化定位；C07 成本/定价/毛利初步测算；C08 销量预测与商业目标(四项基准值录入)；C09 项目等级评定与差异化系数；C1",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-11",
+  "case": "S级任一阻断未完成拒",
+  "cmd": "同上",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "S级 CONCEPT 必做集未完成即拒; code=10001",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-11b",
+  "case": "S级阻断动作数=38",
+  "cmd": "SQL stage_actions",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "blocking=38 total=69",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-15s",
+  "case": "C12 在 S 级阻断清单",
+  "cmd": "拒信包含 C12",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=阶段门禁（BR-IPD-06）：阻断性动作未完成，禁止进入下一阶段 —— C01 市场机会与痛点调研；C02 竞品分析；C03 目标客户与细分市场定义；C06 产品概念与差异化定位；C07 成本/定价",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-26",
+  "case": "动作总数 69=42深+27轻",
+  "cmd": "SQL",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "实测 total=69 DEEP=42 LIGHT=27",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-28",
+  "case": "六阶段顺序+不可删除",
+  "cmd": "SQL project_stages + DELETE 探针",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "codes=['CONCEPT', 'PLAN', 'DEV', 'VALID', 'LAUNCH', 'LIFECYCLE'] names=['概念', '计划', '开发', '验证', '发布', '生命周期'] DELETE(真实stage id)探针 http=404; ProjectController 源码无任何 DeleteMapping/stages 删除端点",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-15",
+  "case": "B级 C12 出现在阻断清单",
+  "cmd": "POST /advance-stage",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=阶段门禁（BR-IPD-06）：阻断性动作未完成，禁止进入下一阶段 —— C11 Charter立项评审会；C12 生物特征数据合规审查",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-01",
+  "case": "深管C01无交付物完成被拒",
+  "cmd": "POST /transit DONE",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "code=10001 msg=深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: C01",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-02",
+  "case": "轻管C05三字段完成无附件校验",
+  "cmd": "fields+transit DONE",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "depth=LIGHT; DONE 成功无附件类报错; msg=ok",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-25",
+  "case": "C05 深度=LIGHT",
+  "cmd": "SQL",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "stage_actions.depth=LIGHT",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-16",
+  "case": "C12无交付物完成被拒",
+  "cmd": "POST /transit DONE",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "code=10001 msg=深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: C12",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-17",
+  "case": "D11仅状态+日期被拒",
+  "cmd": "fields(仅日期)+DONE",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "DONE 响应 code=10001 msg=BioCV 算法评测必须登记实测 FAR/FRR（动作清单 v3 例外二）: D11; fields code=0",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-17b",
+  "case": "FAR/FRR 必须成对",
+  "cmd": "POST /fields far only",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=FAR/FRR 必须成对登记: D11",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-18",
+  "case": "D11 FAR=0.0001/FRR=0.01 保存成功",
+  "cmd": "fields+DONE+SQL",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "落库=['0.000100', '0.010000', 'DONE'] (流程页展示为前端项 NOT-RUN)",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-24",
+  "case": "C10无交付物拒但不在阻断集",
+  "cmd": "transit DONE + 稍后advance证据",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "code=10001; C10 未完成时 B 级 CONCEPT→PLAN 仍放行见 AC-IPD-10 成功腿",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-21",
+  "case": "V11 硬件模板=轻管三字段",
+  "cmd": "row.depth=LIGHT status=NOT_STARTED; fields+DONE",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "depth=LIGHT DONE=0",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-10",
+  "case": "B级非B清单深管未完成放行",
+  "cmd": "advance CONCEPT→PLAN",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "advance code=10001; 仍有未完成轻管 19 个/非B深管 ['C01', 'C02', 'C03', 'C06', 'C07', 'C08'] 但未阻断; 注:AC 文字『B级14个阻断』与代码 B_LEVEL_BLOCKING_CODES=10 项存在口径差(真缺陷候选)",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-IPD-07",
+  "case": "轻管未完成允许跳阶",
+  "cmd": "同上成功腿",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "LIGHT NOT_STARTED 剩余=['D01', 'D02', 'D03', 'D07', 'D08', 'D09', 'L05', 'LC06'] 仍放行",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-IPD-10",
+  "case": "链中断",
+  "cmd": "advance",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL-ENV",
+  "note": "阶段门禁（BR-IPD-06）：阻断性动作未完成，禁止进入下一阶段 —— C12 生物特征数据合规审查",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-GATE-13",
+  "case": "90天复盘排期+幂等",
+  "cmd": "POST /post-launch-reviews x2 + SQL",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "FAIL-ENV",
+  "note": "scheduled_at=None(=上市日+90d) status=None 幂等=None; 注:G5 通过→自动触发待办在代码中无调用方(仅显式 HTTP),自动腿未接线→真缺陷候选",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-IPD-22",
+  "case": "V11 SOLUTION 升深管",
+  "cmd": "depth=DEEP; DONE 无交付物探针",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "depth=DEEP code=10001 msg=深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: V11",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-IPD-23",
+  "case": "V12 海外市场挂载+深管强制",
+  "cmd": "POVS V12=('NOT_STARTED', 'DEEP') vs 纯国内=('NA', 'DEEP'); DONE 探针",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "海外项目 V12 depth/status=DEEP/NOT_STARTED; 国内项目 V12 status=NA(NA 裁剪); 逐项打勾清单内容校验属前端 NOT-RUN 并入 note",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-IPD-27",
+  "case": "SOP改版发布+实例快照+项目绑定探针",
+  "cmd": "copy/update/publish/current/instantiate",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "旧版本 id=None v=None → 发布新版本 id=None; current 已切新=True; 手动 instantiate 旧版给在研项目实例=0 条; 但新项目 stage_actions.sop_id 全 NULL(=0/69)→项目级自动快照绑定未接线,『新项目用新 SOP/在研保持原版』仅靠前端读取路径成立",
+  "ts": "2026-09-26T11:50:07+08:00"
+ }
+]

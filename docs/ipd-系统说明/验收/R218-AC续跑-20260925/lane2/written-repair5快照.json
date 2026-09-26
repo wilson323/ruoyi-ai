@@ -1,0 +1,192 @@
+[
+ {
+  "card": "AC-GATE-10",
+  "op": "arbitrate gate=2103693550679011329",
+  "ts": "2026-09-26T11:50:02+08:00"
+ },
+ {
+  "card": "AC-GATE-17",
+  "op": "close legacy 2103693559092785153",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.g1.minCustomerVerifications=3",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-1d",
+  "op": "business-config delete gate.g1.minCustomerVerifications",
+  "ts": "2026-09-26T11:50:04+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=0",
+  "ts": "2026-09-26T11:50:05+08:00"
+ },
+ {
+  "card": "AC-GATE-08",
+  "op": "bind rd2 RD_PM pid=2103693564184670210 approvalRef",
+  "ts": "2026-09-26T11:50:05+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=3",
+  "ts": "2026-09-26T11:50:05+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=1",
+  "ts": "2026-09-26T11:50:05+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=3",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.extension.maxCount=3",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.extension.maxCount=1",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-GATE-18",
+  "op": "gate-element create/update/publish id=None code=LANE2-L2T205000-ELEM",
+  "ts": "2026-09-26T11:50:06+08:00"
+ },
+ {
+  "card": "AC-IPD-27",
+  "op": "sop copy/update/publish C11 new id=None",
+  "ts": "2026-09-26T11:50:07+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "op": "product 2103696035019796481 status=ON_SALE",
+  "ts": "2026-09-26T11:59:54+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=1",
+  "ts": "2026-09-26T11:59:54+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=3",
+  "ts": "2026-09-26T11:59:54+08:00"
+ },
+ {
+  "card": "AC-GATE-18",
+  "op": "gate-element create/update/publish id=2103696036613632001 code=L2ET20595",
+  "ts": "2026-09-26T11:59:54+08:00"
+ },
+ {
+  "card": "AC-GATE-17",
+  "op": "close legacy 2103696038236827650",
+  "ts": "2026-09-26T11:59:55+08:00"
+ },
+ {
+  "card": "AC-IPD-09",
+  "op": "launch-date PINV1=2103696041021845505",
+  "ts": "2026-09-26T11:59:56+08:00"
+ },
+ {
+  "card": "AC-IPD-27",
+  "op": "sop copy/update/publish C11 new id=2103696045518139394",
+  "ts": "2026-09-26T11:59:56+08:00"
+ },
+ {
+  "card": "AC-IPD-27",
+  "op": "sop instantiate v2 id=2103696045518139394 pid=2103696040464003074",
+  "ts": "2026-09-26T11:59:56+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "op": "product 2103696932928008193 status=ACTIVE",
+  "ts": "2026-09-26T12:03:28+08:00"
+ },
+ {
+  "card": "AC-GATE-18",
+  "op": "gate-element create/update/publish id=2103696933250969602 code=L2ET21032",
+  "ts": "2026-09-26T12:03:28+08:00"
+ },
+ {
+  "card": "probe(非AC)",
+  "op": "PUT /system-configs/allowance.projectCountThreshold=5",
+  "ts": "2026-09-26T12:14:25+08:00"
+ },
+ {
+  "card": "probe(非AC)",
+  "op": "POST /projects LANE2-L2T211425-PROBE-THR pid=2103699690276040706",
+  "ts": "2026-09-26T12:14:25+08:00"
+ },
+ {
+  "card": "probe(非AC)",
+  "op": "POST /projects/2103699690276040706/members bind 9110005 (probe)",
+  "ts": "2026-09-26T12:14:25+08:00"
+ },
+ {
+  "card": "probe(非AC)",
+  "op": "PUT /system-configs/allowance.projectCountThreshold=3",
+  "ts": "2026-09-26T12:14:25+08:00"
+ },
+ {
+  "card": "AC-GATE-07/09/10(环境脚手架)",
+  "op": "PUT /system-configs/allowance.projectCountThreshold = 6 (LANE2-L2T211458 复跑:并发车道占满绑定槽位(全库活跃PM均达上限)属环境假红,临时放宽到6,跑完还原)",
+  "ts": "2026-09-26T12:14:58+08:00"
+ },
+ {
+  "card": "AC-GATE-05",
+  "op": "bind 9110005 MARKET_PM pid=2103699828746792962",
+  "ts": "2026-09-26T12:14:58+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=1",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-09",
+  "op": "bind 2096…6065 MARKET_PM pid=2103699831095603201",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.signDeadlineDays=3",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.extension.maxCount=3",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-08/09/1d/21",
+  "op": "business-config upsert gate.extension.maxCount=1",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-07/09/10(环境脚手架)",
+  "op": "PUT /system-configs/allowance.projectCountThreshold = 3 (LANE2-L2T211458 复跑结束还原 projectCountThreshold)",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "op": "product 2103709899702710273 status=ACTIVE",
+  "ts": "2026-09-26T12:54:59+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "op": "guest demand=69Y3YLWQ req=2103709900138917890 triage+link pid=2103709899765624834",
+  "ts": "2026-09-26T12:54:59+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "op": "req-change create id=2103709900453490689",
+  "ts": "2026-09-26T12:54:59+08:00"
+ }
+]

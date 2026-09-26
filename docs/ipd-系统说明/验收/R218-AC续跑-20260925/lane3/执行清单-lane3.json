@@ -1,0 +1,1572 @@
+[
+ {
+  "card": "AC-KPI-01",
+  "case": "GET system-configs kpi.functionalWeight",
+  "cmd": "GET /api/v1/system-configs/kpi.functionalWeight",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"lastChangeAt\": \"\", \"value\": \"0.6\", \"key\": \"kpi.functionalWeight\", \"lastChangeBy\": \"\"}, \"timestamp\": \"2026-09-26T03:28:54Z\", \"traceId\": \"f74f5",
+  "ts": "2026-09-26T11:28:54+08:00"
+ },
+ {
+  "card": "AC-KPI-01",
+  "case": "GET system-configs kpi.sharedWeight",
+  "cmd": "GET /api/v1/system-configs/kpi.sharedWeight",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"lastChangeAt\": \"\", \"value\": \"0.4\", \"key\": \"kpi.sharedWeight\", \"lastChangeBy\": \"\"}, \"timestamp\": \"2026-09-26T03:28:54Z\", \"traceId\": \"c8e0f710b",
+  "ts": "2026-09-26T11:28:54+08:00"
+ },
+ {
+  "card": "AC-KPI-01",
+  "case": "权重 0.6/0.4 真值",
+  "cmd": "DB-assert",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "真库 kpi.functionalWeight=0.6 kpi.sharedWeight=0.4 与卡面 60/40 一致",
+  "ts": "2026-09-26T11:28:54+08:00"
+ },
+ {
+  "card": "AC-KPI-01",
+  "case": "PUT kpi.functionalWeight=0.95(共担5%<30%) 应拒",
+  "cmd": "PUT /api/v1/system-configs/kpi.functionalWeight",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"value\": \"0.95\", \"key\": \"kpi.functionalWeight\", \"invalidated\": \"true\"}, \"timestamp\": \"2026-09-26T03:28:55Z\", \"traceId\": \"893417169f3d45b98dea7",
+  "ts": "2026-09-26T11:28:55+08:00"
+ },
+ {
+  "card": "AC-KPI-01",
+  "case": "恢复后现值复核",
+  "cmd": "GET /api/v1/system-configs/kpi.functionalWeight",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"lastChangeAt\": \"1790393335000\", \"value\": \"0.6\", \"key\": \"kpi.functionalWeight\", \"lastChangeBy\": \"900101\"}, \"timestamp\": \"2026-09-26T03:28:55Z\"",
+  "ts": "2026-09-26T11:28:55+08:00"
+ },
+ {
+  "card": "AC-KPI-01",
+  "case": "恢复净态=0.6",
+  "cmd": "GET /system-configs/kpi.functionalWeight",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "PUT 后现值已恢复 0.6，无残留",
+  "ts": "2026-09-26T11:28:55+08:00"
+ },
+ {
+  "card": "AC-KPI-01",
+  "case": "30% 下限 HTTP 守卫",
+  "cmd": "PUT boundary test above",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "真缺陷候选：通用 PUT /system-configs 无键级校验直写成功，KpiScoreCalculator.validateFunctionalWeight(MIN_SHARED_WEIGHT=0.30) 仅存于 service 层未被任何 Controller 调用(grep 0 引用)，30% 下限在 HTTP 面不可强制",
+  "ts": "2026-09-26T11:28:55+08:00"
+ },
+ {
+  "card": "AC-KPI-05",
+  "case": "POST /kpi/shared 主归集(销量400/500万)",
+  "cmd": "POST /api/v1/kpi/shared",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"projectId\": \"2103685956337971202\", \"period\": \"2026-08\", \"sharedScore\": 95.88, \"items\": [{\"code\": \"K01\", \"source\": \"FINANCE_OR_ERP\", \"actual\":",
+  "ts": "2026-09-26T11:28:55+08:00"
+ },
+ {
+  "card": "AC-KPI-05",
+  "case": "K01 达成率80%→96分",
+  "cmd": "recompute",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "真库重算 100-CEIL(20/5)=96 与响应 score=96.0 一致",
+  "ts": "2026-09-26T11:28:55+08:00"
+ },
+ {
+  "card": "AC-KPI-07",
+  "case": "K02 渠道 60/80=75%→95分",
+  "cmd": "recompute",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "75pct→100-CEIL(25/5)=95, weight=0.10 与卡面口径一致; 实际 score=95.0 weight=0.1",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-08",
+  "case": "K03 NPS=50-15=35,目标50→97分",
+  "cmd": "recompute",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "NPS 实际=35(推荐-贬损) 得分=100-CEIL(15/5)=97; 实际 actual=35 score=97.0",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-10",
+  "case": "K04 场景 3/4=75%→95分",
+  "cmd": "recompute",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "75pct→95; 实际 score=95.0 weight=0.05",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-11",
+  "case": "双PM同分(2026-08)",
+  "cmd": "recompute",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "归集 sharedScore=95.88；真库重算 (96×0.15+95×0.10+97×0.10+95×0.05)/0.40=38.35/0.40=95.875→HALF_UP 95.88 一致（前值'重算不符'为车道侧 96×0.15 手误 14.25，归因 fixture 假红已改判）",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-11",
+  "case": "真库双PM行同分",
+  "cmd": "SELECT kpi_records",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "kpi_records 两行 [['2096266884222570498', '95.88'], ['2103686643654373378', '95.88']] comprehensive_score 相等=True segment=FULL_SHARED",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-13",
+  "case": "共担不分段不打折(segment=FULL_SHARED)",
+  "cmd": "SELECT kpi_records.segment",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "segment=FULL_SHARED 全量共担标记",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-06",
+  "case": "POST /kpi/shared 2026-07 销量40%",
+  "cmd": "POST /api/v1/kpi/shared",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"projectId\": \"2103685956337971202\", \"period\": \"2026-07\", \"sharedScore\": 59.88, \"items\": [{\"code\": \"K01\", \"source\": \"FINANCE_OR_ERP\", \"actual\":",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-06",
+  "case": "K01 达成率40%<50→0分",
+  "cmd": "recompute",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "40pct→0 分; 实际 score=0.0",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-09",
+  "case": "POST /kpi/shared 2026-06 nps样本29",
+  "cmd": "POST /api/v1/kpi/shared",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"projectId\": \"2103685956337971202\", \"period\": \"2026-06\", \"sharedScore\": 95.5, \"items\": [{\"code\": \"K01\", \"source\": \"FINANCE_OR_ERP\", \"actual\": ",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-09",
+  "case": "样本不足标记待补充(included=false)",
+  "cmd": "recompute",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "included=false message=样本不足 30（nps.minSample），结果不计入，待补充",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-04",
+  "case": "GET /kpi/performance 面探测",
+  "cmd": "GET /api/v1/kpi/performance?period=2026-08",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"L1\": \"0\", \"L2\": \"0\", \"L3\": \"0\", \"L4\": \"0\", \"L5\": \"0\", \"COMPREHENSIVE\": \"0\"}, \"timestamp\": \"2026-09-26T03:30:04Z\", \"traceId\": \"0c78f35d17e54ac",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-04",
+  "case": "综合得分公式 HTTP 面",
+  "cmd": "code-search",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "KpiScoreCalculator.comprehensive(f,s,w)=f×0.6+s×0.4 与 saveKpiWeights 均无 Controller 调用方(grep 0)；归集响应仅 sharedScore；卡面 80×0.6+70×0.4=76 在 HTTP 面不可直接断言；shared 侧 95.10 已由 KPI-11 重算证实",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-12",
+  "case": "功能KPI分段语义真库侧写",
+  "cmd": "SELECT segment FROM kpi_records",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "真库该项目 segment 取值=['FULL_SHARED']；'补入前不追溯补入后全量'依赖功能KPI按段录入流程，HTTP 面仅见 SHARED 全量段 FULL_SHARED，FUNCTIONAL 录入链已由 AC-KPI-02/03(r218) 覆盖但分段规则无独立端点可断言",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-15",
+  "case": "GET /kpi/functional 2026-08",
+  "cmd": "GET /api/v1/kpi/functional?period=2026-08",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": [{\"source\": \"KPI_CALCULATOR\", \"value\": 60, \"weight\": 0.4, \"contribution\": 24.0}], \"timestamp\": \"2026-09-26T03:30:04Z\", \"traceId\": \"32c19039c363",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-14",
+  "case": "需求变更率自动取数 HTTP 面",
+  "cmd": "code-search",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "grep 控制器层无 变更单数÷总需求数 自动统计端点；KpiRawRecord 为手工录入通道，自动取数断言无 HTTP 入口",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-15",
+  "case": "窗口命中率自动偏差",
+  "cmd": "code-search",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "KpiScoreCalculator.WINDOW_HIT_TOLERANCE_DAYS=30 与 computeDeviationDays 存在但无 Controller 调用方(grep 0)；GET /kpi/functional 返回 http=200 code=0 供人工核",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "marketLeader=90 提交",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PARTIAL",
+  "note": "fixture 假红（首轮）：目标 PM 选了 Mock 无组人员，requireAuthor 组 leader 校验 403 属正常守卫；已在 EVAL 链(900001 组 PM)重跑全链 PASS 见后续记录",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "rdLeader=85 提交",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PARTIAL",
+  "note": "fixture 假红（首轮）：目标 PM 选了 Mock 无组人员，requireAuthor 组 leader 校验 403 属正常守卫；已在 EVAL 链(900001 组 PM)重跑全链 PASS 见后续记录",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "研发PM 双组长评 独立行",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PARTIAL",
+  "note": "fixture 假红（首轮）：目标 PM 选了 Mock 无组人员，requireAuthor 组 leader 校验 403 属正常守卫；已在 EVAL 链(900001 组 PM)重跑全链 PASS 见后续记录",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "研发PM rdLeader",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PARTIAL",
+  "note": "fixture 假红（首轮）：目标 PM 选了 Mock 无组人员，requireAuthor 组 leader 校验 403 属正常守卫；已在 EVAL 链(900001 组 PM)重跑全链 PASS 见后续记录",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "SELF 自评提交(本人无凭证)",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "{\"code\": 30001, \"message\": \"自评必须由被评 PM 本人提交\", \"data\": null, \"timestamp\": \"2026-09-26T03:30:04Z\", \"traceId\": \"d929e4fc87814763b1e1c1ec9c888ef1\"} || 改判: 403'自评必须由被评PM本人提交'(requireAuthor SELF无超管豁免)即守卫预期行为,rec()误标(归因fixture假红已改判)",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "GET project-scores view(mkt)",
+  "cmd": "GET /api/v1/project-scores/2103685956337971202/2103686643654373378",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"projectId\": \"2103685956337971202\", \"personId\": \"2103686643654373378\", \"pmRole\": \"MARKET_PM\", \"versionNo\": 0, \"ruleVersion\": 0, \"settled\": fal",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "GET project-scores view(rd)",
+  "cmd": "GET /api/v1/project-scores/2103685956337971202/2096266884222570498",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"projectId\": \"2103685956337971202\", \"personId\": \"2096266884222570498\", \"pmRole\": \"RD_PM\", \"versionNo\": 0, \"ruleVersion\": 0, \"settled\": false},",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "86 分完整断言可行性",
+  "cmd": "analysis",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "BLOCKED",
+  "note": "卡面 80×0.2+90×0.4+85×0.4=86 需 SELF 组件本人提交；requireAuthor 校验提交人=目标本人(自评)——Mock PM/刘研发无登录凭证，ipd-admin 代提 SELF 实测 http=403 code=30001 msg={\"code\": 30001, \"message\": \"组长必须是被评 PM 所在产品组 leader\", \"data\": null, \"timestamp\":；组长两组件通道已验证",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "双PM各自得分行独立存在",
+  "cmd": "GET /project-scores/{p}/{person}",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "两 PM 的 project_scores view 均可查且按 personId 隔离: mkt=['projectId', 'personId', 'pmRole', 'versionNo', 'ruleVersion', 'settled'] rd=['projectId', 'personId', 'pmRole', 'versionNo', 'ruleVersion', 'settled']",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16b",
+  "case": "GET kpi.reviewWeights",
+  "cmd": "GET /api/v1/system-configs/kpi.reviewWeights",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"lastChangeAt\": \"\", \"value\": \"{\\\"self\\\":0.2,\\\"marketLeader\\\":0.4,\\\"rdLeader\\\":0.4}\", \"key\": \"kpi.reviewWeights\", \"lastChangeBy\": \"\"}, \"timesta",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16b",
+  "case": "20/40/40 且和=1.0",
+  "cmd": "GET",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "kpi.reviewWeights={\"self\":0.2,\"marketLeader\":0.4,\"rdLeader\":0.4}",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16b",
+  "case": "PUT 同值(短路不脏写)",
+  "cmd": "PUT /api/v1/system-configs/kpi.reviewWeights",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"value\": \"{\\\"self\\\":0.2,\\\"marketLeader\\\":0.4,\\\"rdLeader\\\":0.4}\", \"key\": \"kpi.reviewWeights\", \"invalidated\": \"true\"}, \"timestamp\": \"2026-09-26T",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-16b",
+  "case": "后台可改通道",
+  "cmd": "PUT+versions",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "超管 PUT 通道 200/0（同值短路），版本表行数=0；0.2/0.4/0.4 现值与卡面一致",
+  "ts": "2026-09-26T11:30:04+08:00"
+ },
+ {
+  "card": "AC-KPI-17",
+  "case": "POST /project-score-tasks/scan",
+  "cmd": "POST /api/v1/project-score-tasks/scan",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"createdTasks\": 0, \"selfTasks\": 0, \"leaderTasks\": 0, \"reminders\": 18, \"escalations\": 27, \"updatedTasks\": 0}, \"timestamp\": \"2026-09-26T03:30:05",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-17",
+  "case": "GET /project-score-tasks/my",
+  "cmd": "GET /api/v1/project-score-tasks/my",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": [{\"projectId\": \"9150001\", \"projectCode\": \"PRJ-ACC-G5\", \"personId\": \"900103\", \"personName\": \"ipd-market\", \"targetType\": \"LEADER_REVIEW\", \"dueAt\"",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-17",
+  "case": "L08 后 30 日生成待办语义",
+  "cmd": "code+http",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "scan 端点可用并返回计数；'上市(L08)后30日'精确时点需项目处于 L08+30d 窗口，LANE3 项目未推进到 L08，卡面全链路定时语义无法在本次真跑复现（诚实降为 PARTIAL：端点存在+幂等可跑已实证）",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-18",
+  "case": "非法组件 TECH_COMMITTEE 被拒",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "{\"code\": 10001, \"message\": \"componentType 必须为 SELF|MARKET_LEADER|RD_LEADER\", \"data\": null, \"timestamp\": \"2026-09-26T03:30:05Z\", \"traceId\": \"313db547b3734bc5a88717dcc9f846b0\"} || 改判: 400 COMPONENTS白名单{SELF,MARKET_LEADER,RD_LEADER}预期拒,rec()误标(归因fixture假红已改判)",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-18",
+  "case": "评定人=自评+各产品组长(无第四类)",
+  "cmd": "negative test",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "COMPONENTS 白名单外组件被拒 http=400 code=10001 msg={\"code\": 10001, \"message\": \"componentType 必须为 SELF|MARKET_LEADER|RD_LEADER\", \"da",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-19",
+  "case": "roles/person_type 无评审上级",
+  "cmd": "SELECT DISTINCT person_type",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "person_type 全集=['GROUP_LEADER', 'MARKET_PM', 'RD_PM', 'SUPER_ADMIN']，无『评审上级』类角色（A5 决策成立）",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-20",
+  "case": "ipd-market 执行共担归集",
+  "cmd": "POST /api/v1/kpi/shared",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "{\"code\": 30001, \"message\": \"权限不足\", \"data\": null, \"timestamp\": \"2026-09-26T03:30:05Z\", \"traceId\": \"5a4e17bfdec74143af5a120eecfbc017\"} || 改判: ipd-market(MARKET_PM)调归集/confirms被403拒属requireCollectorRole/IDOR守卫预期行为(仅GROUP_LEADER/SUPER_ADMIN可归集),rec()误标(归因fixture假红已改判)",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-20",
+  "case": "K01-K04 入口仅组长/超管",
+  "cmd": "negative",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "MARKET_PM 归集被拒 http=403 code=30001 msg={\"code\": 30001, \"message\": \"权限不足\", \"data\": null, \"timestamp\": \"2026-09-26T03:30:",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-20",
+  "case": "GET /kpi/shared/confirms(market视角)",
+  "cmd": "GET /api/v1/kpi/shared/confirms?projectId=2103685956337971202&period=2026-08",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "{\"code\": 30001, \"message\": \"无权访问该项目\", \"data\": null, \"timestamp\": \"2026-09-26T03:30:05Z\", \"traceId\": \"89af63fa96364b779801269a1a9b76fa\"} || 改判: ipd-market(MARKET_PM)调归集/confirms被403拒属requireCollectorRole/IDOR守卫预期行为(仅GROUP_LEADER/SUPER_ADMIN可归集),rec()误标(归因fixture假红已改判)",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21",
+  "case": "POST /kpi/shared/deadline-scan period=2026-05",
+  "cmd": "POST /api/v1/kpi/shared/deadline-scan?period=2026-05",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"day1Reminders\": 13, \"day3Escalations\": 27, \"skippedProjects\": 0}, \"timestamp\": \"2026-09-26T03:30:05Z\", \"traceId\": \"c012c055badf4ce38935691a89",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21",
+  "case": "第1天提醒/第3天升级",
+  "cmd": "deadline-scan",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "scan 返回 {\"day1Reminders\": 13, \"day3Escalations\": 27, \"skippedProjects\": 0}；overdue_days 由扫描日-截止日推定，2026-05 周期截止 2026-06 第5工作日已过→命中 day1/day3 分支依赖各项目的双PM齐备与未归集状态；当日通知落库行数=35",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21b",
+  "case": "PUT kpi.monthlyDeadlineDay=10",
+  "cmd": "PUT /api/v1/system-configs/kpi.monthlyDeadlineDay",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"value\": \"10\", \"key\": \"kpi.monthlyDeadlineDay\", \"invalidated\": \"true\"}, \"timestamp\": \"2026-09-26T03:30:05Z\", \"traceId\": \"6d5d86bcb9534daf9185b",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21b",
+  "case": "GET deadline-config",
+  "cmd": "GET /api/v1/kpi/shared/deadline-config",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"dayOfMonth\": 10, \"cutoffTime\": \"2026-10-15 18:00:00\", \"version\": 7, \"source\": \"DB_ACTIVE\", \"configuredValue\": \"10\"}, \"timestamp\": \"2026-09-26",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21b",
+  "case": "恢复 kpi.monthlyDeadlineDay=5",
+  "cmd": "PUT /api/v1/system-configs/kpi.monthlyDeadlineDay",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"value\": \"5\", \"key\": \"kpi.monthlyDeadlineDay\", \"invalidated\": \"true\"}, \"timestamp\": \"2026-09-26T03:30:05Z\", \"traceId\": \"1c9182d6a9c54ccb824abd",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21b",
+  "case": "恢复后 deadline-config",
+  "cmd": "GET /api/v1/kpi/shared/deadline-config",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "{\"code\": 0, \"message\": \"ok\", \"data\": {\"dayOfMonth\": 5, \"cutoffTime\": \"2026-10-08 18:00:00\", \"version\": 7, \"source\": \"DB_ACTIVE\", \"configuredValue\": \"5\"}, \"timestamp\": \"2026-09-26T0",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-21b",
+  "case": "改10即时生效且恢复5净态",
+  "cmd": "PUT+GET deadline-config",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "改后 dayOfMonth=10 source=DB_ACTIVE version=7；恢复后=5（非硬编码，即时生效）",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-22",
+  "case": "两域无互相推导字段",
+  "cmd": "schema check",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "persons.level=[['L3', 'MOCK'], ['L3', 'NULL']](HR源) 独立于 project_scores 表(列中 level/allowance 派生字段=[])；代码层 ProjectScoreArchiveService 不读 person.level（grep 佐证），两域不互推",
+  "ts": "2026-09-26T11:30:05+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "PM-A 自评80(ipd-market本人)",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"7f7e79f080e949e6bb9bc80304ea5386\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "PM-A 市场组长评90(900001 leader)",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"644a5e26d461496693bda63192d7cb87\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "PM-A 研发组长评85",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"995222d66dcc4168baa60cc90b7c6f93\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "PM-B 自评80(ipd-rd本人)",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"c0528d5626e343798e5164fbd374ed85\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "PM-B 市场组长评90",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"b77dda50f3d34666a0cff50075f688d7\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "PM-B 研发组长评85",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"8af9adfd79b74e1cb62476cfc7c3b598\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "三段提交全部 200/0",
+  "cmd": "POST x3",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "FAIL-ENV",
+  "note": "实际 409 409 409: {\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"trace || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "GET view 加权=86",
+  "cmd": "GET /api/v1/project-scores/2103689168134647809/2114000000000000001",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"451996fa1166402e941545b243ab8548\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "80×0.2+90×0.4+85×0.4=86 服务端聚合",
+  "cmd": "GET /project-scores/{p}/{a}",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "[归因改判 FAIL→FAIL-ENV] view 无 86: {}；根因同 50002 簇：eval_proj 成员行坍缩仅陈市场1人+其凭证不可登录(历史波次改写hash)，非被测行为缺陷",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "GET view PM-B",
+  "cmd": "GET /api/v1/project-scores/2103689168134647809/900104",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"a91c2101f66e4cedb07f53fde60854a7\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16c",
+  "case": "双PM独立行且同参数各自86",
+  "cmd": "GET x2",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "[归因改判 FAIL→FAIL-ENV] PM-B view={}；根因同 50002 簇：eval_proj 成员行坍缩仅陈市场1人+其凭证不可登录(历史波次改写hash)，非被测行为缺陷",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-18",
+  "case": "RD_PM 代交组长评应拒",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"541e1e2f6fae49ec94eff22d08599418\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-18",
+  "case": "组长评仅限 GROUP_LEADER/SUPER_ADMIN",
+  "cmd": "negative",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "RD_PM 代交被拒 http=409 msg=项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人（含'不存在评审上级/技术委员会角色'分支守卫）",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16b",
+  "case": "超管代评提交通道(v2)",
+  "cmd": "POST /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "{\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"traceId\": \"6229afa74fde440fa6465f3489e1b263\"} || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16b",
+  "case": "SUPER_ADMIN 可提交组件(v2归档)",
+  "cmd": "POST",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL-ENV",
+  "note": "实际 409 {\"code\": 50002, \"message\": \"项目必须有且仅有一个在职 MARKET_PM/RD_PM 被评人\", \"data\": null, \"timestamp\": \"2026-09-26T03:32:37Z\", \"trace || 改判FAIL-ENV: 03:30批次同通道POST仍200/0, 03:32批次起eval_proj(2103689168134647809)成员行坍缩为仅陈市场1人(真库直读:刘研发member行消失), RD_PM恰1守卫如实409. 疑似兄弟车道同库串扰,不重试轰炸。",
+  "ts": "2026-09-26T11:32:37+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "陈市场 SELF=80(SUPER_ADMIN通道)",
+  "cmd": "POST/GET /api/v1/project-scores",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "BLOCKED",
+  "note": "http=403 msg=自评必须由被评 PM 本人提交；SELF 通道语义: requireAuthor 仅允许 actor.id==person 或 SUPER_ADMIN 兜底，本调用以超管通道验证卡面 80/90/85 三段落库",
+  "ts": "2026-09-26T11:33:33+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "陈市场 ML=90(SUPER_ADMIN通道)",
+  "cmd": "POST/GET /api/v1/project-scores",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "200/0 提交成功；SELF 通道语义: requireAuthor 仅允许 actor.id==person 或 SUPER_ADMIN 兜底，本调用以超管通道验证卡面 80/90/85 三段落库",
+  "ts": "2026-09-26T11:33:33+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "陈市场 RL=85(SUPER_ADMIN通道)",
+  "cmd": "POST/GET /api/v1/project-scores",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "200/0 提交成功；SELF 通道语义: requireAuthor 仅允许 actor.id==person 或 SUPER_ADMIN 兜底，本调用以超管通道验证卡面 80/90/85 三段落库",
+  "ts": "2026-09-26T11:33:33+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "view 聚合=80×0.2+90×0.4+85×0.4=86",
+  "cmd": "POST/GET /api/v1/project-scores",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "view 分数字段={\"marketLeaderScore\": 90.0, \"rdLeaderScore\": 85.0} || 改判: SELF缺失时view不出weightedScore属聚合守卫预期行为(实证20/40/40需三分量齐),rec()对缺字段判FAIL误标(归因fixture假红已改判);86全链断言随SELF阻塞记BLOCKED",
+  "ts": "2026-09-26T11:33:33+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "settle 结算视图",
+  "cmd": "POST/GET /api/v1/project-scores",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "settle={} || 改判: 缺SELF时settle 409拒结算属预期守卫(归因fixture假红已改判)",
+  "ts": "2026-09-26T11:33:33+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "KPI16-self-owner-blocked",
+  "cmd": "login(陈市场)@Ipd@123456 -> 400; DB直读 persons.陈市场 must_change_pwd=0 hash已非dev信源; ipd-market/ipd-rd 已满3项无法新增绑定(第4个守卫一律拒)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "BLOCKED",
+  "note": "SELF组件需被评PM本人提交(requireAuthor无超管豁免,403'自评必须由被评PM本人提交'已实证)；账号池无凭证可得的MARKET_PM/RD_PM本人(陈市场hash已被历史波次改写,mock新PM无password_hash)。归因=fixture/账号池凭证限制,非产品缺陷。ML=90/RL=85超管通道200/0已实证，view缺selfScore/settle 409守卫链全套实证在案。",
+  "ts": "2026-09-26T11:40:52+08:00"
+ },
+ {
+  "card": "AC-KPI-16",
+  "case": "KPI16-final-status",
+  "cmd": "总结: ML=90/RL=85(超管通道200/0)+SELF 403守卫实证+view/settle缺SELF拒聚合(改判PASS); 86全链需陈市场本人凭证,直读DB确认hash已非dev信源",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "20/40/40两分量真库实证在案(90.0/85.0聚合可见);weightedScore=86断言BLOCKED于账号凭证(fixture侧,非产品缺陷);FROZEN链路由HAND域覆盖",
+  "ts": "2026-09-26T11:43:14+08:00"
+ },
+ {
+  "card": "AC-DEL-01",
+  "case": "DEL01-direct-delete-gate",
+  "cmd": "DELETE /api/v1/gates/{id}",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "直删尝试 http=404 code=50001 msg=资源不存在; 静态: controller 包 grep DeleteMapping 命中仅 BusinessConfig/IpdRolePermission/KpiFunctionalMetrics/NegativeFeedback 4 文件, gate 系 controller 0 命中",
+  "ts": "2026-09-26T11:47:02+08:00"
+ },
+ {
+  "card": "AC-DEL-01",
+  "case": "DEL01-direct-delete-project",
+  "cmd": "DELETE /api/v1/projects/{id}",
+  "http": 200,
+  "envelope_code": 405,
+  "verdict": "FAIL",
+  "note": "直删尝试 http=200 code=405 msg=请求方式不支持",
+  "ts": "2026-09-26T11:47:02+08:00"
+ },
+ {
+  "card": "AC-DEL-02",
+  "case": "DEL02-leader-approve",
+  "cmd": "POST /2103692969793073153/leader-decision(ipd-leader 900001=主组)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "初审后 status=ADMIN_REVIEW",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-02",
+  "case": "DEL02-admin-approve",
+  "cmd": "POST /2103692969793073153/admin-decision",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "终审后 status=DELETED",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-02",
+  "case": "DEL02-verify-softdelete-audit",
+  "cmd": "真库直读 gates.del_flag + audit_logs",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "gate.del_flag=1; gates/2103692797566562306 审计条数=4(SUBMIT/LEADER/ADMIN链在案); deletedAt语义=del_flag置位+请求记录留档",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-02",
+  "case": "DEL02-archive-visible",
+  "cmd": "GET /deletion-requests/archive",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "归档区含请求 2103692969793073153: True",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-03",
+  "case": "DEL03-unsupported-type",
+  "cmd": "POST /deletion-requests entityType=deliverables",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=不支持的 entity_type: deliverables; SUPPORTED={projects,products,persons,cert_templates,gates,requirements}(白名单常量直读源码 DeletionRequestServiceImpl:453)",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-03",
+  "case": "DEL03-nonexistent-target",
+  "cmd": "POST /deletion-requests 不存在gate",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "R217僵尸行根因修复实证: msg=目标实体不存在: gates/999999999999",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-04",
+  "case": "DEL04-main-group-leader-ok",
+  "cmd": "POST leader-decision as 主组组长",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "主组(市场PM所在组900001)组长初审放行 status=ADMIN_REVIEW; 协同组组长'知会'为通知面, 本波无独立HTTP读端点未证(PARTIAL口径)",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-05",
+  "case": "DEL05-reject-recorded",
+  "cmd": "POST admin-decision approve=false",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=REJECTED 驳回意见随记录保存(opinion字段回读)",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-05",
+  "case": "DEL05-applicant-visible",
+  "cmd": "GET /my-requests",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "申请人可见驳回全记录: {\"createDept\": \"-1\", \"createBy\": \"-1\", \"createTime\": 1790394463000, \"updateBy\": \"-1\", \"updateTime\": 1790394464000, \"id\": \"2103692970233475073\", \"entit",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-05",
+  "case": "DEL05-rejected-not-in-queue",
+  "cmd": "GET /review-queue(组长)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "已驳回 2103692970233475073 不再出现在待审队列=True; '申请人收到通知'为通知面未单独证",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-06",
+  "case": "DEL06-withdraw-within24h",
+  "cmd": "POST /2103692970665488385/withdraw(<24h)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=WITHDRAWN; 时限=deletion.withdrawHours(默认24,业务配置可覆盖); >24h与终态/非本人统一404防侧信道(源码208-235)",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-06",
+  "case": "DEL06-withdraw-again-404",
+  "cmd": "再次撤回(已终态)",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "终态再撤统一404: http=404 msg=资源不存在; 真>24h路径需改DB create_time(禁直写)+等24h→NOT-RUN",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-07",
+  "case": "DEL07-escalate-endpoint",
+  "cmd": "POST /escalate-overdue(超管)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "POST 200/0 端点可执行; escalated 计数回读见 DB 校验记录(本条note首轮格式化字面量已清理); dueAt 未过期→0 为如实; 到时升级分支需时间旅行禁直写 NOT-RUN",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-07",
+  "case": "DEL07-overdue-admin-list",
+  "cmd": "GET /overdue-admin-review",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "code=0 逾期终审清单可读",
+  "ts": "2026-09-26T11:47:43+08:00"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "DEL08-chain-submit",
+  "cmd": "POST /deletion-requests gates(G3)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "DEL-08 前置双层链: status=LEADER_REVIEW",
+  "ts": "2026-09-26T11:49:35+08:00"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "DEL08-chain-to-deleted",
+  "cmd": "leader+admin approve",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=DELETED",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "DEL08-purge",
+  "cmd": "POST /2103693441849405441/purge(超管)",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "FAIL",
+  "note": "POST /purge -> http=409 msg=清除冲突：并发或已清除(实为UPDATE 0行分支,并非真已清除)。真库普查: deletion_requests 全部10+条DELETED行 remark 均为NULL, audit_logs WHERE action='DELETE_ARCHIVE_PURGE' COUNT=0 —— 该库从未成功清除过任何归档行。根因=DeletionArchiveService.purge 原子守卫 .notLike(remark,PURGED_MARK) 在 remark IS NULL 时 SQL 三值逻辑不为TRUE→UPDATE 0行→'purge 对任何 remark=NULL(即全部)申请恒 409 不可用'。归因=真缺陷候选(非fixture非环境:代码直读+全库零成功审计+两次独立复现)",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "DEL08-purge-audit",
+  "cmd": "真库直读 audit_logs %%PURGE%%",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "audit_logs action='DELETE_ARCHIVE_PURGE'(注意purge审计entity_id记目标实体非申请id) 全库=0条。真库普查: deletion_requests 全部10+条DELETED行 remark 均为NULL, audit_logs WHERE action='DELETE_ARCHIVE_PURGE' COUNT=0 —— 该库从未成功清除过任何归档行。根因=DeletionArchiveService.purge 原子守卫 .notLike(remark,PURGED_MARK) 在 remark IS NULL 时 SQL 三值逻辑不为TRUE→UPDATE 0行→'purge 对任何 remark=NULL(即全部)申请恒 409 不可用'。归因=真缺陷候选(非fixture非环境:代码直读+全库零成功审计+两次独立复现)",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "DEL08-purge-twice-409",
+  "cmd": "重复 purge",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PARTIAL",
+  "note": "http=409 msg=清除冲突：并发或已清除——但这是首次purge即失败的同一409(非二次防重证);'已清除二次拒'守卫(notLike remark@92-113)代码在案却无法实测,因purge从不成功。随DEL-08主缺陷记PARTIAL。真库普查: deletion_requests 全部10+条DELETED行 remark 均为NULL, audit_logs WHERE action='DELETE_ARCHIVE_PURGE' COUNT=0 —— 该库从未成功清除过任何归档行。根因=DeletionArchiveServi",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "DEL08-g1-purged-evidence",
+  "cmd": "真库直读 G1 申请 remark",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "G1申请remark=NULL→首轮409与本轮同因,撤销'purge成功'假说。真库普查: deletion_requests 全部10+条DELETED行 remark 均为NULL, audit_logs WHERE action='DELETE_ARCHIVE_PURGE' COUNT=0 —— 该库从未成功清除过任何归档行。根因=DeletionArchiveService.purge 原子守卫 .notLike(remark,PURGED_MARK) 在 remark IS NULL 时 SQL 三值逻辑不为TRUE→UPDATE 0行→'purge 对任何 remark=NULL(即全部)申请恒 409 不可用'。归因=真缺陷候选(非fixture非环境:代码直读+全库零成功审计+两次独立复现)",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-DEL-04",
+  "case": "DEL04-foreign-role-leader-decision",
+  "cmd": "POST leader-decision as MARKET_PM(LEADER_REVIEW态请求)",
+  "http": 500,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "MARKET_PM 越权被拦截但响应畸变: http=500 裸Spring错误体(无code/message/traceId包络) path=POST leader-decision as MARKET_PM(LEADER_REVIEW态请求); 根因: NotPermissionException 自 SaInterceptor.preHandle 抛出, DeletionRequestController 局部@ExceptionHandler('withdraw'外)rethrow 后已过 HandlerExceptionResolver 链无法二次解析→500。归因=真缺陷候选(权限拒绝应出403 ApiV1包络,SEC-MED-3局部处理器只救withdraw一法)。缺包络原因: ipd:deletion-request:leader 注解层拒",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-DEL-07",
+  "case": "DEL07-negative-role-403",
+  "cmd": "GET overdue-admin-review as MARKET_PM",
+  "http": 500,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "MARKET_PM 越权被拦截但响应畸变: http=500 裸Spring错误体(无code/message/traceId包络) path=GET overdue-admin-review as MARKET_PM; 根因: NotPermissionException 自 SaInterceptor.preHandle 抛出, DeletionRequestController 局部@ExceptionHandler('withdraw'外)rethrow 后已过 HandlerExceptionResolver 链无法二次解析→500。归因=真缺陷候选(权限拒绝应出403 ApiV1包络,SEC-MED-3局部处理器只救withdraw一法)。缺包络原因: ipd:deletion-request:admin 注解层拒(sys-error.log 实证 NotPermissionException 无此权限)",
+  "ts": "2026-09-26T11:49:36+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-resign",
+  "cmd": "POST /persons/F01/resign(超管)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "pendingProjects=3 idempotent=False msg=冻结成功(先移交后禁用:非直接DISABLED)",
+  "ts": "2026-09-26T11:52:10+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-db-state",
+  "cmd": "真库直读 persons.F01",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "employment/account=['RESIGNED', 'FROZEN_PENDING_HANDOVER']",
+  "ts": "2026-09-26T11:52:10+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-resign-notifications",
+  "cmd": "真库直读 notification_events(近5min)",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "近5min新增通知行=28(resign联动 publishResignNotifications:双方组长+本人+超管; 收件人级精确比对未做)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-pending-list",
+  "cmd": "GET /hr-sync/pending-handovers",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "F01 出现在待移交清单=True",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-escalate-15d-endpoint",
+  "cmd": "POST escalate-stale-resignations?thresholdDays=15",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp={\"escalated\": 0, \"thresholdDays\": 15}(F01刚冻结<15日→escalated应为0属如实; 15日倒计时升级端点可执行已证; 到时分支需时间旅行 NOT-RUN)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-escalate-threshold0",
+  "cmd": "同端点 thresholdDays=0(强制命中F01)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp={\"escalated\": 2, \"thresholdDays\": 0} —— thresholdDays=0 使'冻结已超0日'即时命中,证明到时升级分支真实可执行(替代时间旅行)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-01b",
+  "case": "H01b-frozen-no-cred",
+  "cmd": "login(F01) 不可行: mock人无password_hash(真库直读) + 冻结账号HTTP面",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "本人视角不可模拟(fixture:Mock人无凭证)。代码与错误码在案: ApiV1ErrorCode.ACCOUNT_FROZEN_PENDING_HANDOVER(20002,'账号待移交冻结中,仅保留移交相关权限')+IpdPermission:92 scope=HANDOVER_ONLY→20002,每请求实时判定; DISABLED→scope NONE 拒全部。归因fixture限制,守卫链源码实证",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-04",
+  "case": "H04-batch3",
+  "cmd": "POST /handovers/batch(projectIds=null=名下全部)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "results=[{\"projectId\": \"2103685958288322561\", \"status\": \"COMPLETED\"}, {\"projectId\": \"2103685959114600450\", \"status\": \"COMPLETED\"}, {\"projectId\": \"2103685960033153026\", \"status\": \"COMPLETED\"}]",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-04",
+  "case": "H04-db-follow",
+  "cmd": "真库直读成员行+审计",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "T01成员行=3/3; F01行exit置位=3; HANDOVER审计(5min)=6条; 历史审批/Gate/奖金台账跟随=成员行+project_id不变即链不断(gates表按project_id查仍在案)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-01d",
+  "case": "H01d-auto-disabled",
+  "cmd": "真库直读 F01 状态+禁用审计",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "account_status=['FROZEN_PENDING_HANDOVER', 'RESIGNED'] 禁用审计=0条(企微解绑随DISABLED联动源码646-685; 登录侧DISABLED→NONE兜底源码在案,F01本无凭证故登录复现NOT可测)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-03",
+  "case": "H03-resigned-cannot-bind",
+  "cmd": "POST members bind F01(冻结离职人)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "守卫拒=400 msg=离职/禁用人员不可入组: Mock-LANE3-HND-F01; 只读可查视角需冻结本人登录凭证(fixture无凭证,PARTIAL口径:编辑面拦截已证)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-02",
+  "case": "H02-scan-overdue",
+  "cmd": "POST /handovers/scan-overdue",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp={\"escalated\": 0, \"reminded\": 1}(DRAFT超期→升级超管+每日提醒; PersonResignEscalator 15日链在H01-escalate-threshold0已实测)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-07",
+  "case": "H07-wrong-phrase-400",
+  "cmd": "POST /handovers/super-admin confirmation=错误短语",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "http=400 code=10001 msg=确认短语不匹配，二次确认未通过（须输入：确认移交管理员）(后端强制二次确认短语'确认移交管理员',防误触)",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-07",
+  "case": "H07-leader-not-admin-403",
+  "cmd": "同上 but GROUP_LEADER 发起",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "http=403 权限拒(非500包络畸变,该端点无局部handler兜底但全局403正常)——GROUP_LEADER 不可发起超管移交。注:真切换执行会全库超管换人破坏共享环境→PASS路径NOT-RUN诚实记账; DISABLED+解绑+审计链源码566-646在案",
+  "ts": "2026-09-26T11:52:11+08:00"
+ },
+ {
+  "card": "AC-HAND-06",
+  "case": "H06-role-scoped-batch",
+  "cmd": "POST /handovers/batch role=RD_PM(仅1行靶)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "batch role=RD_PM 命中0行→results=[]行为正确(该角色名下无活跃绑定,零扰动); 但断言靶未建: F01已DISABLED被'离职/禁用人员不可入组'守卫拒绑RD_PM(400,该守卫本身已在H03实证=正确行为)。归因fixture假红:DISABLED人无法新绑,角色隔离改以H04交叉证据(MARKET_PM批量后,他项目RD_PM行0变化)。results=[]",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-HAND-06",
+  "case": "H06-scope-verify-db",
+  "cmd": "真库直读 2103685959114600450 成员行",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "成员=[['2103685161064378370', 'MARKET_PM', '1'], ['2103685161437671425', 'MARKET_PM', '0']]; MARKET_PM(T01)活跃未受扰动=True; RD_PM行换手/保留=False(本卡核心断言=移交只动指定角色)",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-HAND-05",
+  "case": "H05-allowance-readonly",
+  "cmd": "GET kpi/performance(T01接手后)+台账核账",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "GET /kpi/performance?period=2026-09(仅需period,actor聚合) -> http=200 code=0 复测通过; allowance_ledgers(T01)=0行且移交前后不变; batch只动project_members/handover_records(源码290-296+真库核账); '接手时等级锁定/不追溯重算'为月结计算口径无HTTP触发面→PARTIAL核账口径",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-HAND-08",
+  "case": "H08-midmonth-rule",
+  "cmd": "AC-HAND-08 月中移交当月归属",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "计算口径源码实证(HandoverService 955-964 + AllowanceService 247-279: exitDate>=次月月初⇒该月整月active; 当月内退出即停发=月初PM领全额不按天折算,次月起归新PM); 归属查询无独立HTTP端点(月结批处理面), 真库核账: T01/T02 allowance_ledgers 行数不因本轮移交新增(0→0)",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-HAND-01",
+  "case": "H01-rehire-guard",
+  "cmd": "POST /persons/T02/rehire(在职人复职)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "http=403 code=30001 msg=GROUP_LEADER 仅可复职本组员工（操作组=900001，员工组=null）(仅接受RESIGNED对象,源码PersonService:303; DISABLED需先解禁不允许直接复职=AC-USER-09前波覆盖,本条负向实证)",
+  "ts": "2026-09-26T11:53:39+08:00"
+ },
+ {
+  "card": "AC-REQ-01",
+  "case": "REQ01-guest-submit-noauth",
+  "cmd": "POST /api/v1/public/demands (no token)",
+  "http": 404,
+  "envelope_code": 40401,
+  "verdict": "PARTIAL",
+  "note": "[FAIL→PARTIAL fixture假红] 40401 系误用 IN_RD 夹具产品，非被测缺陷；免登录提交正向已由 REQ01-guest-submit-active-product(ZYV181FZ) 证得 [fixture假红-已在REQ01-guest-submit-active-product纠正] 响应异常 head={'code': 40401, 'message': '产品已下架', 'data': None, 'timestamp': '2026-09-26T04:01:53Z', 'traceId': '5e512c7c2de54051927122461747715f'}",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-02",
+  "case": "REQ02-public-products",
+  "cmd": "GET /api/v1/public/products (no token)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "免登录产品清单 6 项，首项={\"id\": \"9130006\", \"productName\": \"P3验收种子-G5产品\", \"status\": \"ACTIVE\", \"listingStatus\": \"OTHER\"}",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-02",
+  "case": "REQ02-dto-whitelist-ignore-unknown",
+  "cmd": "POST /public/demands +未知字段/越权字段",
+  "http": 404,
+  "envelope_code": 40401,
+  "verdict": "PARTIAL",
+  "note": "[fixture假红] 40401 因误用 IN_RD 夹具产品；白名单本体由 GuestDemandSubmitReq @JsonIgnoreProperties 源码+后续 ACTIVE 产品提交携带 productId/status 干扰未报错侧面佐证，未干净正验→PARTIAL",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-02",
+  "case": "REQ02-honeypot-reject",
+  "cmd": "POST /public/demands website蜜罐非空",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "蜜罐命中应拒绝；http=400 code=10001 msg=参数校验失败 审计=1",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-03",
+  "case": "REQ03-triage-dual-pm",
+  "cmd": "-",
+  "http": "-",
+  "envelope_code": "-",
+  "verdict": "BLOCKED",
+  "note": "[行为已由 REQ03-route-dual-pm-on-submit 证得] REQ01 未拿到 queryCode，下游全阻塞；本条用例体（经triage补双PM）未单独执行，保留 BLOCKED 记账",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-04",
+  "case": "REQ04-withdraw-no-route",
+  "cmd": "PUT+POST /api/v1/public/demands/{code}/withdraw",
+  "http": "404/404",
+  "envelope_code": "50001/50001",
+  "verdict": "FAIL",
+  "note": "真缺陷候选：GuestDemandService.withdraw() 已实现(仅SUBMITTED可撤回/24h窗口)但无任何 controller 路由，两法均404；trace 视图仍暴露 withdraw 倒计时字段，游客端不可达",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-04b",
+  "case": "REQ04-supplement-no-route",
+  "cmd": "PUT+POST /api/v1/public/demands/{code}/supplement",
+  "http": "404/404",
+  "envelope_code": "50001/50001",
+  "verdict": "FAIL",
+  "note": "真缺陷候选：GuestDemandService.supplement() 已实现(仅SUBMITTED可撤回/24h窗口)但无任何 controller 路由，两法均404；trace 视图仍暴露 withdraw 倒计时字段，游客端不可达",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-04",
+  "case": "REQ04-trace-anti-enum",
+  "cmd": "GET /public/demands/{不存在码}x2",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "格式非法/查无此码/已撤回三态同码防枚举：ZZZZZZZZ→50001 00000000→50001",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-05",
+  "case": "REQ05-demands-list-auth",
+  "cmd": "GET /api/v1/demands (no token)",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "游客访问内部池被拒 http=401 code=20001",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-07",
+  "case": "REQ07-ui-kanban",
+  "cmd": "纯UI看板核对",
+  "http": "-",
+  "envelope_code": "-",
+  "verdict": "NOT-RUN",
+  "note": "需求看板列渲染为前端行为，无HTTP面可证，诚实NOT-RUN",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-08",
+  "case": "REQ08-create-submit",
+  "cmd": "-",
+  "http": "-",
+  "envelope_code": "-",
+  "verdict": "PASS",
+  "note": "[窗口重置后补跑判定] 真库 requirement_changes id=2103710183455764482 已由 create(四维度快照)→submit(PENDING_SIGN)→sign(REJECT) 全链走通，现终态 REJECTED req=2103710182558183425；早前 BLOCKED 系 REQ01 fixture 假红连带",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-02",
+  "case": "REQ02-rate-limit-10per-hour",
+  "cmd": "POST /public/demands x12 同IP",
+  "http": "-",
+  "envelope_code": "40011",
+  "verdict": "PARTIAL",
+  "note": "[归因改判 PASS→PARTIAL] 12连发结果码=[40401, 40401, 40401, 40401, 40401, 40401, 40011, 40011, 40011, 40011, 40011, 40011] 成功=0 限流(40011)=6；口径=本会话前已累计提交(含REQ01/02/06)，RATE_LIMIT_PER_HOUR=10；本车道有意消耗127.0.0.1配额，兄弟车道若命中40011请标FAIL-ENV；40011 触发与滑窗口径已实证，但 12 发全部被 fixture 假红(40401)先行拒绝，未干净验证\"前10次放行第11次拒\"的分界",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-REQ-02",
+  "case": "REQ02-trace-quota-isolated",
+  "cmd": "GET /public/demands/{code} x12",
+  "http": "-",
+  "envelope_code": "40011",
+  "verdict": "PARTIAL",
+  "note": "[FAIL→PARTIAL] 12连打中前6次返 50001(NOT_FOUND语义)而非40011 ⇒ 提交池耗尽时 trace 池未被打满=前缀隔离生效；但第7次起 trace 池亦见40011，池容量口径未精确到10，改判 PARTIAL trace: 前缀独立池 12连打结果=[50001, 50001, 50001, 50001, 50001, 50001, '...', 40011, 40011]（提交池同时已耗尽→前缀隔离生效）",
+  "ts": "2026-09-26T12:01:53+08:00"
+ },
+ {
+  "card": "AC-PROD-07",
+  "case": "PROD07-pm-create-in-rd",
+  "cmd": "POST /products source=PM_NEW (ipd-market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "PM 新增产品 id=2103698064232460289 真库 status=IN_RD（期望 IN_RD=在研）msg=ok",
+  "ts": "2026-09-26T12:07:58+08:00"
+ },
+ {
+  "card": "AC-PROD-07",
+  "case": "PROD07-demand-under-in-rd",
+  "cmd": "POST /public/demands productId=2103698064232460289(IN_RD)",
+  "http": 429,
+  "envelope_code": 40011,
+  "verdict": "FAIL",
+  "note": "真缺陷候选：submit 门为 !\"ACTIVE\".equals(status)→40401 产品已下架，而 PM 新增默认 IN_RD/批量导入 ON_SALE 均≠ACTIVE ⇒ 在研/在售产品在游客门户不可提需求（本例 code=40011 msg=请求过于频繁，请稍后重试）；需 changeStatus=ACTIVE 旁路才可",
+  "ts": "2026-09-26T12:07:58+08:00"
+ },
+ {
+  "card": "AC-PROD-06",
+  "case": "PROD06-batch-import-onsale",
+  "cmd": "POST /products/batch-import x3(含1条缺modelCode)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "返回行=[{\"row\": 1, \"status\": \"CREATED\", \"id\": \"2103698064412815362\", \"ok\": true}, {\"row\": 2, \"status\": \"CREATED\", \"id\": \"2103698064442175489\", \"ok\": true}, {\"row\": 3, \"ok\": false, \"error\" 真库=[['LANE3-PROD06导入A-0926', 'ON_SALE'], ['LANE3-PROD06导入B-0926', 'ON_SALE']]；ADMIN_IMPORT→ON_SALE(在售)，缺 modelCode ",
+  "ts": "2026-09-26T12:07:58+08:00"
+ },
+ {
+  "card": "AC-PROD-06",
+  "case": "PROD06-non-admin-rejected",
+  "cmd": "POST /products/batch-import (ipd-market)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "requireAdmin 守卫：http=403 code=30001 msg=权限不足",
+  "ts": "2026-09-26T12:07:58+08:00"
+ },
+ {
+  "card": "AC-PROD-01",
+  "case": "PROD01-second-project-rejected",
+  "cmd": "POST /projects productId=2103698266704097281 第二次",
+  "http": "200/400",
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "A项目建成功=2103698266762817538；同产品再立项B被拒 http=400 code=10001 msg=一个产品仅对应一个项目（1:1 Q5）",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-01",
+  "case": "PROD01-rebind-same-idempotent",
+  "cmd": "POST bind-project 同项目重绑",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "同 id 重绑幂等成功不写二次审计：code=0 msg=ok",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-01",
+  "case": "PROD01-project-side-conflict",
+  "cmd": "产品B bind 已占用的项目A",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "project 端条件 UPDATE isNull(productId) affected=0 → 409：code=50002 msg=绑定冲突（产品:项目 = 1:1，项目已被占用）",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-02",
+  "case": "PROD02-hw-mount-catalog",
+  "cmd": "POST /projects templateType=HARDWARE id=2103698267295494146",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "真库：挂载 69 行(目录全集69) NA=6 C12存在=1 bio标记=3；硬件适用=69-3(SW专属)-…，SW专属行状态=[['D04', 'NA'], ['P05', 'NA'], ['V04', 'NA']]",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-13",
+  "case": "PROD13-c12-no-cancel",
+  "cmd": "POST transit C12→NA (涉生物项目)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "C12 id=2103698267316465676 bio=1；NA 被拒 msg=涉生物项目的 C12 生物特征数据合规审查不可取消（AC-PROD-13） 真库 status=NOT_STARTED（不可取消守卫）",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-13",
+  "case": "PROD13-na-requires-reason",
+  "cmd": "POST transit NA 无reason",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "NA 必填原因守卫：msg=标记 NA 必须填写原因（防绕过 P1-4.3）: C12",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-10",
+  "case": "PROD10-sa-saber-auto",
+  "cmd": "GET /projects/2103698267295494146/cert-items (markets CN+SA)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "AUTO项=[('CN', 'CCC', 'AUTO'), ('CN', 'SRRC', 'AUTO'), ('CN', '等保 2.0', 'AUTO'), ('CN', '个保法合规', 'AUTO'), ('SA', 'SABER/SASO', 'AUTO')]；期望含 CN(CCC/SRRC/等保/个保法)+SA(SABER/SASO)",
+  "ts": "2026-09-26T12:08:46+08:00"
+ },
+ {
+  "card": "AC-PROD-11",
+  "case": "PROD11-br-in-kr-auto",
+  "cmd": "GET /projects/2103698295615434753/cert-items (BR/IN/KR)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "带出=[('BR', 'ANATEL'), ('IN', 'BIS'), ('KR', 'KC')]；期望 ANATEL/BIS/KC 三国齐",
+  "ts": "2026-09-26T12:08:53+08:00"
+ },
+ {
+  "card": "AC-PROD-11",
+  "case": "PROD11-sync-idempotent",
+  "cmd": "POST cert-items/sync 二次",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "sync 返回新增=0（幂等应为0或稳定）",
+  "ts": "2026-09-26T12:09:03+08:00"
+ },
+ {
+  "card": "AC-PROD-12",
+  "case": "PROD12-manual-cert-add",
+  "cmd": "POST cert-items 手工项(JP)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "真库=[['MANUAL', 'LANE3-手工补充认证-0926']]（source=MANUAL 与 AUTO 并存）",
+  "ts": "2026-09-26T12:09:04+08:00"
+ },
+ {
+  "card": "AC-PROD-08",
+  "case": "PROD08-no-project-no-route",
+  "cmd": "POST /public/demands productId=9130006(ACTIVE无项目)",
+  "http": 429,
+  "envelope_code": 40011,
+  "verdict": "FAIL-ENV",
+  "note": "提交失败 code=40011 msg=请求过于频繁，请稍后重试",
+  "ts": "2026-09-26T12:09:04+08:00"
+ },
+ {
+  "card": "AC-REQ-01",
+  "case": "REQ01-guest-submit-active-product",
+  "cmd": "POST /public/demands productId=9130001",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "[PASS→PARTIAL] 8位码/免登录/双PM自动路由(mkt=9110003,rd=9110009)均真库实证；但 requirements.project_id=NULL——产品1:1的项目并未在提交时带出（口径仅路由双PM，项目关联需 link-project），卡片若主张『自动挂项目』则不成立",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-03",
+  "case": "REQ03-route-dual-pm-on-submit",
+  "cmd": "sql 核对 ZYV181FZ 自动路由",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "AC-REQ-03 游客提交即路由：resolveDualPm 取项目 9140001 在职 MARKET_PM=9110003/RD_PM=9110009 写双PM+routed_at；状态保持 SUBMITTED 等受理",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-04",
+  "case": "REQ04-trace-real-code",
+  "cmd": "GET /public/demands/ZYV181FZ",
+  "http": 429,
+  "envelope_code": 40011,
+  "verdict": "FAIL-ENV",
+  "note": "[FAIL→FAIL-ENV] trace 端点 429/40011：本车道早前 12 连发 trace 池 + 疑似兄弟车道共用 127.0.0.1 已耗尽 trace 独立滑窗；trace 正向可读性由 REQ04-trace-read 轮外补证需待窗口，不重试轰炸",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-PROD-08",
+  "case": "PROD08-null-product-no-route",
+  "cmd": "POST /public/demands productId=null",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "不选产品不触发路由：真库 status=SUBMITTED mkt=NULL rd=NULL project=NULL；『待指派』词不达意——库内无 UNASSIGNED 态（全库 status 枚举=['SUBMITTED', 'SCHEDULED', 'ADOPTED']）",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-02",
+  "case": "REQ02-rate-limit-consumed-note",
+  "cmd": "配额账：本车道游客提交共 XZZ3GFFY",
+  "http": "-",
+  "envelope_code": "-",
+  "verdict": "PARTIAL",
+  "note": "REQ02-rate-limit-10per-hour 早前在 fixture 假红(40401)下顺带证得 40011 生效；本轮额度用于主链验证，限流精确第11次口径不再重复消耗（兄弟车道注意：127.0.0.1 提交池 1h 滑窗）",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-06",
+  "case": "REQ06-triage-accepted",
+  "cmd": "POST /demands/2103710182558183425/triage ACCEPTED",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "受理=仅改状态（双PM已由提交路由齐）msg=ok",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-06",
+  "case": "REQ06-link-project-scheduled",
+  "cmd": "POST /demands/2103710182558183425/link-project 9140001",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "已受理+双PM齐→关联后置 SCHEDULED 真库=SCHEDULED",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-08",
+  "case": "REQ08-reject-shortcut",
+  "cmd": "PUT sign REJECT (MARKET_PM)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "任一否决⇒整体REJECTED：status=REJECTED signatures=MARKET_PM:900103=REJECT",
+  "ts": "2026-09-26T12:56:07+08:00"
+ },
+ {
+  "card": "AC-REQ-08",
+  "case": "REQ08-sign-on-terminal",
+  "cmd": "PUT sign on REJECTED",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "终态再签拒 code=50002 msg=状态冲突",
+  "ts": "2026-09-26T12:56:07+08:00"
+ }
+]

@@ -1,0 +1,902 @@
+[
+ {
+  "card": "AC-GLB-01",
+  "case": "权限矩阵抽样回归（BR-ORG-06 关键点）",
+  "cmd": "5 角色×端点越权探测",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "抽样=['POST@ipd-market->http403/code30001', 'GET@ipd-market->http403/code30001', 'POST@ipd-rd->http403/code30001', 'POST@ipd-leader->http403/code30001', 'GET@ipd-market->http200/code0']；PM 越权均拒（3xxxx/4xx），组长对涉钱扫描按 Catalog 放行；全量矩阵已由 R218-SEC04 57 条覆盖（去重不重跑）",
+  "ts": "2026-09-26T12:40:34+08:00"
+ },
+ {
+  "card": "AC-GLB-02",
+  "case": "关键操作审计覆盖对账",
+  "cmd": "SELECT DISTINCT action FROM audit_logs",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "库内 action 120 种；关键操作缺失=[]",
+  "ts": "2026-09-26T12:40:34+08:00"
+ },
+ {
+  "card": "AC-GLB-03",
+  "case": "绝对化文案扫描（后端 Java + 前端 src，注释行除外）",
+  "cmd": "grep -rE 五词 + 注释行剔除",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "后端命中=0(代码级 0) 前端命中=1(代码级 0)；被剔除的均为注释/文档引用行(样例=/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/zk-ipd-rules.ts:4: * 真值来源：ZK-IPD 仓 `/Us)——唯一命中是 zk-ipd-rules.ts L4 注释里引用 ZK 源文档文件名『…无遗留疑问）.md』，非界面文案",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-04",
+  "case": "状态机终态可达抽查",
+  "cmd": "grep -rn ARCHIVED service（迁移表含 →ARCHIVED 出边）",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "静态抽查：项目状态机含归档终态迁移 26 处（如 /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/）；全量 27 卡状态机遍历建议专卡处理",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-05",
+  "case": "全部 BR 编号对照实现",
+  "cmd": "-",
+  "http": 0,
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "原因=文档级人工全量对照（BR 全集×实现映射），非服务层可观测，且需产品逐条裁决；本车道不硬凑",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-06",
+  "case": "深管42/轻管27/合计69/阻断38 核对",
+  "cmd": "sop_templates 列探测 + 六阶段标准动作清单_v3.md 计数",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "库表无逐行动作管理深度标记列=n/a（探测列=['id', 'template_code', 'template_name', 'description', 'effective_from', 'effective_to', 'category', 'created_by']）；权威文档口径出现 深管×19 轻管×18 阻断×24 次——动作台账未入库，系统侧无 42/27 真值载体，判定悬置",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-07",
+  "case": "中文界面英文残留/错别字",
+  "cmd": "-",
+  "http": 0,
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "原因=纯 UI 走查域（浏览器），本车道为服务层矩阵；R218 已有 UI-walkthrough 专车道产物",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-08",
+  "case": "文案抽离检查（zh-CN 语言包集中 + 代码中文字面量）",
+  "cmd": "grep locales/langs/zh-CN/*.json + views/*.vue 字面量",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "i18n 基线存在=True（zh-CN 语言包目录 …/apps/web-antd/src/locales/langs/zh-CN，含中文行数 79）；业务 views 目录 232 个 .vue 中模板直写中文字面量命中 1071 处(样例 /Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/nodeManage/index.vue:82:       )——集中化与直写并存，未收口",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-09",
+  "case": "6 涉钱参数配置表消费核对（零字面量）",
+  "cmd": "grep 各键在 main/java 的 consumer",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "FAIL",
+  "note": "真缺陷候选（涉钱参数只读不消费）：system_configs 6 个 bonus.* 键均有值，但 Java 侧代码级 consumer 全为 0（全量命中 {'bonus.poolBase': 0, 'bonus.salesSource': 1, 'bonus.performanceScoreStrategy': 0, 'bonus.coefficient': 1, 'bonus.achievementTiers': 0, 'bonus.launchAnchor': 0, 'allowance.L3': 1} / 代码级 {'bonus.poolBase': 0, 'bonus.salesSource': 1, 'bonus.performanceScoreStrategy': 0, 'bonus.coefficient': 0, 'bonus.achievementTiers': 0, 'bonus.launchAnchor': 0, 'allowance.L3': 1}；allowance.L3 作为阳性对照命中 1 处=机制本身可用）。bonus.salesSource 的 4 处全量命中逐条都是 javadoc（SystemConfig L12 注释、BonusPool L13/L37、ReceiptLedger L14，样例=/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/），非读取代码；阶梯/系数改以 BonusPoolService 字面量 DEFAULT_THRESHOLDS/TOP_COEFFICIENT 硬编码(命中 6)→当前字面量与配置值巧合一致所以结果正确，但改配置不生效，违反 G-08『涉钱参数不得硬编码』红线；行为侧证据见 AC-GLB-10（切 SHIPMENT 后 finalPool 不变）",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-10",
+  "case": "切 salesSource=SHIPMENT 重算结果随配置变化（无需重启）",
+  "cmd": "GET cfg→compute@123201→PUT SHIPMENT→compute@828290→PUT 复原",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "原值=RECEIPT；PUT SHIPMENT code=0；两次同参新项目 compute: RECEIPT 态 finalPool=216000.0(code=0) vs SHIPMENT 态 finalPool=216000.0(code=0) 差异=False；复原 PUT code=0 库内现值=RECEIPT。真缺陷候选: compute 入参 actualReceipts 由调用方给定，销售源键在 Java 零 consumer(见 AC-GLB-09 grep)，故切换配置对结果无影响=配置面形同虚设(非环境/非 fixture)",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-11",
+  "case": "角色体系仅 普通PM/组长/超管(/游客)",
+  "cmd": "SELECT DISTINCT person_type + grep 三角色",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "persons.person_type=['SUPER_ADMIN', 'GROUP_LEADER', 'MARKET_PM', 'RD_PM']；越权角色 grep 命中=3；GUEST 为登录态而非 person 记录",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "AC-GLB-12",
+  "case": "33 要素可判定 + 14 否决项生效",
+  "cmd": "GET /api/v1/gate-elements + gate_review_elements 编码分布 + 否决判定码证",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "API 返回 68 条(其中 isVeto 编码为 '1' 的 15 条、为 'Y' 的 14 条)；真库 published&enabled=1 共 66 条(否决 '1'=15 / 否决 'Y'=14)；is_veto∈{Y,N} 老编码共 33 条(其中 Y=14)——卡面判据 33 项/14 否决恰好等于这代 Y/N 编码数据，而现行 published 注册面已是 66 项/15 否决。⚠真缺陷候选(否决静默失效): 判定实现只认 '1'(GateElementResultService L85/L126/L258 共 3 处 \"1\".equals)，14 条 'Y' 编码要素在服务层永不被视为否决项=编码混存导致否决失效；API 也未过滤 status(68 条含 draft enabled=1 2 条)；『可判定』侧 published 66 条 pass_standard 全非空、threshold_json 全为空(阈值判定无数据)。归因:真缺陷(编码/过滤)+卡面数字过期各一",
+  "ts": "2026-09-26T12:40:35+08:00"
+ },
+ {
+  "card": "INC-FIXTURE",
+  "case": "立项 LANE4 项目(S/A/B/C 复用 + R 新建)+双 PM 在位",
+  "cmd": "POST /projects ×1(复用判定 SELECT projects)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "P_S=2103691814362984449(新建=False) P_A=2103691814631419906 P_B=2103691814895661057 P_C=2103691815466086402 P_R=2103706277245923329；P_S 在位成员=[['2103691815679995905', 'MARKET_PM'], ['9110011', 'RD_PM']]（S 项目含 MARKET_PM+RD_PM 双 PM 是 NF 三场景前置）",
+  "ts": "2026-09-26T12:40:36+08:00"
+ },
+ {
+  "card": "INC-FIXTURE-P",
+  "case": "HR 同步造 MARKET_PM/L3 新人(dev profile MockHrAdapter)",
+  "cmd": "POST /person-sync/jobs ×6",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "M1=2103706277447249921 M2=2103706280102244353(离职实验) M3=2103706282753044481 M4=2103706285416427522(备案闸) M5=2103706288084004866(绑定快照) M6=2103706290768359425 —— 工号 LANE4M97635_n，person_type=MARKET_PM level=L3；每轮新人=零污染+名额自足",
+  "ts": "2026-09-26T12:40:39+08:00"
+ },
+ {
+  "card": "AC-INC-02",
+  "case": "绑定即锁定 L3/2000 快照(等级不追溯语义)",
+  "cmd": "POST members(M5→P_R market)+角色互斥负向",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "锁定快照=L3/2000 落库=[['PRIMARY', 'L3', '2000.00', '2026-09-26 12:40:40']]；互斥拒文案=角色互斥：人员类型 MARKET_PM 不可绑定为 RD_PM；memberType=PRIMARY(首绑 PRIMARY)。AC 原述『L2 接手期间升 L3 全程按 L2』需 HR 升级事件(hr.levelSource=API_ONLY，禁直写 persons.level)不可构造，但 BY_BIND_TIME 快照 + 码证(ProjectMemberServiceImpl L27-29/L130-140: 绑定时锁 level 快照，HR 后续更新不追溯已绑定项目)已证同一语义",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-01",
+  "case": "L1–L5 津贴标准 1000/1500/2000/2500/3000",
+  "cmd": "SELECT system_configs + 绑定快照回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "配置五档={'allowance.L1': '1000', 'allowance.L2': '1500', 'allowance.L3': '2000', 'allowance.L4': '2500', 'allowance.L5': '3000'}（与卡面 1000/1500/2000/2500/3000 全等=True）；行为侧 L3 绑定实测快照=[['L3', '2000.00']]（读取函数=ProjectMemberServiceImpl 按 person.level 查 allowance.{level} 落 lockedAmount）；其余 4 档无 L1/L2/L4/L5 在职人员可绑（level 只能由 HR 接口写，禁直写），依同一函数同构推定 + 配置直证",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-03",
+  "case": "L3 PM 绑 4 项目 应发8000→封顶4000",
+  "cmd": "bind 序列(第1/第2/第3备案闸/第4上限) + 台账观察",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "FAIL",
+  "note": "两段均不可达(真缺陷候选，两条独立):①绑定上限 allowance.projectCountThreshold=3 使『4 个已备案项目』前提无法成立——第3绑定无备案被拒(code=10001 msg=绑定第 3 个项目需先录入评级委员会审批备案记录（appro)→带备案放行(code=0)，第4带备案仍硬拒 code=10001 msg=已达项目数上限 3，禁止再绑定（备案也不能超过上限）（与清单 AC-INC-03『4 项目均备案』口径冲突，属实现收紧，需卡面裁决；memberType 序列=['PRIMARY', 'ADDITIONAL', 'ADDITIONAL'] 证 PRIMARY/ADDITIONAL 判定）；②即便 3 项目也无台账行生成(见 AC-INC-04 根因:AllowanceService 生产零调用方)，应发/封顶算术在 HTTP 层完全不可观测。另证名额死锁: 全库 7 名 RD_PM 活跃绑定均已达 3 且 ProjectMemberController 只有 bind/list 无解绑出口。归因:真缺陷候选(接线缺失)+口径漂移各一，非环境",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-04",
+  "case": "月度台账扫描:应发8000→封顶4000",
+  "cmd": "auto-scan + ledger 回读 + 写路径调用方检索",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "真缺陷候选(autoScan 语义): POST /allowance/auto-scan 仅 COUNT 当月既有行(码证 AllowanceLedgerService L228-242 直接 return selectCount)，不生成台账；全仓检索 calculateMonthlyAllowance/recordOrSkip/idempotentInsert 在 controller/scheduler 零调用(仅 AllowanceService 内部+单测)，即月度津贴生成未接 HTTP 也未接 @Scheduled；本轮 M4 已 3 项目活跃绑定，GET ledger 行数=0、scan 返回=1（全库存量 2026-08 6 行+2026-09 1 行均为 09-08 脚本灌入，非服务生成）。归因:真缺陷(功能接线缺失)而非环境",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-06",
+  "case": "津贴不乘绩效系数(码证)",
+  "cmd": "grep calcFinalAmount 无绩效乘子 + 公式注释",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "calcFinalAmount 公式=final min(Σbase, base×capMultiplier)(L91-94 码证)无绩效乘子；『绩效』字样命中=2；行为验证受 AC-INC-04 接线缺失阻断",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-05",
+  "case": "综合考核<60 当月停发",
+  "cmd": "config+判定码调用方检索+pending-stop 回读",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "scoreStopThreshold=60 在库；determineStopReason 族(定义+重载)命中=13 但注入方 allowanceService.* 生产调用=0 处→停发判定与台账生成同源于未接线(见 AC-INC-04)；pending-stop 端点只回读既有行；kpi_records 2026 存量 <60 分=2 行→即便接线也无低分样本",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-07",
+  "case": "60 天无产出→待确认停发单",
+  "cmd": "pending-stop 回读 + NO_OUTPUT_DAYS 码证",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "端点活(code=0 命中0 行)；NO_OUTPUT_DAYS_THRESHOLD=60/noOutputMonths=2 码证+库证；60 天历史无产出条件不可零副作用构造(需 last_activity 回溯)，确认停发无 HTTP 出口",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-08",
+  "case": "主项目无产出不触发停发",
+  "cmd": "码证 memberType 过滤+本轮 0 误伤",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "AllowanceService javadoc L35 明示 AC-INC-08 语义+isMemberActiveForMonth 区分主/附(码证)；数据侧因停发链路未接线无法行为验证",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-09",
+  "case": "准入评定通过次月起享",
+  "cmd": "-",
+  "http": 0,
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "原因=评级委员会评定事件+『次月生效』时序无法在服务层构造（无委员会 API；系统现行 allowance.levelEffectiveRule=BY_BIND_TIME 为绑定即生效口径，与 AC 次月口径不同——口径差异留卡面裁决）",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-10",
+  "case": "主动退出→津贴次月停发+奖金资格作废",
+  "cmd": "bind(M2→P_R)→resign→members 回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "resign code=0 persons.employment_status=RESIGNED；M2@P_R 绑定行 exit_date 仍为空=True——设计即如此(码证 PersonService L95『不动 project_members 绑定，exitDate 由 HandoverService.accept 写』)，资格作废依赖移交验收闭环；『次月停发』时序+资格翻转在 HTTP 服务层不可观测(台账链路未接线，见 AC-INC-04；奖金侧作废无写路径见 AC-INC-39)。归因:真缺陷候选(离职→绑定解耦需移交闭环)+口径长尾",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-11",
+  "case": "连续两期考核<60 自动触发退出",
+  "cmd": "-",
+  "http": 0,
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "原因=需跨两考核期历史 KPI 序列+定时判定；本轮禁 SQL 写且无外数注入端点；实现仅 person resign 人工通道",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-15",
+  "case": "S 级录入系数 2.5 拒绝",
+  "cmd": "POST /projects level=S coef=2.5",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=S 级系数区间为 1.5–2.0；同族 B 级区间下界负向(0.5→拒) code=10001 msg=B 级系数区间为 0.6–0.8",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-15b",
+  "case": "A 级系数 1.2 拒绝(固定 1.0)",
+  "cmd": "POST /projects level=A coef=1.2",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "msg=A 级为固定 1.0 不可改",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-12",
+  "case": "S 级立项默认系数 1.5",
+  "cmd": "GET /projects/P_R",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "默认=1.5；『池=目标×5%×系数』旧口径已被 owner 裁决[CONSISTENCY-1]改实际回款口径(见算例组)",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-13",
+  "case": "A 级默认 1.0",
+  "cmd": "GET /projects/P_A",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "系数=1.0",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-14",
+  "case": "B 级默认 0.8",
+  "cmd": "GET /projects/P_B",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "系数=0.8",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-15c",
+  "case": "系数定值:双PM提议→组长确认→写入档案",
+  "cmd": "propose+leader-decision→GET",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "propose code=0 id=2103706296749436929 msg=ok；组长确认 code=0；档案现值=1.8（区间校验 S:1.5-2.0 码证 ProjectService.validateCoefficientRange L684；提交人须为双 PM 之一码证 CoefficientChangeService L100-104）",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-16c",
+  "case": "回款台账月度录入+凭证",
+  "cmd": "POST /receipt-ledgers",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "id=2103706297273724929 450万@2026-04 凭证=True",
+  "ts": "2026-09-26T12:40:40+08:00"
+ },
+ {
+  "card": "AC-INC-16d",
+  "case": "窗口外回款不计入(in_window=0)",
+  "cmd": "真库回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "回读={'2026-04': ('1', '2026-03-01', '2026-08-31'), '2026-10': ('0', '2026-03-01', '2026-08-31')}(P_R 上市 2026-03-01，窗口 2026-03~2026-08)",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-31b",
+  "case": "窗口内退款当期冲减",
+  "cmd": "POST refunds 2026-04",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "net=4400000.00(4500000-100000)",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-31",
+  "case": "窗口外退款拒绝(不回溯扣减)",
+  "cmd": "POST refunds 2026-10",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "code=50002 msg=AC-INC-31：窗口外退款不做回溯扣减，月份=2026-10",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-32",
+  "case": "6 个月窗口以上市日起算",
+  "cmd": "window_start/end GENERATED 列回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "锚定={'2026-04': ('2026-03-01', '2026-08-31'), '2026-10': ('2026-03-01', '2026-08-31')}(windowMonths=6 在库)",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-17",
+  "case": "达成率 100%→阶梯 1.0(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER100) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=1.0 db tier=1.00 finalPool=75000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-17b",
+  "case": "达成率 130%→阶梯 1.2(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER130) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=1.2 db tier=1.20 finalPool=90000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-17c",
+  "case": "达成率 120%→阶梯 1.0(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER120) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=1.0 db tier=1.00 finalPool=75000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-17d",
+  "case": "达成率 120.1%→阶梯 1.2(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER120p1) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=1.2 db tier=1.20 finalPool=90000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-17e",
+  "case": "达成率 110%→阶梯 1.0(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER110) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=1.0 db tier=1.00 finalPool=75000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-17f",
+  "case": "达成率 99.99%→阶梯 0.8(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER99p99) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=0.8 db tier=0.80 finalPool=60000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-18",
+  "case": "达成率 90%→阶梯 0.8(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER90) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=0.8 db tier=0.80 finalPool=60000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-19",
+  "case": "达成率 75%→阶梯 0.6(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER75) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=0.6 db tier=0.60 finalPool=45000.0 池系数=1.50 状态=DRAFT freeze code=0",
+  "ts": "2026-09-26T12:40:41+08:00"
+ },
+ {
+  "card": "AC-INC-20",
+  "case": "达成率 60%→阶梯 0.3(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER60) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=0.3 db tier=0.30 finalPool=22500.0 池系数=1.50 状态=DRAFT freeze code=0；复盘检讨提醒=前端/待办侧(服务层无 reminder 出口，grep ReviewReminder=0)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-21",
+  "case": "达成率 45%→阶梯 0(HTTP+DB 双回读,独立项目)",
+  "cmd": "POST /projects(TIER45) → compute → freeze → SELECT bonus_pools",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp tier=0 db tier=0.00 finalPool=0.0 池系数=1.50 状态=DRAFT freeze code=0；finalPool=0.0→0 不发放；『已发月度津贴不追回』=独立链路(AllowanceLedgerService 无 recover/clawback 码证)+本轮台账未接线(AC-INC-04)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-16",
+  "case": "奖金池=实际回款×5%%×系数族(ZK 现行口径)+重算版本链可达性",
+  "cmd": "矩阵 10 点 HTTP 与 bonus_pools 行 1:1 + DRAFT/FROZEN 双态二次 compute 探针",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PARTIAL",
+  "note": "矩阵全点 HTTP/DB 一致且 freeze 正常=True（抽样 AC-INC-17 100%→resp1.0/db1.00 | AC-INC-17b 130%→resp1.2/db1.20 | AC-INC-17c 120%→resp1.0/db1.00）；compute 主入口=calculateBonusPoolByZkFormulaWithModifiers(码证)，旧目标销售额口径 calculateBasePool @Deprecated[CONSISTENCY-1 裁决]。⚠真缺陷候选(奖金池版本链锁死): 真库 information_schema 实测 bonus_pools 仅有 UNIQUE uk_bp_project(project_id)，全库重复组=0；双态探针=新项目 576449 首算 code=0→DRAFT 态重算 HTTP=409/code=50002 msg=项目 2103706302537576449 已存在 DRAFT 奖金池（id=210370630267；已 freeze 态重算(池 id=2103706302302695426 status=CONFIRMED) HTTP=500/code=90001 msg=系统内部错误。结论: DRAFT 态二次 compute 由业务闸正常拒(409/50002)；已 freeze 态按闸文案应『计算新版本』，实测 500/90001 非业务码=uk_bp_project 冲突→版本链不可兑现(真缺陷坐实,sys-error.log Duplicate entry 同栈)；freeze 语义=状态推进到 CONFIRMED(码证)，故承诺的版本链仅在未 freeze 时被拒、一旦 freeze 即与 uk_bp_project 单行约束互斥",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-17g",
+  "case": "阶梯无浮点等值判定(静态)",
+  "cmd": "grep 等值=0 + compareTo>=0 循环>=1",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "等值命中=0；降序逐档 compareTo 命中=1(/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/BonusPoolService.java:168)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-17h",
+  "case": "equalityTolerance 不存在+achievementTiers 六档在库",
+  "cmd": "SELECT system_configs",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "equalityTolerance 行数=0(判据0)；achievementTiers 六档=True，逐档(min/minIncl/max/multiplier)=[('120', False, None, '1.2'), ('100', True, '120', '1.0'), ('85', True, '100', '0.8'), ('70', True, '85', '0.6'), ('50', True, '70', '0.3'), (None, False, '50', '0')]；multiplier 序列与代码 DEFAULT_COEFFICIENTS+TOP 同构=True，语义与清单期望[{Infinity,1.2},{120,1.0},{85,0.8},{70,0.6},{50,0.3},{0,0}] 一致；⚠该键 Java main 零 consumer(实测 grep=0，AC-GLB-09 真缺陷候选记账)——改此配置不影响行为，现正确系巧合一致",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-22",
+  "case": "综合 96 分→绩效系数 1",
+  "cmd": "POST /coefficient/preview",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "返回=1.0 归一=1(判据 1；≥95→1.0,≥85→0.8,≥70→0.6,≥60→0.3,<60→0 取消资格)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-23",
+  "case": "综合 88 分→绩效系数 0.8",
+  "cmd": "POST /coefficient/preview",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "返回=0.8 归一=0.8(判据 0.8；≥95→1.0,≥85→0.8,≥70→0.6,≥60→0.3,<60→0 取消资格)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-24",
+  "case": "综合 55 分→绩效系数 0",
+  "cmd": "POST /coefficient/preview",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "返回=0 归一=0(判据 0；≥95→1.0,≥85→0.8,≥70→0.6,≥60→0.3,<60→0 取消资格)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-28",
+  "case": "贡献度入口仅 G5 上市后 90 天复盘(含正向可达性)",
+  "cmd": "POST /projects/P_S/status?target=LIFECYCLE 探针 → POST /contributions/P_S/save",
+  "http": 409,
+  "envelope_code": 50007,
+  "verdict": "PARTIAL",
+  "note": "负向入口闸生效: 非 G5 保存被拒 code=50007 msg=项目不在 G5 上市后 90 天复盘阶段（当前 status=DRAFT）（判据正确）。正向不可达=真缺陷候选(阶段字段错配): 闸判 projects.status，而实测 POST /projects/{id}/status?target=LIFECYCLE → code=10001 msg=状态机非法迁移: DRAFT → LIFECYCLE（STATUS_TRANSITIONS L54-59 白名单不含 LIFECYCLE/POST_LAUNCH），项目仍停在 status=DRAFT/current_stage=CONCEPT；advanceStage 与 legacy-import 只写 current_stage，全仓无生产代码把 status 置为 LIFECYCLE/POST_LAUNCH(grep setStatus(\"LIFECYCLE\")=0)→新建项目按合法 HTTP 路径不可进入贡献度评定，连带 distribute(AC-INC-30)不可达。双PM 自评+组长评定四角色要求为服务层常量(码证)，正向行为验证同被阻断",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-25",
+  "case": "市场 65%→研发 35% 联动恒和",
+  "cmd": "POST market-share@非G5",
+  "http": 409,
+  "envelope_code": 50007,
+  "verdict": "PARTIAL",
+  "note": "code=50007 msg=项目不在 G5 上市后 90 天复盘阶段（当前 status=DRAFT）——入口闸同样 G5 限定，正向联动 HTTP 不可达；公式 adjustMarketShare rd=1-market+区间[.40,.65]/容差 1e-4 码证(BonusPoolService.calculateDistribution)；bean 校验层证据见 AC-INC-26",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-26",
+  "case": "市场 70% 拒绝(区间 40–65)",
+  "cmd": "POST market-share=0.70",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "code=10001 msg=adjustMarketShare.marketShare: 市场 PM 比例不能高于 0.65(校验层先于 G5 闸拦截)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-27",
+  "case": "五维权重 25+25+20+20+10=100",
+  "cmd": "grep ContributionService/DTO 权重",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "服务层权重命中=13(/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/)；DTO 五维字段存在=7 处；权重求和=100 属前端/卡面口径，服务层仅透传五维分值(入口被 G5 闸挡，行为验证不可达)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-29",
+  "case": "算例A S级/90%/绩效0.8 双口径对账",
+  "cmd": "compute@CASE-A→freeze",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "实现口径(S 级默认系数 1.5)finalPool=216000.0==复算 216000(450万回款×5%×1.5×阶梯0.8×个人0.8)；清单算例 A 期望『池 30 万→市场PM 13.2 万』系目标销售额 500 万基数口径(base=target×5%×1.5=37.5万→×0.8=30万→×55%×0.8=13.2万)，被 [CONSISTENCY-1] owner 裁决改为实际回款基数=口径漂移留档，算式两侧均已复算",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-29b",
+  "case": "算例B 130%%档/绩效1.0 双口径对账",
+  "cmd": "compute@CASE-B→freeze",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "finalPool=585000.0==复算 585000(650万×5%×1.5×1.2×1.0)，阶梯=1.2 证实 130%→1.2 档进档；清单算例 B 期望 45 万池/24.75 万市场PM 系目标基数旧口径(37.5万×1.2)，同 AC-INC-29 双口径留档",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-29c",
+  "case": "算例C 回款口径 A 级 350 万/70%%",
+  "cmd": "compute@CASE-C(A 级)→freeze",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "finalPool=105000.0==复算 105000(350万×5%×1.0×阶梯0.6×1.0)；A 级系数 1.0 下实现口径(回款基数)与清单期望池 25 万→可分配 15 万(目标基数)分叉已复算留档；阶梯=0.6 证 70%→0.6",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-29d",
+  "case": "基数取回款非出库字段(算例 C 对照)",
+  "cmd": "grep SHIPMENT consumer + CASE-C 复算",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "池/达成率服务出库命中(全量)=1 其中代码级=0(判据 0)，余量为 javadoc 断言句『口径=回款不是出库/开票』(ReceiptLedgerService L27)；CASE-C 以回款 350 万入参即得达成率 70%→阶梯 0.6，若误取出库 450 万应得 90%→0.8（未出现）→字段取数正确。bonus.salesSource 键零 consumer 问题归 AC-GLB-09 记账",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-30",
+  "case": "中途退出双PM 不参与分配(资格过滤+distribute 前置闸)",
+  "cmd": "compute@P_C→distribute→bonus_allocations",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PARTIAL",
+  "note": "distribute code=50002 msg=项目尚无贡献度评定记录，不允许分配奖金（请先完成页 35 贡献度评定并确认）；分配行=[]。根因=真缺陷候选(链式不可达): BonusPoolService.distribute L1095 requireConfirmedContribution 要求项目存在 CONFIRMED 贡献度(含 tierCoefficient)，而贡献度入口/确认均被 ContributionService.requireG5Stage L601-605 限定 projects.status∈{LIFECYCLE,POST_LAUNCH}；ProjectService.STATUS_TRANSITIONS L54-59 无该二目标、advanceStage/legacy-import 只写 current_stage、全仓 setStatus(LIFECYCLE) 生产零命中(实测探针见 AC-INC-28)→新建项目永远进不了贡献度评定，故 distribute 与『退出者资格作废』行为验证在 HTTP 层不可达（真库唯一满足态项目=9150001 SQL 验收种子，非本车道 fixture 不动）。资格过滤码证: 分配按 members.bonus_eligible/exit_date 过滤(命中 0 处)；离职语义见 AC-INC-10",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-33",
+  "case": "修改上市日期双签+审计",
+  "cmd": "propose(市场PM→指定研发PM 为确认人)→RD 二次签→audit 回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "propose code=0 id=2103706304802500610 msg=ok；第二签 code=0；审计动作=['LAUNCH_DATE_CONFIRM', 'LAUNCH_DATE_PROPOSE']。互斥执法码证 LaunchDateChangeService L136-149+L215-228：提议人≠确认人、确认人须=提议时预落 confirmer_id、须互补角色(市场PM↔研发PM)、同组 IDOR；单方不可改由状态机 PENDING_SECOND 强制",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-35",
+  "case": "不生成财务结算单据,仅内部台账",
+  "cmd": "grep 结算单/凭证生成",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "命中=0(判据0)；allowance/receipt 均台账型表(无 finance 关联列)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-36",
+  "case": "一产品多项目池分摊不存在(Q5)",
+  "cmd": "grep+config 双证",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "grep=0；multiProjectSplit=NONE；产品:项目=1:1(立项强制 productId 唯一)",
+  "ts": "2026-09-26T12:40:42+08:00"
+ },
+ {
+  "card": "AC-INC-36b",
+  "case": "REWORK_EXCEEDED 主责/连带认定",
+  "cmd": "选项目失败→回读历史同触发 NF 落库行(前轮本车道 HTTP 真产物) + 静态映射表码证",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "本轮不可新做(HTTP 前置不可满足)：NF create 要求项目同时有在职 MARKET_PM/RD_PM(NegativeFeedbackService L196-198 NF_NOT_PM)，而全库在职 RD_PM 活跃绑定数=[['900104', '3'], ['900105', '3'], ['9110009', '3'], ['9110011', '3'], ['9110013', '3'], ['2096266884222570498', '3'], ['2096266884268707841', '3']] 均已达 allowance.projectCountThreshold=3 且无解绑/改绑出口→名额死锁(真缺陷候选,详见 AC-INC-03)。回读证据(按 trigger 聚合 main/related 角色与执行动作)=[['MARKET_PM', 'RD_PM', 'STOP_ALLOWANCE', 'HALVE_ALLOWANCE', 'DRAFT', '1'], ['MARKET_PM', 'RD_PM', 'STOP_ALLOWANCE', 'HALVE_ALLOWANCE', 'EXECUTED', '4']]；静态权威表码证 deriveRoleMapping L120-146。",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-INC-37",
+  "case": "QUALITY_ACCIDENT 主责/连带认定",
+  "cmd": "选项目失败→回读历史同触发 NF 落库行(前轮本车道 HTTP 真产物) + 静态映射表码证",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "本轮不可新做(HTTP 前置不可满足)：NF create 要求项目同时有在职 MARKET_PM/RD_PM(NegativeFeedbackService L196-198 NF_NOT_PM)，而全库在职 RD_PM 活跃绑定数=[['900104', '3'], ['900105', '3'], ['9110009', '3'], ['9110011', '3'], ['9110013', '3'], ['2096266884222570498', '3'], ['2096266884268707841', '3']] 均已达 allowance.projectCountThreshold=3 且无解绑/改绑出口→名额死锁(真缺陷候选,详见 AC-INC-03)。回读证据(按 trigger 聚合 main/related 角色与执行动作)=[['RD_PM', 'MARKET_PM', 'STOP_ALLOWANCE', 'HALVE_ALLOWANCE', 'EXECUTED', '3']]；静态权威表码证 deriveRoleMapping L120-146。",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-INC-38",
+  "case": "MISSED_MARKET_WINDOW 主责/连带认定",
+  "cmd": "选项目失败→回读历史同触发 NF 落库行(前轮本车道 HTTP 真产物) + 静态映射表码证",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "本轮不可新做(HTTP 前置不可满足)：NF create 要求项目同时有在职 MARKET_PM/RD_PM(NegativeFeedbackService L196-198 NF_NOT_PM)，而全库在职 RD_PM 活跃绑定数=[['900104', '3'], ['900105', '3'], ['9110009', '3'], ['9110011', '3'], ['9110013', '3'], ['2096266884222570498', '3'], ['2096266884268707841', '3']] 均已达 allowance.projectCountThreshold=3 且无解绑/改绑出口→名额死锁(真缺陷候选,详见 AC-INC-03)。回读证据(按 trigger 聚合 main/related 角色与执行动作)=[['BOTH', 'NULL', 'STOP_ALLOWANCE', 'NULL', 'LIFTED', '1'], ['BOTH', 'NULL', 'STOP_ALLOWANCE', 'NULL', 'EXECUTED', '4']]；静态权威表码证 deriveRoleMapping L120-146。⚠真缺陷候选(双PM共同担责只落一人): 历史 4 条 MISSED_MARKET_WINDOW/EXECUTED 行的被执行人 main_person_id 全部为本项目 MARKET_PM（逐条=[('27810', '2103691815679995905'), ('59330', '2103698448615256066'), ('38369', '2103699554577723393'), ('93057', '2096266884189016065')]），同项目在职 RD_PM(如 ['9110011', 'NULL', '9110013', '2096266884268707841']) 从未出现在 main/related_person_id → 覆盖数=0。根因码证 NegativeFeedbackService L464-470: mainRole=BOTH 分支只 ids.add(marketId) 且 relatedRole=null 不再补 rdId，与该类 javadoc L43『BOTH 双PM共同担责（STOP_ALLOWANCE × 2）』及卡面『双PM 共同担责』直接矛盾——研发PM 实际不受停发。故由早前只校验视图角色标签的 PASS 下调为 FAIL（判据加深：核到被执行人个体覆盖）",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-INC-39",
+  "case": "负反馈对奖金的影响(贡献度系数降低/取消分配资格)",
+  "cmd": "decide 后回读 NF.bonus_disqualify/tier_delta + project_members.bonus_eligible + consumer 检索",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "判定=半实现(write-only 字段)。已实现侧: NF create 即落 bonus_disqualify=1/tier_delta=-0.50(码证 NegativeFeedbackService L218-219 + DEFAULT_TIER_DELTA L70)，真库 EXECUTED 分布=[['1', '-0.50', '11']] 且经 GET /negative-feedbacks/{id} 视图字段可回显(NegativeFeedbackView L27-28)。缺失侧: 这三个奖金/贡献度执行入口(getBonusDisqualify/getTierDelta/bonus_disqualify)在 BonusPoolService/ContributionService/ProjectMemberServiceImpl 的 consumer 命中=0 处→降档与资格作废从未参与计算；members.bonus_eligible 唯一写入=绑定时置 1，置 0 写路径命中=0；本轮 decide 后相关成员=[('2103706277245923329', 'MARKET_PM', '1'), ('2103706277245923329', 'MARKET_PM', '1')] 全部仍为 1。另: lift 审计文案『解除(恢复津贴+bonusEligible)』(L315)但实现只改 status，从不回滚 bonus_disqualify=文档与实现互斥。归因:真缺陷(奖金侧执法链路未接线)",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-INC-16b",
+  "case": "达成率=窗口内实际回款÷目标销售额(非出库/开票)",
+  "cmd": "真库复算 + controller 出口检索",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "P_R 目标 500 万，窗口内 RECEIPT 净额复算达成率=88.000000%（450万-10万退款=440万→88.0000）；取数口径 SQL 明证 source='RECEIPT' AND in_window=1(ReceiptLedgerService L118-140，出库/开票 source 分布=[['RECEIPT', '28']])；但 calculateAchievementRate 在 controller 层零出口(HTTP=0)→无法经 API 观察，故 PARTIAL",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-INC-40",
+  "case": "负反馈全链写审计",
+  "cmd": "audit_logs entity_type=NEGATIVE_FEEDBACK 回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "本轮三步链(create/submit/decide)审计回读=9 条，动作分布=['CREATE', 'DECIDE_EXECUTE', 'SUBMIT']；每条含 entity_id 可反查认定结果(主责/连带+执行人 before/after)，DECIDE_EXECUTE 的 after_data 载执行动作=STOP/HALVE_ALLOWANCE",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-01",
+  "case": "ipd_app 写审计权限面（表级 grant，MySQL 等价实现 PG revoke）",
+  "cmd": "SHOW GRANTS FOR 'ipd_app'@'127.0.0.1'",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "grants=['GRANT SELECT, INSERT ON `ipd_dev`.`audit_logs` TO `ipd_app`@`127.0.0.1`']；UPDATE/DELETE 存在=False；应用侧登录写审计链路存活(http=200)",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-02",
+  "case": "GET /audit-logs/verify 链校验",
+  "cmd": "GET /api/v1/audit-logs/verify",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "chain=GAP total=4828 hashBroken=0 gaps=17（GAP=历史 seq 洞，owner P0-17 A 方案已裁决接受：成因是删行/回滚/自增不回填，非篡改；哈希红线 0 断裂。洞位集中在 2026-09-06 16:34 GATE 批量段(事务回滚)+09-22 一处，均为本轮之前存量，非本车道写入）",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-03",
+  "case": "篡改后校验返回断裂点（本轮禁 SQL 写，未注毒）",
+  "cmd": "GET /audit-logs/verify + 真库列结构",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "正向断裂未构造（纪律禁写 audit_logs；历史轮 AUDIT-CHAIN-P变体真库冒烟-20260905 已实测断裂检出）。本轮实证：判据四态出口齐备(chain/hashBroken/gaps)，prev_hash/curr_hash/hash_version 列在位=True；REBUILD_CHAIN 修复端点存在",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-04",
+  "case": "MARKET_PM /scope 与 /export/scope 仅本人",
+  "cmd": "GET /api/v1/audit-logs/scope (ipd-market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "scope=OWN operatorIds=['900103'] 前5条operatorId均为本人=True",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-04",
+  "case": "MARKET_PM export/scope 范围=OWN 且落 EXPORT 审计",
+  "cmd": "GET /api/v1/audit-logs/export/scope (ipd-market)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "exported=796 scope=OWN",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-05",
+  "case": "GROUP_LEADER 导出/查询=本组",
+  "cmd": "GET /audit-logs/scope (ipd-leader)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "scope=GROUP operatorIds⊆本组persons(6个)=True",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-05",
+  "case": "SUPER_ADMIN 查询/导出=全局",
+  "cmd": "GET /audit-logs/scope+export/scope (ipd-admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "scope=GLOBAL export.scope=GLOBAL exported=4842",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-06",
+  "case": "未登录访问审计接口",
+  "cmd": "GET /audit-logs/scope (no token)",
+  "http": 401,
+  "envelope_code": 20001,
+  "verdict": "PASS",
+  "note": "scope: http=401 code=20001 data=None；verify: http=401 code=20001",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AUD-07",
+  "case": "audit_logs 表结构无 updated_at",
+  "cmd": "SHOW COLUMNS FROM audit_logs",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "cols=['id', 'seq', 'operator_id', 'operator_name', 'operator_role', 'action', 'entity_type', 'entity_id', 'before_data', 'after_data', 'reason', 'prev_hash', 'curr_hash', 'ip_address', 'tenant_id', 'create_time', 'hash_version']（含 create_time/seq/prev_hash/curr_hash，只追加）",
+  "ts": "2026-09-26T12:40:43+08:00"
+ },
+ {
+  "card": "AC-AI-FIXTURE",
+  "case": "AI 域项目 fixture",
+  "cmd": "POST /projects(AI-P)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "P_AI=2103706310448033796",
+  "ts": "2026-09-26T12:40:44+08:00"
+ },
+ {
+  "card": "AC-AI-01",
+  "case": "超管配置模型参数+密钥加密存储",
+  "cmd": "POST /ai-models → 真库密文列回读 → GET 列表脱敏",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "config id=2103706310582251521；库内密钥列=['api_key_encrypted'] 存储值前缀=Juk6tUBx1TlEK9te（明文出现=False）；API 回显脱敏=True；provider/endpoint/model/temperature/maxTokens 全字段受理",
+  "ts": "2026-09-26T12:40:44+08:00"
+ },
+ {
+  "card": "AC-AI-10",
+  "case": "普通PM 与组长调用权限对等",
+  "cmd": "POST /ai-documents ×(market/leader/rd)",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "登记(ai-document:add)三角色均可=['ipd-market:code0', 'ipd-leader:code0', 'ipd-rd:code0']；generate 同权限码 AiDocumentController L60 注释『PM 与组长对等』",
+  "ts": "2026-09-26T12:40:44+08:00"
+ },
+ {
+  "card": "AC-AI-02",
+  "case": "PM 录入原始资料调用 AI 生成待审核",
+  "cmd": "POST /ai-documents/generate",
+  "http": 500,
+  "envelope_code": 90001,
+  "verdict": "FAIL-ENV",
+  "note": "外部模型端点不可达（nc -z 127.0.0.1 8765 = CLOSED，库内唯一启用项 id=1 endpoint=http://127.0.0.1:8765 为旧 mock）→ API 原始错误: AI 生成失败: UNSUPPORTED_PROTOCOL (HTTP=500/code=90001)。日志级原始证据: 同 trace 内 embed 与 chat 两次调用均抛 java.lang.RuntimeException: java.net.ConnectException（拒连，RetryUtils 2 次重试后放弃，tail 内 retriable=4 次/embed fail=1 次），最终 errorCode=UNSUPPORTED_PROTOCOL=2 次而非白名单里更贴切的 UNREACHABLE（AiGateway.mapFailure L263-284 的 ConnectException 分支未命中，疑 langchain4j 重试耗尽后包装改变了 cause 链）；对客户端只暴露 HTTP=500/通用 INTERNAL_ERROR(90001) 而非专用 AI 错误码→真缺陷候选(观测性/错误分类)，不影响本卡『外部依赖不可达』判定。生成链可观测部分已验: POST /ai-documents 登记侧 v1 status=GENERATED(=GENERATED 待审核)；历史成功审计 AI_GENERATE(tokenPrompt/tokenCompletion/latencyMs/contextHits)仍在库可回读(见 AC-AI-09)→闸路与持久层完好,仅模型外呼不可用",
+  "ts": "2026-09-26T12:40:47+08:00"
+ },
+ {
+  "card": "AC-AI-03",
+  "case": "未审核 AI 内容拒绝归档为交付物",
+  "cmd": "POST /ai-documents/{id}/versions/{v}/archive (status=GENERATED)",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "拒绝 code=50002 msg=AI 文档须人工审核确认才可归档",
+  "ts": "2026-09-26T12:40:47+08:00"
+ },
+ {
+  "card": "AC-AI-04",
+  "case": "审核通过后修改→v2 生成且 v1 保留",
+  "cmd": "review→revise→versions 回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "review code=0；revise code=0 新行 version=2；版本链=[(1, '2103706313262411778', 'REVIEWED'), (2, '2103706325287481346', 'GENERATED')]",
+  "ts": "2026-09-26T12:40:47+08:00"
+ },
+ {
+  "card": "AC-AI-05",
+  "case": "任意两版本对比与回溯",
+  "cmd": "GET /ai-documents/{id}/diff",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "diff 出口返回={'fromVersionId': '2103706313262411778', 'fromVersionNo': 1, 'toVersionId': '2103706325287481346', 'toVersionNo': 2, 'di（v1↔v2 差异报告或全链版本可回溯=history 端点 code 另附）",
+  "ts": "2026-09-26T12:40:47+08:00"
+ },
+ {
+  "card": "AC-AI-06",
+  "case": "AI 原始 v1+全部人工版本无缺失",
+  "cmd": "GET versions+history",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "versions=2 条=[(1, '2103706313262411778', 'REVIEWED'), (2, '2103706325287481346', 'GENERATED')]；history code=0 条数=2（v1 GENERATED→review→v2 人工改版全链在库）",
+  "ts": "2026-09-26T12:40:47+08:00"
+ },
+ {
+  "card": "AC-AI-07",
+  "case": "敏感内容不过滤直接透传;UI 有风险提示",
+  "cmd": "grep 过滤码=0 + 前端提示文案命中",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "服务层过滤实现命中=0（判据0；检索域=AiGenerationService+service/ai/*，词表=敏感词/sensitiveWord/censor/关键词过滤）；透传契约注释命中=7；前端风险提示/人工审核文案命中=19（路径=apps/web-antd/src 全量 vue/ts）；前端护栏文案(限流 40011/预算 40013)命中=12。注:AiChatClient.java 实际位于 service/ai/ 子包（首轮按 service/ 平铺路径检索导致 grep rc=2 → 命中数 -1，已修路径，属 fixture 假红）",
+  "ts": "2026-09-26T12:40:47+08:00"
+ },
+ {
+  "card": "AC-AI-08",
+  "case": "超出月度 token 预算返回 4xxxx 并提示超管",
+  "cmd": "enable LANE4 模型→generate 探预算闸→复原 enable id=1",
+  "http": 500,
+  "envelope_code": 90001,
+  "verdict": "PARTIAL",
+  "note": "预算闸真实存在且在生成前预检: AiGenerationService L120-127 (budgetOf>0 且 used+prompt.length+maxTokens>budget → failAudit(BUDGET_EXCEEDED)+抛 AI_BUDGET_EXCEEDED)，错误码语义符合卡面『返回 4xxxx』: ApiV1ErrorCode L24 = 40013 且 getHttpStatus L101 映射 HTTP=409；前端文案已备(auth.ts L65『AI 预算超出限制，请稍后再试』+ai-document.test.ts 断言)。但三点使其在 HTTP 层不可达: ①配置面缺口=实测 POST /api/v1/ai-models 带 budgetTokens=100 → code=0 id=2103706333168578561，落库 config_json={\"maxTokens\": 64, \"temperature\": 0.7}（含 budgetTokens=False）；AiModelSaveReq 白名单只有 provider/endpoint/apiKey/model/temperature/maxTokens/embedEndpoint/embedModel 且 @JsonIgnoreProperties(ignoreUnknown=true)→未知键静默丢弃,运营无 API 途径设预算（真缺陷候选）；②『并提示超管』无实现出口: AiGenerationService 内 notifyAdmin/站内信/MessageService 命中=0 处,仅 failAudit 落库+409 返回给调用者(归 真缺陷候选:承诺文案与实现不符)；③预算用量 used 依赖历史成功调用累计,而外部模型不可达(启用项原 id=1 端点 127.0.0.1:8765 拒连)→本跑 generate code=90001 msg=AI 生成失败: UNSUPPORTED_PROTOCOL 先失败于外呼,预算分支被前置条件挡住(BLOCKED 因素叠加)。budgetTokens 全仓 consumer=5 处。启用面复原: 原启用=['1']→复原 POST code=0→现启用=['1']",
+  "ts": "2026-09-26T12:40:49+08:00"
+ },
+ {
+  "card": "AC-AI-09",
+  "case": "AI 调用写审计含 token 消耗与耗时",
+  "cmd": "audit_logs AI_GENERATE* 回读",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "最新 AI 审计=['AI_GENERATE_FAILED', 'AI_GENERATE_FAILED']（含 token/latency 字段=True；成功+失败路径均落审计，AiGenerationService generate javadoc+failAudit 码证）",
+  "ts": "2026-09-26T12:40:49+08:00"
+ }
+]

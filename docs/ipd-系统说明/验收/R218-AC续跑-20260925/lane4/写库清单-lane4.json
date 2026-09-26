@@ -1,0 +1,1262 @@
+[
+ {
+  "ts": "2026-09-26T12:40:34+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-market",
+  "http": 403,
+  "code": 30001,
+  "body_sha": "c7ddf7c578c2"
+ },
+ {
+  "ts": "2026-09-26T12:40:34+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/allowance/auto-scan?period=2026-09",
+  "who": "ipd-rd",
+  "http": 403,
+  "code": 30001,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:34+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/allowance/auto-scan?period=2026-09",
+  "who": "ipd-leader",
+  "http": 403,
+  "code": 30001,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "092242e27185"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "372b473d5b34"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4597eb2d6dc7"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "PUT",
+  "path": "/api/v1/system-configs/bonus.salesSource",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d2b4e3d0dbc5"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "092242e27185"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "1e49adde393a"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "b9fa3fc67b4c"
+ },
+ {
+  "ts": "2026-09-26T12:40:35+08:00",
+  "run": "glb",
+  "method": "PUT",
+  "path": "/api/v1/system-configs/bonus.salesSource",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "eb6febbc3ff2"
+ },
+ {
+  "ts": "2026-09-26T12:40:36+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "bf63eaaf3e67"
+ },
+ {
+  "ts": "2026-09-26T12:40:36+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "5bf25589ffd8"
+ },
+ {
+  "ts": "2026-09-26T12:40:36+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "65d1b87d0dfd"
+ },
+ {
+  "ts": "2026-09-26T12:40:36+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ea095091fa90"
+ },
+ {
+  "ts": "2026-09-26T12:40:37+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "bcb1c96dddb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:38+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d5c6af8aad57"
+ },
+ {
+  "ts": "2026-09-26T12:40:38+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "6cabcc92d0ac"
+ },
+ {
+  "ts": "2026-09-26T12:40:39+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "dcea434c96c2"
+ },
+ {
+  "ts": "2026-09-26T12:40:39+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103706277245923329/members",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "a81046b027ac"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103706277245923329/members",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "1e0efe5db04c"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691814631419906/members",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "93f81d71c400"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691814895661057/members",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "93f81d71c400"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691815466086402/members",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "93f81d71c400"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691815466086402/members",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "2e642486d9ff"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691814362984449/members",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "2e642486d9ff"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/allowance/auto-scan?period=2026-09",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103706277245923329/members",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "9dff7ed46411"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/persons/2103706280102244353/resign",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "6b366a077f60"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/persons/2103706280102244353/rehire",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4147a549ff8f"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691814631419906/members",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "815c9d9c4da3"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "3122d8a2dcda"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "d7447d1dc214"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "9199e988c599"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "61733b4b88e9"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d29191e97b7d"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": "46485392cc2d"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/coefficient-change-requests",
+  "who": "ipd-market",
+  "http": 200,
+  "code": 0,
+  "body_sha": "9c114d0ec175"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/coefficient-change-requests/2103706296749436929/leader-decision?approve=true&opinion=LANE4-ok",
+  "who": "ipd-leader",
+  "http": 200,
+  "code": 0,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/receipt-ledgers",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ccd9d42e7ff3"
+ },
+ {
+  "ts": "2026-09-26T12:40:40+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/receipt-ledgers",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "a95ec14da049"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/receipt-ledgers/2103706277245923329/refunds",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "f4cf1bf246e0"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/receipt-ledgers/2103706277245923329/refunds",
+  "who": "ipd-admin",
+  "http": 409,
+  "code": 50002,
+  "body_sha": "cf2144418dfc"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "eb0c3977bd1b"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "e9691662e94e"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "129ddc6cf003"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706299056304129/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "3c822b76fbad"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d6ca93672b37"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "9513b08e4d58"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706299387654145/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4979f3bf7dec"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "1da256db19f8"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ac4ab937e471"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706299777724417/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "04ba4b3af4f7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "2de344e003ad"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "dd7d33f26c80"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706300159406081/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "6831b5540f96"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "34fe5628837a"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "3dffb9e10e5d"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706300499144705/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "7b17e8a74b24"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "b1504bffd1a6"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "f4fae67d424e"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706300847271937/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4b6b387f1776"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "9e8fbd94071a"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "b9db3f4c9b3d"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706301212176385/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "c6ae3fb53779"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "241111c8f647"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "f23db4ef97ce"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706301568692225/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "39988504a27c"
+ },
+ {
+  "ts": "2026-09-26T12:40:41+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d679856e6b3d"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d524bab6feab"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706301916819457/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "fbdc5a7c2daa"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "6ecf1a68278c"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "02fbe8727c3c"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706302302695426/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "ab3d8738aeb7"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4588201a91bd"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "5350a5b71ec9"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "553a22b520ee"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 409,
+  "code": 50002,
+  "body_sha": "8585eeedb6ac"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 500,
+  "code": 90001,
+  "body_sha": "15b378464542"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/coefficient/preview",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d529df2eb710"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/coefficient/preview",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "9b0e75107870"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/coefficient/preview",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "acfdd0dacd96"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects/2103691814362984449/status?target=LIFECYCLE",
+  "who": "ipd-admin",
+  "http": 400,
+  "code": 10001,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/contributions/2103691814362984449/save",
+  "who": "ipd-market",
+  "http": 409,
+  "code": 50007,
+  "body_sha": "c55cd7ca46d8"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/contributions/2103691814362984449/market-share?marketShare=0.65",
+  "who": "ipd-leader",
+  "http": 409,
+  "code": 50007,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/contributions/2103691814362984449/market-share?marketShare=0.70",
+  "who": "ipd-leader",
+  "http": 400,
+  "code": 10001,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "177807cc9447"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "23bdb5bd4fdd"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4266b4f3bd30"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706303829422082/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "e8cc68ca7cfb"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "6b4fb2afe2bb"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "29022b675852"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "4216e441b354"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706304135606274/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "b4577c7bccd4"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "e4e0431e4704"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "8293259c891f"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "0c6f97c94875"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103706304462761986/freeze",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "7772b14e6142"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/compute",
+  "who": "ipd-admin",
+  "http": 409,
+  "code": 50002,
+  "body_sha": "2fb7205f60ac"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/bonus-pool/2103697407756775426/distribute",
+  "who": "ipd-leader",
+  "http": 409,
+  "code": 50002,
+  "body_sha": "074d30da7fc2"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/launch-date-change-requests",
+  "who": "ipd-market",
+  "http": 200,
+  "code": 0,
+  "body_sha": "2111b3fcef23"
+ },
+ {
+  "ts": "2026-09-26T12:40:42+08:00",
+  "run": "inc",
+  "method": "POST",
+  "path": "/api/v1/launch-date-change-requests/2103706304802500610/second-decision?approve=true&opinion=LANE4-ok",
+  "who": "ipd-rd",
+  "http": 200,
+  "code": 0,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "465b3b8278b5"
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "23389d356700"
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-models",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "71e6e3c136b0"
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents",
+  "who": "ipd-market",
+  "http": 200,
+  "code": 0,
+  "body_sha": "d0fdef9c6fad"
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents",
+  "who": "ipd-leader",
+  "http": 200,
+  "code": 0,
+  "body_sha": "be6f18dfaad8"
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents",
+  "who": "ipd-rd",
+  "http": 200,
+  "code": 0,
+  "body_sha": "e4ca211f6b48"
+ },
+ {
+  "ts": "2026-09-26T12:40:44+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents",
+  "who": "ipd-market",
+  "http": 200,
+  "code": 0,
+  "body_sha": "37b6467fe8a7"
+ },
+ {
+  "ts": "2026-09-26T12:40:47+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/generate",
+  "who": "ipd-market",
+  "http": 500,
+  "code": 90001,
+  "body_sha": "92ebb17c2ca0"
+ },
+ {
+  "ts": "2026-09-26T12:40:47+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/2103706313262411778/versions/2103706313262411778/archive",
+  "who": "ipd-market",
+  "http": 409,
+  "code": 50002,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:47+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/2103706313262411778/versions/2103706313262411778/review",
+  "who": "ipd-leader",
+  "http": 200,
+  "code": 0,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:47+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/2103706313262411778/revise",
+  "who": "ipd-market",
+  "http": 200,
+  "code": 0,
+  "body_sha": "b23e35b6da84"
+ },
+ {
+  "ts": "2026-09-26T12:40:47+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-models/2103706310582251521/enable",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:49+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-documents/generate",
+  "who": "ipd-market",
+  "http": 500,
+  "code": 90001,
+  "body_sha": "802374b78c1c"
+ },
+ {
+  "ts": "2026-09-26T12:40:49+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-models/1/enable",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": null
+ },
+ {
+  "ts": "2026-09-26T12:40:49+08:00",
+  "run": "ai",
+  "method": "POST",
+  "path": "/api/v1/ai-models",
+  "who": "ipd-admin",
+  "http": 200,
+  "code": 0,
+  "body_sha": "322568d96e80"
+ }
+]

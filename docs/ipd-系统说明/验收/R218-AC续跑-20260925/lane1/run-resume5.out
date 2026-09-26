@@ -1,0 +1,33 @@
+[RESUME] RUN=205339 ctx={'P-A': '2103694596738428930', 'P-B': '2103694596964921346', 'P-C': '2103694597157859329', 'INV1': '2103694597292077058', 'INV2': '2103694598646837249', 'INVX': '2103694600123232258'}
+[SKIP] AC-ENV-01 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-02 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-03 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-04 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-05 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-06 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-01 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-02 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-04 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-05 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-08 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-06 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-07 已判定, 续跑模式不重复写
+[SKIP] AC-HR-05 已判定, 续跑模式不重复写
+[SKIP] AC-HR-05 已判定, 续跑模式不重复写
+[SKIP] AC-HR-01 已判定, 续跑模式不重复写
+[SKIP] AC-HR-02 已判定, 续跑模式不重复写
+[SKIP] AC-HR-06 已判定, 续跑模式不重复写
+[SKIP] AC-HR-07 已判定, 续跑模式不重复写
+[SKIP] AC-HR-04 已判定, 续跑模式不重复写
+[SKIP] AC-HR-08 已判定, 续跑模式不重复写
+[SKIP] AC-CFG-01 已判定, 续跑模式不重复写
+[SKIP] AC-CFG-02 已判定, 续跑模式不重复写
+[SKIP] AC-CFG-03 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-09 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-10 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-11 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-07 已判定, 续跑模式不重复写
+[PARTIAL] AC-AUTH-06 AUTH06-resign-chain -> http=200 ①自有夹具 Mock-LANE1A06-205339 id=2103700498329677826 建后态=ACTIVE/ACTIVE; mark-resigned http=200 code=0 view={"idem
+[PARTIAL] AC-AUTH-03 AUTH03-change-pwd -> http=400 未登录 http=401 code=20001; 原密码错 http=400 code=10001 msg=原密码错误 (改密失败尝试未留 PASSWORD_CHANGE* 审计, 全库该类action=0, 实测计数=
+[SKIP] AC-TEAM-08 已判定, 续跑模式不重复写
+RUN 205339 DONE recs= 41

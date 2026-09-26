@@ -1,0 +1,32 @@
+[
+ {
+  "card": "AC-IPD-12",
+  "case": "深管逾期:工作台标记腿 + 每日提醒腿",
+  "cmd": "GET /workbench/summary?projectId=9140005 + SQL notification_events",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "① 标记腿(通过): 动作 D02(id=9160044, depth=DEEP, due=2026-09-16 18:39:17) 在工作台以 priority=high dueDate=1789555157000 暴露, stats.overdue=1 ② 提醒腿(未接线): 全库 ACTION_OVERDUE 通知=0 条、主责人 900103 收到=0 条; NotificationService.Types.ACTION_OVERDUE 仅常量声明, 主代码 0 发布方且无 stage_actions 逾期扫描器/端点 ⇒ 每日提醒不成立(真缺陷, 只描述不立卡)",
+  "ts": "2026-09-26T13:02:29+08:00"
+ },
+ {
+  "card": "AC-GATE-10",
+  "case": "组长真实落裁+重复守卫+终裁门",
+  "cmd": "sign(冲突)+arbitrate x2+final-ruling + SQL",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PARTIAL",
+  "note": "冲突签署 http=200; 预落待裁行=[['900102', 'NULL']] | 组900001 在册未软删的 GROUP_LEADER 仅 900102 一人(900112 真库 del_flag=2 已软删故不入 collectLeaders，与 leaderOpinions<2 的终裁门一致)；900102 落裁 code=0 id=2103711786099322882; 重复提交被拒(您已提交本轮仲裁意见，不可重复提交); 落裁后行数/已决/待决=['1', '1', '0']; 审计GATE_ARBITRATION=1; 仅1份组长意见时终裁被拒(组长仲裁尚未形成两组对立意见，暂无需超管终裁) | 未覆盖腿: 两组长意见不一致→自动升级超管终裁。本库可登录组长仅 900102（900112 login 实测 400/10001 且已软删；9110004/王组长/李组长 无 dev-accounts 凭证）⇒ 该腿环境不具备。旁证仅历史 seed 行 (gate 9100000000000000063 round5: 900102 APPROVE vs 900112 REJECT + 900101 终裁 REJECT，2026-09-06 遗留非本轮) ",
+  "ts": "2026-09-26T13:02:29+08:00"
+ },
+ {
+  "card": "AC-GATE-09",
+  "case": "双签两侧在册:仅提醒未签方",
+  "cmd": "sign(MTK APPROVE)+scan-remind + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "FAIL",
+  "note": "remindCount=0 未签研发侧(900104)通知=0, 已签市场侧(900103)通知=0(应0·BR『已签方不提醒』), due=2026-09-27 13:02:30; 市场侧另证见 repair-3 单侧用例",
+  "ts": "2026-09-26T13:02:29+08:00"
+ }
+]

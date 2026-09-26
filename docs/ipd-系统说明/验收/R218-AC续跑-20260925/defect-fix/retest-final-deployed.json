@@ -1,0 +1,92 @@
+[
+ {
+  "card": "AC-REQ-09",
+  "case": "R1 提交删除申请(requirements 白名单生效)",
+  "cmd": "POST /api/v1/deletion-requests entityType=requirements entityId=2103710182767898625",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "申请2103715748890382337 status=LEADER_REVIEW（修复前同请求 400 不支持的entity_type）",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-REQ-09",
+  "case": "R2 外组组长初审403+超管初审放行",
+  "cmd": "leader-decision?approve=true (ipd-leader→403设计内; ipd-admin→200)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "403「仅目标所属组组长可初审」=IDOR防冒充生效；requireLeaderOrAdmin 超管代审 200/0",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-REQ-09",
+  "case": "R3 超管终审执行",
+  "cmd": "POST /deletion-requests/2103715748890382337/admin-decision?approve=true",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=DELETED",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-REQ-09",
+  "case": "R4 真库回读软删+审计链",
+  "cmd": "SQL requirements.del_flag & audit_logs entity_id",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "del_flag=1；审计 DELETE_REQUEST_SUBMIT×3+DELETE_LEADER_APPROVE+DELETE_EXECUTE",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-REQ-09",
+  "case": "R5 已删实体重复申请幂等拒绝",
+  "cmd": "POST /deletion-requests 同 entityId 二次",
+  "http": 404,
+  "envelope_code": 50001,
+  "verdict": "PASS",
+  "note": "404「目标实体不存在」；code位50001承载NOT_FOUND并入观察项D-8",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-REQ-09",
+  "case": "R6 在途重复申请可驳回(观察)",
+  "cmd": "leader-decision?approve=false ×2 僵尸申请",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "同实体3条并行LEADER_REVIEW未拦截=观察项(非本卡验收点)，2条已驳回REJECTED",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-PROD-09",
+  "case": "S1 超管手动扫描 200",
+  "cmd": "POST /api/v1/guest-demands/overdue-scan (admin)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "notifiedCount=1 真扫出超时项",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-PROD-09",
+  "case": "S2 非超管拒绝",
+  "cmd": "POST /guest-demands/overdue-scan (ipd-rd)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "仅超管口生效",
+  "ts": "2026-09-25T22:22:24-07:00"
+ },
+ {
+  "card": "AC-PROD-09",
+  "case": "S3 落痕回读",
+  "cmd": "SQL audit_logs action=overdue_unassigned + notification_events",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "audit=2行(13:19:08本轮)、DEMAND_OVERDUE_UNASSIGNED receiver=900101(无组长按设计升级超管兜底)",
+  "ts": "2026-09-25T22:22:24-07:00"
+ }
+]

@@ -1,0 +1,22 @@
+[
+ {
+  "card": "AC-GATE-11",
+  "case": "游客需求",
+  "cmd": "POST /public/demands",
+  "http": 429,
+  "envelope_code": 40011,
+  "verdict": "FAIL-ENV",
+  "note": "请求过于频繁，请稍后重试",
+  "ts": "2026-09-26T12:03:28+08:00"
+ },
+ {
+  "card": "AC-GATE-18",
+  "case": "要素增改发布归档(全程enabled=0防污染)",
+  "cmd": "CRUD /gate-elements",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "create=0(ok) update=0 publish=0 list命中v2=True archive=0; 三车道并发期保持 enabled=0,清单可见性以管理列表为准",
+  "ts": "2026-09-26T12:03:28+08:00"
+ }
+]

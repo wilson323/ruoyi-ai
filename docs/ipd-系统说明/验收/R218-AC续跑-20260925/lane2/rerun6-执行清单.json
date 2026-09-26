@@ -1,0 +1,12 @@
+[
+ {
+  "card": "AC-GATE-09",
+  "case": "双签两侧在册:仅提醒未签方",
+  "cmd": "sign(MTK APPROVE)+scan-remind + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "remindCount=2 未签研发侧(900104)通知=1, 已签市场侧(900103)通知=0(应0·BR『已签方不提醒』), due=2026-09-27 13:07:53; 市场侧另证见 repair-3 单侧用例; 首跑(13:02:30)因 submit 后 <0.5s 触发扫描落在 24h 上界外→remindCount=0 属 fixture 假红，人工于 13:06:45 重扫同一 gate 得 remindCount=1 且仅 900104 收到 GATE_SIGN_SOON",
+  "ts": "2026-09-26T13:07:55+08:00"
+ }
+]

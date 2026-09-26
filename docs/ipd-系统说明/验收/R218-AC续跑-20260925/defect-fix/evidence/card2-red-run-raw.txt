@@ -1,0 +1,107 @@
+=== RED-RUN-2 卡2 未修实现 mvn 原始输出 2026-09-25T20:14:59-0700 ===
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< org.ruoyi:ruoyi-ipd >-------------------------
+[INFO] Building ruoyi-ipd 3.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ ruoyi-ipd ---
+[INFO] Copying 5 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- flatten:1.3.0:flatten (flatten) @ ruoyi-ipd ---
+[INFO] Generating flattened POM of project org.ruoyi:ruoyi-ipd:jar:3.1.0...
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ ruoyi-ipd ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ ruoyi-ipd ---
+[INFO] skip non existing resourceDirectory /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ ruoyi-ipd ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 294 source files with javac [debug target 17] to target/test-classes
+[INFO] /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/controller/DemandDetailEndpointTest.java: 某些输入文件使用或覆盖了已过时的 API。
+[INFO] /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/controller/DemandDetailEndpointTest.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/advice/Qa07ErrorContractAcceptanceTest.java: 某些输入文件使用了未经检查或不安全的操作。
+[INFO] /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/advice/Qa07ErrorContractAcceptanceTest.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] --- surefire:3.5.3:test (default-test) @ ruoyi-ipd ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.ruoyi.ipd.service.R218AcProd09WiringTest
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[ERROR] Tests run: 5, Failures: 2, Errors: 2, Skipped: 0, Time elapsed: 1.046 s <<< FAILURE! -- in org.ruoyi.ipd.service.R218AcProd09WiringTest
+[ERROR] org.ruoyi.ipd.service.R218AcProd09WiringTest.scanPublishesRealNotificationToProductGroupLeader -- Time elapsed: 0.789 s <<< FAILURE!
+java.lang.AssertionError: 契约缺失：GuestDemandService 未装配 NotificationService（AC-PROD-09 通知链未接线，修复前必红）
+	at org.ruoyi.ipd.service.R218AcProd09WiringTest.findFieldOfType(R218AcProd09WiringTest.java:256)
+	at org.ruoyi.ipd.service.R218AcProd09WiringTest.scanPublishesRealNotificationToProductGroupLeader(R218AcProd09WiringTest.java:177)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] org.ruoyi.ipd.service.R218AcProd09WiringTest.manualScanEndpointExists -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.ClassNotFoundException: org.ruoyi.ipd.controller.GuestDemandOverdueScanController
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:520)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at org.ruoyi.ipd.service.R218AcProd09WiringTest.manualScanEndpointExists(R218AcProd09WiringTest.java:151)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] org.ruoyi.ipd.service.R218AcProd09WiringTest.schedulerWiringExists -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.ClassNotFoundException: org.ruoyi.ipd.service.GuestDemandOverdueScheduler
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:520)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at org.ruoyi.ipd.service.R218AcProd09WiringTest.schedulerWiringExists(R218AcProd09WiringTest.java:129)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[ERROR] org.ruoyi.ipd.service.R218AcProd09WiringTest.fallbackToSuperAdminWhenNoLeader -- Time elapsed: 0.002 s <<< FAILURE!
+java.lang.AssertionError: 契约缺失：GuestDemandService 未装配 NotificationService（AC-PROD-09 通知链未接线，修复前必红）
+	at org.ruoyi.ipd.service.R218AcProd09WiringTest.findFieldOfType(R218AcProd09WiringTest.java:256)
+	at org.ruoyi.ipd.service.R218AcProd09WiringTest.fallbackToSuperAdminWhenNoLeader(R218AcProd09WiringTest.java:206)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   R218AcProd09WiringTest.fallbackToSuperAdminWhenNoLeader:206->findFieldOfType:256 契约缺失：GuestDemandService 未装配 NotificationService（AC-PROD-09 通知链未接线，修复前必红）
+[ERROR]   R218AcProd09WiringTest.scanPublishesRealNotificationToProductGroupLeader:177->findFieldOfType:256 契约缺失：GuestDemandService 未装配 NotificationService（AC-PROD-09 通知链未接线，修复前必红）
+[ERROR] Errors: 
+[ERROR]   R218AcProd09WiringTest.manualScanEndpointExists:151 » ClassNotFound org.ruoyi.ipd.controller.GuestDemandOverdueScanController
+[ERROR]   R218AcProd09WiringTest.schedulerWiringExists:129 » ClassNotFound org.ruoyi.ipd.service.GuestDemandOverdueScheduler
+[INFO] 
+[ERROR] Tests run: 5, Failures: 2, Errors: 2, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  13.168 s
+[INFO] Finished at: 2026-09-25T20:15:13-07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.3:test (default-test) on project ruoyi-ipd: There are test failures.
+[ERROR] 
+[ERROR] See /Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+=== END 2026-09-25T20:15:13-0700 ===

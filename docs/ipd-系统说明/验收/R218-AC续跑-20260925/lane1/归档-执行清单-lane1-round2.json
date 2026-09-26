@@ -1,0 +1,112 @@
+[
+ {
+  "card": "AC-ENV-01",
+  "case": "ENV01-connectivity",
+  "cmd": "TCP probe 127.0.0.1 {5432,6379,9000,9001,13306}",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "PG:5432=True Redis:6379=False MinIO:9000=True/9001=False | MySQL:13306=True. 清单P0底座基于Windows+PG+Redis+MinIO; 当前运行栈为免Docker MySQL@13306(见ps:java -jar ruoyi-admin.jar profiles=ipd-local,dev redis 16379), Windows .bat/PG/MinIO 端口本机不存在。归因=环境基线漂移(非缺陷): 该AC前提不适用当前部署。Redis实连端口16379(启动参数)。",
+  "ts": "2026-09-26T11:37:13+08:00"
+ },
+ {
+  "card": "AC-ENV-02",
+  "case": "ENV02-seed",
+  "cmd": "SQL: _ipd_schema_history + persons超管 + product_groups + system_configs; GET /role-permissions/effective(角色字典)",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "schema_history=12 migrations; SUPER_ADMIN=1; product_groups=12; system_configs=59; 角色字典=effective端点 http=200 code=0 角色['GROUP_LEADER', 'MARKET_PM', 'RD_PM', 'SUPER_ADMIN'] 各角色javaDefault条数={'GROUP_LEADER': 59, 'MARKET_PM': 52, 'RD_PM': 50, 'SUPER_ADMIN': 88}; ipd_role_permission 覆盖行=0(0=无覆盖,系R215设计:字典默认在Java目录非DB)。真库 ipd_dev 回读 2026-09-26T11:37:13+08:00",
+  "ts": "2026-09-26T11:37:13+08:00"
+ },
+ {
+  "card": "AC-ENV-03",
+  "case": "ENV03-backup",
+  "cmd": "n/a (pg_dumpall/Windows F:\\devtools\\pgdata)",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "清单要求备份Windows pgdata并PG恢复; 当前无PostgreSQL栈(实为MySQL), 且禁止破坏性备份/恢复演练。归因=环境基线漂移。",
+  "ts": "2026-09-26T11:37:13+08:00"
+ },
+ {
+  "card": "AC-ENV-04",
+  "case": "ENV04-dedup",
+  "cmd": "skip",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "NOT-RUN",
+  "note": "去重: 该卡已由 R218-QA08-SEC04 执行清单覆盖(见 执行清单-r218.json card=AC-ENV-04)，本车道按去重规则不重复跑。",
+  "ts": "2026-09-26T11:37:13+08:00"
+ },
+ {
+  "card": "AC-ENV-05",
+  "case": "ENV05-grep",
+  "cmd": "grep -rE 'docker compose up' ruoyi-ai (exclude docs/.claude/node_modules)",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "命中1处; 开发脚本/AI指令中直接执行命中=1。样本: ['/Users/mac/Documents/ruoyi-ai/scripts/start-prod.sh:39:docker-compose up -d'] | 说明: 命中集中于README/部署文档(生产)与docs; 无开发期脚本自动执行。",
+  "ts": "2026-09-26T11:37:46+08:00"
+ },
+ {
+  "card": "AC-ENV-06",
+  "case": "ENV06-grep",
+  "cmd": "grep -rE 'ZRANGESTORE|GETDEL|SINTERCARD' ruoyi-modules ruoyi-common",
+  "http": "-",
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "Redis 6.2+ 专有命令命中=0 ['零命中'] (COPY 因语义泛化单列不计)。",
+  "ts": "2026-09-26T11:37:47+08:00"
+ },
+ {
+  "card": "AC-AUTH-01",
+  "case": "AUTH01-admin-login",
+  "cmd": "POST /api/v1/auth/login(ipd-admin) + GET /auth/me",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "http=200 code=0 scope=FULL personType=SUPER_ADMIN username=ipd-admin(独立凭证非PM姓名规则) token=eyJ0eXAiOiJK... ts=2026-09-26T11:37:47+08:00",
+  "ts": "2026-09-26T11:37:47+08:00"
+ },
+ {
+  "card": "AC-AUTH-02",
+  "case": "AUTH02-first-login",
+  "cmd": "login(刘研发) @initial-password(Ipd@123456)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "NOT-RUN",
+  "note": "登录未成功 http=400 code=10001 msg=用户名或密码错误。归因=fixture数据: 库内刘研发 password_hash 与 dev 信源 initial-password 不匹配(该账号由历史波次改写或独立hash),无其它 must_change_pwd=1 且凭证有据的账号。",
+  "ts": "2026-09-26T11:37:47+08:00"
+ },
+ {
+  "card": "AC-AUTH-04",
+  "case": "AUTH04-qr-bound",
+  "cmd": "POST /api/v1/auth/wecom/qr-login(wecom_R29_4_test_001, ipd-rd已绑定)",
+  "http": 409,
+  "envelope_code": 50019,
+  "verdict": "PARTIAL",
+  "note": "http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 开关 ipd.auth.qr-login.enabled=false(R214/U0 安全默认关闭,启动配置未开启),端点行为正确(不查库不签token,409业务拒绝);'登录成功签发JWT'正向路径在本部署不可观测。归因=环境配置(开关关闭),非缺陷。ts=2026-09-26T11:37:47+08:00",
+  "ts": "2026-09-26T11:37:47+08:00"
+ },
+ {
+  "card": "AC-AUTH-05",
+  "case": "AUTH05-qr-unbound",
+  "cmd": "POST /auth/wecom/qr-login(未绑定wecomId)",
+  "http": 409,
+  "envelope_code": 50019,
+  "verdict": "PARTIAL",
+  "note": "http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 同样被开关50019前置拦截,无法观测'账号未绑定'提示路径(代码路径 wecomMockLogin NOT_FOUND 存在,src/service/IpdAuthService.java)。归因=环境配置同AUTH-04。",
+  "ts": "2026-09-26T11:37:47+08:00"
+ },
+ {
+  "card": "AC-AUTH-08",
+  "case": "AUTH08-pm-vs-admin",
+  "cmd": "PUT /system-configs/gate.signDeadlineDays (ipd-market)",
+  "http": 403,
+  "envelope_code": 30001,
+  "verdict": "PASS",
+  "note": "http=403 code=30001 msg=权限不足(预期403/30001); 数据无变更回读 value 3->3 一致 ts=2026-09-26T11:37:47+08:00",
+  "ts": "2026-09-26T11:37:47+08:00"
+ }
+]

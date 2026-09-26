@@ -1,0 +1,29 @@
+[RESUME] RUN=205339 ctx={'P-A': '2103694596738428930', 'P-B': '2103694596964921346', 'P-C': '2103694597157859329', 'INV1': '2103694597292077058', 'INV2': '2103694598646837249', 'INVX': '2103694600123232258'}
+[SKIP] AC-ENV-01 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-02 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-03 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-04 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-05 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-06 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-01 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-02 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-04 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-05 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-08 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-06 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-07 已判定, 续跑模式不重复写
+[PASS] AC-HR-05 HR05-config-allowance(resume) -> http=200 津贴额度可配置(复跑分支): PUT code=0 立即回读=2777.00; 回滚 code=0 终值=2500(基线); 既有绑定行=改值后 L4/2777.00(行2103694601419272193@P-B)/
+[SKIP] AC-HR-05 已判定, 续跑模式不重复写
+[PASS] AC-HR-04 HR04-no-level-entry -> http=404 探测 http=404 code=50001(预期404/405); PersonController PUT/PATCH 命中=0(仅 resign/rehire/unbind 等 POST 动作端点); hr.lev
+[PASS] AC-HR-08 HR08-role-lock -> http=400 http=400 code=10001 msg=角色互斥：人员类型 MARKET_PM 不可绑定为 RD_PM; 落库行数=0(预期0)。代码证据: ProjectMemberServiceImpl.bindMember
+[FAIL] AC-CFG-01 CFG01-hardcode -> http=- 原始命中44行,扣除默认回退/常量声明口径后业务面命中44行。样例: ["/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/r
+[FAIL] AC-CFG-02 CFG02-gate-deadline -> http=200 改值 http=200 code=0; 新Gate id=2103696715994411009 code=0; 要素判定 14/14 成功(失败样本=-); 提交评审 http=200 code=0 msg=ok; s
+[PASS] AC-CFG-03 CFG03-instant -> http=200 PUT http=200 code=0 data={"code": 0, "message": "ok", "data": {"value": "5", "key": "gate.signDeadlineDays", "
+[FAIL] AC-AUTH-09 AUTH09-peer-project -> http=200 http=200 code=0 返回name=LANE1-P-A-205339 —— 预期'3xxxx或无数据不泄露项目名称'。归因=真缺陷候选(同组RD_PM可读他人项目全量详情,src ProjectControll
+[PASS] AC-AUTH-10 AUTH10-leader-view -> http=200 http=200 code=0 name=LANE1-P-A-205339 mainGroupId=900001 status=DRAFT 可查看全部内容 ts=2026-09-26T12:02:37+08:00
+[PASS] AC-AUTH-11 AUTH11-crossgroup-edit -> http=403 跨组查看 http=200 code=0(预期可看=True); 跨组状态编辑 http=403 code=30001 msg=无权操作(预期3xxxx); 库内status=ACTIVE(应为ACTIVE未被改)。ts
+[PASS] AC-AUTH-07 AUTH07-invalid-token -> http=401 撤销/失效后请求 http=401 code=20001 msg=未认证或凭证失效(预期401/2xxxx,前端据此跳登录); ts=2026-09-26T12:02:37+08:00
+[FAIL] AC-AUTH-06 AUTH06-resign-chain -> http=409 http=409 code=50002 view={}; 企微绑定 wecom_R214_swarm_mkt->wecom_R214_swarm_mkt(预期解绑null); 解绑/离职审计=0行; 状态回读=DISAB
+[FAIL] AC-AUTH-03 AUTH03-change-pwd -> http=400 未登录 http=401 code=20001; 原密码错 http=400 code=10001 msg=原密码错误 且失败审计 PASSWORD_CHANGE_REJECTED=0行(预期>0); 新密码过短 htt
+[FAIL] AC-TEAM-08 TEAM08-auto-close -> http=- status=OPEN(预期EXPIRED自动关闭); 到期通知=0条。若仍OPEN: 归因=真缺陷候选——BidInvitationService.expireOverdue() 全模块零调用方(无@Scheduled
+RUN 205339 DONE recs= 37

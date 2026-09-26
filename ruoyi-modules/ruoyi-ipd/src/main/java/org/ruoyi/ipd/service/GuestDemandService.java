@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Requirement;
@@ -13,6 +14,7 @@ import org.ruoyi.ipd.dto.GuestDemandUpdateReq;
 import org.ruoyi.ipd.dto.GuestDemandView;
 import org.ruoyi.ipd.dto.PortalDemandTraceView;
 import org.ruoyi.ipd.dto.PublicProductView;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
@@ -67,6 +69,30 @@ public class GuestDemandService {
     private Date now() { return Date.from(clock.instant()); }
     private final IAuditLogService auditLogService;
     private final GuestRateLimiter rateLimiter;
+
+    /**
+     * R218 卡2（看板 f62ab684 / AC-PROD-09）通知接线：notifyOverdueUnassigned 扫描命中后
+     * 除 audit 留痕外，publishDaily 真通知给「该产品组组长」（AC 原文口径；修复前注释口径=超管属偏差）。
+     * 可选注入（仿 DeletionRequestServiceImpl.certTemplateMapper 先例）：5 参构造的存量测试
+     * （P413AcceptanceTest）未装配时优雅降级为仅 audit，生产 Spring 装配恒注入。
+     */
+    @Autowired(required = false)
+    private NotificationService notificationService;
+    @Autowired(required = false)
+    private PersonMapper personMapper;
+
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    public void setPersonMapper(PersonMapper personMapper) {
+        this.personMapper = personMapper;
+    }
+
+    /** AC-PROD-09 事件类型（与 NotificationService.Types 目录同族，本地常量避免跨卡改动面扩大）。 */
+    public static final String EVT_DEMAND_OVERDUE_UNASSIGNED = "DEMAND_OVERDUE_UNASSIGNED";
+    /** AC-PROD-09 兜底期限：待指派超过 5 个工作日（BR-REQ-04a；口径见 {@link #subtractBusinessDays}）。 */
+    static final int OVERDUE_UNASSIGNED_WORKDAYS = 5;
 
     /** 限流抽象：默认内存滑动窗口（单实例）；多实例部署时替换为 Redis 实现，勿动调用方。 */
     public interface GuestRateLimiter {
@@ -347,13 +373,26 @@ public class GuestDemandService {
     }
 
     /**
-     * P4-1.3：扫描待指派需求并按 AC-PROD-09 兜底（5 工作日超时未处理通知超管）。
-     * <p>BR-REQ-04a：submitedAt + 5 个工作日（跳过周末）后仍未处理，通知超管。
-     * 由 scheduler 周期调用；本方法做幂等扫描，写 notification_events。
+     * P4-1.3 / R218 卡2 接线：扫描「待指派」需求并按 AC-PROD-09 兜底提醒。
+     *
+     * <p>AC-PROD-09 原文：「待指派」需求超过 5 个工作日未处理 ⇒ 提醒<b>该产品组组长</b>兜底处理。
+     * 触发路径（R218 修复前全仓零调用方，归因 DEF-B）：
+     * ① {@code GuestDemandOverdueScheduler} 每日 09:40 @Scheduled（IpdSchedulingConfig 错峰表）；
+     * ② {@code POST /api/v1/guest-demands/overdue-scan} 超管手动端点（验收兜底）。
+     *
+     * <p>工作日口径：阈值 = now − {@link #OVERDUE_UNASSIGNED_WORKDAYS}=5 个工作日，
+     * 由 {@link #subtractBusinessDays} 逐日回退并跳过周六/周日（既有工具，未计法定节假日——
+     * 与 P4-1.3 单测复核记录 20260907 登记口径一致，节假日调休属已知限制非本次扩展面）。
+     *
+     * <p>每条逾期需求：先 audit（action=overdue_unassigned，真库取证面保持）→ 再 publishDaily
+     * 真通知（dedupKey 含自然日：同日重扫幂等不重发，次日可再提醒——同 KPI/移交催办惯例）。
+     * 接收人=该产品组组长（persons.personType=GROUP_LEADER 且 groupId=产品所属组，
+     * GateReviewService.collectLeaders 同源口径）；组无在任组长（数据异常）时升级在任超管
+     * （ACTIVE SUPER_ADMIN，HandoverOverdueScanner.escalate 同口径）——不静默丢弃。
      */
     @Transactional(rollbackFor = Exception.class)
     public int notifyOverdueUnassigned() {
-        Date threshold = subtractBusinessDays(now(), 5);
+        Date threshold = subtractBusinessDays(now(), OVERDUE_UNASSIGNED_WORKDAYS);
         List<Requirement> overdue = requirementMapper.selectList(new LambdaQueryWrapper<Requirement>()
             .eq(Requirement::getStatus, "SUBMITTED")
             .isNull(Requirement::getMarketPmId)
@@ -361,13 +400,59 @@ public class GuestDemandService {
             .le(Requirement::getCreateTime, threshold));
         int notified = 0;
         for (Requirement r : overdue) {
-            // 调用方注入 NotificationService 不可行（解耦约束），此处落 audit 留痕；
-            // 真实通知由 scheduler 在 audit 后调用 publish（见后续 P2-4.1 桥接）
             auditGuestAction("overdue_unassigned", r.getId(), null, null,
                 "now()=" + now().getTime() + ";createTime=" + r.getCreateTime().getTime());
+            publishOverdueReminder(r);
             notified++;
         }
         return notified;
+    }
+
+    /**
+     * AC-PROD-09 通知发布：优先产品组组长，兜底在任超管；协作者未装配（存量 5 参构造测试）时
+     * 优雅降级为仅 audit（certTemplateMapper 可选注入先例同口径），生产装配恒有值。
+     */
+    private void publishOverdueReminder(Requirement r) {
+        if (notificationService == null || personMapper == null) {
+            return;
+        }
+        List<Person> receivers = resolveGroupLeaders(r.getProductId());
+        if (receivers.isEmpty()) {
+            // 「其他/不确定」需求（productId=NULL）或组无在任组长：升级在任超管兜底（原 P4-1.3 注释口径，保留为 fallback）
+            receivers = activeSuperAdmins();
+        }
+        String title = "需求待指派超 " + OVERDUE_UNASSIGNED_WORKDAYS + " 个工作日提醒";
+        String content = "需求【" + (r.getQueryCode() == null ? r.getId() : r.getQueryCode()) + "】"
+            + "提交后已超过 " + OVERDUE_UNASSIGNED_WORKDAYS + " 个工作日仍未指派双 PM，请兜底处理（AC-PROD-09）";
+        for (Person receiver : receivers) {
+            notificationService.publishDaily(receiver.getId(), EVT_DEMAND_OVERDUE_UNASSIGNED,
+                NotificationService.KIND_ACTION, "requirement", r.getId(),
+                title, content, "/demands/pool?status=SUBMITTED", now());
+        }
+    }
+
+    /** 需求所属产品的组组长（productId→products.group_id→persons GROUP_LEADER；不可解析返回空集）。 */
+    private List<Person> resolveGroupLeaders(Long productId) {
+        if (productId == null) {
+            return List.of();
+        }
+        Product product = productMapper.selectById(productId);
+        if (product == null || product.getGroupId() == null) {
+            return List.of();
+        }
+        return personMapper.selectList(new LambdaQueryWrapper<Person>()
+            .eq(Person::getPersonType, "GROUP_LEADER")
+            .eq(Person::getGroupId, product.getGroupId())
+            .ne(Person::getDelFlag, "1"));
+    }
+
+    /** 在任超管（ACTIVE 且未软删；与 HandoverOverdueScanner/PersonService 兜底同口径）。 */
+    private List<Person> activeSuperAdmins() {
+        return personMapper.selectList(new LambdaQueryWrapper<Person>()
+            .eq(Person::getPersonType, "SUPER_ADMIN")
+            .eq(Person::getEmploymentStatus, "ACTIVE")
+            .eq(Person::getAccountStatus, "ACTIVE")
+            .eq(Person::getDelFlag, "0"));
     }
 
     private GuestDemandView toView(Requirement r) {

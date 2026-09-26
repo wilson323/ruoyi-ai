@@ -1,0 +1,102 @@
+[
+ {
+  "card": "AC-GATE-05",
+  "case": "任一否决→驳回+双方通知",
+  "cmd": "sign(rd REJECT)+SQL notification_events",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=REJECTED 通知(market=1,rd=1)",
+  "ts": "2026-09-26T12:14:58+08:00"
+ },
+ {
+  "card": "AC-GATE-10",
+  "case": "分歧→预落仲裁行+越权组长拒+终裁门",
+  "cmd": "arbitrate(900102他组组长)+final-ruling(admin)",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PARTIAL",
+  "note": "预落待裁行=[['9110004', 'NULL']](组长9110004) 仲裁请求通知=1; 他组组长900102提交被拒(仅冲突双方所在组的产品组长可提交仲裁意见); 终裁被拒(组长仲裁尚未形成两组对立意见，暂无需超管终裁) — 组长真实落裁需 9110004 登录凭证(dev-accounts.yaml 无此账号)、两组对立→自动升级腿单组长库结构性不可测",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-06",
+  "case": "驳回后重发起 round+1",
+  "cmd": "POST /reopen",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "resp={'status': 'PENDING', 'round': 2, 'signDueAt': 'Tue Sep 29 12:14:59 CST 2026', 'id': '2103699828939730946'}",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-07",
+  "case": "第3轮组长列席通知",
+  "cmd": "sign+reopen 至 r3 + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "round=3 列席通知=1 接收人=9110004(在册PM胡蛟露所在组9120002组长文元彪)",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-07b",
+  "case": "第5轮超管介入通知",
+  "cmd": "reopen 至 r5 + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "round=5 超管(900101)介入通知=1",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-09",
+  "case": "期限前24h提醒未签方",
+  "cmd": "POST /gates/sign/scan-remind + SQL notif",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "remindCount=1 在册市场侧(陈市场2096…6065)通知=1 due=2026-09-27 12:14:59; 研发侧 RD_PM 全员绑定饱和(900103/04/05等 c=3)未入册→该侧提醒无法实测,按 BR 静默跳过",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-21",
+  "case": "延期3次第4拒+计数",
+  "cmd": "POST /extend-deadline x4",
+  "http": 200,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "4次调用(code,extCount,msg)=[(0, 1, 'ok'), (0, 2, 'ok'), (0, 3, 'ok'), (10001, None, '签署期限最多延长 3 次，已达上限（AC-GATE-21）')]; 测后 gate.extension.maxCount 还原=1",
+  "ts": "2026-09-26T12:14:59+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "case": "未闭环变更单阻断跳阶",
+  "cmd": "POST /advance-stage (PENDING_SIGN)",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "envelope=50002 msg=存在未闭环需求变更单（1 张），需先关闭（P2-6.2 阶段门禁）",
+  "ts": "2026-09-26T12:55:00+08:00"
+ },
+ {
+  "card": "AC-GATE-12",
+  "case": "变更双签→需求池已采纳",
+  "cmd": "sign x2 + SQL",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "change.status=APPROVED requirement.status=ADOPTED codes=0/0",
+  "ts": "2026-09-26T12:55:00+08:00"
+ },
+ {
+  "card": "AC-GATE-11",
+  "case": "闭环后变更不再阻断(转为阶段门禁)",
+  "cmd": "POST /advance-stage 再试",
+  "http": 400,
+  "envelope_code": 10001,
+  "verdict": "PASS",
+  "note": "现在被阶段门禁拦:阶段门禁（BR-IPD-06）：阻断性动作未完成，禁止进入下一阶段 —— C11 Charter立项评审会；C12 生物特征数据合规审查",
+  "ts": "2026-09-26T12:55:00+08:00"
+ }
+]

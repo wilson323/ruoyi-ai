@@ -1,0 +1,22 @@
+[RESUME] RUN=205339 ctx={'P-A': '2103694596738428930', 'P-B': '2103694596964921346', 'P-C': '2103694597157859329', 'INV1': '2103694597292077058', 'INV2': '2103694598646837249', 'INVX': '2103694600123232258'}
+[SKIP] AC-ENV-01 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-02 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-03 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-04 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-05 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-06 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-01 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-02 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-04 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-05 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-08 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-06 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-07 已判定, 续跑模式不重复写
+Traceback (most recent call last):
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 745, in <module>
+    main()
+    ~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 733, in main
+    env(); auth_core(); team_timers_and_admin(); team12_and_hr(); cfg(); auth_tail()
+                                                 ^^^^^^^^^^^^^
+NameError: name 'team12_and_hr' is not defined

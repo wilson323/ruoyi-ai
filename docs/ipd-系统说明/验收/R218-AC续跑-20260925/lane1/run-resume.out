@@ -1,0 +1,38 @@
+[PARTIAL] AC-ENV-01 ENV01-connectivity -> http=- PG:5432=True Redis:6379=False MinIO:9000=True/9001=False | MySQL:13306=True. 清单P0底座基于Windows+PG+Redis+MinIO; 当
+[PASS] AC-ENV-02 ENV02-seed -> http=200 schema_history=12 migrations; SUPER_ADMIN=1; product_groups=12; system_configs=59; 角色字典=effective端点 http=200 c
+[NOT-RUN] AC-ENV-03 ENV03-backup -> http=- 清单要求备份Windows pgdata并PG恢复; 当前无PostgreSQL栈(实为MySQL), 且禁止破坏性备份/恢复演练。归因=环境基线漂移。
+[NOT-RUN] AC-ENV-04 ENV04-dedup -> http=- 去重: 该卡已由 R218-QA08-SEC04 执行清单覆盖(见 执行清单-r218.json card=AC-ENV-04)，本车道按去重规则不重复跑。
+[PARTIAL] AC-ENV-05 ENV05-grep -> http=- 命中1处; 开发脚本/AI指令中直接执行命中=1。样本: ['/Users/mac/Documents/ruoyi-ai/scripts/start-prod.sh:39:docker-compose up -d'] |
+[PASS] AC-ENV-06 ENV06-grep -> http=- Redis 6.2+ 专有命令命中=0 ['零命中'] (COPY 因语义泛化单列不计)。
+[PASS] AC-AUTH-01 AUTH01-admin-login -> http=200 http=200 code=0 scope=FULL personType=SUPER_ADMIN username=ipd-admin(独立凭证非PM姓名规则) token=eyJ0eXAiOiJK... ts=202
+[NOT-RUN] AC-AUTH-02 AUTH02-first-login -> http=400 登录未成功 http=400 code=10001 msg=用户名或密码错误。归因=fixture数据: 库内刘研发 password_hash 与 dev 信源 initial-password 不匹配(该账号由历史波
+[PARTIAL] AC-AUTH-04 AUTH04-qr-bound -> http=409 http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 开关 ipd.auth.qr-login.enabled=false(R214
+[PARTIAL] AC-AUTH-05 AUTH05-qr-unbound -> http=409 http=409 code=50019 msg=企微扫码登录未启用（需 ipd.auth.qr-login.enabled=true） —— 同样被开关50019前置拦截,无法观测'账号未绑定'提示路径(代码路径 wec
+[PASS] AC-AUTH-08 AUTH08-pm-vs-admin -> http=403 http=403 code=30001 msg=权限不足(预期403/30001); 数据无变更回读 value 3->3 一致 ts=2026-09-26T11:54:11+08:00
+[FAIL] AC-TEAM-01 TEAM01-invite -> http=200 创建http=200 code=0 id=2103694597292077058; publish http=200 code=0; 被邀人rd通知数=0(预期>0); 非受邀者(leader)列表可见该单=True(预
+[PASS] AC-TEAM-02 TEAM02-no-forward -> http=403 非受邀leader应标 http=403 code=30001 msg=权限不足(预期30001不在邀请名单); bid_responses 行数=0(预期0); 转发/transfer端点检索命中=0。ts=2026-
+[PASS] AC-TEAM-03 TEAM03-reject-traceless -> http=200 http=200 code=0 data=None(预期null=204语义); 该邀标rd应标行数=0(预期0); 全局reject审计行数=0(预期0); 被邀人侧隐私由TEAM02/列表过滤保证 ts=2026-0
+[PARTIAL] AC-TEAM-04 TEAM04-to-public -> http=200 INV1 mode=ONE_TO_ONE; 改mode: modify端点参数无mode(实测200/0)→系统采用'新建公开招标单'路径 INV2 id=2103694598646837249 code=0; 非受邀l
+[FAIL] AC-TEAM-10 TEAM10-self-rdpm -> http=200 市场PM 应标研发侧未被拒绝: http=200 code=0 且落库 bid_responses 行数=1(已即时withdraw清理)。预期应 40004 ROLE_LOCKED/30001。归因=真缺陷候选(应标服
+[PASS] AC-TEAM-13 TEAM13-modify -> http=200 http=200 code=0; 审计modify_conditions=1行(预期>0); 变更通知BID_CONDITIONS_CHANGED=2条(预期>=2,实测见左); 新标题回读=LANE1-INV2-205
+[PARTIAL] AC-TEAM-05 TEAM05-select -> http=200 select http=200 code=0; 中标行=2103694598990770177 状态=ACCEPTED; 另一应标=2103694599041101825 状态=REJECTED(预期REJECTED);
+[NOT-RUN] AC-TEAM-06 TEAM06-warn3d -> http=- 定时提醒不可实时观测(需时间推进)且代码检索: bid.expireWarnDays=3 配置存在于 system_configs,但主源码调用方命中=0(仅配置定义,无调度/端点接线到期前3天提醒)。归因=服务层无该j
+[NOT-RUN] AC-TEAM-07 TEAM07-escalate7d -> http=- 同TEAM-06: bid.selectDeadlineDays=7 配置在,无'7日未遴选升级组长'调度实现命中;时间依赖场景无法真执行。ts=2026-09-26T11:54:12+08:00
+[PARTIAL] AC-TEAM-09 TEAM09-admin-assign -> http=409 超管直指OPEN单 http=409 code=50002 msg=admin-assign 仅适用于 EXPIRED 挂起超 30 日的招标单，当前状态: OPEN(预期50002状态门禁:仅EXPIRED且挂起>=3
+[PASS] AC-TEAM-11 TEAM11-third-bind -> http=200 无备案: http=400 code=10001 msg=绑定第 3 个项目需先录入评级委员会审批备案记录（approvalRef），未录入禁止绑定(预期拒:第3个项目需备案); 带备案: http=200 code=0
+[PASS] AC-TEAM-12 TEAM12-mount -> http=200 P-A=2103694596738428930 stage_actions挂载=69(设计64)/distinct stage_id=6(六阶段=project_stages挂载口径); 绑定 http=200 code
+[PASS] AC-HR-03 HR03-snapshot-rule -> http=200 生效规则=BY_BIND_TIME; 改值http=200 code=0; 改值后新绑定(P-B)快照=L4/2777.00(预期L4/2777); 改值前已绑定(P-A)快照=L4/2500.00(预期L4/2500 
+Traceback (most recent call last):
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 684, in <module>
+    main()
+    ~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 676, in main
+    team12_and_hr(); cfg(); auth_tail()
+    ~~~~~~~~~~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 480, in team12_and_hr
+    ad = sql1("SELECT COUNT(*) FROM audit_logs WHERE action='SYSTEM_CONFIG_UPDATE' AND config_key='%s'" % ck)
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 45, in sql1
+    r = L.sql(q)
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lib.py", line 70, in sql
+    raise RuntimeError("SQL-ERR " + r.stderr.strip()[:200])
+RuntimeError: SQL-ERR ERROR 1054 (42S22) at line 1: Unknown column 'config_key' in 'where clause'

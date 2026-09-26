@@ -14,6 +14,7 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.domain.Requirement;
 import org.ruoyi.ipd.mapper.CertTemplateMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
@@ -21,6 +22,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.util.Workdays;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +78,17 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
 
     public void setCertTemplateMapper(CertTemplateMapper certTemplateMapper) {
         this.certTemplateMapper = certTemplateMapper;
+    }
+    /**
+     * R218 卡1（AC-REQ-09）配套：requirements 实体存在性/归属解析所需只读 mapper。
+     * 可选注入（与 certTemplateMapper 同型先例）：9 参构造的存量测试未注入时该类型跳过存在性判定，
+     * 生产 Spring 装配恒注入。
+     */
+    @Autowired(required = false)
+    private RequirementMapper requirementMapper;
+
+    public void setRequirementMapper(RequirementMapper requirementMapper) {
+        this.requirementMapper = requirementMapper;
     }
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
@@ -434,9 +447,11 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
 
     // ===== W5-E-2.2（P0 #2）IDOR 修复：actor 入口 + 资源归属 + 审批角色校验 =====
 
-    /** 与 DeleteAuditService 软删执行器注册表一致的 entity_type 白名单（未知类型 fail-closed） */
+    /** 与 DeleteAuditService 软删执行器注册表一致的 entity_type 白名单（未知类型 fail-closed）。
+     *  R218 卡1（看板 e256007b / AC-REQ-09）：补 requirements——需求池删除强制双层审核，
+     *  执行器见 RequirementSoftDeleteExecutor（Spring List 注入自动注册，两侧须同步扩表防漂移）。 */
     private static final Set<String> SUPPORTED_ENTITY_TYPES =
-        Set.of("projects", "products", "persons", "cert_templates", "gates");
+        Set.of("projects", "products", "persons", "cert_templates", "gates", "requirements");
 
     /** actor 入口校验——service 层不信任 controller 必传（防御性兜底）。actor == null 或 id == null → UNAUTHORIZED。 */
     private static void requireAuthenticated(IpdActor actor) {
@@ -499,7 +514,8 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
     /**
      * W5-E-2.2：按资源类型解析删除目标归属（projectId/groupId 均可空；目标行缺失时对应维度为 null，调用方 fail-closed）。
      * projects → 本体即项目；gates → 经 projectId 上溯项目主组；products → 直取所属项目/组；
-     * persons → 所属组；cert_templates → 组织级全局参考数据，无组/项目归属（仅 SUPER_ADMIN 可发起）。
+     * persons → 所属组；cert_templates → 组织级全局参考数据，无组/项目归属（仅 SUPER_ADMIN 可发起）；
+     * requirements → 经 productId 上溯所属产品的 projectId/groupId（R218 卡1，AC-REQ-09）。
      */
     private TargetScope resolveScope(String entityType, Long entityId) {
         switch (entityType) {
@@ -526,6 +542,21 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
                 Person person = personMapper.selectById(entityId);
                 return new TargetScope(null, person == null ? null : person.getGroupId());
             }
+            case "requirements": {
+                // R218 卡1：需求经 productId 上溯所属产品的项目/组归属（与 products 分支同口径）；
+                // 「其他/不确定」需求 productId=NULL → scope 不可解析，非超管 fail-closed 拒绝
+                if (requirementMapper == null) {
+                    return new TargetScope(null, null);
+                }
+                Requirement requirement = requirementMapper.selectById(entityId);
+                if (requirement == null) {
+                    return new TargetScope(null, null);
+                }
+                Product product = requirement.getProductId() == null
+                    ? null : productMapper.selectById(requirement.getProductId());
+                Long projectId = product != null ? product.getProjectId() : requirement.getProjectId();
+                return new TargetScope(projectId, product == null ? null : product.getGroupId());
+            }
             default:
                 return new TargetScope(null, null);
         }
@@ -550,6 +581,10 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
                 return personMapper.selectById(entityId) != null;
             case "cert_templates":
                 return certTemplateMapper == null || certTemplateMapper.selectById(entityId) != null;
+            case "requirements":
+                // R218 卡1：未注入（旧 9 参构造测试）时放行，与 cert_templates 先例同口径；
+                // 软删行经 @TableLogic 过滤后 selectById 返回 null → 视为不存在
+                return requirementMapper == null || requirementMapper.selectById(entityId) != null;
             default:
                 return false; // 白名单外类型 fail-closed（理论上已被 SUPPORTED_ENTITY_TYPES 拦截）
         }

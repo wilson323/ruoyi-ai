@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * GateSignScanScheduler 09:20 签署期限提醒 + 09:25 超时弃权折算（R215-GAP-B4 接线补齐 2026-09-25）/
  * GateLegacyScanScheduler 09:30（条件遗留逾期提醒，R215-GAP-B4）/
  * P0EscalationScanScheduler 09:35（P0 升级链阈值检查，R215-GAP-B4）/
+ * GuestDemandOverdueScheduler 09:40（AC-PROD-09 待指派超5工作日提醒组长，R218 卡2 接线补齐 2026-09-25）/
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
  * 间隔可配 ipd.notification.dispatch.interval-ms）。
  */

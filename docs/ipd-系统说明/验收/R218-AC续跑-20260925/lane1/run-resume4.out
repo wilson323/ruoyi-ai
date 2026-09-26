@@ -1,0 +1,40 @@
+[RESUME] RUN=205339 ctx={'P-A': '2103694596738428930', 'P-B': '2103694596964921346', 'P-C': '2103694597157859329', 'INV1': '2103694597292077058', 'INV2': '2103694598646837249', 'INVX': '2103694600123232258'}
+[SKIP] AC-ENV-01 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-02 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-03 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-04 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-05 已判定, 续跑模式不重复写
+[SKIP] AC-ENV-06 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-01 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-02 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-04 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-05 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-08 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-06 已判定, 续跑模式不重复写
+[SKIP] AC-TEAM-07 已判定, 续跑模式不重复写
+[SKIP] AC-HR-05 已判定, 续跑模式不重复写
+[SKIP] AC-HR-05 已判定, 续跑模式不重复写
+[NOT-RUN] AC-HR-01 HR01-sync-cron -> http=409 sync-now http=409 code=50018 msg=HR 真源同步未启用（需 ipd.hr.enabled=true）; last-run data=None; hr.syncCron=0 2 1 * *(
+[NOT-RUN] AC-HR-02 HR02-level-change -> http=- L3->L4 等级变更依赖 HR 真源同步(未启用, 证据见 HR-01); persons.level/level_updated_at/level_source 列存在=3/3; hr.levelSource=API
+[NOT-RUN] AC-HR-06 HR06-leader-sync -> http=- 'HR标注组长→同步→自动获组长角色' 链路依赖 ipd.hr.enabled(实测见HR-01: sync-now/50018); 配置 hr.syncLeaderRole=true。归因=环境。ts=2026-09-
+[PASS] AC-HR-07 HR07-no-proxy-leader -> http=404 探测 http=404 code=50001(预期404=入口不存在); controller 层代理组长端点命中=0; 开关配置 hr.enableProxyLeader=false(false,仅存配置无入口,符合 
+[SKIP] AC-HR-04 已判定, 续跑模式不重复写
+[SKIP] AC-HR-08 已判定, 续跑模式不重复写
+[FAIL] AC-CFG-01 CFG01-hardcode -> http=- 原始命中44行; 扣除噪声口径(@Size/长度/超时/分页/注释/默认回退常量/测试)后业务系数硬编码命中7行。样例: ["/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruo
+[SKIP] AC-CFG-02 已判定, 续跑模式不重复写
+[SKIP] AC-CFG-03 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-09 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-10 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-11 已判定, 续跑模式不重复写
+[SKIP] AC-AUTH-07 已判定, 续跑模式不重复写
+Traceback (most recent call last):
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 786, in <module>
+    main()
+    ~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 774, in main
+    env(); auth_core(); team_timers_and_admin(); team12_and_hr(); cfg(); auth_tail()
+                                                                         ~~~~~~~~~^^
+  File "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/R218-AC续跑-20260925/lane1/r219_lane1.py", line 636, in auth_tail
+    rec("AC-AUTH-06", "AUTH06-resign-chain", "POST /persons/{id}/rehire -> POST /hr-sync/mark-resigned + SQL 回读" % pid, s, code(b),
+                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+TypeError: not all arguments converted during string formatting

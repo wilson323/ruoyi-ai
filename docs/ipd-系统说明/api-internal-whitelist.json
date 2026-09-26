@@ -111,6 +111,18 @@
       "evidence": "LegacyScanController.java:27"
     },
     {
+      "path": "/api/v1/guest-demands/overdue-scan",
+      "methods": [
+        "POST"
+      ],
+      "reason": "AC-PROD-09 待指派超时提醒手动验收/补跑口（仅超管）：主链路是 GuestDemandOverdueScheduler @Scheduled 09:40 自动触发，端点仅供验收与运维兑底，无 UI 消费",
+      "owner_card": "f62ab684",
+      "review_date": "2026-09-26",
+      "expire": "2026-12-31",
+      "added_by": "R218-AC续跑波",
+      "evidence": "GuestDemandOverdueScanController.java:27"
+    },
+    {
       "path": "/api/v1/notifications/async-dispatch",
       "methods": [
         "POST"

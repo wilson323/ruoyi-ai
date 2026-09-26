@@ -1,0 +1,1010 @@
+[
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-KPI产品-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-KPI验证项目-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/None/members",
+  "entity": "900103:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/None/members",
+  "entity": "900104:RD_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "person.sync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "entity": "LANE3-HND-F01",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "person.sync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "entity": "LANE3-HND-T01",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "person.sync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "entity": "LANE3-HND-T02",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-HAND产品1-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-HAND项目1-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/None/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-HAND产品2-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-HAND项目2-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/None/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-HAND产品3-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:41+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-HAND项目3-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:16:42+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/None/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-KPI验证项目-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/members",
+  "entity": "900103:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/members",
+  "entity": "900104:RD_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-HAND产品1-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-HAND项目1-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685958288322561/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:51+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-HAND产品2-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:52+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-HAND项目2-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:52+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685959114600450/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:52+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-HAND产品3-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:52+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-HAND项目3-0925b",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:19:52+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685960033153026/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:22:35+08:00",
+  "lane": "lane3",
+  "op": "person.sync",
+  "method": "POST",
+  "path": "/api/v1/person-sync/jobs",
+  "entity": "LANE3-KPI-MKT1",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:22:35+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/members",
+  "entity": "2103686643654373378:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:22:35+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/members",
+  "entity": "2096266884222570498:RD_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:22:35+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685960033153026/members",
+  "entity": "2103685161064378370:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:32:36+08:00",
+  "lane": "lane3",
+  "op": "product.create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "LANE3-评定产品-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:32:37+08:00",
+  "lane": "lane3",
+  "op": "project.create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "LANE3-评定项目-0925",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:32:37+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103689168134647809/members",
+  "entity": "900103:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:32:37+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103689168134647809/members",
+  "entity": "900104:RD_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:32:37+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103689168134647809/members",
+  "entity": "2114000000000000001:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:33:33+08:00",
+  "lane": "lane3",
+  "op": "member.bind",
+  "method": "POST",
+  "path": "/api/v1/projects/2103689168134647809/members",
+  "entity": "2096266884189016065:MARKET_PM",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:33:33+08:00",
+  "lane": "lane3",
+  "op": "project-score.submit",
+  "method": "POST",
+  "path": "/api/v1/project-scores",
+  "entity": "2096266884189016065:SELF",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:33:33+08:00",
+  "lane": "lane3",
+  "op": "project-score.submit",
+  "method": "POST",
+  "path": "/api/v1/project-scores",
+  "entity": "2096266884189016065:MARKET_LEADER",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:33:33+08:00",
+  "lane": "lane3",
+  "op": "project-score.submit",
+  "method": "POST",
+  "path": "/api/v1/project-scores",
+  "entity": "2096266884189016065:RD_LEADER",
+  "note": ""
+ },
+ {
+  "ts": "2026-09-26T11:47:02+08:00",
+  "lane": "lane3",
+  "op": "create-gate",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/gates?gateCode=G1",
+  "entity": "gates",
+  "note": "LANE3-DEL fixture"
+ },
+ {
+  "ts": "2026-09-26T11:47:02+08:00",
+  "lane": "lane3",
+  "op": "create-gate",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/gates?gateCode=G2",
+  "entity": "gates",
+  "note": "LANE3-DEL fixture"
+ },
+ {
+  "ts": "2026-09-26T11:47:02+08:00",
+  "lane": "lane3",
+  "op": "create-gate",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/gates?gateCode=G3",
+  "entity": "gates",
+  "note": "LANE3-DEL fixture"
+ },
+ {
+  "ts": "2026-09-26T11:47:02+08:00",
+  "lane": "lane3",
+  "op": "deletion-submit",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests",
+  "entity": "deletion_requests",
+  "note": "LANE3- gate=2103692797566562306 req=None"
+ },
+ {
+  "ts": "2026-09-26T11:47:02+08:00",
+  "lane": "lane3",
+  "op": "deletion-leader-ok",
+  "method": "POST",
+  "path": "/deletion-requests/None/leader-decision",
+  "entity": "deletion_requests",
+  "note": "LANE3 组长初审通过"
+ },
+ {
+  "ts": "2026-09-26T11:47:02+08:00",
+  "lane": "lane3",
+  "op": "deletion-admin-ok",
+  "method": "POST",
+  "path": "/deletion-requests/None/admin-decision",
+  "entity": "deletion_requests",
+  "note": "LANE3 超管终审通过→软删执行"
+ },
+ {
+  "ts": "2026-09-26T11:47:29+08:00",
+  "lane": "lane3",
+  "op": "create-gate",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/gates?gateCode=G1",
+  "entity": "gates",
+  "note": "LANE3-DEL fixture"
+ },
+ {
+  "ts": "2026-09-26T11:47:29+08:00",
+  "lane": "lane3",
+  "op": "create-gate",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/gates?gateCode=G2",
+  "entity": "gates",
+  "note": "LANE3-DEL fixture"
+ },
+ {
+  "ts": "2026-09-26T11:47:29+08:00",
+  "lane": "lane3",
+  "op": "create-gate",
+  "method": "POST",
+  "path": "/api/v1/projects/2103685956337971202/gates?gateCode=G3",
+  "entity": "gates",
+  "note": "LANE3-DEL fixture"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-submit",
+  "method": "POST",
+  "path": "/api/v1/deletion-requests",
+  "entity": "deletion_requests",
+  "note": "LANE3- gate=2103692797566562306 req=2103692969793073153"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-leader-ok",
+  "method": "POST",
+  "path": "/deletion-requests/2103692969793073153/leader-decision",
+  "entity": "deletion_requests",
+  "note": "LANE3 组长初审通过"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-admin-ok",
+  "method": "POST",
+  "path": "/deletion-requests/2103692969793073153/admin-decision",
+  "entity": "deletion_requests",
+  "note": "LANE3 超管终审通过→软删执行"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-submit",
+  "method": "POST",
+  "path": "/deletion-requests",
+  "entity": "deletion_requests",
+  "note": "LANE3-DEL04 gate=2103692797696585729"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-submit",
+  "method": "POST",
+  "path": "/deletion-requests",
+  "entity": "deletion_requests",
+  "note": "LANE3-DEL06 gate=2103692797788860418"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-escalate",
+  "method": "POST",
+  "path": "/deletion-requests/escalate-overdue",
+  "entity": "deletion_requests",
+  "note": "LANE3-DEL07 幂等扫描"
+ },
+ {
+  "ts": "2026-09-26T11:47:43+08:00",
+  "lane": "lane3",
+  "op": "deletion-purge",
+  "method": "POST",
+  "path": "/deletion-requests/2103692969793073153/purge",
+  "entity": "deletion_requests",
+  "note": "LANE3-DEL08 清除"
+ },
+ {
+  "ts": "2026-09-26T11:49:35+08:00",
+  "lane": "lane3",
+  "op": "deletion-submit",
+  "method": "POST",
+  "path": "/deletion-requests",
+  "entity": "deletion_requests",
+  "note": "LANE3-DEL08 gate=G3 req=2103693441849405441"
+ },
+ {
+  "ts": "2026-09-26T11:49:35+08:00",
+  "lane": "lane3",
+  "op": "deletion-leader-ok",
+  "method": "POST",
+  "path": "/deletion-requests/2103693441849405441/leader-decision",
+  "entity": "deletion_requests",
+  "note": "LANE3"
+ },
+ {
+  "ts": "2026-09-26T11:49:36+08:00",
+  "lane": "lane3",
+  "op": "deletion-admin-ok",
+  "method": "POST",
+  "path": "/deletion-requests/2103693441849405441/admin-decision",
+  "entity": "deletion_requests",
+  "note": "LANE3"
+ },
+ {
+  "ts": "2026-09-26T11:49:36+08:00",
+  "lane": "lane3",
+  "op": "deletion-purge",
+  "method": "POST",
+  "path": "/deletion-requests/2103693441849405441/purge",
+  "entity": "deletion_requests",
+  "note": "LANE3-DEL08"
+ },
+ {
+  "ts": "2026-09-26T11:52:10+08:00",
+  "lane": "lane3",
+  "op": "person-resign",
+  "method": "POST",
+  "path": "/persons/2103685161064378370/resign",
+  "entity": "persons",
+  "note": "LANE3- F01 冻结"
+ },
+ {
+  "ts": "2026-09-26T11:52:11+08:00",
+  "lane": "lane3",
+  "op": "hr-escalate",
+  "method": "POST",
+  "path": "/hr-sync/escalate-stale-resignations",
+  "entity": "persons",
+  "note": "LANE3-HAND01 幂等扫描"
+ },
+ {
+  "ts": "2026-09-26T11:52:11+08:00",
+  "lane": "lane3",
+  "op": "hr-escalate",
+  "method": "POST",
+  "path": "/hr-sync/escalate-stale-resignations?thresholdDays=0",
+  "entity": "persons",
+  "note": "LANE3 观测到时分支"
+ },
+ {
+  "ts": "2026-09-26T11:52:11+08:00",
+  "lane": "lane3",
+  "op": "handover-batch",
+  "method": "POST",
+  "path": "/handovers/batch",
+  "entity": "project_members/handovers",
+  "note": "LANE3- F01→T01 x3"
+ },
+ {
+  "ts": "2026-09-26T11:52:11+08:00",
+  "lane": "lane3",
+  "op": "handover-scan",
+  "method": "POST",
+  "path": "/handovers/scan-overdue",
+  "entity": "handovers",
+  "note": "LANE3-HAND02"
+ },
+ {
+  "ts": "2026-09-26T11:52:11+08:00",
+  "lane": "lane3",
+  "op": "handover-initiate",
+  "method": "POST",
+  "path": "/handovers(onBehalf)",
+  "entity": "handovers/project_members",
+  "note": "LANE3- HPS0→T02"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "person-resign",
+  "method": "POST",
+  "path": "/persons/2103685161064378370/resign",
+  "entity": "persons",
+  "note": "LANE3- F01 冻结"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "hr-escalate",
+  "method": "POST",
+  "path": "/hr-sync/escalate-stale-resignations",
+  "entity": "persons",
+  "note": "LANE3-HAND01 幂等扫描"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "hr-escalate",
+  "method": "POST",
+  "path": "/hr-sync/escalate-stale-resignations?thresholdDays=0",
+  "entity": "persons",
+  "note": "LANE3 观测到时分支"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "handover-batch",
+  "method": "POST",
+  "path": "/handovers/batch",
+  "entity": "project_members/handovers",
+  "note": "LANE3- F01→T01 x3"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "handover-scan",
+  "method": "POST",
+  "path": "/handovers/scan-overdue",
+  "entity": "handovers",
+  "note": "LANE3-HAND02"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "member-bind",
+  "method": "POST",
+  "path": "/projects/2103685959114600450/members",
+  "entity": "project_members",
+  "note": "LANE3-HAND06 F01兼任RD_PM(作用域靶)"
+ },
+ {
+  "ts": "2026-09-26T11:53:39+08:00",
+  "lane": "lane3",
+  "op": "handover-batch",
+  "method": "POST",
+  "path": "/handovers/batch(RD_PM)",
+  "entity": "project_members",
+  "note": "LANE3- F01 RD_PM→T02"
+ },
+ {
+  "ts": "2026-09-26T12:07:57+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD07在研-0926"
+ },
+ {
+  "ts": "2026-09-26T12:07:58+08:00",
+  "lane": "lane3",
+  "op": "batch-import",
+  "method": "POST",
+  "path": "/api/v1/products/batch-import",
+  "entity": "products",
+  "note": "LANE3-PROD06 x3"
+ },
+ {
+  "ts": "2026-09-26T12:07:58+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01主产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD07在研-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "batch-import",
+  "method": "POST",
+  "path": "/api/v1/products/batch-import",
+  "entity": "products",
+  "note": "LANE3-PROD06 x3"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01主产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD01项目A-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01第二产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD02硬件产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD02硬件项目-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "c12-na-attempt",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/2103698267316465676/transit",
+  "entity": "stage_actions",
+  "note": "PROD13 负向"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD11产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:46+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD11三国项目-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:52+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD07在研-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:52+08:00",
+  "lane": "lane3",
+  "op": "batch-import",
+  "method": "POST",
+  "path": "/api/v1/products/batch-import",
+  "entity": "products",
+  "note": "LANE3-PROD06 x3"
+ },
+ {
+  "ts": "2026-09-26T12:08:52+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01主产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:52+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD01项目A-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:52+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01第二产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:53+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD02硬件产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:53+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD02硬件项目-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:53+08:00",
+  "lane": "lane3",
+  "op": "c12-na-attempt",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/2103698295028232196/transit",
+  "entity": "stage_actions",
+  "note": "PROD13 负向"
+ },
+ {
+  "ts": "2026-09-26T12:08:53+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD11产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:08:53+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD11三国项目-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD07在研-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "batch-import",
+  "method": "POST",
+  "path": "/api/v1/products/batch-import",
+  "entity": "products",
+  "note": "LANE3-PROD06 x3"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01主产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD01项目A-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD01第二产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD02硬件产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD02硬件项目-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "c12-na-attempt",
+  "method": "POST",
+  "path": "/api/v1/stage-actions/2103698340213469192/transit",
+  "entity": "stage_actions",
+  "note": "PROD13 负向"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "product-create",
+  "method": "POST",
+  "path": "/api/v1/products",
+  "entity": "products",
+  "note": "LANE3-PROD11产品-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:03+08:00",
+  "lane": "lane3",
+  "op": "project-create",
+  "method": "POST",
+  "path": "/api/v1/projects",
+  "entity": "projects",
+  "note": "LANE3-PROD11三国项目-0926"
+ },
+ {
+  "ts": "2026-09-26T12:09:04+08:00",
+  "lane": "lane3",
+  "op": "cert-manual-add",
+  "method": "POST",
+  "path": "/api/v1/projects/2103698340762923009/cert-items",
+  "entity": "project_cert_items",
+  "note": "PROD12"
+ },
+ {
+  "ts": "2026-09-26T12:56:07+08:00",
+  "lane": "lane3",
+  "op": "guest-submit",
+  "method": "POST",
+  "path": "/api/v1/public/demands",
+  "entity": "requirements",
+  "note": "REQ01 probe ZYV181FZ"
+ },
+ {
+  "ts": "2026-09-26T12:56:07+08:00",
+  "lane": "lane3",
+  "op": "triage",
+  "method": "POST",
+  "path": "/api/v1/demands/2103710182558183425/triage",
+  "entity": "requirements",
+  "note": "REQ06"
+ },
+ {
+  "ts": "2026-09-26T12:56:07+08:00",
+  "lane": "lane3",
+  "op": "link-project",
+  "method": "POST",
+  "path": "/api/v1/demands/2103710182558183425/link-project",
+  "entity": "requirements",
+  "note": "REQ06"
+ },
+ {
+  "ts": "2026-09-26T12:56:07+08:00",
+  "lane": "lane3",
+  "op": "req-change",
+  "method": "POST",
+  "path": "/api/v1/requirement-changes",
+  "entity": "requirement_changes",
+  "note": "LANE3-REQ08 id=2103710183455764482"
+ }
+]
