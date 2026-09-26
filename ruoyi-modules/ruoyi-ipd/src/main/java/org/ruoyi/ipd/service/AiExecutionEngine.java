@@ -72,6 +72,11 @@ public class AiExecutionEngine {
     public void withClock(Clock clock) { this.clock = clock; }
     public void setClock(Clock clock) { this.clock = clock; }
 
+    /** 已接线路由键集（单一事实源：实际路由表 executorByCode）：主动扫描等外围按此过滤，接线一批放开一批（复审问题7）。 */
+    public java.util.Set<String> wiredActionCodes() {
+        return java.util.Set.copyOf(executorByCode.keySet());
+    }
+
     public void dispatchAsync() {
         try {
             pool.submit(() -> {

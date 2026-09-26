@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,22 +63,24 @@ class AiExecSchedulerWiringTest {
         assertThat(s.cron()).isEqualTo("0 55 9 * * ?");
     }
 
+    /** 复审问题3：兜底扫描只提交异步派发，不得在 Spring 默认单线程调度器上 inline 跑 dispatchCycle（AI 生成耗时会饿死 cron 家族） */
     @Test
-    void fallbackScanDelegatesToEngineDispatchCycle() throws Exception {
+    void fallbackScanDelegatesToEngineAsyncDispatch() throws Exception {
         AiExecutionEngine engine = mock(AiExecutionEngine.class);
         AiTaskFallbackScanner scanner = new AiTaskFallbackScanner(engine);
         scheduledMethodOf(AiTaskFallbackScanner.class).invoke(scanner);
-        verify(engine).dispatchCycle(50);
+        verify(engine).dispatchAsync();
+        verify(engine, never()).dispatchCycle(anyInt());
     }
 
-    /** 引擎抛异常不吞调度线程：单轮异常 catch 住下轮继续（outbox 同款语义） */
+    /** 提交异常不吞调度线程：单轮异常 catch 住下轮继续（outbox 同款语义） */
     @Test
     void fallbackScanSwallowsEngineException() throws Exception {
         AiExecutionEngine engine = mock(AiExecutionEngine.class);
-        when(engine.dispatchCycle(50)).thenThrow(new RuntimeException("boom"));
+        org.mockito.Mockito.doThrow(new RuntimeException("boom")).when(engine).dispatchAsync();
         AiTaskFallbackScanner scanner = new AiTaskFallbackScanner(engine);
         scheduledMethodOf(AiTaskFallbackScanner.class).invoke(scanner); // 不抛出即通过
-        verify(engine).dispatchCycle(50);
+        verify(engine).dispatchAsync();
     }
 
     /**
@@ -89,11 +92,11 @@ class AiExecSchedulerWiringTest {
     void proactiveScanTriggersOnlyAiModeActions() throws Exception {
         StageActionMapper mapper = mock(StageActionMapper.class);
         AiExecutionTrigger trigger = mock(AiExecutionTrigger.class);
-        AiProactiveScanScheduler scheduler = new AiProactiveScanScheduler(mapper, trigger);
+        AiProactiveScanScheduler scheduler = new AiProactiveScanScheduler(mapper, trigger, wiredEngine());
         scheduler.setClock(Clock.fixed(Instant.parse("2026-09-26T10:00:00Z"), ZoneId.of("UTC")));
 
-        StageAction c01 = action(1L, 100L, "C01");    // AI_GENERATE → 触发
-        StageAction p08 = action(2L, 100L, "P08");    // AI_DIRECT → 触发
+        StageAction c01 = action(1L, 100L, "C01");    // AI_GENERATE 且已接线 → 触发
+        StageAction p08 = action(2L, 100L, "P08");    // AI_DIRECT 且已接线 → 触发
         StageAction c11 = action(3L, 100L, "C11");    // HUMAN_GATE → 不触发
         StageAction zzz = action(4L, 100L, "Z99");    // 目录外 → 不触发不阻断
         when(mapper.selectList(any())).thenReturn(List.of(c01, p08, c11, zzz));
@@ -106,12 +109,26 @@ class AiExecSchedulerWiringTest {
         verify(trigger, never()).triggerSchedule(anyLong(), eq("Z99"), anyLong());
     }
 
+    /** 复审问题7：未接线的 AI 档码（如 C02）不得被主动扫描建必死任务——接线一批放开一批 */
+    @Test
+    void proactiveScanSkipsAiModeActionsWithoutWiredExecutor() throws Exception {
+        StageActionMapper mapper = mock(StageActionMapper.class);
+        AiExecutionTrigger trigger = mock(AiExecutionTrigger.class);
+        AiProactiveScanScheduler scheduler = new AiProactiveScanScheduler(mapper, trigger, wiredEngine());
+        scheduler.setClock(Clock.fixed(Instant.parse("2026-09-26T10:00:00Z"), ZoneId.of("UTC")));
+        when(mapper.selectList(any())).thenReturn(List.of(action(5L, 100L, "C02")));
+
+        scheduledMethodOf(AiProactiveScanScheduler.class).invoke(scheduler);
+
+        verify(trigger, never()).triggerSchedule(anyLong(), anyString(), anyLong());
+    }
+
     /** 单行 triggerSchedule 异常不阻断后续行（NotificationOutboxScanner 同款容错范式） */
     @Test
     void proactiveScanRowFailureDoesNotBlockNext() throws Exception {
         StageActionMapper mapper = mock(StageActionMapper.class);
         AiExecutionTrigger trigger = mock(AiExecutionTrigger.class);
-        AiProactiveScanScheduler scheduler = new AiProactiveScanScheduler(mapper, trigger);
+        AiProactiveScanScheduler scheduler = new AiProactiveScanScheduler(mapper, trigger, wiredEngine());
         scheduler.setClock(Clock.fixed(Instant.parse("2026-09-26T10:00:00Z"), ZoneId.of("UTC")));
         when(mapper.selectList(any())).thenReturn(List.of(action(1L, 100L, "C01"), action(2L, 100L, "P08")));
         when(trigger.triggerSchedule(anyLong(), anyString(), anyLong()))
@@ -123,6 +140,13 @@ class AiExecSchedulerWiringTest {
         ArgumentCaptor<String> codes = ArgumentCaptor.forClass(String.class);
         verify(trigger, org.mockito.Mockito.times(2)).triggerSchedule(eq(100L), codes.capture(), anyLong());
         assertThat(codes.getAllValues()).containsExactly("C01", "P08");
+    }
+
+    /** 已接线路由键集 mock：与 ExecutorCoverageSentinelTest.WIRED 首切片 4 码对齐 */
+    private static AiExecutionEngine wiredEngine() {
+        AiExecutionEngine engine = mock(AiExecutionEngine.class);
+        when(engine.wiredActionCodes()).thenReturn(java.util.Set.of("C01", "C08", "P08", "C11"));
+        return engine;
     }
 
     private static StageAction action(long id, long projectId, String code) {

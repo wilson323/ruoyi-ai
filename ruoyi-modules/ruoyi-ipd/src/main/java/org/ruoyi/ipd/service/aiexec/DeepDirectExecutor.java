@@ -48,7 +48,7 @@ public class DeepDirectExecutor implements AiActionExecutor {
         }
         String payload = resolvePayload(task);
         if (payload == null || payload.isBlank()) {
-            return AiExecResult.fail("C08 基准值需数据：请在动作详情页用对话填表提供四项基准值后重试");
+            return AiExecResult.fail("C08 基准值需数据：请在动作详情页用对话填表提供四项基准值后手动触发执行（主动扫描不自动采用未确认建议）");
         }
         // N2：载荷先解析后副作用——非法 JSON 不得先把完成日落库
         JsonNode fields;
@@ -56,6 +56,10 @@ public class DeepDirectExecutor implements AiActionExecutor {
             fields = JSON.readTree(payload).path("fields");
         } catch (IOException ex) {
             return AiExecResult.fail("C08 对话填表载荷非法（非 JSON）：请重新对话填表后再执行");
+        }
+        // 复审问题6：fields 缺失/空对象同样不得走完——空载荷不能把动作刷成 DONE
+        if (!fields.isObject() || fields.size() == 0) {
+            return AiExecResult.fail("C08 对话填表载荷无有效字段（fields 缺失或为空）：请重新对话填表后再执行");
         }
         Date now = Date.from(ctx.clock().instant());
         // C08 valueFields=""，validateCompletion 只要求 actualDoneAt：先落完成日再挂交付物再 transit
@@ -76,16 +80,26 @@ public class DeepDirectExecutor implements AiActionExecutor {
     }
 
     /**
-     * M1（CodeReview）：PASSIVE/EVENT/SCHEDULE 派发行自身 fill_payload 恒为 null（唯一写载荷的
-     * triggerChat 落 CHAT 审计行不参与派发），故回捞同动作最近一条带载荷的 CHAT 行闭环对话填表链路。
+     * M1（CodeReview）：PASSIVE 行自身 fill_payload 恒为 null（唯一写载荷的 triggerChat 落 CHAT
+     * 审计行不参与派发），故回捞同动作最近一条带载荷的 CHAT 行闭环对话填表链路。
+     *
+     * <p>复审问题1/2 收紧信任面：CHAT 行的 actionCode/stageActionId 均来自客户端 pageContext，
+     * 回捞仅限「自然人点过执行」的 PASSIVE 行（triggerType=PASSIVE 且 triggeredBy 非空），
+     * 且必须同项目 + 同动作码（server 端 task.projectId/actionCode 做硬约束，防跨项目/跨动作串载荷）；
+     * SCHEDULE/EVENT 无人确认环节，不得自动采用 suggest 载荷，连查都不查。
      */
     private String resolvePayload(AiAgentTask task) {
         String payload = task.getFillPayload();
         if (payload != null && !payload.isBlank()) {
             return payload;
         }
+        if (!AiAgentTask.TRIGGER_PASSIVE.equals(task.getTriggerType()) || task.getTriggeredBy() == null) {
+            return null;
+        }
         AiAgentTask chat = taskMapper.selectOne(new LambdaQueryWrapper<AiAgentTask>()
             .eq(AiAgentTask::getStageActionId, task.getStageActionId())
+            .eq(AiAgentTask::getProjectId, task.getProjectId())
+            .eq(AiAgentTask::getActionCode, task.getActionCode())
             .eq(AiAgentTask::getTriggerType, AiAgentTask.TRIGGER_CHAT)
             .isNotNull(AiAgentTask::getFillPayload)
             .orderByDesc(AiAgentTask::getId)
@@ -109,6 +123,7 @@ public class DeepDirectExecutor implements AiActionExecutor {
                 sb.append("- ").append(e.getKey()).append(": ").append(e.getValue().asText()).append('\n');
             }
         } else {
+            // 复审问题6 后不可达（execute 已前置 fail），保留原文兜底仅为防御，不再参与完成判定
             sb.append("## 原始载荷\n\n```\n").append(payload).append("\n```\n");
         }
         return sb.toString();

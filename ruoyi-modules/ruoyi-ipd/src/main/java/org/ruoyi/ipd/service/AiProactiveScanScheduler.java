@@ -18,7 +18,8 @@ import java.util.List;
 
 /**
  * R221 AI 主动执行扫描器（spec §3.1 ACTIVE 定时档）：每日 09:55 扫 7 日内到期、
- * NOT_STARTED、execMode ∈ {AI_DIRECT, AI_GENERATE} 的阶段动作，逐个
+ * NOT_STARTED、execMode ∈ {AI_DIRECT, AI_GENERATE} <b>且已有接线执行器</b>
+ * （{@link AiExecutionEngine#wiredActionCodes()} 单一事实源，接线一批放开一批）的阶段动作，逐个
  * {@link AiExecutionTrigger#triggerSchedule} 建 SCHEDULE 任务（dedup 守卫天然防重复建任务）。
  *
  * <p>HUMAN_GATE 档（如 C11）不在此主动触发——备料由到期日 PASSIVE/后续批次接管（spec §4.2）。
@@ -35,6 +36,7 @@ public class AiProactiveScanScheduler {
 
     private final StageActionMapper stageActionMapper;
     private final AiExecutionTrigger trigger;
+    private final AiExecutionEngine engine;
 
     /** 可注入时钟（仿 P0EscalationScanScheduler；生产零影响）。 */
     private Clock clock = Clock.systemDefaultZone();
@@ -56,6 +58,9 @@ public class AiProactiveScanScheduler {
                 ActionDef def = ActionCatalog.byCode(code);
                 if (!"AI_DIRECT".equals(def.execMode()) && !"AI_GENERATE".equals(def.execMode())) {
                     continue; // HUMAN_GATE 不主动触发（spec §4.2）
+                }
+                if (!engine.wiredActionCodes().contains(code)) {
+                    continue; // 复审问题7：未接线码建了必死（路由 miss → FAILED→DEAD），接线一批放开一批
                 }
                 trigger.triggerSchedule(a.getProjectId(), code, a.getId());
                 dispatched++;

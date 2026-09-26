@@ -76,7 +76,7 @@ class DirectExecutorsTest {
         verify(stageActionService, never()).transit(anyLong(), any(), any(), any());
     }
 
-    /** M1 链路闭环：PASSIVE 行自身无 payload 时回捞同动作最近 CHAT 行的对话填表载荷 */
+    /** M1 链路闭环：PASSIVE 行（人点了执行，triggeredBy 非空）自身无 payload 时回捞同动作最近 CHAT 行载荷 */
     @Test
     void deepRecoversChatPayloadFromLinkedChatTask() {
         DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
@@ -87,14 +87,57 @@ class DirectExecutorsTest {
         org.ruoyi.system.domain.vo.SysOssVo vo = new org.ruoyi.system.domain.vo.SysOssVo();
         vo.setOssId(8801L);
         when(ossService.upload(any(org.springframework.web.multipart.MultipartFile.class))).thenReturn(vo);
-        AiAgentTask t = AiAgentTask.builder().id(2L).actionCode("C08").stageActionId(9003L)
-            .triggerType("PASSIVE").build();
+        AiAgentTask t = AiAgentTask.builder().id(2L).projectId(100L).actionCode("C08").stageActionId(9003L)
+            .triggerType("PASSIVE").triggeredBy(77L).build();
 
         AiExecResult r = deep.execute(t, CTX);
 
         assertThat(r.ok()).isTrue();
         verify(stageActionService).addDeliverable(eq(9003L), any(String.class), eq(8801L), eq("0"));
         verify(stageActionService).transit(eq(9003L), eq("DONE"), any(String.class), eq("0"));
+    }
+
+    /** 复审问题2：SCHEDULE 主动扫描行不得自动采用未经人确认的对话建议载荷（fail 引导，连查都不查） */
+    @Test
+    void deepScheduleDoesNotRecoverUnconfirmedChatPayload() {
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
+        AiAgentTask t = AiAgentTask.builder().id(3L).projectId(100L).actionCode("C08").stageActionId(9003L)
+            .triggerType("SCHEDULE").build();
+
+        AiExecResult r = deep.execute(t, CTX);
+
+        assertThat(r.ok()).isFalse();
+        assertThat(r.errorMsg()).contains("对话填表");
+        verify(taskMapper, never()).selectOne(any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    /** 复审问题1：PASSIVE 但无自然人触发者（triggeredBy=null，非端点来源）同样禁止消费回捞载荷 */
+    @Test
+    void deepPassiveWithoutHumanTriggerDoesNotRecover() {
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
+        AiAgentTask t = AiAgentTask.builder().id(4L).projectId(100L).actionCode("C08").stageActionId(9003L)
+            .triggerType("PASSIVE").build();
+
+        AiExecResult r = deep.execute(t, CTX);
+
+        assertThat(r.ok()).isFalse();
+        verify(taskMapper, never()).selectOne(any());
+    }
+
+    /** 复审问题6：合法 JSON 但 fields 缺失/空对象 → 副作用前 fail，不得空载荷把动作转 DONE */
+    @Test
+    void deepEmptyFieldsFailsBeforeSideEffects() {
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
+        AiAgentTask t = AiAgentTask.builder().id(5L).actionCode("C08").stageActionId(9003L)
+            .fillPayload("{\"scene\":\"stage-action-fields\",\"fields\":{}}").build();
+
+        AiExecResult r = deep.execute(t, CTX);
+
+        assertThat(r.ok()).isFalse();
+        assertThat(r.errorMsg()).contains("对话填表");
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(ossService, never()).upload(any(org.springframework.web.multipart.MultipartFile.class));
     }
 
     /** N2：非法 JSON 在副作用前就 fail 引导，不得先落完成日 */

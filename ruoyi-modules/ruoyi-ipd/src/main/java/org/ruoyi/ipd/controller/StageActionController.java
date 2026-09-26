@@ -2,6 +2,8 @@ package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.StageAction;
@@ -119,13 +121,18 @@ public class StageActionController {
      * R221：AI 代理执行入口（spec §3.1 PASSIVE）。权限沿用动作执行口径；
      * 任务行落库即返回，人不等待——引擎 afterCommit 异步跑，页面轮询任务状态。
      * 前置状态校验交给执行链：DONE/NA 动作触发后 transit 幂等 no-op，不在此重复判断（防两处口径漂移）。
+     *
+     * <p>复审问题5：getById 对不存在 id 抛 ServiceException 永不返回 null（死判分支已删），
+     * 资源不存在按本仓契约收口 50001 NOT_FOUND（40401 在本仓语义是 PRODUCT_INACTIVE，严禁复用）。
      */
     @PostMapping("/{id}/ai-execute")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Map<String, Object>> aiExecute(@PathVariable Long id) {
-        StageAction a = stageActionService.getById(id);
-        if (a == null) {
-            return ApiV1Response.fail(40401, "动作不存在");
+        StageAction a;
+        try {
+            a = stageActionService.getById(id);
+        } catch (ServiceException e) {
+            return ApiV1Response.fail(ApiV1ErrorCode.NOT_FOUND, "动作不存在");
         }
         IpdActor actor = ipdPermission.requireActionWriter(() -> a);
         var task = aiExecutionTrigger.triggerPassive(a.getProjectId(),
