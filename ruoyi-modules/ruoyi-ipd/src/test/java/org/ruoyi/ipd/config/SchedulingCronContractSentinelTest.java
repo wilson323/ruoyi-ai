@@ -63,11 +63,13 @@ class SchedulingCronContractSentinelTest {
     /** 发现下限：现有 9 个 cron 注解（GateSignScanScheduler 2 个），防正则失效导致全空假绿。 */
     private static final int MIN_DISCOVERED_CRON_JOBS = 9;
 
-    /** 一个 @Scheduled(cron=...) 命中项：类名 / 相对路径 / 行号 / 原始串 / 生效 cron / 时刻（不可解析为 null）。 */
+    /** 一个 @Scheduled(cron=...) 命中项：类名 / 相对路径 / 行号 / 原始串 / 生效 cron / 时刻（不可解析为 null）；dayOfMonth 非空=每月固定日型。 */
     private record CronJob(String className, Path file, long line, String rawCron,
-                           String effectiveCron, Integer hour, Integer minute) {
+                           String effectiveCron, Integer hour, Integer minute, Integer dayOfMonth) {
         String timeKey() { return String.format("%02d:%02d", hour, minute); }
-        String where() { return className + " " + timeKey() + " @ " + file + ":" + line + " (cron=\"" + rawCron + "\")"; }
+        /** 防撞分组键：每日型按 HH:mm；每月型按「D日@HH:mm」，与每日 10:00 互不串组。 */
+        String guardKey() { return dayOfMonth == null ? timeKey() : "D" + dayOfMonth + "@" + timeKey(); }
+        String where() { return className + " " + guardKey() + " @ " + file + ":" + line + " (cron=\"" + rawCron + "\")"; }
     }
 
     @Test
@@ -93,7 +95,7 @@ class SchedulingCronContractSentinelTest {
         List<CronJob> timed = dailyTimedJobs();
         Map<String, List<CronJob>> byTime = new LinkedHashMap<>();
         for (CronJob j : timed) {
-            byTime.computeIfAbsent(j.timeKey(), k -> new ArrayList<>()).add(j);
+            byTime.computeIfAbsent(j.guardKey(), k -> new ArrayList<>()).add(j);
         }
         List<String> clashes = byTime.entrySet().stream()
             .filter(e -> e.getValue().size() > 1)
@@ -150,12 +152,20 @@ class SchedulingCronContractSentinelTest {
                 String eff = resolvePlaceholder(raw);
                 Integer hour = null;
                 Integer minute = null;
+                Integer dayOfMonth = null;
                 int[] hm = dailyFixedMinuteOfHour(eff);
                 if (hm != null) {
                     hour = hm[0];
                     minute = hm[1];
+                } else {
+                    int[] mdh = monthlyFixedTime(eff);
+                    if (mdh != null) {
+                        dayOfMonth = mdh[0];
+                        hour = mdh[1];
+                        minute = mdh[2];
+                    }
                 }
-                jobs.add(new CronJob(cls, ipdRoot.relativize(f), line, raw, eff, hour, minute));
+                jobs.add(new CronJob(cls, ipdRoot.relativize(f), line, raw, eff, hour, minute, dayOfMonth));
             }
         }
         return jobs;
@@ -187,6 +197,30 @@ class SchedulingCronContractSentinelTest {
         int minute = Integer.parseInt(f[1]);
         if (hour >= 24 || minute >= 60) return null;
         return new int[]{hour, minute};
+    }
+
+    /**
+     * Spring 6 段 cron「每月固定日固定时刻」判定（R220 补盲：AllowanceMonthlyLedgerScheduler
+     * {@code 0 0 10 1 * ?} 形态此前落在解析盲区，SENT-0 报「需人看形态决定是否豁免」）：
+     * 秒任意、分/时/日为常量数字、月与周通配。返回 [day,hour,minute] 或 null。
+     * 每月型参与防撞（guardKey 带日号，不与每日同刻误撞）与错峰表登记断言（按 HH:mm 匹配类名条目）。
+     */
+    private static int[] monthlyFixedTime(String cron) {
+        if (cron == null) return null;
+        String[] f = cron.trim().split("\\s+");
+        if (f.length != 6) return null;
+        boolean secondAny = Set.of("*", "?").contains(f[0]) || f[0].matches("\\d{1,2}");
+        boolean minuteFixed = f[1].matches("\\d{1,2}");
+        boolean hourFixed = f[2].matches("\\d{1,2}");
+        boolean dayFixed = f[3].matches("\\d{1,2}");
+        boolean monthWild = Set.of("*", "?").contains(f[4]);
+        boolean weekWild = Set.of("*", "?").contains(f[5]);
+        if (!(secondAny && minuteFixed && hourFixed && dayFixed && monthWild && weekWild)) return null;
+        int day = Integer.parseInt(f[3]);
+        int hour = Integer.parseInt(f[2]);
+        int minute = Integer.parseInt(f[1]);
+        if (day < 1 || day > 31 || hour >= 24 || minute >= 60) return null;
+        return new int[]{day, hour, minute};
     }
 
     /** 定位 src/main/java：从 user.dir（mvn -pl 时即模块根）向上找，兼容不同调用目录。 */

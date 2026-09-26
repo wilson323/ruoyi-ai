@@ -410,6 +410,12 @@ tenant:
     # R215 权限可配置化（2026-09-24）：角色权限码 DB 覆盖层——含 tenant_id 列但单企业语义；
     # 未登记则启动加载（@PostConstruct 无会话上下文）被拦截器追加过滤，覆盖层永远读空
     - ipd_role_permission
+    # R220 测试波次收口（2026-09-26）：WB-17-1 草案缺表 DDL（20260925-wb171-draft-missing-tables.sql）
+    # 自带「按仓内规约补登 tenant.excludes」TODO——3 张表含 tenant_id 默认 000000 但单企业语义，
+    # 超前登记先例同 person_roles（表未 apply 不报错，apply 后即受保护）
+    - saved_items
+    - change_implementations
+    - change_implementation_evidence
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

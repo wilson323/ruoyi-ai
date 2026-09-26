@@ -51,6 +51,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DeliverableService implements IDeliverableService {
 
+    /** 测试三禁·禁一：业务时钟走注入缝（对齐 AllowanceService 先例），默认系统时区。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    public void setClock(java.time.Clock clock) {
+        this.clock = clock;
+    }
+
     /** AC2：单文件上限 100MB（TS14 文件约束「单文件 ≤ 100MB」） */
     public static final long MAX_UPLOAD_BYTES = 100L * 1024 * 1024;
 
@@ -130,7 +137,7 @@ public class DeliverableService implements IDeliverableService {
             // AC3：大小/上传者/SHA-256 hash 均取服务端可信来源入库
             .fileSize(file.getSize())
             .uploadedBy(actor.id())
-            .uploadedAt(new Date())
+            .uploadedAt(Date.from(clock.instant()))
             .contentHash(DigestUtil.sha256Hex(bytes))
             .build();
         try {

@@ -152,7 +152,9 @@ class NegativeFeedbackServiceTest {
         assertThat(row.getMainExecution()).isEqualTo("STOP_ALLOWANCE");
         assertThat(row.getRelatedRole()).isNull();
         assertThat(row.getRelatedExecution()).isNull();
-        assertThat(row.getRelatedPersonId()).isNull();
+        // R219 台账⑮后契约（P382AcceptanceTest 同步）：BOTH 双人共同担责时第二人（研发PM）
+        // 落 relatedPersonId 供执行/通知面消费，relatedRole/relatedExec 仍 NULL（无连带减半语义）
+        assertThat(row.getRelatedPersonId()).isEqualTo(RD_PM);
     }
 
     /* ============================================================
