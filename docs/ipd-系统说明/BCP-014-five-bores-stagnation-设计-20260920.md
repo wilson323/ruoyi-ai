@@ -1,5 +1,6 @@
 # BCP-014-five-bores-stagnation-设计-20260920
 
+> **状态（2026-09-25 R219b）**：目标脚本 `scripts/check-five-bores-stagnation.sh` 已删除（22-23 行零逻辑，可执行部分仅 `echo PASS; exit 0`，曾由 pointer-143 要求「每 R 轮必跑」＝每轮产出假绿）。本文档保留为实装蓝图；重建清单与判定证据见 log.md marker r219b-skeleton-batch1。
 > **来源**：R143 子任务 R143.4 — 5 钻撞根因覆盖率停滞预警（R131/R141 5 钻 39/80 = 48.75% 停滞）
 > **撞车 0 让路**：✅ 仅 docs/ + scripts/ 白名单
 > **撞号避让**：✅ 不抢 R142 §十七 + 4 智能体穿透 §十八/§十九/§二十/§二十一
