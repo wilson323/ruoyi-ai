@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.SystemConfig;
 import org.ruoyi.ipd.domain.SystemConfigVersion;
 import org.ruoyi.ipd.mapper.SystemConfigMapper;
@@ -23,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -170,6 +172,45 @@ class P033AcceptanceTest {
         verify(systemConfigVersionMapper, times(2)).insert(captor.capture());
         SystemConfigVersion latest = captor.getAllValues().get(1);
         assertThat(latest.getConfigValue()).isEqualTo("C12,C11");
+    }
+
+    @Test
+    @DisplayName("R219 台账③(lane3 D-1)：KPI 权重键 HTTP 写面守卫——0.95/共担0.05/非数均拒，不落库不进版本链")
+    void kpiWeightKeys_httpGuardRejects() {
+        // 守卫在 selectOne 之前报错，无需桩化 mapper；任何写入发生即为漏
+        assertThatThrownBy(() -> service.update("kpi.functionalWeight", "0.95", 9L))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("30%");
+        assertThatThrownBy(() -> service.update("kpi.functionalWeight", "abc", 9L))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("功能 KPI 权重");
+        assertThatThrownBy(() -> service.update("kpi.sharedWeight", "0.05", 9L))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("30%");
+        assertThatThrownBy(() -> service.update("kpi.sharedWeight", "1", 9L))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("小于 1");
+        verify(systemConfigMapper, never()).updateById(any(SystemConfig.class));
+        verify(systemConfigVersionMapper, never()).insert(any(SystemConfigVersion.class));
+    }
+
+    @Test
+    @DisplayName("R219 台账③：合法权重照写不误——功能 0.50（共担 50%）正常落库进版本链")
+    void kpiWeightKeys_legalValuesStillWrite() {
+        SystemConfig fwRow = SystemConfig.builder()
+            .id(3L).configKey("kpi.functionalWeight").configValue("0.6")
+            .valueType("NUMBER").defaultValue("0.6")
+            .build();
+        fwRow.setCreateTime(new Date());
+        when(systemConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(fwRow);
+        when(systemConfigVersionMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        service.update("kpi.functionalWeight", "0.50", 9L);
+
+        ArgumentCaptor<SystemConfig> cap = ArgumentCaptor.forClass(SystemConfig.class);
+        verify(systemConfigMapper).updateById(cap.capture());
+        assertThat(cap.getValue().getConfigValue()).isEqualTo("0.50");
+        verify(systemConfigVersionMapper, times(2)).insert(any(SystemConfigVersion.class));
     }
 
     @Test

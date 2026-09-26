@@ -7,6 +7,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.SystemConfig;
 import org.ruoyi.ipd.domain.SystemConfigVersion;
 import org.ruoyi.ipd.mapper.SystemConfigMapper;
@@ -15,6 +16,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
@@ -60,6 +62,10 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
 
     private final SystemConfigMapper systemConfigMapper;
     private final SystemConfigVersionMapper systemConfigVersionMapper;
+
+    /** R219 台账③（lane3 D-1）：KPI 权重两键在通用写面也要过 30% 共担下限（对齐 GateEngine A 级键先例） */
+    static final String KPI_FUNCTIONAL_WEIGHT_KEY = "kpi.functionalWeight";
+    static final String KPI_SHARED_WEIGHT_KEY = "kpi.sharedWeight";
 
     /** PERF-P2-5：Caffeine 缓存——500 上限 + 5 分钟 TTL；详见类 Javadoc。 */
     private Cache<String, Optional<String>> cache = Caffeine.newBuilder()
@@ -149,6 +155,10 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
             // P1-5.2：A 级必做集 trim/去重/未知码拒绝后再落库
             normalized = GateEngine.validateAndNormalizeALevelConfigValue(value);
         }
+        if (KPI_FUNCTIONAL_WEIGHT_KEY.equals(key) || KPI_SHARED_WEIGHT_KEY.equals(key)) {
+            // R219 台账③：闭掉「PUT /system-configs 直写绕过共担 30% 下限」——值域不合法直接拒绝，不落库不进版本链
+            validateKpiWeightValue(key, value);
+        }
         SystemConfig existing = systemConfigMapper.selectOne(
             new LambdaQueryWrapper<SystemConfig>().eq(SystemConfig::getConfigKey, key).last("limit 1"));
         if (existing == null) {
@@ -165,6 +175,32 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
         systemConfigMapper.updateById(existing);
         recordVersion(existing, oldValue, normalized, operatorId);
         invalidate(key);
+    }
+
+    /**
+     * R219 台账③：KPI 权重键值域守卫。功能权重复用 {@link KpiScoreCalculator#validateFunctionalWeight}
+     *（(0,1] 且共担 1−w ≥ 30%）；共担键镜像校验 [30%, 1)。只验不改写（面值原样落库，
+     * 保持同值短路/版本链行为不变）。
+     */
+    private static void validateKpiWeightValue(String key, String value) {
+        boolean functional = KPI_FUNCTIONAL_WEIGHT_KEY.equals(key);
+        if (value == null || value.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                (functional ? "功能 KPI 权重" : "共担 KPI 权重") + "不能为空");
+        }
+        BigDecimal w;
+        try {
+            w = new BigDecimal(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                (functional ? "功能 KPI 权重" : "共担 KPI 权重") + "必须是 0-1 之间的小数");
+        }
+        if (functional) {
+            KpiScoreCalculator.validateFunctionalWeight(w);
+        } else if (w.compareTo(KpiScoreCalculator.MIN_SHARED_WEIGHT) < 0 || w.compareTo(BigDecimal.ONE) >= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "共担 KPI 权重不得低于 30%且必须小于 1（当前=" + w.toPlainString() + "）");
+        }
     }
 
     /**
