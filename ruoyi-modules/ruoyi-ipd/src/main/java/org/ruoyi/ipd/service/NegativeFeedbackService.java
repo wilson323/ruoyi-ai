@@ -461,7 +461,14 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         String mainRole = mapping.get("mainRole");
         String relatedRole = mapping.get("relatedRole");
         java.util.List<Long> ids = new java.util.ArrayList<>();
-        if ("MARKET_PM".equals(mainRole) || "BOTH".equals(mainRole)) {
+        if ("BOTH".equals(mainRole)) {
+            // R219 台账⑮修复：MISSED_MARKET_WINDOW 双PM共同担责（STOP_ALLOWANCE ×2，javadoc L43 口径），
+            // 缺任一角色都不得只担一半——修复前只 add(marketId)，研发PM永不进 main/related 字段，
+            // 执行/通知面双双漏发。返回 [市场, 研发]，relatedRole/relatedExec 仍为 null（无连带减半语义）。
+            if (marketId == null || rdId == null) throw new IpdBusinessException(ApiV1ErrorCode.NF_NOT_PM);
+            ids.add(marketId);
+            ids.add(rdId);
+        } else if ("MARKET_PM".equals(mainRole)) {
             if (marketId == null) throw new IpdBusinessException(ApiV1ErrorCode.NF_NOT_PM);
             ids.add(marketId);
         } else if ("RD_PM".equals(mainRole)) {

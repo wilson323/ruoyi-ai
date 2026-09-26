@@ -305,6 +305,39 @@ class Sec03WithdrawSideChannelTest {
             .doesNotContain(IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT);
     }
 
+    // ==================== R219 台账⑧：局部 @ExceptionHandler 不得 rethrow ====================
+
+    /** 直接驱动 controller 内的 NotPermissionException handler（依赖仅为 HandlerMethod 反射，构造参数传 null）。 */
+    private org.springframework.http.ResponseEntity<org.ruoyi.ipd.common.ApiV1Response<Void>> invokeNotPermissionHandler(
+        String methodName) throws Exception {
+        DeletionRequestController controller = new DeletionRequestController(null, null, null);
+        Method target = "withdraw".equals(methodName)
+            ? DeletionRequestController.class.getDeclaredMethod(methodName, Long.class)
+            : DeletionRequestController.class.getDeclaredMethod(methodName);
+        org.springframework.web.method.HandlerMethod handlerMethod =
+            new org.springframework.web.method.HandlerMethod(controller, target);
+        return controller.handleNotPermissionForWithdraw(
+            new cn.dev33.satoken.exception.NotPermissionException("ipd:deletion-request:admin"), handlerMethod);
+    }
+
+    @Test
+    @DisplayName("11) R219台账⑧：非 withdraw 方法的 NotPermission → 就地返回 403 {code:30001} 包络（修复前 rethrow 塌 500）")
+    void nonWithdrawNotPermissionReturnsForbiddenEnvelope() throws Exception {
+        var resp = invokeNotPermissionHandler("myRequests");
+        assertThat(resp.getStatusCode().value()).isEqualTo(403);
+        assertThat(resp.getBody()).isNotNull();
+        assertThat(resp.getBody().getCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN.getCode());
+    }
+
+    @Test
+    @DisplayName("12) R219台账⑧：withdraw 方法短路保持 404 {code:50001}（SEC-MED-3 防侧信道不变）")
+    void withdrawNotPermissionStillReturnsNotFoundEnvelope() throws Exception {
+        var resp = invokeNotPermissionHandler("withdraw");
+        assertThat(resp.getStatusCode().value()).isEqualTo(404);
+        assertThat(resp.getBody()).isNotNull();
+        assertThat(resp.getBody().getCode()).isEqualTo(ApiV1ErrorCode.NOT_FOUND.getCode());
+    }
+
     private static IpdBusinessException capture(RunnableWithThrow r) {
         try {
             r.run();

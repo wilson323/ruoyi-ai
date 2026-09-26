@@ -329,7 +329,8 @@ public class GuestDemandService {
      * P4-1.3：路由后回写双 PM（AC-REQ-03；页40）。
      * <p>BR-REQ-04：产品 1:1 项目（uk_products_project），取该项目在职 MARKET_PM/RD_PM 写双 PM，
      * 并发场景同 IP 同时双提同产品时走 MySQL 行锁/条件 UPDATE 守卫。
-     * 仅 SUBMITTED/UNASSIGNED 状态可路由；已路由/已受理/已撤回不再覆盖。
+     * 仅 SUBMITTED 状态可路由（「待指派」口径=规格 batch-04 §L65：status=SUBMITTED + 双PM空，
+     * 无独立 UNASSIGNED 状态词）；已路由/已受理/已撤回不再覆盖。
      */
     @Transactional(rollbackFor = Exception.class)
     public GuestDemandView routeDualPm(String queryCode) {
@@ -353,14 +354,14 @@ public class GuestDemandService {
         }
         String route = resolveDualPm(p, r);
         if (!"routed".equals(route)) {
-            // 项目无在职 PM：不强行写空，回退到 UNASSIGNED 状态供超管指派
+            // R219 台账⑦收口：项目无在职 PM 时需求仍留在 status=SUBMITTED + 双PM空 = 「待指派」池
+            // （规格 batch-04 §L65 权威口径），不强行写空、不新增全库不存在的 UNASSIGNED 状态词。
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
-        // 条件 UPDATE 守卫：仅 SUBMITTED/UNASSIGNED 才更新
+        // 条件 UPDATE 守卫：仅当前 status=SUBMITTED 才更新（嵌套 id 等值，避免 OR 破坏 AND 优先级误更他行）
         int rows = requirementMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Requirement>()
             .eq(Requirement::getId, r.getId())
             .eq(Requirement::getStatus, "SUBMITTED")
-            .or().eq(Requirement::getStatus, "UNASSIGNED")
             .set(Requirement::getMarketPmId, r.getMarketPmId())
             .set(Requirement::getRdPmId, r.getRdPmId())
             .set(Requirement::getRoutedAt, r.getRoutedAt()));

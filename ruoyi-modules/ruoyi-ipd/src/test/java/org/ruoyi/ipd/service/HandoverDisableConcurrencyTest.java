@@ -42,7 +42,8 @@ import static org.mockito.Mockito.when;
  * 一并置退出并禁用，名下多项目时违反 AC-HAND-01d 及 P2-7.2「不得提前禁用仍有待移交人员」）→
  * 本版：FOR UPDATE 锁行计数（保留 TOCTOU 防护，串行化并发移交/新增绑定）
  * + 仅真全清（活跃绑定计数=0）才禁用
- * + person 侧 accountStatus=ACTIVE 条件守卫（并发双过计数窗口仅一人生效，后到者 affected=0 不重复审计）。
+ * + person 侧 accountStatus ∈ {ACTIVE, FROZEN_PENDING_HANDOVER} 条件守卫（R219 台账④：resign 后真实态是
+ * FROZEN，只认 ACTIVE 会使全清自动禁用永不命中；并发双过计数窗口仅一人生效，后到者 affected=0 不重复审计）。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -106,6 +107,17 @@ class HandoverDisableConcurrencyTest {
         return p;
     }
 
+    /** resign 后待移交真实态（PersonService.AC_FROZEN）：R219 台账④的回归靶。 */
+    private Person frozenPerson(Long id) {
+        Person p = new Person();
+        p.setId(id);
+        p.setName("p-" + id);
+        p.setPersonType("MARKET_PM");
+        p.setAccountStatus("FROZEN_PENDING_HANDOVER");
+        p.setEmploymentStatus("RESIGNED");
+        return p;
+    }
+
     @Test
     @DisplayName("真全清（FOR UPDATE 计数=0）→ person DISABLED + ACCOUNT_DISABLED_AFTER_HANDOVER 审计")
     void disableIfAllCleared_allCleared_disablesPersonAndAudits() {
@@ -120,6 +132,12 @@ class HandoverDisableConcurrencyTest {
         ArgumentCaptor<LambdaUpdateWrapper<Person>> personCap =
             ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(personMapper, times(1)).update(isNull(), personCap.capture());
+        // R219 台账④契约：守卫必须同时接受 ACTIVE 与 FROZEN_PENDING_HANDOVER（resign 后的真实态）。
+        // MP wrapper 惰性填参：先触发 getSqlSegment 再读 paramNameValuePairs（DISABLED 作为 set 目标值也在其中，不属守卫集）
+        LambdaUpdateWrapper<Person> guard = personCap.getValue();
+        assertThat(guard.getSqlSegment()).contains("IN");
+        assertThat(guard.getParamNameValuePairs().values())
+            .contains("ACTIVE", "FROZEN_PENDING_HANDOVER");
 
         ArgumentCaptor<org.ruoyi.ipd.domain.AuditLog> auditCap =
             ArgumentCaptor.forClass(org.ruoyi.ipd.domain.AuditLog.class);
@@ -176,5 +194,19 @@ class HandoverDisableConcurrencyTest {
 
         verify(personMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any());
+    }
+
+    @Test
+    @DisplayName("R219台账④回归：FROZEN_PENDING_HANDOVER 人员（resign 后真实态）真全清 → 仍应 DISABLED+审计")
+    void disableIfAllCleared_frozenPerson_disablesAndAudits() {
+        when(memberMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+        when(personMapper.selectById(50L)).thenReturn(frozenPerson(50L));
+        when(personMapper.update(any(), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+        service.disableIfAllCleared(50L, operator());
+
+        // 修复前守卫只认 ACTIVE，FROZEN 人员 affected 永远=0，这里必须走到 update+审计
+        verify(personMapper, times(1)).update(isNull(), any(LambdaUpdateWrapper.class));
+        verify(auditLogService).append(any());
     }
 }

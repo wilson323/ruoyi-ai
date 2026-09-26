@@ -139,9 +139,13 @@ public class DeletionRequestController {
 
     /**
      * SEC-MED-3 防侧信道：仅 {@code withdraw} 方法的 {@link NotPermissionException}（@SaCheckPermission 拒绝）
-     * 转 404 NOT_FOUND 与 service 同返；其他方法继续走 {@code IpdPermissionExceptionHandler} 默认 403 行为。
-     * <p>实现要点：通过 {@link HandlerMethod} 反射判断抛异常的 handler 方法名，只对 withdraw 短路；
-     * 非 withdraw 方法重新抛出让全局 {@code IpdPermissionExceptionHandler} 接住，保持原有 403 语义不变。
+     * 转 404 NOT_FOUND 与 service 同返；其他方法在本 handler 内直接返回与全局 advice 同款的 403 包络。
+     * <p>实现要点：通过 {@link HandlerMethod} 反射判断抛异常的 handler 方法名，只对 withdraw 短路。
+     * <b>R219 台账⑧修复</b>：非 withdraw 分支不得 rethrow——ControllerAdvice 内的局部
+     * {@code @ExceptionHandler} 重新抛出会让 {@code ExceptionHandlerExceptionResolver} 放弃二次解析，
+     * 全局 {@code IpdPermissionExceptionHandler} 根本接不到，塌 HTTP 500 裸 Spring 错误体（实测
+     * lane3 执行清单 AC-DEL-04/07 实证：无权限码者 GET overdue-admin-review / POST leader-decision → 500）。
+     * 改为就地返回与 {@code IpdPermissionExceptionHandler.notPermission} 完全同款的 403 FORBIDDEN 包络，语义不变。
      */
     @ExceptionHandler(NotPermissionException.class)
     public ResponseEntity<ApiV1Response<Void>> handleNotPermissionForWithdraw(
@@ -153,8 +157,9 @@ public class DeletionRequestController {
             return ResponseEntity.status(ApiV1ErrorCode.NOT_FOUND.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.NOT_FOUND, "资源不存在"));
         }
-        // 其他端点：重新抛出让 IpdPermissionExceptionHandler 接住（403 FORBIDDEN 默认行为不变）
-        throw exception;
+        // 其他端点：就地返回与 IpdPermissionExceptionHandler.notPermission 同款 403 包络
+        // （不得 rethrow：局部 handler 内重抛会绕过全局 advice，塌 500 裸体——R219 台账⑧）
+        return ResponseEntity.status(403).body(ApiV1Response.fail(ApiV1ErrorCode.FORBIDDEN));
     }
 
     /**

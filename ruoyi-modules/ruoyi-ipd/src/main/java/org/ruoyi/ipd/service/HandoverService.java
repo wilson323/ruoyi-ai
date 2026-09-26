@@ -651,8 +651,12 @@ public class HandoverService {
      * 「仅真全清（活跃绑定计数=0）才禁用」。此前的原子 UPDATE 版会把余留绑定一并置退出
      * （updated&gt;0 才继续禁用），名下多项目时提前退出待移交项目绑定并禁用账号，与
      * AC-HAND-01d「全部移交完成才 DISABLED」及 P2-7.2「不得提前禁用仍有待移交人员」相反。
-     * person 侧 DISABLED 再加 accountStatus=ACTIVE 条件守卫：并发双过计数窗口内仅一人
+     * person 侧 DISABLED 再加 accountStatus ∈ {ACTIVE, FROZEN_PENDING_HANDOVER} 条件守卫：并发双过计数窗口内仅一人
      * update 生效（affected=1），后到者 affected=0 直接返回不重复审计。
+     * <p><b>R219 台账④修复</b>：守卫不得只认 ACTIVE——resign 后人恒为 FROZEN_PENDING_HANDOVER
+     * （PersonService.AC_FROZEN，B8 先移交后禁用设计），“.eq(ACTIVE)”使全清后的自动 DISABLED
+     * 在生产状态机下永不命中（lane3 H01 链实测名下全清后 accountStatus 仍 FROZEN）。接受双态后
+     * 幂等性不变：已 DISABLED 者 affected=0，不重复禁用/审计。
      *
      * <p>package-private（无 private）便于测试直接调用；不暴露给 controller/service。
      */
@@ -668,10 +672,11 @@ public class HandoverService {
         if (p == null || "DISABLED".equals(p.getAccountStatus())) {
             return;
         }
-        // updateById 不落 null 字段：企微解绑必须显式 set null；ACTIVE 守卫防并发重复禁用/审计
+        // updateById 不落 null 字段：企微解绑必须显式 set null；双态守卫防并发重复禁用/审计，
+        // 含 FROZEN_PENDING_HANDOVER（resign 后的真实态，R219 台账④）
         int disabled = personMapper.update(null, new LambdaUpdateWrapper<Person>()
             .eq(Person::getId, personId)
-            .eq(Person::getAccountStatus, "ACTIVE")
+            .in(Person::getAccountStatus, "ACTIVE", "FROZEN_PENDING_HANDOVER")
             .set(Person::getAccountStatus, "DISABLED")
             .set(Person::getWecomUserId, null)
             .set(Person::getWecomBoundAt, null));

@@ -224,7 +224,7 @@ class P382AcceptanceTest {
      *  场景3：AC-INC-38 — 错过市场窗口 ⇒ BOTH 双PM共同担责，无连带区分
      * ==================================================================== */
     @Test
-    @DisplayName("AC-INC-38：MISSED_MARKET_WINDOW → BOTH 双PM共同担责，related 字段空")
+    @DisplayName("AC-INC-38：MISSED_MARKET_WINDOW → BOTH 双PM共同担责（市场+研发），无连带减半字段")
     void acInc38_missedMarketWindow_bothSharedNoRelated() {
         stubNoDuplicate();
         stubProjectHasBothPm();
@@ -234,15 +234,31 @@ class P382AcceptanceTest {
 
         NegativeFeedback row = service.create(req, MARKET_PM_ACTOR);
 
-        // 双PM共同担责：mainRole=BOTH，related 字段全部 NULL
+        // R219 台账⑮修复后契约：BOTH 双PM共同担责（STOP_ALLOWANCE ×2）——
+        // main=市场、related=研发（人员落字段），但 relatedRole/relatedExec 仍 NULL（无连带减半语义）
         assertThat(row.getMainRole()).isEqualTo("BOTH");
         assertThat(row.getMainExecution()).isEqualTo("STOP_ALLOWANCE");
         assertThat(row.getRelatedRole()).isNull();
         assertThat(row.getRelatedExecution()).isNull();
-        assertThat(row.getRelatedPersonId()).isNull();
+        assertThat(row.getMainPersonId()).isEqualTo(MARKET_PM_ID);
+        assertThat(row.getRelatedPersonId()).isEqualTo(RD_PM_ID);
+    }
 
-        // 注意：BOTH 模式下 mainPersonId 仍填一个主记录人（即 MARKET_PM 作为回执人）
-        assertThat(row.getMainPersonId()).isNotNull();
+    @Test
+    @DisplayName("R219台账⑮回归：BOTH 缺 RD_PM（仅市场PM在职）→ NF_NOT_PM，不得只担一半")
+    void acInc38_missedMarketWindow_missingRdPm_rejected() {
+        stubNoDuplicate();
+        when(memberMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(ProjectMember.builder().projectId(PROJECT_ID)
+                .personId(MARKET_PM_ID).role("MARKET_PM").build()));
+
+        NegativeFeedbackCreateReq req = new NegativeFeedbackCreateReq(
+            PROJECT_ID, "MISSED_MARKET_WINDOW", "缺研发PM项目", "2026-09", null);
+
+        assertThatThrownBy(() -> service.create(req, MARKET_PM_ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.NF_NOT_PM);
     }
 
     /* ====================================================================
