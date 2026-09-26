@@ -94,4 +94,21 @@ class AiExecutionTriggerTest {
         assertThat(cap.getValue().getFillPayload()).contains("stage-action-fields");
         assertThat(cap.getValue().getInputDigest()).isEqualTo("digest-abc");
     }
+
+    /** #4：INSERT 撞 DB 唯一兜底 uk_active_dedup（并发双插）时重查返回既有在途行，保证幂等。 */
+    @Test
+    void insertDuplicateKeyFallsBackToExistingInflight() {
+        AiAgentTask raced = AiAgentTask.builder().id(88L).status(AiAgentTask.STATUS_PENDING)
+            .dedupKey("P08:9002:PASSIVE").build();
+        // 首次 SELECT（dedup 守卫）空 → 走到 INSERT；INSERT 抛唯一键冲突 → 重查返回既有
+        when(taskMapper.selectList(any(Wrapper.class)))
+            .thenReturn(List.of())
+            .thenReturn(List.of(raced));
+        when(taskMapper.insert(any(AiAgentTask.class)))
+            .thenThrow(new org.springframework.dao.DuplicateKeyException("uk_active_dedup"));
+
+        AiAgentTask got = trigger.triggerPassive(100L, "P08", 9002L, 555L);
+
+        assertThat(got.getId()).isEqualTo(88L);
+    }
 }

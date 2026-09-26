@@ -10,6 +10,8 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.aiexec.AiActionExecutor;
 import org.ruoyi.ipd.service.aiexec.AiExecContext;
 import org.ruoyi.ipd.service.aiexec.AiExecResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,15 @@ public class AiExecutionEngine {
         return t;
     });
     private Clock clock = Clock.systemDefaultZone();
+
+    /**
+     * self 代理：使 {@link #finalizeTask} 的 @Transactional 真正生效——runOne 由池线程以 raw this 调用，
+     * 直接 this.finalizeTask() 属 self-invocation 会绕过 Spring 代理导致注解失效（#2）。
+     * 单测无 Spring 上下文时 self 为 null，回退 this（mock mapper 不需事务）。
+     */
+    @Lazy
+    @Autowired
+    private AiExecutionEngine self;
 
     public AiExecutionEngine(AiAgentTaskMapper taskMapper, List<AiActionExecutor> executors,
                              IAuditLogService auditLogService, NotificationService notificationService) {
@@ -110,24 +121,28 @@ public class AiExecutionEngine {
         AiAgentTask t = taskMapper.selectById(taskId);
         if (t == null || !AiAgentTask.STATUS_RUNNING.equals(t.getStatus())) { return false; }
         AiActionExecutor executor = executorByCode.get(t.getActionCode());
+        AiExecResult result;
         if (executor == null) {
-            finalizeTask(t, AiExecResult.fail("无已接线执行器: " + t.getActionCode() + "（分批接线期，spec 附录B）"), null);
-            return false;
+            result = AiExecResult.fail("无已接线执行器: " + t.getActionCode() + "（分批接线期，spec 附录B）");
+        } else {
+            try {
+                result = executor.execute(t, new AiExecContext(SYSTEM_ACTOR, clock));
+            } catch (Exception e) {
+                log.warn("[R221] 执行器异常: task={} code={}", taskId, t.getActionCode(), e);
+                result = AiExecResult.fail(e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
         }
-        try {
-            AiExecResult r = executor.execute(t, new AiExecContext(SYSTEM_ACTOR, clock));
-            finalizeTask(t, r, null);
-            return r.ok();
-        } catch (Exception e) {
-            log.warn("[R221] 执行器异常: task={} code={}", taskId, t.getActionCode(), e);
-            finalizeTask(t, AiExecResult.fail(e.getClass().getSimpleName() + ": " + e.getMessage()), null);
-            return false;
-        }
+        // 收尾恰好一次（经 self 代理使 @Transactional 生效）：无论执行器成功/失败/无执行器，
+        // 都只走一次 finalizeTask，杜绝旧实现「publish 抛异常被 runOne catch 触发二次收尾」（#2）。
+        (self != null ? self : this).finalizeTask(t, result, null);
+        // DEAD 转人工通知放在事务外、尽力而为：通知失败不回滚已落库的 DEAD 状态（#3）。
+        notifyIfDead(t);
+        return result.ok();
     }
 
-    /** 收尾：成功翻 SUCCEEDED；失败 attempt+1，<3 翻 FAILED 定退避，>=3 翻 DEAD 通知人接管。 */
+    /** 收尾：成功翻 SUCCEEDED；失败 attempt+1，<3 翻 FAILED 定退避，>=3 翻 DEAD。事务内仅 updateById + audit（原子）。 */
     @Transactional(rollbackFor = Exception.class)
-    void finalizeTask(AiAgentTask t, AiExecResult result, String unused) {
+    public void finalizeTask(AiAgentTask t, AiExecResult result, String unused) {
         boolean ok = result != null && result.ok();
         if (ok) {
             t.setStatus(AiAgentTask.STATUS_SUCCEEDED);
@@ -165,13 +180,30 @@ public class AiExecutionEngine {
                 "aiDocId", t.getAiDocId()))
             .reason("R221 AI 代理执行闭环")
             .build());
-        if (AiAgentTask.STATUS_DEAD.equals(t.getStatus())) {
-            notificationService.publish(t.getTriggeredBy(), "AI_EXEC_DEAD", NotificationService.KIND_ACTION,
+    }
+
+    /**
+     * DEAD 转人工通知（事务外、尽力而为）：
+     * 主动触发（EVENT/SCHEDULE）triggeredBy=null 时无接收人，跳过推送由审计+看板兜底，
+     * 避免旧实现 publish(null) 触发 doPublish 的 requireArg 抛异常（#3）；推送失败只 WARN 不外泄。
+     */
+    private void notifyIfDead(AiAgentTask t) {
+        if (!AiAgentTask.STATUS_DEAD.equals(t.getStatus())) { return; }
+        Long receiver = t.getTriggeredBy();
+        if (receiver == null) {
+            log.warn("[R221] DEAD 任务无接收人（主动触发 triggeredBy=null），跳过推送，已由审计+看板兜底: task={} code={}",
+                t.getId(), t.getActionCode());
+            return;
+        }
+        try {
+            notificationService.publish(receiver, "AI_EXEC_DEAD", NotificationService.KIND_ACTION,
                 "ai_agent_task", t.getId(),
                 "AI 执行失败转人工: " + t.getActionCode(),
                 "任务已重试 " + t.getAttempt() + " 次仍失败，请人工接管（原手工路径不受影响）。错误: "
                     + truncate(t.getErrorMsg(), 200),
                 null);
+        } catch (Exception e) {
+            log.warn("[R221] DEAD 通知推送失败（不回滚状态，审计已留痕）: task={}", t.getId(), e);
         }
     }
 

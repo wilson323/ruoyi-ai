@@ -27,6 +27,9 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -126,6 +129,7 @@ class AiExecutionEngineTest {
         executor.boom = new IllegalStateException("still failing");
         AiAgentTask t = pending();
         t.setAttempt(2); // mock 合法性：真库 FAILED 退避路径可产生 attempt=2
+        t.setTriggeredBy(555L); // mock 合法性：PASSIVE 人触发必有真人接收人（主动触发才为 null）
         when(taskMapper.selectList(any(Wrapper.class))).thenReturn(List.of(t));
         when(taskMapper.update(isNull(), any())).thenReturn(1);
         when(taskMapper.selectById(1L)).thenReturn(t);
@@ -152,5 +156,44 @@ class AiExecutionEngineTest {
 
         assertThat(t.getStatus()).isEqualTo(AiAgentTask.STATUS_FAILED);
         assertThat(t.getErrorMsg()).contains("无已接线执行器");
+    }
+
+    /** #3：主动触发（EVENT/SCHEDULE）triggeredBy=null 进 DEAD 时无接收人，跳过推送且不崩。 */
+    @Test
+    void deadWithNullTriggeredBySkipsPublishNoCrash() {
+        executor.boom = new IllegalStateException("still failing");
+        AiAgentTask t = pending();
+        t.setTriggerType(AiAgentTask.TRIGGER_EVENT);
+        t.setTriggeredBy(null); // 主动触发无真人接收人
+        t.setAttempt(2);
+        when(taskMapper.selectList(any(Wrapper.class))).thenReturn(List.of(t));
+        when(taskMapper.update(isNull(), any())).thenReturn(1);
+        when(taskMapper.selectById(1L)).thenReturn(t);
+
+        engine.dispatchCycle(10); // 不应抛异常
+
+        assertThat(t.getStatus()).isEqualTo(AiAgentTask.STATUS_DEAD);
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(taskMapper, times(1)).updateById(any(AiAgentTask.class));
+    }
+
+    /** #2：DEAD 通知推送抛异常时尽力而为——不回滚状态、不触发二次收尾（updateById/audit 恰好一次）。 */
+    @Test
+    void deadNotificationFailureDoesNotDoubleFinalize() {
+        executor.boom = new IllegalStateException("still failing");
+        AiAgentTask t = pending();
+        t.setTriggeredBy(555L);
+        t.setAttempt(2);
+        when(taskMapper.selectList(any(Wrapper.class))).thenReturn(List.of(t));
+        when(taskMapper.update(isNull(), any())).thenReturn(1);
+        when(taskMapper.selectById(1L)).thenReturn(t);
+        doThrow(new RuntimeException("notify down")).when(notificationService)
+            .publish(any(), any(), any(), any(), any(), any(), any(), any());
+
+        engine.dispatchCycle(10); // publish 异常被吞，不外泄
+
+        assertThat(t.getStatus()).isEqualTo(AiAgentTask.STATUS_DEAD);
+        verify(taskMapper, times(1)).updateById(any(AiAgentTask.class)); // 恰好一次收尾
+        verify(auditLogService, times(1)).append(any(AuditLog.class));
     }
 }

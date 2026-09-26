@@ -63,7 +63,20 @@ public class AiExecutionTrigger {
             .triggeredBy(triggeredBy)
             .build();
         t.setCreateBy(0L); // Global Constraint 4：调度/系统线程 createBy 手工置 0
-        taskMapper.insert(t);
+        try {
+            taskMapper.insert(t);
+        } catch (org.springframework.dao.DuplicateKeyException dup) {
+            // DB 唯一兜底 uk_active_dedup 挡下并发双插（SELECT-then-INSERT 的 TOCTOU 竞态，#4）：
+            // 重查在途行返回，保证触发幂等（不重复执行动作、不重复写业务表）。
+            List<AiAgentTask> raced = taskMapper.selectList(new LambdaQueryWrapper<AiAgentTask>()
+                .eq(AiAgentTask::getDedupKey, dedupKey)
+                .in(AiAgentTask::getStatus, AiAgentTask.STATUS_PENDING, AiAgentTask.STATUS_RUNNING));
+            if (!raced.isEmpty()) {
+                log.info("[R221] 唯一键兜底并发双插，返回既有在途任务: {}", dedupKey);
+                return raced.get(0);
+            }
+            throw dup; // 极端：唯一键冲突但查不到在途行（对手行已翻终态），交上层处理
+        }
         dispatchAfterCommit();
         return t;
     }
