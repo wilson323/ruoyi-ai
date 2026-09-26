@@ -286,7 +286,8 @@ public class BonusPoolService implements IBonusPoolService {
         if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
-        BigDecimal rate = (poolRate != null) ? poolRate : new BigDecimal("0.05");
+        // R219 台账①：兜底面值收敛到 DEFAULT_CONFIG_POOL_RATE 单一源（下方 P3-4.2 段定义）
+        BigDecimal rate = (poolRate != null) ? poolRate : DEFAULT_CONFIG_POOL_RATE;
         return targetSales.multiply(rate);
     }
 
@@ -439,8 +440,10 @@ public class BonusPoolService implements IBonusPoolService {
         if ("S".equals(lvl)) {
             if (coefficient.compareTo(COEFFICIENT_S_MIN) < 0
                 || coefficient.compareTo(COEFFICIENT_S_MAX) > 0) {
+                // R219 台账①：文案按实际边界常量拼装，消除面值与提示语两套字面量漂移
                 throw new IpdBusinessException(
-                    "P3-4.2：S 级项目系数必须在 [1.5, 2.0]，当前=" + coefficient);
+                    "P3-4.2：S 级项目系数必须在 [" + COEFFICIENT_S_MIN.toPlainString()
+                        + ", " + COEFFICIENT_S_MAX.toPlainString() + "]，当前=" + coefficient);
             }
         } else if ("A".equals(lvl)) {
             if (coefficient.compareTo(COEFFICIENT_A) != 0) {

@@ -139,6 +139,8 @@ public class KpiSharedCollectionService {
     static final BigDecimal K02_WEIGHT = new BigDecimal("0.10");
     static final BigDecimal K03_WEIGHT = new BigDecimal("0.10");
     static final BigDecimal K04_WEIGHT = new BigDecimal("0.05");
+    /** R219 台账①（AC-CFG-01）：kpi.k04Weight 合法区间上限（共担四项权重之和不得越界太多，0.40 内视为合法）。 */
+    static final BigDecimal K04_WEIGHT_MAX = new BigDecimal("0.40");
     static final BigDecimal FUNCTIONAL_WEIGHT = new BigDecimal("0.60");
     static final BigDecimal SHARED_WEIGHT = new BigDecimal("0.40");
     static final int NPS_MIN_SAMPLE = 30;
@@ -712,8 +714,27 @@ public class KpiSharedCollectionService {
         // P2-1 K04 双认定：source 改为动态判定（销售报备 / 交付验收 / 双来源）
         String k04Source = resolveK04Source(request.projectId());
         MetricResult scenario = MetricResult.of(K04, k04Source, landed, planned,
-            K04_WEIGHT, true, "场景覆盖率");
+            readK04Weight(), true, "场景覆盖率");
         return new ArrayList<>(List.of(sales, channel, npsMetric, scenario));
+    }
+
+    /**
+     * R219 台账①（AC-CFG-01）：K04 权重改由 system_configs.kpi.k04Weight 实时控制，缺省 0.05。
+     * 对齐 {@link #readMinSample()} 模式：读失败/非法值（≤0 或 &gt; {@link #K04_WEIGHT_MAX}）回退默认。
+     */
+    public BigDecimal readK04Weight() {
+        if (systemConfigService == null) {
+            return K04_WEIGHT;
+        }
+        try {
+            String raw = systemConfigService.getValue("kpi.k04Weight", K04_WEIGHT.toPlainString());
+            BigDecimal v = new BigDecimal(raw.trim());
+            return v.compareTo(BigDecimal.ZERO) > 0 && v.compareTo(K04_WEIGHT_MAX) <= 0
+                ? v : K04_WEIGHT;
+        } catch (Exception ex) {
+            // 配置读取失败静默回退默认（与 readMinSample 同严）
+            return K04_WEIGHT;
+        }
     }
 
     /**

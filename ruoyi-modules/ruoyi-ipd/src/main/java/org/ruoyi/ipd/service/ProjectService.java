@@ -88,7 +88,12 @@ public class ProjectService implements IProjectService {
     }
     private Date now() { return Date.from(clock.instant()); }
 
-    public static final BigDecimal BONUS_POOL_RATE = new BigDecimal("0.05");
+    /**
+     * R219 台账①（AC-CFG-01）：面值单一源收敛——指向 BonusPoolService 默认常量；
+     * 运行期实际生效值走 {@code bonus.poolRate}（{@link BonusPoolService#readActivePoolRate()}，
+     * ROOT-R1 P0-7 已接线），本常量仅作无配置/旧契约回退。
+     */
+    public static final BigDecimal BONUS_POOL_RATE = BonusPoolService.DEFAULT_CONFIG_POOL_RATE;
     private static final Set<String> TEMPLATE_TYPES = Set.of("HARDWARE", "SOFTWARE", "SOLUTION");
     private static final BigDecimal DEFAULT_COEF_S = new BigDecimal("1.5");
     private static final BigDecimal DEFAULT_COEF_A = new BigDecimal("1.0");
@@ -197,10 +202,18 @@ public class ProjectService implements IProjectService {
      * @return 奖金池金额
      */
     public static BigDecimal computeBonusPool(BigDecimal targetSales, BigDecimal coefficient) {
-        if (targetSales == null || coefficient == null) {
+        return computeBonusPool(targetSales, coefficient, BONUS_POOL_RATE);
+    }
+
+    /**
+     * R219 台账①：配置化重载——调用方传入 {@link BonusPoolService#readActivePoolRate()}
+     * 的实时 poolRate，不再钉死默认面值。
+     */
+    public static BigDecimal computeBonusPool(BigDecimal targetSales, BigDecimal coefficient, BigDecimal poolRate) {
+        if (targetSales == null || coefficient == null || poolRate == null) {
             throw new ServiceException("计算奖金池需要目标销售额与差异化系数");
         }
-        return targetSales.multiply(BONUS_POOL_RATE).multiply(coefficient);
+        return targetSales.multiply(poolRate).multiply(coefficient);
     }
 
     /**
@@ -701,8 +714,11 @@ public class ProjectService implements IProjectService {
         }
         BigDecimal coefficient = project.getLevelCoefficient();
         switch (level) {
-            case "S" -> requireCoefficient(coefficient, "1.5", "2.0", "S 级系数区间为 1.5–2.0");
-            case "B" -> requireCoefficient(coefficient, "0.6", "0.8", "B 级系数区间为 0.6–0.8");
+            // R219 台账①：区间/文案改由 BonusPoolService 常量单一源拼装，消除面值与提示语两套字面量漂移
+            case "S" -> requireCoefficient("S", coefficient,
+                BonusPoolService.COEFFICIENT_S_MIN, BonusPoolService.COEFFICIENT_S_MAX);
+            case "B" -> requireCoefficient("B", coefficient,
+                BonusPoolService.COEFFICIENT_B_MIN, BonusPoolService.COEFFICIENT_B_MAX);
             case "A" -> {
                 // AC-INC-15b：A 固定 1.0；客户端显式录入非 1.0 拒绝；服务端默认已写 1.0
                 if (coefficient == null || coefficient.compareTo(DEFAULT_COEF_A) != 0) {
@@ -728,18 +744,21 @@ public class ProjectService implements IProjectService {
      */
     public static void validateCoefficientRange(String level, BigDecimal coefficient) {
         switch (level == null ? "" : level) {
-            case "S" -> requireCoefficient(coefficient, "1.5", "2.0", "S 级系数区间为 1.5–2.0");
-            case "B" -> requireCoefficient(coefficient, "0.6", "0.8", "B 级系数区间为 0.6–0.8");
+            case "S" -> requireCoefficient("S", coefficient,
+                BonusPoolService.COEFFICIENT_S_MIN, BonusPoolService.COEFFICIENT_S_MAX);
+            case "B" -> requireCoefficient("B", coefficient,
+                BonusPoolService.COEFFICIENT_B_MIN, BonusPoolService.COEFFICIENT_B_MAX);
             default -> throw new ServiceException("仅 S/B 级可校验差异化系数区间");
         }
     }
 
-    private static void requireCoefficient(BigDecimal coefficient, String min, String max, String tip) {
+    /** R219 台账①：区间边界改 BigDecimal（与 BonusPoolService 常量同源），文案按实际边界拼装。 */
+    private static void requireCoefficient(String level, BigDecimal coefficient, BigDecimal min, BigDecimal max) {
         if (coefficient == null) {
             throw new ServiceException("该级别差异化系数必填");
         }
-        if (coefficient.compareTo(new BigDecimal(min)) < 0 || coefficient.compareTo(new BigDecimal(max)) > 0) {
-            throw new ServiceException(tip);
+        if (coefficient.compareTo(min) < 0 || coefficient.compareTo(max) > 0) {
+            throw new ServiceException(level + " 级系数区间为 " + min.toPlainString() + "–" + max.toPlainString());
         }
     }
 
