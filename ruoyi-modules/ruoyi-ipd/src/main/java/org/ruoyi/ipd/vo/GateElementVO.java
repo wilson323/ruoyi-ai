@@ -27,18 +27,20 @@ public record GateElementVO(
     Date updateTime
 ) {
     public static GateElementVO from(GateElement e) {
+        // R219（看板卡 a995a9e3）：对外契约统一 '1'/'0' 编码——真库存量 14+19 条 'Y'/'N' 脏行
+        // （老代 seed 字面量）经归一化输出，前端不再需要双编码兼容；存量清洗 SQL 待 owner apply。
         return new GateElementVO(
             e.getId(),
             e.getGateCode(),
             e.getElementCode(),
             e.getElementName(),
             e.getPassStandard(),
-            e.getIsVeto(),
+            org.ruoyi.ipd.service.GateElementService.normalizeFlag(e.getIsVeto()),
             e.getSortOrder(),
             e.getEnabled(),
             e.getStatus(),
             e.getVersion(),
-            e.getVetoDualRequired(),
+            org.ruoyi.ipd.service.GateElementService.normalizeFlag(e.getVetoDualRequired()),
             e.getThresholdJson(),
             e.getSignDueAt(),
             e.getSignExtensionCount(),

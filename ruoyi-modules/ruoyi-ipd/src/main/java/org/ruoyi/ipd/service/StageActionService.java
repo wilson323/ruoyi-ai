@@ -6,21 +6,28 @@ import org.ruoyi.ipd.domain.ActionDef;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.ProjectStage;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.DeliverableMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProjectStageMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -52,6 +59,30 @@ public class StageActionService implements IStageActionService {
     private final IAuditLogService auditLogService;
     private final ProjectStageMapper projectStageMapper;
     private final ProjectMapper projectMapper;
+
+    /**
+     * R219 卡④（ef20c06a）逾期动作通知链的可选依赖：setter 注入，
+     * 不扩 @RequiredArgsConstructor 构造签名（既有 5 参构造调用方不破）。
+     * 缺失时 notifyOverdueActions 只扫描返回 0，不影响主业务。
+     */
+    private NotificationService notificationService;
+    private ProjectMemberMapper projectMemberMapper;
+    private ProductGroupMapper productGroupMapper;
+
+    @Autowired(required = false)
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @Autowired(required = false)
+    public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
+        this.projectMemberMapper = projectMemberMapper;
+    }
+
+    @Autowired(required = false)
+    public void setProductGroupMapper(ProductGroupMapper productGroupMapper) {
+        this.productGroupMapper = productGroupMapper;
+    }
 
     public StageAction getById(Long id) {
         StageAction a = stageActionMapper.selectById(id);
@@ -471,5 +502,85 @@ public class StageActionService implements IStageActionService {
         IpdIdorGuard.requireAuthenticated(actor);
         Project project = assertProjectWritable(projectId);
         IpdIdorGuard.assertSameGroupIpd(actor, project == null ? null : project.getMainGroupId());
+    }
+
+    /**
+     * R219 卡④（ef20c06a）：逾期动作每日提醒链。
+     *
+     * <p>扫描 dueDate 已过且仍处开放态（NOT_STARTED/IN_PROGRESS/DELAYED）的动作（LIMIT 500 兜底），
+     * 按 ownerRole 解析接收人后走 {@link NotificationService#publishDaily}：
+     * dedupKey 含自然日（yyyyMMdd），同日重扫不重发、次日再提醒（AC-IPD-12 语义）。
+     *
+     * <p>接收人映射：MARKET_PM/RD_PM → 该项目对应在职成员（exitDate 为空）；
+     * BOTH → 两类并集；GROUP_LEADER → 项目主产品组组长（product_groups.leader_person_id）。
+     * 解析不到接收人的动作跳过计数，不抛错（调度器不因单条脏数据中断整批）。
+     *
+     * @return 实际发布的通知条数（含幂等命中既有行的重复调用，同日重跑结果稳定）
+     */
+    public int notifyOverdueActions() {
+        if (notificationService == null || projectMemberMapper == null || productGroupMapper == null) {
+            return 0;
+        }
+        Date now = new Date();
+        List<StageAction> overdue = stageActionMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
+                .isNotNull(StageAction::getDueDate)
+                .lt(StageAction::getDueDate, now)
+                .in(StageAction::getStatus, "NOT_STARTED", "IN_PROGRESS", "DELAYED")
+                .last("LIMIT 500"));
+
+        int sent = 0;
+        Map<Long, Project> projectCache = new HashMap<>();
+        Map<Long, List<ProjectMember>> memberCache = new HashMap<>();
+        for (StageAction a : overdue) {
+            Set<Long> receivers = resolveOverdueReceivers(a, projectCache, memberCache);
+            if (receivers.isEmpty()) {
+                continue;
+            }
+            String actionName = a.getActionName() == null ? a.getActionCode() : a.getActionName();
+            String title = "动作逾期: " + actionName;
+            String content = "项目 " + a.getProjectId() + " 的阶段动作「" + actionName
+                + "」已逾期（截止 " + new java.text.SimpleDateFormat("yyyy-MM-dd").format(a.getDueDate()) + "），请尽快处理。";
+            String actionUrl = a.getProjectId() == null ? null : "/projects/" + a.getProjectId();
+            for (Long receiverId : receivers) {
+                notificationService.publishDaily(receiverId, NotificationService.Types.ACTION_OVERDUE,
+                    NotificationService.KIND_ACTION, "stage_action", a.getId(), title, content, actionUrl, now);
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    private Set<Long> resolveOverdueReceivers(StageAction a, Map<Long, Project> projectCache,
+                                              Map<Long, List<ProjectMember>> memberCache) {
+        Set<Long> receivers = new HashSet<>();
+        String role = a.getOwnerRole();
+        if (role == null || a.getProjectId() == null) {
+            return receivers;
+        }
+        if ("GROUP_LEADER".equals(role)) {
+            Project project = projectCache.computeIfAbsent(a.getProjectId(), pid -> projectMapper.selectById(pid));
+            Long groupId = project == null ? null : project.getMainGroupId();
+            if (groupId != null) {
+                org.ruoyi.ipd.domain.ProductGroup group = productGroupMapper.selectById(groupId);
+                if (group != null && group.getLeaderPersonId() != null) {
+                    receivers.add(group.getLeaderPersonId());
+                }
+            }
+            return receivers;
+        }
+        List<String> roles = "BOTH".equals(role) ? List.of("MARKET_PM", "RD_PM") : List.of(role);
+        List<ProjectMember> members = memberCache.computeIfAbsent(a.getProjectId(), pid ->
+            projectMemberMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProjectMember>()
+                    .eq(ProjectMember::getProjectId, pid)
+                    .in(ProjectMember::getRole, roles)
+                    .isNull(ProjectMember::getExitDate)));
+        for (ProjectMember m : members) {
+            if (m.getPersonId() != null) {
+                receivers.add(m.getPersonId());
+            }
+        }
+        return receivers;
     }
 }

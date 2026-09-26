@@ -984,12 +984,20 @@ public class BonusPoolService implements IBonusPoolService {
         // 旧实现 compute 路径完全跳过 validatePoolRate() 静态方法（仅 fillDerivedFields 内调用了一次旧方法），
         // 是 P3-4.2 的回归。此处显式复用，与 calculateDistribution 同严。
         validatePoolRate(poolRate);
-        // W4-B 件 2：DuplicateKey → 409 业务异常（先查后写，落库兜底前拦截）
-        BonusPool existing = bonusPoolMapper.selectByProjectIdAndStatus(projectId, STATUS_DRAFT);
+        // W4-B 件 2 + R219（看板卡 2bef6e0e）：DuplicateKey → 409 业务异常（先查后写，落库兜底前拦截）。
+        // 旧实现只查 DRAFT：已 freeze（CONFIRMED）的项目 existing=null 直落 insert 撞
+        // UNIQUE uk_bp_project → 未被捕获的 DuplicateKeyException → HTTP 500/90001。
+        // 预检查任意状态，碰撞集合与 uk 严格一致（含软删行，见 BonusPoolMapper 注释）。
+        BonusPool existing = bonusPoolMapper.selectByProjectIdAnyStatus(projectId);
         if (existing != null) {
+            if (STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                    "项目 " + projectId + " 已存在 DRAFT 奖金池（id=" + existing.getId()
+                        + "），请先 freeze/distribute 后再计算新版本");
+            }
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
-                "项目 " + projectId + " 已存在 DRAFT 奖金池（id=" + existing.getId()
-                    + "），请先 freeze/distribute 后再计算新版本");
+                "项目 " + projectId + " 已存在 " + existing.getStatus() + " 状态奖金池（id="
+                    + existing.getId() + "），每项目仅保留一池，暂不支持版本链重算，请先处理既有池");
         }
         BonusPool pool = buildPoolFromProjectWithAchievement(
             projectId, actualReceipts, achievementRate, personalCoefficient, new Date(), poolRate);
@@ -997,7 +1005,14 @@ public class BonusPoolService implements IBonusPoolService {
         // ROOT-R3-P0-1：守卫 preCheck —— DRAFT->DRAFT 初始置位（无迁移）no-op
         pool.setStatus(STATUS_DRAFT);
         preCheckGuard("bonus_pool", null, STATUS_DRAFT, "compute");
-        bonusPoolMapper.insert(pool);
+        try {
+            bonusPoolMapper.insert(pool);
+        } catch (org.springframework.dao.DuplicateKeyException dkEx) {
+            // 并发窗口第二道防线：两 compute 同时通过前置查，后写者被 uk_bp_project 拦下 →
+            // 转干净 409（不回滚其它写之外的状态，事务整体回滚），不再外抛裸 500。
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目 " + projectId + " 奖金池并发冲突（已有池刚被创建），请刷新后重试");
+        }
         // W4-B 件 1：compute 与 freeze/distribute 同严落审计（v3 TS-08：审计失败不阻塞业务）
         // [SEC-FIX-HIGH-5.2-FOLLOWUP] under-validated-sink-arg 件 3：结构化字段 afterData JSON
         // 替代 reason 字符串拼接（审计反查可解析、可还原；reason 仅保留人类可读摘要）。

@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
-import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectCertItem;
 import org.ruoyi.ipd.dto.GateChecklistView;
@@ -77,12 +76,16 @@ public class ProjectController {
         return ApiV1Response.ok(projectService.listWithScenario(keyword, actor));
     }
 
-    /** 查询项目详情，需 ipd:project:query 权限 */
+    /**
+     * 查询项目详情，需 ipd:project:query 权限。
+     * <p>AC-AUTH-09（看板卡 96b7b157）：详情读经 {@link ProjectService#getVisibleById} 可见性谓词
+     * （超管/组长本组/在册成员），堵住同组非成员 PM 越权读他人项目全量详情的 IDOR 读腿。
+     */
     @GetMapping("/{id}")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Project> get(@PathVariable Long id) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(IpdResources.requireOrNotFound(projectService.getById(id), id, "项目"));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(projectService.getVisibleById(id, actor));
     }
 
     /**

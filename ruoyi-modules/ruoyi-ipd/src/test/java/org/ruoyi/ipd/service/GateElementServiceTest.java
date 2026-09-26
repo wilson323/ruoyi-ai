@@ -165,4 +165,55 @@ class GateElementServiceTest {
         assertThat(out.getThresholdJson()).isEqualTo("{\"minRevenue\":1000}");
         assertThat(out.getElementName()).isEqualTo("市场吸引力");
     }
+
+    /* ====== R219（看板卡 a995a9e3）：is_veto 'Y'/'N' 历史脏行归一化 ====== */
+
+    @Test
+    @DisplayName("R219：isVetoSet 同时认 '1'/'Y'（含小写），normalizeFlag 将 'Y'/'N' 归一为 '1'/'0'")
+    void vetoFlagNormalization() {
+        assertThat(GateElementService.isVetoSet("1")).isTrue();
+        assertThat(GateElementService.isVetoSet("Y")).isTrue();
+        assertThat(GateElementService.isVetoSet("y")).isTrue();
+        assertThat(GateElementService.isVetoSet("0")).isFalse();
+        assertThat(GateElementService.isVetoSet("N")).isFalse();
+        assertThat(GateElementService.isVetoSet(null)).isFalse();
+        assertThat(GateElementService.normalizeFlag("Y")).isEqualTo("1");
+        assertThat(GateElementService.normalizeFlag("n")).isEqualTo("0");
+        assertThat(GateElementService.normalizeFlag("1")).isEqualTo("1");
+        assertThat(GateElementService.normalizeFlag(null)).isNull();
+    }
+
+    @Test
+    @DisplayName("R219：存量 'Y' 脏行仅改 enabled 启停 → 不再被 FLAGS 校验 400 卡死，保存时顺带清洗回写 '1'")
+    void updateDirtyYRowEnabledOnlyNormalizesOnSave() {
+        GateElement exist = e("G1-02");
+        exist.setId(4L);
+        exist.setStatus("published");
+        exist.setIsVeto("Y");        // 真库脏行实态：14 条 is_veto='Y' 全部 published+enabled
+        exist.setVetoDualRequired("N");
+        exist.setEnabled("1");
+        when(mapper.selectById(4L)).thenReturn(exist);
+        when(mapper.updateById(any(GateElement.class))).thenReturn(1);
+        GateElement patch = GateElement.builder().enabled("0").build();  // 停用路径（无定义字段变更）
+        patch.setId(4L);
+        GateElement out = service.update(patch, ACTOR);
+        assertThat(out.getIsVeto()).isEqualTo("1");            // 编辑保存即清洗
+        assertThat(out.getVetoDualRequired()).isEqualTo("0");
+        assertThat(out.getEnabled()).isEqualTo("0");
+    }
+
+    @Test
+    @DisplayName("R219：草稿行 patch isVeto='Y' → 归一为 '1' 落库；vetoDualRequired='1' 不再被误拒")
+    void updatePatchYAcceptedNormalized() {
+        GateElement exist = e("G1-03");
+        exist.setId(5L);
+        exist.setStatus("draft");
+        when(mapper.selectById(5L)).thenReturn(exist);
+        when(mapper.updateById(any(GateElement.class))).thenReturn(1);
+        GateElement patch = GateElement.builder().isVeto("Y").vetoDualRequired("1").build();
+        patch.setId(5L);
+        GateElement out = service.update(patch, ACTOR);
+        assertThat(out.getIsVeto()).isEqualTo("1");
+        assertThat(out.getVetoDualRequired()).isEqualTo("1");
+    }
 }

@@ -9,8 +9,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.support.NoopTransactionManager;
@@ -49,6 +52,8 @@ class ProjectServiceTest {
     private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;
     @Mock
     private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
+    @Mock
+    private org.ruoyi.ipd.mapper.ProjectMemberMapper projectMemberMapper;
 
     private ProjectService service;
 
@@ -58,6 +63,7 @@ class ProjectServiceTest {
             auditLogService, gateEngine,
             projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
             null /* P2-6.2：未挂载需求变更单 service 时跳过 hasOpenChange 门禁 */);
+        service.setProjectMemberMapper(projectMemberMapper);
     }
 
     private Project base(String level, String coefficient, String reason) {
@@ -250,5 +256,87 @@ class ProjectServiceTest {
         when(projectMapper.selectById(22L)).thenReturn(archived);
         // getById 是只读，不应抛异常
         assertThat(service.getById(22L).getStatus()).isEqualTo("ARCHIVED");
+    }
+
+    /* ----------------- AC-AUTH-09（看板卡 96b7b157）getVisibleById 可见性谓词 ----------------- */
+
+    private Project visibleProject(long id) {
+        Project p = new Project();
+        p.setId(id);
+        p.setName("idor-probe");
+        p.setStatus("ACTIVE");
+        p.setDelFlag("0");
+        p.setMainGroupId(7L);
+        return p;
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：同组非成员 MARKET_PM 读他人项目 → FORBIDDEN(30001)，IDOR 读腿闭合")
+    void getVisibleByIdSameGroupNonMemberRejected() {
+        when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        IpdActor actor = new IpdActor(7L, "pm-a", "MARKET_PM", 7L);
+        assertThatThrownBy(() -> service.getVisibleById(9L, actor))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("无权访问该项目")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：外组组长（GROUP_LEADER 组≠mainGroupId）→ FORBIDDEN")
+    void getVisibleByIdForeignGroupLeaderRejected() {
+        when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        IpdActor actor = new IpdActor(8L, "leader-b", "GROUP_LEADER", 99L);
+        assertThatThrownBy(() -> service.getVisibleById(9L, actor))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("无权访问该项目");
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：组长读本组项目（groupId==mainGroupId）→ 放行")
+    void getVisibleByIdOwnGroupLeaderAllowed() {
+        when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
+        IpdActor actor = new IpdActor(8L, "leader-a", "GROUP_LEADER", 7L);
+        assertThat(service.getVisibleById(9L, actor).getId()).isEqualTo(9L);
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：超管读任意项目 → 放行（不查成员表）")
+    void getVisibleByIdSuperAdminAllowed() {
+        when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
+        IpdActor actor = new IpdActor(1L, "root", "SUPER_ADMIN", 3L);
+        assertThat(service.getVisibleById(9L, actor).getId()).isEqualTo(9L);
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：在册成员（project_members 命中）读自己项目 → 放行")
+    void getVisibleByIdActiveMemberAllowed() {
+        when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+        IpdActor actor = new IpdActor(7L, "pm-member", "MARKET_PM", 42L);
+        assertThat(service.getVisibleById(9L, actor).getId()).isEqualTo(9L);
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：项目不存在与无权限统一 FORBIDDEN 文案，不泄漏存在性")
+    void getVisibleByIdMissingProjectNoExistenceLeak() {
+        when(projectMapper.selectById(404L)).thenReturn(null);
+        IpdActor actor = new IpdActor(7L, "pm-a", "MARKET_PM", 7L);
+        assertThatThrownBy(() -> service.getVisibleById(404L, actor))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessage("无权访问该项目");
+    }
+
+    @Test
+    @DisplayName("AC-AUTH-09：projectMemberMapper 未注入（旧构造器形态）非超管一律拒，fail-closed")
+    void getVisibleByIdFailsClosedWithoutMemberMapper() {
+        ProjectService bare = new ProjectService(projectMapper, productMapper, stageActionMapper,
+            kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService,
+            NoopTransactionManager.INSTANCE, null);
+        when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
+        IpdActor actor = new IpdActor(7L, "pm-a", "MARKET_PM", 7L);
+        assertThatThrownBy(() -> bare.getVisibleById(9L, actor))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("无权访问该项目");
     }
 }

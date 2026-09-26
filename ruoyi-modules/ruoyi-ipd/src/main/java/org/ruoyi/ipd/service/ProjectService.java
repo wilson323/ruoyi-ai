@@ -344,6 +344,53 @@ public class ProjectService implements IProjectService {
         return projectMapper.selectById(id);
     }
 
+    /**
+     * AC-AUTH-09（看板卡 96b7b157，R218 lane1 缺陷#1）：项目详情可见性谓词，fail-closed，
+     * 与 {@link #listWithScenario} 同口径收口「同组非成员 PM 越权读他人项目全量详情」的 IDOR 读腿
+     * （写腿已有互斥/归属校验，读腿此前完全裸奔）。
+     *
+     * <p>放行序（任一即通过）：
+     * <ol>
+     *   <li>SUPER_ADMIN：全部；</li>
+     *   <li>GROUP_LEADER 且 {@code actor.groupId == project.mainGroupId}：本组（AC-AUTH-10 组长可看本组）；</li>
+     *   <li>该项目在职成员（{@code project_members} 未退出未删）：本人负责/参与的项目。</li>
+     * </ol>
+     * 其余一律 FORBIDDEN。项目不存在与无权限统一文案，不泄漏存在性（对齐 {@code IpdIdorGuard}）。
+     *
+     * @param id    项目 ID
+     * @param actor 服务端会话身份
+     * @return 可见时返回项目实体
+     * @throws org.ruoyi.ipd.common.IpdBusinessException FORBIDDEN(30001) 当不可见 / 项目不存在
+     */
+    public Project getVisibleById(Long id, IpdActor actor) {
+        Project project = projectMapper.selectById(id);
+        if (project == null) {
+            throw new org.ruoyi.ipd.common.IpdBusinessException(
+                org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+        }
+        String role = actor == null ? null : actor.role();
+        if ("SUPER_ADMIN".equals(role)) {
+            return project;
+        }
+        if ("GROUP_LEADER".equals(role) && actor.groupId() != null
+                && actor.groupId().equals(project.getMainGroupId())) {
+            return project;
+        }
+        // 在职成员维度：projectMemberMapper 为可选注入（旧构造器兼容），缺失时非超管/组长一律拒（fail-closed）
+        if (projectMemberMapper != null && actor != null && actor.id() != null) {
+            Long cnt = projectMemberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+                .eq(ProjectMember::getProjectId, id)
+                .eq(ProjectMember::getPersonId, actor.id())
+                .isNull(ProjectMember::getExitDate)
+                .eq(ProjectMember::getDelFlag, "0"));
+            if (cnt != null && cnt > 0) {
+                return project;
+            }
+        }
+        throw new org.ruoyi.ipd.common.IpdBusinessException(
+            org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+    }
+
     public List<Project> list(String keyword) {
         LambdaQueryWrapper<Project> qw = new LambdaQueryWrapper<Project>().eq(Project::getDelFlag, "0");
         if (keyword != null && !keyword.isBlank()) {

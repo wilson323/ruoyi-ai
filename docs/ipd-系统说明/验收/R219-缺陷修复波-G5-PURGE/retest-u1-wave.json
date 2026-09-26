@@ -1,0 +1,121 @@
+[
+ {
+  "card": "96b7b157",
+  "case": "I1 在册成员读项目 200",
+  "verdict": "PASS",
+  "note": "HTTP200 code=0",
+  "ts": "2026-09-26T01:02:57.833414"
+ },
+ {
+  "card": "96b7b157",
+  "case": "I2 同组非成员读 403/30001 统一文案",
+  "verdict": "PASS",
+  "note": "HTTP403 code=30001 msg=无权访问该项目",
+  "ts": "2026-09-26T01:02:57.893881"
+ },
+ {
+  "card": "96b7b157",
+  "case": "I3 不存在项目同一文案不泄露存在性",
+  "verdict": "PASS",
+  "note": "HTTP403 code=30001 msg=无权访问该项目",
+  "ts": "2026-09-26T01:02:57.907551"
+ },
+ {
+  "card": "96b7b157",
+  "case": "I4 超管跨组读放行 200",
+  "verdict": "PASS",
+  "note": "HTTP200 code=0",
+  "ts": "2026-09-26T01:02:57.927000"
+ },
+ {
+  "card": "2bef6e0e",
+  "case": "B1 CONFIRMED池项目再compute→干净409(非500)",
+  "verdict": "PASS",
+  "note": "判据修正重跑：HTTP409 code=50002 msg=项目 9140003 已存在 CONFIRMED 状态奖金池（id=2097189624253313025），每项目仅保留一池，暂不支持版本链重算，请先处理既有池（原判据误把错误码50002子串'500'当裸500）",
+  "ts": "2026-09-26T01:03:15.502321"
+ },
+ {
+  "card": "2bef6e0e",
+  "case": "B2 DRAFT池项目compute不炸500",
+  "verdict": "PASS",
+  "note": "HTTP409 code=50002 msg=项目 9150001 已存在 DRAFT 奖金池（id=2103425150102843394），请先 freeze/d",
+  "ts": "2026-09-26T01:02:57.981957"
+ },
+ {
+  "card": "a995a9e3",
+  "case": "G1 列表输出 isVeto/vetoDual 全部归一 1/0",
+  "verdict": "PASS",
+  "note": "rows=14 非归一isVeto=0 非归一dual=0",
+  "ts": "2026-09-26T01:02:58.013712"
+ },
+ {
+  "card": "a995a9e3",
+  "case": "G1b 真库仍有脏行(存量SQL待owner)但API输出已归一",
+  "verdict": "PASS",
+  "note": "真库脏行=33（读腿归一化生效证明）",
+  "ts": "2026-09-26T01:02:58.042367"
+ },
+ {
+  "card": "a995a9e3",
+  "case": "G1c draft+enabled 漏发行存在(2条)·评审适用集已加published过滤(单测钉死)",
+  "verdict": "PASS",
+  "note": "真库 draft+enabled=2",
+  "ts": "2026-09-26T01:02:58.053033"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S1 非超管 expire-scan 403",
+  "verdict": "PASS",
+  "note": "HTTP403 code=30001",
+  "ts": "2026-09-26T01:02:58.065533"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S2 超管 expire-scan 200 且 expiredCount>=1",
+  "verdict": "PASS",
+  "note": "HTTP200 {'expiredCount': 4}",
+  "ts": "2026-09-26T01:02:58.101337"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S2b 真库回读：过期OPEN清零",
+  "verdict": "PASS",
+  "note": "残余过期OPEN=0",
+  "ts": "2026-09-26T01:02:58.113036"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S3 overdue-scan 200 且 notifiedCount>0",
+  "verdict": "PASS",
+  "note": "HTTP200 {'notifiedCount': 8}",
+  "ts": "2026-09-26T01:02:58.213468"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S3b 真库新增 ACTION_OVERDUE 行>0",
+  "verdict": "PASS",
+  "note": "通知行 0→8",
+  "ts": "2026-09-26T01:02:58.224534"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S4 同日重扫 publishDaily 幂等不新增行",
+  "verdict": "PASS",
+  "note": "二次扫描后行数=8（上一轮8）",
+  "ts": "2026-09-26T01:02:58.430834"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S5 auto-scan 2026-07 先生成后计数：真库新行>0",
+  "verdict": "PASS",
+  "note": "HTTP200 count=8 真库2026-07行=8",
+  "ts": "2026-09-26T01:02:58.584821"
+ },
+ {
+  "card": "ef20c06a",
+  "case": "S6 非超管 auto-scan 403",
+  "verdict": "PASS",
+  "note": "HTTP403 code=30001",
+  "ts": "2026-09-26T01:02:58.594495"
+ }
+]

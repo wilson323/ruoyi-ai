@@ -18,6 +18,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * GateLegacyScanScheduler 09:30（条件遗留逾期提醒，R215-GAP-B4）/
  * P0EscalationScanScheduler 09:35（P0 升级链阈值检查，R215-GAP-B4）/
  * GuestDemandOverdueScheduler 09:40（AC-PROD-09 待指派超5工作日提醒组长，R218 卡2 接线补齐 2026-09-25）/
+ * BidInvitationExpireScheduler 09:45（AC-TEAM-08 邀标到期自动过期，R219 卡④ 接线补齐 2026-09-26）/
+ * StageActionOverdueScheduler 09:50（ACTION_OVERDUE 逐日逾期提醒，R219 卡④）/
+ * AllowanceMonthlyLedgerScheduler 每月 1 日 10:00（上自然月台账全量生成，R219 卡④）/
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
  * 间隔可配 ipd.notification.dispatch.interval-ms）。
  */

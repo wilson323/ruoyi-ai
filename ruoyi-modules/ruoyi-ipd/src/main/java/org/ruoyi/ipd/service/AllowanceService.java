@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
+import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 月度津贴台账服务（P3-3.1/3.2/3.3；AC-INC-03/04/05/06/07/08；BR-INC-02/03/11）
@@ -47,6 +51,17 @@ public class AllowanceService implements IAllowanceService {
     @Autowired(required = false)
     public void setAuditLogService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
+    }
+
+    /**
+     * R219 卡④（ef20c06a）：月度台账生成链的低分停发数据源（可选注入）。
+     * 缺失时 generateMonthlyLedgers 不判停发腿——宁可少停不误停，与 P3-3.2 保守口径一致。
+     */
+    private KpiRecordMapper kpiRecordMapper;
+
+    @Autowired(required = false)
+    public void setKpiRecordMapper(KpiRecordMapper kpiRecordMapper) {
+        this.kpiRecordMapper = kpiRecordMapper;
     }
 
     /** 可注入时钟（裸时钟守卫禁一：审计时间戳走业务时钟；测试固定时刻消除摇摆）。 */
@@ -326,5 +341,97 @@ public class AllowanceService implements IAllowanceService {
             new LambdaQueryWrapper<AllowanceLedger>()
                 .eq(AllowanceLedger::getPersonId, personId)
                 .eq(AllowanceLedger::getMonth, month));
+    }
+
+    /**
+     * R219 卡④（ef20c06a）：按月全量生成津贴台账（auto-scan 从「只计数」补齐为「先生成后计数」）。
+     *
+     * <p>编排口径：
+     * <ul>
+     *   <li>候选人：project_members 未退出（isNull exitDate），逐条再过
+     *       {@link #isMemberActiveForMonth}（入职晚于当月/当月内退出均跳过）；</li>
+     *   <li>幂等：{@link #existsByKey} 命中则跳过，重复扫描不重复成账（P3-3.3）；</li>
+     *   <li>金额：per-project 行记各自 lockedAmount；capApplied 按人当月维度判定
+     *       （Σ > 2×最高锁定额时该人所有行标 1，实发封顶语义由 calculateMonthlyAllowance 承担）；</li>
+     *   <li>停发腿：仅低分腿（当月 FINALIZED KPI 综合分 < 60 → STOP_SCORE_BELOW_60，finalAmount=0）；
+     *       NO_OUTPUT_60_DAYS 腿缺四类并集活动数据源，本波不接（诚实登记 PARTIAL，待后续卡）；</li>
+     *   <li>kpiRecordMapper 未注入时不判停发腿，防误停发。</li>
+     * </ul>
+     *
+     * @param month 账期 yyyy-MM
+     * @return 新生成的台账行数（幂等命中不计）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int generateMonthlyLedgers(String month) {
+        if (month == null || !month.matches("\\d{4}-\\d{2}")) {
+            throw new IpdBusinessException("month 格式应为 yyyy-MM: " + month);
+        }
+        List<ProjectMember> candidates = projectMemberMapper.selectList(
+            new LambdaQueryWrapper<ProjectMember>().isNull(ProjectMember::getExitDate));
+        if (candidates == null || candidates.isEmpty()) {
+            return 0;
+        }
+
+        // 按人预聚合：cap 判定用（Σ 与最高锁定额）
+        Map<Long, BigDecimal[]> sumAndBase = new HashMap<>();
+        for (ProjectMember m : candidates) {
+            if (m.getPersonId() == null || m.getProjectId() == null
+                || !isMemberActiveForMonth(m, month)) {
+                continue;
+            }
+            BigDecimal amt = calculateProjectAllowance(m);
+            BigDecimal[] sb = sumAndBase.computeIfAbsent(m.getPersonId(),
+                k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+            sb[0] = sb[0].add(amt);
+            if (amt.compareTo(sb[1]) > 0) {
+                sb[1] = amt;
+            }
+        }
+
+        Map<Long, Boolean> lowScoreByPerson = new HashMap<>();
+        int created = 0;
+        for (ProjectMember m : candidates) {
+            if (m.getPersonId() == null || m.getProjectId() == null
+                || !isMemberActiveForMonth(m, month)) {
+                continue;
+            }
+            if (existsByKey(m.getPersonId(), m.getProjectId(), month)) {
+                continue; // 幂等：已成账不重复
+            }
+            BigDecimal amt = calculateProjectAllowance(m);
+            BigDecimal[] sb = sumAndBase.get(m.getPersonId());
+            boolean capApplied = sb != null && amt.signum() > 0
+                && sb[0].compareTo(sb[1].multiply(DEFAULT_CAP_MULTIPLIER)) > 0;
+            boolean lowScore = isLowScoreForMonth(m.getPersonId(), month, lowScoreByPerson);
+
+            AllowanceLedger ledger = buildLedger(m.getPersonId(), month, lowScore ? BigDecimal.ZERO : amt,
+                m.getLockedLevel(), amt, capApplied);
+            if (lowScore) {
+                ledger.setStopReason("STOP_SCORE_BELOW_60");
+                ledger.setStopStartDate(now());
+            }
+            if (recordOrSkip(ledger, m.getProjectId()) != null) {
+                created++;
+            }
+        }
+        return created;
+    }
+
+    /** 当月 FINALIZED KPI 综合分 < 60 判定（mapper 缺失/无记录/非 FINALIZED 均视为不停发）。 */
+    private boolean isLowScoreForMonth(Long personId, String month, Map<Long, Boolean> cache) {
+        if (kpiRecordMapper == null) {
+            return false;
+        }
+        return cache.computeIfAbsent(personId, pid -> {
+            List<KpiRecord> records = kpiRecordMapper.selectList(
+                new LambdaQueryWrapper<KpiRecord>()
+                    .eq(KpiRecord::getPersonId, pid)
+                    .eq(KpiRecord::getPeriod, month)
+                    .eq(KpiRecord::getStatus, "FINALIZED"));
+            if (records == null || records.isEmpty()) {
+                return false;
+            }
+            return determineLowScoreStop(records.get(0).getComprehensiveScore()) != null;
+        });
     }
 }

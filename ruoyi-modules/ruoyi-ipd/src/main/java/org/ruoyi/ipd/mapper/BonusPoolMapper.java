@@ -13,23 +13,21 @@ import org.ruoyi.ipd.domain.BonusPool;
 public interface BonusPoolMapper extends BaseMapperPlus<BonusPool, BonusPool> {
 
     /**
-     * P3-4.4 §2.1 + W4-B BonusPoolService.compute 防 DuplicateKey 改 409：
-     * 按 projectId + 状态精确查一条奖金池（避开 SELECT * 与软删过滤在 Java 层错位）。
-     * 命中即视为"已存在对应状态的奖金池"，由 Service 层抛 STATE_CONFLICT（HTTP 409）
-     * 而非落入 UNIQUE KEY `uk_bp_project` 兜底 500。
+     * R219（看板卡 2bef6e0e）：按 projectId 查任意状态奖金池，用于 compute 前置拦截
+     * 「已 freeze（CONFIRMED）池二次 compute 撞 UNIQUE uk_bp_project → 裸 500/90001」。
+     * 取代旧 selectByProjectIdAndStatus（仅查 DRAFT，对 CONFIRMED 池有洞）——
+     * uk 每项目只允许一行，任意状态预查即可完全覆盖 DRAFT 分支。
      *
-     * <p>注解 SQL 风格对齐 AuditChainHeadMapper / ProjectStageMapper（不依赖 XML 文件）。
-     * tenant_id 与 del_flag 显式列出——多租户拦截器虽会自动注入租户过滤，但此处属于
-     * 唯一性判定的硬约束读，必须在 SQL 自身可证伪（防御性双保险）。
+     * <p>故意不过滤 del_flag：{@code uk_bp_project(project_id)} 不含软删标记位，
+     * 软删行同样会撞唯一键——预检查询必须与 uk 的碰撞集合严格一致，否则拦截有洞。
+     * 命中后由 Service 层抛 STATE_CONFLICT（HTTP 409）而非落入 DB 兜底 500。
      *
      * @param projectId 项目 ID
-     * @param status    状态（DRAFT / CONFIRMED / DISTRIBUTED）
-     * @return 命中实体；无则 null
+     * @return 命中实体（含 DRAFT / CONFIRMED / DISTRIBUTED / 软删行）；无则 null
      */
     @Select("SELECT * FROM bonus_pools"
-          + " WHERE project_id = #{projectId} AND status = #{status}"
-          + " AND tenant_id = '000000' AND del_flag = '0'"
+          + " WHERE project_id = #{projectId}"
+          + " AND tenant_id = '000000'"
           + " ORDER BY id DESC LIMIT 1")
-    BonusPool selectByProjectIdAndStatus(@Param("projectId") Long projectId,
-                                         @Param("status") String status);
+    BonusPool selectByProjectIdAnyStatus(@Param("projectId") Long projectId);
 }

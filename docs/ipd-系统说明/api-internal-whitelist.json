@@ -229,6 +229,30 @@
       "expire": "2026-12-31",
       "added_by": "fde68b8c",
       "evidence": "DeliverableController.java:60"
+    },
+    {
+      "path": "/api/v1/bid-invitations/expire-scan",
+      "methods": [
+        "POST"
+      ],
+      "reason": "AC-TEAM-08 邀标过期扫描手动验收/补跑口（仅超管）：主链路是 BidInvitationExpireScheduler @Scheduled 09:45 自动触发，端点仅供验收与运维兜底，无 UI 消费",
+      "owner_card": "ef20c06a",
+      "review_date": "2026-09-26",
+      "expire": "2026-12-31",
+      "added_by": "R219 U1四卡修复波",
+      "evidence": "BidInvitationExpireScanController.java:27"
+    },
+    {
+      "path": "/api/v1/stage-actions/overdue-scan",
+      "methods": [
+        "POST"
+      ],
+      "reason": "阶段动作逾期提醒手动验收/补跑口（仅超管）：主链路是 StageActionOverdueScheduler @Scheduled 09:50 自动触发，端点仅供验收与运维兜底，无 UI 消费",
+      "owner_card": "ef20c06a",
+      "review_date": "2026-09-26",
+      "expire": "2026-12-31",
+      "added_by": "R219 U1四卡修复波",
+      "evidence": "StageActionOverdueScanController.java:27"
     }
   ]
 }

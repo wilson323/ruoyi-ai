@@ -82,7 +82,9 @@ public class GateElementResultService implements IGateElementResultService {
             row.put("elementCode", e.getElementCode());
             row.put("elementName", e.getElementName());
             row.put("passStandard", e.getPassStandard());
-            row.put("isVeto", "1".equals(e.getIsVeto()));
+            // R219（看板卡 a995a9e3）：is_veto 历史混存 '1'/'Y' 两套编码，经归一化判定，
+            // 否则 14 条 'Y' 否决项在前端静默显示为非否决。
+            row.put("isVeto", GateElementService.isVetoSet(e.getIsVeto()));
             row.put("sortOrder", e.getSortOrder());
             GateElementResult r = judged.get(e.getId());
             row.put("result", r == null ? null : r.getResult());
@@ -123,7 +125,8 @@ public class GateElementResultService implements IGateElementResultService {
         if (!RESULTS.contains(result)) {
             throw new ServiceException("判定非法: " + result);
         }
-        boolean veto = "1".equals(element.getIsVeto());
+        // R219（看板卡 a995a9e3）：否决判定认 '1' 和 'Y'（历史脏行），脏行不再静默失效
+        boolean veto = GateElementService.isVetoSet(element.getIsVeto());
         if ("CONDITIONAL".equals(result)) {
             if (isBlank(conditionNote)) {
                 throw new ServiceException("带条件通过必须填写说明: " + element.getElementCode());
@@ -255,7 +258,7 @@ public class GateElementResultService implements IGateElementResultService {
             if ("FAIL".equals(r.getResult())) {
                 if (isBlank(r.getEvidenceRef())) {
                     vetoFails.add(e.getElementCode() + "(缺证据)");
-                } else if ("1".equals(e.getIsVeto())) {
+                } else if (GateElementService.isVetoSet(e.getIsVeto())) {
                     vetoFails.add(e.getElementCode());
                 }
             }
@@ -263,7 +266,8 @@ public class GateElementResultService implements IGateElementResultService {
             item.put("elementCode", e.getElementCode());
             item.put("elementName", e.getElementName());
             item.put("passStandard", e.getPassStandard());
-            item.put("isVeto", e.getIsVeto());
+            // 快照对外统一 '1'/'0' 编码（历史 'Y'/'N' 行归一化后写入，防双编码继续扩散）
+            item.put("isVeto", GateElementService.normalizeFlag(e.getIsVeto()));
             item.put("result", r.getResult());
             item.put("conditionNote", r.getConditionNote());
             item.put("evidenceRef", r.getEvidenceRef());
@@ -477,6 +481,9 @@ public class GateElementResultService implements IGateElementResultService {
     private List<GateElement> enabledElements(String gateCode) {
         return elementMapper.selectList(new LambdaQueryWrapper<GateElement>()
                 .eq(GateElement::getGateCode, gateCode)
+                // R219（看板卡 a995a9e3）：评审适用集只认 published——真库现存 2 条 draft+enabled='1'
+                // 越权行（违反「新建一律草稿不生效」契约），旧实现仅过 enabled 导致 draft 混入清单。
+                .eq(GateElement::getStatus, "published")
                 .orderByAsc(GateElement::getSortOrder))
             .stream()
             .filter(e -> !"0".equals(e.getEnabled()))

@@ -239,4 +239,40 @@ class GateElementResultTest {
         verify(auditLogService, never()).append(org.mockito.ArgumentMatchers.argThat(a ->
             "GATE_SUBMIT".equals(a.getAction())));
     }
+
+    // ---------- R219（看板卡 a995a9e3）：'Y' 编码脏行否决链不再静默失效 ----------
+
+    @Test
+    @DisplayName("R219：真库存量 is_veto='Y' 脏行 FAIL ⇒ submit 同样命中否决阻断（旧代码只认 '1' 会静默放行）")
+    void submit_vetoFail_dirtyYFlag_stillBlocked() {
+        stubOssForSubmit();
+        // 真库实态：gate_review_elements 里 14 条 is_veto='Y'（老代 seed 写入），全部 published+enabled
+        GateElement dirtyVeto = element(VETO_ID, "G1", "G1-02", "Y");
+        lenient().when(elementMapper.selectList(any())).thenReturn(List.of(dirtyVeto));
+        when(resultMapper.selectList(any()))
+            .thenReturn(List.of(judgedRow(VETO_ID, "FAIL", "https://oss.local/proof.pdf")));
+
+        assertThatThrownBy(() -> service.submit(501L, 9001L, 9002L, PM))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("命中否决项无法提交通过")
+            .hasMessageContaining("G1-02");
+    }
+
+    @Test
+    @DisplayName("R219：'Y' 脏行 PASS 放行——冻结快照 isVeto 对外归一输出 '1'，防双编码扩散")
+    void submit_dirtyYRow_passes_snapshotNormalized() {
+        stubOssForSubmit();
+        GateElement dirtyVeto = element(VETO_ID, "G1", "G1-02", "Y");
+        lenient().when(elementMapper.selectList(any())).thenReturn(List.of(dirtyVeto));
+        when(resultMapper.selectList(any()))
+            .thenReturn(List.of(judgedRow(VETO_ID, "PASS", null)));
+
+        Gate submitted = service.submit(501L, 9001L, 9002L, PM);
+
+        assertThat(submitted.getStartedAt()).as("PASS 应放行").isNotNull();
+        // 冻结快照里不得再出现 'Y' 字面量（防双编码继续扩散到 gate 历史证据）
+        assertThat(submitted.getElementSnapshot())
+            .as("快照 isVeto 应归一为 '1'").contains("\"isVeto\":\"1\"")
+            .doesNotContain("\"isVeto\":\"Y\"");
+    }
 }

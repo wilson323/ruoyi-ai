@@ -370,8 +370,8 @@ class BonusPoolServiceTest {
     @DisplayName("W4-B 件 1：compute 落 1 条 BONUS_POOL_COMPUTE 审计（与 freeze/distribute 同严）")
     void compute_appendsAudit_bonusPoolComputeAction() {
         when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
-        when(bonusPoolMapper.selectByProjectIdAndStatus(200L, BonusPoolService.STATUS_DRAFT))
-            .thenReturn(null);  // 无现有 DRAFT
+        when(bonusPoolMapper.selectByProjectIdAnyStatus(200L))
+            .thenReturn(null);  // 无现有池（任意态）
 
         service.compute(200L,
             new BigDecimal("10000000"),
@@ -405,7 +405,7 @@ class BonusPoolServiceTest {
         existingDraft.setId(555L);
         existingDraft.setProjectId(200L);
         existingDraft.setStatus(BonusPoolService.STATUS_DRAFT);
-        when(bonusPoolMapper.selectByProjectIdAndStatus(200L, BonusPoolService.STATUS_DRAFT))
+        when(bonusPoolMapper.selectByProjectIdAnyStatus(200L))
             .thenReturn(existingDraft);
 
         assertThatThrownBy(() -> service.compute(200L,
@@ -426,7 +426,7 @@ class BonusPoolServiceTest {
     @DisplayName("W4-B 件 1+：审计失败不阻断主流程（mock append 抛异常，compute 仍成功）")
     void compute_auditFailure_doesNotBlockBusiness() {
         when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
-        when(bonusPoolMapper.selectByProjectIdAndStatus(200L, BonusPoolService.STATUS_DRAFT))
+        when(bonusPoolMapper.selectByProjectIdAnyStatus(200L))
             .thenReturn(null);
         // mock append 抛 RuntimeException，appendAudit 内 try/catch 应吞掉
         org.mockito.Mockito.doThrow(new RuntimeException("audit append boom"))
@@ -443,6 +443,49 @@ class BonusPoolServiceTest {
         assertThat(pool.getStatus()).isEqualTo(BonusPoolService.STATUS_DRAFT);
         assertThat(pool.getFinalPool()).isEqualByComparingTo(new BigDecimal("1080000"));
         verify(bonusPoolMapper, times(1)).insert(any(BonusPool.class));
+    }
+
+    /* ====== R219（看板卡 2bef6e0e）：已 freeze 池二次 compute → 干净 409，不再裸 500 ====== */
+
+    @Test
+    @DisplayName("R219：已存在 CONFIRMED 池二次 compute → STATE_CONFLICT(409)，不 insert")
+    void compute_existingConfirmed_throwsStateConflictNotRaw500() {
+        BonusPool confirmed = new BonusPool();
+        confirmed.setId(666L);
+        confirmed.setProjectId(200L);
+        confirmed.setStatus(BonusPoolService.STATUS_CONFIRMED);
+        when(bonusPoolMapper.selectByProjectIdAnyStatus(200L)).thenReturn(confirmed);
+
+        assertThatThrownBy(() -> service.compute(200L,
+            new BigDecimal("10000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.0"),
+            new BigDecimal("0.05"),
+            actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("CONFIRMED")
+            .hasMessageContaining("id=666");
+        // 前置拦截：不走到 build/insert，Uk 碰撞在 Service 层就变成干净 409
+        verify(bonusPoolMapper, never()).insert(any(BonusPool.class));
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("R219：并发窗口撞 uk → DuplicateKeyException 被转 STATE_CONFLICT(409)，不外抛 500")
+    void compute_duplicateKeyRace_convertedToStateConflict() {
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
+        when(bonusPoolMapper.selectByProjectIdAnyStatus(200L)).thenReturn(null); // 前置查无洞可钻
+        when(bonusPoolMapper.insert(any(BonusPool.class)))
+            .thenThrow(new org.springframework.dao.DuplicateKeyException("uk_bp_project"));
+
+        assertThatThrownBy(() -> service.compute(200L,
+            new BigDecimal("10000000"),
+            new BigDecimal("100"),
+            new BigDecimal("1.0"),
+            new BigDecimal("0.05"),
+            actor()))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("并发冲突");
     }
 
     /* ====================== [SEC-FIX-HIGH-5.2-FOLLOWUP] 三件套校验 ====================== */

@@ -38,6 +38,29 @@ public class GateElementService implements IGateElementService {
     private static final Set<String> GATES = Set.of("G1", "G2", "G3", "G4", "G5");
     private static final Set<String> FLAGS = Set.of("0", "1");
 
+    /**
+     * R219（看板卡 a995a9e3）：is_veto / veto_dual_required 读值归一化判定。
+     * 真库现查 ipd_dev.gate_review_elements（del_flag='0'）存在历史混存：
+     * '1'(23)/'0'(27) 现行编码 + 'Y'(14)/'N'(19) 老代 seed 字面量（写入侧已在
+     * IpdGateElementSeedInitializer 修复，存量脏行归一化 SQL 待 owner apply，见
+     * docs/script/sql/update/2026-09-22-ipd-gate-element-value-domain-normalize.sql）。
+     * 判定侧必须同时认两套编码，否则 14 条 'Y' 否决项静默失效（AC-GATE-16 否决链破洞）。
+     */
+    static boolean isVetoSet(String flag) {
+        return "1".equals(flag) || "Y".equalsIgnoreCase(flag);
+    }
+
+    /** 同上：'Y'/'N'（含大小写变体）归一为 '1'/'0'；其余原样返回交给既有校验拒绝。public 供 VO 层对外契约归一。 */
+    public static String normalizeFlag(String flag) {
+        if ("Y".equalsIgnoreCase(flag)) {
+            return "1";
+        }
+        if ("N".equalsIgnoreCase(flag)) {
+            return "0";
+        }
+        return flag;
+    }
+
     /** 生命周期三态（页47） */
     public static final String STATUS_DRAFT = "draft";
     public static final String STATUS_PUBLISHED = "published";
@@ -168,6 +191,10 @@ public class GateElementService implements IGateElementService {
         if (patch.getEnabled() != null) {
             merged.setEnabled(patch.getEnabled());
         }
+        // R219（看板卡 a995a9e3）：存量 'Y'/'N' 脏行在合并副本时归一化——否则脏行任何编辑
+        // （含仅 enabled 启停）都被 validateDefinition 的 FLAGS 校验 400 卡死；编辑保存即顺带清洗。
+        merged.setIsVeto(normalizeFlag(merged.getIsVeto()));
+        merged.setVetoDualRequired(normalizeFlag(merged.getVetoDualRequired()));
         validateDefinition(merged);
         // Bug#7 中危：审计字段绑 actor —— updateBy 取 actor.id()，updateTime 清空交由 MetaObjectHandler 填服务端权威时间
         merged.setUpdateBy(actor.id());
@@ -258,9 +285,9 @@ public class GateElementService implements IGateElementService {
             .elementCode(newElementCode.trim())
             .elementName(source.getElementName())
             .passStandard(source.getPassStandard())
-            .isVeto(source.getIsVeto() == null ? "0" : source.getIsVeto())
+            .isVeto(normalizeFlag(source.getIsVeto()) == null ? "0" : normalizeFlag(source.getIsVeto()))
             .sortOrder(source.getSortOrder() == null ? 0 : source.getSortOrder())
-            .vetoDualRequired(source.getVetoDualRequired() == null ? "0" : source.getVetoDualRequired())
+            .vetoDualRequired(normalizeFlag(source.getVetoDualRequired()) == null ? "0" : normalizeFlag(source.getVetoDualRequired()))
             .thresholdJson(source.getThresholdJson())
             .build();
         validateDefinition(clone);
@@ -334,9 +361,9 @@ public class GateElementService implements IGateElementService {
             .elementCode(nextDuplicateCode(code))
             .elementName(nextDuplicateName(name))
             .passStandard(source.getPassStandard())
-            .isVeto(source.getIsVeto() == null ? "0" : source.getIsVeto())
+            .isVeto(normalizeFlag(source.getIsVeto()) == null ? "0" : normalizeFlag(source.getIsVeto()))
             .sortOrder(source.getSortOrder() == null ? 0 : source.getSortOrder())
-            .vetoDualRequired(source.getVetoDualRequired() == null ? "0" : source.getVetoDualRequired())
+            .vetoDualRequired(normalizeFlag(source.getVetoDualRequired()) == null ? "0" : normalizeFlag(source.getVetoDualRequired()))
             .thresholdJson(source.getThresholdJson())
             .build();
         validateDefinition(clone);
@@ -499,7 +526,7 @@ public class GateElementService implements IGateElementService {
         if (e.getVetoDualRequired() != null && !FLAGS.contains(e.getVetoDualRequired())) {
             throw invalid("vetoDualRequired 必须为 '0' 或 '1'");
         }
-        if ("1".equals(e.getVetoDualRequired()) && !"1".equals(e.getIsVeto())) {
+        if (isVetoSet(e.getVetoDualRequired()) && !isVetoSet(e.getIsVeto())) {
             throw invalid("vetoDualRequired='1' 仅适用于否决项（isVeto='1'）");
         }
         validateThresholdJson(e);

@@ -8,6 +8,7 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,18 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
 
     /** W4-D：允许 SELECT/COUNT 的 Mapper（之前仅 AllowanceService 注入，本卡补齐）。 */
     private final AllowanceLedgerMapper allowanceLedgerMapper;
+
+    /**
+     * R219 卡④（ef20c06a）：auto-scan 的「先生成后计数」编排依赖（可选 setter 注入，
+     * 不破既有 1 参构造）。缺失时 autoScan 退化为旧「只计数」行为，存量测试不受影响。
+     */
+    private AllowanceService allowanceService;
+
+    @Autowired(required = false)
+    public void setAllowanceService(AllowanceService allowanceService) {
+        this.allowanceService = allowanceService;
+    }
+
 
     /** W4-D：period 入参 YYYY-MM 校验，避免 list/pendingStop/autoScan 三个端点接受任意字符串。 */
     private static final Pattern MONTH_PATTERN = Pattern.compile("^\\d{4}-(0[1-9]|1[0-2])$");
@@ -231,6 +244,12 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅超管可执行月度扫描");
         }
         validateMonth(period);
+        // R219 卡④：先全量生成当月台账（幂等，已成账不重复），再计数——补齐长期
+        // 「只 selectCount、无任何生产者」的零触发缺口；生成失败直接抛出，不静默降级。
+        if (allowanceService != null) {
+            int created = allowanceService.generateMonthlyLedgers(period);
+            log.info("autoScan: generateMonthlyLedgers period={} created={}", period, created);
+        }
         LambdaQueryWrapper<AllowanceLedger> q = new LambdaQueryWrapper<>();
         q.eq(AllowanceLedger::getMonth, period);
         long cnt = allowanceLedgerMapper.selectCount(q);
