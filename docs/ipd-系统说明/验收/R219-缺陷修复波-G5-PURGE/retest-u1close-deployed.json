@@ -1,0 +1,52 @@
+[
+ {
+  "case": "D1 ipd-admin login",
+  "status": "PASS",
+  "evidence": "token=yes"
+ },
+ {
+  "case": "D2 auto-scan 2026-06",
+  "status": "PASS",
+  "evidence": "http=200 code=0 created=8"
+ },
+ {
+  "case": "D3 STOP_NO_OUTPUT 行落库",
+  "status": "PASS",
+  "evidence": "groups=[['NULL', '8', 'NULL']] | 改判：2026-06 自然成账集 8 行全 PRIMARY(58 个在职 ADDITIONAL 均 2026-09 下旬加入，过不了 joinDate<=月初 判定)=AC-INC-08 主项目不误停真机实证；正向触发由 D7-D9 补"
+ },
+ {
+  "case": "D4 停发行全为 ADDITIONAL",
+  "status": "PASS",
+  "evidence": "violations=[]"
+ },
+ {
+  "case": "D5 幂等重扫",
+  "status": "PASS",
+  "evidence": "second_created=8 total_rows=8 | 判据修正：返回值=生成后当月计数(先计后数语义)，幂等判据=库内行数 8→8 不变"
+ },
+ {
+  "case": "D6 非超管(ipd-rd) 403",
+  "status": "PASS",
+  "evidence": "http=403"
+ },
+ {
+  "case": "D7 join_date 临时回拨(900105,proj 2098349974990389250, ADDITIONAL/L3/2000/四类信号全0)",
+  "status": "PASS",
+  "evidence": "原值 2026-09-25 18:03:37 现查登记，临时置 2026-06-01 过月初判定（R214 测试数据政策，验收后还原）"
+ },
+ {
+  "case": "D8 重扫 2026-06",
+  "status": "PASS",
+  "evidence": "http=200 code=0；2026-06 行数 8→9，新增行即 900105"
+ },
+ {
+  "case": "D9 ADDITIONAL 四类全空→STOP+实发0 (AC-INC-07 正向)",
+  "status": "PASS",
+  "evidence": "回读 900105 行：stop_reason=STOP_NO_OUTPUT_60_DAYS final_amount=0.00 base_amount=2000.00 locked_level=L3 stop_start_date=2026-09-26 17:29:49（中断重查补全：首次查询列名 original_amount 不存在报 SQL-ERR，改 SELECT * 拿到全行）"
+ },
+ {
+  "case": "D10 join_date 还原",
+  "status": "PASS",
+  "evidence": "还原为 2026-09-25 18:03:37 回读证实；STOP 行按 R214 留库登记"
+ }
+]
