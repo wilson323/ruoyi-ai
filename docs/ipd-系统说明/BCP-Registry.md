@@ -1459,13 +1459,13 @@ grep "13 BCP CLOSED" docs/ipd-系统说明/BCP-Registry.md  # 应有 1 行（§�
 
 **需新增（9 个门禁脚本骨架，撞车 0 边界内）**：
 - `scripts/check-closure-rate.sh`（M-Root-1）
-- `scripts/check-paiban-deadline.sh`（M-Root-2）
+- `scripts/check-paiban-deadline.sh`（M-Root-2）【⚠️ 2026-09-25 R219b 已删：骨架无主逻辑且无条件 exit 0】
 - `scripts/check-cd-absolute-path.sh`（M-Root-3）
 - `scripts/check-m1m5-landed.sh`（M-Root-4）
 - `scripts/check-gep-running.sh`（M-Root-5）
 - `scripts/check-reflection-convergence.sh`（M-Root-6）
 - `scripts/check-bcp-unit-mismatch.sh`（M-Root-7）
-- `scripts/check-collision-drift.sh`（R-4 撞号预防）
+- `scripts/check-collision-drift.sh`（R-4 撞号预防）【⚠️ 2026-09-25 R219b 已删：同上，待实装清单见 log.md marker r219b-skeleton-batch1】
 - `scripts/check-three-source-hash.sh`（三源对账）
 
 **owner 拍板位（C 类 4 条，撞车 0 边界外）**：
@@ -1485,13 +1485,13 @@ grep "13 BCP CLOSED" docs/ipd-系统说明/BCP-Registry.md  # 应有 1 行（§�
 **4.4.3 自证能红 + FAIL_SEED 双向触发（设计完成，实装等拍板）**：
 ```bash
 $ CLOSURE_FAIL_SEED=1 bash scripts/check-closure-rate.sh         # EXIT=1（设计）
-$ PAIBAN_DEADLINE_FAIL_SEED=1 bash scripts/check-paiban-deadline.sh  # EXIT=1（设计）
+$ PAIBAN_DEADLINE_FAIL_SEED=1 bash scripts/check-paiban-deadline.sh  # ⚠️ 2026-09-25 R219b 已删（零逻辑恒 PASS 骨架）
 $ CD_ABS_FAIL_SEED=1 bash scripts/check-cd-absolute-path.sh       # EXIT=1（设计）
 $ M1M5_FAIL_SEED=1 bash scripts/check-m1m5-landed.sh             # EXIT=1（设计）
 $ GEP_FAIL_SEED=1 bash scripts/check-gep-running.sh               # EXIT=1（设计）
 $ REFLECT_CONVERGE_FAIL_SEED=1 bash scripts/check-reflection-convergence.sh  # EXIT=1（设计）
 $ BCP_UNIT_FAIL_SEED=1 bash scripts/check-bcp-unit-mismatch.sh    # EXIT=1（设计）
-$ COLLISION_FAIL_SEED=1 bash scripts/check-collision-drift.sh     # EXIT=1（设计）
+$ COLLISION_FAIL_SEED=1 bash scripts/check-collision-drift.sh     # ⚠️ 2026-09-25 R219b 已删（零逻辑恒 PASS 骨架）
 $ THREE_SOURCE_FAIL_SEED=1 bash scripts/check-three-source-hash.sh  # EXIT=1（设计）
 ```
 

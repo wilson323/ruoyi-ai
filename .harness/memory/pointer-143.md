@@ -1,28 +1,20 @@
 # Pointer-143 — 跨会话异常根因反思 + 根除最佳实践触发器
 
-> **触发条件**：每 R 轮必跑 R143 4 脚本 + 撞号自检
+> **触发条件**：~~每 R 轮必跑 R143 4 脚本~~ **已失效（2026-09-25 R219b）**：4 脚本为 `echo PASS; exit 0` 零逻辑骨架，每轮必跑等于每轮产出 4 条“治理检查已过”假绿，已删除（单 commit 可 revert，待实装清单迁至 log.md R219b 段）
 > **撞车 0 让路**：✅ 仅 .harness/memory/ + scripts/ + docs/ 白名单
 > **撞号避让**：✅ 4 脚本骨架 docs-only 设计，不实装主逻辑（等 owner 拍板）
 
 ---
 
-## §1 触发链
+## §1 触发链（已停用，勿跑）
 
 ```bash
-# 每 R 轮收口必跑
-cd /Users/mac/Documents/ruoyi-ai
-
-# 1. 跨会话身份隔离
-CSI_FAIL_SEED=1 bash scripts/check-cross-session-isolation.sh; echo "CSI EXIT=$?"
-
-# 2. 撞车 0 让路边界
-CDRIFT_FAIL_SEED=1 bash scripts/check-collision-drift.sh; echo "CDRIFT EXIT=$?"
-
-# 3. paiban 拍板契约
-PDL_FAIL_SEED=1 bash scripts/check-paiban-deadline.sh; echo "PDL EXIT=$?"
-
-# 4. 5 钻覆盖率
-FBS_FAIL_SEED=1 bash scripts/check-five-bores-stagnation.sh; echo "FBS EXIT=$?"
+# 2026-09-25 R219b：下列 4 脚本已删除（零逻辑恒 PASS），本段仅作历史留存
+# 跑它会直接 `No such file or directory`；如需重建按 log.md 「r219b-skeleton-batch1」段的待实装清单
+# CSI_FAIL_SEED=1   bash scripts/check-cross-session-isolation.sh
+# CDRIFT_FAIL_SEED=1 bash scripts/check-collision-drift.sh
+# PDL_FAIL_SEED=1   bash scripts/check-paiban-deadline.sh
+# FBS_FAIL_SEED=1   bash scripts/check-five-bores-stagnation.sh
 ```
 
 ## §2 撞号预防映射表
@@ -53,5 +45,5 @@ FBS_FAIL_SEED=1 bash scripts/check-five-bores-stagnation.sh; echo "FBS EXIT=$?"
 
 ## §5 后续 R 轮必跑
 
-- R144：4 脚本主逻辑实装 + 跨仓穿透 + 三源对账
-- R145+：持续应用保障（每 R 轮必跑本指针触发链）
+- ~~R144：4 脚本主逻辑实装~~ **未执行（挂起 5 天）→ 2026-09-25 R219b 已删除骨架本体**，实装需求降为 owner 待拍项，清单见 log.md marker r219b-skeleton-batch1
+- R145+：持续应用保障（本指针 §1 触发链已停用，仅 §3 撞车红线仍有效）
