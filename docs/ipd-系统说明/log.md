@@ -12382,3 +12382,37 @@ marker: r220-orphan-gate-live-run
   bash scripts/check-{e2e-block-gate,cross-repo-cd-guard,charset-consistency,surefire-fake-green,m1m5-landed,time-redline,dispatch-sequence,kanban-section-shape}.sh
 
 本轮未提交任何脚本改动（② 已回退），并清理试跑产生的 3 个报告文件（字符集一致性-20260925.md、lint-reports/dynamic-loadable-20260925-181526.{md,json}），结论以本段为准。
+
+## 2026-09-25 19:05 | R221（owner 拍板 A 路线：先清存量红 —— 第 1 个已清，其余 3 个确诊）
+marker: r221-clear-red-batch1
+
+owner 就 R220 ⑤ 拍 A：先把 4 个红灯背后的真问题修掉，再接线。本轮结果：1 个已清并实测转绿，3 个确诊到根因但**不宜由执行方单方面修绿**，逐条列明待拍。
+
+### 1. charset 红灯已清（RC 1 → 0，实测）
+- 明细现查：14 处不一致全部集中在 hr_organizations 一张表 = 13 个字符列（orgeh/stext/short_name/parent_orgeh/zbmcj/begda/endda/bmfzr/hr_del_flag/expiration_flag/trigger_by/tenant_id/del_flag）+ 1 个表级 default collation；字符集本身已是 utf8mb4，只有排序规则是 utf8mb4_general_ci（期望 utf8mb4_0900_ai_ci）。这也解释了 R220 记录里「脚本报 14、列查询只有 13 行」的差值。
+- 处置：该表实测 0 行（COUNT(*)=0），执行 ALTER TABLE hr_organizations CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci（空表元数据变更，可逆）。
+- 验证：回读 TABLE_COLLATION=utf8mb4_0900_ai_ci、不一致字符列计数=0；scripts/check-charset-consistency.sh 由 RC=1 转 **RC=0**，输出 tables=157 char_cols=1164 inconsistent=0「✅ PASS: 字符集全一致」。
+- 沉淀：docs/script/sql/update/ipd_r220_hr_organizations_collate_20260925.sql（含来源/影响/回退/已 apply 环境/待 apply 环境）。隔离库 ipd_qa04 属兄弟会话在途，本轮未触碰。
+
+### 2. E2E 红灯确诊：不能靠「补终态标记」清（那是把验收失败改成通过）
+- check-e2e-block-gate.sh 判据为 grep -qE "状态.*(PASSED|FAILED|RUNNING)|✅.*通过|❌.*未通过|🏃.*运行中"；那 3 份 E2E-验收-20260919-2255/2304/2355.md 写的是「## ❌ 业务契约有失败项」，措辞不匹配 → 报「缺终态标记」。文件本身**有明确终态（失败）**，故本项是判据过窄，不是文件缺结论。
+- 生成这 3 份报告的 check-e2e-fe-be.sh 全部业务请求**不带任何认证**（grep token/login/Authorization 零命中），而 IPD /api/v1 需真实 Person 会话 → 现测无凭证结果：/api/v1/kpi/rules 与 /api/v1/projects/{id} 均 401 code=20001。该脚本对这两项**设计上必然失败**。
+- /api/v1/persons/active 现测 404 code=50001「资源不存在」；代码侧确证：PersonController 只有类级 @RequestMapping("/api/v1/persons") + 3 个 @PostMapping（{id}/resign、{id}/rehire、{id}/wecom/unbind），controller 目录全量搜 active 零命中；前端 ruoyi-ipd-web/apps/web-antd/src 搜 persons/active 亦零命中 → **R118 契约要求的端点从未实现，且无调用方**。补该端点会立即被 R212 孤儿端点棘轮记为新孤儿，自相矛盾。
+- /api/v1/deletion-requests 无凭证 GET 返回 HTTP 200 但 body code=405「请求方式不支持」→ HTTP 层与包络层语义不一致（应 405）。
+- 3 份报告头部端口号呈乱码（「## ✅ 后端存活（:??」），与 check-dispatch-sequence.sh 的 last_wt= 乱码同型，属生成侧编码 bug。
+- 待拍三选：(a) 把 R118 契约改指向实际存在的端点（=改需求，需 owner）；(b) 后端补 /persons/active（会触发孤儿棘轮，需同时登记白名单）；(c) 给 check-e2e-fe-be.sh 加登录取 token，并把「契约未实现」与「服务不可达」分成两类结论显式记账。
+
+### 3. M4 check-cross-repo-cd-guard.sh 确诊为双向坏（建议删，本轮未动）
+- 假红：set -eo pipefail 下执行 tail -20 "$SHELL_HISTORY" | grep -E ... | head -5 | while ...，grep 无匹配返回 1 → pipefail 使整条管道非 0 → set -e 立即终止，实测 exit 1 且**只打印一行启动日志、无任何失败原因**；脚本末尾本应输出的「✅ 跨仓 cd 检查通过」永远到不了。
+- 假绿：SHELL_HISTORY 文件不存在时显式 exit 0「history 缺失 = 不阻断」。
+- 意图不成立：检查对象是 ~/.zsh_history 最近 20 条，而跨仓 cd 由智能体经 Bash 工具执行、不写入该文件 → 该门禁无论红绿都反映不了真实风险。
+- 牵连：它占 check-m1m5-landed.sh 五脚本名单的 M4 位，删须同步改名单。结合 R220 ②③④（M1 死件、M2/M3 数据缺失即放行、m1m5-landed 只查文件名存在却报「全部实装 ✅」），建议 **M1–M5 门禁群整体处置**（整群重设判据或整群删），不宜逐个删。
+
+### 4. surefire 红灯本轮未动（需单独授权）
+治理它要改 pom.xml 的 <groups>${profiles.active}</groups> 或给 290 个测试类补基础 tag，两者都改变所有会话 mvn test 的默认行为，属构建配置级变更，不并入本批。
+
+复现：
+  mysql --defaults-file=.codex/ipd-dev/config/mysql-client.cnf ipd_dev -N -B -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='ipd_dev' AND CHARACTER_SET_NAME IS NOT NULL AND CHARACTER_SET_NAME!='' AND (CHARACTER_SET_NAME!='utf8mb4' OR COLLATION_NAME!='utf8mb4_0900_ai_ci');"
+  bash scripts/check-charset-consistency.sh; echo RC=$?
+  curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:16039/api/v1/persons/active
+  bash scripts/check-cross-repo-cd-guard.sh; echo RC=$?
