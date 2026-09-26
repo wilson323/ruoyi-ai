@@ -40,6 +40,10 @@ public class GenerateExecutor implements AiActionExecutor {
 
     @Override
     public AiExecResult execute(AiAgentTask task, AiExecContext ctx) {
+        AiExecResult terminal = AiActionExecutor.terminalNoOp(stageActionService.getById(task.getStageActionId()));
+        if (terminal != null) {
+            return terminal; // M3：人审已完结后重复触发不得把 DONE 打回 IN_PROGRESS/重复生成
+        }
         var def = ActionCatalog.byCode(task.getActionCode());
         String title = def.code() + " " + def.name() + "（AI 草稿）";
         String prompt = "请为项目 " + task.getProjectId() + " 起草「" + def.name() + "」（"

@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.AiAgentTask;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateElement;
-import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
@@ -41,7 +40,6 @@ class GatePrepExecutorTest {
         Clock.fixed(Instant.parse("2026-09-26T10:00:00Z"), ZoneId.of("UTC")));
 
     @Mock private GateMapper gateMapper;
-    @Mock private GateElementMapper gateElementMapper;
     @Mock private GateElementResultService gateElementResultService;
     @Mock private ISysOssService ossService;
     @Mock private NotificationService notificationService;
@@ -90,7 +88,8 @@ class GatePrepExecutorTest {
     @Test
     void judgesNonVetoElementsOnlyThenSubmitsAndNotifies() {
         when(gateMapper.selectOne(any())).thenReturn(pendingGate());
-        when(gateElementMapper.selectList(any())).thenReturn(List.of(
+        // M2：适用集必须复用 submit 权威口径（published + 排除 '0'），不得自建第二套查询
+        when(gateElementResultService.enabledElements("G1")).thenReturn(List.of(
             element(11L, "G1-E1", "0"), element(12L, "G1-E2", "1")));
         var vo = new org.ruoyi.system.domain.vo.SysOssVo();
         vo.setOssId(8802L);
@@ -110,7 +109,7 @@ class GatePrepExecutorTest {
     @Test
     void submitRejectedByVetoGapFailsWithGuidanceButStillNotifies() {
         when(gateMapper.selectOne(any())).thenReturn(pendingGate());
-        when(gateElementMapper.selectList(any())).thenReturn(List.of(element(12L, "G1-E2", "1")));
+        when(gateElementResultService.enabledElements("G1")).thenReturn(List.of(element(12L, "G1-E2", "1")));
         var vo = new org.ruoyi.system.domain.vo.SysOssVo();
         vo.setOssId(8802L);
         when(ossService.upload(any(org.springframework.web.multipart.MultipartFile.class))).thenReturn(vo);

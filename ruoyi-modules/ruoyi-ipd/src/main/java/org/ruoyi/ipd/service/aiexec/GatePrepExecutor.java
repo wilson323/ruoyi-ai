@@ -8,7 +8,6 @@ import org.ruoyi.ipd.domain.AiAgentTask;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateElement;
 import org.ruoyi.ipd.domain.ProjectMember;
-import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
@@ -36,7 +35,6 @@ import java.util.Set;
 public class GatePrepExecutor implements AiActionExecutor {
 
     private final GateMapper gateMapper;
-    private final GateElementMapper gateElementMapper;
     private final GateElementResultService gateElementResultService;
     private final ISysOssService ossService;
     private final NotificationService notificationService;
@@ -61,10 +59,9 @@ public class GatePrepExecutor implements AiActionExecutor {
 
         String day = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ctx.clock().getZone())
             .format(ctx.clock().instant());
-        List<GateElement> elements = gateElementMapper.selectList(new LambdaQueryWrapper<GateElement>()
-            .eq(GateElement::getGateCode, gate.getGateCode())
-            .eq(GateElement::getEnabled, "1")
-            .orderByAsc(GateElement::getSortOrder));
+        // M2（CodeReview）：适用集必须复用 submit 同一权威口径（published + 排除 '0'），
+        // 自建第二套查询会漏判 enabled=NULL/'Y' 行、多判 draft 越权行，导致备料集 ≠ 提交集。
+        List<GateElement> elements = gateElementResultService.enabledElements(gate.getGateCode());
         Long materialsOssId = uploadMd(gateCode + "-评审材料-" + day + ".md", buildMaterials(gate, elements, ctx));
         Long minutesOssId = uploadMd(gateCode + "-会议纪要模板-" + day + ".md", buildMinutes(gate, ctx));
 

@@ -478,7 +478,8 @@ public class GateElementResultService implements IGateElementResultService {
             org.ruoyi.ipd.service.GateReviewService.SIGN_DEADLINE_KEY, 3);
     }
 
-    private List<GateElement> enabledElements(String gateCode) {
+    /** R221：public 供 aiexec GatePrepExecutor 复用——评审适用集唯一权威口径（published + 排除 '0'），防两处口径漂移。 */
+    public List<GateElement> enabledElements(String gateCode) {
         return elementMapper.selectList(new LambdaQueryWrapper<GateElement>()
                 .eq(GateElement::getGateCode, gateCode)
                 // R219（看板卡 a995a9e3）：评审适用集只认 published——真库现存 2 条 draft+enabled='1'

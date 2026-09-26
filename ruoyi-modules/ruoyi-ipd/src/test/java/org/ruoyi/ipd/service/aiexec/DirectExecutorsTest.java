@@ -7,6 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.AiAgentTask;
+import org.ruoyi.ipd.domain.StageAction;
+import org.ruoyi.ipd.mapper.AiAgentTaskMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.StageActionService;
 import org.ruoyi.system.service.ISysOssService;
@@ -37,6 +39,7 @@ class DirectExecutorsTest {
 
     @Mock private StageActionService stageActionService;
     @Mock private ISysOssService ossService;
+    @Mock private AiAgentTaskMapper taskMapper;
     @InjectMocks private LightDirectExecutor light;
 
     @Test
@@ -63,7 +66,7 @@ class DirectExecutorsTest {
 
     @Test
     void deepWithoutPayloadFailsFastWithGuidance() {
-        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService);
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
         AiAgentTask t = AiAgentTask.builder().id(2L).actionCode("C08").stageActionId(9003L).build();
 
         AiExecResult r = deep.execute(t, CTX);
@@ -73,9 +76,78 @@ class DirectExecutorsTest {
         verify(stageActionService, never()).transit(anyLong(), any(), any(), any());
     }
 
+    /** M1 链路闭环：PASSIVE 行自身无 payload 时回捞同动作最近 CHAT 行的对话填表载荷 */
+    @Test
+    void deepRecoversChatPayloadFromLinkedChatTask() {
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
+        when(taskMapper.selectOne(any())).thenReturn(AiAgentTask.builder().id(9L)
+            .actionCode("C08").stageActionId(9003L).triggerType("CHAT")
+            .fillPayload("{\"scene\":\"stage-action-fields\",\"fields\":{\"baselineSales\":\"10000\"}}")
+            .build());
+        org.ruoyi.system.domain.vo.SysOssVo vo = new org.ruoyi.system.domain.vo.SysOssVo();
+        vo.setOssId(8801L);
+        when(ossService.upload(any(org.springframework.web.multipart.MultipartFile.class))).thenReturn(vo);
+        AiAgentTask t = AiAgentTask.builder().id(2L).actionCode("C08").stageActionId(9003L)
+            .triggerType("PASSIVE").build();
+
+        AiExecResult r = deep.execute(t, CTX);
+
+        assertThat(r.ok()).isTrue();
+        verify(stageActionService).addDeliverable(eq(9003L), any(String.class), eq(8801L), eq("0"));
+        verify(stageActionService).transit(eq(9003L), eq("DONE"), any(String.class), eq("0"));
+    }
+
+    /** N2：非法 JSON 在副作用前就 fail 引导，不得先落完成日 */
+    @Test
+    void deepInvalidJsonFailsBeforeSideEffects() {
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
+        AiAgentTask t = AiAgentTask.builder().id(2L).actionCode("C08").stageActionId(9003L)
+            .fillPayload("not-a-json").build();
+
+        AiExecResult r = deep.execute(t, CTX);
+
+        assertThat(r.ok()).isFalse();
+        assertThat(r.errorMsg()).contains("对话填表");
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    /** M3 红线：终态动作（DONE）重复触发必须 no-op，不得改写历史完成日 */
+    @Test
+    void deepSkipsTerminalAction() {
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
+        StageAction done = new StageAction();
+        done.setStatus("DONE");
+        when(stageActionService.getById(9003L)).thenReturn(done);
+        AiAgentTask t = AiAgentTask.builder().id(2L).actionCode("C08").stageActionId(9003L)
+            .fillPayload("{\"fields\":{\"a\":\"1\"}}").build();
+
+        AiExecResult r = deep.execute(t, CTX);
+
+        assertThat(r.ok()).isTrue();
+        assertThat(r.summary()).contains("no-op");
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(ossService, never()).upload(any(org.springframework.web.multipart.MultipartFile.class));
+    }
+
+    /** M3 红线：P08 重复触发不得把 DONE 动作的完成日改成当天 */
+    @Test
+    void lightSkipsTerminalAction() {
+        StageAction done = new StageAction();
+        done.setStatus("DONE");
+        when(stageActionService.getById(9002L)).thenReturn(done);
+        AiAgentTask t = AiAgentTask.builder().id(1L).actionCode("P08").stageActionId(9002L).build();
+
+        AiExecResult r = light.execute(t, CTX);
+
+        assertThat(r.ok()).isTrue();
+        assertThat(r.summary()).contains("no-op");
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).transit(anyLong(), any(), any(), any());
+    }
+
     @Test
     void deepWithPayloadUploadsDeliverableThenTransitsDone() {
-        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService);
+        DeepDirectExecutor deep = new DeepDirectExecutor(stageActionService, ossService, taskMapper);
         org.ruoyi.system.domain.vo.SysOssVo vo = new org.ruoyi.system.domain.vo.SysOssVo();
         vo.setOssId(8801L);
         when(ossService.upload(any(org.springframework.web.multipart.MultipartFile.class))).thenReturn(vo);

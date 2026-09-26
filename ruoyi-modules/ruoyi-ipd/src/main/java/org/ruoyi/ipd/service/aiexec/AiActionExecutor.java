@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service.aiexec;
 
 import org.ruoyi.ipd.domain.AiAgentTask;
+import org.ruoyi.ipd.domain.StageAction;
 
 import java.util.Set;
 
@@ -15,4 +16,13 @@ public interface AiActionExecutor {
 
     /** 执行单个任务，返回结构化结果（不抛业务异常；异常由引擎捕获进退避/DEAD）。 */
     AiExecResult execute(AiAgentTask task, AiExecContext ctx);
+
+    /** 终态守卫（CodeReview M3）：DONE/NA 动作重复触发必须 no-op，
+     * 不得改写历史完成日/重复生成文档/重复挂交付物（transit 只对同 target 幂等，侧效应不幂等）。 */
+    static AiExecResult terminalNoOp(StageAction action) {
+        if (action != null && ("DONE".equals(action.getStatus()) || "NA".equals(action.getStatus()))) {
+            return AiExecResult.ok("no-op: 动作已终态 " + action.getStatus() + "，AI 不重复执行");
+        }
+        return null;
+    }
 }

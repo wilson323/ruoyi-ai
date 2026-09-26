@@ -23,6 +23,10 @@ public class LightDirectExecutor implements AiActionExecutor {
     @Override
     public AiExecResult execute(AiAgentTask task, AiExecContext ctx) {
         Long id = task.getStageActionId();
+        AiExecResult terminal = AiActionExecutor.terminalNoOp(stageActionService.getById(id));
+        if (terminal != null) {
+            return terminal;
+        }
         Date now = Date.from(ctx.clock().instant());
         stageActionService.recordFields(id, now, null, null, null, null, null, "0");
         stageActionService.transit(id, "DONE", "R221 AI 直接执行（LIGHT）", "0");

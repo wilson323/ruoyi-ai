@@ -20,9 +20,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * GuestDemandOverdueScheduler 09:40（AC-PROD-09 待指派超5工作日提醒组长，R218 卡2 接线补齐 2026-09-25）/
  * BidInvitationExpireScheduler 09:45（AC-TEAM-08 邀标到期自动过期，R219 卡④ 接线补齐 2026-09-26）/
  * StageActionOverdueScheduler 09:50（ACTION_OVERDUE 逐日逾期提醒，R219 卡④）/
+ * AiProactiveScanScheduler 09:55（R221 AI 主动执行扫描：7 日内到期 AI 档动作建 SCHEDULE 任务，2026-09-26）/
  * AllowanceMonthlyLedgerScheduler 每月 1 日 10:00（上自然月台账全量生成，R219 卡④）/
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
- * 间隔可配 ipd.notification.dispatch.interval-ms）。
+ * 间隔可配 ipd.notification.dispatch.interval-ms）；
+ * AiTaskFallbackScanner 每 30s 轮询（R221 兜底扫描，同为常驻间隔任务；
+ * 间隔可配 ipd.aiexec.fallback.interval-ms）。
  */
 @Configuration
 @EnableScheduling

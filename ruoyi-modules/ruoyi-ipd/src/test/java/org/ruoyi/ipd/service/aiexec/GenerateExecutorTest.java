@@ -59,4 +59,21 @@ class GenerateExecutorTest {
         verify(stageActionService).transit(eq(9001L), eq("IN_PROGRESS"), any(String.class), eq("0"));
         verify(stageActionService, never()).transit(anyLong(), eq("DONE"), any(), any());
     }
+
+    /** M3 红线：人审已完结（DONE）后重复触发不得把状态打回 IN_PROGRESS/重复生成文档 */
+    @Test
+    void generateSkipsTerminalDoneAction() {
+        org.ruoyi.ipd.domain.StageAction done = new org.ruoyi.ipd.domain.StageAction();
+        done.setStatus("DONE");
+        when(stageActionService.getById(9001L)).thenReturn(done);
+        AiAgentTask t = AiAgentTask.builder().id(3L).projectId(100L).actionCode("C01")
+            .stageActionId(9001L).execMode("AI_GENERATE").build();
+
+        AiExecResult r = executor.execute(t, CTX);
+
+        assertThat(r.ok()).isTrue();
+        assertThat(r.summary()).contains("no-op");
+        verify(aiGenerationService, never()).generate(any(), any());
+        verify(stageActionService, never()).transit(anyLong(), any(), any(), any());
+    }
 }

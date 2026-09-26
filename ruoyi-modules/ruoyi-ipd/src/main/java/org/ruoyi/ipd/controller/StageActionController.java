@@ -10,6 +10,8 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.seed.ActionCatalog;
+import org.ruoyi.ipd.service.AiExecutionTrigger;
 import org.ruoyi.ipd.service.StageActionService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 阶段动作实例接口 /api/v1/stage-actions（深轻管分离 BR-IPD-03/04/05）
@@ -32,6 +35,7 @@ public class StageActionController {
 
     private final StageActionService stageActionService;
     private final IpdPermission ipdPermission;
+    private final AiExecutionTrigger aiExecutionTrigger;
 
     /** 查询项目阶段动作列表，需 ipd:stage-action:list 权限 */
     @GetMapping
@@ -109,5 +113,24 @@ public class StageActionController {
     public ApiV1Response<Integer> ensureBioCompliance(@RequestParam Long projectId) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(stageActionService.ensureBioComplianceMount(projectId, actor));
+    }
+
+    /**
+     * R221：AI 代理执行入口（spec §3.1 PASSIVE）。权限沿用动作执行口径；
+     * 任务行落库即返回，人不等待——引擎 afterCommit 异步跑，页面轮询任务状态。
+     * 前置状态校验交给执行链：DONE/NA 动作触发后 transit 幂等 no-op，不在此重复判断（防两处口径漂移）。
+     */
+    @PostMapping("/{id}/ai-execute")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Map<String, Object>> aiExecute(@PathVariable Long id) {
+        StageAction a = stageActionService.getById(id);
+        if (a == null) {
+            return ApiV1Response.fail(40401, "动作不存在");
+        }
+        IpdActor actor = ipdPermission.requireActionWriter(() -> a);
+        var task = aiExecutionTrigger.triggerPassive(a.getProjectId(),
+            ActionCatalog.resolveCode(a.getActionCode()), id, actor.id());
+        return ApiV1Response.ok(Map.of(
+            "taskId", task.getId(), "status", task.getStatus(), "actionCode", task.getActionCode()));
     }
 }
