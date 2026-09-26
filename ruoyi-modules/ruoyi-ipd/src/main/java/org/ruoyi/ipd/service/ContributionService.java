@@ -595,14 +595,22 @@ public class ContributionService implements IContributionService {
 
     /**
      * G5 阶段门控：仅上市后 90 天复盘阶段开放（AC-INC-28）。
-     * <p>判定规则：项目当前阶段 = G5；容许 LIFECYCLE 阶段（已上市）进入。
-     * 简化：要求项目 status IN ("LIFECYCLE", "POST_LAUNCH")，否则拒。
+     * <p>e697a401（R218 AC续跑 lane4 D-3）修复：原实现判 projects.status，而状态机枚举只有
+     * DRAFT/TEAMING/ACTIVE/SUSPENDED/ARCHIVED，不存在通往 LIFECYCLE/POST_LAUNCH 的迁移——
+     * 贡献度评定→distribute 链对新项目永久不可达（真库仅 SQL 种子 9150001 命中）。
+     * 正确事实源是 current_stage：六阶段推进终点即 LIFECYCLE（NEXT_STAGE LAUNCH→LIFECYCLE，
+     * 动作目录 LC02 G5 复盘与 LC04 贡献度评定均挂该阶段）。
+     * <p>规则：current_stage = LIFECYCLE 且未归档（ZK-IPD §二.10 归档只读）。
      */
     private void requireG5Stage(Project project) {
-        String status = project.getStatus();
-        if (!"LIFECYCLE".equals(status) && !"POST_LAUNCH".equals(status)) {
+        String stage = project.getCurrentStage();
+        if ("ARCHIVED".equals(project.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.CONTRIB_NOT_G5_STAGE,
-                "项目不在 G5 上市后 90 天复盘阶段（当前 status=" + status + "）");
+                "项目已归档（ZK-IPD §二.10 只读），不开放 G5 贡献度评定（当前 currentStage=" + stage + "）");
+        }
+        if (!"LIFECYCLE".equals(stage)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.CONTRIB_NOT_G5_STAGE,
+                "项目不在 G5 上市后 90 天复盘阶段（当前 currentStage=" + stage + "）");
         }
     }
 

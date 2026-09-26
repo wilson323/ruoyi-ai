@@ -83,9 +83,11 @@ class ContributionServiceTest {
     }
 
     private Project lifecycleProject() {
+        // e697a401 契约：G5 判 current_stage=LIFECYCLE；status 用状态机合法在任态 ACTIVE
         Project p = new Project();
         p.setId(PROJECT_ID);
-        p.setStatus("LIFECYCLE");
+        p.setStatus("ACTIVE");
+        p.setCurrentStage("LIFECYCLE");
         p.setDelFlag("0");
         return p;
     }
@@ -93,7 +95,8 @@ class ContributionServiceTest {
     private Project conceptProject() {
         Project p = new Project();
         p.setId(PROJECT_ID);
-        p.setStatus("CONCEPT");
+        p.setStatus("DRAFT");
+        p.setCurrentStage("CONCEPT");
         p.setDelFlag("0");
         return p;
     }

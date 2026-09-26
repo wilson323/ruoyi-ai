@@ -82,7 +82,11 @@ public class DeletionArchiveService implements IDeletionArchiveService {
         int updated = deletionRequestMapper.update(null, new LambdaUpdateWrapper<DeletionRequest>()
             .eq(DeletionRequest::getId, requestId)
             .eq(DeletionRequest::getStatus, DeletionRequestServiceImpl.ST_DELETED)
-            .notLike(DeletionRequest::getRemark, PURGED_MARK)
+            // b494f56e（R218 AC续跑 lane3 D-2）：与 DEF-8 同坑——notLike 对 remark IS NULL 行三值逻辑不为 TRUE，
+            // UPDATE 恒 0 行 → 首次 purge 恒 409「清除冲突：并发或已清除」，DELETE_ARCHIVE_PURGE 全库不可用。
+            // 修复 = 原子守卫显式放行 NULL（与 listArchive 同款）。
+            .and(w -> w.isNull(DeletionRequest::getRemark)
+                .or().notLike(DeletionRequest::getRemark, PURGED_MARK))
             .set(DeletionRequest::getRemark, purgeMark)
             .set(DeletionRequest::getUpdateBy, adminId)
             .set(DeletionRequest::getUpdateTime, new Date(ts)));

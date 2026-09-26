@@ -68,8 +68,9 @@ class ContributionVersionArchiveTest {
     }
 
     private Project lifecycleProject() {
+        // e697a401 契约：G5 判 current_stage=LIFECYCLE；status 用状态机合法在任态 ACTIVE
         return Project.builder().id(PROJECT_ID).name("PRJ").code("PRJ-001")
-            .status("LIFECYCLE").delFlag("0").build();
+            .status("ACTIVE").currentStage("LIFECYCLE").delFlag("0").build();
     }
 
     private Contribution submitted() {

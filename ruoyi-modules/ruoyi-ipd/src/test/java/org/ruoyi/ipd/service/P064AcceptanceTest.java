@@ -160,7 +160,16 @@ class P064AcceptanceTest {
     void superAdminCanPurgeAndAuditIsWritten() throws Exception {
         mvc.perform(post("/api/v1/deletion-requests/11/purge"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
-        verify(deletionRequestMapper, times(1)).update(isNull(), any(LambdaUpdateWrapper.class));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaUpdateWrapper<DeletionRequest>> wrapCap =
+            ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(deletionRequestMapper, times(1)).update(isNull(), wrapCap.capture());
+        // b494f56e（lane3 D-2）回归锁：purge 原子守卫必须 NULL 安全（IS NULL OR NOT LIKE），
+        // 否则 remark IS NULL 的 DELETED 行三值逻辑恒不成立 → UPDATE 0 行 → 首次 purge 恒 409。
+        String sql = wrapCap.getValue().getSqlSegment();
+        assertThat(sql).contains("IS NULL").contains("OR").contains("NOT LIKE");
+        assertThat(wrapCap.getValue().getParamNameValuePairs().values())
+            .contains("%" + DeletionArchiveService.PURGED_MARK + "%");
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService, times(1)).append(auditCap.capture());
         AuditLog audit = auditCap.getValue();

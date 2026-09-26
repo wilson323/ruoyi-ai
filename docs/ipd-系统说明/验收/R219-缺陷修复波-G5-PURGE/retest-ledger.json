@@ -1,0 +1,112 @@
+[
+ {
+  "card": "AC-INC-28",
+  "case": "N1 归档项目(LIFECYCLE+ARCHIVED)关闭·新码生效",
+  "cmd": "POST /contributions/9140001/save",
+  "http": 409,
+  "envelope_code": 50007,
+  "verdict": "PASS",
+  "note": "msg=项目已归档（ZK-IPD §二.10 只读），不开放 G5 贡献度评定（当前 currentStage=LIFECYCLE）",
+  "ts": "2026-09-25T23:48:10.431382"
+ },
+ {
+  "card": "AC-INC-28",
+  "case": "N2 DRAFT项目拒绝且回显 currentStage(判错字段→判对字段铁证)",
+  "cmd": "POST /contributions/2096235170527993857/save",
+  "http": 409,
+  "envelope_code": 50007,
+  "verdict": "PASS",
+  "note": "msg=项目不在 G5 上市后 90 天复盘阶段（当前 currentStage=CONCEPT）",
+  "ts": "2026-09-25T23:48:10.497426"
+ },
+ {
+  "card": "AC-INC-28",
+  "case": "P1 LIFECYCLE项目G5入口开放(过门控→非50007)",
+  "cmd": "POST /contributions/9150001/save",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "过G5门控=True 下游态=50002:已确认的贡献度评定不可修改 status=None",
+  "ts": "2026-09-25T23:48:10.526913"
+ },
+ {
+  "card": "AC-INC-25",
+  "case": "P2 比例联动入口可达(过G5门控非50007)",
+  "cmd": "POST /contributions/9150001/market-share",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "code=50002:已确认的贡献度比例不可调整",
+  "ts": "2026-09-25T23:48:10.558283"
+ },
+ {
+  "card": "AC-INC-28",
+  "case": "P3 GET 回读评定记录",
+  "cmd": "GET /contributions/9150001",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "status=CONFIRMED",
+  "ts": "2026-09-25T23:48:10.581402"
+ },
+ {
+  "card": "AC-INC-28",
+  "case": "P4 真库回读 contributions",
+  "cmd": "SQL contributions project=9150001",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "row=['CONFIRMED', '0.5500']",
+  "ts": "2026-09-25T23:48:10.594378"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "A1 归档区列表含 NULL-remark 候选",
+  "cmd": "GET /deletion-requests/archive",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "候选数=27 含2103693441849405441=True",
+  "ts": "2026-09-25T23:48:10.628437"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "A2 首次 purge 200(修复前恒409)",
+  "cmd": "POST /deletion-requests/2103693441849405441/purge",
+  "http": 200,
+  "envelope_code": 0,
+  "verdict": "PASS",
+  "note": "remark=PURGED_BY_SUPER_ADMIN:900101@1790405290647",
+  "ts": "2026-09-25T23:48:10.663272"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "A3 真库回读 remark打标+审计行(历史0→≥1)",
+  "cmd": "SQL deletion_requests.remark & audit_logs",
+  "http": null,
+  "envelope_code": null,
+  "verdict": "PASS",
+  "note": "remark=PURGED_BY_SUPER_ADMIN:900101@1790405290647 purge_audit_count=2",
+  "ts": "2026-09-25T23:48:10.690669"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "A4 已清除二次 purge 拒绝",
+  "cmd": "POST /deletion-requests/2103693441849405441/purge (repeat)",
+  "http": 409,
+  "envelope_code": 50002,
+  "verdict": "PASS",
+  "note": "http=409 msg=该记录已清除，不可二次清除",
+  "ts": "2026-09-25T23:48:10.711659"
+ },
+ {
+  "card": "AC-DEL-08",
+  "case": "A5 非超管 purge 被拦",
+  "cmd": "POST purge (ipd-rd)",
+  "http": 500,
+  "envelope_code": null,
+  "verdict": "PARTIAL",
+  "note": "拦下=True 包络正常=False → 裸500属lane3 D-3权限包络既有缺陷(非本波范围)",
+  "ts": "2026-09-25T23:48:10.728728"
+ }
+]

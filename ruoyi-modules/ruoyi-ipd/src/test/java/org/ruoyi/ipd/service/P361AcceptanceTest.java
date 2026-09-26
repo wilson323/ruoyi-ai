@@ -38,8 +38,8 @@ import static org.mockito.Mockito.when;
  *   <li>AC-INC-27：五维度权重和 25+25+20+20+10 = 100</li>
  *   <li>AC-INC-25：市场 65% ⇒ 研发自动联动 35%（两者之和恒为 100%）</li>
  *   <li>AC-INC-26：市场 70% ⇒ 越界拒绝，错误码 CONTRIB_TIER_OUT_OF_RANGE</li>
- *   <li>AC-INC-28：仅 G5 上市后 90 天复盘阶段开放（status=LIFECYCLE/POST_LAUNCH）</li>
- *   <li>AC-INC-28：非 G5 阶段项目永远关闭（status=CONCEPT ⇒ CONTRIB_NOT_G5_STAGE）</li>
+ *   <li>AC-INC-28：仅 G5 上市后 90 天复盘阶段开放（current_stage=LIFECYCLE，e697a401 修正字段）</li>
+ *   <li>AC-INC-28：非 G5 阶段项目永远关闭（current_stage=CONCEPT ⇒ CONTRIB_NOT_G5_STAGE）</li>
  *   <li>AC-INC-28：双 PM 自评缺一不可（仅 MARKET_PM 完成 ⇒ status 保持 DRAFT）</li>
  *   <li>A5（无"评审上级"角色）：仅各自产品组长（GROUP_LEADER）可 confirm；非组长 ⇒ 403</li>
  * </ol>
@@ -125,7 +125,7 @@ class P361AcceptanceTest {
     @Test
     @DisplayName("[AC-INC-28] LIFECYCLE 阶段项目（已上市）⇒ 评定入口开放")
     void AC_INC_28_G5_上市后90天_开放() {
-        // Given：项目 status = LIFECYCLE（已上市，进入 90 天复盘窗口）
+        // Given：项目 current_stage = LIFECYCLE（已上市，进入 90 天复盘窗口）
         when(ipdPermission.requireInternal()).thenReturn(marketPmActor());
         when(projectMapper.selectById(PROJECT_ID)).thenReturn(lifecycleProject());
         when(contributionMapper.selectOne(any())).thenReturn(null);
@@ -150,7 +150,7 @@ class P361AcceptanceTest {
     @Test
     @DisplayName("[AC-INC-28] 非 G5 阶段项目（CONCEPT）⇒ 永远关闭 CONTRIB_NOT_G5_STAGE")
     void AC_INC_28_非G5项目_永远关闭() {
-        // Given：项目 status = CONCEPT（未进入 G5）
+        // Given：项目 current_stage = CONCEPT（未进入 G5）
         when(ipdPermission.requireInternal()).thenReturn(marketPmActor());
         when(projectMapper.selectById(PROJECT_ID)).thenReturn(conceptProject());
 
@@ -254,9 +254,11 @@ class P361AcceptanceTest {
     }
 
     private Project lifecycleProject() {
+        // e697a401 契约：G5 判 current_stage=LIFECYCLE；status 用状态机合法在任态 ACTIVE（非 SQL 种子形态）
         Project p = new Project();
         p.setId(PROJECT_ID);
-        p.setStatus("LIFECYCLE");
+        p.setStatus("ACTIVE");
+        p.setCurrentStage("LIFECYCLE");
         p.setDelFlag("0");
         return p;
     }
@@ -264,7 +266,8 @@ class P361AcceptanceTest {
     private Project conceptProject() {
         Project p = new Project();
         p.setId(PROJECT_ID);
-        p.setStatus("CONCEPT");
+        p.setStatus("DRAFT");
+        p.setCurrentStage("CONCEPT");
         p.setDelFlag("0");
         return p;
     }
