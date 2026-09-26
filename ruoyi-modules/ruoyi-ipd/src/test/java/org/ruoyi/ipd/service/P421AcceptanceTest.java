@@ -62,7 +62,7 @@ class P421AcceptanceTest {
 
     private static AiModelSaveReq req(String apiKey) {
         return new AiModelSaveReq("openai", "https://api.openai.com/v1", apiKey,
-            "gpt-4o-mini", new BigDecimal("0.70"), 4096, null, null);
+            "gpt-4o-mini", new BigDecimal("0.70"), 4096, null, null, null);
     }
 
     private static AiModelConfig stored(Long id, String cipher) {
@@ -171,17 +171,17 @@ class P421AcceptanceTest {
     void parameterBounds() {
         IpdBusinessException hot = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                "m", new BigDecimal("2.50"), 100, null, null), "9"));
+                "m", new BigDecimal("2.50"), 100, null, null, null), "9"));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, hot.getErrorCode());
         assertTrue(hot.getMessage().contains("温度"), "temperature 超界必须含「温度」字样给前端定向文案：" + hot.getMessage());
         IpdBusinessException ftp = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "ftp://a.b", "sk-1234567890",
-                "m", null, null, null, null), "9"));
+                "m", null, null, null, null, null), "9"));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, ftp.getErrorCode());
         assertTrue(ftp.getMessage().contains("接口地址"), "ftp 端点必须含「接口地址」字样：" + ftp.getMessage());
         IpdBusinessException shortKey = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "short",
-                "m", null, null, null, null), "9"));
+                "m", null, null, null, null, null), "9"));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, shortKey.getErrorCode());
         assertTrue(shortKey.getMessage().contains("API 密钥"), "短密钥必须含「API 密钥」字样：" + shortKey.getMessage());
         // 边界内合法：temperature 0 与 2
@@ -191,7 +191,7 @@ class P421AcceptanceTest {
             return 1;
         });
         assertDoesNotThrow(() -> service.create(new AiModelSaveReq("openai", "https://a.b",
-            "sk-1234567890", "m", BigDecimal.ZERO, 1, null, null), "9"));
+            "sk-1234567890", "m", BigDecimal.ZERO, 1, null, null, null), "9"));
     }
 
     @Test
@@ -204,51 +204,51 @@ class P421AcceptanceTest {
         // 提供商空
         IpdBusinessException blankProvider = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("", "https://a.b", "sk-1234567890",
-                "m", null, null, null, null), "9"));
+                "m", null, null, null, null, null), "9"));
         assertTrue(blankProvider.getMessage().contains("提供商"), "提供商空必须含「提供商」：" + blankProvider.getMessage());
         // 提供商超 32
         String long41 = "a".repeat(33);
         IpdBusinessException longProvider = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq(long41, "https://a.b", "sk-1234567890",
-                "m", null, null, null, null), "9"));
+                "m", null, null, null, null, null), "9"));
         assertTrue(longProvider.getMessage().contains("提供商"), "提供商超长必须含「提供商」：" + longProvider.getMessage());
         // 端点空
         IpdBusinessException blankEndpoint = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "", "sk-1234567890",
-                "m", null, null, null, null), "9"));
+                "m", null, null, null, null, null), "9"));
         assertTrue(blankEndpoint.getMessage().contains("接口地址"), "端点空必须含「接口地址」：" + blankEndpoint.getMessage());
         // 端点超 255
         String long256 = "https://a.b/" + "x".repeat(250);
         IpdBusinessException longEndpoint = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", long256, "sk-1234567890",
-                "m", null, null, null, null), "9"));
+                "m", null, null, null, null, null), "9"));
         assertTrue(longEndpoint.getMessage().contains("接口地址"), "端点超长必须含「接口地址」：" + longEndpoint.getMessage());
         // 模型名空
         IpdBusinessException blankModel = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                "", null, null, null, null), "9"));
+                "", null, null, null, null, null), "9"));
         assertTrue(blankModel.getMessage().contains("模型名称"), "模型名空必须含「模型名称」：" + blankModel.getMessage());
         // 模型名超 64
         String longModel = "m".repeat(65);
         IpdBusinessException longModelEx = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                longModel, null, null, null, null), "9"));
+                longModel, null, null, null, null, null), "9"));
         assertTrue(longModelEx.getMessage().contains("模型名称"), "模型名超长必须含「模型名称」：" + longModelEx.getMessage());
         // maxTokens 越界
         IpdBusinessException maxTokensEx = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                "m", null, 999_999, null, null), "9"));
+                "m", null, 999_999, null, null, null), "9"));
         assertTrue(maxTokensEx.getMessage().contains("最大 Token"), "maxTokens 越界必须含「最大 Token」：" + maxTokensEx.getMessage());
         // RAG 端点格式错
         IpdBusinessException embedEp = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                "m", null, null, "ftp://x", null), "9"));
+                "m", null, null, "ftp://x", null, null), "9"));
         assertTrue(embedEp.getMessage().contains("RAG"), "RAG 端点错必须含「RAG」：" + embedEp.getMessage());
         // RAG 模型名超 64
         String embedLongModel = "e".repeat(65);
         IpdBusinessException embedModelEx = assertThrows(IpdBusinessException.class,
             () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
-                "m", null, null, null, embedLongModel), "9"));
+                "m", null, null, null, embedLongModel, null), "9"));
         assertTrue(embedModelEx.getMessage().contains("RAG"), "RAG 模型名超长必须含「RAG」：" + embedModelEx.getMessage());
     }
 
@@ -333,5 +333,41 @@ class P421AcceptanceTest {
             .andExpect(jsonPath("$.code").value(0))
             .andExpect(jsonPath("$.data[0].provider").value("openai"));
         verify(permission).requireInternal();
+    }
+
+    @Test
+    @DisplayName("R219 台账⑪：create 带 budgetTokens 落库 config_json；null 不落键；负数拒绝")
+    void createPersistsBudgetTokens() {
+        AtomicReference<AiModelConfig> saved = new AtomicReference<>();
+        when(mapper.insert(any(AiModelConfig.class))).thenAnswer(inv -> {
+            saved.set(inv.getArgument(0, AiModelConfig.class));
+            saved.get().setId(1L);
+            return 1;
+        });
+        service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
+            "m", null, null, null, null, 100), "9");
+        assertTrue(saved.get().getConfigJson().contains("\"budgetTokens\":100"),
+            "预算键必须落库供 AiGenerationService 消费：" + saved.get().getConfigJson());
+        service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
+            "m2", null, null, null, null, null), "9");
+        assertFalse(saved.get().getConfigJson().contains("budgetTokens"),
+            "null 不落键保持载荷最小：" + saved.get().getConfigJson());
+        IpdBusinessException neg = assertThrows(IpdBusinessException.class,
+            () -> service.create(new AiModelSaveReq("openai", "https://a.b", "sk-1234567890",
+                "m3", null, null, null, null, -1), "9"));
+        assertEquals(ApiV1ErrorCode.PARAM_INVALID, neg.getErrorCode());
+        assertTrue(neg.getMessage().contains("预算"), "负预算必须含「预算」定向文案：" + neg.getMessage());
+    }
+
+    @Test
+    @DisplayName("R219 台账⑪：mergeConfigJson budgetTokens 三态——null 沿用旧值、非 null 覆盖（含 0=不限）")
+    void mergeBudgetTokensThreeStates() {
+        String oldJson = "{\"temperature\":0.70,\"maxTokens\":4096,\"budgetTokens\":500,\"generateTimeoutMs\":30000}";
+        String keep = AiModelConfigService.mergeConfigJson(oldJson, null, null, null, null, null);
+        assertTrue(keep.contains("\"budgetTokens\":500"), "null=沿用旧值，编辑不得抹掉预算：" + keep);
+        assertTrue(keep.contains("generateTimeoutMs"), "其余扩展键原样保留：" + keep);
+        String overridden = AiModelConfigService.mergeConfigJson(oldJson, null, null, null, null, 0);
+        assertTrue(overridden.contains("\"budgetTokens\":0"), "0=显式覆盖为不限：" + overridden);
+        assertFalse(overridden.contains("\"budgetTokens\":500"), "旧值必须被覆盖：" + overridden);
     }
 }

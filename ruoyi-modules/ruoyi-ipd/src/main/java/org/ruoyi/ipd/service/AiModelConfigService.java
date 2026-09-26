@@ -124,7 +124,8 @@ public class AiModelConfigService implements IAiModelConfigService {
             .modelName(req.model().trim())
             .endpointUrl(req.endpoint().trim())
             .apiKeyEncrypted(encrypt(req.apiKey()))
-            .configJson(configJsonOf(req.temperature(), req.maxTokens(), req.embedEndpoint(), req.embedModel()))
+            .configJson(configJsonOf(req.temperature(), req.maxTokens(), req.embedEndpoint(),
+                        req.embedModel(), req.budgetTokens()))
             .isActive(false)
             .build();
         mapper.insert(entity);
@@ -147,7 +148,7 @@ public class AiModelConfigService implements IAiModelConfigService {
         patch.setModelName(req.model().trim());
         // P4-2.2：合并而非重建——保留 budgetTokens/generateTimeoutMs 等扩展键（页48编辑不得抹掉生成侧护栏配置）
         patch.setConfigJson(mergeConfigJson(exists.getConfigJson(), req.temperature(), req.maxTokens(),
-            req.embedEndpoint(), req.embedModel()));
+            req.embedEndpoint(), req.embedModel(), req.budgetTokens()));
         if (mapper.updateById(patch) != 1) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
@@ -411,6 +412,10 @@ public class AiModelConfigService implements IAiModelConfigService {
         if (req.maxTokens() != null && (req.maxTokens() < 1 || req.maxTokens() > 200_000)) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "最大 Token 必须在 1-200000 之间");
         }
+        // R219 台账⑪：预算闸消费 config_json.budgetTokens，保存侧同口径守非负（0=不限由消费侧语义）
+        if (req.budgetTokens() != null && req.budgetTokens() < 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "月度 Token 预算不能为负");
+        }
         // AI-STRAT-1（2026-09-11）：embed 两键可选，填了才校验格式（SSRF 黑名单在调用时
         // AiGateway.embed 前置，与主 endpoint 同策略——不在保存时做 DNS 解析）
         if (!isBlank(req.embedEndpoint())) {
@@ -453,9 +458,10 @@ public class AiModelConfigService implements IAiModelConfigService {
     /**
      * config_json 组装：null/blank 字段不落键（保持载荷最小，P4-2.2 可扩展键）。
      * AI-STRAT-1：embed 两键字符串值经 ObjectNode 序列化（免手拼转义）。
+     * R219 台账⑪：budgetTokens 非 null 才落键（null=不落，避免覆盖消费侧默认）。
      */
     private static String configJsonOf(BigDecimal temperature, Integer maxTokens,
-                                       String embedEndpoint, String embedModel) {
+                                       String embedEndpoint, String embedModel, Integer budgetTokens) {
         com.fasterxml.jackson.databind.node.ObjectNode out = JSON.createObjectNode();
         if (temperature != null) {
             out.put("temperature", temperature);
@@ -469,22 +475,27 @@ public class AiModelConfigService implements IAiModelConfigService {
         if (!isBlank(embedModel)) {
             out.put("embedModel", embedModel.trim());
         }
+        if (budgetTokens != null) {
+            out.put("budgetTokens", budgetTokens);
+        }
         return out.toString();
     }
 
     /**
      * P4-2.2：update 合并 config_json——temperature/maxTokens 覆盖（null 沿用旧值，防误清），
-     * 其余扩展键（budgetTokens/generateTimeoutMs 等）原样保留。
+     * 其余扩展键（generateTimeoutMs 等）原样保留。
      * AI-STRAT-1：embedEndpoint/embedModel 三态——null=不动（沿用旧值）、blank=显式清除
      * （关闭 RAG 的运营途径）、非空=覆盖。
+     * R219 台账⑪：budgetTokens 并入可覆盖键——null=沿用旧值，非 null（含 0=不限）=覆盖。
      */
     static String mergeConfigJson(String oldJson, BigDecimal temperature, Integer maxTokens,
-                                  String embedEndpoint, String embedModel) {
+                                  String embedEndpoint, String embedModel, Integer budgetTokens) {
         JsonNode old = parseConfig(oldJson);
         com.fasterxml.jackson.databind.node.ObjectNode out = JSON.createObjectNode();
         old.fields().forEachRemaining(e -> {
             if ("temperature".equals(e.getKey()) || "maxTokens".equals(e.getKey())
-                || "embedEndpoint".equals(e.getKey()) || "embedModel".equals(e.getKey())) {
+                || "embedEndpoint".equals(e.getKey()) || "embedModel".equals(e.getKey())
+                || "budgetTokens".equals(e.getKey())) {
                 return;
             }
             out.set(e.getKey(), e.getValue());
@@ -501,6 +512,11 @@ public class AiModelConfigService implements IAiModelConfigService {
         }
         mergeEmbedKey(out, old, "embedEndpoint", embedEndpoint);
         mergeEmbedKey(out, old, "embedModel", embedModel);
+        Integer b = budgetTokens != null ? budgetTokens
+            : (old.hasNonNull("budgetTokens") ? Integer.valueOf(old.get("budgetTokens").asInt()) : null);
+        if (b != null) {
+            out.put("budgetTokens", b);
+        }
         return out.toString();
     }
 
