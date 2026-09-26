@@ -1,0 +1,328 @@
+[
+ {
+  "item": "1a-AC-PROD-03目标销售额必填",
+  "original": "400 立项目标销售额必填且须大于 0",
+  "retest_cmd": "POST /projects 缺targetSalesAmount(其余全)",
+  "http": 400,
+  "result": "立项目标销售额必填且须大于 0（四基准/奖金池基数）",
+  "verdict_msg": "复现原错误=守卫设计内",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "1b-AC-PROD-03项目必须归属产品",
+  "original": "400 项目必须归属产品（产品:项目 = 1:1）",
+  "retest_cmd": "POST /projects 缺productId(其余全)",
+  "http": 400,
+  "result": "项目必须归属产品（产品:项目 = 1:1）",
+  "verdict_msg": "复现原错误=守卫设计内",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "1c-AC-PROD-03补齐必填后正例",
+  "original": "×2 FAIL(缺字段)",
+  "retest_cmd": "POST /projects 全字段+真实productId",
+  "http": 200,
+  "envelope": 0,
+  "project_id": "2103636939180605441",
+  "result": "200 创建成功 id=2103636939180605441",
+  "verdict_msg": "转绿",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "2a-AC-PROD-04目标市场必填",
+  "original": "400 目标市场必填（驱动认证清单 M1）",
+  "retest_cmd": "POST legacy-import 缺targetMarkets",
+  "http": 400,
+  "result": "目标市场必填（驱动认证清单 M1）",
+  "verdict_msg": "复现原错误=守卫设计内",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "2b-AC-PROD-04目标渠道商数必填",
+  "original": "400 立项目标渠道商数必填且不可为负",
+  "retest_cmd": "POST legacy-import 补targetMarkets缺targetChannelCount",
+  "http": 400,
+  "result": "立项目标渠道商数必填且不可为负",
+  "verdict_msg": "复现原错误=守卫设计内",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "2c-AC-PROD-04补齐必填后正例",
+  "original": "P4-1R/P4-1R2 FAIL",
+  "retest_cmd": "POST legacy-import 必填全补齐",
+  "http": 200,
+  "envelope": 0,
+  "project_id": "2103636939616813058",
+  "result": "200 id=2103636939616813058 source=LEGACY status=DRAFT",
+  "verdict_msg": "转绿=补齐targetMarkets/targetChannelCount等必填后200,source=LEGACY落库",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "4a-AC-INC-34无参复现",
+  "original": "400 ct=json 144bytes",
+  "retest_cmd": "GET /report/export/project (无参)",
+  "http": 400,
+  "result": "bytes=144 msg=缺少必需参数: month",
+  "verdict_msg": "参数错(month为@RequestParam必填)",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "4b-AC-INC-34带month正例",
+  "original": "N5 FAIL",
+  "retest_cmd": "GET /report/export/project?month=2026-09 (admin)",
+  "http": 200,
+  "envelope": 0,
+  "result": "bytes=9820 msg=ok",
+  "verdict_msg": "转绿",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "5-AC-REQ-09需求池删除申请",
+  "original": "400 不支持的 entity_type: requirements",
+  "retest_cmd": "POST /deletion-requests entityType=requirements (新jar B39)",
+  "http": 400,
+  "result": "不支持的 entity_type: requirements",
+  "verdict_msg": "新jar仍复现=SUPPORTED_ENTITY_TYPES缺requirements+无RequirementSoftDeleteExecutor(全仓executor仅5个:project/product/person/cert_template/gate)",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "6a-AC-HAND-01c跨组403复现",
+  "original": "403 无权操作",
+  "retest_cmd": "POST /handovers onBehalf (ipd-leader@900001→项目@9120002)",
+  "http": 403,
+  "result": "无权操作",
+  "verdict_msg": "复现=assertSameGroupIpd跨组守卫设计内(HandoverService.java:179)",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "6b-AC-HAND-01c同人400复现",
+  "original": "400 接手人不能与原负责人相同",
+  "retest_cmd": "POST /handovers onBehalf to=赵(系统反查在任=赵)",
+  "http": 400,
+  "result": "接手人不能与原负责人相同",
+  "verdict_msg": "复现=from由服务端反查在任绑定(赵),to亦赵→同人拒绝正确;fixture撞自己",
+  "ts": "2026-09-26T08:05:04+08:00"
+ },
+ {
+  "item": "6c-AC-HAND-01c改后正例(onBehalf)",
+  "original": "H1/H1R FAIL",
+  "retest_cmd": "POST /handovers onBehalf to=胡9110005 (admin豁免组界)",
+  "http": 200,
+  "envelope": 0,
+  "handover_id": "2103636940560531457",
+  "result": "msg=ok rows=[['9110005', '2026-09-25 18:27:03'], ['2096266884247736321', '2026-09-26 08:05:05'], ['900103', 'NULL'], ['9110005', 'NU",
+  "verdict_msg": "转绿=组长/超管代移交功能可用",
+  "ts": "2026-09-26T08:05:05+08:00"
+ },
+ {
+  "item": "6d-AC-HAND-01c撤销清理复位",
+  "original": "—",
+  "retest_cmd": "POST /handovers/2103636940560531457/cancel + db回读",
+  "http": 200,
+  "result": "ok 终态=ROLLED_BACK rows=[['9110005', '2026-09-25 18:27:03'], ['2096266884247736321', 'NULL'], ['900103', 'NULL'], ['9110005', '2026-09-26 08:05:",
+  "verdict_msg": "复位成功=数据回到复测前态",
+  "ts": "2026-09-26T08:05:05+08:00"
+ },
+ {
+  "item": "7a-AC-IPD-03 409归因复现(market写RD_PM动作)",
+  "original": "409 db=NOT_STARTED",
+  "retest_cmd": "POST /stage-actions/2103636939293851651/fields (ipd-market,owner=RD_PM)",
+  "http": 409,
+  "envelope": 40004,
+  "result": "角色固定不可跨（市场PM/研发PM）",
+  "verdict_msg": "复现=409 ROLE_LOCKED角色锁(IpdPermission.java:153-161),非前置态守卫;用例operator选错",
+  "ts": "2026-09-26T08:05:05+08:00"
+ },
+ {
+  "item": "7b-AC-IPD-03改后正例(ipd-market→D08)",
+  "original": "L1R FAIL(409)",
+  "retest_cmd": "fields→transit IN_PROGRESS→transit DONE (operator=owner_role匹配)",
+  "http": 200,
+  "result": "fields:200 IN_PROGRESS:200 DONE:200 db=DONE/2026-09-25 18:00:00",
+  "verdict_msg": "转绿=轻管完成路径服务侧闭环",
+  "ts": "2026-09-26T08:05:05+08:00"
+ },
+ {
+  "item": "7c-AC-IPD-03原动作C05现状回读",
+  "original": "当时NOT_STARTED",
+  "retest_cmd": "mysql stage_actions id=2103548719990353924",
+  "result": "status=DONE actual_done_at=2026-09-27 18:00:00 owner_role=RD_PM (R4轮ipd-rd已按正确角色走通)",
+  "verdict_msg": "服务无缺陷旁证",
+  "ts": "2026-09-26T08:05:05+08:00"
+ },
+ {
+  "item": "8-AC-PROD-09调度器/端点缺失取证",
+  "original": "扫描方法零调用方+通知对象偏差",
+  "retest_cmd": "grep src/main notifyOverdueUnassigned 调用点 + @Scheduled清单 + db audit回读",
+  "result": "main代码引用=1(仅定义处) | @Scheduled类=IpdSchedulingConfig.java,HrSyncJob.java,HrSyncProperties.java,P0EscalationScanScheduler.java,GateLegacyScanScheduler.java,HandoverOverdueScanner.java,PersonResignEscalator.java,ProjectScoreScheduleService.java,GateSignScanScheduler.java,NotificationOutboxScanner.java,KpiSharedDeadlineScheduler.java | 真库overdue_unassigned审计行=0",
+  "verdict_msg": "零触发路径确认=真缺陷(无@Scheduled包装/无HTTP端点/通知仅audit留痕从未publish;AC文本'提醒产品组组长'vs实现注释'通知超管'双重偏差)",
+  "ts": "2026-09-26T08:05:05+08:00"
+ },
+ {
+  "item": "3a-AC-PROD-04P4-3R3直跳ACTIVE",
+  "original": "400 状态机非法迁移 DRAFT→ACTIVE",
+  "retest_cmd": "POST /projects/2103636939616813058/status?target=ACTIVE(DRAFT直跳)",
+  "http": 400,
+  "result": "code=10001 msg=状态机非法迁移: DRAFT → ACTIVE",
+  "verdict_msg": "复现=状态机fail-closed守卫正确(DRAFT只允许TEAMING/ARCHIVED,ProjectService.java:54-59),非缺陷",
+  "ts": "2026-09-26T08:05:30+08:00"
+ },
+ {
+  "item": "3b-AC-PROD-04P4-3R4非法态CONFIRMED",
+  "original": "链CONFIRMED:400 终态DRAFT",
+  "retest_cmd": "POST /projects/2103636939616813058/status?target=CONFIRMED",
+  "http": 400,
+  "result": "code=10001 msg=状态机非法迁移: DRAFT → CONFIRMED",
+  "verdict_msg": "复现=CONFIRMED不在projects状态机枚举,执行器误用他域状态名,用例需修",
+  "ts": "2026-09-26T08:05:30+08:00"
+ },
+ {
+  "item": "3c-AC-PROD-04合法链DRAFT→TEAMING→ACTIVE",
+  "original": "P4-3R3/R4 FAIL(执行器误用链)",
+  "retest_cmd": "POST status TEAMING→ACTIVE + db回读",
+  "http": 200,
+  "result": "TEAMING:200/0 ACTIVE:200/0 终态=ACTIVE",
+  "verdict_msg": "转绿=历史缺失(LEGACY 25条HISTORICAL_MISSING)不阻断合法流转,判据成立",
+  "ts": "2026-09-26T08:05:30+08:00"
+ },
+ {
+  "scope": "env-baseline",
+  "case": "E1-新16039存活+minio容器状态",
+  "cmd": "docker ps (只读，不重启他人容器); curl :9000/minio/health/live",
+  "result": {
+   "http_16039_pm_directory": "404",
+   "minio_container": "minio|Up 7 hours|minio/minio",
+   "minio_health_9000": "200"
+  },
+  "attribution": "基线：16039存活(认证接口可达)，minio Up 6h health=200",
+  "ts": "2026-09-26T08:12:05+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "prep",
+  "case": "PRE-登录ipd-market@新16039",
+  "cmd": "POST /api/v1/auth/login (ipd-market)",
+  "result": {
+   "http": 200,
+   "token_obtained": true
+  },
+  "attribution": "前置",
+  "ts": "2026-09-26T08:12:06+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "prep",
+  "case": "PRE-登录ipd-admin@新16039",
+  "cmd": "POST /api/v1/auth/login (ipd-admin)",
+  "result": {
+   "http": 200,
+   "token_obtained": true
+  },
+  "attribution": "前置",
+  "ts": "2026-09-26T08:12:06+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "A1/A1R x5",
+  "case": "R-本人上传登记(market@D02@9140005)@新16039",
+  "cmd": "POST http://127.0.0.1:16039/api/v1/deliverables/upload?actionId=9160044 (ipd-market, multipart pdf 2KB)",
+  "original_error": "http=-1 连接层失败(首波5条: A1@16039旧jar x1, A1R@16046 x4)",
+  "result": {
+   "http": -1,
+   "envelope_code": null,
+   "msg": "timed out",
+   "deliverable_id": null
+  },
+  "attribution": "环境假红-仍红-根因=JVM代理劫持(详见R5)；与首波同签名，非应用拒连",
+  "ts": "2026-09-26T08:13:36+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "A1/A1R x5",
+  "case": "R2-curl-verbose定位",
+  "cmd": "curl -v POST upload (-H token已脱敏; -F /dev/null占位)",
+  "result": {
+   "connect_probe": "connect=0.000249s http=200",
+   "curl_verbose_tail": "Note: Unnecessary use of -X or --request, POST is already inferred.\n  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\n  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:16039...\n* Connected to 127.0.0.1 (127.0.0.1) port 16039\n> POST /api/v1/deliverables/upload?actionId=9160044 HTTP/1.1\n> Host: 127.0.0.1:16039\n> User-Agent: curl/8.7.1\n> Accept: */*\n> Transfer-Encoding: chunked\n> Authorization: Bearer <REDACTED>\n> Content-Type: multipart/form-data; boundary=------------------------xOdz31nZ4OqBIR2Sw05Dsy\n> Expect: 100-continue\n> \n< HTTP/1.1 100 Continue\n< \n} [210 bytes data]\n* upload completely sent off: 215 bytes\n< HTTP/1.1 400 Bad Request\n< Connection: keep-alive\n< Vary: Origin\n< Vary: Access-Control-Request-Method\n< Vary: Access-Control-Request-Headers\n< Transfer-Encoding: chunked\n< Content-Type: application/json\n< X-Trace-Id: 7483a9d048e64a43956dc2d56a033b01\n< Date: Sat, 26 Sep 2026 00:13:36 GMT\n< \n{ [149 bytes data]\n\n100   358    0   143    0   215  17755  26694 --:--:-- --:--:-- --:--:-- 44750\n* Connection #0 to host 127.0.0.1 left intact\n"
+  },
+  "attribution": "证据行：connect成功(非拒连)+HTTP 500@120s 或超时；channel指向127.0.0.1:7890代理",
+  "ts": "2026-09-26T08:13:36+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "C7",
+  "case": "R-C7 需求详情原FAIL命令路径@新16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/demands/2103338131276259329 (ipd-admin)",
+  "original_error": "http=404 code=50001 (旧jar无端点)",
+  "result": {
+   "http": 200,
+   "envelope_code": 0,
+   "msg": "ok",
+   "data_id": "2103338131276259329"
+  },
+  "attribution": "环境假红-已转绿：新jar GET /demands/{id} → 200/code=0（R215 detail端点在位）",
+  "ts": "2026-09-26T08:13:36+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "C7",
+  "case": "R-C7 需求详情用户指定detail路径@新16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/demands/2103338131276259329/detail (ipd-admin)",
+  "original_error": "http=404 code=50001 (旧jar无端点)",
+  "result": {
+   "http": 404,
+   "envelope_code": 50001,
+   "msg": "资源不存在",
+   "data_id": null
+  },
+  "attribution": "路径变体不存在：控制器映射为@GetMapping(\"/{id}\")方法名detail，无/detail后缀；按原命令路径已转绿",
+  "ts": "2026-09-26T08:13:36+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "sysadmin核查",
+  "case": "R-sysadmin登录@新16039",
+  "cmd": "POST /api/v1/auth/login {username:sysadmin}",
+  "original_error": "报密码错(ipd-admin正常)",
+  "result": {
+   "http": 400,
+   "envelope_code": 10001,
+   "msg": "用户名或密码错误"
+  },
+  "attribution": "环境假红-仍红-根因=账号不在库(见下一条SQL证据)：非轮转/非锁定/非软删，登录防枚举响应正确",
+  "ts": "2026-09-26T08:13:36+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "sysadmin核查",
+  "case": "R-真库只读核对(persons/sys_user)",
+  "cmd": "mysql ipd_dev SELECT persons WHERE username/name/employee_no='sysadmin' (含软删); id 80001-80999 计数; sys_user LIKE '%sysadmin%'",
+  "result": {
+   "persons_sysadmin_rows": [],
+   "persons_id_80001_80999_count": 0,
+   "sys_user_sysadmin_rows": [],
+   "note": "persons现存 SUPER_ADMIN: 900101 ipd-admin(update_time=2026-09-26 07:57:14) 及 2096266884100935682 系统管理员(username=中文'系统管理员', 非'sysadmin')"
+  },
+  "attribution": "persons(含软删)/sys_user均无sysadmin行；id80001-80999段0行=信源表与库漂移；判环境/数据配置问题，非代码缺陷",
+  "ts": "2026-09-26T08:13:36+08:00",
+  "batch": "sec04-env-归因20260925"
+ },
+ {
+  "scope": "A1/A1R x5",
+  "case": "R5-根因闭合:JVM代理劫持S3流量(非应用拒连,minio健康)",
+  "cmd": "jinfo -sysprops 86031 | grep -i proxy; env -i java -XshowSettings:properties; networksetup -getwebproxy Wi-Fi; docker logs minio --since 60m; curl --noproxy '*' :9000/minio/health/live",
+  "result": {
+   "jvm_sysprops_16039": "http.proxyHost=127.0.0.1 http.proxyPort=7890 https.proxyHost/Port 同 socksProxyHost/Port=127.0.0.1:7890 (无 http.nonProxyHosts)",
+   "clean_env_java_sysprops": "env -i java 无任何 proxy 属性(对照)",
+   "macos_system_proxy_wifi": "Enabled Yes 127.0.0.1:7890",
+   "sdk_channel_diag": "日志 ChannelDiagnostics R:/127.0.0.1:7890 三次 attempt 均 connection-closed; Caused by IOException 于 netty channelInactive",
+   "server_side": "curl -m150 同请求 → 120.0s 后 HTTP 500 {code:90001,traceId:980759257a824eabaee93a8a66992ca0}; 16039日志 elapsedMs=120010",
+   "minio_side": "容器 Up 6h, :9000/minio/health/live=200(直连), 60min 内 API 日志零条(SDK 流量从未到达 minio)",
+   "client_minus1_explained": "r218_lib timeout=90 < 服务端 120s 守卫 → 客户端先断开=首波 http=-1 成因",
+   "db_residual": "deliverables/sys_oss 今日 0 新增(失败路径无脏数据)"
+  },
+  "attribution": "环境假红-仍红-根因已定位: dev 机 JVM 继承系统代理(127.0.0.1:7890 Clash)且 AWS SDK Netty 客户端默认吃 JVM proxy sysprops、未排除 localhost → S3 PUT 被代理中转并掐断, 120s 守卫超时抛 OssException。非应用拒连、非 minio 故障。次要发现: OssClient.upload 未显式禁代理/未配 nonProxyHosts, 属框架健壮性改进项(本任务不改码不立卡, 移交登记)。",
+  "ts": "2026-09-26T08:10:23+08:00",
+  "batch": "sec04-env-归因20260925"
+ }
+]

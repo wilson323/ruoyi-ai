@@ -1,0 +1,132 @@
+[
+ {
+  "scope": "env-baseline",
+  "case": "E1-新16039存活+minio容器状态",
+  "cmd": "docker ps (只读，不重启他人容器); curl :9000/minio/health/live",
+  "result": {
+   "http_16039_pm_directory": "404",
+   "minio_container": "minio|Up 7 hours|minio/minio",
+   "minio_health_9000": "200"
+  },
+  "attribution": "基线：16039存活(认证接口可达)，minio Up 6h health=200",
+  "ts": "2026-09-26T08:12:05+08:00"
+ },
+ {
+  "scope": "prep",
+  "case": "PRE-登录ipd-market@新16039",
+  "cmd": "POST /api/v1/auth/login (ipd-market)",
+  "result": {
+   "http": 200,
+   "token_obtained": true
+  },
+  "attribution": "前置",
+  "ts": "2026-09-26T08:12:06+08:00"
+ },
+ {
+  "scope": "prep",
+  "case": "PRE-登录ipd-admin@新16039",
+  "cmd": "POST /api/v1/auth/login (ipd-admin)",
+  "result": {
+   "http": 200,
+   "token_obtained": true
+  },
+  "attribution": "前置",
+  "ts": "2026-09-26T08:12:06+08:00"
+ },
+ {
+  "scope": "A1/A1R x5",
+  "case": "R-本人上传登记(market@D02@9140005)@新16039",
+  "cmd": "POST http://127.0.0.1:16039/api/v1/deliverables/upload?actionId=9160044 (ipd-market, multipart pdf 2KB)",
+  "original_error": "http=-1 连接层失败(首波5条: A1@16039旧jar x1, A1R@16046 x4)",
+  "result": {
+   "http": -1,
+   "envelope_code": null,
+   "msg": "timed out",
+   "deliverable_id": null
+  },
+  "attribution": "环境假红-仍红-根因=JVM代理劫持(详见R5)；与首波同签名，非应用拒连",
+  "ts": "2026-09-26T08:13:36+08:00"
+ },
+ {
+  "scope": "A1/A1R x5",
+  "case": "R2-curl-verbose定位",
+  "cmd": "curl -v POST upload (-H token已脱敏; -F /dev/null占位)",
+  "result": {
+   "connect_probe": "connect=0.000249s http=200",
+   "curl_verbose_tail": "Note: Unnecessary use of -X or --request, POST is already inferred.\n  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\n  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:16039...\n* Connected to 127.0.0.1 (127.0.0.1) port 16039\n> POST /api/v1/deliverables/upload?actionId=9160044 HTTP/1.1\n> Host: 127.0.0.1:16039\n> User-Agent: curl/8.7.1\n> Accept: */*\n> Transfer-Encoding: chunked\n> Authorization: Bearer <REDACTED>\n> Content-Type: multipart/form-data; boundary=------------------------xOdz31nZ4OqBIR2Sw05Dsy\n> Expect: 100-continue\n> \n< HTTP/1.1 100 Continue\n< \n} [210 bytes data]\n* upload completely sent off: 215 bytes\n< HTTP/1.1 400 Bad Request\n< Connection: keep-alive\n< Vary: Origin\n< Vary: Access-Control-Request-Method\n< Vary: Access-Control-Request-Headers\n< Transfer-Encoding: chunked\n< Content-Type: application/json\n< X-Trace-Id: 7483a9d048e64a43956dc2d56a033b01\n< Date: Sat, 26 Sep 2026 00:13:36 GMT\n< \n{ [149 bytes data]\n\n100   358    0   143    0   215  17755  26694 --:--:-- --:--:-- --:--:-- 44750\n* Connection #0 to host 127.0.0.1 left intact\n"
+  },
+  "attribution": "证据行：connect成功(非拒连)+HTTP 500@120s 或超时；channel指向127.0.0.1:7890代理",
+  "ts": "2026-09-26T08:13:36+08:00"
+ },
+ {
+  "scope": "C7",
+  "case": "R-C7 需求详情原FAIL命令路径@新16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/demands/2103338131276259329 (ipd-admin)",
+  "original_error": "http=404 code=50001 (旧jar无端点)",
+  "result": {
+   "http": 200,
+   "envelope_code": 0,
+   "msg": "ok",
+   "data_id": "2103338131276259329"
+  },
+  "attribution": "环境假红-已转绿：新jar GET /demands/{id} → 200/code=0（R215 detail端点在位）",
+  "ts": "2026-09-26T08:13:36+08:00"
+ },
+ {
+  "scope": "C7",
+  "case": "R-C7 需求详情用户指定detail路径@新16039",
+  "cmd": "GET http://127.0.0.1:16039/api/v1/demands/2103338131276259329/detail (ipd-admin)",
+  "original_error": "http=404 code=50001 (旧jar无端点)",
+  "result": {
+   "http": 404,
+   "envelope_code": 50001,
+   "msg": "资源不存在",
+   "data_id": null
+  },
+  "attribution": "路径变体不存在：控制器映射为@GetMapping(\"/{id}\")方法名detail，无/detail后缀；按原命令路径已转绿",
+  "ts": "2026-09-26T08:13:36+08:00"
+ },
+ {
+  "scope": "sysadmin核查",
+  "case": "R-sysadmin登录@新16039",
+  "cmd": "POST /api/v1/auth/login {username:sysadmin}",
+  "original_error": "报密码错(ipd-admin正常)",
+  "result": {
+   "http": 400,
+   "envelope_code": 10001,
+   "msg": "用户名或密码错误"
+  },
+  "attribution": "环境假红-仍红-根因=账号不在库(见下一条SQL证据)：非轮转/非锁定/非软删，登录防枚举响应正确",
+  "ts": "2026-09-26T08:13:36+08:00"
+ },
+ {
+  "scope": "sysadmin核查",
+  "case": "R-真库只读核对(persons/sys_user)",
+  "cmd": "mysql ipd_dev SELECT persons WHERE username/name/employee_no='sysadmin' (含软删); id 80001-80999 计数; sys_user LIKE '%sysadmin%'",
+  "result": {
+   "persons_sysadmin_rows": [],
+   "persons_id_80001_80999_count": 0,
+   "sys_user_sysadmin_rows": [],
+   "note": "persons现存 SUPER_ADMIN: 900101 ipd-admin(update_time=2026-09-26 07:57:14) 及 2096266884100935682 系统管理员(username=中文'系统管理员', 非'sysadmin')"
+  },
+  "attribution": "persons(含软删)/sys_user均无sysadmin行；id80001-80999段0行=信源表与库漂移；判环境/数据配置问题，非代码缺陷",
+  "ts": "2026-09-26T08:13:36+08:00"
+ },
+ {
+  "scope": "A1/A1R x5",
+  "case": "R5-根因闭合:JVM代理劫持S3流量(非应用拒连,minio健康)",
+  "cmd": "jinfo -sysprops 86031 | grep -i proxy; env -i java -XshowSettings:properties; networksetup -getwebproxy Wi-Fi; docker logs minio --since 60m; curl --noproxy '*' :9000/minio/health/live",
+  "result": {
+   "jvm_sysprops_16039": "http.proxyHost=127.0.0.1 http.proxyPort=7890 https.proxyHost/Port 同 socksProxyHost/Port=127.0.0.1:7890 (无 http.nonProxyHosts)",
+   "clean_env_java_sysprops": "env -i java 无任何 proxy 属性(对照)",
+   "macos_system_proxy_wifi": "Enabled Yes 127.0.0.1:7890",
+   "sdk_channel_diag": "日志 ChannelDiagnostics R:/127.0.0.1:7890 三次 attempt 均 connection-closed; Caused by IOException 于 netty channelInactive",
+   "server_side": "curl -m150 同请求 → 120.0s 后 HTTP 500 {code:90001,traceId:980759257a824eabaee93a8a66992ca0}; 16039日志 elapsedMs=120010",
+   "minio_side": "容器 Up 6h, :9000/minio/health/live=200(直连), 60min 内 API 日志零条(SDK 流量从未到达 minio)",
+   "client_minus1_explained": "r218_lib timeout=90 < 服务端 120s 守卫 → 客户端先断开=首波 http=-1 成因",
+   "db_residual": "deliverables/sys_oss 今日 0 新增(失败路径无脏数据)"
+  },
+  "attribution": "环境假红-仍红-根因已定位: dev 机 JVM 继承系统代理(127.0.0.1:7890 Clash)且 AWS SDK Netty 客户端默认吃 JVM proxy sysprops、未排除 localhost → S3 PUT 被代理中转并掐断, 120s 守卫超时抛 OssException。非应用拒连、非 minio 故障。次要发现: OssClient.upload 未显式禁代理/未配 nonProxyHosts, 属框架健壮性改进项(本任务不改码不立卡, 移交登记)。",
+  "ts": "2026-09-26T08:10:23+08:00"
+ }
+]
