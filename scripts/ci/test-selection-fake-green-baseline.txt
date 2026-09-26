@@ -1,0 +1,12 @@
+# scripts/ci/test-selection-fake-green-baseline.txt
+# 存量"整类不会被 Surefire 执行"的测试源文件（默认 profile=dev，<groups>=${profiles.active}）。
+# 只允许单调收敛：修好一条就删一行，禁止为过检往里新增。
+# 来源：2026-09-25 本机实测（git ls-files 与 find 两种口径各数一次，均为 6 个）。
+# 机制证据：mvn -o -pl ruoyi-common/ruoyi-common-trace test → RC=0 BUILD SUCCESS，
+#           Tests run: 8，仅 2 份 XML，无 @Tag 的 TraceContextTest 零报告（静默不跑）。
+ruoyi-common/ruoyi-common-core/src/test/java/org/ruoyi/common/core/config/ApplicationConfigSmokeTest.java
+ruoyi-common/ruoyi-common-trace/src/test/java/org/ruoyi/common/trace/core/TraceContextTest.java
+ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/integration/MinimaxIntegrationTest.java
+ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/chat/impl/provider/MinimaxServiceImplTest.java
+ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/embed/impl/MinimaxEmbeddingProviderTest.java
+ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/rerank/impl/AliBaiLianRerankModelServiceTest.java

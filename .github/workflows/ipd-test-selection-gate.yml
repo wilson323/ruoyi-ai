@@ -1,0 +1,75 @@
+# 测试选择门禁：每个测试源文件至少有一个方法真的会被执行
+#
+# 为什么单独成 job（2026-09-25 本机实测，非推断）：
+#   父 pom.xml 的 surefire 配 <groups>${profiles.active}</groups>，activeByDefault 在 dev，
+#   且无任何子模块 pom 覆盖 <groups> → 没打 @Tag("dev") 的测试类不是"失败"，是"不进执行"，
+#   构建照报 SUCCESS。实测：
+#     mvn -o -pl ruoyi-common/ruoyi-common-trace test
+#       → RC=0 BUILD SUCCESS，Tests run: 8，只产出 2 份 XML
+#       → 无 @Tag 的 TraceContextTest 零报告、零失败、零跳过提示
+#   本仓存量 319 个测试源文件里有 6 个属于此类，已登记基线逐条消。
+#
+# 为什么不复用 ipd-test-gate.yml：
+#   那个 job 要装 JDK + mvn install + 全量测试（timeout 40min）。本门禁纯静态、秒级，
+#   排队等 JDK 既慢又会让它的失败被 mvn 噪音淹没；触发面也不同（本文件只需 src/test + pom）。
+#
+# 为什么不继承旧件 check-surefire-fake-green.sh 的判据（保留该文件不动，差异记录在 log.md）：
+#   实测三处不成立 —— (1) 诊断写死"默认 profile=local 下 0 个测试运行"，实际默认 dev、真跑 2507；
+#   (2) @Tag 唯一值 >=2 时打印"✅ 无单一过滤风险"，而新增一个 @Tag("unit") 的类正是整类不跑；
+#   (3) 完全无 @Tag 的文件不进任何统计（夹具：文件数 2→3，errors 恒定）。
+#   即：它可以在"变差"时打印 ✅，接上就是永远绿。故本 job 用会红的判据，且第一步先自测。
+#
+# 阻断/记账分层：
+#   阻断 = 基线之外新增"整类不会被执行"的测试源文件
+#   记账 = 基线内 6 条存量 + <groups> 动态 profile 耦合（改它会影响所有会话的 mvn 行为，需 owner 单独授权）
+#   读不到 pom / 不在 git 仓 / 基线缺失 → exit 2，不默认通过
+
+name: ipd-test-selection-gate
+
+on:
+  pull_request:
+    paths:
+      - '**/src/test/**/*.java'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - 'scripts/check-test-selection-fake-green.sh'
+      - 'scripts/ci/test-selection-fake-green-baseline.txt'
+      - '.github/workflows/ipd-test-selection-gate.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/src/test/**/*.java'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - 'scripts/check-test-selection-fake-green.sh'
+      - 'scripts/ci/test-selection-fake-green-baseline.txt'
+      - '.github/workflows/ipd-test-selection-gate.yml'
+  schedule:
+    # 每周日 03:30 Asia/Shanghai = 19:30 UTC Saturday，与 r25-root-cause-lint 错开半分钟
+    - cron: '30 19 * * 6'
+  workflow_dispatch:
+
+jobs:
+  test-selection:
+    name: 静默跳过检测（不跑 mvn，秒级）
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # 护栏条件写反 / 被后续改动削弱，表现同样是"检查通过"，与真的通过无法区分。
+      # 故先跑 7 个夹具用例（含 3 条阻断分支与 2 条 exit 2），自测不绿则本 job 无意义。
+      - name: 门禁自测（护栏必须真的会拦）
+        shell: bash
+        run: bash scripts/check-test-selection-fake-green.sh --self-test
+
+      - name: 实跑（基线外新增静默跳过即阻断）
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/check-test-selection-fake-green.sh | tee -a "$GITHUB_STEP_SUMMARY"
