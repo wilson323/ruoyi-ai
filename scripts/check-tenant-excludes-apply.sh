@@ -171,16 +171,28 @@ fi
 rc3a_count=$(wc -l < "$TMPDIR_CHECK/rc3a_unregistered.txt" | tr -d ' ')
 
 # RC-3-B 实体存在但 DB 未建表（最严重——代码可编译但运行查询空）
+# 【精度修复 R226-B3】VO 投影类排除：@TableName 仅作 Domain 形态标记、无 BaseMapper 挂载
+# 且无 mapper XML SQL 引用的 Entity（如 workbench/MyInitiatedTask：程序内聚合组装、注释声明
+# 不写本表），从不查询物理表——归入 rc3b_vo_projection（信息级），不算缺表致命。
 > "$TMPDIR_CHECK/rc3b_missing_db.txt"
+> "$TMPDIR_CHECK/rc3b_vo_projection.txt"
 if [ "$DB_AVAILABLE" -eq 1 ]; then
   while IFS='|' read -r tbl path; do
     [ -z "$tbl" ] && continue
     if ! grep -qx "$tbl" "$DB_TABLES_FILE" 2>/dev/null; then
-      echo "${tbl}|${path}" >> "$TMPDIR_CHECK/rc3b_missing_db.txt"
+      cls=$(basename "$path" .java)
+      has_mapper=$(grep -rlE "BaseMapper<${cls}>" "${BACKEND_ROOT}/ruoyi-modules" --include='*.java' 2>/dev/null | grep -v '/src/test/' | head -1)
+      has_xml=$(grep -rl "${tbl}" "${BACKEND_ROOT}/ruoyi-modules" --include='*.xml' 2>/dev/null | head -1)
+      if [ -z "$has_mapper" ] && [ -z "$has_xml" ]; then
+        echo "${tbl}|${path}" >> "$TMPDIR_CHECK/rc3b_vo_projection.txt"
+      else
+        echo "${tbl}|${path}" >> "$TMPDIR_CHECK/rc3b_missing_db.txt"
+      fi
     fi
   done < "$TMPDIR_CHECK/entity_tables.uniq.txt"
 fi
 rc3b_count=$(wc -l < "$TMPDIR_CHECK/rc3b_missing_db.txt" | tr -d ' ')
+rc3b_vo=$(wc -l < "$TMPDIR_CHECK/rc3b_vo_projection.txt" | tr -d ' ')
 
 # RC-3-C Entity @TableName 与 tenant.excludes 重叠（业务逻辑可能漏过滤）
 > "$TMPDIR_CHECK/rc3c_overlap.txt"
@@ -202,6 +214,7 @@ cat > "$REPORT_JSON" <<EOF
   "db_available": ${DB_AVAILABLE},
   "rc3a_unregistered": $(awk '{ printf "\"%s\",", $0 }' "$TMPDIR_CHECK/rc3a_unregistered.txt" 2>/dev/null | sed 's/,$//' | sed 's/^/[/' | sed 's/$/]/' || echo "[]"),
   "rc3b_missing_db": $(awk -F'|' '{ printf "{\"table\":\"%s\",\"entity\":\"%s\"},", $1, $2 }' "$TMPDIR_CHECK/rc3b_missing_db.txt" 2>/dev/null | sed 's/,$//' | sed 's/^/[/' | sed 's/$/]/' || echo "[]"),
+  "rc3b_vo_projection": $(awk -F'|' '{ printf "{\"table\":\"%s\",\"entity\":\"%s\"},", $1, $2 }' "$TMPDIR_CHECK/rc3b_vo_projection.txt" 2>/dev/null | sed 's/,$//' | sed 's/^/[/' | sed 's/$/]/' || echo "[]"),
   "rc3c_overlap": $(awk -F'|' '{ printf "{\"table\":\"%s\",\"entity\":\"%s\"},", $1, $2 }' "$TMPDIR_CHECK/rc3c_overlap.txt" 2>/dev/null | sed 's/,$//' | sed 's/^/[/' | sed 's/$/]/' || echo "[]")
 }
 EOF
@@ -223,6 +236,7 @@ cat > "$REPORT_MD" <<EOF
 | DB 实际表数 | $([ "$DB_AVAILABLE" -eq 1 ] && wc -l < "$DB_TABLES_FILE" | tr -d ' ' || echo "N/A（DB 未连通）") |
 | 🔴 RC-3-A 配置先行（excludes 已登记但 DB 无表） | $rc3a_count |
 | 🔴 RC-3-B 实体存在但 DB 未建表（致命） | $rc3b_count |
+| ℹ️ RC-3-B2 VO 投影类（无 mapper 挂载，信息级） | $rc3b_vo |
 | 🟡 RC-3-C Entity 与 excludes 重叠（需复核） | $rc3c_count |
 
 ## 🔴 RC-3-A 配置先行（DB 缺表）
@@ -257,6 +271,25 @@ if [ -s "$TMPDIR_CHECK/rc3b_missing_db.txt" ]; then
   done < "$TMPDIR_CHECK/rc3b_missing_db.txt"
 else
   echo "✅ 所有 Entity 表都已建表" >> "$REPORT_MD"
+fi
+
+cat >> "$REPORT_MD" <<EOF
+
+## ℹ️ RC-3-B2 VO 投影类（不查物理表，R226-B3 新增分类）
+
+> @TableName 仅作 Domain 形态标记：无 BaseMapper 挂载且无 mapper XML 引用，
+> 程序内聚合组装从不查物理表（如 workbench 聚合卡）——非缺表，无需建表
+
+EOF
+
+if [ -s "$TMPDIR_CHECK/rc3b_vo_projection.txt" ]; then
+  echo "| 表名 | Entity 路径 |" >> "$REPORT_MD"
+  echo "|---|---|" >> "$REPORT_MD"
+  while IFS='|' read -r t p; do
+    echo "| \`$t\` | \`$p\` |" >> "$REPORT_MD"
+  done < "$TMPDIR_CHECK/rc3b_vo_projection.txt"
+else
+  echo "✅ 无 VO 投影类" >> "$REPORT_MD"
 fi
 
 cat >> "$REPORT_MD" <<EOF

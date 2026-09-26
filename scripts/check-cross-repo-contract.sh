@@ -41,7 +41,7 @@ PATH_DRIFT=0
 DOC_IMPL_DRIFT=0
 
 echo "==== R25 P0-2 跨仓契约对账（RC-2） ===="
-echo "后端: $BACKEND_ROOT/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/"
+echo "后端: ruoyi-ipd + ruoyi-admin 两模块的 IPD controller（R226-B3 起双扫）"
 echo "前端: $FRONTEND_ROOT/src/api/ipd/"
 echo "文档: $DOCS_ROOT/开发说明书.md + 产品流程细化管理工具/IPD系统_AI开发主Prompt_v3.md"
 echo
@@ -59,7 +59,11 @@ fi
 echo "[1/4] 抽取后端 Controller 端点..."
 
 > "$TMPDIR_CHECK/backend_endpoints.txt"
-for ctrl in "$BACKEND_ROOT/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller"/*.java; do
+# 【精度修复 R226-B3】后端收集范围补 ruoyi-admin 模块的 IPD controller：
+# IpdPlatformAuthController 在 ruoyi-admin（非 ruoyi-ipd），漏扫会令 /auth/platform-token
+# 被误判为前端白屏（R226 盘点实锤：后端 @PostMapping("/platform-token") 一直存在）。
+for ctrl in "$BACKEND_ROOT"/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/*.java \
+            "$BACKEND_ROOT"/ruoyi-admin/src/main/java/org/ruoyi/ipd/controller/*.java; do
   [ -f "$ctrl" ] || continue
   base=$(basename "$ctrl" .java)
 
@@ -211,6 +215,15 @@ echo "[4/4] 三向对账..."
 > "$TMPDIR_CHECK/d1a_white_screen.txt"
 while IFS= read -r fe_path; do
   [ -z "$fe_path" ] && continue
+  # 【精度修复 R226-B3】剥 query string：前端调用常把 query 拼进模板串
+  # （如 `.../select?responseId=${id}&confirmToken=${id}`、`.../modify${query}`），
+  # 后端清单是纯路径——query 不剥会连坐 3 个 bid 白屏误报。
+  fe_path="${fe_path%%\?*}"
+  [ -z "$fe_path" ] && continue
+  # 【精度修复 R226-B3】${query}/${params} 类动态尾巴被 3b) 步骤替换成 :id 后与前一端
+  # 粘连（如 `/modify${query}` → `/modify:id`）——"冒号前是词字符"的尾段是动态
+  # 拼接不是路径参数（合法 :id 冒号前必是 /），裁掉冒号后缀再比对。
+  fe_path=$(echo "$fe_path" | sed 's|\([A-Za-z0-9_-]\):[A-Za-z0-9_]*$|\1|')
   # 排除路径变量（:id / {id}）——后端用 {id}
   fe_normalized=$(echo "$fe_path" | sed 's|:[A-Za-z0-9_]*|{id}|g')
   # 检查后端是否有匹配（精确匹配 + 路径参数归一化匹配）
