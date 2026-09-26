@@ -35,7 +35,7 @@ STATE="$STATE_DIR/${SESS}.files"
 touch "$STATE" 2>/dev/null || exit 0
 
 ABS=$(cd "$(dirname "$FILE")" 2>/dev/null && pwd)/$(basename "$FILE") || exit 0
-KNOWN=$(grep -F "= $ABS" "$STATE" 2>/dev/null | tail -1 | cut -d= -f1)
+KNOWN=$(grep -F "= $ABS" "$STATE" 2>/dev/null | tail -1 | cut -d= -f1 | tr -d ' ')
 if [ -n "$KNOWN" ]; then
   CUR=$(stat -f %m "$ABS" 2>/dev/null || stat -c %Y "$ABS" 2>/dev/null || echo 0)
   [ "$CUR" = "$KNOWN" ] && exit 0   # mtime 与本会话上次写入一致 → 是自己的连续编辑
