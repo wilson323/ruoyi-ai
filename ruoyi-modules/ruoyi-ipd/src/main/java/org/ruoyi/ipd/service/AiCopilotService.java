@@ -1,6 +1,8 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -20,8 +22,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * AI-P2-3（2026-09-11）：AI 副驾——工作台项目助理。
@@ -60,6 +65,9 @@ public class AiCopilotService implements IAiCopilotService {
     private final ProjectMemberMapper projectMemberMapper;
     /** AI-STRAT-1 Phase 2（2026-09-23）：RAG 第三档上下文（项目历史已审核文档）；nullable 用于降级 */
     private final AiDocEmbeddingService docEmbeddingService;
+    /** R221 对话即填表（spec §3.5）：FILL_PAGE 命中时落 CHAT 任务行（可追溯可重放） */
+    private final AiExecutionTrigger aiExecutionTrigger;
+    private static final ObjectMapper JSON = new ObjectMapper();
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     public AiCopilotService(AiModelConfigService modelConfigService,
@@ -68,7 +76,8 @@ public class AiCopilotService implements IAiCopilotService {
                             IAuditLogService auditLogService,
                             ProjectMapper projectMapper,
                             ProjectMemberMapper projectMemberMapper,
-                            AiDocEmbeddingService docEmbeddingService) {
+                            AiDocEmbeddingService docEmbeddingService,
+                            AiExecutionTrigger aiExecutionTrigger) {
         this.modelConfigService = modelConfigService;
         this.workbenchService = workbenchService;
         this.aiGateway = aiGateway;
@@ -76,6 +85,7 @@ public class AiCopilotService implements IAiCopilotService {
         this.projectMapper = projectMapper;
         this.projectMemberMapper = projectMemberMapper;
         this.docEmbeddingService = docEmbeddingService;
+        this.aiExecutionTrigger = aiExecutionTrigger;
     }
 
     /** 测试口：注入固定时钟。 */
@@ -93,12 +103,15 @@ public class AiCopilotService implements IAiCopilotService {
         assertProjectVisible(actor, req.projectId());
 
         // 1) 意图分类——命中直接走 workbench 数据 + 简短模板解释（不调 AI，节省 token 与审计失真）
-        String intent = classifyIntent(req.message());
+        String intent = classifyIntent(req.message(), hasPageContext(req));
         if ("TASKS".equals(intent)) {
             return tasksPath(actor, req, start, intent);
         }
         if ("ADVANCE".equals(intent)) {
             return advancePath(actor, req, start, intent);
+        }
+        if ("FILL_PAGE".equals(intent)) {
+            return fillPagePath(actor, req, start, intent);
         }
 
         // 2) CHITCHAT/FALLBACK：调 AI 生成（项目+个人上下文注入 system prompt；BR-AI-04 不入原文）
@@ -131,13 +144,16 @@ public class AiCopilotService implements IAiCopilotService {
         }
         // 越权拦截（与 chat 同款；BR-AI-05 不教 AI 编数据）
         assertProjectVisible(actor, req.projectId());
-        String intent = classifyIntent(req.message());
+        String intent = classifyIntent(req.message(), hasPageContext(req));
 
-        // 1) 意图兜底（不调 AI）：一次性 meta+delta+done，无真流式（诚实：本轮没有 token 流）
-        if ("TASKS".equals(intent) || "ADVANCE".equals(intent)) {
+        // 1) 意图兜底（不调 AI 流式）：一次性 meta+delta+done，无真流式（诚实：本轮没有 token 流）
+        //    FILL_PAGE 也走此分支——填表要结构化 JSON 而非 token 流，done 帧携 fillPayload
+        if ("TASKS".equals(intent) || "ADVANCE".equals(intent) || "FILL_PAGE".equals(intent)) {
             AiCopilotResp resp = "TASKS".equals(intent)
                 ? tasksPath(actor, req, start, intent)
-                : advancePath(actor, req, start, intent);
+                : "ADVANCE".equals(intent)
+                    ? advancePath(actor, req, start, intent)
+                    : fillPagePath(actor, req, start, intent);
             sink.meta(resp);
             String answer = resp.answer() == null ? "" : resp.answer();
             if (!answer.isEmpty()) {
@@ -228,6 +244,14 @@ public class AiCopilotService implements IAiCopilotService {
     // ---- 意图分类（关键字命中；ML 分类留后续） ----
 
     static String classifyIntent(String message) {
+        return classifyIntent(message, false);
+    }
+
+    /**
+     * 意图分类（R221 扩签）：分类顺序 TASKS → ADVANCE → FILL_PAGE → CHITCHAT。
+     * FILL_PAGE 仅当带页面上下文（hasPageContext）且命中填充关键字才返回，避免「填」劫持无上下文的闲聊。
+     */
+    static String classifyIntent(String message, boolean hasPageContext) {
         String m = message == null ? "" : message;
         if (m.contains("该干什么") || m.contains("我该干啥") || m.contains("待办")
             || m.contains("做什么") || m.contains("next") || m.contains("todo")) {
@@ -237,7 +261,187 @@ public class AiCopilotService implements IAiCopilotService {
             || m.contains("项目当前") || m.contains("卡在哪") || m.contains("advance")) {
             return "ADVANCE";
         }
+        if (hasPageContext && (m.contains("填") || m.contains("补全") || m.contains("帮我写") || m.contains("fill"))) {
+            return "FILL_PAGE";
+        }
         return "CHITCHAT";
+    }
+
+    /** 宿主页面是否注册了填表上下文（pageContext 非空）。 */
+    private static boolean hasPageContext(AiCopilotReq req) {
+        return req != null && req.pageContext() != null && !req.pageContext().isBlank();
+    }
+
+    /**
+     * R221 填表字段白名单（spec §3.5 安全红线）：后端强校验，非仅前端。
+     * 未登记 scene 一律拒绝（金额/角色/ID 等敏感面永不开放）；首切片仅 stage-action-fields。
+     */
+    static final Map<String, Set<String>> FILL_FIELD_WHITELIST = Map.of(
+        "stage-action-fields", Set.of(
+            "actualDoneAt", "farValue", "frrValue", "certNo", "certPassedAt", "algoType", "remark"));
+
+    /**
+     * 按 scene 白名单过滤 AI 生成的字段：未登记 scene 返回空 Map，schema 外字段丢弃。
+     * 后端强校验（不依赖前端），敏感字段永不下发。
+     */
+    static Map<String, Object> filterFillFields(String scene, Map<String, Object> raw) {
+        Set<String> allowed = FILL_FIELD_WHITELIST.get(scene);
+        if (allowed == null || raw == null || raw.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Object> kept = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> e : raw.entrySet()) {
+            if (allowed.contains(e.getKey())) {
+                kept.put(e.getKey(), e.getValue());
+            }
+        }
+        return kept;
+    }
+
+    /**
+     * R221 对话即填表主路径（spec §3.5）：解析 pageContext → AI 生成白名单字段 JSON → filterFillFields 强校验
+     * → 组 fillPayload（永远 suggest）→ triggerChat 落 CHAT 行（可追溯可重放）→ 审计 AI_FILL。
+     * 未登记 scene / pageContext 解析失败 → 诚实降级为普通问答（不编造填充）。
+     */
+    private AiCopilotResp fillPagePath(IpdActor actor, AiCopilotReq req, long start, String intent) {
+        String scene = null;
+        String actionCode = null;
+        Long stageActionId = null;
+        String pageCtx = req.pageContext();
+        if (pageCtx != null && !pageCtx.isBlank()) {
+            try {
+                JsonNode node = JSON.readTree(pageCtx);
+                if (node.hasNonNull("scene")) { scene = node.get("scene").asText(); }
+                if (node.hasNonNull("actionCode")) { actionCode = node.get("actionCode").asText(); }
+                if (node.hasNonNull("stageActionId")) { stageActionId = node.get("stageActionId").asLong(); }
+            } catch (Exception e) {
+                log.warn("[R221] pageContext 解析失败，降级普通问答: {}", e.getMessage());
+            }
+        }
+        if (scene == null || !FILL_FIELD_WHITELIST.containsKey(scene)) {
+            return chitchatPath(actor, req, start, "CHITCHAT");
+        }
+
+        AiModelConfig config;
+        try {
+            config = modelConfigService.currentEnabled();
+        } catch (IpdBusinessException ex) {
+            long latency0 = clock.millis() - start;
+            auditCopilot(actor, req, intent, latency0, 0, 0,
+                "FAIL:" + (ex.getErrorCode() == null ? "UNKNOWN" : ex.getErrorCode().name()), null);
+            String tip = "AI 副驾暂未启用：未配置生效的 AI 模型。请联系超管在「AI 模型配置」启用。";
+            return new AiCopilotResp(intent, tip, List.of(), List.of("config.disabled"), 0, 0, latency0);
+        }
+
+        String prompt = composeFillPrompt(req, scene);
+        AiChatResult result = aiGateway.chat(
+            new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
+                modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS),
+            prompt, MAX_TOKENS, new BigDecimal("0.30"));
+        long latency = clock.millis() - start;
+        if (!result.success()) {
+            auditCopilot(actor, req, intent, latency, 0, 0,
+                "FAIL:" + (result.errorCode() == null ? "UNKNOWN" : result.errorCode()), config.getModelName());
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "AI 副驾暂不可用：" + (result.errorCode() == null ? "UNKNOWN" : result.errorCode()));
+        }
+
+        Map<String, Object> raw = parseJsonMap(result.content());
+        Set<String> allowed = FILL_FIELD_WHITELIST.get(scene);
+        Map<String, Object> kept = filterFillFields(scene, raw);
+        List<String> dropped = new ArrayList<>();
+        for (String k : raw.keySet()) {
+            if (!allowed.contains(k)) { dropped.add(k); }
+        }
+        Collections.sort(dropped);
+
+        Map<String, Object> fillPayload = new LinkedHashMap<>();
+        fillPayload.put("scene", scene);
+        fillPayload.put("fields", kept);
+        fillPayload.put("mode", "suggest"); // 首切片永远 suggest（敏感字段红线 spec §3.5）
+        String fillPayloadJson;
+        try {
+            fillPayloadJson = JSON.writeValueAsString(fillPayload);
+        } catch (Exception e) {
+            fillPayloadJson = null;
+        }
+
+        // 落 CHAT 任务行（可追溯可重放；引擎不派发 CHAT 行——dispatchCycle 已排除 trigger_type=CHAT）
+        if (actionCode != null && !actionCode.isBlank()) {
+            try {
+                aiExecutionTrigger.triggerChat(req.projectId(), actionCode, stageActionId, actor.id(),
+                    fillPayloadJson, GuestDemandService.sha256Short(req.message()));
+            } catch (Exception e) {
+                log.warn("[R221] FILL_PAGE 落 CHAT 任务行失败（不阻断响应）: {}", e.getMessage());
+            }
+        }
+
+        auditFill(actor, req, scene, kept.size(), dropped, latency,
+            result.promptTokens(), result.completionTokens(), config.getModelName());
+
+        String answer = kept.isEmpty()
+            ? "未能从对话中提取可填充的白名单字段，请补充信息或手工填写。"
+            : "已为当前页面准备 " + kept.size() + " 个字段建议（suggest 模式，需你确认后回填）。";
+        return new AiCopilotResp(intent, answer, List.of(), List.of("ai.fill"),
+            result.promptTokens(), result.completionTokens(), latency, fillPayload);
+    }
+
+    /** 填表 prompt：限定只输出白名单字段的纯 JSON，禁编造、禁 markdown、禁敏感字段。 */
+    static String composeFillPrompt(AiCopilotReq req, String scene) {
+        Set<String> allowed = FILL_FIELD_WHITELIST.getOrDefault(scene, Set.of());
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是 IPD 产品经理系统的表单填充助手。根据用户对话，为当前页面表单生成字段建议值。\n");
+        sb.append("- 只输出一个 JSON 对象，不要任何解释文字、不要 markdown 代码块。\n");
+        sb.append("- JSON 的键只能来自以下白名单字段：").append(String.join(", ", allowed)).append("。\n");
+        sb.append("- 无法确定的字段直接省略，不要编造；日期用 YYYY-MM-DD，数值用字符串。\n");
+        sb.append("- 不要输出白名单外的任何字段（金额、角色、ID 等敏感字段一律禁止）。\n\n");
+        sb.append("【用户对话】\n").append(req.message() == null ? "" : req.message());
+        String s = sb.toString();
+        return s.length() > COPILOT_PROMPT_MAX ? s.substring(0, COPILOT_PROMPT_MAX) : s;
+    }
+
+    /** 容错解析 AI 输出为 Map：剔 markdown 围栏 / 前后解释文字，截首个 { 到末个 }；解析失败返回空 Map。 */
+    static Map<String, Object> parseJsonMap(String content) {
+        if (content == null || content.isBlank()) {
+            return Map.of();
+        }
+        String s = content.trim();
+        int lb = s.indexOf('{');
+        int rb = s.lastIndexOf('}');
+        if (lb < 0 || rb <= lb) {
+            return Map.of();
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> m = JSON.readValue(s.substring(lb, rb + 1), Map.class);
+            return m == null ? Map.of() : m;
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    /** AI_FILL 审计（aiRole=agent_exec 已白名单化）：只记丢弃键名不记值（BR-AI-04 不存原文/敏感值）。 */
+    private void auditFill(IpdActor actor, AiCopilotReq req, String scene, int keptCount,
+                           List<String> droppedKeys, long latencyMs, int tokenPrompt, int tokenCompletion,
+                           String aiModel) {
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
+            .action("AI_FILL").entityType("AI_COPILOT")
+            .afterData(AuditEventData.json(
+                "aiAssisted", true,
+                "aiModel", aiModel == null || aiModel.isBlank() ? "intent_match" : aiModel,
+                "aiRole", "agent_exec",
+                "scene", scene,
+                "projectId", req.projectId(),
+                "mode", "suggest",
+                "keptCount", keptCount,
+                "droppedKeys", droppedKeys,
+                "status", "ok",
+                "tokenPrompt", tokenPrompt,
+                "tokenCompletion", tokenCompletion,
+                "latencyMs", latencyMs,
+                "promptLen", req.message() == null ? 0 : req.message().length()))
+            .build());
     }
 
     // ---- 三个路径 ----

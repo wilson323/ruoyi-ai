@@ -60,6 +60,7 @@ class AiCopilotServiceStreamTest {
     private ProjectMapper projectMapper;
     private ProjectMemberMapper projectMemberMapper;
     private AiDocEmbeddingService docEmbeddingService;
+    private AiExecutionTrigger aiExecutionTrigger;
     private AiCopilotService service;
 
     private static final IpdActor SA = new IpdActor(1L, "sa", "SUPER_ADMIN", null);
@@ -108,10 +109,11 @@ class AiCopilotServiceStreamTest {
         projectMapper = mock(ProjectMapper.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
         docEmbeddingService = mock(AiDocEmbeddingService.class);
+        aiExecutionTrigger = mock(AiExecutionTrigger.class);
         when(docEmbeddingService.retrieveContext(any(), any(), any()))
             .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService);
+            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService, aiExecutionTrigger);
         service.withClock(Clock.fixed(Instant.parse("2026-09-23T19:00:00Z"), ZoneId.of("UTC")));
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         // 默认（projectId=null）空上下文；各测试可覆盖

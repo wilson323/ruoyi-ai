@@ -54,6 +54,7 @@ class AiCopilotServiceTest {
     private ProjectMapper projectMapper;
     private ProjectMemberMapper projectMemberMapper;
     private AiDocEmbeddingService docEmbeddingService;
+    private AiExecutionTrigger aiExecutionTrigger;
     private AiCopilotService service;
 
     private static final IpdActor SA = new IpdActor(1L, "sa", "SUPER_ADMIN", null);
@@ -68,10 +69,11 @@ class AiCopilotServiceTest {
         projectMapper = mock(ProjectMapper.class);
         projectMemberMapper = mock(ProjectMemberMapper.class);
         docEmbeddingService = mock(AiDocEmbeddingService.class);
+        aiExecutionTrigger = mock(AiExecutionTrigger.class);
         when(docEmbeddingService.retrieveContext(any(), any(), any()))
             .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService);
+            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService, aiExecutionTrigger);
         // 固定时钟便于断言 latencyMs
         service.withClock(Clock.fixed(Instant.parse("2026-09-10T19:00:00Z"), ZoneId.of("UTC")));
         // auditLogService.append 透传捕获

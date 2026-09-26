@@ -123,11 +123,16 @@ public class AiCopilotController {
 
                 @Override
                 public void done(AiCopilotResp resp) {
-                    sendFrame(emitter, "done", java.util.Map.of(
-                        "status", "ok",
-                        "tokenPrompt", resp.tokenPrompt(),
-                        "tokenCompletion", resp.tokenCompletion(),
-                        "latencyMs", resp.latencyMs()));
+                    // R221 对话即填表：FILL_PAGE 意图时 done 帧携 fillPayload（仅非空时加键，Map.of 不容 null）
+                    java.util.Map<String, Object> done = new java.util.LinkedHashMap<>();
+                    done.put("status", "ok");
+                    done.put("tokenPrompt", resp.tokenPrompt());
+                    done.put("tokenCompletion", resp.tokenCompletion());
+                    done.put("latencyMs", resp.latencyMs());
+                    if (resp.fillPayload() != null) {
+                        done.put("fillPayload", resp.fillPayload());
+                    }
+                    sendFrame(emitter, "done", done);
                     emitter.complete();
                 }
 

@@ -86,6 +86,9 @@ public class AiExecutionEngine {
     public int dispatchCycle(int limit) {
         Date now = Date.from(clock.instant());
         List<AiAgentTask> due = taskMapper.selectList(new LambdaQueryWrapper<AiAgentTask>()
+            // CHAT 行是对话即填表（suggest）的可追溯可重放记录，非引擎工作项（spec §3.5）：
+            // 若被派发会给执行器 auto-transit，违背「填表需用户确认」的人审红线，故扫描时排除。
+            .ne(AiAgentTask::getTriggerType, AiAgentTask.TRIGGER_CHAT)
             .and(w -> w.eq(AiAgentTask::getStatus, AiAgentTask.STATUS_PENDING)
                 .or(o -> o.eq(AiAgentTask::getStatus, AiAgentTask.STATUS_FAILED)
                     .and(x -> x.isNull(AiAgentTask::getNextRetryAt).or().le(AiAgentTask::getNextRetryAt, now))))
@@ -140,7 +143,7 @@ public class AiExecutionEngine {
         return result.ok();
     }
 
-    /** 收尾：成功翻 SUCCEEDED；失败 attempt+1，<3 翻 FAILED 定退避，>=3 翻 DEAD。事务内仅 updateById + audit（原子）。 */
+    /** 收尾：成功翻 SUCCEEDED；失败 attempt+1，<3 翻 FAILED 定退避，>=3 翻 DEAD。事务内 updateById + audit（audit 为 REQUIRES_NEW 独立提交，保证审计不随外层回滚丢失）。 */
     @Transactional(rollbackFor = Exception.class)
     public void finalizeTask(AiAgentTask t, AiExecResult result, String unused) {
         boolean ok = result != null && result.ok();
