@@ -13,13 +13,17 @@
 #   - D1-C 路径漂移（method+path 双向不一致）——致命
 #   - D1-D 文档端点 vs 实现不一致（未实现 / 已废弃）
 #
-# 退出码:
-#   0  = 无白屏风险 + 路径漂移
+# 退出码（位掩码，R226-B 移植 R212 孤儿棘轮机制）:
+#   0  = 无白屏风险 + 路径漂移，且无新孤儿
 #   1  = 发现白屏风险或路径漂移
-#   2  = 脚本错误
+#   2  = 脚本错误（含 baseline 缺失/防伪失败）
+#   4  = 新增孤儿端点未入 baseline（存量只减不增；白名单式收敛）
+#   可叠加（如 5 = 1|4）
 #
 # 用法:
 #   ./scripts/check-cross-repo-contract.sh
+#   ./scripts/check-cross-repo-contract.sh --update-orphans-baseline   # 脚本独占重写 baseline（需人审 commit）
+#   ./scripts/check-cross-repo-contract.sh --ratchet=off              # 逃生阀：跳过孤儿棘轮判定
 
 set -u
 
@@ -33,6 +37,18 @@ mkdir -p "$OUTPUT_DIR"
 REPORT_MD="${OUTPUT_DIR}/contract-drift-${TIMESTAMP}.md"
 TMPDIR_CHECK=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_CHECK"' EXIT
+
+# 【R226-B 孤儿棘轮】存量孤儿冻结在 baseline（受 ratchet-data-guard hook 保护，
+# agent 不可手工编辑，仅本脚本 --update-orphans-baseline 可写）；新孤儿未入 baseline 即 RC|=4。
+ORPHAN_BASELINE="${BACKEND_ROOT}/scripts/baselines/cross-repo-orphan-baseline.json"
+RATCHET=on
+for arg in "$@"; do
+  case "$arg" in
+    --update-orphans-baseline) UPDATE_BASELINE=1 ;;
+    --ratchet=off) RATCHET=off ;;
+    *) echo "[check-contract] 未知参数: $arg" >&2; exit 2 ;;
+  esac
+done
 
 # 白屏风险 / 路径漂移 计数
 WHITE_SCREEN=0
@@ -249,6 +265,55 @@ while IFS= read -r be_path; do
 done < "$TMPDIR_CHECK/be.uniq.txt"
 ORPHAN_ENDPOINT=$(wc -l < "$TMPDIR_CHECK/d1b_orphan.txt" | tr -d ' ')
 
+# 【R226-B 孤儿棘轮】与 baseline 比对：存量冻结（warning），新孤儿单独计数并参与退出码 bit4。
+> "$TMPDIR_CHECK/orphans_baseline.txt"
+if [ -f "$ORPHAN_BASELINE" ]; then
+  # 防伪校验：meta 完整且 orphans 数组非空声明（被截断/手工改坏即 RC=2）
+  if ! grep -q '"tool": *"check-cross-repo-contract.sh"' "$ORPHAN_BASELINE"; then
+    echo "[check-contract] ❌ 孤儿 baseline 防伪失败（meta.tool 缺失或被手工编辑）: $ORPHAN_BASELINE" >&2
+    exit 2
+  fi
+  grep -oE '"/api/v1/[^"]*"' "$ORPHAN_BASELINE" | tr -d '"' | sort -u > "$TMPDIR_CHECK/orphans_baseline.txt"
+fi
+BASELINE_COUNT=$(wc -l < "$TMPDIR_CHECK/orphans_baseline.txt" | tr -d ' ')
+> "$TMPDIR_CHECK/d1b_new_orphan.txt"
+if [ "$RATCHET" = on ] && [ "${UPDATE_BASELINE:-0}" != 1 ] && [ "$BASELINE_COUNT" -eq 0 ] && [ "$ORPHAN_ENDPOINT" -gt 0 ]; then
+  # baseline 不存在/为空但孤儿存在 → 要求先走 --update-orphans-baseline 人审登记
+  echo "[check-contract] ❌ 孤儿 baseline 缺失或为空，而当前有 $ORPHAN_ENDPOINT 个孤儿——先运行 --update-orphans-baseline 并经人审 commit" >&2
+  exit 2
+fi
+if [ "$BASELINE_COUNT" -gt 0 ]; then
+  while IFS= read -r p; do
+    [ -z "$p" ] && continue
+    grep -qFx "$p" "$TMPDIR_CHECK/orphans_baseline.txt" || echo "$p" >> "$TMPDIR_CHECK/d1b_new_orphan.txt"
+  done < "$TMPDIR_CHECK/d1b_orphan.txt"
+fi
+NEW_ORPHAN=$(wc -l < "$TMPDIR_CHECK/d1b_new_orphan.txt" | tr -d ' ')
+# 收敛记账：baseline 中已消失的孤儿（前端已接或后端已删）
+CONVERGED=0
+if [ "$BASELINE_COUNT" -gt 0 ]; then
+  CONVERGED=$(while IFS= read -r b; do grep -qFx "$b" "$TMPDIR_CHECK/d1b_orphan.txt" || echo "$b"; done < "$TMPDIR_CHECK/orphans_baseline.txt" | wc -l | tr -d ' ')
+fi
+
+if [ "${UPDATE_BASELINE:-0}" = 1 ]; then
+  mkdir -p "$(dirname "$ORPHAN_BASELINE")"
+  {
+    echo '{'
+    echo '  "meta": {'
+    echo '    "tool": "check-cross-repo-contract.sh",'
+    echo '    "mode": "orphans-ratchet",'
+    echo '    "generated_at": "'"$TIMESTAMP"'",'
+    echo '    "count": '"$ORPHAN_ENDPOINT"
+    echo '  },'
+    echo '  "orphans": ['
+    sort -u "$TMPDIR_CHECK/d1b_orphan.txt" | sed -e 's/"/\\"/g' -e 's|^|"|' -e 's|$|",|' | sed '$ s/,$//'
+    echo '  ]'
+    echo '}'
+  } > "$ORPHAN_BASELINE"
+  echo "[check-contract] ✅ 孤儿 baseline 已重写：${ORPHAN_BASELINE}（count=${ORPHAN_ENDPOINT}，须人审 commit）"
+  exit 0
+fi
+
 # D4-A 文档有、后端无（未实现）
 > "$TMPDIR_CHECK/d4a_unimplemented.txt"
 while IFS= read -r doc_path; do
@@ -326,6 +391,24 @@ fi
 
 cat >> "$REPORT_MD" <<EOF
 
+## 🔴 D1-B 棘轮判定（R226-B，移植 R212 机制）
+
+> baseline：\`scripts/baselines/cross-repo-orphan-baseline.json\`（存量冻结只减不增；受 ratchet-data-guard 保护，仅本脚本 --update-orphans-baseline 可写，变更须人审 commit）
+
+EOF
+echo "- baseline 存量：${BASELINE_COUNT}（本轮已收敛 $CONVERGED 条，建议下次 --update-orphans-baseline 固化减账）" >> "$REPORT_MD"
+if [ "$NEW_ORPHAN" -gt 0 ]; then
+  echo "- 🆕 新孤儿（未入 baseline，RC|=4）：$NEW_ORPHAN" >> "$REPORT_MD"
+  echo '' >> "$REPORT_MD"
+  echo '| 新孤儿路径 | 处置 |' >> "$REPORT_MD"
+  echo '|---|---|' >> "$REPORT_MD"
+  while IFS= read -r p; do echo "| \`$p\` | 前端接入计划 OR 挂看板卡人审入 baseline |" >> "$REPORT_MD"; done < "$TMPDIR_CHECK/d1b_new_orphan.txt"
+else
+  echo "- ✅ 无新孤儿（均已被 baseline 冻结）" >> "$REPORT_MD"
+fi
+
+cat >> "$REPORT_MD" <<EOF
+
 ## 🟡 D4-A 文档端点未实现
 
 > 开发说明书或主Prompt v3 提及但后端无对应实现
@@ -364,11 +447,15 @@ EOF
 echo
 echo "==== 对账完成 ===="
 echo "白屏风险: $WHITE_SCREEN"
-echo "孤儿端点: $ORPHAN_ENDPOINT"
+echo "孤儿端点: ${ORPHAN_ENDPOINT}（baseline=${BASELINE_COUNT} 新孤儿=${NEW_ORPHAN} 已收敛=${CONVERGED}）"
 echo "文档未实现: $DOC_IMPL_DRIFT"
 echo "报告: $REPORT_MD"
 
+RC=0
 if [ "$WHITE_SCREEN" -gt 0 ]; then
-  exit 1
+  RC=$((RC | 1))
 fi
-exit 0
+if [ "$RATCHET" = on ] && [ "$NEW_ORPHAN" -gt 0 ]; then
+  RC=$((RC | 4))
+fi
+exit $RC

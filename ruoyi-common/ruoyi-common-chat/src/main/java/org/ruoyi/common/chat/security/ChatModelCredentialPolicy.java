@@ -142,7 +142,15 @@ public final class ChatModelCredentialPolicy {
         }
     }
 
-    /** Validates credential use without allowing another adapter to consume a provider's key. */
+    /**
+     * Validates credential use without allowing another adapter to consume a provider's key.
+     * Non-DeepSeek providers are not routed through the DeepSeek checks: the else branch used to
+     * call {@link #requireDeepSeekConfiguration} unconditionally, which mislabelled every
+     * non-allowlisted provider as "DeepSeek model provider is not trusted" and diverged from the
+     * guard shape in {@link #requirePersistableConfiguration}. Cross-provider credential confusion
+     * remains blocked by the consumer binding in {@link #resolveApiKeyForUse} and the reference
+     * allowlist in {@link ChatModelSecretReference#resolveAllowlistedReference}.
+     */
     public static void requireTrustedConfiguration(String providerCode, String modelName,
                                                    String apiHost, String apiKey) {
         if (CustomApiCredentialPolicy.isCustomProvider(providerCode)) {
@@ -151,7 +159,7 @@ public final class ChatModelCredentialPolicy {
             requirePpioConfiguration(providerCode, modelName, apiHost, apiKey);
         } else if (ATLAS_PROVIDER.equals(providerCode)) {
             requireAtlasConfiguration(providerCode, modelName, apiHost, apiKey);
-        } else {
+        } else if (isDeepSeekConfiguration(providerCode, modelName)) {
             requireDeepSeekConfiguration(providerCode, modelName, apiHost, apiKey);
         }
     }

@@ -8,11 +8,16 @@
 #   AliBaiLianRerankModelServiceTest 已补 @Tag("dev")，默认 dev 下实测执行且全绿
 #   （trace Tests run: 2；chat Tests run: 7）。
 # 剩余 3 条各自的阻塞原因（不是同一件事，勿一并处理）：
-#   common-core 1 条 → 该模块 classpath 无 JUnit 引擎，补 tag 也跑不了，
-#     实测 groups+excludedGroups 全置空仍 BUILD FAILURE，需加 test 依赖（待 owner 授权）；
-#   Minimax 2 条 → 阻塞于上游缺陷 ChatModelCredentialPolicy
-#     .requireTrustedConfiguration():154 的 else 分支缺 isDeepSeekConfiguration 守卫，
-#     非 deepseek/ppio/atlas/openai/anthropic 的 provider 一律被误判，实测 24 Errors。
+#   common-core 1 条 → 【R226-B1 复核改判：刻意设计，非缺陷】该测试为 main 方法 +
+#     JDK 反射形态（类注释明记"不依赖 JUnit，加依赖会改已跟踪 pom 触发兄弟会话冲突"），
+#     真实执行通道是 scripts/run-async-smoke-test.sh（2026-09-26 实跑 PASSED=5 FAILED=0）。
+#     保留记账防"Surefire 没跑=没测"的误读，勿为其加 JUnit 依赖。
+#   Minimax 2 条 → 【R226-B1 已修上游缺陷本体】requireTrustedConfiguration else 已改为
+#     isDeepSeekConfiguration 同型守卫（行为锁见 common-chat ChatModelCredentialPolicyTest 4 例全绿）；
+#     但两测试仍跑不了：其 apiKey="test-api-key"/本地 http mock 仍被
+#     ChatModelSecretReference env 引用白名单 + requireSecureApiHost(https) 拒绝，
+#     属"minimax provider 系统性支持"范畴（host/引用白名单扩容 + 测试改造），另立专卡，
+#     补 @Tag 只会把 24 个误判错换成引用白名单错。修好后再删行。
 ruoyi-common/ruoyi-common-core/src/test/java/org/ruoyi/common/core/config/ApplicationConfigSmokeTest.java
 ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/integration/MinimaxIntegrationTest.java
 ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/chat/impl/provider/MinimaxServiceImplTest.java

@@ -1,0 +1,92 @@
+{
+ "card": "a4657cec SEC-04",
+ "wave": "R226-B2",
+ "head": "69396e3a",
+ "base": "http://127.0.0.1:16039",
+ "matrix_total": 16,
+ "pass": 16,
+ "fail": 0,
+ "coverage_note": "六身份中\"协同组/游客具名账号\"缺真库载体（无 guest 账号/协同组成员账号），以跨组+匿名覆盖并披露 PARTIAL；Sec04AcceptanceTest(Java @Tag dev) 另纸",
+ "results": [
+  {
+   "项": "DL-1 self(上传者/主组成员) 200 真实字节流",
+   "结论": "PASS",
+   "详情": "status=200 bytes=200"
+  },
+  {
+   "项": "DL-2 SUPER_ADMIN 跨项目放行 200",
+   "结论": "PASS",
+   "详情": "status=200 bytes=200"
+  },
+  {
+   "项": "DL-3 跨组拒绝(4xx fail-closed)",
+   "结论": "PASS",
+   "详情": "status=403"
+  },
+  {
+   "项": "DL-4 拒绝响应不泄露对象文件名",
+   "结论": "PASS",
+   "详情": "message=非项目成员，无权访问"
+  },
+  {
+   "项": "DL-5 游客/未认证 401 零写",
+   "结论": "PASS",
+   "详情": "status=401 code=20001"
+  },
+  {
+   "项": "DL-6 不存在资源 fail-closed(4xx 非 5xx)",
+   "结论": "PASS",
+   "详情": "status=400"
+  },
+  {
+   "项": "AQ-1 内部角色 scope 查询 200 且按 actor 过滤(scope=OWN, 行级 operatorId 全等本人)",
+   "结论": "PASS",
+   "详情": "status=200 scope=OWN operatorIds=['900104'] rows=5"
+  },
+  {
+   "项": "AQ-2 游客 scope 401（AC-AUD-06）",
+   "结论": "PASS",
+   "详情": "status=401"
+  },
+  {
+   "项": "AE-1 非超管 export 拒绝(4xx)",
+   "结论": "PASS",
+   "详情": "status=403"
+  },
+  {
+   "项": "AE-2 非超管 export 被拒后 EXPORT 审计零增量",
+   "结论": "PASS",
+   "详情": "52→52"
+  },
+  {
+   "项": "AE-3 超管 export 正例 200 且写且仅写 1 条 EXPORT 审计",
+   "结论": "PASS",
+   "详情": "status=200 EXPORT 52→53"
+  },
+  {
+   "项": "AE-4 游客 export 401 零写",
+   "结论": "PASS",
+   "详情": "status=401"
+  },
+  {
+   "项": "DQ-1 游客访问需求池 ⇒ 拒绝（AC-REQ-05 原预期）",
+   "结论": "PASS",
+   "详情": "status=401"
+  },
+  {
+   "项": "DQ-2 内部角色需求池读放行",
+   "结论": "PASS",
+   "详情": "status=200"
+  },
+  {
+   "项": "DQ-3 只读全矩阵业务零写（requirements 行数不变）",
+   "结论": "PASS",
+   "详情": "15→15"
+  },
+  {
+   "项": "ZD-1 除 AE-3 合法 EXPORT 1 条外审计表无其他意外增量",
+   "结论": "PASS",
+   "详情": "delta=1（登录本身也写 AUTH 审计，容差=4）"
+  }
+ ]
+}
