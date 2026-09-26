@@ -33,7 +33,8 @@ L.record(recs, {"card":"AC-IPD-03","case":"L1R2-轻管完成路径服务腿闭�
 # ---------- 2) AC-PROD-04 存量导入正腿（补 targetMarkets） ----------
 legacy = {"name":"R218-QA08-存量导入项目R4","productId":P2,"templateType":"SOFTWARE",
           "targetMarkets":json.dumps(["CONSUMER"], ensure_ascii=False),"level":"A",
-          "targetSalesAmount":200,"mainGroupId":9120002,"legacyEffectiveAt":"2026-08-01T00:00:00",
+          "targetSalesAmount":200,"targetChannelCount":5,"targetNps":40,"targetSceneCount":2,  # [FIX-R5 归因行4] 渠道商数等四基准必填
+          "mainGroupId":9120002,"legacyEffectiveAt":"2026-08-01T00:00:00",
           "declaredStage":"DEV","missingHistoryAck":True,"alternativeEvidence":{"D01":"R218邮件纪要"}}
 s, bj, _, _ = L.req("POST", L.B46, "/api/v1/projects/legacy-import", token=T["ipd-admin"], body=legacy)
 LP = (data_of(bj) or {}).get("id") if isinstance(data_of(bj), dict) else None
@@ -51,8 +52,10 @@ if LP:
     L.record(recs, {"card":"AC-PROD-04","case":"P4-2R2回读source/审计/history_mark/替代佐证","cmd":"mysql projects/audit_logs/stage_actions id=%s" % LP,
         "http": None, "exit": 0, "verdict": "PASS" if src[0]=="LEGACY" and int(au)>=1 and int(hm)>=1 else "FAIL",
         "note":"source=%s status=%s audit=%s history_mark行=%s 佐证remark行=%s" % (src[0], src[1], au, hm, ev)})
+    # [FIX-R5 归因行5/6] 合法链TEAMING→ACTIVE(直跳为状态机守卫拒绝的设计内行为)
+    L.req("POST", L.B46, "/api/v1/projects/%s/status?target=TEAMING" % LP, token=T["ipd-admin"])
     s, bj2, _, _ = L.req("POST", L.B46, "/api/v1/projects/%s/status?target=ACTIVE" % LP, token=T["ipd-admin"])
-    L.record(recs, {"card":"AC-PROD-04","case":"P4-3R2历史缺失不阻断状态流转","cmd":"POST /projects/%s/status?target=ACTIVE" % LP,
+    L.record(recs, {"card":"AC-PROD-04","case":"P4-3R2历史缺失不阻断状态流转(合法链TEAMING→ACTIVE)","cmd":"POST /projects/%s/status TEAMING→ACTIVE" % LP,
         "http": s, "envelope_code": code_of(bj2), "verdict": "PASS" if s==200 and code_of(bj2)==0 else "FAIL", "note": msg_of(bj2)[:60]})
 
 # ---------- 3) AC-HAND-01c 隔离正例：自有项目上 赵(RESIGNED)→胡(9110005) onBehalf + cancel ----------

@@ -10,6 +10,11 @@ def msg_of(bj):  return (bj.get("message") or bj.get("msg") or "") if isinstance
 def data_of(bj): return bj.get("data") if isinstance(bj, dict) else None
 T = {u: L.login(L.B46, u) for u in ("ipd-admin", "ipd-leader", "ipd-market", "ipd-rd")}
 WRITTEN = []  # 写库登记清单
+# [FIX-R5 归因行1/2] 配套产品helper：SOFTWARE项目须1:1挂真实产品(source=PM_NEW)
+def _fixprod(nm, tok):
+    s0, b0, _, _ = L.req("POST", L.B46, "/api/v1/products", token=tok, body={"productName": nm, "source": "PM_NEW"})
+    d0 = data_of(b0) if isinstance(data_of(b0), dict) else {}
+    return d0.get("id")
 
 # ---- SEC-04 下载腿替代验证（存量交付物，不需要 OSS 上传通道） ----
 STOCK = "2096364946240630785"
@@ -31,7 +36,8 @@ L.record(recs, {"card":"SEC-04","case":"D3-匿名下载存量交付物拒绝","c
 # ---- AC-PROD-03 新建 SOFTWARE 项目：硬件动作 NA ----
 proj = {"name": "R218-QA08-软件模板验证项目", "templateType": "SOFTWARE", "level": "S",
         "mainGroupId": 9120002, "targetMarkets": json.dumps(["CONSUMER"], ensure_ascii=False),
-        "targetSalesAmount": 100, "targetChannelCount": 3, "targetNps": 40, "targetSceneCount": 2}
+        "targetSalesAmount": 100, "targetChannelCount": 3, "targetNps": 40, "targetSceneCount": 2,
+        "productId": (lambda x: int(x) if x else None)(_fixprod("R218-QA08-配套软件产品R5FIX", tok_admin))}  # [FIX-R5 归因行1/2] 原fixture缺productId致400
 s, bj, _, _ = L.req("POST", L.B46, "/api/v1/projects", token=tok_admin, body=proj)
 PID = data_of(bj) or {}
 PID = PID.get("id") if isinstance(PID, dict) else None
@@ -48,12 +54,13 @@ if PID:
         "http": None, "exit": 0, "verdict": "PASS" if ok else "FAIL",
         "note":"NA动作=%s | D03(手板/EVT)=%s | 断言:硬件专属动作存在且status=NA" % (",".join(na), d03 and d03[0][2])})
     # 轻管完成腿 (AC-IPD-03 服务部分) 用新项目 LIGHT 动作
-    light = L.sql("SELECT id,depth,owner_role,status FROM stage_actions WHERE project_id=%s AND depth='LIGHT' AND status='NOT_STARTED' AND del_flag='0' LIMIT 1" % PID)
+    light = L.sql("SELECT id,depth,owner_role,status FROM stage_actions WHERE project_id=%s AND depth='LIGHT' AND status='NOT_STARTED' AND del_flag='0' ORDER BY owner_role='MARKET_PM' DESC,id LIMIT 1" % PID)  # [FIX-R5 归因行12] 优先取operator可写动作
     if light:
         LA = light[0][0]
-        s1, bj1, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/fields" % LA, token=tok_market, body={"actualDoneAt": "2026-09-25 10:00:00", "remark": "R218-QA08 轻管完成腿"})
-        s2, bj2, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=IN_PROGRESS&reason=r218" % LA, token=tok_market)
-        s3, bj3, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=DONE&reason=r218-qa08" % LA, token=tok_market)
+        LT = {"MARKET_PM": tok_market, "RD_PM": tok_rd}.get(light[0][2], tok_market)  # [FIX-R5 归因行12] operator与owner_role配对(ROLE_LOCKED)
+        s1, bj1, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/fields" % LA, token=LT, body={"actualDoneAt": "2026-09-25T10:00:00"})  # [FIX-R5] 仅白名单字段+ISO日期
+        s2, bj2, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=IN_PROGRESS&reason=r218" % LA, token=LT)
+        s3, bj3, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=DONE&reason=r218-qa08" % LA, token=LT)
         st = L.sql("SELECT status,actual_done_at FROM stage_actions WHERE id=%s" % LA)[0]
         WRITTEN.append("stage_actions id=%s (LIGHT动作 fields/transit 完成流转, status=%s)" % (LA, st[0]))
         L.record(recs, {"card":"AC-IPD-03","case":"L1-轻管动作fields+transit DONE(服务腿)","cmd":"POST /stage-actions/%s/fields{actualDoneAt} + transit IN_PROGRESS + transit DONE (market)" % LA,
@@ -68,8 +75,12 @@ if PID:
 
 # ---- AC-PROD-04 存量导入 ----
 if PID:
+    # [FIX-R5 归因行3/4] 原fixture缺 targetMarkets/targetChannelCount 等必填→400；补四基准+挂真实产品+ISO生效日
     legacy = {"name": "R218-QA08-存量导入项目", "templateType": "SOFTWARE", "level": "A", "mainGroupId": 9120002,
-              "targetSalesAmount": 200, "legacyEffectiveAt": "2026-08-01", "declaredStage": "DEV", "missingHistoryAck": True,
+              "productId": (lambda x: int(x) if x else None)(_fixprod("R218-QA08-存量配套产品R5FIX", tok_admin)),
+              "targetMarkets": json.dumps(["CONSUMER"], ensure_ascii=False),
+              "targetSalesAmount": 200, "targetChannelCount": 5, "targetNps": 40, "targetSceneCount": 2,
+              "legacyEffectiveAt": "2026-08-01T00:00:00", "declaredStage": "DEV", "missingHistoryAck": True,
               "alternativeEvidence": {"D01": "R218邮件纪要"}}
     s, bj, _, _ = L.req("POST", L.B46, "/api/v1/projects/legacy-import", token=tok_admin, body=legacy)
     LP = data_of(bj) or {}
@@ -84,8 +95,10 @@ if PID:
         L.record(recs, {"card":"AC-PROD-04","case":"P4-2回读source/history_mark/审计","cmd":"mysql projects+stage_actions+audit_logs WHERE id=%s" % LP,
             "http": None, "exit": 0, "verdict": "PASS" if src=="LEGACY" and int(au)>=1 else "FAIL",
             "note":"source=%s history/NA行=%s audit(PROJECT_LEGACY_IMPORT)=%s" % (src, hm, au)})
+        # [FIX-R5 归因行5/6] 状态机DRAFT禁直跳ACTIVE且CONFIRMED不在枚举(ProjectService.java:54-59)→合法链TEAMING→ACTIVE
+        L.req("POST", L.B46, "/api/v1/projects/%s/status?target=TEAMING" % LP, token=tok_admin)
         s, bj, _, _ = L.req("POST", L.B46, "/api/v1/projects/%s/status?target=ACTIVE" % LP, token=tok_admin)
-        L.record(recs, {"card":"AC-PROD-04","case":"P4-3历史缺失不阻断后续流转","cmd":"POST /projects/%s/status?target=ACTIVE (admin)" % LP,
+        L.record(recs, {"card":"AC-PROD-04","case":"P4-3历史缺失不阻断后续流转(合法链TEAMING→ACTIVE)","cmd":"POST /projects/%s/status TEAMING→ACTIVE (admin)" % LP,
             "http": s, "envelope_code": code_of(bj), "verdict": "PASS" if s==200 and code_of(bj)==0 else "FAIL", "note":"msg=%s" % msg_of(bj)[:50]})
     legacy_bad = dict(legacy); legacy_bad["name"]="R218-QA08-存量导入反例"; legacy_bad["missingHistoryAck"]=False
     s, bj, _, _ = L.req("POST", L.B46, "/api/v1/projects/legacy-import", token=tok_admin, body=legacy_bad)
@@ -111,11 +124,17 @@ WRITTEN.append("stage_actions id=%s (D02 推进到 IN_PROGRESS, transit 状态�
 ZAO = "2096266884247736321"
 L.sql("INSERT INTO project_members (id,project_id,person_id,role,member_type,locked_level,locked_amount,join_date,create_time,tenant_id,del_flag) VALUES (918000000000000001,9140005,%s,'MARKET_PM','FORMAL','B',0,'2026-08-01',NOW(),'000000','0')" % ZAO)
 WRITTEN.append("project_members id=918000000000000001 (赵市场2096266884247736321 @9140005 MARKET_PM 在任绑定, HAND-01c夹具, 故意保留:移交成功即被系统改写)")
-# 900103 是 9140005 在任 MARKET_PM,代移交把职位交给赵(冻结待移交)？矩阵语义:组长代离职人员发起。反向:目标人=ACTIVE 应拒
-s, bj, _, _ = L.req("POST", L.B46, "/api/v1/handovers", token=T["ipd-leader"], body={"projectId": 9140005, "role": "MARKET_PM", "toPersonId": int(ZAO), "note": "R218-QA08 代移交验证", "onBehalf": True})
+# [FIX-R5 归因行7/8] ①403=assertSameGroupIpd跨组设计守卫(HandoverService.java:173-179)→组长临时换组9120002同组发起后还原；
+#             ②400同人=接手人不能=在任反查(赵)→接手人改胡9110005；复跑走 r218_qa08_fix10.py(自有项目隔离,不触9140005共享夹具)
+L.sql("UPDATE persons SET group_id=9120002 WHERE id=900102")
+try:
+    L._tok.pop((L.B46, "ipd-leader"), None)
+    s, bj, _, _ = L.req("POST", L.B46, "/api/v1/handovers", token=L.login(L.B46, "ipd-leader"), body={"projectId": 9140005, "role": "MARKET_PM", "toPersonId": 9110005, "note": "R218-QA08 代移交验证(FIX同组+胡接手)", "onBehalf": True})
+finally:
+    L.sql("UPDATE persons SET group_id=900001 WHERE id=900102")
 HO = data_of(bj) or {}
 HO_ID = HO.get("id") if isinstance(HO, dict) else None
-L.record(recs, {"card":"AC-HAND-01c","case":"H1-组长代移交正例(onBehalf=true)","cmd":"POST /api/v1/handovers (leader组9120002=项目组) toPerson=赵(冻结)",
+L.record(recs, {"card":"AC-HAND-01c","case":"H1-组长代移交正例(onBehalf,FIX:同组+to=胡9110005)","cmd":"POST /api/v1/handovers (leader临时组9120002同组) toPerson=胡9110005",
     "http": s, "envelope_code": code_of(bj), "handover_id": HO_ID, "verdict": "PASS" if s==200 and code_of(bj)==0 else "FAIL", "note":"msg=%s" % msg_of(bj)[:80]})
 s2, bj2, _, _ = L.req("POST", L.B46, "/api/v1/handovers", token=tok_admin, body={"projectId": 9140005, "role": "MARKET_PM", "toPersonId": int(ZAO), "note": "R218 跨组负例", "onBehalf": True})
 L.record(recs, {"card":"AC-HAND-01c","case":"H2-跨组代移交应拒(admin豁免对照组)","cmd":"POST /handovers (admin组900001≠9120002) 同参数",
@@ -130,7 +149,7 @@ cases = [
     ("N2-津贴台账导出(market内部角色)", "/api/v1/report/export/allowance?month=2026-09", tok_market, "ipd-market"),
     ("N3-奖金台账导出(admin)", "/api/v1/report/export/bonus?projectId=9140005", tok_admin, "ipd-admin"),
     ("N4-奖金台账导出(rd应拒)", "/api/v1/report/export/bonus?projectId=9140005", tok_rd, "ipd-rd"),
-    ("N5-项目报表导出(admin)", "/api/v1/report/export/project", tok_admin, "ipd-admin"),
+    ("N5-项目报表导出(admin)", "/api/v1/report/export/project?month=2026-09", tok_admin, "ipd-admin"),  # [FIX-R5 归因行9] month为@RequestParam必填(ReportController.java:84-88)
 ]
 for name, path, tok, who in cases:
     s, bj, h, rb = L.req("GET", L.B46, path, token=tok, timeout=40)

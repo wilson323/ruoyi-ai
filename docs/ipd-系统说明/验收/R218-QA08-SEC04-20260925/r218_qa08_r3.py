@@ -7,7 +7,7 @@ recs = json.load(open(L.REC_PATH))
 def code_of(bj): return bj.get("code") if isinstance(bj, dict) else None
 def msg_of(bj):  return (bj.get("message") or bj.get("msg") or "") if isinstance(bj, dict) else ""
 def data_of(bj): return bj.get("data") if isinstance(bj, dict) else None
-T = {u: L.login(L.B46, u) for u in ("ipd-admin", "ipd-leader", "ipd-market")}
+T = {u: L.login(L.B46, u) for u in ("ipd-admin", "ipd-leader", "ipd-market", "ipd-rd")}  # [FIX-R5 归因行12] 增rd供operator配对
 W = json.load(open(os.path.join(os.path.dirname(L.REC_PATH), "写库清单-qa08.json")))
 
 # 新建产品（SOFTWARE 项目须 1:1 挂产品）；source 枚举=PM_NEW（首轮 400 根因：误传 NEW）
@@ -48,12 +48,14 @@ if PROD:
         ok = bool(d03) and d03[0]=="NA" and len(na) >= 2
         L.record(recs, {"card":"AC-PROD-03","case":"P3-2R真库回读硬件动作NA","cmd":"mysql stage_actions WHERE project_id=%s" % PID,
             "http": None, "exit": 0, "verdict": "PASS" if ok else "FAIL", "note":"NA动作=%s D03=%s" % (",".join(na), d03 and d03[0])})
-        light = L.sql("SELECT id FROM stage_actions WHERE project_id=%s AND depth='LIGHT' AND status='NOT_STARTED' AND del_flag='0' LIMIT 1" % PID)
+        # [FIX-R5 归因行12] 取owner_role并与operator配对；fields仅白名单+ISO日期
+        light = L.sql("SELECT id,owner_role FROM stage_actions WHERE project_id=%s AND depth='LIGHT' AND status='NOT_STARTED' AND del_flag='0' ORDER BY owner_role='MARKET_PM' DESC,id LIMIT 1" % PID)
         if light:
             LA = light[0][0]
-            s1, bj1, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/fields" % LA, token=T["ipd-market"], body={"actualDoneAt": "2026-09-25 10:00:00", "remark": "R218轻管腿"})
-            L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=IN_PROGRESS&reason=r218" % LA, token=T["ipd-market"])
-            s3, bj3, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=DONE&reason=r218-qa08" % LA, token=T["ipd-market"])
+            lk = {"MARKET_PM": "ipd-market", "RD_PM": "ipd-rd"}.get(light[0][1], "ipd-market")
+            s1, bj1, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/fields" % LA, token=T[lk], body={"actualDoneAt": "2026-09-25T10:00:00"})
+            L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=IN_PROGRESS&reason=r218" % LA, token=T[lk])
+            s3, bj3, _, _ = L.req("POST", L.B46, "/api/v1/stage-actions/%s/transit?target=DONE&reason=r218-qa08" % LA, token=T[lk])
             st = L.sql("SELECT status,actual_done_at FROM stage_actions WHERE id=%s" % LA)[0]
             W.append("stage_actions id=%s (LIGHT动作 %s 项目轻管完成流转,status=%s)" % (LA, PID, st[0]))
             L.record(recs, {"card":"AC-IPD-03","case":"L1R-轻管fields+transit DONE(服务腿)","cmd":"fields{actualDoneAt}+transit x2 (market) id=%s" % LA,
@@ -64,8 +66,11 @@ if PROD:
         P2 = (data_of(bj2) or {}).get("id")
         if P2:
             W.append("products id=%s (R218-QA08存量产品)" % P2)
+            # [FIX-R5 归因行3/4] 补 targetMarkets+targetChannelCount 等四基准必填 + ISO生效日
             legacy = {"name": "R218-QA08-存量导入项目", "templateType": "SOFTWARE", "level": "A", "mainGroupId": 9120002,
-                      "productId": int(P2), "targetSalesAmount": 200, "legacyEffectiveAt": "2026-08-01",
+                      "productId": int(P2), "targetMarkets": json.dumps(["CONSUMER"], ensure_ascii=False),
+                      "targetSalesAmount": 200, "targetChannelCount": 5, "targetNps": 40, "targetSceneCount": 2,
+                      "legacyEffectiveAt": "2026-08-01T00:00:00",
                       "declaredStage": "DEV", "missingHistoryAck": True, "alternativeEvidence": {"D01": "R218邮件纪要"}}
             s, bj3, _, _ = L.req("POST", L.B46, "/api/v1/projects/legacy-import", token=T["ipd-admin"], body=legacy)
             LP = (data_of(bj3) or {}).get("id") if isinstance(data_of(bj3), dict) else None
@@ -79,8 +84,10 @@ if PROD:
                 L.record(recs, {"card":"AC-PROD-04","case":"P4-2R回读source/history_mark/审计","cmd":"mysql projects/stage_actions/audit_logs id=%s" % LP,
                     "http": None, "exit": 0, "verdict": "PASS" if src=="LEGACY" and int(au)>=1 else "FAIL",
                     "note":"source=%s audit=%s history_mark行=%s(0也需看NA标记,主判据=source+audit)" % (src, au, hm)})
+                # [FIX-R5 归因行5/6] 直跳ACTIVE被状态机守卫拒(设计内)→合法链TEAMING→ACTIVE
+                L.req("POST", L.B46, "/api/v1/projects/%s/status?target=TEAMING" % LP, token=T["ipd-admin"])
                 s, bj4, _, _ = L.req("POST", L.B46, "/api/v1/projects/%s/status?target=ACTIVE" % LP, token=T["ipd-admin"])
-                L.record(recs, {"card":"AC-PROD-04","case":"P4-3R历史缺失不阻断流转","cmd":"POST /projects/%s/status?target=ACTIVE" % LP,
+                L.record(recs, {"card":"AC-PROD-04","case":"P4-3R历史缺失不阻断流转(合法链TEAMING→ACTIVE)","cmd":"POST /projects/%s/status TEAMING→ACTIVE" % LP,
                     "http": s, "envelope_code": code_of(bj4), "verdict": "PASS" if s==200 and code_of(bj4)==0 else "FAIL", "note": msg_of(bj4)[:50]})
             legacy_bad = dict(legacy); legacy_bad["name"]="R218-QA08-存量导入反例R3"; legacy_bad["missingHistoryAck"]=False
             s, bj5, _, _ = L.req("POST", L.B46, "/api/v1/projects/legacy-import", token=T["ipd-admin"], body=legacy_bad)
@@ -97,10 +104,11 @@ if PROD:
 L.sql("UPDATE persons SET group_id=9120002 WHERE id=900102")
 try:
     Tl = L.login(L.B46, "ipd-leader")
+    # [FIX-R5 归因行8] to原=赵与在任反查同人→400；接手人改胡9110005
     s, bj, _, _ = L.req("POST", L.B46, "/api/v1/handovers", token=Tl,
-        body={"projectId": 9140005, "role": "MARKET_PM", "toPersonId": 2096266884247736321, "note": "R218-QA08 代移交正例", "onBehalf": True})
+        body={"projectId": 9140005, "role": "MARKET_PM", "toPersonId": 9110005, "note": "R218-QA08 代移交正例(FIX:胡接手)", "onBehalf": True})
     HO = (data_of(bj) or {}).get("id") if isinstance(data_of(bj), dict) else None
-    L.record(recs, {"card":"AC-HAND-01c","case":"H1R-组长代移交正例(onBehalf)","cmd":"POST /handovers (leader,同组9120002) to=赵市场(RESIGNED)","http": s,
+    L.record(recs, {"card":"AC-HAND-01c","case":"H1R-组长代移交正例(onBehalf)","cmd":"POST /handovers (leader,同组9120002) to=胡9110005(FIX)","http": s,
         "envelope_code": code_of(bj), "handover_id": HO, "verdict": "PASS" if s==200 and code_of(bj)==0 else "FAIL", "note":"msg=%s" % msg_of(bj)[:90]})
     if HO:
         W.append("handovers id=%s (9140005 MARKET_PM 900103→赵市场 代移交请求)" % HO)

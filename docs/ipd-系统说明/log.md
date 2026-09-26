@@ -12416,3 +12416,27 @@ owner 就 R220 ⑤ 拍 A：先把 4 个红灯背后的真问题修掉，再接�
   bash scripts/check-charset-consistency.sh; echo RC=$?
   curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:16039/api/v1/persons/active
   bash scripts/check-cross-repo-cd-guard.sh; echo RC=$?
+
+## 2026-09-25 19:00 | R222（owner 拍 C：测试假绿检查挂 CI 记账；挂前实测推翻原判据，改判据后接入）
+
+① 原件 check-surefire-fake-green.sh 不可原样挂 CI，三条判据实测不成立（夹具在 /tmp，脚本副本 REPO_ROOT 自解析到夹具根）：
+- 诊断写死「默认 profile=local 下 0 个测试运行」：现查 pom.xml activeByDefault 在 **dev**、profiles.active=dev，且 R221 的 full 模式实测真跑出 2507 个测试 → 该红的原因是错的。
+- (b) 判据把「@Tag 唯一值 ≥2 种」打印成「✅ 无单一过滤风险」：夹具 F3 新增一个 @Tag("unit") 的类（默认 profile 下整类不跑），errors 反从 2 掉到 1 —— **状况变差、判定变好**。
+- (c) 完全无 @Tag 的文件不进任何统计：夹具文件数 2→3（多的正是无标签类），all_dev_tag 与 errors 恒定不变。
+- 决定性一条：F4 把 <groups> 写死成 dev（即有人按建议修好 (a)）→ RC=0；F5 在其基础上新增 2 个永不被执行的测试类 → 仍 RC=0 pass:true。即原件属本轮已定性的「接上就永远绿」形态，挂进 CI 等于给可为假绿背书的检查发长期台账。
+
+② 新判据与真存量（比原件重要）：判据收敛为一句可静态判定的事——每个被 Surefire 默认包含规则识别的测试源文件，至少要有一个方法真的会被执行。父 pom surefire 在 <build><plugins>（非 pluginManagement）全模块生效，且 **无任何子模块 pom 覆盖 <groups>**（rg 全仓 pom.xml 仅命中根 pom）。据此全仓实测：319 个测试源文件中 **6 个整类不会被执行**（common-core 1 / common-trace 1 / ruoyi-chat 4，全部无 @Tag；git ls-files 与 find 两口径各数一次一致）。
+- 机制实证（不是语义推断）：mvn -o -pl ruoyi-common/ruoyi-common-trace test → **RC=0 BUILD SUCCESS，Tests run: 8，只产出 2 份 XML**，无 @Tag 的 TraceContextTest 零报告、零失败、零跳过提示。
+- 为何长期无人发现：mvn -o -pl ruoyi-common/ruoyi-common-core test → **RC=1 BUILD FAILURE「groups/excludedGroups require TestNG, JUnit48+ or JUnit 5 ... on project test classpath」**（该模块 pom 无任何 test 引擎依赖）→ 全仓 mvn test 根本跑不通，静默跳过因此没有暴露面。
+
+③ 落地 scripts/check-test-selection-fake-green.sh + scripts/ci/test-selection-fake-green-baseline.txt（6 条存量，只允许单调收敛）+ .github/workflows/ipd-test-selection-gate.yml（独立 job，不跑 mvn、timeout 5min、触发面 src/test+pom+基线+自身、周日 03:30 与 r25 错开半分钟、workflow_dispatch）。分层：基线外新增静默跳过 → exit 1 阻断；基线内存量 + <groups> 动态 profile 耦合 → exit 0 记账；pom 缺失/不在 git 仓/基线缺失 → exit 2 拒绝判定（不继承 M2/M3「读不到就放行」）。
+- 沿用 ipd-test-gate.yml 已声明的「门禁自己先自测」铁律：--self-test 7 夹具用例全过（C1 全选中绿 / C2 新增无 @Tag 红 / C3 新增 @Tag(unit) 红 / C4 登记基线后不阻断 / C5 基线缺失 exit 2 / C6 pom 缺失 exit 2 / C7 有人把默认 profile 改 local 致全仓 0 测试跑 → 红）。真仓实跑 RC=0，JSON: total=319 unselected=6 baseline=6 fresh_violations=0 stale_baseline=0。
+- 原件保留未动（其头注释指向的 skill .claude/skills/ipd-guard-surefire-fake-green 实测不存在，又一死指针，待 M1–M5 门禁群一并处置）。pom 的 <groups> 动态耦合与 290 个 dev 标签治理仍属需 owner 单独授权的构建配置级变更，本轮未动。
+
+④ 执行方自查（同一根因二次踩，机制化仍不够）：首版把 M4 定性的 `set -e` 下 `[ 条件 ] && 动作` 又写进去了——条件为假时整个 AND 列表失败即静默 exit 1，自测 C1 立刻抓到（期望 0 实得 1）。另有一类 bash 特有坑：`$groups（` 变量名紧跟全角括号，首字节被吞进变量名 → 「groups…: unbound variable」。两者都因「先写会红的自测再接线」当场暴露，未流入 CI。
+
+复现：
+  bash scripts/check-test-selection-fake-green.sh --self-test; echo RC=$?
+  bash scripts/check-test-selection-fake-green.sh; echo RC=$?
+  export PATH="$HOME/tools/maven/bin:$PATH" JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"; mvn -o -pl ruoyi-common/ruoyi-common-trace test; echo RC=$?
+- 2026-09-26 R218 FAIL归因批+上传链修复轮（协调会话，marker r218-fail-attrib-round）：①[归因] 18 FAIL+1 FAIL-ENV 全量复测定性（两 agency-harness 车道独立复跑）：16 假红（5 上传链环境+1 旧jar漂移转绿+10 执行器 fixture 缺陷）+2 真缺陷立卡（e256007b AC-REQ-09 需求池删除三分量补齐 U1；f62ab684 AC-PROD-09 超时提醒零触发接线 U2）。产物 commit 60bc98da（R218-FAIL归因-20260925/ 9 文件）。②[fixture 修正] 10 条假红用例按归因通过路径原位打补丁（r218_qa08*.py 17 处 [FIX-R5] 注释），复跑 10/10 绿两轮（r218_qa08_fix10.py，F11 正式趟），写库清单追加登记。③[上传链双根因修复] 层一=本机 java 进程 bootstrap 被注入系统代理属性（env -i 挡不住，解法=-javaagent:/tmp/npxagent/noproxy-agent.jar 清空属性）；层二=sys_oss_config(minio).endpoint 误存带 http:// 前缀 + OssClient.getEndpoint() 二次拼接 → host="http" 挂死 120s，**真库 UPDATE endpoint='127.0.0.1:9000'**（数据修复，主代码零改动，中途试验已 git checkout 还原）。v6 终测：A1 上传 200→deliverable 2103666236842881025→真库 hash 一致→本人下载 200 字节一致→审计行 1，SEC-04 六条 6/6 全绿（sec04-env-归因.md v6 补记段）。④[环境基线] 16039 现跑 jar=含 R218 全部入库代码+新启动参数（/tmp/r218-run-16039-v2.sh 为基线模板）；期间发现并修正"内嵌 ipd jar 落后 m2 旧版"部署漂移一次（install ruoyi-ipd 后重打）。⑤[遗留] sysadmin 账号现库从未创建（信源 dev-accounts.yaml 需补建或删行）；代理属性注入源未定论；QA-08 维持 todo 待 147 条续跑。

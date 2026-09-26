@@ -48,3 +48,16 @@
 | 附 | sysadmin 登录 | 10001 密码错 | 仍 10001；persons/sys_user 均无行 | **环境假红-仍红-根因**：账号不在库（信源-库漂移），登录拒绝行为正确，非代码缺陷 |
 
 无一条判为"真缺陷-建议立卡"；A 链修复属环境操作（代理加白/JVM 参数），已给出可复制指令。本轮零写库，`写库清单` 无新增条目。
+
+---
+
+## 归因更新（v6 终局，2026-09-26 协调会话补记，marker r218-upload-final-fix）
+
+首报结论"根因=JVM 代理劫持"只对了第一层。按修复方向逐层剥除后暴露第二层真凶，A1/A1R 五条上传 FAIL 实为**双根因叠加**：
+
+1. **层一（环境，已修）**：本机所有 java 进程 bootstrap 期被注入 `http(s)/socksProxyHost=127.0.0.1:7890`（来源：macOS 系统代理被某机制同步进 JVM sysprops，`env -i`、`-Djava.net.useSystemProxies=false` 均挡不住；注入源未彻底查明，记录在案）。修复：启动挂 `-javaagent:/tmp/npxagent/noproxy-agent.jar`（premain 清 8 个代理属性，零代码侵入，5 行 jar 不入仓）。
+2. **层二（数据配置错误，已修）**：`sys_oss_config`(config_key=minio) 的 endpoint 存成了 `http://127.0.0.1:9000`（带 scheme），而 `OssClient.getEndpoint()` 会按 is_https 再拼一次协议头 → 实际连接 `http://http://127.0.0.1:9000`，host 解析成字面量 "http"、端口退化 80、被 Clash TUN 喂 fake-ip 后挂死 120s。**修复＝改数据不改代码**：`UPDATE sys_oss_config SET endpoint='127.0.0.1:9000' WHERE config_key='minio'`（上游 RuoYi 惯例 endpoint 存裸 host:port，此库入库时写错）。
+3. **主代码零改动**：中途试验性给 OssClient 加过 ProxyConfiguration 配置，已 `git checkout` 还原（且发现纯禁代理+null host 会引入云域名回归，弃用）。
+4. **v6 全链实证**（时间线 2026-09-26T10:01:29）：A1 上传 200/code=0 → deliverable_id=2103666236842881025；真库回读 hash/size 匹配（2095B，uploaded_by=900103，project 9140005）；本人下载 200 且字节 sha 一致；审计行 rows=1；C7 需求详情 200。SEC-04 六条环境类 FAIL 至此全部闭环：6/6 绿。
+5. **重启命令基线**：`/tmp/r218-run-16039-v2.sh`（env -i + JDK17 绝对路径 + useSystemProxies=false + noproxy-agent + 16379 redis + 16039），兄弟会话轮换 16046 时可复制同款参数。
+6. **观察项移交**：①代理属性 bootstrap 注入源未定论（不影响现解法）；②sysadmin 账号需按 dev-accounts.yaml 信源补建或删行（维持首报结论）。
