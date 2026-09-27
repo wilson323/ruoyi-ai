@@ -125,18 +125,54 @@ public abstract class AbstractWfNode {
             inputConsumer.accept(state);
         }
         log.info("--node input:{}", JsonUtil.toJson(state.getInputs()));
-        NodeProcessResult processResult;
-        try {
-            processResult = onProcess();
-        } catch (Exception e) {
+        NodeProcessResult processResult = null;
+        Exception lastException = null;
+        String lastError = null;
+        int attempt = 0;
+        boolean terminal = false;
+        // G5 移植：AiExecutionEngine 退避重试语义（30s/2m/10m × 3 次，第 3 次失败 DEAD 转人工）
+        while (attempt < NodeFailurePolicy.MAX_ATTEMPTS && !terminal) {
+            attempt++;
+            lastException = null;
+            lastError = null;
+            try {
+                processResult = onProcess();
+            } catch (Exception e) {
+                lastException = e;
+                lastError = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                log.warn("↑↑↑↑↑ node process error(try {}/{},max {}),name:{},uuid:{},error:{}",
+                        attempt, NodeFailurePolicy.MAX_ATTEMPTS, NodeFailurePolicy.MAX_ATTEMPTS,
+                        node.getTitle(), node.getUuid(), lastError, e);
+            }
+            if (lastException == null && processResult != null && processResult.isError()) {
+                lastError = processResult.getMessage() != null ? processResult.getMessage() : "node soft error";
+                log.warn("node process soft error(try {}/{}),name:{},uuid:{},msg:{}",
+                        attempt, NodeFailurePolicy.MAX_ATTEMPTS, node.getTitle(), node.getUuid(), lastError);
+            }
+            NodeFailurePolicy.Outcome outcome = NodeFailurePolicy.decide(
+                    attempt, lastException == null && (processResult == null || !processResult.isError()), lastError);
+            if (outcome == NodeFailurePolicy.Outcome.SUCCESS) {
+                break;
+            }
+            processResult = null;
+            terminal = outcome == NodeFailurePolicy.Outcome.DEAD;
+            if (!terminal) {
+                NodeFailurePolicy.sleepBeforeRetry(attempt);
+            }
+        }
+        if (processResult == null) {
             state.setProcessStatus(NODE_PROCESS_STATUS_FAIL);
-            state.setProcessStatusRemark("process error:" + e.getMessage());
+            state.setProcessStatusRemark(attempt >= NodeFailurePolicy.MAX_ATTEMPTS
+                    ? NodeFailurePolicy.deadTrailMessage(node.getTitle(), attempt, lastError)
+                    : "process error:" + NodeFailurePolicy.safeError(lastError));
             wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_FAIL);
-            log.info("↑↑↑↑↑ node process error,name:{},uuid:{},error", node.getTitle(), node.getUuid(), e);
             if (null != outputConsumer) {
                 outputConsumer.accept(state);
             }
-            throw new RuntimeException(e);
+            if (lastException != null) {
+                throw new RuntimeException(lastException);
+            }
+            throw new BaseException("process error:" + NodeFailurePolicy.safeError(lastError));
         }
 
         if (!processResult.getContent().isEmpty()) {
