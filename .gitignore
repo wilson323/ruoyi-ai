@@ -122,3 +122,7 @@ agentdb.rvf.lock
 
 # R157-E-A: 兄弟会话 session 数据（不入库）
 .harness/audit/
+
+# R236: agent 运行时 scratch 与 IDE 缓存（不入库）；.superpowers/sdd 是 SDD plan workspace，按 skill 定义即 git-ignored scratch
+.superpowers/
+.qoder/

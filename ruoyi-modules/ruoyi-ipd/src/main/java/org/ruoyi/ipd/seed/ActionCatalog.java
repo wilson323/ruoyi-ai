@@ -236,4 +236,31 @@ public final class ActionCatalog {
         }
         return def.depth();
     }
+
+    /**
+     * R236：动作码 → AI 文档类型（docType）静态映射。
+     *
+     * <p><b>为何放这里而不加 {@code ActionDef} 字段</b>：加字段要改 record 签名 + 69 行数据 +
+     * 所有 {@code new ActionDef(...)} 引用点（契约 §7 B6 估算 +2 修改类）；本方法是纯派生数据，
+     * 放在目录旁即 SSOT 同处，且由哨兵测试锁定。
+     *
+     * <p><b>词表口径</b>：市场族沿用既有 {@code MARKET_RESEARCH}（而非 {@code MRD}）——真库
+     * {@code ai_documents} 已有 C01 历史草稿用该值，改词会断掉 RAG Phase-2 按 docType 的过滤
+     * 连续性（{@code AiGenerationService} L143-146）；其余取 {@link org.ruoyi.ipd.domain.PromptType}
+     * 既有值域，使降级路径能直接复用 {@code PromptTemplates} 8 套成熟模板。
+     *
+     * @param code 动作码
+     * @return docType；**无自然归类返回 {@code null}** —— {@code AiGenerationService} L145-147
+     *         明写 docType 为空时 RAG 退回不按类型过滤（向后兼容），不得为此编造类型
+     */
+    public static String docTypeOf(String code) {
+        return switch (resolveCode(code)) {
+            case "C01", "C02", "C03", "C04", "C06" -> "MARKET_RESEARCH";
+            case "P01" -> "PRD";
+            case "D04" -> "TEST_REPORT";
+            case "C12", "D06", "V06" -> "REVIEW";
+            case "LC08" -> "RELEASE_NOTE";
+            default -> null;
+        };
+    }
 }

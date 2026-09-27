@@ -72,3 +72,21 @@
   - wiki/modules/common-business.md（5 模块：log + job + ratelimiter + idempotent + translation）
 - **CI**: .github/workflows/wiki-lint.yml（GitHub Actions 自动验证）
 - **lint 结果**: 121 通过 / 0 失败 / 0 孤立 raw
+
+### batch-12: IPD 业务工作流（2026-09-27）
+- **背景**: 工作流系统性梳理治理报告（`docs/ipd-系统说明/工作流系统性梳理-20260927.md`）发现 wiki 完全未覆盖 IPD 业务工作流（探针 D）
+- **ingest**: 2 个 ipd raw（gate-review-service.md / stage-action-service.md）
+- **compile**: wiki/modules/ipd-workflow.md（三套工作流边界 / 六阶段 69 动作 / 5 Gate 双签 / 状态机守卫）
+- **勘误**: index.md 修正统计失真（raw 60→65、wiki 22→23）+ 补登 multimodal-source(4)/chat 8→10/system 8→9/common 6→9 实数
+- **lint 结果**: 124 通过 / 0 失败 / 0 孤立 raw（EXIT=0）
+- **git**: 未 commit，待 owner 授权
+
+### batch-13: IPD 生命周期节点智能体（2026-09-27）
+- **背景**: R236 接线设计契约（`docs/ipd-系统说明/R236-生命周期节点智能体接线设计-20260927.md`）——把 IPD 六阶段 69 个标准动作全部接到嵌入式节点智能体（非请假审批流的数字员工）；本轮新接线 61 码，哨兵棘轮 8→69、豁免清零
+- **ingest**: 1 个 ipd raw（ai-execution-engine.md — AiExecutionEngine outbox 抢占-路由-退避链路 / 6 执行器 / AiGenerationService 7 道治理 / NodeAgentResolver）
+- **compile**: wiki/modules/ipd-node-agents.md（69 码执行栈 / 6 执行器分档表 / 信任边界 6 红线 / 人审点清单 / 哨兵 10 断言 / 5 条已知限制）
+- **勘误（本批自查）**: 首版文章写于 Java 落地前，含 4 处失效陈述（AgentEvidenceExecutor「尚未落地」与 17 码、「8 码已接线 / 61 码待分批扩展」、LightDirect 15 码），已按磁盘真值校正为 18 码 / 69 码全接线 / 14 码，并补 §4.7 NodeAgentResolver 与 V11 动态深度归属说明（契约 §7 B3）
+- **index.md**: 统计 raw 65→66、wiki 23→24、raw ~450→~496 KB、wiki ~210→~224 KB；`raw/ipd-source/` 2→3；modules 表补 ipd-node-agents.md 行
+- **跨仓对账补强（本批二次自查）**: 前端 `ipd-enums.ts` 的 `ACTION_EXEC_MODE`（69 行静态映射）原注释放称「哨兵测试保护」，但全仓 grep 实测**无任何测试引用该常量** = 失真陈述 + 静默漂移隐患（后端改档位、前端徽标显示错档且不报错）。处置：后端哨兵新增第 10 条断言 `frontEndExecModeMapMatchesActionCatalog` 做跨仓逐码对账，**复用** `StateMachineGuardRulesExportTest` 已有的 `IPD_FE_SHARED_DIR` 定位约定（不另造第二套探测逻辑）；三态自证：篡改副本→红并点名「C01 后端=AI_GENERATE 前端=AI_DIRECT」、真值→10 绿、前端仓缺失→Skipped 而非假绿（全程零触碰真实前端文件）。前端注释同步改为指名该断言。机械校验结果：后端 69 码 ↔ 前端 69 码逐行零差异（AI_DIRECT 40 / AI_GENERATE 24 / HUMAN_GATE 5）
+- **lint 结果**: 126 通过 / 0 失败 / 0 孤立 raw（EXIT=0）
+- **git**: 未 commit，待 owner 授权

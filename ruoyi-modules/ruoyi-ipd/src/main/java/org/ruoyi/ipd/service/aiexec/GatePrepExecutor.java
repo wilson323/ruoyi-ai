@@ -25,9 +25,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * R221 Gate 备料执行器（首切片 C11）：AI 生成评审材料/会议纪要 md → OSS →
+ * R221 Gate 备料执行器（R236 扩至全部 5 个 HUMAN_GATE 动作）：AI 生成评审材料/会议纪要 md → OSS →
  * 对非否决要素批量预判 PASS 草稿 → 尝试 submit；否决项绝不代判（spec §5.1 红线）。
  * submit 被人判门槛拒绝属预期路径：仍通知双 PM 后 fail 引导（统一退避重试）。
+ *
+ * <p>R236 泛化：Gate 码一律取 {@code ActionCatalog.byCode(code).gate()}（本来就已数据驱动），
+ * 本轮仅消除两处 {@code "C11"} 字面量（返回串与 log）并扩 {@code supportedActionCodes}。
+ * 5 码的 ownerRole 均为 BOTH，故双 PM 通知（MARKET_PM + RD_PM）适配全部。
+ * <b>本执行器不调 LLM</b>（材料/纪要为确定性模板），故不绑定节点智能体。
  */
 @Slf4j
 @Service
@@ -41,9 +46,12 @@ public class GatePrepExecutor implements AiActionExecutor {
     private final ProjectMemberMapper projectMemberMapper;
     private final org.ruoyi.ipd.service.StageActionService stageActionService;
 
+    /** 5 个 HUMAN_GATE 动作（契约 §7.3）：C11/G1、P13/G2、D05/G3、L07/G4、LC02/G5。 */
+    static final Set<String> CODES = Set.of("C11", "P13", "D05", "L07", "LC02");
+
     @Override
     public Set<String> supportedActionCodes() {
-        return Set.of("C11");
+        return CODES;
     }
 
     @Override
@@ -90,7 +98,8 @@ public class GatePrepExecutor implements AiActionExecutor {
         if (submitError != null) {
             return AiExecResult.fail("备料完成，待人判否决要素后提交: " + submitError);
         }
-        return AiExecResult.ok("C11 " + gateCode + " 备料完成：材料与纪要已挂、非否决要素预判 PASS、评审已提交待签署");
+        return AiExecResult.ok(task.getActionCode() + ' ' + gateCode
+            + " 备料完成：材料与纪要已挂、非否决要素预判 PASS、评审已提交待签署");
     }
 
     /** 否决判定：复用 GateElementService.normalizeFlag 归一（'Y'/'1' 同源语义，R219 双编码兼容）。 */
@@ -147,7 +156,8 @@ public class GatePrepExecutor implements AiActionExecutor {
                 .eq(ProjectMember::getRole, role)
                 .isNull(ProjectMember::getExitDate));
             if (members.isEmpty()) {
-                log.warn("R221 C11 通知跳过：项目 {} 无在任 {}（taskId={}）", task.getProjectId(), role, task.getId());
+                log.warn("R221 {} 通知跳过：项目 {} 无在任 {}（taskId={}）",
+                    task.getActionCode(), task.getProjectId(), role, task.getId());
                 continue;
             }
             for (ProjectMember m : members) {

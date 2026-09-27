@@ -15,6 +15,8 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 | [modules/chat-mcp-tools.md](modules/chat-mcp-tools.md) | ruoyi-chat — 内置 MCP 工具详解（含 ExecuteCommand 安全风险） | 2026-09-04 |
 | [modules/chat-multimodal.md](modules/chat-multimodal.md) | ruoyi-chat — 多模态（视频 / 音频 / 图像 / Embedding） | 2026-09-04 |
 | [modules/aiflow.md](modules/aiflow.md) | ruoyi-aiflow — 可视化 AI 工作流引擎 | 2026-09-04 |
+| [modules/ipd-workflow.md](modules/ipd-workflow.md) | ruoyi-ipd — IPD 业务工作流（六阶段 / Gate 评审 / 阶段动作） | 2026-09-27 |
+| [modules/ipd-node-agents.md](modules/ipd-node-agents.md) | ruoyi-ipd — 生命周期节点智能体（69 码执行栈 / 6 执行器 / 信任边界） | 2026-09-27 |
 | [modules/system.md](modules/system.md) | ruoyi-system — RBAC 与系统管理 | 2026-09-04 |
 | [modules/system-rbac-deep-dive.md](modules/system-rbac-deep-dive.md) | ruoyi-system — RBAC 实体关系 + 权限注解 + 数据权限 | 2026-09-04 |
 | [modules/system-listener-runner.md](modules/system-listener-runner.md) | ruoyi-system — 事件监听器与启动任务 | 2026-09-04 |
@@ -43,11 +45,11 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 
 ## 统计
 
-- **raw 文件数**：60
-- **wiki 文章数**：22
-- **raw 总大小**：~450 KB
-- **wiki 总大小**：~210 KB
-- **覆盖模块**：admin / chat / aiflow / system / workflow / generator / common / extend
+- **raw 文件数**：66
+- **wiki 文章数**：24
+- **raw 总大小**：~496 KB
+- **wiki 总大小**：~224 KB
+- **覆盖模块**：admin / chat / aiflow / system / workflow / generator / common / extend / ipd
 - **覆盖主题**：架构 / 多租户 / 部署 / 自动化
 - **git 跟踪**：commit 8004cd03（+ 新增待提交）
 - **CI 集成**：.github/workflows/wiki-lint.yml（自动验证）
@@ -58,12 +60,14 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 |---|---|---|
 | `raw/project-skeleton/` | 7 | 项目骨架（pom / application*.yml / CLAUDE.md / README） |
 | `raw/admin-source/` | 7 | ruoyi-admin 源码（启动 / controller / config / logback） |
-| `raw/chat-source/` | 8 | ruoyi-chat 核心（agent / controller / MCP tool / factory / RAG trace） |
+| `raw/chat-source/` | 10 | ruoyi-chat 核心（agent / controller / MCP tool / factory / RAG trace） |
 | `raw/aiflow-source/` | 8 | ruoyi-aiflow 核心（controller / entity / 引擎 / factory） |
-| `raw/system-source/` | 8 | ruoyi-system 核心（controller / listener / runner / entity） |
+| `raw/system-source/` | 9 | ruoyi-system 核心（controller / listener / runner / entity） |
 | `raw/workflow-source/` | 2 | ruoyi-workflow 核心（controller / service） |
+| `raw/ipd-source/` | 3 | ruoyi-ipd 业务工作流（Gate 评审 / 阶段动作 / AI 执行引擎与节点智能体） |
+| `raw/multimodal-source/` | 4 | 多模态（视频 / 音频 / 图像 / Embedding） |
 | `raw/generator-source/` | 2 | ruoyi-generator 核心（controller / service） |
-| `raw/common-source/` | 6 | ruoyi-common 关键库（security / mybatis / web / satoken / chat） |
+| `raw/common-source/` | 9 | ruoyi-common 关键库（security / mybatis / web / satoken / chat） |
 | `raw/extend-source/` | 2 | ruoyi-extend（monitor-admin / snailjob-server） |
 | `raw/docker-source/` | 3 | docker-compose 配置 + Dockerfile |
 

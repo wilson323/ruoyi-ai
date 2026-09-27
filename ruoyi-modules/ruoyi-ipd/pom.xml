@@ -77,6 +77,18 @@
             <version>${langchain4j.version}</version>
         </dependency>
 
+        <!-- R233 节点智能体：**仅**取 ruoyi-chat 的智能体配置契约（IAgentService#queryEnabledOptions
+             + AgentVo{agentName,systemPrompt,status}），按命名约定 IPD-<动作码> 解析节点指令。
+             刻意不引入 langchain4j 主件（AiServices 所在构件）、不用 ChatServiceFactory#buildChatModel、
+             不用 MCP ToolProvider：节点执行统一走本模块已治理的 AiGenerationService.generate()
+             （SSRF 前置 / 预算预检 / Semaphore 限流 / RAG / 重试 / 落库 / 审计 7 道），
+             另起第二条 LLM 路径会全部绕过 = AGENTS.md 禁止的双轨。
+             依据：docs/ipd-系统说明/R233-生命周期节点智能体接线设计-20260927.md §1 裁决 A/B。 -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-chat</artifactId>
+        </dependency>
+
         <!-- W20-B：Notification 中间件化 WEBSOCKET 真实通道依赖 ruoyi-common-websocket -->
         <dependency>
             <groupId>org.ruoyi</groupId>

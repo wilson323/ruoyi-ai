@@ -9,6 +9,7 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.HandoverRecord;
@@ -19,6 +20,7 @@ import org.ruoyi.ipd.domain.RequirementChange;
 import org.ruoyi.ipd.dto.AiSuggestReq;
 import org.ruoyi.ipd.dto.AiSuggestResp;
 import org.ruoyi.ipd.mapper.GateElementResultMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -29,6 +31,7 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -128,6 +131,20 @@ public class AiSuggestionService {
     // AI-P3 场景包只读依赖：需求查重 / 变更影响面 / 移交清单
     private final RequirementChangeMapper requirementChangeMapper;
     private final HandoverMapper handoverMapper;
+
+    /**
+     * R232-P2-05（batch 8 盲签红线修复）：Gate 状态行只读来源（揭示判定需要「终态/在途」）。
+     * 刻意沿用 {@code GateReviewService.setProjectMapper} 的 {@code @Autowired(required = false)}
+     * setter 注入范式——零构造器波及（本类已被多处构造注入，改构造签名会炸装配，历史教训）；
+     * 未装配/查无行 → gate=null → {@link GateReviewService#isRevealed} 按在途 PENDING 保守遮蔽（fail-closed）。
+     */
+    private GateMapper gateMapper;
+
+    /** 测试口/可选注入：装配 Gate 状态行读取（null=未装配 → 盲签遮蔽按在途 fail-closed）。 */
+    @Autowired(required = false)
+    public void setGateMapper(GateMapper gateMapper) {
+        this.gateMapper = gateMapper;
+    }
 
     /** 测试口注入固定时钟（同 copilot 模式）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -268,7 +285,7 @@ public class AiSuggestionService {
             }
             Map<String, Object> sourceRefs = new LinkedHashMap<>();
             // 入参侧（R2 双向①的采集面）：事实按 Catalog schema 声明采集，schema 外字段在采集侧即无入口
-            Map<String, Object> facts = collectCardFacts(req, def, sourceRefs);
+            Map<String, Object> facts = collectCardFacts(actor, req, def, sourceRefs);
             return buildCardChecked(actor, req, catalogJson, facts, sourceRefs, aiModel);
         } catch (RuntimeException ex) {
             log.warn("card 组装失败降级纯文本 scene={} err={}", req.scene(), ex.toString());
@@ -301,7 +318,7 @@ public class AiSuggestionService {
             Collections.sort(dropped);
             auditCardEvent(actor, req, aiModel, cardType, "SCHEMA_DROP", dropped);
         }
-        String reject = reconcileCard(def, req, card, refs);
+        String reject = reconcileCard(actor, def, req, card, refs);
         if (reject != null) {
             auditCardEvent(actor, req, aiModel, cardType, "CARD_REJECT:" + reject, List.of());
             return null;
@@ -392,7 +409,8 @@ public class AiSuggestionService {
      * sourceRefs 缺必备键 / 回读失败（DB 异常、行不齐、行不属该锚）/ 任一字段数值不一致 → 返回拒绝原因
      * （拒出卡降级纯文本；禁止用 LLM 复述值兜底）；全部一致返回 null。只读，零业务表写入（C08）。
      */
-    private String reconcileCard(JsonNode def, AiSuggestReq req, AiSuggestResp.Card card, Map<String, Object> sourceRefs) {
+    private String reconcileCard(IpdActor actor, JsonNode def, AiSuggestReq req, AiSuggestResp.Card card,
+                                Map<String, Object> sourceRefs) {
         try {
             for (String key : refKeys(def)) {
                 if (!sourceRefs.containsKey(key) || sourceRefs.get(key) == null) {
@@ -421,7 +439,8 @@ public class AiSuggestionService {
                         return "reread_foreign_row";
                     }
                 }
-                projectGateFacts(wanted, reviews, results, facts2);
+                // R232-P2-05：两跳同一遮蔽投影（键在值空），保证 R3 对账逐字段可比
+                projectGateFacts(wanted, reviews, results, facts2, actor, rulingsRevealed(req.entityId(), actor));
             } else {
                 Project project = projectMapper.selectById(req.projectId());
                 if (project == null) {
@@ -463,12 +482,15 @@ public class AiSuggestionService {
      * （gate_reviews / gate_element_results 按 gateId）；创建类场景锚定 projects 行；demand 场景补
      * requirements 需求池行（按 projectId，前 20 条同口径截断）。只读，零业务表写入（C08）。
      */
-    private Map<String, Object> collectCardFacts(AiSuggestReq req, JsonNode def, Map<String, Object> sourceRefs) {
+    private Map<String, Object> collectCardFacts(IpdActor actor, AiSuggestReq req, JsonNode def,
+                                                 Map<String, Object> sourceRefs) {
         String scene = req.scene();
         Set<String> wanted = fieldNames(def.get("fields"));
         Set<String> wantedRefs = refKeys(def);
         Map<String, Object> facts = new LinkedHashMap<>();
         if (scene.startsWith("gate.")) {
+            // R232-P2-05 盲签红线：揭示开关唯一来源 GateReviewService.isRevealed（本类不得另造布尔逻辑）
+            boolean revealed = rulingsRevealed(req.entityId(), actor);
             List<GateReview> reviews = List.of();
             List<GateElementResult> results = List.of();
             if (wantedRefs.contains("reviewIds") || containsAny(wanted, GATE_REVIEW_FIELDS)) {
@@ -479,7 +501,7 @@ public class AiSuggestionService {
                 results = gateElementResultMapper.selectList(new LambdaQueryWrapper<GateElementResult>()
                     .eq(GateElementResult::getGateId, req.entityId()));
             }
-            projectGateFacts(wanted, reviews, results, facts);
+            projectGateFacts(wanted, reviews, results, facts, actor, revealed);
             if (wantedRefs.contains("gateId")) {
                 sourceRefs.put("gateId", req.entityId());
             }
@@ -509,11 +531,25 @@ public class AiSuggestionService {
     }
 
     /**
+     * R232-P2-05（batch 8 盲签红线修复）：Gate 判定揭示开关取值——**唯一布尔来源**
+     * {@link GateReviewService#isRevealed}（GateReviewService.view 同源），本方法只负责取 Gate 状态行；
+     * 本类严禁另造遮蔽布尔逻辑（母文件红线「卡片层不得另造遮蔽逻辑，必须复用 rowView 同源」）。
+     */
+    private boolean rulingsRevealed(Long gateId, IpdActor actor) {
+        Gate gate = gateMapper == null || gateId == null ? null : gateMapper.selectById(gateId);
+        return GateReviewService.isRevealed(gate, actor);
+    }
+
+    /**
      * gate 事实投影（R3 两跳共用：首过组装与 sourceRefs 回读对账走同一投影；行按 id 定序保证两跳逐字段可比）。
      * 值全部来自业务表行（gate_reviews / gate_element_results），LLM 复述值无入口。
+     *
+     * <p>R232-P2-05（batch 8 盲签红线修复）：reviews 行 decision/opinion 走
+     * {@link GateReviewService#isRowRevealed} + {@link GateReviewService#maskRulingFields} 同源遮蔽——
+     * 非己方未揭示行**键在值空**（键集与 Catalog itemFields 恒等，两跳同投影保证 value_mismatch 对账一致）。
      */
     static void projectGateFacts(Set<String> wanted, List<GateReview> reviews, List<GateElementResult> results,
-                                 Map<String, Object> facts) {
+                                 Map<String, Object> facts, IpdActor actor, boolean revealed) {
         List<GateReview> rs = new ArrayList<>(reviews);
         rs.sort(Comparator.comparing(GateReview::getId, Comparator.nullsLast(Comparator.naturalOrder())));
         List<GateElementResult> es = new ArrayList<>(results);
@@ -554,6 +590,8 @@ public class AiSuggestionService {
                 m.put("decision", r.getDecision());
                 m.put("opinion", r.getOpinion());
                 m.put("round", r.getRound());
+                // R232-P2-05 盲签红线：非己方未揭示行 decision/opinion 键在值空（rowView 同源遮蔽开关）
+                GateReviewService.maskRulingFields(m, GateReviewService.isRowRevealed(r, actor, revealed));
                 reviewRows.add(m);
             }
             facts.put("reviews", reviewRows);
@@ -567,6 +605,15 @@ public class AiSuggestionService {
         if (wanted.contains("failCount")) {
             facts.put("failCount", countResult(es, "FAIL"));
         }
+    }
+
+    /**
+     * R232-P2-05：全揭示投影重载（已揭示语境专用：终态/超管上下文与测试直入缝）。
+     * 未揭示语境**必须**走带 actor+revealed 的遮蔽重载（生产两跳均走遮蔽重载）。
+     */
+    static void projectGateFacts(Set<String> wanted, List<GateReview> reviews, List<GateElementResult> results,
+                                 Map<String, Object> facts) {
+        projectGateFacts(wanted, reviews, results, facts, null, true);
     }
 
     /** projects 行事实投影（R3 两跳共用；值全部来自 projects 行，LLM 复述值无入口）。 */
@@ -778,12 +825,19 @@ public class AiSuggestionService {
                 .eq(GateReview::getGateId, req.entityId()));
             GateReview latest = reviews.get(reviews.size() - 1);
             StringBuilder sb = new StringBuilder(renderProjectContext(requireProject(latest.getProjectId())));
+            // R232-P2-05 盲签红线（BR-AI-05 L118）：reveal 前对方判定/意见不进上下文——rowView 同源遮蔽
+            boolean revealed = rulingsRevealed(req.entityId(), actor);
             for (GateReview r : reviews) {
                 sb.append("- 评审行：gate=").append(nullToDash(r.getGateCode()))
                     .append("，轮次=").append(r.getRound())
-                    .append("，签署人类型=").append(nullToDash(r.getReviewerType()))
-                    .append("，决定=").append(nullToDash(r.getDecision()))
-                    .append("，意见=").append(nullToDash(r.getOpinion())).append('\n');
+                    .append("，签署人类型=").append(nullToDash(r.getReviewerType()));
+                if (GateReviewService.isRowRevealed(r, actor, revealed)) {
+                    sb.append("，决定=").append(nullToDash(r.getDecision()))
+                        .append("，意见=").append(nullToDash(r.getOpinion()));
+                } else {
+                    sb.append(r.getDecision() == null ? "，未签署" : "，已提交（未揭示）");
+                }
+                sb.append('\n');
             }
             List<GateElementResult> results = gateElementResultMapper.selectList(
                 new LambdaQueryWrapper<GateElementResult>()

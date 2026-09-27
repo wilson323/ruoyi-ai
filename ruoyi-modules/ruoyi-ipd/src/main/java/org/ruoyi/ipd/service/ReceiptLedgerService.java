@@ -116,9 +116,25 @@ public class ReceiptLedgerService implements IReceiptLedgerService {
      * 达成率 = SUM(窗口内净回款) / 目标销售额
      */
     public BigDecimal calculateAchievementRate(Long projectId, BigDecimal targetSales) {
-        // 2026-09-09 治理轮 PERF-P1-1：窗口过滤从 Java 循环切到真库 STORED GENERATED 列 in_window
-        // （DDL: receipt_ledger.in_window tinyint(1) STORED GENERATED = 1 当且仅当 receiptMonth 在 6 月窗口内）。
-        // .apply() 直接拼接 SQL 避免 mybatis-plus 引入 receipt_ledger 全表 selectAll。
+        BigDecimal totalInWindow = windowNet(projectId).netAmount();
+        if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return totalInWindow.divide(targetSales, 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100));
+    }
+
+    /**
+     * 6 自然月窗口内 RECEIPT 口径净回款（AC-INC-16b/16d）：SUM(receiptAmount - refundAmount)。
+     *
+     * <p>2026-09-09 治理轮 PERF-P1-1：窗口过滤从 Java 循环切到真库 STORED GENERATED 列 in_window
+     * （DDL: receipt_ledger.in_window tinyint(1) STORED GENERATED = 1 当且仅当 receiptMonth 在 6 月窗口内）。
+     * .apply() 直接拼接 SQL 避免 mybatis-plus 引入 receipt_ledger 全表 selectAll。
+     *
+     * <p>R232-LC03 终算对账复用本方法做「存储回款基数 vs 窗口净额」确定性复算；
+     * {@code rowCount=0} 表示窗口内**无台账行**（区别于净额为 0），调用方据此标「待补」而非按 0 伪判（W14-02 语义）。
+     */
+    public WindowNet windowNet(Long projectId) {
         List<ReceiptLedger> all = receiptLedgerMapper.selectList(
             new LambdaQueryWrapper<ReceiptLedger>()
                 .eq(ReceiptLedger::getProjectId, projectId)
@@ -132,11 +148,11 @@ public class ReceiptLedgerService implements IReceiptLedgerService {
             totalInWindow = totalInWindow.add(net);
             // AC-INC-16d：窗口外数据已被 SQL 过滤，Java 循环内不再判定
         }
-        if (targetSales == null || targetSales.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-        return totalInWindow.divide(targetSales, 4, RoundingMode.HALF_UP)
-            .multiply(BigDecimal.valueOf(100));
+        return new WindowNet(all.size(), totalInWindow);
+    }
+
+    /** 窗口净回款视图：rowCount 行数（0 = 窗口内无台账行，不等于净额 0）+ netAmount 净额。 */
+    public record WindowNet(int rowCount, BigDecimal netAmount) {
     }
 
     /**

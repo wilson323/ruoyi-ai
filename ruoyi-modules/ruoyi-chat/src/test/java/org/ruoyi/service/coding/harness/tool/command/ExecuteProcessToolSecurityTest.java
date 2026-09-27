@@ -1,13 +1,20 @@
 package org.ruoyi.service.coding.harness.tool.command;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.ruoyi.service.coding.harness.tool.builtin.RunContext;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -35,12 +42,67 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("S-2 execute_process 攻击样本拒绝——argv/executable/cwd 三层守卫")
 class ExecuteProcessToolSecurityTest {
 
+    /** bcff4fd9 后构造函数强制校验沙箱配置；用例均在 validate 前终止，无需真实 Docker 进程。 */
+    private static final String PINNED_TEST_IMAGE = "sha256:" + "0".repeat(64);
+
     @TempDir
     Path workspace;
 
-    private ExecuteProcessTool newTool() {
+    private ExecuteProcessTool tool;
+
+    @BeforeEach
+    void buildToolWithSandboxFixture() throws Exception {
         RunContext ctx = RunContext.forWorkspace(workspace);
-        return new ExecuteProcessTool(ctx);
+        Path binDir = workspace.resolve("sandbox-bin");
+        Files.createDirectories(binDir);
+        Path dockerCli = binDir.resolve("docker");
+        Files.writeString(dockerCli, "#!/bin/sh\nexit 126\n", StandardCharsets.UTF_8);
+        Path configDir = workspace.resolve("sandbox-config");
+        Files.createDirectories(configDir);
+        if (!System.getProperty("os.name", "").toLowerCase().contains("windows")) {
+            Files.setPosixFilePermissions(binDir, Set.of(PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE));
+            Files.setPosixFilePermissions(configDir, Set.of(PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE));
+            Files.setPosixFilePermissions(dockerCli, Set.of(PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ, PosixFilePermission.OTHERS_READ));
+        }
+        String digest = HexFormat.of().formatHex(
+            MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(dockerCli)));
+        // macOS 的 /tmp 是符号链接，沙箱校验要求 toRealPath 等于规范路径，统一取真实路径
+        DockerSandboxConfig sandbox = DockerSandboxConfig.configured(
+            dockerCli.toRealPath().toString(), digest,
+            configDir.toRealPath().toString(), DockerSandboxConfig.localDockerHost(),
+            PINNED_TEST_IMAGE);
+        CommandToolConfig config = new CommandToolConfig(
+            CommandToolConfig.DEFAULT_EXECUTABLE_ALLOWLIST,
+            CommandToolConfig.DEFAULT_INHERITED_ENVIRONMENT,
+            java.util.Map.of(), 2, 30_000, 120_000, 256 * 1024, 256, 16 * 1024, 2_000,
+            sandbox);
+        // 包私有构造注入 no-op runtime：本类只验 argv/executable/cwd 三层守卫，不碰真实 Docker 引擎
+        tool = new ExecuteProcessTool(ctx, config, new DockerRuntime() {
+            @Override
+            public void verifyAvailable(DockerSandboxConfig sandbox) {
+                // no-op：用例均在进程启动前拒绝，无需真实引擎
+            }
+
+            @Override
+            public Process start(DockerSandboxConfig sandbox, DockerSandboxInvocation invocation,
+                                 long timeoutMs) {
+                throw new UnsupportedOperationException("security tests must never start a process");
+            }
+
+            @Override
+            public void ensureRemoved(DockerSandboxConfig sandbox, String containerName,
+                                      long timeoutMs) {
+                // no-op：本类用不到容器清理
+            }
+        });
+    }
+
+    private ExecuteProcessTool newTool() {
+        return tool;
     }
 
     // ---------- argv 守卫 ----------
@@ -222,8 +284,9 @@ class ExecuteProcessToolSecurityTest {
         // 注：本用例仅断言 argv 元字符不被 CommandWorkspaceGuard/ExecutablePolicy 拦截
         // ——即使后续真启动 git shell 也不会执行注入。argv 元字符是普通字符串，git args 不解析。
         ExecuteProcessTool tool = newTool();
-        // 调用入口不抛 argv/exe/cwd 守卫错——可能因 PATH 没有 git 抛 EXECUTABLE_NOT_FOUND
-        // 这是正确语义：未授权的程序找不到；非元字符解析路径
+        // no-op 假 runtime 下：能走到 DockerRuntime.start 即证明未被 argv/exe/cwd 守卫以
+        // ARGV_INVALID/SHELL_INTERPRETER_DENIED 类错误拦截，元字符已字面传递
+        boolean reachedStartPhase = false;
         try {
             tool.executeProcess("git", List.of("status", "; cat /etc/passwd #"), ".", null, null);
         } catch (CommandToolException ex) {
@@ -234,6 +297,13 @@ class ExecuteProcessToolSecurityTest {
                 .as("shell 元字符必须字面传递，不应被解析为 ARGV_INVALID/SHELL_INTERPRETER_DENIED")
                 .isIn("EXECUTABLE_NOT_FOUND", "EXECUTABLE_NOT_ALLOWLISTED", "PROCESS_SLOT_TIMEOUT",
                     "INVALID_EXECUTABLE");
+            reachedStartPhase = true; // 守卫层放行，错在后续授权/容量阶段，同样证明未解析元字符
+        } catch (UnsupportedOperationException reachedDocker) {
+            reachedStartPhase = true;
+        }
+        if (!reachedStartPhase) {
+            org.assertj.core.api.Assertions.fail(
+                "既未到达启动阶段也未命中允许的错误码，断链不可判为通过");
         }
     }
 }

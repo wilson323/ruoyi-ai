@@ -232,13 +232,48 @@ public class GateReviewService implements IGateReviewService {
         return row;
     }
 
+    /* ---------- R232-P2-05（batch 8 盲签红线修复）：遮蔽同源复用入口（REST 视图 / AI 卡片 data / prompt 上下文共用） ---------- */
+
+    /**
+     * R232-P2-05：揭示判定**同源唯一入口**（view() 与本方法同源；AiSuggestionService 的卡片 data 与
+     * prompt 上下文遮蔽一律调用本方法，禁止在调用方另造布尔逻辑——母文件红线「卡片层不得另造遮蔽逻辑，
+     * 必须复用 rowView 同源」）。
+     *
+     * <p>规则（BR-GATE-03 / AC-GATE-03/04，零变化）：{@code revealed = 终态(gate 非 PENDING) || SUPER_ADMIN}。
+     * gate 行缺失按未终态处理（fail-closed 保守遮蔽：揭示是例外不是默认）。
+     */
+    public static boolean isRevealed(Gate gate, IpdActor actor) {
+        boolean terminal = gate != null && !STATUS_PENDING.equals(gate.getStatus());
+        boolean superAdmin = actor != null && ROLE_SUPER_ADMIN.equals(actor.role());
+        return terminal || superAdmin;
+    }
+
+    /**
+     * R232-P2-05：行级揭示判定（view() L263 {@code rowView(mine, true)} / L269 {@code rowView(other, revealed)}
+     * 同源规则）：己方行（{@code reviewerType == actor.role()}）恒揭示，对方行按 revealed。
+     */
+    public static boolean isRowRevealed(GateReview row, IpdActor actor, boolean revealed) {
+        return (actor != null && actor.role() != null && actor.role().equals(row.getReviewerType())) || revealed;
+    }
+
+    /**
+     * R232-P2-05：遮蔽开关（rowView L339-348 {@code if (revealed)} 同源）——未揭示行 decision/opinion
+     * <b>键在值空</b>（键保留、值置 null，供 Catalog itemFields 键集恒等与 R3 两跳 value_mismatch 对账一致）。
+     * REST 视图 rowView 的「键不出现」是其视图口径，卡片口径为键在值空；揭示开关同一来源。
+     */
+    public static void maskRulingFields(Map<String, Object> row, boolean rowRevealed) {
+        if (!rowRevealed) {
+            row.put("decision", null);
+            row.put("opinion", null);
+        }
+    }
+
     /** 双签视图：终态或超管全揭示；在途仅见己方结论与"对方已提交"标志（AC-GATE-03/04）。 */
     public Map<String, Object> view(Long gateId, IpdActor actor) {
         Gate gate = requireGate(gateId);
         List<GateReview> rows = roundRows(gateId, gate.getCurrentRound());
-        boolean terminal = !STATUS_PENDING.equals(gate.getStatus());
-        boolean superAdmin = "SUPER_ADMIN".equals(actor.role());
-        boolean revealed = terminal || superAdmin;
+        // R232-P2-05：揭示开关并入 isRevealed 同源唯一入口（原 terminal/superAdmin/revealed 三布尔语义零变化）
+        boolean revealed = isRevealed(gate, actor);
 
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("gateId", String.valueOf(gateId));
