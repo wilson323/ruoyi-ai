@@ -566,6 +566,14 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     }
 
     /**
+     * 只读规则表快照（§5-1 Guard 规则表导出 JSON 契约链路；仅返回不可变拷贝，
+     * 供导出测试序列化为本仓与前端仓共享的 state-machine-guard-rules.json，不构成写入口）
+     */
+    public Map<String, StateTransitionRule> rulesSnapshot() {
+        return java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(rules));
+    }
+
+    /**
      * 兼容 ServiceException（保留旧路径调用方的可能性）
      */
     public void preCheckOrThrowServiceException(String entityType, String fromState, String toState, String trigger) {
