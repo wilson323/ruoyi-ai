@@ -30,6 +30,8 @@ import org.ruoyi.ipd.mapper.GateElementResultMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.HandoverMapper;
+import org.ruoyi.ipd.mapper.RequirementChangeMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
@@ -137,6 +139,8 @@ class AiCardC08SubmitChainTest {
     private GateElementResultMapper gateElementResultMapper;
     private ISystemConfigService systemConfigService;
     private RequirementMapper requirementMapper;
+    private RequirementChangeMapper requirementChangeMapper;
+    private HandoverMapper handoverMapper;
     private AiSuggestionService service;
 
     private static final IpdActor SA = new IpdActor(1L, "sa", "SUPER_ADMIN", null);
@@ -156,9 +160,11 @@ class AiCardC08SubmitChainTest {
         gateElementResultMapper = mock(GateElementResultMapper.class);
         systemConfigService = mock(ISystemConfigService.class);
         requirementMapper = mock(RequirementMapper.class);
+        requirementChangeMapper = mock(RequirementChangeMapper.class);
+        handoverMapper = mock(HandoverMapper.class);
         service = new AiSuggestionService(modelConfigService, workbenchService, aiGateway,
             auditLogService, projectMapper, projectMemberMapper, gateReviewMapper, gateElementResultMapper,
-            systemConfigService, requirementMapper)
+            systemConfigService, requirementMapper, requirementChangeMapper, handoverMapper)
             .withClock(Clock.fixed(Instant.parse("2026-09-27T09:00:00Z"), ZoneId.of("UTC")));
         when(systemConfigService.getValue(eq(AiSuggestionService.CARD_CATALOG_KEY), any()))
             .thenReturn(CATALOG_JSON);

@@ -11,15 +11,19 @@ import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.domain.GateReview;
+import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.Requirement;
+import org.ruoyi.ipd.domain.RequirementChange;
 import org.ruoyi.ipd.dto.AiSuggestReq;
 import org.ruoyi.ipd.dto.AiSuggestResp;
 import org.ruoyi.ipd.mapper.GateElementResultMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
+import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.RequirementChangeMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
@@ -83,7 +87,15 @@ public class AiSuggestionService {
         "workbench.next-step", "workbench.risk-warning",
         "project.summary.refresh",
         "project.create.suggest", "demand.create.from-requirement",
-        "gate.precheck-checklist", "gate.conclusion-draft");
+        "gate.precheck-checklist", "gate.conclusion-draft",
+        // AI-P3 场景包（2026-09-27）：需求查重路由 / 变更影响面 / 移交清单 / NL查报表（导航语义）
+        "demand.dedupe", "change.impact-analyze", "handover.checklist-generate",
+        "report.nl-query");
+
+    /** AI-P3：素材驱动场景（无实体上下文也可出建议，但 userPrompt 必填作提问素材）。 */
+    static final Set<String> USER_PROMPT_REQUIRED_SCENES = Set.of(
+        "project.create.suggest", "demand.create.from-requirement",
+        "demand.dedupe", "report.nl-query");
 
     /** R232-P1-02：结构化输出场景（响应体增 card 字段）；3 轻场景保持纯文本零变化。 */
     static final Set<String> STRUCTURED_SCENES = Set.of(
@@ -113,6 +125,9 @@ public class AiSuggestionService {
     private final GateElementResultMapper gateElementResultMapper;
     private final ISystemConfigService systemConfigService;
     private final RequirementMapper requirementMapper;
+    // AI-P3 场景包只读依赖：需求查重 / 变更影响面 / 移交清单
+    private final RequirementChangeMapper requirementChangeMapper;
+    private final HandoverMapper handoverMapper;
 
     /** 测试口注入固定时钟（同 copilot 模式）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -126,7 +141,9 @@ public class AiSuggestionService {
                                GateReviewMapper gateReviewMapper,
                                GateElementResultMapper gateElementResultMapper,
                                ISystemConfigService systemConfigService,
-                               RequirementMapper requirementMapper) {
+                               RequirementMapper requirementMapper,
+                               RequirementChangeMapper requirementChangeMapper,
+                               HandoverMapper handoverMapper) {
         this.modelConfigService = modelConfigService;
         this.workbenchService = workbenchService;
         this.aiGateway = aiGateway;
@@ -137,6 +154,8 @@ public class AiSuggestionService {
         this.gateElementResultMapper = gateElementResultMapper;
         this.systemConfigService = systemConfigService;
         this.requirementMapper = requirementMapper;
+        this.requirementChangeMapper = requirementChangeMapper;
+        this.handoverMapper = handoverMapper;
     }
 
     AiSuggestionService withClock(java.time.Clock fixed) {
@@ -155,8 +174,8 @@ public class AiSuggestionService {
                 "scene 必填且在白名单内：" + String.join(", ", SCENES.stream().sorted().toList()));
         }
         String scene = req.scene();
-        // 创建类场景必须有用户素材；项目类场景必须有 projectId
-        if ((scene.equals("project.create.suggest") || scene.equals("demand.create.from-requirement"))
+        // 创建/素材类场景必须有用户素材；项目类场景必须有 projectId
+        if (USER_PROMPT_REQUIRED_SCENES.contains(scene)
             && (req.userPrompt() == null || req.userPrompt().isBlank())) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "该场景 userPrompt 必填（原始素材）");
         }
@@ -172,6 +191,12 @@ public class AiSuggestionService {
             assertProjectVisible(actor, reviews.get(0).getProjectId());
         } else if (scene.startsWith("workbench.")) {
             assertProjectVisible(actor, req.projectId()); // 可空=全局，同 copilot 语义
+        } else if (scene.equals("change.impact-analyze")) {
+            loadChangeForActor(actor, req.entityId()); // AI-P3：entityId=changeId，缺失/越权均 NOT_FOUND
+        } else if (scene.equals("handover.checklist-generate")) {
+            loadHandoverForActor(actor, req.entityId()); // AI-P3：entityId=handoverId，仅限归属项目成员/移交双方/超管
+        } else if (scene.equals("report.nl-query")) {
+            assertProjectVisible(actor, req.projectId()); // 全局可空=跨项目报告导航；带项目则校验可见性
         } else {
             if (req.projectId() == null) {
                 throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "该场景 projectId 必填");
@@ -726,6 +751,25 @@ public class AiSuggestionService {
         if (scene.startsWith("workbench.")) {
             return renderWorkbenchContext(workbenchService.summary(actor, req.projectId()));
         }
+        if (scene.equals("report.nl-query")) {
+            return REPORT_CATALOG; // AI-P3：NL查报表=导航语义，静态目录注入（不执行任意查询，不触 text2sql）
+        }
+        if (scene.equals("change.impact-analyze")) {
+            RequirementChange c = loadChangeForActor(actor, req.entityId());
+            return renderChangeContext(c,
+                c.getRequirementId() == null ? null : requirementMapper.selectById(c.getRequirementId()),
+                requireProject(c.getProjectId()));
+        }
+        if (scene.equals("handover.checklist-generate")) {
+            HandoverRecord h = loadHandoverForActor(actor, req.entityId());
+            return renderHandoverContext(h,
+                h.getProjectId() == null ? null : requireProject(h.getProjectId()));
+        }
+        if (scene.equals("demand.dedupe")) {
+            List<Requirement> existing = requirementMapper.selectList(
+                new LambdaQueryWrapper<Requirement>().eq(Requirement::getProjectId, req.projectId()));
+            return renderDedupeContext(existing);
+        }
         if (scene.equals("project.summary.refresh")) {
             return renderProjectContext(requireProject(req.projectId()));
         }
@@ -758,6 +802,109 @@ public class AiSuggestionService {
         }
         // 创建类场景无实体上下文，素材在 userPrompt
         return "";
+    }
+
+    // ---- AI-P3 场景包：实体装载（越权即 NOT_FOUND，与 gate 同构语义） ----
+
+    /** change.impact-analyze：entityId=requirement_changes 主键；无单/项目不可见均 NOT_FOUND。 */
+    private RequirementChange loadChangeForActor(IpdActor actor, Long changeId) {
+        if (changeId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "change.impact-analyze 场景 entityId（changeId）必填");
+        }
+        RequirementChange c = requirementChangeMapper.selectById(changeId);
+        if (c == null || c.getProjectId() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "变更单不存在");
+        }
+        assertProjectVisible(actor, c.getProjectId());
+        return c;
+    }
+
+    /** handover.checklist-generate：entityId=handover_records 主键；项目移交经可见性校验，非项目类仅限移交双方/超管。 */
+    private HandoverRecord loadHandoverForActor(IpdActor actor, Long handoverId) {
+        if (handoverId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "handover.checklist-generate 场景 entityId（handoverId）必填");
+        }
+        HandoverRecord h = handoverMapper.selectById(handoverId);
+        if (h == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "移交记录不存在");
+        }
+        if (h.getProjectId() != null) {
+            assertProjectVisible(actor, h.getProjectId());
+        }
+        boolean party = actor.id() != null
+            && (actor.id().equals(h.getFromPersonId()) || actor.id().equals(h.getToPersonId()));
+        if (!"SUPER_ADMIN".equals(actor.role()) && !party && h.getProjectId() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "移交记录不可见");
+        }
+        return h;
+    }
+
+    /** AI-P3 report.nl-query：静态报告目录（与 ReportController 四端点同源；改端点需同步此常量）。 */
+    static final String REPORT_CATALOG =
+        "- GET /api/v1/report/project-summary?month=YYYY-MM —— 项目绩效汇总列表（分页）\n"
+        + "- GET /api/v1/report/export/allowance?month=YYYY-MM —— 补贴台账导出（xlsx）\n"
+        + "- GET /api/v1/report/export/bonus?projectId= —— 奖金分配导出（xlsx）\n"
+        + "- GET /api/v1/report/export/project?month=YYYY-MM —— 项目汇总导出（xlsx）\n";
+
+    /** demand.dedupe：同项目既有需求清单（前 30 条，标题+状态；正文不进 prompt 防超长）。 */
+    static String renderDedupeContext(List<Requirement> existing) {
+        StringBuilder sb = new StringBuilder();
+        int shown = 0;
+        for (Requirement r : existing) {
+            if (shown++ >= 30) {
+                sb.append("- （既有需求共 ").append(existing.size()).append(" 条，仅渲染前 30 条）\n");
+                break;
+            }
+            sb.append("- 需求#").append(r.getId())
+                .append("：").append(nullToDash(r.getTitle()))
+                .append("（状态 ").append(nullToDash(r.getStatus())).append("）\n");
+        }
+        if (shown == 0) {
+            sb.append("- （该项目暂无既有需求，查重基准为空）\n");
+        }
+        return sb.toString();
+    }
+
+    static String renderChangeContext(RequirementChange c, Requirement reqRow, Project p) {
+        StringBuilder sb = new StringBuilder(renderProjectContext(p)).append('\n');
+        sb.append("- 变更单#").append(c.getId())
+            .append("：类型 ").append(nullToDash(c.getChangeType()))
+            .append("，状态 ").append(nullToDash(c.getStatus()))
+            .append("，原因 ").append(abbrev(c.getReason(), 300)).append('\n');
+        if (reqRow != null) {
+            sb.append("- 关联需求#").append(reqRow.getId())
+                .append("：").append(nullToDash(reqRow.getTitle()))
+                .append("（状态 ").append(nullToDash(reqRow.getStatus())).append("）\n");
+        }
+        sb.append("- 变更前快照：").append(abbrev(c.getBeforeSnapshot(), 500)).append('\n');
+        sb.append("- 变更后快照：").append(abbrev(c.getAfterSnapshot(), 500)).append('\n');
+        return sb.toString();
+    }
+
+    static String renderHandoverContext(HandoverRecord h, Project p) {
+        StringBuilder sb = new StringBuilder();
+        if (p != null) {
+            sb.append(renderProjectContext(p)).append('\n');
+        }
+        sb.append("- 移交记录#").append(h.getId())
+            .append("：类型 ").append(nullToDash(h.getHandoverType()))
+            .append("，角色 ").append(nullToDash(h.getHandoverRole()))
+            .append("，状态 ").append(nullToDash(h.getStatus()))
+            .append("，移交人 personId=").append(h.getFromPersonId())
+            .append("，承接人 personId=").append(h.getToPersonId())
+            .append("，截止 ").append(h.getDeadlineAt() == null ? "-" : h.getDeadlineAt())
+            .append("，说明 ").append(abbrev(h.getNote(), 300)).append('\n');
+        return sb.toString();
+    }
+
+    /** 快照/长文本截断（防单字段撑爆 prompt；null 安全）。 */
+    static String abbrev(String s, int max) {
+        if (s == null || s.isBlank()) {
+            return "-";
+        }
+        return s.length() <= max ? s : s.substring(0, max) + "…";
     }
 
     /** workbench summary → 文本块（当前推进 + 待办前 10 条 + 统计）；渲染口径同 copilot 意图兜底路径。 */
@@ -826,6 +973,18 @@ public class AiSuggestionService {
                 "你是 Gate 评审助手。根据以下评审与要素结果上下文，生成评审前检查清单：哪些要素证据已齐、哪些缺失或存疑、评审需要追问的问题。markdown 清单格式。";
             case "gate.conclusion-draft" ->
                 "你是 Gate 评审助手。根据以下评审上下文与要素结果，起草评审结论（含通过/不通过/有条件通过的建议倾向与理由、遗留条件建议）。markdown，200 字以内。";
+            case "demand.dedupe" ->
+                "你是需求管理助手。对照以下项目既有需求清单，判断用户新需求是否与存量重复：给出查重结论（重复/部分重复/全新）、最相似的存量需求（≤5 条，含编号与理由）、"
+                + "路由建议（并入哪条存量需求 / 新建并指派市场PM还是研发PM）。不确定标「待确认」。markdown 分节输出。";
+            case "change.impact-analyze" ->
+                "你是变更管理助手。根据以下需求变更单上下文，输出影响面分析：受影响需求/阶段动作/Gate/排期的候选清单、风险点（≤3 条）、"
+                + "影响面评级（高/中/低+理由）、是否推荐批准的建议（仅建议性，双签审批链以真实流程为准）。缺数据标「待确认」，不得虚构。markdown 分节输出。";
+            case "handover.checklist-generate" ->
+                "你是移交管理助手。根据以下移交记录上下文，生成移交清单草稿：未完成流程/待交接资料与附件/Gate 评审遗留/台账与待办续交、接收方责任清单、"
+                + "建议交接顺序。缺数据标「待确认」，不得虚构。markdown 清单格式输出。";
+            case "report.nl-query" ->
+                "你是报表助手。以下是系统现有报告中心目录（唯一可查数据源，不支持目录外查询与自由 SQL）。根据用户的自然语言问题：选择应导航到的报告端点与参数（month/projectId 等）、"
+                + "说明该报告能否回答此问题；不能回答时明确说「暂不支持」并给最近似替代。markdown 输出：选中端点/参数建议/缺口说明。";
             default -> throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "未知场景：" + scene);
         };
         StringBuilder sb = new StringBuilder(instruction).append('\n');
