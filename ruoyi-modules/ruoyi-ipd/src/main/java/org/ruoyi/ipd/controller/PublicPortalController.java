@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.GuestDemandSubmitReq;
 import org.ruoyi.ipd.dto.GuestDemandSubmittedView;
+import org.ruoyi.ipd.dto.GuestDemandUpdateReq;
+import org.ruoyi.ipd.dto.GuestDemandView;
 import org.ruoyi.ipd.dto.PortalDemandTraceView;
 import org.ruoyi.ipd.dto.PublicProductView;
 import org.ruoyi.ipd.service.GuestDemandService;
@@ -23,6 +25,8 @@ import java.util.List;
  *   <li>POST /api/v1/public/demands——游客提交，返回 8 位查询码（页38）。</li>
  *   <li>GET /api/v1/public/products——三情形选择源（在售/在研/其他），仅返回 ACTIVE 产品。</li>
  *   <li>GET /api/v1/public/demands/{code}——凭 8 位查询码查脱敏进度（页39；BR-REQ-09）。</li>
+ *   <li>POST /api/v1/public/demands/{code}/supplement——受理前补登 functionalRequirement/contact（页39 用例1；AC-REQ-04；BR-REQ-03a）。</li>
+ *   <li>POST /api/v1/public/demands/{code}/withdraw——受理前置 WITHDRAWN 终态撤回（页39 用例2；AC-REQ-04b；BR-REQ-03b）。</li>
  * </ul>
  */
 @RestController
@@ -51,6 +55,33 @@ public class PublicPortalController {
     public ApiV1Response<PortalDemandTraceView> trace(@PathVariable("code") String code,
                                                       HttpServletRequest http) {
         return ApiV1Response.ok(guestDemandService.traceByCode(code, clientIp(http)));
+    }
+
+    /**
+     * 页39 用例1：受理前补登 functionalRequirement / contact（AC-REQ-04；BR-REQ-03a 受理后原文锁定）。
+     * <p>业务与校验收口在 {@link GuestDemandService#supplement}（action=SUPPLEMENT、字段长度、
+     * 状态机 SUBMITTED 门槛、审计），此处仅做 HTTP 接线；@Valid 走 DTO 的 @Size 上限。
+     */
+    @PostMapping("/demands/{code}/supplement")
+    public ApiV1Response<GuestDemandView> supplement(@PathVariable("code") String code,
+                                                     @Valid @RequestBody GuestDemandUpdateReq req,
+                                                     HttpServletRequest http) {
+        return ApiV1Response.ok(guestDemandService.supplement(code, req, clientIp(http), http.getHeader("User-Agent")));
+    }
+
+    /**
+     * 页39 用例2：受理前置 WITHDRAWN 终态撤回（AC-REQ-04b；BR-REQ-03b 仅 SUBMITTED 可撤）。
+     * <p>body 与 service 签名对齐：{@link GuestDemandService#withdraw} 强校验 action=WITHDRAW
+     * （缺失 body / 空对象 / 错配 action 由 service 统一 PARAM_INVALID 收口），故 body 须为
+     * {@code {"action":"WITHDRAW"}}。此处不加 {@code @Valid}：DTO 的 {@code @Size} 约束是补登
+     * 字段语义（withdraw 不读 functionalRequirement/contact），加上会拒绝 service 本会忽略的载荷；
+     * 且 {@code @RequestBody(required = false)} 让缺 body 以 null 交 service 收口（同 10001）。
+     */
+    @PostMapping("/demands/{code}/withdraw")
+    public ApiV1Response<GuestDemandView> withdraw(@PathVariable("code") String code,
+                                                   @RequestBody(required = false) GuestDemandUpdateReq req,
+                                                   HttpServletRequest http) {
+        return ApiV1Response.ok(guestDemandService.withdraw(code, req, clientIp(http), http.getHeader("User-Agent")));
     }
 
     /**
