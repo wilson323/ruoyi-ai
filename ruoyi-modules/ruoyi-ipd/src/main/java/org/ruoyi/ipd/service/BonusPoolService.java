@@ -77,6 +77,10 @@ public class BonusPoolService implements IBonusPoolService {
     @Autowired(required = false)
     private ContributionMapper contributionMapper;
 
+    /** R221 通知缺口（可选注入，nullable 兼容旧测试）：奖金池 DRAFT 就绪 → 知会双 PM。 */
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
     /** P-DATA-gap-1 接线：测试显式注入入口（对齐 setStateMachineGuard 模式）。 */
     public void setBonusAllocationMapper(BonusAllocationMapper bonusAllocationMapper) {
         this.bonusAllocationMapper = bonusAllocationMapper;
@@ -84,6 +88,11 @@ public class BonusPoolService implements IBonusPoolService {
 
     public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
         this.projectMemberMapper = projectMemberMapper;
+    }
+
+    /** R221 通知缺口：测试显式注入入口（对齐 setProjectMemberMapper 模式）。 */
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
     public void setContributionMapper(ContributionMapper contributionMapper) {
@@ -1037,6 +1046,24 @@ public class BonusPoolService implements IBonusPoolService {
         appendAudit(actor, ACTION_COMPUTE, pool.getId(),
             "compute projectId=" + projectId + " finalPool=" + pool.getFinalPool(),
             afterDataJson, null);
+        // R221 通知缺口补线（spec §5.1）：奖金池 DRAFT 就绪 → 知会双 PM（MARKET_PM + RD_PM）确认。
+        // 照 GatePrepExecutor 在任成员解析范式；compute 为 @Transactional，走 afterCommit 防 W1 毒化。
+        // projectMemberMapper / notificationService 均为可选注入（旧测试可能为 null）→ 任一为 null 则整体跳过。
+        // actionUrl 暂用 /projects/{id}，真实奖金池页路由待 Task 14 前端接线对齐。
+        if (notificationService != null && projectMemberMapper != null) {
+            for (String role : List.of("MARKET_PM", "RD_PM")) {
+                List<ProjectMember> pms = projectMemberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
+                    .eq(ProjectMember::getProjectId, projectId)
+                    .eq(ProjectMember::getRole, role));
+                for (ProjectMember pm : pms) {
+                    notificationService.publishAfterCommit(pm.getPersonId(), "BONUS_POOL_READY",
+                        NotificationService.KIND_ACTION, "bonus_pool", pool.getId(),
+                        "奖金池草稿已就绪，待确认：项目" + projectId,
+                        "项目 " + projectId + " 奖金池已完成试算（finalPool=" + pool.getFinalPool() + "），请确认或调整。",
+                        "/projects/" + projectId);
+                }
+            }
+        }
         return pool;
     }
 

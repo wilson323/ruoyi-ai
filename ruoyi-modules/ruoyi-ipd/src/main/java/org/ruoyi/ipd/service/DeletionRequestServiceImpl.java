@@ -12,6 +12,7 @@ import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Product;
+import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.Requirement;
@@ -19,6 +20,7 @@ import org.ruoyi.ipd.mapper.CertTemplateMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
@@ -90,6 +92,24 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
     public void setRequirementMapper(RequirementMapper requirementMapper) {
         this.requirementMapper = requirementMapper;
     }
+    /**
+     * R221 通知缺口补线（spec §5.1）：submit/驳回/超期升级三处业务节点发 DEL_* 待办通知。
+     * 可选注入（setter 同型先例）：存量 9 参构造测试未注入时整体跳过，生产 Spring 装配恒注入。
+     */
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    /** R221 通知缺口：按目标组/申请人组解析组长（知会收件人）所需只读 mapper，同上可选注入范式。 */
+    @Autowired(required = false)
+    private ProductGroupMapper productGroupMapper;
+
+    public void setProductGroupMapper(ProductGroupMapper productGroupMapper) {
+        this.productGroupMapper = productGroupMapper;
+    }
     /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
     @Autowired(required = false)
     private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
@@ -140,6 +160,10 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         deletionRequestMapper.insert(request);
         audit(entityType, entityId, requesterId, "DELETE_REQUEST_SUBMIT", request.getId());
         registerPostCommit("deletion_request", "DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit", requesterId, request.getId());
+        // R221 通知缺口补线（spec §5.1，AC-DEL-04 DEL_CROSS_GROUP_CC 死账接线）：建单进初审
+        // → 知会目标组组长。submit 为 @Transactional，走 publishAfterCommit 防 W1 毒化；
+        // 目标组/组长不可解析或服务未装配（存量 9 参测试）时静默跳过，绝不影响建单主链。
+        notifyLeaderPendingReview(request, requesterId);
         return request;
     }
 
@@ -274,6 +298,15 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         // ROOT-R3-P0-1：postCommit 跨域副作用
         registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger, leaderId, request.getId());
         audit(request.getEntityType(), request.getEntityId(), leaderId, approve ? "DELETE_LEADER_APPROVE" : "DELETE_LEADER_REJECT", request.getId());
+        // R221 通知缺口补线（AC-DEL-05 DEL_REJECTED 死账接线）：组长驳回 → 申请人收驳回待办；
+        // 通过时初审待办已在 submit 发过，终审队列可见不重复发。
+        if (!approve && notificationService != null) {
+            notificationService.publishAfterCommit(request.getRequesterId(), NotificationService.Types.DEL_REJECTED,
+                NotificationService.KIND_ACTION, "deletion_request", request.getId(),
+                "删除申请被组长驳回：" + request.getEntityType() + "/" + request.getEntityId(),
+                "组长（" + actor.name() + "）驳回了你的删除申请，可修改后重新发起。",
+                "/ipd/deletion/my-requests");
+        }
         return request;
     }
 
@@ -362,6 +395,27 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         // 步骤 ③：按预取行补逐条审计（G-02 语义不变：每条升级单独留痕，可被审计范围查询到）
         for (DeletionRequest request : overdue) {
             audit(request.getEntityType(), request.getEntityId(), null, "DELETE_LEADER_OVERDUE_ESCALATE", request.getId());
+            // R221 通知缺口补线（AC-DEL-07 DEL_REVIEW_OVERDUE 死账接线）：超期升级 →
+            // 申请人知会 + 原初审组长提醒（其组可解析时）。同日重复扫描不重发、次日可再提醒，
+            // 幂等由 publishDailyAfterCommit 的 dayStamp dedupKey 保证。
+            if (notificationService != null) {
+                notificationService.publishDailyAfterCommit(request.getRequesterId(),
+                    NotificationService.Types.DEL_REVIEW_OVERDUE, NotificationService.KIND_ACTION,
+                    "deletion_request", request.getId(),
+                    "删除申请超期已升级超管终审：" + request.getEntityType() + "/" + request.getEntityId(),
+                    "你的删除申请因组长超期未审，已自动升级超管终审（超管不会自动通过，仅提醒）。",
+                    "/ipd/deletion/my-requests", now());
+                Person applicant = personMapper.selectById(request.getRequesterId());
+                Long overdueLeaderId = resolveGroupLeader(applicant == null ? null : applicant.getGroupId());
+                if (overdueLeaderId != null) {
+                    notificationService.publishDailyAfterCommit(overdueLeaderId,
+                        NotificationService.Types.DEL_REVIEW_OVERDUE, NotificationService.KIND_ACTION,
+                        "deletion_request", request.getId(),
+                        "组内删除申请超期已升级超管：" + request.getEntityType() + "/" + request.getEntityId(),
+                        "申请人（ID " + request.getRequesterId() + "）的删除申请超过你的审核期限，已自动升级超管终审。",
+                        "/ipd/deletion/review", now());
+                }
+            }
         }
         return affected;
     }
@@ -433,6 +487,36 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
             throw new ServiceException("删除申请不存在: " + id);
         }
         return request;
+    }
+
+    /**
+     * R221 通知缺口：submit 后知会目标组组长待初审（AC-DEL-04 语义：组长对组内删除事项知会/待办）。
+     * 服务/mapper 未装配、目标组不可解析（如 cert_templates 全局参考数据）、组长未配置或
+     * 组长即申请人本人 → 均静默跳过，绝不影响建单主链。
+     */
+    private void notifyLeaderPendingReview(DeletionRequest request, Long requesterId) {
+        if (notificationService == null || productGroupMapper == null) {
+            return;
+        }
+        TargetScope scope = resolveScope(request.getEntityType(), request.getEntityId());
+        Long leaderPersonId = resolveGroupLeader(scope.groupId());
+        if (leaderPersonId == null || leaderPersonId.equals(requesterId)) {
+            return;
+        }
+        notificationService.publishAfterCommit(leaderPersonId, NotificationService.Types.DEL_CROSS_GROUP_CC,
+            NotificationService.KIND_ACTION, "deletion_request", request.getId(),
+            "删除申请待初审：" + request.getEntityType() + "/" + request.getEntityId(),
+            "你所属组收到删除申请（申请人 ID " + requesterId + "），请在审核期限内处置。",
+            "/ipd/deletion/review");
+    }
+
+    /** 按组 ID 解析组长 personId（mapper 未装配/组未配置组长 → null，调用方自行跳过）。 */
+    private Long resolveGroupLeader(Long groupId) {
+        if (productGroupMapper == null || groupId == null) {
+            return null;
+        }
+        ProductGroup group = productGroupMapper.selectById(groupId);
+        return group == null ? null : group.getLeaderPersonId();
     }
 
     private void requireStatus(DeletionRequest request, String expect) {

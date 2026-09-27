@@ -151,7 +151,7 @@ public class GatePrepExecutor implements AiActionExecutor {
                 continue;
             }
             for (ProjectMember m : members) {
-                notificationService.publishDaily(m.getPersonId(), "AI_PREPARED_GATE",
+                notificationService.publishDaily(m.getPersonId(), NotificationService.Types.AI_PREPARED_GATE,
                     NotificationService.KIND_ACTION, "ai_agent_task", task.getId(),
                     title, content, actionUrl, day);
             }

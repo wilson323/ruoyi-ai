@@ -6,10 +6,13 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.NotificationChannelType;
 import org.ruoyi.ipd.domain.NotificationEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.mapper.NotificationEventMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -31,6 +34,7 @@ import java.util.Set;
  * （如 Gate 双签、删除初审待办）——同一业务动作两类事件各自成行，前端待办列表只取 ACTION。
  * 收件箱按 receiver_id 强隔离（AC-TEAM-01：未被邀标的研发 PM 看不到该通知）。
  */
+@Slf4j
 @Service
 public class NotificationService implements INotificationService {
 
@@ -107,6 +111,11 @@ public class NotificationService implements INotificationService {
         public static final String KPI_DUE_SOON = "KPI_DUE_SOON";
         /** MEDIUM-1.3：Gate 列席人员邀请通知 */
         public static final String GATE_OBSERVER_INVITED = "GATE_OBSERVER_INVITED";
+        /** R221 AI 备料完成待办（GenerateExecutor 草稿就绪 / GatePrepExecutor 评审材料就绪）——收编原字面量 */
+        public static final String AI_PREPARED_GENERATE = "AI_PREPARED_GENERATE";
+        public static final String AI_PREPARED_GATE = "AI_PREPARED_GATE";
+        /** R221 AI 执行退避耗尽转 DEAD，通知人接管（AiExecutionEngine）——收编原字面量 */
+        public static final String AI_EXEC_DEAD = "AI_EXEC_DEAD";
 
         private Types() {
         }
@@ -140,6 +149,85 @@ public class NotificationService implements INotificationService {
                                      String content, String actionUrl) {
         return doPublish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl,
             sourceType + ":" + eventType + ":" + sourceId + ":" + receiverId);
+    }
+
+    /**
+     * R221 通知缺口补线的安全入口（宿主 {@code @Transactional} 方法内发布通知专用）。
+     *
+     * <p>直接调 {@link #publish} 有事务毒化风险：{@code publish} 自带 {@code @Transactional}
+     * 且默认 REQUIRED 传播会加入宿主事务，一旦内部抛异常即把宿主事务打成 rollback-only，
+     * 宿主外层 try/catch 拦不住（提交点 UnexpectedRollbackException）——这正是 R221 复审 W1
+     * 在 review 闭环里踩过的坑（见 {@link AiExecReviewHook}）。故此处：宿主事务活跃时把发布
+     * 延迟到 afterCommit 独立事务运行（业务已提交，通知失败仅 WARN 绝不反噬主链）；无事务同步
+     * （调度器 / 单测直调）时同步发布。接收人为 null（组长/双 PM 未配置等脏数据）直接跳过并 WARN，
+     * 照 {@code GatePrepExecutor} 无在任成员跳过范式。幂等仍由 publish 的 dedup_key 保证。</p>
+     */
+    public void publishAfterCommit(Long receiverId, String eventType, String kind,
+                                   String sourceType, Long sourceId, String title,
+                                   String content, String actionUrl) {
+        if (receiverId == null) {
+            log.warn("[R221] 通知跳过：接收人为空 eventType={} sourceType={} sourceId={}", eventType, sourceType, sourceId);
+            return;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    tryPublish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl);
+                }
+            });
+        } else {
+            tryPublish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl);
+        }
+    }
+
+    /** 实际发布，失败只 WARN（通知是副链，绝不反炸已提交的业务主链）。 */
+    private void tryPublish(Long receiverId, String eventType, String kind,
+                            String sourceType, Long sourceId, String title,
+                            String content, String actionUrl) {
+        try {
+            publish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl);
+        } catch (Exception e) {
+            log.warn("[R221] 通知发布失败（不影响主链）eventType={} receiverId={} sourceType={} sourceId={}",
+                eventType, receiverId, sourceType, sourceId, e);
+        }
+    }
+
+    /**
+     * R221 通知缺口：{@link #publishDaily} 的 afterCommit 安全入口（语义同
+     * {@link #publishAfterCommit}：宿主事务活跃时延迟提交后发布、null 接收者跳过 WARN；
+     * 区别仅在 dedupKey 追加自然日——同日重复触发不重发，供超期提醒类幂等场景）。
+     */
+    public void publishDailyAfterCommit(Long receiverId, String eventType, String kind,
+                                        String sourceType, Long sourceId, String title,
+                                        String content, String actionUrl, java.util.Date day) {
+        if (receiverId == null) {
+            log.warn("[R221] 每日通知跳过：接收人为空 eventType={} sourceType={} sourceId={}", eventType, sourceType, sourceId);
+            return;
+        }
+        String dayStamp = new java.text.SimpleDateFormat("yyyyMMdd").format(day);
+        String dedupKey = sourceType + ":" + eventType + ":" + sourceId + ":" + receiverId + ":" + dayStamp;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    tryPublishWithKey(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl, dedupKey);
+                }
+            });
+        } else {
+            tryPublishWithKey(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl, dedupKey);
+        }
+    }
+
+    private void tryPublishWithKey(Long receiverId, String eventType, String kind,
+                                   String sourceType, Long sourceId, String title,
+                                   String content, String actionUrl, String dedupKey) {
+        try {
+            doPublish(receiverId, eventType, kind, sourceType, sourceId, title, content, actionUrl, dedupKey);
+        } catch (Exception e) {
+            log.warn("[R221] 通知发布失败（不影响主链）eventType={} receiverId={} sourceType={} sourceId={}",
+                eventType, receiverId, sourceType, sourceId, e);
+        }
     }
 
     /**

@@ -71,7 +71,7 @@ public class GenerateExecutor implements AiActionExecutor {
         String content = "AI 已为动作「" + task.getActionCode() + "」生成草稿《" + docTitle + "》，请进入动作详情页审核。";
         String actionUrl = "/projects/" + task.getProjectId();
         for (ProjectMember m : members) {
-            notificationService.publishDaily(m.getPersonId(), "AI_PREPARED_GENERATE",
+            notificationService.publishDaily(m.getPersonId(), NotificationService.Types.AI_PREPARED_GENERATE,
                 NotificationService.KIND_ACTION, "ai_agent_task", task.getId(),
                 "AI 草稿待审: " + docTitle, content, actionUrl, day);
         }

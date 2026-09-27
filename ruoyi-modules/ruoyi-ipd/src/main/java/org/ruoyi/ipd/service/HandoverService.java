@@ -84,6 +84,9 @@ public class HandoverService {
     /** P2-7.4 AC-HAND-02：通知 sourceType 锚（handover 记录）。 */
     private static final String SRC_HANDOVER = "handover";
 
+    /** R221 通知缺口：createDraft 后知会接手人待确认（KIND_ACTION，深链接手人收件箱）。 */
+    private static final String EVT_HANDOVER_CREATED = "HANDOVER_CREATED";
+
     private final ProjectMemberMapper memberMapper;
     private final PersonMapper personMapper;
     private final ProjectMapper projectMapper;
@@ -402,6 +405,14 @@ public class HandoverService {
                 "onBehalf", !operator.id().equals(fromId)))
             .createTime(now())
             .build());
+        // R221 通知缺口补线（spec §5.1）：移交草稿建好 → 知会接手人待确认。
+        // 走 publishAfterCommit：createDraft 经 @Transactional 调用者进入宿主事务，通知延迟到
+        // 业务提交后独立事务发布，失败仅 WARN 绝不反噬建单主链；接手人 toPersonId 入口已校验非空。
+        notificationService.publishAfterCommit(toPersonId, EVT_HANDOVER_CREATED,
+            NotificationService.KIND_ACTION, SRC_HANDOVER, rec.getId(),
+            "移交待确认：项目" + projectId + " 角色" + role,
+            "你被指定为项目 " + projectId + " 的" + role + "移交接手人，请在 " + DEADLINE_DAYS + " 日内确认。",
+            "/ipd/handovers/inbox");
         return rec;
     }
 

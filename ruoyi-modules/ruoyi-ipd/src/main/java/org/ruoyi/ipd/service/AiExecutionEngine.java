@@ -224,7 +224,7 @@ public class AiExecutionEngine {
             return;
         }
         try {
-            notificationService.publish(receiver, "AI_EXEC_DEAD", NotificationService.KIND_ACTION,
+            notificationService.publish(receiver, NotificationService.Types.AI_EXEC_DEAD, NotificationService.KIND_ACTION,
                 "ai_agent_task", t.getId(),
                 "AI 执行失败转人工: " + t.getActionCode(),
                 "任务已重试 " + t.getAttempt() + " 次仍失败，请人工接管（原手工路径不受影响）。错误: "

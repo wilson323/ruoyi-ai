@@ -70,6 +70,14 @@ public class ContributionService implements IContributionService {
         this.stateMachineGuard = stateMachineGuard;
     }
 
+    /** R221 通知缺口（nullable 兼容旧测试）：双 PM 自评 SUBMITTED → 知会组长终裁。 */
+    private NotificationService notificationService;
+
+    @Autowired(required = false)
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
     /** R24 接线：守卫 preCheck 包装（fail-closed）。 */
     private void preCheckGuard(String fromState, String toState, String trigger) {
         if (stateMachineGuard == null) {
@@ -363,6 +371,18 @@ public class ContributionService implements IContributionService {
                 registerPostCommit(Contribution.ST_DRAFT, Contribution.ST_SUBMITTED, "submit",
                     actor.id(), entity.getId());
             }
+        }
+
+        // R221 通知缺口补线（spec §5.1）：双方自评均完成进入 SUBMITTED → 知会组长终裁。
+        // 组长取 leader_id（上方 335 预落），可能为 null（未配组长）——publishAfterCommit 内部 null 守卫跳过。
+        // saveSelf 为 @Transactional，走 afterCommit 防 W1 毒化；幂等由 dedup_key 保证（重复保存不重发）。
+        // actionUrl 暂用 /projects/{id}（照 GenerateExecutor 既有深链约定），真实详情页路由待 Task 14 前端接线后对齐。
+        if (bothDone && Contribution.ST_SUBMITTED.equals(entity.getStatus()) && notificationService != null) {
+            notificationService.publishAfterCommit(entity.getLeaderId(), "CONTRIBUTION_SUBMITTED",
+                NotificationService.KIND_ACTION, CONTRIBUTION_ENTITY_TYPE, entity.getId(),
+                "贡献度自评已提交，待终裁：项目" + projectId,
+                "项目 " + projectId + " 双 PM 贡献度自评已完成，请组长进入终裁确认。",
+                "/projects/" + projectId);
         }
 
         auditLogService.append(AuditLog.builder()
