@@ -43,7 +43,10 @@ class AiExecEventHookTest {
     @Mock private AiExecutionEngine engine;
 
     private AiExecReviewHook hook() {
-        return new AiExecReviewHook(taskMapper, stageActionService, trigger, ossService, engine);
+        AiExecReviewHook hook = new AiExecReviewHook(taskMapper, stageActionService, ossService);
+        hook.setTrigger(trigger);
+        hook.setEngine(engine);
+        return hook;
     }
 
     private static StageAction action(long id, long projectId, long stageId, String code, String status) {

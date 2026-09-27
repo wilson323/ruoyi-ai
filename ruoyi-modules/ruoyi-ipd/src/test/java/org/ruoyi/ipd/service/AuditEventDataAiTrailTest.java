@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * AI-P1-3 留痕门禁单测（《AI参与留痕规范-20260910》§4）：
- * aiAssisted=true 的审计载荷必须同时携带非空 aiModel + 白名单 aiRole（draft|precheck|summarize），
+ * aiAssisted=true 的审计载荷必须同时携带非空 aiModel + 白名单 aiRole（draft|precheck|summarize|copilot_answer|streaming|agent_exec|suggestion），
  * 缺一即拒写（防半吊子留痕）；决策语义 aiRole 一概拦下（责任链红线：AI 只出建议，决策恒为人工）。
  * 门禁接线点：IAuditLogService.append 入口（单点，44 文件/81 处调用自动受益）。
  */
@@ -53,9 +53,9 @@ class AuditEventDataAiTrailTest {
     }
 
     @Test
-    @DisplayName("合法三件套放行：draft / precheck / summarize / copilot_answer / streaming 全通过")
+    @DisplayName("合法三件套放行：draft / precheck / summarize / copilot_answer / streaming / agent_exec / suggestion 全通过")
     void legalTrailPasses() {
-        for (String role : new String[] {"draft", "precheck", "summarize", "copilot_answer", "streaming"}) {
+        for (String role : new String[] {"draft", "precheck", "summarize", "copilot_answer", "streaming", "agent_exec", "suggestion"}) {
             String payload = AuditEventData.json(
                 "aiAssisted", true, "aiModel", "gpt-4o-mini", "aiRole", role,
                 "tokenPrompt", 120, "latencyMs", 900);

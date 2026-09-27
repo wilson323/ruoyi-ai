@@ -10,6 +10,8 @@ import org.ruoyi.ipd.seed.ActionCatalog;
 import org.ruoyi.ipd.service.aiexec.ByteArrayMultipartFile;
 import org.ruoyi.system.domain.vo.SysOssVo;
 import org.ruoyi.system.service.ISysOssService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -47,9 +49,31 @@ public class AiExecReviewHook {
 
     private final AiAgentTaskMapper taskMapper;
     private final StageActionService stageActionService;
-    private final AiExecutionTrigger trigger;
     private final ISysOssService ossService;
-    private final AiExecutionEngine engine;
+
+    /**
+     * 回环边（R221 循环依赖破环）：trigger/engine 与本类互成环——
+     * AiExecutionTrigger → AiExecutionEngine → GenerateExecutor → AiGenerationService →
+     * AiDocumentService(setAiExecReviewHook) → AiExecReviewHook → AiExecutionTrigger。
+     * 构造器注入会闭合此环使 Spring 启动崩（ApplicationContext 无法 refresh）；
+     * 单测 mock 容器故漏过。破环=把回环边改为 @Lazy 字段注入（先例 AiExecutionEngine.self），
+     * 运行期首用才解析，不影响语义。*/
+    @Lazy
+    @Autowired
+    private AiExecutionTrigger trigger;
+
+    @Lazy
+    @Autowired
+    private AiExecutionEngine engine;
+
+    /* 测试注入用（无 Spring 容器时直赋 mock）；Spring 走上方 @Lazy @Autowired 字段注入。 */
+    void setTrigger(AiExecutionTrigger trigger) {
+        this.trigger = trigger;
+    }
+
+    void setEngine(AiExecutionEngine engine) {
+        this.engine = engine;
+    }
 
     /**
      * 人审通过闭环（AiDocumentService.review 真实流转分支尾部调用）。
