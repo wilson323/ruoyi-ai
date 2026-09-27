@@ -1,5 +1,7 @@
 # CopilotKit 全局调研分析（2026-09-26）
 
+> ⚠️ 后续更新（2026-09-27）：同主题终版评估见 `CopilotKit前端融合可行性分析-20260927.md`，其结论（不适合现阶段引入）取代本文「试点 POC」建议——差异在于补充了 ZK-IPD 原型红线 / C08 suggest 红线 / R214 反双轨 / R221 人审闭环四项权重；本文事实层仍有效，引证状态修正见终版 §6。
+
 > 调研性质：只读研究，未改动任何代码/依赖/看板/pom/package.json。
 > 调研对象：CopilotKit（docs.copilotkit.ai、github.com/CopilotKit/CopilotKit、npm @copilotkit/*、AG-UI 协议）。
 > 本项目：ruoyi-ai（Spring Boot 3.5.8 + Java 17 + Langchain4j 多模块 Maven）+ 正式前端 ruoyi-ipd-web（vue-vben-admin monorepo：Vue 3.5 + Ant Design Vue 4.2 + Vite 7 + pnpm 10.14）。
