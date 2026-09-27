@@ -30,7 +30,7 @@ import java.util.Set;
  * 转 DEAD（死信可观察，不静默丢失）。调度接线（定时轮询）待 OPS-04 scheduler 合入主树，
  * 当前可由管理端点手动轮询。
  *
- * <p>kind 严格分流：FYI=跨组知会（如 AC-DEL-04 协同组组长知会）与 ACTION=可执行审批行动
+ * <p>kind 严格分流：FYI=跨组知会 与 ACTION=可执行审批行动
  * （如 Gate 双签、删除初审待办）——同一业务动作两类事件各自成行，前端待办列表只取 ACTION。
  * 收件箱按 receiver_id 强隔离（AC-TEAM-01：未被邀标的研发 PM 看不到该通知）。
  */
@@ -67,7 +67,9 @@ public class NotificationService implements INotificationService {
      * / BID_CONDITIONS_CHANGED（AC-TEAM-13 条件变更知会已应标者）
      * / GATE_REJECTED（AC-GATE-05 双方收通知）/ GATE_SIGN_SOON（AC-GATE-09 签署期限前 1 天）
      * / G5_REVIEW_TODO（AC-GATE-13 上市 +90 天复盘待办）/ GATE_CONDITION_OVERDUE（AC-GATE-17 条件关闭逾期提醒）
-     * / DEL_CROSS_GROUP_CC（AC-DEL-04 协同组组长知会，FYI）/ DEL_REJECTED（AC-DEL-05 初审驳回）
+     * / DEL_CROSS_GROUP_CC（AC-DEL-04；R221 Task12 落地口径 owner 追认：删除建单→目标组组长
+     * 初审待办，KIND_ACTION——现数据模型下删除目标归属唯一，不存在双组长协同场景，
+     * 原「协同组 FYI 知会」语义作废）/ DEL_REJECTED（AC-DEL-05 初审驳回）
      * / DEL_REVIEW_OVERDUE（AC-DEL-07 审核超期提醒并升级）。
      */
     public static final class Types {

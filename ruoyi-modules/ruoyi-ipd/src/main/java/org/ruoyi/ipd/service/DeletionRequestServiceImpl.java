@@ -405,8 +405,11 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
                     "删除申请超期已升级超管终审：" + request.getEntityType() + "/" + request.getEntityId(),
                     "你的删除申请因组长超期未审，已自动升级超管终审（超管不会自动通过，仅提醒）。",
                     "/ipd/deletion/my-requests", now());
-                Person applicant = personMapper.selectById(request.getRequesterId());
-                Long overdueLeaderId = resolveGroupLeader(applicant == null ? null : applicant.getGroupId());
+                // 复审修复 W-1（r221-notification-gap）：初审义务人是**目标组**组长（L280 IDOR
+                // 校验同口径），非申请人组组长——跨组删除时按申请人组解析会把提醒发给了
+                // 无审核义务的组长、真正逾期者反而收不到。改走与 submit 知会一致的 resolveScope 链。
+                TargetScope overdueScope = resolveScope(request.getEntityType(), request.getEntityId());
+                Long overdueLeaderId = resolveGroupLeader(overdueScope.groupId());
                 if (overdueLeaderId != null) {
                     notificationService.publishDailyAfterCommit(overdueLeaderId,
                         NotificationService.Types.DEL_REVIEW_OVERDUE, NotificationService.KIND_ACTION,

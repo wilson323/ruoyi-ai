@@ -1054,7 +1054,10 @@ public class BonusPoolService implements IBonusPoolService {
             for (String role : List.of("MARKET_PM", "RD_PM")) {
                 List<ProjectMember> pms = projectMemberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
                     .eq(ProjectMember::getProjectId, projectId)
-                    .eq(ProjectMember::getRole, role));
+                    .eq(ProjectMember::getRole, role)
+                    // 复审修复 W-2：补齐 GatePrepExecutor 同型在任过滤——缺 exitDate 谓词会把
+                    // 已离项 PM 也拉进待办（注释自称范式与实现直接矛盾）。
+                    .isNull(ProjectMember::getExitDate));
                 for (ProjectMember pm : pms) {
                     notificationService.publishAfterCommit(pm.getPersonId(), "BONUS_POOL_READY",
                         NotificationService.KIND_ACTION, "bonus_pool", pool.getId(),

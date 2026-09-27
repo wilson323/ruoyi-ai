@@ -244,8 +244,12 @@ class NotificationGapWiringTest {
         overdue.setCreateTime(NOW);
         when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(overdue));
         when(deletionRequestMapper.update(any(), any())).thenReturn(1);
-        when(personMapper.selectById(1L)).thenReturn(
-            Person.builder().id(1L).groupId(20L).build());
+        // W-1 修复后口径：组长提醒按**目标组**（resolveScope）解析，与申请人组无关——
+        // 故意把申请人组配成外组 99（无组长），若实现回退到申请人组解析则本例会因
+        // 组长 verify 失败而红。
+        lenient().when(personMapper.selectById(1L)).thenReturn(
+            Person.builder().id(1L).groupId(99L).build());
+        when(projectMapper.selectById(100L)).thenReturn(projectOfGroup(20L));
         when(productGroupMapper.selectById(20L)).thenReturn(
             ProductGroup.builder().id(20L).leaderPersonId(5L).build());
         lenient().when(systemConfigService.getIntValue("deletion.adminDeadlineDays", 2)).thenReturn(2);
@@ -258,6 +262,23 @@ class NotificationGapWiringTest {
         verify(notificationService).publishDailyAfterCommit(eq(5L),
             eq(NotificationService.Types.DEL_REVIEW_OVERDUE), eq(NotificationService.KIND_ACTION),
             eq("deletion_request"), eq(99L), any(), any(), eq("/ipd/deletion/review"), eq(NOW));
+    }
+
+    @Test
+    @DisplayName("删除 submit：申请人即目标组组长 → 不自发初审待办（never）")
+    void submit_applicantIsTargetLeader_publishesNothing() {
+        IpdActor leaderActor = new IpdActor(5L, "组长兼PM", "MARKET_PM", 20L);
+        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
+        when(projectMapper.selectById(100L)).thenReturn(projectOfGroup(20L));
+        when(productGroupMapper.selectById(20L)).thenReturn(
+            ProductGroup.builder().id(20L).leaderPersonId(5L).build());
+        when(systemConfigService.getIntValue("deletion.leaderDeadlineDays", 2)).thenReturn(2);
+        when(deletionRequestMapper.insert(any(DeletionRequest.class))).thenReturn(1);
+
+        deletionService.submit(leaderActor, "projects", 100L, "{}", "自删申请");
+
+        verify(notificationService, never()).publishAfterCommit(anyLong(), any(), any(), any(), any(),
+            any(), any(), any());
     }
 
     // ============================================================
@@ -359,6 +380,6 @@ class NotificationGapWiringTest {
 
         verify(notificationService).publishAfterCommit(eq(9L), eq("HANDOVER_CREATED"),
             eq(NotificationService.KIND_ACTION), eq("handover"), eq(55L),
-            any(), any(), any());
+            any(), any(), eq("/ipd/handovers/inbox"));
     }
 }
