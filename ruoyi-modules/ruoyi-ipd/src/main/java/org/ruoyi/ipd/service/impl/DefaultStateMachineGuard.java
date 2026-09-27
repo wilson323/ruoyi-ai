@@ -430,6 +430,74 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("双签 APPROVE 生效并回写需求池 ADOPTED（跨域：requirements）")
             .build());
 
+
+        // ---- R28 补遗 §5-2 接线轮（fix/r28-guard-wire）：StageAction 状态机登记（C8 消灭）----
+        // from→to 严格图：NOT_STARTED→IN_PROGRESS→DONE/DELAYED；DELAYED→IN_PROGRESS/DONE；
+        // NA 可在未开始/进行中登记（必 reason，Service 校验）；DONE/NA 硬终态。
+        // 此前 transit 仅目标白名单（NOT_STARTED→DONE 直跳、DONE→IN_PROGRESS 回退皆放行，C8）。
+        // 词表来源：StageActionService LIGHT/DEEP 枚举 + 前端 ACTION_STATUS_MACHINE 严格图
+        // （ruoyi-ipd-web _shared/ipd-state-machines.ts），差异仅 NA 入边（前端图 NA 无入边属缺口，
+        // 后端 BR 允许 NA 标记，见 StageActionServiceTest IN_PROGRESS→NA 与 AC-PROD-13 用例）。
+        // 轻管跳阶契约（P143AcceptanceTest.lightCanSkipInProgressToDone，P1-4.3 验收）：
+        // 守卫规则表无 depth 维度，登记该边同时放行深管直跳——深管直跳的彻底封禁（C8 全形）
+        // 需 depth 维度或 Service 层校验，见接线轮报告「建议方案」，本轮不吞尾扩大改动。
+        register(StateTransitionRule.builder()
+            .key("stage_action:NOT_STARTED->DONE|complete")
+            .entityType("stage_action")
+            .fromState("NOT_STARTED").toState("DONE").trigger("complete")
+            .crossDomain(false)
+            .description("轻管跳阶直完成（P143 验收契约；深管完成条件仍由 validateCompletion 把关）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:NOT_STARTED->IN_PROGRESS|start")
+            .entityType("stage_action")
+            .fromState("NOT_STARTED").toState("IN_PROGRESS").trigger("start")
+            .crossDomain(false)
+            .description("动作开始（P1-4.3 深/轻管同图）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:IN_PROGRESS->DONE|complete")
+            .entityType("stage_action")
+            .fromState("IN_PROGRESS").toState("DONE").trigger("complete")
+            .crossDomain(false)
+            .description("动作完成（深管交付物/轻管完成日校验在 Service validateCompletion，先于守卫）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:DELAYED->DONE|complete")
+            .entityType("stage_action")
+            .fromState("DELAYED").toState("DONE").trigger("complete")
+            .crossDomain(false)
+            .description("逾期动作补完成（深管专属，轻管由目标白名单先拒 DELAYED）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:IN_PROGRESS->DELAYED|delay")
+            .entityType("stage_action")
+            .fromState("IN_PROGRESS").toState("DELAYED").trigger("delay")
+            .crossDomain(false)
+            .description("深管标记逾期（BR-IPD-05：轻管枚举无 DELAYED，Service 白名单先拒）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:DELAYED->IN_PROGRESS|resume")
+            .entityType("stage_action")
+            .fromState("DELAYED").toState("IN_PROGRESS").trigger("resume")
+            .crossDomain(false)
+            .description("逾期动作恢复进行")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:NOT_STARTED->NA|mark_na")
+            .entityType("stage_action")
+            .fromState("NOT_STARTED").toState("NA").trigger("mark_na")
+            .crossDomain(false)
+            .description("未开始即标记不适用（必 reason，Service 校验；AC-PROD-13 等域规则在 Service）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("stage_action:IN_PROGRESS->NA|mark_na")
+            .entityType("stage_action")
+            .fromState("IN_PROGRESS").toState("NA").trigger("mark_na")
+            .crossDomain(false)
+            .description("进行中改判不适用（必 reason）")
+            .build());
+
         log.info("StateMachineGuard 种子规则注入完成：{} 条", rules.size());
     }
 

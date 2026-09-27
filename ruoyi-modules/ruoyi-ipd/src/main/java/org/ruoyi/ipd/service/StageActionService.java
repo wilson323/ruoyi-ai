@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.domain.ActionDef;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -18,6 +19,8 @@ import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,6 +87,21 @@ public class StageActionService implements IStageActionService {
         this.productGroupMapper = productGroupMapper;
     }
 
+    /**
+     * R28 补遗 §5-2 接线：状态机守卫（C8 消灭）。setter 注入（对齐 KpiRecord/Handover 金样板），
+     * 不扩 @RequiredArgsConstructor 构造签名——既有 10+ 测试 5 参 new 不破。
+     * 生产路径 Spring 必装配；缺失时 transit fail-closed（preCheckGuard 抛业务异常）。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他 9 台机器一致：小写下划线。 */
+    private static final String STAGE_ACTION_ENTITY_TYPE = "stage_action";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
     public StageAction getById(Long id) {
         StageAction a = stageActionMapper.selectById(id);
         if (a == null) {
@@ -138,6 +156,14 @@ public class StageActionService implements IStageActionService {
             validateCompletion(a, def, deep);
         }
 
+        // R28 补遗 §5-2 接线：状态机守卫 preCheck（fail-closed）——transit 由「仅目标白名单」
+        // 升级为守卫规则表 from→to 严格图（C8：NOT_STARTED→DONE 直跳 / DONE→IN_PROGRESS 回退拒绝）。
+        // 位置在所有既有业务校验（深度白名单/幂等/NA reason/AC-PROD-13/DONE 完成条件）之后、
+        // setStatus 之前——保留既有 BR 异常语义优先，守卫只拦「白名单过但图非法」迁移。
+        String fromBefore = a.getStatus();
+        String guardTrigger = triggerForStageTransition(fromBefore, target);
+        preCheckGuard(fromBefore, target, guardTrigger);
+
         String before = statusSnapshot(a);
         a.setStatus(target);
         a.setUpdateBy(actorIdOf(operator));
@@ -154,6 +180,9 @@ public class StageActionService implements IStageActionService {
             .beforeData(before).afterData(statusSnapshot(a))
             .reason(reason == null || reason.isBlank() ? "P1-4.3 状态机" : reason)
             .build());
+        // R28 补遗 §5-2 接线：postCommit（事务提交后）。stage_action 全边 crossDomain=false，
+        // postCommit 语义为 no-op 留扩展点；from 用变更前快照（防 setStatus 后读到新态的 ghost 迁移老 bug）。
+        registerPostCommit(fromBefore, target, guardTrigger, actorIdOf(operator), a.getId());
         return a;
     }
 
@@ -457,6 +486,56 @@ public class StageActionService implements IStageActionService {
             "status", a.getStatus(),
             "version", a.getVersion(),
             "actualDoneAt", a.getActualDoneAt().getTime());
+    }
+
+    /**
+     * R28 补遗 §5-2 接线：守卫 preCheck 包装（fail-closed 模式，对齐 KpiRecordService 样板）。
+     * 守卫 null = 装配缺失，抛业务异常拒绝迁移（防 state-machine-bypass）。
+     */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + STAGE_ACTION_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(STAGE_ACTION_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /**
+     * R28 补遗 §5-2 接线：注册 postCommit 副作用（事务提交后触发，避免回滚后污染审计）。
+     * 无守卫注入时降级 no-op；无事务上下文时直接执行（对齐 KpiRecord/Handover 样板）。
+     */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(STAGE_ACTION_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(STAGE_ACTION_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
+
+    /**
+     * R28 补遗 §5-2 接线：由 (from,to) 推导守卫 trigger 词表边标签。
+     * 词表：start / complete / delay / resume / mark_na（与 DefaultStateMachineGuard 登记 key 一一对应）。
+     */
+    private static String triggerForStageTransition(String fromState, String toState) {
+        switch (toState) {
+            case "IN_PROGRESS": return "DELAYED".equals(fromState) ? "resume" : "start";
+            case "DONE": return "complete";
+            case "DELAYED": return "delay";
+            case "NA": return "mark_na";
+            default: return "transit";
+        }
     }
 
     private static Long actorIdOf(String operator) {

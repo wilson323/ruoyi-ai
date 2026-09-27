@@ -53,6 +53,13 @@ class P143AcceptanceTest {
             Project.builder().id(100L).status("ACTIVE").delFlag("0").build());
         service = new StageActionService(actionMapper, deliverableMapper, auditLogService,
             mock(org.ruoyi.ipd.mapper.ProjectStageMapper.class), projectMapper);
+        // 接线轮（fix/r28-guard-wire）：注入真实守卫（transit 已接 from→to 严格图）
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guardForTest =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService,
+                mock(org.ruoyi.ipd.service.NotificationService.class));
+        guardForTest.resetRules();
+        guardForTest.initRules();
+        service.setStateMachineGuard(guardForTest);
     }
 
     private StageAction seedDeep(String code, String status) {

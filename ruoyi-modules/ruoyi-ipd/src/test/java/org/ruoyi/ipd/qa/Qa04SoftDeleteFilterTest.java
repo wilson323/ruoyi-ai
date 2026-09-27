@@ -68,6 +68,14 @@ class Qa04SoftDeleteFilterTest {
         auditLogService = Mockito.mock(IAuditLogService.class);
         service = new StageActionService(stageActionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
+        // 接线轮（fix/r28-guard-wire）：注入真实守卫；本类测 del_flag 过滤链，与状态机词表无关，
+        // 但 transit 已接 from→to 严格图，deepAction 初始态须为 IN_PROGRESS（真库合法组合：进行中动作才标 DONE）。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guardForTest =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService,
+                Mockito.mock(org.ruoyi.ipd.service.NotificationService.class));
+        guardForTest.resetRules();
+        guardForTest.initRules();
+        service.setStateMachineGuard(guardForTest);
     }
 
     /** 构造 DEEP 动作（含 version=0，映射真实实体）。 */
@@ -76,7 +84,7 @@ class Qa04SoftDeleteFilterTest {
             .id(id).projectId(projectId).stageId(2000L)
             .actionCode("C01").actionName("市场调研")
             .ownerRole("MARKET_PM").depth("DEEP")
-            .status("NOT_STARTED").isBlocking("1").isBioFeature("0")
+            .status("IN_PROGRESS").isBlocking("1").isBioFeature("0")
             .build();
         a.setVersion(0);
         return a;

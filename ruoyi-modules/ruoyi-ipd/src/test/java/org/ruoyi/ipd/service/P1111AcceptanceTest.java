@@ -84,6 +84,13 @@ class P1111AcceptanceTest {
         gateEngine = new GateEngine(actionMapper, configService);
         stageActionService = new StageActionService(actionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
+        // 接线轮（fix/r28-guard-wire）：注入真实守卫（transit 已接 from→to 严格图）
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guardForTest =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService,
+                org.mockito.Mockito.mock(org.ruoyi.ipd.service.NotificationService.class));
+        guardForTest.resetRules();
+        guardForTest.initRules();
+        stageActionService.setStateMachineGuard(guardForTest);
         projectCertService = new ProjectCertServiceImpl(certItemMapper, projectMapper, certTemplateService, auditLogService);
     }
 

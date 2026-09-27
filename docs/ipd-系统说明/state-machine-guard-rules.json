@@ -1,8 +1,8 @@
 {
   "meta" : {
-    "ruleCount" : 42,
+    "ruleCount" : 50,
     "source" : "DefaultStateMachineGuard.initRules（后端守卫规则表导出，补遗 §5-1）",
-    "version" : "sha256:5a5a9111a38b73b0134450888cc1c1042ad57ca1db4ace0a699afa05cfde45d7"
+    "version" : "sha256:5a29a1e8d2e50d6c16cd28bcbb85337bf4ac1f8f5a1a31e10af4767e97335d5e"
   },
   "rules" : [ {
     "crossDomain" : true,
@@ -256,5 +256,53 @@
     "fromState" : "PENDING_SIGN",
     "toState" : "REJECTED",
     "trigger" : "reject"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "DELAYED",
+    "toState" : "DONE",
+    "trigger" : "complete"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "DELAYED",
+    "toState" : "IN_PROGRESS",
+    "trigger" : "resume"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "IN_PROGRESS",
+    "toState" : "DELAYED",
+    "trigger" : "delay"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "IN_PROGRESS",
+    "toState" : "DONE",
+    "trigger" : "complete"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "IN_PROGRESS",
+    "toState" : "NA",
+    "trigger" : "mark_na"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "NOT_STARTED",
+    "toState" : "DONE",
+    "trigger" : "complete"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "NOT_STARTED",
+    "toState" : "IN_PROGRESS",
+    "trigger" : "start"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "stage_action",
+    "fromState" : "NOT_STARTED",
+    "toState" : "NA",
+    "trigger" : "mark_na"
   } ]
 }

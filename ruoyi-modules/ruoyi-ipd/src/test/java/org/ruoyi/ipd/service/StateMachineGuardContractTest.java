@@ -62,17 +62,18 @@ class StateMachineGuardContractTest {
     /* ====================== 0. 哨兵：规则数 ====================== */
 
     @Test
-    @DisplayName("哨兵：种子规则总数=42（9机：deletion 7+bonus 4+gate 6+launch 3+coef 3+contrib 5+handover 3+kpi 7+req_change 4）")
+    @DisplayName("哨兵：种子规则总数=50（10机：deletion 7+bonus 4+gate 6+launch 3+coef 3+contrib 5+handover 3+kpi 7+req_change 4+stage_action 8）")
     void sentinelRuleCount() {
         // 增删规则必须同步修改本断言与下方表驱动行——防止规则表与测试悄然漂移
         // 2026-09-09 双线合并：R24线 settleTimeout-APPROVED（gate 5→6）+ R25线 DRAFT直分已并
         // 2026-09-09 R28线：requirement_change 4 迁移点接线（INITIAL->DRAFT/PENDING_SIGN/REJECTED/APPROVED）
+        // 接线轮（fix/r28-guard-wire）：stage_action 7 边登记，transit 由目标白名单升级为 from→to 严格图（C8）
         assertThat(guard.ruleCount())
             .as("规则总数变化=契约变更，必须显式过本测试 + code review")
-            .isEqualTo(42);
+            .isEqualTo(50);
     }
 
-    /* ====================== 1. 表驱动：42 条合法迁移 ====================== */
+    /* ====================== 1. 表驱动：50 条合法迁移 ====================== */
 
     @ParameterizedTest(name = "[{index}] 合法 {0}")
     @CsvSource({
@@ -127,6 +128,15 @@ class StateMachineGuardContractTest {
         "requirement_change, DRAFT, PENDING_SIGN, submit",
         "requirement_change, PENDING_SIGN, REJECTED, reject",
         "requirement_change, PENDING_SIGN, APPROVED, sign",
+        // ---- stage_action（8，接线轮 C8：from→to 严格图，DONE/NA 硬终态）----
+        "stage_action, NOT_STARTED, IN_PROGRESS, start",
+        "stage_action, NOT_STARTED, DONE, complete",   // P143 轻管跳阶验收契约
+        "stage_action, IN_PROGRESS, DONE, complete",
+        "stage_action, DELAYED, DONE, complete",
+        "stage_action, IN_PROGRESS, DELAYED, delay",
+        "stage_action, DELAYED, IN_PROGRESS, resume",
+        "stage_action, NOT_STARTED, NA, mark_na",
+        "stage_action, IN_PROGRESS, NA, mark_na",
     })
     void legalTransitionAllowed(String entityType, String from, String to, String trigger) {
         assertThat(guard.isAllowed(entityType, from, to, trigger))
@@ -137,7 +147,7 @@ class StateMachineGuardContractTest {
             .doesNotThrowAnyException();
     }
 
-    /* ====================== 2. 表驱动：18 条非法迁移拒绝 ====================== */
+    /* ====================== 2. 表驱动：22 条非法迁移拒绝 ====================== */
 
     @ParameterizedTest(name = "[{index}] 非法 {0}:{1}->{2}|{3}")
     @CsvSource({
@@ -177,6 +187,14 @@ class StateMachineGuardContractTest {
         "requirement_change, DRAFT, APPROVED, sign",
         // 终态复活：APPROVED 回 PENDING_SIGN（单方 APPROVE 不回退，变更单生效后不可逆）
         "requirement_change, APPROVED, PENDING_SIGN, submit",
+        // 未登记：DELAYED 直标 NA（须先 resume 回 IN_PROGRESS 再判 NA）
+        "stage_action, DELAYED, NA, mark_na",
+        // C8 消灭②：终态回退——DONE 回 IN_PROGRESS（旧目标白名单放行，严格图拒绝）
+        "stage_action, DONE, IN_PROGRESS, resume",
+        // 终态复活：NA 再开工
+        "stage_action, NA, IN_PROGRESS, start",
+        // 倒退：IN_PROGRESS 退回 NOT_STARTED
+        "stage_action, IN_PROGRESS, NOT_STARTED, start",
     })
     void illegalTransitionRejected(String entityType, String from, String to, String trigger) {
         assertThat(guard.isAllowed(entityType, from, to, trigger))

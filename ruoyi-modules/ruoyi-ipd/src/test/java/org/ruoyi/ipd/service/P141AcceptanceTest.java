@@ -49,6 +49,14 @@ class P141AcceptanceTest {
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         service = new StageActionService(actionMapper, deliverableMapper, auditLogService,
             projectStageMapper, projectMapper);
+        // 接线轮（fix/r28-guard-wire）：注入真实守卫（resetRules+initRules 种子 50 条），
+        // transit 走 from→to 严格图，与生产装配一致（fail-closed；stage_action 全边 crossDomain=false → postCommit no-op）。
+        org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guardForTest =
+            new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService,
+                org.mockito.Mockito.mock(org.ruoyi.ipd.service.NotificationService.class));
+        guardForTest.resetRules();
+        guardForTest.initRules();
+        service.setStateMachineGuard(guardForTest);
     }
 
     private StageAction seed(String code, String depth) {
