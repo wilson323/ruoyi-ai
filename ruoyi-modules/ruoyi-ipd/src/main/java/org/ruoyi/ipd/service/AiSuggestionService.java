@@ -1,6 +1,9 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -10,12 +13,14 @@ import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.domain.Requirement;
 import org.ruoyi.ipd.dto.AiSuggestReq;
 import org.ruoyi.ipd.dto.AiSuggestResp;
 import org.ruoyi.ipd.mapper.GateElementResultMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -23,8 +28,14 @@ import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -48,6 +59,20 @@ import java.util.Set;
  * workbench.next-step / workbench.risk-warning / project.summary.refresh /
  * project.create.suggest / demand.create.from-requirement /
  * gate.precheck-checklist / gate.conclusion-draft。
+ *
+ * <p>R232-P1-02（2026-09-27，CopilotKit 三能力落地 Phase 1）：增 structured 输出模式——
+ * 4 结构化场景（{@link #STRUCTURED_SCENES}）响应体增 {@code card} 字段
+ * （{type, version, data, sourceRefs}，母文件 §2.2 契约），3 轻场景保持纯文本零变化。
+ * 纪律：
+ * <ul>
+ *   <li>**Schema Catalog 是唯一 schema 事实源**（禁硬编码）：4 卡类型定义 JSON 存
+ *       {@code system_configs} 行 {@value #CARD_CATALOG_KEY}，data 字段名清单/类型/源表.源列
+ *       全部以 Catalog 为准，Java 只做「Catalog 驱动投影」；Catalog 缺失/损坏 → 无 card 降级纯文本；</li>
+ *   <li>**R3 铁律**：card.data 值全部经 sourceRefs 指向的业务表行回读组装
+ *       （gate_* 三表 / projects / requirements），LLM 复述值不进 card（AI 建议正文仍在 markdown）；</li>
+ *   <li>**C08 红线**：本节点只出建议数据，零业务表写入（审计行除外，审计亦只记 promptLen）；</li>
+ *   <li>card 组装任何异常只降级为无 card（卡片层是增强不是依赖），不影响建议主流程。</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -59,6 +84,17 @@ public class AiSuggestionService {
         "project.summary.refresh",
         "project.create.suggest", "demand.create.from-requirement",
         "gate.precheck-checklist", "gate.conclusion-draft");
+
+    /** R232-P1-02：结构化输出场景（响应体增 card 字段）；3 轻场景保持纯文本零变化。 */
+    static final Set<String> STRUCTURED_SCENES = Set.of(
+        "gate.precheck-checklist", "gate.conclusion-draft",
+        "project.create.suggest", "demand.create.from-requirement");
+
+    /** R232-P1-02：Schema Catalog 配置键（system_configs.config_key；value_type=JSON）。 */
+    static final String CARD_CATALOG_KEY = "ai.suggest.cardCatalog";
+
+    /** Catalog JSON 解析器（仅解析配置，不落任何业务数据）。 */
+    private static final ObjectMapper CATALOG_JSON = new ObjectMapper();
 
     /** 建议输出 maxTokens（markdown 草稿比 copilot 短答长，比文档生成短）。 */
     static final int MAX_TOKENS = 1200;
@@ -75,6 +111,8 @@ public class AiSuggestionService {
     private final ProjectMemberMapper projectMemberMapper;
     private final GateReviewMapper gateReviewMapper;
     private final GateElementResultMapper gateElementResultMapper;
+    private final ISystemConfigService systemConfigService;
+    private final RequirementMapper requirementMapper;
 
     /** 测试口注入固定时钟（同 copilot 模式）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -86,7 +124,9 @@ public class AiSuggestionService {
                                ProjectMapper projectMapper,
                                ProjectMemberMapper projectMemberMapper,
                                GateReviewMapper gateReviewMapper,
-                               GateElementResultMapper gateElementResultMapper) {
+                               GateElementResultMapper gateElementResultMapper,
+                               ISystemConfigService systemConfigService,
+                               RequirementMapper requirementMapper) {
         this.modelConfigService = modelConfigService;
         this.workbenchService = workbenchService;
         this.aiGateway = aiGateway;
@@ -95,6 +135,8 @@ public class AiSuggestionService {
         this.projectMemberMapper = projectMemberMapper;
         this.gateReviewMapper = gateReviewMapper;
         this.gateElementResultMapper = gateElementResultMapper;
+        this.systemConfigService = systemConfigService;
+        this.requirementMapper = requirementMapper;
     }
 
     AiSuggestionService withClock(java.time.Clock fixed) {
@@ -146,7 +188,7 @@ public class AiSuggestionService {
         } catch (IpdBusinessException ex) {
             long latency = clock.millis() - start;
             audit(actor, req, latency, 0, 0,
-                "FAIL:" + (ex.getErrorCode() == null ? "UNKNOWN" : ex.getErrorCode().name()), null);
+                "FAIL:" + (ex.getErrorCode() == null ? "UNKNOWN" : ex.getErrorCode().name()), null, null);
             return AiSuggestResp.degraded(scene,
                 "AI 建议暂未启用：未配置生效的 AI 模型。请联系超管在「AI 模型配置」启用。", latency);
         }
@@ -159,13 +201,521 @@ public class AiSuggestionService {
         long latency = clock.millis() - start;
         if (!result.success()) {
             audit(actor, req, latency, 0, 0,
-                "FAIL:" + (result.errorCode() == null ? "UNKNOWN" : result.errorCode()), config.getModelName());
+                "FAIL:" + (result.errorCode() == null ? "UNKNOWN" : result.errorCode()), config.getModelName(), null);
             throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
                 "AI 建议暂不可用：" + (result.errorCode() == null ? "UNKNOWN" : result.errorCode()));
         }
-        audit(actor, req, latency, result.promptTokens(), result.completionTokens(), "ok", config.getModelName());
+        // R232-P1-02/03：4 结构化场景组装 card（Catalog 驱动 + R2 双向白名单 + R3 源回读对账）；失败只降级无 card
+        AiSuggestResp.Card card = buildCard(actor, req, config.getModelName());
+        audit(actor, req, latency, result.promptTokens(), result.completionTokens(), "ok", config.getModelName(),
+            card == null ? null : card.type());
         return new AiSuggestResp(scene, result.content() == null ? "" : result.content(),
-            config.getModelName(), result.promptTokens(), result.completionTokens(), latency, false);
+            config.getModelName(), result.promptTokens(), result.completionTokens(), latency, false, card);
+    }
+
+    // ---- R232-P1-02/03 结构化输出（cardPayload 组装器：R2 白名单双向校验 + R3 回读对账） ----
+
+    /** gate 事实字段分组（schema 驱动采集：只查声明字段需要的源表，只读）。 */
+    private static final Set<String> GATE_REVIEW_FIELDS = Set.of("gateCode", "round", "reviewCount", "reviews");
+    private static final Set<String> GATE_RESULT_FIELDS =
+        Set.of("totalElements", "items", "passCount", "conditionalCount", "failCount");
+
+    /** requirements 需求池展示上限（与 renderContext「仅渲染前 20 条」同口径截断）。 */
+    private static final int REQUIREMENT_POOL_LIMIT = 20;
+
+    /**
+     * 结构化卡片组装：Catalog 从 system_configs 读取（唯一 schema 事实源）→ 业务表行回读事实
+     * （R3）→ Catalog 驱动投影成 {type, version, data, sourceRefs}。非结构化场景恒 null；
+     * Catalog 缺失/损坏/组装异常只降级为无 card（纯文本路径永不删）。
+     */
+    private AiSuggestResp.Card buildCard(IpdActor actor, AiSuggestReq req, String aiModel) {
+        if (!STRUCTURED_SCENES.contains(req.scene())) {
+            return null;
+        }
+        try {
+            String catalogJson = systemConfigService.getValue(CARD_CATALOG_KEY, "");
+            if (catalogJson == null || catalogJson.isBlank()) {
+                return null;
+            }
+            JsonNode def = findCardDef(parseCatalog(catalogJson), req.scene());
+            if (def == null || !def.hasNonNull("type") || !def.hasNonNull("version") || !def.hasNonNull("fields")) {
+                return null;
+            }
+            Map<String, Object> sourceRefs = new LinkedHashMap<>();
+            // 入参侧（R2 双向①的采集面）：事实按 Catalog schema 声明采集，schema 外字段在采集侧即无入口
+            Map<String, Object> facts = collectCardFacts(req, def, sourceRefs);
+            return buildCardChecked(actor, req, catalogJson, facts, sourceRefs, aiModel);
+        } catch (RuntimeException ex) {
+            log.warn("card 组装失败降级纯文本 scene={} err={}", req.scene(), ex.toString());
+            return null;
+        }
+    }
+
+    /**
+     * cardPayload 组装器（R232-P1-03，测试直入缝）：对**不可信** facts/sourceRefs 做 R2 白名单双向校验
+     * （schema 外字段一律丢弃 + 落审计）→ 组装 → R3 sourceRefs 回读对账（数值逐字段对账）。
+     * sourceRefs 缺失 / 回读失败 / 对账不一致 → 拒出卡降级纯文本（不得用 LLM 复述值兜底）。
+     */
+    AiSuggestResp.Card buildCardChecked(IpdActor actor, AiSuggestReq req, String catalogJson,
+                                        Map<String, Object> facts, Map<String, Object> sourceRefs, String aiModel) {
+        JsonNode def = findCardDef(parseCatalog(catalogJson), req.scene());
+        if (def == null || !def.hasNonNull("type") || !def.hasNonNull("version") || !def.hasNonNull("fields")) {
+            return null;
+        }
+        String cardType = def.get("type").asText();
+        List<String> dropped = new ArrayList<>();
+        // R2 双向①（入参/组装侧防御）：schema 外字段一律丢弃 + 留痕（照抄 FILL_FIELD_WHITELIST/filterFillFields
+        // 校验模式；白名单来源=Catalog fields/itemFields/sourceRefs 声明，禁硬编码字段表）
+        Map<String, Object> data = filterCardData(def.get("fields"), facts, dropped, "");
+        Map<String, Object> refs = filterSourceRefs(def, sourceRefs, dropped);
+        // R2 双向②（出卡前过滤，后端权威）：对已组装载荷再过同一白名单，防绕过组装侧直塞
+        data = filterCardData(def.get("fields"), data, dropped, "");
+        refs = filterSourceRefs(def, refs, dropped);
+        AiSuggestResp.Card card = new AiSuggestResp.Card(cardType, def.get("version").asInt(), data, refs);
+        if (!dropped.isEmpty()) {
+            Collections.sort(dropped);
+            auditCardEvent(actor, req, aiModel, cardType, "SCHEMA_DROP", dropped);
+        }
+        String reject = reconcileCard(def, req, card, refs);
+        if (reject != null) {
+            auditCardEvent(actor, req, aiModel, cardType, "CARD_REJECT:" + reject, List.of());
+            return null;
+        }
+        return card;
+    }
+
+    /**
+     * R2 白名单双向校验（照抄 {@code AiCopilotService.FILL_FIELD_WHITELIST} / {@code filterFillFields}
+     * 先例的白名单结构与丢弃写法）：schema 外字段一律丢弃并记入 dropped（字段路径）；同时承担 data
+     * 投影职责——白名单内字段按 Catalog 顺序产出（源值缺失=null 占位，字段名集合与 Catalog 恒等），
+     * 数组元素按 itemFields 子白名单投影。
+     */
+    static Map<String, Object> filterCardData(JsonNode fieldsNode, Map<String, Object> raw,
+                                              List<String> dropped, String prefix) {
+        Map<String, Object> kept = new LinkedHashMap<>();
+        if (fieldsNode == null || !fieldsNode.isArray()) {
+            return kept;
+        }
+        Set<String> allowed = fieldNames(fieldsNode);
+        if (raw != null) {
+            for (String k : raw.keySet()) {
+                if (!allowed.contains(k) && dropped != null) {
+                    dropped.add(prefix + k);
+                }
+            }
+        }
+        for (JsonNode field : fieldsNode) {
+            String name = field.path("name").asText(null);
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            kept.put(name, filterItemValue(field, raw == null ? null : raw.get(name), dropped, prefix + name));
+        }
+        return kept;
+    }
+
+    /** 数组字段按 itemFields 子白名单投影：schema 外子字段一律丢弃 + 留痕（items.aiConfidence 路径形态）；非数组原样返回。 */
+    private static Object filterItemValue(JsonNode field, Object value, List<String> dropped, String path) {
+        JsonNode itemFields = field.get("itemFields");
+        if (itemFields == null || !itemFields.isArray() || !(value instanceof List<?> list)) {
+            return value;
+        }
+        Set<String> subAllowed = fieldNames(itemFields);
+        List<Object> projected = new ArrayList<>(list.size());
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> m)) {
+                projected.add(item);
+                continue;
+            }
+            for (Object k : m.keySet()) {
+                String name = String.valueOf(k);
+                if (!subAllowed.contains(name) && dropped != null) {
+                    dropped.add(path + "." + name);
+                }
+            }
+            Map<String, Object> subKept = new LinkedHashMap<>();
+            for (JsonNode f : itemFields) {
+                String n = f.path("name").asText(null);
+                if (n != null) {
+                    subKept.put(n, m.get(n));
+                }
+            }
+            projected.add(subKept);
+        }
+        return projected;
+    }
+
+    /** sourceRefs 同样按 Catalog 声明键白名单投影（schema 外键丢弃 + 留痕 sourceRefs.x）。 */
+    static Map<String, Object> filterSourceRefs(JsonNode def, Map<String, Object> raw, List<String> dropped) {
+        Map<String, Object> kept = new LinkedHashMap<>();
+        if (raw == null) {
+            return kept;
+        }
+        Set<String> allowed = refKeys(def);
+        for (Map.Entry<String, Object> e : raw.entrySet()) {
+            if (allowed.contains(e.getKey())) {
+                kept.put(e.getKey(), e.getValue());
+            } else if (dropped != null) {
+                dropped.add("sourceRefs." + e.getKey());
+            }
+        }
+        return kept;
+    }
+
+    /**
+     * R3 回读对账（铁律）：card.data 全部字段经 sourceRefs 重新回读真实业务表行，逐字段与源行投影值对账。
+     * sourceRefs 缺必备键 / 回读失败（DB 异常、行不齐、行不属该锚）/ 任一字段数值不一致 → 返回拒绝原因
+     * （拒出卡降级纯文本；禁止用 LLM 复述值兜底）；全部一致返回 null。只读，零业务表写入（C08）。
+     */
+    private String reconcileCard(JsonNode def, AiSuggestReq req, AiSuggestResp.Card card, Map<String, Object> sourceRefs) {
+        try {
+            for (String key : refKeys(def)) {
+                if (!sourceRefs.containsKey(key) || sourceRefs.get(key) == null) {
+                    return "source_refs_missing:" + key;
+                }
+            }
+            Set<String> wanted = fieldNames(def.get("fields"));
+            Map<String, Object> facts2 = new LinkedHashMap<>();
+            if (req.scene().startsWith("gate.")) {
+                List<Long> reviewIds = longIds(sourceRefs.get("reviewIds"));
+                List<Long> resultIds = longIds(sourceRefs.get("elementResultIds"));
+                List<GateReview> reviews = reviewIds.isEmpty() ? List.of()
+                    : gateReviewMapper.selectList(new LambdaQueryWrapper<GateReview>().in(GateReview::getId, reviewIds));
+                List<GateElementResult> results = resultIds.isEmpty() ? List.of()
+                    : gateElementResultMapper.selectList(new LambdaQueryWrapper<GateElementResult>().in(GateElementResult::getId, resultIds));
+                if (reviews.size() != reviewIds.size() || results.size() != resultIds.size()) {
+                    return "reread_incomplete";
+                }
+                for (GateReview r : reviews) {
+                    if (!req.entityId().equals(r.getGateId())) {
+                        return "reread_foreign_row";
+                    }
+                }
+                for (GateElementResult r : results) {
+                    if (!req.entityId().equals(r.getGateId())) {
+                        return "reread_foreign_row";
+                    }
+                }
+                projectGateFacts(wanted, reviews, results, facts2);
+            } else {
+                Project project = projectMapper.selectById(req.projectId());
+                if (project == null) {
+                    return "reread_incomplete";
+                }
+                projectProjectFacts(wanted, project, facts2);
+                if (req.scene().equals("demand.create.from-requirement")) {
+                    List<Long> ids = longIds(sourceRefs.get("requirementIds"));
+                    List<Requirement> pool = ids.isEmpty() ? List.of()
+                        : requirementMapper.selectList(new LambdaQueryWrapper<Requirement>().in(Requirement::getId, ids));
+                    if (pool.size() != ids.size()) {
+                        return "reread_incomplete";
+                    }
+                    for (Requirement r : pool) {
+                        if (!req.projectId().equals(r.getProjectId())) {
+                            return "reread_foreign_row";
+                        }
+                    }
+                    projectRequirementFacts(wanted, shownRequirements(pool), facts2);
+                }
+            }
+            // 数值逐字段对账（两跳同一投影口径；任一字段不等=对账失败，拒出卡）
+            Map<String, Object> data2 = filterCardData(def.get("fields"), facts2, null, "");
+            for (Map.Entry<String, Object> e : card.data().entrySet()) {
+                if (!Objects.equals(e.getValue(), data2.get(e.getKey()))) {
+                    return "value_mismatch:" + e.getKey();
+                }
+            }
+            return null;
+        } catch (RuntimeException ex) {
+            log.warn("R3 回读对账异常拒出卡 scene={} err={}", req.scene(), ex.toString());
+            return "reread_failed:" + ex.getClass().getSimpleName();
+        }
+    }
+
+    /**
+     * 事实源回读（R3 第一跳）：按 Catalog schema 声明**只收白名单内字段**（无声明字段不进 facts），
+     * 并登记 sourceRefs 行 id 引用（只收 Catalog 声明键）。gate.* 复用 renderContext 同款查询
+     * （gate_reviews / gate_element_results 按 gateId）；创建类场景锚定 projects 行；demand 场景补
+     * requirements 需求池行（按 projectId，前 20 条同口径截断）。只读，零业务表写入（C08）。
+     */
+    private Map<String, Object> collectCardFacts(AiSuggestReq req, JsonNode def, Map<String, Object> sourceRefs) {
+        String scene = req.scene();
+        Set<String> wanted = fieldNames(def.get("fields"));
+        Set<String> wantedRefs = refKeys(def);
+        Map<String, Object> facts = new LinkedHashMap<>();
+        if (scene.startsWith("gate.")) {
+            List<GateReview> reviews = List.of();
+            List<GateElementResult> results = List.of();
+            if (wantedRefs.contains("reviewIds") || containsAny(wanted, GATE_REVIEW_FIELDS)) {
+                reviews = gateReviewMapper.selectList(new LambdaQueryWrapper<GateReview>()
+                    .eq(GateReview::getGateId, req.entityId()));
+            }
+            if (wantedRefs.contains("elementResultIds") || containsAny(wanted, GATE_RESULT_FIELDS)) {
+                results = gateElementResultMapper.selectList(new LambdaQueryWrapper<GateElementResult>()
+                    .eq(GateElementResult::getGateId, req.entityId()));
+            }
+            projectGateFacts(wanted, reviews, results, facts);
+            if (wantedRefs.contains("gateId")) {
+                sourceRefs.put("gateId", req.entityId());
+            }
+            if (wantedRefs.contains("reviewIds")) {
+                sourceRefs.put("reviewIds", reviews.stream().map(GateReview::getId).sorted().toList());
+            }
+            if (wantedRefs.contains("elementResultIds")) {
+                sourceRefs.put("elementResultIds", results.stream().map(GateElementResult::getId).sorted().toList());
+            }
+            return facts;
+        }
+        Project project = requireProject(req.projectId());
+        projectProjectFacts(wanted, project, facts);
+        if (wantedRefs.contains("projectId")) {
+            sourceRefs.put("projectId", req.projectId());
+        }
+        if (scene.equals("demand.create.from-requirement")) {
+            List<Requirement> pool = requirementMapper.selectList(new LambdaQueryWrapper<Requirement>()
+                .eq(Requirement::getProjectId, req.projectId()));
+            List<Requirement> shown = shownRequirements(pool);
+            projectRequirementFacts(wanted, shown, facts);
+            if (wantedRefs.contains("requirementIds")) {
+                sourceRefs.put("requirementIds", shown.stream().map(Requirement::getId).toList());
+            }
+        }
+        return facts;
+    }
+
+    /**
+     * gate 事实投影（R3 两跳共用：首过组装与 sourceRefs 回读对账走同一投影；行按 id 定序保证两跳逐字段可比）。
+     * 值全部来自业务表行（gate_reviews / gate_element_results），LLM 复述值无入口。
+     */
+    static void projectGateFacts(Set<String> wanted, List<GateReview> reviews, List<GateElementResult> results,
+                                 Map<String, Object> facts) {
+        List<GateReview> rs = new ArrayList<>(reviews);
+        rs.sort(Comparator.comparing(GateReview::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        List<GateElementResult> es = new ArrayList<>(results);
+        es.sort(Comparator.comparing(GateElementResult::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        if (!rs.isEmpty()) {
+            GateReview latest = rs.get(rs.size() - 1); // id 最大行=最新一轮（定序保证两跳一致）
+            if (wanted.contains("gateCode")) {
+                facts.put("gateCode", latest.getGateCode());
+            }
+            if (wanted.contains("round")) {
+                facts.put("round", latest.getRound());
+            }
+        }
+        if (wanted.contains("reviewCount")) {
+            facts.put("reviewCount", rs.size());
+        }
+        if (wanted.contains("totalElements")) {
+            facts.put("totalElements", es.size());
+        }
+        if (wanted.contains("items")) {
+            List<Map<String, Object>> items = new ArrayList<>(es.size());
+            for (GateElementResult r : es) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("elementId", r.getElementId());
+                m.put("result", r.getResult());
+                m.put("conditionNote", r.getConditionNote());
+                m.put("evidenceRef", r.getEvidenceRef());
+                m.put("leftoverStatus", r.getLeftoverStatus());
+                items.add(m);
+            }
+            facts.put("items", items);
+        }
+        if (wanted.contains("reviews")) {
+            List<Map<String, Object>> reviewRows = new ArrayList<>(rs.size());
+            for (GateReview r : rs) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("reviewerType", r.getReviewerType());
+                m.put("decision", r.getDecision());
+                m.put("opinion", r.getOpinion());
+                m.put("round", r.getRound());
+                reviewRows.add(m);
+            }
+            facts.put("reviews", reviewRows);
+        }
+        if (wanted.contains("passCount")) {
+            facts.put("passCount", countResult(es, "PASS"));
+        }
+        if (wanted.contains("conditionalCount")) {
+            facts.put("conditionalCount", countResult(es, "CONDITIONAL"));
+        }
+        if (wanted.contains("failCount")) {
+            facts.put("failCount", countResult(es, "FAIL"));
+        }
+    }
+
+    /** projects 行事实投影（R3 两跳共用；值全部来自 projects 行，LLM 复述值无入口）。 */
+    static void projectProjectFacts(Set<String> wanted, Project p, Map<String, Object> facts) {
+        if (wanted.contains("contextProjectId")) {
+            facts.put("contextProjectId", p.getId());
+        }
+        if (wanted.contains("contextProjectCode")) {
+            facts.put("contextProjectCode", p.getCode());
+        }
+        if (wanted.contains("contextProjectName")) {
+            facts.put("contextProjectName", p.getName());
+        }
+        if (wanted.contains("contextCurrentStage")) {
+            facts.put("contextCurrentStage", p.getCurrentStage());
+        }
+        if (wanted.contains("contextProductId")) {
+            facts.put("contextProductId", p.getProductId());
+        }
+    }
+
+    /** requirements 池事实投影（R3 两跳共用；值全部来自 requirements 行）。 */
+    static void projectRequirementFacts(Set<String> wanted, List<Requirement> shown, Map<String, Object> facts) {
+        if (!wanted.contains("requirements")) {
+            return;
+        }
+        List<Map<String, Object>> rows = new ArrayList<>(shown.size());
+        for (Requirement r : shown) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("requirementId", r.getId());
+            m.put("title", r.getTitle());
+            m.put("status", r.getStatus());
+            m.put("source", r.getSource());
+            rows.add(m);
+        }
+        facts.put("requirements", rows);
+    }
+
+    /** requirements 展示集（id 定序 + 前 20 条同口径截断；两跳共用保证对账可比）。 */
+    static List<Requirement> shownRequirements(List<Requirement> pool) {
+        List<Requirement> sorted = new ArrayList<>(pool);
+        sorted.sort(Comparator.comparing(Requirement::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        return sorted.size() > REQUIREMENT_POOL_LIMIT
+            ? new ArrayList<>(sorted.subList(0, REQUIREMENT_POOL_LIMIT)) : sorted;
+    }
+
+    /**
+     * R2/R3 卡片事件审计（AI-审计三件套规约 §2 Layer2：aiRole=suggestion ∈ 7 值白名单、prompt 只记
+     * promptLen 不落原文（BR-AI-04））：schema 外字段丢弃（SCHEMA_DROP）/ 拒出卡（CARD_REJECT:*）
+     * 这类安全事件单独留痕；正常出卡不加行（轻场景与正常路径零影响）。
+     */
+    private void auditCardEvent(IpdActor actor, AiSuggestReq req, String aiModel, String cardType,
+                                String status, List<String> droppedFields) {
+        String json = AuditEventData.json(
+            "aiAssisted", true,
+            "aiModel", aiModel == null || aiModel.isBlank() ? "intent_match" : aiModel,
+            "aiRole", "suggestion",
+            "scene", req.scene(),
+            "projectId", req.projectId(),
+            "entityId", req.entityId(),
+            "cardType", cardType,
+            "status", status,
+            "droppedFields", droppedFields,
+            "promptLen", req.userPrompt() == null ? 0 : req.userPrompt().length());
+        auditLogService.append(AuditLog.builder()
+            .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
+            .action("AI_SUGGEST").entityType("AI_SUGGESTION")
+            .afterData(json)
+            .build());
+    }
+
+    // ---- Catalog schema 工具（白名单来源=Catalog，禁硬编码字段表） ----
+
+    /** Catalog JSON → 树；解析失败返回 null（降级无 card，文本路径永不删）。 */
+    private static JsonNode parseCatalog(String catalogJson) {
+        try {
+            return CATALOG_JSON.readTree(catalogJson);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    /** fields/itemFields JSON 数组 → 字段名白名单。 */
+    private static Set<String> fieldNames(JsonNode fieldsNode) {
+        Set<String> names = new LinkedHashSet<>();
+        if (fieldsNode != null && fieldsNode.isArray()) {
+            for (JsonNode f : fieldsNode) {
+                String n = f.path("name").asText(null);
+                if (n != null && !n.isBlank()) {
+                    names.add(n);
+                }
+            }
+        }
+        return names;
+    }
+
+    /** Catalog 卡定义的 sourceRefs 声明键白名单。 */
+    private static Set<String> refKeys(JsonNode def) {
+        Set<String> keys = new LinkedHashSet<>();
+        JsonNode declared = def.get("sourceRefs");
+        if (declared != null && declared.isArray()) {
+            for (JsonNode k : declared) {
+                String s = k.asText(null);
+                if (s != null) {
+                    keys.add(s);
+                }
+            }
+        }
+        return keys;
+    }
+
+    private static boolean containsAny(Set<String> wanted, Set<String> group) {
+        for (String g : group) {
+            if (wanted.contains(g)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** sourceRefs 值 → id 列表（回读用；非数值元素忽略）。 */
+    private static List<Long> longIds(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        List<Long> ids = new ArrayList<>(list.size());
+        for (Object o : list) {
+            if (o instanceof Number n) {
+                ids.add(n.longValue());
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * Catalog 驱动投影（schema 事实源唯一）：只产出 Catalog 字段清单内的 data 字段（含数组 itemFields
+     * 子字段白名单），schema 外字段一律丢弃（可选 droppedSink 记录丢弃路径，R2 留痕）；sourceRefs 同样
+     * 按 Catalog 声明的键白名单投影。Catalog 未登记该 scene / 结构不合法 → null。
+     */
+    static AiSuggestResp.Card assembleCard(String scene, String catalogJson,
+                                           Map<String, Object> facts, Map<String, Object> sourceRefs) {
+        return assembleCard(scene, catalogJson, facts, sourceRefs, null);
+    }
+
+    static AiSuggestResp.Card assembleCard(String scene, String catalogJson,
+                                           Map<String, Object> facts, Map<String, Object> sourceRefs,
+                                           List<String> droppedSink) {
+        JsonNode def = findCardDef(parseCatalog(catalogJson), scene);
+        if (def == null || !def.hasNonNull("type") || !def.hasNonNull("version") || !def.hasNonNull("fields")) {
+            return null;
+        }
+        Map<String, Object> data = filterCardData(def.get("fields"), facts, droppedSink, "");
+        Map<String, Object> refs = filterSourceRefs(def, sourceRefs, droppedSink);
+        return new AiSuggestResp.Card(def.get("type").asText(), def.get("version").asInt(), data, refs);
+    }
+
+    private static JsonNode findCardDef(JsonNode root, String scene) {
+        if (root == null) {
+            return null;
+        }
+        JsonNode cards = root.get("cards");
+        if (cards == null || !cards.isArray()) {
+            return null;
+        }
+        for (JsonNode c : cards) {
+            if (scene.equals(c.path("scene").asText(null))) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    private static long countResult(List<GateElementResult> results, String target) {
+        return results.stream().filter(r -> target.equals(r.getResult())).count();
     }
 
     // ---- 场景上下文渲染（包私有静态便于行为测试直渲断言） ----
@@ -312,24 +862,36 @@ public class AiSuggestionService {
         }
     }
 
-    /** AI_SUGGEST 审计行（三件套规约 §2：aiRole=suggestion；原文不落库，只记 promptLen）。 */
+    /**
+     * AI_SUGGEST 审计行（AI-审计三件套规约 §2 Layer2：aiRole=suggestion；原文不落库，只记 promptLen）。
+     * R232-P1-02：结构化产出附 cardType（仅元数据；轻场景/无 card 不加键，审计载荷零变化）。
+     */
     private void audit(IpdActor actor, AiSuggestReq req, long latencyMs,
-                       int tokenPrompt, int tokenCompletion, String status, String aiModel) {
+                       int tokenPrompt, int tokenCompletion, String status, String aiModel, String cardType) {
+        StringBuilder json = new StringBuilder();
+        Object[] base = {
+            "aiAssisted", true,
+            "aiModel", aiModel == null || aiModel.isBlank() ? "intent_match" : aiModel,
+            "aiRole", "suggestion",
+            "scene", req.scene(),
+            "projectId", req.projectId(),
+            "entityId", req.entityId(),
+            "status", status,
+            "tokenPrompt", tokenPrompt,
+            "tokenCompletion", tokenCompletion,
+            "latencyMs", latencyMs,
+            "promptLen", req.userPrompt() == null ? 0 : req.userPrompt().length()
+        };
+        java.util.List<Object> pairs = new java.util.ArrayList<>(java.util.Arrays.asList(base));
+        if (cardType != null) {
+            pairs.add("cardType");
+            pairs.add(cardType);
+        }
+        json.append(AuditEventData.json(pairs.toArray()));
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
             .action("AI_SUGGEST").entityType("AI_SUGGESTION")
-            .afterData(AuditEventData.json(
-                "aiAssisted", true,
-                "aiModel", aiModel == null || aiModel.isBlank() ? "intent_match" : aiModel,
-                "aiRole", "suggestion",
-                "scene", req.scene(),
-                "projectId", req.projectId(),
-                "entityId", req.entityId(),
-                "status", status,
-                "tokenPrompt", tokenPrompt,
-                "tokenCompletion", tokenCompletion,
-                "latencyMs", latencyMs,
-                "promptLen", req.userPrompt() == null ? 0 : req.userPrompt().length()))
+            .afterData(json.toString())
             .build());
     }
 

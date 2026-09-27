@@ -20,6 +20,7 @@ import org.ruoyi.ipd.mapper.GateElementResultMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -68,6 +69,8 @@ class AiSuggestionServiceTest {
     private ProjectMemberMapper projectMemberMapper;
     private GateReviewMapper gateReviewMapper;
     private GateElementResultMapper gateElementResultMapper;
+    private ISystemConfigService systemConfigService;
+    private RequirementMapper requirementMapper;
     private AiSuggestionService service;
 
     private static final IpdActor SA = new IpdActor(1L, "sa", "SUPER_ADMIN", null);
@@ -83,8 +86,11 @@ class AiSuggestionServiceTest {
         projectMemberMapper = mock(ProjectMemberMapper.class);
         gateReviewMapper = mock(GateReviewMapper.class);
         gateElementResultMapper = mock(GateElementResultMapper.class);
+        systemConfigService = mock(ISystemConfigService.class);
+        requirementMapper = mock(RequirementMapper.class);
         service = new AiSuggestionService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper, gateReviewMapper, gateElementResultMapper)
+            auditLogService, projectMapper, projectMemberMapper, gateReviewMapper, gateElementResultMapper,
+            systemConfigService, requirementMapper)
             .withClock(Clock.fixed(Instant.parse("2026-09-26T08:00:00Z"), ZoneId.of("UTC")));
     }
 
