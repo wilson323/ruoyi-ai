@@ -11,6 +11,11 @@ public class SwitcherCase {
     private String uuid;
     private String operator;
     private List<Condition> conditions;
+    /**
+     * 可选：原始 SpEL 布尔表达式（沙箱求值）。非空时优先于 conditions 求值；
+     * 不配置则走 conditions 旧配置，存量流程零迁移。
+     */
+    private String spel;
     @JsonProperty("target_node_uuid")
     private String targetNodeUuid;
 

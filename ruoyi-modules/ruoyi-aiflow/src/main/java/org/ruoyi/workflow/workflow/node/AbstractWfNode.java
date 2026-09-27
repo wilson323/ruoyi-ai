@@ -150,7 +150,8 @@ public abstract class AbstractWfNode {
                         attempt, NodeFailurePolicy.MAX_ATTEMPTS, node.getTitle(), node.getUuid(), lastError);
             }
             NodeFailurePolicy.Outcome outcome = NodeFailurePolicy.decide(
-                    attempt, lastException == null && (processResult == null || !processResult.isError()), lastError);
+                    attempt, lastException == null && (processResult == null || !processResult.isError()), lastError,
+                    NodeFailurePolicy.isNonRetryable(lastException));
             if (outcome == NodeFailurePolicy.Outcome.SUCCESS) {
                 break;
             }

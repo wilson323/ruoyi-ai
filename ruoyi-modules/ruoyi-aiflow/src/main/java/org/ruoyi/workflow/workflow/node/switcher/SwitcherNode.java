@@ -16,12 +16,19 @@ import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 条件分支节点
- * 根据配置的条件规则，选择不同的分支路径执行
+ * 条件分支节点：按配置顺序评估分支（存量 conditions 组合翻译成 SpEL，或直接用可选 spel 表达式，
+ * 统一在 SwitcherCaseEvaluator 沙箱中求值），命中则路由到对应分支，全部未命中走默认分支。
+ *
+ * <p>D2 修复：条件评估异常不再吞成 error 输出（此前被下游 WorkflowGraphBuilder 的
+ * next 路由 NPE 覆盖），真实错误一律携带「哪个 switcher 节点、哪条 case、什么表达式/操作数」
+ * 上下文抛出；确定性错误（配置/表达式类）经 {@link SwitcherEvaluationException.Fatal}
+ * 标记为不可重试，瞬时性错误（取值时 DB/IO 故障）走 AbstractWfNode 有界重试。
  */
 @Slf4j
 public class SwitcherNode extends AbstractWfNode {
@@ -30,408 +37,237 @@ public class SwitcherNode extends AbstractWfNode {
         super(wfComponent, nodeDef, wfState, nodeState);
     }
 
-    private static final WorkflowNodeService workflowNodeService = SpringUtils.getBean(WorkflowNodeService.class);
-
     @Override
     public NodeProcessResult onProcess() {
-        try {
-            SwitcherNodeConfig config = checkAndGetConfig(SwitcherNodeConfig.class);
-            List<NodeIOData> inputs = state.getInputs();
+        SwitcherNodeConfig config = loadConfig();
+        List<NodeIOData> inputs = state.getInputs();
+        int caseCount = config.getCases() != null ? config.getCases().size() : 0;
+        log.info("条件分支节点处理中，分支数量: {}", caseCount);
+        String nodeMessageTemplate = messageTemplate(NodeMessageTemplateEnum.SWITCH.getValue());
 
-            log.info("条件分支节点处理中，分支数量: {}",
-                    config.getCases() != null ? config.getCases().size() : 0);
-
-            // 获取提示模板
-            String nodeMessageTemplate = getNodeMessageTemplate(NodeMessageTemplateEnum.SWITCH.getValue());
-
-            // 按顺序评估每个分支
-            if (config.getCases() != null) {
-                for (int i = 0; i < config.getCases().size(); i++) {
-                    SwitcherCase switcherCase = config.getCases().get(i);
-                    log.info("评估分支 {}: uuid={}, 运算符={}",
-                            i + 1, switcherCase.getUuid(), switcherCase.getOperator());
-
-                    if (evaluateCase(switcherCase, inputs)) {
-                        // 检查目标节点UUID是否为空
-                        String targetNodeUuid = switcherCase.getTargetNodeUuid();
-                        if (StringUtils.isBlank(targetNodeUuid)) {
-                            log.warn("分支 {} 匹配但目标节点UUID为空，跳过到下一个分支", i + 1);
-                            continue;
-                        }
-
-                        // 根据目标节点UUID获取对应节点名称
-                        findNodeAndNotify(targetNodeUuid, nodeMessageTemplate);
-
-                        log.info("分支 {} 匹配，跳转到节点: {}",
-                                i + 1, targetNodeUuid);
-
-                        // 构造输出：只保留 output 和其他非 input 参数 + 添加分支匹配信息
-                        List<NodeIOData> outputs = new java.util.ArrayList<>();
-
-                        // 过滤输入：排除 input 参数（与 output 冗余），保留其他参数
-                        inputs.stream()
-                                .filter(item -> !"input".equals(item.getName()))
-                                .forEach(outputs::add);
-
-                        // 如果没有 output 参数，从 input 创建 output（便于后续节点使用）
-                        boolean hasOutput = outputs.stream().anyMatch(item -> "output".equals(item.getName()));
-                        if (!hasOutput) {
-                            inputs.stream()
-                                    .filter(item -> "input".equals(item.getName()))
-                                    .findFirst()
-                                    .ifPresent(inputParam -> {
-                                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
-                                                ? inputParam.getContent().getTitle() : "";
-                                        NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                                        outputs.add(outputParam);
-                                        log.debug("从输入创建输出参数供下游节点使用");
-                                    });
-                        }
-
-                        outputs.add(NodeIOData.createByText("matched_case", "switcher", String.valueOf(i + 1)));
-                        outputs.add(NodeIOData.createByText("case_uuid", "switcher", switcherCase.getUuid()));
-                        outputs.add(NodeIOData.createByText("target_node", "switcher", targetNodeUuid));
-
-                        // WorkflowEngine 会自动将 nextNodeUuid 放入 resultMap 的 "next" 键中
-                        return NodeProcessResult.builder()
-                                .content(outputs)
-                                .nextNodeUuid(targetNodeUuid)
-                                .build();
-                    }
+        if (config.getCases() != null) {
+            for (int i = 0; i < config.getCases().size(); i++) {
+                SwitcherCase switcherCase = config.getCases().get(i);
+                if (!evaluateCase(switcherCase, i + 1)) {
+                    continue;
                 }
+                String targetNodeUuid = switcherCase.getTargetNodeUuid();
+                if (StringUtils.isBlank(targetNodeUuid)) {
+                    log.warn("分支 {} 匹配但目标节点UUID为空，跳过到下一个分支", i + 1);
+                    continue;
+                }
+                findNodeAndNotify(targetNodeUuid, nodeMessageTemplate);
+                log.info("分支 {} 匹配，跳转到节点: {}", i + 1, targetNodeUuid);
+                return NodeProcessResult.builder()
+                        .content(buildOutputs(inputs, String.valueOf(i + 1), switcherCase.getUuid(), targetNodeUuid))
+                        .nextNodeUuid(targetNodeUuid)
+                        .build();
             }
+        }
 
-            // 所有分支都不满足，使用默认分支
-            log.info("没有分支匹配，使用默认分支: {}", config.getDefaultTargetNodeUuid());
+        log.info("没有分支匹配，使用默认分支: {}", config.getDefaultTargetNodeUuid());
+        findNodeAndNotify(config.getDefaultTargetNodeUuid(), nodeMessageTemplate);
+        if (StringUtils.isBlank(config.getDefaultTargetNodeUuid())) {
+            log.warn("默认目标节点UUID为空，工作流可能在此停止");
+        }
+        String defaultTarget = config.getDefaultTargetNodeUuid() != null ? config.getDefaultTargetNodeUuid() : "";
+        return NodeProcessResult.builder()
+                .content(buildOutputs(inputs, "default", null, defaultTarget))
+                .nextNodeUuid(config.getDefaultTargetNodeUuid())
+                .build();
+    }
 
-            // 根据默认目标节点UUID获取对应节点名称
-            findNodeAndNotify(config.getDefaultTargetNodeUuid(), nodeMessageTemplate);
-
-            if (StringUtils.isBlank(config.getDefaultTargetNodeUuid())) {
-                log.warn("默认目标节点UUID为空，工作流可能在此停止");
+    /**
+     * 评估单条 case：spel 原始表达式优先，否则走存量 conditions 组合（翻译成 SpEL 求值）。
+     * 评估异常统一带上下文抛出，不吞成 false / error 输出（D2）。
+     */
+    private boolean evaluateCase(SwitcherCase switcherCase, int caseIndex) {
+        String caseContext = "条件分支节点 [uuid=" + node.getUuid() + ", title=" + node.getTitle()
+                + "] case [序号=" + caseIndex + ", uuid=" + switcherCase.getUuid() + "]";
+        try {
+            if (StringUtils.isNotBlank(switcherCase.getSpel())) {
+                return SwitcherCaseEvaluator.evaluateSpel(switcherCase.getSpel().trim(), caseContext, buildSpelVars());
             }
-
-            String defaultTarget = config.getDefaultTargetNodeUuid() != null ?
-                    config.getDefaultTargetNodeUuid() : "";
-
-            // 构造输出：只保留 output 和其他非 input 参数 + 添加默认分支信息
-            List<NodeIOData> outputs = new java.util.ArrayList<>();
-
-            // 过滤输入：排除 input 参数（与 output 冗余），保留其他参数
-            inputs.stream()
-                    .filter(item -> !"input".equals(item.getName()))
-                    .forEach(outputs::add);
-
-            // 如果没有 output 参数，从 input 创建 output（便于后续节点使用）
-            boolean hasOutput = outputs.stream().anyMatch(item -> "output".equals(item.getName()));
-            if (!hasOutput) {
-                inputs.stream()
-                        .filter(item -> "input".equals(item.getName()))
-                        .findFirst()
-                        .ifPresent(inputParam -> {
-                            String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
-                                    ? inputParam.getContent().getTitle() : "";
-                            NodeIOData outputParam = NodeIOData.createByText("output", title, inputParam.valueToString());
-                            outputs.add(outputParam);
-                            log.debug("从输入创建输出参数供下游节点使用");
-                        });
-            }
-
-            outputs.add(NodeIOData.createByText("matched_case", "switcher", "default"));
-            outputs.add(NodeIOData.createByText("target_node", "switcher", defaultTarget));
-
-            // WorkflowEngine 会自动将 nextNodeUuid 放入 resultMap 的 "next" 键中
-            return NodeProcessResult.builder()
-                    .content(outputs)
-                    .nextNodeUuid(config.getDefaultTargetNodeUuid())
-                    .build();
-
+            return SwitcherCaseEvaluator.evaluateLegacyCase(switcherCase, caseContext,
+                    condition -> resolveConditionValue(condition, caseContext));
+        } catch (SwitcherEvaluationException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("处理条件分支节点失败: {}", node.getUuid(), e);
-
-            List<NodeIOData> errorOutputs = List.of(
-                    NodeIOData.createByText("status", "switcher", "error"),
-                    NodeIOData.createByText("error", "switcher", e.getMessage())
-            );
-
-            return NodeProcessResult.builder()
-                    .content(errorOutputs)
-                    .error(true)
-                    .message("条件分支节点错误: " + e.getMessage())
-                    .build();
+            throw new SwitcherEvaluationException(caseContext + " 评估异常: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 根据节点ID查询对应节点
-     * @param targetNodeUuid 节点UUID
-     * @param nodeMessageTemplate 节点消息模板
+     * 条件取值（存量语义保留）：未解析到时按空串评估（缺失值兜底，旧流程零迁移）。
+     */
+    private String resolveConditionValue(SwitcherCase.Condition condition, String caseContext) {
+        String actualValue = getValueFromInputs(condition.getNodeUuid(), condition.getNodeParamName(), state.getInputs());
+        if (actualValue == null) {
+            log.warn("{} 未找到节点: {}, 参数: {} 的值，按存量语义按空串评估 - 可用输入: {}",
+                    caseContext, condition.getNodeUuid(), condition.getNodeParamName(),
+                    state.getInputs().stream().map(NodeIOData::getName).toList());
+        }
+        return actualValue;
+    }
+
+    /** 原始 spel 表达式的变量表：各输入参数（名称 → 值），另以只读 Map #vars 暴露 */
+    private Map<String, String> buildSpelVars() {
+        Map<String, String> vars = new LinkedHashMap<>();
+        for (NodeIOData input : state.getInputs()) {
+            if (input.getName() != null) {
+                vars.put(input.getName(), input.valueToString());
+            }
+        }
+        return vars;
+    }
+
+    /**
+     * 分支输出契约（WorkflowEngine 据 nextNodeUuid 写 "next" 路由键，下游依赖 matched_case/case_uuid/target_node）：
+     * 非 input 参数透传 + 缺 output 时由 input 派生 + 分支匹配信息。
+     */
+    private List<NodeIOData> buildOutputs(List<NodeIOData> inputs, String matchedCase, String caseUuid, String targetNodeUuid) {
+        List<NodeIOData> outputs = new ArrayList<>();
+        inputs.stream()
+                .filter(item -> !"input".equals(item.getName()))
+                .forEach(outputs::add);
+        boolean hasOutput = outputs.stream().anyMatch(item -> "output".equals(item.getName()));
+        if (!hasOutput) {
+            inputs.stream()
+                    .filter(item -> "input".equals(item.getName()))
+                    .findFirst()
+                    .ifPresent(inputParam -> {
+                        String title = inputParam.getContent() != null && inputParam.getContent().getTitle() != null
+                                ? inputParam.getContent().getTitle() : "";
+                        outputs.add(NodeIOData.createByText("output", title, inputParam.valueToString()));
+                        log.debug("从输入创建输出参数供下游节点使用");
+                    });
+        }
+        outputs.add(NodeIOData.createByText("matched_case", "switcher", matchedCase));
+        if (caseUuid != null) {
+            outputs.add(NodeIOData.createByText("case_uuid", "switcher", caseUuid));
+        }
+        outputs.add(NodeIOData.createByText("target_node", "switcher", targetNodeUuid));
+        return outputs;
+    }
+
+    /**
+     * 根据节点ID查询对应节点并广播提示消息。消息通知为尽力而为：失败只告警，不中断路由。
      */
     private void findNodeAndNotify(String targetNodeUuid, String nodeMessageTemplate) {
-        // 根据目标节点UUID获取对应节点名称
-        WorkflowNode workflowNode = workflowNodeService.lambdaQuery().eq(WorkflowNode::getUuid, targetNodeUuid).one();
-        if (null != workflowNode){
-            // 获取节点名称
-            String message = nodeMessageTemplate + workflowNode.getTitle();
-            notifyAndStoreMessage(wfState, message);
+        if (StringUtils.isBlank(targetNodeUuid)) {
+            return;
         }
-    }
-
-    /**
-     * 评估单个分支的条件
-     *
-     * @param switcherCase 分支配置
-     * @param inputs       输入数据
-     * @return 是否满足条件
-     */
-    private boolean evaluateCase(SwitcherCase switcherCase, List<NodeIOData> inputs) {
-        if (switcherCase.getConditions() == null || switcherCase.getConditions().isEmpty()) {
-            log.warn("分支 {} 没有条件，跳过", switcherCase.getUuid());
-            return false;
-        }
-
-        String operator = switcherCase.getOperator();
-        boolean isAnd = "and".equalsIgnoreCase(operator);
-
-        log.debug("使用 {} 逻辑评估 {} 个条件",
-                operator, switcherCase.getConditions().size());
-
-        for (SwitcherCase.Condition condition : switcherCase.getConditions()) {
-            boolean conditionResult = evaluateCondition(condition, inputs);
-            log.debug("条件结果: {} (参数: {}, 运算符: {}, 值: {})",
-                    conditionResult, condition.getNodeParamName(),
-                    condition.getOperator(), condition.getValue());
-
-            if (isAnd && !conditionResult) {
-                // AND 逻辑：任何一个条件不满足就返回 false
-                return false;
-            } else if (!isAnd && conditionResult) {
-                // OR 逻辑：任何一个条件满足就返回 true
-                return true;
-            }
-        }
-        // AND 逻辑：所有条件都满足返回 true
-        // OR 逻辑：所有条件都不满足返回 false
-        return isAnd;
-    }
-
-    /**
-     * 评估单个条件
-     *
-     * @param condition 条件配置
-     * @param inputs    输入数据
-     * @return 是否满足条件
-     */
-    private boolean evaluateCondition(SwitcherCase.Condition condition, List<NodeIOData> inputs) {
         try {
-            log.info("评估条件 - 节点UUID: {}, 参数名: {}, 运算符: {}, 期望值: {}",
-                    condition.getNodeUuid(), condition.getNodeParamName(),
-                    condition.getOperator(), condition.getValue());
-
-            // 获取实际值
-            String actualValue = getValueFromInputs(condition.getNodeUuid(),
-                    condition.getNodeParamName(), inputs);
-
-            if (actualValue == null) {
-                log.warn("无法找到节点: {}, 参数: {} 的值 - 可用输入: {}",
-                        condition.getNodeUuid(), condition.getNodeParamName(),
-                        inputs.stream().map(NodeIOData::getName).toList());
-                actualValue = "";
+            WorkflowNode workflowNode = lookupWorkflowNode(targetNodeUuid);
+            if (null != workflowNode) {
+                notifyAndStoreMessage(wfState, nodeMessageTemplate + workflowNode.getTitle());
             }
-
-            log.info("获取到的实际值: '{}' (类型: {})", actualValue, actualValue.getClass().getSimpleName());
-
-            String expectedValue = condition.getValue() != null ? condition.getValue() : "";
-            OperatorEnum operator = OperatorEnum.getByName(condition.getOperator());
-
-            if (operator == null) {
-                log.warn("未知运算符: {}，视为false", condition.getOperator());
-                return false;
-            }
-
-            boolean result = evaluateOperator(operator, actualValue, expectedValue);
-            log.info("条件评估结果: {} (实际值='{}', 运算符={}, 期望值='{}')",
-                    result, actualValue, operator, expectedValue);
-
-            return result;
-
         } catch (Exception e) {
-            log.error("评估条件时出错: {}", condition, e);
-            return false;
+            log.warn("条件分支节点提示消息发送失败（不影响路由）: {}", targetNodeUuid, e);
         }
     }
 
     /**
-     * 从输入数据中获取指定节点的参数值
+     * 从输入数据中获取指定节点的参数值（存量语义保留）：
+     * 当前输入按名匹配（同名取最后）→ 指定节点历史输出 → 节点 user_inputs 配置指向的 input → output 缺失时回退 input。
      */
     private String getValueFromInputs(String nodeUuid, String paramName, List<NodeIOData> inputs) {
         log.debug("从节点UUID '{}' 搜索参数 '{}'", nodeUuid, paramName);
 
         String result = null;
-
-        // 首先尝试从当前输入中查找
-        log.debug("检查当前输入 (数量: {})", inputs.size());
         for (NodeIOData input : inputs) {
-            log.debug("  - 输入: 名称='{}', 值='{}'", input.getName(), input.valueToString());
             if (paramName.equals(input.getName())) {
                 result = input.valueToString();
             }
         }
-
         if (result != null) {
-            log.info("在当前输入中找到参数 '{}': '{}'", paramName, result);
             return result;
         }
 
-        // 如果当前输入中没有，尝试从工作流状态中查找指定节点的输出
         if (StringUtils.isNotBlank(nodeUuid)) {
-            List<NodeIOData> nodeOutputs = wfState.getIOByNodeUuid(nodeUuid);
-            log.debug("检查节点 '{}' 的输出 (数量: {})", nodeUuid, nodeOutputs.size());
-            for (NodeIOData output : nodeOutputs) {
-                log.debug("  - 输出: 名称='{}', 值='{}'", output.getName(), output.valueToString());
+            for (NodeIOData output : wfState.getIOByNodeUuid(nodeUuid)) {
                 if (paramName.equals(output.getName())) {
                     result = output.valueToString();
                 }
             }
-
             // 根据UUID查询对应节点是否存在Param(替换成Input)
             result = findParamValueInNode(nodeUuid, paramName, inputs, result);
-
             if (result != null) {
-                log.info("在节点 '{}' 的输出中找到参数 '{}': '{}'", nodeUuid, paramName, result);
                 return result;
             }
-        } else {
-            log.debug("节点UUID为空，跳过工作流状态搜索");
         }
 
         // 特殊处理：如果找的是 'output' 但没找到，尝试找 'input'
         if ("output".equals(paramName)) {
-            log.debug("未找到参数 'output'，尝试查找 'input'");
             String inputValue = getValueFromInputs(nodeUuid, "input", inputs);
             if (inputValue != null) {
                 return inputValue;
             }
         }
-
         log.warn("在输入或节点 '{}' 的输出中未找到参数 '{}'", nodeUuid, paramName);
         return null;
     }
 
     /**
-     * 根据节点UUID和参数名查找对应的输入值
-      * 意义：修复开始节点参数名错误的问题
-     *
-     * @param nodeUuid 节点的唯一标识符（UUID）
-     * @param paramName 需要查找的参数名称
-     * @param inputs 输入数据列表，用于匹配参数值
-     * @param result 默认返回结果，若未找到匹配项则返回该值
-     * @return 返回查找到的参数值，若未找到则返回默认结果
+     * 根据节点UUID和参数名查找对应的输入值。
+     * 意义：修复开始节点参数名错误的问题——节点 user_inputs 中声明的参数实际取节点的 input 值。
      */
     private String findParamValueInNode(String nodeUuid, String paramName, List<NodeIOData> inputs, String result) {
-        // 查询工作流节点信息
-        WorkflowNode workflowNode = workflowNodeService.lambdaQuery().eq(WorkflowNode::getUuid, nodeUuid).one();
-        if (ObjectUtils.isNotEmpty(workflowNode)){
-            // 获取节点的输入配置
-            String inputConfig = workflowNode.getInputConfig();
-            log.info("节点 '{}' 的输入配置: {}", nodeUuid, inputConfig);
-            if (StringUtils.isNotBlank(inputConfig)){
-                try {
-                    // 使用统一的 JsonUtil 而不是每次创建新的 ObjectMapper
-                    JsonNode configJson = JsonUtil.toJsonNode(inputConfig);
-                    if (configJson == null) {
-                        log.warn("节点 '{}' 的输入配置 JSON 解析结果为 null", nodeUuid);
-                        return result;
+        WorkflowNode workflowNode = lookupWorkflowNode(nodeUuid);
+        if (ObjectUtils.isEmpty(workflowNode)) {
+            return result;
+        }
+        String inputConfig = workflowNode.getInputConfig();
+        if (StringUtils.isBlank(inputConfig)) {
+            return result;
+        }
+        try {
+            JsonNode configJson = JsonUtil.toJsonNode(inputConfig);
+            if (configJson == null) {
+                return result;
+            }
+            JsonNode userInputs = configJson.get("user_inputs");
+            if (userInputs == null || !userInputs.isArray()) {
+                return result;
+            }
+            for (JsonNode inputNode : userInputs) {
+                if (inputNode.has("name") && paramName.equals(inputNode.get("name").asText())) {
+                    String value = getValueFromInputs(nodeUuid, "input", inputs);
+                    if (value != null) {
+                        return value;
                     }
-                    // 获取 user_inputs 数组
-                    JsonNode userInputs = configJson.get("user_inputs");
-                    if (userInputs != null && userInputs.isArray()) {
-                        // 在 user_inputs 中查找匹配的参数名，并获取对应值
-                        for (JsonNode inputNode : userInputs) {
-                            if (inputNode.has("name") && paramName.equals(inputNode.get("name").asText())) {
-                                String value = getValueFromInputs(nodeUuid, "input", inputs);
-                                if (value != null) {
-                                    result = value;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("解析节点 '{}' 输入配置失败，参数名: {}, 配置内容: {}", nodeUuid, paramName, inputConfig, e);
-                    // 不抛出异常，返回默认结果，避免中断整个流程
                 }
             }
+        } catch (Exception e) {
+            // 不抛出异常，返回默认结果，避免中断整个流程（存量语义保留）
+            log.error("解析节点 '{}' 输入配置失败，参数名: {}, 配置内容: {}", nodeUuid, paramName, inputConfig, e);
         }
         return result;
     }
 
-    /**
-     * 根据运算符评估条件
-     */
-    private boolean evaluateOperator(OperatorEnum operator, String actualValue, String expectedValue) {
-        switch (operator) {
-            case CONTAINS:
-                return actualValue.contains(expectedValue);
+    // ==================== 测试/运行环境接缝 ====================
 
-            case NOT_CONTAINS:
-                return !actualValue.contains(expectedValue);
-
-            case START_WITH:
-                return actualValue.startsWith(expectedValue);
-
-            case END_WITH:
-                return actualValue.endsWith(expectedValue);
-
-            case EMPTY:
-                return StringUtils.isBlank(actualValue);
-
-            case NOT_EMPTY:
-                return StringUtils.isNotBlank(actualValue);
-
-            case EQUAL:
-                return actualValue.equals(expectedValue);
-
-            case NOT_EQUAL:
-                return !actualValue.equals(expectedValue);
-
-            case GREATER:
-            case GREATER_OR_EQUAL:
-            case LESS:
-            case LESS_OR_EQUAL:
-                return evaluateNumericComparison(operator, actualValue, expectedValue);
-
-            default:
-                log.warn("不支持的运算符: {}", operator);
-                return false;
-        }
+    /** 加载节点配置（基类 JSON 解析 + 校验），测试可覆写注入配置 */
+    protected SwitcherNodeConfig loadConfig() {
+        return checkAndGetConfig(SwitcherNodeConfig.class);
     }
 
-    /**
-     * 评估数值比较
-     */
-    private boolean evaluateNumericComparison(OperatorEnum operator, String actualValue, String expectedValue) {
-        try {
-            BigDecimal actual = new BigDecimal(actualValue.trim());
-            BigDecimal expected = new BigDecimal(expectedValue.trim());
-            int comparison = actual.compareTo(expected);
+    /** 按 UUID 查询工作流节点定义（DB），测试可覆写免除 DB 依赖 */
+    protected WorkflowNode lookupWorkflowNode(String nodeUuid) {
+        return workflowNodeService().lambdaQuery().eq(WorkflowNode::getUuid, nodeUuid).one();
+    }
 
-            switch (operator) {
-                case GREATER:
-                    return comparison > 0;
-                case GREATER_OR_EQUAL:
-                    return comparison >= 0;
-                case LESS:
-                    return comparison < 0;
-                case LESS_OR_EQUAL:
-                    return comparison <= 0;
-                default:
-                    return false;
-            }
-        } catch (NumberFormatException e) {
-            log.warn("无法解析数字进行比较: 实际值={}, 期望值={}",
-                    actualValue, expectedValue);
-            return false;
+    private WorkflowNodeService workflowNodeService() {
+        return SpringUtils.getBean(WorkflowNodeService.class);
+    }
+
+    /** 提示消息模板：sys_config 缺失/不可用时回退内置默认模板，不中断工作流 */
+    private String messageTemplate(String configKey) {
+        try {
+            return getNodeMessageTemplate(configKey);
+        } catch (Exception e) {
+            log.warn("获取节点消息模板失败，回退内置默认模板: {}", configKey, e);
+            return NodeMessageTemplateEnum.getDefaultTemplate(configKey);
         }
     }
 }

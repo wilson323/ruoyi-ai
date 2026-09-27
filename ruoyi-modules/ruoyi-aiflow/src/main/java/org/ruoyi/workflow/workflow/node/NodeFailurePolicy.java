@@ -32,6 +32,13 @@ public final class NodeFailurePolicy {
         }
     };
 
+    /**
+     * 标记接口：确定性失败（配置/表达式类错误），重试 3 次也不会变好，
+     * 带此标记的异常应立即终局失败，不再退避占线程（Switcher 等节点的配置/表达式错误用）。
+     */
+    public interface NonRetryable {
+    }
+
     /** 节点执行一次尝试的三种结局：成功 / 可重试失败 / 终局失败（DEAD 转人工） */
     public enum Outcome {
         SUCCESS, RETRY, DEAD
@@ -61,10 +68,33 @@ public final class NodeFailurePolicy {
      * 与异常失败共用本决策，杜绝"错误被当正常输出、流程照常 SUCCESS"。
      */
     public static Outcome decide(int attempt, boolean ok, String errorMsg) {
+        return decide(attempt, ok, errorMsg, false);
+    }
+
+    /**
+     * 单次尝试结局判定（含不可重试区分）：异常链带 {@link NonRetryable} 标记的确定性失败
+     * 直接 DEAD，跳过退避重试；瞬时性失败仍按 attempt>=MAX_ATTEMPTS 翻 DEAD。
+     */
+    public static Outcome decide(int attempt, boolean ok, String errorMsg, boolean nonRetryable) {
         if (ok) {
             return Outcome.SUCCESS;
         }
-        return isDead(attempt) ? Outcome.DEAD : Outcome.RETRY;
+        return (nonRetryable || isDead(attempt)) ? Outcome.DEAD : Outcome.RETRY;
+    }
+
+    /** 异常（或其 cause 链任一环节）带 {@link NonRetryable} 标记即视为不可重试 */
+    public static boolean isNonRetryable(Throwable t) {
+        for (int depth = 0; t != null && depth < 16; depth++) {
+            if (t instanceof NonRetryable) {
+                return true;
+            }
+            Throwable cause = t.getCause();
+            if (cause == t) {
+                return false;
+            }
+            t = cause;
+        }
+        return false;
     }
 
     /**

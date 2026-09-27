@@ -154,9 +154,10 @@ public class WorkflowGraphBuilder {
                 for (String target : targets) {
                     mappings.put(target, target);
                 }
+                String routeSourceId = stateGraphNodeUuid;
                 stateGraph.addConditionalEdges(
                         stateGraphNodeUuid,
-                        edge_async(state -> state.data().get("next").toString()),
+                        edge_async(state -> resolveNextRoute(state.data(), routeSourceId)),
                         mappings
                 );
             }
@@ -167,6 +168,21 @@ public class WorkflowGraphBuilder {
         } else {
             addEdgeToStateGraph(stateGraph, stateGraphNodeUuid, END);
         }
+    }
+
+    /**
+     * 条件边路由：取节点产出的 "next" 路由键（WorkflowEngine 从 NodeProcessResult.nextNodeUuid 写入）。
+     * <p>D2 修复：此前 {@code state.data().get("next").toString()} 对缺失 next 直接 NPE，
+     * 把上游真实错误（如 Switcher 评估失败输出）覆盖成空指针；现在 next 缺失时报明确错误。
+     */
+    static String resolveNextRoute(Map<String, Object> stateData, String sourceNodeId) {
+        Object next = stateData == null ? null : stateData.get("next");
+        if (next == null || StringUtils.isBlank(next.toString())) {
+            throw new IllegalStateException("条件路由失败：节点 [" + sourceNodeId + "] 未产出 next 路由键"
+                    + "（分支未命中且默认分支目标为空，或节点失败输出未携带 next），state 键: "
+                    + (stateData == null ? "[]" : stateData.keySet()));
+        }
+        return next.toString();
     }
 
     private GraphCompileNode getOrCreateGraphCompileNode(String rootId) {

@@ -1,6 +1,7 @@
 package org.ruoyi.workflow.workflow.node;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.common.chat.entity.User;
 import org.ruoyi.common.core.exception.base.BaseException;
@@ -32,6 +33,7 @@ import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.WORKFLOW_
  * HttpRequestNode.executeHttpRequest 终局 RuntimeException、AbstractWfNode.checkAndGetConfig
  * 的 BaseException、SwitcherNode 评估异常的 error=true 软失败（D8 吞错点）、getMessage()==null 异常。
  */
+@Tag("dev")
 class AbstractWfNodeRetryDeadTest {
 
     private static final NodeIOData INPUT = NodeIOData.createByText("input", "用户输入", "hello");
