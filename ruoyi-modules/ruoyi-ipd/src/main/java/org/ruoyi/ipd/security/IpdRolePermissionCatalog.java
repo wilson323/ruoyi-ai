@@ -24,6 +24,13 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_CERT_TEMPLATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT,
         IpdPermissionCode.OPERATION_GATE_REVIEW,
+        // R234（2026-09-27 owner 拍板「权限码全套开工」）：前端按钮闸用码登记（与 gate-review:list 同集合）。
+        // 这 3 码仅用于 /auth/me 下发 + 前端 v-access 显隐；后端端点鉴权不挂注解，
+        // 仍走 requireInternal/requireLeaderOrAdmin + Service 对象级判定（GateReview/Handover 既有口径），
+        // 不改任何 Controller 鉴权语义。不登记会导致前端按钮闸永不满足（疑功能不可达）。
+        IpdPermissionCode.OPERATION_GATE_REVIEW_CREATE,
+        IpdPermissionCode.OPERATION_GATE_REVIEW_APPROVE,
+        IpdPermissionCode.OPERATION_HANDOVER_CANCEL,
         IpdPermissionCode.OPERATION_SYSTEM_CONFIG_READ,
         // OPS-05：站内通知收件箱（本人；receiver 从会话推导，读写同人）
         IpdPermissionCode.OPERATION_NOTIFICATION_READ,

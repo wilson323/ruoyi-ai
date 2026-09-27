@@ -45,6 +45,30 @@ public interface IpdPermissionCode {
 
     String OPERATION_GATE_REVIEW = "ipd:gate-review:list";
 
+    // ------------------------------------------------------------------
+    // R234（2026-09-27 owner 拍板「权限码全套开工」）：前端按钮闸用码补齐。
+    // 语义：前端 gate-review 发起/审批按钮与 handover 撤销按钮挂 v-access:code，
+    // 但后端 GateReviewController 全部端点与 HandoverController /{id}/cancel 均无
+    // @SaCheckPermission（走 requireInternal/requireLeaderOrAdmin + Service 对象级判定，
+    // 见各端点「无权限注解原因」注释）——这些码后端原本不下发，前端按钮闸永不满足。
+    // ------------------------------------------------------------------
+
+    /**
+     * 2026-09-27 R234：前端按钮闸用码（Gate 评审发起），后端端点鉴权仍走方法内对象级判定，
+     * 本码仅下发用于 v-access 显隐，不挂注解。
+     */
+    String OPERATION_GATE_REVIEW_CREATE = "ipd:gate-review:add";
+    /**
+     * 2026-09-27 R234：前端按钮闸用码（Gate 评审审批），后端端点鉴权仍走方法内对象级判定，
+     * 本码仅下发用于 v-access 显隐，不挂注解。
+     */
+    String OPERATION_GATE_REVIEW_APPROVE = "ipd:gate-review:edit";
+    /**
+     * 2026-09-27 R234：前端按钮闸用码（项目移交撤销），后端端点鉴权仍走方法内对象级判定，
+     * 本码仅下发用于 v-access 显隐，不挂注解。
+     */
+    String OPERATION_HANDOVER_CANCEL = "ipd:handover:cancel";
+
     /** AC-INC-15c：双PM 联合提议系数 */
     String OPERATION_COEFFICIENT_PROPOSE = "ipd:coefficient:propose";
     /** AC-INC-15c：产品组长确认系数 */
