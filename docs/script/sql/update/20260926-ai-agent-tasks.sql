@@ -45,7 +45,9 @@ CREATE TABLE IF NOT EXISTS ai_agent_tasks (
   KEY idx_dedup (dedup_key, status),
   KEY idx_project (project_id, action_code),
   UNIQUE KEY uk_active_dedup (active_dedup)
-) COMMENT='AI 代理执行任务队列（R221 闭环设计）';
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI 代理执行任务队列（R221 闭环设计）';
+-- R230 补显式 COLLATE：原建表未写字符集，继承库默认；ipd_dev 库默认曾为 utf8mb4_general_ci
+-- 导致 ai_agent_tasks 11 列漂移。现库默认已 ALTER 为 utf8mb4_0900_ai_ci，此处显式声明防新环境再漂。
 
 -- 表级 GRANT（漏 GRANT 会读链全通写链炸 500；audit_logs 仅 INSERT 红线不受影响）
 -- 应用数据源用户 ipd_app@127.0.0.1（现查 mysql.user 核实，非 '%'）
