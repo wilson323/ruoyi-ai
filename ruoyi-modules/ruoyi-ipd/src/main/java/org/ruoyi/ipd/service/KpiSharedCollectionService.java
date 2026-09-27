@@ -776,8 +776,7 @@ public class KpiSharedCollectionService {
         return K04_SOURCE_SALES_ONLY;
     }
 
-    // R232-W14：package 可见供同包 KpiSharedReconcileService 复算复用（防自建第二套公式漂移，GatePrep M2 教训）；行为零改动
-    BigDecimal weightedScore(List<MetricResult> metrics) {
+    private BigDecimal weightedScore(List<MetricResult> metrics) {
         BigDecimal numerator = BigDecimal.ZERO;
         BigDecimal denominator = BigDecimal.ZERO;
         for (MetricResult metric : metrics) {
@@ -914,8 +913,7 @@ public class KpiSharedCollectionService {
             actor.id(), request.projectId(), request.period(), score);
     }
 
-    // R232-W14：package 可见供同包对账服务复用同一 NPS 公式；行为零改动
-    static BigDecimal calculateNpsTargetScore(BigDecimal actual, BigDecimal target) {
+    private static BigDecimal calculateNpsTargetScore(BigDecimal actual, BigDecimal target) {
         if (actual.compareTo(target) >= 0) {
             return new BigDecimal("100");
         }

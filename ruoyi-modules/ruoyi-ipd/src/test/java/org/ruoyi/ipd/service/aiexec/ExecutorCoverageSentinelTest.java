@@ -18,11 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("dev")
 class ExecutorCoverageSentinelTest {
 
-    /** R232-W14 批次：首切片 4 码 + 对账执行器 K01-K04，与 5 执行器 supportedActionCodes 并集对账 */
-    private static final Set<String> WIRED = Set.of("C01", "C08", "P08", "C11",
-        "K01", "K02", "K03", "K04");
+    /** 首切片已接线 4 码，与 4 执行器 supportedActionCodes 并集对账 */
+    private static final Set<String> WIRED = Set.of("C01", "C08", "P08", "C11");
 
-    /** 豁免：全部 69 码减去已接线 8 码（接线一批删一批，禁止新增） */
+    /** 豁免：全部 69 码减去已接线 4 码（接线一批删一批，禁止新增） */
     private static final Set<String> EXEMPT = ActionCatalog.ALL.stream()
         .map(ActionDef::code)
         .filter(c -> !WIRED.contains(c))
@@ -35,25 +34,22 @@ class ExecutorCoverageSentinelTest {
                 new LightDirectExecutor(null).supportedActionCodes(),
                 new DeepDirectExecutor(null, null, null).supportedActionCodes(),
                 new GenerateExecutor(null, null, null, null).supportedActionCodes(),
-                new GatePrepExecutor(null, null, null, null, null, null).supportedActionCodes(),
-                new KpiSharedReconcileExecutor(null, null, null, null).supportedActionCodes())
+                new GatePrepExecutor(null, null, null, null, null, null).supportedActionCodes())
             .flatMap(Set::stream).collect(Collectors.toUnmodifiableSet());
         assertThat(union).isEqualTo(WIRED);
     }
 
     /** 遗留 MINOR#2 行为锁（真实现非 mock）：可自动派发集 = AI 档 ∧ 已接线 ∧ supportsSchedule
-     * → C08（填表族）/C11（HUMAN_GATE）/K01-K04（对账 supportsSchedule=false，防调度每日堆台账）被排除，只剩 C01/P08 */
+     * → C08（填表族）/C11（HUMAN_GATE）被排除，只剩 C01/P08 */
     @Test
     void scheduleWiredCodesExcludeFillTableAndHumanGate() {
         org.ruoyi.ipd.service.AiExecutionEngine engine = new org.ruoyi.ipd.service.AiExecutionEngine(
             null,
             List.of(new LightDirectExecutor(null), new DeepDirectExecutor(null, null, null),
                 new GenerateExecutor(null, null, null, null),
-                new GatePrepExecutor(null, null, null, null, null, null),
-                new KpiSharedReconcileExecutor(null, null, null, null)),
+                new GatePrepExecutor(null, null, null, null, null, null)),
             null, null);
-        assertThat(engine.wiredActionCodes()).containsExactlyInAnyOrder(
-            "C01", "C08", "P08", "C11", "K01", "K02", "K03", "K04");
+        assertThat(engine.wiredActionCodes()).containsExactlyInAnyOrder("C01", "C08", "P08", "C11");
         assertThat(engine.scheduleWiredActionCodes()).containsExactlyInAnyOrder("C01", "P08");
     }
 
@@ -69,7 +65,7 @@ class ExecutorCoverageSentinelTest {
 
     @Test
     void exemptionRatchetOnlyShrinks() {
-        // 棘轮基线：R232-W14 批次后豁免数 = 69 - 8 = 61；接线批次推进时同步递减，禁止回调大
-        assertThat(EXEMPT).hasSize(61);
+        // 棘轮基线：首切片后豁免数 = 69 - 4 = 65；接线批次推进时同步递减，禁止回调大
+        assertThat(EXEMPT).hasSize(65);
     }
 }
