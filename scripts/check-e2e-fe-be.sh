@@ -43,6 +43,11 @@ FE_ALIVE=1
 if ! lsof -i :$BACKEND_PORT >/dev/null 2>&1; then
   echo "## ❌ 后端未启（:$BACKEND_PORT 无监听）" >> "$REPORT"
   echo "  按 AGENTS.md §撞车 0 严守原则：若撞车兄弟会话，则跳过真活 E2E 验收" >> "$REPORT"
+  # R231（待拍1配套）：提前退出也必须落机器可读终态，且按"服务不可达"分类记账，
+  # 否则 M5 会把环境性缺勤误报成"缺结论"（分类：服务不可达 ≠ 契约失败）
+  echo "" >> "$REPORT"
+  echo "状态: FAILED（服务不可达：后端 :${BACKEND_PORT} 无监听，属环境前提缺失非契约题）" >> "$REPORT"
+  echo "STATUS: FAILED" >> "$REPORT"
   echo "❌ 后端未启，E2E 无法跑真活 HTTP 验收"
   exit 1
 fi
@@ -90,6 +95,10 @@ echo "|---|---|---|---|---|---|" >> "$REPORT"
 CNF=".codex/ipd-dev/config/mysql-client.cnf"
 PROJECT_ID=$(mysql --defaults-file="$CNF" -N -e "SELECT id FROM ipd_dev.projects WHERE del_flag='0' LIMIT 1;" 2>/dev/null || echo "")
 if [ -z "$PROJECT_ID" ]; then
+  # R231（待拍1配套）：同上，真库无数据属环境类"服务不可达"，显式落终态防 M5 误报缺结论
+  echo "" >> "$REPORT"
+  echo "状态: FAILED（服务不可达：真库无 project 数据，契约验证前提缺失）" >> "$REPORT"
+  echo "STATUS: FAILED" >> "$REPORT"
   echo "❌ 真库无 project 数据，跳过业务契约验证"
   exit 1
 fi
