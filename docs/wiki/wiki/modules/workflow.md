@@ -105,3 +105,55 @@ org.ruoyi.workflow/
 4. 在 BPMN XML 里画 userTask / serviceTask 节点
 
 **注意**：BPMN 流程定义（XML）存在 `flw_definition` 表，由 Warm-Flow 管理；不要自己改表结构。
+
+---
+
+## AI 工作流（ruoyi-aiflow）死枚举与历史损坏登记
+
+> 本节归属模块：`ruoyi-aiflow`（自研图驱动 AI 编排）。以下问题均出自该模块；因 wiki 文档按用户原指令统一收纳在 `workflow.md`，实际排查请定位到 `ruoyi-aiflow` 代码路径。
+
+### 死枚举清单
+
+枚举声明在 `WfComponentNameEnum`，但 `WfNodeFactory` switch 分支、`t_workflow_component` 库行、前端 `NodeShell` name-switch 三方均无对应实现的项，归类为「死枚举」。
+
+| name | enum 声明 | factory switch | 库行 is_enable=1 AND is_deleted=0 | 前端 NodeShell | 状态 |
+|---|---|---|---|---|---|
+| DALLE3 | 是 | 否（default → null） | 否（2026-09-27 fresh 直读 ipd_dev） | 否（forwarding 壳） | 🔴 死枚举 |
+| FAQ_EXTRACTOR | 是 | 否（default → null） | 否（2026-09-27 fresh 直读 ipd_dev） | 否（forwarding 壳） | 🔴 死枚举 |
+
+证据：fresh 直读 MySQL 13306/ipd_dev（cnf `.codex/ipd-dev/config/mysql-client.cnf` + socket `.codex/ipd-dev/run/mysql.sock`）：
+
+```
+SELECT name, uuid, is_enable, is_deleted FROM t_workflow_component
+  WHERE name IN ('DALLE3','FAQ_EXTRACTOR') ORDER BY name;
+-- 结果 0 行
+```
+
+全表 9 行 / 启用 9 / 软删 0；启用清单：Start / End / Answer / Switcher / Tongyiwanx / MailSend / KnowledgeRetrieval / HttpRequest / Google。三方对齐无缺口。
+
+清理建议（owner 拍板后动）：
+
+1. 枚举侧：从 `WfComponentNameEnum` 删除 `DALLE3` / `FAQ_EXTRACTOR` 两条。
+2. 库侧：保留空（已是现状，无写入副作用）。
+3. 前端：保留空（已是现状，无渲染副作用）。
+
+### GBK 乱码史
+
+`WorkflowEngine.java`（`ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java`）历史上残留多处 UTF-8/GBK 互转损坏（典型形态：UTF-8 文件被以 GBK 解读后再次以 UTF-8 保存，产生 `e5 88 86 ef bf bd 3f` 这种 `分<U+FFFD>?` 字节序列）。
+
+| 修复日期 | 位置 | 损坏形态 | 修复结果 |
+|---|---|---|---|
+| 2026-09-27 | L141 | `errorMsg = "并行节点中不能包含条件分<U+FFFD>?";` | `errorMsg = "并行节点中不能包含条件分支";` |
+| 2026-09-27 | L188 | `//并行节点...发送输出结<U+FFBD>?` | 注释上提至 L174 并修正为 `输出结果`；同步清理 13 行注释死代码（原 L164-176） |
+| 2026-09-27 | L190 | `//langgraph4j state...只存储元数<U+FFBD>?` | `//...只存储元数据` |
+
+未清理的残留（按"最小变更"原则保留待后续清理）：
+
+| 位置 | 损坏形态 | 处置 |
+|---|---|---|
+| L239 | `* @param startNode  开始节点定<U+FFBD>?` | 不动；仅 javadoc，不影响运行时 |
+| L240 | `* @return 正确的用户输入列<U+FFBD>?` | 不动；仅 javadoc，不影响运行时 |
+
+教训：写入 UTF-8 中文注释时，若 IDE / 终端编码未锁 UTF-8，会触发 GBK ↔ UTF-8 互转损坏。建议 `.editorconfig` + IDE 编码设置固定为 UTF-8。
+
+参见：[aiflow.md](../raw/aiflow-source/workflow-engine.md)（同模块入口）。

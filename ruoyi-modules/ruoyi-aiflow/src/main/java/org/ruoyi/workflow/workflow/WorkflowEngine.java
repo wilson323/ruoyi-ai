@@ -138,7 +138,7 @@ public class WorkflowEngine {
         String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.EXCEPTION.getValue());
         String errorMsg = e.getMessage();
         if (errorMsg != null && errorMsg.contains("parallel node doesn't support conditional branch")) {
-            errorMsg = "并行节点中不能包含条件分�?";
+            errorMsg = "并行节点中不能包含条件分支";
         }
         errorMsg = nodeMessageTemplate + (errorMsg != null ? errorMsg : e.getClass().getSimpleName());
         // 保存会话信息且发送驱动消息事件
@@ -161,19 +161,6 @@ public class WorkflowEngine {
             NodeProcessResult processResult = abstractWfNode.process((is) -> {
                 workflowRuntimeNodeService.updateInput(runtimeNodeDto.getId(), nodeState);
                 List<NodeIOData> nodeIODataList = nodeState.getInputs();
-//                if (!wfNode.getWorkflowComponentId().equals(1L)) {
-//                    String inputConfig = wfNode.getInputConfig();
-//                    WfNodeInputConfig nodeInputConfig = NodeInputConfigTypeHandler.fillNodeInputConfig(inputConfig);
-//                    List<WfNodeParamRef> refInputs = nodeInputConfig.getRefInputs();
-//                    Set<String> nameSet = CollStreamUtil.toSet(refInputs, WfNodeParamRef::getNodeParamName);
-//                    if (CollUtil.isNotEmpty(nameSet)) {
-//                        nodeIODataList = nodeIODataList.stream().filter(item -> nameSet.contains(item.getName()))
-//                                .collect(Collectors.toList());
-//                    } else {
-//                        nodeIODataList = nodeIODataList.stream().filter(item -> item.getName().contains("input"))
-//                                .collect(Collectors.toList());
-//                    }
-//                }
                 for (NodeIOData input : nodeIODataList) {
                     String inputConfig = wfNode.getInputConfig();
                     WfNodeInputConfig nodeInputConfig = NodeInputConfigTypeHandler.fillNodeInputConfig(inputConfig);
@@ -184,8 +171,8 @@ public class WorkflowEngine {
                     SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_INPUT_" + wfNode.getUuid() + "]", JsonUtil.toJson(input));
                 }
             }, (is) -> {
+                //并行节点内部的节点执行结束后，需要主动向客户端发送输出结果
                 workflowRuntimeNodeService.updateOutput(runtimeNodeDto.getId(), nodeState);
-                //并行节点内部的节点执行结束后，需要主动向客户端发送输出结�?
                 String nodeUuid = wfNode.getUuid();
                 List<NodeIOData> nodeOutputs = nodeState.getOutputs();
                 for (NodeIOData output : nodeOutputs) {
@@ -201,7 +188,7 @@ public class WorkflowEngine {
             throw new BaseException(ErrorEnum.B_WF_RUN_ERROR.getInfo());
         }
         resultMap.put("name", wfNode.getTitle());
-        //langgraph4j state中的data不做数据存储，只存储元数�?
+        //langgraph4j state中的data不做数据存储，只存储元数据
         StreamingChatGenerator<AgentState> generator = wfState.getNodeToStreamingGenerator().get(wfNode.getUuid());
         if (null != generator) {
             resultMap.put("_streaming_messages", generator);
