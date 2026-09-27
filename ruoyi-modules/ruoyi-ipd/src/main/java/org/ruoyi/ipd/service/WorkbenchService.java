@@ -15,6 +15,7 @@ import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.workbench.WorkbenchAggregator;
 import org.ruoyi.ipd.workbench.WorkbenchPolicy;
@@ -56,26 +57,37 @@ public class WorkbenchService implements IWorkbenchService {
      * stage_sign / key_gate / key_gate_arbitration / deletion_review / handover /
      * contribution_confirm / strategic_change / closeout / kpi_fill。
      *
-     * <p><b>剩余 8 类登记（R217-B4 现查 2026-09-25：数据源缺失或口径待 owner 拍板，
-     * 纪律=不发明新表新机制、不擅定业务字段，禁止在拍板前写聚合器——
-     * 见 WB-17-1-tasktype字段级spec填写模板-20260923.md 风险红线「owner 未拍板的 ⚠️ AI 初稿
-     * 字段不得动 Java 代码」）</b>：
+     * <p><b>剩余 8 类登记（R218 现查修正 2026-09-25，见
+     * docs/ipd-系统说明/验收/R218-WB171-20260925/ 两份调研；纪律不变=不发明新表新机制、
+     * owner 拍板前禁止写聚合器——见
+     * WB-17-1-tasktype字段级spec填写模板-20260923.md 风险红线）</b>：
      * <ul>
-     *   <li>缺表 4 类（DDL 仅草案 2026-09-08-ipd-c-batch-4-tables-draft.sql 未 apply，
-     *     Java 实体/Mapper 零）：waiver_review（gate_waivers 待建，14 问 Q1-Q3）；
-     *     rd_replacement（双表 vs project_members 扩展 Q4-Q6 未定）；
-     *     retirement_review（新表 vs 复用 deletion_requests Q7-Q9 未定）；
-     *     capacity_approval（multi_project_capacity_approvals 未 apply，Q10-Q12）</li>
-     *   <li>表已建但口径待拍板 4 类（字段级 spec pending_expr/state_machine 全部仍 ⚠️ AI 初稿）：
-     *     receipt_review——receipt_ledgers 实为销售回款台账，无 status/reviewer 字段，「收据待审」单据态不存在；
-     *     change_implementation / change_verify——requirement_changes 仅
-     *     DRAFT/PENDING_SIGN/APPROVED/REJECTED，无 implementer_id/verifier_id/planned_date 责任人字段，
-     *     投递锚不存在（spec batch-03 L107 自登记 v3 要求但代码未存储 4 字段）；
-     *     bonus_lock——bonus_pools 状态机仅 DRAFT→CONFIRMED→DISTRIBUTED，freeze 为人触发主动动作，
-     *     无「待锁定」前置态（AI 初稿 pending_expr status='PENDING_LOCK' 无写入路径生产者，
-     *     违反 mock 规约硬规约②状态可达）</li>
+     *   <li>表在码缺 4 类（五表 2026-09-25 现查已 apply 存在于 ipd_dev，0 行；
+     *     旧登记「DDL 仅草案未 apply」作废）：waiver_review / rd_replacement /
+     *     retirement_review / capacity_approval——Java 实体/Mapper/写入 API 全零，
+     *     投递 pending_expr 与链路语义待 owner 拍板（缺表4类-14问澄清）</li>
+     *   <li>锚/态缺 2 类：receipt_review——receipt_ledgers 实为销售回款台账，
+     *     无 status/reviewer 锚列，「收据待审」单据态不存在（扩列 vs 新表待拍板）；
+     *     bonus_lock——bonus_pools 状态机仅 DRAFT→CONFIRMED→DISTRIBUTED，
+     *     无「待锁定」前置态（新增态+生产者 vs DRAFT+窗口派生，口径二选一待拍板）</li>
+     *   <li>真缺表 2 类：change_implementation / change_verify——change_implementations /
+     *     change_implementation_evidence 真库无表（DDL 草稿
+     *     20260925-wb171-draft-missing-tables.sql 未 apply，待 owner 拍板 + DBA 窗口）</li>
      * </ul>
+     *
+     * <p>消费侧过滤（本卡后端真空缺口，S0 切片已交付）：
+     * {@code GET /api/v1/workbench/tasks?bucket=&type=&limit=&projectId=}（{@link #tasks}），
+     * 17 类 tab 渲染不再依赖后端补数据；旧 /summary 契约保留兼容。
+     *
+     * <p>已知死路（非本卡引入，契约登记 yaml A1-A4 在案）：已实现 9 类中
+     * key_gate / contribution_confirm / strategic_change 的投递锚字段在写入路径下恒 NULL，
+     * 真活卡恒空；修复属写入侧车道（GateCreationService / incentives / propose 路径）。
      */
+    /** tasks() 支持的 bucket 值域（completed/initiated 有诚实理由 fail-closed，见 tasks() javadoc）。 */
+    private static final List<String> OPEN_BUCKETS = List.of("pending", "overdue");
+    /** tasks() limit 契约：默认 50，上限 200（防拉全表拖垮工作台）。 */
+    private static final int TASKS_DEFAULT_LIMIT = 50;
+    private static final int TASKS_MAX_LIMIT = 200;
     private static final List<String> ALL_TASK_TYPES = List.of(
         "bonus_lock", "capacity_approval", "change_implementation", "change_verify",
         "closeout", "contribution_confirm", "deletion_review", "handover",
@@ -161,6 +173,91 @@ public class WorkbenchService implements IWorkbenchService {
         return result;
     }
 
+    /**
+     * 任务队列过滤视图（WB-17-1 S0 切片；spec 页03 §4「GET /api/workflow/tasks?bucket=&type=&limit=」）。
+     *
+     * <p>与 {@link #summary} 共用同一聚合器调度链（真数据源零 mock），在其上过滤：
+     * <ul>
+     *   <li>type：17 类权威枚举之一（非法值 400 fail-closed）；空 = 不过滤</li>
+     *   <li>projectId：卡面 projectId 精确匹配；空 = 全部可见项目</li>
+     *   <li>bucket：pending=全部在途卡（缺省）；overdue=dueDate 早于当前时刻（与 summary stats.overdue 同规则）</li>
+     *   <li>limit：1~200，缺省 50；total 返回截断前命中数</li>
+     * </ul>
+     *
+     * <p>fail-closed 边界（不发明数据源）：bucket=completed 聚合器契约仅有
+     * {@link WorkbenchAggregator#completedCount} 计数、无卡级完成历史；bucket=initiated
+     * 数据源契约属 {@code /workbench/my-initiated} 既有端点——两态均 400 并指向正确契约，
+     * 禁止在此返回空列表伪装「无数据即正常」。
+     *
+     * <p>排序：priority urgent&gt;high&gt;normal，同优先级 dueDate 升序（null 恒最后），
+     * 稳定排序保持聚合器 @Order 调度序为最终 tiebreaker（对齐原型 ORDER BY priority,due_at）。
+     */
+    @Override
+    public Map<String, Object> tasks(IpdActor actor, Long projectId, String bucket, String type, Integer limit) {
+        String b = (bucket == null || bucket.isBlank()) ? "pending" : bucket.trim();
+        if ("completed".equals(b) || "initiated".equals(b)) {
+            throw new IpdBusinessException("bucket=" + b + " 无卡级数据源契约：completed 仅有计数（/summary stats.completed），"
+                + "initiated 请走 /workbench/my-initiated；本端点支持 pending|overdue");
+        }
+        if (!OPEN_BUCKETS.contains(b)) {
+            throw new IpdBusinessException("bucket 非法: " + b + "（值域 pending|overdue）");
+        }
+        String t = (type == null || type.isBlank()) ? null : type.trim();
+        if (t != null && !ALL_TASK_TYPES.contains(t)) {
+            throw new IpdBusinessException("type 非法: " + t + "，权威 17 类见 spec 页03:165（与 stats.pendingType 键集同序同值）");
+        }
+        int lim = limit == null ? TASKS_DEFAULT_LIMIT : limit;
+        if (lim < 1 || lim > TASKS_MAX_LIMIT) {
+            throw new IpdBusinessException("limit 须在 1~" + TASKS_MAX_LIMIT + "，当前: " + limit);
+        }
+
+        List<Project> scope = visibleProjects(actor);
+        Map<Long, Project> byId = new LinkedHashMap<>();
+        scope.forEach(p -> byId.put(p.getId(), p));
+        Date now = new Date();
+        List<Map<String, Object>> collected = new ArrayList<>();
+        for (WorkbenchAggregator aggregator : aggregators) {
+            collected.addAll(aggregator.collect(actor, byId, now));
+        }
+
+        List<Map<String, Object>> filtered = new ArrayList<>();
+        for (Map<String, Object> task : collected) {
+            if (t != null && !t.equals(task.get("taskType"))) {
+                continue;
+            }
+            if (projectId != null && !projectId.equals(task.get("projectId"))) {
+                continue;
+            }
+            if ("overdue".equals(b)
+                && !(task.get("dueDate") instanceof Date due && due.before(now))) {
+                continue;
+            }
+            filtered.add(task);
+        }
+        filtered.sort(Comparator
+            .comparingInt((Map<String, Object> m) -> priorityRank(m.get("priority")))
+            .thenComparing(m -> m.get("dueDate") instanceof Date d ? d : null,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+
+        List<Map<String, Object>> page = filtered.size() > lim ? new ArrayList<>(filtered.subList(0, lim)) : filtered;
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("bucket", b);
+        result.put("type", t);
+        result.put("projectId", projectId);
+        result.put("limit", lim);
+        result.put("total", filtered.size());
+        result.put("returned", page.size());
+        result.put("tasks", page);
+        return result;
+    }
+
+    /** 优先级排序锚：与聚合器卡 priority 值域对齐（urgent/high/normal，未知值垫底 3）。 */
+    private static int priorityRank(Object priority) {
+        if ("urgent".equals(priority)) { return 0; }
+        if ("high".equals(priority)) { return 1; }
+        if ("normal".equals(priority)) { return 2; }
+        return 3;
+    }
     /**
      * 「我发起的」聚合（P1-4）：三张业务单据表（删除申请/系数变更/上市日期变更）按 create_by 计数。
      * <p>三表均继承 BaseEntity，{@code create_by} 由 MyBatis-Plus MetaObjectHandler 在插入时填充当前人 ID，

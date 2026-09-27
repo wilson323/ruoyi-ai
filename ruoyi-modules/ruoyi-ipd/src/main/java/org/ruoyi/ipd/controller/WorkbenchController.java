@@ -44,6 +44,25 @@ public class WorkbenchController {
     }
 
     /**
+     * 任务队列过滤视图（WB-17-1 S0 切片；spec 页03 §4 tasks?bucket=&type=&limit=）。
+     *
+     * @param projectId 可选：仅该项目的卡（卡面 projectId 精确匹配）
+     * @param bucket    pending（缺省，全部在途）| overdue（dueDate 早于当前，与 summary 同规则）；
+     *                  completed/initiated fail-closed 400（数据源契约各在 completedCount / my-initiated）
+     * @param type      可选：spec 页03:165 权威 17 类 taskType 之一，非法值 400
+     * @param limit     可选：1~200，缺省 50；返回 total=截断前命中数
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/tasks")
+    public ApiV1Response<Map<String, Object>> tasks(@RequestParam(required = false) Long projectId,
+                                                    @RequestParam(required = false) String bucket,
+                                                    @RequestParam(required = false) String type,
+                                                    @RequestParam(required = false) Integer limit) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(workbenchService.tasks(actor, projectId, bucket, type, limit));
+    }
+
+    /**
      * 我发起的（R27 P0-6）：聚合 3 张业务单据（删除/系数/上市日期）create_by=personId。
      * <p>personId 缺省 = 当前登录人（从会话推导，SEC-API-01 强制）。
      */

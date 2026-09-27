@@ -45,6 +45,12 @@ public interface IWorkbenchService {
     /** 通知收件箱透传（工作台右侧与顶栏红点共用）。 */
     List<NotificationEvent> inbox(IpdActor actor, boolean unreadOnly);
 
+    /**
+     * 任务队列过滤视图（WB-17-1 S0，spec 页03 §4）：type/projectId/bucket 过滤 + limit 截断。
+     * 非法 type/bucket/limit 抛 IpdBusinessException（PARAM_INVALID→400）。
+     */
+    Map<String, Object> tasks(IpdActor actor, Long projectId, String bucket, String type, Integer limit);
+
 
     /* ========================================================================
      *  R27 P0-6：Workbench 路径 2 函数补全
