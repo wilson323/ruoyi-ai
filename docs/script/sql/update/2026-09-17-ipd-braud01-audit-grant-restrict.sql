@@ -15,11 +15,14 @@
 --   3. 回滚预案: §6 GRANT INSERT, UPDATE, DELETE ... ipd_app 一键复原
 --   4. rebuild chain 临时 GRANT: §5 (超管运维期专用, 平时 REVOKE 生效)
 --
--- 上线状态 (2026-09-17):
+-- 上线状态 (2026-09-26 owner 拍板后已 apply):
 --   - DCL 已正式登记 docs/script/sql/update/ 体系
 --   - 静态门禁 scripts/ci/check-braud01-audit-grant.sh 已部署
---   - 真库 apply 待 DBA 在 OPS-04 维护窗口执行
+--   - 真库已 apply (R227-C11, owner 2026-09-26 授权直接应用于 ipd_dev, root@socket)
 --   - 与 e9e6631d Q6 配套: Q6 已 REVOKE UPDATE/DELETE (库级 + 表级), 本文件补 INSERT 库级兜底收回
+--   - apply 时发现前提偏差: ipd_app 表级 INSERT 原不存在(应用此前靠库级兜底写审计),
+--     已按 §6 预案补 GRANT INSERT ×2; 终态三查全过(库级I/U/D=0/表级INSERT=2/两表无U/D)
+--   - 前提偏差成因待查: 21131def 系列 21 张表级 GRANT 清单未含 audit_logs 两表
 -- --------------------------------------------------------------------
 
 -- ============================================================================
