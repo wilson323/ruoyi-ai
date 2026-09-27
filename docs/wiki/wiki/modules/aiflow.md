@@ -1,7 +1,7 @@
 ---
 topic: modules/aiflow
 title: ruoyi-aiflow — 可视化 AI 工作流引擎
-updated: 2026-09-04
+updated: 2026-09-27
 raw:
   - raw/aiflow-source/workflow-controller.md
   - raw/aiflow-source/workflow-runtime-controller.md
@@ -98,19 +98,27 @@ org.ruoyi.workflow/
 ## 节点工厂 — WfNodeFactory + WfComponentNameEnum
 
 ```java
-WfNodeFactory.getNode(String componentName) → AbstractNode
+// 实际签名（R27-P0-N1 修复后）
+WfNodeFactory.create(WorkflowComponent, WorkflowNode, WfState, WfNodeState) → AbstractWfNode
 ```
 
-`WfComponentNameEnum` 是节点类型枚举，常见类型：
+入口先校验 `WfComponentNameEnum.getByName(name)` 是否返回 null，未注册名 / 拼错名立即抛 `IllegalArgumentException`，不再静默返回 null。
 
-- `MODEL`（模型调用）
-- `EMAIL`（邮件发送）
-- `MANUAL_REVIEW`（人工审核）
-- `WEB_SEARCH`（联网搜索）
-- `KNOWLEDGE`（知识库检索）
-- `CODE_EXEC`（代码执行）
+`WfComponentNameEnum` 节点类型枚举共 **11 项**：
 
-新增节点类型：实现 `AbstractNode` 接口 → 在 `WfComponentNameEnum` 加枚举 → 在 `WfNodeFactory` 注册。
+- `START("Start")` → StartNode
+- `END("End")` → EndNode
+- `LLM_ANSWER("Answer")` → LLMAnswerNode
+- `DALLE3("Dalle3")` → ImageNode（与 TONGYI_WANX 共用）
+- `TONGYI_WANX("Tongyiwanx")` → ImageNode
+- `FAQ_EXTRACTOR("FaqExtractor")` → **未实现节点类**（R27-P0-N1 修复后 throw）
+- `KNOWLEDGE_RETRIEVER("KnowledgeRetrieval")` → KnowledgeRetrievalNode
+- `SWITCHER("Switcher")` → SwitcherNode
+- `GOOGLE_SEARCH("Google")` → GoogleSearchNode
+- `MAIL_SEND("MailSend")` → MailSendNode
+- `HTTP_REQUEST("HttpRequest")` → HttpRequestNode
+
+新增节点类型：实现 `AbstractWfNode` 类 → 在 `WfComponentNameEnum` 加枚举 → 在 `WfNodeFactory.create` 注册 case 分支。
 
 参见：[wf-node-factory.md](../raw/aiflow-source/wf-node-factory.md)。
 
@@ -127,10 +135,12 @@ WfNodeFactory.getNode(String componentName) → AbstractNode
 
 ## 状态机
 
-工作流状态由 `WfState` 跟踪，节点状态由 `WfNodeState` 跟踪：
+工作流状态由 `WfState` 跟踪，节点状态由 `WfNodeState` 跟踪。**实际状态值均为 int 常量**（在 `AdiConstant.WorkflowConstant` 定义）：
 
-- `WorkflowRuntime`: `PENDING / RUNNING / PAUSED / COMPLETED / FAILED / CANCELED`
-- `WorkflowRuntimeNode`: `WAITING / RUNNING / SUCCESS / FAILED / SKIPPED`
+- `WorkflowRuntime.status`（int）：`WORKFLOW_PROCESS_STATUS_READY=1 / DOING=2 / SUCCESS=3 / FAIL=4`
+- `WorkflowRuntimeNode.status`（int）：`NODE_PROCESS_STATUS_READY=1 / DOING=2 / SUCCESS=3 / FAIL=4`
+
+调用点：[AdiConstant.java](../raw/aiflow-source/) 不在本次 wiki 收录范围，参见代码。
 
 状态转换由 `WorkflowEngine` 在执行节点前后驱动。
 

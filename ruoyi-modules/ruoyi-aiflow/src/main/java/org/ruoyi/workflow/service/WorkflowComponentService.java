@@ -36,7 +36,9 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
     @Resource
     private WorkflowComponentService self;
 
-    @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY})
+    // N2 治理（2026-09-27）：allEntries=true 必配——@Cacheable 方法均无参（key=SimpleKey.EMPTY），
+    // 而按参数生成 key 的 @CacheEvict 永远清不掉 EMPTY key 条目，不升级会造成脏缓存（含存量 WORKFLOW_COMPONENT_START_KEY 同类隐患）
+    @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY}, allEntries = true)
     public WorkflowComponent addOrUpdate(WfComponentReq req) {
         WorkflowComponent wfComponent;
         if (StringUtils.isNotBlank(req.getUuid())) {
@@ -63,7 +65,9 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
         }
     }
 
-    @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY})
+    // N2 治理（2026-09-27）：allEntries=true 必配——@Cacheable 方法均无参（key=SimpleKey.EMPTY），
+    // 而按参数生成 key 的 @CacheEvict 永远清不掉 EMPTY key 条目，不升级会造成脏缓存（含存量 WORKFLOW_COMPONENT_START_KEY 同类隐患）
+    @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY}, allEntries = true)
     public void enable(String uuid, Boolean isEnable) {
         WorkflowComponent wfComponent = PrivilegeUtil.checkAndGetByUuid(uuid, this.query(), ErrorEnum.A_WF_COMPONENT_NOT_FOUND);
         WorkflowComponent update = new WorkflowComponent();
@@ -72,7 +76,9 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
         this.baseMapper.updateById(update);
     }
 
-    @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY})
+    // N2 治理（2026-09-27）：allEntries=true 必配——@Cacheable 方法均无参（key=SimpleKey.EMPTY），
+    // 而按参数生成 key 的 @CacheEvict 永远清不掉 EMPTY key 条目，不升级会造成脏缓存（含存量 WORKFLOW_COMPONENT_START_KEY 同类隐患）
+    @CacheEvict(cacheNames = {WORKFLOW_COMPONENTS, WORKFLOW_COMPONENT_START_KEY}, allEntries = true)
     public void deleteByUuid(String uuid) {
         WorkflowComponent component = PrivilegeUtil.checkAndGetByUuid(uuid, this.query(), ErrorEnum.A_WF_COMPONENT_NOT_FOUND);
         Integer refNodeCount = baseMapper.countRefNodes(uuid);
@@ -98,7 +104,10 @@ public class WorkflowComponentService extends ServiceImpl<WorkflowComponentMappe
         return baseMapper.selectPage(new Page<>(currentPage, pageSize), wrapper);
     }
 
-    // @Cacheable(cacheNames = WORKFLOW_COMPONENTS)
+    // N2 治理（2026-09-27）：恢复缓存。脏缓存前提已闭合：变更路径 addOrUpdate/enable/deleteByUuid
+    // 均带 @CacheEvict(allEntries = true)（见本文件上方），且本方法无参 → key=SimpleKey.EMPTY 可被 allEntries 清除。
+    // 历史注释出处：commit 1cd8ae1c「人机交互节点逻辑修改」顺带注释，commit message 未给理由（探针A N2 实证）。
+    @Cacheable(cacheNames = WORKFLOW_COMPONENTS)
     public List<WorkflowComponent> getAllEnable() {
         return ChainWrappers.lambdaQueryChain(baseMapper)
                 .eq(WorkflowComponent::getIsEnable, true)
