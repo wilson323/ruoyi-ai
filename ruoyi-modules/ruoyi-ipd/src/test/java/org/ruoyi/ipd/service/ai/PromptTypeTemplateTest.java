@@ -82,10 +82,12 @@ class PromptTypeTemplateTest {
     }
 
     @Test
-    void sevenTemplatesAreDistinctAndCoverCardList() {
+    void allTemplatesAreDistinctAndCoverCardList() {
         // 卡面枚举清单：PRD/MRD/BRD/CHARTER/TEST_REPORT/RELEASE_NOTE/REVIEW
+        // + AI-P3 场景包·复盘起草（2026-09-27）：RETROSPECTIVE
         assertThat(PromptType.values()).extracting(PromptType::getCode)
-            .containsExactly("PRD", "MRD", "BRD", "CHARTER", "TEST_REPORT", "RELEASE_NOTE", "REVIEW");
+            .containsExactly("PRD", "MRD", "BRD", "CHARTER", "TEST_REPORT", "RELEASE_NOTE", "REVIEW",
+                "RETROSPECTIVE");
         List<String> templates = new ArrayList<>();
         for (PromptType t : PromptType.values()) {
             templates.add(PromptTemplates.templateOf(t));

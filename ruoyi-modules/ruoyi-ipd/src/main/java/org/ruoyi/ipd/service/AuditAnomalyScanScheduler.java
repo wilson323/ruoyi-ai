@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import java.time.Clock;
 import java.util.Date;
 
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,17 @@ public class AuditAnomalyScanScheduler {
 
     private final AuditAnomalyScanService auditAnomalyScanService;
 
+    /** 可注入时钟（仿 P0EscalationScanScheduler，ServiceBareClockGuardTest 禁一）：生产零影响，测试可钉死时刻。 */
+    private Clock clock = Clock.systemDefaultZone();
+
+    public void setClock(Clock clock) {
+        this.clock = (clock == null) ? Clock.systemDefaultZone() : clock;
+    }
+
     /** 每日 10:05 执行异常扫描（窗口 24h，与 job 间隔对齐实现无缝覆盖）。 */
     @Scheduled(cron = "0 5 10 * * ?")
     public void dailyAnomalyScan() {
-        int hits = auditAnomalyScanService.scanAndNotify(new Date());
+        int hits = auditAnomalyScanService.scanAndNotify(Date.from(clock.instant()));
         log.info("AuditAnomalyScanScheduler: AI-P3#7 审计异常扫描完成 hits={}", hits);
     }
 }

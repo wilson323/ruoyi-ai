@@ -125,7 +125,7 @@ public class AiGenerationService implements IAiGenerationService {
             long planMax = cfg.path("maxTokens").asInt(0) > 0
                 ? cfg.path("maxTokens").asInt(0) : DEFAULT_PLAN_MAX_TOKENS;
             if (used + req.prompt().length() + planMax > budgetOf(cfg)) {
-                failAudit(actor, config, req, "BUDGET_EXCEEDED", 0, null);
+                failAudit(actor, config, req, "BUDGET_EXCEEDED", 0, null, false);
                 throw new IpdBusinessException(ApiV1ErrorCode.AI_BUDGET_EXCEEDED);
             }
         }
@@ -134,7 +134,7 @@ public class AiGenerationService implements IAiGenerationService {
         try {
             acquired = gate.tryAcquire(2, TimeUnit.SECONDS);
             if (!acquired) {
-                failAudit(actor, config, req, "RATE_LIMITED", 0, null);
+                failAudit(actor, config, req, "RATE_LIMITED", 0, null, false);
                 throw new IpdBusinessException(ApiV1ErrorCode.RATE_LIMITED);
             }
             Integer maxTokens = cfg.path("maxTokens").asInt(0) > 0 ? cfg.path("maxTokens").asInt(0) : null;
@@ -151,17 +151,26 @@ public class AiGenerationService implements IAiGenerationService {
             // AI-P1-1：promptType 模板拼接（null/空 → 原样返回，裸 prompt 直传老逻辑；
             // 置于 RAG 拼装之后，模板槽位收到的是含历史文档注入的完整资料）。
             effectivePrompt = PromptTemplates.render(req.promptType(), effectivePrompt);
-            AiChatResult result = aiGateway.chat(new AiTestConfig(
+            AiTestConfig chatCfg = new AiTestConfig(
                 config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), timeoutMs),
-                effectivePrompt, maxTokens, temperature);
+                modelConfigService.decryptApiKey(config), config.getModelName(), timeoutMs);
+            AiChatResult result = aiGateway.chat(chatCfg, effectivePrompt, maxTokens, temperature);
+            // AI-P1-1 失败重试（2026-09-27）：瞬时类失败（TIMEOUT/UNREACHABLE/HTTP_5xx）
+            // 同请求内补一次重试；确定性失败（AUTH_FAILED/HTTP_429 限流/EMPTY_RESPONSE 等）
+            // 不重试——重试只会拖长失败反馈并双扣上游配额。审计仍只在最终失败落一条
+            // （retried=true 标记发生过重试；token 预算口径"成功落库才计入"不受影响）。
+            boolean retried = false;
+            if (!result.success() && isTransientFailure(result.errorCode())) {
+                retried = true;
+                result = aiGateway.chat(chatCfg, effectivePrompt, maxTokens, temperature);
+            }
             if (!result.success()) {
-                failAudit(actor, config, req, result.errorCode(), result.latencyMs(), ctx);
+                failAudit(actor, config, req, result.errorCode(), result.latencyMs(), ctx, retried);
                 throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
                     "AI 生成失败: " + safeErr(result.errorCode()));
             }
             if (result.content() == null || result.content().isBlank()) {
-                failAudit(actor, config, req, "EMPTY_RESPONSE", result.latencyMs(), ctx);
+                failAudit(actor, config, req, "EMPTY_RESPONSE", result.latencyMs(), ctx, false);
                 throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "AI 生成失败: EMPTY_RESPONSE");
             }
             AiDocument doc = documentService.createGenerated(req.projectId(), req.docType(), req.title(),
@@ -187,7 +196,7 @@ public class AiGenerationService implements IAiGenerationService {
             return doc;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            failAudit(actor, config, req, "RATE_LIMITED", 0, null);
+            failAudit(actor, config, req, "RATE_LIMITED", 0, null, false);
             throw new IpdBusinessException(ApiV1ErrorCode.RATE_LIMITED);
         } finally {
             if (acquired) {
@@ -255,6 +264,21 @@ public class AiGenerationService implements IAiGenerationService {
             .anyMatch(h -> h.equalsIgnoreCase(host));
     }
 
+    /**
+     * AI-P1-1：可重试瞬时失败白名单（AiGateway.mapFailure 同源错误码）：
+     * TIMEOUT / UNREACHABLE / HTTP_5xx。不在此列的失败（认证、429 限流、4xx、
+     * EMPTY_RESPONSE、UNSUPPORTED_PROTOCOL）重试无收益，直接失败反馈。
+     */
+    static boolean isTransientFailure(String errorCode) {
+        if (errorCode == null) {
+            return false;
+        }
+        return switch (errorCode) {
+            case "TIMEOUT", "UNREACHABLE" -> true;
+            default -> errorCode.startsWith("HTTP_5");
+        };
+    }
+
     /** errorCode 已是白名单类别（Tester 风格），此处仅兜空值。 */
     private static String safeErr(String errorCode) {
         return errorCode == null || errorCode.isBlank() ? "UNKNOWN" : errorCode;
@@ -292,7 +316,7 @@ public class AiGenerationService implements IAiGenerationService {
     }
 
     private void failAudit(IpdActor actor, AiModelConfig config, AiGenerateReq req, String code,
-                           long latencyMs, AiDocEmbeddingService.RetrievalContext ctx) {
+                           long latencyMs, AiDocEmbeddingService.RetrievalContext ctx, boolean retried) {
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
             .action("AI_GENERATE_FAILED").entityType("AI_DOCUMENT")
@@ -303,6 +327,7 @@ public class AiGenerationService implements IAiGenerationService {
                 "projectId", req.projectId(),
                 "promptLen", req.prompt().length(),
                 "errorCode", code,
+                "retried", retried,
                 "latencyMs", latencyMs,
                 "contextHits", ctx == null ? 0 : ctx.hits(),
                 "contextChars", ctx == null ? 0 : ctx.chars()))

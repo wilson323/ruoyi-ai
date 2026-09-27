@@ -34,7 +34,10 @@ public enum PromptType {
     RELEASE_NOTE("RELEASE_NOTE"),
 
     /** 评审纪要 / 评审意见稿 */
-    REVIEW("REVIEW");
+    REVIEW("REVIEW"),
+
+    /** 复盘报告（AI-P3 场景包之复盘起草；US-L1-09：目标回顾/达成数据/教训/改进项） */
+    RETROSPECTIVE("RETROSPECTIVE");
 
     /** 线传值（与枚举名一致；预留 code 字段对齐 NotificationChannelType 惯例） */
     private final String code;
