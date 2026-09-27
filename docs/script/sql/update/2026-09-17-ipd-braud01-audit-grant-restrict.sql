@@ -21,8 +21,13 @@
 --   - 真库已 apply (R227-C11, owner 2026-09-26 授权直接应用于 ipd_dev, root@socket)
 --   - 与 e9e6631d Q6 配套: Q6 已 REVOKE UPDATE/DELETE (库级 + 表级), 本文件补 INSERT 库级兜底收回
 --   - apply 时发现前提偏差: ipd_app 表级 INSERT 原不存在(应用此前靠库级兜底写审计),
---     已按 §6 预案补 GRANT INSERT ×2; 终态三查全过(库级I/U/D=0/表级INSERT=2/两表无U/D)
---   - 前提偏差成因待查: 21131def 系列 21 张表级 GRANT 清单未含 audit_logs 两表
+--     已按 §6 预案补 GRANT INSERT ×2; 但登录链随后 500 暴露第二缺口: append 三步是
+--     selectForUpdate(FOR UPDATE 需 SELECT+DML)→advance **UPDATE 锚行**→insert,
+--     chain_heads 的表级 UPDATE 是业务必需而本文件从未建过 → 已补
+--     GRANT UPDATE ON audit_log_chain_heads(无 DELETE, G-02 不破);
+--     终态: audit_logs=S+I / chain_heads=S+I+U / 两表无 DELETE / 库级兕底=空
+--   - 教训: 收权前必须对照业务代码逐语句核权限需求(AuditLogServiceImpl.append:107/122),
+--     文档 SQL 的权限模型 ≠ 代码真实需求; 21131def 21 张表级 GRANT 清单未含审计两表
 -- --------------------------------------------------------------------
 
 -- ============================================================================
