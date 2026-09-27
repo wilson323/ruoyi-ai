@@ -38,7 +38,7 @@ public class WfNodeFactory {
             case FAQ_EXTRACTOR ->
                 throw new UnsupportedOperationException(
                     "FAQ_EXTRACTOR is registered in WfComponentNameEnum but no node class implemented yet. "
-                        + "前端 Dalle3/FaqExtractor 节点需等 IPD 后续治理轮补实现类后再启用。");
+                        + "前端 FaqExtractor 节点需等 IPD 后续治理轮补实现类后再启用。");
             default ->
                 throw new IllegalArgumentException(
                     "Unhandled workflow component: " + component.name());

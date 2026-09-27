@@ -1,5 +1,6 @@
 package org.ruoyi.workflow.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
@@ -75,6 +76,7 @@ public class FlwDefinitionController extends BaseController {
      *
      * @param flowDefinition 参数
      */
+    @SaCheckPermission("workflow:definition:add")
     @Log(title = "流程定义", businessType = BusinessType.INSERT)
     @PostMapping
     @RepeatSubmit()
@@ -88,6 +90,7 @@ public class FlwDefinitionController extends BaseController {
      *
      * @param flowDefinition 参数
      */
+    @SaCheckPermission("workflow:definition:edit")
     @Log(title = "流程定义", businessType = BusinessType.UPDATE)
     @PutMapping
     @RepeatSubmit()
@@ -101,6 +104,7 @@ public class FlwDefinitionController extends BaseController {
      *
      * @param id 流程定义id
      */
+    @SaCheckPermission("workflow:definition:edit")
     @Log(title = "流程定义", businessType = BusinessType.INSERT)
     @PutMapping("/publish/{id}")
     @RepeatSubmit()
@@ -113,6 +117,7 @@ public class FlwDefinitionController extends BaseController {
      *
      * @param id 流程定义id
      */
+    @SaCheckPermission("workflow:definition:edit")
     @Log(title = "流程定义", businessType = BusinessType.INSERT)
     @PutMapping("/unPublish/{id}")
     @RepeatSubmit()
@@ -124,6 +129,7 @@ public class FlwDefinitionController extends BaseController {
     /**
      * 删除流程定义
      */
+    @SaCheckPermission("workflow:definition:remove")
     @Log(title = "流程定义", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable List<Long> ids) {
@@ -135,6 +141,7 @@ public class FlwDefinitionController extends BaseController {
      *
      * @param id 流程定义id
      */
+    @SaCheckPermission("workflow:definition:add")
     @Log(title = "流程定义", businessType = BusinessType.INSERT)
     @PostMapping("/copy/{id}")
     @RepeatSubmit()
@@ -149,6 +156,7 @@ public class FlwDefinitionController extends BaseController {
      * @param file     文件
      * @param category 分类
      */
+    @SaCheckPermission("workflow:definition:import")
     @Log(title = "流程定义", businessType = BusinessType.IMPORT)
     @PostMapping("/importDef")
     public R<Boolean> importDef(MultipartFile file, String category) {
@@ -162,6 +170,7 @@ public class FlwDefinitionController extends BaseController {
      * @param response 响应
      * @throws IOException 异常
      */
+    @SaCheckPermission("workflow:definition:import")
     @Log(title = "流程定义", businessType = BusinessType.EXPORT)
     @PostMapping("/exportDef/{id}")
     public void exportDef(@PathVariable Long id, HttpServletResponse response) throws IOException {
@@ -184,6 +193,7 @@ public class FlwDefinitionController extends BaseController {
      * @param id     流程定义id
      * @param active 激活/挂起
      */
+    @SaCheckPermission("workflow:definition:edit")
     @RepeatSubmit()
     @PutMapping("/active/{id}")
     @Transactional(rollbackFor = Exception.class)

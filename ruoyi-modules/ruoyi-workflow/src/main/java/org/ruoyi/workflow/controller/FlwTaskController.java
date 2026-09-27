@@ -1,5 +1,6 @@
 package org.ruoyi.workflow.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.dto.StartProcessReturnDTO;
@@ -91,6 +92,7 @@ public class FlwTaskController extends BaseController {
      * @param flowTaskBo 参数
      * @param pageQuery  分页
      */
+    @SaCheckPermission("workflow:task:queryAll")
     @GetMapping("/pageByAllTaskWait")
     public TableDataInfo<FlowTaskVo> pageByAllTaskWait(FlowTaskBo flowTaskBo, PageQuery pageQuery) {
         return flwTaskService.pageByAllTaskWait(flowTaskBo, pageQuery);
@@ -102,6 +104,7 @@ public class FlwTaskController extends BaseController {
      * @param flowTaskBo 参数
      * @param pageQuery  分页
      */
+    @SaCheckPermission("workflow:task:queryAll")
     @GetMapping("/pageByAllTaskFinish")
     public TableDataInfo<FlowHisTaskVo> pageByAllTaskFinish(FlowTaskBo flowTaskBo, PageQuery pageQuery) {
         return flwTaskService.pageByAllTaskFinish(flowTaskBo, pageQuery);
@@ -143,6 +146,7 @@ public class FlwTaskController extends BaseController {
      *
      * @param bo 参数
      */
+    @SaCheckPermission("workflow:task:edit")
     @Log(title = "任务管理", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping("/terminationTask")
@@ -169,6 +173,7 @@ public class FlwTaskController extends BaseController {
      * @param taskIdList 任务id
      * @param userId     办理人id
      */
+    @SaCheckPermission("workflow:task:edit")
     @Log(title = "任务管理", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping("/updateAssignee/{userId}")
