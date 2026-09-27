@@ -236,8 +236,8 @@ public class WorkflowEngine {
      * 校验用户输入并组装成工作流的输入
      *
      * @param userInputs 用户输入
-     * @param startNode  开始节点定义
-     * @return 正确的用户输入列表
+     * @param startNode  开始节点定�?
+     * @return 正确的用户输入列�?
      */
     private List<NodeIOData> getAndCheckUserInput(List<ObjectNode> userInputs, WorkflowNode startNode) {
         WfNodeInputConfig wfNodeInputConfig = NodeInputConfigTypeHandler.fillNodeInputConfig(startNode.getInputConfig());
