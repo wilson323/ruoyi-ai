@@ -118,8 +118,8 @@ org.ruoyi.workflow/
 
 | name | enum 声明 | factory switch | 库行 is_enable=1 AND is_deleted=0 | 前端 NodeShell | 状态 |
 |---|---|---|---|---|---|
-| DALLE3 | 是 | 否（default → null） | 否（2026-09-27 fresh 直读 ipd_dev） | 否（forwarding 壳） | 🔴 死枚举 |
-| FAQ_EXTRACTOR | 是 | 否（default → null） | 否（2026-09-27 fresh 直读 ipd_dev） | 否（forwarding 壳） | 🔴 死枚举 |
+| DALLE3 | 是 | ✅ 已闭合：`case DALLE3, TONGYI_WANX -> ImageNode`（WfNodeFactory.java:31） | 否（2026-09-27 fresh 直读 ipd_dev） | 否（forwarding 壳） | 🟡 已修复待库行/前端启用（2026-09-27 R27-P0-N1，兄弟会话 staged） |
+| FAQ_EXTRACTOR | 是 | ✅ 已闭合：显式抛 `UnsupportedOperationException`（WfNodeFactory.java:38-41） | 否（2026-09-27 fresh 直读 ipd_dev） | 否（forwarding 壳） | 🟡 显式报错态（同上；实现类待后续治理轮补） |
 
 证据：fresh 直读 MySQL 13306/ipd_dev（cnf `.codex/ipd-dev/config/mysql-client.cnf` + socket `.codex/ipd-dev/run/mysql.sock`）：
 
@@ -131,11 +131,11 @@ SELECT name, uuid, is_enable, is_deleted FROM t_workflow_component
 
 全表 9 行 / 启用 9 / 软删 0；启用清单：Start / End / Answer / Switcher / Tongyiwanx / MailSend / KnowledgeRetrieval / HttpRequest / Google。三方对齐无缺口。
 
-清理建议（owner 拍板后动）：
+清理建议（owner 拍板后动；2026-09-27 已按「保留枚举+显式闭合」路线修复，原「删除枚举」建议作废——N1 修复记录见《工作流系统性梳理-20260927.md》P0 落地表）：
 
-1. 枚举侧：从 `WfComponentNameEnum` 删除 `DALLE3` / `FAQ_EXTRACTOR` 两条。
-2. 库侧：保留空（已是现状，无写入副作用）。
-3. 前端：保留空（已是现状，无渲染副作用）。
+1. ~~枚举侧：从 `WfComponentNameEnum` 删除 `DALLE3` / `FAQ_EXTRACTOR` 两条。~~ 已被修复路线取代：保留枚举，factory 对 DALLE3 合入 ImageNode、对 FAQ_EXTRACTOR 显式抛异常、未知组件名早抛 `IllegalArgumentException`，default→null NPE 根因闭合。
+2. 库侧：保留空（已是现状，无写入副作用）；如需实际启用 DALLE3 节点，补 `t_workflow_component` 库行并登记 `is_enable=1`。
+3. 前端：保留空（已是现状，无渲染副作用）；Dalle3/FaqExtractor 壳升级真实现待后端启用同批。
 
 ### GBK 乱码史
 
