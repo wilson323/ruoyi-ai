@@ -275,10 +275,16 @@ public class AiCopilotService implements IAiCopilotService {
     /**
      * R221 填表字段白名单（spec §3.5 安全红线）：后端强校验，非仅前端。
      * 未登记 scene 一律拒绝（金额/角色/ID 等敏感面永不开放）；首切片仅 stage-action-fields。
+     *
+     * <p>R230（2026-09-27）：字段集合必须与 {@code StageActionFieldsReq} / {@code POST /stage-actions/{id}/fields}
+     * 的可落库字段**严格同构**——原含 {@code remark}（7 字段）但 /fields 端点 DTO 结构性无该参数，
+     * AI 建议填 remark 时前端回填 → 用户确认保存 → 值被端点静默丢弃，形成“假成功”。
+     * 故 remark 已从白名单移除（6 字段），能力不对称的另一侧（前端回填集）由前端仓 1a330d9 W1 同步剔除。
+     * 本常量同时被 {@link #composeFillPrompt} 用于生成 prompt 的“可输出字段”清单，移除即双向收窄。
      */
     static final Map<String, Set<String>> FILL_FIELD_WHITELIST = Map.of(
         "stage-action-fields", Set.of(
-            "actualDoneAt", "farValue", "frrValue", "certNo", "certPassedAt", "algoType", "remark"));
+            "actualDoneAt", "farValue", "frrValue", "certNo", "certPassedAt", "algoType"));
 
     /**
      * 按 scene 白名单过滤 AI 生成的字段：未登记 scene 返回空 Map，schema 外字段丢弃。
