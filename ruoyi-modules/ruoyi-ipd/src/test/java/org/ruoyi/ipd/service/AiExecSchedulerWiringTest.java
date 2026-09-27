@@ -123,6 +123,20 @@ class AiExecSchedulerWiringTest {
         verify(trigger, never()).triggerSchedule(anyLong(), anyString(), anyLong());
     }
 
+    /** 遗留 MINOR#2（C08 SCHEDULE 必死行累积）：声明 supportsSchedule=false 的执行器（DEEP 填表族）不得被主动扫描建任务 */
+    @Test
+    void proactiveScanSkipsScheduleUnsupportedExecutors() throws Exception {
+        StageActionMapper mapper = mock(StageActionMapper.class);
+        AiExecutionTrigger trigger = mock(AiExecutionTrigger.class);
+        AiProactiveScanScheduler scheduler = new AiProactiveScanScheduler(mapper, trigger, wiredEngine());
+        scheduler.setClock(Clock.fixed(Instant.parse("2026-09-26T10:00:00Z"), ZoneId.of("UTC")));
+        when(mapper.selectList(any())).thenReturn(List.of(action(6L, 100L, "C08")));
+
+        scheduledMethodOf(AiProactiveScanScheduler.class).invoke(scheduler);
+
+        verify(trigger, never()).triggerSchedule(anyLong(), eq("C08"), anyLong());
+    }
+
     /** 单行 triggerSchedule 异常不阻断后续行（NotificationOutboxScanner 同款容错范式） */
     @Test
     void proactiveScanRowFailureDoesNotBlockNext() throws Exception {
@@ -142,10 +156,13 @@ class AiExecSchedulerWiringTest {
         assertThat(codes.getAllValues()).containsExactly("C01", "P08");
     }
 
-    /** 已接线路由键集 mock：与 ExecutorCoverageSentinelTest.WIRED 首切片 4 码对齐 */
+    /** 已接线路由键集 mock：与 ExecutorCoverageSentinelTest.WIRED 首切片 4 码对齐；
+     * schedule 口径为真实交集（AI 档 ∧ 已接线 ∧ supportsSchedule）：剔除 C08（填表族）与 C11（HUMAN_GATE） */
     private static AiExecutionEngine wiredEngine() {
         AiExecutionEngine engine = mock(AiExecutionEngine.class);
-        when(engine.wiredActionCodes()).thenReturn(java.util.Set.of("C01", "C08", "P08", "C11"));
+        org.mockito.Mockito.lenient().when(engine.wiredActionCodes()).thenReturn(java.util.Set.of("C01", "C08", "P08", "C11"));
+        org.mockito.Mockito.lenient().when(engine.scheduleWiredActionCodes())
+            .thenReturn(java.util.Set.of("C01", "P08"));
         return engine;
     }
 

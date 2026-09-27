@@ -17,6 +17,12 @@ public interface AiActionExecutor {
     /** 执行单个任务，返回结构化结果（不抛业务异常；异常由引擎捕获进退避/DEAD）。 */
     AiExecResult execute(AiAgentTask task, AiExecContext ctx);
 
+    /** 是否接受主动扫描的 SCHEDULE 自动派发（遗留 MINOR#2）：DEEP 填表族无载荷自动跑必死，
+     * 只能由人确认后的 PASSIVE 触发——扫描器据此二次过滤，不建每日累积的必死行。 */
+    default boolean supportsSchedule() {
+        return true;
+    }
+
     /** 终态守卫（CodeReview M3）：DONE/NA 动作重复触发必须 no-op，
      * 不得改写历史完成日/重复生成文档/重复挂交付物（transit 只对同 target 幂等，侧效应不幂等）。 */
     static AiExecResult terminalNoOp(StageAction action) {

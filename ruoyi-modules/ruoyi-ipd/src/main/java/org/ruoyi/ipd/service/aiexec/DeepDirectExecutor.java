@@ -39,6 +39,12 @@ public class DeepDirectExecutor implements AiActionExecutor {
         return Set.of("C08");
     }
 
+    /** 遗留 MINOR#2：C08 需对话填表载荷，SCHEDULE 自动派发无载荷必 fail → 不接受主动扫描，只走人确认后的 PASSIVE。 */
+    @Override
+    public boolean supportsSchedule() {
+        return false;
+    }
+
     @Override
     public AiExecResult execute(AiAgentTask task, AiExecContext ctx) {
         Long id = task.getStageActionId();

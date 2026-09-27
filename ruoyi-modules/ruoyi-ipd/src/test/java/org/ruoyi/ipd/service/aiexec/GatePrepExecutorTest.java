@@ -44,6 +44,7 @@ class GatePrepExecutorTest {
     @Mock private ISysOssService ossService;
     @Mock private NotificationService notificationService;
     @Mock private ProjectMemberMapper projectMemberMapper;
+    @Mock private org.ruoyi.ipd.service.StageActionService stageActionService;
     @InjectMocks private GatePrepExecutor executor;
 
     private AiAgentTask task() {
@@ -70,6 +71,23 @@ class GatePrepExecutorTest {
         e.setIsVeto(isVeto);
         e.setEnabled("1");
         return e;
+    }
+
+    /** 复审问题4（遗留 MINOR#1）：动作已终态（DONE）→ 动作级 no-op，不得重复备料/上传/通知（M3 同款侧效应不幂等） */
+    @Test
+    void doneActionIsTerminalNoOp() {
+        org.ruoyi.ipd.domain.StageAction done = new org.ruoyi.ipd.domain.StageAction();
+        done.setId(9004L);
+        done.setStatus("DONE"); // mock 合法性：人判完成后 SCHEDULE/PASSIVE 再触发是真库可达序列
+        when(stageActionService.getById(9004L)).thenReturn(done);
+
+        AiExecResult r = executor.execute(task(), CTX);
+
+        assertThat(r.ok()).isTrue();
+        assertThat(r.summary()).contains("no-op");
+        verify(gateMapper, never()).selectOne(any());
+        verify(ossService, never()).upload(any(org.springframework.web.multipart.MultipartFile.class));
+        verify(notificationService, never()).publishDaily(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

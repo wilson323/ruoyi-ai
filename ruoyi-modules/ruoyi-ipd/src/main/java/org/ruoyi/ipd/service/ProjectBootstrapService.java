@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.domain.ActionDef;
@@ -36,6 +37,7 @@ import java.util.Set;
  * 事务语义保持不变（{@code Propagation.MANDATORY}），失败仍由调用方事务整体回滚。
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ProjectBootstrapService implements IProjectBootstrapService {
     public static final String[][] STAGES = {
@@ -51,6 +53,15 @@ public class ProjectBootstrapService implements IProjectBootstrapService {
 
     private final ProjectStageMapper projectStageMapper;
     private final StageActionMapper stageActionMapper;
+
+    /** R221 Task 10：EVENT hook 尾唤醒（nullable——单测/降级零影响，StageActionService 同款 setter 范式）。
+     * 绝不在调度线程反向调 bootstrap（Propagation.MANDATORY），只顺调用 bootstrap → hook。 */
+    private AiExecReviewHook aiExecReviewHook;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setAiExecReviewHook(AiExecReviewHook aiExecReviewHook) {
+        this.aiExecReviewHook = aiExecReviewHook;
+    }
 
     /** 首次成功返回阶段数6，已有完整结构返回0；调用方必须已开启真实事务。 */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
@@ -127,6 +138,14 @@ public class ProjectBootstrapService implements IProjectBootstrapService {
         }
         if (actionIds.size() != ActionCatalog.ALL.size()) throw writeFailure();
 
+        // R221：首次初始化成功后唤醒第一个可自动派发 AI 档动作；副链失败只 WARN 不炸项目创建主链
+        if (aiExecReviewHook != null) {
+            try {
+                aiExecReviewHook.onBootstrapped(projectId);
+            } catch (RuntimeException e) {
+                log.warn("[R221] bootstrap 尾唤醒失败（不影响项目初始化）projectId={}: {}", projectId, e.getMessage());
+            }
+        }
         return stageIds.size();
     }
 

@@ -76,6 +76,14 @@ public class AiDocumentService {
     /** AI-STRAT-1（2026-09-11）：审核通过即异步向量化（nullable 同上——单测可只装配主链）。 */
     private AiDocEmbeddingService docEmbeddingService;
 
+    /** R221 Task 10：人审通过自动闭环 hook（nullable 同上——无关联任务时 hook 内部 no-op）。 */
+    private AiExecReviewHook aiExecReviewHook;
+
+    @Autowired(required = false)
+    public void setAiExecReviewHook(AiExecReviewHook aiExecReviewHook) {
+        this.aiExecReviewHook = aiExecReviewHook;
+    }
+
     @Autowired(required = false)
     public void setAuditLogService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
@@ -237,6 +245,15 @@ public class AiDocumentService {
             } else {
                 log.warn("[AI-STRAT-1-SCOPE] docEmbeddingService 未注入，embedAsync 跳过 reviewDocId={} status={}",
                     row.getId(), row.getStatus());
+            }
+            // R221 Task 10：挂着 SUCCEEDED 任务行的文档审通过 → 自动挂交付物 + DONE + 唤醒后继；
+            // 副链失败只 WARN 不炸审核主链（hook 失败由兜底扫描器/人工兼容）
+            if (aiExecReviewHook != null) {
+                try {
+                    aiExecReviewHook.onDocumentReviewed(versionId, row.getContent());
+                } catch (RuntimeException e) {
+                    log.warn("[R221] review 闭环 hook 失败（不影响审核结果）docId={}: {}", versionId, e.getMessage());
+                }
             }
             return row;
         }

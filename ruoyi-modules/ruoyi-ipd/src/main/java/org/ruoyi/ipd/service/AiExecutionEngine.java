@@ -77,6 +77,20 @@ public class AiExecutionEngine {
         return java.util.Set.copyOf(executorByCode.keySet());
     }
 
+    /** 可自动派发集（真实交集：AI 档 ∧ 已接线 ∧ supportsSchedule）：主动扫描与 EVENT 唤醒后继统一按此过滤。
+     * 剔除 C08 类填表族（无载荷 SCHEDULE/EVENT 建了必死，只能人确认后 PASSIVE，遗留 MINOR#2）
+     * 与 C11 类 HUMAN_GATE（AI 不代启门控，spec §4.2）。 */
+    public java.util.Set<String> scheduleWiredActionCodes() {
+        return executorByCode.entrySet().stream()
+            .filter(e -> e.getValue().supportsSchedule())
+            .filter(e -> {
+                String mode = org.ruoyi.ipd.seed.ActionCatalog.byCode(e.getKey()).execMode();
+                return "AI_DIRECT".equals(mode) || "AI_GENERATE".equals(mode);
+            })
+            .map(java.util.Map.Entry::getKey)
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
     public void dispatchAsync() {
         try {
             pool.submit(() -> {

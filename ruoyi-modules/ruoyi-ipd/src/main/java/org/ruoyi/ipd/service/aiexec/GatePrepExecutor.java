@@ -39,6 +39,7 @@ public class GatePrepExecutor implements AiActionExecutor {
     private final ISysOssService ossService;
     private final NotificationService notificationService;
     private final ProjectMemberMapper projectMemberMapper;
+    private final org.ruoyi.ipd.service.StageActionService stageActionService;
 
     @Override
     public Set<String> supportedActionCodes() {
@@ -47,6 +48,11 @@ public class GatePrepExecutor implements AiActionExecutor {
 
     @Override
     public AiExecResult execute(AiAgentTask task, AiExecContext ctx) {
+        // 复审问题4（M3 同款）：动作级终态守卫——人判完成后重复触发不得再备料/上传/通知
+        AiExecResult terminal = AiActionExecutor.terminalNoOp(stageActionService.getById(task.getStageActionId()));
+        if (terminal != null) {
+            return terminal;
+        }
         String gateCode = ActionCatalog.byCode(task.getActionCode()).gate();
         Gate gate = gateMapper.selectOne(new LambdaQueryWrapper<Gate>()
             .eq(Gate::getProjectId, task.getProjectId())

@@ -29,14 +29,28 @@ class ExecutorCoverageSentinelTest {
 
     @Test
     void wiredCodesMatchExecutorsUnion() {
-        // 构造签名以磁盘现态为准（CodeReview 修复波后：Deep 3 参 / GatePrep 5 参）
+        // 构造签名以磁盘现态为准（复审问题4 波后：GatePrep 6 参——+StageActionService 终态守卫）
         Set<String> union = java.util.stream.Stream.of(
                 new LightDirectExecutor(null).supportedActionCodes(),
                 new DeepDirectExecutor(null, null, null).supportedActionCodes(),
                 new GenerateExecutor(null, null, null, null).supportedActionCodes(),
-                new GatePrepExecutor(null, null, null, null, null).supportedActionCodes())
+                new GatePrepExecutor(null, null, null, null, null, null).supportedActionCodes())
             .flatMap(Set::stream).collect(Collectors.toUnmodifiableSet());
         assertThat(union).isEqualTo(WIRED);
+    }
+
+    /** 遗留 MINOR#2 行为锁（真实现非 mock）：可自动派发集 = AI 档 ∧ 已接线 ∧ supportsSchedule
+     * → C08（填表族）/C11（HUMAN_GATE）被排除，只剩 C01/P08 */
+    @Test
+    void scheduleWiredCodesExcludeFillTableAndHumanGate() {
+        org.ruoyi.ipd.service.AiExecutionEngine engine = new org.ruoyi.ipd.service.AiExecutionEngine(
+            null,
+            List.of(new LightDirectExecutor(null), new DeepDirectExecutor(null, null, null),
+                new GenerateExecutor(null, null, null, null),
+                new GatePrepExecutor(null, null, null, null, null, null)),
+            null, null);
+        assertThat(engine.wiredActionCodes()).containsExactlyInAnyOrder("C01", "C08", "P08", "C11");
+        assertThat(engine.scheduleWiredActionCodes()).containsExactlyInAnyOrder("C01", "P08");
     }
 
     @Test
