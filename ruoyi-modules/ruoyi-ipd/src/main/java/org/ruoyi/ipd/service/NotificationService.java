@@ -118,6 +118,10 @@ public class NotificationService implements INotificationService {
         public static final String AI_PREPARED_GATE = "AI_PREPARED_GATE";
         /** R221 AI 执行退避耗尽转 DEAD，通知人接管（AiExecutionEngine）——收编原字面量 */
         public static final String AI_EXEC_DEAD = "AI_EXEC_DEAD";
+        /** AI-P3 #7：窗口内同一操作人写型动作超阈值（只报不拦，FYI 给全体在任超管） */
+        public static final String AUDIT_ANOMALY_BULK_WRITE = "AUDIT_ANOMALY_BULK_WRITE";
+        /** AI-P3 #7：非超管角色执行敏感动作（PERMANENT_DELETE/REBUILD_CHAIN/TRANSFER_SUPER_ADMIN） */
+        public static final String AUDIT_ANOMALY_SENSITIVE_OFFROLE = "AUDIT_ANOMALY_SENSITIVE_OFFROLE";
 
         private Types() {
         }

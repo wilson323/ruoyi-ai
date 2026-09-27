@@ -10,7 +10,9 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AiGenerateReq;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.domain.PromptType;
 import org.ruoyi.ipd.service.ai.AiChatResult;
+import org.ruoyi.ipd.service.ai.PromptTemplates;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -146,6 +148,9 @@ public class AiGenerationService implements IAiGenerationService {
                 ctx = AiDocEmbeddingService.RetrievalContext.EMPTY;
             }
             String effectivePrompt = composePrompt(req.prompt(), ctx);
+            // AI-P1-1：promptType 模板拼接（null/空 → 原样返回，裸 prompt 直传老逻辑；
+            // 置于 RAG 拼装之后，模板槽位收到的是含历史文档注入的完整资料）。
+            effectivePrompt = PromptTemplates.render(req.promptType(), effectivePrompt);
             AiChatResult result = aiGateway.chat(new AiTestConfig(
                 config.getProvider(), config.getEndpointUrl(),
                 modelConfigService.decryptApiKey(config), config.getModelName(), timeoutMs),
@@ -202,6 +207,13 @@ public class AiGenerationService implements IAiGenerationService {
         requireArg(req.prompt().length() <= MAX_PROMPT_LEN, "prompt 超长（≤30000 字符）");
         if (req.docType() != null && req.docType().length() > 32) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
+        }
+        // AI-P1-1：promptType 可选；非空但非法 → fail-fast 拒绝（出站前拦截，不耗
+        // 预算/信号量；不静默降级裸 prompt，避免"以为套了模板"的假成功）。
+        if (req.promptType() != null && !req.promptType().isBlank()
+                && PromptType.fromCodeOrNull(req.promptType()) == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "promptType 非法: " + req.promptType());
         }
     }
 
