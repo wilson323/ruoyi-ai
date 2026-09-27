@@ -1,5 +1,6 @@
 package org.ruoyi.workflow.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
@@ -74,6 +75,7 @@ public class FlwInstanceController extends BaseController {
      *
      * @param businessIds 业务id
      */
+    @SaCheckPermission("workflow:instance:remove")
     @DeleteMapping("/deleteByBusinessIds/{businessIds}")
     public R<Void> deleteByBusinessIds(@PathVariable List<Long> businessIds) {
         return toAjax(flwInstanceService.deleteByBusinessIds(businessIds));
@@ -84,6 +86,7 @@ public class FlwInstanceController extends BaseController {
      *
      * @param instanceIds 实例id
      */
+    @SaCheckPermission("workflow:instance:remove")
     @DeleteMapping("/deleteByInstanceIds/{instanceIds}")
     public R<Void> deleteByInstanceIds(@PathVariable List<Long> instanceIds) {
         return toAjax(flwInstanceService.deleteByInstanceIds(instanceIds));
@@ -94,6 +97,7 @@ public class FlwInstanceController extends BaseController {
      *
      * @param instanceIds 实例id
      */
+    @SaCheckPermission("workflow:instance:remove")
     @DeleteMapping("/deleteHisByInstanceIds/{instanceIds}")
     public R<Void> deleteHisByInstanceIds(@PathVariable List<Long> instanceIds) {
         return toAjax(flwInstanceService.deleteHisByInstanceIds(instanceIds));
@@ -116,6 +120,7 @@ public class FlwInstanceController extends BaseController {
      * @param id     流程实例id
      * @param active 激活/挂起
      */
+    @SaCheckPermission("workflow:instance:edit")
     @RepeatSubmit()
     @PutMapping("/active/{id}")
     public R<Boolean> active(@PathVariable Long id, @RequestParam boolean active) {
@@ -158,6 +163,7 @@ public class FlwInstanceController extends BaseController {
      *
      * @param bo 参数
      */
+    @SaCheckPermission("workflow:instance:edit")
     @RepeatSubmit()
     @PutMapping("/updateVariable")
     public R<Void> updateVariable(@Validated @RequestBody FlowVariableBo bo) {
@@ -169,6 +175,7 @@ public class FlwInstanceController extends BaseController {
      *
      * @param bo 参数
      */
+    @SaCheckPermission("workflow:instance:edit")
     @Log(title = "流程实例管理", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping("/invalid")
