@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -81,8 +82,13 @@ public class AiExecutionEngine {
      * 剔除 C08 类填表族（无载荷 SCHEDULE/EVENT 建了必死，只能人确认后 PASSIVE，遗留 MINOR#2）
      * 与 C11 类 HUMAN_GATE（AI 不代启门控，spec §4.2）。 */
     public java.util.Set<String> scheduleWiredActionCodes() {
+        // 复审 S4：目录外码安全跳过（byCode 未知码抛 IllegalArgumentException，静默拖垮扫描/唤醒整条链）；
+        // 目录↔接线对账由 ExecutorCoverageSentinelTest 锁住，此处只防生产 NPE/异常面
+        Set<String> catalogCodes = org.ruoyi.ipd.seed.ActionCatalog.ALL.stream()
+            .map(org.ruoyi.ipd.domain.ActionDef::code).collect(Collectors.toUnmodifiableSet());
         return executorByCode.entrySet().stream()
             .filter(e -> e.getValue().supportsSchedule())
+            .filter(e -> catalogCodes.contains(e.getKey()))
             .filter(e -> {
                 String mode = org.ruoyi.ipd.seed.ActionCatalog.byCode(e.getKey()).execMode();
                 return "AI_DIRECT".equals(mode) || "AI_GENERATE".equals(mode);

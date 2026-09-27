@@ -9,11 +9,15 @@ import org.ruoyi.ipd.domain.AiAgentTask;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.mapper.AiAgentTaskMapper;
 import org.ruoyi.system.service.ISysOssService;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -50,6 +54,41 @@ class AiExecEventHookTest {
         a.setActionCode(code);
         a.setStatus(status);
         return a;
+    }
+
+    private static org.ruoyi.system.domain.vo.SysOssVo ossVo(long ossId) {
+        var vo = new org.ruoyi.system.domain.vo.SysOssVo();
+        vo.setOssId(ossId);
+        return vo;
+    }
+
+    /** 复审 W1 行为锁（CodeReview 54b1e3ec..8a8fe615）：host 事务活跃时 closeOne 必须延迟到
+     * afterCommit 独立事务运行——addDeliverable/transit 抛 ServiceException 会把 review 事务打成
+     * rollback-only，同步内联调用时宿主 try/catch 拦不住（审核被反噬 500 + OSS 孤儿）。
+     * 无事务同步（单测直调）同步执行是既有语义，由 closesLoop 正例锁住。 */
+    @Test
+    void closeDefersToAfterCommitWhenHostTransactionActive() {
+        AiAgentTask linked = AiAgentTask.builder().id(3L).projectId(100L).actionCode("C01")
+            .stageActionId(9001L).status(AiAgentTask.STATUS_SUCCEEDED).aiDocId(4401L).build();
+        when(taskMapper.selectList(any())).thenReturn(List.of(linked));
+        when(stageActionService.getById(9001L)).thenReturn(action(9001L, 100L, 10L, "C01", "IN_PROGRESS"));
+        when(ossService.upload(any(org.springframework.web.multipart.MultipartFile.class)))
+            .thenReturn(ossVo(777L));
+        when(engine.scheduleWiredActionCodes()).thenReturn(Set.of("C01", "P08"));
+        when(stageActionService.listByProject(100L)).thenReturn(List.of());
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            hook().onDocumentReviewed(4401L, "# 草稿正文");
+            verify(stageActionService, never()).transit(anyLong(), anyString(), anyString(), anyString());
+            List<TransactionSynchronization> syncs = TransactionSynchronizationManager.getSynchronizations();
+            assertThat(syncs).hasSize(1);
+            // afterCommit 时机（review 事务已提交，不再是 rollback-only 风险窗口）→ 闭环真正执行
+            syncs.get(0).afterCommit();
+            verify(stageActionService).transit(9001L, "DONE", "R221 人审通过自动闭环", "0");
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     /** review 通过 hook：文档挂着 SUCCEEDED 任务 → 自动挂交付物 + DONE；同阶段后继唤醒只碰可自动派发集

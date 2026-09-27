@@ -143,7 +143,7 @@ public class ProjectBootstrapService implements IProjectBootstrapService {
             try {
                 aiExecReviewHook.onBootstrapped(projectId);
             } catch (RuntimeException e) {
-                log.warn("[R221] bootstrap 尾唤醒失败（不影响项目初始化）projectId={}: {}", projectId, e.getMessage());
+                log.warn("[R221] bootstrap 尾唤醒失败（不影响项目初始化）projectId={}", projectId, e);
             }
         }
         return stageIds.size();

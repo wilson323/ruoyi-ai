@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * R221 AI 主动执行扫描器（spec §3.1 ACTIVE 定时档）：每日 09:55 扫 7 日内到期、
@@ -53,6 +54,8 @@ public class AiProactiveScanScheduler {
             .eq(StageAction::getStatus, "NOT_STARTED")
             .between(StageAction::getDueDate, Date.from(now), Date.from(now.plus(HORIZON))));
         int dispatched = 0;
+        // 复审 S5：可自动派发集整轮不变，提到循环外取一次（首切片 {C01,P08}）
+        Set<String> auto = engine.scheduleWiredActionCodes();
         for (StageAction a : due) {
             try {
                 String code = ActionCatalog.resolveCode(a.getActionCode());
@@ -60,7 +63,7 @@ public class AiProactiveScanScheduler {
                 if (!"AI_DIRECT".equals(def.execMode()) && !"AI_GENERATE".equals(def.execMode())) {
                     continue; // HUMAN_GATE 不主动触发（spec §4.2）
                 }
-                if (!engine.scheduleWiredActionCodes().contains(code)) {
+                if (!auto.contains(code)) {
                     continue; // 复审问题7+遗留MINOR#2：未接线/不支持 SCHEDULE（C08 填表族）建了必死，接线一批放开一批
                 }
                 trigger.triggerSchedule(a.getProjectId(), code, a.getId());

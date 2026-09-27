@@ -246,13 +246,14 @@ public class AiDocumentService {
                 log.warn("[AI-STRAT-1-SCOPE] docEmbeddingService 未注入，embedAsync 跳过 reviewDocId={} status={}",
                     row.getId(), row.getStatus());
             }
-            // R221 Task 10：挂着 SUCCEEDED 任务行的文档审通过 → 自动挂交付物 + DONE + 唤醒后继；
-            // 副链失败只 WARN 不炸审核主链（hook 失败由兜底扫描器/人工兼容）
+            // R221 Task 10：挂着 SUCCEEDED 任务行的文档审通过 → 自动挂交付物 + DONE + 唤醒后继。
+            // 复审 W1：闭环主体在 hook 内 afterCommit 延迟运行（不在本事务内，不会 rollback-only 反噬审核）；
+            // 本处 try/catch 只余窄用途——兜注册/无事务内联路径的首读异常，异常对象尾参带堆栈（复审 S3）
             if (aiExecReviewHook != null) {
                 try {
                     aiExecReviewHook.onDocumentReviewed(versionId, row.getContent());
                 } catch (RuntimeException e) {
-                    log.warn("[R221] review 闭环 hook 失败（不影响审核结果）docId={}: {}", versionId, e.getMessage());
+                    log.warn("[R221] review 闭环 hook 注册/执行失败（不影响审核结果）docId={}", versionId, e);
                 }
             }
             return row;
