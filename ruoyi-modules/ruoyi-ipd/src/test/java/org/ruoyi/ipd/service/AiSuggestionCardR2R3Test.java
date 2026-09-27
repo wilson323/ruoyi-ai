@@ -66,6 +66,10 @@ import static org.mockito.Mockito.when;
  *   <li>负向：sourceRefs 回读失败（DB 异常 / 行不齐）→ 拒出卡降级纯文本（CARD_REJECT:reread_*），
  *       不得用 LLM 复述值兜底（card 恒 null、markdown 原样保留）；</li>
  *   <li>正向：4 结构化场景 card 与 Catalog 逐字段对账（值全部等于 sourceRefs 指向的源行投影值）；</li>
+ *   <li>负向（P1-03 挂账补账）：sourceRefs 回读值≠组装值 → 拒出卡降级纯文本（value_mismatch）、
+ *       sourceRefs 指向他人/越权行 → 拒出卡降级纯文本（reread_foreign_row）；</li>
+ *   <li>P1-04 对账哨兵：fixture ↔ DB Catalog 导出双份 schema 逐字段双向对账（零增删）+
+ *       4 场景 card schema ↔ DB Catalog 逐字段双向对账（零增删）；</li>
  *   <li>回归：3 轻场景零影响（无 card、不读 Catalog、审计载荷零变化）。</li>
  * </ul>
  *
@@ -83,6 +87,244 @@ class AiSuggestionCardR2R3Test {
 
     /** Catalog fixture 复用 P1-02 同文（唯一 fixture 源防漂移；真库行 ai.suggest.cardCatalog 已对账同文）。 */
     private static final String CATALOG_JSON = AiSuggestionCardTest.CATALOG_JSON;
+
+    /**
+     * P1-04 对账哨兵基准：DB 行 {@code ai.suggest.cardCatalog}（id=1948091001）的导出快照——
+     * **必须与 DB 同文**（哨兵用例与 fixture 双份对账即以本快照为裁决侧）。取数探针（只读；
+     * 凭证在 defaults-extra-file，不上命令行）：
+     * <pre>{@code
+     * mysql --defaults-extra-file=/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/config/mysql-client.cnf ipd_dev --vertical -e "SELECT config_value FROM system_configs WHERE config_key='ai.suggest.cardCatalog'"
+     * }</pre>
+     * 与 {@link #CATALOG_JSON}（P1-02 fixture）已知唯一差异：gate.conclusion.description 说明文案的
+     * 空白字符（DB 原文 "+" 后双空格、"建议区" 后多一空格），description 非 schema 字段不参与对账。
+     */
+    static final String CATALOG_DB_EXPORT = """
+        {
+          "catalogVersion": 1,
+          "description": "R232-P1-02 AI 建议卡 schema Catalog（唯一 schema 事实源）；data 值经 sourceRefs 回读业务表（R3），无源字段不进 schema",
+          "cards": [
+            {
+              "type": "gate.precheck",
+              "version": 1,
+              "scene": "gate.precheck-checklist",
+              "shape": "checklist",
+              "description": "Gate 预检清单卡（清单型）：要素逐项判定事实（gate_element_results/gate_reviews）；AI 清单建议在 markdown 建议区",
+              "fields": [
+                {
+                  "name": "gateCode",
+                  "type": "string",
+                  "source": "gate_reviews.gate_code"
+                },
+                {
+                  "name": "round",
+                  "type": "number",
+                  "source": "gate_reviews.round"
+                },
+                {
+                  "name": "reviewCount",
+                  "type": "number",
+                  "source": "gate_reviews.id"
+                },
+                {
+                  "name": "totalElements",
+                  "type": "number",
+                  "source": "gate_element_results.id"
+                },
+                {
+                  "name": "items",
+                  "type": "array<object>",
+                  "source": "gate_element_results",
+                  "itemFields": [
+                    {
+                      "name": "elementId",
+                      "type": "number",
+                      "source": "gate_element_results.element_id"
+                    },
+                    {
+                      "name": "result",
+                      "type": "string",
+                      "source": "gate_element_results.result"
+                    },
+                    {
+                      "name": "conditionNote",
+                      "type": "string",
+                      "source": "gate_element_results.condition_note"
+                    },
+                    {
+                      "name": "evidenceRef",
+                      "type": "string",
+                      "source": "gate_element_results.evidence_ref"
+                    },
+                    {
+                      "name": "leftoverStatus",
+                      "type": "string",
+                      "source": "gate_element_results.leftover_status"
+                    }
+                  ]
+                }
+              ],
+              "sourceRefs": [
+                "gateId",
+                "reviewIds",
+                "elementResultIds"
+              ]
+            },
+            {
+              "type": "gate.conclusion",
+              "version": 1,
+              "scene": "gate.conclusion-draft",
+              "shape": "decision",
+              "description": "Gate 结论草稿卡（判定型）：签署决定事实（gate_reviews）+  要素结果计数（gate_element_results.result 聚合）；AI 结论草稿在 markdown 建议区 （LLM 复述值不进 data）",
+              "fields": [
+                {
+                  "name": "gateCode",
+                  "type": "string",
+                  "source": "gate_reviews.gate_code"
+                },
+                {
+                  "name": "reviews",
+                  "type": "array<object>",
+                  "source": "gate_reviews",
+                  "itemFields": [
+                    {
+                      "name": "reviewerType",
+                      "type": "string",
+                      "source": "gate_reviews.reviewer_type"
+                    },
+                    {
+                      "name": "decision",
+                      "type": "string",
+                      "source": "gate_reviews.decision"
+                    },
+                    {
+                      "name": "opinion",
+                      "type": "string",
+                      "source": "gate_reviews.opinion"
+                    },
+                    {
+                      "name": "round",
+                      "type": "number",
+                      "source": "gate_reviews.round"
+                    }
+                  ]
+                },
+                {
+                  "name": "passCount",
+                  "type": "number",
+                  "source": "gate_element_results.result"
+                },
+                {
+                  "name": "conditionalCount",
+                  "type": "number",
+                  "source": "gate_element_results.result"
+                },
+                {
+                  "name": "failCount",
+                  "type": "number",
+                  "source": "gate_element_results.result"
+                }
+              ],
+              "sourceRefs": [
+                "gateId",
+                "reviewIds",
+                "elementResultIds"
+              ]
+            },
+            {
+              "type": "project.charter",
+              "version": 1,
+              "scene": "project.create.suggest",
+              "shape": "compare",
+              "description": "立项要点卡（对比型）：当前项目上下文事实（projects）对照 AI 立项建议（markdown 建议区）；目标/范围/干系人建议无 projects 落点列，不进 schema（无源不进 schema）",
+              "fields": [
+                {
+                  "name": "contextProjectId",
+                  "type": "number",
+                  "source": "projects.id"
+                },
+                {
+                  "name": "contextProjectCode",
+                  "type": "string",
+                  "source": "projects.code"
+                },
+                {
+                  "name": "contextProjectName",
+                  "type": "string",
+                  "source": "projects.name"
+                },
+                {
+                  "name": "contextCurrentStage",
+                  "type": "string",
+                  "source": "projects.current_stage"
+                },
+                {
+                  "name": "contextProductId",
+                  "type": "number",
+                  "source": "projects.product_id"
+                }
+              ],
+              "sourceRefs": [
+                "projectId"
+              ]
+            },
+            {
+              "type": "demand.draft",
+              "version": 1,
+              "scene": "demand.create.from-requirement",
+              "shape": "draft",
+              "description": "需求单草稿卡（草稿型）：项目锚 + 需求池来源事实（projects/requirements）；AI 规范化草稿在 markdown 建议区；分类/优先级/验收标准建议无 requirements 落点列，不进 schema（无源不进 schema）",
+              "fields": [
+                {
+                  "name": "contextProjectId",
+                  "type": "number",
+                  "source": "projects.id"
+                },
+                {
+                  "name": "contextProjectCode",
+                  "type": "string",
+                  "source": "projects.code"
+                },
+                {
+                  "name": "contextProjectName",
+                  "type": "string",
+                  "source": "projects.name"
+                },
+                {
+                  "name": "requirements",
+                  "type": "array<object>",
+                  "source": "requirements",
+                  "itemFields": [
+                    {
+                      "name": "requirementId",
+                      "type": "number",
+                      "source": "requirements.id"
+                    },
+                    {
+                      "name": "title",
+                      "type": "string",
+                      "source": "requirements.title"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string",
+                      "source": "requirements.status"
+                    },
+                    {
+                      "name": "source",
+                      "type": "string",
+                      "source": "requirements.source"
+                    }
+                  ]
+                }
+              ],
+              "sourceRefs": [
+                "projectId",
+                "requirementIds"
+              ]
+            }
+          ]
+        }
+        """;
 
     private AiModelConfigService modelConfigService;
     private WorkbenchService workbenchService;
@@ -341,6 +583,60 @@ class AiSuggestionCardR2R3Test {
         assertTrue(rejectRow.contains("CARD_REJECT:reread_incomplete"), rejectRow);
     }
 
+
+    // ---- ③b 负向（P1-03 挂账补账）：回读值漂移 / 越权行 → 拒出卡降级纯文本 ----
+
+    @Test
+    @DisplayName("sourceRefs 回读值≠组装值（回读时源行已漂移）→ 拒出卡降级纯文本（CARD_REJECT:value_mismatch:*，不以 LLM 复述值兜底）")
+    void valueMismatchRejectsCardAndDegradesToText() {
+        enableModelAndGateway("## 预检清单");
+        mockProject(7L);
+        GateReview assembled = mockReview(91L, 3L, 7L, "MARKET_PM", "APPROVE", "证据齐");
+        GateReview drifted = mockReview(91L, 3L, 7L, "MARKET_PM", "APPROVE", "证据齐");
+        drifted.setGateCode("G5"); // 回读时 gateCode 已被并发更新（回读值≠组装值）
+        // 校验/上下文渲染/事实采集 3 跳读到组装值，第 4 跳（R3 回读对账）读到漂移值
+        when(gateReviewMapper.selectList(any()))
+            .thenReturn(List.of(assembled)).thenReturn(List.of(assembled))
+            .thenReturn(List.of(assembled)).thenReturn(List.of(drifted));
+        when(gateElementResultMapper.selectList(any())).thenReturn(List.of(
+            mockElementResult(501L, 3L, 21L, "PASS", null, null, null)));
+
+        AiSuggestResp resp = service.suggest(SA, new AiSuggestReq("gate.precheck-checklist", null, 3L, null));
+
+        assertNull(resp.card(), "回读值≠组装值必须拒出卡（不得用 LLM 复述值兜底）");
+        assertEquals("## 预检清单", resp.markdown(), "降级纯文本：markdown 原样返回");
+        String rejectRow = capturedAuditRows().stream().map(AuditLog::getAfterData)
+            .filter(a -> a.contains("CARD_REJECT")).findFirst()
+            .orElseThrow(() -> new AssertionError("缺 CARD_REJECT 审计行"));
+        assertTrue(rejectRow.contains("CARD_REJECT:value_mismatch:gateCode"), rejectRow);
+    }
+
+    @Test
+    @DisplayName("sourceRefs 指向他人/越权行（同 id 异主挂到别的 gate）→ 拒出卡降级纯文本（CARD_REJECT:reread_foreign_row）")
+    void rereadForeignRowRejectsCardAndDegradesToText() {
+        enableModelAndGateway("## 预检清单");
+        mockProject(7L);
+        when(gateReviewMapper.selectList(any())).thenReturn(List.of(
+            mockReview(91L, 3L, 7L, "MARKET_PM", "APPROVE", "证据齐")));
+        List<GateElementResult> own = List.of(
+            mockElementResult(501L, 3L, 21L, "PASS", null, null, null),
+            mockElementResult(502L, 3L, 22L, "FAIL", null, "oss://evid/22.pdf", null));
+        // sourceRefs 指向的行回读后挂在他人 gate 99 下（越权行形态：id 命中但锚不属本 gate）
+        List<GateElementResult> foreign = List.of(
+            mockElementResult(501L, 99L, 21L, "PASS", null, null, null),
+            mockElementResult(502L, 99L, 22L, "FAIL", null, "oss://evid/22.pdf", null));
+        when(gateElementResultMapper.selectList(any()))
+            .thenReturn(own).thenReturn(own).thenReturn(foreign);
+
+        AiSuggestResp resp = service.suggest(SA, new AiSuggestReq("gate.precheck-checklist", null, 3L, null));
+
+        assertNull(resp.card(), "越权行必须拒出卡（不得用 LLM 复述值兜底）");
+        assertEquals("## 预检清单", resp.markdown(), "降级纯文本：markdown 原样返回");
+        String rejectRow = capturedAuditRows().stream().map(AuditLog::getAfterData)
+            .filter(a -> a.contains("CARD_REJECT")).findFirst()
+            .orElseThrow(() -> new AssertionError("缺 CARD_REJECT 审计行"));
+        assertTrue(rejectRow.contains("CARD_REJECT:reread_foreign_row"), rejectRow);
+    }
     // ---- ④ 正向：4 结构化场景 card 与 Catalog 逐字段对账（值=sourceRefs 源行投影值） ----
 
     @Test
@@ -477,6 +773,46 @@ class AiSuggestionCardR2R3Test {
         assertFalse(after.contains("CARD_REJECT"), after);
     }
 
+
+    // ---- ⑥ P1-04 对账哨兵：fixture ↔ DB Catalog 双份对账 + 4 场景 card ↔ DB Catalog 对账 ----
+
+    @Test
+    @DisplayName("P1-04 哨兵：fixture ↔ DB Catalog 导出双份 schema 逐字段双向对账（4 卡零增删：type/version/scene/shape + fields/itemFields 的 name/type/source + sourceRefs）")
+    void catalogFixtureReconcilesWithDbExportFieldByField() throws Exception {
+        JsonNode fixture = JSON.readTree(CATALOG_JSON);
+        JsonNode db = JSON.readTree(CATALOG_DB_EXPORT);
+        assertEquals(db.path("catalogVersion").asInt(), fixture.path("catalogVersion").asInt(), "catalogVersion 对齐");
+        assertEquals(4, db.get("cards").size(), "DB Catalog 含 4 卡");
+        assertEquals(db.get("cards").size(), fixture.get("cards").size(), "卡片数零增删");
+        for (JsonNode dbCard : db.get("cards")) {
+            String type = dbCard.path("type").asText();
+            JsonNode fxCard = cardDefByType(CATALOG_JSON, type);
+            assertEquals(type, fxCard.path("type").asText(), type + " type 双向对齐");
+            assertEquals(dbCard.path("version").asInt(), fxCard.path("version").asInt(), type + " version 零增删");
+            assertEquals(dbCard.path("scene").asText(), fxCard.path("scene").asText(), type + " scene 对齐");
+            assertEquals(dbCard.path("shape").asText(), fxCard.path("shape").asText(), type + " shape 对齐");
+            assertFieldSeqSameSchema(dbCard.get("fields"), fxCard.get("fields"), type + ".fields");
+            List<String> dbRefs = refKeyList(dbCard);
+            List<String> fxRefs = refKeyList(fxCard);
+            assertEquals(new LinkedHashSet<>(dbRefs), new LinkedHashSet<>(fxRefs), type + " sourceRefs 逐名双向零增删");
+            assertEquals(dbRefs.size(), fxRefs.size(), type + " sourceRefs 数量零增删");
+        }
+    }
+
+    @Test
+    @DisplayName("P1-04 哨兵：4 场景 card schema ↔ DB Catalog 逐字段双向对账（type/version/data 字段名与类型/嵌套 itemFields/sourceRefs 零增删；双份 Catalog 组装结果全等）")
+    void fourSceneCardsReconcileWithDbCatalogFieldByField() {
+        for (String scene : List.of("gate.precheck-checklist", "gate.conclusion-draft",
+            "project.create.suggest", "demand.create.from-requirement")) {
+            Map<String, Object> facts = sentinelFacts(scene);
+            Map<String, Object> refs = sentinelRefs(scene);
+            AiSuggestResp.Card fromDb = AiSuggestionService.assembleCard(scene, CATALOG_DB_EXPORT, facts, refs);
+            AiSuggestResp.Card fromFixture = AiSuggestionService.assembleCard(scene, CATALOG_JSON, facts, refs);
+            assertNotNull(fromDb, scene + " 应按 DB Catalog 出卡");
+            assertEquals(fromFixture, fromDb, scene + " 双份 Catalog 组装结果全等（fixture↔DB 双份对账）");
+            assertCardSchemaBidirectional(fromDb, cardDefFromCatalog(CATALOG_DB_EXPORT, scene), scene);
+        }
+    }
     // ---- 对账与工具 ----
 
     /** card 与 Catalog 逐项对账：type/version 一致、data 字段名集合与 fields 逐名相等、sourceRefs 与声明逐名相等。 */
@@ -539,5 +875,171 @@ class AiSuggestionCardR2R3Test {
         verify(gateElementResultMapper, never()).updateById(any(GateElementResult.class));
         verify(requirementMapper, never()).insert(any(Requirement.class));
         verify(requirementMapper, never()).updateById(any(Requirement.class));
+    }
+
+    // ---- P1-04 哨兵工具（双份对账断言） ----
+
+    /** 按 type 取卡定义（哨兵双份对账用）。 */
+    private JsonNode cardDefByType(String catalogJson, String type) {
+        try {
+            for (JsonNode c : JSON.readTree(catalogJson).get("cards")) {
+                if (type.equals(c.path("type").asText())) {
+                    return c;
+                }
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Catalog 解析失败", e);
+        }
+        throw new IllegalStateException("Catalog 缺 type: " + type);
+    }
+
+    /** 卡定义的 sourceRefs 声明键（有序）。 */
+    private List<String> refKeyList(JsonNode def) {
+        List<String> keys = new ArrayList<>();
+        for (JsonNode k : def.get("sourceRefs")) {
+            keys.add(k.asText());
+        }
+        return keys;
+    }
+
+    /** fields/itemFields 序列逐字段对账（name/type/source + itemFields 递归；序位+数量双向零增删）。 */
+    private void assertFieldSeqSameSchema(JsonNode dbFields, JsonNode fxFields, String where) {
+        assertNotNull(dbFields, where + " DB 侧存在");
+        assertNotNull(fxFields, where + " fixture 侧存在");
+        assertEquals(dbFields.size(), fxFields.size(), where + " 字段数零增删");
+        for (int i = 0; i < dbFields.size(); i++) {
+            JsonNode d = dbFields.get(i);
+            JsonNode f = fxFields.get(i);
+            String w = where + "[" + d.path("name").asText() + "]";
+            assertEquals(d.path("name").asText(), f.path("name").asText(), w + " name");
+            assertEquals(d.path("type").asText(), f.path("type").asText(), w + " type");
+            assertEquals(d.path("source").asText(), f.path("source").asText(), w + " source");
+            assertEquals(d.has("itemFields"), f.has("itemFields"), w + " itemFields 有无对齐");
+            if (d.has("itemFields")) {
+                assertFieldSeqSameSchema(d.get("itemFields"), f.get("itemFields"), w + ".itemFields");
+            }
+        }
+    }
+
+    /** card schema ↔ DB Catalog 逐字段双向对账（零增删）：type/version + data 名/型/嵌套 + sourceRefs。 */
+    private void assertCardSchemaBidirectional(AiSuggestResp.Card card, JsonNode def, String scene) {
+        assertEquals(def.path("type").asText(), card.type(), scene + " type 对齐 DB Catalog");
+        assertEquals(def.path("version").asInt(), card.version(), scene + " version 对齐 DB Catalog");
+        List<String> declared = new ArrayList<>();
+        for (JsonNode f : def.get("fields")) {
+            declared.add(f.path("name").asText());
+        }
+        assertTrue(card.data().keySet().containsAll(declared), scene + " DB Catalog→card 字段零缺失：" + declared);
+        assertTrue(declared.containsAll(card.data().keySet()), scene + " card→DB Catalog 字段零增项：" + card.data().keySet());
+        assertEquals(declared.size(), card.data().size(), scene + " data 字段数零增删");
+        for (JsonNode f : def.get("fields")) {
+            assertValueTypeMatches(scene + "." + f.path("name").asText(),
+                f.path("type").asText(), f.get("itemFields"), card.data().get(f.path("name").asText()));
+        }
+        List<String> refDeclared = refKeyList(def);
+        assertTrue(card.sourceRefs().keySet().containsAll(refDeclared), scene + " sourceRefs 零缺失");
+        assertTrue(refDeclared.containsAll(card.sourceRefs().keySet()), scene + " sourceRefs 零增项");
+        assertEquals(refDeclared.size(), card.sourceRefs().size(), scene + " sourceRefs 数量零增删");
+    }
+
+    /** 值类型 ↔ Catalog type 对账（含 array<object> 的 itemFields 子字段双向零增删 + 子类型）。 */
+    private void assertValueTypeMatches(String where, String type, JsonNode itemFields, Object value) {
+        switch (type) {
+            case "string" -> assertTrue(value == null || value instanceof String, where + " 应为 string，实际 " + value);
+            case "number" -> assertTrue(value == null || value instanceof Number, where + " 应为 number，实际 " + value);
+            case "array<object>" -> {
+                assertTrue(value instanceof List<?>, where + " 应为 array<object>，实际 " + value);
+                List<String> subNames = new ArrayList<>();
+                for (JsonNode f : itemFields) {
+                    subNames.add(f.path("name").asText());
+                }
+                for (Object item : (List<?>) value) {
+                    assertTrue(item instanceof Map<?, ?>, where + " 数组元素应为 object");
+                    Map<?, ?> m = (Map<?, ?>) item;
+                    assertTrue(m.keySet().containsAll(subNames), where + " itemFields→item 子字段零缺失：" + subNames);
+                    assertTrue(subNames.containsAll(m.keySet()), where + " item→itemFields 子字段零增项：" + m.keySet());
+                    assertEquals(subNames.size(), m.size(), where + " 数组子字段数零增删");
+                    for (JsonNode f : itemFields) {
+                        Object sub = m.get(f.path("name").asText());
+                        String subType = f.path("type").asText();
+                        assertTrue("string".equals(subType) ? sub == null || sub instanceof String
+                            : sub == null || sub instanceof Number,
+                            where + "." + f.path("name").asText() + " 类型应为 " + subType + "，实际 " + sub);
+                    }
+                }
+            }
+            default -> throw new IllegalStateException("DB Catalog 未知类型 " + type);
+        }
+    }
+
+    /** 哨兵样本 facts（4 场景全字段覆盖；值仅作类型样本，R3 真值链路由④ 正向用例覆盖）。 */
+    private Map<String, Object> sentinelFacts(String scene) {
+        Map<String, Object> facts = new LinkedHashMap<>();
+        switch (scene) {
+            case "gate.precheck-checklist" -> {
+                facts.put("gateCode", "G4");
+                facts.put("round", 1);
+                facts.put("reviewCount", 1);
+                facts.put("totalElements", 1);
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("elementId", 21L);
+                item.put("result", "PASS");
+                item.put("conditionNote", null);
+                item.put("evidenceRef", null);
+                item.put("leftoverStatus", null);
+                facts.put("items", List.of(item));
+            }
+            case "gate.conclusion-draft" -> {
+                facts.put("gateCode", "G4");
+                Map<String, Object> review = new LinkedHashMap<>();
+                review.put("reviewerType", "MARKET_PM");
+                review.put("decision", "APPROVE");
+                review.put("opinion", "通过");
+                review.put("round", 1);
+                facts.put("reviews", List.of(review));
+                facts.put("passCount", 1L);
+                facts.put("conditionalCount", 0L);
+                facts.put("failCount", 0L);
+            }
+            case "project.create.suggest" -> {
+                facts.put("contextProjectId", 7L);
+                facts.put("contextProjectCode", "PRJ-7");
+                facts.put("contextProjectName", "示例项目");
+                facts.put("contextCurrentStage", "PLAN");
+                facts.put("contextProductId", 5L);
+            }
+            case "demand.create.from-requirement" -> {
+                facts.put("contextProjectId", 7L);
+                facts.put("contextProjectCode", "PRJ-7");
+                facts.put("contextProjectName", "示例项目");
+                Map<String, Object> reqRow = new LinkedHashMap<>();
+                reqRow.put("requirementId", 31L);
+                reqRow.put("title", "游客需求-扫地机");
+                reqRow.put("status", "SUBMITTED");
+                reqRow.put("source", "PORTAL_GUEST");
+                facts.put("requirements", List.of(reqRow));
+            }
+            default -> throw new IllegalStateException("哨兵未覆盖 scene: " + scene);
+        }
+        return facts;
+    }
+
+    /** 哨兵样本 sourceRefs（与 sentinelFacts 同场景配套，键=Catalog 声明键）。 */
+    private Map<String, Object> sentinelRefs(String scene) {
+        Map<String, Object> refs = new LinkedHashMap<>();
+        switch (scene) {
+            case "gate.precheck-checklist", "gate.conclusion-draft" -> {
+                refs.put("gateId", 3L);
+                refs.put("reviewIds", List.of(91L));
+                refs.put("elementResultIds", List.of(501L));
+            }
+            case "project.create.suggest" -> refs.put("projectId", 7L);
+            case "demand.create.from-requirement" -> {
+                refs.put("projectId", 7L);
+                refs.put("requirementIds", List.of(31L));
+            }
+            default -> throw new IllegalStateException("哨兵未覆盖 scene: " + scene);
+        }
+        return refs;
     }
 }
