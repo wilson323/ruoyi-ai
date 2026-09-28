@@ -10,7 +10,7 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.workflow.entity.*;
-import org.ruoyi.workflow.helper.SSEEmitterHelper;
+import org.ruoyi.workflow.util.WorkflowMessageUtil;
 import org.ruoyi.workflow.service.*;
 import org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver;
 import org.springframework.context.annotation.Lazy;
@@ -49,9 +49,6 @@ public class WorkflowStarter implements IWorkFlowStarterService {
     private WorkflowRuntimeNodeService workflowRuntimeNodeService;
 
     @Resource
-    private SSEEmitterHelper sseEmitterHelper;
-
-    @Resource
     private JdbcCheckpointSaver jdbcCheckpointSaver;
 
     @Resource
@@ -66,15 +63,15 @@ public class WorkflowStarter implements IWorkFlowStarterService {
         String tenantId = TenantHelper.getTenantId();
         // 根据会话ID连接SSE对象（每会话一个连接，避免同用户多会话串台）
         SseEmitter sseEmitter = sseEmitterManager.connect(String.valueOf(sessionId));
-        if (!sseEmitterHelper.checkOrComplete(user, sseEmitter)) {
+        if (!WorkflowMessageUtil.checkOrComplete(user, sseEmitter)) {
             return sseEmitter;
         }
         Workflow workflow = workflowService.getByUuid(workflowUuid);
         if (null == workflow) {
-            sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, A_WF_NOT_FOUND.getInfo());
+            WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter, A_WF_NOT_FOUND.getInfo());
             return sseEmitter;
         } else if (Boolean.FALSE.equals(workflow.getIsEnable())) {
-            sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, A_WF_DISABLED.getInfo());
+            WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter, A_WF_DISABLED.getInfo());
             return sseEmitter;
         }
         self.asyncRun(user, workflow, userInputs, sseEmitter, userId, tokenValue, sessionId, tenantId);
@@ -99,7 +96,7 @@ public class WorkflowStarter implements IWorkFlowStarterService {
                     .eq(WorkflowEdge::getIsDeleted, false)
                     .list();
             WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
-                    sseEmitterHelper, components, nodes, edges,
+                    components, nodes, edges,
                     workflowRuntimeService, workflowRuntimeNodeService, jdbcCheckpointSaver);
             workflowEngine.run(user, userInputs, sseEmitter, userId, tokenValue, sessionId);
         } finally {
@@ -141,7 +138,7 @@ public class WorkflowStarter implements IWorkFlowStarterService {
                     .eq(WorkflowEdge::getIsDeleted, false)
                     .list();
             WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
-                    sseEmitterHelper, components, nodes, edges,
+                    components, nodes, edges,
                     workflowRuntimeService, workflowRuntimeNodeService, jdbcCheckpointSaver);
             workflowEngine.resume(user, runtime, sseEmitter, userId, tokenValue, sessionId);
         } catch (Exception e) {
