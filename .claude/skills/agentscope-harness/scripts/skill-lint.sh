@@ -144,13 +144,32 @@ fi
 echo "== [L8] 裸变量紧跟多字节字符（bash -n 抓不到的运行期炸） =="
 # 实测连踩两次：写 "...：$AS_VER（..." 时，bash 3.2 在非 UTF-8 locale 下会把全角括号
 # 的首字节归入变量名 → set -u 报 `AS_VER\xef\xbc: unbound variable`，而 bash -n 完全通过。
-# LC_ALL=C 下 [^ -~] = 任何非可打印 ASCII 字节，可移植地捕获 UTF-8 引导字节。
-VARBUG=$(LC_ALL=C grep -rnE --exclude='skill-lint.sh' '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]' "$SKILL_DIR/scripts" 2>/dev/null)
-if [ -n "$VARBUG" ]; then
-  fail "发现裸变量紧跟多字节字符，必须改写为 \${VAR}："
-  printf '%s\n' "$VARBUG" | head -10 | sed 's|^|         |'
+# 单轨纪律（owner 明确要求「严格避免双轨」）：这条判据的**权威实现属于仓级门禁**
+#   scripts/check-shell-var-multibyte.sh（R224，同一正则、整行注释不误计、自带 --self-test
+#   夹具，且已接入 pre-commit 门禁 4）。故本段**委托**它，不在此另养一套正则；
+#   只有脱离本仓运行（仓脚本不存在）才退回等价的 LC_ALL=C grep 兜底。
+REPO_GATE="$REPO_ROOT/scripts/check-shell-var-multibyte.sh"
+if [ -f "$REPO_GATE" ]; then
+  bash "$REPO_GATE" "$SKILL_DIR"/scripts/*.sh >"${TMPDIR:-/tmp}/skill-lint-l8.$$" 2>&1
+  L8_RC=$?
+  if [ "$L8_RC" -eq 0 ]; then
+    ok "委托仓级门禁 R224 通过（scripts/check-shell-var-multibyte.sh）"
+  elif [ "$L8_RC" -eq 2 ]; then
+    warn "仓级门禁 R224 环境错（exit=2，多为缺 python3 或不在 git 仓），非代码违例"
+    sed 's|^|         |' "${TMPDIR:-/tmp}/skill-lint-l8.$$"
+  else
+    fail "仓级门禁 R224 报变量吞字节违例，必须改写为 \${VAR}："
+    sed 's|^|         |' "${TMPDIR:-/tmp}/skill-lint-l8.$$" | head -10
+  fi
+  rm -f "${TMPDIR:-/tmp}/skill-lint-l8.$$"
 else
-  ok "无裸变量 + 多字节字符粘连"
+  VARBUG=$(LC_ALL=C grep -rnE --exclude='skill-lint.sh' '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]' "$SKILL_DIR/scripts" 2>/dev/null)
+  if [ -n "$VARBUG" ]; then
+    fail "发现裸变量紧跟多字节字符，必须改写为 \${VAR}："
+    printf '%s\n' "$VARBUG" | head -10 | sed 's|^|         |'
+  else
+    warn "兜底 grep 通过（未找到仓级门禁 ${REPO_GATE}，脱离本仓运行）"
+  fi
 fi
 
 echo
