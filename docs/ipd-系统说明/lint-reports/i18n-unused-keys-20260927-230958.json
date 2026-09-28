@@ -1,0 +1,8 @@
+{
+  "timestamp": "20260927-230958",
+  "baseline_locale": "",
+  "total_keys": 66,
+  "live_keys": 60,
+  "dead_keys": 6,
+  "dead_keys_list": ["component.tenantToggle.placeholder","component.tenantToggle.reset","component.tenantToggle.switch","page.dashboard.analytics","page.dashboard.title","page.dashboard.workspace"]
+}
