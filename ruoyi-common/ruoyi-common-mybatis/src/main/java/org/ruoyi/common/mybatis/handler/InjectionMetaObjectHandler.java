@@ -80,12 +80,16 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
                 Date current = new Date();
                 baseEntity.setUpdateTime(current);
 
-                // 获取当前登录用户的ID，并填充更新人信息
-                Long userId = LoginHelper.getUserId();
-                if (ObjectUtil.isNotNull(userId)) {
-                    baseEntity.setUpdateBy(userId);
-                } else {
-                    baseEntity.setUpdateBy(DEFAULT_USER_ID);
+                // 与 insertFill 对称：仅当业务/服务层未预置 updateBy 时才自动填充，
+                // 避免无条件覆盖服务层显式绑定的操作人（R240 DEFECT 0493f098：IPD /api/v1
+                // 无框架 LoginUser 上下文时 getUserId()=null，会吞掉服务层 setUpdateBy(actor.id())）
+                if (ObjectUtil.isNull(baseEntity.getUpdateBy())) {
+                    Long userId = LoginHelper.getUserId();
+                    if (ObjectUtil.isNotNull(userId)) {
+                        baseEntity.setUpdateBy(userId);
+                    } else {
+                        baseEntity.setUpdateBy(DEFAULT_USER_ID);
+                    }
                 }
             } else {
                 this.strictUpdateFill(metaObject, "updateTime", Date.class, new Date());
