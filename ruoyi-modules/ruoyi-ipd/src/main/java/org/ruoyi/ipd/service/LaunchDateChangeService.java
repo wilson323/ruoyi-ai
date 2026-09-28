@@ -326,9 +326,7 @@ public class LaunchDateChangeService implements ILaunchDateChangeService {
     }
 
     private void audit(Long operatorId, String action, Long entityId, String reason) {
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action(action).entityType("launch_date_change_requests")
-            .entityId(entityId).reason(reason).createTime(new Date()).build());
+        auditLogService.append(operatorId, action, "launch_date_change_requests", entityId, reason);
     }
 
     /**

@@ -229,6 +229,25 @@ class Lc03SettlementReconcileServiceTest {
     }
 
     @Test
+    void neutralMatchDisclosesDerivedCoefficientDivergence() {
+        // 伪绿面根除（剩余三项②）：存储=中性路 15 命中 MATCH，但 kpi_records 推导系数 0.6≠中性 1.0。
+        // 系数无持久化列、计算时实际入参不可从存储复原 —— note 必须如实披露分歧留给人工裁决，不许静默 MATCH。
+        stubProjectAndPool(pool(new BigDecimal("15")));
+        stubWindowRows(1, new BigDecimal("1000"));
+        when(kpiRecordMapper.selectCount(any())).thenReturn(1L);
+        when(kpiRecordMapper.selectList(any())).thenReturn(List.of(
+            KpiRecord.builder().comprehensiveScore(new BigDecimal("90")).build()));
+        when(projectScoreService.projectPerformanceCoefficient(any())).thenReturn(new BigDecimal("0.6"));
+        var report = service.reconcile(PROJECT_ID, CLOCK);
+        assertThat(report.items()).filteredOn(i -> "FINAL_POOL".equals(i.code()))
+            .singleElement().satisfies(i -> {
+                assertThat(i.verdict()).isEqualTo(Lc03SettlementReconcileService.VERDICT_MATCH);
+                assertThat(i.note()).contains("0.6").contains("待人工裁决");
+            });
+        assertThat(report.personalCoefficientNote()).contains("0.6").contains("待人工裁决");
+    }
+
+    @Test
     void awaitingSettlementLedgerMarksAllPendingWithoutFabricatingScores() {
         // 无奖金池 → 全项 PENDING_DATA，不按 0 伪判，仍是有台账的有效产出
         when(projectMapper.selectById(PROJECT_ID)).thenReturn(project());

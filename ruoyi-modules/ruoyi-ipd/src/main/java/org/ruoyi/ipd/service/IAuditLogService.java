@@ -15,6 +15,8 @@ public interface IAuditLogService {
 
     public void append(IpdActor actor, String action, String entityType, Long entityId, String reason);
 
+    public void append(Long operatorId, String action, String entityType, Long entityId, String reason);
+
     public List<Long> verifyChain();
 
     public List<Long> verifyChainStrict();

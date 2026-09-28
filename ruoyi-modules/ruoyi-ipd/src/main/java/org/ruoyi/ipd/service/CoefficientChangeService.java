@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
@@ -246,14 +245,7 @@ public class CoefficientChangeService implements ICoefficientChangeService {
     }
 
     private void audit(Long operatorId, String action, Long entityId, String reason) {
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId)
-            .action(action)
-            .entityType("coefficient_change_requests")
-            .entityId(entityId)
-            .reason(reason)
-            .createTime(new Date())
-            .build());
+        auditLogService.append(operatorId, action, "coefficient_change_requests", entityId, reason);
     }
 
     /**

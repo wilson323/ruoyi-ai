@@ -37,10 +37,11 @@ import java.util.Set;
  * 不得按 0 直接扣分」语义），不伪造数据、不改写任何业务表；差异处置权留真人组长（台账只报事实，不做裁决）。
  * 公式一律复用 {@link BonusPoolService}/{@link ReceiptLedgerService}（同源复用，防第二套口径漂移，GatePrep M2 教训）。
  *
- * <p><b>personalCoefficient 诚实处理</b>：个人绩效系数不落 {@code bonus_pools} 表（仅入 distributions JSON /
- * 由 {@link BonusPoolService#resolvePersonalCoefficient} 从 kpi_records 推导），stored finalPool 含它而复算无法
- * 单路还原——故 finalPool 项双路复算（中性 1.0 / 推导同源），命中任一即 MATCH 并注明命中路；均不符标 DIFF 并
- * 如实披露「差异可能源于计算时个人绩效系数」，不伪造确定性、不假绿。
+ * <p><b>personalCoefficient 诚实处理</b>：个人绩效系数无持久化列——{@code bonus_pools} 不存它（distributions JSON
+ * 实测仅存团队拆分 rdShare/marketShare），仅可由 {@link BonusPoolService#resolvePersonalCoefficient} 从 kpi_records
+ * 推导，计算时实际入参不可从存储复原——故 finalPool 项双路复算（中性 1.0 / 推导同源），命中任一即 MATCH 并注明
+ * 命中路；中性路命中但推导系数≠1.0 时另发「分歧披露……待人工裁决」（MATCH 仅证公式自洽，不证系数业务正确）；
+ * 均不符标 DIFF 并如实披露「差异可能源于计算时个人绩效系数」，不伪造确定性、不假绿。
  */
 @Service
 @RequiredArgsConstructor
@@ -248,9 +249,15 @@ public class Lc03SettlementReconcileService {
                 str(neutral), VERDICT_MATCH, "两路复算同值（个人绩效系数=中性 1.0）");
         }
         if (eq(pool.getFinalPool(), neutral)) {
+            // 伪绿面根除（剩余三项②）：推导系数≠中性时必须如实披露分歧——系数无持久化列，
+            // 计算时实际入参不可从存储复原，MATCH 仅证公式自洽，不证系数业务正确。
+            String diverge = (derivedPersonal != null && derivedPersonal.compareTo(BigDecimal.ONE) != 0)
+                ? "；分歧披露：kpi_records 推导系数=" + str(derivedPersonal) + "≠中性 1.0，"
+                    + "而系数无持久化列、计算时入参不可从存储复原，存储按中性入账是否正确待人工裁决"
+                : "";
             return new FinalCheck(new Item(ITEM_FINAL_POOL, label, str(pool.getFinalPool()), str(neutral),
-                VERDICT_MATCH, "§三.2.5 完整公式以存储因子复算一致"),
-                str(neutral), VERDICT_MATCH, "个人绩效系数按中性 1.0 复算一致");
+                VERDICT_MATCH, "§三.2.5 完整公式以存储因子复算一致" + diverge),
+                str(neutral), VERDICT_MATCH, "个人绩效系数按中性 1.0 复算一致" + diverge);
         }
         if (eq(pool.getFinalPool(), derived) && !eq(derived, neutral)) {
             return new FinalCheck(new Item(ITEM_FINAL_POOL, label, str(pool.getFinalPool()), str(derived),
@@ -261,10 +268,11 @@ public class Lc03SettlementReconcileService {
         String both = "中性=" + str(neutral) + "；推导=" + str(derived);
         return new FinalCheck(new Item(ITEM_FINAL_POOL, label, str(pool.getFinalPool()), both,
                 VERDICT_DIFF,
-                "§三.2.5 双路复算均不符存储值；个人绩效系数不落 bonus_pools（仅入 distributions JSON），"
-                    + "差异可能源于计算时个人绩效系数或输入改动，请人工核对 distributions 与计算参数"),
+                "§三.2.5 双路复算均不符存储值；个人绩效系数不落 bonus_pools（无持久化列，计算时入参不可从存储复原；"
+                    + "distributions JSON 实测仅存团队拆分 rdShare/marketShare），"
+                    + "差异可能源于计算时个人绩效系数或输入改动，请人工核对计算参数"),
             both, VERDICT_DIFF,
-            "个人绩效系数不落 bonus_pools（仅入 distributions JSON）；两路复算（中性=" + str(neutral)
+            "个人绩效系数不落 bonus_pools（无持久化列，计算时入参不可从存储复原）；两路复算（中性=" + str(neutral)
                 + " / 推导=" + str(derivedPersonal) + "）均不符，差异待人工核对，不假绿");
     }
 

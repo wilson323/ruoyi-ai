@@ -154,6 +154,22 @@ public class AuditLogServiceImpl implements IAuditLogService {
     }
 
     /**
+     * Service 层消重重载（R239）：CoefficientChange/LaunchDateChange 两份逐字同构 private audit()
+     * （builder 拼装仅 entityType 不同）统一收到 Service 层。与 {@link #append(IpdActor, ...)} 同型：
+     * 均只拼语义字段后委派 {@link #append(AuditLog)}，createTime 与 operator 姓名/角色由底层统一补
+     * （createTime=null→now 且毫秒归零；name/role 空→Person 回填），语义与原拷贝一致、无并行实现。
+     */
+    public void append(Long operatorId, String action, String entityType, Long entityId, String reason) {
+        append(AuditLog.builder()
+            .operatorId(operatorId)
+            .action(action)
+            .entityType(entityType)
+            .entityId(entityId)
+            .reason(reason)
+            .build());
+    }
+
+    /**
      * 全链校验（默认出口，P0-17 A 方案）：只报告「哈希不符」行——hash 必连续是安全红线；
      * seq 缺行（GAP）成因不同（删行/事务回滚/InnoDB 自增值不回填），允许可验业务将其视为通过，
      * 严态语义（既判 hash 也判 gap）请用 {@link #verifyChainStrict()}。
