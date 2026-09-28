@@ -68,6 +68,7 @@ import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
 import org.ruoyi.argtrace.RagTraceNodeTypes;
@@ -111,6 +112,8 @@ public class ChatServiceFacade implements IChatService {
     private final IKnowledgeInfoService knowledgeInfoService;
 
     private final KnowledgeRetrievalService knowledgeRetrievalService;
+
+    private final KnowledgeAccessGate knowledgeAccessGate;
 
     private final SseEmitterManager sseEmitterManager;
 
@@ -677,15 +680,20 @@ public class ChatServiceFacade implements IChatService {
     }
 
     /**
-     * 汇总本次对话要检索的知识库ID列表：智能体绑定的 knowledgeIds 优先，回退到请求的 knowledgeId
+     * 汇总本次对话要检索的知识库ID列表：智能体绑定的 knowledgeIds 优先，回退到请求的 knowledgeId。
+     * S1：每个 kid 返回前过检索访问门，不可见即抛业务异常（本方法在 augmentAgentInput 的
+     * try 之前调用，异常不会被回退逻辑吞掉，可正常向上传播）。
      */
     private List<Long> collectKnowledgeIds(ChatRequest chatRequest, AgentVo agentVo) {
         if (agentVo != null && agentVo.getKnowledgeIds() != null && !agentVo.getKnowledgeIds().isEmpty()) {
+            agentVo.getKnowledgeIds().forEach(knowledgeAccessGate::checkRetrievalAccess);
             return agentVo.getKnowledgeIds();
         }
         if (StringUtils.isNotBlank(chatRequest.getKnowledgeId())) {
             try {
-                return List.of(Long.valueOf(chatRequest.getKnowledgeId()));
+                Long kid = Long.valueOf(chatRequest.getKnowledgeId());
+                knowledgeAccessGate.checkRetrievalAccess(kid);
+                return List.of(kid);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -776,12 +784,17 @@ public class ChatServiceFacade implements IChatService {
     }
 
     /**
-     * 构建向量查询参数
+     * 构建向量查询参数。
+     * S1：kid 可解析为数字时先过检索访问门；空白或非数字维持现状原样写入，不扩大行为边界。
      */
     private QueryVectorBo buildQueryVectorBo(ChatRequest chatRequest, KnowledgeInfoVo knowledgeInfoVo,
                                              ChatModelVo chatModel) {
         QueryVectorBo queryVectorBo = new QueryVectorBo();
         queryVectorBo.setQuery(chatRequest.getContent());
+        try {
+            knowledgeAccessGate.checkRetrievalAccess(Long.valueOf(chatRequest.getKnowledgeId()));
+        } catch (NumberFormatException ignored) {
+        }
         queryVectorBo.setKid(chatRequest.getKnowledgeId());
         queryVectorBo.setBaseUrl(chatModel.getApiHost());
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());

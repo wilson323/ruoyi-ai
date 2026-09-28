@@ -3,6 +3,7 @@ package org.ruoyi.service.retrieval.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.trace.config.TraceProperties;
 import org.ruoyi.common.trace.constant.TraceConstants;
@@ -378,13 +379,31 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         retrievalCache.put(key, new CacheEntry(System.currentTimeMillis(), copyResults(results)));
     }
 
+    /**
+     * 构建检索缓存键。
+     * <p>
+     * S3：第二段为身份段（当前会话 userId，未登录或会话上下文不可用固定为 "anon"），
+     * 防止不同身份共享同 kid+query 的缓存导致越权读到他人检索结果。
+     * <p>
+     * 约束：kid 必须保持第一段——{@link #invalidateKnowledge(String)} 依赖
+     * {@code key.startsWith(kid + "|")} 前缀清除语义，身份段只能插在 kid 段之后、绝不可前移，
+     * 否则按 kid 失效缓存的既有行为会整体回归。
+     */
     private String cacheKey(QueryVectorBo bo) {
-        return String.join("|", Objects.toString(bo.getKid(), ""), Objects.toString(bo.getQuery(), ""),
+        return String.join("|", Objects.toString(bo.getKid(), ""), identitySegment(), Objects.toString(bo.getQuery(), ""),
                 Objects.toString(bo.getMaxResults(), ""), Objects.toString(bo.getVectorModelName(), ""),
                 Objects.toString(bo.getEmbeddingModelName(), ""), Objects.toString(bo.getSimilarityThreshold(), ""),
                 Objects.toString(bo.getEnableHybrid(), ""), Objects.toString(bo.getHybridAlpha(), ""),
                 Objects.toString(bo.getEnableRerank(), ""), Objects.toString(bo.getRerankModelName(), ""),
                 Objects.toString(bo.getRerankTopN(), ""), Objects.toString(bo.getRerankScoreThreshold(), ""));
+    }
+
+    /**
+     * S3 身份段：当前会话 userId；未登录或取不到（LoginHelper.getUserId() 返回 null）给 "anon"。
+     */
+    private String identitySegment() {
+        Long userId = LoginHelper.getUserId();
+        return userId == null ? "anon" : String.valueOf(userId);
     }
 
     private List<KnowledgeRetrievalVo> copyResults(List<KnowledgeRetrievalVo> source) {

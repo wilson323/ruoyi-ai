@@ -28,6 +28,7 @@ import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
@@ -68,6 +69,7 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
     private final IChatModelService chatModelService;
     private final IAgentService agentService;
     private final IKnowledgeInfoService knowledgeInfoService;
+    private final KnowledgeAccessGate knowledgeAccessGate;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final IChatMessageService chatMessageService;
     private final ChatSessionOwnershipGuard chatSessionOwnershipGuard;
@@ -136,7 +138,7 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
             // 3. 拼装最终输入：RAG 增强 + systemPrompt 前置
             String finalSystemPrompt = (agentVo != null && StringUtils.isNotBlank(agentVo.getSystemPrompt()))
                 ? agentVo.getSystemPrompt() : systemPrompt;
-            String augmentedContent = augmentWithKnowledge(content, agentVo, knowledgeId);
+            String augmentedContent = augmentWithKnowledge(content, agentVo, knowledgeId, userId);
             String finalContent = StringUtils.isNotBlank(finalSystemPrompt)
                 ? finalSystemPrompt + "\n\n" + augmentedContent : augmentedContent;
 
@@ -219,8 +221,11 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
     /**
      * 智能体绑定知识库 / 前端传入 knowledgeId 时，对 content 做向量检索增强。
      * 复用 ChatServiceFacade.buildMultiKnowledgeAugmentor 的组装方式（简化为多库复合检索）。
+     * <p>
+     * userId 取自握手期 MpChatHandshakeInterceptor 验 token 后写入的 session attributes：
+     * ws 消息线程无 Sa-Token ThreadLocal，须以显式身份过 Gate（双参重载），不得走单参会话变体。
      */
-    private String augmentWithKnowledge(String content, AgentVo agentVo, String knowledgeId) {
+    private String augmentWithKnowledge(String content, AgentVo agentVo, String knowledgeId, Long userId) {
         List<Long> kids = new ArrayList<>();
         if (agentVo != null && agentVo.getKnowledgeIds() != null) {
             kids.addAll(agentVo.getKnowledgeIds());
@@ -237,6 +242,10 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
         if (kids.isEmpty()) {
             return content;
         }
+        // S1：kids 进入检索上下文前逐个过检索访问门，不可见即抛业务异常
+        // （放在回退 try 之前，异常向上传播由 handleTextMessage 统一向前端报错，而非静默回退原文）
+        // B0 修复：ws 消息线程无 Sa-Token ThreadLocal，单参变体取会话恒 null 会被全拒，改传显式身份
+        kids.forEach(kid -> knowledgeAccessGate.checkRetrievalAccess(kid, userId));
         try {
             RetrievalAugmentor augmentor = buildMultiKnowledgeAugmentor(kids);
             if (augmentor == null) {

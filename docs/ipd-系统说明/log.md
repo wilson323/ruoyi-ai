@@ -12822,3 +12822,59 @@ COPY ... 03-kb-partA.sql，而 compose-all 用的正是该 Dockerfile 构建后�
   真正会崩容器的路径。夸大和漏报是同一个毛病的两面——都源于只看了配置值差异，没追到执行时序。
 - **修文档里的 SQL 反引号嵌套别硬套双反引号**：内层反引号紧邻外层结束时会产生三反引号串，CommonMark
   下 code span 直接失效；消解嵌套比转义更稳。
+
+
+## 2026-09-28（kb-partB-B0 轮）· 知识库直传口收敛 KnowledgeAccessGate + S2 会话派生 + S3 缓存身份段
+
+marker: kb-partb-b0-impl
+
+### 1. 实施内容（卡 5c1cc6f8，按 docs/ipd-系统说明/知识库PartB接线实施方案-20260928.md B0 设计）
+
+- 新增 `ruoyi-chat` `service/knowledge/KnowledgeAccessGate`（端口，单方法 `assertVisible(kid, userId)`，
+  拒绝语义=抛业务异常，非静默忽略）与 `impl/UserIdShareKnowledgeAccessGate`（实现：null kid 拒、
+  userId 空→拒且不触库、库不存在→拒、owned（create_by）|| share=1 放行）。
+- 四处直传口全部收敛：
+  ① `ChatServiceFacade.collectKnowledgeIds` 回退分支过 Gate；
+  ② `ChatServiceFacade.buildQueryVectorBo.setKid` 前过 Gate；
+  ③ `MpChatWebSocketHandler.buildMultiKnowledgeAugmentor` 过 Gate（传握手 userId）；
+  ④ `KnowledgeFragmentServiceImpl`（`/system/fragment/retrieval`）组 setKid 前过 Gate。
+- S2：`KnowledgeInfoServiceImpl.buildQueryWrapper` 的 userId 改为会话派生（StpUtil），客户端传值忽略；
+  前端零传 userId 已实测（api/ipd/knowledge 相关 ts 无该参数）→ 无契约破坏。
+- S3：`KnowledgeRetrievalServiceImpl.cacheKey` 在 kid 之后插入身份段（`|u:` + userId），
+  `invalidateKnowledge` 的 `startsWith(kid+"|")` 前缀清除语义保持（身份段在 kid 之后，前缀仍命中）。
+
+### 2. Executor/Validator 分离——Validator 证伪成功（P0）并已修
+
+- 独立 Validator 抓到 **P0：ws 消息线程无 Sa-Token 上下文 → Gate 恒拒 → 小程序 RAG 全断**。
+  根因：MpChatWebSocketHandler 处理消息在 ws 线程，StpUtil 取不到登录态；而 userId 实际在
+  握手时已验签存入 session attributes。修复：Gate 增加显式 userId 双参重载，ws 路径传握手
+  userId（不依赖线程上下文），并留根因注释。
+- 次要：S2 判据与 Gate 不同构（公开库从列表消失）→ 修为同构（owned || share=1）。
+- 修复后定向复验智能体复核通过，允许提交；全量 114 用例绿（12 新增：Gate 4 + Facade 3 +
+  Wrapper 2 + CacheIdentity 3），`@Tag("dev")` 齐全（Surefire 假绿陷阱已规避）。
+
+### 3. SSE/WS 事实更正（owner 指正，登记）
+
+本轮前我表述「项目无现成 SSE/WS」不准确。现态：IPD AI 副驾已有 `GET /api/v1/ai-copilot/chat/stream`
++ 前端 SSE 契约（ruoyi-ipd-web `api/ipd/ai-copilot.ts`）；`/api/v1/resource/sse`；聊天模块 `/chat/ws`；
+`IpdWebSocketConfig`；前端 notify store 双通道消费。已核查 PartB 实施方案与最佳实践文档无相关误写，
+无需回改；AgentScope PoC 接入的 W1 回归范围按此现态定义（现有端点/鉴权/前端事件格式兼容）。
+
+### 4. B1/B2 前提盘点（并行智能体产出，未实施）
+
+冲突 C1-C4：C1 `chat_knowledge` 关联表无 share/sensitivity 冗余（B1 过滤需 join 或以 Gate 判据替）；
+C2 `MpChatWebSocketHandler` 与 Facade 仍两套同构 augmentor（收敛待 B1）；C3 Weaviate payload 现仅
+text/fid/kid/docId，B1 过滤参数落 payload 需 Reindex 窗口；C4 `QueryVectorBo` 6 个仅后端装配参数需
+防前端透传。新缺口 N1-N3：N1 `KnowledgeInfoServiceImpl` 列表查询的 share 过滤与 Gate 判据同构维持；
+N2 嵌套 kid（知识库-文档-片段）三表可见性需统一判据；N3 `ai_model_configs` embedding 模型切换与
+`embedded_at` 三元组一致性（Part A 列）需 B2 联动。B1 四刀清单已入实施方案文档。
+
+### 5. 提交范围与未捎带声明
+
+`application.yml` 的 `tenant.excludes` 新增 `ipd_sub_stage`/`ipd_action_skill_map`（Track A1）与
+3 个 seed SQL、`SubStageSeedSqlContractTest` 均为**兄弟会话在途**，本 commit 不捎带（--only 精确路径）。
+
+### 6. 状态口径
+
+B0 单测全绿 + 双独立复验 ≠ 业务闭环：真库/HTTP 回归（登录态拉一个 kid 走 chat/retrieval）未跑，
+卡 5c1cc6f8 置 inreview 如实登记；S3 修完后 B1 检索过滤才允许开（否则缓存穿透假绿的前提已消除）。

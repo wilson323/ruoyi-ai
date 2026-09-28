@@ -1,5 +1,6 @@
 package org.ruoyi.service.knowledge.impl;
 
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -58,7 +59,13 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     }
 
     /**
-     * 分页查询知识库列表
+     * 分页查询知识库列表。
+     * S2：userId 会话派生，客户端值一律覆盖，不信任前端传入。
+     * <p>
+     * 行为变化（S2 判据与 Gate 同构）：列表可见范围 =「我的库（userId 归属）+ 公开库（share=1）」，
+     * 与 {@link org.ruoyi.service.knowledge.KnowledgeAccessGate} 的检索可见判据一致；
+     * 他人私有库从列表中隔离属于安全收窄（此前仅按 userId 过滤时 share=1 公开库也会消失）。
+     * 全量管理视图如需开放，走 admin 专用端点（B1/B2 再议），不在本判据内放行。
      *
      * @param bo        查询条件
      * @param pageQuery 分页参数
@@ -66,6 +73,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      */
     @Override
     public TableDataInfo<KnowledgeInfoVo> queryPageList(KnowledgeInfoBo bo, PageQuery pageQuery) {
+        bo.setUserId(LoginHelper.getUserId());
         LambdaQueryWrapper<KnowledgeInfo> lqw = buildQueryWrapper(bo);
         Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         // 批量填充文档数
@@ -74,13 +82,16 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     }
 
     /**
-     * 查询符合条件的知识库列表
+     * 查询符合条件的知识库列表。
+     * S2：userId 会话派生，客户端值一律覆盖，不信任前端传入；
+     * 可见范围与 queryPageList 同构（我的 + 公开 share=1），见其 javadoc 行为说明。
      *
      * @param bo 查询条件
      * @return 知识库列表
      */
     @Override
     public List<KnowledgeInfoVo> queryList(KnowledgeInfoBo bo) {
+        bo.setUserId(LoginHelper.getUserId());
         LambdaQueryWrapper<KnowledgeInfo> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
@@ -89,7 +100,12 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<KnowledgeInfo> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(KnowledgeInfo::getId);
-        lqw.eq(bo.getUserId() != null, KnowledgeInfo::getUserId, bo.getUserId());
+        // S2 同构判据：可见范围 =「我的（userId 归属）OR 公开（share=1）」，与 KnowledgeAccessGate 检索判据一致。
+        // userId 为 null 时保持原语义不挂该组条件（端点登录态下已被排除；防御性保留，避免把 null 当过滤值全拒）。
+        lqw.and(bo.getUserId() != null, w -> w
+            .eq(KnowledgeInfo::getUserId, bo.getUserId())
+            .or()
+            .eq(KnowledgeInfo::getShare, 1L));
         lqw.like(StringUtils.isNotBlank(bo.getName()), KnowledgeInfo::getName, bo.getName());
         lqw.eq(bo.getShare() != null, KnowledgeInfo::getShare, bo.getShare());
         lqw.eq(StringUtils.isNotBlank(bo.getDescription()), KnowledgeInfo::getDescription, bo.getDescription());

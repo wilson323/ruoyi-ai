@@ -19,6 +19,7 @@ import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
 import org.ruoyi.service.knowledge.IKnowledgeFragmentService;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
 
     private final KnowledgeFragmentMapper baseMapper;
     private final IKnowledgeInfoService knowledgeInfoService;
+    private final KnowledgeAccessGate knowledgeAccessGate;
     private final IChatModelService chatModelService;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final org.ruoyi.service.vector.VectorStoreService vectorStoreService;
@@ -153,13 +155,15 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
     }
 
     /**
-     * 检索测试核心实现 - 委托给统一的 KnowledgeRetrievalService
+     * 检索测试核心实现 - 委托给统一的 KnowledgeRetrievalService。
+     * S1：kid 进入检索上下文前先过检索访问门，不可见即抛业务异常。
      */
     @Override
     public List<KnowledgeRetrievalVo> retrieval(KnowledgeFragmentBo bo) {
         if (bo.getKnowledgeId() == null || StringUtils.isBlank(bo.getQuery())) {
             return new ArrayList<>();
         }
+        knowledgeAccessGate.checkRetrievalAccess(bo.getKnowledgeId());
 
         // 1. 获取知识库及模型配置（为了获取 API Key/Host 等模型参数）
         KnowledgeInfoVo knowledgeInfoVo = knowledgeInfoService.queryById(bo.getKnowledgeId());
