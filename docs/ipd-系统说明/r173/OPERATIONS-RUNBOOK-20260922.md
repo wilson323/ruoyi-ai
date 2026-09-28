@@ -38,7 +38,10 @@ nohup /opt/homebrew/bin/redis-server --daemonize no --port 6379 --bind 127.0.0.1
 cd /Users/mac/Documents/ruoyi-ai
 
 # 打包（拿 fat jar）
-mvn -o -pl ruoyi-admin -am package -DskipTests -Dmaven.jar.forceCreation=true
+# 【勘误 2026-09-28 login-single-track 轮】原写 `mvn -o` 与本机 .m2 不符（缺 velocity-engine-core/anyline
+# 系列必失败）——离线仅适用于单模块复核（`mvn -o -pl <模块> test`）；全链打包必须联网：
+mvn -pl ruoyi-admin -am package -DskipTests -Dmaven.jar.forceCreation=true
+# 另：-am 全链会编译所有依赖模块，兄弟会话在途破损会拖红全链——构建前先 git diff 看在途。
 
 # 启（双 profile + 显式 ipd-local 配置）
 export JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"

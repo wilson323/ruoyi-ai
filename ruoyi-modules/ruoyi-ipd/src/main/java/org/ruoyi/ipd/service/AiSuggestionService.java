@@ -62,10 +62,13 @@ import java.util.Set;
  *       只记 promptLen 不记原文（BR-AI-04）。</li>
  * </ul>
  *
- * <p>场景白名单（7 个，对应拍板的 5 个页面）：
- * workbench.next-step / workbench.risk-warning / project.summary.refresh /
- * project.create.suggest / demand.create.from-requirement /
- * gate.precheck-checklist / gate.conclusion-draft。
+ * <p>场景白名单（21 个）：R227-C1 首批 7 个 + AI-P3 场景包 4 个（demand.dedupe /
+ * change.impact-analyze / handover.checklist-generate / report.nl-query）+ L2 每页 AI 入口
+ * 补全 10 个（2026-09-28，AI 能力用户故事 US-L2-05/07/08/12~14/16~19）。
+ * 新增 10 场景均为纯文本轻场景：不出 card、不进 STRUCTURED_SCENES；其中素材驱动场景
+ * （demand.classify / demand.priority / bid.evaluate-proposal / kpi.* / bonus.fairness-analyze /
+ * report.trend-analyze / audit.anomaly-detect / product.name-classify）userPrompt 必填，
+ * 防无数据编造；输出只出建议值，采纳/评分/发放一律人工（BR-AI-05 口径）。
  *
  * <p>R232-P1-02（2026-09-27，CopilotKit 三能力落地 Phase 1）：增 structured 输出模式——
  * 4 结构化场景（{@link #STRUCTURED_SCENES}）响应体增 {@code card} 字段
@@ -93,12 +96,21 @@ public class AiSuggestionService {
         "gate.precheck-checklist", "gate.conclusion-draft",
         // AI-P3 场景包（2026-09-27）：需求查重路由 / 变更影响面 / 移交清单 / NL查报表（导航语义）
         "demand.dedupe", "change.impact-analyze", "handover.checklist-generate",
-        "report.nl-query");
+        "report.nl-query",
+        // L2 每页 AI 入口补全（2026-09-28，US-L2-05/07/08/12/13/14/16/17/18/19）
+        "demand.classify", "demand.priority", "bid.evaluate-proposal",
+        "kpi.monthly-summary", "kpi.contributor-summary", "bonus.fairness-analyze",
+        "timeline.storyline", "report.trend-analyze", "audit.anomaly-detect",
+        "product.name-classify");
 
     /** AI-P3：素材驱动场景（无实体上下文也可出建议，但 userPrompt 必填作提问素材）。 */
     static final Set<String> USER_PROMPT_REQUIRED_SCENES = Set.of(
         "project.create.suggest", "demand.create.from-requirement",
-        "demand.dedupe", "report.nl-query");
+        "demand.dedupe", "report.nl-query",
+        // L2 补全的素材驱动场景（缺数据素材的解读=编造风险，一律 userPrompt 必填）
+        "demand.classify", "demand.priority", "bid.evaluate-proposal",
+        "kpi.monthly-summary", "kpi.contributor-summary", "bonus.fairness-analyze",
+        "report.trend-analyze", "audit.anomaly-detect", "product.name-classify");
 
     /** R232-P1-02：结构化输出场景（响应体增 card 字段）；3 轻场景保持纯文本零变化。 */
     static final Set<String> STRUCTURED_SCENES = Set.of(
@@ -206,14 +218,14 @@ public class AiSuggestionService {
                 throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "该 Gate 下无评审记录");
             }
             assertProjectVisible(actor, reviews.get(0).getProjectId());
-        } else if (scene.startsWith("workbench.")) {
+        } else if (scene.startsWith("workbench.") || isAggregateScene(scene)) {
             assertProjectVisible(actor, req.projectId()); // 可空=全局，同 copilot 语义
         } else if (scene.equals("change.impact-analyze")) {
             loadChangeForActor(actor, req.entityId()); // AI-P3：entityId=changeId，缺失/越权均 NOT_FOUND
         } else if (scene.equals("handover.checklist-generate")) {
             loadHandoverForActor(actor, req.entityId()); // AI-P3：entityId=handoverId，仅限归属项目成员/移交双方/超管
-        } else if (scene.equals("report.nl-query")) {
-            assertProjectVisible(actor, req.projectId()); // 全局可空=跨项目报告导航；带项目则校验可见性
+        } else if (scene.equals("report.nl-query") || scene.equals("report.trend-analyze")) {
+            assertProjectVisible(actor, req.projectId()); // 全局可空=跨项目报告导航/趋势；带项目则校验可见性
         } else {
             if (req.projectId() == null) {
                 throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "该场景 projectId 必填");
@@ -798,7 +810,7 @@ public class AiSuggestionService {
         if (scene.startsWith("workbench.")) {
             return renderWorkbenchContext(workbenchService.summary(actor, req.projectId()));
         }
-        if (scene.equals("report.nl-query")) {
+        if (scene.equals("report.nl-query") || scene.equals("report.trend-analyze")) {
             return REPORT_CATALOG; // AI-P3：NL查报表=导航语义，静态目录注入（不执行任意查询，不触 text2sql）
         }
         if (scene.equals("change.impact-analyze")) {
@@ -812,13 +824,21 @@ public class AiSuggestionService {
             return renderHandoverContext(h,
                 h.getProjectId() == null ? null : requireProject(h.getProjectId()));
         }
-        if (scene.equals("demand.dedupe")) {
+        if (scene.equals("demand.dedupe") || scene.equals("demand.classify")
+            || scene.equals("demand.priority")) {
             List<Requirement> existing = requirementMapper.selectList(
                 new LambdaQueryWrapper<Requirement>().eq(Requirement::getProjectId, req.projectId()));
             return renderDedupeContext(existing);
         }
         if (scene.equals("project.summary.refresh")) {
             return renderProjectContext(requireProject(req.projectId()));
+        }
+        // L2 补全：招标评分/故事线=项目维度；KPI/奖金池/审计/产品=聚合维度（项目可空）
+        if (scene.equals("bid.evaluate-proposal") || scene.equals("timeline.storyline")) {
+            return renderProjectContext(requireProject(req.projectId()));
+        }
+        if (isAggregateScene(scene)) {
+            return req.projectId() == null ? "" : renderProjectContext(requireProject(req.projectId()));
         }
         if (scene.startsWith("gate.")) {
             List<GateReview> reviews = gateReviewMapper.selectList(new LambdaQueryWrapper<GateReview>()
@@ -1039,6 +1059,34 @@ public class AiSuggestionService {
             case "report.nl-query" ->
                 "你是报表助手。以下是系统现有报告中心目录（唯一可查数据源，不支持目录外查询与自由 SQL）。根据用户的自然语言问题：选择应导航到的报告端点与参数（month/projectId 等）、"
                 + "说明该报告能否回答此问题；不能回答时明确说「暂不支持」并给最近似替代。markdown 输出：选中端点/参数建议/缺口说明。";
+            case "demand.classify" ->
+                "你是需求管理助手。根据项目既有需求清单与用户提供的需求素材，给出分类建议：来源渠道/产品线/严重度三项判定（每项给建议值+置信度高/中/低+一句依据）。"
+                + "markdown 表格输出，末尾单列「建议值」小节（只给建议值，采纳由人工完成）。";
+            case "demand.priority" ->
+                "你是需求管理助手。结合项目既有需求清单与用户提供的需求素材，给出优先级建议（Must/Should/Could 对应 P0-P3）与依据（业务价值/工作量/风险/时效各一行），"
+                + "并指出与存量需求的排期冲突可能。markdown 分节输出。";
+            case "bid.evaluate-proposal" ->
+                "你是招标评审助手。根据用户提供的应标方案素材，输出横向评分草稿：资格符合性/交付能力/方案质量三列（1-5 分+一句理由）、风险点（≤3 条）、推荐倾向。"
+                + "定标权归双组长，本输出仅为草稿。markdown 表格输出。";
+            case "kpi.monthly-summary" ->
+                "你是绩效分析助手。根据用户提供的月度 KPI 数据素材（缺项标「待归集」不得填 0），输出团队月度汇总解读：完成率概览、趋势与异常点（≤3 条）、下月改进建议（≤3 条）。markdown 分节输出。";
+            case "kpi.contributor-summary" ->
+                "你是绩效分析助手。根据用户提供的成员贡献素材，按「自评 20% + 双组长 40/40」框架做事实归集摘要（每人：关键产出/证据/贡献度建议区间），"
+                + "并明确标注「AI 仅建议分，评分人必须真人」。markdown 分节输出，缺数据标「待归集」。";
+            case "bonus.fairness-analyze" ->
+                "你是激励分析助手。根据用户提供的奖金池分配素材（池金额/达成系数/贡献度/绩效档），复算六档阶梯分配并输出合理性检查：逐人数值复算表、"
+                + "偏离均值告警（|偏离|>20% 标注）、口径疑点（≤3 条）。金额仅作建议区，不构成发放依据。markdown 分节输出。";
+            case "timeline.storyline" ->
+                "你是项目叙事助手。根据以下项目上下文与用户补充的关键事件素材，按时间顺序生成项目故事线叙述稿（背景→关键节点→当前状态→下一步），供 PM 汇报使用。markdown 分节输出。";
+            case "report.trend-analyze" ->
+                "你是报表分析助手。以下是系统报告中心目录（唯一可引用的数据口径）。根据用户提供的数据素材或问题，输出跨项目趋势洞察：变更率/里程碑偏差/毛利偏差的观察、"
+                + "可能成因（≤3 条，标注为推断）、建议关注项。markdown 分节输出。";
+            case "audit.anomaly-detect" ->
+                "你是审计分析助手。根据用户提供的操作日志素材或现象描述，识别异常模式：高频失败操作、越权尝试迹象、金额异常三类（每类≤3 条+依据）、建议核查动作。"
+                + "只做分析建议，不认定违规。markdown 分节输出。";
+            case "product.name-classify" ->
+                "你是产品管理助手。根据用户提供的产品名称/描述素材，输出命名与分类推荐：建议命名（提示版本号+年份+国别后缀规范）、产品线归属建议、"
+                + "目标市场（必带国别认证提示）+置信度。markdown 分节输出。";
             default -> throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "未知场景：" + scene);
         };
         StringBuilder sb = new StringBuilder(instruction).append('\n');
@@ -1114,5 +1162,17 @@ public class AiSuggestionService {
 
     private static String nullToDash(String s) {
         return s == null || s.isBlank() || "null".equals(s) ? "-" : s;
+    }
+
+    /**
+     * L2 补全（2026-09-28）：聚合维度场景——KPI/奖金池/审计/产品线，projectId 可空（=全局聚合，
+     * 带项目则校验可见性并注入项目上下文）；与项目维度场景（bid.evaluate-proposal / timeline.storyline，
+     * projectId 必填）区分。【接手登记】原调用点（L221/L840）先于定义落盘导致编译红，
+     * 本定义按同日场景包注释语义补齐（ORIGIN- 史实见 log.md）。
+     */
+    private static boolean isAggregateScene(String scene) {
+        return scene.equals("kpi.monthly-summary") || scene.equals("kpi.contributor-summary")
+            || scene.equals("bonus.fairness-analyze") || scene.equals("audit.anomaly-detect")
+            || scene.equals("product.name-classify");
     }
 }

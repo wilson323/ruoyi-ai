@@ -63,8 +63,15 @@ public class IpdPlatformAuthController {
     private final SysClientMapper clientMapper;
     private final SysLoginService loginService;
 
-    /** 平台票视图。形状对齐 IPD 登录响应习惯（token/tokenType/expiresIn）。 */
-    public record PlatformTokenView(String token, String tokenType, long expiresIn, String platformUser) { }
+    /**
+     * 平台票视图。形状对齐 IPD 登录响应习惯（token/tokenType/expiresIn）。
+     *
+     * <p>clientId = sys_client.client_id（UUID，已写入 token extra）——基线 /system/** 鉴权要求
+     * 请求头 clientid 与 token extra 一致（SecurityConfig 校验），故必须随换票响应交付给调用方。
+     * 注意："pc" 是登录查询键 client_key，不是 clientid，绝不进鉴权头
+     * （契约唯一化 login-single-track / clientid-contract 2026-09-28）。
+     */
+    public record PlatformTokenView(String token, String tokenType, long expiresIn, String platformUser, String clientId) { }
 
     @PostMapping("/platform-token")
     public ResponseEntity<ApiV1Response<PlatformTokenView>> platformToken() {
@@ -94,7 +101,8 @@ public class IpdPlatformAuthController {
         }
         LoginHelper.login(loginUser, model);
         return ResponseEntity.ok(ApiV1Response.ok(
-            new PlatformTokenView(StpUtil.getTokenValue(), "Bearer", StpUtil.getTokenTimeout(), user.getUserName())));
+            new PlatformTokenView(StpUtil.getTokenValue(), "Bearer", StpUtil.getTokenTimeout(), user.getUserName(),
+                client != null ? client.getClientId() : null)));
     }
 
     /** 同名优先，其次按 personType 兜底；停用账号视同不存在（不放大停用身份）。 */

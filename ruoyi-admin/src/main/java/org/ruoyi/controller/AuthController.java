@@ -15,7 +15,6 @@ import me.zhyd.oauth.request.AuthRequest;
 import me.zhyd.oauth.utils.AuthStateUtils;
 import org.ruoyi.common.core.constant.SystemConstants;
 import org.ruoyi.common.core.domain.R;
-import org.ruoyi.common.core.domain.model.LoginBody;
 import org.ruoyi.common.core.domain.model.RegisterBody;
 import org.ruoyi.common.core.domain.model.SocialLoginBody;
 import org.ruoyi.common.core.utils.*;
@@ -27,12 +26,12 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.social.config.properties.SocialLoginConfigProperties;
 import org.ruoyi.common.social.config.properties.SocialProperties;
 import org.ruoyi.common.social.utils.SocialUtils;
-import org.ruoyi.common.sse.dto.SseMessageDto;
-import org.ruoyi.common.sse.utils.SseMessageUtils;
 import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.system.domain.bo.SysTenantBo;
 import org.ruoyi.system.domain.vo.*;
 import org.ruoyi.system.service.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,8 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 认证
@@ -63,50 +60,23 @@ public class AuthController {
     private final ISysTenantService tenantService;
     private final ISysSocialService socialUserService;
     private final ISysClientService clientService;
-    private final ScheduledExecutorService scheduledExecutorService;
 
 
     /**
-     * 登录方法
+     * 登录方法（双轨裁决 2026-09-28 login-single-track：登录契约唯一化）
      *
-     * @param body 登录信息
-     * @return 结果
+     * 全系统密码登录只走 IPD 契约 POST /api/v1/auth/login（Person 凭据，code0 包络）；
+     * 平台 Sa-Token 会话仅由 POST /api/v1/auth/platform-token 换票签发，不再接受密码直登。
+     * 本映射保留仅为给存量误用方 410 明确指引，防止静默契约错位
+     * （错位实测症状：code 500「请求参数校验失败」）。回滚见 Git 历史 marker login-single-track。
+     *
+     * @param body 登录信息（已不消费）
+     * @return 恒 410 Gone + 统一契约指引
      */
-    @ApiEncrypt
     @PostMapping("/login")
-    public R<LoginVo> login(@RequestBody String body) {
-        LoginBody loginBody = JsonUtils.parseObject(body, LoginBody.class);
-        ValidatorUtils.validate(loginBody);
-        // 授权类型和客户端id
-        String clientId = loginBody.getClientId();
-        String grantType = loginBody.getGrantType();
-        log.info("登录请求 - clientId: {}, grantType: {}", clientId, grantType);
-        SysClientVo client = clientService.queryByClientId(clientId);
-        log.info("查询客户端结果 - client: {}, grantType: {}", client, client != null ? client.getGrantType() : "null");
-        // 查询不到 client 或 client 内不包含 grantType
-        if (ObjectUtil.isNull(client)) {
-            log.info("客户端id: {} 不存在!", clientId);
-            return R.fail(MessageUtils.message("auth.grant.type.error"));
-        }
-        if (!StringUtils.contains(client.getGrantType(), grantType)) {
-            log.info("客户端id: {} 认证类型：{} 不匹配! 数据库grantType: {}", clientId, grantType, client.getGrantType());
-            return R.fail(MessageUtils.message("auth.grant.type.error"));
-        } else if (!SystemConstants.NORMAL.equals(client.getStatus())) {
-            return R.fail(MessageUtils.message("auth.grant.type.blocked"));
-        }
-        // 校验租户
-        loginService.checkTenant(loginBody.getTenantId());
-        // 登录
-        LoginVo loginVo = IAuthStrategy.login(body, client, grantType);
-
-        Long userId = LoginHelper.getUserId();
-        scheduledExecutorService.schedule(() -> {
-            SseMessageDto dto = new SseMessageDto();
-            dto.setMessage("欢迎登录ruoyi-ai后台管理系统");
-            dto.setUserIds(List.of(userId));
-            SseMessageUtils.publishMessage(dto);
-        }, 5, TimeUnit.SECONDS);
-        return R.ok(loginVo);
+    public ResponseEntity<R<LoginVo>> login(@RequestBody(required = false) String body) {
+        return ResponseEntity.status(HttpStatus.GONE)
+            .body(R.fail("登录契约已统一：请使用 POST /api/v1/auth/login；平台票由 POST /api/v1/auth/platform-token 换票签发。本端点已下线（login-single-track）"));
     }
 
     /**
