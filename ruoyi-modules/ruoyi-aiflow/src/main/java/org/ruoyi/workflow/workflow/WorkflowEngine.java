@@ -24,7 +24,7 @@ import org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeNodeDto;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeResp;
 import org.ruoyi.workflow.entity.*;
-import org.ruoyi.workflow.helper.SSEEmitterHelper;
+import org.ruoyi.common.sse.core.SseEmitterHelper;
 import org.ruoyi.workflow.service.WorkflowRuntimeNodeService;
 import org.ruoyi.workflow.service.WorkflowRuntimeService;
 import org.ruoyi.workflow.util.JsonUtil;
@@ -50,7 +50,6 @@ public class WorkflowEngine {
     private final List<WorkflowComponent> components;
     private final List<WorkflowNode> wfNodes;
     private final List<WorkflowEdge> wfEdges;
-    private final SSEEmitterHelper sseEmitterHelper;
     private final WorkflowRuntimeService workflowRuntimeService;
     private final WorkflowRuntimeNodeService workflowRuntimeNodeService;
     private final JdbcCheckpointSaver checkpointSaver;
@@ -65,7 +64,6 @@ public class WorkflowEngine {
 
     public WorkflowEngine(
             Workflow workflow,
-            SSEEmitterHelper sseEmitterHelper,
             List<WorkflowComponent> components,
             List<WorkflowNode> nodes,
             List<WorkflowEdge> wfEdges,
@@ -73,7 +71,6 @@ public class WorkflowEngine {
             WorkflowRuntimeNodeService workflowRuntimeNodeService,
             JdbcCheckpointSaver checkpointSaver) {
         this.workflow = workflow;
-        this.sseEmitterHelper = sseEmitterHelper;
         this.components = components;
         this.wfNodes = nodes;
         this.wfEdges = wfEdges;
@@ -87,13 +84,13 @@ public class WorkflowEngine {
         this.sseEmitter = sseEmitter;
         log.info("WorkflowEngine run,userId:{},workflowUuid:{},userInputs:{}", user.getId(), workflow.getUuid(), userInputs);
         if (!this.workflow.getIsEnable()) {
-            sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, ErrorEnum.A_WF_DISABLED.getInfo());
+            WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter, ErrorEnum.A_WF_DISABLED.getInfo());
             throw new BaseException(ErrorEnum.A_WF_DISABLED.getInfo());
         }
 
         Long workflowId = this.workflow.getId();
         this.wfRuntimeResp = workflowRuntimeService.create(user, workflowId);
-        this.sseEmitterHelper.startSse(user, sseEmitter, JsonUtil.toJson(wfRuntimeResp));
+        WorkflowMessageUtil.startSse(user, sseEmitter, JsonUtil.toJson(wfRuntimeResp));
 
         String runtimeUuid = this.wfRuntimeResp.getUuid();
         try {
@@ -141,7 +138,7 @@ public class WorkflowEngine {
                 }
         });
         if (null != sseEmitter) {
-            sseEmitterHelper.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
+            WorkflowMessageUtil.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
         }
     }
 
@@ -156,7 +153,7 @@ public class WorkflowEngine {
         // 保存会话信息且发送驱动消息事件
         WorkflowMessageUtil.saveWorkflowMessage(wfState, errorMsg);
         if (null != sseEmitter) {
-            sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
+            WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
         }
         workflowRuntimeService.updateStatus(wfRuntimeResp.getId(), WORKFLOW_PROCESS_STATUS_FAIL, errorMsg);
     }
@@ -332,7 +329,7 @@ public class WorkflowEngine {
      */
     private void sendPartialIfConnected(String name, String content) {
         if (null != sseEmitter) {
-            SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, name, content);
+            SseEmitterHelper.parseAndSendPartialMsg(sseEmitter, name, content);
         }
     }
 
