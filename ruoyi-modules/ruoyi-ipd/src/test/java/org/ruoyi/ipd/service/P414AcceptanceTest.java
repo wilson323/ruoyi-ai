@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P4-1.4 需求七态处理、采纳与变更关联 验收测试 (BR-REQ-05; AC-REQ-05/06/07/08)
@@ -83,6 +84,10 @@ class P414AcceptanceTest {
     void setUp() {
         service = new RequirementStateMachine(requirementMapper, requirementChangeMapper,
             projectMapper, projectMemberMapper, auditLogService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         // 默认：项目存在、mainGroupId 匹配、actor 是项目成员（鉴权链兜底）
         Project project = Project.builder().id(PROJECT_ID).mainGroupId(GROUP_ID).tenantId("000000").build();

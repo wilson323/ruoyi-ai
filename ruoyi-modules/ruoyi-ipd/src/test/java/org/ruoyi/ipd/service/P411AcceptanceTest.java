@@ -33,6 +33,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P4-1.1 游客需求提交模型与三路产品归属验收（页38 用例1-4；AC-REQ-01/02、AC-PROD-08、BR-REQ-03/04）。
@@ -59,6 +60,10 @@ class P411AcceptanceTest {
         when(limiter.tryAcquire(anyString())).thenReturn(true);
         service = new GuestDemandService(requirementMapper, productMapper, projectMemberMapper,
             auditLogService, limiter);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
         when(requirementMapper.selectCount(any())).thenReturn(0L);
     }
 

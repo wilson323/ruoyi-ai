@@ -32,6 +32,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * HIGH-1.2 selectResponse 落选通知验收测试
@@ -69,6 +70,11 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
 
     @BeforeEach
     void setUp() {
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard_bidInvitationService = new DefaultStateMachineGuard(null, null);
+        d1Guard_bidInvitationService.initRules();
+        bidInvitationService.setStateMachineGuard(d1Guard_bidInvitationService);
+
         publicInvitation = BidInvitation.builder()
             .id(1002L).projectId(100L).mode("PUBLIC").targetPersonId(null)
             .title("研发PM公开招标-项目B").status("OPEN")

@@ -1,10 +1,70 @@
 {
   "meta" : {
-    "ruleCount" : 50,
+    "ruleCount" : 89,
     "source" : "DefaultStateMachineGuard.initRules（后端守卫规则表导出，补遗 §5-1）",
-    "version" : "sha256:5a29a1e8d2e50d6c16cd28bcbb85337bf4ac1f8f5a1a31e10af4767e97335d5e"
+    "version" : "sha256:23cfd5ad571f6a1cbcb969383e57be5052634548b438f5ddfa16b3fae0a2e85d"
   },
   "rules" : [ {
+    "crossDomain" : false,
+    "entityType" : "bid_invitation",
+    "fromState" : "*",
+    "toState" : "CLOSED",
+    "trigger" : "close"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_invitation",
+    "fromState" : "EXPIRED",
+    "toState" : "SELECTED",
+    "trigger" : "adminAssign"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_invitation",
+    "fromState" : "INITIAL",
+    "toState" : "OPEN",
+    "trigger" : "create"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_invitation",
+    "fromState" : "OPEN",
+    "toState" : "CLOSED",
+    "trigger" : "withdraw"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_invitation",
+    "fromState" : "OPEN",
+    "toState" : "EXPIRED",
+    "trigger" : "expire"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_invitation",
+    "fromState" : "OPEN",
+    "toState" : "SELECTED",
+    "trigger" : "select"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_response",
+    "fromState" : "INITIAL",
+    "toState" : "PENDING",
+    "trigger" : "respond"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_response",
+    "fromState" : "PENDING",
+    "toState" : "ACCEPTED",
+    "trigger" : "select"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_response",
+    "fromState" : "PENDING",
+    "toState" : "REJECTED",
+    "trigger" : "select"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "bid_response",
+    "fromState" : "PENDING",
+    "toState" : "WITHDRAWN",
+    "trigger" : "withdraw"
+  }, {
     "crossDomain" : true,
     "entityType" : "bonus_pool",
     "fromState" : "CONFIRMED",
@@ -156,6 +216,18 @@
     "trigger" : "reopen"
   }, {
     "crossDomain" : false,
+    "entityType" : "guest_demand",
+    "fromState" : "INITIAL",
+    "toState" : "SUBMITTED",
+    "trigger" : "submit"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "guest_demand",
+    "fromState" : "SUBMITTED",
+    "toState" : "WITHDRAWN",
+    "trigger" : "withdraw"
+  }, {
+    "crossDomain" : false,
     "entityType" : "handover_record",
     "fromState" : "COMPLETED",
     "toState" : "ROLLED_BACK",
@@ -216,6 +288,24 @@
     "trigger" : "reject"
   }, {
     "crossDomain" : false,
+    "entityType" : "kpi_shared_confirm",
+    "fromState" : "CONFIRMED",
+    "toState" : "PENDING",
+    "trigger" : "recapture"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "kpi_shared_confirm",
+    "fromState" : "INITIAL",
+    "toState" : "PENDING",
+    "trigger" : "create"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "kpi_shared_confirm",
+    "fromState" : "PENDING",
+    "toState" : "CONFIRMED",
+    "trigger" : "secondSign"
+  }, {
+    "crossDomain" : false,
     "entityType" : "launch_date_change",
     "fromState" : "INITIAL",
     "toState" : "PENDING_SECOND",
@@ -232,6 +322,90 @@
     "fromState" : "PENDING_SECOND",
     "toState" : "REJECTED",
     "trigger" : "secondSign"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "negative_feedback",
+    "fromState" : "DRAFT",
+    "toState" : "PENDING_DECISION",
+    "trigger" : "submit"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "negative_feedback",
+    "fromState" : "EXECUTED",
+    "toState" : "LIFTED",
+    "trigger" : "lift"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "negative_feedback",
+    "fromState" : "INITIAL",
+    "toState" : "DRAFT",
+    "trigger" : "create"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "negative_feedback",
+    "fromState" : "PENDING_DECISION",
+    "toState" : "EXECUTED",
+    "trigger" : "decide"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "negative_feedback",
+    "fromState" : "PENDING_DECISION",
+    "toState" : "REJECTED",
+    "trigger" : "decide"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "ACTIVE",
+    "toState" : "ARCHIVED",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "ACTIVE",
+    "toState" : "SUSPENDED",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "DRAFT",
+    "toState" : "ARCHIVED",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "DRAFT",
+    "toState" : "TEAMING",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "INITIAL",
+    "toState" : "DRAFT",
+    "trigger" : "create"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "SUSPENDED",
+    "toState" : "ACTIVE",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "SUSPENDED",
+    "toState" : "ARCHIVED",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "TEAMING",
+    "toState" : "ACTIVE",
+    "trigger" : "changeStatus"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "TEAMING",
+    "toState" : "ARCHIVED",
+    "trigger" : "changeStatus"
   }, {
     "crossDomain" : false,
     "entityType" : "requirement_change",
@@ -256,6 +430,66 @@
     "fromState" : "PENDING_SIGN",
     "toState" : "REJECTED",
     "trigger" : "reject"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "ACCEPTED",
+    "toState" : "CHANGED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "ACCEPTED",
+    "toState" : "REJECTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "CHANGED",
+    "toState" : "CLOSED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "CHANGED",
+    "toState" : "REJECTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "DRAFT",
+    "toState" : "REJECTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "DRAFT",
+    "toState" : "SUBMITTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "ROUTED",
+    "toState" : "ACCEPTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "ROUTED",
+    "toState" : "REJECTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "SUBMITTED",
+    "toState" : "REJECTED",
+    "trigger" : "transition"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "requirement_v2",
+    "fromState" : "SUBMITTED",
+    "toState" : "ROUTED",
+    "trigger" : "transition"
   }, {
     "crossDomain" : false,
     "entityType" : "stage_action",

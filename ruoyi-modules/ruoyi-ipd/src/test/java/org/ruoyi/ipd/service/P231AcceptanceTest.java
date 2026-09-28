@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P2-3.1 招标域验收测试（AC-TEAM-03/05/08/13）
@@ -42,6 +43,11 @@ class P231AcceptanceTest {
 
     @BeforeEach
     void setUp() {
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard_bidInvitationService = new DefaultStateMachineGuard(null, null);
+        d1Guard_bidInvitationService.initRules();
+        bidInvitationService.setStateMachineGuard(d1Guard_bidInvitationService);
+
         // LambdaUpdateWrapper.set 构造期解析列缓存，纯 Mockito 环境需先注册 TableInfo（仓内 P064/P171 同惯例；P2-3.2 起 expireOverdue/selectResponse 走 UpdateWrapper）
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
             new org.apache.ibatis.builder.MapperBuilderAssistant(

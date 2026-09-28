@@ -27,6 +27,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P1-5.2 selectResponse confirmToken 验收测试
@@ -64,6 +65,10 @@ class BidInvitationSelectConfirmTokenAcceptanceTest {
     void setUp() {
         bidInvitationService = new BidInvitationService(
             bidInvitationMapper, bidResponseMapper, auditLogService, notificationService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        bidInvitationService.setStateMachineGuard(d1Guard);
         invitation = BidInvitation.builder()
             .id(5001L).projectId(100L).mode("PUBLIC").title("P1-5.2 验证").status("OPEN")
             .expireAt(new Date(System.currentTimeMillis() + 7 * 24 * 3600 * 1000L))

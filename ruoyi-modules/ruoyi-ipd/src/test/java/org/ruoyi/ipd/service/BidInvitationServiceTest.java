@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * 招标单服务单测（BR-TEAM-03/05；@Tag("dev") 必须）
@@ -51,6 +52,10 @@ class BidInvitationServiceTest {
     @BeforeEach
     void setUp() {
         service = new BidInvitationService(bidInvitationMapper, bidResponseMapper, auditLogService, notificationService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     @Test

@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P1-2.1 验收：四基准必填、系数默认/区间、奖金池算例、服务端 DRAFT。
@@ -45,6 +46,10 @@ class P121AcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     private Product productOk() {

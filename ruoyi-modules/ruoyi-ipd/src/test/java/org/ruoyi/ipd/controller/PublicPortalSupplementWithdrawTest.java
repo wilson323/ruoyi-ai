@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * R3 游客需求补登/撤回 HTTP 端点验收（页39 用例1/用例2；AC-REQ-04/04b；BR-REQ-03/03a/03b）。
@@ -72,6 +73,10 @@ class PublicPortalSupplementWithdrawTest {
         when(limiter.tryAcquire(anyString())).thenReturn(true);
         service = new GuestDemandService(requirementMapper, mock(ProductMapper.class),
             mock(ProjectMemberMapper.class), auditLogService, limiter);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     /** 真库可能态组合：SUBMITTED 受理前；其余状态带 acceptedAt（WITHDRAWN 终态除外，撤回发生在受理前）。 */

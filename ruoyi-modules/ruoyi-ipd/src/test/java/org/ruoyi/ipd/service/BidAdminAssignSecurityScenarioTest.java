@@ -42,6 +42,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * adminAssign 双层授权闭环（commit dc850833 + e1d6f90f 家族）场景级回归。
@@ -94,6 +95,10 @@ class BidAdminAssignSecurityScenarioTest {
     @BeforeEach
     void setUp() {
         realService = new BidInvitationService(bidInvitationMapper, bidResponseMapper, auditLogService, notificationService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        realService.setStateMachineGuard(d1Guard);
         permission = new IpdPermission(session, authService);
         controller = new BidController(serviceMock, bidResponseService, permission, session);
     }

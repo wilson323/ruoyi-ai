@@ -35,6 +35,9 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
+import org.ruoyi.ipd.common.IpdBusinessException;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 项目服务（核心实体）
@@ -104,6 +107,52 @@ public class ProjectService implements IProjectService {
     public static final int LEGACY_SCENARIO_CRITICAL_DAYS = 3;
     /** 编码冲突（TOCTOU：nextCode 与 insert 非同一原子临界区）最大重试次数 */
     private static final int CODE_CONFLICT_MAX_RETRY = 8;
+
+
+    /**
+     * D-1 批次（补遗 §5-2 二波接线）：状态机守卫，对齐 StageActionService 金样板。
+     * setter 注入（@Autowired(required=false)）不扩构造签名——既有测试 new 不破；
+     * 生产路径 Spring 必装配，缺失时迁移 fail-closed（防 state-machine-bypass）。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他机器一致：小写下划线。 */
+    private static final String PROJECT_ENTITY_TYPE = "project";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + PROJECT_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(PROJECT_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** 注册 postCommit 副作用（事务提交后触发；无守卫降级 no-op；无事务上下文直接执行）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = now();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(PROJECT_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(PROJECT_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
 
     /**
      * 创建项目（P1-2.1：四基准 + 模板/市场必填；系数默认/区间；状态强制 DRAFT）。
@@ -177,6 +226,8 @@ public class ProjectService implements IProjectService {
         project.setCode(nextCode());
         project.setCurrentStage("CONCEPT");
         // P1-2.1：草稿初始状态由服务端强制设置，忽略客户端注入
+        // D-1 接线：INITIAL->DRAFT|create 守卫（null=创建迁移）
+        preCheckGuard(null, "DRAFT", "create");
         project.setStatus("DRAFT");
         if (isBlank(project.getSource())) {
             project.setSource("NEW");
@@ -191,6 +242,7 @@ public class ProjectService implements IProjectService {
         // P1-7.1：目标市场认证清单落项目（模板变更 re-sync 只增不重置 DONE）
         projectCertService.syncFromProject(project, operatorId);
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
+        registerPostCommit(null, "DRAFT", "create", operatorId, project.getId());
         return project;
     }
 
@@ -241,9 +293,13 @@ public class ProjectService implements IProjectService {
         if (!allowed.contains(target)) {
             throw new ServiceException("状态机非法迁移: " + project.getStatus() + " → " + target);
         }
+        // D-1 接线：changeStatus 迁移守卫（白名单检查后、setStatus 前；8 条边 trigger=changeStatus）
+        String guardFrom = project.getStatus();
+        preCheckGuard(guardFrom, target, "changeStatus");
         project.setStatus(target);
         projectMapper.updateById(project);
         audit(projectId, project.getName(), operatorId, "PROJECT_STATUS_" + target);
+        registerPostCommit(guardFrom, target, "changeStatus", operatorId, projectId);
         return project;
     }
 

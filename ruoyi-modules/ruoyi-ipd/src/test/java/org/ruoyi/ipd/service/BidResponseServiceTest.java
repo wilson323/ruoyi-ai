@@ -33,6 +33,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * W5-E-2.4 P0 #5 IDOR 修复验收：BidResponseService 3 公开方法 actor 化。
@@ -71,6 +72,11 @@ class BidResponseServiceTest {
 
     @BeforeEach
     void setUp() {
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard_service = new DefaultStateMachineGuard(null, null);
+        d1Guard_service.initRules();
+        service.setStateMachineGuard(d1Guard_service);
+
         // LambdaQueryWrapper 构造期解析列缓存，纯 Mockito 环境需先注册 TableInfo（仓内 P232/P171 同惯例）
         TableInfoHelper.initTableInfo(
             new MapperBuilderAssistant(new MybatisConfiguration(), "ipd-w5e24-test-bid"),

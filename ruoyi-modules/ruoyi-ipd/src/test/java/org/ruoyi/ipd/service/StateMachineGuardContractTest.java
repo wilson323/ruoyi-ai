@@ -35,9 +35,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
  *
  * <p>覆盖维度：
  * <ol>
- *   <li>哨兵：ruleCount()==42（增删规则必须同步改此处+对应表驱动行；R24线settleTimeout-APPROVED与R25线DRAFT直分合入后 37→38；R28线requirement_change接线4条 38→42）</li>
- *   <li>表驱动 42 条合法迁移全部放行（preCheck 不抛 + isAllowed=true）</li>
- *   <li>表驱动 18 条非法迁移全部拒绝（跳级/倒退/错误trigger/终态复活/跨机污染）</li>
+ *   <li>哨兵：ruleCount()==89（增删规则必须同步改此处+对应表驱动行；R24线settleTimeout-APPROVED与R25线DRAFT直分合入后 37→38；R28线requirement_change接线4条 38→42；后补登至 50；R33 一期 kpi_shared_confirm 3条 50→53；D-1 批次 6 机 36 条 53→89）</li>
+ *   <li>表驱动 89 条合法迁移全部放行（preCheck 不抛 + isAllowed=true；通配 *->CLOSED|close 展开为逐 from 语义行）</li>
+ *   <li>表驱动 22 条非法迁移全部拒绝（跳级/倒退/错误trigger/终态复活/跨机污染）</li>
  *   <li>横向契约：fail-closed / from=null→INITIAL（isAllowed 与 postCommit 双路径）/ 未登记 postCommit no-op</li>
  * </ol>
  */
@@ -62,18 +62,20 @@ class StateMachineGuardContractTest {
     /* ====================== 0. 哨兵：规则数 ====================== */
 
     @Test
-    @DisplayName("哨兵：种子规则总数=50（10机：deletion 7+bonus 4+gate 6+launch 3+coef 3+contrib 5+handover 3+kpi 7+req_change 4+stage_action 8）")
+    @DisplayName("哨兵：种子规则总数=89（17机：11机存量 53 + D-1 批次 6 机 36：project 9+requirement_v2 10+bid_invitation 6+bid_response 4+guest_demand 2+negative_feedback 5）")
     void sentinelRuleCount() {
         // 增删规则必须同步修改本断言与下方表驱动行——防止规则表与测试悄然漂移
         // 2026-09-09 双线合并：R24线 settleTimeout-APPROVED（gate 5→6）+ R25线 DRAFT直分已并
         // 2026-09-09 R28线：requirement_change 4 迁移点接线（INITIAL->DRAFT/PENDING_SIGN/REJECTED/APPROVED）
         // 接线轮（fix/r28-guard-wire）：stage_action 7 边登记，transit 由目标白名单升级为 from→to 严格图（C8）
+        // R33 一期（2026-09-27）：kpi_shared_confirm 接线 3 条（create/recapture/secondSign）50→53
+        // D-1 批次（蜂群 SWARM-A）：6 台 36 条接线规则 53→89
         assertThat(guard.ruleCount())
             .as("规则总数变化=契约变更，必须显式过本测试 + code review")
-            .isEqualTo(50);
+            .isEqualTo(89);
     }
 
-    /* ====================== 1. 表驱动：50 条合法迁移 ====================== */
+    /* ====================== 1. 表驱动：89 条规则合法迁移 ====================== */
 
     @ParameterizedTest(name = "[{index}] 合法 {0}")
     @CsvSource({
@@ -123,6 +125,10 @@ class StateMachineGuardContractTest {
         "kpi_record, EDITING, REJECTED, reject",
         "kpi_record, PENDING_REVIEW, REJECTED, reject",
         "kpi_record, EDITING, ARCHIVED, archive",
+        // ---- kpi_shared_confirm（3，R33 一期 C5 补接线：首签自环不迁移状态不登记）----
+        "kpi_shared_confirm, INITIAL, PENDING, create",
+        "kpi_shared_confirm, CONFIRMED, PENDING, recapture",
+        "kpi_shared_confirm, PENDING, CONFIRMED, secondSign",
         // ---- requirement_change（4，R28线接线：create/submit/reject/sign）----
         "requirement_change, INITIAL, DRAFT, create",
         "requirement_change, DRAFT, PENDING_SIGN, submit",
@@ -137,6 +143,52 @@ class StateMachineGuardContractTest {
         "stage_action, DELAYED, IN_PROGRESS, resume",
         "stage_action, NOT_STARTED, NA, mark_na",
         "stage_action, IN_PROGRESS, NA, mark_na",
+        // ---- D-1 批次：project（9）----
+        "project, INITIAL, DRAFT, create",
+        "project, DRAFT, TEAMING, changeStatus",
+        "project, DRAFT, ARCHIVED, changeStatus",
+        "project, TEAMING, ACTIVE, changeStatus",
+        "project, TEAMING, ARCHIVED, changeStatus",
+        "project, ACTIVE, SUSPENDED, changeStatus",
+        "project, ACTIVE, ARCHIVED, changeStatus",
+        "project, SUSPENDED, ACTIVE, changeStatus",
+        "project, SUSPENDED, ARCHIVED, changeStatus",
+        // ---- D-1 批次：requirement_v2（10，trigger 统一 transition）----
+        "requirement_v2, DRAFT, SUBMITTED, transition",
+        "requirement_v2, DRAFT, REJECTED, transition",
+        "requirement_v2, SUBMITTED, ROUTED, transition",
+        "requirement_v2, SUBMITTED, REJECTED, transition",
+        "requirement_v2, ROUTED, ACCEPTED, transition",
+        "requirement_v2, ROUTED, REJECTED, transition",
+        "requirement_v2, ACCEPTED, CHANGED, transition",
+        "requirement_v2, ACCEPTED, REJECTED, transition",
+        "requirement_v2, CHANGED, CLOSED, transition",
+        "requirement_v2, CHANGED, REJECTED, transition",
+        // ---- D-1 批次：bid_invitation（6，含 *->CLOSED 通配终态收敛）----
+        "bid_invitation, INITIAL, OPEN, create",
+        "bid_invitation, OPEN, SELECTED, select",
+        "bid_invitation, OPEN, EXPIRED, expire",
+        "bid_invitation, OPEN, CLOSED, withdraw",
+        "bid_invitation, *, CLOSED, close",
+        "bid_invitation, EXPIRED, SELECTED, adminAssign",
+        // 通配展开语义行（isTerminalState(BID_INVITATION_TERMINAL=CLOSED) 配套）：close() 宽进
+        "bid_invitation, SELECTED, CLOSED, close",
+        "bid_invitation, EXPIRED, CLOSED, close",
+        "bid_invitation, CLOSED, CLOSED, close",
+        // ---- D-1 批次：bid_response（4）----
+        "bid_response, INITIAL, PENDING, respond",
+        "bid_response, PENDING, ACCEPTED, select",
+        "bid_response, PENDING, REJECTED, select",
+        "bid_response, PENDING, WITHDRAWN, withdraw",
+        // ---- D-1 批次：guest_demand（2）----
+        "guest_demand, INITIAL, SUBMITTED, submit",
+        "guest_demand, SUBMITTED, WITHDRAWN, withdraw",
+        // ---- D-1 批次：negative_feedback（5）----
+        "negative_feedback, INITIAL, DRAFT, create",
+        "negative_feedback, DRAFT, PENDING_DECISION, submit",
+        "negative_feedback, PENDING_DECISION, EXECUTED, decide",
+        "negative_feedback, PENDING_DECISION, REJECTED, decide",
+        "negative_feedback, EXECUTED, LIFTED, lift",
     })
     void legalTransitionAllowed(String entityType, String from, String to, String trigger) {
         assertThat(guard.isAllowed(entityType, from, to, trigger))

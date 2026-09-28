@@ -20,6 +20,8 @@ import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 招标单服务（P2-3.1 BR-TEAM-03/05）
@@ -67,9 +69,12 @@ public class BidInvitationService {
      */
     @Transactional(rollbackFor = Exception.class)
     public BidInvitation create(BidInvitation invitation) {
+        // D-1 接线：INITIAL->OPEN|create 守卫
+        preCheckGuard(BID_INVITATION_ENTITY_TYPE, null, "OPEN", "create");
         invitation.setStatus("OPEN");
         invitation.setCreateTime(now());
         bidInvitationMapper.insert(invitation);
+        registerPostCommit(BID_INVITATION_ENTITY_TYPE, null, "OPEN", "create", invitation.getCreateBy(), invitation.getId());
         return invitation;
     }
 
@@ -157,6 +162,10 @@ public class BidInvitationService {
             // STATE_CONFLICT 而非 ROLE_LOCKED：缺 rd_pm_id 是业务数据不完整（非角色被锁定）；ROLE_LOCKED 专属"市场PM 不可跨研发PM 动作"语义
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "中标应标行缺少研发PM身份，无法绑定");
         }
+        // D-1 接线：三条迁移守卫（bid_response 两条 + bid_invitation 一条；落选批量 UPDATE 旁路按迁移为单位 preCheck 一次，DeletionRequestServiceImpl:386 口径）
+        preCheckGuard(BID_INVITATION_ENTITY_TYPE, "OPEN", "SELECTED", "select");
+        preCheckGuard(BID_RESPONSE_ENTITY_TYPE, "PENDING", "ACCEPTED", "select");
+        preCheckGuard(BID_RESPONSE_ENTITY_TYPE, "PENDING", "REJECTED", "select");
         resp.setStatus("ACCEPTED");
         bidResponseMapper.updateById(resp);
         // 落选：同单其余 PENDING 行单 SQL 批量置 REJECTED（避免逐行写放大）
@@ -177,6 +186,12 @@ public class BidInvitationService {
         inv.setConfirmToken(null);
         inv.setConfirmTokenExpires(null);
         bidInvitationMapper.updateById(inv);
+        registerPostCommit(BID_INVITATION_ENTITY_TYPE, "OPEN", "SELECTED", "select", operatorId, invitationId);
+        registerPostCommit(BID_RESPONSE_ENTITY_TYPE, "PENDING", "ACCEPTED", "select", operatorId, responseId);
+        if (!losers.isEmpty()) {
+            // 批量落选：以迁移为单位登记一次 postCommit（实体锚=招标单）
+            registerPostCommit(BID_RESPONSE_ENTITY_TYPE, "PENDING", "REJECTED", "select", operatorId, invitationId);
+        }
         auditLogService.append(AuditLog.builder()
             .operatorId(operatorId).action("select").entityType("bid_invitation").entityId(invitationId)
             .afterData(AuditEventData.json(
@@ -223,6 +238,10 @@ public class BidInvitationService {
             new LambdaQueryWrapper<BidInvitation>()
                 .eq(BidInvitation::getStatus, "OPEN")
                 .lt(BidInvitation::getExpireAt, now()));
+        // D-1 接线：批量 UPDATE 旁路以迁移为单位 preCheck 一次（定时任务无操作人 operatorId=null）
+        if (!overdue.isEmpty()) {
+            preCheckGuard(BID_INVITATION_ENTITY_TYPE, "OPEN", "EXPIRED", "expire");
+        }
         int affected = bidInvitationMapper.update(null, new LambdaUpdateWrapper<BidInvitation>()
             .set(BidInvitation::getStatus, "EXPIRED")
             .eq(BidInvitation::getStatus, "OPEN")
@@ -239,6 +258,10 @@ public class BidInvitationService {
                     "/bid-invitations/" + inv.getId());
             }
         }
+        if (affected > 0) {
+            registerPostCommit(BID_INVITATION_ENTITY_TYPE, "OPEN", "EXPIRED", "expire", null,
+                overdue.isEmpty() ? null : overdue.get(0).getId());
+        }
         return affected;
     }
 
@@ -252,8 +275,11 @@ public class BidInvitationService {
         if (millisSinceCreate > 24 * 60 * 60 * 1000L) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "超过24小时不可撤回");
         }
+        // D-1 接线：OPEN->CLOSED|withdraw 守卫（requireOpen 已保证 OPEN）
+        preCheckGuard(BID_INVITATION_ENTITY_TYPE, "OPEN", "CLOSED", "withdraw");
         inv.setStatus("CLOSED");
         bidInvitationMapper.updateById(inv);
+        registerPostCommit(BID_INVITATION_ENTITY_TYPE, "OPEN", "CLOSED", "withdraw", null, id);
         return inv;
     }
 
@@ -266,8 +292,12 @@ public class BidInvitationService {
         if (inv == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + id);
         }
+        // D-1 接线：*->CLOSED|close 通配终态收敛守卫（close() 无状态门禁宽进语义保持）
+        String guardFrom = inv.getStatus();
+        preCheckGuard(BID_INVITATION_ENTITY_TYPE, guardFrom, "CLOSED", "close");
         inv.setStatus("CLOSED");
         bidInvitationMapper.updateById(inv);
+        registerPostCommit(BID_INVITATION_ENTITY_TYPE, guardFrom, "CLOSED", "close", null, id);
         return inv;
     }
 
@@ -486,6 +516,53 @@ public class BidInvitationService {
         return inv;
     }
 
+
+    /**
+     * D-1 批次（补遗 §5-2 二波接线）：状态机守卫，对齐 StageActionService 金样板。
+     * 本服务同时驱动两台机器（bid_invitation + bid_response 遴选迁移），helper 按 entityType 参数化。
+     * setter 注入不扩构造签名；缺失时迁移 fail-closed。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他机器一致：小写下划线。 */
+    private static final String BID_INVITATION_ENTITY_TYPE = "bid_invitation";
+    private static final String BID_RESPONSE_ENTITY_TYPE = "bid_response";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
+    private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + entityType
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
+    }
+
+    /** 注册 postCommit 副作用（事务提交后触发；无守卫降级 no-op；无事务上下文直接执行）。 */
+    private void registerPostCommit(String entityType, String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(entityType, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(entityType, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
+
     /**
      * AC-TEAM-09：超管对挂起超 30 日的招标单直接指派（无需应标行）
      * SEC-REV-BID-01：状态门禁 + 年龄判定 + targetPersonId 必填 + 通知对等。
@@ -520,9 +597,12 @@ public class BidInvitationService {
         if (targetPersonId == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "targetPersonId 必填");
         }
+        // D-1 接线：EXPIRED->SELECTED|adminAssign 守卫
+        preCheckGuard(BID_INVITATION_ENTITY_TYPE, "EXPIRED", "SELECTED", "adminAssign");
         inv.setStatus("SELECTED");
         inv.setUpdateTime(now());
         bidInvitationMapper.updateById(inv);
+        registerPostCommit(BID_INVITATION_ENTITY_TYPE, "EXPIRED", "SELECTED", "adminAssign", adminId, id);
         auditLogService.append(AuditLog.builder()
             .operatorId(adminId).action("admin_assign").entityType("bid_invitation").entityId(id)
             .afterData(AuditEventData.json("targetPersonId", targetPersonId))

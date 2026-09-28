@@ -7,7 +7,7 @@
 ## 1. 链路
 
 ```
-后端 DefaultStateMachineGuard.initRules()（42 条规则，内存唯一事实源）
+后端 DefaultStateMachineGuard.initRules()（53 条规则，内存唯一事实源；口径演进 42→50→53，R33 一期 2026-09-27 补 kpi_shared_confirm 3 条）
   → StateMachineGuardRulesExportTest 导出契约 JSON（双写）
       ├─ 本仓 docs/ipd-系统说明/state-machine-guard-rules.json（留档对账）
       └─ 前端仓 apps/web-antd/src/views/ipd/_shared/state-machine-guard-rules.json（消费源）
@@ -46,7 +46,7 @@ mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=StateMachineGuardRulesExportTest -Dgua
 ## 5. 与既有机制的边界（防双轨声明）
 
 - `scripts/check-api-contract-fe-be.mjs`（pre-commit 门禁 3）：管 **API 端点**孤儿/消费对账，不管迁移图——本链路是其互补，不重叠。
-- `StateMachineGuardContractTest`：管**后端守卫表内部**（42 条哨兵 + 表驱动放行/拒绝）——本链路测试管守卫表**导出面**与跨仓文件，两者联动：改规则必须同时过两测试。
+- `StateMachineGuardContractTest`：管**后端守卫表内部**（53 条哨兵 + 表驱动放行/拒绝）——本链路测试 管守卫表**导出面**与跨仓文件，两者联动：改规则必须同时过两测试。
 - `ipd-frontend-drift-guard.cjs`：管前端 api/ipd 导出冲突，与本文件无关。
 - 不新增 CI job、不新增 hook；校验命令挂现有测试通道（vitest / mvn test）。
 

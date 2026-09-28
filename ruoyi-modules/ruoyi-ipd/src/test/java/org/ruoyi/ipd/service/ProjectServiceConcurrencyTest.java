@@ -40,6 +40,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * PERF-01 取号并发 + 撞号收口单测。
@@ -108,6 +109,10 @@ class ProjectServiceConcurrencyTest {
             auditLogService, gateEngine,
             projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
             null /* P2-6.2 */);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     @Test
@@ -121,6 +126,10 @@ class ProjectServiceConcurrencyTest {
             stageActionMapper, kpiRecordMapper, auditLogService, gateEngine,
             projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
             null /* P2-6.2 */);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        racing.setStateMachineGuard(d1Guard);
 
         int n = 50;
         ExecutorService pool = Executors.newFixedThreadPool(20);

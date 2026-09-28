@@ -22,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * R27 P0-5：NegativeFeedbackService 状态机 5 函数补全 单测（TDD 红→绿）。
@@ -59,6 +60,10 @@ class NegativeFeedbackServiceR27Test {
     void setUp() {
         // 单注入构造器（已有）：测试口仅 mapper，其余依赖为 null
         service = new NegativeFeedbackService(mapper);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     /* ====================== 1. getByProjectId ====================== */

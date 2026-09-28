@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P4-1.2 查询码隔离与受理前撤回补充 验收测试 (BR-REQ-03/03a/03b; AC-REQ-04 + AC-REQ-04b)
@@ -59,6 +60,10 @@ class P412AcceptanceTest {
     @BeforeEach
     void setUp() {
         service = new GuestDemandService(requirementMapper, productMapper, projectMemberMapper, auditLogService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 

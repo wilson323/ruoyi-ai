@@ -34,6 +34,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P1-1.1 / AC-PROD-01：产品↔项目 1:1 双向绑定验收（Mock 层）。
@@ -77,6 +78,10 @@ class P111AcceptanceTest {
         projectService = new ProjectService(
             projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService,
             projectCertService, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        projectService.setStateMachineGuard(d1Guard);
     }
 
     private Product aliveProduct(Long id, String source, Long projectId) {

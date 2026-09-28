@@ -20,6 +20,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 应标记录服务（P2-3.2 BR-TEAM-03/05、BR-REC-BID-01/02/03）
@@ -39,6 +42,52 @@ public class BidResponseService implements IBidResponseService {
     private final BidInvitationMapper bidInvitationMapper;
     private final ProjectMemberMapper projectMemberMapper;
     private final IAuditLogService auditLogService;
+
+
+    /**
+     * D-1 批次（补遗 §5-2 二波接线）：状态机守卫，对齐 StageActionService 金样板。
+     * setter 注入（@Autowired(required=false)）不扩构造签名——既有测试 new 不破；
+     * 生产路径 Spring 必装配，缺失时迁移 fail-closed（防 state-machine-bypass）。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他机器一致：小写下划线。 */
+    private static final String BID_RESPONSE_ENTITY_TYPE = "bid_response";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + BID_RESPONSE_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(BID_RESPONSE_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** 注册 postCommit 副作用（事务提交后触发；无守卫降级 no-op；无事务上下文直接执行）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(BID_RESPONSE_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(BID_RESPONSE_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
 
     /**
      * W5-E-2.4 件 1.2：actor 入口校验——service 层不信任 controller 必传（防御性兜底）。
@@ -106,11 +155,14 @@ public class BidResponseService implements IBidResponseService {
             return existing;
         }
         response.setResponseNote(note);
+        // D-1 接线：INITIAL->PENDING|respond 守卫（既有应标覆盖更新路径无状态迁移，不接）
+        preCheckGuard(null, "PENDING", "respond");
         response.setStatus("PENDING");
         response.setRespondedAt(now);
         response.setCreateTime(now);
         bidResponseMapper.insert(response);
         audit(response, currentPersonId);
+        registerPostCommit(null, "PENDING", "respond", currentPersonId, response.getId());
         return response;
     }
 
@@ -132,8 +184,11 @@ public class BidResponseService implements IBidResponseService {
         if (!"PENDING".equals(resp.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
+        // D-1 接线：PENDING->WITHDRAWN|withdraw 守卫
+        preCheckGuard("PENDING", "WITHDRAWN", "withdraw");
         resp.setStatus("WITHDRAWN");
         bidResponseMapper.updateById(resp);
+        registerPostCommit("PENDING", "WITHDRAWN", "withdraw", currentPersonId, id);
         return resp;
     }
 

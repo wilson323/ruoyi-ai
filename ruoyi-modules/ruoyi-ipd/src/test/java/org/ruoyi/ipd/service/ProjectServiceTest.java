@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * 项目服务单测：编码生成/系数区间/1:1/状态机/阶段推进
@@ -64,6 +65,10 @@ class ProjectServiceTest {
             auditLogService, gateEngine,
             projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
             null /* P2-6.2：未挂载需求变更单 service 时跳过 hasOpenChange 门禁 */);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
         service.setProjectMemberMapper(projectMemberMapper);
     }
 
@@ -335,6 +340,10 @@ class ProjectServiceTest {
         ProjectService bare = new ProjectService(projectMapper, productMapper, stageActionMapper,
             kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService,
             NoopTransactionManager.INSTANCE, null);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        bare.setStateMachineGuard(d1Guard);
         when(projectMapper.selectById(9L)).thenReturn(visibleProject(9L));
         IpdActor actor = new IpdActor(7L, "pm-a", "MARKET_PM", 7L);
         assertThatThrownBy(() -> bare.getVisibleById(9L, actor))

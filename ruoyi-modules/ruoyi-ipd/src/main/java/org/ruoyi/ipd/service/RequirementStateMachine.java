@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * P4-1.4 需求七态状态机 (BR-REQ-05; AC-REQ-05/06/07/08)
@@ -176,6 +179,52 @@ public class RequirementStateMachine {
         }
     }
 
+
+    /**
+     * D-1 批次（补遗 §5-2 二波接线）：状态机守卫，对齐 StageActionService 金样板。
+     * setter 注入（@Autowired(required=false)）不扩构造签名——既有测试 new 不破；
+     * 生产路径 Spring 必装配，缺失时迁移 fail-closed（防 state-machine-bypass）。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他机器一致：小写下划线。 */
+    private static final String REQUIREMENT_ENTITY_TYPE = "requirement_v2";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + REQUIREMENT_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(REQUIREMENT_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** 注册 postCommit 副作用（事务提交后触发；无守卫降级 no-op；无事务上下文直接执行）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(REQUIREMENT_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(REQUIREMENT_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
+
     /**
      * 需求七态迁移入口。事务包裹；非法迁移抛 STATE_CONFLICT；
      * ACCEPTED → CHANGED 自动创建 RequirementChange DRAFT。
@@ -238,6 +287,8 @@ public class RequirementStateMachine {
                 String.format("需求状态机非法迁移：from=%s, to=%s（守卫层未登记该迁移）",
                     fromState, toState));
         }
+        // D-1 接线：Guard 规则表第二道迁移图守卫（10 条边 trigger=transition；自建 ALLOWED 图保留角色门前置语义，双跑不前弿）
+        preCheckGuard(fromState, toState, "transition");
         // ACCEPTED → CHANGED：自动创建 RequirementChange DRAFT（与原 requirementId 关联）
         if (ST_ACCEPTED.equals(fromState) && ST_CHANGED.equals(toState)) {
             RequirementChange change = new RequirementChange();
@@ -260,6 +311,7 @@ public class RequirementStateMachine {
         requirement.setStatus(toState);
         requirement.setUpdateTime(new Date());
         requirementMapper.updateById(requirement);
+        registerPostCommit(fromState, toState, "transition", actor.id(), requirementId);
         return requirement;
     }
 

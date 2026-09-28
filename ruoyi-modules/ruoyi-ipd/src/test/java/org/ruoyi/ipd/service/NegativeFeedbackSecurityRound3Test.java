@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * SEC-REV round 3：NegativeFeedbackService 安全修复回归（4 项）：
@@ -75,6 +76,10 @@ class NegativeFeedbackSecurityRound3Test {
         org.mockito.Mockito.lenient().when(auditLogService.append(any(AuditLog.class)))
             .thenAnswer(inv -> inv.getArgument(0));
         service = new NegativeFeedbackService(mapper, memberMapper, auditLogService, null);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     private NegativeFeedback existingDraft() {
@@ -98,6 +103,10 @@ class NegativeFeedbackSecurityRound3Test {
         when(mapper.selectCount(any())).thenReturn(0L);
         // 注入 projectMapper（这是 Bug#4 修复引入）
         service = new NegativeFeedbackService(mapper, memberMapper, auditLogService, null);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
         // Bug#4 验证：调用前需要 projectMapper 注入；当前服务构造器未注入 projectMapper
         // 故本测试断言当前实现存在 Bug#4 —— 通过 mock projectMapper 模拟跨组检测
         // 跨组场景：在 fix 后，projectMapper.selectById 返回 mainGroupId != actor.groupId → 抛 FORBIDDEN

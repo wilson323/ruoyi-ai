@@ -40,6 +40,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P3-8.2 负反馈停发减半与奖金资格联动 验收测试
@@ -129,6 +130,10 @@ class P382AcceptanceTest {
 
         service = new NegativeFeedbackService(mapper, memberMapper, auditLogService,
             notificationService, projectMapper, ipdPermission);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     /** 项目下默认配齐 MARKET_PM + RD_PM 两位在职 PM */

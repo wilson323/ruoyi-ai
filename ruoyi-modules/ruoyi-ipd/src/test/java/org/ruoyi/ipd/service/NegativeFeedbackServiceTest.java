@@ -31,6 +31,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P3-8.2 负反馈执行单测（BR-INC-10；AC-INC-36b/37/38/39/40）
@@ -72,6 +73,10 @@ class NegativeFeedbackServiceTest {
     void setUp() {
         service = new NegativeFeedbackService(negativeFeedbackMapper, projectMemberMapper,
             auditLogService, notificationService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     /* ============================================================

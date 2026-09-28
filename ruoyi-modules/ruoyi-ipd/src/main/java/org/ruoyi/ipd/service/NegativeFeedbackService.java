@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * P3-8.2 负反馈执行（BR-INC-10；AC-INC-36b/37/38/39/40）
@@ -105,6 +107,52 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         this.projectMapper = projectMapper;
         this.ipdPermission = ipdPermission;
     }
+
+    /**
+     * D-1 批次（补遗 §5-2 二波接线）：状态机守卫，对齐 StageActionService 金样板。
+     * setter 注入（@Autowired(required=false)）不扩构造签名——既有测试 new 不破；
+     * 生产路径 Spring 必装配，缺失时迁移 fail-closed（防 state-machine-bypass）。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他机器一致：小写下划线。 */
+    private static final String NEGATIVE_FEEDBACK_ENTITY_TYPE = "negative_feedback";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + NEGATIVE_FEEDBACK_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(NEGATIVE_FEEDBACK_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** 注册 postCommit 副作用（事务提交后触发；无守卫降级 no-op；无事务上下文直接执行）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(NEGATIVE_FEEDBACK_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(NEGATIVE_FEEDBACK_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
+
 
     /* ========================================================================
      *  AC-INC-40：triggerType → (mainRole, relatedRole, mainExec, relatedExec)
@@ -198,6 +246,8 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_NOT_PM);
         }
 
+        // D-1 接线：INITIAL->DRAFT|create 守卫
+        preCheckGuard(null, STATUS_DRAFT, "create");
         NegativeFeedback row = NegativeFeedback.builder()
             .projectId(req.projectId())
             // [R29 audit 2026-09-09] source/content/severity 是 DDL NOT NULL legacy 字段，
@@ -231,6 +281,7 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
                 "同项目同触发情形的负反馈记录已存在（DB 唯一索引兜底）");
         }
         appendAudit("CREATE", row, actor, null, "P3-8.2 录入");
+        registerPostCommit(null, STATUS_DRAFT, "create", actor.id(), row.getId());
         return row;
     }
 
@@ -244,9 +295,12 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         if (!STATUS_DRAFT.equals(row.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID);
         }
+        // D-1 接线：DRAFT->PENDING_DECISION|submit 守卫
+        preCheckGuard(STATUS_DRAFT, STATUS_PENDING_DECISION, "submit");
         row.setStatus(STATUS_PENDING_DECISION);
         mapper.updateById(row);
         appendAudit("SUBMIT", row, actor, STATUS_DRAFT, "P3-8.2 提交认定");
+        registerPostCommit(STATUS_DRAFT, STATUS_PENDING_DECISION, "submit", actor.id(), row.getId());
         return row;
     }
 
@@ -268,20 +322,26 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
 
         String before = row.getStatus();
         if ("APPROVE".equalsIgnoreCase(req.decision())) {
+            // D-1 接线：PENDING_DECISION->EXECUTED|decide 守卫
+            preCheckGuard(before, STATUS_EXECUTED, "decide");
             row.setStatus(STATUS_EXECUTED);
             row.setDecidedBy(actor.id());
             row.setDecidedAt(new Date());
             row.setDecisionComment(req.comment());
             mapper.updateById(row);
             appendAudit("DECIDE_EXECUTE", row, actor, before, "P3-8.2 认定执行（AC-INC-36b/37/38/39）");
+            registerPostCommit(before, STATUS_EXECUTED, "decide", actor.id(), row.getId());
             notifyExecuted(row);
         } else if ("REJECT".equalsIgnoreCase(req.decision())) {
+            // D-1 接线：PENDING_DECISION->REJECTED|decide 守卫
+            preCheckGuard(before, STATUS_REJECTED, "decide");
             row.setStatus(STATUS_REJECTED);
             row.setDecidedBy(actor.id());
             row.setDecidedAt(new Date());
             row.setDecisionComment(req.comment());
             mapper.updateById(row);
             appendAudit("DECIDE_REJECT", row, actor, before, "P3-8.2 驳回");
+            registerPostCommit(before, STATUS_REJECTED, "decide", actor.id(), row.getId());
         } else {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
@@ -304,6 +364,8 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
             throw new IpdBusinessException(ApiV1ErrorCode.NF_STATE_INVALID);
         }
         String before = row.getStatus();
+        // D-1 接线：EXECUTED->LIFTED|lift 守卫
+        preCheckGuard(before, STATUS_LIFTED, "lift");
         row.setStatus(STATUS_LIFTED);
         row.setLiftedBy(actor.id());
         row.setLiftedAt(new Date());
@@ -312,6 +374,7 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         }
         mapper.updateById(row);
         appendAudit("LIFT", row, actor, before, "P3-8.2 解除（恢复津贴+bonusEligible）");
+        registerPostCommit(before, STATUS_LIFTED, "lift", actor.id(), row.getId());
         notifyLifted(row);
         return row;
     }
@@ -598,9 +661,15 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         if (!STATUS_DRAFT.equals(row.getStatus())) {
             return false;
         }
+        // D-1 接线：DRAFT->PENDING_DECISION|submit 守卫（简化重载同样不得旁路状态机）
+        preCheckGuard(STATUS_DRAFT, STATUS_PENDING_DECISION, "submit");
         row.setStatus(STATUS_PENDING_DECISION);
         fb.setStatus(STATUS_PENDING_DECISION);  // 同步回写到入参，便于调用方断言
-        return mapper.updateById(row) > 0;
+        int affected = mapper.updateById(row);
+        if (affected > 0) {
+            registerPostCommit(STATUS_DRAFT, STATUS_PENDING_DECISION, "submit", null, row.getId());
+        }
+        return affected > 0;
     }
 
     /**

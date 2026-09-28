@@ -32,6 +32,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * P4-1.1 游客需求提交模型与三路产品归属（页38；BR-REQ-01/02/02b/03/04）。
@@ -120,6 +122,52 @@ public class GuestDemandService {
         this.rateLimiter = rateLimiter;
     }
 
+    /**
+     * D-1 批次（补遗 §5-2 二波接线）：状态机守卫，对齐 StageActionService 金样板。
+     * setter 注入（@Autowired(required=false)）不扩构造签名——既有测试 new 不破；
+     * 生产路径 Spring 必装配，缺失时迁移 fail-closed（防 state-machine-bypass）。
+     */
+    private StateMachineGuard stateMachineGuard;
+
+    /** entityType 词表与其他机器一致：小写下划线。 */
+    private static final String GUEST_DEMAND_ENTITY_TYPE = "guest_demand";
+
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
+    private void preCheckGuard(String fromState, String toState, String trigger) {
+        if (stateMachineGuard == null) {
+            throw new IpdBusinessException("状态机守卫未装配 entityType=" + GUEST_DEMAND_ENTITY_TYPE
+                + " from=" + fromState + " to=" + toState);
+        }
+        stateMachineGuard.preCheck(GUEST_DEMAND_ENTITY_TYPE, fromState, toState, trigger);
+    }
+
+    /** 注册 postCommit 副作用（事务提交后触发；无守卫降级 no-op；无事务上下文直接执行）。 */
+    private void registerPostCommit(String fromState, String toState, String trigger,
+                                    Long operatorId, Long entityId) {
+        if (stateMachineGuard == null) {
+            return;
+        }
+        Date occurredAt = new Date();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    stateMachineGuard.postCommit(GUEST_DEMAND_ENTITY_TYPE, fromState, toState, trigger,
+                        operatorId, entityId, occurredAt);
+                }
+            });
+        } else {
+            stateMachineGuard.postCommit(GUEST_DEMAND_ENTITY_TYPE, fromState, toState, trigger,
+                operatorId, entityId, occurredAt);
+        }
+    }
+
+
     public GuestDemandSubmittedView submit(GuestDemandSubmitReq req, String clientIp, String userAgent) {
         String ipHash = sha256Short(clientIp);
         String uaHash = sha256Short(userAgent);
@@ -140,6 +188,8 @@ public class GuestDemandService {
         r.setRawModel(blankToNull(req.rawModel()));
         r.setTitle(buildTitle(r.getRawModel(), req.customerName()));
         r.setContent(req.functionalRequirement());
+        // D-1 接线：INITIAL->SUBMITTED|submit 守卫（游客匿名入口 operatorId=null）
+        preCheckGuard(null, "SUBMITTED", "submit");
         r.setStatus("SUBMITTED");
         String route = "unassigned"; // AC-PROD-08：其他/不确定 → 待指派池，不路由
         if (req.productId() != null) {
@@ -158,6 +208,7 @@ public class GuestDemandService {
         requirementMapper.insert(r);
         audit("submit", r.getId(), ipHash, uaHash,
             "route=" + route + ";productId=" + r.getProductId() + ";mkt=" + r.getMarketPmId() + ";rd=" + r.getRdPmId());
+        registerPostCommit(null, "SUBMITTED", "submit", null, r.getId());
         return new GuestDemandSubmittedView(r.getQueryCode(), r.getStatus());
     }
 
@@ -319,8 +370,11 @@ public class GuestDemandService {
         if (!"SUBMITTED".equals(r.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
+        // D-1 接线：SUBMITTED->WITHDRAWN|withdraw 守卫
+        preCheckGuard("SUBMITTED", "WITHDRAWN", "withdraw");
         r.setStatus("WITHDRAWN");
         requirementMapper.updateById(r);
+        registerPostCommit("SUBMITTED", "WITHDRAWN", "withdraw", null, r.getId());
         auditGuestAction("withdraw", r.getId(), clientIp, userAgent, "from=SUBMITTED;to=WITHDRAWN");
         return toView(r);
     }

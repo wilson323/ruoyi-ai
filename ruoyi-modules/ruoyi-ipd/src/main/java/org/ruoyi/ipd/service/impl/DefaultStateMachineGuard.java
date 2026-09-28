@@ -55,6 +55,9 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     /** KpiRecord 已知终态：APPROVED / REJECTED / ARCHIVED（2026-09-09 治理轮补登，配套 *→ARCHIVED 通配） */
     private static final Set<String> KPI_RECORD_TERMINAL =
         Set.of("APPROVED", "REJECTED", "ARCHIVED");
+    /** BidInvitation 已知终态：CLOSED（D-1 批次补登，配套 *→CLOSED|close 通配收敛） */
+    private static final Set<String> BID_INVITATION_TERMINAL =
+        Set.of("CLOSED");
 
     /** 规则表：key = "{entityType}:{fromState}->{toState}" */
     private final Map<String, StateTransitionRule> rules = new ConcurrentHashMap<>();
@@ -430,6 +433,31 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("双签 APPROVE 生效并回写需求池 ADOPTED（跨域：requirements）")
             .build());
 
+        // ---- R33 一期分片 E 停手项补登：KpiSharedConfirm 状态机接线（create/recapture/secondSign 3 迁移点）----
+        // KpiSharedConfirmService 尾部签名确认机：两组长双签（首签自环不迁移状态，不登记）；
+        // 此前规则表无 kpi_shared_confirm 机（哨兵「kpi 7」是 kpi_record 填报机），接线 preCheck 会 fail-closed。
+        register(StateTransitionRule.builder()
+            .key("kpi_shared_confirm:INITIAL->PENDING|create")
+            .entityType("kpi_shared_confirm")
+            .fromState("INITIAL").toState("PENDING").trigger("create")
+            .crossDomain(false)
+            .description("创建共担 KPI 确认单（from=null 映射 INITIAL）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("kpi_shared_confirm:CONFIRMED->PENDING|recapture")
+            .entityType("kpi_shared_confirm")
+            .fromState("CONFIRMED").toState("PENDING").trigger("recapture")
+            .crossDomain(false)
+            .description("重归集复位（已双签确认单重新收数回待签）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("kpi_shared_confirm:PENDING->CONFIRMED|secondSign")
+            .entityType("kpi_shared_confirm")
+            .fromState("PENDING").toState("CONFIRMED").trigger("secondSign")
+            .crossDomain(false)
+            .description("第二签（不同组长）双签达成终态")
+            .build());
+
 
         // ---- R28 补遗 §5-2 接线轮（fix/r28-guard-wire）：StageAction 状态机登记（C8 消灭）----
         // from→to 严格图：NOT_STARTED→IN_PROGRESS→DONE/DELAYED；DELAYED→IN_PROGRESS/DONE；
@@ -496,6 +524,280 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .fromState("IN_PROGRESS").toState("NA").trigger("mark_na")
             .crossDomain(false)
             .description("进行中改判不适用（必 reason）")
+            .build());
+
+        // ---- D-1 批次（补遗 §5 序 2 剩余 6 台接线轮）：project / requirement_v2 / bid_invitation /
+        // bid_response / guest_demand / negative_feedback 六台状态机入表 + Service 接线。
+        // 边=从各 Service 现有迁移路径逐条提取（零发明）；trigger 单词化与既有词表同风格；
+        // 全部精确边零通配（不动 isTerminalState）。批量 UPDATE 旁路（expireOverdue / 遴选落选）
+        // 以迁移为单位 preCheck 一次（与 DeletionRequestServiceImpl:386 批量先例同口径）。
+
+        // ---- Project 状态机：INITIAL→DRAFT；DRAFT→TEAMING/ARCHIVED；TEAMING→ACTIVE/ARCHIVED；
+        // ACTIVE→SUSPENDED/ARCHIVED；SUSPENDED→ACTIVE/ARCHIVED（ProjectService.STATUS_TRANSITIONS 同图）----
+        register(StateTransitionRule.builder()
+            .key("project:INITIAL->DRAFT|create")
+            .entityType("project")
+            .fromState("INITIAL").toState("DRAFT").trigger("create")
+            .crossDomain(false)
+            .description("立项创建（状态强制 DRAFT，P1-2.1）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:DRAFT->TEAMING|changeStatus")
+            .entityType("project")
+            .fromState("DRAFT").toState("TEAMING").trigger("changeStatus")
+            .crossDomain(false)
+            .description("草稿进入组队")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:DRAFT->ARCHIVED|changeStatus")
+            .entityType("project")
+            .fromState("DRAFT").toState("ARCHIVED").trigger("changeStatus")
+            .crossDomain(false)
+            .description("草稿直接归档")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:TEAMING->ACTIVE|changeStatus")
+            .entityType("project")
+            .fromState("TEAMING").toState("ACTIVE").trigger("changeStatus")
+            .crossDomain(false)
+            .description("组队完成进入进行中")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:TEAMING->ARCHIVED|changeStatus")
+            .entityType("project")
+            .fromState("TEAMING").toState("ARCHIVED").trigger("changeStatus")
+            .crossDomain(false)
+            .description("组队期归档")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:ACTIVE->SUSPENDED|changeStatus")
+            .entityType("project")
+            .fromState("ACTIVE").toState("SUSPENDED").trigger("changeStatus")
+            .crossDomain(false)
+            .description("进行中暂停")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:ACTIVE->ARCHIVED|changeStatus")
+            .entityType("project")
+            .fromState("ACTIVE").toState("ARCHIVED").trigger("changeStatus")
+            .crossDomain(false)
+            .description("进行中归档")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:SUSPENDED->ACTIVE|changeStatus")
+            .entityType("project")
+            .fromState("SUSPENDED").toState("ACTIVE").trigger("changeStatus")
+            .crossDomain(false)
+            .description("暂停恢复")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("project:SUSPENDED->ARCHIVED|changeStatus")
+            .entityType("project")
+            .fromState("SUSPENDED").toState("ARCHIVED").trigger("changeStatus")
+            .crossDomain(false)
+            .description("暂停归档（归档后只读禁迁出，Service 侧 ZK-IPD §二.10 先拦）")
+            .build());
+
+        // ---- requirement_v2 状态机（RequirementStateMachine 七态，单入口 transition()）----
+        // DRAFT→SUBMITTED/REJECTED；SUBMITTED→ROUTED/REJECTED；ROUTED→ACCEPTED/REJECTED；
+        // ACCEPTED→CHANGED/REJECTED；CHANGED→CLOSED/REJECTED。角色门在 Service（AC-REQ-05/06）。
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:DRAFT->SUBMITTED|transition")
+            .entityType("requirement_v2")
+            .fromState("DRAFT").toState("SUBMITTED").trigger("transition")
+            .crossDomain(false)
+            .description("需求提交")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:DRAFT->REJECTED|transition")
+            .entityType("requirement_v2")
+            .fromState("DRAFT").toState("REJECTED").trigger("transition")
+            .crossDomain(false)
+            .description("草稿驳回/撤回（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:SUBMITTED->ROUTED|transition")
+            .entityType("requirement_v2")
+            .fromState("SUBMITTED").toState("ROUTED").trigger("transition")
+            .crossDomain(false)
+            .description("组长/超管派单路由")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:SUBMITTED->REJECTED|transition")
+            .entityType("requirement_v2")
+            .fromState("SUBMITTED").toState("REJECTED").trigger("transition")
+            .crossDomain(false)
+            .description("受理前驳回（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:ROUTED->ACCEPTED|transition")
+            .entityType("requirement_v2")
+            .fromState("ROUTED").toState("ACCEPTED").trigger("transition")
+            .crossDomain(false)
+            .description("双 PM 采纳")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:ROUTED->REJECTED|transition")
+            .entityType("requirement_v2")
+            .fromState("ROUTED").toState("REJECTED").trigger("transition")
+            .crossDomain(false)
+            .description("路由后驳回（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:ACCEPTED->CHANGED|transition")
+            .entityType("requirement_v2")
+            .fromState("ACCEPTED").toState("CHANGED").trigger("transition")
+            .crossDomain(false)
+            .description("采纳后变更（自动创建 RequirementChange DRAFT）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:ACCEPTED->REJECTED|transition")
+            .entityType("requirement_v2")
+            .fromState("ACCEPTED").toState("REJECTED").trigger("transition")
+            .crossDomain(false)
+            .description("采纳后撤回（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:CHANGED->CLOSED|transition")
+            .entityType("requirement_v2")
+            .fromState("CHANGED").toState("CLOSED").trigger("transition")
+            .crossDomain(false)
+            .description("项目级关闭（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("requirement_v2:CHANGED->REJECTED|transition")
+            .entityType("requirement_v2")
+            .fromState("CHANGED").toState("REJECTED").trigger("transition")
+            .crossDomain(false)
+            .description("超管撤变更（终态）")
+            .build());
+
+        // ---- BidInvitation 状态机：OPEN→SELECTED/EXPIRED/CLOSED；EXPIRED→SELECTED/CLOSED；
+        // SELECTED→CLOSED（close 宽进现状如实登记）。javadoc 词表：OPEN → SELECTED / EXPIRED → CLOSED ----
+        register(StateTransitionRule.builder()
+            .key("bid_invitation:INITIAL->OPEN|create")
+            .entityType("bid_invitation")
+            .fromState("INITIAL").toState("OPEN").trigger("create")
+            .crossDomain(false)
+            .description("市场 PM 发起招标（AC-TEAM-03）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_invitation:OPEN->SELECTED|select")
+            .entityType("bid_invitation")
+            .fromState("OPEN").toState("SELECTED").trigger("select")
+            .crossDomain(false)
+            .description("遴选定标（confirmToken 校验在 Service）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_invitation:OPEN->EXPIRED|expire")
+            .entityType("bid_invitation")
+            .fromState("OPEN").toState("EXPIRED").trigger("expire")
+            .crossDomain(false)
+            .description("到期无人应标自动过期（expireOverdue 批量 UPDATE，迁移级 preCheck）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_invitation:OPEN->CLOSED|withdraw")
+            .entityType("bid_invitation")
+            .fromState("OPEN").toState("CLOSED").trigger("withdraw")
+            .crossDomain(false)
+            .description("24h 内撤回（AC-TEAM-13）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_invitation:*->CLOSED|close")
+            .entityType("bid_invitation")
+            .fromState(StateTransitionRule.FROM_ANY).toState("CLOSED").trigger("close")
+            .crossDomain(false)
+            .description("关闭招标单（close() 无状态门禁宽进，通配收敛至终态 CLOSED，isTerminalState 配套）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_invitation:EXPIRED->SELECTED|adminAssign")
+            .entityType("bid_invitation")
+            .fromState("EXPIRED").toState("SELECTED").trigger("adminAssign")
+            .crossDomain(false)
+            .description("超管强制指派（EXPIRED 挂起 ≥30 日，Bug#4 门禁在 Service）")
+            .build());
+
+        // ---- BidResponse 状态机：PENDING→ACCEPTED/REJECTED/WITHDRAWN（遴选落选批量 REJECTED 同迁移）----
+        register(StateTransitionRule.builder()
+            .key("bid_response:INITIAL->PENDING|respond")
+            .entityType("bid_response")
+            .fromState("INITIAL").toState("PENDING").trigger("respond")
+            .crossDomain(false)
+            .description("研发 PM 应标")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_response:PENDING->ACCEPTED|select")
+            .entityType("bid_response")
+            .fromState("PENDING").toState("ACCEPTED").trigger("select")
+            .crossDomain(false)
+            .description("中标（回填 rd_pm_id）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_response:PENDING->REJECTED|select")
+            .entityType("bid_response")
+            .fromState("PENDING").toState("REJECTED").trigger("select")
+            .crossDomain(false)
+            .description("落选（同单其余 PENDING 行批量置 REJECTED，迁移级 preCheck）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("bid_response:PENDING->WITHDRAWN|withdraw")
+            .entityType("bid_response")
+            .fromState("PENDING").toState("WITHDRAWN").trigger("withdraw")
+            .crossDomain(false)
+            .description("应标人撤回（仅本人）")
+            .build());
+
+        // ---- GuestDemand 状态机（guest 域需求，requirements 表 source=PORTAL_GUEST）：SUBMITTED→WITHDRAWN ----
+        register(StateTransitionRule.builder()
+            .key("guest_demand:INITIAL->SUBMITTED|submit")
+            .entityType("guest_demand")
+            .fromState("INITIAL").toState("SUBMITTED").trigger("submit")
+            .crossDomain(false)
+            .description("游客提交需求（P4-1.1）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("guest_demand:SUBMITTED->WITHDRAWN|withdraw")
+            .entityType("guest_demand")
+            .fromState("SUBMITTED").toState("WITHDRAWN").trigger("withdraw")
+            .crossDomain(false)
+            .description("受理前撤回（BR-REQ-03b，终态）")
+            .build());
+
+        // ---- NegativeFeedback 状态机：DRAFT→PENDING_DECISION→EXECUTED/REJECTED；EXECUTED→LIFTED ----
+        register(StateTransitionRule.builder()
+            .key("negative_feedback:INITIAL->DRAFT|create")
+            .entityType("negative_feedback")
+            .fromState("INITIAL").toState("DRAFT").trigger("create")
+            .crossDomain(false)
+            .description("负反馈创建（唯一索引防重复触发）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("negative_feedback:DRAFT->PENDING_DECISION|submit")
+            .entityType("negative_feedback")
+            .fromState("DRAFT").toState("PENDING_DECISION").trigger("submit")
+            .crossDomain(false)
+            .description("提交认定（P3-8.2）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("negative_feedback:PENDING_DECISION->EXECUTED|decide")
+            .entityType("negative_feedback")
+            .fromState("PENDING_DECISION").toState("EXECUTED").trigger("decide")
+            .crossDomain(false)
+            .description("组长/超管认定执行（AC-INC-36b）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("negative_feedback:PENDING_DECISION->REJECTED|decide")
+            .entityType("negative_feedback")
+            .fromState("PENDING_DECISION").toState("REJECTED").trigger("decide")
+            .crossDomain(false)
+            .description("认定驳回（终态）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("negative_feedback:EXECUTED->LIFTED|lift")
+            .entityType("negative_feedback")
+            .fromState("EXECUTED").toState("LIFTED").trigger("lift")
+            .crossDomain(false)
+            .description("解除（恢复津贴+bonusEligible，AC-INC-40 不可逆）")
             .build());
 
         log.info("StateMachineGuard 种子规则注入完成：{} 条", rules.size());
@@ -622,6 +924,9 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
         }
         if ("kpi_record".equals(entityType)) {
             return KPI_RECORD_TERMINAL.contains(toState);
+        }
+        if ("bid_invitation".equals(entityType)) {
+            return BID_INVITATION_TERMINAL.contains(toState);
         }
         return false;
     }

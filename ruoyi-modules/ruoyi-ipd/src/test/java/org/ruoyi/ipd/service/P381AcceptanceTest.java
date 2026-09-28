@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
  * P3-8.1 负反馈四类触发与责任评定 验收测试 (BR-INC-10/12/13; AC-INC-31~35)
@@ -53,6 +54,10 @@ class P381AcceptanceTest {
     void setUp() {
         // 4-arg 测试口：mapper + (memberMapper=null) + audit + notify
         service = new NegativeFeedbackService(negativeFeedbackMapper, null, auditLogService, notificationService);
+        // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
+        DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
+        d1Guard.initRules();
+        service.setStateMachineGuard(d1Guard);
     }
 
     private NegativeFeedback buildExecutedFeedback() {
