@@ -249,6 +249,36 @@ run_shell_var_gate() {
 }
 
 # ---------------------------------------------------------------------------
+# 门禁 5:G2 langchain4j 双轨面积「只减不增」棘轮(复刻 R212 棘轮模式)
+# scripts/check-langchain4j-ratchet.sh 单跑 ~0.3s;照门禁 0/3/4 先例 fast 模式也跑
+# 基线 scripts/baselines/langchain4j-count.json — 脚本外禁改(--update-baseline 是唯一写入口)
+# ---------------------------------------------------------------------------
+run_langchain4j_ratchet_gate() {
+    local start_time
+    start_time=$(date +%s)
+    echo "[check-pre-commit] → 门禁 5: langchain4j 双轨面积棘轮(只减不增)"
+    if [[ ! -f "$REPO_ROOT/scripts/check-langchain4j-ratchet.sh" ]]; then
+        echo "[check-pre-commit] ⚠ 门禁 5 SKIP: scripts/check-langchain4j-ratchet.sh 不存在"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+    local out rc
+    out=$(bash "$REPO_ROOT/scripts/check-langchain4j-ratchet.sh" 2>&1)
+    rc=$?
+    local elapsed=$(( $(date +%s) - start_time ))
+    if [[ "$rc" -eq 0 ]]; then
+        echo "[check-pre-commit] ✅ 门禁 5 PASS: langchain4j 面积未增长 (elapsed=${elapsed}s)"
+        echo "$out" | grep -E "count=" || true
+        PASSED=$((PASSED + 1))
+    else
+        echo "[check-pre-commit] ❌ 门禁 5 FAIL: exit=$rc (elapsed=${elapsed}s)"
+        echo "$out" | tail -15
+        echo "[check-pre-commit]   处置: 只减不增——删 langchain4j 引用,或确需增长走 --update-baseline 登记(脚本外禁改基线)"
+        FAILED=$((FAILED + 1))
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # 路由
 # ---------------------------------------------------------------------------
 case "$MODE" in
@@ -259,6 +289,7 @@ case "$MODE" in
         run_contract_gate
         run_ratchet_gate
         run_shell_var_gate
+        run_langchain4j_ratchet_gate
         ;;
     drift)
         run_untracked_gate
@@ -279,6 +310,7 @@ case "$MODE" in
         run_untracked_gate
         run_ratchet_gate
         run_shell_var_gate
+        run_langchain4j_ratchet_gate
         SKIPPED=2
         echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"
         ;;
