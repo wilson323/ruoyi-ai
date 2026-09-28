@@ -1,6 +1,6 @@
 # OPS-06 只读监测与人工报警
 
-2026-09-05，Codex/swarm-94ae。适用本仓库 `.codex/ipd-dev/` 的本机原生实例；依据 [DOC-08](../工程合同/DOC-08.md)、[OPS-01](本机原生开发环境.md)、[OPS-04](ops04-持久调度与业务日历.md) 和当前源码。监测工具已运行，**OPS-06 整卡仍为 PARTIAL**：共享库调度表不可见，审计故障 trace 接线未验证。看板状态由本轮主协调器统一回写。
+2026-09-05，Codex/swarm-94ae。适用本仓库 `.codex/ipd-dev/` 的本机原生实例；依据 [DOC-08](../工程合同/DOC-08.md)、[OPS-01](本机原生开发环境.md)、[OPS-04](ops04-持久调度与业务日历.md) 和当前源码。监测工具已运行，**OPS-06 整卡仍为 PARTIAL**：共享库调度表不可见，审计故障 trace 接线未验证。看板状态由本轮主协调器统一回写。（2026-09-27 R240 轮更新：代码态 trace 接线已落、演练已复跑，见文末「R240 轮证据与接线登记」。）
 
 ## 使用与判读
 
@@ -87,3 +87,16 @@ SQL
 - `manifest.json`：本轮新增交付物和证据摘要、状态边界、已知凭据非泄漏检查。历史首次测试中HTTPError资源释放警告已修复，原 `tests-initial.log` 保留；最终22测试无该警告。
 
 恢复方式是停止运行此一次性监测命令，不涉及数据库回滚或共享服务控制。源文件仅新增运行手册脚本/测试/本文；没有修改Java、共享配置、Maven target、账号、生产环境或安装定时器。
+
+## R240 轮证据与接线登记（2026-09-27，marker r240-land-ops6）
+
+**代码态审计 trace 接线（四断点同批落码，待部署）**：①`AuditLog` 增 `trace_id` 列 + 迁移 `docs/script/sql/update/2026-09-27-ipd-audit-trace-id.sql`，**不入哈希链 canonical**（字段清单冻结，加列不触链、无需 rebuildChain）；迁移已实跑留证（17→18 列，历史 6341 行零触碰，证据 `ops06-trace-id-migration-20260927.txt`，`ipd_migrator` 账号执行）。②`AuditLogServiceImpl.append` 抓 MDC `traceId`（尊重调用方预置，X-Trace-Id 兜底；不入 canonical）并在追加失败时发射 `[IPD] 未捕获异常 traceId=… 审计追加失败` 事件。③`IpdServiceExceptionAdvice` 14 个 handler 复用 TraceIdFilter 铸就的 MDC trace（`beginTrace()/endTrace(owned)`，不再每 handler 另铸 UUID）。④`handleUnexpected` 按本监测器契约词形发射 marker。`AuditTraceWiringTest`（`@Tag("dev")`，6 用例）含 runbook 解除条件的 Java 侧证明——**隔离环境注入审计故障**（selectForUpdate→null 确定性注入，断言 marker+trace+`AuditLogService` 堆栈帧）与哈希协议红线（仅 traceId 不同的两行 curr_hash 必须相等）；ruoyi-ipd 批跑 54/54 全绿。
+
+**运行手册依赖复原（如实登记，防误读）**：`native_env.py` 自 `.codex/ipd-integration/20260905-1230-shared` 快照回泊入库（此前从未入库，监测器 ModuleNotFoundError）；`ops03_backup.py` **原件全盘不存在**（历轮已挂账），按 ops06-monitor.py 实际调用面最小复原（NoRedirect 阻断 3xx + SigV4 签名 HEAD），**非原件、不代备份职责**；`.codex/ipd-dev/config/*.cnf` 与 `credentials.json` 权限逸出 644 已复位 0600。
+
+**演练实录（2026-09-27，证据 `ops06-drill-20260927.txt`）**：fixture 22/22 全绿（含 redirect 阻断判据：3xx 抛 RuntimeError 落 PROBE_ERROR，服务端只见首跳）。live 只读监测 `live-readonly-20260927-r2.json`：db/redis/oss/backend 全 UP，oss `SIGNED_HEAD_OK`。**OSS 403 根因与处置**：9-25 R218 轮遗留 TCP 转发器（`/tmp/r218-tcpfwd.py`，19000→9000 冒名 MinIO）+ 原生 MinIO 进程已死，签名被冒名端点拒 `InvalidAccessKeyId`（非签名算法问题）；处置=停该孤儿转发器（R218 为已收口轮次，非兄弟在途）+ 按 native_env 同款 launch 复起 MinIO（credentials.json 身份，数据目录 fixture 完好），HEAD fixture 200 / GET 不存在 key NoSuchKey 证实签名链路有效。监测器 `O_EXCL` 拒覆盖旧证据文件（exit3 `MONITOR_INPUT_OR_OUTPUT_ERROR`）属设计行为，换新证据文件名复跑即出报告。
+
+**告警路径登记（按「可执行人工报警路径」，两条如实维持，不得表述为完成）**：
+
+1. `SCHEDULER_SCHEMA_NOT_VISIBLE_OR_MISSING`（visible 0/3）→ **BLOCKED_DEPENDENCY**：由 OPS-04/SEC-03 对获准目标核对迁移与授权（本工具不建表不授权）；真实调度故障/耗尽报警演练同待该授权后进行。
+2. `AUDIT_TRACE_NOT_WIRED`（audit UNKNOWN，record_count=6345，窗口扫描 0 故障事件）→ **BLOCKED 部署态**：16039 共享实例仍运行旧 jar（兄弟会话在用，不做服务控制）。解除条件中「经验证的审计失败事件」与「隔离环境注入审计故障验证」已代码态完成（上文 54/54），余「部署」一项待新 jar 发布后复跑 live 监测确认，届时以 `AUDIT_FAILURE_OBSERVED` 可定位 trace 为准。
