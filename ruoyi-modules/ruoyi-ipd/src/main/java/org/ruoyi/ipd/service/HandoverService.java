@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -25,8 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
@@ -100,62 +99,34 @@ public class HandoverService {
     /** P2-7.4 AC-HAND-02：超期升级 + 每日提醒 outbox 发布。 */
     private final NotificationService notificationService;
 
-    /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；handover 三迁移点接线）。 */
-    private StateMachineGuard stateMachineGuard;
+    /** R33 ChainSpec C7：审批链守卫实体类型（与 DefaultStateMachineGuard 规则表锚点一致）。 */
+    private static final String ENTITY_TYPE = "handover_record";
 
     /**
-     * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（nullable 兼容旧测试）。
+     * R33 ChainSpec 一期（分片 C7）：审批链共享守卫骨架组合件——收编 preCheckGuard/registerPostCommit
+     * 六连拷贝 + 终态守卫 requireFromState + CAS 命中判定 requireCasHit（纯组合；API 冻结见 ApprovalGuardSupport）。
+     * final + 构造初始化：不进 @RequiredArgsConstructor 参数表，存量 9 参构造测试零改动。
+     */
+    private final ApprovalGuardSupport guardSupport = new ApprovalGuardSupport(ENTITY_TYPE);
+
+    /**
+     * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（R33 起转发 guardSupport，nullable 兼容旧测试）。
      * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
      */
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
-        this.stateMachineGuard = stateMachineGuard;
+        this.guardSupport.setStateMachineGuard(stateMachineGuard);
     }
 
-    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
+    /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。
+     *  R33 保真注：双投（本地 now() + guardSupport）——迁移前 registerPostCommit 的 occurredAt 取 now()，
+     *  必须同源投递 guardSupport.setClock 才能逐字保真（行为零变更）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
     public void setClock(java.time.Clock clock) {
         this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+        this.guardSupport.setClock(this.clock);
     }
     private Date now() { return Date.from(clock.instant()); }
-
-    /**
-     * ROOT-R3-P0-2 修复：守卫 preCheck 包装（fail-closed 模式）。
-     *
-     * <p>守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass）。
-     * 测试兼容：HandoverServiceTest 等通过 setStateMachineGuard(...) 注入 mock。
-     */
-    private void preCheckGuard(String fromState, String toState, String trigger) {
-        if (stateMachineGuard == null) {
-            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
-                "状态机守卫未装配 entityType=handover_record from=" + fromState + " to=" + toState);
-        }
-        stateMachineGuard.preCheck("handover_record", fromState, toState, trigger);
-    }
-
-    /**
-     * ROOT-R3-P0-2：注册 postCommit 副作用（事务提交后触发，避免回滚后污染）。
-     * 无守卫注入时降级 no-op；无事务上下文时直接执行（向后兼容测试场景）。
-     */
-    private void registerPostCommit(String fromState, String toState, String trigger,
-                                    Long operatorId, Long entityId) {
-        if (stateMachineGuard == null) {
-            return;
-        }
-        Date occurredAt = now();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    stateMachineGuard.postCommit("handover_record", fromState, toState, trigger,
-                        operatorId, entityId, occurredAt);
-                }
-            });
-        } else {
-            stateMachineGuard.postCommit("handover_record", fromState, toState, trigger,
-                operatorId, entityId, occurredAt);
-        }
-    }
 
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
     @Transactional(rollbackFor = Exception.class)
@@ -231,9 +202,9 @@ public class HandoverService {
         if (rec == null) {
             throw new ServiceException("移交记录不存在: " + handoverId);
         }
-        if (!ST_DRAFT.equals(rec.getStatus())) {
-            throw new ServiceException("移交已处理（状态 " + rec.getStatus() + "），不可重复处理");
-        }
+        // R33 一期：命中判定收敛 ApprovalGuardSupport.requireFromState（ServiceException 类型与文案逐字保真）
+        guardSupport.requireFromState(rec.getStatus(), ST_DRAFT,
+            "移交已处理（状态 " + rec.getStatus() + "），不可重复处理");
         if (!recipient.id().equals(rec.getToPersonId())) {
             throw new ServiceException("仅接手人本人可确认移交");
         }
@@ -383,7 +354,7 @@ public class HandoverService {
             throw new ServiceException("该项目该角色已有进行中的移交，不可重复发起");
         }
         // 守卫前置快照：创建迁移 fromState=null（守卫层归一化 INITIAL）
-        preCheckGuard(null, ST_DRAFT, "create");
+        guardSupport.preCheck(null, ST_DRAFT, "create");
         Date deadlineAt = new Date(now().getTime() + DEADLINE_DAYS * 24L * 3_600_000L);
         HandoverRecord rec = HandoverRecord.builder()
             .handoverType("PROJECT")
@@ -396,7 +367,7 @@ public class HandoverService {
             .deadlineAt(deadlineAt)
             .build();
         handoverMapper.insert(rec);
-        registerPostCommit(null, ST_DRAFT, "create", operator.id(), rec.getId());
+        guardSupport.registerPostCommit(null, ST_DRAFT, "create", operator.id(), rec.getId());
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("HANDOVER_CREATE").entityType("handover").entityId(rec.getId())
@@ -420,21 +391,20 @@ public class HandoverService {
     private HandoverRecord doAccept(HandoverRecord rec, String approvalRef, IpdActor operator) {
         int exited = projectMemberService.exitForHandover(
             rec.getProjectId(), rec.getFromPersonId(), rec.getHandoverRole());
-        if (exited == 0) {
-            throw new ServiceException("原负责人在该项目已无此角色在任绑定，移交中止");
-        }
+        // R33 一期：CAS 命中判定收敛 requireCasHit（miss 仍抛 ServiceException 原文案，行为零变更）
+        guardSupport.requireCasHit(exited, "原负责人在该项目已无此角色在任绑定，移交中止");
         ProjectMember bound = projectMemberService.bindMember(
             rec.getProjectId(), rec.getToPersonId(), rec.getHandoverRole(), approvalRef, operator);
         // 守卫前置快照（setStatus 后读 entity 状态陷阱：from 必须在迁移前捕获）
         String fromStatus = rec.getStatus();
-        preCheckGuard(fromStatus, ST_COMPLETED, "accept");
+        guardSupport.preCheck(fromStatus, ST_COMPLETED, "accept");
         rec.setStatus(ST_COMPLETED);
         if (rec.getConfirmedAt() == null) {
             rec.setConfirmedAt(now());
         }
         rec.setCompletedAt(now());
         handoverMapper.updateById(rec);
-        registerPostCommit(fromStatus, ST_COMPLETED, "accept", operator.id(), rec.getId());
+        guardSupport.registerPostCommit(fromStatus, ST_COMPLETED, "accept", operator.id(), rec.getId());
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id()).operatorName(operator.name()).operatorRole(operator.role())
             .action("HANDOVER_ACCEPT").entityType("handover").entityId(rec.getId())
@@ -514,14 +484,14 @@ public class HandoverService {
         }
         // 守卫前置快照：此时 status 仍为 COMPLETED（setStatus 在下方才执行）
         String fromStatus = rec.getStatus();
-        preCheckGuard(fromStatus, ST_ROLLED_BACK, "rollback");
+        guardSupport.preCheck(fromStatus, ST_ROLLED_BACK, "rollback");
         // 副作用反转：接手人 exit + 发起人 exit_date/exit_reason 复位
         restoreForRollback(rec);
         rec.setStatus(ST_ROLLED_BACK);
         rec.setRollbackReason(reason);
         rec.setRollbackAt(now());
         handoverMapper.updateById(rec);
-        registerPostCommit(fromStatus, ST_ROLLED_BACK, "rollback", actor.id(), rec.getId());
+        guardSupport.registerPostCommit(fromStatus, ST_ROLLED_BACK, "rollback", actor.id(), rec.getId());
         auditLogService.append(AuditLog.builder()
             .operatorId(actor.id()).operatorName(actor.name()).operatorRole(actor.role())
             .action("HANDOVER_ROLLBACK").entityType("handover").entityId(rec.getId())
@@ -544,6 +514,8 @@ public class HandoverService {
      * 直接 update 复位原绑定行的 exit_date/exit_reason。
      */
     private void restoreForRollback(HandoverRecord rec) {
+        // R33 一期注：下方两处 CAS miss 判定故意不收敛 requireCasHit——其 miss 抛 ServiceException
+        // 不带 STATE_CONFLICT 错误码，收敛即错误码/响应变更（违反行为零变更红线，见迁移报告）。
         // 1) 接手人退出（accept 时由 bindMember 插入，本次撤销退出）
         int exited = memberMapper.update(null, new LambdaUpdateWrapper<ProjectMember>()
             .eq(ProjectMember::getProjectId, rec.getProjectId())
@@ -908,9 +880,9 @@ public class HandoverService {
         if (rec.getArchivedAt() != null) {
             return rec;
         }
-        if (!ST_COMPLETED.equals(rec.getStatus())) {
-            throw new ServiceException("仅 COMPLETED 移交可归档（当前 " + rec.getStatus() + "）");
-        }
+        // R33 一期：命中判定收敛 ApprovalGuardSupport.requireFromState（ServiceException 类型与文案逐字保真）
+        guardSupport.requireFromState(rec.getStatus(), ST_COMPLETED,
+            "仅 COMPLETED 移交可归档（当前 " + rec.getStatus() + "）");
         int updated = handoverMapper.update(null, new LambdaUpdateWrapper<HandoverRecord>()
             .eq(HandoverRecord::getId, handoverId)
             .eq(HandoverRecord::getStatus, ST_COMPLETED)

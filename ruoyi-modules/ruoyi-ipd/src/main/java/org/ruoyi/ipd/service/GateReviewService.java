@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -27,8 +28,6 @@ import org.ruoyi.ipd.service.StateMachineGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -110,44 +109,18 @@ public class GateReviewService implements IGateReviewService {
     private final NotificationService notificationService;
 
     /* ---------- R24 治理轮：GateReview 状态机守卫（接线） ---------- */
-    /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */
-    private StateMachineGuard stateMachineGuard;
     /** GateReview 实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
     static final String GATE_REVIEW_ENTITY_TYPE = "gate_review";
+    /**
+     * R33 一期分片D：审批链共享守卫骨架（组合收编 preCheckGuard/registerPostCommit 六连拷贝，
+     * entityType 沿用原常量 {@link #GATE_REVIEW_ENTITY_TYPE}）。语义与原拷贝逐字等价：
+     * {@code preCheck} fail-closed、{@code registerPostCommit} 事务同步 afterCommit 双路径降级。
+     */
+    private final ApprovalGuardSupport guardSupport = new ApprovalGuardSupport(GATE_REVIEW_ENTITY_TYPE);
 
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
-        this.stateMachineGuard = stateMachineGuard;
-    }
-
-    /** R24 接线：守卫 preCheck 包装（fail-closed）。守卫 null = fail-closed 抛业务异常。 */
-    private void preCheckGuard(String fromState, String toState, String trigger) {
-        if (stateMachineGuard == null) {
-            throw new IpdBusinessException("状态机守卫未装配 entityType=" + GATE_REVIEW_ENTITY_TYPE
-                + " from=" + fromState + " to=" + toState);
-        }
-        stateMachineGuard.preCheck(GATE_REVIEW_ENTITY_TYPE, fromState, toState, trigger);
-    }
-
-    /** R24 接线：注册 postCommit 副作用（事务提交后触发）。 */
-    private void registerPostCommit(String fromState, String toState, String trigger,
-                                    Long operatorId, Long entityId) {
-        if (stateMachineGuard == null) {
-            return;
-        }
-        Date occurredAt = now();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    stateMachineGuard.postCommit(GATE_REVIEW_ENTITY_TYPE, fromState, toState, trigger,
-                        operatorId, entityId, occurredAt);
-                }
-            });
-        } else {
-            stateMachineGuard.postCommit(GATE_REVIEW_ENTITY_TYPE, fromState, toState, trigger,
-                operatorId, entityId, occurredAt);
-        }
+        this.guardSupport.setStateMachineGuard(stateMachineGuard);
     }
     /**
      * P0-10.23 补齐（R30 生产就绪）：项目维度 Gate 列表（原型 /api/key-gates?projectId= 的正式替代）。
@@ -187,8 +160,10 @@ public class GateReviewService implements IGateReviewService {
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+    /** R33 分片D：注入点签名不变，同步转发 guardSupport.setClock——postCommit occurredAt 与 now() 同源时刻。 */
     public void setClock(java.time.Clock clock) {
         this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+        this.guardSupport.setClock(this.clock);
     }
     private Date now() { return Date.from(clock.instant()); }
 
@@ -329,16 +304,20 @@ public class GateReviewService implements IGateReviewService {
 
     /** 落终态：更新 Gate 状态 + REJECTED 时双方 GATE_REJECTED 通知（AC-GATE-05）+ 审计。 */
     private void settle(Gate gate, String status, IpdActor actor, List<GateReview> rows) {
-        if (STATUS_PENDING.equals(gate.getStatus())) {
-            // R24 接线：状态机守卫 preCheck（fail-closed）。守卫 null / 未登记迁移则抛业务异常。
-            preCheckGuard(STATUS_PENDING, status, "sign");
-            gate.setStatus(status);
-            gateMapper.updateById(gate);
-            audit(actor, gate, "REJECTED".equals(status) ? "GATE_REJECT" : "GATE_APPROVE",
-                "终态 " + status, "round", gate.getCurrentRound());
-            // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
-            registerPostCommit(STATUS_PENDING, status, "sign", actor.id(), gate.getId());
-        }
+        // R33 分片D：终态守卫前置判定收敛 ApprovalGuardSupport.requireFromState（文案逐字沿用
+        // requireSubmitted 的终态文案）。原 if(PENDING) 守卫覆盖的非 PENDING 分支为防御死路径
+        // （唯一调用链 sign→advance 前置 requireSubmitted 恒保证 PENDING），收敛为 fail-closed
+        // 前置断言后活路径行为零变更。
+        guardSupport.requireFromState(gate.getStatus(), STATUS_PENDING,
+            "Gate 已终态（" + gate.getStatus() + "），不可签署");
+        // R24 接线：状态机守卫 preCheck（fail-closed）。守卫 null / 未登记迁移则抛业务异常。
+        guardSupport.preCheck(STATUS_PENDING, status, "sign");
+        gate.setStatus(status);
+        gateMapper.updateById(gate);
+        audit(actor, gate, "REJECTED".equals(status) ? "GATE_REJECT" : "GATE_APPROVE",
+            "终态 " + status, "round", gate.getCurrentRound());
+        // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
+        guardSupport.registerPostCommit(STATUS_PENDING, status, "sign", actor.id(), gate.getId());
         if (STATUS_REJECTED.equals(status)) {
             notifyBothSides(gate, rows);
             // P2-5.4 AC-GATE-10：双 PM 意见分歧（先 APPROVE 后 REJECT）⇒ 自动邀请组长仲裁
@@ -484,21 +463,24 @@ public class GateReviewService implements IGateReviewService {
             throw new IpdBusinessException("仅签署双方或超管可重新发起评审");
         }
         // R24 接线：状态机守卫 preCheck（fail-closed）。本调用发起两条迁移（REJECTED→PENDING|reopen / ABSTAINED_TIMEOUT→PENDING|reopen），守卫会精准命中。
-        preCheckGuard(gate.getStatus(), STATUS_PENDING, "reopen");
+        guardSupport.preCheck(gate.getStatus(), STATUS_PENDING, "reopen");
         int newRound = gate.getCurrentRound() + 1;
         int days = resolveSignDeadlineDays();
         Date newDue = new Date(now().getTime() + TimeUnit.DAYS.toMillis(days));
         // 显式 set 清列：MP updateById 忽略 null 字段，concludedAt 必须置回 null
-        gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
+        // R33 分片D：CAS 判定收敛 ApprovalGuardSupport.requireCasHit（文案逐字沿用本方法起点守卫文案）。
+        // 本批不加状态谓词、不改写写语义——reopen 并发防线属 §1 登记缺陷族，一期范围只修 C5/C6 并发。
+        guardSupport.requireCasHit(gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
             .eq(Gate::getId, gateId)
             .set(Gate::getStatus, STATUS_PENDING)
             .set(Gate::getCurrentRound, newRound)
             .set(Gate::getSignDueAt, newDue)
-            .set(Gate::getConcludedAt, null));
+            .set(Gate::getConcludedAt, null)),
+            "仅被驳回或双弃权超时的 Gate 可重新发起，当前：" + gate.getStatus());
         audit(actor, gate, "GATE_REOPEN", "否决后重新发起评审（BR-GATE-05 不限次数）",
             "round", newRound, "signDueAt", newDue.toString());
         // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
-        registerPostCommit(gate.getStatus(), STATUS_PENDING, "reopen", actor.id(), gate.getId());
+        guardSupport.registerPostCommit(gate.getStatus(), STATUS_PENDING, "reopen", actor.id(), gate.getId());
 
         Gate updated = requireGate(gateId);
         if (newRound >= 3) {
@@ -977,12 +959,12 @@ public class GateReviewService implements IGateReviewService {
         // R24 接线：状态机守卫 preCheck（fail-closed）。仅当 Gate 当前仍处 PENDING 才验证迁移合法性；
         // （护责双重设防御：双调扫描（scanTimeout）可能在主流程之后到达导致双 settle，这里仅在 PENDING 时落 UPDATE）
         if (STATUS_PENDING.equals(gate.getStatus())) {
-            preCheckGuard(STATUS_PENDING, status, "settleTimeout");
+            guardSupport.preCheck(STATUS_PENDING, status, "settleTimeout");
             gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
                 .eq(Gate::getId, gate.getId())
                 .set(Gate::getStatus, status));
             // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
-            registerPostCommit(STATUS_PENDING, status, "settleTimeout", operator.id(), gate.getId());
+            guardSupport.registerPostCommit(STATUS_PENDING, status, "settleTimeout", operator.id(), gate.getId());
         }
         audit(operator, gate, STATUS_APPROVED.equals(status) ? "GATE_APPROVE" : "GATE_ABSTAIN_TIMEOUT",
             reason, "round", gate.getCurrentRound());

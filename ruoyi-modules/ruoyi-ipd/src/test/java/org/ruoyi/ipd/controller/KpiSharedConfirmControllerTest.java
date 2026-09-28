@@ -337,7 +337,9 @@ class KpiSharedConfirmControllerTest {
         assertThat(row.getFirstConfirmedBy()).isEqualTo(100L);
         assertThat(row.getFirstConfirmedAt()).isNotNull();
         assertThat(row.getStatus()).isEqualTo("PENDING");
-        verify(layer.confirmMapper, times(1)).updateById(row);
+        // R33 一期 CAS 修复：写点 updateById(row) → update(null, CAS谓词)（首签并发双写窗口封堵）
+        verify(layer.confirmMapper, times(1)).update(isNull(), any());
+        verify(layer.confirmMapper, never()).updateById(row);
         verify(layer.auditLogService, times(1)).append(any());
     }
 
@@ -359,7 +361,9 @@ class KpiSharedConfirmControllerTest {
         assertThat(row.getSecondConfirmedBy()).isEqualTo(200L);
         assertThat(row.getSecondConfirmedAt()).isNotNull();
         assertThat(row.getStatus()).isEqualTo("CONFIRMED");
-        verify(layer.confirmMapper, times(1)).updateById(row);
+        // R33 一期 CAS 修复：写点 updateById(row) → update(null, CAS谓词)（第二签并发双写窗口封堵）
+        verify(layer.confirmMapper, times(1)).update(isNull(), any());
+        verify(layer.confirmMapper, never()).updateById(row);
     }
 
     @Test
@@ -446,6 +450,15 @@ class KpiSharedConfirmControllerTest {
         final ISystemConfigService systemConfigService = null; // 默认 5 工作日
         final KpiSharedConfirmService service = new KpiSharedConfirmService(
             confirmMapper, projectMapper, memberMapper, personMapper, auditLogService, systemConfigService);
+
+        private ServiceLayer() {
+            // R33 一期集成适配：①守卫 fail-closed 后必须注入（mock no-op = preCheck 放行/postCommit 无副作用）；
+            // ②首签/第二签/重归集 CAS 谓词收敛后，mock update 默认 0 = 并发冲突误报，统一桩命中（1）。
+            service.setStateMachineGuard(
+                org.mockito.Mockito.mock(org.ruoyi.ipd.service.StateMachineGuard.class));
+            org.mockito.Mockito.lenient().when(confirmMapper.update(
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any())).thenReturn(1);
+        }
     }
 
     private static IpdActor actorGroupLeader(long id) {

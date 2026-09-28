@@ -27,6 +27,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -53,6 +54,9 @@ class P261AcceptanceTest {
     void setUpGuard() {
         // ROOT-R3-P0-2：Mockito 构造器注入优先后不再走 setter——守卫 fail-closed 后必须显式注入
         requirementChangeService.setStateMachineGuard(stateMachineGuard);
+        // R33 一期集成适配：sign() 三写点 CAS 谓词收敛后，mock update 默认 0 = 并发冲突误报，
+        // 统一桩命中（1）；sign_* 各例的 verify 不数 update 次数，lenient 不触 strict stubs 红。
+        lenient().when(requirementChangeMapper.update(any(), any())).thenReturn(1);
     }
 
     private static final Long MARKET_PM = 300L;

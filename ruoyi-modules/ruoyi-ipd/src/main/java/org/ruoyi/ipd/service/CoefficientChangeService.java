@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.Project;
@@ -14,8 +15,6 @@ import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -45,46 +44,18 @@ public class CoefficientChangeService implements ICoefficientChangeService {
     private final ProjectMapper projectMapper;
     private final IAuditLogService auditLogService;
 
-    /* ---------- R24 治理轮：CoefficientChange 状态机守卫（接线） ---------- */
-    /** 跨状态机守卫（nullable 兼容旧测试；R24 按 KpiRecordService 样板接线） */
-    private StateMachineGuard stateMachineGuard;
+    /* ---------- R33 一期：状态机守卫接线收编至 ApprovalGuardSupport（行为零变更） ---------- */
     /** CoefficientChange 实体类型（与 DefaultStateMachineGuard.registerRule 约定一致） */
     static final String COEF_ENTITY_TYPE = "coefficient_change";
+    /**
+     * R33 一期：审批链共享守卫骨架（组合替代 preCheckGuard/registerPostCommit 六连拷贝）。
+     * fail-closed 抛错 + afterCommit 双路径 + 无事务降级语义与旧拷贝逐字等价。
+     */
+    private final ApprovalGuardSupport guardSupport = new ApprovalGuardSupport(COEF_ENTITY_TYPE);
 
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
-        this.stateMachineGuard = stateMachineGuard;
-    }
-
-    /** R24 接线：守卫 preCheck 包装（fail-closed）。 */
-    private void preCheckGuard(String fromState, String toState, String trigger) {
-        if (stateMachineGuard == null) {
-            throw new ServiceException("状态机守卫未装配 entityType=" + COEF_ENTITY_TYPE
-                + " from=" + fromState + " to=" + toState);
-        }
-        stateMachineGuard.preCheck(COEF_ENTITY_TYPE, fromState, toState, trigger);
-    }
-
-    /** R24 接线：注册 postCommit 副作用（事务提交后触发）。 */
-    private void registerPostCommit(String fromState, String toState, String trigger,
-                                    Long operatorId, Long entityId) {
-        if (stateMachineGuard == null) {
-            return;
-        }
-        Date occurredAt = new Date();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                /** 事务提交成功后调用守卫 postCommit，登记系数变更状态机副作用。 */
-                @Override
-                public void afterCommit() {
-                    stateMachineGuard.postCommit(COEF_ENTITY_TYPE, fromState, toState, trigger,
-                        operatorId, entityId, occurredAt);
-                }
-            });
-        } else {
-            stateMachineGuard.postCommit(COEF_ENTITY_TYPE, fromState, toState, trigger,
-                operatorId, entityId, occurredAt);
-        }
+        this.guardSupport.setStateMachineGuard(stateMachineGuard);
     }
 
     /**
@@ -131,9 +102,8 @@ public class CoefficientChangeService implements ICoefficientChangeService {
         Long pending = requestMapper.selectCount(new LambdaQueryWrapper<CoefficientChangeRequest>()
             .eq(CoefficientChangeRequest::getProjectId, projectId)
             .eq(CoefficientChangeRequest::getStatus, CoefficientChangeRequest.ST_PENDING_LEADER));
-        if (pending != null && pending > 0) {
-            throw new ServiceException("该项目已有待组长确认的系数定值申请");
-        }
+        // R33 一期：在途单唯一预检收编（文案逐字保留）
+        guardSupport.assertNoInFlight(pending, "该项目已有待组长确认的系数定值申请");
         CoefficientChangeRequest req = CoefficientChangeRequest.builder()
             .projectId(projectId)
             .proposedCoefficient(coefficient)
@@ -145,10 +115,10 @@ public class CoefficientChangeService implements ICoefficientChangeService {
             .build();
         req.setCreateTime(new Date());
         // R24 接线：状态机守卫 preCheck（fail-closed）——创建迁移 INITIAL→PENDING_LEADER|propose。
-        preCheckGuard(null, CoefficientChangeRequest.ST_PENDING_LEADER, "propose");
+        guardSupport.preCheck(null, CoefficientChangeRequest.ST_PENDING_LEADER, "propose");
         requestMapper.insert(req);
         // R24 接线：postCommit（事务后）。本规则 crossDomain=false。
-        registerPostCommit(null, CoefficientChangeRequest.ST_PENDING_LEADER, "propose", proposerId, req.getId());
+        guardSupport.registerPostCommit(null, CoefficientChangeRequest.ST_PENDING_LEADER, "propose", proposerId, req.getId());
         audit(proposerId, ACTION_PROPOSE, req.getId(),
             "project:" + projectId + " coef:" + coefficient + " " + reason.trim());
         return req;
@@ -179,9 +149,9 @@ public class CoefficientChangeService implements ICoefficientChangeService {
         if (req == null) {
             throw new ServiceException("系数定值申请不存在: " + requestId);
         }
-        if (!CoefficientChangeRequest.ST_PENDING_LEADER.equals(req.getStatus())) {
-            throw new ServiceException("状态机不匹配：期望 PENDING_LEADER，实际 " + req.getStatus());
-        }
+        // R33 一期：终态守卫前置收编（requireFromState，文案逐字保留）
+        guardSupport.requireFromState(req.getStatus(), CoefficientChangeRequest.ST_PENDING_LEADER,
+            "状态机不匹配：期望 PENDING_LEADER，实际 " + req.getStatus());
         // approve 路径守卫（加载项目 → 同组归属 → 区间校验）保持在任何写库之前——
         // 守卫抛 FORBIDDEN 时申请状态不被污染。
         Project project = null;
@@ -200,9 +170,9 @@ public class CoefficientChangeService implements ICoefficientChangeService {
         // R24 接线（双线合并修正）：preCheck 前移至任何写库前（C3 缺陷修复原则：迁移前拦截）。
         // 2026-09-09 双线合并：原 R24 接线把 preCheck 挂在 CAS UPDATE 之后（时序错误）；
         // CAS 前调时 DB 仍处 PENDING_LEADER，preCheck 语义与内存快照一致。
-        preCheckGuard(CoefficientChangeRequest.ST_PENDING_LEADER, targetStatus,
+        guardSupport.preCheck(CoefficientChangeRequest.ST_PENDING_LEADER, targetStatus,
             approve ? "leaderApprove" : "leaderReject");
-        boolean flipped = requestMapper.update(null, new LambdaUpdateWrapper<CoefficientChangeRequest>()
+        int updatedRows = requestMapper.update(null, new LambdaUpdateWrapper<CoefficientChangeRequest>()
             .eq(CoefficientChangeRequest::getId, requestId)
             .eq(CoefficientChangeRequest::getStatus, CoefficientChangeRequest.ST_PENDING_LEADER)
             .set(CoefficientChangeRequest::getStatus, targetStatus)
@@ -212,17 +182,16 @@ public class CoefficientChangeService implements ICoefficientChangeService {
             .set(CoefficientChangeRequest::getLeaderOpinion, opinion)
             // update(null, wrapper) 不触发 BaseEntity 的 INSERT_UPDATE 元填充，簿记字段显式补齐（蜂群复审 P2）
             .set(CoefficientChangeRequest::getUpdateBy, leaderId)
-            .set(CoefficientChangeRequest::getUpdateTime, decidedAt)) > 0;
-        if (!flipped) {
-            throw new ServiceException("状态机不匹配：申请已被并发处理（期望 PENDING_LEADER）");
-        }
+            .set(CoefficientChangeRequest::getUpdateTime, decidedAt));
+        // R33 一期：CAS 命中判定收编（未命中即以原文案抛出，文案逐字保留）
+        guardSupport.requireCasHit(updatedRows, "状态机不匹配：申请已被并发处理（期望 PENDING_LEADER）");
         req.setStatus(targetStatus);
         req.setLeaderId(leaderId);
         req.setLeaderDecision(decision);
         req.setLeaderDecidedAt(decidedAt);
         req.setLeaderOpinion(opinion);
         // R24 接线：postCommit（事务后）—— CAS 已原子翻转，不再 updateById 双写。
-        registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, targetStatus,
+        guardSupport.registerPostCommit(CoefficientChangeRequest.ST_PENDING_LEADER, targetStatus,
             approve ? "leaderApprove" : "leaderReject", leaderId, req.getId());
         if (!approve) {
             audit(leaderId, ACTION_REJECT, req.getId(), opinion);

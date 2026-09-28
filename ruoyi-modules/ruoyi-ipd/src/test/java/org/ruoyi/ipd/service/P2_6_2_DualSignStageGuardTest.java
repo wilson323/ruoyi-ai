@@ -98,6 +98,9 @@ class P2_6_2_DualSignStageGuardTest {
             .thenAnswer(inv -> inv.getArgument(0));
         reqChangeService = new RequirementChangeService(changeMapper, reqMapper, auditLogService);
         reqChangeService.setStateMachineGuard(org.mockito.Mockito.mock(StateMachineGuard.class));
+        // R33 C6 并发修复：sign() 决策写点改 CAS 条件 UPDATE（update(null, wrapper)），
+        // mock 默认返回 0 会误触并发冲突——统一 stub 命中（lenient：仅写路径测试消费）。
+        org.mockito.Mockito.lenient().when(changeMapper.update(any(), any())).thenReturn(1);
     }
 
     /** 构造一个 PENDING_SIGN 状态的变更单（含四维度快照）。 */

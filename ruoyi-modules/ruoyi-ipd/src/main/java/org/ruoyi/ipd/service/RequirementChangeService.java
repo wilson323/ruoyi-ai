@@ -1,12 +1,14 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -18,8 +20,6 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -62,6 +62,13 @@ public class RequirementChangeService implements IRequirementChangeService {
     private static final Set<String> DECISIONS = Set.of("APPROVE", "REJECT");
 
     /**
+     * R33 C6 并发修复新增文案（并发冲突，逐字冻结）：并行双签第二签决策 CAS 未命中时抛出。
+     * 既有异常文案零变更，此为并发冲突窗口的新增明确文案（报告已列明）。
+     */
+    private static final String CAS_CONFLICT_MESSAGE =
+        "签署并发冲突：该变更单已被其他签署方同时处理，请刷新后重试";
+
+    /**
      * 影响评估必填四维度键（P2-6.2 强化）。AC-REQ-08 要求变更必须显式覆盖范围/成本/时限/质量，
      * 缺失任一维度 ⇒ PARAM_INVALID，从源头上杜绝「影响评估留白、双签走过场」的 state-drift。
      */
@@ -77,52 +84,20 @@ public class RequirementChangeService implements IRequirementChangeService {
     private final RequirementMapper requirementMapper;
     private final IAuditLogService auditLogService;
 
-    /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；requirement_change 4 迁移点接线）。 */
-    private StateMachineGuard stateMachineGuard;
+    /**
+     * R33 一期：审批链共享守卫骨架（entityType=requirement_change；requirement_change 4 迁移点
+     * create/submit/reject/sign 接线保持）。收编原 preCheckGuard/registerPostCommit 六连拷贝
+     * （fail-closed 抛错 + afterCommit 双路径 + 无事务降级），语义逐字等价。
+     */
+    private final ApprovalGuardSupport guardSupport = new ApprovalGuardSupport("requirement_change");
 
     /**
-     * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（nullable 兼容旧测试）。
+     * R33 一期：Spring 注入 StateMachineGuard（nullable 兼容旧测试，委托共享骨架）。
      * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
      */
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
-        this.stateMachineGuard = stateMachineGuard;
-    }
-
-    /**
-     * ROOT-R3-P0-2 修复：守卫 preCheck 包装（fail-closed 模式）。
-     * 守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass）。
-     */
-    private void preCheckGuard(String fromState, String toState, String trigger) {
-        if (stateMachineGuard == null) {
-            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
-                "状态机守卫未装配 entityType=requirement_change from=" + fromState + " to=" + toState);
-        }
-        stateMachineGuard.preCheck("requirement_change", fromState, toState, trigger);
-    }
-
-    /**
-     * ROOT-R3-P0-2：注册 postCommit 副作用（事务提交后触发，避免回滚后污染）。
-     * 无守卫注入时降级 no-op；无事务上下文时直接执行（向后兼容测试场景）。
-     */
-    private void registerPostCommit(String fromState, String toState, String trigger,
-                                    Long operatorId, Long entityId) {
-        if (stateMachineGuard == null) {
-            return;
-        }
-        Date occurredAt = new Date();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    stateMachineGuard.postCommit("requirement_change", fromState, toState, trigger,
-                        operatorId, entityId, occurredAt);
-                }
-            });
-        } else {
-            stateMachineGuard.postCommit("requirement_change", fromState, toState, trigger,
-                operatorId, entityId, occurredAt);
-        }
+        guardSupport.setStateMachineGuard(stateMachineGuard);
     }
 
     /**
@@ -155,12 +130,12 @@ public class RequirementChangeService implements IRequirementChangeService {
         validateFourDimensionalSnapshot(change.getAfterSnapshot(), "afterSnapshot");
 
         // 守卫前置快照：创建迁移 fromState=null（守卫层归一化 INITIAL）
-        preCheckGuard(null, STATUS_DRAFT, "create");
+        guardSupport.preCheck(null, STATUS_DRAFT, "create");
         change.setStatus(STATUS_DRAFT);
         change.setCreateTime(new Date());
         change.setCreateBy(actor.id());
         requirementChangeMapper.insert(change);
-        registerPostCommit(null, STATUS_DRAFT, "create", actor.id(), change.getId());
+        guardSupport.registerPostCommit(null, STATUS_DRAFT, "create", actor.id(), change.getId());
         audit(actor, change, "REQ_CHANGE_CREATE",
             "DRAFT 创建，影响评估四维度快照已冻结");
         return change;
@@ -186,11 +161,11 @@ public class RequirementChangeService implements IRequirementChangeService {
         validateFourDimensionalSnapshot(change.getAfterSnapshot(), "afterSnapshot");
         // 守卫前置快照：迁移前捕获 from（setStatus 后读 entity 状态陷阱）
         String fromStatus = change.getStatus();
-        preCheckGuard(fromStatus, STATUS_PENDING_SIGN, "submit");
+        guardSupport.preCheck(fromStatus, STATUS_PENDING_SIGN, "submit");
         change.setStatus(STATUS_PENDING_SIGN);
         change.setUpdateTime(new Date());
         requirementChangeMapper.updateById(change);
-        registerPostCommit(fromStatus, STATUS_PENDING_SIGN, "submit", actor.id(), change.getId());
+        guardSupport.registerPostCommit(fromStatus, STATUS_PENDING_SIGN, "submit", actor.id(), change.getId());
         audit(actor, change, "REQ_CHANGE_SUBMIT",
             "进入双签队列 PENDING_SIGN");
         return change;
@@ -217,6 +192,8 @@ public class RequirementChangeService implements IRequirementChangeService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
         // 同方重复签署拒绝（signatures 字段聚合签名，SEC-REV-REQ-CHANGE-04：含 actorId 防同角色多账号混淆）
+        // signaturesBefore：CAS 谓词用读改写窗口旧值（保持 null 语义，与 "" 区分）
+        String signaturesBefore = change.getSignatures();
         String existing = change.getSignatures() == null ? "" : change.getSignatures();
         String signature = actor.role() + ":" + actor.id() + "=" + decision;
         if (existing.contains(signature)) {
@@ -228,10 +205,13 @@ public class RequirementChangeService implements IRequirementChangeService {
 
         // 任何 REJECT ⇒ 整体 REJECTED（无需等另一方）
         if ("REJECT".equals(decision)) {
-            preCheckGuard(STATUS_PENDING_SIGN, STATUS_REJECTED, "reject");
+            guardSupport.preCheck(STATUS_PENDING_SIGN, STATUS_REJECTED, "reject");
+            // R33 C6 并发修复（规格 §1「四道防线全缺」）：裸 updateById 改 CAS 谓词翻转
+            //（对齐 C2 模式）——status/signatures 双谓词保证读改写原子性，未命中即并发冲突。
             change.setStatus(STATUS_REJECTED);
-            requirementChangeMapper.updateById(change);
-            registerPostCommit(STATUS_PENDING_SIGN, STATUS_REJECTED, "reject", actor.id(), change.getId());
+            guardSupport.requireCasHit(
+                updateWithCas(change, signaturesBefore, joined, STATUS_REJECTED, actor.id()), CAS_CONFLICT_MESSAGE);
+            guardSupport.registerPostCommit(STATUS_PENDING_SIGN, STATUS_REJECTED, "reject", actor.id(), change.getId());
             audit(actor, change, "REQ_CHANGE_REJECT",
                 "单方 REJECT，整体 REJECTED；意见：" + opinion);
             return change;
@@ -252,19 +232,63 @@ public class RequirementChangeService implements IRequirementChangeService {
                 recordWriteBackFailure(change, ex);
                 throw ex;
             }
-            preCheckGuard(STATUS_PENDING_SIGN, STATUS_APPROVED, "sign");
+            guardSupport.preCheck(STATUS_PENDING_SIGN, STATUS_APPROVED, "sign");
             change.setStatus(STATUS_APPROVED);
-            requirementChangeMapper.updateById(change);
-            registerPostCommit(STATUS_PENDING_SIGN, STATUS_APPROVED, "sign", actor.id(), change.getId());
+            // R33 C6 并发修复：并行双签第二签决策裸 updateById 双写窗口 → CAS 谓词翻转
+            guardSupport.requireCasHit(
+                updateWithCas(change, signaturesBefore, joined, STATUS_APPROVED, actor.id()), CAS_CONFLICT_MESSAGE);
+            guardSupport.registerPostCommit(STATUS_PENDING_SIGN, STATUS_APPROVED, "sign", actor.id(), change.getId());
             audit(actor, change, "REQ_CHANGE_APPROVE",
                 "双签 APPROVE，变更单生效");
             return change;
         }
         // 单方 APPROVE：保持 PENDING_SIGN，等待另一方
-        requirementChangeMapper.updateById(change);
+        // R33 C6 并发修复：签名聚合串读改写窗口（并行双签后写覆盖先写、签名丢失）
+        // → CAS 谓词翻转（signatures 旧值入谓词），未命中 = 另一方已并发签署，本签让位重试。
+        guardSupport.requireCasHit(
+            updateWithCas(change, signaturesBefore, joined, STATUS_PENDING_SIGN, actor.id()), CAS_CONFLICT_MESSAGE);
         audit(actor, change, "REQ_CHANGE_PARTIAL_SIGN",
             actor.role() + " 已 APPROVE，等待另一方");
         return change;
+    }
+
+    /**
+     * R33 C6 并发修复：签名写入 CAS 谓词翻转（对齐 C2 CoefficientChangeService 决策 CAS 模式）。
+     *
+     * <p>此前三个决策写点均为「读状态/签名 → 内存改 → updateById 全量」，无任何并发防线
+     * （无乐观锁/CAS/唯一键/串行化，规格 §1 C6 行）：并行双签时后写覆盖先写，signatures
+     * 聚合串丢失一方签名，双签永不合拢。改为条件 UPDATE 原子翻转：
+     * <ul>
+     *   <li>谓词：id + status=PENDING_SIGN + signatures 读改写窗口旧值（null 走 IS NULL）</li>
+     *   <li>未命中 0 行 = 该变更单已被另一签署方并发处理 ⇒ 由调用方
+     *       {@link ApprovalGuardSupport#requireCasHit} 抛并发冲突</li>
+     * </ul>
+     *
+     * <p>R-8 红线：「;」聚合签名串存储为存量行为，本方法不改其存储形态（零变更）。
+     *
+     * @param change           变更单（内存态）
+     * @param signaturesBefore 读改写窗口的 signatures 旧值（null 走 IS NULL，与空串区分）
+     * @param joined           聚合后的 signatures 新值
+     * @param targetStatus     目标状态（单方 APPROVE 传 PENDING_SIGN，状态不变）
+     * @param operatorId       操作人（簿记 updateBy 显式补齐——update(null, wrapper) 不触发
+     *                         BaseEntity INSERT_UPDATE 元填充，对齐 C2 蜂群复审 P2）
+     * @return 受影响行数（0 = 并发冲突）
+     */
+    private int updateWithCas(RequirementChange change, String signaturesBefore,
+                              String joined, String targetStatus, Long operatorId) {
+        LambdaUpdateWrapper<RequirementChange> wrapper = new LambdaUpdateWrapper<RequirementChange>()
+            .eq(RequirementChange::getId, change.getId())
+            .eq(RequirementChange::getStatus, STATUS_PENDING_SIGN);
+        if (signaturesBefore == null) {
+            wrapper.isNull(RequirementChange::getSignatures);
+        } else {
+            wrapper.eq(RequirementChange::getSignatures, signaturesBefore);
+        }
+        return requirementChangeMapper.update(null, wrapper
+            .set(RequirementChange::getSignatures, joined)
+            .set(RequirementChange::getStatus, targetStatus)
+            .set(RequirementChange::getUpdateBy, operatorId)
+            .set(RequirementChange::getUpdateTime, change.getUpdateTime()));
     }
 
     /**

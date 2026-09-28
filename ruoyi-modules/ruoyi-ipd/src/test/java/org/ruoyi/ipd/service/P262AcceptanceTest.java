@@ -50,6 +50,9 @@ class P262AcceptanceTest {
     void setUpGuard() {
         // ROOT-R3-P0-2：Mockito 构造器注入优先后不再走 setter——守卫 fail-closed 后必须显式注入
         requirementChangeService.setStateMachineGuard(stateMachineGuard);
+        // R33 C6 并发修复：sign() 决策写点改 CAS 条件 UPDATE（update(null, wrapper)），
+        // mock 默认返回 0 会误触并发冲突——统一 stub 命中（lenient：仅写路径测试消费）。
+        org.mockito.Mockito.lenient().when(requirementChangeMapper.update(any(), any())).thenReturn(1);
     }
 
     private static final Long MARKET_PM = 300L;

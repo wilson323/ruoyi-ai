@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.satoken.utils.LoginHelper;
+import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -18,6 +19,7 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.vo.KpiSharedConfirmView;
 import org.ruoyi.ipd.vo.SharedKpiCollectView;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -89,6 +91,28 @@ public class KpiSharedConfirmService {
     }
 
     /**
+     * R33 一期：审批链共享守卫骨架（entityType=kpi_shared_confirm）。
+     *
+     * <p>C5 补 StateMachineGuard 接线（规格 §5-2 病根③「接线点靠人肉对账」）：状态迁移点
+     * create（INITIAL→PENDING）/ recapture（CONFIRMED→PENDING 重归集复位）/ secondSign
+     * （PENDING→CONFIRMED 第二签终态）接 preCheck/registerPostCommit，fail-closed。
+     *
+     * <p>注意：{@code DefaultStateMachineGuard} 规则表暂无 kpi_shared_confirm 机迁移规则，
+     * 接线后 preCheck 会 fail-closed 拒绝——补规则需求见 R33 分片 E 报告「待主会话处理」清单，
+     * 本分片不改规则表/哨兵/契约 JSON。
+     */
+    private final ApprovalGuardSupport guardSupport = new ApprovalGuardSupport("kpi_shared_confirm");
+
+    /**
+     * R33 一期：注入 StateMachineGuard（nullable 兼容旧测试，委托共享骨架）。
+     * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
+     */
+    @Autowired(required = false)
+    public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
+        guardSupport.setStateMachineGuard(stateMachineGuard);
+    }
+
+    /**
      * 归集成功后生成 / 复位 K01-K04 确认行（PENDING）。
      *
      * <p>由 SharedKpiController.collect 在归集事务提交后调用：
@@ -119,7 +143,9 @@ public class KpiSharedConfirmService {
                     .eq(KpiSharedConfirm::getMetricCode, metric.code())
                     .last("LIMIT 1"));
             if (existing == null) {
-                confirmMapper.insert(KpiSharedConfirm.builder()
+                // R33 C5 接线：创建迁移 INITIAL→PENDING（guard 层归一化 INITIAL），迁移前拦截
+                guardSupport.preCheck(null, ST_PENDING, "create");
+                KpiSharedConfirm created = KpiSharedConfirm.builder()
                     .projectId(projectId)
                     .period(period)
                     .personId(collectedBy)
@@ -128,8 +154,12 @@ public class KpiSharedConfirmService {
                     .weight(metric.weight())
                     .deadlineAt(deadline)
                     .status(ST_PENDING)
-                    .build());
+                    .build();
+                confirmMapper.insert(created);
+                guardSupport.registerPostCommit(null, ST_PENDING, "create", collectedBy, created.getId());
             } else if (ST_CONFIRMED.equals(existing.getStatus())) {
+                // R33 C5 接线：复位迁移 CONFIRMED→PENDING（重归集需重新双签），迁移前拦截
+                guardSupport.preCheck(ST_CONFIRMED, ST_PENDING, "recapture");
                 // 重归集后需重新双签：updateById 忽略 null 字段，显式 SET 置空双签
                 confirmMapper.update(null, Wrappers.<KpiSharedConfirm>lambdaUpdate()
                     .eq(KpiSharedConfirm::getId, existing.getId())
@@ -140,6 +170,7 @@ public class KpiSharedConfirmService {
                     .set(KpiSharedConfirm::getSecondConfirmedAt, null)
                     .set(KpiSharedConfirm::getPersonId, collectedBy)
                     .set(KpiSharedConfirm::getDeadlineAt, deadline));
+                guardSupport.registerPostCommit(ST_CONFIRMED, ST_PENDING, "recapture", collectedBy, existing.getId());
             } else {
                 existing.setDeadlineAt(deadline);
                 confirmMapper.updateById(existing);
@@ -267,20 +298,49 @@ public class KpiSharedConfirmService {
         Date now = new Date();
         String round;
         if (row.getFirstConfirmedBy() == null) {
+            round = "first";
+            // R33 C5 并发修复：两组长抢首签裸 updateById 双写窗口 → CAS 谓词翻转
+            //（对齐 C2 CoefficientChangeService 决策 CAS 模式）：仅当仍 PENDING 且
+            // firstConfirmedBy IS NULL 才生效，未命中 = 被其他组长并发抢先签署。
+            int rows = confirmMapper.update(null, Wrappers.<KpiSharedConfirm>lambdaUpdate()
+                .eq(KpiSharedConfirm::getId, confirmId)
+                .eq(KpiSharedConfirm::getStatus, ST_PENDING)
+                .isNull(KpiSharedConfirm::getFirstConfirmedBy)
+                .set(KpiSharedConfirm::getFirstConfirmedBy, actor.id())
+                .set(KpiSharedConfirm::getFirstConfirmedAt, now)
+                .set(KpiSharedConfirm::getUpdateBy, actor.id())
+                .set(KpiSharedConfirm::getUpdateTime, now));
+            guardSupport.requireCasHit(rows,
+                "签署并发冲突：该共担 KPI 确认已被其他组长抢先签署，请刷新后重试");
             row.setFirstConfirmedBy(actor.id());
             row.setFirstConfirmedAt(now);
-            round = "first";
         } else if (row.getFirstConfirmedBy().equals(actor.id())) {
             // 双签规则：第二签必须为另一位组长；同人重复签 = 双签未完成
             throw new IpdBusinessException(ApiV1ErrorCode.DUAL_SIGN_INCOMPLETE,
                 "双组长确认需第二位不同组长签署，同一人不能重复确认");
         } else {
+            round = "second";
+            // R33 C5 接线：第二签迁移 PENDING→CONFIRMED（终态），迁移前拦截
+            guardSupport.preCheck(ST_PENDING, ST_CONFIRMED, "secondSign");
+            // R33 C5 并发修复：两组长抢第二签裸 updateById 并发双写窗口 → CAS 谓词翻转
+            //（对齐 C2 模式）：仅当仍 PENDING 且 firstConfirmedBy 未被复位才生效，
+            // 未命中 = 另一组长已完成第二签 / 重归集复位，本签让位。
+            int rows = confirmMapper.update(null, Wrappers.<KpiSharedConfirm>lambdaUpdate()
+                .eq(KpiSharedConfirm::getId, confirmId)
+                .eq(KpiSharedConfirm::getStatus, ST_PENDING)
+                .eq(KpiSharedConfirm::getFirstConfirmedBy, row.getFirstConfirmedBy())
+                .set(KpiSharedConfirm::getSecondConfirmedBy, actor.id())
+                .set(KpiSharedConfirm::getSecondConfirmedAt, now)
+                .set(KpiSharedConfirm::getStatus, ST_CONFIRMED)
+                .set(KpiSharedConfirm::getUpdateBy, actor.id())
+                .set(KpiSharedConfirm::getUpdateTime, now));
+            guardSupport.requireCasHit(rows,
+                "签署并发冲突：该共担 KPI 确认已被其他组长抢先完成双签，请刷新后重试");
             row.setSecondConfirmedBy(actor.id());
             row.setSecondConfirmedAt(now);
             row.setStatus(ST_CONFIRMED);
-            round = "second";
+            guardSupport.registerPostCommit(ST_PENDING, ST_CONFIRMED, "secondSign", actor.id(), confirmId);
         }
-        confirmMapper.updateById(row);
 
         if (auditLogService != null) {
             auditLogService.append(AuditLog.builder()

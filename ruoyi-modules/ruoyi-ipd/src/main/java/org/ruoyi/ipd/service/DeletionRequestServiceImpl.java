@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -29,8 +30,6 @@ import org.ruoyi.ipd.util.Workdays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.List;
@@ -109,15 +108,26 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
     public void setProductGroupMapper(ProductGroupMapper productGroupMapper) {
         this.productGroupMapper = productGroupMapper;
     }
-    /** ROOT-R3-P0-1：跨状态机守卫（可选注入，nullable 兼容旧测试） */
+    /** R33 ChainSpec C3：审批链守卫实体类型（与 DefaultStateMachineGuard 规则表锚点一致）。 */
+    private static final String ENTITY_TYPE = "deletion_request";
+
+    /**
+     * R33 ChainSpec 一期（分片 C3）：审批链共享守卫骨架组合件——收编 preCheckGuard/registerPostCommit
+     * 六连拷贝 + 终态守卫 requireFromState（纯组合；API 冻结见 ApprovalGuardSupport）。
+     * 决策 CAS requireCasHit 未收敛：escalate 批量 CAS 的 miss 语义为静默短路，与其 miss→抛相反（见该处注）。
+     * final + 构造初始化：不进 @RequiredArgsConstructor 参数表，存量 9 参构造测试零改动。
+     */
+    private final ApprovalGuardSupport guardSupport = new ApprovalGuardSupport(ENTITY_TYPE);
+
+    /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（R33 起转发 guardSupport，nullable 兼容旧测试） */
     @Autowired(required = false)
-    private org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard;
-    /** ROOT-R3-P0-1 修复：Spring 注入 StateMachineGuard（fail-closed 改造后，测试可显式注入 mock） */
     public void setStateMachineGuard(org.ruoyi.ipd.service.StateMachineGuard stateMachineGuard) {
-        this.stateMachineGuard = stateMachineGuard;
+        this.guardSupport.setStateMachineGuard(stateMachineGuard);
     }
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定提交时刻消除真实时钟摇摆，生产零影响）。
-     *  当前仅 submit 路径接入，其余方法的时钟接入按需扩展。 */
+     *  当前仅 submit 路径接入，其余方法的时钟接入按需扩展。
+     *  R33 保真注：本 setter 故意不投递 guardSupport.setClock——守卫 postCommit 的 occurredAt
+     *  沿用其默认系统时钟，与迁移前 registerPostCommit 内 {@code new java.util.Date()} 逐字等价（行为零变更）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     public void setClock(java.time.Clock clock) {
@@ -155,10 +165,10 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         // ⚠️ @Builder 只覆盖本类字段，BaseEntity 的 createTime 须走 setter
         request.setCreateTime(now());
         // ROOT-R3-P0-1：守卫 preCheck（跨域联动合法性校验）—— DRAFT->LEADER_REVIEW 合法
-        preCheckGuard("deletion_request", "DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit");
+        guardSupport.preCheck("DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit");
         deletionRequestMapper.insert(request);
         audit(entityType, entityId, requesterId, "DELETE_REQUEST_SUBMIT", request.getId());
-        registerPostCommit("deletion_request", "DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit", requesterId, request.getId());
+        guardSupport.registerPostCommit("DRAFT", DeletionRequestServiceImpl.ST_LEADER_REVIEW, "submit", requesterId, request.getId());
         // R221 通知缺口补线（spec §5.1，AC-DEL-04 DEL_CROSS_GROUP_CC 死账接线）：建单进初审
         // → 知会目标组组长。submit 为 @Transactional，走 publishAfterCommit 防 W1 毒化；
         // 目标组/组长不可解析或服务未装配（存量 9 参测试）时静默跳过，绝不影响建单主链。
@@ -198,11 +208,11 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         // 2026-09-09 C3 缺陷修复：先留存真实 from——此前 setStatus 污染后再取
         // request.getStatus() 传给 postCommit，from 失真成 WITHDRAWN（审计链数据质量问题）
         String fromStatus = request.getStatus();
-        preCheckGuard("deletion_request", fromStatus, DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw");
+        guardSupport.preCheck(fromStatus, DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw");
         request.setStatus(ST_WITHDRAWN);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), requesterId, "DELETE_REQUEST_WITHDRAW", request.getId());
-        registerPostCommit("deletion_request", fromStatus, DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
+        guardSupport.registerPostCommit(fromStatus, DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw", requesterId, request.getId());
         return request;
     }
 
@@ -251,11 +261,11 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "资源不存在");
         }
         // ROOT-R3-P0-1：守卫 preCheck —— *->WITHDRAWN 通配收敛
-        preCheckGuard("deletion_request", request.getStatus(), DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw");
+        guardSupport.preCheck(request.getStatus(), DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw");
         request.setStatus(ST_WITHDRAWN);
         deletionRequestMapper.updateById(request);
         audit(request.getEntityType(), request.getEntityId(), actor.id(), "DELETE_REQUEST_WITHDRAW", request.getId());
-        registerPostCommit("deletion_request", request.getStatus(), DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw", actor.id(), request.getId());
+        guardSupport.registerPostCommit(request.getStatus(), DeletionRequestServiceImpl.ST_WITHDRAWN, "withdraw", actor.id(), request.getId());
         return request;
     }
 
@@ -288,14 +298,14 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         String target = approve ? ST_ADMIN_REVIEW : ST_REJECTED;
         String trigger = approve ? "leaderApprove" : "leaderReject";
         // ROOT-R3-P0-1：守卫 preCheck（LEADER_REVIEW -> ADMIN_REVIEW/REJECTED 合法）
-        preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger);
+        guardSupport.preCheck(DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger);
         request.setStatus(approve ? ST_ADMIN_REVIEW : ST_REJECTED);
         if (approve) {
             request.setAdminDueAt(Workdays.add(now(), adminDeadlineDays()));
         }
         deletionRequestMapper.updateById(request);
         // ROOT-R3-P0-1：postCommit 跨域副作用
-        registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger, leaderId, request.getId());
+        guardSupport.registerPostCommit(DeletionRequestServiceImpl.ST_LEADER_REVIEW, target, trigger, leaderId, request.getId());
         audit(request.getEntityType(), request.getEntityId(), leaderId, approve ? "DELETE_LEADER_APPROVE" : "DELETE_LEADER_REJECT", request.getId());
         // R221 通知缺口补线（AC-DEL-05 DEL_REJECTED 死账接线）：组长驳回 → 申请人收驳回待办；
         // 通过时初审待办已在 submit 发过，终审队列可见不重复发。
@@ -334,15 +344,15 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         requireStatus(request, ST_ADMIN_REVIEW);
         if (approve) {
             // ROOT-R3-P0-1：守卫 preCheck —— ADMIN_REVIEW -> DELETED 合法（跨域→触发原子软删）
-            preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_DELETED, "adminApprove");
+            guardSupport.preCheck(DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_DELETED, "adminApprove");
             // P0-6.2 / AC-DEL-02：必须走原子软删，禁止只改申请态
             DeletionRequest deleted = deleteAuditService.approveAndExecute(requestId, adminId);
             // ROOT-R3-P0-1：postCommit 跨域副作用（事务提交后触发）
-            registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_DELETED, "adminApprove", adminId, requestId);
+            guardSupport.registerPostCommit(DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_DELETED, "adminApprove", adminId, requestId);
             return deleted;
         }
         // ROOT-R3-P0-1：守卫 preCheck —— ADMIN_REVIEW -> REJECTED 合法
-        preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_REJECTED, "adminReject");
+        guardSupport.preCheck(DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_REJECTED, "adminReject");
         request.setAdminId(adminId);
         request.setAdminDecision("REJECT");
         request.setAdminDecidedAt(now());
@@ -351,7 +361,7 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         audit(request.getEntityType(), request.getEntityId(), adminId, "DELETE_ADMIN_REJECT", request.getId());
         // 2026-09-09 C3 缺陷修复：R5 adminReject 标 crossDomain=true（跨域→通知申请人），
         // 但此前驳回分支漏调 registerPostCommit → 申请人收不到驳回通知。与 adminApprove(L230) 对齐
-        registerPostCommit("deletion_request", DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_REJECTED, "adminReject", adminId, requestId);
+        guardSupport.registerPostCommit(DeletionRequestServiceImpl.ST_ADMIN_REVIEW, DeletionRequestServiceImpl.ST_REJECTED, "adminReject", adminId, requestId);
         return request;
     }
 
@@ -380,7 +390,7 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         // ROOT-R3-P0-1：守卫 preCheck —— LEADER_REVIEW -> ADMIN_REVIEW 合法（升级路径）
         // 2026-09-09 C3 缺陷修复：preCheck 语义是"迁移前拦截"，此前挂在批量 UPDATE 之后——
         // 虽有 @Transactional 兜底回滚，但守卫应前置拒绝而非事后验证。前移到 UPDATE 前
-        preCheckGuard("deletion_request", DeletionRequestServiceImpl.ST_LEADER_REVIEW, DeletionRequestServiceImpl.ST_ADMIN_REVIEW, "escalateOverdue");
+        guardSupport.preCheck(DeletionRequestServiceImpl.ST_LEADER_REVIEW, DeletionRequestServiceImpl.ST_ADMIN_REVIEW, "escalateOverdue");
         // 步骤 ②：单 SQL 条件批量 UPDATE（PERF-P0-1：消除 N+1 写放大）
         int affected = deletionRequestMapper.update(null, new LambdaUpdateWrapper<DeletionRequest>()
             .set(DeletionRequest::getStatus, ST_ADMIN_REVIEW)
@@ -389,6 +399,8 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
             .lt(DeletionRequest::getLeaderDueAt, now()));
         if (affected == 0) {
             // 谓词扫描与 UPDATE 之间发生状态变迁（极少见——并发方抢先处置）：同样短路
+            // R33 一期注：此处命中判定故意不收敛 requireCasHit——其 miss 语义为抛冲突异常，
+            // 与本处 miss→静默短路相反，收敛即行为变更（违反 escalate 语义零触碰红线，见迁移报告）。
             return 0;
         }
         // 步骤 ③：按预取行补逐条审计（G-02 语义不变：每条升级单独留痕，可被审计范围查询到）
@@ -522,9 +534,9 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
     }
 
     private void requireStatus(DeletionRequest request, String expect) {
-        if (!expect.equals(request.getStatus())) {
-            throw new ServiceException("状态机不匹配：期望 " + expect + "，实际 " + request.getStatus());
-        }
+        // R33 一期：命中判定收敛 ApprovalGuardSupport.requireFromState（ServiceException 类型与文案逐字保真）
+        guardSupport.requireFromState(request.getStatus(), expect,
+            "状态机不匹配：期望 " + expect + "，实际 " + request.getStatus());
     }
 
     private boolean isTerminal(String status) {
@@ -707,41 +719,4 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
         auditLogService.append(operatorId, action, entityType, entityId, "deletion_request:" + requestId);
     }
 
-    /**
-     * ROOT-R3-P0-1 修复：守卫 preCheck 包装（fail-closed 模式）。
-     *
-     * <p>守卫 null = fail-closed 抛 IpdBusinessException（防 state-machine-bypass，与 KpiRecordService 8bdc7811 同型）。
-     * 测试兼容：DeletionRequestServiceTest 通过 setStateMachineGuard(...) 注入 mock；
-     * MockitoExtension STRICT_STUBS 模式下空 mock 必显式 fail。
-     */
-    private void preCheckGuard(String entityType, String fromState, String toState, String trigger) {
-        if (stateMachineGuard == null) {
-            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
-                "状态机守卫未装配 entityType=" + entityType + " from=" + fromState + " to=" + toState);
-        }
-        stateMachineGuard.preCheck(entityType, fromState, toState, trigger);
-    }
-
-    /**
-     * ROOT-R3-P0-1：注册 postCommit 副作用（在事务提交后触发，避免回滚后污染）
-     * 无守卫注入时降级 no-op；无事务上下文时直接执行（向后兼容）。
-     */
-    private void registerPostCommit(String entityType, String fromState, String toState,
-                                    String trigger, Long operatorId, Long entityId) {
-        if (stateMachineGuard == null) {
-            return; // 未注入守卫 → 降级 no-op
-        }
-        java.util.Date occurredAt = new java.util.Date();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    stateMachineGuard.postCommit(entityType, fromState, toState, trigger, operatorId, entityId, occurredAt);
-                }
-            });
-        } else {
-            // 无事务上下文（测试场景）—— 直接执行
-            stateMachineGuard.postCommit(entityType, fromState, toState, trigger, operatorId, entityId, occurredAt);
-        }
-    }
 }
