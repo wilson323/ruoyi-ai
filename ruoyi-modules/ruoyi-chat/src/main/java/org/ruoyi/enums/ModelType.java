@@ -31,7 +31,7 @@ public enum ModelType {
     /**
      * 知识库内容重新排序模型
      */
-    RERANKER(4, "reranker", "知识库内容重新排序模型"),
+    RERANKER(4, "rerank", "知识库内容重新排序模型"),
 
     /**
      * 语音生成模型
