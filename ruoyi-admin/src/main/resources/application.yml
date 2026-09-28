@@ -293,6 +293,8 @@ security:
     - /workflow/run
     # IPD 独立认证体系（StpLogic "ipd"）——/api/v1/** 鉴权由 IpdPermission 自管，不走基线 sys_user 会话
     - /api/v1/**
+    # CopilotKit AG-UI 桥（2026-09-28）：/copilotkit/** 同款 IPD 会话自管（run 端点 Bearer 校验在 AgUiCopilotRun 内做）
+    - /copilotkit/**
 # 多租户配置
 tenant:
   # 是否开启

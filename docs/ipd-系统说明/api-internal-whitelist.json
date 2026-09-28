@@ -253,6 +253,30 @@
       "expire": "2026-12-31",
       "added_by": "R219 U1四卡修复波",
       "evidence": "StageActionOverdueScanController.java:27"
+    },
+    {
+      "path": "/copilotkit/info",
+      "methods": [
+        "GET"
+      ],
+      "reason": "CopilotKit Runtime 多路由握手探测口（GET runtimeUrl/info，2026-09-28 前端实证 auto 握手只读 GET 即锁多路由）：只返回 agents 静态元数据与模式声明，零写入；消费方 @copilotkit/vue 在 ruoyi-ipd-web 独立仓树，本仓 FE 扫描不可见",
+      "owner_card": "e5c36c70",
+      "review_date": "2026-09-28",
+      "expire": "2026-12-31",
+      "added_by": "copilotkit-single-track-be",
+      "evidence": "CopilotKitRuntimeController.java:83"
+    },
+    {
+      "path": "/copilotkit/agent/{VAR}/run",
+      "methods": [
+        "POST"
+      ],
+      "reason": "CopilotKit 单轨 AG-UI 桥事件流口（POST agent/ipd_copilot/run，SSE）：四帧→AG-UI 协议转换层，单轨复用 AiCopilotService.chatStream 同一入口、桥内零业务写库（C08）；消费方 @copilotkit/vue 经 runtimeUrl 动态拼接调用，静态 API 扫描不可见",
+      "owner_card": "e5c36c70",
+      "review_date": "2026-09-28",
+      "expire": "2026-12-31",
+      "added_by": "copilotkit-single-track-be",
+      "evidence": "CopilotKitRuntimeController.java:115"
     }
   ]
 }
