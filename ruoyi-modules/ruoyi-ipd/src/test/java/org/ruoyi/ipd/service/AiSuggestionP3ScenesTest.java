@@ -125,13 +125,35 @@ class AiSuggestionP3ScenesTest {
 
     // ---- 白名单 ----
 
+    /**
+     * SCENES 21 场景镜像清单（R227 7 + AI-P3 4 + L2 每页 AI 入口补全 10，2026-09-28）。
+     * 与 AiSuggestionService.SCENES 逐字对齐——本清单若与 Service 漂移，
+     * sceneWhitelistExact 双向断言必红（禁「现状放行」式假绿）。
+     */
+    private static final List<String> EXPECTED_SCENES = List.of(
+        "workbench.next-step", "workbench.risk-warning",
+        "project.summary.refresh",
+        "project.create.suggest", "demand.create.from-requirement",
+        "gate.precheck-checklist", "gate.conclusion-draft",
+        "demand.dedupe", "change.impact-analyze", "handover.checklist-generate",
+        "report.nl-query",
+        "demand.classify", "demand.priority", "bid.evaluate-proposal",
+        "kpi.monthly-summary", "kpi.contributor-summary", "bonus.fairness-analyze",
+        "timeline.storyline", "report.trend-analyze", "audit.anomaly-detect",
+        "product.name-classify");
+
     @Test
-    @DisplayName("SCENES 白名单恰为 R227 7 场景 + AI-P3 4 场景 = 11，无增删漂移")
+    @DisplayName("SCENES 白名单恰为 R227 7 + AI-P3 4 + L2 10 = 21，双向断言无增删漂移")
     void sceneWhitelistExact() {
-        assertEquals(11, AiSuggestionService.SCENES.size());
-        assertTrue(AiSuggestionService.SCENES.containsAll(List.of(
-            "demand.dedupe", "change.impact-analyze",
-            "handover.checklist-generate", "report.nl-query")));
+        assertEquals(21, EXPECTED_SCENES.size(), "镜像清单自身必须 21");
+        assertEquals(21, AiSuggestionService.SCENES.size(),
+            "SCENES 实态: " + AiSuggestionService.SCENES);
+        assertTrue(AiSuggestionService.SCENES.containsAll(EXPECTED_SCENES),
+            "缺场景: " + EXPECTED_SCENES.stream()
+                .filter(s -> !AiSuggestionService.SCENES.contains(s)).toList());
+        assertTrue(EXPECTED_SCENES.containsAll(AiSuggestionService.SCENES),
+            "多余场景: " + AiSuggestionService.SCENES.stream()
+                .filter(s -> !EXPECTED_SCENES.contains(s)).toList());
     }
 
     // ---- demand.dedupe ----
