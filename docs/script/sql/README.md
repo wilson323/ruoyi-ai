@@ -8,7 +8,7 @@
 mysql -uroot -p < ruoyi-ai.sql
 ```
 
-主 SQL 已合并下表中的全部更新，无需再次执行 `update` 目录中的脚本。[snail_job_mysql.sql](snail_job_mysql.sql) 仅用于单独初始化调度库，执行主 SQL 后无需再执行它。
+主 SQL 已合并下表中的全部更新，但 [update/kb-partA-ddl-draft-20260928.sql](update/kb-partA-ddl-draft-20260928.sql) 除外：该切片只在开发库 `ipd_dev` 上 apply，尚未回写进主 SQL dump，回写前不得视为已合并。因此执行完主 SQL 后，必须再执行该增量脚本（顺序为先基线、后增量）。[snail_job_mysql.sql](snail_job_mysql.sql) 仅用于单独初始化调度库，执行主 SQL 后无需再执行它。
 
 全量初始化包含 `DROP TABLE` 和调度库的 `DROP DATABASE`，已有数据库升级应使用对应的增量脚本。
 

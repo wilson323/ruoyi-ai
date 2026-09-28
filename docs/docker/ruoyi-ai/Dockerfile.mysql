@@ -1,5 +1,6 @@
 # 基于官方MySQL 8.0镜像构建自定义镜像
-# 构建命令: docker build -t registry.cn-hangzhou.aliyuncs.com/ruoyi-ai/mysql:v3 -f Dockerfile.mysql .
+# 构建命令（在仓库根目录执行，构建上下文为仓库根，与下方 COPY 源路径的相对基准一致）:
+#   docker build -t registry.cn-hangzhou.aliyuncs.com/ruoyi-ai/mysql:v3 -f docs/docker/ruoyi-ai/Dockerfile.mysql .
 FROM mysql:8.0
 
 # 设置时区
@@ -9,6 +10,7 @@ ENV TZ=Asia/Shanghai
 # 主库统一为 ruoyi-ai，与初始化 SQL 和 Compose 中的数据库配置保持一致。
 COPY docs/script/sql/ruoyi-ai.sql /docker-entrypoint-initdb.d/01-ruoyi-ai.sql
 COPY docs/script/sql/snail_job_mysql.sql /docker-entrypoint-initdb.d/02-snail-job.sql
+COPY docs/script/sql/update/kb-partA-ddl-draft-20260928.sql /docker-entrypoint-initdb.d/03-kb-partA.sql
 
 # MySQL启动参数
 CMD ["--default-authentication-plugin=mysql_native_password", \

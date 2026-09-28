@@ -1,3 +1,7 @@
+-- 【时效声明 2026-09-28 追加】本快照为 Part A（docs/script/sql/update/kb-partA-ddl-draft-20260928.sql）
+-- 之前的 ipd_dev 结构态：agent_info 18 列 / knowledge_info 26 列 / knowledge_fragment 13 列。
+-- 按本快照导入后必须追加执行该 Part A 增量脚本，否则静默缺 12 列、8 索引（不报错）。
+-- 本文件为历史快照，以下 DDL 正文保持原样、不予修改。
 -- MySQL dump 10.13  Distrib 8.0.46, for Linux (aarch64)
 --
 -- Host: host.docker.internal    Database: ipd_dev

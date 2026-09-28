@@ -58,7 +58,7 @@ CREATE TABLE `agent_info`  (
 -- ----------------------------
 -- Records of agent_info
 -- ----------------------------
-INSERT INTO `agent_info` VALUES (1, 0, '对话智能体', '对话智能体', NULL, 2000585866022060033, '0', '你是一个乐于助人的通用 AI 助手，请用简洁、准确的中文回答用户的问题。', '[]', '[\"docx\"]', '[]', '0', '系统初始化的默认智能体，自动绑定首个启用的对话模型', 103, 1, '2026-07-14 16:12:21', 1, '2026-07-14 16:18:04');
+INSERT INTO `agent_info` (`id`, `tenant_id`, `agent_name`, `agent_describe`, `agent_show`, `model_id`, `enable_thinking`, `system_prompt`, `mcp_tool_ids`, `skill_names`, `knowledge_ids`, `status`, `remark`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`) VALUES (1, 0, '对话智能体', '对话智能体', NULL, 2000585866022060033, '0', '你是一个乐于助人的通用 AI 助手，请用简洁、准确的中文回答用户的问题。', '[]', '[\"docx\"]', '[]', '0', '系统初始化的默认智能体，自动绑定首个启用的对话模型', 103, 1, '2026-07-14 16:12:21', 1, '2026-07-14 16:18:04');
 
 -- ----------------------------
 -- Table structure for chat_message

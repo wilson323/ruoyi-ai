@@ -1,10 +1,29 @@
 -- =====================================================================
 -- 文件：kb-partA-ddl-draft-20260928.sql
--- 状态：待 owner 拍板，未 apply，禁止执行。
--- 性质：草案（Part A 最小 DDL 切片）。设计依据见
---       docs/ipd-系统说明/知识库结构与属性最佳实践-20260928.md §6。
--- 纪律：本文件未 apply 前，严禁在 Java 实体/Bo/Vo/Mapper 中加对应字段——
---       真库 Unknown column 会连锁打红全部查询（P2-7.4 前车之鉴）。
+-- 状态：已 apply 到开发库 ipd_dev（2026-09-28 13:54 PDT，EXIT=0）。
+--       回读核验：knowledge_info 5 列 + knowledge_fragment 3 列 + agent_info 3 列
+--       = 12 列，8 索引齐全；默认值落位（存量 1 库 PERSON/INTERNAL、42 员工 INTERNAL，
+--       NULL 违规 0）。运行时零回归：/api/v1/workbench/summary 带 ipd-admin token HTTP 200。
+-- ⚠ 证据更正（2026-09-28 独立 Validator 证伪后修正）：本文件此前将
+--       `bash scripts/check-ddl-applied.sh` EXIT=0 列为对齐证据，**该引用无效**：
+--       该门禁（docs/script/sql/check-entity-db-drift.py）只扫 ruoyi-ipd/domain 实体目录，
+--       而 knowledge_info/knowledge_fragment/agent_info 三表实体全在 ruoyi-chat；且它
+--       只认 `@TableName(value="t")` 形态（这三表用裸 `@TableName("t")`）、只算
+--       「实体有/库缺」单向漂移。所以它对本切片**零证明力**，不得再当作证据引用。
+--       「Java 零感知」的真证据只有一项：全仓 git grep 这 12 个列名（含驼峰变体）
+--       在 *.java/*.xml/*.yml 零命中。门禁覆盖补齐已列为 Part B 前置项。
+--       本文件不改名（保留历史名），后续引用以本行为准。
+-- 性质：Part A 最小 DDL 切片。设计依据见
+--       docs/ipd-系统说明/知识库结构与属性最佳实践-20260928.md §6/§8。
+-- 纪律①：本 DDL 已落库但 Java 实体/Bo/Vo/Mapper 零感知（全仓 grep sensitivity|
+--       scope_type = 0 命中），行为未变；Part B 接线时按最佳实践篇 §8 排期推进。
+-- 纪律②：本 DDL apply 后，禁止在已迁移库上重放基线 docs/script/sql/ruoyi-ai.sql
+--       （基线建表是 Part A 之前的 18 列态）。基线中 agent_info 的裸 INSERT 已改为
+--       显式列名清单，避免列数不匹配 ERROR 1136；fresh install 顺序=先基线后增量。
+--       fresh-install 三通道已同日补齐：docs/script/sql/README.md 「全新安装」段、
+--       docs/docker/ruoyi-ai/Dockerfile.mysql（新增 03-kb-partA.sql）、同目录 compose 挂载；
+--       docs/script/sql/schema/schema-snapshot-2026-09-09.sql 已标 Part A 前态，
+--       生产部署 Runbook 已强制「快照导入后必跟 Part A」。
 -- 语法：MySQL 8。全部 ALTER 加列均带默认值或 NULL，向后兼容，可安全回滚
 --       （回滚=DROP COLUMN，见配套文档 §7 风险与回滚）。
 -- =====================================================================
@@ -70,7 +89,7 @@ ALTER TABLE `agent_info`
     ADD INDEX `idx_agent_project`      (`project_id`);
 
 -- =====================================================================
--- 回滚草案（仅当 owner 拍板 apply 后需要回撤时使用；未 apply 则无需回滚）
+-- 回滚（已 apply 后如需回撤；列均带默认值/NULL，回滚窗口内应用侧零依赖）
 -- ALTER TABLE `knowledge_info`    DROP COLUMN `scope_type`, DROP COLUMN `group_id`,
 --     DROP COLUMN `project_id`, DROP COLUMN `owner_agent_id`, DROP COLUMN `sensitivity`;
 -- ALTER TABLE `knowledge_fragment` DROP COLUMN `embedding_model`,
