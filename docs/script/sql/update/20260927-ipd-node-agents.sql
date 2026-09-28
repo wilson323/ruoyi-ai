@@ -1,8 +1,8 @@
 -- =====================================================================
--- R236（2026-09-27）：IPD 生命周期节点智能体种子数据（agent_info，41 行；R232-LC03 让出 LC03 后 42→41）
+-- R236（2026-09-27）：IPD 生命周期节点智能体种子数据（agent_info，40 行；R232-LC03/LC04 让出 LC03、LC04 后 42→41→40）
 -- =====================================================================
 -- 【用途】
---   为 IPD 69 码生命周期动作中「真正消费 system_prompt」的 41 个节点建立智能体身份行。
+--   为 IPD 69 码生命周期动作中「真正消费 system_prompt」的 40 个节点建立智能体身份行。
 --   命名约定即映射（契约 §1 裁决 B）：agent_name = 'IPD-<动作码>'，代码侧由
 --   NodeAgentResolver 经 IAgentService.queryEnabledOptions() 解析，无映射表、无 system_configs 键。
 --   改名即静默解绑 —— 本文件的 agent_name 字面量是代码侧解析契约，不得改写。
@@ -14,27 +14,29 @@
 --     §5 69 码接线矩阵（动作名/阶段/execMode/深度/责任角色/Gate/valueFields/执行器归属）
 --   码集交叉核对：ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java（69 行，已逐码比对一致）
 --
--- 【41 行的筛选口径】（不是 69 行！）
+-- 【40 行的筛选口径】（不是 69 行！）
 --   只有真正调用 LLM 消费 system_prompt 的节点才建行。按 §5 矩阵「执行器归属」列筛选：
 --     GenerateExecutor(既有)      1 码：C01
 --     GenerateExecutor(扩展)     23 码：C02 C03 C04 C05 C06 C12 P01 P03 P04 P05 P06 P07 P11
 --                                      D01 D04 D06 V06 V07 V08 L01 L03 L04 LC08
---     AgentEvidenceExecutor(新增) 17 码：C07 C09 C10 P02 P12 V03 V09 V10 V11 V12 L02
---                                      L06 LC01 LC04 LC05 LC07 LC09
---     合计 1 + 23 + 17 = 41 码 ✓（R232-LC03：LC03 让出 LLM 证据路径，改由
---       Lc03SettlementReconcileExecutor 确定性对账接管，零 LLM 不建行，编号重排为 41 行制）
+--     AgentEvidenceExecutor(新增) 16 码：C07 C09 C10 P02 P12 V03 V09 V10 V11 V12 L02
+--                                      L06 LC01 LC05 LC07 LC09
+--     合计 1 + 23 + 16 = 40 码 ✓（R232-LC03：LC03 让出 LLM 证据路径，改由
+--       Lc03SettlementReconcileExecutor 确定性对账接管，零 LLM 不建行；R232-LC04：
+--       LC04 同样让出，改由 Lc04ContributionReconcileExecutor 确定性对账接管，零 LLM 不建行）
 --   ⚠ V11 归属修正（契约 §7 B3）：V11 在 ActionCatalog.expectedDepth 下随模板变深度
 --     （SOLUTION → DEEP），而 StageActionService 按**实例** depth 判定、DEEP 强制 ≥1 交付物
 --     （BR-IPD-03）。归零 LLM 的 LightDirectExecutor 会让 SOLUTION 项目该动作必死于校验 →
 --     退避 → DEAD，故移入 AgentEvidenceExecutor 并为其建行。
---   明确排除（28 码，执行器为确定性逻辑、零 LLM 调用，建行即装饰性假配置）：
+--   明确排除（29 码，执行器为确定性逻辑、零 LLM 调用，建行即装饰性假配置）：
 --     LightDirectExecutor(*)          14 码：P08 P09 P10 D02 D03 D07 D08 D09 D10 V01 V04 V05 L05 LC06
 --     DeepDirectExecutor(*)            4 码：C08 D11 V02 L08（矩阵中 D11/V02/L08 标注 ValueFieldDirectExecutor，
 --                                           契约 §1 裁决 C 已收敛为 DeepDirectExecutor 数据化泛化，同一行为族）
 --     GatePrepExecutor(*)              5 码：C11 P13 D05 L07 LC02（HUMAN_GATE，否决项绝不代判）
 --     KpiSharedReconcileExecutor       4 码：K01 K02 K03 K04（兄弟车道 R232-W14，本轮不碰）
 --     Lc03SettlementReconcileExecutor  1 码：LC03（R232-LC03 终算对账接管，stored vs 公式复算，零 LLM）
---     41 + 14 + 4 + 5 + 4 + 1 = 69 ✓
+--     Lc04ContributionReconcileExecutor 1 码：LC04（R232-LC04 贡献度评定对账接管，stored vs 公式复算，零 LLM）
+--     40 + 14 + 4 + 5 + 4 + 1 + 1 = 69 ✓
 --
 -- 【列名依据（未猜列名）】
 --   docs/script/sql/ruoyi-ai.sql L34-L56 CREATE TABLE `agent_info`，实际 18 列：
@@ -496,18 +498,7 @@ NULL, NULL, NULL, '0', 'LC01 上市后销售与回款跟踪（R236 节点智能�
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM agent_info WHERE agent_name = 'IPD-LC01');
 
--- ---------- 37/41  IPD-LC04 ｜ 双PM贡献度评定 ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ BOTH ｜ AgentEvidenceExecutor(新增) ----------
-INSERT INTO agent_info (tenant_id, agent_name, agent_describe, model_id, enable_thinking, system_prompt, mcp_tool_ids, skill_names, knowledge_ids, status, remark, create_dept, create_by, create_time)
-SELECT 0, 'IPD-LC04', 'IPD 生命周期阶段（LIFECYCLE）· LC04 双PM贡献度评定 · 双PM共担（BOTH）· AI_DIRECT/DEEP · 证据文档型 · R236 节点智能体', 2096619236821577729, '0',
-'【角色与任务】你是 IPD 生命周期阶段（LIFECYCLE）节点智能体 IPD-LC04，服务动作「双PM贡献度评定」，责任角色为 BOTH（市场PM 与研发PM 共担），执行模式 AI_DIRECT、深度 DEEP，由 AgentEvidenceExecutor 调用并挂为交付物。任务：**只做事实归集，不做价值评判**——把两个角色在项目全程的可核验工作事实按维度整理成证据文档，供评定人（产品组长或上级）判断；贡献度比例、评分与排名一律由人决定。
-【输出格式】Markdown：1.评定范围与依据声明（项目名称与周期、评定维度来源于公司 IPD 双 PM 职责定义并标注出处）；2.**客观事实清单（市场侧）**（需求与定位产出、竞品与细分工作、渠道与 GTM 推进、上市执行、回款与达成，每条事实标注证据载体）；3.**客观事实清单（研发侧）**（方案与设计交付、进度与里程碑达成、质量与缺陷情况、成本控制、认证与技术攻关，每条事实标注证据载体）；4.过程协作事实（跨角色协同事例、变更处理、风险应对、冲突解决，注明时间与载体）；5.事实层面的差异与争议点（只陈述分歧，不作价值评判，不指责任何一方）；6.待补充证据清单（缺哪类事实、由谁提供）；7.评定程序说明（谁评定、依据什么流程、当事人是否需陈述与申辩、结果如何反馈）。
-【证据要求】DEEP：每条事实必须挂可核验载体（动作码 + 交付物或文档编号 + 记录日期 + 人判记录编号），无载体的传闻、印象与口头评价一律不写入；严格区分〔事实〕与〔他人评价〕两类标签并分别标注来源；引用系统记录须说明来源（哪个页面或哪张表）；对双方采用**完全一致的证据标准**，不得一方给事实另一方给形容；涉及个人的内容限于工作事实。
-【禁止事项】**禁止输出贡献度比例、评分、排名、权重分配或「谁贡献更大 / 谁应负责」的结论**（评定权在人）；禁止编造事实、文档编号、日期与他人评价；禁止输出「已评定 / 已签署 / 结果已确认」等代替人判的结论；禁止对 G5 复盘要素表态；**禁止涉及与工作无关的个人隐私、健康状况、薪酬数额、人际关系与性格评价**；禁止使用贬损性或倾向性措辞；禁止将任何数值作为 recordFields 落库来源；禁止泄漏 apiKey。',
-NULL, NULL, NULL, '0', 'LC04 双PM贡献度评定（R236 节点智能体）', 103, 1, NOW()
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM agent_info WHERE agent_name = 'IPD-LC04');
-
--- ---------- 38/41  IPD-LC05 ｜ 客户反馈与质量问题处理 ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ MARKET_PM ｜ AgentEvidenceExecutor(新增) ----------
+-- ---------- 37/40  IPD-LC05 ｜ 客户反馈与质量问题处理 ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ MARKET_PM ｜ AgentEvidenceExecutor(新增) ----------
 INSERT INTO agent_info (tenant_id, agent_name, agent_describe, model_id, enable_thinking, system_prompt, mcp_tool_ids, skill_names, knowledge_ids, status, remark, create_dept, create_by, create_time)
 SELECT 0, 'IPD-LC05', 'IPD 生命周期阶段（LIFECYCLE）· LC05 客户反馈与质量问题处理 · 市场PM · AI_DIRECT/DEEP · 证据文档型 · R236 节点智能体', 2096619236821577729, '0',
 '【角色与任务】你是 IPD 生命周期阶段（LIFECYCLE）节点智能体 IPD-LC05，服务动作「客户反馈与质量问题处理」，责任角色为市场PM（MARKET_PM），执行模式 AI_DIRECT、深度 DEEP，由 AgentEvidenceExecutor 调用并挂为交付物（BR-IPD-03）。任务：产出**质量问题的归集、分级与根因分析证据文档**，把涉及安全与批次风险的项显式置顶；是否召回、是否上报监管、问题是否关闭，全部由人决定。
@@ -518,7 +509,7 @@ NULL, NULL, NULL, '0', 'LC05 客户反馈与质量问题处理（R236 节点智�
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM agent_info WHERE agent_name = 'IPD-LC05');
 
--- ---------- 39/41  IPD-LC07 ｜ 生命周期状态维护 ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ MARKET_PM ｜ AgentEvidenceExecutor(新增) ----------
+-- ---------- 38/40  IPD-LC07 ｜ 生命周期状态维护 ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ MARKET_PM ｜ AgentEvidenceExecutor(新增) ----------
 INSERT INTO agent_info (tenant_id, agent_name, agent_describe, model_id, enable_thinking, system_prompt, mcp_tool_ids, skill_names, knowledge_ids, status, remark, create_dept, create_by, create_time)
 SELECT 0, 'IPD-LC07', 'IPD 生命周期阶段（LIFECYCLE）· LC07 生命周期状态维护 · 市场PM · AI_DIRECT/DEEP · 证据文档型 · R236 节点智能体', 2096619236821577729, '0',
 '【角色与任务】你是 IPD 生命周期阶段（LIFECYCLE）节点智能体 IPD-LC07，服务动作「生命周期状态维护」，责任角色为市场PM（MARKET_PM），执行模式 AI_DIRECT、深度 DEEP，由 AgentEvidenceExecutor 调用并挂为交付物。任务：产出**状态判定的依据文档**——先定义状态口径，再用可核验数据说明当前处于哪个状态、建议迁移到哪里、迁移会带来什么影响；状态的实际变更由人确认后执行。
@@ -529,7 +520,7 @@ NULL, NULL, NULL, '0', 'LC07 生命周期状态维护（R236 节点智能体）'
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM agent_info WHERE agent_name = 'IPD-LC07');
 
--- ---------- 40/41  IPD-LC08 ｜ 停产评估与公告 ｜ LIFECYCLE ｜ AI_GENERATE·DEEP ｜ MARKET_PM ｜ GenerateExecutor(扩展) ----------
+-- ---------- 39/40  IPD-LC08 ｜ 停产评估与公告 ｜ LIFECYCLE ｜ AI_GENERATE·DEEP ｜ MARKET_PM ｜ GenerateExecutor(扩展) ----------
 INSERT INTO agent_info (tenant_id, agent_name, agent_describe, model_id, enable_thinking, system_prompt, mcp_tool_ids, skill_names, knowledge_ids, status, remark, create_dept, create_by, create_time)
 SELECT 0, 'IPD-LC08', 'IPD 生命周期阶段（LIFECYCLE）· LC08 停产评估与公告 · 市场PM · AI_GENERATE/DEEP · R236 节点智能体', 2096619236821577729, '0',
 '【角色与任务】你是 IPD 生命周期阶段（LIFECYCLE）节点智能体 IPD-LC08，服务动作「停产评估与公告」，责任角色为市场PM（MARKET_PM），执行模式 AI_GENERATE、深度 DEEP。任务：产出**停产评估报告草稿 + EOL 对外公告草稿**（含关键时间节点建议），供市场PM、法务与业务负责人人审；停产决定、时间节点确认与公告发布全部由人执行，你的公告文本必须始终带草稿标注。
@@ -540,7 +531,7 @@ NULL, NULL, NULL, '0', 'LC08 停产评估与公告（R236 节点智能体）', 1
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM agent_info WHERE agent_name = 'IPD-LC08');
 
--- ---------- 41/41  IPD-LC09 ｜ 项目归档(系统自动,业务责任产品组长) ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ GROUP_LEADER ｜ AgentEvidenceExecutor(新增) ----------
+-- ---------- 40/40  IPD-LC09 ｜ 项目归档(系统自动,业务责任产品组长) ｜ LIFECYCLE ｜ AI_DIRECT·DEEP ｜ GROUP_LEADER ｜ AgentEvidenceExecutor(新增) ----------
 INSERT INTO agent_info (tenant_id, agent_name, agent_describe, model_id, enable_thinking, system_prompt, mcp_tool_ids, skill_names, knowledge_ids, status, remark, create_dept, create_by, create_time)
 SELECT 0, 'IPD-LC09', 'IPD 生命周期阶段（LIFECYCLE）· LC09 项目归档（系统自动触发，业务责任产品组长）· GROUP_LEADER · AI_DIRECT/DEEP · 证据文档型 · R236 节点智能体', 2096619236821577729, '0',
 '【角色与任务】你是 IPD 生命周期阶段（LIFECYCLE）节点智能体 IPD-LC09，服务动作「项目归档(系统自动,业务责任产品组长)」，业务责任角色为产品组长（GROUP_LEADER），执行由系统自动触发（无登录态、无自然人当次确认），执行模式 AI_DIRECT、深度 DEEP，由 AgentEvidenceExecutor 调用并挂为交付物。任务：产出**归档完备性证据文档**——盘点全生命周期动作与交付物是否齐备、人判记录是否可追溯，并把经验教训沉淀为可复用资产；归档的最终确认与资料处置由产品组长决定。
@@ -586,7 +577,7 @@ SELECT id, agent_name, model_id, status, update_time
 FROM agent_info
 WHERE agent_name NOT LIKE 'IPD-%';
 
--- ⑥ 缺码定位：把 41 个应有码列出（R232-LC03 让出 LC03 后 42→41），与库内实际比对（差集即缺失行）
+-- ⑥ 缺码定位：把 40 个应有码列出（R232-LC03/LC04 让出后 42→41→40），与库内实际比对（差集即缺失行）
 SELECT c.code AS missing_code
 FROM (
   SELECT 'IPD-C01' AS code UNION ALL SELECT 'IPD-C02' UNION ALL SELECT 'IPD-C03' UNION ALL
@@ -602,13 +593,13 @@ FROM (
   SELECT 'IPD-V12' UNION ALL SELECT 'IPD-L01' UNION ALL
   SELECT 'IPD-L02' UNION ALL SELECT 'IPD-L03' UNION ALL SELECT 'IPD-L04' UNION ALL
   SELECT 'IPD-L06' UNION ALL SELECT 'IPD-LC01' UNION ALL
-  SELECT 'IPD-LC04' UNION ALL SELECT 'IPD-LC05' UNION ALL SELECT 'IPD-LC07' UNION ALL
+  SELECT 'IPD-LC05' UNION ALL SELECT 'IPD-LC07' UNION ALL
   SELECT 'IPD-LC08' UNION ALL SELECT 'IPD-LC09'
 ) c
 LEFT JOIN agent_info a ON a.agent_name = c.code
 WHERE a.id IS NULL;
 
--- ⑦ 反向越界自查：库内不应出现被排除的 28 码（LightDirect 14 + DeepDirect 4 + GatePrep 5 + Kpi 4 + Lc03 对账 1）
+-- ⑦ 反向越界自查：库内不应出现被排除的 29 码（LightDirect 14 + DeepDirect 4 + GatePrep 5 + Kpi 4 + Lc03 对账 1 + Lc04 对账 1）
 --    若本查询返回任何行，说明有人误加了确定性执行器的装饰性智能体行，应删除
 SELECT agent_name AS should_not_exist
 FROM agent_info
@@ -617,7 +608,7 @@ WHERE agent_name IN (
   'IPD-V01','IPD-V04','IPD-V05','IPD-L05','IPD-LC06',
   'IPD-C08','IPD-D11','IPD-V02','IPD-L08',
   'IPD-C11','IPD-P13','IPD-D05','IPD-L07','IPD-LC02',
-  'IPD-K01','IPD-K02','IPD-K03','IPD-K04','IPD-LC03'
+  'IPD-K01','IPD-K02','IPD-K03','IPD-K04','IPD-LC03','IPD-LC04'
 );
 
 -- =====================================================================

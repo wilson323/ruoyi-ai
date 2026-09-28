@@ -64,6 +64,7 @@ class ExecutorCoverageSentinelTest {
             new GatePrepExecutor(null, null, null, null, null, null),
             new KpiSharedReconcileExecutor(null, null, null, null),
             new Lc03SettlementReconcileExecutor(null, null, null, null),
+            new Lc04ContributionReconcileExecutor(null, null, null, null),
             new AgentEvidenceExecutor(null, null, null, null));
     }
 
@@ -214,8 +215,9 @@ class ExecutorCoverageSentinelTest {
     void scheduleWiredCodesExcludeFillTableAndHumanGate() {
         AiExecutionEngine engine = new AiExecutionEngine(null, executors(), null, null);
         assertThat(engine.wiredActionCodes()).isEqualTo(WIRED);
-        // R236 排除面：AgentEvidence 17（LLM 产物即 DONE 门禁证据，无独立人审环节 → 仅 PASSIVE 人触发，契约 §7 B4）、
+        // R236 排除面：AgentEvidence 16（LLM 产物即 DONE 门禁证据，无独立人审环节 → 仅 PASSIVE 人触发，契约 §7 B4）、
         // DeepDirect 4（需人确认对话填表载荷）、Kpi 4（防调度每日堆台账）、Lc03 对账 1（同 Kpi，防调度堆台账）、
+        // Lc04 对账 1（同 Lc03，防调度堆台账）、
         // GatePrep 5（HUMAN_GATE）；
         // 只剩 GenerateExecutor 24（草稿待人审，日级 dedup 通知）+ LightDirectExecutor 14（纯确定性）。
         Set<String> expected = union(GenerateExecutor.CODES, LightDirectExecutor.CODES);

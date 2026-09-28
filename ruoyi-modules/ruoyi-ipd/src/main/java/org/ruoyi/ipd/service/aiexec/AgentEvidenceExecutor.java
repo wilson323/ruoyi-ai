@@ -51,10 +51,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AgentEvidenceExecutor implements AiActionExecutor {
 
-    /** 17 码（契约 §7.3，R232-LC03 让出 LC03 后）：AI_DIRECT ∧ DEEP ∧ 无 valueFields，含动态深度码 V11。 */
+    /** 16 码（契约 §7.3，R232-LC03 让出 LC03、R232-LC04 让出 LC04 后）：AI_DIRECT ∧ DEEP ∧ 无 valueFields，含动态深度码 V11。 */
     static final Set<String> CODES = Set.of(
         "C07", "C09", "C10", "P02", "P12", "V03", "V09", "V10",
-        "V11", "V12", "L02", "L06", "LC01", "LC04", "LC05",
+        "V11", "V12", "L02", "L06", "LC01", "LC05",
         "LC07", "LC09");
 
     private final StageActionService stageActionService;

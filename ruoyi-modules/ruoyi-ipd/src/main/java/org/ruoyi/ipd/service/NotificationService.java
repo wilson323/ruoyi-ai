@@ -115,6 +115,8 @@ public class NotificationService implements INotificationService {
         public static final String KPI_RECONCILE_LEDGER = "KPI_RECONCILE_LEDGER";
         /** R232-LC03：上市后6个月终算对账台账产出，知会产品组长真人复核（ACTION，奖金池金额与分配由人决定） */
         public static final String SETTLEMENT_RECONCILE_LEDGER = "SETTLEMENT_RECONCILE_LEDGER";
+        /** R232-LC04：双PM贡献度评定对账台账产出，知会产品组长真人复核（ACTION，评定与分配由 G5 真人签署链决定） */
+        public static final String CONTRIBUTION_RECONCILE_LEDGER = "CONTRIBUTION_RECONCILE_LEDGER";
         /** MEDIUM-1.3：Gate 列席人员邀请通知 */
         public static final String GATE_OBSERVER_INVITED = "GATE_OBSERVER_INVITED";
         /** R221 AI 备料完成待办（GenerateExecutor 草稿就绪 / GatePrepExecutor 评审材料就绪）——收编原字面量 */
