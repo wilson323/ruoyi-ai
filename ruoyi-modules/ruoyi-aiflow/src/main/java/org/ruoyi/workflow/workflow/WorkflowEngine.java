@@ -2,6 +2,7 @@ package org.ruoyi.workflow.workflow;
 
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bsc.async.AsyncGenerator;
 import org.bsc.langgraph4j.*;
-import org.bsc.langgraph4j.checkpoint.MemorySaver;
+import org.bsc.langgraph4j.GraphInput;
 import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
 import org.bsc.langgraph4j.state.AgentState;
 import org.bsc.langgraph4j.state.StateSnapshot;
@@ -19,6 +20,7 @@ import org.ruoyi.common.chat.entity.User;
 import org.ruoyi.common.chat.enums.ErrorEnum;
 import org.ruoyi.common.core.exception.base.BaseException;
 import org.ruoyi.workflow.base.NodeInputConfigTypeHandler;
+import org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeNodeDto;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeResp;
 import org.ruoyi.workflow.entity.*;
@@ -32,6 +34,7 @@ import org.ruoyi.workflow.workflow.def.WfNodeIO;
 import org.ruoyi.workflow.workflow.def.WfNodeParamRef;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
 import org.ruoyi.workflow.workflow.node.enmus.NodeMessageTemplateEnum;
+import org.springframework.beans.BeanUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
@@ -50,6 +53,7 @@ public class WorkflowEngine {
     private final SSEEmitterHelper sseEmitterHelper;
     private final WorkflowRuntimeService workflowRuntimeService;
     private final WorkflowRuntimeNodeService workflowRuntimeNodeService;
+    private final JdbcCheckpointSaver checkpointSaver;
     @Getter
     private CompiledGraph<WfNodeState> app;
     @Setter
@@ -66,7 +70,8 @@ public class WorkflowEngine {
             List<WorkflowNode> nodes,
             List<WorkflowEdge> wfEdges,
             WorkflowRuntimeService workflowRuntimeService,
-            WorkflowRuntimeNodeService workflowRuntimeNodeService) {
+            WorkflowRuntimeNodeService workflowRuntimeNodeService,
+            JdbcCheckpointSaver checkpointSaver) {
         this.workflow = workflow;
         this.sseEmitterHelper = sseEmitterHelper;
         this.components = components;
@@ -74,6 +79,7 @@ public class WorkflowEngine {
         this.wfEdges = wfEdges;
         this.workflowRuntimeService = workflowRuntimeService;
         this.workflowRuntimeNodeService = workflowRuntimeNodeService;
+        this.checkpointSaver = checkpointSaver;
     }
 
     public void run(User user, List<ObjectNode> userInputs, SseEmitter sseEmitter, Long userId, String tokenValue, Long sessionId) {
@@ -106,20 +112,20 @@ public class WorkflowEngine {
                     this.wfState);
             StateGraph<WfNodeState> mainStateGraph = graphBuilder.build(startNode);
 
-            MemorySaver saver = new MemorySaver();
-            CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver)
+            CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(checkpointSaver)
                     .build();
             app = mainStateGraph.compile(compileConfig);
-            RunnableConfig invokeConfig = RunnableConfig.builder().build();
-            exe(invokeConfig);
+            // checkpoint 落库按 thread_id 隔离，必须传 runtime 实例 uuid，否则不同实例 checkpoint 串到 $default 桶
+            RunnableConfig invokeConfig = RunnableConfig.builder().threadId(runtimeUuid).build();
+            exe(invokeConfig, GraphInput.args(Map.of()));
         } catch (Exception e) {
             errorWhenExe(e);
         }
     }
 
-    private void exe(RunnableConfig invokeConfig) {
+    private void exe(RunnableConfig invokeConfig, GraphInput graphInput) {
         //不使用langgraph4j state的update相关方法，无需传入input
-        AsyncGenerator<NodeOutput<WfNodeState>> outputs = app.stream(Map.of(), invokeConfig);
+        AsyncGenerator<NodeOutput<WfNodeState>> outputs = app.stream(graphInput, invokeConfig);
         streamingResult(wfState, outputs, sseEmitter);
 
         StateSnapshot<WfNodeState> stateSnapshot = app.getState(invokeConfig);
@@ -128,9 +134,15 @@ public class WorkflowEngine {
         wfNodes.stream().filter(item -> stateSnapshot.node().equals(item.getUuid()))
             .findFirst().ifPresent(wfNode -> {
                 String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.END.getValue());
-                WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, wfNode, nodeMessageTemplate);
+                if (null != sseEmitter) {
+                    WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, wfNode, nodeMessageTemplate);
+                } else {
+                    WorkflowMessageUtil.saveWorkflowMessage(wfState, nodeMessageTemplate);
+                }
         });
-        sseEmitterHelper.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
+        if (null != sseEmitter) {
+            sseEmitterHelper.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
+        }
     }
 
     private void errorWhenExe(Exception e) {
@@ -143,7 +155,9 @@ public class WorkflowEngine {
         errorMsg = nodeMessageTemplate + (errorMsg != null ? errorMsg : e.getClass().getSimpleName());
         // 保存会话信息且发送驱动消息事件
         WorkflowMessageUtil.saveWorkflowMessage(wfState, errorMsg);
-        sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
+        if (null != sseEmitter) {
+            sseEmitterHelper.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
+        }
         workflowRuntimeService.updateStatus(wfRuntimeResp.getId(), WORKFLOW_PROCESS_STATUS_FAIL, errorMsg);
     }
 
@@ -156,7 +170,7 @@ public class WorkflowEngine {
             WfRuntimeNodeDto runtimeNodeDto = workflowRuntimeNodeService.createByState(user, wfNode.getId(), wfRuntimeResp.getId(), nodeState);
             wfState.getRuntimeNodes().add(runtimeNodeDto);
 
-            SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_RUN_" + wfNode.getUuid() + "]", JsonUtil.toJson(runtimeNodeDto));
+            sendPartialIfConnected("[NODE_RUN_" + wfNode.getUuid() + "]", JsonUtil.toJson(runtimeNodeDto));
 
             NodeProcessResult processResult = abstractWfNode.process((is) -> {
                 workflowRuntimeNodeService.updateInput(runtimeNodeDto.getId(), nodeState);
@@ -168,7 +182,7 @@ public class WorkflowEngine {
                     if (CollUtil.isNotEmpty(refInputs) && "input".equals(input.getName())) {
                         continue;
                     }
-                    SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_INPUT_" + wfNode.getUuid() + "]", JsonUtil.toJson(input));
+                    sendPartialIfConnected("[NODE_INPUT_" + wfNode.getUuid() + "]", JsonUtil.toJson(input));
                 }
             }, (is) -> {
                 //并行节点内部的节点执行结束后，需要主动向客户端发送输出结果
@@ -177,7 +191,7 @@ public class WorkflowEngine {
                 List<NodeIOData> nodeOutputs = nodeState.getOutputs();
                 for (NodeIOData output : nodeOutputs) {
                     log.info("callback node:{},output:{}", nodeUuid, output.getContent());
-                    SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_OUTPUT_" + nodeUuid + "]", JsonUtil.toJson(output));
+                    sendPartialIfConnected("[NODE_OUTPUT_" + nodeUuid + "]", JsonUtil.toJson(output));
                 }
             });
             if (StringUtils.isNotBlank(processResult.getNextNodeUuid())) {
@@ -209,7 +223,7 @@ public class WorkflowEngine {
                 String node = streamingOutput.node();
                 String chunk = streamingOutput.chunk();
                 log.info("node:{},chunk:{}", node, chunk);
-                SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, "[NODE_CHUNK_" + node + "]", chunk);
+                sendPartialIfConnected("[NODE_CHUNK_" + node + "]", chunk);
             } else {
                 // __END__ 是 langgraph4j 的终止伪节点, 无对应业务节点状态, 跳过
                 if (END.equals(out.node())) {
@@ -270,6 +284,118 @@ public class WorkflowEngine {
             }
         }
         return wfInputs;
+    }
+
+    /**
+     * 僵尸实例断点续跑（补遗 §5-5 D1）：给定 runtime 实例 uuid（= checkpoint thread_id），
+     * 从该 thread 最新 checkpoint 的 nextNodeId 恢复执行；已完成节点按 t_workflow_runtime_node 留痕
+     * 重建上游上下文（completedNodes），供续跑节点 initInput/getLatestOutputs 引用。
+     * <p>
+     * sseEmitter 可为 null（进程重启后无 SSE 连接）：跳过实时推送，结果照常落库。
+     */
+    public void resume(User user, WorkflowRuntime runtime, SseEmitter sseEmitter, Long userId, String tokenValue, Long sessionId) {
+        this.user = user;
+        this.sseEmitter = sseEmitter;
+        String runtimeUuid = runtime.getUuid();
+        this.wfRuntimeResp = new WfRuntimeResp();
+        BeanUtils.copyProperties(runtime, this.wfRuntimeResp);
+        log.info("WorkflowEngine resume,runtimeUuid:{},workflowId:{}", runtimeUuid, runtime.getWorkflowId());
+        try {
+            Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
+            WorkflowNode startNode = startAndEnds.getLeft();
+            this.wfState = new WfState(user, rebuildNodeIOData(runtime.getInput()), runtimeUuid, userId, tokenValue, sseEmitter, sessionId);
+            rebuildCompletedNodes(runtime.getId());
+            workflowRuntimeService.updateStatus(runtime.getId(), WORKFLOW_PROCESS_STATUS_DOING, "");
+
+            WorkflowGraphBuilder graphBuilder = new WorkflowGraphBuilder(
+                    components,
+                    wfNodes,
+                    wfEdges,
+                    this::runNode,
+                    this.wfState);
+            StateGraph<WfNodeState> mainStateGraph = graphBuilder.build(startNode);
+
+            CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(checkpointSaver)
+                    .build();
+            app = mainStateGraph.compile(compileConfig);
+            RunnableConfig invokeConfig = RunnableConfig.builder().threadId(runtimeUuid).build();
+            // GraphInput.resume()：有 checkpoint 时从最新断点（nextNodeId）继续；
+            // 注意 stream(Map) 是 GraphArgs 全新执行（从 START 重跑），不能用于续跑
+            exe(invokeConfig, GraphInput.resume());
+        } catch (Exception e) {
+            errorWhenExe(e);
+        }
+    }
+
+    /**
+     * SSE 推送（sseEmitter 可为 null：断点续跑无 SSE 连接时跳过推送，不影响落库）
+     */
+    private void sendPartialIfConnected(String name, String content) {
+        if (null != sseEmitter) {
+            SSEEmitterHelper.parseAndSendPartialMsg(sseEmitter, name, content);
+        }
+    }
+
+    /**
+     * 从落库 JSON（{参数名: content} 形态，见 WorkflowRuntimeService.updateInput/updateOutput）重建 NodeIOData 列表
+     */
+    private List<NodeIOData> rebuildNodeIOData(String ioJson) {
+        List<NodeIOData> result = new ArrayList<>();
+        if (StringUtils.isBlank(ioJson)) {
+            return result;
+        }
+        JsonNode root = JsonUtil.toJsonNode(ioJson);
+        if (!(root instanceof ObjectNode objectNode)) {
+            return result;
+        }
+        Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            ObjectNode wrapper = JsonUtil.createObjectNode();
+            wrapper.put("name", entry.getKey());
+            wrapper.set("content", entry.getValue());
+            NodeIOData nodeIOData = WfNodeIODataUtil.createNodeIOData(wrapper);
+            if (null != nodeIOData) {
+                result.add(nodeIOData);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 从 t_workflow_runtime_node 留痕重建已完成节点（completedNodes），
+     * 恢复上游输出供续跑节点引用
+     */
+    private void rebuildCompletedNodes(Long runtimeId) {
+        List<WorkflowRuntimeNode> runtimeNodes = workflowRuntimeNodeService.lambdaQuery()
+                .eq(WorkflowRuntimeNode::getWorkflowRuntimeId, runtimeId)
+                .eq(WorkflowRuntimeNode::getIsDeleted, false)
+                .orderByAsc(WorkflowRuntimeNode::getId)
+                .list();
+        for (WorkflowRuntimeNode runtimeNode : runtimeNodes) {
+            if (!Integer.valueOf(NODE_PROCESS_STATUS_SUCCESS).equals(runtimeNode.getStatus())) {
+                continue;
+            }
+            WorkflowNode wfNode = wfNodes.stream()
+                    .filter(item -> item.getId().equals(runtimeNode.getNodeId())).findFirst().orElse(null);
+            if (null == wfNode) {
+                log.warn("Can not find workflow node by runtime node,nodeId:{}", runtimeNode.getNodeId());
+                continue;
+            }
+            WorkflowComponent wfComponent = components.stream()
+                    .filter(item -> item.getId().equals(wfNode.getWorkflowComponentId())).findFirst().orElse(null);
+            if (null == wfComponent) {
+                log.warn("Can not find workflow component,componentId:{}", wfNode.getWorkflowComponentId());
+                continue;
+            }
+            WfNodeState nodeState = new WfNodeState();
+            nodeState.setUuid(runtimeNode.getUuid());
+            nodeState.setProcessStatus(runtimeNode.getStatus());
+            nodeState.getInputs().addAll(rebuildNodeIOData(runtimeNode.getInput()));
+            nodeState.getOutputs().addAll(rebuildNodeIOData(runtimeNode.getOutput()));
+            wfState.getCompletedNodes().add(WfNodeFactory.create(wfComponent, wfNode, wfState, nodeState));
+            wfState.setOutput(nodeState.getOutputs());
+        }
     }
 
     /**

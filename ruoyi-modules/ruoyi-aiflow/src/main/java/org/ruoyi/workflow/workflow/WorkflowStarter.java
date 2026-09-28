@@ -12,6 +12,7 @@ import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.workflow.entity.*;
 import org.ruoyi.workflow.helper.SSEEmitterHelper;
 import org.ruoyi.workflow.service.*;
+import org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,9 @@ public class WorkflowStarter implements IWorkFlowStarterService {
 
     @Resource
     private SSEEmitterHelper sseEmitterHelper;
+
+    @Resource
+    private JdbcCheckpointSaver jdbcCheckpointSaver;
 
     @Resource
     private SseEmitterManager sseEmitterManager;
@@ -96,8 +100,52 @@ public class WorkflowStarter implements IWorkFlowStarterService {
                     .list();
             WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
                     sseEmitterHelper, components, nodes, edges,
-                    workflowRuntimeService, workflowRuntimeNodeService);
+                    workflowRuntimeService, workflowRuntimeNodeService, jdbcCheckpointSaver);
             workflowEngine.run(user, userInputs, sseEmitter, userId, tokenValue, sessionId);
+        } finally {
+            TenantHelper.clearDynamic();
+        }
+    }
+
+    /**
+     * 僵尸实例断点续跑入口（补遗 §5-5 D1）：给定 runtime 实例 uuid，从该 thread 最新 checkpoint 恢复执行。
+     * <p>
+     * 与 {@link #streaming} 不同：不新建实例、不校验用户输入（输入沿用原实例落库 input）。
+     * sseEmitter 可传 null（进程重启后无 SSE 连接）：跳过实时推送，结果照常落库。
+     * 配套处置入口见 {@code WorkflowRuntimeService#failZombieDoingRuntimes}。
+     */
+    public void resumeRuntime(String runtimeUuid, User user, SseEmitter sseEmitter, Long userId, String tokenValue,
+                              Long sessionId, String tenantId) {
+        // @Async/运维线程无租户上下文时显式设置（与 asyncRun 同因）
+        if (tenantId != null) {
+            TenantHelper.setDynamic(tenantId);
+        }
+        try {
+            WorkflowRuntime runtime = workflowRuntimeService.getByUuidForResume(runtimeUuid);
+            if (null == runtime) {
+                log.error("工作流实例不存在,runtimeUuid:{}", runtimeUuid);
+                return;
+            }
+            Workflow workflow = workflowService.getById(runtime.getWorkflowId());
+            if (null == workflow) {
+                log.error("工作流定义不存在,workflowId:{}", runtime.getWorkflowId());
+                return;
+            }
+            List<WorkflowComponent> components = workflowComponentService.getAllEnable();
+            List<WorkflowNode> nodes = workflowNodeService.lambdaQuery()
+                    .eq(WorkflowNode::getWorkflowId, workflow.getId())
+                    .eq(WorkflowNode::getIsDeleted, false)
+                    .list();
+            List<WorkflowEdge> edges = workflowEdgeService.lambdaQuery()
+                    .eq(WorkflowEdge::getWorkflowId, workflow.getId())
+                    .eq(WorkflowEdge::getIsDeleted, false)
+                    .list();
+            WorkflowEngine workflowEngine = new WorkflowEngine(workflow,
+                    sseEmitterHelper, components, nodes, edges,
+                    workflowRuntimeService, workflowRuntimeNodeService, jdbcCheckpointSaver);
+            workflowEngine.resume(user, runtime, sseEmitter, userId, tokenValue, sessionId);
+        } catch (Exception e) {
+            log.error("resumeRuntime error,runtimeUuid:{}", runtimeUuid, e);
         } finally {
             TenantHelper.clearDynamic();
         }

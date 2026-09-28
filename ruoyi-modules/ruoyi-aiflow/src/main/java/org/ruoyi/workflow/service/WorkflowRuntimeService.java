@@ -25,9 +25,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.WORKFLOW_PROCESS_STATUS_DOING;
+import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.WORKFLOW_PROCESS_STATUS_FAIL;
+import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.WORKFLOW_PROCESS_STATUS_REMARK_INTERRUPTED;
 
 @Slf4j
 @Service
@@ -100,6 +104,41 @@ public class WorkflowRuntimeService extends ServiceImpl<WorkflowRunMapper, Workf
         updateOne.setStatus(processStatus);
         updateOne.setStatusRemark(StringUtils.substring(statusRemark, 0, 250));
         baseMapper.updateById(updateOne);
+    }
+
+    /**
+     * 按 uuid 取实例（断点续跑等运维入口用）：不做当前用户过滤——ThreadContext 无登录态时
+     * {@link #getByUuid} 会 NPE，权限控制交给调用方入口。
+     */
+    public WorkflowRuntime getByUuidForResume(String uuid) {
+        return ChainWrappers.lambdaQueryChain(baseMapper)
+                .eq(WorkflowRuntime::getUuid, uuid)
+                .eq(WorkflowRuntime::getIsDeleted, false)
+                .last("limit 1")
+                .one();
+    }
+
+    /**
+     * 僵尸 DOING 处置（补遗 §5-5 D1）：把 status=DOING 且 update_time 早于阈值（超时/进程重启遗留）
+     * 的实例标记为 FAIL，status_remark 落「进程中断，可从断点续跑」语义区分（不新增 status 枚举值）。
+     * <p>
+     * 阈值语义：正常运行中的实例 update_time 停留在进入 DOING 的时刻（节点进度记在 t_workflow_runtime_node），
+     * 故 staleTimeout 应大于单实例最长预期执行时长；进程重启后立即处置可传 Duration.ZERO。
+     *
+     * @return 处置的实例数
+     */
+    public int failZombieDoingRuntimes(Duration staleTimeout) {
+        LocalDateTime deadline = LocalDateTime.now().minus(staleTimeout);
+        List<WorkflowRuntime> zombies = ChainWrappers.lambdaQueryChain(baseMapper)
+                .eq(WorkflowRuntime::getStatus, WORKFLOW_PROCESS_STATUS_DOING)
+                .eq(WorkflowRuntime::getIsDeleted, false)
+                .le(WorkflowRuntime::getUpdateTime, deadline)
+                .list();
+        for (WorkflowRuntime zombie : zombies) {
+            log.warn("僵尸 DOING 处置为 FAIL 并标记可续跑,id:{},uuid:{}", zombie.getId(), zombie.getUuid());
+            updateStatus(zombie.getId(), WORKFLOW_PROCESS_STATUS_FAIL, WORKFLOW_PROCESS_STATUS_REMARK_INTERRUPTED);
+        }
+        return zombies.size();
     }
 
     public WorkflowRuntime getByUuid(String uuid) {

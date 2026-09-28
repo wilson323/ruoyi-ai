@@ -342,6 +342,11 @@ public class AdiConstant {
         public static final int NODE_PROCESS_STATUS_SUCCESS = 3;
         public static final int NODE_PROCESS_STATUS_FAIL = 4;
 
+        /**
+         * 僵尸 DOING 处置后的 status_remark 语义标记（不新增 status 枚举值，靠 remark 区分「可从断点续跑」）
+         */
+        public static final String WORKFLOW_PROCESS_STATUS_REMARK_INTERRUPTED = "进程中断，可从断点续跑";
+
         public static final int WORKFLOW_PROCESS_STATUS_READY = 1;
         public static final int WORKFLOW_PROCESS_STATUS_DOING = 2;
         public static final int WORKFLOW_PROCESS_STATUS_SUCCESS = 3;

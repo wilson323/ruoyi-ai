@@ -314,6 +314,10 @@ tenant:
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run
     - trace_node
+    # R31 checkpoint 落库表：租户共享（表结构带 tenant_id 默认 000000 与现有表风格一致，但断点恢复场景
+    # 无租户上下文，且 langgraph4j AbstractCheckpointSaver 扩展点 API 只有 RunnableConfig 拿不到租户；
+    # 不登记则租户拦截器追加 WHERE tenant_id=? 表现为「查不到 checkpoint」断点续跑全断）
+    - t_workflow_checkpoint
     # IPD 单企业私有部署：26+2 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
     # 26 张基线表 + 2 张 Round 8 新增表（launch_date_change_requests / project_cert_items）
     - persons
