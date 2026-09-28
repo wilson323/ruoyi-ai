@@ -35,6 +35,12 @@
             <artifactId>agentscope-extensions-rag-simple</artifactId>
             <version>2.0.3</version>
         </dependency>
+        <!-- [G4 PoC] OpenAI 兼容模型扩展——真实流式实证(MiniMax OpenAI 兼容端点, okhttp 5.x 运行态复核) -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-model-openai</artifactId>
+            <version>2.0.3</version>
+        </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>
