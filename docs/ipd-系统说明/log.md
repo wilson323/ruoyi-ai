@@ -12734,3 +12734,91 @@ mvn -o -pl ruoyi-common/ruoyi-common-trace -Dprofiles.active= test    # Tests ru
 - **④ B0 安全前置（既存高危，先于 sensitivity 存在）**：S1 知识库标识客户端直传实测 **4 处非 3 处**（`ChatServiceFacade.collectKnowledgeIds` 回退直传、同文件 `buildQueryVectorBo.setKid`、`MpChatWebSocketHandler` 自带一份与 Facade 同构独立保留的 `buildMultiKnowledgeAugmentor`、`KnowledgeFragmentController.retrieval`→`KnowledgeFragmentServiceImpl` 组 setKid）；S2 `buildQueryWrapper` userId 客户端可控=列表水平越权；S3 `KnowledgeRetrievalServiceImpl.cacheKey` 无身份维度——**S3 未修完禁止开检索过滤，否则是「加了过滤但被缓存穿透」的假绿**。B0 收口设计（见 Part B 方案）：service 层单端口 `KnowledgeAccessGate`（chat 定义、ipd 实现，拒绝语义非静默忽略），S3 身份段插在 kid 之后以保住 `invalidateKnowledge` 的 `startsWith(kid+"|")` 前缀清除语义。
 - **⑤ 产物**：新增 `docs/ipd-系统说明/知识库PartB接线实施方案-20260928.md`（145 行，B0/B1/B2 三档 + 实体/Bo/Vo 清单精确到类名字段类型 + payload 驼峰键名裁决 + 每档完成门禁 + 分档回滚窗口，含 4 项诚实 not-run）；`kb-partA-ddl-draft-20260928.sql` 文件头从「待 owner 拍板，未 apply，禁止执行」改写为「已 apply + 证据 + 两条纪律 + 证据更正」；最佳实践篇新增 §8 与 §8.5。
 - **⑥ 教训（本轮新沉淀，已入记忆）**：a) **裸 INSERT / 表名匹配类扫描必须覆盖引号形态**（反引号/双引号/无引号 + 跨行拼接），单一字面量 grep 的假阴性会直接制造错误的安全结论；b) **引用门禁作为完成证据前，必须先验证门禁的覆盖面与校验方向**——EXIT=0 可能只是「根本没扫到你要的东西」的空洞通过；c) 大段中文替换后必做字符级复核（本轮自查抓到 2 处真损坏：`拒绝`→`拒绍`、混入 `ᾞ2 externally`），且要用「字符本身错码」而非「终端 CJK 折行伪影」判据区分真假（空格类一律用 python 计数复核，本轮 1 次误判为损坏实为折行伪影）；d) 完成声明必须经独立 Validator 复核——本轮 Validator 3 次证伪我，全部成立。
+
+
+## 2026-09-28（kb-partA-mysql-db-name-fix 轮）· 探测三处未闭环 → 查出我方引入的 ERROR 1146 地雷并修正
+
+marker: kb-partA-mysql-db-name-fix
+
+### 1. 缘起与探测（本轮全程只读起步，未先动手）
+
+上轮报告列了「未闭环且我没动的 3 处」，本轮按 owner 回贴逐处取磁盘现态证据，不采信上轮记述：
+
+- worktree：`git worktree list` 实测 `.worktrees/poc-agentscope-kernel` HEAD = 129327db（已推 origin），
+  `git rev-list --left-right --count main...poc/agentscope-kernel` = **11 / 6**——上轮记的「落后 9 提交」
+  已过期（本轮 main 又进了 2 个提交）。该树 `git status --porcelain` 为空（clean）。裸 INSERT 复扫仍命中
+  `docs/script/sql/ruoyi-ai.sql` 的 agent_info 无列清单 INSERT（18 值）；`docs/script/sql/update/` 下无 partA 文件。
+- compose-all：mysql 服务用 GHCR 仓外镜像，volumes 只有 mysql-data（**不挂 initdb**），故 SQL 烘在镜像内。
+- wiki raw：`docs/wiki/raw/docker-source/docker-compose.md` 只挂 01/02，无 03。
+
+### 2. 纠正③：上轮把严重度说反了，同时漏报了更狠的一处（本轮最重要）
+
+上轮断言「compose-all 的 `MYSQL_DATABASE: ruoyi-ai-agent` 与后端 JDBC 库名 `ruoyi-ai` 不一致」并列为高危，
+暗示会连空库。**该断言夸大**：基线 `docs/script/sql/ruoyi-ai.sql` 自带 CREATE DATABASE IF NOT EXISTS
+建 ruoyi-ai 并紧跟 USE 切库，会话当前库被 SQL 内部改写，业务表照落 ruoyi-ai，ruoyi-ai-agent 只是多出的空库。
+
+**真雷在反方向**：`docs/script/sql/update/kb-partA-ddl-draft-20260928.sql` 全文**零 USE 语句**、只有 6 条
+ALTER TABLE（knowledge_info ×2 / knowledge_fragment ×2 / agent_info ×2），完全依赖会话当前库；而 MySQL
+entrypoint 以 `--database="$MYSQL_DATABASE"` 逐文件执行 initdb。于是在 `MYSQL_DATABASE: ruoyi-ai-agent`
+的编排下，03-kb-partA 会在**空库**上执行 → ERROR 1146（Table 'ruoyi-ai-agent.knowledge_info' doesn't exist）
+→ initdb 中止 → mysql 容器起不来 → 整套 compose-all 崩。
+
+**引爆路径是我上轮亲手铺的**：上轮给 `docs/docker/ruoyi-ai/Dockerfile.mysql` 加了
+COPY ... 03-kb-partA.sql，而 compose-all 用的正是该 Dockerfile 构建后推到 GHCR 的镜像。
+属我方变更引入，非上游老账——上轮我只检查了「同目录 compose」，没有把「用同一 Dockerfile 产物的
+另一个编排文件的 MYSQL_DATABASE」纳入影响面。
+
+### 3. 处置：修 4 处生效值 + 1 处 SQL 纪律（属收口自己的变更，未扩范围）
+
+- `docs/docker/ruoyi-ai/docker-compose-all.yaml`：MYSQL_DATABASE ruoyi-ai-agent → **ruoyi-ai**（+7/−1，带成因注释）
+- `docs/wiki/raw/docker-source/docker-compose-all.md`：同上（+5/−1）
+- `docs/wiki/raw/docker-source/docker-compose.md`：MYSQL_DATABASE 统一 + **补 03-kb-partA 挂载**（+4/−1）
+- `docs/docker/ruoyi-ai/docker-compose.yaml`：本就正确（MYSQL_DATABASE: ruoyi-ai，03 挂载已在），未动
+- `docs/script/sql/update/kb-partA-ddl-draft-20260928.sql`：新增**纪律③（库名依赖）**（+10），明写
+  「零 USE 是有意为之，**禁止加 USE ruoyi-ai**」——开发库实为 `ipd_dev`，写死 USE 会让 DBA/脚本在
+  错误库上执行 DDL；并列出三类调用方各自的当前库保证方式（mysql CLI 显式指定库 / Docker initdb 靠
+  MYSQL_DATABASE / 基线自带 USE 故不受影响）。
+- `docs/ipd-系统说明/知识库结构与属性最佳实践-20260928.md`：§8.5 末尾两项未闭环风险改写（+41/−8），
+  ① worktree 数据更新为实测 11/6，② 整段改为「严重度说反了 + 真雷 + 已修 + 验证 + 仍未闭环」。
+
+### 4. 验证（每条都实跑）
+
+- `MYSQL_ROOT_PASSWORD=dummy MINIO_ROOT_PASSWORD=dummy MINIO_ROOT_USER=dummy docker compose -f docs/docker/ruoyi-ai/docker-compose-all.yaml config --quiet` → **EXIT=0**
+  （首次 EXIT=1 是 MINIO_ROOT_PASSWORD 因 `:?` 强制变量缺失所致，与本次改动无关，补变量后绿）
+- `docker compose -f docs/docker/ruoyi-ai/docker-compose.yaml config --quiet` → **EXIT=0**
+- compose-all `config` 解析后实测：MYSQL_DATABASE: ruoyi-ai 与 backend
+  SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL 里的 `jdbc:mysql://mysql:3306/ruoyi-ai` **一致**
+- `node docs/wiki/wiki-lint.cjs` → **通过 126 / 失败 0 / 孤立 raw 0**（改了 docs/wiki/** 必跑）
+- 全仓 MYSQL_DATABASE 终扫：4 处生效值全为 ruoyi-ai；ruoyi-ai-agent 残留仅在注释/历史记述中
+- 字符完整性自查（上轮踩过两次坑）：5 个改动文件 backslash-backtick 计数全 0、无「拒绍」类错码、
+  无可疑希腊字符。**本轮又中招 2 次并已修**：SQL 纪律③里的转义反引号、§8.5 里 2 行嵌套 code span
+  （后者不用双反引号硬解，改为消解嵌套——内层反引号去掉或拆成 `USE` 单独 code span，因为
+  「双反引号包裹 + 紧邻三反引号结尾」在 CommonMark 下反而解析失败）
+
+### 5. 旁证与不改写的历史
+
+`docs/ipd-系统说明/后端启动+E2E验证收口-20260906.md` 早在 09-06 就记有人为绕开这个孤值而弃用 compose
+改 docker run（原文「不是 compose 默认的 23306/ruoyi-ai-agent」）——孤值此前已被人踩过，但当时选择绕行
+而非回修配置。按历史记录不改写原则，该文件本轮不动。
+
+### 6. 仍未闭环（需 owner 授权，本轮不动手）
+
+1. **GHCR 镜像本体**：`ghcr.io/ageerle/ruoyi-ai-mysql:latest` 不含 Part A，仓内改文件对它零影响，
+   必须重新 docker build + push 镜像后 compose-all 通道才真正支持 Part A（属发布动作）。
+2. **worktree `poc/agentscope-kernel`**：merge main 可一次取得裸 INSERT 修复 + Part A，但这是写兄弟分支
+   （且已推 origin），需授权。
+3. **门禁补齐（卡 2e380293）**：加「库有/实体无」反向漂移校验前必须先配 baseline 白名单，否则既存
+   `knowledge_info.system_prompt` 会立刻判红卡死所有人 pre-commit。本轮仍刻意不做。
+
+### 7. 教训
+
+- **影响面必须按「同一产物的所有消费者」枚举，不能按「同一目录的文件」枚举**：我改了 Dockerfile.mysql
+  却只验了同目录的 docker-compose.yaml，漏了用同一镜像产物的 docker-compose-all.yaml——两者 MYSQL_DATABASE
+  不同值，正是这个差异把改动变成了地雷。
+- **增量 SQL 是否带 USE 决定了它对编排库名的敏感度**：基线 SQL 自带 USE 所以「库名写错」长期无害，
+  这个无害性掩盖了孤值的存在，直到第一个不带 USE 的增量脚本进来才引爆。判断此类风险要问
+  「会话当前库由谁决定」，而不是问「配置值对不对」。
+- **严重度断言要双向查**：我上轮把一个「有 USE 兜底、后果仅为多余空库」的问题报成高危，同时漏报了
+  真正会崩容器的路径。夸大和漏报是同一个毛病的两面——都源于只看了配置值差异，没追到执行时序。
+- **修文档里的 SQL 反引号嵌套别硬套双反引号**：内层反引号紧邻外层结束时会产生三反引号串，CommonMark
+  下 code span 直接失效；消解嵌套比转义更稳。

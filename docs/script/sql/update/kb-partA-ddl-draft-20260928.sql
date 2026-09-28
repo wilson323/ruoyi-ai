@@ -24,6 +24,16 @@
 --       docs/docker/ruoyi-ai/Dockerfile.mysql（新增 03-kb-partA.sql）、同目录 compose 挂载；
 --       docs/script/sql/schema/schema-snapshot-2026-09-09.sql 已标 Part A 前态，
 --       生产部署 Runbook 已强制「快照导入后必跟 Part A」。
+-- 纪律③（库名依赖，2026-09-28 补）：本文件全文**零 `USE` 语句**，6 条 ALTER TABLE 完全
+--       依赖会话当前库。这是有意为之，**不得给它加 `USE ruoyi-ai`**：开发库实为
+--       `ipd_dev`（见 .codex/ipd-dev/config/application-ipd-local.yml），写死 USE 会让
+--       DBA/脚本在错误库上执行 DDL。因此调用方必须自己保证当前库正确：
+--         · mysql CLI：`mysql <目标库> < 本文件`（本仓已 apply 时用的就是 ipd_dev）；
+--         · Docker initdb：entrypoint 以 `--database="$MYSQL_DATABASE"` 执行，故编排里
+--           MYSQL_DATABASE 必须 = ruoyi-ai。`docker-compose-all.yaml` 原为 ruoyi-ai-agent
+--           （孤值），已于同日修正为 ruoyi-ai，否则本文件在空库上报 ERROR 1146
+--           （Table 'ruoyi-ai-agent.knowledge_info' doesn't exist）并使 initdb 中止。
+--         · 基线 ruoyi-ai.sql 自带 CREATE DATABASE + USE `ruoyi-ai`，故它不受此约束影响。
 -- 语法：MySQL 8。全部 ALTER 加列均带默认值或 NULL，向后兼容，可安全回滚
 --       （回滚=DROP COLUMN，见配套文档 §7 风险与回滚）。
 -- =====================================================================

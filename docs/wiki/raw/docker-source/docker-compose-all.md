@@ -33,7 +33,11 @@ services:
       - "13306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ruoyi-ai-agent
+      # 必须与 backend 的 JDBC 库名（jdbc:mysql://mysql:3306/ruoyi-ai）一致。
+      # 原值 ruoyi-ai-agent 是孤值：镜像内 initdb 的会话当前库由 MYSQL_DATABASE 决定，
+      # 而 update/kb-partA-ddl-draft-20260928.sql 零 USE、只有 ALTER TABLE，
+      # 在空库上执行会报 ERROR 1146 并使 initdb 中止。
+      MYSQL_DATABASE: ruoyi-ai
       TZ: Asia/Shanghai
     volumes:
       - mysql-data:/var/lib/mysql

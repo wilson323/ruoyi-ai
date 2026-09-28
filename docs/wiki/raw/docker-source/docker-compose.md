@@ -28,11 +28,14 @@ services:
       - "13306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ruoyi-ai-agent
+      # 与后端 JDBC 库名一致（ruoyi-ai）；原值 ruoyi-ai-agent 会使不带 USE 的
+      # 增量脚本（03-kb-partA）落到空库而报 ERROR 1146。
+      MYSQL_DATABASE: ruoyi-ai
       TZ: Asia/Shanghai
     volumes:
       - ../../script/sql/ruoyi-ai.sql:/docker-entrypoint-initdb.d/01-ruoyi-ai.sql:ro
       - ../../script/sql/snail_job_mysql.sql:/docker-entrypoint-initdb.d/02-snail-job.sql:ro
+      - ../../script/sql/update/kb-partA-ddl-draft-20260928.sql:/docker-entrypoint-initdb.d/03-kb-partA.sql:ro
       - mysql-data:/var/lib/mysql
     command:
       --default-authentication-plugin=mysql_native_password

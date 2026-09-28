@@ -24,7 +24,13 @@ services:
     environment:
 
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
-      MYSQL_DATABASE: ruoyi-ai-agent
+      # 必须与后端 JDBC 库名（下方 backend 的 ..._MASTER_URL: jdbc:mysql://mysql:3306/ruoyi-ai）
+      # 及 Dockerfile.mysql 注释「主库统一为 ruoyi-ai」一致。
+      # 原值 ruoyi-ai-agent 是孤值：基线 ruoyi-ai.sql 自带 CREATE DATABASE + USE `ruoyi-ai`，
+      # 业务表仍落 ruoyi-ai（故此前未暴露为「连空库」），但 initdb 会话当前库是 MYSQL_DATABASE，
+      # 而 update/kb-partA-ddl-draft-20260928.sql 全文零 USE、只有 6 条 ALTER TABLE，
+      # 会在空的 ruoyi-ai-agent 上执行 → ERROR 1146 → initdb 中止 → mysql 容器起不来。
+      MYSQL_DATABASE: ruoyi-ai
 
       TZ: Asia/Shanghai
     volumes:
