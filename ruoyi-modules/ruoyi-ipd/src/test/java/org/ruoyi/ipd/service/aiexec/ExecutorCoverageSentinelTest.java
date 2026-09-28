@@ -157,9 +157,10 @@ class ExecutorCoverageSentinelTest {
 
     /**
      * R236 新增（契约 §1 裁决 B）：命名约定 {@code IPD-<code>} 是隐式契约，改名即静默解绑 →
-     * 与种子 SQL 逐码对账。只校验**消费 LLM 的 41 码**（GenerateExecutor 24 + AgentEvidenceExecutor 17）；
+     * 与种子 SQL 逐码对账。只校验**消费 LLM 的 40 码**（GenerateExecutor 24 + AgentEvidenceExecutor 16）；
      * 其余 28 码执行器为确定性逻辑，种子不得为其建行（建行即装饰性假配置）。
-     *（R232-LC03：LC03 改由 Lc03SettlementReconcileExecutor 确定性对账，零 LLM，不再建行。）
+     *（R232-LC03：LC03 改由 Lc03SettlementReconcileExecutor 确定性对账，零 LLM，不再建行。
+     * LC04 同：Lc04ContributionReconcileExecutor 确定性对账，零 LLM，不再建行。）
      *
      * <p>双向用一次集合相等断言表达：缺行 → 该节点永久走降级路径；多行 → 零 LLM 档位的装饰性假配置。
      */

@@ -19,7 +19,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -300,7 +299,8 @@ public class Lc04ContributionReconcileService {
     private static String periodOf(Contribution c, Clock clock) {
         Instant at = c.getUpdateTime() != null ? c.getUpdateTime().toInstant()
             : (c.getSubmittedAt() != null ? c.getSubmittedAt().toInstant() : clock.instant());
-        return YearMonth.from(LocalDate.ofInstant(at, ZoneId.of("Asia/Shanghai"))).toString();
+        // 时区随 Clock（与 Lc03 同构）：评定期与 executor 台账文件名日期同源，避免 Clock 非上海时跨月错位
+        return YearMonth.from(LocalDate.ofInstant(at, clock.getZone())).toString();
     }
 
     private static boolean eq(BigDecimal a, BigDecimal b) {

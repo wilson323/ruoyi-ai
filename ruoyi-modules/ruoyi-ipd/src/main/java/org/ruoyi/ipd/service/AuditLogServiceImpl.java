@@ -138,6 +138,10 @@ public class AuditLogServiceImpl implements IAuditLogService {
      * @param entityId   实体 ID（可空）
      * @param reason     理由（可空）
      */
+    // 事务边界与 append(AuditLog) 同（REQUIRES_NEW）：本重载自调用 this.append(draft) 不走 Spring 代理，
+    // 重载自身不带注解时独立事务会被静默降级为随业务回滚（失败审计独立落库红线），
+    // 由 AuditLogAppendTransactionContractTest 反射断言锁死。
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void append(IpdActor actor, String action, String entityType, Long entityId, String reason) {
         if (actor == null) {
             return;
@@ -158,7 +162,9 @@ public class AuditLogServiceImpl implements IAuditLogService {
      * （builder 拼装仅 entityType 不同）统一收到 Service 层。与 {@link #append(IpdActor, ...)} 同型：
      * 均只拼语义字段后委派 {@link #append(AuditLog)}，createTime 与 operator 姓名/角色由底层统一补
      * （createTime=null→now 且毫秒归零；name/role 空→Person 回填），语义与原拷贝一致、无并行实现。
+     * <p>事务边界同 {@link #append(IpdActor, ...)}：REQUIRES_NEW 显式标注（自调用不走代理的坑同源）。
      */
+    @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void append(Long operatorId, String action, String entityType, Long entityId, String reason) {
         append(AuditLog.builder()
             .operatorId(operatorId)

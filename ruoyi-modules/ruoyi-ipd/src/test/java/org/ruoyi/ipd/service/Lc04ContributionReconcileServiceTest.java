@@ -77,12 +77,18 @@ class Lc04ContributionReconcileServiceTest {
     /**
      * saveSelf 落库形状：tier=两路自评复算之一、share 为默认 0.55/0.45（saveSelf 初始落库值）。
      * 五维全 80 → tier 0.80；全 60 → 0.60（computeTierCoefficient 真公式）。
+     * <p>状态取 CONFIRMED（规约二）：分配行只在 distribute 事务内落库且前置要求最新评定 CONFIRMED
+     * （BonusPoolService.distribute → requireConfirmedContribution 同事务翻池 DISTRIBUTED），
+     * 含行用例的可达组合只能是 CONFIRMED+DISTRIBUTED；personId/marketContributionRate 为
+     * DDL NOT NULL 列，按规约三显式赋值（与被测路径无关也要补）。
      */
     private Contribution contribution(BigDecimal tier, BigDecimal marketShare, BigDecimal rdShare) {
         Contribution c = new Contribution();
         c.setId(1L);
         c.setProjectId(PROJECT_ID);
-        c.setStatus(Contribution.ST_SUBMITTED);
+        c.setPersonId(11L);
+        c.setMarketContributionRate(new BigDecimal("0.55"));
+        c.setStatus(Contribution.ST_CONFIRMED);
         c.setMarketShare(marketShare);
         c.setRdShare(rdShare);
         c.setMarketSelfInitiation(new BigDecimal("80"));
@@ -110,10 +116,15 @@ class Lc04ContributionReconcileServiceTest {
             .status("DRAFT").build();
     }
 
-    private BonusPool pool(BigDecimal finalPool, BigDecimal coefficient) {
+    /**
+     * 池形状：targetSales/poolRate 为 DDL NOT NULL 列（规约三，取 Lc03 样板同值）。
+     * status 显式传入（规约二）：含分配行→DISTRIBUTED（行与翻状态同事务落库）；无行→DRAFT（池建出未分）。
+     */
+    private BonusPool pool(BigDecimal finalPool, BigDecimal coefficient, String status) {
         return BonusPool.builder()
             .id(1L).projectId(PROJECT_ID).finalPool(finalPool)
-            .coefficient(coefficient).status("DRAFT").build();
+            .targetSales(new BigDecimal("1000")).poolRate(new BigDecimal("0.05"))
+            .coefficient(coefficient).status(status).build();
     }
 
     private void stubContribution(Contribution c) {
@@ -132,7 +143,7 @@ class Lc04ContributionReconcileServiceTest {
     private void stubAllMatch() {
         when(projectMapper.selectById(PROJECT_ID)).thenReturn(project());
         stubContribution(contribution(new BigDecimal("0.80"), new BigDecimal("0.55"), new BigDecimal("0.45")));
-        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0")));
+        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0"), "DISTRIBUTED"));
         stubAllocations(List.of(
             allocation(1L, Contribution.ROLE_MARKET, new BigDecimal("8.25"), new BigDecimal("0.44"), new BigDecimal("1.0")),
             allocation(2L, Contribution.ROLE_RD, new BigDecimal("6.75"), new BigDecimal("0.36"), new BigDecimal("1.0"))));
@@ -161,7 +172,7 @@ class Lc04ContributionReconcileServiceTest {
         c.setRdSelfMarketResult(new BigDecimal("60"));
         c.setRdSelfLeadership(new BigDecimal("60"));
         stubContribution(c);
-        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0")));
+        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0"), "DISTRIBUTED"));
         stubAllocations(List.of(
             allocation(1L, Contribution.ROLE_MARKET, new BigDecimal("8.25"), new BigDecimal("0.44"), new BigDecimal("1.0")),
             allocation(2L, Contribution.ROLE_RD, new BigDecimal("6.75"), new BigDecimal("0.36"), new BigDecimal("1.0"))));
@@ -187,7 +198,7 @@ class Lc04ContributionReconcileServiceTest {
         c.setRdSelfMarketResult(new BigDecimal("60"));
         c.setRdSelfLeadership(new BigDecimal("60"));
         stubContribution(c);
-        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0")));
+        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0"), "DRAFT"));
         stubAllocations(List.of());
 
         var report = service.reconcile(PROJECT_ID, CLOCK);
@@ -208,7 +219,7 @@ class Lc04ContributionReconcileServiceTest {
         // 仅可能来自绕过校验器的直写/历史脏数据——本对账项正是抓它（不变量守卫）。
         // §三.2.4 同源校验器自身即校验 sum=100%（总和违例抛 ServiceException → DIFF）。
         stubContribution(contribution(new BigDecimal("0.80"), new BigDecimal("0.55"), new BigDecimal("0.55")));
-        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0")));
+        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0"), "DRAFT"));
         stubAllocations(List.of());
 
         var report = service.reconcile(PROJECT_ID, CLOCK);
@@ -225,7 +236,7 @@ class Lc04ContributionReconcileServiceTest {
         when(projectMapper.selectById(PROJECT_ID)).thenReturn(project());
         // market 0.70 越 §三.2.4 上界 0.65：calculateDistribution 同源校验器抛 → DIFF（非生产者路径载荷，同上不变量守卫）
         stubContribution(contribution(new BigDecimal("0.80"), new BigDecimal("0.70"), new BigDecimal("0.30")));
-        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0")));
+        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.0"), "DRAFT"));
         stubAllocations(List.of());
 
         var report = service.reconcile(PROJECT_ID, CLOCK);
@@ -278,7 +289,7 @@ class Lc04ContributionReconcileServiceTest {
     void performanceCoefficientDriftWhenPoolCoefficientChanged() {
         stubAllMatch();
         // 行 perf=1.0 写入时旧系数，池系数已变 1.2 → DRIFT（人工确认后重算）
-        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.2")));
+        stubPool(pool(new BigDecimal("15"), new BigDecimal("1.2"), "DISTRIBUTED"));
         stubAllocations(List.of(
             allocation(1L, Contribution.ROLE_MARKET, new BigDecimal("8.25"), new BigDecimal("0.44"), new BigDecimal("1.0")),
             allocation(2L, Contribution.ROLE_RD, new BigDecimal("6.75"), new BigDecimal("0.36"), new BigDecimal("1.0"))));
