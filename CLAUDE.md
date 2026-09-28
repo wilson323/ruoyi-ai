@@ -131,7 +131,7 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 
 本项目除 Claude Code 内置能力外，挂了 4 层自动化：Skill（用户主动调用）、Subagent（Claude 自动并发调度）、Hook（机器执行拦截 / 提醒）、MCP Server（外部能力）。另由 Ruflo 提供多智能体协同底座。
 
-### Skills（用户主动调用，4 个项目自定义 + 30 个 ruflo 内置）
+### Skills（4 个 user-only + 1 个自动发现 + 30 个 ruflo 内置）
 
 **项目自定义**（都在 `.claude/skills/<name>/SKILL.md`）：
 
@@ -141,6 +141,9 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 | `/gen-test` | user-only | 按 `@Tag("dev")` Surefire 过滤规范生成 Service / Controller 单测。封装了 Mockito + AssertJ 模板 + 必须覆盖的 6 个维度 |
 | `/api-contract` | user-only | 改了 controller / DTO 后生成 OpenAPI 增量 diff + BREAKING / NEW / CHANGE 分类 + 给 `ruoyi-web` / `ruoyi-admin` 的变更通知草稿 |
 | `/db-migration` | user-only | 新增业务表 / 加字段 / 加索引 / 新增 snailjob 任务 / 登记租户共享表。封装 DDL 模板、Entity 必备字段、回滚脚本生成 |
+| `agentscope-harness` | **自动发现** | 设计 / 评审 / 落地 agent harness：五层责任边界、任务状态机与多维预算、Context 管线与压缩、Action Plane 与 Permission 三态、Verifier 完成门禁、Trace→Harness Patch 反退化闭环。含本仓已实证的 AgentScope 2.0.3 API 面（区分“已实证 / 仅文档”）、四维隔离键收口规则、自研 harness ↔ AgentScope 契约对照表。**动 `io.agentscope:*` / `HarnessAgent.builder()` / `RuntimeContext` 前必读** |
+
+> **为何只有 `agentscope-harness` 是自动发现**：本 IDE（Qoder）的 skill 发现目录是 `.agents/skills/`，不是 `.claude/skills/`。上表前 4 个只在 `.claude/` 下，因此只能靠斜杠命令手动调；`agentscope-harness` 额外镜像了一份到 `.agents/skills/agentscope-harness/`，模型才会按 description 自动应用。`.gitignore:101` 忽略该目录，**fresh clone 必须重建镜像**。镜像与事实源必须字节一致：`skill-lint.sh` 的 L5 会 `diff -r` 校验，不一致直接 FAIL，防「文档说 A、运行时用 B」双轨。重建：`rm -rf .agents/skills/agentscope-harness && cp -R .claude/skills/agentscope-harness .agents/skills/`
 
 **ruflo 内置 30 个**：默认不主动调，需要时按名字调用。`swarm-orchestration` / `v3-swarm-coordination` / `sparc-methodology` 是重型武器，小改动别上。
 
@@ -194,10 +197,15 @@ echo $?  # 期望: 2（阻断）
 
 ```bash
 # 1. 文件存在 + 语法
-for f in .claude/skills/{ai-module-add,api-contract,db-migration,gen-test}/SKILL.md \
+for f in .claude/skills/{ai-module-add,api-contract,db-migration,gen-test,agentscope-harness}/SKILL.md \
          .claude/agents/*.md; do [ -f "$f" ] && echo "✅ $f"; done
 node --check .claude/helpers/*.cjs
 bash -n .claude/hooks/*.sh
+
+# 1b. agentscope-harness：契约门禁 + 运行时镜像一致性（两条都期望 EXIT=0）
+bash .claude/skills/agentscope-harness/scripts/verify.sh;            echo "verify    EXIT=$?"
+bash .claude/skills/agentscope-harness/scripts/verify.sh --self-red; echo "self-red  EXIT=$?"
+# --self-red 退 != 0 意味着门禁自身失效（假绿或恒红），不是“代码有违规”
 
 # 2. settings.json 合法性 + hook 引用
 node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"

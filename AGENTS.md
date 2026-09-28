@@ -43,6 +43,9 @@
 - `scripts/check-ipd-frontend-drift.sh` 是上述 hook 的 CI/手动版：4 项检查（同名导出 / 错误码文件 / product-group 兼容层 / 手写 BackendPending）。CI 接入位置 `.github/workflows/ipd-frontend-drift.yml`（待补）。
 - 改 `pom.xml` 会触发 `pom-edit-hint.cjs` 的非阻断同步提醒（BOM 对齐 / 注解处理器 / gRPC 版本等 5 类）。
 - 4 个项目 skill（ai-module-add / gen-test / api-contract / db-migration）与 4 个审查 subagent（code-reviewer / security-reviewer / langchain4j-agent-reviewer / performance-analyzer）在 `.claude/` 下，分工见 `CLAUDE.md` §自动化栈。
+- **skill 发现目录不是 `.claude/skills/`**：Qoder 只从 `.agents/skills/` 自动发现（该目录被 `.gitignore:101` 忽略，fresh clone 必然缺）。上面 4 个 skill 因此只能斜杠手调；`agentscope-harness` 是**唯一做了运行时镜像**的，改完事实源必须 `rm -rf .agents/skills/agentscope-harness && cp -R .claude/skills/agentscope-harness .agents/skills/`，否则会出现「文档说 A、模型用 B」。镜像一致性由 `skill-lint.sh` L5 的 `diff -r` 卡住（不一致 FAIL）。
+- **`agentscope-harness` skill（agent harness 工程契约，2026-09-28 入库）**：动 `io.agentscope:*` / `HarnessAgent.builder()` / `RuntimeContext` 前必读。两条反直觉的坑：① `verify.sh --self-red` **期望 EXIT=0**（它断言五组正反控全部符合预期；退 != 0 是门禁自身失效，不是代码有违规）；② pom 契约门禁必须按「声明 pom 所属工作树」解析根目录——`io.agentscope` 只在 `.worktrees/poc-agentscope-kernel/` 里，okhttp 5.3.2 钉在该树根 pom、`banDuplicateClasses` 在 `ruoyi-modules/ruoyi-chat/pom.xml`，按主树查会三项全报缺失（纯假红，已实测踩过）。
+- **本仓已有自研 harness，禁双轨**：`org.ruoyi.service.coding.harness`（17 子包 / main 254 个 `.java`，**零** `io.agentscope` 引用）已自行实现了 Permission 三态（`tool/PolicyDecision`）、副作用幂等（`recovery/ToolEffectLedgerReconciler`、`UncertainToolEffectGuard`）、Plan 版本（`plan/CanonicalPlanHasher`）、预算（`model/HarnessBudget`）、Context 压缩（`context/ContextEngine`）等契约。引入 AgentScope 时最大风险不是不会用，而是**静默长出第二套 harness**；内核替换必须做「替换 / 包装 / 保留」三选一并记 ADR，先用 `references/agentscope-java.md` 的对照表审计。自研 harness 内部大量 `+ ":" +` 是自身 run-state 命名空间，**不是**四维隔离键违规——门禁扫描范围因此收窄为「引用 `io.agentscope` 或 `RuntimeContext` 的 `.java`」，别把它改宽。
 - 修改 `docs/wiki/**` 后必须跑 `node docs/wiki/wiki-lint.cjs`（无 CI 门禁，靠自觉）。
 
 ## Learned User Preferences
