@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AI-P2-1：POST /gates/{gateId}/precheck 路由委托")
+@DisplayName("AI-P2-1：POST /gates/{gateId}/precheck|arbitration-divergences 路由委托")
 class GatePrecheckControllerTest {
 
     @Mock
@@ -75,5 +75,20 @@ class GatePrecheckControllerTest {
 
         IpdBusinessException ex = assertThrows(IpdBusinessException.class, () -> controller.precheck(50L));
         assertEquals(ApiV1ErrorCode.PARAM_INVALID, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("正常：POST /arbitration-divergences 委托 service.arbitrationDivergences，包络 code=0")
+    void arbitrationDelegatesToService() {
+        IpdActor actor = new IpdActor(9L, "pm", "MARKET_PM", 100L);
+        when(permission.requireInternal()).thenReturn(actor);
+        Map<String, Object> result = Map.of("gateId", "50", "blocking", false);
+        when(service.arbitrationDivergences(50L, actor)).thenReturn(result);
+
+        ApiV1Response<Map<String, Object>> resp = controller.arbitrationDivergences(50L);
+
+        assertEquals(ApiV1Response.CODE_SUCCESS, resp.getCode());
+        assertEquals(result, resp.getData());
+        verify(service).arbitrationDivergences(50L, actor);
     }
 }

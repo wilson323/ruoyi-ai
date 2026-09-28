@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateElementResult;
@@ -18,6 +19,9 @@ import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.service.ai.AiChatResult;
+import org.ruoyi.ipd.service.ai.AiGateway;
+import org.ruoyi.ipd.service.ai.AiTestConfig;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -49,7 +53,8 @@ import static org.mockito.Mockito.when;
  *   <li>正常 → 结构化「已覆盖/部分/缺失 + 证据定位」且审计带 aiAssisted/precheck；</li>
  *   <li>红线锁：预审零写库（gates/gate_reviews 不 update/insert）、不阻塞（blocking=false）；</li>
  *   <li>AI 环节抛错 → 预审仍返回结构化结果（degraded 标记），审计照落；</li>
- *   <li>仲裁分歧汇总草稿：同轮双 PM 决策不一致才算分歧。</li>
+ *   <li>仲裁分歧点汇总（R240）：同轮双 PM 决策不一致才算分歧；AI 归纳降级不抛、
+ *       零分歧跳 AI、审计 AI_ARBITRATION 三件套、非参与人 403。</li>
  * </ol>
  *
  * <p>{@code @Tag("dev")} 必须——Surefire 按 active profile（dev）过滤 groups，
@@ -66,6 +71,8 @@ class GatePrecheckServiceTest {
     private GateMaterialChecker gateMaterialChecker;
     private AiSuggestionService aiSuggestionService;
     private IAuditLogService auditLogService;
+    private IAiModelConfigService modelConfigService;
+    private AiGateway aiGateway;
     private GatePrecheckService service;
 
     private static final IpdActor SA = new IpdActor(1L, "sa", "SUPER_ADMIN", null);
@@ -81,8 +88,11 @@ class GatePrecheckServiceTest {
         gateMaterialChecker = mock(GateMaterialChecker.class);
         aiSuggestionService = mock(AiSuggestionService.class);
         auditLogService = mock(IAuditLogService.class);
+        modelConfigService = mock(IAiModelConfigService.class);
+        aiGateway = mock(AiGateway.class);
         service = new GatePrecheckService(gateMapper, elementResultMapper, gateReviewMapper,
-            projectMemberMapper, gateMaterialChecker, aiSuggestionService, auditLogService)
+            projectMemberMapper, gateMaterialChecker, aiSuggestionService, auditLogService,
+            modelConfigService, aiGateway)
             .withClock(Clock.fixed(Instant.parse("2026-09-27T08:00:00Z"), ZoneId.of("UTC")));
     }
 
@@ -277,12 +287,10 @@ class GatePrecheckServiceTest {
             cap.getValue().getAfterData());
     }
 
-    // ---- 仲裁分歧汇总（草稿） ----
+    // ---- 仲裁分歧点汇总（R240：数据装配 + AI 归纳 + 审计） ----
 
-    @Test
-    @DisplayName("仲裁分歧草稿：同轮 MARKET_PM/RD_PM 决策不一致记分歧；一致/未签不计")
-    void arbitrationDivergenceDraft() {
-        gate(50L, 7L);
+    /** 分歧样例：第 1 轮双 PM 决策不一致（记 1 个分歧点）；第 2 轮一致；第 3 轮未签。 */
+    private List<GateReview> divergentReviews() {
         GateReview r1m = new GateReview();
         r1m.setRound(1);
         r1m.setReviewerType("MARKET_PM");
@@ -305,9 +313,29 @@ class GatePrecheckServiceTest {
         unsigned.setRound(3);
         unsigned.setReviewerType("RD_PM");
         unsigned.setDecision(null); // 未签行不参与
-        when(gateReviewMapper.selectList(any())).thenReturn(List.of(r1m, r1d, r2m, r2d, unsigned));
+        return List.of(r1m, r1d, r2m, r2d, unsigned);
+    }
 
-        Map<String, Object> out = service.arbitrationDivergences(50L);
+    private AiModelConfig modelConfig() {
+        AiModelConfig cfg = new AiModelConfig();
+        cfg.setProvider("openai");
+        cfg.setEndpointUrl("https://api.example.com/v1");
+        cfg.setModelName("mock-mini");
+        return cfg;
+    }
+
+    @Test
+    @DisplayName("仲裁分歧汇总：同轮双 PM 不一致记分歧；AI 归纳 + 审计 AI_ARBITRATION 三件套")
+    void arbitrationSummarizedAndAudited() {
+        gate(50L, 7L);
+        makeParticipant();
+        when(gateReviewMapper.selectList(any())).thenReturn(divergentReviews());
+        when(modelConfigService.currentEnabled()).thenReturn(modelConfig());
+        when(modelConfigService.decryptApiKey(any())).thenReturn("sk-test");
+        when(aiGateway.chat(any(AiTestConfig.class), any(), any(), any()))
+            .thenReturn(AiChatResult.ok("## 分歧归纳\n- 轮1：样机温测", 80, 40, 500));
+
+        Map<String, Object> out = service.arbitrationDivergences(50L, PM);
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> div = (List<Map<String, Object>>) out.get("divergences");
@@ -317,5 +345,94 @@ class GatePrecheckServiceTest {
         assertEquals("REJECT", div.get(0).get("rdDecision"));
         assertEquals("样机未过温测", div.get(0).get("rdOpinion"));
         assertFalse(div.toString().contains("round=2"));
+        Map<?, ?> aiSummary = (Map<?, ?>) out.get("aiSummary");
+        assertEquals("## 分歧归纳\n- 轮1：样机温测", aiSummary.get("markdown"));
+        assertEquals("mock-mini", aiSummary.get("aiModel"));
+        assertEquals(false, aiSummary.get("degraded"));
+        // 自证旗标：只读参考、不代写仲裁决策
+        assertEquals(false, out.get("blocking"));
+        assertEquals(false, out.get("decisionWritten"));
+
+        // prompt 红线：只归纳不裁决（原文只进模型，BR-AI-04）
+        ArgumentCaptor<String> promptCap = ArgumentCaptor.forClass(String.class);
+        verify(aiGateway).chat(any(AiTestConfig.class), promptCap.capture(), any(), any());
+        assertTrue(promptCap.getValue().contains("只归纳不裁决"), promptCap.getValue());
+        assertTrue(promptCap.getValue().contains("样机未过温测"), promptCap.getValue());
+
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        AuditLog log = cap.getValue();
+        assertEquals("AI_ARBITRATION", log.getAction());
+        assertEquals("GATE", log.getEntityType());
+        String after = log.getAfterData();
+        assertTrue(after.contains("\"aiAssisted\":true"), after);
+        assertTrue(after.contains("\"aiRole\":\"summarize\""), after);
+        assertTrue(after.contains("\"aiModel\":\"mock-mini\""), after);
+        assertTrue(after.contains("\"divergenceCount\":1"), after);
+        assertTrue(after.contains("\"status\":\"ok\""), after);
+    }
+
+    @Test
+    @DisplayName("仲裁分歧汇总：非评审参与人 → FORBIDDEN（403），AI/审计零触达")
+    void arbitrationNonParticipantForbidden() {
+        gate(50L, 7L);
+        when(projectMemberMapper.selectCount(any())).thenReturn(0L);
+
+        IpdBusinessException ex = assertThrows(IpdBusinessException.class,
+            () -> service.arbitrationDivergences(50L, OUTSIDER));
+        assertEquals(ApiV1ErrorCode.FORBIDDEN, ex.getErrorCode());
+        assertEquals(403, ex.getErrorCode().getHttpStatus());
+        verify(aiGateway, never()).chat(any(AiTestConfig.class), any(), any(), any());
+        verify(auditLogService, never()).append(any(AuditLog.class));
+    }
+
+    @Test
+    @DisplayName("仲裁分歧汇总：AI 归纳失败 → 分歧数据恒返回，aiSummary.degraded=true，审计 FAIL:*")
+    void arbitrationAiFailureDegrades() {
+        gate(50L, 7L);
+        makeParticipant();
+        when(gateReviewMapper.selectList(any())).thenReturn(divergentReviews());
+        when(modelConfigService.currentEnabled()).thenReturn(modelConfig());
+        when(modelConfigService.decryptApiKey(any())).thenReturn("sk-test");
+        when(aiGateway.chat(any(AiTestConfig.class), any(), any(), any()))
+            .thenReturn(AiChatResult.fail("TIMEOUT", "gateway timeout", 30_000));
+
+        Map<String, Object> out = service.arbitrationDivergences(50L, PM);
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> div = (List<Map<String, Object>>) out.get("divergences");
+        assertEquals(1, div.size()); // 结构化分歧数据不受 AI 影响
+        Map<?, ?> aiSummary = (Map<?, ?>) out.get("aiSummary");
+        assertEquals(true, aiSummary.get("degraded"));
+        assertEquals(null, aiSummary.get("aiModel"));
+        assertTrue(((String) aiSummary.get("markdown")).contains("暂不可用"),
+            (String) aiSummary.get("markdown"));
+        assertEquals(false, out.get("decisionWritten"));
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertTrue(cap.getValue().getAfterData().contains("\"status\":\"FAIL:INTERNAL_ERROR\""),
+            cap.getValue().getAfterData());
+    }
+
+    @Test
+    @DisplayName("仲裁分歧汇总：零分歧 → 跳过 AI 给确定性结论，审计 ok_no_ai")
+    void arbitrationNoDivergenceSkipsAi() {
+        gate(50L, 7L);
+        makeParticipant();
+        when(gateReviewMapper.selectList(any())).thenReturn(List.of());
+
+        Map<String, Object> out = service.arbitrationDivergences(50L, PM);
+
+        assertEquals(List.of(), out.get("divergences"));
+        Map<?, ?> aiSummary = (Map<?, ?>) out.get("aiSummary");
+        assertTrue(((String) aiSummary.get("markdown")).contains("无分歧点"),
+            (String) aiSummary.get("markdown"));
+        assertEquals(false, aiSummary.get("degraded"));
+        verify(aiGateway, never()).chat(any(AiTestConfig.class), any(), any(), any());
+        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogService).append(cap.capture());
+        assertEquals("AI_ARBITRATION", cap.getValue().getAction());
+        assertTrue(cap.getValue().getAfterData().contains("\"status\":\"ok_no_ai\""),
+            cap.getValue().getAfterData());
     }
 }

@@ -24,6 +24,11 @@ import java.util.Map;
  * 全在 {@link GatePrecheckService}，Controller 不掺业务。
  *
  * <p>卡面硬约束：只读参考——不写 Gate 决策、不阻塞评审（无请求体、无状态变更）。
+ *
+ * <p>POST /api/v1/gates/{gateId}/arbitration-divergences → 仲裁分歧点汇总（同轮双 PM
+ * 决策不一致清单 + AI 归纳参考，R240 落地）。同为只读参考：响应固定回带
+ * {@code blocking=false / decisionWritten=false} 自证旗标，不代写仲裁决策；
+ * 权限与对象级参与人校验同预审口径。
  */
 @RestController
 @RequestMapping("/api/v1/gates/{gateId}")
@@ -38,5 +43,12 @@ public class GatePrecheckController {
     public ApiV1Response<Map<String, Object>> precheck(@PathVariable Long gateId) {
         IpdActor actor = permission.requireInternal();
         return ApiV1Response.ok(service.precheck(gateId, actor));
+    }
+
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_REVIEW, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/arbitration-divergences")
+    public ApiV1Response<Map<String, Object>> arbitrationDivergences(@PathVariable Long gateId) {
+        IpdActor actor = permission.requireInternal();
+        return ApiV1Response.ok(service.arbitrationDivergences(gateId, actor));
     }
 }
