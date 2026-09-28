@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -175,7 +176,7 @@ class P111AcceptanceTest {
         assertThat(project.getProductId()).isEqualTo(3L);
         verify(productMapper).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper).update(isNull(), any(LambdaUpdateWrapper.class));
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -191,6 +192,7 @@ class P111AcceptanceTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any());
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test

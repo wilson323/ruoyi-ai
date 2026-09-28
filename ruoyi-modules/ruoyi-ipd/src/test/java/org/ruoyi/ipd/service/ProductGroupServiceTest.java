@@ -17,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,7 +83,7 @@ class ProductGroupServiceTest {
         when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         ProductGroup created = service.create(group("新组", 1001L), 1L);
         assertThat(created.getDelFlag()).isEqualTo("0");
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
 
         assertThatThrownBy(() -> service.remove(1L, 1L))
             .isInstanceOf(ServiceException.class)

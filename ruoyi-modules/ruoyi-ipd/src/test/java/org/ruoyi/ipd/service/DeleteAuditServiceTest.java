@@ -39,6 +39,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -109,9 +111,7 @@ class DeleteAuditServiceTest {
 
         assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_DELETED);
         verify(projectMapper).update(isNull(), any());
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(cap.capture());
-        assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_EXECUTE);
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_EXECUTE), any(), any(), any());
     }
 
     @Test
@@ -127,7 +127,7 @@ class DeleteAuditServiceTest {
         service.approveAndExecute(11L, 99L);
 
         verify(productMapper).update(isNull(), any());
-        verify(auditLogService).append(any(AuditLog.class));
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -143,7 +143,7 @@ class DeleteAuditServiceTest {
         service.approveAndExecute(12L, 99L);
 
         verify(personMapper).update(any(), any());
-        verify(auditLogService).append(any(AuditLog.class));
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -159,7 +159,7 @@ class DeleteAuditServiceTest {
         service.approveAndExecute(13L, 99L);
 
         verify(certTemplateMapper).update(isNull(), any());
-        verify(auditLogService).append(any(AuditLog.class));
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -176,6 +176,7 @@ class DeleteAuditServiceTest {
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(projectMapper, never()).update(isNull(), any());
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -190,6 +191,7 @@ class DeleteAuditServiceTest {
 
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -205,6 +207,7 @@ class DeleteAuditServiceTest {
             .hasMessageContaining("DB连接中断");
 
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -216,6 +219,7 @@ class DeleteAuditServiceTest {
 
         verify(deletionRequestMapper, never()).selectById(org.mockito.ArgumentMatchers.anyLong());
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -243,7 +247,7 @@ class DeleteAuditServiceTest {
         ArgumentCaptor<LambdaUpdateWrapper<Gate>> cap = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(gateMapper).update(isNull(), cap.capture());
         assertThat(cap.getValue().getSqlSet()).contains("del_flag");
-        verify(auditLogService).append(any(AuditLog.class));
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -258,14 +262,8 @@ class DeleteAuditServiceTest {
 
         service.approveAndExecute(21L, 42L);
 
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService, times(1)).append(cap.capture());
-        AuditLog captured = cap.getValue();
-        assertThat(captured.getOperatorId()).isEqualTo(42L);
-        assertThat(captured.getEntityType()).isEqualTo("products");
-        assertThat(captured.getEntityId()).isEqualTo(1200L);
-        assertThat(captured.getReason()).isEqualTo("deletion_request:21");
-        assertThat(captured.getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_EXECUTE);
+        verify(auditLogService, times(1)).append(eq(42L), eq(DeleteAuditService.ACTION_DELETE_EXECUTE),
+            eq("products"), eq(1200L), eq("deletion_request:21"));
     }
 
     @Test
@@ -280,9 +278,7 @@ class DeleteAuditServiceTest {
         service.approveAndExecute(22L, 99L);
 
         verify(projectMapper, never()).update(isNull(), any());
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(cap.capture());
-        assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_NOOP), any(), any(), any());
     }
 
     @Test
@@ -296,8 +292,6 @@ class DeleteAuditServiceTest {
         service.approveAndExecute(23L, 99L);
 
         verify(projectMapper, never()).update(isNull(), any());
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(cap.capture());
-        assertThat(cap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_NOOP), any(), any(), any());
     }
 }

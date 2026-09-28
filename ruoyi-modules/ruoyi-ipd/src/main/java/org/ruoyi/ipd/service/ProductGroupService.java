@@ -3,7 +3,6 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.springframework.stereotype.Service;
@@ -66,14 +65,8 @@ public class ProductGroupService implements IProductGroupService {
             group.setTenantId("000000");
         }
         productGroupMapper.insert(group);
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId)
-            .action("PRODUCT_GROUP_CREATE")
-            .entityType("product_groups")
-            .entityId(group.getId())
-            .reason(group.getGroupName())
-            .createTime(new Date())
-            .build());
+        auditLogService.append(operatorId, "PRODUCT_GROUP_CREATE", "product_groups",
+            group.getId(), group.getGroupName());
         return group;
     }
 
@@ -87,14 +80,8 @@ public class ProductGroupService implements IProductGroupService {
         existing.setLeaderPersonId(newLeaderPersonId);
         existing.setUpdateTime(new Date());
         productGroupMapper.updateById(existing);
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId)
-            .action("PRODUCT_GROUP_LEADER_CHANGE")
-            .entityType("product_groups")
-            .entityId(groupId)
-            .reason("old=" + oldLeader + ",new=" + newLeaderPersonId)
-            .createTime(new Date())
-            .build());
+        auditLogService.append(operatorId, "PRODUCT_GROUP_LEADER_CHANGE", "product_groups",
+            groupId, "old=" + oldLeader + ",new=" + newLeaderPersonId);
         return existing;
     }
 

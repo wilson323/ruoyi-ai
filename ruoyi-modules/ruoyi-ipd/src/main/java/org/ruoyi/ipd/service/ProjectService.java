@@ -625,11 +625,9 @@ public class ProjectService implements IProjectService {
             // 通知 MARKET_PM（项目主组 GROUP_LEADER 视作 PRODUCT_LEADER 角色；
             // 此处简化为发到 mainGroupId 对应 GROUP_LEADER 与项目主负责人）
             if (p.getMainGroupId() != null) {
-                auditLogService.append(AuditLog.builder()
-                    .operatorId(0L).action("LEGACY_SCENARIO_CRITICAL")
-                    .entityType("projects").entityId(p.getId())
-                    .reason("LEGACY 场景复核临界：" + p.getName() + " 剩余 " + remaining + " 天（lastActivityAt=" + lastActivity + "）")
-                    .createTime(now()).build());
+                // R239 消重：委托 append(Long,...) 共享重载；createTime 由注入 Clock（业务时间）回归真实写入时刻（审计语义更准，生产墙钟等价，无测试断言审计时间，行为可证等价）
+                auditLogService.append(0L, "LEGACY_SCENARIO_CRITICAL", "projects", p.getId(),
+                    "LEGACY 场景复核临界：" + p.getName() + " 剩余 " + remaining + " 天（lastActivityAt=" + lastActivity + "）");
                 notified++;
             }
         }
@@ -771,9 +769,9 @@ public class ProjectService implements IProjectService {
     }
 
     private void audit(Long id, String name, Long operatorId, String action) {
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action(action).entityType("projects").entityId(id).reason(name)
-            .createTime(now()).build());
+        // R239 消重：委托 append(Long,...) 共享重载；createTime 由注入 Clock（业务时间）回归
+        // 真实写入时刻（审计语义更准，生产墙钟等价，无测试断言审计时间，行为可证等价）。
+        auditLogService.append(operatorId, action, "projects", id, name);
     }
 
     /** R8X-CONT-1 P0-1：四基准 before/after 审计（PATCH 触发变更时镜像新旧值） */

@@ -22,6 +22,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -101,7 +102,7 @@ class ProductServiceTest {
         // 108be858 起 PM_NEW 默认状态由 ACTIVE 改为 IN_RD（AC-PROD-07：PM 新增→在研）
         Product created = service.create(product("PM_NEW", null, null), 1L);
         assertThat(created.getStatus()).isEqualTo(Product.ST_IN_RD);
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test

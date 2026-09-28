@@ -187,13 +187,8 @@ public class PersonService {
     private boolean revokeIpdSessions(Long personId, IpdActor operator) {
         try {
             ipdAuthSession.revokeAll(personId);
-            auditLogService.append(AuditLog.builder()
-                .entityType("persons")
-                .entityId(personId)
-                .action("REVOKE_SESSIONS")
-                .operatorId(operator.id())
-                .reason("离职冻结撤销会话（AC-AUTH-06）")
-                .build());
+            auditLogService.append(operator.id(), "REVOKE_SESSIONS", "persons", personId,
+                "离职冻结撤销会话（AC-AUTH-06）");
             return true;
         } catch (Exception e) {
             log.warn("P2-2.2 撤销会话失败（不影响主链路）: personId={}", personId, e);

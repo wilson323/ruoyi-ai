@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductMapper;
@@ -413,9 +412,7 @@ public class ProductService implements IProductService {
     }
 
     private void audit(Long id, String name, Long operatorId, String action) {
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action(action).entityType("products").entityId(id).reason(name)
-            .createTime(new Date()).build());
+        auditLogService.append(operatorId, action, "products", id, name);
     }
 
     private static boolean isBlank(String v) {

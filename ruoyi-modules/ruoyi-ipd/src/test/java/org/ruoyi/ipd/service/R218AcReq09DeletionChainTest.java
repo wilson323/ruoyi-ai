@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.Requirement;
@@ -37,6 +36,8 @@ import java.util.Date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -116,7 +117,7 @@ class R218AcReq09DeletionChainTest {
         assertThat(request.getEntityType()).isEqualTo("requirements");
         assertThat(request.getEntityId()).isEqualTo(REAL_REQ_ID);
         verify(deletionRequestMapper).insert(any(DeletionRequest.class));
-        verify(auditLogService).append(any(AuditLog.class));
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -210,10 +211,7 @@ class R218AcReq09DeletionChainTest {
         ArgumentCaptor<LambdaUpdateWrapper<Requirement>> cap = ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(requirementMapper).update(isNull(), cap.capture());
         assertThat(cap.getValue().getSqlSet()).contains("del_flag");
-        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(auditCap.capture());
-        assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_EXECUTE);
-        assertThat(auditCap.getValue().getEntityType()).isEqualTo("requirements");
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_EXECUTE), eq("requirements"), any(), any());
     }
 
     @Test
@@ -229,9 +227,7 @@ class R218AcReq09DeletionChainTest {
         auditService.approveAndExecute(32L, 2L);
 
         verify(requirementMapper, never()).update(isNull(), any());
-        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(auditCap.capture());
-        assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_NOOP), any(), any(), any());
     }
 
     private static Date date(int y, int m, int d) {

@@ -17,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,7 +89,7 @@ class CertTemplateServiceTest {
         when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         CertTemplate created = service.create(tpl("CN", "中国", "SRRC", "1"), 1L);
         assertThat(created.getIsMandatory()).isEqualTo("1");
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
 
         assertThatThrownBy(() -> service.remove(1L, 1L))
             .isInstanceOf(ServiceException.class)

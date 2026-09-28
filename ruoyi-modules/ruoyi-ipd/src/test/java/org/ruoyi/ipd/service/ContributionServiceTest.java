@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -216,7 +217,7 @@ class ContributionServiceTest {
         // 8300 / 10000 = 0.83
         assertThat(view.tierCoefficient()).isEqualByComparingTo(new BigDecimal("0.83"));
         verify(contributionMapper).insert(any(Contribution.class));
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -357,7 +358,7 @@ class ContributionServiceTest {
         var view = service.confirm(PROJECT_ID, "APPROVE", "评定通过");
         assertThat(view.status()).isEqualTo(Contribution.ST_CONFIRMED);
         assertThat(view.leaderDecision()).isEqualTo("APPROVE");
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
         // BR-INC-09 归档版本可追溯：APPROVE 必归档一份快照
         verify(versionMapper).insert(org.mockito.ArgumentMatchers
             .<org.ruoyi.ipd.domain.ContributionVersion>argThat(cv ->

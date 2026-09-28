@@ -24,6 +24,8 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -156,11 +158,8 @@ class P1_1_1_BidirectionalBindingTest {
         // 终态自洽校验触发重读（product 端 require + 自洽终态；project 端 requireProject + 自洽终态）
         verify(productMapper, times(2)).selectById(3L);
         verify(projectMapper, times(2)).selectById(9L);
-        // 审计 1 次
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService, times(1)).append(cap.capture());
-        assertThat(cap.getValue().getAction()).isEqualTo("PRODUCT_BIND_PROJECT");
-        assertThat(cap.getValue().getOperatorId()).isEqualTo(1L);
+        // 审计 1 次（5 参重载 eq 保真：operatorId=1L + action=PRODUCT_BIND_PROJECT）
+        verify(auditLogService, times(1)).append(eq(1L), eq("PRODUCT_BIND_PROJECT"), any(), any(), any());
     }
 
     // ========== 维度 2：反例 —— 产品已绑 A，再绑 B 拒绝 ==========
@@ -184,6 +183,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         // 不写审计
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     // ========== 维度 3：反例 —— 项目 A 已绑产品 X，再绑产品 Y 拒绝 ==========
@@ -205,6 +205,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     // ========== 维度 4：解绑后重新绑定 ==========
@@ -226,11 +227,10 @@ class P1_1_1_BidirectionalBindingTest {
         // 终态：两端 project_id / product_id 应为 null
         assertThat(p.getProjectId()).isNull();
         assertThat(pr.getProductId()).isNull();
-        // 解绑审计
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService, atLeastOnce()).append(cap.capture());
-        assertThat(cap.getAllValues().stream()
-            .anyMatch(a -> "PRODUCT_UNBIND_PROJECT".equals(a.getAction()))).isTrue();
+        // 解绑审计（5 参重载：第 2 参 action 捕获，保持 atLeastOnce 语义）
+        ArgumentCaptor<String> actionCap = ArgumentCaptor.forClass(String.class);
+        verify(auditLogService, atLeastOnce()).append(anyLong(), actionCap.capture(), any(), any(), any());
+        assertThat(actionCap.getAllValues()).contains("PRODUCT_UNBIND_PROJECT");
 
         // 第二阶段：重新绑到不同项目（100）——验证 product.project_id 已被解绑
         Product p2 = product(3L, null, 7L);
@@ -269,6 +269,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -302,13 +303,9 @@ class P1_1_1_BidirectionalBindingTest {
 
         service.bindProject(3L, 9L, 42L /* 操作人 */, 7L, "MARKET_PM");
 
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService, times(1)).append(cap.capture());
-        AuditLog log = cap.getValue();
-        assertThat(log.getOperatorId()).isEqualTo(42L);
-        assertThat(log.getAction()).isEqualTo("PRODUCT_BIND_PROJECT");
-        assertThat(log.getEntityType()).isEqualTo("products");
-        assertThat(log.getEntityId()).isEqualTo(3L);
+        // 5 参 eq 保真映射：operatorId/action/entityType/entityId 原断言字段全保留（reason 原未断言 → any()）
+        verify(auditLogService, times(1)).append(eq(42L), eq("PRODUCT_BIND_PROJECT"),
+            eq("products"), eq(3L), any());
     }
 
     @Test
@@ -323,13 +320,9 @@ class P1_1_1_BidirectionalBindingTest {
 
         service.unbindProject(3L, 9L, 77L /* 操作人 */, 7L, "MARKET_PM");
 
-        ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService, times(1)).append(cap.capture());
-        AuditLog log = cap.getValue();
-        assertThat(log.getOperatorId()).isEqualTo(77L);
-        assertThat(log.getAction()).isEqualTo("PRODUCT_UNBIND_PROJECT");
-        assertThat(log.getEntityType()).isEqualTo("products");
-        assertThat(log.getEntityId()).isEqualTo(3L);
+        // 5 参 eq 保真映射：operatorId/action/entityType/entityId 原断言字段全保留（reason 原未断言 → any()）
+        verify(auditLogService, times(1)).append(eq(77L), eq("PRODUCT_UNBIND_PROJECT"),
+            eq("products"), eq(3L), any());
     }
 
     // ========== W28-2 commit 后台安全审查闭环：cross-group-idor + info-disclosure ==========
@@ -359,6 +352,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     /**
@@ -384,6 +378,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     /**
@@ -447,6 +442,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         // 不写审计
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -467,6 +463,7 @@ class P1_1_1_BidirectionalBindingTest {
 
         // 不写审计
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     // ========== 辅助：解绑自洽 ==========
@@ -484,6 +481,7 @@ class P1_1_1_BidirectionalBindingTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     // ========== 辅助：GUEST_OTHER 拒绝 ==========
@@ -502,5 +500,6 @@ class P1_1_1_BidirectionalBindingTest {
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 }

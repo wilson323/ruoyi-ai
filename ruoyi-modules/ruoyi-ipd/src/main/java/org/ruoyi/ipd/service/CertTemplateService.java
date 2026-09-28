@@ -3,7 +3,6 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.mapper.CertTemplateMapper;
 import org.springframework.stereotype.Service;
@@ -98,9 +97,7 @@ public class CertTemplateService implements ICertTemplateService {
     }
 
     private void audit(Long id, String name, Long operatorId, String action) {
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action(action).entityType("cert_templates").entityId(id).reason(name)
-            .createTime(new Date()).build());
+        auditLogService.append(operatorId, action, "cert_templates", id, name);
     }
 
     private static boolean isBlank(String v) {

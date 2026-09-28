@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.ContributionVersion;
 import org.ruoyi.ipd.domain.Project;
@@ -385,14 +384,9 @@ public class ContributionService implements IContributionService {
                 "/projects/" + projectId);
         }
 
-        auditLogService.append(AuditLog.builder()
-            .action("CONTRIBUTION_SAVE")
-            .entityType("Contribution")
-            .entityId(entity.getId())
-            .operatorId(actor.id())
-            .reason("{\"role\":\"" + req.role() + "\",\"tierCoefficient\":\""
-                + tier.toPlainString() + "\",\"status\":\"" + entity.getStatus() + "\"}")
-            .build());
+        auditLogService.append(actor.id(), "CONTRIBUTION_SAVE", "Contribution", entity.getId(),
+            "{\"role\":\"" + req.role() + "\",\"tierCoefficient\":\""
+                + tier.toPlainString() + "\",\"status\":\"" + entity.getStatus() + "\"}");
 
         log.info("[{}] 保存贡献度自评 projectId={} role={} tier={} status={}",
             actor.id(), projectId, req.role(), tier.toPlainString(), entity.getStatus());
@@ -425,14 +419,9 @@ public class ContributionService implements IContributionService {
         entity.setUpdateBy(actor.id());
         contributionMapper.updateById(entity);
 
-        auditLogService.append(AuditLog.builder()
-            .action("CONTRIBUTION_ADJUST_SHARE")
-            .entityType("Contribution")
-            .entityId(entity.getId())
-            .operatorId(actor.id())
-            .reason("{\"oldShare\":\"" + oldShare + "\",\"newShare\":\""
-                + marketShare.toPlainString() + "\"}")
-            .build());
+        auditLogService.append(actor.id(), "CONTRIBUTION_ADJUST_SHARE", "Contribution", entity.getId(),
+            "{\"oldShare\":\"" + oldShare + "\",\"newShare\":\""
+                + marketShare.toPlainString() + "\"}");
 
         log.info("[{}] 调整贡献度比例 projectId={} {} -> {}",
             actor.id(), projectId, oldShare, marketShare.toPlainString());
@@ -509,15 +498,10 @@ public class ContributionService implements IContributionService {
         String postCommitToState = "APPROVE".equals(decision) ? Contribution.ST_CONFIRMED : Contribution.ST_DRAFT;
         registerPostCommit(postCommitFromState, postCommitToState, postCommitTrigger, actor.id(), entity.getId());
 
-        auditLogService.append(AuditLog.builder()
-            .action("CONTRIBUTION_CONFIRM")
-            .entityType("Contribution")
-            .entityId(entity.getId())
-            .operatorId(actor.id())
-            .reason("{\"decision\":\"" + decision + "\",\"marketShare\":\""
+        auditLogService.append(actor.id(), "CONTRIBUTION_CONFIRM", "Contribution", entity.getId(),
+            "{\"decision\":\"" + decision + "\",\"marketShare\":\""
                 + entity.getMarketShare().toPlainString() + "\",\"tierCoefficient\":\""
-                + entity.getTierCoefficient().toPlainString() + "\"}")
-            .build());
+                + entity.getTierCoefficient().toPlainString() + "\"}");
 
         log.info("[{}] 组长确认贡献度 projectId={} decision={} tier={}",
             actor.id(), projectId, decision, entity.getTierCoefficient().toPlainString());

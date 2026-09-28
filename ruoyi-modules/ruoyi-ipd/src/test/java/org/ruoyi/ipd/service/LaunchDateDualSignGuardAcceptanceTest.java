@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -177,6 +178,7 @@ class LaunchDateDualSignGuardAcceptanceTest {
         assertThat(project.getLaunchDate()).isNull();
         verify(projectMapper, never()).updateById(any(Project.class));
         verify(auditLogService, never()).append(any());
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -193,7 +195,7 @@ class LaunchDateDualSignGuardAcceptanceTest {
         assertThat(confirmed.getStatus()).isEqualTo(LaunchDateChangeRequest.ST_CONFIRMED);
         assertThat(confirmed.getConfirmerId()).isEqualTo(22L);
         assertThat(project.getLaunchDate()).isEqualTo(DAY);
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test

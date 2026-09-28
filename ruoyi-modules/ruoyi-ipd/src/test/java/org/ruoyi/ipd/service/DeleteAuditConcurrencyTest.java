@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
@@ -29,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -98,7 +98,7 @@ class DeleteAuditConcurrencyTest {
 
         assertThat(success.get()).isEqualTo(1);
         assertThat(failed.get()).isEqualTo(1);
-        verify(auditLogService, times(1)).append(any(AuditLog.class));
+        verify(auditLogService, times(1)).append(anyLong(), any(), any(), any(), any());
     }
 
     private DeletionRequest pending() {

@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -176,11 +177,7 @@ class P232AcceptanceTest {
         assertThat(result.getStatus()).isEqualTo("PENDING");
         assertThat(result.getRdPmId()).isEqualTo(RD_PM_A);
         verify(bidResponseMapper).insert(any(BidResponse.class));
-        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo("accept");
-        assertThat(captor.getValue().getEntityType()).isEqualTo("bid_response");
-        assertThat(captor.getValue().getOperatorId()).isEqualTo(RD_PM_A);
+        verify(auditLogService).append(eq(RD_PM_A), eq("accept"), eq("bid_response"), any(), any());
     }
 
     @Test
@@ -199,7 +196,7 @@ class P232AcceptanceTest {
         assertThat(result.getResponseNote()).contains("A方案");
         verify(bidResponseMapper, never()).insert(any(BidResponse.class));
         verify(bidResponseMapper).updateById(existing);
-        verify(auditLogService).append(any(AuditLog.class));
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test

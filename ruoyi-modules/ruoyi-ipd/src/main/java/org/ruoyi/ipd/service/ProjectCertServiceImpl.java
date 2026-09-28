@@ -3,7 +3,6 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectCertItem;
@@ -101,11 +100,8 @@ public class ProjectCertServiceImpl implements IProjectCertService {
         if (added > 0) {
             // R8-P0-6：批量插入（MyBatis-Plus insertBatch 自动分批）
             projectCertItemMapper.insertBatch(toInsert, 200);
-            auditLogService.append(AuditLog.builder()
-                .operatorId(operatorId).action("PROJECT_CERT_SYNC")
-                .entityType("project_cert_items").entityId(project.getId())
-                .reason("catalog=" + catalogVersion + ";added=" + added)
-                .createTime(now).build());
+            auditLogService.append(operatorId, "PROJECT_CERT_SYNC", "project_cert_items",
+                project.getId(), "catalog=" + catalogVersion + ";added=" + added);
         }
         return added;
     }
@@ -228,11 +224,8 @@ public class ProjectCertServiceImpl implements IProjectCertService {
         item.setCreateBy(operatorId);
         item.setUpdateBy(operatorId);
         projectCertItemMapper.insert(item);
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action("PROJECT_CERT_MANUAL")
-            .entityType("project_cert_items").entityId(item.getId())
-            .reason(code + "/" + name)
-            .createTime(new Date()).build());
+        auditLogService.append(operatorId, "PROJECT_CERT_MANUAL", "project_cert_items",
+            item.getId(), code + "/" + name);
         return item;
     }
 
@@ -267,11 +260,8 @@ public class ProjectCertServiceImpl implements IProjectCertService {
         if (updated == 0) {
             throw new ServiceException("认证状态变更被并发覆盖（version 不匹配），请刷新后重试");
         }
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action("PROJECT_CERT_STATUS")
-            .entityType("project_cert_items").entityId(itemId)
-            .reason(before + "→" + target)
-            .createTime(new Date()).build());
+        auditLogService.append(operatorId, "PROJECT_CERT_STATUS", "project_cert_items",
+            itemId, before + "→" + target);
         return item;
     }
 

@@ -2,7 +2,6 @@ package org.ruoyi.ipd.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.service.executor.CertTemplateSoftDeleteExecutor;
@@ -115,16 +114,9 @@ public class DeleteAuditService implements IDeleteAuditService {
             throw e;
         }
 
-        // 步骤 3：同事务内写审计（绝不能跨事务或 catch 异常后补写）
-        AuditLog logEntry = AuditLog.builder()
-            .operatorId(adminId)
-            .action(noop ? ACTION_DELETE_NOOP : ACTION_DELETE_EXECUTE)
-            .entityType(request.getEntityType())
-            .entityId(request.getEntityId())
-            .reason("deletion_request:" + requestId)
-            .createTime(new Date())
-            .build();
-        auditLogService.append(logEntry);
+        // 步骤 3：同事务内写审计（绝不能跨事务或 catch 异常后补写）；委托 append(Long,...) 共享重载
+        auditLogService.append(adminId, noop ? ACTION_DELETE_NOOP : ACTION_DELETE_EXECUTE,
+            request.getEntityType(), request.getEntityId(), "deletion_request:" + requestId);
 
         return request;
     }

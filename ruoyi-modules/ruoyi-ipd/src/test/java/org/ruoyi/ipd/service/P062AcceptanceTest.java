@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CertTemplate;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Gate;
@@ -38,6 +37,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -133,7 +134,7 @@ class P062AcceptanceTest {
             }
             service.approveAndExecute(req.getId(), 99L);
         }
-        verify(auditLogService, times(5)).append(any(AuditLog.class));
+        verify(auditLogService, times(5)).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -173,9 +174,7 @@ class P062AcceptanceTest {
         service.approveAndExecute(1L, 99L);
 
         verify(projectMapper, never()).update(isNull(), any());
-        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(auditCap.capture());
-        assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_NOOP), any(), any(), any());
     }
 
     @Test
@@ -191,8 +190,6 @@ class P062AcceptanceTest {
         service.approveAndExecute(2L, 99L);
 
         verify(productMapper, never()).update(isNull(), any());
-        ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
-        verify(auditLogService).append(auditCap.capture());
-        assertThat(auditCap.getValue().getAction()).isEqualTo(DeleteAuditService.ACTION_DELETE_NOOP);
+        verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_NOOP), any(), any(), any());
     }
 }

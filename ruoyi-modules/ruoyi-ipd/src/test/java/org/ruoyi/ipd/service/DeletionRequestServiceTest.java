@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -140,7 +141,9 @@ class DeletionRequestServiceTest {
         // 周五 +1 工作日 = 周一(7)，+2 = 周二(8)
         assertThat(due.get(Calendar.DATE)).isEqualTo(8);
         verify(deletionRequestMapper).insert(any(DeletionRequest.class));
-        verify(auditLogService).append(any(AuditLog.class));
+        // 5 参重载首参统一 nullable(Long)：本服务系统升级路径（如 DELETE_LEADER_OVERDUE_ESCALATE）
+        // operatorId=null 是真实语义，anyLong() 不匹配 null 会假红；判据=matcher 首参与生产参数可空性对齐
+        verify(auditLogService).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -218,7 +221,7 @@ class DeletionRequestServiceTest {
         // PERF-P0-1：禁止逐条 updateById（消除 N+1 写放大）
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         // 步骤 ③：受影响行逐条补审计（G-02 语义不变）
-        verify(auditLogService, times(1)).append(any(AuditLog.class));
+        verify(auditLogService, times(1)).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -233,6 +236,7 @@ class DeletionRequestServiceTest {
         verify(deletionRequestMapper, never()).update(any(), any(LambdaUpdateWrapper.class));
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -287,6 +291,7 @@ class DeletionRequestServiceTest {
             .isEqualTo(ApiV1ErrorCode.UNAUTHORIZED);
         verify(deletionRequestMapper, never()).insert(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
         verifyNoInteractions(projectMapper, projectMemberMapper, gateMapper, productMapper, personMapper);
     }
 
@@ -330,6 +335,7 @@ class DeletionRequestServiceTest {
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
         verify(deletionRequestMapper, never()).insert(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -354,6 +360,7 @@ class DeletionRequestServiceTest {
             .isEqualTo(ApiV1ErrorCode.NOT_FOUND);
         verify(deletionRequestMapper, never()).insert(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -421,6 +428,7 @@ class DeletionRequestServiceTest {
         verify(deletionRequestMapper, never()).selectById(any());
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -436,6 +444,7 @@ class DeletionRequestServiceTest {
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test
@@ -473,6 +482,7 @@ class DeletionRequestServiceTest {
         verify(deleteAuditService, never()).approveAndExecute(any(), any());
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     private static Date date(int y, int m, int d) {

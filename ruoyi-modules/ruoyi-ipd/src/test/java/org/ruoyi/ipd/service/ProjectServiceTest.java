@@ -24,6 +24,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -120,7 +121,7 @@ class ProjectServiceTest {
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
         assertThat(product50().getProjectId()).isEqualTo(created.getId());
         verify(projectBootstrapService).bootstrap(created.getId(), 1L);
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test

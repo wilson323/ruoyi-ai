@@ -20,6 +20,7 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -172,10 +173,15 @@ class P222AcceptanceTest {
 
         ArgumentCaptor<AuditLog> audits = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService, atLeastOnce()).append(audits.capture());
+        ArgumentCaptor<String> actionCap = ArgumentCaptor.forClass(String.class);
+        verify(auditLogService, atLeastOnce()).append(anyLong(), actionCap.capture(), any(), any(), any());
         List<AuditLog> all = audits.getAllValues();
+        // 合并 1 参（RESIGN/UNBIND_WECHAT）与 5 参（REVOKE_SESSIONS）两侧 action 值
+        List<String> allActions = new ArrayList<>();
+        all.forEach(a -> allActions.add(a.getAction()));
+        allActions.addAll(actionCap.getAllValues());
         // 必须有 RESIGN + UNBIND_WECHAT + REVOKE_SESSIONS 至少三条
-        assertThat(all).extracting(AuditLog::getAction)
-            .contains("RESIGN", "UNBIND_WECHAT", "REVOKE_SESSIONS");
+        assertThat(allActions).contains("RESIGN", "UNBIND_WECHAT", "REVOKE_SESSIONS");
         AuditLog unbindAudit = all.stream()
             .filter(a -> "UNBIND_WECHAT".equals(a.getAction())).findFirst().orElseThrow();
         assertThat(unbindAudit.getEntityId()).isEqualTo(902L);
@@ -220,8 +226,9 @@ class P222AcceptanceTest {
         assertThat(second.message()).contains("幂等");
         // 第二次不应再触发 updateById / audit / 通知
         verify(personMapper, times(1)).updateById(any(Person.class));
-        // audit 仅首次 RESIGN + REVOKE_SESSIONS 二条（wecom 已空无 UNBIND_WECHAT），二次不重写
-        verify(auditLogService, times(2)).append(any(AuditLog.class));
+        // audit 仅首次 RESIGN（1 参）+ REVOKE_SESSIONS（5 参）各一条（wecom 已空无 UNBIND_WECHAT），二次不重写
+        verify(auditLogService, times(1)).append(any(AuditLog.class));
+        verify(auditLogService, times(1)).append(anyLong(), any(), any(), any(), any());
         // publish 仅首次发本人通知 1 条（无本组/对方/超管 stub 均返空 list），二次不重写
         verify(notificationService, times(1)).publish(anyLong(), anyString(), anyString(),
             anyString(), anyLong(), anyString(), anyString(), anyString());
@@ -446,6 +453,7 @@ class P222AcceptanceTest {
         assertThat(result.idempotent()).isTrue();
         // audit 完全不调（幂等路径）
         verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
         verify(ipdAuthSession, never()).revokeAll(anyLong());
     }
 

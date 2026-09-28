@@ -39,6 +39,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -133,6 +134,7 @@ class Sec03WithdrawSideChannelTest {
             .isEqualTo(ApiV1ErrorCode.NOT_FOUND);
         verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
         verify(auditLogService, never()).append(any());
+        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -208,7 +210,7 @@ class Sec03WithdrawSideChannelTest {
 
         assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_WITHDRAWN);
         verify(deletionRequestMapper).updateById(any(DeletionRequest.class));
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     // ==================== 错误响应 body 字节级一致 ====================

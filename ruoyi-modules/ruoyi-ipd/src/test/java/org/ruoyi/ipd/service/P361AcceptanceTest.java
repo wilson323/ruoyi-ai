@@ -27,6 +27,7 @@ import java.util.Arrays;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -223,7 +224,7 @@ class P361AcceptanceTest {
         // Then：status ⇒ CONFIRMED，leaderDecision ⇒ APPROVE，审计落地
         assertThat(view.status()).isEqualTo(Contribution.ST_CONFIRMED);
         assertThat(view.leaderDecision()).isEqualTo("APPROVE");
-        verify(auditLogService).append(any());
+        verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
     /* ============================================================

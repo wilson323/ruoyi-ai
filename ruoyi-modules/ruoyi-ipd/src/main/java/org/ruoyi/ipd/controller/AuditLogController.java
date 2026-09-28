@@ -165,15 +165,9 @@ public class AuditLogController {
         IpdActor actor = ipdPermission.requireInternal();
         List<Long> operatorIds = resolveOperatorIds(actor);
         long count = auditLogService.countByOperatorIds(operatorIds);
-        // 导出动作本身写一条审计（独立事务）
-        auditLogService.append(AuditLog.builder()
-            .operatorId(actor.id())
-            .operatorName(actor.name())
-            .operatorRole(actor.role())
-            .action("EXPORT")
-            .entityType("audit_logs")
-            .reason("scope=" + (operatorIds == null ? "GLOBAL" : operatorIds.size() + "_ids"))
-            .build());
+        // 导出动作本身写一条审计（独立事务）；委托 append(IpdActor,...) 共享重载（entityId 语义同原样缺省）
+        auditLogService.append(actor, "EXPORT", "audit_logs", null,
+            "scope=" + (operatorIds == null ? "GLOBAL" : operatorIds.size() + "_ids"));
         return ApiV1Response.ok(Map.of(
             "exported", count,
             "scope", operatorIds == null ? "GLOBAL" : (operatorIds.size() == 1 && operatorIds.get(0).equals(actor.id())) ? "OWN" : "GROUP"));
@@ -190,14 +184,7 @@ public class AuditLogController {
     public ApiV1Response<Map<String, Object>> rebuildChain() {
         IpdActor actor = ipdPermission.requireAdmin();
         long fixed = auditLogService.rebuildChain();
-        auditLogService.append(AuditLog.builder()
-            .operatorId(actor.id())
-            .operatorName(actor.name())
-            .operatorRole(actor.role())
-            .action("REBUILD_CHAIN")
-            .entityType("audit_logs")
-            .reason("DEF-4 fixed=" + fixed)
-            .build());
+        auditLogService.append(actor, "REBUILD_CHAIN", "audit_logs", null, "DEF-4 fixed=" + fixed);
         return ApiV1Response.ok(Map.of(
             "fixed", fixed,
             "serverBuild", currentBuildVersion(),

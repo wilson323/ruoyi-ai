@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.domain.ProjectMember;
@@ -258,9 +257,7 @@ public class BidResponseService implements IBidResponseService {
      * 应标审计：仅 accept 写入（BR-TEAM-03 拒绝不写审计）；entityType 对齐 spec 页21 全局枚举 bid_response
      */
     private void audit(BidResponse resp, Long operatorId) {
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action("accept").entityType("bid_response").entityId(resp.getId())
-            .reason("invitation=" + resp.getInvitationId())
-            .createTime(new Date()).build());
+        auditLogService.append(operatorId, "accept", "bid_response", resp.getId(),
+            "invitation=" + resp.getInvitationId());
     }
 }

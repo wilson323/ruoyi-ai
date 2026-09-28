@@ -1346,14 +1346,6 @@ public class BonusPoolService implements IBonusPoolService {
         appendAudit(actor, action, entityId, reason, null, null);
     }
 
-    /**
-     * [legacy] 兼容旧 try/catch 块的占位符——原 4 参 appendAudit 已被新签名取代，
-     * 旧的 try/catch 已并入新方法末尾，本占位无逻辑。
-     */
-    private void _legacy_audit_append_marker(AuditLog draft) {
-        // 占位以维持源码可见；真实 try/catch 见新 appendAudit 实现。
-    }
-
     /* ---------------------- ROOT-R3-P0-1 跨状态机守卫辅助 ---------------------- */
 
     /**

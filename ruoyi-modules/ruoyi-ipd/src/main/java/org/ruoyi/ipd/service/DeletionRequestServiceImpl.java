@@ -7,7 +7,6 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.Person;
@@ -704,15 +703,8 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
     }
 
     private void audit(String entityType, Long entityId, Long operatorId, String action, Long requestId) {
-        AuditLog log = AuditLog.builder()
-            .operatorId(operatorId)
-            .action(action)
-            .entityType(entityType)
-            .entityId(entityId)
-            .reason("deletion_request:" + requestId)
-            .createTime(now())
-            .build();
-        auditLogService.append(log);
+        // R239 消重：委托 append(Long,...) 共享重载；createTime 由注入 Clock 回归真实写入时刻（同 ProjectService 注）。
+        auditLogService.append(operatorId, action, entityType, entityId, "deletion_request:" + requestId);
     }
 
     /**
