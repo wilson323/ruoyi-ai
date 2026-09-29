@@ -18,11 +18,41 @@
 #     8) kpis / incentives → DB 拆为 kpi_records / bonus_pools 等
 #
 # 本脚本做两件事(必须都能跑):
-#   (a) 文档表名漂移:扫 docs/开发说明/ + docs/ipd-系统说明/ 中所有 snake_case
-#       标识符,与 INFORMATION_SCHEMA.TABLES 对账。命中 DB → 合法;命中白名
-#       单 → 合法(术语表已确认);否则 → mismatch,exit 1。
+#   (a) 文档表名漂移:扫 docs/开发说明/ + docs/ipd-系统说明/ 中的**表名语境
+#       候选标识符**(O-6-3 四围栏,见下),与 INFORMATION_SCHEMA.TABLES 对账。
+#       命中 DB → 合法;命中白名单 → 合法(术语表已确认);否则 → mismatch,exit 1。
 #   (b) DB 表无文档引用:扫 ipd_dev 全表,在文档里 0 引用的表 → 警告(仅警告,
 #       不 exit 1,因为新表短期无文档引用是合理的)。
+#
+# 【2026-09-28 O-6-3 精度修订(审计 §S6 证据③裁决:曾报 73,212~85,697 处漂移,
+#   量级不可能;R37/R39 有 66→1→3→2 式精度迭代先例)】
+#   旧口径病根:候选提取用 \b[a-z][a-z_]+[a-z]\b —— 把文档中**一切小写英文单词**
+#   (含无下划线普通词)都当 snake_case 表名候选,白名单仅 ~470 词,导致普通
+#   英文词成片误报(73k+ 假红)。
+#   新口径 = 四层「表名语境」围栏(R37 式逐轮收敛,73,212 → 246,297 倍收敛):
+#     S1 `tbl.col`   : 反引号包裹的 表.字段 引用(如 `change_requests.code`),
+#                      col 非文件扩展名 —— 最强表名声称信号
+#     S2 SQL 位置词   : FROM/JOIN/INTO/UPDATE/TABLE 紧随词(含 db.table 取 table),
+#                      须含下划线、非字段后缀形态
+#     S3 「表」+反引号: 行内含中文「表」字的反引号词(如 「数据表 `gate_elements`」),
+#                      排除字段名后缀(_id/_at/_name 等 42 种)与 hex-hash 形态
+#     S4 entityType 行: 含 entityType 的行(排除 notification/通知语境)中的
+#                      含下划线词 —— R37 §5.1 失真#1 的检出通道
+#   【2026-09-28 O-6-3 补丁·扫描截断修复】首轮修订验证时发现:docs/ipd-系统说明/
+#     E2E-验收-20260919-{2304,2255,2355}.md 含非法 UTF-8 字节(emoji 截断产物 0xBC 0x8B 0x8E),
+#     macOS BWK awk(UTF-8 locale)处理时 towc multibyte conversion failure 直接 fatal(exit 2),
+#     且原调用 `2>/dev/null` 吞掉了错误 —— find 序在首个坏文件之后的文档全部漏扫,
+#     960 hits/444 drift 实为截断值。修复:LC_ALL=C 字节模式 + index(line,"表") 字节匹配。
+#     修复后 hits/drift 数字为全量扫描值(较截断值增大属预期,漏扫面首次纳入)。
+#   已知口径限制(如实披露):
+#     - 无「表」字/无反引号/无 SQL 动词的纯概念词散引用(如段落里的 demand)
+#       不在候选内 —— 概念层对账需术语表支撑(R43-β 方向),静态形态抓不全
+#     - 以字段后缀结尾的真表名(仅 sys_dict_data/sys_dict_type/sys_url 三张,
+#       均在 DB 集合内)在 S3 通道漏检 —— 不产生误报,仅检出面收窄
+#   --refined 语义重构:R39 版三层围栏实现有缺陷(文件缓存只读首行+URL 围栏
+#     未实现);现改为「强信号子集」= S1+S2 因栏的漂移(pre-commit hook 兼容
+#     入口,drift_count 为阻断级强信号数;主模式输出四围栏全量)。
+#   白名单棘轮只减不增:本轮未向白名单加任何词,纯靠围栏精度收敛。
 #
 # 用法:
 #   ./scripts/check-doc-db-drift.sh
@@ -65,7 +95,7 @@ WHITELIST_FILE=""
 JSON_ONLY=0
 STRICT=0
 MIN_LEN=4            # snake_case 标识符最小长度(MIN_LEN=4 是为了覆盖 R37 §5.1 的 kpis 漂移);MIN_LEN=3 会引入大量 ipd/done/test/dev/vue/git 等短词误报,默认不放开
-REFINED=0            # R39 精炼模式:三层围栏(MCP/URL/代码块)+ 字段名识别
+REFINED=0            # O-6-3 强信号子集模式(S1+S2 围栏漂移;hook 兼容入口)
 
 # ---------------------------------------------------------------------------
 # 帮助
@@ -84,7 +114,7 @@ OPTIONS:
   --min-len <N>        标识符最小长度(默认 5)
   --strict             把"DB 表无文档引用"警告升级为错误
   --json-only          只输出 JSON(便于 CI 抓取)
-  --refined            R39 精炼模式:三层围栏过滤(MCP/URL/代码块)+ 字段名识别,显著降噪
+  --refined            强信号子集(S1 tbl.col + S2 SQL 位置词;O-6-3 重构,hook 兼容入口)
   -h | --help          显示帮助
 
 EXIT CODES:
@@ -207,8 +237,11 @@ fi
 # 这些是 grep -ohE 会扫到的 snake_case 标识符,但它们不是 DB 表名,也不
 # 应被当作漂移。
 #
-# ⚠ R37 报告的 8 张漂移**故意**不加白名单,否则脚本不能红(自证能红失败)。
-# 若业务确认需把某词吸收,放到外部 --whitelist 文件即可。
+# ⚠ R37 报告的 8 张漂移原为「自证能红」样本（故意不加白名单）；2026-09-28 owner
+# 拍板随 114 条历史漂移一并吸收到外部 --whitelist 文件（只减不增棘轮）。
+# 自证能力保障：临时在文档目录造一个含伪造表名的 .md 注入 FAIL_SEED 验证
+# 脚本仍会检出（检出后删除种子文件）——吸收白名单不等于关闭检出门禁。
+# 后续新漂移必须修文档，不许再加白名单。
 
 cat > "$WL_TXT" <<'WL_EOF'
 # 默认白名单 - 已知非表名英文短词 / 工具名 / 业务概念
@@ -695,26 +728,75 @@ WL_COUNT=$(wc -l < "$WL_TXT" | tr -d ' ')
 [ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] whitelist entries: $WL_COUNT (merged with $DB_TABLE_COUNT DB tables = known set)"
 
 # ---------------------------------------------------------------------------
-# 3) 扫描文档 → 提取每个 snake_case 标识符的 file:line 列表
-#    输出格式:每行 "<id>\t<file>:<line>"
+# 3) 扫描文档 → 提取「表名语境」候选标识符(O-6-3 四围栏,单遍 awk)
+#    输出格式:每行 "<id>\t<file>:<line>\t<fence>"
+#    fence ∈ {S1,S2,S3,S4},供 --refined 强信号子集(S1+S2)过滤
 # ---------------------------------------------------------------------------
-for f in "${DOC_FILES_ALL[@]}"; do
-  [ -f "$f" ] || continue
-  rel="${f#${REPO_ROOT}/}"
+AWK_PROG="$(mktemp -t cdbd_fence.XXXXXX)"
+trap 'rm -f "$DB_TXT" "$ERR_TXT" "$HITS_TXT" "$DRIFT_TXT" "$WL_TXT" "$DOC_CONCAT_TXT" "$ORPHAN_TXT" "$AWK_PROG"' EXIT
+cat > "$AWK_PROG" <<'AWKEOF'
+BEGIN {
+  # S3 字段名后缀黑名单(42 种;真表名以此结尾的仅 sys_dict_data/type/url,均在 DB 集合内)
+  FIELD_RE = "_(id|at|time|name|code|key|type|status|flag|count|seq|hash|version|url|ref|data|value|from|to|by|dept|json|model|score|level|order|path|text|title|label|note|desc|period|reason|mode|format|total|amount|date|day|year|rate|num|size)$"
+  EXT_RE = "^(sh|py|mjs|js|ts|tsx|md|json|yml|yaml|xml|sql|java|vue|css|html|txt|log|cnf|conf|lock)$"
+}
+function ishash(w) { return w ~ /^[0-9a-f]{7,40}$/ }
+function oklen(w)  { return length(w) >= minlen }
+function emit(w, fn, fnc) { printf "%s\t%s\t%s\n", w, fn, fnc }
+{
+  line = $0; ln = FNR; fn = FILENAME
+  hasbiao = (index(line, "表") > 0)  # LC_ALL=C 字节匹配(免疫非法 UTF-8,见头注释 towc 修复)
+  iset    = (line ~ /entityType/ && line !~ /notification|通知/)
+  issql   = (line ~ /(FROM|from|JOIN|join|INTO|into|UPDATE|update|TABLE|table)[ \t]+/)
 
-  while IFS= read -r hit_line; do
-    [ -z "$hit_line" ] && continue
-    lineno="${hit_line%%:*}"
-    content="${hit_line#*:}"
-    while IFS= read -r id; do
-      [ -z "$id" ] && continue
-      printf '%s\t%s:%s\n' "$id" "$rel" "$lineno" >> "$HITS_TXT"
-    done < <(printf '%s' "$content" | grep -ohE '\b[a-z][a-z_]+[a-z]\b' 2>/dev/null)
-  done < <(grep -nE '[a-z_]+' "$f" 2>/dev/null)
-done
+  # 反引号 token:S1(tbl.col) + S3(「表」字语境裸词)
+  rest = line
+  while (match(rest, /`[^`]+`/)) {
+    tok = substr(rest, RSTART + 1, RLENGTH - 2)
+    rest = substr(rest, RSTART + RLENGTH)
+    if (tok ~ /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/) {
+      split(tok, pp, ".")
+      if (pp[1] ~ /_/ && oklen(pp[1]) && pp[2] !~ EXT_RE && !ishash(pp[1]))
+        emit(pp[1], fn ":" ln, "S1")
+    } else if (tok ~ /^[a-z][a-z0-9_]*$/) {
+      if (hasbiao && oklen(tok) && tok !~ /_$/ && !ishash(tok) && tok !~ FIELD_RE)
+        emit(tok, fn ":" ln, "S3")
+    }
+  }
+
+  # S4:entityType 行(排除通知语境)的含下划线词
+  if (iset) {
+    rest = line
+    while (match(rest, /[a-z][a-z0-9]*(_[a-z0-9]+)+/)) {
+      w = substr(rest, RSTART, RLENGTH)
+      rest = substr(rest, RSTART + RLENGTH)
+      if (oklen(w)) emit(w, fn ":" ln, "S4")
+    }
+  }
+
+  # S2:SQL 位置词(FROM/JOIN/INTO/UPDATE/TABLE 紧随词;db.table 取 table)
+  if (issql) {
+    rest = line
+    while (match(rest, /(FROM|from|JOIN|join|INTO|into|UPDATE|update|TABLE|table)[ \t]+`?[a-z][a-z0-9_.]*/)) {
+      seg = substr(rest, RSTART, RLENGTH)
+      rest = substr(rest, RSTART + RLENGTH)
+      w = seg; sub(/^.*[^a-z0-9_.]/, "", w)
+      if (w ~ /\./) { split(w, pp, "."); w = pp[2] }
+      if (w ~ /_/ && oklen(w) && !ishash(w) && w !~ FIELD_RE)
+        emit(w, fn ":" ln, "S2")
+    }
+  }
+}
+AWKEOF
+
+# LC_ALL=C(字节模式):BWK awk 在 UTF-8 locale 下遇非法字节(如 E2E-验收-20260919-*.md:3 的
+# 截断 emoji 0xBC 0x8B 0x8E)会 towc fatal 退出,且 `2>/dev/null` 曾吞掉错误 —— 导致 find 序
+# 在坏文件之后的全部文档漏扫(960/444 实为截断值)。字节模式下 index(line,"表") 等价匹配,
+# 且不再 fatal;stderr 保持可见,fatal 即刻暴露。
+LC_ALL=C awk -v minlen="$MIN_LEN" -f "$AWK_PROG" "${DOC_FILES_ALL[@]}" >> "$HITS_TXT"
 
 TOTAL_HITS=$(wc -l < "$HITS_TXT" | tr -d ' ')
-[ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] raw snake_case hits in docs: $TOTAL_HITS"
+[ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] fenced table-context hits in docs (O-6-3): $TOTAL_HITS"
 
 # ---------------------------------------------------------------------------
 # 4) 主对账
@@ -750,77 +832,22 @@ rm -f "${HITS_TXT}.pass" "${HITS_TXT}.fail"
 #     awk 严格按第一列精确匹配
 awk -F'\t' '
 NR==FNR { fail[$1] = 1; next }
-fail[$1] { print $0 }
+fail[$1] { print $1 "\t" $2 "\t" ($3 == "" ? "S?" : $3) }
 ' "${HITS_TXT}.fail.txt" "$HITS_TXT" | sort -u > "$DRIFT_TXT"
 DRIFT_COUNT=$(wc -l < "$DRIFT_TXT" | tr -d ' ')
 
-# 4a-4 R39 精炼模式:三层围栏过滤(URL / 代码块 / MCP 工具名)
-#   仅当 --refined 时启用。原始逻辑(DRIFT_TXT)不变,精炼结果另存到 DRIFT_TXT.refined
-#   性能优化:用 awk + 文件缓存,避免 N 次 sed 调用
+# 4a-4 O-6-3 强信号子集模式(--refined,hook 兼容入口)
+#   R39 版三层围栏实现有缺陷(文件缓存只读首行 + URL 围栏未实现),已废弃。
+#   现语义:S1(`tbl.col` 表名字段引用) + S2(SQL 位置词) 两因栏的漂移子集 ——
+#   即「文档以最强形态声称了某表名而 DB 无此表」的阻断级信号。
+#   主模式(不带 --refined)输出四围栏(S1+S2+S3+S4)全量,供人工对账。
 if [ "$REFINED" -eq 1 ]; then
   REFINED_TXT="${DRIFT_TXT}.refined"
-  # awk 程序:按 file 分组,逐 (id, file:line) 检查 ±2 行上下文是否含 URL/代码块
-  # MCP/工具名 直接用白名单筛
-  awk -F'\t' '
-  BEGIN {
-    TOOL_RE = "^(zker_|zvec_|vibe_kanban|kanban_|ruflo_|claude_flow_|mcp_)"
-    URL_RE  = "(https?://|www\\.|[a-zA-Z0-9_-]+\\.(com|cn|io|org|net|dev|local))"
-    CODE_RE = "^[[:space:]]{4,}|^```"
-  }
-  # 主循环:读 DRIFT_TXT 的 (id, loc)
-  NR==FNR {
-    # 第一遍:收集所有 loc 去重用于预读
-    locs[$2] = 1
-    next
-  }
-  # 第二遍:重新读 DRIFT_TXT
-  NR>FNR { exit }
-  ' "$DRIFT_TXT" "$DRIFT_TXT" > /dev/null
-  # 以上仅用于预读验证,实际过滤走下面更高效的 awk 一次性脚本
-
-  awk -F'\t' -v REFINED_TXT="$REFINED_TXT" '
-  BEGIN {
-    # 围栏 1:MCP/工具名前缀(zker_vibe_kanban / zvec / vibe_kanban / ruflo / mcp_ 等)
-    TOOL_RE = "^(zker_|zvec_|vibe_kanban|kanban_|ruflo_|claude_flow_|mcp_)"
-    # 围栏 3:markdown 行内代码 `id`(更精确,不会误杀表格/列表/引用块)
-    # 我们在主循环里用 awk 模式匹配 `\\<id\\>`,不用正则。
-  }
-  {
-    id = $1; loc = $2
-    if (id == "" || loc == "") next
-
-    # 围栏 1:MCP / 工具名前缀
-    if (id ~ TOOL_RE) next
-
-    # 解析 file:lineno
-    n = split(loc, parts, ":")
-    file = parts[1]
-    lineno = parts[n]
-    fullpath = ENVIRON["REPO_ROOT"] "/" file
-
-    # 检查文件是否已缓存(awk 进程内静态缓存)
-    if (!(file in cache_loaded)) {
-      cache[file] = ""
-      cmd = "cat \"" fullpath "\" 2>/dev/null"
-      cmd | getline cache[file]
-      close(cmd)
-      cache_loaded[file] = 1
-    }
-    if (cache[file] == "") next
-
-    # 围栏 3:markdown 行内代码 `id`(只针对 id 本身的字面量,避免误杀其他行)
-    # 用 index() 检查 ctx 是否含 \u0060id\u0060
-    tick = sprintf("%c", 96)
-    if (index(cache[file], tick id tick) > 0) next
-
-    # 通过三层围栏,加入精炼 fail 集
-    print id "\t" loc > REFINED_TXT
-  }
-  ' "$DRIFT_TXT"
+  awk -F'\t' '$3 == "S1" || $3 == "S2"' "$DRIFT_TXT" > "$REFINED_TXT"
   RAW_COUNT=$DRIFT_COUNT
   DRIFT_COUNT=$(wc -l < "$REFINED_TXT" | tr -d ' ')
   FILTERED_OUT=$(( RAW_COUNT - DRIFT_COUNT ))
-  [ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] REFINED: $RAW_COUNT raw -> $DRIFT_COUNT real (filtered $FILTERED_OUT by URL/code/MCP)"
+  [ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] REFINED(strong-signal S1+S2): $RAW_COUNT all-fence -> $DRIFT_COUNT strong (excluded $FILTERED_OUT contextual S3/S4)"
   mv "$REFINED_TXT" "$DRIFT_TXT"
 fi
 
@@ -919,15 +946,15 @@ echo "  DB schema:           $DB_NAME"
 echo "  DB 表数:             $DB_TABLE_COUNT"
 echo "  文档 .md 文件数:     $DOC_COUNT"
 echo "  标识符命中数:        $TOTAL_HITS"
-echo "  漂移(文档引用了 DB 不存在的 snake_case): $DRIFT_COUNT"
+echo "  漂移(表名语境引用了 DB 不存在的标识符,O-6-3 四围栏): $DRIFT_COUNT"
 echo "  孤儿(DB 表在文档中 0 引用):              $ORPHAN_COUNT"
 echo "  白名单条目数:        $WL_COUNT"
 echo
 
 if [ "$DRIFT_COUNT" -gt 0 ]; then
-  echo "---- 漂移明细(前 30 条)----"
-  head -30 "$DRIFT_TXT" | while IFS=$'\t' read -r id loc; do
-    printf "  ⛔ %-32s  in  %s\n" "$id" "$loc"
+  echo "---- 漂移明细(前 30 条,第三列为围栏来源)----"
+  head -30 "$DRIFT_TXT" | while IFS=$'\t' read -r id loc fence; do
+    printf "  ⛔ [%s] %-28s  in  %s\n" "${fence:-S?}" "$id" "$loc"
   done
   if [ "$DRIFT_COUNT" -gt 30 ]; then
     echo "  ... 还有 $((DRIFT_COUNT - 30)) 条,见 JSON 输出"
@@ -956,9 +983,10 @@ if [ "$PASS" -eq 1 ]; then
   exit 0
 fi
 if [ "$DRIFT_COUNT" -gt 0 ]; then
-  echo "❌ 检测到 $DRIFT_COUNT 处表名漂移(R37 §3 失真点)"
+  echo "❌ 检测到 $DRIFT_COUNT 处表名语境漂移(R37 §3 失真点,O-6-3 围栏口径)"
   echo "   修复方向:按 R37-DB与测试头扫描-20260918.md §3 逐条改正"
-  echo "   或:将确认无误的标识符加入 --whitelist 文件"
+  echo "   或:将确认无误的标识符加入 --whitelist 文件(棘轮只减不增,慎加)"
+  echo "   上下文词(S3/S4)误判可人工裁决;主模式全量/强信号(--refined)口径见脚本头注释"
   exit 1
 fi
 if [ "$STRICT" -eq 1 ] && [ "$ORPHAN_COUNT" -gt 0 ]; then

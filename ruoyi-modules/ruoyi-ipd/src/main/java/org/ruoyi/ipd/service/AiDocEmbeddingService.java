@@ -30,6 +30,10 @@ import java.util.concurrent.Executors;
  *       不进审计（审计只记 contextHits/contextChars）；不进日志。</li>
  *   <li>RAG 开关：AiModelConfig.config_json 的 embedEndpoint/embedModel 两键齐全才启用；
  *       缺省 = RAG 关闭（静默跳过，检索返回 EMPTY）。embedding apiKey 复用主配置密文。</li>
+ *   <li>端点归一化（2026-09-28 卡 80b0be1f）：embedEndpoint 兼容「全路径 …/v1/embeddings」
+ *       与「base URL …/v1」两种配置写法——resolveEmbedConfig 读侧单点归一化（剥 /embeddings
+ *       尾缀），Langchain4j 消费时统一按 base URL 拼 POST {base}/embeddings；保存/回显/上送
+ *       不做改写（toView 原样），归一化只在消费口生效（单源，禁多处重复判断）。</li>
  * </ul>
  */
 @Slf4j
@@ -238,11 +242,47 @@ public class AiDocEmbeddingService {
             return null;
         }
         // 构造序与 record 声明一致：(endpoint, apiKey, embedModel)——参数序错位会静默交换密钥与模型名
-        return new EmbedEndpoint(endpoint.trim(), modelConfigService.decryptApiKey(config), model.trim());
+        // 端点归一化（卡 80b0be1f）：全路径 …/v1/embeddings 与 base URL …/v1 均归一为 base URL，
+        // 由 Langchain4j 统一拼 POST {base}/embeddings（全路径直传会拼成 /embeddings/embeddings → 404）。
+        // 仅剥子路径不动 host/port——下游 AiGateway.embed 的 SSRF 前置校验语义不变。
+        return new EmbedEndpoint(normalizeEmbedBaseUrl(endpoint), modelConfigService.decryptApiKey(config), model.trim());
     }
 
     /** embedding 端点三元组（包内值对象）。 */
     record EmbedEndpoint(String endpoint, String apiKey, String embedModel) { }
+
+    /**
+     * embedEndpoint 端点归一化（单源；卡 80b0be1f）：兼容「全路径 …/v1/embeddings」与
+     * 「base URL …/v1」两种写法，产出 Langchain4j OpenAiEmbeddingModel 所需 base URL
+     * （其内部固定拼 POST {base}/embeddings，见 DefaultOpenAiClient#embedding）。
+     * <ul>
+     *   <li>规则：trim → 剥全部尾部 / → 剥尾部 /embeddings（忽略大小写，幂等循环）→
+     *       再剥尾部 /；base URL 形态原样透传（Langchain4j 自拼子路径，无需补挂）。</li>
+     *   <li>SSRF 语义：仅剥 path 子段，host/port 不变——下游 AiGateway.embed 的
+     *       ssrfCheck 前置校验等价（host 级）且更贴近实际请求目标。</li>
+     *   <li>范围：仅消费口归一化；入库 config_json 与回显（toView）保持用户原样，
+     *       避免编辑回显与保存值不一致的困惑（表单三态 merge 语义不受影响）。</li>
+     * </ul>
+     */
+    static String normalizeEmbedBaseUrl(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String out = raw.trim();
+        while (out.endsWith("/")) {
+            out = out.substring(0, out.length() - 1);
+        }
+        String lower = out.toLowerCase(java.util.Locale.ROOT);
+        // 幂等剥 /embeddings 尾缀（双写 …/embeddings/embeddings 一并归一）；每轮剥后重剥尾斜杠
+        while (lower.endsWith("/embeddings")) {
+            out = out.substring(0, out.length() - "/embeddings".length());
+            while (out.endsWith("/")) {
+                out = out.substring(0, out.length() - 1);
+            }
+            lower = out.toLowerCase(java.util.Locale.ROOT);
+        }
+        return out;
+    }
 
     /** 固定窗口切片（无重叠）：尾片不足窗口并入前片太碎，独立保留（语义完整优先）。 */
     static List<String> splitChunks(String content) {

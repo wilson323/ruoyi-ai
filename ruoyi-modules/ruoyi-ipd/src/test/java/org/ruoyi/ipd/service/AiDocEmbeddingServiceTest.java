@@ -103,6 +103,57 @@ class AiDocEmbeddingServiceTest {
         assertNull(service.resolveEmbedConfig(), "两键全缺 → RAG 关");
     }
 
+    // ---- 端点归一化（卡 80b0be1f：全路径 / base URL 两形态兼容） ----
+
+    @Test
+    @DisplayName("归一化：全路径 …/v1/embeddings 剥子路径为 base URL；base URL 原样透传")
+    void normalizeEmbedBaseUrlTwoForms() {
+        // base URL 形态：Langchain4j 自拼 /embeddings，原样透传（真库 id=1 现行写法）
+        assertEquals("http://embed.example.com/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1"));
+        // 全路径形态：剥 /embeddings 尾缀（直传会拼成 /embeddings/embeddings → 404）
+        assertEquals("http://embed.example.com/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1/embeddings"));
+        // 尾斜杠（两形态各自带尾斜杠）
+        assertEquals("http://embed.example.com/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1/"));
+        assertEquals("http://embed.example.com/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1/embeddings/"));
+        // 大小写宽容（path 大小写敏感但该写法必 404，剥离是纯增益）；双写幂等归一
+        assertEquals("http://embed.example.com/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1/EMBEDDINGS"));
+        assertEquals("http://embed.example.com/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1/embeddings/embeddings"));
+        // 无 /v1 前缀的根路径全路径与带端口形态；null/空白防御
+        assertEquals("http://h:9997",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("http://h:9997/embeddings"));
+        assertEquals("http://h:9997/v1",
+            AiDocEmbeddingService.normalizeEmbedBaseUrl("  http://h:9997/v1/embeddings  "));
+        assertEquals("", AiDocEmbeddingService.normalizeEmbedBaseUrl(null));
+        assertEquals("", AiDocEmbeddingService.normalizeEmbedBaseUrl("   "));
+    }
+
+    @Test
+    @DisplayName("resolveEmbedConfig：全路径配置归一后才交给 gateway（消费口单源，回显/入库不改写）")
+    void resolveEmbedConfigNormalizesFullPath() {
+        // 全路径写法入库（运营从 OpenAI 文档整段复制）：读侧归一为 base URL
+        stubEmbedEnabled("{\"embedEndpoint\":\"http://embed.example.com/v1/embeddings\",\"embedModel\":\"emb-1\"}");
+        AiDocEmbeddingService.EmbedEndpoint cfg = service.resolveEmbedConfig();
+        assertNotNull(cfg);
+        assertEquals("http://embed.example.com/v1", cfg.endpoint(), "全路径 → 归一为 base URL");
+        assertEquals("emb-1", cfg.embedModel());
+
+        // 归一化后经 embedSync 传递给 AiGateway 的 AiTestConfig.baseUrl 即为 base URL
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{1, 0}));
+        org.mockito.ArgumentCaptor<AiTestConfig> cap =
+            org.mockito.ArgumentCaptor.forClass(AiTestConfig.class);
+        service.embedSync(doc("正文"), cfg);
+        verify(aiGateway).embed(cap.capture(), anyList());
+        assertEquals("http://embed.example.com/v1", cap.getValue().baseUrl(),
+            "Langchain4j 收到 base URL → 自拼 POST {base}/embeddings 命中真实端点");
+    }
+
     // ---- embedAsync 降级（不出队不抛错） ----
 
     @Test

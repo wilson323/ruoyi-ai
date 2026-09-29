@@ -237,7 +237,7 @@ class P162AcceptanceTest {
             .build();
     }
 
-    private void withAllJudgedDefaultPass(Gate gate, Map<String, String> codeToResult) {
+    private void withAllJudged(Gate gate, Map<String, String> codeToResult) {
         List<GateElement> elements = elementsOf(gate.getGateCode());
         lenient().when(elementMapper.selectList(argThat(
             (com.baomidou.mybatisplus.core.conditions.Wrapper<GateElement> w) -> true)))
@@ -247,7 +247,10 @@ class P162AcceptanceTest {
         List<GateElementResult> rows = new ArrayList<>();
         long rowId = 8001L;
         for (GateElement e : elements) {
-            String result = codeToResult.getOrDefault(e.getElementCode(), "PASS");
+            String result = codeToResult.get(e.getElementCode());
+            assertThat(result)
+                .as("判定 map 缺键 %s：缺判不得静默补 PASS（O-3 fail-noisy 反转，审计 §S2）", e.getElementCode())
+                .isNotNull();
             String evidenceRef = "FAIL".equals(result) ? "https://oss.local/proof.pdf" : null;
             rows.add(judgedRow(rowId++, e.getId(), result, evidenceRef));
         }
@@ -255,7 +258,7 @@ class P162AcceptanceTest {
     }
 
     /** 仅对 codeToResult 显式给出的要素生成判定行（其余视为尚未判定，无 result 行）。
-     *  与 withAllJudgedDefaultPass 的「缺省补 PASS」相对，用于构造缺判拒绝场景——
+     *  与 withAllJudged（O-3 后：缺键即断言失败，不得静默补 PASS）相对，用于构造缺判拒绝场景——
      *  实现侧「未判定」语义是无 result 行（GateElementResultService judged.get(id)==null）。 */
     private void withOnlyJudged(Gate gate, Map<String, String> codeToResult) {
         List<GateElement> elements = elementsOf(gate.getGateCode());
@@ -326,16 +329,12 @@ class P162AcceptanceTest {
             }
             Gate gate = newGate(gateIds[i], gateCode);
             Map<String, String> results = new LinkedHashMap<>();
-            // 非否决项 PASS
+            // O-3：全量显式判定 —— 目标否决项 FAIL，其余（含其它否决项）PASS；
+            // 旧写法只给非否决项+单个 FAIL，其余否决项依赖 getOrDefault 缺省补 PASS（假绿）
             for (ElementSpec s : ALL_ELEMENTS.get(gateCode)) {
-                if ("1".equals(s.isVeto)) {
-                    continue;
-                }
-                results.put(s.code, "PASS");
+                results.put(s.code, vetoCode.equals(s.code) ? "FAIL" : "PASS");
             }
-            // 否决项 FAIL
-            results.put(vetoCode, "FAIL");
-            withAllJudgedDefaultPass(gate, results);
+            withAllJudged(gate, results);
 
             final String expectedVetoCode = vetoCode;
             assertThatThrownBy(() -> service.submit(gate.getId(), 9001L, 9002L, MARKET_PM))
@@ -368,7 +367,7 @@ class P162AcceptanceTest {
         Gate gate = newGate(501L, "G1");
         Map<String, String> results = new LinkedHashMap<>();
         ALL_ELEMENTS.get("G1").forEach(s -> results.put(s.code, "PASS"));
-        withAllJudgedDefaultPass(gate, results);
+        withAllJudged(gate, results);
 
         Gate out = service.submit(501L, 9001L, 9002L, MARKET_PM);
 
@@ -397,7 +396,7 @@ class P162AcceptanceTest {
         Gate gate = newGate(501L, "G1");
         Map<String, String> results = new LinkedHashMap<>();
         ALL_ELEMENTS.get("G1").forEach(s -> results.put(s.code, "PASS"));
-        withAllJudgedDefaultPass(gate, results);
+        withAllJudged(gate, results);
 
         Gate submitted = service.submit(501L, 9001L, 9002L, MARKET_PM);
         String snapshotAtSubmit = submitted.getElementSnapshot();
@@ -429,7 +428,7 @@ class P162AcceptanceTest {
         Gate gate = newGate(501L, "G1");
         Map<String, String> results = new LinkedHashMap<>();
         ALL_ELEMENTS.get("G1").forEach(s -> results.put(s.code, "PASS"));
-        withAllJudgedDefaultPass(gate, results);
+        withAllJudged(gate, results);
 
         Gate submitted = service.submit(501L, 9001L, 9002L, MARKET_PM);
         String snapshotAtSubmit = submitted.getElementSnapshot();
@@ -447,7 +446,7 @@ class P162AcceptanceTest {
         Gate gate = newGate(501L, "G1");
         Map<String, String> results = new LinkedHashMap<>();
         ALL_ELEMENTS.get("G1").forEach(s -> results.put(s.code, "PASS"));
-        withAllJudgedDefaultPass(gate, results);
+        withAllJudged(gate, results);
 
         Gate submitted = service.submit(501L, 9001L, 9002L, MARKET_PM);
         String snapshotAtSubmit = submitted.getElementSnapshot();
@@ -465,7 +464,10 @@ class P162AcceptanceTest {
     void newGate_usesLatestPublishedElements() {
         // 旧 Gate 已冻结快照
         Gate oldGate = newGate(501L, "G1");
-        withAllJudgedDefaultPass(oldGate, Map.of("G1-1", "PASS", "G1-2", "PASS"));
+        // O-3：G1 全 7 要素显式判定（旧 Map.of 只给 2 键，其余 5 键靠缺省补 PASS）
+        Map<String, String> oldGateResults = new LinkedHashMap<>();
+        ALL_ELEMENTS.get("G1").forEach(s -> oldGateResults.put(s.code, "PASS"));
+        withAllJudged(oldGate, oldGateResults);
         service.submit(501L, 9001L, 9002L, MARKET_PM);
 
         // 新 Gate 实例（G2）从 LIVE 读取新发布要素
@@ -501,7 +503,7 @@ class P162AcceptanceTest {
                 results.put(s.code, "PASS");
             }
         });
-        withAllJudgedDefaultPass(g4, results);
+        withAllJudged(g4, results);
 
         assertThatThrownBy(() -> service.submit(504L, 9001L, 9002L, MARKET_PM))
             .isInstanceOf(ServiceException.class)
@@ -529,7 +531,7 @@ class P162AcceptanceTest {
         // 第二轮：补齐 G1-1 后重试 → 成功 ⇒ snapshot 落一次
         Map<String, String> allPass = new LinkedHashMap<>();
         ALL_ELEMENTS.get("G1").forEach(s -> allPass.put(s.code, "PASS"));
-        withAllJudgedDefaultPass(gate, allPass);
+        withAllJudged(gate, allPass);
 
         Gate out = service.submit(501L, 9001L, 9002L, MARKET_PM);
         assertThat(out.getElementSnapshot()).isNotNull();

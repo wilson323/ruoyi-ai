@@ -121,7 +121,8 @@ run_drift_gate() {
     local start_time
     start_time=$(date +%s)
     echo "[check-pre-commit] → 门禁 1/2: doc ↔ db 漂移门禁(--refined)"
-    if bash "$REPO_ROOT/scripts/check-doc-db-drift.sh" --refined --json-only > /tmp/cdbd-refined.json 2>&1; then
+    # R245 棘轮：外部白名单吸收 9 个历史漂移标识符（owner 拍板 2026-09-28，只减不增）
+    if bash "$REPO_ROOT/scripts/check-doc-db-drift.sh" --refined --json-only --whitelist "$REPO_ROOT/scripts/check-doc-db-drift-whitelist.txt" > /tmp/cdbd-refined.json 2>&1; then
         local drift_count
         drift_count=$(jq -r '.drift_count // 0' /tmp/cdbd-refined.json 2>/dev/null || echo 0)
         local elapsed=$(( $(date +%s) - start_time ))

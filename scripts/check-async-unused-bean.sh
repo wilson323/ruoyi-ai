@@ -6,6 +6,11 @@
 #
 # 命中即 exit 1（违反规约禁止 implements）。
 # 同时统计所有 @Bean(name="taskExecutor") 文件——超过 1 个时报警（同 Bean 名冲突）。
+#
+# 【2026-09-28 O-6-1 关联修复】find 排除面补 .worktrees/ 与 node_modules/：兄弟 worktree
+# 副本（如 .worktrees/poc-agentscope-kernel）内的同文件被计为第二处 taskExecutor 定义，
+# 造成假红（审计 §S6 裁决"bean 版本为正轨"所依据的 0 命中 PASS 状态被扫描面污染破坏）。
+# 与 check-async-configurer-duplication.sh 同款处置，保持双门禁结论一致。
 # ----------------------------------------------------------------------
 set -uo pipefail
 
@@ -21,6 +26,8 @@ TASKEX_FILES=$(find . -type f -name "*.java" \
   -not -path "*/.claude/worktrees/*" \
   -not -path "*/target/*" \
   -not -path "*/.git/*" \
+  -not -path "*/.worktrees/*" \
+  -not -path "*/node_modules/*" \
   -print0 2>/dev/null | xargs -0 grep -l '@Bean(name\s*=\s*"taskExecutor"' 2>/dev/null)
 
 TASKEX_COUNT=$(echo "$TASKEX_FILES" | grep -c . 2>/dev/null || true)
@@ -31,6 +38,8 @@ ASYNC_CFG_FILES=$(find . -type f -name "*.java" \
   -not -path "*/.claude/worktrees/*" \
   -not -path "*/target/*" \
   -not -path "*/.git/*" \
+  -not -path "*/.worktrees/*" \
+  -not -path "*/node_modules/*" \
   -print0 2>/dev/null | xargs -0 grep -l 'implements\s\+AsyncConfigurer\|extends\s\+AsyncConfigurer' 2>/dev/null | while read f; do
     # 精确匹配：class Foo implements AsyncConfigurer（避免注释里讲其他类的 implements 字面量）
     if grep -v '^\s*//' "$f" | grep -v '^\s*\*' | grep -E 'class\s+[A-Za-z_][A-Za-z0-9_]*\s+(implements|extends)\s+AsyncConfigurer' | grep -q .; then
