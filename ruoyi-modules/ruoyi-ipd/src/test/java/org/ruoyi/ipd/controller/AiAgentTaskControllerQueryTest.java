@@ -21,6 +21,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +41,12 @@ import static org.mockito.Mockito.when;
  *
  * <p>另附 prompt 防泄漏哨兵：{@link AiAgentTaskView} 组件面不得出现
  * fillPayload / inputDigest / prompt / dedupKey（状态呈现到 result_summary 粒度）。
+ *
+ * <p><b>actor 透传契约（AgentScope 执行链阶段 1「项目身份」）</b>：角色级权限码不限定项目，
+ * 故两端点必须把 {@code requireInternal()} 捕获的会话身份**同一实例**透传给 service
+ * （由 service 经 IpdIdorGuard 守卫 3 裁定项目在职成员/租户）。本类以
+ * {@code verify(service).getByTaskId(taskId, actor)} 的同实例断言钉住该契约——
+ * 若日后回退为不传 actor（丢守卫）或改传前端值，此处必红。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -62,7 +70,7 @@ class AiAgentTaskControllerQueryTest {
     void get_passesTaskId_andReturnsEnvelope() {
         IpdActor actor = new IpdActor(9001L, "alice", "MARKET_PM", 100L);
         when(ipdPermission.requireInternal()).thenReturn(actor);
-        when(aiAgentTaskQueryService.getByTaskId(2104L)).thenReturn(sampleView());
+        when(aiAgentTaskQueryService.getByTaskId(2104L, actor)).thenReturn(sampleView());
 
         ApiV1Response<AiAgentTaskView> resp = controller.get(2104L);
 
@@ -71,20 +79,21 @@ class AiAgentTaskControllerQueryTest {
         assertThat(resp.getData().status()).isEqualTo("SUCCEEDED");
         assertThat(resp.getData().resultSummary()).contains("G1 备料完成");
         assertThat(resp.getData().aiDocId()).isEqualTo(9001L);
-        verify(aiAgentTaskQueryService).getByTaskId(2104L);
+        verify(aiAgentTaskQueryService).getByTaskId(2104L, actor);
     }
 
     @Test
     @DisplayName("P2-04 #2：listByProject(projectId=200) 透传；空项目返回空列表不是 404")
     void listByProject_passesProjectId_emptyListIsOk() {
-        when(ipdPermission.requireInternal()).thenReturn(new IpdActor(9001L, "bob", "RD_PM", 100L));
-        when(aiAgentTaskQueryService.listByProject(200L)).thenReturn(List.of());
+        IpdActor actor = new IpdActor(9001L, "bob", "RD_PM", 100L);
+        when(ipdPermission.requireInternal()).thenReturn(actor);
+        when(aiAgentTaskQueryService.listByProject(200L, actor)).thenReturn(List.of());
 
         ApiV1Response<List<AiAgentTaskView>> resp = controller.listByProject(200L);
 
         assertThat(resp.getCode()).isEqualTo(ApiV1Response.CODE_SUCCESS);
         assertThat(resp.getData()).isEmpty();
-        verify(aiAgentTaskQueryService).listByProject(200L);
+        verify(aiAgentTaskQueryService).listByProject(200L, actor);
     }
 
     @Test
@@ -97,15 +106,16 @@ class AiAgentTaskControllerQueryTest {
             .isInstanceOf(IpdPermissionException.class);
         assertThatThrownBy(() -> controller.listByProject(200L))
             .isInstanceOf(IpdPermissionException.class);
-        verify(aiAgentTaskQueryService, never()).getByTaskId(2104L);
-        verify(aiAgentTaskQueryService, never()).listByProject(200L);
+        verify(aiAgentTaskQueryService, never()).getByTaskId(anyLong(), any());
+        verify(aiAgentTaskQueryService, never()).listByProject(anyLong(), any());
     }
 
     @Test
     @DisplayName("P2-04 #4：任务不存在（service 抛 50001 NOT_FOUND）→ 透传不吞")
     void notFound_propagates() {
-        when(ipdPermission.requireInternal()).thenReturn(new IpdActor(9001L, "carol", "GROUP_LEADER", 100L));
-        when(aiAgentTaskQueryService.getByTaskId(4044L))
+        IpdActor actor = new IpdActor(9001L, "carol", "GROUP_LEADER", 100L);
+        when(ipdPermission.requireInternal()).thenReturn(actor);
+        when(aiAgentTaskQueryService.getByTaskId(4044L, actor))
             .thenThrow(new IpdBusinessException(org.ruoyi.ipd.common.ApiV1ErrorCode.NOT_FOUND,
                 "AI 执行任务不存在: 4044"));
 

@@ -3,6 +3,7 @@ package org.ruoyi.ipd.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
@@ -30,6 +31,10 @@ import java.util.List;
  * prompt/fillPayload 原文永不出 {@link AiAgentTaskView}（审计规约 L0-5）。
  * 权限码沿用 AI 读族 {@code ipd:ai-document:list}（READ_SET 四角色全员可读，
  * 与 versions/history/diff 同口径）；receiver/actor 恒从会话推导（SEC-API-01）。
+ *
+ * <p><b>数据范围</b>：角色级权限码不限定项目，故 actor 由 {@code requireInternal()} 捕获后
+ * 透传 service，由 {@code AiAgentTaskQueryService} 经 IpdIdorGuard 守卫 3 做项目在职成员/租户校验
+ * （跨项目 taskId/projectId 一律 FORBIDDEN，与 SubStage/PostLaunchReview/Handover 同口径）。
  */
 @RestController
 @RequestMapping("/api/v1/ai-agent-tasks")
@@ -45,8 +50,8 @@ public class AiAgentTaskController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/{taskId}")
     public ApiV1Response<AiAgentTaskView> get(@PathVariable Long taskId) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(aiAgentTaskQueryService.getByTaskId(taskId));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiAgentTaskQueryService.getByTaskId(taskId, actor));
     }
 
     /**
@@ -55,7 +60,7 @@ public class AiAgentTaskController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping
     public ApiV1Response<List<AiAgentTaskView>> listByProject(@RequestParam Long projectId) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(aiAgentTaskQueryService.listByProject(projectId));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(aiAgentTaskQueryService.listByProject(projectId, actor));
     }
 }
