@@ -87,6 +87,13 @@ public class VectorStoreServiceImpl implements VectorStoreService {
     }
 
     @Override
+    public void updatePayloadSensitivity(String kid, String sensitivity, String embeddingModelName) {
+        log.info("同步向量 payload 敏感级: kid={}, sensitivity={}", kid, sensitivity);
+        VectorStoreService strategy = getStrategy(vectorTypeForKid(kid));
+        strategy.updatePayloadSensitivity(kid, sensitivity, embeddingModelName);
+    }
+
+    @Override
     public void removeByDocId(String docId, String kid) {
         log.info("根据docId删除向量数据: docId={}, kid={}", docId, kid);
         VectorStoreService strategy = getStrategy(vectorTypeForKid(kid));

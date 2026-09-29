@@ -44,7 +44,9 @@ class KnowledgeRetrievalCacheIdentityTest {
     private static KnowledgeRetrievalServiceImpl newService() {
         return new KnowledgeRetrievalServiceImpl(
             mock(VectorStoreService.class), mock(RerankModelFactory.class), mock(KnowledgeFragmentMapper.class),
-            mock(TraceRecordService.class), new TraceProperties());
+            mock(TraceRecordService.class), new TraceProperties(),
+            mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class),
+            new org.ruoyi.config.KnowledgeRetrievalAccessFilterProperties());
     }
 
     private static String invokeCacheKey(KnowledgeRetrievalServiceImpl service, QueryVectorBo bo) throws Exception {
@@ -146,7 +148,9 @@ class KnowledgeRetrievalCacheIdentityTest {
             .thenReturn(List.of(KnowledgeRetrievalVo.builder().id("fid-a").content("A").score(0.9).build()));
         KnowledgeRetrievalServiceImpl service = new KnowledgeRetrievalServiceImpl(
             vectorStore, mock(RerankModelFactory.class), mock(KnowledgeFragmentMapper.class),
-            mock(TraceRecordService.class), new TraceProperties());
+            mock(TraceRecordService.class), new TraceProperties(),
+            mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class),
+            new org.ruoyi.config.KnowledgeRetrievalAccessFilterProperties());
         // 测试环境无 SaToken 会话上下文，LoginHelper.getUserId() 归 null → 身份段统一为 anon，两次同键
         QueryVectorBo query = bo("1", "问题");
 

@@ -65,4 +65,30 @@ public interface KnowledgeAccessGate {
      * 拒绝语义：不可管理即抛业务异常，userId 为 null 亦拒绝。
      */
     void assertManageable(Long kid, Long userId);
+
+    /**
+     * B2 检索接线：当前身份的检索访问过滤 profile（角色→敏感级上限 + 归属可见键）。
+     * <p>
+     * 权威源在 IPD 侧实现（最佳实践 §8.2：SUPER_ADMIN/GROUP_LEADER→SECRET、
+     * MARKET_PM/RD_PM→INTERNAL、其余→PUBLIC fail-closed）；chat 默认实现
+     * {@code UserIdShareKnowledgeAccessGate} 无角色→上限表，恒返回最严档
+     * （PUBLIC）——不构成第二套上限模型。
+     * <p>
+     * 单参变体：HTTP 线程，实现内部解析当前会话（ipd 会话优先，无则 sys_user
+     * fallback——sys_user 无 person 映射时 fail-closed 到 PUBLIC）。
+     * 未登录/匿名同样返回最严档（E anon：anon 走最严档）。
+     * <p>
+     * 本方法不抛业务异常（与 checkRetrievalAccess 的拒绝语义不同）——
+     * profile 是「装配值供应」而非「准入判定」，取不到身份即降档。
+     */
+    RetrievalAccessProfile retrievalAccessProfile();
+
+    /**
+     * 显式身份变体：供非 HTTP 线程（如 aiflow 工作流 @Async 线程）传入已验证的 userId
+     * （A 口 WfState.userId 透传先例）。现态该身份为 sys_user id，persons 表无映射列、
+     * 且 id 空间不相交（sys_user 小整数 vs persons 900xxx），不得按数值巧合直查 persons
+     * （会拿别人的 person 权限——提权面），一律 fail-closed 到 PUBLIC；
+     * 身份体系建立映射后由 IPD 侧实现在此扩展。
+     */
+    RetrievalAccessProfile retrievalAccessProfile(Long userId);
 }

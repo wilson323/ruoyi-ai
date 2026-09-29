@@ -19,6 +19,9 @@ import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.factory.RerankModelFactory;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
+import org.ruoyi.config.KnowledgeRetrievalAccessFilterProperties;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
+import org.ruoyi.service.knowledge.RetrievalAccessProfile;
 import org.ruoyi.service.rerank.RerankModelService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 import org.ruoyi.service.vector.VectorStoreService;
@@ -50,6 +53,12 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     private final KnowledgeFragmentMapper fragmentMapper;
     private final TraceRecordService traceRecordService;
     private final TraceProperties traceProperties;
+    /**
+     * B2 检索接线：桥端口（角色→敏感级上限权威源在 IPD 侧实现）+ 装配开关
+     * （实施方案 §5 回滚预案：默认关=回旧行为，桥判据仍 fail-closed）。
+     */
+    private final KnowledgeAccessGate knowledgeAccessGate;
+    private final KnowledgeRetrievalAccessFilterProperties accessFilterProperties;
 
     /**
      * 粗召回默认扩大倍数
@@ -70,6 +79,14 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
 
     @Override
     public List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo) {
+        // B2：HTTP 线程身份取当前会话（无会话=匿名，anon 走最严档）；非 HTTP 线程
+        //（aiflow 等）必须走显式身份重载，否则会被降为匿名档（误杀面已登记）。
+        return retrieve(queryVectorBo, LoginHelper.getUserId());
+    }
+
+    @Override
+    public List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo, Long userId) {
+        applyBridgeAccessFilters(queryVectorBo, userId);
         String cacheKey = cacheKey(queryVectorBo);
         CacheEntry cached = retrievalCache.get(cacheKey);
         if (cached != null && System.currentTimeMillis() - cached.createdAt < CACHE_TTL_MILLIS) {
@@ -346,6 +363,33 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         } finally {
             TraceContext.popNode();
         }
+    }
+
+    /**
+     * B2 检索接线核心装配点：开关开启时经桥（KnowledgeAccessGate#retrievalAccessProfile）
+     * 取当前身份的过滤 profile，经 QueryVectorBo#applyBackendAccessFilters（唯一写入口）
+     * 注入六个仅后端装配参数——角色→上限表的权威源在 IPD 侧，chat 侧零内嵌。
+     * <p>
+     * 开关关闭（默认，实施方案 §5 回滚态）：不动 Bo，B1 前行为零变化。
+     * profile 解析异常：按 PUBLIC 最严档装配（fail-closed，与 S3 身份段失败语义一致），
+     * 不让装配失败退化成「无闸门」。
+     * 装配发生在 cacheKey 之前——过滤参数已并入缓存键尾（B1 预落位），不同档位不共享缓存。
+     */
+    private void applyBridgeAccessFilters(QueryVectorBo bo, Long userId) {
+        if (!accessFilterProperties.isEnabled()) {
+            return;
+        }
+        RetrievalAccessProfile profile;
+        try {
+            profile = userId == null
+                ? knowledgeAccessGate.retrievalAccessProfile()
+                : knowledgeAccessGate.retrievalAccessProfile(userId);
+        } catch (Exception e) {
+            log.warn("检索访问 profile 解析失败，按 PUBLIC 最严档装配（fail-closed）: {}", e.getMessage());
+            profile = RetrievalAccessProfile.FAIL_CLOSED_PUBLIC;
+        }
+        bo.applyBackendAccessFilters(profile.maxSensitivity(), profile.personId(), profile.scopeTypes(),
+            profile.groupId(), profile.projectId(), profile.ownerAgentIds());
     }
 
     private QueryVectorBo copyOf(QueryVectorBo original, int maxResults) {

@@ -118,6 +118,10 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             .eq(KnowledgeInfo::getShare, 1L));
         lqw.like(StringUtils.isNotBlank(bo.getName()), KnowledgeInfo::getName, bo.getName());
         lqw.eq(bo.getShare() != null, KnowledgeInfo::getShare, bo.getShare());
+        // B1 列表通道接线：sensitivity 为权威字段（share 只是派生镜像），查询参数此前未挂
+        // 谓词被完全忽略（传 PUBLIC 仍返回 INTERNAL 行）。仅显式携带（非空非空白）时
+        // 精确匹配；未携带=不过滤，与同方法内其他 String 字段谓词模式一致。
+        lqw.eq(StringUtils.isNotBlank(bo.getSensitivity()), KnowledgeInfo::getSensitivity, bo.getSensitivity());
         lqw.eq(StringUtils.isNotBlank(bo.getDescription()), KnowledgeInfo::getDescription, bo.getDescription());
         lqw.eq(StringUtils.isNotBlank(bo.getSeparator()), KnowledgeInfo::getSeparator, bo.getSeparator());
         lqw.eq(bo.getOverlapChar() != null, KnowledgeInfo::getOverlapChar, bo.getOverlapChar());
@@ -169,6 +173,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      * @return 是否修改成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(KnowledgeInfoBo bo) {
         // C 口收敛（B0 审计破坏面 C）：edit 无 ownership 校验时，任何持 system:info:edit 者可
         // UPDATE 任意库 share=1，即刻击穿 Gate 读面判据的 share 半边（提权链）。统一过管理面门。
@@ -177,9 +182,39 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         // B1 §8.1：显式携带 sensitivity 时派生 share；未携带时二者均不动（部分更新保既有值）
         applySensitivityShareMirror(update, false);
         validEntityBeforeSave(update);
+        // B2 P1-1：显式携带 sensitivity 时取库内旧值（比对用 + 向量随动需要旧 embeddingModel，
+        // 部分更新场景 Bo 可不带模型名）；未携带则无需随动（sensitivity 不进 SET 子句）。
+        KnowledgeInfo before = update.getSensitivity() == null ? null : baseMapper.selectById(bo.getId());
         boolean updated = baseMapper.updateById(update) > 0;
-        if (updated) knowledgeRetrievalService.invalidateKnowledge(String.valueOf(bo.getId()));
+        if (updated) {
+            syncVectorPayloadSensitivity(bo.getId(), before, update);
+            knowledgeRetrievalService.invalidateKnowledge(String.valueOf(bo.getId()));
+        }
         return updated;
+    }
+
+    /**
+     * B2 P1-1：sensitivity 变更随动已入库向量 payload 的同名键（B1 轮 Validator 登记
+     * 「update 不随动=MySQL 与向量侧脱钩的隔离穿透」，最佳实践 §4 铁律一）。
+     * <ul>
+     *   <li>仅在显式携带 sensitivity 且与库内旧值不同（含旧值为 null 的老数据——
+     *       顺带补标）时触发；同值/未携带零动作。</li>
+     *   <li>失败语义 fail-noisy：向量侧随动抛错向上传播，MySQL 更新随本事务回滚
+     *       （DB 侧不脱钩，与 deleteWithValidByIds 同款先例）；向量侧 PATCH 非事务资源，
+     *       多批中途失败可能残留部分随动，重试收敛（幂等：同值再写无害）；TOCTOU 窗口
+     *       与 P2-2 登记同款，可重试。</li>
+     *   <li>Milvus/Qdrant 策略不承载 sensitivity 键（N2 登记缺口），默认实现 no-op。</li>
+     * </ul>
+     */
+    private void syncVectorPayloadSensitivity(Long kid, KnowledgeInfo before, KnowledgeInfo update) {
+        if (update.getSensitivity() == null || before == null) {
+            return;
+        }
+        if (update.getSensitivity().equals(before.getSensitivity())) {
+            return;
+        }
+        vectorStoreService.updatePayloadSensitivity(String.valueOf(kid), update.getSensitivity(),
+            before.getEmbeddingModel());
     }
 
     /**

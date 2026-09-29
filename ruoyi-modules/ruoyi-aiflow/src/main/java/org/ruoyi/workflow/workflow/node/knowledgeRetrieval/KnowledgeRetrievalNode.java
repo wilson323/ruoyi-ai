@@ -267,7 +267,10 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
 
             org.ruoyi.service.retrieval.KnowledgeRetrievalService retrievalService =
                 SpringUtil.getBean(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class);
-            java.util.List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> results = retrievalService.retrieve(bo);
+            // B2 检索接线：@Async 线程无 Sa-Token 上下文，显式传 WfState.userId（与上方 Gate
+            // 双参同源）——否则检索入口会把本节点降为匿名档（anon 最严档，E anon 纪律）。
+            java.util.List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> results =
+                retrievalService.retrieve(bo, wfState.getUserId());
             if (results == null || results.isEmpty()) {
                 log.info("Knowledge retrieval returned no results, kid={}, query={}", knowledgeId, query);
                 return "";

@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -78,10 +80,11 @@ class KnowledgeRetrievalNodeAccessTest {
             .thenReturn(validator);
     }
 
-    /** 放行链路的常规 stub：kb 存在 + 向量模型配置存在 + 空检索结果 */
-    private static void stubPassThroughBeans(MockedStatic<SpringUtil> spring,
-                                             KnowledgeAccessGate gate,
-                                             IKnowledgeInfoService infoService) {
+    /** 放行链路的常规 stub：kb 存在 + 向量模型配置存在 + 空检索结果；
+     *  返回 retrievalService mock 供「身份透传进检索装配点」断言复用。 */
+    private static KnowledgeRetrievalService stubPassThroughBeans(MockedStatic<SpringUtil> spring,
+                                                                  KnowledgeAccessGate gate,
+                                                                  IKnowledgeInfoService infoService) {
         stubValidator(spring);
         spring.when(() -> SpringUtil.getBean(KnowledgeAccessGate.class)).thenReturn(gate);
         spring.when(() -> SpringUtil.getBean(IKnowledgeInfoService.class)).thenReturn(infoService);
@@ -103,7 +106,9 @@ class KnowledgeRetrievalNodeAccessTest {
 
         KnowledgeRetrievalService retrievalService = mock(KnowledgeRetrievalService.class);
         spring.when(() -> SpringUtil.getBean(KnowledgeRetrievalService.class)).thenReturn(retrievalService);
-        when(retrievalService.retrieve(any())).thenReturn(List.of());
+        // B2 双参：WfState.userId 显式身份随检索请求进装配链（unstubbed 会返回 null 走空结果分支）
+        when(retrievalService.retrieve(any(), any())).thenReturn(List.of());
+        return retrievalService;
     }
 
     @Test
@@ -112,12 +117,15 @@ class KnowledgeRetrievalNodeAccessTest {
         IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
         KnowledgeRetrievalNode node = newNode(100L, "{\"knowledge_id\":\"9\",\"top_k\":3}");
 
+        KnowledgeRetrievalService retrievalService = null;
         try (MockedStatic<SpringUtil> spring = mockStatic(SpringUtil.class)) {
-            stubPassThroughBeans(spring, gate, infoService);
+            retrievalService = stubPassThroughBeans(spring, gate, infoService);
             assertDoesNotThrow(node::onProcess);
         }
         // 身份透传正确性：WfState.userId（而非 Sa-Token 会话）作为显式身份进 Gate
         verify(gate).checkRetrievalAccess(9L, 100L);
+        // B2：同一身份继续透传到检索装配点（retrieve 双参），不因 @Async 线程降为匿名档
+        verify(retrievalService).retrieve(any(), eq(100L));
         verify(infoService).queryById(9L);
     }
 
@@ -147,11 +155,14 @@ class KnowledgeRetrievalNodeAccessTest {
         IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
         KnowledgeRetrievalNode node = newNode(null, "{\"knowledge_id\":\"9\",\"top_k\":3}");
 
+        KnowledgeRetrievalService retrievalService = null;
         try (MockedStatic<SpringUtil> spring = mockStatic(SpringUtil.class)) {
-            stubPassThroughBeans(spring, gate, infoService);
+            retrievalService = stubPassThroughBeans(spring, gate, infoService);
             assertDoesNotThrow(node::onProcess);
         }
         verify(gate).checkRetrievalAccess(9L, null);
+        // B2：null 身份原样进检索装配点（装配层按 anon 最严档处理，节点层不改写）
+        verify(retrievalService).retrieve(any(), isNull());
     }
 
     @Test

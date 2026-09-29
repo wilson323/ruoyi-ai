@@ -115,4 +115,26 @@ public class UserIdShareKnowledgeAccessGate implements KnowledgeAccessGate {
             throw new ServiceException("仅库归属人可管理该知识库 kid=" + kid);
         }
     }
+
+    /**
+     * B2 检索接线默认实现：chat 侧无「角色→敏感级上限」权威表（§8.2 纪律：
+     * 上限判定唯一权威源在 ruoyi-ipd），恒返回 fail-closed 最严档（PUBLIC）。
+     * <p>
+     * 单模块部署（无 ruoyi-ipd）时检索过滤若启用，所有身份都按 PUBLIC 闸门
+     * ——只收不放；主部署（ruoyi-admin 聚合 ipd）由
+     * {@code org.ruoyi.ipd.security.IpdKnowledgeAccessGate} 以 @Primary 覆盖本 Bean。
+     */
+    @Override
+    public org.ruoyi.service.knowledge.RetrievalAccessProfile retrievalAccessProfile() {
+        return org.ruoyi.service.knowledge.RetrievalAccessProfile.FAIL_CLOSED_PUBLIC;
+    }
+
+    /**
+     * 显式身份变体同判：sys_user id 无 person 映射可解析（persons 无关联列、
+     * id 空间不相交），一律 fail-closed 到 PUBLIC，不做数值巧合直查。
+     */
+    @Override
+    public org.ruoyi.service.knowledge.RetrievalAccessProfile retrievalAccessProfile(Long userId) {
+        return org.ruoyi.service.knowledge.RetrievalAccessProfile.FAIL_CLOSED_PUBLIC;
+    }
 }

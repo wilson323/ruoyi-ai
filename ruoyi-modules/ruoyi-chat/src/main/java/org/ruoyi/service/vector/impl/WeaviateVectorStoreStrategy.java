@@ -29,6 +29,8 @@ import io.weaviate.client.v1.filters.WhereFilter;
 import io.weaviate.client.v1.graphql.model.GraphQLResponse;
 import io.weaviate.client.v1.graphql.query.Get;
 import io.weaviate.client.v1.graphql.query.argument.NearVectorArgument;
+import io.weaviate.client.v1.graphql.query.argument.SortArgument;
+import io.weaviate.client.v1.graphql.query.argument.SortOrder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.Schema;
@@ -69,6 +71,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
      * 已确认存在的 class 缓存，避免每次检索都全量拉取 schema
      */
     private final Set<String> knownClasses = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** payload 敏感级随动的游标分页批量（低频管理动作，量级对齐 schema 补齐探测）。 */
+    private static final int PAYLOAD_SYNC_BATCH_SIZE = 100;
 
     public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                        IChatModelService chatModelService,
@@ -457,6 +461,108 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             .operator(operator)
             .operands(operands.toArray(new WhereFilter[0]))
             .build();
+    }
+
+    /**
+     * B2 P1-1：库级 sensitivity 变更随动已入库 payload 的 sensitivity 键
+     * （B1 轮 Validator 登记「update 不随动=隔离穿透」，最佳实践 §4 铁律一）。
+     * <p>
+     * 实现路径（weaviate-client 5.3.0）：游标分页（withAfter）拉取该 class 全部对象
+     * {@code _additional { id }}，逐对象 {@code data().updater().withMerge()} PATCH
+     * 单键——merge 语义只改 sensitivity 不触碰 text/fid/kid/docId 等其余 payload
+     * （batch PUT 会整体替换属性，禁用）。
+     * 不带 where 全量扫：老 4 键对象（sensitivity 键缺失）不命中 NotEqual 过滤，
+     * 全量 merge 顺带补齐缺键（B1 前写入对象的补标），正确性优先于扫描成本——
+     * 库级改敏感级是低频人审动作（§8.1 规则 1），可接受。
+     * 失败语义 fail-noisy：任一批次失败抛 {@link ServiceException}，由调用方
+     * KnowledgeInfoServiceImpl 与 MySQL 更新同事务回滚（两侧不脱钩）。
+     */
+    @Override
+    public void updatePayloadSensitivity(String kid, String sensitivity, String embeddingModelName) {
+        createSchema(kid, embeddingModelName);
+        String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
+        Map<String, Object> patch = java.util.Map.of(WeaviatePayloadKeys.SENSITIVITY, sensitivity);
+        String cursor = null;
+        int total = 0;
+        while (true) {
+            List<String> batchIds = fetchObjectIds(className, cursor);
+            if (batchIds.isEmpty()) {
+                break;
+            }
+            for (String id : batchIds) {
+                Result<Boolean> update = getClient().data().updater()
+                    .withID(id)
+                    .withClassName(className)
+                    .withMerge()
+                    .withProperties(patch)
+                    .run();
+                if (update == null || update.hasErrors()) {
+                    throw new ServiceException("Weaviate payload 敏感级随动失败: kid=" + kid
+                        + ", objectId=" + id + ", error=" + (update == null ? "null result" : update.getError()));
+                }
+                total++;
+            }
+            String next = batchIds.get(batchIds.size() - 1);
+            if (next.equals(cursor)) {
+                // 防御：游标未推进（异常服务端行为），终止防死循环并留痕
+                log.error("Weaviate 游标未推进，终止敏感级随动: class={}, cursor={}", className, cursor);
+                break;
+            }
+            cursor = next;
+        }
+        log.info("Weaviate payload 敏感级随动完成: kid={}, sensitivity={}, 更新对象数={}", kid, sensitivity, total);
+    }
+
+    /**
+     * 游标分页拉取 class 下对象 ID 列表（withAfter 语义：传入上一批末位 id，
+     * 返回其后对象；空列表=遍历完成）。批量上限与 createSchema 补齐探测同一量级。
+     */
+    private List<String> fetchObjectIds(String className, String cursor) {
+        Get query = getClient().graphQL().get()
+            .withClassName(className)
+            .withLimit(PAYLOAD_SYNC_BATCH_SIZE)
+            // P2-1：游标分页必须固定排序——无 sort 时 Weaviate 跨请求顺序不保证
+            //（并发写入下尤甚），withAfter 遍历会漏批=部分对象敏感级未随动。
+            .withSort(SortArgument.builder().path(new String[]{"id"}).order(SortOrder.asc).build())
+            .withFields(Field.builder().name("_additional")
+                .fields(Field.builder().name("id").build()).build());
+        if (cursor != null) {
+            query = query.withAfter(cursor);
+        }
+        Result<GraphQLResponse> result = query.run();
+        if (result == null || result.hasErrors()) {
+            throw new ServiceException("Weaviate 对象 ID 分页拉取失败: class=" + className
+                + ", error=" + (result == null ? "null result" : result.getError()));
+        }
+        return parseBatchObjectIds(result.getResult() == null ? null : result.getResult().getData(), className);
+    }
+
+    /**
+     * 解析 GraphQL Get 响应中的对象 ID 列表（包私有静态便于直测：与 #search 的
+     * JSONObject 解析同构，data.Get.&lt;className&gt; 数组取 _additional.id）。
+     */
+    static List<String> parseBatchObjectIds(Object data, String className) {
+        List<String> ids = new ArrayList<>();
+        if (data == null) {
+            return ids;
+        }
+        JSONObject entries = new JSONObject(data);
+        Map<String, cn.hutool.json.JSONArray> entriesMap = entries.get("Get", Map.class);
+        if (entriesMap == null) {
+            return ids;
+        }
+        cn.hutool.json.JSONArray objects = entriesMap.get(className);
+        if (objects == null) {
+            return ids;
+        }
+        for (Object obj : objects) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            Map<String, Object> additional = (Map<String, Object>) map.get("_additional");
+            if (additional != null && additional.get("id") != null) {
+                ids.add(String.valueOf(additional.get("id")));
+            }
+        }
+        return ids;
     }
 
     @Override

@@ -24,7 +24,9 @@ class KnowledgeRetrievalServiceRegressionTest {
     void rrfMergesSameStableIdAndKeepsDistinctItems() throws Exception {
         KnowledgeRetrievalServiceImpl service = new KnowledgeRetrievalServiceImpl(
             mock(VectorStoreService.class), mock(RerankModelFactory.class), mock(KnowledgeFragmentMapper.class),
-            mock(TraceRecordService.class), new TraceProperties());
+            mock(TraceRecordService.class), new TraceProperties(),
+            mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class),
+            new org.ruoyi.config.KnowledgeRetrievalAccessFilterProperties());
         KnowledgeRetrievalVo vectorA = item("fid-a", "A", 0.9);
         KnowledgeRetrievalVo vectorB = item("fid-b", "B", 0.8);
         KnowledgeRetrievalVo keywordA = item("fid-a", "A", 10.0);
@@ -48,7 +50,9 @@ class KnowledgeRetrievalServiceRegressionTest {
         when(vectorStore.search(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(item("fid-a", "A", 0.75)));
         KnowledgeRetrievalServiceImpl service = new KnowledgeRetrievalServiceImpl(
             vectorStore, mock(RerankModelFactory.class), mock(KnowledgeFragmentMapper.class),
-            mock(TraceRecordService.class), new TraceProperties());
+            mock(TraceRecordService.class), new TraceProperties(),
+            mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class),
+            new org.ruoyi.config.KnowledgeRetrievalAccessFilterProperties());
         QueryVectorBo query = new QueryVectorBo();
         query.setKid("1");
         query.setQuery("test");

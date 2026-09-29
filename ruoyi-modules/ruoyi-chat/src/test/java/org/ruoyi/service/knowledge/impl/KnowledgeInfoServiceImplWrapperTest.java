@@ -107,4 +107,33 @@ class KnowledgeInfoServiceImplWrapperTest {
         assertTrue(params.values().stream().filter(v -> Long.valueOf(1L).equals(v)).count() == 2,
             "share=1 应同时出现在 OR 组常量与独立过滤条件，实际=" + params);
     }
+
+    @Test
+    void sensitivityFilterWiredAsExactEqPredicate() throws Exception {
+        // B1 列表通道接线回归：sensitivity=PUBLIC 须生成精确 eq 谓词并绑定原值
+        // （修复前该参数被 buildQueryWrapper 完全忽略，传 PUBLIC 仍返回 INTERNAL 行）
+        KnowledgeInfoBo bo = new KnowledgeInfoBo();
+        bo.setUserId(100L);
+        bo.setSensitivity("PUBLIC");
+        LambdaQueryWrapper<KnowledgeInfo> lqw = buildWrapper(bo);
+        // MP wrapper 参数为惰性求值：须先渲染 SQL 段，paramNameValuePairs 才填充（与上同序）
+        String sql = lqw.getSqlSegment();
+        Map<String, Object> params = lqw.getParamNameValuePairs();
+        assertTrue(sql.contains("sensitivity ="), "须挂 sensitivity 精确等值谓词（eq 而非 like/缺失），实际=" + sql);
+        assertFalse(sql.contains("sensitivity LIKE"), "敏感级为精确匹配语义，不得退化为模糊匹配，实际=" + sql);
+        assertTrue(params.containsValue("PUBLIC"), "过滤值须原样绑定 PUBLIC，实际=" + params);
+    }
+
+    @Test
+    void absentOrBlankSensitivityOmitsPredicate() throws Exception {
+        // 不携带（null）或纯空白时不挂 sensitivity 谓词：未指定过滤=全档可见的既有语义
+        KnowledgeInfoBo bo = new KnowledgeInfoBo();
+        bo.setUserId(100L);
+        bo.setSensitivity(null);
+        String sqlNull = buildWrapper(bo).getSqlSegment();
+        assertFalse(sqlNull.contains("sensitivity"), "sensitivity=null 不应挂过滤谓词，实际=" + sqlNull);
+        bo.setSensitivity("   ");
+        String sqlBlank = buildWrapper(bo).getSqlSegment();
+        assertFalse(sqlBlank.contains("sensitivity"), "sensitivity=纯空白不应挂过滤谓词，实际=" + sqlBlank);
+    }
 }

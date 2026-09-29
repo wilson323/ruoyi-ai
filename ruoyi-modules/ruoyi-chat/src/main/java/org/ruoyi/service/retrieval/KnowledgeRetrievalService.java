@@ -33,4 +33,17 @@ public interface KnowledgeRetrievalService {
     List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo);
 
     void invalidateKnowledge(String kid);
+
+    /**
+     * 显式身份变体（B2 检索接线）：供非 HTTP 线程（aiflow 工作流 @Async 等）
+     * 传入已验证的 userId（A 口 WfState.userId 透传先例），检索入口据此经
+     * KnowledgeAccessGate#retrievalAccessProfile(Long) 装配访问过滤参数。
+     * 语义与 {@link #retrieve(QueryVectorBo)} 完全一致，仅身份来源不同；
+     * userId 为 null 时按匿名（anon 最严档）处理，不抛错。
+     *
+     * @param queryVectorBo 查询参数
+     * @param userId        已验证的会话用户 ID（null=匿名）
+     * @return 检索结果列表
+     */
+    List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo, Long userId);
 }

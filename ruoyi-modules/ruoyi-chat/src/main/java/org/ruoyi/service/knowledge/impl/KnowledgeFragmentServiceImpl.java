@@ -1,6 +1,7 @@
 package org.ruoyi.service.knowledge.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.ruoyi.common.satoken.utils.LoginHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.knowledge.KnowledgeFragmentBo;
+import org.ruoyi.domain.bo.knowledge.KnowledgeInfoBo;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
 import org.ruoyi.domain.vo.knowledge.KnowledgeFragmentVo;
@@ -74,6 +76,12 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
         // B 口收敛（/system/fragment/list）：knowledgeId 为他人库时分页拉取片段明文，kid 级过读面门
         checkListAccessByKnowledgeId(bo);
         LambdaQueryWrapper<KnowledgeFragment> lqw = buildQueryWrapper(bo);
+        // B2 S2 化：kid 为空的裸列查询收窄到会话可见库，未登录 fail-closed 空结果（勿放大：
+        // 仅按 S2 同构判据收窄可见面，不做 sensitivity 过滤、不触 /{id} 行为）
+        List<Long> visibleKnowledgeIds = narrowBareListToVisibleKnowledge(bo, lqw);
+        if (visibleKnowledgeIds != null && visibleKnowledgeIds.isEmpty()) {
+            return TableDataInfo.build(new Page<>());
+        }
         Page<KnowledgeFragmentVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
@@ -89,18 +97,54 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
         // B 口收敛（/system/fragment/export）：整库导出 Excel 前按 kid 过读面门
         checkListAccessByKnowledgeId(bo);
         LambdaQueryWrapper<KnowledgeFragment> lqw = buildQueryWrapper(bo);
+        // B2 S2 化：与 queryPageList 同构收窄（裸列导出不再全租户片段明文）
+        List<Long> visibleKnowledgeIds = narrowBareListToVisibleKnowledge(bo, lqw);
+        if (visibleKnowledgeIds != null && visibleKnowledgeIds.isEmpty()) {
+            return new ArrayList<>();
+        }
         return baseMapper.selectVoList(lqw);
     }
 
     /**
      * B 口收敛公共入口：列表/导出查询携带 knowledgeId 条件时按 kid 过读面门
      * （owned || share=1 可见即够——片段读面与检索口同判据，不另立口径）。
-     * knowledgeId 为空的裸列查询面不在本轮收敛范围（登记：B2 片段列表 S2 化时统一收窄）。
+     * knowledgeId 为空的裸列查询面已随 B2 S2 化收窄（见
+     * {@link #narrowBareListToVisibleKnowledge}），不再是无归属谓词的全租户明文列。
      */
     private void checkListAccessByKnowledgeId(KnowledgeFragmentBo bo) {
         if (bo.getKnowledgeId() != null) {
             knowledgeAccessGate.checkRetrievalAccess(bo.getKnowledgeId());
         }
+    }
+
+    /**
+     * B2 S2 化：kid 为空的裸列查询收窄到会话可见库集合（判据单源复用
+     * {@code KnowledgeInfoServiceImpl#queryList} 的 S2 同构判据：我的 ∪ 公开 share=1，
+     * 会话 userId 由其入口派生），片段 wrapper 追加 knowledge_id IN (可见集合)。
+     * <ul>
+     *   <li>未登录（LoginHelper 取 null）：fail-closed 返回空集合，调用方直接空结果
+     *       ——不以「不挂条件」形态借用 Info 列表的防御性放开分支（其 null userId
+     *       不挂可见性组会返回全部库，此处绝不可继承该行为）。</li>
+     *   <li>可见集合为空（用户无库且租户无公开库）：调用方短路空结果，不触片段表。</li>
+     *   <li>kid 非空：返回 null 标记（已走单库 Gate 路径，无需收窄）。</li>
+     * </ul>
+     */
+    private List<Long> narrowBareListToVisibleKnowledge(KnowledgeFragmentBo bo,
+                                                        LambdaQueryWrapper<KnowledgeFragment> lqw) {
+        if (bo.getKnowledgeId() != null) {
+            return null;
+        }
+        if (LoginHelper.getUserId() == null) {
+            return List.of();
+        }
+        List<Long> visibleIds = knowledgeInfoService.queryList(new KnowledgeInfoBo()).stream()
+            .map(KnowledgeInfoVo::getId)
+            .toList();
+        if (visibleIds.isEmpty()) {
+            return List.of();
+        }
+        lqw.in(KnowledgeFragment::getKnowledgeId, visibleIds);
+        return visibleIds;
     }
 
     private LambdaQueryWrapper<KnowledgeFragment> buildQueryWrapper(KnowledgeFragmentBo bo) {
