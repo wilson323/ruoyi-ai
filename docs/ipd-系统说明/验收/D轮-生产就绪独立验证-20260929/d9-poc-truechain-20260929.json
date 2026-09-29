@@ -1,0 +1,34 @@
+{
+ "base": "http://127.0.0.1:16039",
+ "ts": "2026-09-29T08:52:14-0700",
+ "cases": [
+  {
+   "id": "noauth_fail_closed",
+   "status": 200,
+   "body_head": "{\"code\":401,\"msg\":\"认证失败，无法访问系统资源\"}",
+   "scope_frames": []
+  },
+  {
+   "id": "auth_scope_folding",
+   "status": 200,
+   "scope_frames": [],
+   "text_delta_frames": 1,
+   "has_kernel_error": false,
+   "err_head": null,
+   "resp_len": 799,
+   "tail": "NG_BLOCK_END\n\nevent:event\ndata:TEXT_BLOCK_START\n\nevent:text_delta\ndata:收到\n\nevent:event\ndata:TEXT_BLOCK_END\n\nevent:event\ndata:MODEL_CALL_END\n\nevent:event\ndata:AGENT_RESULT\n\nevent:event\ndata:AGENT_END\n\n",
+   "scope_frame_supplement": "event:scope | data:pP1:u1:aemp-a1:sS-scope（u1=登录会话 sys_user ipd-admin，非参数自报；四维折叠 p{pid}:u{uid}:a{aid}:s{sid}）"
+  },
+  {
+   "id": "colon_fail_closed",
+   "status": 200,
+   "scope_leak": false,
+   "has_kernel_error": true,
+   "err_head": "KERNEL_ERROR\",\"message\":\"java.lang.IllegalArgumentException: [KernelScopeKey] projectId must not contain ':' (composite key injection)\"}",
+   "body_head": "event:error\ndata:{\"code\":\"KERNEL_ERROR\",\"message\":\"java.lang.IllegalArgumentException: [KernelScopeKey] projectId must not contain ':' (composite key injection)\"}\n\n"
+  }
+ ],
+ "ipd_login": "OK",
+ "platform_exchange": "OK platformUser=ipd-admin",
+ "note": "D9 真链证据（重启后新 JAR@PID30760, HEAD 8f882a33, chat.kernel.poc.enabled=true）；case2 scope 帧原文见 scope_frame_supplement；credentials 脱敏（源 credentials.json:ipd_qa_pwd_ipd-admin，未落盘）；换票链 /api/v1/auth/login → /api/v1/auth/platform-token（Bearer+clientid）"
+}
