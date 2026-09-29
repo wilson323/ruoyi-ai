@@ -9,11 +9,8 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.dto.AiCopilotReq;
 import org.ruoyi.ipd.dto.AiCopilotResp;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -37,7 +34,7 @@ import static org.mockito.Mockito.*;
  * <p>五条红线对齐：
  * <ul>
  *   <li>BR-AI-04：审计 afterData 三件套必带（aiAssisted/aiModel/aiRole=copilot_answer）；</li>
- *   <li>BR-AI-05：越权拦截（SA 全见；其余角色按 project_members 命中）；</li>
+ *   <li>BR-AI-05：越权拦截（服务端 Person、租户和在职成员校验）；</li>
  *   <li>P1-3 门禁：aiRole 白名单必须包含 copilot_answer；</li>
  *   <li>intent_match 路径诚实标记（aiModel=intent_match）避免 AI 假标；</li>
  *   <li>composePrompt 超 MAX 钳制 + 项目上下文取 currentAdvance 真实键。</li>
@@ -51,9 +48,9 @@ class AiCopilotServiceTest {
     private WorkbenchService workbenchService;
     private AiGateway aiGateway;
     private IAuditLogService auditLogService;
-    private ProjectMapper projectMapper;
-    private ProjectMemberMapper projectMemberMapper;
+    private IpdCopilotAccess access;
     private AiDocEmbeddingService docEmbeddingService;
+    private IpdPublicKnowledgeService publicKnowledgeService;
     private AiExecutionTrigger aiExecutionTrigger;
     private AiCopilotService service;
 
@@ -66,14 +63,17 @@ class AiCopilotServiceTest {
         workbenchService = mock(WorkbenchService.class);
         aiGateway = mock(AiGateway.class);
         auditLogService = mock(IAuditLogService.class);
-        projectMapper = mock(ProjectMapper.class);
-        projectMemberMapper = mock(ProjectMemberMapper.class);
+        access = mock(IpdCopilotAccess.class);
+        when(access.requireVisible(any(), any())).thenReturn("tenant-a");
         docEmbeddingService = mock(AiDocEmbeddingService.class);
+        publicKnowledgeService = mock(IpdPublicKnowledgeService.class);
         aiExecutionTrigger = mock(AiExecutionTrigger.class);
         when(docEmbeddingService.retrieveContext(any(), any(), any()))
             .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService, aiExecutionTrigger);
+            auditLogService, access, docEmbeddingService, aiExecutionTrigger, publicKnowledgeService);
+        when(publicKnowledgeService.retrieve(eq("tenant-a"), isNull(), anyString()))
+            .thenReturn(IpdPublicKnowledgeService.RetrievalContext.EMPTY);
         // 固定时钟便于断言 latencyMs
         service.withClock(Clock.fixed(Instant.parse("2026-09-10T19:00:00Z"), ZoneId.of("UTC")));
         // auditLogService.append 透传捕获
@@ -111,52 +111,51 @@ class AiCopilotServiceTest {
         assertEquals("CHITCHAT", AiCopilotService.classifyIntent(""));
     }
 
-    // ============ 越权拦截（不依赖反射；走 project_members 命中） ============
+    // ============ 越权拦截（具体 Person/租户/成员判据由 IpdCopilotAccessTest 锁定） ============
 
     @Test
-    @DisplayName("越权：projectId 命中且 SA 角色 → 放行；service.chat 不抛")
+    @DisplayName("越权：已授权项目 → 副驾服务继续执行")
     void visibilitySuperAdminPasses() {
         AiCopilotReq req = new AiCopilotReq(10L, "项目当前进度", List.of());
-        when(projectMapper.selectById(10L)).thenReturn(project(10L));
-        when(workbenchService.summary(any(), eq(10L))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of("projectName", "P1", "currentStage", "TR2", "actionName", "立项评审"),
             "tasks", List.of()
         ));
         AiCopilotResp resp = service.chat(SA, req);
         assertEquals("ADVANCE", resp.intent());
-        // SA 不查 projectMemberMapper
-        verify(projectMemberMapper, never()).selectCount(any());
+        verify(access).requireVisible(SA, 10L);
     }
 
     @Test
     @DisplayName("越权：非 SA 角色，project_members 未命中 → IpdBusinessException NOT_FOUND")
     void visibilityRejectWhenNotMember() {
         AiCopilotReq req = new AiCopilotReq(10L, "项目当前进度", List.of());
-        when(projectMapper.selectById(10L)).thenReturn(project(10L));
-        when(projectMemberMapper.selectCount(any())).thenReturn(0L);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND))
+            .when(access).requireVisible(RD_PM, 10L);
         IpdBusinessException ex = assertThrows(IpdBusinessException.class,
             () -> service.chat(RD_PM, req));
         assertEquals(ApiV1ErrorCode.NOT_FOUND, ex.getErrorCode());
+        verifyNoInteractions(workbenchService);
     }
 
     @Test
     @DisplayName("越权：非 SA 角色，project_members 命中 → 放行")
     void visibilityPassWhenMember() {
         AiCopilotReq req = new AiCopilotReq(10L, "项目当前进度", List.of());
-        when(projectMapper.selectById(10L)).thenReturn(project(10L));
-        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
-        when(workbenchService.summary(any(), eq(10L))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of("projectName", "P1", "currentStage", "TR2"),
             "tasks", List.of()
         ));
         assertDoesNotThrow(() -> service.chat(RD_PM, req));
+        verify(access).requireVisible(RD_PM, 10L);
     }
 
     @Test
     @DisplayName("越权：projectId 不存在 → NOT_FOUND")
     void visibilityRejectWhenProjectMissing() {
         AiCopilotReq req = new AiCopilotReq(999L, "查询", List.of());
-        when(projectMapper.selectById(999L)).thenReturn(null);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND))
+            .when(access).requireVisible(SA, 999L);
         IpdBusinessException ex = assertThrows(IpdBusinessException.class,
             () -> service.chat(SA, req));
         assertEquals(ApiV1ErrorCode.NOT_FOUND, ex.getErrorCode());
@@ -168,7 +167,7 @@ class AiCopilotServiceTest {
     @DisplayName("TASKS 路径：返回 workbench.tasks 结构化；审计 aiModel=intent_match + token=0")
     void tasksPathReturnsStructured() {
         AiCopilotReq req = new AiCopilotReq(null, "我该干啥", List.of());
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "tasks", List.of(
                 Map.of("taskType", "stage_sign", "title", "阶段签署", "hint", "待签 TR2", "url", "/w/stage/1"),
                 Map.of("taskType", "deletion_review", "title", "归档复核", "hint", "限 24h", "url", "/w/del/2")
@@ -200,7 +199,7 @@ class AiCopilotServiceTest {
     @DisplayName("TASKS 路径：tasks 为空 → 返回「当前没有待你处理的待办」")
     void tasksPathEmpty() {
         AiCopilotReq req = new AiCopilotReq(null, "我该干啥", List.of());
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "tasks", List.of(), "currentAdvance", Map.of()
         ));
         AiCopilotResp resp = service.chat(SA, req);
@@ -214,8 +213,7 @@ class AiCopilotServiceTest {
     @DisplayName("ADVANCE 路径：取 WorkbenchService 真键 currentAdvance；旧键 advance 兜底")
     void advancePathReadsCurrentAdvance() {
         AiCopilotReq req = new AiCopilotReq(10L, "项目当前进度", List.of());
-        when(projectMapper.selectById(10L)).thenReturn(project(10L));
-        when(workbenchService.summary(any(), eq(10L))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a"))).thenReturn(Map.of(
             // 只放 currentAdvance 键（与 WorkbenchService.summary 一致）
             "currentAdvance", Map.of("projectName", "P1", "currentStage", "TR2", "actionName", "立项评审"),
             "tasks", List.of()
@@ -232,8 +230,7 @@ class AiCopilotServiceTest {
     @DisplayName("ADVANCE 路径：currentAdvance 为空 → 友好提示（不调 AI）")
     void advancePathEmpty() {
         AiCopilotReq req = new AiCopilotReq(10L, "项目当前进度", List.of());
-        when(projectMapper.selectById(10L)).thenReturn(project(10L));
-        when(workbenchService.summary(any(), eq(10L))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()
         ));
         AiCopilotResp resp = service.chat(SA, req);
@@ -248,8 +245,7 @@ class AiCopilotServiceTest {
     void chitchatPathSuccess() {
         stubEnabledConfig();
         AiCopilotReq req = new AiCopilotReq(10L, "讲个笑话", List.of());
-        when(projectMapper.selectById(10L)).thenReturn(project(10L));
-        when(workbenchService.summary(any(), eq(10L))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of("projectName", "P1", "currentStage", "TR2", "actionName", "评审"),
             "tasks", List.of(
                 Map.of("taskType", "stage_sign", "title", "阶段签署", "hint", "TR2 待签")
@@ -281,11 +277,53 @@ class AiCopilotServiceTest {
     }
 
     @Test
+    @DisplayName("显式选公共库：同步问答注入受限片段并返回真实来源引用")
+    void selectedPublicKnowledgeEntersSynchronousPrompt() {
+        stubEnabledConfig();
+        AiCopilotReq req = new AiCopilotReq(null, "公共知识里的待办规则是什么", List.of(),
+            null, null, List.of("7"));
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a")))
+            .thenReturn(Map.of("currentAdvance", Map.of(), "tasks", List.of()));
+        when(publicKnowledgeService.retrieve("tenant-a", List.of("7"), req.message()))
+            .thenReturn(new IpdPublicKnowledgeService.RetrievalContext(
+                "【公共知识片段 1｜知识库 7】\n公开规则正文\n", List.of("knowledge.public:7")));
+        when(aiGateway.chat(any(), anyString(), anyInt(), any(BigDecimal.class)))
+            .thenAnswer(inv -> {
+                String prompt = inv.getArgument(1);
+                assertTrue(prompt.contains("公开规则正文"));
+                assertTrue(prompt.contains("【公共知识（关键词命中，仅供参考）】"));
+                return AiChatResult.ok("引用回答", 10, 5, 30L);
+            });
+
+        AiCopilotResp resp = service.chat(SA, req);
+
+        assertEquals("CHITCHAT", resp.intent(), "显式选库优先于‘待办’关键词兜底");
+        assertTrue(resp.sources().contains("knowledge.public:7"));
+        verify(publicKnowledgeService).retrieve("tenant-a", List.of("7"), req.message());
+    }
+
+    @Test
+    @DisplayName("旧手工构造器缺公共知识服务时，显式选库在模型调用前失败")
+    void selectedLibraryCannotBypassMissingKnowledgeService() {
+        stubEnabledConfig();
+        AiCopilotService legacy = new AiCopilotService(modelConfigService, workbenchService,
+            aiGateway, auditLogService, access, docEmbeddingService, aiExecutionTrigger);
+        AiCopilotReq req = new AiCopilotReq(null, "知识库规则", List.of(),
+            null, null, List.of("7"));
+
+        IpdBusinessException error = assertThrows(IpdBusinessException.class,
+            () -> legacy.chat(SA, req));
+
+        assertEquals(ApiV1ErrorCode.INTERNAL_ERROR, error.getErrorCode());
+        verify(aiGateway, never()).chat(any(), anyString(), anyInt(), any());
+    }
+
+    @Test
     @DisplayName("CHITCHAT 路径：AI 失败 → IpdBusinessException + 审计 status=FAIL:xxx")
     void chitchatPathFail() {
         stubEnabledConfig();
         AiCopilotReq req = new AiCopilotReq(null, "闲聊", List.of());
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()
         ));
         when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class)))
@@ -309,7 +347,6 @@ class AiCopilotServiceTest {
     @DisplayName("R221 FILL_PAGE：白名单只留 farValue、丢弃 salary，mode=suggest，落 CHAT 行 + AI_FILL 审计不记值")
     void fillPagePathSuggestsOnlyWhitelistedFields() {
         stubEnabledConfig();
-        when(projectMapper.selectById(100L)).thenReturn(project(100L));
         when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class)))
             .thenReturn(AiChatResult.ok("{\"farValue\":\"0.002\",\"salary\":\"99999\"}", 10, 20, 50L));
         AiCopilotReq req = new AiCopilotReq(100L, "帮我把基准值填了", List.of(), null,
@@ -344,8 +381,7 @@ class AiCopilotServiceTest {
     @DisplayName("R221 WARNING#3：未登记 scene 拒绝 → 补 AI_FILL(REJECTED) 留痕 + 降级闲聊 + 不落 CHAT 行 + 无 fillPayload")
     void fillPageRejectsUnknownSceneWithAuditTrail() {
         stubEnabledConfig();
-        when(projectMapper.selectById(100L)).thenReturn(project(100L));
-        when(workbenchService.summary(any(), eq(100L))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), eq(100L), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()));
         when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class)))
             .thenReturn(AiChatResult.ok("闲聊回答", 5, 10, 30L));
@@ -369,7 +405,7 @@ class AiCopilotServiceTest {
     @DisplayName("CHITCHAT 路径：未启用 AI 模型（currentEnabled STATE_CONFLICT）→ 友好兜底，不抛 50002")
     void chitchatPathNoEnabledConfig() {
         AiCopilotReq req = new AiCopilotReq(null, "闲聊一下", List.of());
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()
         ));
         when(modelConfigService.currentEnabled())
@@ -415,6 +451,44 @@ class AiCopilotServiceTest {
         String hugeProjectCtx = "P".repeat(20_000);
         String prompt2 = AiCopilotService.composePrompt(req, hugeProjectCtx, null, null);
         assertEquals(AiCopilotService.COPILOT_PROMPT_MAX, prompt2.length(), "总长必钳到 COPILOT_PROMPT_MAX");
+        assertTrue(prompt2.endsWith("Q".repeat(2_000)), "超长旧上下文不能截掉本次问题");
+    }
+
+    @Test
+    @DisplayName("超长项目/RAG/历史上下文时保留本次问题与完整公共片段")
+    void composePromptReservesQuestionAndPublicKnowledge() {
+        AiCopilotReq req = new AiCopilotReq(null, "真正问题尾标记", List.of(
+            new AiCopilotReq.CopilotTurn("user", "H".repeat(6_000))));
+        String publicBlock = "【公共知识片段 1｜知识库 7】\nPUBLIC_MARKER\n";
+
+        String prompt = AiCopilotService.composePrompt(req, "P".repeat(7_000),
+            "B".repeat(7_000), "R".repeat(7_000), publicBlock);
+
+        assertEquals(AiCopilotService.COPILOT_PROMPT_MAX, prompt.length());
+        assertTrue(prompt.contains(publicBlock), "公共片段完整注入后才允许标来源");
+        assertTrue(prompt.endsWith("【本次问题】\n真正问题尾标记"));
+    }
+
+    @Test
+    @DisplayName("异常超大公共片段未注入时不声明来源")
+    void oversizedPublicKnowledgeDoesNotClaimSource() {
+        stubEnabledConfig();
+        AiCopilotReq req = new AiCopilotReq(null, "公开资料说明", List.of());
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a")))
+            .thenReturn(Map.of("currentAdvance", Map.of(), "tasks", List.of()));
+        when(publicKnowledgeService.retrieve("tenant-a", null, req.message()))
+            .thenReturn(new IpdPublicKnowledgeService.RetrievalContext(
+                "X".repeat(9_000), List.of("knowledge.public:7")));
+        when(aiGateway.chat(any(), anyString(), anyInt(), any(BigDecimal.class)))
+            .thenAnswer(inv -> {
+                String prompt = inv.getArgument(1);
+                assertFalse(prompt.contains("【公共知识（关键词命中，仅供参考）】"));
+                return AiChatResult.ok("回答", 10, 5, 30L);
+            });
+
+        AiCopilotResp resp = service.chat(SA, req);
+
+        assertFalse(resp.sources().contains("knowledge.public:7"));
     }
 
     @Test
@@ -470,7 +544,7 @@ class AiCopilotServiceTest {
             .thenReturn(new AiDocEmbeddingService.RetrievalContext(1, 64,
                 "R184 单元测试注入的 RAG 内容"));
         stubEnabledConfig();
-        when(workbenchService.summary(any(), any(Long.class))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), any(Long.class), eq("tenant-a"))).thenReturn(Map.of(
             "projectAdvance", Map.of("stageCode", "TR4", "currentAdvance", "待真活验证")
         ));
         when(aiGateway.chat(any(), any(), any(), any(BigDecimal.class)))
@@ -483,8 +557,6 @@ class AiCopilotServiceTest {
                     "RAG 块头必出现");
                 return AiChatResult.ok("ok", 10, 20, 50L);
             });
-        when(projectMapper.selectById(9140001L)).thenReturn(project(9140001L));
-        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
 
         AiCopilotReq req = new AiCopilotReq(9140001L, "RAG 是否进 prompt", List.of());
         AiCopilotResp resp = service.chat(RD_PM, req);
@@ -500,11 +572,9 @@ class AiCopilotServiceTest {
         // R184 阶段 3：前端 UI 让用户选 docType，后端必须把 docType 透传到 retrieveContext
         // 让 SQL 按 idx_emb_doctype 走「仅该类型」语义，不是「同项目全类型」
         stubEnabledConfig();
-        when(workbenchService.summary(any(), any(Long.class))).thenReturn(Map.of(
+        when(workbenchService.summary(any(), any(Long.class), eq("tenant-a"))).thenReturn(Map.of(
             "projectAdvance", Map.of("stageCode", "TR4", "currentAdvance", "docType 过滤验证")
         ));
-        when(projectMapper.selectById(9140001L)).thenReturn(project(9140001L));
-        when(projectMemberMapper.selectCount(any())).thenReturn(1L);
         // capture 进 retrieveContext 的第 2 参
         ArgumentCaptor<String> docTypeCap = ArgumentCaptor.forClass(String.class);
         when(docEmbeddingService.retrieveContext(any(), docTypeCap.capture(), any()))
@@ -579,13 +649,6 @@ class AiCopilotServiceTest {
     }
 
     // ============ helper ============
-
-    private static Project project(Long id) {
-        Project p = new Project();
-        p.setId(id);
-        p.setName("P-" + id);
-        return p;
-    }
 
     private void stubEnabledConfig() {
         AiModelConfig cfg = AiModelConfig.builder().id(1L).provider("openai")

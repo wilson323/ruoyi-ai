@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdPageParamGuardInterceptor;
 import org.ruoyi.ipd.security.IpdPermissionException;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -58,5 +59,11 @@ public class IpdWebSecurityConfig implements WebMvcConfigurer {
             .addPathPatterns("/api/v1/**")
             .excludePathPatterns("/api/v1/auth/login", "/api/v1/auth/wecom/qr-login", "/api/v1/public/**", "/api/v1/resource/**")
             .order(Ordered.HIGHEST_PRECEDENCE + 1);
+
+        // P1-3（D3 §2.1 真红，2026-09-29）：分页入参统一校验（B-2 契约：pageNum|pageNo ≥ 1、
+        // pageSize 1~200，超限 400/10001）。不 exclude 任何路径：公开端点同样受成本放大防护。
+        registry.addInterceptor(new IpdPageParamGuardInterceptor())
+            .addPathPatterns("/api/v1/**")
+            .order(Ordered.HIGHEST_PRECEDENCE + 2);
     }
 }

@@ -8,16 +8,16 @@ import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AiCopilotService;
+import org.ruoyi.ipd.service.CopilotRunRegistryService;
 import org.ruoyi.ipd.service.AiDocEmbeddingService;
 import org.ruoyi.ipd.service.AiExecutionTrigger;
 import org.ruoyi.ipd.service.AiModelConfigService;
 import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.IpdAuthService;
+import org.ruoyi.ipd.service.IpdCopilotAccess;
 import org.ruoyi.ipd.service.WorkbenchService;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -87,18 +88,20 @@ class CopilotKitRuntimeControllerTest {
         // RetrievalContext.EMPTY 包私有不可达；null = 无命中，服务端 ragContextBlock 同语义降级
         when(docEmbeddingService.retrieveContext(any(), any(), any())).thenReturn(null);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()));
         when(session.currentPerson()).thenReturn(SA_PERSON);
         when(authService.scopeOf(any())).thenReturn(IpdAuthService.Scope.FULL);
 
+        IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+        when(access.requireVisible(any(), any())).thenReturn("tenant-a");
         AiCopilotService service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, mock(ProjectMapper.class), mock(ProjectMemberMapper.class),
-            docEmbeddingService, aiExecutionTrigger);
+            auditLogService, access, docEmbeddingService, aiExecutionTrigger);
         IpdPermission permission = new IpdPermission(session, authService);
         // 直通 executor：同步确定性（run 语义与生产 SSE_EXECUTOR 相同，仅线程模型不同）
         CopilotKitRuntimeController controller =
-            new CopilotKitRuntimeController(service, permission, Runnable::run);
+            new CopilotKitRuntimeController(service, permission,
+                new CopilotRunRegistryService(auditLogService), Runnable::run);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 

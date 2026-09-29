@@ -16,6 +16,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.workbench.WorkbenchAggregator;
 import org.ruoyi.ipd.workbench.WorkbenchPolicy;
@@ -123,7 +124,19 @@ public class WorkbenchService implements IWorkbenchService {
      * @return stats + 任务平铺列表（前端按项目分组）+ 当前推进 + 删除待办数
      */
     public Map<String, Object> summary(IpdActor actor, Long projectId) {
-        List<Project> scope = visibleProjects(actor);
+        return summaryInScope(actor, projectId, visibleProjects(actor), null);
+    }
+
+    /** AI 副驾使用已从 Person 重新确认的租户；异步 SSE 不依赖请求线程上下文。 */
+    public Map<String, Object> summary(IpdActor actor, Long projectId, String trustedTenantId) {
+        if (trustedTenantId == null || trustedTenantId.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN);
+        }
+        return summaryInScope(actor, projectId, visibleProjects(actor, trustedTenantId), trustedTenantId);
+    }
+
+    private Map<String, Object> summaryInScope(IpdActor actor, Long projectId, List<Project> scope,
+                                               String trustedTenantId) {
         Map<Long, Project> byId = new LinkedHashMap<>();
         scope.forEach(p -> byId.put(p.getId(), p));
 
@@ -131,7 +144,9 @@ public class WorkbenchService implements IWorkbenchService {
         // 统一调度：每类 taskType 由各自 aggregator 投递卡（P1 方向 B）
         List<Map<String, Object>> tasks = new ArrayList<>();
         for (WorkbenchAggregator aggregator : aggregators) {
-            tasks.addAll(aggregator.collect(actor, byId, now));
+            tasks.addAll(trustedTenantId == null
+                ? aggregator.collect(actor, byId, now)
+                : aggregator.collect(actor, byId, now, trustedTenantId));
         }
         int completed = aggregators.stream()
             .mapToInt(a -> a.completedCount(actor, byId))
@@ -169,7 +184,9 @@ public class WorkbenchService implements IWorkbenchService {
         result.put("deletionPending", (int) tasks.stream()
             .filter(t -> "deletion_review".equals(t.get("taskType")))
             .count());
-        result.put("currentAdvance", currentAdvance(actor, projectId, byId));
+        // 副驾指定项目若不在进行中可见范围，不能悄悄回退到另一个项目的推进信息。
+        result.put("currentAdvance", trustedTenantId != null && projectId != null && !byId.containsKey(projectId)
+            ? null : currentAdvance(actor, projectId, byId));
         return result;
     }
 
@@ -283,21 +300,37 @@ public class WorkbenchService implements IWorkbenchService {
 
     /** 项目可见范围：超管全部，其余按成员关系。 */
     private List<Project> visibleProjects(IpdActor actor) {
+        return visibleProjects(actor, null);
+    }
+
+    private List<Project> visibleProjects(IpdActor actor, String trustedTenantId) {
         if ("SUPER_ADMIN".equals(actor.role())) {
-            return projectMapper.selectList(new LambdaQueryWrapper<Project>()
+            LambdaQueryWrapper<Project> query = new LambdaQueryWrapper<Project>()
                 .eq(Project::getStatus, ST_ACTIVE_PROJECT)
-                .orderByAsc(Project::getId));
+                .orderByAsc(Project::getId);
+            if (trustedTenantId != null) {
+                query.eq(Project::getTenantId, trustedTenantId);
+            }
+            return projectMapper.selectList(query);
         }
-        List<ProjectMember> memberships = projectMemberMapper.selectList(
-            new LambdaQueryWrapper<ProjectMember>().eq(ProjectMember::getPersonId, actor.id()));
+        LambdaQueryWrapper<ProjectMember> membershipQuery = new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getPersonId, actor.id());
+        if (trustedTenantId != null) {
+            membershipQuery.isNull(ProjectMember::getExitDate);
+        }
+        List<ProjectMember> memberships = projectMemberMapper.selectList(membershipQuery);
         if (memberships.isEmpty()) {
             return List.of();
         }
         List<Long> ids = memberships.stream().map(ProjectMember::getProjectId).distinct().toList();
-        return projectMapper.selectList(new LambdaQueryWrapper<Project>()
+        LambdaQueryWrapper<Project> query = new LambdaQueryWrapper<Project>()
             .in(Project::getId, ids)
             .eq(Project::getStatus, ST_ACTIVE_PROJECT)
-            .orderByAsc(Project::getId));
+            .orderByAsc(Project::getId);
+        if (trustedTenantId != null) {
+            query.eq(Project::getTenantId, trustedTenantId);
+        }
+        return projectMapper.selectList(query);
     }
 
     /** 我的当前推进：指定项目（或第一个可见项目）当前阶段的第一个未完成动作。 */

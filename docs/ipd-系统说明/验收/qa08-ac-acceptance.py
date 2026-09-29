@@ -138,23 +138,27 @@ def http_post_json(path: str, payload: dict, timeout: int = 8):
 
 
 # 2026-09-07 解锁：audit_log_chain_heads 已落库（qa08 前轮修复），16039 登录链路已通。
-# 凭据读 .codex/ipd-dev/config/bootstrap-accounts.json（仓库内在库 dev 凭据，非新增明文）。
+# bootstrap-accounts.json 仅作账号白名单；密码只从本机 credentials.json 读取。
 _token_cache: dict = {}
 
 
 def login(username: str):
-    """16039 真登录取 Bearer token；bootstrap 缺失/登录失败返 None（调用方降级 BLOCKED）。"""
+    """16039 真登录取 Bearer token；只从本机凭据文件读取 QA 密码。"""
     if username in _token_cache:
         return _token_cache[username]
     token = None
     try:
         boot = REPO / ".codex/ipd-dev/config/bootstrap-accounts.json"
-        accounts = {a["username"]: a["password"] for a in json.loads(boot.read_text())}
+        accounts = {a["username"] for a in json.loads(boot.read_text())["accounts"]}
+        password = None
+        if username in accounts:
+            credentials = json.loads((REPO / ".codex/ipd-dev/config/credentials.json").read_text())
+            password = credentials.get(f"ipd_qa_pwd_{username}")
     except Exception:
-        accounts = {}
-    if username in accounts:
+        password = None
+    if password:
         s, body = http_post_json("/api/v1/auth/login",
-                                 {"username": username, "password": accounts[username]})
+                                 {"username": username, "password": password})
         if s == 200 and isinstance(body, dict):
             token = ((body.get("data") or {}).get("token")) or None
     _token_cache[username] = token

@@ -1,11 +1,13 @@
 package org.ruoyi.ipd.controller;
 
+import org.ruoyi.common.sse.core.SseErrorEmitter;
 import org.ruoyi.ipd.copilotkit.AgUiCopilotRun;
 import org.ruoyi.ipd.copilotkit.RunAgentInput;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.ruoyi.ipd.service.AiCopilotService;
+import org.ruoyi.ipd.service.CopilotRunRegistryService;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -58,6 +60,7 @@ public class CopilotKitRuntimeController {
 
     private final AiCopilotService service;
     private final IpdPermission ipdPermission;
+    private final CopilotRunRegistryService runRegistry;
     private final Executor executor;
 
     /** 复用独立 cachedThreadPool 推 SSE 流（与 AiCopilotController.SSE_EXECUTOR 同模式，不分业务线程池）。 */
@@ -68,14 +71,17 @@ public class CopilotKitRuntimeController {
     });
 
     @Autowired
-    public CopilotKitRuntimeController(AiCopilotService service, IpdPermission ipdPermission) {
-        this(service, ipdPermission, SSE_EXECUTOR);
+    public CopilotKitRuntimeController(AiCopilotService service, IpdPermission ipdPermission,
+                                       CopilotRunRegistryService runRegistry) {
+        this(service, ipdPermission, runRegistry, SSE_EXECUTOR);
     }
 
     /** 测试口：注入直通 executor（Runnable::run）保证同步确定性。 */
-    CopilotKitRuntimeController(AiCopilotService service, IpdPermission ipdPermission, Executor executor) {
+    CopilotKitRuntimeController(AiCopilotService service, IpdPermission ipdPermission,
+                                CopilotRunRegistryService runRegistry, Executor executor) {
         this.service = service;
         this.ipdPermission = ipdPermission;
+        this.runRegistry = runRegistry;
         this.executor = executor;
     }
 
@@ -123,7 +129,12 @@ public class CopilotKitRuntimeController {
                 .body(body);
         }
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        new AgUiCopilotRun(service, ipdPermission, executor).execute(input, sseSink(emitter));
+        try {
+            new AgUiCopilotRun(service, ipdPermission, executor, runRegistry).execute(input, sseSink(emitter));
+        } catch (Exception e) {
+            // 同步拒绝/同步异常兜底（execute 内部业务错误已 in-band RUN_ERROR；此处只接漏网同步抛出）
+            SseErrorEmitter.completeWithError(emitter, "RUN_ERROR", e.getMessage(), log);
+        }
         return ResponseEntity.ok().contentType(MediaType.TEXT_EVENT_STREAM).body(emitter);
     }
 

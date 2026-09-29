@@ -275,54 +275,13 @@ public class AiChatClient {
         return set;
     }
 
-    /** 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6。S-6 增量：fe80::/10 字节级显式断言。 */
+    /**
+     * 内网 / loopback / link-local IP 黑名单，覆盖 IPv4 + IPv6（含 fe80::/10 显式断言）。
+     * P0-3（2026-09-29）：判定委托 {@link EndpointUrlValidator#isBlockedIp} 唯一实现
+     * （黑名单不复制——保存入口 B 路与出站 C 路同一份字节级判定，防两套名单漂移）。
+     */
     private static boolean isBlockedIp(byte[] ip) {
-        if (ip == null) {
-            return true;
-        }
-        try {
-            InetAddress addr = InetAddress.getByAddress(ip);
-            if (addr.isAnyLocalAddress())  return true;
-            if (addr.isLoopbackAddress())  return true;
-            if (addr.isLinkLocalAddress()) return true;
-            if (addr.isSiteLocalAddress())  return true;
-            if (addr.isMulticastAddress()) return true;
-        } catch (java.net.UnknownHostException e) {
-            return true;
-        }
-        if (ip.length == 16) {
-            boolean isMapped = true;
-            for (int i = 0; i < 10; i++) {
-                if (ip[i] != 0) { isMapped = false; break; }
-            }
-            if (isMapped && ip[10] == (byte) 0xFF && ip[11] == (byte) 0xFF) {
-                byte[] ipv4 = { ip[12], ip[13], ip[14], ip[15] };
-                return isBlockedIpv4(ipv4);
-            }
-        }
-        if (ip.length == 4) return isBlockedIpv4(ip);
-        if (ip.length == 16 && (ip[0] & (byte) 0xFE) == (byte) 0xFC) return true;  // fc00::/7 ULA
-        // S-6 增量：IPv6 fe80::/10 字节级显式断言（不依赖 JDK isLinkLocalAddress 语义；纵深防御 + 抗 JDK 升级漂移）
-        // fe80::/10 = ip[0]==0xFE 且 ip[1] 高 2 位为 10（即 ip[1] ∈ [0x80, 0xBF]）
-        if (ip.length == 16
-            && ip[0] == (byte) 0xFE
-            && (ip[1] & (byte) 0xC0) == (byte) 0x80) {
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean isBlockedIpv4(byte[] ip) {
-        int b0 = ip[0] & 0xFF;
-        int b1 = ip[1] & 0xFF;
-        if (b0 == 127) return true;
-        if (b0 == 10)  return true;
-        if (b0 == 172 && (b1 & 0xF0) == 16) return true;
-        if (b0 == 192 && b1 == 168) return true;
-        if (b0 == 169 && b1 == 254) return true;
-        if (b0 == 100 && (b1 & 0xC0) == 64) return true;
-        if (b0 == 0)   return true;
-        return false;
+        return EndpointUrlValidator.isBlockedIp(ip);
     }
 
     /** SHA-256 短指纹（16 hex chars ≈ 64 bit），用于日志中请求/响应配对，不暴露原文。 */

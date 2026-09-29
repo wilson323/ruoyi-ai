@@ -252,6 +252,16 @@ run_shell_var_gate() {
 # ---------------------------------------------------------------------------
 # 路由
 # ---------------------------------------------------------------------------
+run_langchain4j_gate() {
+    echo "[check-pre-commit] → 门禁 5: LangChain4j 引用面积只减不增"
+    if bash "$REPO_ROOT/scripts/check-langchain4j-ratchet.sh"; then
+        PASSED=$((PASSED + 1))
+    else
+        echo "[check-pre-commit] ❌ 门禁 5 FAIL: AgentScope 迁移期间出现新的 LangChain4j 接线" >&2
+        FAILED=$((FAILED + 1))
+    fi
+}
+
 case "$MODE" in
     all)
         # R43-α 二轮: 所有 hook 模式默认跑门禁 0(untracked 引用检测) < 1s
@@ -260,6 +270,7 @@ case "$MODE" in
         run_contract_gate
         run_ratchet_gate
         run_shell_var_gate
+        run_langchain4j_gate
         ;;
     drift)
         run_untracked_gate
@@ -280,6 +291,7 @@ case "$MODE" in
         run_untracked_gate
         run_ratchet_gate
         run_shell_var_gate
+        run_langchain4j_gate
         SKIPPED=2
         echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"
         ;;

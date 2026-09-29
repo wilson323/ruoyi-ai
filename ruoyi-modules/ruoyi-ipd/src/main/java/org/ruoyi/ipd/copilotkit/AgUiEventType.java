@@ -29,7 +29,27 @@ public enum AgUiEventType {
     /** 工具调用结果（messageId + toolCallId + content）。 */
     TOOL_CALL_RESULT("TOOL_CALL_RESULT"),
     /** 状态增量（delta = RFC 6902 JSON Patch 操作数组）。 */
-    STATE_DELTA("STATE_DELTA");
+    STATE_DELTA("STATE_DELTA"),
+    /**
+     * 步骤开始（stepName 必填，subagentRunId 可选；官方 {@code EventType.STEP_STARTED}）。
+     *
+     * <p>多智能体/蜂群进度以 STEP_* 表达子任务节拍（协议无 SUBAGENT_PROGRESS，进度即 STEP_* 与
+     * ACTIVITY_DELTA）。桥侧词表已铺，<b>待真实 swarm 生产者接入</b>——当前 {@code AiCopilotService.chatStream}
+     * 为单一 RAG 流，尚无子智能体分裂，本常量暂不由翻译器产出。
+     */
+    STEP_STARTED("STEP_STARTED"),
+    /** 步骤结束（stepName 必填，subagentRunId 可选；官方 {@code EventType.STEP_FINISHED}）。 */
+    STEP_FINISHED("STEP_FINISHED"),
+    /**
+     * 子智能体开始（subagentRunId + name 必填，description/parent* 可选；官方 {@code EventType.SUBAGENT_STARTED}）。
+     *
+     * <p>桥侧词表已铺，<b>待真实 swarm 生产者接入</b>（同上，暂不由翻译器产出）。
+     */
+    SUBAGENT_STARTED("SUBAGENT_STARTED"),
+    /** 子智能体结束（subagentRunId 必填，result/outcome 可选；官方 {@code EventType.SUBAGENT_FINISHED}）。 */
+    SUBAGENT_FINISHED("SUBAGENT_FINISHED"),
+    /** 子智能体失败（subagentRunId + message 必填，code 可选；官方 {@code EventType.SUBAGENT_ERROR}）。 */
+    SUBAGENT_ERROR("SUBAGENT_ERROR");
 
     private final String wireName;
 

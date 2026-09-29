@@ -2,11 +2,13 @@ package org.ruoyi.ipd.workbench;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
@@ -15,6 +17,9 @@ import org.ruoyi.ipd.mapper.GateArbitrationMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -33,6 +38,12 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
 class KeyGateArbitrationAggregatorTest {
+
+    @BeforeAll
+    static void initLambdaColumns() {
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""),
+            Project.class);
+    }
 
     @Mock
     private GateMapper gateMapper;
@@ -163,6 +174,47 @@ class KeyGateArbitrationAggregatorTest {
         assertThat(tasks).hasSize(1);
         assertThat(tasks.get(0).get("projectName")).isEqualTo("项目A");
         assertThat(tasks.get(0).get("projectCode")).isEqualTo("P-001");
+    }
+
+    @Test
+    @DisplayName("AI 副驾同租户组长即使不是项目成员仍可见指派仲裁")
+    void copilotCollectKeepsSameTenantNonMemberArbitration() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(arbitration(601L, 301L, "GROUP_LEADER", 3L, null, 2)));
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(gate(301L, 10L, "G3")));
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(Project.builder()
+            .id(10L).code("P-001").name("项目A").status("ACTIVE").tenantId("tenant-a").build()));
+
+        List<Map<String, Object>> tasks = aggregator.collect(leader, Map.of(), new Date(), "tenant-a");
+
+        assertThat(tasks).extracting(t -> t.get("id")).containsExactly("GA-601");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<Project>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(projectMapper).selectList(query.capture());
+        assertThat(query.getValue().getSqlSegment()).contains("tenant_id");
+        assertThat(query.getValue().getParamNameValuePairs()).containsValue("tenant-a");
+    }
+
+    @Test
+    @DisplayName("AI 副驾不投递跨租户仲裁，连补查返回的异常行也拦截")
+    void copilotCollectExcludesCrossTenantArbitration() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        when(gateArbitrationMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(arbitration(602L, 302L, "GROUP_LEADER", 3L, null, 1)));
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(gate(302L, 11L, "G4")));
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(Project.builder()
+            .id(11L).code("P-011").name("外租户项目").status("ACTIVE").tenantId("tenant-b").build()));
+
+        assertThat(aggregator.collect(leader, Map.of(), new Date(), "tenant-a")).isEmpty();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<Project>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(projectMapper).selectList(query.capture());
+        assertThat(query.getValue().getSqlSegment()).contains("tenant_id");
+        assertThat(query.getValue().getParamNameValuePairs()).containsValue("tenant-a");
     }
 
     @Test

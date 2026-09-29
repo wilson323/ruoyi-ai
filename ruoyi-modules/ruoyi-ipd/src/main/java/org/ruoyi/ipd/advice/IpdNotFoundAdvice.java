@@ -10,6 +10,7 @@ import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -47,7 +48,7 @@ public class IpdNotFoundAdvice {
      */
     @ExceptionHandler(NoHandlerFoundException.class)
     public Object handleNoHandler(NoHandlerFoundException e, HttpServletRequest request) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        boolean ownedTrace = ensureTrace();
         try {
             if (isIpdApi(request)) {
                 log.warn("[IPD] no handler: {}", request.getRequestURI());
@@ -56,7 +57,7 @@ public class IpdNotFoundAdvice {
             // 非 IPD 域：复刻基线 handleNoHandlerFoundException 契约（R 包络 HTTP 200）
             return R.fail(HttpStatus.NOT_FOUND, "请求地址不存在");
         } finally {
-            MDC.remove("traceId");
+            clearOwnedTrace(ownedTrace);
         }
     }
 
@@ -67,7 +68,7 @@ public class IpdNotFoundAdvice {
      */
     @ExceptionHandler(NoResourceFoundException.class)
     public Object handleNoResource(NoResourceFoundException e, HttpServletRequest request) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        boolean ownedTrace = ensureTrace();
         try {
             if (isIpdApi(request)) {
                 log.warn("[IPD] no resource: {}", request.getRequestURI());
@@ -76,13 +77,50 @@ public class IpdNotFoundAdvice {
             // 非 IPD 域：复刻基线 handleServletException 契约（R 包络 HTTP 200 code=500）
             return R.fail("系统异常，请联系管理员");
         } finally {
-            MDC.remove("traceId");
+            clearOwnedTrace(ownedTrace);
+        }
+    }
+
+    /**
+     * CONTRACT-01（D 轮 D2 §4.3 真红，2026-09-29）：请求方法不被端点支持（如
+     * {@code DELETE /api/v1/projects/{id}}）时基线返回 HTTP 200 + R 包络
+     * {@code {code:405,msg:"请求方式不支持"}}，在 IPD 路径泄漏框架格式。本分支使
+     * /api/v1/ 域返回 HTTP 405 + 标准包络（code/message/data/timestamp/traceId）。
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public Object handleMethodNotSupported(HttpRequestMethodNotSupportedException e, HttpServletRequest request) {
+        boolean ownedTrace = ensureTrace();
+        try {
+            if (isIpdApi(request)) {
+                log.warn("[IPD] method not supported: {} {}", e.getMethod(), request.getRequestURI());
+                return ResponseEntity.status(ApiV1ErrorCode.METHOD_NOT_SUPPORTED.getHttpStatus())
+                    .body(ApiV1Response.fail(ApiV1ErrorCode.METHOD_NOT_SUPPORTED));
+            }
+            // 非 IPD 域：复刻基线 handleHttpRequestMethodNotSupported 契约（R 包络 HTTP 200 code=405）
+            return R.fail(HttpStatus.BAD_METHOD, "请求方式不支持");
+        } finally {
+            clearOwnedTrace(ownedTrace);
         }
     }
 
     static boolean isIpdApi(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return uri != null && uri.startsWith(IPD_API_PREFIX);
+    }
+
+    private static boolean ensureTrace() {
+        String existing = MDC.get("traceId");
+        if (existing != null && !existing.isBlank()) {
+            return false;
+        }
+        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        return true;
+    }
+
+    private static void clearOwnedTrace(boolean ownedTrace) {
+        if (ownedTrace) {
+            MDC.remove("traceId");
+        }
     }
 
     private static ResponseEntity<ApiV1Response<Void>> ipdNotFound() {

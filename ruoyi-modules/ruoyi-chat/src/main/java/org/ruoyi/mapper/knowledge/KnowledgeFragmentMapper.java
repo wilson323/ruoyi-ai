@@ -77,4 +77,35 @@ public interface KnowledgeFragmentMapper extends BaseMapperPlus<KnowledgeFragmen
             ? null : KnowledgeSensitivity.allowedNamesUpTo(maxSensitivity);
         return searchByKeyword(knowledgeId, query, limit, sensitivityAllowed);
     }
+
+    /**
+     * IPD 副驾公共知识检索：一次查询重新校验库、附件和片段的租户与公开状态。
+     * knowledgeIds=null 表示全部同租户公共全局库；空集合显式拒绝，不能退化成全库检索。
+     * 不依赖请求线程的 TenantHelper，供独立 SSE 线程安全调用。
+     */
+    @Select("<script>" +
+            "SELECT kf.id, kf.fid, kf.doc_id AS docId, kf.content, kf.idx, " +
+            "kf.knowledge_id AS knowledgeId " +
+            "FROM knowledge_fragment kf " +
+            "JOIN knowledge_info ki ON ki.id = kf.knowledge_id " +
+            "JOIN knowledge_attach ka ON ka.knowledge_id = ki.id AND ka.doc_id = kf.doc_id " +
+            "WHERE ki.tenant_id = #{tenantId} AND kf.tenant_id = #{tenantId} " +
+            "AND ka.tenant_id = #{tenantId} AND ka.status = 2 " +
+            "AND ki.scope_type = 'GLOBAL' AND ki.sensitivity = 'PUBLIC' AND ki.share = 1 " +
+            "AND MATCH (kf.content) AGAINST (#{query} IN NATURAL LANGUAGE MODE) " +
+            "<choose>" +
+            "<when test='knowledgeIds == null'></when>" +
+            "<when test='knowledgeIds.size() > 0'>" +
+            "AND ki.id IN " +
+            "<foreach collection='knowledgeIds' item='id' open='(' separator=',' close=')'>#{id}</foreach> " +
+            "</when>" +
+            "<otherwise>AND 1 = 0 </otherwise>" +
+            "</choose>" +
+            "ORDER BY MATCH (kf.content) AGAINST (#{query} IN NATURAL LANGUAGE MODE) DESC, kf.id DESC " +
+            "LIMIT #{limit}" +
+            "</script>")
+    List<KnowledgeFragmentVo> searchIpdPublic(@Param("tenantId") Long tenantId,
+                                               @Param("knowledgeIds") List<Long> knowledgeIds,
+                                               @Param("query") String query,
+                                               @Param("limit") Integer limit);
 }

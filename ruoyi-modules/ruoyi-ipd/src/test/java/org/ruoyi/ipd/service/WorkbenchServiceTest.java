@@ -2,11 +2,13 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
@@ -21,6 +23,9 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.workbench.DeletionReviewAggregator;
 import org.ruoyi.ipd.workbench.StageSignAggregator;
 import org.ruoyi.ipd.workbench.WorkbenchAggregator;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -29,7 +34,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -40,6 +48,13 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
 class WorkbenchServiceTest {
+
+    @BeforeAll
+    static void initLambdaColumns() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, Project.class);
+        TableInfoHelper.initTableInfo(assistant, ProjectMember.class);
+    }
 
     @Mock
     private ProjectMapper projectMapper;
@@ -72,6 +87,10 @@ class WorkbenchServiceTest {
         // 调度器对每个聚合器都调用 collect + completedCount：默认空投递，个别用例覆盖
         lenient().when(stageAgg.collect(any(IpdActor.class), any(), any(Date.class))).thenReturn(List.of());
         lenient().when(deletionAgg.collect(any(IpdActor.class), any(), any(Date.class))).thenReturn(List.of());
+        lenient().when(stageAgg.collect(any(IpdActor.class), any(), any(Date.class), anyString()))
+            .thenReturn(List.of());
+        lenient().when(deletionAgg.collect(any(IpdActor.class), any(), any(Date.class), anyString()))
+            .thenReturn(List.of());
         lenient().when(stageAgg.completedCount(any(IpdActor.class), any())).thenReturn(0);
         lenient().when(deletionAgg.completedCount(any(IpdActor.class), any())).thenReturn(0);
         lenient().when(stageAgg.taskType()).thenReturn("stage_sign");
@@ -126,6 +145,86 @@ class WorkbenchServiceTest {
         card.put("isBlocking", "1");
         card.put("deepLink", "/ipd/deletion/review");
         return card;
+    }
+
+    @Test
+    @DisplayName("AI 副驾超管工作台显式限定可信租户")
+    void copilotSummaryRestrictsSuperAdminToTrustedTenant() {
+        IpdActor admin = new IpdActor(99L, "root", "SUPER_ADMIN", null);
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        service.summary(admin, null, "tenant-a");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<Project>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(projectMapper).selectList(query.capture());
+        assertThat(query.getValue().getSqlSegment()).contains("tenant_id");
+        assertThat(query.getValue().getParamNameValuePairs()).containsValue("tenant-a");
+        verifyNoInteractions(projectMemberMapper);
+    }
+
+    @Test
+    @DisplayName("AI 副驾已退出成员不进入项目范围")
+    void copilotSummaryExcludesExitedMembership() {
+        IpdActor actor = new IpdActor(1L, "alice", "RD_PM", 10L);
+        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        Map<String, Object> result = service.summary(actor, null, "tenant-a");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<ProjectMember>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(projectMemberMapper).selectList(query.capture());
+        assertThat(query.getValue().getSqlSegment()).contains("exit_date", "IS NULL");
+        assertThat(result.get("tasks")).isEqualTo(List.of());
+        verifyNoInteractions(projectMapper);
+    }
+
+    @Test
+    @DisplayName("AI 副驾在职成员仅从同租户项目组成工作台上下文")
+    void copilotSummaryUsesCurrentMemberAndTenantScope() {
+        IpdActor actor = new IpdActor(1L, "alice", "RD_PM", 10L);
+        when(projectMemberMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(member(10L, 1L)));
+        Project sameTenant = Project.builder().id(10L).status("ACTIVE").tenantId("tenant-a").build();
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(sameTenant));
+        when(stageActionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        service.summary(actor, null, "tenant-a");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<ProjectMember>> memberQuery = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(projectMemberMapper).selectList(memberQuery.capture());
+        assertThat(memberQuery.getValue().getSqlSegment()).contains("exit_date", "IS NULL");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<Project>> projectQuery = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(projectMapper).selectList(projectQuery.capture());
+        assertThat(projectQuery.getValue().getSqlSegment()).contains("tenant_id");
+        assertThat(projectQuery.getValue().getParamNameValuePairs()).containsValue("tenant-a");
+        verify(stageAgg).collect(any(IpdActor.class), org.mockito.ArgumentMatchers.argThat(
+            byId -> byId.size() == 1 && byId.containsKey(10L)), any(Date.class),
+            org.mockito.ArgumentMatchers.eq("tenant-a"));
+    }
+
+    @Test
+    @DisplayName("AI 副驾指定非进行中项目不回退到其他项目，普通工作台保留既有回退")
+    void copilotSummaryDoesNotSubstituteAnotherProjectsAdvance() {
+        IpdActor admin = new IpdActor(99L, "root", "SUPER_ADMIN", null);
+        Project active = project(10L, "P-010", "进行中项目", "TR2");
+        active.setTenantId("tenant-a");
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(active));
+        when(stageActionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        Map<String, Object> copilot = service.summary(admin, 20L, "tenant-a");
+
+        assertThat(copilot.get("currentAdvance")).isNull();
+        verifyNoInteractions(stageActionMapper);
+
+        Map<String, Object> ordinary = service.summary(admin, 20L);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> legacyAdvance = (Map<String, Object>) ordinary.get("currentAdvance");
+        assertThat(legacyAdvance).containsEntry("projectId", 10L);
     }
 
     @Test

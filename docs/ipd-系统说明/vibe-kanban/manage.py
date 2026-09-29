@@ -31,7 +31,7 @@ KEY = re.compile(r'^(?:'
                  r'|DDL-[A-Z0-9]+(?:-[A-Z0-9]+)*'
                  r'|FE-PARITY'
                  r'|qa0\d-[A-Z]'
-                 r'|R\d'
+                 r'|R\d+'
                  r'|REFLECTION-\d+'
                  r'|GUARD-\d+'
                  r'|WAVE\d+(?:-[A-Z0-9]+)*'
@@ -43,6 +43,11 @@ KEY = re.compile(r'^(?:'
                  r'|API-GATE-RATCHET'
                  r'|DATA-CLEAN-\d+'
                  r'|P[0-4]-LOW'
+                 # D0a 纳管轮（2026-09-29 owner 授权 D 代执行）：活跃未纳管卡命名空间
+                 r'|KB-[A-Z0-9-]+'
+                 r'|GATE-CL-\d+'
+                 r'|AC-[A-Z]+-\d+'
+                 r'|AI-FUSION-L\d+'
                  r')$')
 PRIORITIES = {'U0': '紧急', 'U1': '高', 'U2': '中', 'U3': '后续', 'P1': 'P1', 'P2': 'P2', 'P3': 'P3', '汇总': '汇总'}
 
@@ -57,6 +62,9 @@ EXEMPT_UNMANAGED = frozenset({
     '6a3f9b4d-55cc-46be-8067-89064b2a0e99',  # P-DATA-gap-2 业务裁决未落地（镜像缺口表 487 行）
     '67ffc283-13d6-4426-b3e0-fec823f23f84',  # P-DATA-gap-1 业务裁决未落地（镜像缺口表 486 行）
     '73fb9329-3f9f-45f4-adbb-aad5fd723ca7',  # AUD-GOV-B-FIX-PACK-3 长期 backlog 容器，已裁决维持 unmanaged
+    # D0a 收口轮（2026-09-29 同日完成）：原 5 张 [KEY] token 碰撞卡（80b0be1f/f0c4ffa6/b72aa97d/e5c36c70/09cb52dc）
+    # 已按 owner 授权由 D 代改标题挂唯一 token（PLAN-R241-C2/PLAN-R232-P3/PLAN-R232-P2/PLAN-R232-P1/PLAN-R221-B4，
+    # 原标题全文保留在标题内），镜像补行后移出豁免，正常纳管。
     # 2026-09-08 reconcile 证据核验轮清理：
     # - ROOT-1 已被兄弟会话改名 ROOT-R6 + done + 镜像补行（KEY 正则 ROOT-R\d+ 匹配），移除
     # - AM-BASELINE-TTL/AM-HELPER/AM-GUARD/AM-CLOCK-2/AM-CLOCK-1/AM-GRANT/AM-SQL 7 张兄弟根除落地轮全部 done，

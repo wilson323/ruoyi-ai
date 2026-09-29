@@ -609,6 +609,16 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
             .isNull(ProjectMember::getExitDate)) > 0;
     }
 
+    /** AI 副驾删除初审卡沿用审批链的目标组判定；归属不可解析时不展示。 */
+    public boolean isTargetInLeaderGroup(IpdActor actor, DeletionRequest request) {
+        if (actor == null || !"GROUP_LEADER".equals(actor.role()) || actor.groupId() == null
+            || request == null || request.getEntityType() == null || request.getEntityId() == null) {
+            return false;
+        }
+        TargetScope scope = resolveScope(request.getEntityType(), request.getEntityId());
+        return actor.groupId().equals(scope.groupId());
+    }
+
     /**
      * W5-E-2.2：按资源类型解析删除目标归属（projectId/groupId 均可空；目标行缺失时对应维度为 null，调用方 fail-closed）。
      * projects → 本体即项目；gates → 经 projectId 上溯项目主组；products → 直取所属项目/组；

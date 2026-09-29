@@ -418,11 +418,11 @@ class AiCardC08SubmitChainTest {
         WorkbenchService wb = mock(WorkbenchService.class);
         AiGateway gw = mock(AiGateway.class);
         IAuditLogService audit = mock(IAuditLogService.class);
-        ProjectMapper pm = mock(ProjectMapper.class);
-        ProjectMemberMapper pmm = mock(ProjectMemberMapper.class);
+        IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+        when(access.requireVisible(any(), any())).thenReturn("tenant-a");
         AiDocEmbeddingService docs = mock(AiDocEmbeddingService.class);
         AiExecutionTrigger trigger = mock(AiExecutionTrigger.class);
-        AiCopilotService copilot = new AiCopilotService(cfg, wb, gw, audit, pm, pmm, docs, trigger)
+        AiCopilotService copilot = new AiCopilotService(cfg, wb, gw, audit, access, docs, trigger)
             .withClock(Clock.fixed(Instant.parse("2026-09-27T09:00:00Z"), ZoneId.of("UTC")));
         AiModelConfig config = new AiModelConfig();
         config.setProvider("openai");
@@ -430,11 +430,6 @@ class AiCardC08SubmitChainTest {
         config.setModelName("mock-mini");
         when(cfg.currentEnabled()).thenReturn(config);
         when(cfg.decryptApiKey(config)).thenReturn("sk-x");
-        Project p = new Project();
-        p.setId(100L);
-        p.setCode("PRJ-100");
-        p.setName("示例项目");
-        when(pm.selectById(100L)).thenReturn(p);
         when(gw.chat(any(AiTestConfig.class), anyString(), anyInt(), any()))
             .thenReturn(AiChatResult.ok("{\"farValue\":\"0.002\",\"salary\":\"99999\"}", 10, 20, 50L));
 
@@ -449,7 +444,7 @@ class AiCardC08SubmitChainTest {
         assertTrue(payloadJson.getValue().contains("\"mode\":\"suggest\""), payloadJson.getValue());
 
         // ② REJECTED 路径（未知 scene）：AI_FILL 审计同样 "mode":"suggest"
-        when(wb.summary(any(), any())).thenReturn(Map.of("currentAdvance", Map.of(), "tasks", List.of()));
+        when(wb.summary(any(), any(), eq("tenant-a"))).thenReturn(Map.of("currentAdvance", Map.of(), "tasks", List.of()));
         when(gw.chat(any(AiTestConfig.class), anyString(), anyInt(), any()))
             .thenReturn(AiChatResult.ok("好笑的回答", 1, 1, 5L));
         copilot.chat(SA, new AiCopilotReq(null, "帮我填一下", List.of(), null, "{\"scene\":\"hack-scene\"}"));

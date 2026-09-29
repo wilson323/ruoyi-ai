@@ -482,7 +482,7 @@ public class GuestDemandService {
         for (Person receiver : receivers) {
             notificationService.publishDaily(receiver.getId(), EVT_DEMAND_OVERDUE_UNASSIGNED,
                 NotificationService.KIND_ACTION, "requirement", r.getId(),
-                title, content, "/demands/pool?status=SUBMITTED", now());
+                title, content, "/ipd/requirements?status=SUBMITTED", now());
         }
     }
 

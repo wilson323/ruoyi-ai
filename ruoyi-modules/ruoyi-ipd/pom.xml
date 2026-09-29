@@ -146,6 +146,25 @@
                          构造器第三个依赖。基线 exempt_class 两行同步删除，台账 OD-AM-06 翻为已决。 -->
                 </configuration>
             </plugin>
+
+            <!-- P1-1（D 轮 D4 §7.2，2026-09-29）：Surefire 零测试门，防 0-test 假绿。
+                 根 pom 按 <groups>${profiles.active}</groups> 做 tag 过滤（dev profile activeByDefault），
+                 一旦 profile/tag 不匹配（如 -Dprofiles.active=nothing 或切 prod profile），全部测试被
+                 静默跳过且 BUILD SUCCESS——本轮实测复现：Tests run: 0 + BUILD SUCCESS（假绿实证）。
+                 修复两件套（仅本模块，不波及无测试的兄弟模块）：
+                 ① groups combine.self="override" 清空 tag 过滤——本模块 @Tag("dev") 测试不再依赖
+                    profile 注入，任何 profile 下都执行；
+                 ② failIfNoTests=true 零测试门——过滤/发现结果为 0 个测试时直接转红，不再假绿。
+                 验证证据：docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/
+                 P1-1-Surefire零测试门修复验证-20260929.md -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups combine.self="override"/>
+                    <failIfNoTests>true</failIfNoTests>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

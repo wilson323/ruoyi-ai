@@ -52,6 +52,12 @@ public class KeyGateArbitrationAggregator implements WorkbenchAggregator {
 
     @Override
     public List<Map<String, Object>> collect(IpdActor actor, Map<Long, Project> visibleProjects, Date now) {
+        return collect(actor, visibleProjects, now, null);
+    }
+
+    @Override
+    public List<Map<String, Object>> collect(IpdActor actor, Map<Long, Project> visibleProjects,
+                                             Date now, String trustedTenantId) {
         List<GateArbitration> undecided = gateArbitrationMapper.selectList(
             new LambdaQueryWrapper<GateArbitration>()
                 .eq(GateArbitration::getArbitratorId, actor.id())
@@ -72,11 +78,17 @@ public class KeyGateArbitrationAggregator implements WorkbenchAggregator {
         List<Long> missing = gates.stream().map(Gate::getProjectId).distinct()
             .filter(pid -> !projectById.containsKey(pid)).toList();
         if (!missing.isEmpty()) {
-            List<Project> extra = projectMapper.selectList(new LambdaQueryWrapper<Project>()
+            LambdaQueryWrapper<Project> query = new LambdaQueryWrapper<Project>()
                 .in(Project::getId, missing)
-                .eq(Project::getStatus, ST_ACTIVE_PROJECT));
+                .eq(Project::getStatus, ST_ACTIVE_PROJECT);
+            if (trustedTenantId != null) {
+                query.eq(Project::getTenantId, trustedTenantId);
+            }
+            List<Project> extra = projectMapper.selectList(query);
             if (extra != null) {
-                extra.forEach(p -> projectById.put(p.getId(), p));
+                extra.stream()
+                    .filter(p -> trustedTenantId == null || trustedTenantId.equals(p.getTenantId()))
+                    .forEach(p -> projectById.put(p.getId(), p));
             }
         }
         List<Map<String, Object>> tasks = new ArrayList<>();

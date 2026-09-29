@@ -188,7 +188,7 @@ class R218AcProd09WiringTest {
         // AC 文本对齐：接收人=产品组组长 777（修复前注释口径=超管，属偏差）
         verify(notificationService).publishDaily(eq(777L), eq("DEMAND_OVERDUE_UNASSIGNED"),
             eq(NotificationService.KIND_ACTION), eq("requirement"), eq(500L),
-            anyString(), anyString(), anyString(), any(Date.class));
+            anyString(), anyString(), eq("/ipd/requirements?status=SUBMITTED"), any(Date.class));
         // audit 留痕不得丢（既有行为保持，真库取证面）
         verify(auditLogService).append(any());
     }

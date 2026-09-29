@@ -7,6 +7,7 @@ import org.ruoyi.ipd.dto.AiCopilotResp;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,9 +32,15 @@ public class CopilotRunRegistryService {
 
     private final Map<String, RunHandle> runs = new ConcurrentHashMap<>();
     private final IAuditLogService auditLogService;
+    /** 业务时钟缝（禁一：测试编写三禁-20260908）：测试 setClock 注入固定时钟，默认系统时钟。 */
+    private Clock clock = Clock.systemDefaultZone();
 
     public CopilotRunRegistryService(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
+    }
+
+    public void setClock(Clock clock) {
+        this.clock = clock;
     }
 
     /** 一次 run 的取消句柄：owner 定型，cancelFlag 由流式回调线程与取消端点共享。 */
@@ -70,7 +77,7 @@ public class CopilotRunRegistryService {
     public RunHandle register(IpdActor actor, String runId) {
         String id = runId == null || runId.isBlank() ? UUID.randomUUID().toString() : runId.trim();
         evictExpiredIfFull();
-        RunHandle fresh = new RunHandle(id, actor.id(), System.currentTimeMillis());
+        RunHandle fresh = new RunHandle(id, actor.id(), clock.millis());
         runs.compute(id, (k, old) -> {
             if (old != null && !old.ownerId.equals(fresh.ownerId)) {
                 throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "runId 已被占用");
@@ -155,7 +162,7 @@ public class CopilotRunRegistryService {
         if (runs.size() < 64) {
             return;
         }
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         runs.entrySet().removeIf(e -> now - e.getValue().createdAtMs > RUN_TTL_MS);
     }
 }

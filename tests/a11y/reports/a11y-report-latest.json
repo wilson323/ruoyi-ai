@@ -1,44 +1,131 @@
 {
-  "timestamp": "2026-09-07T08:36:13.442Z",
-  "base": "http://127.0.0.1:4173",
-  "mode": "puppeteer",
+  "timestamp": "2026-09-29T18:24:25.423Z",
+  "base": "http://127.0.0.1:4176",
+  "mode": "jsdom",
   "pages": [
     {
-      "name": "login",
-      "url": "http://127.0.0.1:4173/login",
+      "name": "neg2",
+      "url": "http://127.0.0.1:4176/fixtures/neg2.html",
       "status": 200,
-      "violations": []
-    },
-    {
-      "name": "workbench",
-      "url": "http://127.0.0.1:4173/workspace",
-      "status": 200,
-      "violations": []
-    },
-    {
-      "name": "project-list",
-      "url": "http://127.0.0.1:4173/project-list",
-      "status": 200,
-      "violations": []
-    },
-    {
-      "name": "gate-review",
-      "url": "http://127.0.0.1:4173/gate-review",
-      "status": 200,
-      "violations": []
-    },
-    {
-      "name": "dashboard",
-      "url": "http://127.0.0.1:4173/dashboard",
-      "status": 200,
-      "violations": []
+      "violations": [
+        {
+          "id": "image-alt",
+          "impact": "critical",
+          "tags": [
+            "cat.text-alternatives",
+            "wcag2a",
+            "wcag111",
+            "section508",
+            "section508.22.a",
+            "TTv5",
+            "TT7.a",
+            "TT7.b",
+            "EN-301-549",
+            "EN-9.1.1.1",
+            "ACT",
+            "RGAAv4",
+            "RGAA-1.1.1"
+          ],
+          "description": "Ensure <img> elements have alternative text or a role of none or presentation",
+          "help": "Images must have alternative text",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/image-alt?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "has-alt",
+                  "data": null,
+                  "relatedNodes": [],
+                  "impact": "critical",
+                  "message": "Element does not have an alt attribute"
+                },
+                {
+                  "id": "aria-label",
+                  "data": null,
+                  "relatedNodes": [],
+                  "impact": "critical",
+                  "message": "aria-label attribute does not exist or is empty"
+                },
+                {
+                  "id": "aria-labelledby",
+                  "data": null,
+                  "relatedNodes": [],
+                  "impact": "critical",
+                  "message": "aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+                },
+                {
+                  "id": "non-empty-title",
+                  "data": {
+                    "messageKey": "noAttr"
+                  },
+                  "relatedNodes": [],
+                  "impact": "critical",
+                  "message": "Element has no title attribute"
+                },
+                {
+                  "id": "presentational-role",
+                  "data": null,
+                  "relatedNodes": [],
+                  "impact": "critical",
+                  "message": "Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "critical",
+              "html": "<img src=\"x.png\">",
+              "target": [
+                "img"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element does not have an alt attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "tags": [
+            "cat.keyboard",
+            "best-practice",
+            "RGAAv4",
+            "RGAA-9.2.1"
+          ],
+          "description": "Ensure all page content is contained by landmarks",
+          "help": "All page content should be contained by landmarks",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/region?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "region",
+                  "data": {
+                    "isIframe": false
+                  },
+                  "relatedNodes": [],
+                  "impact": "moderate",
+                  "message": "Some page content is not contained by landmarks"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "moderate",
+              "html": "<img src=\"x.png\">",
+              "target": [
+                "img"
+              ],
+              "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
     }
   ],
   "totals": {
-    "violations": 0,
-    "critical": 0,
+    "violations": 2,
+    "critical": 1,
     "serious": 0,
-    "moderate": 0,
-    "minor": 0
+    "moderate": 1,
+    "minor": 0,
+    "scanErrors": 0
   }
 }

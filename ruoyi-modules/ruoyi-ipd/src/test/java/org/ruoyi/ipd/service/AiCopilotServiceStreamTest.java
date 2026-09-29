@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.dto.AiCopilotReq;
 import org.ruoyi.ipd.dto.AiCopilotResp;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -27,11 +27,14 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -57,9 +60,9 @@ class AiCopilotServiceStreamTest {
     private WorkbenchService workbenchService;
     private AiGateway aiGateway;
     private IAuditLogService auditLogService;
-    private ProjectMapper projectMapper;
-    private ProjectMemberMapper projectMemberMapper;
+    private IpdCopilotAccess access;
     private AiDocEmbeddingService docEmbeddingService;
+    private IpdPublicKnowledgeService publicKnowledgeService;
     private AiExecutionTrigger aiExecutionTrigger;
     private AiCopilotService service;
 
@@ -106,18 +109,21 @@ class AiCopilotServiceStreamTest {
         workbenchService = mock(WorkbenchService.class);
         aiGateway = mock(AiGateway.class);
         auditLogService = mock(IAuditLogService.class);
-        projectMapper = mock(ProjectMapper.class);
-        projectMemberMapper = mock(ProjectMemberMapper.class);
+        access = mock(IpdCopilotAccess.class);
+        when(access.requireVisible(any(), any())).thenReturn("tenant-a");
         docEmbeddingService = mock(AiDocEmbeddingService.class);
+        publicKnowledgeService = mock(IpdPublicKnowledgeService.class);
         aiExecutionTrigger = mock(AiExecutionTrigger.class);
         when(docEmbeddingService.retrieveContext(any(), any(), any()))
             .thenReturn(AiDocEmbeddingService.RetrievalContext.EMPTY);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService, aiExecutionTrigger);
+            auditLogService, access, docEmbeddingService, aiExecutionTrigger, publicKnowledgeService);
+        when(publicKnowledgeService.retrieve(eq("tenant-a"), isNull(), anyString()))
+            .thenReturn(IpdPublicKnowledgeService.RetrievalContext.EMPTY);
         service.withClock(Clock.fixed(Instant.parse("2026-09-23T19:00:00Z"), ZoneId.of("UTC")));
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
         // 默认（projectId=null）空上下文；各测试可覆盖
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()));
     }
 
@@ -178,9 +184,36 @@ class AiCopilotServiceStreamTest {
     }
 
     @Test
+    @DisplayName("显式选公共库：SSE 与同步共用受限检索，meta/done 均带来源引用")
+    void selectedPublicKnowledgeEntersStreamingPrompt() {
+        stubEnabledConfig();
+        AiCopilotReq req = new AiCopilotReq(null, "公共知识中的待办规则", List.of(),
+            null, null, List.of("7"));
+        when(publicKnowledgeService.retrieve("tenant-a", List.of("7"), req.message()))
+            .thenReturn(new IpdPublicKnowledgeService.RetrievalContext(
+                "【公共知识片段 1｜知识库 7】\n公开规则正文\n", List.of("knowledge.public:7")));
+        doAnswer(inv -> {
+            String prompt = inv.getArgument(1);
+            assertTrue(prompt.contains("公开规则正文"));
+            AiGateway.StreamHandler handler = inv.getArgument(4);
+            handler.onComplete(8, 4, 20L);
+            return null;
+        }).when(aiGateway).stream(any(AiTestConfig.class), anyString(), anyInt(),
+            any(BigDecimal.class), any());
+
+        RecordingSink sink = new RecordingSink();
+        service.chatStream(SA, req, sink);
+
+        assertEquals("CHITCHAT", sink.meta.intent());
+        assertTrue(sink.meta.sources().contains("knowledge.public:7"));
+        assertTrue(sink.done.sources().contains("knowledge.public:7"));
+        verify(publicKnowledgeService).retrieve("tenant-a", List.of("7"), req.message());
+    }
+
+    @Test
     @DisplayName("意图兜底(TASKS)：不调 AI 流式 → 帧 meta/delta/done(整段一次)，verify stream never")
     void chatStreamIntentFallbackNoAi() {
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "tasks", List.of(Map.of("taskType", "stage_sign", "title", "阶段签署", "hint", "待签 TR2", "url", "/w/s/1")),
             "currentAdvance", Map.of()));
 
@@ -190,7 +223,23 @@ class AiCopilotServiceStreamTest {
         assertEquals(List.of("meta", "delta", "done"), sink.events);
         assertEquals("TASKS", sink.done.intent());
         assertEquals(1, sink.deltas.size(), "整段 answer 一次性 delta（无真流式）");
+        verify(access).requireVisible(SA, null);
         // 意图兜底不真调 AI 流式网关
+        verify(aiGateway, never()).stream(any(), anyString(), anyInt(), any(), any());
+    }
+
+    @Test
+    @DisplayName("项目越权在 SSE 生成前拒绝，未读取工作台或调用模型")
+    void chatStreamRejectsInvisibleProjectBeforeWork() {
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND))
+            .when(access).requireVisible(SA, 10L);
+
+        IpdBusinessException error = assertThrows(IpdBusinessException.class,
+            () -> service.chatStream(SA, new AiCopilotReq(10L, "讲个笑话", List.of()),
+                new RecordingSink()));
+
+        assertEquals(ApiV1ErrorCode.NOT_FOUND, error.getErrorCode());
+        verify(workbenchService, never()).summary(any(), any(), any());
         verify(aiGateway, never()).stream(any(), anyString(), anyInt(), any(), any());
     }
 

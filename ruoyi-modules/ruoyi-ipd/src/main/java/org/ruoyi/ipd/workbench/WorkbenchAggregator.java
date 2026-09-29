@@ -34,6 +34,12 @@ public interface WorkbenchAggregator {
      */
     List<Map<String, Object>> collect(IpdActor actor, Map<Long, Project> visibleProjects, Date now);
 
+    /** AI 副驾专用租户范围；默认实现沿用受限 visibleProjects，特殊聚合器可补充租户过滤。 */
+    default List<Map<String, Object>> collect(IpdActor actor, Map<Long, Project> visibleProjects,
+                                              Date now, String trustedTenantId) {
+        return collect(actor, visibleProjects, now);
+    }
+
     /**
      * 该聚合器域内的"已完成"计数（stats.completed 口径）；默认 0，
      * 仅 stage_sign 等有完成态语义的域覆盖（设计文档 §4 的最小扩展，避免 summary() 感知具体域）。

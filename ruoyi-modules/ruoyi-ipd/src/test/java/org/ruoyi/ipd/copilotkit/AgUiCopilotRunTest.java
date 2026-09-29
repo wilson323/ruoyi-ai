@@ -8,10 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
-import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.dto.AiCopilotReq;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AiCopilotService;
@@ -20,6 +19,7 @@ import org.ruoyi.ipd.service.AiExecutionTrigger;
 import org.ruoyi.ipd.service.AiModelConfigService;
 import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.IpdAuthService;
+import org.ruoyi.ipd.service.IpdCopilotAccess;
 import org.ruoyi.ipd.service.WorkbenchService;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -37,8 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,7 +48,7 @@ import static org.mockito.Mockito.when;
  * CopilotKit AG-UI 桥（2026-09-28）：{@link AgUiCopilotRun} 编排测试。
  *
  * <p>mock 合法性：只 mock 模型输出（{@link AiGateway} doAnswer 同步驱动 StreamHandler / chat 返回
- * 合法 stub JSON）与查询侧仓储（ProjectMapper/ProjectMemberMapper，越权测试仓库惯例）；
+ * 合法 stub JSON）与项目访问边界（IpdCopilotAccess）；
  * 真 {@link AiCopilotService}（存储/审计路径走真代码，mock 只挡外部模型面）。
  */
 @Tag("dev")
@@ -60,8 +62,7 @@ class AgUiCopilotRunTest {
     private WorkbenchService workbenchService;
     private AiGateway aiGateway;
     private IAuditLogService auditLogService;
-    private ProjectMapper projectMapper;
-    private ProjectMemberMapper projectMemberMapper;
+    private IpdCopilotAccess access;
     private AiDocEmbeddingService docEmbeddingService;
     private AiExecutionTrigger aiExecutionTrigger;
     private IpdAuthSession session;
@@ -104,8 +105,8 @@ class AgUiCopilotRunTest {
         workbenchService = mock(WorkbenchService.class);
         aiGateway = mock(AiGateway.class);
         auditLogService = mock(IAuditLogService.class);
-        projectMapper = mock(ProjectMapper.class);
-        projectMemberMapper = mock(ProjectMemberMapper.class);
+        access = mock(IpdCopilotAccess.class);
+        when(access.requireVisible(any(), any())).thenReturn("tenant-a");
         docEmbeddingService = mock(AiDocEmbeddingService.class);
         aiExecutionTrigger = mock(AiExecutionTrigger.class);
         session = mock(IpdAuthSession.class);
@@ -113,9 +114,9 @@ class AgUiCopilotRunTest {
         // RetrievalContext.EMPTY 包私有不可达；null = 无命中，服务端 ragContextBlock 同语义降级
         when(docEmbeddingService.retrieveContext(any(), any(), any())).thenReturn(null);
         service = new AiCopilotService(modelConfigService, workbenchService, aiGateway,
-            auditLogService, projectMapper, projectMemberMapper, docEmbeddingService, aiExecutionTrigger);
+            auditLogService, access, docEmbeddingService, aiExecutionTrigger);
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(workbenchService.summary(any(), isNull())).thenReturn(Map.of(
+        when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "currentAdvance", Map.of(), "tasks", List.of()));
         when(session.currentPerson()).thenReturn(SA_PERSON);
         when(authService.scopeOf(any())).thenReturn(IpdAuthService.Scope.FULL);
@@ -189,8 +190,8 @@ class AgUiCopilotRunTest {
     void projectEscalationEmitsRunError50001() {
         when(session.currentPerson()).thenReturn(RD_PERSON);
         when(authService.scopeOf(any())).thenReturn(IpdAuthService.Scope.FULL);
-        when(projectMapper.selectById(7L)).thenReturn(new Project());
-        when(projectMemberMapper.selectCount(any())).thenReturn(0L);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
+            .when(access).requireVisible(any(), eq(7L));
 
         RecordingSink out = new RecordingSink();
         new AgUiCopilotRun(service, permission, DIRECT)

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditChainHead;
 import org.ruoyi.ipd.domain.AuditLog;
@@ -17,6 +18,7 @@ import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.MDC;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -57,6 +59,7 @@ import java.util.List;
  * 均为「接受预先解析好的 operatorIds」——角色→范围（本人/本组/全局）的判定由 Controller 层
  * 依据 {@code IpdPermission}（SEC-02）与 {@code PersonMapper}（本组人员）完成，Service 不感知角色。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuditLogServiceImpl implements IAuditLogService {
@@ -103,27 +106,38 @@ public class AuditLogServiceImpl implements IAuditLogService {
         if (draft.getTenantId() == null) {
             draft.setTenantId("000000");
         }
-        // ①②③ P 变体：锚行悲观锁 → 原子分配 seq/prevHash（全局串行，零重试零 CAS 竞态；锁序单一无死锁环）
-        AuditChainHead head = chainHeadMapper.selectForUpdate(CHAIN_KEY_GLOBAL);
-        if (head == null) {
-            // 锚行缺失 = seed 未初始化/被清：fail-fast，禁止代码自举（自举会与并发方竞态；修复走停写窗口 sync-seed runbook）
-            throw new IllegalStateException(
-                "audit_log_chain_heads missing GLOBAL anchor — run seed-sync (PR就绪包 §4.3) before appending");
+        if (isBlank(draft.getTraceId())) {
+            String traceId = MDC.get("traceId");
+            draft.setTraceId(isBlank(traceId) ? null : traceId);
         }
-        long seq = head.getNextSeq();
-        // GENESIS 兕底而非 nvl 空串：锚行 last_hash=NULL（清库后未 sync-seed 的病态）时，
-        // 链首 prevHash 必须是 64×'0'（外部验链工具硬编码 GENESIS 起验）
-        String prevHash = head.getLastHash() == null ? AuditHashChain.GENESIS : head.getLastHash();
-        draft.setSeq(seq);                                   // NEVER 已去：显式值真正进入 INSERT
-        draft.setPrevHash(prevHash);
-        draft.setCurrHash(AuditHashChain.computeCurrHash(prevHash, canonicalOf(draft, seq)));
-        // advance=1 防御断言（锁保护下正常必 1；0 = schema/chain_key 漂移，静默继续会劣化为
-        // 撞 uk 或错链——与 head==null fail-fast 对称）
-        if (chainHeadMapper.advance(CHAIN_KEY_GLOBAL, seq, draft.getCurrHash(), seq + 1) != 1) {
-            throw new IllegalStateException("audit chain anchor advance missed — schema/config drift suspected");
+        try {
+            // ①②③ P 变体：锚行悲观锁 → 原子分配 seq/prevHash（全局串行，零重试零 CAS 竞态；锁序单一无死锁环）
+            AuditChainHead head = chainHeadMapper.selectForUpdate(CHAIN_KEY_GLOBAL);
+            if (head == null) {
+                // 锚行缺失 = seed 未初始化/被清：fail-fast，禁止代码自举（自举会与并发方竞态；修复走停写窗口 sync-seed runbook）
+                throw new IllegalStateException(
+                    "audit_log_chain_heads missing GLOBAL anchor — run seed-sync (PR就绪包 §4.3) before appending");
+            }
+            long seq = head.getNextSeq();
+            // GENESIS 兕底而非 nvl 空串：锚行 last_hash=NULL（清库后未 sync-seed 的病态）时，
+            // 链首 prevHash 必须是 64×'0'（外部验链工具硬编码 GENESIS 起验）
+            String prevHash = head.getLastHash() == null ? AuditHashChain.GENESIS : head.getLastHash();
+            draft.setSeq(seq);                                   // NEVER 已去：显式值真正进入 INSERT
+            draft.setPrevHash(prevHash);
+            draft.setCurrHash(AuditHashChain.computeCurrHash(prevHash, canonicalOf(draft, seq)));
+            // advance=1 防御断言（锁保护下正常必 1；0 = schema/chain_key 漂移，静默继续会劣化为
+            // 撞 uk 或错链——与 head==null fail-fast 对称）
+            if (chainHeadMapper.advance(CHAIN_KEY_GLOBAL, seq, draft.getCurrHash(), seq + 1) != 1) {
+                throw new IllegalStateException("audit chain anchor advance missed — schema/config drift suspected");
+            }
+            auditLogMapper.insert(draft);
+            return draft;
+        } catch (RuntimeException | Error ex) {
+            // 失败审计保留原异常和独立事务回滚；marker 供 OPS-06 监测定位。
+            log.error("[IPD] 未捕获异常 traceId={} 审计追加失败 seq={}",
+                draft.getTraceId(), draft.getSeq(), ex);
+            throw ex;
         }
-        auditLogMapper.insert(draft);
-        return draft;
     }
 
     /**

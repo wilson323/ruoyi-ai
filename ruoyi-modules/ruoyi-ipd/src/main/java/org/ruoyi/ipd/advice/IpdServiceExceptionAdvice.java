@@ -34,8 +34,8 @@ import java.util.UUID;
  * 例外：权限三型（IpdPermissionException / NotPermissionException / NotRoleException）
  * 由 IpdPermissionExceptionHandler 独占，不得在本类重复注册（详见下方注释）。
  *
- * <p>P0.7 traceId 串联：每个 exception handler 在方法入口 put MDC、return 前 remove，
- * 保证 ApiV1Response.traceId 字段始终有值（即便 TraceIdFilter 未触发）。
+ * <p>P0.7/OPS-06 traceId 串联：优先复用 TraceIdFilter 写入的请求 ID，仅无入口上下文时
+ * 生成兜底 ID；由创建者清理 MDC，保证响应、审计和异常日志共用同一链路 ID。
  */
 @Slf4j
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -44,20 +44,20 @@ public class IpdServiceExceptionAdvice {
 
     @ExceptionHandler(IpdBusinessException.class)
     public ResponseEntity<ApiV1Response<Void>> handleIpdBusiness(IpdBusinessException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             ApiV1ErrorCode mapped = e.getErrorCode() != null ? e.getErrorCode() : ApiV1ErrorCode.INTERNAL_ERROR;
             log.warn("[IPD] business exception: code={} msg={}", mapped.getCode(), e.getMessage());
             return ResponseEntity.status(mapped.getHttpStatus())
                 .body(ApiV1Response.fail(mapped, e.getMessage()));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<ApiV1Response<Void>> handleServiceException(ServiceException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             Integer code = e.getCode();
             ApiV1ErrorCode mapped = (code != null)
@@ -67,13 +67,13 @@ public class IpdServiceExceptionAdvice {
             return ResponseEntity.status(mapped.getHttpStatus())
                 .body(ApiV1Response.fail(mapped, e.getMessage()));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiV1Response<Void>> handleValidation(MethodArgumentNotValidException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             String msg = e.getBindingResult().getAllErrors().stream()
                 .map(org.springframework.context.support.DefaultMessageSourceResolvable::getDefaultMessage)
@@ -82,7 +82,7 @@ public class IpdServiceExceptionAdvice {
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, msg));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -96,7 +96,7 @@ public class IpdServiceExceptionAdvice {
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiV1Response<Void>> handleConstraintViolation(ConstraintViolationException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             String msg = e.getConstraintViolations().stream()
                 .map(v -> {
@@ -108,19 +108,19 @@ public class IpdServiceExceptionAdvice {
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, msg));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiV1Response<Void>> handleNotFound(NoHandlerFoundException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             log.warn("[IPD] not found: {}", e.getRequestURL());
             return ResponseEntity.status(ApiV1ErrorCode.NOT_FOUND.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.NOT_FOUND, "资源不存在"));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -131,13 +131,13 @@ public class IpdServiceExceptionAdvice {
      */
     @ExceptionHandler(NotLoginException.class)
     public ResponseEntity<ApiV1Response<Void>> handleNotLogin(NotLoginException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             log.warn("[IPD] not login: type={}", e.getType());
             return ResponseEntity.status(ApiV1ErrorCode.UNAUTHORIZED.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.UNAUTHORIZED));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -149,7 +149,7 @@ public class IpdServiceExceptionAdvice {
      */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiV1Response<Void>> handleResponseStatus(ResponseStatusException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             int http = e.getStatusCode().value();
             ApiV1ErrorCode mapped = switch (http) {
@@ -170,20 +170,20 @@ public class IpdServiceExceptionAdvice {
             return ResponseEntity.status(mapped.getHttpStatus())
                 .body(ApiV1Response.fail(mapped, reason));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
     @ExceptionHandler(IpdAuthInputException.class)
     public ResponseEntity<ApiV1Response<Void>> handleIpdAuthInput(IpdAuthInputException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             // 认证输入错误（原密码不符/密码强度不足等）属 4xx 参数/凭据问题，不得落入兜底 500。
             log.warn("[IPD] auth input rejected: {}", e.getMessage());
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, e.getMessage()));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -212,8 +212,8 @@ public class IpdServiceExceptionAdvice {
         org.springframework.context.ApplicationContextException.class
     })
     public ResponseEntity<ApiV1Response<Void>> handleIllegalState(Exception e) {
-        String traceId = UUID.randomUUID().toString().replace("-", "");
-        MDC.put("traceId", traceId);
+        TraceScope trace = beginTrace();
+        String traceId = trace.traceId();
         try {
             log.error("[IPD] CONFIG_CONFLICT (R28.5) traceId={} type={} msg={}",
                 traceId, e.getClass().getSimpleName(), e.getMessage(), e);
@@ -222,7 +222,7 @@ public class IpdServiceExceptionAdvice {
                     "系统配置异常，请联系管理员（traceId=" + traceId + "）",
                     traceId));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -234,14 +234,14 @@ public class IpdServiceExceptionAdvice {
     // 回归探针见 DefectBAdviceAcceptanceTest（已改为同时注册两个 advice，走生产真实链）。
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiV1Response<Void>> handleNotReadable(HttpMessageNotReadableException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             // DEF-2：请求体缺失/不可读属客户端错误，应 400/10001 而非落 500。
             log.warn("[IPD] request body not readable: {}", e.getMessage());
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "请求体缺失或格式错误"));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -252,13 +252,13 @@ public class IpdServiceExceptionAdvice {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiV1Response<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             log.warn("[IPD] path variable type mismatch: name={}", e.getName());
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "参数类型错误: " + e.getName()));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -270,25 +270,25 @@ public class IpdServiceExceptionAdvice {
      */
     @ExceptionHandler(MissingPathVariableException.class)
     public ResponseEntity<ApiV1Response<Void>> handleMissingPathVariable(MissingPathVariableException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             log.warn("[IPD] missing path variable: {}", e.getVariableName());
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "路径参数缺失"));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiV1Response<Void>> handleMissingParam(MissingServletRequestParameterException e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
             log.warn("[IPD] missing request parameter: {}", e.getParameterName());
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, "缺少必需参数: " + e.getParameterName()));
         } finally {
-            MDC.remove("traceId");
+            endTrace(trace);
         }
     }
 
@@ -306,12 +306,32 @@ public class IpdServiceExceptionAdvice {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiV1Response<Void>> handleUnexpected(Exception e) {
-        MDC.put("traceId", UUID.randomUUID().toString().replace("-", ""));
+        TraceScope trace = beginTrace();
         try {
-            log.error("[IPD] unexpected exception", e);
+            log.error("[IPD] 未捕获异常 traceId={} type={}",
+                trace.traceId(), e.getClass().getSimpleName(), e);
             return ResponseEntity.status(ApiV1ErrorCode.INTERNAL_ERROR.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.INTERNAL_ERROR));
         } finally {
+            endTrace(trace);
+        }
+    }
+
+    private record TraceScope(String traceId, boolean owned) {
+    }
+
+    private static TraceScope beginTrace() {
+        String existing = MDC.get("traceId");
+        if (existing != null && !existing.isBlank()) {
+            return new TraceScope(existing, false);
+        }
+        String generated = UUID.randomUUID().toString().replace("-", "");
+        MDC.put("traceId", generated);
+        return new TraceScope(generated, true);
+    }
+
+    private static void endTrace(TraceScope trace) {
+        if (trace.owned()) {
             MDC.remove("traceId");
         }
     }

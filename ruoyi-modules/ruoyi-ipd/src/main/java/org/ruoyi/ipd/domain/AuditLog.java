@@ -47,6 +47,9 @@ public class AuditLog implements Serializable {
     private String currHash;
     @TableField("ip_address")
     private String ipAddress;
+    /** 请求链路定位信息；审计哈希协议不包含此字段，历史行保持 NULL。 */
+    @TableField("trace_id")
+    private String traceId;
     @TableField("tenant_id")
     private String tenantId;
     @TableField("create_time")

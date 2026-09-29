@@ -64,6 +64,46 @@ CREATE TABLE IF NOT EXISTS product_groups
     primary key (id)
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 产品组（组织架构）';
 
+-- 2a. 产品线大工作空间；一个空间可包含多个产品及其项目，独立于 product_groups 组织架构
+CREATE TABLE IF NOT EXISTS product_lines
+(
+    id               bigint       not null                comment '雪花主键；稳定产品线空间身份',
+    line_code        varchar(64)  not null                comment '产品线编码',
+    line_name        varchar(128) not null                comment '产品线名称',
+    leader_person_id bigint       null                    comment '管理员指定的产品线组长',
+    status           varchar(16)  not null default 'ACTIVE' comment 'ACTIVE|INACTIVE',
+    create_dept      bigint       null, create_by bigint null,
+    create_time      datetime     null default CURRENT_TIMESTAMP,
+    update_by        bigint       null, update_time datetime null default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+    tenant_id        varchar(20)  not null default '000000',
+    del_flag         char(1)      not null default '0',
+    remark           varchar(500) null,
+    primary key (id),
+    unique key uk_product_lines_tenant_code (tenant_id, line_code, del_flag),
+    key idx_product_lines_leader (leader_person_id)
+) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 产品线大工作空间';
+
+CREATE TABLE IF NOT EXISTS product_line_members
+(
+    id              bigint      not null                comment '雪花主键',
+    product_line_id bigint      not null                comment '产品线空间 ID',
+    person_id       bigint      not null                comment 'Person ID',
+    status          varchar(16) not null default 'PENDING' comment 'PENDING|ACTIVE|EXITED|REJECTED',
+    joined_at       datetime    null,
+    exited_at       datetime    null,
+    reviewed_by     bigint      null,
+    reviewed_at     datetime    null,
+    create_dept     bigint      null, create_by bigint null,
+    create_time     datetime    null default CURRENT_TIMESTAMP,
+    update_by       bigint      null, update_time datetime null default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+    tenant_id       varchar(20) not null default '000000',
+    del_flag        char(1)     not null default '0',
+    remark          varchar(500) null,
+    primary key (id),
+    unique key uk_product_line_member (product_line_id, person_id),
+    key idx_product_line_members_person (person_id, status, tenant_id)
+) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 产品线空间成员';
+
 -- 3. products 产品（与项目 1:1，BR-PROD-01/Q5；三路来源）
 
 CREATE TABLE IF NOT EXISTS products
@@ -75,6 +115,7 @@ CREATE TABLE IF NOT EXISTS products
     source           varchar(32)  not null default 'PM_NEW' comment '来源 ADMIN_IMPORT|PM_NEW|GUEST_OTHER',
     project_id       bigint       null                    comment '关联项目（1:1 唯一）',
     group_id         bigint       null                    comment '归属产品组',
+    product_line_id  bigint       null                    comment '归属产品线大工作空间（1:N 非唯一）',
     status           varchar(16)  not null default 'ACTIVE' comment '状态 ACTIVE|INACTIVE',
     create_dept      bigint       null, create_by bigint null,
     create_time      datetime     null default CURRENT_TIMESTAMP,
@@ -83,7 +124,8 @@ CREATE TABLE IF NOT EXISTS products
     del_flag         char(1)      null default '0',
     remark           varchar(500) null,
     primary key (id),
-    unique key uk_products_project (project_id)
+    unique key uk_products_project (project_id),
+    key idx_products_product_line (product_line_id, tenant_id, del_flag)
 ) engine=innodb default charset=utf8mb4 collate=utf8mb4_general_ci comment='IPD 产品（项目与需求上层实体）';
 
 -- 4. projects 项目（v3 TS-06 全字段）
@@ -529,6 +571,7 @@ CREATE TABLE IF NOT EXISTS audit_logs
     prev_hash     char(64)    not null comment '前条 hash（链首为 64 个 0）',
     curr_hash     char(64)    not null comment 'SHA256(prevHash+本条内容)',
     ip_address    varchar(64) null,
+    trace_id      varchar(64) null comment 'OPS-06 请求链路 ID（定位元数据，不入审计哈希）',
     tenant_id     varchar(20) null default '000000',
     create_time   datetime    null default CURRENT_TIMESTAMP comment '创建时间（唯一时间字段，只追加）',
     hash_version  int         null     comment 'NULL=legacy-v1,2=canonical-json-v2（QA-04-D2 回写线上形态）',

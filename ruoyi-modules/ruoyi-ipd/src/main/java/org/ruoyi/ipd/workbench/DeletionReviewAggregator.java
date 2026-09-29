@@ -6,8 +6,8 @@ import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.service.IDeletionRequestService;
 import org.ruoyi.ipd.service.DeletionRequestServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +28,14 @@ public class DeletionReviewAggregator implements WorkbenchAggregator {
 
     private final DeletionRequestMapper deletionRequestMapper;
 
+    /** 与审批写路径共用目标组解析；仅副驾受信租户路径使用。 */
+    private DeletionRequestServiceImpl deletionRequestService;
+
+    @Autowired
+    public void setDeletionRequestService(DeletionRequestServiceImpl deletionRequestService) {
+        this.deletionRequestService = deletionRequestService;
+    }
+
     @Override
     public String taskType() {
         return "deletion_review";
@@ -35,6 +43,12 @@ public class DeletionReviewAggregator implements WorkbenchAggregator {
 
     @Override
     public List<Map<String, Object>> collect(IpdActor actor, Map<Long, Project> visibleProjects, Date now) {
+        return collect(actor, visibleProjects, now, null);
+    }
+
+    @Override
+    public List<Map<String, Object>> collect(IpdActor actor, Map<Long, Project> visibleProjects,
+                                             Date now, String trustedTenantId) {
         String reviewStatus;
         boolean adminSide;
         if ("SUPER_ADMIN".equals(actor.role())) {
@@ -46,13 +60,25 @@ public class DeletionReviewAggregator implements WorkbenchAggregator {
         } else {
             return List.of();
         }
-        List<DeletionRequest> pending = deletionRequestMapper.selectList(
-            new LambdaQueryWrapper<DeletionRequest>().eq(DeletionRequest::getStatus, reviewStatus));
+        LambdaQueryWrapper<DeletionRequest> query = new LambdaQueryWrapper<DeletionRequest>()
+            .eq(DeletionRequest::getStatus, reviewStatus);
+        if (trustedTenantId != null) {
+            query.eq(DeletionRequest::getTenantId, trustedTenantId);
+        }
+        List<DeletionRequest> pending = deletionRequestMapper.selectList(query);
         if (pending == null || pending.isEmpty()) {
             return List.of();
         }
         List<Map<String, Object>> tasks = new ArrayList<>();
         for (DeletionRequest request : pending) {
+            if (trustedTenantId != null && !trustedTenantId.equals(request.getTenantId())) {
+                continue;
+            }
+            if (trustedTenantId != null && !adminSide
+                && (deletionRequestService == null
+                    || !deletionRequestService.isTargetInLeaderGroup(actor, request))) {
+                continue;
+            }
             tasks.add(toTask(request, adminSide, now));
         }
         return tasks;

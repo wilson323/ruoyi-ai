@@ -22,6 +22,7 @@ import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.ruoyi.ipd.service.ai.AiTestResult;
 import org.ruoyi.ipd.service.ai.BaiduTester;
 import org.ruoyi.ipd.service.ai.DefaultTester;
+import org.ruoyi.ipd.service.ai.EndpointUrlValidator;
 import org.ruoyi.ipd.service.ai.OllamaTester;
 import org.ruoyi.ipd.service.ai.OpenAiCompatibleTester;
 import org.ruoyi.ipd.service.ai.ProviderRegistry;
@@ -58,6 +59,13 @@ public class AiModelConfigService implements IAiModelConfigService {
     private final String encryptKey;
     /** 多协议派发器（BR-AI-PROV-01/02） */
     private final ProviderRegistry providerRegistry;
+    /**
+     * P0-3（D 轮 SSRF-01）：host allowlist（R184-A 语义，AiGenerationService 同款字段注入）。
+     * 命中 host 字符串等值豁免保存入口 SSRF 黑名单（dev/mock 场景走 127.0.0.1）；
+     * 默认空串 = 严格拒绝（R212 门禁双向契约）。
+     */
+    @Value("${ai.allowed-hosts:}")
+    private String allowedHosts = "";
 
     /** 3 参构造（保留向后兼容：现有单测与生产 wiring 沿用） */
     // 2026-09-06 第六批：双构造器需显式指定 Spring 注入入口（多构造器无 @Autowired 启动失败，踩过两次）
@@ -319,40 +327,12 @@ public class AiModelConfigService implements IAiModelConfigService {
 
     /**
      * SEC-REV-04：SSRF 防护 — host（域名或 IP 字面量）解析后落入下列范围即视为内部目标，禁止探测。
-     * <ul>
-     *   <li>loopback 127.0.0.0/8、IPv6 ::1</li>
-     *   <li>链路本地 169.254.0.0/16（含 AWS / Azure metadata 169.254.169.254）</li>
-     *   <li>RFC1918 私网 10/8、172.16/12、192.168/16</li>
-     *   <li>唯一本地 IPv6 fc00::/7、回环 IPv4 0.0.0.0/8</li>
-     *   <li>组播 224.0.0.0/4、回环 localhost 解析到 127.*</li>
-     * </ul>
+     * P0-3（2026-09-29）：黑名单判定委托 {@link EndpointUrlValidator} 唯一实现（本方法保留签名，
+     * 供 AiGenerationService / 既有测试调用；新增范围：fc00::/7 ULA、0.0.0.0/8 非零尾、IPv4-mapped 解包）。
      * 域名走 InetAddress.getAllByName 任一解析落入黑名单即拒；IP 字面量直接字面解析。
      */
     static String ssrfBlockReason(String host) {
-        if (host == null || host.isBlank()) {
-            return "空主机名";
-        }
-        try {
-            java.net.InetAddress[] addrs = java.net.InetAddress.getAllByName(host);
-            for (java.net.InetAddress addr : addrs) {
-                if (addr.isLoopbackAddress()) return "loopback";
-                if (addr.isLinkLocalAddress()) return "链路本地";
-                if (addr.isAnyLocalAddress()) return "通配地址";
-                if (addr.isMulticastAddress()) return "组播";
-                if (addr.isSiteLocalAddress()) return "RFC1918 私网";
-                byte[] raw = addr.getAddress();
-                if (raw.length == 4) {
-                    int b0 = raw[0] & 0xFF;
-                    int b1 = raw[1] & 0xFF;
-                    // 100.64.0.0/10（运营商级 NAT，CGN）也按私网处理
-                    if (b0 == 100 && (b1 & 0xC0) == 64) return "CGN 私网";
-                    // 0.0.0.0/8 已由 isAnyLocalAddress 覆盖
-                }
-            }
-        } catch (java.net.UnknownHostException e) {
-            return null; // 解析失败：交给外层 catch 报"域名不可达"，不阻断
-        }
-        return null;
+        return EndpointUrlValidator.blockReasonForHost(host);
     }
 
     private AiModelConfig requireEntity(Long id) {
@@ -375,7 +355,7 @@ public class AiModelConfigService implements IAiModelConfigService {
         }
     }
 
-    private static void validate(AiModelSaveReq req, boolean requireApiKey) {
+    private void validate(AiModelSaveReq req, boolean requireApiKey) {
         // P0 修复（R177-A，2026-09-22）：每条抛错带具体字段名，前端能看到「温度必须在 0-2 之间」
         // 这类定向文案，而不是笼统的「参数校验失败」。align SopTemplateService 的好实践（9 处带 message）。
         if (req == null) {
@@ -427,6 +407,24 @@ public class AiModelConfigService implements IAiModelConfigService {
         }
         if (!isBlank(req.embedModel()) && req.embedModel().trim().length() > 64) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "RAG 向量化模型名称长度不能超过 64 字符");
+        }
+        // P0-3（D 轮 SSRF-01，2026-09-29）：保存入口 B 路 SSRF 闸——拒绝指向 RFC1918/链路本地/
+        // 回环/云元数据（169.254.169.254）/CGN/ULA 等内网目标的端点，堵死「注册内网模型配置 →
+        // 激活 → AI 调用链出站」的 SSRF 注册面（D2 SSRF3 判据：169.254.169.254 应 400 而非 200）。
+        // 放在所有字段校验之后：保持 D2 SSRF2 判据顺序（短 key 场景仍先撞 key 文案）。
+        // ai.allowed-hosts 命中 host 豁免（R184-A 语义，dev/mock 走 127.0.0.1）；解析失败 fail-open，
+        // 出站前 C 路（AiChatClient.validateEndpoint 双解析 + fail-closed）才是权威关口。
+        String endpointBlocked = EndpointUrlValidator.blockReason(req.endpoint().trim(), allowedHosts);
+        if (endpointBlocked != null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "接口地址禁止指向内网/回环/链路本地/云元数据目标（SSRF 黑名单：" + endpointBlocked + "）");
+        }
+        if (!isBlank(req.embedEndpoint())) {
+            String embedBlocked = EndpointUrlValidator.blockReason(req.embedEndpoint().trim(), allowedHosts);
+            if (embedBlocked != null) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                    "RAG 向量化端点禁止指向内网/回环/链路本地/云元数据目标（SSRF 黑名单：" + embedBlocked + "）");
+            }
         }
     }
 

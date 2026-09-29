@@ -16,6 +16,12 @@
     </description>
 
     <dependencies>
+        <!-- QwenFileUploadUtils 直接使用 okhttp3；由父 POM 统一管理 5.x 版本。 -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-jvm</artifactId>
+        </dependency>
+
         <!-- 通用工具-->
         <dependency>
             <groupId>org.ruoyi</groupId>

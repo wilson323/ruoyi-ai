@@ -4,7 +4,9 @@
  *
  * 模式选择（自动回退）：
  *   1) Puppeteer 模式（有 puppeteer-core + 系统 Chromium）：真浏览器跑 axe-core，结果最准
- *   2) jsdom 模式（默认）：纯 DOM fixture，CI 友好无浏览器依赖，结果快速但仅覆盖静态 HTML
+ *   2) jsdom 模式：纯 DOM fixture，CI 友好无浏览器依赖，仅覆盖静态 HTML；
+ *      注意 color-contrast 等需要渲染树的规则只有 puppeteer 模式能检出
+ *      （jsdom 下该类规则落入 incomplete，不记为 violation）
  *
  * 输入：A11Y_TARGET_BASE_URL（默认 http://127.0.0.1:4173，ZK-IPD LIVE URL）
  *       A11Y_PAGES（默认 5 页 login/workbench/project-list/gate-review/dashboard）
@@ -14,6 +16,8 @@
  *   tests/a11y/reports/a11y-report-<timestamp>.json   完整 axe 结果
  *   tests/a11y/reports/a11y-report-latest.json        最近一次结果（覆盖）
  *   控制台摘要：violations 按 impact 排序，>0 退出码 1（默认 WARN，调用方决定阻断）
+ *   扫描错误（非违规）：任一页 axe 运行报错时摘要标 [SCAN-ERROR] 并以退出码 2 报gate 失效，
+ *   不得塌缩成 violations=0 的假绿（2026-09-29 修复的缺陷）
  *
  * 阈值：A11Y_MAX_VIOLATIONS（默认不设，所有 violations 报告）
  *       A11Y_FAIL_ON_CRITICAL=1 时 critical 违规退出 2
@@ -22,7 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import http from 'node:http';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import axe from 'axe-core';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -67,6 +71,10 @@ function summarize(results) {
   lines.push('');
   for (const page of results.pages) {
     lines.push(`--- ${page.name} (${page.url}) status=${page.status} violations=${page.violations.length} ---`);
+    if (page.error) {
+      lines.push(`  [SCAN-ERROR] ${page.error} —— 该页未真正完成扫描，violations=0 不可信`);
+      continue;
+    }
     if (page.violations.length === 0) {
       lines.push('  (clean)');
       continue;
@@ -84,10 +92,21 @@ function summarize(results) {
 async function scanWithJsdom(page) {
   const url = BASE + page.path;
   const html = await fetchHtml(url);
-  const dom = new JSDOM(html, { url, runScripts: 'outside-only', pretendToBeVisual: true });
-  // axe-core 需要注入到目标 window
-  dom.window.axe = axe;
-  const result = await dom.window.axe.run(dom.window.document, {
+  // jsdom 默认 virtualConsole 会把 axe color-contrast 匹配器调 canvas.getContext 的
+  // "Not implemented" 噪声打到 stderr（掩盖真错误）；过滤掉这一类已知噪声，其余照常转发。
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', (e) => {
+    if (!String(e && e.message).includes('HTMLCanvasElement.prototype.getContext')) {
+      process.stderr.write(`[a11y][jsdomError] ${e.stack || e}\n`);
+    }
+  });
+  const dom = new JSDOM(html, { url, runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole });
+  // axe-core 必须在目标 window 内 eval 注入。直接 `dom.window.axe = axe` 把 Node 侧模块挂到
+  // window 上，axe.run 内部仍解析不到 window/document globals，抛
+  // 'Required "window" or "document" globals not defined'——曾被外层 catch 吞掉、
+  // 伪装成全页 0 violations 的假绿（2026-09-29 实测复现）。
+  dom.window.eval(axe.source);
+  const result = await dom.window.axe.run(dom.window.document.body, {
     resultTypes: ['violations'],
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] }
   });
@@ -191,9 +210,10 @@ async function main() {
       acc.serious += t.serious;
       acc.moderate += t.moderate;
       acc.minor += t.minor;
+      acc.scanErrors += p.error ? 1 : 0;
       return acc;
     },
-    { violations: 0, critical: 0, serious: 0, moderate: 0, minor: 0 }
+    { violations: 0, critical: 0, serious: 0, moderate: 0, minor: 0, scanErrors: 0 }
   );
 
   const results = {
@@ -212,6 +232,10 @@ async function main() {
   process.stdout.write(`[a11y] report written: ${jsonPath}\n`);
 
   const criticalCount = totals.critical;
+  if (totals.scanErrors > 0) {
+    process.stderr.write(`[a11y] GATE-ERROR: ${totals.scanErrors}/${pages.length} 页扫描报错（非违规，但门禁无法自证已扫描）— exit 2\n`);
+    process.exit(2);
+  }
   if (FAIL_ON_CRITICAL && criticalCount > 0) {
     process.stderr.write(`[a11y] FAIL_ON_CRITICAL=1 and ${criticalCount} critical violations found — exit 2\n`);
     process.exit(2);

@@ -111,4 +111,68 @@ public final class AgUiEvents {
         e.put("type", type.wireName());
         return e;
     }
+
+    // ===== 多智能体/蜂群进度事件（官方 wire 名，字段严格对齐 @ag-ui/core@0.0.59 schema） =====
+    // 词表已铺，<b>待真实 swarm 生产者接入</b>：当前 chatStream 为单一 RAG 流，以下工厂尚无调用方，
+    // 仅由单测锁定 wire 格式；接入后由 swarm 编排层按官方 schema 产出，经同一 SSE 通道下发。
+
+    /** StepStarted：stepName 必填；subagentRunId 仅非空时下发（官方 schema optional）。 */
+    public static Map<String, Object> stepStarted(String stepName, String subagentRunId) {
+        Map<String, Object> e = base(AgUiEventType.STEP_STARTED);
+        e.put("stepName", stepName == null ? "" : stepName);
+        putIfPresent(e, "subagentRunId", subagentRunId);
+        return e;
+    }
+
+    /** StepFinished：stepName 必填；subagentRunId 仅非空时下发。 */
+    public static Map<String, Object> stepFinished(String stepName, String subagentRunId) {
+        Map<String, Object> e = base(AgUiEventType.STEP_FINISHED);
+        e.put("stepName", stepName == null ? "" : stepName);
+        putIfPresent(e, "subagentRunId", subagentRunId);
+        return e;
+    }
+
+    /**
+     * SubagentStarted：subagentRunId + name 必填；description 仅非空时下发
+     * （parentSubagentRunId/parentToolCallId/parentMessageId 官方亦 optional，桥侧首版不产，接入嵌套子智能体时再补）。
+     */
+    public static Map<String, Object> subagentStarted(String subagentRunId, String name, String description) {
+        Map<String, Object> e = base(AgUiEventType.SUBAGENT_STARTED);
+        e.put("subagentRunId", subagentRunId == null ? "" : subagentRunId);
+        e.put("name", name == null ? "" : name);
+        putIfPresent(e, "description", description);
+        return e;
+    }
+
+    /**
+     * SubagentFinished：subagentRunId 必填；result（任意值，null 表缺省不下发）/outcome 仅在有值时下发。
+     * outcome 官方为判别联合（{@code {type:"success"}} | {@code {type:"suspended",interruptIds?}}），此处透传 Map。
+     */
+    public static Map<String, Object> subagentFinished(String subagentRunId, Object result, Map<String, Object> outcome) {
+        Map<String, Object> e = base(AgUiEventType.SUBAGENT_FINISHED);
+        e.put("subagentRunId", subagentRunId == null ? "" : subagentRunId);
+        if (result != null) {
+            e.put("result", result);
+        }
+        if (outcome != null && !outcome.isEmpty()) {
+            e.put("outcome", outcome);
+        }
+        return e;
+    }
+
+    /** SubagentError：subagentRunId + message 必填；code 仅非空时下发。 */
+    public static Map<String, Object> subagentError(String subagentRunId, String message, String code) {
+        Map<String, Object> e = base(AgUiEventType.SUBAGENT_ERROR);
+        e.put("subagentRunId", subagentRunId == null ? "" : subagentRunId);
+        e.put("message", message == null ? "" : message);
+        putIfPresent(e, "code", code);
+        return e;
+    }
+
+    /** 可选字符串字段：仅非空白时下发（官方 schema optional 字段缺省可解析）。 */
+    private static void putIfPresent(Map<String, Object> e, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            e.put(key, value);
+        }
+    }
 }

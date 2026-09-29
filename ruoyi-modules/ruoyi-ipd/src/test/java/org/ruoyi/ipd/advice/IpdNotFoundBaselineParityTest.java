@@ -8,6 +8,7 @@ import org.ruoyi.common.web.handler.GlobalExceptionHandler;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -87,6 +88,30 @@ class IpdNotFoundBaselineParityTest {
             .isEqualTo(expected.getCode());
         assertThat(actualR.getMsg())
             .as("文案漂移：基线 handleServletException(internalError) 当前实际值=%s，advice 复刻值=%s",
+                expected.getMsg(), actualR.getMsg())
+            .isEqualTo(expected.getMsg());
+    }
+
+    @Test
+    @DisplayName("3) 非 IPD 路径 HttpRequestMethodNotSupported：advice 的 R(code,msg) 必须等于基线 handleHttpRequestMethodNotSupported 实际输出")
+    void methodNotSupportedOutsideIpdMatchesBaselineOutput() {
+        String uri = "/chat/some-endpoint";
+        HttpRequestMethodNotSupportedException ex = new HttpRequestMethodNotSupportedException("DELETE");
+        MockHttpServletRequest request = new MockHttpServletRequest("DELETE", uri);
+
+        R<Void> expected = baseline.handleHttpRequestMethodNotSupported(ex, request);
+        Object actual = advice.handleMethodNotSupported(ex, request);
+
+        assertThat(actual)
+            .as("非 IPD 路径 405 必须回落基线 R 包络，不得返回 IPD ApiV1Response")
+            .isInstanceOf(R.class);
+        R<?> actualR = (R<?>) actual;
+        assertThat(actualR.getCode())
+            .as("code 漂移：基线 handleHttpRequestMethodNotSupported 当前实际值=%s，advice 复刻值=%s",
+                expected.getCode(), actualR.getCode())
+            .isEqualTo(expected.getCode());
+        assertThat(actualR.getMsg())
+            .as("文案漂移：基线 handleHttpRequestMethodNotSupported 当前实际值=%s，advice 复刻值=%s",
                 expected.getMsg(), actualR.getMsg())
             .isEqualTo(expected.getMsg());
     }

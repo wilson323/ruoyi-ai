@@ -6,6 +6,9 @@ public enum ApiV1ErrorCode {
 
     PARAM_INVALID(10001, "参数校验失败"),
 
+    /** CONTRACT-01（D 轮 D2 §4.3，2026-09-29）：请求方法不被端点支持（HTTP 405 + 标准包络） */
+    METHOD_NOT_SUPPORTED(10002, "请求方式不支持"),
+
     UNAUTHORIZED(20001, "未认证或凭证失效"),
     ACCOUNT_FROZEN_PENDING_HANDOVER(20002, "账号待移交冻结中，仅保留移交相关权限"),
     ACCOUNT_PASSWORD_CHANGE_REQUIRED(20003, "首登强制改密：仅允许调用改密相关接口"),
@@ -103,6 +106,7 @@ public enum ApiV1ErrorCode {
                 HANDOVER_LOCKED, HR_SYNC_NOT_ENABLED, QR_LOGIN_NOT_ENABLED -> 409;
             case RATE_LIMITED -> 429;
             case ATTACHMENT_TOO_LARGE -> 413;
+            case METHOD_NOT_SUPPORTED -> 405;
             case PRODUCT_INACTIVE, NOT_FOUND -> 404;
             case INTERNAL_ERROR -> 500;
         };
