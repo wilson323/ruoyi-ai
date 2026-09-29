@@ -13,6 +13,7 @@ import dev.langchain4j.rag.query.Metadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
+import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.enums.RoleType;
@@ -24,9 +25,15 @@ import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.knowledge.KnowledgeAccessGate;
+import org.ruoyi.chat.kernel.AgentScopeChatKernel;
+import org.ruoyi.chat.kernel.KernelChatSink;
+import org.ruoyi.chat.kernel.KernelModelRequest;
 import org.ruoyi.service.knowledge.retriever.MultiKnowledgeAugmentorFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import reactor.core.Disposable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
@@ -35,6 +42,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -66,6 +77,55 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
     private final IChatMessageService chatMessageService;
     private final ChatSessionOwnershipGuard chatSessionOwnershipGuard;
     private final ObjectMapper objectMapper;
+
+    private final Map<WebSocketSession, Set<Runnable>> activeKernelStreams = new ConcurrentHashMap<>();
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        cancelKernelStreams(session);
+    }
+
+    @Override
+    public void handleTransportError(WebSocketSession session, Throwable exception) {
+        cancelKernelStreams(session);
+    }
+
+    private void cancelKernelStreams(WebSocketSession session) {
+        Set<Runnable> streams = activeKernelStreams.remove(session);
+        if (streams != null) {
+            streams.forEach(Runnable::run);
+        }
+    }
+
+    private void unregisterKernelStream(WebSocketSession session, Runnable cancel) {
+        activeKernelStreams.computeIfPresent(session, (ignored, streams) -> {
+            streams.remove(cancel);
+            return streams.isEmpty() ? null : streams;
+        });
+    }
+
+    /** W1 内核委托：chat 平台域无项目维度，projectId 折叠为常量段（镜像 ChatServiceFacade，ADR-0075 矩阵 #1 登记风险）。 */
+    static final String KERNEL_PROJECT_SEGMENT = "chat";
+
+    /** W1 内核委托：普通模型对话（无智能体）在四维键中的 agent 折叠段（镜像 ChatServiceFacade）。 */
+    static final String KERNEL_MODEL_AGENT_SEGMENT = "chat-model";
+
+    /** W1 内核委托：内核错误帧对外固定脱敏文案（KernelChatSink 契约：对外展示前须由适配器脱敏）。 */
+    static final String SAFE_KERNEL_ERROR_MESSAGE = "对话处理失败，请稍后重试";
+
+    /**
+     * W1 内核委托（ADR-0075 回滚点）：bean 缺席时保留 StreamingChatModel 执行路径，
+     * WS 消息保存与完成帧的可靠性修复同时适用于两条执行路径。
+     * 开关 = {@code chat.kernel.agentscope.enabled}（matchIfMissing=false）。
+     * <p>
+     * 不得进 {@code @RequiredArgsConstructor} 构造面（Lombok 只收 final 字段）——
+     * 采用可选注入字段，与 {@code ChatServiceFacade} 同口径双保险回滚。
+     */
+    @Autowired(required = false)
+    private AgentScopeChatKernel agentScopeChatKernel;
+
+    @Value("${chat.kernel.agentscope.enabled:false}")
+    private boolean agentScopeEnabled;
 
     @Value("${chat.default-model:}")
     private String defaultModel;
@@ -111,13 +171,22 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
                 }
             }
 
-            // 2. 解析模型：智能体绑定 > 前端传入 > 默认配置 > 表内首个 chat 模型
+            // 2. 解析模型：智能体绑定 > 前端传入 > 默认配置 > 表内首个 chat 模型。
+            // 显式指定的模型失效时拒绝本轮，不能静默改用其他模型。
             ChatModelVo modelVo = null;
             if (agentVo != null && agentVo.getModelId() != null) {
                 modelVo = chatModelService.queryById(agentVo.getModelId());
+                if (modelVo == null) {
+                    sendError(session, "错误:智能体绑定的对话模型不可用");
+                    return;
+                }
             }
             if (modelVo == null && StringUtils.isNotBlank(model)) {
                 modelVo = chatModelService.selectModelByName(model);
+                if (modelVo == null) {
+                    sendError(session, "错误:指定的对话模型不可用");
+                    return;
+                }
             }
             if (modelVo == null) {
                 modelVo = resolveDefaultModel();
@@ -134,17 +203,22 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
             String finalContent = StringUtils.isNotBlank(finalSystemPrompt)
                 ? finalSystemPrompt + "\n\n" + augmentedContent : augmentedContent;
 
-            // 4. 落库用户消息（仅在具备用户与会话标识时）
-            if (userId != null && sessionId != null) {
-                try {
-                    chatMessageService.saveChatMessage(userId, sessionId, content,
-                        RoleType.USER.getName(), modelVo.getModelName());
-                } catch (Exception e) {
-                    log.warn("落库用户消息失败: {}", e.getMessage());
+            // 4. WS 完成语义要求本轮用户消息可确认落库，失败时不得启动模型。
+            saveRequiredMessage(userId, sessionId, content, RoleType.USER.getName(), modelVo.getModelName());
+
+            // 5. W1 内核委托（ADR-0075 回滚点）：开关开 → AgentScope 内核对话；
+            // 开关关 / bean 缺席 → StreamingChatModel 流式路径。
+            if (agentScopeEnabled) {
+                if (agentScopeChatKernel == null) {
+                    throw new IllegalStateException("AgentScope 聊天内核已启用但未装配");
                 }
+                log.info("mp-chat 处理内核对话,会话:{},agentId:{}", sessionId, agentIdRaw);
+                handleKernelChat(session, augmentedContent, finalSystemPrompt, agentVo,
+                    userId, sessionId, modelVo);
+                return;
             }
 
-            // 5. 构造流式模型并异步生成
+            // 6. 构造流式模型并异步生成
             ChatRequest chatRequest = new ChatRequest();
             chatRequest.setContent(content);
             chatRequest.setModel(modelVo.getModelName());
@@ -156,57 +230,167 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
             final String modelName = modelVo.getModelName();
             CompletableFuture.runAsync(() -> {
                 StringBuilder buffer = new StringBuilder();
-                // 是否已向前端发送 [DONE] 结束标记，避免重复发送或遗漏
-                boolean[] doneSent = {false};
+                // 任一终态仅允许发送一次完成或错误帧。
+                AtomicBoolean terminal = new AtomicBoolean(false);
                 StreamingChatResponseHandler handler = new StreamingChatResponseHandler() {
                     @Override
                     public void onPartialResponse(String partialResponse) {
+                        if (terminal.get()) {
+                            return;
+                        }
                         buffer.append(partialResponse);
                         sendJson(session, Map.of("content", partialResponse));
                     }
 
                     @Override
                     public void onCompleteResponse(ChatResponse completeResponse) {
-                        if (!doneSent[0]) {
-                            doneSent[0] = true;
-                            sendRaw(session, "[DONE]");
+                        if (!terminal.compareAndSet(false, true)) {
+                            return;
                         }
-                        if (userId != null && sessionId != null && buffer.length() > 0) {
-                            try {
-                                chatMessageService.saveChatMessage(userId, sessionId, buffer.toString(),
+                        try {
+                            if (buffer.length() > 0) {
+                                saveRequiredMessage(userId, sessionId, buffer.toString(),
                                     RoleType.ASSISTANT.getName(), modelName);
-                            } catch (Exception e) {
-                                log.warn("落库助手回复失败: {}", e.getMessage());
                             }
+                            sendRaw(session, "[DONE]");
+                        } catch (Exception e) {
+                            log.error("mp-chat operation=ASSISTANT_MESSAGE_SAVE status=FAILED exceptionType={}",
+                                e.getClass().getSimpleName());
+                            sendError(session, "错误:" + SAFE_KERNEL_ERROR_MESSAGE);
                         }
                     }
 
                     @Override
                     public void onError(Throwable error) {
-                        if (buffer.length() == 0) {
-                            // 一点内容都没输出就出错：向前端报错
-                            sendError(session, "错误:" + safeMsg(error));
-                        } else if (!doneSent[0]) {
-                            // 已有部分内容但流式中途异常：补发 [DONE] 让前端正常收尾，不报错
-                            doneSent[0] = true;
-                            sendRaw(session, "[DONE]");
-                            log.warn("mp-chat 流式中途异常（已输出内容，补发 [DONE]）: {}", safeMsg(error));
-                        } else {
-                            // onComplete 后的收尾异常：回复已正常结束，静默
-                            log.warn("mp-chat 流式收尾异常（已结束，忽略）: {}", safeMsg(error));
+                        if (terminal.compareAndSet(false, true)) {
+                            sendError(session, "错误:" + SAFE_KERNEL_ERROR_MESSAGE);
                         }
+                        log.warn("mp-chat operation=LEGACY_STREAM status=FAILED exceptionType={}",
+                            error.getClass().getSimpleName());
                     }
                 };
                 try {
                     streamingModel.chat(finalContent, handler);
                 } catch (Exception e) {
-                    log.error("mp-chat 调用模型失败", e);
-                    sendError(session, "错误:" + safeMsg(e));
+                    log.error("mp-chat operation=LEGACY_STREAM_START status=FAILED exceptionType={}",
+                        e.getClass().getSimpleName());
+                    if (terminal.compareAndSet(false, true)) {
+                        sendError(session, "错误:" + SAFE_KERNEL_ERROR_MESSAGE);
+                    }
                 }
             });
         } catch (Exception e) {
-            log.error("mp-chat 处理消息失败", e);
-            sendError(session, "错误:" + safeMsg(e));
+            log.error("mp-chat operation=WS_REQUEST status=FAILED exceptionType={}", e.getClass().getSimpleName());
+            sendError(session, "错误:" + SAFE_KERNEL_ERROR_MESSAGE);
+        }
+    }
+
+    private void handleKernelChat(WebSocketSession session, String augmentedContent, String systemPrompt,
+                                  AgentVo agentVo, Long userId, Long sessionId, ChatModelVo modelVo) {
+        StringBuilder buffer = new StringBuilder();
+        AtomicBoolean terminal = new AtomicBoolean(false);
+        AtomicReference<Disposable> subscription = new AtomicReference<>();
+        AtomicBoolean disconnected = new AtomicBoolean(false);
+        Object lifecycleLock = new Object();
+        Runnable cancel = () -> {
+            Disposable active;
+            synchronized (lifecycleLock) {
+                disconnected.set(true);
+                terminal.set(true);
+                active = subscription.get();
+            }
+            if (active != null) {
+                active.dispose();
+            }
+        };
+        Set<Runnable> streams = activeKernelStreams.computeIfAbsent(session, ignored -> ConcurrentHashMap.newKeySet());
+        streams.add(cancel);
+        KernelChatSink sink = new KernelChatSink() {
+
+            @Override
+            public void onContent(String delta) {
+                synchronized (lifecycleLock) {
+                    if (terminal.get() || disconnected.get()) {
+                        return;
+                    }
+                    buffer.append(delta);
+                    sendJson(session, Map.of("content", delta));
+                }
+            }
+
+            @Override
+            public void onReasoning(String delta) {
+                // WS 契约无推理帧（增量只有 {"content"}），丢弃（KernelChatSink 契约允许）
+            }
+
+            @Override
+            public void onMcpTool(String toolName, String status, String result) {
+                // WS 契约无 mcp_tool 帧；W1 对话内核不挂工具，丢弃
+            }
+
+            @Override
+            public void onError(String code, String message) {
+                synchronized (lifecycleLock) {
+                    unregisterKernelStream(session, cancel);
+                    if (terminal.compareAndSet(false, true) && !disconnected.get()) {
+                        sendError(session, "错误:" + SAFE_KERNEL_ERROR_MESSAGE);
+                    }
+                    log.error("mp-chat kernel operation=KERNEL_STREAM status=FAILED code={}", code);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                synchronized (lifecycleLock) {
+                    unregisterKernelStream(session, cancel);
+                    if (!terminal.compareAndSet(false, true) || disconnected.get()) {
+                        return;
+                    }
+                    try {
+                        if (buffer.length() > 0) {
+                            saveRequiredMessage(userId, sessionId, buffer.toString(),
+                                RoleType.ASSISTANT.getName(), modelVo.getModelName());
+                        }
+                        sendRaw(session, "[DONE]");
+                    } catch (Exception e) {
+                        log.error("mp-chat operation=KERNEL_ASSISTANT_MESSAGE_SAVE status=FAILED exceptionType={}",
+                            e.getClass().getSimpleName());
+                        sendError(session, "错误:" + SAFE_KERNEL_ERROR_MESSAGE);
+                    }
+                }
+            }
+        };
+
+        Disposable active = agentScopeChatKernel.stream(
+            KERNEL_PROJECT_SEGMENT,
+            userId == null ? null : String.valueOf(userId),
+            agentVo == null || agentVo.getId() == null ? KERNEL_MODEL_AGENT_SEGMENT : String.valueOf(agentVo.getId()),
+            sessionId == null ? null : String.valueOf(sessionId),
+            augmentedContent,
+            systemPrompt,
+            KernelModelRequest.from(modelVo),
+            sink
+        );
+        subscription.set(active);
+        if (disconnected.get() || !session.isOpen()) {
+            cancel.run();
+            unregisterKernelStream(session, cancel);
+        }
+    }
+
+    /** 与旧 saveChatMessage 的五个业务字段一致，但写入结果必须可观察。 */
+    private void saveRequiredMessage(Long userId, Long sessionId, String content, String role, String modelName) {
+        if (userId == null || sessionId == null) {
+            throw new IllegalStateException("missing owned session");
+        }
+        ChatMessageBo message = new ChatMessageBo();
+        message.setUserId(userId);
+        message.setSessionId(sessionId);
+        message.setContent(content);
+        message.setRole(role);
+        message.setModelName(modelName);
+        if (!Boolean.TRUE.equals(chatMessageService.insertByBo(message))) {
+            throw new IllegalStateException("chat message persistence failed");
         }
     }
 

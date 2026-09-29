@@ -32,6 +32,7 @@ import org.ruoyi.agent.tool.QueryAllTablesTool;
 import org.ruoyi.agent.tool.QueryTableSchemaTool;
 import org.ruoyi.common.chat.base.ThreadContext;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.chat.domain.dto.request.WorkFlowRunner;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.enums.RoleType;
@@ -42,6 +43,7 @@ import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
+import org.ruoyi.common.sse.dto.SseEventDto;
 import org.ruoyi.common.sse.utils.SseMessageUtils;
 import org.ruoyi.common.trace.config.TraceProperties;
 import org.ruoyi.common.trace.constant.TraceConstants;
@@ -62,10 +64,16 @@ import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.KnowledgeAccessGate;
+import org.ruoyi.chat.kernel.AgentScopeChatKernel;
+import org.ruoyi.chat.kernel.KernelChatSink;
+import org.ruoyi.chat.kernel.KernelModelRequest;
 import org.ruoyi.service.knowledge.retriever.MultiKnowledgeAugmentorFactory;
 import org.ruoyi.argtrace.RagTraceNodeTypes;
 import org.ruoyi.argtrace.RagTracePayloadBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
@@ -76,6 +84,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 聊天服务门面层
@@ -95,6 +104,8 @@ public class ChatServiceFacade implements IChatService {
     private static final Integer DEFAULT_MAX_MESSAGES = 20;
 
     static final String SAFE_CHAT_ERROR_MESSAGE = "对话处理失败，请稍后重试";
+    static final String KERNEL_PROJECT_SEGMENT = "chat";
+    static final String KERNEL_MODEL_AGENT_SEGMENT = "chat-model";
 
     private final IChatModelService chatModelService;
 
@@ -126,6 +137,12 @@ public class ChatServiceFacade implements IChatService {
      * Key: sessionId, Value: MessageWindowChatMemory实例
      */
     private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
+
+    @Autowired(required = false)
+    private AgentScopeChatKernel agentScopeChatKernel;
+
+    @Value("${chat.kernel.agentscope.enabled:false}")
+    private boolean agentScopeEnabled;
 
 
 
@@ -189,11 +206,15 @@ public class ChatServiceFacade implements IChatService {
             throw new IllegalArgumentException("模型不存在");
         }
 
+        if (agentScopeEnabled && agentScopeChatKernel == null) {
+            throw new IllegalStateException("AgentScope 聊天内核已启用但未装配");
+        }
+
         // 对话和智能体模式共用按会话隔离的 SSE。
         SseEmitter emitter = sseEmitterManager.connect(String.valueOf(chatRequest.getSessionId()));
 
-        // 构建上下文消息列表（系统提示词 + 历史消息 + 当前用户消息）
-        List<ChatMessage> contextMessages = buildContextMessages(chatRequest, agentVo);
+        // AgentScope 持有自己的会话状态；旧链上下文仅在旧入口期间构建。
+        List<ChatMessage> contextMessages = agentScopeEnabled ? List.of() : buildContextMessages(chatRequest, agentVo);
 
         chatRequest.setEmitter(emitter);
         chatRequest.setUserId(userId);
@@ -205,13 +226,12 @@ public class ChatServiceFacade implements IChatService {
         chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
 
         TraceRunHandle traceRun = startRagTraceRun(chatRequest, userId);
-
-        // 智能体和普通对话互斥：有 agentId 为智能体，否则为普通模型对话。
+        if (agentScopeEnabled) {
+            return handleKernelChat(chatRequest, agentVo, traceRun);
+        }
         if (agentVo != null) {
-            log.info("处理智能体对话,会话:{},agentId:{}", chatRequest.getSessionId(), chatRequest.getAgentId());
             return handleAgentChat(chatRequest, agentVo, traceRun);
         }
-        log.info("处理普通对话,会话:{},模型:{}", chatRequest.getSessionId(), chatRequest.getModel());
         return handleModelChat(chatRequest, traceRun);
     }
 
@@ -758,6 +778,127 @@ public class ChatServiceFacade implements IChatService {
                 log.error("chat_stream operation=MODEL_STREAM status=FAILED errorType={}", errorType(error));
             }
         };
+    }
+
+    private SseEmitter handleKernelChat(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun) {
+        String sessionId = String.valueOf(chatRequest.getSessionId());
+        // 沿用旧链知识库选择与访问门；只有检索异常可回退，授权拒绝在内核前 fail-closed。
+        String augmentedInput = augmentAgentInput(chatRequest, agentVo);
+        StringBuilder messageBuffer = new StringBuilder();
+        AtomicReference<Disposable> subscription = new AtomicReference<>();
+        AtomicBoolean disconnected = new AtomicBoolean(false);
+        AtomicBoolean terminal = new AtomicBoolean(false);
+        Object lifecycleLock = new Object();
+        Runnable cancel = () -> {
+            Disposable active;
+            synchronized (lifecycleLock) {
+                disconnected.set(true);
+                terminal.set(true);
+                active = subscription.get();
+            }
+            if (active != null) {
+                active.dispose();
+            }
+        };
+        chatRequest.getEmitter().onCompletion(cancel);
+        chatRequest.getEmitter().onTimeout(cancel);
+        chatRequest.getEmitter().onError(ignored -> cancel.run());
+        KernelChatSink sink = new KernelChatSink() {
+
+            @Override
+            public void onContent(String delta) {
+                synchronized (lifecycleLock) {
+                    if (terminal.get()) {
+                        return;
+                    }
+                    messageBuffer.append(delta);
+                    SseMessageUtils.sendContent(sessionId, delta);
+                }
+            }
+
+            @Override
+            public void onReasoning(String delta) {
+                synchronized (lifecycleLock) {
+                    if (terminal.get()) {
+                        return;
+                    }
+                    SseMessageUtils.sendReasoning(sessionId, delta);
+                }
+            }
+
+            @Override
+            public void onMcpTool(String toolName, String status, String result) {
+                synchronized (lifecycleLock) {
+                    if (terminal.get()) {
+                        return;
+                    }
+                    SseMessageUtils.sendEvent(sessionId, SseEventDto.mcpTool(toolName, status, result));
+                }
+            }
+
+            @Override
+            public void onError(String code, String message) {
+                synchronized (lifecycleLock) {
+                    if (!terminal.compareAndSet(false, true)) {
+                        return;
+                    }
+                    finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, new IllegalStateException(code + ": " + message));
+                    SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
+                    SseMessageUtils.completeConnection(sessionId);
+                    log.error("chat_stream operation=KERNEL_STREAM status=FAILED code={}", code);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                synchronized (lifecycleLock) {
+                    if (!terminal.compareAndSet(false, true)) {
+                        return;
+                    }
+                    try {
+                        String fullMessage = messageBuffer.toString();
+                        if (StringUtils.isNotBlank(fullMessage)) {
+                            ChatMessageBo message = new ChatMessageBo();
+                            message.setUserId(chatRequest.getUserId());
+                            message.setSessionId(chatRequest.getSessionId());
+                            message.setContent(fullMessage);
+                            message.setRole(RoleType.ASSISTANT.getName());
+                            message.setModelName(chatRequest.getModel());
+                            if (!Boolean.TRUE.equals(chatMessageService.insertByBo(message))) {
+                                throw new IllegalStateException("assistant message persistence failed");
+                            }
+                        } else {
+                            log.warn("chat_stream status=EMPTY_RESPONSE");
+                        }
+                        finishTraceRun(traceRun, TraceConstants.STATUS_SUCCESS, null);
+                        SseMessageUtils.sendDone(sessionId);
+                    } catch (Exception e) {
+                        finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
+                        SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
+                        log.error("chat_stream operation=KERNEL_COMPLETE status=FAILED errorType={}", errorType(e));
+                    } finally {
+                        SseMessageUtils.completeConnection(sessionId);
+                    }
+                }
+            }
+        };
+
+        Disposable active = agentScopeChatKernel.stream(
+            KERNEL_PROJECT_SEGMENT,
+            // 不得经 String.valueOf 把空身份变成 "null"；内核正式桥会 fail-closed 拒绝。
+            chatRequest.getUserId() == null ? null : String.valueOf(chatRequest.getUserId()),
+            chatRequest.getAgentId() == null ? KERNEL_MODEL_AGENT_SEGMENT : String.valueOf(chatRequest.getAgentId()),
+            sessionId,
+            augmentedInput,
+            agentVo == null ? null : agentVo.getSystemPrompt(),
+            KernelModelRequest.from(chatRequest.getChatModelVo(), chatRequest.getModel()),
+            sink
+        );
+        subscription.set(active);
+        if (disconnected.get()) {
+            active.dispose();
+        }
+        return chatRequest.getEmitter();
     }
 
     /**
