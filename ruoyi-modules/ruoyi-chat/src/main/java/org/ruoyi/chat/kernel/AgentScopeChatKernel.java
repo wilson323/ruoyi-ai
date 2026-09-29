@@ -15,7 +15,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 import java.nio.file.Files;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +41,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>成熟方案优先：会话状态用 AgentScope 原生 {@link MysqlAgentStateStore}（矩阵 #5「替换」）、
  * 事件流用 {@code HarnessAgent.streamEvents}（矩阵 #7「包装」），同键串行使用原生
- * {@link LocalSessionTurnGate}，覆盖本桥所有 Agent 实例；多副本串行须另行验收。
+ * {@link LocalSessionTurnGate}（JVM 级静态共享，覆盖同进程内全部内核实例与注入点；
+ * 跨进程多副本串行须分布式锁，另行验收）。
  * 四维隔离键只经 {@link KernelScopeKey} 唯一收口（矩阵 #1「包装」，业务代码禁止手拼）。
  *
  * <p>身份三态（矩阵 #4「包装」，userId 严禁来自请求参数）：
@@ -87,7 +91,9 @@ public class AgentScopeChatKernel implements AutoCloseable {
     private final Path workspaceRoot;
     private final KernelEventFrames frames;
     private final ConcurrentMap<AgentConfiguration, HarnessAgent> agents = new ConcurrentHashMap<>();
-    private final SessionTurnGate turnGate = new LocalSessionTurnGate();
+    /** JVM 级共享整轮锁：同进程内全部内核实例/注入点同 slot 整轮互斥（C1 双副本实证教训：
+     * 实例级 gate 遇双实例同 slot 并发保存会进 CAS 竞态，SDK 版本化保存反序列化失败）。 */
+    private static final SessionTurnGate TURN_GATE = new LocalSessionTurnGate();
 
     /** 缓存身份含配置摘要与工作区分桶维度；不得在键或日志中保留明文凭据。 */
     private record AgentConfiguration(String projectId, String userId, String agentId, String systemPrompt,
@@ -217,7 +223,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
             KernelModelRequest effectiveModel = modelRoutingEnabled ? model : null;
             HarnessAgent selectedAgent = agent(projectId, userId, agentId, systemPrompt,
                     modelSelector.plan(effectiveModel));
-            return Flux.using(() -> turnGate.acquire(scope.slotId()),
+            return Flux.using(() -> TURN_GATE.acquire(scope.slotId()),
                     lease -> selectedAgent.streamEvents(msg, scope.toRuntimeContext()),
                     TurnLease::close)
                     .subscribeOn(Schedulers.boundedElastic())
@@ -246,11 +252,18 @@ public class AgentScopeChatKernel implements AutoCloseable {
     private HarnessAgent buildAgent(String projectId, String userId, String agentId,
                                     String systemPrompt, KernelModelSelector.ModelPlan plan) {
         try {
-            Path workspace = workspaceFor(workspaceRoot, projectId, userId, agentId);
-            Files.createDirectories(workspace);
+            Path workspace = createWorkspace(workspaceRoot, projectId, userId, agentId);
             Path agentsMd = workspace.resolve("AGENTS.md");
-            if (!Files.exists(agentsMd)) {
-                Files.writeString(agentsMd, "# " + agentId + "\n\nChat kernel employee.\n");
+            if (!Files.exists(agentsMd, LinkOption.NOFOLLOW_LINKS)) {
+                try {
+                    Files.writeString(agentsMd, "# " + agentId + "\n\nChat kernel employee.\n",
+                            StandardOpenOption.CREATE_NEW);
+                } catch (FileAlreadyExistsException concurrentCreate) {
+                    // Another configuration may have created the same employee workspace.
+                }
+            }
+            if (!Files.isRegularFile(agentsMd, LinkOption.NOFOLLOW_LINKS)) {
+                throw new IllegalStateException("workspace AGENTS.md must be a regular file");
             }
             ToolsConfig toolsConfig = new ToolsConfig();
             toolsConfig.setDeny(List.of("web_fetch", "web_search", "wait_async_results"));
@@ -300,6 +313,30 @@ public class AgentScopeChatKernel implements AutoCloseable {
         return root.resolve(workspaceSegment("projectId", projectId))
                 .resolve(workspaceSegment("userId", userId))
                 .resolve(workspaceSegment("agentId", agentId));
+    }
+
+    private static Path createWorkspace(Path root, String projectId, String userId, String agentId)
+            throws java.io.IOException {
+        Path workspace = workspaceFor(root, projectId, userId, agentId);
+        Files.createDirectories(root);
+        Path current = root;
+        for (Path segment : root.relativize(workspace)) {
+            current = current.resolve(segment);
+            if (Files.isSymbolicLink(current)) {
+                throw new IllegalStateException("workspace symbolic link rejected");
+            }
+            try {
+                Files.createDirectory(current);
+            } catch (FileAlreadyExistsException existing) {
+                if (!Files.isDirectory(current, LinkOption.NOFOLLOW_LINKS)) {
+                    throw new IllegalStateException("workspace segment must be a directory", existing);
+                }
+            }
+            if (!Files.isDirectory(current, LinkOption.NOFOLLOW_LINKS)) {
+                throw new IllegalStateException("workspace symbolic link rejected");
+            }
+        }
+        return workspace;
     }
 
     private static String workspaceSegment(String name, String value) {
@@ -360,7 +397,8 @@ public class AgentScopeChatKernel implements AutoCloseable {
         }
 
         private void error(Throwable err) {
-            log.error("kernel_chat operation=STREAM status=FAILED errorType={}", err.getClass().getName());
+            log.error("kernel_chat operation=STREAM status=FAILED errorType={} error={}",
+                    err.getClass().getName(), err.getMessage(), err);
             sink.onError(ERR_STREAM_ERROR, SAFE_ERROR_MESSAGE);
         }
 

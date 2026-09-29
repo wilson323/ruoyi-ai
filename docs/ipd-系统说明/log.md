@@ -12997,3 +12997,171 @@ P1-1 update sensitivity 向量 payload 不随动（B2 前置待办，0 行窗口
 - **竞态实况**：补记 4 的独立 commit 因兄弟会话同刻提交（HEAD ref 锁冲突 `is at 3ba33c9e but expected a2c63675`）**message 丢失**，但补记 4 内容已随兄弟 `3ba33c9e`（docs(agent-capability)）的 log.md 变更一并入库（grep 验证在 HEAD 内）；本条为事后更正登记，补记 4 事实以库内内容为准。
 - **push 捎带**：本次 `git push`（`1d152901..3ba33c9e`）一并推送了兄弟 3 个在途 commit（`4fa21e7a` kb/b2 桥接线、`a2c63675` 三门禁假红修订+漂移棘轮吸收、`3ba33c9e` agent-capability docs）——push 语义正常，归属归各 commit author，特此留痕防混淆。
 - **门禁态翻转**：兄弟 `a2c63675` 已把 `check-doc-db-drift.sh` 修订 + 白名单棘轮（owner 拍板吸收 9+28 标识符，pre-commit 接线 `--whitelist`，只减不增）正式入库，门禁 1/2 假红收口；`1d152901` 的 --no-verify 豁免成因就此消解，后续提交走正常门禁。
+
+### p13-closeout-w1w2-qa-20260928 主计划 p13 收口：W1/W2 交付登记 + 前端全量验证（2026-09-28 20:53）
+
+- **子域 1 前端全量验证（/Users/mac/Documents/ruoyi-ipd-web 仓根，三绿）**：`pnpm exec vitest run --config vitest.ipd.config.mts` EXIT 0（20:11:45–20:14:28）：Test Files 149 passed | 5 skipped (154)、Tests 1616 passed | 37 skipped (1653)，较上轮基线 1611 绿/37 跳只增不减（多会话正常增量）；`pnpm run check:type --force` EXIT 0（20:26:17–20:26:54，1 successful / 0 cached 强制去缓存复核，0 错误）；`pnpm run build:antd` EXIT 0（20:27，11/11 tasks，web-antd 真实重建 52.46s）。**本轮无真红，零修复**。
+- **W1 三单交付事实**：①A1 建表 DDL+seed 三份 SQL（**待 owner apply**）②SubStageSeedSqlContractTest 4/4 ③McpWriteOnlyConfigRegressionTest 4/4。
+- **W2 五单交付事实**：④E5 结构化连接表单 14/14 ⑤B1 ai-workspace 16/16 ⑥C1 GuideScriptCatalog 69 条+6 测 ⑦C3 CommandDegrader 42 命令+3 测 ⑧3 个门禁脚本+基线（TS2493 清零、E1-E3 配置中心三页 vitest 1611 绿）。
+- **AgentScope W1**：内核接线 + check-sse-contract 修复 + 62/62 基线绿；ADR-0075 交付（替换 6 / 包装 11 / 保留 7，已逐项核对吻合）。
+- **子域 2 文档同步**：主计划 §0.2 基线更正（PARTIAL → 三绿）+ W1/W2/p13 复测两行登记 + §9 差异登记摘要；Track-E #118 过时项同步（E-Verify/E5/E1/E2/E3 标 ✅ 已实施，E-A1 仍待实施）；D-G05 夹具位置纠偏（Track-D L97/L614 记载位置 `views/mcp/**` 实测不红 → 改为白名单外 `views/agent/orphan-fixture/orphan.test.ts`，与 scripts/__fixtures__/README.md 及门禁脚本自证口径对齐，不动脚本）。
+- **差异登记**：E1-E3 的 6 条仓内未检索到（待补指针）；AgentScope W1 的 8 条 ≈ ADR-0075 §8 的 5+3 条。详见主计划 §9「差异登记摘要」。
+- **子域 3 看板对账**：007f0477 拆分「PoC 技术实验已通过」与「待审核」为两句独立表述；61217664 追加 p13 收口登记段（W1/W2 + AgentScope W1 + ADR-0075 结论）。
+
+### codex-agentscope-full-replacement-ux-20260928 全量替换与文档纠偏（2026-09-28）
+
+- 用户扩充范围至旧 AI 与知识链全量替换、模型配置等正式 UI 重构，并要求文档及时与代码对齐。三名专业智能体只读分工盘点后端、前端和独立验收；主协调为单一写入者。看板卡 `61217664-73c1-4858-bd73-c3cfcaf13bcb` 已追加本轮 scope/allowedPaths 并 GET 回读 marker，状态 `inprogress/PARTIAL`。
+- 当前代码事实：PoC AgentScope 接旧 ruoyi-chat SSE/WS，IPD `AiCopilotService`、`AiDocEmbeddingService`、生成/建议等仍调用 `AiGateway`。PoC `KernelModelRequest.from(ChatModelVo)` 来源为 `chat_model`，非注释所称 `ai_model_configs`；独立复核发现旧 SSE/WS 调用方现已传模型对象，但生产模型路由开关默认 false，不能称 W2 动态选型真实生效。前端页 48 模型配置仍 Table+Modal，AI 工作区步骤/画布/文档仍为占位。
+- 本轮先修 PoC ADR-0075 主矩阵/结论的证据口径：`streamEvents` 不自动保障同键整轮及跨副本串行，W7 删旧门是条件式目标；W1 已在 PoC 实施，ADR 尚为 proposed。新 IPD 不默认接旧 `chat_message`。现运行 16039 属主树无 AgentScope JAR，正式 DDL、真实模型/向量、认证入口与浏览器验收未证，因此无切换/上线声明。下一步沿本卡逐片实施、定向回归和文档同步；未提交、推送、执行 DDL。
+
+### codex-agentscope-full-replacement-ux-20260928 V2 模型身份防错续验（2026-09-28）
+
+- 版本证据：AgentScope Java 官方 release `https://github.com/agentscope-ai/agentscope-java/releases/tag/v2.0.3` 标记 Latest；PoC `ruoyi-chat/pom.xml` 五处锁定 `2.0.3`。本地 V2 资料用于能力映射，不能替代实际 API/运行证据。发布说明提及 `VersionedState`、冲突策略、AG-UI 断连中断和应用层 RAG 示例，项目尚未据此完成对应接线。
+- PoC `KernelModelSelector` 显式模型装配失败原会退默认模型，本轮改为记录无凭据错误类型并上抛；Harness 构建期默认模型回退关闭；`KernelModelRequest` 文档改为真实 `chat_model` 来源，明确 IPD `ai_model_configs` 未接入。选型红例日志 `/tmp/agentscope-selected-model-red-20260928.log`（预期两红），最终 `/tmp/agentscope-selected-model-final-20260928.log` 14/14；相邻 `/tmp/agentscope-selected-model-adjacent-20260928.log` 48/48、BUILD SUCCESS；`/tmp/agentscope-harness-verify-model-20260928.log` 与 `/tmp/agentscope-harness-selfred-model-20260928.log` 均 EXIT 0。
+- 验收边界与独立复核纠偏：PoC 选型失败封闭已证明；旧 ruoyi-chat SSE/WS 调用方现已传模型对象，但生产 `model-routing.enabled` 默认 false，真实入口仍会忽略请求选型；IPD 仍旧 AiGateway。缓存键尚缺配置版本/端点/密钥轮换，真实模型、A→B→A、预算/审计一致性、RAG、四维隔离、HTTP/WS/DB/浏览器和旧能力退场未证。看板卡 61217664 保持 inprogress/PARTIAL，未提交、推送、执行 DDL 或切换运行 JAR。
+- 本地 V2 能力核准：`agent.md` 的 `prepareRun/AgentRun.cancel()` 不在锁定 2.0.3 JAR；手写 SSE/WS 现依赖 `streamEvents`/`Disposable`，需真实断连验证。状态库有 CAS 原语但 Harness Builder 的冲突策略配置未证明；不能因官方 AG-UI 示例或 JAR 类存在宣称四维/跨副本/断连已验。独立 Validator 还指出 WS `[DONE]` 先于保存、部分错误补 `[DONE]` 与消息保存吞异常；旧 SSE 历史未入模型输入，门仅包推理流。上述均为 P0，尚未切换。
+- 反冗余收尾：删除 PoC `KernelModelSelector.fallback(ModelPlan)` 恒 null 死方法及内核 Builder 的不可达 `fallbackModel` 条件分支；`/tmp/agentscope-no-fallback-final-20260928.log` 中相邻 48/48、BUILD SUCCESS。仅本地 PoC 代码面，不扩大替换结论。
+
+### codex-agentscope-six-specialists-20260928 执行计划与第一批认领（2026-09-28）
+
+- 用户要求基于全部进度制定后续完整计划并以六专业智能体并行执行，同时强调全局一致性。原卡 `61217664-73c1-4858-bd73-c3cfcaf13bcb` 已追加两批执行认领；PoC ADR-0075 §10 是计划/门禁载体，不产生第二个事项状态源。本机看板卡为权威、主镜像为投影；ADR 为 proposed，业务矩阵仍待逐项验收。
+- §10 覆盖 F0 清册，W1–W8 内核替换，U0–U2 正式 Vue 体验，G1–G3 真活/回滚/独立裁决；七轴一致性门涵盖状态、版本 API、身份数据、模型知识工具、事件成功语义、界面、替换裁决。特别将前端六阶段计划的 W1/W2 与 AgentScope W1/W2 分开，且 W8 含正式 IPD/aiflow，不只旧 ruoyi-chat。
+- 第一批 W1、W2、W4 三组已分配互斥写面；第二批工具/MCP 与前端两组只读核验；root 为第六角色，负责总控、独立静态对账及 ADR/镜像/log/看板单一写入。此条仅登记派发，不声明实现/测试通过。未 commit/push、DDL、部署或线上写入。
+- W4 局部结果：主树 `AiDocEmbeddingService.java`/同名测试已加当前 REVIEWED/同项目/未软删来源过滤与归档残留向量负例，`git diff --check=0`。`/tmp/w4-rag-status-red-20260928.log`、`/tmp/w4-rag-status-compile-20260928.log` 都在 `ruoyi-ipd` compile/testCompile 因本地 `ruoyi-chat` 缺知识接口符号而失败，未执行到断言，状态 PENDING_VALIDATION。`AiGenerationService` 缺项目可见性守卫仍 P0；先列全部文档 ID 再 `IN` 的大数据量性能未验，不宣称 W4 完成。
+- W1 局部结果：PoC WS 内核路径以现有 `insertByBo` 检查必需用户/助手消息写入，助手成功后才调用发送 `[DONE]`，部分流错误只发脱敏错误；同名测试补顺序、保存失败和错误负例。`/tmp/w1-ws-red-20260929.log`、`/tmp/w1-ws-green-20260929.log`、`/tmp/w1-ws-nonincremental-20260929.log` 分别在 testCompile 缺类、MapStruct NPE、FilerException 阶段中止，0 新断言执行，已按防空转停止；PENDING_VALIDATION，sendMessage 无客户端 ACK，真实 WS/DB 未验。
+- 独立审查补充：当前 PoC `MpChatWebSocketHandler` 的 `saveRequiredMessage` 已在内核分流**之前**调用，旧 LangChain4j WS 分支的用户写入和助手完成语义也随之变化；不能只用内核同名测试验收，需旧消费者真实 WS 协议/落库回归。显式模型不可用时该入口仍可能 `resolveDefaultModel()`，须单列负例，未关 W2 静默回退风险。
+- W2 局部结果：PoC 模型缓存键增加配置摘要、`KernelModelRequest.toString()` 脱敏，新增同名模型端点/凭据 A→B→A 测试；`/tmp/w2-model-cache-red-20260929.log` 与 `/tmp/w2-model-cache-target-20260929.log` 均在 MapStruct processor compile 阶段中止，0 新断言执行；PENDING_VALIDATION。旧 HarnessAgent 实例在内核关闭前留存，频繁轮换内存累积风险和 IPD `ai_model_configs` 未接线仍 P0。
+- W3/W5 只读核验：2.0.3 Toolkit/MCP API 可用，但共享 build-time `tools.json` 不能充当租户/项目权限权威；现有 `mcp_tool_info`、员工绑定与 `PolicyDecision`/ASK claim/效果账本必须唯一。MCP `readOnlyHint` 自动允许不得绕过业务 Gate；旧服务/文件工具要等消费者和管理回读归零才删。尚未改工具代码或验证真实工具调用，PoC ADR §4/§10 已纠偏。
+- U0 只读核验：三方向“项目 AI 桌面／任务时间线／资料与证据侧栏”，选单一 `ai-assistant.vue` 宿主的项目 AI 桌面作后续实现基准；正式模型页仍 Table+Modal，工作区三 pane 占位，路由注释称浮动入口移除但实际 `ipd-ai-fab` 存在。模型 API 无健康/费用/影响项目聚合，不得前端伪造。前端脏文件零覆盖，未跑浏览器验收；详见 ADR §10.5。
+- 总控独立静态对账：`AiDocument.delFlag` 有 `@TableLogic`，`AiDocumentService.STATUS_REVIEWED` 是真实常量；W1/W2/W4 原始编译日志均未出现目标用例结果，保持 PENDING_VALIDATION。双仓 `git diff --check` EXIT 0 只证格式；不替代构建、权限、真库与协议验收。
+- 旧记录口径勘误：p13 镜像曾称 ADR-0075「矩阵定案」，现更正为 proposed 目标分类（替换6/包装11/保留7）；24 项仍需业务语义与技术兼容逐项对证。卡 61217664 追加勘误并保持 inprogress。独立审查还发现 W1 `saveRequiredMessage` 在 WS 内核分流前，旧流路径也改变，必须补旧消费者兼容回归；显式模型不可用时 `resolveDefaultModel()` 风险未闭环。
+
+### codex-agentscope-isolated-validation-20260928 局部验证续验（2026-09-28）
+
+- 共享 PoC `target` 的 MapStruct 生成物干扰定向 Maven，复制当前源码到 `/tmp/agentscope-isolated-20260928.xbq6aY`（排除 `.git`/`target`）后执行：W1/W2 定向 25/25、相邻 53/53，均 BUILD SUCCESS；原始日志 `/tmp/agentscope-isolated-target-tests-20260928.log`、`/tmp/agentscope-isolated-adjacent-20260928.log`。这修正此前“0 断言执行”仅适用于共享构建尝试的时点，不证明生产运行。
+- W4 服务和测试在临时输出目录独立编译运行；测试补 MyBatis-Plus 表元数据初始化和 SQL 片段物化后参数检查。`/tmp/ipd-rag-isolated-tests-20260928.log` 14/14，包含归档残留向量负例。主模块 Maven 仍受本地 `ruoyi-chat` 依赖漂移影响，真实向量/权限/项目可见性/性能未验。
+- ADR-0075 §10 与本镜像同步补记。整体保持 PARTIAL，未提交、推送、执行 DDL 或部署。
+
+### codex-agentscope-productization-scope-move-20260928 产品化边界清理（2026-09-28）
+
+- PoC `/chat/ws` 显式模型不存在时拒绝默认回退；隔离源码快照 26/26（`/tmp/agentscope-isolated-target-tests-20260928c.log`）。`KernelScopeKey` 从实验包迁至正式 `chat.kernel`，更新正式桥/PoC 测试引用，隔离快照定向 38/38（`/tmp/agentscope-isolated-scope-move-20260928c.log`）。
+- 两名只读专业核对：旧 SSE/WS 仅条件委托内核；IPD 多个服务继续依赖 `AiGateway`，前端单一副驾 SSE 契约仍有步骤/画布/文档占位及断连恢复缺口。旧实现按消费者逐项迁移、验收后清理；PoC 样例测试尚引用实验入口，不能孤立删文件。
+- 用户已授权清理、整合、合并、提交、推送。当前 PoC 与 main 已分叉且三工作树有在途未提交差异；本轮仅暂存归属明确的 PoC 文件。预提交门禁 0 通过，门禁 1 文档-DB 漂移扫描超过六分钟无新输出，主动中止 exit 130，未绕过；**无新提交、合并、推送**。ADR/镜像/本机卡保持 inprogress/PARTIAL。
+
+### codex-agentscope-w1-stream-frontend-20260928 SSE 完成语义与断连（2026-09-28）
+
+- PoC `ChatServiceFacade` 内核 SSE 分支：断连/超时/错误设置终态，迟到的 delta/tool/complete/error 不再产生帧或落库；助手完成改用可观察 `insertByBo`，返回失败只发 error。新增负例，隔离源码快照定向 `/tmp/agentscope-isolated-sse-persist-20260928c.log` 为 10/10、BUILD SUCCESS。第一次复测红例揭示旧 handler 被误改，已恢复旧 handler 并只在内核分支修改后复测通过。
+- 正式前端 `ai-copilot.ts` 对 reader.read 失败返回固定安全 `TRANSPORT`、主动 Abort 静默并释放 reader；聚焦 vitest 17/17。全仓 `check:type` 被其他在途 `ai-guide/guide-script.test.ts` 语法错误阻断，不能将前端整体记为通过。
+- W2 独立只读复核确认七类 IPD 服务仍取 `ai_model_configs` 并调用旧 `AiGateway`；正式适配口和实例回收仍未做。真实 HTTP/WS/DB、模型、向量、浏览器、双副本与旧代码退场仍是阻断，卡保持 PARTIAL。
+- W1 WS 独立复核发现 `activeKernelStreams` 空集合滞留及关闭/注册交错风险；补终态原子移除和连接注册前已关闭负例，隔离快照 `/tmp/agentscope-isolated-ws-lifecycle-20260928b.log` 11/11。SSE 完成/断连并发业务时点、旧 WS fallback 帧语义仍未验。
+- 正式运行只读复核：16039/15666 本机监听存在，但主树当前 `ruoyi-admin/target/ruoyi-admin.jar` 的 AgentScope 依赖数 0、所含 `ruoyi-chat` 无内核类；正式 `ipd_dev.agentscope_sessions` 表不存在（information_schema 计数 0）。未进行真实 Person 入口、正式 DB 写入或浏览器业务验收，PoC 数据不可挪作正式落库结论。状态 PARTIAL。
+- PoC 当前源码隔离快照七类 W1/W2 相邻 54/54、BUILD SUCCESS（`/tmp/agentscope-isolated-w1-adjacent-20260928.log`）；正式前端 typecheck exit 2，因其他在途 `ai-guide/guide-script.test.ts:6–7` 语法错误（`/tmp/agentscope-frontend-type-20260928.log`）。预提交漂移门禁第一次真跑出现 pass=true 与 mismatch 列表同存；已定位未传仓根/只读首行/缺输出后继续计算，PoC 脚本修复后全量复验仍在运行，未据假绿提交。
+
+### 2026-09-28 AgentScope 已选型主树集成纠偏
+
+AgentScope Java V2.0.3 为既定内核选型；此前“运行 JAR 无 AgentScope”仅是部署状态。已将 PoC 依赖、重复类门禁、正式 kernel 源码及旧 SSE/WS 的显式启用接线纳入主树。`ruoyi-chat` 离线 compile EXIT 0（`/tmp/agentscope-main-integration-compile2.log`）。IPD 四维身份、取消、embedding 和正式状态表尚未完成，仍为 PARTIAL。PoC 文档/DB 漂移门禁的原假绿已暴露，修正提取后仍有字段名误报，不作绿灯宣称。对应计划镜像 marker `codex-agentscope-main-integration-20260928`。
+
+### 2026-09-28 完整切换与生产就绪清单核验
+
+marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要求系统性列出完整切换及正式前端生产就绪剩余工作。本轮三个专业智能体分别只读核后端入口/治理/知识、前端挂载与逐页、Harness SDK与Service边界，root复核关键原始源码并在正式前端执行`pnpm run check:type`，EXIT 0、非缓存、23.005秒，日志`/tmp/agentscope-readiness-typecheck-20260928.log`。此结果取代历史前端typecheck阻塞；guide源码现已出现但未正式挂载，不能重复称缺文件。
+
+完整清单直接写入既有《开发计划-看板镜像》同marker章节，复用原卡61217664、W1–W8/U0–U2/G1–G3，无另建任务状态源。重点阻断：模型路由默认忽略选择、workspace仅按员工、整轮门/多副本未闭、IPD/aiflow旧执行、前端项目上下文/终态/卡片校验不一致、工作台占位及配置/知识体验未完成。整体PARTIAL；本轮未改产品代码，未跑新后端测试/全量前端Vitest/生产构建/真实浏览器/DDL/部署。上轮49/49日志只作为该次局部回归证据。
+
+### 2026-09-29 B 路共享配置与独立交接（marker `codex-ipd-b-partial-handoff-20260929`）
+
+- 总控卡 `61217664-73c1-4858-bd73-c3cfcaf13bcb` 继续 `inprogress/PARTIAL`。B1/B2 局部代码、SQL 与本机数据实证已交主协调，B3 仅有项目 Gate 清单可见性守卫，B4 未完成；48/48 定向隔离测试通过，全量 dev 3245 项有 1 失败（新增两表未进租户排除合同），原始日志 `/tmp/ipd-b-isolated-focused-final-20260929.log` 与 `/tmp/ipd-b-isolated-all-dev-final-20260929.log`。共享配置修复后的正式复测和真实 Person HTTP/重启回读/浏览器均待验。
+- 独立接手 `application.yml` 中原有未提交 `ipd_sub_stage`、`ipd_action_skill_map` 两项，原样保留；本轮仅追加 `product_lines`、`product_line_members` 至 `tenant.excludes`。镜像同步 `codex-ipd-b-partial-handoff-20260929`；最终提交号由主协调提交后补记。`ipd_dev.ipd_sub_stage` 目录表检查时尚不存在，后续本机 DDL/seed 的执行和验证由主协调处理。未将任何 B 项翻 done。
+
+### 2026-09-29 B 路主树提交与推送（marker `codex-ipd-b-main-integration-b46ec1ac-20260929`）
+
+- 经独立工作树隔离验证后，将 B 路 56 文件提交 `b46ec1ac` 快进本地 `main` 并推送 `origin/main`；逐字节核对共享工作树，无覆盖其他在途暂存。Reactor 构建 PASS，IPD 全量 dev 测试 3238/0 fail/0 error/22 skip，定向 59/59 PASS；提交钩子 4 PASS、1 非适用 SKIP。原始日志 `/tmp/ipd-b-clean-reactor-install2-20260929.log`、`/tmp/ipd-b-clean-all-dev-20260929.log`、`/tmp/ipd-b-clean-focused-20260929.log`。
+- 总控卡同 marker 回读 `inprogress/PARTIAL`。B2 小阶段目录本机开发库未落表，真实 Person HTTP/重启/浏览器以及 B3 249 AC、B4 AgentScope 仍待验；早前配置合同失败日志已由本轮最终源码全量回归取代。
+
+### 2026-09-29 D2b 全局 AI 智能体能力深度反思与 AgentScope v2 契约对照（D 路只读）
+
+- 用户直令发起，产出《D2b-后端与全局AI智能体能力深度反思-AgentScope契约对照-20260929.md》（D 路独占写面 `docs/ipd-系统说明/验收/**`）。方法=CodeReview 双子席位实审前后端 + 本席位逐一复核关键断言 + AgentScope v2 官方文档（architecture/going-to-production/permission-system 原文 + llms.txt 全索引）对照。
+- 三问裁决：①AI 智能体能力**未完整实现**（PARTIAL，成熟度天花板=测试通过（单模块），真链证据 0；AgentScope v2 参照系 2 已实现/11 部分/7 缺失）；②全局一致性主干成立但有 1 个 P0 双轨残留（`PocSseController` 仍在 src/main 被注册、userId 自报、默认工具面，违反 ADR-0075 D9 红线，已本席位一手复核）+ 4 处文档/代码漂移 + FE 卡片双通道生产不可达；③缺口集中 Harness 长跑四件套（长期记忆/subagent/toolResultEviction/跨副本可恢复）。
+- 新发现登记：langchain4j 棘轮基线 2026-09-29 手工上调 111→113 无理由审批；harness 254 main 文件仅 1 测试文件、ADR 引证数字出自 /tmp 不可复跑；verify.sh EXIT=1 为 C2 双树假红（工具侧待修）。D2a P1（flow.vue 错误链路）等 3 项存留未修已续账。
+- 本轮未改任何被测源码、未提交/推送、未新建看板卡（用户直令、无对应卡）；处方 P0–P2 七条待回 A/C 路原卡排期。
+
+### 2026-09-29 AgentScope 官方执行链最佳实践落档与三路一致性审查（用户直令）
+
+- 落档《调研/AgentScope官方执行链最佳实践-20260929.md》（untracked，DRAFT_ONLY，事项状态仍以看板镜像为准，不另建台账）。官方 v2.0.3 固定版本核查＋`最佳实践`专题分级检索＋前后端源码四段事实对账；根因=跨模块交付顺序断裂（界面入口先于 B 路业务合同），「缺初始化」提法误导；最小纵向切片 G0–G8 设计稿已内嵌。
+- 三路只读智能体并行审查（后端执行链/前端合同/全局一致性）：9 项源码事实断言全部属实；治理链 `KernelGovernedTool→KernelToolGovernance→InMemoryKernelToolEffectLedger` 生产零调用、仅 3 个测试类接线；前端 AI 模式 send() 守卫、四帧契约、threadEndpoints 全 false、单宿主原则均属实（steps 插槽已接真实目录，ADR §10.5「steps 尚为占位」描述已过时）。
+- 就地修复 2×P0：①G0–G8 为设计稿私有编号，与 ABCD G0–G5 门/ADR W1–W8、G1–G3/PoC G1–G5 同号不同义，已加映射表并禁止按其建卡回写；②效果账本唯一归属已声明——对账仲裁唯一归自研 ToolEffectLedgerReconciler＋UncertainToolEffectGuard（ADR 矩阵 #14 不删不旁路），内核 KernelToolEffectLedger 仅作 W3 写入口，禁止第二套持久账本。4×P1 就地修复（G2 裁决唯一源措辞、窄 run 强外键边界、G3 permission-system PoC 硬前置＋C9/U9 前提、本条落档登记）；5×P2 就地修复（W8/B4 迁移限定、W6 唯一出口、ABCD 分工原文、B4 子项映射、bootstrap R221 尾唤醒补记）。
+- 本轮未改任何产品源码、未提交/推送、未新建看板卡；D2b 已登记的 PocSseController P0 残留归 A/C 路原卡，不在本文范围。
+
+### agentscope-execchain-stage1-idor-20260929 执行链阶段1「项目身份」切片：ai_agent_tasks 只读面项目可见性守卫（2026-09-29 06:19）
+
+- **切片归属与零碰撞裁决**：现查表明阶段 1/2 的 copilot 入口、前端宿主、模型装配调用面全部由兄弟会话在途占据（后端 CopilotKitRuntimeController/AiCopilotService/AiCopilotReq + untracked IpdCopilotAccess，前端 ai-assistant.vue/ai-copilot.ts/ai-workspace/*），且 `AgentScopeChatKernel` 在 IPD 侧无调用方 → W2 端到端接线物理上不可能先于兄弟的独立 agentId 适配口。故本轮取零碰撞切片，与兄弟 W4 已登记的「AiGenerationService 缺项目可见性守卫仍 P0」同家族不同文件，互斥写面。
+- **缺陷真实可达（真库证据，非理论路径）**：ipd_dev `ai_agent_tasks` 10 行分属 4 个项目；person 900103 是项目 9150001 在职成员，修复前可经 `GET /api/v1/ai-agent-tasks/2104615871463858178` 读到项目 2101316086904410113 的任务（resultSummary/aiDocId 等业务内容）——成因是角色级 `ipd:ai-document:list` 四角色全员可读，而 service/controller 两层均无项目范围校验。
+- **实施（4 文件，+199/-23）**：①`AiAgentTaskQueryService` 注入 ProjectMemberMapper/ProjectMapper，两方法加 `IpdActor actor` 形参并接 `IpdIdorGuard.requireProjectMemberOrSuperAdmin`（守卫 3；复用已提交稳定范式，不依赖兄弟 untracked 在途 IpdCopilotAccess，不另写一套校验）；getByTaskId 的项目范围取自任务行本身而非调用方传参，listByProject 先裁定可见性再查库。②`AiAgentTaskController` 两端点捕获 `requireInternal()` 会话身份后透传（actor 恒从会话推导，SEC-API-01）。③④两测试类同步签名并扩至 16 例。
+- **就地修复 1×P0（真红已归属）**：首轮 16 例跑出 1 红 `listByProject_nullActor_throwsUnauthorized` expected UNAUTHORIZED but was NOT_FOUND——根因是 getByTaskId 先查库再校验 actor，未认证调用方可借 NOT_FOUND/UNAUTHORIZED 差异探测资源存在性，违反 IpdIdorGuard 守卫 4/5「角色校验先于任何 DB 读」与「不泄漏存在性」口径。**修实现（守卫 1 前置）而非改断言迎合现状**；另修测试自身两处缺陷：insert/updateById 重载歧义 → 显式 `any(Xxx.class)`；`never().selectById(anyLong())` 与 `selectById(2104L)` 自相矛盾 → 删矛盾断言。
+- **验证**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=AiAgentTaskQueryServiceTest,AiAgentTaskControllerQueryTest test` EXIT=0，16/16 绿（service 11 + controller 5，均 `@Tag("dev")` 未被 Surefire 静默跳过）。**变异自证能红**：把 3 处守卫调用临时中和为 `if(false){...}` → 8/11 转红（5 条反例全红 + 3 条 STRICT_STUBS UnnecessaryStubbing），随后 `cp` 还原（`grep -c "if (false)"`=0）并复跑 EXIT=0，证明绿非恒绿。日志 `/tmp/ipd_task_guard_test{,2,3}.log`、`/tmp/mutant.log`、`/tmp/ipd_final.log`。
+- **刻意延后（YAGNI，防超前登记）**：`ai_agent_tasks` 的 `agent_id/session_id/run_id` 身份列 DDL 本轮不加——当前无生产者（AgentScope 内核未被 IPD 侧调用），先加列即 `person_roles` 式超前登记；且 agentId 裁决权归兄弟 B 路《产品线空间与AI双模式-实现合同草案》的独立 agentId 适配口切片，单方面定义会制造双轨。
+- **未验证项**：真链 HTTP 核验未做——16039 运行的是旧 JAR，加载新代码需重启，而 AGENTS.md 要求复用已运行服务、不杀其他端口进程（兄弟会话在途），故标 PENDING_VALIDATION；前端 URL/参数契约未变（`/ai-agent-tasks/{taskId}`、`?projectId=`），前端仓无需改动也未改动。本轮未新建看板卡、未执行 DDL、未部署。
+- **新发现（门禁失明，已归属、本轮不修）**：`bash .claude/skills/agentscope-harness/scripts/verify.sh` EXIT=1（env-probe=0 / skill-lint=0 / harness-contract=1），红项为 C2「复合键拼接散落到 2 个文件」。**实为扫描根假红**：`SCAN_ROOTS` 默认取仓库根，把 `.worktrees/poc-agentscope-kernel/` 的 `KernelScopeKey.java` 副本与主树同名文件计为 2 个（而同一脚本的 C7/C8 是按工作树分别判定，口径不一致）。**实证**：`HARNESS_SCAN_ROOTS=$PWD/ruoyi-modules` 限定主树后 C2 OK + C3 OK（fail-closed 三要素齐全）+ EXIT=0（`/tmp/c2_maintree.log`，对照 `/tmp/as_verify.log`）。触发者为今日兄弟 commit `6da7f4f6`（AgentScope 内核全套补提交进主树，此前主树无该文件故 KEY_N=1）。**危害不止噪声**：C2 假红连带 C3 SKIP，即「收口文件拒 `':'` / 拒 `'..'`」这条真实安全门被跳过（与看板 `2e380293 [KB-GATE-BLIND]` 同型）。修复方向：C2 判据按「相对路径去重」或按工作树分组（与 C7/C8 同口径）。本轮不修——改 skill 事实源须同步 `.agents/skills/` 镜像且 skill-lint L5 `diff -r` 卡一致性，归属 AgentScope 内核线（A/C 路）+ skill 维护者。
+- **看板与 SSOT 同步**：经只读 HTTP 核对 567 卡后确认归属卡为 `b72aa97d`（[R232][CK-EXEC] Phase 2，assignee=None，desc 含 P2-04 = ai_agent_tasks 查询端点），**未新建卡**（遵「别各自建卡」）：PUT 追加唯一 marker `r232-p204-idor-guard-20260929` 注记 + status 由 `todo` 对齐为 `inprogress`（承接 R241 注记「融合线维持进行中」的事实，消卡面滞后），整卡不翻 done（P2-01/02/03/05/06 不在本轮范围）。回读核验 PASS：status=inprogress、desc_len=2097（符期望）、marker/commit 命中、原 R241 注记保留、title 未破坏。SSOT 镜像第 5544 行同步为 `▶ inprogress`（兄弟在途 diff 不触及该卡，互斥写面）。本会话无 `user-zker_vibe_kanban` MCP（仅 taskview 等），故看板操作走本机 62250 REST。
+- **待主协调收口的两个工作树文件**：`log.md`（本条）与 `开发计划-看板镜像.md`（第 5544 行）——两者均含兄弟在途未提交修改（log.md 共 96+ 行），pathspec 提交为文件级粒度会卷入兄弟未收口内容，故按 OPS-09 单一写入者纪律只写工作树不提交。本轮已提交推送的仅 4 个 Java 文件（`c749fab0`）。
+
+### agentscope-w1-d9-gatefix-20260929
+
+- **触发**：owner 拍板三项落地——①清 B 层（W1 身份收口 + 真链证据补录）②修门禁失明（C2 假红连带跳 C3）③C 层摩擦只记账不扩权。以下为已验证切片（2026-09-29 07:00 前后）。
+- **W1 身份收口（D9 双症状）**：`PocSseController`（ruoyi-chat）——①装配面默认关闭：类加 `@ConditionalOnProperty(chat.kernel.poc.enabled, matchIfMissing=false)`（与 `chat.kernel.agentscope.enabled` 同族），PoC 路由不再流入正式面；②userId 自报移除：删 `@RequestParam userId`，新增 `resolveUserId()` 唯一入口从 `LoginHelper.getUserId()` 会话推导，未登录 fail-closed（`NotLoginException` → 显式 `IllegalStateException`，经 `SseErrorEmitter` 转 KERNEL_ERROR 帧，无「默认 U1」式降级）。残留自报参数（projectId/agentId/sessionId）仅供 PoC 接线验证，javadoc 显式标注 cutover 时按 W1 裁决收口。`PocSseApplication` 用法注释同步（防「文档说 A、模型用 B」）。守卫链核查：主树 `@RequestParam userId` 自报点仅此一处（SysUserController 的 `userIds` 为查询选项非身份，不算）。
+- **行为自证测试**：新增 `PocSseControllerIdentityTest`（@Tag("dev")，2 例）——反例（未登录）断言内核工厂零触达 + 身份源唯一；正例（会话 900103）断言内核 `RuntimeContext` 身份段含会话值 900103 且经四维收口折叠 `pP1:u900103`（断言口径自查：若实现回退默认值/参数 userId，`contains("900103")` 必红，锁定力保持）。**变异自证能红**：把 `resolveUserId()` 中和为 `"U1"` 默认值 → 2/2 全红（反例+正例双抓）→ `cp` 还原（grep 确认 MUTATION=0）→ 2/2 复绿。测试构建中途 3 类编译红均归属并修复：import 路径（`io.agentscope.core.agent.RuntimeContext`/`io.agentscope.harness.agent.HarnessAgent`）、`NotLoginException` 三 String 构造器、`streamEvents` 重载 `any()` 歧义（改显式 `any(Msg.class)`）。
+- **门禁失明修复（上轮遗留闭环，更正「本轮不修」判定）**：`harness-contract-check.sh` C2 判据改为按 `owning_root`（最近 `.git`，与 C7/C8 同口径）工作树分组——每树内 ≤1 处收口即通过；C3 改为对每份收口文件逐份查 fail-closed 三要素，**不再因他组假红连带 SKIP**。修复后实证：两棵工作树（主树 + `.worktrees/poc-agentscope-kernel`）各 OK，两份 `KernelScopeKey.java` 均过 fail-closed 检查。三重门禁全绿：`harness-contract-check` EXIT=0（接线 42 文件）、`verify.sh --self-red` EXIT=0（五组正反控全符合预期，SR1 违规样本仍红防恒绿）、`verify.sh` 全量 EXIT=0（env-probe/skill-lint/harness-contract 三段 PASS）。镜像已同步（`.claude/skills/` → `.agents/skills/`，`diff -r` 一致；`.agents` 被 .gitignore 忽略不入 git）。
+- **Pitfall（工具坑，已自纠）**：SearchReplace 写入 shell 脚本的 grep 判据行时，JSON 转义层把我自己的笔误（`':'` 误写 `': '` 多空格、`\(` 丢转义）带进 new_text，工具报 success 但落盘判据损坏（安全门判据失效风险）。**教训**：编辑含正则/转义的脚本行后必须复核磁盘字节面（grep -n 逐段对），不能信 diff 渲染；本次已发现并回正（`indexOf\(':'\)|contains\(\":\"\)`）。呼应记忆「SearchReplace 异常时多路复核磁盘」。
+- **C 层记账（拍板 3，只记账不扩权）**：双栈并存期「禁止新增 langchain4j 直连面」纪律**已被既有机制覆盖，不新建台账/门禁**（防双轨/过度设计）——ADR-0075 D8 红线「langchain4j 面积反弹→棘轮门禁只减不增」（主树基线 113）本轮复核 count=113=baseline 零反弹；本轮新增接线零 langchain4j 直连面。W2 回滚窗口关闭前 langchain4j 直连层维持现状，删除时点按 ADR 矩阵 #8 单独定案。
+- **未验证项（承上轮）**：真链 HTTP 证据仍 PENDING_VALIDATION——16039 运行旧 JAR，且 PocSseController 现需 `chat.kernel.poc.enabled=true` + 登录态才能真链验证，需安排重启窗口（待拍板）。前端零改动（URL/参数契约未变，且 PoC 路由本就非前端面）。本轮未执行 DDL、未新建看板卡。
+
+### agentscope-d9-truechain-and-prereq-contracts-20260929 真链补证 + 双前置契约立项（owner 指令「都做，你来重启」）
+
+- **重启窗口执行（owner 授权）**：kill 旧 PID 23115（Sep 28 20:34 旧 JAR）→ `mvn -o -pl ruoyi-admin -am package -DskipTests`（0 ERROR，jar 08:48）→ 入包闭包核验（嵌套 ruoyi-chat jar 内 `PocSseController.class` 含 D9 字符串）→ 同参数 + `--chat.kernel.poc.enabled=true` 重启（新 PID 30760，`Started RuoYiAIApplication`，16039 LISTEN）。
+- **D9 真链 HTTP 三例全通**（证据 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/d9-poc-truechain-20260929.json` + 脚本 `d9-poc-truechain.py`）：①未登录 → Sa-Token 拦截器 `{"code":401}`，无 scope 帧无默认身份；②登录态（换票链 /api/v1/auth/login → platform-token，Bearer+clientid）→ `event:scope data:pP1:u1:aemp-a1:sS-scope`（u1 源自会话非自报）+ MiniMax 真模型流 text_delta→AGENT_END；③`projectId=P1:evil` → `KERNEL_ERROR: [KernelScopeKey] projectId must not contain ':'` fail-closed。原 PENDING_VALIDATION 项就此闭环。
+- **两项前置契约立项**：新档 `docs/ipd-系统说明/Mem0与HayStack接入前置契约-20260929.md`——§1 四维键→Mem0 三维+metadata 映射表（唯一合法映射）+ N1~N5 串桶负例 + ':' 字符集实证项 + 数据出境拍板项；§2 RAG 写链防双写（现查两链清单：AiDocEmbeddingService→MySQL ai_doc_embedding / knowledge.impl→VectorStore 三策略；HayStack 只读适配三规则 + BLOCKED 待核三项）。Mem0/HayStack 判定维持 D2b §2.4「暂缓/保留自研」不变。
+- **本会话提交面**：pathspec 3 文件（契约文档 + d9 证据 json/py）；log.md 与本镜像含兄弟在途，按 OPS-09 只写工作树不提交。看板 61217664 追加 marker `d9-truechain-mem0-haystack-20260929`。
+
+### d-round-p0-3-ssrf-b-gate-20260929 D 轮 P0-3（N-3 真红）SSRF-01 修复：模型端点保存入口 SSRF 校验收紧（B 路 + C 路双路）
+
+- **判据与修复路**：D2 §3.7 SSRF3（`POST /api/v1/ai-models` endpoint=`169.254.169.254` + 有效 key 实测 200 入库 → 应 400）+ D4 P0-3「必须在建立出站调用前校验（防 DNS 重绑定），不可只在保存时校验」。C 路已有（`AiChatClient.validateEndpoint` 双解析防 rebinding + allowlist，AiGateway chat/embed/stream 唯一前置），缺口在 B 路保存入口（仅校验 http/https 前缀）。
+- **实施（3 文件 + 1 新测试）**：①新增 `org.ruoyi.ipd.service.ai.EndpointUrlValidator` 为 SSRF 黑名单**唯一实现**（D2 建议命名）：`blockReason(url, allowedHosts)` B 路闸 / `blockReasonForHost` host 黑名单（保存侧解析失败 fail-open）/ `isBlockedIp(byte[])` 字节级 fail-closed；黑名单取两套旧实现并集并补缺口（0.0.0.0/8 非零尾、fc00::/7 ULA、IPv4-mapped 解包、fe80::/10 显式断言、CGN 100.64/10）。②`AiModelConfigService.validate()` 尾部接闸（endpoint + embedEndpoint 同口径，置于全部字段校验后保持 SSRF2 短 key 文案顺序）+ `@Value("${ai.allowed-hosts:}")` 字段（R184-A/R212 豁免语义）；`ssrfBlockReason` 委托唯一实现（签名保留）。③`AiChatClient.isBlockedIp` 委托（黑名单不复制）。④`AiModelEndpointValidatorTest`（@Tag("dev") 18 例，含 D2 P2 判据命名）。
+- **验证证据**（09:40-09:45 实跑，`mvn -o -pl ruoyi-modules/ruoyi-ipd` 单模块错峰无 `-am`/`clean`）：8 类 **78/78 全绿**（新 18 + Round3 8 + P421 14 + P422 16 + R212 3 + AiChatClientSsrf 11（含 rebinding 用例，证委托零漂移）+ AiGateway 4 + ServiceProvider 4）。**解析器一致性 jshell 实证**：`getAllByName("2130706433")`→`/127.0.0.1`、`"0x7f000001"`→`127.0.0.1`，校验器与连接器同解析器，无字面量差异绕过。**自证能红**：短路黑名单分支 → 18 例中 10 例转红（含 SSRF3 核心判据）→ 还原复绿，非恒绿。
+- **语义决策**：allowlist 豁免走 host 字符串等值（R184-A），默认空串严格（R212 双向契约）；豁免不覆盖云元数据（反例钉扎）；dev/mock 保存 127.0.0.1 端点需配 `ai.allowed-hosts: 127.0.0.1`（存量 mock 行再编辑同理，**迁移注意**）。
+- **残留（显式列出）**：① `enable()` 未加闸——存量行（含 D2 探针行 2104855400313536513）仍可激活但出站 C 路必拦，激活面收紧待运营口径；② D2 B8 真实外发验证需隔离环境；③ 探针行清理走 D4 §L535 `d-probe-` 前缀批量清理约定。证据全文 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/P0-3-SSRF修复验证-20260929.md`。
+- **看板/SSOT**：R242-ABCD 23 卡无独立 P0-3 修复卡（查 567 卡实证，遵「别各自建卡」不新建），看板批量回写并入 49 条 BLOCKED 归因批次；本会话为 owner 指定唯一写入者（2026-09-29 owner 拍板），工作树写入不再等停手窗口。
+
+### d-round-p1-2-contract01-405-envelope-20260929 D 轮 P1-2（N-5）CONTRACT-01 修复：405 响应泄漏框架格式（B 路）
+
+- **判据与修复路**：D2 §4.3 CONTRACT-01 真红（L168/172：`DELETE /api/v1/projects/{id}` → HTTP 200 `{code:405,msg:"请求方式不支持"}` 泄漏框架 R 包络，应 HTTP 405 + code/message/data/timestamp/traceId）+ D4 P1-2 指定修法「`IpdNotFoundAdvice` 增加 `HttpRequestMethodNotSupportedException` 分支」。
+- **实施（2 文件 + 2 测试）**：① `ApiV1ErrorCode` 新增 `METHOD_NOT_SUPPORTED(10002,"请求方式不支持")` → 405（additive，既有码零改动）；② `IpdNotFoundAdvice` 新增 `handleMethodNotSupported`：IPD 域（/api/v1/）→ HTTP 405 + ApiV1Response 标准包络，非 IPD 域复刻基线 `handleHttpRequestMethodNotSupported`（R 包络 HTTP 200 code=405，/chat 旧通道零变化）；③ 新增 `Contract01MethodNotAllowedEnvelopeTest`（@Tag("dev") 2 例：405+五字段包络形状 / 非 IPD 不误伤）；④ `IpdNotFoundBaselineParityTest` 补第 3 例双侧对照哨兵（非 IPD 分支 vs 基线实际输出逐字比对）。
+- **验证证据**（09:54 实跑，`mvn -o -pl ruoyi-modules/ruoyi-ipd` 单模块错峰无 `-am`/`clean`）：**23/23 全绿**（CONTRACT-01 2 + parity 3 + Qa07 8 + P064 fromCode 相邻回归 10）。**自证能红**：临时把 IPD 分支短路回基线 R → `methodNotAllowedInIpdDomainReturnsIpdEnvelope` 转红（parity 3 绿，双哨兵分工互补）→ 还原复绿。首跑遇假红（`NoSuchFileException: ProductLine$ProductLineBuilder.class`，兄弟会话并发改写 target/ 的已知形态），同命令重试即绿，按 AGENTS.md 假红规约处理。
+- **语义决策**：业务码取 10002（归 1xxxx 参数/请求段），D2 只钉包络形状未指定 code 值，前端契约无 10002 引用冲突（实测）。
+- **看板/SSOT**：无独立修复卡（遵「别各自建卡」），证据 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/P1-2-CONTRACT01-405包络修复验证-20260929.md`；看板批量回写并入 49 条 BLOCKED 归因批次（b5e）。
+
+### d-round-p1-3-paging-guard-20260929 D 轮 P1-3（N-7）分页参数校验修复（B 路，附 B-2 契约交付）
+
+- **判据与修复路**：D3 §2.1 真红（`GET /api/v1/products?pageNum=-1&pageSize=99999` → 200 code=0 非法参数被接受，对 stage_actions 17,838 行/audit_logs 6,552 行构成成本放大 DoS 推论）+ D4 P1-3「分页入参补 @Min(1)/@Max(200)，超限返 code」。
+- **B-2 契约拍板**（D4 §13.1 点名交付物）：pageNum|pageNo ≥ 1、pageSize 1~200、超限/非法/非整数 → HTTP 400 + code=10001 标准包络；域=/api/v1/** 全域（含不消费分页参数的端点与公开端点）；未提供/空白参数不干预。
+- **实施（2 文件 + 1 测试）**：① 新增 `org.ruoyi.ipd.security.IpdPageParamGuardInterceptor`（preHandle 统一校验，违规抛 IpdBusinessException(PARAM_INVALID) 复用 IpdServiceExceptionAdvice 现成映射）；② `IpdWebSecurityConfig` 注册 order HIGHEST+2（登录/注解鉴权之后，未登录先撞 401 不泄漏校验行为）；③ `IpdPageParamGuardTest`（@Tag("dev") 10 例：D3 判据重放/双拼写/Long 溢出/200 含界 201 拒/非整数不回显/放行面）。
+- **验证证据**（2026-09-29 实跑，单模块错峰无 `-am`/`clean`）：**28/28 全绿**（新 10 + IpdWebSecurityConfigTest 静态哨兵 4 + Qa07 8 + P073 鉴权链 6）。**自证能红**：短路校验逻辑 → 7/10 转红（含 D3 判据重放）→ 还原复绿。**前端流量核查**：api/ipd/views/ipd 分页值仅 20/50，前端 999/1000 用例打框架端点非 /api/v1 域，零误伤。
+- **语义决策**：200 上限与既有 AuditLog/BonusPool 硬上限同值；控制器内 Math.min 夹取保留作纵深防御（双层不冲突）。
+- **残留**：① 大表 pageSize=99999 负载复现（D3 推论）待隔离环境；② D2 负例重测（B-2 消费方）待 D 路下轮。证据 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/P1-3-分页校验修复验证-20260929.md`；看板批量回写并入 b5e。
+
+### d-round-p1-1-surefire-zero-test-gate-20260929 D 轮 P1-1（N-6）Surefire 零测试门修复：0-test 假绿收口（B 路）
+
+- **判据与修复路**：D4 P1-1/N-6（根 pom surefire `<groups>${profiles.active}</groups>` tag 过滤 + 无 failIfNoTests → 0 测试静默跳过仍绿）+ D4 §7.2 原文修法「IPD 模块 pom 显式覆盖 `<groups/>` 清空过滤」。
+- **假绿实证（修复前复现）**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=IpdPageParamGuardTest -Dprofiles.active=nothing test` → **Tests run: 0 + BUILD SUCCESS**（P1-1 精确向量成立，10:13 实跑）。
+- **实施（1 文件）**：`ruoyi-modules/ruoyi-ipd/pom.xml` 增加 surefire 覆盖两件套——①`<groups combine.self="override"/>` 清空 tag 过滤（断根）；②`<failIfNoTests>true</failIfNoTests>` 零测试门（兜底）。仅落本模块，根 pom 与兄弟模块零改动。
+- **验证证据**（10:14 实跑，单模块错峰无 `-am`/`clean`）：同命令修复后 **Tests run: 10 全绿**（groups 确已清空）；**自证能红**（0 测试场景 `-Dtest=NoSuchTestClassExists -Dsurefire.failIfNoSpecifiedTests=false` → BUILD FAILURE `No tests were executed!`，门确实会红）；b5a/b5b 相关 6 类回归 **33/33 全绿**。
+- **口径差异登记**：现查 383 个含 @Test 文件全部带 @Tag（未带 tag = 0），与 D2「2987 个 @Test 无一带 tag」不符（历史快照/另一口径），按现态处理；但陷阱对未来新增忘加 tag 的测试与 profile 切换仍活，故门禁照收。
+- **残留**：兄弟模块仍继承根 pom groups 过滤（0-test 假绿面在 ruoyi-chat/ruoyi-system 等仍在），需各自收口，本轮范围外待挂卡；CLI `-Dgroups=` 逃生口由 failIfNoTests 兜底。证据 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/P1-1-Surefire零测试门修复验证-20260929.md`；看板批量回写并入 b5e。
+
+### b-track-b0-b5-truechain-round-20260929 B 轨道 B0～B5 真链验收轮（B 路独占写面）
+
+- **B1 产品线（PASS）**：`a1-productline-e2e.py` 19/19「VERDICT: A1 PASS」+ 补链探针 `b1-admin-supplement-probe.py` ①-⑥ 全绿（管理员建/改/停用、组长指定与失权、申请审批链、成员移除）。根因修复链：90001→`FOR UPDATE` denied（ipd_app 缺表级授权）→兄弟 GRANT 已 apply→**Hikari 池 ACL 陈旧需重启**（新教训：GRANT 后连接池不刷新）。DB 回读成员状态 + 审计链 JOIN_APPLY→APPROVE→LEAVE 12 条。口径登记：「368 存量」实为 338 存活+30 软删；探针留库数据按测试数据政策保留；遗留停用探针线 probe-b1x 留证。
+- **B2 项目主链（PASS）**：工作树修复 `advanced && !progress.replayed()`（SubStageController 1 行 + SubStageAdvanceEndpointTest 15 行）→定向测试 EXIT=0→重打包 javap 入包核验→重启部署→真链 phase1 9/9（重放 `replayed=true/advanced=false/version不变`、CAS 冲突 409/50002 游标不变、乱序拒退）+ DB 游标 DEV-S3/3/PASSED 回读 + 审计 `PROJECT_SUB_STAGE_ADVANCE`×3 与三次成功推进一一对应（重放/冲突零新增）+ **重启后 phase2 持久化 PASS**。commit `c9bbc5fd`（pre-commit 5 门禁全过，已 push）。意外卷入兄弟已 staged 的 AiDocEmbeddingService REVIEWED 过滤改进——按 R25 三步评审=原样入库，定向测试 14/14 实跑全绿（surefire report 非静默）。
+- **B5 数据演进（PASS）**：tenant.excludes 四表现查 ✓；`uk_product_lines_tenant_code`/`uk_product_line_member` ✓；`ipd_sub_stage` 22 行 ✓；projects 游标三列 ✓；04 基线 SQL 原地回写判定合规（仓库惯例 04aad050/dd361ef3 + 独立新迁移并存）；备份 products-before-product-line-20260929.sql ✓。登记：`ipd_action_skill_map` seed 69 行脚本头明示 **DO NOT APPLY—待 owner apply**，0 行是设计内状态非缺陷（C 类）。
+- **B0 合同（交付）**：DOC-06.md + DOC-06.routes.json（273 canonical 路由）自 `.codex/ruflo`（gitignored 风险区）**回迁主仓工程合同目录**（D 轮 §9 证实有源）。真 HTTP 负例三类齐：未登录 401/20001、无权 403/30001、CAS 冲突 409/50002 + 业务规则 50002 四型。B↔C：AG-UI forwardedProps 非可信身份红线沿用；**B 侧 run 取消零实现**（CopilotKitRuntimeController/AgUiCopilotRun/AiGateway grep 0 命中）=G1 阻塞缺口。交付 `docs/ipd-系统说明/工程合同/B0-合同对照与B到A样例-20260929.md`；缺口 G1~G6 登记于该文档 §4。另：DOC-06 初入顶层时被三向对账门禁拦截（方向 A 漂移 121>40、B contract_only 86>0）——门禁真拦真红非假绿，按 G5 前置改置 `工程合同/DOC-06/` 子目录隔离（非顶层 glob 扫描面）；同时门禁拓住 B0 文档 progress 路径笔误（漏 /ipd 前缀）已修正——本次门禁修复链路自证有效。
+- **B3 矩阵（交付）**：D 轮 QA-08 16 fail 中 **14 条复核推翻**（receipt_ledgers 表实存 28 行、kpi.functionalWeight=0.6 实存、achievementTiers 6 档降序实存、/audit-logs/verify 端点实存——D 轮探针恰逢 B1 登录故障窗口 + 键/表名探测错，环境假红）。真实缺口定位：GAP-A **审计哈希链 17 处断裂**（seq≤3074，2026-09-06~09-22 遗留；hash_version 全表 NULL；9-23 后 5469 新行无断裂）须 ADR+授权窗口修复；GAP-B Gate 要素 seed 95/veto 37 vs 规格 33 口径分歧待 owner 裁。交付 `docs/ipd-系统说明/验收/B3-全业务域矩阵证据盘点-20260929.md`。
+- **B4 前置核查（BLOCKED 如实登记）**：owner 裁决（f8afc463 C0 §6.3）七消费者仅 #1/#2 进内核、#3-#7 保留 AiGateway；P1 可信 AgentScope 端口随 PoC 退役暂不存在、P2 ai_model_configs 唯一 active 是 TEST mock(8765) 真实模型 MiniMax is_active=0（激活有费用副作用待 owner 拍）、P4 C2 未落地、P3 B 侧取消切片可独立先行。交付 `docs/ipd-系统说明/验收/B4-AgentScope适配前置核查-20260929.md`。
+- **运行态**：16039 当前 PID 55654（25.9s 启动，含 c9bbc5fd 修复）；本机 8765 mock 与其余 java 进程未动。证据日志 `/tmp/{b1-e2e-20260929-r2,b1-admin-sup-20260929-r2,b2-probe-p1-20260929-r2,b2-probe-p2-20260929,b2-embed-fixup-test-20260929}.log`、`/tmp/b0-n1.json`。
