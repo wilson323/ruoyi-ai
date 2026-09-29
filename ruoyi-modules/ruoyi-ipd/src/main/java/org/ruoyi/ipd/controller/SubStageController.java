@@ -157,7 +157,7 @@ public class SubStageController {
         body.put("version", progress.version());
         body.put("gateResult", progress.gateResult());
         body.put("replayed", progress.replayed());
-        body.put("advanced", advanced);
+        body.put("advanced", advanced && !progress.replayed());
         return body;
     }
 }

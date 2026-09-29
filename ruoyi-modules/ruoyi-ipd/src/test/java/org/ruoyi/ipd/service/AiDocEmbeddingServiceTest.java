@@ -1,14 +1,19 @@
 package org.ruoyi.ipd.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.ruoyi.ipd.domain.AiDocEmbedding;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.mapper.AiDocEmbeddingMapper;
+import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 
@@ -28,10 +33,18 @@ import static org.mockito.Mockito.*;
 @DisplayName("AI-STRAT-1：文档向量化与检索")
 class AiDocEmbeddingServiceTest {
 
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "ai-doc-embedding-test");
+        TableInfoHelper.initTableInfo(assistant, AiDocument.class);
+        TableInfoHelper.initTableInfo(assistant, AiDocEmbedding.class);
+    }
+
     private static final String EMBED_CFG =
         "{\"embedEndpoint\":\"http://embed.example.com/v1\",\"embedModel\":\"emb-1\"}";
 
     private AiDocEmbeddingMapper embeddingMapper;
+    private AiDocumentMapper documentMapper;
     private AiModelConfigService modelConfigService;
     private AiGateway aiGateway;
     private AiDocEmbeddingService service;
@@ -39,9 +52,22 @@ class AiDocEmbeddingServiceTest {
     @BeforeEach
     void setUp() {
         embeddingMapper = mock(AiDocEmbeddingMapper.class);
+        documentMapper = mock(AiDocumentMapper.class);
         modelConfigService = mock(AiModelConfigService.class);
         aiGateway = mock(AiGateway.class);
-        service = new AiDocEmbeddingService(embeddingMapper, modelConfigService, aiGateway);
+        service = new AiDocEmbeddingService(embeddingMapper, documentMapper, modelConfigService, aiGateway);
+    }
+
+
+    private static boolean hasProjectScope(com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> wrapper) {
+        // MyBatis-Plus materializes lambda parameters when building the SQL segment.
+        wrapper.getSqlSegment();
+        return wrapper.getParamNameValuePairs().values().stream().anyMatch(v -> "9".equals(String.valueOf(v)));
+    }
+
+    private static boolean hasReviewedStatus(com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> wrapper) {
+        wrapper.getSqlSegment();
+        return wrapper.getParamNameValuePairs().containsValue(AiDocumentService.STATUS_REVIEWED);
     }
 
     private void stubEmbedEnabled(String configJson) {
@@ -228,6 +254,8 @@ class AiDocEmbeddingServiceTest {
     @DisplayName("检索：余弦 top-K 拼块（正交片不入选），块含来源标注；候选空 EMPTY")
     void retrieveContextTopK() {
         stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(
+            AiDocument.builder().id(1L).build(), AiDocument.builder().id(2L).build()));
         when(aiGateway.embed(any(AiTestConfig.class), anyList()))
             .thenReturn(List.of(new float[]{1, 0}));
 
@@ -241,6 +269,10 @@ class AiDocEmbeddingServiceTest {
 
         AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, null, "查询");
         assertEquals(1, ctx.hits(), "正交片（cos=0）不入选");
+        verify(documentMapper).selectList(argThat(w ->
+            w instanceof com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> actual
+                && hasProjectScope(actual)
+                && hasReviewedStatus(actual)));
         assertTrue(ctx.block().contains("旧需求"), "块含来源标注（docType/title）");
         assertTrue(ctx.block().contains("相似片段正文"));
         assertTrue(ctx.chars() > 0);
@@ -250,9 +282,34 @@ class AiDocEmbeddingServiceTest {
     }
 
     @Test
+    @DisplayName("检索：已归档文档的残留向量不得进入提示词")
+    void retrieveContextExcludesArchivedDocument() {
+        stubEmbedEnabled(EMBED_CFG);
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{1, 0}));
+        AiDocEmbedding archived = AiDocEmbedding.builder().docId(101L).projectId(9L).docType("PRD")
+            .title("已归档资料").chunkSeq(0).chunkText("归档后不得出现的正文")
+            .embedModel("emb-1").vectorJson("[1.0,0.0]").build();
+        when(embeddingMapper.selectList(any())).thenReturn(List.of(archived));
+        // 数据库当前行已归档：REVIEWED + MP 逻辑删除过滤的 ID 查询返回空。
+        when(documentMapper.selectList(any())).thenReturn(List.of());
+
+        AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, "PRD", "查询");
+
+        assertEquals(0, ctx.hits());
+        assertEquals("", ctx.block());
+        verify(documentMapper).selectList(argThat(w ->
+            w instanceof com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> actual
+                && hasReviewedStatus(actual)));
+        verifyNoInteractions(aiGateway, embeddingMapper);
+    }
+
+    @Test
     @DisplayName("检索：候选异常（反序列化坏向量）不炸——cos=-1 过滤后仍可命中其他片")
     void retrieveContextBadVectorTolerated() {
         stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(
+            AiDocument.builder().id(3L).build(), AiDocument.builder().id(4L).build()));
         when(aiGateway.embed(any(AiTestConfig.class), anyList()))
             .thenReturn(List.of(new float[]{1, 0}));
         AiDocEmbedding good = AiDocEmbedding.builder().docId(3L).projectId(9L).docType("PRD")

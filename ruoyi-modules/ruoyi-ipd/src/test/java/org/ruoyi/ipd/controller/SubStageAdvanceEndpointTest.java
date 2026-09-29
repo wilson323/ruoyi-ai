@@ -81,6 +81,21 @@ class SubStageAdvanceEndpointTest {
     }
 
     @Test
+    @DisplayName("B2：重复推进只回读既有游标，不报告本次成功推进")
+    void replayedAdvanceDoesNotReportNewAdvance() {
+        when(ipdPermission.requireInternal()).thenReturn(ACTOR);
+        when(progressService.advance(1001L, "CONCEPT-S2", 1L, ACTOR.id()))
+            .thenReturn(new SubStageProgressService.Progress("1001", "CONCEPT", "CONCEPT-S2", 2L, "PASSED", true));
+
+        ApiV1Response<Map<String, Object>> resp = controller.advance(1001L, "CONCEPT-S2", 1L);
+
+        assertThat(resp.getCode()).isEqualTo(0);
+        assertThat(resp.getData().get("replayed")).isEqualTo(true);
+        assertThat(resp.getData().get("advanced")).isEqualTo(false);
+        assertThat(resp.getData().get("version")).isEqualTo(2L);
+    }
+
+    @Test
     @DisplayName("A5：门禁拒绝（40001）原样上抛，由 IpdServiceExceptionAdvice 转包络")
     void advancePropagatesGateNotPassed() {
         when(ipdPermission.requireInternal()).thenReturn(ACTOR);

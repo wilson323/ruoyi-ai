@@ -7,6 +7,7 @@ import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.ipd.domain.AiDocEmbedding;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.mapper.AiDocEmbeddingMapper;
+import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,7 +26,8 @@ import java.util.concurrent.Executors;
  *   <li>入库：ai_documents 审核通过（REVIEWED）即 {@link #embedAsync} 异步向量化——
  *       固定窗口切片 + AiGateway.embed（OpenAI 兼容 /embeddings）；失败只 WARN 不阻塞
  *       主流程（增强链路降级语义）；doc 级重建 = 先删后插（同 embedModel）。</li>
- *   <li>检索：{@link #retrieveContext} 同项目（含同 embedModel——向量空间一致性锚，
+ *   <li>检索：{@link #retrieveContext} 同项目且当前仍为 REVIEWED 的未删除文档
+ *       （含同 embedModel——向量空间一致性锚，
  *       换 embedding 模型后旧向量自动退出检索）余弦 top-K，预算内拼上下文块；
  *       任何异常返回 {@link RetrievalContext#EMPTY}（生成链 contextHits=0 照常走）。</li>
  *   <li>红线：BR-AI-04——切片原文只进 ai_doc_embeddings（业务库）与生成 prompt，
@@ -54,6 +58,7 @@ public class AiDocEmbeddingService {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final AiDocEmbeddingMapper embeddingMapper;
+    private final AiDocumentMapper documentMapper;
     private final AiModelConfigService modelConfigService;
     private final AiGateway aiGateway;
 
@@ -65,9 +70,11 @@ public class AiDocEmbeddingService {
     });
 
     public AiDocEmbeddingService(AiDocEmbeddingMapper embeddingMapper,
+                                 AiDocumentMapper documentMapper,
                                  AiModelConfigService modelConfigService,
                                  AiGateway aiGateway) {
         this.embeddingMapper = embeddingMapper;
+        this.documentMapper = documentMapper;
         this.modelConfigService = modelConfigService;
         this.aiGateway = aiGateway;
         // IPD 单企业私有部署（2026-09-23）：启动主线程 setDynamic('000000') 让 PlusTenantLineHandler.ignoreTable() 走 excludes 匹配分支。
@@ -165,7 +172,8 @@ public class AiDocEmbeddingService {
     }
 
     /**
-     * 同项目检索 top-K 相关片段并拼上下文块。异常一律 EMPTY（调用方 contextHits=0 生成照常）。
+     * 同项目且当前仍为 REVIEWED 的文档检索 top-K 相关片段并拼上下文块。
+     * 异常一律 EMPTY（调用方 contextHits=0 生成照常）。
      * 块格式（来源标注 + 片段原文），供 generate 拼进 prompt。
      *
      * @param projectId 项目 ID（检索范围锚）
@@ -174,8 +182,29 @@ public class AiDocEmbeddingService {
      */
     public RetrievalContext retrieveContext(Long projectId, String docType, String query) {
         try {
+            if (projectId == null || query == null || query.isBlank()) {
+                return RetrievalContext.EMPTY;
+            }
+            // ai_doc_embeddings 是快照，归档/拒绝/软删不会同步清理旧切片。
+            // 必须以 ai_documents 当前 REVIEWED 行为准；MP @TableLogic 隐式排除 del_flag=1。
+            LambdaQueryWrapper<AiDocument> documents = new LambdaQueryWrapper<AiDocument>()
+                .select(AiDocument::getId)
+                .eq(AiDocument::getProjectId, projectId)
+                .eq(AiDocument::getStatus, AiDocumentService.STATUS_REVIEWED);
+            if (docType != null && !docType.isBlank()) {
+                documents.eq(AiDocument::getDocType, docType.trim());
+            }
+            List<AiDocument> approved = documentMapper.selectList(documents);
+            if (approved == null || approved.isEmpty()) {
+                return RetrievalContext.EMPTY;
+            }
+            Set<Long> approvedIds = approved.stream().map(AiDocument::getId)
+                .filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+            if (approvedIds.isEmpty()) {
+                return RetrievalContext.EMPTY;
+            }
             EmbedEndpoint cfg = TenantHelper.ignore(() -> resolveEmbedConfig());
-            if (cfg == null || query == null || query.isBlank()) {
+            if (cfg == null) {
                 return RetrievalContext.EMPTY;
             }
             String q = query.length() > QUERY_MAX_CHARS ? query.substring(0, QUERY_MAX_CHARS) : query;
@@ -189,7 +218,8 @@ public class AiDocEmbeddingService {
             // 普通索引；docType 为空/null 时保留历史「同项目全类型」语义，向后兼容。
             LambdaQueryWrapper<AiDocEmbedding> wrapper = new LambdaQueryWrapper<AiDocEmbedding>()
                 .eq(AiDocEmbedding::getProjectId, projectId)
-                .eq(AiDocEmbedding::getEmbedModel, cfg.embedModel());
+                .eq(AiDocEmbedding::getEmbedModel, cfg.embedModel())
+                .in(AiDocEmbedding::getDocId, approvedIds);
             if (docType != null && !docType.isBlank()) {
                 wrapper.eq(AiDocEmbedding::getDocType, docType.trim());
             }
