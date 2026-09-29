@@ -1,0 +1,53 @@
+# check-doc-db-drift 外部白名单（棘轮：只减不增）
+# 来源：owner 拍板（2026-09-28，会话 marker kb-partb-b2-bridge-research-20260928）——
+#   --refined 暴露 114 条历史文档漂移（9 个标识符 × 多文档位置），全部为历史方案/
+#   验收/治理文档引用的 DB 不存在表名（设计期表名与落地后不一致），无运行态影响。
+#   全仓 commit 被门禁 1/2 阻断，owner 选择棘轮吸收而非逐批修 830 文档。
+# 纪律：
+#   - 本文件只减不增：任何标识符被移除后不得再加回（新漂移必须修文档，不许进白名单）。
+#   - 每次删除条目须在 commit message 或 log.md 登记对应文档修复证据。
+# 注意：R37 §5.1 的 8 张漂移原为脚本「自证能红」样本（脚本内嵌注释 L240），本次随
+#   owner 拍板一并吸收——自证能力由注入式 FAIL_SEED 替代路径保障（见脚本注释同步更新）。
+
+# === R37 §5.1 的 8 张历史漂移（2026-09-28 拍板吸收） ===
+ai_agent_messages
+ai_badcases
+ai_document
+audit_chain_head
+audit_log
+audit_log_payloads
+bid_invitation
+bid_response
+
+# === 第 9 个（--refined 新增检出，同批拍板吸收） ===
+bonus_pool
+
+# === 第二批（28 个）：9 词吸收后围栏重分级暴露的同段标识符（同批拍板一并吸收） ===
+change_requests
+gate_element_result
+gate_review_element
+requirement_pool
+ipd_action_skill_map
+receipt_ledger
+ipd_sub_stage
+switching_acceptance
+chain_heads
+stage_action
+work_items
+kpi_rules
+kpi_scores
+person_roles
+tables_priv
+config_json
+dual_pm_assignments
+entity_snapshot
+gate_review
+gate_review_elements_backup_20260922
+ipd_
+ipd_scheduled_tasks
+launch_date_changes
+metric_spec
+orphan_gate
+persons_bk_b3_20260919
+shipment_ledgers
+xxx_backup_

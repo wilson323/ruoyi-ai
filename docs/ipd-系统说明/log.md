@@ -12975,3 +12975,13 @@ P1-1 update sensitivity 向量 payload 不随动（B2 前置待办，0 行窗口
 - **事实**：本批 37 文件提交被 pre-commit 门禁 1/2（doc↔db 漂移）拦下。根因 = 兄弟会话在途未提交的 `scripts/check-doc-db-drift.sh` O-6-3 精度修订（18:59，晚于 HEAD 17:50）以新口径暴露 114 条**存量**文档漂移（`docs/开发说明/spec/**` 圣经单数表名 49 条 + 历史治理文档备份表名 `persons_bk_b3_20260919` 等），与本批内容零因果（唯一落 log.md 的漂移在 L7645 历史条目，非本会话补记）。
 - **处置**：owner 2026-09-28 明确授权 `--no-verify` 提交本批。豁免仅限本批 commit 一次；114 存量漂移账归属兄弟在途门禁脚本收口范围（白名单/baseline 方向），不在此代行（防撞车）。
 - **补记**：门禁 1/2 报文「FAIL: exit=0」系 `check-pre-commit.sh` run_drift_gate 中 `$?` 取到 `local` 返回值的报文瑕疵，真实 exit=1（已手动复跑验证）。
+
+**W1续验（marker codex-harness-w1-final-33-20260928）**：卡61217664仍inprogress/PARTIAL。PoC真库同slot提示词A→B→A三轮、第三轮模型输入及最终agent_state回读通过；内核启用时状态catalog显式必填，DDL仅非自动迁移草案、未执行。SSE复用旧知识库访问门，无权请求不触内核。相邻33 tests全绿、原始日志SECRET_CANARY零命中、verify/self-red均0。旧chat_message历史投影、真RAG、模型选路、多副本、正式DB/HTTP/WS/浏览器及W2-W8仍未验，切换开关关闭；详见ADR-0075 §9与既有独立复核附件。
+
+### r139-leftover-closeout-20260928 补记 3：部署闭环 + 真活 5/5（2026-09-28 20:35）
+
+- **commit 落地**：后端 `1d152901`（37 文件，--no-verify 经 owner 授权，见补记 2）已 push origin/main；前端 `410ed43`（stages 接线 4 文件，vitest 37/37 绿）已 push origin/main（ruoyi-admin 仓）。
+- **R109 判定落地**：探针改指 `GET /api/v1/deletion-requests/my-requests`（规格 §9.2 无 GET 根列表，详见补记），随 1d152901 入库。
+- **部署闭环**：`mvn -o -pl ruoyi-admin -am package -DskipTests` exit=0（20:30，兄弟在途编译自洽）；解 jar 验字节码 `/{id}/stages` + `/active` 在 BOOT-INF/lib/ruoyi-ipd-3.1.0.jar 内坐实；TERM 82388 → 新进程 23115 起 16039（~25s READY，启动命令照原样含 ipd-local,dev profile）。**披露**：运行 jar 含兄弟在途未提交字节码（ruoyi-chat 知识门禁/AiDoc 等），dev 联测常态，兄弟收口后再滚动。
+- **真活验证**：`check-e2e-fe-be.sh` 20:35 报告 **5/5 PASS**（P0-9/P3-6.1/R108/R118/R109 全 200+code0 包络），P3-6.1/R118 运行态 404 消解、R109 改后首绿。**BCP-013 A2/A4 正式翻 CLOSED**（mock合法性登记 4 处「修复 commit 待补」兑现为 1d152901）。
+- **历史对照**：19:04 E2E 报告记录的 P3-6.1/R118 404 为部署落差（jar 12:56 早于代码），本轮重打包后消除——与契约缺失判定一致。
