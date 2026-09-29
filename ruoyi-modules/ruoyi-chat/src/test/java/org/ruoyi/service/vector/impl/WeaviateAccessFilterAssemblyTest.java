@@ -220,4 +220,30 @@ class WeaviateAccessFilterAssemblyTest {
         assertEquals("embeddingModel", WeaviatePayloadKeys.EMBEDDING_MODEL);
         assertEquals("embeddingDim", WeaviatePayloadKeys.EMBEDDING_DIM);
     }
+
+    // ---------- B2 P1-1：payload 敏感级随动的游标分页 ID 解析（parseBatchObjectIds） ----------
+
+    @Test
+    void parseBatchObjectIdsExtractsIdsInCursorOrder() {
+        // data.Get.<className> 数组取 _additional.id（与 #search 的 JSONObject 解析同构）；
+        // 顺序保持分页顺序——withAfter 游标依赖末位 id，乱序会漏页/循环
+        Map<String, Object> data = Map.of("Get", Map.of("Knowledge_base1", List.of(
+            Map.of("_additional", Map.of("id", "uuid-1")),
+            Map.of("_additional", Map.of("id", "uuid-2")))));
+        assertEquals(List.of("uuid-1", "uuid-2"),
+            WeaviateVectorStoreStrategy.parseBatchObjectIds(data, "Knowledge_base1"));
+    }
+
+    @Test
+    void parseBatchObjectIdsToleratesDegenerateResponses() {
+        // null data（GraphQLResponse.getResult() 为 null 的防御）/ 缺 Get 键 /
+        // Get 下缺 className 键 / 条目缺 _additional.id——一律空列表：
+        // fetchObjectIds 空批即分页终止（fail-closed，不炸不误推进游标）
+        assertTrue(WeaviateVectorStoreStrategy.parseBatchObjectIds(null, "Knowledge_base1").isEmpty());
+        assertTrue(WeaviateVectorStoreStrategy.parseBatchObjectIds(Map.of(), "Knowledge_base1").isEmpty());
+        assertTrue(WeaviateVectorStoreStrategy.parseBatchObjectIds(
+            Map.of("Get", Map.of("Other_class", List.of())), "Knowledge_base1").isEmpty());
+        assertTrue(WeaviateVectorStoreStrategy.parseBatchObjectIds(
+            Map.of("Get", Map.of("Knowledge_base1", List.of(Map.of()))), "Knowledge_base1").isEmpty());
+    }
 }
