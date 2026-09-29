@@ -12985,3 +12985,9 @@ P1-1 update sensitivity 向量 payload 不随动（B2 前置待办，0 行窗口
 - **部署闭环**：`mvn -o -pl ruoyi-admin -am package -DskipTests` exit=0（20:30，兄弟在途编译自洽）；解 jar 验字节码 `/{id}/stages` + `/active` 在 BOOT-INF/lib/ruoyi-ipd-3.1.0.jar 内坐实；TERM 82388 → 新进程 23115 起 16039（~25s READY，启动命令照原样含 ipd-local,dev profile）。**披露**：运行 jar 含兄弟在途未提交字节码（ruoyi-chat 知识门禁/AiDoc 等），dev 联测常态，兄弟收口后再滚动。
 - **真活验证**：`check-e2e-fe-be.sh` 20:35 报告 **5/5 PASS**（P0-9/P3-6.1/R108/R118/R109 全 200+code0 包络），P3-6.1/R118 运行态 404 消解、R109 改后首绿。**BCP-013 A2/A4 正式翻 CLOSED**（mock合法性登记 4 处「修复 commit 待补」兑现为 1d152901）。
 - **历史对照**：19:04 E2E 报告记录的 P3-6.1/R118 404 为部署落差（jar 12:56 早于代码），本轮重打包后消除——与契约缺失判定一致。
+
+### r139-leftover-closeout-20260928 补记 4：f17eed69 捎带归属登记（2026-09-28 20:48）
+
+- **事实**：f17eed69（登记批）除本会话 5 个登记文件外，捎带入库了 `scripts/check-doc-db-drift-whitelist.txt`（53 行，mtime 20:34）——该文件为**兄弟会话（marker kb-partb-b2-bridge-research-20260928）按 owner 拍板创建**的漂移棘轮白名单（「棘轮吸收而非逐批修 830 文档」），在我 `git add` 与 `commit` 之间进入 staged 而被一并提交，commit message 未及标注。
+- **归属处置**：ORIGIN- 纪律登记如上，文件所有权与内容解释权归兄弟会话及其 marker；本会话不修改该文件。兄弟的 `scripts/check-doc-db-drift.sh` 仍为在途 M，归其自行收口。
+- **关联事实**：1d152901 的 --no-verify 豁免发生在 20:41，兄弟白名单 20:34 已落盘但门禁脚本仍按在途状态放行时机不同——两路对同一阻断（114 存量漂移）并行处置，事后看豁免非必要，但当时门禁实拦事实与授权链完整，特此留痕。
