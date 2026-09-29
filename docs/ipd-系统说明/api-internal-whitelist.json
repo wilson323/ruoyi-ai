@@ -279,18 +279,6 @@
       "evidence": "CopilotKitRuntimeController.java:121"
     },
     {
-      "path": "/api/v1/projects/{VAR}/stages",
-      "methods": [
-        "GET"
-      ],
-      "reason": "E2E 契约 P3-6.1 项目阶段视图读端点（check-e2e-fe-be.sh 真活探针）；前端经既有 /projects/{id} 组合阶段数据，本端点为契约补全尚无直接 UI 消费",
-      "owner_card": "P3-6.1",
-      "review_date": "2026-09-28",
-      "expire": "2026-12-31",
-      "added_by": "e2e-contract-stages-active-20260928",
-      "evidence": "ProjectController.java:245"
-    },
-    {
       "path": "/api/v1/persons/active",
       "methods": [
         "GET"
