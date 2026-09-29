@@ -13207,3 +13207,12 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **白名单清账（ac09589e，owner 授权）**：stale 条目 `/api/v1/projects/{VAR}/stages`（P3-6.1 前端已接线）移出内部白名单；清后 24 条登记/24 条生效/防伪 0/stale 清零，门禁 3 PASS。
 - **入库阻塞与自愈（归属判定双实证）**：C2-2 曾被兄弟在途波多点传染阻塞（白名单 evidence 行号防伪失败 2 条 + `/runs/{runId}/cancel` P0 孤儿）；隔离 worktree 干净基线实证失败面全部来自兄弟波；后兄弟 c150b749（P3 取消切片）自愈入库，本轨改为主树原地落库（pathspec 两笔，pre-commit 5 门禁全过）。曾建的落地区 `/private/tmp/c2-land` 已废弃不再提交。
 - **C2 剩余缺口（C2-3）**：①真模型出站链证据（A→B→A 真 HTTP + mock 模型 server）；②账本/预算接入 AiGateway 调用面（recordUsage/preoccupy/settle 挂入调用点）；③对话链接线（#1/#2 经桥+预占/结算/记账走内核）依赖 C5 迁移口径。验收全文 `docs/ipd-系统说明/验收/C2-模型与预算-切片1权威桥-切片2账本预算-20260929.md`。
+
+## 2026-09-29 C 线 C2-3 账本/预算接入 AiGateway 调用面登记 — C 轨执行会话
+
+- **载波方案落地（96924e89，已 push）**：`AiCallScope` 记账身份随 `AiTestConfig.scope` 携带（兼容构造保留、chat/stream 签名不动），存量 20+ 处 Mockito stub 零波及；`AiCallScope.of()` 在 modelConfigId 空时返回 null（=无记账面，测试桩零感知，生产配置恒有 DB 主键）——初版 requireNonNull 致 37 处存量测试 NPE（病根①变体），按「不改 37 处测试、放宽载波」修正并补 of(null) 防回退用例。
+- **记账面全链**：`AiGateway.chat/stream` 预占（fail-closed，预算拒绝/预算面故障均不出站，BUDGET_EXCEEDED）→ 出站 → settle 恒执行（真实 usage 对账回冲）+ recordUsage 含失败（ok / FAIL:\<code\> / REJECTED:BUDGET / REJECTED:BUDGET_CHECK_FAILED）；5 调用点接 scope（suggest/gate_precheck/bid_check/bid_compare/generate），AiCopilotService 3 处待兄弟 IpdCopilotAccess 波入库后补。
+- **mapFailure 真缺口修复**：JDK HttpClient 连接拒绝真实链 root 是 ClosedChannelException（ConnectException 是中间层），原单点 root 判定漏判落 UNSUPPORTED_PROTOCOL——改全链命中即 UNREACHABLE，AiGatewayTest 表补真实链回归（initCause 组链，ConnectException 无 (String,Throwable) 构造器）。
+- **验证**：AiGatewayAccountingTest 9 用例（JDK HttpServer 测试内 mock 真出站 + 请求计数证「预算拒绝=零出站」）；回归批 251/251 绿（错峰单模块）；pre-commit 6 门禁全过（门禁 5 LangChain4j 只减不增曾因 javadoc {@link} 增量拦下，改 {@code} 消增量过闸，不动基线）。
+- **pathspec 事故自纠**：首次 commit 误卷兄弟已暂存 a11y 三件（13 files），soft reset 后带 pathspec 重提交剥出（10 files），兄弟暂存态原样保留。教训：add 自己的文件后 commit 必须带 pathspec 参数，只 add 不够。
+- **C2 剩余**：真模型 A→B→A 出站链证据（MiniMax-M3 真 HTTP）、失效配置拒绝/实例回收真链证据、AiCopilotService 接线尾巴、对话链接线（依赖 C5）。验收文档 §4/§5 已同步。
