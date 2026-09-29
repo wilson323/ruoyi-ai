@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
  * 只装配 org.ruoyi.chat.poc.kernel 包,剔除数据源自动装配(状态存储经 PocKernelSupport 直连 ipd_poc)。
  *
  * <p>用法: java -cp <test classpath> org.ruoyi.chat.poc.kernel.PocSseApplication [--server.port=18765]
+ * [--chat.kernel.poc.enabled=true](PocSseController 装配开关,默认关;D9 收口后无开关即无 /poc/kernel 路由)
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration(

@@ -119,41 +119,60 @@ done < <(cat "$TMPD/wired.txt")
 [ "$C1_N" -eq 0 ] && info "无 HarnessAgent.builder() 装配点（可能只用了 Model/Knowledge 层）"
 
 # ---- C2/C3: 四维复合隔离键必须单一收口 + fail-closed ----
-echo "== [C2] 复合隔离键手拼收口（AgentScope 接线文件内 ≤1 处） =="
-: > "$TMPD/keyfiles.txt"
+# 判定按「所属工作树」分组（与 C7/C8 的 owning_root 同口径）：每个工作树内 ≤1 处收口。
+# 实测教训（2026-09-29 门禁失明）：主树与 .worktrees/poc-agentscope-kernel 各有一份同名
+# KernelScopeKey.java（同一实现、不同工作树），按全局计数 KEY_N=2 判「散落」=假红；
+# 且 SCOPE_FILE 只取第一份，使 C3 真实安全门被连带 SKIP（假红连带跳过安全门）。
+# 跨工作树的同名收口不是散落——同一工作树内散落才是铁律违规。
+echo "== [C2] 复合隔离键手拼收口（每工作树内 ≤1 处） =="
+: > "$TMPD/keypairs.txt"
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   grep -qE '\+[[:space:]]*":"[[:space:]]*\+' "$f" || continue
   grep -qiE 'sessionId|slotId' "$f" || continue
-  printf '%s\n' "$f" >> "$TMPD/keyfiles.txt"
+  printf '%s\t%s\n' "$(owning_root "$f")" "$f" >> "$TMPD/keypairs.txt"
 done < <(cat "$TMPD/wired.txt")
-KEY_N=$(count_lines "$TMPD/keyfiles.txt")
+KEY_N=$(count_lines "$TMPD/keypairs.txt")
 
-SCOPE_FILE=""
+# 每个 C2 命中的收口文件都进 SCOPE_LIST，C3 逐份查 fail-closed（不因他组假红连带 SKIP）
+SCOPE_LIST="$TMPD/scopelist.txt"
+: > "$SCOPE_LIST"
 if [ "$KEY_N" -eq 0 ]; then
   ok "无手拼复合键（全部经收口 API）"
-elif [ "$KEY_N" -eq 1 ]; then
-  SCOPE_FILE=$(head -1 "$TMPD/keyfiles.txt")
-  ok "复合键拼接集中在单一收口文件: $(rel "$SCOPE_FILE")"
 else
-  fail "复合键拼接散落到 $KEY_N 个文件 —— 违反「四维隔离键唯一收口」铁律，串桶即数据泄漏："
-  sed 's|^|         |' "$TMPD/keyfiles.txt" | while IFS= read -r f; do printf '         %s\n' "$(rel "$f")"; done
-  fail "  修复：全部改走 KernelScopeKey.of(projectId, userId, agentId, sessionId)，业务代码禁止手拼"
+  C2_FAIL=0
+  while IFS= read -r TR; do
+    [ -z "$TR" ] && continue
+    GRP_N=$(awk -F'\t' -v t="$TR" '$1==t{n++} END{print n+0}' "$TMPD/keypairs.txt")
+    if [ "$GRP_N" -eq 1 ]; then
+      F=$(awk -F'\t' -v t="$TR" '$1==t {print $2}' "$TMPD/keypairs.txt")
+      printf '%s\n' "$F" >> "$SCOPE_LIST"
+      ok "工作树 $(rel "$TR")：复合键拼接集中在单一收口文件: $(rel "$F")"
+    else
+      C2_FAIL=1
+      fail "工作树 $(rel "$TR") 内复合键拼接散落到 $GRP_N 个文件 —— 违反「四维隔离键唯一收口」铁律，串桶即数据泄漏："
+      awk -F'\t' -v t="$TR" '$1==t {print "         " $2}' "$TMPD/keypairs.txt"
+    fi
+  done < <(awk -F'\t' '{print $1}' "$TMPD/keypairs.txt" | sort -u)
+  [ "$C2_FAIL" -eq 1 ] && fail "  修复：全部改走 KernelScopeKey.of(projectId, userId, agentId, sessionId)，业务代码禁止手拼"
 fi
 
 echo "== [C3] 收口文件必须 fail-closed（拒 ':' 与 '..'） =="
-if [ -z "$SCOPE_FILE" ]; then
+if [ ! -s "$SCOPE_LIST" ]; then
   info "SKIP（C2 未命中收口文件）"
 else
-  MISS=""
-  grep -qE "indexOf\(':'\)|contains\(\":\"\)|indexOf\(\":\"\)" "$SCOPE_FILE" || MISS="$MISS 冒号段拒绝"
-  grep -qF '".."' "$SCOPE_FILE" || MISS="$MISS 路径穿越(..)拒绝"
-  grep -qE 'IllegalArgumentException|throw new' "$SCOPE_FILE" || MISS="$MISS 显式抛错"
-  if [ -z "$MISS" ]; then
-    ok "$(rel "$SCOPE_FILE") fail-closed 三要素齐全（拒 ':' / 拒 '..' / 显式抛错）"
-  else
-    fail "$(rel "$SCOPE_FILE") fail-closed 缺:$MISS —— 可被复合 key 注入伪造别桶地址"
-  fi
+  while IFS= read -r SCOPE_FILE; do
+    [ -z "$SCOPE_FILE" ] && continue
+    MISS=""
+    grep -qE "indexOf\(':'\)|contains\(\":\"\)|indexOf\(\":\"\)" "$SCOPE_FILE" || MISS="$MISS 冒号段拒绝"
+    grep -qF '".."' "$SCOPE_FILE" || MISS="$MISS 路径穿越(..)拒绝"
+    grep -qE 'IllegalArgumentException|throw new' "$SCOPE_FILE" || MISS="$MISS 显式抛错"
+    if [ -z "$MISS" ]; then
+      ok "$(rel "$SCOPE_FILE") fail-closed 三要素齐全（拒 ':' / 拒 '..' / 显式抛错）"
+    else
+      fail "$(rel "$SCOPE_FILE") fail-closed 缺:$MISS —— 可被复合 key 注入伪造别桶地址"
+    fi
+  done < "$SCOPE_LIST"
 fi
 
 # ---- C4: RuntimeContext.builder() 必须带身份二维 ----
