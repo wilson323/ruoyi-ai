@@ -13216,3 +13216,12 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **验证**：AiGatewayAccountingTest 9 用例（JDK HttpServer 测试内 mock 真出站 + 请求计数证「预算拒绝=零出站」）；回归批 251/251 绿（错峰单模块）；pre-commit 6 门禁全过（门禁 5 LangChain4j 只减不增曾因 javadoc {@link} 增量拦下，改 {@code} 消增量过闸，不动基线）。
 - **pathspec 事故自纠**：首次 commit 误卷兄弟已暂存 a11y 三件（13 files），soft reset 后带 pathspec 重提交剥出（10 files），兄弟暂存态原样保留。教训：add 自己的文件后 commit 必须带 pathspec 参数，只 add 不够。
 - **C2 剩余**：真模型 A→B→A 出站链证据（MiniMax-M3 真 HTTP）、失效配置拒绝/实例回收真链证据、AiCopilotService 接线尾巴、对话链接线（依赖 C5）。验收文档 §4/§5 已同步。
+
+## 2026-09-29 全工作树系统性整合收口（后端 b738a1d4 + 前端 fdafef6）— 整合协调会话
+
+- **[盘点归属]** 3 仓 + 全 worktree 逐路判定：`c2-land`（暂存 11 文件与 main 已提交 blob **逐字节一致**，纯冗余）、`cts-baseline-check`/`ipd-b1-integration-20260929`（均为 main 祖先、0 变更、已落地）、`fix/r240-land`（2 个未落地提交 OPS-06 审计 trace + AI-P2 招标，经逐文件比对内容已被 main 卷走演进为超集，Bid* 字节相同，AuditLog/Service 差异仅注释精简）。四路在途全部收敛于 main 工作区，**无需 git merge**，本次为整合提交而非合并。ZK-IPD、最佳实践非 git 仓（无需提交）。
+- **[整合提交]** 后端 `b738a1d4`（86 文件 41A/45M，C2 账本预算 + OPS-06 审计 trace + AI-P2 招标 + SSRF/分页/IpdCopilotAccess/IpdPublicKnowledge/McpRedactor 安全修复 + 契约包络 405 + D 轮验收证据 + AgentScope DDL 草案）；前端 `fdafef6`（79 文件 50A/29M，AI 工作界面/ai-swarm + Agent + MCP + IPD 视图 + 门禁脚本 + baselines + __fixtures__ 门禁自证夹具）。两仓均 push 成功无漂移（`63abef59..b738a1d4`、`c9e5bab..fdafef6`）。
+- **[清理]** 删除可再生成瞬时产物：后端 entity-complete per-run 快照 16 件 + ddl-apply-check result json + DB 备份 sql + `__pycache__`；前端 `.21st/` 缓存 + 8 张 shot 截图 + `a4-role-traverse-result.json`。**保留**被 log.md/前后端全量审计报告/R226 盘点/提交完整度引用的 118 已跟踪 lint 证据快照（曾被 `rm -rf lint-reports/` 连带误删，已 `git checkout` 恢复，仅删除未跟踪瞬时件）；保留 `__fixtures__`（门禁自证能红夹具）与 `baselines`（契约基线）。W0/DDL 证据文档对已删原始输出的引用属 provenance 指针，findings 内联完整。
+- **[worktree/分支]** 移除 `c2-land`/`cts-baseline-check`/`ipd-b1-integration-20260929` 三 worktree，prune `wt-r240-land` 残留注册，删 `fix/r240-land` 本地分支（内容已收敛）。远端 `origin/fix/r240-land` 与其它无关本地分支不在口径内，保留待裁。
+- **[验证全绿]** 后端 ruoyi-ipd 单模块 3354 测试 0 失败 0 错误 23 跳过（错峰无 -am/clean）；预提交 6 门禁 PASS（untracked/doc-db drift=0/contract tri-source/API 孤儿棘轮/shell R224/langchain4j 只减不增）；前端 check:type(vue-tsc) PASS + vitest 168 文件 1715 用例通过（仅 *-live 跳过）+ 三门禁 color/mcp/vitest-include 全 PASS。
+- marker r243-full-worktree-integration-cleanup
