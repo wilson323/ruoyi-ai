@@ -17,6 +17,7 @@ import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
@@ -283,7 +284,8 @@ public class GatePrecheckService {
             modelName = config.getModelName();
             AiChatResult result = aiGateway.chat(
                 new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-                    modelConfigService.decryptApiKey(config), config.getModelName(), ARBITRATION_TIMEOUT_MS),
+                    modelConfigService.decryptApiKey(config), config.getModelName(), ARBITRATION_TIMEOUT_MS,
+                    AiCallScope.of(config.getId(), actor, "gate_precheck")),
                 composeArbitrationPrompt(divergences), ARBITRATION_MAX_TOKENS, ARBITRATION_TEMPERATURE);
             if (!result.success()) {
                 throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,

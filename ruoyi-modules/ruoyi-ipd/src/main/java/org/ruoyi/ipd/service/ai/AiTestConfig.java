@@ -10,8 +10,10 @@ package org.ruoyi.ipd.service.ai;
  * @param apiKey     明文密钥（仅 Tester 内部消化用，绝不外传）
  * @param modelName  模型名（用于 OpenAI 兼容 POST body）
  * @param timeoutMs  超时（连接+读），默认 5000
+ * @param scope      C2-3 用量记账身份（可空：null = 无记账面，见 {@link AiCallScope}）
  */
-public record AiTestConfig(String provider, String baseUrl, String apiKey, String modelName, int timeoutMs) {
+public record AiTestConfig(String provider, String baseUrl, String apiKey, String modelName, int timeoutMs,
+                           AiCallScope scope) {
 
     public AiTestConfig {
         if (timeoutMs <= 0) {
@@ -19,7 +21,12 @@ public record AiTestConfig(String provider, String baseUrl, String apiKey, Strin
         }
     }
 
+    /** 兼容构造：无记账面（连通性测试/存量调用点/测试桩均零感知）。 */
+    public AiTestConfig(String provider, String baseUrl, String apiKey, String modelName, int timeoutMs) {
+        this(provider, baseUrl, apiKey, modelName, timeoutMs, null);
+    }
+
     public AiTestConfig(String provider, String baseUrl, String apiKey, String modelName) {
-        this(provider, baseUrl, apiKey, modelName, 5000);
+        this(provider, baseUrl, apiKey, modelName, 5000, null);
     }
 }

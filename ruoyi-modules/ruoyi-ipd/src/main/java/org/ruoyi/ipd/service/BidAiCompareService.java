@@ -11,6 +11,7 @@ import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
@@ -121,7 +122,8 @@ public class BidAiCompareService {
         AiModelConfig config = modelConfigService.currentEnabled();
         AiChatResult result = aiGateway.chat(
             new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), COMPARE_TIMEOUT_MS),
+                modelConfigService.decryptApiKey(config), config.getModelName(), COMPARE_TIMEOUT_MS,
+                AiCallScope.of(config.getId(), actor, "bid_compare")),
             composePrompt(inv, ids, byId), MAX_TOKENS, new BigDecimal("0.20"));
         long latency = Math.max(0, clock.millis() - start);
         if (!result.success()) {

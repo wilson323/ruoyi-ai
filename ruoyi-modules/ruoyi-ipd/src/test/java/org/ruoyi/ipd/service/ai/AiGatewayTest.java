@@ -38,6 +38,11 @@ class AiGatewayTest {
         // IOException 被 JDK 客户端包成 RuntimeException（源码实证）→ cause 解链后归类
         assertMap(new RuntimeException("wrapped", new ConnectException("refused")), "UNREACHABLE");
         assertMap(new RuntimeException("wrapped", new UnknownHostException("nohost")), "UNREACHABLE");
+        // C2-3 实测回归：JDK HttpClient 连接拒绝真实链 = ConnectException → 包装 ConnectException
+        // → ClosedChannelException（root 是 ClosedChannelException）——全链命中才算，不能只看 root
+        ConnectException deepChain = new ConnectException("refused");
+        deepChain.initCause(new java.nio.channels.ClosedChannelException());
+        assertMap(new RuntimeException("wrapped", deepChain), "UNREACHABLE");
         assertMap(new RuntimeException("wrapped",
             new java.net.http.HttpTimeoutException("read timeout")), "TIMEOUT");
         assertMap(new IllegalStateException("boom"), "UNSUPPORTED_PROTOCOL");

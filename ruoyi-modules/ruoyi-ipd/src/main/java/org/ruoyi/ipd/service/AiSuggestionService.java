@@ -28,6 +28,7 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.RequirementChangeMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
@@ -249,7 +250,8 @@ public class AiSuggestionService {
 
         AiChatResult result = aiGateway.chat(
             new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), SUGGEST_TIMEOUT_MS),
+                modelConfigService.decryptApiKey(config), config.getModelName(), SUGGEST_TIMEOUT_MS,
+                AiCallScope.of(config.getId(), actor, "suggest")),
             prompt, MAX_TOKENS, new BigDecimal("0.50"));
 
         long latency = clock.millis() - start;

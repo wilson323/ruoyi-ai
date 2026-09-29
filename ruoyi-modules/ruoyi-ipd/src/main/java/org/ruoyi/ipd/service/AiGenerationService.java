@@ -11,6 +11,7 @@ import org.ruoyi.ipd.dto.AiGenerateReq;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.domain.PromptType;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.PromptTemplates;
 import org.ruoyi.ipd.service.ai.AiGateway;
@@ -153,7 +154,8 @@ public class AiGenerationService implements IAiGenerationService {
             effectivePrompt = PromptTemplates.render(req.promptType(), effectivePrompt);
             AiTestConfig chatCfg = new AiTestConfig(
                 config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), timeoutMs);
+                modelConfigService.decryptApiKey(config), config.getModelName(), timeoutMs,
+                AiCallScope.of(config.getId(), actor, "generate"));
             AiChatResult result = aiGateway.chat(chatCfg, effectivePrompt, maxTokens, temperature);
             // AI-P1-1 失败重试（2026-09-27）：瞬时类失败（TIMEOUT/UNREACHABLE/HTTP_5xx）
             // 同请求内补一次重试；确定性失败（AUTH_FAILED/HTTP_429 限流/EMPTY_RESPONSE 等）

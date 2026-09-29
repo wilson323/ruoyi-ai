@@ -9,6 +9,7 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
@@ -99,7 +100,8 @@ public class BidResponseCheckService {
         AiModelConfig config = modelConfigService.currentEnabled();
         AiChatResult result = aiGateway.chat(
             new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), CHECK_TIMEOUT_MS),
+                modelConfigService.decryptApiKey(config), config.getModelName(), CHECK_TIMEOUT_MS,
+                AiCallScope.of(config.getId(), actor, "bid_check")),
             composePrompt(inv, note), CHECK_MAX_TOKENS, new BigDecimal("0.20"));
         long latency = Math.max(0, clock.millis() - start);
         if (!result.success()) {
