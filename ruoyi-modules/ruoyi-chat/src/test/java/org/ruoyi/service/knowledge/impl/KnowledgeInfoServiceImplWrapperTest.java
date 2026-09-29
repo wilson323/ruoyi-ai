@@ -50,7 +50,8 @@ class KnowledgeInfoServiceImplWrapperTest {
             mock(KnowledgeFragmentMapper.class),
             mock(VectorStoreService.class),
             mock(KnowledgeRetrievalService.class),
-            mock(OssService.class));
+            mock(OssService.class),
+            mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class));
     }
 
     private static LambdaQueryWrapper<KnowledgeInfo> buildWrapper(KnowledgeInfoBo bo) throws Exception {

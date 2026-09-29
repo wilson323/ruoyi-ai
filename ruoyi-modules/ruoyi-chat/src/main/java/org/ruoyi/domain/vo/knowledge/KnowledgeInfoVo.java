@@ -46,11 +46,43 @@ public class KnowledgeInfoVo implements Serializable {
     private String name;
 
     /**
-     * 是否公开知识库（0 否 1是）
+     * 是否公开知识库（0 否 1是）——派生只读镜像（B1 §8.1），读侧一律以 sensitivity 为准
      */
     @ExcelProperty(value = "是否公开知识库", converter = ExcelDictConvert.class)
     @ExcelDictFormat(readConverterExp = "0=,否=,1=是")
     private Long share;
+
+    // ========== B1 新增：三层作用域 × 四维归属 × 敏感级（镜像 Part A 列） ==========
+
+    /**
+     * 作用域：GLOBAL|GROUP|PROJECT|PERSON|AGENT
+     */
+    @ExcelProperty(value = "作用域")
+    private String scopeType;
+
+    /**
+     * 归属产品组
+     */
+    @ExcelProperty(value = "归属产品组")
+    private Long groupId;
+
+    /**
+     * 归属项目
+     */
+    @ExcelProperty(value = "归属项目")
+    private Long projectId;
+
+    /**
+     * 归属数字员工
+     */
+    @ExcelProperty(value = "归属数字员工")
+    private Long ownerAgentId;
+
+    /**
+     * 敏感级：PUBLIC|INTERNAL|SECRET
+     */
+    @ExcelProperty(value = "敏感级")
+    private String sensitivity;
 
     /**
      * 知识库描述

@@ -63,5 +63,22 @@ public class KnowledgeFragmentVo implements Serializable {
      */
     private Long knowledgeId;
 
+    // ========== B1：向量版本三元组（镜像 Part A 列；Bo 不加——片段列是嵌入产物，非筛选入参） ==========
+
+    /**
+     * 本片段实际使用的 embedding 模型名
+     */
+    private String embeddingModel;
+
+    /**
+     * 本片段向量维度
+     */
+    private Integer embeddingDim;
+
+    /**
+     * 本片段最近一次成功嵌入时间
+     */
+    private java.util.Date embeddedAt;
+
 
 }

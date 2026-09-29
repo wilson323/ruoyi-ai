@@ -52,7 +52,14 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
      */
     @Override
     public KnowledgeFragmentVo queryById(Long id){
-        return baseMapper.selectVoById(id);
+        // B 口收敛（B0 审计破坏面 B）：/{id} 按片段主键明文直读任意库片段。
+        // 先取行得到其归属 kid，再过读面门（owned || share=1 可见即够，与检索口同判据）；
+        // 片段无归属 kid（防御分支）与不存在的片段同样不外泄内容。
+        KnowledgeFragmentVo fragment = baseMapper.selectVoById(id);
+        if (fragment != null) {
+            knowledgeAccessGate.checkRetrievalAccess(fragment.getKnowledgeId());
+        }
+        return fragment;
     }
 
     /**
@@ -64,6 +71,8 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
      */
     @Override
     public TableDataInfo<KnowledgeFragmentVo> queryPageList(KnowledgeFragmentBo bo, PageQuery pageQuery) {
+        // B 口收敛（/system/fragment/list）：knowledgeId 为他人库时分页拉取片段明文，kid 级过读面门
+        checkListAccessByKnowledgeId(bo);
         LambdaQueryWrapper<KnowledgeFragment> lqw = buildQueryWrapper(bo);
         Page<KnowledgeFragmentVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
@@ -77,8 +86,21 @@ public class KnowledgeFragmentServiceImpl implements IKnowledgeFragmentService {
      */
     @Override
     public List<KnowledgeFragmentVo> queryList(KnowledgeFragmentBo bo) {
+        // B 口收敛（/system/fragment/export）：整库导出 Excel 前按 kid 过读面门
+        checkListAccessByKnowledgeId(bo);
         LambdaQueryWrapper<KnowledgeFragment> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * B 口收敛公共入口：列表/导出查询携带 knowledgeId 条件时按 kid 过读面门
+     * （owned || share=1 可见即够——片段读面与检索口同判据，不另立口径）。
+     * knowledgeId 为空的裸列查询面不在本轮收敛范围（登记：B2 片段列表 S2 化时统一收窄）。
+     */
+    private void checkListAccessByKnowledgeId(KnowledgeFragmentBo bo) {
+        if (bo.getKnowledgeId() != null) {
+            knowledgeAccessGate.checkRetrievalAccess(bo.getKnowledgeId());
+        }
     }
 
     private LambdaQueryWrapper<KnowledgeFragment> buildQueryWrapper(KnowledgeFragmentBo bo) {

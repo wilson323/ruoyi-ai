@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 import java.io.Serial;
+import java.util.Date;
 
 /**
  * 知识片段对象 knowledge_fragment
@@ -56,6 +57,23 @@ public class KnowledgeFragment extends BaseEntity {
      * 知识库ID
      */
     private Long knowledgeId;
+
+    // ========== B1：向量版本三元组（镜像 Part A 列；唯一生产者 KnowledgeAttachServiceImpl#parse） ==========
+
+    /**
+     * 本片段实际使用的 embedding 模型名（写入时快照，非库级引用）
+     */
+    private String embeddingModel;
+
+    /**
+     * 本片段向量维度（与 embedding_model 联合判桶；取嵌入实测值，非模型配置值）
+     */
+    private Integer embeddingDim;
+
+    /**
+     * 本片段最近一次成功嵌入时间（增量重嵌入水位线）
+     */
+    private Date embeddedAt;
 
 
 }

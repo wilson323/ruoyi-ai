@@ -169,7 +169,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
             CompletableFuture<List<KnowledgeRetrievalVo>> keywordFuture = CompletableFuture.supplyAsync(() -> {
                 try {
                     Long kid = Long.valueOf(queryVectorBo.getKid());
-                    List<KnowledgeFragmentVo> fragments = fragmentMapper.searchByKeyword(kid, queryVectorBo.getQuery(), finalTargetMaxResults);
+                    List<KnowledgeFragmentVo> fragments = fragmentMapper.searchByKeyword(kid, queryVectorBo.getQuery(), finalTargetMaxResults, queryVectorBo.getMaxSensitivity());
                     return fragments.stream().map(f -> {
                         KnowledgeRetrievalVo vo = new KnowledgeRetrievalVo();
                         // 优先使用 fid 作为融合标识（与向量侧一致），历史数据无 fid 时回退主键
@@ -356,6 +356,9 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
         copy.setVectorModelName(original.getVectorModelName());
         copy.setEmbeddingModelName(original.getEmbeddingModelName());
         copy.setBaseUrl(original.getBaseUrl());
+        // B1：仅后端装配的访问过滤参数必须同步透传（方案 §8.4 盘点缺口——手工拷贝漏字段
+        // 会让混合检索的向量子通道丢过滤；经 QueryVectorBo 拷贝重载走同一校验入口）。
+        copy.applyBackendAccessFilters(original);
         return copy;
     }
 
@@ -395,7 +398,13 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
                 Objects.toString(bo.getEmbeddingModelName(), ""), Objects.toString(bo.getSimilarityThreshold(), ""),
                 Objects.toString(bo.getEnableHybrid(), ""), Objects.toString(bo.getHybridAlpha(), ""),
                 Objects.toString(bo.getEnableRerank(), ""), Objects.toString(bo.getRerankModelName(), ""),
-                Objects.toString(bo.getRerankTopN(), ""), Objects.toString(bo.getRerankScoreThreshold(), ""));
+                Objects.toString(bo.getRerankTopN(), ""), Objects.toString(bo.getRerankScoreThreshold(), ""),
+                // B1：访问过滤参数并入键尾（S3 的 B2 预告项提前落位）——同 kid+query 不同
+                // maxSensitivity/scope 不得互相命中缓存；追加剧不破坏 kid 首段与身份段次序，
+                // invalidateKnowledge 的 kid 前缀清除语义不受影响。
+                Objects.toString(bo.getMaxSensitivity(), ""), Objects.toString(bo.getPersonId(), ""),
+                Objects.toString(bo.getScopeTypes(), ""), Objects.toString(bo.getGroupId(), ""),
+                Objects.toString(bo.getProjectId(), ""), Objects.toString(bo.getOwnerAgentIds(), ""));
     }
 
     /**

@@ -10,6 +10,7 @@ import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.domain.bo.knowledge.KnowledgeInfoBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import org.ruoyi.common.idempotent.annotation.RepeatSubmit;
@@ -36,6 +37,13 @@ import org.ruoyi.common.mybatis.core.page.TableDataInfo;
 public class KnowledgeInfoController extends BaseController {
 
     private final IKnowledgeInfoService knowledgeInfoService;
+
+    /**
+     * C 口收敛（getInfo 读面）专用：queryById 被 ws 消息线程（MultiKnowledgeAugmentor）与
+     * @Async 解析链共享，Service 层内嵌单参 Gate 会误伤非 HTTP 调用方，故该端点的
+     * ownership 校验收敛在 Controller 入口（判据仍在 Gate，非手写）。
+     */
+    private final KnowledgeAccessGate knowledgeAccessGate;
 
     /**
      * 查询知识库列表
@@ -66,6 +74,10 @@ public class KnowledgeInfoController extends BaseController {
     @GetMapping("/{id}")
     public R<KnowledgeInfoVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
+        // C 口收敛（B0 审计破坏面 C）：getInfo 按 kid 直读任意库元数据，读面判据过 Gate
+        //（owned || share=1 可见即可；他人私有库在此拒绝）。收敛点在 Controller 的原因
+        // 见字段 javadoc——queryById 是 ws/@Async 共享底层，不能内嵌 Gate。
+        knowledgeAccessGate.checkRetrievalAccess(id);
         return R.ok(knowledgeInfoService.queryById(id));
     }
 

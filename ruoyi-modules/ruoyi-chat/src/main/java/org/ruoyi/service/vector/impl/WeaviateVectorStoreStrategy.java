@@ -14,7 +14,9 @@ import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
+import org.ruoyi.enums.KnowledgeSensitivity;
 import org.ruoyi.factory.EmbeddingModelFactory;
+import org.ruoyi.service.vector.WeaviatePayloadKeys;
 import org.springframework.stereotype.Component;
 import io.weaviate.client.Config;
 import io.weaviate.client.base.Result;
@@ -25,6 +27,9 @@ import io.weaviate.client.v1.batch.model.BatchDeleteResponse;
 import io.weaviate.client.v1.filters.Operator;
 import io.weaviate.client.v1.filters.WhereFilter;
 import io.weaviate.client.v1.graphql.model.GraphQLResponse;
+import io.weaviate.client.v1.graphql.query.Get;
+import io.weaviate.client.v1.graphql.query.argument.NearVectorArgument;
+import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.Schema;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
@@ -33,12 +38,24 @@ import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Weaviate向量库策略实现
+ * <p>
+ * B1 四刀之二/之一落点：
+ * <ul>
+ *   <li>入库 payload：在现态 {@code text/fid/kid/docId} 四键之上补 8 个驼峰归属键
+ *       （{@link WeaviatePayloadKeys} 单源；存量片段 0 行，无 Reindex 负担）。</li>
+ *   <li>检索消费：{@link #search} 按 QueryVectorBo 仅后端装配参数构造 typed
+ *       {@code WhereFilter}（graphQL().get() typed 链，客户端序列化/转义）——
+ *       可见集 OR 组 ∩ 敏感闸门（ContainsAny + 允许值集合，非序比较）；
+ *       参数全空=不加 where=B1 前行为。</li>
+ * </ul>
  *
  * @author Yzm
  */
@@ -51,7 +68,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     /**
      * 已确认存在的 class 缓存，避免每次检索都全量拉取 schema
      */
-    private final java.util.Set<String> knownClasses = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final Set<String> knownClasses = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public WeaviateVectorStoreStrategy(VectorStoreProperties vectorStoreProperties,
                                        IChatModelService chatModelService,
@@ -91,24 +108,21 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         // 检查类是否存在，如果不存在就创建 schema
         Result<Schema> schemaResult = getClient().schema().getter().run();
         Schema schema = schemaResult.getResult();
-        boolean classExists = false;
-        for (WeaviateClass weaviateClass : schema.getClasses()) {
-            if (weaviateClass.getClassName().equals(className)) {
-                classExists = true;
-                break;
+        WeaviateClass existing = null;
+        if (schema.getClasses() != null) {
+            for (WeaviateClass weaviateClass : schema.getClasses()) {
+                if (weaviateClass.getClassName().equals(className)) {
+                    existing = weaviateClass;
+                    break;
+                }
             }
         }
-        if (!classExists) {
-            // 类不存在，创建 schema
+        if (existing == null) {
+            // 类不存在，创建 schema（B1：property 清单单源 WeaviatePayloadKeys，含 8 个新驼峰键）
             WeaviateClass build = WeaviateClass.builder()
                     .className(className)
                     .vectorizer("none")
-                    .properties(
-                            List.of(Property.builder().name("text").dataType(Collections.singletonList("text")).build(),
-                                    Property.builder().name("fid").dataType(Collections.singletonList("text")).build(),
-                                    Property.builder().name("kid").dataType(Collections.singletonList("text")).build(),
-                                    Property.builder().name("docId").dataType(Collections.singletonList("text")).build())
-                    )
+                    .properties(WeaviatePayloadKeys.requiredProperties())
                     .build();
             Result<Boolean> createResult = getClient().schema().classCreator().withClass(build).run();
             if (createResult.hasErrors()) {
@@ -117,8 +131,38 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             } else {
                 log.info("Schema 创建成功: {}", className);
             }
+        } else {
+            // 老 class 不重建：写入前按清单补齐缺失 property（Weaviate 支持追加；
+            // 客户端 5.3.0 的 schema().propertyCreator()，方案 §2.3 not-run 顾虑已核实解除）。
+            // 失败语义=抛错中断写入（attach 置 FAILED），不静默降级——否则出现
+            // 「MySQL 有标、向量侧无键」的隔离穿透（最佳实践 §4 铁律一）。
+            ensurePayloadPropertiesPresent(className, existing);
         }
         knownClasses.add(className);
+    }
+
+    /**
+     * 对已存在的 class 补齐缺失的 payload property（幂等：仅添加清单中缺失的项）。
+     */
+    private void ensurePayloadPropertiesPresent(String className, WeaviateClass existing) {
+        Set<String> presentNames = existing.getProperties() == null
+            ? Set.of()
+            : existing.getProperties().stream().map(Property::getName).collect(Collectors.toSet());
+        for (Property required : WeaviatePayloadKeys.requiredProperties()) {
+            if (presentNames.contains(required.getName())) {
+                continue;
+            }
+            Result<Boolean> addResult = getClient().schema().propertyCreator()
+                .withClassName(className)
+                .withProperty(required)
+                .run();
+            if (addResult == null || addResult.hasErrors()) {
+                log.error("property 补齐失败: class={}, property={}, error={}",
+                    className, required.getName(), addResult == null ? "null result" : addResult.getError());
+                throw new ServiceException("Weaviate property 补齐失败: " + required.getName());
+            }
+            log.info("property 补齐成功: class={}, property={}", className, required.getName());
+        }
     }
 
     @Override
@@ -136,17 +180,16 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         if (embeddings.size() != chunkList.size()) {
             throw new ServiceException("Embedding 返回数量与分片数量不一致");
         }
+        // B1 三元组权威值：以嵌入实测维度回写 Bo（「实际用了什么」优先于配置值），
+        // 供 KnowledgeAttachServiceImpl#parse 为本批片段补 knowledge_fragment.embedding_dim。
+        int actualDim = embeddings.get(0).dimension();
+        storeEmbeddingBo.setEmbeddingDim(actualDim);
         ObjectsBatcher batcher = getClient().batch().objectsBatcher();
         for (int i = 0; i < chunkList.size(); i++) {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
             Embedding embedding = embeddings.get(i);
-            Map<String, Object> properties = Map.of(
-                    "text", text,
-                    "fid", fid,
-                    "kid", kid,
-                    "docId", docId
-            );
+            Map<String, Object> properties = buildFragmentPayload(storeEmbeddingBo, text, fid, actualDim);
             float[] vectorArray = embedding.vector();
             normalize(vectorArray);
             Float[] vector = toObjectArray(vectorArray);
@@ -163,6 +206,43 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         log.info("向量存储完成消耗时间：" + (endTime - startTime) / 1000 + "秒");
     }
 
+    /**
+     * B1 四刀之二：组装单个片段的 payload（现态 4 键 + 8 个驼峰新键）。
+     * <p>
+     * 归属/敏感级取自 {@link StoreEmbeddingBo}（parse 时从 knowledge_info 镜像），
+     * null 值键不写入（空态降级：无归属元数据的老写入路径不携带新键）；
+     * {@code embeddingDim} 恒写（嵌入实测值必得）。
+     * 键名单源 {@link WeaviatePayloadKeys}，禁字面量。
+     */
+    static Map<String, Object> buildFragmentPayload(StoreEmbeddingBo bo, String text, String fid, int dimension) {
+        Map<String, Object> properties = new LinkedHashMap<>();
+        properties.put(WeaviatePayloadKeys.TEXT, text);
+        properties.put(WeaviatePayloadKeys.FID, fid);
+        properties.put(WeaviatePayloadKeys.KID, bo.getKid());
+        properties.put(WeaviatePayloadKeys.DOC_ID, bo.getDocId());
+        putIfNotNull(properties, WeaviatePayloadKeys.SCOPE_TYPE, bo.getScopeType());
+        putIdIfNotNull(properties, WeaviatePayloadKeys.GROUP_ID, bo.getGroupId());
+        putIdIfNotNull(properties, WeaviatePayloadKeys.PROJECT_ID, bo.getProjectId());
+        putIdIfNotNull(properties, WeaviatePayloadKeys.OWNER_PERSON_ID, bo.getOwnerPersonId());
+        putIdIfNotNull(properties, WeaviatePayloadKeys.OWNER_AGENT_ID, bo.getOwnerAgentId());
+        putIfNotNull(properties, WeaviatePayloadKeys.SENSITIVITY, bo.getSensitivity());
+        putIfNotNull(properties, WeaviatePayloadKeys.EMBEDDING_MODEL, bo.getEmbeddingModelName());
+        properties.put(WeaviatePayloadKeys.EMBEDDING_DIM, dimension);
+        return properties;
+    }
+
+    private static void putIfNotNull(Map<String, Object> target, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            target.put(key, value);
+        }
+    }
+
+    private static void putIdIfNotNull(Map<String, Object> target, String key, Long value) {
+        if (value != null) {
+            // 归属 ID 以 string 承载（雪花精度，见 WeaviatePayloadKeys dataType 裁决）
+            target.put(key, String.valueOf(value));
+        }
+    }
 
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
@@ -180,7 +260,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         String vectorStr = String.join(",", vectorStrings);
         String className = vectorStoreProperties.getWeaviate().getClassname();
 
-        // 构建 GraphQL 查询
+        // 构建 GraphQL 查询（本方法无 where 过滤消费，维持 raw 形态；
+        // 访问过滤的 typed 链见 #search）
         String graphQLQuery = String.format(
                 "{\n" +
                         "  Get {\n" +
@@ -231,32 +312,29 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         float[] vector = queryEmbedding.vector();
         // 查询向量单位化处理
         normalize(vector);
-        List<String> vectorStrings = new ArrayList<>();
-        for (float v : vector) {
-            vectorStrings.add(String.valueOf(v));
-        }
-        String vectorStr = String.join(",", vectorStrings);
         String className = vectorStoreProperties.getWeaviate().getClassname();
+        // B1 四刀之一：payload where 过滤消费（仅后端装配参数非空时加 where，见 buildAccessWhereFilter）
+        WhereFilter accessFilter = buildAccessWhereFilter(queryVectorBo);
 
-        String graphQLQuery = String.format(
-                "{\n" +
-                "  Get {\n" +
-                "    %s(nearVector: {vector: [%s]} limit: %d) {\n" +
-                "      text\n" +
-                "      fid\n" +
-                "      docId\n" +
-                "      _additional {\n" +
-                "        distance\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}",
-                className + queryVectorBo.getKid(),
-                vectorStr,
-                queryVectorBo.getMaxResults()
-        );
+        // typed GraphQL 链（客户端 5.3.0 graphQL().get()）：where 子句由 WhereFilter
+        // 结构化构建、值引号转义由客户端 Serializer 统一处理——整体消灭手写 GraphQL
+        // 字符串拼接与自制 escapeGraphQLString；string dataType 键的过滤值一律
+        // valueString（typed builder 强制键/值形态配对，杜绝 valueText/valueString 配错）
+        Get getQuery = getClient().graphQL().get()
+                .withClassName(className + queryVectorBo.getKid())
+                .withNearVector(NearVectorArgument.builder().vector(toObjectArray(vector)).build())
+                .withLimit(queryVectorBo.getMaxResults())
+                .withFields(
+                        Field.builder().name(WeaviatePayloadKeys.TEXT).build(),
+                        Field.builder().name(WeaviatePayloadKeys.FID).build(),
+                        Field.builder().name(WeaviatePayloadKeys.DOC_ID).build(),
+                        Field.builder().name("_additional")
+                                .fields(Field.builder().name("distance").build()).build());
+        if (accessFilter != null) {
+            getQuery = getQuery.withWhere(accessFilter);
+        }
 
-        Result<GraphQLResponse> result = getClient().graphQL().raw().withQuery(graphQLQuery).run();
+        Result<GraphQLResponse> result = getQuery.run();
         List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> resultList = new ArrayList<>();
 
         if (result != null && !result.hasErrors()) {
@@ -264,6 +342,9 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             JSONObject entries = new JSONObject(data);
             Map<String, cn.hutool.json.JSONArray> entriesMap = entries.get("Get", Map.class);
             cn.hutool.json.JSONArray objects = entriesMap.get(className + queryVectorBo.getKid());
+            if (objects == null) {
+                return resultList;
+            }
 
             for (Object obj : objects) {
                 Map<String, Object> map = (Map<String, Object>) obj;
@@ -298,6 +379,86 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         return resultList;
     }
 
+    /**
+     * B1 四刀之一：按 QueryVectorBo 仅后端装配参数构造 typed {@link WhereFilter}。
+     * <p>
+     * 语义（最佳实践 §4 铁律二）：「作用域并集 ∪ 归属可见性」为 OR 组，
+     * 叠加敏感闸门 AND：「sensitivity ∈ allowedValuesUpTo(maxSensitivity)」
+     * 以 ContainsAny + 允许值集合表达（集合语义，禁序比较——字典序
+     * INTERNAL&lt;PUBLIC&lt;SECRET 与敏感级升序 PUBLIC&lt;INTERNAL&lt;SECRET 不一致，
+     * 序比较曾致 cap=PUBLIC 放行 INTERNAL 库的越权放大，Validator P0）。
+     * 全部参数为空 → 返回 {@code null}（不加 where，与 B1 前行为一致）——B1 检索
+     * 装配点均不装配过滤参数（上限权威源在 IPD 桥，B2 接入），现网运行态零行为变化。
+     * <p>
+     * 值域已由 {@code QueryVectorBo#applyBackendAccessFilters} 枚举/字符集校验收口，
+     * 值序列化（引号转义）由 weaviate-client Serializer 兜底（纵深防御）。
+     *
+     * @return null 或 And(Or(可见性谓词...), 敏感闸门) 形态的 typed 过滤器
+     */
+    static WhereFilter buildAccessWhereFilter(QueryVectorBo bo) {
+        List<WhereFilter> visibilityFilters = new ArrayList<>();
+        if (bo.getScopeTypes() != null && !bo.getScopeTypes().isEmpty()) {
+            visibilityFilters.add(stringValuesFilter(WeaviatePayloadKeys.SCOPE_TYPE, Operator.ContainsAny,
+                bo.getScopeTypes()));
+        }
+        if (bo.getGroupId() != null) {
+            visibilityFilters.add(stringValuesFilter(WeaviatePayloadKeys.GROUP_ID, Operator.Equal,
+                List.of(String.valueOf(bo.getGroupId()))));
+        }
+        if (bo.getProjectId() != null) {
+            visibilityFilters.add(stringValuesFilter(WeaviatePayloadKeys.PROJECT_ID, Operator.Equal,
+                List.of(String.valueOf(bo.getProjectId()))));
+        }
+        if (bo.getPersonId() != null) {
+            visibilityFilters.add(stringValuesFilter(WeaviatePayloadKeys.OWNER_PERSON_ID, Operator.Equal,
+                List.of(String.valueOf(bo.getPersonId()))));
+        }
+        if (bo.getOwnerAgentIds() != null && !bo.getOwnerAgentIds().isEmpty()) {
+            List<String> agentIds = bo.getOwnerAgentIds().stream().map(String::valueOf).toList();
+            visibilityFilters.add(stringValuesFilter(WeaviatePayloadKeys.OWNER_AGENT_ID, Operator.ContainsAny,
+                agentIds));
+        }
+        WhereFilter sensitivityGate = bo.getMaxSensitivity() == null ? null
+            : stringValuesFilter(WeaviatePayloadKeys.SENSITIVITY, Operator.ContainsAny,
+                KnowledgeSensitivity.allowedNamesUpTo(bo.getMaxSensitivity()));
+
+        if (visibilityFilters.isEmpty() && sensitivityGate == null) {
+            return null;
+        }
+        if (visibilityFilters.isEmpty()) {
+            return sensitivityGate;
+        }
+        WhereFilter visibilityGroup = group(Operator.Or, visibilityFilters);
+        if (sensitivityGate == null) {
+            return visibilityGroup;
+        }
+        return WhereFilter.builder().operator(Operator.And).operands(visibilityGroup, sensitivityGate).build();
+    }
+
+    /**
+     * string dataType payload 键的谓词：值一律走 builder 的 {@code valueString}
+     * （weaviate-client 5.3.0 typed API，单值/多值均以 varargs 落 valueStringArray，
+     * 序列化时由客户端统一输出 valueString 形态并做引号转义）。
+     * valueText 仅适用于 text dataType 键（见 removeByDocId/removeByFid 的 docId/fid）。
+     */
+    private static WhereFilter stringValuesFilter(String key, String operator, List<String> values) {
+        return WhereFilter.builder()
+            .path(key)
+            .operator(operator)
+            .valueString(values.toArray(new String[0]))
+            .build();
+    }
+
+    private static WhereFilter group(String operator, List<WhereFilter> operands) {
+        if (operands.size() == 1) {
+            return operands.get(0);
+        }
+        return WhereFilter.builder()
+            .operator(operator)
+            .operands(operands.toArray(new WhereFilter[0]))
+            .build();
+    }
+
     @Override
     @SneakyThrows
     public void removeById(String id, String modelName) {
@@ -316,7 +477,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public void removeByDocId(String docId, String kid) {
         String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
-        // 构建 Where 条件
+        // 构建 Where 条件（docId 为 text dataType 键，valueText 是其正确配对形态）
         WhereFilter whereFilter = WhereFilter.builder()
                 .path("docId")
                 .operator(Operator.Equal)
@@ -336,7 +497,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public void removeByFid(String fid, String kid) {
         String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
-        // 构建 Where 条件
+        // 构建 Where 条件（fid 为 text dataType 键，valueText 是其正确配对形态）
         WhereFilter whereFilter = WhereFilter.builder()
                 .path("fid")
                 .operator(Operator.Equal)

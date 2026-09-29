@@ -38,9 +38,46 @@ public class KnowledgeInfo extends BaseEntity {
     private String name;
 
     /**
-     * 是否公开知识库（0 否 1是）
+     * 是否公开知识库（0 否 1是）。
+     * <p>
+     * B1 起降级为后端派生只读镜像（最佳实践 §8.1 规则 3）：
+     * share = (sensitivity == PUBLIC ? 1 : 0)，唯一写点
+     * KnowledgeInfoServiceImpl#insertByBo/updateByBo，客户端传值一律被覆盖。
+     * <p>
+     * P2-1 顺手修（B1 Validator）：显式钉死 UPDATE 策略 NOT_NULL——
+     * 实体置 null 不参与 UPDATE SET（与「派生镜像不回写清空」语义一致），
+     * 不再隐式依赖全局 field-strategy 默认值（yml 改全局策略会静默翻车）。
      */
+    @TableField(updateStrategy = FieldStrategy.NOT_NULL)
     private Long share;
+
+    // ========== B1：三层作用域 × 四维归属 × 敏感级（镜像 Part A 列，驼峰自动映射 snake_case 列名） ==========
+
+    /**
+     * 作用域：GLOBAL全局|GROUP产品线|PROJECT项目|PERSON个人|AGENT数字员工（列默认 PERSON）
+     */
+    private String scopeType;
+
+    /**
+     * 归属产品组（scope_type=GROUP/PROJECT 时使用；对齐 product_groups.id）
+     */
+    private Long groupId;
+
+    /**
+     * 归属项目（scope_type=PROJECT 时使用；对齐 projects.id）
+     */
+    private Long projectId;
+
+    /**
+     * 归属数字员工（scope_type=AGENT 时使用；对齐 agent_info.id）
+     */
+    private Long ownerAgentId;
+
+    /**
+     * 敏感级：PUBLIC公开|INTERNAL内部|SECRET机密（列默认 INTERNAL）。
+     * SECRET 禁止由自动规则产生，升密仅人审显式改（§8.1 规则 1）。
+     */
+    private String sensitivity;
 
     /**
      * 知识库描述

@@ -204,12 +204,29 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
     }
 
     /**
-     * 从向量库检索（复用聊天模块的统一检索服务：向量 + 可选混合检索 + 可选重排）
+     * 从向量库检索（复用聊天模块的统一检索服务：向量 + 可选混合检索 + 可选重排）。
+     * <p>
+     * A 口收敛（B0 审计破坏面 A，§8.3 S1-③ 登记卡）：节点 config.knowledgeId 客户端可控
+     * （自建工作流即可引用任意 kid，PrivilegeUtil 只校验工作流归属不校验节点引用的库），
+     * 进检索上下文前必须过检索访问门。工作流节点在 @Async 线程执行、无 Sa-Token
+     * ThreadLocal，按 ws 先例走双参显式身份——userId 由 WorkflowStarter.streaming 在
+     * HTTP 起始线程经 WfState 透传（resume 路径同构透传）。
+     * <p>
+     * Gate 拒绝语义：抛 ServiceException 且置于下方 try 之外——被 catch(Exception) 吞成
+     * 静默空结果即变相绕过 Gate（非静默忽略是端口契约），异常交由 WorkflowEngine 统一
+     * 进入节点失败路径（重试/DEAD 留痕，见 AbstractWfNodeRetryDeadTest 语义）。
      */
     private String retrieveFromVector(KnowledgeRetrievalNodeConfig config, String query) {
+        final Long knowledgeId;
         try {
-            Long knowledgeId = Long.parseLong(config.getKnowledgeId());
-
+            knowledgeId = Long.parseLong(config.getKnowledgeId());
+        } catch (NumberFormatException e) {
+            log.error("Invalid knowledge base ID format: {}", config.getKnowledgeId(), e);
+            return "错误：知识库ID格式无效";
+        }
+        SpringUtil.getBean(org.ruoyi.service.knowledge.KnowledgeAccessGate.class)
+            .checkRetrievalAccess(knowledgeId, wfState.getUserId());
+        try {
             org.ruoyi.service.knowledge.IKnowledgeInfoService knowledgeInfoService =
                 SpringUtil.getBean(org.ruoyi.service.knowledge.IKnowledgeInfoService.class);
             org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo kb = knowledgeInfoService.queryById(knowledgeId);
@@ -272,9 +289,6 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
                 sb.append("\n");
             }
             return sb.toString().trim();
-        } catch (NumberFormatException e) {
-            log.error("Invalid knowledge base ID format: {}", config.getKnowledgeId(), e);
-            return "错误：知识库ID格式无效";
         } catch (Exception e) {
             log.error("Failed to retrieve from vector store", e);
             return "";

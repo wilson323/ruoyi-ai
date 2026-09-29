@@ -1,5 +1,6 @@
 package org.ruoyi.service.knowledge.impl;
 
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
@@ -12,10 +13,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.domain.bo.knowledge.KnowledgeInfoBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeInfo;
+import org.ruoyi.enums.KnowledgeSensitivity;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import org.ruoyi.mapper.knowledge.KnowledgeInfoMapper;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
@@ -46,6 +49,13 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     private final org.ruoyi.service.vector.VectorStoreService vectorStoreService;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final OssService ossService;
+
+    /**
+     * 管理面访问门（C 口收敛）：edit/remove 等 ownership 面统一过 assertManageable，
+     * 判据仅 owned（share=1 公开不授予写权），superadmin 豁免。
+     * 构造循环由 Gate 实现侧 @Lazy 打破（Gate 判 owned 需回调本 Service 查库）。
+     */
+    private final KnowledgeAccessGate knowledgeAccessGate;
 
     /**
      * 查询知识库
@@ -142,6 +152,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     @Override
     public Boolean insertByBo(KnowledgeInfoBo bo) {
         KnowledgeInfo add = MapstructUtils.convert(bo, KnowledgeInfo.class);
+        // B1 §8.1：sensitivity 权威写点 + share 派生镜像（新增路径，缺省 INTERNAL）
+        applySensitivityShareMirror(add, true);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -158,7 +170,12 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      */
     @Override
     public Boolean updateByBo(KnowledgeInfoBo bo) {
+        // C 口收敛（B0 审计破坏面 C）：edit 无 ownership 校验时，任何持 system:info:edit 者可
+        // UPDATE 任意库 share=1，即刻击穿 Gate 读面判据的 share 半边（提权链）。统一过管理面门。
+        knowledgeAccessGate.assertManageable(bo.getId());
         KnowledgeInfo update = MapstructUtils.convert(bo, KnowledgeInfo.class);
+        // B1 §8.1：显式携带 sensitivity 时派生 share；未携带时二者均不动（部分更新保既有值）
+        applySensitivityShareMirror(update, false);
         validEntityBeforeSave(update);
         boolean updated = baseMapper.updateById(update) > 0;
         if (updated) knowledgeRetrievalService.invalidateKnowledge(String.valueOf(bo.getId()));
@@ -174,7 +191,48 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         int overlap = entity.getOverlapChar() == null
             ? DocumentSplitConfig.DEFAULT_OVERLAP : entity.getOverlapChar().intValue();
         new DocumentSplitConfig(entity.getSeparator(), blockSize, overlap, "");
-        //TODO 做一些数据校验,如唯一约束
+        // B1 §8.1 一致性断言（方案 §4）：显式写 sensitivity 时 share 必须等于派生值，
+        // 防止未来新增写点绕过镜像（两键脱钩=读侧口径分裂的病根）。
+        if (entity.getSensitivity() != null) {
+            Long derivedShare = derivedShare(entity.getSensitivity());
+            if (!derivedShare.equals(entity.getShare())) {
+                throw new ServiceException("share 与 sensitivity 派生镜像不一致（预期 share="
+                    + derivedShare + "），拒绝写入");
+            }
+        }
+    }
+
+    /**
+     * B1 §8.1：sensitivity 权威写点 + share 派生只读镜像（写点仅 insertByBo/updateByBo）。
+     * <ul>
+     *   <li>insert：sensitivity 缺省 INTERNAL（自动规则禁产 SECRET，§8.1 规则 1）；
+     *       显式值忽略大小写/空白归一后校验枚举。</li>
+     *   <li>update：仅显式携带 sensitivity 时才重派生 share；未携带时置 share=null
+     *       （MyBatis-Plus NOT_NULL 策略下不进 SET 子句），杜绝客户端单独改 share——
+     *       share 自此不是安全边界，只是 sensitivity 的兼容镜像。</li>
+     *   <li>非法 sensitivity 取值抛 {@link ServiceException}（fail-closed，防任意串进
+     *       payload 过滤/关键词 JOIN 谓词）。</li>
+     * </ul>
+     */
+    private void applySensitivityShareMirror(KnowledgeInfo entity, boolean insert) {
+        if (insert && StringUtils.isBlank(entity.getSensitivity())) {
+            entity.setSensitivity(KnowledgeSensitivity.INTERNAL.name());
+        }
+        if (StringUtils.isNotBlank(entity.getSensitivity())) {
+            KnowledgeSensitivity parsed = KnowledgeSensitivity.parse(entity.getSensitivity());
+            if (parsed == null) {
+                throw new ServiceException("非法敏感级取值（仅 PUBLIC/INTERNAL/SECRET）: "
+                    + entity.getSensitivity());
+            }
+            entity.setSensitivity(parsed.name());
+            entity.setShare(derivedShare(parsed.name()));
+        } else {
+            entity.setShare(null);
+        }
+    }
+
+    private static Long derivedShare(String sensitivity) {
+        return KnowledgeSensitivity.PUBLIC.name().equals(sensitivity) ? 1L : 0L;
     }
 
     /**
@@ -190,6 +248,10 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         if(isValid){
             //TODO 做一些业务上的校验,判断是否需要校验
         }
+        // C 口收敛：删除为不可逆破坏面（连带向量库 removeById + OSS 物理删），必须先全量过
+        // 管理面门再动手——循环内中途拒绝虽可回滚 DB，但向量库/OSS 清理无事务保护，
+        // 会留下「DB 已回滚、外部存储已删一半」的脏状态。
+        ids.forEach(knowledgeAccessGate::assertManageable);
         for (Long kid : ids) {
             KnowledgeInfo info = baseMapper.selectById(kid);
             // 1. 删除向量库中该知识库的所有向量（按文档逐个清理，三种向量库行为一致）

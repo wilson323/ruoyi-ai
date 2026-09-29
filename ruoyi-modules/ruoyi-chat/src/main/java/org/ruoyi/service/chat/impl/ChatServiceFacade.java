@@ -14,15 +14,11 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.rag.content.Content;
-import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.rag.AugmentationRequest;
 import dev.langchain4j.rag.AugmentationResult;
-import dev.langchain4j.rag.DefaultRetrievalAugmentor;
 import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.query.Metadata;
-import dev.langchain4j.rag.query.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -56,9 +52,7 @@ import org.ruoyi.common.trace.core.TraceStreamSpan;
 import org.ruoyi.common.trace.domain.TraceNode;
 import org.ruoyi.common.trace.domain.TraceRun;
 import org.ruoyi.common.trace.service.TraceRecordService;
-import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.agent.AgentVo;
-import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.service.core.LangChain4jMcpToolProviderService;
 import org.ruoyi.observability.*;
@@ -67,10 +61,8 @@ import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
-import org.ruoyi.service.knowledge.IKnowledgeInfoService;
 import org.ruoyi.service.knowledge.KnowledgeAccessGate;
-import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
-import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
+import org.ruoyi.service.knowledge.retriever.MultiKnowledgeAugmentorFactory;
 import org.ruoyi.argtrace.RagTraceNodeTypes;
 import org.ruoyi.argtrace.RagTracePayloadBuilder;
 import org.springframework.stereotype.Service;
@@ -80,7 +72,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,11 +100,9 @@ public class ChatServiceFacade implements IChatService {
 
     private final ChatServiceFactory chatServiceFactory;
 
-    private final IKnowledgeInfoService knowledgeInfoService;
-
-    private final KnowledgeRetrievalService knowledgeRetrievalService;
-
     private final KnowledgeAccessGate knowledgeAccessGate;
+
+    private final MultiKnowledgeAugmentorFactory multiKnowledgeAugmentorFactory;
 
     private final SseEmitterManager sseEmitterManager;
 
@@ -517,7 +506,7 @@ public class ChatServiceFacade implements IChatService {
             return content;
         }
         try {
-            RetrievalAugmentor augmentor = buildMultiKnowledgeAugmentor(knowledgeIds);
+            RetrievalAugmentor augmentor = multiKnowledgeAugmentorFactory.buildMultiKnowledgeAugmentor(knowledgeIds);
             if (augmentor == null) {
                 return content;
             }
@@ -698,116 +687,6 @@ public class ChatServiceFacade implements IChatService {
             }
         }
         return List.of();
-    }
-
-    /**
-     * 构建多知识库复合检索增强器。
-     * 单知识库直接用 DefaultRetrievalAugmentor + CustomVectorRetriever；
-     * 多知识库用一个复合 ContentRetriever 合并各库检索结果。
-     */
-    private RetrievalAugmentor buildMultiKnowledgeAugmentor(List<Long> knowledgeIds) {
-        if (knowledgeIds == null || knowledgeIds.isEmpty()) {
-            return null;
-        }
-        List<ContentRetriever> retrievers = new ArrayList<>();
-        for (Long kid : knowledgeIds) {
-            try {
-                KnowledgeInfoVo kb = knowledgeInfoService.queryById(kid);
-                if (kb == null) {
-                    continue;
-                }
-                ChatModelVo embModel = chatModelService.selectModelByName(kb.getEmbeddingModel());
-                if (embModel == null) {
-                    log.warn("knowledge_retriever status=SKIPPED reason=EMBEDDING_MODEL_UNAVAILABLE");
-                    continue;
-                }
-                retrievers.add(new CustomVectorRetriever(knowledgeRetrievalService, kb, embModel));
-            } catch (Exception e) {
-                log.warn("knowledge_retriever operation=BUILD status=FAILED errorType={}", errorType(e));
-            }
-        }
-        if (retrievers.isEmpty()) {
-            return null;
-        }
-        // 单库直接返回；多库用复合检索器
-        ContentRetriever composite = retrievers.size() == 1
-            ? retrievers.get(0)
-            : new CompositeContentRetriever(retrievers);
-        return DefaultRetrievalAugmentor.builder()
-            .contentRetriever(composite)
-            .build();
-    }
-
-    /**
-     * 复合内容检索器：对多个知识库检索器并发查询并合并结果
-     */
-    private static class CompositeContentRetriever implements ContentRetriever {
-        private final List<ContentRetriever> delegates;
-
-        CompositeContentRetriever(List<ContentRetriever> delegates) {
-            this.delegates = delegates;
-        }
-
-        @Override
-        public List<Content> retrieve(Query query) {
-            List<CompletableFuture<List<Content>>> futures = delegates.stream()
-                    .map(r -> CompletableFuture.supplyAsync(() -> {
-                        try {
-                            List<Content> part = r.retrieve(query);
-                            return part == null ? List.<Content>of() : part;
-                        } catch (Exception e) {
-                            log.warn("knowledge_retriever operation=RETRIEVE status=FAILED errorType={}",
-                                errorType(e));
-                            return List.<Content>of();
-                        }
-                    })).toList();
-            Map<String, Content> unique = new LinkedHashMap<>();
-            for (CompletableFuture<List<Content>> future : futures) {
-                for (Content content : future.join()) {
-                    String key = content.textSegment().metadata().getString("kid") + "|"
-                            + content.textSegment().metadata().getString("docId") + "|"
-                            + content.textSegment().metadata().getString("fid");
-                    if (key.endsWith("null|null|null")) key = content.textSegment().text();
-                    unique.putIfAbsent(key, content);
-                }
-            }
-            List<Content> bounded = new ArrayList<>();
-            int chars = 0;
-            for (Content content : unique.values()) {
-                int next = content.textSegment().text().length();
-                if (bounded.size() >= 20 || chars + next > 24000) break;
-                bounded.add(content);
-                chars += next;
-            }
-            return bounded;
-        }
-    }
-
-    /**
-     * 构建向量查询参数。
-     * S1：kid 可解析为数字时先过检索访问门；空白或非数字维持现状原样写入，不扩大行为边界。
-     */
-    private QueryVectorBo buildQueryVectorBo(ChatRequest chatRequest, KnowledgeInfoVo knowledgeInfoVo,
-                                             ChatModelVo chatModel) {
-        QueryVectorBo queryVectorBo = new QueryVectorBo();
-        queryVectorBo.setQuery(chatRequest.getContent());
-        try {
-            knowledgeAccessGate.checkRetrievalAccess(Long.valueOf(chatRequest.getKnowledgeId()));
-        } catch (NumberFormatException ignored) {
-        }
-        queryVectorBo.setKid(chatRequest.getKnowledgeId());
-        queryVectorBo.setBaseUrl(chatModel.getApiHost());
-        queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
-        queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
-        queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
-
-        // 设置重排序参数
-        queryVectorBo.setEnableRerank(knowledgeInfoVo.getEnableRerank() != null && knowledgeInfoVo.getEnableRerank() == 1);
-        queryVectorBo.setRerankModelName(knowledgeInfoVo.getRerankModel());
-        queryVectorBo.setRerankTopN(knowledgeInfoVo.getRerankTopN());
-        queryVectorBo.setRerankScoreThreshold(knowledgeInfoVo.getRerankScoreThreshold());
-
-        return queryVectorBo;
     }
 
     /**

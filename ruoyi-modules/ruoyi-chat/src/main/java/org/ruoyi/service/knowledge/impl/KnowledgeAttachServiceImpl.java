@@ -33,6 +33,7 @@ import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
 import org.ruoyi.service.knowledge.IKnowledgeAttachService;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.ruoyi.service.knowledge.ResourceLoader;
 import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.vector.VectorStoreService;
@@ -66,6 +67,12 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
     private final VectorStoreService vectorStoreService;
     private final OssService ossService;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
+
+    /**
+     * 管理面访问门（D 口收敛）：upload/reparse 向库注入文档属 ownership 面，
+     * 统一过 assertManageable（仅 owned，share=1 公开不授予写权），superadmin 豁免。
+     */
+    private final KnowledgeAccessGate knowledgeAccessGate;
 
     @Override
     public KnowledgeAttachVo queryById(Long id) {
@@ -150,6 +157,10 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
     @Override
     public void upload(KnowledgeInfoUploadBo bo) {
+        // D 口收敛（B0 审计破坏面 D）：bo.getKnowledgeId() 客户端直传即可向他人库注入文档
+        //（经 parse 进入向量库与 RAG 检索面）。管理面门置于一切副作用之前——
+        // 拒绝时不读文件流、不上传 OSS、不落 attach 表（fail-fast）。
+        knowledgeAccessGate.assertManageable(bo.getKnowledgeId());
         MultipartFile file = bo.getFile();
         final String fileHash;
         try (InputStream input = file.getInputStream()) {
@@ -236,6 +247,7 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             // 重新解析前先清理旧的向量数据，避免向量重复累积
             List<String> fids = new ArrayList<>();
             List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
+            Date embeddedAt = new Date();
             for (int i = 0; i < chunkList.size(); i++) {
                 String fid = RandomUtil.randomString(10);
                 fids.add(fid);
@@ -246,6 +258,10 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                 knowledgeFragment.setIdx(i);
                 knowledgeFragment.setContent(chunkList.get(i));
                 knowledgeFragment.setCreateTime(new Date());
+                // B1 §2.4 三元组：模型名与嵌入时间在分片时快照；维度取嵌入实测值，
+                // 待 storeEmbeddings 回填后统一补（见下方 actualDim 赋值处）。
+                knowledgeFragment.setEmbeddingModel(knowledgeInfoVo.getEmbeddingModel());
+                knowledgeFragment.setEmbeddedAt(embeddedAt);
                 knowledgeFragmentList.add(knowledgeFragment);
             }
             ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
@@ -258,6 +274,15 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModel());
             storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
             storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
+            // B1 四刀之二：payload 归属冗余值随片段同批写入向量侧（WeaviatePayloadKeys 驼峰键）。
+            // MySQL 与向量侧同一批事实（最佳实践 §4 铁律一）；owner_person_id 由现有
+            // user_id 语义承担（最佳实践 §3 组一）。库级未配置的归属维为 null → 不写键（空态降级）。
+            storeEmbeddingBo.setScopeType(knowledgeInfoVo.getScopeType());
+            storeEmbeddingBo.setGroupId(knowledgeInfoVo.getGroupId());
+            storeEmbeddingBo.setProjectId(knowledgeInfoVo.getProjectId());
+            storeEmbeddingBo.setOwnerPersonId(knowledgeInfoVo.getUserId());
+            storeEmbeddingBo.setOwnerAgentId(knowledgeInfoVo.getOwnerAgentId());
+            storeEmbeddingBo.setSensitivity(knowledgeInfoVo.getSensitivity());
             try {
                 // 写入新向量前，先按 docId 清理该文档的旧向量：
                 // 历史数据的片段 fid 为迁移脚本回填的 MD5 值，与向量库中实际存储的 fid 不一致，
@@ -275,6 +300,14 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                 throw vectorError;
             }
 
+            // 三元组补维：storeEmbeddings 已以 Embedding#dimension() 实测值回写 Bo
+            // （「实际用了什么」权威于模型配置值，最佳实践 §3 组三）。
+            Integer actualDim = storeEmbeddingBo.getEmbeddingDim();
+            if (actualDim != null) {
+                for (KnowledgeFragment fragment : knowledgeFragmentList) {
+                    fragment.setEmbeddingDim(actualDim);
+                }
+            }
             knowledgeFragmentMapper.delete(Wrappers.<KnowledgeFragment>lambdaQuery().eq(KnowledgeFragment::getDocId, docId));
             knowledgeFragmentMapper.insertBatch(knowledgeFragmentList);
             knowledgeRetrievalService.invalidateKnowledge(String.valueOf(knowledgeId));
@@ -292,6 +325,9 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
     @Override
     public KnowledgeReparseVo reparseKnowledge(Long knowledgeId) {
+        // D 口收敛：整库 reparse = 清他人库旧向量 + 重写内容，破坏性等同写面，先过管理面门
+        //（拒绝时不触 attach 表查询、不触发任何 parse 重解析）。
+        knowledgeAccessGate.assertManageable(knowledgeId);
         List<KnowledgeAttach> attachments = baseMapper.selectList(
             Wrappers.<KnowledgeAttach>lambdaQuery().eq(KnowledgeAttach::getKnowledgeId, knowledgeId));
         int submitted = 0;

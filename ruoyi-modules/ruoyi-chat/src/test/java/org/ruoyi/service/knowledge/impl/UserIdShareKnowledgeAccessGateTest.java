@@ -28,6 +28,11 @@ import static org.mockito.Mockito.when;
  * <p>
  * 双参重载用例（B0 修复：ws 消息线程显式身份）与单参用例分开成组：
  * 单参=HTTP 线程（mock LoginHelper 模拟会话），双参=非 HTTP 线程（显式 userId，断言不读会话）。
+ * <p>
+ * assertManageable 组（2026-09-28 审计四口收敛轮）：管理面判据=仅 owned，share=1 公开
+ * 不授予写权（§8.1）；superadmin 豁免走 LoginHelper.isSuperAdmin 真实等值实现
+ * （SUPER_ADMIN_ID=1L，纯常量比较无会话依赖，故双参组无需 mockStatic）。
+ * mock 合法性：share 取值域 {0,1}，不造真库不可能组合。
  */
 @Tag("dev")
 class UserIdShareKnowledgeAccessGateTest {
@@ -136,6 +141,117 @@ class UserIdShareKnowledgeAccessGateTest {
         IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
         UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
         ServiceException ex = assertThrows(ServiceException.class, () -> gate.checkRetrievalAccess(9L, null));
+        assertTrue(ex.getMessage().contains("kid=9"));
+        verify(infoService, never()).queryById(any());
+    }
+
+    // ---------- assertManageable：管理面判据（C/D 口收敛，仅 owned + superadmin 豁免） ----------
+
+    @Test
+    void manageableOwnedLibraryPasses() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(9L)).thenReturn(kb(9L, 100L, 0L));
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            assertDoesNotThrow(() -> gate.assertManageable(9L));
+        }
+    }
+
+    @Test
+    void manageableSharedLibraryRejected() {
+        // 契约（§8.1）：share=1 公开仅授予可见性，不授予管理权——
+        // 否则 edit 翻 share 即击穿 Gate 读面判据（B0 审计破坏面 C 提权链）
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(9L)).thenReturn(kb(9L, 200L, 1L));
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            ServiceException ex = assertThrows(ServiceException.class, () -> gate.assertManageable(9L));
+            assertTrue(ex.getMessage().contains("kid=9"), "异常消息应含 kid 便于排查");
+        }
+    }
+
+    @Test
+    void manageableOtherPrivateLibraryRejected() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(9L)).thenReturn(kb(9L, 200L, 0L));
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            ServiceException ex = assertThrows(ServiceException.class, () -> gate.assertManageable(9L));
+            assertTrue(ex.getMessage().contains("kid=9"));
+        }
+    }
+
+    @Test
+    void manageableNonexistentKidRejected() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(404L)).thenReturn(null);
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            ServiceException ex = assertThrows(ServiceException.class, () -> gate.assertManageable(404L));
+            assertTrue(ex.getMessage().contains("kid=404"));
+        }
+    }
+
+    @Test
+    void manageableNullKidRejectedWithoutTouchingDb() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            assertThrows(ServiceException.class, () -> gate.assertManageable(null));
+        }
+        verify(infoService, never()).queryById(any());
+    }
+
+    @Test
+    void manageableNotLoggedInRejectedWithoutTouchingDb() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(null);
+            assertThrows(ServiceException.class, () -> gate.assertManageable(9L));
+        }
+        // 未登录在触库之前即拒绝
+        verify(infoService, never()).queryById(any());
+    }
+
+    @Test
+    void manageableSuperAdminManagesOthersLibrary() {
+        // superadmin 豁免：isSuperAdmin 走真实等值实现（SUPER_ADMIN_ID=1L），
+        // 无需 mockStatic——双参显式身份下连会话读取都不发生
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(9L)).thenReturn(kb(9L, 200L, 0L));
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        assertDoesNotThrow(() -> gate.assertManageable(9L, 1L));
+    }
+
+    @Test
+    void manageableSuperAdminStillRejectedForNonexistentKid() {
+        // 豁免不吞「库不存在」：存在性判断先于豁免，admin 对不存在 kid 得到明确拒绝
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(404L)).thenReturn(null);
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        ServiceException ex = assertThrows(ServiceException.class, () -> gate.assertManageable(404L, 1L));
+        assertTrue(ex.getMessage().contains("kid=404"));
+    }
+
+    @Test
+    void manageableExplicitUserIdOwnedPasses() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        when(infoService.queryById(9L)).thenReturn(kb(9L, 100L, 0L));
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        assertDoesNotThrow(() -> gate.assertManageable(9L, 100L));
+    }
+
+    @Test
+    void manageableExplicitNullUserIdRejected() {
+        IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
+        UserIdShareKnowledgeAccessGate gate = new UserIdShareKnowledgeAccessGate(infoService);
+        ServiceException ex = assertThrows(ServiceException.class, () -> gate.assertManageable(9L, null));
         assertTrue(ex.getMessage().contains("kid=9"));
         verify(infoService, never()).queryById(any());
     }

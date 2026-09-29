@@ -8,12 +8,8 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.rag.AugmentationRequest;
 import dev.langchain4j.rag.AugmentationResult;
-import dev.langchain4j.rag.DefaultRetrievalAugmentor;
 import dev.langchain4j.rag.RetrievalAugmentor;
-import dev.langchain4j.rag.content.Content;
-import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Metadata;
-import dev.langchain4j.rag.query.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.bo.chat.ChatModelBo;
@@ -23,15 +19,12 @@ import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.domain.vo.agent.AgentVo;
-import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
 import org.ruoyi.service.knowledge.KnowledgeAccessGate;
-import org.ruoyi.service.knowledge.IKnowledgeInfoService;
-import org.ruoyi.service.knowledge.retriever.CustomVectorRetriever;
-import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
+import org.ruoyi.service.knowledge.retriever.MultiKnowledgeAugmentorFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
@@ -68,9 +61,8 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
     private final ChatServiceFactory chatServiceFactory;
     private final IChatModelService chatModelService;
     private final IAgentService agentService;
-    private final IKnowledgeInfoService knowledgeInfoService;
     private final KnowledgeAccessGate knowledgeAccessGate;
-    private final KnowledgeRetrievalService knowledgeRetrievalService;
+    private final MultiKnowledgeAugmentorFactory multiKnowledgeAugmentorFactory;
     private final IChatMessageService chatMessageService;
     private final ChatSessionOwnershipGuard chatSessionOwnershipGuard;
     private final ObjectMapper objectMapper;
@@ -220,7 +212,8 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
 
     /**
      * 智能体绑定知识库 / 前端传入 knowledgeId 时，对 content 做向量检索增强。
-     * 复用 ChatServiceFacade.buildMultiKnowledgeAugmentor 的组装方式（简化为多库复合检索）。
+     * 经 MultiKnowledgeAugmentorFactory 收敛组装（B1 C2：与 ChatServiceFacade 同一实现，
+     * 并发检索 + kid|docId|fid 去重 + 20条/24000字符限界）。
      * <p>
      * userId 取自握手期 MpChatHandshakeInterceptor 验 token 后写入的 session attributes：
      * ws 消息线程无 Sa-Token ThreadLocal，须以显式身份过 Gate（双参重载），不得走单参会话变体。
@@ -247,7 +240,7 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
         // B0 修复：ws 消息线程无 Sa-Token ThreadLocal，单参变体取会话恒 null 会被全拒，改传显式身份
         kids.forEach(kid -> knowledgeAccessGate.checkRetrievalAccess(kid, userId));
         try {
-            RetrievalAugmentor augmentor = buildMultiKnowledgeAugmentor(kids);
+            RetrievalAugmentor augmentor = multiKnowledgeAugmentorFactory.buildMultiKnowledgeAugmentor(kids);
             if (augmentor == null) {
                 return content;
             }
@@ -260,33 +253,6 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
             log.warn("mp-chat RAG 增强失败，回退原文: {}", e.getMessage());
             return content;
         }
-    }
-
-    private RetrievalAugmentor buildMultiKnowledgeAugmentor(List<Long> knowledgeIds) {
-        List<ContentRetriever> retrievers = new ArrayList<>();
-        for (Long kid : knowledgeIds) {
-            try {
-                KnowledgeInfoVo kb = knowledgeInfoService.queryById(kid);
-                if (kb == null) {
-                    continue;
-                }
-                ChatModelVo embModel = chatModelService.selectModelByName(kb.getEmbeddingModel());
-                if (embModel == null) {
-                    log.warn("mp-chat 知识库向量模型未配置: kid={}, emb={}", kid, kb.getEmbeddingModel());
-                    continue;
-                }
-                retrievers.add(new CustomVectorRetriever(knowledgeRetrievalService, kb, embModel));
-            } catch (Exception e) {
-                log.warn("mp-chat 构建检索器失败: kid={}, err={}", kid, e.getMessage());
-            }
-        }
-        if (retrievers.isEmpty()) {
-            return null;
-        }
-        ContentRetriever composite = retrievers.size() == 1
-            ? retrievers.get(0)
-            : new CompositeContentRetriever(retrievers);
-        return DefaultRetrievalAugmentor.builder().contentRetriever(composite).build();
     }
 
     /**
@@ -366,31 +332,4 @@ public class MpChatWebSocketHandler extends AbstractWebSocketHandler {
         }
     }
 
-    /**
-     * 多知识库复合检索器：并发查询各库并合并结果。
-     * （与 ChatServiceFacade 内部 CompositeContentRetriever 同构，独立保留以解耦公共门面）
-     */
-    private static class CompositeContentRetriever implements ContentRetriever {
-        private final List<ContentRetriever> delegates;
-
-        CompositeContentRetriever(List<ContentRetriever> delegates) {
-            this.delegates = delegates;
-        }
-
-        @Override
-        public List<Content> retrieve(Query query) {
-            List<Content> all = new ArrayList<>();
-            for (ContentRetriever r : delegates) {
-                try {
-                    List<Content> part = r.retrieve(query);
-                    if (part != null) {
-                        all.addAll(part);
-                    }
-                } catch (Exception e) {
-                    log.warn("mp-chat 复合检索子检索器异常: {}", e.getMessage());
-                }
-            }
-            return all;
-        }
-    }
 }

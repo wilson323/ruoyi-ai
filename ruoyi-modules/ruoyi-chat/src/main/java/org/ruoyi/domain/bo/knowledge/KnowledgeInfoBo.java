@@ -38,9 +38,38 @@ public class KnowledgeInfoBo extends BaseEntity {
     private String name;
 
     /**
-     * 是否公开知识库（0 否 1是）
+     * 是否公开知识库（0 否 1是）——派生只读镜像，后端勿信前端值（B1 §8.1 规则 3）。
+     * 写入时由 sensitivity 派生（PUBLIC→1，其余→0），客户端传值一律被
+     * KnowledgeInfoServiceImpl#insertByBo/updateByBo 覆盖/清空。
      */
     private Long share;
+
+    // ========== B1 新增：三层作用域 × 四维归属 × 敏感级（镜像 Part A 列） ==========
+
+    /**
+     * 作用域：GLOBAL|GROUP|PROJECT|PERSON|AGENT
+     */
+    private String scopeType;
+
+    /**
+     * 归属产品组
+     */
+    private Long groupId;
+
+    /**
+     * 归属项目
+     */
+    private Long projectId;
+
+    /**
+     * 归属数字员工
+     */
+    private Long ownerAgentId;
+
+    /**
+     * 敏感级：PUBLIC|INTERNAL|SECRET（null 时新增默认 INTERNAL；SECRET 仅人审显式设置）
+     */
+    private String sensitivity;
 
     /**
      * 知识库描述
