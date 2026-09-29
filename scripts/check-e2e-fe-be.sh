@@ -8,7 +8,9 @@
 #   P3-6.1:/api/v1/projects/{id}/stages       → 200 + 含 stages[].id/name
 #   R108:  /api/v1/kpi/rules                  → 200 + 含 rules[].id/code
 #   R118:  /api/v1/persons/active             → 200 + 含 persons[].id/name（非 MOCK）
-#   R109:  /api/v1/deletion-requests          → 200 + code0/message 包络 + delFlag 字段
+#   R109:  /api/v1/deletion-requests/my-requests → 200 + code0/message 包络
+#          （2026-09-28 判定：规格开发说明书 §9.2 仅 POST 发起 + POST /:id/review，无 GET 根列表；
+#            原根列表探针超规格，改指前端实消费的 my-requests 查询契约，判定登记见 log.md r139-leftover-closeout）
 #
 # 包络检查（IPD /api/v1）：code=0 + IPD 包络（含 message/data 字段），框架包络（code/msg）判为不符
 # R224 分类记账：5 项契约结果分四类，不再把"环境没跑通"和"契约不存在"混记成同一个 ❌
@@ -167,7 +169,7 @@ probe "P0-9" "/api/v1/projects/${PROJECT_ID}" "id"
 probe "P3-6.1" "/api/v1/projects/${PROJECT_ID}/stages" ""
 probe "R108" "/api/v1/kpi/rules" ""
 probe "R118" "/api/v1/persons/active" ""
-probe "R109" "/api/v1/deletion-requests" ""
+probe "R109" "/api/v1/deletion-requests/my-requests" ""
 
 echo "" >> "$REPORT"
 echo "## 分类汇总" >> "$REPORT"

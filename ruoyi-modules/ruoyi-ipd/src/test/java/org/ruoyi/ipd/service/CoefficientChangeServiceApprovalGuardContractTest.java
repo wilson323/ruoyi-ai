@@ -13,8 +13,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.CoefficientChangeRequest;
+import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
@@ -50,6 +52,8 @@ class CoefficientChangeServiceApprovalGuardContractTest {
 
     @Mock private CoefficientChangeRequestMapper requestMapper;
     @Mock private ProjectMapper projectMapper;
+    // R11/A2：propose 预落 leader_id 需按主组解析组长（构造签名 3→4 参同步）
+    @Mock private ProductGroupMapper productGroupMapper;
     @Mock private IAuditLogService auditLogService;
     @Mock private StateMachineGuard stateMachineGuard;
 
@@ -57,7 +61,7 @@ class CoefficientChangeServiceApprovalGuardContractTest {
 
     @BeforeEach
     void setUp() {
-        service = new CoefficientChangeService(requestMapper, projectMapper, auditLogService);
+        service = new CoefficientChangeService(requestMapper, projectMapper, productGroupMapper, auditLogService);
     }
 
     /** LambdaUpdateWrapper 列名缓存引导（同 CoefficientChangeServiceTest 惯例）。 */
@@ -95,6 +99,9 @@ class CoefficientChangeServiceApprovalGuardContractTest {
     private void stubProposeHappy() {
         when(projectMapper.selectById(10L)).thenReturn(sProject());
         when(requestMapper.selectCount(any())).thenReturn(0L);
+        // R11/A2：组长解析发生在 builder 前（fail-closed），预落 900L 保持 C2 契约面不变
+        when(productGroupMapper.selectById(7L)).thenReturn(
+            ProductGroup.builder().id(7L).leaderPersonId(900L).build());
         when(requestMapper.insert(any(CoefficientChangeRequest.class))).thenAnswer(inv -> {
             inv.getArgument(0, CoefficientChangeRequest.class).setId(99L);
             return 1;
@@ -132,8 +139,11 @@ class CoefficientChangeServiceApprovalGuardContractTest {
     @DisplayName("C2-3) 未注入守卫时 preCheck fail-closed，文案逐字钉死")
     void nullGuardFailsClosedOnPropose() {
         // 自证能红锚点：guardSupport.preCheck 调用点若被删/绕开，本用例必红
+        // R11/A2 注：组长预落解析先于 preCheck 执行，本用例需配组长（文案断言仍钉 preCheck fail-closed）
         when(projectMapper.selectById(10L)).thenReturn(sProject());
         when(requestMapper.selectCount(any())).thenReturn(0L);
+        when(productGroupMapper.selectById(7L)).thenReturn(
+            ProductGroup.builder().id(7L).leaderPersonId(900L).build());
 
         assertThatThrownBy(this::propose)
             .isInstanceOf(ServiceException.class)

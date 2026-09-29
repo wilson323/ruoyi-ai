@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DataDeletionRequestDTO {
+public class DataDeletionRequestReq {
 
     @NotBlank(message = "resourceType 必填")
     @Size(max = 64, message = "resourceType 最长 64")

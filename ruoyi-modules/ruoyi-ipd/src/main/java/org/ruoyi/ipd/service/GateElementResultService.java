@@ -68,6 +68,22 @@ public class GateElementResultService implements IGateElementResultService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private IBusinessConfigService businessConfigService;
 
+    /**
+     * R11 / A4 修复：gate 提交（startedAt 置位）→ 预落本轮待签占位行的生产者挂接点
+     * （GateReviewService.openSignQueue，工作台 GR- 卡 decision IS NULL 锚自此有源）。
+     *
+     * <p>刻意沿用本类 businessConfigService 的 {@code @Autowired(required = false)} 字段注入
+     * 范式而非构造器形参——避免改动 {@code @RequiredArgsConstructor} 构造签名波及 5 个既有
+     * 测试构造点（最小侵入，同 GateReviewService.setProjectMapper 先例）。生产由 Spring
+     * 必装配（同扫描域 @Service）；未装配时 submit 行为与修复前一致（纯单测零扰动）。
+     */
+    private GateReviewService gateReviewService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setGateReviewService(GateReviewService gateReviewService) {
+        this.gateReviewService = gateReviewService;
+    }
+
     /** 要素清单（含当前判定）：33 要素按 Gate 展示，未判定项 result=null 供前端高亮缺失。 */
     public List<Map<String, Object>> checklist(Long gateId) {
         Gate gate = requireGate(gateId);
@@ -289,6 +305,12 @@ public class GateElementResultService implements IGateElementResultService {
         gate.setSignDueAt(new Date(gate.getStartedAt().getTime() + 24L * 60 * 60 * 1000 * signDays));
         gate.setElementSnapshot(AuditEventData.json("frozenAt", now().toString(), "elements", snapshot));
         gateMapper.updateById(gate);
+        // R11 / A4 修复：startedAt 置位 = 待签开启，同事务为本轮应签方预落 decision=NULL
+        // 占位行（分配即落行，openArbitration 对偶范式；幂等由 openSignQueue 内部查重保证，
+        // 无签署人角色 warn 跳过不阻断提交——防存量无 PM 成员 gate 提交塌方）。
+        if (gateReviewService != null) {
+            gateReviewService.openSignQueue(gate);
+        }
         auditLogService.append(AuditLog.builder()
             .operatorId(operator.id())
             .operatorName(operator.name())

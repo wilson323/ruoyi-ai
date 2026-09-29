@@ -277,6 +277,30 @@
       "expire": "2026-12-31",
       "added_by": "copilotkit-single-track-be",
       "evidence": "CopilotKitRuntimeController.java:115"
+    },
+    {
+      "path": "/api/v1/projects/{VAR}/stages",
+      "methods": [
+        "GET"
+      ],
+      "reason": "E2E 契约 P3-6.1 项目阶段视图读端点（check-e2e-fe-be.sh 真活探针）；前端经既有 /projects/{id} 组合阶段数据，本端点为契约补全尚无直接 UI 消费",
+      "owner_card": "P3-6.1",
+      "review_date": "2026-09-28",
+      "expire": "2026-12-31",
+      "added_by": "e2e-contract-stages-active-20260928",
+      "evidence": "ProjectController.java:245"
+    },
+    {
+      "path": "/api/v1/persons/active",
+      "methods": [
+        "GET"
+      ],
+      "reason": "E2E 契约 R118 在职人员下拉数据源读端点（真库 persons 非 MOCK）；供人员选择器接入，当前前端 person.ts 尚未切换到本口径查询",
+      "owner_card": "P2-1.3",
+      "review_date": "2026-09-28",
+      "expire": "2026-12-31",
+      "added_by": "e2e-contract-stages-active-20260928",
+      "evidence": "PersonController.java:82"
     }
   ]
 }

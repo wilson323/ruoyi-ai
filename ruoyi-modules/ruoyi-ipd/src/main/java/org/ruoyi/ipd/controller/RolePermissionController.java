@@ -43,7 +43,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/role-permissions")
 @RequiredArgsConstructor
 @Validated
-class IpdRolePermissionController {
+class RolePermissionController {
 
     private final IpdPermission ipdPermission;
     private final IpdRolePermissionConfigService configService;

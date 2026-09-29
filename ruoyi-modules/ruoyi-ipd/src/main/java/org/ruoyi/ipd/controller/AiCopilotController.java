@@ -37,7 +37,7 @@ import java.util.concurrent.Executors;
  *       异步 token 推送，逐段送 delta 帧（不再是同步结果分片的伪流式）；</li>
  *   <li>两端的审计 / 越权 / 意图分类 / 上下文注入 / 三件套全在 service 集中处理，Controller 不掺业务；</li>
  *   <li>SSE 端不复读 token 进 URL query——同步端点走 IpdPermission.requireInternal 读 sa-token 上下文即可；
- *       真流式 EventSource 场景再补 IpdSseController 同款的 URL token 模式（本次非阻塞项）。</li>
+ *       真流式 EventSource 场景再补 ResourceSseController（原 IpdSseController） 同款的 URL token 模式（本次非阻塞项）。</li>
  * </ul>
  */
 @Slf4j

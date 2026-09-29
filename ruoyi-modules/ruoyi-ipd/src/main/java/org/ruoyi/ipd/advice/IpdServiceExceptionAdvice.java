@@ -296,7 +296,7 @@ public class IpdServiceExceptionAdvice {
      * SSE/异步长连接客户端断开（AsyncRequestNotUsableException）：连接生命周期事件，非业务异常。
      * 修复前：落入下方 handleUnexpected 兜底 → 试图序列化 ApiV1Response JSON，但响应
      * Content-Type 已是 text/event-stream → HttpMessageNotWritableException 二次异常
-     * （2026-09-11 实测于 IpdSseController 客户端断开+心跳竞态，日志双 ERROR 噪音）。
+     * （2026-09-11 实测于 ResourceSseController（原 IpdSseController） 客户端断开+心跳竞态，日志双 ERROR 噪音）。
      * 此处静默返回 void：response 已不可写，Spring 不会再尝试序列化任何响应体。
      */
     @ExceptionHandler(AsyncRequestNotUsableException.class)

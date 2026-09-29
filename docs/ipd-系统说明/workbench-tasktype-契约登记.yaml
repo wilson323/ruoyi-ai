@@ -9,10 +9,13 @@
 #   已实现类的 taskType 字面量与聚合器源码一致；关键状态常量与登记值一致）。
 # 证据基础：2026-09-08 四路只读蜂群盘点（9 聚合器逐文件读源码 + 配套 Service
 #   写入路径 + 真库 DDL/数据探针），字段值以磁盘现态源码为准。
-# 已知死路（真库探针证实，待 owner 拍板修复方向，见
-#   docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md）：
-#   key_gate / strategic_change(LD+CC) / contribution_confirm 三类 4 卡的
-#   投递锚字段在写入路径下恒 NULL，真活卡永不投递（与 gate 仲裁卡恒空同构）。
+# 已知死路（真库探针证实，登记原文见 docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md）：
+#   key_gate / strategic_change(LD+CC) / contribution_confirm 三类 4 卡曾「投递锚字段在
+#   写入路径下恒 NULL ⇒ 真活卡永不投递」（与 gate 仲裁卡恒空同构）。
+#   [2026-09-28 R11 勘误] 四卡均已按方向甲闭环：A1 LD 提议强制指定第二签人（fail-closed）、
+#   A2 CC propose 预落主组组长 leader_id（fail-closed，merge 回归重接）、A3 CT SUBMITTED
+#   预落 leader_id、A4 GR gate 提交时 openSignQueue 预落 decision=NULL 待签占位行；
+#   write_timing 相应从 SUBMIT 更正为 ALLOCATE（待办锚在首落即可用）。遗留见各条 known_deadlock。
 # =====================================================================
 
 meta:
@@ -44,14 +47,16 @@ key_gate:
   implemented: true
   aggregator: KeyGateAggregator
   table: gate_reviews           # ⋈ gates
-  write_timing: SUBMIT          # sign 落行即带 decision；无 decision=NULL 生产者
+  write_timing: ALLOCATE        # R11/A4（2026-09-28）：gate 提交（GateElementResultService.submit 置 startedAt）
+                                # 即由 GateReviewService.openSignQueue 为本轮应签方预落 decision=NULL 待签占位行；
+                                # sign/超期弃权 走 UPDATE 原行落带值决策（无占位行才退回 INSERT）
   anchor: "project_scope ∩ reviewerId"
   pending_expr: "decision IS NULL"
   outer_status_filter: "gates.status = 'PENDING'"
   due_field: "review.signDueAt 优先，回退 gate.signDueAt"
   owner_field: reviewerId       # 卡 ownerRole=reviewerType
-  known_deadlock: "decision IS NULL 无写入路径（GateCreationService 写 'PENDING' 哨兵且缺 gateId）→ 真活 GR- 卡恒空（死路 A4）"
-  notes: "gates 侧双期限列 dueAt/signDueAt 口径分叉，聚合器只读 signDueAt"
+  known_deadlock: "已闭环（A4，方向甲·预落占位行，2026-09-28）：原根因=R30 改道后 GateCreationService 不再建占位行、sign 落带值、insertAbstain 落 ABSTAIN ⇒ decision IS NULL 锚无任何生产者（真库探针：10 个已提交待签 PENDING gate 中 8 个 gate_reviews 零行）→ 本次 GateReviewService.openSignQueue 补齐生产者；聚合器另加 round==gate.currentRound 防御（对照 key_gate_arbitration）防多轮占位行放大旧轮残留投卡"
+  notes: "gates 侧双期限列 dueAt/signDueAt 口径分叉，聚合器只读 signDueAt；应签方=单签 leadSideOf / G1·G5 双签 MARKET_PM+RD_PM；该角色在 project_members 无在册人时 openSignQueue 只 warn 跳过不抛（存量 5 个无 PM 成员在途 gate 属数据治理项，见 mock 登记 §三遗留）"
 
 key_gate_arbitration:
   implemented: true
@@ -93,25 +98,30 @@ contribution_confirm:
   implemented: true
   aggregator: ContributionConfirmAggregator
   table: contributions
-  write_timing: SUBMIT          # 双 PM 自评均完成 → DRAFT→SUBMITTED（leader_id 仍 NULL）
+  write_timing: ALLOCATE        # R11/A3 修复：双 PM 自评均完成 → DRAFT→SUBMITTED 的同一写入里
+                                # 预落 leader_id=project.main_group.leader_person_id（ContributionService），
+                                # confirm 时刻仍由 actor 覆盖——待办锚在 SUBMITTED 态即非 NULL
   anchor: "project_scope ∩ leaderId"
   pending_expr: "status = 'SUBMITTED'"
   outer_status_filter: null
   due_field: null
   owner_field: leaderId
-  known_deadlock: "SUBMITTED 行 leader_id 恒 NULL（confirm 才回填且同时转 CONFIRMED）→ 真活 CT- 卡恒空（死路 A3）"
+  known_deadlock: "已闭环（A3，方向甲·预落确认人）：原根因=SUBMITTED 行 leader_id 恒 NULL（confirm 才回填且同时转 CONFIRMED）→ 真活 CT- 卡恒空；现 SUBMITTED 即预落 leader_id。遗留：项目主组未配组长时 A3 为 warn 保留 NULL（口径弱于 A1/A2 的 fail-closed），该态 CT- 卡仍不可达，属数据治理项（见 mock 登记 §三）"
 
 strategic_change:
   implemented: true
   aggregator: StrategicChangeAggregator
   table: "launch_date_change_requests ∪ coefficient_change_requests"
-  write_timing: ALLOCATE        # propose 即落 PENDING_SECOND / PENDING_LEADER（确认人 ID 不写）
+  write_timing: ALLOCATE        # propose 即落 PENDING_SECOND / PENDING_LEADER 且同事务预落待办锚：
+                                # LD 由提案人显式指定 confirmer_id（A1 fail-closed，缺参即拒），
+                                # CC 按 project.main_group.leader_person_id 预落 leader_id（A2，2026-09-28 重接，
+                                # 解析不到组长 fail-closed 抛 IpdBusinessException 防工作台 CC-卡恒空）
   anchor: "project_scope ∩ (confirmerId | leaderId)"
   pending_expr: "LD: status='PENDING_SECOND' / CC: status='PENDING_LEADER'"
   outer_status_filter: null
   due_field: null
   owner_field: "LD: confirmerId / CC: leaderId"
-  known_deadlock: "PENDING_SECOND 行 confirmer_id 恒 NULL、PENDING_LEADER 行 leader_id 恒 NULL（decide 才回填且同时离态）→ 真活 LD-/CC- 卡恒空（死路 A1/A2，真库现存 1 条在途 PENDING_SECOND 印证）"
+  known_deadlock: "已闭环（A1/A2，方向甲·预落确认人）：LD=原 PENDING_SECOND 行 confirmer_id 恒 NULL，A1 改为提议时强制指定第二签人（fail-closed）；CC=原 PENDING_LEADER 行 leader_id 恒 NULL——曾由 136ef385 修复、被 2a3799d4 merge 取错侧吞掉，2026-09-28 R11 按 A3 式服务端解析重接并 fail-closed，leaderDecision 另加「actor 必须=预落 leaderId 或 SUPER_ADMIN」校验（真库现存 1 条在途 PENDING_SECOND 行曾印证死路有真实业务影响）"
 
 closeout:
   implemented: true

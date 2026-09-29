@@ -104,7 +104,7 @@ class Sec01AcceptanceTest {
     @BeforeEach
     void setUp() {
         ipdPermission = new IpdPermission(session, authService);
-        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, gateReviewService, ipdPermission);
+        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, gateReviewService, stageActionService, ipdPermission);
         stageActionController = new StageActionController(stageActionService, ipdPermission,
             org.mockito.Mockito.mock(org.ruoyi.ipd.service.AiExecutionTrigger.class));
         certTemplateController = new CertTemplateController(certTemplateService, ipdPermission);

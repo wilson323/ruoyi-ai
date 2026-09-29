@@ -56,6 +56,7 @@ public class ProjectController {
     private final LaunchDateChangeService launchDateChangeService;
     private final GateCreationService gateCreationService;
     private final GateReviewService gateReviewService;
+    private final org.ruoyi.ipd.service.IStageActionService stageActionService;
     private final IpdPermission ipdPermission;
 
     /**
@@ -233,6 +234,31 @@ public class ProjectController {
         return ApiV1Response.ok(gateReviewService.listByProject(id));
     }
 
+    /**
+     * P3-6.1 契约（R128 P0 #2 补端点，SSOT=scripts/check-e2e-fe-be.sh L167）：
+     * {@code GET /api/v1/projects/{id}/stages} → 200 + data.stages[].id/name。
+     *
+     * <p>鉴权与 {@code GET /{id}} 详情同口径：{@code ipd:project:query} 注解闸 +
+     * {@link ProjectService#getVisibleById} 可见性谓词（AC-AUTH-09，堵 IDOR 读腿）。
+     * 数据源 = 真库 project_stages（IStageActionService 只读查询）；无阶段返回空数组。
+     */
+    @GetMapping("/{id}/stages")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<ProjectStagesView> listStages(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireInternal();
+        Project project = projectService.getVisibleById(id, actor);
+        List<ProjectStageView> stages = stageActionService.listStagesByProject(project.getId()).stream()
+            .map(s -> new ProjectStageView(String.valueOf(s.getId()), s.getStageName(),
+                s.getStageCode(), s.getStatus(), s.getSortOrder()))
+            .toList();
+        return ApiV1Response.ok(new ProjectStagesView(stages));
+    }
+
+    /** 阶段视图（契约 stages[].id/name；id 字符串化守大数精度铁律，附 code/status/sortOrder 供前端渲染）。 */
+    public record ProjectStageView(String id, String name, String code, String status, Integer sortOrder) { }
+
+    /** 阶段清单包装（data.stages[]，与契约字面「含 stages[].id/name」对齐）。 */
+    public record ProjectStagesView(List<ProjectStageView> stages) { }
     /**
      * P1-7.1：项目认证清单（含未知市场提示）。
      *

@@ -21,6 +21,10 @@ import java.util.Map;
  * 关键评审签署任务投递（taskType=key_gate，P1 方向 B 设计 §3 表 #3）：
  * gate_reviews JOIN gates——actor 是签署人且未签（decision IS NULL），gate 在可见项目内且待决（PENDING），
  * 每行 1 张卡。期限口径：review.signDueAt（BR-GATE-04 签署期限）优先，回退 gate.signDueAt。
+ *
+ * <p>R11 / A4 修复（2026-09-28 防回归重接）：decision IS NULL 锚的生产者 =
+ * {@code GateReviewService.openSignQueue}（gate 提交时预落本轮待签占位行，
+ * 与 openArbitration 预落待裁行对偶）；此前 R30 改道后锚恒空、GR- 卡真活永不投递。
  */
 @Component
 @Order(3)
@@ -66,6 +70,13 @@ public class KeyGateAggregator implements WorkbenchAggregator {
             }
             Gate gate = gateById.get(review.getGateId());
             if (gate == null) {
+                continue;
+            }
+            // 防御式双保险（R11/A4 配套）：旧轮残留行不算当前待办——decision=NULL 锚在多轮
+            // （reopen 后新轮再次预落占位行）下会放大旧轮未签残留投卡，round 谓词对照
+            // KeyGateArbitrationAggregator L97-101 既有防御；任一侧 round 为空的存量数据不拦。
+            if (gate.getCurrentRound() != null && review.getRound() != null
+                && !gate.getCurrentRound().equals(review.getRound())) {
                 continue;
             }
             tasks.add(toTask(review, gate, visibleProjects.get(gate.getProjectId()), now));

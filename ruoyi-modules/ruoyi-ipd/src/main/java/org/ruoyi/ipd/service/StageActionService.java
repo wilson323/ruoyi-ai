@@ -118,6 +118,20 @@ public class StageActionService implements IStageActionService {
     }
 
     /**
+     * P3-6.1（R128 P0 #2 补端点）：项目六阶段实例只读清单（GET /projects/{id}/stages 数据源）。
+     * 复用既有 projectStageMapper 字段（零构造器变更）；排序键与 selectLiveByProject 一致；纯读无锁。
+     */
+    @Override
+    public List<ProjectStage> listStagesByProject(Long projectId) {
+        return projectStageMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProjectStage>()
+                .eq(ProjectStage::getProjectId, projectId)
+                .eq(ProjectStage::getDelFlag, "0")
+                .orderByAsc(ProjectStage::getSortOrder)
+                .orderByAsc(ProjectStage::getId));
+    }
+
+    /**
      * 状态迁移唯一入口（P1-4.3）。
      * - 状态机白名单（depth + 目标）
      * - 幂等：当前态 == 目标态 → 直接返回，不写库、不写审计

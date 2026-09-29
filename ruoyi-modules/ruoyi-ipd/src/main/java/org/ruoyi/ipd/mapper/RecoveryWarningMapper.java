@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.RecoveryWarning;
 
@@ -9,5 +10,6 @@ import org.ruoyi.ipd.domain.RecoveryWarning;
  * <p>复用 MyBatis-Plus {@link BaseMapperPlus} 提供默认 CRUD；
  * 列表查询 / 幂等去重走 Service 层 {@code LambdaQueryWrapper} 组装。
  */
+@Mapper
 public interface RecoveryWarningMapper extends BaseMapperPlus<RecoveryWarning, RecoveryWarning> {
 }

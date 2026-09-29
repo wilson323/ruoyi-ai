@@ -100,6 +100,17 @@ public interface IStageActionService {
      */
     int ensureBioComplianceMount(Long projectId, org.ruoyi.ipd.security.IpdActor actor);
 
+    /**
+     * P3-6.1（R128 P0 #2 补端点，SSOT=scripts/check-e2e-fe-be.sh L167）：项目六阶段实例只读清单。
+     *
+     * <p>口径：project_stages 未删行（del_flag=0；@TableLogic 与显式条件双保险，同
+     * {@code resolveConceptStageId} 范式），排序键 sort_order ASC, id ASC 与
+     * {@code ProjectStageMapper.selectLiveByProject} 一致（只读不加 FOR UPDATE）。
+     *
+     * @param projectId 项目主键
+     * @return 阶段实例列表（空列表 = 尚未 bootstrap 六阶段）
+     */
+    List<ProjectStage> listStagesByProject(Long projectId);
     /** * 是否存在未删的涉生物动作（is_bio_feature=1）。 */
     /** * */
     /** * @param projectId 项目主键 */

@@ -81,6 +81,9 @@ class KeyGateAggregatorTest {
             .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
         when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(gate(301L, 10L, "G3", "PENDING", future)));
+        // R11/A4 落地后合法化（mock合法性登记 §一）：decision=null 占位行写入路径=
+        // GateReviewService.openSignQueue（gate 提交时预落本轮待签行，行为锁见
+        // GateSignQueueAcceptanceTest）；SQL 锚 reviewerId+decision IS NULL 真库可命中。
         when(gateReviewMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(review(401L, 301L, "MARKET_PM", 1L, null, 2, future)));
 
@@ -137,10 +140,13 @@ class KeyGateAggregatorTest {
         Map<Long, Project> byId = scope(Project.builder()
             .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
         // review 自身无期限 → 回退 gate.signDueAt（昨日）
+        // R11/A4 配套修正（mock合法性登记 §二「次级」缺口）：round 由旧值 1 改为与
+        // gate.currentRound=2 同轮——旧轮残留行不投递的新防御见 collect_skipsStaleRoundRows；
+        // 占位行写入路径=GateReviewService.openSignQueue。
         when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(gate(301L, 10L, "G2", "PENDING", past)));
         when(gateReviewMapper.selectList(any(LambdaQueryWrapper.class)))
-            .thenReturn(List.of(review(401L, 301L, "MARKET_PM", 1L, null, 1, null)));
+            .thenReturn(List.of(review(401L, 301L, "MARKET_PM", 1L, null, 2, null)));
 
         List<Map<String, Object>> tasks = aggregator.collect(actor, byId, new Date());
 
@@ -166,9 +172,25 @@ class KeyGateAggregatorTest {
             .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
         when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(gate(301L, 10L, "G1", "PENDING", null)));
-        // gateId=999 不存在于 gateById
+        // gateId=999 不存在于 gateById（decision=null 占位行合法写入路径=openSignQueue，见上锚）
         when(gateReviewMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(review(401L, 999L, "MARKET_PM", 1L, null, 1, null)));
+
+        assertThat(aggregator.collect(actor, byId, new Date())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("R11/A4 轮次防御：旧轮未签残留行（round=1 vs gate 当前轮 2）不投递")
+    void collect_skipsStaleRoundRows() {
+        // 多轮 reopen 后旧轮占位行恒 decision NULL，无 round 谓词会放大旧轮投卡
+        // （对照 KeyGateArbitrationAggregator 既有 round 防御；reopen 新轮由 openSignQueue 再预落）
+        IpdActor actor = new IpdActor(1L, "alice", "MARKET_PM", 10L);
+        Map<Long, Project> byId = scope(Project.builder()
+            .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
+        when(gateMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(gate(301L, 10L, "G1", "PENDING", null)));
+        when(gateReviewMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(review(401L, 301L, "MARKET_PM", 1L, null, 1, null)));
 
         assertThat(aggregator.collect(actor, byId, new Date())).isEmpty();
     }

@@ -92,6 +92,10 @@ class StrategicChangeAggregatorTest {
         IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
         Map<Long, Project> byId = scope(Project.builder()
             .id(10L).code("P-001").name("项目A").status("ACTIVE").build());
+        // R11/A2 落地后合法化（mock合法性登记 §一）：写入路径=CoefficientChangeService.propose
+        // 预落 leader_id（136ef385 原修、2a3799d4 merge 吞掉后本次重接；行为锁见
+        // CoefficientChangeServiceTest#proposeHappyAndGuards「created.getLeaderId()==组长ID」）；
+        // PENDING_LEADER+leaderId 非 NULL 是真库可达组合（无组长在入口即 fail-closed）。
         when(coefficientChangeMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(CoefficientChangeRequest.builder()
                 .id(1201L).projectId(10L).status("PENDING_LEADER")
@@ -119,6 +123,7 @@ class StrategicChangeAggregatorTest {
         when(launchDateChangeMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(LaunchDateChangeRequest.builder()
                 .id(1101L).projectId(10L).status("PENDING_SECOND").confirmerId(2L).build()));
+        // 写入路径=CoefficientChangeService.propose 预落（R11/A2，同上锚说明；真值组合非 mock 虚构）
         when(coefficientChangeMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(CoefficientChangeRequest.builder()
                 .id(1201L).projectId(10L).status("PENDING_LEADER").leaderId(3L).build()));

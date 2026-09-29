@@ -3,6 +3,8 @@ package org.ruoyi.ipd.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
@@ -77,6 +79,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class GateReviewService implements IGateReviewService {
+
+    private static final Logger log = LoggerFactory.getLogger(GateReviewService.class);
 
     static final String STATUS_PENDING = "PENDING";
     static final String STATUS_APPROVED = "APPROVED";
@@ -188,17 +192,30 @@ public class GateReviewService implements IGateReviewService {
         requireAuthorized(gate.getGateCode(), actor);
         requireNotSigned(gate, actor.role());
 
-        GateReview row = GateReview.builder()
-            .gateId(gateId)
-            .reviewerType(actor.role())
-            .reviewerId(actor.id())
-            .decision(decision)
-            .opinion(opinion)
-            .signedAt(now())
-            .dueAt(dueAtFrom(gate))
-            .round(gate.getCurrentRound())
-            .build();
-        reviewMapper.insert(row);
+        // R11 / A4 修复（预落待签占位行对偶，逐字对照 arbitrate() 对 openArbitration 预落行的
+        // 「提交=原行落决策 UPDATE，无行退回 INSERT」范式）：本轮本角色若已有 decision=NULL
+        // 占位行（openSignQueue 预落），签署走 UPDATE 原行；无占位行（存量在途 gate / 旧路径）
+        // 退回 INSERT，行为兼容。
+        GateReview placeholder = roundRows(gate.getId(), gate.getCurrentRound()).stream()
+            .filter(r -> actor.role().equals(r.getReviewerType()) && r.getDecision() == null)
+            .findFirst().orElse(null);
+        GateReview row;
+        if (placeholder != null) {
+            row = placeholder.setDecision(decision).setOpinion(opinion).setSignedAt(now());
+            reviewMapper.updateById(row);
+        } else {
+            row = GateReview.builder()
+                .gateId(gateId)
+                .reviewerType(actor.role())
+                .reviewerId(actor.id())
+                .decision(decision)
+                .opinion(opinion)
+                .signedAt(now())
+                .dueAt(dueAtFrom(gate))
+                .round(gate.getCurrentRound())
+                .build();
+            reviewMapper.insert(row);
+        }
 
         audit(actor, gate, "GATE_SIGN", null,
             "decision", decision, "opinion", opinion, "round", gate.getCurrentRound());
@@ -246,7 +263,11 @@ public class GateReviewService implements IGateReviewService {
     /** 双签视图：终态或超管全揭示；在途仅见己方结论与"对方已提交"标志（AC-GATE-03/04）。 */
     public Map<String, Object> view(Long gateId, IpdActor actor) {
         Gate gate = requireGate(gateId);
-        List<GateReview> rows = roundRows(gateId, gate.getCurrentRound());
+        // R11 / A4：「己方/对方已提交」只统计已决行——decision=NULL 待签占位行不算已签、
+        // 不触发 otherSubmitted、也不回显空结论（口径同 maybeEscalateAfterArbitration 对预落待裁行）。
+        List<GateReview> rows = roundRows(gateId, gate.getCurrentRound()).stream()
+            .filter(r -> r.getDecision() != null)
+            .toList();
         // R232-P2-05：揭示开关并入 isRevealed 同源唯一入口（原 terminal/superAdmin/revealed 三布尔语义零变化）
         boolean revealed = isRevealed(gate, actor);
 
@@ -285,21 +306,24 @@ public class GateReviewService implements IGateReviewService {
 
     /** 终态推进：双签 Gate 双方齐签或任一 REJECT；领域 Gate 主导方单签即终态。 */
     private void advance(Gate gate, IpdActor actor) {
+        // R11 / A4：本轮行含 openSignQueue 预落的 decision=NULL 占位行——终态判定只按已决行，
+        // 否则双签 Gate 占位 2 行会被 rows.size()>=2 误判「双签齐」在首签即放行（盲签红线塌方）。
         List<GateReview> rows = roundRows(gate.getId(), gate.getCurrentRound());
-        boolean rejected = rows.stream().anyMatch(r -> "REJECT".equals(r.getDecision()));
+        List<GateReview> decided = rows.stream().filter(r -> r.getDecision() != null).toList();
+        boolean rejected = decided.stream().anyMatch(r -> "REJECT".equals(r.getDecision()));
         boolean dual = isDualSignGate(gate.getGateCode());
 
         if (rejected) {
-            settle(gate, STATUS_REJECTED, actor, rows);
+            settle(gate, STATUS_REJECTED, actor, decided);
             return;
         }
         if (dual) {
-            if (rows.size() >= 2) {   // 双 APPROVE ⇒ 通过（AC-GATE-04）
-                settle(gate, STATUS_APPROVED, actor, rows);
+            if (decided.size() >= 2) {   // 双 APPROVE ⇒ 通过（AC-GATE-04）
+                settle(gate, STATUS_APPROVED, actor, decided);
             }
             return;                    // 一方已签仍在途：等另一方（盲签保持）
         }
-        settle(gate, STATUS_APPROVED, actor, rows);  // 领域 Gate 主导方 APPROVE 单签终态
+        settle(gate, STATUS_APPROVED, actor, decided);  // 领域 Gate 主导方 APPROVE 单签终态
     }
 
     /** 落终态：更新 Gate 状态 + REJECTED 时双方 GATE_REJECTED 通知（AC-GATE-05）+ 审计。 */
@@ -392,8 +416,9 @@ public class GateReviewService implements IGateReviewService {
 
     /** 同轮同角色重复签署拒绝（并发窗口由 uk_gr_gate_type_round 唯一约束兜底）。 */
     private void requireNotSigned(Gate gate, String reviewerType) {
+        // R11 / A4：只统计已决行——decision=NULL 待签占位行不算已签（否则预落后本人永无法签署）
         boolean already = roundRows(gate.getId(), gate.getCurrentRound()).stream()
-            .anyMatch(r -> reviewerType.equals(r.getReviewerType()));
+            .anyMatch(r -> reviewerType.equals(r.getReviewerType()) && r.getDecision() != null);
         if (already) {
             throw new IpdBusinessException("本轮您已签署，不可重复签署");
         }
@@ -528,8 +553,12 @@ public class GateReviewService implements IGateReviewService {
             if (rows.stream().anyMatch(r -> "REJECT".equals(r.getDecision()))) {
                 continue; // 防御：REJECT 应已 settle REJECTED，不在此折算
             }
-            boolean marketSigned = rows.stream().anyMatch(r -> "MARKET_PM".equals(r.getReviewerType()));
-            boolean rdSigned = rows.stream().anyMatch(r -> "RD_PM".equals(r.getReviewerType()));
+            // R11 / A4：「已签」只统计已决行——占位行（decision=NULL）是待签不是已签，
+            // 否则预落后 scanTimeout 会误判「已签方」并走错弃权折算分支。
+            boolean marketSigned = rows.stream().anyMatch(r -> "MARKET_PM".equals(r.getReviewerType())
+                && r.getDecision() != null);
+            boolean rdSigned = rows.stream().anyMatch(r -> "RD_PM".equals(r.getReviewerType())
+                && r.getDecision() != null);
             String lead = leadSideOf(gate.getGateCode());
             if (marketSigned && rdSigned) {
                 continue; // 防御：双 APPROVE 应已 settle APPROVED
@@ -577,7 +606,9 @@ public class GateReviewService implements IGateReviewService {
             List<GateReview> rows = roundRows(gate.getId(), gate.getCurrentRound());
             boolean dual = isDualSignGate(gate.getGateCode());
             for (String side : List.of("MARKET_PM", "RD_PM")) {
-                if (dual && rows.stream().anyMatch(r -> side.equals(r.getReviewerType()))) {
+                // R11 / A4：已签方判定只按已决行——占位行未签，仍需提醒
+                if (dual && rows.stream().anyMatch(r -> side.equals(r.getReviewerType())
+                    && r.getDecision() != null)) {
                     continue; // 双签 Gate：已签方不提醒
                 }
                 if (!dual && !side.equals(leadSideOf(gate.getGateCode()))) {
@@ -866,9 +897,13 @@ public class GateReviewService implements IGateReviewService {
 
     /** 双 PM 意见分歧 = 当轮同时存在 APPROVE 与 REJECT（先 A 后 R 序列）。 */
     private boolean hasPmConflict(List<GateReview> rows) {
-        boolean approve = rows.stream().anyMatch(r -> SIGNER_ROLES.contains(r.getReviewerType())
+        // R11 / A4：统一「只统计已决行」口径（decision=NULL 占位行值域不含 APPROVE/REJECT，
+        // 显式过滤防后续值域扩展时误判；写法对照 maybeEscalateAfterArbitration L910-912）。
+        boolean approve = rows.stream().filter(r -> r.getDecision() != null)
+            .anyMatch(r -> SIGNER_ROLES.contains(r.getReviewerType())
             && "APPROVE".equals(r.getDecision()));
-        boolean reject = rows.stream().anyMatch(r -> SIGNER_ROLES.contains(r.getReviewerType())
+        boolean reject = rows.stream().filter(r -> r.getDecision() != null)
+            .anyMatch(r -> SIGNER_ROLES.contains(r.getReviewerType())
             && "REJECT".equals(r.getDecision()));
         return approve && reject;
     }
@@ -897,6 +932,61 @@ public class GateReviewService implements IGateReviewService {
                 "Gate " + gate.getGateCode() + " 双PM意见分歧，请仲裁",
                 "第 " + gate.getCurrentRound() + " 轮双方意见冲突，请提交仲裁意见（AC-GATE-10）",
                 "/reviews/gate/" + gate.getId());
+        }
+    }
+
+    /**
+     * R11 / A4 修复（预落待签占位行 · openArbitration 的 WB-17-1 对偶范式）：
+     * gate 提交（GateElementResultService.submit 置 startedAt）时刻为本轮应签方预落
+     * gate_reviews decision=NULL 占位行——KeyGateAggregator 锚点
+     * （reviewer_id=actor AND decision IS NULL）自此有了生产者，「GR- 卡真活永不投递」
+     * 死路（A4）闭环。
+     *
+     * <p>真库探针实证（登记原文 2026-09-08；本次修复前复核仍成立）：10 个已提交待签
+     * PENDING gate 中 8 个 gate_reviews 零行——R30 改道后 GateCreationService 不再建
+     * 占位行，sign 落带值行、insertAbstain 落 ABSTAIN，decision NULL 行无任何生产者。
+     *
+     * <ul>
+     *   <li>应签方：单签 Gate 取 leadSideOf(gateCode) 主导方一行；G1/G5 双签
+     *       （isDualSignGate）落 MARKET_PM + RD_PM 两行（与签署矩阵 BR-GATE-03 对齐）</li>
+     *   <li>签署人：signerPersonId(gate, side) 解析 project_members 在册首个人；
+     *       dueAt/round 照 sign 流口径（dueAtFrom + gate.currentRound）</li>
+     *   <li>幂等：同轮同角色已有行即跳过（防重复 submit / 与既有行撞
+     *       uk_gr_gate_type_round；仿 openArbitration 预落查重）</li>
+     *   <li>解析不到签署人（该角色无在册成员）⇒ log.warn 跳过<b>不抛错</b>：
+     *       保护存量 5 个无 PM 成员的在途 gate 提交链路不塌方（数据治理项另卡处理，
+     *       不混入本修复）——与 A2 fail-closed 口径不同的原因：CC- 提议入口有双 PM
+     *       强参可校验，而 submit 是要素判定收尾，不应因成员配置缺失回滚已冻结快照。</li>
+     * </ul>
+     */
+    public void openSignQueue(Gate gate) {
+        if (gate == null || gate.getId() == null) {
+            return;
+        }
+        List<String> sides = isDualSignGate(gate.getGateCode())
+            ? List.of("MARKET_PM", "RD_PM")
+            : List.of(leadSideOf(gate.getGateCode()));
+        List<GateReview> existing = roundRows(gate.getId(), gate.getCurrentRound());
+        Date due = dueAtFrom(gate);
+        for (String side : sides) {
+            boolean exists = existing.stream().anyMatch(r -> side.equals(r.getReviewerType()));
+            if (exists) {
+                continue; // 幂等：同轮同角色已有行（占位或已签）不重复预落
+            }
+            Long personId = signerPersonId(gate, side);
+            if (personId == null) {
+                log.warn("[R11 A4] gate {}（projectId={} 第 {} 轮）角色 {} 无在册签署人，"
+                        + "跳过预落待签占位行（工作台 GR- 卡该角色不可达；数据治理项另卡处理）",
+                    gate.getId(), gate.getProjectId(), gate.getCurrentRound(), side);
+                continue;
+            }
+            reviewMapper.insert(GateReview.builder()
+                .gateId(gate.getId())
+                .reviewerType(side)
+                .reviewerId(personId)
+                .dueAt(due)
+                .round(gate.getCurrentRound())
+                .build()); // decision/opinion/signedAt 留 NULL = 待签（工作台「分配即落行」锚点）
         }
     }
 
@@ -942,6 +1032,17 @@ public class GateReviewService implements IGateReviewService {
         if (personId == null) {
             throw new IpdBusinessException("签署方在册成员缺失，无法标记弃权：" + side
                 + "（projectId=" + gate.getProjectId() + "）");
+        }
+        // R11 / A4：本轮同角色已有 decision=NULL 占位行（openSignQueue 预落）⇒ 弃权落原行
+        // （UPDATE），直插会撞 uk_gr_gate_type_round 唯一约束；无占位行（存量/旧路径）退回 INSERT。
+        GateReview placeholder = roundRows(gate.getId(), gate.getCurrentRound()).stream()
+            .filter(r -> side.equals(r.getReviewerType()) && r.getDecision() == null)
+            .findFirst().orElse(null);
+        if (placeholder != null) {
+            placeholder.setDecision("ABSTAIN")
+                .setOpinion("超期未签署，自动弃权（BR-GATE-04 / AC-GATE-08）");
+            reviewMapper.updateById(placeholder);
+            return;
         }
         reviewMapper.insert(GateReview.builder()
             .gateId(gate.getId())

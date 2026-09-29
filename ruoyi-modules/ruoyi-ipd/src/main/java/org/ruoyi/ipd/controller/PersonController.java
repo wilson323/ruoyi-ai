@@ -14,6 +14,8 @@ import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.PersonService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * P2-1.3 人员账户状态联动（/api/v1/persons；页13）。
  *
@@ -54,6 +56,11 @@ public class PersonController {
         }
     }
 
+    /** 在职人员轻量项（契约 persons[].id/name；id 字符串化，附 personType/groupId 供选择器分组）。 */
+    public record ActivePersonView(String id, String name, String personType, String groupId) { }
+
+    /** 在职人员清单包装（data.persons[]，与契约字面「含 persons[].id/name」对齐）。 */
+    public record ActivePersonsView(List<ActivePersonView> persons) { }
     /** 复职/解绑响应（人员快照）。 */
     public record PersonView(String id, String name, String employmentStatus, String accountStatus,
                             String wecomUserId) {
@@ -64,6 +71,23 @@ public class PersonController {
         }
     }
 
+    /**
+     * 在职人员清单（R118 契约，R128 P0 #2 补端点，SSOT=scripts/check-e2e-fe-be.sh L169）：
+     * {@code GET /api/v1/persons/active} → 200 + data.persons[].id/name（真库 persons 表，非 MOCK 硬编码）。
+     *
+     * <p>权限：本 Controller 既有范式 = 方法内 requireInternal/requireLeaderOrAdmin，不挂
+     * {@code @SaCheckPermission}（persons 域无专用读码，不发明新权限体系）；
+     * 在职名册供内部角色选择器使用，内部登录用户全员可读。
+     */
+    @GetMapping("/active")
+    public ApiV1Response<ActivePersonsView> listActive() {
+        permission.requireInternal();
+        List<ActivePersonView> persons = personService.listActive().stream()
+            .map(p -> new ActivePersonView(String.valueOf(p.getId()), p.getName(), p.getPersonType(),
+                p.getGroupId() == null ? null : String.valueOf(p.getGroupId())))
+            .toList();
+        return ApiV1Response.ok(new ActivePersonsView(persons));
+    }
     /**
      * 离职冻结（AC-USER-08）。
      * <p>权限：HR 角色（SUPER_ADMIN/GROUP_LEADER）或本人（selfId == personId）。

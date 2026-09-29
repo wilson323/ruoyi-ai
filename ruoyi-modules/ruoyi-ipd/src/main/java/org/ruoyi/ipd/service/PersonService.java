@@ -67,6 +67,22 @@ public class PersonService {
     public static final String EVT_RESIGN_ESCALATION = "RESIGN_ESCALATION";
 
     /**
+     * R118 契约（R128 P0 #2 补端点，SSOT=scripts/check-e2e-fe-be.sh L169）：在职人员名册。
+     *
+     * <p>「在职」口径 = persons.employment_status='ACTIVE'（雇佣维度；EM_ACTIVE 常量为本服务
+     * 状态机唯一权威源。account_status 是登录能力维度，DISABLED/FROZEN 者仍在职，不在此滤）。
+     * del_flag 软删由 {@code @TableLogic} 自动过滤；按 id 升序稳定排序。
+     * 数据源 = 真库 persons 表（非硬编码 MOCK）。
+     *
+     * @return 在职人员实体列表（Controller 层收窄为轻量 id/name 视图）
+     */
+    public List<Person> listActive() {
+        return personMapper.selectList(new LambdaQueryWrapper<Person>()
+            .eq(Person::getEmploymentStatus, EM_ACTIVE)
+            .orderByAsc(Person::getId));
+    }
+
+    /**
      * 离职冻结（AC-USER-08；BR-USER-05；P2-2.2 联动：撤销会话 + 企微自动解绑 + 双方组长/本人/超管通知）。
      *
      * <p>状态机：employment_status ACTIVE → RESIGNED；account_status ACTIVE → FROZEN_PENDING_HANDOVER；

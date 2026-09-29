@@ -5,10 +5,13 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.approval.ApprovalGuardSupport;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.CoefficientChangeRequest;
+import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
+import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
@@ -42,6 +45,11 @@ public class CoefficientChangeService implements ICoefficientChangeService {
 
     private final CoefficientChangeRequestMapper requestMapper;
     private final ProjectMapper projectMapper;
+    /**
+     * R11 / A2 修复：propose 预落 leader_id 需按项目主组解析 product_groups.leader_person_id，
+     * 与 ContributionService（A3，L342）同源注入范式（ProductGroupMapper 直查，零 REST 契约变更）。
+     */
+    private final ProductGroupMapper productGroupMapper;
     private final IAuditLogService auditLogService;
 
     /* ---------- R33 一期：状态机守卫接线收编至 ApprovalGuardSupport（行为零变更） ---------- */
@@ -104,6 +112,25 @@ public class CoefficientChangeService implements ICoefficientChangeService {
             .eq(CoefficientChangeRequest::getStatus, CoefficientChangeRequest.ST_PENDING_LEADER));
         // R33 一期：在途单唯一预检收编（文案逐字保留）
         guardSupport.assertNoInFlight(pending, "该项目已有待组长确认的系数定值申请");
+        // R11 / A2 修复（防回归重接：136ef385 曾落地、被 2a3799d4 merge 取错侧吞掉，本次找回）：
+        // propose 时刻预落 leader_id = 项目主组组长（product_groups.leader_person_id）。
+        // StrategicChangeAggregator 的 CC- 卡要求 PENDING_LEADER + leader_id 非 NULL 才投递；
+        // leaderDecision 回填即转终态离卡——不预落则真活 CC- 卡永不投递（死路 A2）。
+        // 解析范式与 A3（ContributionService.saveSelf [R11 A3] 段）同构；但口径按 A1 更严：
+        // 解析不到组长 fail-closed 拒绝提议——防工作台 CC- 卡恒空（宁可在入口暴露配置缺失，
+        // 不允许产生投不出卡的在途单）。
+        Long preLeaderId = null;
+        if (project.getMainGroupId() != null) {
+            ProductGroup group = productGroupMapper.selectById(project.getMainGroupId());
+            if (group != null) {
+                preLeaderId = group.getLeaderPersonId();
+            }
+        }
+        if (preLeaderId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目主组（mainGroupId=" + project.getMainGroupId() + "）未配置产品组长，"
+                    + "系数定值不可提议——请先配置组长（防工作台 CC-卡恒空）");
+        }
         CoefficientChangeRequest req = CoefficientChangeRequest.builder()
             .projectId(projectId)
             .proposedCoefficient(coefficient)
@@ -111,6 +138,7 @@ public class CoefficientChangeService implements ICoefficientChangeService {
             .marketPmId(marketPmId)
             .rdPmId(rdPmId)
             .proposerId(proposerId)
+            .leaderId(preLeaderId)
             .status(CoefficientChangeRequest.ST_PENDING_LEADER)
             .build();
         req.setCreateTime(new Date());
@@ -152,6 +180,16 @@ public class CoefficientChangeService implements ICoefficientChangeService {
         // R33 一期：终态守卫前置收编（requireFromState，文案逐字保留）
         guardSupport.requireFromState(req.getStatus(), CoefficientChangeRequest.ST_PENDING_LEADER,
             "状态机不匹配：期望 PENDING_LEADER，实际 " + req.getStatus());
+        // R11 / A2 修复：actor 必须 = propose 时刻预落的 leader_id 或超管（防组长 A 的单被组长 B 代签，
+        // 与 ContributionService.confirm L451-459 / LaunchDateChangeService.secondDecision L188-189 同构口径）。
+        // leader_id 为 NULL 的存量行（A2 修复前的历史在途单）不校验，兼容放行照旧回填。
+        if (req.getLeaderId() != null
+            && !actor.id().equals(req.getLeaderId())
+            && !"SUPER_ADMIN".equals(actor.role())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "系数定值确认必须为预落组长（leaderId=" + req.getLeaderId()
+                    + "）或超管，当前 actor=" + actor.id() + "/" + actor.role());
+        }
         // approve 路径守卫（加载项目 → 同组归属 → 区间校验）保持在任何写库之前——
         // 守卫抛 FORBIDDEN 时申请状态不被污染。
         Project project = null;

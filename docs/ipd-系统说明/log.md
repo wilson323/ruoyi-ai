@@ -12912,3 +12912,66 @@ P1-1 update sensitivity 向量 payload 不随动（B2 前置待办，0 行窗口
 - **恒真断言是假绿的温床**：sensitivityLexicographicOrderInvariantHolds 断言字符串序本身（与实现同语反复）——契约测试必须断言业务语义（谁能看到什么），不是断言实现形态。
 - **并行智能体改码禁跑构建是必要的（防交叉假红），但回归主会话必须统一跑**：六处笔误全部在统一验证时现形，无一漏网。
 - **第三方库行为要用最小可执行探针实证**：weaviate-client 单元素数组拆标量的行为 javap/jshell 五行复现即定案，比读文档快且准。
+
+
+**AgentScope 根因修复接续（2026-09-28，marker codex-harness-rootfix-20260928）**：现拉本机看板卡 61217664 为总控卡，本轮已更新 inprogress。接手 PoC d8231596 的 AgentScopeChatKernel 与对应 kernel 测试：已逐文件审查，缓存 hashCode 碰撞/错误裸传拟修改，其余 Facade、WS、Controller 在途原样保留。Java 由本协调串行写，三个专业智能体只读研究/独立验证。无提交号（用户未要求 commit/push）。验收与根因计划引用 `/Users/mac/Documents/最佳实践/2026-09-28-AgentScope-W1语义兼容性独立复核.md`；完整业务验收前保持 PARTIAL。
+
+
+**R139 遗留项收口轮（2026-09-28，marker r139-leftover-closeout-20260928）**：owner 指令基于 R139 盘点并行执行未完成事宜。执行架构：agency-harness×3（后端端点+机械治理 / 前端对账补齐 / A2+A4 死路修复）+ ecc-harness（A1-A4 只读审计）+ ioedream-qa-gatekeeper（真活 E2E+门禁只读验证），19:00-19:40 五路并行、文件面互斥、mvn 错峰、兄弟在途零捎带（IpdKnowledgeAccessGate*/AiDocEmbeddingService*/ruoyi-chat/application.yml 全程未碰）。
+- **对账**：R139 P0/P1 共 25 项中 13 项已在 R140~R242 治理中闭环（kpi_rules、表名复数、Service 接口化、类级事务、charset、脚本命名 99/102、合规页、回款台账接线、copilot 路由、contribution/project-score 对齐等），本轮执行真实缺口 12 项。
+- **本轮闭环（工作树，未 commit）**：①T1 新端点 GET /projects/{id}/stages + GET /persons/active（ProjectController/PersonController + 契约测试 13 例 + api-internal-whitelist 2 条，check-api-contract-fe-be.mjs EXIT=0）；②T2 机械治理：@Mapper 67/67、IpdRolePermission→RolePermission + IpdSse→ResourceSse 改名（IpdAuthController 豁免：与 ruoyi-admin AuthController bean 名冲突）、OssFileEntity extends BaseEntity（其余 5 Entity 真库列缺失豁免）、6 处 IllegalArgumentException 保留（协议 catch/编程防御语义证据在案）、DataDeletionRequestDTO→Req 改名；③T3 BCP-013：审计证实 A1/A3 已修（A3 曾被 StrategicChange merge 事故口径澄清）、A2 系 2a3799d4 merge 取侧错误回归——本轮甲方向重接（propose 预落 leaderId fail-closed + actor 校验 + 行为锁），A4 根因已换（R30 改道后占位行生产者零）——openSignQueue 预落 decision NULL 占位行 + sign/insertAbstain UPDATE 优先 + 6 消费点已决口径收敛 + round 防御 + GateSignQueueAcceptanceTest 13 例；契约登记 yaml 4 处勘误 + mock合法性登记 §二/§三状态更新。合并验收 224 tests EXIT=0（scoped javac 全量编译自证；mvn test-compile 被兄弟未 install 的 chat 类阻塞，兄弟收口后需复跑）。④T4 前端：flow.vue 接 /stages 服务端驱动（回退保真，flow.test+project.test 37 例绿、check:type 0 TS 诊断）；persons/active 判定无需接线（PM 下拉已用 /pm-directory 正常工作，防为用而用）。
+- **真活刷新**：后端可见性 R139「~25%」→ 实测核心端点 200 率 ~71%（19:06 探针）；check-charset-consistency.sh exit=0（163 表/1222 列 0 不一致）；两新端点运行态 404 系部署落差（jar 12:56 早于代码 18:38），重打包重启后消解。
+- **遗留（如实登记）**：①commit+push+后端重打包重启窗口待 owner 授权；②R109 /deletion-requests 根列表端点补/删待 owner 拍板（R224 口径，现撞框架 405 包络）；③@Autowired→构造器注入 90 处/37 文件推迟——兄弟正同文件区工作，批量机械改易复刻 A2 的 merge 吞没事故，待其在途收口后单独批次+行为锁护航；④产品退市（product_retirements）：表在真库、规格页17 P1 真存在（R139 用词「下线」应为「退市」），后端 5 端点零代码，且两级审批链 SQL 注释与 README 口径冲突待 owner 裁决，跨仓须回原卡；⑤数据治理非代码项：persons Mock-* 87 行、5 个无 MARKET_PM/RD_PM 在册成员的 PENDING gate、8 个零 reviews 待签 gate 占位行回填、launch_date 1 条 confirmer NULL 历史行、真空表现值 79 张需重新盘点；⑥A3 leader 缺失口径为 warn（A1/A2 为 fail-closed），统一与否留 owner；⑦check-e2e-fe-be.sh 等门禁脚本自身向 docs/ 写报告会制造未跟踪文件，兄弟撞车按 #115 SOP 处置。
+
+
+**首批实施结果（marker codex-harness-rootfix-result-20260928）**：卡61217664维持inprogress/PARTIAL。PoC AgentScopeChatKernel已修完整配置缓存、固定安全错误、原生LocalSessionTurnGate同键串行、W1零工具与异步记忆默认关闭；新BoundaryTest及并发合同红→绿，相邻回归22/0/0/0，扩展并发4/0/0/0（跨提示词实例、错误后恢复），verify/self-red均0。增强文档W7/W8纠正。未commit/push/正式切换。取消、最终历史、多副本、四维Workspace、身份/路径、历史RAG模型、DDL及真实入口仍未关闭；证据详见最佳实践/2026-09-28-AgentScope-W1语义兼容性独立复核.md。
+
+**续作实证（marker codex-harness-cancel-result-20260928）**：卡61217664仍inprogress/PARTIAL。正式桥空用户和agentId越界路径fail-closed，SDK原文trace及本地transcript/session持久化关闭；内核Disposable绑定SSE/WS断连。身份红例7项4败，修复后相关28项全绿，SECRET_CANARY在最终原始测试日志零命中，verify/self-red均0。未启用开关、未commit/push。SSE历史/RAG、选定模型、WS落库完成语义、多副本/状态配置换代、正式HTTP/WS/DB/浏览器及W2-W8仍未验；详见既有独立复核附件及ADR-0075 §9。
+
+### r139-leftover-closeout-20260928 补记：R109 探针超规格判定（2026-09-28）
+
+- **判定**：`check-e2e-fe-be.sh` 的 R109 探针（`GET /api/v1/deletion-requests` 根列表 + delFlag 字段期望）为**超规格臆造契约**。规格事实源 `开发说明书.md` §9.2 API 表对 deletion-requests 仅登记 `POST /api/v1/deletion-requests`（发起）与 `POST /api/v1/deletion-requests/:id/review`（审核）两条，无 GET 根列表要求；前端 6 个消费点均为子路径（my-requests/review-queue 等），无任何根列表消费方。
+- **处置**：修探针而非臆造端点（防过度设计）——R109 改指 `GET /api/v1/deletion-requests/my-requests`（规格内、前端实消费的查询契约）。此为规格判定，非「断言改现状」掩盖缺口：缺口本就不存在于规格。
+- **证据**：`开发说明书.md` L562-563（API 表）；`DeletionRequestController` 映射清单（POST×6 + GET /archive、/overdue-admin-review、/my-requests、/review-queue）；前端 `api/ipd/*.ts` 消费点 grep 零根列表。
+
+**B2 桥接线+四路研究+验证收口轮（2026-09-28，marker kb-partb-b2-bridge-research-20260928）**：承接卡 67874b63（B1B2）注记的 B2 下一步与卡 80b0be1f（模型配置）待办，五路执行+四路研究+Validator 证伪+统一验证全链路。
+
+### 1. 五路实施回执（文件面互斥，禁各自构建）
+- **B2 IPD 桥（路1）**：14 主+9 测。IpdKnowledgeAccessGate（角色→敏感级上限权威表唯一落点：SUPER_ADMIN/GROUP_LEADER→SECRET、双 PM→INTERNAL、其余含 null→PUBLIC fail-closed；B0 四方法整体委托 UserIdShare 组合零漂移）；RetrievalAccessProfile（record 六字段+FAIL_CLOSED_PUBLIC）；KnowledgeRetrievalAccessFilterProperties（开关 knowledge.retrieval.access-filter.enabled 默认 false）；IpdKnowledgeAccessConfig（@Bean @Primary 替换 chat 侧默认 Bean）；P1-1 向量随动（updateByBo 触发 syncVectorPayloadSensitivity→Weaviate withMerge PATCH 游标分页）；P2-3/anon 最严档；S2 裸列收窄；检索装配在 cacheKey 之前。
+- **模型配置（路2）**：AiDocEmbeddingService.normalizeEmbedBaseUrl（trim→幂等剥尾/→忽略大小写剥/embeddings）；仅消费口归一化入库不改写；前端 placeholder 一行。
+- **门禁（路3）**：check-async-configurer-duplication（6→0，src/test 豁免+find -o bug）、check-entity-complete（Entity=1→69）、check-doc-db-drift（85697→693/114，四围栏+LC_ALL=C）；P162AcceptanceTest getOrDefault("PASS")→fail-noisy 反转。
+- **环境冒烟（路4）**：BE 拉起 16040（worktree 构建）；B0 三例绿、80b0be1f 真向量 RAG GREEN；**发现 B1 列表通道真红**（sensitivity 查询参数未接线）。
+- **B1 修复**：chat 模块 KnowledgeInfoServiceImpl.buildQueryWrapper 补 sensitivity eq 谓词（L124，非空非空白才挂；B1 Part A 新字段 scopeType/groupId/projectId/ownerAgentId 同类缺口登记未实施）。
+
+### 2. Validator 证伪打回（独立 CodeReview）与返工
+- **P1-1 personId 值域错位**：ipd 分支装 persons 900xxx 而向量 payload owner_person_id 是 sys_user 小整数——空间不相交致开启开关后检索恒空（全量误杀）。返工：personId 恒 null（只装 maxSensitivity），类注释登记映射建立后再装；测试断言同步 isNull。
+- **P1-2 updateByBo 无事务**：三处注释宣称「同事务回滚」但无 @Transactional，Weaviate PATCH 失败 MySQL 已提交=穿透原样重现。返工：加 @Transactional(rollbackFor=Exception.class)（deleteWithValidByIds 先例）；javadoc/测试注释措辞改「DB 侧回滚，向量 PATCH 非事务资源残留由重试收敛」。
+- **P2-1 游标分页无固定排序**：漏批风险。返工：fetchObjectIds 加 withSort(id asc)（javap 现查 weaviate-client 5.3.0 SortArgument.builder().path.order API）。
+- **P2-2 开关注释失实**：「切换即时生效」→「启动期绑定需重启生效」。
+- 证伪未遂项（防御在位）：switch default 兜底/null 降 PUBLIC/开关默认关 verify(never)/cacheKey 装配在前 times(2)/B0 委托 verify/@Tag("dev") 在位/B1 用例实断 SQL 段/kid Long→String 无精度丢失。
+
+### 3. 主会话统一验证（终态全绿）
+`/tmp/b2-verify`（worktree@762651cc+本轮文件）：**chat 205 + aiflow 117 + ipd 3135 tests，Failures=0 Errors=0（22 skipped 已知），三模块 SUCCESS，EXIT=0**。过程中暴露并修复四个坑：①第一轮 copy 清单严重不全（16 个本轮文件未同步，含 VectorStoreService——「验证通过」覆盖面失真，git status 系统对账后补齐）；②KnowledgeRetrievalService 接口 invalidateKnowledge 重复声明（路1 笔误，chat 从未被完整编译而漏网）；③IpdKnowledgeAccessGate multi-catch 父子类冗余（NotLoginException extends SaTokenException，改单捕父类）；④残缺 target+增量编译假象（agent 域「找不到符号」实为 ColumnInfo.class 缺失，全量重编后消失）；⑤离线单模块跑 ipd 解析依赖取旧 chat jar（RetrievalAccessProfile 未 install）——**跨模块新类必须同 reactor 验证**。
+
+### 4. 四路深度研究+两交付物（owner 指令）
+外部精读 34 篇+本仓 45 文件盘点+jar javap 现查+用户 5 文档解构，产出：
+- `docs/ipd-系统说明/智能体能力增强最佳实践-AgentScope-20260928.md`（196 行：六大支柱四维表、五环进化闭环、触发器矩阵、防污染七防御、W1-W8 映射、ADR-0075 两点修正）
+- `docs/ipd-系统说明/智能体系统提示词-AgentScope完整版-20260928.md`（131 行：十二条铁律、反合理化借口表、质量保证协议、五环进化、主动智能、多智能体协作、输出契约、止损升级）
+
+### 5. 登记不实施（如实）
+- **门禁 1/2 全仓阻断**：check-doc-db-drift.sh --refined 修订后暴露 114 条历史文档漂移（audit_log/bid_invitation 等旧文档引用 DB 不存在表名），pre-commit（core.hooksPath=.claude/hooks）failed=1→exit 1，**本轮与兄弟会话 commit 均被阻断**（兄弟 30 文件 commit 未落库，HEAD 仍 762651cc）。处置选项待 owner 拍板：a) 修 830 文档消红（工作量最大）b) 114 条入白名单棘轮（只减不增）c) 显式授权绕过。本轮零新增白名单。
+- B1 HTTP 复验待重部署（冒烟服务 16040 为修复前构建）；路由偏差登记（Controller /system/info 无 /ipd/knowledge 前缀，冒烟 URL 疑经网关 rewrite）。
+- 看板卡面未同步：未定位持久化看板文件（kanban-board json 无 67874b63/80b0be1f 等卡），卡状态以本 log 为 SSOT。
+- 临时资源：/tmp/b2-verify（验证树，保留至 commit 落库）、/tmp/env-smoke-b2r（冒烟树+服务 PID 4219@16040）。
+- 终端串台 ×3（兄弟会话共享 PTY：export PATH/JAVA_HOME 注入、命令回显交错）——后续会话重要结论须以文件重定向+python 直读交叉验证。
+
+### 6. 教训
+- **「copy 验证」的覆盖面必须系统对账**：git status 全量对照本轮文件清单，不能靠智能体回报的记忆清单——本轮 16 文件漏同步让两轮「验证通过」成为假象。
+- **智能体改码后文件仍会变（写入竞态）**：normalizeEmbedBaseUrl/multi-catch 两例均系 copy 时点与现态不一致——copy 前应对每个文件记录 hash，或验证失败先 diff 主树现态。
+- **跨模块新类禁止单模块离线验证**：依赖走本地仓库旧 jar，必假红。
+
+### r139-leftover-closeout-20260928 补记 2：commit 门禁豁免登记（2026-09-28）
+
+- **事实**：本批 37 文件提交被 pre-commit 门禁 1/2（doc↔db 漂移）拦下。根因 = 兄弟会话在途未提交的 `scripts/check-doc-db-drift.sh` O-6-3 精度修订（18:59，晚于 HEAD 17:50）以新口径暴露 114 条**存量**文档漂移（`docs/开发说明/spec/**` 圣经单数表名 49 条 + 历史治理文档备份表名 `persons_bk_b3_20260919` 等），与本批内容零因果（唯一落 log.md 的漂移在 L7645 历史条目，非本会话补记）。
+- **处置**：owner 2026-09-28 明确授权 `--no-verify` 提交本批。豁免仅限本批 commit 一次；114 存量漂移账归属兄弟在途门禁脚本收口范围（白名单/baseline 方向），不在此代行（防撞车）。
+- **补记**：门禁 1/2 报文「FAIL: exit=0」系 `check-pre-commit.sh` run_drift_gate 中 `$?` 取到 `local` 返回值的报文瑕疵，真实 exit=1（已手动复跑验证）。

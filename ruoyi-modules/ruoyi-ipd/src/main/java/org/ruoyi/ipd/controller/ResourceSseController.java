@@ -39,7 +39,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/api/v1/resource")
 @RequiredArgsConstructor
-public class IpdSseController {
+public class ResourceSseController {
 
     /** 与 IpdAuthSession.LOGIN_TYPE 对齐：IPD 业务会话走独立 loginType */
     private static final StpLogicJwtForSimple IPD_LOGIC = new StpLogicJwtForSimple("ipd");
