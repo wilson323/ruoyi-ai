@@ -14,8 +14,10 @@ import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.AiCopilotService;
+import org.ruoyi.ipd.service.CopilotRunRegistryService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,6 +53,7 @@ public class AiCopilotController {
 
     private final AiCopilotService service;
     private final IpdPermission ipdPermission;
+    private final CopilotRunRegistryService runRegistry;
 
     /** 复用独立单线程 executor 推 SSE 流（不分业务线程池）；MVP 量级足够。 */
     private static final Executor SSE_EXECUTOR = Executors.newCachedThreadPool(r -> {
@@ -85,13 +88,17 @@ public class AiCopilotController {
      * @param message   必填，URL query 上限 2000（与 DTO @Size 对齐）
      * @param pageContext 可空（R221 对话即填表，spec §3.5）：宿主页面注册的填表上下文 JSON，上限 4000（与 DTO @Size 对齐）；
      *                    非空且 message 含「填」类关键字才命中 FILL_PAGE，done 帧携 fillPayload。
+     * @param runId     可空（P3 取消切片，2026-09-29）：客户端生成的 run 关联键，供
+     *                    {@code POST /runs/{runId}/cancel} 定位；空则服务端生成（未回传，仅不启用取消面）。
      */
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@RequestParam(required = false) Long projectId,
                              @RequestParam @jakarta.validation.constraints.NotBlank
                              @jakarta.validation.constraints.Size(max = 2000) String message,
                              @RequestParam(required = false)
-                             @jakarta.validation.constraints.Size(max = 4000) String pageContext) {
+                             @jakarta.validation.constraints.Size(max = 4000) String pageContext,
+                             @RequestParam(required = false)
+                             @jakarta.validation.constraints.Size(max = 64) String runId) {
         // 2026-09-11：入口鉴权异常（requireInternal 抛 IpdBusinessException / NotLoginException）
         // 不再走 advice 返回 JSON——EventSource 收到 JSON 响应同样报 MIME 错误；
         // 改为推 error 帧 + complete()，前端按事件名识别业务错误（event=error）。
@@ -108,13 +115,27 @@ public class AiCopilotController {
             return emitter;
         }
         AiCopilotReq req = new AiCopilotReq(projectId, message, java.util.List.of(), null, pageContext);
-        SSE_EXECUTOR.execute(() -> pushChunks(emitter, actor, req));
+        CopilotRunRegistryService.RunHandle handle = runRegistry.register(actor, runId);
+        SSE_EXECUTOR.execute(() -> pushChunks(emitter, actor, req, handle));
         return emitter;
     }
 
-    private void pushChunks(SseEmitter emitter, IpdActor actor, AiCopilotReq req) {
+    /**
+     * P3 取消切片（B↔C 合同 G1）：取消一次在飞 run。仅 run 所有者可取消（外部一律 50001，
+     * 不泄露存在性）；首次取消落审计 AI_COPILOT_RUN_CANCEL，重复取消幂等。晚到回调被
+     * guard 吞掉（无成功帧，ADR-0075 取消先赢语义）。
+     */
+    @PostMapping("/runs/{runId}/cancel")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<java.util.Map<String, Object>> cancelRun(@PathVariable String runId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(runRegistry.cancel(actor, runId));
+    }
+
+    private void pushChunks(SseEmitter emitter, IpdActor actor, AiCopilotReq req,
+                            CopilotRunRegistryService.RunHandle handle) {
         try {
-            service.chatStream(actor, req, new AiCopilotService.CopilotStreamSink() {
+            service.chatStream(actor, req, runRegistry.guard(handle, new AiCopilotService.CopilotStreamSink() {
                 @Override
                 public void meta(AiCopilotResp resp) {
                     sendFrame(emitter, "meta", resp);
@@ -147,7 +168,7 @@ public class AiCopilotController {
                         "message", message == null ? "" : message));
                     emitter.complete();
                 }
-            });
+            }));
         } catch (IpdBusinessException biz) {
             // 同步前置错误（message 空 / 项目不可见）：推 error 帧 + complete（SSE 契约模式 B）
             log.warn("[AI-COPILOT-SSE] stream rejected: code={} msg={}",

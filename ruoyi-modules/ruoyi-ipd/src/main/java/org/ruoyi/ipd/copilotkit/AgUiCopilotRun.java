@@ -8,6 +8,7 @@ import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionException;
 import org.ruoyi.ipd.service.AiCopilotService;
+import org.ruoyi.ipd.service.CopilotRunRegistryService;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,11 +47,19 @@ public class AgUiCopilotRun {
     private final AiCopilotService service;
     private final IpdPermission permission;
     private final Executor executor;
+    private final CopilotRunRegistryService runRegistry;
 
     public AgUiCopilotRun(AiCopilotService service, IpdPermission permission, Executor executor) {
+        this(service, permission, executor, null);
+    }
+
+    /** P3 取消切片（2026-09-29）：接入 run 注册表后，RunAgentInput.runId 可在飞取消；null = 不启用。 */
+    public AgUiCopilotRun(AiCopilotService service, IpdPermission permission, Executor executor,
+                          CopilotRunRegistryService runRegistry) {
         this.service = service;
         this.permission = permission;
         this.executor = executor;
+        this.runRegistry = runRegistry;
     }
 
     /**
@@ -78,7 +87,47 @@ public class AgUiCopilotRun {
             fail(out, tx, String.valueOf(ApiV1ErrorCode.PARAM_INVALID.getCode()), bad.getMessage());
             return;
         }
-        executor.execute(() -> pushStream(actor, req, tx, out));
+        // P3 取消切片：注册在飞 run（runId 取 AG-UI 协议字段），取消后端点置位、guard 吞后续帧
+        // 并补发一次 RUN_ERROR(CANCELLED) 合法闭合 run 边界（终结仍只一次）。
+        CopilotRunRegistryService.RunHandle handle =
+            runRegistry == null ? null : runRegistry.register(actor, runId);
+        AgUiSseSink guarded = cancelGuard(handle, out, tx);
+        executor.execute(() -> pushStream(actor, req, tx, guarded));
+    }
+
+    /**
+     * 取消守卫（sink 层）：取消先赢后吞掉全部晚到帧（无成功帧，ADR-0075）；首次观察到
+     * 取消时补发 RUN_ERROR(CANCELLED) 成对闭合 RUN_STARTED。registry 未接入时直通。
+     */
+    private AgUiSseSink cancelGuard(CopilotRunRegistryService.RunHandle handle,
+                                    AgUiSseSink out, AgUiFrameTranslator tx) {
+        if (handle == null) {
+            return out;
+        }
+        AtomicBoolean cancelledFrameSent = new AtomicBoolean(false);
+        return new AgUiSseSink() {
+            @Override
+            public void send(List<Map<String, Object>> events) {
+                if (!handle.isCancelled()) {
+                    out.send(events);
+                    return;
+                }
+                // 取消已置位：吞业务帧，仅终结一次 RUN_ERROR(CANCELLED)
+                if (cancelledFrameSent.compareAndSet(false, true)) {
+                    runRegistry.unregister(handle.runId());
+                    out.send(tx.onError("CANCELLED", "run cancelled by client"));
+                    out.complete();
+                }
+            }
+
+            @Override
+            public void complete() {
+                runRegistry.unregister(handle.runId());
+                if (!cancelledFrameSent.get()) {
+                    out.complete();
+                }
+            }
+        };
     }
 
     private void pushStream(IpdActor actor, AiCopilotReq req, AgUiFrameTranslator tx, AgUiSseSink out) {

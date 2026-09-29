@@ -13156,6 +13156,20 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **口径差异登记**：现查 383 个含 @Test 文件全部带 @Tag（未带 tag = 0），与 D2「2987 个 @Test 无一带 tag」不符（历史快照/另一口径），按现态处理；但陷阱对未来新增忘加 tag 的测试与 profile 切换仍活，故门禁照收。
 - **残留**：兄弟模块仍继承根 pom groups 过滤（0-test 假绿面在 ruoyi-chat/ruoyi-system 等仍在），需各自收口，本轮范围外待挂卡；CLI `-Dgroups=` 逃生口由 failIfNoTests 兜底。证据 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/P1-1-Surefire零测试门修复验证-20260929.md`；看板批量回写并入 b5e。
 
+### d-round-p1-5-full-backup-restore-drill-20260929 D 轮 P1-5（N-9）全库备份与试恢复校验（B-4 交付，成功条件 5）
+
+- **判据与修复路**：D4 P1-5/N-9（Sep 5 dump 仅 112 CREATE TABLE 缺 58 表 + 无试恢复记录）+ 成功条件 5 + B-4「覆盖 170 表的全库 dump（含 checksum）」。
+- **全库 dump（B-4）**：`.codex/ipd-dev/backups/b5d-ipd_dev-full-20260929-102000.sql`（10,794,342 字节，`--single-transaction` 一致性快照）+ sha256 `459dfc55...8901ca`（同名 .sha256）；dump 内 **172 张 CREATE TABLE** = 现查表数（D3 的 170 已前移，五必现查以现态为准），全覆盖。
+- **试恢复校验（隔离库 ipd_restore_b5d0929，业务库零写入）**：sed 只改 dump 头部 L22/L24 库名（防误灌源库）→ RESTORE-EXIT=0、隔离库 172 表；**逐表 CHECKSUM 比对 169/172 完全一致**，3 表 MISMATCH 全部归因 dump 后源库活跃写入——audit_logs **前缀证明**（src 中 id≤restored_max 恰 7,174 = 恢复库行数，无丢失无篡改，+5 为新增审计行）、audit_log_chain_heads 链头前移自洽、persons 唯一差异行一字段（ipd-admin.last_login_at 01:17:59→01:18:43 一次登录）⇒ 恢复=dump 时点忠实快照。**b3 单文件试恢复**（独立库 ipd_restore_b5d0929_b3）：EXIT=0 + **61 行回读一致**。
+- **防伪记录**：首轮 CHECKSUM 脚本被 `group_concat_max_len=1024` 截断 → SQL 1064 → 两边空文件 diff 出假 IDENTICAL，当场识破（行数门 0≠172）后修正重跑得真结果。
+- **残留**：① 定期备份 cron/保留策略仍缺（P1-5 持续机制部分，需运维挂卡）；② 正式全库回滚演练应停服/低峰执行（在线 dump 后源库前移已实证）；③ 两个演练隔离库留库备查（R214 政策登记）。证据 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/P1-5-全库备份与试恢复校验-20260929.md`；看板批量回写并入 b5e。
+
+### d-round-blockers-fixes-20260929 D 轮 b5e：49 条 BLOCKED 归因 + 看板批量回写（D 轮阻断修复全收口）
+
+- **49 条 BLOCKED 归因**（数据源 QA-08 D5 轮实跑 249 AC = 48/137/15/49）：A 前端/UI 未实施 32（KPI 20 + P0-10.* 5 + PROD 4 + 零散 3）/ B 服务层逻辑 3 / C 定时任务 2 / D 外部依赖 6（HR API 4 + 企微扫码 2）/ E 登录环境 6（多 QA 账号凭据轮换 5 + 前端仓未拉入 1）。关键判断：49 条全部为「没得验」非「验了不对」，无一条由本轮修复引入或指向已修面；A 类 65% 为纯前端缺口；E 类随 P0-1/P0-4 直接可重测；重测前不得计入通过率分母。全文 `docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/QA08-49条BLOCKED归因-20260929.md`。
+- **看板批量回写**（marker `d-round-blockers-fixes-20260929`）：总控卡 61217664 desc 32,002→33,165（b1~b5e 六项修复证据登记，维持 inprogress/PARTIAL）、QA-08 卡 3ba1f028 desc 5,721→6,240（归因结论登记）；两卡 PUT HTTP 200 + 回读验证 marker 命中 + desc_len 增量符合（按五必现查规约不依赖 updated_at）。无新建卡（遵「别各自建卡」）。SSOT 镜像 `开发计划-看板镜像.md` 同步登记段已追加。
+- **D 轮阻断修复计划（b1~b5e）全部完成**：b1 冻结/b2 数据重建/b3 数据判据/b4 SSRF/b5a 405 包络/b5b 分页/b5c Surefire 零测试门/b5d 备份试恢复/b5e 归因回写。生产就绪判定不变（P0-1 jar 重建、P0-2、P0-4、G2 重测、SLO 书面约定仍缺）。
+
 ### b-track-b0-b5-truechain-round-20260929 B 轨道 B0～B5 真链验收轮（B 路独占写面）
 
 - **B1 产品线（PASS）**：`a1-productline-e2e.py` 19/19「VERDICT: A1 PASS」+ 补链探针 `b1-admin-supplement-probe.py` ①-⑥ 全绿（管理员建/改/停用、组长指定与失权、申请审批链、成员移除）。根因修复链：90001→`FOR UPDATE` denied（ipd_app 缺表级授权）→兄弟 GRANT 已 apply→**Hikari 池 ACL 陈旧需重启**（新教训：GRANT 后连接池不刷新）。DB 回读成员状态 + 审计链 JOIN_APPLY→APPROVE→LEAVE 12 条。口径登记：「368 存量」实为 338 存活+30 软删；探针留库数据按测试数据政策保留；遗留停用探针线 probe-b1x 留证。
@@ -13165,3 +13179,23 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **B3 矩阵（交付）**：D 轮 QA-08 16 fail 中 **14 条复核推翻**（receipt_ledgers 表实存 28 行、kpi.functionalWeight=0.6 实存、achievementTiers 6 档降序实存、/audit-logs/verify 端点实存——D 轮探针恰逢 B1 登录故障窗口 + 键/表名探测错，环境假红）。真实缺口定位：GAP-A **审计哈希链 17 处断裂**（seq≤3074，2026-09-06~09-22 遗留；hash_version 全表 NULL；9-23 后 5469 新行无断裂）须 ADR+授权窗口修复；GAP-B Gate 要素 seed 95/veto 37 vs 规格 33 口径分歧待 owner 裁。交付 `docs/ipd-系统说明/验收/B3-全业务域矩阵证据盘点-20260929.md`。
 - **B4 前置核查（BLOCKED 如实登记）**：owner 裁决（f8afc463 C0 §6.3）七消费者仅 #1/#2 进内核、#3-#7 保留 AiGateway；P1 可信 AgentScope 端口随 PoC 退役暂不存在、P2 ai_model_configs 唯一 active 是 TEST mock(8765) 真实模型 MiniMax is_active=0（激活有费用副作用待 owner 拍）、P4 C2 未落地、P3 B 侧取消切片可独立先行。交付 `docs/ipd-系统说明/验收/B4-AgentScope适配前置核查-20260929.md`。
 - **运行态**：16039 当前 PID 55654（25.9s 启动，含 c9bbc5fd 修复）；本机 8765 mock 与其余 java 进程未动。证据日志 `/tmp/{b1-e2e-20260929-r2,b1-admin-sup-20260929-r2,b2-probe-p1-20260929-r2,b2-probe-p2-20260929,b2-embed-fixup-test-20260929}.log`、`/tmp/b0-n1.json`。
+
+## 2026-09-29 任务A（正式前端六项收口验收）登记 — Qoder 主协调会话
+
+- **GRANT 修复（已 apply）**：`docs/script/sql/update/2026-09-29-ipd-grant-product-line-dml.sql`——product_lines / product_line_members 表级 CRUD 授权补齐（A1 探针实证写链 90001 `SELECT with locking clause denied`，读链全通），已 mysql apply + SHOW GRANTS 回读两行生效。
+- **缺陷登记**：D1 产品线空间待审批状态刷新不回读（仅前端内存 pendingApplyIds）；D2 退出空间/组长批准无二次确认；D3 A1 走查残留 probe-b1x 测试线数据卫生；D4（新，A5 live 真跑暴露）AI 文档 diff 契约漂移——后端 AiDocumentService 序列化 `differences` vs 前端契约 `fields`（api/ipd/ai-document.ts L107/L334），前端兜底静默解析空数组 ⇒ UI diff 恒空，live 步骤6 保持红不掩盖，待 owner/后端裁决归一方向。
+- **A3 BLOCKED 依赖**：ipd_action_skill_map 真库 0 行，`2026-09-28-ipd-action-skill-map-seed.sql` 头部 DO NOT APPLY 闸门有效，待 owner 人工 apply 后重验 flow.vue 分组。
+- **测试数据留库（owner 政策 R214）**：PRJ-2026-047 动作 C01 IN_PROGRESS（version=2）；ai-docs generate 真跑产物 2 篇（docId 2104989628309184514 等，projectId=100，标题「A5复现 PRD」「W9-A39…」）；产品 2103713141559963649 归属残留（unassign 业务规则拦截，非缺陷）。
+- **live 37 项真跑结果**：23 项（auth/project loopback）错峰重跑全绿（首轮假红根因=兄弟会话 10:34:19 重启后端撞窗口）；market 组 14 项 13 绿 + D4 红。修测试基建两处：ai-docs-live step5 isRecord 误判数组笔断言对齐 Array.isArray 契约、HTTP 超时 5s→15s（真 generate 4.3s）。
+- **质量门**：非缓存 vue-tsc EXIT=0；全量 Vitest 1691 passed/37 skipped EXIT=0；`turbo build:prod --force` 0 cached EXIT=0（1079 产物，日志 0 error TS）。
+- **证据**：前端仓 `docs/任务A-六项收口验收-20260929.md` + `scripts/a4-role-traverse-result.json` + `scripts/a4-shot-narrow-*.png`×5 + `scripts/a5-shot-*.png`×3 + `/tmp/a5_*.log`。
+
+## 2026-09-29 B 轨收口波（owner 批复「MiniMax-M3 可以启用。剩余决定按照最佳实践来」）— B 轨执行会话
+
+- **①[MiniMax-M3 激活（owner 明确拍板）]**：`ai_model_configs` id=2104885081318375426（endpoint https://api.minimax.cn/v1）经 HTTP 官方链路激活替代 TEST mock：test 连通前置（code=0）→ enable 互斥切换 → 列表回读全局 active 唯一 → `POST /ai/suggest`（project.summary.refresh, projectId=2103550173220220929）返回 MiniMax-M3 真实 markdown 内容。踩坑一处：AiChatClient SSRF allowlist 拦 `api.minimax.cn`（400/10001 host not in allowlist），在 gitignored 的 `.codex/ipd-dev/config/application-ipd-local.yml` `ai.allowed-hosts` 追加后重启生效（本机验收开窗，不入库）。探针 `.codex/ipd-dev/minimax-activate-probe.py` 五步全绿。
+- **②[GAP-A 审计断链纠偏 + ADR-0076（按 DEF-9 A 方案关闭）]**：fresh `verifyChainDetailed` 实测 `hashBroken=[]`——上轮 B3 所记「哈希链 17 处断裂」为误判，实为 17 处 seq GAP（缺行，total=7202，hash_version NULL=legacy-v1 设计内）。复用 DEF-9/R30（2026-09-11 owner A 方案先例：GAP 接受+标记不连续，与哈希断裂分开）零数据变更关闭，落 `ADR/ADR-0076-审计链GAP按DEF-9-A方案接受-20260929.md`，并勘误 B3 证据文件 GAP-A 行。
+- **③[P3 取消切片（B↔C 合同 G1，ADR-0075 §③取消语义）]**：新建 `CopilotRunRegistryService`（进程内 run 注册表 + guard，取消先赢吞晚到帧、首取消落审计 `AI_COPILOT_RUN_CANCEL`、非 owner/未知一律 50001 不泄露存在性、TTL 惰性驱逐）；`AiCopilotController` stream 加 runId 参数 + `POST /api/v1/ai-copilot/runs/{runId}/cancel`；`AgUiCopilotRun` cancelGuard 补发 RUN_ERROR(CANCELLED) 终帧合法闭合 AG-UI run 边界（终结仍只一次）。前端同批（防孤儿棘轮 R212）：`ai-copilot.ts` streamCopilot 内部生成 runId + AbortController.abort 自动补发 cancel（调用方零改造）+ `cancelCopilotRun` API。验证链：后端单测 `CopilotRunRegistryServiceTest` 8/8 + 受构造函数影响存量 `AgUiCopilotRunTest` 7/7 + `CopilotKitRuntimeControllerTest` 5/5（错峰单模块无 -am/clean）；前端 vitest 21/21、`pnpm run check:type` 全绿；契约门禁 `check-api-contract-fe-be.mjs` RC=0（含白名单 evidence 行号勘误 83/115→89/121，沿 R221 python 勘误先例，纯行号无语义变更）；HTTP 真链 `.codex/ipd-dev/p3-cancel-probe.py` **9/9 PASS**（MiniMax 真流式在飞取消：首帧→cancel 200 firstTime=true→晚到无 done→重复 cancel 50001；AG-UI 桥 RUN_STARTED→cancel→RUN_ERROR(CANCELLED) 且无 RUN_FINISHED）；审计回读 audit_logs seq 8667/8671/8673 三行落库（首取消各一行、重复取消未落）。踩坑如实：探针 C 链首跑 3 红，根因=消息含「推进」被意图分类兜底直答秒完注销（非在飞），换 CHITCHAT 长流消息后全绿——判据修正非代码修正。
+- **④[提交边界·兄弟波纠缠（R25 三步·评审处置结论）]**：工作树检出兄弟会话在途 `IpdCopilotAccess` 抽象波（`IpdCopilotAccess.java` untracked + `AiCopilotService.java`/`WorkbenchService.java`/`AgUiCopilotRunTest.java`/`CopilotKitRuntimeControllerTest.java` 等 M）。`CopilotKitRuntimeController.java` 与其 Test 的 diff 混有该波内容且无法按 hunk 干净剥离——处置结论：**本笔不提交该两文件**，留兄弟波随其 AiCopilotService 重构整波入库（部分入库必致 fresh clone 引用缺失编译炸，§5 病根②）；我切片对 AG-UI 桥的接线（4 参构造传 runRegistry）暂以工作树+已部署 jar 形态存在（本轮 HTTP C 链即跑在该 jar 上，证据真实）。`AgUiCopilotRun.java` 3 参兼容构造保留使 HEAD 态旧 Controller 仍可编译。兄弟自有改动零触碰、不掠带。
+- **⑤[C 类按最佳实践处置=登记建议，不自主翻转]**（G-04 产品业务权威面 + R227 C 类不计闭环分母）：a) `2026-09-28-ipd-action-skill-map-seed.sql` 头部 DO-NOT-APPLY 闸门属 owner/DBA apply 权，维持不 apply，A3 BLOCKED 依赖不变；b) Gate 要素 95 vs 33 口径分歧属产品业务决策，留 owner 拍板；c) admin 前缀拍平（菜单/账号命名）属运维口径，未动；d) 「停用产品线带活动产品」拦截语义属业务规则本体（unassign 拦截本轮视为规则正确行为）。四项均已作为建议随本段登记，待 owner 逐项裁决。
+- **⑥[变更清单]** 后端入库：`CopilotRunRegistryService.java`(新)/`CopilotRunRegistryServiceTest.java`(新)/`AiCopilotController.java`/`AgUiCopilotRun.java`/`ADR-0076`(新)/`B3-...20260929.md`(勘误)/`api-internal-whitelist.json`(行号勘误)/本 log.md；前端入库：`api/ipd/ai-copilot.ts`/`ai-copilot.test.ts`。看板回写：D 独占写面，本会话仅交建议（见 ⑦）。marker r229-bclose-minimax-cancel
+- **⑦[看板回写建议（D 独占写面，B 轨仅提交证据+建议）]**：建议增补/翻卡三项——a) B↔C 合同缺口 G1（取消面）卡：附本段 ③ 全链证据（单测 20/20 + 契约 RC=0 + HTTP 9/9 + 审计 seq 8667/8671/8673），建议翻「已完成」但注明 AG-UI 桥接线半段随兄弟 IpdCopilotAccess 波入库（见 ④）；b) GAP-A/审计断链卡：按 ADR-0076 关闭口径改「已接受（DEF-9 A 方案，零数据变更）」，纠正原「哈希断裂」表述；c) MiniMax-M3 激活对应卡：置「已完成（owner 2026-09-29 拍板+HTTP 真调验收）」。三项由守门人/D 会话按回写纪律执行，本会话不代写看板与镜像。
