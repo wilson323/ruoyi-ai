@@ -20,6 +20,7 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP,
         IpdPermissionCode.OPERATION_PRODUCT_QUERY,
+        IpdPermissionCode.OPERATION_PRODUCT_LINE_LIST,
         IpdPermissionCode.OPERATION_STAGE_ACTION,
         IpdPermissionCode.OPERATION_CERT_TEMPLATE,
         IpdPermissionCode.OPERATION_GATE_ELEMENT,
@@ -74,6 +75,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP_CREATE,
         IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT,
+        IpdPermissionCode.OPERATION_PRODUCT_LINE_APPLY,
+        IpdPermissionCode.OPERATION_PRODUCT_LINE_LEAVE,
+        IpdPermissionCode.OPERATION_PRODUCT_LINE_REVIEW,
         IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE,
         IpdPermissionCode.OPERATION_STAGE_ACTION_DELIVERABLE,
         IpdPermissionCode.OPERATION_DELETION_REQUEST_SUBMIT,
@@ -170,7 +174,8 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_PERMANENT_DELETE,
         // R215 权限可配置化：元权限不参与 DB 覆盖自身（防管理员被锁在门外），固定仅超管
         IpdPermissionCode.OPERATION_ROLE_PERMISSION_CONFIG_QUERY,
-        IpdPermissionCode.OPERATION_ROLE_PERMISSION_CONFIG_EDIT
+        IpdPermissionCode.OPERATION_ROLE_PERMISSION_CONFIG_EDIT,
+        IpdPermissionCode.OPERATION_PRODUCT_LINE_MANAGE
     );
 
     /**

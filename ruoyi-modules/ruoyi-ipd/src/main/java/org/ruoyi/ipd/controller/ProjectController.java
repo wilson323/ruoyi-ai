@@ -100,8 +100,8 @@ public class ProjectController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<GateChecklistView> gateChecklist(@PathVariable Long id,
                                                           @RequestParam(required = false) String stage) {
-        ipdPermission.requireInternal();
-        Project project = projectService.getById(id);
+        IpdActor actor = ipdPermission.requireInternal();
+        Project project = projectService.getVisibleById(id, actor);
         return ApiV1Response.ok(gateEngine.explainChecklist(project, stage));
     }
 

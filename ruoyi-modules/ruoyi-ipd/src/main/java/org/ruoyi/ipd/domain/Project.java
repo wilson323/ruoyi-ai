@@ -77,6 +77,18 @@ public class Project extends BaseEntity implements SoftDeletable {
     /** 当前阶段 CONCEPT|PLAN|DEV|VALID|LAUNCH|LIFECYCLE */
     private String currentStage;
 
+    /** 项目级小阶段游标；null 表示尚未开始引导，不代表完成首节点。 */
+    @TableField(updateStrategy = FieldStrategy.NEVER)
+    private String currentSubStageCode;
+
+    /** 小阶段推进乐观版本，初始为 0。 */
+    @TableField(updateStrategy = FieldStrategy.NEVER)
+    private Long subStageVersion;
+
+    /** 最近一次成功推进的门禁结果；拒绝路径不移动游标。 */
+    @TableField(updateStrategy = FieldStrategy.NEVER)
+    private String lastSubStageGateResult;
+
     /** P1-9.1：存量申报阶段（补齐目标展示）；NEW 项目为空 */
     private String declaredStage;
 

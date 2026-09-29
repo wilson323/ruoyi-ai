@@ -3,6 +3,7 @@ package org.ruoyi.ipd.mapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 import org.ruoyi.common.mybatis.core.mapper.BaseMapperPlus;
 import org.ruoyi.ipd.domain.Project;
 
@@ -23,4 +24,20 @@ public interface ProjectMapper extends BaseMapperPlus<Project, Project> {
     @Select("SELECT MAX(CAST(SUBSTRING(code, CHAR_LENGTH(CONCAT('PRJ-', #{year}, '-')) + 1) AS UNSIGNED)) "
         + "FROM projects WHERE code LIKE CONCAT('PRJ-', #{year}, '-%')")
     Integer selectMaxCodeSeqByYear(@Param("year") int year);
+
+    /** 小阶段游标 CAS；租户、软删与旧游标均参与条件，避免并发覆盖或跨租户更新。 */
+    @Update("UPDATE projects SET current_sub_stage_code = #{nextCode}, "
+        + "sub_stage_version = sub_stage_version + 1, last_sub_stage_gate_result = 'PASSED', "
+        + "update_by = #{actorId}, update_time = CURRENT_TIMESTAMP "
+        + "WHERE id = #{projectId} AND tenant_id <=> #{tenantId} AND del_flag = '0' "
+        + "AND current_stage = #{expectedStage} AND status NOT IN ('SUSPENDED', 'ARCHIVED') "
+        + "AND sub_stage_version = #{expectedVersion} "
+        + "AND current_sub_stage_code <=> #{previousCode}")
+    int advanceSubStage(@Param("projectId") Long projectId,
+                        @Param("tenantId") String tenantId,
+                        @Param("expectedStage") String expectedStage,
+                        @Param("previousCode") String previousCode,
+                        @Param("nextCode") String nextCode,
+                        @Param("expectedVersion") Long expectedVersion,
+                        @Param("actorId") Long actorId);
 }

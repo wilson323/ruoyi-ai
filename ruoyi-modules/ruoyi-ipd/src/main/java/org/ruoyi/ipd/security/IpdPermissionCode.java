@@ -16,6 +16,12 @@ public interface IpdPermissionCode {
     String OPERATION_PRODUCT_GROUP_CREATE = "ipd:product:add";
     String OPERATION_PRODUCT_GROUP_BIND_PROJECT = "ipd:product:edit";
 
+    String OPERATION_PRODUCT_LINE_LIST = "ipd:product-line:list";
+    String OPERATION_PRODUCT_LINE_APPLY = "ipd:product-line:apply";
+    String OPERATION_PRODUCT_LINE_LEAVE = "ipd:product-line:leave";
+    String OPERATION_PRODUCT_LINE_REVIEW = "ipd:product-line:review";
+    String OPERATION_PRODUCT_LINE_MANAGE = "ipd:product-line:manage";
+
     String OPERATION_STAGE_ACTION = "ipd:stage-action:list";
     String OPERATION_STAGE_ACTION_EXECUTE = "ipd:stage-action:edit";
     String OPERATION_STAGE_ACTION_DELIVERABLE = "ipd:stage-action:add";

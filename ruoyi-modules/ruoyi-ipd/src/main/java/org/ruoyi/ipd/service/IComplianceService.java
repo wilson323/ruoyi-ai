@@ -17,7 +17,7 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.dto.AuditEntryVO;
-import org.ruoyi.ipd.dto.DataDeletionRequestDTO;
+import org.ruoyi.ipd.dto.DataDeletionRequestReq;
 import org.ruoyi.ipd.dto.DataDeletionRequestVO;
 import org.ruoyi.ipd.dto.DataRetentionRuleVO;
 import org.ruoyi.ipd.dto.PermissionSeparationVO;
@@ -45,7 +45,7 @@ public interface IComplianceService {
     /** * @param dto   入参 */
     /** * @param actor 当前操作人 */
     /** * @return VO（含 deadlineAt） */
-    DataDeletionRequestVO createDeletionRequest(DataDeletionRequestDTO dto, IpdActor actor);
+    DataDeletionRequestVO createDeletionRequest(DataDeletionRequestReq dto, IpdActor actor);
 
     /** * AC-COMP-04：按 resourceType+resourceId 查询审计链。 */
     /** * <p>「同组/本人/全局」范围规则由 service 透明按 actor 角色解析（与 AuditLogController 一致）。 */

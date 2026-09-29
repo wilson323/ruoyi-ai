@@ -65,6 +65,9 @@ public class Product extends BaseEntity implements SoftDeletable {
     /** 归属产品组 */
     private Long groupId;
 
+    /** 归属产品线团队大工作空间；一个产品线可包含多个产品。 */
+    private Long productLineId;
+
     /** 状态 ACTIVE|INACTIVE */
     private String status;
 

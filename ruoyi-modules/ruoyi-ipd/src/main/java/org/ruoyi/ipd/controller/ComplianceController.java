@@ -6,7 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.dto.AuditEntryVO;
-import org.ruoyi.ipd.dto.DataDeletionRequestDTO;
+import org.ruoyi.ipd.dto.DataDeletionRequestReq;
 import org.ruoyi.ipd.dto.DataDeletionRequestVO;
 import org.ruoyi.ipd.dto.DataRetentionRuleVO;
 import org.ruoyi.ipd.dto.PermissionSeparationVO;
@@ -56,7 +56,7 @@ public class ComplianceController {
     /** AC-COMP-02/03：创建数据删除请求（30 天 deadline + 强制审计）。 */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_COMPLIANCE_WRITE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/data-deletion-request")
-    public ApiV1Response<DataDeletionRequestVO> requestDeletion(@Valid @RequestBody DataDeletionRequestDTO dto) {
+    public ApiV1Response<DataDeletionRequestVO> requestDeletion(@Valid @RequestBody DataDeletionRequestReq dto) {
         return ApiV1Response.ok(complianceService.createDeletionRequest(dto, ipdPermission.requireInternal()));
     }
 

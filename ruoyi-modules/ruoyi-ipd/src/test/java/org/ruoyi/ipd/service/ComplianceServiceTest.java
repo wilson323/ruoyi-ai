@@ -11,7 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.dto.AuditEntryVO;
-import org.ruoyi.ipd.dto.DataDeletionRequestDTO;
+import org.ruoyi.ipd.dto.DataDeletionRequestReq;
 import org.ruoyi.ipd.dto.DataDeletionRequestVO;
 import org.ruoyi.ipd.dto.DataRetentionRuleVO;
 import org.ruoyi.ipd.dto.PermissionSeparationVO;
@@ -105,7 +105,7 @@ class ComplianceServiceTest {
         });
 
         IpdActor actor = new IpdActor(7L, "张三", "MARKET_PM", 100L);
-        DataDeletionRequestDTO dto = DataDeletionRequestDTO.builder()
+        DataDeletionRequestReq dto = DataDeletionRequestReq.builder()
             .resourceType("projects").resourceId(99L).reason("个保法要求删除").build();
 
         long before = System.currentTimeMillis();
@@ -134,7 +134,7 @@ class ComplianceServiceTest {
 
         IpdActor actor = new IpdActor(7L, "张三", "MARKET_PM", 100L);
         service.createDeletionRequest(
-            DataDeletionRequestDTO.builder()
+            DataDeletionRequestReq.builder()
                 .resourceType("requirements").resourceId(11L).reason("GDPR").build(),
             actor);
 
@@ -152,7 +152,7 @@ class ComplianceServiceTest {
 
     @Test
     void createDeletionRequest_rejectsMissingActor() {
-        DataDeletionRequestDTO dto = DataDeletionRequestDTO.builder()
+        DataDeletionRequestReq dto = DataDeletionRequestReq.builder()
             .resourceType("projects").resourceId(1L).reason("test").build();
         Assertions.assertThrows(RuntimeException.class,
             () -> service.createDeletionRequest(dto, null));

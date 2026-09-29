@@ -13,7 +13,7 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.dto.AuditEntryVO;
-import org.ruoyi.ipd.dto.DataDeletionRequestDTO;
+import org.ruoyi.ipd.dto.DataDeletionRequestReq;
 import org.ruoyi.ipd.dto.DataDeletionRequestVO;
 import org.ruoyi.ipd.dto.DataRetentionRuleVO;
 import org.ruoyi.ipd.dto.PermissionSeparationVO;
@@ -168,7 +168,7 @@ public class ComplianceService implements IComplianceService {
      * @return VO（含 deadlineAt）
      */
     @Transactional(rollbackFor = Exception.class)
-    public DataDeletionRequestVO createDeletionRequest(DataDeletionRequestDTO dto, IpdActor actor) {
+    public DataDeletionRequestVO createDeletionRequest(DataDeletionRequestReq dto, IpdActor actor) {
         if (dto == null) throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         if (actor == null || actor.id() == null) throw new IpdBusinessException(ApiV1ErrorCode.UNAUTHORIZED);
 
