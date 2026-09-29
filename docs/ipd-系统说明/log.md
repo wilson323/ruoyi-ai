@@ -12878,3 +12878,37 @@ N2 嵌套 kid（知识库-文档-片段）三表可见性需统一判据；N3 `a
 
 B0 单测全绿 + 双独立复验 ≠ 业务闭环：真库/HTTP 回归（登录态拉一个 kid 走 chat/retrieval）未跑，
 卡 5c1cc6f8 置 inreview 如实登记；S3 修完后 B1 检索过滤才允许开（否则缓存穿透假绿的前提已消除）。
+
+
+## 2026-09-28（kb-partB-B1+门禁+PoC-W0 四路并行轮）· B1 实施→Validator 证伪 P0→双智能体修复→全绿
+
+marker: kb-partb-b1-fourtracks
+
+### 1. 四路并行回执（4 专业智能体，文件面互斥）
+
+- **份2 PoC W0（卡 61217664）**：worktree merge main 零冲突（双方改动文件集不相交），merge commit d8231596 落本地 poc 分支（未 push，需授权）。merge 后 8 项验证全 EXIT=0：verify.sh --self-red、正向 verify、langchain4j 棘轮 111/111、chat test-compile、G3/G4/G5 三个 IT（真库 ipd_poc + 真 MINIMAX 流式）、B0 四测试 18/18。产出 ADR：`docs/ipd-系统说明/AgentScope接入ADR与Contract六问-20260928.md`（163 行：六问对照、17 子包替换1/包装2/保留14、W1 五端点兼容矩阵+身份接线 5 条+Gate 5 接入点）。
+- **份3 KB B1（卡 67874b63）**：四刀落地——sensitivity 过滤通道（实体补 5+3 列映射、关键词路 JOIN+谓词、向量路 where 构造器；B1 装配点不注值，权威源 B2 IPD 桥）、payload 12 键（WeaviatePayloadKeys 单源，雪花 ID string 防精度）、C4 防透传（实测发现仅 @Setter(NONE) 挡不住 Jackson 字段反射 → 补 @JsonProperty(READ_ONLY)）、C2 收敛（MultiKnowledgeAugmentorFactory 单实现，ws 顺序版升级为并行版=有意增强）。165 用例绿（+41）。
+- **份4 门禁（卡 2e380293）**：check-entity-db-drift.py 重写（实体域扩 ruoyi-ipd+ruoyi-chat、@TableName 双形态、反向漂移+白名单 ratchet 只减不增+过期也红+父类审计列+扫描失效自检）；baseline entity-db-drift-baseline.json（104 列级+3 表级，理由六分类；**严禁 scripts/baselines/**，guard 会拦）；新 scripts/check-mysql-db-name-consistency.mjs（8 取值点一致性+initdb 对齐）。红绿自证 8 条（白名单减列红/过期红/表级红/孤值红/initdb 缺口红/JDBC 孤值红+对应绿）。真库实测反向全集 59 表 112 列（远超任务点名三表）。两门禁未接 pre-commit（接入待主会话决定）。
+- **第4路 B0 安全审计**：报告 `docs/ipd-系统说明/验收/2026-09-28-B0安全审计.md`。Q1 现网零破坏（库 1 行 owner=1，访问者≠owner 会话 0）；Q2 不构成自立第二套上限（Gate 是准入闸门非上限模型，B1/B2 由 IPD 侧 Bean 覆盖=登记过渡豁免）但 system:info:edit 无 ownership 是真实击穿面；Q3 四口核验+新发现（buildQueryVectorBo 死代码、/system/info edit/remove/getInfo、/system/attach upload/reparse 无 ownership）；Q4 retrievalCache 是唯一检索缓存、无跨部署残留。
+
+### 2. Validator 证伪 P0（独立复核，关键拦截）
+
+独立 CodeReview 证伪 B1 核心不变量：**敏感级字符串字典序（INTERNAL<PUBLIC<SECRET）≠ 敏感级序（PUBLIC<INTERNAL<SECRET）**，两消费端（Weaviate LessThanEqual / SQL <=）按字典序比较 → cap=PUBLIC（fail-closed 默认档）命中 INTERNAL 库=越权放大，且被恒真断言测试固化成绿灯。另抓 P1：update 改 sensitivity 向量 payload 不随动（登记 B2 前置）；P2 三条（share 置 null 隐式依赖全局策略、TOCTOU、SECRET 直传）。
+
+### 3. 双智能体并行修复 + 主会话统一验证
+
+- 甲（P0）：放弃序比较改**允许值集合**语义（KnowledgeSensitivity.allowedValuesUpTo 单源；Weaviate ContainsAny+值数组；SQL IN <foreach>）；手写 GraphQL where 换 weaviate-client 5.3.0 typed WhereFilter（javap 核实 API；删 escapeGraphQLString/wrapOperands/whereClause）；P2-1 share 加 @TableField(updateStrategy=NOT_NULL)；测试翻转+三档全矩阵断言。
+- 乙（口子收敛）：KnowledgeAccessGate 增 assertManageable（判据 isSuperAdmin||owned，share 不参与——公开不授予写权；豁免用 LoginHelper.isSuperAdmin 全仓惯例，不按权限码豁免防提权链复活）。A 口 aiflow 节点过 Gate（WfState.userId 双参透传，Gate 在 try 外不被 catch 吞）；B 口 fragment list/queryList/queryById kid 级读面；C 口 edit/remove 全量预检（防向量/OSS 无事务中途拒留脏态）+getInfo 收敛 Controller（唯一 Service 外落位，因 queryById 被 ws/async 线程共享、Service 内嵌会 P0 回归，已论证）；D 口 upload/reparse fail-fast；死代码 buildQueryVectorBo 删除。
+- 主会话修复 6 处智能体笔误（并行改码禁跑 mvn 的代价）：两测试构造器缺第 7 参 Gate、PageQuery 零参构造不存在、any() 二义、Modifier.isDefault 不存在（应 Method.isDefault）、reparse 测试缺 SpringUtil.getBean mock、**weaviate-client 新发现：build() 的 assignSingleOrArray 会把单元素数组拆成标量**（valueStringArray=null、valueString="x"，jshell 实证；测试断言需兼容两态，已记入测试注释）。
+- 终态验证：`mvn -o -pl ruoyi-modules/ruoyi-chat,ruoyi-modules/ruoyi-aiflow test` → **198+117 全绿 BUILD SUCCESS**（chat +33：含口子收敛 29 与 P0 翻转后重计；aiflow +4）。
+
+### 4. 登记不实施（如实）
+
+P1-1 update sensitivity 向量 payload 不随动（B2 前置待办，0 行窗口无实害）；P2-2 TOCTOU（fail-noisy 可重试）；P2-3 SECRET 直传（B2 桥权限判定必做）；E anon 身份段（B2 并维度统一，A 口 WfState 透传已预置身份来源）；fragment list kid 空裸列（B2 S2 化收窄，用例已钉边界）；attach add/edit/remove 口（随 B1 attach 三元组工作裁决）；Agent 三件套（§8.4 范围）；Milvus/Qdrant payload（键单源已备，接入成本低）；C3 方案文档无定义未实施（以任务卡为事实源）；门禁未接 pre-commit；ADR 治理类机制全文档级（W3-W5 前逐项 PoC）。
+
+### 5. 教训
+
+- **序比较类过滤上线前必须画命中矩阵**：字典序与业务序重合是巧合不是不变量（本次 SECRET 恰为字典序最大值掩盖了两格错误）；三档×三值矩阵一画，越权放大格立刻现形。
+- **恒真断言是假绿的温床**：sensitivityLexicographicOrderInvariantHolds 断言字符串序本身（与实现同语反复）——契约测试必须断言业务语义（谁能看到什么），不是断言实现形态。
+- **并行智能体改码禁跑构建是必要的（防交叉假红），但回归主会话必须统一跑**：六处笔误全部在统一验证时现形，无一漏网。
+- **第三方库行为要用最小可执行探针实证**：weaviate-client 单元素数组拆标量的行为 javap/jshell 五行复现即定案，比读文档快且准。
