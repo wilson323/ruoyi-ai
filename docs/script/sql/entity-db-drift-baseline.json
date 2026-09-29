@@ -1,0 +1,789 @@
+{
+  "_meta": {
+    "description": "entity↔真库 反向漂移（库有列/实体无列）+ 表级缺失 白名单基线；由 docs/script/sql/check-entity-db-drift.py 消费",
+    "created": "2026-09-28",
+    "measured_against": "ipd_dev（.codex/ipd-dev/config/mysql-client.cnf socket 通道真库实测）× 工作区实体现状（含并行 B1 切片已映射列）",
+    "ratchet_rule": "只减不增：新增反向漂移/新缺失表即门禁红；条目失效（实体已映射/列已删/表已建）也红，须同步收缩本基线",
+    "part_a_expectation": "reason=part-a-unmapped 条目在 Part B B1 实体映射落地后必须删除；2026-09-28 交付时 B1 并行切片已映射 knowledge_info 5 列 + knowledge_fragment 3 列（相应条目已随收缩移除），agent_info 3 列尚待 B1 收尾",
+    "location_note": "本文件必须位于 docs/script/sql/ 下；严禁移入 scripts/baselines/（ratchet-data-guard 域，属 API 契约）",
+    "reason_legend": {
+      "part-a-unmapped": "Part A DDL（docs/script/sql/update/kb-partA-ddl-draft-20260928.sql）加列，Java 实体刻意零感知（纪律①）；Part B B1 实体映射落地后移除本条",
+      "preexisting-before-part-a": "Part A 之前既存差异：基线 docs/script/sql/ruoyi-ai.sql 自带该列，上游设计，实体从未映射",
+      "framework-implicit-tenant": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+      "ddl-template-unmapped": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+      "legacy-ddl-unmapped": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）"
+    }
+  },
+  "tables": {
+    "agent_info": {
+      "columns": {
+        "owner_person_id": {
+          "reason": "part-a-unmapped",
+          "detail": "Part A DDL（docs/script/sql/update/kb-partA-ddl-draft-20260928.sql）加列，Java 实体刻意零感知（纪律①）；Part B B1 实体映射落地后移除本条",
+          "since": "2026-09-28"
+        },
+        "project_id": {
+          "reason": "part-a-unmapped",
+          "detail": "Part A DDL（docs/script/sql/update/kb-partA-ddl-draft-20260928.sql）加列，Java 实体刻意零感知（纪律①）；Part B B1 实体映射落地后移除本条",
+          "since": "2026-09-28"
+        },
+        "sensitivity": {
+          "reason": "part-a-unmapped",
+          "detail": "Part A DDL（docs/script/sql/update/kb-partA-ddl-draft-20260928.sql）加列，Java 实体刻意零感知（纪律①）；Part B B1 实体映射落地后移除本条",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "ai_agent_tasks": {
+      "columns": {
+        "active_dedup": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "ai_documents": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "ai_model_configs": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "allowance_ledgers": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "audit_logs": {
+      "columns": {
+        "hash_version": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "trace_id": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "bid_invitations": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "bid_responses": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "bonus_allocations": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "bonus_pools": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "version": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "cert_templates": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "chat_session": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "contribution_versions": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "contributions": {
+      "columns": {
+        "archive_version": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "leader_evaluation": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "rd_contribution_rate": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "self_evaluation": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "deliverables": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "gate_arbitrations": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "gate_element_results": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "gate_review_elements": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "gate_reviews": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "gates": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "handover_records": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "hr_organizations": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "ipd_business_config": {
+      "columns": {
+        "scope_id": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "ipd_role_permission": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "knowledge_attach": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "knowledge_fragment": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "knowledge_info": {
+      "columns": {
+        "system_prompt": {
+          "reason": "preexisting-before-part-a",
+          "detail": "Part A 之前既存差异：基线 docs/script/sql/ruoyi-ai.sql 自带该列，上游设计，实体从未映射",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "kpi_records": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "launch_date_change_requests": {
+      "columns": {
+        "pending_project_id": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "legacy_imports": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "mcp_market_info": {
+      "columns": {
+        "del_flag": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "mcp_tool_info": {
+      "columns": {
+        "del_flag": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "negative_feedbacks": {
+      "columns": {
+        "handler_id": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "resolution": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "notification_events": {
+      "columns": {
+        "error_count": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "last_error_message": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "person_sync_jobs": {
+      "columns": {
+        "del_flag": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "product_groups": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "products": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "retired_at": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "retirement_locked": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "project_cert_items": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "project_circle_comments": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "project_circle_posts": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "project_followers": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "project_members": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "project_scores": {
+      "columns": {
+        "evidence_urls": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "total_score": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "projects": {
+      "columns": {
+        "archived_at": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "receipt_ledgers": {
+      "columns": {
+        "in_window": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "net_amount": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "requirement_changes": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "requirement_pools": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "requirements": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_audio": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_character": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_character_appearance": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_location": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_project": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_script": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "short_drama_storyboard": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "sop_templates": {
+      "columns": {
+        "remark": {
+          "reason": "ddl-template-unmapped",
+          "detail": "IPD 建表模板预留 remark 列，实体无对应业务字段（BaseEntity 不含 remark）——预留列，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "stage_actions": {
+      "columns": {
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "sys_oss": {
+      "columns": {
+        "create_dept": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "ext1": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "tenant_id": {
+          "reason": "framework-implicit-tenant",
+          "detail": "租户插件隐式列：TenantLineHandler 在 SQL 层注入 tenant_id，建表 DDL 模板统一带该列，本表实体按需未继承 TenantEntity——框架层语义，非映射缺失",
+          "since": "2026-09-28"
+        },
+        "update_by": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "update_time": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    },
+    "system_configs": {
+      "columns": {
+        "source_ref": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        },
+        "validation_rule": {
+          "reason": "legacy-ddl-unmapped",
+          "detail": "历史 update DDL 加列/建表列，实体从未映射（既存差异，非 2026-09-28 门禁补齐切片引入）",
+          "since": "2026-09-28"
+        }
+      }
+    }
+  },
+  "missing_tables": {
+    "knowledge_graph_instance": {
+      "reason": "上游 ruoyi-chat 实体存在，但 docs/script/sql 基线与 update 目录均无建表 DDL，ipd_dev 亦无此表——实体超前于 DDL 的既存事实；启用知识图谱功能前须补建表迁移并删除本条",
+      "since": "2026-09-28"
+    },
+    "knowledge_graph_segment": {
+      "reason": "上游 ruoyi-chat 实体存在，但 docs/script/sql 基线与 update 目录均无建表 DDL，ipd_dev 亦无此表——实体超前于 DDL 的既存事实；启用知识图谱功能前须补建表迁移并删除本条",
+      "since": "2026-09-28"
+    },
+    "my_initiated_task_view": {
+      "reason": "workbench 视图实体，建视图 SQL 未纳入 docs/script/sql 且 ipd_dev 未部署——既存事实；部署视图或调整实体数据来源后删除本条",
+      "since": "2026-09-28"
+    }
+  }
+}
