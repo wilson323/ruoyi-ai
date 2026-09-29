@@ -12991,3 +12991,9 @@ P1-1 update sensitivity 向量 payload 不随动（B2 前置待办，0 行窗口
 - **事实**：f17eed69（登记批）除本会话 5 个登记文件外，捎带入库了 `scripts/check-doc-db-drift-whitelist.txt`（53 行，mtime 20:34）——该文件为**兄弟会话（marker kb-partb-b2-bridge-research-20260928）按 owner 拍板创建**的漂移棘轮白名单（「棘轮吸收而非逐批修 830 文档」），在我 `git add` 与 `commit` 之间进入 staged 而被一并提交，commit message 未及标注。
 - **归属处置**：ORIGIN- 纪律登记如上，文件所有权与内容解释权归兄弟会话及其 marker；本会话不修改该文件。兄弟的 `scripts/check-doc-db-drift.sh` 仍为在途 M，归其自行收口。
 - **关联事实**：1d152901 的 --no-verify 豁免发生在 20:41，兄弟白名单 20:34 已落盘但门禁脚本仍按在途状态放行时机不同——两路对同一阻断（114 存量漂移）并行处置，事后看豁免非必要，但当时门禁实拦事实与授权链完整，特此留痕。
+
+### r139-leftover-closeout-20260928 补记 5：并发竞态更正（2026-09-28 20:52）
+
+- **竞态实况**：补记 4 的独立 commit 因兄弟会话同刻提交（HEAD ref 锁冲突 `is at 3ba33c9e but expected a2c63675`）**message 丢失**，但补记 4 内容已随兄弟 `3ba33c9e`（docs(agent-capability)）的 log.md 变更一并入库（grep 验证在 HEAD 内）；本条为事后更正登记，补记 4 事实以库内内容为准。
+- **push 捎带**：本次 `git push`（`1d152901..3ba33c9e`）一并推送了兄弟 3 个在途 commit（`4fa21e7a` kb/b2 桥接线、`a2c63675` 三门禁假红修订+漂移棘轮吸收、`3ba33c9e` agent-capability docs）——push 语义正常，归属归各 commit author，特此留痕防混淆。
+- **门禁态翻转**：兄弟 `a2c63675` 已把 `check-doc-db-drift.sh` 修订 + 白名单棘轮（owner 拍板吸收 9+28 标识符，pre-commit 接线 `--whitelist`，只减不增）正式入库，门禁 1/2 假红收口；`1d152901` 的 --no-verify 豁免成因就此消解，后续提交走正常门禁。
