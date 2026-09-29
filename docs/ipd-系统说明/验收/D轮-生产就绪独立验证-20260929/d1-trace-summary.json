@@ -1,0 +1,658 @@
+{
+  "generated_at": "2026-09-29T17:10:12+08:00",
+  "repo_head": "b46ec1ac5ab02e8e67c672a837f8e8c4e49791af",
+  "web_head": "a8a1729395273f2ad38e4cd63fa70e03b8696dba",
+  "doc06_snapshot_date": "2026-09-05",
+  "doc06_self_claimed_counts": {
+    "pages": 49,
+    "sourceApiLines": 458,
+    "sourceApiTokens": 535,
+    "sourceFieldRows": 608,
+    "controllers": 6,
+    "javaMappings": 28,
+    "canonicalRoutes": 273,
+    "implementedSourceMappings": 28,
+    "verifiedRoutes": 0,
+    "runtimeObservedAuthEndpoints": 5
+  },
+  "backend_controller_files": 130,
+  "backend_parsed_mappings": 666,
+  "frontend_parsed_calls": 262,
+  "frontend_entry_points_excluded": 2,
+  "frontend_to_backend_hit": 262,
+  "frontend_to_backend_hit_rate_pct": 100.0,
+  "frontend_true_orphans": 0,
+  "frontend_true_orphan_paths": [],
+  "canonical_routes_traced": 273,
+  "not_implemented_split": {
+    "suspected_name_drift": 75,
+    "high_confidence_gap": 135,
+    "gap_by_prefix": {
+      "admin": 26,
+      "performance": 36,
+      "attachments": 2,
+      "auth": 3,
+      "bootstrap": 1,
+      "cert-templates": 1,
+      "changes": 7,
+      "collaboration": 1,
+      "deletion-archive": 2,
+      "demands": 5,
+      "documents": 1,
+      "handoff-batches": 3,
+      "projects": 16,
+      "rd-replacements": 1,
+      "requirements": 3,
+      "saved-items": 2,
+      "stage-actions": 4,
+      "ai": 2,
+      "bid-invitations": 2,
+      "deletion-requests": 1,
+      "gates": 4,
+      "handovers": 2,
+      "internal": 2,
+      "products": 5,
+      "public": 1,
+      "reviews": 1,
+      "waivers": 1
+    },
+    "alias_samples": [
+      {
+        "canonical": "/api/v1/admin/cert-templates",
+        "backend_same_tail": [
+          "/api/v1/cert-templates"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/cert-templates/{VAR}",
+        "backend_same_tail": [
+          "/api/v1/cert-templates"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/members",
+        "backend_same_tail": [
+          "/api/v1/project-circle/{VAR}/members",
+          "/api/v1/projects/{VAR}/members"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/people-sync/history",
+        "backend_same_tail": [
+          "/api/v1/ai-documents/{VAR}/history"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/system-config",
+        "backend_same_tail": [
+          "/api/v1/system-configs",
+          "/api/v1/system-configs/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/system-config/bonus",
+        "backend_same_tail": [
+          "/api/v1/report/export/bonus"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/system-config/performance",
+        "backend_same_tail": [
+          "/api/v1/kpi/performance"
+        ]
+      },
+      {
+        "canonical": "/api/v1/auth/wecom/callback",
+        "backend_same_tail": [
+          "/auth/social/callback"
+        ]
+      },
+      {
+        "canonical": "/api/v1/auth/wecom/url",
+        "backend_same_tail": [
+          "/system/url",
+          "/system/url/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/deletion-requests/{VAR}/audit-trail",
+        "backend_same_tail": [
+          "/api/v1/compliance/audit-trail/{VAR}/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/gates/{VAR}",
+        "backend_same_tail": [
+          "/api/v1/projects/{VAR}/gates"
+        ]
+      },
+      {
+        "canonical": "/api/v1/gates/{VAR}/reviews",
+        "backend_same_tail": [
+          "/api/v1/ai-documents/{VAR}/versions/{VAR}/review",
+          "/api/v1/gates/{VAR}/review",
+          "/api/v1/ipd/product-lines/{VAR}/join-applications/{VAR}/review"
+        ]
+      },
+      {
+        "canonical": "/api/v1/handovers/{VAR}/preview",
+        "backend_same_tail": [
+          "/api/v1/bonus-pool/coefficient/preview",
+          "/api/v1/contributions/{VAR}/preview",
+          "/tool/gen/preview/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/performance/allowances",
+        "backend_same_tail": [
+          "/api/v1/report/export/allowance"
+        ]
+      },
+      {
+        "canonical": "/api/v1/performance/contributions/{VAR}",
+        "backend_same_tail": [
+          "/api/v1/contributions/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/projects/{VAR}/incentives/export",
+        "backend_same_tail": [
+          "/agent/agent/export",
+          "/api/v1/audit-logs/export",
+          "/chat/config/export"
+        ]
+      },
+      {
+        "canonical": "/api/v1/projects/{VAR}/performance/summary",
+        "backend_same_tail": [
+          "/api/v1/workbench/summary"
+        ]
+      },
+      {
+        "canonical": "/api/v1/requirements/{VAR}/history",
+        "backend_same_tail": [
+          "/api/v1/ai-documents/{VAR}/history"
+        ]
+      },
+      {
+        "canonical": "/api/v1/stage-actions/{VAR}",
+        "backend_same_tail": [
+          "/api/v1/stage-actions"
+        ]
+      },
+      {
+        "canonical": "/api/v1/users",
+        "backend_same_tail": [
+          "/system/user",
+          "/system/user/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/workflow/tasks",
+        "backend_same_tail": [
+          "/api/v1/workbench/tasks"
+        ]
+      },
+      {
+        "canonical": "/api/v1/stage-actions/{VAR}",
+        "backend_same_tail": [
+          "/api/v1/stage-actions"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/ai-providers/{VAR}/sync",
+        "backend_same_tail": [
+          "/api/v1/projects/{VAR}/cert-items/sync"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/cert-templates/{VAR}/copy",
+        "backend_same_tail": [
+          "/api/v1/gate-elements/{VAR}/copy",
+          "/api/v1/sop-templates/{VAR}/copy",
+          "/workflow/definition/copy/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/gate-element-versions/{VAR}/publish",
+        "backend_same_tail": [
+          "/api/v1/bid-invitations/{VAR}/publish",
+          "/api/v1/gate-elements/{VAR}/publish",
+          "/api/v1/sop-templates/{VAR}/publish"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/gate-element-versions/{VAR}/revert",
+        "backend_same_tail": [
+          "/api/v1/gate-elements/{VAR}/revert",
+          "/api/v1/sop-templates/{VAR}/revert"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/identity-source/test",
+        "backend_same_tail": [
+          "/api/v1/ai-models/{VAR}/test",
+          "/mcp/tool/{VAR}/test"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/members/{VAR}/resign",
+        "backend_same_tail": [
+          "/api/v1/persons/{VAR}/resign"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/people-sync/confirm",
+        "backend_same_tail": [
+          "/api/v1/contributions/{VAR}/confirm",
+          "/api/v1/kpi/shared/confirms",
+          "/api/v1/kpi/shared/{VAR}/confirm"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/people-sync/preview",
+        "backend_same_tail": [
+          "/api/v1/bonus-pool/coefficient/preview",
+          "/api/v1/contributions/{VAR}/preview",
+          "/tool/gen/preview/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/product-groups",
+        "backend_same_tail": [
+          "/api/v1/product-groups",
+          "/api/v1/product-groups/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/sop-versions/{VAR}/copy",
+        "backend_same_tail": [
+          "/api/v1/gate-elements/{VAR}/copy",
+          "/api/v1/sop-templates/{VAR}/copy",
+          "/workflow/definition/copy/{VAR}"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/sop-versions/{VAR}/publish",
+        "backend_same_tail": [
+          "/api/v1/bid-invitations/{VAR}/publish",
+          "/api/v1/gate-elements/{VAR}/publish",
+          "/api/v1/sop-templates/{VAR}/publish"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/sop-versions/{VAR}/revert",
+        "backend_same_tail": [
+          "/api/v1/gate-elements/{VAR}/revert",
+          "/api/v1/sop-templates/{VAR}/revert"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/system-config/revert",
+        "backend_same_tail": [
+          "/api/v1/gate-elements/{VAR}/revert",
+          "/api/v1/sop-templates/{VAR}/revert"
+        ]
+      },
+      {
+        "canonical": "/api/v1/admin/system-config/{VAR}/publish",
+        "backend_same_tail": [
+          "/api/v1/bid-invitations/{VAR}/publish",
+          "/api/v1/gate-elements/{VAR}/publish",
+          "/api/v1/sop-templates/{VAR}/publish"
+        ]
+      },
+      {
+        "canonical": "/api/v1/ai/generate",
+        "backend_same_tail": [
+          "/api/v1/ai-documents/generate",
+          "/short-drama/storyboards/generate"
+        ]
+      },
+      {
+        "canonical": "/api/v1/auth/wecom/demo/login",
+        "backend_same_tail": [
+          "/api/v1/auth/login",
+          "/auth/login"
+        ]
+      },
+      {
+        "canonical": "/api/v1/auth/wecom/start",
+        "backend_same_tail": [
+          "/short-drama/image/start"
+        ]
+      },
+      {
+        "canonical": "/api/v1/auth/wecom/unbind",
+        "backend_same_tail": [
+          "/api/v1/persons/{VAR}/wecom/unbind"
+        ]
+      }
+    ],
+    "gap_paths": [
+      "/api/v1/admin/cert-templates/{VAR}/items/{VAR}",
+      "/api/v1/performance/kpis/{VAR}/{VAR}/evidence/{VAR}",
+      "/api/v1/admin/ai-call-logs",
+      "/api/v1/admin/ai-providers",
+      "/api/v1/admin/identity-source",
+      "/api/v1/admin/organization",
+      "/api/v1/admin/organization/groups/{VAR}",
+      "/api/v1/admin/organization/sync-status",
+      "/api/v1/admin/organization/tree",
+      "/api/v1/admin/sop-versions",
+      "/api/v1/admin/sop-versions/{VAR}",
+      "/api/v1/admin/sync-config",
+      "/api/v1/admin/system-config/kpi",
+      "/api/v1/admin/system-config/performance/feedback",
+      "/api/v1/admin/transfer-readiness",
+      "/api/v1/attachments/{VAR}",
+      "/api/v1/auth/password-policy",
+      "/api/v1/auth/wecom/demo/accounts",
+      "/api/v1/bootstrap",
+      "/api/v1/cert-templates/lookup",
+      "/api/v1/changes",
+      "/api/v1/changes/{VAR}",
+      "/api/v1/changes/{VAR}/implementation",
+      "/api/v1/changes/{VAR}/review-detail",
+      "/api/v1/collaboration",
+      "/api/v1/deletion-archive",
+      "/api/v1/deletion-archive/{VAR}/hash-chain",
+      "/api/v1/demands/unassigned",
+      "/api/v1/documents",
+      "/api/v1/handoff-batches",
+      "/api/v1/performance/bonuses/{VAR}",
+      "/api/v1/performance/capacity-approvals",
+      "/api/v1/performance/cycles",
+      "/api/v1/performance/feedback",
+      "/api/v1/performance/feedback/{VAR}",
+      "/api/v1/performance/feedback/{VAR}/attachments",
+      "/api/v1/performance/kpis/{VAR}/{VAR}/evidence",
+      "/api/v1/performance/no-output-alerts",
+      "/api/v1/performance/overview",
+      "/api/v1/performance/project-reviews/{VAR}",
+      "/api/v1/performance/receipts/{VAR}",
+      "/api/v1/performance/shared-kpis/collect",
+      "/api/v1/performance/shared-kpis/reconcile",
+      "/api/v1/performance/shared-kpis/{VAR}/evidence",
+      "/api/v1/performance/substantive-output",
+      "/api/v1/projects/create-options",
+      "/api/v1/projects/{VAR}/cert-checklist",
+      "/api/v1/projects/{VAR}/closeout-readiness",
+      "/api/v1/projects/{VAR}/handoff-candidates",
+      "/api/v1/projects/{VAR}/handover-allowance-preview",
+      "/api/v1/projects/{VAR}/timeline",
+      "/api/v1/projects/{VAR}/timeline/actions/{VAR}",
+      "/api/v1/projects/{VAR}/timeline/certificates",
+      "/api/v1/projects/{VAR}/timeline/gate-element-results",
+      "/api/v1/rd-replacements/{VAR}",
+      "/api/v1/requirements",
+      "/api/v1/requirements/{VAR}",
+      "/api/v1/saved-items",
+      "/api/v1/stage-actions/{VAR}/attachments",
+      "/api/v1/projects/{VAR}/level-coefficient",
+      "/api/v1/admin/ai-providers",
+      "/api/v1/admin/ai-providers/{VAR}/rotate-key",
+      "/api/v1/admin/ai-providers/{VAR}/set-default",
+      "/api/v1/admin/cert-templates/{VAR}/items",
+      "/api/v1/admin/handoff-batches/assign-frozen-status",
+      "/api/v1/admin/handoff-batches/unfreeze",
+      "/api/v1/admin/members/{VAR}/confirm-handover",
+      "/api/v1/admin/members/{VAR}/freeze-handover",
+      "/api/v1/admin/transfer",
+      "/api/v1/ai/context-preview",
+      "/api/v1/ai/outputs/{VAR}/decision",
+      "/api/v1/attachments",
+      "/api/v1/auth/wecom/bind",
+      "/api/v1/bid-invitations/{VAR}/approvals",
+      "/api/v1/changes",
+      "/api/v1/changes/{VAR}/evidence",
+      "/api/v1/changes/{VAR}/implementation",
+      "/api/v1/deletion-requests/{VAR}/escalate",
+      "/api/v1/demands/{VAR}/claim",
+      "/api/v1/demands/{VAR}/evaluate",
+      "/api/v1/demands/{VAR}/process",
+      "/api/v1/demands/{VAR}/schedule",
+      "/api/v1/gates/{VAR}/elements/{VAR}/judge",
+      "/api/v1/gates/{VAR}/elements/{VAR}/legacy-todo",
+      "/api/v1/gates/{VAR}/extend",
+      "/api/v1/gates/{VAR}/waive",
+      "/api/v1/handoff-batches",
+      "/api/v1/handoff-batches/{VAR}/legs/{VAR}/decision",
+      "/api/v1/handovers/{VAR}/decision",
+      "/api/v1/handovers/{VAR}/product-continuation",
+      "/api/v1/internal/gates/scan-deadlines",
+      "/api/v1/internal/shared-kpis/scan-deadlines",
+      "/api/v1/performance/allowance-stop-orders",
+      "/api/v1/performance/allowance-stop-orders/{VAR}/decision",
+      "/api/v1/performance/allowances/{VAR}/decision",
+      "/api/v1/performance/contribution-evidence",
+      "/api/v1/performance/contributions/{VAR}/decision",
+      "/api/v1/performance/feedback",
+      "/api/v1/performance/feedback/{VAR}/attachments",
+      "/api/v1/performance/feedback/{VAR}/decision",
+      "/api/v1/performance/feedback/{VAR}/remediation",
+      "/api/v1/performance/feedback/{VAR}/remediation-review",
+      "/api/v1/performance/kpis/{VAR}/{VAR}/evidence",
+      "/api/v1/performance/project-reviews/{VAR}/decision",
+      "/api/v1/performance/receipts/{VAR}/evidence",
+      "/api/v1/performance/receipts/{VAR}",
+      "/api/v1/performance/receipts/{VAR}/settlement",
+      "/api/v1/performance/receipts/{VAR}/settlement-decision",
+      "/api/v1/performance/shared-kpis/collect",
+      "/api/v1/products/import-confirm",
+      "/api/v1/products/import-preview",
+      "/api/v1/products/{VAR}/cert-templates/derive",
+      "/api/v1/products/{VAR}/retirement",
+      "/api/v1/projects/catch-up",
+      "/api/v1/projects/from-recruitment",
+      "/api/v1/projects/{VAR}/biweekly-reviews",
+      "/api/v1/projects/{VAR}/catchup-milestone",
+      "/api/v1/projects/{VAR}/catchup-stage-completed",
+      "/api/v1/projects/{VAR}/stages/{VAR}/gate-submissions",
+      "/api/v1/public/demands/{VAR}/attachments",
+      "/api/v1/requirements",
+      "/api/v1/reviews/{VAR}/decision",
+      "/api/v1/saved-items",
+      "/api/v1/stage-actions/{VAR}/convert-to-deep",
+      "/api/v1/stage-actions/{VAR}/quality-check",
+      "/api/v1/stage-actions/{VAR}/sop-preview",
+      "/api/v1/waivers/{VAR}/decision",
+      "/api/v1/admin/ai-providers/{VAR}",
+      "/api/v1/admin/cert-templates/{VAR}/items/{VAR}",
+      "/api/v1/admin/product-groups/{VAR}/lead",
+      "/api/v1/bid-invitations/{VAR}/terms",
+      "/api/v1/performance/kpis/{VAR}/{VAR}",
+      "/api/v1/performance/project-reviews/{VAR}/draft",
+      "/api/v1/performance/shared-kpis/collect/{VAR}",
+      "/api/v1/products/{VAR}/target-markets"
+    ]
+  },
+  "d1_state_counts": {
+    "NOT_IMPLEMENTED": 210,
+    "TEST_PASS": 11,
+    "SOURCE_CANDIDATE": 52
+  },
+  "per_page_state": {
+    "1": {
+      "TEST_PASS": 1,
+      "NOT_IMPLEMENTED": 8,
+      "SOURCE_CANDIDATE": 2
+    },
+    "2": {
+      "NOT_IMPLEMENTED": 2,
+      "TEST_PASS": 1,
+      "SOURCE_CANDIDATE": 1
+    },
+    "3": {
+      "NOT_IMPLEMENTED": 5,
+      "SOURCE_CANDIDATE": 1
+    },
+    "4": {
+      "SOURCE_CANDIDATE": 3,
+      "NOT_IMPLEMENTED": 2
+    },
+    "5": {
+      "SOURCE_CANDIDATE": 2,
+      "NOT_IMPLEMENTED": 2
+    },
+    "6": {
+      "TEST_PASS": 1,
+      "SOURCE_CANDIDATE": 2,
+      "NOT_IMPLEMENTED": 2
+    },
+    "7": {
+      "NOT_IMPLEMENTED": 5,
+      "SOURCE_CANDIDATE": 5,
+      "TEST_PASS": 1
+    },
+    "8": {
+      "SOURCE_CANDIDATE": 5,
+      "TEST_PASS": 2,
+      "NOT_IMPLEMENTED": 3
+    },
+    "9": {
+      "NOT_IMPLEMENTED": 5
+    },
+    "10": {
+      "NOT_IMPLEMENTED": 5
+    },
+    "11": {
+      "NOT_IMPLEMENTED": 9,
+      "SOURCE_CANDIDATE": 8
+    },
+    "12": {
+      "NOT_IMPLEMENTED": 10,
+      "SOURCE_CANDIDATE": 1
+    },
+    "13": {
+      "NOT_IMPLEMENTED": 3
+    },
+    "14": {
+      "NOT_IMPLEMENTED": 4
+    },
+    "15": {
+      "NOT_IMPLEMENTED": 4
+    },
+    "16": {
+      "TEST_PASS": 1,
+      "NOT_IMPLEMENTED": 3
+    },
+    "17": {
+      "SOURCE_CANDIDATE": 2,
+      "NOT_IMPLEMENTED": 3
+    },
+    "18": {
+      "NOT_IMPLEMENTED": 8
+    },
+    "19": {
+      "SOURCE_CANDIDATE": 7,
+      "NOT_IMPLEMENTED": 3
+    },
+    "20": {
+      "SOURCE_CANDIDATE": 2,
+      "NOT_IMPLEMENTED": 1
+    },
+    "21": {
+      "SOURCE_CANDIDATE": 1
+    },
+    "22": {
+      "NOT_IMPLEMENTED": 1,
+      "SOURCE_CANDIDATE": 1
+    },
+    "23": {
+      "SOURCE_CANDIDATE": 5,
+      "NOT_IMPLEMENTED": 4
+    },
+    "24": {
+      "NOT_IMPLEMENTED": 6,
+      "SOURCE_CANDIDATE": 3
+    },
+    "25": {
+      "NOT_IMPLEMENTED": 14
+    },
+    "26": {
+      "TEST_PASS": 1,
+      "NOT_IMPLEMENTED": 10
+    },
+    "27": {
+      "NOT_IMPLEMENTED": 14,
+      "SOURCE_CANDIDATE": 3
+    },
+    "28": {
+      "NOT_IMPLEMENTED": 13
+    },
+    "29": {
+      "NOT_IMPLEMENTED": 7
+    },
+    "30": {
+      "NOT_IMPLEMENTED": 10
+    },
+    "31": {
+      "NOT_IMPLEMENTED": 7
+    },
+    "32": {
+      "NOT_IMPLEMENTED": 6,
+      "SOURCE_CANDIDATE": 1
+    },
+    "33": {
+      "NOT_IMPLEMENTED": 8
+    },
+    "34": {
+      "NOT_IMPLEMENTED": 11
+    },
+    "35": {
+      "NOT_IMPLEMENTED": 6
+    },
+    "36": {
+      "NOT_IMPLEMENTED": 10
+    },
+    "37": {
+      "NOT_IMPLEMENTED": 9,
+      "TEST_PASS": 1
+    },
+    "38": {
+      "TEST_PASS": 2,
+      "SOURCE_CANDIDATE": 2,
+      "NOT_IMPLEMENTED": 1
+    },
+    "39": {
+      "SOURCE_CANDIDATE": 3
+    },
+    "40": {
+      "SOURCE_CANDIDATE": 3,
+      "NOT_IMPLEMENTED": 9
+    },
+    "41": {
+      "NOT_IMPLEMENTED": 5,
+      "SOURCE_CANDIDATE": 1
+    },
+    "42": {
+      "NOT_IMPLEMENTED": 10
+    },
+    "43": {
+      "NOT_IMPLEMENTED": 4,
+      "SOURCE_CANDIDATE": 1
+    },
+    "44": {
+      "NOT_IMPLEMENTED": 8
+    },
+    "45": {
+      "NOT_IMPLEMENTED": 4
+    },
+    "46": {
+      "NOT_IMPLEMENTED": 6
+    },
+    "47": {
+      "TEST_PASS": 2,
+      "NOT_IMPLEMENTED": 2,
+      "SOURCE_CANDIDATE": 2
+    },
+    "48": {
+      "NOT_IMPLEMENTED": 8
+    },
+    "49": {
+      "NOT_IMPLEMENTED": 3
+    }
+  },
+  "note": "SOURCE_CANDIDATE 含 untracked（未部署）与无测试两类；LIVE_PASS/PROD_READY 需 --live 与人工权限正反例，本轮未自动判定"
+}

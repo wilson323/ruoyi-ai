@@ -1,0 +1,28 @@
+[*] parsed 249 ACs from IPD系统_验收清单.md
+
+=== QA-08 SUMMARY ===
+Total: 249  PASS: 47  PARTIAL: 136  FAIL: 16  BLOCKED: 50
+Pass rate: 18.9%
+
+Phase breakdown:
+  P0: total=27 pass=9 partial=7 fail=1 blocked=10
+  P1: total=42 pass=9 partial=24 fail=0 blocked=9
+  P2: total=58 pass=8 partial=40 fail=1 blocked=9
+  P3: total=82 pass=13 partial=35 fail=13 blocked=21
+  P4: total=40 pass=8 partial=30 fail=1 blocked=1
+
+Probe type breakdown:
+  SQL+HTTP: 2
+  SQL: 72
+  REPORT_REF: 8
+  DEPENDENCY: 143
+  CODE_GREP: 9
+  HTTP: 3
+  OPENAPI: 5
+  SQL+DEPENDENCY: 1
+  SQL+CODE_GREP: 6
+
+Outputs:
+  PASS  -> docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/qa08-ac-pass.json
+  FAIL/PARTIAL/BLOCKED -> docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/qa08-ac-fail.json
+  SUMMARY -> docs/ipd-系统说明/验收/D轮-生产就绪独立验证-20260929/qa08-ac-summary.json

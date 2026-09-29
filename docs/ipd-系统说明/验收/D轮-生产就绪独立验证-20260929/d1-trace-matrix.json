@@ -1,0 +1,4689 @@
+[
+ {
+  "canonical": "/api/v1/admin/cert-templates/{VAR}/items/{VAR}",
+  "verb": "DELETE",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/kpis/{VAR}/{VAR}/evidence/{VAR}",
+  "verb": "DELETE",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-call-logs",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-providers",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/cert-templates",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/cert-templates/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/identity-source",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/members",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28,
+   44,
+   49
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/organization",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/organization/groups/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/organization/sync-status",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/organization/tree",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/people-sync/history",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28,
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sop-versions",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   46
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sop-versions/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   46
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sync-config",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   45
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config/bonus",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34,
+   35
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config/kpi",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30,
+   31
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config/performance",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config/performance/feedback",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/transfer-readiness",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27,
+   49
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/attachments/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   14
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/audit-logs",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   6,
+   26,
+   37
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AuditLogController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [
+   "DefectBAdviceAcceptanceTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/audit-logs/export",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   6
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AuditLogController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/audit-logs/verify",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   6
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AuditLogController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/audit.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/me",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: observed runtime scenarios passed; 未宣称所有角色/冻结/首登组合均",
+  "pages": [
+   1
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdAuthController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/core/user.ts"
+  ],
+  "test_evidence": [
+   "P073BehaviorAcceptanceTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/password-policy",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   2
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/callback",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/demo/accounts",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/url",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   8,
+   19,
+   20
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "POST"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   19
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/responses",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   8
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bootstrap",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1,
+   2,
+   3,
+   7,
+   10,
+   11,
+   12
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/cert-templates",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/cert-template.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/cert-templates/country-counts",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/cert-template.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/cert-templates/lookup",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/cert-templates/resolve",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/cert-template.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/implementation",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/review-detail",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/collaboration",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-archive",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   43
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-archive/{VAR}/hash-chain",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   43
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-requests",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   4,
+   5,
+   7
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DeletionRequestController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/deletion.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-requests/{VAR}/audit-trail",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   5
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DemandController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/demand.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/unassigned",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/documents",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   14
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gate-elements",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   47
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-element.ts"
+  ],
+  "test_evidence": [
+   "P161AcceptanceTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   24
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/elements",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   24
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementResultController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-element-result.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/reviews",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   24
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handoff-batches",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handovers/inbox",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/handover.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handovers/{VAR}/preview",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/allowances",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33,
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/bonuses/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/capacity-approvals",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/contributions/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/cycles",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   32
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36,
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}/attachments",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/kpis/{VAR}/{VAR}/evidence",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29,
+   32
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/no-output-alerts",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   3
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/overview",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29,
+   30,
+   31,
+   32,
+   33,
+   35,
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/project-reviews/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   31
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/receipts/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34,
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/collect",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/reconcile",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/{VAR}/evidence",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/substantive-output",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   8,
+   16
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/product.ts"
+  ],
+  "test_evidence": [
+   "IpdWebSecurityConfigTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   17
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "PUT"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/product.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   7
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [
+   "IpdWebSecurityConfigTest.java",
+   "ProjectStagesEndpointContractTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/create-options",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   7,
+   8,
+   20
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   7,
+   32
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/cert-checklist",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   7,
+   8,
+   10,
+   11
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/closeout-readiness",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   7,
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/handoff-candidates",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   10,
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/handover-allowance-preview",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/incentives/export",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   37
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/members",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   7
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectMemberController.java",
+    "verb": "POST"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectMemberController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/stages",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/timeline",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   6,
+   15
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/timeline/actions/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   6,
+   15
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/timeline/certificates",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   15
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/timeline/gate-element-results",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   15
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/gates",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   23
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "POST"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-review.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/performance/summary",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   32
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/demands/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   39
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PublicPortalController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/portal.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/products",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   38
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PublicPortalController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/portal.ts"
+  ],
+  "test_evidence": [
+   "P411AcceptanceTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/rd-replacements/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   10
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/requirements",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   41
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/requirements/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40,
+   41
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/requirements/{VAR}/history",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   41
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/saved-items",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   3
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions",
+  "verb": "GET",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/stage-action.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   13
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/attachments",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   14
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/users",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   17,
+   24
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/workflow/tasks",
+  "verb": "GET",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   3,
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/level-coefficient",
+  "verb": "PATCH",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   10
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}",
+  "verb": "PATCH",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   12,
+   13
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-providers",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-providers/{VAR}/rotate-key",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-providers/{VAR}/set-default",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-providers/{VAR}/sync",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/cert-templates/{VAR}/copy",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/cert-templates/{VAR}/items",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/gate-element-versions/{VAR}/publish",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   47
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/gate-element-versions/{VAR}/revert",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   47
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/handoff-batches/assign-frozen-status",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/handoff-batches/unfreeze",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/identity-source/test",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/members/{VAR}/confirm-handover",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/members/{VAR}/freeze-handover",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/members/{VAR}/resign",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/people-sync/confirm",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/people-sync/preview",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/product-groups",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sop-versions/{VAR}/copy",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   46
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sop-versions/{VAR}/publish",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   46
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sop-versions/{VAR}/revert",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   46
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config/revert",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   45
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config/{VAR}/publish",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   45
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/transfer",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   49
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/ai/context-preview",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12,
+   42
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/ai/generate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12,
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/ai/outputs/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12,
+   42
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/attachments",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12,
+   14,
+   25
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/change-password",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: observed runtime scenarios passed; 32720运行集覆盖改密拒绝与失",
+  "pages": [
+   2
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdAuthController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [
+   "Api03AcceptanceTest.java",
+   "DefectBAdviceAcceptanceTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/login",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: observed runtime scenarios passed; 注解60秒同IP+usernam",
+  "pages": [
+   1
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdAuthController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/core/auth.ts",
+   "apps/web-antd/src/api/ipd/auth.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/logout",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: observed runtime scenarios passed; 当前family退出不是全设备退",
+  "pages": [
+   2
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdAuthController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/core/auth.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/refresh",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: observed runtime scenarios passed; 不是仅以access换acces",
+  "pages": [
+   1
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/IpdAuthController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/auth.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/bind",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/demo/login",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/start",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/auth/wecom/unbind",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   1
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   8,
+   19,
+   20
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "POST"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/approvals",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   19,
+   22
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/close",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   19
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "PUT"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/publish",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   19
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "PUT"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/responses",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   8,
+   19,
+   21
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/select",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   8,
+   19,
+   22
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/BidController.java",
+    "verb": "PUT"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/bid.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/cert-templates",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/cert-template.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/cert-templates/{VAR}/remove",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/CertTemplateController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/cert-template.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/baseline",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/close",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/evidence",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/implementation",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/reviews",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/changes/{VAR}/verify",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   26
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-archive/{VAR}/clear",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   43
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-archive/{VAR}/restore",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   43
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-requests",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   4,
+   5,
+   7,
+   41,
+   43
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DeletionRequestController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/deletion.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-requests/{VAR}/escalate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   4
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-requests/{VAR}/review",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   4,
+   5,
+   7
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/deletion-requests/{VAR}/withdraw",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   4
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DeletionRequestController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/deletion.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/accept",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/archive",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/claim",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/close",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/comments",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/evaluate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/link-project",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DemandController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/demand.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/process",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/schedule",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/demands/{VAR}/triage",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   40
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/DemandController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/demand.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gate-elements",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   47
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-element.ts"
+  ],
+  "test_evidence": [
+   "P161AcceptanceTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gate-elements/{VAR}/disable",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   47
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-element.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gate-elements/{VAR}/update",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   47
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-element.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/arbitrate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   23,
+   24
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateReviewController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-review.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/elements/{VAR}/judge",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   24
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/elements/{VAR}/legacy-todo",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   24
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/extend",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   23
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/materials",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   23
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateMaterialController.java",
+    "verb": "GET"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-material.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/reopen",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   23,
+   24
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateReviewController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-review.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/reviews",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   23,
+   24
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/submit",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   23
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/GateElementResultController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/gate-element-result.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/gates/{VAR}/waive",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handoff-batches",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27,
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handoff-batches/preview",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handoff-batches/{VAR}/legs/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handovers",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/handover.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handovers/{VAR}/cancel",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/HandoverController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/handover.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handovers/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/handovers/{VAR}/product-continuation",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/integration/hr/sync",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   27,
+   28,
+   44
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/internal/gates/scan-deadlines",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   23
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/internal/shared-kpis/scan-deadlines",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/notifications/read-all",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   3
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/NotificationController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/notification.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/allowance-stop-orders",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/allowance-stop-orders/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/allowances/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/allowances/{VAR}/generate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   33
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/bonus-calculate/confirm",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/bonus-calculate/preview",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/bonuses/{VAR}/lock",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/bonuses/{VAR}/generate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/contribution-evidence",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   35
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/contributions/{VAR}/confirm",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   35
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/contributions/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   35
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/cycles/generate",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}/attachments",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}/close",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}/remediation",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/feedback/{VAR}/remediation-review",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   36
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/kpis/{VAR}/review",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29,
+   32
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/kpis/{VAR}/{VAR}/evidence",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/project-reviews/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   31
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/project-reviews/{VAR}/lock",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   31
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/project-reviews/{VAR}/submit",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   31
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/receipts/{VAR}/evidence",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/receipts/{VAR}/submit",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/receipts/{VAR}",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/receipts/{VAR}/settlement",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/receipts/{VAR}/settlement-decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   34
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/collect",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/collect/{VAR}/review",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/lock",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/product.ts"
+  ],
+  "test_evidence": [
+   "IpdWebSecurityConfigTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/import-confirm",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   16
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/import-preview",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   16
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}/bind-project",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/product.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}/cert-templates/derive",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   17,
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}/retirement",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   17
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}/status",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/product.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   8
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [
+   "IpdWebSecurityConfigTest.java",
+   "ProjectStagesEndpointContractTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/catch-up",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   9
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/from-recruitment",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   8,
+   19
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/advance-stage",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   7,
+   11
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/biweekly-reviews",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   9
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/catchup-milestone",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   9
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/catchup-stage-completed",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   9
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/legacy-import",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   9
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/status",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/project.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/projects/{VAR}/stages/{VAR}/gate-submissions",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/demands",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   38
+  ],
+  "d1_state": "TEST_PASS",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PublicPortalController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/portal.ts"
+  ],
+  "test_evidence": [
+   "P411AcceptanceTest.java",
+   "PublicPortalSupplementWithdrawTest.java"
+  ],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/demands/{VAR}/comments",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/demands/{VAR}/supplement",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   38,
+   39
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PublicPortalController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/portal.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/demands/{VAR}/withdraw",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   38,
+   39
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/PublicPortalController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/portal.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/public/demands/{VAR}/attachments",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   38
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/requirements",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   25,
+   41
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/requirements/{VAR}/status",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   41
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/reviews/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11,
+   23
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/saved-items",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   3,
+   12
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/instantiate",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/convert-to-deep",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   13
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/deliverables",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [
+   11,
+   12
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/stage-action.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/quality-check",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/quality-runs/{VAR}/review",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/sop-preview",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   12
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/stage-actions/{VAR}/transit",
+  "verb": "POST",
+  "doc06_status": "implemented",
+  "doc06_conformance": "PARTIAL: source mapping exists; see exact Java signature and",
+  "pages": [],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/StageActionController.java",
+    "verb": "POST"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/stage-action.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/waivers/{VAR}/decision",
+  "verb": "POST",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   11
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/ai-providers/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   42,
+   48
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/cert-templates/{VAR}/items/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   18
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/product-groups/{VAR}/lead",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   28
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/sop-templates/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   46
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/admin/system-config",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   45
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/bid-invitations/{VAR}/terms",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   19
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/contributions/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   35
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/kpis/{VAR}/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   29,
+   32
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/project-reviews/{VAR}/draft",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   31
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/performance/shared-kpis/collect/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   30
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   17
+  ],
+  "d1_state": "SOURCE_CANDIDATE",
+  "backend_impl": [
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "GET"
+   },
+   {
+    "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProductController.java",
+    "verb": "PUT"
+   }
+  ],
+  "backend_untracked": false,
+  "frontend_callers": [
+   "apps/web-antd/src/api/ipd/product.ts"
+  ],
+  "test_evidence": [],
+  "live_probe": null
+ },
+ {
+  "canonical": "/api/v1/products/{VAR}/target-markets",
+  "verb": "PUT",
+  "doc06_status": "planned",
+  "doc06_conformance": "NOT_VERIFIED",
+  "pages": [
+   16
+  ],
+  "d1_state": "NOT_IMPLEMENTED",
+  "backend_impl": [],
+  "backend_untracked": false,
+  "frontend_callers": [],
+  "test_evidence": [],
+  "live_probe": null
+ }
+]

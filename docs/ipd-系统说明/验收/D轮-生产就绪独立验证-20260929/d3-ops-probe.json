@@ -1,0 +1,177 @@
+{
+ "base": "http://127.0.0.1:16039",
+ "generated_at": "2026-09-29 03:10:43",
+ "version_gap": {
+  "jar_mtime": "2026-09-28 20:30:36",
+  "jar_pid": "23115",
+  "jar_proc_started": "Mon Sep 28 20:34:17 2026",
+  "source_head": "f79f580b 09-29 02:32 fix(ipd-c): validate AgentScope chat entry delegation",
+  "commits_since_jar": 10,
+  "commits_detail": [
+   "f79f580b 09-29 02:32 fix(ipd-c): validate AgentScope chat entry delegation",
+   "8caf7097 09-29 02:16 docs(ipd-c): C 路交付包 + ADR-0075 + 验收口径基准",
+   "6da7f4f6 09-29 02:11 feat(ipd-c): AgentScope 内核全套补提交 + C1 workspace 四维分桶",
+   "b46ec1ac 09-29 01:22 feat(ipd): integrate product line spaces and substage progress",
+   "3c67f100 09-28 20:41 docs(r139): 补记5——并发竞态更正(补记4随3ba33c9e入库/push捎带兄弟3commit/门禁假红已由a2c63675收口)",
+   "da84d656 09-28 20:40 test(kb/b2): parseBatchObjectIds 游标分页解析两用例(批1漏列补提)",
+   "3ba33c9e 09-28 20:38 docs(agent-capability): 智能体能力增强最佳实践+完整系统提示词(四路研究成果)",
+   "a2c63675 09-28 20:38 fix(gates+model): 三门禁假红修订+P162 fail-noisy+embedEndpoint 归一化+漂移棘轮吸收(卡 2e380293/80b0be1f)",
+   "f17eed69 09-28 20:37 docs(r139): 收口登记补记3——部署闭环+真活5/5+BCP-013 A2/A4翻CLOSED(1d152901兑现)",
+   "4fa21e7a 09-28 20:36 feat(kb/b2): IPD 检索桥接线+B1 列表谓词+Validator 返工(卡 67874b63)"
+  ]
+ },
+ "login": "OK token_len=187（凭据脱敏，不落盘）",
+ "latency_serial": {
+  "/api/v1/auth/me": {
+   "min": 7.63,
+   "p50": 8.39,
+   "p95": 10.17,
+   "max": 10.17,
+   "mean": 8.59
+  },
+  "/api/v1/projects?pageNum=1&pageSize=10": {
+   "min": 61.48,
+   "p50": 62.91,
+   "p95": 94.01,
+   "max": 94.01,
+   "mean": 66.48
+  },
+  "/api/v1/products?pageNum=1&pageSize=10": {
+   "min": 9.53,
+   "p50": 11.15,
+   "p95": 14.13,
+   "max": 14.13,
+   "mean": 11.56
+  },
+  "/api/v1/audit-logs?pageNum=1&pageSize=10": {
+   "min": 7.72,
+   "p50": 9.02,
+   "p95": 11.25,
+   "max": 11.25,
+   "mean": 9.1
+  },
+  "/api/v1/stage-actions?pageNum=1&pageSize=10": {
+   "min": 6.45,
+   "p50": 7.08,
+   "p95": 8.15,
+   "max": 8.15,
+   "mean": 7.13
+  },
+  "/api/v1/demands?pageNum=1&pageSize=10": {
+   "min": 9.15,
+   "p50": 10.68,
+   "p95": 14.75,
+   "max": 14.75,
+   "mean": 10.9
+  },
+  "/api/v1/gate-elements?pageNum=1&pageSize=10": {
+   "min": 8.17,
+   "p50": 9.54,
+   "p95": 11.97,
+   "max": 11.97,
+   "mean": 9.6
+  }
+ },
+ "pagination_scaling": {
+  "samples": {
+   "1": 60.87,
+   "10": 66.21,
+   "50": 72.0,
+   "100": 62.82
+  },
+  "growth_pct": 3.2,
+  "spread_ms": 11.13,
+  "verdict": "**平坦**（pageSize 1→100 仅 +3%）⇒ 延迟主体是**固定每请求开销**（与返回行数无关），疑 N+1 / 权限重算 / 每请求远程调用"
+ },
+ "concurrency": {
+  "10": {
+   "p50": 366.36,
+   "p95": 466.53,
+   "max": 466.53,
+   "errors": 0,
+   "n": 10
+  },
+  "20": {
+   "p50": 324.06,
+   "p95": 389.6,
+   "max": 392.9,
+   "errors": 0,
+   "n": 20
+  },
+  "50": {
+   "p50": 1059.14,
+   "p95": 1132.5,
+   "max": 1133.92,
+   "errors": 0,
+   "n": 50
+  }
+ },
+ "failfast": [
+  {
+   "case": "未认证访问受保护端点",
+   "path": "/api/v1/auth/me",
+   "ms": 6.73,
+   "http": 401,
+   "code": 20001
+  },
+  {
+   "case": "不存在的资源 ID",
+   "path": "/api/v1/projects/99999999999",
+   "ms": 10.29,
+   "http": 403,
+   "code": 30001
+  },
+  {
+   "case": "非法分页参数",
+   "path": "/api/v1/products?pageNum=-1&pageSize=99999",
+   "ms": 11.43,
+   "http": 200,
+   "code": 0
+  },
+  {
+   "case": "不存在的路由",
+   "path": "/api/v1/nonexistent-route-xyz",
+   "ms": 7.37,
+   "http": 404,
+   "code": 50001
+  },
+  {
+   "case": "actuator 用 IPD token（应 401，非 200）",
+   "path": "/actuator/health",
+   "ms": 6.43,
+   "http": 401,
+   "code": 401
+  },
+  {
+   "case": "actuator/shutdown 用 IPD token GET（应 401/405，绝不 200）",
+   "path": "/actuator/shutdown",
+   "ms": 6.68,
+   "http": 401,
+   "code": 401
+  }
+ ],
+ "ops_facts": {
+  "db_tables_size": "170\t17.67\t35652",
+  "sql_update_scripts": 121,
+  "flyway_or_liquibase": "无（⇒ 121 个 SQL 脚本靠人工 apply）",
+  "weaviate_ready": "200",
+  "weaviate_objects": "{\"deprecations\":null,\"objects\":[]}",
+  "ai_model_configs": "9\t1\tOPENAI,TEST",
+  "product_lines_seed": "3",
+  "backup_artifacts": [
+   ".codex/ipd-dev/backups/ipd_restore_68423e608051.sql",
+   ".codex/ipd-dev/backups/b1-product-lines-20260929-before.sql",
+   ".codex/ipd-dev/backups/b2-projects-20260929-before.sql",
+   ".codex/ipd-dev/backups/products-before-product-line-20260929.sql",
+   ".codex/ipd-dev/backups/ipd_restore_49153a49d3b1.sql",
+   ".codex/ipd-dev/backup-archive/gate_review_elements_backup_20260922.sql",
+   ".codex/ipd-dev/backup-archive/persons_bk_b3_20260919.sql"
+  ],
+  "prometheus_scraper_running": "aip-base-redis redis:7-alpine\naip-base-mysql mysql:8.4.9\ntaskview-self-host-taskview-api-server-1 gimanhead/taskview-ce-api-server:latest\ntaskview-self-host-taskview-mcp-1 gimanhead/taskview-ce-mcp:latest\ntaskview-self-host-taskview-webapp-1 gimanhead/taskview-ce-webapp:latest\ntaskview-self-host-db-1 postgres:17\naip-vk-web nginx:1.28-alpine\nweaviate-weaviate-1 semitechnologies/weaviate:1.30.0\nruoyi-ai-vibe-kanban ruoyi-ai/vibe-kanban-local:0.0.168",
+  "masking_converters_in_java": [
+   "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sensitive/src/main/java/org/ruoyi/common/sensitive/handler/SensitiveHandler.java",
+   "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sensitive/src/main/java/org/ruoyi/common/sensitive/core/SensitiveStrategy.java"
+  ]
+ },
+ "slo_thresholds": "BLOCKED — 业务未约定容量/SLO 阈值，D 拒绝自行发明（见 D3 文档 §7）"
+}
