@@ -361,6 +361,10 @@ tenant:
     - project_circle_comments
     - gate_arbitrations
     - ai_model_configs
+    # C2（2026-09-29）：AI 用量账本 + 模型月度预算——IPD 单企业私有部署无多租户语义，
+    # 与 ai_model_configs 同策略；Mapper 侧 @InterceptorIgnore(tenantLine="true") 双保险
+    - ai_model_usage_ledger
+    - ai_model_budget
     - system_config_versions
     - legacy_imports
     - receipt_ledgers
