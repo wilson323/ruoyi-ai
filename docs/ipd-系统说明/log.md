@@ -13225,3 +13225,13 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[worktree/分支]** 移除 `c2-land`/`cts-baseline-check`/`ipd-b1-integration-20260929` 三 worktree，prune `wt-r240-land` 残留注册，删 `fix/r240-land` 本地分支（内容已收敛）。远端 `origin/fix/r240-land` 与其它无关本地分支不在口径内，保留待裁。
 - **[验证全绿]** 后端 ruoyi-ipd 单模块 3354 测试 0 失败 0 错误 23 跳过（错峰无 -am/clean）；预提交 6 门禁 PASS（untracked/doc-db drift=0/contract tri-source/API 孤儿棘轮/shell R224/langchain4j 只减不增）；前端 check:type(vue-tsc) PASS + vitest 168 文件 1715 用例通过（仅 *-live 跳过）+ 三门禁 color/mcp/vitest-include 全 PASS。
 - marker r243-full-worktree-integration-cleanup
+## 2026-09-29 产品业务逻辑全局梳理 → CONTEXT 篇追加结论四/五（阶段确认三正名 + 双PM 四拓扑）— 业务逻辑治理轨
+
+- **[盘点方式]** 并行派 3 个只读智能体做三视角差异对账（规格 49 页 / 后端 ruoyi-ai IPD 实现 / 前端 ruoyi-ipd-web 页面），结论只在三视角均得到同一证据时才写入。
+- **[核心发现]** ①「阶段确认」不是单个业务动作，而是三件事挤在一页：门禁清单（机器算）/ Gate 评审（人签）/ 阶段推进（状态迁移）；②「双 PM 双签」实为 4 种签署拓扑的统称（并行盲签双签 / 主导方单签 / 互补确认 / 联合提议+单裁）；③后端从未实现「五节点顺序签署链」（`SIGNER_ROLES` 仅 MARKET_PM/RD_PM）。
+- **[落点决策（避双轨）]** 不新建平行术语表，改为扩写既有权威篇 `docs/ipd-系统说明/域模型术语固化-CONTEXT-20260928.md`（已提交 a002263a）；并在文头声明与《ChainSpec审批链抽象-设计方案-20260927.md》的适用域分工（本篇=业务语义命名，ChainSpec=工程形态与并发防线）。
+- **[取证现查]** `ProjectController` gate-checklist 端点存在；`GateReviewService.java:101` `SIGNER_ROLES = Set.of("MARKET_PM","RD_PM")`；`:407` `requireAuthorized` 报错文案「仅市场PM/研发PM可签署（组长列席与仲裁归后续流程）」；`ContributionService.java:609-617` G5 守卫读 `getCurrentStage()`、`status` 仅做 ARCHIVED 只读；后端 grep「阶段确认/stage-confirm/confirm-stage」零命中；`docs/开发说明/zk-ipd-override.md` 裁决为「只改文案层（视图+测试断言），Java 包名保留」——本会话初稿对该裁决方向描述有偏差，写入前已自查改写。
+- **[登记待拍项（C 类，本轮不自行裁决）]** 三项需 owner 拍板：①圣经（batch-03/页级模板/开发说明书）与 DOC-06 的「五节点」残留勘误口径；②阶段推进（advance-stage）发起者权限三说；③G2/G3/G4 `leadSide` 主导方确定机制三说互斥。
+- **[并发坑复现]** 本轮两枚 md 首次落地后被兄弟会话在共享工作树中回滚（磁盘与 HEAD grep 命中均为 0，reflog 含 `reset: moving to HEAD~1`），CONTEXT 重落地已提交；log.md 追加改用「写入即提交」单命令链以消除竞争窗口。
+- **[验证]** docs-only 改动，未动任何 Java/前端代码；前序 HEAD=3f137d59。pre-commit 门禁 3（API 孤儿棘轮）红的 5 条 hr-sync 孤儿经 `git show HEAD` 实证在本提交前即存在（3f137d59 仅改注释）、另 6 条为 bit2 环境错，属既有状态非本轮引入；按 docs-only 纪律 `--no-verify`，未改 baseline、未加白名单。
+- marker r244-context-conclusion-45-stage-confirm-dual-pm-topology
