@@ -71,6 +71,9 @@ GRANT_RULES = [
         "ipd_business_config", "ipd_business_config_versions",
         "negative_feedbacks", "launch_date_change_requests",
         "notification_events", "coefficient_change_requests", "project_cert_items",
+        # 2026-09-29 C2-3f 探针抓的第三撞（ai_model_usage_ledger/ai_model_budget 建表漏 GRANT，
+        # 修复脚本 2026-09-29-ipd-grant-ai-model-ledger-budget-dml.sql）
+        "ai_model_usage_ledger", "ai_model_budget",
     )
 ]
 
