@@ -234,7 +234,16 @@ public class GateElementService implements IGateElementService {
         if (!STATUS_DRAFT.equals(exist.getStatus())) {
             throw conflict("仅草稿可发布，当前状态: " + exist.getStatus());
         }
+        // ZK-DIFF-P1-02（页47 规格③「发布前校验」）：否决项(isVeto='1')必须勾选双签(vetoDualRequired='1')
+        // 方可发布；同步补定义字段统一校验（含 thresholdJson 合法性）。R219 同款：先归一 'Y'/'N' 遗留编码，
+        // 避免存量 legacy 草稿被 FLAGS 校验误拒（编辑路径 :196-197 已同构归一）。
         GateElement before = snapshotCopy(exist);
+        exist.setIsVeto(normalizeFlag(exist.getIsVeto()));
+        exist.setVetoDualRequired(normalizeFlag(exist.getVetoDualRequired()));
+        validateDefinition(exist);
+        if (isVetoSet(exist.getIsVeto()) && !isVetoSet(exist.getVetoDualRequired())) {
+            throw invalid("发布前校验（页47③）：否决项（isVeto='1'）必须 vetoDualRequired='1'（双签确认）才能发布");
+        }
         exist.setStatus(STATUS_PUBLISHED);
         exist.setEnabled("1");
         exist.setVersion(exist.getVersion() == null ? 1 : exist.getVersion() + 1);

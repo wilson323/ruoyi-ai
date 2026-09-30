@@ -83,4 +83,64 @@ class GateElementPublishTest {
         assertCode(() -> service.publish(null, ACTOR), ApiV1ErrorCode.PARAM_INVALID);
     }
 
+    // ZK-DIFF-P1-02（页47 规格③）：发布前校验 isVeto=true ⇒ vetoDualRequired=true
+    @Test
+    @DisplayName("P4 否决项草稿 vetoDualRequired='0' 发布被拒且零写库")
+    void publishVetoWithoutDualRejected() {
+        GateElement e = GateElement.builder().gateCode("G1").elementCode("G1-V01")
+            .elementName("毛利率门槛").isVeto("1").vetoDualRequired("0").sortOrder(1).build();
+        e.setId(4L);
+        e.setStatus("draft");
+        e.setEnabled("0");
+        e.setVersion(0);
+        when(mapper.selectById(4L)).thenReturn(e);
+        assertThatThrownBy(() -> service.publish(4L, ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("双签");
+        Mockito.verify(mapper, Mockito.never()).updateById(any(GateElement.class));
+    }
+
+    @Test
+    @DisplayName("P5 否决项草稿 vetoDualRequired='1' 发布通过")
+    void publishVetoWithDualOk() {
+        GateElement e = GateElement.builder().gateCode("G1").elementCode("G1-V02")
+            .elementName("客户需求验证").isVeto("1").vetoDualRequired("1").sortOrder(2).build();
+        e.setId(5L);
+        e.setStatus("draft");
+        e.setEnabled("0");
+        e.setVersion(0);
+        when(mapper.selectById(5L)).thenReturn(e);
+        when(mapper.updateById(any(GateElement.class))).thenReturn(1);
+        GateElement out = service.publish(5L, ACTOR);
+        assertThat(out.getStatus()).isEqualTo("published");
+    }
+
+    @Test
+    @DisplayName("P6 legacy 'Y' 否决项归一后仍要求双签：vetoDualRequired='N' 发布被拒")
+    void publishLegacyVetoNormalized() {
+        GateElement e = GateElement.builder().gateCode("G1").elementCode("G1-V03")
+            .elementName("legacy 否决项").isVeto("Y").vetoDualRequired("N").sortOrder(3).build();
+        e.setId(6L);
+        e.setStatus("draft");
+        e.setEnabled("0");
+        e.setVersion(0);
+        when(mapper.selectById(6L)).thenReturn(e);
+        assertThatThrownBy(() -> service.publish(6L, ACTOR))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("双签");
+    }
+
+    @Test
+    @DisplayName("P7 thresholdJson 非法 JSON 发布被拒（规格③：thresholdJson 合法）")
+    void publishInvalidThresholdJsonRejected() {
+        GateElement e = GateElement.builder().gateCode("G1").elementCode("G1-V04")
+            .elementName("门槛项").isVeto("0").thresholdJson("{not-json").sortOrder(4).build();
+        e.setId(7L);
+        e.setStatus("draft");
+        e.setEnabled("0");
+        e.setVersion(0);
+        when(mapper.selectById(7L)).thenReturn(e);
+        assertCode(() -> service.publish(7L, ACTOR), ApiV1ErrorCode.PARAM_INVALID);
+    }
+
 }
