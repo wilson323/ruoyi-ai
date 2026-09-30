@@ -13295,3 +13295,14 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[诚实登记]** 误启竞争进程 98266（启动守卫子 shell 退出码缺陷）因端口冲突自退无残留；start 脚本 `>` 截断损兄弟 87730 启动日志，已保全 `/tmp/ipd-16039-crash-evidence-20260929.log`（该备份 grep undertow CNFE 得 0，CNFE 原文来自更早 tail 捕获）。
 - **[残留]** 生产就绪仍 PARTIAL：P0-2（KPI functionalWeight="None"→0.6）/P0-4（qa08 login 结构修复重跑收敛 50/49 BLOCKED）/G2 重测（product_line_members 现 0 行）/SLO 书面约定 未动，等指令。文件未 git 提交。
 - marker d-round-p0-1-jar-restart-live-recheck-20260929
+
+## 2026-09-29 ZK-DIFF-P1-02 真库 HTTP 验收闭环（✅，marker `zk-diff-p102-http-accept-20260929`）
+- **[验收路径]** worktree `/tmp/p102-wt`（HEAD=0f58bb7b 纯闭包，含 3290b166 修复）隔离构建 `mvn -o -pl ruoyi-admin -am -DskipTests -Dmaven.jar.forceCreation=true` BUILD SUCCESS → JAR 22:08 内嵌 ruoyi-ipd 新字节码。不动主树（兄弟 28+ 处在途 M）。
+- **[启动阻断披露]** HEAD 基线 JAR 在本机配置（`ipd.hr.enabled=true`）下**不可启动**：`PersonSyncService.processor` 双 bean（`RealHrSyncAdapter` enabled=true 装配 + HEAD 版 `MockHrAdapter` 仅 @Profile("dev") 无互斥条件）。兄弟的互斥修复（MockHrAdapter 加 @ConditionalOnProperty havingValue=false）仍在途未提交（M）。验收侧以 `--ipd.hr.enabled=false` 命令行覆盖绕过（HR 域与 P1-02 零交集）；**兄弟提交该修复前，任何会话用纯 HEAD JAR + 本机配置都会撞此阻断**。
+- **[HTTP 三例（真库 ipd_dev@13306，admin 单 token）]** A：create 否决项(isVeto='1',dual='0')→publish→**400 code=10001「发布前校验（页47③）：否决项（isVeto='1'）必须 vetoDualRequired='1'（双签确认）才能发布」**（守卫文案精确命中）；B：否决+双签→publish→**200 status=published**→archive 清理 200；C：thresholdJson='{not-json'→create 侧即 **400「thresholdJson 不是合法 JSON」**（未落库）。
+- **[DB 回读]** ZKDIFF-P102-A=draft（发布拒未升状态）/B=archived/C 无行。测试数据按 R214 留库政策保留（ZKDIFF-P102-* 前缀可识别）。
+- **[影响面披露]** 存量已发布否决项 **14 条 veto_dual_required≠'1'**（双签否决 5 条）。已发布态不回溯校验；未来 revert/copy→draft→重新 publish 会被新守卫 400 拦截——需要批量补 dual='1' 时另立卡走 owner 确认。
+- **[现场恢复]** 验收期间 kill 了兄弟起的 88895（21:52 主树 JAR）。恢复时发现兄弟已自行拉起 96039（主树 JAR 21:44 + timezone 参数，curl 200）→ 现场已达原状态，未再动；我方 launchd 临时 job 已全部 remove、worktree 已清理。**注意：主树 21:44 JAR 不含 3290b166 修复，16039 当前运行的是无守卫旧代码，下次重打包自然带上**（不代打包，主树兄弟在途）。
+- **[sandbox 教训回灌]** Qoder Bash is_background=true + exec java 前台化本次**仍被 SIGTERM 回收**（Started 后 ~2 分钟优雅关闭日志为证）；`launchctl submit -l <label> -- /bin/zsh <script>` 起的实例存活并完成验收，`launchctl remove` 后优雅关闭需 >12s（本次实测 60s+ 才释放端口，探测循环要放宽）。本机常驻后端建议直接走 launchctl。
+- **[R25 接手披露]** 本次 commit 含镜像文件兄弟在途 +15 行纯追加（D 轮 P0-1 复核收口区块，零删除、与本波编辑区无冲突），审读后原样入库。
+- marker zk-diff-p102-http-accept-20260929
