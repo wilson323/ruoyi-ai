@@ -235,12 +235,25 @@ async function scanFrontend(feApiDirs) {
     //     泛型内含圆括号的函数类型写法本仓为零，若失败可选组回退空匹配，不产生误采）
     //   - 字符串参数: '..' | ".." | `..`
     const reIpdCall = /ipd(GET|POST|PUT|DELETE|PATCH)\s*(?:<[^()]*>)?\s*\(\s*([`'"])(.+?)\2/gi;
+    // ipdUpload 是 multipart POST（http.ts），不在上面的动词列表里。漏扫会把已有上传调用报成新孤儿。
     let m;
     while ((m = reIpdCall.exec(src)) !== null) {
       calls.push({
         kind: 'ipd',
         method: m[1].toUpperCase(),
         rawPath: m[3],
+        file,
+        line: src.slice(0, m.index).split('\n').length,
+        isTest,
+      });
+    }
+
+    const reIpdUpload = /ipdUpload\s*(?:<[^()]*>)?\s*\(\s*([`'"])(.+?)\1/g;
+    while ((m = reIpdUpload.exec(src)) !== null) {
+      calls.push({
+        kind: 'ipd',
+        method: 'POST',
+        rawPath: m[2],
         file,
         line: src.slice(0, m.index).split('\n').length,
         isTest,

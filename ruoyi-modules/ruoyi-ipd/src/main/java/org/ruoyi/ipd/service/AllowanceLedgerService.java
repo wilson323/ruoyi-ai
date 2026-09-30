@@ -223,6 +223,27 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
     }
 
     /**
+     * 确认待停发台账：终额置 0。已是 0 时原样返回。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public AllowanceLedger confirmStop(IpdActor actor, Long ledgerId) {
+        requireAuthenticated(actor);
+        if (!"GROUP_LEADER".equals(actor.role()) && !"SUPER_ADMIN".equals(actor.role())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅组长或超管可确认停发");
+        }
+        AllowanceLedger row = allowanceLedgerMapper.selectById(ledgerId);
+        if (row == null || row.getStopReason() == null || row.getStopReason().isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "待停发台账不存在");
+        }
+        if (row.getFinalAmount() != null && BigDecimal.ZERO.compareTo(row.getFinalAmount()) == 0) {
+            return row;
+        }
+        row.setFinalAmount(BigDecimal.ZERO);
+        allowanceLedgerMapper.updateById(row);
+        return row;
+    }
+
+    /**
      * W4-D 件 2 §3：月度自动扫描（按 period；返回当月所有台账记录数）。
      * 端点 POST /api/v1/allowance/auto-scan 配套服务方法（仅超管）。
      *

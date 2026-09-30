@@ -53,6 +53,21 @@ COLUMN_RULES = [
     ("launch_date_change_requests", "version", "NO", "int", "项1b 乐观锁"),
     ("launch_date_change_requests", "pending_project_id", "YES", "bigint",
      "项1a 生成列（生成列核验见 check_column_rules 的 EXTRA 分支）"),
+    # R-2/R-3（2026-09-29）：gate_review_elements 曾是核验盲区——ipd_qa04 缺 6 列 + 缺唯一键
+    # 长期无人发现（登记见 验收/2026-09-29-分支清理四项裁决与gate值域风险登记.md §R-2/R-3）。
+    # 注意 ipd_perf / ipd_restore 是历史 schema 库（本组 6 列全缺），预期报 N/A(列缺失) 而非 PASS。
+    ("gate_review_elements", "status", "NO", "varchar(16)",
+     "P1-6.1 生命周期列（页47 draft/published/archived）；权威脚本 2026-09-06-ipd-p161-gate-element-lifecycle.sql"),
+    ("gate_review_elements", "version", "NO", "int",
+     "P1-6.1 发布版本号（新建草稿=0，每次 publish 递增）；同 p161 脚本"),
+    ("gate_review_elements", "veto_dual_required", "NO", "char(1)",
+     "双否决位（ZK-DIFF-P1-02 页47规格③ 否决项须双签）；同 p161 脚本"),
+    ("gate_review_elements", "threshold_json", "YES", "varchar(512)",
+     "阈值配置 JSON（键非空、值均为整数）；同 p161 脚本"),
+    ("gate_review_elements", "sign_due_at", "YES", "datetime",
+     "签署期限副本列（权威在 gates.sign_due_at）；live-form 见 2026-09-29-ipd-qa04-gate-element-sign-cols-live-form.sql"),
+    ("gate_review_elements", "sign_extension_count", "YES", "int",
+     "签署延期次数副本列；同上 live-form 脚本（勿套 gates 的 NOT NULL DEFAULT 0 形态，那是另一张表）"),
 ]
 
 # ===== 扩项②：表级 GRANT 规则（库, 表, 账号, host, 期望权限集）=====
@@ -83,6 +98,14 @@ DOMAIN_RULES = [
     ("gate_arbitrations", "arbitrator_type", {"GROUP_LEADER", "SUPER_ADMIN"}, False),
     ("contributions", "status", {"DRAFT", "SUBMITTED", "CONFIRMED"}, False),
     ("contributions", "leader_decision", {"APPROVE", "REJECT"}, True),
+    # R-1 缓解（2026-09-29）：ipd_dev 该表无 CHECK / ENUM，值域只靠服务层
+    # GateElementService.normalizeFlag + validateDefinition（FLAGS=Set.of("0","1")）守；
+    # 这里补核验器级对照，让 legacy 'Y'/'N' 或大写状态一旦回流立即变红。
+    # 2026-09-29 实测分布：ipd_dev 97 行、ipd_restore 42 行全在域内；ipd_perf/ipd_qa04 空表记 EMPTY。
+    ("gate_review_elements", "status", {"draft", "published", "archived"}, False),
+    ("gate_review_elements", "enabled", {"0", "1"}, False),
+    ("gate_review_elements", "is_veto", {"0", "1"}, False),
+    ("gate_review_elements", "veto_dual_required", {"0", "1"}, False),
 ]
 
 # --strict 门禁判定用的坏状态前缀集合
@@ -177,14 +200,24 @@ def check_domain_rules(cur, db):
         if not table_exists(cur, db, table):
             out.append({"table": table, "column": column, "state": "N/A(表不存在)"})
             continue
+        # 列缺失必须先挡：历史 schema 库（ipd_perf / ipd_restore 无 status 等 6 列）直接进
+        # 下面的 SELECT 会抛 1054，把整个默认跑批（DEFAULT_DBS 含 ipd_restore）打崩（R-3 实测）。
+        if not column_exists(cur, db, table, column):
+            out.append({"table": table, "column": column, "state": "N/A(列缺失)"})
+            continue
         placeholders = ", ".join(["%s"] * len(domain))
+        # 值域比较必须显式 COLLATE utf8mb4_bin：库/列默认是 utf8mb4_0900_ai_ci 或
+        # utf8mb4_general_ci（大小写不敏感），'PUBLISHED' 会被当成命中 'published' 而漏网。
+        # 2026-09-29 R-3 自证能红探针实测踩到：同一行里 is_veto='Y' 抓到、status='PUBLISHED' 漏判。
         cur.execute(
-            "SELECT `%s` AS v, COUNT(*) AS c FROM `%s`.`%s` "
-            "WHERE `%s` IS NOT NULL AND `%s` NOT IN (%s) GROUP BY `%s`"
+            "SELECT `%s` COLLATE utf8mb4_bin AS v, COUNT(*) AS c FROM `%s`.`%s` "
+            "WHERE `%s` IS NOT NULL AND `%s` COLLATE utf8mb4_bin NOT IN (%s) "
+            "GROUP BY `%s` COLLATE utf8mb4_bin"
             % (column, db, table, column, column, placeholders, column),
             tuple(sorted(domain)))
         bad = cur.fetchall()
-        cur.execute("SELECT `%s` AS v, COUNT(*) AS c FROM `%s`.`%s` GROUP BY `%s` ORDER BY c DESC"
+        cur.execute("SELECT `%s` COLLATE utf8mb4_bin AS v, COUNT(*) AS c FROM `%s`.`%s` "
+                    "GROUP BY `%s` COLLATE utf8mb4_bin ORDER BY c DESC"
                     % (column, db, table, column))
         dist = cur.fetchall()
         null_count = next((r["c"] for r in dist if r["v"] is None), 0)
@@ -247,6 +280,17 @@ def check_db(cur, db):
             "WHERE status='PENDING_SECOND' AND IFNULL(del_flag,'0')='0' "
             "GROUP BY project_id HAVING COUNT(*)>1" % db)
         out["duplicate_pending_rows"] = [r["c"] for r in cur.fetchall()]
+    # R-2/R-3（2026-09-29）：补 element_code 全局唯一键（并发唯一兜底的 DB 层防线）与索引清单；
+    # 列约束与值域走上面两张规则表。NOT_APPLIED 语义同项1a（不计入 --strict 拦截），
+    # 因 ipd_perf / ipd_restore 属历史 schema 库，缺唯一键是既成事实而非本轮回归。
+    tbl = "gate_review_elements"
+    out["gre_table_exists"] = table_exists(cur, db, tbl)
+    if out["gre_table_exists"]:
+        out["uk_gate_element_code"] = index_info(cur, db, tbl, "uk_gate_element_code")
+        cur.execute(
+            "SELECT DISTINCT index_name AS n FROM information_schema.statistics "
+            "WHERE table_schema=%s AND table_name='gate_review_elements' ORDER BY n", (db,))
+        out["gate_review_elements_indexes"] = [r["n"] for r in cur.fetchall()]
     # D 批次机制 2 扩项：列约束 + 值域抽查（随库）
     out["column_rules"] = check_column_rules(cur, db)
     out["domain_rules"] = check_domain_rules(cur, db)
@@ -268,6 +312,8 @@ def judge(results):
             "项1b_version列": ("APPLIED" if r.get("col_version") is True
                           else "NOT_APPLIED" if r.get("ldcr_table_exists") else "N/A(表不存在)"),
             "双签表存在": bool(r.get("ldcr_table_exists")),
+            "R2_uk_gate_element_code": ("APPLIED" if r.get("uk_gate_element_code")
+                                        else "NOT_APPLIED" if r.get("gre_table_exists") else "N/A(表不存在)"),
             "列约束": _summarize(col_states),
             "值域": _summarize(dom_states),
         })

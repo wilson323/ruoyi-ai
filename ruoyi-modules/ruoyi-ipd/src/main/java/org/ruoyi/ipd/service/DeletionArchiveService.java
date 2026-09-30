@@ -63,6 +63,17 @@ public class DeletionArchiveService implements IDeletionArchiveService {
      * @return 更新后的申请
      */
     @Transactional(rollbackFor = Exception.class)
+    public DeletionRequest purge(Long requestId, String confirmTail, String clearedReason) {
+        if (requestId == null || confirmTail == null || !confirmTail.equals(String.valueOf(requestId))) {
+            throw new ServiceException("二次确认未通过：confirmTail 必须等于申请编号",
+                ApiV1ErrorCode.PARAM_INVALID.getCode());
+        }
+        if (clearedReason == null || clearedReason.isBlank()) {
+            throw new ServiceException("清除原因必填", ApiV1ErrorCode.PARAM_INVALID.getCode());
+        }
+        return purge(requestId);
+    }
+
     public DeletionRequest purge(Long requestId) {
         IpdActor admin = ipdPermission.requireAdmin();
         Long adminId = admin.id();

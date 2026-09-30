@@ -13,6 +13,7 @@ import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.AllowanceLedgerService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -85,6 +86,14 @@ public class AllowanceLedgerController {
         // W5-E-2.3：捕获 actor 传入 service（IDOR 修复）
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(service.pendingStop(actor, period));
+    }
+
+    /** 确认停发，终额置 0。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_KPI_QUERY, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/ledgers/{id}/confirm-stop")
+    public ApiV1Response<AllowanceLedger> confirmStop(@PathVariable Long id) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(service.confirmStop(actor, id));
     }
 
     /**

@@ -13,6 +13,7 @@ import org.ruoyi.ipd.dto.AiCopilotReq;
 import org.ruoyi.ipd.dto.AiCopilotResp;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 
@@ -274,6 +275,26 @@ class AiCopilotServiceTest {
         assertTrue(after.contains("\"status\":\"ok\""));
         // prompt 原文必不入审计（BR-AI-04）
         assertFalse(after.contains("讲个笑话"));
+    }
+
+    @Test
+    @DisplayName("C2-3 接线：CHITCHAT 路径 AiTestConfig 携非空 scope（model×actor×copilot_chat）")
+    void chitchatPathWiresAiCallScope() {
+        stubEnabledConfig();
+        AiCopilotReq req = new AiCopilotReq(10L, "讲个笑话", List.of());
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a"))).thenReturn(Map.of());
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class)))
+            .thenReturn(AiChatResult.ok("ok", 1, 1, 10L));
+
+        service.chat(SA, req);
+
+        ArgumentCaptor<AiTestConfig> cfgCap = ArgumentCaptor.forClass(AiTestConfig.class);
+        verify(aiGateway).chat(cfgCap.capture(), anyString(), anyInt(), any(BigDecimal.class));
+        AiCallScope scope = cfgCap.getValue().scope();
+        assertNotNull(scope, "copilot 问答必须纳入记账面，scope 不得为 null");
+        assertEquals(1L, scope.modelConfigId());
+        assertEquals("1", scope.actorId());
+        assertEquals("copilot_chat", scope.scene());
     }
 
     @Test

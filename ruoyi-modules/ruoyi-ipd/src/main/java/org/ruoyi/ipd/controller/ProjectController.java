@@ -112,7 +112,8 @@ public class ProjectController {
         // CODE-01：白名单 DTO，code/currentStage/status/source 由服务端定，客户端不可注入
         IpdActor actor = ipdPermission.requireProjectCreator();
         // 主组可选（2026-09-11 owner 拍板）：未选时后端权威自动归属操作人所在产品组（BR-ORG-01）
-        return ApiV1Response.ok(projectService.create(req.toEntity(), actor.id(), actor.groupId()));
+        return ApiV1Response.ok(projectService.create(
+            req.toEntity(), actor.id(), actor.groupId(), req.marketPmId(), req.rdPmId()));
     }
 
     /** 变更项目状态，需 ipd:project:edit 权限 */

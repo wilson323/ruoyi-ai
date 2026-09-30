@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.SystemConfig;
@@ -22,6 +23,7 @@ import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.ISystemConfigService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -149,6 +151,24 @@ public class SystemConfigController {
         } catch (Exception e) {
             log.warn("audit append 失败 key={} : {}", key, e.getMessage());
         }
+    }
+
+    /**
+     * 回滚到上一版本。没有历史版本时拒绝，不改当前值。
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_SYSTEM_CONFIG_UPDATE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{key:.+}/revert")
+    public ApiV1Response<Map<String, String>> revert(@PathVariable @NotBlank String key) {
+        IpdActor actor = ipdPermission.requireAdmin();
+        List<SystemConfigVersion> history = systemConfigService.listVersions(key, 2);
+        if (history.size() < 2 || history.get(1).getConfigValue() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "没有可回滚的上一版本");
+        }
+        String previous = history.get(1).getConfigValue();
+        String oldValue = systemConfigService.getValue(key, null);
+        systemConfigService.update(key, previous, actor.id());
+        appendConfigUpdateAudit(actor, key, oldValue, previous, "revert");
+        return ApiV1Response.ok(updateResponse(key, previous));
     }
 
     /** P0-3.3 版本链查询（仅超管）：某 key 的不可变版本历史，最新在前 */

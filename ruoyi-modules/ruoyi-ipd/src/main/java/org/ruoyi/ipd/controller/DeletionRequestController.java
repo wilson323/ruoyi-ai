@@ -1,6 +1,8 @@
 package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import cn.dev33.satoken.exception.NotPermissionException;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
@@ -113,10 +115,13 @@ public class DeletionRequestController {
      * @return 清除后的请求记录
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_PURGE, type = IpdAuthSession.LOGIN_TYPE)
+    public record PurgeRequest(@NotBlank String confirmTail, @NotBlank String clearedReason) { }
+
     @PostMapping("/{id}/purge")
-    public ApiV1Response<DeletionRequest> purge(@PathVariable Long id) {
+    public ApiV1Response<DeletionRequest> purge(@PathVariable Long id,
+                                               @Valid @RequestBody PurgeRequest request) {
         ipdPermission.requireAdmin();
-        return ApiV1Response.ok(archiveService.purge(id));
+        return ApiV1Response.ok(archiveService.purge(id, request.confirmTail(), request.clearedReason()));
     }
 
     /**

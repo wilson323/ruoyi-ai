@@ -73,6 +73,11 @@ public interface IAllowanceLedgerService {
     /** * @return 停发原因非空的 AllowanceLedger 列表 */
     List<AllowanceLedger> pendingStop(IpdActor actor, String period);
 
+    /**
+     * 确认停发：把终额置 0，避免只提醒不落账。
+     */
+    AllowanceLedger confirmStop(IpdActor actor, Long ledgerId);
+
     /** * W4-D 件 2 §3：月度自动扫描（按 period；返回当月所有台账记录数）。 */
     /** * 端点 POST /api/v1/allowance/auto-scan 配套服务方法（仅超管）。 */
     /** * */

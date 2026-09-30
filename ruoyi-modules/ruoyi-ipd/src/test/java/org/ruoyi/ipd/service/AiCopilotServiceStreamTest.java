@@ -13,6 +13,7 @@ import org.ruoyi.ipd.dto.AiCopilotReq;
 import org.ruoyi.ipd.dto.AiCopilotResp;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 
@@ -26,6 +27,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -181,6 +183,27 @@ class AiCopilotServiceStreamTest {
         assertTrue(after.contains("\"tokenCompletion\":6"), after);
         // BR-AI-04：prompt 原文绝不入审计
         assertFalse(after.contains("讲个笑话"), after);
+    }
+
+    @Test
+    @DisplayName("C2-3 接线：SSE 主链路 AiTestConfig 携非空 scope（model×actor×copilot_stream）")
+    void chatStreamWiresAiCallScope() {
+        stubEnabledConfig();
+        doAnswer(inv -> {
+            AiGateway.StreamHandler h = inv.getArgument(4);
+            h.onComplete(1, 1, 10L);
+            return null;
+        }).when(aiGateway).stream(any(AiTestConfig.class), anyString(), anyInt(), any(BigDecimal.class), any());
+
+        service.chatStream(SA, new AiCopilotReq(null, "讲个笑话", List.of()), new RecordingSink());
+
+        ArgumentCaptor<AiTestConfig> cfgCap = ArgumentCaptor.forClass(AiTestConfig.class);
+        verify(aiGateway).stream(cfgCap.capture(), anyString(), anyInt(), any(BigDecimal.class), any());
+        AiCallScope scope = cfgCap.getValue().scope();
+        assertNotNull(scope, "SSE 真流式主链路必须纳入记账面，scope 不得为 null");
+        assertEquals(1L, scope.modelConfigId());
+        assertEquals("1", scope.actorId());
+        assertEquals("copilot_stream", scope.scene());
     }
 
     @Test

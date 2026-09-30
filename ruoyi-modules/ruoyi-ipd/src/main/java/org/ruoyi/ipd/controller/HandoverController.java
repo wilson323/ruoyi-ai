@@ -83,7 +83,7 @@ public class HandoverController {
     @PostMapping
     public ApiV1Response<HandoverView> initiate(@Valid @RequestBody InitiateRequest request) {
         boolean onBehalf = Boolean.TRUE.equals(request.onBehalf());
-        IpdActor actor = onBehalf ? permission.requireLeaderOrAdmin() : permission.requireInternal();
+        IpdActor actor = onBehalf ? permission.requireLeaderOrAdmin() : permission.requireHandoverCapable();
         HandoverRecord rec = onBehalf
             ? handoverService.initiateOnBehalf(request.projectId(), request.role(),
                 request.toPersonId(), request.note(), request.approvalRef(), actor)
@@ -109,7 +109,7 @@ public class HandoverController {
     @PostMapping("/{id}/accept")
     public ApiV1Response<HandoverView> accept(@PathVariable Long id,
                                               @RequestBody(required = false) AcceptRequest request) {
-        IpdActor actor = permission.requireInternal();
+        IpdActor actor = permission.requireHandoverCapable();
         return ApiV1Response.ok(HandoverView.from(
             handoverService.accept(id, request == null ? null : request.approvalRef(), actor)));
     }
@@ -124,7 +124,7 @@ public class HandoverController {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
                 "确认短语不匹配，二次确认未通过（须输入：确认撤销该移交）");
         }
-        IpdActor actor = permission.requireInternal();
+        IpdActor actor = permission.requireHandoverCapable();
         return ApiV1Response.ok(HandoverView.from(
             handoverService.rollback(id, request.reason(), actor)));
     }
@@ -134,7 +134,7 @@ public class HandoverController {
      */
     @GetMapping("/inbox")
     public ApiV1Response<List<HandoverView>> inbox() {
-        IpdActor actor = permission.requireInternal();
+        IpdActor actor = permission.requireHandoverCapable();
         return ApiV1Response.ok(handoverService.inbox(actor).stream().map(HandoverView::from).toList());
     }
 
@@ -164,7 +164,7 @@ public class HandoverController {
      */
     @PostMapping("/{id}/archive")
     public ApiV1Response<HandoverView> archive(@PathVariable Long id) {
-        IpdActor actor = permission.requireInternal();
+        IpdActor actor = permission.requireHandoverCapable();
         return ApiV1Response.ok(HandoverView.from(handoverService.archiveCompletedHandover(id, actor)));
     }
 
@@ -191,7 +191,7 @@ public class HandoverController {
     @GetMapping("/monthly-attribution")
     public ApiV1Response<List<AttributionRow>> monthlyAttribution(@RequestParam Long projectId,
                                                                   @RequestParam String month) {
-        IpdActor actor = permission.requireInternal();
+        IpdActor actor = permission.requireHandoverCapable();
         return ApiV1Response.ok(handoverService.getMonthlyAttribution(projectId, month, actor)
             .stream().map(AttributionRow::from).toList());
     }

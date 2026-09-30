@@ -35,6 +35,7 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -170,6 +171,17 @@ public class ProjectService implements IProjectService {
      * @return 落库后的项目（含编码与 CONCEPT/DRAFT）
      */
     public Project create(Project project, Long operatorId, Long fallbackMainGroupId) {
+        return create(project, operatorId, fallbackMainGroupId, null, null);
+    }
+
+    /**
+     * 创建立项并绑定双 PM。同一人不可兼市场 PM 与研发 PM。
+     */
+    public Project create(Project project, Long operatorId, Long fallbackMainGroupId,
+                          Long marketPmId, Long rdPmId) {
+        if (marketPmId != null && marketPmId.equals(rdPmId)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.ROLE_LOCKED, "同一人不可同时担任市场PM与研发PM");
+        }
         validateBaselinesAndTemplate(project);
         // 主组可选：未选时权威填充，双空才拒（存量导入显式必填语义不变）
         if (project.getMainGroupId() == null) {
@@ -186,7 +198,7 @@ public class ProjectService implements IProjectService {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         for (int attempt = 1; attempt <= CODE_CONFLICT_MAX_RETRY; attempt++) {
             try {
-                return tx.execute(status -> insertNewProject(project, operatorId));
+                return tx.execute(status -> insertNewProject(project, operatorId, marketPmId, rdPmId));
             } catch (DuplicateKeyException ex) {
                 // R179-P0：不再静默——DuplicateKeyException 可能来自任何物理 uk（非只有
                 // code）；无日志曾让「软删行占号」问题排查成本极高（靠 general_log 才定位）。
@@ -206,7 +218,7 @@ public class ProjectService implements IProjectService {
      * @param operatorId 操作人
      * @return 落库项目
      */
-    private Project insertNewProject(Project project, Long operatorId) {
+    private Project insertNewProject(Project project, Long operatorId, Long marketPmId, Long rdPmId) {
         Product product = productMapper.selectById(project.getProductId());
         if (product == null || "1".equals(product.getDelFlag())) {
             throw new ServiceException("归属产品不存在: " + project.getProductId());
@@ -238,12 +250,34 @@ public class ProjectService implements IProjectService {
         product.setProjectId(project.getId());
         productMapper.updateById(product);
         // P1-3.1：bootstrap 六阶段 + 69 动作实例；同事务内执行（PERF-01 取号已 synchronized 保护）
+        bindProjectPm(project.getId(), marketPmId, "MARKET_PM");
+        bindProjectPm(project.getId(), rdPmId, "RD_PM");
         projectBootstrapService.bootstrap(project.getId(), operatorId);
         // P1-7.1：目标市场认证清单落项目（模板变更 re-sync 只增不重置 DONE）
         projectCertService.syncFromProject(project, operatorId);
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
         registerPostCommit(null, "DRAFT", "create", operatorId, project.getId());
         return project;
+    }
+
+    /**
+     * 立项时写入一名在职 PM。未指定则跳过。
+     */
+    private void bindProjectPm(Long projectId, Long personId, String role) {
+        if (personId == null) {
+            return;
+        }
+        if (projectMemberMapper == null) {
+            throw new ServiceException("项目成员写入不可用，无法绑定 " + role);
+        }
+        ProjectMember member = ProjectMember.builder()
+            .projectId(projectId)
+            .personId(personId)
+            .role(role)
+            .joinDate(now())
+            .bonusEligible("1")
+            .build();
+        projectMemberMapper.insert(member);
     }
 
     /**

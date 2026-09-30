@@ -10,8 +10,10 @@ import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
+import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,13 @@ public class BidInvitationService {
     private final BidResponseMapper bidResponseMapper;
     private final IAuditLogService auditLogService;
     private final NotificationService notificationService;
+    private ProjectMemberMapper projectMemberMapper;
+
+    /** 遴选后把中标研发 PM 写入既有项目成员。测试构造器可不注入。 */
+    @Autowired(required = false)
+    public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
+        this.projectMemberMapper = projectMemberMapper;
+    }
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
@@ -183,6 +192,7 @@ public class BidInvitationService {
             .ne(BidResponse::getId, responseId));
         inv.setStatus("SELECTED");
         inv.setSelectedResponseId(responseId);
+        bindSelectedRdPm(inv.getProjectId(), resp.getRdPmId());
         inv.setConfirmToken(null);
         inv.setConfirmTokenExpires(null);
         bidInvitationMapper.updateById(inv);
@@ -224,6 +234,38 @@ public class BidInvitationService {
             }
         }
         return inv;
+    }
+
+    /**
+     * 招标单已挂在既有项目上。遴选不另建项目，把中标研发 PM 写入该项目成员。
+     * 已有其他在职研发 PM 时拒绝覆盖。
+     */
+    private void bindSelectedRdPm(Long projectId, Long rdPmId) {
+        if (projectMemberMapper == null || projectId == null || rdPmId == null) {
+            return;
+        }
+        Long same = projectMemberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, projectId)
+            .eq(ProjectMember::getRole, "RD_PM")
+            .eq(ProjectMember::getPersonId, rdPmId)
+            .isNull(ProjectMember::getExitDate));
+        if (same != null && same > 0) {
+            return;
+        }
+        Long others = projectMemberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, projectId)
+            .eq(ProjectMember::getRole, "RD_PM")
+            .isNull(ProjectMember::getExitDate));
+        if (others != null && others > 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "项目已有在职研发PM，遴选不能覆盖");
+        }
+        projectMemberMapper.insert(ProjectMember.builder()
+            .projectId(projectId)
+            .personId(rdPmId)
+            .role("RD_PM")
+            .joinDate(now())
+            .bonusEligible("1")
+            .build());
     }
 
     /**
@@ -601,6 +643,7 @@ public class BidInvitationService {
         preCheckGuard(BID_INVITATION_ENTITY_TYPE, "EXPIRED", "SELECTED", "adminAssign");
         inv.setStatus("SELECTED");
         inv.setUpdateTime(now());
+        bindSelectedRdPm(inv.getProjectId(), targetPersonId);
         bidInvitationMapper.updateById(inv);
         registerPostCommit(BID_INVITATION_ENTITY_TYPE, "EXPIRED", "SELECTED", "adminAssign", adminId, id);
         auditLogService.append(AuditLog.builder()

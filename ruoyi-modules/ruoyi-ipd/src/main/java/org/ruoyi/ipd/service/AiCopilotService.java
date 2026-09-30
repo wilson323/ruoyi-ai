@@ -12,6 +12,7 @@ import org.ruoyi.ipd.dto.AiCopilotResp;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.service.ai.AiChatResult;
 import org.ruoyi.ipd.service.ai.AiGateway;
+import org.ruoyi.ipd.service.ai.AiCallScope;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -206,8 +207,11 @@ public class AiCopilotService implements IAiCopilotService {
         String sessionId = java.util.UUID.randomUUID().toString();
         sink.meta(new AiCopilotResp(intent, "", List.of(), sources, 0, 0, 0L));
 
+        // C2-3 接线（2026-09-29 D3 复测轮）：copilot 主链路纳入 AiCallScope 记账面，
+        // 预算预占→结算与用量落账生效（无预算行=不限额，行为与旧口径一致）
         AiTestConfig cfg = new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-            modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS);
+            modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS,
+            AiCallScope.of(config.getId(), actor, "copilot_stream"));
         String modelName = config.getModelName();
         final int[] totalChunks = {0};
         aiGateway.stream(cfg, prompt, MAX_TOKENS, new BigDecimal("0.50"), new AiGateway.StreamHandler() {
@@ -365,7 +369,8 @@ public class AiCopilotService implements IAiCopilotService {
         String prompt = composeFillPrompt(req, scene);
         AiChatResult result = aiGateway.chat(
             new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS),
+                modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS,
+                AiCallScope.of(config.getId(), actor, "copilot_fill")),
             prompt, MAX_TOKENS, new BigDecimal("0.30"));
         long latency = clock.millis() - start;
         if (!result.success()) {
@@ -555,7 +560,8 @@ public class AiCopilotService implements IAiCopilotService {
 
         AiChatResult result = aiGateway.chat(
             new AiTestConfig(config.getProvider(), config.getEndpointUrl(),
-                modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS),
+                modelConfigService.decryptApiKey(config), config.getModelName(), COPILOT_TIMEOUT_MS,
+                AiCallScope.of(config.getId(), actor, "copilot_chat")),
             prompt, MAX_TOKENS, new BigDecimal("0.50"));
 
         long latency = clock.millis() - start;

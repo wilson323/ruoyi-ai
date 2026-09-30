@@ -44,6 +44,21 @@ public class IpdActionSkillMapService {
     }
 
     /**
+     * 按动作编码查映射行（每次查库，不做进程内缓存）。
+     *
+     * @param actionCode 动作编码（如 C02）；空则返回 null
+     * @return 映射行；未命中返回 null
+     */
+    public IpdActionSkillMap findByActionCode(String actionCode) {
+        if (actionCode == null || actionCode.isBlank()) {
+            return null;
+        }
+        return skillMapMapper.selectOne(new LambdaQueryWrapper<IpdActionSkillMap>()
+            .eq(IpdActionSkillMap::getActionCode, actionCode.trim())
+            .last("LIMIT 1"));
+    }
+
+    /**
      * skill_names JSON 数组文本 → List&lt;String&gt;。
      * NULL/空 → 空列表（§3 未定稿口径，前端按「无绑定技能」渲染）；JSON 非法抛 90001。
      */

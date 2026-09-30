@@ -1,0 +1,228 @@
+{
+ "generated_at": "2026-09-29 21:17:16",
+ "base": "http://127.0.0.1:16039",
+ "rounds": 5,
+ "session_kick_probe": {
+  "mode": "5 独立会话 × 均分 50 并发",
+  "session_pool": 5,
+  "note": "登录防爆破限流实测：连续第 6 次 login 即 400 code=10001「登录尝试过于频繁」⇒ 50 独立会话口径不可行，SLO#1 按并发请求口径测并披露"
+ },
+ "slo3_readonly_list": {
+  "/api/v1/projects?pageNum=1&pageSize=10": {
+   "round_p95": [
+    184.5,
+    75.5,
+    71.6,
+    73.0,
+    141.8
+   ],
+   "p95_median": 75.5,
+   "p95_min": 71.6,
+   "p95_max": 184.5,
+   "p50_all": 69.9,
+   "stdev": 112.9,
+   "note": "§1.1 离群（固定开销），单列不并入判定"
+  },
+  "/api/v1/products?pageNum=1&pageSize=10": {
+   "round_p95": [
+    17.9,
+    14.7,
+    12.4,
+    16.5,
+    13.5
+   ],
+   "p95_median": 14.7,
+   "p95_min": 12.4,
+   "p95_max": 17.9,
+   "p50_all": 11.5,
+   "stdev": 5.5,
+   "pass_200ms": true
+  },
+  "/api/v1/audit-logs?pageNum=1&pageSize=10": {
+   "round_p95": [
+    13.2,
+    12.6,
+    11.8,
+    17.8,
+    20.7
+   ],
+   "p95_median": 13.2,
+   "p95_min": 11.8,
+   "p95_max": 20.7,
+   "p50_all": 10.9,
+   "stdev": 8.9,
+   "pass_200ms": true
+  },
+  "/api/v1/stage-actions?pageNum=1&pageSize=10": {
+   "round_p95": [
+    9.6,
+    7.5,
+    8.2,
+    11.0,
+    11.9
+   ],
+   "p95_median": 9.6,
+   "p95_min": 7.5,
+   "p95_max": 11.9,
+   "p50_all": 7.1,
+   "stdev": 4.5,
+   "pass_200ms": true
+  },
+  "/api/v1/demands?pageNum=1&pageSize=10": {
+   "round_p95": [
+    24.2,
+    36.0,
+    84.5,
+    52.1,
+    25.1
+   ],
+   "p95_median": 36.0,
+   "p95_min": 24.2,
+   "p95_max": 84.5,
+   "p50_all": 18.3,
+   "stdev": 60.2,
+   "pass_200ms": true
+  },
+  "/api/v1/gate-elements?pageNum=1&pageSize=10": {
+   "round_p95": [
+    22.9,
+    19.2,
+    31.5,
+    27.6,
+    21.0
+   ],
+   "p95_median": 22.9,
+   "p95_min": 19.2,
+   "p95_max": 31.5,
+   "p50_all": 16.8,
+   "stdev": 12.3,
+   "pass_200ms": true
+  },
+  "/api/v1/auth/me": {
+   "round_p95": [
+    9.5,
+    11.2,
+    10.7,
+    20.2,
+    28.9
+   ],
+   "p95_median": 11.2,
+   "p95_min": 9.5,
+   "p95_max": 28.9,
+   "p50_all": 9.2,
+   "stdev": 19.4,
+   "pass_200ms": true
+  }
+ },
+ "slo1_concurrency": {
+  "mode": "5 独立会话 × 均分 50 并发",
+  "rounds": [
+   {
+    "n": 50,
+    "errors": 0,
+    "error_rate": 0.0,
+    "p50": 1882.9,
+    "p95": 2005.0,
+    "max": 2024.8,
+    "bg_noise_req_completed_tail": 200
+   },
+   {
+    "n": 50,
+    "errors": 0,
+    "error_rate": 0.0,
+    "p50": 1323.5,
+    "p95": 1766.0,
+    "max": 1770.2,
+    "bg_noise_req_completed_tail": 200
+   },
+   {
+    "n": 50,
+    "errors": 0,
+    "error_rate": 0.0,
+    "p50": 1445.0,
+    "p95": 1509.8,
+    "max": 1534.7,
+    "bg_noise_req_completed_tail": 200
+   },
+   {
+    "n": 50,
+    "errors": 0,
+    "error_rate": 0.0,
+    "p50": 1333.5,
+    "p95": 1424.6,
+    "max": 1438.1,
+    "bg_noise_req_completed_tail": 200
+   },
+   {
+    "n": 50,
+    "errors": 0,
+    "error_rate": 0.0,
+    "p50": 1075.0,
+    "p95": 1386.6,
+    "max": 1430.1,
+    "bg_noise_req_completed_tail": 200
+   }
+  ],
+  "total_errors": 0,
+  "pass": true,
+  "p95_median_of_rounds": 1509.8,
+  "p95_range": [
+   1386.6,
+   2005.0
+  ]
+ },
+ "slo2_first_token": {
+  "first_byte_ms": [
+   114.6,
+   73.8,
+   91.3,
+   97.8,
+   75.3,
+   47.6
+  ],
+  "first_meta_ms": [
+   114.6,
+   73.9,
+   91.3,
+   97.8,
+   75.3,
+   47.6
+  ],
+  "first_delta_ms": [
+   1034.6,
+   690.3,
+   915.9,
+   992.3,
+   1133.6,
+   801.0
+  ],
+  "terminals": [
+   "done",
+   "done",
+   "done",
+   "done",
+   "done",
+   "done"
+  ],
+  "p95": 1133.6,
+  "median": 954.1,
+  "min": 690.3,
+  "max": 1133.6,
+  "pass_3s": true,
+  "n_valid_first_delta": 6
+ },
+ "slo4_vector": {
+  "weaviate_objects_sample": 0,
+  "weaviate_schema_classes": 0,
+  "note": "Weaviate 空库不能代表 IPD 文档检索；生产路径为 ai_doc_embeddings 余弦",
+  "mysql_ai_doc_embeddings_rows": 3,
+  "retrievable_qwen3_reviewed": 1,
+  "n": 20,
+  "hits_each": 1,
+  "p50_ms": 237.6,
+  "p95_ms": 483.5,
+  "samples_ms": [219.5, 248.8, 244.8, 232.1, 236.6, 236.6, 483.0, 492.5, 236.2, 225.8, 244.1, 245.6, 226.0, 221.6, 255.7, 229.7, 217.2, 481.0, 238.6, 267.2],
+  "verdict": "PASS（p95=483.5ms n=20 hits=1，路径=MySQL 余弦非 Weaviate）"
+ },
+ "slo5_budget": "不在此脚本（需可逆 DB 测试写入，单独流程）"
+}

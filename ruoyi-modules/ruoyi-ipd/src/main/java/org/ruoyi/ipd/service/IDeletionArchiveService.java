@@ -38,4 +38,9 @@ public interface IDeletionArchiveService {
     /** * @return 更新后的申请 */
     DeletionRequest purge(Long requestId);
 
+    /**
+     * 带二次确认的清除。confirmTail 必须等于申请编号，clearedReason 必填。
+     */
+    DeletionRequest purge(Long requestId, String confirmTail, String clearedReason);
+
 }

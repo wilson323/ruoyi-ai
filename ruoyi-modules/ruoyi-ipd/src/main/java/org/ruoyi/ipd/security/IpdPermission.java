@@ -123,6 +123,32 @@ public class IpdPermission {
         return new IpdActor(person.getId(), person.getName(), person.getPersonType(), person.getGroupId());
     }
 
+    /**
+     * 冻结待移交账号的移交域守门。
+     * FULL 与 HANDOVER_ONLY 放行；待改密、未登录、禁用仍拒。
+     * 只给移交收件箱、发起、接受、撤销、归档使用，不放开其余业务写口。
+     */
+    public IpdActor requireHandoverCapable() {
+        Person person;
+        try {
+            person = session.currentPerson();
+        } catch (NotLoginException e) {
+            throw new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED);
+        }
+        if (person.getId() == null) {
+            throw new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED);
+        }
+        IpdAuthService.Scope scope = authService.scopeOf(person);
+        if (scope != IpdAuthService.Scope.FULL && scope != IpdAuthService.Scope.HANDOVER_ONLY) {
+            throw new IpdPermissionException(403,
+                scope == IpdAuthService.Scope.PASSWORD_CHANGE_REQUIRED
+                    ? ApiV1ErrorCode.ACCOUNT_PASSWORD_CHANGE_REQUIRED
+                    : ApiV1ErrorCode.FORBIDDEN);
+        }
+        if (!INTERNAL_ROLES.contains(person.getPersonType())) throw denied();
+        return new IpdActor(person.getId(), person.getName(), person.getPersonType(), person.getGroupId());
+    }
+
     public IpdActor requireAdmin() {
         return requireRoles("SUPER_ADMIN");
     }

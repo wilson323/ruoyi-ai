@@ -1,22 +1,24 @@
 {
  "base": "http://127.0.0.1:16039",
  "login": "OK（凭据源 credentials.json:ipd_qa_pwd_ipd-admin，已脱敏）",
- "probed": 262,
+ "probed": 271,
  "live_state_counts": {
-  "LIVE_PASS": 62,
-  "LIVE_405": 123,
-  "LIVE_REACHABLE": 45,
-  "LIVE_404": 31,
+  "LIVE_PASS": 67,
+  "LIVE_405": 137,
+  "LIVE_404": 19,
+  "LIVE_REACHABLE": 47,
   "LIVE_AUTHZ": 1
  },
  "source_x_live": {
-  "SOURCE_OK->LIVE_PASS": 62,
-  "SOURCE_OK->LIVE_405": 123,
-  "SOURCE_OK->LIVE_REACHABLE": 45,
-  "SOURCE_OK->LIVE_404": 31,
+  "SOURCE_OK->LIVE_PASS": 67,
+  "SOURCE_OK->LIVE_405": 137,
+  "SOURCE_OK->LIVE_404": 19,
+  "SOURCE_OK->LIVE_REACHABLE": 47,
   "SOURCE_OK->LIVE_AUTHZ": 1
  },
  "source_ok_but_runtime_404": [
+  "/api/v1/agent-runs/9140001",
+  "/api/v1/agent-runs/9140001/events",
   "/api/v1/ai-agent-tasks/9140001",
   "/api/v1/ai-documents/9140001/history",
   "/api/v1/ai-documents/9140001/versions",
@@ -25,23 +27,9 @@
   "/api/v1/bid-invitations/9140001/responses",
   "/api/v1/bonus-pool/9140001",
   "/api/v1/demands/9140001",
-  "/api/v1/ipd/product-lines",
-  "/api/v1/ipd/product-lines/discoverable",
-  "/api/v1/ipd/product-lines/9140001/deactivate",
   "/api/v1/ipd/product-lines/9140001/join-applications",
-  "/api/v1/ipd/product-lines/9140001/join-applications/9140001/review",
-  "/api/v1/ipd/product-lines/9140001/leader/9140001",
-  "/api/v1/ipd/product-lines/9140001/leave",
-  "/api/v1/ipd/product-lines/9140001/members/9140001/remove",
-  "/api/v1/ipd/product-lines/9140001/name",
   "/api/v1/ipd/product-lines/9140001/products",
-  "/api/v1/ipd/product-lines/9140001/products/9140001",
-  "/api/v1/ipd/product-lines/9140001/products/9140001/unassign",
   "/api/v1/ipd/product-lines/9140001/projects",
-  "/api/v1/ipd/stage/sub-stages",
-  "/api/v1/ipd/stage/sub-stages/advance",
-  "/api/v1/ipd/stage/sub-stages/guide-events",
-  "/api/v1/ipd/stage/sub-stages/progress",
   "/api/v1/negative-feedbacks/9140001",
   "/api/v1/products/9140001",
   "/api/v1/products/9140001/workspace",
@@ -49,15 +37,10 @@
   "/api/v1/requirement-changes/9140001",
   "/api/v1/sop-templates/9140001"
  ],
- "route_level_404": [
-  "/api/v1/ipd/product-lines",
-  "/api/v1/ipd/product-lines/discoverable",
-  "/api/v1/ipd/stage/sub-stages",
-  "/api/v1/ipd/stage/sub-stages/advance",
-  "/api/v1/ipd/stage/sub-stages/guide-events",
-  "/api/v1/ipd/stage/sub-stages/progress"
- ],
+ "route_level_404": [],
  "resource_level_404": [
+  "/api/v1/agent-runs/9140001",
+  "/api/v1/agent-runs/9140001/events",
   "/api/v1/ai-agent-tasks/9140001",
   "/api/v1/ai-documents/9140001/history",
   "/api/v1/ai-documents/9140001/versions",
@@ -66,16 +49,8 @@
   "/api/v1/bid-invitations/9140001/responses",
   "/api/v1/bonus-pool/9140001",
   "/api/v1/demands/9140001",
-  "/api/v1/ipd/product-lines/9140001/deactivate",
   "/api/v1/ipd/product-lines/9140001/join-applications",
-  "/api/v1/ipd/product-lines/9140001/join-applications/9140001/review",
-  "/api/v1/ipd/product-lines/9140001/leader/9140001",
-  "/api/v1/ipd/product-lines/9140001/leave",
-  "/api/v1/ipd/product-lines/9140001/members/9140001/remove",
-  "/api/v1/ipd/product-lines/9140001/name",
   "/api/v1/ipd/product-lines/9140001/products",
-  "/api/v1/ipd/product-lines/9140001/products/9140001",
-  "/api/v1/ipd/product-lines/9140001/products/9140001/unassign",
   "/api/v1/ipd/product-lines/9140001/projects",
   "/api/v1/negative-feedbacks/9140001",
   "/api/v1/products/9140001",
@@ -107,6 +82,9 @@
   "/api/v1/gate-elements/manage",
   "/api/v1/handovers/inbox",
   "/api/v1/hr-sync/pending-handovers",
+  "/api/v1/ipd/product-lines",
+  "/api/v1/ipd/product-lines/discoverable",
+  "/api/v1/ipd/stage/sub-stages",
   "/api/v1/kpi/functional-metrics/codes",
   "/api/v1/kpi/raw-records/types",
   "/api/v1/kpi/rules",
@@ -119,6 +97,7 @@
   "/api/v1/p0/escalation-chain",
   "/api/v1/person-sync/jobs",
   "/api/v1/person-sync/jobs/abnormal",
+  "/api/v1/persons/active",
   "/api/v1/pm-directory",
   "/api/v1/product-groups",
   "/api/v1/products",
@@ -128,6 +107,7 @@
   "/api/v1/project-score-tasks/my",
   "/api/v1/projects",
   "/api/v1/projects/9140001",
+  "/api/v1/projects/9140001/agent-capabilities",
   "/api/v1/projects/9140001/cert-items",
   "/api/v1/projects/9140001/gate-checklist",
   "/api/v1/projects/9140001/gates",
@@ -159,7 +139,31 @@
    "path": "/api/v1/admin/permanent-delete/9140001/9140001",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
+  },
+  {
+   "path": "/api/v1/agent-runs/9140001",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_404",
+   "detail": "HTTP404 code=50001 运行不存在"
+  },
+  {
+   "path": "/api/v1/agent-runs/9140001/artifacts/9140001/apply",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
+  },
+  {
+   "path": "/api/v1/agent-runs/9140001/cancel",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
+  },
+  {
+   "path": "/api/v1/agent-runs/9140001/events",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_404",
+   "detail": "HTTP404 code=50001 运行不存在"
   },
   {
    "path": "/api/v1/ai-agent-tasks",
@@ -177,13 +181,19 @@
    "path": "/api/v1/ai-copilot/chat",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-copilot/chat/stream",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_AUTHZ",
    "detail": "code=500 系统异常，请联系管理员"
+  },
+  {
+   "path": "/api/v1/ai-copilot/runs/9140001/cancel",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-documents",
@@ -195,7 +205,7 @@
    "path": "/api/v1/ai-documents/generate",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-documents/9140001/diff",
@@ -213,7 +223,7 @@
    "path": "/api/v1/ai-documents/9140001/revise",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-documents/9140001/versions",
@@ -225,19 +235,25 @@
    "path": "/api/v1/ai-documents/9140001/versions/9140001/archive",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-documents/9140001/versions/9140001/reject",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-documents/9140001/versions/9140001/review",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
+  },
+  {
+   "path": "/api/v1/ai-feedback/9140001/9140001",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-models",
@@ -255,31 +271,31 @@
    "path": "/api/v1/ai-models/9140001/enable",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-models/9140001/test",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai-models/9140001/update",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ai/suggest",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/allowance/auto-scan",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/allowance/ledger",
@@ -303,7 +319,7 @@
    "path": "/api/v1/audit-logs/rebuild-chain",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/audit-logs/scope",
@@ -321,13 +337,13 @@
    "path": "/api/v1/auth/login",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/auth/logout",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/auth/me",
@@ -339,19 +355,19 @@
    "path": "/api/v1/auth/platform-token",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/auth/refresh",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/auth/wecom/qr-login",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations",
@@ -381,43 +397,43 @@
    "path": "/api/v1/bid-invitations/9140001/admin-assign",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/ai-compare",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/ai-completeness-check",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/close",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/modify",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/pre-select-token",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/publish",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/responses",
@@ -429,25 +445,25 @@
    "path": "/api/v1/bid-invitations/9140001/select",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-invitations/9140001/withdraw",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-responses",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bid-responses/9140001/withdraw",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bonus-pool/auto-compute",
@@ -459,7 +475,7 @@
    "path": "/api/v1/bonus-pool/coefficient/preview",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bonus-pool/compute",
@@ -489,13 +505,13 @@
    "path": "/api/v1/bonus-pool/9140001/distribute",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/bonus-pool/9140001/freeze",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/business-config",
@@ -525,7 +541,7 @@
    "path": "/api/v1/cert-templates/9140001/remove",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/coefficient-change-requests",
@@ -543,7 +559,7 @@
    "path": "/api/v1/coefficient-change-requests/9140001/leader-decision",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/compliance/data-retention-rules",
@@ -561,25 +577,25 @@
    "path": "/api/v1/contributions/9140001/confirm",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/contributions/9140001/market-share",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/contributions/9140001/preview",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/contributions/9140001/save",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/contributions/9140001/versions",
@@ -591,7 +607,7 @@
    "path": "/api/v1/deletion-requests",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/deletion-requests/archive",
@@ -603,7 +619,7 @@
    "path": "/api/v1/deletion-requests/escalate-overdue",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/deletion-requests/my-requests",
@@ -627,25 +643,25 @@
    "path": "/api/v1/deletion-requests/9140001/admin-decision",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/deletion-requests/9140001/leader-decision",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/deletion-requests/9140001/purge",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/deletion-requests/9140001/withdraw",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/demands",
@@ -663,13 +679,13 @@
    "path": "/api/v1/demands/9140001/link-project",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/demands/9140001/triage",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements",
@@ -687,73 +703,73 @@
    "path": "/api/v1/gate-elements/9140001/archive",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/copy",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/disable",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/duplicate",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/publish",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/restore",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/revert",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gate-elements/9140001/update",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/arbitrate",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/arbitration-divergences",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/element-results",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/element-results/9140001/close",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/elements",
@@ -765,13 +781,13 @@
    "path": "/api/v1/gates/9140001/extend-deadline",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/final-ruling",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/legacy",
@@ -795,25 +811,25 @@
    "path": "/api/v1/gates/9140001/observers/invite",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/observers/9140001/opinion",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/precheck",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/reopen",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/review",
@@ -825,25 +841,25 @@
    "path": "/api/v1/gates/9140001/sign",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/gates/9140001/submit",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/handovers",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/handovers/batch",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/handovers/inbox",
@@ -861,25 +877,25 @@
    "path": "/api/v1/handovers/super-admin",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/handovers/9140001/accept",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/handovers/9140001/archive",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/handovers/9140001/cancel",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/hr-sync/pending-handovers",
@@ -890,104 +906,104 @@
   {
    "path": "/api/v1/ipd/product-lines",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_PASS",
+   "detail": "code=0 ok"
   },
   {
    "path": "/api/v1/ipd/product-lines/discoverable",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_PASS",
+   "detail": "code=0 ok"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/deactivate",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/join-applications",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "detail": "HTTP404 code=50001 产品线空间不存在"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/join-applications/9140001/review",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/leader/9140001",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/leave",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/members/9140001/remove",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/name",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/products",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "detail": "HTTP404 code=50001 产品线空间不存在"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/products/9140001",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/products/9140001/unassign",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/product-lines/9140001/projects",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "detail": "HTTP404 code=50001 产品线空间不存在"
   },
   {
    "path": "/api/v1/ipd/stage/sub-stages",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_PASS",
+   "detail": "code=0 ok"
   },
   {
    "path": "/api/v1/ipd/stage/sub-stages/advance",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/ipd/stage/sub-stages/guide-events",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_REACHABLE",
+   "detail": "HTTP400 code=10001 缺少必需参数: subStageCode"
   },
   {
    "path": "/api/v1/ipd/stage/sub-stages/progress",
    "source_state": "SOURCE_OK",
-   "live_state": "LIVE_404",
-   "detail": "HTTP404 code=50001 资源不存在"
+   "live_state": "LIVE_REACHABLE",
+   "detail": "HTTP400 code=10001 缺少必需参数: projectId"
   },
   {
    "path": "/api/v1/kpi/functional",
@@ -1011,7 +1027,7 @@
    "path": "/api/v1/kpi/functional-metrics/9140001",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/kpi/performance",
@@ -1059,7 +1075,7 @@
    "path": "/api/v1/kpi/shared/9140001/confirm",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/kpi/trend",
@@ -1083,7 +1099,7 @@
    "path": "/api/v1/launch-date-change-requests/9140001/second-decision",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/negative-feedbacks",
@@ -1107,19 +1123,19 @@
    "path": "/api/v1/negative-feedbacks/9140001/decide",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/negative-feedbacks/9140001/lift",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/negative-feedbacks/9140001/submit",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/notifications",
@@ -1131,7 +1147,7 @@
    "path": "/api/v1/notifications/read-all",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/notifications/unread-count",
@@ -1143,7 +1159,7 @@
    "path": "/api/v1/notifications/9140001/read",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/p0/escalation-chain",
@@ -1167,31 +1183,37 @@
    "path": "/api/v1/person-sync/jobs/retry-all",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/person-sync/jobs/9140001/retry",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
+  },
+  {
+   "path": "/api/v1/persons/active",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_PASS",
+   "detail": "code=0 ok"
   },
   {
    "path": "/api/v1/persons/9140001/rehire",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/persons/9140001/resign",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/persons/9140001/wecom/unbind",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/pm-directory",
@@ -1203,7 +1225,7 @@
    "path": "/api/v1/post-launch-reviews",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/post-launch-reviews/pending",
@@ -1215,7 +1237,7 @@
    "path": "/api/v1/post-launch-reviews/9140001/complete",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/product-groups",
@@ -1233,7 +1255,7 @@
    "path": "/api/v1/product-groups/9140001/leader",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/products",
@@ -1257,19 +1279,19 @@
    "path": "/api/v1/products/9140001/bind-project",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/products/9140001/status",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/products/9140001/unbind-project",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/products/9140001/workspace",
@@ -1281,7 +1303,7 @@
    "path": "/api/v1/project-circle/posts/9140001/comments",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/project-circle/9140001",
@@ -1305,7 +1327,7 @@
    "path": "/api/v1/project-circle/9140001/posts",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/project-score-tasks/my",
@@ -1317,7 +1339,7 @@
    "path": "/api/v1/project-scores",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/project-scores/9140001/9140001",
@@ -1347,7 +1369,7 @@
    "path": "/api/v1/projects/legacy-import/batch",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/projects/9140001",
@@ -1359,13 +1381,25 @@
    "path": "/api/v1/projects/9140001/advance-stage",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
+  },
+  {
+   "path": "/api/v1/projects/9140001/agent-capabilities",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_PASS",
+   "detail": "code=0 ok"
+  },
+  {
+   "path": "/api/v1/projects/9140001/agent-runs",
+   "source_state": "SOURCE_OK",
+   "live_state": "LIVE_405",
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/projects/9140001/baselines",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/projects/9140001/cert-items",
@@ -1377,13 +1411,13 @@
    "path": "/api/v1/projects/9140001/cert-items/sync",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/projects/9140001/cert-items/9140001/status",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/projects/9140001/gate-checklist",
@@ -1401,7 +1435,7 @@
    "path": "/api/v1/projects/9140001/launch-date",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/projects/9140001/members",
@@ -1419,13 +1453,13 @@
    "path": "/api/v1/projects/9140001/status",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/public/demands",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/public/demands/9140001",
@@ -1437,13 +1471,13 @@
    "path": "/api/v1/public/demands/9140001/supplement",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/public/demands/9140001/withdraw",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/public/products",
@@ -1455,7 +1489,7 @@
    "path": "/api/v1/receipt-ledgers",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/receipt-ledgers/by-project/9140001",
@@ -1467,13 +1501,13 @@
    "path": "/api/v1/receipt-ledgers/9140001/refunds",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/recovery/check-90d",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/recovery/warnings",
@@ -1527,13 +1561,13 @@
    "path": "/api/v1/requirement-changes/9140001/sign",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/requirement-changes/9140001/submit",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/role-permissions",
@@ -1551,13 +1585,13 @@
    "path": "/api/v1/role-permissions/reload",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/role-permissions/9140001",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/scenarios/landed",
@@ -1569,7 +1603,7 @@
    "path": "/api/v1/scenarios/landed/import",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/sop-templates",
@@ -1599,25 +1633,25 @@
    "path": "/api/v1/sop-templates/9140001/copy",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/sop-templates/9140001/publish",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/sop-templates/9140001/revert",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/sop-templates/9140001/update",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/stage-actions",
@@ -1629,25 +1663,25 @@
    "path": "/api/v1/stage-actions/9140001/ai-execute",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/stage-actions/9140001/deliverables",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/stage-actions/9140001/fields",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/stage-actions/9140001/transit",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/switching-acceptance",
@@ -1665,19 +1699,19 @@
    "path": "/api/v1/switching-acceptance/9140001/lock",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/switching-acceptance/9140001/run",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/switching-acceptance/9140001/unlock",
    "source_state": "SOURCE_OK",
    "live_state": "LIVE_405",
-   "detail": "HTTP200 code=405 请求方式不支持"
+   "detail": "HTTP405 code=10002 请求方式不支持"
   },
   {
    "path": "/api/v1/system-configs",

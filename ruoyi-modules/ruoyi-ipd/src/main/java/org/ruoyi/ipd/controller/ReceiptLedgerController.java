@@ -13,14 +13,19 @@ import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.ReceiptLedgerService;
+import org.ruoyi.ipd.service.ReceiptVoucherUploadService;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 销售回款台账 HTTP 端点（P3-4.1 AC-INC-16b/16c/16d/31/31b/32）。
@@ -35,6 +40,7 @@ public class ReceiptLedgerController {
 
     private final IpdPermission permission;
     private final ReceiptLedgerService service;
+    private final ReceiptVoucherUploadService voucherUploadService;
 
     /** 月度回款录入（AC-INC-16c）：凭证可空，source/窗口由服务端定死。 */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
@@ -56,6 +62,21 @@ public class ReceiptLedgerController {
         // AOP P1 批注解化（R22 2026-09-09）：审计/超管门禁移交 IpdAuditAspect（adminOnly 同步落库，
         // 行为等价：requireAdmin 先于业务、成功返回后 append），SpEL 在注解字面量里维护。
         return ApiV1Response.ok(service.recordReceipt(ledger));
+    }
+
+    /**
+     * 上传回款凭证（AC-INC-16c）。仅超管，返回服务端 URL 与 SHA-256，供录入请求带回。
+     *
+     * @param projectId 项目编号
+     * @param file 凭证文件
+     * @return voucherUrl、voucherHash、fileName
+     */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping(value = "/projects/{projectId}/voucher", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiV1Response<Map<String, String>> uploadVoucher(@PathVariable Long projectId,
+                                                            @RequestPart("file") MultipartFile file) {
+        permission.requireAdmin();
+        return ApiV1Response.ok(voucherUploadService.upload(projectId, file));
     }
 
     /** 退款冲减（AC-INC-31/31b）：窗口内当期冲减，窗口外拒绝回溯。 */

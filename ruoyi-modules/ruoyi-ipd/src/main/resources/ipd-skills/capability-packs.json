@@ -1,0 +1,258 @@
+{
+  "manifestVersion": 1,
+  "comment": "项目智能体内置能力清单（随 JAR 交付）。skills[].sha256 = SKILL.md 原始字节 SHA-256，加载时校验；不一致即该 Skill 不可用。DB 表 ipd_capability_pack(+item) 的种子与本清单同源（W2 起 DB 可覆盖/扩展）。",
+  "skills": [
+    {
+      "name": "beta-trial-feedback-ipd",
+      "version": "1.0.0",
+      "sha256": "058144a81f449f5c241cdf675625c46e558535ecce1667c8875d2fbed7b90ec8"
+    },
+    {
+      "name": "biocv-far-frr-register-ipd",
+      "version": "1.0.0",
+      "sha256": "f3bad79a35963d2610448b3483c24d0c7d21570deadff29804c1ded5d5666e59"
+    },
+    {
+      "name": "biometric-compliance-review-ipd",
+      "version": "1.0.0",
+      "sha256": "280d477f0d6afc910f363f80c3c4eb768ceeb3ac136c175515d4242a5d920eb2"
+    },
+    {
+      "name": "catalog-listing-ipd",
+      "version": "1.0.0",
+      "sha256": "f4956e39fb24796202acb690d9f09cf684bb174e031aa0297d713a269c8682f9"
+    },
+    {
+      "name": "cert-reg-checklist-ipd",
+      "version": "1.0.0",
+      "sha256": "700f9c64090a81e4ef036452c5ad22f218baa02cca73b619cdd0e1066900b772"
+    },
+    {
+      "name": "cert-test-result-register-ipd",
+      "version": "1.0.0",
+      "sha256": "e54fddaedc45a1edc77ae08fad761edf41bcdf9bb1d90a8a75935027f0c32812"
+    },
+    {
+      "name": "channel-price-policy-ipd",
+      "version": "1.0.0",
+      "sha256": "e7f7a5273cd34ac032bf9ee4489c9e0a4f0f04a89a1b4e5136873cfc45455844"
+    },
+    {
+      "name": "charter-baseline-ipd",
+      "version": "1.0.0",
+      "sha256": "846d523f3082751c6ddcc7be1cd573ae82c618c4a46e9951fe4add1bc68272c1"
+    },
+    {
+      "name": "competitor-analysis-ipd",
+      "version": "1.0.0",
+      "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+    },
+    {
+      "name": "cost-pricing-margin-ipd",
+      "version": "1.0.0",
+      "sha256": "b39fcea9f1ffa1672fa17cd92381cd2630c3ffee55420f3927e9c326a683bd49"
+    },
+    {
+      "name": "cross-demographic-fit-verify-ipd",
+      "version": "1.0.0",
+      "sha256": "47ca7a9c34a31f426cca1e99eec3c35099c88f8b717004c98b7e8ad6e26c3274"
+    },
+    {
+      "name": "customer-feedback-quality-ipd",
+      "version": "1.0.0",
+      "sha256": "49bd4068c57150eff5bef01de6476d98afe9fd78d26b1373c75ca7aa89ae401d"
+    },
+    {
+      "name": "differentiation-value-pricing-ipd",
+      "version": "1.0.0",
+      "sha256": "8bdf0ca2de505dce843935a5413241864c6a758b6f9bed0915fb17bee6441fb1"
+    },
+    {
+      "name": "dual-pm-contribution-ipd",
+      "version": "1.0.0",
+      "sha256": "68ca90ae734bdfc6109135320332559c3d3462ba4196f96af592506a0df42c5c"
+    },
+    {
+      "name": "eol-assessment-announce-ipd",
+      "version": "1.0.0",
+      "sha256": "4e690dbd0650124e74c716b78c510186182fc3b1451e97db7abdd3a54a81ac42"
+    },
+    {
+      "name": "gate-g1-charter-review-ipd",
+      "version": "1.0.0",
+      "sha256": "7e967d81c041f246b5c2db8c55b5511c6e6289e0d90077332d08db2e04502be1"
+    },
+    {
+      "name": "gate-g2-diff-confirm-ipd",
+      "version": "1.0.0",
+      "sha256": "d47540b736bea3eb9c0632da091aa11d6d2ea279042b00a90a40332143b914c6"
+    },
+    {
+      "name": "gate-g3-biweekly-review-ipd",
+      "version": "1.0.0",
+      "sha256": "b3e4141bc2b5f7b4418900833b643c2d54db40f3bf8d0b46c640e7271f165e42"
+    },
+    {
+      "name": "gate-g4-gtm-readiness-ipd",
+      "version": "1.0.0",
+      "sha256": "bfa809b8198e3e33753d28c859eefaecfe15bd54f2e770f9da7eac2dea3d6e95"
+    },
+    {
+      "name": "gate-g5-90day-review-ipd",
+      "version": "1.0.0",
+      "sha256": "b4893ced92f42673f0cd495e830af653fa4837c322570eb21bc1fbfc6a3d6a45"
+    },
+    {
+      "name": "gtm-launch-strategy-ipd",
+      "version": "1.0.0",
+      "sha256": "d39e94afb18200c9566c97edad6cb013c5e1d029329eb7386919e9dc7b3951af"
+    },
+    {
+      "name": "ip-fto-precheck-ipd",
+      "version": "1.0.0",
+      "sha256": "84c6d73c45f7a3f133a0747ef239119647b73a9de965178cf637112fee186cfb"
+    },
+    {
+      "name": "kpi-channel-coverage-ipd",
+      "version": "1.0.0",
+      "sha256": "8e8eebca2567a9b85f84dd1dfad7e961051afe384c4cf186d3fd089a052cfd41"
+    },
+    {
+      "name": "kpi-nps-survey-ipd",
+      "version": "1.0.0",
+      "sha256": "6b33abebec0351c728e77c14e8d0036c988c91f0d77f8d41ea674630c63061fd"
+    },
+    {
+      "name": "kpi-receipt-achievement-ipd",
+      "version": "1.0.0",
+      "sha256": "9d31fd393c2069742a8a1aa5d7d2585335ba24a2112cdbe3ad7466f95a59ef7f"
+    },
+    {
+      "name": "kpi-scenario-coverage-ipd",
+      "version": "1.0.0",
+      "sha256": "e756593eb2e6d59ee7ad9c133409b26285b8c8a7fdea8b4b50af2072cddf22f7"
+    },
+    {
+      "name": "launch-date-anchor-ipd",
+      "version": "1.0.0",
+      "sha256": "e5f54c03e9023553b628d9712a75fa4c48f8113fc8bd6898ce16c018a48c934b"
+    },
+    {
+      "name": "lifecycle-status-maintain-ipd",
+      "version": "1.0.0",
+      "sha256": "5c1be6f509daf55f6a717bd1167aadaf2157f8a93e1cd4da522bd9d300df24d3"
+    },
+    {
+      "name": "market-opportunity-research-ipd",
+      "version": "1.0.0",
+      "sha256": "c116dac4094ed5dea7013a7952943f5482e1632880c40287b4f0130641223c28"
+    },
+    {
+      "name": "mass-production-readiness-ipd",
+      "version": "1.0.0",
+      "sha256": "3ed7b86063a23e64c81bdb06a9122c615f87c275c256d28ccb02ff2fbf9b1053"
+    },
+    {
+      "name": "monthly-receipt-tracking-ipd",
+      "version": "1.0.0",
+      "sha256": "963ca7f4ef180a30c360143c17cef2894303069ae6d90d8ad85a4e42b41b8e2b"
+    },
+    {
+      "name": "overseas-localization-verify-ipd",
+      "version": "1.0.0",
+      "sha256": "8a3111ac22a507bf3af8728385ace48c1c8255cf5dc3e673683bd5b903ad8857"
+    },
+    {
+      "name": "packaging-docs-finalize-ipd",
+      "version": "1.0.0",
+      "sha256": "90830a3ff2ee563191583d508f04e057fd9a0b575d7db347c40c75e2fa889f93"
+    },
+    {
+      "name": "platform-sdk-compat-verify-ipd",
+      "version": "1.0.0",
+      "sha256": "2ba3a1ad4199ab368ea0d9ddeb9e28a213b4cca2d6868af85025d0acde5bdfd7"
+    },
+    {
+      "name": "product-concept-positioning-ipd",
+      "version": "1.0.0",
+      "sha256": "cae7a56b1c16de2608c29f73035779ef1b92ac28a7282c0cfd1dbcf5f665baa1"
+    },
+    {
+      "name": "product-prd-ipd",
+      "version": "1.0.0",
+      "sha256": "72b73d02172092814e0bc6c494f943932c7bbe27c851e1c02c9d78d21b85c47b"
+    },
+    {
+      "name": "project-grade-coefficient-ipd",
+      "version": "1.0.0",
+      "sha256": "64ed6c9a07b1df5be09d9c3b3e5d2c0177313c3132c7672dc1abe21f523ec9b7"
+    },
+    {
+      "name": "regional-market-diff-ipd",
+      "version": "1.0.0",
+      "sha256": "3b21b0ac2660fea29e5212334f796c567a5cca482e8a2292d20dccd910aad7fe"
+    },
+    {
+      "name": "requirement-change-assess-ipd",
+      "version": "1.0.0",
+      "sha256": "a28c2807e07ab08888e1e15882ab7ad7254d6a080eb2ba0c8e1dfe4d050c69e8"
+    },
+    {
+      "name": "requirement-priority-roadmap-ipd",
+      "version": "1.0.0",
+      "sha256": "26ec59a7144c7d9e2f3b6eb0b1e5c2ec7fa36708ef53e26a06cdafd2b69f1879"
+    },
+    {
+      "name": "sales-channel-training-ipd",
+      "version": "1.0.0",
+      "sha256": "b677c773aa3677e3a353ae0c2529efd7ecde2b97dac174c9da045dcd318a1c15"
+    },
+    {
+      "name": "sales-toolkit-ipd",
+      "version": "1.0.0",
+      "sha256": "d80d4a86113e0ccd7bd1cac8566aa7fdb34cc8c1464e56731785f282bfb21b98"
+    },
+    {
+      "name": "six-month-receipt-settlement-ipd",
+      "version": "1.0.0",
+      "sha256": "6269293a4f28d5498ddf4d50165e6658bc28be3f97fdbc29d528fbeee3e66a00"
+    },
+    {
+      "name": "solution-pilot-delivery-ipd",
+      "version": "1.0.0",
+      "sha256": "fda1a213c964b8392c5f4a45cb0969677dade04c9f112f413ceb148a95c94a79"
+    },
+    {
+      "name": "target-customer-segment-ipd",
+      "version": "1.0.0",
+      "sha256": "516d067566ff34da25ad91b6cf8f09fcdb982822664e222f32b99b771dafac9f"
+    }
+  ],
+  "tools": [
+    {
+      "id": "project_knowledge_search",
+      "name": "项目资料检索",
+      "readOnly": true
+    }
+  ],
+  "packs": [
+    {
+      "code": "market-research",
+      "version": "v1",
+      "name": "商业/市场/竞品研究",
+      "description": "基于本项目已审核资料与用户输入开展竞品分析（功能/价格/渠道/技术路线），输出可追溯对比与缺项清单。",
+      "stages": [
+        "CONCEPT"
+      ],
+      "actionCodes": [
+        "C02"
+      ],
+      "skills": [
+        "competitor-analysis-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search"
+      ]
+    }
+  ]
+}

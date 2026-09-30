@@ -65,6 +65,16 @@ class IpdActionSkillMapServiceTest {
     }
 
     @Test
+    @DisplayName("findByActionCode：命中返回行；空码返回 null")
+    void findByActionCodeQueriesMapper() {
+        IpdActionSkillMap row = map(9L, "C02", "CONCEPT-S2", 1, "[\"competitor-analysis-ipd\"]");
+        when(mapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(row);
+        assertThat(service.findByActionCode("C02")).isSameAs(row);
+        assertThat(service.findByActionCode(null)).isNull();
+        assertThat(service.findByActionCode("  ")).isNull();
+    }
+
+    @Test
     @DisplayName("parseSkillNames：JSON 非法抛 90001（fail-loud，不静默吞坏数据）")
     void parseSkillNamesInvalidJsonFailsLoud() {
         assertThatThrownBy(() -> IpdActionSkillMapService.parseSkillNames("{\"bad\""))

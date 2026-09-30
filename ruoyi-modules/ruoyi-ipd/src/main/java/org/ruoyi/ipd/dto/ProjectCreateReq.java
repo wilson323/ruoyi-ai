@@ -25,7 +25,9 @@ public record ProjectCreateReq(
     Integer targetNps,
     Integer targetSceneCount,
     Long mainGroupId,
-    Date launchDate) {
+    Date launchDate,
+    Long marketPmId,
+    Long rdPmId) {
 
     /**
      * 将白名单请求转为领域实体（不含服务端权威字段）。

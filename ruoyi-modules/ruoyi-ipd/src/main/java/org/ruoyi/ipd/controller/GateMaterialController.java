@@ -7,13 +7,19 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.GateMaterialChecker;
+import org.ruoyi.ipd.service.GateMaterialUploadService;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -32,7 +38,9 @@ import java.util.Map;
 public class GateMaterialController {
 
     private final GateMaterialChecker gateMaterialChecker;
+    private final GateMaterialUploadService gateMaterialUploadService;
     private final GateMapper gateMapper;
+    private final IpdPermission ipdPermission;
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_REVIEW, type = "ipd")
     @GetMapping
@@ -45,5 +53,14 @@ public class GateMaterialController {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "Gate 不存在或不属于该项目");
         }
         return ApiV1Response.ok(gateMaterialChecker.listMaterialStatus(gateId, projectId));
+    }
+
+    /** 上传评审材料或会议纪要，返回服务端 ossId。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_REVIEW, type = "ipd")
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiV1Response<Map<String, String>> upload(@PathVariable("gateId") Long gateId,
+                                                     @RequestPart("file") MultipartFile file) {
+        ipdPermission.requireInternal();
+        return ApiV1Response.ok(gateMaterialUploadService.upload(gateId, file));
     }
 }

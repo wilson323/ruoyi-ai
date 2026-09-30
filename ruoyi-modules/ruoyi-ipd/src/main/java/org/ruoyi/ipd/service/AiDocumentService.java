@@ -10,6 +10,7 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -47,14 +48,38 @@ import java.util.List;
 @Slf4j
 public class AiDocumentService {
 
-    /** AI 原始输出/人工改版后待审 */
+    /** AI 原始输出/人工改版后待审（库内码；用户可见名见 {@link #LABEL_PENDING_REVIEW}）。 */
     public static final String STATUS_GENERATED = "GENERATED";
+    /** GENERATED 的用户可见名。未人工审核不得写成已审核或已生成。 */
+    public static final String LABEL_PENDING_REVIEW = "待审核";
     /** 人工审核通过（BR-AI-03） */
     public static final String STATUS_REVIEWED = "REVIEWED";
     /** 审核拒绝——终态，必须重新走 review 流后才能 archive（BR-AI-03 兜底） */
     public static final String STATUS_REJECTED = "REJECTED";
     /** 已归档——终态，仅 REVIEWED 行可归档；归档后不可改版/拒绝/再归档 */
     public static final String STATUS_ARCHIVED = "ARCHIVED";
+
+    /**
+     * 文档状态的用户可见名。库内码不变；GENERATED 只显示「待审核」。
+     *
+     * @param status ai_documents.status
+     * @return 中文展示名；未知码原样返回，避免另造状态机
+     */
+    public static String statusLabel(String status) {
+        if (STATUS_GENERATED.equals(status)) {
+            return LABEL_PENDING_REVIEW;
+        }
+        if (STATUS_REVIEWED.equals(status)) {
+            return "已审核";
+        }
+        if (STATUS_REJECTED.equals(status)) {
+            return "已拒绝";
+        }
+        if (STATUS_ARCHIVED.equals(status)) {
+            return "已归档";
+        }
+        return status == null ? "" : status;
+    }
 
     /** AC-AI-03：未审核不可归档的对外文案（"须人工审核确认" 固定字面量） */
     public static final String MSG_REVIEW_REQUIRED = "AI 文档须人工审核确认才可归档";
@@ -79,6 +104,12 @@ public class AiDocumentService {
     /** R221 Task 10：人审通过自动闭环 hook（nullable 同上——无关联任务时 hook 内部 no-op）。 */
     private AiExecReviewHook aiExecReviewHook;
 
+    /**
+     * 项目可见性守卫（nullable：单测可只测主链；生产由 Spring 注入）。
+     * W2 产物 apply / 授权写入口经此重读 Person，禁止信任请求侧缓存成员关系。
+     */
+    private IpdCopilotAccess projectAccess;
+
     @Autowired(required = false)
     public void setAiExecReviewHook(AiExecReviewHook aiExecReviewHook) {
         this.aiExecReviewHook = aiExecReviewHook;
@@ -97,6 +128,30 @@ public class AiDocumentService {
     @Autowired(required = false)
     public void setDocEmbeddingService(AiDocEmbeddingService docEmbeddingService) {
         this.docEmbeddingService = docEmbeddingService;
+    }
+
+    /**
+     * 注入项目可见性守卫（产物 apply / 授权写入口依赖）。
+     *
+     * @param projectAccess 副驾数据范围守卫，可为 null（单测未装配时授权入口会失败）
+     */
+    @Autowired(required = false)
+    public void setProjectAccess(IpdCopilotAccess projectAccess) {
+        this.projectAccess = projectAccess;
+    }
+
+    /**
+     * 校验 actor 对 projectId 可见；每次重读 Person，不做成员关系缓存。
+     *
+     * @param actor 会话身份
+     * @param projectId 目标项目
+     * @return 可信租户 ID
+     */
+    public String requireProjectVisible(IpdActor actor, Long projectId) {
+        if (projectAccess == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "项目可见性守卫未装配");
+        }
+        return projectAccess.requireVisible(actor, projectId);
     }
 
     /** 仅真实流转行审计；幂等短路与并发重读分支不审计（避免同一流转双行）。 */
@@ -153,6 +208,32 @@ public class AiDocumentService {
         row.setCreateBy(operatorId);
         mapper.insert(row);
         return row;
+    }
+
+    /**
+     * 授权登记 AI 原始输出 v1：先校验项目可见性，再落 GENERATED 文档。
+     * <p>W2 产物 apply 专用入口；不改审核语义（仍为 GENERATED，索引未就绪由调用方返回 NOT_INDEXED）。
+     * 可见性在 insert 前再读一次 Person，防止 preflight 与写入之间的成员撤销窗口。
+     *
+     * @param actor 会话身份（createBy = actor.id()）
+     * @param projectId 项目 ID
+     * @param docType 文档类型
+     * @param title 标题
+     * @param content 正文
+     * @param model 模型名（可空）
+     * @param tokenPrompt prompt token（可空）
+     * @param tokenCompletion completion token（可空）
+     * @return 落库行（status=GENERATED）
+     */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
+    @Transactional(rollbackFor = Exception.class)
+    public AiDocument createGeneratedAuthorized(IpdActor actor, Long projectId, String docType,
+                                                String title, String content, String model,
+                                                Integer tokenPrompt, Integer tokenCompletion) {
+        requireArg(actor != null && actor.id() != null, "actor 必填");
+        requireProjectVisible(actor, projectId);
+        return createGenerated(projectId, docType, title, content, model,
+            tokenPrompt, tokenCompletion, actor.id());
     }
 
     /**
@@ -359,7 +440,7 @@ public class AiDocumentService {
 
     /**
      * AC-AI-05：两版本字段级 diff（fromVersionId 任意版本行 ID → toVersionId 任意版本行 ID）。
-     * 仅在同一条链上返回有意义的结果；跨链调用方需自行负责。
+     * 若能取到 from 所属版本链，则 to 必须同链，否则 STATE_CONFLICT；链数据未装配时保持仅按行对比（兼容旧测）。
      * 差异字段：title/content/contentSha256（review/archived 落名不参与 diff——属审计维度）。
      *
      * @return DiffReport，含两版本行 ID/版本号 + 字段级差异列表（无差异返回空列表）
@@ -371,6 +452,11 @@ public class AiDocumentService {
         AiDocument to = mapper.selectById(toVersionId);
         if (from == null || to == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        }
+        List<AiDocument> fromChain = mapper.selectChain(fromVersionId);
+        if (fromChain != null && !fromChain.isEmpty()
+            && fromChain.stream().noneMatch(r -> toVersionId.equals(r.getId()))) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
         List<FieldDiff> diffs = new ArrayList<>();
         // title：同链 v(n+1) 若未传 title 应等于 v(n)，此处等价视为无差异
@@ -389,6 +475,29 @@ public class AiDocumentService {
         }
         return new DiffReport(from.getId(), from.getVersionNo(),
             to.getId(), to.getVersionNo(), diffs);
+    }
+
+    /**
+     * 授权版本对比：校验项目可见性，且 from/to 必须同属路径文档链。
+     *
+     * @param documentId 路径上的文档版本 ID（用于解析链）
+     * @param fromVersionId 对比起点版本行 ID
+     * @param toVersionId 对比终点版本行 ID
+     * @param actor 会话身份
+     * @return 同链字段级 diff
+     */
+    public DiffReport diffAuthorized(Long documentId, Long fromVersionId, Long toVersionId,
+                                     IpdActor actor) {
+        requireArg(documentId != null, "documentId 必填");
+        requireArg(actor != null && actor.id() != null, "actor 必填");
+        List<AiDocument> chain = history(documentId);
+        requireProjectVisible(actor, chain.get(0).getProjectId());
+        boolean fromOnChain = chain.stream().anyMatch(r -> fromVersionId.equals(r.getId()));
+        boolean toOnChain = chain.stream().anyMatch(r -> toVersionId.equals(r.getId()));
+        if (!fromOnChain || !toOnChain) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+        }
+        return diff(fromVersionId, toVersionId);
     }
 
     private static boolean safeEq(Object a, Object b) {
@@ -436,8 +545,16 @@ public class AiDocumentService {
         if (chain.get(0).getVersionNo() == null || chain.get(0).getVersionNo() != 1) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
-        for (int i = 1; i < chain.size(); i++) {
-            if (chain.get(i).getVersionNo() != chain.get(i - 1).getVersionNo() + 1) {
+        Long chainProjectId = chain.get(0).getProjectId();
+        String chainDocType = chain.get(0).getDocType();
+        for (int i = 0; i < chain.size(); i++) {
+            AiDocument row = chain.get(i);
+            if (i > 0 && row.getVersionNo() != chain.get(i - 1).getVersionNo() + 1) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+            }
+            // 同链必须同项目、同文档类型；跨项目/跨类型父链即使版本号连续也视为断裂
+            if (!java.util.Objects.equals(chainProjectId, row.getProjectId())
+                || !java.util.Objects.equals(chainDocType, row.getDocType())) {
                 throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
             }
         }
