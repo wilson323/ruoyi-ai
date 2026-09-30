@@ -13245,8 +13245,10 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[运行态：一度受阻 → 已闭环]** 21:32 首跑 `bash scripts/check-e2e-fe-be.sh` RC=1（报告 `E2E-验收-20260929-2132.md` 判「后端未启：:16039 无监听」，原 java PID 96442 已退出）；按「不杀/不擅自重启兄弟服务」纪律**不自行拉起**，先交无编译依赖的收尾。后端于 **21:52:16** 重启（PID 88895，jar 打包 21:44:05 已含本改动），21:55 复跑即 **PASSED · 真实 RC=0**（`R118 → 200 / code=0/IPD / PASS`、5 项契约全 PASS，报告 `E2E-验收-20260929-2155.md`）。另用同款登录取 token 实调精确核对：**`n=25`**（与真库 SQL 精算逐数对上）、**`mock_hits=[]`**、四字段符 R118、名单含「傅志谦」（account=DISABLED + employment=ACTIVE）→ 实证「DISABLED 不滤」未被误伤。前端 `check:type` RC=0 + vitest **1803 passed / 0 failed / 37 skipped**；`check-cross-repo-contract.sh` **RC=0**（白屏 0 / 新孤儿 0 / baseline 43）。裁决文档 §四 已回填十层证据，状态 **`PARTIAL` → `VERIFIED`**。坑：首次跑时误用 `bash x.sh | tail -6; echo $?` 取到的是 **tail 的退出码**（假绿），已改 `> file; echo $?` 取脚本真实 RC。
 - **[兄弟在途不代写]** 复跑单测时 main 编译红在 `HrApiClient.java:86`（`HrTokenClient.postJson` 实际参数列表长度不同），取证 `HrTokenClient.java` mtime **21:40:49**（我跑 mvn 前 4 秒）+ git ` M` = 兄弟正在改签名的瞬时跨文件不一致，非本改动引入；改用 `mvn -o -pl ruoyi-modules/ruoyi-ipd surefire:test`（test-classes 已编好 21:39:31）绕 compile 取新鲜证据，不代写兄弟文件。同型教训：判「兄弟是否活跃」必须查 **tracked 文件 mtime + git status**，只看 untracked mtime 会误判（本轮曾据此误判两次，另一次是 `head` 截断的 grep 造成假阴性、误以为 `AiDocumentService` 缺 4 个成员）。
 - **[前端附带修复·跨域真实红]** 全量 vitest 出现 1 failed：`_shared/ai-workspace/stage-step-nav.test.ts` 期望「依据目录顺序绘制编号时间线」，而 `stage-step-nav.vue` 的 `groups` computed 只按传入顺序分组、**无 `sortOrder` 排序**，且缺 `.timeline-marker` 编号元素与「选中仅切换视图，不表示已执行或已完成」提示文案（测试为 untracked 兄弟资产 12:59、`.vue` 内容 = HEAD fdafef6）——属「测试已写、实现未跟上」（§5 病根①镜像）。按测试规约最小补齐三处（组内 `sortOrder` 升序 + 两位补零编号 + 提示文案），该文件 **2/2 PASS**（改前 1 failed → 改后全绿，红绿自证天然完成）。
-- **[变更清单]** 后端：`PersonService.java`(+11) / `PersonActiveEndpointContractTest.java`(+29) / 裁决文档(新) / 本 log.md；前端：`api/ipd/person.ts`(+4 纯注释，不换 UI 数据源) / `stage-step-nav.vue`(+9)。**均未提交**（按 §2「禁止擅自提交」，待用户明确指示）。
-- marker r245-dual-track-convergence-persons-active-mock-exclusion
+- **[变更清单]** 后端：`PersonService.java`(+11) / `PersonActiveEndpointContractTest.java`(+29) / 裁决文档(新) / 本 log.md；前端：`api/ipd/person.ts`(+4 纯注释，不换 UI 数据源) / `stage-step-nav.vue`(+12/-2)。写入时点均未提交（按 §2「禁止擅自提交」）；owner 随后经 AskUserQuestion 选定「两仓各自提交」，已带 pathspec 分别入库（后端含证据快照共 7 文件，归属见下段）。
+- **[提交归属与撞号消歧（R25 第③条）]** 本段 21:53 写入后未及提交，被兄弟提交 `0eb2eb53`（21:54:36，`docs(ipd): r245 owner拍板落地——圣经6文件+CONTEXT「五节点」勘误收口`）连同 log.md 一起卷入版本库（`git log -S "r245-dual-track-convergence" -- log.md` 实证首次引入即该提交，且本段不在 `0f58bb7b` 的 `+` 增量里、仅作上下文出现）；该提交 message 亦用 r245 轮次号，与本段原 marker **撞号**。按 R25「保留史实而非覆盖删除」：原 marker 文本不删，另立 **r246** 为本段权威号，后续引用以 r246 为准。代码/文档实体（`PersonService.java`、`PersonActiveEndpointContractTest.java`、裁决文档、E2E 与契约证据快照）由本会话带 pathspec 单独提交。
+- marker r246-dual-track-convergence-persons-active-mock-exclusion（= 上一行原 marker r245-dual-track-convergence-persons-active-mock-exclusion，因撞号消歧而立）
+
 ## 2026-09-29 owner 三项拍板落地：圣经+前端「五节点」勘误收口 + 拍板口径固化 CONTEXT（r245）
 
 - **[拍板]** AskUserQuestion 三项 owner 裁决：①「五节点」残留＝圣经+前端一起改；②advance-stage 发起权＝维持现码权限点口径（`OPERATION_MODULE_PROJECT_STATUS_CHANGE` + `IpdIdorGuard` 同组，无角色白名单）；③leadSide＝维持按 Gate 静态映射（G3/G4→RD_PM 其余→MARKET_PM，`GateReviewService.leadSideOf`）。
@@ -13284,3 +13286,12 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[B 看板登记]** 镜像新增「ZK-DIFF P1 卡登记波」区块（marker `zk-diff-p1-register-20260929`）：P1-01 ⬜ / P1-02 ◐ / P1-03 ⬜(待O2拍板) / P1-04 ⬜(待O4/O5拍板)。
 - **[接手兄弟 log.md 在途登记（R25 软化三步法）**：本波 commit 前对 log.md 兄弟 M/改动逐一审读：两条纯追加登记（R118 PARTIAL→VERIFIED 更新 + C2-3f 探针闭环）无冲突，原样入库；其自有编号体系未撞号。
 - marker zk-diff-p1-register-20260929
+
+## 2026-09-29 D 轮 P0-1 复核 — jar 重建重启与 17 路由转 LIVE（VERIFIED）
+- **[判定]** P0-1（D4 N-1，17 条 product-lines/sub-stages 运行态 404）= **VERIFIED**。根因是纯部署缺口（运行 jar 早于引入两 Controller 的 b46ec1ac），非数据/源码缺口。证据 `验收/D轮-生产就绪独立验证-20260929/P0-1-jar重建重启与17路由LIVE复核-20260929.md`。
+- **[运行态]** 原 PID 96442 因兄弟 21:38 jar 热替换抛 undertow CNFE 崩溃；后继 87730 XNIO 卡死（TCP 秒连/HTTP 30s 挂起/RSS~100MB）。干净重启 PID **88895**（21:52 起，RSS 234MB，`Started in 99.925s`，auth/me→401 total=0.016s 健康），运行 jar mtime 21:44、嵌套 ruoyi-ipd-3.1.0.jar 含 ProductLineSpaceController.class(11018B)+SubStageController.class(12453B)@21:43。
+- **[探针对比]** 重放 d1-live-probe.py：**route_level_404 6→0**，LIVE_PASS 62→67、LIVE_405 123→137、LIVE_404 31→19。焦点 17 路由全部离开 LIVE_404（3 LIVE_PASS + 9 LIVE_405 + 2 LIVE_REACHABLE = 14 已部署；余 3 含填充 ID 9140001 属资源级 404 非路由缺失）。
+- **[金标准 HTTP]** GET product-lines→code=0 返 4 线（考勤/门禁/视频 ACTIVE + probe-b1x 遗留探针线，按 R214 留库政策属预期）；GET stage/sub-stages→code=0 返恰好 22（CONCEPT4+PLAN4+DEV3+VALID4+LAUNCH3+LIFECYCLE3+KPI1）。
+- **[诚实登记]** 误启竞争进程 98266（启动守卫子 shell 退出码缺陷）因端口冲突自退无残留；start 脚本 `>` 截断损兄弟 87730 启动日志，已保全 `/tmp/ipd-16039-crash-evidence-20260929.log`（该备份 grep undertow CNFE 得 0，CNFE 原文来自更早 tail 捕获）。
+- **[残留]** 生产就绪仍 PARTIAL：P0-2（KPI functionalWeight="None"→0.6）/P0-4（qa08 login 结构修复重跑收敛 50/49 BLOCKED）/G2 重测（product_line_members 现 0 行）/SLO 书面约定 未动，等指令。文件未 git 提交。
+- marker d-round-p0-1-jar-restart-live-recheck-20260929

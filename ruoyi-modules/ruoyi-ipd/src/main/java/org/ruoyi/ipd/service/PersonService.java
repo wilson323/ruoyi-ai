@@ -74,11 +74,22 @@ public class PersonService {
      * del_flag 软删由 {@code @TableLogic} 自动过滤；按 id 升序稳定排序。
      * 数据源 = 真库 persons 表（非硬编码 MOCK）。
      *
+     * <p>「非 MOCK」口径 = R118 契约明文（R121-真活E2E-拍板包 L24）；R46-A3 治本三重排除
+     * （与 PmDirectoryController#directory 同款）：account_status≠MOCK 哨兵值 + name 前缀
+     * Mock-% + username 前缀 u_QA-SYNC-%（R33 事故：Mock-QA-SYNC 账号 account_status=ACTIVE
+     * 被纯状态过滤漏过）。注意此≠"滤 account_status 维度"：DISABLED/FROZEN 仍在职照常返回，
+     * 仅排除 MOCK 哨兵值。与 pm-directory 的双轨分工（雇佣维度轻名册 vs 账户维度富目录）见
+     * docs/ipd-系统说明/双轨收敛裁决-persons-active与pm-directory-20260929.md。
+     *
      * @return 在职人员实体列表（Controller 层收窄为轻量 id/name 视图）
      */
     public List<Person> listActive() {
         return personMapper.selectList(new LambdaQueryWrapper<Person>()
             .eq(Person::getEmploymentStatus, EM_ACTIVE)
+            // R118 契约「非 MOCK」+ R46-A3 治本：排除 Mock 测试种子（与 pm-directory 同口径）
+            .ne(Person::getAccountStatus, "MOCK")
+            .notLike(Person::getName, "Mock-%")
+            .notLike(Person::getUsername, "u_QA-SYNC-%")
             .orderByAsc(Person::getId));
     }
 

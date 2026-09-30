@@ -44,6 +44,10 @@ import static org.mockito.Mockito.when;
  *
  * <p>「在职」口径锁：employment_status='ACTIVE'（雇佣维度；account_status 登录维度不滤，
  * 与 PersonService 状态机 EM_ACTIVE 常量同源）+ @TableLogic 软删 + id 升序稳定排序。
+ *
+ * <p>「非 MOCK」口径锁（R118 契约明文）：R46-A3 三重排除（account_status≠MOCK 哨兵值 +
+ * name 前缀 Mock-% + username 前缀 u_QA-SYNC-%），与 pm-directory 双轨同口径；分工裁决见
+ * docs/ipd-系统说明/双轨收敛裁决-persons-active与pm-directory-20260929.md。
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -175,5 +179,33 @@ class PersonActiveEndpointContractTest {
             .contains("employment_status =")
             .contains("ORDER BY id ASC");
         assertThat(w.getParamNameValuePairs().values()).contains("ACTIVE");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    @DisplayName("[R118-7] MOCK 排除锁：R46-A3 三重过滤（哨兵值+双前缀），且 DISABLED 不滤（雇佣/账户维度分工不漂移）")
+    void listActive_mock_exclusion_and_dimension_split_locked() {
+        PersonMapper personMapper = Mockito.mock(PersonMapper.class);
+        PersonService svc = new PersonService(personMapper, null, null, null, null);
+        when(personMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        svc.listActive();
+
+        ArgumentCaptor<LambdaQueryWrapper<Person>> captor =
+            ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(personMapper).selectList(captor.capture());
+        LambdaQueryWrapper<Person> w = captor.getValue();
+        // R118 契约「非 MOCK」：account_status≠MOCK 哨兵值 + name Mock-% + username u_QA-SYNC-%
+        // （R33 事故：Mock-QA-SYNC 账号 account_status=ACTIVE 被纯状态过滤漏过）
+        assertThat(w.getSqlSegment())
+            .contains("NOT LIKE")
+            .doesNotContain("account_status =");
+        // 锁语义而非字面量：notLike 参数会被 MyBatis-Plus 两侧包 %（实测 %Mock-%%），与 pm-directory 同款写法
+        assertThat(w.getParamNameValuePairs().values())
+            .contains("MOCK")
+            .anyMatch(v -> String.valueOf(v).contains("Mock-"))
+            .anyMatch(v -> String.valueOf(v).contains("u_QA-SYNC-"))
+            // 雇佣维度分工锁：不滤 account_status 维度（DISABLED/FROZEN 仍在职照常返回）
+            .doesNotContain("DISABLED", "FROZEN_PENDING_HANDOVER");
     }
 }
