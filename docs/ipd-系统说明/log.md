@@ -13257,3 +13257,14 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[联动]** 本轮同时产出「拍板口径 × 最新代码」未实现清单（规格 1-24/25-49/后端工程面/前端面四路只读盘点合成，摘要见 CONTEXT 结论四/五口径 + 交付会话报告）。
 - **[验证]** docs-only（后端）+ 纯文案/断言层（前端，全量 IPD 套件绿）；撞车声明：后端仅 stage 本文 8 文件、前端仅 stage 上述 9 文件；前序 HEAD 后端 684886c8。门禁3 既有红（hr-sync 孤儿+bit2 环境）沿 r244 根因不变，docs-only 按纪律 --no-verify。
 - marker r245-owner-ruling-five-node-errata-closure
+
+## 2026-09-29 EHR 测试环境对接落地（t1-t7 完成 / t8 PARTIAL / t9-t10 交付）— EHR 对接执行会话
+
+- **[落地范围]** 计划 `EHR对接测试环境落地`：网关单端点适配（HrTokenClient/HrApiClient）、MD5 签名对齐 HR getMD5Value 口径（空值跳过/JSON 序列化/BigInteger 去前导0）、HrResponse 33 字段 @JsonProperty、hr_person_mirror DDL+实体+Mapper+Ingest（已 apply ipd_dev）、EMPCATEGORY 白名单过滤+LEAVE_FLAG/STAT2 离职口径、0 点增量调度+sync-now mode=ALL|NEW、tenant.excludes 登记。保护性 commit **a5866839**（20 文件，pre-commit 5 门禁全过）。
+- **[t8 PARTIAL]** 真连被 1005「当前IP禁止调用」拦（端点可达、包络正常；无凭据探测返回 9999 反证网络与形态 OK）。待集成平台管理员加白出口 IP **202.61.200.134** 后补跑 token→user→org 三连 + 真库回读；禁止以 Mock 绿冒充实连。
+- **[测试证据]** 29 跑 28 绿（Hr* 5 类 + Cron 哨兵）；唯一红 TenantExcludesConsistencyTest 缺 6 张兄弟会话 untracked agent 表——在途漂移不代补，随 agent 波次自登记。
+- **[事故披露]** 前一轮 11 个 tracked 文件编辑被兄弟会话 09-29 21:08 全工作树收口批量丢弃（未入库/不在 stash/reflog 含 reset），本 commit 为 bash 磁盘仲裁后全量重做；教训回灌=验证绿后立刻保护性 commit。Read 工具命中会话缓存与磁盘矛盾时用 bash 仲裁（本会话实证两次）。
+- **[白名单行号对齐]** api-internal-whitelist.json 5 条 hr-sync evidence 纯行号刷新（151→153 等），端点/owner_card/reason/expire 零改动；HrSyncController 编辑推号致 R212 防伪 exit 6，属 AGENTS.md「引用配置用键名别用行号」已知漂移形态的白名单 variant。
+- **[P0-10.44 注记（owner 插话）]** 页 44 前端已登记；后端 identity-source Controller 待补（同步源类型/来源实例/最近同步时间），交付前页面不展示模拟数据、3 同步按钮 disabled。
+- **[交付物]** `EHR对接-IPD侧字段清单-20260929.md`（新）；`HR-SYNC-P0-设计+实现-20260921.md` v0.2→v0.3（+§9 实施记录）；看板镜像「EHR 测试环境对接落地轮」区块。
+- marker ehr-test-env-t1-t7-a5866839
