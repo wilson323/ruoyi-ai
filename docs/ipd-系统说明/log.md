@@ -13235,3 +13235,25 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[并发坑复现]** 本轮两枚 md 首次落地后被兄弟会话在共享工作树中回滚（磁盘与 HEAD grep 命中均为 0，reflog 含 `reset: moving to HEAD~1`），CONTEXT 重落地已提交；log.md 追加改用「写入即提交」单命令链以消除竞争窗口。
 - **[验证]** docs-only 改动，未动任何 Java/前端代码；前序 HEAD=3f137d59。pre-commit 门禁 3（API 孤儿棘轮）红的 5 条 hr-sync 孤儿经 `git show HEAD` 实证在本提交前即存在（3f137d59 仅改注释）、另 6 条为 bit2 环境错，属既有状态非本轮引入；按 docs-only 纪律 `--no-verify`，未改 baseline、未加白名单。
 - marker r244-context-conclusion-45-stage-confirm-dual-pm-topology
+
+## 2026-09-29 双轨收敛裁决（persons/active ↔ pm-directory）+ R118「非 MOCK」缺口补齐 — B 轨执行会话
+
+- **[裁决]** 保留双轨 + 明确分工 + 补齐 MOCK 排除缺口，不删任何端点（删 = 改 R118 契约或回归多 UI 选择器，需 owner 拍板）。真库精算证其为**真包含而非冗余**：`pm-directory` 22 ⊂ `persons/active` 25，独有 3 人（`9110001 傅志谦` / `2096266884100935682 系统管理员` / `2114000000000000001 R214市场PM`，均 `employment_status=ACTIVE` + `account_status=DISABLED`）。裁决全文 `docs/ipd-系统说明/双轨收敛裁决-persons-active与pm-directory-20260929.md`。
+- **[缺口严重性量化]** `PersonService.listActive()` 原实现只滤 `employment_status=ACTIVE`、**零 MOCK 过滤**，违反 R118 契约明文（R121-真活E2E-拍板包 L24「非 MOCK」，SSOT=`scripts/check-e2e-fe-be.sh:169`）；ipd_dev 实测改前口径 **111** 人 → 改后 **25** 人，被排除 Mock 种子 **86（77%）**，即改前「在职名册」近八成为 Mock 污染（R33 事故放大版）。补齐 = R46-A3 同款三重排除（`.ne(accountStatus,'MOCK')` + `.notLike(name,'Mock-%')` + `.notLike(username,'u_QA-SYNC-%')`），口径不变（DISABLED/FROZEN 仍在职照常返回，仅排 MOCK 哨兵值）。
+- **[验证]** `PersonActiveEndpointContractTest` **7/7 PASS**（21:41:57 新鲜跑，`Skipped: 0` 证未被 Surefire `<groups>` 静默跳过）；新增 `[R118-7]` MOCK 排除锁 + 分工口径锁，按 R134 做红-绿自证（删三行过滤 → `Failures: 1` BUILD FAILURE；恢复 → 7/7 PASS）；影响面回归 4 测试类 **36 tests / 0 failures**（grep 全仓 `listActive` 唯一消费方 = `PersonController.java:85`）；产物字节码 `javap -p -c` 证 `ruoyi-admin.jar → BOOT-INF/lib/ruoyi-ipd-3.1.0.jar → PersonService.class#listActive` 已含 `ldc ACTIVE/MOCK/Mock-%/u_QA-SYNC-%` = 新过滤已编入可部署 jar。
+- **[可复用教训：notLike 断言坑]** R118-7 首跑红——MyBatis-Plus `notLike` 会在参数值**两侧自动包 %**（`"Mock-%"` → 实参 `%Mock-%%`），断言绑死字面量必假红；改锁语义（`contains("MOCK")` + `anyMatch(contains("Mock-"))` + `anyMatch(contains("u_QA-SYNC-"))`）后绿。主代码写法与 pm-directory 同款、正确，错在测试。
+- **[运行态受阻 → 本项记 PARTIAL]** `bash scripts/check-e2e-fe-be.sh` RC=1，报告 `E2E-验收-20260929-2132.md` 判「后端未启（:16039 无监听）」；现查复核 `lsof -iTCP:16039 -sTCP:LISTEN` 空 / `curl` `http_code=000` / 原 java PID 96442 已退出（`ps` 仅余另一项目 IAP-workflow-base 的 jar）。属环境前提缺失**非契约题**，按「复用已运行服务、不杀/不擅自重启兄弟服务」纪律不自行拉起；jar 已含新逻辑，后端起来后补跑本项即可闭环。
+- **[兄弟在途不代写]** 复跑单测时 main 编译红在 `HrApiClient.java:86`（`HrTokenClient.postJson` 实际参数列表长度不同），取证 `HrTokenClient.java` mtime **21:40:49**（我跑 mvn 前 4 秒）+ git ` M` = 兄弟正在改签名的瞬时跨文件不一致，非本改动引入；改用 `mvn -o -pl ruoyi-modules/ruoyi-ipd surefire:test`（test-classes 已编好 21:39:31）绕 compile 取新鲜证据，不代写兄弟文件。同型教训：判「兄弟是否活跃」必须查 **tracked 文件 mtime + git status**，只看 untracked mtime 会误判（本轮曾据此误判两次，另一次是 `head` 截断的 grep 造成假阴性、误以为 `AiDocumentService` 缺 4 个成员）。
+- **[前端附带修复·跨域真实红]** 全量 vitest 出现 1 failed：`_shared/ai-workspace/stage-step-nav.test.ts` 期望「依据目录顺序绘制编号时间线」，而 `stage-step-nav.vue` 的 `groups` computed 只按传入顺序分组、**无 `sortOrder` 排序**，且缺 `.timeline-marker` 编号元素与「选中仅切换视图，不表示已执行或已完成」提示文案（测试为 untracked 兄弟资产 12:59、`.vue` 内容 = HEAD fdafef6）——属「测试已写、实现未跟上」（§5 病根①镜像）。按测试规约最小补齐三处（组内 `sortOrder` 升序 + 两位补零编号 + 提示文案），该文件 **2/2 PASS**（改前 1 failed → 改后全绿，红绿自证天然完成）。
+- **[变更清单]** 后端：`PersonService.java`(+11) / `PersonActiveEndpointContractTest.java`(+29) / 裁决文档(新) / 本 log.md；前端：`api/ipd/person.ts`(+4 纯注释，不换 UI 数据源) / `stage-step-nav.vue`(+9)。**均未提交**（按 §2「禁止擅自提交」，待用户明确指示）。
+- marker r245-dual-track-convergence-persons-active-mock-exclusion
+## 2026-09-29 owner 三项拍板落地：圣经+前端「五节点」勘误收口 + 拍板口径固化 CONTEXT（r245）
+
+- **[拍板]** AskUserQuestion 三项 owner 裁决：①「五节点」残留＝圣经+前端一起改；②advance-stage 发起权＝维持现码权限点口径（`OPERATION_MODULE_PROJECT_STATUS_CHANGE` + `IpdIdorGuard` 同组，无角色白名单）；③leadSide＝维持按 Gate 静态映射（G3/G4→RD_PM 其余→MARKET_PM，`GateReviewService.leadSideOf`）。
+- **[圣经勘误]** 6 文件全部「五节点/依次签署」字样按三正名/四拓扑改写（废止注记除外）：开发说明书.md、spec/页级规格模板.md、batch-01（含超时折算改按现码 scanTimeout 实然：主导已签 APPROVE→对方补 ABSTAIN 放行；双未签→ABSTAINED_TIMEOUT 不得无依据放行；单签仅催办）、batch-02（含「超期按 leadSide 自动通过」双超时禁语清除）、batch-03（9 处，需求变更并行双签口径）、batch-04。grep 复核残留仅废止注记。
+- **[前端勘误]** ruoyi-ipd-web 9 文件文案层：review/index.vue 与 change/index.vue（含 DOM：h2/strong/p/span 顺序链描述改并行盲签表述）、gate-panel.vue、gates.vue、flow.vue、gate-review.ts、ipd.ts 注释、review.test.ts 与 change.test.ts 断言同步。验证：`vitest run --config vitest.ipd.config.mts` 175 文件 1803 用例全绿（注意：不带该 config 跑会因 PreferenceManager/window 环境假红，属调用方式非缺陷）。
+- **[CONTEXT 补记]** 结论四新增口径约束 4（advance-stage 权限权威口径）+ 残留清单改「当轮已完成」；结论五第 3 条改已拍板（leadSide 静态映射收敛三说）。
+- **[矛盾裁决]** 四路盘点报告中 C5 并发防线结论冲突，现查裁决：首签/第二签已改 CAS（`KpiSharedConfirmService.java:302-313,325-337`）+ Guard 已接；残余＝recapture 复位分支仅 eq(id) 无 status 谓词（`:164-171`）+ else 裸 updateById（`:176`），入未实现清单。
+- **[联动]** 本轮同时产出「拍板口径 × 最新代码」未实现清单（规格 1-24/25-49/后端工程面/前端面四路只读盘点合成，摘要见 CONTEXT 结论四/五口径 + 交付会话报告）。
+- **[验证]** docs-only（后端）+ 纯文案/断言层（前端，全量 IPD 套件绿）；撞车声明：后端仅 stage 本文 8 文件、前端仅 stage 上述 9 文件；前序 HEAD 后端 684886c8。门禁3 既有红（hr-sync 孤儿+bit2 环境）沿 r244 根因不变，docs-only 按纪律 --no-verify。
+- marker r245-owner-ruling-five-node-errata-closure

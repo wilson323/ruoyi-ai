@@ -18,7 +18,7 @@
 - 页面外层使用 `<PageFrame title="变更管理">`（App.jsx:312）。
 - 顶部沿用全局 `<Shell>` 项目选择器（App.jsx:124）。
 - 当前路由未挂载 `<StageRail>`（App.jsx:126-130 条件渲染）。
-- 副标题固定："先选择变更项目，再加载该项目的需求基线；双PM项目进入五节点决策链"。
+- 副标题固定："先选择变更项目，再加载该项目的需求基线；双PM项目进入并行双签决策链"。
 - 顶部操作区右侧 `<button className="primary-button">` 触发 `ChangeModal`。
 - 页面展示项目选择区（`<select>` 列出 boot.projects）。
 - 指标卡显示全部变更、待双重审批、已批准、累计排期影响。
@@ -28,7 +28,7 @@
 - 变更被批准后下方渲染 `<ChangeClosurePanel change={selectedChange}>`。
 - 实施闭环步骤：基线修订 → 实施结果 → 市场PM验证 → 研发PM验证 → 关闭。
 - 变更申请附件可在批准前查看。
-- 双PM项目显示五节点协同链（market_pm→rd_pm→market_lead→rd_lead→super_admin），非双PM项目显示产品组长与超级管理员两个节点。
+- 双PM项目显示并行双签协同链（market_pm + rd_pm 并行签署、互不可见，任一 REJECT 即整单否；原「五节点」顺序口径已由 DOC-06 废止），非双PM项目显示产品组长与超级管理员两个节点。
 
 ## 3. 字段模型
 
@@ -96,8 +96,8 @@
 | 环节 | v3 状态机 | 内容 |
 |---|---|---|
 | ① 发起 | `SUBMITTED` | 项目负责人在 `/changes` 选项目与需求，填写变更标题、原因、影响范围、排期与成本，上传证据后调用 `POST /api/changes`。 |
-| ② 处理 | `PENDING` | 双PM项目服务端调用 `createJointDecision` 生成五节点 `change_request` 协同决策（BR-GATE-03 并行签署，互不可见）；非双PM项目创建 `change_approvals` 产品组长与超级管理员两节点。 |
-| ③ 审核 | `PENDING→APPROVED/REJECTED` | 五节点依次签署，期限 3 个自然日（`gate.signDeadlineDays`），到时未签按主导方意见弃权执行（BR-GATE-04）；**超期 3 个自然日（gate.signDeadlineDays）未签署 → 自动转 ABSTAINED_TIMEOUT，按主导方意见执行（v3 BR-GATE-04），并写审计 entityType=gate, action=sign（自动弃权）**。 |
+| ② 处理 | `PENDING` | 双PM项目服务端调用 `createJointDecision` 生成并行双签 `change_request` 协同决策（BR-GATE-03 并行签署，互不可见）；非双PM项目创建 `change_approvals` 产品组长与超级管理员两节点。 |
+| ③ 审核 | `PENDING→APPROVED/REJECTED` | 双PM并行签署（无先后次序），期限 3 个自然日（`gate.signDeadlineDays`），到时未签按主导方意见弃权执行（BR-GATE-04）；**超期 3 个自然日（gate.signDeadlineDays）未签署 → 自动转 ABSTAINED_TIMEOUT，按主导方意见执行（v3 BR-GATE-04），并写审计 entityType=gate, action=sign（自动弃权）**。 |
 | ④ 结果 | `APPROVED` | 进入实施闭环：基线修订→实施结果→双PM验证→关闭；任何节点驳回进入 `REJECTED` 不可执行（BR-GATE-07 未闭环阻断阶段出口）。 |
 | ⑤ 记录 | — | 写入 `change_request / submit`、`/ sign`、`/ approve|reject`、`/ closeout`、`/ update` 等审计，entityType=`requirement_change`。 |
 | ⑥ 归档 | `ARCHIVED` | 变更历史、附件、验证记录永久保留；不得物理删除；已结项项目下只读。 |
@@ -106,7 +106,7 @@
 
 - **缺失字段（3 个）**：v3 要求但当前代码未存储 `leader_approver_id`（产品组长审批人单独字段）、`admin_approver_id`（超级管理员审批人单独字段）、`closed_by`/`closed_at`（`change_implementations` 已具备但前端未读取展示）。
 - **缺失接口（1 个）**：v3 要求变更单详情独立路由 `GET /api/changes/:id`，当前仅有 `GET /api/changes?projectId` 列表（30004 项目不可见）。
-- **缺失状态机环节（2 个）**：v3 BR-GATE-07 要求"未闭环变更单阻断阶段出口"，当前 `StageConfirmPage` 未读取 `change_requests.status=pending` 进行门禁校验；五节点签署 3 个自然日超期弃权机制当前没有调度任务（`gate.signDeadlineDays` 参数已读取但未触发）。
+- **缺失状态机环节（2 个）**：v3 BR-GATE-07 要求"未闭环变更单阻断阶段出口"，当前 `StageConfirmPage` 未读取 `change_requests.status=pending` 进行门禁校验；并行双签 3 个自然日超期弃权机制当前没有调度任务（`gate.signDeadlineDays` 参数已读取但未触发）。
 - **缺失定时任务（1 个）**：v3 要求变更签署期限到期自动弃权，无对应 cron job。
 - **验收用例覆盖度**：v3 验收清单 AC-CHG-01~07 共 7 条，当前页面实现覆盖 5 条（提交、审批、实施、验证、关闭），缺失 2 条（签署超期弃权、未闭环阻断）。
 
@@ -116,14 +116,14 @@
 ```text
 Given 当前用户是市场项目负责人且可编辑当前项目
 When 用户选择关联需求并提交完整变更影响
-Then 服务端生成 CR-xxx 和五节点 change_request 决策
+Then 服务端生成 CR-xxx 和并行双签 change_request 决策
 And 变更状态为 pending
 And 写入 entityType=requirement_change, action=submit
 ```
 
 **用例 2：变更节点否决**
 ```text
-Given 某双PM项目变更正在进行五节点签署
+Given 某双PM项目变更正在进行并行双签
 When 当前签署人选择驳回并填写意见
 Then 变更状态立即变为 rejected
 And 后续节点不得继续签署
@@ -207,7 +207,7 @@ And 不得进入下一阶段
 | `impactScheduleDays` | integer | 是 | 0–365 | `change_requests.impact_schedule_days` | 无 | 非负 |
 | `impactCost` | number | 是 | 万元 | `change_requests.impact_cost` | 无 | 非负 |
 | `status` | enum | 是 | `pending/approved/rejected` | `change_requests.status` | `pending` | 只读 |
-| `decisionChain` | array | 是 | 五节点对象 | `joint_decision_signatures` | 空 | 按顺序展示 |
+| `decisionChain` | array | 是 | 双签对象（MARKET_PM/RD_PM 两行） | `joint_decision_signatures` | 空 | 按顺序展示 |
 | `currentApprover` | object | 否 | 签署节点 | `joint_decisions` | 空 | 只能有一个 |
 | `implementation` | object | 否 | 实施对象 | `change_implementations` | 空 | approved后才存在 |
 | `evidence` | array | 否 | 附件对象 | `change_implementation_evidence` | 空 | 按创建时间倒序 |
@@ -238,7 +238,7 @@ And 不得进入下一阶段
 | 环节 | 内容 |
 |---|---|
 | ① 发起 | 用户在 `ChangesPage` 点击 CR-xxx 或访问 `/changes?change=<id>`。 |
-| ② 处理 | 详情组件加载变更单、关联需求、申请附件和五节点决策；当前节点只展示一次。 |
+| ② 处理 | 详情组件加载变更单、关联需求、申请附件和并行双签决策；各签位只展示一次。 |
 | ③ 审核 | 签署人填写具体证据、影响或整改意见后批准或驳回；申请人不能自审（BR-GATE-03）；**超期 3 个自然日（gate.signDeadlineDays）未签署 → 自动转 ABSTAINED_TIMEOUT，按主导方意见执行（v3 BR-GATE-04），并写审计 entityType=gate, action=sign（自动弃权）**。 |
 | ④ 结果 | 全部通过后出现实施入口；任一节点否决后状态变为已驳回。 |
 | ⑤ 记录 | 详情页记录当前节点、签署人、时间和意见，并显示在审计摘要中；审计：entityType=requirement_change, action=view_detail / sign / approve / reject。 |

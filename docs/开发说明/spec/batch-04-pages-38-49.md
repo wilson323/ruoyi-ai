@@ -309,7 +309,7 @@ Then  走 BR-DEL-01 双层审核（product_lead 2 工作日 + super_admin 2 工�
 |---|---|
 | ① 发起 | 项目负责人录入，**必关联 workItem**（BR-REQ-07） |
 | ② 处理 | CANDIDATE → EVALUATING → BASELINED → 与项目 IPD 节点联动 |
-| ③ 审核 | 评估/基线变更由 product_lead 确认；变更走 BR-GATE-07 五节点 |
+| ③ 审核 | 评估/基线变更由 product_lead 确认；变更走 BR-GATE-07 双PM并行双签（原「五节点」口径已由 DOC-06 废止） |
 | ④ 结果 | PROCESSING 同步通知双 PM；CLOSED 后禁编辑 |
 | ⑤ 记录 | audit entityType=`requirement`, action=`update` |
 | ⑥ 归档 | 删除走 BR-DEL-01 双层审核（2 + 2 工作日） |

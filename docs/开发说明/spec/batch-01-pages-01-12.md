@@ -755,7 +755,7 @@ And 审计 entityType=project, action=update, before=1.5, after=1.8
 |---|---|
 | ① 发起 | 项目 owner 完成所有 workItem 后点「提交阶段确认」 |
 | ② 处理 | `POST /api/key-gates/:stageId/submit` → 服务端校验本阶段全部 workItem 已 DONE 且 gateStatus=ready（DEEP 强制交付物 / LIGHT 仅三字段 / D11 FAR+FRR 数值 / V02 证书号+日期） |
-| ③ 审核 | 双PM阶段确认：market_pm → rd_pm → product_lead → product_lead(r&d) → super_admin 五节点（gate.signDeadlineDays=3 自然日 BR-GATE-04）；关键 Gate 还需会议纪要 + 评审材料 + 33 项要素三态判定（命中 ❌ 阻断）；**超期 3 个自然日（gate.signDeadlineDays）未签署 → 自动转 ABSTAINED_TIMEOUT，按主导方意见执行（v3 BR-GATE-04），并写审计 entityType=gate, action=sign（自动弃权）** |
+| ③ 审核 | 双PM阶段确认签署：G1/G5＝market_pm 与 rd_pm 并行盲签双签（互不可见，任一 REJECT 即整单否）；G2/G3/G4＝主导方单签（leadSide 按 Gate 固定映射：G3/G4→RD_PM，其余→MARKET_PM）；冲突升级＝组长仲裁→超管终裁（gate.signDeadlineDays=3 自然日 BR-GATE-04）；关键 Gate 还需会议纪要 + 评审材料 + 33 项要素三态判定（命中 ❌ 阻断）；**超期 3 个自然日（gate.signDeadlineDays）未签署 → 自动转 ABSTAINED_TIMEOUT，按主导方意见执行（v3 BR-GATE-04），并写审计 entityType=gate, action=sign（自动弃权）** |
 | ④ 结果 | 通过：stage.status=APPROVED，next stage 激活；⚠️ 项生成待办、关闭前不允许进入下个 Gate；驳回：回到 PENDING 等待整改 |
 | ⑤ 记录 | submit/sign/arbitrate/element_decided/reopen 全链路写入；before/after 含 stage.status、gate.elementResults、signatures |
 | ⑥ 归档 | 阶段 archived → 决策链保留；进入下一阶段；G5 90 天复盘（gate.reviewDays90=90）生成项目绩效综合得分（BR-KPI-08） |
@@ -773,9 +773,9 @@ And 审计 entityType=project, action=update, before=1.5, after=1.8
 ```
 Given 项目当前阶段为 develop 且 workItem 已全部 DONE（含 DEEP 交付物）
 When 项目 owner 提交阶段确认
-Then POST /api/key-gates/:stageId/submit 创建五节点决策链（gate.signDeadlineDays=3 → dueAt）
+Then POST /api/key-gates/:stageId/submit 按签署矩阵创建签位（G1/G5 预落双PM并行盲签；G2/G3/G4 预落主导方）（gate.signDeadlineDays=3 → dueAt）
 And 审计 entityType=gate, action=submit
-And 工作台投递任务给 market_pm 第一节点
+And 工作台向 market_pm 与 rd_pm 并行投递签署任务（盲签互不可见，无「第一节点」）
 ```
 ```
 Given G1 评审命中否决项（如客户验证 < gate.g1.minCustomerVerifications=5 家无书面意向）
@@ -789,9 +789,9 @@ When 提交 DONE
 Then 返回 40004 缺数值字段；UI 显示"必须登记实测 FAR/FRR 数值"
 ```
 ```
-Given G2 五节点签署中（market_pm 已签，后续节点 3 自然日未签）
+Given G1 并行双签签署中（leadSide＝market_pm 已签 APPROVE，rd_pm 3 自然日未签；G2/G3/G4 单签 Gate 无对方弃权概念，超期仅催办不折算）
 When 系统触发 gate.signDeadlineDays=3 超期 cron（v3 BR-GATE-04）
-Then 未签节点自动转 ABSTAINED_TIMEOUT，gate.leadSide（market/rd）主导方意见执行
+Then 未签方自动补 ABSTAIN 并按主导方意见放行；两人均未签 → ABSTAINED_TIMEOUT 且不得无依据放行
 And 审计 entityType=gate, action=sign（自动弃权），status pill 由 PENDING → ABSTAINED_TIMEOUT
 ```
 

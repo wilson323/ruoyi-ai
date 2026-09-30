@@ -853,14 +853,14 @@ Then 按钮 disabled，弹窗字段下方显示红色 field-error
 ## 1. 页面元信息
 - **编号 / 名称 / URL**：23 / 项目详情-Gate 评审 / `/reviews` + 嵌入式 `KeyGatePanel`（App.jsx:401）
 - **主用角色 / 可见角色**：market_pm + rd_pm + product_lead + super_admin / **优先级 P2**
-- **关联 BR 规则**：BR-GATE-01（五节点联合签署）、BR-GATE-02（强制附件）、BR-GATE-04（**`gate.signDeadlineDays=3`** + **`gate.signExtendMaxTimes=3`** + **`gate.reviewRoundEscalation=3`**）、BR-GATE-01b（33 项要素骨架）
-- **现有实现**：**部分** — `KeyGatePanel`（FinalRulesPages.jsx:11-18）+ `DecisionChainPanel` 已实现五节点签署；**缺失3 天弃权倒计时、超期按主导方意见执行、super_admin 延长3 次**
+- **关联 BR 规则**：BR-GATE-01（双PM并行签署；口径正名见 CONTEXT 篇结论四/五：G1/G5 并行盲签双签、G2/G3/G4 主导方单签，原「五节点」顺序口径已由 DOC-06 废止）、BR-GATE-02（强制附件）、BR-GATE-04（**`gate.signDeadlineDays=3`** + **`gate.signExtendMaxTimes=3`** + **`gate.reviewRoundEscalation=3`**）、BR-GATE-01b（33 项要素骨架）
+- **现有实现**：**部分** — `KeyGatePanel`（FinalRulesPages.jsx:11-18）+ `DecisionChainPanel` 已实现协同签署面板（原型按旧「五节点」顺序链绘制，与现码不符——现码为 G1/G5 并行盲签双签 + G2/G3/G4 主导方单签）；**缺失3 天弃权倒计时、超期按主导方意见执行、super_admin 延长3 次**
 
 ## 2. 页面布局（基于现有代码，**应增强**）
 - 顶栏：`<PageFrame title="阶段确认">`，副标题"用于确认一个 IPD 阶段是否具备进入下一阶段的条件，防止缺项、无证据或未决风险被带入后续工作"
 - 右上：`<button className="primary-button">提交{stage.name}阶段确认</button>`（仅 can_edit_project 时）
 - 主体双栏 `.review-layout`：
-  - 左：阶段确认事项 + `<DecisionChainPanel>` 五节点链
+  - 左：阶段确认事项 + `<DecisionChainPanel>` 协同签署链面板（原型图，现状口径见 CONTEXT 篇结论四）
   - 右：确认条件 checklist + 当前阶段状态卡
 - 开发阶段追加 `<BiweeklyPanel>`
 - **`<KeyGatePanel>` 增强**：
@@ -910,8 +910,8 @@ Then 按钮 disabled，弹窗字段下方显示红色 field-error
 | 环节 | 内容 |
 |---|---|
 | ① 发起 | 双PM 完成本阶段 → market_pm 上传会议纪要+评审材料 → 点击"提交 Gate" |
-| ② 处理 | 服务端校验材料齐全 → 创建五节点签名（market_pm→rd_pm→market_lead→rd_lead→super_admin）→ dueAt=now+`gate.signDeadlineDays`(3d) |
-| ③ 审核 | 五节点依次收到待办；任意节点驳回 → status=`REJECTED`；双方组长结论不一致 → arbitrate；超期未签 → 定时任务按 leadSide 自动通过 → status=`ABSTAINED_TIMEOUT` |
+| ② 处理 | 服务端校验材料齐全 → 按签署矩阵创建签位（G1/G5：预落 market_pm + rd_pm 并行盲签；G2/G3/G4：预落主导方单签）→ dueAt=now+`gate.signDeadlineDays`(3d) |
+| ③ 审核 | 双PM并行收到待办（盲签互不可见）；任一 REJECT → status=`REJECTED`（整单否）；冲突升级 → 组长仲裁 → 不一致再超管终裁；超期折算（现码）：双签 Gate 主导方已签 APPROVE → 对方补 ABSTAIN 放行；两人均未签 → `ABSTAINED_TIMEOUT` 不得无依据放行；单签 Gate 超期仅催办不折算 |
 | ④ 结果 | 全部 approved → status=`APPROVED`，触发阶段门禁解锁；rejected → 整改后 reopen |
 | ⑤ 记录 | 每次操作写 `key_gate_signatures` / `arbitrations` + audit_log；超期自动通过写 audit `gate.approve（auto）` |
 | ⑥ 归档 | 通过的 Gate 永久归档；vetoMode=true 双PM否决不可覆盖 |
@@ -926,7 +926,7 @@ And 两个上传位均为空
 When 上传纪要 + 材料 + 提交 Gate
 Then POST /api/key-gates/:id/submit
 And dueAt=now+3d（= `gate.signDeadlineDays`）
-And 五节点 mini-chain 显示 pending
+And 双签 mini-chain 显示 pending（原型旧「五节点」画法已废止）
 And 审计 entityType=gate, action=submit
 
 Given 当前节点签署后第4天仍 PENDING
@@ -959,7 +959,7 @@ Then 返回 40001 "已达 signExtendMaxTimes 延长上限"
 - **编号 / 名称 / URL**：24 / Gate 评审详情 / `/reviews/gate/:gateId`（独立抽屉/子页）+ `KeyGatePanel` 卡片 `Eye` 图标触发
 - **主用角色 / 可见角色**：market_pm + rd_pm + product_lead + super_admin / **优先级 P2**
 - **关联 BR 规则**：BR-GATE-01b（**33 项要素三态判定表**：G1 七项/5 否决 + G2 六项/4 否决 + G3 五项/0 否决 + G4 八项/3 否决 + G5 七项/2 否决 = **33 项/14 否决**）、BR-GATE-02（否决项硬阻断）、BR-GATE-03（双签互不可见）、BR-GATE-04（⚠️ 项必填责任人+关闭期限 + 遗留项自动生成待办）
-- **现有实现**：**完全缺失 33 项要素判定表** — `KeyGatePanel` 仅显示五节点签署 + 双PM否决模式 + 仲裁；现状无 GateDetailDrawer，无要素判定表，无 ⚠️ 项必填责任人+关闭期限
+- **现有实现**：**完全缺失 33 项要素判定表** — `KeyGatePanel` 仅显示原型签署链（旧「五节点」画法，已废止口径） + 双PM否决模式 + 仲裁；现状无 GateDetailDrawer，无要素判定表，无 ⚠️ 项必填责任人+关闭期限
 
 ## 2. 页面布局（**应新增**）
 - 触发：`KeyGatePanel` 卡片右上 `Eye` 图标 → 打开 `<GateDetailDrawer>`
@@ -970,7 +970,7 @@ Then 返回 40001 "已达 signExtendMaxTimes 延长上限"
     - 序号 / 要素代码 / 要素名称 / 否决项标记 / **当前用户判定**（三态：`passed` / `conditional` / `failed`）/ 他人判定（互不可见）/ 证据编号 / 备注
     - **⚠️ `conditional` 项必须**填责任人与关闭期限（v3 BR-GATE-04）
     - **❌ 否决项 + `failed`**触发 →整体 Gate 硬阻断，"确认本节点"按钮置灰
-  - 下半区：五节点 mini-chain（本人未签突出）
+  - 下半区：签署链 mini-chain（本人未签突出；原型旧画法，现口径＝双签/单签）
   - 底部：当前签署人"驳回 / 确认本节点"；仲裁态双组长仲裁按钮
 
 ## 3. 字段模型
@@ -1143,4 +1143,4 @@ And 审计 entityType=gate_element_result, action=update
 - **缺失审计 `entityType`**：1 个（`gate_element_result`）
 - **缺失审计 `action`**：`update`（含遗留项生成子动作）
 - **验收覆盖度**：现状 0 条 / v3 应有 8 条
-- **根因**：`KeyGatePanel` 当前仅展示五节点签署 + 仲裁，**完全缺失 33 项要素判定表骨架**——这是 v3 BR-GATE-01b 的核心
+- **根因**：`KeyGatePanel` 当前仅展示原型签署链（旧五节点画法） + 仲裁，**完全缺失 33 项要素判定表骨架**——这是 v3 BR-GATE-01b 的核心
