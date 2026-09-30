@@ -51,7 +51,7 @@ public class HrSyncProperties {
     }
 
     /**
-     * HR 真源定时同步配置（默认每日凌晨 02:00；与既有 09:00/09:05 错峰）。
+     * HR 真源定时同步配置（默认每日凌晨 0 点，2026-09-29 xlsx 调度要求；0 点无既有 job 撞点）。
      * <ul>
      *   <li>{@code enabled}：全局闸门；ipd.hr.enabled=false ⇒ 本 cron 不装配（防错位）</li>
      *   <li>{@code cron}：Spring cron 6 字段表达式；空串 ⇒ 不启用 @Scheduled</li>
@@ -62,9 +62,9 @@ public class HrSyncProperties {
     @Data
     public static class Sync {
         private boolean enabled = true;
-        private String cron = "0 0 2 * * ?";
+        private String cron = "0 0 0 * * ?";
         private long timeoutMs = 600_000L;
-        /** ALL（默认）= 全量；INCREMENTAL = 仅 NEW。 */
-        private String scope = "ALL";
+        /** ALL = 全量；INCREMENTAL（默认，2026-09-29 xlsx 每日增量）= INPUT_TYP:NEW + BEGDA/ENDDA=当天。 */
+        private String scope = "INCREMENTAL";
     }
 }

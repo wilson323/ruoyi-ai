@@ -81,10 +81,12 @@ public class HrSyncController {
 
     /** R149-v1 D4：sync-now/sync-one 出参。 */
     public record SyncStatsResponse(int personsFetched, int personsUpserted, int personsSkipped,
-                                    int failures, int orgsFetched, int orgsUpserted, long costMs) {
+                                    int failures, int orgsFetched, int orgsUpserted, long costMs,
+                                    int filteredOut, int mirrorUpserts) {
         public static SyncStatsResponse from(RealHrSyncAdapter.SyncStats s) {
             return new SyncStatsResponse(s.personsFetched(), s.personsUpserted(),
-                s.personsSkipped(), s.failures(), s.orgsFetched(), s.orgsUpserted(), s.costMs());
+                s.personsSkipped(), s.failures(), s.orgsFetched(), s.orgsUpserted(), s.costMs(),
+                s.filteredOut(), s.mirrorUpserts());
         }
     }
 
@@ -145,18 +147,23 @@ public class HrSyncController {
     /**
      * R149-v1 D4：管理员手动触发 HR 真源全量同步（异步执行，秒级响应返回 last-run 占位）。
      *
-     * <p>权限：SUPER_ADMIN。生产由 cron 每日 02:00 自动跑；本端点是 admin 应急入口（HR 紧急
-     * 增删人后立刻触发，避免等到次日凌晨 02:00）。
+     * <p>权限：SUPER_ADMIN。生产由 cron 每日 0 点 自动跑；本端点是 admin 应急入口（HR 紧急
+     * 增删人后立刻触发，避免等到次日凌晨 0 点）。
      */
     @PostMapping("/sync-now")
-    public ApiV1Response<SyncStatsResponse> syncNow() {
+    public ApiV1Response<SyncStatsResponse> syncNow(
+            @RequestParam(value = "mode", required = false, defaultValue = "ALL") String mode) {
         IpdActor operator = permission.requireAdmin();
         HrSyncJob job = requireHrSyncJob();
+        String normalized = mode == null ? "ALL" : mode.trim().toUpperCase();
+        if (!"ALL".equals(normalized) && !"NEW".equals(normalized)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "mode \u4ec5\u652f\u6301 ALL | NEW");
+        }
         String triggerBy = "MANUAL:" + operator.id();
-        HrSyncJob.LastRun lr = job.runOnce(triggerBy);
-        audit(operator, "hr_sync_now", null, triggerBy);
+        HrSyncJob.LastRun lr = job.runOnce(triggerBy, normalized);
+        audit(operator, "hr_sync_now", null, triggerBy + "/" + normalized);
         if (!lr.isOk()) {
-            return ApiV1Response.ok(new SyncStatsResponse(0, 0, 0, 1, 0, 0, lr.costMs()));
+            return ApiV1Response.ok(new SyncStatsResponse(0, 0, 0, 1, 0, 0, lr.costMs(), 0, 0));
         }
         return ApiV1Response.ok(SyncStatsResponse.from(lr.stats()));
     }

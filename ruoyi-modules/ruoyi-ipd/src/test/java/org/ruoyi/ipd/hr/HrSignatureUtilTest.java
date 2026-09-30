@@ -79,6 +79,40 @@ class HrSignatureUtilTest {
         String s = util.sign(new java.util.HashMap<>(), null);
         assertThat(s).isEqualTo(md5HexJdk("secretKey="));
     }
+    
+    @Test
+    @DisplayName("getMD5Value 去前导 0：BigInteger 十六进制≠定长格式化（HR 网关同口径，必须对齐）")
+    void md5StripsLeadingZero() {
+        // md5("a=lead0-10&secretKey=k") 定长值以 0 开头：0FCB016ACC1184DD1DCB45CB0E1392BF
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("a", "lead0-10");
+        String s = util.sign(params, "k");
+        assertThat(md5HexJdk("a=lead0-10&secretKey=k")).startsWith("0");
+        assertThat(s).isEqualTo("FCB016ACC1184DD1DCB45CB0E1392BF");
+    }
+    
+    @Test
+    @DisplayName("空值（空串/null）整条跳过：md5(\"a=1&secretKey=k\")")
+    void emptyValuesSkipped() {
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("a", "1");
+        params.put("b", "");
+        params.put("c", null);
+        String s = util.sign(params, "k");
+        assertThat(s).isEqualTo("2B9F72B0876B2C854623D0D19947743C");
+    }
+    
+    @Test
+    @DisplayName("data 集合值按 JSON 序列化后参与签名（HR §1.2.3：DATA 段参与 sign）")
+    void dataValueSerializedAsJson() {
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("DATA", "x");
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("a", "1");
+        params.put("data", data);
+        String s = util.sign(params, "k");
+        assertThat(s).isEqualTo("89369F8101D0E127F2B2413ABDBD1F31");
+    }
 
     private static String md5HexJdk(String s) {
         try {

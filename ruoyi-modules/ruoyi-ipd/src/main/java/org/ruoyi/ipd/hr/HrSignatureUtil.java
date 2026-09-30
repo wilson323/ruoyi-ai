@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.hr;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,7 +35,13 @@ public class HrSignatureUtil {
         }
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, Object> e : sorted.entrySet()) {
-            sb.append(e.getKey()).append('=').append(e.getValue() == null ? "" : e.getValue().toString()).append('&');
+            Object v = e.getValue();
+            // HR §1.2.3：空值（null/空串）整条跳过，不参与签名
+            if (v == null || v.toString().isEmpty()) continue;
+            String vs = (v instanceof Map || v instanceof java.util.Collection)
+                ? JsonUtil.toJsonString(v)   // data 等结构值按 JSON 序列化后参与签名
+                : v.toString();
+            sb.append(e.getKey()).append('=').append(vs).append('&');
         }
         sb.append("secretKey=").append(secretKey == null ? "" : secretKey);
         return md5Hex(sb.toString());
@@ -44,11 +51,8 @@ public class HrSignatureUtil {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] bytes = md.digest(src.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(32);
-            for (byte b : bytes) {
-                sb.append(String.format("%02X", b & 0xff));
-            }
-            return sb.toString();
+            // 与 HR 文档 getMD5Value 样例同口径：BigInteger(1,).toString(16) 去前导 0（网关端同样去前导 0）
+            return new BigInteger(1, bytes).toString(16).toUpperCase();
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("MD5 not available", e);
         }

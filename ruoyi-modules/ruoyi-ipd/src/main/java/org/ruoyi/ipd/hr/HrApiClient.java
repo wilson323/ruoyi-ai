@@ -83,8 +83,8 @@ public class HrApiClient {
         params.put("sign", signatureUtil.sign(params, nvl(props.getSecretKey())));
 
         String json = JsonUtil.toJsonString(params);
-        return tokenClient.postJson("/ehr/getUserInfo".equals(method) ? "/ehr/getUserInfo"
-                : "/ehr/getOrganizationInfo", json);
+        // 2026-09-29 网关单端点形态：method 已在 body params 内，直 POST baseUrl（不再拼 /ehr/* 子路径）
+        return tokenClient.postJson(json);
     }
 
     private <T> List<T> parseBodyArray(JsonNode bodyArray, Class<T> klass) {

@@ -48,7 +48,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:151"
+      "evidence": "HrSyncController.java:153"
     },
     {
       "path": "/api/v1/hr-sync/sync-one",
@@ -60,7 +60,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:167"
+      "evidence": "HrSyncController.java:174"
     },
     {
       "path": "/api/v1/hr-sync/last-run",
@@ -72,7 +72,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:194"
+      "evidence": "HrSyncController.java:201"
     },
     {
       "path": "/api/v1/hr-sync/mark-resigned",
@@ -84,7 +84,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:108"
+      "evidence": "HrSyncController.java:110"
     },
     {
       "path": "/api/v1/hr-sync/escalate-stale-resignations",
@@ -96,7 +96,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:120"
+      "evidence": "HrSyncController.java:122"
     },
     {
       "path": "/api/v1/gates/legacy/scan-overdue",

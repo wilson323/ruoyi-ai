@@ -44,58 +44,91 @@ public class HrResponse<T> {
     public static class BasicInfo {
         @com.fasterxml.jackson.annotation.JsonProperty("NACHN")
         public String nachn;            // 姓名 → persons.name
+        @com.fasterxml.jackson.annotation.JsonProperty("RUFNM")
         public String rufnm;
         @com.fasterxml.jackson.annotation.JsonProperty("GESCH")
         public String gesch;            // 性别 1/2
+        @com.fasterxml.jackson.annotation.JsonProperty("NATIO")
         public String natio;
         @com.fasterxml.jackson.annotation.JsonProperty("GBDAT")
         public String gbdat;            // 出生日期
+        @com.fasterxml.jackson.annotation.JsonProperty("FAMST")
         public String famst;
+        @com.fasterxml.jackson.annotation.JsonProperty("LIVE_ADRESS")
         public String liveAdress;
+        @com.fasterxml.jackson.annotation.JsonProperty("WORK_ADRESS")
         public String workAdress;
+        @com.fasterxml.jackson.annotation.JsonProperty("PHONE")
         public String phone;
+        @com.fasterxml.jackson.annotation.JsonProperty("EMAIL_PER")
         public String emailPer;
         @com.fasterxml.jackson.annotation.JsonProperty("EMAIL_COM")
         public String emailCom;
         @com.fasterxml.jackson.annotation.JsonProperty("HIRE_DATE")
         public String hireDate;         // 入职日期
+        @com.fasterxml.jackson.annotation.JsonProperty("SERVICESTARTDATE")
         public String servicestartdate;
+        @com.fasterxml.jackson.annotation.JsonProperty("REGULARDATE")
         public String regulardate;
+        @com.fasterxml.jackson.annotation.JsonProperty("EFFECTDATEMOVENT")
         public String effectdatemovent;
         @com.fasterxml.jackson.annotation.JsonProperty("LEAVE_DATE")
         public String leaveDate;
+        @com.fasterxml.jackson.annotation.JsonProperty("BUKRS")
         public String bukrs;
+        @com.fasterxml.jackson.annotation.JsonProperty("CONTRACTSUBJECT")
         public String contractsubject;
+        @com.fasterxml.jackson.annotation.JsonProperty("PERSG")
         public String persg;
         @com.fasterxml.jackson.annotation.JsonProperty("ORGEH")
         public String orgeh;            // 部门编码（关联 hr_organizations）
+        @com.fasterxml.jackson.annotation.JsonProperty("DEPTNAME")
         public String deptname;
         @com.fasterxml.jackson.annotation.JsonProperty("PLANS")
         public String plans;
         @com.fasterxml.jackson.annotation.JsonProperty("POSITIONNAME")
         public String positionname;
+        @com.fasterxml.jackson.annotation.JsonProperty("EXTERNALPOSITION")
         public String externalposition;
+        @com.fasterxml.jackson.annotation.JsonProperty("ORGPATH")
         public String orgpath;
+        @com.fasterxml.jackson.annotation.JsonProperty("EMPCATEGORY")
         public String empcategory;
+        @com.fasterxml.jackson.annotation.JsonProperty("ZZWTPDJ")
         public String zzwtpdj;
+        @com.fasterxml.jackson.annotation.JsonProperty("POSITIONGRADE")
         public String positiongrade;
+        @com.fasterxml.jackson.annotation.JsonProperty("LANGUAGECODE")
         public String languagecode;
+        @com.fasterxml.jackson.annotation.JsonProperty("BANKN")
         public String bankn;
+        @com.fasterxml.jackson.annotation.JsonProperty("BANKL")
         public String bankl;
         @com.fasterxml.jackson.annotation.JsonProperty("STAT2")
         public String stat2;            // 3=在职 / 0=离职 → employment_status
+        @com.fasterxml.jackson.annotation.JsonProperty("LEAVE_FLAG")
         public String leaveFlag;        // X=离职
         @com.fasterxml.jackson.annotation.JsonProperty("DEL_FLAG")
         public String delFlag;          // X=删除
+        @com.fasterxml.jackson.annotation.JsonProperty("KOSTL")
         public String kostl;
+        @com.fasterxml.jackson.annotation.JsonProperty("KOSTL_T")
         public String kostlT;
+        @com.fasterxml.jackson.annotation.JsonProperty("SUPERVISORNO")
         public String supervisorno;
+        @com.fasterxml.jackson.annotation.JsonProperty("SUPERVISORNAME")
         public String supervisorname;
+        @com.fasterxml.jackson.annotation.JsonProperty("LIFNR")
         public String lifnr;
+        @com.fasterxml.jackson.annotation.JsonProperty("FILEURL")
         public String fileurl;
+        @com.fasterxml.jackson.annotation.JsonProperty("CERTIFICATE")
         public String certificate;
+        @com.fasterxml.jackson.annotation.JsonProperty("INSITUTE")
         public String insitute;
+        @com.fasterxml.jackson.annotation.JsonProperty("LINE_OF_STUDY")
         public String lineOfStudy;
+        @com.fasterxml.jackson.annotation.JsonProperty("QUALIFICATIONLEVEL")
         public String qualificationlevel;
     }
 

@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 比反射法维护成本低：不必维护 FQN 清单，也不必担心类加载副作用）。
  *
  * <p><b>断言 A（防撞）</b>：所有「每日固定时刻型」cron（秒/分/时 为常量、日/月/周 为通配）按 HH:mm
- * 去重，任意两个 job 不得占同一分钟。占位符 cron（如 {@code ${ipd.hr.sync.cron:0 0 2 * * ?}}）
+ * 去重，任意两个 job 不得占同一分钟。占位符 cron（如 {@code ${ipd.hr.sync.cron:0 0 0 * * ?}}）
  * 取冒号后默认值参与比对。
  *
  * <p><b>断言 B（防漏登记）</b>：每个每日时刻型 job 的「类名 + HH:mm」必须出现在
@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ul>
  *   <li>{@code NotificationOutboxScanner}——fixedDelayString 常驻间隔任务（每 30s），非每日固定时刻，
  *       正则天然不匹配 {@code cron=}，不参与 A/B；错峰表以「每 30s 轮询」口径登记，无撞时刻问题。</li>
- *   <li>{@code HrSyncJob}（02:00）——见 {@link #EXEMPT_FROM_REGISTRATION} 注释。</li>
+ *   <li>{@code HrSyncJob}（00:00）——见 {@link #EXEMPT_FROM_REGISTRATION} 注释。</li>
  * </ul>
  */
 @Tag("dev")
@@ -51,13 +51,13 @@ class SchedulingCronContractSentinelTest {
         Pattern.compile("@Scheduled\\s*\\(\\s*cron\\s*=\\s*\"([^\"]+)\"");
 
     /**
-     * 断言 B 的显式豁免名单：HrSyncJob 02:00 属 HR 同步自有时段，cron 为占位符
-     * {@code ${ipd.hr.sync.cron:0 0 2 * * ?}}（默认值登记在 HrSyncProperties#cron，运维可改），
+     * 断言 B 的显式豁免名单：HrSyncJob 00:00 属 HR 同步自有时段，cron 为占位符
+     * {@code ${ipd.hr.sync.cron:0 0 0 * * ?}}（默认值登记在 HrSyncProperties#cron，运维可改），
      * 不在 IpdSchedulingConfig 错峰表「09:00~09:35 晨间业务窗口」登记口径内。
-     * 它仍参与断言 A（防撞）——02:00 若被别的 job 撞上照样红。
+     * 它仍参与断言 A（防撞）——00:00 若被别的 job 撞上照样红。
      */
     private static final Map<String, String> EXEMPT_FROM_REGISTRATION = Map.of(
-        "HrSyncJob", "HR 同步自有时段（02:00），占位符可配 + HrSyncProperties 登记，错峰表口径外——显式豁免"
+        "HrSyncJob", "HR 同步自有时段（00:00），占位符可配 + HrSyncProperties 登记，错峰表口径外——显式豁免"
     );
 
     /** 发现下限：现有 9 个 cron 注解（GateSignScanScheduler 2 个），防正则失效导致全空假绿。 */

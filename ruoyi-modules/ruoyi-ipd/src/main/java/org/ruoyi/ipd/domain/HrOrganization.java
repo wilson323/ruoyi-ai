@@ -59,7 +59,7 @@ public class HrOrganization extends BaseEntity implements Serializable {
     @TableField("begda")
     private String begda;
 
-    /** 有效止（ENDDA；yyyy-MM-dd；空=当前有效）。 */
+    /** 组织失效日期（ENDDA；yyyy-MM-dd；空=当前有效；xlsx「产品IPD」用语对齐）。 */
     @TableField("endda")
     private String endda;
 
@@ -75,11 +75,11 @@ public class HrOrganization extends BaseEntity implements Serializable {
     @TableField("zbmcj")
     private String zbmcj;
 
-    /** 删除标记（HR delFlag；X=已删）。 */
+    /** 组织删除标识（HR delFlag；X=已删；IPD 口径：只归档不消费）。 */
     @TableField("hr_del_flag")
     private String hrDelFlag;
 
-    /** 过期标记（HR expirationflag；X=已过期）。 */
+    /** 是否封存（HR expirationflag；X=已封存/过期）。 */
     @TableField("expiration_flag")
     private String expirationFlag;
 

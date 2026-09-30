@@ -55,7 +55,7 @@ public class HrTokenClient {
         params.put("sign", signatureUtil.sign(params, nvl(props.getSecretKey())));
 
         String body = JsonUtil.toJsonString(params);
-        JsonNode root = postJson("/token/get", body);
+        JsonNode root = postJson(body);
         int code = root.path("code").asInt(-1);
         if (code != 0) {
             throw new HrApiException(HrApiException.PERMANENT, String.valueOf(code),
@@ -72,13 +72,17 @@ public class HrTokenClient {
         return token;
     }
 
-    /** POST JSON + 解析响应；HTTP 4xx/5xx → HrApiException。 */
-    public JsonNode postJson(String path, String jsonBody) {
+    /**
+     * POST JSON 到网关单端点 + 解析响应；HTTP 4xx/5xx → HrApiException。
+     * <p>2026-09-29 测试网关形态（http://.../api/router）：method 在 body params 内，不再拼子路径
+     * （旧 /token/get 拼接与单端点网关不符；真连探测若发现需要子路径，再补 router-path 可配置）。
+     */
+    public JsonNode postJson(String jsonBody) {
         if (!props.isEnabled()) {
             throw new HrApiException(HrApiException.PERMANENT, "DISABLED",
                 "ipd.hr.enabled=false，跳过调用", null);
         }
-        String url = nvl(props.getBaseUrl()) + path;
+        String url = nvl(props.getBaseUrl());
         try {
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(url))

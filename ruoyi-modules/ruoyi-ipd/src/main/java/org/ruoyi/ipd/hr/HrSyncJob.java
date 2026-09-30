@@ -15,7 +15,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * HR 真源定时同步调度器（R149-v1 D3；FA-HR-Sync 每日 02:00 调度入口）。
+ * HR 真源定时同步调度器（R149-v1 D3；FA-HR-Sync 每日凌晨 0 点增量调度入口，2026-09-29 xlsx 口径）。
  *
  * <p><b>错峰原则</b>：与既有 09:00（{@code PersonResignEscalator}）/
  * 09:05（{@code HandoverOverdueScanner}）错峰 6h+，避免并发争抢数据库连接池。
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @ConditionalOnExpression(
     "'${ipd.hr.enabled:false}'=='true' "
     + "and '${ipd.hr.sync.enabled:true}'=='true' "
-    + "and '${ipd.hr.sync.cron:0 0 2 * * ?}'!=''")
+    + "and '${ipd.hr.sync.cron:0 0 0 * * ?}'!=''")
 @RequiredArgsConstructor
 public class HrSyncJob {
 
@@ -47,14 +47,15 @@ public class HrSyncJob {
     /** 看板 / controller 用：上一次同步结果快照。 */
     private final AtomicReference<LastRun> lastResult = new AtomicReference<>();
 
-    /** 每日 02:00 cron 同步（错峰 09:00/09:05）。 */
-    @Scheduled(cron = "${ipd.hr.sync.cron:0 0 2 * * ?}")
+    /** 每日凌晨 0 点 cron 同步（xlsx 调度口径；默认增量 NEW，scope=ALL 可切全量；0 点无既有 job 撞点）。 */
+    @Scheduled(cron = "${ipd.hr.sync.cron:0 0 0 * * ?}")
     public void dailySyncJob() {
-        runOnce("CRON_DAILY");
+        runOnce("CRON_DAILY",
+            "ALL".equalsIgnoreCase(properties.getSync().getScope()) ? "ALL" : "NEW");
     }
 
     /** 手动触发（来自 controller）。 */
-    public LastRun runOnce(String triggerBy) {
+    public LastRun runOnce(String triggerBy, String mode) {
         long start = System.currentTimeMillis();
         ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "hr-sync-" + triggerBy);
@@ -64,13 +65,8 @@ public class HrSyncJob {
         Future<RealHrSyncAdapter.SyncStats> future = null;
         Throwable failure = null;
         try {
-            future = executor.submit(() -> {
-                if ("INCREMENTAL".equalsIgnoreCase(properties.getSync().getScope())) {
-                    // R149-v1 默认 ALL；INCREMENTAL 暂未实现单点 driver，先走全量
-                    log.info("R149-v1 incremental scope fallback to ALL (单点 driver 待 P2)");
-                }
-                return adapter.syncAll(triggerBy);
-            });
+            future = executor.submit(() -> "ALL".equalsIgnoreCase(mode)
+                ? adapter.syncAll(triggerBy) : adapter.syncIncremental(triggerBy));
             RealHrSyncAdapter.SyncStats stats = future.get(
                 properties.getSync().getTimeoutMs(), TimeUnit.MILLISECONDS);
             LastRun lr = new LastRun(start, System.currentTimeMillis(), triggerBy,

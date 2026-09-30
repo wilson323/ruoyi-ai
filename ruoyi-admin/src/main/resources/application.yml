@@ -389,6 +389,9 @@ tenant:
     - person_sync_jobs
     # R149-v1（2026-09-21）：HR 真源公司组织树——全公司范围数据，与 product_groups 业务语义不同
     - hr_organizations
+    # D10 落地（2026-09-29）：HR 人员档案镜像（xlsx 全字段快照）——公司级数据无多租户语义，
+    # 同步调度线程无会话上下文，未登记则租户过滤吞空；登录体系仍走 persons 不双轨
+    - hr_person_mirror
     # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
     # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
     # switching_acceptances 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错
