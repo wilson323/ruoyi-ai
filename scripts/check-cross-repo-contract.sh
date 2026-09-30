@@ -123,7 +123,12 @@ for ctrl in "$BACKEND_ROOT"/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/
   done >> "$TMPDIR_CHECK/backend_endpoints.txt"
 done
 
-sort -u "$TMPDIR_CHECK/backend_endpoints.txt" > "$TMPDIR_CHECK/be.uniq.txt"
+sort -u "$TMPDIR_CHECK/backend_endpoints.txt" > "$TMPDIR_CHECK/be.raw.txt"
+# 【白屏/孤儿假阳性根因修复 2026-09-29】剥离 Spring 路径变量的正则约束
+# （如 {key:.+} → {key}）。下游 fe_pattern {var} 归一、be_for_fe 转换、文档比对
+# 均只识别 {name} 形式，含 :.+/ [0-9]+ 约束的字面量会让 SystemConfigController
+# 这类 @GetMapping("/{key:.+}/versions") 端点被误判为后端缺失（假白屏）。
+sed -E 's|\{([A-Za-z0-9_]+):[^}]*\}|{\1}|g' "$TMPDIR_CHECK/be.raw.txt" | sort -u > "$TMPDIR_CHECK/be.uniq.txt"
 be_count=$(wc -l < "$TMPDIR_CHECK/be.uniq.txt" | tr -d ' ')
 echo "  → 后端端点数: $be_count"
 
@@ -139,11 +144,45 @@ PATH_RE='/api/v1/[A-Za-z0-9/_:.\?\&\=%-]+'
 REL_RE='/[a-zA-Z][A-Za-z0-9/_:.\?\&\=%-]+'
 
 strip_ts_comments() {
-  # 去掉 /* ... */ 多行注释和 // 单行注释（避免注释里的伪路径被误抓）
-  sed -E '
-    /\/\*/,/\*\//d
-    s|//.*$||g
-  '
+  # awk 状态机：正确剥离 /* ... */（含跨行、同行起止）与 // 单行注释。
+  # 旧 sed 版在「块注释起止在同一行」（如首行 /** ... */ 头注）时范围永不关闭，
+  # 导致后续整文件被删——product-line.ts 等调用点丢抽的根因（2026-09-29 修）。
+  awk '
+  {
+    line = $0
+    out = ""
+    # 注：不对以 * 开头的 JSDoc 续行做 early-next——块注释收尾行 ` */` 本身以 * 开头，
+    # 若提前 next 会跳过 while 里唯一将 inblock 置 0 的分支，导致 inblock 永久卡住、
+    # 该文件首个多行 JSDoc 之后的代码全被清空（bid.ts 等假孤儿根因，2026-09-29 修）。
+    # 注释内容的伪路径丢弃由下方 while 的 inblock 分支统一处理。
+    while (length(line) > 0) {
+      if (inblock) {
+        p = index(line, "*/")
+        if (p == 0) { line = "" }
+        else { inblock = 0; line = substr(line, p + 2) }
+        continue
+      }
+      b = index(line, "/*")
+        s = 0
+        rest = line
+        off = 0
+        while ((q = index(rest, "//")) > 0) {
+          pos = off + q
+          prev = pos > 1 ? substr(line, pos - 1, 1) : ""
+          if (prev != "" && (prev ~ /[A-Za-z0-9]/ || prev == "\047" || prev == "\140")) {  # 前接字母数字/引号的是 URL 或路径（https://）
+            off = pos + 2; rest = substr(line, off + 1)
+          } else { s = pos; break }
+        }
+        if (s > 0 && (b == 0 || s < b)) { line = substr(line, 1, s - 1); break }
+        if (b == 0) { out = out line; line = "" }
+        else {
+          e = index(substr(line, b + 2), "*/")
+          if (e == 0) { out = out substr(line, 1, b - 1); inblock = 1; line = "" }
+          else { line = substr(line, 1, b - 1) substr(line, b + e + 3) }
+        }
+    }
+    print out
+  }'
 }
 
 for api_file in "$FRONTEND_ROOT/src/api/ipd"/*.ts; do
@@ -166,8 +205,11 @@ for api_file in "$FRONTEND_ROOT/src/api/ipd"/*.ts; do
     >> "$TMPDIR_CHECK/frontend_endpoints.txt"
 
   # 3) 提取 requestIpd('xxx', ...) / ipdGet('xxx') / ipdPost('xxx') / ipdPut('xxx') / ipdDelete('xxx') 调用的相对路径，补 /api/v1 前缀
+  #    2026-09-29 漏配修复：①泛型调用 ipdGet<T>(...) 曾整类漏抽（project-agent.ts 等）；
+  #    ②跨行调用（路径字面量在下一行）用 tr 压平后再匹配，引号边界正则保证精度。
   strip_ts_comments < "$api_file" \
-    | grep -oE "(requestIpd|ipdGet|ipdPost|ipdPut|ipdDelete|ipdPatch)\(\s*['\"\`](${REL_RE})['\"\`]" 2>/dev/null \
+    | tr '\n' ' ' \
+    | grep -oE "(requestIpd|ipdGet|ipdPost|ipdPut|ipdDelete|ipdPatch)(<[^()]*>)?\(\s*['\"\`](${REL_RE})['\"\`]" 2>/dev/null \
     | grep -oE "${REL_RE}" \
     | sed 's|^|/api/v1|' \
     >> "$TMPDIR_CHECK/frontend_endpoints.txt"
@@ -175,9 +217,20 @@ for api_file in "$FRONTEND_ROOT/src/api/ipd"/*.ts; do
   # 3b) 提取上述函数调用中的模板字符串参数：ipdPost(`/ai-documents/${id}/revise`, ...)
   #     把 ${...} 替换成 :id（类似后端风格），再补 /api/v1 前缀
   strip_ts_comments < "$api_file" \
-    | grep -oE "(requestIpd|ipdGet|ipdPost|ipdPut|ipdDelete|ipdPatch)\(\s*['\"\`][^'\"\`]*['\"\`]" 2>/dev/null \
+    | tr '\n' ' ' \
+    | grep -oE "(requestIpd|ipdGet|ipdPost|ipdPut|ipdDelete|ipdPatch)(<[^()]*>)?\(\s*['\"\`][^'\"\`]*['\"\`]" 2>/dev/null \
     | grep -oE "['\"\`]/[^'\"\`]+['\"\`]" 2>/dev/null \
     | sed -E "s|\\\${[^}]+}|:id|g; s|^['\"\`]/|/api/v1/|; s|['\"\`]\$||" \
+    >> "$TMPDIR_CHECK/frontend_endpoints.txt"
+
+  # 3c) 提取 requestPortal(`/xxx`) 调用的相对路径（游客门户）——补 /api/v1/public 前缀
+  #     portal.ts 内部 fetch(`/api/v1/public${path}`)，helper 不在 3)/3b) 白名单
+  #     会漏抽 /public/demands/:code/supplement|withdraw 造成假孤儿（2026-09-29 修）。
+  strip_ts_comments < "$api_file" \
+    | tr '\n' ' ' \
+    | grep -oE "requestPortal(<[^()]*>)?\(\s*['\"\`][^'\"\`]*['\"\`]" 2>/dev/null \
+    | grep -oE "['\"\`]/[^'\"\`]+['\"\`]" 2>/dev/null \
+    | sed -E "s|\\\${[^}]+}|:id|g; s|^['\"\`]/|/api/v1/public/|; s|['\"\`]\$||" \
     >> "$TMPDIR_CHECK/frontend_endpoints.txt"
 
   # 4) 提取模板字符串里的前缀：${prefix}/api/v1/xxx （取 xxx 部分）
