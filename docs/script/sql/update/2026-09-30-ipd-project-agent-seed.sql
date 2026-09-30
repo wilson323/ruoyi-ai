@@ -5,8 +5,9 @@
 --       ② C02 动作绑定 Skill：ipd_action_skill_map.skill_names（仅 NULL 时写入，不覆盖管理员定制）
 -- 幂等：显式 ID + INSERT IGNORE；UPDATE 带 skill_names IS NULL 条件，重复执行无副作用。
 -- Skill 锁定：competitor-analysis-ipd@1.0.0
---   sha256 = 28d695be2c9e69fb2fb4daab59f2d4edde644d2cec1d3b44fecd514af40203fa
---   （= ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/competitor-analysis-ipd/SKILL.md 原始字节）
+--   sha256 = f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2
+--   （= ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/competitor-analysis-ipd/SKILL.md 原始字节，
+--    与 classpath capability-packs.json 同一摘要。已执行过的库由文末 UPDATE 对齐。）
 -- =====================================================================
 
 SELECT DATABASE() AS selected_catalog;
@@ -24,7 +25,7 @@ INSERT IGNORE INTO `ipd_capability_pack_item`
    `del_flag`, `create_by`, `create_time`)
 VALUES
   (930000000000000011, '000000', 930000000000000001, 'SKILL', 'competitor-analysis-ipd', '1.0.0',
-   '28d695be2c9e69fb2fb4daab59f2d4edde644d2cec1d3b44fecd514af40203fa', 1, 1, '0', -1, NOW()),
+   'f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2', 1, 1, '0', -1, NOW()),
   (930000000000000012, '000000', 930000000000000001, 'TOOL', 'project_knowledge_search', NULL,
    NULL, 1, 2, '0', -1, NOW());
 
@@ -34,6 +35,14 @@ UPDATE `ipd_action_skill_map`
  WHERE `action_code` = 'C02'
    AND `sub_stage_code` = 'CONCEPT-S2'
    AND `skill_names` IS NULL;
+
+-- 已执行过本种子的库：INSERT IGNORE 不会改旧摘要。只在仍是旧值时对齐到当前 SKILL.md。
+UPDATE `ipd_capability_pack_item`
+   SET `sha256` = 'f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2'
+ WHERE `item_type` = 'SKILL'
+   AND `item_ref` = 'competitor-analysis-ipd'
+   AND `item_version` = '1.0.0'
+   AND `sha256` = '28d695be2c9e69fb2fb4daab59f2d4edde644d2cec1d3b44fecd514af40203fa';
 
 -- 执行后只读核验：
 -- SELECT code, version, status FROM ipd_capability_pack WHERE code = 'market-research';

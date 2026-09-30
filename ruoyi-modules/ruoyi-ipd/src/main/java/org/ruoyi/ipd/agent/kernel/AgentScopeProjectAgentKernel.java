@@ -2,8 +2,10 @@ package org.ruoyi.ipd.agent.kernel;
 
 import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.event.ExceedMaxItersEvent;
+import io.agentscope.core.event.ModelCallEndEvent;
 import io.agentscope.core.event.ModelCallStartEvent;
 import io.agentscope.core.event.TextBlockDeltaEvent;
+import io.agentscope.core.model.ChatUsage;
 import io.agentscope.core.event.ToolCallStartEvent;
 import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
@@ -31,6 +33,7 @@ import reactor.core.scheduler.Schedulers;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -203,6 +206,8 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                     result.getState() == null ? null : result.getState().name());
             } else if (event instanceof ModelCallStartEvent) {
                 sink.onStep("MODEL_CALL", Map.of());
+            } else if (event instanceof ModelCallEndEvent end) {
+                sink.onStep("MODEL_CALL", modelCallDetail(end.getUsage()));
             } else if (event instanceof ExceedMaxItersEvent) {
                 sink.onStep("EXCEED_MAX_ITERS", Map.of());
             }
@@ -218,5 +223,22 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         private void complete() {
             sink.onComplete();
         }
+    }
+
+    /**
+     * 把模型结束事件上的用量写成步骤明细。没有 usage 时不编造 token。
+     * {@code ChatUsage.getTime()} 的单位未经本仓实证，不写入耗时。
+     *
+     * @param usage 原生用量，可为 null
+     * @return 含 inputTokens / outputTokens 的明细；无用量时为空 map
+     */
+    static Map<String, Object> modelCallDetail(ChatUsage usage) {
+        if (usage == null) {
+            return Map.of();
+        }
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("inputTokens", usage.getInputTokens());
+        detail.put("outputTokens", usage.getOutputTokens());
+        return detail;
     }
 }

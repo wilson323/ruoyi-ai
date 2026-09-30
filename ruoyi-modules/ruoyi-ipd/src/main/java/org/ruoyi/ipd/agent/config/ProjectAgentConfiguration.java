@@ -23,6 +23,7 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.service.AiDocEmbeddingService;
 import org.ruoyi.ipd.service.AiDocumentService;
 import org.ruoyi.ipd.service.AiModelConfigService;
+import org.ruoyi.ipd.service.AiModelUsageLedgerService;
 import org.ruoyi.ipd.service.IpdActionSkillMapService;
 import org.ruoyi.ipd.service.IpdCopilotAccess;
 import org.springframework.beans.factory.ObjectProvider;
@@ -108,9 +109,13 @@ public class ProjectAgentConfiguration {
     public ProjectAgentRunExecutor projectAgentRunExecutor(
             AgentRunStore store, ArtifactVersionStore artifactStore,
             ObjectProvider<ProjectAgentKernel> kernel, ObjectMapper mapper,
+            AiModelUsageLedgerService usageLedger,
             @Value("${ipd.project-agent.max-concurrent-runs:4}") int maxConcurrentRuns) {
-        return new ProjectAgentRunExecutor(store, artifactStore, kernel.getIfAvailable(), mapper,
-            Schedulers.boundedElastic(), System::currentTimeMillis, maxConcurrentRuns);
+        ProjectAgentRunExecutor executor = new ProjectAgentRunExecutor(store, artifactStore,
+            kernel.getIfAvailable(), mapper, Schedulers.boundedElastic(), System::currentTimeMillis,
+            maxConcurrentRuns);
+        executor.setUsageLedger(usageLedger);
+        return executor;
     }
 
     /** @return 运行服务 */

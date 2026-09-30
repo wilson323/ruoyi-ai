@@ -4,9 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog.LoadedSkill;
 import org.ruoyi.ipd.agent.domain.IpdAgentRun;
+import org.ruoyi.ipd.agent.kernel.ProjectAgentEventSink;
 import org.ruoyi.ipd.agent.kernel.ProjectAgentIntent;
 import org.ruoyi.ipd.agent.kernel.ProjectAgentKernel;
 import org.ruoyi.ipd.agent.kernel.ProjectAgentRunSpec;
+import org.ruoyi.ipd.agent.kernel.ProjectAgentUsageSink;
+import org.ruoyi.ipd.service.AiModelUsageLedgerService;
 import org.ruoyi.ipd.agent.model.AgentEventType;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
 import org.ruoyi.ipd.agent.store.AgentRunStore;
@@ -49,6 +52,7 @@ public class ProjectAgentRunExecutor {
     private final LongSupplier clock;
     private final Semaphore permits;
     private final ConcurrentMap<Long, ProjectAgentRunHandle> handles = new ConcurrentHashMap<>();
+    private AiModelUsageLedgerService usageLedger;
 
     /**
      * @param store 持久化端口
@@ -69,6 +73,31 @@ public class ProjectAgentRunExecutor {
         this.scheduler = scheduler;
         this.clock = clock;
         this.permits = new Semaphore(Math.max(1, maxConcurrentRuns));
+    }
+
+    /**
+     * 绑定既有用量账本。未绑定时模型步骤仍写入运行事件，但不落账。
+     *
+     * @param usageLedger 用量账本
+     */
+    public void setUsageLedger(AiModelUsageLedgerService usageLedger) {
+        this.usageLedger = usageLedger;
+    }
+
+    /**
+     * 有账本时在内核出口外包一层，把模型结束步骤的 token 写入既有账本。
+     *
+     * @param handle 运行句柄
+     * @param run 运行行
+     * @return 交给内核的事件出口
+     */
+    private ProjectAgentEventSink usageSink(ProjectAgentRunHandle handle, IpdAgentRun run) {
+        if (usageLedger == null || run.getModelConfigId() == null) {
+            return handle;
+        }
+        return new ProjectAgentUsageSink(handle, usageLedger, run.getModelConfigId(),
+            run.getPersonId() == null ? null : String.valueOf(run.getPersonId()),
+            String.valueOf(run.getId()));
     }
 
     /**
@@ -199,7 +228,7 @@ public class ProjectAgentRunExecutor {
             return;
         }
         try {
-            Disposable subscription = kernel.execute(spec, handle);
+            Disposable subscription = kernel.execute(spec, usageSink(handle, run));
             handle.attach(subscription);
         } catch (RuntimeException e) {
             log.error("project_agent operation=EXECUTE status=FAILED runId={} errorType={}",

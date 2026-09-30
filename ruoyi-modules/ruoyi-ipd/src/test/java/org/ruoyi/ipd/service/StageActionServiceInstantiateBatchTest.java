@@ -137,4 +137,32 @@ class StageActionServiceInstantiateBatchTest {
         assertThat(created).isZero();
         verify(stageActionMapper, never()).insertBatch(any(java.util.Collection.class), any(Integer.class));
     }
+
+    @Test
+    @DisplayName("软件项目新插入硬件动作为 NA，已有行不回写")
+    void softwareDevMarksNewHardwareNaAndLeavesExistingRow() {
+        when(projectMapper.selectById(any())).thenReturn(
+            Project.builder().id(1L).status("ACTIVE").delFlag("0").mainGroupId(900001L)
+                .templateType("SOFTWARE").targetMarkets("[\"CN\"]").build());
+        when(stageActionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(
+            StageAction.builder().id(9L).projectId(1L).actionCode("D01")
+                .depth("DEEP").status("IN_PROGRESS").build()));
+        lenient().when(stageActionMapper.insertBatch(any(java.util.Collection.class), any(Integer.class)))
+            .thenReturn(true);
+
+        int created = service.instantiate(1L, 10L, "DEV", IN_GROUP);
+
+        assertThat(created).isEqualTo(ActionCatalog.byStage("DEV").size() - 1);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.Collection<StageAction>> cap = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(stageActionMapper).insertBatch(cap.capture(), any(Integer.class));
+        java.util.Collection<StageAction> batch = cap.getValue();
+        assertThat(batch).noneMatch(a -> "D01".equals(a.getActionCode()));
+        StageAction hardware = batch.stream().filter(a -> "D02".equals(a.getActionCode())).findFirst().orElseThrow();
+        assertThat(hardware.getStatus()).isEqualTo("NA");
+        assertThat(hardware.getDepth()).isEqualTo("LIGHT");
+        StageAction software = batch.stream().filter(a -> "D04".equals(a.getActionCode())).findFirst().orElseThrow();
+        assertThat(software.getStatus()).isEqualTo("NOT_STARTED");
+        assertThat(software.getDepth()).isEqualTo("LIGHT");
+    }
 }

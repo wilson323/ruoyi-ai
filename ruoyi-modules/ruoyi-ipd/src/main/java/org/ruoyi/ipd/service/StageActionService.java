@@ -452,13 +452,16 @@ public class StageActionService implements IStageActionService {
      * PERF-03：批量实例化阶段动作，从 N 次 selectCount + N 次 insert 优化为
      * 1 次 selectList（取项目所有已有 action codes）+ 1 次 insertBatch（批量插入剩余）。
      * 69 动作 CONCEPT 阶段 = 138 IO → 2 IO，P99 下降 ~250ms → ~20ms。
+     * 已有动作码不更新。新行按目录适用性写入：不适用为 NA，深度用 expectedDepth。
      */
     @Transactional(rollbackFor = Exception.class)
     public int instantiate(Long projectId, Long stageId, String stage, IpdActor actor) {
         // Round 8 / 后台安全审查 sibling-path-gate-parity：加项目状态门禁
         // R212-②（看板卡 dbe1b6a7）：状态门禁之上叠加组归属断言（原方法无 actor 入参
         // ⇒ 任意内部 PM 可向任意项目批量物化 69 项阶段动作）。
-        assertProjectWritableInGroup(projectId, actor);
+        Project project = assertProjectWritableInGroup(projectId, actor);
+        String template = project == null ? null : project.getTemplateType();
+        String markets = project == null ? null : project.getTargetMarkets();
         Set<String> existingCodes = stageActionMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
                 .eq(StageAction::getProjectId, projectId))
@@ -466,17 +469,20 @@ public class StageActionService implements IStageActionService {
             .collect(java.util.stream.Collectors.toSet());
         List<StageAction> toCreate = ActionCatalog.byStage(stage).stream()
             .filter(def -> !existingCodes.contains(def.code()))
-            .map(def -> StageAction.builder()
-                .projectId(projectId)
-                .stageId(stageId)
-                .actionCode(def.code())
-                .actionName(def.name())
-                .ownerRole(def.ownerRole())
-                .depth(def.depth())
-                .status("NOT_STARTED")
-                .isBlocking(def.blocking() ? "1" : "0")
-                .isBioFeature(def.bioFeature() ? "1" : "0")
-                .build())
+            .map(def -> {
+                boolean applicable = ActionCatalog.applicableTo(def, template, markets);
+                return StageAction.builder()
+                    .projectId(projectId)
+                    .stageId(stageId)
+                    .actionCode(def.code())
+                    .actionName(def.name())
+                    .ownerRole(def.ownerRole())
+                    .depth(ActionCatalog.expectedDepth(def, template))
+                    .status(applicable ? "NOT_STARTED" : "NA")
+                    .isBlocking(def.blocking() ? "1" : "0")
+                    .isBioFeature(def.bioFeature() ? "1" : "0")
+                    .build();
+            })
             .toList();
         if (!toCreate.isEmpty()) {
             stageActionMapper.insertBatch(toCreate, 200);
@@ -591,10 +597,11 @@ public class StageActionService implements IStageActionService {
      * <p>组断言排在状态门禁之后：跨组者无法借「暂停/归档」与「不存在」的文案差异探测
      * 他组项目状态；而存在性文案（ServiceException）本就对同/跨组一致，未新增泄露面。
      */
-    private void assertProjectWritableInGroup(Long projectId, IpdActor actor) {
+    private Project assertProjectWritableInGroup(Long projectId, IpdActor actor) {
         IpdIdorGuard.requireAuthenticated(actor);
         Project project = assertProjectWritable(projectId);
         IpdIdorGuard.assertSameGroupIpd(actor, project == null ? null : project.getMainGroupId());
+        return project;
     }
 
     /**

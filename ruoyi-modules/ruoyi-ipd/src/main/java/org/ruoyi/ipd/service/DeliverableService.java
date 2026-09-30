@@ -178,7 +178,16 @@ public class DeliverableService implements IDeliverableService {
         if (d.getOssId() == null) {
             throw new ServiceException("交付物未关联对象存储文件，禁止下载（P1-4.2 可信链要求）: " + deliverableId);
         }
-        ossService.download(d.getOssId(), response);
+        try {
+            ossService.download(d.getOssId(), response);
+        } catch (RuntimeException ex) {
+            // 对象存储在写出正文前失败时，清掉已设的附件头，让 IPD 异常包络还能写成 JSON。
+            // 已经提交的响应不再改写。
+            if (!response.isCommitted()) {
+                response.reset();
+            }
+            throw ex;
+        }
     }
 
     /** 小写扩展名（无点号）；无扩展名返回空串，必然不命中白名单。 */

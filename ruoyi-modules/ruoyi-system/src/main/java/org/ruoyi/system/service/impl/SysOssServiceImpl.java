@@ -201,10 +201,12 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         if (ObjectUtil.isNull(sysOss)) {
             throw new ServiceException("文件数据不存在!");
         }
+        OssClient storage = OssFactory.instance(sysOss.getService());
+        // 先完成对象读取。连接失败发生在打开响应流之前，错误包络仍可写成 JSON。
+        var body = storage.download(sysOss.getFileName(), response::setContentLengthLong);
         FileUtils.setAttachmentResponseHeader(response, sysOss.getOriginalName());
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
-        OssClient storage = OssFactory.instance(sysOss.getService());
-        storage.download(sysOss.getFileName(), response.getOutputStream(), response::setContentLengthLong);
+        body.writeTo(response.getOutputStream());
     }
 
     @Override

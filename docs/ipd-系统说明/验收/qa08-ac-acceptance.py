@@ -233,10 +233,15 @@ def probe_sql_setup(cur):
     _db_state["audit_logs_cols"] = [r[0] for r in qall(cur, f"""SELECT column_name
         FROM information_schema.columns WHERE table_schema='{MYSQL_DB}'
         AND table_name='audit_logs' ORDER BY ordinal_position""")]
-    _db_state["gate_elements_total"] = q1(cur, "SELECT COUNT(*) FROM gate_review_elements")
-    _db_state["gate_elements_veto"] = q1(cur, "SELECT COUNT(*) FROM gate_review_elements WHERE is_veto=1")
+    # 现行目录只计已发布、启用、未逻辑删除。草稿、归档和 del_flag=1 的旧副本
+    # 不改 AC 期望的 33 项 / 14 条否决（G1=7,G2=6,G3=5,G4=8,G5=7）。
+    gate_current = "status='published' AND enabled=1 AND del_flag=0"
+    _db_state["gate_elements_total"] = q1(cur,
+        f"SELECT COUNT(*) FROM gate_review_elements WHERE {gate_current}")
+    _db_state["gate_elements_veto"] = q1(cur,
+        f"SELECT COUNT(*) FROM gate_review_elements WHERE is_veto=1 AND {gate_current}")
     _db_state["gate_per_gate"] = dict(qall(cur,
-        "SELECT gate_code, COUNT(*) FROM gate_review_elements GROUP BY gate_code"))
+        f"SELECT gate_code, COUNT(*) FROM gate_review_elements WHERE {gate_current} GROUP BY gate_code"))
     _db_state["cert_total"] = q1(cur, "SELECT COUNT(*) FROM cert_templates")
     _db_state["cert_by_country"] = dict(qall(cur,
         "SELECT country_code, COUNT(*) FROM cert_templates GROUP BY country_code"))
@@ -259,13 +264,11 @@ def probe_sql_setup(cur):
     _db_state["gate_element_results_exists"] = q1(cur,
         f"""SELECT COUNT(*) FROM information_schema.tables
             WHERE table_schema='{MYSQL_DB}' AND table_name='gate_element_results'""") > 0
-    # 回款台账表是否存在（2026-09-06 修正：实际表名为 receipt_ledger 单数，与
-    # ReceiptLedger#@TableName、2026-09-06-ipd-receipt-ledger-table.sql DDL、
-    # tenant.excludes 登记三方一致；原脚本的 receipt_ledgers 复数为笔误，
-    # AC 清单原文亦无复数写法，导致该检查恒 FAIL）
+    # 回款台账表是否存在。实体 ReceiptLedger @TableName 与租户排除清单都是
+    # receipt_ledgers（复数）。2026-09-06 把探测改成单数后，这几条恒 FAIL。
     _db_state["receipt_ledgers_exists"] = q1(cur,
         f"""SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_schema='{MYSQL_DB}' AND table_name='receipt_ledger'""") > 0
+            WHERE table_schema='{MYSQL_DB}' AND table_name='receipt_ledgers'""") > 0
     # launch_date_change_requests
     _db_state["launch_date_cr_exists"] = q1(cur,
         f"""SELECT COUNT(*) FROM information_schema.tables
@@ -278,6 +281,51 @@ def probe_sql_setup(cur):
 
 def get_cfg(key):
     return _db_state["sys_configs"].get(key)
+
+
+# DOC-01 §3.2。null 表示无界，不用 Infinity。
+_DOC01_TIERS = [
+    {"min": "120", "minInclusive": False, "max": None, "maxInclusive": False, "multiplier": "1.2"},
+    {"min": "100", "minInclusive": True, "max": "120", "maxInclusive": True, "multiplier": "1.0"},
+    {"min": "85", "minInclusive": True, "max": "100", "maxInclusive": False, "multiplier": "0.8"},
+    {"min": "70", "minInclusive": True, "max": "85", "maxInclusive": False, "multiplier": "0.6"},
+    {"min": "50", "minInclusive": True, "max": "70", "maxInclusive": False, "multiplier": "0.3"},
+    {"min": None, "minInclusive": False, "max": "50", "maxInclusive": False, "multiplier": "0"},
+]
+
+
+def _achievement_tiers(cfg):
+    """读 bonus.achievementTiers。DOC-01 是对象，旧种子是数组。"""
+    raw = cfg.get("bonus.achievementTiers")
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        return []
+    if isinstance(parsed, dict):
+        rows = parsed.get("tiers")
+        return rows if isinstance(rows, list) else []
+    if isinstance(parsed, list):
+        return parsed
+    return []
+
+
+def _achievement_contract(tiers):
+    """六档与 DOC-01 逐项一致，或旧种子的六档阈值降序。"""
+    if not isinstance(tiers, list) or len(tiers) != 6:
+        return False
+    if all(isinstance(row, dict) and "min" in row for row in tiers):
+        for got, expected in zip(tiers, _DOC01_TIERS):
+            for key, value in expected.items():
+                if got.get(key) != value:
+                    return False
+        return True
+    try:
+        thresholds = [row["threshold"] for row in tiers]
+    except Exception:
+        return False
+    return thresholds == [120, 100, 85, 70, 50, 0]
 
 
 def probe_one(ac: dict, cur) -> dict:
@@ -480,7 +528,7 @@ def probe_one(ac: dict, cur) -> dict:
         return out
     if aid == "AC-AUD-02":
         # verifyChain 真调用（2026-09-07 解锁）：超管 token GET /api/v1/audit-logs/verify
-        s_doc, body = http_get("/v3/api-docs")
+        s_doc, body = http_get("/v3/api-docs", timeout=20)
         listed = "/api/v1/audit-logs/verify" in ((body or {}).get("paths", {}) if isinstance(body, dict) else {})
         tok = login("ipd-admin")
         if tok:
@@ -622,12 +670,23 @@ def probe_one(ac: dict, cur) -> dict:
                             "products_uk_index_exists": _db_state["products_uk_project"]}
         return out
     if aid == "AC-PROD-02":
-        # 硬件模板挂 69 动作：当前 projects=0, stage_actions=0（无实例可挂）
-        out["status"] = "PARTIAL"
+        # 硬件模板挂载 69 行：软件/方案专属动作标 NA，硬件动作保持非 NA。
+        hw_mounted = q1(cur, """
+            SELECT COUNT(*) FROM (
+              SELECT p.id
+              FROM projects p
+              JOIN stage_actions a ON a.project_id = p.id
+              WHERE p.template_type = 'HARDWARE' AND p.del_flag = '0'
+              GROUP BY p.id
+              HAVING COUNT(*) = 69
+                 AND SUM(a.action_code IN ('P05','D04','V04') AND a.status = 'NA') = 3
+                 AND SUM(a.action_code IN ('D02','D03') AND a.status <> 'NA') = 2
+            ) t
+        """)
+        out["status"] = "PASS" if hw_mounted else "PARTIAL"
         out["probe_type"] = "SQL"
-        out["evidence"] = {"projects_alive": _db_state["projects_alive"],
-                            "stage_actions_total": q1(cur, "SELECT COUNT(*) FROM stage_actions"),
-                            "note": "ProjectBootstrapService 落地（d4836573），无项目实例可挂载实测"}
+        out["evidence"] = {"hardware_projects_with_applicable_mount": hw_mounted,
+                            "stage_actions_total": q1(cur, "SELECT COUNT(*) FROM stage_actions")}
         return out
     if aid in ("AC-PROD-03", "AC-PROD-04", "AC-PROD-05", "AC-PROD-09"):
         out["status"] = "BLOCKED"
@@ -636,7 +695,7 @@ def probe_one(ac: dict, cur) -> dict:
         return out
     if aid == "AC-PROD-06":
         # 产品批量导入端点：swagger 列出 /api/v1/products/batch-import
-        s, b = http_get("/v3/api-docs")
+        s, b = http_get("/v3/api-docs", timeout=20)
         ok = "/api/v1/products/batch-import" in (b or {}).get("paths", {})
         out["status"] = "PASS" if ok else "FAIL"
         out["probe_type"] = "OPENAPI"
@@ -644,7 +703,7 @@ def probe_one(ac: dict, cur) -> dict:
         return out
     if aid == "AC-PROD-07":
         # PM 新增在研产品：products POST 端点存在
-        s, b = http_get("/v3/api-docs")
+        s, b = http_get("/v3/api-docs", timeout=20)
         ok = "/api/v1/products" in (b or {}).get("paths", {}) and "post" in (b or {}).get("paths", {}).get("/api/v1/products", {})
         out["status"] = "PARTIAL" if ok else "FAIL"
         out["probe_type"] = "OPENAPI"
@@ -744,11 +803,20 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"ref": "d4836573 P1-3 C05 depth=LIGHT"}
         return out
     if aid == "AC-IPD-26":
-        # 动作总数 69：当前实例 stage_actions=0，无项目挂载可数
-        out["status"] = "PARTIAL"
+        # 69 行且深管 42、轻管 27。9140005 是 45/24，不拿它当这条的样本。
+        mounted = q1(cur, """
+            SELECT COUNT(*) FROM (
+              SELECT project_id FROM stage_actions
+              GROUP BY project_id
+              HAVING COUNT(*) = 69
+                 AND SUM(depth = 'DEEP') = 42
+                 AND SUM(depth = 'LIGHT') = 27
+            ) t
+        """)
+        out["status"] = "PASS" if mounted else "PARTIAL"
         out["probe_type"] = "SQL"
-        out["evidence"] = {"stage_actions_in_db": q1(cur, "SELECT COUNT(*) FROM stage_actions"),
-                            "note": "d4836573 P1-3 seed 69 个（深管 42/轻管 27/阻断 38）；当前 ipd_dev 项目实例 0 故未挂载"}
+        out["evidence"] = {"projects_with_42_deep_27_light": mounted,
+                            "stage_actions_in_db": q1(cur, "SELECT COUNT(*) FROM stage_actions")}
         return out
     if aid in ("AC-IPD-03", "AC-IPD-04", "AC-IPD-05", "AC-IPD-06", "AC-IPD-29"):
         out["status"] = "BLOCKED"
@@ -866,7 +934,7 @@ def probe_one(ac: dict, cur) -> dict:
         return out
     if aid == "AC-GATE-18":
         # gate-elements CRUD 端点存在
-        s, b = http_get("/v3/api-docs")
+        s, b = http_get("/v3/api-docs", timeout=20)
         paths = (b or {}).get("paths", {})
         ok = "/api/v1/gate-elements" in paths
         out["status"] = "PARTIAL" if ok else "FAIL"
@@ -1116,7 +1184,7 @@ def probe_one(ac: dict, cur) -> dict:
         out["probe_type"] = "SQL"
         out["evidence"] = {"bonus.salesSource": cfg.get("bonus.salesSource"),
                             "receipt_ledger_table_exists": rl,
-                            "note": "配置链已就位；表已建（receipt_ledger 单数），月度录入数据留 QA 复核"}
+                            "note": "配置链已就位；表已建（receipt_ledgers），月度录入数据留 QA 复核"}
         return out
     if aid in ("AC-INC-16c", "AC-INC-16d"):
         rl = _db_state["receipt_ledgers_exists"]
@@ -1125,30 +1193,21 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"receipt_ledger_table_exists": rl}
         return out
     if aid == "AC-INC-17":
-        # 6 档阶梯区间制
-        cfg = _db_state["sys_configs"]
-        v = cfg.get("bonus.achievementTiers")
-        try:
-            tiers = json.loads(v) if v else []
-            ok = len(tiers) == 6
-        except Exception:
-            ok = False
+        # 6 档阶梯。库内是 DOC-01 对象 {"unit","tiers"}，不是阈值数组。
+        tiers = _achievement_tiers(_db_state["sys_configs"])
+        ok = _achievement_contract(tiers)
         out["status"] = "PASS" if ok else "FAIL"
         out["probe_type"] = "SQL"
-        out["evidence"] = {"bonus.achievementTiers_count": len(tiers) if isinstance(tiers, list) else 0}
+        out["evidence"] = {"bonus.achievementTiers_count": len(tiers)}
         return out
     if aid in ("AC-INC-17b", "AC-INC-17c", "AC-INC-17d", "AC-INC-17e", "AC-INC-17f"):
-        # 端点边界测试：cfg 区间已对（≥阈值从高到低），但服务端匹配逻辑需实测
-        cfg = _db_state["sys_configs"]
-        v = cfg.get("bonus.achievementTiers")
-        try:
-            tiers = json.loads(v) if v else []
-            ok = len(tiers) == 6 and sorted([t["threshold"] for t in tiers], reverse=True) == [t["threshold"] for t in tiers]
-        except Exception:
-            ok = False
+        # 配置与 DOC-01 六档一致才进入部分通过；端点命中不在这条只读探针里调用计算。
+        tiers = _achievement_tiers(_db_state["sys_configs"])
+        ok = _achievement_contract(tiers)
         out["status"] = "PARTIAL" if ok else "FAIL"
         out["probe_type"] = "SQL"
-        out["evidence"] = {"tiers_descending": ok, "note": "配置已正确排序，真机匹配需登录"}
+        out["evidence"] = {"tiers_match_doc01": ok,
+                            "note": "六档与 DOC-01 一致；端点命中未在本探针调用计算接口"}
         return out
     if aid == "AC-INC-17g":
         # 静态检查：=== 100 / equalityTolerance / toFixed(2) == 零命中
@@ -1163,21 +1222,13 @@ def probe_one(ac: dict, cur) -> dict:
     if aid == "AC-INC-17h":
         cfg = _db_state["sys_configs"]
         et = cfg.get("bonus.equalityTolerance")  # 应不存在
-        at = cfg.get("bonus.achievementTiers")
-        try:
-            tiers = json.loads(at) if at else []
-            # 期望 [{Infinity,1.2},{120,1.0},{85,0.8},{70,0.6},{50,0.3},{0,0}]
-            thresholds = [t["threshold"] for t in tiers]
-            mults = [t["multiplier"] for t in tiers]
-            expected_thr = [120, 100, 85, 70, 50, 0]  # 数据库用 120/100/85/70/50/0
-            expected_mul = [1.2, 1.0, 0.8, 0.6, 0.3, 0.0]
-            ok = (et is None) and (thresholds == expected_thr) and (mults == expected_mul)
-        except Exception:
-            ok = False
+        tiers = _achievement_tiers(cfg)
+        ok = (et is None) and _achievement_contract(tiers)
         out["status"] = "PASS" if ok else "FAIL"
         out["probe_type"] = "SQL"
         out["evidence"] = {"bonus.equalityTolerance_absent": et is None,
-                            "tiers_thresholds": thresholds if 'thresholds' in dir() else None}
+                            "tiers_match_doc01": ok,
+                            "tiers_count": len(tiers)}
         return out
     if aid in ("AC-INC-18", "AC-INC-19", "AC-INC-20", "AC-INC-21"):
         out["status"] = "PARTIAL"
@@ -1213,7 +1264,7 @@ def probe_one(ac: dict, cur) -> dict:
               cfg.get("bonus.salesSource") == "RECEIPT")
         out["status"] = "PARTIAL" if ok else "FAIL"
         out["probe_type"] = "SQL"
-        out["evidence"] = {"config_chain_ready": ok, "note": "算例公式参数就位；receipt_ledger 表已建，算例实测留 QA"}
+        out["evidence"] = {"config_chain_ready": ok, "note": "算例公式参数就位；receipt_ledgers 表已建，算例实测留 QA"}
         return out
     if aid in ("AC-INC-29c", "AC-INC-29d"):
         # 算例 C/D：依赖 ReceiptLedger
@@ -1364,7 +1415,7 @@ def probe_one(ac: dict, cur) -> dict:
         return out
     if aid == "AC-DEL-08":
         # purge 端点存在
-        s, b = http_get("/v3/api-docs")
+        s, b = http_get("/v3/api-docs", timeout=20)
         ok = "/api/v1/deletion-requests/{id}/purge" in (b or {}).get("paths", {})
         out["status"] = "PARTIAL" if ok else "FAIL"
         out["probe_type"] = "OPENAPI"
@@ -1507,6 +1558,11 @@ def main():
     fail_list = [r for r in results if r["status"] == "FAIL"]
     partial_list = [r for r in results if r["status"] == "PARTIAL"]
     blocked_list = [r for r in results if r["status"] == "BLOCKED"]
+    unmeasured = [r for r in results
+                  if "DEPENDENCY" in (r.get("probe_type") or "")
+                  or r.get("probe_type") == "UNVERIFIABLE"]
+    measured = [r for r in results if r not in unmeasured]
+    measured_pass = [r for r in measured if r["status"] == "PASS"]
 
     summary = {
         "card": "QA-08",
@@ -1517,6 +1573,10 @@ def main():
         "fail": len(fail_list),
         "blocked": len(blocked_list),
         "pass_rate": round(len(pass_list) / max(len(results), 1) * 100, 1),
+        "excluded_unmeasured": len(unmeasured),
+        "measured_total": len(measured),
+        "measured_pass": len(measured_pass),
+        "measured_pass_rate": round(len(measured_pass) / max(len(measured), 1) * 100, 1),
         "env": {"backend": BACKEND, "mysql": f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}",
                 "auth_chain": "audit_log_chain_heads 已落库；HTTP 探针走 bootstrap 真登录（只读）；"
                               "ipd-admin must_change_pwd 已置 0 作超管正对照夹具，其余 demo 保持首登态作 20003 探针"},
@@ -1571,6 +1631,9 @@ def main():
     print(f"Total: {len(results)}  PASS: {len(pass_list)}  PARTIAL: {len(partial_list)}  "
           f"FAIL: {len(fail_list)}  BLOCKED: {len(blocked_list)}")
     print(f"Pass rate: {summary['pass_rate']}%")
+    print(f"Measured pass rate: {summary['measured_pass_rate']}% "
+          f"({summary['measured_pass']}/{summary['measured_total']}, "
+          f"excluded unmeasured {summary['excluded_unmeasured']})")
     print(f"\nPhase breakdown:")
     for ph, st in summary["by_section"].items():
         print(f"  {ph}: total={st['total']} pass={st['pass']} partial={st['partial']} fail={st['fail']} blocked={st['blocked']}")
