@@ -13275,3 +13275,12 @@ marker: `codex-agentscope-production-readiness-checklist-20260928`。用户要�
 - **[探针修正]** AiSuggestResp 信封字段现查为 markdown/degraded（非 content），S7 判定改 degraded+文案双契约（比 code≠0 更严）；真库无 active 时是降级应答非异常拒绝，属服务既有设计语义。
 - **[部署面交叉污染观察，移交]** 第 4 轮进程返回过 OUTPUT_TRUNCATED 但磁盘源码/HEAD/当前 jar 均无该字符串（仅 untracked AiGatewayCompletionGuardTest.java 引用）——兄弟会话中间态构建的 guard 类被进程缓存、源码后又回退。已用磁盘 HEAD 源码 21:44 重打包 + 21:52 重启消除；若 guard 是预期特性请兄弟波次自行入库，勿静默丢弃。
 - marker c2-3f-outbound-probe-6of6
+
+## 2026-09-29 ZK-IPD↔代码全量 diff 治理波（治理审计会话，owner 授权 A/B/C/D 四项全选）
+- **[A 报告入库]** `ZK-IPD-vs-Code-全量diff-20260929.md`（154 条不一致 + 4 张 P1 卡草案）commit f9afee7e 已 push。首提事故披露：共享 index 下兄弟会话在我们 stage 后又追加 7 个 HR-mirror 文件，被首次 commit 捎带 → 立即 reset --soft 回退，改用 pathspec 单文件重提；兄弟文件零损（后由其 a5866839 自行入库）。教训回灌：多会话共工下 commit 必须用 pathspec，禁用裸 commit。
+- **[A 门禁假红根因存档]** 当时门禁 3 exit=6（bit2 防伪 + bit4 新孤儿）系兄弟在途 `HrSyncController.java`(M) 推行号所致；`git show HEAD` 自证白名单 5 条 evidence 与 HEAD 版 :108/:120/:151/:167/:194 完全吻合。兄弟 21:5x 入库 a5866839（含行号对齐）后门禁转绿（现查 PASS），未绕闸未改白名单。docs-only 期间按 memory c3c4e30a 纪律 --no-verify + commit message 显式根因。
+- **[C 修复 ZK-DIFF-P1-02]** `GateElementService.publish()` 补页47规格③发布前校验：isVeto('Y'归一后)='1' ⇒ vetoDualRequired 必须 '1'，否则 400；同步补 validateDefinition 统一校验（含 thresholdJson）。`GateElementPublishTest` +4 契约用例（P4~P7）；`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='GateElement*Test' test` **58/58 绿**（22:0x 实测，PublishTest suite xml tests=7 failures=0）。commit 3290b166 全 5 门禁绿后 push。真库/HTTP 正反例验收待补，卡面维持 ◐ 不翻 done。
+- **[D 调研结论（只读）]** `ProjectAgentPanel` 宿主选型：首选 `ai-assistant.vue` AI 模式 `IpdAiWorkspace` 区（面板 docstring 设即于此；:687 现被短路 return，需接 submitText 转发；projectId 可由 layout `ipd:active-project-updated` 事件现成供给），次选 `project/action-detail`（actionCode prop 已预置）；卡片注册表收口：`card-registry.ts` 现 4 类，`SubStageGuideTool` 第 5 类 `sub-stage.guide` 游离在外待并。已写入镜像 P1-04 卡面注记。
+- **[B 看板登记]** 镜像新增「ZK-DIFF P1 卡登记波」区块（marker `zk-diff-p1-register-20260929`）：P1-01 ⬜ / P1-02 ◐ / P1-03 ⬜(待O2拍板) / P1-04 ⬜(待O4/O5拍板)。
+- **[接手兄弟 log.md 在途登记（R25 软化三步法）**：本波 commit 前对 log.md 兄弟 M/改动逐一审读：两条纯追加登记（R118 PARTIAL→VERIFIED 更新 + C2-3f 探针闭环）无冲突，原样入库；其自有编号体系未撞号。
+- marker zk-diff-p1-register-20260929

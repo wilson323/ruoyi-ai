@@ -94,6 +94,8 @@
 
 ## 5) 建议登记看板 P1 卡（4 张，本轮新发现）
 
+> **登记结果追补（2026-09-29 22:1x）**：4 卡已登看板镜像 marker `zk-diff-p1-register-20260929`；P1-02 已代码实施 commit `3290b166`（GateElement*Test 58/58 绿，真库 HTTP 验收待补，卡面 ◐）；P1-04 卡面已按宿主选型调研回填建议（首选 ai-assistant AI 模式 IpdAiWorkspace 区）。
+
 > **登记方式**：按 AGENTS.md §「并发写单一写入者（OPS-09）」+ 「写操作用 `manage.py set` 同步源和看板」——本报告不直接编辑 `开发计划-看板镜像.md`，仅提供卡片草案供 owner 或主协调会话走 `manage.py set` 或 Vibe Kanban UI 正式登记。
 
 | # | 建议编号 | 卡片标题 | 优先级 | 验收要点 | allowedPaths | 验证命令 | 依据 |
