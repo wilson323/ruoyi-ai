@@ -262,6 +262,36 @@ run_langchain4j_gate() {
     fi
 }
 
+# 已跟踪符号链接若指向仓库外的绝对路径，或目标已不存在，rg --follow 会整次搜索失败。
+run_symlink_gate() {
+    echo "[check-pre-commit] → 门禁 6: 已跟踪符号链接必须是仓库内相对路径且目标存在"
+    local broken=0
+    local line meta path mode target
+    while IFS= read -r line; do
+        meta="${line%%$'\t'*}"
+        path="${line#*$'\t'}"
+        mode="${meta%% *}"
+        [[ "$mode" == "120000" ]] || continue
+        target="$(git -C "$REPO_ROOT" show ":$path" 2>/dev/null || true)"
+        target="${target%$'\n'}"
+        if [[ "$target" == /* ]]; then
+            echo "[check-pre-commit] ❌ 绝对路径符号链接: $path -> $target" >&2
+            broken=1
+            continue
+        fi
+        if [[ -L "$REPO_ROOT/$path" && ! -e "$REPO_ROOT/$path" ]]; then
+            echo "[check-pre-commit] ❌ 目标不存在: $path -> $(readlink "$REPO_ROOT/$path")" >&2
+            broken=1
+        fi
+    done < <(git -C "$REPO_ROOT" ls-files -s)
+    if [[ "$broken" -eq 0 ]]; then
+        echo "[check-pre-commit] ✅ 门禁 6 PASS"
+        PASSED=$((PASSED + 1))
+    else
+        FAILED=$((FAILED + 1))
+    fi
+}
+
 case "$MODE" in
     all)
         # R43-α 二轮: 所有 hook 模式默认跑门禁 0(untracked 引用检测) < 1s
@@ -271,6 +301,7 @@ case "$MODE" in
         run_ratchet_gate
         run_shell_var_gate
         run_langchain4j_gate
+        run_symlink_gate
         ;;
     drift)
         run_untracked_gate
@@ -292,6 +323,7 @@ case "$MODE" in
         run_ratchet_gate
         run_shell_var_gate
         run_langchain4j_gate
+        run_symlink_gate
         SKIPPED=2
         echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"
         ;;

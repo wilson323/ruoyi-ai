@@ -10,7 +10,7 @@
 ## 不适用范围
 
 - 与 ai-native-sdlc 链接的 skill（已有 references/ 子目录，不要破坏）
-- 第三方维护的 skill（symlink 到 `~/.claude/ai-native-sdlc/skills/`）
+- 第三方维护的 skill（本机全局技能在 `~/.claude/ai-native-sdlc/baseline/skills/`，不要在仓库里提交指向 `$HOME` 的绝对符号链接）
 
 ## 改造步骤
 
