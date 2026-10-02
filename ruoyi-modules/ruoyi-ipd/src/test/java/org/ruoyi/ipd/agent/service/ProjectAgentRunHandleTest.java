@@ -51,7 +51,10 @@ class ProjectAgentRunHandleTest {
         handle.onText("竞品");
         handle.onText("分析");
         handle.onToolCall("call-1", "project_knowledge_search");
-        handle.onSource(Map.of("hits", 1));
+        handle.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "citationText", "竞品分析",
+            "sourceEvidence", List.of(Map.of("sourceName", "测试知识片段", "documentId", "fixture-fragment",
+                "knowledgeId", "fixture-knowledge", "sourceType", "KNOWLEDGE_FRAGMENT",
+                "reviewStatus", "NOT_PROJECT_DOCUMENT"))));
         handle.onComplete();
         handle.onComplete();
         handle.onError("STREAM_ERROR");
@@ -108,7 +111,10 @@ class ProjectAgentRunHandleTest {
         handle.onComplete();
         handle.onText("迟到文本");
         handle.onToolCall("late", "project_knowledge_search");
-        handle.onSource(Map.of("hits", 1));
+        handle.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "citationText", "竞品分析",
+            "sourceEvidence", List.of(Map.of("sourceName", "测试知识片段", "documentId", "fixture-fragment",
+                "knowledgeId", "fixture-knowledge", "sourceType", "KNOWLEDGE_FRAGMENT",
+                "reviewStatus", "NOT_PROJECT_DOCUMENT"))));
 
         List<IpdAgentRunEvent> events = store.events(run.getId());
         assertThat(events).extracting(IpdAgentRunEvent::getEventType).containsExactly("TEXT_DELTA", "RUN_FINISHED");
@@ -219,6 +225,10 @@ class ProjectAgentRunHandleTest {
         IpdAgentRun after = store.findRun(run.getId()).orElseThrow();
         assertThat(after.getStatus()).isEqualTo("FAILED");
         assertThat(after.getErrorCode()).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(store.events(run.getId()).stream().filter(e -> "ERROR".equals(e.getEventType()))
+            .findFirst().orElseThrow().getPayload())
+            .contains("\"completionReason\":\"MISSING_RETRIEVAL_DISCLOSURE\"")
+            .doesNotContain("竞品价格", "12 元");
     }
 
     @Test
@@ -252,5 +262,9 @@ class ProjectAgentRunHandleTest {
             .doesNotContain("ARTIFACT", "RUN_FINISHED");
         assertThat(store.findRun(run.getId()).orElseThrow().getErrorCode())
             .isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(store.events(run.getId()).stream().filter(e -> "ERROR".equals(e.getEventType()))
+            .findFirst().orElseThrow().getPayload())
+            .contains("\"completionReason\":\"GATE_AUTHORITY_CLAIM\"")
+            .doesNotContain("建议 Gate 签署");
     }
 }

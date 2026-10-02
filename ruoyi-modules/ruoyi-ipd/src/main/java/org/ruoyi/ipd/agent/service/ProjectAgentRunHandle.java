@@ -238,6 +238,8 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         flushText();
         boolean won = false;
         AgentRunStatus effectiveWon = null;
+        boolean completionEvaluated = false;
+        ProjectAgentCompletionGate.RejectionReason completionReason = null;
         for (int attempt = 0; attempt < FINISH_ATTEMPTS && !won; attempt++) {
             AgentRunStatus current = store.findRun(runId).map(r -> AgentRunStatus.valueOf(r.getStatus())).orElse(null);
             if (current == null || current.isTerminal()) {
@@ -246,10 +248,13 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
             AgentRunStatus effective = current == AgentRunStatus.CANCEL_REQUESTED ? AgentRunStatus.CANCELLED : target;
             String code = effective == AgentRunStatus.FAILED ? errorCode : null;
             if (effective == AgentRunStatus.SUCCEEDED) {
-                String rejection = completion.reject(fullText.toString());
-                if (rejection != null) {
+                if (!completionEvaluated) {
+                    completionReason = completion.rejectionReason(fullText.toString());
+                    completionEvaluated = true;
+                }
+                if (completionReason != null) {
                     effective = AgentRunStatus.FAILED;
-                    code = rejection;
+                    code = ProjectAgentCompletionGate.REJECTED;
                 }
             }
             won = store.transition(runId, EnumSet.of(current), effective, code, new Date(clock.getAsLong()));
@@ -264,7 +269,7 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
                             runId, artifactEx.getClass().getName());
                     }
                 }
-                writeTerminal(effective, code);
+                writeTerminal(effective, code, effective == AgentRunStatus.FAILED ? completionReason : null);
             }
         }
         closed = true;
@@ -363,11 +368,15 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         write(AgentEventType.TEXT_DELTA, payload);
     }
 
-    private void writeTerminal(AgentRunStatus status, String errorCode) {
+    private void writeTerminal(AgentRunStatus status, String errorCode,
+                               ProjectAgentCompletionGate.RejectionReason completionReason) {
         Map<String, Object> payload = new LinkedHashMap<>();
         if (status == AgentRunStatus.FAILED) {
             payload.put("errorCode", errorCode);
             payload.put("message", ProjectAgentErrorTexts.textOf(errorCode));
+            if (completionReason != null) {
+                payload.put("completionReason", completionReason.name());
+            }
             write(AgentEventType.ERROR, payload);
         } else {
             payload.put("status", status.name());
