@@ -172,7 +172,36 @@ public final class ProjectAgentCompletionGate {
         if (explicitIdentityContradiction(body)) {
             return true;
         }
-        return uniqueTitleMislabel(body);
+        return metadataMislabel(body) || uniqueTitleMislabel(body);
+    }
+
+    /** 项目上下文是元数据，不因出现在审核材料层级表里就成为已审核文档。 */
+    private static boolean metadataMislabel(String body) {
+        for (String raw : body.split("[\\r\\n；;。]")) {
+            String line = raw.replace("**", "").replace("`", "").trim();
+            if (line.startsWith("|")) {
+                String[] cells = line.split("\\|", -1);
+                // 只核明确的“来源主体 → 类型”表行，不把整行任意后置字段借给主体。
+                if (cells.length > 2 && metadataSubject(cells[1].trim())
+                    && reviewedClassification(cells[2].trim())) return true;
+            } else if ((line.startsWith("项目事实") || line.startsWith("项目上下文") || line.startsWith("项目元数据"))
+                && !line.matches(".*(?:若|如果|如有|尚未取得|未取得).*")) {
+                String relation = line.replaceFirst("^(项目事实|项目上下文|项目元数据)", "").trim();
+                if (!relation.matches(".*(?:不是|不等于|不属于|不能作为|不代表|不应视为).*")) {
+                    if (relation.matches(".{0,80}(?:属于|作为|等同于|视为|是)(?:项目已审核文档|已审核项目文档|已审核文档).*"))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean metadataSubject(String value) {
+        return value.matches("^(?:项目事实|项目上下文|项目元数据)(?:[（(：:，,\\s].*|$)");
+    }
+
+    private static boolean reviewedClassification(String value) {
+        return value.matches("^(?:项目已审核文档|已审核项目文档|已审核文档)(?:[（(\\s].*|$)");
     }
 
     /** 每条引用独立核对完整标识，不让同行的其他来源借用类型或审核状态。 */

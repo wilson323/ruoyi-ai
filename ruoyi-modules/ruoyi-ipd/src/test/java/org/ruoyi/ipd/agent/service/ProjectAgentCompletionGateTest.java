@@ -16,6 +16,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProjectAgentCompletionGateTest {
 
     @Test
+    @DisplayName("项目上下文不得冒作审核文档；否定、条件和层级定义不拒绝")
+    void projectMetadataCannotBecomeReviewedDocument() {
+        ProjectAgentCompletionGate gate = new ProjectAgentCompletionGate();
+        String realRow = "| 项目事实（项目代号 / 产品代号 / 阶段 / 动作） | **项目已审核文档**（最高） | 项目边界 | 未含产品 D 规格 |";
+        assertThat(gate.rejectionReason(realRow))
+            .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SOURCE_IDENTITY_MISMATCH);
+        assertThat(gate.reject("项目上下文是项目已审核文档")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        for (String allowed : java.util.List.of(
+            "项目事实不是已审核文档", "项目事实不等于已审核文档",
+            "| 项目事实（阶段） | 不是项目已审核文档 |",
+            "项目事实尚未取得；若有已审核文档将引用",
+            "权威层级定义：项目已审核文档最高，系统知识片段其次",
+            "若有已审核文档将引用，其他材料仅备查")) {
+            assertThat(gate.reject(allowed)).as(allowed).isNull();
+        }
+        gate.noteSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "citationText", "已审核正文",
+            "sourceEvidence", java.util.List.of(Map.of("sourceType", "PROJECT_DOCUMENT",
+                "documentId", "123", "sourceName", "审核文件.md", "reviewStatus", "REVIEWED"))));
+        assertThat(gate.reject("审核文件.md documentId=123 sourceType=PROJECT_DOCUMENT reviewStatus=REVIEWED")).isNull();
+        assertThat(gate.reject(realRow)).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+    }
+
+    @Test
     @DisplayName("固定原因保持原判据、首拒绝优先与通用业务码")
     void fixedReasonsPreserveDecisionAndPrecedence() {
         ProjectAgentCompletionGate gate = new ProjectAgentCompletionGate();
