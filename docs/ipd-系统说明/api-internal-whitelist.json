@@ -1,6 +1,6 @@
 {
   "$schema_version": 1,
-  "notice": "API 内部/运维口白名单（R212 卡 7b76b7cd API-GATE-RATCHET, owner 2026-09-24 拍板）。主键=path(canonical, {VAR} 归一)；methods 仅提示不参与豁免判定。六条防伪校验由 scripts/api-contract/orphan-gate-lib.mjs validateWhitelist 强制: ①owner_card 须在看板镜像 | KEY | 命中 ②path 须在后端扫描集 ③evidence File.java:NN 须 ≤ 行数且该行含 Mapping ④expire 过期即失效(回落 WARN) ⑤前端已接线条目报 stale(strict 阻断) ⑥reason≥12 字且 review_date 近 90 天。新增/变更须挂看板卡执行。",
+  "notice": "API 内部/运维口白名单（R212 卡 7b76b7cd API-GATE-RATCHET, owner 2026-09-24 拍板）。主键=path(canonical, {VAR} 归一)；methods 须与证据Mapping一致；豁免分类仍按canonical path。六条防伪校验由 scripts/api-contract/orphan-gate-lib.mjs validateWhitelist 强制: ①owner_card 须在看板镜像 | KEY | 命中 ②path 须在后端扫描集 ③evidence File.java#methodName 须唯一对应同文件实际Mapping的路径及HTTP方法，兼容严格绑定的 File.java:NN ④expire 过期即失效(回落 WARN) ⑤前端已接线条目报 stale(strict 阻断) ⑥reason≥12 字且 review_date 近 90 天。新增/变更须挂看板卡执行。",
   "entries": [
     {
       "path": "/api/v1/gates/sign/scan-remind",
@@ -12,7 +12,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "GateSignScanController.java:38"
+      "evidence": "GateSignScanController.java#scanRemind"
     },
     {
       "path": "/api/v1/gates/sign/scan-timeout",
@@ -24,7 +24,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "GateSignScanController.java:32"
+      "evidence": "GateSignScanController.java#scanTimeout"
     },
     {
       "path": "/api/v1/handovers/scan-overdue",
@@ -36,7 +36,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HandoverController.java:156"
+      "evidence": "HandoverController.java#scanOverdueDrafts"
     },
     {
       "path": "/api/v1/hr-sync/sync-now",
@@ -48,7 +48,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:153"
+      "evidence": "HrSyncController.java#syncNow"
     },
     {
       "path": "/api/v1/hr-sync/sync-one",
@@ -60,7 +60,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:174"
+      "evidence": "HrSyncController.java#syncOne"
     },
     {
       "path": "/api/v1/hr-sync/last-run",
@@ -72,7 +72,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:201"
+      "evidence": "HrSyncController.java#lastRun"
     },
     {
       "path": "/api/v1/hr-sync/mark-resigned",
@@ -84,7 +84,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:110"
+      "evidence": "HrSyncController.java#markResigned"
     },
     {
       "path": "/api/v1/hr-sync/escalate-stale-resignations",
@@ -96,7 +96,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "HrSyncController.java:122"
+      "evidence": "HrSyncController.java#escalateStaleResignations"
     },
     {
       "path": "/api/v1/gates/legacy/scan-overdue",
@@ -108,7 +108,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "LegacyScanController.java:27"
+      "evidence": "LegacyScanController.java#scanOverdue"
     },
     {
       "path": "/api/v1/guest-demands/overdue-scan",
@@ -120,7 +120,7 @@
       "review_date": "2026-09-26",
       "expire": "2026-12-31",
       "added_by": "R218-AC续跑波",
-      "evidence": "GuestDemandOverdueScanController.java:27"
+      "evidence": "GuestDemandOverdueScanController.java#scanOverdueUnassigned"
     },
     {
       "path": "/api/v1/notifications/async-dispatch",
@@ -132,7 +132,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "NotificationController.java:103"
+      "evidence": "NotificationController.java#asyncDispatch"
     },
     {
       "path": "/api/v1/notifications/dispatch-pending",
@@ -144,7 +144,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "NotificationController.java:89"
+      "evidence": "NotificationController.java#dispatchPending"
     },
     {
       "path": "/api/v1/project-score-tasks/scan",
@@ -156,7 +156,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "ProjectScoreTaskController.java:27"
+      "evidence": "ProjectScoreTaskController.java#scan"
     },
     {
       "path": "/api/v1/kpi/shared/deadline-scan",
@@ -168,7 +168,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "SharedKpiController.java:74"
+      "evidence": "SharedKpiController.java#scanDeadlines"
     },
     {
       "path": "/api/v1/product-groups/{VAR}/remove",
@@ -180,7 +180,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "ProductGroupController.java:74"
+      "evidence": "ProductGroupController.java#remove"
     },
     {
       "path": "/api/v1/stage-actions/instantiate",
@@ -192,7 +192,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "StageActionController.java:100"
+      "evidence": "StageActionController.java#instantiate"
     },
     {
       "path": "/api/v1/stage-actions/ensure-bio-compliance",
@@ -204,7 +204,7 @@
       "review_date": "2026-09-24",
       "expire": "2026-12-31",
       "added_by": "7b76b7cd",
-      "evidence": "StageActionController.java:113"
+      "evidence": "StageActionController.java#ensureBioCompliance"
     },
     {
       "path": "/api/v1/deliverables/upload",
@@ -216,7 +216,7 @@
       "review_date": "2026-09-25",
       "expire": "2026-12-31",
       "added_by": "fde68b8c",
-      "evidence": "DeliverableController.java:50"
+      "evidence": "DeliverableController.java#upload"
     },
     {
       "path": "/api/v1/deliverables/{VAR}/download",
@@ -228,7 +228,7 @@
       "review_date": "2026-09-25",
       "expire": "2026-12-31",
       "added_by": "fde68b8c",
-      "evidence": "DeliverableController.java:60"
+      "evidence": "DeliverableController.java#download"
     },
     {
       "path": "/api/v1/bid-invitations/expire-scan",
@@ -240,7 +240,7 @@
       "review_date": "2026-09-26",
       "expire": "2026-12-31",
       "added_by": "R219 U1四卡修复波",
-      "evidence": "BidInvitationExpireScanController.java:27"
+      "evidence": "BidInvitationExpireScanController.java#expireScan"
     },
     {
       "path": "/api/v1/stage-actions/overdue-scan",
@@ -252,7 +252,7 @@
       "review_date": "2026-09-26",
       "expire": "2026-12-31",
       "added_by": "R219 U1四卡修复波",
-      "evidence": "StageActionOverdueScanController.java:27"
+      "evidence": "StageActionOverdueScanController.java#overdueScan"
     },
     {
       "path": "/copilotkit/info",
@@ -264,7 +264,7 @@
       "review_date": "2026-09-28",
       "expire": "2026-12-31",
       "added_by": "copilotkit-single-track-be",
-      "evidence": "CopilotKitRuntimeController.java:89"
+      "evidence": "CopilotKitRuntimeController.java#info"
     },
     {
       "path": "/copilotkit/agent/{VAR}/run",
@@ -276,7 +276,7 @@
       "review_date": "2026-09-28",
       "expire": "2026-12-31",
       "added_by": "copilotkit-single-track-be",
-      "evidence": "CopilotKitRuntimeController.java:121"
+      "evidence": "CopilotKitRuntimeController.java#run"
     },
     {
       "path": "/api/v1/persons/active",
@@ -288,7 +288,7 @@
       "review_date": "2026-09-28",
       "expire": "2026-12-31",
       "added_by": "e2e-contract-stages-active-20260928",
-      "evidence": "PersonController.java:82"
+      "evidence": "PersonController.java#listActive"
     }
   ]
 }

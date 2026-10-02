@@ -15,7 +15,6 @@ import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.constant.SystemConstants;
 import org.ruoyi.common.core.constant.TenantConstants;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.common.core.service.WorkflowService;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.core.utils.StreamUtils;
@@ -210,12 +209,6 @@ public class SysTenantServiceImpl implements ISysTenantService {
         }
         configMapper.insertBatch(sysConfigList);
 
-        // 未开启工作流不执行下方操作
-        if (SpringUtils.getProperty("warm-flow.enabled", Boolean.class, false)) {
-            WorkflowService workflowService = SpringUtils.getBean(WorkflowService.class);
-            // 新增租户流程定义
-            workflowService.syncDef(tenantId);
-        }
         return true;
     }
 

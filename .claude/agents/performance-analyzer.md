@@ -22,7 +22,6 @@ description: RuoYi-AI 项目性能专项审查代理。专攻 SQL 慢查询与 N
 
 - 代码风格 / 命名 / 注释 → `code-reviewer`
 - 业务安全（多租户、SQL 注入、密钥） → `security-reviewer`
-- AI prompt 安全 / 工具暴露 → `langchain4j-agent-reviewer`
 
 ## 审查维度（按优先级）
 

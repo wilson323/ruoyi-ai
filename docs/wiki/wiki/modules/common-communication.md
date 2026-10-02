@@ -40,8 +40,6 @@ security:
     - /favicon.ico
     - /error
     - /*/api-docs
-    - /warm-flow-ui/config
-    - /workflow/run
 ```
 
 ## ruoyi-common-sse（8 文件）
@@ -75,7 +73,7 @@ SseMessageUtils.sendMessage(userId, new SseMessageDto("chat", "data..."));
 
 WebSocket 服务端（默认关）。
 
-参见 [claude-md.md § websocket.enabled](../raw/project-skeleton/claude-md.md)。
+参见 。
 
 **关键类**：
 
@@ -107,7 +105,7 @@ websocket:
 
 AWS S3 / MinIO 对象存储。
 
-参见 [claude-md.md § MinIO 端口](../raw/project-skeleton/claude-md.md)。
+参见 。
 
 **关键类**：
 
@@ -147,7 +145,7 @@ mail:
   ssl: true
 ```
 
-**典型用法**（aiflow 节点 `EmailSend`）：
+**典型用法**（邮件通知场景）：
 
 ```java
 mailService.sendText("user@example.com", "标题", "正文");
@@ -169,7 +167,7 @@ mailService.sendHtml("user@example.com", "标题", "<p>HTML 正文</p>");
 
 社交登录（基于 JustAuth）。
 
-参见 [claude-md.md § JustAuth](../raw/project-skeleton/claude-md.md)。
+参见 。
 
 **支持的平台**：GitHub / Gitee / 微信 / QQ / 支付宝 / 百度 / 钉钉 / 飞书等。
 
@@ -181,13 +179,11 @@ mailService.sendHtml("user@example.com", "标题", "<p>HTML 正文</p>");
 
 ## 与 chat 模块的关系
 
-7 个通信模块全部支撑 chat / aiflow 模块：
+7 个通信模块全部支撑 chat / ipd 模块：
 
 - **SSE**：LLM 流式输出
 - **WebSocket**：协同场景
 - **OSS**：文件上传（聊天附件、AI 生成图片 / 视频）
-- **Mail**：aiflow 邮件节点 + 通知
+- **Mail**：邮件通知
 - **SMS**：登录验证码
 - **Social**：第三方登录
-
-参见：[claude-md.md § 排除路径 / 端口表](../raw/project-skeleton/claude-md.md)。

@@ -3,7 +3,6 @@ topic: cross-cutting/deployment-guide
 title: 部署指南
 updated: 2026-09-04
 raw:
-  - raw/project-skeleton/application-yml.md
   - raw/docker-source/docker-compose-all.md
   - raw/docker-source/docker-compose.md
   - raw/docker-source/dockerfile-admin.md
@@ -14,8 +13,6 @@ raw:
 # 部署指南
 
 RuoYi-AI 提供 3 种部署方式：**Docker Compose 一键启动**（推荐）、**分模块源码构建**、**传统外部 Tomcat war 包**。
-
-参见：[readme-md.md § Docker Deployment](../raw/project-skeleton/readme-md.md)、[pom-xml.md](../raw/project-skeleton/pom-xml.md)。
 
 ## 方式一：一键启动（推荐）
 
@@ -104,7 +101,7 @@ docker compose up -d --build
 
 ## 方式三：外部 Tomcat war 包
 
-参见：[pom-xml.md § maven-war-plugin](../raw/project-skeleton/pom-xml.md) + [RuoYiAIServletInitializer](../raw/admin-source/ruoyi-ai-servlet-initializer)。
+参见： + [RuoYiAIServletInitializer](../raw/admin-source/ruoyi-ai-servlet-initializer)。
 
 ```bash
 mvn clean package -DskipTests
@@ -114,7 +111,7 @@ mvn clean package -DskipTests
 
 ## 三种 Profile 切换
 
-参见 [application-yml.md § spring.profiles.active](../raw/project-skeleton/application-yml.md)。
+参见 。
 
 ```bash
 # dev（默认）
@@ -129,8 +126,6 @@ java -jar ruoyi-admin.jar --spring.profiles.active=prod
 | `dev` | `true`（默认） | info | 开发 |
 | `prod` | `false` | warn | 生产 |
 | `local` | `true` | info | 本地 |
-
-参见：[claude-md.md § Build & Run](../raw/project-skeleton/claude-md.md)。
 
 ## 多 Profile 配置差异
 
@@ -159,7 +154,7 @@ java -jar ruoyi-admin.jar --spring.profiles.active=prod
 
 ## 环境变量 / 密钥管理
 
-参见 [application-yml.md](../raw/project-skeleton/application-yml.md) 的 `${XXX:default}` 模式：
+参见  的 `${XXX:default}` 模式：
 
 ```yaml
 chat:

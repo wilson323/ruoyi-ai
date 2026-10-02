@@ -80,14 +80,16 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     @Override
     public List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo) {
         // B2：HTTP 线程身份取当前会话（无会话=匿名，anon 走最严档）；非 HTTP 线程
-        //（aiflow 等）必须走显式身份重载，否则会被降为匿名档（误杀面已登记）。
+        // 必须走显式身份重载，否则会被降为匿名档（误杀面已登记）。
         return retrieve(queryVectorBo, LoginHelper.getUserId());
     }
 
     @Override
     public List<KnowledgeRetrievalVo> retrieve(QueryVectorBo queryVectorBo, Long userId) {
-        applyBridgeAccessFilters(queryVectorBo, userId);
-        String cacheKey = cacheKey(queryVectorBo);
+        // 与既有 null 回落语义一致，过滤和缓存必须使用同一次解析的身份。
+        Long effectiveUserId = userId == null ? LoginHelper.getUserId() : userId;
+        applyBridgeAccessFilters(queryVectorBo, effectiveUserId);
+        String cacheKey = cacheKey(queryVectorBo, effectiveUserId);
         CacheEntry cached = retrievalCache.get(cacheKey);
         if (cached != null && System.currentTimeMillis() - cached.createdAt < CACHE_TTL_MILLIS) {
             return copyResults(cached.results);
@@ -429,7 +431,7 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     /**
      * 构建检索缓存键。
      * <p>
-     * S3：第二段为身份段（当前会话 userId，未登录或会话上下文不可用固定为 "anon"），
+     * S3：第二段为身份段（本次显式 userId；单参入口传当前会话，null 固定为 "anon"），
      * 防止不同身份共享同 kid+query 的缓存导致越权读到他人检索结果。
      * <p>
      * 约束：kid 必须保持第一段——{@link #invalidateKnowledge(String)} 依赖
@@ -437,7 +439,11 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
      * 否则按 kid 失效缓存的既有行为会整体回归。
      */
     private String cacheKey(QueryVectorBo bo) {
-        return String.join("|", Objects.toString(bo.getKid(), ""), identitySegment(), Objects.toString(bo.getQuery(), ""),
+        return cacheKey(bo, LoginHelper.getUserId());
+    }
+
+    private String cacheKey(QueryVectorBo bo, Long userId) {
+        return String.join("|", Objects.toString(bo.getKid(), ""), identitySegment(userId), Objects.toString(bo.getQuery(), ""),
                 Objects.toString(bo.getMaxResults(), ""), Objects.toString(bo.getVectorModelName(), ""),
                 Objects.toString(bo.getEmbeddingModelName(), ""), Objects.toString(bo.getSimilarityThreshold(), ""),
                 Objects.toString(bo.getEnableHybrid(), ""), Objects.toString(bo.getHybridAlpha(), ""),
@@ -452,10 +458,9 @@ public class KnowledgeRetrievalServiceImpl implements KnowledgeRetrievalService 
     }
 
     /**
-     * S3 身份段：当前会话 userId；未登录或取不到（LoginHelper.getUserId() 返回 null）给 "anon"。
+     * S3 身份段只使用本次入参，非 HTTP 线程不再回读登录上下文；null 给 "anon"。
      */
-    private String identitySegment() {
-        Long userId = LoginHelper.getUserId();
+    private String identitySegment(Long userId) {
         return userId == null ? "anon" : String.valueOf(userId);
     }
 

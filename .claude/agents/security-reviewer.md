@@ -28,7 +28,6 @@ description: RuoYi-AI 项目安全审查代理。专攻多租户过滤绕过、S
 
 **不审查你**（交给对应 agent）：
 
-- AI agent 的 prompt / 工具暴露 / token 成本 → `langchain4j-agent-reviewer`
 - SQL 慢查询、Redis 缓存、连接池、JVM 调优 → `performance-analyzer`
 - 架构分层、命名、注释、Spring 用法、错误处理 → `code-reviewer`
 
@@ -129,6 +128,6 @@ description: RuoYi-AI 项目安全审查代理。专攻多租户过滤绕过、S
 ## 边界
 
 - 只输出审查报告，不改代码。
-- 不重复通用 lint（langchain4j-agent-reviewer 负责 AI 模块审查；本 agent 负责其他）。
+- 不重复通用 lint（code-reviewer 负责通用审查；本 agent 负责业务安全）。
 - 涉及密钥 / 凭证变更时强制标注「需用户确认」。
 - 不审查已声明 `@Tag("exclude")` 的性能 / 手动测试代码。

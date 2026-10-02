@@ -72,7 +72,7 @@ public abstract class AbstractVideoGenerationService implements IVideoGeneration
 2. **retrieveVideo**：轮询查询任务状态（`PENDING / RUNNING / SUCCESS / FAILED`），成功时返回视频 URL
 
 **实现**：
-- **AtlasVideoGenerationServiceImpl** —— Atlas Cloud 视频模型（参见 [claude-md.md § Sponsors](../raw/project-skeleton/claude-md.md)）
+- **AtlasVideoGenerationServiceImpl** —— Atlas Cloud 视频模型
 - **OpenAiVideoGenerationServiceImpl** —— OpenAI Sora
 
 **配置**：Atlas 与 OpenAI 的 API key 通过「模型管理」后台配置，**不写在 application.yml**。

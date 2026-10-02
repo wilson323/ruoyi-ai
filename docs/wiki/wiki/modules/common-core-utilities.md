@@ -65,7 +65,7 @@ springdoc / Swagger UI 集成：
 - `SpringDocUtils` —— Springdoc 工具
 - `Customizer` —— 自定义分组
 
-**6 个 OpenAPI 分组**（参见 [application-yml.md](../raw/project-skeleton/application-yml.md)）：
+**6 个 OpenAPI 分组**：
 
 ```yaml
 springdoc:

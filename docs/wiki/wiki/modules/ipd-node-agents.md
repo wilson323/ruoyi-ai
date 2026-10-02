@@ -14,7 +14,7 @@ IPD 六阶段的 **69 个标准动作**（ActionCatalog）由嵌入式节点智�
 
 ## 执行栈唯一原则（裁决 A）
 
-节点智能体的 LLM 调用**一律经 `AiGenerationService.generate(actor, req)`**，不走 ruoyi-chat 的 `ChatServiceFacade` / langchain4j `AiServices` / supervisor 路径。
+节点智能体的 LLM 调用**一律经 `AiGenerationService.generate(actor, req)`**，不走 ruoyi-chat 的 `ChatServiceFacade` / supervisor 路径（langchain4j `AiServices` 栈已于 2026-10-02 全量替换为 AgentScope）。
 
 **为什么不能走 ruoyi-chat 路径**：
 
@@ -30,7 +30,7 @@ IPD 六阶段的 **69 个标准动作**（ActionCatalog）由嵌入式节点智�
 
 | 事实 | 位置 |
 |---|---|
-| IPD 生成主链已是 langchain4j | `service/ai/AiGateway.java` L3-16 import `dev.langchain4j.model.openai.OpenAiChatModel` |
+| IPD 生成主链已是 AgentScope | `service/ai/AiGateway.java` import `io.agentscope.core.model.*` 与 `AgentScopeModelFactory`（2026-10-02 替换） |
 | 旧 HttpClient 栈已废弃 | `service/ai/AiChatClient.java` L41 类级 `@Deprecated` + L44-48 注释「新代码禁止直接注入本类做生成调用」 |
 | 新增代码零 AiServices/ChatServiceFactory/MCP ToolProvider | 契约 §1 裁决 A 明文约束 |
 

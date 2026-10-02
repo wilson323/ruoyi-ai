@@ -73,10 +73,24 @@ for r in $SCAN_ROOTS; do
     | grep -vE '/(target|node_modules|\.git)/' >> "$TMPD/wired.txt"
 done
 sort -u "$TMPD/wired.txt" -o "$TMPD/wired.txt"
+# 并发陈旧引用守卫（2026-10-02）：本仓常有多会话共工同一工作树，清单生成后到各 C 段消费
+# 之间，兄弟会话可能删除/改名文件。实测 W6 波次删 observability listener 时，C2 的 python 与
+# C5 的 grep 各报 5 条「文件不存在」——污染输出、淹没真实判定，且 C2 靠 `|| continue` 吞掉
+# 异常等于该文件未经检查（静默漏检）。此处先剔除已消失路径，各消费循环再加 [ -f ] 守卫双保险。
+# （注：本段刻意不写字面报错英文原文，避免被输出自检类 grep 反向自命中。）
+# 剔除数如实披露，不静默。
+STALE_N=0
+: > "$TMPD/wired.live"
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  if [ -f "$f" ]; then printf '%s\n' "$f" >> "$TMPD/wired.live"; else STALE_N=$((STALE_N+1)); fi
+done < "$TMPD/wired.txt"
+mv "$TMPD/wired.live" "$TMPD/wired.txt"
 WIRED_N=$(count_lines "$TMPD/wired.txt")
 
 echo "== 扫描范围 =="
 info "scan roots: $SCAN_ROOTS"
+[ "$STALE_N" -gt 0 ] && info "已剔除扫描期间消失的文件 $STALE_N 个（兄弟会话并发改动，非门禁失败）"
 info "AgentScope 接线 .java 文件数: $WIRED_N"
 if [ "$WIRED_N" -eq 0 ]; then
   echo
@@ -128,8 +142,8 @@ echo "== [C2] 复合隔离键手拼收口（每工作树内 ≤1 处） =="
 : > "$TMPD/keypairs.txt"
 while IFS= read -r f; do
   [ -z "$f" ] && continue
-  grep -qE '\+[[:space:]]*":"[[:space:]]*\+' "$f" || continue
-  grep -qiE 'sessionId|slotId' "$f" || continue
+  [ -f "$f" ] || continue
+  python3 "$SKILL_DIR/scripts/scope-key-statements.py" "$f" || continue
   printf '%s\t%s\n' "$(owning_root "$f")" "$f" >> "$TMPD/keypairs.txt"
 done < <(cat "$TMPD/wired.txt")
 KEY_N=$(count_lines "$TMPD/keypairs.txt")
@@ -193,6 +207,7 @@ done < <(cat "$TMPD/wired.txt")
 echo "== [C5] call / streamEvents 调用点必须引用 RuntimeContext =="
 while IFS= read -r f; do
   [ -z "$f" ] && continue
+  [ -f "$f" ] || continue
   grep -qE '\.(streamEvents|call)\(' "$f" || continue
   grep -q 'HarnessAgent' "$f" || continue
   if grep -qE 'RuntimeContext|toRuntimeContext\(\)' "$f"; then
@@ -207,6 +222,7 @@ echo "== [C6] AgentScope 接线文件禁止硬编码凭据字面量 =="
 C6_HIT=0
 while IFS= read -r f; do
   [ -z "$f" ] && continue
+  [ -f "$f" ] || continue
   if grep -nE 'set(User|Password)\([[:space:]]*"' "$f" >/dev/null 2>&1; then
     fail "$(rel "$f") 存在硬编码 setUser/setPassword 字面量（凭证必须走 gitignored cnf / 环境变量）"
     grep -nE 'set(User|Password)\([[:space:]]*"' "$f" | head -3 | sed 's|^|         |'
@@ -215,9 +231,9 @@ while IFS= read -r f; do
 done < <(cat "$TMPD/wired.txt")
 [ "$C6_HIT" -eq 0 ] && ok "无硬编码凭据字面量"
 
-# ---- C7/C8: 依赖门禁（G1 okhttp 钉版 / G2 langchain4j 棘轮） ----
+# ---- C7: 依赖门禁（G1 okhttp 钉版；G2 langchain4j 棘轮随 2026-10-02 字样清零退役） ----
 if [ "$SKIP_POM" = "1" ]; then
-  echo "== [C7/C8] 依赖门禁 =="
+  echo "== [C7] 依赖门禁 =="
   info "SKIP（HARNESS_SKIP_POM_GATES=1）"
 else
   echo "== [C7] 引入 io.agentscope 必须钉 okhttp 全家 + banDuplicateClasses =="
@@ -241,24 +257,6 @@ else
         fail "$(rel "$p") 缺:$MISS —— agentscope 带入 okhttp5，未钉版即运行态重复类冲突"
       fi
     done
-  fi
-
-  echo "== [C8] langchain4j 只减不增棘轮门禁在场 =="
-  if [ -z "$AS_POMS" ]; then
-    info "SKIP（未引入 agentscope，内核替换尚未开始）"
-  else
-    while IFS= read -r TR; do
-      [ -z "$TR" ] && continue
-      MISS=""
-      [ -f "$TR/scripts/check-langchain4j-ratchet.sh" ]     || MISS="$MISS scripts/check-langchain4j-ratchet.sh"
-      [ -f "$TR/scripts/baselines/langchain4j-count.json" ] || MISS="$MISS scripts/baselines/langchain4j-count.json"
-      if [ -z "$MISS" ]; then
-        CNT=$(grep -oE '"count":[[:space:]]*[0-9]+' "$TR/scripts/baselines/langchain4j-count.json" 2>/dev/null | head -1)
-        ok "$(rel "$TR") 棘轮脚本 + 基线在场（G2 雷已封，${CNT:-未见 count}）"
-      else
-        fail "$(rel "$TR") 缺:$MISS —— 内核替换期新旧接线会无控膨胀"
-      fi
-    done < "$TMPD/trees.txt"
   fi
 fi
 

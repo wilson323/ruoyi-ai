@@ -58,8 +58,7 @@ logging:
     org.apache.fury: warn
     # MCP traffic/stdout may contain tool arguments, results or credentials.
     MCP: "OFF"
-    # 单轨：MCP 走 AgentScope + io.modelcontextprotocol SDK（langchain4j 已 0 引用，
-    # 棘轮基线 scripts/baselines/langchain4j-count.json count=0 锁死回潮）
+    # 单轨：MCP 走 AgentScope + io.modelcontextprotocol SDK
     io.agentscope.core.tool.mcp: "OFF"
     io.modelcontextprotocol: "OFF"
   # 使用 logback-spring.xml 以支持 <springProfile name="dev|prod"> 切换 root level
@@ -257,8 +256,6 @@ security:
     - /error
     - /*/api-docs
     - /*/api-docs/**
-    - /warm-flow-ui/config
-    - /workflow/run
     # IPD 独立认证体系（StpLogic "ipd"）——/api/v1/** 鉴权由 IpdPermission 自管，不走基线 sys_user 会话
     - /api/v1/**
     # CopilotKit AG-UI 桥（2026-09-28）：/copilotkit/** 同款 IPD 会话自管（run 端点 Bearer 校验在 AgUiCopilotRun 内做）
@@ -280,19 +277,15 @@ tenant:
     - sys_oss_config
     # IPD OssFileEntity(@TableName("sys_oss"))：附件元数据表，IPD 单企业部署无多租户语义（R28 补登，kpi_rule_snapshots 已在前段）
     - sys_oss
-    - flow_spel
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run
     - trace_node
-    # R31 checkpoint 落库表：租户共享（表结构带 tenant_id 默认 000000 与现有表风格一致，但断点恢复场景
-    # 无租户上下文，且 langgraph4j AbstractCheckpointSaver 扩展点 API 只有 RunnableConfig 拿不到租户；
-    # 不登记则租户拦截器追加 WHERE tenant_id=? 表现为「查不到 checkpoint」断点续跑全断）
-    - t_workflow_checkpoint
     # IPD 单企业私有部署：26+2 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
     # 26 张基线表 + 2 张 Round 8 新增表（launch_date_change_requests / project_cert_items）
     - persons
     - product_groups
     - products
+    - product_sellable_countries
     - projects
     - project_members
     - project_stages
@@ -341,6 +334,15 @@ tenant:
     - kpi_shared_confirms
     - allowance_ledgers
     - bonus_pools
+    # 项目智能体运行/能力目录沿用IPD单企业业务表策略；访问权限与显式tenant条件仍由业务服务检查。
+    - ipd_agent_artifact_version
+    - ipd_agent_run
+    - ipd_agent_run_event
+    - ipd_capability_pack_item
+    - ipd_capability_pack
+    - ipd_ai_feedback
+    # 国家目录为既有产品主档共享参考，不通过框架登录租户切换业务目录。
+    - market_countries
     - ai_documents
     - ai_doc_embeddings
     - system_configs
@@ -400,7 +402,7 @@ tenant:
     # R221（2026-09-26）：AI 代理执行任务队列——单企业私有部署语义，调度线程无会话上下文须豁免租户过滤
     - ai_agent_tasks
     # Track A1（2026-09-28）：IPD 小阶段目录与动作技能映射——含 tenant_id 默认 000000 但单企业私有部署语义，
-    # 未登记则租户拦截器追加 WHERE tenant_id=?，AG-UI/定时任务等无租户上下文路径读空（t_workflow_checkpoint 前车之鉴）
+    # 未登记则租户拦截器追加 WHERE tenant_id=?，AG-UI/定时任务等无租户上下文路径读空
     - ipd_sub_stage
     - ipd_action_skill_map
     # B1（2026-09-29）：产品线团队空间和成员表为单企业 IPD 业务表；独立的 Person/项目授权仍由业务层校验
@@ -568,20 +570,7 @@ demo:
     - /system/info/**
     # IPD 独立认证体系（与 security.excludes 对齐）：默认 dev profile 演示模式放行 IPD 写操作
     - /api/v1/**
---- # warm-flow工作流配置
-warm-flow:
-  # 是否开启工作流，默认true
-  enabled: true
-  # 是否开启设计器ui
-  ui: true
-  # 是否显示流程图顶部文字
-  top-text-show: true
-  # 是否渲染节点悬浮提示，默认true
-  node-tooltip: true
-  # 默认Authorization，如果有多个token，用逗号分隔
-  token-name: ${sa-token.token-name},clientid
-
-# 向量库配置
+--- # 向量库配置
 vector-store:
   # 向量存储类型 可选(weaviate/milvus/qdrant)
   # 如需修改向量库类型，请修改此配置值!

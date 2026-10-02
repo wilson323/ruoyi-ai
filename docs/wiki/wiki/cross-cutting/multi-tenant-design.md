@@ -3,10 +3,8 @@ topic: cross-cutting/multi-tenant-design
 title: 多租户隔离设计
 updated: 2026-09-04
 raw:
-  - raw/project-skeleton/application-yml.md
   - raw/common-source/mybatis-plus-config.md
   - raw/system-source/entity-sys-user.md
-  - raw/chat-source/mcp-tool-provider-service.md
 ---
 
 # 多租户隔离设计
@@ -43,7 +41,7 @@ RuoYi-AI **默认开启多租户**（`tenant.enable=true`），所有业务表�
 
 ## 关键配置
 
-参见 [application-yml.md § tenant](../raw/project-skeleton/application-yml.md)：
+参见 ：
 
 ```yaml
 tenant:
@@ -58,7 +56,6 @@ tenant:
     - sys_user_role
     - sys_client
     - sys_oss_config
-    - flow_spel             # Warm-Flow 表达式
     - trace_run             # 链路追踪（异步线程写，无 tenant 上下文）
     - trace_node            # 同上
 ```
@@ -143,7 +140,6 @@ public void asyncTask() {
 | `sys_role` / `sys_role_menu` / `sys_user_role` | 角色定义本身可共享 |
 | `sys_tenant` / `sys_tenant_package` | 租户管理元数据 |
 | `sys_oss_config` | OSS 配置是系统级 |
-| `flow_spel` | Warm-Flow 表达式 |
 | `trace_run` / `trace_node` | 异步线程追踪写入 |
 
 **新增共享表**：在 `application.yml` 的 `tenant.excludes` 数组加一行。**漏加 = 跨租户串数据**（P0 事故）。
@@ -178,17 +174,11 @@ public void dailyCleanup() {
 
 ## Chat 模块的租户处理
 
-参见 [mcp-tool-provider-service.md](../raw/chat-source/mcp-tool-provider-service.md)：Langchain4j agent 调用 MCP 工具时，工具方法必须显式接 `@MemoryId String tenantId` 隔离：
+（2026-10-02：LangChain4j `@MemoryId` 自动注入机制已随内核替换退役。）
 
-```java
-@Tool
-public String readUserDoc(@MemoryId String tenantId, String docId) {
-    // tenantId 在 Langchain4j 调用时自动从 chat memory 注入
-    return docService.read(tenantId, docId);
-}
-```
+当前 AgentScope 内核下，租户/身份上下文由服务端在构造运行时注入：项目智能体的 `ProjectAgentRunSpec` 携带可信 `tenantId`，`ProjectKnowledgeSearchTool` 强制以服务端可信 projectId 执行检索，模型传入的任何 projectId/tenantId 字段一律忽略；系统级知识库固定 `KNOWLEDGE_TENANT_ID = 0`。
 
-**漏接 tenantId = 跨租户读数据**（P0 安全事故）。
+**把租户选择权交给模型输入 = 跨租户读数据**（P0 安全事故）。
 
 ## 测试多租户
 

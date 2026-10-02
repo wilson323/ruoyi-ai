@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
  *       收到的 Bo（三档全矩阵，配合 WeaviateAccessFilterAssemblyTest 的
  *       cap×库值集合矩阵，覆盖「谁能看到什么」端到端）；</li>
  *   <li>E anon：无会话（LoginHelper null）走单参桥（anon 最严档），身份不凭空捏造；</li>
- *   <li>非 HTTP 线程显式身份（aiflow WfState.userId 先例）：走双参桥，
+ *   <li>非 HTTP 线程显式身份（显式 userId 先例）：走双参桥，
  *       装配结果与 HTTP 线程同构；</li>
  *   <li>桥解析异常：fail-closed 按 PUBLIC 装配（不得退化成「无闸门」）。</li>
  * </ul>
@@ -152,7 +152,7 @@ class KnowledgeRetrievalBridgeAssemblyTest {
 
     @Test
     void explicitIdentityVariantRoutesToTwoArgBridge() {
-        // 非 HTTP 线程（aiflow WfState.userId 先例）：显式身份走双参桥，
+        // 非 HTTP 线程（显式 userId 先例）：显式身份走双参桥，
         // 不读会话上下文（@Async 线程无 Sa-Token ThreadLocal）
         VectorStoreService vectorStore = mock(VectorStoreService.class);
         when(vectorStore.search(any())).thenReturn(List.of(HIT));

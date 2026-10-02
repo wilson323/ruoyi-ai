@@ -256,15 +256,6 @@ run_shell_var_gate() {
 # ---------------------------------------------------------------------------
 # 路由
 # ---------------------------------------------------------------------------
-run_langchain4j_gate() {
-    echo "[check-pre-commit] → 门禁 5: LangChain4j 引用面积只减不增"
-    if bash "$REPO_ROOT/scripts/check-langchain4j-ratchet.sh"; then
-        PASSED=$((PASSED + 1))
-    else
-        echo "[check-pre-commit] ❌ 门禁 5 FAIL: AgentScope 迁移期间出现新的 LangChain4j 接线" >&2
-        FAILED=$((FAILED + 1))
-    fi
-}
 
 # 已跟踪符号链接若指向仓库外的绝对路径，或目标已不存在，rg --follow 会整次搜索失败。
 run_symlink_gate() {
@@ -315,7 +306,6 @@ case "$MODE" in
         run_contract_gate
         run_ratchet_gate
         run_shell_var_gate
-        run_langchain4j_gate
         run_symlink_gate
         ;;
     drift)
@@ -337,7 +327,6 @@ case "$MODE" in
         run_untracked_gate
         run_ratchet_gate
         run_shell_var_gate
-        run_langchain4j_gate
         run_symlink_gate
         SKIPPED=2
         echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"

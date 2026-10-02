@@ -35,7 +35,7 @@ public class RuoYiAIApplication {
 1. **`killPortProcess(6039)`** 必须在 `SpringApplication.run()` 之前调用，否则端口被占 → 启动失败。Windows 风格用 `netstat -ano` + `taskkill /F /PID`；macOS/Linux 直接抛异常被 catch + 静默跳过（无副作用）。
 2. **`BufferingApplicationStartup(2048)`** 启用 Spring Boot 启动期事件缓冲（2048 条），用于 actuator 暴露 startup 端点，便于排查启动慢的 bean。
 
-参见：[ruoyi-ai-application.md](../raw/admin-source/ruoyi-ai-application.md)、[claude-md.md § Key Conventions — Port 6039 auto-kill](../raw/project-skeleton/claude-md.md)。
+参见：[ruoyi-ai-application.md](../raw/admin-source/ruoyi-ai-application.md)、。
 
 ## War 包支持 — RuoYiAIServletInitializer
 
@@ -48,7 +48,7 @@ public class RuoYiAIServletInitializer extends SpringBootServletInitializer {
 }
 ```
 
-继承 `SpringBootServletInitializer`，让项目能打成 war 包部署到外部 Tomcat（默认打 jar）。部署方式见 [readme-md.md § Docker Deployment](../raw/project-skeleton/readme-md.md)。
+继承 `SpringBootServletInitializer`，让项目能打成 war 包部署到外部 Tomcat（默认打 jar）。部署方式见 。
 
 ## MapStruct Plus 冲突解决器 — MapperConflictResolver
 
@@ -144,13 +144,13 @@ captcha:
   charLength: 4
 ```
 
-参见：[captcha-controller.md](../raw/admin-source/captcha-controller.md)、[application-yml.md § captcha](../raw/project-skeleton/application-yml.md)。
+参见：[captcha-controller.md](../raw/admin-source/captcha-controller.md)、。
 
 ## 日志 — logback-plus.xml
 
 项目自定义的 logback 配置，**不在 classpath 默认的 logback-spring.xml 体系里**——直接叫 `logback-plus.xml` 是项目惯例。
 
-参见：[logback-plus-xml.md](../raw/admin-source/logback-plus-xml.md)、[application-yml.md § logging.config](../raw/project-skeleton/application-yml.md)。
+参见：[logback-plus-xml.md](../raw/admin-source/logback-plus-xml.md)、。
 
 ## 模块边界
 

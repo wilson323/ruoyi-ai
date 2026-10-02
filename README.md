@@ -15,7 +15,7 @@
 
 ### Enterprise-Grade AI Assistant Platform
 
-*An out-of-the-box full-stack AI platform supporting multi-agent collaboration, Supervisor mode orchestration, and multiple decision models, with advanced RAG technology and visual workflow orchestration capabilities*
+*An out-of-the-box full-stack AI platform supporting multi-agent collaboration, Supervisor mode orchestration, and multiple decision models, with advanced RAG technology*
 
 **[中文](README_ZH.md)** | **[📖 Documentation](https://doc.ruoyiai.chat/)** |
 **[🚀 Live Demo](https://web.ruoyiai.chat/)** | **[🐛 Report Issues](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 Feature Requests](https://github.com/ageerle/ruoyi-ai/issues)**
@@ -38,8 +38,7 @@
 | **Model Management** | Multi-model integration (DeepSeek/Zhipu/MIMO/Bailian/OpenAI), multi-modal understanding, Coze/DIFY/FastGPT/RAGFlow platform integration |
 | **Knowledge Management** | Local RAG + Vector DB (Milvus/Weaviate/Qdrant) + Document parsing |
 | **Tool Management** | MCP protocol integration, Skills capability + Extensible tool ecosystem |
-| **Workflow Orchestration** | Visual workflow designer, drag-and-drop node orchestration, SSE streaming execution, currently supports model calls, email sending, manual review, and other nodes |
-| **Multi-Agent** | Agent framework based on Langchain4j, Supervisor mode orchestration, supports multiple decision models, can flexibly combine tools and skills |
+| **Multi-Agent** | Agent framework based on AgentScope, Supervisor mode orchestration, supports multiple decision models, can flexibly combine tools and skills |
 
 ### Project Repositories
 
@@ -60,7 +59,7 @@
 ## 🛠️ Technical Architecture
 
 ### Core Framework
-- **Backend**: Spring Boot 3.5.8 + Langchain4j
+- **Backend**: Spring Boot 3.5.8 + AgentScope
 - **Data Storage**: MySQL 8.0 + Redis + Vector Databases (Milvus/Weaviate/Qdrant)
 - **Frontend**: Vue 3 + Vben Admin + element-plus-x
 - **Security**: Sa-Token + JWT dual-layer security
@@ -230,7 +229,7 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 ## 🙏 Acknowledgments
 
 Thanks to the following excellent open-source projects for their support:
-- [Langchain4j](https://github.com/langchain4j/langchain4j) - Powerful Java LLM development framework
+- [AgentScope Java](https://github.com/agentscope-ai/agentscope-java) - Agent framework for building controllable AI agents
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - Mature enterprise-level rapid development framework
 - [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - Modern Vue admin template
 

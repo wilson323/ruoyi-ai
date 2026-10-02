@@ -55,7 +55,7 @@ public R<Void> add(@RequestBody SysUserBo user) {
 
 SnailJob 客户端封装。
 
-参见 [claude-md.md § SnailJob](../raw/project-skeleton/claude-md.md)。
+参见 。
 
 **关键类**：
 

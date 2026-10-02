@@ -142,6 +142,68 @@ class KnowledgeRetrievalCacheIdentityTest {
     }
 
     @Test
+    void explicitIdentitiesDoNotShareAnonymousThreadCache() {
+        VectorStoreService vectorStore = mock(VectorStoreService.class);
+        when(vectorStore.search(org.mockito.ArgumentMatchers.any()))
+            .thenReturn(List.of(KnowledgeRetrievalVo.builder().id("a").content("A").build()),
+                List.of(KnowledgeRetrievalVo.builder().id("b").content("B").build()));
+        KnowledgeRetrievalServiceImpl service = serviceWith(vectorStore);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(null);
+            assertEquals("A", service.retrieve(bo("1", "问题"), 100L).get(0).getContent());
+            assertEquals("B", service.retrieve(bo("1", "问题"), 200L).get(0).getContent());
+            assertEquals("A", service.retrieve(bo("1", "问题"), 100L).get(0).getContent());
+            verify(vectorStore, times(2)).search(org.mockito.ArgumentMatchers.any());
+        }
+    }
+
+    @Test
+    void explicitIdentityOverridesThreadAndNullUsesSameThreadIdentity() throws Exception {
+        VectorStoreService vectorStore = mock(VectorStoreService.class);
+        when(vectorStore.search(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+        KnowledgeRetrievalServiceImpl service = serviceWith(vectorStore);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(999L);
+            service.retrieve(bo("1", "问题"), 100L);
+            service.retrieve(bo("1", "问题"), null);
+            service.retrieve(bo("1", "问题"));
+            Map<String, Object> cache = retrievalCacheOf(service);
+            assertEquals(2, cache.size());
+            assertTrue(cache.keySet().stream().anyMatch(key -> key.startsWith("1|100|")));
+            assertFalse(cache.keySet().stream().anyMatch(key -> key.startsWith("1|anon|")));
+            assertTrue(cache.keySet().stream().anyMatch(key -> key.startsWith("1|999|")));
+            service.invalidateKnowledge("1");
+            assertTrue(cache.isEmpty(), "按 kid 失效必须覆盖显式、线程及匿名身份");
+        }
+    }
+
+    @Test
+    void nullExplicitIdentityDoesNotShareDifferentThreadCaches() {
+        VectorStoreService vectorStore = mock(VectorStoreService.class);
+        when(vectorStore.search(org.mockito.ArgumentMatchers.any()))
+            .thenReturn(List.of(KnowledgeRetrievalVo.builder().id("a").content("A").build()),
+                List.of(KnowledgeRetrievalVo.builder().id("b").content("B").build()));
+        KnowledgeRetrievalServiceImpl service = serviceWith(vectorStore);
+        try (MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class)) {
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            assertEquals("A", service.retrieve(bo("1", "问题"), null).get(0).getContent());
+            login.when(LoginHelper::getUserId).thenReturn(200L);
+            assertEquals("B", service.retrieve(bo("1", "问题"), null).get(0).getContent());
+            login.when(LoginHelper::getUserId).thenReturn(100L);
+            assertEquals("A", service.retrieve(bo("1", "问题"), null).get(0).getContent());
+            verify(vectorStore, times(2)).search(org.mockito.ArgumentMatchers.any());
+        }
+    }
+
+    private static KnowledgeRetrievalServiceImpl serviceWith(VectorStoreService vectorStore) {
+        return new KnowledgeRetrievalServiceImpl(
+            vectorStore, mock(RerankModelFactory.class), mock(KnowledgeFragmentMapper.class),
+            mock(TraceRecordService.class), new TraceProperties(),
+            mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class),
+            new org.ruoyi.config.KnowledgeRetrievalAccessFilterProperties());
+    }
+
+    @Test
     void sameIdentityStillHitsCache() {
         VectorStoreService vectorStore = mock(VectorStoreService.class);
         when(vectorStore.search(org.mockito.ArgumentMatchers.any()))

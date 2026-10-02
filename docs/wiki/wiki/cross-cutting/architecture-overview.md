@@ -3,17 +3,14 @@ topic: cross-cutting/architecture-overview
 title: 系统架构总览
 updated: 2026-09-04
 raw:
-  - raw/project-skeleton/pom-xml.md
-  - raw/project-skeleton/application-yml.md
   - raw/admin-source/ruoyi-ai-application.md
   - raw/chat-source/chat-controller.md
   - raw/system-source/sys-user-controller.md
-  - raw/aiflow-source/workflow-engine.md
 ---
 
 # 系统架构总览
 
-RuoYi-AI 是一个**企业级 AI 助手平台**，后端基于 Spring Boot 3.5.8 + Java 17 + Langchain4j 1.17.2 + Langgraph4j 1.8.20，前端分离（独立仓库）。
+RuoYi-AI 是一个**企业级 AI 助手平台**，后端基于 Spring Boot 3.5.8 + Java 17 + AgentScope（项目智能体内核），前端分离（独立仓库）。（2026-10-02：LangChain4j/Langgraph4j 已全量替换为 AgentScope；ruoyi-aiflow / ruoyi-workflow 两模块已下线，IPD 领域状态机为唯一编排事实源）
 
 ## 顶层架构
 
@@ -32,15 +29,15 @@ RuoYi-AI 是一个**企业级 AI 助手平台**，后端基于 Spring Boot 3.5.8
 │  ┌──────────────────────────────────────────────────┐  │
 │  │  ruoyi-modules/                                   │  │
 │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────┐ │  │
-│  │  │ ruoyi-chat   │ │ ruoyi-aiflow │ │ ruoyi-   │ │  │
-│  │  │  Langchain4j │ │  自研图引擎  │ │ system   │ │  │
-│  │  │  AI 核心     │ │  AI 编排     │ │ RBAC     │ │  │
+│  │  │ ruoyi-chat   │ │ ruoyi-ipd    │ │ ruoyi-   │ │  │
+│  │  │  AgentScope  │ │ IPD 业务核心 │ │ system   │ │  │
+│  │  │  AI 核心     │ │ 69动作/Gate │ │ RBAC     │ │  │
 │  │  └──────────────┘ └──────────────┘ └──────────┘ │  │
-│  │  ┌──────────────┐ ┌──────────────────────────┐  │  │
-│  │  │ ruoyi-       │ │ ruoyi-generator           │  │  │
-│  │  │ workflow     │ │ 代码生成                  │  │  │
-│  │  │ Warm-Flow    │ │                          │  │  │
-│  │  └──────────────┘ └──────────────────────────┘  │  │
+│  │  ┌──────────────┐                                │  │
+│  │  │ ruoyi-       │                                │  │
+│  │  │ generator    │                                │  │
+│  │  │ 代码生成     │                                │  │
+│  │  └──────────────┘                                │  │
 │  └──────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │  ruoyi-common/ (27 子模块)                       │  │
@@ -62,7 +59,7 @@ RuoYi-AI 是一个**企业级 AI 助手平台**，后端基于 Spring Boot 3.5.8
 - Dify / Coze / FastGPT / RAGFlow 平台集成
 ```
 
-参见：[pom-xml.md](../raw/project-skeleton/pom-xml.md)、[modules/admin.md](../modules/admin.md)、[modules/chat.md](../modules/chat.md)。
+参见：[modules/admin.md](../modules/admin.md)、[modules/chat.md](../modules/chat.md)。
 
 ## 模块拓扑
 
@@ -75,43 +72,35 @@ RuoYi-AI 是一个**企业级 AI 助手平台**，后端基于 Spring Boot 3.5.8
         ┌───────────────────┼───────────────────┐
         ▼                   ▼                   ▼
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ ruoyi-system │    │  ruoyi-chat  │    │ ruoyi-aiflow │
-│   RBAC       │    │  AI 核心     │    │  AI 编排     │
+│ ruoyi-system │    │  ruoyi-chat  │    │  ruoyi-ipd   │
+│   RBAC       │    │  AI 核心     │    │  IPD 业务    │
 └──────────────┘    └──────────────┘    └──────────────┘
                             │
-        ┌───────────────────┼───────────────────┐
-        ▼                   ▼                   ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ ruoyi-       │    │  ruoyi-      │    │  ruoyi-      │
-│ workflow     │    │  generator   │    │  common/*    │
-│ Warm-Flow    │    │  代码生成    │    │  27 共享库   │
-└──────────────┘    └──────────────┘    └──────────────┘
+                ┌───────────┴───────────┐
+                ▼                       ▼
+        ┌──────────────┐        ┌──────────────┐
+        │  ruoyi-      │        │  ruoyi-      │
+        │  generator   │        │  common/*    │
+        │  代码生成    │        │  27 共享库   │
+        └──────────────┘        └──────────────┘
 ```
 
 **关键点**：`ruoyi-extend/`（monitor-admin + snailjob-server）是**独立 Spring Boot 应用**，**不**被 admin 依赖——它们独立部署。
 
-参见：[modules/admin.md](../modules/admin.md)、[claude-md.md § Module Layout](../raw/project-skeleton/claude-md.md)。
+参见：[modules/admin.md](../modules/admin.md)。
 
-## AI 双引擎
+## AI 编排
 
-项目有**两套工作流引擎**，分工清晰：
-
-| 引擎 | 适用 | 技术 |
-|---|---|---|
-| `ruoyi-workflow` | 传统审批 | Warm-Flow（BPMN 2.0） |
-| `ruoyi-aiflow` | AI 处理管道 | 自研图驱动 |
-
-详见 [modules/workflow.md](../modules/workflow.md) 和 [modules/aiflow.md](../modules/aiflow.md)。
+原项目曾并存两套工作流引擎（`ruoyi-workflow` Warm-Flow BPMN / `ruoyi-aiflow` 自研图驱动），**均已于 2026-10-02 整模块下线**（零消费查证后退役，下线脚本见 `docs/script/sql/update/2026-10-02-workflow-modules-offline.sql`）。当前唯一编排事实源是 `ruoyi-ipd` 的自研领域状态机（六阶段 + 5 Gate + 69 标准动作），详见 [modules/ipd-workflow.md](../modules/ipd-workflow.md)。
 
 ## AI 核心技术栈
 
-- **Langchain4j**：`1.17.2`（stable + community + beta 三套 BOM 严格对齐）
-- **Langgraph4j**：`1.8.20`（Supervisor 模式 agent 编排）
+- **AgentScope**：`2.0.3`（项目智能体内核，HarnessAgent 装配面）
 - **向量库**：Weaviate（默认）/ Milvus / Qdrant，可通过 `vector-store.type` 切换
 - **多模型**：通过「模型管理」后台配置，支持 DeepSeek / Zhipu / OpenAI 等
-- **MCP 协议**：内置 6 个文件操作工具 + 自定义 MCP 服务接入
+- **MCP 协议**：自定义 MCP 服务接入（modelcontextprotocol SDK + SSE 传输）
 
-参见：[modules/chat.md](../modules/chat.md)、[claude-md.md § AI Stack](../raw/project-skeleton/claude-md.md)。
+参见：[modules/chat.md](../modules/chat.md)。
 
 ## 通信协议
 
@@ -119,8 +108,6 @@ RuoYi-AI 是一个**企业级 AI 助手平台**，后端基于 Spring Boot 3.5.8
 - **SSE**：默认流式响应通道（`/resource/sse`），适合 LLM streaming 输出
 - **WebSocket**：可选（默认关），用于需要双向通信场景
 - **MySQL TCP**：数据库连接（HikariCP 连接池）
-
-参见：[application-yml.md § sse / websocket](../raw/project-skeleton/application-yml.md)。
 
 ## 数据持久层
 

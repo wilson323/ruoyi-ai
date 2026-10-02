@@ -11,9 +11,10 @@ import java.util.WeakHashMap;
 /**
  * SseEmitter 发送生命周期公共支撑（R32 并入）。
  *
- * <p>来源：ruoyi-aiflow 手写 {@code org.ruoyi.workflow.helper.SSEEmitterHelper} 的生命周期部分
- * 下沉至此（消灭双套 SSE 管理）；业务事件协议（[NODE_CHUNK_] 多行拆帧、[START]/[DONE]/[ERROR]
- * 帧语义）原样保留，调用方接线见 ruoyi-aiflow {@code WorkflowMessageUtil}。
+ * <p>来源：已下线模块 ruoyi-aiflow（2026-10-02 整模块下线）手写
+ * {@code org.ruoyi.workflow.helper.SSEEmitterHelper} 的生命周期部分下沉至此
+ * （消灭双套 SSE 管理）；业务事件协议（[NODE_CHUNK_] 多行拆帧、[START]/[DONE]/[ERROR]
+ * 帧语义）原样保留。
  *
  * <p>本类治理两个既知缺陷（补遗 §5 R6）：
  * <ul>

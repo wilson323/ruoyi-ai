@@ -11,8 +11,6 @@ raw:
 
 `ruoyi-generator` 是**代码生成器模块**（13 个 Java 文件，最轻量）。基于 Velocity + 数据库元数据，自动生成 entity / mapper / service / controller / vue 模板。
 
-参见：[pom-xml.md § velocity](../raw/project-skeleton/pom-xml.md)。
-
 ## 核心思路
 
 ```
@@ -101,5 +99,3 @@ db-migration skill（我们装的 `.claude/skills/db-migration/SKILL.md`）封�
 1. 用 generator 跑出新表的 entity + mapper + service + controller
 2. 用 db-migration 风格的 DDL 脚本落库
 3. 用 generator 生成的菜单 SQL 注册到 sys_menu
-
-参见：[claude-md.md § Skills — db-migration / ai-module-add](../raw/project-skeleton/claude-md.md)。

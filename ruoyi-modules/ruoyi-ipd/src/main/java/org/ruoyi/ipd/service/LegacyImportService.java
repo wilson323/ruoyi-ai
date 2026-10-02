@@ -82,9 +82,10 @@ public class LegacyImportService implements ILegacyImportService {
     private final LegacyImportMapper legacyImportMapper;
     private final IAuditLogService auditLogService;
     private final ObjectProvider<LegacyImportService> self;
-    /** R8-P0-10：并行导入执行器。2026-09-05 修正：必须具名 mainExecutor——上下文存在多个
-     * @Primary 的 Executor 子类型 bean（aiflow mainExecutor + common-core scheduledExecutorService），
-     * 裸 Executor 构造注入会 NoUniqueBeanDefinitionException（依赖根 lombok.config 的 copyableAnnotations）。 */
+    /** R8-P0-10：并行导入执行器。必须具名 mainExecutor（IpdPrimaryBeansConfig 提供，
+     * 2026-10-02 迁移自已下线的 ruoyi-aiflow）——上下文存在多个 Executor 子类型 bean
+     * （mainExecutor + common-core scheduledExecutorService），裸 Executor 构造注入会
+     * NoUniqueBeanDefinitionException（依赖根 lombok.config 的 copyableAnnotations）。 */
     @Qualifier("mainExecutor")
     private final Executor executor;
 

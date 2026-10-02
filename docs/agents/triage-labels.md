@@ -25,7 +25,7 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 | `documentation` | 文档变更 | 仅改文档（不动代码） |
 | `priority-urgent` / `priority-high` / `priority-medium` / `priority-low` | 优先级（issue 紧急度） | 任何 task |
 | `stage-p0` / `stage-p1` / `stage-p2` / `stage-p3` / `stage-p4` | 构建阶段（对应开发说明书 §11 P0–P4） | 任何 IPD 二开任务 |
-| `chat` / `aiflow` / `system` / `common` / `infra` | 模块标签（对应 `ruoyi-modules/*`） | 模块相关任务 |
+| `chat` / `system` / `common` / `infra` | 模块标签（对应 `ruoyi-modules/*`） | 模块相关任务 |
 | `ipd` | IPD 二开相关 | 任何改造任务 |
 | `urgent` | 紧急（保留，与 priority-urgent 共用） | 阻塞性问题 |
 
@@ -57,8 +57,7 @@ jobs:
             if (/^p2/i.test(title) || title.includes('[p2]')) labels.push('p2');
             if (/^p3/i.test(title) || title.includes('[p3]')) labels.push('p3');
             if (/^p4/i.test(title) || title.includes('[p4]')) labels.push('p4');
-            if (/chat|agent|langchain4j|mcp/i.test(title)) labels.push('chat');
-            if (/aiflow|workflow/i.test(title)) labels.push('aiflow');
+            if (/chat|agent|mcp/i.test(title)) labels.push('chat');
             if (/system|rbac|sys_user|sys_role/i.test(title)) labels.push('system');
             if (/common|common-/i.test(title)) labels.push('common');
             if (/ipd/i.test(title)) labels.push('ipd');

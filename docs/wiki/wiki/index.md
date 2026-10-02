@@ -10,17 +10,13 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 |---|---|---|
 | [modules/admin.md](modules/admin.md) | ruoyi-admin — Spring Boot 主应用入口 | 2026-09-04 |
 | [modules/admin-source.md](modules/admin-source.md) | ruoyi-admin 源码层（启动 / Controller / Config） | 2026-09-04 |
-| [modules/chat.md](modules/chat.md) | ruoyi-chat — Langchain4j AI 核心模块 | 2026-09-04 |
-| [modules/chat-agents-catalog.md](modules/chat-agents-catalog.md) | ruoyi-chat — 21 个 Agent 目录 + Supervisor 编排 | 2026-09-04 |
-| [modules/chat-mcp-tools.md](modules/chat-mcp-tools.md) | ruoyi-chat — 内置 MCP 工具详解（含 ExecuteCommand 安全风险） | 2026-09-04 |
+| [modules/chat.md](modules/chat.md) | ruoyi-chat — AI 核心模块（AgentScope 内核 + AiGateway） | 2026-10-02 |
 | [modules/chat-multimodal.md](modules/chat-multimodal.md) | ruoyi-chat — 多模态（视频 / 音频 / 图像 / Embedding） | 2026-09-04 |
-| [modules/aiflow.md](modules/aiflow.md) | ruoyi-aiflow — 可视化 AI 工作流引擎 | 2026-09-04 |
 | [modules/ipd-workflow.md](modules/ipd-workflow.md) | ruoyi-ipd — IPD 业务工作流（六阶段 / Gate 评审 / 阶段动作） | 2026-09-27 |
 | [modules/ipd-node-agents.md](modules/ipd-node-agents.md) | ruoyi-ipd — 生命周期节点智能体（69 码执行栈 / 6 执行器 / 信任边界） | 2026-09-27 |
 | [modules/system.md](modules/system.md) | ruoyi-system — RBAC 与系统管理 | 2026-09-04 |
 | [modules/system-rbac-deep-dive.md](modules/system-rbac-deep-dive.md) | ruoyi-system — RBAC 实体关系 + 权限注解 + 数据权限 | 2026-09-04 |
 | [modules/system-listener-runner.md](modules/system-listener-runner.md) | ruoyi-system — 事件监听器与启动任务 | 2026-09-04 |
-| [modules/workflow.md](modules/workflow.md) | ruoyi-workflow — Warm-Flow BPMN 引擎 | 2026-09-04 |
 | [modules/generator.md](modules/generator.md) | ruoyi-generator — 代码生成器 | 2026-09-04 |
 | [modules/common.md](modules/common.md) | ruoyi-common — 27 个共享库 | 2026-09-04 |
 | [modules/common-core-utilities.md](modules/common-core-utilities.md) | common — 核心工具层（core / json / doc / excel） | 2026-09-04 |
@@ -33,7 +29,7 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 
 | 文章 | 主题 | Updated |
 |---|---|---|
-| [cross-cutting/architecture-overview.md](cross-cutting/architecture-overview.md) | 系统架构总览 + 模块拓扑 + AI 双引擎 | 2026-09-04 |
+| [cross-cutting/architecture-overview.md](cross-cutting/architecture-overview.md) | 系统架构总览 + 模块拓扑 + AI 内核 | 2026-10-02 |
 | [cross-cutting/multi-tenant-design.md](cross-cutting/multi-tenant-design.md) | 多租户隔离设计（机制 / 边界 / checklist） | 2026-09-04 |
 | [cross-cutting/deployment-guide.md](cross-cutting/deployment-guide.md) | 部署指南（3 种方式 + 配套服务 + 故障排查） | 2026-09-04 |
 
@@ -45,11 +41,11 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 
 ## 统计
 
-- **raw 文件数**：66
-- **wiki 文章数**：24
-- **raw 总大小**：~496 KB
-- **wiki 总大小**：~224 KB
-- **覆盖模块**：admin / chat / aiflow / system / workflow / generator / common / extend / ipd
+- **raw 文件数**：49
+- **wiki 文章数**：20
+- **raw 总大小**：~430 KB
+- **wiki 总大小**：~210 KB
+- **覆盖模块**：admin / chat / system / generator / common / extend / ipd
 - **覆盖主题**：架构 / 多租户 / 部署 / 自动化
 - **git 跟踪**：commit 8004cd03（+ 新增待提交）
 - **CI 集成**：.github/workflows/wiki-lint.yml（自动验证）
@@ -58,12 +54,10 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 
 | 目录 | 文件数 | 主题 |
 |---|---|---|
-| `raw/project-skeleton/` | 7 | 项目骨架（pom / application*.yml / CLAUDE.md / README） |
+| `raw/project-skeleton/` | 2 | 项目骨架（application-dev/prod yml） |
 | `raw/admin-source/` | 7 | ruoyi-admin 源码（启动 / controller / config / logback） |
-| `raw/chat-source/` | 10 | ruoyi-chat 核心（agent / controller / MCP tool / factory / RAG trace） |
-| `raw/aiflow-source/` | 8 | ruoyi-aiflow 核心（controller / entity / 引擎 / factory） |
+| `raw/chat-source/` | 8 | ruoyi-chat 核心（controller / factory / RAG trace / vector store） |
 | `raw/system-source/` | 9 | ruoyi-system 核心（controller / listener / runner / entity） |
-| `raw/workflow-source/` | 2 | ruoyi-workflow 核心（controller / service） |
 | `raw/ipd-source/` | 3 | ruoyi-ipd 业务工作流（Gate 评审 / 阶段动作 / AI 执行引擎与节点智能体） |
 | `raw/multimodal-source/` | 4 | 多模态（视频 / 音频 / 图像 / Embedding） |
 | `raw/generator-source/` | 2 | ruoyi-generator 核心（controller / service） |
@@ -81,10 +75,10 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 
 ```yaml
 topic: modules/chat
-title: ruoyi-chat — Langchain4j AI 核心
+title: ruoyi-chat — AI 核心模块
 raw:
-  - raw/chat-source/chit-chat-agent.md
   - raw/chat-source/chat-controller.md
+  - raw/chat-source/vector-store-properties.md
   ...
 ```
 

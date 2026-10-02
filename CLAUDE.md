@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 + Langchain4j 技术栈，叠加 11 条硬约束（G-01~G-11） + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。
+**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 技术栈，AI 内核已全量切换 AgentScope，叠加 11 条硬约束（G-01~G-11） + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。
 
-- **基线**：Spring Boot 3.5.8 + Java 17 + Langchain4j 1.17.2 + Langgraph4j。Parent Maven project (revision `3.1.0`)。多租户、多模型（DeepSeek / Zhipu / OpenAI / etc.）、RAG、MCP tools、Supervisor-mode 多 agent。
+- **基线**：Spring Boot 3.5.8 + Java 17 + AgentScope 2.0.3。Parent Maven project (revision `3.1.0`)。多租户、多模型（DeepSeek / Zhipu / OpenAI / etc.）、RAG、MCP tools、Supervisor-mode 多 agent。
 - **目标**：IPD 产品经理管理系统。详见 `README-IPD-OVERRIDE.md`（优先级高于本文件）和 `docs/开发说明/`（产品设计）+ `docs/ipd-系统说明/`（改造工程指南）。
 - **前端**：拆分独立仓库（`ruoyi-web` / `ruoyi-admin`）；本仓库只含后端。
 - **核心信念**：**业务规则高于文档惯例，文档惯例高于系统实现**——开发说明书 G-04 硬约束。
@@ -53,7 +53,7 @@ ruoyi-admin/                # Spring Boot main, port 6039, controllers, OpenAPI 
 ruoyi-common/               # 27 shared library modules (BOM-managed)
   ruoyi-common-core         # utilities, base entities, exceptions
   ruoyi-common-security     # Sa-Token + JWT integration
-  ruoyi-common-chat         # Langchain4j adapters, AI helpers
+  ruoyi-common-chat         # AI model adapters, AI helpers
   ruoyi-common-mybatis      # MyBatis-Plus config, paging, tenant filter
   ruoyi-common-redis        # Redisson, distributed locks (lock4j)
   ruoyi-common-web          # web mvc config, XSS filter, rate limiter
@@ -66,9 +66,7 @@ ruoyi-common/               # 27 shared library modules (BOM-managed)
   ... (~15 more, see ruoyi-common/pom.xml)
 ruoyi-modules/              # Feature modules, each ships its own REST API
   ruoyi-system              # RBAC: user/role/menu/dept/post/dict/config
-  ruoyi-chat                # AI chat core: Langchain4j agents, knowledge base, RAG, tools
-  ruoyi-workflow            # Warm-Flow BPMN workflow
-  ruoyi-aiflow              # Visual AI workflow orchestration (drag-and-drop nodes)
+  ruoyi-chat                # AI chat core: AgentScope agents, knowledge base, RAG, tools
   ruoyi-generator           # Velocity-based code generator
 ruoyi-extend/               # Auxiliary Spring Boot apps (run separately, not part of main jar)
   ruoyi-monitor-admin       # Spring Boot Admin server
@@ -77,13 +75,11 @@ ruoyi-extend/               # Auxiliary Spring Boot apps (run separately, not pa
 
 ## AI Stack
 
-- **Langchain4j**: three BOMs pinned in `pom.xml:55-58` (stable `1.17.2`, community `1.17.0-beta27`, beta `1.17.2-beta27`). Keep them aligned when upgrading.
-- **Langgraph4j** `1.8.20` — graph-style agent orchestration.
+- **AgentScope** `2.0.3`（`agentscope.version`；okhttp 5.3.2 全家钉版 + `banDuplicateClasses` 门禁防重复类冲突）。
 - **Vector DB**: pluggable, selected by `vector-store.type` in `application.yml`. Default `weaviate` (port `28080` in compose); supports `milvus` (`:19530`) and `qdrant` (`:6334`). **The compose-deployed vector DB must match this setting** or RAG queries silently return empty.
 - **Models**: configured at runtime via "Model Management" UI; backend integration covers DeepSeek, Zhipu (with official `zai-sdk`), MIMO, Bailian, OpenAI.
 - **RAG**: local knowledge stored as `LocalKnowledge` class/collection; doc parsing handles PDF/Word/Excel/images.
-- **MCP tools**: protocol integration; builtin tools exposed to LangChain4j agents via `ToolProvider` beans.
-- **Workflow orchestration**: `ruoyi-aiflow` provides a visual designer (frontend) backed by SSE-streamed execution on the backend; nodes include model calls, email send, manual review.
+- **MCP tools**: protocol integration; builtin tools exposed to AgentScope agents.
 
 ## Key Conventions & Gotchas
 
@@ -91,7 +87,7 @@ ruoyi-extend/               # Auxiliary Spring Boot apps (run separately, not pa
 - **Demo mode** (parent `application.yml`, key `demo.enabled`): **default is now `false`** (R8-P0-2 flipped it). If someone flips it back to `true`, every write operation is blocked with "演示模式，不允许操作" on POST/PATCH/DELETE; the whitelist lives in the same block under `demo.excludes` (login, chat-send, system-session, …). Pass `-Ddemo.enabled=false` when you need deterministic behaviour. Do **not** cite line numbers for these keys — see the "cite keys, not line numbers" rule in `AGENTS.md`.
 - **Multi-tenant** is on by default (`tenant.enable=true`). Tenant filter is applied via MyBatis-Plus; tenant-shared tables are listed in the parent `application.yml` under `tenant.excludes`. New shared tables must be added there or they'll be incorrectly filtered. Note `trace_run` and `trace_node` are excluded because the trace writer runs on async threads without tenant context. Registering a table that does not exist yet is possible (and currently done: `person_roles` is listed while no such table exists in any local DB), so the excludes list is not a schema inventory.
 - **Sa-Token** JWT secret (parent `application.yml`, key `sa-token.jwt-secret-key`) is `${SA_TOKEN_JWT_SECRET_KEY:}` — an env placeholder **with no inline default**, so a missing env fails fast instead of silently using a shared key. `application-dev.yml` keeps a `devOnly-`prefixed fallback so local bootstrapping stays frictionless; that literal is committed, treat it as public and never reuse it outside dev. Guarded by `CredentialLiteralGuardTest`.
-- **Coding harness** (`application.yml:24-32`): an agent runtime with budget limits (`max-iterations: 200`, `max-tool-calls: 600`). The `coding.harness.tools.execute-process.enabled=true` flag enables command execution — be aware this can shell out from inside chat.
+- **Coding harness** (removed 2026-10-02 per ADR-0077): the self-built `org.ruoyi.service.coding.harness` chain and its `/coding/harness` controller were deleted in favor of the official `HarnessAgent.builder()` assembly; a 13-file pure-value closure survives under `harness/{tool,model}/` as the tool-governance contract (consumed by chat kernel & IPD agent). The `coding.harness.tools.execute-process` sandbox flags are gone; the only live key is `coding.harness.workspace.shared-root` (CodingWorkspaceService).
 - **Annotation processors** (`pom.xml:432-457`): five wired via `maven-compiler-plugin` — `therapi-runtime-javadoc-scribe`, `lombok`, `spring-boot-configuration-processor`, `mapstruct-plus-processor`, `lombok-mapstruct-binding`. Adding a new processor means updating `<annotationProcessorPaths>` or it won't run.
 - **Java 17** is required. Virtual threads are gated off (`spring.threads.virtual.enabled: false`); toggle on if running JDK 21+.
 - **gRPC version pinning**: `pom.xml:67-70` pins `grpc-bom` to `1.62.2` to resolve Milvus SDK conflicts. Don't upgrade gRPC without re-testing Milvus integration.
@@ -137,7 +133,6 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 
 | Skill | 调用 | 适用场景 |
 |---|---|---|
-| `/ai-module-add` | user-only | 在 `ruoyi-chat` / `ruoyi-aiflow` 加新 Langchain4j agent、tool、workflow 节点或 MCP 工具。封装了项目约定（包结构、注解模板、MCP 暴露、租户 / 权限约束） |
 | `/gen-test` | user-only | 按 `@Tag("dev")` Surefire 过滤规范生成 Service / Controller 单测。封装了 Mockito + AssertJ 模板 + 必须覆盖的 6 个维度 |
 | `/api-contract` | user-only | 改了 controller / DTO 后生成 OpenAPI 增量 diff + BREAKING / NEW / CHANGE 分类 + 给 `ruoyi-web` / `ruoyi-admin` 的变更通知草稿 |
 | `/db-migration` | user-only | 新增业务表 / 加字段 / 加索引 / 新增 snailjob 任务 / 登记租户共享表。封装 DDL 模板、Entity 必备字段、回滚脚本生成 |
@@ -154,15 +149,13 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 | Agent | 触发时机 | 审查范围 | 交给谁 |
 |---|---|---|---|
 | `code-reviewer` | 改任何 Java 文件 | 架构、可读性、并发、错误处理、Spring 用法、Lombok / MapStruct-Plus 配合 | AI 安全 / 业务安全 / 性能 |
-| `langchain4j-agent-reviewer` | 改 `ruoyi-chat` / `ruoyi-aiflow` | prompt 注入、`@Tool` 暴露、token 成本、MCP 配置、RAG 检索 | 性能 / 业务安全 / 架构 |
 | `security-reviewer` | 改 controller / service / config / yml | 多租户过滤、Sa-Token + JWT、API 加解密、XSS、SQL 注入、密钥硬编码 | AI / 性能 / 架构 |
-| `performance-analyzer` | 改 mapper / service / AI 模块 | SQL 慢查询与 N+1、Redis、连接池、JVM、Langchain4j token、向量化批处理 | 架构 / 业务安全 / AI 安全 |
+| `performance-analyzer` | 改 mapper / service / AI 模块 | SQL 慢查询与 N+1、Redis、连接池、JVM、模型 token、向量化批处理 | 架构 / 业务安全 / AI 安全 |
 
 **调度规则**：
 
 - 改 1-2 行代码 → 不派 agent（成本不划算）
 - 改一个 controller 写操作 → `security-reviewer` + `code-reviewer`（2 个）
-- 改 Langchain4j 模块 → `langchain4j-agent-reviewer`（1 个就够）
 - 模块级重构（>5 文件）→ 2-3 个 agent 并发，烧 token 但值
 
 ### Hooks（机器执行，最硬约束）
@@ -172,7 +165,7 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 | Hook | 类型 | 触发 | 行为 |
 |---|---|---|---|
 | `sensitive-field-guard.cjs` | PreToolUse | Write / Edit / MultiEdit | **阻断** `.env*` / `application-prod.yml` / 含 PEM 私钥内容；**警告** JWT secret / 明文 password 字面量 |
-| `pom-edit-hint.cjs` | PostToolUse | Write / Edit / MultiEdit 命中 `**/pom.xml` | **不阻断**，stderr 提示 5 类同步项（langchain4j 多 BOM 对齐、annotation processor、grpc 版本、flatten 插件、surefire groups） |
+| `pom-edit-hint.cjs` | PostToolUse | Write / Edit / MultiEdit 命中 `**/pom.xml` | **不阻断**，stderr 提示 4 类同步项（annotation processor、grpc 版本、flatten 插件、surefire groups） |
 | `block-dangerous-git.sh` | PreToolUse | Bash | **阻断** `git push` / `git push --force` / `git reset --hard` / `git clean -f[d]` / `git branch -D` / `git checkout .` / `git restore .`（来自 mattpocock-skills `git-guardrails-claude-code`） |
 
 调试命令：
@@ -188,7 +181,7 @@ echo $?  # 期望: 2（阻断）
 
 | Server | 命令 | 用途 | 状态 |
 |---|---|---|---|
-| `context7` | `npx -y @upstash/context7-mcp` | 实时查 Langchain4j / Spring Boot 文档 | ✅ 可用 |
+| `context7` | `npx -y @upstash/context7-mcp` | 实时查 AgentScope / Spring Boot 文档 | ✅ 可用 |
 | `github` | `npx -y @modelcontextprotocol/server-github` | 操作 issues / PRs / actions | ⚠️ 需 `GITHUB_PERSONAL_ACCESS_TOKEN` 环境变量才能调用；补 token：`claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=<PAT> -- npx -y @modelcontextprotocol/server-github` |
 
 注册位置：`~/.claude.json → projects[/Users/mac/Documents/ruoyi-ai].mcpServers`，scope = `local`，不会污染其他项目。
@@ -213,8 +206,8 @@ node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8'))"
 # 3. MCP 注册
 node -e 'const j=require("/Users/mac/.claude.json").projects["/Users/mac/Documents/ruoyi-ai"].mcpServers||{}; console.log(Object.keys(j))'
 
-# 4. 4 个 agent 边界节齐全
-for a in code-reviewer langchain4j-agent-reviewer performance-analyzer security-reviewer; do
+# 4. 3 个 agent 边界节齐全
+for a in code-reviewer performance-analyzer security-reviewer; do
   grep -q "^## 边界" .claude/agents/$a.md && echo "✅ $a" || echo "❌ $a 缺边界节"
 done
 
@@ -242,11 +235,11 @@ node docs/wiki/wiki-lint.cjs
 
 按 karpathy-llm-wiki 工作流生成：
 
-- **入口**：`docs/wiki/wiki/index.md`（21 篇文章清单）
-- **模块详解**：`docs/wiki/wiki/modules/<name>.md`（18 篇：admin / chat / aiflow / system / workflow / generator / common + 扩展）
+- **入口**：`docs/wiki/wiki/index.md`（20 篇文章清单）
+- **模块详解**：`docs/wiki/wiki/modules/<name>.md`（16 篇：admin / chat / system / generator / common / ipd + 扩展）
 - **跨模块主题**：`docs/wiki/wiki/cross-cutting/<name>.md`（3 篇：架构 / 多租户 / 部署）
 - **自动化栈**：`docs/wiki/wiki/automation/claude-code-setup.md`
-- **原始材料**：`docs/wiki/raw/<topic>/*.md`（60 个 verbatim 源文件）
+- **原始材料**：`docs/wiki/raw/<topic>/*.md`（49 个 verbatim 源文件）
 - **lint 验证**：`node docs/wiki/wiki-lint.cjs`（每次改 wiki 跑一次）
 
 改造时**先查 wiki**了解 RuoYi-AI 基线实现，再读 `docs/ipd-系统说明/naming-convention.md` 和 `type-mapping.md` 决定新代码怎么写。
@@ -285,7 +278,7 @@ npx claude-flow hooks route --task "<任务描述>"
 
 ### Issue tracker
 
-GitHub Issues（gh CLI）—— origin 是 `wilson323/ruoyi-ai`，upstream 是 `ageerle/ruoyi-ai`。详见 `docs/agents/issue-tracker-github.md`。
+IPD 使用本地看板与镜像，执行顺序以总画布为准，见 `docs/agents/issue-tracker.md`。`docs/agents/issue-tracker-github.md` 仅是历史操作参考；当前用户未明确要求，不创建外部事项。
 
 ### Triage labels
 
@@ -420,3 +413,10 @@ grep "BCP-014" docs/ipd-系统说明/BCP-Closure-Log.md | head -3  # ≥ 3 行
 - **5 个门禁脚本**：`scripts/check-{best-practices-coverage,naming-convention,doc-code-sync,memory-leak-pattern,a11y-basics}.sh`
 - **BCP-Registry 反思段**：`docs/ipd-系统说明/BCP-Registry.md §十六`
 - **BCP-Closure-Log 闭环段**：`docs/ipd-系统说明/BCP-Closure-Log.md §三.3.20`
+
+
+## AgentScope 开发入口校准（2026-10-02，文档v1.1.0）
+
+SDK、Harness、知识/工具或多人协作改动先读 `docs/ipd-系统说明/AgentScope官方化-六计划总览-20261002.md` 对应P节，再按需读专项；它只细化总画布，不能取代总画布/唯一看板。先核六行缺口，按已认领allowedPaths实施。`ai-native-sdlc`负责工程方法，`agentscope-harness`用于本项目SDK装配合同；按改动选择api-contract/gen-test/db-migration，不照已退役技能模板或零测试默认写代码。宿主未实际执行hook时不能声称已被保护。工具、技能版本与调用链、正反例和当前2.0.3 API以真实证据为准。
+
+多Agent只读评审可并行，共享Java/计划文件主协调者串行集成、Maven target错峰。所有自研类必须实现SPI的名称门禁不采用；只检查已确证重复基础能力与生产双轨。版本化形成可审查差异和证据，提交/推送/发布仍需用户明确授权。Skill更新必须实际回归与镜像核验，不能由一次模型回答自动晋升全局。

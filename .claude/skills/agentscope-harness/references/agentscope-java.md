@@ -1,10 +1,10 @@
 # agentscope-java — 本仓实证的 AgentScope Java API 面与依赖雷
 
 > 事实源分级（**引用前先看标记，禁止把 📄 当 ✅ 用**）：
-> - ✅**已实证** = 本仓 `poc/agentscope-kernel` 分支代码里真跑过、真库回读过（commit `8019d9a5`→`129327db`，G1~G5，2026-09-28 现查）
-> - 📄**仅文档** = 出自 `java.agentscope.io` 官方文档/博客，**本仓尚未验证**，用前必须自己跑通
+> - ✅**已实证** = 本仓 `poc/agentscope-kernel` 分支代码里真跑过、真库回读过（commit `8019d9a5`→`129327db`，G1~G5，2026-09-28 现查；**该分支已合入主树**（2026-10-02 现查 worktree 已删），代码现于主树 `ruoyi-chat`）
+> - 📄**仅文档** = 出自 `java.agentscope.io` 官方文档/博客，**本仓尚未验证**，用前必须自己跑通；官方文档已全量存档本地（见文末来源），引用时读存档
 >
-> 版本：`io.agentscope:*:2.0.3`（✅ 见 `ruoyi-modules/ruoyi-chat/pom.xml`，PoC 分支）
+> 版本：`io.agentscope:*:2.0.3`（✅ 主树 `ruoyi-modules/ruoyi-chat/pom.xml` 声明，根 pom `agentscope.version` 锁版，禁升 2.0.4）
 
 ## 是什么
 
@@ -15,7 +15,7 @@ AgentScope Java 2.0 的 `HarnessAgent` 是统一代码入口；同一套 Harness
 | 雷 | 表现 | 根因 / 解法 |
 |---|---|---|
 | **okhttp 重复类** | 引入 agentscope 后运行态类冲突 | G1 已把 okhttp **5.3.2 全家钉版** + `banDuplicateClasses` 门禁根除。升 agentscope 前先重跑该门禁 |
-| **langchain4j 接线膨胀** | 内核替换期间新旧两套并存、接线点无控增长 | G2 立"**只减不增**棘轮门禁" + 基线 111 条（`scripts/baselines/langchain4j-count.json` + `scripts/check-langchain4j-ratchet.sh`，已接 `.claude/hooks/check-pre-commit.sh` 门禁 5）。新增 langchain4j 接线会被拦 |
+| **langchain4j 回潮** | 迁移期新旧两套并存、接线点无控增长 | 2026-10-02 已清零（count 113→0，含代码注释/活文档/治理脚本字样），G2 棘轮门禁随零字样一并退役（ratchet 脚本+基线+pre-commit 门禁 5+C8 检查已删）。防回潮：全仓 grep 终检（`dev.langchain4j`/`langgraph4j` 活区零命中） |
 | **原生只有二维寻址，业务要四维隔离** | project / agent 两个维度在 `AgentStateStore` 里**没有列**，串桶即数据泄漏 | G3 用 `KernelScopeKey` 把四维折入 `(userId, sessionId)` 二元组，fail-closed 拒注入。见下 §3 |
 
 ## 怎么识别（装配骨架，✅ 全部已实证）
@@ -144,11 +144,13 @@ Object pid = hits.get(0).getPayloadValue("projectId");
 | `.stateStore(AgentStateStore)` | ✅ | 外置状态；分布式/可恢复必需 |
 | `.call(Msg, RuntimeContext)` / `.streamEvents(Msg, RuntimeContext)` | ✅ | 同步 / 流式；均须传 RuntimeContext |
 | `.additionalContextFile("SOUL.md")` | 📄 | workspace 相对路径，全文注入，可重复调 |
-| `.maxContextTokens(int)` | 📄 | MEMORY 注入预算 |
+| `.maxContextTokens(int)` | ✅ | workspace 注入预算（默认 8000），**不是对话窗口**：唯一作用点 = WorkspaceContextMiddleware 对 MEMORY.md 的截断；双 disable memory 时该分支永不进入（死数字），AGENTS.md/KNOWLEDGE.md/session 段只计入不截断。对话历史由 compaction 管 |
 | `.enablePlanMode()` / `.planFileDirectory("plans")` | 📄 | 只读探索→写计划→HITL 确认→执行；计划落 `plans/PLAN.md` |
 | `.enableTaskList()` | 📄 | Todo，存 Agent 状态，跨调用恢复 |
-| `.compaction(CompactionConfig.builder().triggerMessages(30).keepMessages(10).build())` | 📄 | 上下文压缩 |
-| `.toolResultEviction(ToolResultEvictionConfig.defaults())` | 📄 | 超大工具结果落盘、窗口只留占位符 |
+| `.compaction(CompactionConfig.builder().build())` | ✅ | 长对话压缩；**官方 Builder 字段默认即装配全默认配置**（主模型+官方摘要prompt+动态阈值，HarnessAgent:1222/2546），显式声明 = 固化意图防默认漂移；硬失败仅在显式 disableCompaction() 时出现 |
+| `.modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)` | ✅ | 模型调用 5min 超时 + 3 次尝试 + 指数退避；不设时 SDK **不套任何重试**（ReActAgent 对 null 直接跳过） |
+| `.toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)` | ✅ | 工具调用 5min 超时单次；与 DeadlineMiddleware（run 级总时限）不同层不双轨 |
+| `.toolResultEviction(ToolResultEvictionConfig.defaults())` | ✅ | 超大工具结果（>80k 字符）落盘+2k 预览占位；**官方默认即装配**（Builder 字段默认 defaults()，HarnessAgent:1224） |
 | `.filesystem(new DockerFilesystemSpec().image("ubuntu:24.04"))` | 📄 | Sandbox 执行环境；另有 `SandboxFilesystemSpec` / `RemoteFilesystemSpec`（Redis/JDBC/OSS） |
 | `.skillRepository(repo)` / `.skillRepositories(list)` | 📄 | 追加 / 替换技能市场（`GitSkillRepository`、Nacos、MySQL、Classpath） |
 | `.projectGlobalSkillsDir(Path)` | 📄 | 项目全局技能目录，不存在则跳过 |
@@ -188,9 +190,24 @@ Object pid = hits.get(0).getPayloadValue("projectId");
 
 下层独有的 skill 仍保留，只在重名时被上层覆盖。子 agent 自动继承父的市场列表和项目全局目录，不用重复配。运行时按需 `load_skill_through_path` 加载详情；**读 `SKILL.md` 不需要沙箱**，只有跑 skill 脚本才进沙箱（宿主物化 → workspace projection 注入容器 `/workspace` → 容器内执行）。
 
+## Building-blocks 7 组件 × 本项目应用状态（2026-10-02 BB1-BB4 定稿）
+
+以 2.0.3 jar（javap + sources）为事实源逐项核实后的裁决：
+
+| 官方组件 | 真实 API 面 | 本项目状态 | 裁决理由 |
+|---|---|---|---|
+| ExecutionConfig | `MODEL_DEFAULTS`(5min+3次) / `TOOL_DEFAULTS`(5min单次)；Builder 是 `maxAttempts(Integer)` **无 maxRetries** | ✅ 双装配点已挂 | 不设时无重试无超时，纯韧性增强 |
+| fallbackModel | `fallbackModel(Model\|String)` | ❌ 不上 | 无第二模型事实源，不编造回退目标 |
+| Compaction | `CompactionConfig` 全默认 = 主模型+官方 prompt+动态阈值；`model=null` 字面意思就是用主模型 | ✅ 双装配点已挂（owner 拍板 A） | 消除溢出硬失败；`HarnessAgent.getCompactionHook()` 可断言 |
+| Permission 规则 | `permissionContext(PermissionContextState)` + `PermissionRule(toolName, ruleContent, behavior, source)`；权限流 = `ToolBase#checkPermissions(input, state.getPermissionContext())` | ❌ 不上（已有四层防线） | toolkit 白名单 + exposed 校验 + toolsConfig deny + OwnershipMiddleware/checkPermissions 覆写；规则式 = 同一事实两源，双轨 |
+| stopOnReject | `ReActAgent$Builder.stopOnReject(boolean)`，`ReactConfig.DEFAULT_STOP_ON_REJECT=false`；HarnessAgent:1684 透传 | ❌ 保持默认 false | true 会拒绝即停不让模型自纠，属行为变更 |
+| OtelTracingMiddleware | `io.agentscope.core.tracing`，硬 import `opentelemetry-instrumentation-reactor` | ❌ 不上 | 本仓无 opentelemetry 依赖，NoClassDefFoundError 风险 |
+| FinalAnswerFilterMiddleware | `io.agentscope.core.middleware`，抑制带 tool call 轮次的缓冲文本 | ❌ 不上 | 改前端流式可见行为（中间轮文本被吞） |
+| GracefulShutdownMiddleware | `io.agentscope.core.shutdown`，需 GracefulShutdownManager 构造 | ❌ 不上 | 服务生命周期 Spring 已管，双轨 |
+
 ## 本仓自研 harness ↔ AgentScope 契约对照（单轨决策用）
 
-本仓已有一套**与 AgentScope 无关**的自研 harness：`org.ruoyi.service.coding.harness`，17 子包 / main 树 254 个 `.java` + test 树 1 个（2026-09-28 `find` 现查），**零** `io.agentscope` 引用。它已经把 blog 01~04 的多条契约自己实现了一遍，所以引入 AgentScope 时最大的风险不是「不会用」，而是**静默长出第二套 harness**。
+本仓已有一套**与 AgentScope 无关**的自研 harness：`org.ruoyi.service.coding.harness`，17 子包 / main 树 256 个 `.java` + test 树 1 个（2026-10-02 `find` 现查，随兄弟会话在途漂移；2026-09-28 首查为 254），**零** `io.agentscope` 引用。它已经把 blog 01~04 的多条契约自己实现了一遍，所以引入 AgentScope 时最大的风险不是「不会用」，而是**静默长出第二套 harness**。
 
 子包规模（大到小）：`tool` 48 / `model` 38 / `loop` 35 / `plan` 28 / `approval` 18 / `artifact` 15 / `context` 15 / `app` 8 / `journal` 7 / `recovery` 7 / `runtime` 7 / `modelruntime` 6 / `prompt` 6 / `store` 6 / `event` 5 / `skill` 4 / `config` 1。
 
@@ -223,9 +240,9 @@ Object pid = hits.get(0).getPayloadValue("projectId");
 # 契约门禁（四维键收口 / builder 必备项 / 凭据纪律 / 依赖钉版）
 bash .claude/skills/agentscope-harness/scripts/verify.sh
 
-# PoC 分支实证复跑（错峰 + 单模块 + 不带 -am 不带 clean，见项目 AGENTS.md 假红陷阱）
+# PoC 实证复跑（已合入主树，直接主树跑；错峰 + 单模块 + 不带 -am 不带 clean，见项目 AGENTS.md 假红陷阱）
 export PATH="$HOME/tools/maven/bin:$PATH"; export JAVA_HOME="$HOME/tools/jdk-17/Contents/Home"
-cd /Users/mac/Documents/ruoyi-ai/.worktrees/poc-agentscope-kernel
+cd /Users/mac/Documents/ruoyi-ai
 mvn -o -pl ruoyi-modules/ruoyi-chat -Dtest=AgentScopeKernelPocIT test
 ```
 
@@ -233,7 +250,8 @@ mvn -o -pl ruoyi-modules/ruoyi-chat -Dtest=AgentScopeKernelPocIT test
 
 ## 来源
 
-- ✅ 本仓 `poc/agentscope-kernel`：`ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/{KernelScopeKey,PocKernelSupport,PocSseController}.java`、`src/test/.../{AgentScopeKernelPocIT,AgentScopeRagPocIT,AgentScopeStreamingPocIT,PocSseApplication}.java`、`ruoyi-modules/ruoyi-chat/pom.xml`、`scripts/check-langchain4j-ratchet.sh`、`scripts/baselines/langchain4j-count.json`（2026-09-28 现查；C7 实测：okhttp 5.3.2 钉在该树根 pom、`banDuplicateClasses` 在 `ruoyi-modules/ruoyi-chat/pom.xml:287`、棘轮基线 `count: 111`）
-- ✅ 本仓自研 harness（对照表事实源）：`ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/harness/`——17 子包，main 254 + test 1 个 `.java`；表中引用的 13 个类名已逐一 `find` 现查存在（2026-09-28）。早期文档写的「261 文件」是把 `service/coding` 下非 harness 文件算进去了，已订正。
+- ✅ 本仓 `poc/agentscope-kernel`：`ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/{KernelScopeKey,PocKernelSupport,PocSseController}.java`、`src/test/.../{AgentScopeKernelPocIT,AgentScopeRagPocIT,AgentScopeStreamingPocIT,PocSseApplication}.java`、`ruoyi-modules/ruoyi-chat/pom.xml`（2026-09-28 现查；C7 实测：okhttp 5.3.2 钉在该树根 pom、`banDuplicateClasses` 在 `ruoyi-modules/ruoyi-chat/pom.xml:287`；**2026-10-02 现查已合入主树**：okhttp 钉版落主树根 pom（`okhttp.version=5.3.2`）、`banDuplicateClasses` 在主树 `ruoyi-chat/pom.xml`、langchain4j 主链已清零；ratchet 脚本与基线随字样清零退役已删）
+- ✅ 本仓自研 harness（对照表事实源）：`ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/harness/`——17 子包，main 256 + test 1 个 `.java`（2026-10-02 现查；数量随兄弟会话在途漂移，引用时现查）；表中引用的 13 个类名已逐一 `find` 现查存在（2026-09-28）。早期文档写的「261 文件」是把 `service/coding` 下非 harness 文件算进去了，已订正。
 - 📄 `/v2/zh/docs/harness/{workspace,skill,filesystem,sandbox,compaction,plan-mode,memory,subagent,architecture,channel}`、`/v2/zh/docs/building-blocks/{context,permission-system,middleware,tool,message-and-event,model,agent}`、`/v2/zh/docs/others/going-to-production`、blog 01~04
+- 📄 官方文档本地存档（2026-10-02 建立并验证零漂移）：`/Users/mac/Documents/最佳实践/AgentScope-Java-v2-docs-full/`（164 篇 zh 全量，llms.txt 153 URL 全覆盖）；上一行 📄 条目的原文均在该存档 `docs/`、`blogs/` 下，引用时读本地
 - 项目雷区：根 `AGENTS.md`（假红/假绿陷阱、Maven 与 JDK 路径、真库 13306、凭据纪律）

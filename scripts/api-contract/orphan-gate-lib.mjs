@@ -10,7 +10,7 @@
  *
  * 本库职责（与扫描逻辑完全解耦，靶脚本扫描集原样传入）:
  *   - loadJsonFile            读取 + 基础 schema
- *   - validateWhitelist       §3.2 六条防伪校验（卡号可验/path 真存/evidence 行号可机械校验/过期即失效/反向清账/文案防伪）
+ *   - validateWhitelist       §3.2 六条防伪校验（卡号可验/path 真存/evidence 方法锚/行号可机械校验/过期即失效/反向清账/文案防伪）
  *   - loadBaseline            baseline 加载 + sha256 自洽 + git show HEAD 硬闸（防手工编辑/删基线重生）
  *   - classifyOrphans         分诊: exempt_baseline / exempt_whitelist / violations / stale / expired
  *   - writeBaseline           --update-baseline 唯一合法写入口（count 单调不增，growth_log 记账）
@@ -82,15 +82,50 @@ export async function loadJsonFile(p, { required = true, label = 'JSON 文件' }
   return doc;
 }
 
+/** 注释置空并保留偏移/换行；不误删注解字符串中的http://。 */
+export function javaSourceWithoutComments(source) {
+  let state = 'code', result = '', escaped = false;
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i], next = source[i + 1];
+    if (state === 'line') {
+      result += c === '\n' ? '\n' : ' ';
+      if (c === '\n') state = 'code';
+    } else if (state === 'block') {
+      if (c === '*' && next === '/') { result += '  '; i++; state = 'code'; }
+      else result += c === '\n' ? '\n' : ' ';
+    } else if (state === 'string' || state === 'char') {
+      result += c;
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if ((state === 'string' && c === '"') || (state === 'char' && c === "'")) state = 'code';
+    } else if (c === '/' && (next === '/' || next === '*')) {
+      state = next === '/' ? 'line' : 'block'; result += '  '; i++;
+    } else {
+      result += c;
+      if (c === '"') state = 'string';
+      else if (c === "'") state = 'char';
+    }
+  }
+  return result;
+}
+
+/** Mapping后对应的Java方法名；越过下一Mapping/类型声明时拒绝猜测。 */
+export function javaMethodAfterMapping(source, offset) {
+  const tail = javaSourceWithoutComments(source).slice(offset);
+  const declaration = /\b(?:public|protected|private)\s+(?:[\w.$<>?,\[\]]+\s+)+([A-Za-z_$][\w$]*)\s*\(/.exec(tail);
+  if (!declaration || /@(?:Get|Post|Put|Delete|Patch|Request)Mapping\b|\b(?:class|interface|enum)\s/.test(tail.slice(0, declaration.index))) return null;
+  return declaration[1];
+}
+
 // ---------- 白名单 §3.2 六条防伪 ----------
 /**
  * @param {object}   doc                白名单 JSON 文档
  * @param {object}   ctx
  * @param {Set}      ctx.beCanonicalSet 后端扫描 canonical path 全集
- * @param {Map}      ctx.beEndpointByCanonical  canonical → {file,line}（evidence 校验基准，扫描器产出）
+ * @param {object[]} ctx.beEndpoints    真实扫描端点（canonical/method/file/line/methodName）
  * @param {string}   ctx.mirrorText     看板镜像文件全文（卡号防伪第 1 条）
  * @param {string}   ctx.today          YYYY-MM-DD
- * @param {object[]} ctx.beFilesContent basename → 文本行数组（evidence 第 3 条：该行含 Mapping）
+ * @param {Map}      ctx.beFilesContent basename → 文本行数组；重名为null（拒绝歧义）
  * @returns {{errors:string[], warnings:string[], activeMap:Map, expiredEntries:object[], entriesByCanonical:Map}}
  */
 export function validateWhitelist(doc, ctx) {
@@ -136,21 +171,43 @@ export function validateWhitelist(doc, ctx) {
     if (!ctx.beCanonicalSet.has(e.path)) {
       errors.push(`${tag}: path 不存在于后端扫描集（防污染 + 防死条目）`);
     }
-    // --- 防伪 3: evidence 可机械校验（File.java:NN，NN ≤ 行数且该行含 Mapping） ---
+    // --- 防伪 3: 稳定方法锚或旧行号，必须绑定真实扫描端点的路径与HTTP方法 ---
     if (e.evidence) {
-      const m = /^([A-Za-z0-9_]+\.java):(\d+)$/.exec(e.evidence);
-      if (!m) {
-        errors.push(`${tag}: evidence "${e.evidence}" 不符合 File.java:NN 格式`);
+      const stable = /^([A-Za-z0-9_]+\.java)#([A-Za-z_$][\w$]*)$/.exec(e.evidence);
+      const legacy = /^([A-Za-z0-9_]+\.java):(\d+)$/.exec(e.evidence);
+      const match = stable || legacy;
+      if (!match) {
+        errors.push(`${tag}: evidence "${e.evidence}" 不符合 File.java#methodName 或 File.java:NN 格式`);
       } else {
-        const lines = ctx.beFilesContent.get(m[1]);
+        const lines = ctx.beFilesContent.get(match[1]);
         if (!lines) {
-          errors.push(`${tag}: evidence 文件 ${m[1]} 不在后端扫描集内`);
+          errors.push(`${tag}: evidence 文件 ${match[1]} 缺失或重名，不可唯一定位`);
+        } else if (!Array.isArray(ctx.beEndpoints)) {
+          errors.push(`${tag}: 缺后端真实端点清单，不能验证证据绑定`);
         } else {
-          const ln = Number(m[2]);
-          if (ln < 1 || ln > lines.length) {
-            errors.push(`${tag}: evidence 行号 ${ln} 超出 ${m[1]} 总行数 ${lines.length}`);
-          } else if (!/Mapping/.test(lines[ln - 1])) {
-            errors.push(`${tag}: evidence ${e.evidence} 该行不含 Mapping 注解（行内容: "${lines[ln - 1].trim().slice(0, 60)}"）`);
+          const inFile = ctx.beEndpoints.filter(ep => basename(ep.file) === match[1]);
+          const files = new Set(inFile.map(ep => ep.file));
+          let anchored = [];
+          if (files.size !== 1) {
+            errors.push(`${tag}: evidence 文件不可唯一定位`);
+          } else if (stable) {
+            anchored = inFile.filter(ep => ep.methodName === stable[2]);
+            const declarations = new Set(anchored.map(ep => ep.line));
+            if (declarations.size !== 1) errors.push(`${tag}: 方法锚 ${e.evidence} 缺失或重复`);
+          } else {
+            const ln = Number(legacy[2]);
+            if (ln < 1 || ln > lines.length) errors.push(`${tag}: evidence 行号 ${ln} 超出 ${match[1]} 总行数 ${lines.length}`);
+            else if (!/Mapping/.test(lines[ln - 1])) errors.push(`${tag}: evidence ${e.evidence} 该行不含 Mapping 注解`);
+            anchored = inFile.filter(ep => ep.line === ln);
+            if (!anchored.length) errors.push(`${tag}: evidence 行号未对应方法端点`);
+          }
+          const actual = anchored.filter(ep => ep.canonical === e.path);
+          if (!actual.length) errors.push(`${tag}: evidence 所指Mapping不匹配path ${e.path}`);
+          const declared = [...new Set(actual.map(ep => ep.method))].sort();
+          const requested = Array.isArray(e.methods) ? [...new Set(e.methods)].sort() : [];
+          if (!requested.length || requested.length !== e.methods?.length
+              || JSON.stringify(requested) !== JSON.stringify(declared)) {
+            errors.push(`${tag}: methods与证据Mapping不一致（声明=${JSON.stringify(requested)}，实际=${JSON.stringify(declared)}）`);
           }
         }
       }

@@ -146,7 +146,7 @@ public class SysUserImportListener implements ReadListener<SysUserImportVo> {
 
 事件源：Spring `ApplicationEventPublisher` 发 `UserActionEvent`，listener 接 event → 写 `sys_oper_log` 表。
 
-参见：[claude-md.md § Key Conventions — Demo mode](../raw/project-skeleton/claude-md.md)（演示模式拦截写操作）。
+（演示模式拦截写操作）。
 
 ## 启动期任务 — SystemApplicationRunner
 

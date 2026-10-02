@@ -48,8 +48,6 @@
         <sms4j.version>3.3.5</sms4j.version>
         <!-- 面向运行时的D-ORM依赖 -->
         <anyline.version>8.7.2-20250603</anyline.version>
-        <!-- 工作流配置 -->
-        <warm-flow.version>1.8.2</warm-flow.version>
         <!-- 企业微信SDK -->
         <weixin-java-cp.version>4.6.0</weixin-java-cp.version>
         <!-- Jackson XML -->
@@ -63,7 +61,7 @@
         <!-- 智谱官方 Java SDK -->
         <zai-sdk.version>0.3.5</zai-sdk.version>
 
-        <!-- gRPC 版本 - 解决 Milvus SDK 依赖冲突 -->
+        <!-- gRPC 版本 - Weaviate client 传递引入 gRPC，钉版防冲突 -->
         <grpc.version>1.62.2</grpc.version>
         <!-- Apache Commons Compress - 用于POI处理ZIP格式 -->
         <commons-compress.version>1.27.1</commons-compress.version>
@@ -135,7 +133,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- gRPC BOM - 解决 Milvus SDK 依赖冲突，强制统一版本 -->
+            <!-- gRPC BOM - Weaviate client 传递引入 gRPC，强制统一版本 -->
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-bom</artifactId>
@@ -334,18 +332,6 @@
                 <version>${mapstruct-plus.version}</version>
             </dependency>
 
-            <!-- Warm-Flow国产工作流引擎, 在线文档：http://warm-flow.cn/ -->
-            <dependency>
-                <groupId>org.dromara.warm</groupId>
-                <artifactId>warm-flow-mybatis-plus-sb3-starter</artifactId>
-                <version>${warm-flow.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.dromara.warm</groupId>
-                <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
-                <version>${warm-flow.version}</version>
-            </dependency>
-
             <!-- JustAuth 的依赖配置-->
             <dependency>
                 <groupId>me.zhyd.oauth</groupId>
@@ -381,20 +367,6 @@
             <dependency>
                 <groupId>org.ruoyi</groupId>
                 <artifactId>ruoyi-chat</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <!--  工作流模块  -->
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-workflow</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
-            <!--  AI流程编排模块  -->
-            <dependency>
-                <groupId>org.ruoyi</groupId>
-                <artifactId>ruoyi-aiflow</artifactId>
                 <version>${revision}</version>
             </dependency>
 

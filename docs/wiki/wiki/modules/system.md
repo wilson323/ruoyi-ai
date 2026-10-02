@@ -40,8 +40,6 @@ org.ruoyi.system/
 └── utils/
 ```
 
-参见：[pom-xml.md § modules](../raw/project-skeleton/pom-xml.md)、[claude-md.md § Module Layout](../raw/project-skeleton/claude-md.md)。
-
 ## RBAC 模型
 
 5 个核心实体：
@@ -65,7 +63,7 @@ org.ruoyi.system/
 - `@SaCheckPermission("system:user:list")`：要求权限标识（菜单的 `perms` 字段）
 - `@SaCheckDataScope`：要求数据权限范围（all / 自定义 / 本部门 / 本部门及下级 / 本人）
 
-`Sa-Token` 配置参见 [application-yml.md § sa-token](../raw/project-skeleton/application-yml.md)。
+`Sa-Token` 配置参见 。
 
 ## 23 个 controller 全景
 
@@ -153,7 +151,7 @@ public class SystemApplicationRunner implements ApplicationRunner {
 
 `SysUser` 实体含 `tenantId` 字段（继承自 `BaseEntity`）。所有 user / role / menu 查询都自动加 `tenantId` 过滤（MyBatis-Plus 多租户拦截器）。
 
-**例外**：`sys_menu` / `sys_tenant` / `sys_role_menu` 等在 `tenant.excludes` 白名单里（参见 [application-yml.md § tenant.excludes](../raw/project-skeleton/application-yml.md)）——菜单需要跨租户共享（不然切换租户看不到菜单）。
+**例外**：`sys_menu` / `sys_tenant` / `sys_role_menu` 等在 `tenant.excludes` 白名单里——菜单需要跨租户共享（不然切换租户看不到菜单）。
 
 ## 与 ruoyi-chat 的边界
 

@@ -9,11 +9,11 @@ raw:
 
 # ruoyi-ipd — IPD 业务工作流
 
-`ruoyi-ipd` 是 IPD 产品经理管理系统的核心业务模块（**528 个 Java 文件**）。它的工作流与 `ruoyi-workflow`（Warm-Flow BPMN 审批）、`ruoyi-aiflow`（图驱动 AI 编排）都不同——**这是自研的领域状态机**，直接编码 IPD 方法论（六阶段 + 5 Gate + 69 标准动作），不接任何第三方流程引擎。
+`ruoyi-ipd` 是 IPD 产品经理管理系统的核心业务模块（**528 个 Java 文件**）。它的工作流与原 `ruoyi-workflow`（Warm-Flow BPMN 审批）、`ruoyi-aiflow`（图驱动 AI 编排）都不同（两模块已于 2026-10-02 整模块下线）——**这是自研的领域状态机**，直接编码 IPD 方法论（六阶段 + 5 Gate + 69 标准动作），不接任何第三方流程引擎。
 
 参见治理报告：`docs/ipd-系统说明/工作流系统性梳理-20260927.md`（三套工作流对比与边界裁决）。
 
-## 三套"工作流"的边界
+## 三套"工作流"的边界（前两套已于 2026-10-02 下线，下表为历史对照）
 
 | 维度 | ruoyi-workflow | ruoyi-aiflow | ruoyi-ipd（本模块） |
 |---|---|---|---|

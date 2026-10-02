@@ -45,7 +45,6 @@ public class SecurityConfig implements WebMvcConfigurer {
 - 静态资源（`/*.html`、`/static/**`）
 - API docs（`/v3/api-docs/**`）
 - 登录相关（`/login`、`/auth/**`、`/captcha/**`）
-- 工作流 UI（`/warm-flow-ui/config`）
 
 ## ruoyi-common-satoken（5 文件）
 
@@ -80,7 +79,7 @@ StpUtil.checkRole("admin");
 
 API 加解密 + MyBatis 字段加密。
 
-参见 [claude-md.md § Key Conventions — Sa-Token](../raw/project-skeleton/claude-md.md)（api-decrypt 配置）。
+参见 （api-decrypt 配置）。
 
 **两类加密**：
 
@@ -105,7 +104,7 @@ public R<?> secureEndpoint(@RequestBody SensitiveRequest req) { ... }
 private String idCard;
 ```
 
-**密钥管理**：`api-decrypt.privateKey` / `publicKey` 在 application.yml，**生产必须替换**（[claude-md.md § api-decrypt](../raw/project-skeleton/claude-md.md) 有 dev 默认 key）。
+**密钥管理**：`api-decrypt.privateKey` / `publicKey` 在 application.yml，**生产必须替换**（ 有 dev 默认 key）。
 
 ## ruoyi-common-sensitive（4 文件）
 

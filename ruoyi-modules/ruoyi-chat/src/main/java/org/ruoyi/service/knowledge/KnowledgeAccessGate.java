@@ -84,8 +84,8 @@ public interface KnowledgeAccessGate {
     RetrievalAccessProfile retrievalAccessProfile();
 
     /**
-     * 显式身份变体：供非 HTTP 线程（如 aiflow 工作流 @Async 线程）传入已验证的 userId
-     * （A 口 WfState.userId 透传先例）。现态该身份为 sys_user id，persons 表无映射列、
+     * 显式身份变体：供非 HTTP 线程（如 @Async 线程）传入已验证的 userId。
+     * 现态该身份为 sys_user id，persons 表无映射列、
      * 且 id 空间不相交（sys_user 小整数 vs persons 900xxx），不得按数值巧合直查 persons
      * （会拿别人的 person 权限——提权面），一律 fail-closed 到 PUBLIC；
      * 身份体系建立映射后由 IPD 侧实现在此扩展。

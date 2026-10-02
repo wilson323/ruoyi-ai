@@ -6,7 +6,7 @@
 
 ## 一、为什么有这个文件
 
-本仓库原始来源是 [`wilson323/ruoyi-ai`](https://github.com/wilson323/ruoyi-ai)（一份开源的「企业级 AI 助手平台」Spring Boot + Langchain4j 项目）。在此基线上，二开团队（用户身份：Gavin）将整个项目改造为一个全新的产品——**「IPD 产品经理管理系统」**，服务于熵基科技内部市场PM/研发PM 的产品研发协同与激励核算。
+本仓库原始来源是 [`wilson323/ruoyi-ai`](https://github.com/wilson323/ruoyi-ai)（一份开源的「企业级 AI 助手平台」Spring Boot + LLM 应用框架项目）。在此基线上，二开团队（用户身份：Gavin）将整个项目改造为一个全新的产品——**「IPD 产品经理管理系统」**，服务于熵基科技内部市场PM/研发PM 的产品研发协同与激励核算。
 
 **改造不是另起炉灶，是 fork 后深度改造**。这是为什么仓库里同时存在：
 
@@ -15,7 +15,7 @@
 | **RuoYi-AI 原始代码**（约 1274 个 Java 文件） | 基线，原封不动保留 + 部分复用 |
 | **`docs/开发说明/`**（约 7122 行文档） | 目标 IPD 系统的二次开发说明书（产品设计） |
 | **`docs/ipd-系统说明/`**（本次新增） | 二开漂移审计 + 改造检查清单 + 适配说明 |
-| **`docs/wiki/`**（约 60 个 raw + 21 篇 wiki） | RuoYi-AI 基线的知识库（karpathy-llm-wiki 工作流生成） |
+| **`docs/wiki/`**（49 个 raw + 20 篇 wiki） | RuoYi-AI 基线的知识库（karpathy-llm-wiki 工作流生成） |
 | **本文件（README-IPD-OVERRIDE.md）** | 二开工程师的第一道门 |
 
 **访问者分两类，对应不同读法**：
@@ -29,9 +29,9 @@
 | | **改造前（RuoYi-AI）** | **改造后（IPD 系统）** |
 |---|---|---|
 | **产品定位** | 企业级 AI 助手平台（多 agent + RAG + 多模型） | 单企业私有部署的 IPD 产品工作平台 |
-| **核心场景** | AI 聊天、知识库、AI 工作流编排 | 69 动作 IPD 流程、五大 Gate 双签、KPI 考核、奖金池核算 |
+| **核心场景** | AI 聊天、知识库、多智能体编排 | 69 动作 IPD 流程、五大 Gate 双签、KPI 考核、奖金池核算 |
 | **用户** | 任何企业 | 市场PM / 研发PM / 产品组长 / 超管 / 游客 |
-| **业务核心** | Langchain4j agent + 知识库 + 模型适配 | 双 PM 协同 + 奖金公式 + 审计 hash 链 |
+| **业务核心** | AgentScope agent + 知识库 + 模型适配 | 双 PM 协同 + 奖金公式 + 审计 hash 链 |
 | **前端** | Vue 3 + Vben Admin + element-plus-x（保留） | 同上 + 49 页 IPD 业务页面（待开发） |
 | **后端** | Spring Boot 3.5.8 + MyBatis-Plus（保留） | 同上 + IPD 业务表 + 新业务 controller |
 
@@ -55,8 +55,8 @@
 | `ruoyi-system` | 保留 + 大幅扩展 | RBAC 已有；增加产品组、IPD 业务表（建议新建子包 `system.ipd`） |
 | `ruoyi-chat` | 保留 + 扩展 | AI 基础保留；增加 IPD 文档助手 agent 与文档版本链 |
 | **`ruoyi-ipd`**（建议新建） | 全新 | 69 动作 / 五大 Gate / KPI / 奖金池 / 需求池 / 删除审核等 IPD 业务核心 |
-| `ruoyi-workflow` | 保留 | Warm-Flow 保留；二期可考虑集成 |
-| `ruoyi-aiflow` | 保留 | 可与 `ruoyi-ipd` 集成做 IPD 流程的可视化编辑器 |
+| `ruoyi-workflow` | 已下线 | 2026-10-02 整模块下线（Warm-Flow 引擎退役，IPD 状态机为唯一编排事实源） |
+| `ruoyi-aiflow` | 已下线 | 2026-10-02 整模块下线（零消费查证后退役，详见 `docs/script/sql/update/2026-10-02-workflow-modules-offline.sql`） |
 | `ruoyi-generator` | 保留 | 沿用 |
 | `ruoyi-common` | 保留 + 复用 | 27 个子模块全部沿用 |
 
@@ -126,8 +126,8 @@
 │   │       └── mock-data.js
 │   │
 │   └── wiki/                             ← RuoYi-AI 基线的知识库（karpathy-llm-wiki 生成）
-│       ├── raw/                          60 个不可变源文件
-│       ├── wiki/                         21 篇结构化文章（按模块/主题分组）
+│       ├── raw/                          49 个不可变源文件
+│       ├── wiki/                         20 篇结构化文章（按模块/主题分组）
 │       └── wiki-lint.cjs                 自写 lint 脚本
 │
 ├── ruoyi-admin/                         Spring Boot 主应用（保留 + 扩展）
@@ -136,8 +136,6 @@
 ├── ruoyi-modules/                       功能模块（保留 + 扩展）
 │   ├── ruoyi-system/                    系统管理（保留 + 新增 IPD 子包）
 │   ├── ruoyi-chat/                      AI 核心（保留 + IPD 文档助手扩展）
-│   ├── ruoyi-aiflow/                     AI 工作流（保留）
-│   ├── ruoyi-workflow/                  传统工作流（保留）
 │   └── ruoyi-generator/                  代码生成（保留）
 │
 └── CLAUDE.md                             Claude Code 上下文（项目级规范）
@@ -211,7 +209,7 @@
 - 你熟悉的 `R<T>{code=200}` 保留给 RuoYi-AI 接口；**新 IPD 接口用 `ApiV1Response{code=0}`**
 - 你熟悉的 `/system/xxx`、`/chat/send` 路径保留；**新 IPD 接口走 `/api/v1/...`**
 - 你的 MyBatis-Plus / Redisson / Sa-Token 经验 100% 适用
-- 你的 Langchain4j 经验部分适用（IPD 文档助手扩展即可）
+- 你的 AgentScope 经验部分适用（IPD 项目智能体内核即 AgentScope Java）
 
 ### 6.3 新工程师（无 RuoYi 经验）
 
@@ -230,7 +228,7 @@
 
 ⚠️ **本仓库与原 wilson323/ruoyi-ai 的同步问题**：
 - 此 fork 在 2026-09-04 独立开发
-- 后续与上游同步需要评估：RuoYi-AI 的 AI 能力（Langchain4j）部分同步；IPD 业务部分反向贡献给上游
+- 后续与上游同步需要评估：上游 AI 能力与本仓 AgentScope 内核已分叉，按文件逐个评估；IPD 业务部分反向贡献给上游
 - 同步策略待 Gavin 决定（建议建 `merge-upstream` 分支保护主分支）
 
 ### 7.2 二开范围 vs 上游 RuoYi-AI 的兼容性
@@ -252,8 +250,8 @@
 | 类型 | 内容 | 文件 |
 |---|---|---|
 | **CLAUDE.md** | 项目级规范（已重写为「本项目当前是 IPD 二开基线」视角） | `CLAUDE.md` |
-| **Skills（4 个项目自定义）** | ai-module-add / gen-test / api-contract / db-migration | `.claude/skills/` |
-| **Subagents（4 个）** | code-reviewer / langchain4j-agent-reviewer / performance-analyzer / security-reviewer | `.claude/agents/` |
+| **Skills（3 个项目自定义）** | gen-test / api-contract / db-migration | `.claude/skills/` |
+| **Subagents（3 个）** | code-reviewer / performance-analyzer / security-reviewer | `.claude/agents/` |
 | **Hooks（2 个）** | sensitive-field-guard.cjs / pom-edit-hint.cjs | `.claude/helpers/` |
 | **MCP Servers** | context7（实时文档） / github（待配 PAT） | `~/.claude.json → projects[本仓库].mcpServers` |
 | **CI 集成** | wiki-lint.yml（每次 wiki 变动自动验证） | `.github/workflows/wiki-lint.yml` |

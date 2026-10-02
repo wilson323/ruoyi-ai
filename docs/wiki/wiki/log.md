@@ -90,3 +90,13 @@
 - **跨仓对账补强（本批二次自查）**: 前端 `ipd-enums.ts` 的 `ACTION_EXEC_MODE`（69 行静态映射）原注释放称「哨兵测试保护」，但全仓 grep 实测**无任何测试引用该常量** = 失真陈述 + 静默漂移隐患（后端改档位、前端徽标显示错档且不报错）。处置：后端哨兵新增第 10 条断言 `frontEndExecModeMapMatchesActionCatalog` 做跨仓逐码对账，**复用** `StateMachineGuardRulesExportTest` 已有的 `IPD_FE_SHARED_DIR` 定位约定（不另造第二套探测逻辑）；三态自证：篡改副本→红并点名「C01 后端=AI_GENERATE 前端=AI_DIRECT」、真值→10 绿、前端仓缺失→Skipped 而非假绿（全程零触碰真实前端文件）。前端注释同步改为指名该断言。机械校验结果：后端 69 码 ↔ 前端 69 码逐行零差异（AI_DIRECT 40 / AI_GENERATE 24 / HUMAN_GATE 5）
 - **lint 结果**: 126 通过 / 0 失败 / 0 孤立 raw（EXIT=0）
 - **git**: 未 commit，待 owner 授权
+
+### batch-14: 两模块下线 + LangChain4j→AgentScope 全量替换的 wiki 同步（2026-10-02）
+- **背景**: ruoyi-aiflow / ruoyi-workflow 整模块下线（三重证据零消费查证后 owner 拍板）+ LangChain4j/Langgraph4j 全量替换为 AgentScope（ADR-0077），wiki 活文档同步清零
+- **删除 4 篇 wiki**（描述对象已物理删除）: wiki/modules/aiflow.md、workflow.md（两模块下线）；chat-agents-catalog.md、chat-mcp-tools.md（21 个 @Agent 接口、LangChain4jMcpToolProviderService、内置 MCP 工具 6 件套已删）
+- **删除 15 个 raw**: aiflow-source/（8）、workflow-source/（2）、project-skeleton 5 个漂移骨架快照（pom-xml / application-yml / claude-md / readme-md / readme-zh-md，与现盘不符）、chat-source 3 个独占 raw（chit-chat-agent / mcp-tools-catalog / mcp-tool-provider-service）
+- **死链清理**: 18 页 56 处指向已删骨架快照的正文死链 + 第二轮 11 文件边角修复（“参见：。”等）
+- **改写 12 页**: index（统计 raw 66→49、文章 24→20）、chat（-98 行失效段落 + AgentScope 声明）、architecture-overview（双 ASCII 图重排 + AI 编排节改写）、multi-tenant-design（@MemoryId 段改写为服务端可信注入：ProjectAgentRunSpec/ProjectKnowledgeSearchTool）、admin（模块聚合 5→3）、common、claude-code-setup、common-security-auth、common-communication、system-listener-runner（删 refresh/warmup 两行）、ipd-node-agents（证据表 AiGateway langchain4j→io.agentscope.core）、ipd-workflow（对比表加下线历史标注）
+- **仓级同步**: CLAUDE.md / README-IPD-OVERRIDE.md 篇数统计（21→20 篇 / 60→49 raw）
+- **lint 结果**: 91 通过 / 0 失败 / 0 孤立 raw（EXIT=0）
+- **git**: 未 commit（并入本轮下线任务收口统一 stage）

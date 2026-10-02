@@ -12,6 +12,27 @@
 
 稳定的 Agent Loop + 权威任务状态 + 多维预算 + 外置计划 + 受控委派 + 证据化完成。
 
+### 0. 术语来源声明（2026-10-02 全量核对后追加）
+
+本文件（及 SKILL.md 的 §五层责任边界、§任务状态机、§多维预算、§Action Plane、§Permission 三态、§Verifier、§Trace→Harness Patch）描述的是**本项目自研的 harness 工程契约**，叠加在 AgentScope 2.0.3 之上，**不是 AgentScope 官方设计**。
+
+核对方法与结论：
+
+```bash
+rg "五层责任边界|Action Plane|Verifier|任务状态机" \
+   /Users/mac/Documents/agentscope-java/docs/v2/zh/docs/harness/*.md
+# → 零命中
+```
+
+官方 harness 文档（`docs/v2/zh/docs/harness/` 共 10 篇）只讲「三条核心工作原理」与「状态分三层」，不含上述任何术语。**注意该核对范围只覆盖 `docs/`**：官方 **blogs**《如何构建 Agent Harness》01 篇已含同构的五层责任边界表（时序上本项目 skill 先行，官方方法论后续追平；原文见本地存档 `blogs/how-to-build-agent-harness/01-patterns.md`）。因此「零命中」的准确表述是「docs/harness 与源码零命中」；写对照文档时区分 `docs/`（API 依据）与 `blogs/`（方法论印证，非 API 依据）两个来源。**因此：写「对照 Agent 设计原理」类文档时，不得以本文件为官方对照物**；官方对照物只能是 `/Users/mac/Documents/agentscope-java/docs/v2/zh/docs/` 与 `agentscope-harness/src/main/java/`。
+
+本轮同时实证了两条**不得当作官方能力**的边界：
+
+1. **harness 无图编排原语**——`StateGraph` / `addEdge` / `addNode` / `CompiledGraph` 在 `agentscope-harness` 与 `agentscope-core` 均零命中；`HarnessAgent implements Agent`（`:169`），`getDelegate()` 返回 `ReActAgent`（`:492`）。编排只有 middleware 叠加 + 子 agent 委派两条路。
+2. **无 checkpoint / 从第 N 步恢复 API**——全仓 `checkpoint` 只命中 `core/shutdown/*`（JVM 优雅停机钩子，非可回放执行检查点）；官方恢复仅三场景（session transcript 分段、`TaskRecord`、远程 SSE `lastEventSeq` 续传），且孤儿任务只标 FAILED 不重跑。
+
+引用本文件结论时，请同时标注**「已实证（给 file:line）」/「仅文档提及（源码未找到）」**两栏——这是本项目强制口径。
+
 ## 为什么（根因）
 
 消息历史只记录"模型和用户曾交换过什么"，不能当任务状态的唯一来源。模型看到几百条历史就得靠猜进度；预算没有外部边界就会悄然截断；完成没有验收器就会把"模型说完成了"当成事实。

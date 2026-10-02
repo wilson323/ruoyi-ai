@@ -33,7 +33,7 @@ RuoYi-AI 数据库变更标准化技能。
 ### 表命名
 
 - 表名小写 + 下划线：`sys_user`、`chat_session`、`knowledge_doc`
-- 模块前缀：`sys_*`（系统）、`chat_*`（chat 模块）、`flow_*`（workflow 模块）、`aiflow_*`（aiflow 模块）、`trace_*`（trace 模块）
+- 模块前缀：`sys_*`（系统）、`chat_*`（chat 模块）、`trace_*`（trace 模块）
 - 主键：`id BIGINT`，雪花算法（MyBatis-Plus `ASSIGN_ID`）
 - 必备字段：
 

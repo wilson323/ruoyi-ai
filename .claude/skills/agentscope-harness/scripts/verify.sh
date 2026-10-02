@@ -2,7 +2,11 @@
 # verify.sh — agentscope-harness 主入口（DisCo 形态要求的动态断言）
 #
 #   正向： bash verify.sh              三段门禁全跑，期望 EXIT=0
-#   负向： bash verify.sh --self-red   播种真违规样本，期望 EXIT!=0
+#   负向： bash verify.sh --self-red   播种五组正反控并断言其结果，**同样期望 EXIT=0**
+#          （它验证的是「门禁会红」这件事本身是否符合预期；退 != 0 意味着门禁自身失效
+#           ——恒绿或恒红，此时禁止声称本 skill 已验证。2026-10-02 修正：此处旧文案
+#           误写「期望 EXIT!=0」，与 :303 的 self-red: PASS 判据及 AGENTS.md 记录相矛盾，
+#           会让后续会话把正常的 EXIT=0 误读成失败。）
 #
 # 为什么必须有 --self-red（.claude/skills/_templates/IPD-SKILL-DISCO-TEMPLATE.md）：
 #   从不红的门禁 = 假门禁。本 skill 的判据全是 grep 模式，写宽了恒绿、写窄了恒红，
@@ -58,7 +62,7 @@ if [ "$MODE" = "positive" ]; then
   echo
   if [ "$EXIT_CODE" -eq 0 ]; then
     echo "verify: PASS"
-    echo "  下一步（自证能红，上岗前必跑一次）: bash $0 --self-red   # 期望 EXIT != 0"
+    echo "  下一步（自证能红，上岗前必跑一次）: bash $0 --self-red   # 同样期望 EXIT=0（断言五组正反控全符合预期）"
   else
     echo "verify: FAIL"
   fi

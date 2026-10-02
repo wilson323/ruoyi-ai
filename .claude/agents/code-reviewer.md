@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: RuoYi-AI 项目通用 Java / Spring Boot 代码审查代理。审查架构合理性、可读性、可维护性、并发安全、错误处理、日志规范、Spring 用法。与 langchain4j-agent-reviewer（AI 模块）和 security-reviewer（业务安全）正交互补。
+description: RuoYi-AI 项目通用 Java / Spring Boot 代码审查代理。审查架构合理性、可读性、可维护性、并发安全、错误处理、日志规范、Spring 用法。与 security-reviewer（业务安全）正交互补。
 ---
 
 # Code Reviewer
@@ -24,7 +24,6 @@ description: RuoYi-AI 项目通用 Java / Spring Boot 代码审查代理。审�
 
 **不审查你**（交给对应 agent）：
 
-- AI agent 的 prompt / token / 工具暴露 → `langchain4j-agent-reviewer`
 - 多租户 / Sa-Token / 加密 / XSS / SQL 注入 → `security-reviewer`
 - SQL 性能、缓存策略、JVM 调优 → `performance-analyzer`
 
@@ -131,7 +130,7 @@ description: RuoYi-AI 项目通用 Java / Spring Boot 代码审查代理。审�
 
 ## 边界再强调
 
-- 重复发现让 `langchain4j-agent-reviewer` / `security-reviewer` 关注的事，避免三个 agent 互相打架。
+- 重复发现让 `security-reviewer` 关注的事，避免 agent 之间互相打架。
 - 性能问题（SQL N+1 之外）转交 `performance-analyzer`。
 - 只输出审查报告，不改代码。
 - 涉及配置文件 / 依赖改动时**强制**标注「需用户确认」。

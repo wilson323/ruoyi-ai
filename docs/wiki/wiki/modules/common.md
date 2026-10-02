@@ -15,8 +15,6 @@ raw:
 
 `ruoyi-common` 由 27 个子模块组成，提供所有功能模块复用的基础能力。总 342 个 Java 文件。
 
-参见：[pom-xml.md § ruoyi-common-bom](../raw/project-skeleton/pom-xml.md)、[claude-md.md § Module Layout — common](../raw/project-skeleton/claude-md.md)。
-
 ## 27 个子模块清单
 
 | 模块 | 文件数 | 作用 |
@@ -29,7 +27,7 @@ raw:
 | ruoyi-common-mybatis | 中 | MyBatis-Plus 配置、多租户拦截器 |
 | ruoyi-common-redis | 中 | Redisson、分布式锁 |
 | ruoyi-common-cache | 低 | 缓存注解封装 |
-| ruoyi-common-chat | 中 | Langchain4j 适配、BaseEntity、RoleType |
+| ruoyi-common-chat | 中 | AI 模块公共支撑、BaseEntity、RoleType |
 | ruoyi-common-encrypt | 低 | mybatis-encryptor、api-decrypt |
 | ruoyi-common-excel | 低 | FastExcel 集成 |
 | ruoyi-common-job | 低 | SnailJob 客户端封装 |
@@ -120,5 +118,3 @@ public class MybatisPlusConfig {
     <artifactId>ruoyi-common-web</artifactId>
 </dependency>
 ```
-
-参见：[pom-xml.md § dependencyManagement](../raw/project-skeleton/pom-xml.md)。

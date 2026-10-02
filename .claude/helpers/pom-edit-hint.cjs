@@ -7,7 +7,6 @@
  * 行为: stderr 输出提示，不阻断（exit 0）。
  *
  * 提示内容（基于 ruoyi-ai 已知坑点）:
- *   - 多套 BOM 版本对齐（langchain4j stable/community/beta）
  *   - annotation processor 同步
  *   - grpc-bom 强制版本（Milvus SDK 兼容）
  *   - flatten-maven-plugin 影响 CI 版本号
@@ -59,14 +58,7 @@ function main() {
   const content = extractContent(payload.tool_input || payload.toolInput || {});
   const hints = [];
 
-  // 1. langchain4j 多 BOM 对齐
-  if (/<langchain4j[._]?[a-z]*\.version>/i.test(content)) {
-    hints.push(
-      '• langchain4j 有 3 套 BOM（stable / community / beta），确认版本号同步对齐。',
-    );
-  }
-
-  // 2. annotation processor 同步
+  // 1. annotation processor 同步
   if (/<artifactId>maven-compiler-plugin<\/artifactId>/.test(content) &&
       /annotationProcessorPaths/.test(content)) {
     hints.push(
@@ -74,7 +66,7 @@ function main() {
     );
   }
 
-  // 3. grpc 版本（Milvus SDK 兼容）
+  // 2. grpc 版本（Milvus SDK 兼容）
   if (/<grpc[._]?[a-z]*\.version>/i.test(content) ||
       /<artifactId>grpc-bom<\/artifactId>/.test(content)) {
     hints.push(
@@ -82,14 +74,14 @@ function main() {
     );
   }
 
-  // 4. flatten-maven-plugin
+  // 3. flatten-maven-plugin
   if (/<artifactId>flatten-maven-plugin<\/artifactId>/.test(content)) {
     hints.push(
       '• flatten-maven-plugin 影响 CI 部署版本号（用 \${revision} 占位），改了 flattenMode 要重新发布。',
     );
   }
 
-  // 5. surefire groups 过滤
+  // 4. surefire groups 过滤
   if (/<artifactId>maven-surefire-plugin<\/artifactId>/.test(content)) {
     hints.push(
       '• surefire 配了 <groups>\${profiles.active}</groups>——新增测试必须加 @Tag("dev") 才会跑。',

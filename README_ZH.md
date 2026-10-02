@@ -15,7 +15,7 @@
 
 ### 企业级AI助手平台
 
-*开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模式、RAG技术和流程编排能力*
+*开箱即用的全栈AI平台，支持多智能体协同、Supervisor模式编排、多种决策模式、RAG技术*
 
 **[English](README.md)** | **[📖 使用文档](https://doc.ruoyiai.chat/)** |
 **[🚀 在线体验](https://web.ruoyiai.chat/)** | **[🐛 问题反馈](https://github.com/ageerle/ruoyi-ai/issues)** | **[💡 功能建议](https://github.com/ageerle/ruoyi-ai/issues)**
@@ -38,8 +38,7 @@
 | **模型管理**  | 多模型接入(DeepSeek/智谱/MIMO/百炼/OpenAI)、多模态理解、Coze/DIFY/FastGPT/RAGFlow平台集成
 | **知识管理**  | 本地RAG + 向量库(Milvus/Weaviate/Qdrant)  + 文档解析
 | **工具管理**  | Mcp协议集成、Skills能力 + 可扩展工具生态
-| **流程编排**  | 可视化工作流设计器、节点拖拽编排、SSE流式执行,目前已经支持模型调用,邮件发送,人工审核等节点
-| **智能体管理** | 基于Langchain4j的Agent框架、Supervisor模式编排,支持多种决策模型,可以灵活搭配工具,skills
+| **智能体管理** | 基于AgentScope的Agent框架、Supervisor模式编排,支持多种决策模型,可以灵活搭配工具,skills
 
 
 ### 项目源码
@@ -61,7 +60,7 @@
 ## 🛠️ 技术架构
 
 ### 核心框架
-- **后端架构**：Spring Boot 3.5.8 + Langchain4j
+- **后端架构**：Spring Boot 3.5.8 + AgentScope
 - **数据存储**：MySQL 8.0 + Redis + 向量数据库（Milvus/Weaviate/Qdrant）
 - **前端技术**：Vue 3 + Vben Admin + element-plus-x
 - **安全认证**：Sa-Token + JWT 双重保障
@@ -226,7 +225,7 @@ docker-compose up -d --build
 ## 🙏 特别鸣谢
 
 感谢以下优秀的开源项目为本项目提供支持：
-- [Langchain4j](https://github.com/langchain4j/langchain4j) - 强大的 Java LLM 开发框架
+- [AgentScope Java](https://github.com/agentscope-ai/agentscope-java) - 可控 AI 智能体开发框架
 - [RuoYi-Vue-Plus](https://gitee.com/dromara/RuoYi-Vue-Plus) - 成熟的企业级快速开发框架
 - [Vben Admin](https://github.com/vbenjs/vue-vben-admin) - 现代化的 Vue 后台管理模板
 

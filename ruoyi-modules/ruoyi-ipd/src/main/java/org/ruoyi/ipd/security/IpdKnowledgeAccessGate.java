@@ -100,7 +100,7 @@ public class IpdKnowledgeAccessGate implements KnowledgeAccessGate {
 
     @Override
     public RetrievalAccessProfile retrievalAccessProfile(Long userId) {
-        // 非 HTTP 线程（aiflow @Async 等）：无 Sa-Token 上下文可解析 ipd 会话；
+        // 非 HTTP 线程（@Async 等）：无 Sa-Token 上下文可解析 ipd 会话；
         // 入参 userId 为 sys_user id，同上无映射可查，fail-closed PUBLIC
         //（身份体系建立映射后在此扩展，见类注释现态登记）。
         return RetrievalAccessProfile.FAIL_CLOSED_PUBLIC;

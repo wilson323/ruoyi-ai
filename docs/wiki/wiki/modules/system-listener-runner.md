@@ -36,8 +36,6 @@ public class SystemApplicationRunner implements ApplicationRunner {
 | 加载配置 | `configService.loadAll() → Caffeine` | 本地缓存，避免每次访问 MySQL |
 | 初始化租户 | `tenantService.init()` | 创建默认租户 / 套餐绑定 |
 | 注册服务发现 | `nacos.register()` | 如果用 nacos / consul |
-| 加载 MCP 工具列表 | `mcpToolService.refresh()` | LangChain4j 工具注册 |
-| 预热 Langchain4j embedding | `embeddingModel.warmup()` | 减少首次调用延迟 |
 
 **注意**：`run()` 内**禁止**做耗时长的同步操作（会卡住启动）。重任务应放到 SnailJob 异步执行。
 
@@ -170,4 +168,4 @@ public void run(ApplicationArguments args) {
 
 **经验**：启动期失败不应该阻塞应用启动（让用户能登录到管理界面查问题）。只对**致命依赖**（如数据库连接）throw，让 Spring Boot 退出码非 0，方便 systemd 重启。
 
-参见：[claude-md.md § Key Conventions — Demo mode](../raw/project-skeleton/claude-md.md)（演示模式会拦截写入）。
+（演示模式会拦截写入）。

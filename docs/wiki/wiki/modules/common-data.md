@@ -50,7 +50,7 @@ public MybatisPlusInterceptor mybatisPlusInterceptor(TenantConfig tenantConfig) 
 - 实现 `MetaObjectHandler`
 - 在 `@TableField(fill = FieldFill.INSERT)` / `FieldFill.INSERT_UPDATE` 自动注入
 
-参见 [claude-md.md § Key Conventions — 多租户](../raw/project-skeleton/claude-md.md)。
+参见 。
 
 ## ruoyi-common-redis（11 文件）
 
@@ -62,7 +62,7 @@ Redisson 集成 + 分布式锁 + 缓存。
 - `RedisUtils` —— 静态 Redis 操作（`get` / `set` / `hGet` / `setNx` 等）
 - `RedisLock` —— 分布式锁（基于 `setNx + Lua`）
 
-**Redisson 自动装配**（参见 [pom-xml.md § redisson](../raw/project-skeleton/pom-xml.md)）：
+**Redisson 自动装配**：
 
 ```xml
 <dependency>
@@ -71,7 +71,7 @@ Redisson 集成 + 分布式锁 + 缓存。
 </dependency>
 ```
 
-**Lock4j 分布式锁**（参见 [claude-md.md § Lock4j](../raw/project-skeleton/claude-md.md)）：
+**Lock4j 分布式锁**：
 
 ```java
 @Lock4j(key = "order:create", expire = 30000)
@@ -109,7 +109,7 @@ try {
 
 分布式链路追踪 —— 把每个请求的调用链写入 MySQL 表，供查询分析。
 
-参见 [claude-md.md § trace.enabled](../raw/project-skeleton/claude-md.md)。
+参见 。
 
 **关键类**：
 
@@ -124,7 +124,7 @@ trace_run  -- 一次请求 / 一次会话（trace_id, tenant_id, start_time, end
 trace_node -- 一个 span（trace_id, span_id, parent_span_id, name, type, start_time, duration_ms, payload）
 ```
 
-**重要**：`trace_run` 和 `trace_node` 在 `tenant.excludes` 白名单里（参见 [application-yml.md § tenant.excludes](../raw/project-skeleton/application-yml.md)）—— 因为 trace writer 在异步线程写，没有 tenant 上下文。
+**重要**：`trace_run` 和 `trace_node` 在 `tenant.excludes` 白名单里—— 因为 trace writer 在异步线程写，没有 tenant 上下文。
 
 **启用**：`trace.enabled: true`（默认开）；关闭后所有埋点透传，零性能开销。
 

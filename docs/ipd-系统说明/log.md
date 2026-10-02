@@ -13526,4 +13526,105 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
 - **未执行 push**：兄弟会话 356 文件已 staged、撞号风险高，留给兄弟会话合并时一并处置
 - 本会话磁盘改动保留 unstaged + untracked（`M CodingServiceImpl.java` 未改 / `M AgentScopeProjectAgentKernel.java` 已恢复 HEAD disable / `?? ChatOfficialCapabilities.java` 已插入 disable 三件套 / `?? plan-AgentScope全量启用与红线合规-20261002.md`）
 
-**判断冲突**：兄弟会话 ADR-0077 §3 勘误认为 disable 三件套是“旧实现待迁移”需移除；本会话依据用户原话“严格禁止功能降级” + owner 裁决“用官方 disable 开关表达业务约束合规”认为 disable 不可移除。需要 owner 拍板哪一个为准；本会话代码状态仅为参考，以 owner 拍板为准。
+**判断冲突**：兄弟会话 ADR-0077 §3 勘误认为 disable 三件套是“旧实现待迁移”需移除；本会话依据用户原话“严格禁止功能降级” + owner 裁决“用官方 disable 开关表达业务 约束合规”认为 disable 不可移除。需要 owner 拍板哪一个为准；本会话代码状态仅为参 考，以 owner 拍板为准。
+
+### 2026-10-02 本会话纠正登记（HEAD b757fa7a 后 judgement）
+
+本会话上条登记中“修复疑似功能降级”的判断是**错误的**。
+
+**证据**：兄弟会话 commit `b757fa7a (HEAD -> main) test`（Author: Claude Code，2026-10-02 15:13:16 -0700）已包含本会话的 plan.md（336 行）与本会话的 log.md 追加。同时 commit 包含了兄弟会话 Java 代码（ChatOfficialCapabilities.java 新增 / AgentScopeProjectAgentKernel.java 改）。
+
+**事实核验**（现查 b757fa7a）：
+- HEAD `ChatOfficialCapabilities.java` 中无 disable 三件套，取而代之是官方扩展点 `.middleware(capabilities)` + `.enableSkillPromotionGate(capabilities, capabilities)` + `.enableSkillCurator(...)` + `.enableSkillManageTool(...)`
+- HEAD `AgentScopeProjectAgentKernel.java` 中无 disable，取而代之是 `.enableSkillPromotionGate(skillGovernance, skillGovernance)` + `.enableSkillCurator(...)` + 6 个 `.middleware(...)` + `.permissionContext(ProjectAgentOfficialPermissions.workspace())`
+- HEAD `CodingServiceImpl.java` 中仍保留 11 个 disable（兄弟会话未同步处理）
+
+**判断修正**（按 memory `AgentScope Integration: Disable Flags vs. Extension Points` 召回）：
+- 业务闸门已通过官方扩展点（`.middleware()` / `.permissionContext()` / `ToolBase#checkPermissions`）实现
+- `disableSubagents()` / `disableDynamicSubagents()` / `disableDynamicSkills()` 是**冗余的**，违反“全量启用官方能力”政策
+- 兄弟会话 ADR-0077 §3 勘误是**正确的**，本会话“修复”是错位方向
+- 本会话重复三次插入 disable 三件套（都被兄弟会话覆盖）是低效操作
+
+**最终状态**：
+- 本会话产出：`plan-AgentScope全量启用与红线合规-20261002.md` (336 行) + 本 log 追加（225 行变更）均已被兄弟会话 commit b757fa7a 收纳
+- 本会话磁盘 disable 修复 被 b757fa7a 覆盖 是**正确结果**，不应逆转
+- 不需要推送（commit b757fa7a 是兄弟会话 commit，message “test” 不规范，需 owner 拍板是否 squash）
+- 本会话不再 commit 任何 disable 修复（后续 commit 只限于新产出）
+
+**本会话遗留项**：
+1. HEAD b757fa7a 中 `CodingServiceImpl.java` 保留 11 个 disable，与 `AgentScopeProjectAgentKernel.java` / `ChatOfficialCapabilities.java` 不一致 —需后续治理轮统一处理（按 memory 召回，应移除）
+2. `origin/main` 仍是 `2db6d4ef`，b757fa7a 未 push —需 owner 拍板
+3. 工作树仍有 staged 355 / unstaged 275 / untracked 429 兄弟会话在途改动—留给兄弟会话处理
+
+---
+
+## 2026-10-02（下午）ruoyi-aiflow / ruoyi-workflow 整模块下线 + LangChain4j→AgentScope 活区零残留（收口登记）
+
+**任务**：owner 拍板两模块下线（三重证据零消费查证：代码 import / 真库数据 / 前端路由）与 langchain4j 清理合并一刀。
+
+**代码（后端）**：
+- 删 `ruoyi-modules/ruoyi-aiflow`、`ruoyi-modules/ruoyi-workflow` 两模块 + 根/ruoyi-modules/admin/chat/ipd pom 变更 + application.yml warm-flow 段
+- 排雷补修（终检发现，模块删除漏网）：
+  - aiflow BeanConfig 随模块删除留下两个存活消费者断供：`mainExecutor`（LegacyImportService 启动期 NoSuchBeanDefinitionException）与 `@Primary objectMapper`（10+ 注入点静默回落 Spring Boot 默认 mapper，丢 Long→字符串/NON_NULL/`yyyy-MM-dd HH:mm:ss` 契约；基线 ruoyi-common-json JacksonConfig 只定制默认 mapper 非 @Primary 无法承接）→ 新增 `ruoyi-ipd/config/IpdPrimaryBeansConfig` 按原参数零改动迁移（含 LocalDateTime Serializer/Deserializer 内联）
+  - SysTenantServiceImpl 删 `warm-flow.enabled` 死分支（配置键已删恒假）+ WorkflowService import（common-core 接口按上游基线保留不删）
+  - 8 处注释残留清理（KnowledgeAccessGate / KnowledgeRetrievalService(Impl) / KnowledgeRetrievalAccessFilterProperties / KnowledgeRetrievalBridgeAssemblyTest / IpdKnowledgeAccessGate / LegacyImportService / SseEmitterHelper——aiflow WfState 等已删对象引用改通用表述，SseEmitterHelper 保留来源史实删死引用）
+- SQL：`docs/script/sql/update/2026-10-02-workflow-modules-offline.sql`（表 12 + 菜单 + E1 权限码 + sys_config 8 条 node.*.template）已 apply 真库（13306/ipd_dev），回读双 0
+
+**前端（ruoyi-ipd-web）**：删 views/aiflow、views/workflow、api 两套、路由、access.ts；终检补清：request.ts 两行 `/workflow` 端点列举、ipd-color-baseline.json 14 个死键（workflow-designer 5 + aiflow 2 + workflow/task 5，只减不增零触碰活键）、孤儿门禁 check-mcp-config-gates.mjs + mcp-gates 两夹具（检查对象 LangChain4jMcpToolProviderService 已物理删除，package.json/CI/hook 零引用者）
+
+**文档**：README/README_ZH/AGENTS/CLAUDE/README-IPD-OVERRIDE/triage-labels 活文档清零；开发说明书（ruoyi-ai 与 ZK-IPD 两份）:47/:60 Langchain4j→AgentScope 勘误；langgraph4j 迁移活方案加失效标注（正文史实保留）；wiki batch-14（4 篇 wiki 删 + 15 raw 删 + 56 处死链清 + 12 页改写 + CLAUDE/README-IPD-OVERRIDE 篇数同步 21→20 篇/60→49 raw）；_ARCHIVED_NOTICE 同步
+
+**验证证据**：
+- 后端全量 `mvn -o -T1 compile` EXIT=0（本轮 Java 变更前基线）+ system/chat/sse 三模块 `mvn -o compile` EXIT=0 + IpdPrimaryBeansConfig `javac` EXIT=0（单文件级；ruoyi-ipd 整模块被兄弟 agent 轮在途编辑阻塞——pauseChildren→KernelScopeKey.Scope 错误集合漂移、出错文件 AM/MM 归属实锤，均非本任务文件）
+- 前端 `pnpm run check:type` EXIT=0；契约门禁 `check-api-contract-fe-be.mjs` EXIT=0 PASS；wiki-lint 91 通过/0 失败/0 孤立 EXIT=0
+- 终检 grep：代码活区 aiflow/warm-flow/langchain4j 零残留（后端仅剩 3 处"自已下线 ruoyi-aiflow 迁移"溯源注释，属史实登记）；前端零命中
+
+**遗留**：
+1. ruoyi-ipd 整模块编译验证待兄弟 agent 轮收口后补跑（本任务文件已单文件级验证）
+2. verify.sh harness-contract FAIL（C1 ProjectAgentFoundationToolsTest 缺 .workspace——staged 兄弟在途文件；C4 知识库MCP验收目录快照 java 被扫描器误扫）；--self-red PASS 证明门禁自身有效、FAIL 为真红非假门禁
+3. 前端 check-ipd-color-gate FAIL（兄弟 ai-agent 组件 5 项 R1 超基线 REGRESSION，非本任务变更；本轮只删死键未动任何活键计数）
+4. push 挂起：origin/main 落后于 b757fa7a（兄弟 commit "test"，message 不规范待 owner 拍板，沿用上一登记裁决不越权推送），本轮三仓均 commit 不 push
+
+---
+
+## 2026-10-02（晚）门禁 1/2 棘轮第三批 + 在途整合入库（提交推送授权执行）
+
+**授权依据**：owner 本段明确指令「记得及时梳理工作树合并整合并提交推送」→ 本登记**覆盖**上一条第 4 项的「暂缓 push、待 owner 拍板」裁决，不再挂起；同步覆盖兄弟会话 `b757fa7a`（message=`test`，作者 Claude Code）message 不规范的挂起理由 —— 整合 commit 一次性入库并推送，不 amend、不改写兄弟 commit 史实。
+
+### 一、门禁 1/2（doc↔db 漂移）第三批棘轮吸收：4 词
+
+**测量纠错（本条为方法论留痕，防再犯）**：
+1. `check-doc-db-drift.sh` 的 `WHITELIST_FILE=""` 默认空，**必须显式传 `--whitelist <file>` 才生效**（hook 第 151 行为唯一权威调用口径：`--refined --json-only --whitelist ...`，**不传 `--scope`**，默认 all 扫 `docs/开发说明` + `docs/ipd-系统说明`）。此前误跑未加载白名单，报出的 502 处 / 58 处均为失真口径。
+2. `bash script | tail -20; echo $?` 取到的是 `tail` 退出码而非脚本退出码；真实退出码须 `> file 2>&1` 后再捕获。
+3. 白名单是**精确集合差**（脚本第 804 行 `id ∉ WHITELIST`），非前缀匹配 —— 文件内既有 `ipd_` 词条也未命中 `ipd_poc`，故必须逐词写全名。
+
+**真实阻断面 = 5 处**（非此前推断的 4 处）：
+
+| 标识符 | 位置 | 定性 |
+|---|---|---|
+| `ipd_poc` | `AgentScope能力启用裁决-三方权威冲突与ADR-0077失实声明更正-20261002.md:529` | **纯误报**：S1 围栏把跨库 `db.table` 引用拿到 `ipd_dev` 查 |
+| `t_workflow_component` | `_probes/20260927-f-workflow-p0.md:98` | 历史实测执行记录（SELECT 9 行/启用 9/软删 0） |
+| `t_workflow_runtime` | `langgraph4j迁移AgentScope编排-20261002.md:199` | 迁移档案引用源表结构 |
+| `t_workflow_runtime_node` | 同上 :122 / :382 | 迁移档案引用源表结构 |
+
+**A 级库证据（13306/ipd_dev 直查）**：
+- `SHOW DATABASES` 含 `ipd_poc`；`information_schema.tables` 中 `ipd_poc.agentscope_sessions` **表真实存在** → 该文档 §3.6.3 陈述**正确**，改文档等于改错事实。
+- `ipd_dev` 中 `table_name LIKE 't_workflow%'` **COUNT = 0** → owner 今日 workflow/flow 双模块下线裁定已实证生效（offline SQL 已 apply）。
+
+**处置**：改文档方案被排除 —— 4 条中 1 条会歪曲跨库事实陈述、3 条会篡改实测证据与历史档案，违反 `log.md` 第 76 条先例（「改成任何既有表名都会把设计稿歪曲成事实陈述」）；且主模式 `--scope 系统说明` 实测 18 处命中横跨 **8 份文档**，逐批改写成本与歪曲风险均不可接受。故按 2026-09-28 棘轮拍板同性质（DB 不存在 + 文档陈述正确 + 无运行态影响 + 全仓 commit 被阻断）写入 `scripts/check-doc-db-drift-whitelist.txt` 第三批 4 词；该文件已有 3 个「已删表」先例词条。**可逆性**：白名单为 git 跟踪文件，owner 可 `git revert` 该段即时回滚。
+
+**验证**：`bash scripts/check-doc-db-drift.sh --refined --json-only --whitelist scripts/check-doc-db-drift-whitelist.txt` → `EXIT=0` / `drift_count=0` / `orphan=0`。
+
+### 二、在途文件接手处置（R25 三步法，逐一评审结论）
+
+| 文件 | 状态 | 处置结论 |
+|---|---|---|
+| `docs/script/sql/update/2026-10-02-workflow-modules-offline.sql`（73 行，原 untracked） | 兄弟会话产物 | **原样入库**。评审：全语句幂等（`DROP IF EXISTS` / `DELETE` 固定 ID 集合）、带 3 条自检查询、显式标注「不可回滚 + 恢复需 revert 代码 commit + 重放上游种子」；表清单与 `ipd_dev` 实测残留 0 吻合。**必须同批入库的原因**：上方兄弟登记已引用该路径，若只提交 log.md 会触发门禁 0（untracked 引用检测）阻断全仓 commit |
+| `docs/ipd-系统说明/log.md`（工作树 58 行未暂存） | 兄弟会话登记 | **原样入库**。内容为 `b757fa7a` 后 judgement 的自我纠正登记 + 双模块下线收口登记，事实陈述与现查一致 |
+| `scripts/check-doc-db-drift-whitelist.txt`（+18 行） | 本会话 | **原样入库**，依据见第一节 |
+
+### 三、验证证据
+
+- 全门禁 `bash .claude/hooks/check-pre-commit.sh` → `passed=7 failed=0 skipped=0`，`EXIT=0`
+  - 门禁 0 untracked 引用检测 PASS（351 staged 文件）；门禁 1/2 漂移 `drift_count=0`；门禁 2/2 合同↔spec↔code 对账 PASS；门禁 3 API 契约孤儿棘轮 PASS（vs baseline `-0 / +22`，白名单 24 条防伪 0 错）；门禁 4 shell 变量吞字节 0 违例；门禁 6 符号链接 PASS
+- 本 commit 的真实 hash、push 结果与远端基线核对：见下一条登记（commit 号只能在提交后取得，故自指登记拆为两条 commit）
