@@ -267,4 +267,52 @@ class ProjectAgentRunHandleTest {
             .contains("\"completionReason\":\"GATE_AUTHORITY_CLAIM\"")
             .doesNotContain("建议 Gate 签署");
     }
+    @Test
+    @DisplayName("C02 使用运行记录动作合同：可选用途冒作阻塞时拒绝草稿")
+    void c02OptionalPurposeBlockerCannotPersistArtifact() {
+        IpdAgentRun c02 = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)
+            .projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id())
+            .agentId("ipd_project_agent").actionCode("C02").status(AgentRunStatus.RUNNING.name())
+            .idempotencyKey("key-c02-default-contract").build();
+        store.insertRun(c02);
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunHandle c02Handle = new ProjectAgentRunHandle(c02, store, artifacts,
+            AgentTestFixtures.MAPPER, clock::get, () -> { });
+        c02Handle.onText("| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞 C02 步骤2 | 未声明则按规则四维齐全、篇幅克制。 |");
+        c02Handle.onComplete();
+        c02Handle.onComplete();
+
+        assertThat(artifacts.size()).isZero();
+        assertThat(store.findRun(c02.getId()).orElseThrow().getStatus()).isEqualTo("FAILED");
+        assertThat(store.findRun(c02.getId()).orElseThrow().getErrorCode())
+            .isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(store.events(c02.getId())).extracting(IpdAgentRunEvent::getEventType)
+            .doesNotContain("ARTIFACT", "RUN_FINISHED");
+        assertThat(store.events(c02.getId()).stream().filter(e -> "ERROR".equals(e.getEventType())))
+            .singleElement().satisfies(e -> assertThat(e.getPayload())
+                .contains("SKILL_CONTRACT_MISMATCH").doesNotContain("目的裁剪"));
+    }
+
+    @Test
+    @DisplayName("C02 默认四维可生成草稿；其他动作不借用 C02 用途规则")
+    void recordedActionKeepsDefaultScopeAndOtherActionsCompatible() {
+        Map<String, String> cases = Map.of(
+            "C02", "用途未声明，不阻塞；按默认四维齐全、篇幅克制。竞品名单未取得，暂不比较。",
+            "C01", "| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞步骤2 | 未声明则四维齐全、篇幅克制。 |");
+        cases.forEach((action, body) -> {
+            IpdAgentRun recorded = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)
+                .projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id())
+                .agentId("ipd_project_agent").actionCode(action).status(AgentRunStatus.RUNNING.name())
+                .idempotencyKey("key-default-contract-" + action).build();
+            store.insertRun(recorded);
+            InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+            ProjectAgentRunHandle scoped = new ProjectAgentRunHandle(recorded, store, artifacts,
+                AgentTestFixtures.MAPPER, clock::get, () -> { });
+            scoped.onText(body);
+            scoped.onComplete();
+            assertThat(store.findRun(recorded.getId()).orElseThrow().getStatus()).isEqualTo("SUCCEEDED");
+            assertThat(artifacts.size()).isEqualTo(1);
+        });
+    }
+
 }

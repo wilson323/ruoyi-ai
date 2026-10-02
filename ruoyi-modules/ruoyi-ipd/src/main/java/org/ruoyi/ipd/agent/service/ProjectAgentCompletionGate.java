@@ -23,7 +23,8 @@ public final class ProjectAgentCompletionGate {
         GATE_AUTHORITY_CLAIM,
         SOURCE_IDENTITY_MISMATCH,
         MISSING_RETRIEVAL_DISCLOSURE,
-        UNSUPPORTED_MEASUREMENT
+        UNSUPPORTED_MEASUREMENT,
+        SKILL_CONTRACT_MISMATCH
     }
 
     static final String SEARCH_TOOL = "project_knowledge_search";
@@ -34,6 +35,12 @@ public final class ProjectAgentCompletionGate {
     /** 只排除 Markdown 行首标题的章节号；标题中的价格等其他数字仍需来源。 */
     private static final Pattern HEADING_SECTION = Pattern.compile(
         "(?m)^([ ]{0,3}#{1,6}[\\t ]+)\\d+(?:\\.\\d+)+(?:[.)])?(?=[\\t ]+\\S)");
+
+    private final String actionCode;
+
+    public ProjectAgentCompletionGate() { this(null); }
+
+    public ProjectAgentCompletionGate(String actionCode) { this.actionCode = actionCode; }
 
     private boolean searchInvoked;
     private boolean anyHit;
@@ -164,7 +171,50 @@ public final class ProjectAgentCompletionGate {
         if (searchInvoked && !measurementsMatchQuotes(body)) {
             return RejectionReason.UNSUPPORTED_MEASUREMENT;
         }
+        if ("C02".equals(actionCode) && blocksOptionalPurpose(body)) {
+            return RejectionReason.SKILL_CONTRACT_MISMATCH;
+        }
         return null;
+    }
+
+    /** 只核用途本身的肯定阻塞声明，不把竞品名单等其他缺项借作用途阻塞。 */
+    private static boolean blocksOptionalPurpose(String body) {
+        for (String raw : body.split("\\R")) {
+            String line = raw.strip().replace("**", "").replace("`", "");
+            if (line.startsWith(">")) continue;
+            if (line.startsWith("|")) {
+                String[] cells = line.split("\\|", -1);
+                // 缺项表：编号 / 缺项 / 影响 / 处置。只看紧邻缺项的影响列。
+                if (cells.length >= 5 && cells[1].strip().matches("[A-Za-z]+[-－]?\\d+")) {
+                    String subject = cells[2].strip();
+                    if (subject.matches("^(?:目的裁剪|用途(?:声明)?|目的声明)(?:[（(：:].*|$)" )
+                        && (subject.contains("用户声明时") || line.contains("未声明")
+                            || line.contains("默认四维") || subject.contains("可选"))
+                        && affirmativePurposeBlock(cells[3].strip())) return true;
+                }
+            } else if (line.matches("^(?:[-*] |\\d+[.、] )?(?:用途未声明|未声明用途|目的裁剪.{0,20}可选|用途声明.{0,20}可选|目的声明.{0,20}可选).{0,60}")) {
+                if (affirmativePurposeBlock(line)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean affirmativePurposeBlock(String statement) {
+        for (String segment : statement.split("(?:但是|但|然而|并且|且)")) {
+            if (segment.strip().matches("^(?:若|如果|如有|当|引用|例如|假设).*")) continue;
+            boolean conditional = false;
+            for (String raw : segment.split("[，,；;。]")) {
+                String clause = raw.strip();
+                if (clause.matches("^(?:若|如果|如有|当|引用|例如|假设).*")) conditional = true;
+                if (conditional) continue;
+                if (clause.matches(".*(?:不阻塞|不应阻塞|不是阻塞|不构成阻塞|无需|无须|不必|并非必需|不得作为阻塞).*")) continue;
+                // 明确其他缺项的主语不继承前句用途；只接受用途本身或省略主语的用途声明/影响谓词。
+                boolean purpose = clause.matches("^(?:用途|目的裁剪|目的声明).*")
+                    || clause.matches("^(?:必须(?:先)?声明|必需(?:条件|前置)|未声明|阻塞(?:\\s*C02|\\s*步骤)).*");
+                if (purpose && clause.matches(".*(?:阻塞(?:\\s*C02)?|必须(?:先|补|声明)|必需(?:条件|前置)|才能继续).*")) return true;
+            }
+        }
+        return false;
     }
 
     /** 先按 documentId 核对，同名标题不能互相借用身份。 */
@@ -204,38 +254,83 @@ public final class ProjectAgentCompletionGate {
         return value.matches("^(?:项目已审核文档|已审核项目文档|已审核文档)(?:[（(\\s].*|$)");
     }
 
-    /** 每条引用独立核对完整标识，不让同行的其他来源借用类型或审核状态。 */
+    /** 每条引用独立核对完整标识；白话资料编号与 documentId 使用同一身份。 */
     private boolean explicitIdentityContradiction(String body) {
         for (String part : body.split("[\\r\\n；;。]")) {
             Matcher fields = Pattern.compile(
-                "(documentId|sourceType|reviewStatus)=([^\\s|｜，,；;。】]+)").matcher(part);
+                "(?<![\\p{L}\\p{N}_])(documentId|sourceType|reviewStatus)=([^\\s|｜，,；;。】（）()]+)"
+                    + "|资料编号[：:][\\t ]*([^\\s|｜，,；;。】（）()]+)").matcher(part);
             Map<String, String> reference = new java.util.LinkedHashMap<>();
+            int from = 0;
             while (fields.find()) {
-                String key = fields.group(1);
-                // 一条引用每个键只有一个值；重复键意味着下一条引用开始。
+                String key = fields.group(1) == null ? "documentId" : fields.group(1);
+                String value = fields.group(1) == null ? fields.group(3) : fields.group(2);
+                // 重复身份键开始下一引用；只把本条文本交给审核宣称判定。
                 if (reference.containsKey(key)) {
-                    if (identityContradiction(reference, part)) return true;
+                    int boundary = referenceBoundary(part, from, fields.start());
+                    if (identityContradiction(reference, part.substring(from, boundary))) return true;
                     reference.clear();
+                    from = boundary;
                 }
-                reference.put(key, fields.group(2));
+                reference.put(key, value);
             }
-            if (identityContradiction(reference, part)) return true;
+            if (identityContradiction(reference, part.substring(from))) return true;
         }
         return false;
     }
 
-    /** 字段顺序可变，但每条引用只对照自己明确写出的 documentId。 */
+    /** 下一编号前的归属谓词属于下一引用，不能留给上一正式文档。 */
+    private static int referenceBoundary(String part, int from, int fieldStart) {
+        int boundary = fieldStart;
+        int comma = Math.max(part.lastIndexOf('，', fieldStart), part.lastIndexOf(',', fieldStart));
+        if (comma >= from) boundary = comma + 1;
+        Matcher preceding = Pattern.compile(
+            "(?:作为|来自|属于|是)(?:项目已审核文档|已审核项目文档|已审核文档)的[\\t ]*$")
+            .matcher(part.substring(from, fieldStart));
+        if (preceding.find()) boundary = Math.min(boundary, from + preceding.start());
+        return boundary;
+    }
+
+    /** 显式编号的审核归属必须有本次正式文档正证；未知编号不能借同名标题。 */
     private boolean identityContradiction(Map<String, String> reference, String part) {
         String documentId = reference.get("documentId");
         if (documentId == null) return false;
+        if (part.stripLeading().matches("^(?:反例|错误示例|禁止示例)[：:].*")) return false;
+        boolean reviewedClaim = affirmativeReviewedClaim(part);
+        if (reviewedClaim && evidence.stream().noneMatch(item -> documentId.equals(item.documentId)
+            && "PROJECT_DOCUMENT".equals(item.sourceType) && "REVIEWED".equals(item.reviewStatus))) return true;
         for (Evidence item : evidence) {
             if (!documentId.equals(item.documentId)) continue;
             String claimedType = reference.get("sourceType");
             String claimedReview = reference.get("reviewStatus");
             if (claimedType != null && !claimedType.equals(item.sourceType)) return true;
             if (claimedReview != null && !claimedReview.equals(item.reviewStatus)) return true;
-            if ("KNOWLEDGE_FRAGMENT".equals(item.sourceType)
-                && claimsReviewedRole(part) && !specificallyDeniesReviewed(part)) return true;
+            if ("KNOWLEDGE_FRAGMENT".equals(item.sourceType) && reviewedClaim) return true;
+        }
+        return false;
+    }
+
+    private static boolean affirmativeReviewedClaim(String part) {
+        for (String cell : part.split("[|｜]")) {
+            if (reviewedClassification(cell.replace("**", "").replace("`", "").trim())) return true;
+        }
+        String[] claims = {"属于已审核文档", "属于项目已审核文档", "作为项目已审核文档",
+            "来自项目已审核文档", "来自已审核文档", "是项目已审核文档",
+            "来自已审核项目文档", "属于已审核项目文档", "是已审核项目文档",
+            "sourceType=PROJECT_DOCUMENT", "reviewStatus=REVIEWED"};
+        for (String claim : claims) {
+            int from = 0;
+            while (from < part.length()) {
+                int at = part.indexOf(claim, from);
+                if (at < 0) break;
+                String prefix = part.substring(0, at);
+                prefix = prefix.substring(Math.max(prefix.lastIndexOf('，'), prefix.lastIndexOf(',')) + 1);
+                if (!prefix.matches(".*(?:不|未|没|不能|不应|不得|禁止|不要|并非|不等于|未被认定为)(?:能|可|将|应|会)?$|.*(?:不是|不属于|不能作为|不代表)(?:项目)?$")
+                    && !conditionalAfter(part, at, claim.length())
+                    && !part.substring(at + claim.length()).matches("^(?:未取得|未命中).*")
+                    && !prefix.matches(".*(?:若|如果|如有).*")) return true;
+                from = at + claim.length();
+            }
         }
         return false;
     }

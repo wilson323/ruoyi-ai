@@ -16,6 +16,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProjectAgentCompletionGateTest {
 
     @Test
+    void readableIdentityRequiresExactReviewedEvidenceWithSameTitle() {
+        ProjectAgentCompletionGate gate = new ProjectAgentCompletionGate();
+        gate.noteSource(Map.of("hits", 2, "retrievalStatus", "SUCCESS", "citationText", "受控正文",
+            "sourceEvidence", java.util.List.of(
+                Map.of("sourceType", "KNOWLEDGE_FRAGMENT", "documentId", "12", "knowledgeId", "100",
+                    "sourceName", "同名.md", "reviewStatus", "NOT_PROJECT_DOCUMENT"),
+                Map.of("sourceType", "PROJECT_DOCUMENT", "documentId", "123",
+                    "sourceName", "同名.md", "reviewStatus", "REVIEWED"))));
+        for (String rejected : java.util.List.of(
+            "同名.md（资料编号：12）来自项目已审核文档",
+            "同名.md（资料编号：unknown）来自项目已审核文档",
+            "资料编号：unknown 其他材料未取得，但来自项目已审核文档",
+            "资料编号：unknown 若其他资料能取得，但该资料来自项目已审核文档",
+            "来自项目已审核文档的资料编号：12，资料编号：123 系统知识片段",
+            "资料编号：123 来自项目已审核文档，来自项目已审核文档的资料编号：unknown",
+            "同名.md documentId=unknown 来自项目已审核文档",
+            "同名.md（资料编号：1234）来自项目已审核文档",
+            "| 同名.md（资料编号：12） | 已审核项目文档 |",
+            "| 同名.md（资料编号：unknown） | 已审核项目文档 |",
+            "资料编号：123 来自项目已审核文档，作为项目已审核文档的资料编号：12",
+            "资料编号：123 是系统知识片段，来自项目已审核文档的资料编号：12",
+            "资料编号：123 来自项目已审核文档 作为项目已审核文档的资料编号：12",
+            "资料编号：123 来自项目已审核文档；资料编号：12 来自项目已审核文档")) {
+            assertThat(gate.rejectionReason(rejected)).as(rejected)
+                .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SOURCE_IDENTITY_MISMATCH);
+        }
+        for (String allowed : java.util.List.of(
+            "同名.md（资料编号：12）是系统知识片段，不是项目已审核文档",
+            "同名.md（资料编号：123）来自项目已审核文档",
+            "资料编号：123 来自项目已审核文档；资料编号：12 系统知识片段",
+            "资料编号：12 系统知识片段，来自项目已审核文档的资料编号：123",
+            "资料编号：123 来自项目已审核文档 资料编号：12 系统知识片段",
+            "资料编号：12 系统知识片段 资料编号：123 来自项目已审核文档",
+            "资料编号：unknown 不是项目已审核文档",
+            "资料编号：unknown 并非属于项目已审核文档",
+            "资料编号：unknown 不等于是项目已审核文档",
+            "资料编号：unknown 正在查询已审核文档的使用规范",
+            "资料编号：unknown 项目已审核文档未取得",
+            "| 同名.md（资料编号：12） | 不是已审核项目文档 |",
+            "资料编号：12 不能作为项目已审核文档",
+            "| 同名.md（资料编号：123） | 已审核项目文档 |",
+            "如果资料编号：unknown 来自项目已审核文档，才可引用",
+            "反例：资料编号：unknown 来自项目已审核文档")) {
+            assertThat(gate.rejectionReason(allowed)).as(allowed).isNull();
+        }
+    }
+
+    @Test
     @DisplayName("项目上下文不得冒作审核文档；否定、条件和层级定义不拒绝")
     void projectMetadataCannotBecomeReviewedDocument() {
         ProjectAgentCompletionGate gate = new ProjectAgentCompletionGate();
@@ -286,4 +334,54 @@ class ProjectAgentCompletionGateTest {
         }
     }
 
+    @org.junit.jupiter.api.Test
+    void c02PurposeDefaultCannotBecomeBlockingRequirement() {
+        String realRow = "| G-06 | **目的裁剪**（产品设计侧重功能矩阵 / 战略侧重格局与壁垒 / 融资材料侧重差异一页纸），按 C02 步骤 2「**用户声明时**」裁剪 | 阻塞 C02 步骤 2 | 由项目方/需求方在本次任务中显式声明用途；未声明则按规则四维齐全、篇幅克制 |";
+        assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(realRow))
+            .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
+        assertThat(new ProjectAgentCompletionGate().rejectionReason(realRow)).isNull();
+        assertThat(new ProjectAgentCompletionGate("C01").rejectionReason(realRow)).isNull();
+    }
+
+    @org.junit.jupiter.api.Test
+    void c02PurposeDefaultKeepsOtherMissingFactsAndConditionalStatements() {
+        for (String text : java.util.List.of(
+            "用途未声明，按四维齐全、篇幅克制，不阻塞。",
+            "| G-06 | 目的裁剪（用户声明时） | 可选，不阻塞 | 默认四维 |",
+            "用途已声明为产品设计；竞品名单未取得，停止比较。",
+            "| G-08 | 用途声明（已声明融资用途） | 阻塞融资材料输出：原始报价未取得 | 补报价 |",
+            "目的裁剪不是阻塞条件，无需先声明用途。",
+            "若用途未声明，默认四维；如果声明用途则裁剪。",
+            "> 引用错误示例：用途未声明必须先补齐才能继续。",
+            "| G-01 | 候选竞品名单 | 阻塞目的裁剪和比较 | 未取得 |")) {
+            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(text)).as(text).isNull();
+        }
+        assertThat(new ProjectAgentCompletionGate("C02").rejectionReason("用途未声明，必须先声明才能继续"))
+            .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
+    }
+    @Test
+    void optionalPurposeNegationAndAffirmativeContrastStayDistinct() {
+        for (String body : java.util.List.of(
+            "用途未声明，不构成阻塞；按默认四维执行。",
+            "用途未声明，不构成阻塞，但竞品名单缺失阻塞 C02。",
+            "用途未声明，竞品名单缺失阻塞 C02。",
+            "用途未声明，必须先补竞品名单才能继续。",
+            "用途未声明，竞品名单缺失阻塞目的裁剪与四维比较",
+            "用途未声明，如果用户要求窄化，必须先声明用途",
+            "用途未声明，无须补充用途才能继续，按默认四维执行。",
+            "用途未声明时，若按默认四维执行，不构成阻塞条件。",
+            "| G-06 | 目的裁剪（用户声明时） | 不构成阻塞 C02 步骤2 | 未声明默认四维 |",
+            "| G-06 | 目的裁剪（用户声明时） | 如果用户要求窄化，必须先声明用途 | 未声明默认四维 |")) {
+            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(body)).as(body).isNull();
+        }
+        for (String body : java.util.List.of(
+            "用途声明是可选的，但必须先声明才能继续。",
+            "用途未声明，无须补报价且必须先声明用途才能继续",
+            "| G-06 | 目的裁剪（用户声明时） | 如果用户要求窄化才裁剪，但未声明用途仍阻塞 C02 | 未声明默认四维 |",
+            "| G-06 | 目的裁剪（用户声明时） | 用途可选，但未声明阻塞 C02 步骤2 | 未声明默认四维 |")) {
+            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(body)).as(body)
+                .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
+            assertThat(new ProjectAgentCompletionGate("C01").rejectionReason(body)).as(body).isNull();
+        }
+    }
 }

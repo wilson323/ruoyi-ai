@@ -49,7 +49,7 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     /** 最近一次文本落库的时钟；0 表示本段还没开始计时。 */
     private long lastTextFlushAt;
     private final StringBuilder fullText = new StringBuilder();
-    private final ProjectAgentCompletionGate completion = new ProjectAgentCompletionGate();
+    private final ProjectAgentCompletionGate completion;
     private long seq;
     private boolean closed;
     private long lastStatusProbe;
@@ -69,6 +69,7 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         this.tenantId = run.getTenantId();
         this.personId = run.getPersonId();
         this.actionCode = run.getActionCode();
+        this.completion = new ProjectAgentCompletionGate(this.actionCode);
         this.store = store;
         this.artifactStore = artifactStore;
         this.mapper = mapper;
