@@ -101,9 +101,25 @@ class WorkflowRuntimeZombieDisposeTest {
         assertEquals(WORKFLOW_PROCESS_STATUS_REMARK_INTERRUPTED, found.getStatusRemark());
     }
 
+    @Test
+    void busyOwnerCannotBeMarkedAsZombie() throws Exception {
+        FakeRuntimeDb db = new FakeRuntimeDb();
+        WorkflowRuntime row = db.seed(10L, "rt-busy-owner", WORKFLOW_PROCESS_STATUS_DOING,
+            LocalDateTime.now().minusHours(2), false, null);
+        WorkflowRuntimeService service = service(db);
+        var owner = new org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver(null);
+        try (var lease = owner.acquireRun("rt-busy-owner")) {
+            assertEquals(0, service.failZombieDoingRuntimes(Duration.ZERO));
+            assertEquals(WORKFLOW_PROCESS_STATUS_DOING, row.getStatus().intValue());
+            assertNull(row.getStatusRemark());
+        }
+    }
+
     private static WorkflowRuntimeService service(FakeRuntimeDb db) {
         WorkflowRuntimeService service = new WorkflowRuntimeService();
         ReflectionTestUtils.setField(service, "baseMapper", db.mapper());
+        ReflectionTestUtils.setField(service, "jdbcCheckpointSaver",
+            new org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver(null));
         return service;
     }
 
@@ -150,6 +166,20 @@ class WorkflowRuntimeZombieDisposeTest {
                     return selectOne((Wrapper<WorkflowRuntime>) args[0]);
                 case "selectById":
                     return selectById(args[0]);
+                case "update": {
+                    WorkflowRuntime update = (WorkflowRuntime) args[0];
+                    List<Predicate2> conditions = parseConditions((Wrapper<WorkflowRuntime>) args[1]);
+                    int count = 0;
+                    for (WorkflowRuntime row : rows) {
+                        if (conditions.stream().allMatch(cond -> cond.test(row))) {
+                            row.setStatus(update.getStatus());
+                            row.setStatusRemark(update.getStatusRemark());
+                            row.setUpdateTime(LocalDateTime.now());
+                            count++;
+                        }
+                    }
+                    return count;
+                }
                 case "updateById":
                     return updateById((WorkflowRuntime) args[0]);
                 case "toString":
@@ -238,6 +268,7 @@ class WorkflowRuntimeZombieDisposeTest {
 
         private static Object columnValue(WorkflowRuntime row, String column) {
             return switch (column) {
+                case "id" -> row.getId();
                 case "uuid" -> row.getUuid();
                 case "status" -> row.getStatus();
                 case "status_remark" -> row.getStatusRemark();

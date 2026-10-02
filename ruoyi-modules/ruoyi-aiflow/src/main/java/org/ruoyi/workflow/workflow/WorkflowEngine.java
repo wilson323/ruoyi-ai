@@ -82,40 +82,53 @@ public class WorkflowEngine {
 
         Long workflowId = this.workflow.getId();
         this.wfRuntimeResp = workflowRuntimeService.create(user, workflowId);
-        WorkflowMessageUtil.startSse(user, sseEmitter, JsonUtil.toJson(wfRuntimeResp));
+        if (sseEmitter != null) {
+            WorkflowMessageUtil.startSse(user, sseEmitter, JsonUtil.toJson(wfRuntimeResp));
+        }
 
         String runtimeUuid = this.wfRuntimeResp.getUuid();
-        try {
-            Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
-            WorkflowNode startNode = startAndEnds.getLeft();
-            List<NodeIOData> wfInputs = getAndCheckUserInput(userInputs, startNode);
-            this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter, sessionId);
-            workflowRuntimeService.updateInput(this.wfRuntimeResp.getId(), wfState);
+        try (JdbcCheckpointSaver.RunLease lease = checkpointSaver.acquireRun(runtimeUuid)) {
+            try {
+                lease.requireHeld();
+                Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
+                WorkflowNode startNode = startAndEnds.getLeft();
+                List<NodeIOData> wfInputs = getAndCheckUserInput(userInputs, startNode);
+                this.wfState = new WfState(user, wfInputs, runtimeUuid,userId, tokenValue, sseEmitter, sessionId);
+                workflowRuntimeService.updateInput(this.wfRuntimeResp.getId(), wfState);
 
 
-            WorkflowGraphBuilder graphBuilder = new WorkflowGraphBuilder(
-                    components,
-                    wfNodes,
-                    wfEdges,
-                    this::runNode,
-                    this.wfState);
-            app = graphBuilder.build(startNode);
-            exe(runtimeUuid, false);
+                WorkflowGraphBuilder graphBuilder = new WorkflowGraphBuilder(
+                        components,
+                        wfNodes,
+                        wfEdges,
+                        this::runNode,
+                        this.wfState);
+                app = graphBuilder.build(startNode);
+                exe(runtimeUuid, false, lease);
+            } catch (Exception e) {
+                lease.requireHeld();
+                errorWhenExe(e);
+            }
         } catch (Exception e) {
-            errorWhenExe(e);
+            reportUnownedFailure(e);
         }
     }
 
-    private void exe(String runtimeUuid, boolean resume) throws Exception {
-        String lastNode = app.execute(checkpointSaver, runtimeUuid, resume, Map.of(), this::persistNodeOutput);
+    private void exe(String runtimeUuid, boolean resume, JdbcCheckpointSaver.RunLease lease) throws Exception {
+        String lastNode = app.executeUnderLease(checkpointSaver, runtimeUuid, resume, Map.of(), this::persistNodeOutput, lease);
+        lease.requireHeld();
         wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_SUCCESS);
         WorkflowRuntime updatedRuntime = workflowRuntimeService.updateOutput(wfRuntimeResp.getId(), wfState);
-        wfNodes.stream().filter(node -> lastNode.equals(node.getUuid())).findFirst().ifPresent(node -> {
-            String template = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.END.getValue());
-            if (sseEmitter != null) WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, node, template);
-            else WorkflowMessageUtil.saveWorkflowMessage(wfState, template);
-        });
-        if (sseEmitter != null) WorkflowMessageUtil.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
+        try {
+            wfNodes.stream().filter(node -> lastNode.equals(node.getUuid())).findFirst().ifPresent(node -> {
+                String template = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.END.getValue());
+                if (sseEmitter != null) WorkflowMessageUtil.notifyAndStoreMessage(wfState, sseEmitter, node, template);
+                else WorkflowMessageUtil.saveWorkflowMessage(wfState, template);
+            });
+            if (sseEmitter != null) WorkflowMessageUtil.sendComplete(user.getId(), sseEmitter, updatedRuntime.getOutput());
+        } catch (RuntimeException notificationError) {
+            log.warn("Workflow succeeded but completion notification failed,runtimeUuid:{}", runtimeUuid, notificationError);
+        }
     }
 
     private void persistNodeOutput(String nodeUuid) {
@@ -127,20 +140,42 @@ public class WorkflowEngine {
         wfState.setOutput(completed.getState().getOutputs());
     }
 
+    /** 未取得或已失去租约，只通知本次连接；禁止写原运行状态与持久消息。 */
+    private void reportUnownedFailure(Exception e) {
+        log.error("Workflow attempt cannot retain execution ownership", e);
+        if (sseEmitter != null) {
+            WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter,
+                "本次运行无法继续，请确认原运行状态后重试");
+        }
+    }
+
     private void errorWhenExe(Exception e) {
         log.error("error", e);
-        String nodeMessageTemplate = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.EXCEPTION.getValue());
         String errorMsg = e.getMessage();
         if (errorMsg != null && errorMsg.contains("parallel node doesn't support conditional branch")) {
             errorMsg = "并行节点中不能包含条件分支";
         }
-        errorMsg = nodeMessageTemplate + (errorMsg != null ? errorMsg : e.getClass().getSimpleName());
-        // 保存会话信息且发送驱动消息事件
-        WorkflowMessageUtil.saveWorkflowMessage(wfState, errorMsg);
-        if (null != sseEmitter) {
-            WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter, errorMsg);
+        String failure = errorMsg != null ? errorMsg : e.getClass().getSimpleName();
+        // 调用方已确认租约；业务终态不依赖配置、持久消息或连接通知。
+        workflowRuntimeService.updateStatus(wfRuntimeResp.getId(), WORKFLOW_PROCESS_STATUS_FAIL, failure);
+        String notification = failure;
+        try {
+            notification = WorkflowMessageUtil.getNodeMessageTemplate(NodeMessageTemplateEnum.EXCEPTION.getValue()) + failure;
+        } catch (RuntimeException templateError) {
+            log.warn("Workflow failure persisted but notification template unavailable", templateError);
         }
-        workflowRuntimeService.updateStatus(wfRuntimeResp.getId(), WORKFLOW_PROCESS_STATUS_FAIL, errorMsg);
+        try {
+            WorkflowMessageUtil.saveWorkflowMessage(wfState, notification);
+        } catch (RuntimeException messageError) {
+            log.warn("Workflow failure persisted but failure message unavailable", messageError);
+        }
+        if (sseEmitter != null) {
+            try {
+                WorkflowMessageUtil.sendErrorAndComplete(user.getId(), sseEmitter, notification);
+            } catch (RuntimeException notificationError) {
+                log.warn("Workflow failure persisted but connection notification failed", notificationError);
+            }
+        }
     }
 
     private Map<String, Object> runNode(WorkflowNode wfNode, WfNodeState nodeState) {
@@ -245,23 +280,39 @@ public class WorkflowEngine {
         this.wfRuntimeResp = new WfRuntimeResp();
         BeanUtils.copyProperties(runtime, this.wfRuntimeResp);
         log.info("WorkflowEngine resume,runtimeUuid:{},workflowId:{}", runtimeUuid, runtime.getWorkflowId());
-        try {
-            Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
-            WorkflowNode startNode = startAndEnds.getLeft();
-            this.wfState = new WfState(user, rebuildNodeIOData(runtime.getInput()), runtimeUuid, userId, tokenValue, sseEmitter, sessionId);
-            rebuildCompletedNodes(runtime.getId());
-            workflowRuntimeService.updateStatus(runtime.getId(), WORKFLOW_PROCESS_STATUS_DOING, "");
+        try (JdbcCheckpointSaver.RunLease lease = checkpointSaver.acquireRun(runtimeUuid)) {
+            lease.requireHeld();
+            WorkflowRuntime fresh = workflowRuntimeService.getByUuidForResume(runtimeUuid);
+            if (fresh == null || !Objects.equals(fresh.getId(), runtime.getId())
+                    || !Objects.equals(fresh.getWorkflowId(), workflow.getId())
+                    || !Objects.equals(fresh.getStatus(), WORKFLOW_PROCESS_STATUS_DOING)
+                        && !Objects.equals(fresh.getStatus(), WORKFLOW_PROCESS_STATUS_FAIL)) {
+                reportUnownedFailure(new IllegalStateException("运行已结束或不可恢复"));
+                return;
+            }
+            BeanUtils.copyProperties(fresh, this.wfRuntimeResp);
+            try {
+                lease.requireHeld();
+                Pair<WorkflowNode, Set<WorkflowNode>> startAndEnds = findStartAndEndNode();
+                WorkflowNode startNode = startAndEnds.getLeft();
+                this.wfState = new WfState(user, rebuildNodeIOData(fresh.getInput()), runtimeUuid, userId, tokenValue, sseEmitter, sessionId);
+                rebuildCompletedNodes(fresh.getId());
+                workflowRuntimeService.updateStatus(fresh.getId(), WORKFLOW_PROCESS_STATUS_DOING, "");
 
-            WorkflowGraphBuilder graphBuilder = new WorkflowGraphBuilder(
-                    components,
-                    wfNodes,
-                    wfEdges,
-                    this::runNode,
-                    this.wfState);
-            app = graphBuilder.build(startNode);
-            exe(runtimeUuid, true);
+                WorkflowGraphBuilder graphBuilder = new WorkflowGraphBuilder(
+                        components,
+                        wfNodes,
+                        wfEdges,
+                        this::runNode,
+                        this.wfState);
+                app = graphBuilder.build(startNode);
+                exe(runtimeUuid, true, lease);
+            } catch (Exception e) {
+                lease.requireHeld();
+                errorWhenExe(e);
+            }
         } catch (Exception e) {
-            errorWhenExe(e);
+            reportUnownedFailure(e);
         }
     }
 

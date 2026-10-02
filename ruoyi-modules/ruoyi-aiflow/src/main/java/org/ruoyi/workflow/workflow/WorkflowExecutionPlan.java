@@ -84,9 +84,17 @@ public final class WorkflowExecutionPlan {
     public String execute(JdbcCheckpointSaver saver, String thread, boolean resume, Map<String, Object> initial,
                           Consumer<String> afterNode) throws Exception {
         try (JdbcCheckpointSaver.RunLease lease = saver.acquireRun(thread)) {
-            return executeLocked(saver, thread, resume, initial, afterNode, lease);
+            return executeUnderLease(saver, thread, resume, initial, afterNode, lease);
         }
     }
+
+    /** 调用方拥有同一运行租约时，准备与终态写入可与节点执行共用所有权边界。 */
+    public String executeUnderLease(JdbcCheckpointSaver saver, String thread, boolean resume,
+                                   Map<String, Object> initial, Consumer<String> afterNode,
+                                   JdbcCheckpointSaver.RunLease lease) throws Exception {
+        return executeLocked(saver, thread, resume, initial, afterNode, lease);
+    }
+
     private String executeLocked(JdbcCheckpointSaver saver, String thread, boolean resume, Map<String, Object> initial,
                           Consumer<String> afterNode, JdbcCheckpointSaver.RunLease lease) throws Exception {
         lease.requireHeld();

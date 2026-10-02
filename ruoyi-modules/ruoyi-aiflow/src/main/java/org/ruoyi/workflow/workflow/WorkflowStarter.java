@@ -123,6 +123,11 @@ public class WorkflowStarter implements IWorkFlowStarterService {
                 log.error("工作流实例不存在,runtimeUuid:{}", runtimeUuid);
                 return;
             }
+            if (!java.util.Objects.equals(runtime.getStatus(), org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.WORKFLOW_PROCESS_STATUS_DOING)
+                    && !java.util.Objects.equals(runtime.getStatus(), org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.WORKFLOW_PROCESS_STATUS_FAIL)) {
+                log.warn("工作流运行已结束或不可恢复,runtimeUuid:{}", runtimeUuid);
+                return;
+            }
             Workflow workflow = workflowService.getById(runtime.getWorkflowId());
             if (null == workflow) {
                 log.error("工作流定义不存在,workflowId:{}", runtime.getWorkflowId());

@@ -43,6 +43,9 @@ public class WorkflowRuntimeService extends ServiceImpl<WorkflowRunMapper, Workf
     @Resource
     private WorkflowRuntimeNodeService workflowRuntimeNodeService;
 
+    @Resource
+    private org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaver jdbcCheckpointSaver;
+
     public WfRuntimeResp create(User user, Long workflowId) {
         WorkflowRuntime one = new WorkflowRuntime();
         one.setUuid(UuidUtil.createShort());
@@ -134,11 +137,31 @@ public class WorkflowRuntimeService extends ServiceImpl<WorkflowRunMapper, Workf
                 .eq(WorkflowRuntime::getIsDeleted, false)
                 .le(WorkflowRuntime::getUpdateTime, deadline)
                 .list();
+        int disposed = 0;
         for (WorkflowRuntime zombie : zombies) {
-            log.warn("僵尸 DOING 处置为 FAIL 并标记可续跑,id:{},uuid:{}", zombie.getId(), zombie.getUuid());
-            updateStatus(zombie.getId(), WORKFLOW_PROCESS_STATUS_FAIL, WORKFLOW_PROCESS_STATUS_REMARK_INTERRUPTED);
+            try (var lease = jdbcCheckpointSaver.acquireRun(zombie.getUuid())) {
+                lease.requireHeld();
+                WorkflowRuntime fresh = baseMapper.selectById(zombie.getId());
+                if (fresh == null || Boolean.TRUE.equals(fresh.getIsDeleted())
+                        || !Integer.valueOf(WORKFLOW_PROCESS_STATUS_DOING).equals(fresh.getStatus())
+                        || fresh.getUpdateTime() == null || fresh.getUpdateTime().isAfter(deadline)) {
+                    continue;
+                }
+                lease.requireHeld();
+                WorkflowRuntime update = new WorkflowRuntime();
+                update.setStatus(WORKFLOW_PROCESS_STATUS_FAIL);
+                update.setStatusRemark(WORKFLOW_PROCESS_STATUS_REMARK_INTERRUPTED);
+                disposed += baseMapper.update(update, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<WorkflowRuntime>()
+                    .eq(WorkflowRuntime::getId, fresh.getId())
+                    .eq(WorkflowRuntime::getUuid, fresh.getUuid())
+                    .eq(WorkflowRuntime::getStatus, WORKFLOW_PROCESS_STATUS_DOING)
+                    .eq(WorkflowRuntime::getUpdateTime, fresh.getUpdateTime())
+                    .eq(WorkflowRuntime::getIsDeleted, false));
+            } catch (Exception ownershipError) {
+                log.warn("跳过无执行所有权的运行清理,id:{}", zombie.getId(), ownershipError);
+            }
         }
-        return zombies.size();
+        return disposed;
     }
 
     public WorkflowRuntime getByUuid(String uuid) {
