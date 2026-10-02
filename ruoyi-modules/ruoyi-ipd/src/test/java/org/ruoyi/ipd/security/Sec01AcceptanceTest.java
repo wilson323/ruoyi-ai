@@ -196,7 +196,13 @@ class Sec01AcceptanceTest {
     @DisplayName("阶段动作 transit 审计 operator 取会话身份字符串")
     void stageActionTransitOperatorComesFromSession() {
         loginAs(MARKET_PM_ID, "MARKET_PM");
+        org.ruoyi.ipd.mapper.ProjectMapper projects = org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMapper.class);
+        org.ruoyi.ipd.mapper.ProjectMemberMapper members = org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMemberMapper.class);
+        ipdPermission.setActionWriteMappers(projects, members);
+        when(projects.selectById(11L)).thenReturn(Project.builder().id(11L).tenantId("000000").build());
+        when(members.selectCount(any())).thenReturn(1L); // 当前会话是该项目的在任成员。
         StageAction action = new StageAction();
+        action.setProjectId(11L);
         action.setOwnerRole("MARKET_PM");
         when(stageActionService.getById(5L)).thenReturn(action);
         when(stageActionService.transit(anyLong(), anyString(), any(), anyString())).thenReturn(action);

@@ -8,6 +8,9 @@ import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.service.IpdAuthService;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -75,6 +78,15 @@ public class IpdPermission {
     private static final Set<String> INTERNAL_ROLES = Set.of("MARKET_PM", "RD_PM", "GROUP_LEADER", "SUPER_ADMIN");
     private final IpdAuthSession session;
     private final IpdAuthService authService;
+    private ProjectMapper actionProjectMapper;
+    private ProjectMemberMapper actionProjectMemberMapper;
+
+    /** 保留既有会话构造合同；生产必须注入现有成员 Mapper，动作写缺依赖时拒绝。 */
+    @Autowired
+    public void setActionWriteMappers(ProjectMapper projectMapper, ProjectMemberMapper projectMemberMapper) {
+        this.actionProjectMapper = projectMapper;
+        this.actionProjectMemberMapper = projectMemberMapper;
+    }
 
     public IpdActor requireInternal() {
         Person person;
@@ -182,9 +194,14 @@ public class IpdPermission {
         if (action == null) throw denied();
         if ("SUPER_ADMIN".equals(actor.role())) return actor;
         String owner = action.getOwnerRole();
-        if (actor.role().equals(owner)) return actor;
-        if ("BOTH".equals(owner) && Set.of("MARKET_PM", "RD_PM").contains(actor.role())) return actor;
-        throw new IpdPermissionException(409, ApiV1ErrorCode.ROLE_LOCKED);
+        if (!actor.role().equals(owner)
+            && !("BOTH".equals(owner) && Set.of("MARKET_PM", "RD_PM").contains(actor.role()))) {
+            throw new IpdPermissionException(409, ApiV1ErrorCode.ROLE_LOCKED);
+        }
+        if (actionProjectMapper == null || actionProjectMemberMapper == null) throw denied();
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, action.getProjectId(),
+            actionProjectMemberMapper, actionProjectMapper);
+        return actor;
     }
 
     /** 禁止Entity请求中的审计身份透传；完整业务字段白名单另由API-02收口。 */
