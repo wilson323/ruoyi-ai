@@ -6,13 +6,30 @@ import io.agentscope.core.event.ModelCallEndEvent;
 import io.agentscope.core.event.ModelCallStartEvent;
 import io.agentscope.core.event.TextBlockDeltaEvent;
 import io.agentscope.core.model.ChatUsage;
+import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.event.ToolCallStartEvent;
 import io.agentscope.core.event.ToolResultEndEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.model.Model;
+import io.agentscope.core.tool.AgentTool;
+import io.agentscope.core.tool.ToolCallParam;
 import io.agentscope.core.tool.Toolkit;
+import io.agentscope.core.tool.ToolkitConfig;
+import io.agentscope.core.state.InMemoryAgentStateStore;
+import io.agentscope.core.agent.Agent;
+import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.middleware.MiddlewareBase;
+import io.agentscope.core.middleware.AgentInput;
+import io.agentscope.core.middleware.ModelCallInput;
+import io.agentscope.core.middleware.ActingInput;
+import java.time.Duration;
+import java.util.function.Function;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.skill.curator.SkillCuratorConfig;
+import io.agentscope.harness.agent.tool.SkillManageConfig;
+import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import io.agentscope.harness.agent.tools.ToolsConfig;
 import org.ruoyi.chat.kernel.KernelScopeKey;
 import org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger;
@@ -21,6 +38,8 @@ import org.ruoyi.chat.kernel.tool.KernelToolCallTrace;
 import org.ruoyi.chat.kernel.tool.KernelToolGovernance;
 import org.ruoyi.ipd.agent.ProjectAgentConstants;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentToolCatalog;
+import org.ruoyi.ipd.mapper.ProductLineNameMapper;
+import org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalContext;
 import org.ruoyi.service.coding.harness.model.HarnessPermissionMode;
 import org.ruoyi.service.coding.harness.tool.ToolDescriptor;
 import org.ruoyi.service.coding.harness.tool.ToolPolicyEngine;
@@ -28,6 +47,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.nio.file.Path;
@@ -39,6 +60,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 /**
  * 项目智能体 AgentScope 2.0.3 内核适配（独立于 {@code AgentScopeChatKernel}，不改其原文）。
@@ -48,18 +70,28 @@ import java.util.concurrent.TimeoutException;
  *   <li>身份：{@link KernelScopeKey#of} 四维收口 (projectId, personId, ipd_project_agent, runId)，
  *       userId 来自已授权运行行，不来自请求参数；非法段 fail-closed → SCOPE_REJECTED；</li>
  *   <li>模型：按运行选定的 ai_model_configs 装配，失败 → MODEL_UNAVAILABLE，不回落默认模型；</li>
- *   <li>Skill：正文已在服务端经 ClasspathSkillRepository 读取并校验 sha256，注入系统提示；
- *       原生动态 Skill/工作区 Skill 关闭，避免第二条未审计的加载路径；</li>
- *   <li>工具：仅注册选定的只读工具，外包 {@link KernelGovernedTool}，执行前经
+ *   <li>Skill：正文经 ClasspathSkillRepository 与本次冻结 sha/version/body 复核，由官方仓库渐进发现/加载；
+ *       动态技能与管理能力启用，发布与可见性经官方 owner 扩展点约束；</li>
+ *   <li>工具：选定业务检索外包 {@link KernelGovernedTool}，执行前经
  *       {@link KernelToolGovernance}（裁决唯一源 {@link ToolPolicyEngine}，READ_ONLY）；
- *       构建后校验 Toolkit 工具集 ⊆ 选定集，多出即拒绝运行；</li>
- *   <li>状态：每次运行新 session（sessionId=runId），不接 MysqlAgentStateStore；
+ *       官方基础能力完整装配，构建后及子任务 acting 前统一保护所有权、权限与审计；</li>
+ *   <li>状态：每次运行新 session（sessionId=runId），生产复用SDK RedissonAgentStateStore；
  *       业务状态/事件由 IPD 持久层承担，AgentState 不作任务完成依据。</li>
  * </ul>
  */
 public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
 
     private static final Logger log = LoggerFactory.getLogger(AgentScopeProjectAgentKernel.class);
+
+    /**
+     * 事件循环专用调度器，不占用全局 {@code boundedElastic}。
+     * 工具侧已经两次订在那个池上：AgentScope {@code ToolExecutor.applyScheduling}
+     * 和 {@code ProjectKnowledgeSearchTool.callAsync}。
+     * 事件循环若再订上去，同一次回复里的两次检索会经 {@code mergeSequential}
+     * 把任务排进仍在等待结果的那条工人队列，工具体不会开始，整轮只能空转到超时。
+     */
+    static final Scheduler AGENT_LOOP = Schedulers.newBoundedElastic(
+        4, Integer.MAX_VALUE, "ipd-project-agent-loop", 60, true);
 
     static final String ERR_SCOPE_REJECTED = "SCOPE_REJECTED";
     static final String ERR_MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE";
@@ -71,6 +103,10 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
     private final ProjectKnowledgeSearchTool.KnowledgeRetriever retriever;
     private final Path workspaceRoot;
     private final int maxIters;
+    private final ProductLineNameMapper lineNames;
+    private final io.agentscope.core.hook.Hook auditHook;
+    private io.agentscope.core.state.AgentStateStore stateStore = new InMemoryAgentStateStore();
+    private java.util.function.Consumer<ProjectAgentRunSpec> runtimeAccess = spec -> { };
 
     /**
      * @param modelAssembler 模型装配
@@ -81,15 +117,49 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
     public AgentScopeProjectAgentKernel(ProjectAgentModelAssembler modelAssembler,
                                         ProjectKnowledgeSearchTool.KnowledgeRetriever retriever,
                                         Path workspaceRoot, int maxIters) {
+        this(modelAssembler, retriever, workspaceRoot, maxIters, null);
+    }
+
+    /**
+     * @param modelAssembler 模型装配
+     * @param retriever 项目资料检索端口
+     * @param workspaceRoot 工作区根
+     * @param maxIters ReAct 最大迭代数（工具调用轮次上限）
+     * @param lineNames 读取产品线已记下的服务标识；展示名不参与选择
+     */
+    public AgentScopeProjectAgentKernel(ProjectAgentModelAssembler modelAssembler,
+                                        ProjectKnowledgeSearchTool.KnowledgeRetriever retriever,
+                                        Path workspaceRoot, int maxIters,
+                                        ProductLineNameMapper lineNames) {
+        this(modelAssembler, retriever, workspaceRoot, maxIters, lineNames, null);
+    }
+
+    public AgentScopeProjectAgentKernel(ProjectAgentModelAssembler modelAssembler,
+                                        ProjectKnowledgeSearchTool.KnowledgeRetriever retriever,
+                                        Path workspaceRoot, int maxIters, ProductLineNameMapper lineNames,
+                                        io.agentscope.core.hook.Hook auditHook) {
+        this.auditHook = auditHook;
         this.modelAssembler = Objects.requireNonNull(modelAssembler, "modelAssembler");
         this.retriever = Objects.requireNonNull(retriever, "retriever");
         this.workspaceRoot = Objects.requireNonNull(workspaceRoot, "workspaceRoot");
         this.maxIters = Math.max(1, maxIters);
+        this.lineNames = lineNames;
+    }
+
+    /** 生产配置复用SDK Redis状态存储；业务完成仍由原run/事件权威。 */
+    public void setStateStore(io.agentscope.core.state.AgentStateStore store) {
+        this.stateStore = Objects.requireNonNull(store, "stateStore");
+    }
+
+    /** 生产配置绑定当前 Person/租户/项目权限的原业务访问服务；不导入 SDK 权限快照。 */
+    public void setRuntimeAccess(java.util.function.Consumer<ProjectAgentRunSpec> access) {
+        this.runtimeAccess = Objects.requireNonNull(access, "runtimeAccess");
     }
 
     /** {@inheritDoc} */
     @Override
-    public Disposable execute(ProjectAgentRunSpec spec, ProjectAgentEventSink sink) {
+    public Disposable execute(ProjectAgentRunSpec spec, ProjectAgentEventSink originalSink) {
+        ProjectAgentEventSink sink = new ProjectAgentRuntimeAccessSink(originalSink, spec, runtimeAccess);
         KernelScopeKey.Scope scope;
         try {
             scope = KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
@@ -101,7 +171,8 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         }
         Model model;
         try {
-            model = modelAssembler.assemble(spec.model());
+            sink.requireActiveOwnership();
+            model = modelAssembler.assemble(spec.model(), spec.personId(), spec.runId());
         } catch (RuntimeException e) {
             log.warn("project_agent operation=MODEL status=REJECTED runId={} errorType={}",
                 spec.runId(), e.getClass().getName());
@@ -109,21 +180,64 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             return () -> { };
         }
         HarnessAgent agent;
+        ManagedAgent managed;
+        DeadlineMiddleware deadline = new DeadlineMiddleware(spec.timeout());
         try {
-            agent = buildAgent(spec, model, sink);
+            sink.requireActiveOwnership();
+            managed = buildManagedAgent(spec, model, sink, deadline);
+            agent = managed.agent();
         } catch (Exception e) {
             log.error("project_agent operation=BUILD status=FAILED runId={} errorType={}",
                 spec.runId(), e.getClass().getName());
             sink.onError(ERR_KERNEL_ERROR);
             return () -> { };
         }
-        Msg msg = Msg.builder().role(MsgRole.USER).textContent(spec.message()).build();
-        EventBridge bridge = new EventBridge(sink, spec.runId());
+        List<Msg> messages;
+        try {
+            messages = spec.serverResumeMessages() != null ? spec.serverResumeMessages()
+                : spec.aguiInput() != null ? ProjectAgentAguiInput.messages(spec.aguiInput(), Map.of())
+                : List.of(Msg.builder().role(MsgRole.USER).textContent(spec.message()).build());
+            if (messages.isEmpty()) throw new IllegalArgumentException("Agent input messages are required");
+        } catch (RuntimeException invalidInput) {
+            managed.agent().close();
+            try {
+                checkpointOwnership(sink).withActiveOwnership(() -> { managed.state().sealAndDelete(); return null; });
+            } catch (org.ruoyi.ipd.agent.service.ProjectAgentRunOwnership.OwnershipLost ignored) {
+                // 失去执行租约后不能清理后继 owner 的检查点。
+            }
+            sink.onError(ERR_SCOPE_REJECTED);
+            return () -> { };
+        }
+        EventBridge bridge = new EventBridge(sink, spec.runId(), spec.aguiInput(), () -> {
+            var checkpoint = managed.state().getVersioned(scope.userId(), scope.sessionId(),
+                "agent_state", io.agentscope.core.state.AgentState.class);
+            if (!checkpoint.isPresent() || checkpoint.version() < 0)
+                throw new IllegalStateException("Official interrupted checkpoint has not been persisted");
+            return checkpoint.version();
+        });
+        var runtimeContext = scope.toRuntimeContext();
+        var deadlineReached = new java.util.concurrent.atomic.AtomicBoolean();
         return Flux.using(() -> agent,
-                a -> a.streamEvents(msg, scope.toRuntimeContext()),
-                HarnessAgent::close)
-            .timeout(spec.timeout())
-            .subscribeOn(Schedulers.boundedElastic())
+                a -> a.streamEvents(messages, runtimeContext),
+                a -> {
+                    deadline.cancel();
+                    if (!sink.isPaused()) a.interrupt(runtimeContext);
+                    try { a.close(); } finally {
+                        try {
+                            if (!sink.isPaused()) checkpointOwnership(sink).withActiveOwnership(() -> {
+                                managed.state().sealAndDelete();
+                                return null;
+                            });
+                        } catch (org.ruoyi.ipd.agent.service.ProjectAgentRunOwnership.OwnershipLost ignored) {
+                            // 旧owner只释放SDK资源，不得清理新epoch的checkpoint。
+                        }
+                    }
+                })
+            // takeUntilOther 的伴随流须正常发信号才能取消主订阅；伴随流报错只向下游报错。
+            .takeUntilOther(Mono.delay(spec.timeout()).doOnNext(ignored -> deadlineReached.set(true)))
+            .concatWith(Mono.defer(() -> deadlineReached.get()
+                ? Mono.error(new TimeoutException("project agent deadline exceeded")) : Mono.empty()))
+            .subscribeOn(AGENT_LOOP)
             .subscribe(bridge::dispatch, bridge::error, bridge::complete);
     }
 
@@ -137,6 +251,17 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
      * @throws Exception 装配失败或工具集越界
      */
     HarnessAgent buildAgent(ProjectAgentRunSpec spec, Model model, ProjectAgentEventSink sink) throws Exception {
+        return buildManagedAgent(spec, model, sink, new DeadlineMiddleware(spec.timeout())).agent();
+    }
+
+    private record ManagedAgent(HarnessAgent agent, ProjectAgentTemporaryStateStore state) { }
+
+    private static ProjectAgentEventSink checkpointOwnership(ProjectAgentEventSink sink) {
+        return sink instanceof ProjectAgentRuntimeAccessSink guarded ? guarded.checkpointOwnership() : sink;
+    }
+
+    private ManagedAgent buildManagedAgent(ProjectAgentRunSpec spec, Model model, ProjectAgentEventSink sink,
+                                    DeadlineMiddleware deadline) throws Exception {
         Path workspace = ProjectAgentWorkspace.prepare(workspaceRoot, String.valueOf(spec.projectId()),
             String.valueOf(spec.personId()), ProjectAgentConstants.AGENT_ID);
         List<ToolDescriptor> descriptors = new ArrayList<>();
@@ -148,56 +273,367 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             descriptors.add(descriptor);
         }
         KernelToolGovernance governance = new KernelToolGovernance(new ToolPolicyEngine(descriptors),
-            HarnessPermissionMode.READ_ONLY, new InMemoryKernelToolEffectLedger(), new KernelToolCallTrace());
-        Toolkit toolkit = new Toolkit();
+            HarnessPermissionMode.WORKSPACE_WRITE, new InMemoryKernelToolEffectLedger(), new KernelToolCallTrace());
+        // 同一次回复里的两次检索不要并行订到同一个 boundedElastic。
+        Toolkit toolkit = new Toolkit(ToolkitConfig.builder().parallel(false).build());
         if (spec.toolIds().contains(ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH)) {
+            ProjectKnowledgeSearchTool.KnowledgeRetriever boundRetriever = retriever;
+            if (retriever instanceof ProjectKnowledgeRetriever concrete) {
+                Long personId = spec.personId();
+                boundRetriever = (projectId, docType, query) ->
+                    concrete.retrieve(personId, projectId, docType, query);
+            }
             toolkit.registerAgentTool(KernelGovernedTool.wrap(
-                new ProjectKnowledgeSearchTool(spec.projectId(), retriever, sink::onSource), governance));
+                new InlineKnowledgeSearchTool(spec.projectId(), boundRetriever, sink::onSource), governance));
+        }
+        sink.requireActiveOwnership();
+        ProductLineMcpTool.bind(toolkit, governance, spec, lineNames, sink);
+        for (String name : List.copyOf(toolkit.getToolNames())) {
+            AgentTool original = toolkit.getTool(name);
+            toolkit.removeTool(name);
+            toolkit.registerAgentTool(new OwnershipGuardedTool(original, sink));
         }
         ToolsConfig toolsConfig = new ToolsConfig();
-        toolsConfig.setDeny(List.of("web_fetch", "web_search", "wait_async_results"));
+        FrozenProjectAgentSkills selectedSkills = new FrozenProjectAgentSkills(spec.skills());
+        ProjectAgentSkillGovernance skillGovernance = new ProjectAgentSkillGovernance(workspace, spec, selectedSkills);
+        var parentRef = new java.util.concurrent.atomic.AtomicReference<HarnessAgent>();
+        var trustedScope = KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
+            ProjectAgentConstants.AGENT_ID, String.valueOf(spec.runId()));
+        var subagentScope = new ProjectAgentSubagentScopeMiddleware(
+            new ProjectAgentFoundationTools.Scope(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
+                String.valueOf(spec.runId()), workspace), trustedScope.toRuntimeContext(),
+            sink::requireActiveOwnership, (leaf, parent, context) -> leaf).bindParent(parentRef::get);
+        subagentScope.onRegistered((actor, context) -> {
+            io.agentscope.core.ReActAgent actual = actor instanceof HarnessAgent child
+                ? child.getDelegate() : actor instanceof io.agentscope.core.ReActAgent react ? react : null;
+            if (actual == null) throw new IllegalStateException("Official ReAct actor is required");
+            var existing = actual.getAgentState(context.getUserId(), context.getSessionId()).getPermissionContext();
+            var extended = ProjectAgentOfficialPermissions.extend(existing);
+            if (!existing.getAllowRules().equals(extended.getAllowRules())) {
+                actual.replacePermissionContext(context.getUserId(), context.getSessionId(), extended);
+            }
+        });
+        ProjectAgentOfficialToolGovernance officialGovernance = new ProjectAgentOfficialToolGovernance(sink,
+            trustedScope, (actor, context) -> { subagentScope.lineage().requireKnown(actor, context); return true; });
+        ProjectAgentSafeTranscriptStore safeTranscript = new ProjectAgentSafeTranscriptStore(
+            spec.model().apiKey() == null ? List.of() : List.of(spec.model().apiKey()));
+        ProjectAgentEventSink checkpointOwnership = checkpointOwnership(sink);
+        ProjectAgentTemporaryStateStore temporaryState = new ProjectAgentTemporaryStateStore(stateStore,
+            KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
+                ProjectAgentConstants.AGENT_ID, String.valueOf(spec.runId())), checkpointOwnership, subagentScope.lineage());
+        sink.registerTemporaryStateCleanup(temporaryState::sealAndDelete);
+        org.ruoyi.chat.kernel.OfficialAgentTraceLogging.install();
         HarnessAgent built = HarnessAgent.builder()
             .name(ProjectAgentConstants.AGENT_ID)
             .sysPrompt(ProjectAgentPrompt.build(spec))
-            .model(model)
+            .skillRepository(selectedSkills)
+            .skillFilter(selectedSkills.filter())
+            .enableSkillManageTool(SkillManageConfig.defaults())
+            .enableSkillPromotionGate(skillGovernance, skillGovernance)
+            .enableSkillCurator(SkillCuratorConfig.defaults())
+            .memory(ProjectAgentNativeProfile.memory())
+            .enablePlanMode()
+            .enableTaskList()
+            .enableMetaTool(true)
+            .enableAgentTracingLog(true)
+            .enablePendingToolRecovery(true)
+            .asyncToolTimeout(Duration.ofSeconds(30))
+            .middleware(safeTranscript)
+            .transcriptStore(safeTranscript)
+            .middleware(subagentScope)
+            .middleware(officialGovernance)
+            .middleware(new ProjectAgentSkillRuntimeGuard(selectedSkills, spec, sink))
+            .model(new ProjectAgentMeteredModel(model, sink, checkpointOwnership))
+            .permissionContext(ProjectAgentOfficialPermissions.workspace())
+            .hook(auditHook)
+            .middleware(deadline)
+            .middleware(new OwnershipMiddleware(sink))
             .toolkit(toolkit)
             .maxIters(maxIters)
-            .disableFilesystemTools()
-            .disableShellTool()
-            .disableMemoryTools()
-            .disableMemoryHooks()
-            .disableTranscript()
-            .disableSessionPersistence()
-            .enableAgentTracingLog(false)
-            .disableSubagents()
-            .disableDynamicSubagents()
-            .disableDynamicSkills()
-            .disableDefaultWorkspaceSkills()
-            .skillsEnabled(false)
+            // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）；不设时SDK不套任何重试。
+            .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
+            .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)
+            // 长对话压缩：官方 Builder 默认即装配全默认配置（主模型+官方摘要prompt+动态阈值）。
+            // 此处显式声明与默认等价的配置，固化意图防官方默认漂移；溢出硬失败仅在 disableCompaction 时出现。
+            .compaction(CompactionConfig.builder().build())
+            // 官方 provider 负责文件与命令执行，缺失镜像明确失败，不回退主机执行。
+            .filesystem(ProjectAgentOfficialSandbox.filesystem(workspace, "python:3.13-alpine", sink))
+            // SDK checkpoint与业务run状态分离，session使用可信person/run身份。
+            .stateStore(temporaryState)
             .toolsConfig(toolsConfig)
             .workspace(workspace)
             .build();
-        Set<String> exposed = new HashSet<>(built.getToolkit().getToolNames());
-        if (!new HashSet<>(spec.toolIds()).containsAll(exposed)) {
-            built.close();
-            throw new IllegalStateException("project agent exposes unselected tools");
+        // SDK build 与子任务会追加工具；统一在装配后和每次 acting 前挂官方权限扩展。
+        parentRef.set(built);
+        subagentScope.lineage().bindRoot(built);
+        safeTranscript.bind(built.getWorkspaceManager());
+        skillGovernance.bind(built.getWorkspaceManager());
+        // AG-UI schemas are already server-bound by the planner; never overwrite a backend tool.
+        if (spec.aguiInput() != null && spec.aguiInput().getTools() != null) {
+            var frontendSchemas = new io.agentscope.core.agui.converter.AguiToolConverter()
+                .toToolSchemaList(spec.aguiInput().getTools());
+            for (var schema : frontendSchemas) {
+                if (built.getToolkit().getTool(schema.getName()) != null) {
+                    built.close();
+                    throw new IllegalArgumentException("Frontend tool conflicts with an existing backend tool");
+                }
+            }
+            for (var schema : frontendSchemas) {
+                built.getToolkit().registerAgentTool(new io.agentscope.core.tool.SchemaOnlyTool(schema));
+            }
         }
-        return built;
+        officialGovernance.bind(built.getToolkit());
+        return new ManagedAgent(built, temporaryState);
+    }
+
+    static final class OwnershipMiddleware implements MiddlewareBase {
+        private final ProjectAgentEventSink sink;
+        OwnershipMiddleware(ProjectAgentEventSink sink) { this.sink = sink; }
+        public int order() { return Integer.MAX_VALUE; }
+        public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext ctx, AgentInput input,
+                                       Function<AgentInput, Flux<AgentEvent>> next) {
+            return Flux.defer(() -> { sink.requireActiveOwnership(); return next.apply(input); });
+        }
+        public Flux<AgentEvent> onModelCall(Agent agent, RuntimeContext ctx, ModelCallInput input,
+                                           Function<ModelCallInput, Flux<AgentEvent>> next) {
+            return Flux.defer(() -> { sink.requireActiveOwnership(); return next.apply(input); });
+        }
+        public Flux<AgentEvent> onActing(Agent agent, RuntimeContext ctx, ActingInput input,
+                                        Function<ActingInput, Flux<AgentEvent>> next) {
+            return Flux.defer(() -> { sink.requireActiveOwnership(); return next.apply(input); });
+        }
+    }
+
+    /** 同一acting批次的每个工具订阅也检查，不能只在批次开始检查一次。 */
+    static final class OwnershipGuardedTool extends io.agentscope.core.tool.ToolBase
+            implements ProjectAgentOfficialToolGovernance.BusinessExecutionGuarded {
+        private final io.agentscope.core.tool.ToolBase delegate;
+        private final ProjectAgentEventSink sink;
+        OwnershipGuardedTool(AgentTool original, ProjectAgentEventSink sink) {
+            super(io.agentscope.core.tool.ToolBase.builder().name(original.getName())
+                .description(original.getDescription()).inputSchema(original.getParameters())
+                .readOnly(original.isReadOnly())
+                .concurrencySafe(original instanceof io.agentscope.core.tool.ToolBase nativeTool && nativeTool.isConcurrencySafe()));
+            if (!(original instanceof io.agentscope.core.tool.ToolBase nativeTool)) {
+                throw new IllegalArgumentException("Ownership guard requires a native governed tool");
+            }
+            this.delegate = nativeTool;
+            this.sink = sink;
+        }
+        public boolean hasExecutionClaimGuard() { return delegate instanceof KernelGovernedTool; }
+        public Boolean getStrict() { return delegate.getStrict(); }
+        public Map<String, Object> getOutputSchema() { return delegate.getOutputSchema(); }
+        @Override public Mono<io.agentscope.core.permission.PermissionDecision> checkPermissions(
+                Map<String, Object> input, io.agentscope.core.permission.PermissionContextState context) {
+            return Mono.defer(() -> { sink.requireActiveOwnership(); return delegate.checkPermissions(input, context); });
+        }
+        public Mono<ToolResultBlock> callAsync(ToolCallParam param) {
+            return Mono.defer(() -> { sink.requireActiveOwnership(); return delegate.callAsync(param); });
+        }
+    }
+
+    /** 让整轮截止从SDK内部错误路径收口，先清理请求注册，再由事件桥提交失败。 */
+    static final class DeadlineMiddleware implements MiddlewareBase {
+        private final Duration timeout;
+        private final long deadline;
+        private final reactor.core.publisher.Sinks.One<Boolean> cancelled = reactor.core.publisher.Sinks.one();
+
+        private void cancel() { cancelled.tryEmitValue(Boolean.TRUE); }
+
+        DeadlineMiddleware(Duration timeout) {
+            this.timeout = timeout;
+            this.deadline = System.nanoTime() + timeout.toNanos();
+        }
+
+        @Override
+        public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
+                                        Function<AgentInput, Flux<AgentEvent>> next) {
+            return Flux.defer(() -> {
+                return next.apply(input);
+            });
+        }
+
+        @Override
+        public Flux<AgentEvent> onModelCall(Agent agent, RuntimeContext context, ModelCallInput input,
+                                            Function<ModelCallInput, Flux<AgentEvent>> next) {
+            return withinDeadline(() -> next.apply(input));
+        }
+
+        @Override
+        public Flux<AgentEvent> onActing(Agent agent, RuntimeContext context, ActingInput input,
+                                        Function<ActingInput, Flux<AgentEvent>> next) {
+            return withinDeadline(() -> next.apply(input));
+        }
+
+        private Flux<AgentEvent> withinDeadline(java.util.function.Supplier<Flux<AgentEvent>> action) {
+            return Flux.defer(() -> {
+                long remaining = deadline - System.nanoTime();
+                if (remaining <= 0) { return Flux.error(new TimeoutException("project agent deadline exceeded")); }
+                var stopped = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+                Mono<?> stop = Mono.firstWithSignal(
+                    cancelled.asMono().doOnNext(ignored -> stopped.set(
+                        new java.util.concurrent.CancellationException("project agent cancelled"))),
+                    Mono.delay(Duration.ofNanos(remaining)).doOnNext(ignored -> stopped.set(
+                        new TimeoutException("project agent deadline exceeded"))));
+                // 正常停止信号先取消上游，再把原因交给 SDK 的错误收口路径。
+                return action.get().takeUntilOther(stop)
+                    .concatWith(Flux.defer(() -> stopped.get() == null
+                        ? Flux.empty() : Flux.error(stopped.get())));
+            });
+        }
+    }
+
+    /**
+     * 与 {@link ProjectKnowledgeSearchTool} 同一参数和结果，但不再 {@code subscribeOn(boundedElastic)}。
+     * 工具体那一次调度会把检索任务排进仍在等待结果的工人队列，调用发出后工具体不会进入。
+     */
+    private static final class InlineKnowledgeSearchTool implements AgentTool {
+
+        private final Long boundProjectId;
+        private final ProjectKnowledgeSearchTool.KnowledgeRetriever retriever;
+        private final Consumer<Map<String, Object>> sourceListener;
+
+        private InlineKnowledgeSearchTool(Long boundProjectId,
+                                          ProjectKnowledgeSearchTool.KnowledgeRetriever retriever,
+                                          Consumer<Map<String, Object>> sourceListener) {
+            this.boundProjectId = Objects.requireNonNull(boundProjectId, "boundProjectId");
+            this.retriever = Objects.requireNonNull(retriever, "retriever");
+            this.sourceListener = sourceListener == null ? source -> { } : sourceListener;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String getName() {
+            return ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String getDescription() {
+            return ProjectKnowledgeSearchTool.DESCRIPTION;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public Map<String, Object> getParameters() {
+            Map<String, Object> query = Map.of("type", "string", "description", "检索主题关键词或问题");
+            Map<String, Object> docType = Map.of("type", "string", "description", "可选：文档类型过滤");
+            Map<String, Object> schema = new LinkedHashMap<>();
+            schema.put("type", "object");
+            schema.put("properties", Map.of("query", query, "docType", docType));
+            schema.put("required", List.of("query"));
+            schema.put("additionalProperties", false);
+            return schema;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean isReadOnly() {
+            return true;
+        }
+
+        /**
+         * 在当前订阅线程上执行检索。不要再切到 boundedElastic。
+         *
+         * @param param 原生调用参数
+         * @return 检索文本；缺 query 时返回可见错误
+         */
+        @Override
+        public Mono<ToolResultBlock> callAsync(ToolCallParam param) {
+            Map<String, Object> input = param == null || param.getInput() == null ? Map.of() : param.getInput();
+            String query = stringArg(input, "query");
+            String docType = stringArg(input, "docType");
+            String toolCallId = param == null || param.getToolUseBlock() == null
+                ? null : param.getToolUseBlock().getId();
+            if (query == null) {
+                return Mono.just(ToolResultBlock.error("query 为必填参数"));
+            }
+            return Mono.fromCallable(() -> {
+                try {
+                    RetrievalContext context = retriever.retrieve(boundProjectId, docType, query);
+                    int hits = context == null ? 0 : context.hits();
+                    String block = context == null || context.block() == null ? "" : context.block();
+                    Map<String, Object> source = new LinkedHashMap<>();
+                    source.put("toolCallId", toolCallId);
+                    source.put("tool", getName());
+                    source.put("projectId", String.valueOf(boundProjectId));
+                    source.put("query", query);
+                    source.put("hits", hits);
+                    source.put("retrievalStatus", ProjectKnowledgeSearchTool.retrievalStatus(context));
+                    source.put("chars", context == null ? 0 : context.chars());
+                    source.put("preview", block.length() > ProjectKnowledgeSearchTool.PREVIEW_MAX_CHARS
+                        ? block.substring(0, ProjectKnowledgeSearchTool.PREVIEW_MAX_CHARS) : block);
+                    String citationText = context == null ? "" : context.citationText();
+                    source.put("citationText", citationText);
+                    source.put("citationStatus", citationText.isBlank() ? "NONE" : "SUCCESS");
+                    source.put("sourceEvidence", ProjectKnowledgeSearchTool.sourceEvidence(context));
+                    sourceListener.accept(source);
+                    return ProjectKnowledgeSearchTool.result(context);
+                } catch (Throwable ex) {
+                    if (ex instanceof VirtualMachineError) {
+                        throw (VirtualMachineError) ex;
+                    }
+                    String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+                    return ToolResultBlock.error(message);
+                }
+            });
+        }
+
+        private static String stringArg(Map<String, Object> input, String key) {
+            Object value = input.get(key);
+            if (value == null) {
+                return null;
+            }
+            String text = String.valueOf(value).trim();
+            return text.isEmpty() ? null : text;
+        }
     }
 
     /** 原生事件 → IPD 事件出口（只映射合同事件；推理原文不外发不落库）。 */
     private static final class EventBridge {
 
         private final ProjectAgentEventSink sink;
+        private final ProjectAgentAguiBridge agui;
         private final Long runId;
+        private final java.util.function.LongSupplier checkpointVersion;
+        private final StringBuilder accumulated = new StringBuilder();
 
         private EventBridge(ProjectAgentEventSink sink, Long runId) {
+            this(sink, runId, null, () -> { throw new IllegalStateException("Checkpoint version source is required"); });
+        }
+
+        private EventBridge(ProjectAgentEventSink sink, Long runId,
+                            java.util.function.LongSupplier checkpointVersion) {
+            this(sink, runId, null, checkpointVersion);
+        }
+
+        private EventBridge(ProjectAgentEventSink sink, Long runId,
+                            io.agentscope.core.agui.model.RunAgentInput serverBoundInput,
+                            java.util.function.LongSupplier checkpointVersion) {
             this.sink = sink;
             this.runId = runId;
+            this.checkpointVersion = checkpointVersion;
+            this.agui = new ProjectAgentAguiBridge(sink, runId, serverBoundInput);
         }
 
         private void dispatch(AgentEvent event) {
-            if (event instanceof TextBlockDeltaEvent text) {
+            agui.accept(event);
+            // 子事件完整保留在官方 subagent.* 流，不能拼入父运行的业务正文。
+            if (event.getSource() != null && !event.getSource().isBlank()) return;
+            if (event instanceof io.agentscope.core.event.AgentResultEvent result) {
+                var pending = agui.pendingInterrupts();
+                if (!pending.isEmpty()) {
+                    sink.onAguiInterrupt(pending, checkpointVersion.getAsLong());
+                    return;
+                }
+                String finalText = org.ruoyi.chat.kernel.KernelFinalResponse.text(result.getResult(), accumulated.toString());
+                if (!java.util.Objects.equals(finalText, accumulated.toString())) {
+                    sink.onFinalText(finalText);
+                    accumulated.setLength(0);
+                    accumulated.append(finalText);
+                }
+            } else if (event instanceof TextBlockDeltaEvent text) {
+                accumulated.append(text.getDelta());
                 sink.onText(text.getDelta());
             } else if (event instanceof ToolCallStartEvent call) {
                 sink.onToolCall(call.getToolCallId(), call.getToolCallName());
@@ -207,7 +643,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             } else if (event instanceof ModelCallStartEvent) {
                 sink.onStep("MODEL_CALL", Map.of());
             } else if (event instanceof ModelCallEndEvent end) {
-                sink.onStep("MODEL_CALL", modelCallDetail(end.getUsage()));
+                // The shared Model decorator meters main, memory, compaction and child calls.
+                // Keep native stream lifecycle visible without a second token-bearing STEP.
+                sink.onStep("MODEL_CALL", Map.of("phase", "STREAM_END"));
             } else if (event instanceof ExceedMaxItersEvent) {
                 sink.onStep("EXCEED_MAX_ITERS", Map.of());
             }
@@ -221,7 +659,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         }
 
         private void complete() {
-            sink.onComplete();
+            if (!sink.isPaused()) sink.onComplete();
         }
     }
 
