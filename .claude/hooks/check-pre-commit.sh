@@ -22,6 +22,21 @@ set -uo pipefail  # 不要 -e:单门禁失败不阻断其他门禁跑
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# ---------------------------------------------------------------------------
+# PATH 补齐（2026-10-02 修）：hook 在非交互 shell（Claude Code / Qoder）下 PATH 精简，
+# 缺 /opt/homebrew/bin 时门禁 1/2 的 `command -v mysql` 落空 → 以 exit=2 假失败
+# （报「mysql command not found」而非真实漂移），且会拦下全仓 commit。
+# 优先仓内自带实例客户端（跟 base-services.sh 同一 mysqld，跳机器稳定），再兜底 Homebrew。
+# 注：只补查找路径，不改任何判定逻辑；库未起时仍照原设计 FAIL。
+# ---------------------------------------------------------------------------
+_path_prefix=""
+for _p in "$REPO_ROOT/.codex/ipd-dev/software/mysql-8.0.46-macos15-arm64/bin" /opt/homebrew/bin /usr/local/bin; do
+    [[ -d "$_p" ]] && _path_prefix="${_path_prefix}${_p}:"
+done
+PATH="${_path_prefix}${PATH}"
+export PATH
+unset _p _path_prefix
+
 MODE="${1:-all}"
 FAILED=0
 PASSED=0
@@ -55,54 +70,65 @@ run_untracked_gate() {
     start_time=$(date +%s)
     echo "[check-pre-commit] → 门禁 0: untracked 引用检测(R43-α 二轮新增)"
 
-    # 取所有 staged 文件名
-    local staged_files
-    staged_files=$(git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null)
-
-    # 取所有 untracked 文件名
-    local untracked_files
-    untracked_files=$(git -C "$REPO_ROOT" ls-files --others --exclude-standard 2>/dev/null)
-
-    if [[ -z "$untracked_files" ]]; then
-        local elapsed=$(( $(date +%s) - start_time ))
-        echo "[check-pre-commit] ✅ 门禁 0 PASS: 无 untracked 文件 (elapsed=${elapsed}s)"
+    # NUL 分隔，保留中文、空格和换行路径；先捕获 Git 失败再读取列表。
+    local listing_dir
+    listing_dir=$(mktemp -d) || { echo "[check-pre-commit] ❌ 门禁 0 FAIL: 无法创建临时列表" >&2; FAILED=$((FAILED + 1)); return 1; }
+    if ! git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACM -z > "$listing_dir/staged" ||
+       ! git -C "$REPO_ROOT" ls-files --others --exclude-standard -z > "$listing_dir/untracked"; then
+        echo "[check-pre-commit] ❌ 门禁 0 FAIL: Git index/untracked 列表读取失败" >&2
+        rm -rf "$listing_dir"
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+    if [[ ! -s "$listing_dir/untracked" ]]; then
+        rm -rf "$listing_dir"
+        echo "[check-pre-commit] ✅ 门禁 0 PASS: 无 untracked 文件"
         PASSED=$((PASSED + 1))
         return 0
     fi
-
-    # 拼接 untracked 文件名为 regex(纯 basename,不要求完整路径)
     local untracked_names=()
-    while IFS= read -r f; do
-        [[ -n "$f" ]] && untracked_names+=("$f")
-    done <<< "$untracked_files"
+    local f
+    while IFS= read -r -d '' f; do
+        untracked_names+=("$f")
+    done < "$listing_dir/untracked"
 
     # 在 staged 文件内容里 grep 每个 untracked 文件名(basename)
     local hits=()
+    local hit_count=0
     local staged_count=0
-    while IFS= read -r staged_file; do
-        [[ -z "$staged_file" || ! -f "$REPO_ROOT/$staged_file" ]] && continue
+    while IFS= read -r -d '' staged_file; do
+        [[ -z "$staged_file" ]] && continue
         staged_count=$((staged_count + 1))
         # 只查文本类文件(避免 binary 读不出来)
         case "$staged_file" in
             *.md|*.txt|*.java|*.yml|*.yaml|*.xml|*.json|*.sh|*.py|*.js|*.ts|*.tsx|*.vue|*.sql|*.md) ;;
             *) continue ;;
         esac
+        local staged_content
+        if ! staged_content=$(git -C "$REPO_ROOT" show ":$staged_file"); then
+            echo "[check-pre-commit] ❌ 门禁 0 FAIL: 无法读取 index 文件: $staged_file" >&2
+            rm -rf "$listing_dir"
+            FAILED=$((FAILED + 1))
+            return 1
+        fi
         for untracked in "${untracked_names[@]}"; do
             # 用 basename 做引用匹配(避免路径噪音)
             local basename_untracked
-            basename_untracked=$(basename "$untracked")
+            basename_untracked="${untracked##*/}"
             # 跳过 .gitignore / 临时文件
             [[ "$basename_untracked" == ".gitignore" ]] && continue
             [[ "$basename_untracked" == *.swp ]] && continue
-            if grep -qF "$basename_untracked" "$REPO_ROOT/$staged_file" 2>/dev/null; then
+            if [[ "$staged_content" == *"$basename_untracked"* ]]; then
                 hits+=("$staged_file → 引用 untracked 文件 '$untracked'")
+                hit_count=$((hit_count + 1))
             fi
         done
-    done <<< "$staged_files"
+    done < "$listing_dir/staged"
+    rm -rf "$listing_dir"
 
     local elapsed=$(( $(date +%s) - start_time ))
-    if [[ ${#hits[@]} -gt 0 ]]; then
-        echo "[check-pre-commit] ❌ 门禁 0 FAIL: ${#hits[@]} 处 untracked 引用 (elapsed=${elapsed}s)"
+    if [[ "$hit_count" -gt 0 ]]; then
+        echo "[check-pre-commit] ❌ 门禁 0 FAIL: ${hit_count} 处 untracked 引用 (elapsed=${elapsed}s)"
         for hit in "${hits[@]}"; do
             echo "[check-pre-commit]   - $hit"
         done
@@ -134,8 +160,15 @@ run_drift_gate() {
             PASSED=$((PASSED + 1))
         fi
     else
+        # 必须先捕获 $?：下一行的 local 赋值会把 $? 覆盖成 0，
+        # 原写法恒打印「FAIL: exit=0」（自相矛盾，掩盖真实退出码，已误导诊断两轮）。
+        local exit_code=$?
         local elapsed=$(( $(date +%s) - start_time ))
-        echo "[check-pre-commit] ❌ 门禁 1/2 FAIL: exit=$? (elapsed=${elapsed}s)"
+        echo "[check-pre-commit] ❌ 门禁 1/2 FAIL: exit=$exit_code (elapsed=${elapsed}s)"
+        if [[ "$exit_code" -eq 2 ]]; then
+            echo "[check-pre-commit]   提示: exit=2 是环境/脚本错（如 mysql 客户端缺失或 13306 实例未起），非漂移违规"
+            echo "[check-pre-commit]   恢复: bash .codex/ipd-dev/base-services.sh start；详情见 /tmp/cdbd-refined.json"
+        fi
         FAILED=$((FAILED + 1))
     fi
 }
@@ -212,39 +245,10 @@ run_shell_var_gate() {
     local start_time
     start_time=$(date +%s)
     echo "[check-pre-commit] → 门禁 4: shell 变量吞字节 R224(\$VAR 紧跟非 ASCII)"
-    if ! command -v python3 >/dev/null 2>&1; then
-        echo "[check-pre-commit] ⚠ 门禁 4 SKIP: python3 不可用(跳过而非误报 env error)"
-        SKIPPED=$((SKIPPED + 1))
-        return 0
-    fi
-    if [[ ! -f "$REPO_ROOT/scripts/check-shell-var-multibyte.sh" ]]; then
-        echo "[check-pre-commit] ⚠ 门禁 4 SKIP: scripts/check-shell-var-multibyte.sh 不存在"
-        SKIPPED=$((SKIPPED + 1))
-        return 0
-    fi
-
-    local sh_files=()
-    while IFS= read -r p; do
-        [[ -n "$p" ]] && sh_files+=("$p")
-    done < <(git -C "$REPO_ROOT" -c core.quotePath=false diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.sh$' || true)
-
-    local elapsed=$(( $(date +%s) - start_time ))
-    if [[ "${#sh_files[@]}" -eq 0 ]]; then
-        echo "[check-pre-commit] ⚠ 门禁 4 SKIP: staged 无 *.sh (elapsed=${elapsed}s)"
-        SKIPPED=$((SKIPPED + 1))
-        return 0
-    fi
-    local out rc
-    out=$(bash "$REPO_ROOT/scripts/check-shell-var-multibyte.sh" "${sh_files[@]}" 2>&1)
-    rc=$?
-    elapsed=$(( $(date +%s) - start_time ))
-    if [[ "$rc" -eq 0 ]]; then
-        echo "[check-pre-commit] ✅ 门禁 4 PASS: staged ${#sh_files[@]} 个 .sh 无变量吞字节违例 (elapsed=${elapsed}s)"
+    if python3 "$REPO_ROOT/scripts/check-staged-snapshot.py" --be-root "$REPO_ROOT" --shell-only; then
         PASSED=$((PASSED + 1))
     else
-        echo "[check-pre-commit] ❌ 门禁 4 FAIL: exit=$rc (elapsed=${elapsed}s)"
-        echo "$out" | tail -25
-        echo '[check-pre-commit]   处置: 把 $NAME 改写为 ${NAME}（整行注释不计违例）'
+        echo "[check-pre-commit] ❌ 门禁 4 FAIL: indexed shell validation failed"
         FAILED=$((FAILED + 1))
     fi
 }
@@ -291,6 +295,17 @@ run_symlink_gate() {
         FAILED=$((FAILED + 1))
     fi
 }
+
+run_snapshot_gate() {
+    echo "[check-pre-commit] → 暂存快照门禁: BE/FE index 静态合同"
+    if python3 "$REPO_ROOT/scripts/check-staged-snapshot.py" --be-root "$REPO_ROOT" --fe-root "${IPD_FE_REPO_ROOT:-$REPO_ROOT/../ruoyi-ipd-web}"; then
+        PASSED=$((PASSED + 1))
+    else
+        echo "[check-pre-commit] ❌ 暂存快照门禁 FAIL"
+        FAILED=$((FAILED + 1))
+    fi
+}
+run_snapshot_gate
 
 case "$MODE" in
     all)
