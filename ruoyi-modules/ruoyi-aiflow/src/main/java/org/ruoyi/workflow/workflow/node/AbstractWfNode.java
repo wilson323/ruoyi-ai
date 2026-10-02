@@ -130,6 +130,8 @@ public abstract class AbstractWfNode {
         String lastError = null;
         int attempt = 0;
         boolean terminal = false;
+        var componentType = org.ruoyi.workflow.workflow.WfComponentNameEnum.getByName(wfComponent.getName());
+        boolean sideEffect = componentType != null && componentType.hasSideEffect();
         // G5 移植：AiExecutionEngine 退避重试语义（30s/2m/10m × 3 次，第 3 次失败 DEAD 转人工）
         while (attempt < NodeFailurePolicy.MAX_ATTEMPTS && !terminal) {
             attempt++;
@@ -151,7 +153,7 @@ public abstract class AbstractWfNode {
             }
             NodeFailurePolicy.Outcome outcome = NodeFailurePolicy.decide(
                     attempt, lastException == null && (processResult == null || !processResult.isError()), lastError,
-                    NodeFailurePolicy.isNonRetryable(lastException));
+                    sideEffect || NodeFailurePolicy.isNonRetryable(lastException));
             if (outcome == NodeFailurePolicy.Outcome.SUCCESS) {
                 break;
             }
@@ -163,7 +165,9 @@ public abstract class AbstractWfNode {
         }
         if (processResult == null) {
             state.setProcessStatus(NODE_PROCESS_STATUS_FAIL);
-            state.setProcessStatusRemark(attempt >= NodeFailurePolicy.MAX_ATTEMPTS
+            state.setProcessStatusRemark(sideEffect
+                    ? "节点执行结果尚未确认，请先核对业务结果；未自动重试"
+                    : attempt >= NodeFailurePolicy.MAX_ATTEMPTS
                     ? NodeFailurePolicy.deadTrailMessage(node.getTitle(), attempt, lastError)
                     : "process error:" + NodeFailurePolicy.safeError(lastError));
             wfState.setProcessStatus(WORKFLOW_PROCESS_STATUS_FAIL);

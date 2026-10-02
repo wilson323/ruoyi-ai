@@ -21,7 +21,8 @@ public final class WorkflowGraphBuilder {
         Set<String> effects = new HashSet<>();
         for (WorkflowNode node : nodes) {
             components.stream().filter(c -> Objects.equals(c.getId(), node.getWorkflowComponentId()))
-                .filter(c -> Set.of("HttpRequest", "MailSend", "Dalle3", "Tongyiwanx").contains(c.getName()))
+                .filter(c -> WfComponentNameEnum.getByName(c.getName()) != null
+                    && WfComponentNameEnum.getByName(c.getName()).hasSideEffect())
                 .findFirst().ifPresent(c -> effects.add(node.getUuid()));
         }
         WorkflowExecutionPlan plan = new WorkflowExecutionPlan(nodes, edges, start.getUuid(), runner, state, effects);

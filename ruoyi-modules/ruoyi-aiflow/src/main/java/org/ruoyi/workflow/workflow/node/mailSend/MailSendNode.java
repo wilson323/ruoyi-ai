@@ -165,7 +165,7 @@ public class MailSendNode extends AbstractWfNode {
             List<NodeIOData> errorOutputs = new java.util.ArrayList<>();
 
             // 保存失败会话信息且发送驱动消息事件
-            String resultMessage = nodeMessageTemplate + "发送邮箱失败: " + e.getMessage();
+            String resultMessage = nodeMessageTemplate + "邮件发送结果尚未确认，请先核对业务结果";
             notifyAndStoreMessage(wfState, resultMessage);
 
             state.getInputs().stream()
@@ -185,7 +185,8 @@ public class MailSendNode extends AbstractWfNode {
                 );
 
             errorOutputs.add(NodeIOData.createByText("error", "mail", resultMessage));
-            return NodeProcessResult.builder().content(errorOutputs).build();
+            return NodeProcessResult.builder().content(errorOutputs).error(true)
+                .message("邮件发送结果尚未确认，请先核对业务结果").build();
         }
     }
 

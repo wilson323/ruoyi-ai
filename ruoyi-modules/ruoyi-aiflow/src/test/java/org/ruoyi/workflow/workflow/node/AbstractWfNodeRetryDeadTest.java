@@ -100,6 +100,24 @@ class AbstractWfNodeRetryDeadTest {
         return new Object[]{node, sleeps, thrown};
     }
 
+    @Test
+    void sideEffectThrowAndSoftErrorStopAfterOneAttempt() {
+        for (String name : List.of("MailSend", "HttpRequest", "Dalle3", "Tongyiwanx")) {
+            for (StepMode mode : List.of(StepMode.FAIL_EXCEPTION, StepMode.FAIL_SOFT)) {
+                List<Long> sleeps = new ArrayList<>();
+                NodeFailurePolicy.sleeper = sleeps::add;
+                var soft = NodeProcessResult.builder().error(true).message("结果未知").build();
+                ScriptedNode node = new ScriptedNode(List.of(mode, StepMode.SUCCEED), soft);
+                node.getWfComponent().setName(name);
+                assertThrows(RuntimeException.class, () -> node.process(null, null));
+                assertEquals(1, node.calls);
+                assertTrue(sleeps.isEmpty());
+                assertEquals(NODE_PROCESS_STATUS_FAIL, node.getState().getProcessStatus());
+                assertEquals("节点执行结果尚未确认，请先核对业务结果；未自动重试", node.getState().getProcessStatusRemark());
+            }
+        }
+    }
+
     // ---------- 断点 1：无退避重试（G5）→ 移植后按 30s/2m/10m 退避 ----------
 
     @Test
