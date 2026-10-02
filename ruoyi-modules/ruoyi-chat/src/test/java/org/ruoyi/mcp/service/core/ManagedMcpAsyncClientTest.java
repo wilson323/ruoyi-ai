@@ -9,6 +9,21 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ManagedMcpAsyncClientTest {
+    @Test void streamableHttpConstructionDoesNotDependOnContextProviderDiscovery() {
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        try {
+            thread.setContextClassLoader(new ClassLoader(null) { });
+            var wrapper = ManagedMcpAsyncClient.streamableHttp("fixture", "http://127.0.0.1:1/mcp?fixture=1",
+                java.util.Map.of("X-Fixture", "public"), Duration.ofMillis(100));
+            assertThat(wrapper).isNotNull();
+            wrapper.close();
+            wrapper.closeCompletion().block(Duration.ofSeconds(2));
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
+    }
+
     @Test void realClientClosesTransportExactlyOnceAfterCancellation() {
         McpClientTransport transport = mock(McpClientTransport.class);
         when(transport.protocolVersions()).thenReturn(java.util.List.of("2024-11-05"));

@@ -33,6 +33,7 @@ public final class ManagedMcpAsyncClient extends McpAsyncClientWrapper {
             io.modelcontextprotocol.spec.McpClientTransport transport, Duration requestTimeout) {
         return new ManagedMcpAsyncClient(name, io.modelcontextprotocol.client.McpClient.async(transport)
             .requestTimeout(requestTimeout).initializationTimeout(requestTimeout)
+            .jsonSchemaValidator(new io.modelcontextprotocol.json.schema.jackson.JacksonJsonSchemaValidatorSupplier().get())
             .clientInfo(new McpSchema.Implementation("ruoyi-agentscope", "2.0.3"))
             .capabilities(McpSchema.ClientCapabilities.builder().build()).build(), Duration.ofSeconds(1));
     }
@@ -46,6 +47,7 @@ public final class ManagedMcpAsyncClient extends McpAsyncClientWrapper {
         String origin = uri.getScheme() + "://" + uri.getRawAuthority();
         return create(name, io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport
             .builder(origin).endpoint(endpoint)
+            .jsonMapper(new io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapperSupplier().get())
             .customizeRequest(request -> headers.forEach(request::header)).build(), timeout);
     }
 
