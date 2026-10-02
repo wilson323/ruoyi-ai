@@ -7,7 +7,8 @@ import org.ruoyi.agent.manager.TableSchemaManager;
 import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Component;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 
@@ -30,7 +31,7 @@ public class QueryAllTablesTool implements BuiltinToolProvider {
      *
      * @return 包含所有表信息的结果
      */
-    @Tool("Query all tables in the database and return table names and basic information")
+    @Tool(name = "queryAllTables", description = "Query all tables in the database and return table names and basic information", readOnly = true)
     public String queryAllTables() {
         try {
             // 1. 从管理器获取所有允许的表结构信息（内部已包含初始化/缓存逻辑）

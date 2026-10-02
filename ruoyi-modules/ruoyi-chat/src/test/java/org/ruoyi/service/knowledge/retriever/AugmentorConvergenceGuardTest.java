@@ -47,9 +47,9 @@ class AugmentorConvergenceGuardTest {
     @Test
     void factoryIsTheSinglePublicImplementation() {
         boolean hasPublicBuilder = Arrays.stream(MultiKnowledgeAugmentorFactory.class.getMethods())
-            .anyMatch(m -> m.getName().equals("buildMultiKnowledgeAugmentor")
-                && Modifier.isPublic(m.getName().contains("build") ? m.getModifiers() : 0));
-        assertTrue(hasPublicBuilder, "工厂须公开 buildMultiKnowledgeAugmentor 供两调用方委托");
+            .anyMatch(m -> m.getName().equals("augment")
+                && Modifier.isPublic(m.getModifiers()));
+        assertTrue(hasPublicBuilder, "工厂须公开 augment 供两调用方委托");
         // 工厂是 Spring 组件（org.springframework.stereotype.Component 注解在场）
         assertTrue(MultiKnowledgeAugmentorFactory.class
             .isAnnotationPresent(org.springframework.stereotype.Component.class));

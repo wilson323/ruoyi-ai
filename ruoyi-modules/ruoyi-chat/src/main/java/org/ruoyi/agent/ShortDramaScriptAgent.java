@@ -1,20 +1,10 @@
 package org.ruoyi.agent;
 
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
-import dev.langchain4j.service.V;
 import org.ruoyi.domain.bo.shortdrama.ShortDramaScriptResult;
 
-/**
- * 短剧剧本打磨 Agent —— 使用 langchain4j AiServices 结构化输出
- * <p>
- * 框架自动生成 JSON Schema 并强制 LLM 返回符合结构的数据，无需手工 parse。
- *
- * @author ageerle
- */
+/** Business script contract; native structured generation preserves its six fields. */
 public interface ShortDramaScriptAgent {
-
-    @SystemMessage("""
+    String SYSTEM_PROMPT = """
         你是顶级短剧编剧和创意总监。请根据用户的一个创意想法，创作完整的短剧剧本。
 
         【核心原则 - 最高优先级】
@@ -45,7 +35,6 @@ public interface ShortDramaScriptAgent {
         - 必须有清晰的冲突和反转
         - 情绪节奏要有起伏（紧张→舒缓→爆发）
         - 结尾要有记忆点（反转/留白/情感升华）
-        """)
-    @UserMessage("用户期望项目名：{{projectName}}\n用户创意：{{idea}}")
-    ShortDramaScriptResult polish(@V("projectName") String projectName, @V("idea") String idea);
+        """;
+    ShortDramaScriptResult polish(String projectName, String idea);
 }

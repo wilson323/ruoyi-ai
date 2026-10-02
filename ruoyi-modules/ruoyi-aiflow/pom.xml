@@ -120,12 +120,7 @@
             <version>${google-api-client.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-core</artifactId>
-            <version>${langchain4j.version}</version>
-            <scope>compile</scope>
-        </dependency>
+
 
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -134,17 +129,9 @@
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.bsc.langgraph4j</groupId>
-            <artifactId>langgraph4j-core</artifactId>
-            <version>${langgraph4j.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>org.bsc.langgraph4j</groupId>
-            <artifactId>langgraph4j-langchain4j</artifactId>
-            <version>${langgraph4j.version}</version>
-        </dependency>
+
+
 
         <dependency>
             <groupId>org.apache.commons</groupId>

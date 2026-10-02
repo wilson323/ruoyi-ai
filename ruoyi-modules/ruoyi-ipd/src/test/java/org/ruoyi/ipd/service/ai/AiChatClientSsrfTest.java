@@ -7,7 +7,6 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.net.http.HttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -83,7 +82,7 @@ class AiChatClientSsrfTest {
     void dnsRebinding_publicThenLinkLocal_blocked() throws Exception {
         InetAddress publicIp = InetAddress.getByName("1.2.3.4");
         InetAddress linkLocal = InetAddress.getByName("fe80::1");
-        AiChatClient client = new AiChatClient(HttpClient.newHttpClient(), false);
+        AiChatClient client = new AiChatClient("");
         try (var mocked = mockStatic(InetAddress.class, CALLS_REAL_METHODS)) {
             AtomicInteger calls = new AtomicInteger();
             mocked.when(() -> InetAddress.getAllByName(any(String.class)))
@@ -105,7 +104,7 @@ class AiChatClientSsrfTest {
     @DisplayName("R-2 DNS rebinding 公网→公网 IP 一致 → 放行")
     void dnsRebinding_publicThenPublicStable_passed() throws Exception {
         InetAddress publicIp = InetAddress.getByName("1.2.3.4");
-        AiChatClient client = new AiChatClient(HttpClient.newHttpClient(), false);
+        AiChatClient client = new AiChatClient("");
         try (var mocked = mockStatic(InetAddress.class, CALLS_REAL_METHODS)) {
             AtomicInteger calls = new AtomicInteger();
             mocked.when(() -> InetAddress.getAllByName(any(String.class)))

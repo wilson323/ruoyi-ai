@@ -1,9 +1,5 @@
 package org.ruoyi.service.chat.impl.provider;
 
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
@@ -13,7 +9,6 @@ import org.ruoyi.enums.ChatModeType;
 import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.impl.provider.doubao.DoubaoStreamingChatModel;
-import org.ruoyi.service.coding.harness.modelruntime.HarnessModelPolicy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -44,30 +39,23 @@ public class CustomApiServiceImpl implements AbstractChatService {
     /**
      * Doubao 单轮流式截止时间，可通过 Spring Duration 配置
      * {@code chat.custom-api.doubao.timeout=PT10M} 覆盖；默认 10 分钟，
-     * 与 Harness 的 coding.harness.model-timeout.millis 默认 600000ms 协调，
-     * 使长思考回合由 Harness 预算与单轮上限统一控制，而不是在接入层被提前切断。
+     * 与调用侧的长任务总时限（如 coding 30 分钟）保持同一量级，
+     * 使长思考回合由调用侧预算与单轮上限统一控制，而不是在接入层被提前切断。
      * 直接 new 本服务（无 Spring 容器）时该字段初始值同样是正确默认值。
      */
     @Value("${chat.custom-api.doubao.timeout:PT10M}")
     private Duration doubaoTimeout = Duration.ofMinutes(10);
 
     @Override
-    public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
+    public io.agentscope.core.model.Model buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
         String baseUrl = validateConfiguration(chatModelVo);
-        if (HarnessModelPolicy.isDoubao(chatModelVo.getModelName())) {
+        if (isDoubao(chatModelVo.getModelName())) {
             return buildDoubaoStreamingModel(chatModelVo, chatRequest, baseUrl);
         }
-        return OpenAiStreamingChatModel.builder()
-            .baseUrl(baseUrl)
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(chatModelVo.getModelName())
-            .timeout(DEFAULT_TIMEOUT)
-            .listeners(List.of(new MyChatModelListener()))
-            .returnThinking(Boolean.TRUE.equals(chatRequest.getEnableThinking()))
-            .build();
+        return AbstractChatService.super.buildStreamingChatModel(chatModelVo, chatRequest);
     }
 
-    private StreamingChatModel buildDoubaoStreamingModel(ChatModelVo chatModelVo,
+    private io.agentscope.core.model.Model buildDoubaoStreamingModel(ChatModelVo chatModelVo,
                                                          ChatRequest chatRequest,
                                                          String baseUrl) {
         // Doubao 思考等级：默认 high；none 关闭思考（thinking.type=disabled 且不传 reasoning_effort）。
@@ -88,19 +76,34 @@ public class CustomApiServiceImpl implements AbstractChatService {
     }
 
     @Override
-    public ChatModel buildChatModel(ChatModelVo chatModelVo) {
-        String baseUrl = validateConfiguration(chatModelVo);
-        return OpenAiChatModel.builder()
-            .baseUrl(baseUrl)
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(chatModelVo.getModelName())
-            .timeout(DEFAULT_TIMEOUT)
-            .build();
+    public io.agentscope.core.model.Model buildChatModel(ChatModelVo config) {
+        return buildStreamingChatModel(config, null);
+    }
+
+    @jakarta.annotation.PostConstruct
+    public void registerNativeAdapter() {
+        io.agentscope.core.model.ModelRegistry.registerFactory("openai:(?i:doubao).*", (String modelId, io.agentscope.core.model.ModelCreationContext context) -> {
+            var options = context.component(io.agentscope.core.model.GenerateOptions.class);
+            String effort = options == null || options.getReasoningEffort() == null ? "high" : options.getReasoningEffort();
+            return DoubaoStreamingChatModel.builder().endpoint(context.getBaseUrl().replaceAll("/$", "") + "/chat/completions")
+                .apiKey(context.getApiKey()).modelName(modelId.substring(modelId.indexOf(':') + 1))
+                .timeout(doubaoTimeout).reasoningEffort(effort).thinkingEnabled(!"none".equalsIgnoreCase(effort)).build();
+        });
     }
 
     @Override
     public String getProviderName() {
         return ChatModeType.CUSTOM_API.getCode();
+    }
+
+    /**
+     * 是否为字节 Doubao-Seed-Evolving 模型（精确匹配两个官方 Model ID，不参与自动路由）。
+     * 判定内联自 coding.harness.modelruntime.HarnessModelPolicy#isDoubao（自研 harness 随官方化摘链删除，2026-10-02）。
+     */
+    private static boolean isDoubao(String model) {
+        String normalized = model == null ? "" : model.strip();
+        return "doubao-seed-evolving".equals(normalized)
+            || "bytedance/doubao-seed-evolving".equals(normalized);
     }
 
     private String validateConfiguration(ChatModelVo config) {

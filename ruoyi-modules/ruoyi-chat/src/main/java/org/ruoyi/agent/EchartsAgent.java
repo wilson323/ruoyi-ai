@@ -1,18 +1,9 @@
 package org.ruoyi.agent;
 
-import dev.langchain4j.agentic.Agent;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
-import dev.langchain4j.service.V;
-
-/**
- * Text2SQL and Echarts Chart Generation Agent
- * An intelligent assistant that converts natural language queries into SQL,
- * executes database queries, and generates Echarts visualizations.
- */
-public interface EchartsAgent {
-
-    @SystemMessage("""
+/** 同一次原生运行使用的提示规约，不创建第二条执行轨。 */
+public final class EchartsAgent {
+    private EchartsAgent() { }
+    public static final String SYSTEM_PROMPT = """
         You are a data visualization assistant that generates Echarts chart configurations.
 
         CRITICAL OUTPUT REQUIREMENTS:
@@ -80,12 +71,5 @@ public interface EchartsAgent {
         - Always wrap JSON in ```echarts and ``` markers; no functions, JavaScript, HTML or external resources
         - Use proper formatting with indentation
         - This is the expected format for frontend parsing
-        """)
-    @UserMessage("""
-        Generate an Echarts chart for: {{query}}
-
-        IMPORTANT: On success return valid Echarts JSON in an echarts markdown code block. On missing or failed data explain the problem.
-        """)
-    @Agent("Query allowed database tables and draw ECharts in one task. Discovers tables, inspects schemas, executes SQL, then renders real results. For already supplied verified data, use ChartGenerationAgent instead.")
-    String search(@V("query") String query);
+        """;
 }

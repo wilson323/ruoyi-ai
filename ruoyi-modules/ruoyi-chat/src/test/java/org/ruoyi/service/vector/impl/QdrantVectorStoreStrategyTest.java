@@ -1,8 +1,7 @@
 package org.ruoyi.service.vector.impl;
 
 import com.google.common.util.concurrent.Futures;
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.model.output.Response;
+import reactor.core.publisher.Mono;
 import io.grpc.Status;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
@@ -51,7 +50,7 @@ class QdrantVectorStoreStrategyTest {
 
     @BeforeEach
     void setUp() {
-        // Keep the real LangChain4j store/filter conversion and exception wrapping,
+        // Keep the official Qdrant payload/filter conversion and exception wrapping,
         // replacing only the Qdrant transport so no running database is required.
         QdrantGrpcClient.Builder builder = mock(QdrantGrpcClient.Builder.class, RETURNS_SELF);
         grpcFactory = mockStatic(QdrantGrpcClient.class);
@@ -134,8 +133,7 @@ class QdrantVectorStoreStrategyTest {
         when(modelService.selectModelByName(MODEL)).thenReturn(model);
         BaseEmbedModelService embeddingModel = mock(BaseEmbedModelService.class);
         when(embeddingModelFactory.createModel(MODEL)).thenReturn(embeddingModel);
-        when(embeddingModel.embedAll(anyList()))
-            .thenReturn(Response.from(List.of(Embedding.from(new float[] {1, 0}))));
+        when(embeddingModel.embed(any())).thenReturn(Mono.just(new double[] {1, 0}));
         StoreEmbeddingBo input = new StoreEmbeddingBo();
         input.setKid(KID);
         input.setDocId(DOC_ID);
@@ -157,6 +155,16 @@ class QdrantVectorStoreStrategyTest {
                 && DOC_ID.equals(points.get(0).getPayloadOrThrow("doc_id").getStringValue())
                 && FID.equals(points.get(0).getPayloadOrThrow("fid").getStringValue())
                 && "first upload".equals(points.get(0).getPayloadOrThrow("text_segment").getStringValue())));
+    }
+
+    @Test
+    void permissionFilterUsesRequiredMetadataAndVisibilityOr() {
+        var query = new org.ruoyi.domain.bo.vector.QueryVectorBo();
+        query.applyBackendAccessFilters("INTERNAL", 7L, List.of("PROJECT"), null, 9L, List.of());
+        var filter = QdrantVectorStoreStrategy.accessFilter(query);
+        assertEquals(3, filter.getMustCount());
+        assertEquals(List.of("PUBLIC", "INTERNAL"), filter.getMust(1).getField().getMatch().getKeywords().getStringsList());
+        assertEquals(3, filter.getMust(2).getFilter().getShouldCount());
     }
 
     private void assertDeletionFails(DeleteOperation operation, Throwable failure) {

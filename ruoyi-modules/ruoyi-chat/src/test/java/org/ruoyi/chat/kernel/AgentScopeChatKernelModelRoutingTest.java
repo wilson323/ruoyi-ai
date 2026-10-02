@@ -1,6 +1,7 @@
 package org.ruoyi.chat.kernel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -162,11 +163,11 @@ class AgentScopeChatKernelModelRoutingTest {
 
             assertTrue(sink.finished.await(30, TimeUnit.SECONDS), "流应收尾");
             assertTrue(sink.errors.isEmpty(), "不应报错: " + sink.errors);
-            assertEquals(List.of("minimax:m1"), assembler.keys,
+            assertEquals(List.of(KernelModelSelector.providerAlias("minimax") + ":m1"), assembler.keys,
                     "明确选型不得暗中装配默认模型");
             assertEquals("sk-test", assembler.contexts.get(0).getApiKey(), "凭据走 ModelCreationContext");
             assertEquals("https://api.test/v1", assembler.contexts.get(0).getBaseUrl());
-            assertTrue(assembler.track("minimax:m1").await(5, TimeUnit.SECONDS), "请求模型必须真正被路由调用");
+            assertTrue(assembler.track(KernelModelSelector.providerAlias("minimax") + ":m1").await(5, TimeUnit.SECONDS), "请求模型必须真正被路由调用");
         }
     }
 
@@ -179,7 +180,7 @@ class AgentScopeChatKernelModelRoutingTest {
             kernel.stream("P1", "U1", "emp-route", "S-T2a", "hi", null,
                     new KernelModelRequest("m1", "minimax", null, null), first);
             assertTrue(first.finished.await(30, TimeUnit.SECONDS), "第一路应收尾");
-            assertTrue(assembler.track("minimax:m1").await(5, TimeUnit.SECONDS), "m1 应被路由调用");
+            assertTrue(assembler.track(KernelModelSelector.providerAlias("minimax") + ":m1").await(5, TimeUnit.SECONDS), "m1 应被路由调用");
 
             LatchSink second = new LatchSink();
             kernel.stream("P1", "U1", "emp-route", "S-T2b", "hi", null,
@@ -220,7 +221,7 @@ class AgentScopeChatKernelModelRoutingTest {
             assertTrue(sink.finished.await(30, TimeUnit.SECONDS), "流应收尾");
             assertTrue(sink.errors.isEmpty(), "不应报错: " + sink.errors);
             assertEquals(List.of(DEFAULT_KEY), assembler.keys, "7 参路径只装配默认模型（BLANK_REQUEST 留痕）");
-            assertTrue(assembler.track(DEFAULT_KEY).await(5, TimeUnit.SECONDS), "默认模型应被调用");
+            assertTrue(assembler.track(DEFAULT_KEY).await(5, TimeUnit.SECONDS), "未选模型时必须调用配置的默认模型");
         }
     }
 
@@ -258,8 +259,8 @@ class AgentScopeChatKernelModelRoutingTest {
     }
 
     @Test
-    @DisplayName("W2 回滚点：模型路由开关关 → 忽略请求 model 字段（W1 静态 model-id 行为）")
-    void routingSwitchOffIgnoresRequestModel() throws Exception {
+    @DisplayName("原生单轨始终使用明确选定模型")
+    void explicitRequestAlwaysSelectsItsModel() throws Exception {
         RecordingAssembler assembler = new RecordingAssembler();
         try (AgentScopeChatKernel kernel = new AgentScopeChatKernel(
                 new KernelModelSelector(DEFAULT_KEY, assembler),
@@ -272,9 +273,10 @@ class AgentScopeChatKernelModelRoutingTest {
 
             assertTrue(sink.finished.await(30, TimeUnit.SECONDS), "流应收尾");
             assertTrue(sink.errors.isEmpty(), "不应报错: " + sink.errors);
-            assertEquals(List.of(DEFAULT_KEY), assembler.keys,
-                    "路由开关关 → 请求 model 不路由（回退 W1 静态 model-id）");
-            assertTrue(assembler.track(DEFAULT_KEY).await(5, TimeUnit.SECONDS), "默认模型应被调用");
+            assertEquals(List.of(KernelModelSelector.providerAlias("minimax") + ":m1"), assembler.keys,
+                    "明确选型不再被旧路由开关忽略");
+            assertTrue(assembler.track("minimax:m1").await(5, TimeUnit.SECONDS), "明确选择的模型必须被实际调用");
+            assertFalse(assembler.streamed.containsKey(DEFAULT_KEY), "明确选型不能执行默认模型");
         }
     }
 }

@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import org.ruoyi.common.process.ChildProcessSecretSanitizer;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
@@ -83,8 +84,8 @@ public class ExecuteCommandTool implements BuiltinToolProvider {
      * @param command 完整命令行（如 "npm install" 或 "node -v"）
      * @return 命令输出尾部，失败返回 "Error: ..."
      */
-    @Tool(DESCRIPTION)
-    public String executeCommand(String command) {
+    @Tool(name = "executeCommand", description = DESCRIPTION, readOnly = false)
+    public String executeCommand(@ToolParam(name = "command", description = "经策略批准的命令") String command) {
         if (command == null || command.trim().isEmpty()) {
             return "Error: Command cannot be empty";
         }

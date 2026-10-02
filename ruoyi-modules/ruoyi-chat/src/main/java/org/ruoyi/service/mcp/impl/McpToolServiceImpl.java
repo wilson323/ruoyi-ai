@@ -18,7 +18,7 @@ import org.ruoyi.enums.McpToolStatus;
 import org.ruoyi.mapper.mcp.McpToolMapper;
 import org.ruoyi.service.mcp.IMcpToolService;
 import org.ruoyi.mcp.service.core.BuiltinToolRegistry;
-import org.ruoyi.mcp.service.core.LangChain4jMcpToolProviderService;
+import org.ruoyi.mcp.service.core.AgentScopeMcpToolProviderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -37,7 +37,7 @@ import java.util.Map;
 public class McpToolServiceImpl implements IMcpToolService {
 
     private final McpToolMapper baseMapper;
-    private final LangChain4jMcpToolProviderService langChain4jMcpToolProviderService;
+    private final AgentScopeMcpToolProviderService agentScopeMcpToolProviderService;
     private final BuiltinToolRegistry builtinToolRegistry;
 
     @Override
@@ -122,7 +122,7 @@ public class McpToolServiceImpl implements IMcpToolService {
         baseMapper.updateById(tool);
 
         // 如果工具正在使用中，需要刷新连接
-        langChain4jMcpToolProviderService.refreshClient(bo.getId());
+        agentScopeMcpToolProviderService.refreshClient(bo.getId());
 
         return String.valueOf(tool.getId());
     }
@@ -161,8 +161,8 @@ public class McpToolServiceImpl implements IMcpToolService {
             throw new ServiceException("所选工具均为内置工具，不允许删除");
         }
 
-        // 刷新连接（LangChain4j会自动处理）
-        deletableIds.forEach(id -> langChain4jMcpToolProviderService.refreshClient(id));
+        // 撤销旧配置对应的运行连接
+        deletableIds.forEach(id -> agentScopeMcpToolProviderService.refreshClient(id));
         baseMapper.deleteBatchIds(deletableIds);
     }
 
@@ -183,7 +183,7 @@ public class McpToolServiceImpl implements IMcpToolService {
         baseMapper.updateById(tool);
 
         // 刷新连接
-        langChain4jMcpToolProviderService.refreshClient(id);
+        agentScopeMcpToolProviderService.refreshClient(id);
     }
 
     @Override
@@ -239,7 +239,7 @@ public class McpToolServiceImpl implements IMcpToolService {
      */
     private McpToolTestResult testMcpTool(McpTool tool) {
         try {
-            boolean isHealthy = langChain4jMcpToolProviderService.checkToolHealth(tool.getId());
+            boolean isHealthy = agentScopeMcpToolProviderService.checkToolHealth(tool.getId());
             if (isHealthy) {
                 return McpToolTestResult.success(
                     String.format("MCP工具 [%s] 连接测试成功", tool.getName()),

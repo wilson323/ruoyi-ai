@@ -44,14 +44,16 @@ class MinimaxEmbeddingProviderTest {
 
     @Test
     void configure_setsModelConfig() {
-        ChatModelVo config = new ChatModelVo();
+        ChatModelVo config = org.mockito.Mockito.spy(new ChatModelVo());
         config.setApiHost("https://api.minimax.io/v1");
-        config.setApiKey("test-api-key");
+        config.setProviderCode("minimax");
+        org.mockito.Mockito.doReturn("fixture-key").when(config).resolveApiKeyForConfiguredEndpoint("minimax");
         config.setModelName("embo-01");
         config.setModelDimension(1536);
 
         provider.configure(config);
-        // configure sets internal state; verify no exception thrown
-        assertNotNull(provider);
+        assertEquals("embo-01", provider.getModelName());
+        assertEquals(1536, provider.getDimensions());
+        org.mockito.Mockito.verify(config).resolveApiKeyForConfiguredEndpoint("minimax");
     }
 }

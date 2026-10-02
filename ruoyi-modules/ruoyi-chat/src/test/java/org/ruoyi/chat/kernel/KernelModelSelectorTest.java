@@ -51,6 +51,14 @@ class KernelModelSelectorTest {
         assertFalse(first.toString().contains("https://a.test/v1"));
     }
 
+    @Test
+    void ollamaTagIsPartOfModelName() {
+        assertEquals("ollama:qwen3:0.6b", AgentScopeModelFactory.registryKey(
+            new KernelModelRequest("qwen3:0.6b", "ollama", null, null)));
+        assertEquals("ollama:qwen3:0.6b", AgentScopeModelFactory.registryKey(
+            new KernelModelRequest("ollama:qwen3:0.6b", "ollama", null, null)));
+    }
+
     /** 记录型装配缝：记录 (key, context) 并按脚本返回/抛错。 */
     private static final class RecordingAssembler implements KernelModelSelector.ModelAssembler {
 

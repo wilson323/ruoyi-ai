@@ -1,6 +1,6 @@
 package org.ruoyi.service.embed;
 
-import dev.langchain4j.model.embedding.EmbeddingModel;
+import io.agentscope.core.embedding.EmbeddingModel;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ModalityType;
 

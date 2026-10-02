@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,8 +46,7 @@ import org.ruoyi.common.sse.utils.SseMessageUtils;
 import org.ruoyi.common.trace.config.TraceProperties;
 import org.ruoyi.common.trace.service.TraceRecordService;
 import org.ruoyi.domain.vo.agent.AgentVo;
-import org.ruoyi.factory.ChatServiceFactory;
-import org.ruoyi.mcp.service.core.LangChain4jMcpToolProviderService;
+import org.ruoyi.mcp.service.core.AgentScopeMcpToolProviderService;
 import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
@@ -112,9 +112,12 @@ class ChatServiceFacadeKernelDelegateTest {
     private ChatServiceFacade newFacade(IChatMessageService chatMessageService,
                                         KnowledgeAccessGate accessGate) {
         when(chatMessageService.insertByBo(any())).thenReturn(true);
+        AgentScopeMcpToolProviderService provider = mock(AgentScopeMcpToolProviderService.class);
+        AgentScopeMcpToolProviderService.ToolSession tools = mock(AgentScopeMcpToolProviderService.ToolSession.class);
+        when(tools.toolkit()).thenReturn(new io.agentscope.core.tool.Toolkit());
+        when(provider.createSession(org.mockito.ArgumentMatchers.nullable(List.class))).thenReturn(tools);
         return new ChatServiceFacade(
             mock(IChatModelService.class),
-            mock(ChatServiceFactory.class),
             accessGate,
             mock(MultiKnowledgeAugmentorFactory.class),
             mock(SseEmitterManager.class),
@@ -122,7 +125,7 @@ class ChatServiceFacadeKernelDelegateTest {
             mock(ChatSessionOwnershipGuard.class),
             mock(IWorkFlowStarterService.class),
             mock(IAgentService.class),
-            mock(LangChain4jMcpToolProviderService.class),
+            provider,
             mock(TraceRecordService.class),
             new TraceProperties());
     }
@@ -149,9 +152,9 @@ class ChatServiceFacadeKernelDelegateTest {
         KernelChatSink[] captured = new KernelChatSink[1];
         streamDisposable = mock(Disposable.class);
         doAnswer(invocation -> {
-            captured[0] = invocation.getArgument(7);
+            captured[0] = invocation.getArgument(10);
             return streamDisposable;
-        }).when(kernel).stream(any(), any(), any(), any(), any(), any(), any(), any());
+        }).when(kernel).stream(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         method.invoke(facade, request, agentVo, null);
         return captured[0];
     }
@@ -173,6 +176,27 @@ class ChatServiceFacadeKernelDelegateTest {
     }
 
     @Test
+    void nativeFinalReplacementIsWhatGetsPersisted() throws Exception {
+        IChatMessageService messages = mock(IChatMessageService.class);
+        ChatServiceFacade facade = newFacade(messages);
+        AgentScopeChatKernel kernel = mock(AgentScopeChatKernel.class);
+        injectKernel(facade, kernel);
+        KernelChatSink sink = invokeHandleKernelChat(facade, newRequest("hello"), null, kernel);
+        sink.onContent("old reply");
+        sink.onResult(io.agentscope.core.message.Msg.builder()
+            .role(io.agentscope.core.message.MsgRole.ASSISTANT).textContent("old reply")
+            .metadata(java.util.Map.of("replacementText", "replacement reply")).build());
+        sink.onComplete();
+        verify(messages).insertByBo(argThat(row -> "replacement reply".equals(row.getContent())));
+        var frames = capturedFrames();
+        assertEquals(3, frames.size());
+        assertEquals("content", frames.get(1).getEventDto().getEvent());
+        assertEquals("replacement reply", frames.get(1).getEventDto().getContent());
+        assertEquals(Boolean.TRUE, frames.get(1).getEventDto().getReplace());
+        assertEquals("done", frames.get(2).getEventDto().getEvent());
+    }
+
+    @Test
     @DisplayName("委托帧映射镜像既有契约：content/reasoning/mcp_tool/done + 助手消息 + completeConnection 恰一次")
     void kernelDelegateMapsFramesToSseContract() throws Exception {
         IChatMessageService chatMessageService = mock(IChatMessageService.class);
@@ -186,8 +210,8 @@ class ChatServiceFacadeKernelDelegateTest {
         // 四维收口：projectId=chat 折叠段、无 agentId 折叠 chat-model、systemPrompt=null
         verify(kernel).stream(
             eq("chat"), eq(String.valueOf(USER_ID)), eq("chat-model"), eq(SESSION_KEY),
-            eq("你好"), argThat(s -> s == null),
-            argThat(m -> m != null && "MiniMax-M3".equals(m.modelName())), any());
+            eq("你好"), argThat(s -> s != null && s.contains("只有本次登记的工具")),
+            argThat(m -> m != null && "MiniMax-M3".equals(m.modelName())), any(), any(), any(), any());
 
         sink.onContent("你好，");
         sink.onContent("世界");
@@ -285,8 +309,8 @@ class ChatServiceFacadeKernelDelegateTest {
 
         verify(kernel).stream(
             eq("chat"), eq(String.valueOf(USER_ID)), eq("7"), eq(SESSION_KEY),
-            eq("执行任务"), eq("你是研发助手"),
-            argThat(m -> m != null && "MiniMax-M3".equals(m.modelName())), any());
+            eq("执行任务"), argThat(s -> s.startsWith("你是研发助手")),
+            argThat(m -> m != null && "MiniMax-M3".equals(m.modelName())), any(), any(), any(), any());
     }
 
     @Test
@@ -303,8 +327,8 @@ class ChatServiceFacadeKernelDelegateTest {
 
         verify(kernel).stream(
             eq("chat"), argThat(s -> s == null), eq("chat-model"), eq(SESSION_KEY),
-            eq("匿名提问"), argThat(s -> s == null),
-            argThat(m -> m != null && "MiniMax-M3".equals(m.modelName())), any());
+            eq("匿名提问"), argThat(s -> s != null && s.contains("只有本次登记的工具")),
+            argThat(m -> m != null && "MiniMax-M3".equals(m.modelName())), any(), any(), any(), any());
     }
 
     @Test
@@ -383,7 +407,7 @@ class ChatServiceFacadeKernelDelegateTest {
 
         ArgumentCaptor<KernelModelRequest> modelCaptor = ArgumentCaptor.forClass(KernelModelRequest.class);
         verify(kernel).stream(eq("chat"), eq(String.valueOf(USER_ID)), eq("chat-model"), eq(SESSION_KEY),
-                eq("换模型"), argThat(s -> s == null), modelCaptor.capture(), any());
+                eq("换模型"), argThat(s -> s != null && s.contains("只有本次登记的工具")), modelCaptor.capture(), any(), any(), any(), any());
         assertEquals("glm-4", modelCaptor.getValue().modelName(), "请求 model 字段路由进内核");
         assertEquals("zhipu", modelCaptor.getValue().providerCode(), "厂商码随模型配置透传");
         assertEquals("sk-vo", modelCaptor.getValue().apiKey(), "凭据走 ModelCreationContext 落位");
@@ -407,13 +431,21 @@ class ChatServiceFacadeKernelDelegateTest {
     }
 
     @Test
-    @DisplayName("12 参构造面不变：新增内核字段为可选注入，不进构造器（哨兵复证）")
-    void twelveArgConstructorStaysUnchanged() throws Exception {
-        ChatServiceFacade facade = newFacade(mock(IChatMessageService.class));
+    @DisplayName("单一原生内核必须注入，构造器仅保留实际业务依赖")
+    void nativeKernelInjectionIsRequiredAndLegacyDependencyRemoved() throws Exception {
+        var constructors = ChatServiceFacade.class.getDeclaredConstructors();
+        assertEquals(1, constructors.length, "Spring使用唯一业务依赖构造器");
+        assertEquals(11, constructors[0].getParameterCount());
+        assertTrue(java.util.Arrays.stream(constructors[0].getParameterTypes())
+            .noneMatch(type -> "ChatServiceFactory".equals(type.getSimpleName())));
         Field field = ChatServiceFacade.class.getDeclaredField("agentScopeChatKernel");
+        var injection = field.getAnnotation(org.springframework.beans.factory.annotation.Autowired.class);
+        assertNotNull(injection);
+        assertTrue(injection.required(), "缺少原生内核时禁止装配旧执行回退");
+        ChatServiceFacade facade = newFacade(mock(IChatMessageService.class));
+        AgentScopeChatKernel kernel = mock(AgentScopeChatKernel.class);
+        injectKernel(facade, kernel);
         field.setAccessible(true);
-        assertNull(field.get(facade), "内核委托为可选注入字段，默认 null（回滚点=bean 缺席）");
-        assertEquals(12, ChatServiceFacade.class.getDeclaredConstructors()[0].getParameterCount(),
-            "构造器参数数不得变化（ChatServiceFacadeKnowledgeAccessTest 直接 new 12 参）");
+        assertEquals(kernel, field.get(facade));
     }
 }

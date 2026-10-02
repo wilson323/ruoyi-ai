@@ -46,7 +46,9 @@ public final class KernelEventFrames {
         if (event == null || sink == null) {
             return;
         }
-        if (event instanceof TextBlockDeltaEvent text) {
+        if (event instanceof io.agentscope.core.event.AgentResultEvent result) {
+            sink.onResult(result.getResult());
+        } else if (event instanceof TextBlockDeltaEvent text) {
             sink.onContent(text.getDelta());
         } else if (event instanceof ThinkingBlockDeltaEvent thinking) {
             sink.onReasoning(thinking.getDelta());

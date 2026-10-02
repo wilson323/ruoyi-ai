@@ -2,13 +2,13 @@ package org.ruoyi.workflow.workflow;
 
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollUtil;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.model.ChatResponse;
+import org.ruoyi.common.chat.service.chat.ChatResponseHandler;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
-import org.bsc.langgraph4j.state.AgentState;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.service.chat.IChatService;
 import org.ruoyi.common.chat.service.image.IImageGenerationService;
@@ -99,33 +99,29 @@ public class WorkflowUtil{
         chatRequest.setModel(modelName);
         chatRequest.setContent(prompt);
 
-        // 构建流式生成器
-        StreamingChatGenerator<AgentState> streamingGenerator = StreamingChatGenerator.builder()
-            .mapResult(response -> {
-                String responseTxt = response.aiMessage().text();
-                logCompletionMetadata(responseTxt);
-                // 传递所有输入数据 + 添加 LLM 输出
-                wfState.getNodeStateByNodeUuid(node.getUuid()).ifPresent(item -> {
-                    List<NodeIOData> outputs = new ArrayList<>(item.getInputs());
-                    NodeIOData output = NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", responseTxt);
-                    outputs.add(output);
-                    item.setOutputs(outputs);
-                });
-
-                return Map.of("completeResult", response.aiMessage().text());
-            })
-            .startingNode(node.getUuid())
-            .startingState(state)
-            .build();
-
-        // 获取 StreamingChatGenerator 的 handler，用于处理流式响应
-        StreamingChatResponseHandler workflowHandler = streamingGenerator.handler();
-
-        // 调用 Chat 服务，传入 workflow 的 handler
-        // 消息会同时发送到 SSE（前端）和 workflowHandler（工作流处理）
-        chatService.chat(chatRequest, workflowHandler);
-
+        var streamingGenerator = new WorkflowNodeStream();
+        // 先登记再调用：同步回调和异步回调采用同一节点状态，不依赖 completedNodes 时序。
         wfState.getNodeToStreamingGenerator().put(node.getUuid(), streamingGenerator);
+        ChatResponseHandler workflowHandler = new ChatResponseHandler() {
+            @Override public void onPartialResponse(String token) {
+                streamingGenerator.chunk(token);
+            }
+            @Override public void onCompleteResponse(ChatResponse response) {
+                try {
+                    String responseTxt = response.getContent().stream().filter(TextBlock.class::isInstance)
+                        .map(TextBlock.class::cast).map(TextBlock::getText).collect(java.util.stream.Collectors.joining());
+                    logCompletionMetadata(responseTxt);
+                    streamingGenerator.complete(() -> {
+                        List<NodeIOData> outputs = new ArrayList<>(state.getInputs());
+                        outputs.add(NodeIOData.createByText(DEFAULT_OUTPUT_PARAM_NAME, "", responseTxt));
+                        state.setOutputs(outputs);
+                    });
+                } catch (Exception error) { onError(error); }
+            }
+            @Override public void onError(Throwable error) { streamingGenerator.fail(error); }
+        };
+        try { chatService.chat(chatRequest, workflowHandler); }
+        catch (RuntimeException error) { streamingGenerator.fail(error); throw error; }
     }
 
     /**
@@ -134,7 +130,7 @@ public class WorkflowUtil{
      * @param node        节点
      * @param userMessage 用户信息
      */
-    private void addUserMessage(WorkflowNode node, List<NodeIOData> userMessage, List<ChatMessage> messages) {
+    private void addUserMessage(WorkflowNode node, List<NodeIOData> userMessage, List<Msg> messages) {
         if (CollUtil.isEmpty(userMessage)) {
             return;
         }
@@ -142,7 +138,7 @@ public class WorkflowUtil{
         List<WfNodeParamRef> refInputs = nodeInputConfig.getRefInputs();
         Set<String> nameSet = CollStreamUtil.toSet(refInputs, WfNodeParamRef::getName);
         // 构建消息列表
-        List<UserMessage> messageList = buildMessageList(userMessage, nameSet);
+        List<Msg> messageList = buildMessageList(userMessage, nameSet);
         // 如果没有找到匹配的消息，尝试使用input字段
         if (CollUtil.isEmpty(messageList)) {
             messageList = buildMessageList(userMessage, Set.of("input"));
@@ -157,15 +153,15 @@ public class WorkflowUtil{
      * @param value
      * @return
      */
-    private UserMessage getMessage(String role, String value) {
+    private Msg getMessage(String role, String value) {
         logMessageMetadata(role, value);
-        return new UserMessage(value);
+        return Msg.builder().role(MsgRole.USER).textContent(value).build();
     }
 
     /**
      * 构建消息列表
      */
-    private List<UserMessage> buildMessageList(List<NodeIOData> userMessage, Set<String> nameSet) {
+    private List<Msg> buildMessageList(List<NodeIOData> userMessage, Set<String> nameSet) {
         return userMessage.stream()
             .filter(item -> item != null && item.getName() != null)
             // 兼容默认输出参数的人机交互

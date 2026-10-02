@@ -42,6 +42,9 @@ public interface KernelChatSink {
      */
     void onError(String code, String message);
 
+    /** 同一次原生事件流的最终消息；默认空实现保持已有传输适配器兼容。 */
+    default void onResult(io.agentscope.core.message.Msg result) { }
+
     /** 流正常结束（done 帧 + 连接收尾）。 */
     void onComplete();
 }

@@ -109,6 +109,68 @@ class KernelGovernedToolTest {
     }
 
     @Test
+    void errorResultIsSanitizedAndConcurrencyDeclarationPreserved() {
+        io.agentscope.core.tool.ToolBase delegate = org.mockito.Mockito.mock(io.agentscope.core.tool.ToolBase.class);
+        org.mockito.Mockito.when(delegate.getName()).thenReturn("note_read");
+        org.mockito.Mockito.when(delegate.getDescription()).thenReturn("note lookup");
+        org.mockito.Mockito.when(delegate.getParameters()).thenReturn(Map.of("type", "object"));
+        org.mockito.Mockito.when(delegate.isReadOnly()).thenReturn(true);
+        org.mockito.Mockito.when(delegate.isConcurrencySafe()).thenReturn(false);
+        org.mockito.Mockito.when(delegate.callAsync(org.mockito.ArgumentMatchers.any()))
+            .thenReturn(Mono.just(ToolResultBlock.error("secret-marker")));
+        KernelGovernedTool tool = KernelGovernedTool.wrap(delegate,
+            governance(HarnessPermissionMode.READ_ONLY, READ_TOOL));
+        Map<String, Object> input = Map.of();
+        tool.checkPermissions(input, null).block();
+        ToolResultBlock result = tool.callAsync(param("safe-1", "note_read", input)).block();
+        assertEquals(false, tool.isConcurrencySafe());
+        assertEquals(ToolResultState.ERROR, result.getState());
+        assertEquals("safe-1", result.getId());
+        assertEquals("[ERROR] 工具执行失败，请稍后重试", outputText(result));
+    }
+
+    @Test
+    void returnedErrorIsNotSettledAsSuccess() {
+        KernelToolGovernance gov = governance(HarnessPermissionMode.READ_ONLY, READ_TOOL);
+        AgentTool delegate = org.mockito.Mockito.mock(AgentTool.class);
+        org.mockito.Mockito.when(delegate.getName()).thenReturn("note_read");
+        org.mockito.Mockito.when(delegate.getDescription()).thenReturn("read");
+        org.mockito.Mockito.when(delegate.getParameters()).thenReturn(Map.of("type", "object"));
+        org.mockito.Mockito.when(delegate.isReadOnly()).thenReturn(true);
+        org.mockito.Mockito.when(delegate.callAsync(org.mockito.ArgumentMatchers.any()))
+            .thenReturn(Mono.just(ToolResultBlock.error("unavailable")));
+        KernelGovernedTool tool = KernelGovernedTool.wrap(delegate, gov);
+        Map<String, Object> input = Map.of("path", "a.md");
+        tool.checkPermissions(input, null).block();
+        assertEquals(ToolResultState.ERROR, tool.callAsync(param("error-1", "note_read", input)).block().getState());
+        assertEquals(HarnessToolEffectStatus.ABANDONED, gov.ledger().entries().get(0).status());
+        assertEquals(1, gov.ledger().writeCount());
+    }
+
+    @Test
+    void emptyResultAndSynchronousThrowAreSettledAsFailures() {
+        for (boolean empty : List.of(true, false)) {
+            KernelToolGovernance gov = governance(HarnessPermissionMode.READ_ONLY, READ_TOOL);
+            AgentTool delegate = org.mockito.Mockito.mock(AgentTool.class);
+            org.mockito.Mockito.when(delegate.getName()).thenReturn("note_read");
+            org.mockito.Mockito.when(delegate.getDescription()).thenReturn("read");
+            org.mockito.Mockito.when(delegate.getParameters()).thenReturn(Map.of("type", "object"));
+            org.mockito.Mockito.when(delegate.isReadOnly()).thenReturn(true);
+            org.mockito.Mockito.when(delegate.callAsync(org.mockito.ArgumentMatchers.any())).thenAnswer(call -> {
+                if (empty) { return Mono.empty(); }
+                throw new IllegalStateException("private error");
+            });
+            KernelGovernedTool tool = KernelGovernedTool.wrap(delegate, gov);
+            Map<String, Object> input = Map.of("path", "a.md");
+            tool.checkPermissions(input, null).block();
+            ToolResultBlock result = tool.callAsync(param("failure-1", "note_read", input)).block();
+            assertEquals(ToolResultState.ERROR, result.getState());
+            assertEquals(HarnessToolEffectStatus.ABANDONED, gov.ledger().entries().get(0).status());
+            assertTrue(!outputText(result).contains("private error"));
+        }
+    }
+
+    @Test
     @DisplayName("checkPermissions 原生拦截点：三态映射（ALLOW/ASK/DENY）各恰一事件/一账本写")
     void checkPermissionsMapsThreeStates() {
         KernelToolGovernance readGov = governance(HarnessPermissionMode.READ_ONLY, READ_TOOL);

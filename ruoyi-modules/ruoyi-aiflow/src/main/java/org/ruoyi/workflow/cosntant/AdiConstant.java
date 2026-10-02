@@ -1,6 +1,5 @@
 package org.ruoyi.workflow.cosntant;
 
-import dev.langchain4j.model.input.PromptTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
@@ -46,7 +45,7 @@ public class AdiConstant {
     public static final String OPENAI_CREATE_IMAGE_RESP_FORMATS_URL = "url";
     public static final List<String> DALLE2_CREATE_IMAGE_SIZES = List.of("256x256", "512x512", "1024x1024");
     public static final List<String> DALLE3_CREATE_IMAGE_SIZES = List.of("1024x1024", "1024x1792", "1792x1024");
-    public static final PromptTemplate PROMPT_EXTRA_TEMPLATE = PromptTemplate.from("""
+    public static final String PROMPT_EXTRA_TEMPLATE = """
             ## 要求
             尽可能准确地回答用户的问题
 
@@ -55,8 +54,8 @@ public class AdiConstant {
 
             ## 注意
             {{extraInfo}}
-            """);
-    public static final PromptTemplate PROMPT_INFO_TEMPLATE = PromptTemplate.from("""
+            """;
+    public static final String PROMPT_INFO_TEMPLATE = """
             ## 要求
             根据已知信息，尽可能准确地回答用户的问题
 
@@ -68,11 +67,11 @@ public class AdiConstant {
 
             ## 注意
             回答的内容不能让用户感知到已知信息的存在
-            """);
+            """;
     /**
      * 可能的 extraInfo 如适用转音频的要求： 2. 回答的内容要尽量口语化，以方便将内容转成语音
      */
-    public static final PromptTemplate PROMPT_INFO_EXTRA_TEMPLATE = PromptTemplate.from("""
+    public static final String PROMPT_INFO_EXTRA_TEMPLATE = """
             ## 要求
             根据已知信息，尽可能准确地回答用户的问题
 
@@ -85,7 +84,7 @@ public class AdiConstant {
             ## 注意
             1. 回答的内容不能让用户感知到已知信息的存在
             {{extraInfo}}
-            """);
+            """;
     public static final String PROMPT_EXTRA_AUDIO = "2. 回答的内容要尽量口语化，以方便将内容转成语音";
     public static final Double LLM_TEMPERATURE_DEFAULT = 0.7D;
     public static final Double RAG_RETRIEVE_MIN_SCORE_DEFAULT = 0.6D;

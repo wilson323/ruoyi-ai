@@ -1,7 +1,7 @@
 package org.ruoyi.service.chat.impl;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.UserMessage;
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
 import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatMessageVo;
 import org.ruoyi.common.chat.entity.chat.ChatMessage;
@@ -146,20 +146,22 @@ public class ChatMessageServiceImpl implements IChatMessageService {
      * @return 消息DTO列表
      */
     @Override
-    public List<dev.langchain4j.data.message.ChatMessage> getMessagesBySessionId(Long sessionId) {
+    public List<Msg> getMessagesBySessionId(Long sessionId) {
         if (sessionId == null) {
             return new java.util.ArrayList<>();
         }
 
-        List<dev.langchain4j.data.message.ChatMessage> chatMessageList = new ArrayList<>();
+        List<Msg> chatMessageList = new ArrayList<>();
         ChatMessageBo bo = new ChatMessageBo();
         bo.setSessionId(sessionId);
         List<ChatMessageVo> voList = queryList(bo);
 
         for (ChatMessageVo chatMessageVo : voList) {
             switch (chatMessageVo.getRole()) {
-                case "user" -> chatMessageList.add(UserMessage.from(chatMessageVo.getContent()));
-                case "assistant" -> chatMessageList.add(AiMessage.from(chatMessageVo.getContent()));
+                case "user" -> chatMessageList.add(Msg.builder().role(MsgRole.USER).textContent(chatMessageVo.getContent())
+                    .metadata(java.util.Map.of("chatMessageId", String.valueOf(chatMessageVo.getId()))).build());
+                case "assistant" -> chatMessageList.add(Msg.builder().role(MsgRole.ASSISTANT).textContent(chatMessageVo.getContent())
+                    .metadata(java.util.Map.of("chatMessageId", String.valueOf(chatMessageVo.getId()))).build());
             }
         }
         return chatMessageList;

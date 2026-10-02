@@ -1,88 +1,88 @@
 package org.ruoyi.service.knowledge.retriever;
 
-import dev.langchain4j.rag.RetrievalAugmentor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
+import org.ruoyi.common.core.exception.ServiceException;
+import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo;
 import org.ruoyi.service.knowledge.IKnowledgeInfoService;
+import org.ruoyi.service.knowledge.KnowledgeEmbedEndpoint;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
-
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-/**
- * B1 四刀之四（C2 收敛）：MultiKnowledgeAugmentorFactory 行为直测。
- * <p>
- * 收敛前 ChatServiceFacade 与 MpChatWebSocketHandler 各持一份同构
- * buildMultiKnowledgeAugmentor（ws 版为顺序检索、无去重无限界，弱于门面版），
- * 统一为工厂单一实现（并行+去重+限界）。kid 级可见性不在工厂内重复裁决——
- * 由调用方收集 kids 时经 KnowledgeAccessGate（B0）。
- * 空态：无库/库不存在/模型未配置 → 返回 null（调用方按无增强回退原文）。
- */
 @Tag("dev")
 class MultiKnowledgeAugmentorFactoryTest {
+    private final IKnowledgeInfoService info = mock(IKnowledgeInfoService.class);
+    private final IChatModelService models = mock(IChatModelService.class);
+    private final KnowledgeRetrievalService retrieval = mock(KnowledgeRetrievalService.class);
+    private final MultiKnowledgeAugmentorFactory factory = new MultiKnowledgeAugmentorFactory(info, models, retrieval);
 
-    private final IKnowledgeInfoService infoService = mock(IKnowledgeInfoService.class);
-    private final IChatModelService chatModelService = mock(IChatModelService.class);
-
-    private MultiKnowledgeAugmentorFactory factory() {
-        return new MultiKnowledgeAugmentorFactory(infoService, chatModelService,
-            mock(KnowledgeRetrievalService.class));
-    }
-
-    private static KnowledgeInfoVo kb(Long id, String embeddingModel) {
-        KnowledgeInfoVo vo = new KnowledgeInfoVo();
-        vo.setId(id);
-        vo.setEmbeddingModel(embeddingModel);
-        return vo;
+    private KnowledgeInfoVo kb(long id) {
+        KnowledgeInfoVo kb = new KnowledgeInfoVo();
+        kb.setId(id);
+        return kb;
     }
 
     @Test
-    void nullOrEmptyKidsReturnNull() {
-        assertNull(factory().buildMultiKnowledgeAugmentor(null));
-        assertNull(factory().buildMultiKnowledgeAugmentor(List.of()));
+    void noSelectionPreservesInput() {
+        assertEquals("input", factory.augment(null, "input", null));
+        assertEquals("input", factory.augment(List.of(), "input", null));
+        verifyNoInteractions(info, models, retrieval);
     }
 
     @Test
-    void missingKnowledgeOrModelDegradesToNull() {
-        // 空态：库不存在 / 向量模型未配置 → 无可用检索器 → null（不抛错不增强）
-        when(infoService.queryById(1L)).thenReturn(null);
-        when(infoService.queryById(2L)).thenReturn(kb(2L, "emb-v3"));
-        when(chatModelService.selectModelByName("emb-v3")).thenReturn(null);
-        assertNull(factory().buildMultiKnowledgeAugmentor(List.of(1L)));
-        assertNull(factory().buildMultiKnowledgeAugmentor(List.of(2L)));
+    void missingLibraryOrModelIsFailureNotNoHit() {
+        assertThrows(ServiceException.class, () -> factory.augment(List.of(1L), "input", null));
+        var kb = kb(2L);
+        kb.setEmbeddingModel("missing");
+        when(info.queryById(2L)).thenReturn(kb);
+        assertThrows(ServiceException.class, () -> factory.augment(List.of(2L), "input", null));
     }
 
     @Test
-    void singleKnowledgeBuildsAugmentor() {
-        when(infoService.queryById(1L)).thenReturn(kb(1L, "emb-v3"));
-        when(chatModelService.selectModelByName("emb-v3")).thenReturn(new ChatModelVo());
-        RetrievalAugmentor augmentor = factory().buildMultiKnowledgeAugmentor(List.of(1L));
-        assertNotNull(augmentor, "单库应直接构建 DefaultRetrievalAugmentor+CustomVectorRetriever");
+    void builtinPreservesSourceAndQueryConfigurationAndDeduplicates() {
+        var kb = kb(1L);
+        kb.setRetrieveLimit(7);
+        when(info.queryById(1L)).thenReturn(kb);
+        var hit = KnowledgeRetrievalVo.builder().id("fragment").docId("document").sourceName("original.pdf")
+            .content("事实原文").score(0.8).build();
+        when(retrieval.retrieve(any(QueryVectorBo.class))).thenReturn(List.of(hit, hit));
+        String result = factory.augment(List.of(1L, 1L), "input", "session");
+        assertTrue(result.contains("original.pdf"));
+        assertTrue(result.contains("document"));
+        assertEquals(1, result.split("事实原文", -1).length - 1);
+        verify(models, never()).selectModelByName(anyString());
+        verify(retrieval).retrieve(argThat(bo -> bo.getMaxResults() == 7
+            && KnowledgeEmbedEndpoint.MODEL_NAME.equals(bo.getEmbeddingModelName())
+            && KnowledgeEmbedEndpoint.BASE_URL.equals(bo.getBaseUrl())));
     }
 
     @Test
-    void multipleKnowledgeBuildsCompositeAugmentor() {
-        when(infoService.queryById(1L)).thenReturn(kb(1L, "emb-v3"));
-        when(infoService.queryById(2L)).thenReturn(kb(2L, "emb-v4"));
-        when(chatModelService.selectModelByName("emb-v3")).thenReturn(new ChatModelVo());
-        when(chatModelService.selectModelByName("emb-v4")).thenReturn(new ChatModelVo());
-        RetrievalAugmentor augmentor = factory().buildMultiKnowledgeAugmentor(List.of(1L, 2L));
-        assertNotNull(augmentor, "多库应经 CompositeContentRetriever（并行+去重+限界）构建");
+    void mixedFailureIsVisibleAndSuccessfulNoHitRemainsNoHit() {
+        when(info.queryById(1L)).thenThrow(new IllegalStateException("db"));
+        when(info.queryById(2L)).thenReturn(kb(2L));
+        when(retrieval.retrieve(any(QueryVectorBo.class))).thenReturn(List.of());
+        assertTrue(factory.augment(List.of(1L, 2L), "input", null).contains("知识检索部分失败"));
+        assertEquals("input", factory.augment(List.of(2L), "input", null));
+        when(retrieval.retrieve(any(QueryVectorBo.class))).thenThrow(new IllegalStateException("vector"));
+        assertThrows(ServiceException.class, () -> factory.augment(List.of(2L), "input", null));
     }
 
     @Test
-    void buildFailureOfOneKidDoesNotAbortOthers() {
-        when(infoService.queryById(1L)).thenThrow(new RuntimeException("db down"));
-        when(infoService.queryById(2L)).thenReturn(kb(2L, "emb-v3"));
-        when(chatModelService.selectModelByName("emb-v3")).thenReturn(new ChatModelVo());
-        RetrievalAugmentor augmentor = factory().buildMultiKnowledgeAugmentor(List.of(1L, 2L));
-        assertNotNull(augmentor, "单库构建失败只跳过该库，不得中断整体（fail-open 到可用子集）");
+    void boundedAtTwentyDocumentsAndWriteContractRejected() {
+        var kb = kb(1L);
+        when(info.queryById(1L)).thenReturn(kb);
+        var rows = java.util.stream.IntStream.range(0, 30).mapToObj(i -> KnowledgeRetrievalVo.builder()
+            .id("f" + i).docId("d").content("entry " + i).sourceName("source").build()).toList();
+        when(retrieval.retrieve(any(QueryVectorBo.class))).thenReturn(rows);
+        String result = factory.augment(List.of(1L), "input", null);
+        assertEquals(20, result.split("【知识片段", -1).length - 1);
+        var reader = new CustomVectorRetriever(retrieval, kb, new org.ruoyi.common.chat.domain.vo.chat.ChatModelVo());
+        assertThrows(UnsupportedOperationException.class, () -> reader.addDocuments(List.of()).block());
     }
 }

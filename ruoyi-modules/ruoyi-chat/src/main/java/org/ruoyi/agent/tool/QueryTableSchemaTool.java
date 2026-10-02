@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 
@@ -29,8 +30,8 @@ public class QueryTableSchemaTool implements BuiltinToolProvider {
         return SpringUtils.getBean(TableSchemaManager.class);
     }
 
-    @Tool("Query the CREATE TABLE statement (DDL) for a specific table by table name")
-    public String queryTableSchema(String tableName) {
+    @Tool(name = "queryTableSchema", description = "Query the CREATE TABLE statement (DDL) for a specific table by table name", readOnly = true)
+    public String queryTableSchema(@ToolParam(name = "tableName", description = "允许查询的表名") String tableName) {
         if (tableName == null || tableName.trim().isEmpty()) {
             return "Error: Table name cannot be empty";
         }

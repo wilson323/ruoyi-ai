@@ -1,7 +1,7 @@
 package org.ruoyi.ipd.service.ai;
 
-import dev.langchain4j.exception.HttpException;
-import dev.langchain4j.exception.TimeoutException;
+import io.agentscope.extensions.model.openai.exception.OpenAIException;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -92,7 +92,7 @@ class AiGatewayTest {
         assertEquals(expectedCode, r.errorCode(), () -> "异常 " + e + " 应映射 " + expectedCode);
     }
 
-    private static HttpException http(int code) {
-        return new HttpException(code, "body-irrelevant");
+    private static OpenAIException http(int code) {
+        return new OpenAIException("http", code, "body-irrelevant");
     }
 }

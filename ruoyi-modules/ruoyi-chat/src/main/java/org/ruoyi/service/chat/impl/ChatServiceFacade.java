@@ -1,35 +1,9 @@
 package org.ruoyi.service.chat.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import dev.langchain4j.agentic.AgenticServices;
-import dev.langchain4j.agentic.supervisor.SupervisorAgent;
-import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.chat.response.PartialThinking;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.service.tool.ToolProvider;
-import dev.langchain4j.rag.AugmentationRequest;
-import dev.langchain4j.rag.AugmentationResult;
-import dev.langchain4j.rag.RetrievalAugmentor;
-import dev.langchain4j.rag.query.Metadata;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.agent.ChartGenerationAgent;
-import org.ruoyi.agent.ChitChatAgent;
-import org.ruoyi.agent.EchartsAgent;
-import org.ruoyi.agent.SqlAgent;
-import org.ruoyi.agent.WebSearchAgent;
-import org.ruoyi.agent.tool.ExecuteSqlQueryTool;
-import org.ruoyi.agent.tool.QueryAllTablesTool;
-import org.ruoyi.agent.tool.QueryTableSchemaTool;
 import org.ruoyi.common.chat.base.ThreadContext;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
@@ -55,14 +29,13 @@ import org.ruoyi.common.trace.domain.TraceNode;
 import org.ruoyi.common.trace.domain.TraceRun;
 import org.ruoyi.common.trace.service.TraceRecordService;
 import org.ruoyi.domain.vo.agent.AgentVo;
-import org.ruoyi.factory.ChatServiceFactory;
-import org.ruoyi.mcp.service.core.LangChain4jMcpToolProviderService;
-import org.ruoyi.observability.*;
+import org.ruoyi.mcp.service.core.AgentScopeMcpToolProviderService;
+import org.ruoyi.common.chat.service.chat.ChatResponseHandler;
+import io.agentscope.core.model.ChatResponse;
+import io.agentscope.core.message.TextBlock;
 import org.ruoyi.service.agent.IAgentService;
-import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
-import org.ruoyi.service.chat.impl.memory.PersistentChatMemoryStore;
 import org.ruoyi.service.knowledge.KnowledgeAccessGate;
 import org.ruoyi.chat.kernel.AgentScopeChatKernel;
 import org.ruoyi.chat.kernel.KernelChatSink;
@@ -71,18 +44,14 @@ import org.ruoyi.service.knowledge.retriever.MultiKnowledgeAugmentorFactory;
 import org.ruoyi.argtrace.RagTraceNodeTypes;
 import org.ruoyi.argtrace.RagTracePayloadBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -101,15 +70,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class ChatServiceFacade implements IChatService {
 
-    private static final Integer DEFAULT_MAX_MESSAGES = 20;
 
     static final String SAFE_CHAT_ERROR_MESSAGE = "对话处理失败，请稍后重试";
     static final String KERNEL_PROJECT_SEGMENT = "chat";
     static final String KERNEL_MODEL_AGENT_SEGMENT = "chat-model";
 
     private final IChatModelService chatModelService;
-
-    private final ChatServiceFactory chatServiceFactory;
 
     private final KnowledgeAccessGate knowledgeAccessGate;
 
@@ -126,25 +92,14 @@ public class ChatServiceFacade implements IChatService {
 
     private final IAgentService agentService;
 
-    private final LangChain4jMcpToolProviderService langChain4jMcpToolProviderService;
+    private final AgentScopeMcpToolProviderService agentScopeMcpToolProviderService;
 
     private final TraceRecordService traceRecordService;
 
     private final TraceProperties traceProperties;
 
-    /**
-     * 内存实例缓存，避免同一会话重复创建
-     * Key: sessionId, Value: MessageWindowChatMemory实例
-     */
-    private static final Map<Object, MessageWindowChatMemory> memoryCache = new ConcurrentHashMap<>();
-
-    @Autowired(required = false)
+    @Autowired
     private AgentScopeChatKernel agentScopeChatKernel;
-
-    @Value("${chat.kernel.agentscope.enabled:false}")
-    private boolean agentScopeEnabled;
-
-
 
     /**
      * 统一聊天入口 - SSE流式响应
@@ -206,33 +161,23 @@ public class ChatServiceFacade implements IChatService {
             throw new IllegalArgumentException("模型不存在");
         }
 
-        if (agentScopeEnabled && agentScopeChatKernel == null) {
+        if (agentScopeChatKernel == null) {
             throw new IllegalStateException("AgentScope 聊天内核已启用但未装配");
         }
 
         // 对话和智能体模式共用按会话隔离的 SSE。
         SseEmitter emitter = sseEmitterManager.connect(String.valueOf(chatRequest.getSessionId()));
 
-        // AgentScope 持有自己的会话状态；旧链上下文仅在旧入口期间构建。
-        List<ChatMessage> contextMessages = agentScopeEnabled ? List.of() : buildContextMessages(chatRequest, agentVo);
-
         chatRequest.setEmitter(emitter);
         chatRequest.setUserId(userId);
         chatRequest.setTokenValue(tokenValue);
         chatRequest.setChatModelVo(chatModelVo);
-        chatRequest.setContextMessages(contextMessages);
 
         // 保存用户消息
-        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
+        Long currentMessageId = saveRequiredUserMessage(chatRequest);
 
         TraceRunHandle traceRun = startRagTraceRun(chatRequest, userId);
-        if (agentScopeEnabled) {
-            return handleKernelChat(chatRequest, agentVo, traceRun);
-        }
-        if (agentVo != null) {
-            return handleAgentChat(chatRequest, agentVo, traceRun);
-        }
-        return handleModelChat(chatRequest, traceRun);
+        return handleKernelChat(chatRequest, agentVo, traceRun, null, currentMessageId);
     }
 
     /**
@@ -252,164 +197,7 @@ public class ChatServiceFacade implements IChatService {
         );
     }
 
-    /**
-     * 普通对话模式：直接调用选定模型，不装配 Supervisor、MCP、Skills 或专业子 Agent。
-     */
-    private SseEmitter handleModelChat(ChatRequest chatRequest, TraceRunHandle traceRun) {
-        ChatModelVo chatModelVo = chatRequest.getChatModelVo();
-        AbstractChatService chatService = chatServiceFactory.getOriginalService(chatModelVo.getProviderCode());
-        StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
-        List<ChatMessage> messages = buildModelChatMessages(chatRequest);
-
-        TraceStreamSpan llmSpan = null;
-        try (TraceScope ignored = openTraceScope(traceRun, chatRequest.getUserId())) {
-            llmSpan = startLlmCallSpan(traceRun, chatRequest, "handleModelChat");
-            streamingChatModel.chat(
-                messages,
-                createModelChatResponseHandler(chatRequest, traceRun, llmSpan)
-            );
-        } catch (Exception e) {
-            if (llmSpan != null) {
-                llmSpan.finishError(e);
-                llmSpan.detach();
-            }
-            finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-            SseMessageUtils.sendError(String.valueOf(chatRequest.getSessionId()), SAFE_CHAT_ERROR_MESSAGE);
-            SseMessageUtils.completeConnection(String.valueOf(chatRequest.getSessionId()));
-            log.error("chat_operation operation=MODEL_CHAT status=FAILED errorType={}", errorType(e));
-        }
-        return chatRequest.getEmitter();
-    }
-
-    /**
-     * 智能体对话模式：构建 Supervisor 多 Agent 编排并异步执行，结果通过 SSE 推送。
-     *
-     * @param chatRequest 聊天请求
-     * @param agentVo    智能体配置
-     */
-    private SseEmitter handleAgentChat(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun) {
-        ChatModelVo chatModelVo = chatRequest.getChatModelVo();
-
-        // 配置监督者模型：统一按 providerCode 走对应 AbstractChatService.buildChatModel，
-        // 兼容 ZhiPu/QianWen/Ollama/Dify/Coze/CustomApi 等非 OpenAI 协议；默认实现为 OpenAI 兼容。
-        AbstractChatService chatService = chatServiceFactory.getOriginalService(chatModelVo.getProviderCode());
-        ChatModel plannerModel = chatService.buildChatModel(chatModelVo);
-
-        Long userId = chatRequest.getUserId();
-        String sessionId = String.valueOf(chatRequest.getSessionId());
-
-        // Only explicitly configured legacy MCP tools are installed. The old implicit
-        // Playwright/filesystem fallback bypassed Harness leases and approvals.
-        ToolProvider toolProvider = null;
-        if (agentVo != null && agentVo.getMcpToolIds() != null && !agentVo.getMcpToolIds().isEmpty()) {
-            toolProvider = langChain4jMcpToolProviderService.getToolProvider(agentVo.getMcpToolIds());
-        }
-
-        // 构建子 Agent
-        var searchAgentBuilder = AgenticServices.agentBuilder(WebSearchAgent.class)
-            .chatModel(plannerModel)
-            .listener(new MyAgentListener());
-        if (toolProvider != null) {
-            searchAgentBuilder.toolProvider(toolProvider);
-        }
-        WebSearchAgent searchAgent = searchAgentBuilder.build();
-
-        // Disk skills previously exposed unrestricted run_shell_command. Coding skills now live
-        // behind the Harness catalog, policy engine, and per-call approval flow.
-        if (agentVo != null && agentVo.getSkillNames() != null
-            && !agentVo.getSkillNames().isEmpty()) {
-            log.warn("Legacy shell-backed skills are disabled; use the coding Harness skill runtime");
-        }
-
-        // 构建子 Agent 3: SqlAgent - 负责数据库查询
-        SqlAgent sqlAgent = AgenticServices.agentBuilder(SqlAgent.class)
-            .chatModel(plannerModel)
-            .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
-            .listener(new MyAgentListener())
-            .build();
-
-        // 构建子 Agent 4: ChartGenerationAgent - 负责图表生成
-        ChartGenerationAgent chartGenerationAgent = AgenticServices.agentBuilder(ChartGenerationAgent.class)
-            .chatModel(plannerModel)
-            .listener(new MyAgentListener())
-            .build();
-
-        // 构建子 Agent 5: EchartsAgent - 负责数据可视化（结合 SQL 查询生成 Echarts 图表）
-        EchartsAgent echartsAgent = AgenticServices.agentBuilder(EchartsAgent.class)
-            .chatModel(plannerModel)
-            .tools(new QueryAllTablesTool(), new QueryTableSchemaTool(), new ExecuteSqlQueryTool())
-            .listener(new MyAgentListener())
-            .build();
-
-        // 构建子 Agent 6: ChitChatAgent - 简单闲聊兜底,避免无子 Agent 可用时 supervisor 空转
-        ChitChatAgent chitChatAgent = AgenticServices.agentBuilder(ChitChatAgent.class)
-            .chatModel(plannerModel)
-            .build();
-
-        // 构建监督者 Agent - 管理多个子 Agent
-        var supervisorBuilder = AgenticServices.supervisorBuilder()
-            .chatModel(plannerModel)
-            .subAgents(searchAgent, sqlAgent, chartGenerationAgent, echartsAgent, chitChatAgent)
-            .supervisorContext("仅当请求是问候或简单闲聊、不需要任何数据、搜索、技能或图表时,才使用 chitChatAgent;"
-                + "其余情况必须使用对应的专业 Agent。"
-                + "数据库问数交给 SqlAgent；用户已提供完整数据时交给 ChartGenerationAgent。"
-                + "数据库转图表可交给 EchartsAgent；用户明确要求先查询再绘图时，先调用 SqlAgent，"
-                + "将其 SQL、筛选条件、单位、完整结果行和截断状态传给 ChartGenerationAgent。"
-                + "数据查询失败、为空或被截断时，返回限制说明，不得编造图表。"
-                + "图表生成后直接结束任务，保留最后结果的 echarts 代码块，不再调用闲聊 Agent 改写。")
-            .responseStrategy(SupervisorResponseStrategy.LAST);
-        SupervisorAgent supervisor = supervisorBuilder.build();
-
-        // 知识库增强：智能体绑定了知识库时，对 supervisor 输入做一次 RAG 增强（全程唯一一次检索）
-        String augmentedInput = augmentAgentInput(chatRequest, agentVo);
-        // 组装最终 prompt：系统提示词 → 多轮历史 → RAG 增强后的当前提问
-        StringBuilder promptBuilder = new StringBuilder();
-        if (agentVo != null && StringUtils.isNotBlank(agentVo.getSystemPrompt())) {
-            promptBuilder.append(agentVo.getSystemPrompt()).append("\n\n");
-        }
-        String historyText = formatHistoryMessages(chatRequest.getContextMessages(), chatRequest.getContent());
-        if (StringUtils.isNotBlank(historyText)) {
-            promptBuilder.append("以下是本次会话的历史对话，请结合上下文理解用户最新提问：\n")
-                .append(historyText).append("\n\n");
-        }
-        promptBuilder.append(augmentedInput);
-        String prompt = promptBuilder.toString();
-
-        // 异步执行 supervisor，避免阻塞 HTTP 请求线程导致 SSE 事件被缓冲
-        CompletableFuture.runAsync(() -> {
-            TraceStreamSpan llmSpan = null;
-            try (TraceScope ignored = openTraceScope(traceRun, userId)) {
-                llmSpan = startLlmCallSpan(traceRun, chatRequest, "handleAgentChat");
-                String result = supervisor.invoke(prompt);
-                SseMessageUtils.sendContent(sessionId, result);
-                SseMessageUtils.sendDone(sessionId);
-                // 保存助手回复到数据库（智能体对话为默认路径后，需在此落库以保留历史）
-                if (StringUtils.isNotBlank(result)) {
-                    chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(),
-                        result, RoleType.ASSISTANT.getName(), chatRequest.getModel());
-                }
-                if (llmSpan != null) {
-                    llmSpan.finishSuccess(RagTracePayloadBuilder.streamOutputSummary(
-                        result == null ? 0 : result.length()));
-                }
-                finishTraceRun(traceRun, TraceConstants.STATUS_SUCCESS, null);
-            } catch (Exception e) {
-                if (llmSpan != null) {
-                    llmSpan.finishError(e);
-                }
-                finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-                log.error("chat_operation operation=SUPERVISOR status=FAILED errorType={}", errorType(e));
-                SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
-            } finally {
-                if (llmSpan != null) {
-                    llmSpan.detach();
-                }
-                SseMessageUtils.completeConnection(sessionId);
-            }
-        });
-        return chatRequest.getEmitter();
-    }
-
+    /** 记录既有聊天链路追踪。 */
     private TraceRunHandle startRagTraceRun(ChatRequest chatRequest, Long userId) {
         if (!traceProperties.isEnabled()) {
             return null;
@@ -525,20 +313,7 @@ public class ChatServiceFacade implements IChatService {
         if (knowledgeIds == null || knowledgeIds.isEmpty()) {
             return content;
         }
-        try {
-            RetrievalAugmentor augmentor = multiKnowledgeAugmentorFactory.buildMultiKnowledgeAugmentor(knowledgeIds);
-            if (augmentor == null) {
-                return content;
-            }
-            UserMessage userMessage = UserMessage.userMessage(content);
-            Metadata metadata = Metadata.from(userMessage, chatRequest.getSessionId(), new ArrayList<>());
-            AugmentationResult result = augmentor.augment(new AugmentationRequest(userMessage, metadata));
-            ChatMessage augmented = result.chatMessage();
-            return augmented instanceof UserMessage ? ((UserMessage) augmented).singleText() : content;
-        } catch (Exception e) {
-            log.warn("chat_rag operation=AUGMENT status=FALLBACK errorType={}", errorType(e));
-            return content;
-        }
+        return multiKnowledgeAugmentorFactory.augment(knowledgeIds, content, chatRequest.getSessionId());
     }
 
     /**
@@ -549,37 +324,19 @@ public class ChatServiceFacade implements IChatService {
      * @param externalHandler 外部响应处理器（可为 null）
      */
     @Override
-    public void chat(ChatRequest chatRequest, StreamingChatResponseHandler externalHandler) {
-        // 1. 根据模型名称查询完整配置
-        ChatModelVo chatModelVo = chatModelService.selectModelByName(chatRequest.getModel());
-        if (chatModelVo == null) {
-            throw new IllegalArgumentException("模型不存在");
-        }
-
-        // 3. 路由服务提供商
-        String providerCode = chatModelVo.getProviderCode();
-        log.info("chat_routing status=SELECTED");
-        AbstractChatService chatService = chatServiceFactory.getOriginalService(providerCode);
-
-        // 4. 获取用户信息
-        Long userId = LoginHelper.getUserId();
-
-        // 5. 建立 SSE 连接（用于前端监听，按会话隔离）
-        // 工作流调用时(externalHandler 非空), SSE 连接由工作流引擎创建并持有(WorkflowStarter#streaming),
-        // connect 为替换语义(关闭同键旧连接), 此处重连会掐断工作流连接, 必须跳过
+    public void chat(ChatRequest chatRequest, ChatResponseHandler externalHandler) {
         if (externalHandler == null) {
-            sseEmitterManager.connect(String.valueOf(chatRequest.getSessionId()));
+            sseChat(chatRequest);
+            return;
         }
-
-        // 保存用户消息
-        chatMessageService.saveChatMessage(userId, chatRequest.getSessionId(), chatRequest.getContent(), RoleType.USER.getName(), chatRequest.getModel());
-
-        // 6. 创建组合 handler：同时发送到 SSE 和外部 handler
-        StreamingChatResponseHandler combinedHandler = createCombinedHandler(String.valueOf(chatRequest.getSessionId()), externalHandler);
-
-        // 7. 发起对话
-        StreamingChatModel streamingChatModel = chatService.buildStreamingChatModel(chatModelVo, chatRequest);
-        streamingChatModel.chat(chatRequest.getContent(), combinedHandler);
+        Long userId = LoginHelper.getUserId();
+        chatSessionOwnershipGuard.requireOwned(userId, chatRequest.getSessionId());
+        ChatModelVo selected = chatModelService.selectModelByName(chatRequest.getModel());
+        if (selected == null) { throw new IllegalArgumentException("模型不存在"); }
+        chatRequest.setUserId(userId);
+        chatRequest.setChatModelVo(selected);
+        Long currentMessageId = saveRequiredUserMessage(chatRequest);
+        handleKernelChat(chatRequest, null, startRagTraceRun(chatRequest, userId), externalHandler, currentMessageId);
     }
 
     /**
@@ -591,108 +348,7 @@ public class ChatServiceFacade implements IChatService {
     }
 
 
-    /**
-     * 创建或获取聊天内存实例（缓存机制）
-     * 同一个会话ID会返回同一个内存实例，避免重复创建和消息丢失
-     *
-     * @param memoryId 内存ID（会话ID）
-     * @return MessageWindowChatMemory实例
-     */
-    private MessageWindowChatMemory createChatMemory(Object memoryId) {
-        // 先从缓存中获取
-        return memoryCache.computeIfAbsent(memoryId, key -> {
-            try {
-                PersistentChatMemoryStore store = new PersistentChatMemoryStore(chatMessageService);
-                return MessageWindowChatMemory.builder()
-                    .id(memoryId)
-                    .maxMessages(DEFAULT_MAX_MESSAGES)
-                    .chatMemoryStore(store)
-                    .build();
-            } catch (Exception e) {
-                log.warn("chat_memory operation=CREATE status=FAILED errorType={}", errorType(e));
-                return null;
-            }
-        });
-    }
-
-
-    /**
-     * 构建上下文消息列表
-     * 消息顺序：系统提示词 → 历史消息 → 当前用户消息（确保 AI 正确理解对话上下文）
-     *
-     * @param chatRequest 聊天请求
-     * @param agentVo     智能体配置（可为 null）
-     * @return 上下文消息列表
-     */
-    private List<ChatMessage> buildContextMessages(ChatRequest chatRequest, AgentVo agentVo) {
-        List<ChatMessage> messages = new ArrayList<>();
-
-        // 0. 智能体自定义系统提示词（普通对话今天无 SystemMessage，这里新增注入点）
-        if (agentVo != null && StringUtils.isNotBlank(agentVo.getSystemPrompt())) {
-            messages.add(SystemMessage.from(agentVo.getSystemPrompt()));
-        }
-
-        // 1. 从数据库查询历史对话消息（放在前面）
-        if (chatRequest.getSessionId() != null) {
-            MessageWindowChatMemory memory = createChatMemory(chatRequest.getSessionId());
-            if (memory != null) {
-                List<ChatMessage> historicalMessages = memory.messages();
-                if (historicalMessages != null && !historicalMessages.isEmpty()) {
-                    messages.addAll(historicalMessages);
-                    log.debug("已加载 {} 条历史消息用于会话 {}", historicalMessages.size(), chatRequest.getSessionId());
-                }
-            }
-        }
-
-        // 2. 添加当前用户消息（放在最后；RAG 增强在 handleAgentChat 中统一执行，避免重复检索）
-        messages.add(UserMessage.userMessage(chatRequest.getContent()));
-
-        return messages;
-    }
-
-    /**
-     * 构建普通对话消息。保留历史上下文，并在请求指定知识库时仅增强当前用户消息。
-     */
-    private List<ChatMessage> buildModelChatMessages(ChatRequest chatRequest) {
-        List<ChatMessage> messages = new ArrayList<>(chatRequest.getContextMessages());
-        String augmentedInput = augmentAgentInput(chatRequest, null);
-        int lastIndex = messages.size() - 1;
-        if (lastIndex >= 0 && messages.get(lastIndex) instanceof UserMessage) {
-            messages.set(lastIndex, UserMessage.userMessage(augmentedInput));
-        }
-        return messages;
-    }
-
-    /**
-     * 将上下文消息格式化为多轮对话文本（供只接受 String 输入的 Supervisor 使用）。
-     * 跳过 SystemMessage（系统提示词单独前置）与最后一条当前用户消息（单独做 RAG 增强后拼接）。
-     */
-    private String formatHistoryMessages(List<ChatMessage> contextMessages, String currentContent) {
-        if (contextMessages == null || contextMessages.isEmpty()) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        int limit = contextMessages.size();
-        // 最后一条是当前用户消息，不纳入历史（避免与增强后的输入重复）
-        if (limit > 0 && contextMessages.get(limit - 1) instanceof UserMessage) {
-            limit--;
-        }
-        for (int i = 0; i < limit; i++) {
-            ChatMessage msg = contextMessages.get(i);
-            if (msg instanceof UserMessage userMsg) {
-                sb.append("用户: ").append(userMsg.singleText()).append("\n");
-            } else if (msg instanceof AiMessage aiMsg) {
-                sb.append("助手: ").append(aiMsg.text()).append("\n");
-            }
-        }
-        return sb.toString().trim();
-    }
-
-    /**
-     * 汇总本次对话要检索的知识库ID列表：智能体绑定的 knowledgeIds 优先，回退到请求的 knowledgeId。
-     * S1：每个 kid 返回前过检索访问门，不可见即抛业务异常（本方法在 augmentAgentInput 的
-     * try 之前调用，异常不会被回退逻辑吞掉，可正常向上传播）。
-     */
+    /** 所有选定知识库逐个经过业务访问门后才检索。 */
     private List<Long> collectKnowledgeIds(ChatRequest chatRequest, AgentVo agentVo) {
         if (agentVo != null && agentVo.getKnowledgeIds() != null && !agentVo.getKnowledgeIds().isEmpty()) {
             agentVo.getKnowledgeIds().forEach(knowledgeAccessGate::checkRetrievalAccess);
@@ -712,79 +368,17 @@ public class ChatServiceFacade implements IChatService {
     /**
      * 普通对话响应处理器：推送流式内容、保存助手消息并结束链路追踪。
      */
-    private StreamingChatResponseHandler createModelChatResponseHandler(ChatRequest chatRequest,
-                                                                         TraceRunHandle traceRun,
-                                                                         TraceStreamSpan llmSpan) {
-        String sessionId = String.valueOf(chatRequest.getSessionId());
-        return new StreamingChatResponseHandler() {
-
-            private final StringBuilder messageBuffer = new StringBuilder();
-
-            @Override
-            public void onPartialResponse(String partialResponse) {
-                messageBuffer.append(partialResponse);
-                SseMessageUtils.sendContent(sessionId, partialResponse);
-            }
-
-            @Override
-            public void onPartialThinking(PartialThinking partialThinking) {
-                SseMessageUtils.sendReasoning(sessionId, partialThinking.text());
-            }
-
-            @Override
-            public void onCompleteResponse(ChatResponse completeResponse) {
-                try {
-                    String fullMessage = messageBuffer.toString();
-                    if (StringUtils.isNotBlank(fullMessage)) {
-                        chatMessageService.saveChatMessage(
-                            chatRequest.getUserId(),
-                            chatRequest.getSessionId(),
-                            fullMessage,
-                            RoleType.ASSISTANT.getName(),
-                            chatRequest.getModel()
-                        );
-                    } else {
-                        log.warn("chat_stream status=EMPTY_RESPONSE");
-                    }
-                    if (llmSpan != null) {
-                        llmSpan.finishSuccess(RagTracePayloadBuilder.streamOutputSummary(fullMessage.length()));
-                    }
-                    finishTraceRun(traceRun, TraceConstants.STATUS_SUCCESS, null);
-                    SseMessageUtils.sendDone(sessionId);
-                } catch (Exception e) {
-                    if (llmSpan != null) {
-                        llmSpan.finishError(e);
-                    }
-                    finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-                    SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
-                    log.error("chat_stream operation=COMPLETE status=FAILED errorType={}", errorType(e));
-                } finally {
-                    if (llmSpan != null) {
-                        llmSpan.detach();
-                    }
-                    SseMessageUtils.completeConnection(sessionId);
-                }
-            }
-
-            @Override
-            public void onError(Throwable error) {
-                if (llmSpan != null) {
-                    llmSpan.finishError(error);
-                    llmSpan.detach();
-                }
-                finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, error);
-                SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
-                SseMessageUtils.completeConnection(sessionId);
-                log.error("chat_stream operation=MODEL_STREAM status=FAILED errorType={}", errorType(error));
-            }
-        };
+    private SseEmitter handleKernelChat(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun) {
+        return handleKernelChat(chatRequest, agentVo, traceRun, null, null);
     }
 
-    private SseEmitter handleKernelChat(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun) {
+    private SseEmitter handleKernelChat(ChatRequest chatRequest, AgentVo agentVo, TraceRunHandle traceRun,
+                                        ChatResponseHandler externalHandler, Long currentMessageId) {
         String sessionId = String.valueOf(chatRequest.getSessionId());
         // 沿用旧链知识库选择与访问门；只有检索异常可回退，授权拒绝在内核前 fail-closed。
         String augmentedInput = augmentAgentInput(chatRequest, agentVo);
         StringBuilder messageBuffer = new StringBuilder();
+        AtomicReference<io.agentscope.core.message.Msg> finalResult = new AtomicReference<>();
         AtomicReference<Disposable> subscription = new AtomicReference<>();
         AtomicBoolean disconnected = new AtomicBoolean(false);
         AtomicBoolean terminal = new AtomicBoolean(false);
@@ -800,9 +394,11 @@ public class ChatServiceFacade implements IChatService {
                 active.dispose();
             }
         };
-        chatRequest.getEmitter().onCompletion(cancel);
-        chatRequest.getEmitter().onTimeout(cancel);
-        chatRequest.getEmitter().onError(ignored -> cancel.run());
+        if (externalHandler == null) {
+            chatRequest.getEmitter().onCompletion(cancel);
+            chatRequest.getEmitter().onTimeout(cancel);
+            chatRequest.getEmitter().onError(ignored -> cancel.run());
+        }
         KernelChatSink sink = new KernelChatSink() {
 
             @Override
@@ -812,7 +408,8 @@ public class ChatServiceFacade implements IChatService {
                         return;
                     }
                     messageBuffer.append(delta);
-                    SseMessageUtils.sendContent(sessionId, delta);
+                    if (externalHandler == null) { SseMessageUtils.sendContent(sessionId, delta); }
+                    else { externalHandler.onPartialResponse(delta); }
                 }
             }
 
@@ -822,7 +419,8 @@ public class ChatServiceFacade implements IChatService {
                     if (terminal.get()) {
                         return;
                     }
-                    SseMessageUtils.sendReasoning(sessionId, delta);
+                    if (externalHandler == null) { SseMessageUtils.sendReasoning(sessionId, delta); }
+                    else { externalHandler.onPartialThinking(delta); }
                 }
             }
 
@@ -832,7 +430,9 @@ public class ChatServiceFacade implements IChatService {
                     if (terminal.get()) {
                         return;
                     }
-                    SseMessageUtils.sendEvent(sessionId, SseEventDto.mcpTool(toolName, status, result));
+                    if (externalHandler == null) {
+                        SseMessageUtils.sendEvent(sessionId, SseEventDto.mcpTool(toolName, status, result));
+                    }
                 }
             }
 
@@ -843,9 +443,18 @@ public class ChatServiceFacade implements IChatService {
                         return;
                     }
                     finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, new IllegalStateException(code + ": " + message));
-                    SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
-                    SseMessageUtils.completeConnection(sessionId);
+                    if (externalHandler == null) {
+                        SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
+                        SseMessageUtils.completeConnection(sessionId);
+                    } else { externalHandler.onError(new IllegalStateException(code)); }
                     log.error("chat_stream operation=KERNEL_STREAM status=FAILED code={}", code);
+                }
+            }
+
+            @Override
+            public void onResult(io.agentscope.core.message.Msg result) {
+                synchronized (lifecycleLock) {
+                    if (!terminal.get()) { finalResult.set(result); }
                 }
             }
 
@@ -856,7 +465,7 @@ public class ChatServiceFacade implements IChatService {
                         return;
                     }
                     try {
-                        String fullMessage = messageBuffer.toString();
+                        String fullMessage = org.ruoyi.chat.kernel.KernelFinalResponse.text(finalResult.get(), messageBuffer.toString());
                         if (StringUtils.isNotBlank(fullMessage)) {
                             ChatMessageBo message = new ChatMessageBo();
                             message.setUserId(chatRequest.getUserId());
@@ -871,18 +480,43 @@ public class ChatServiceFacade implements IChatService {
                             log.warn("chat_stream status=EMPTY_RESPONSE");
                         }
                         finishTraceRun(traceRun, TraceConstants.STATUS_SUCCESS, null);
-                        SseMessageUtils.sendDone(sessionId);
+                        if (externalHandler == null) {
+                            if (!java.util.Objects.equals(fullMessage, messageBuffer.toString())) {
+                                SseMessageUtils.sendEvent(sessionId, org.ruoyi.common.sse.dto.SseEventDto.replacement(fullMessage));
+                            }
+                            SseMessageUtils.sendDone(sessionId);
+                        }
+                        else { externalHandler.onCompleteResponse(org.ruoyi.chat.kernel.KernelFinalResponse.response(
+                            finalResult.get(), fullMessage)); }
                     } catch (Exception e) {
                         finishTraceRun(traceRun, TraceConstants.STATUS_ERROR, e);
-                        SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE);
+                        if (externalHandler == null) { SseMessageUtils.sendError(sessionId, SAFE_CHAT_ERROR_MESSAGE); }
+                        else { externalHandler.onError(e); }
                         log.error("chat_stream operation=KERNEL_COMPLETE status=FAILED errorType={}", errorType(e));
                     } finally {
-                        SseMessageUtils.completeConnection(sessionId);
+                        if (externalHandler == null) { SseMessageUtils.completeConnection(sessionId); }
                     }
                 }
             }
         };
 
+        AgentScopeMcpToolProviderService.ToolSession tools;
+        try {
+            tools = agentScopeMcpToolProviderService.createSession(
+                agentVo == null ? List.of() : agentVo.getMcpToolIds());
+        } catch (RuntimeException failure) {
+            sink.onError("TOOL_UNAVAILABLE", SAFE_CHAT_ERROR_MESSAGE);
+            return chatRequest.getEmitter();
+        }
+        String nativePrompt;
+        try {
+            nativePrompt = org.ruoyi.agent.AgentChatPrompt.build(agentVo == null ? null : agentVo.getSystemPrompt(),
+                agentVo == null ? List.of() : agentVo.getSkillNames(), tools.toolkit().getToolNames());
+        } catch (RuntimeException failure) {
+            tools.close();
+            sink.onError("SKILL_UNAVAILABLE", SAFE_CHAT_ERROR_MESSAGE);
+            return chatRequest.getEmitter();
+        }
         Disposable active = agentScopeChatKernel.stream(
             KERNEL_PROJECT_SEGMENT,
             // 不得经 String.valueOf 把空身份变成 "null"；内核正式桥会 fail-closed 拒绝。
@@ -890,15 +524,36 @@ public class ChatServiceFacade implements IChatService {
             chatRequest.getAgentId() == null ? KERNEL_MODEL_AGENT_SEGMENT : String.valueOf(chatRequest.getAgentId()),
             sessionId,
             augmentedInput,
-            agentVo == null ? null : agentVo.getSystemPrompt(),
+            nativePrompt,
             KernelModelRequest.from(chatRequest.getChatModelVo(), chatRequest.getModel()),
-            sink
+            tools.toolkit(), tools,
+            () -> initialHistory(chatRequest.getSessionId(), currentMessageId), sink
         );
         subscription.set(active);
         if (disconnected.get()) {
             active.dispose();
         }
         return chatRequest.getEmitter();
+    }
+
+    private Long saveRequiredUserMessage(ChatRequest request) {
+        ChatMessageBo row = new ChatMessageBo();
+        row.setUserId(request.getUserId()); row.setSessionId(request.getSessionId());
+        row.setContent(request.getContent()); row.setRole(RoleType.USER.getName()); row.setModelName(request.getModel());
+        if (!Boolean.TRUE.equals(chatMessageService.insertByBo(row)) || row.getId() == null) {
+            throw new IllegalStateException("user message persistence failed");
+        }
+        return row.getId();
+    }
+
+    /** 仅缺失原生状态时读取；真实消息ID截断，避免导入本轮或尚未执行的后续用户行。 */
+    private List<io.agentscope.core.message.Msg> initialHistory(Long sessionId, Long beforeMessageId) {
+        if (beforeMessageId == null) { return List.of(); }
+        List<io.agentscope.core.message.Msg> rows = chatMessageService.getMessagesBySessionId(sessionId);
+        return rows == null ? List.of() : rows.stream().filter(row -> {
+            Object id = row.getMetadata() == null ? null : row.getMetadata().get("chatMessageId");
+            return id instanceof Number number && number.longValue() < beforeMessageId;
+        }).toList();
     }
 
     /**
@@ -908,9 +563,9 @@ public class ChatServiceFacade implements IChatService {
      * @param externalHandler 外部响应处理器（可为 null）
      * @return 组合的流式响应处理器
      */
-    protected StreamingChatResponseHandler createCombinedHandler(String sessionId,
-                                                                  StreamingChatResponseHandler externalHandler) {
-        return new StreamingChatResponseHandler() {
+    protected ChatResponseHandler createCombinedHandler(String sessionId,
+                                                                  ChatResponseHandler externalHandler) {
+        return new ChatResponseHandler() {
 
             private final StringBuilder messageBuffer = new StringBuilder();
 
@@ -933,10 +588,10 @@ public class ChatServiceFacade implements IChatService {
             }
 
             @Override
-            public void onPartialThinking(PartialThinking partialThinking) {
+            public void onPartialThinking(String partialThinking) {
                 // 发送推理内容到 SSE（前端通过 reasoning 事件监听）, 工作流调用时不发送
                 if (externalHandler == null) {
-                    SseMessageUtils.sendReasoning(sessionId, partialThinking.text());
+                    SseMessageUtils.sendReasoning(sessionId, partialThinking);
                 }
 
                 // 转发给外部 handler

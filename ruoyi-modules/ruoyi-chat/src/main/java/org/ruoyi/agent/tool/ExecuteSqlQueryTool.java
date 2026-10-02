@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 
@@ -46,8 +47,8 @@ public class ExecuteSqlQueryTool implements BuiltinToolProvider {
      * @param sql 要执行的 SELECT SQL 语句，例如：SELECT * FROM sys_user
      * @return 包含查询结果的字符串
      */
-    @Tool("Execute one read-only SELECT on allowed tables. Returns a Markdown table (at most 10 rows and 8 columns), not JSON. Aggregate and LIMIT in SQL; use explicit column aliases. Never infer omitted rows.")
-    public String executeSql(String sql) {
+    @Tool(name = "executeSql", description = "Execute one read-only SELECT on allowed tables. Returns a Markdown table (at most 10 rows and 8 columns), not JSON. Aggregate and LIMIT in SQL; use explicit column aliases. Never infer omitted rows.", readOnly = true)
+    public String executeSql(@ToolParam(name = "sql", description = "仅允许已批准表的单条SELECT") String sql) {
         if (sql == null || sql.trim().isEmpty()) {
             return "Error: SQL query cannot be empty";
         }

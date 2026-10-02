@@ -14,5 +14,6 @@ import org.springframework.stereotype.Component;
 @Component("minimax")
 @org.springframework.context.annotation.Scope("prototype")
 public class MinimaxEmbeddingProvider extends OpenAiEmbeddingProvider {
-
+    @Override
+    protected String credentialProvider() { return "minimax"; }
 }

@@ -43,7 +43,7 @@ public class BuiltinToolRegistry {
 
     /**
      * Spring 自动注入所有实现 BuiltinToolProvider 接口的 Bean
-     * 注意：这些是 Spring 代理，不能直接用于 LangChain4j
+     * 注意：这些是 Spring 代理，不能直接用于 AgentScope
      * 我们需要提取 Class 信息以便创建新实例
      */
     private final List<BuiltinToolProvider> toolProviders;
@@ -128,7 +128,7 @@ public class BuiltinToolRegistry {
 
     /**
      * 获取所有内置工具对象
-     * 这些对象包含 @Tool 注解的方法，可直接用于 AgenticServices
+     * 这些对象包含 @Tool 注解的方法，可直接用于 Toolkit
      * 注意：每次调用都创建新实例，以避免 Spring CGLIB 代理问题
      *
      * @return 内置工具对象列表

@@ -1,8 +1,12 @@
 package org.ruoyi.service.knowledge.impl.loader;
 
 import cn.hutool.core.exceptions.UtilException;
-import dev.langchain4j.data.document.Document;
-import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.sax.BodyContentHandler;
+import org.apache.tika.exception.TikaException;
+import org.xml.sax.SAXException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.service.knowledge.ResourceLoader;
@@ -26,10 +30,10 @@ public class ExcelFileLoader implements ResourceLoader {
     public String getContent(InputStream inputStream) {
         // 使用带缓冲的输入流包装（保持原流不自动关闭）
         try (InputStream bufferedStream = new BufferedInputStream(inputStream, DEFAULT_BUFFER_SIZE)) {
-            ApacheTikaDocumentParser apacheTikaDocumentParser = new ApacheTikaDocumentParser();
-            Document document = apacheTikaDocumentParser.parse(bufferedStream);
-            return document.text();
-        } catch (IOException e) {
+            BodyContentHandler handler = new BodyContentHandler(-1);
+            new AutoDetectParser().parse(bufferedStream, handler, new Metadata(), new ParseContext());
+            return handler.toString();
+        } catch (IOException | TikaException | SAXException e) {
             String errorMsg = "Excel文件流读取失败";
             throw new UtilException(errorMsg, e);
         } catch (RuntimeException e) {

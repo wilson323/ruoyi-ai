@@ -22,10 +22,25 @@ class AgentScopeKernelBoundaryTest {
     @Test
     void enabledKernelRequiresExplicitStateCatalog() {
         assertThrows(IllegalArgumentException.class, () -> new AgentScopeChatKernel(
-                mock(DataSource.class), "stub:boundary", "", "agentscope_sessions", workspace, true));
+                mock(DataSource.class), "stub:boundary", "", "agentscope_sessions", workspace));
         try (AgentScopeChatKernel ignored = new AgentScopeChatKernel(
-                mock(DataSource.class), "stub:boundary", "ipd_dev", "agentscope_sessions", workspace, true)) {
+                mock(DataSource.class), "stub:boundary", "ipd_dev", "agentscope_sessions", workspace)) {
             // 显式 catalog 可装配；建表与真实读写另由集成验收负责。
+        }
+    }
+
+    @Test
+    void invalidScopeClosesTurnResourcesBeforeError() throws Exception {
+        AutoCloseable resources = mock(AutoCloseable.class);
+        KernelChatSink sink = mock(KernelChatSink.class);
+        try (AgentScopeChatKernel kernel = new AgentScopeChatKernel(mock(Model.class),
+                "stub:boundary", () -> mock(MysqlAgentStateStore.class), workspace)) {
+            kernel.stream("chat", null, "employee", "session", "hello", null, null,
+                new io.agentscope.core.tool.Toolkit(), resources, sink);
+            verify(resources).close();
+            verify(sink).onError(AgentScopeChatKernel.ERR_SCOPE_REJECTED,
+                AgentScopeChatKernel.SAFE_ERROR_MESSAGE);
+            verify(sink, never()).onComplete();
         }
     }
 

@@ -17,6 +17,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-redis</artifactId>
+            <version>${agentscope.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-core</artifactId>
         </dependency>
@@ -69,17 +74,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-        <!-- AI-STRAT-2 统一 AI 调用层：AiGateway 迁 Langchain4j（流式/重试/结构化输出基建），
-             版本与 ruoyi-chat 及父 POM 三 BOM 对齐规则一致（pom-edit-hint 5 类提醒遵守） -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
+        <!-- AI-STRAT-2 统一 AI 调用层：AiGateway 使用共享 AgentScope 模型与嵌入装配，版本由父 POM 统一 -->
+
 
         <!-- R233 节点智能体：**仅**取 ruoyi-chat 的智能体配置契约（IAgentService#queryEnabledOptions
              + AgentVo{agentName,systemPrompt,status}），按命名约定 IPD-<动作码> 解析节点指令。
-             刻意不引入 langchain4j 主件（AiServices 所在构件）、不用 ChatServiceFactory#buildChatModel、
+             复用 AgentScope 模型装配，不另建模型调用路径、
              不用 MCP ToolProvider：节点执行统一走本模块已治理的 AiGenerationService.generate()
              （SSRF 前置 / 预算预检 / Semaphore 限流 / RAG / 重试 / 落库 / 审计 7 道），
              另起第二条 LLM 路径会全部绕过 = AGENTS.md 禁止的双轨。
@@ -113,6 +113,9 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion><groupId>org.skyscreamer</groupId><artifactId>jsonassert</artifactId></exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -164,6 +167,49 @@
                     <groups combine.self="override"/>
                     <failIfNoTests>true</failIfNoTests>
                 </configuration>
+            </plugin>
+
+            <!-- AgentScope 单轨内核（2026-10-02）：本模块经 ruoyi-chat 传递引入 io.agentscope:*，
+                 agentscope-core 走 okhttp-jvm 5.3.2，与仓内其余传递依赖的 okhttp 4.12.0 同含 okhttp3/*
+                 → 运行态重复类冲突。okhttp 全家已在树根 pom dependencyManagement 钉版 5.3.2
+                 （键名 okhttp.version，G1 PoC 已封），此处补模块级重复类门禁，与 ruoyi-chat /
+                 ruoyi-common-chat 同一套规则，避免「钉版被后续依赖悄悄推翻」无人发现。
+                 豁免簇与 ruoyi-chat 一致（swagger-annotations / commons-logging，非 okhttp3，
+                 属存量、不在本关射程）；okhttp3 簇不豁免 → 必红。
+                 门禁出处：.claude/skills/agentscope-harness/scripts/verify.sh C7。 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>1.8.0</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <fail>true</fail>
+                    <rules>
+                        <banDuplicateClasses>
+                            <!-- fail-fast 语义(findAllDuplicates=false):发现第一个未豁免重复簇即红 -->
+                            <ignoreWhenIdentical>true</ignoreWhenIdentical>
+                            <findAllDuplicates>false</findAllDuplicates>
+                            <ignoreClasses>
+                                <ignoreClass>io/swagger/v3/oas/annotations/*</ignoreClass>
+                                <ignoreClass>org/apache/commons/logging/*</ignoreClass>
+                            </ignoreClasses>
+                        </banDuplicateClasses>
+                    </rules>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>ban-okhttp3-duplicate-classes</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

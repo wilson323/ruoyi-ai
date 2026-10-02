@@ -12,6 +12,11 @@
     <artifactId>ruoyi-common-satoken</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>
@@ -28,6 +33,10 @@
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-spring-boot3-starter</artifactId>
+            <!-- Servlet API 仅作本模块编译契约；运行实现由 Web 容器提供，避免重复类。 -->
+            <exclusions>
+                <exclusion><groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId></exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Sa-Token 整合 jwt -->

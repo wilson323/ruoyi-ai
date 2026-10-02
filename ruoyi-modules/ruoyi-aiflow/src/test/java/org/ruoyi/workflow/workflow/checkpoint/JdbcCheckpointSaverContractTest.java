@@ -2,9 +2,6 @@ package org.ruoyi.workflow.workflow.checkpoint;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.bsc.langgraph4j.RunnableConfig;
-import org.bsc.langgraph4j.checkpoint.BaseCheckpointSaver;
-import org.bsc.langgraph4j.checkpoint.Checkpoint;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -23,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 表驱动契约测试：{@link JdbcCheckpointSaver} 对 {@code AbstractCheckpointSaver} 四方法的栈序语义
+ * 表驱动契约测试：{@link JdbcCheckpointSaver} 对 {@code JdbcCheckpointSaver} 四方法的栈序语义
  * （push 头插、peek 最新、按 id 替换保栈位、release 清理）与 thread_id 缺省落 $default 的行为钉死。
  * <p>
  * fake mapper 行形态与真库可产生形态一致（见 {@link FakeCheckpointDb}）；
@@ -54,7 +51,7 @@ class JdbcCheckpointSaverContractTest {
         RELEASE_CLEARS_THREAD,
         /** thread_id 隔离：不同实例 uuid 的 checkpoint 互不可见 */
         THREAD_ISOLATION,
-        /** 缺 thread_id 落 $default 桶（BaseCheckpointSaver.THREAD_ID_DEFAULT），不与显式 thread 串台 */
+        /** 缺 thread_id 落 $default 桶（JdbcCheckpointSaver.THREAD_ID_DEFAULT），不与显式 thread 串台 */
         DEFAULT_BUCKET_WHEN_THREAD_ID_MISSING
     }
 
@@ -63,13 +60,13 @@ class JdbcCheckpointSaverContractTest {
     void contract(Contract scenario) throws Exception {
         FakeCheckpointDb db = new FakeCheckpointDb();
         JdbcCheckpointSaver saver = new JdbcCheckpointSaver(db.mapper());
-        RunnableConfig config = RunnableConfig.builder().threadId(THREAD).build();
+        WorkflowCheckpointConfig config = WorkflowCheckpointConfig.builder().threadId(THREAD).build();
 
         switch (scenario) {
             case PUSH_PEEK_STACK_ORDER -> {
-                Checkpoint cp1 = checkpoint("n1", "n2", "state-1");
-                Checkpoint cp2 = checkpoint("n2", "n3", "state-2");
-                Checkpoint cp3 = checkpoint("n3", "n4", "state-3");
+                WorkflowCheckpointState cp1 = checkpoint("n1", "n2", "state-1");
+                WorkflowCheckpointState cp2 = checkpoint("n2", "n3", "state-2");
+                WorkflowCheckpointState cp3 = checkpoint("n3", "n4", "state-3");
                 saver.put(config, cp1);
                 saver.put(config, cp2);
                 saver.put(config, cp3);
@@ -92,26 +89,26 @@ class JdbcCheckpointSaverContractTest {
                 }
             }
             case GET_BY_CHECKPOINT_ID -> {
-                Checkpoint cp1 = checkpoint("n1", "n2", "state-1");
-                Checkpoint cp2 = checkpoint("n2", "n3", "state-2");
+                WorkflowCheckpointState cp1 = checkpoint("n1", "n2", "state-1");
+                WorkflowCheckpointState cp2 = checkpoint("n2", "n3", "state-2");
                 saver.put(config, cp1);
                 saver.put(config, cp2);
-                RunnableConfig byId = RunnableConfig.builder()
+                WorkflowCheckpointConfig byId = WorkflowCheckpointConfig.builder()
                         .threadId(THREAD).checkPointId(cp1.getId()).build();
                 assertEquals(cp1.getId(), saver.get(byId).orElseThrow().getId());
                 assertEquals("state-1", saver.get(byId).orElseThrow().getState().get("payload"));
             }
             case REPLACE_BY_ID_KEEPS_POSITION -> {
-                Checkpoint cp1 = checkpoint("n1", "n2", "state-1");
-                Checkpoint cp2 = checkpoint("n2", "n3", "state-2");
-                Checkpoint cp3 = checkpoint("n3", "n4", "state-3");
+                WorkflowCheckpointState cp1 = checkpoint("n1", "n2", "state-1");
+                WorkflowCheckpointState cp2 = checkpoint("n2", "n3", "state-2");
+                WorkflowCheckpointState cp3 = checkpoint("n3", "n4", "state-3");
                 saver.put(config, cp1);
                 saver.put(config, cp2);
                 saver.put(config, cp3);
                 // 与 CompiledGraph.updateState 同型：带 checkPointId 的 put 触发 updatedCheckpoint
-                Checkpoint cp2Updated = Checkpoint.builder().id(cp2.getId())
+                WorkflowCheckpointState cp2Updated = WorkflowCheckpointState.builder().id(cp2.getId())
                         .nodeId("n2x").nextNodeId("n3x").state(Map.of("payload", "state-2-updated")).build();
-                RunnableConfig replace = RunnableConfig.builder()
+                WorkflowCheckpointConfig replace = WorkflowCheckpointConfig.builder()
                         .threadId(THREAD).checkPointId(cp2.getId()).build();
                 saver.put(replace, cp2Updated);
                 // 栈位不变（仍在第 2 位）、内容已换；行数不增
@@ -120,15 +117,15 @@ class JdbcCheckpointSaverContractTest {
                 assertEquals("state-2-updated", saver.get(replace).orElseThrow().getState().get("payload"));
             }
             case RELEASE_CLEARS_THREAD -> {
-                Checkpoint cp1 = checkpoint("n1", "n2", "state-1");
-                Checkpoint cp2 = checkpoint("n2", "n3", "state-2");
+                WorkflowCheckpointState cp1 = checkpoint("n1", "n2", "state-1");
+                WorkflowCheckpointState cp2 = checkpoint("n2", "n3", "state-2");
                 saver.put(config, cp1);
                 saver.put(config, cp2);
-                BaseCheckpointSaver.Tag tag = saver.release(config);
+                JdbcCheckpointSaver.Tag tag = saver.release(config);
                 // Tag(threadId, 释放前快照)
                 assertEquals(THREAD, tag.threadId());
                 assertEquals(List.of(cp2.getId(), cp1.getId()),
-                        tag.checkpoints().stream().map(Checkpoint::getId).toList());
+                        tag.checkpoints().stream().map(WorkflowCheckpointState::getId).toList());
                 // 清理后：list 空 + 行逻辑删除（与仓库 softDelete 惯例一致）
                 assertTrue(saver.list(config).isEmpty());
                 assertTrue(saver.get(config).isEmpty());
@@ -136,20 +133,20 @@ class JdbcCheckpointSaverContractTest {
                 assertTrue(db.rows().stream().allMatch(row -> Boolean.TRUE.equals(row.getIsDeleted())));
             }
             case THREAD_ISOLATION -> {
-                Checkpoint mine = checkpoint("n1", "n2", "state-mine");
-                Checkpoint other = checkpoint("n9", "n8", "state-other");
+                WorkflowCheckpointState mine = checkpoint("n1", "n2", "state-mine");
+                WorkflowCheckpointState other = checkpoint("n9", "n8", "state-other");
                 saver.put(config, mine);
-                saver.put(RunnableConfig.builder().threadId(OTHER_THREAD).build(), other);
+                saver.put(WorkflowCheckpointConfig.builder().threadId(OTHER_THREAD).build(), other);
                 assertEquals(List.of(mine.getId()), idList(saver.list(config)));
                 assertEquals(List.of(other.getId()),
-                        idList(saver.list(RunnableConfig.builder().threadId(OTHER_THREAD).build())));
+                        idList(saver.list(WorkflowCheckpointConfig.builder().threadId(OTHER_THREAD).build())));
             }
             case DEFAULT_BUCKET_WHEN_THREAD_ID_MISSING -> {
                 // 引擎漏传 thread_id 的行为钉死：落 $default 桶
-                RunnableConfig noThread = RunnableConfig.builder().build();
-                Checkpoint cp = checkpoint("n1", "n2", "state-default");
+                WorkflowCheckpointConfig noThread = WorkflowCheckpointConfig.builder().build();
+                WorkflowCheckpointState cp = checkpoint("n1", "n2", "state-default");
                 saver.put(noThread, cp);
-                assertEquals(BaseCheckpointSaver.THREAD_ID_DEFAULT, db.rows().get(0).getThreadId());
+                assertEquals(JdbcCheckpointSaver.THREAD_ID_DEFAULT, db.rows().get(0).getThreadId());
                 assertEquals("$default", db.rows().get(0).getThreadId());
                 assertEquals(List.of(cp.getId()), idList(saver.list(noThread)));
                 // 不与显式 thread 串台
@@ -158,15 +155,15 @@ class JdbcCheckpointSaverContractTest {
         }
     }
 
-    private static Checkpoint checkpoint(String nodeId, String nextNodeId, String payload) {
+    private static WorkflowCheckpointState checkpoint(String nodeId, String nextNodeId, String payload) {
         Map<String, Object> state = new LinkedHashMap<>();
         state.put("payload", payload);
         state.put("input", NodeIOData.createByText("input", "用户输入", payload));
-        return Checkpoint.builder().id(java.util.UUID.randomUUID().toString())
+        return WorkflowCheckpointState.builder().id(java.util.UUID.randomUUID().toString())
                 .nodeId(nodeId).nextNodeId(nextNodeId).state(state).build();
     }
 
-    private static List<String> idList(Collection<Checkpoint> checkpoints) {
-        return checkpoints.stream().map(Checkpoint::getId).toList();
+    private static List<String> idList(Collection<WorkflowCheckpointState> checkpoints) {
+        return checkpoints.stream().map(WorkflowCheckpointState::getId).toList();
     }
 }

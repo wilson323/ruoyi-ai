@@ -1,19 +1,9 @@
 package org.ruoyi.agent;
 
-import dev.langchain4j.agentic.Agent;
-import dev.langchain4j.service.SystemMessage;
-import dev.langchain4j.service.UserMessage;
-import dev.langchain4j.service.V;
-
-/**
- * SQL Database Agent
- * A database query assistant that answers natural language questions by querying the database
- * and returning relevant data and analysis results.
- *
- */
-public interface SqlAgent {
-
-    @SystemMessage("""
+/** 同一次原生运行使用的提示规约，不创建第二条执行轨。 */
+public final class SqlAgent {
+    private SqlAgent() { }
+    public static final String SYSTEM_PROMPT = """
         Generate MySQL-compatible SELECT queries. Do not assume a table or column exists.
         You are an intelligent database query assistant. Your responsibility is to:
         1. Query all tables in the database to understand the database structure
@@ -38,10 +28,5 @@ public interface SqlAgent {
         - Aggregate in SQL, include ORDER BY and an appropriate LIMIT; never compute a complete report from a truncated preview
         - On tool errors or empty results, report the limitation and do not invent values or replace missing data with zero
         - For a chart handoff, preserve the SQL, filters, units, column aliases, all displayed rows and truncation status
-        """)
-    @UserMessage("""
-        Answer the following question: {{query}}
-        """)
-    @Agent("Query real database data: discover allowed tables, inspect schemas, execute SELECT, and return SQL, filters, units and exact rows for analysis or a subsequent ChartGenerationAgent. Does not draw charts.")
-    String getData(@V("query") String query);
+        """;
 }

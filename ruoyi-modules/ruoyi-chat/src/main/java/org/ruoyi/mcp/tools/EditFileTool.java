@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
@@ -50,8 +51,8 @@ public class EditFileTool implements BuiltinToolProvider {
      * @param diff     要应用的diff内容
      * @return 操作结果
      */
-    @Tool(DESCRIPTION)
-    public String editFile(String filePath, String diff) {
+    @Tool(name = "editFile", description = DESCRIPTION, readOnly = false)
+    public String editFile(@ToolParam(name = "filePath", description = "工作目录内文件绝对路径") String filePath, @ToolParam(name = "diff", description = "文件修改差异") String diff) {
         try {
             // 验证参数
             if (filePath == null || filePath.trim().isEmpty()) {

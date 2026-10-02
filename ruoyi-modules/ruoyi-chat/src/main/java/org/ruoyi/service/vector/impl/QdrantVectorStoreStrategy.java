@@ -1,13 +1,14 @@
 package org.ruoyi.service.vector.impl;
 
-import dev.langchain4j.data.document.Metadata;
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.store.embedding.EmbeddingStore;
-import dev.langchain4j.store.embedding.filter.Filter;
-import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
-import dev.langchain4j.store.embedding.qdrant.QdrantEmbeddingStore;
+import io.agentscope.core.embedding.EmbeddingModel;
+import org.ruoyi.service.embed.EmbeddingVectors;
+import io.qdrant.client.grpc.Points.*;
+import io.qdrant.client.grpc.Common.*;
+import io.qdrant.client.grpc.Common.PointId;
+import io.qdrant.client.grpc.Common.Filter;
+import io.qdrant.client.grpc.Common.Condition;
+import io.qdrant.client.grpc.Common.FieldCondition;
+import io.qdrant.client.grpc.Common.Match;
 import io.grpc.Status;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
@@ -60,19 +61,6 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
                                      KnowledgeAttachMapper knowledgeAttachMapper) {
         super(vectorStoreProperties, embeddingModelFactory, chatModelService);
         this.knowledgeAttachMapper = knowledgeAttachMapper;
-    }
-
-    private EmbeddingStore<TextSegment> getQdrantStore(String collectionName) {
-        VectorStoreProperties.Qdrant cfg = vectorStoreProperties.getQdrant();
-        QdrantEmbeddingStore.Builder builder = QdrantEmbeddingStore.builder()
-                .host(cfg.getHost())
-                .port(cfg.getPort())
-                .collectionName(collectionName)
-                .useTls(cfg.isUseTls());
-        if (cfg.getApiKey() != null && !cfg.getApiKey().isEmpty()) {
-            builder.apiKey(cfg.getApiKey());
-        }
-        return builder.build();
     }
 
     private QdrantClient buildQdrantClient() {
@@ -130,31 +118,38 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
         String docId = storeEmbeddingBo.getDocId();
         String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + kid;
 
-        EmbeddingStore<TextSegment> embeddingStore = getQdrantStore(collectionName);
 
         log.info("Qdrant向量存储条数记录: {}", chunkList.size());
         long startTime = System.currentTimeMillis();
 
-        List<TextSegment> segments = new ArrayList<>(chunkList.size());
-        for (int i = 0; i < chunkList.size(); i++) {
-            String text = chunkList.get(i);
-            String fid = fidList.get(i);
-            Metadata metadata = new Metadata();
-            metadata.put(METADATA_FID_KEY, fid);
-            metadata.put(METADATA_KID_KEY, kid);
-            metadata.put(METADATA_DOC_ID_KEY, docId);
-            segments.add(TextSegment.from(text, metadata));
+        if (chunkList.size() != fidList.size()) {
+            throw new ServiceException("分片数量与标识数量不一致");
         }
-        List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
-        if (embeddings.size() != segments.size()) {
-            throw new ServiceException("Embedding 返回数量与分片数量不一致");
+        List<float[]> embeddings = EmbeddingVectors.embedAll(embeddingModel, chunkList);
+        if (!embeddings.isEmpty()) { storeEmbeddingBo.setEmbeddingDim(embeddings.get(0).length); }
+        List<PointStruct> points = new ArrayList<>();
+        for (int i = 0; i < embeddings.size(); i++) {
+            float[] vector = normalize(embeddings.get(i));
+            List<Float> values = new ArrayList<>();
+            for (float value : vector) { values.add(value); }
+            // 原有 LangChain4j Qdrant payload 名和随机 UUID 点标识保留。
+            var point = PointStruct.newBuilder().setId(PointId.newBuilder().setUuid(java.util.UUID.randomUUID().toString()))
+                .setVectors(io.qdrant.client.VectorsFactory.vectors(values))
+                .putPayload(TEXT_SEGMENT_KEY, JsonWithInt.Value.newBuilder().setStringValue(chunkList.get(i)).build())
+                .putPayload(METADATA_FID_KEY, JsonWithInt.Value.newBuilder().setStringValue(fidList.get(i)).build())
+                .putPayload(METADATA_KID_KEY, JsonWithInt.Value.newBuilder().setStringValue(kid).build())
+                .putPayload(METADATA_DOC_ID_KEY, JsonWithInt.Value.newBuilder().setStringValue(docId).build());
+            WeaviateVectorStoreStrategy.buildFragmentPayload(storeEmbeddingBo, chunkList.get(i), fidList.get(i), vector.length)
+                .forEach((key, value) -> point.putPayload(key, value instanceof Number number
+                    ? JsonWithInt.Value.newBuilder().setIntegerValue(number.longValue()).build()
+                    : JsonWithInt.Value.newBuilder().setStringValue(String.valueOf(value)).build()));
+            points.add(point.build());
         }
-        for (Embedding embedding : embeddings) {
-            // 单位化处理
-            float[] vector = embedding.vector();
-            normalize(vector);
+        try (QdrantClient client = buildQdrantClient()) {
+            if (!points.isEmpty()) { client.upsertAsync(collectionName, points).get(); }
+        } catch (Exception ex) {
+            throw new ServiceException("Qdrant向量写入失败");
         }
-        embeddingStore.addAll(embeddings, segments);
 
         long endTime = System.currentTimeMillis();
         log.info("Qdrant向量存储完成消耗时间：{}秒", (endTime - startTime) / 1000);
@@ -163,9 +158,7 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
-        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
-        // 查询向量单位化处理
-        float[] queryVector = queryEmbedding.vector();
+        float[] queryVector = EmbeddingVectors.embed(embeddingModel, queryVectorBo.getQuery());
         normalize(queryVector);
 
         String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + queryVectorBo.getKid();
@@ -183,11 +176,13 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
                             .build())
                     .setLimit(queryVectorBo.getMaxResults())
                     .setWithPayload(enable(true))
+                    .setFilter(accessFilter(queryVectorBo))
                     .build();
 
             List<ScoredPoint> results = client.queryAsync(request).get();
             List<String> resultList = new ArrayList<>();
             for (ScoredPoint point : results) {
+                if (!VectorAccessMetadata.permits(permissionMetadata(point), queryVectorBo)) continue;
                 JsonWithInt.Value textValue = point.getPayloadMap().get(TEXT_SEGMENT_KEY);
                 if (textValue != null && textValue.hasStringValue()) {
                     resultList.add(textValue.getStringValue());
@@ -203,9 +198,7 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
     @Override
     public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
-        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
-        // 查询向量单位化处理
-        float[] queryVector = queryEmbedding.vector();
+        float[] queryVector = EmbeddingVectors.embed(embeddingModel, queryVectorBo.getQuery());
         normalize(queryVector);
 
         String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + queryVectorBo.getKid();
@@ -223,11 +216,13 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
                             .build())
                     .setLimit(queryVectorBo.getMaxResults())
                     .setWithPayload(enable(true))
+                    .setFilter(accessFilter(queryVectorBo))
                     .build();
 
             List<ScoredPoint> results = client.queryAsync(request).get();
             List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> resultList = new ArrayList<>();
             for (ScoredPoint point : results) {
+                if (!VectorAccessMetadata.permits(permissionMetadata(point), queryVectorBo)) continue;
                 String content = "";
                 JsonWithInt.Value textValue = point.getPayloadMap().get(TEXT_SEGMENT_KEY);
                 if (textValue != null && textValue.hasStringValue()) {
@@ -299,18 +294,44 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     private void removeByMetadata(String kid, String metadataKey, String value) {
         String collectionName = vectorStoreProperties.getQdrant().getCollectionname() + kid;
-        EmbeddingStore<TextSegment> embeddingStore = getQdrantStore(collectionName);
-        Filter filter = MetadataFilterBuilder.metadataKey(metadataKey).isEqualTo(value);
-        try {
-            embeddingStore.removeAll(filter);
-            log.info("Qdrant成功删除 {}={} 的所有向量数据", metadataKey, value);
-        } catch (RuntimeException e) {
-            // 首次上传会先清理旧向量，此时集合尚未创建；SDK 会将 gRPC 状态包装在异常链中。
-            if (Status.fromThrowable(e).getCode() == Status.Code.NOT_FOUND) {
-                log.debug("Qdrant集合不存在，跳过删除: {}", collectionName);
-                return;
-            }
-            throw e;
+        Filter filter = Filter.newBuilder().addMust(Condition.newBuilder().setField(FieldCondition.newBuilder()
+            .setKey(metadataKey).setMatch(Match.newBuilder().setKeyword(value)))).build();
+        try (QdrantClient client = buildQdrantClient()) {
+            client.deleteAsync(DeletePoints.newBuilder().setCollectionName(collectionName)
+                .setPoints(PointsSelector.newBuilder().setFilter(filter)).build()).get();
+        } catch (Exception e) {
+            if (Status.fromThrowable(e).getCode() == Status.Code.NOT_FOUND) { return; }
+            throw new IllegalStateException("Qdrant删除向量失败", e);
         }
+    }
+    @Override
+    public void updatePayloadSensitivity(String kid, String sensitivity, String embeddingModelName) {
+        if (org.ruoyi.enums.KnowledgeSensitivity.parse(sensitivity) == null) throw new ServiceException("非法敏感级");
+        try (QdrantClient client = buildQdrantClient()) {
+            client.setPayloadAsync(vectorStoreProperties.getQdrant().getCollectionname() + kid,
+                java.util.Map.of("sensitivity", JsonWithInt.Value.newBuilder().setStringValue(sensitivity).build()),
+                Boolean.TRUE, null, java.time.Duration.ofSeconds(60)).get();
+        } catch (Exception ex) { throw new ServiceException("Qdrant payload 敏感级随动失败"); }
+    }
+
+    static Filter accessFilter(QueryVectorBo bo) {
+        var filter = Filter.newBuilder().addMust(match("scopeType", VectorAccessMetadata.SCOPES))
+            .addMust(match("sensitivity", VectorAccessMetadata.sensitivity(bo)));
+        var visibility = VectorAccessMetadata.visibility(bo);
+        if (!visibility.isEmpty()) {
+            var alternatives = Filter.newBuilder();
+            visibility.forEach((key, values) -> alternatives.addShould(match(key, values)));
+            filter.addMust(Condition.newBuilder().setFilter(alternatives));
+        }
+        return filter.build();
+    }
+    private static Condition match(String key, List<String> values) {
+        return Condition.newBuilder().setField(FieldCondition.newBuilder().setKey(key)
+            .setMatch(Match.newBuilder().setKeywords(RepeatedStrings.newBuilder().addAllStrings(values)))).build();
+    }
+    private static java.util.Map<String, String> permissionMetadata(ScoredPoint point) {
+        var result = new java.util.HashMap<String, String>();
+        point.getPayloadMap().forEach((key, value) -> { if (value.hasStringValue()) result.put(key, value.getStringValue()); });
+        return result;
     }
 }

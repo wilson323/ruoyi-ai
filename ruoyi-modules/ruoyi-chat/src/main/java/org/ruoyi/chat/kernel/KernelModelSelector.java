@@ -9,28 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * W2 模型层（2026-09-28，ADR-0075 矩阵 #8「替换」+ #9「包装」）：内核模型选择唯一入口。
- *
- * <p><b>装配（矩阵 #8「替换」）</b>：模型装配只经 AgentScope 原生 model 配置/装配 API
- * —— {@link ModelRegistry#resolve(String, ModelCreationContext)}（provider SPI），
- * 凭据/端点由 {@link ModelCreationContext} 承载；当前 ruoyi-chat 调用方配置来自
- * {@code chat_model}，IPD {@code ai_model_configs} 尚未接入。本类即内核面
- * 唯一装配点；W1 遗留的 {@code fixedModel/modelId/resolveModel()} 平行自定义层由本类吸收消除，
- * 13 家自装配（langchain4j 直连）不进内核面（其保留期与回滚职责见 ADR-0075 W2 回滚点）。
- *
- * <p><b>动态切换（矩阵 #9「包装」）</b>：请求 {@code model} 字段 → 薄归一（厂商别名 +
- * "provider:model" 注册键）→ 原生 {@code ModelRegistry} 解析；选型/降级是业务政策薄壳，
- * <b>解析唯一源 = ModelRegistry，禁第二套路由</b>。可解析性由原生解析裁定：
- * 不猜测厂商语义；明确选定模型解析失败即拒绝本轮，禁止隐式换模型。
- *
- * <p><b>默认路径</b>：仅调用方没有提供模型时使用
- * {@code chat.kernel.agentscope.model-id}；明确选定模型装配失败时只记录错误类型并上抛，
- * 不用默认模型或 {@code fallbackModel} 掩盖实际执行身份。
- * 回滚点沿用 W1 双保险：开关关（{@code chat.kernel.agentscope.enabled} matchIfMissing=false）
- * 或 Bean 缺席 → 不触本类（既有 langchain4j 路径零行为变化）。
- *
- * <p>测试缝 {@link ModelAssembler} 镜像原生 {@code modelResolver(Function&lt;String, Model&gt;)}
- * 语义；生产恒为 {@link ModelRegistry#resolve}，不产出平行解析实现。
+ * 内核模型选择入口。业务配置经共享 AgentScopeModelFactory 归一，
+ * 原生 ModelRegistry 是唯一解析源；明确选择失败直接拒绝，不隐式换模型。
+ * 请求未提供模型时才使用配置的默认模型。
+ * ModelAssembler 仅作为原生解析接口的测试缝。
  */
 final class KernelModelSelector {
 
@@ -81,16 +63,18 @@ final class KernelModelSelector {
     }
 
     /** 选型 + 装配；明确选定模型不可装配时 fail-closed。 */
-    ModelPlan plan(KernelModelRequest request) {
+    ModelPlan plan(KernelModelRequest request) { return plan(request, null, null); }
+
+    ModelPlan plan(KernelModelRequest request, String userId, String sessionId) {
         if (request == null || request.modelName() == null || request.modelName().isBlank()) {
             log.warn("kernel_model operation=ROUTE status=FALLBACK reason=BLANK_REQUEST");
             return defaultPlan(null);
         }
         String key = registryKey(request);
         try {
-            Model model = assembler.assemble(key, context(request));
+            Model model = assembler.assemble(key, AgentScopeModelFactory.context(request, null, userId, sessionId));
             log.info("kernel_model operation=ROUTE status=SELECTED source=REQUEST registryKey={}", key);
-            return new ModelPlan(key, Source.REQUEST, model, key, request.configurationIdentity());
+            return new ModelPlan(key, Source.REQUEST, model, key, request.configurationIdentity() + ":u" + userId + ":s" + sessionId);
         } catch (RuntimeException e) {
             log.warn("kernel_model operation=ROUTE status=REJECTED reason=ASSEMBLE_FAILED"
                     + " requestedKey={} errorType={}", key, e.getClass().getName());
@@ -108,15 +92,7 @@ final class KernelModelSelector {
      * 已是注册键（含 ':'）原样透传；无厂商段也原样透传（可解析性由原生 ModelRegistry 裁定）。
      */
     static String registryKey(KernelModelRequest request) {
-        String name = request.modelName().trim();
-        if (name.indexOf(':') >= 0) {
-            return name;
-        }
-        String providerCode = request.providerCode();
-        if (providerCode == null || providerCode.isBlank()) {
-            return name;
-        }
-        return providerAlias(providerCode) + ':' + name;
+        return AgentScopeModelFactory.registryKey(request);
     }
 
     /**
@@ -126,24 +102,11 @@ final class KernelModelSelector {
      * 未覆盖厂商（dify/coze/custom_anthropic 等）不猜测语义，由原生解析裁定（失败即拒绝）。
      */
     static String providerAlias(String providerCode) {
-        String normalized = providerCode.trim().toLowerCase(Locale.ROOT);
-        return switch (normalized) {
-            case "zhipu" -> "glm";
-            case "qianwen" -> "dashscope";
-            case "custom_api", "atlas", "ppio", "xiaomi" -> "openai";
-            default -> normalized;
-        };
+        return AgentScopeModelFactory.providerAlias(providerCode);
     }
 
     /** 装配上下文：凭据/端点走原生 ModelCreationContext（凭据不落代码，C6）。 */
     private static ModelCreationContext context(KernelModelRequest request) {
-        ModelCreationContext.Builder builder = ModelCreationContext.builder();
-        if (request.apiKey() != null && !request.apiKey().isBlank()) {
-            builder.apiKey(request.apiKey());
-        }
-        if (request.apiHost() != null && !request.apiHost().isBlank()) {
-            builder.baseUrl(request.apiHost());
-        }
-        return builder.build();
+        return AgentScopeModelFactory.context(request);
     }
 }

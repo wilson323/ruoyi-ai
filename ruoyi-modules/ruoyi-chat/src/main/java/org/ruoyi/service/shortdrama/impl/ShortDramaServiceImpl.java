@@ -12,15 +12,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import io.agentscope.core.agent.accumulator.ReasoningContext;
+import io.agentscope.core.message.*;
+import io.agentscope.core.model.Model;
+import io.agentscope.core.model.ChatResponse;
+import io.agentscope.core.model.GenerateOptions;
+import org.ruoyi.chat.kernel.AgentScopeModelFactory;
+import org.ruoyi.chat.kernel.KernelModelRequest;
+import reactor.core.Disposable;
 
-import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
+
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.entity.image.ImageContext;
 import org.ruoyi.common.chat.entity.media.MediaGenerationResponse;
@@ -65,8 +66,6 @@ import org.ruoyi.mapper.shortdrama.ShortDramaLocationMapper;
 import org.ruoyi.mapper.shortdrama.ShortDramaProjectMapper;
 import org.ruoyi.mapper.shortdrama.ShortDramaScriptMapper;
 import org.ruoyi.mapper.shortdrama.ShortDramaStoryboardMapper;
-import org.ruoyi.factory.ChatServiceFactory;
-import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.media.AtlasPredictionService;
 import org.ruoyi.service.shortdrama.IShortDramaService;
 import org.ruoyi.service.shortdrama.IShortDramaVideoComposeService;
@@ -103,7 +102,6 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     private final ShortDramaLocationMapper locationMapper;
     private final ShortDramaAudioMapper audioMapper;
     private final IChatModelService chatModelService;
-    private final ChatServiceFactory chatServiceFactory;
     private final VideoServiceFactory videoServiceFactory;
     private final ImageServiceFactory imageServiceFactory;
     private final AudioServiceFactory audioServiceFactory;
@@ -111,6 +109,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     private final IShortDramaVideoComposeService videoComposeService;
     private final org.ruoyi.common.core.service.OssService ossService;
     private final java.util.Map<SseEmitter, AtomicBoolean> activeEmitters = new ConcurrentHashMap<>();
+    private final java.util.Map<SseEmitter, java.util.Set<Disposable>> nativeTurns = new ConcurrentHashMap<>();
     private final java.util.Map<Long, AtomicBoolean> storyboardGenerationStates = new ConcurrentHashMap<>();
 
     /**
@@ -179,8 +178,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     @Override
     public ShortDramaDetailVo createFromIdea(ShortDramaIdeaBo bo, Long userId) {
         ChatModelVo modelVo = validateAndGetModel(bo.getModel());
-        AbstractChatService chatService = getChatService(modelVo);
-        ChatModel chatModel = chatService.buildChatModel(modelVo);
+        Model chatModel = nativeModel(modelVo);
 
         // Phase 1: 剧本打磨
         ShortDramaScriptResult polishResult = executePhase1_ScriptPolish(chatModel, bo);
@@ -209,9 +207,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             Long projectId = null;
             try {
                 ChatModelVo modelVo = validateAndGetModel(bo.getModel());
-                AbstractChatService chatService = getChatService(modelVo);
-                ChatModel chatModel = chatService.buildChatModel(modelVo);
-                StreamingChatModel streamingModel = chatService.buildStreamingChatModel(modelVo, new ChatRequest());
+                Model chatModel = nativeModel(modelVo);
+                Model streamingModel = nativeModel(modelVo);
 
                 // Phase 1: 单次流式调用（JSON 元信息 → 分隔符 → 剧本正文逐字推送）
                 emit(emitter, "polish", "running", "正在生成故事大纲...");
@@ -223,7 +220,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
                 // Phase 2: 资产分析（角色 + 场景 并发，流式输出）
                 emit(emitter, "assets", "running", "正在分析角色和场景...");
-                StreamingChatModel assetsStreamModel = chatService.buildStreamingChatModel(modelVo, new ChatRequest());
+                Model assetsStreamModel = nativeModel(modelVo);
                 executePhase2_AssetAnalysis(chatModel, assetsStreamModel, projectId, script, emitter);
                 long charCount = characterMapper.selectCount(new LambdaQueryWrapper<ShortDramaCharacter>()
                     .eq(ShortDramaCharacter::getProjectId, projectId));
@@ -231,7 +228,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     .eq(ShortDramaLocation::getProjectId, projectId));
                 emit(emitter, "assets", "done", "提取了 " + charCount + " 个角色、" + locCount + " 个场景");
 
-                // Phase 3-6: 分镜流水线（各子阶段内部创建 StreamingChatModel 实现流式输出）
+                // Phase 3-6: 分镜流水线（各子阶段内部创建 Model 实现流式输出）
                 List<StoryboardPanelData> panels = executeStoryboardPipeline(chatModel, script, projectId, emitter);
                 emit(emitter, "storyboard", "done", "分镜完成，共 " + panels.size() + " 个镜头");
 
@@ -268,6 +265,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     private void closeEmitter(SseEmitter emitter) {
         AtomicBoolean active = activeEmitters.remove(emitter);
         if (active != null) active.set(false);
+        java.util.Set<Disposable> turns = nativeTurns.remove(emitter);
+        if (turns != null) { turns.forEach(Disposable::dispose); }
     }
 
     private void completeEmitter(SseEmitter emitter) {
@@ -337,11 +336,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         return script;
     }
 
-    private List<StoryboardPanelData> executeStoryboardPipeline(ChatModel chatModel, ShortDramaScript script, Long projectId) {
+    private List<StoryboardPanelData> executeStoryboardPipeline(Model chatModel, ShortDramaScript script, Long projectId) {
         return executeStoryboardPipeline(chatModel, script, projectId, null);
     }
 
-    private List<StoryboardPanelData> executeStoryboardPipeline(ChatModel chatModel, ShortDramaScript script, Long projectId, SseEmitter emitter) {
+    private List<StoryboardPanelData> executeStoryboardPipeline(Model chatModel, ShortDramaScript script, Long projectId, SseEmitter emitter) {
         // Phase 3: 分镜规划（流式输出由 executePhase3_StoryboardPlan 内部处理）
         if (emitter != null) emit(emitter, "storyboard_plan", "running", "正在规划分镜镜头...");
         List<StoryboardPanelData> panels = executePhase3_StoryboardPlan(chatModel, script, projectId, emitter);
@@ -378,8 +377,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             .orderByDesc(ShortDramaScript::getId).last("limit 1"));
         String idea = script != null ? firstNotBlank(script.getScriptText(), script.getOutlineText(), project.getDescription()) : project.getDescription();
         ChatModelVo modelVo = findChatModel();
-        AbstractChatService chatService = getChatService(modelVo);
-        ChatModel chatModel = chatService.buildChatModel(modelVo);
+        Model chatModel = nativeModel(modelVo);
 
         ShortDramaIdeaBo bo = new ShortDramaIdeaBo();
         bo.setIdea(idea);
@@ -457,8 +455,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             .eq(ShortDramaStoryboard::getScriptId, scriptId));
 
         ChatModelVo modelVo = StrUtil.isNotBlank(model) ? validateAndGetModel(model) : findChatModel();
-        AbstractChatService chatService = getChatService(modelVo);
-        ChatModel chatModel = chatService.buildChatModel(modelVo);
+        Model chatModel = nativeModel(modelVo);
 
         List<StoryboardPanelData> panels = executePhase3_StoryboardPlan(chatModel, script, projectId);
         if (panels.isEmpty()) {
@@ -510,9 +507,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     .eq(ShortDramaStoryboard::getScriptId, scriptId));
 
                 ChatModelVo modelVo = StrUtil.isNotBlank(model) ? validateAndGetModel(model) : findChatModel();
-                AbstractChatService chatService = getChatService(modelVo);
-                ChatModel chatModel = chatService.buildChatModel(modelVo);
-                StreamingChatModel streamingModel = chatService.buildStreamingChatModel(modelVo, new ChatRequest());
+                Model chatModel = nativeModel(modelVo);
+                Model streamingModel = nativeModel(modelVo);
 
                 log.info("开始流式生成分镜: projectId={}, scriptId={}, model={}", projectId, scriptId, modelVo.getModelName());
                 emit(emitter, "storyboard_plan", "running", "正在规划分镜镜头，模型开始输出后会实时显示...");
@@ -572,7 +568,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
         List<StoryboardPanelData> panels = toPanelDataList(existing);
         ChatModelVo modelVo = findChatModel();
-        ChatModel chatModel = getChatService(modelVo).buildChatModel(modelVo);
+        Model chatModel = nativeModel(modelVo);
         List<JsonNode> photographyRules = executePhase4_PhotographyRules(chatModel, panels, projectId);
         mergePhotographyRules(panels, photographyRules);
         for (int i = 0; i < existing.size() && i < panels.size(); i++) {
@@ -596,7 +592,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
         List<StoryboardPanelData> panels = toPanelDataList(existing);
         ChatModelVo modelVo = findChatModel();
-        ChatModel chatModel = getChatService(modelVo).buildChatModel(modelVo);
+        Model chatModel = nativeModel(modelVo);
         List<ActingDirectionResult> actingDirections = executePhase5_ActingDirections(chatModel, panels, projectId);
         mergeActingDirections(panels, actingDirections);
         for (int i = 0; i < existing.size() && i < panels.size(); i++) {
@@ -1306,8 +1302,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
         clearAssets(projectId);
         ChatModelVo modelVo = findChatModel();
-        AbstractChatService chatService = getChatService(modelVo);
-        ChatModel chatModel = chatService.buildChatModel(modelVo);
+        Model chatModel = nativeModel(modelVo);
         executePhase2_AssetAnalysis(chatModel, projectId, script);
         return getDetail(projectId, userId);
     }
@@ -1837,10 +1832,10 @@ public class ShortDramaServiceImpl implements IShortDramaService {
     // ==================== 通用流式调用辅助 ====================
 
     /**
-     * 使用 StreamingChatModel 调用 LLM，原始输出逐字推送到 SSE，返回完整响应文本。
+     * 使用 Model 调用 LLM，原始输出逐字推送到 SSE，返回完整响应文本。
      * 仅当 emitter 和 model 均非 null 时启用流式；否则退化为同步调用。
      */
-    private String streamingChat(StreamingChatModel streamingModel, ChatModel chatModel,
+    private String streamingChat(Model streamingModel, Model chatModel,
                                  String prompt, SseEmitter emitter, String streamPhase) {
         return streamingChat(streamingModel, chatModel, prompt, emitter, streamPhase, null);
     }
@@ -1849,11 +1844,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
      * 流式调用模型。onPartial 回调在每次新 token 到来时以当前完整 buffer 调用，
      * 调用方可在此做增量解析（如分镜 panel 增量推送）。onPartial 为 null 时行为同旧版。
      */
-    private String streamingChat(StreamingChatModel streamingModel, ChatModel chatModel,
+    private String streamingChat(Model streamingModel, Model chatModel,
                                  String prompt, SseEmitter emitter, String streamPhase,
                                  java.util.function.Consumer<String> onPartial) {
         if (streamingModel == null || emitter == null) {
-            return chatModel.chat(prompt);
+            return nativeChat(chatModel, prompt);
         }
         StringBuilder buf = new StringBuilder();
         CompletableFuture<Void> done = new CompletableFuture<>();
@@ -1873,8 +1868,8 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     "模型在90秒内未返回任何流式内容，可能该模型或服务不支持流式输出，请更换模型或使用同步生成"));
             }
         }, 90, TimeUnit.SECONDS);
-        List<ChatMessage> messages = List.of(UserMessage.from(prompt));
-        streamingModel.chat(messages, new StreamingChatResponseHandler() {
+        List<Msg> messages = List.of(textMessage(MsgRole.USER, prompt));
+        Disposable nativeTurn = nativeStream(streamingModel, messages, emitter, new NativeStreamHandler() {
             @Override
             public void onPartialResponse(String text) {
                 firstTokenReceived.set(true);
@@ -1902,6 +1897,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
             throw new RuntimeException("模型在30分钟内未完成响应，请检查模型服务状态或更换模型后重试", cause);
         } finally {
+            nativeTurn.dispose();
             heartbeat.shutdownNow();
         }
         return buf.toString();
@@ -1995,23 +1991,23 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         return result.getScriptText().length() < 1000 || countSceneHeadings(result.getScriptText()) < 5;
     }
 
-    private ShortDramaScriptResult expandIncompleteScript(ChatModel chatModel, ShortDramaIdeaBo bo,
+    private ShortDramaScriptResult expandIncompleteScript(Model chatModel, ShortDramaIdeaBo bo,
                                                            ShortDramaScriptResult initial) {
         String prompt = PHASE1_COMBINED_SYSTEM
             + "\n\n以下初稿场次不足或过度集中在高潮。请基于原始资料完整重写，不要只修改局部。"
             + "\n原始资料：\n" + sanitizeIdeaInput(bo.getIdea())
             + "\n\n不合格初稿：\n" + (initial == null ? "无" : firstNotBlank(initial.getScriptText(), "无"));
-        ShortDramaScriptResult expanded = parsePhase1Response(chatModel.chat(prompt));
+        ShortDramaScriptResult expanded = parsePhase1Response(nativeChat(chatModel, prompt));
         return expanded != null && !scriptNeedsExpansion(expanded) ? expanded : initial;
     }
 
-    private ShortDramaScriptResult executePhase1_ScriptPolish(ChatModel chatModel, ShortDramaIdeaBo bo,
+    private ShortDramaScriptResult executePhase1_ScriptPolish(Model chatModel, ShortDramaIdeaBo bo,
                                                                Consumer<String> onPhase) {
         String projectName = firstNotBlank(bo.getProjectName(), "短剧项目");
         String prompt = PHASE1_COMBINED_SYSTEM + "\n\n用户期望项目名：" + projectName + "\n用户创意：" + sanitizeIdeaInput(bo.getIdea());
 
         long t0 = System.currentTimeMillis();
-        String resp = chatModel.chat(prompt);
+        String resp = nativeChat(chatModel, prompt);
         log.info("Phase 1 剧本打磨: elapsed={}ms len={}", System.currentTimeMillis() - t0,
             resp != null ? resp.length() : 0);
 
@@ -2028,20 +2024,20 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         return result;
     }
 
-    private ShortDramaScriptResult executePhase1_ScriptPolish(ChatModel chatModel, ShortDramaIdeaBo bo) {
+    private ShortDramaScriptResult executePhase1_ScriptPolish(Model chatModel, ShortDramaIdeaBo bo) {
         return executePhase1_ScriptPolish(chatModel, bo, null);
     }
 
     /**
-     * 流式版本：StreamingChatModel 单次调用，边收边解析，JSON 完成后立即推流剧本正文
+     * 流式版本：Model 单次调用，边收边解析，JSON 完成后立即推流剧本正文
      */
-    private ShortDramaScriptResult executePhase1_Streaming(StreamingChatModel streamingModel,
+    private ShortDramaScriptResult executePhase1_Streaming(Model streamingModel,
                                                             ShortDramaIdeaBo bo, SseEmitter emitter) {
         String projectName = firstNotBlank(bo.getProjectName(), "短剧项目");
         String systemPrompt = PHASE1_COMBINED_SYSTEM;
         String userPrompt = "用户期望项目名：" + projectName + "\n用户创意：" + sanitizeIdeaInput(bo.getIdea());
-        List<ChatMessage> messages = List.of(
-            SystemMessage.from(systemPrompt), UserMessage.from(userPrompt));
+        List<Msg> messages = List.of(
+            textMessage(MsgRole.SYSTEM, systemPrompt), textMessage(MsgRole.USER, userPrompt));
 
         StringBuilder buf = new StringBuilder();
         ShortDramaScriptResult[] result = {null};
@@ -2049,7 +2045,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         CompletableFuture<Void> streamDone = new CompletableFuture<>();
 
         long t0 = System.currentTimeMillis();
-        streamingModel.chat(messages, new StreamingChatResponseHandler() {
+        Disposable nativeTurn = nativeStream(streamingModel, messages, emitter, new NativeStreamHandler() {
             @Override
             public void onPartialResponse(String text) {
                 buf.append(text);
@@ -2107,7 +2103,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         });
 
         try {
-            streamDone.join();
+            streamDone.orTimeout(30, TimeUnit.MINUTES).join();
         } catch (Exception e) {
             throw new RuntimeException("剧本打磨失败：" + e.getMessage(), e);
         }
@@ -2117,7 +2113,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (scriptNeedsExpansion(result[0])) {
             emit(emitter, "script", "running", "检测到剧情场次不足，正在扩展完整故事线...");
             ChatModelVo fallbackModel = findChatModel();
-            ChatModel fallbackChatModel = getChatService(fallbackModel).buildChatModel(fallbackModel);
+            Model fallbackChatModel = nativeModel(fallbackModel);
             result[0] = expandIncompleteScript(fallbackChatModel, bo, result[0]);
             emit(emitter, "script", "done", "完整多场次剧本已生成");
         }
@@ -2157,11 +2153,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     // ==================== Phase 2: 资产分析（并发）====================
 
-    private void executePhase2_AssetAnalysis(ChatModel chatModel, Long projectId, ShortDramaScript script) {
+    private void executePhase2_AssetAnalysis(Model chatModel, Long projectId, ShortDramaScript script) {
         executePhase2_AssetAnalysis(chatModel, null, projectId, script, null);
     }
 
-    private void executePhase2_AssetAnalysis(ChatModel chatModel, StreamingChatModel streamModel,
+    private void executePhase2_AssetAnalysis(Model chatModel, Model streamModel,
                                              Long projectId, ShortDramaScript script, SseEmitter emitter) {
         String scriptText = firstNotBlank(script.getScriptText(), script.getOutlineText(), "");
         if (StrUtil.isBlank(scriptText)) return;
@@ -2178,7 +2174,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 emit(emitter, "assets_chars", "done", "角色分析完成，提取 " + characters.size() + " 个角色");
 
                 emit(emitter, "assets_locs", "running", "正在分析场景站位...");
-                StreamingChatModel locsStreamModel = buildStreamingChatModel();
+                Model locsStreamModel = buildModel();
                 String locsResp = streamingChat(locsStreamModel, chatModel, buildLocationCreatePrompt(scriptText), emitter, "assets");
                 locations = parseLocationList(locsResp);
                 emit(emitter, "assets_locs", "done", "场景分析完成，提取 " + locations.size() + " 个场景");
@@ -2186,12 +2182,12 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 // 非流式：保持原有并发模式，速度更快
                 CompletableFuture<List<AssetGeneratedCharacter>> charsFuture =
                     CompletableFuture.supplyAsync(() -> {
-                        String resp = chatModel.chat(buildCharacterProfilePrompt(scriptText));
+                        String resp = nativeChat(chatModel, buildCharacterProfilePrompt(scriptText));
                         return parseCharacterList(resp);
                     });
                 CompletableFuture<List<AssetGeneratedLocation>> locsFuture =
                     CompletableFuture.supplyAsync(() -> {
-                        String resp = chatModel.chat(buildLocationCreatePrompt(scriptText));
+                        String resp = nativeChat(chatModel, buildLocationCreatePrompt(scriptText));
                         return parseLocationList(resp);
                     });
                 characters = charsFuture.join();
@@ -2207,7 +2203,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 visualFutures.add(CompletableFuture.runAsync(() -> {
                     String visualDesc = "";
                     try {
-                        String vr = chatModel.chat(buildCharacterVisualPrompt(c, script.getTone()));
+                        String vr = nativeChat(chatModel, buildCharacterVisualPrompt(c, script.getTone()));
                         AssetCharacterVisualResult visResult = parseJson(extractJson(vr), AssetCharacterVisualResult.class);
                         if (visResult != null && visResult.getCharacters() != null) {
                             for (AssetCharVisual cv : visResult.getCharacters()) {
@@ -2500,15 +2496,15 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     // ==================== Phase 3: 分镜规划 ====================
 
-    private List<StoryboardPanelData> executePhase3_StoryboardPlan(ChatModel chatModel, ShortDramaScript script, Long projectId) {
+    private List<StoryboardPanelData> executePhase3_StoryboardPlan(Model chatModel, ShortDramaScript script, Long projectId) {
         return executePhase3_StoryboardPlan(chatModel, null, script, projectId, null);
     }
 
-    private List<StoryboardPanelData> executePhase3_StoryboardPlan(ChatModel chatModel, ShortDramaScript script, Long projectId, SseEmitter emitter) {
+    private List<StoryboardPanelData> executePhase3_StoryboardPlan(Model chatModel, ShortDramaScript script, Long projectId, SseEmitter emitter) {
         return executePhase3_StoryboardPlan(chatModel, null, script, projectId, emitter);
     }
 
-    private List<StoryboardPanelData> executePhase3_StoryboardPlan(ChatModel chatModel, StreamingChatModel streamingModel,
+    private List<StoryboardPanelData> executePhase3_StoryboardPlan(Model chatModel, Model streamingModel,
                                                                     ShortDramaScript script, Long projectId, SseEmitter emitter) {
         try {
             String text = firstNotBlank(script.getScriptText(), script.getOutlineText(), "");
@@ -2524,7 +2520,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 artStyleSuffix(projectId), projectAspectRatio(projectId));
             String response;
             if (emitter != null) {
-                StreamingChatModel activeStreamingModel = streamingModel != null ? streamingModel : buildStreamingChatModel();
+                Model activeStreamingModel = streamingModel != null ? streamingModel : buildModel();
                 // 流式增量：每解析出一个完整 panel 就推给前端，不等整个数组完成
                 final org.ruoyi.service.shortdrama.support.IncrementalJsonArrayExtractor<StoryboardPanelData> extractor =
                     new org.ruoyi.service.shortdrama.support.IncrementalJsonArrayExtractor<>(StoryboardPanelData.class);
@@ -2535,7 +2531,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                     }
                 });
             } else {
-                response = chatModel.chat(prompt);
+                response = nativeChat(chatModel, prompt);
             }
             List<StoryboardPanelData> panels = parsePanelList(response);
             if (panels != null && !panels.isEmpty()) {
@@ -2663,11 +2659,11 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     // ==================== Phase 4: 摄影规则 ====================
 
-    private List<JsonNode> executePhase4_PhotographyRules(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId) {
+    private List<JsonNode> executePhase4_PhotographyRules(Model chatModel, List<StoryboardPanelData> panels, Long projectId) {
         return executePhase4_PhotographyRules(chatModel, panels, projectId, null);
     }
 
-    private List<JsonNode> executePhase4_PhotographyRules(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
+    private List<JsonNode> executePhase4_PhotographyRules(Model chatModel, List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
         try {
             String panelsJson = JsonUtils.toJsonString(panels);
             String locsDesc = buildLocationsDescString(projectId);
@@ -2675,9 +2671,9 @@ public class ShortDramaServiceImpl implements IShortDramaService {
             String prompt = buildCinematographerPrompt(panelsJson, panels.size(), locsDesc, charsInfo);
             String response;
             if (emitter != null) {
-                response = streamingChat(buildStreamingChatModel(), chatModel, prompt, emitter, "photography");
+                response = streamingChat(buildModel(), chatModel, prompt, emitter, "photography");
             } else {
-                response = chatModel.chat(prompt);
+                response = nativeChat(chatModel, prompt);
             }
             // 用 JsonNode 直接保存原始 JSON，避免 POJO 反序列化丢失字段
             JsonNode array = parseJsonNode(extractJson(response));
@@ -2764,20 +2760,20 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     // ==================== Phase 5: 表演指导 ====================
 
-    private List<ActingDirectionResult> executePhase5_ActingDirections(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId) {
+    private List<ActingDirectionResult> executePhase5_ActingDirections(Model chatModel, List<StoryboardPanelData> panels, Long projectId) {
         return executePhase5_ActingDirections(chatModel, panels, projectId, null);
     }
 
-    private List<ActingDirectionResult> executePhase5_ActingDirections(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
+    private List<ActingDirectionResult> executePhase5_ActingDirections(Model chatModel, List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
         try {
             String panelsJson = JsonUtils.toJsonString(panels);
             String charsInfo = buildCharactersInfoString(projectId);
             String prompt = buildActingDirectionPrompt(panelsJson, panels.size(), charsInfo);
             String response;
             if (emitter != null) {
-                response = streamingChat(buildStreamingChatModel(), chatModel, prompt, emitter, "acting");
+                response = streamingChat(buildModel(), chatModel, prompt, emitter, "acting");
             } else {
-                response = chatModel.chat(prompt);
+                response = nativeChat(chatModel, prompt);
             }
             List<ActingDirectionResult> results = parseJsonArray(extractJson(response), ActingDirectionResult.class);
             if (results != null) {
@@ -3025,15 +3021,15 @@ public class ShortDramaServiceImpl implements IShortDramaService {
 
     // ==================== Phase 6: 分镜细化 ====================
 
-    private void executePhase6_StoryboardDetail(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId) {
+    private void executePhase6_StoryboardDetail(Model chatModel, List<StoryboardPanelData> panels, Long projectId) {
         executePhase6_StoryboardDetail(chatModel, null, panels, projectId, null);
     }
 
-    private void executePhase6_StoryboardDetail(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
+    private void executePhase6_StoryboardDetail(Model chatModel, List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
         executePhase6_StoryboardDetail(chatModel, null, panels, projectId, emitter);
     }
 
-    private void executePhase6_StoryboardDetail(ChatModel chatModel, StreamingChatModel streamingModel,
+    private void executePhase6_StoryboardDetail(Model chatModel, Model streamingModel,
                                                  List<StoryboardPanelData> panels, Long projectId, SseEmitter emitter) {
         try {
             String panelsJson = JsonUtils.toJsonString(panels);
@@ -3043,10 +3039,10 @@ public class ShortDramaServiceImpl implements IShortDramaService {
                 artStyleSuffix(projectId), projectAspectRatio(projectId));
             String response;
             if (emitter != null) {
-                StreamingChatModel activeStreamingModel = streamingModel != null ? streamingModel : buildStreamingChatModel();
+                Model activeStreamingModel = streamingModel != null ? streamingModel : buildModel();
                 response = streamingChat(activeStreamingModel, chatModel, prompt, emitter, "storyboard_detail");
             } else {
-                response = chatModel.chat(prompt);
+                response = nativeChat(chatModel, prompt);
             }
             List<StoryboardDetailResult> results = parseJsonArray(extractJson(response), StoryboardDetailResult.class);
             if (results != null) {
@@ -3109,7 +3105,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
      * 低于 ⌈duration/3⌉ 时发起一次二次 LLM 调用补写。补写后再次校验，仍不达标则保留并记 warn。
      * 仅在非流式（同步生成）模式下执行，避免流式场景重复请求。
      */
-    private void ensureVideoPromptBeats(ChatModel chatModel, List<StoryboardPanelData> panels, Long projectId) {
+    private void ensureVideoPromptBeats(Model chatModel, List<StoryboardPanelData> panels, Long projectId) {
         List<StoryboardPanelData> deficient = new ArrayList<>();
         for (StoryboardPanelData panel : panels) {
             if (StrUtil.isBlank(panel.getVideoPrompt())) continue;
@@ -3123,7 +3119,7 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         if (deficient.isEmpty()) return;
         try {
             String supplementPrompt = buildVideoPromptSupplementPrompt(deficient, artStyleSuffix(projectId), projectAspectRatio(projectId));
-            String response = chatModel.chat(supplementPrompt);
+            String response = nativeChat(chatModel, supplementPrompt);
             List<StoryboardDetailResult> results = parseJsonArray(extractJson(response), StoryboardDetailResult.class);
             if (results != null) {
                 for (StoryboardDetailResult r : results) {
@@ -3469,8 +3465,88 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         throw new IllegalArgumentException("无可用聊天模型");
     }
 
-    private AbstractChatService getChatService(ChatModelVo modelVo) {
-        return chatServiceFactory.getOriginalService(modelVo.getProviderCode());
+    private Model nativeModel(ChatModelVo modelVo) {
+        return AgentScopeModelFactory.create(KernelModelRequest.from(modelVo));
+    }
+
+    private static Msg textMessage(MsgRole role, String text) {
+        return Msg.builder().role(role).textContent(text).build();
+    }
+
+    private String nativeChat(Model model, String prompt) {
+        StringBuilder text = new StringBuilder();
+        try {
+            // blockLast 空流返回 null；对齐原适配器「No provider response」语义（0 chunk 即失败）。
+            ChatResponse lastChunk = model.stream(List.of(textMessage(MsgRole.USER, prompt)), List.of(), GenerateOptions.builder().build())
+                .timeout(java.time.Duration.ofMinutes(30))
+                .doOnNext(chunk -> {
+                    for (ContentBlock block : chunk.getContent() == null ? List.<ContentBlock>of() : chunk.getContent()) {
+                        if (block instanceof TextBlock textBlock) { text.append(textBlock.getText()); }
+                    }
+                })
+                .blockLast();
+            if (lastChunk == null) { throw new IllegalStateException("No provider response"); }
+        } catch (RuntimeException failure) {
+            // 含中断（Reactor 将 InterruptedException 转为 RuntimeException）与超时/供给方失败。
+            throw new IllegalStateException("Short drama model generation failed", failure);
+        }
+        return text.toString();
+    }
+
+    private Disposable nativeStream(Model model, List<Msg> messages, SseEmitter emitter, NativeStreamHandler handler) {
+        ReasoningContext accumulator = new ReasoningContext("short-drama");
+        java.util.concurrent.atomic.AtomicReference<ChatResponse> lastChunk = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<Disposable> self = new java.util.concurrent.atomic.AtomicReference<>();
+        Disposable subscription = model.stream(messages, List.of(), GenerateOptions.builder().build())
+            .timeout(java.time.Duration.ofMinutes(30))
+            // dispose()/cancel() 不触发 Reactor 回调，桥接恢复「取消必通知」契约：
+            // 下游 done/streamDone 依赖 onError 解除阻塞，否则断连后 join 线程悬挂。
+            .doOnCancel(() -> handler.onError(
+                new java.util.concurrent.CancellationException("model turn cancelled")))
+            .subscribe(
+                chunk -> {
+                    lastChunk.set(chunk);
+                    accumulator.processChunk(chunk);
+                    for (ContentBlock block : chunk.getContent() == null ? List.<ContentBlock>of() : chunk.getContent()) {
+                        if (block instanceof TextBlock textBlock) { handler.onPartialResponse(textBlock.getText()); }
+                    }
+                },
+                failure -> {
+                    removeNativeTurn(emitter, self.get());
+                    handler.onError(failure);
+                },
+                () -> {
+                    removeNativeTurn(emitter, self.get());
+                    try {
+                        Msg finalMessage = accumulator.buildFinalMessage();
+                        ChatResponse last = lastChunk.get();
+                        if (last == null || finalMessage == null) { throw new IllegalStateException("模型未返回任何内容"); }
+                        handler.onCompleteResponse(ChatResponse.builder().id(last.getId())
+                            .content(finalMessage.getContent()).usage(last.getUsage())
+                            .metadata(last.getMetadata()).finishReason(last.getFinishReason()).build());
+                    } catch (RuntimeException callbackFailure) { handler.onError(callbackFailure); }
+                });
+        self.set(subscription);
+        nativeTurns.compute(emitter, (ignored, turns) -> {
+            java.util.Set<Disposable> current = turns == null ? ConcurrentHashMap.newKeySet() : turns;
+            current.add(subscription); return current;
+        });
+        AtomicBoolean active = activeEmitters.get(emitter);
+        if (active == null || !active.get()) { subscription.dispose(); }
+        return subscription;
+    }
+
+    private void removeNativeTurn(SseEmitter emitter, Disposable subscription) {
+        if (subscription == null) { return; }
+        nativeTurns.computeIfPresent(emitter, (ignored, turns) -> {
+            turns.remove(subscription); return turns.isEmpty() ? null : turns;
+        });
+    }
+
+    private interface NativeStreamHandler {
+        void onPartialResponse(String text);
+        void onCompleteResponse(ChatResponse response);
+        void onError(Throwable failure);
     }
 
     // ==================== 语音资产 ====================
@@ -3633,10 +3709,9 @@ public class ShortDramaServiceImpl implements IShortDramaService {
         }
     }
 
-    private StreamingChatModel buildStreamingChatModel() {
+    private Model buildModel() {
         ChatModelVo modelVo = findChatModel();
-        AbstractChatService chatService = getChatService(modelVo);
-        return chatService.buildStreamingChatModel(modelVo, new ChatRequest());
+        return nativeModel(modelVo);
     }
 
     private ShortDramaProject validateProjectOwner(Long projectId, Long userId) {

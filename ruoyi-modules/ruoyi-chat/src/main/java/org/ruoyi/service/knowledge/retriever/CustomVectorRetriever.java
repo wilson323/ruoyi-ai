@@ -1,15 +1,18 @@
 package org.ruoyi.service.knowledge.retriever;
 
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.data.document.Metadata;
-import dev.langchain4j.rag.content.Content;
-import dev.langchain4j.rag.content.retriever.ContentRetriever;
-import dev.langchain4j.rag.query.Query;
+import io.agentscope.core.rag.Knowledge;
+import io.agentscope.core.rag.model.Document;
+import io.agentscope.core.rag.model.DocumentMetadata;
+import io.agentscope.core.rag.model.RetrieveConfig;
+import io.agentscope.core.message.TextBlock;
+import reactor.core.publisher.Mono;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.domain.bo.vector.QueryVectorBo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
+import org.ruoyi.service.knowledge.KnowledgeEmbedEndpoint;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 
 import java.util.List;
@@ -17,30 +20,44 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 自定义检索器：适配 LangChain4j ContentRetriever 接口
+ * 自定义检索器：适配 AgentScope Knowledge 只读接口
  * 桥接统一的 KnowledgeRetrievalService，支持配置化的混合检索、阈值过滤等功能
  *
  * @author RobustH
  */
 @Slf4j
 @RequiredArgsConstructor
-public class CustomVectorRetriever implements ContentRetriever {
+public class CustomVectorRetriever implements Knowledge {
 
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final KnowledgeInfoVo knowledgeInfoVo;
     private final ChatModelVo chatModelVo;
 
     @Override
-    public List<Content> retrieve(Query query) {
-        log.info("执行自定义检索，关键字: {}", query.text());
+    public Mono<Void> addDocuments(List<Document> documents) {
+        return Mono.error(new UnsupportedOperationException("知识写入须走已有业务写入入口"));
+    }
+
+    @Override
+    public Mono<List<Document>> retrieve(String query, RetrieveConfig config) {
+        return Mono.fromCallable(() -> retrieveBound(query));
+    }
+
+    private List<Document> retrieveBound(String query) {
 
         // 构建增强后的查询参数
         QueryVectorBo queryVectorBo = new QueryVectorBo();
-        queryVectorBo.setQuery(query.text());
+        queryVectorBo.setQuery(query);
         queryVectorBo.setKid(String.valueOf(knowledgeInfoVo.getId()));
-        queryVectorBo.setBaseUrl(chatModelVo.getApiHost());
+        KnowledgeEmbedEndpoint.Choice choice = KnowledgeEmbedEndpoint.resolve(knowledgeInfoVo.getEmbeddingModel());
+        if (choice.builtin()) {
+            queryVectorBo.setBaseUrl(choice.baseUrl());
+            queryVectorBo.setEmbeddingModelName(choice.modelName());
+        } else {
+            queryVectorBo.setBaseUrl(chatModelVo.getApiHost());
+            queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
+        }
         queryVectorBo.setVectorModelName(knowledgeInfoVo.getVectorModel());
-        queryVectorBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
         
         // 应用知识库配置参数
         queryVectorBo.setMaxResults(knowledgeInfoVo.getRetrieveLimit());
@@ -57,15 +74,19 @@ public class CustomVectorRetriever implements ContentRetriever {
         // 通过统一服务执行检索
         var nearestList = knowledgeRetrievalService.retrieve(queryVectorBo);
 
-        // 将结果包装为标准的 Content 返回
+        if (nearestList == null) {
+            throw new IllegalStateException("知识库检索未返回有效结果");
+        }
         return nearestList.stream()
-                .map(vo -> {
-                    Metadata metadata = new Metadata();
-                    metadata.put("kid", String.valueOf(knowledgeInfoVo.getId()));
-                    metadata.put("docId", Objects.toString(vo.getDocId(), ""));
-                    metadata.put("fid", Objects.toString(vo.getId(), ""));
-                    return Content.from(TextSegment.from(vo.getContent(), metadata));
-                })
-                .collect(Collectors.toList());
+            .filter(vo -> vo != null && vo.getContent() != null && !vo.getContent().isBlank())
+            .map(vo -> {
+                var payload = Map.<String, Object>of(
+                    "kid", String.valueOf(knowledgeInfoVo.getId()),
+                    "sourceName", Objects.toString(vo.getSourceName(), "未知来源"));
+                Document document = new Document(new DocumentMetadata(TextBlock.builder().text(vo.getContent()).build(),
+                    Objects.toString(vo.getDocId(), ""), Objects.toString(vo.getId(), ""), payload));
+                document.setScore(vo.getScore());
+                return document;
+            }).toList();
     }
 }

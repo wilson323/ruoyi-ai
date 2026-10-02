@@ -13,6 +13,7 @@
     <description>全栈式AI开发平台</description>
 
     <properties>
+        <agentscope.version>2.0.3</agentscope.version>
         <revision>3.1.0</revision>
         <spring-boot.version>3.5.8</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -35,7 +36,7 @@
         <mapstruct-plus.version>1.5.0</mapstruct-plus.version>
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
         <lombok.version>1.18.40</lombok.version>
-        <bouncycastle.version>1.80</bouncycastle.version>
+        <bouncycastle.version>1.83</bouncycastle.version>
         <!-- [G1 PoC] okhttp 5.x 统一收敛:okhttp 薄壳转依赖 okhttp-jvm,根除 4.12.0/5.x 重复类 -->
         <okhttp.version>5.3.2</okhttp.version>
         <justauth.version>1.16.7</justauth.version>
@@ -55,10 +56,6 @@
         <jackson-dataformat-xml.version>2.18.2</jackson-dataformat-xml.version>
         <!-- AI 相关依赖 -->
 
-        <langchain4j.version>1.17.2</langchain4j.version>
-        <langchain4j.beta.version>1.17.2-beta27</langchain4j.beta.version>
-        <langchain4j.community.version>1.17.0-beta27</langchain4j.community.version>
-        <langgraph4j.version>1.8.20</langgraph4j.version>
 
         <weaviate.version>1.19.6</weaviate.version>
         <dify.version>1.2.7</dify.version>
@@ -297,6 +294,11 @@
             <!--redisson-->
             <dependency>
                 <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redisson.version}</version>
             </dependency>
@@ -322,7 +324,7 @@
             <!-- 加密包引入 -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk15to18</artifactId>
+                <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
 
@@ -418,7 +420,7 @@
             </dependency>
 
             <!-- [G1 PoC] okhttp 全家钉版 5.3.2:消除 okhttp-4.12.0 与 okhttp-jvm-5.3.2 同含 okhttp3/* 的重复类雷
-                 (langchain4j 等传递依赖的 4.12.0 被强制对齐;okhttp 5.x 的 okhttp artifact 为薄壳,实际类在 okhttp-jvm) -->
+                 (SDK 传递依赖统一对齐;okhttp 5.x 的 okhttp artifact 为薄壳,实际类在 okhttp-jvm) -->
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>
@@ -567,4 +569,3 @@
     </pluginRepositories>
 
 </project>
-

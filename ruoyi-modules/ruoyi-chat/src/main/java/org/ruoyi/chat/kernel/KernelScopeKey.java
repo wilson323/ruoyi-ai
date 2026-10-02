@@ -5,13 +5,26 @@ import io.agentscope.core.agent.RuntimeContext;
 /**
  * 四维隔离(project × user × agent × session) → AgentScope {@link RuntimeContext} 的唯一收口。
  *
- * <p>键式(方案 §2.1,以实测 MysqlAgentStateStore.slotId = {@code userId + ":" + sessionId} 为准):
+ * <p>键式(方案 §2.1;生产实际走 Redis 而非 MySQL,见下方 store 说明):
  * <ul>
  *   <li>复合 userId = {@code p{projectId}:u{userId}}(项目维度为原生缺失维度,经 userId 前缀补齐)
  *   <li>复合 sessionId = {@code a{agentId}:s{sessionId}}(AgentStateStore 只有 (userId, sessionId)
  *       二元寻址、无 agent 列,agent 维度折入 session 段;HarnessAgent.name 目录分桶为其文件侧对应)
- *   <li>最终落库 slotId = {@code p{projectId}:u{userId}:a{agentId}:s{sessionId}},四维全收口于一列
+ *   <li>{@link Scope#slotId()} = {@code 复合userId + ":" + 复合sessionId}
+ *       = {@code p{projectId}:u{userId}:a{agentId}:s{sessionId}},四维全收口于一个字符串
  * </ul>
+ *
+ * <p><b>store 事实(2026-10-02 实读修正)</b>:生产用
+ * {@code AgentScopeRedisStateStores.create(RedissonClient, keyPrefix)} →
+ * 官方 {@code io.agentscope.extensions.redis.state.RedisAgentStateStore},<b>不是</b>
+ * {@code MysqlAgentStateStore}(后者本仓仅测试代码 import;注意别与
+ * {@code MysqlDistributedStore} 混淆——被 {@code @Deprecated(since="2.1", forRemoval=true)}
+ * 标注的是 <b>DistributedStore 那个</b>,{@code MysqlAgentStateStore} 本身无类级弃用注解)。
+ * 官方 {@code RedisAgentStateStore} 的 Redis key 结构是
+ * {@code {prefix}{sessionId}:{stateKey}}——<b>其 key 本身不含 userId</b>,
+ * userId 维度由调用方传入的 sessionId 参数承载。故四维隔离的落点
+ * <b>取决于调用方传进去的复合 sessionId 字符串</b>,这也是 fail-closed 校验必须前移的原因:
+ * 一旦某个调用点绕过 {@link #of} 直接传原始 sessionId,user/project/agent 三维会静默丢失。
  *
  * <p>fail-closed 校验:任何原始段含 {@code ':'} 或 {@code ".."} 直接拒绝(防复合 key 注入伪造别桶地址);
  * userId 允许为空 → 降级 SESSION 语义(与 IsolationScope.USER 空 userId 降级 SESSION 对齐,
@@ -21,7 +34,15 @@ import io.agentscope.core.agent.RuntimeContext;
  */
 public final class KernelScopeKey {
 
-    /** 空 userId 降级命名空间(对齐 MysqlAgentStateStore.ANON_USER 语义)。 */
+    /**
+     * 空 userId 降级命名空间。
+     *
+     * <p>与官方 {@code RedisAgentStateStore.ANON_USER = "__anon__"}
+     * （{@code RedisAgentStateStore.java:439-442}）取值一致,属**有意对齐**:
+     * 官方空 userId 时也降级到同一桶,本仓保持相同语义以免两套行为分叉。
+     * 注意:这意味着空 userId 的调用方在本仓与官方**共享** {@code __anon__} 桶——
+     * 多租户场景下调用方必须保证 userId 非空,不能依赖该降级做隔离。
+     */
     public static final String ANONYMOUS_USER_SEGMENT = "__anon__";
 
     private KernelScopeKey() {}
@@ -34,7 +55,13 @@ public final class KernelScopeKey {
             return RuntimeContext.builder().userId(userId).sessionId(sessionId).build();
         }
 
-        /** MysqlAgentStateStore 落库 slotId(userId + ":" + sessionId),仅测试/回读 SQL 用。 */
+        /**
+         * 四维收口 slotId(复合 userId + ":" + 复合 sessionId)。
+         *
+         * <p>用途:turn gate 串行化键({@code TURN_GATE.acquire(scope.slotId())})与测试/回读比对。
+         * <b>不是</b>任何 store 的落库键——官方 {@code RedisAgentStateStore} 的 Redis key 是
+         * {@code {prefix}{sessionId}:{stateKey}},不含 userId 段;本方法不参与持久化键构成。
+         */
         public String slotId() {
             return userId + ":" + sessionId;
         }

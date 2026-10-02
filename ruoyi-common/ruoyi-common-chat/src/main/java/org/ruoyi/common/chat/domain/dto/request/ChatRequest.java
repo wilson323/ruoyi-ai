@@ -2,7 +2,6 @@ package org.ruoyi.common.chat.domain.dto.request;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import dev.langchain4j.data.message.ChatMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
@@ -109,8 +108,8 @@ public class ChatRequest {
     private String tokenValue;
 
     /**
-     * 完整的上下文
+     * 兼容历史客户端的上下文列表，仅用于审计计数，不作为模型执行消息。
      */
-    private List<ChatMessage> contextMessages;
+    private List<Object> contextMessages;
 
 }

@@ -126,7 +126,7 @@ public class CodingController {
     private void requireLegacyEnabled() {
         if (!legacyEnabled) {
             throw new ResponseStatusException(HttpStatus.GONE,
-                "Legacy coding endpoints are disabled; use /coding/harness");
+                "Legacy coding endpoints are disabled");
         }
     }
 

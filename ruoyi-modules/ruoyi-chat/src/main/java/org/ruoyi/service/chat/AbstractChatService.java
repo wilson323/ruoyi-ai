@@ -1,49 +1,32 @@
 package org.ruoyi.service.chat;
 
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
+import io.agentscope.core.model.Model;
+import io.agentscope.core.model.GenerateOptions;
+import org.ruoyi.chat.kernel.AgentScopeModelFactory;
+import org.ruoyi.chat.kernel.KernelModelRequest;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 
-import java.time.Duration;
-
-/**
- * 聊天消息Service接口
- *
- * @author ageerle
- * @date 2025-12-14
- */
+/** 平台模型均使用 AgentScope Model，模型创建唯一委托共享注册表。 */
 public interface AbstractChatService {
-
-    /**
-     * 创建流式聊天模型
-     *
-     * @param chatModelVo 模型配置
-     * @param chatRequest 聊天请求
-     * @return 流式聊天模型实例
-     */
-    StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest);
-
-    /**
-     * 创建同步聊天模型（供 Agent/SupervisorAgent 使用）
-     * 默认实现使用 OpenAI 兼容协议，适用于 OpenAI、DeepSeek、Atlas Cloud 等兼容接口的 provider。
-     * ZhiPu、QianWen、Ollama 等需覆盖此方法使用各自 SDK。
-     *
-     * @param chatModelVo 模型配置
-     * @return 同步聊天模型实例
-     */
-    default ChatModel buildChatModel(ChatModelVo chatModelVo) {
-        return OpenAiChatModel.builder()
-            .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(chatModelVo.getModelName())
-            .timeout(Duration.ofSeconds(120))
-            .build();
+    default Model buildStreamingChatModel(ChatModelVo config, ChatRequest request) {
+        return buildNativeModel(config, request, 180_000);
     }
 
-    /**
-     * 获取服务提供商名称
-     */
+    default Model buildChatModel(ChatModelVo config) {
+        return buildNativeModel(config, null, 120_000);
+    }
+
+    default Model buildNativeModel(ChatModelVo config, ChatRequest request, int timeoutMs) {
+        var modelRequest = new KernelModelRequest(config.getModelName(), getProviderName(),
+            config.resolveApiKeyForConfiguredEndpoint(getProviderName()), config.getApiHost(), null, null, timeoutMs);
+        var options = GenerateOptions.builder().stream(true);
+        if (request != null && request.getReasoningEffort() != null && !request.getReasoningEffort().isBlank()) {
+            options.reasoningEffort(request.getReasoningEffort());
+        }
+        return new org.ruoyi.observability.MyChatModelListener().wrap(
+            AgentScopeModelFactory.create(modelRequest, options.build()));
+    }
+
     String getProviderName();
 }

@@ -18,7 +18,13 @@ import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
  * <p>本对象只携带装配数据，不承载任何选型/解析逻辑：解析唯一源 = AgentScope
  * {@code ModelRegistry}（{@link KernelModelSelector}），禁止第二套路由。
  */
-public record KernelModelRequest(String modelName, String providerCode, String apiKey, String apiHost) {
+public record KernelModelRequest(String modelName, String providerCode, String apiKey, String apiHost,
+                                 Double temperature, Integer maxTokens, Integer timeoutMs) {
+
+    /** 兼容原有平台聊天与调用方；未指定参数时保留模型默认值。 */
+    public KernelModelRequest(String modelName, String providerCode, String apiKey, String apiHost) {
+        this(modelName, providerCode, apiKey, apiHost, null, null, null);
+    }
 
     /** 缓存身份仅存摘要；同名模型的端点或凭据变化必须得到不同身份。 */
     String configurationIdentity() {
@@ -28,6 +34,9 @@ public record KernelModelRequest(String modelName, String providerCode, String a
             update(digest, providerCode);
             update(digest, apiHost);
             update(digest, apiKey);
+            update(digest, temperature == null ? null : temperature.toString());
+            update(digest, maxTokens == null ? null : maxTokens.toString());
+            update(digest, timeoutMs == null ? null : timeoutMs.toString());
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 unavailable", e);

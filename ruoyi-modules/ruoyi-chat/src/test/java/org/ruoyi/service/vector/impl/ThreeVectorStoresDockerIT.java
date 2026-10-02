@@ -1,9 +1,8 @@
 package org.ruoyi.service.vector.impl;
+import io.agentscope.core.message.ContentBlock;
+import io.agentscope.core.message.TextBlock;
+import reactor.core.publisher.Mono;
 
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.output.Response;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -166,29 +165,23 @@ class ThreeVectorStoresDockerIT {
         }
 
         @Override
-        public Response<Embedding> embed(String text) {
-            return Response.from(vector(text));
-        }
+        public String getModelName() { return MODEL; }
 
         @Override
-        public Response<Embedding> embed(TextSegment segment) {
-            return embed(segment.text());
-        }
+        public int getDimensions() { return DIMENSION; }
 
         @Override
-        public Response<List<Embedding>> embedAll(List<TextSegment> segments) {
-            List<Embedding> embeddings = new ArrayList<>(segments.size());
-            for (TextSegment segment : segments) embeddings.add(vector(segment.text()));
-            return Response.from(embeddings);
+        public Mono<double[]> embed(ContentBlock block) {
+            return Mono.just(vector(((TextBlock) block).getText()));
         }
 
-        private static Embedding vector(String text) {
+        private static double[] vector(String text) {
             try {
                 byte[] digest = MessageDigest.getInstance("SHA-256")
                     .digest(text.getBytes(StandardCharsets.UTF_8));
-                float[] values = new float[DIMENSION];
+                double[] values = new double[DIMENSION];
                 for (int i = 0; i < values.length; i++) values[i] = (digest[i] & 0xff) / 255.0f;
-                return Embedding.from(values);
+                return values;
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }

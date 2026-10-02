@@ -3,7 +3,6 @@ package org.ruoyi.workflow.workflow;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.bsc.langgraph4j.state.AgentState;
 import org.ruoyi.workflow.util.UuidUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 
@@ -23,10 +22,13 @@ import static org.ruoyi.workflow.cosntant.AdiConstant.WorkflowConstant.NODE_PROC
 @Setter
 @Getter
 @ToString(callSuper = true)
-public class WfNodeState extends AgentState implements Serializable {
+public class WfNodeState implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    private final Map<String, Object> data;
+    public Map<String, Object> data() { return data; }
 
     private String uuid = UuidUtil.createShort();
     private int processStatus = NODE_PROCESS_STATUS_READY;
@@ -39,12 +41,13 @@ public class WfNodeState extends AgentState implements Serializable {
      *
      * @param initData the initial data for the agent state
      */
+    @SuppressWarnings("unchecked")
     public WfNodeState(Map<String, Object> initData) {
-        super(initData);
+        this.data = (Map<String,Object>) org.apache.commons.lang3.SerializationUtils.clone((java.io.Serializable) new java.util.LinkedHashMap<>(initData));
     }
 
     public WfNodeState() {
-        super(Map.of());
+        this(Map.of());
     }
 
     public Optional<NodeIOData> getDefaultInput() {

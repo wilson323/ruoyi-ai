@@ -1,6 +1,6 @@
 package org.ruoyi.service.chat;
 
-import dev.langchain4j.data.message.ChatMessage;
+import io.agentscope.core.message.Msg;
 import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.chat.domain.vo.chat.ChatMessageVo;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
@@ -74,7 +74,7 @@ public interface IChatMessageService {
      * @param sessionId 会话ID
      * @return 消息DTO列表
      */
-    List<ChatMessage> getMessagesBySessionId(Long sessionId);
+    List<Msg> getMessagesBySessionId(Long sessionId);
 
     /**
      * 根据会话ID删除所有消息

@@ -8,22 +8,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * 跨线程事件总线
- *
- * 写入端（异步线程）：StreamingOutputWrapper / SupervisorStreamListener
- * 读取端（SSE 线程）：ChatServiceFacade.drain
- *
- * 调用链路：
- *   SSE请求 -> 创建 OutputChannel
- *           -> Supervisor.invoke() [同步阻塞调用子Agent]
- *              ├── SupervisorStreamListener -> channel.send()
- *              └── searchAgent.search()
- *                  └── StreamingOutputWrapper -> channel.send() [每个token]
- *           -> channel.complete()
- *   drain线程 -> channel.drain() -> SSE实时推送
- *
- * @author ageerle@163.com
- * @date 2025/04/10
+ * 编码执行事件使用的跨线程通道；由 CodingEventChannel 适配为原生 Harness 事件输出。
+ * 不承载普通聊天的执行或模型调用。
  */
 @Slf4j
 public class OutputChannel {

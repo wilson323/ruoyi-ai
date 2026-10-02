@@ -1,11 +1,5 @@
 package org.ruoyi.service.chat.impl.provider;
 
-import dev.langchain4j.model.anthropic.AnthropicChatModel;
-import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
@@ -37,53 +31,21 @@ public class MinimaxServiceImpl implements AbstractChatService {
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
 
     @Override
-    public StreamingChatModel buildStreamingChatModel(ChatModelVo chatModelVo, ChatRequest chatRequest) {
-        String baseUrl = normalizeBaseUrl(chatModelVo.getApiHost());
-        boolean thinkingEnabled = Boolean.TRUE.equals(chatRequest.getEnableThinking());
-        String thinkingType = thinkingType(chatModelVo.getModelName(), thinkingEnabled);
-
-        if (isAnthropicBaseUrl(baseUrl)) {
-            return AnthropicStreamingChatModel.builder()
-                .baseUrl(toAnthropicClientBaseUrl(baseUrl))
-                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-                .modelName(chatModelVo.getModelName())
-                .timeout(DEFAULT_TIMEOUT)
-                .listeners(List.of(new MyChatModelListener()))
-                .thinkingType(thinkingType)
-                .returnThinking(thinkingEnabled)
-                .build();
-        }
-
-        OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder builder = OpenAiStreamingChatModel.builder()
-            .baseUrl(baseUrl)
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(chatModelVo.getModelName())
-            .timeout(DEFAULT_TIMEOUT)
-            .listeners(List.of(new MyChatModelListener()))
-            .returnThinking(thinkingEnabled);
-        if (thinkingType != null) {
-            builder.customParameters(Map.of("thinking", Map.of("type", thinkingType)));
-        }
-        return builder.build();
+    public io.agentscope.core.model.Model buildStreamingChatModel(ChatModelVo config, ChatRequest runtime) {
+        String baseUrl = normalizeBaseUrl(config.getApiHost());
+        boolean thinking = runtime != null && Boolean.TRUE.equals(runtime.getEnableThinking());
+        var options = io.agentscope.core.model.GenerateOptions.builder().stream(true);
+        String type = thinkingType(config.getModelName(), thinking);
+        if (type != null) { options.additionalBodyParam("thinking", Map.of("type", type)); }
+        String provider = isAnthropicBaseUrl(baseUrl) ? "anthropic" : getProviderName();
+        return new org.ruoyi.observability.MyChatModelListener().wrap(org.ruoyi.chat.kernel.AgentScopeModelFactory.create(
+            new org.ruoyi.chat.kernel.KernelModelRequest(config.getModelName(), provider,
+                config.resolveApiKeyForConfiguredEndpoint(getProviderName()), baseUrl, null, null, 180000), options.build()));
     }
 
     @Override
-    public ChatModel buildChatModel(ChatModelVo chatModelVo) {
-        String baseUrl = normalizeBaseUrl(chatModelVo.getApiHost());
-        if (isAnthropicBaseUrl(baseUrl)) {
-            return AnthropicChatModel.builder()
-                .baseUrl(toAnthropicClientBaseUrl(baseUrl))
-                .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-                .modelName(chatModelVo.getModelName())
-                .timeout(DEFAULT_TIMEOUT)
-                .build();
-        }
-        return OpenAiChatModel.builder()
-            .baseUrl(baseUrl)
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(chatModelVo.getModelName())
-            .timeout(DEFAULT_TIMEOUT)
-            .build();
+    public io.agentscope.core.model.Model buildChatModel(ChatModelVo config) {
+        return buildStreamingChatModel(config, null);
     }
 
     @Override
@@ -123,7 +85,7 @@ public class MinimaxServiceImpl implements AbstractChatService {
     }
 
     private static String toAnthropicClientBaseUrl(String baseUrl) {
-        // LangChain4j appends /messages, while MiniMax exposes /anthropic/v1/messages.
+        // 兼容历史端点格式；AgentScope formatter 维护实际请求路径。
         return baseUrl + "/v1";
     }
 

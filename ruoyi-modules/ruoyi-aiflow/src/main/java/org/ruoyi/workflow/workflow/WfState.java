@@ -2,8 +2,6 @@ package org.ruoyi.workflow.workflow;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.bsc.langgraph4j.langchain4j.generators.StreamingChatGenerator;
-import org.bsc.langgraph4j.state.AgentState;
 import org.ruoyi.common.chat.entity.User;
 import org.ruoyi.workflow.dto.workflow.WfRuntimeNodeDto;
 import org.ruoyi.workflow.entity.WorkflowNode;
@@ -31,18 +29,18 @@ public class WfState {
     private Long sessionId;
 
     //Source node uuid => target node uuid list
-    private Map<String, List<String>> edges = new HashMap<>();
-    private Map<String, List<String>> conditionalEdges = new HashMap<>();
+    private Map<String, List<String>> edges = new java.util.concurrent.ConcurrentHashMap<>();
+    private Map<String, List<String>> conditionalEdges = new java.util.concurrent.ConcurrentHashMap<>();
 
     //Source node uuid => streaming chat generator
-    private Map<String, StreamingChatGenerator<AgentState>> nodeToStreamingGenerator = new HashMap<>();
+    private Map<String, WorkflowNodeStream> nodeToStreamingGenerator = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * 已运行节点列表
      */
-    private List<AbstractWfNode> completedNodes = new LinkedList<>();
+    private List<AbstractWfNode> completedNodes = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    private List<WfRuntimeNodeDto> runtimeNodes = new ArrayList<>();
+    private List<WfRuntimeNodeDto> runtimeNodes = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     /**
      * 工作流接收到的输入（也是开始节点的输入参数）
@@ -70,7 +68,19 @@ public class WfState {
      *
      * @return 参数列表
      */
+    private final ThreadLocal<String> activeNode = new ThreadLocal<>();
+    public void beginNode(String nodeUuid) { activeNode.set(nodeUuid); }
+    public void endNode() { activeNode.remove(); }
     public List<NodeIOData> getLatestOutputs() {
+        String current = activeNode.get();
+        if (current != null) {
+            Set<String> predecessors = new LinkedHashSet<>();
+            edges.forEach((source, targets) -> { if (targets.contains(current)) predecessors.add(source); });
+            List<NodeIOData> output = new ArrayList<>();
+            completedNodes.stream().filter(n -> predecessors.contains(n.getNode().getUuid()))
+                .forEach(n -> n.getState().getOutputs().forEach(value -> output.add(org.apache.commons.lang3.SerializationUtils.clone(value))));
+            return output;
+        }
         WfNodeState upstreamState = completedNodes.get(completedNodes.size() - 1).getState();
         return upstreamState.getOutputs();
     }
@@ -109,23 +119,31 @@ public class WfState {
         if (optional.isEmpty()) {
             return result;
         }
-        result.addAll(optional.get().getState().getInputs());
-        result.addAll(optional.get().getState().getOutputs());
+        optional.get().getState().getInputs().forEach(value -> result.add(org.apache.commons.lang3.SerializationUtils.clone(value)));
+        optional.get().getState().getOutputs().forEach(value -> result.add(org.apache.commons.lang3.SerializationUtils.clone(value)));
         return result;
     }
 
-    public WfRuntimeNodeDto getRuntimeNodeByNodeUuid(String wfNodeUuid) {
-        WorkflowNode wfNode = getCompletedNodes().stream()
-                .map(AbstractWfNode::getNode)
-                .filter(node -> node.getUuid().equals(wfNodeUuid))
-                .findFirst()
-                .orElse(null);
-        if (null == wfNode) {
-            return null;
+    /** 只保留已提交检查点的上游上下文；未提交尝试只留在数据库历史中。 */
+    public void retainCheckpointCompleted(Set<String> completed) {
+        Map<String, AbstractWfNode> latest = new LinkedHashMap<>();
+        for (AbstractWfNode node : completedNodes) {
+            String id = node.getNode().getUuid();
+            if (completed.contains(id)) latest.put(id, node);
         }
-        return getRuntimeNodes().stream()
-                .filter(item -> item.getNodeId().equals(wfNode.getId()))
-                .findFirst()
-                .orElse(null);
+        completedNodes.clear();
+        completedNodes.addAll(latest.values());
+        Set<String> attempts = new HashSet<>();
+        latest.values().forEach(node -> attempts.add(node.getState().getUuid()));
+        runtimeNodes.removeIf(node -> !attempts.contains(node.getUuid()));
+        output = completedNodes.isEmpty() ? new ArrayList<>() : new ArrayList<>(completedNodes.get(completedNodes.size() - 1).getState().getOutputs());
+    }
+
+    public WfRuntimeNodeDto getRuntimeNodeByNodeUuid(String wfNodeUuid) {
+        Optional<WfNodeState> state = getNodeStateByNodeUuid(wfNodeUuid);
+        if (state.isEmpty()) return null;
+        return runtimeNodes.stream()
+                .filter(item -> Objects.equals(item.getUuid(), state.get().getUuid()))
+                .findFirst().orElse(null);
     }
 }

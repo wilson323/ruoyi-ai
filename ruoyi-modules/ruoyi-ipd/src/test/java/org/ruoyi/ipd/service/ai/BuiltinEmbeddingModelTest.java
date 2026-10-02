@@ -32,7 +32,7 @@ class BuiltinEmbeddingModelTest {
     @DisplayName("base URL 拼 /embeddings 即用户原文端点；不含 /embeddings 尾缀（防双拼 404）")
     void baseUrlComposesUserEndpoint() {
         assertThat(BuiltinEmbeddingModel.BASE_URL + "/embeddings")
-            .isEqualTo("http://171.43.138.237:9997/v1/embeddings");
+            .isEqualTo("http://127.0.0.1:11434/v1/embeddings");
         assertThat(BuiltinEmbeddingModel.BASE_URL).doesNotEndWith("/embeddings").doesNotEndWith("/");
         assertThat(BuiltinEmbeddingModel.API_KEY).isEmpty();
         assertThat(BuiltinEmbeddingModel.SOURCE).isEqualTo("builtin-default");

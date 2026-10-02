@@ -1,6 +1,5 @@
 package org.ruoyi.common.chat.service.chat;
 
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import jakarta.validation.Valid;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -22,6 +21,6 @@ public interface IChatService {
      * @param chatRequest    聊天请求
      * @param externalHandler 外部响应处理器（可为 null）
      */
-    void chat(@Valid ChatRequest chatRequest, StreamingChatResponseHandler externalHandler);
+    void chat(@Valid ChatRequest chatRequest, ChatResponseHandler externalHandler);
 
 }

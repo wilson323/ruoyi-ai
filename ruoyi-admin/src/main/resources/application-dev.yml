@@ -42,20 +42,6 @@ coding:
   harness:
     workspace:
       shared-root: ${CODING_HARNESS_WORKSPACE_SHARED_ROOT:D:/Project}
-    journal:
-      # Keep local projection disabled unless an operator explicitly chooses a destination.
-      enabled: ${CODING_HARNESS_JOURNAL_ENABLED:false}
-      output-directory: ${CODING_HARNESS_JOURNAL_OUTPUT_DIRECTORY:./data/coding-harness-journal}
-    # 本地实战也必须显式提供 Docker CLI 绝对路径与不可变镜像；默认保持关闭。
-    tools:
-      execute-process:
-        enabled: ${CODING_HARNESS_EXECUTE_PROCESS_ENABLED:false}
-        sandbox:
-          docker-executable: ${CODING_HARNESS_DOCKER_EXECUTABLE:}
-          docker-executable-sha256: ${CODING_HARNESS_DOCKER_EXECUTABLE_SHA256:}
-          docker-config-directory: ${CODING_HARNESS_DOCKER_CONFIG_DIRECTORY:}
-          docker-host: ${CODING_HARNESS_DOCKER_HOST:}
-          image: ${CODING_HARNESS_SANDBOX_IMAGE:}
 
 --- # 上传文件地址
 sys:

@@ -1,23 +1,29 @@
 package org.ruoyi.service.coding.impl;
 
 import cn.hutool.core.util.StrUtil;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.model.ExecutionConfig;
+import io.agentscope.core.model.Model;
+import io.agentscope.core.state.InMemoryAgentStateStore;
+import io.agentscope.core.tool.Toolkit;
+import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
+import org.ruoyi.chat.kernel.AgentScopeModelFactory;
+import org.ruoyi.chat.kernel.KernelModelRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.json.utils.JsonUtils;
 import org.ruoyi.domain.bo.coding.CodingRequestBo;
-import org.ruoyi.factory.ChatServiceFactory;
 import org.ruoyi.mcp.tools.DeleteFileTool;
 import org.ruoyi.mcp.tools.EditFileTool;
 import org.ruoyi.mcp.tools.ExecuteCommandTool;
 import org.ruoyi.mcp.tools.ListDirectoryTool;
 import org.ruoyi.mcp.tools.ReadFileTool;
 import org.ruoyi.mcp.tools.WriteFileTool;
-import org.ruoyi.service.chat.AbstractChatService;
-import org.ruoyi.service.coding.CodingAgent;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
 import org.ruoyi.service.coding.CodingWorkspaceService;
@@ -38,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 编程能力 Service 实现。
  *
  * <p>B 路径：自建 SseEmitter（不进 SseEmitterManager 全局注册表），照 ShortDramaServiceImpl 骨架。
- * 拿模型三步（skill 铁律）→ 解析工作目录 → new 工具实例注入 channel+root → AiServices 构建 →
+ * 模型配置 → 解析工作目录 → 原生 Toolkit 注入 channel+root → HarnessAgent 构建 →
  * 异步执行，工具内部通过 channel 实时推事件，drain 线程把事件写到 emitter。
  *
  * @author ageerle
@@ -51,7 +57,6 @@ public class CodingServiceImpl implements ICodingService {
     static final String SAFE_CODING_ERROR_MESSAGE = "编程任务执行失败，请稍后重试";
 
     private final IChatModelService chatModelService;
-    private final ChatServiceFactory chatServiceFactory;
     private final CodingWorkspaceService workspaceService;
     private final Map<SseEmitter, AtomicBoolean> activeEmitters = new ConcurrentHashMap<>();
 
@@ -90,8 +95,7 @@ public class CodingServiceImpl implements ICodingService {
                     throw new IllegalStateException("模型未找到: " + bo.getModel()
                         + "，请在 chat_model 表配置该模型名称");
                 }
-                AbstractChatService chatService = chatServiceFactory.getOriginalService(modelVo.getProviderCode());
-                ChatModel chatModel = chatService.buildChatModel(modelVo);
+                Model chatModel = AgentScopeModelFactory.create(KernelModelRequest.from(modelVo));
 
                 // 2. 解析工作目录
                 Files.createDirectories(root);
@@ -104,14 +108,33 @@ public class CodingServiceImpl implements ICodingService {
                 DeleteFileTool delete = new DeleteFileTool(root, channel);
                 ExecuteCommandTool exec = new ExecuteCommandTool(root, channel);
 
-                // 4. 构建 AiServices
-                CodingAgent agent = AiServices.builder(CodingAgent.class)
-                    .chatModel(chatModel)
-                    .tools(read, edit, list, write, delete, exec)
-                    .build();
-
-                // 5. 同步调用（方案 B）：工具执行过程中事件通过 channel 实时推送
-                String result = agent.chat(bo.getPrompt());
+                // Native execution keeps the existing workspace guard and tool event channel.
+                Toolkit toolkit = new Toolkit();
+                for (Object tool : java.util.List.of(read, edit, list, write, delete, exec)) {
+                    toolkit.registerTool(tool);
+                }
+                String result;
+                try (HarnessAgent agent = HarnessAgent.builder().name("coding")
+                    .model(chatModel).toolkit(toolkit).maxIters(30)
+                    // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）；不设时SDK不套任何重试。
+                    .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
+                    .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)
+                    // 长对话压缩：官方 Builder 默认即装配全默认配置（主模型+官方摘要prompt+动态阈值）。
+                    // 此处显式声明与默认等价的配置，固化意图防官方默认漂移；溢出硬失败仅在 disableCompaction 时出现。
+                    .compaction(CompactionConfig.builder().build())
+                    .sysPrompt("你是编程助手。只操作当前受控工作目录；修改前读取文件，命令失败检查输出，"
+                        + "完成后简要总结。只能调用本次注册的工具：" + toolkit.getToolNames())
+                    .disableFilesystemTools().disableShellTool().disableMemoryTools()
+                    .disableMemoryHooks().disableTranscript().disableSubagents().disableDynamicSubagents()
+                    .disableDynamicSkills().disableDefaultWorkspaceSkills().skillsEnabled(false)
+                    .stateStore(new InMemoryAgentStateStore()).workspace(root).build()) {
+                    RuntimeContext context = RuntimeContext.builder().userId(String.valueOf(userId))
+                        .sessionId(java.util.UUID.randomUUID().toString()).build();
+                    Msg answer = agent.call(Msg.builder().role(MsgRole.USER).textContent(bo.getPrompt()).build(), context)
+                        .block(java.time.Duration.ofMinutes(30));
+                    if (answer == null) { throw new IllegalStateException("Native coding agent returned no result"); }
+                    result = answer.getTextContent();
+                }
 
                 // 6. 推送最终文本
                 if (StrUtil.isNotBlank(result)) {

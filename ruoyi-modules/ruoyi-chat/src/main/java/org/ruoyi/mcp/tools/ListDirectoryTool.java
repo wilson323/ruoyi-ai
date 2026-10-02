@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
@@ -57,8 +58,8 @@ public class ListDirectoryTool implements BuiltinToolProvider {
      * @param maxDepth  最大递归深度（可选，默认 3，范围 1-10）
      * @return 目录列表结果
      */
-    @Tool(DESCRIPTION)
-    public String listDirectory(String filePath, Boolean recursive, Integer maxDepth) {
+    @Tool(name = "listDirectory", description = DESCRIPTION, readOnly = true)
+    public String listDirectory(@ToolParam(name = "filePath", description = "工作目录内目录绝对路径") String filePath, @ToolParam(name = "recursive", description = "是否递归", required = false) Boolean recursive, @ToolParam(name = "maxDepth", description = "最大递归深度", required = false) Integer maxDepth) {
         // 创建参数对象
         ListDirectoryParams params = new ListDirectoryParams();
         params.filePath = filePath;

@@ -1,6 +1,7 @@
 package org.ruoyi.chat.kernel.tool;
 
 import io.agentscope.core.message.ToolResultBlock;
+import io.agentscope.core.message.ToolResultState;
 import io.agentscope.core.permission.PermissionContextState;
 import io.agentscope.core.permission.PermissionDecision;
 import io.agentscope.core.tool.AgentTool;
@@ -48,7 +49,7 @@ public final class KernelGovernedTool extends ToolBase {
                         .description(delegate.getDescription())
                         .inputSchema(delegate.getParameters())
                         .readOnly(delegate.isReadOnly())
-                        .concurrencySafe(true),
+                        .concurrencySafe(delegate instanceof ToolBase nativeTool && nativeTool.isConcurrencySafe()),
                 delegate, governance);
     }
 
@@ -74,14 +75,22 @@ public final class KernelGovernedTool extends ToolBase {
             return Mono.fromCallable(() -> governance.refuseExecution(getName(), input));
         }
         String nativeToolCallId = param.getToolUseBlock().getId();
-        return delegate.callAsync(param)
+        return Mono.defer(() -> delegate.callAsync(param))
+                .switchIfEmpty(Mono.error(new IllegalStateException("TOOL_EMPTY_RESULT")))
                 .flatMap(result -> Mono.defer(() -> {
-                    governance.settleSuccess(call, nativeToolCallId, describe(result));
+                    if (result.getState() == ToolResultState.ERROR) {
+                        governance.settleFailure(call, "TOOL_RESULT_ERROR");
+                        return Mono.just(ToolResultBlock.error(getName(), SAFE_ERROR_MESSAGE)
+                            .withIdAndName(nativeToolCallId, getName()));
+                    } else {
+                        governance.settleSuccess(call, nativeToolCallId, describe(result));
+                    }
                     return Mono.just(result);
                 }))
                 .onErrorResume(err -> Mono.defer(() -> {
                     governance.settleFailure(call, err.getClass().getName());
-                    return Mono.just(ToolResultBlock.error(getName(), SAFE_ERROR_MESSAGE));
+                    return Mono.just(ToolResultBlock.error(getName(), SAFE_ERROR_MESSAGE)
+                        .withIdAndName(nativeToolCallId, getName()));
                 }));
     }
 

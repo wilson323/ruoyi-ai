@@ -11,5 +11,7 @@ import org.springframework.stereotype.Component;
 @Component("siliconflow")
 @org.springframework.context.annotation.Scope("prototype")
 public class SiliconFlowEmbeddingProvider extends OpenAiEmbeddingProvider {
+    @Override
+    protected String credentialProvider() { return "siliconflow"; }
 
 }

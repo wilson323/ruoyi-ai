@@ -1,6 +1,6 @@
 package org.ruoyi.integration;
 
-import dev.langchain4j.model.chat.StreamingChatModel;
+import io.agentscope.core.model.Model;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,7 +50,7 @@ class MinimaxIntegrationTest {
         ChatRequest request = new ChatRequest();
         request.setEnableThinking(enableThinking);
 
-        StreamingChatModel model = minimaxService.buildStreamingChatModel(modelVo, request);
+        Model model = minimaxService.buildStreamingChatModel(modelVo, request);
         assertNotNull(model, "Should create streaming model for " + modelName + " at " + apiHost);
     }
 }

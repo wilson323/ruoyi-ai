@@ -5,7 +5,7 @@ import java.nio.file.Path;
 /**
  * 磁盘 Skills 目录路径解析器
  * <p>
- * langchain4j 的 ShellSkills 通过 FileSystemSkillLoader 从磁盘加载 SKILL.md，
+ * AgentScope 的只读 FileSystemSkillRepository 从磁盘加载 SKILL.md，
  * 路径硬编码在 ChatServiceFacade 中。抽到此工具类供智能体管理端与聊天流程共用，
  * 避免两处路径漂移。
  *

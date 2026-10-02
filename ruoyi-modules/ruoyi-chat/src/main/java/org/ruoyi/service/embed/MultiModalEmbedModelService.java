@@ -1,7 +1,6 @@
 package org.ruoyi.service.embed;
 
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.model.output.Response;
+import reactor.core.publisher.Mono;
 import org.ruoyi.domain.dto.MultiModalInput;
 
 
@@ -16,7 +15,7 @@ public interface MultiModalEmbedModelService extends BaseEmbedModelService {
      * @param imageDataUrl 图像的地址，必须是公开可访问的URL
      * @return 包含嵌入向量的响应对象，可能包含状态信息和嵌入结果
      */
-    Response<Embedding> embedImage(String imageDataUrl);
+    Mono<double[]> embedImage(String imageDataUrl);
 
     /**
      * 将视频数据转换为嵌入向量
@@ -24,14 +23,14 @@ public interface MultiModalEmbedModelService extends BaseEmbedModelService {
      * @param videoDataUrl 视频的地址，必须是公开可访问的URL
      * @return 包含嵌入向量的响应对象，可能包含状态信息和嵌入结果
      */
-    Response<Embedding> embedVideo(String videoDataUrl);
+    Mono<double[]> embedVideo(String videoDataUrl);
 
 
     /**
      * 处理多模态输入并返回嵌入向量的方法
      *
      * @param input 包含多种模态信息（如图像、文本等）的输入对象
-     * @return Response<Embedding> 包含嵌入向量的响应对象，Embedding通常表示输入数据的向量表示
+     * @return Mono<double[]> 包含嵌入向量的响应对象，Embedding通常表示输入数据的向量表示
      */
-    Response<Embedding> embedMultiModal(MultiModalInput input);
+    Mono<double[]> embedMultiModal(MultiModalInput input);
 }

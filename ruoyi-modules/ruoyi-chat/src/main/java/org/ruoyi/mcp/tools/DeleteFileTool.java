@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
@@ -54,8 +55,8 @@ public class DeleteFileTool implements BuiltinToolProvider {
      * @param recursive 是否递归删除非空目录（可选，默认 false）
      * @return 操作结果
      */
-    @Tool(DESCRIPTION)
-    public String deleteFile(String filePath, Boolean recursive) {
+    @Tool(name = "deleteFile", description = DESCRIPTION, readOnly = false)
+    public String deleteFile(@ToolParam(name = "filePath", description = "工作目录内目标绝对路径") String filePath, @ToolParam(name = "recursive", description = "是否递归", required = false) Boolean recursive) {
         try {
             if (filePath == null || filePath.trim().isEmpty()) {
                 return "Error: File path cannot be empty";

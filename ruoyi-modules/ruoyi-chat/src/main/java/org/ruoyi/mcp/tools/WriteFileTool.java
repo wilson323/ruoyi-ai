@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
@@ -54,8 +55,8 @@ public class WriteFileTool implements BuiltinToolProvider {
      * @param content  文件内容
      * @return 操作结果
      */
-    @Tool(DESCRIPTION)
-    public String writeFile(String filePath, String content) {
+    @Tool(name = "writeFile", description = DESCRIPTION, readOnly = false)
+    public String writeFile(@ToolParam(name = "filePath", description = "工作目录内文件绝对路径") String filePath, @ToolParam(name = "content", description = "文件正文") String content) {
         try {
             if (filePath == null || filePath.trim().isEmpty()) {
                 return "Error: File path cannot be empty";

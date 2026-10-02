@@ -1,12 +1,13 @@
 package org.ruoyi.service.vector.impl;
 
-import dev.langchain4j.model.embedding.EmbeddingModel;
+import io.agentscope.core.embedding.EmbeddingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.config.VectorStoreProperties;
 import org.ruoyi.factory.EmbeddingModelFactory;
+import org.ruoyi.service.knowledge.KnowledgeEmbedEndpoint;
 import org.ruoyi.service.vector.VectorStoreService;
 
 /**
@@ -58,8 +59,17 @@ public abstract class AbstractVectorStoreStrategy implements VectorStoreService 
     /**
      * 获取向量模型
      */
+    /**
+     * 内置模型名直接走与文档嵌入相同的客户端。其他名字仍查模型表。
+     *
+     * @param modelName 嵌入模型名
+     * @return 嵌入客户端
+     */
     @SneakyThrows
     protected EmbeddingModel getEmbeddingModel(String modelName) {
+        if (KnowledgeEmbedEndpoint.isBuiltinModel(modelName)) {
+            return KnowledgeEmbedEndpoint.embeddingModel();
+        }
         return embeddingModelFactory.createModel(modelName);
     }
 

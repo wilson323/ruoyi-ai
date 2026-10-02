@@ -19,7 +19,7 @@ import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
 import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.domain.vo.agent.AgentVo;
-import org.ruoyi.factory.ChatServiceFactory;
+import org.ruoyi.mcp.service.core.AgentScopeMcpToolProviderService;
 import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
@@ -33,7 +33,9 @@ import reactor.core.Disposable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -98,8 +100,12 @@ class MpChatWebSocketHandlerKernelDelegateTest {
             return null;
         }).when(ownershipGuard).requireOwned(any(), any());
 
+        AgentScopeMcpToolProviderService provider = mock(AgentScopeMcpToolProviderService.class);
+        AgentScopeMcpToolProviderService.ToolSession tools = mock(AgentScopeMcpToolProviderService.ToolSession.class);
+        when(tools.toolkit()).thenReturn(new io.agentscope.core.tool.Toolkit());
+        when(provider.createSession(org.mockito.ArgumentMatchers.nullable(List.class))).thenReturn(tools);
         handler = new MpChatWebSocketHandler(
-            mock(ChatServiceFactory.class),
+            provider,
             chatModelService,
             agentService,
             mock(KnowledgeAccessGate.class),
@@ -111,9 +117,6 @@ class MpChatWebSocketHandlerKernelDelegateTest {
         Field field = MpChatWebSocketHandler.class.getDeclaredField("agentScopeChatKernel");
         field.setAccessible(true);
         field.set(handler, kernel);
-        Field enabled = MpChatWebSocketHandler.class.getDeclaredField("agentScopeEnabled");
-        enabled.setAccessible(true);
-        enabled.setBoolean(handler, true);
 
         attributes = new HashMap<>();
         wsSession = mock(WebSocketSession.class);
@@ -127,9 +130,27 @@ class MpChatWebSocketHandlerKernelDelegateTest {
         streamDisposable = mock(Disposable.class);
         doAnswer(invocation -> {
             streamArgs = invocation.getArguments();
-            streamSink = (KernelChatSink) invocation.getArgument(7);
+            streamSink = (KernelChatSink) invocation.getArgument(10);
             return streamDisposable;
-        }).when(kernel).stream(any(), any(), any(), any(), any(), any(), any(), any());
+        }).when(kernel).stream(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void finalReplacementUsesSameContentChainBeforeDone() throws Exception {
+        attributes.put(MpChatHandshakeInterceptor.USER_ID_KEY, 42L);
+        handler.handleTextMessage(wsSession, new TextMessage(
+            "{\"content\":\"hello\",\"sessionId\":\"100\",\"model\":\"m1\"}"));
+        streamSink.onContent("old");
+        streamSink.onResult(io.agentscope.core.message.Msg.builder()
+            .role(io.agentscope.core.message.MsgRole.ASSISTANT).textContent("old")
+            .metadata(Map.of("replacementText", "final")).build());
+        streamSink.onComplete();
+        assertEquals(3, frames.size());
+        var replacement = new ObjectMapper().readTree(frames.get(1));
+        assertEquals("final", replacement.get("content").asText());
+        assertTrue(replacement.get("replace").asBoolean());
+        assertEquals("[DONE]", frames.get(2));
+        verify(chatMessageService).insertByBo(argThat(row -> "final".equals(row.getContent())));
     }
 
     @Test
@@ -137,6 +158,7 @@ class MpChatWebSocketHandlerKernelDelegateTest {
     void kernelDelegateMapsFramesToWsContract() {
         attributes.put(MpChatHandshakeInterceptor.USER_ID_KEY, 42L);
         AgentVo agentVo = new AgentVo();
+        agentVo.setStatus("0");
         agentVo.setId(7L);
         agentVo.setSystemPrompt("你是客服");
         when(agentService.queryById(7L)).thenReturn(agentVo);
@@ -159,7 +181,7 @@ class MpChatWebSocketHandlerKernelDelegateTest {
         assertEquals("7", streamArgs[2], "agentId 段取智能体 id");
         assertEquals("100", streamArgs[3], "sessionId 段");
         assertEquals("你好", streamArgs[4], "RAG 增强后内容透传（无知识库=原文）");
-        assertEquals("你是客服", streamArgs[5], "agentVo.systemPrompt 透传内核 sysPrompt");
+        assertTrue(((String) streamArgs[5]).startsWith("你是客服"), "保留智能体提示并合并本次能力规约");
         KernelModelRequest modelRequest = (KernelModelRequest) streamArgs[6];
         assertEquals("m1", modelRequest.modelName(), "请求 model 字段路由进内核模型请求（W2 收口）");
         assertEquals("minimax", modelRequest.providerCode(), "厂商码随 ChatModelVo 透传");
@@ -185,7 +207,7 @@ class MpChatWebSocketHandlerKernelDelegateTest {
             "{\"content\":\"hi\",\"sessionId\":\"100\",\"model\":\"m1\",\"systemPrompt\":\"用一句话回答\"}"));
 
         assertEquals("chat-model", streamArgs[2], "无智能体折叠段（镜像 ChatServiceFacade）");
-        assertEquals("用一句话回答", streamArgs[5], "请求级 systemPrompt 回退透传");
+        assertTrue(((String) streamArgs[5]).startsWith("用一句话回答"), "保留请求提示并合并本次能力规约");
     }
 
     @Test

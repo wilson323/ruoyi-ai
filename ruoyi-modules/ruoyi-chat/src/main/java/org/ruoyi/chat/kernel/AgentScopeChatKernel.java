@@ -4,9 +4,15 @@ import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.model.Model;
+import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.extensions.mysql.state.MysqlAgentStateStore;
+import io.agentscope.core.state.AgentStateStore;
+import io.agentscope.core.state.AgentState;
+import org.redisson.api.RedissonClient;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
+import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import io.agentscope.harness.agent.gateway.LocalSessionTurnGate;
 import io.agentscope.harness.agent.gateway.SessionTurnGate;
 import io.agentscope.harness.agent.gateway.TurnLease;
@@ -32,44 +38,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import org.springframework.stereotype.Component;
 
-/**
- * W1 对话内核委托桥（2026-09-28，ADR-0075 W1：矩阵 #1 #2 #4 #5 #6 #7）+ W2 模型层
- * （矩阵 #8「替换」+ #9「包装」）。
- *
- * <p>成熟方案优先：会话状态用 AgentScope 原生 {@link MysqlAgentStateStore}（矩阵 #5「替换」）、
- * 事件流用 {@code HarnessAgent.streamEvents}（矩阵 #7「包装」），同键串行使用原生
- * {@link LocalSessionTurnGate}（JVM 级静态共享，覆盖同进程内全部内核实例与注入点；
- * 跨进程多副本串行须分布式锁，另行验收）。
- * 四维隔离键只经 {@link KernelScopeKey} 唯一收口（矩阵 #1「包装」，业务代码禁止手拼）。
- *
- * <p>身份三态（矩阵 #4「包装」，userId 严禁来自请求参数）：
- * <ul>
- *   <li>已登录 → 四维键 p&#123;project&#125;:u&#123;user&#125;；</li>
- *   <li>空 userId → 正式桥拒绝；PoC 匿名键只供隔离实验；</li>
- *   <li>非法段（':'/'..'）→ fail-closed 拒绝（{@code SCOPE_REJECTED} 错误帧，不触引擎）。</li>
- * </ul>
- *
- * <p>模型层（W2，唯一装配/选型入口 {@link KernelModelSelector}）：装配只经 AgentScope
- * 原生 {@code ModelRegistry.resolve}（provider SPI，凭据走 {@code ModelCreationContext}，
- * 矩阵 #8「替换」）；请求 {@code model} 字段经 {@link KernelModelRequest} 薄归一进同一
- * 解析面（矩阵 #9「包装」，禁第二套路由），{@code chat.kernel.agentscope.model-id}
- * 仅在入口未提供模型时作为默认值；显式选型失败不得借 {@code fallbackModel} 静默改用其他模型。
- * PoC 旧 SSE/WS 已传入选定模型；默认关闭的路由开关、正式运行与 IPD
- * {@code ai_model_configs} 接线仍须分别验收（W2 出条件待验）。
- *
- * <p>W1 工具清单强制为空。{@link KernelEventFrames} 的权限状态映射不是执行拦截；
- * W3 必须把既有 {@link ToolPolicyEngine} 接入真正执行前边界后再开放工具。
- *
- * <p>回滚点（ADR-0075 W1/W2）：{@code chat.kernel.agentscope.enabled} 默认 {@code false}，
- * Bean 缺席即回既有 langchain4j 路径（{@code ChatServiceFacade}/{@code MpChatWebSocketHandler}
- * 内核委托分支随之失效），保留 {@code AbstractChatService} 现实现一个版本周期。
- * 状态存储表 DDL 预建（{@code createIfNotExist=false}）。
- */
+/** 原生 AgentScope 聊天内核，保持身份隔离、会话持久状态与同键整轮串行。 */
 @Component
-@ConditionalOnProperty(name = "chat.kernel.agentscope.enabled", havingValue = "true", matchIfMissing = false)
 public class AgentScopeChatKernel implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(AgentScopeChatKernel.class);
@@ -85,9 +58,9 @@ public class AgentScopeChatKernel implements AutoCloseable {
     /** 未分桶降级段（W1 兼容面 {@code agent(String, String)} 专用，不承载真实项目/用户语义）。 */
     static final String UNSCOPED_SEGMENT = "__unscoped__";
 
+    private io.agentscope.core.hook.Hook auditHook;
     private final KernelModelSelector modelSelector;
-    private final boolean modelRoutingEnabled;
-    private final Supplier<MysqlAgentStateStore> stateStoreSupplier;
+    private final Supplier<? extends AgentStateStore> stateStoreSupplier;
     private final Path workspaceRoot;
     private final KernelEventFrames frames;
     private final ConcurrentMap<AgentConfiguration, HarnessAgent> agents = new ConcurrentHashMap<>();
@@ -99,23 +72,32 @@ public class AgentScopeChatKernel implements AutoCloseable {
     private record AgentConfiguration(String projectId, String userId, String agentId, String systemPrompt,
                                       String modelKey, String configurationIdentity) {}
 
-    private volatile MysqlAgentStateStore stateStore;
+    private volatile AgentStateStore stateStore;
 
-    /** 生产装配：应用 DataSource + 可配置模型/库表/工作区（凭据不落代码，C6）。 */
+    /** 正式状态只借用本项目现有 Redisson，原生 CAS 持久化，不创建表或新 Redis 客户端。 */
     @Autowired
-    public AgentScopeChatKernel(
-            DataSource dataSource,
+    public AgentScopeChatKernel(RedissonClient redisson,
             @Value("${chat.kernel.agentscope.model-id:minimax:MiniMax-M3}") String modelId,
-            @Value("${chat.kernel.agentscope.state-database:}") String stateDatabase,
-            @Value("${chat.kernel.agentscope.state-table:agentscope_sessions}") String stateTable,
-            @Value("${chat.kernel.agentscope.workspace-root:${java.io.tmpdir}/agentscope-workspace}")
-                    Path workspaceRoot,
-            @Value("${chat.kernel.agentscope.model-routing.enabled:false}") boolean modelRoutingEnabled) {
-        this(
-                new KernelModelSelector(modelId),
-                modelRoutingEnabled,
-                checkedStateStoreSupplier(dataSource, stateDatabase, stateTable),
-                workspaceRoot);
+            @Value("${chat.kernel.agentscope.workspace-root:${java.io.tmpdir}/agentscope-workspace}") Path workspaceRoot,
+            @org.springframework.beans.factory.annotation.Qualifier("agentScopeAuditHook") io.agentscope.core.hook.Hook auditHook) {
+        this(redisson, modelId, workspaceRoot);
+        this.auditHook = auditHook;
+    }
+
+    /** 兼容直接构造；生产使用带共享诊断Hook的构造器。 */
+    public AgentScopeChatKernel(
+            RedissonClient redisson,
+            @Value("${chat.kernel.agentscope.model-id:minimax:MiniMax-M3}") String modelId,
+            @Value("${chat.kernel.agentscope.workspace-root:${java.io.tmpdir}/agentscope-workspace}") Path workspaceRoot) {
+        this(new KernelModelSelector(modelId), true,
+            () -> new FailClosedAgentStateStore(AgentScopeRedisStateStores.create(redisson, "ruoyi:agentscope:chat:")), workspaceRoot);
+    }
+
+    /** 旧 MySQL 测试夹具；生产注入不使用它。 */
+    AgentScopeChatKernel(DataSource dataSource, String modelId, String stateDatabase,
+                         String stateTable, Path workspaceRoot) {
+        this(new KernelModelSelector(modelId), true,
+            checkedStateStoreSupplier(dataSource, stateDatabase, stateTable), workspaceRoot);
     }
 
     private static Supplier<MysqlAgentStateStore> checkedStateStoreSupplier(
@@ -134,7 +116,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
     AgentScopeChatKernel(
             Model fixedModel,
             String modelId,
-            Supplier<MysqlAgentStateStore> stateStoreSupplier,
+            Supplier<? extends AgentStateStore> stateStoreSupplier,
             Path workspaceRoot) {
         this(fixedModel == null
                         ? new KernelModelSelector(modelId)
@@ -144,14 +126,13 @@ public class AgentScopeChatKernel implements AutoCloseable {
                 workspaceRoot);
     }
 
-    /** 测试装配：路由开关可显式关闭（W2 回滚点语义验证）。 */
+    /** 兼容既有测试装配签名；明确选定模型始终生效。 */
     AgentScopeChatKernel(
             KernelModelSelector modelSelector,
             boolean modelRoutingEnabled,
-            Supplier<MysqlAgentStateStore> stateStoreSupplier,
+            Supplier<? extends AgentStateStore> stateStoreSupplier,
             Path workspaceRoot) {
         this.modelSelector = Objects.requireNonNull(modelSelector, "modelSelector");
-        this.modelRoutingEnabled = modelRoutingEnabled;
         this.stateStoreSupplier = Objects.requireNonNull(stateStoreSupplier, "stateStoreSupplier");
         this.workspaceRoot = Objects.requireNonNull(workspaceRoot, "workspaceRoot");
         this.frames = new KernelEventFrames(
@@ -161,7 +142,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
     /** 测试装配：可观测装配缝（模型路由断言用；生产恒原生 {@code ModelRegistry.resolve}）。 */
     AgentScopeChatKernel(
             KernelModelSelector modelSelector,
-            Supplier<MysqlAgentStateStore> stateStoreSupplier,
+            Supplier<? extends AgentStateStore> stateStoreSupplier,
             Path workspaceRoot) {
         this(modelSelector, true, stateStoreSupplier, workspaceRoot);
     }
@@ -219,10 +200,9 @@ public class AgentScopeChatKernel implements AutoCloseable {
         try {
             Msg msg = Msg.builder().role(MsgRole.USER).textContent(userText).build();
             AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink);
-            // W2 回滚点：路由开关关 → 忽略请求 model 字段（W1 静态 model-id 行为）。
-            KernelModelRequest effectiveModel = modelRoutingEnabled ? model : null;
+            KernelModelRequest effectiveModel = model;
             HarnessAgent selectedAgent = agent(projectId, userId, agentId, systemPrompt,
-                    modelSelector.plan(effectiveModel));
+                    modelSelector.plan(effectiveModel, userId, sessionId));
             return Flux.using(() -> TURN_GATE.acquire(scope.slotId()),
                     lease -> selectedAgent.streamEvents(msg, scope.toRuntimeContext()),
                     TurnLease::close)
@@ -232,6 +212,79 @@ public class AgentScopeChatKernel implements AutoCloseable {
             log.error("kernel_chat operation=STREAM status=FAILED errorType={}", e.getClass().getName());
             sink.onError(ERR_KERNEL_ERROR, SAFE_ERROR_MESSAGE);
             return () -> { };
+        }
+    }
+
+    /** 本次工具集与客户端仅供本次运行，终态/失败/取消均关闭；会话状态仍在原生状态库。 */
+    public Disposable stream(String projectId, String userId, String agentId, String sessionId,
+                             String userText, String systemPrompt, KernelModelRequest model,
+                             Toolkit toolkit, AutoCloseable resources, KernelChatSink sink) {
+        return stream(projectId, userId, agentId, sessionId, userText, systemPrompt, model,
+            toolkit, resources, List::of, sink);
+    }
+
+    public Disposable stream(String projectId, String userId, String agentId, String sessionId,
+                             String userText, String systemPrompt, KernelModelRequest model,
+                             Toolkit toolkit, AutoCloseable resources,
+                             Supplier<List<Msg>> initialHistory, KernelChatSink sink) {
+        KernelScopeKey.Scope scope;
+        try {
+            if (userId == null || userId.isBlank()) {
+                throw new IllegalArgumentException("authenticated user required");
+            }
+            scope = KernelScopeKey.of(projectId, userId, agentId, sessionId);
+        } catch (IllegalArgumentException rejected) {
+            closeResources(resources);
+            sink.onError(ERR_SCOPE_REJECTED, SAFE_ERROR_MESSAGE);
+            return () -> { };
+        }
+        try {
+            KernelModelSelector.ModelPlan plan = modelSelector.plan(model, userId, sessionId);
+            var descriptors = toolkit.getToolNames().stream().map(name -> {
+                boolean readOnly = toolkit.getTool(name).isReadOnly();
+                return new org.ruoyi.service.coding.harness.tool.ToolDescriptor(name,
+                    java.util.EnumSet.of(readOnly
+                        ? org.ruoyi.service.coding.harness.tool.ToolCapability.READ
+                        : org.ruoyi.service.coding.harness.tool.ToolCapability.WRITE),
+                    readOnly, 30_000L, 4096L, 16384L, false, "配置选定的市场工具");
+            }).toList();
+            var policy = new ToolPolicyEngine(descriptors);
+            var governance = new org.ruoyi.chat.kernel.tool.KernelToolGovernance(policy,
+                HarnessPermissionMode.READ_ONLY,
+                new org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger(),
+                new org.ruoyi.chat.kernel.tool.KernelToolCallTrace());
+            for (String name : List.copyOf(toolkit.getToolNames())) {
+                var delegate = toolkit.getTool(name);
+                toolkit.removeTool(name);
+                toolkit.registerAgentTool(org.ruoyi.chat.kernel.tool.KernelGovernedTool.wrap(delegate, governance));
+            }
+            HarnessAgent selectedAgent = buildAgent(projectId, userId, agentId, systemPrompt, plan, toolkit);
+            AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink,
+                new KernelEventFrames(policy, HarnessPermissionMode.READ_ONLY));
+            Msg msg = Msg.builder().role(MsgRole.USER).textContent(userText).build();
+            return Flux.using(() -> TURN_GATE.acquire(scope.slotId()),
+                lease -> {
+                    initializeHistoryIfAbsent(scope, initialHistory);
+                    return selectedAgent.streamEvents(msg, scope.toRuntimeContext());
+                }, TurnLease::close)
+                .doFinally(signal -> {
+                    try { selectedAgent.close(); }
+                    finally { closeResources(resources); }
+                }).subscribeOn(Schedulers.boundedElastic())
+                .subscribe(bridge::dispatch, bridge::error, bridge::complete);
+        } catch (Exception failure) {
+            closeResources(resources);
+            sink.onError(ERR_KERNEL_ERROR, SAFE_ERROR_MESSAGE);
+            return () -> { };
+        }
+    }
+
+    private static void closeResources(AutoCloseable resources) {
+        if (resources != null) {
+            try { resources.close(); }
+            catch (Exception failure) {
+                log.warn("kernel_chat operation=CLOSE_TOOLS status=FAILED errorType={}", failure.getClass().getName());
+            }
         }
     }
 
@@ -251,6 +304,11 @@ public class AgentScopeChatKernel implements AutoCloseable {
 
     private HarnessAgent buildAgent(String projectId, String userId, String agentId,
                                     String systemPrompt, KernelModelSelector.ModelPlan plan) {
+        return buildAgent(projectId, userId, agentId, systemPrompt, plan, new Toolkit());
+    }
+
+    private HarnessAgent buildAgent(String projectId, String userId, String agentId,
+                                    String systemPrompt, KernelModelSelector.ModelPlan plan, Toolkit toolkit) {
         try {
             Path workspace = createWorkspace(workspaceRoot, projectId, userId, agentId);
             Path agentsMd = workspace.resolve("AGENTS.md");
@@ -272,9 +330,18 @@ public class AgentScopeChatKernel implements AutoCloseable {
                     .sysPrompt(systemPrompt == null || systemPrompt.isBlank()
                             ? "You are a helpful assistant. Answer concisely in the user's language."
                             : systemPrompt)
-                    .model(plan.model());
+                    .model(plan.model())
+                    .hook(auditHook);
             HarnessAgent built = builder
-                    .toolkit(new Toolkit())
+                    .toolkit(toolkit)
+                    // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）。
+                    .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
+                    .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)
+                    // 长对话压缩：官方 Builder 默认即装配全默认配置；此处显式声明固化意图防默认漂移。
+                    .compaction(CompactionConfig.builder().build())
+                    // 业务输入仅来自显式系统提示、授权资料与会话，禁止默认读取启动目录工程文件。
+                    .disableWorkspaceContext()
+                    .disableAtPathExpansion()
                     .disableFilesystemTools()
                     .disableShellTool()
                     .disableMemoryTools()
@@ -288,13 +355,9 @@ public class AgentScopeChatKernel implements AutoCloseable {
                     .disableDefaultWorkspaceSkills()
                     .toolsConfig(toolsConfig)
                     .workspace(workspace)
+                    .filesystem(new LocalFilesystemSpec().project(workspace))
                     .stateStore(stateStore())
                     .build();
-            // W1 只开放对话；W3 完成执行前权限/审批/账本验收后再按单一目录开放工具。
-            if (!built.getToolkit().getToolNames().isEmpty()) {
-                built.close();
-                throw new IllegalStateException("W1 chat kernel must not expose tools");
-            }
             return built;
         } catch (Exception e) {
             throw new IllegalStateException("build HarnessAgent failed: " + agentId, e);
@@ -349,8 +412,22 @@ public class AgentScopeChatKernel implements AutoCloseable {
         return value;
     }
 
-    private MysqlAgentStateStore stateStore() {
-        MysqlAgentStateStore store = stateStore;
+    /** 在同键 turn gate 内仅创建缺失状态，已有原生状态是唯一权威。 */
+    private void initializeHistoryIfAbsent(KernelScopeKey.Scope scope, Supplier<List<Msg>> initialHistory) {
+        AgentStateStore store = stateStore();
+        if (store == null || store.exists(scope.userId(), scope.sessionId())) { return; }
+        List<Msg> history = initialHistory.get();
+        if (history == null || history.isEmpty()) { return; }
+        AgentState seed = AgentState.builder().userId(scope.userId()).sessionId(scope.sessionId())
+            .context(history).build();
+        long version = store.saveIfVersion(scope.userId(), scope.sessionId(), "agent_state", seed, 0L);
+        if (store.supportsVersioning() && version == AgentStateStore.UNVERSIONED) {
+            throw new IllegalStateException("chat state initialized concurrently");
+        }
+    }
+
+    private AgentStateStore stateStore() {
+        AgentStateStore store = stateStore;
         if (store == null) {
             synchronized (this) {
                 store = stateStore;
@@ -373,10 +450,10 @@ public class AgentScopeChatKernel implements AutoCloseable {
             }
         }
         agents.clear();
-        MysqlAgentStateStore store = stateStore;
-        if (store != null) {
+        AgentStateStore store = stateStore;
+        if (store instanceof MysqlAgentStateStore mysql) {
             try {
-                store.close();
+                mysql.close();
             } catch (Exception e) {
                 log.warn("kernel_chat operation=CLOSE_STORE status=FAILED errorType={}", e.getClass().getName());
             }
@@ -387,18 +464,20 @@ public class AgentScopeChatKernel implements AutoCloseable {
     private final class AgentEventSinkBridge {
 
         private final KernelChatSink sink;
+        private final KernelEventFrames turnFrames;
 
-        private AgentEventSinkBridge(KernelChatSink sink) {
+        private AgentEventSinkBridge(KernelChatSink sink) { this(sink, frames); }
+        private AgentEventSinkBridge(KernelChatSink sink, KernelEventFrames turnFrames) {
             this.sink = sink;
+            this.turnFrames = turnFrames;
         }
 
         private void dispatch(AgentEvent event) {
-            frames.dispatch(event, sink);
+            turnFrames.dispatch(event, sink);
         }
 
         private void error(Throwable err) {
-            log.error("kernel_chat operation=STREAM status=FAILED errorType={} error={}",
-                    err.getClass().getName(), err.getMessage(), err);
+            log.error("kernel_chat operation=STREAM status=FAILED errorType={}", err.getClass().getName());
             sink.onError(ERR_STREAM_ERROR, SAFE_ERROR_MESSAGE);
         }
 

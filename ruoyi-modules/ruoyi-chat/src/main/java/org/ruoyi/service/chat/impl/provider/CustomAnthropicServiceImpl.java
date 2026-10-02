@@ -1,9 +1,5 @@
 package org.ruoyi.service.chat.impl.provider;
 
-import dev.langchain4j.model.anthropic.AnthropicChatModel;
-import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatModel;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.security.CustomApiCredentialPolicy;
@@ -23,31 +19,15 @@ public class CustomAnthropicServiceImpl implements AbstractChatService {
     private static final int DEFAULT_MAX_TOKENS = 4096;
 
     @Override
-    public StreamingChatModel buildStreamingChatModel(ChatModelVo config, ChatRequest request) {
+    public io.agentscope.core.model.Model buildStreamingChatModel(ChatModelVo config, ChatRequest runtime) {
         String baseUrl = validateConfiguration(config);
-        return AnthropicStreamingChatModel.builder()
-            .baseUrl(baseUrl)
-            .apiKey(config.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(config.getModelName())
-            .maxTokens(DEFAULT_MAX_TOKENS)
-            .timeout(DEFAULT_TIMEOUT)
-            .listeners(List.of(new MyChatModelListener()))
-            .returnThinking(Boolean.TRUE.equals(request.getEnableThinking()))
-            .build();
+        return new org.ruoyi.observability.MyChatModelListener().wrap(org.ruoyi.chat.kernel.AgentScopeModelFactory.create(
+            new org.ruoyi.chat.kernel.KernelModelRequest(config.getModelName(), "anthropic",
+                config.resolveApiKeyForConfiguredEndpoint(getProviderName()), baseUrl, null, DEFAULT_MAX_TOKENS, 180000)));
     }
 
     @Override
-    public ChatModel buildChatModel(ChatModelVo config) {
-        String baseUrl = validateConfiguration(config);
-        return AnthropicChatModel.builder()
-            .baseUrl(baseUrl)
-            .apiKey(config.resolveApiKeyForConfiguredEndpoint(getProviderName()))
-            .modelName(config.getModelName())
-            .maxTokens(DEFAULT_MAX_TOKENS)
-            .timeout(DEFAULT_TIMEOUT)
-            .listeners(List.of(new MyChatModelListener()))
-            .build();
-    }
+    public io.agentscope.core.model.Model buildChatModel(ChatModelVo config) { return buildStreamingChatModel(config, null); }
 
     private String validateConfiguration(ChatModelVo config) {
         if (!getProviderName().equals(config.getProviderCode())) {

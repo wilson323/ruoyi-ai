@@ -10,8 +10,7 @@ import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.trace.config.TraceProperties;
 import org.ruoyi.common.trace.service.TraceRecordService;
 import org.ruoyi.domain.vo.agent.AgentVo;
-import org.ruoyi.factory.ChatServiceFactory;
-import org.ruoyi.mcp.service.core.LangChain4jMcpToolProviderService;
+import org.ruoyi.mcp.service.core.AgentScopeMcpToolProviderService;
 import org.ruoyi.service.agent.IAgentService;
 import org.ruoyi.service.chat.ChatSessionOwnershipGuard;
 import org.ruoyi.service.chat.IChatMessageService;
@@ -53,7 +52,6 @@ class ChatServiceFacadeKnowledgeAccessTest {
 
         ChatServiceFacade facade = new ChatServiceFacade(
             mock(IChatModelService.class),
-            mock(ChatServiceFactory.class),
             gate,
             factory,
             mock(SseEmitterManager.class),
@@ -61,7 +59,7 @@ class ChatServiceFacadeKnowledgeAccessTest {
             mock(ChatSessionOwnershipGuard.class),
             mock(IWorkFlowStarterService.class),
             mock(IAgentService.class),
-            mock(LangChain4jMcpToolProviderService.class),
+            mock(AgentScopeMcpToolProviderService.class),
             mock(TraceRecordService.class),
             new TraceProperties());
 
@@ -77,7 +75,7 @@ class ChatServiceFacadeKnowledgeAccessTest {
         assertTrue(cause.getMessage().contains("kid=99"));
 
         // 未进入 augmentor 构建（B1 C2 收敛后 Facade 委托工厂，以工厂 never 验证）
-        verify(factory, never()).buildMultiKnowledgeAugmentor(any());
+        verify(factory, never()).augment(any(), any(), any());
     }
 
     @Test
@@ -87,7 +85,6 @@ class ChatServiceFacadeKnowledgeAccessTest {
 
         ChatServiceFacade facade = new ChatServiceFacade(
             mock(IChatModelService.class),
-            mock(ChatServiceFactory.class),
             gate,
             mock(MultiKnowledgeAugmentorFactory.class),
             mock(SseEmitterManager.class),
@@ -95,7 +92,7 @@ class ChatServiceFacadeKnowledgeAccessTest {
             mock(ChatSessionOwnershipGuard.class),
             mock(IWorkFlowStarterService.class),
             mock(IAgentService.class),
-            mock(LangChain4jMcpToolProviderService.class),
+            mock(AgentScopeMcpToolProviderService.class),
             mock(TraceRecordService.class),
             new TraceProperties());
 

@@ -1,19 +1,17 @@
 package org.ruoyi.ipd.service.ai;
 
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.exception.HttpException;
-import dev.langchain4j.exception.TimeoutException;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
-import dev.langchain4j.model.output.Response;
-import dev.langchain4j.model.output.TokenUsage;
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.model.ChatResponse;
+import io.agentscope.core.model.ChatUsage;
+import io.agentscope.core.model.GenerateOptions;
+import io.agentscope.core.model.Model;
+import io.agentscope.core.model.ModelHttpException;
+import org.ruoyi.chat.kernel.AgentScopeModelFactory;
+import org.ruoyi.chat.kernel.KernelModelRequest;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.service.AiModelBudgetService;
@@ -28,30 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AI-STRAT-2 统一 AI 调用层（2026-09-10）：IPD 生成主链从裸 HttpClient（{@link AiChatClient}）
- * 迁 Langchain4j OpenAI 兼容 {@link OpenAiChatModel}，终结「IPD 自写单轮 vs 平台 Langchain4j」两套并存。
- * <ul>
- *   <li>同签名：{@link #chat(AiTestConfig, String, Integer, BigDecimal)} 与旧 AiChatClient.chat
- *       完全一致（含返回 {@link AiChatResult}），调用方与测试桩零语义迁移；</li>
- *   <li>安全契约原样继承：① SSRF 前置校验复用 {@link AiChatClient#ssrfCheck}（内网黑名单 +
- *       DNS rebinding 双解析 + allowlist，SEC P1-3/P1-15 + R-NEW S-6 唯一实现不复制）；
- *       ② apiKey 仅进 builder 内存消费，不进日志/审计/异常消息（BR-AI-PROV-02）；
- *       ③ prompt/响应原文一律不落日志（BR-AI-04），观测走长度分桶 + SHA-256 短指纹；</li>
- *   <li>错误码白名单与旧链同源：AUTH_FAILED / HTTP_n / TIMEOUT / UNREACHABLE / EMPTY_RESPONSE /
- *       UNSUPPORTED_PROTOCOL——Langchain4j JDK 客户端异常（HttpException/TimeoutException/
- *       IOException 包装 RuntimeException）逐类映射，{@link #mapFailure} 单一出口可表驱动测试；</li>
- *   <li>每次调用按 AiModelConfig 动态构建 model 实例（运营可改配置；构建为轻量对象包装，
- *       生成链已有 MAX_CONCURRENT=3 限流闸，QPS 量级无池化必要）；</li>
- *   <li>C2-3（2026-09-29）：预算预占→结算与用量落账挂本层——cfg 携带 {@link AiCallScope} 时生效，
- *       额度拒绝 fail-closed 不出站（BUDGET_EXCEEDED）；限流与业务审计仍在调用方服务。</li>
- * </ul>
- * <p>后续 AI 卡（SSE 流式/重试/结构化输出/RAG embedding）一律挂本层，禁止再裸写 HTTP 调模型。
+ * IPD 唯一模型出站口：AgentScope 原生模型、流与嵌入。
+ * 业务侧保留 SSRF、预算预占/结算、用量账本及白名单错误，公共服务接口不变。
  */
 @Slf4j
 @Component
 public class AiGateway {
 
-    private final AiChatClient legacyClient;
+    private final AiChatClient endpointGuard;
     /** C2-3 预算预占→结算面（Spring 恒注入；测试口可为 null = 不限额）。 */
     private final AiModelBudgetService budgetService;
     /** C2-3 用量账本面（Spring 恒注入；测试口可为 null = 不落账）。 */
@@ -61,22 +43,27 @@ public class AiGateway {
     private java.time.Clock clock = java.time.Clock.systemDefaultZone();
 
     @Autowired
-    public AiGateway(AiChatClient legacyClient, AiModelBudgetService budgetService,
+    public AiGateway(AiChatClient endpointGuard, AiModelBudgetService budgetService,
                      AiModelUsageLedgerService usageLedgerService) {
-        this.legacyClient = legacyClient;
+        this.endpointGuard = endpointGuard;
         this.budgetService = budgetService;
         this.usageLedgerService = usageLedgerService;
     }
 
     /** 测试口：无预算/账本面（cfg.scope 为 null 的调用本就不记账；既有单测构造零迁移）。 */
-    AiGateway(AiChatClient legacyClient) {
-        this(legacyClient, null, null);
+    AiGateway(AiChatClient endpointGuard) {
+        this(endpointGuard, null, null);
     }
 
     /** 测试口：注入固定时钟（同 AiGenerationService.withClock 惯例）。 */
     AiGateway withClock(java.time.Clock fixed) {
         this.clock = fixed;
         return this;
+    }
+
+    /** 内部复用的模型出站校验；不执行模型调用或预算写入。 */
+    public void validateEndpoint(String endpoint) {
+        endpointGuard.ssrfCheck(endpoint);
     }
 
     /**
@@ -88,7 +75,7 @@ public class AiGateway {
                               BigDecimal temperature) {
         long start = clock.millis();
         // SSRF 前置（旧链同款：黑名单 + DNS rebinding 双解析 + allowlist）
-        legacyClient.ssrfCheck(cfg.baseUrl());
+        endpointGuard.ssrfCheck(cfg.baseUrl());
         int promptLen = prompt == null ? 0 : prompt.length();
         // C2-3 预算预占（fail-closed：拒绝即不出站）；无记账面 pre=0 直通过
         long pre = preoccupy(cfg, prompt, maxTokens, start);
@@ -96,26 +83,18 @@ public class AiGateway {
             return AiChatResult.fail("BUDGET_EXCEEDED", "模型月度预算不足", elapsed(start));
         }
         try {
-            OpenAiChatModel model = OpenAiChatModel.builder()
-                .baseUrl(stripTrailingSlash(cfg.baseUrl()))
-                .apiKey(cfg.apiKey())
-                .modelName(cfg.modelName())
-                .timeout(Duration.ofMillis(cfg.timeoutMs()))
-                .temperature(temperature == null ? null : temperature.doubleValue())
-                .maxTokens(maxTokens)
-                .build();
-            ChatResponse resp = model.chat(ChatRequest.builder()
-                .messages(UserMessage.from(prompt))
-                .build());
-            String content = resp == null || resp.aiMessage() == null ? null : resp.aiMessage().text();
-            if (content == null || content.isBlank()) {
+            Reply reply = responses(cfg, prompt, maxTokens, temperature, false)
+                .reduce(new Reply(), Reply::accept).block(Duration.ofMillis(cfg.timeoutMs()));
+            String content = reply == null ? "" : reply.body();
+            String failure = reply == null ? "EMPTY_RESPONSE" : reply.failure();
+            if (failure != null) {
                 logAiRequest(cfg, promptLen, null);
-                settleAndRecord(cfg, pre, 0, 0, "EMPTY_RESPONSE", elapsed(start));
-                return AiChatResult.fail("EMPTY_RESPONSE", "模型返回空内容", elapsed(start));
+                settleAndRecord(cfg, pre, reply == null ? 0 : reply.input,
+                    reply == null ? 0 : reply.output, failure, elapsed(start));
+                return AiChatResult.fail(failure, "模型没有返回完整正文", elapsed(start));
             }
-            TokenUsage usage = resp.metadata() == null ? null : resp.metadata().tokenUsage();
-            int promptTokens = usage == null || usage.inputTokenCount() == null ? 0 : usage.inputTokenCount();
-            int completionTokens = usage == null || usage.outputTokenCount() == null ? 0 : usage.outputTokenCount();
+            int promptTokens = reply.input;
+            int completionTokens = reply.output;
             logAiRequest(cfg, promptLen, content.length());
             settleAndRecord(cfg, pre, promptTokens, completionTokens, "ok", elapsed(start));
             return AiChatResult.ok(content, promptTokens, completionTokens, elapsed(start));
@@ -139,29 +118,11 @@ public class AiGateway {
      */
     public List<float[]> embed(AiTestConfig cfg, List<String> texts) {
         long start = clock.millis();
-        legacyClient.ssrfCheck(cfg.baseUrl());
+        endpointGuard.ssrfCheck(cfg.baseUrl());
         try {
-            OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder()
-                .baseUrl(stripTrailingSlash(cfg.baseUrl()))
-                .apiKey(cfg.apiKey())
-                .modelName(cfg.modelName())
-                .timeout(Duration.ofMillis(cfg.timeoutMs()))
-                .build();
-            List<TextSegment> segments = new ArrayList<>(texts.size());
-            for (String t : texts) {
-                segments.add(t == null ? TextSegment.from("") : TextSegment.from(t));
-            }
-            Response<List<Embedding>> resp = model.embedAll(segments);
-            List<Embedding> content = resp == null ? null : resp.content();
-            if (content == null || content.size() != texts.size()) {
-                log.warn("[AI] embed size mismatch: expect={} actual={}",
-                    texts.size(), content == null ? -1 : content.size());
-                return null;
-            }
-            List<float[]> out = new ArrayList<>(content.size());
-            for (Embedding e : content) {
-                out.add(e.vector());
-            }
+            var model = org.ruoyi.service.embed.EmbeddingModels.create(cfg.provider(), cfg.modelName(),
+                cfg.baseUrl(), cfg.apiKey(), null, Duration.ofMillis(cfg.timeoutMs()));
+            List<float[]> out = org.ruoyi.service.embed.EmbeddingVectors.embedAll(model, texts, Duration.ofMillis(cfg.timeoutMs()));
             log.info("[AI] embed ok: model={} chunks={} latencyMs={} endpointHost={}",
                 cfg.modelName(), texts.size(), elapsed(start), hostOf(cfg.baseUrl()));
             return out;
@@ -174,7 +135,7 @@ public class AiGateway {
     }
 
     /**
-     * 流式生成（AI-STRAT-3 / L0-4 SSE 真流式，2026-09-23）：Langchain4j {@link OpenAiStreamingChatModel}
+     * 流式生成（AI-STRAT-3 / L0-4 SSE 真流式，2026-09-23）：AgentScope 原生 Model 流
      * 异步 token-by-token 推送，调用方通过 {@link StreamHandler} 接收 onDelta/onComplete/onError。
      *
      * <p>安全契约与 {@link #chat} 同源：
@@ -187,7 +148,7 @@ public class AiGateway {
      *
      * <p>与 {@link #chat} 区别：chat 同步返回 {@link AiChatResult}（含完整 content）；stream 异步推送，
      * 调用方在 {@code onDelta} 逐段收 token、{@code onComplete} 收聚合 tokenUsage（OpenAI SSE 末帧 usage）、
-     * {@code onError} 收白名单错误码——本方法无返回值（异步语义）。
+     * {@code onError} 收白名单错误码——返回原生可取消订阅（异步语义）。
      *
      * @param cfg         模型配置（provider/endpoint/key/model/timeoutMs）
      * @param prompt      用户输入原文（不落日志，仅记长度分桶 + 短指纹）
@@ -195,76 +156,141 @@ public class AiGateway {
      * @param temperature 采样温度（null = 服务端默认）
      * @param handler     流式回调（onDelta 收增量 token、onComplete 收 tokenUsage、onError 收白名单错误码）
      */
-    public void stream(AiTestConfig cfg, String prompt, Integer maxTokens,
+    public reactor.core.Disposable stream(AiTestConfig cfg, String prompt, Integer maxTokens,
                        BigDecimal temperature, StreamHandler handler) {
         long start = clock.millis();
-        // SSRF 前置（与 chat 同款；失败同步抛 IpdBusinessException 直通调用方）
-        legacyClient.ssrfCheck(cfg.baseUrl());
+        endpointGuard.ssrfCheck(cfg.baseUrl());
         int promptLen = prompt == null ? 0 : prompt.length();
-        // C2-3 预算预占（与 chat 同款 fail-closed）；拒绝走 onError 不出站
         long pre = preoccupy(cfg, prompt, maxTokens, start);
         if (pre < 0) {
             handler.onError(AiChatResult.fail("BUDGET_EXCEEDED", "模型月度预算不足", elapsed(start)));
-            return;
+            return reactor.core.Disposables.disposed();
         }
-        OpenAiStreamingChatModel model;
+        Reply reply = new Reply();
+        Object lifecycle = new Object();
+        java.util.concurrent.atomic.AtomicBoolean terminal = new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.concurrent.atomic.AtomicReference<reactor.core.Disposable> source = new java.util.concurrent.atomic.AtomicReference<>();
+        reactor.core.Disposable cancellation = new reactor.core.Disposable() {
+            @Override public void dispose() {
+                int input;
+                int output;
+                synchronized (lifecycle) {
+                    if (!terminal.compareAndSet(false, true)) { return; }
+                    cancelled.set(true); input = reply.input; output = reply.output;
+                }
+                reactor.core.Disposable active = source.get();
+                if (active != null) { active.dispose(); }
+                long latency = elapsed(start);
+                settleAndRecord(cfg, pre, input, output, "FAIL:CANCELLED", latency);
+                handler.onError(AiChatResult.fail("CANCELLED", "本次生成已取消", latency));
+            }
+            @Override public boolean isDisposed() { return terminal.get(); }
+        };
         try {
-            model = OpenAiStreamingChatModel.builder()
-                .baseUrl(stripTrailingSlash(cfg.baseUrl()))
-                .apiKey(cfg.apiKey())
-                .modelName(cfg.modelName())
-                .timeout(Duration.ofMillis(cfg.timeoutMs()))
-                .temperature(temperature == null ? null : temperature.doubleValue())
-                .maxTokens(maxTokens)
-                .build();
-        } catch (Exception e) {
-            // builder 构建失败（配置非法等）：走 onError，不抛（异步语义统一）
-            AiChatResult fail = mapFailure(e, elapsed(start));
-            log.warn("[AI] gateway stream build fail: model={} promptLenBucket={} errorCode={}",
-                cfg.modelName(), PromptLenBucket.of(promptLen).label(), fail.errorCode());
-            settleAndRecord(cfg, pre, 0, 0, "FAIL:" + fail.errorCode(), fail.latencyMs());
-            handler.onError(fail);
-            return;
-        }
-        // Langchain4j 1.17.2：StreamingChatModel.chat(ChatRequest, StreamingChatResponseHandler)
-        // 异步推送——onPartialResponse 每段一次，onCompleteResponse 聚合（含 tokenUsage），onError 失败。
-        model.chat(ChatRequest.builder()
-                .messages(UserMessage.from(prompt))
-                .build(),
-            new StreamingChatResponseHandler() {
-                @Override
-                public void onPartialResponse(String partialResponse) {
-                    // 透传增量 token 给调用方（SseEmitter delta 帧）；空段跳过
-                    if (partialResponse != null && !partialResponse.isEmpty()) {
-                        handler.onDelta(partialResponse);
+            reactor.core.Disposable active = responses(cfg, prompt, maxTokens, temperature, true)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(response -> {
+                    java.util.List<String> deltas = new java.util.ArrayList<>();
+                    synchronized (lifecycle) {
+                        if (terminal.get()) { return; }
+                        reply.accept(response);
+                        for (var block : response.getContent() == null ? List.<io.agentscope.core.message.ContentBlock>of()
+                            : response.getContent()) {
+                            if (block instanceof TextBlock text && text.getText() != null && !text.getText().isEmpty()) {
+                                deltas.add(text.getText());
+                            }
+                        }
                     }
+                    for (String delta : deltas) {
+                        if (terminal.get()) { break; }
+                        handler.onDelta(delta);
+                    }
+                }, error -> {
+                    synchronized (lifecycle) {
+                        if (!terminal.compareAndSet(false, true)) { return; }
+                        AiChatResult failure = mapFailure(error, elapsed(start));
+                        settleAndRecord(cfg, pre, reply.input, reply.output,
+                            "FAIL:" + failure.errorCode(), failure.latencyMs());
+                        handler.onError(failure);
+                    }
+                }, () -> {
+                    synchronized (lifecycle) {
+                        if (!terminal.compareAndSet(false, true)) { return; }
+                        String failure = reply.failure();
+                        long latency = elapsed(start);
+                        settleAndRecord(cfg, pre, reply.input, reply.output,
+                            failure == null ? "ok" : "FAIL:" + failure, latency);
+                        logAiRequest(cfg, promptLen, reply.body().length());
+                        if (failure == null) { handler.onComplete(reply.input, reply.output, latency); }
+                        else { handler.onError(AiChatResult.fail(failure, "模型没有返回完整正文", latency)); }
+                    }
+                });
+            source.set(active);
+            if (cancelled.get() && !active.isDisposed()) { active.dispose(); }
+        } catch (Exception error) {
+            synchronized (lifecycle) {
+                if (terminal.compareAndSet(false, true)) {
+                    AiChatResult failure = mapFailure(error, elapsed(start));
+                    settleAndRecord(cfg, pre, reply.input, reply.output, "FAIL:" + failure.errorCode(), failure.latencyMs());
+                    handler.onError(failure);
                 }
-
-                @Override
-                public void onCompleteResponse(ChatResponse response) {
-                    long latency = elapsed(start);
-                    TokenUsage usage = response == null ? null : response.tokenUsage();
-                    int promptTokens = usage == null || usage.inputTokenCount() == null ? 0 : usage.inputTokenCount();
-                    int completionTokens = usage == null || usage.outputTokenCount() == null ? 0 : usage.outputTokenCount();
-                    logAiStreamComplete(cfg, promptLen, response, latency);
-                    settleAndRecord(cfg, pre, promptTokens, completionTokens, "ok", latency);
-                    handler.onComplete(promptTokens, completionTokens, latency);
-                }
-
-                @Override
-                public void onError(Throwable error) {
-                    // 错误映射到白名单错误码（mapFailure 单一出口），透传给调用方
-                    AiChatResult fail = mapFailure(error, elapsed(start));
-                    log.warn("[AI] gateway stream fail: model={} promptLenBucket={} errorCode={} latencyMs={} promptHash={}",
-                        cfg.modelName(), PromptLenBucket.of(promptLen).label(), fail.errorCode(),
-                        fail.latencyMs(), AiChatClient.shortHash(prompt));
-                    settleAndRecord(cfg, pre, 0, 0, "FAIL:" + fail.errorCode(), fail.latencyMs());
-                    handler.onError(fail);
-                }
-            });
+            }
+        }
+        return cancellation;
     }
 
-    /** 流式回调（项目级，解耦 Langchain4j 类型；调用方 = AiCopilotService）。 */
+    private Flux<ChatResponse> responses(AiTestConfig cfg, String prompt, Integer maxTokens,
+                                         BigDecimal temperature, boolean streaming) {
+        Model model = AgentScopeModelFactory.create(new KernelModelRequest(cfg.modelName(), cfg.provider(),
+            cfg.apiKey(), stripTrailingSlash(cfg.baseUrl()), temperature == null ? null : temperature.doubleValue(),
+            maxTokens, cfg.timeoutMs()));
+        return Flux.defer(() -> {
+            var expired = new java.util.concurrent.atomic.AtomicBoolean();
+            return model.stream(List.of(Msg.builder().role(MsgRole.USER).textContent(prompt).build()), List.of(),
+                    GenerateOptions.builder().stream(streaming).build())
+                .takeUntilOther(reactor.core.publisher.Mono.delay(Duration.ofMillis(cfg.timeoutMs()))
+                    .doOnNext(ignored -> expired.set(true)))
+                .concatWith(Flux.defer(() -> expired.get()
+                    ? Flux.error(new java.util.concurrent.TimeoutException("model deadline exceeded")) : Flux.empty()));
+        });
+    }
+
+    /** SDK 返回增量内容；业务终态必须有完整正文，截断不能结算为成功。 */
+    private static final class Reply {
+        private final StringBuilder text = new StringBuilder();
+        private String finishReason;
+        private int input;
+        private int output;
+
+        private Reply accept(ChatResponse response) {
+            if (response.getContent() != null) {
+                response.getContent().forEach(block -> {
+                    if (block instanceof TextBlock t && t.getText() != null) { text.append(t.getText()); }
+                });
+            }
+            if (response.getMetadata() != null && response.getMetadata().get("replacementText") instanceof String replacement) {
+                text.setLength(0);
+                text.append(replacement);
+            }
+            ChatUsage usage = response.getUsage();
+            if (usage != null) { input = usage.getInputTokens(); output = usage.getOutputTokens(); }
+            if (response.getFinishReason() != null) { finishReason = response.getFinishReason(); }
+            return this;
+        }
+
+        private String body() {
+            return text.toString().replaceAll("(?is)<think>.*?(?:</think>|$)", "").trim();
+        }
+
+        private String failure() {
+            if ("length".equals(finishReason) || "max_tokens".equals(finishReason)) { return "OUTPUT_TRUNCATED"; }
+            if ("content_filter".equals(finishReason)) { return "OUTPUT_REJECTED"; }
+            return body().isBlank() ? "EMPTY_RESPONSE" : null;
+        }
+    }
+
+    /** 流式回调（项目级，解耦 SDK 类型；调用方 = AiCopilotService）。 */
     public interface StreamHandler {
         /** 每收到一段增量 token 触发（可能多次；调用方推 SSE delta 帧）。 */
         void onDelta(String token);
@@ -274,19 +300,6 @@ public class AiGateway {
 
         /** 流失败：白名单错误码（mapFailure 同源；调用方推 error 帧 + 审计 FAIL）。 */
         void onError(AiChatResult failure);
-    }
-
-    /** 流式完成观测日志：长度分桶 + tokenUsage 聚合（BR-AI-04 prompt 原文不落）。 */
-    private void logAiStreamComplete(AiTestConfig cfg, int promptLen, ChatResponse response, long latencyMs) {
-        boolean transitioned = bucketLogger.record(promptLen);
-        TokenUsage usage = response == null ? null : response.tokenUsage();
-        int promptTokens = usage == null || usage.inputTokenCount() == null ? 0 : usage.inputTokenCount();
-        int completionTokens = usage == null || usage.outputTokenCount() == null ? 0 : usage.outputTokenCount();
-        AiMessage msg = response == null ? null : response.aiMessage();
-        int contentLen = msg == null || msg.text() == null ? 0 : msg.text().length();
-        log.info("[AI] gateway stream complete: model={} promptLenBucket={} bucketTransitioned={} contentLen={} promptTokens={} completionTokens={} latencyMs={} endpointHost={}",
-            cfg.modelName(), PromptLenBucket.of(promptLen).label(), transitioned,
-            contentLen, promptTokens, completionTokens, latencyMs, hostOf(cfg.baseUrl()));
     }
 
     /**
@@ -363,23 +376,23 @@ public class AiGateway {
 
     /**
      * 异常 → 白名单错误码单一映射口（package-private 供表驱动单测）。
-     * Langchain4j JDK 客户端契约（1.17.2 JdkHttpClient 源码实证）：
-     * 非 2xx → HttpException(statusCode,body)；HttpTimeoutException → TimeoutException；
+     * AgentScope 原生 ModelHttpException 契约：
+     * 非 2xx 按 ModelHttpException 状态映射；超时沿 cause 解链；
      * ConnectException/UnknownHostException 等 IOException → RuntimeException 包装（走 cause 解链）。
      * C2-3 实测：JDK HttpClient 连接拒绝链为「ConnectException → 包装 ConnectException →
      * ClosedChannelException」多层，root 是 ClosedChannelException——故连接类判定按全链命中
      * （任一层 ConnectException/UnknownHostException 即 UNREACHABLE），不能只看 root。
      */
     static AiChatResult mapFailure(Throwable e, long latencyMs) {
-        if (e instanceof TimeoutException) {
+        if (findInChain(e, java.util.concurrent.TimeoutException.class,
+            java.net.http.HttpTimeoutException.class) != null) {
             return AiChatResult.fail("TIMEOUT", "gateway: timeout", latencyMs);
         }
-        if (e instanceof HttpException he) {
-            int code = he.statusCode();
-            if (code == 401 || code == 403) {
-                return AiChatResult.fail("AUTH_FAILED", "HTTP " + code, latencyMs);
-            }
-            return AiChatResult.fail("HTTP_" + code, "HTTP " + code, latencyMs);
+        Throwable http = findInChain(e, ModelHttpException.class);
+        if (http instanceof ModelHttpException he && he.getStatusCode() != null) {
+            int code = he.getStatusCode();
+            return AiChatResult.fail(code == 401 || code == 403 ? "AUTH_FAILED" : "HTTP_" + code,
+                "HTTP " + code, latencyMs);
         }
         Throwable connect = findInChain(e, java.net.ConnectException.class, java.net.UnknownHostException.class);
         if (connect != null) {

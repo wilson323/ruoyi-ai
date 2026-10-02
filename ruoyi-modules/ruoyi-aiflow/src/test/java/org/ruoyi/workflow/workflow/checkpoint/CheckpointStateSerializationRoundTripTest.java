@@ -1,6 +1,5 @@
 package org.ruoyi.workflow.workflow.checkpoint;
 
-import org.bsc.langgraph4j.checkpoint.Checkpoint;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * 序列化往返测试：state Map（含 NodeIOData 等真实业务对象）经生产序列化路径
  * （{@link JdbcCheckpointSaver#serializeCheckpoint}/{@code deserializeCheckpoint}，
- * 内核为官方 CheckpointSerializer + ObjectStreamStateSerializer）往返后等价。
+ * 内核为版本化 ObjectStream 业务载荷）往返后等价。
  * <p>
  * 抉择依据：plain_text 包 JacksonCheckpointListSerializer 对 NodeIODataContent 多态字段
  * （抽象泛型基类、无 @JsonTypeInfo）往返会丢子类型/反解失败，故选 ObjectStream 二进制 + Base64。
@@ -34,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class CheckpointStateSerializationRoundTripTest {
 
     enum SerdeCase {
-        /** 纯元数据 state（langgraph4j state 常规形态：name/next 等 String 键值） */
+        /** 纯元数据 state（工作流 state 常规形态：name/next 等 String 键值） */
         WF_METADATA,
         /** 单个 NodeIOData（文本内容） */
         NODE_IO_TEXT,
@@ -100,14 +99,14 @@ class CheckpointStateSerializationRoundTripTest {
 
         String nodeId = "node-uuid-1";
         String nextNodeId = "node-uuid-2";
-        Checkpoint original = Checkpoint.builder()
+        WorkflowCheckpointState original = WorkflowCheckpointState.builder()
                 .id("f3b6a1a2-0000-4000-8000-000000000001")
                 .nodeId(nodeId).nextNodeId(nextNodeId).state(state).build();
 
-        // 往返：Checkpoint → Base64（state_json 落库形态）→ Checkpoint
+        // 往返：WorkflowCheckpointState → Base64（state_json 落库形态）→ WorkflowCheckpointState
         String stateJson = JdbcCheckpointSaver.serializeCheckpoint(original);
         assertNotNull(stateJson);
-        Checkpoint restored = JdbcCheckpointSaver.deserializeCheckpoint(stateJson);
+        WorkflowCheckpointState restored = JdbcCheckpointSaver.deserializeCheckpoint(stateJson);
 
         assertEquals(original.getId(), restored.getId());
         assertEquals(nodeId, restored.getNodeId());

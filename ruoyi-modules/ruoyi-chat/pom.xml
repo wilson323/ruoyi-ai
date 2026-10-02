@@ -13,33 +13,41 @@
     </description>
 
     <dependencies>
+        <!-- 智谱重排序官方鉴权沿用已使用版本，不再依赖旧 AI SDK 传递带入。 -->
+        <dependency><groupId>io.jsonwebtoken</groupId><artifactId>jjwt</artifactId><version>0.13.0</version></dependency>
+        <!-- 原生模型/状态扩展与现有 Weaviate 官方客户端；无第二套 AI SDK。 -->
+        <dependency><groupId>io.agentscope</groupId><artifactId>agentscope-extensions-model-anthropic</artifactId><version>${agentscope.version}</version></dependency>
+        <dependency><groupId>io.agentscope</groupId><artifactId>agentscope-extensions-model-ollama</artifactId><version>${agentscope.version}</version></dependency>
+        <dependency><groupId>io.agentscope</groupId><artifactId>agentscope-extensions-redis</artifactId><version>${agentscope.version}</version></dependency>
+        <dependency><groupId>io.weaviate</groupId><artifactId>client</artifactId><version>5.3.0</version></dependency>
 
-        <!-- [C11 PoC probe] AgentScope Java 内核依赖——仅 poc/agentscope-kernel 分支隔离验证用 -->
+
+        <!-- AgentScope 单一智能体运行技术栈。 -->
         <dependency>
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-harness</artifactId>
-            <version>2.0.3</version>
+            <version>${agentscope.version}</version>
         </dependency>
         <dependency>
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-extensions-model-dashscope</artifactId>
-            <version>2.0.3</version>
+            <version>${agentscope.version}</version>
         </dependency>
         <dependency>
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-extensions-mysql</artifactId>
-            <version>2.0.3</version>
+            <version>${agentscope.version}</version>
         </dependency>
         <dependency>
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-extensions-rag-simple</artifactId>
-            <version>2.0.3</version>
+            <version>${agentscope.version}</version>
         </dependency>
         <!-- [G4 PoC] OpenAI 兼容模型扩展——真实流式实证(MiniMax OpenAI 兼容端点, okhttp 5.x 运行态复核) -->
         <dependency>
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-extensions-model-openai</artifactId>
-            <version>2.0.3</version>
+            <version>${agentscope.version}</version>
         </dependency>
 
         <dependency>
@@ -70,41 +78,17 @@
             <artifactId>ruoyi-common-trace</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-anthropic</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-ollama</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-agentic</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-community-dashscope</artifactId>
-            <version>${langchain4j.community.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-community-zhipu-ai</artifactId>
-            <version>${langchain4j.community.version}</version>
-        </dependency>
+
+
+
+
+
+
 
 
         <dependency>
@@ -120,56 +104,22 @@
         </dependency>
 
         <!--文档解析-->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-document-parser-apache-tika</artifactId>
-            <version>${langchain4j.beta.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-compress</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
 
         <!-- LangChain4j Milvus Embedding Store -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-milvus</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-weaviate</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-qdrant</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-mcp</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
+
+
+
+
 
         <!-- LangChain4j Skills - 技能模块 -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-skills</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
 
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-experimental-skills-shell</artifactId>
-            <version>${langchain4j.beta.version}</version>
-        </dependency>
+
+
 
 
         <dependency>
@@ -239,6 +189,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <exclusions>
+                <!-- 本模块无 JSONAssert 消费者；其内嵌 org.json.JSONString 与运行库重复。 -->
+                <exclusion><groupId>org.skyscreamer</groupId><artifactId>jsonassert</artifactId></exclusion>
+            </exclusions>
             <scope>test</scope>
         </dependency>
 
@@ -267,8 +221,6 @@
               [G1 PoC] 类路径重复类硬门禁(maven-enforcer-plugin + extra-enforcer-rules)
               目标雷区: okhttp3 包重复类(okhttp-4.12.0 与 okhttp-jvm-5.3.2 同含 okhttp3/OkHttpClient.class)
               处置: root pom dependencyManagement 统一钉版 okhttp 5.x 全家(okhttp 为薄壳转依赖 okhttp-jvm),重复类自然消失。
-              [存量地雷登记 · 本关不根除] protobuf-java-util 4.29.3(langchain4j-weaviate 带入) <-> protobuf-java 3.25.5 错配:
-              根除路径 = W4 摘除 langchain4j-weaviate/qdrant/milvus 三依赖后再收敛;禁止钉版假收敛(util 钉 3.x/4.x 均破坏 weaviate 二进制兼容)。
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

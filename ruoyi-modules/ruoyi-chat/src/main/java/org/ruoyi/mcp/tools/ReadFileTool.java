@@ -1,6 +1,7 @@
 package org.ruoyi.mcp.tools;
 
-import dev.langchain4j.agent.tool.Tool;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 import org.ruoyi.service.coding.CodingEventChannel;
 import org.ruoyi.service.coding.CodingSseEvent;
@@ -53,8 +54,8 @@ public class ReadFileTool implements BuiltinToolProvider {
      * @param filePath 文件绝对路径
      * @return 文件内容
      */
-    @Tool(DESCRIPTION)
-    public String readFile(String filePath) {
+    @Tool(name = "readFile", description = DESCRIPTION, readOnly = true)
+    public String readFile(@ToolParam(name = "filePath", description = "工作目录内文件的绝对路径") String filePath) {
         try {
             // 验证参数
             if (filePath == null || filePath.trim().isEmpty()) {

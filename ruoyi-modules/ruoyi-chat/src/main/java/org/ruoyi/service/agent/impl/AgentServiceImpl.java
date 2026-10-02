@@ -3,8 +3,6 @@ package org.ruoyi.service.agent.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import dev.langchain4j.skills.FileSystemSkill;
-import dev.langchain4j.skills.FileSystemSkillLoader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
@@ -121,12 +119,12 @@ public class AgentServiceImpl implements IAgentService {
     @Override
     public List<SkillOptionVo> listSkillOptions() {
         try {
-            List<FileSystemSkill> skills = FileSystemSkillLoader.loadSkills(SkillsPathResolver.resolveSkillsPath());
+            List<io.agentscope.core.skill.AgentSkill> skills = org.ruoyi.agent.NativeChatSkills.available();
             if (skills == null || skills.isEmpty()) {
                 return Collections.emptyList();
             }
             return skills.stream()
-                .map(s -> new SkillOptionVo(s.name(), s.description()))
+                .map(s -> new SkillOptionVo(s.getName(), s.getDescription()))
                 .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("加载磁盘 Skills 失败: {}", e.getMessage(), e);

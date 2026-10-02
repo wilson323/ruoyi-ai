@@ -50,6 +50,13 @@ public class SseEventDto implements Serializable {
      */
     private Boolean done;
 
+    /** true 时 content 为权威全文，消费者须替换累计正文；缺省仍为增量。 */
+    private Boolean replace;
+
+    public static SseEventDto replacement(String content) {
+        return SseEventDto.builder().event("content").content(content).replace(true).build();
+    }
+
     /**
      * 创建内容事件
      */

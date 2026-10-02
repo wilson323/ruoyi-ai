@@ -1,49 +1,39 @@
 package org.ruoyi.service.embed.impl;
 
-
-
-import dev.langchain4j.community.model.zhipu.ZhipuAiEmbeddingModel;
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.output.Response;
+import io.agentscope.core.embedding.EmbeddingModel;
+import io.agentscope.core.embedding.openai.OpenAITextEmbedding;
+import io.agentscope.core.message.ContentBlock;
+import reactor.core.publisher.Mono;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ModalityType;
 import org.ruoyi.service.embed.BaseEmbedModelService;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 import java.util.Set;
 
-/**
- * @Author:yang
- * @Date:
- * @Description: 智谱AI嵌入模型
- */
+/** 使用 AgentScope 原生嵌入客户端，保留模型配置权限。 */
 @Component("zhipu")
 @org.springframework.context.annotation.Scope("prototype")
 public class ZhipuAiEmbeddingProvider implements BaseEmbedModelService {
-    protected ChatModelVo chatModelVo;
+    private ChatModelVo config;
+    private EmbeddingModel model;
 
     @Override
     public void configure(ChatModelVo config) {
-        this.chatModelVo = config;
+        this.config = config;
+        this.model = org.ruoyi.service.embed.EmbeddingModels.create("zhipu",
+            config.getModelName(), config.getApiHost(), config.resolveApiKeyForConfiguredEndpoint("zhipu"), config.getModelDimension(),
+            java.time.Duration.ofSeconds(60));
     }
 
     @Override
-    public Set<ModalityType> getSupportedModalities() {
-        return Set.of(ModalityType.TEXT);
-    }
+    public Set<ModalityType> getSupportedModalities() { return Set.of(ModalityType.TEXT); }
 
     @Override
-    public Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
-        EmbeddingModel model = ZhipuAiEmbeddingModel.builder()
-            .baseUrl(chatModelVo.getApiHost())
-            .apiKey(chatModelVo.resolveApiKeyForConfiguredEndpoint("zhipu"))
-            .model(chatModelVo.getModelName())
-            .dimensions(chatModelVo.getModelDimension())
-            .build();
+    public String getModelName() { return config.getModelName(); }
 
-        return model.embedAll(textSegments);
-    }
+    @Override
+    public int getDimensions() { return config.getModelDimension() == null ? 1024 : config.getModelDimension(); }
+
+    @Override
+    public Mono<double[]> embed(ContentBlock block) { return model.embed(block); }
 }

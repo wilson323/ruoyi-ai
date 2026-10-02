@@ -1,198 +1,33 @@
 package org.ruoyi.ipd.service.ai;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.IpdBusinessException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.HexFormat;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-/**
- * P4-2.2 生成调用器：OpenAI 兼容 chat/completions 非流式单轮。
- * <p>
- * 覆盖 openai / deepseek / qwen / moonshot / MiniMax 及其兼容层（智谱/百度/Ollama 均提供
- * OpenAI 兼容端点）；P4-2.1 的多协议探测仍走 ProviderRegistry，生成本版统一 OpenAI 兼容面。
- * <p>错误码与 P4-2.1 Tester 白名单同源（AUTH_FAILED / HTTP_n / TIMEOUT / UNREACHABLE /
- * EMPTY_RESPONSE / UNSUPPORTED_PROTOCOL）；apiKey 仅拼入请求头内存消费，
- * 绝不进日志/审计/异常消息。模型输出透传不过滤（BR-AI-04）。
- */
+/** 出站端点安全校验与脱敏指纹；实际模型调用统一由 AiGateway 使用 AgentScope 执行。 */
 @Slf4j
 @Component
-@Deprecated
 public class AiChatClient {
-
-    /**
-     * AI-STRAT-2（2026-09-10）：生成主链已迁 {@link AiGateway}（Langchain4j）。
-     * 本类保留一个版本周期：① ssrfCheck 供 AiGateway 复用（SSRF 黑名单/双解析/allowlist 唯一实现）；
-     * ② 单测拦截桩 (HttpClient) 构造器仍在用。新代码禁止直接注入本类做生成调用。
-     */
-
-    private static final ObjectMapper JSON = new ObjectMapper();
-
-    private final HttpClient http;
-    /**
-     * 排障 DEBUG 开关。默认 false —— prompt/响应原文一律不进日志、审计、异常消息（BR-AI-04）。
-     * 仅当 owner 在 yml 显式打开（如生产排障）才会以 DEBUG 级输出 body 完整内容。
-     * Why: P4-2.2 真机收口 commit dea95fc0 自动安全审查触发：
-     *   - [HIGH] bodyTail 落日志（即使不含 apiKey，prompt 本身属用户隐私）
-     *   - [MEDIUM] respBody.substring(0,300) 落日志（供应商响应可能含用户数据）
-     *   改用结构化字段 + SHA256 短指纹，保留请求/响应配对能力。
-     */
-    private final boolean debugEnabled;
-
-    /**
-     * host allowlist（可选）。逗号分隔的公网供应商域名；为空则放行所有公网（向后兼容，留警告）。
-     * Why: P1-3/P1-15 安全审查——AiModelConfig.baseUrl 来自运营配置可被注入内网 / loopback /
-     * 169.254.169.254 元数据端点，配合 Bearer 转发可能让 SSRF 命中点伪装为已认证用户。
-     */
     private final String allowedHosts;
-    /** R-NEW S-7：promptLen bucket 切换日志聚合器；每实例独立，线程安全。 */
-    private final PromptLenBucketLogger bucketLogger;
 
-    /**
-     * P2-7.4 HTTP 重启附加：显式 @Autowired 标记主 ctor。
-     * 历史：eae78d71 (P4-2.2-D-4) 把 no-args ctor 删了；eae78d71 之后版本是 3 个 ctor (boolean,String) / (HttpClient) / (HttpClient,boolean)，
-     * Spring 多 ctor 无 @Autowired 会抛 "No default constructor found"（实测 2026-09-07 07:32 启动失败）。
-     * 测试桩 (HttpClient) / (HttpClient,boolean) 不动（单测拦截仍走它们 new 直接调用，不走 Spring）。
-     */
-    @Autowired
-    public AiChatClient(@Value("${ai.debug.enabled:false}") boolean debugEnabled,
-                        @Value("${ai.allowed-hosts:}") String allowedHosts) {
-        this.debugEnabled = debugEnabled;
+    public AiChatClient(@Value("${ai.allowed-hosts:}") String allowedHosts) {
         this.allowedHosts = allowedHosts == null ? "" : allowedHosts;
-        this.bucketLogger = new PromptLenBucketLogger();
-        // 显式 HTTP/1.1：避免部分模型网关（MiniMax 等）对 h2 协商 POST 的兼容性差异（P4-2.2 真机验收 400 排查）
-        this.http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
-            .connectTimeout(Duration.ofSeconds(10)).build();
     }
-
-    /** 测试桩入口：注入自定义 HttpClient（单测拦截）。默认 debugEnabled=false。 */
-    public AiChatClient(HttpClient http) {
-        this(http, false);
-    }
-
-    /** 测试桩入口（显式控制 debug）。 */
-    public AiChatClient(HttpClient http, boolean debugEnabled) {
-        this.http = http;
-        this.debugEnabled = debugEnabled;
-        this.allowedHosts = "";
-        this.bucketLogger = new PromptLenBucketLogger();
-    }
-
-    /** AI-STRAT-2：嵌套 record 已提取为顶层 {@link AiChatResult}（避免 Deprecated 类连带告警），
-     * 旧引用 AiChatClient.AiChatResult 同包内自动解析到顶层（同名字段遮蔽已删）。 */
 
     /**
-     * 单轮生成。cfg 复用 P4-2.1 的 {@link AiTestConfig}（provider/endpoint/key/model/timeoutMs）；
-     * maxTokens/temperature 为 null 时不携带对应请求键（由服务端默认值决定）。
-     */
-    public AiChatResult chat(AiTestConfig cfg, String prompt, Integer maxTokens, BigDecimal temperature) {
-        long start = System.currentTimeMillis();
-        try {
-            // P4-2.2 收口：改用 Jackson Map→JSON 序列化，消除手工拼串 + 自写 jsonEscape 带来的
-            // 转义不全 / 结构漂移 / messages 数组闭合遗漏 等历史缺陷（dea95fc0 / baf90683）。
-            // LinkedHashMap 保 key 顺序，便于日志 reqHash 稳定可对账。
-            Map<String, Object> bodyMap = new LinkedHashMap<>();
-            bodyMap.put("model", cfg.modelName());
-            bodyMap.put("messages", List.of(Map.of("role", "user", "content", prompt)));
-            if (maxTokens != null && maxTokens > 0) {
-                bodyMap.put("max_tokens", maxTokens);
-            }
-            if (temperature != null) {
-                bodyMap.put("temperature", temperature);
-            }
-            // writeValueAsString 失败属于协议层异常（无法构造请求体），由下方 catch (Exception e)
-            // 统一归类为 UNSUPPORTED_PROTOCOL（与 Jackson 解析响应错同源处理）。
-            String reqBody = JSON.writeValueAsString(bodyMap);
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(stripTrailingSlash(cfg.baseUrl()) + "/chat/completions"))
-                .timeout(Duration.ofMillis(cfg.timeoutMs()))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + cfg.apiKey())
-                .POST(HttpRequest.BodyPublishers.ofString(reqBody))
-                .build();
-            // 排障观测：仅落非敏感结构化字段（model/bodyLen/promptLen/maxTokens/temperature），
-            // 配合 reqHash 短指纹便于请求/响应配对。prompt 与响应原文一律不进日志（BR-AI-04 / P4-2.2 安全审查闭环）。
-            int promptLen = prompt == null ? 0 : prompt.length();
-            // R-NEW S-7：连续 promptLen 进日志构成「长度指纹」侧信道；改离散桶消除指纹并保留分布决策能力
-            boolean transitioned = bucketLogger.record(promptLen);
-            String bucket = PromptLenBucket.of(promptLen).label();
-            String reqHash = shortHash(reqBody);
-            log.warn("[AI] chat request: model={} bodyLen={} promptLenBucket={} bucketTransitioned={} maxTokens={} temperature={} reqHash={}",
-                cfg.modelName(), reqBody.length(), bucket, transitioned,
-                maxTokens == null ? "default" : maxTokens.toString(),
-                temperature == null ? "default" : temperature.toPlainString(),
-                reqHash);
-            if (debugEnabled) {
-                log.debug("[AI][debug] reqBody={}", reqBody);
-            }
-            // SSRF 防御（SEC P1-3/P1-15）：发请求前解析 host + IP，做内网黑名单 + 公网 allowlist 校验。
-            validateEndpoint(cfg.baseUrl());
-            HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
-            long latency = System.currentTimeMillis() - start;
-            int code = resp.statusCode();
-            if (code < 200 || code >= 300) {
-                // 排障观测：非 2xx 时仅落 code / respLen / respHash（短指纹），响应原文不进日志；
-                // 不含 apiKey、不进 API 响应/审计。
-                String respBody = resp.body() == null ? "" : resp.body();
-                log.warn("[AI] chat non-2xx: code={} latency={}ms respLen={} respHash={} reqHash={}",
-                    code, latency, respBody.length(), shortHash(respBody), reqHash);
-                if (debugEnabled) {
-                    log.debug("[AI][debug] non2xxBody={}", respBody);
-                }
-                if (code == 401 || code == 403) {
-                    return AiChatResult.fail("AUTH_FAILED", "HTTP " + code, latency);
-                }
-                return AiChatResult.fail("HTTP_" + code, "HTTP " + code, latency);
-            }
-            JsonNode root = JSON.readTree(resp.body());
-            String content = root.path("choices").path(0).path("message").path("content").asText(null);
-            if (content == null || content.isBlank()) {
-                return AiChatResult.fail("EMPTY_RESPONSE", "模型返回空内容", latency);
-            }
-            int promptTokens = root.path("usage").path("prompt_tokens").asInt(0);
-            int completionTokens = root.path("usage").path("completion_tokens").asInt(0);
-            return AiChatResult.ok(content, promptTokens, completionTokens, latency);
-        } catch (java.net.http.HttpTimeoutException e) {
-            return AiChatResult.fail("TIMEOUT", "generate: timeout", System.currentTimeMillis() - start);
-        } catch (java.net.ConnectException e) {
-            return AiChatResult.fail("UNREACHABLE", "connect: refused", System.currentTimeMillis() - start);
-        } catch (java.net.UnknownHostException e) {
-            return AiChatResult.fail("UNREACHABLE", "connect: unknown host", System.currentTimeMillis() - start);
-        } catch (Exception e) {
-            return AiChatResult.fail("UNSUPPORTED_PROTOCOL",
-                "generate: " + e.getClass().getSimpleName(), System.currentTimeMillis() - start);
-        }
-    }
-
-    private static String stripTrailingSlash(String s) {
-        if (s == null) return "";
-        return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
-    }
-
-
-    /**
-     * AI-STRAT-2：SSRF 校验复用口（package-private）——AiGateway 发起 Langchain4j 调用前
+     * AI-STRAT-2：SSRF 校验复用口（package-private）——AiGateway 发起 AgentScope 调用前
      * 必须过本方法（与原生成链同一道防御，含 DNS rebinding 双解析 + allowlist）。
      * 校验失败抛 IpdBusinessException（与原链同语义，由 controller 层统一处理）。
      */

@@ -16,6 +16,8 @@
     </description>
 
     <dependencies>
+        <!-- 全局 JSON 实现单一化，与原生向量客户端一致，保留属性迁移器运行能力。 -->
+        <dependency><groupId>org.json</groupId><artifactId>json</artifactId><version>20250107</version></dependency>
         <!-- Spring框架基本的核心工具 -->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -54,6 +56,7 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -85,6 +88,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-properties-migrator</artifactId>
+            <exclusions><exclusion><groupId>com.vaadin.external.google</groupId><artifactId>android-json</artifactId></exclusion></exclusions>
             <scope>runtime</scope>
         </dependency>
 

@@ -1,9 +1,8 @@
 package org.ruoyi.service.vector.impl;
 
 import cn.hutool.json.JSONObject;
-import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.data.segment.TextSegment;
+import io.agentscope.core.embedding.EmbeddingModel;
+import org.ruoyi.service.embed.EmbeddingVectors;
 
 import io.weaviate.client.WeaviateClient;
 import lombok.SneakyThrows;
@@ -35,9 +34,8 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.Schema;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
-import org.ruoyi.domain.entity.knowledge.KnowledgeAttach;
+import org.ruoyi.domain.vo.knowledge.KnowledgeAttachSource;
 import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -179,22 +177,22 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         String docId = storeEmbeddingBo.getDocId();
         log.info("向量存储条数记录: {}", chunkList.size());
         long startTime = System.currentTimeMillis();
-        List<TextSegment> segments = chunkList.stream().map(TextSegment::from).toList();
-        List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
+        List<float[]> embeddings = EmbeddingVectors.embedAll(embeddingModel, chunkList);
+        if (embeddings.isEmpty()) { return; }
         if (embeddings.size() != chunkList.size()) {
             throw new ServiceException("Embedding 返回数量与分片数量不一致");
         }
         // B1 三元组权威值：以嵌入实测维度回写 Bo（「实际用了什么」优先于配置值），
         // 供 KnowledgeAttachServiceImpl#parse 为本批片段补 knowledge_fragment.embedding_dim。
-        int actualDim = embeddings.get(0).dimension();
+        int actualDim = embeddings.get(0).length;
         storeEmbeddingBo.setEmbeddingDim(actualDim);
         ObjectsBatcher batcher = getClient().batch().objectsBatcher();
         for (int i = 0; i < chunkList.size(); i++) {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
-            Embedding embedding = embeddings.get(i);
+            float[] embedding = embeddings.get(i);
             Map<String, Object> properties = buildFragmentPayload(storeEmbeddingBo, text, fid, actualDim);
-            float[] vectorArray = embedding.vector();
+            float[] vectorArray = embedding;
             normalize(vectorArray);
             Float[] vector = toObjectArray(vectorArray);
 
@@ -252,8 +250,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     public List<String> getQueryVector(QueryVectorBo queryVectorBo) {
         createSchema(queryVectorBo.getKid(), queryVectorBo.getEmbeddingModelName());
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
-        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
-        float[] vector = queryEmbedding.vector();
+        float[] vector = EmbeddingVectors.embed(embeddingModel, queryVectorBo.getQuery());
         // 查询向量单位化处理
         normalize(vector);
 
@@ -308,12 +305,30 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         }
     }
 
+    /**
+     * 按文档 ID 取附件名称。创建人用 {@link KnowledgeAttachSource} 按字符串读，
+     * 不是数字时仍返回出处，不把整段向量检索打成失败。
+     *
+     * @param mapper 附件查询
+     * @param docId 文档 ID，可空
+     * @return 附件名称；没有名称时返回「未知来源」
+     */
+    static String sourceName(KnowledgeAttachMapper mapper, String knowledgeId, String docId) {
+        if (knowledgeId == null || knowledgeId.isBlank() || docId == null || docId.isBlank()) {
+            return "未知来源";
+        }
+        KnowledgeAttachSource row = mapper.selectSourceByKnowledgeAndDocId(knowledgeId, docId);
+        if (row == null || row.getName() == null || row.getName().isBlank()) {
+            return "未知来源";
+        }
+        return row.getName();
+    }
+
     @Override
     public List<KnowledgeRetrievalVo> search(QueryVectorBo queryVectorBo) {
-        createSchema(queryVectorBo.getKid(), queryVectorBo.getEmbeddingModelName());
+        // 检索只读。Schema 创建/补齐只由 storeEmbeddings 和显式管理写入口负责。
         EmbeddingModel embeddingModel = getEmbeddingModel(queryVectorBo.getEmbeddingModelName());
-        Embedding queryEmbedding = embeddingModel.embed(queryVectorBo.getQuery()).content();
-        float[] vector = queryEmbedding.vector();
+        float[] vector = EmbeddingVectors.embed(embeddingModel, queryVectorBo.getQuery());
         // 查询向量单位化处理
         normalize(vector);
         String className = vectorStoreProperties.getWeaviate().getClassname();
@@ -338,10 +353,17 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             getQuery = getQuery.withWhere(accessFilter);
         }
 
-        Result<GraphQLResponse> result = getQuery.run();
+        Result<GraphQLResponse> result;
+        try {
+            result = getQuery.run();
+        } catch (RuntimeException failure) {
+            // SDK 错误可能带地址或鉴权信息，不把底层异常原文传入 SOURCE。
+            throw new ServiceException("知识库向量查询不可用");
+        }
+        requireSearchResponse(result);
         List<org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo> resultList = new ArrayList<>();
 
-        if (result != null && !result.hasErrors()) {
+        {
             Object data = result.getResult().getData();
             JSONObject entries = new JSONObject(data);
             Map<String, cn.hutool.json.JSONArray> entriesMap = entries.get("Get", Map.class);
@@ -361,15 +383,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                 // 转换距离为得分 (Weaviate 0 是最相近，1 是最远；余弦距离下 1-dist 即为相似度)
                 double score = 1.0 - distance;
 
-                String sourceName = "未知来源";
-                if (docId != null) {
-                    KnowledgeAttach attach = knowledgeAttachMapper.selectOne(new LambdaQueryWrapper<KnowledgeAttach>()
-                            .eq(KnowledgeAttach::getDocId, docId)
-                            .last("limit 1"));
-                    if (attach != null) {
-                        sourceName = attach.getName();
-                    }
-                }
+                String sourceName = sourceName(knowledgeAttachMapper, queryVectorBo.getKid(), docId);
 
                 resultList.add(org.ruoyi.domain.vo.knowledge.KnowledgeRetrievalVo.builder()
                         .id(fid)
@@ -381,6 +395,15 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
             }
         }
         return resultList;
+    }
+
+    /** 查询失败和损坏响应不可伪装成零命中；错误信息不包含远端响应正文。 */
+    static void requireSearchResponse(Result<GraphQLResponse> result) {
+        if (result == null || result.hasErrors() || result.getResult() == null
+            || result.getResult().getData() == null
+            || (result.getResult().getErrors() != null && result.getResult().getErrors().length > 0)) {
+            throw new ServiceException("知识库向量查询不可用");
+        }
     }
 
     /**
