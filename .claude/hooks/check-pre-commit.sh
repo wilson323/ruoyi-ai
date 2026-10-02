@@ -213,13 +213,13 @@ run_ratchet_gate() {
         SKIPPED=$((SKIPPED + 1))
         return 0
     fi
-    if [[ ! -f "$REPO_ROOT/scripts/check-api-contract-fe-be.mjs" ]]; then
-        echo "[check-pre-commit] ⚠ 门禁 3 SKIP: scripts/check-api-contract-fe-be.mjs 不存在"
-        SKIPPED=$((SKIPPED + 1))
-        return 0
+    if [[ ! -f "$REPO_ROOT/scripts/check-staged-snapshot.py" ]]; then
+        echo "[check-pre-commit] ❌ 门禁 3 FAIL: 暂存快照检查器不存在"
+        FAILED=$((FAILED + 1))
+        return 1
     fi
     local out rc
-    out=$(node "$REPO_ROOT/scripts/check-api-contract-fe-be.mjs" 2>&1)
+    out=$(python3 "$REPO_ROOT/scripts/check-staged-snapshot.py" --be-root "$REPO_ROOT" --fe-root "${IPD_FE_REPO_ROOT:-$REPO_ROOT/../ruoyi-ipd-web}" 2>&1)
     rc=$?
     local elapsed=$(( $(date +%s) - start_time ))
     if [[ "$rc" -eq 0 ]]; then
@@ -227,7 +227,7 @@ run_ratchet_gate() {
         echo "$out" | grep -E "vs baseline" || true
         PASSED=$((PASSED + 1))
     else
-        echo "[check-pre-commit] ❌ 门禁 3 FAIL: exit=$rc (位掩码: 1=P0孤儿路径/strict, 2=环境错/防伪失败/基线被改, 4=新孤儿未白名单; elapsed=${elapsed}s)"
+        echo "[check-pre-commit] ❌ 门禁 3 FAIL: 暂存快照 API 棘轮 exit=$rc (elapsed=${elapsed}s)"
         echo "$out" | grep -E "^\s*(❌|\[|exit code)" | tail -25 || echo "$out" | tail -15
         echo "[check-pre-commit]   处置: 新孤儿→补前端消费/删端点/白名单登记(卡号+reason+expire); 基线→--update-baseline"
         FAILED=$((FAILED + 1))

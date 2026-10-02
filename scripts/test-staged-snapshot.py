@@ -169,6 +169,32 @@ process.exit([be,fe].every(p=>fs.readFileSync(p+'/contract.txt','utf8')==='good'
         checker.write_text('process.exit(0);')
         self.check(7)
 
+    def run_ratchet_fixture(self):
+        text = (Path(__file__).resolve().parents[1] / '.claude/hooks/check-pre-commit.sh').read_text()
+        function = text[text.index('run_ratchet_gate() {'):text.index('\n# ---------------------------------------------------------------------------\n# 门禁 4：')]
+        checker = self.be / 'scripts/check-staged-snapshot.py'
+        checker.write_text(Path(module.__file__).read_text())
+        self.git(self.be, 'add', str(checker.relative_to(self.be)))
+        runner = Path(self.temp.name) / 'ratchet.sh'
+        runner.write_text('set -uo pipefail\nREPO_ROOT="$1"\nIPD_FE_REPO_ROOT="$2"\nPASSED=0; FAILED=0; SKIPPED=0\n' + function + '\nrun_ratchet_gate\n[ "$FAILED" = 0 ]\n')
+        return subprocess.run(['/bin/bash', str(runner), str(self.be), str(self.fe)], capture_output=True, text=True)
+
+    def test_ratchet_hook_good_index_bad_worktree_passes(self):
+        for root in (self.be, self.fe):
+            (root / 'contract.txt').write_text('bad')
+        result = self.run_ratchet_fixture()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('门禁 3 PASS', result.stdout)
+
+    def test_ratchet_hook_bad_index_good_worktree_rejected(self):
+        for root in (self.be, self.fe):
+            (root / 'contract.txt').write_text('bad')
+            self.git(root, 'add', 'contract.txt')
+            (root / 'contract.txt').write_text('good')
+        result = self.run_ratchet_fixture()
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn('门禁 3 FAIL', result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()
