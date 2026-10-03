@@ -27,7 +27,20 @@ public record ProjectCreateReq(
     Long mainGroupId,
     Date launchDate,
     Long marketPmId,
-    Long rdPmId) {
+    Long rdPmId,
+    Long productLineId,
+    String startKind) {
+
+    /** 兼容既有 16 参调用。新产品线字段由服务端按产品回填。 */
+    public ProjectCreateReq(
+        String name, Long productId, String templateType, String targetMarkets, String level,
+        BigDecimal levelCoefficient, String levelCoefficientReason, BigDecimal targetSalesAmount,
+        Integer targetChannelCount, Integer targetNps, Integer targetSceneCount, Long mainGroupId,
+        Date launchDate, Long marketPmId, Long rdPmId) {
+        this(name, productId, templateType, targetMarkets, level, levelCoefficient,
+            levelCoefficientReason, targetSalesAmount, targetChannelCount, targetNps,
+            targetSceneCount, mainGroupId, launchDate, marketPmId, rdPmId, null, null);
+    }
 
     /**
      * 将白名单请求转为领域实体（不含服务端权威字段）。

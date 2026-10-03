@@ -55,7 +55,8 @@ class GateEngineHistoryMissingScopeAcceptanceTest {
 
     private StageAction act(String code, String status) {
         return StageAction.builder().id(1L).projectId(100L).stageId(10L)
-            .actionCode(code).actionName(ActionCatalog.byCode(code).name()).status(status).build();
+            .actionCode(code).actionName(ActionCatalog.byCode(code).name()).status(status)
+            .confirmedBy("DONE".equals(status) ? 1L : null).build();
     }
 
     /** 把 C11 换成带 MISSING 标记的行（IN_PROGRESS：只有 MISSING 能救它，否则必红）。 */

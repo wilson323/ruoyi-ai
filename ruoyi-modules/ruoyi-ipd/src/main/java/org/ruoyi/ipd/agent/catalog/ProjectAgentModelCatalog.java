@@ -1,5 +1,7 @@
 package org.ruoyi.ipd.agent.catalog;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.ruoyi.chat.kernel.KernelModelRequest;
 import org.ruoyi.ipd.domain.AiModelConfig;
@@ -66,6 +68,23 @@ public class ProjectAgentModelCatalog {
     }
 
     /**
+     * 读取指定配置上的 modelName。已停用的配置仍返回原名，不改选其他模型。
+     *
+     * @param modelConfigId 运行行上的配置 ID
+     * @return 模型名；配置不存在或名为空时 null
+     */
+    public String modelNameOf(Long modelConfigId) {
+        if (modelConfigId == null) {
+            return null;
+        }
+        AiModelConfig config = mapper.selectById(modelConfigId);
+        if (config == null || config.getModelName() == null || config.getModelName().isBlank()) {
+            return null;
+        }
+        return config.getModelName().trim();
+    }
+
+    /**
      * 解析选定模型为内核装配请求（仅可用配置；凭据内存解密）。
      *
      * @param modelConfigId 配置 ID
@@ -76,8 +95,29 @@ public class ProjectAgentModelCatalog {
         if (config == null || unavailableReason(config) != null) {
             return Optional.empty();
         }
+        JsonNode parameters;
+        try {
+            parameters = config.getConfigJson() == null || config.getConfigJson().isBlank()
+                ? new ObjectMapper().createObjectNode() : new ObjectMapper().readTree(config.getConfigJson());
+        } catch (Exception ex) {
+            // 与既有生成入口一致：无效 JSON 不注入任何参数。
+            parameters = new ObjectMapper().createObjectNode();
+        }
+        if (parameters == null) {
+            parameters = new ObjectMapper().createObjectNode();
+        }
+        Double temperature = parameters.hasNonNull("temperature")
+            ? parameters.get("temperature").doubleValue() : null;
+        Integer maxTokens = parameters.path("maxTokens").asInt(0) > 0
+            ? parameters.path("maxTokens").asInt() : null;
+        // 与生成入口 generateTimeoutMs 的 10–120 秒钳制一致；未配置不改变内核默认。
+        Integer timeout = parameters.hasNonNull("generateTimeoutMs")
+            ? parameters.path("generateTimeoutMs").asInt(0) : null;
+        if (timeout != null) {
+            timeout = timeout <= 0 ? 60_000 : Math.min(Math.max(timeout, 10_000), 120_000);
+        }
         return Optional.of(new KernelModelRequest(config.getModelName(), config.getProvider(),
-            modelConfigService.decryptApiKey(config), config.getEndpointUrl()));
+            modelConfigService.decryptApiKey(config), config.getEndpointUrl(), temperature, maxTokens, timeout));
     }
 
     private static ModelStatus status(AiModelConfig config) {

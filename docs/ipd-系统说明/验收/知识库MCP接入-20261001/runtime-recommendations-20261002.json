@@ -1,0 +1,29 @@
+{
+  "pid": 52897,
+  "candidateSha256": "aae3e275fe8fd72ed959f4b914d73fc604e71c056b75ba8c2f67235d0ba597dc",
+  "jarInode": 285739443,
+  "modules": {
+    "ipd": {
+      "matchesTarget": true,
+      "compression": 0,
+      "sha256": "5cc986b4f3de3e22d39cbf59bc0a4927c25159cf014ed52b232ddd073abe8df0"
+    },
+    "chat": {
+      "matchesTarget": true,
+      "compression": 0,
+      "sha256": "363aed4f7f12b5148a847121b5f8fa746b7e78387858aa0a6a923fffa46b3a99"
+    },
+    "aiflow": {
+      "matchesTarget": true,
+      "compression": 0,
+      "sha256": "e6d41507e1109095b0f6821251945e6560257d81a267d3a01ef8d44290175b0c"
+    }
+  },
+  "openedCandidate": true,
+  "frontendPid": 38773,
+  "frontendHttp": 200,
+  "unauthAuthMeHttp": 401,
+  "authenticatedBrowser": "组长登录工作台成功；仅导航/读取，无模型运行与产物应用；项目智能体不可访问目标仍拒绝",
+  "checkedAt": "2026-10-02T15:19:27.895008+00:00",
+  "applicationConfigMatchesTarget": true
+}

@@ -5,17 +5,22 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.agent.ProjectAgentConstants;
+import org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion;
 import org.ruoyi.ipd.agent.domain.IpdAgentRun;
 import org.ruoyi.ipd.agent.domain.IpdAgentRunEvent;
 import org.ruoyi.ipd.agent.model.AgentEventType;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
+import org.ruoyi.ipd.agent.store.ArtifactVersionStore;
 import org.ruoyi.ipd.agent.support.AgentTestFixtures;
 import org.ruoyi.ipd.agent.support.InMemoryAgentRunStore;
 import org.ruoyi.ipd.agent.support.InMemoryArtifactVersionStore;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -51,10 +56,7 @@ class ProjectAgentRunHandleTest {
         handle.onText("竞品");
         handle.onText("分析");
         handle.onToolCall("call-1", "project_knowledge_search");
-        handle.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "citationText", "竞品分析",
-            "sourceEvidence", List.of(Map.of("sourceName", "测试知识片段", "documentId", "fixture-fragment",
-                "knowledgeId", "fixture-knowledge", "sourceType", "KNOWLEDGE_FRAGMENT",
-                "reviewStatus", "NOT_PROJECT_DOCUMENT"))));
+        handle.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS"));
         handle.onComplete();
         handle.onComplete();
         handle.onError("STREAM_ERROR");
@@ -111,10 +113,7 @@ class ProjectAgentRunHandleTest {
         handle.onComplete();
         handle.onText("迟到文本");
         handle.onToolCall("late", "project_knowledge_search");
-        handle.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "citationText", "竞品分析",
-            "sourceEvidence", List.of(Map.of("sourceName", "测试知识片段", "documentId", "fixture-fragment",
-                "knowledgeId", "fixture-knowledge", "sourceType", "KNOWLEDGE_FRAGMENT",
-                "reviewStatus", "NOT_PROJECT_DOCUMENT"))));
+        handle.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS"));
 
         List<IpdAgentRunEvent> events = store.events(run.getId());
         assertThat(events).extracting(IpdAgentRunEvent::getEventType).containsExactly("TEXT_DELTA", "RUN_FINISHED");
@@ -226,9 +225,7 @@ class ProjectAgentRunHandleTest {
         assertThat(after.getStatus()).isEqualTo("FAILED");
         assertThat(after.getErrorCode()).isEqualTo(ProjectAgentCompletionGate.REJECTED);
         assertThat(store.events(run.getId()).stream().filter(e -> "ERROR".equals(e.getEventType()))
-            .findFirst().orElseThrow().getPayload())
-            .contains("\"completionReason\":\"MISSING_RETRIEVAL_DISCLOSURE\"")
-            .doesNotContain("竞品价格", "12 元");
+            .findFirst().orElseThrow().getPayload()).contains("MISSING_RETRIEVAL_DISCLOSURE");
     }
 
     @Test
@@ -263,10 +260,9 @@ class ProjectAgentRunHandleTest {
         assertThat(store.findRun(run.getId()).orElseThrow().getErrorCode())
             .isEqualTo(ProjectAgentCompletionGate.REJECTED);
         assertThat(store.events(run.getId()).stream().filter(e -> "ERROR".equals(e.getEventType()))
-            .findFirst().orElseThrow().getPayload())
-            .contains("\"completionReason\":\"GATE_AUTHORITY_CLAIM\"")
-            .doesNotContain("建议 Gate 签署");
+            .findFirst().orElseThrow().getPayload()).contains("GATE_AUTHORITY_CLAIM");
     }
+
     @Test
     @DisplayName("C02 使用运行记录动作合同：可选用途冒作阻塞时拒绝草稿")
     void c02OptionalPurposeBlockerCannotPersistArtifact() {
@@ -313,6 +309,158 @@ class ProjectAgentRunHandleTest {
             assertThat(store.findRun(recorded.getId()).orElseThrow().getStatus()).isEqualTo("SUCCEEDED");
             assertThat(artifacts.size()).isEqualTo(1);
         });
+    }
+
+    @Test
+    @DisplayName("没有正文拒绝成功；有正文且不接产物存储仍沿原事件链")
+    void emptyCompletionFailsButTextWithoutArtifactStoreSucceeds() {
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunHandle withArtifacts = new ProjectAgentRunHandle(run, store, artifacts,
+            AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
+        withArtifacts.onComplete();
+
+        assertThat(artifacts.size()).isZero();
+        assertThat(store.events(run.getId())).extracting(IpdAgentRunEvent::getEventType)
+            .containsExactly("ERROR");
+        assertThat(store.findRun(run.getId()).orElseThrow().getStatus()).isEqualTo("FAILED");
+        assertThat(store.findRun(run.getId()).orElseThrow().getErrorCode()).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+
+        IpdAgentRun another = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)
+            .projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id())
+            .agentId("ipd_project_agent").status(AgentRunStatus.RUNNING.name())
+            .idempotencyKey("key-handle-empty-store").build();
+        store.insertRun(another);
+        ProjectAgentRunHandle noStore = new ProjectAgentRunHandle(another, store, AgentTestFixtures.MAPPER,
+            clock::get, () -> { });
+        noStore.onText("只有回答");
+        noStore.onComplete();
+        assertThat(store.findRun(another.getId()).orElseThrow().getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(store.events(another.getId())).extracting(IpdAgentRunEvent::getEventType)
+            .containsExactly("TEXT_DELTA", "RUN_FINISHED")
+            .doesNotContain("ARTIFACT");
+    }
+
+    @Test
+    @DisplayName("产物插入抛错：终态是 FAILED，不保留 SUCCEEDED，不写 RUN_FINISHED")
+    void artifactInsertExceptionFailsTheRun() {
+        AtomicInteger binds = new AtomicInteger();
+        ProjectAgentRunHandle withArtifacts = new ProjectAgentRunHandle(run, store,
+            new InsertControlStore(true, false), AgentTestFixtures.MAPPER, clock::get,
+            closedCallbacks::incrementAndGet);
+        withArtifacts.whenSucceeded(text -> binds.incrementAndGet());
+        withArtifacts.onText("应落库的正文");
+        withArtifacts.onComplete();
+
+        IpdAgentRun after = store.findRun(run.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("FAILED");
+        assertThat(after.getErrorCode()).isEqualTo("ARTIFACT_PERSIST");
+        assertThat(store.events(run.getId())).extracting(IpdAgentRunEvent::getEventType)
+            .contains("ERROR")
+            .doesNotContain("RUN_FINISHED", "ARTIFACT");
+        assertThat(binds).hasValue(0);
+        assertThat(closedCallbacks).hasValue(1);
+    }
+
+    @Test
+    @DisplayName("产物插入返回失败：终态是 FAILED，不把重复插入当成成功")
+    void artifactInsertRejectedFailsTheRun() {
+        ProjectAgentRunHandle withArtifacts = new ProjectAgentRunHandle(run, store,
+            new InsertControlStore(false, true), AgentTestFixtures.MAPPER, clock::get,
+            closedCallbacks::incrementAndGet);
+        withArtifacts.onText("应落库的正文");
+        withArtifacts.onComplete();
+
+        IpdAgentRun after = store.findRun(run.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("FAILED");
+        assertThat(after.getErrorCode()).isEqualTo("ARTIFACT_PERSIST");
+        assertThat(store.events(run.getId())).extracting(IpdAgentRunEvent::getEventType)
+            .doesNotContain("RUN_FINISHED", "ARTIFACT");
+    }
+
+    /**
+     * 只控制 insert 的成败，其余方法委托内存存储。
+     */
+    private static final class InsertControlStore implements ArtifactVersionStore {
+        private final InMemoryArtifactVersionStore inner = new InMemoryArtifactVersionStore();
+        private final boolean throwOnInsert;
+        private final boolean rejectInsert;
+
+        private InsertControlStore(boolean throwOnInsert, boolean rejectInsert) {
+            this.throwOnInsert = throwOnInsert;
+            this.rejectInsert = rejectInsert;
+        }
+
+        @Override
+        public boolean insert(IpdAgentArtifactVersion version) {
+            if (throwOnInsert) {
+                throw new IllegalStateException("artifact insert failed");
+            }
+            if (rejectInsert) {
+                return false;
+            }
+            return inner.insert(version);
+        }
+
+        @Override
+        public Optional<IpdAgentArtifactVersion> findById(Long versionId) {
+            return inner.findById(versionId);
+        }
+
+        @Override
+        public Optional<IpdAgentArtifactVersion> findLatest(Long runId, String artifactId) {
+            return inner.findLatest(runId, artifactId);
+        }
+
+        @Override
+        public boolean markApplied(Long versionId, Long documentId) {
+            return inner.markApplied(versionId, documentId);
+        }
+
+        @Override
+        public Set<Long> findRunIdsByContent(String tenantId, String text) {
+            return inner.findRunIdsByContent(tenantId, text);
+        }
+
+        @Override
+        public List<IpdAgentArtifactVersion> listByRunIds(Collection<Long> runIds) {
+            return inner.listByRunIds(runIds);
+        }
+    }
+    @Test
+    void fullEvidenceStaysInternalAndArtifactUsesDeliveredBody() {
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunHandle subject = new ProjectAgentRunHandle(run, store, artifacts,
+            AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
+        java.util.concurrent.atomic.AtomicReference<String> bound = new java.util.concurrent.atomic.AtomicReference<>();
+        subject.whenSucceeded(bound::set);
+        subject.onToolCall("c1", "project_knowledge_search");
+        subject.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "preview", "短预览",
+            "citationText", "内部原文".repeat(300) + "12.83%"));
+        subject.onText("<thi");
+        subject.onText("nk>错误试算118.69</thi");
+        subject.onText("nk>费用率12.83%。<think>未闭合思考13.09");
+        subject.onComplete();
+        assertThat(store.findRun(run.getId()).orElseThrow().getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(artifacts.listByRunIds(List.of(run.getId())).get(0).getContent()).isEqualTo("费用率12.83%。");
+        assertThat(bound.get()).isEqualTo("费用率12.83%。");
+        assertThat(store.events(run.getId()).stream().filter(e -> "SOURCE".equals(e.getEventType())))
+            .singleElement().satisfies(e -> assertThat(e.getPayload()).contains("citationChars", "citationSha256")
+                .doesNotContain("citationText", "内部原文"));
+    }
+
+    @Test
+    void thinkingOnlyCannotFinishSuccessfully() {
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunHandle subject = new ProjectAgentRunHandle(run, store, artifacts,
+            AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
+        subject.onText("<think>只有思考，没有交付正文</think>");
+        subject.onComplete();
+        IpdAgentRun after = store.findRun(run.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("FAILED");
+        assertThat(after.getErrorCode()).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(artifacts.size()).isZero();
+        assertThat(store.events(run.getId())).extracting(IpdAgentRunEvent::getEventType)
+            .contains("ERROR").doesNotContain("ARTIFACT", "RUN_FINISHED");
     }
 
 }

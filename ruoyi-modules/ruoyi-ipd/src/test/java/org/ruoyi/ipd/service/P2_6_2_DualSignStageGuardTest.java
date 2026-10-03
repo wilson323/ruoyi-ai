@@ -264,6 +264,11 @@ class P2_6_2_DualSignStageGuardTest {
             projectBootstrapService, projectCertService,
             NoopTransactionManager.INSTANCE,
             requirementChangeService);
+        // 两个阶段门禁案例的操作人均为在职成员，保留原门禁与审计断言。
+        org.ruoyi.ipd.mapper.ProjectMemberMapper members =
+            org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMemberMapper.class);
+        projectService.setProjectMemberMapper(members);
+        when(members.selectCount(any())).thenReturn(1L);
 
         // 2) 拒绝断言
         assertThatThrownBy(() -> projectService.advanceStage(33L, 5L, 11L, "MARKET_PM"))
@@ -304,6 +309,11 @@ class P2_6_2_DualSignStageGuardTest {
             projectBootstrapService, projectCertService,
             NoopTransactionManager.INSTANCE,
             requirementChangeService);
+        // 两个阶段门禁案例的操作人均为在职成员，保留原门禁与审计断言。
+        org.ruoyi.ipd.mapper.ProjectMemberMapper members =
+            org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMemberMapper.class);
+        projectService.setProjectMemberMapper(members);
+        when(members.selectCount(any())).thenReturn(1L);
 
         Project out = projectService.advanceStage(34L, 5L, 11L, "MARKET_PM");
 

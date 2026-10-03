@@ -41,7 +41,8 @@ class GateEngineTest {
 
     private StageAction act(String code, String status) {
         return StageAction.builder().id(1L).projectId(100L).stageId(10L)
-            .actionCode(code).actionName(ActionCatalog.byCode(code).name()).status(status).build();
+            .actionCode(code).actionName(ActionCatalog.byCode(code).name()).status(status)
+            .confirmedBy("DONE".equals(status) ? 1L : null).build();
     }
 
     private Project project(String level) {
@@ -89,6 +90,19 @@ class GateEngineTest {
             .hasMessageContaining("C11");
         mockActions(conceptBlockingDone());
         assertThatCode(() -> engine.check(project("S"), "CONCEPT")).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("已完成但没有产线负责人确认时，门禁拒绝")
+    void doneWithoutLeaderRejects() {
+        List<StageAction> rows = new ArrayList<>(List.of(conceptBlockingDone()));
+        rows.removeIf(a -> "C11".equals(a.getActionCode()));
+        rows.add(StageAction.builder().id(1L).projectId(100L).stageId(10L)
+            .actionCode("C11").actionName("Charter").status("DONE").confirmedBy(null).build());
+        mockActions(rows.toArray(StageAction[]::new));
+        assertThatThrownBy(() -> engine.check(project("S"), "CONCEPT"))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("待产线负责人批准");
     }
 
     @Test

@@ -173,4 +173,46 @@ class CopilotRunRegistryServiceTest {
         g.delta("t");
         assertEquals(List.of("delta"), inner.calls);
     }
+    @Test
+    void cancellationBeforeBindingPhysicallyDisposesLaterSubscription() {
+        var handle = registry.register(OWNER, "early-cancel");
+        var sink = registry.guard(handle, new Recording());
+        registry.cancel(OWNER, handle.runId());
+        java.util.concurrent.atomic.AtomicBoolean disposed = new java.util.concurrent.atomic.AtomicBoolean();
+        reactor.core.Disposable source = reactor.core.publisher.Flux.never().doOnCancel(() -> disposed.set(true)).subscribe();
+        sink.bind(source);
+        assertTrue(disposed.get());
+    }
+
+    @Test
+    void disconnectDisposesPhysicalSourceWhileNormalDoneDoesNot() {
+        java.util.concurrent.atomic.AtomicBoolean disposed = new java.util.concurrent.atomic.AtomicBoolean();
+        var handle = registry.register(OWNER, "disconnect");
+        registry.guard(handle, new Recording()).bind(reactor.core.publisher.Flux.never()
+            .doOnCancel(() -> disposed.set(true)).subscribe());
+        registry.disconnect(handle);
+        assertTrue(disposed.get());
+        assertTrue(handle.isCancelled());
+        var normal = registry.register(OWNER, "normal");
+        var source = mock(reactor.core.Disposable.class);
+        var normalSink = registry.guard(normal, new Recording());
+        normalSink.bind(source);
+        normalSink.done(resp());
+        registry.disconnect(normal);
+        verify(source, never()).dispose();
+        assertFalse(normal.isCancelled());
+    }
+
+    @Test
+    void replacingSameOwnerCancelsOldSourceAndOldFramesCannotUnregisterNewRun() {
+        var old = registry.register(OWNER, "replacement");
+        var source = mock(reactor.core.Disposable.class);
+        var oldSink = registry.guard(old, new Recording());
+        oldSink.bind(source);
+        var fresh = registry.register(OWNER, "replacement");
+        verify(source, times(1)).dispose();
+        oldSink.done(resp());
+        assertTrue((Boolean) registry.cancel(OWNER, fresh.runId()).get("cancelled"));
+    }
+
 }

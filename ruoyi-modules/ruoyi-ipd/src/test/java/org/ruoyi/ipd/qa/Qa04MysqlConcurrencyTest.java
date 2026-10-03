@@ -163,8 +163,7 @@ class Qa04MysqlConcurrencyTest {
             c1.setAutoCommit(true);
             c2.setAutoCommit(true);
             for (int round = 0; round < 5; round++) {
-                // 每个 racer 独立 product：uk_projects_product(product_id) 只应约束 1:1 绑定，
-                // 不能让败者的换号重试撞上产品唯一键（服务层真实场景=不同产品抢同一编码段）
+                // 每个竞争者用自己的产品。本用例只争项目编码，不测产品与项目的数量关系。
                 long productA = nextId();
                 long productB = nextId();
                 seedProduct(c1, productA);
@@ -202,7 +201,7 @@ class Qa04MysqlConcurrencyTest {
                     .as("round %d: A=%d B=%d，同 code 并发必须一胜一 1062", round, outcomeA.get(), outcomeB.get())
                     .isTrue();
                 // 败者换号重试（服务层 CODE_CONFLICT_MAX_RETRY 的 SQL 层等价物）：
-                // 同 product 重试会撞 uk_projects_product，必须用败者自己的 product
+                // 败者换号后仍用自己的产品重试，避免和胜者抢同一条产品归属。
                 if (outcomeA.get() == 1062) {
                     assertThat(tryInsertProject(c1, idA, code + "R", productA)).isNull();
                 }

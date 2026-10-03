@@ -57,7 +57,7 @@ public class ProjectSoftDeleteExecutor implements SoftDeleteExecutor<Project> {
     }
 
     /**
-     * 释放产品侧 1:1 指针（优先按项目上记录的 productId；避免 Lambda 缓存依赖）。
+     * 若被删项目正是产品上的首个项目指针，清空该指针。其他项目保持挂在同一产品上。
      *
      * @param projectId 已软删项目 ID
      * @param productId 项目上记录的产品 ID，可为 null

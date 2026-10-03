@@ -37,7 +37,7 @@ public final class ChildProcessSecretSanitizer {
     }
 
     /**
-     * LangChain4j's stdio transport only overlays its environment map on the inherited environment.
+     * The stdio transport only overlays its environment map on the inherited environment.
      * An explicit empty value therefore masks the backend's real credential in the MCP child.
      */
     public static Map<String, String> emptyProviderSecretOverride() {

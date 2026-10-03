@@ -1,0 +1,34 @@
+{
+  "status": "VERIFIED_REQUIRES_NEW_TRANSACTION_CONSUMER_ONLY",
+  "compileExit": 0,
+  "probeExit": 0,
+  "sourceObservedSha256": "e5b105a5247392cb93a0e215989dc19b883130686ba480ef4c1e75b409bf0835",
+  "compiledClassSha256": "2a7f4e3b07b959a7909c80684380773c84547be81b3197efcaae89a9237a747b",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-handle-commit-54j7jzqc",
+  "cases": [
+    "CASE=success receipts=1 cleanup=1 commits=1 status=SUCCEEDED closed=1 suspends=0 resumes=0 log=[receipt:commits=1:active=false]",
+    "CASE=commitfail receipts=0 cleanup=0 commits=0 status=RUNNING closed=0 suspends=0 resumes=0 log=[]",
+    "CASE=cleanupfail receipts=1 cleanup=1 commits=1 status=SUCCEEDED closed=1 suspends=0 resumes=0 log=[receipt:commits=1:active=false]",
+    "CASE=leaselost receipts=0 cleanup=0 commits=1 status=SUCCEEDED closed=1 suspends=0 resumes=0 log=[]",
+    "CASE=outerrollback receipts=1 cleanup=1 commits=1 status=SUCCEEDED closed=1 suspends=1 resumes=1 log=[receipt:commits=1:active=true]",
+    "CASE=nosuspend receipts=0 cleanup=0 commits=0 status=RUNNING closed=0 suspends=0 resumes=0 log=[]"
+  ],
+  "actualManager": "AbstractPlatformTransactionManager actual begin/commit/rollback/suspend/resume lifecycle; explicit existing transaction frames and independent-commit generation; outer no business writes fixture does not rollback inner committed rows",
+  "covered": [
+    "Standalone actualcommit precedes receipt/cleanup",
+    "Commitfailure rollback RUNNING/events0 receipt0 cleanup0 close0",
+    "Cleanupfailure leaves committedSUCCEEDED and logsUNRESOLVED",
+    "Lease loss at realcommit retains checkpoint receipt0 cleanup0",
+    "Outer REQUIRED suspended1/resumed1; innercommit1 SUCCEEDED survives outerrollback and cleanup happens once",
+    "Unsupported suspension throws actual TransactionSuspensionNotSupportedException; no callback/cleanup/close/commit"
+  ],
+  "limits": [
+    "Mock run-store rows/events represent isolation; real MyBatis/DataSourceTransactionManager/Redisson/HTTP not exercised",
+    "After REQUIRES_NEW returns, outer transaction is resumed before receipt (active=true but innercommit1); callback that invokes runOwned may participate outer transaction; receipt should not treat activeouter as proof its DB work committed",
+    "onSucceeded remains inside terminal transaction; independent outbound side effects in that callback would remain rollback-sensitive",
+    "Winner race and real lease expiry after heldcheck not covered here",
+    "Partial cleanup errors require reconciliation, not guarantee all resources remain"
+  ],
+  "preservedRed": "Original probe-final2.log and original counterexample evidence remain unchanged",
+  "writes": "temp/EVDIR only"
+}

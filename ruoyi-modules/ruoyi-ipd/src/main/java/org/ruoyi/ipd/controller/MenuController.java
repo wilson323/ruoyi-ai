@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.menu.IpdPrimaryNavigation;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.system.domain.SysMenu;
 import org.ruoyi.system.domain.vo.RouterVo;
@@ -82,6 +83,8 @@ public class MenuController {
         // 「未找到对应组件」告警。与 tenant 同策：只裁本端点返回值（单一事实源）。
         // 该菜单嵌在「系统管理」目录 children 中，必须递归下钻而非只扫顶层。
         removeNestedByComponent(routers, "system/url/index");
+        // 常用入口收成五项。其余 IPD 子菜单仍返回，只标 hidden。不改角色菜单，不加权限。
+        IpdPrimaryNavigation.apply(routers);
         log.info("ipd_menu_getRouters status=OK personId={} sysUserId={} username={} menus={} routers={}",
             person.getId(), userId, person.getUsername(), menus.size(), routers.size());
         return ApiV1Response.ok(routers);

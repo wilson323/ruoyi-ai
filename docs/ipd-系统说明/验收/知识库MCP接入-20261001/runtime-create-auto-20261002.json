@@ -1,0 +1,159 @@
+{
+  "at": "2026-10-02T09:05:44.225394+00:00",
+  "mode": "create-auto",
+  "personAccount": "ipd-market",
+  "catalogCandidates": [
+    {
+      "id": "project_knowledge_search",
+      "name": "项目资料检索",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+      "name": "停车设备知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+      "name": "通道设备知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+      "name": "万傲瑞达 V6600知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+      "name": "安检设备知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "name": "门禁及梯控设备知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+      "name": "考勤知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+      "name": "E-ZKEco Pro知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+      "name": "智能视频知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+      "name": "人证核验知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+      "name": "消费知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce71396a40120630b055e",
+      "name": "云考勤设备知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce77b96a40120630b0c3d",
+      "name": "外协生态知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce8b996a40120630b1d80",
+      "name": "ZKTime知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce8e096a40120630b1e68",
+      "name": "ZKAccess3.5知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+      "name": "单机版消费epos知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce93796a40120630b2133",
+      "name": "熵基云联知识库",
+      "readOnly": true,
+      "available": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce91596a40120630b2017",
+      "name": "熵基互联知识库",
+      "readOnly": true,
+      "available": true
+    }
+  ],
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "project_knowledge_search",
+      "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+      "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+      "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+      "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+      "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+      "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+      "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+      "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+      "FastGPT-mcp-69cce71396a40120630b055e",
+      "FastGPT-mcp-69cce77b96a40120630b0c3d",
+      "FastGPT-mcp-69cce8b996a40120630b1d80",
+      "FastGPT-mcp-69cce8e096a40120630b1e68",
+      "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+      "FastGPT-mcp-69cce93796a40120630b2133",
+      "FastGPT-mcp-69cce91596a40120630b2017"
+    ],
+    "actionCode": "C02",
+    "message": "请先读取当前项目事实，自行判断本次问题相关且已可用的知识库工具，不要求我手动指定知识库。核验本项目智能锁联动能力，输出不超过四百字的资料核验草稿，注明已查来源、适用性与未取得事项。只调用与项目问题相关的工具，不要遍历全部库，不扩写财务指标或无关竞品，不自行宣称动作完成或评审通过。",
+    "idempotencyKey": "codex-global-20261002-create-auto"
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105947329122136066",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-10-02T09:05:44Z",
+      "traceId": "b9b8d846845d492faf989d980680b6d4"
+    }
+  }
+}

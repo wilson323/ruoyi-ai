@@ -4,19 +4,18 @@ package org.ruoyi.ipd.agent;
  * 项目智能体（C02 W1）固定常量。
  *
  * <p>agentId 固定为 {@link #AGENT_ID}，与副驾 {@code ipd_copilot} 区分执行入口；
- * 开关 {@link #ENABLED_PROPERTY} 默认关闭（matchIfMissing=false），关闭时能力接口
- * 返回 available=false 与 {@link #REASON_DISABLED}，运行接口拒绝且零写入，不降级到副驾。
+ * 官方内核与服务恒定装配；保留旧常量供历史调用兼容，不再用旧配置关闭生产能力。
  */
 public final class ProjectAgentConstants {
 
     /** 项目智能体固定 agentId（四维隔离键 agent 段 + 工作区目录名，单段标识）。 */
     public static final String AGENT_ID = "ipd_project_agent";
 
-    /** 独立功能开关键。 */
+    /** 历史配置键；生产装配不再读取此开关。 */
     public static final String ENABLED_PROPERTY = "ipd.project-agent.enabled";
 
-    /** 开关关闭时的对外原因（能力接口 unavailableReason / 运行接口拒绝文案）。 */
-    public static final String REASON_DISABLED = "项目智能体未启用（ipd.project-agent.enabled=false）";
+    /** 兼容历史服务构造器的不可用原因；生产能力不能靠此常量关闭。 */
+    public static final String REASON_DISABLED = "项目智能体运行服务不可用";
 
     /** 反馈目标：运行的助手回复（targetId = runId，W1 一次运行一条回复）。 */
     public static final String TARGET_RUN_MESSAGE = "RUN_MESSAGE";

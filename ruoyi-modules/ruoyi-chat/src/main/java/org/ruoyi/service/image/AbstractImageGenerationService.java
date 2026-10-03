@@ -36,7 +36,7 @@ public abstract class AbstractImageGenerationService implements IImageGeneration
     protected abstract String doGenerateImage(ChatModelVo chatModelVo, String prompt, String size, Integer seed, String image);
 
     /**
-     * 构建具体厂商的 ImageModel（原生SDK 非langchain4j-dashscope版）
+     * 构建具体厂商的 ImageModel（原生 SDK 直连厂商）
      * 子类必须实现此方法，返回对应厂商的模型实例
      */
     protected abstract Object buildImageModel(ChatModelVo chatModelVo);

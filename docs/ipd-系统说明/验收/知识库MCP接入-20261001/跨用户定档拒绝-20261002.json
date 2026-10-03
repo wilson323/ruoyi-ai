@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-02T09:19:17.109402+00:00",
+  "subject": "existing applied artifact owned by ipd-market",
+  "attempts": [
+    {
+      "account": "ipd-admin",
+      "http": 404,
+      "body": {
+        "code": 50001,
+        "message": "运行不存在",
+        "data": null,
+        "timestamp": "2026-10-02T09:19:16Z",
+        "traceId": "cdd6c1ca1bae4249822471468586ad40"
+      }
+    },
+    {
+      "account": "ipd-rd",
+      "http": 404,
+      "body": {
+        "code": 50001,
+        "message": "项目不可见",
+        "data": null,
+        "timestamp": "2026-10-02T09:19:17Z",
+        "traceId": "3a555ee795844c2589f60e8a9afbc34c"
+      }
+    }
+  ]
+}

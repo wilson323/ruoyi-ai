@@ -1,0 +1,39 @@
+{
+  "status": "VERIFIED_OFFICIAL_SOURCE_ONLY",
+  "timestampUtc": "2026-10-02T21:21:23.621840+00:00",
+  "sourceHead": "e9721285c63a37c10b1d07aa540408e57ba56ab2",
+  "imageDigest": "sha256:0f063af2d465d8dcae54cce04278ada488b96f77b42449c8d071e47d016cc65a",
+  "command": "go test -json -count=1 -p=2 ./internal/orchestration ./internal/httpapi ./internal/product",
+  "exitCode": 0,
+  "rawLog": "/tmp/ipd-codex-service-go-contract-20261002.log",
+  "rawSha256": "34393a76b7b677b3a0c24e2fdac2fb422e0cc20e575a82eb6664d7fd8d11951e",
+  "testEventsIncludingSubtests": {
+    "passed": 305,
+    "failed": 0,
+    "skipped": 64
+  },
+  "topLevelTests": {
+    "passed": 220,
+    "failed": 0,
+    "skipped": 35
+  },
+  "packages": {
+    "github.com/spring-ai-alibaba/aistio/internal/orchestration": {
+      "action": "pass",
+      "elapsed": 0.144
+    },
+    "github.com/spring-ai-alibaba/aistio/internal/httpapi": {
+      "action": "pass",
+      "elapsed": 0.915
+    },
+    "github.com/spring-ai-alibaba/aistio/internal/product": {
+      "action": "pass",
+      "elapsed": 0.105
+    }
+  },
+  "limits": [
+    "Conditional PostgreSQL tests skipped with original prerequisite conditions.",
+    "No IPD adapter integration, durable PostgreSQL deployment, real Hosted or external Channel validation.",
+    "Readonly official source mount; no reference source or business DB mutation."
+  ]
+}

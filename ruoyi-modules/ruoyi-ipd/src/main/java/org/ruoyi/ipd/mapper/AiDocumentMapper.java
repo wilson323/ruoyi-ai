@@ -19,6 +19,14 @@ import java.util.List;
 @Mapper
 public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument> {
 
+    /** 版本链的共同写锁；所有改版与待审核退回均先锁根，读取为当前读。 */
+    @Select("SELECT * FROM ai_documents WHERE id = #{id} AND del_flag = '0' FOR UPDATE")
+    AiDocument lockVersion(@Param("id") Long id);
+
+    /** 锁根后按父版本读取最新已提交子版本，避免重复读快照误判链头。 */
+    @Select("SELECT * FROM ai_documents WHERE parent_version_id = #{parentId} AND del_flag = '0' FOR UPDATE")
+    AiDocument lockChild(@Param("parentId") Long parentId);
+
     /**
      * P4-2.2：本月已消耗 token 聚合（AC-AI-08 月度预算检查）。
      * 仅 AI 原始输出行有 token 计量（人工改版 model/token 为 NULL，SUM 自动跳过）；

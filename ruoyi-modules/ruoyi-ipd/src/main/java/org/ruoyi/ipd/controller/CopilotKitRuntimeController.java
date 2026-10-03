@@ -141,6 +141,13 @@ public class CopilotKitRuntimeController {
     /** SseEmitter 事件下发适配（客户端已断开静默吞，与既有 ai-copilot sendFrame 防御一致）。 */
     static AgUiCopilotRun.AgUiSseSink sseSink(SseEmitter emitter) {
         return new AgUiCopilotRun.AgUiSseSink() {
+            private Runnable cancellation = () -> { };
+            @Override public void onDisconnect(Runnable action) {
+                cancellation = action;
+                emitter.onCompletion(action);
+                emitter.onTimeout(() -> { action.run(); emitter.complete(); });
+                emitter.onError(error -> action.run());
+            }
             @Override
             public void send(List<Map<String, Object>> events) {
                 if (events == null) {
@@ -150,6 +157,7 @@ public class CopilotKitRuntimeController {
                     try {
                         emitter.send(SseEmitter.event().data(event));
                     } catch (IOException | IllegalStateException e) {
+                        cancellation.run();
                         // 客户端已断开，静默（不重复推 error，避免 SIGPIPE 噪声）
                     }
                 }

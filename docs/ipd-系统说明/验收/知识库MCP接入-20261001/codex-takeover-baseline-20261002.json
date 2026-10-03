@@ -1,0 +1,22 @@
+{
+  "time": "2026-10-02T10:39:12.584066-07:00",
+  "phase": "T0",
+  "status": "PARTIAL",
+  "shared_writer": "pending Cursor acknowledgement; Codex review only",
+  "repos": {
+    "ruoyi-ai": {
+      "head": "29b64b97c1729335abe22955b06a7597d68a9fab",
+      "status_count": 348,
+      "index_sha256": "677c48087179afb70a25eb0b2f8d651a31f73655a0906da8921caed078ae09e9",
+      "upstream": "origin/main"
+    },
+    "ruoyi-ipd-web": {
+      "head": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a",
+      "status_count": 84,
+      "index_sha256": "0c32fc5b86e32f8efc471817323dfb2bc13fea788c2f85ca158a30dfb0caefb2",
+      "upstream": "origin/main"
+    }
+  },
+  "running_jar_sha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "pid": 13520
+}

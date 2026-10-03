@@ -1,8 +1,13 @@
 package org.ruoyi.chat.poc.kernel;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
+import org.ruoyi.chat.kernel.ChatOfficialCapabilities;
+import org.ruoyi.chat.kernel.KernelScopeKey;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.ModelRegistry;
+import io.agentscope.core.model.ModelCreationContext;
+import java.util.List;
+import java.util.function.Function;
 import io.agentscope.extensions.mysql.state.MysqlAgentStateStore;
 import io.agentscope.harness.agent.HarnessAgent;
 import java.nio.file.Files;
@@ -47,17 +52,36 @@ public final class PocKernelSupport {
         return AGENTS.computeIfAbsent(agentId, PocKernelSupport::buildAgent);
     }
 
+    /** Authenticated PoC consumer: user/project are part of both the cache key and sandbox root. */
+    public static HarnessAgent agent(String projectId, String userId, String agentId, String sessionId) {
+        var scope = KernelScopeKey.of(projectId, userId, agentId, sessionId);
+        if (userId == null || userId.isBlank()) { throw new IllegalArgumentException("Authenticated user required"); }
+        return AGENTS.computeIfAbsent(scope.slotId(), ignored -> buildAgent(agentId, scope.userId()));
+    }
+
     public static HarnessAgent buildAgent(String agentId) {
+        return buildAgent(agentId, null);
+    }
+
+    private static HarnessAgent buildAgent(String agentId, String expectedUser) {
         try {
+            if (agentId == null || !agentId.matches("[A-Za-z0-9_-]+")) {
+                throw new IllegalArgumentException("Single-segment PoC agent identity required");
+            }
             Path ws = Files.createTempDirectory("poc-kernel-" + agentId + "-");
             Files.writeString(ws.resolve("AGENTS.md"), "# PoC " + agentId + "\n\nIsolation/streaming PoC employee.\n");
-            return HarnessAgent.builder()
+            var binding = resolveModel(System.getProperty("poc.model.id", "minimax:MiniMax-M3"), System::getenv);
+            var builder = HarnessAgent.builder()
                     .name(agentId)
                     .sysPrompt("You are a helpful assistant. Answer concisely in the user's language.")
-                    .model(model())
+                    .model(binding.model())
                     .workspace(ws)
-                    .stateStore(stateStore())
-                    .build();
+                    .stateStore(stateStore());
+            var capabilities = ChatOfficialCapabilities.configure(builder, ws, expectedUser,
+                System.getProperty("chat.kernel.agentscope.sandbox-image", "python:3.13-alpine"), binding.knownSecrets());
+            var built = builder.build();
+            capabilities.bind(built);
+            return built;
         } catch (Exception e) {
             throw new IllegalStateException("build HarnessAgent failed: " + agentId, e);
         }
@@ -66,7 +90,22 @@ public final class PocKernelSupport {
     /** 模型解析:ModelRegistry(provider SPI),默认 MiniMax OpenAI 兼容端点。 */
     public static Model model() {
         String modelId = System.getProperty("poc.model.id", "minimax:MiniMax-M3");
-        return ModelRegistry.resolve(modelId);
+        return resolveModel(modelId, System::getenv).model();
+    }
+
+    record ModelBinding(Model model, List<String> knownSecrets) {
+        @Override public String toString() { return "ModelBinding[knownSecrets=<redacted>]"; }
+    }
+
+    static ModelBinding resolveModel(String modelId, Function<String, String> environment) {
+        // Official 2.0.3 MiniMax provider uses context.apiKey before MINIMAX_API_KEY.
+        // Other SPI providers own their credential resolution; no Vault reference is guessed here.
+        if (modelId != null && modelId.startsWith("minimax:")) {
+            String key = io.agentscope.core.model.ModelProviderSupport.trimToNull(environment.apply("MINIMAX_API_KEY"));
+            var context = ModelCreationContext.builder().apiKey(key).build();
+            return new ModelBinding(ModelRegistry.resolve(modelId, context), key == null ? List.of() : List.of(key));
+        }
+        return new ModelBinding(ModelRegistry.resolve(modelId), List.of());
     }
 
     /** 连接 ipd_poc(凭证走 .codex/ipd-dev/config/mysql-app.cnf,不上命令行)。 */

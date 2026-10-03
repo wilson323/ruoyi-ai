@@ -1,0 +1,2439 @@
+{
+  "at": "2026-10-02T08:42:17.811244+00:00",
+  "mode": "poll",
+  "personAccount": "ipd-market",
+  "run": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105940904400416769",
+        "projectId": "9140005",
+        "agentId": "ipd_project_agent",
+        "status": "SUCCEEDED",
+        "actionCode": "C02",
+        "configSnapshot": {
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1",
+          "modelConfigId": "2104885081318375426",
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "FastGPT-mcp-69cce91596a40120630b2017"
+          ]
+        },
+        "createdAt": "2026-10-02T08:40:13Z",
+        "finishedAt": "2026-10-02T08:41:36Z"
+      },
+      "timestamp": "2026-10-02T08:42:17Z",
+      "traceId": "fa6b80fe64fd46028dea6d53b0a713ee"
+    }
+  },
+  "terminal": true,
+  "nextSeq": 292,
+  "events": [
+    {
+      "seq": 1,
+      "type": "RUN_STARTED",
+      "payload": {
+        "agentId": "ipd_project_agent",
+        "actionCode": "C02",
+        "projectFacts": "项目：熵基互联+智能锁联动\n阶段：概念\n产品：熵基互联+智能锁联动\n当前动作：竞品分析\n退回意见：验收回读：下一次运行应带上这句退回意见。\n",
+        "modelConfigId": "2104885081318375426",
+        "capabilityPackCode": "market-research",
+        "capabilityPackVersion": "v1"
+      },
+      "createdAt": "2026-10-02T08:40:13Z"
+    },
+    {
+      "seq": 2,
+      "type": "STEP",
+      "payload": {
+        "kind": "SKILL_LOADED",
+        "name": "competitor-analysis-ipd",
+        "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+        "version": "1.1.0"
+      },
+      "createdAt": "2026-10-02T08:40:13Z"
+    },
+    {
+      "seq": 3,
+      "type": "STEP",
+      "payload": {
+        "kind": "INTENT",
+        "steps": [
+          "检索「竞品」「价格」「渠道」「技术方案」；无竞品名单则停止比较，只出缺项。",
+          "**目的裁剪**（用户声明时）：产品设计侧重功能矩阵；战略侧重格局与壁垒线索；融资材料侧重差异一页纸。未声明则四维齐全、篇幅克制。",
+          "对每个竞品填四维：功能、价格（币种/时间）、渠道、技术路线；每格附来源。",
+          "**可信度**：公开规格/报价页摘录=高；转述无出处=低（不得当已验证事实）。标注信息时效（资料中的日期）。",
+          "差异化机会仅基于有来源事实；推断标「推断」。可选：追平/差异/创新三层建议，须挂证据行。",
+          "输出「资料核对 / 对比表 / 差异机会 / 冲突与待确认 / 缺项清单」。不凑默认「5 家」。"
+        ],
+        "title": "意图判断",
+        "detail": "范围已明确，按计划执行。",
+        "needsPlan": true,
+        "questions": [],
+        "needsClarification": false
+      },
+      "createdAt": "2026-10-02T08:40:13Z"
+    },
+    {
+      "seq": 4,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T08:40:13Z"
+    },
+    {
+      "seq": 5,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>用户要求基于当前项目事实，调用熵"
+      },
+      "createdAt": "2026-10-02T08:40:14Z"
+    },
+    {
+      "seq": 6,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "基互联知识库 MCP 工具查询智能锁联动相关产品能力，生成简短的资料核验草稿。\n\n约束：\n1. "
+      },
+      "createdAt": "2026-10-02T08:40:14Z"
+    },
+    {
+      "seq": 7,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "只能用 FastGPT-mcp-69cce91596a40120630b2017 这个"
+      },
+      "createdAt": "2026-10-02T08:40:14Z"
+    },
+    {
+      "seq": 8,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "产线知识库 MCP 工具\n2. "
+      },
+      "createdAt": "2026-10-02T08:40:14Z"
+    },
+    {
+      "seq": 9,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "区分远端应用回答和原始出处\n3. 查不到就明确说明\"未取得\"\n4. 不编造参数\n5. 不"
+      },
+      "createdAt": "2026-10-02T08:40:14Z"
+    },
+    {
+      "seq": 10,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "宣称动作完成或评审通过\n6. 当前动作"
+      },
+      "createdAt": "2026-10-02T08:40:14Z"
+    },
+    {
+      "seq": 11,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "是 C02 竞品分析，本次任务只是查询\"智能锁"
+      },
+      "createdAt": "2026-10-02T08:40:15Z"
+    },
+    {
+      "seq": 12,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动\"相关"
+      },
+      "createdAt": "2026-10-02T08:40:16Z"
+    },
+    {
+      "seq": 13,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "产品"
+      },
+      "createdAt": "2026-10-02T08:40:16Z"
+    },
+    {
+      "seq": 14,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "能力"
+      },
+      "createdAt": "2026-10-02T08:40:17Z"
+    },
+    {
+      "seq": 15,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n"
+      },
+      "createdAt": "2026-10-02T08:40:17Z"
+    },
+    {
+      "seq": 16,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "按 C"
+      },
+      "createdAt": "2026-10-02T08:40:18Z"
+    },
+    {
+      "seq": 17,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "02 的"
+      },
+      "createdAt": "2026-10-02T08:40:19Z"
+    },
+    {
+      "seq": 18,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "执行说明，我"
+      },
+      "createdAt": "2026-10-02T08:40:19Z"
+    },
+    {
+      "seq": 19,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "需要先检索「竞品」「价格」「"
+      },
+      "createdAt": "2026-10-02T08:40:19Z"
+    },
+    {
+      "seq": 20,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "渠道」「技术方案」等资料。但用户的"
+      },
+      "createdAt": "2026-10-02T08:40:20Z"
+    },
+    {
+      "seq": 21,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本次具体请求是\"调用本次已选熵基互联知识库查询智能锁联动相关产品能力\"，范围"
+      },
+      "createdAt": "2026-10-02T08:40:20Z"
+    },
+    {
+      "seq": 22,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "比"
+      },
+      "createdAt": "2026-10-02T08:40:20Z"
+    },
+    {
+      "seq": 23,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "竞品分析窄，聚焦在智能锁联动。\n\n我"
+      },
+      "createdAt": "2026-10-02T08:40:20Z"
+    },
+    {
+      "seq": 24,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "应该先调用"
+      },
+      "createdAt": "2026-10-02T08:40:20Z"
+    },
+    {
+      "seq": 25,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库工具"
+      },
+      "createdAt": "2026-10-02T08:40:21Z"
+    },
+    {
+      "seq": 26,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，查询与熵基互联+智能锁联动相关的产品能力信息，然后基于返回结果生成资料核验草稿。\n\n让我"
+      },
+      "createdAt": "2026-10-02T08:40:21Z"
+    },
+    {
+      "seq": 27,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "先做一个合理的查询。考虑到：\n- 项目名是\"熵基互联+智能锁联动\"\n- 当前动作是 C02 "
+      },
+      "createdAt": "2026-10-02T08:40:21Z"
+    },
+    {
+      "seq": 28,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "竞品分析\n-"
+      },
+      "createdAt": "2026-10-02T08:40:22Z"
+    },
+    {
+      "seq": 29,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 用户要求"
+      },
+      "createdAt": "2026-10-02T08:40:22Z"
+    },
+    {
+      "seq": 30,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "查\"智能锁联动相关产品能力\"\n\n我应该围绕熵基互联平台"
+      },
+      "createdAt": "2026-10-02T08:40:23Z"
+    },
+    {
+      "seq": 31,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "能力、开放接口、与智能锁联动的相关产品/"
+      },
+      "createdAt": "2026-10-02T08:40:23Z"
+    },
+    {
+      "seq": 32,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "方案来查询。\n\n我会做几次独立查询，覆盖"
+      },
+      "createdAt": "2026-10-02T08:40:23Z"
+    },
+    {
+      "seq": 33,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "不同角度（避免一次查询太宽）：\n1. 熵基互联平台"
+      },
+      "createdAt": "2026-10-02T08:40:24Z"
+    },
+    {
+      "seq": 34,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "能力与开放接口（侧重"
+      },
+      "createdAt": "2026-10-02T08:40:24Z"
+    },
+    {
+      "seq": 35,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "技术方案 / 联动能力）\n2. 熵基互联对接"
+      },
+      "createdAt": "2026-10-02T08:40:24Z"
+    },
+    {
+      "seq": 36,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁 / 门锁联动相关"
+      },
+      "createdAt": "2026-10-02T08:40:24Z"
+    },
+    {
+      "seq": 37,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "产品 / 方案"
+      },
+      "createdAt": "2026-10-02T08:40:24Z"
+    },
+    {
+      "seq": 38,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n3. 第三方智能锁接入生态 / 价格 / 渠道（如果知识库没有，要明确说明）\n\n注意：C02 的步骤"
+      },
+      "createdAt": "2026-10-02T08:40:24Z"
+    },
+    {
+      "seq": 39,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " "
+      },
+      "createdAt": "2026-10-02T08:40:25Z"
+    },
+    {
+      "seq": 40,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1 说\"无竞品名单则停止比较，只出缺项\"。当前用户输入"
+      },
+      "createdAt": "2026-10-02T08:40:25Z"
+    },
+    {
+      "seq": 41,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "里没有给出竞品名单，本次请求也明确只是\"查产品能力\"，不是要做完整竞品对比"
+      },
+      "createdAt": "2026-10-02T08:40:25Z"
+    },
+    {
+      "seq": 42,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "表"
+      },
+      "createdAt": "2026-10-02T08:40:26Z"
+    },
+    {
+      "seq": 43,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。所以"
+      },
+      "createdAt": "2026-10-02T08:40:26Z"
+    },
+    {
+      "seq": 44,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "我聚焦在\""
+      },
+      "createdAt": "2026-10-02T08:40:26Z"
+    },
+    {
+      "seq": 45,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "资料核对\"——把"
+      },
+      "createdAt": "2026-10-02T08:40:26Z"
+    },
+    {
+      "seq": 46,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "查到的产品能力信息整理出来，并明确区分远"
+      },
+      "createdAt": "2026-10-02T08:40:26Z"
+    },
+    {
+      "seq": 47,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端回答和原始出处。\n\n按 C"
+      },
+      "createdAt": "2026-10-02T08:40:27Z"
+    },
+    {
+      "seq": 48,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "02 执行说明步骤 6 的输出结构是「资料核对 / 对比表 / 差异机会 / 冲突与待确认 / "
+      },
+      "createdAt": "2026-10-02T08:40:27Z"
+    },
+    {
+      "seq": 49,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "缺项清单」。本次用户明确"
+      },
+      "createdAt": "2026-10-02T08:40:27Z"
+    },
+    {
+      "seq": 50,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "只要\"简短的资料核验草稿\"，所以我聚焦\"资料核对\"和"
+      },
+      "createdAt": "2026-10-02T08:40:28Z"
+    },
+    {
+      "seq": 51,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"缺项清单"
+      },
+      "createdAt": "2026-10-02T08:40:28Z"
+    },
+    {
+      "seq": 52,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"两部分，对比表和差异机会不强行凑。\n\n让我开始"
+      },
+      "createdAt": "2026-10-02T08:40:28Z"
+    },
+    {
+      "seq": 53,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "查询。先做三个并行查询：\n- 一个查熵基互联平台"
+      },
+      "createdAt": "2026-10-02T08:40:28Z"
+    },
+    {
+      "seq": 54,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁"
+      },
+      "createdAt": "2026-10-02T08:40:28Z"
+    },
+    {
+      "seq": 55,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动产品方案\n- 一个查熵基互联开放接口"
+      },
+      "createdAt": "2026-10-02T08:40:29Z"
+    },
+    {
+      "seq": 56,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " / 联动技术\n- 一个查智能锁联动相关价格渠道（如"
+      },
+      "createdAt": "2026-10-02T08:40:29Z"
+    },
+    {
+      "seq": 57,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库没有就如实标注）</think>\n\n我"
+      },
+      "createdAt": "2026-10-02T08:40:29Z"
+    },
+    {
+      "seq": 58,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "先就「智能锁联动」相关产品能力向熵基互联产线知识库发起几次查询，再据实整理资料核验草稿。"
+      },
+      "createdAt": "2026-10-02T08:40:29Z"
+    },
+    {
+      "seq": 59,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb4e"
+      },
+      "createdAt": "2026-10-02T08:40:33Z"
+    },
+    {
+      "seq": 60,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb4f"
+      },
+      "createdAt": "2026-10-02T08:40:33Z"
+    },
+    {
+      "seq": 61,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb50"
+      },
+      "createdAt": "2026-10-02T08:40:33Z"
+    },
+    {
+      "seq": 62,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL",
+        "inputTokens": 6937,
+        "outputTokens": 779
+      },
+      "createdAt": "2026-10-02T08:40:33Z"
+    },
+    {
+      "seq": 63,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 1,
+        "tool": "FastGPT-mcp-69cce91596a40120630b2017",
+        "query": "熵基互联平台与智能锁联动的产品方案、开放接口与联动能力有哪些？覆盖门锁联动场景。",
+        "preview": "【产线知识库｜产线：熵基互联｜服务标识：FastGPT-mcp-69cce91596a40120630b2017｜远端声明出处：【视频指导】_熵基互联_操作视频①.md、熵基互联简介.docx、【FAQ】_熵基互联_常见问题.md、熵基互联_操作指导手册①.docx、熵基互联小程序视频链接.docx】\n远端返回资料：\n{\"dataset\":[{\"id\":\"68f0a66f14bdc9f2395e6e77\",\"updateTime\":\"2025-12-03T07:58:39.562Z\",\"q\":\"# 【视频指导】_熵基互联_操作视频①\\n## 熵基互联小程序端门禁应用设置步骤\\n视频链接：[remote-address-redacted]\",\"chunkIndex\":2,\"datasetId\":\"66d51dd1e6ac063d23b75264\",\"collectionId\":\"68f0a66d14bdc9f2395e6cd8\",\"sourceId\":\"dataset/66d51dd1e6ac063d23b75264/pNccIs-【视频指导】_熵基互联_操作视频.md\",\"sourceName\":\"【视频指导】_熵基互联_操作视频①.md\",\"score\":[{\"type\":\"embedding\",\"value\":0.84244704246521,\"index\":9},{\"type\":\"fullText\",\"value\":2.879032258064516,\"index\":9},{\"type\":\"rrf\",\"value\":0.014285714285714284,\"index\":0}],\"tokens\":88},{\"id\":\"68f0a66f14bdc9f2395e6e8c\",\"updateTime\":\"2025-12-03T07:58:42.822Z\",\"q\":\"# 【视频指导】_熵基互联_操作视频①\\n## 一分钟了解熵基互联\\n视频链接：[remote-address-redacted]",
+        "lineName": "熵基互联",
+        "serviceId": "FastGPT-mcp-69cce91596a40120630b2017",
+        "sourceKind": "REMOTE_APPLICATION",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb4e",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T08:40:34Z"
+    },
+    {
+      "seq": 64,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 1,
+        "tool": "FastGPT-mcp-69cce91596a40120630b2017",
+        "query": "熵基互联对接第三方智能锁的技术方案、协议、对接方式（SDK/API）",
+        "preview": "【产线知识库｜产线：熵基互联｜服务标识：FastGPT-mcp-69cce91596a40120630b2017｜远端声明出处：【FAQ】_熵基互联_常见问题.md、【视频指导】_熵基互联_操作视频①.md、熵基互联简介.docx、【视频指导】_熵基互联_操作视频②.md、熵基互联小程序视频链接.docx】\n远端返回资料：\n{\"dataset\":[{\"id\":\"68f0a66f14bdc9f2395e6e0e\",\"updateTime\":\"2025-11-26T13:18:34.106Z\",\"q\":\"# 熵基互联新增常见问题\\n## 24. 设备绑定方式有哪些？\\n\\n答：1、小程序添加设备\\n\\n进入【熵基互联】微信小程序，在【设备】页面-添加设备，选择不同型号设备进行设备绑定蓝牙添加的设备连接设备后为设备进行网络配置，即可绑定使用。\\n\\n2、网页端添加设备在电脑浏览器输入：[remote-address-redacted]>选择设备中心>选择添加设备，输入序列号即可进行设备的添加。\",\"chunkIndex\":21,\"datasetId\":\"66d51dd1e6ac063d23b75264\",\"collectionId\":\"68f0a66d14bdc9f2395e6cb5\",\"sourceId\":\"dataset/66d51dd1e6ac063d23b75264/fAGW51-【FAQ】_熵基互联_常见问题.md\",\"sourceName\":\"【FAQ】_熵基互联_常见问题.md\",\"score\":[{\"type\":\"embedding\",\"value\":0.8391587734222412,\"index\":5},{\"type\":\"fullText\",\"value\":4.006666666666667,\"index\":3},{\"type\":\"rrf\",\"value\":0.01534090909090909,\"i",
+        "lineName": "熵基互联",
+        "serviceId": "FastGPT-mcp-69cce91596a40120630b2017",
+        "sourceKind": "REMOTE_APPLICATION",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb4f",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T08:40:35Z"
+    },
+    {
+      "seq": 65,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 1,
+        "tool": "FastGPT-mcp-69cce91596a40120630b2017",
+        "query": "熵基互联智能锁联动相关产品线价格、渠道、销售模式",
+        "preview": "【产线知识库｜产线：熵基互联｜服务标识：FastGPT-mcp-69cce91596a40120630b2017｜远端声明出处：【视频指导】_熵基互联_操作视频①.md、【FAQ】_熵基互联_常见问题.md、熵基互联简介.docx、熵基互联小程序视频链接.docx、【视频指导】_熵基互联_操作视频②.md】\n远端返回资料：\n{\"dataset\":[{\"id\":\"68f0a66f14bdc9f2395e6e70\",\"updateTime\":\"2025-12-03T07:58:34.000Z\",\"q\":\"# 【视频指导】_熵基互联_操作视频①\\n## 熵基互联小程序添加设备\\n视频链接：[remote-address-redacted]\",\"chunkIndex\":0,\"datasetId\":\"66d51dd1e6ac063d23b75264\",\"collectionId\":\"68f0a66d14bdc9f2395e6cd8\",\"sourceId\":\"dataset/66d51dd1e6ac063d23b75264/pNccIs-【视频指导】_熵基互联_操作视频.md\",\"sourceName\":\"【视频指导】_熵基互联_操作视频①.md\",\"score\":[{\"type\":\"embedding\",\"value\":0.83735191822052,\"index\":1},{\"type\":\"fullText\",\"value\":2.4375,\"index\":22},{\"type\":\"rrf\",\"value\":0.014496696463272445,\"index\":0}],\"tokens\":68},{\"id\":\"68f0a66f14bdc9f2395e6e0e\",\"updateTime\":\"2025-11-26T13:18:34.106Z\",\"q\":\"# 熵基互联新增常见问题\\n## 24. 设备绑定方式有哪些？\\n\\n答：1、小程序添加设备\\n\\n进入【熵基互联】微信小程序，在【设备】页面-添加设备，选择不同型号设备进行设备绑定蓝牙添加的设备连接设备后为设备进行网络配置，即可绑定使用。\\n\\n2、网页端添加设备在电脑浏览器输入：[remote-address-redacted]",
+        "lineName": "熵基互联",
+        "serviceId": "FastGPT-mcp-69cce91596a40120630b2017",
+        "sourceKind": "REMOTE_APPLICATION",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb50",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T08:40:36Z"
+    },
+    {
+      "seq": 66,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb4e"
+      },
+      "createdAt": "2026-10-02T08:40:36Z"
+    },
+    {
+      "seq": 67,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb4f"
+      },
+      "createdAt": "2026-10-02T08:40:36Z"
+    },
+    {
+      "seq": 68,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbc5b3f27061b5fbeb50"
+      },
+      "createdAt": "2026-10-02T08:40:36Z"
+    },
+    {
+      "seq": 69,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T08:40:36Z"
+    },
+    {
+      "seq": 70,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>我已获取"
+      },
+      "createdAt": "2026-10-02T08:40:37Z"
+    },
+    {
+      "seq": 71,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联产线知识库的三次查询结果。现在整理资料核验草稿。\n\n关键约束：\n1. 区分远端应用回答和"
+      },
+      "createdAt": "2026-10-02T08:40:37Z"
+    },
+    {
+      "seq": 72,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原始出处：远端 MCP 返回的是带 sourceName 的文档片段；这些"
+      },
+      "createdAt": "2026-10-02T08:40:37Z"
+    },
+    {
+      "seq": 73,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "片段本身就是"
+      },
+      "createdAt": "2026-10-02T08:40:38Z"
+    },
+    {
+      "seq": 74,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文档中的原文摘录，按系统提示「本地检索返回的文档片段可按实际出处"
+      },
+      "createdAt": "2026-10-02T08:40:38Z"
+    },
+    {
+      "seq": 75,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "引用原文；MCP 远端应用回答是应用整理"
+      },
+      "createdAt": "2026-10-02T08:40:38Z"
+    },
+    {
+      "seq": 76,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "结果」。这里 MCP 返回的"
+      },
+      "createdAt": "2026-10-02T08:40:38Z"
+    },
+    {
+      "seq": 77,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " dataset 实际上是检索到的带来源标注的文档"
+      },
+      "createdAt": "2026-10-02T08:40:38Z"
+    },
+    {
+      "seq": 78,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " chunk"
+      },
+      "createdAt": "2026-10-02T08:40:38Z"
+    },
+    {
+      "seq": 79,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（sourceName 给出了文档名），相当于来源标注，可作为原始"
+      },
+      "createdAt": "2026-10-02T08:40:39Z"
+    },
+    {
+      "seq": 80,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出处引用。\n2. 但注意：sourceName 如「熵基互联_"
+      },
+      "createdAt": "2026-10-02T08:40:39Z"
+    },
+    {
+      "seq": 81,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "操作指导手册①.docx」是远端应用整理时给的来源"
+      },
+      "createdAt": "2026-10-02T08:40:39Z"
+    },
+    {
+      "seq": 82,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "声明，不等同于我亲手"
+      },
+      "createdAt": "2026-10-02T08:40:39Z"
+    },
+    {
+      "seq": 83,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "在文档中核对过。这里需要谨慎处理——按硬约束"
+      },
+      "createdAt": "2026-10-02T08:40:40Z"
+    },
+    {
+      "seq": 84,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1"
+      },
+      "createdAt": "2026-10-02T08:40:40Z"
+    },
+    {
+      "seq": 85,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：「MCP 远"
+      },
+      "createdAt": "2026-10-02T08:40:40Z"
+    },
+    {
+      "seq": 86,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端应用回答是应用整理结果，不能等同于已核对的原始文档。只有返回中明确提供的原文"
+      },
+      "createdAt": "2026-10-02T08:40:40Z"
+    },
+    {
+      "seq": 87,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "与出处才能作为原文引用，没有原始出处时标注'远端应用回答，原始出处未取得'"
+      },
+      "createdAt": "2026-10-02T08:40:40Z"
+    },
+    {
+      "seq": 88,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，不得编造文档"
+      },
+      "createdAt": "2026-10-02T08:40:41Z"
+    },
+    {
+      "seq": 89,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "名、页码或原句」。\n3. 实际上远端返回的 dataset"
+      },
+      "createdAt": "2026-10-02T08:40:41Z"
+    },
+    {
+      "seq": 90,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 提供了明确的\"q\"字段原文摘录和 sourceName 文档名，所以这些可以"
+      },
+      "createdAt": "2026-10-02T08:40:41Z"
+    },
+    {
+      "seq": 91,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "引用，但要标注是远端应用整理的来源。\n4. 资料时效：update"
+      },
+      "createdAt": "2026-10-02T08:40:41Z"
+    },
+    {
+      "seq": 92,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Time 在 2025-11-26 到 2025-12-16 之间，update"
+      },
+      "createdAt": "2026-10-02T08:40:41Z"
+    },
+    {
+      "seq": 93,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Time 是知识库更新时间，不是业务时效；业务内容本身没有写"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 94,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "明日期。\n5. 智能锁联动相关"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 95,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：知识库中\"智能锁\"几乎没出现，主要是\"门禁\"内容。两者"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 96,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "语义不完全相同，需要明确标注。\n6. 没有价格"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 97,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、渠道、技术协议（API/SDK）的具体描述。\n7. 设备型号"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 98,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "支持：ZQ3、ZQ1、ZQ102、ZQ2、xFace360-HL、xFace100-HL——但没有看到具体的智能"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 99,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁型号。\n\n整理结构"
+      },
+      "createdAt": "2026-10-02T08:40:42Z"
+    },
+    {
+      "seq": 100,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：\n1. 资料核对（来源 / 内容 / 时效 / 可信度）\n2."
+      },
+      "createdAt": "2026-10-02T08:40:43Z"
+    },
+    {
+      "seq": 101,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 缺项清单（智能锁特定功能 / 价格 / 渠道 / 技术"
+      },
+      "createdAt": "2026-10-02T08:40:43Z"
+    },
+    {
+      "seq": 102,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "协议）\n3. 不输出竞品对比表和差异机会（用户只要求简短的资料核验草稿，没有"
+      },
+      "createdAt": "2026-10-02T08:40:43Z"
+    },
+    {
+      "seq": 103,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "给出竞品名单，按 C02「无竞品名单则停止比较，只"
+      },
+      "createdAt": "2026-10-02T08:40:43Z"
+    },
+    {
+      "seq": 104,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出缺项」）\n\n让我开始组织输出。\n\n注意：\n- 原文里有"
+      },
+      "createdAt": "2026-10-02T08:40:44Z"
+    },
+    {
+      "seq": 105,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "图片"
+      },
+      "createdAt": "2026-10-02T08:40:44Z"
+    },
+    {
+      "seq": 106,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "URL"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 107,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 108,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "zktecowebui.com 图床），那只是"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 109,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "资源URL，不算参数。\n- 知识库 update"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 110,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Time 数据点：2025-11-26、2025-12-03、2025-12-"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 111,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "16\n- 没有找到关于\"智能锁\"型号、SDK/API"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 112,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、价格、渠道"
+      },
+      "createdAt": "2026-10-02T08:40:45Z"
+    },
+    {
+      "seq": 113,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的有效信息\n\n我可以组织如下：\n- 资料核对表（每条"
+      },
+      "createdAt": "2026-10-02T08:40:46Z"
+    },
+    {
+      "seq": 114,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "记录 远端声明出处 / 内容摘要 / 信息时效 / 可信度）\n-"
+      },
+      "createdAt": "2026-10-02T08:40:46Z"
+    },
+    {
+      "seq": 115,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 缺项清单\n- 边界说明（智能锁 ≠ 门禁）"
+      },
+      "createdAt": "2026-10-02T08:40:46Z"
+    },
+    {
+      "seq": 116,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "</think>\n\n# 资料核验草稿｜C02 竞品分析 · 智能锁联动\n\n> **范围声明**：本次"
+      },
+      "createdAt": "2026-10-02T08:40:46Z"
+    },
+    {
+      "seq": 117,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "仅就「熵基互联产线知识库」内与"
+      },
+      "createdAt": "2026-10-02T08:40:46Z"
+    },
+    {
+      "seq": 118,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动相关的产品能力进行资料核验，未做竞品对比（无竞品名单，按"
+      },
+      "createdAt": "2026-10-02T08:40:46Z"
+    },
+    {
+      "seq": 119,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " C02 规则停止比较）。来源均为远端 MCP 工具 `FastGPT"
+      },
+      "createdAt": "2026-10-02T08:40:47Z"
+    },
+    {
+      "seq": 120,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "-mcp-69cce91596a40120630b2017` 的实际返回摘录，未经二次线下核验。\n\n## 1 资料核对\n\n### 1.1 平台与产品定位- **远端声明出处**：`熵基互联简介.docx`\n-"
+      },
+      "createdAt": "2026-10-02T08:40:47Z"
+    },
+    {
+      "seq": 121,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " **原文摘录**："
+      },
+      "createdAt": "2026-10-02T08:40:47Z"
+    },
+    {
+      "seq": 122,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联是以微信小程序为载体的轻应用，为中小企业提供**场所管理、人员管理、考勤管理、门禁管理、设备管理**等功能；同时支持电脑端操作。"
+      },
+      "createdAt": "2026-10-02T08:40:48Z"
+    },
+    {
+      "seq": 123,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "版本\"完整列出门禁管理含\"多种识别方式（刷卡、指纹、刷脸）\"\"远程开门\"\"访客管理\"等。\n"
+      },
+      "createdAt": "2026-10-02T08:40:48Z"
+    },
+    {
+      "seq": 124,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- **信息时效**：远端 `updateTime=2025-11-"
+      },
+      "createdAt": "2026-10-02T08:40:48Z"
+    },
+    {
+      "seq": 125,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "26T13:18:03.424Z`（知识库更新时间，非业务条款生效"
+      },
+      "createdAt": "2026-10-02T08:40:48Z"
+    },
+    {
+      "seq": 126,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "日期）。\n- **可信度**：中"
+      },
+      "createdAt": "2026-10-02T08:40:48Z"
+    },
+    {
+      "seq": 127,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。属于官方简介型"
+      },
+      "createdAt": "2026-10-02T08:40:48Z"
+    },
+    {
+      "seq": 128,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "材料"
+      },
+      "createdAt": "2026-10-02T08:40:49Z"
+    },
+    {
+      "seq": 129,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，未"
+      },
+      "createdAt": "2026-10-02T08:40:49Z"
+    },
+    {
+      "seq": 130,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "呈现具体规格参数"
+      },
+      "createdAt": "2026-10-02T08:40:50Z"
+    },
+    {
+      "seq": 131,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n\n### 1."
+      },
+      "createdAt": "2026-10-02T08:40:50Z"
+    },
+    {
+      "seq": 132,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "2 支持"
+      },
+      "createdAt": "2026-10-02T08:40:51Z"
+    },
+    {
+      "seq": 133,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的"
+      },
+      "createdAt": "2026-10-02T08:40:51Z"
+    },
+    {
+      "seq": 134,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备清单"
+      },
+      "createdAt": "2026-10-02T08:40:52Z"
+    },
+    {
+      "seq": 135,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- **远"
+      },
+      "createdAt": "2026-10-02T08:40:53Z"
+    },
+    {
+      "seq": 136,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端声明出处**：`【FAQ】_熵基互联_常见问题.md`"
+      },
+      "createdAt": "2026-10-02T08:40:53Z"
+    },
+    {
+      "seq": 137,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " §23\n- **原文摘录**：\"熵基互联-设备可以看目前支持的考勤机/门禁机：**ZQ3、"
+      },
+      "createdAt": "2026-10-02T08:40:53Z"
+    },
+    {
+      "seq": 138,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "ZQ1、ZQ102、ZQ2、xFace360-HL、xFace100-HL**\"。\n- **信息"
+      },
+      "createdAt": "2026-10-02T08:40:53Z"
+    },
+    {
+      "seq": 139,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "时效**：知识库 `updateTime=2025-11-26T13:18:34"
+      },
+      "createdAt": "2026-10-02T08:40:53Z"
+    },
+    {
+      "seq": 140,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".085Z`。\n- **可信度**：中。"
+      },
+      "createdAt": "2026-10-02T08:40:54Z"
+    },
+    {
+      "seq": 141,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**清单"
+      },
+      "createdAt": "2026-10-02T08:40:54Z"
+    },
+    {
+      "seq": 142,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "内全部为考勤机/门禁机型号，未出现任何\""
+      },
+      "createdAt": "2026-10-02T08:40:54Z"
+    },
+    {
+      "seq": 143,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁\"型号**——\"门禁联动\"不等于\"智能锁联动\"，区分见"
+      },
+      "createdAt": "2026-10-02T08:40:55Z"
+    },
+    {
+      "seq": 144,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 1.4。\n"
+      },
+      "createdAt": "2026-10-02T08:40:55Z"
+    },
+    {
+      "seq": 145,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- **备注**：此"
+      },
+      "createdAt": "2026-10-02T08:40:56Z"
+    },
+    {
+      "seq": 146,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "清单可能"
+      },
+      "createdAt": "2026-10-02T08:40:56Z"
+    },
+    {
+      "seq": 147,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "为节"
+      },
+      "createdAt": "2026-10-02T08:40:57Z"
+    },
+    {
+      "seq": 148,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "选；"
+      },
+      "createdAt": "2026-10-02T08:40:58Z"
+    },
+    {
+      "seq": 149,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本次"
+      },
+      "createdAt": "2026-10-02T08:40:58Z"
+    },
+    {
+      "seq": 150,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " MCP 命中片段仅含此 "
+      },
+      "createdAt": "2026-10-02T08:40:58Z"
+    },
+    {
+      "seq": 151,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "6 个型号，**未取得**完整型号白名单原文"
+      },
+      "createdAt": "2026-10-02T08:40:59Z"
+    },
+    {
+      "seq": 152,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n\n### 1.3 门禁联动功能（与\"智能锁联动"
+      },
+      "createdAt": "2026-10-02T08:40:59Z"
+    },
+    {
+      "seq": 153,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"语义最近的部分）\n- **远"
+      },
+      "createdAt": "2026-10-02T08:40:59Z"
+    },
+    {
+      "seq": 154,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端声明出处**：`熵基互联_操作指导手册①.docx` §\"小程序端门禁助理\"\n"
+      },
+      "createdAt": "2026-10-02T08:40:59Z"
+    },
+    {
+      "seq": 155,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- **原文摘录要点**：\n  - **远程开门**：点击"
+      },
+      "createdAt": "2026-10-02T08:40:59Z"
+    },
+    {
+      "seq": 156,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "已绑定的门禁点开锁按钮发送远程开门命令；设备需正常联网在线。\n  - **时间段**：每天最多支持 5 个时段。\n"
+      },
+      "createdAt": "2026-10-02T08:41:00Z"
+    },
+    {
+      "seq": 157,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "  - **通行权限组"
+      },
+      "createdAt": "2026-10-02T08:41:00Z"
+    },
+    {
+      "seq": 158,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**：需选择通行时间 + 通行设备 + 可通行人员；人员可在对应时间段内从指定设备验证"
+      },
+      "createdAt": "2026-10-02T08:41:00Z"
+    },
+    {
+      "seq": 159,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "通行。\n  - **通行记录**：可查看及导出组织中绑定的所有门禁设备通行记录。\n- **信息时效**：知识库 `updateTime=2025-11-26T13:"
+      },
+      "createdAt": "2026-10-02T08:41:00Z"
+    },
+    {
+      "seq": 160,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "18:08.211Z`。\n- **可信度**：中。"
+      },
+      "createdAt": "2026-10-02T08:41:00Z"
+    },
+    {
+      "seq": 161,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文档为操作指导手册型材料，未呈现接口/协议层细节。\n\n### 1"
+      },
+      "createdAt": "2026-10-02T08:41:01Z"
+    },
+    {
+      "seq": 162,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".4 设备绑定与下发"
+      },
+      "createdAt": "2026-10-02T08:41:01Z"
+    },
+    {
+      "seq": 163,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "通道\n- **远端声明出处**：`【FAQ】_熵基"
+      },
+      "createdAt": "2026-10-02T08:41:01Z"
+    },
+    {
+      "seq": 164,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联_常见问题.md` §24 + `【视频指导】_熵基互联_操作视频①"
+      },
+      "createdAt": "2026-10-02T08:41:01Z"
+    },
+    {
+      "seq": 165,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".md`\n- **原文摘录要点**：\n"
+      },
+      "createdAt": "2026-10-02T08:41:02Z"
+    },
+    {
+      "seq": 166,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "  -"
+      },
+      "createdAt": "2026-10-02T08:41:02Z"
+    },
+    {
+      "seq": 167,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 小程序内"
+      },
+      "createdAt": "2026-10-02T08:41:03Z"
+    },
+    {
+      "seq": 168,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**蓝牙"
+      },
+      "createdAt": "2026-10-02T08:41:03Z"
+    },
+    {
+      "seq": 169,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**"
+      },
+      "createdAt": "2026-10-02T08:41:04Z"
+    },
+    {
+      "seq": 170,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "搜索"
+      },
+      "createdAt": "2026-10-02T08:41:05Z"
+    },
+    {
+      "seq": 171,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "添加"
+      },
+      "createdAt": "2026-10-02T08:41:05Z"
+    },
+    {
+      "seq": 172,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备并做网络配置"
+      },
+      "createdAt": "2026-10-02T08:41:06Z"
+    },
+    {
+      "seq": 173,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "；\n  - 网页端"
+      },
+      "createdAt": "2026-10-02T08:41:07Z"
+    },
+    {
+      "seq": 174,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "入口 `[remote-address-redacted]"
+      },
+      "createdAt": "2026-10-02T08:41:07Z"
+    },
+    {
+      "seq": 175,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "link.zktecoiot"
+      },
+      "createdAt": "2026-10-02T08:41:08Z"
+    },
+    {
+      "seq": 176,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".com`，菜单\"设备中心\"→添加设备，按"
+      },
+      "createdAt": "2026-10-02T08:41:08Z"
+    },
+    {
+      "seq": 177,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"序列号\"绑定。\n- **信息时效**：知识库 `"
+      },
+      "createdAt": "2026-10-02T08:41:08Z"
+    },
+    {
+      "seq": 178,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "updateTime=2025"
+      },
+      "createdAt": "2026-10-02T08:41:08Z"
+    },
+    {
+      "seq": 179,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "-11-26T"
+      },
+      "createdAt": "2026-10-02T08:41:08Z"
+    },
+    {
+      "seq": 180,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "13:18:34.106Z` / `2025-12-03T07:58:34.000Z`。\n- **可信度**：高"
+      },
+      "createdAt": "2026-10-02T08:41:09Z"
+    },
+    {
+      "seq": 181,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（操作步骤型描述）。\n- **缺项**：**蓝牙配网之外是否提供 Wi-Fi / 4"
+      },
+      "createdAt": "2026-10-02T08:41:09Z"
+    },
+    {
+      "seq": 182,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "G / 有线网"
+      },
+      "createdAt": "2026-10-02T08:41:09Z"
+    },
+    {
+      "seq": 183,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "线 / OSDK 等其他接入方式，本次未命中**，标注「未"
+      },
+      "createdAt": "2026-10-02T08:41:09Z"
+    },
+    {
+      "seq": 184,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得」。\n\n### 1.5 验证方式（与"
+      },
+      "createdAt": "2026-10-02T08:41:10Z"
+    },
+    {
+      "seq": 185,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"锁具能力\"语义最近的部分）\n- **远端声明出处**：`熵基互联_操作指导手册①.docx` §3."
+      },
+      "createdAt": "2026-10-02T08:41:10Z"
+    },
+    {
+      "seq": 186,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "8.4 \"小程序端验证方式管理\"\n"
+      },
+      "createdAt": "2026-10-02T08:41:10Z"
+    },
+    {
+      "seq": 187,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- **原文摘录要点**：支持**面部、指纹、卡号**三种验证方式；指纹"
+      },
+      "createdAt": "2026-10-02T08:41:10Z"
+    },
+    {
+      "seq": 188,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "需在设备端录入；面部"
+      },
+      "createdAt": "2026-10-02T08:41:10Z"
+    },
+    {
+      "seq": 189,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "支持员工自助录入 + 管理员审批；卡号由管理员手动输入。\n- **信息时效**：知识库 `"
+      },
+      "createdAt": "2026-10-02T08:41:10Z"
+    },
+    {
+      "seq": 190,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "updateTime=2025-11-26T"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 191,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "13:18:03.551Z`。\n- **可信度**：中。**未取得**临时密码、一次性密码、远程动态"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 192,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "口令、NFC/手机蓝牙钥匙、HomeKit/Matter 等其他开锁方式的"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 193,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原文描述"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 194,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n\n### 1.6 视频指导与运维文档清单（仅作\"能力存在\"的弱证据）\n- **远端声明出处**：`"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 195,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联小程序视频链接.docx`、`【视频指导】_熵基互联_操作视频①"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 196,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".md`、`【视频指导】_熵基互联_操作视频②.md`\n- **命中条目**（均为视频"
+      },
+      "createdAt": "2026-10-02T08:41:11Z"
+    },
+    {
+      "seq": 197,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "教程型材料，含微信视频链）：\n  - 「一分钟了解熵基"
+      },
+      "createdAt": "2026-10-02T08:41:12Z"
+    },
+    {
+      "seq": 198,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联」\n  - 「小程序端门禁应用设置步骤」\n  - 「小程序"
+      },
+      "createdAt": "2026-10-02T08:41:12Z"
+    },
+    {
+      "seq": 199,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "添加设备（"
+      },
+      "createdAt": "2026-10-02T08:41:12Z"
+    },
+    {
+      "seq": 200,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "蓝牙）"
+      },
+      "createdAt": "2026-10-02T08:41:13Z"
+    },
+    {
+      "seq": 201,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "」「考勤配置」「一天 2 次 / 4 次打卡排班」\n  - 「设置签到地点」「云"
+      },
+      "createdAt": "2026-10-02T08:41:13Z"
+    },
+    {
+      "seq": 202,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "考勤快速上手」「提示'人员未登记'解决办法」\n  - 「ZQ3"
+      },
+      "createdAt": "2026-10-02T08:41:13Z"
+    },
+    {
+      "seq": 203,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " / ZQ2 / ZQ102 / ZQ102 智能云考勤机操作视频」\n  - 「web 端——管理员"
+      },
+      "createdAt": "2026-10-02T08:41:13Z"
+    },
+    {
+      "seq": 204,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "如何添加员工」\n- **信息时效**：知识库 `updateTime=2025-11-26 ~"
+      },
+      "createdAt": "2026-10-02T08:41:13Z"
+    },
+    {
+      "seq": 205,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 2025-12-16` 区间。\n- **可信度**：低。仅可证明"
+      },
+      "createdAt": "2026-10-02T08:41:13Z"
+    },
+    {
+      "seq": 206,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "官方对外有相应操作教学存在，**未取得**任何产品规格、参数"
+      },
+      "createdAt": "2026-10-02T08:41:14Z"
+    },
+    {
+      "seq": 207,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "表的原文。\n\n---\n\n## 2 缺"
+      },
+      "createdAt": "2026-10-02T08:41:14Z"
+    },
+    {
+      "seq": 208,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项清单（按 C02 四维）\n\n| 维度"
+      },
+      "createdAt": "2026-10-02T08:41:14Z"
+    },
+    {
+      "seq": 209,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " | 现状 | 处置 |\n|---|---|---|\n| 智能锁（门锁）型号白名单 | **未取得"
+      },
+      "createdAt": "2026-10-02T08:41:14Z"
+    },
+    {
+      "seq": 210,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**；命中清单全部为门禁机"
+      },
+      "createdAt": "2026-10-02T08:41:14Z"
+    },
+    {
+      "seq": 211,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/考勤机 | 待补充：智能"
+      },
+      "createdAt": "2026-10-02T08:41:15Z"
+    },
+    {
+      "seq": 212,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁是否在熵基互联\"设备\"白名单内 |\n| 功能矩阵"
+      },
+      "createdAt": "2026-10-02T08:41:15Z"
+    },
+    {
+      "seq": 213,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（开锁、临时密码、联动"
+      },
+      "createdAt": "2026-10-02T08:41:15Z"
+    },
+    {
+      "seq": 214,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "场景） | 仅取得\"门"
+      },
+      "createdAt": "2026-10-02T08:41:15Z"
+    },
+    {
+      "seq": 215,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁助理\"的远程开门/时段/权限组/通行记录 | 待补：智能锁专属功能"
+      },
+      "createdAt": "2026-10-02T08:41:15Z"
+    },
+    {
+      "seq": 216,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原文 |\n| 价格（"
+      },
+      "createdAt": "2026-10-02T08:41:15Z"
+    },
+    {
+      "seq": 217,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "币种 / 时点 / 套餐"
+      },
+      "createdAt": "2026-10-02T08:41:16Z"
+    },
+    {
+      "seq": 218,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）"
+      },
+      "createdAt": "2026-10-02T08:41:16Z"
+    },
+    {
+      "seq": 219,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " | **"
+      },
+      "createdAt": "2026-10-02T08:41:17Z"
+    },
+    {
+      "seq": 220,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未取得**；命中内容无报价、无订阅/"
+      },
+      "createdAt": "2026-10-02T08:41:17Z"
+    },
+    {
+      "seq": 221,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "买断说明 | 待补 |\n| 渠道（直销 / 分销 / 集成"
+      },
+      "createdAt": "2026-10-02T08:41:17Z"
+    },
+    {
+      "seq": 222,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "商） | **未取得**；命中内容未提销售渠道 | 待补 |\n| 技术路线（API / SDK / 协议 / 集成方式） | **"
+      },
+      "createdAt": "2026-10-02T08:41:17Z"
+    },
+    {
+      "seq": 223,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未取得**协议层原文；仅取得\"蓝牙配网 +"
+      },
+      "createdAt": "2026-10-02T08:41:17Z"
+    },
+    {
+      "seq": 224,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " Web 后台 + 小程序\"三种交互形态 | 待补：是否对外提供 OpenAPI、Webhook、"
+      },
+      "createdAt": "2026-10-02T08:41:17Z"
+    },
+    {
+      "seq": 225,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "SDK、OICT/Push 等 |\n| 第三方智能锁厂商"
+      },
+      "createdAt": "2026-10-02T08:41:18Z"
+    },
+    {
+      "seq": 226,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "对接 | **未取得**；命中内容未提\""
+      },
+      "createdAt": "2026-10-02T08:41:18Z"
+    },
+    {
+      "seq": 227,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "接入第三方门锁品牌\"或型号互通列表 | 待补 |\n| 与\"智能锁"
+      },
+      "createdAt": "2026-10-02T08:41:18Z"
+    },
+    {
+      "seq": 228,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动\"项目（本项目）的接口契约 | **未取得**；熵基互联侧未呈现"
+      },
+      "createdAt": "2026-10-02T08:41:18Z"
+    },
+    {
+      "seq": 229,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "面向"
+      },
+      "createdAt": "2026-10-02T08:41:19Z"
+    },
+    {
+      "seq": 230,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " `我方系统"
+      },
+      "createdAt": "2026-10-02T08:41:19Z"
+    },
+    {
+      "seq": 231,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "`的集成 API "
+      },
+      "createdAt": "2026-10-02T08:41:19Z"
+    },
+    {
+      "seq": 232,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "描述 | 待补：若本项目是\"上层 IPD 系统↔熵基互联↔智能锁\"链路，需另寻"
+      },
+      "createdAt": "2026-10-02T08:41:19Z"
+    },
+    {
+      "seq": 233,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "集成接口材料 |\n\n---\n\n## 3"
+      },
+      "createdAt": "2026-10-02T08:41:19Z"
+    },
+    {
+      "seq": 234,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 边界与措辞说明（避免后续误读）\n\n- \""
+      },
+      "createdAt": "2026-10-02T08:41:20Z"
+    },
+    {
+      "seq": 235,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**门禁**\"与\"**智能锁**\"在知识"
+      },
+      "createdAt": "2026-10-02T08:41:20Z"
+    },
+    {
+      "seq": 236,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库命中片段中**未做等同"
+      },
+      "createdAt": "2026-10-02T08:41:20Z"
+    },
+    {
+      "seq": 237,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**。已命中描述的主体是**门禁设备**（控制器/一体机），并非家用或商用智能门锁本体；不能直接把"
+      },
+      "createdAt": "2026-10-02T08:41:21Z"
+    },
+    {
+      "seq": 238,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "命中"
+      },
+      "createdAt": "2026-10-02T08:41:21Z"
+    },
+    {
+      "seq": 239,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "结论迁移到\"智能锁联动\"产品能力上。\n- 知识"
+      },
+      "createdAt": "2026-10-02T08:41:22Z"
+    },
+    {
+      "seq": 240,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库 `updateTime` 是**索引更新时间**，"
+      },
+      "createdAt": "2026-10-02T08:41:22Z"
+    },
+    {
+      "seq": 241,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**不**等同于业务材料生效日期或产品版本日期；本次未命中任何带"
+      },
+      "createdAt": "2026-10-02T08:41:22Z"
+    },
+    {
+      "seq": 242,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "明确"
+      },
+      "createdAt": "2026-10-02T08:41:23Z"
+    },
+    {
+      "seq": 243,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "业务日期的原文"
+      },
+      "createdAt": "2026-10-02T08:41:23Z"
+    },
+    {
+      "seq": 244,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n"
+      },
+      "createdAt": "2026-10-02T08:41:23Z"
+    },
+    {
+      "seq": 245,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- 标\"高 / 中 / 低\"可信度"
+      },
+      "createdAt": "2026-10-02T08:41:24Z"
+    },
+    {
+      "seq": 246,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "仅针对\"摘录文本与文档片段内容是否一致"
+      },
+      "createdAt": "2026-10-02T08:41:24Z"
+    },
+    {
+      "seq": 247,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"，**不**证明业务条款真实性或当前"
+      },
+      "createdAt": "2026-10-02T08:41:24Z"
+    },
+    {
+      "seq": 248,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "仍有效。\n"
+      },
+      "createdAt": "2026-10-02T08:41:24Z"
+    },
+    {
+      "seq": 249,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- 远"
+      },
+      "createdAt": "2026-10-02T08:41:24Z"
+    },
+    {
+      "seq": 250,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端返回的"
+      },
+      "createdAt": "2026-10-02T08:41:25Z"
+    },
+    {
+      "seq": 251,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " `sourceName`（如 `熵基互联_操作指导手册①.docx`）是**远端应用整理时声明的来源**，本次未线下"
+      },
+      "createdAt": "2026-10-02T08:41:25Z"
+    },
+    {
+      "seq": 252,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "打开该"
+      },
+      "createdAt": "2026-10-02T08:41:25Z"
+    },
+    {
+      "seq": 253,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文档逐页复核，已按硬"
+      },
+      "createdAt": "2026-10-02T08:41:25Z"
+    },
+    {
+      "seq": 254,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "约束 1 处理为\"远端应用回答，原始出处未"
+      },
+      "createdAt": "2026-10-02T08:41:25Z"
+    },
+    {
+      "seq": 255,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得（仅可按远"
+      },
+      "createdAt": "2026-10-02T08:41:25Z"
+    },
+    {
+      "seq": 256,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端声明文档名引用）\"。\n- 本次**不**输出竞品对比表、差异机会、"
+      },
+      "createdAt": "2026-10-02T08:41:26Z"
+    },
+    {
+      "seq": 257,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Gate 评审结论——无竞品名单、缺项未"
+      },
+      "createdAt": "2026-10-02T08:41:26Z"
+    },
+    {
+      "seq": 258,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "补，按 C02 步骤 1"
+      },
+      "createdAt": "2026-10-02T08:41:26Z"
+    },
+    {
+      "seq": 259,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/§4 输出规则停止比较；评审"
+      },
+      "createdAt": "2026-10-02T08:41:26Z"
+    },
+    {
+      "seq": 260,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "结论由既有业务流程决定，本草"
+      },
+      "createdAt": "2026-10-02T08:41:26Z"
+    },
+    {
+      "seq": 261,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "稿不替之。\n\n"
+      },
+      "createdAt": "2026-10-02T08:41:26Z"
+    },
+    {
+      "seq": 262,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "## 4 "
+      },
+      "createdAt": "2026-10-02T08:41:27Z"
+    },
+    {
+      "seq": 263,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "工具调用痕迹\n\n| 调用序号 | 工具 | 入参 | 返回命中条数（dataset"
+      },
+      "createdAt": "2026-10-02T08:41:27Z"
+    },
+    {
+      "seq": 264,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 数组"
+      },
+      "createdAt": "2026-10-02T08:41:28Z"
+    },
+    {
+      "seq": 265,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "） | 是否被"
+      },
+      "createdAt": "2026-10-02T08:41:28Z"
+    },
+    {
+      "seq": 266,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "调度 |\n|---|---|---|---|"
+      },
+      "createdAt": "2026-10-02T08:41:29Z"
+    },
+    {
+      "seq": 267,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "---|\n| 1 |"
+      },
+      "createdAt": "2026-10-02T08:41:30Z"
+    },
+    {
+      "seq": 268,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " `FastGPT-mcp"
+      },
+      "createdAt": "2026-10-02T08:41:31Z"
+    },
+    {
+      "seq": 269,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "-69cce91596a401"
+      },
+      "createdAt": "2026-10-02T08:41:31Z"
+    },
+    {
+      "seq": 270,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "20630b6217`（按入参 query = 平台"
+      },
+      "createdAt": "2026-10-02T08:41:31Z"
+    },
+    {
+      "seq": 271,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "与智能锁联动产品方案 / 开放接口 /"
+      },
+      "createdAt": "2026-10-02T08:41:31Z"
+    },
+    {
+      "seq": 272,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 联动能力） | 1 次 | ≥18（按 score"
+      },
+      "createdAt": "2026-10-02T08:41:31Z"
+    },
+    {
+      "seq": 273,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 降序） | 是 |\n| 2"
+      },
+      "createdAt": "2026-10-02T08:41:32Z"
+    },
+    {
+      "seq": 274,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " | 同上（query = 第三方智能锁接入协议 / SDK / API） | 1"
+      },
+      "createdAt": "2026-10-02T08:41:32Z"
+    },
+    {
+      "seq": 275,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 次 | ≥17 | 是 |\n| 3 | 同上（query = 价格"
+      },
+      "createdAt": "2026-10-02T08:41:32Z"
+    },
+    {
+      "seq": 276,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " / 渠道 / 销售模式） | 1"
+      },
+      "createdAt": "2026-10-02T08:41:33Z"
+    },
+    {
+      "seq": 277,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 次 | ≥21"
+      },
+      "createdAt": "2026-10-02T08:41:33Z"
+    },
+    {
+      "seq": 278,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " |"
+      },
+      "createdAt": "2026-10-02T08:41:34Z"
+    },
+    {
+      "seq": 279,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 是 |\n| 合计 | "
+      },
+      "createdAt": "2026-10-02T08:41:34Z"
+    },
+    {
+      "seq": 280,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "3 次 | — | — | 均产生实际远端回答 |\n\n> 说明：表中"
+      },
+      "createdAt": "2026-10-02T08:41:34Z"
+    },
+    {
+      "seq": 281,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"服务标识\"按系统提示为 `Fast"
+      },
+      "createdAt": "2026-10-02T08:41:34Z"
+    },
+    {
+      "seq": 282,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "GPT-mcp-69cce91596a40120630b6217` 的实际"
+      },
+      "createdAt": "2026-10-02T08:41:35Z"
+    },
+    {
+      "seq": 283,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "工具标识为准"
+      },
+      "createdAt": "2026-10-02T08:41:35Z"
+    },
+    {
+      "seq": 284,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。工具被选中不代表项目"
+      },
+      "createdAt": "2026-10-02T08:41:35Z"
+    },
+    {
+      "seq": 285,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "其他动作完成；本次仅完成"
+      },
+      "createdAt": "2026-10-02T08:41:35Z"
+    },
+    {
+      "seq": 286,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "资料核对"
+      },
+      "createdAt": "2026-10-02T08:41:35Z"
+    },
+    {
+      "seq": 287,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "一项，C02 整体动作（竞品对比表、差异"
+      },
+      "createdAt": "2026-10-02T08:41:36Z"
+    },
+    {
+      "seq": 288,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "机会、Gate）尚未进入"
+      },
+      "createdAt": "2026-10-02T08:41:36Z"
+    },
+    {
+      "seq": 289,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。"
+      },
+      "createdAt": "2026-10-02T08:41:36Z"
+    },
+    {
+      "seq": 290,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL",
+        "inputTokens": 29202,
+        "outputTokens": 2756
+      },
+      "createdAt": "2026-10-02T08:41:36Z"
+    },
+    {
+      "seq": 291,
+      "type": "ARTIFACT",
+      "payload": {
+        "title": "C02 产物",
+        "version": 1,
+        "versionId": "2105941253186154497",
+        "artifactId": "08e96e58a89f48b7b3d7a2fab1134869",
+        "contentHash": "85ab8dbea71032938b31fa08af08d007ba3529f5b62a9920daefa25ee9d63341"
+      },
+      "createdAt": "2026-10-02T08:41:36Z"
+    },
+    {
+      "seq": 292,
+      "type": "RUN_FINISHED",
+      "payload": {
+        "status": "SUCCEEDED"
+      },
+      "createdAt": "2026-10-02T08:41:36Z"
+    }
+  ]
+}

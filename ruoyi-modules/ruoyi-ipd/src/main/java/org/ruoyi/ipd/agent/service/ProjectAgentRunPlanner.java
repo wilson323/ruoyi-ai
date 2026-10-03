@@ -9,6 +9,7 @@ import org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog.LoadedSkill;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentToolCatalog;
 import org.ruoyi.ipd.agent.dto.AgentRunCreateReq;
+import org.ruoyi.ipd.agent.kernel.ProductLineMcpQuery;
 import org.ruoyi.ipd.agent.vo.ProjectAgentViews.ConfigSnapshot;
 import org.ruoyi.ipd.agent.vo.ProjectAgentViews.SkillRef;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
  * <p>Skill 来源：请求显式 {@code skillNames} ∪ 本轮 {@code actionCode} 在
  * {@code ipd_action_skill_map} 的绑定（每次查库）。动作绑定名仅在
  * classpath {@code ipd-skills/&lt;name&gt;/SKILL.md} 真实可加载时注入系统提示；
- * 无文件/校验失败则跳过，不编造。NULL 绑定不注入任何动作技能。
+ * 无文件或摘要不符则拒绝本次运行，不跳过、不编造。NULL 绑定不注入任何动作技能。
  */
 public class ProjectAgentRunPlanner {
 
@@ -40,13 +41,60 @@ public class ProjectAgentRunPlanner {
 
     /** 校验通过后的冻结计划。 */
     public record RunPlan(PackEntry pack, Long modelConfigId, KernelModelRequest model, List<LoadedSkill> skills,
-                          List<String> toolIds, String actionCode, ConfigSnapshot snapshot) { }
+                          List<String> toolIds, String actionCode, ConfigSnapshot snapshot) {
+        /** 与业务选择分离；null 表示历史快照，不自动扩权。 */
+        public List<String> executionToolIds() { return snapshot.executionToolIds(); }
+    }
 
     private final CapabilityManifest manifest;
     private final ProjectAgentSkillCatalog skillCatalog;
     private final ProjectAgentToolCatalog toolCatalog;
     private final ProjectAgentModelCatalog modelCatalog;
     private final IpdActionSkillMapService skillMapService;
+    private java.util.function.BiFunction<RunPlan, io.agentscope.core.agui.model.RunAgentInput,
+        java.util.Map<String, io.agentscope.core.agui.model.AguiTool>> aguiFrontendToolResolver;
+
+    /** 装配真实服务器前端工具目录；浏览器 schema 不能作为授权目录。 */
+    public void setAguiFrontendToolResolver(java.util.function.BiFunction<RunPlan,
+            io.agentscope.core.agui.model.RunAgentInput,
+            java.util.Map<String, io.agentscope.core.agui.model.AguiTool>> resolver) {
+        aguiFrontendToolResolver = java.util.Objects.requireNonNull(resolver);
+    }
+
+    public AgentRunCreateReq freezeRequest(AgentRunCreateReq req) {
+        if (req == null) return null;
+        return new AgentRunCreateReq(req.capabilityPackCode(), req.capabilityPackVersion(), req.modelConfigId(),
+            req.skillNames() == null ? null : java.util.Collections.unmodifiableList(new ArrayList<>(req.skillNames())),
+            req.toolIds() == null ? null : java.util.Collections.unmodifiableList(new ArrayList<>(req.toolIds())), req.actionCode(),
+            req.message() == null ? "" : req.message(), req.idempotencyKey(), req.productLineId(),
+            req.requirementId(), req.previousRunId(), req.targetDocumentId(), req.baseVersionId(),
+            org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.freeze(req.aguiInput()));
+    }
+
+    public io.agentscope.core.agui.model.RunAgentInput bindAguiInput(AgentRunCreateReq req,
+            RunPlan plan, Long serverRunId) {
+        if (req.aguiInput() == null) return null;
+        var catalog = authorizedAguiFrontendTools(plan, req.aguiInput());
+        try {
+            var bound = org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.bind(req.aguiInput(),
+                String.valueOf(serverRunId), String.valueOf(serverRunId), catalog);
+            org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.messages(bound, java.util.Map.of());
+            return bound;
+        } catch (IllegalArgumentException invalidInput) {
+            throw invalid("AG-UI 输入不符合当前运行的协议或授权范围");
+        }
+    }
+
+    public java.util.Map<String, io.agentscope.core.agui.model.AguiTool> authorizedAguiFrontendTools(
+            RunPlan plan, io.agentscope.core.agui.model.RunAgentInput input) {
+        java.util.Map<String, io.agentscope.core.agui.model.AguiTool> catalog = java.util.Map.of();
+        if (!input.getTools().isEmpty()) {
+            if (aguiFrontendToolResolver == null) throw conflict("前端工具授权目录尚未装配");
+            catalog = aguiFrontendToolResolver.apply(plan, input);
+            if (catalog == null) throw conflict("前端工具授权目录不可用");
+        }
+        return java.util.Map.copyOf(catalog);
+    }
 
     /**
      * @param manifest 内置清单
@@ -92,14 +140,17 @@ public class ProjectAgentRunPlanner {
             throw invalid("capabilityPackCode 与 capabilityPackVersion 必填");
         }
         parseModelConfigId(req.modelConfigId());
-        if (isBlank(req.message())) {
+        if (isBlank(req.message()) && (req.aguiInput() == null || !req.aguiInput().hasMessages())) {
             throw invalid("message 必填");
         }
-        if (req.message().length() > ProjectAgentConstants.MESSAGE_MAX_CHARS) {
+        if (req.message() != null && req.message().length() > ProjectAgentConstants.MESSAGE_MAX_CHARS) {
             throw invalid("message 超过 " + ProjectAgentConstants.MESSAGE_MAX_CHARS + " 字");
         }
         if (req.idempotencyKey() == null || !IDEMPOTENCY_KEY.matcher(req.idempotencyKey()).matches()) {
             throw invalid("idempotencyKey 须为 8~64 位字母、数字、下划线或连字符");
+        }
+        if (req.aguiInput() != null && !req.aguiInput().getResume().isEmpty()) {
+            throw invalid("中断响应须恢复原运行，不能创建另一运行");
         }
     }
 
@@ -134,8 +185,17 @@ public class ProjectAgentRunPlanner {
         KernelModelRequest model = modelCatalog.resolve(modelConfigId).orElseThrow(() -> conflict(
             "模型不可用：" + req.modelConfigId() + "（" + modelCatalog.status(modelConfigId).reason() + "）"));
         ConfigSnapshot snapshot = new ConfigSnapshot(pack.code(), pack.version(), String.valueOf(modelConfigId),
-            skills.stream().map(s -> new SkillRef(s.name(), s.sha256())).toList(), toolIds);
+            skills.stream().map(s -> new SkillRef(s.name(), s.sha256())).toList(), toolIds,
+            req.previousRunId(), req.targetDocumentId(), req.baseVersionId(),
+            org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.digest(req.aguiInput()),
+            req.requirementId(), req.productLineId())
+            .withExecutionToolIds(ProjectAgentToolCatalog.executionToolIds(toolIds));
         return new RunPlan(pack, modelConfigId, model, List.copyOf(skills), toolIds, actionCode, snapshot);
+    }
+
+    /** 创建前复用运行装配的候选规则；服务标识必须来自服务端项目归属查询。 */
+    public void validateMcpSelection(String storedServiceId, List<String> toolIds) {
+        new ProductLineMcpQuery().select(storedServiceId, toolIds);
     }
 
     /**
@@ -158,8 +218,7 @@ public class ProjectAgentRunPlanner {
     /**
      * 合并显式选定与动作绑定技能并加载正文。
      *
-     * <p>显式名须属于能力包且必须可加载（失败 fail-loud）；动作绑定名仅在
-     * classpath 真实可加载时打入，缺失则跳过不编造。
+     * <p>显式名须属于能力包且必须可加载（失败 fail-loud）；动作绑定名同样必须经清单校验加载，缺失或摘要不符时拒绝运行。
      *
      * @param pack 能力包
      * @param explicitNames 请求 skillNames
@@ -179,10 +238,7 @@ public class ProjectAgentRunPlanner {
             }
             Optional<LoadedSkill> loaded = skillCatalog.load(name);
             if (loaded.isEmpty()) {
-                if (fromRequest) {
-                    throw conflict("Skill 不可用：" + name + "（" + skillCatalog.status(name).reason() + "）");
-                }
-                continue;
+                throw conflict("Skill 不可用：" + name + "（" + skillCatalog.status(name).reason() + "）");
             }
             skills.add(loaded.get());
         }
@@ -201,7 +257,16 @@ public class ProjectAgentRunPlanner {
             String.valueOf(projectId), req.capabilityPackCode(), req.capabilityPackVersion(),
             req.modelConfigId().trim(), String.join(",", sorted(req.skillNames())),
             String.join(",", sorted(req.toolIds())), isBlank(req.actionCode()) ? "" : req.actionCode().trim(),
-            req.message(), isBlank(req.productLineId()) ? "" : req.productLineId().trim());
+            req.message(), isBlank(req.productLineId()) ? "" : req.productLineId().trim(),
+            isBlank(req.requirementId()) ? "" : req.requirementId().trim());
+        // 不带返工关联时保持既有摘要，历史幂等请求仍可回放。
+        if (req.previousRunId() != null || req.targetDocumentId() != null || req.baseVersionId() != null) {
+            canonical += "\n" + String.valueOf(req.previousRunId()) + "\n" + String.valueOf(req.targetDocumentId())
+                + "\n" + String.valueOf(req.baseVersionId());
+        }
+        if (req.aguiInput() != null) {
+            canonical += "\nagui:" + org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.digest(req.aguiInput());
+        }
         return ProjectAgentSkillCatalog.sha256Hex(canonical);
     }
 

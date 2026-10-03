@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-02T09:40:03.245934+00:00",
+  "status": "PENDING_VALIDATION",
+  "referenceSource": "/Users/mac/Documents/agentscope-java",
+  "projectSdk": "2.0.3",
+  "mainCompile": {
+    "modules": 34,
+    "result": "PASS",
+    "log": "ipd-agentscope-global-compile-batch-20261002.log"
+  },
+  "testCompile": {
+    "result": "PASS",
+    "log": "ipd-agentscope-global-testcompile-20261002.log"
+  },
+  "limitations": [
+    "后续技能、恢复、MCP生命周期变更还需重新验证",
+    "尚未验证新候选包已加载",
+    "业务HTTP与数据库全链验收尚未完成"
+  ],
+  "authoritativeCard": "R242",
+  "authoritativePlan": "/Users/mac/.cursor/projects/Users-mac-Documents-ruoyi-ipd-web/canvases/ipd-execution-plan.canvas.tsx"
+}

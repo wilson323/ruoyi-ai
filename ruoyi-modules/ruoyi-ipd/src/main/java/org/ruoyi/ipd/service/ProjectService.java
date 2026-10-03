@@ -7,7 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Product;
+import org.ruoyi.ipd.domain.ProductLine;
+import org.ruoyi.ipd.domain.ProductLineMember;
 import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.mapper.ProductLineMapper;
+import org.ruoyi.ipd.mapper.ProductLineMemberMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +30,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.dto.ProjectListItemView;
@@ -83,6 +89,19 @@ public class ProjectService implements IProjectService {
     /** P2-6.2：阶段门禁 —— 跳阶前查询未闭环需求变更单（含 DRAFT / PENDING_SIGN）。 */
     private final RequirementChangeService requirementChangeService;
 
+    /** 大阶段验收。未注入时旧测试仍走原来的阶段推进。生产由 Spring 注入。 */
+    @Autowired(required = false)
+    private StageAcceptanceService stageAcceptanceService;
+
+    /**
+     * 装配大阶段验收。
+     *
+     * @param stageAcceptanceService 验收服务
+     */
+    public void setStageAcceptanceService(StageAcceptanceService stageAcceptanceService) {
+        this.stageAcceptanceService = stageAcceptanceService;
+    }
+
     /** 奖金池比例（BR-INC-04）：目标销售额 × 5% × 差异化系数 */
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
@@ -123,6 +142,45 @@ public class ProjectService implements IProjectService {
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
         this.stateMachineGuard = stateMachineGuard;
+    }
+
+    private ProductLineMapper productLineMapper;
+    private ProductLineMemberMapper productLineMemberMapper;
+
+    /** 生产环境注入后，立项才校验产品线和在职成员。 */
+    @Autowired(required = false)
+    public void setProductLineMapper(ProductLineMapper productLineMapper) {
+        this.productLineMapper = productLineMapper;
+    }
+
+    /** 生产环境注入后，非超管立项必须已是该产品线在职成员。 */
+    @Autowired(required = false)
+    public void setProductLineMemberMapper(ProductLineMemberMapper productLineMemberMapper) {
+        this.productLineMemberMapper = productLineMemberMapper;
+    }
+
+    /** 立项写入成员时用来读取人员等级。旧测试不注入，插入仍不带锁定列。 */
+    private PersonMapper personMapper;
+    private ISystemConfigService systemConfigService;
+
+    /**
+     * 装配人员查询，供立项成员锁定津贴。
+     *
+     * @param personMapper 人员表
+     */
+    @Autowired(required = false)
+    public void setPersonMapper(PersonMapper personMapper) {
+        this.personMapper = personMapper;
+    }
+
+    /**
+     * 装配系统配置，供立项成员读取 allowance.L1 到 L5。
+     *
+     * @param systemConfigService 配置服务
+     */
+    @Autowired(required = false)
+    public void setSystemConfigService(ISystemConfigService systemConfigService) {
+        this.systemConfigService = systemConfigService;
     }
 
     /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
@@ -179,11 +237,18 @@ public class ProjectService implements IProjectService {
      */
     public Project create(Project project, Long operatorId, Long fallbackMainGroupId,
                           Long marketPmId, Long rdPmId) {
+        return create(project, operatorId, fallbackMainGroupId, marketPmId, rdPmId, null, null);
+    }
+
+    /**
+     * 创建立项。新品只记产品线，产品行在批准开工时生成；迭代必须指向该线的在售产品。
+     */
+    public Project create(Project project, Long operatorId, Long fallbackMainGroupId,
+                          Long marketPmId, Long rdPmId, Long productLineId, String operatorRole) {
         if (marketPmId != null && marketPmId.equals(rdPmId)) {
             throw new IpdBusinessException(ApiV1ErrorCode.ROLE_LOCKED, "同一人不可同时担任市场PM与研发PM");
         }
         validateBaselinesAndTemplate(project);
-        // 主组可选：未选时权威填充，双空才拒（存量导入显式必填语义不变）
         if (project.getMainGroupId() == null) {
             project.setMainGroupId(fallbackMainGroupId);
         }
@@ -192,13 +257,14 @@ public class ProjectService implements IProjectService {
         }
         applyLevelCoefficientDefaults(project);
         validateLevelAndCoefficient(project);
-        if (project.getProductId() == null) {
-            throw new ServiceException("项目必须归属产品（产品:项目 = 1:1）");
+        if (project.getProductId() == null && productLineId == null) {
+            throw new ServiceException("新品立项必须选择产品线");
         }
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         for (int attempt = 1; attempt <= CODE_CONFLICT_MAX_RETRY; attempt++) {
             try {
-                return tx.execute(status -> insertNewProject(project, operatorId, marketPmId, rdPmId));
+                return tx.execute(status -> insertNewProject(
+                    project, operatorId, marketPmId, rdPmId, productLineId, operatorRole));
             } catch (DuplicateKeyException ex) {
                 // R179-P0：不再静默——DuplicateKeyException 可能来自任何物理 uk（非只有
                 // code）；无日志曾让「软删行占号」问题排查成本极高（靠 general_log 才定位）。
@@ -212,56 +278,100 @@ public class ProjectService implements IProjectService {
     }
 
     /**
-     * 单次事务内：校验产品 1:1、取号、插入、回填、bootstrap、审计。
+     * 单次事务内：校验产品、取号、插入。产品上的首个项目指针只在为空时回填。
      *
      * @param project    待插入项目（无 id/code）
      * @param operatorId 操作人
      * @return 落库项目
      */
-    private Project insertNewProject(Project project, Long operatorId, Long marketPmId, Long rdPmId) {
-        Product product = productMapper.selectById(project.getProductId());
-        if (product == null || "1".equals(product.getDelFlag())) {
-            throw new ServiceException("归属产品不存在: " + project.getProductId());
+    private Project insertNewProject(Project project, Long operatorId, Long marketPmId, Long rdPmId,
+                                     Long productLineId, String operatorRole) {
+        Product product = null;
+        if (project.getProductId() != null) {
+            product = productMapper.selectById(project.getProductId());
+            if (product == null || "1".equals(product.getDelFlag())) {
+                throw new ServiceException("归属产品不存在: " + project.getProductId());
+            }
+            if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
+                throw new ServiceException("游客「其他」占位产品不可关联项目");
+            }
         }
-        // P1-1.1：创建入口与 bind 入口一致拒绝游客占位（AC-PROD / GUEST_OTHER）
-        if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
-            throw new ServiceException("游客「其他」占位产品不可关联项目");
-        }
-        if (product.getProjectId() != null) {
-            throw new ServiceException("一个产品仅对应一个项目");
-        }
-        Long taken = projectMapper.selectCount(new LambdaQueryWrapper<Project>()
-            .eq(Project::getProductId, project.getProductId()).eq(Project::getDelFlag, "0"));
-        if (taken != null && taken > 0) {
-            throw new ServiceException("该产品已有关联项目（产品:项目 = 1:1）");
-        }
+        Long lineId = product != null && product.getProductLineId() != null
+            ? product.getProductLineId() : productLineId;
+        enforceProductLine(product, productLineId, lineId, operatorId, operatorRole);
         project.setCode(nextCode());
-        project.setCurrentStage("CONCEPT");
-        // P1-2.1：草稿初始状态由服务端强制设置，忽略客户端注入
-        // D-1 接线：INITIAL->DRAFT|create 守卫（null=创建迁移）
-        preCheckGuard(null, "DRAFT", "create");
-        project.setStatus("DRAFT");
+        preCheckGuard(null, "PENDING_START", "create");
+        project.setStatus("PENDING_START");
+        project.setCreateBy(operatorId);
         if (isBlank(project.getSource())) {
             project.setSource("NEW");
         }
         project.setCreateTime(now());
         projectMapper.insert(project);
-        // 产品回填 1:1 关联
-        product.setProjectId(project.getId());
-        productMapper.updateById(product);
-        // P1-3.1：bootstrap 六阶段 + 69 动作实例；同事务内执行（PERF-01 取号已 synchronized 保护）
+        if (lineId != null) {
+            projectMapper.assignProductLine(project.getId(), lineId);
+        }
+        if (product != null && product.getProjectId() == null) {
+            product.setProjectId(project.getId());
+            productMapper.updateById(product);
+        }
         bindProjectPm(project.getId(), marketPmId, "MARKET_PM");
         bindProjectPm(project.getId(), rdPmId, "RD_PM");
-        projectBootstrapService.bootstrap(project.getId(), operatorId);
-        // P1-7.1：目标市场认证清单落项目（模板变更 re-sync 只增不重置 DONE）
-        projectCertService.syncFromProject(project, operatorId);
+        if (projectMemberMapper != null && operatorId != null
+            && !operatorId.equals(marketPmId) && !operatorId.equals(rdPmId)) {
+            bindProjectPm(project.getId(), operatorId, "MEMBER");
+        }
         audit(project.getId(), project.getName(), operatorId, "PROJECT_CREATE");
-        registerPostCommit(null, "DRAFT", "create", operatorId, project.getId());
+        registerPostCommit(null, "PENDING_START", "create", operatorId, project.getId());
         return project;
     }
 
+    /** 生产环境注入产品线后才校验在售产品和在职成员。旧单测不注入，避免把两套创建路径写死。 */
+    private void enforceProductLine(Product product, Long requestedLineId, Long lineId,
+                                    Long operatorId, String operatorRole) {
+        if (productLineMapper == null) {
+            return;
+        }
+        if (product != null) {
+            if (!Product.ST_ON_SALE.equals(product.getStatus())) {
+                throw new ServiceException("迭代必须选择该产品线上的在售产品");
+            }
+            if (product.getProductLineId() == null) {
+                throw new ServiceException("产品尚未归属产品线");
+            }
+            if (requestedLineId != null && !requestedLineId.equals(product.getProductLineId())) {
+                throw new ServiceException("产品不属于所选产品线");
+            }
+        }
+        if (lineId == null) {
+            throw new ServiceException("新品立项必须选择产品线");
+        }
+        ProductLine line = productLineMapper.selectById(lineId);
+        if (line == null || "1".equals(line.getDelFlag()) || !"ACTIVE".equals(line.getStatus())) {
+            throw new ServiceException("产品线不存在或已停用");
+        }
+        if ("SUPER_ADMIN".equals(operatorRole)) {
+            return;
+        }
+        if (productLineMemberMapper == null || operatorId == null) {
+            throw new ServiceException("产品线成员校验不可用");
+        }
+        Long members = productLineMemberMapper.selectCount(new LambdaQueryWrapper<ProductLineMember>()
+            .eq(ProductLineMember::getProductLineId, lineId)
+            .eq(ProductLineMember::getPersonId, operatorId)
+            .eq(ProductLineMember::getStatus, "ACTIVE"));
+        if (members == null || members == 0) {
+            throw new ServiceException("只有该产品线的在职成员可以立项");
+        }
+    }
+
     /**
-     * 立项时写入一名在职 PM。未指定则跳过。
+     * 立项时写入一名在职成员。未指定人员则跳过。
+     * 生产环境同时注入人员和配置后，按该人当前等级锁定津贴，满足 locked_level / locked_amount 非空。
+     *
+     * @param projectId 项目
+     * @param personId 人员，空则跳过
+     * @param role MARKET_PM、RD_PM 或 MEMBER
      */
     private void bindProjectPm(Long projectId, Long personId, String role) {
         if (personId == null) {
@@ -270,14 +380,25 @@ public class ProjectService implements IProjectService {
         if (projectMemberMapper == null) {
             throw new ServiceException("项目成员写入不可用，无法绑定 " + role);
         }
-        ProjectMember member = ProjectMember.builder()
+        ProjectMember.ProjectMemberBuilder builder = ProjectMember.builder()
             .projectId(projectId)
             .personId(personId)
             .role(role)
+            .memberType("PRIMARY")
             .joinDate(now())
-            .bonusEligible("1")
-            .build();
-        projectMemberMapper.insert(member);
+            .bonusEligible("1");
+        if (personMapper != null && systemConfigService != null) {
+            Person person = personMapper.selectById(personId);
+            if (person == null || person.getLevel() == null || person.getLevel().isBlank()) {
+                throw new ServiceException("该人员等级未同步（L1-L5），无法锁定津贴基准");
+            }
+            int amount = systemConfigService.getIntValue("allowance." + person.getLevel(), -1);
+            if (amount <= 0) {
+                throw new ServiceException("津贴参数缺失: allowance." + person.getLevel());
+            }
+            builder.lockedLevel(person.getLevel()).lockedAmount(BigDecimal.valueOf(amount));
+        }
+        projectMemberMapper.insert(builder.build());
     }
 
     /**
@@ -404,6 +525,13 @@ public class ProjectService implements IProjectService {
     @Transactional(rollbackFor = Exception.class)
     public Project advanceStage(Long projectId, Long operatorId, Long actorGroupId, String actorRole) {
         Project project = require(projectId);
+        if (projectMemberMapper == null && !"SUPER_ADMIN".equals(actorRole)) {
+            throw new org.ruoyi.ipd.common.IpdBusinessException(
+                org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN, "非项目成员，无权访问");
+        }
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(
+            new IpdActor(operatorId, null, actorRole, actorGroupId), projectId,
+            projectMemberMapper, projectMapper);
         IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
             project.getMainGroupId());
         // ZK-IPD §二.10：归档后只读——禁阶段推进
@@ -433,12 +561,18 @@ public class ProjectService implements IProjectService {
         if (next == null) {
             throw new ServiceException("已处于最终阶段 LIFECYCLE");
         }
+        if (stageAcceptanceService != null) {
+            stageAcceptanceService.assertBigStageApprovable(project, operatorId, actorRole);
+        }
         gateEngine.check(project, prior);
         if ("LAUNCH".equals(next) && project.getLaunchDate() == null) {
             throw new ServiceException("进入 LAUNCH 前必须录入上市日期（后置指标起算原点）");
         }
         project.setCurrentStage(next);
         projectMapper.updateById(project);
+        if (stageAcceptanceService != null) {
+            stageAcceptanceService.completeBigStage(projectId, prior);
+        }
         auditStage(projectId, project.getName(), operatorId, prior, next);
         return project;
     }
@@ -471,8 +605,18 @@ public class ProjectService implements IProjectService {
             throw new org.ruoyi.ipd.common.IpdBusinessException(
                 org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
         }
+        if (isUnstarted(project)) {
+            if (canSeeUnstarted(project, actor)) {
+                return project;
+            }
+            throw new org.ruoyi.ipd.common.IpdBusinessException(
+                org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+        }
         String role = actor == null ? null : actor.role();
         if ("SUPER_ADMIN".equals(role)) {
+            return project;
+        }
+        if (isProductLineLeader(project, actor)) {
             return project;
         }
         if ("GROUP_LEADER".equals(role) && actor.groupId() != null
@@ -577,14 +721,98 @@ public class ProjectService implements IProjectService {
         if ("SUPER_ADMIN".equals(role)) {
             return list(keyword);
         }
+        List<Project> rows;
         if ("GROUP_LEADER".equals(role)) {
-            return listByGroup(keyword, actor.groupId());
+            rows = listByGroup(keyword, actor.groupId());
+        } else if ("MARKET_PM".equals(role) || "RD_PM".equals(role)) {
+            rows = listByActorPm(keyword, actor.id());
+        } else {
+            rows = List.of();
         }
-        if ("MARKET_PM".equals(role) || "RD_PM".equals(role)) {
-            return listByActorPm(keyword, actor.id());
+        return filterListed(mergeLedProjects(rows, actor), actor);
+    }
+
+    private boolean isUnstarted(Project project) {
+        String status = project.getStatus();
+        return "PENDING_START".equals(status) || "START_REJECTED".equals(status);
+    }
+
+    /** 未开工项目只给创建人、该线负责人和超管。组织组长和普通成员看不到。 */
+    private boolean canSeeUnstarted(Project project, IpdActor actor) {
+        if (actor == null) {
+            return false;
         }
-        // 未知角色 / 无 GROUP_LEADER 维度以外的中间角色 ⇒ 空列表（fail-closed）
-        return List.of();
+        if ("SUPER_ADMIN".equals(actor.role())) {
+            return true;
+        }
+        if (actor.id() != null && actor.id().equals(project.getCreateBy())) {
+            return true;
+        }
+        return isProductLineLeader(project, actor);
+    }
+
+    private boolean isProductLineLeader(Project project, IpdActor actor) {
+        if (productLineMapper == null || actor == null || actor.id() == null || project.getId() == null) {
+            return false;
+        }
+        Long lineId = projectMapper.findProductLineId(project.getId());
+        if (lineId == null && project.getProductId() != null) {
+            Product product = productMapper.selectById(project.getProductId());
+            lineId = product == null ? null : product.getProductLineId();
+        }
+        if (lineId == null) {
+            return false;
+        }
+        ProductLine line = productLineMapper.selectById(lineId);
+        return line != null && actor.id().equals(line.getLeaderPersonId()) && !"1".equals(line.getDelFlag());
+    }
+
+    private List<Project> mergeLedProjects(List<Project> rows, IpdActor actor) {
+        if (productLineMapper == null || actor == null || actor.id() == null) {
+            return rows;
+        }
+        List<ProductLine> led = productLineMapper.selectList(new LambdaQueryWrapper<ProductLine>()
+            .eq(ProductLine::getLeaderPersonId, actor.id())
+            .eq(ProductLine::getStatus, "ACTIVE")
+            .eq(ProductLine::getDelFlag, "0"));
+        if (led.isEmpty()) {
+            return rows;
+        }
+        java.util.LinkedHashMap<Long, Project> merged = new java.util.LinkedHashMap<>();
+        for (Project row : rows) {
+            if (row.getId() != null) {
+                merged.put(row.getId(), row);
+            }
+        }
+        for (ProductLine line : led) {
+            List<Long> ids = projectMapper.findIdsByProductLine(line.getId());
+            if (ids != null && !ids.isEmpty()) {
+                for (Project row : projectMapper.selectBatchIds(ids)) {
+                    if (row.getId() != null) {
+                        merged.put(row.getId(), row);
+                    }
+                }
+            }
+            List<Long> productIds = productMapper.selectList(new LambdaQueryWrapper<Product>()
+                .eq(Product::getProductLineId, line.getId())
+                .eq(Product::getDelFlag, "0")).stream().map(Product::getId).toList();
+            if (!productIds.isEmpty()) {
+                for (Project row : projectMapper.selectList(new LambdaQueryWrapper<Project>()
+                    .in(Project::getProductId, productIds).eq(Project::getDelFlag, "0"))) {
+                    if (row.getId() != null) {
+                        merged.put(row.getId(), row);
+                    }
+                }
+            }
+        }
+        return new java.util.ArrayList<>(merged.values());
+    }
+
+    private List<Project> filterListed(List<Project> rows, IpdActor actor) {
+        if (actor == null || "SUPER_ADMIN".equals(actor.role())) {
+            return rows;
+        }
+        return rows.stream().filter(project -> !isUnstarted(project) || canSeeUnstarted(project, actor)).toList();
     }
 
     /** R149 B2：组长维度 —— 按 {@code projects.main_group_id} 过滤。null groupId ⇒ 空列表。 */

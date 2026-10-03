@@ -50,9 +50,10 @@ public class ProductLineSpaceController {
             return new ProductView(product.getId(), product.getProductCode(), product.getProductName());
         }
     }
-    public record ProjectView(Long id, String code, String name, String currentStage) {
+    public record ProjectView(Long id, String code, String name, String currentStage, String status) {
         static ProjectView from(Project project) {
-            return new ProjectView(project.getId(), project.getCode(), project.getName(), project.getCurrentStage());
+            return new ProjectView(project.getId(), project.getCode(), project.getName(),
+                project.getCurrentStage(), project.getStatus());
         }
     }
 
@@ -155,4 +156,13 @@ public class ProductLineSpaceController {
         return ApiV1Response.ok(service.projects(lineId, permission.requireInternal())
             .stream().map(ProjectView::from).toList());
     }
+
+    @GetMapping("/{lineId}/demands")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_LINE_LIST, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<List<DemandView>> demands(@PathVariable Long lineId) {
+        return ApiV1Response.ok(service.demands(lineId, permission.requireInternal()).stream()
+            .map(demand -> new DemandView(demand.getId(), demand.getTitle(), demand.getStatus())).toList());
+    }
+
+    public record DemandView(Long id, String title, String status) {}
 }

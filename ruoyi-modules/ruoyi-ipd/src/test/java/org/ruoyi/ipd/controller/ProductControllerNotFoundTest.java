@@ -11,6 +11,7 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.service.ProductSellableCountryQuery;
 import org.ruoyi.ipd.service.ProductService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +38,8 @@ class ProductControllerNotFoundTest {
     private IpdPermission ipdPermission;
     @Mock
     private ProductService productService;
+    @Mock
+    private ProductSellableCountryQuery sellableCountryQuery;
 
     @InjectMocks
     private ProductController controller;

@@ -1,0 +1,215 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMountedFoundationRuntime.java
+@@ -0,0 +1,116 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.harness.agent.filesystem.AbstractFilesystem;
++import io.agentscope.harness.agent.filesystem.RoutedSandboxFilesystem;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.memory.MemoryBackgroundTasks;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.sandbox.WorkspaceSpec;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClient;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions;
++import io.agentscope.harness.agent.sandbox.snapshot.NoopSnapshotSpec;
++
++import java.util.Map;
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++/** 执行容器独有 run 可写盘，历史/记忆只读挂载；原生记忆 API 走单独官方可写 backend。 */
++public final class ProjectAgentMountedFoundationRuntime implements AutoCloseable {
++    private final ProjectAgentFoundationTools.Scope scope;
++    private final String image;
++    private final Sandbox execution;
++    private final Sandbox memory;
++    private final RoutedSandboxFilesystem filesystem;
++    private boolean closed;
++
++    private ProjectAgentMountedFoundationRuntime(ProjectAgentFoundationTools.Scope scope, String image,
++                                                  Sandbox execution, Sandbox memory) {
++        this.scope = scope;
++        this.image = image;
++        this.execution = execution;
++        this.memory = memory;
++        var run = new PinnedSandboxFilesystem(execution);
++        var persistent = new PinnedSandboxFilesystem(memory);
++        var root = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace");
++        var daily = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/memory");
++        var skills = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/skills");
++        var sessions = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/.agentscope");
++        this.filesystem = new RoutedSandboxFilesystem(run, Map.of(
++            "/MEMORY.md", root, "/workspace/MEMORY.md", root,
++            "/memory/", daily, "/workspace/memory/", daily,
++            "/skills/", skills, "/workspace/skills/", skills,
++            "/.agentscope/", sessions, "/workspace/.agentscope/", sessions));
++    }
++
++    public static ProjectAgentMountedFoundationRuntime open(String image,
++        ProjectAgentFoundationTools.Scope scope) throws Exception {
++        java.util.Objects.requireNonNull(scope);
++        if (image == null || image.isBlank()) { throw new IllegalArgumentException("Sandbox image is required"); }
++        String base = scope.volumeName();
++        Sandbox execution = create(image, "/workspace", "--mount", "type=volume,source=" + base
++            + "-run-" + scope.runId() + ",target=/workspace", "--mount", "type=volume,source=" + base
++            + "-history,target=/history,readonly", "--mount", "type=volume,source=" + base
++            + "-memory,target=/memory,readonly");
++        Sandbox memory = create(image, "/workspace", "--mount", "type=volume,source=" + base
++            + "-memory,target=/workspace");
++        try {
++            execution.start();
++            memory.start();
++            var initialized = memory.exec(null, "mkdir -p /workspace/memory /workspace/skills /workspace/.agentscope", 10);
++            if (!initialized.ok()) { throw new IllegalStateException("Memory directories could not be initialized"); }
++            return new ProjectAgentMountedFoundationRuntime(scope, image, execution, memory);
++        } catch (Exception error) {
++            try { execution.shutdown(); } catch (Exception cleanup) { error.addSuppressed(cleanup); }
++            try { memory.shutdown(); } catch (Exception cleanup) { error.addSuppressed(cleanup); }
++            throw error;
++        }
++    }
++
++    private static Sandbox create(String image, String root, String... mounts) throws Exception {
++        String[] args = new String[mounts.length + 2];
++        args[0] = "--cap-drop=ALL";
++        args[1] = "--security-opt=no-new-privileges";
++        System.arraycopy(mounts, 0, args, 2, mounts.length);
++        var options = new DockerSandboxClientOptions().image(image).workspaceRoot(root)
++            .network("none").additionalRunArgs(args);
++        options.setEnvironment(Map.of());
++        return new DockerSandboxClient().create(new WorkspaceSpec(), new NoopSnapshotSpec(), options);
++    }
++
++    public RoutedSandboxFilesystem filesystem() {
++        if (closed) { throw new IllegalStateException("Sandbox runtime is closed"); }
++        return filesystem;
++    }
++
++    public Set<String> volumeNames() {
++        return Set.of(scope.volumeName() + "-run-" + scope.runId(),
++            scope.volumeName() + "-history", scope.volumeName() + "-memory");
++    }
++
++    private void exportHistory() throws Exception {
++        String target = "/history/runs/" + scope.runId();
++        Sandbox exporter = create(image, "/history", "--mount", "type=volume,source="
++            + scope.volumeName() + "-run-" + scope.runId() + ",target=/run,readonly", "--mount",
++            "type=volume,source=" + scope.volumeName() + "-history,target=/history");
++        try {
++            exporter.start();
++            var result = exporter.exec(null, "mkdir -p /history/runs && if [ -d " + target
++                + " ]; then diff -qr /run " + target + "; else cp -a /run " + target + "; fi", 30);
++            if (!result.ok()) { throw new IllegalStateException("Run history export failed or conflicts with its existing snapshot"); }
++        } finally {
++            exporter.shutdown();
++        }
++    }
++
++    @Override
++    public synchronized void close() throws Exception {
++        if (closed) { return; }
++        if (!MemoryBackgroundTasks.awaitQuiescence(30, TimeUnit.SECONDS)) {
++            throw new IllegalStateException("Background memory tasks are still active; runtime retained");
++        }
++        exportHistory();
++        execution.shutdown();
++        memory.shutdown();
++        closed = true;
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSandboxPathFilesystem.java
+@@ -0,0 +1,93 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.harness.agent.filesystem.AbstractFilesystem;
++import io.agentscope.harness.agent.filesystem.model.EditResult;
++import io.agentscope.harness.agent.filesystem.model.FileDownloadResponse;
++import io.agentscope.harness.agent.filesystem.model.FileInfo;
++import io.agentscope.harness.agent.filesystem.model.FileUploadResponse;
++import io.agentscope.harness.agent.filesystem.model.GlobResult;
++import io.agentscope.harness.agent.filesystem.model.GrepMatch;
++import io.agentscope.harness.agent.filesystem.model.GrepResult;
++import io.agentscope.harness.agent.filesystem.model.LsResult;
++import io.agentscope.harness.agent.filesystem.model.ReadResult;
++import io.agentscope.harness.agent.filesystem.model.WriteResult;
++
++import java.util.List;
++import java.util.Map;
++
++/** 官方 CompositeFilesystem 路由的挂载路径适配；全部 I/O 委托同一官方 filesystem。 */
++public final class ProjectAgentSandboxPathFilesystem implements AbstractFilesystem {
++    private final AbstractFilesystem delegate;
++    private final String root;
++
++    public ProjectAgentSandboxPathFilesystem(AbstractFilesystem delegate, String root) {
++        AbstractFilesystem.validatePath(root);
++        if (!root.startsWith("/") || root.equals("/")) {
++            throw new IllegalArgumentException("A fixed mounted directory is required");
++        }
++        this.delegate = java.util.Objects.requireNonNull(delegate);
++        this.root = root.replaceAll("/+$", "");
++    }
++
++    private String physical(String path) {
++        String value = path == null || path.isBlank() ? "/" : path;
++        AbstractFilesystem.validatePath(value);
++        if (value.startsWith("/workspace/")) { value = value.substring("/workspace/".length()); }
++        return root + "/" + value.replaceAll("^/+", "");
++    }
++
++    private String logical(String path) {
++        if (path == null) { return null; }
++        return path.startsWith(root + "/") ? path.substring(root.length()) : path;
++    }
++
++    private FileInfo logical(FileInfo file) {
++        return new FileInfo(logical(file.path()), file.isDirectory(), file.size(), file.modifiedAt());
++    }
++
++    public LsResult ls(RuntimeContext context, String path) {
++        var result = delegate.ls(context, physical(path));
++        return result.isSuccess() ? LsResult.success(result.entries().stream().map(this::logical).toList()) : result;
++    }
++    public ReadResult read(RuntimeContext context, String path, int offset, int limit) {
++        return delegate.read(context, physical(path), offset, limit);
++    }
++    public WriteResult write(RuntimeContext context, String path, String content) {
++        var result = delegate.write(context, physical(path), content);
++        return new WriteResult(logical(result.path()), result.error());
++    }
++    public EditResult edit(RuntimeContext context, String path, String oldText, String newText, boolean all) {
++        var result = delegate.edit(context, physical(path), oldText, newText, all);
++        return new EditResult(logical(result.path()), result.error(), result.occurrences());
++    }
++    public GrepResult grep(RuntimeContext context, String pattern, String path, String glob) {
++        var result = delegate.grep(context, pattern, physical(path), glob);
++        return result.isSuccess() ? GrepResult.success(result.matches().stream().map(match ->
++            new GrepMatch(logical(match.path()), match.line(), match.text())).toList()) : result;
++    }
++    public GlobResult glob(RuntimeContext context, String pattern, String path) {
++        var result = delegate.glob(context, pattern, physical(path));
++        return result.isSuccess() ? GlobResult.success(result.matches().stream().map(this::logical).toList()) : result;
++    }
++    public List<FileUploadResponse> uploadFiles(RuntimeContext context, List<Map.Entry<String, byte[]>> files) {
++        return delegate.uploadFiles(context, files.stream().map(file ->
++            Map.entry(physical(file.getKey()), file.getValue())).toList()).stream().map(result ->
++            new FileUploadResponse(logical(result.path()), result.error())).toList();
++    }
++    public List<FileDownloadResponse> downloadFiles(RuntimeContext context, List<String> paths) {
++        return delegate.downloadFiles(context, paths.stream().map(this::physical).toList()).stream().map(result ->
++            new FileDownloadResponse(logical(result.path()), result.content(), result.error())).toList();
++    }
++    public WriteResult delete(RuntimeContext context, String path) {
++        var result = delegate.delete(context, physical(path));
++        return new WriteResult(logical(result.path()), result.error());
++    }
++    public WriteResult move(RuntimeContext context, String from, String to) {
++        var result = delegate.move(context, physical(from), physical(to));
++        return new WriteResult(logical(result.path()), result.error());
++    }
++    public boolean exists(RuntimeContext context, String path) {
++        return delegate.exists(context, physical(path));
++    }
++}

@@ -62,7 +62,7 @@ class StateMachineGuardContractTest {
     /* ====================== 0. 哨兵：规则数 ====================== */
 
     @Test
-    @DisplayName("哨兵：种子规则总数=89（17机：11机存量 53 + D-1 批次 6 机 36：project 9+requirement_v2 10+bid_invitation 6+bid_response 4+guest_demand 2+negative_feedback 5）")
+    @DisplayName("哨兵：种子规则总数=93（原89条 + 产品线开工审批4条，17机）")
     void sentinelRuleCount() {
         // 增删规则必须同步修改本断言与下方表驱动行——防止规则表与测试悄然漂移
         // 2026-09-09 双线合并：R24线 settleTimeout-APPROVED（gate 5→6）+ R25线 DRAFT直分已并
@@ -70,15 +70,21 @@ class StateMachineGuardContractTest {
         // 接线轮（fix/r28-guard-wire）：stage_action 7 边登记，transit 由目标白名单升级为 from→to 严格图（C8）
         // R33 一期（2026-09-27）：kpi_shared_confirm 接线 3 条（create/recapture/secondSign）50→53
         // D-1 批次（蜂群 SWARM-A）：6 台 36 条接线规则 53→89
+        // 产品线开工合同：创建待开工/批准/拒绝/重新提交四边，89→93。
         assertThat(guard.ruleCount())
             .as("规则总数变化=契约变更，必须显式过本测试 + code review")
-            .isEqualTo(89);
+            .isEqualTo(93);
     }
 
-    /* ====================== 1. 表驱动：89 条规则合法迁移 ====================== */
+    /* ====================== 1. 表驱动：93 条规则合法迁移 ====================== */
 
     @ParameterizedTest(name = "[{index}] 合法 {0}")
     @CsvSource({
+        // 产品线负责人开工审批（业务合同：批准后才生成阶段；拒绝保留项目再次提交）
+        "project, INITIAL, PENDING_START, create",
+        "project, PENDING_START, TEAMING, approveStart",
+        "project, PENDING_START, START_REJECTED, rejectStart",
+        "project, START_REJECTED, PENDING_START, resubmitStart",
         // ---- deletion_request（7）----
         "deletion_request, DRAFT, LEADER_REVIEW, submit",
         "deletion_request, LEADER_REVIEW, ADMIN_REVIEW, leaderApprove",

@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-02T08:30:37.361243+00:00",
+  "pid": 63087,
+  "signals": [
+    "SIGTERM",
+    "SIGKILL"
+  ],
+  "exitObserved": true,
+  "interruptedRun": "2105935561859538946",
+  "reason": "HTTP timeout and stale run; TERM blocked in SDK indefinite awaitTermination; preserve run events and close only verified interrupted run"
+}

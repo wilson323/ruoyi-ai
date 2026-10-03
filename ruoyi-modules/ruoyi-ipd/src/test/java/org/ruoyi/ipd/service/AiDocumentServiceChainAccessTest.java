@@ -52,7 +52,12 @@ class AiDocumentServiceChainAccessTest {
         IpdActor actor = new IpdActor(9L, "alice", "MARKET_PM", 1L);
         IpdCopilotAccess access = mock(IpdCopilotAccess.class);
         service.setProjectAccess(access);
-        when(access.requireVisible(actor, 100L)).thenReturn("000000");
+        ProjectService projectRead = mock(ProjectService.class);
+        service.setProjectReadAccess(projectRead);
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setTenantId("000000");
+        when(access.requireVisible(actor, null)).thenReturn("000000");
+        when(projectRead.getVisibleById(100L, actor)).thenReturn(project);
         when(mapper.selectChain(10L)).thenReturn(List.of(first));
 
         assertThatThrownBy(() -> service.diffAuthorized(10L, 10L, 20L, actor))

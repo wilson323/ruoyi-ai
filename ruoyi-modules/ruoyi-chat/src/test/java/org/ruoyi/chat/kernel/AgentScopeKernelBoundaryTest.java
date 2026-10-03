@@ -6,6 +6,7 @@ import io.agentscope.harness.agent.HarnessAgent;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
+import java.util.List;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -89,13 +90,25 @@ class AgentScopeKernelBoundaryTest {
     }
 
     @Test
-    void textOnlyKernelMustNotExposeDefaultTools() throws Exception {
+    void officialDefaultToolsStayRegisteredUnderGovernance() throws Exception {
         try (AgentScopeChatKernel kernel = new AgentScopeChatKernel(mock(Model.class),
                 "stub:boundary", () -> mock(MysqlAgentStateStore.class), workspace)) {
             Method agent = AgentScopeChatKernel.class.getDeclaredMethod("agent", String.class, String.class);
             agent.setAccessible(true);
             HarnessAgent built = (HarnessAgent) agent.invoke(kernel, "employee", "hello");
-            assertTrue(built.getToolkit().getToolNames().isEmpty(), "W1不能默认开放文件、Shell或网络工具");
+            var names = built.getToolkit().getToolNames();
+            // 官方能力全量启用（禁止禁用）：文件、沙箱执行、记忆、检索、计划、技能管理都在注册面。
+            assertTrue(names.containsAll(List.of("read_file", "write_file", "execute",
+                    "memory_search", "memory_get", "memory_save", "session_search",
+                    "web_fetch", "web_search", "plan_enter", "plan_write", "plan_exit",
+                    "skill_manage")), "官方默认工具必须全量注册: " + names);
+            // 注册面保持完整的同时，全部工具（含官方默认工具）统一经治理包装；
+            // 只读裁决与出站闸门收敛在治理层，不再靠删工具/禁开关实现。
+            for (String name : names) {
+                assertTrue(built.getToolkit().getTool(name)
+                        instanceof org.ruoyi.chat.kernel.tool.KernelGovernedTool,
+                        "官方默认工具必须经治理包装: " + name);
+            }
         }
     }
 }

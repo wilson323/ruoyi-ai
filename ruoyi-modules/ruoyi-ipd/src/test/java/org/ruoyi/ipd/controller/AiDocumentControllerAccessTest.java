@@ -16,6 +16,7 @@ import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.AiDocumentService;
 import org.ruoyi.ipd.service.AiGenerationService;
 import org.ruoyi.ipd.service.IpdCopilotAccess;
+import org.ruoyi.ipd.service.ProjectService;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -48,10 +49,12 @@ class AiDocumentControllerAccessTest {
     private final AiGenerationService generation = mock(AiGenerationService.class);
     private final IpdPermission permission = mock(IpdPermission.class);
     private final IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+    private final ProjectService projectRead = mock(ProjectService.class);
     private final AiDocumentController controller = new AiDocumentController(documents, generation, permission);
 
     AiDocumentControllerAccessTest() {
         when(permission.requireInternal()).thenReturn(ACTOR);
+        documents.setProjectReadAccess(projectRead);
         // 红测先于生产改动：当前 service 没有对象授权依赖；新增字段后同一用例自动注入拒绝桩。
         for (Field field : AiDocumentService.class.getDeclaredFields()) {
             if (field.getType() == IpdCopilotAccess.class) {
@@ -68,7 +71,7 @@ class AiDocumentControllerAccessTest {
     @Test
     void listRejectsProjectOutsideActiveMembership() {
         doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
-            .when(access).requireVisible(ACTOR, 77L);
+            .when(projectRead).getVisibleById(77L, ACTOR);
 
         assertThatThrownBy(() -> controller.listByProject(77L))
             .isInstanceOfSatisfying(IpdBusinessException.class,
@@ -80,7 +83,7 @@ class AiDocumentControllerAccessTest {
     void versionsRejectsDocumentFromInvisibleProject() {
         when(mapper.selectChain(10L)).thenReturn(List.of(document(10L, 100L, null, 1, "REVIEWED")));
         doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
-            .when(access).requireVisible(ACTOR, 100L);
+            .when(projectRead).getVisibleById(100L, ACTOR);
 
         assertThatThrownBy(() -> controller.versions(10L))
             .isInstanceOfSatisfying(IpdBusinessException.class,
@@ -162,7 +165,10 @@ class AiDocumentControllerAccessTest {
         when(mapper.selectChain(10L)).thenReturn(List.of(pathRoot));
         when(mapper.selectById(10L)).thenReturn(pathRoot);
         when(mapper.selectById(20L)).thenReturn(otherVersion);
-        when(access.requireVisible(ACTOR, 100L)).thenReturn("000000");
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setTenantId("000000");
+        when(access.requireVisible(ACTOR, null)).thenReturn("000000");
+        when(projectRead.getVisibleById(100L, ACTOR)).thenReturn(project);
 
         assertThatThrownBy(() -> controller.diff(10L, 10L, 20L))
             .isInstanceOfSatisfying(IpdBusinessException.class,

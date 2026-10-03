@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-02T09:15:12.449Z",
+  "url": "http://127.0.0.1:15666/ipd/workbench",
+  "stepPending": 6,
+  "toolCards": 1,
+  "unfinishedToolCards": 0,
+  "tail": "现\\\"远端声明出处\\\"未核对的引用，仍以\\\"原始出处未取得\\\"对待。\"\n        - button \"复制\"\n        - button \"转发\"\n        - generic: 步骤\n        - generic: 产物\n        - strong: C02 产物\n        - group \"产物：C02 产物反馈\":\n          - button \"产物：C02 产物有帮助\":\n            - generic: 点 赞\n          - button \"产物：C02 产物没帮助\":\n            - generic: 点 踩\n        - generic: 运行结束\n        - generic: 已完成"
+}

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,6 +27,11 @@ import java.util.Set;
 @Repository
 @RequiredArgsConstructor
 public class MybatisAgentRunStore implements AgentRunStore {
+
+    /** 与项目运行列表现有中文状态标签一致；不改变数据库状态枚举。 */
+    private static final Map<String, String> STATUS_LABELS = Map.of(
+        "PENDING", "排队中", "RUNNING", "运行中", "WAITING_APPROVAL", "等待审批",
+        "CANCEL_REQUESTED", "取消中", "SUCCEEDED", "已完成", "FAILED", "失败", "CANCELLED", "已取消");
 
     private final IpdAgentRunMapper runMapper;
     private final IpdAgentRunEventMapper eventMapper;
@@ -125,6 +131,46 @@ public class MybatisAgentRunStore implements AgentRunStore {
         return terminal == null ? Optional.empty() : Optional.ofNullable(terminal.getSeq());
     }
 
+    @Override
+    public Optional<Integer> claimEpoch(Long runId, Integer expectedVersion, Set<AgentRunStatus> statuses) {
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())
+            throw new IllegalStateException("epoch claim requires a transaction");
+        if (expectedVersion != null && expectedVersion == Integer.MAX_VALUE)
+            throw new IllegalStateException("execution epoch exhausted");
+        int next = expectedVersion == null ? 1 : expectedVersion + 1;
+        var update = new LambdaUpdateWrapper<IpdAgentRun>().eq(IpdAgentRun::getId, runId)
+            .in(IpdAgentRun::getStatus, statuses.stream().map(Enum::name).toList())
+            .set(IpdAgentRun::getVersion, next);
+        if (expectedVersion == null) update.isNull(IpdAgentRun::getVersion);
+        else update.eq(IpdAgentRun::getVersion, expectedVersion);
+        // null实体不会触发MP乐观锁插件；epoch只在此显式CAS递增，普通状态迁移不夺权。
+        return runMapper.update(null, update) == 1 ? Optional.of(next) : Optional.empty();
+    }
+
+    @Override
+    public boolean lockEpoch(Long runId, int epoch) {
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())
+            throw new IllegalStateException("epoch guard requires a transaction");
+        IpdAgentRun run = runMapper.selectOne(new LambdaQueryWrapper<IpdAgentRun>()
+            .eq(IpdAgentRun::getId, runId).last("FOR UPDATE"));
+        return run != null && java.util.Objects.equals(run.getVersion(), epoch);
+    }
+
+    @Override
+    public List<IpdAgentRun> listRecoveryCandidates(Long afterId, int limit) {
+        var filter = new LambdaQueryWrapper<IpdAgentRun>()
+            .in(IpdAgentRun::getStatus, List.of("PENDING", "RUNNING", "CANCEL_REQUESTED"));
+        if (afterId != null) filter.gt(IpdAgentRun::getId, afterId);
+        return runMapper.selectList(filter.orderByAsc(IpdAgentRun::getId).last("LIMIT " + Math.min(50, Math.max(1, limit))));
+    }
+
+    @Override
+    public boolean hasExecutionOwner(Long runId) {
+        return eventMapper.selectCount(new LambdaQueryWrapper<IpdAgentRunEvent>()
+            .eq(IpdAgentRunEvent::getRunId, runId).eq(IpdAgentRunEvent::getEventType, AgentEventType.STEP.name())
+            .apply("JSON_UNQUOTE(JSON_EXTRACT(payload, '$.kind')) = {0}", "EXECUTION_OWNER")) > 0;
+    }
+
     /** {@inheritDoc} */
     @Override
     public List<IpdAgentRun> listOwnRuns(OwnRunQuery query) {
@@ -145,10 +191,15 @@ public class MybatisAgentRunStore implements AgentRunStore {
         if (!text.isEmpty()) {
             String pattern = LikePatterns.containsPattern(text);
             Set<Long> hits = query.artifactRunIds() == null ? Set.of() : query.artifactRunIds();
+            List<String> labelStatuses = STATUS_LABELS.entrySet().stream()
+                .filter(entry -> entry.getValue().contains(text)).map(Map.Entry::getKey).toList();
             filter.and(nested -> {
                 nested.apply("action_code LIKE {0} ESCAPE '\\\\'", pattern)
                     .or()
                     .apply("status LIKE {0} ESCAPE '\\\\'", pattern);
+                if (!labelStatuses.isEmpty()) {
+                    nested.or().in(IpdAgentRun::getStatus, labelStatuses);
+                }
                 if (!hits.isEmpty()) {
                     nested.or().in(IpdAgentRun::getId, hits);
                 }
@@ -157,5 +208,26 @@ public class MybatisAgentRunStore implements AgentRunStore {
         int limit = Math.min(50, Math.max(1, query.limit()));
         filter.orderByDesc(IpdAgentRun::getId).last("LIMIT " + limit);
         return runMapper.selectList(filter);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<IpdAgentRun> listInterruptedCandidates(Date createdBefore, int limit) {
+        if (createdBefore == null) {
+            return List.of();
+        }
+        int page = Math.min(50, Math.max(1, limit));
+        List<String> open = List.of(
+            AgentRunStatus.PENDING.name(),
+            AgentRunStatus.RUNNING.name(),
+            AgentRunStatus.WAITING_APPROVAL.name(),
+            AgentRunStatus.CANCEL_REQUESTED.name());
+        return runMapper.selectList(new LambdaQueryWrapper<IpdAgentRun>()
+            .in(IpdAgentRun::getStatus, open)
+            .and(nested -> nested.lt(IpdAgentRun::getCreateTime, createdBefore)
+                .or()
+                .isNull(IpdAgentRun::getCreateTime))
+            .orderByAsc(IpdAgentRun::getId)
+            .last("LIMIT " + page));
     }
 }

@@ -5,18 +5,21 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.ExecutionConfig;
+import io.agentscope.core.tool.AgentTool;
 import io.agentscope.core.tool.Toolkit;
+import io.agentscope.core.agent.Agent;
+import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.middleware.ActingInput;
+import io.agentscope.core.middleware.MiddlewareBase;
 import io.agentscope.extensions.mysql.state.MysqlAgentStateStore;
 import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.core.state.AgentState;
 import org.redisson.api.RedissonClient;
 import io.agentscope.harness.agent.HarnessAgent;
-import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import io.agentscope.harness.agent.gateway.LocalSessionTurnGate;
 import io.agentscope.harness.agent.gateway.SessionTurnGate;
 import io.agentscope.harness.agent.gateway.TurnLease;
-import io.agentscope.harness.agent.tools.ToolsConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
@@ -25,10 +28,13 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
 import org.ruoyi.chat.kernel.KernelScopeKey;
@@ -58,6 +64,9 @@ public class AgentScopeChatKernel implements AutoCloseable {
     /** 未分桶降级段（W1 兼容面 {@code agent(String, String)} 专用，不承载真实项目/用户语义）。 */
     static final String UNSCOPED_SEGMENT = "__unscoped__";
 
+    /** 官方沙箱默认镜像（与 IPD 内核一致；可用 chat.kernel.agentscope.sandbox-image 覆盖）。 */
+    static final String DEFAULT_SANDBOX_IMAGE = "python:3.13-alpine";
+
     private io.agentscope.core.hook.Hook auditHook;
     private final KernelModelSelector modelSelector;
     private final Supplier<? extends AgentStateStore> stateStoreSupplier;
@@ -74,14 +83,20 @@ public class AgentScopeChatKernel implements AutoCloseable {
 
     private volatile AgentStateStore stateStore;
 
+    /** 官方沙箱镜像；缺镜像时沙箱执行明确失败，不自动下载、不回退主机执行。 */
+    private String sandboxImage = DEFAULT_SANDBOX_IMAGE;
+
     /** 正式状态只借用本项目现有 Redisson，原生 CAS 持久化，不创建表或新 Redis 客户端。 */
     @Autowired
     public AgentScopeChatKernel(RedissonClient redisson,
             @Value("${chat.kernel.agentscope.model-id:minimax:MiniMax-M3}") String modelId,
             @Value("${chat.kernel.agentscope.workspace-root:${java.io.tmpdir}/agentscope-workspace}") Path workspaceRoot,
+            @Value("${chat.kernel.agentscope.sandbox-image:python:3.13-alpine}") String sandboxImage,
             @org.springframework.beans.factory.annotation.Qualifier("agentScopeAuditHook") io.agentscope.core.hook.Hook auditHook) {
         this(redisson, modelId, workspaceRoot);
         this.auditHook = auditHook;
+        this.sandboxImage = sandboxImage == null || sandboxImage.isBlank()
+                ? DEFAULT_SANDBOX_IMAGE : sandboxImage;
     }
 
     /** 兼容直接构造；生产使用带共享诊断Hook的构造器。 */
@@ -323,15 +338,17 @@ public class AgentScopeChatKernel implements AutoCloseable {
             if (!Files.isRegularFile(agentsMd, LinkOption.NOFOLLOW_LINKS)) {
                 throw new IllegalStateException("workspace AGENTS.md must be a regular file");
             }
-            ToolsConfig toolsConfig = new ToolsConfig();
-            toolsConfig.setDeny(List.of("web_fetch", "web_search", "wait_async_results"));
             HarnessAgent.Builder builder = HarnessAgent.builder()
                     .name(agentId)
                     .sysPrompt(systemPrompt == null || systemPrompt.isBlank()
                             ? "You are a helpful assistant. Answer concisely in the user's language."
                             : systemPrompt)
                     .model(plan.model())
+                    .middleware(new OfficialToolGovernanceMiddleware())
                     .hook(auditHook);
+            var capabilities = ChatOfficialCapabilities.configure(builder, workspace,
+                KernelScopeKey.of(projectId, userId, agentId, "assembly").userId(),
+                sandboxImage, plan.knownSecrets());
             HarnessAgent built = builder
                     .toolkit(toolkit)
                     // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）。
@@ -339,25 +356,12 @@ public class AgentScopeChatKernel implements AutoCloseable {
                     .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)
                     // 长对话压缩：官方 Builder 默认即装配全默认配置；此处显式声明固化意图防默认漂移。
                     .compaction(CompactionConfig.builder().build())
-                    // 业务输入仅来自显式系统提示、授权资料与会话，禁止默认读取启动目录工程文件。
-                    .disableWorkspaceContext()
-                    .disableAtPathExpansion()
-                    .disableFilesystemTools()
-                    .disableShellTool()
-                    .disableMemoryTools()
-                    .disableMemoryHooks()
-                    .disableTranscript()
-                    .disableSessionPersistence()
-                    .enableAgentTracingLog(false)
-                    .disableSubagents()
-                    .disableDynamicSubagents()
-                    .disableDynamicSkills()
-                    .disableDefaultWorkspaceSkills()
-                    .toolsConfig(toolsConfig)
                     .workspace(workspace)
-                    .filesystem(new LocalFilesystemSpec().project(workspace))
                     .stateStore(stateStore())
                     .build();
+            capabilities.bind(built);
+            // SDK build 注册的官方默认工具统一过治理包装（幂等）；acting 前还会再绑定后注册的工具。
+            governOfficialTools(built.getToolkit());
             return built;
         } catch (Exception e) {
             throw new IllegalStateException("build HarnessAgent failed: " + agentId, e);
@@ -365,9 +369,73 @@ public class AgentScopeChatKernel implements AutoCloseable {
     }
 
     /**
+     * SDK build 注册的官方默认工具统一过治理包装：能力注册面保持完整（不删工具、不设 deny），
+     * 只读裁决与出站闸门收敛在治理层；已包装工具幂等跳过。官方 web 工具按 NETWORK 能力登记，
+     * 只读治理下显式拒绝出站，理由可审计。
+     */
+    static void governOfficialTools(Toolkit toolkit) {
+        List<org.ruoyi.service.coding.harness.tool.ToolDescriptor> descriptors = new ArrayList<>();
+        for (String name : toolkit.getToolNames()) {
+            AgentTool tool = toolkit.getTool(name);
+            if (tool == null) {
+                continue;
+            }
+            if ("web_fetch".equals(name) || "web_search".equals(name)) {
+                descriptors.add(officialDescriptor(name,
+                    EnumSet.of(org.ruoyi.service.coding.harness.tool.ToolCapability.NETWORK),
+                    false, "出站网络访问；只读治理下拒绝"));
+            } else {
+                boolean readOnly = tool.isReadOnly();
+                descriptors.add(officialDescriptor(name,
+                    EnumSet.of(readOnly
+                        ? org.ruoyi.service.coding.harness.tool.ToolCapability.READ
+                        : org.ruoyi.service.coding.harness.tool.ToolCapability.WRITE),
+                    readOnly, "官方默认工具"));
+            }
+        }
+        var policy = new ToolPolicyEngine(descriptors);
+        var governance = new org.ruoyi.chat.kernel.tool.KernelToolGovernance(policy,
+            HarnessPermissionMode.READ_ONLY,
+            new org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger(),
+            new org.ruoyi.chat.kernel.tool.KernelToolCallTrace());
+        for (String name : List.copyOf(toolkit.getToolNames())) {
+            AgentTool delegate = toolkit.getTool(name);
+            if (delegate instanceof org.ruoyi.chat.kernel.tool.KernelGovernedTool) {
+                continue;
+            }
+            toolkit.removeTool(name);
+            toolkit.registerAgentTool(org.ruoyi.chat.kernel.tool.KernelGovernedTool.wrap(delegate, governance));
+        }
+    }
+
+    private static org.ruoyi.service.coding.harness.tool.ToolDescriptor officialDescriptor(
+            String name, EnumSet<org.ruoyi.service.coding.harness.tool.ToolCapability> capabilities,
+            boolean readOnly, String summary) {
+        return new org.ruoyi.service.coding.harness.tool.ToolDescriptor(name, capabilities,
+            readOnly, 30_000L, 4_096L, 16_384L, false, summary);
+    }
+
+    /** 官方工具治理绑定：build 后与每次 acting 前执行，SDK 运行期后注册的工具同样过闸门。 */
+    static final class OfficialToolGovernanceMiddleware implements MiddlewareBase {
+        @Override
+        public int order() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public Flux<AgentEvent> onActing(Agent agent, RuntimeContext context, ActingInput input,
+                Function<ActingInput, Flux<AgentEvent>> next) {
+            return Flux.defer(() -> {
+                governOfficialTools(agent.getToolkit());
+                return next.apply(input);
+            });
+        }
+    }
+
+    /**
      * 工作区分桶与 {@link KernelScopeKey} 同源补维（C1 切片，2026-09-29）：文件面按
      * project × user × agent 三维隔离；会话维由 stateStore 四维键硬隔离，同一用户同一员工的
-     * 多会话共用员工工作区。W3 开放工具前仍须裁决会话维文件隔离（当前 W1 文件工具全关）。
+     * 多会话共用员工 persona 目录；官方 Docker SESSION 隔离实际文件、Shell、记忆与计划。
      *
      * <p>任一段为空、为 {@code .}、含 {@code :}、{@code /}、反斜杠或 {@code ..} 即
      * fail-closed 拒绝，防工作区路径穿越。
@@ -380,6 +448,18 @@ public class AgentScopeChatKernel implements AutoCloseable {
 
     private static Path createWorkspace(Path root, String projectId, String userId, String agentId)
             throws java.io.IOException {
+        root = root.toAbsolutePath().normalize();
+        Path ancestor = root.getRoot();
+        for (Path segment : root) {
+            ancestor = ancestor.resolve(segment);
+            if (Files.isSymbolicLink(ancestor)) {
+                Path expected = ancestor.equals(Path.of("/var")) ? Path.of("/private/var")
+                    : ancestor.equals(Path.of("/tmp")) ? Path.of("/private/tmp") : null;
+                if (ancestor.equals(root) || expected == null || !ancestor.toRealPath().equals(expected)) {
+                    throw new IllegalStateException("workspace root symbolic link rejected");
+                }
+            }
+        }
         Path workspace = workspaceFor(root, projectId, userId, agentId);
         Files.createDirectories(root);
         Path current = root;

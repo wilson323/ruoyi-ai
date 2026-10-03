@@ -49,6 +49,25 @@ public class CopilotRunRegistryService {
         private final Long ownerId;
         private final long createdAtMs;
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
+        private boolean completed;
+        private reactor.core.Disposable provider;
+
+        public void bind(reactor.core.Disposable subscription) {
+            if (subscription == null) { return; }
+            boolean dispose;
+            synchronized (this) { provider = subscription; dispose = cancelled.get(); }
+            if (dispose) { subscription.dispose(); }
+        }
+
+        private synchronized boolean finish() {
+            if (cancelled.get() || completed) { return false; }
+            completed = true; provider = null; return true;
+        }
+        private void disposeProvider() {
+            reactor.core.Disposable active;
+            synchronized (this) { active = provider; provider = null; }
+            if (active != null) { active.dispose(); }
+        }
 
         RunHandle(String runId, Long ownerId, long createdAtMs) {
             this.runId = runId;
@@ -65,8 +84,8 @@ public class CopilotRunRegistryService {
         }
 
         /** 幂等置位：首次 true，重复取消 false（响应语义不重复落审计）。 */
-        boolean markCancelled() {
-            return cancelled.compareAndSet(false, true);
+        synchronized boolean markCancelled() {
+            return !completed && cancelled.compareAndSet(false, true);
         }
     }
 
@@ -82,6 +101,7 @@ public class CopilotRunRegistryService {
             if (old != null && !old.ownerId.equals(fresh.ownerId)) {
                 throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "runId 已被占用");
             }
+            if (old != null && old.markCancelled()) { old.disposeProvider(); }
             return fresh;
         });
         return fresh;
@@ -105,7 +125,8 @@ public class CopilotRunRegistryService {
         }
         boolean first = h.markCancelled();
         if (first) {
-            runs.remove(runId);
+            runs.remove(runId, h);
+            h.disposeProvider();
             auditLogService.append(actor, "AI_COPILOT_RUN_CANCEL", "AI_COPILOT", null, "runId=" + runId);
             log.info("[AI-COPILOT-CANCEL] run cancelled actor={} runId={}", actor.id(), runId);
         }
@@ -116,43 +137,41 @@ public class CopilotRunRegistryService {
      * 既有四帧链（meta/delta/done/error）的取消守卫：取消先赢后全部晚到回调静默
      * （无成功帧语义），完成回调照常注销。
      */
-    public AiCopilotService.CopilotStreamSink guard(RunHandle handle, AiCopilotService.CopilotStreamSink inner) {
-        if (handle == null) {
-            return inner;
+    /** Transport termination is cancellation; normal terminal callbacks finish first. */
+    public void disconnect(RunHandle handle) {
+        if (handle != null && handle.markCancelled()) {
+            runs.remove(handle.runId(), handle);
+            handle.disposeProvider();
         }
+    }
+
+    public void complete(RunHandle handle) {
+        if (handle != null && handle.finish()) { runs.remove(handle.runId(), handle); }
+    }
+
+    public AiCopilotService.CopilotStreamSink guard(RunHandle handle, AiCopilotService.CopilotStreamSink inner) {
+        if (handle == null) { return inner; }
         return new AiCopilotService.CopilotStreamSink() {
-            @Override
-            public void meta(AiCopilotResp resp) {
-                if (handle.isCancelled()) {
-                    return;
-                }
-                inner.meta(resp);
+            @Override public void bind(reactor.core.Disposable subscription) { handle.bind(subscription); }
+            @Override public void meta(AiCopilotResp resp) {
+                synchronized (handle) { if (!handle.isCancelled() && !handle.completed) { inner.meta(resp); } }
             }
-
-            @Override
-            public void delta(String token) {
-                if (handle.isCancelled()) {
-                    return;
-                }
-                inner.delta(token);
+            @Override public void delta(String token) {
+                synchronized (handle) { if (!handle.isCancelled() && !handle.completed) { inner.delta(token); } }
             }
-
-            @Override
-            public void done(AiCopilotResp resp) {
-                unregister(handle.runId());
-                if (handle.isCancelled()) {
-                    return;
+            @Override public void done(AiCopilotResp resp) {
+                synchronized (handle) {
+                    if (!handle.finish()) { return; }
+                    runs.remove(handle.runId(), handle);
+                    inner.done(resp);
                 }
-                inner.done(resp);
             }
-
-            @Override
-            public void error(String code, String message) {
-                unregister(handle.runId());
-                if (handle.isCancelled()) {
-                    return;
+            @Override public void error(String code, String message) {
+                synchronized (handle) {
+                    if (!handle.finish()) { return; }
+                    runs.remove(handle.runId(), handle);
+                    inner.error(code, message);
                 }
-                inner.error(code, message);
             }
         };
     }
@@ -163,6 +182,8 @@ public class CopilotRunRegistryService {
             return;
         }
         long now = clock.millis();
-        runs.entrySet().removeIf(e -> now - e.getValue().createdAtMs > RUN_TTL_MS);
+        runs.forEach((id, handle) -> {
+            if (now - handle.createdAtMs > RUN_TTL_MS) { disconnect(handle); }
+        });
     }
 }

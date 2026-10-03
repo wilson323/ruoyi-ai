@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 产品服务单测：三路来源/1:1/启停
+ * 产品服务单测：三路来源、首个项目指针、启停
  */
 @Tag("dev")
 @ExtendWith(MockitoExtension.class)
@@ -88,11 +88,11 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("1:1：项目已被其他产品占用 → 拒绝")
+    @DisplayName("首个项目指针已被其他产品占用 → 拒绝")
     void oneToOneTaken() {
         when(productMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
         assertThatThrownBy(() -> service.create(product("PM_NEW", null, 9L), 1L))
-            .isInstanceOf(ServiceException.class).hasMessageContaining("1:1");
+            .isInstanceOf(ServiceException.class).hasMessageContaining("首个项目");
     }
 
     @Test

@@ -1,0 +1,234 @@
+{
+  "count": 38,
+  "localFilesDeleted": 0,
+  "links": [
+    {
+      "path": ".claude/skills/ask-matt",
+      "target": "../../.agents/skills/ask-matt",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/claude-handoff",
+      "target": "../../.agents/skills/claude-handoff",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/code-review",
+      "target": "../../.agents/skills/code-review",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/codebase-design",
+      "target": "../../.agents/skills/codebase-design",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/diagnosing-bugs",
+      "target": "../../.agents/skills/diagnosing-bugs",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/domain-modeling",
+      "target": "../../.agents/skills/domain-modeling",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/git-guardrails-claude-code",
+      "target": "../../.agents/skills/git-guardrails-claude-code",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/grill-me",
+      "target": "../../.agents/skills/grill-me",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/grill-with-docs",
+      "target": "../../.agents/skills/grill-with-docs",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/grilling",
+      "target": "../../.agents/skills/grilling",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/handoff",
+      "target": "../../.agents/skills/handoff",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/implement",
+      "target": "../../.agents/skills/implement",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/implement-spec",
+      "target": "../../.agents/skills/implement-spec",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/improve-codebase-architecture",
+      "target": "../../.agents/skills/improve-codebase-architecture",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/karpathy-llm-wiki",
+      "target": "../../.agents/skills/karpathy-llm-wiki",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/loop-me",
+      "target": "../../.agents/skills/loop-me",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/migrate-to-shoehorn",
+      "target": "../../.agents/skills/migrate-to-shoehorn",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/prototype",
+      "target": "../../.agents/skills/prototype",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/research",
+      "target": "../../.agents/skills/research",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/resolving-merge-conflicts",
+      "target": "../../.agents/skills/resolving-merge-conflicts",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/retro",
+      "target": "../../.agents/skills/retro",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/scaffold-exercises",
+      "target": "../../.agents/skills/scaffold-exercises",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/setup-matt-pocock-skills",
+      "target": "../../.agents/skills/setup-matt-pocock-skills",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/setup-pre-commit",
+      "target": "../../.agents/skills/setup-pre-commit",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/setup-ts-deep-modules",
+      "target": "../../.agents/skills/setup-ts-deep-modules",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/tdd",
+      "target": "../../.agents/skills/tdd",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/teach",
+      "target": "../../.agents/skills/teach",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/to-questionnaire",
+      "target": "../../.agents/skills/to-questionnaire",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/to-spec",
+      "target": "../../.agents/skills/to-spec",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/to-tickets",
+      "target": "../../.agents/skills/to-tickets",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/triage",
+      "target": "../../.agents/skills/triage",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/wait-what",
+      "target": "../../.agents/skills/wait-what",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/wayfinder",
+      "target": "../../.agents/skills/wayfinder",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/wizard",
+      "target": "../../.agents/skills/wizard",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/writing-beats",
+      "target": "../../.agents/skills/writing-beats",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/writing-for-agents",
+      "target": "../../.agents/skills/writing-for-agents",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/writing-fragments",
+      "target": "../../.agents/skills/writing-fragments",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    },
+    {
+      "path": ".claude/skills/writing-shape",
+      "target": "../../.agents/skills/writing-shape",
+      "localTargetExists": true,
+      "reason": "开发Skill目标未版本化；保留本地，独立审查来源/许可/启用后才分发"
+    }
+  ]
+}

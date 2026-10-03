@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-02T08:40:12.694894+00:00",
+  "mode": "create-mcp",
+  "personAccount": "ipd-market",
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "FastGPT-mcp-69cce91596a40120630b2017"
+    ],
+    "actionCode": "C02",
+    "message": "请基于当前项目事实，调用本次已选熵基互联知识库查询智能锁联动相关产品能力。生成简短的资料核验草稿：区分远端应用回答和原始出处；查不到就明确说明未取得，不编造参数，不宣称动作完成或评审通过。",
+    "idempotencyKey": "codex-global-20261002-create-mcp"
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105940904400416769",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-10-02T08:40:12Z",
+      "traceId": "35c9447916ca4e1bb8e0fed14967a541"
+    }
+  }
+}

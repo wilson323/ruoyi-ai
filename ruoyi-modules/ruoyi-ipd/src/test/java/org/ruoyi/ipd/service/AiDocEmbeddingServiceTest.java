@@ -16,6 +16,8 @@ import org.ruoyi.ipd.mapper.AiDocEmbeddingMapper;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import org.ruoyi.ipd.service.ai.AiTestConfig;
+import org.ruoyi.ipd.service.ai.BuiltinEmbeddingModel;
+import org.springframework.core.env.Environment;
 
 import java.util.List;
 
@@ -56,6 +58,7 @@ class AiDocEmbeddingServiceTest {
         modelConfigService = mock(AiModelConfigService.class);
         aiGateway = mock(AiGateway.class);
         service = new AiDocEmbeddingService(embeddingMapper, documentMapper, modelConfigService, aiGateway);
+        service.completeEmbedOnCallerForTest();
     }
 
 
@@ -125,8 +128,30 @@ class AiDocEmbeddingServiceTest {
         assertNull(service.resolveEmbedConfig(), "缺 embedModel → RAG 关");
         stubEmbedEnabled("{\"embedModel\":\"emb-1\"}");
         assertNull(service.resolveEmbedConfig(), "缺 embedEndpoint → RAG 关");
+    }
+
+    @Test
+    @DisplayName("官方对话模型未填向量键时走内置向量，且不复用对话密钥")
+    void resolveEmbedConfigFallsBackToBuiltinWithoutChatKey() {
         stubEmbedEnabled("{}");
-        assertNull(service.resolveEmbedConfig(), "两键全缺 → RAG 关");
+        AiDocEmbeddingService.EmbedEndpoint cfg = service.resolveEmbedConfig();
+        assertNotNull(cfg);
+        assertEquals(BuiltinEmbeddingModel.BASE_URL, cfg.endpoint());
+        assertEquals(BuiltinEmbeddingModel.MODEL_NAME, cfg.embedModel());
+        assertEquals(BuiltinEmbeddingModel.API_KEY, cfg.apiKey());
+        verify(modelConfigService, never()).decryptApiKey(any());
+    }
+
+    @Test
+    @DisplayName("内置向量开关关闭且官方行未填向量键时 RAG 关闭")
+    void resolveEmbedConfigBuiltinDisabled() {
+        Environment environment = mock(Environment.class);
+        when(environment.getProperty(BuiltinEmbeddingModel.ENABLED_PROPERTY, Boolean.class, Boolean.TRUE))
+            .thenReturn(Boolean.FALSE);
+        service = new AiDocEmbeddingService(embeddingMapper, documentMapper, modelConfigService, aiGateway, environment);
+        stubEmbedEnabled("{}");
+        assertNull(service.resolveEmbedConfig());
+        verify(modelConfigService, never()).decryptApiKey(any());
     }
 
     // ---- 端点归一化（卡 80b0be1f：全路径 / base URL 两形态兼容） ----
@@ -134,7 +159,7 @@ class AiDocEmbeddingServiceTest {
     @Test
     @DisplayName("归一化：全路径 …/v1/embeddings 剥子路径为 base URL；base URL 原样透传")
     void normalizeEmbedBaseUrlTwoForms() {
-        // base URL 形态：Langchain4j 自拼 /embeddings，原样透传（真库 id=1 现行写法）
+        // base URL 形态：嵌入客户端自拼 /embeddings，原样透传（真库 id=1 现行写法）
         assertEquals("http://embed.example.com/v1",
             AiDocEmbeddingService.normalizeEmbedBaseUrl("http://embed.example.com/v1"));
         // 全路径形态：剥 /embeddings 尾缀（直传会拼成 /embeddings/embeddings → 404）
@@ -177,30 +202,53 @@ class AiDocEmbeddingServiceTest {
         service.embedSync(doc("正文"), cfg);
         verify(aiGateway).embed(cap.capture(), anyList());
         assertEquals("http://embed.example.com/v1", cap.getValue().baseUrl(),
-            "Langchain4j 收到 base URL → 自拼 POST {base}/embeddings 命中真实端点");
+            "客户端收到 base URL → 自拼 POST {base}/embeddings 命中真实端点");
     }
 
     // ---- embedAsync 降级（不出队不抛错） ----
 
     @Test
-    @DisplayName("embedAsync：RAG 未配置静默跳过（不提交任务不触 embed）")
+    @DisplayName("embedAsync：两键都缺走内置向量，调用线程内完成嵌入并写入")
     void embedAsyncSkipsWhenRagOff() {
         stubEmbedEnabled("{}");
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{1f, 0f}));
+        service.embedAsync(doc("正文"));
+        var captor = org.mockito.ArgumentCaptor.forClass(AiTestConfig.class);
+        verify(aiGateway).embed(captor.capture(), anyList());
+        assertEquals(BuiltinEmbeddingModel.BASE_URL, captor.getValue().baseUrl());
+        assertEquals(BuiltinEmbeddingModel.MODEL_NAME, captor.getValue().modelName());
+        assertEquals(BuiltinEmbeddingModel.API_KEY, captor.getValue().apiKey());
+        verify(embeddingMapper).insert(any(AiDocEmbedding.class));
+        verify(modelConfigService, never()).decryptApiKey(any());
+    }
+
+    @Test
+    @DisplayName("embedAsync：只填一键才关闭，不调用嵌入")
+    void embedAsyncSkipsWhenOnlyOneEmbedKey() {
+        stubEmbedEnabled("{\"embedModel\":\"emb-1\"}");
+        assertNull(service.resolveEmbedConfig());
         service.embedAsync(doc("正文"));
         verifyNoInteractions(aiGateway);
         verifyNoInteractions(embeddingMapper);
     }
 
     @Test
-    @DisplayName("embedAsync：null/空白内容直接跳过；currentEnabled 抛错不外抛")
+    @DisplayName("embedAsync：null/空白内容直接跳过；currentEnabled 抛错改走内置且不外抛")
     void embedAsyncGuards() {
         stubEmbedEnabled(EMBED_CFG);
         service.embedAsync(null);
         service.embedAsync(doc("  "));
+        verifyNoInteractions(aiGateway);
         when(modelConfigService.currentEnabled())
             .thenThrow(new IllegalStateException("no config"));
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{1f, 0f}));
         assertDoesNotThrow(() -> service.embedAsync(doc("正文")));
-        verifyNoInteractions(aiGateway);
+        var captor = org.mockito.ArgumentCaptor.forClass(AiTestConfig.class);
+        verify(aiGateway).embed(captor.capture(), anyList());
+        assertEquals(BuiltinEmbeddingModel.MODEL_NAME, captor.getValue().modelName());
+        assertEquals(BuiltinEmbeddingModel.API_KEY, captor.getValue().apiKey());
     }
 
     // ---- embedSync：先删后插 / 失败降级 ----
@@ -230,6 +278,14 @@ class AiDocEmbeddingServiceTest {
         assertEquals(1, cap.getAllValues().get(1).getChunkSeq());
         assertEquals("emb-1", cap.getAllValues().get(0).getEmbedModel());
         assertEquals("[1.0,0.0]", cap.getAllValues().get(0).getVectorJson());
+    }
+
+    @Test
+    void strictRetrievalPropagatesDocumentDatabaseFailure() {
+        when(documentMapper.selectList(any())).thenThrow(new IllegalStateException("database unavailable"));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+            () -> service.retrieveContextStrict(9L, null, "查询"));
+        assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null, "查询"));
     }
 
     // ---- retrieveContext ----
@@ -275,10 +331,39 @@ class AiDocEmbeddingServiceTest {
                 && hasReviewedStatus(actual)));
         assertTrue(ctx.block().contains("旧需求"), "块含来源标注（docType/title）");
         assertTrue(ctx.block().contains("相似片段正文"));
+        assertEquals(1, ctx.sources().size());
+        assertEquals("PROJECT_DOCUMENT", ctx.sources().get(0).sourceType());
+        assertEquals("REVIEWED", ctx.sources().get(0).reviewStatus());
+        assertEquals("1", ctx.sources().get(0).documentId());
+        assertNull(ctx.sources().get(0).knowledgeId());
         assertTrue(ctx.chars() > 0);
 
         when(embeddingMapper.selectList(any())).thenReturn(List.of());
         assertEquals(0, service.retrieveContext(9L, null, "查询").hits(), "候选空 → EMPTY");
+    }
+
+    @Test
+    @DisplayName("检索：已不在当前已审核名单里的残留向量不能出源")
+    void staleEmbeddingIsNotACitation() {
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(AiDocument.builder().id(1L).build()));
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{1, 0}));
+        AiDocEmbedding current = AiDocEmbedding.builder().docId(1L).projectId(9L).docType("PRD")
+            .title("现行需求").chunkSeq(0).chunkText("现行正文")
+            .embedModel("emb-1").vectorJson("[1.0,0.0]").build();
+        AiDocEmbedding stale = AiDocEmbedding.builder().docId(99L).projectId(9L).docType("PRD")
+            .title("过期向量").chunkSeq(0).chunkText("过期正文不应引用")
+            .embedModel("emb-1").vectorJson("[1.0,0.0]").build();
+        when(embeddingMapper.selectList(any())).thenReturn(List.of(stale, current));
+
+        AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContextStrict(9L, null, "查询");
+
+        assertEquals(1, ctx.hits());
+        assertEquals("1", ctx.sources().get(0).documentId());
+        assertEquals("REVIEWED", ctx.sources().get(0).reviewStatus());
+        assertFalse(ctx.block().contains("过期正文不应引用"));
+        assertFalse(ctx.citationText().contains("99"));
     }
 
     @Test

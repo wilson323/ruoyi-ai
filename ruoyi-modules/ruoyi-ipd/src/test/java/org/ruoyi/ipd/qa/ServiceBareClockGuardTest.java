@@ -53,7 +53,7 @@ class ServiceBareClockGuardTest {
      * 须登记本白名单并在 PR 描述注明理由。
      */
     private static final Set<String> LEGACY_WHITELIST = Set.of(
-        "AiChatClient", "AuditLogServiceImpl", "BaiduTester", "BidInvitationService",
+        "AuditLogServiceImpl", "BaiduTester", "BidInvitationService",
         "BidResponseService", "BonusPoolService", "BusinessConfigServiceImpl",
         "CertTemplateService", "CoefficientChangeService", "ComplianceService",
         "ContributionService", "CorrectionLogServiceImpl", "DefaultStateMachineGuard",

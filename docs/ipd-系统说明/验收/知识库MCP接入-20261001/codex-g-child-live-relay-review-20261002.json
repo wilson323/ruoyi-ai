@@ -1,0 +1,29 @@
+{
+  "status": "VERIFIED_SDK_LIVE_CHILD_RESUME_ONLY",
+  "probeSource": "/tmp/ipd-child-live-relay-probe-20261002/ChildLiveRelayProbeTest.java",
+  "probeSha256": "2f05a2eac3130a653190bddaac9e92365ed6e9e0148bacad39696ce12b73de7c",
+  "logSha256": "daa7085ce4ad48620cbb9aefbe52cbe6ae51b5be9e4c36e9ae480d7fb12cdcd1",
+  "actualJUnit": {
+    "found": 1,
+    "passed": 1,
+    "failed": 0,
+    "aborted": 0,
+    "skipped": 0
+  },
+  "verified": [
+    "Parent native agent_spawn produces actual child onActing actor/context; RequireUserConfirm exact tuple captured in test middleware",
+    "Child checkpoint holds ASKING original child-write; parent and child saved versions exist after first parent stream terminates",
+    "Official ReActAgent.streamEvents(List<Msg>,original child RuntimeContext) consumes native ConfirmResult; real file effect verified",
+    "Receipt at parent alone has zero child effect; root context, wrong id and ownership withdrawal rejected by test helper"
+  ],
+  "notVerified": [
+    "Test-only capture/LivePending/requireOriginal are not production relay implementation",
+    "No EventBridge dispatched, no sink.onAguiInterrupt or paused assertion; first parent stream completes before explicit child resume",
+    "No production cleanup behavior/cancel/timeout assertion",
+    "DENY branch exists but no test calls run(DENY,false)",
+    "Version equality checked only current unchanged version, no changed-version negative; no replay consumption assertion",
+    "Original WAIT DB CAS/cold ledger/HTTP resume absent",
+    "Direct ReActAgent delegate resume bypasses full Harness middleware lifecycle; original actor/context permission consumer is genuine but wrapper memory/session/ownership wiring needs full production route verification"
+  ],
+  "mainSourceObservation": "Current AgentScopeProjectAgentKernel EventBridge calls agui.accept then excludes child source; pendingInterrupts checked only root AgentResult. No production binding to test live tuple demonstrated. Prior G real EventBridge counterexample remains unresolved by this pure live probe."
+}

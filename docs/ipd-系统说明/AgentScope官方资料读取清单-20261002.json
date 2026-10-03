@@ -1,0 +1,1250 @@
+{
+  "document_version": "1.1.0",
+  "date": "2026-10-02",
+  "scope": "current official Chinese index docs/service/integration and four Harness blogs; text only",
+  "status": "TEXT_REVIEWED",
+  "pages": [
+    {
+      "url": "https://java.agentscope.io/v2/zh/blogs/how-to-build-agent-harness/01-patterns.md",
+      "ok": true,
+      "bytes": 31774,
+      "sha256": "0c10eb4c6723f19c685a21466575cb37bc01ed695b302c6718acffa49111b0cb",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/blogs/how-to-build-agent-harness/02-task-orchestration.md",
+      "ok": true,
+      "bytes": 27558,
+      "sha256": "e8acbef98150d95f959e3711c3ab00ff20d83fff7a36acef94a1bd3d5fdf5b32",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/blogs/how-to-build-agent-harness/03-context-and-state.md",
+      "ok": true,
+      "bytes": 39060,
+      "sha256": "cb19b53f85ef0916a2dcc8f7592e53aab3949b8ccbc4e94d28bbb7e1fede3a7f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/blogs/how-to-build-agent-harness/04-controlled-execution.md",
+      "ok": true,
+      "bytes": 41321,
+      "sha256": "08f45c76dbe30b01c2cc975d384c6d875bdf8d0c8b8b4ccf4d219387eecd4ccb",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/agent.md",
+      "ok": true,
+      "bytes": 29332,
+      "sha256": "add20ea759ec19b7349bacbe8535e724c4e3c78ee1ea4d6ab80ae23884ca6ab4",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/context.md",
+      "ok": true,
+      "bytes": 17182,
+      "sha256": "30e8a292c34a2a3dc489109a65e82a90d83893d9acc25b8d6b8eb29df1f9172e",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/message-and-event.md",
+      "ok": true,
+      "bytes": 18739,
+      "sha256": "374e484ee632d3de559a55180569c13a3ddce827c957f0a97e75876c1bcd0aad",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/middleware.md",
+      "ok": true,
+      "bytes": 21827,
+      "sha256": "72a315d92fc8607311d9f9def0c7dddc974b8a25a2ca156a64522bc153570d40",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/model.md",
+      "ok": true,
+      "bytes": 25995,
+      "sha256": "c56121893fcb600dfbadb5b665e777eb171843784cbff247799a1c381804d9d5",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/permission-system.md",
+      "ok": true,
+      "bytes": 20776,
+      "sha256": "8eb18f5f5d941b590cefd9bfa95876dc3f2721101112a13bd21014b9a50f921a",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/building-blocks/tool.md",
+      "ok": true,
+      "bytes": 25400,
+      "sha256": "bb2a7a1130e5dad04fd70e67c1144eafa46501b179e2338a4703713c5af99476",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/change-log.md",
+      "ok": true,
+      "bytes": 23727,
+      "sha256": "6aa58a6bed7671d7061a05e502ba58bcc5b6ef4d1c1736cfba4453b8744b046c",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/architecture.md",
+      "ok": true,
+      "bytes": 6762,
+      "sha256": "5013c7290f1f798bb22d7a33ec7713f00a5c25db9c064569bc011bcb1bf30e25",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/channel.md",
+      "ok": true,
+      "bytes": 13176,
+      "sha256": "81b1d1f18fb69f96fa5484e7acd4f4ea3b6ef35cbd161f74513be117a043b913",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/compaction.md",
+      "ok": true,
+      "bytes": 8547,
+      "sha256": "5c15b2318b40c0993e2a3b750bf9ce292358595764489218f5f6e24d4fc3bf95",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/filesystem.md",
+      "ok": true,
+      "bytes": 24299,
+      "sha256": "5f1c3a5d3649a2f57241f1a95219cd35fb685532e6b4e2e949c644b9c98c0f9b",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/memory.md",
+      "ok": true,
+      "bytes": 13271,
+      "sha256": "edce5f56a153dc7d9874033244725e2744e54324601218a4b1c9324cb7246a87",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/plan-mode.md",
+      "ok": true,
+      "bytes": 10934,
+      "sha256": "c59572754323ff203a04f97cba219b926a2c5a6b51dd4252c871283ab86cef0e",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/sandbox.md",
+      "ok": true,
+      "bytes": 17582,
+      "sha256": "7c15399a2cde5c656d23947f6614431cc9a47eb22af7e9b43129f36df6dbb792",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/skill.md",
+      "ok": true,
+      "bytes": 19959,
+      "sha256": "85cc6f006a24eab1d426fe1ae109e5c8c25186effec027600c8e9799bbe57849",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/subagent.md",
+      "ok": true,
+      "bytes": 28565,
+      "sha256": "67ea74c7221cddb1a186746902fd5240eafb7516ec1d82bcd5eca9a76ee06ace",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/harness/workspace.md",
+      "ok": true,
+      "bytes": 34532,
+      "sha256": "64ad648c7e0dc5dd8757375d8bb5caa9a4e0fe851cb545c71d82adde6b9aec75",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/index.md",
+      "ok": true,
+      "bytes": 6019,
+      "sha256": "11d7ccf91cbe52f1681160df541261cffbd8ad47fcee1fbd1d0b9906a778b2ea",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/others/faq.md",
+      "ok": true,
+      "bytes": 2077,
+      "sha256": "853588e9847322524470772ea8ebd938ccb18d05edcca1c00d31f25c086a3493",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/others/going-to-production.md",
+      "ok": true,
+      "bytes": 29732,
+      "sha256": "889e0343bedbedd44d4e78e43687e8e1b5228bcc8d537d9becceab859362c241",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/others/release-notes.md",
+      "ok": true,
+      "bytes": 37592,
+      "sha256": "046ede43609c3d7d0f0e64571aaa7b10ee17b2ce9dc1d09b5563d09dd88c58de",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/docs/quickstart.md",
+      "ok": true,
+      "bytes": 9024,
+      "sha256": "266af0790107336a2e78660b987c61f9cb92eaebd1a3c53a08b9cb7d710b02fb",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/channel/dingtalk.md",
+      "ok": true,
+      "bytes": 4539,
+      "sha256": "67518cc538d43676de6f734dcab82d5e0143f256e3f86a08ff263f363080f3d2",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/channel/feishu.md",
+      "ok": true,
+      "bytes": 2946,
+      "sha256": "2a59bce961f0356b3de119ca360745170e0113eb47e90f691f18a2ec73987173",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/channel/github.md",
+      "ok": true,
+      "bytes": 3130,
+      "sha256": "28a156bff5c50365736fa904adb793a24834522a6093fd0a3ff0b286e3fe1416",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/channel/gitlab.md",
+      "ok": true,
+      "bytes": 2253,
+      "sha256": "0f7c1e990d0447b8b44ec81875d92936a24e0964cfdabda41cf74023c3f7561f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/channel/index.md",
+      "ok": true,
+      "bytes": 2707,
+      "sha256": "37d6bc3c72e7184b8b23328c789663cff05cd1f921c8c7f2f0c0e7dc5ee685a5",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/channel/wecom.md",
+      "ok": true,
+      "bytes": 2845,
+      "sha256": "07e1b2c0d284f7b62511e5d1987d7261c2f0cd278cedfaf7d080688ff7cc783c",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/distributed/index.md",
+      "ok": true,
+      "bytes": 5663,
+      "sha256": "94e6141be58c6906fb5a910ea2fff3ea674fcb6f2e8409c1dfce9226f191ceeb",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/distributed/mongodb.md",
+      "ok": true,
+      "bytes": 5110,
+      "sha256": "b76cca3be6bf10e5597f0d52e1c63b9e767902c26fac3a7b830863fd40dba947",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/distributed/mysql.md",
+      "ok": true,
+      "bytes": 3767,
+      "sha256": "c5ead2cf1aa8d1b8e4dcda6260f76f87e13ba56e9fd419c02e532c574e8b5657",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/distributed/oss.md",
+      "ok": true,
+      "bytes": 3298,
+      "sha256": "3e96538a1ef4191c977db5a95e55ed149165dc39b758c3a0cae3b15d435e16e3",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/distributed/redis.md",
+      "ok": true,
+      "bytes": 3976,
+      "sha256": "1af1b3bdc72dfd541fcb3d829670271d867705a1b02ed2f2ecf55472ca9a0d17",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/ecosystem/chat-completions-web.md",
+      "ok": true,
+      "bytes": 3087,
+      "sha256": "e41b0944450101ea976b8d944986a5d1d186e38ac5ce7375f699f0cd5acb5cad",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/ecosystem/index.md",
+      "ok": true,
+      "bytes": 723,
+      "sha256": "ac7c7a018ebaa5914ff976f3e665ce357843d80dc9fcd76af88f66c298f65a94",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/ecosystem/overview.md",
+      "ok": true,
+      "bytes": 878,
+      "sha256": "225d33012aeae43483a566146392be474e5290c32d66d7d9f674c9b7cc5a05e8",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/ecosystem/studio.md",
+      "ok": true,
+      "bytes": 2870,
+      "sha256": "a01f142ee606b0b1bdaf48170194ae6c436ceb647e12a4935ec3bdb2a6447d87",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/ecosystem/training.md",
+      "ok": true,
+      "bytes": 3392,
+      "sha256": "6d0e275d27cc149f1b640ca73c011314372de77f7b96c7e3ae4dc836927fd804",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/infrastructure/higress.md",
+      "ok": true,
+      "bytes": 2435,
+      "sha256": "4202781cf07eb6759b8130cd24eb621fd84aa096042f4904aee8a12598bcced8",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/infrastructure/index.md",
+      "ok": true,
+      "bytes": 713,
+      "sha256": "01ff974630b2fbe48fe1f9ebaa2590f0714e46cb32bba459f6f60450199ceb4a",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/infrastructure/nacos.md",
+      "ok": true,
+      "bytes": 4027,
+      "sha256": "87bf442f8b4e65db506c9087776764036a0fb5854274f1a1834b1a2e4b449e46",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/infrastructure/overview.md",
+      "ok": true,
+      "bytes": 1191,
+      "sha256": "a68a931e0496a6d759fa7d2159d1f75c0fe9c7f896bf74dba0d00a72c444ae84",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/infrastructure/scheduler.md",
+      "ok": true,
+      "bytes": 4621,
+      "sha256": "a70bd0e0135c81f204f705c6649e52a6a0620b9ff125957d52efeee79fdb03d9",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/memory/bailian.md",
+      "ok": true,
+      "bytes": 3715,
+      "sha256": "a2524584b2fd8ac1ccd177ccb266f19c8a62b0eceb4bf018a3009cf439efc396",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/memory/index.md",
+      "ok": true,
+      "bytes": 662,
+      "sha256": "1e3c31bdb11010d5a74c9b1f68148ca4d6320682a12fbebb1de5e6c607d9375d",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/memory/mem0.md",
+      "ok": true,
+      "bytes": 3975,
+      "sha256": "a7bc2571fccde2f5c0c94ec1219398c821996b4c735a21271fd2dd040ad44a7f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/memory/overview.md",
+      "ok": true,
+      "bytes": 1804,
+      "sha256": "10c58eef3a8f2945ebd8dd074bc7ee217ed0fa46899cd3f72cbc2c5696bed1d4",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/memory/reme.md",
+      "ok": true,
+      "bytes": 2599,
+      "sha256": "5307c4951f307031ed70ff331160fd91468773a1890622ce82aa80b8020c4cb0",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/anthropic.md",
+      "ok": true,
+      "bytes": 3104,
+      "sha256": "389884dbc8c33c5f321cca30982342b3ac9db03b59b2de006f7df0801d1dd338",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/dashscope.md",
+      "ok": true,
+      "bytes": 1921,
+      "sha256": "9ff71a8544b2ed71c2322910d203897416285059f62f25fe3d9c0258a1d96c3a",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/deepseek.md",
+      "ok": true,
+      "bytes": 2449,
+      "sha256": "39c27be163f611430bc5fc2ccfe3c4c9502937b0e283378bd6570f5964c77b10",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/gemini.md",
+      "ok": true,
+      "bytes": 1726,
+      "sha256": "bdaa35ec80ceeaafd29f22d09ee235634d6e84ac72c79480fffe5bebbb0fec2a",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/glm.md",
+      "ok": true,
+      "bytes": 3246,
+      "sha256": "81070633e261dbc212e77b8ce16fb084bc28fbd9fc5c01d413f754774091d122",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/index.md",
+      "ok": true,
+      "bytes": 965,
+      "sha256": "2e4c9138d4782d5a9038bbbfd083c85630bf1b7b12287f13b2765c697ca77bd7",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/kimi.md",
+      "ok": true,
+      "bytes": 3629,
+      "sha256": "1b1ceaedb579b939ca5bcfb76866ce5ecb20f9cc536f3af231c9e317356c3de1",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/minimax.md",
+      "ok": true,
+      "bytes": 3246,
+      "sha256": "800263ba467d6b69a0b756c6f7eaab05fab848663fbff69414edd575496110c0",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/ollama.md",
+      "ok": true,
+      "bytes": 1998,
+      "sha256": "6ed3d99a4e2e998296b3e9e934bf4251a0a584699a602d0bdb859cc3218ecd4d",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/openai-official.md",
+      "ok": true,
+      "bytes": 3057,
+      "sha256": "7987a056961f28d6b2e70a9022c23d6e21a5eeb4e7098005978678c73a912827",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/model/openai.md",
+      "ok": true,
+      "bytes": 1764,
+      "sha256": "9be8f259e78fadbc92fef282c54a6519754bed1b9b9868d9a971159280bc95b3",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/overview.md",
+      "ok": true,
+      "bytes": 6421,
+      "sha256": "9909d444e8dcc62862542ee030091289fe173b570424ae3169026133a31b7761",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/protocol/a2a.md",
+      "ok": true,
+      "bytes": 3739,
+      "sha256": "f692f4b4e7b67b6beece20a6b9c00bb3b69cfbc2190582de9ddab8bff6cc2107",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/protocol/agent-protocol.md",
+      "ok": true,
+      "bytes": 12691,
+      "sha256": "61599fe6d6eca29967fb7d672747c50f267b8a939071e363be09d72e4cb03c98",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/protocol/agui.md",
+      "ok": true,
+      "bytes": 15124,
+      "sha256": "6d47a7e0882ab64e1c94f57b3b3cb5992b902b32a024d99c32a195f497cc3727",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/protocol/index.md",
+      "ok": true,
+      "bytes": 696,
+      "sha256": "75f4a98870a1eee4ba5f9c05d9fcaa062cdc13c416fcae70c4344031f780d761",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/protocol/overview.md",
+      "ok": true,
+      "bytes": 1541,
+      "sha256": "6e32022135ff10f179dbd1495feada6c1ed29421b0565fab83a828287526986c",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/bailian.md",
+      "ok": true,
+      "bytes": 3169,
+      "sha256": "d89dcdb03b22680c02557f5e09f9f536a0b1456d481710fc875abf7725df468d",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/dify.md",
+      "ok": true,
+      "bytes": 3304,
+      "sha256": "61c13f9476e7133f1cfe91f585a39cd8e7e1616d01724e690cf4a685b50efb4a",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/haystack.md",
+      "ok": true,
+      "bytes": 2338,
+      "sha256": "9322c706bd7982471c84227ac733b841a1272954f545bccdf6edae34b7633537",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/index.md",
+      "ok": true,
+      "bytes": 805,
+      "sha256": "eb60bd4c7ce29f452dca604da1446bd9805fdeece5b4a3cce138b24a03d03d10",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/overview.md",
+      "ok": true,
+      "bytes": 2254,
+      "sha256": "b4992f9706a63a0fce0972324f663fc9d2067845dfb6f989dde8e78eac2e5043",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/ragflow.md",
+      "ok": true,
+      "bytes": 2505,
+      "sha256": "33c44c3a64b031a7baf428034ae8211c45c39473167ffcb08859d229e9a8fd59",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/rag/simple.md",
+      "ok": true,
+      "bytes": 3624,
+      "sha256": "f3a2d66b6d4408d0ccbca8062ead631a0e5facaa9a4e146af13701fa46405ef3",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/session/index.md",
+      "ok": true,
+      "bytes": 720,
+      "sha256": "6c0baf311001cae57affda2a0d239ca2bc6733cca82d43059636692ad4e1ba37",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/session/mysql.md",
+      "ok": true,
+      "bytes": 4369,
+      "sha256": "dd613f14839e2520314fce4b6d595f79c6a7a238266ebf03b1130706eff222c2",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/session/oss.md",
+      "ok": true,
+      "bytes": 2307,
+      "sha256": "2259f7c30c77d1a6641412876f9402b5c7feb7af8f43fe9be53b955acf56e1ae",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/session/overview.md",
+      "ok": true,
+      "bytes": 2105,
+      "sha256": "0b6c6949bb0b3ac69329917dac98c2b21a766615392c36f434e1b325c0caa587",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/session/redis.md",
+      "ok": true,
+      "bytes": 5115,
+      "sha256": "5e6838d5a686e574eefd8ff1bcc1862a25c65e1bc7fde14a4f8a90071dd26e59",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/skill/git-repository.md",
+      "ok": true,
+      "bytes": 3221,
+      "sha256": "8f72b23df11f996d414a1da19f9ee035773517c1f99ae16d157b987675edd0ff",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/skill/index.md",
+      "ok": true,
+      "bytes": 743,
+      "sha256": "8247bd3f864afa13d8592022d99f8ec2417620e46443890e3e815f57ce5653f0",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": true
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/skill/mysql-repository.md",
+      "ok": true,
+      "bytes": 3800,
+      "sha256": "08dea8c0727e95045034c50dbf02d3a985a91a580c9b912b72b89d10120f0470",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/skill/overview.md",
+      "ok": true,
+      "bytes": 1902,
+      "sha256": "1d78d318d251d657ff6c6911dfc767a6b75e4cedf66da22d47e7375a8f66fad5",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/integration/skill/postgresql-repository.md",
+      "ok": true,
+      "bytes": 4088,
+      "sha256": "0f118f62c1869d2da637d0c608b925add8dd55a067ef18679f837943b164036b",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/access.md",
+      "ok": true,
+      "bytes": 2776,
+      "sha256": "fbfc5bc234c420d0c42a5c82bbe631550d5c1bf237553aead8ef151015388aec",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/agents.md",
+      "ok": true,
+      "bytes": 4532,
+      "sha256": "39c92a20a22b36236733a0a2b26130f0864d80489622a541d9bc10315412870b",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/api-reference.md",
+      "ok": true,
+      "bytes": 4672,
+      "sha256": "0d63ea3cf37c2934d6389557e161b686142305afd3c1ea72d769637502f34ae2",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/automation.md",
+      "ok": true,
+      "bytes": 5094,
+      "sha256": "1e0db652927907156bc57a3cf786a3548a2675740045367d6361613c6da5d58f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/cases/order-fulfillment.md",
+      "ok": true,
+      "bytes": 10516,
+      "sha256": "824104766e44d2c8f35e3be32d9405029bd94e5a3996da202a5bd139fcab3353",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/cases/presales-team.md",
+      "ok": true,
+      "bytes": 9458,
+      "sha256": "56569db14f778207bf21326fc6a8e61c486f13f4833409f1653d08da51eca514",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/cases/sdlc-team.md",
+      "ok": true,
+      "bytes": 9598,
+      "sha256": "3f4f03eb5074207aaf2afd2c9d19fe4eb8fc06323853bc1b72caf820e58181f4",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/channels.md",
+      "ok": true,
+      "bytes": 2846,
+      "sha256": "45d3d0818f23bee18495d51572843689878e355f7302c5a7257a941c353f43bc",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/configuration.md",
+      "ok": true,
+      "bytes": 4257,
+      "sha256": "a6c8784a72d1497013f2ff8c1c58dda0a12c019b6f2b2ae530e798ee5d8572dc",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/connect-hosted-agent.md",
+      "ok": true,
+      "bytes": 2189,
+      "sha256": "f4a31ae0ea3fdf046aae60c9959c26f5c9a199d20eac2781378b294f79d1e64f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/create-managed-agent.md",
+      "ok": true,
+      "bytes": 2668,
+      "sha256": "fe79b110bb501cd3c58291cec125e5eb54ea6f5c74c82aa13eeb15c7637db84d",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/create-team.md",
+      "ok": true,
+      "bytes": 2690,
+      "sha256": "c9e70201f2f79f04b126eaad8f933841a60c34678b65083ff6770f530195ad19",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/endpoints.md",
+      "ok": true,
+      "bytes": 4573,
+      "sha256": "cd60768808947033cba3b92baa0992136aa7dc7be3b5fb56bbcc925833a3d0d7",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/environments.md",
+      "ok": true,
+      "bytes": 5973,
+      "sha256": "4f308217ea3caadecc9afe07164eb858285482b27f95e547191adfec82f14f5b",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/external-agent-configuration.md",
+      "ok": true,
+      "bytes": 3859,
+      "sha256": "cc31c29e5e6e75c4886f6ff50123a0b1de05b0a66815fc22433d18636942b0d7",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/external-agent-execution.md",
+      "ok": true,
+      "bytes": 3117,
+      "sha256": "e0b233e8ade126f902fce008ddd9d25dbeddc4b8f7a10313df13081d15a39c3f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/external-agent-frameworks.md",
+      "ok": true,
+      "bytes": 3646,
+      "sha256": "8294e9bf087257801b5bcb98afa7cb887af5165cebae62873e026d571d92209e",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/external-agent.md",
+      "ok": true,
+      "bytes": 5918,
+      "sha256": "db7fb2ccbe0c41c3cc5530de04f83c89c88d189de65447d1c25451a2c8ef18ae",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/first-session.md",
+      "ok": true,
+      "bytes": 10945,
+      "sha256": "ff9126e7028a642a86d0fe6c1e094a1c082b50dc5a7caf0d5e54a71aaf6541ef",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/hosted-agent-configuration.md",
+      "ok": true,
+      "bytes": 4305,
+      "sha256": "5d73a0678c5b32cd23b233e13cf0c8e539a75d6f733d66be0fb69935aee45001",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/hosted-agent-execution.md",
+      "ok": true,
+      "bytes": 3134,
+      "sha256": "01fd8fe6e9f43c99c9c703bd726fa9eb241370ee60c96b32d887f177e11f1051",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/hosted-agent-providers.md",
+      "ok": true,
+      "bytes": 3127,
+      "sha256": "a22baa60f1758ac598e163f8d03e462937aaeefe0c3f9b8bd4987844fd9b74b9",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/hosted-agent.md",
+      "ok": true,
+      "bytes": 3678,
+      "sha256": "309dc251d9d26432f295a1586e4f64ce21f1993711d60fe48662d0f43b6443d3",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/inbox.md",
+      "ok": true,
+      "bytes": 3641,
+      "sha256": "97df7d96a519d4e422a40de20e3d0268a09bda4dcd6a6fa0d01f69797d3c9766",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/index.md",
+      "ok": true,
+      "bytes": 5652,
+      "sha256": "5a6dcbf1cdbf61e692d930065d28a1520258a90087aff1b6563a11080109eb2f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/integrations.md",
+      "ok": true,
+      "bytes": 3507,
+      "sha256": "7783e72c5f229b1b0b81625f09f6ffc0a61df57bcbfcd3786fb0a74b938bffd8",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/issues.md",
+      "ok": true,
+      "bytes": 7685,
+      "sha256": "85ff0a3517f4cf345874ab83fc9e53fac9464496f40af8a4feadb3addc4e07d9",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/kubernetes.md",
+      "ok": true,
+      "bytes": 4144,
+      "sha256": "e6e8ad28cc9d903525e815a86311ce46819d891644fd2bf7771642e634f78d99",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/managed-agent-capabilities.md",
+      "ok": true,
+      "bytes": 3721,
+      "sha256": "22aabcc53e2e94d3b182c29537310fc0b4f9b39b06018db56cc261e58a54923b",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/managed-agent-configuration.md",
+      "ok": true,
+      "bytes": 4301,
+      "sha256": "cf56cb8442b5b88f15c555a0b4d574672bc39b3cd3586f4043704bc276aa6d44",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/managed-agent-execution.md",
+      "ok": true,
+      "bytes": 3089,
+      "sha256": "780ef46dc0c4e099e99d9294834c70db7af4f79ba3027598e625aeab2cf61489",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/managed-agent.md",
+      "ok": true,
+      "bytes": 4012,
+      "sha256": "e43a2abfd3d19981fca36d6a3080f381527044b0e7dca3d6e2cdc97017ddd25e",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/managed-harness-task-outcomes.md",
+      "ok": true,
+      "bytes": 3192,
+      "sha256": "ce5742e3589a566f7a1fbb5d0a8ca239e5f441479d5d9f0e21fd2d84a1b65fc8",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/memory.md",
+      "ok": true,
+      "bytes": 3606,
+      "sha256": "04b827d382c0f2df15fb045eba54edf85cecefedc03c7d59c720a85f7531b9b2",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/operations.md",
+      "ok": true,
+      "bytes": 4179,
+      "sha256": "ed72e925a029f9b6fde520ce3de3870b044dc4f0a4e2c1e3a7db6213029478b3",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/quickstart.md",
+      "ok": true,
+      "bytes": 5462,
+      "sha256": "fbf3db81f5a1f191545c34f7dd8a8223400345ba9a4f950ec986c3d42d39bca7",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/register-agentscope-agent.md",
+      "ok": true,
+      "bytes": 2626,
+      "sha256": "43ea482072a0d9245a1c6a995e21bf95324c7d60b4aff9991bc0f5ee8c3b2657",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/releasing.md",
+      "ok": true,
+      "bytes": 3581,
+      "sha256": "1908897b0b248d0b7eb8436f45f5d677c5c320d8a11166a7bfc2eb836333f596",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/runtime-host.md",
+      "ok": true,
+      "bytes": 3586,
+      "sha256": "c12bff588daedb8d7f5ab9ace34d7be468a64d263e85e0ea56169a26bbe8f86f",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/sessions.md",
+      "ok": true,
+      "bytes": 3723,
+      "sha256": "49151764f9885f2e02192ba5eed3dae65b9c7a16b302ec922daddb56bb3fc79c",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/sse-events.md",
+      "ok": true,
+      "bytes": 6981,
+      "sha256": "2153eff39d6f39af047da1f9b7808f604cb0c3de0407ff6e3472bd7d6abb5814",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/team-collaboration.md",
+      "ok": true,
+      "bytes": 4364,
+      "sha256": "34ac7694ea9471ce5dd998ea791fbada0aeec98212f2321382000dea073fee93",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/team-configuration.md",
+      "ok": true,
+      "bytes": 4427,
+      "sha256": "51fd96232fbb40f657ed17ebfa42b9d8d8b677afed631d8957a4c1e0afa3eb58",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/team-execution.md",
+      "ok": true,
+      "bytes": 3501,
+      "sha256": "6e1471a3e2d14d6ab03154aeefb2909d63bcf22b384fd7fcc5ec0aef1e5537b6",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/teams.md",
+      "ok": true,
+      "bytes": 3353,
+      "sha256": "a42fa9db826470697e4f40f25ce3f756fca875705aea273ad5418d252ceb8459",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/troubleshooting.md",
+      "ok": true,
+      "bytes": 3229,
+      "sha256": "1e18b9e8a1df2289a8f7c2defc461b39b0635f4eaf4808ce7b95b5022ee9caaa",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/usecases.md",
+      "ok": true,
+      "bytes": 2089,
+      "sha256": "cae17ee037446efd81032711964d3c8411fe1995a13e015120357080003f4dd1",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/vault.md",
+      "ok": true,
+      "bytes": 3845,
+      "sha256": "3e10cc523bb2efedec554257eb325ee097d12ddaba9803bd15fb25e3f3bc53f3",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/workflows.md",
+      "ok": true,
+      "bytes": 3620,
+      "sha256": "eb0704e9bb0d2cbbd54eb4d6a8554a4acdde3af668830257ea50e5053761f08d",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    },
+    {
+      "url": "https://java.agentscope.io/v2/zh/service/workspaces.md",
+      "ok": true,
+      "bytes": 3703,
+      "sha256": "7ec8af22b1493b7fba5b8089e8daac1299fbab146eab9c9cccb6dc5992cd2f15",
+      "local_equal": false,
+      "error": "",
+      "archive_equal_normalized": false
+    }
+  ],
+  "review_method": "Full local source text reading, then full per-page semantic comparison and reading of actual online differences; no hash-only review",
+  "not_covered": [
+    "images",
+    "videos",
+    "external linked sites",
+    "future additions"
+  ],
+  "application_version": "2.0.3",
+  "application_status": "DRAFT_ONLY"
+}

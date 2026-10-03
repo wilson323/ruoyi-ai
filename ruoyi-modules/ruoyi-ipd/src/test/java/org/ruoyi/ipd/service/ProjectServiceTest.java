@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
@@ -70,6 +71,7 @@ class ProjectServiceTest {
         d1Guard.initRules();
         service.setStateMachineGuard(d1Guard);
         service.setProjectMemberMapper(projectMemberMapper);
+        lenient().when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
     }
 
     private Project base(String level, String coefficient, String reason) {
@@ -112,20 +114,20 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("创建成功：S 默认 1.5 → 编码/CONCEPT/DRAFT 回填 + 产品 1:1 回填")
+    @DisplayName("创建成功：待开工，首个项目回填产品指针，不生成阶段")
     void createOk() {
-        when(productMapper.selectById(50L)).thenReturn(product50());
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        Product product = product50();
+        when(productMapper.selectById(50L)).thenReturn(product);
         when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
 
         Project created = service.create(base("S", null, null), 1L, 7L);
 
         assertThat(created.getCode()).matches("PRJ-\\d{4}-\\d{3}");
-        assertThat(created.getCurrentStage()).isEqualTo("CONCEPT");
-        assertThat(created.getStatus()).isEqualTo("DRAFT");
+        assertThat(created.getCurrentStage()).isNull();
+        assertThat(created.getStatus()).isEqualTo("PENDING_START");
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
-        assertThat(product50().getProjectId()).isEqualTo(created.getId());
-        verify(projectBootstrapService).bootstrap(created.getId(), 1L);
+        assertThat(product.getProjectId()).isEqualTo(created.getId());
+        verify(projectBootstrapService, never()).bootstrap(any(), any());
         verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
@@ -146,19 +148,24 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> service.create(base("S", "1.8", "旗舰"), 1L, 7L))
             .isInstanceOf(ServiceException.class).hasMessageContaining("AC-INC-15c");
         when(productMapper.selectById(50L)).thenReturn(product50());
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
         assertThat(service.create(base("S", null, null), 1L, 7L).getLevelCoefficient())
             .isEqualByComparingTo("1.5");
     }
 
     @Test
-    @DisplayName("产品:项目 = 1:1：产品已被项目占用 → 拒绝")
-    void oneToOneGuard() {
-        when(productMapper.selectById(50L)).thenReturn(product50());
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-        assertThatThrownBy(() -> service.create(base("S", null, null), 1L, 7L))
-            .isInstanceOf(ServiceException.class).hasMessageContaining("1:1");
+    @DisplayName("同一产品可以再立一个项目，且不覆盖产品上的首个项目指针")
+    void secondProjectKeepsFirstPointer() {
+        Product product = product50();
+        product.setProjectId(88L);
+        when(productMapper.selectById(50L)).thenReturn(product);
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
+
+        Project created = service.create(base("S", null, null), 1L, 7L);
+
+        assertThat(created.getStatus()).isEqualTo("PENDING_START");
+        assertThat(product.getProjectId()).isEqualTo(88L);
+        verify(projectBootstrapService, never()).bootstrap(any(), any());
     }
 
     @Test
@@ -211,6 +218,23 @@ class ProjectServiceTest {
         when(projectMapper.selectById(11L)).thenReturn(valid);
         assertThatThrownBy(() -> service.advanceStage(11L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class).hasMessageContaining("上市日期");
+    }
+
+
+    @Test
+    void sameGroupNonMemberCannotAdvanceStage() {
+        Project project = new Project();
+        project.setId(9L);
+        project.setStatus("ACTIVE");
+        project.setCurrentStage("CONCEPT");
+        project.setDelFlag("0");
+        project.setMainGroupId(1L);
+        when(projectMapper.selectById(9L)).thenReturn(project);
+        when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        assertThatThrownBy(() -> service.advanceStage(9L, 2L, 1L, "GROUP_LEADER"))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("非项目成员");
+        org.mockito.Mockito.verifyNoInteractions(gateEngine);
+        verify(projectMapper, never()).updateById(any(Project.class));
     }
 
     /* ----------------- ZK-IPD §二.10 归档后只读下沉到 service 层 ----------------- */

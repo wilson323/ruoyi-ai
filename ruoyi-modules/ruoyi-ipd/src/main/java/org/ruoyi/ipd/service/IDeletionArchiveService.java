@@ -32,12 +32,6 @@ public interface IDeletionArchiveService {
     /** * @return 未清除的已删除申请 */
     List<DeletionRequest> listArchive();
 
-    /** * 二次确认清除：IPD 超管会话 → 原子更新 remark → 写 PURGE 审计。 */
-    /** * */
-    /** * @param requestId 删除申请 ID */
-    /** * @return 更新后的申请 */
-    DeletionRequest purge(Long requestId);
-
     /**
      * 带二次确认的清除。confirmTail 必须等于申请编号，clearedReason 必填。
      */

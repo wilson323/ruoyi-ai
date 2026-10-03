@@ -58,7 +58,10 @@ public class Product extends BaseEntity implements SoftDeletable {
     /** 来源 ADMIN_IMPORT|PM_NEW|GUEST_OTHER */
     private String source;
 
-    /** 关联项目（1:1 唯一，uk_products_project）；软删对端时需可写 null */
+    /**
+     * 首个项目指针。一个产品可以有多个项目，项目全集在 projects.product_id。
+     * 本列由 uk_products_project 保证不重复，只在为空时写入，不代表一对一。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long projectId;
 

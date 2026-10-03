@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
+本页是历史 GitHub 操作参考，不是 IPD 事项入口。IPD 的执行顺序由总画布裁定，事项登记使用本地看板及 `docs/ipd-系统说明/开发计划-看板镜像.md`。以下外部写操作仅在当前用户明确要求时适用，不因 Skill 提到 publish 自动执行。
 
 ## Conventions
 
@@ -27,7 +27,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue.
+不要自动创建 GitHub issue。先按 IPD 现行本地事项机制交付；用户明确要求发布时再使用下列参考。
 
 ## 本仓库特定说明
 

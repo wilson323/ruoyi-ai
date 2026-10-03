@@ -16,6 +16,7 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.service.OssService;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.SpringUtils;
+import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
@@ -28,6 +29,7 @@ import org.ruoyi.domain.vo.knowledge.DocFragmentCountVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeAttachVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeInfoVo;
 import org.ruoyi.domain.vo.knowledge.KnowledgeReparseVo;
+import org.ruoyi.service.knowledge.KnowledgeEmbedEndpoint;
 import org.ruoyi.factory.ResourceLoaderFactory;
 import org.ruoyi.mapper.knowledge.KnowledgeAttachMapper;
 import org.ruoyi.mapper.knowledge.KnowledgeFragmentMapper;
@@ -38,6 +40,9 @@ import org.ruoyi.service.knowledge.ResourceLoader;
 import org.ruoyi.service.knowledge.DocumentSplitConfig;
 import org.ruoyi.service.vector.VectorStoreService;
 import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,7 +62,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
+public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService, ApplicationRunner {
 
     private final KnowledgeAttachMapper baseMapper;
     private final IKnowledgeInfoService knowledgeInfoService;
@@ -73,6 +78,42 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
      * 统一过 assertManageable（仅 owned，share=1 公开不授予写权），superadmin 豁免。
      */
     private final KnowledgeAccessGate knowledgeAccessGate;
+
+    /** 只在本次显式打开时，给已入库且向量为空的片段补向量。默认关闭。 */
+    @Value("${ipd.knowledge.fill-empty-embeddings:false}")
+    private boolean fillEmptyEmbeddings;
+
+    /**
+     * 服务起来之后再补向量，避免挡住端口监听。
+     *
+     * @param args 启动参数
+     */
+    @Override
+    public void run(ApplicationArguments args) {
+        if (!fillEmptyEmbeddings) {
+            return;
+        }
+        Thread worker = new Thread(() -> {
+            try {
+                fillEmptyFragmentVectors();
+            } catch (RuntimeException ex) {
+                log.error("[knowledge-embed] 补向量中断: {}", ex.getMessage());
+            }
+        }, "knowledge-empty-embed-fill");
+        worker.setDaemon(false);
+        worker.start();
+    }
+
+    /**
+     * 用与文档嵌入相同的内置模型，给嵌入模型名为空的已有片段补向量。
+     * 不改正文，不清来源备注，不改附件状态。
+     *
+     * @return 成功回写的片段数
+     */
+    public int fillEmptyFragmentVectors() {
+        return TenantHelper.ignore(() -> KnowledgeEmbedEndpoint.fillStoredVectors(
+            knowledgeFragmentMapper, knowledgeInfoService, vectorStoreService));
+    }
 
     @Override
     public KnowledgeAttachVo queryById(Long id) {
@@ -203,7 +244,6 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
 
         int claimed = baseMapper.update(null, Wrappers.<KnowledgeAttach>lambdaUpdate()
             .set(KnowledgeAttach::getStatus, KnowledgeAttachStatus.PARSING.getCode())
-            .set(KnowledgeAttach::getRemark, null)
             .eq(KnowledgeAttach::getId, id)
             .ne(KnowledgeAttach::getStatus, KnowledgeAttachStatus.PARSING.getCode()));
         if (claimed == 0) return;
@@ -224,6 +264,8 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                 ? DocumentSplitConfig.DEFAULT_BLOCK_SIZE : knowledgeInfoVo.getTextBlockSize().intValue();
             int overlap = knowledgeInfoVo.getOverlapChar() == null
                 ? DocumentSplitConfig.DEFAULT_OVERLAP : knowledgeInfoVo.getOverlapChar().intValue();
+            KnowledgeEmbedEndpoint.Choice embedChoice = KnowledgeEmbedEndpoint.resolve(
+                knowledgeInfoVo.getEmbeddingModel());
             DocumentSplitConfig splitConfig = new DocumentSplitConfig(
                 knowledgeInfoVo.getSeparator(), blockSize, overlap, attach.getType());
 
@@ -260,11 +302,17 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
                 knowledgeFragment.setCreateTime(new Date());
                 // B1 §2.4 三元组：模型名与嵌入时间在分片时快照；维度取嵌入实测值，
                 // 待 storeEmbeddings 回填后统一补（见下方 actualDim 赋值处）。
-                knowledgeFragment.setEmbeddingModel(knowledgeInfoVo.getEmbeddingModel());
+                knowledgeFragment.setEmbeddingModel(embedChoice.modelName());
                 knowledgeFragment.setEmbeddedAt(embeddedAt);
                 knowledgeFragmentList.add(knowledgeFragment);
             }
-            ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModel());
+            ChatModelVo chatModelVo = null;
+            if (!embedChoice.builtin()) {
+                chatModelVo = chatModelService.selectModelByName(embedChoice.modelName());
+                if (chatModelVo == null) {
+                    throw new ServiceException("未找到对应的向量模型配置: " + embedChoice.modelName());
+                }
+            }
 
             StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
             storeEmbeddingBo.setKid(String.valueOf(knowledgeId));
@@ -272,8 +320,8 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
             storeEmbeddingBo.setFids(fids);
             storeEmbeddingBo.setChunkList(chunkList);
             storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModel());
-            storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModel());
-            storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
+            storeEmbeddingBo.setEmbeddingModelName(embedChoice.modelName());
+            storeEmbeddingBo.setBaseUrl(embedChoice.builtin() ? embedChoice.baseUrl() : chatModelVo.getApiHost());
             // B1 四刀之二：payload 归属冗余值随片段同批写入向量侧（WeaviatePayloadKeys 驼峰键）。
             // MySQL 与向量侧同一批事实（最佳实践 §4 铁律一）；owner_person_id 由现有
             // user_id 语义承担（最佳实践 §3 组一）。库级未配置的归属维为 null → 不写键（空态降级）。
@@ -318,7 +366,7 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService {
         } catch (Exception e) {
             log.error("解析文档失败！id: {}, error: {}", id, e.getMessage(), e);
             attach.setStatus(KnowledgeAttachStatus.FAILED.getCode()); // 失败
-            attach.setRemark(StringUtils.substring(e.getMessage(), 0, 255)); // 保存错误原因，截取防止溢出
+            attach.setRemark(KnowledgeEmbedEndpoint.remarkAfterFailure(attach.getRemark(), e.getMessage()));
             baseMapper.updateById(attach);
         }
     }

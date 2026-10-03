@@ -1,0 +1,2266 @@
+{
+  "at": "2026-10-02T08:39:32.973878+00:00",
+  "mode": "poll",
+  "personAccount": "ipd-market",
+  "run": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105940299107823617",
+        "projectId": "9140005",
+        "agentId": "ipd_project_agent",
+        "status": "FAILED",
+        "actionCode": "C02",
+        "configSnapshot": {
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1",
+          "modelConfigId": "2104885081318375426",
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "project_knowledge_search"
+          ]
+        },
+        "errorCode": "COMPLETION_REJECTED",
+        "createdAt": "2026-10-02T08:37:48Z",
+        "finishedAt": "2026-10-02T08:38:57Z"
+      },
+      "timestamp": "2026-10-02T08:39:32Z",
+      "traceId": "3042868924c64931a7eb5e12be287191"
+    }
+  },
+  "terminal": true,
+  "nextSeq": 271,
+  "events": [
+    {
+      "seq": 1,
+      "type": "RUN_STARTED",
+      "payload": {
+        "agentId": "ipd_project_agent",
+        "actionCode": "C02",
+        "projectFacts": "项目：熵基互联+智能锁联动\n阶段：概念\n产品：熵基互联+智能锁联动\n当前动作：竞品分析\n退回意见：验收回读：下一次运行应带上这句退回意见。\n",
+        "modelConfigId": "2104885081318375426",
+        "capabilityPackCode": "market-research",
+        "capabilityPackVersion": "v1"
+      },
+      "createdAt": "2026-10-02T08:37:48Z"
+    },
+    {
+      "seq": 2,
+      "type": "STEP",
+      "payload": {
+        "kind": "SKILL_LOADED",
+        "name": "competitor-analysis-ipd",
+        "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+        "version": "1.1.0"
+      },
+      "createdAt": "2026-10-02T08:37:48Z"
+    },
+    {
+      "seq": 3,
+      "type": "STEP",
+      "payload": {
+        "kind": "INTENT",
+        "steps": [
+          "检索「竞品」「价格」「渠道」「技术方案」；无竞品名单则停止比较，只出缺项。",
+          "**目的裁剪**（用户声明时）：产品设计侧重功能矩阵；战略侧重格局与壁垒线索；融资材料侧重差异一页纸。未声明则四维齐全、篇幅克制。",
+          "对每个竞品填四维：功能、价格（币种/时间）、渠道、技术路线；每格附来源。",
+          "**可信度**：公开规格/报价页摘录=高；转述无出处=低（不得当已验证事实）。标注信息时效（资料中的日期）。",
+          "差异化机会仅基于有来源事实；推断标「推断」。可选：追平/差异/创新三层建议，须挂证据行。",
+          "输出「资料核对 / 对比表 / 差异机会 / 冲突与待确认 / 缺项清单」。不凑默认「5 家」。"
+        ],
+        "title": "意图判断",
+        "detail": "范围已明确，按计划执行。",
+        "needsPlan": true,
+        "questions": [],
+        "needsClarification": false
+      },
+      "createdAt": "2026-10-02T08:37:48Z"
+    },
+    {
+      "seq": 4,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T08:37:48Z"
+    },
+    {
+      "seq": 5,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>用户要求做一次\"竞品证据核验草稿\"，专门针对海康威视：\n"
+      },
+      "createdAt": "2026-10-02T08:37:53Z"
+    },
+    {
+      "seq": 6,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1. 检索海康威视的研发"
+      },
+      "createdAt": "2026-10-02T08:37:53Z"
+    },
+    {
+      "seq": 7,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "投入相关原句、年份、金额和研发"
+      },
+      "createdAt": "2026-10-02T08:37:53Z"
+    },
+    {
+      "seq": 8,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "费用率\n2. 准确引用，不能编"
+      },
+      "createdAt": "2026-10-02T08:37:53Z"
+    },
+    {
+      "seq": 9,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "造\n3. 指出资料对本项目智能"
+      },
+      "createdAt": "2026-10-02T08:37:53Z"
+    },
+    {
+      "seq": 10,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁联动分析的局限\n4. 列出未取得事项\n5. 不要宣称完成动作或"
+      },
+      "createdAt": "2026-10-02T08:37:53Z"
+    },
+    {
+      "seq": 11,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "通过评审\n\n根据项目事实：\n- 项目："
+      },
+      "createdAt": "2026-10-02T08:37:54Z"
+    },
+    {
+      "seq": 12,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联+智能锁联动\n- 阶段：概念\n- 当前动作：C02 竞品分析\n- 退回意见：验收"
+      },
+      "createdAt": "2026-10-02T08:37:54Z"
+    },
+    {
+      "seq": 13,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "回读：下一次运行应带上这句退回意见"
+      },
+      "createdAt": "2026-10-02T08:37:54Z"
+    },
+    {
+      "seq": 14,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n我需要：\n1. 在项目知识库里检索海康威视研发投入资料\n2"
+      },
+      "createdAt": "2026-10-02T08:37:54Z"
+    },
+    {
+      "seq": 15,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ". 按 project_knowledge_search 工具规则执行"
+      },
+      "createdAt": "2026-10-02T08:37:54Z"
+    },
+    {
+      "seq": 16,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n3. 形成\"竞品证据核验"
+      },
+      "createdAt": "2026-10-02T08:37:55Z"
+    },
+    {
+      "seq": 17,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "草稿\"，不是完整 C02 报告——只针对海康一家、核验维度限定在"
+      },
+      "createdAt": "2026-10-02T08:37:55Z"
+    },
+    {
+      "seq": 18,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "研发投入\n4. 不宣布完成 C02"
+      },
+      "createdAt": "2026-10-02T08:37:55Z"
+    },
+    {
+      "seq": 19,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，不说评审结论\n\n我先用工具检索。注意"
+      },
+      "createdAt": "2026-10-02T08:37:56Z"
+    },
+    {
+      "seq": 20,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "硬性约束：\n- 不能访问互联网\n-"
+      },
+      "createdAt": "2026-10-02T08:37:56Z"
+    },
+    {
+      "seq": 21,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 不能编造\n- 引用要带出处"
+      },
+      "createdAt": "2026-10-02T08:37:56Z"
+    },
+    {
+      "seq": 22,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n- 标注资料时效\n- 可信"
+      },
+      "createdAt": "2026-10-02T08:37:56Z"
+    },
+    {
+      "seq": 23,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "度判定\n\n让我先做几次检索：海"
+      },
+      "createdAt": "2026-10-02T08:37:57Z"
+    },
+    {
+      "seq": 24,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "康威视研发投入、海康威视年报"
+      },
+      "createdAt": "2026-10-02T08:37:57Z"
+    },
+    {
+      "seq": 25,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、海康威视智能锁。"
+      },
+      "createdAt": "2026-10-02T08:37:57Z"
+    },
+    {
+      "seq": 26,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "</think>\n\n"
+      },
+      "createdAt": "2026-10-02T08:37:57Z"
+    },
+    {
+      "seq": 27,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-be64f50231febbdc"
+      },
+      "createdAt": "2026-10-02T08:37:57Z"
+    },
+    {
+      "seq": 28,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-8b3ffbbeca29e12e"
+      },
+      "createdAt": "2026-10-02T08:37:57Z"
+    },
+    {
+      "seq": 29,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-b4256075dfc94106"
+      },
+      "createdAt": "2026-10-02T08:37:58Z"
+    },
+    {
+      "seq": 30,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL",
+        "inputTokens": "[redacted]",
+        "outputTokens": "[redacted]"
+      },
+      "createdAt": "2026-10-02T08:37:58Z"
+    },
+    {
+      "seq": 31,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 8,
+        "tool": "project_knowledge_search",
+        "chars": 12759,
+        "query": "海康威视 研发投入",
+        "preview": "【知识库向量｜出处：海康威视.md｜文档：f4bfc9d03c0b292a9d2b1d784d3b8604\n# 海康威视\n\n**as_of:** 2026-09-21 · **tier:** P1 · **country:** 中国 · **regions:** domestic\n\n## 1. 公司基础 (CT-08 + CT-09)\n\n| 字段 | 值 | 来源 |\n|------|----|------|\n| 英文名 | Hikvision (杭州海康威视数字技术股份有限公司) | IR/Wiki |\n| 股票代码 | 002415.SZ (深交所中小板) | IR |\n| 总部 | 中国浙江省杭州市滨江区物联网街518号 | IR |\n| 成立 | 2001-11-30 | 招股书 / 天眼查 |\n| 上市 | 2010 年深交所中小板挂牌 | Wiki |\n| 员工数 | 59,689 人 (2024 年末) | 2024年报 |\n| 营收（最近一期） | 924.96 亿元 (2024，+3.53% YoY) | 2024年报 |\n| 毛利率 | 43.83% (2024，同比-0.5pp) | 2024年报 |\n| 净利率 / 净利润 | 14.21% / 归母 119.77 亿元 (2024，-15.10% YoY) | 2024年报 |\n| 研发投入 | 42.13 亿元 (2024，研发费用率 12.83%) | 2024年报 |\n| 市值 | ~3,134 亿元 (2026-06-30) | 新浪财经 |\n| 实际控制人 / 控股股东 | 中国电子科技集团（CETC）→ 中电海康集团有限公司 间接控股，最终控制人为国务院国资委 | 招股书 / 凤凰光学公告 |\n| 主要股东 (2026 H1) | 中电海康 37.28%; 龚虹嘉 10.50%; 杭州威讯 4.92%; 中电科投资 2.71%; 中国电科五十二所 1.97%; 胡扬忠(董事长)1.70% | \n【知识库向量｜出处：海康威视___大华股份.md｜文档：c8473c35507f89a06fb8a04bbcf0e647\n# 海康威视 · 大华股份\n\n**as_of:** 2026-08-27 · **type:** combo-view · **子实体数:** 2 · **status",
+        "projectId": "9140005",
+        "toolCallId": "chatcmpl-tool-be64f50231febbdc",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T08:38:01Z"
+    },
+    {
+      "seq": 32,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 8,
+        "tool": "project_knowledge_search",
+        "chars": 12833,
+        "query": "海康威视 年报 研发费用 研发费用率",
+        "preview": "【知识库向量｜出处：海康威视.md｜文档：f4bfc9d03c0b292a9d2b1d784d3b8604\n# 海康威视\n\n**as_of:** 2026-09-21 · **tier:** P1 · **country:** 中国 · **regions:** domestic\n\n## 1. 公司基础 (CT-08 + CT-09)\n\n| 字段 | 值 | 来源 |\n|------|----|------|\n| 英文名 | Hikvision (杭州海康威视数字技术股份有限公司) | IR/Wiki |\n| 股票代码 | 002415.SZ (深交所中小板) | IR |\n| 总部 | 中国浙江省杭州市滨江区物联网街518号 | IR |\n| 成立 | 2001-11-30 | 招股书 / 天眼查 |\n| 上市 | 2010 年深交所中小板挂牌 | Wiki |\n| 员工数 | 59,689 人 (2024 年末) | 2024年报 |\n| 营收（最近一期） | 924.96 亿元 (2024，+3.53% YoY) | 2024年报 |\n| 毛利率 | 43.83% (2024，同比-0.5pp) | 2024年报 |\n| 净利率 / 净利润 | 14.21% / 归母 119.77 亿元 (2024，-15.10% YoY) | 2024年报 |\n| 研发投入 | 42.13 亿元 (2024，研发费用率 12.83%) | 2024年报 |\n| 市值 | ~3,134 亿元 (2026-06-30) | 新浪财经 |\n| 实际控制人 / 控股股东 | 中国电子科技集团（CETC）→ 中电海康集团有限公司 间接控股，最终控制人为国务院国资委 | 招股书 / 凤凰光学公告 |\n| 主要股东 (2026 H1) | 中电海康 37.28%; 龚虹嘉 10.50%; 杭州威讯 4.92%; 中电科投资 2.71%; 中国电科五十二所 1.97%; 胡扬忠(董事长)1.70% | \n【知识库向量｜出处：海康威视___大华股份.md｜文档：c8473c35507f89a06fb8a04bbcf0e647\n# 海康威视 · 大华股份\n\n**as_of:** 2026-08-27 · **type:** combo-view · **子实体数:** 2 · **status",
+        "projectId": "9140005",
+        "toolCallId": "chatcmpl-tool-8b3ffbbeca29e12e",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T08:38:06Z"
+    },
+    {
+      "seq": 33,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 8,
+        "tool": "project_knowledge_search",
+        "chars": 12751,
+        "query": "海康威视 智能锁 智能门锁",
+        "preview": "【知识库向量｜出处：海康_iSecure_Center.md｜文档：c2d203d55875d8d7ed236fc1283c6744\n# 海康 iSecure Center\n\n**as_of:** 2026-08-29 · **tier:** P1 · **country:** 中国 · **regions:** global · **entity_kind:** software_platform\n\n> 海康威视安防综合管理平台（iSecure Center），面向中大型项目的统一安防管理软件。母公司详见 [海康威视](海康威视.md)。\n\n## 1. 公司基础 (CT-08 + CT-09)\n\n| 字段 | 值 | 来源 |\n|------|----|------|\n| 英文名 | Hikvision iSecure Center | 官网 |\n| 归属 | 海康威视（002415.SZ）软件平台产品线 | 官网 |\n| 定位 | 综合安防管理平台（视频 / 门禁 / 报警 / 消防统一管理） | 官网 |\n| 部署形态 | 私有化部署（C/S + B/S） | 官网 |\n| 官网 | hikvision.com | 官网 |\n| InfoCloud iSecure 综合安防管理云平台 | InfoCloud iSecure | 平台 | 部署模式: 公有云; 架构: iSecure Center 统一软件技术架构; 替代产品关系: 为 iVMS-7880-LOCAL 互联网视频监控综合管理平台-本地部署、iVMS-7880 互联网视频监控综合管理平台-公有云等停售型号的统一架构升级版 | [链接]([remote-address-redacted] |\n| DS-A80216S Hybrid SAN 网络存储 | DS-A80216S | 存储 | 产品系列: DS-A80 系列 Hybrid SAN; 机箱: 4U（19英寸）\n【知识库向量｜出处：海康威视.md｜文档：f4bfc9d03c0b292a9d2b1d784d3b8604\n# 海康威视\n\n**as_of:** 2026-09-21 · **tier:** P1 · **country:** 中国 · **regions:** ",
+        "projectId": "9140005",
+        "toolCallId": "chatcmpl-tool-b4256075dfc94106",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T08:38:07Z"
+    },
+    {
+      "seq": 34,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-be64f50231febbdc"
+      },
+      "createdAt": "2026-10-02T08:38:08Z"
+    },
+    {
+      "seq": 35,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-8b3ffbbeca29e12e"
+      },
+      "createdAt": "2026-10-02T08:38:08Z"
+    },
+    {
+      "seq": 36,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-b4256075dfc94106"
+      },
+      "createdAt": "2026-10-02T08:38:08Z"
+    },
+    {
+      "seq": 37,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T08:38:11Z"
+    },
+    {
+      "seq": 38,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>我已经检索到了海康威视的研发投入"
+      },
+      "createdAt": "2026-10-02T08:38:14Z"
+    },
+    {
+      "seq": 39,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "相关信息。让我整理一下：\n\n**关键引用（"
+      },
+      "createdAt": "2026-10-02T08:38:14Z"
+    },
+    {
+      "seq": 40,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "按硬性约束必须保留出处）**：\n\n"
+      },
+      "createdAt": "2026-10-02T08:38:14Z"
+    },
+    {
+      "seq": 41,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1. **海康威视.md（as_of: 2026-09-21,"
+      },
+      "createdAt": "2026-10-02T08:38:15Z"
+    },
+    {
+      "seq": 42,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " tier: P1）** §1 公司基础表：\n   - 「研发投入 | 42"
+      },
+      "createdAt": "2026-10-02T08:38:15Z"
+    },
+    {
+      "seq": 43,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".13 亿元 (2024，研发费用率 12.83%) | 2024年报"
+      },
+      "createdAt": "2026-10-02T08:38:15Z"
+    },
+    {
+      "seq": 44,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "」\n   - 「营收（最近一期）| 924.96 亿元 (2024，+"
+      },
+      "createdAt": "2026-10-02T08:38:15Z"
+    },
+    {
+      "seq": 45,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "3.53% YoY) | 2024年报」\n\n2. **CP_Plus"
+      },
+      "createdAt": "2026-10-02T08:38:15Z"
+    },
+    {
+      "seq": 46,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "___Hikvision___Dahua___An"
+      },
+      "createdAt": "2026-10-02T08:38:16Z"
+    },
+    {
+      "seq": 47,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "viz.md** 也引用了同一数据，但语义"
+      },
+      "createdAt": "2026-10-02T08:38:16Z"
+    },
+    {
+      "seq": 48,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "是相同的表格项（重复信息）\n\n3."
+      },
+      "createdAt": "2026-10-02T08:38:16Z"
+    },
+    {
+      "seq": 49,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " **Canon___Hikvision___Dahua"
+      },
+      "createdAt": "2026-10-02T08:38:16Z"
+    },
+    {
+      "seq": 50,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".md（as_of: 2026-08"
+      },
+      "createdAt": "2026-10-02T08:38:17Z"
+    },
+    {
+      "seq": 51,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "-31, tier: P0）**：\n   - 「Hikvision 海康（中国杭州"
+      },
+      "createdAt": "2026-10-02T08:38:17Z"
+    },
+    {
+      "seq": 52,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，SZSE: 002415，a&s Security 50 2024 #1 /"
+      },
+      "createdAt": "2026-10-02T08:38:17Z"
+    },
+    {
+      "seq": 53,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 2024 USD 12.87B / 全球市占率 32.1% 中国"
+      },
+      "createdAt": "2026-10-02T08:38:17Z"
+    },
+    {
+      "seq": 54,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）」\n   - 这里 2024 USD 12"
+      },
+      "createdAt": "2026-10-02T08:38:17Z"
+    },
+    {
+      "seq": 55,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".87B 与人民币 924.96 亿元"
+      },
+      "createdAt": "2026-10-02T08:38:18Z"
+    },
+    {
+      "seq": 56,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的换算口径（按 USD/RMB ≈"
+      },
+      "createdAt": "2026-10-02T08:38:18Z"
+    },
+    {
+      "seq": 57,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 7.18 算约为 USD 12"
+      },
+      "createdAt": "2026-10-02T08:38:18Z"
+    },
+    {
+      "seq": 58,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".88B，相符）\n\n4. 202"
+      },
+      "createdAt": "2026-10-02T08:38:18Z"
+    },
+    {
+      "seq": 59,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "6 H1（半年报）：营收 468.23 亿元，归母 78.96 亿元"
+      },
+      "createdAt": "2026-10-02T08:38:19Z"
+    },
+    {
+      "seq": 60,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（as_of: 2026-08-11，海康威视公告，半年报披露"
+      },
+      "createdAt": "2026-10-02T08:38:19Z"
+    },
+    {
+      "seq": 61,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n\n**对于\"智能锁联动\"的分析局限"
+      },
+      "createdAt": "2026-10-02T08:38:19Z"
+    },
+    {
+      "seq": 62,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**：\n- 海康的核心业务是视频监控"
+      },
+      "createdAt": "2026-10-02T08:38:19Z"
+    },
+    {
+      "seq": 63,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、AI 视觉、智慧物联\n- 海"
+      },
+      "createdAt": "2026-10-02T08:38:19Z"
+    },
+    {
+      "seq": 64,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "康的智能门锁产品通过萤石网络"
+      },
+      "createdAt": "2026-10-02T08:38:20Z"
+    },
+    {
+      "seq": 65,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（EZVIZ，子公司，持股 48"
+      },
+      "createdAt": "2026-10-02T08:38:20Z"
+    },
+    {
+      "seq": 66,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "%，2022-12 科创板上市"
+      },
+      "createdAt": "2026-10-02T08:38:20Z"
+    },
+    {
+      "seq": 67,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）布局，定位消费级智能家居\n- 海康主品牌下没有专门的「智能锁"
+      },
+      "createdAt": "2026-10-02T08:38:20Z"
+    },
+    {
+      "seq": 68,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "」旗舰产品线（门禁产品线是"
+      },
+      "createdAt": "2026-10-02T08:38:21Z"
+    },
+    {
+      "seq": 69,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " DS-K1T 系列人脸门禁一体"
+      },
+      "createdAt": "2026-10-02T08:38:21Z"
+    },
+    {
+      "seq": 70,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "机，与智能锁联动场景部分重合但不直接"
+      },
+      "createdAt": "2026-10-02T08:38:21Z"
+    },
+    {
+      "seq": 71,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "对位）\n- 资料中**没有**"
+      },
+      "createdAt": "2026-10-02T08:38:21Z"
+    },
+    {
+      "seq": 72,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "关于海康（或萤石）与熵基互联"
+      },
+      "createdAt": "2026-10-02T08:38:22Z"
+    },
+    {
+      "seq": 73,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "+智能锁联动方案的直接技术对接、价格、"
+      },
+      "createdAt": "2026-10-02T08:38:22Z"
+    },
+    {
+      "seq": 74,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "渠道、技术路线对比数据\n- 没有针对\""
+      },
+      "createdAt": "2026-10-02T08:38:22Z"
+    },
+    {
+      "seq": 75,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动\"这一具体场景的产品对照表"
+      },
+      "createdAt": "2026-10-02T08:38:22Z"
+    },
+    {
+      "seq": 76,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n**未取得事项**：\n- 海康或萤石在\"智能锁 + 互联平台\"这一具体细分场景的研发投入拆分"
+      },
+      "createdAt": "2026-10-02T08:38:23Z"
+    },
+    {
+      "seq": 77,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n- 海康（萤石）智能门"
+      },
+      "createdAt": "2026-10-02T08:38:23Z"
+    },
+    {
+      "seq": 78,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁的具体 SKU 在本项目语境下的价格、"
+      },
+      "createdAt": "2026-10-02T08:38:23Z"
+    },
+    {
+      "seq": 79,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "渠道、技术路线\n- 萤石 EZV"
+      },
+      "createdAt": "2026-10-02T08:38:23Z"
+    },
+    {
+      "seq": 80,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "IZ 智能门锁与第三方门锁平台"
+      },
+      "createdAt": "2026-10-02T08:38:24Z"
+    },
+    {
+      "seq": 81,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "对接的标准/SDK\n- 海康\"观"
+      },
+      "createdAt": "2026-10-02T08:38:24Z"
+    },
+    {
+      "seq": 82,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "澜\"大模型在智能锁联动场景的应用细节\n- 海康智能锁相关研发投入"
+      },
+      "createdAt": "2026-10-02T08:38:24Z"
+    },
+    {
+      "seq": 83,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的细分（萤石网络独立财报口径，与"
+      },
+      "createdAt": "2026-10-02T08:38:25Z"
+    },
+    {
+      "seq": 84,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "海康合并报表的关系）\n- 印度 ST"
+      },
+      "createdAt": "2026-10-02T08:38:25Z"
+    },
+    {
+      "seq": 85,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "QC 等区域合规事件中针对智能锁的影响"
+      },
+      "createdAt": "2026-10-02T08:38:25Z"
+    },
+    {
+      "seq": 86,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n**可信度判断**：\n- 研发"
+      },
+      "createdAt": "2026-10-02T08:38:25Z"
+    },
+    {
+      "seq": 87,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "投入 42.13 亿元、研发费用率"
+      },
+      "createdAt": "2026-10-02T08:38:25Z"
+    },
+    {
+      "seq": 88,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 12.83% 来源标注「2024"
+      },
+      "createdAt": "2026-10-02T08:38:26Z"
+    },
+    {
+      "seq": 89,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "年报」——这是公开年报口径，**高"
+      },
+      "createdAt": "2026-10-02T08:38:26Z"
+    },
+    {
+      "seq": 90,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "可信度**\n- 但本次检索仅命中「"
+      },
+      "createdAt": "2026-10-02T08:38:26Z"
+    },
+    {
+      "seq": 91,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "2024年报」一个时点，**没有"
+      },
+      "createdAt": "2026-10-02T08:38:26Z"
+    },
+    {
+      "seq": 92,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 2025 年报和 2026 年"
+      },
+      "createdAt": "2026-10-02T08:38:27Z"
+    },
+    {
+      "seq": 93,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "报数据**，作为时间序列对比有局限\n"
+      },
+      "createdAt": "2026-10-02T08:38:27Z"
+    },
+    {
+      "seq": 94,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- 2026 H1 营收 468.23 亿元来自半年报披露——高可信"
+      },
+      "createdAt": "2026-10-02T08:38:27Z"
+    },
+    {
+      "seq": 95,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "度，但**没有 H1 研发投入拆分"
+      },
+      "createdAt": "2026-10-02T08:38:27Z"
+    },
+    {
+      "seq": 96,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "数据**\n\n我应该按要求输出：\n1."
+      },
+      "createdAt": "2026-10-02T08:38:27Z"
+    },
+    {
+      "seq": 97,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 不要宣称完成 C02 动作或通过评审"
+      },
+      "createdAt": "2026-10-02T08:38:28Z"
+    },
+    {
+      "seq": 98,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n2. 准确引用原句、年份、金额、研发费用率\n3. "
+      },
+      "createdAt": "2026-10-02T08:38:28Z"
+    },
+    {
+      "seq": 99,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "标注资料时效\n4. 指出局限\n5. 列出未取得事项\n6."
+      },
+      "createdAt": "2026-10-02T08:38:28Z"
+    },
+    {
+      "seq": 100,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 提到退回意见\n\n输出格式：竞品"
+      },
+      "createdAt": "2026-10-02T08:38:28Z"
+    },
+    {
+      "seq": 101,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "证据核验草稿（针对海康一家）\n\n我注意到任务里也提到\"退回意见"
+      },
+      "createdAt": "2026-10-02T08:38:29Z"
+    },
+    {
+      "seq": 102,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：验收回读：下一次运行应带上这句退回意见。\"——按 R25/AGENTS"
+      },
+      "createdAt": "2026-10-02T08:38:29Z"
+    },
+    {
+      "seq": 103,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".md 里说的回读规则，下一次运行要"
+      },
+      "createdAt": "2026-10-02T08:38:29Z"
+    },
+    {
+      "seq": 104,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "带上。所以我在文档开头必须带回读标识。\n\n"
+      },
+      "createdAt": "2026-10-02T08:38:30Z"
+    },
+    {
+      "seq": 105,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "我应该输出一个简短但准确的核验草"
+      },
+      "createdAt": "2026-10-02T08:38:30Z"
+    },
+    {
+      "seq": 106,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "稿，结构：\n1. 顶部回读"
+      },
+      "createdAt": "2026-10-02T08:38:30Z"
+    },
+    {
+      "seq": 107,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "块（带退回意见 + 当前动作 C02"
+      },
+      "createdAt": "2026-10-02T08:38:30Z"
+    },
+    {
+      "seq": 108,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " + 不宣称完成）\n2. 一、原句"
+      },
+      "createdAt": "2026-10-02T08:38:30Z"
+    },
+    {
+      "seq": 109,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "引用（直接抄录资料原句 + 出"
+      },
+      "createdAt": "2026-10-02T08:38:31Z"
+    },
+    {
+      "seq": 110,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "处 + 时效）\n3. 二、可信"
+      },
+      "createdAt": "2026-10-02T08:38:31Z"
+    },
+    {
+      "seq": 111,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "度评估\n4. 三、对本项目智能锁联动分析的局限\n5. 四、未取得"
+      },
+      "createdAt": "2026-10-02T08:38:31Z"
+    },
+    {
+      "seq": 112,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "事项清单\n6. 五、资料核对小结"
+      },
+      "createdAt": "2026-10-02T08:38:31Z"
+    },
+    {
+      "seq": 113,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n不需要补凑成\"完整 C02 "
+      },
+      "createdAt": "2026-10-02T08:38:32Z"
+    },
+    {
+      "seq": 114,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "报告\"，只针对\"海康一家 + "
+      },
+      "createdAt": "2026-10-02T08:38:32Z"
+    },
+    {
+      "seq": 115,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "研发投入维度\"做证据核验草稿。\n\n让我组织一下输出。注意简化原则：\n-"
+      },
+      "createdAt": "2026-10-02T08:38:32Z"
+    },
+    {
+      "seq": 116,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 用户要\"简短的竞品证据核验"
+      },
+      "createdAt": "2026-10-02T08:38:32Z"
+    },
+    {
+      "seq": 117,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "草稿\"\n- 不要凑 5 家，只"
+      },
+      "createdAt": "2026-10-02T08:38:32Z"
+    },
+    {
+      "seq": 118,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "对海康\n- 不宣布完成"
+      },
+      "createdAt": "2026-10-02T08:38:33Z"
+    },
+    {
+      "seq": 119,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "</think>\n\n> **回读块（"
+      },
+      "createdAt": "2026-10-02T08:38:33Z"
+    },
+    {
+      "seq": 120,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "按上轮验收回"
+      },
+      "createdAt": "2026-10-02T08:38:33Z"
+    },
+    {
+      "seq": 121,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "读要求带出）**\n"
+      },
+      "createdAt": "2026-10-02T08:38:33Z"
+    },
+    {
+      "seq": 122,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "> - 退回意见：验收回读：下一次运行应带上这句退回意见"
+      },
+      "createdAt": "2026-10-02T08:38:33Z"
+    },
+    {
+      "seq": 123,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。（已带上）\n> - 当前 IPD 动作：C"
+      },
+      "createdAt": "2026-10-02T08:38:33Z"
+    },
+    {
+      "seq": 124,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "02 竞品分析（概念阶段，熵基"
+      },
+      "createdAt": "2026-10-02T08:38:34Z"
+    },
+    {
+      "seq": 125,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联+智能锁联动）\n> - 本次范围：仅海康一家 /"
+      },
+      "createdAt": "2026-10-02T08:38:34Z"
+    },
+    {
+      "seq": 126,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 仅研发投入"
+      },
+      "createdAt": "2026-10-02T08:38:34Z"
+    },
+    {
+      "seq": 127,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "维度 / 资料证据核验草稿\n> - 未宣称完成"
+      },
+      "createdAt": "2026-10-02T08:38:34Z"
+    },
+    {
+      "seq": 128,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " C02，未对任何"
+      },
+      "createdAt": "2026-10-02T08:38:34Z"
+    },
+    {
+      "seq": 129,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " Gate 出具评审结论\n\n---\n\n# "
+      },
+      "createdAt": "2026-10-02T08:38:34Z"
+    },
+    {
+      "seq": 130,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "竞品证据核验草稿 — 海康威"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 131,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "视（研发投入维度）\n\n## 一、检索到的研发投入"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 132,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原句与来源\n\n| #"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 133,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " | 原句 | 出处"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 134,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " | 资料 as_of |\n|"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 135,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "---|------|------|-----------|\n|"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 136,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 1 | 「研发投入 \\| **42.13 亿元 (2024，研发"
+      },
+      "createdAt": "2026-10-02T08:38:35Z"
+    },
+    {
+      "seq": 137,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "费用率 12.83%)** \\| 2024年报"
+      },
+      "createdAt": "2026-10-02T08:38:36Z"
+    },
+    {
+      "seq": 138,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "」 | 《海康威视》§1 公司基础（CT-08 + CT"
+      },
+      "createdAt": "2026-10-02T08:38:36Z"
+    },
+    {
+      "seq": 139,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "-09） | 2026-09-21 |\n| 2 | 「营收（最近一期）"
+      },
+      "createdAt": "2026-10-02T08:38:36Z"
+    },
+    {
+      "seq": 140,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\\| **924.96 亿元 (2024，+3.53% YoY)** \\| "
+      },
+      "createdAt": "2026-10-02T08:38:36Z"
+    },
+    {
+      "seq": 141,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "2024年报」 | 同上 | 2026-09-21 |\n| 3 |"
+      },
+      "createdAt": "2026-10-02T08:38:36Z"
+    },
+    {
+      "seq": 142,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 「Hikvision 海康（中国杭州，SZSE: 002415，a&s Security"
+      },
+      "createdAt": "2026-10-02T08:38:36Z"
+    },
+    {
+      "seq": 143,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 50 2024 #1 / 2024 USD 12.87B / 全球市"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 144,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "占率 32.1% 中国）」 | 《Canon / Hikvision / Dahua》组合"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 145,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "条目 | 2026-08-31 |\n"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 146,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "| 4 | 「上半年营业总收入约 **468.23 亿元**，同比增长"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 147,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 11.97%；归母净利润约"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 148,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " **78.96 亿元**，同比增长 39.57%"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 149,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "」（**仅披露营收与"
+      },
+      "createdAt": "2026-10-02T08:38:37Z"
+    },
+    {
+      "seq": 150,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "净利，未拆分 H1"
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 151,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 研发投入**） | CT-11 C1"
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 152,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 周度监控 2026-08-20 E1（转述"
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 153,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "海康 8 月"
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 154,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 11 日半年报） | 2026-08-20 |\n\n**核"
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 155,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "验结论**："
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 156,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "研发投入 42.13 亿元 / 研发"
+      },
+      "createdAt": "2026-10-02T08:38:38Z"
+    },
+    {
+      "seq": 157,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "费用率 12.83% 仅在 #1 处一次性"
+      },
+      "createdAt": "2026-10-02T08:38:39Z"
+    },
+    {
+      "seq": 158,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出现，**唯一标注"
+      },
+      "createdAt": "2026-10-02T08:38:39Z"
+    },
+    {
+      "seq": 159,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "源是"
+      },
+      "createdAt": "2026-10-02T08:38:39Z"
+    },
+    {
+      "seq": 160,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "「2024年报」**，且资料库内"
+      },
+      "createdAt": "2026-10-02T08:38:39Z"
+    },
+    {
+      "seq": 161,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未见 2023、2025、2026"
+      },
+      "createdAt": "2026-10-02T08:38:39Z"
+    },
+    {
+      "seq": 162,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 年度同口径披露的交叉印证"
+      },
+      "createdAt": "2026-10-02T08:38:39Z"
+    },
+    {
+      "seq": 163,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n\n## 二、可信度评估\n\n| "
+      },
+      "createdAt": "2026-10-02T08:38:40Z"
+    },
+    {
+      "seq": 164,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "维度 | 判定 | 依据 |\n|------|"
+      },
+      "createdAt": "2026-10-02T08:38:40Z"
+    },
+    {
+      "seq": 165,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "------|------|\n| 口径来源 | 高 |"
+      },
+      "createdAt": "2026-10-02T08:38:40Z"
+    },
+    {
+      "seq": 166,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 公开年报口径（年报为可"
+      },
+      "createdAt": "2026-10-02T08:38:40Z"
+    },
+    {
+      "seq": 167,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "核验公告"
+      },
+      "createdAt": "2026-10-02T08:38:40Z"
+    },
+    {
+      "seq": 168,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "），非转述 |\n| 数据新鲜"
+      },
+      "createdAt": "2026-10-02T08:38:40Z"
+    },
+    {
+      "seq": 169,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "度 | 中-低"
+      },
+      "createdAt": "2026-10-02T08:38:41Z"
+    },
+    {
+      "seq": 170,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " | 仅 2024 年一个时点；2026 H"
+      },
+      "createdAt": "2026-10-02T08:38:41Z"
+    },
+    {
+      "seq": 171,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1 仅有营收/净利，**未拆分研发** |\n"
+      },
+      "createdAt": "2026-10-02T08:38:41Z"
+    },
+    {
+      "seq": 172,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "| 跨源一致性 | 中 | 924.96 亿元 ×"
+      },
+      "createdAt": "2026-10-02T08:38:41Z"
+    },
+    {
+      "seq": 173,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 12.83% ≈"
+      },
+      "createdAt": "2026-10-02T08:38:41Z"
+    },
+    {
+      "seq": 174,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 118.69 亿元，与 42"
+      },
+      "createdAt": "2026-10-02T08:38:41Z"
+    },
+    {
+      "seq": 175,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".13 亿元口径不一致（疑「研发"
+      },
+      "createdAt": "2026-10-02T08:38:42Z"
+    },
+    {
+      "seq": 176,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "投入」与「研发费用」口径差异，需"
+      },
+      "createdAt": "2026-10-02T08:38:42Z"
+    },
+    {
+      "seq": 177,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "后续向 "
+      },
+      "createdAt": "2026-10-02T08:38:42Z"
+    },
+    {
+      "seq": 178,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "2024 年报正文核对，**当前资料"
+      },
+      "createdAt": "2026-10-02T08:38:42Z"
+    },
+    {
+      "seq": 179,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未给出口径定义**） |\n| 对"
+      },
+      "createdAt": "2026-10-02T08:38:42Z"
+    },
+    {
+      "seq": 180,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本项目的可用度 | 低 |"
+      },
+      "createdAt": "2026-10-02T08:38:42Z"
+    },
+    {
+      "seq": 181,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 仅集团合并"
+      },
+      "createdAt": "2026-10-02T08:38:43Z"
+    },
+    {
+      "seq": 182,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "口径；**未拆分**至萤"
+      },
+      "createdAt": "2026-10-02T08:38:43Z"
+    },
+    {
+      "seq": 183,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "石网络（智能锁载体）/"
+      },
+      "createdAt": "2026-10-02T08:38:43Z"
+    },
+    {
+      "seq": 184,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 智能门禁 BG"
+      },
+      "createdAt": "2026-10-02T08:38:43Z"
+    },
+    {
+      "seq": 185,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " / 海康机器人等业务"
+      },
+      "createdAt": "2026-10-02T08:38:43Z"
+    },
+    {
+      "seq": 186,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "群 |\n\n> 注"
+      },
+      "createdAt": "2026-10-02T08:38:43Z"
+    },
+    {
+      "seq": 187,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：42.13 亿元 vs 118.69"
+      },
+      "createdAt": "2026-10-02T08:38:44Z"
+    },
+    {
+      "seq": 188,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 亿元的差异，**未取得 2024"
+      },
+      "createdAt": "2026-10-02T08:38:44Z"
+    },
+    {
+      "seq": 189,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 年报正文中\"研发投入\"与\"研发费用\"的会计口径界定"
+      },
+      "createdAt": "2026-10-02T08:38:44Z"
+    },
+    {
+      "seq": 190,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**，不得在本草"
+      },
+      "createdAt": "2026-10-02T08:38:44Z"
+    },
+    {
+      "seq": 191,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "稿中下结论。\n\n## 三、对「熵"
+      },
+      "createdAt": "2026-10-02T08:38:44Z"
+    },
+    {
+      "seq": 192,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "基互联+智能锁联动」分析的局限\n\n1. **业务线错位**：海康"
+      },
+      "createdAt": "2026-10-02T08:38:44Z"
+    },
+    {
+      "seq": 193,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "主品牌定位是「"
+      },
+      "createdAt": "2026-10-02T08:38:45Z"
+    },
+    {
+      "seq": 194,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "全球最大安防视频 + AI 视觉 + 智慧物联」（《"
+      },
+      "createdAt": "2026-10-02T08:38:45Z"
+    },
+    {
+      "seq": 195,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "海康·大华》合并信息"
+      },
+      "createdAt": "2026-10-02T08:38:45Z"
+    },
+    {
+      "seq": 196,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "段），"
+      },
+      "createdAt": "2026-10-02T08:38:45Z"
+    },
+    {
+      "seq": 197,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**智能锁是消费级子品牌萤石"
+      },
+      "createdAt": "2026-10-02T08:38:45Z"
+    },
+    {
+      "seq": 198,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " EZVIZ（持股 48%，独立上市"
+      },
+      "createdAt": "2026-10-02T08:38:45Z"
+    },
+    {
+      "seq": 199,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 688475.SH）承担**，集团合并研发"
+      },
+      "createdAt": "2026-10-02T08:38:46Z"
+    },
+    {
+      "seq": 200,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "投入无法反映萤石智能锁的单业务投入"
+      },
+      "createdAt": "2026-10-02T08:38:46Z"
+    },
+    {
+      "seq": 201,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "强度。\n2. **产品对照维度缺失**："
+      },
+      "createdAt": "2026-10-02T08:38:46Z"
+    },
+    {
+      "seq": 202,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本项目为「互联 + "
+      },
+      "createdAt": "2026-10-02T08:38:46Z"
+    },
+    {
+      "seq": 203,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动」，需功能矩阵"
+      },
+      "createdAt": "2026-10-02T08:38:46Z"
+    },
+    {
+      "seq": 204,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、价格、渠道、技术路线四"
+      },
+      "createdAt": "2026-10-02T08:38:46Z"
+    },
+    {
+      "seq": 205,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "维对照。本轮检索仅命中财务维度"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 206,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（研发投入"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 207,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " / 营收），**功能/"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 208,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "价格"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 209,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/渠道/技术路线**四维对萤"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 210,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "石智能锁的命中几乎为零（仅"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 211,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"萤石智能门锁"
+      },
+      "createdAt": "2026-10-02T08:38:47Z"
+    },
+    {
+      "seq": 212,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"出现在产品线清单，**"
+      },
+      "createdAt": "2026-10-02T08:38:48Z"
+    },
+    {
+      "seq": 213,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "无 SKU 规格、无价位、无"
+      },
+      "createdAt": "2026-10-02T08:38:48Z"
+    },
+    {
+      "seq": 214,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "渠道分解、无对接协议"
+      },
+      "createdAt": "2026-10-02T08:38:48Z"
+    },
+    {
+      "seq": 215,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**）。\n3. **联动技术资料缺位"
+      },
+      "createdAt": "2026-10-02T08:38:48Z"
+    },
+    {
+      "seq": 216,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**：海康\"观澜\"大模型、HikCentral /"
+      },
+      "createdAt": "2026-10-02T08:38:48Z"
+    },
+    {
+      "seq": 217,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " iSecure Center 平台、萤石 IoT 平台**"
+      },
+      "createdAt": "2026-10-02T08:38:48Z"
+    },
+    {
+      "seq": 218,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "任一方与第三方智能锁的开放协议、"
+      },
+      "createdAt": "2026-10-02T08:38:49Z"
+    },
+    {
+      "seq": 219,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "SDK、授权模式、对接门槛**"
+      },
+      "createdAt": "2026-10-02T08:38:49Z"
+    },
+    {
+      "seq": 220,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "——本次"
+      },
+      "createdAt": "2026-10-02T08:38:49Z"
+    },
+    {
+      "seq": 221,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "检索均**未取得**。\n4. **时序与对比基准"
+      },
+      "createdAt": "2026-10-02T08:38:49Z"
+    },
+    {
+      "seq": 222,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "不足**：仅 202"
+      },
+      "createdAt": "2026-10-02T08:38:49Z"
+    },
+    {
+      "seq": 223,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "4 一个年度数据点；与"
+      },
+      "createdAt": "2026-10-02T08:38:49Z"
+    },
+    {
+      "seq": 224,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基智能锁联动项目的研发"
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 225,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "投入对照基线**无法"
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 226,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "在本草稿内闭合**。\n\n## 四、未"
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 227,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得事项清单\n\n- [ ] 海康 "
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 228,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "2024 年报正文「研发投入」vs「研发费用」会计口径定义（**"
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 229,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "关键"
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 230,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "卡点，影响可信度**）\n"
+      },
+      "createdAt": "2026-10-02T08:38:50Z"
+    },
+    {
+      "seq": 231,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- [ ] 萤石网络（688475.SH）**"
+      },
+      "createdAt": "2026-10-02T08:38:51Z"
+    },
+    {
+      "seq": 232,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "独立财报**中智能门锁 / 智能家居业务的研发投入与营收（"
+      },
+      "createdAt": "2026-10-02T08:38:51Z"
+    },
+    {
+      "seq": 233,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "属公开信息"
+      },
+      "createdAt": "2026-10-02T08:38:51Z"
+    },
+    {
+      "seq": 234,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，资料库当前未收录）\n"
+      },
+      "createdAt": "2026-10-02T08:38:51Z"
+    },
+    {
+      "seq": 235,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- [ ] 萤石 EZVIZ 智能门锁"
+      },
+      "createdAt": "2026-10-02T08:38:51Z"
+    },
+    {
+      "seq": 236,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " SKU 级规格、价格、渠道清单\n"
+      },
+      "createdAt": "2026-10-02T08:38:51Z"
+    },
+    {
+      "seq": 237,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- [ ] 海康 / 萤石与第三方"
+      },
+      "createdAt": "2026-10-02T08:38:52Z"
+    },
+    {
+      "seq": 238,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁平台对接的协议（MQ"
+      },
+      "createdAt": "2026-10-02T08:38:52Z"
+    },
+    {
+      "seq": 239,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "TT / OCF / 私有云 SDK 等"
+      },
+      "createdAt": "2026-10-02T08:38:52Z"
+    },
+    {
+      "seq": 240,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n- [ ] 海康\"观澜\"大模型在"
+      },
+      "createdAt": "2026-10-02T08:38:52Z"
+    },
+    {
+      "seq": 241,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门锁联动场景的应用细节\n- [ ] 海康 2025 年报、2026"
+      },
+      "createdAt": "2026-10-02T08:38:52Z"
+    },
+    {
+      "seq": 242,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 年报或 2026 H1 半年"
+      },
+      "createdAt": "2026-10-02T08:38:52Z"
+    },
+    {
+      "seq": 243,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "报中**研发费用率**披露\n"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 244,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- [ ] 印度 STQC 等区域合规事件"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 245,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "对海康/萤石智能锁业务的具体影响\n- [ ] 海康在熵"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 246,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "基目标区域（中东非"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 247,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " / 拉美 / 东南亚等）"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 248,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁渠道覆盖数据"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 249,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n"
+      },
+      "createdAt": "2026-10-02T08:38:53Z"
+    },
+    {
+      "seq": 250,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "## 五、资料核对小结\n\n- **已核到**：海康 2024 集团"
+      },
+      "createdAt": "2026-10-02T08:38:54Z"
+    },
+    {
+      "seq": 251,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "口径研发投入 42.13 亿元、研发费用率 12.83%（单一来源："
+      },
+      "createdAt": "2026-10-02T08:38:54Z"
+    },
+    {
+      "seq": 252,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "海康威视.md §1 公司基础表"
+      },
+      "createdAt": "2026-10-02T08:38:54Z"
+    },
+    {
+      "seq": 253,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，2024年报口径）。\n- **未核"
+      },
+      "createdAt": "2026-10-02T08:38:54Z"
+    },
+    {
+      "seq": 254,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "到**：口径定义、子业务拆分、智能锁 SKU"
+      },
+      "createdAt": "2026-10-02T08:38:54Z"
+    },
+    {
+      "seq": 255,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 级资料、联动协议、"
+      },
+      "createdAt": "2026-10-02T08:38:54Z"
+    },
+    {
+      "seq": 256,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "跨年度时序"
+      },
+      "createdAt": "2026-10-02T08:38:55Z"
+    },
+    {
+      "seq": 257,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n- **下一步可继续**：①核对 2024 年报正文中\"研发投入\""
+      },
+      "createdAt": "2026-10-02T08:38:55Z"
+    },
+    {
+      "seq": 258,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "与\"研发费用\"差异；②补萤"
+      },
+      "createdAt": "2026-10-02T08:38:55Z"
+    },
+    {
+      "seq": 259,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "石网络独立财报；③按 C02 四"
+      },
+      "createdAt": "2026-10-02T08:38:55Z"
+    },
+    {
+      "seq": 260,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "维补萤石智能锁的功能/价格"
+      },
+      "createdAt": "2026-10-02T08:38:56Z"
+    },
+    {
+      "seq": 261,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/渠道/技术路线——本次草稿**不"
+      },
+      "createdAt": "2026-10-02T08:38:56Z"
+    },
+    {
+      "seq": 262,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "补全**，留待后续轮次"
+      },
+      "createdAt": "2026-10-02T08:38:56Z"
+    },
+    {
+      "seq": 263,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "或他人"
+      },
+      "createdAt": "2026-10-02T08:38:56Z"
+    },
+    {
+      "seq": 264,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "检索。\n\n> 本草稿仅为 C02 "
+      },
+      "createdAt": "2026-10-02T08:38:56Z"
+    },
+    {
+      "seq": 265,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "阶段针对海康的**研发投入维度证据"
+      },
+      "createdAt": "2026-10-02T08:38:56Z"
+    },
+    {
+      "seq": 266,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "核验**，未覆盖完整竞品分析四"
+      },
+      "createdAt": "2026-10-02T08:38:57Z"
+    },
+    {
+      "seq": 267,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "维，亦未对智能锁联动场景给出"
+      },
+      "createdAt": "2026-10-02T08:38:57Z"
+    },
+    {
+      "seq": 268,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "差异化结论。**评审结论由既有流程决定。"
+      },
+      "createdAt": "2026-10-02T08:38:57Z"
+    },
+    {
+      "seq": 269,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**"
+      },
+      "createdAt": "2026-10-02T08:38:57Z"
+    },
+    {
+      "seq": 270,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL",
+        "inputTokens": "[redacted]",
+        "outputTokens": "[redacted]"
+      },
+      "createdAt": "2026-10-02T08:38:57Z"
+    },
+    {
+      "seq": 271,
+      "type": "ERROR",
+      "payload": {
+        "message": "检索未命中或结论越权，产物未生成",
+        "errorCode": "COMPLETION_REJECTED"
+      },
+      "createdAt": "2026-10-02T08:38:57Z"
+    }
+  ]
+}

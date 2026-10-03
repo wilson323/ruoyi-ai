@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import lombok.RequiredArgsConstructor;
@@ -187,6 +188,14 @@ public class StageActionService implements IStageActionService {
         int n = stageActionMapper.updateById(a);
         if (n != 1) {
             throw new ServiceException("动作状态更新失败：可能并发冲突或记录不存在（P1-4.3 乐观锁）: " + def.code());
+        }
+        if ("DONE".equals(target) || "DONE".equals(fromBefore)) {
+            a.setConfirmedBy(null);
+            a.setConfirmedAt(null);
+            stageActionMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<StageAction>()
+                .eq("id", a.getId())
+                .set("confirmed_by", null)
+                .set("confirmed_at", null));
         }
         auditLogService.append(AuditLog.builder()
             .operatorName(operator).operatorRole("PM")
@@ -446,6 +455,49 @@ public class StageActionService implements IStageActionService {
             .afterData(AuditEventData.json("actionCode", a.getActionCode(), "file", fileName))
             .build());
         return d;
+    }
+
+    /**
+     * 把项目智能体定档的文档记成该动作的交付物。不把动作标成完成。
+     * 动作实例不存在，或同一文档已经登记时直接返回。
+     *
+     * @param projectId 项目
+     * @param actionCode 动作码
+     * @param title 文档标题
+     * @param documentId 已落库的 AI 文档
+     * @param operatorId 定档人
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void recordGeneratedDeliverable(Long projectId, String actionCode, String title,
+                                           Long documentId, Long operatorId) {
+        if (projectId == null || actionCode == null || actionCode.isBlank() || documentId == null) {
+            return;
+        }
+        StageAction action = stageActionMapper.selectOne(
+            new LambdaQueryWrapper<StageAction>()
+                .eq(StageAction::getProjectId, projectId)
+                .eq(StageAction::getActionCode, actionCode.trim())
+                .last("LIMIT 1"));
+        if (action == null || action.getId() == null) {
+            return;
+        }
+        Long existing = deliverableMapper.selectCount(
+            new LambdaQueryWrapper<Deliverable>()
+                .eq(Deliverable::getActionId, action.getId())
+                .eq(Deliverable::getFileUrl, "ai-document:" + documentId));
+        if (existing != null && existing > 0) {
+            return;
+        }
+        String name = title == null || title.isBlank() ? actionCode.trim() : title.trim();
+        Deliverable row = Deliverable.builder()
+            .actionId(action.getId())
+            .projectId(projectId)
+            .fileName(name)
+            .fileUrl("ai-document:" + documentId)
+            .uploadedBy(operatorId)
+            .uploadedAt(new Date())
+            .build();
+        deliverableMapper.insert(row);
     }
 
     /**

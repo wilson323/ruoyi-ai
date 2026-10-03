@@ -171,7 +171,8 @@ class AiCopilotServiceTest {
         when(workbenchService.summary(any(), isNull(), eq("tenant-a"))).thenReturn(Map.of(
             "tasks", List.of(
                 Map.of("taskType", "stage_sign", "title", "阶段签署", "hint", "待签 TR2", "url", "/w/stage/1"),
-                Map.of("taskType", "deletion_review", "title", "归档复核", "hint", "限 24h", "url", "/w/del/2")
+                Map.of("taskType", "deletion_review", "title", "归档复核", "projectName", "锁项目",
+                    "deepLink", "/ipd/projects/2/actions/9")
             ),
             "currentAdvance", Map.of()
         ));
@@ -180,6 +181,8 @@ class AiCopilotServiceTest {
         assertEquals(2, resp.data().size(), "返回 workbench.tasks 全量");
         assertEquals("stage_sign", resp.data().get(0).type());
         assertEquals("阶段签署", resp.data().get(0).title());
+        assertEquals("/ipd/projects/2/actions/9", resp.data().get(1).url());
+        assertEquals("锁项目", resp.data().get(1).hint());
         assertTrue(resp.answer().contains("2 项"));
         // 审计三件套：intent_match 路径诚实标记未真调 AI
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);

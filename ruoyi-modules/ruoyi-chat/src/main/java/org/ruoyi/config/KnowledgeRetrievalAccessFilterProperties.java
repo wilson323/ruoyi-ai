@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * B0 语义不因回滚而退化。
  * <p>
  * 启用后：KnowledgeRetrievalServiceImpl 检索入口按当前身份（HTTP 线程会话 /
- * aiflow WfState.userId 显式透传 / 匿名）经 KnowledgeAccessGate#retrievalAccessProfile
+ * 显式 userId 透传 / 匿名）经 KnowledgeAccessGate#retrievalAccessProfile
  * 装配 maxSensitivity 等六个仅后端参数（QueryVectorBo#applyBackendAccessFilters 唯一写入口）。
  * 注意启用即收紧：sys_user/匿名身份 fail-closed 到 PUBLIC 档（§3.2），
  * 非 PUBLIC 库（含 owner 自建 INTERNAL 库）对这些身份的检索召回将被闸门收窄——

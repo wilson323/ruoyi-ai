@@ -1,0 +1,119 @@
+{
+  "capturedAt": "2026-10-02T03:41:07.102074+00:00",
+  "scope": "read-only project-agent knowledge/MCP design review; not full repository or production acceptance",
+  "backendHead": "3703f3a268929fa3a1eceee1ac993bb224d59a84",
+  "frontendHead": "f358795a124804e6c3a68d25b4b0ebc89f751740",
+  "databaseReadback": [
+    {
+      "id": "2105858033761505281",
+      "status": "SUCCEEDED",
+      "personId": "900103",
+      "projectId": "9140005",
+      "actionCode": "C02"
+    },
+    {
+      "type": "SOURCE",
+      "payload": {
+        "hits": 8,
+        "tool": "project_knowledge_search",
+        "chars": 12823,
+        "query": "海康威视 2024 研发投入",
+        "preview": "【知识库向量｜出处：海康威视.md｜文档：f4bfc9d03c0b292a9d2b1d784d3b8604\n# 海康威视\n\n**as_of:** 2026-09-21 · **tier:** P1 · **country:** 中国 · **regions:** domestic\n\n## 1. 公司基础 (CT-08 + CT-09)\n\n| 字段 | 值 | 来源 |\n|------|----|------|\n| 英文名 | Hikvision (杭州海康威视数字技术股份有限公司) | IR/Wiki |\n| 股票代码 | 002415.SZ (深交所中小板) | IR |\n| 总部 | 中国浙江省杭州市滨江区物联网街518号 | IR |\n| 成立 | 2001-11-30 | 招股书 / 天眼查 |\n| 上市 | 2010 年深交所中小板挂牌 | Wiki |\n| 员工数 | 59,689 人 (2024 年末) | 2024年报 |\n| 营收（最近一期） | 924.96 亿元 (2024，+3.53% YoY) | 2024年报 |\n| 毛利率 | 43.83% (2024，同比-0.5pp) | 2024年报 |\n| 净利率 / 净利润 | 14.21% / 归母 119.77 亿元 (2024，-15.10% YoY) | 2024年报 |\n| 研发投入 | 42.13 亿元 (2024，研发费用率 12.83%) | 2024年报 |\n| 市值 | ~3,134 亿元 (2026-06-30) | 新浪财经 |\n| 实际控制人 / 控股股东 | 中国电子科技集团（CETC）→ 中电海康集团有限公司 间接控股，最终控制人为国务院国资委 | 招股书 / 凤凰光学公告 |\n| 主要股东 (2026 H1) | 中电海康 37.28%; 龚虹嘉 10.50%; 杭州威讯 4.92%; 中电科投资 2.71%; 中国电科五十二所 1.97%; 胡扬忠(董事长)1.70% | \n【知识库向量｜出处：海康威视___大华股份.md｜文档：c8473c35507f89a06fb8a04bbcf0e647\n# 海康威视 · 大华股份\n\n**as_of:** 2026-08-27 · **type:** combo-view · **子实体数:** 2 · **status",
+        "projectId": "9140005",
+        "toolCallId": "chatcmpl-tool-b904d90a0b40b243"
+      }
+    },
+    {
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "project_knowledge_search",
+        "toolCallId": "chatcmpl-tool-b904d90a0b40b243"
+      }
+    },
+    {
+      "name": "熵基互联+智能锁联动",
+      "status": "ACTIVE",
+      "projectId": "9140005",
+      "currentStage": "CONCEPT",
+      "productLineId": "9190001"
+    },
+    {
+      "status": "NOT_STARTED",
+      "actionCode": "C02",
+      "confirmedBy": null
+    },
+    {
+      "remoteMcpCount": 0
+    },
+    {
+      "name": "海康威视.md",
+      "creator": "wb-kb-20260806"
+    }
+  ],
+  "sourceSha256": {
+    "agent/service/ProjectAgentRunService.java": "92c7df1f6008b1bb6fc5a9cd96deb97d6348e4c19fb0642612c4f187b3047166",
+    "agent/kernel/ProjectAgentPrompt.java": "898cf37b08790429f30af65dd72dfbffd304bf872ef91cecc35733a437772fc3",
+    "agent/kernel/ProjectKnowledgeRetriever.java": "4ec9e31366e30639192b4a9b4fb96d018831d19098a697fd167f4485b5b3bcc6",
+    "agent/kernel/AgentScopeProjectAgentKernel.java": "22bb482aee815244e6426b6a98d6619d961b63cb8671620b4c4312f6a4c975cc",
+    "agent/service/ProjectAgentCompletionGate.java": "2c3a09452f61d07f924420c10c9a8877e3c8cf3512d65f4ada554d9f011ea369"
+  },
+  "jar": {
+    "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-admin/target/ruoyi-admin.jar",
+    "inode": 283680217,
+    "classes": {
+      "org/ruoyi/ipd/agent/service/ProjectAgentRunService.class": {
+        "sha256": "0c7aae19c8ec1c198a65a966c454871f12a985e364d1362607a555eae8182a21",
+        "dateTime": [
+          2026,
+          10,
+          1,
+          15,
+          35,
+          20
+        ]
+      },
+      "org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.class": {
+        "sha256": "7f6e60ecf302d980804d965bd16d2b47690a88f5359f3731a6492f67ac317255",
+        "dateTime": [
+          2026,
+          10,
+          1,
+          15,
+          35,
+          20
+        ]
+      },
+      "org/ruoyi/service/vector/impl/WeaviateVectorStoreStrategy.class": {
+        "sha256": "aee6abc6bd2957107d88bedfa4835757e3554794601c9f252745e5527ca75abc",
+        "dateTime": [
+          2026,
+          10,
+          1,
+          20,
+          8,
+          10
+        ]
+      },
+      "org/ruoyi/domain/vo/knowledge/KnowledgeAttachSource.class": {
+        "sha256": "bc4aa61fbead87b9d8cdffb4ecf8a40e03af643d7118f191976c6915bc3576cb",
+        "dateTime": [
+          2026,
+          10,
+          1,
+          20,
+          8,
+          10
+        ]
+      }
+    }
+  },
+  "listener": "COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\njava    18686  mac  196u  IPv6 0x6cfb26a4b6fccf6c      0t0  TCP 127.0.0.1:16039 (LISTEN)",
+  "validationLimits": [
+    "No tools/call to remote MCP",
+    "Only 3/17 MCP servers discovered",
+    "No fresh model generation or browser acceptance",
+    "No restart/DB mutation/commit/push",
+    "Disk JAR entries confirm presence, not full source equivalence"
+  ]
+}

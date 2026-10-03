@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-02T16:50:50.326458+00:00",
+  "oldPid": null,
+  "newPid": 13520,
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-global-20261002-729e587af650.jar",
+  "sha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "activeRunsBefore": 0,
+  "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-global-20261002.log",
+  "status": "STARTING"
+}

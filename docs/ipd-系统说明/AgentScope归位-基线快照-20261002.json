@@ -1,0 +1,49 @@
+{
+  "$comment": "AgentScope 归位工程 N0 基线快照（批次 0 步骤 0-8）。用途：后续任何归位步骤开工前，先比对本文件；HEAD 或装配点档位漂移即说明工作树已被兄弟会话改动，本文件的行号锚点与档位数字全部失效，必须重采。禁止手工编辑——重采时把 generated_at 与 git_head 一起更新。",
+  "generated_at": "2026-10-02T05:55:00-07:00",
+  "git_head": "3703f3a268929fa3a1eceee1ac993bb224d59a84",
+  "worktree": {
+    "dirty_files_total": 399,
+    "dirty_java_files": 313,
+    "note": "全部为兄弟会话在途改动，未提交。Durable 的 disable 数一度从 14「变」15，经复核为计数口径错误而非工作树漂移（文件 mtime 03:24 未变）。脏文件总数同期由 395 增至 401，那部分是真漂移。"
+  },
+  "assembly_points": {
+    "$comment": "HarnessAgent.builder() 的全部主源树调用点。disable 项数不一致 = 三档不齐，属已知待收敛状态。",
+    "DurableHarnessRunProcessor.java": 14,
+    "AgentScopeChatKernel.java": 10,
+    "CodingServiceImpl.java": 9,
+    "AgentScopeProjectAgentKernel.java": 9,
+    "PocKernelSupport.java": 0,
+    "$counting_note": "计数口径：只数 io.agentscope.harness.agent.HarnessAgent.Builder 上的 disable*() 方法。禁用宽松正则 \\.disable[A-Za-z]+\\(\\) —— 它会误计 DurableHarnessRunProcessor:335 的 NonFatalRunJournalSupport.disabled()（与 HarnessAgent 无关的类），曾导致本文件把 14 误记为 15。"
+  },
+  "poc_in_main_tree": {
+    "path": "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/PocKernelSupport.java",
+    "reachable_from": "PocSseController（main 源树，HTTP 可达）",
+    "disable_count": 0,
+    "four_dim_isolation": false,
+    "evidence": "文件内无 KernelScopeKey / slotId / projectId 引用；stateStore() 返回 MysqlAgentStateStore（注释称「ipd_poc.agentscope_sessions，表已按源码 DDL 预建」，依赖一个需预先创建的独立库）",
+    "severity": "P0-待裁决",
+    "note": "官方文件工具 / shell / memory / subagent / skill / 压缩 在此装配点全部默认开启，且不经四维隔离。6 份归位方案中 5 份未覆盖此点。"
+  },
+  "known_gate_blind_spots": [
+    {
+      "id": "C2-假绿",
+      "detector": ".claude/skills/agentscope-harness/scripts/scope-key-statements.py",
+      "only_pattern": "PAIR = re.compile(r'\\+\\s*\":\"\\s*\\+')",
+      "blind_to": "Path.resolve() 链式拼接，如 AgentScopeChatKernel.workspaceFor 的 root.resolve(...).resolve(...).resolve(...)",
+      "verified": "喂入 AgentScopeChatKernel.java 实测 EXIT=1（未命中）",
+      "is_live_vulnerability": false,
+      "reason": "workspaceSegment（AgentScopeChatKernel.java:401-409）本身 fail-closed，拒 null/blank/./: / \\ ..，规则比 KernelScopeKey.validateSegment 更严",
+      "actual_risk": "收口纪律漂移 + 门禁盲区：第二处手拼存在但门禁看不见",
+      "blocked_by": "该检测器正被兄弟会话重构中，本轮不碰"
+    }
+  ],
+  "superseded_conclusions": {
+    "$comment": "已被官方源码实证推翻、不得再被后续执行者引用的旧结论",
+    "MysqlAgentStateStore_不存在": "错——该类在官方仓存在，仅被 @Deprecated(since=2.1, forRemoval=true) 标注；本仓生产走 RedisAgentStateStore，仅测试 import MySQL 版",
+    "官方工具层无白名单校验层": "错——官方 core/tool/coding/ 有 1,446 行（CommandValidator 185 / ShellCommandTool 799 / UnixCommandValidator 215 / WindowsCommandValidator 247）",
+    "官方无_SkillRuntime": "错——该类存在",
+    "必须自建_WorkflowCheckpointStore": "不准确——官方 AgentStateStore.saveIfVersion:134 + getVersioned:104 + ConflictPolicy 可表达 next_node_id",
+    "零_io.agentscope_引用": "已失效——实测 138 个文件引用、5 个装配点。ADR-0075:23 与 AGENTS.md:56 仍写此说法，属待改写的失效事实"
+  }
+}

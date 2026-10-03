@@ -140,10 +140,48 @@ class P064AcceptanceTest {
     }
 
     @Test
+    void purgeWithoutConfirmationBodyIsRejectedWithoutWrite() throws Exception {
+        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
+            .andExpect(status().isBadRequest());
+        verify(deletionRequestMapper, times(0)).update(isNull(), any(Wrapper.class));
+        verify(auditLogService, times(0)).append(any(AuditLog.class));
+    }
+
+    @Test
+    void purgeWrongConfirmationIsRejectedWithoutWrite() throws Exception {
+        mvc.perform(post("/api/v1/deletion-requests/11/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"12\",\"clearedReason\":\"归档清除验收\"}"))
+            .andExpect(status().isBadRequest());
+        verify(deletionRequestMapper, times(0)).update(isNull(), any(Wrapper.class));
+        verify(auditLogService, times(0)).append(any(AuditLog.class));
+    }
+
+    @Test
+    void purgeBlankReasonIsRejectedWithoutWrite() {
+        assertThatThrownBy(() -> service.purge(11L, "11", " ")).isInstanceOf(ServiceException.class);
+        verify(deletionRequestMapper, times(0)).update(isNull(), any(Wrapper.class));
+        verify(auditLogService, times(0)).append(any(AuditLog.class));
+    }
+
+    @Test
+    void noPublicPurgeCanBypassConfirmation() {
+        var methods = java.util.Arrays.stream(DeletionArchiveService.class.getDeclaredMethods())
+            .filter(m -> m.getName().equals("purge") && java.lang.reflect.Modifier.isPublic(m.getModifiers()))
+            .toList();
+        assertThat(methods).hasSize(1);
+        assertThat(methods.get(0).getParameterTypes()).containsExactly(Long.class, String.class, String.class);
+        assertThat(java.util.Arrays.stream(IDeletionArchiveService.class.getDeclaredMethods())
+            .filter(m -> m.getName().equals("purge")).toList()).hasSize(1);
+    }
+
+    @Test
     void purgeRequiresSuperAdminRole() throws Exception {
         when(ipdPermission.requireAdmin())
             .thenThrow(new IpdPermissionException(403, ApiV1ErrorCode.FORBIDDEN));
-        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
+        mvc.perform(post("/api/v1/deletion-requests/11/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"11\",\"clearedReason\":\"归档清除验收\"}"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(30001));
         verify(auditLogService, times(0)).append(any(AuditLog.class));
     }
@@ -152,13 +190,17 @@ class P064AcceptanceTest {
     void purgeRequiresAuthenticated() throws Exception {
         when(ipdPermission.requireAdmin())
             .thenThrow(new IpdPermissionException(401, ApiV1ErrorCode.UNAUTHORIZED));
-        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
+        mvc.perform(post("/api/v1/deletion-requests/11/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"11\",\"clearedReason\":\"归档清除验收\"}"))
             .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value(20001));
     }
 
     @Test
     void superAdminCanPurgeAndAuditIsWritten() throws Exception {
-        mvc.perform(post("/api/v1/deletion-requests/11/purge"))
+        mvc.perform(post("/api/v1/deletion-requests/11/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"11\",\"clearedReason\":\"归档清除验收\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
         @SuppressWarnings("unchecked")
         ArgumentCaptor<LambdaUpdateWrapper<DeletionRequest>> wrapCap =
@@ -177,7 +219,7 @@ class P064AcceptanceTest {
         assertThat(audit.getOperatorId()).isEqualTo(SUPER_ADMIN_ID);
         assertThat(audit.getEntityType()).isEqualTo("projects");
         assertThat(audit.getEntityId()).isEqualTo(99L);
-        assertThat(audit.getReason()).contains("purge_by:100");
+        assertThat(audit.getReason()).contains("purge_by:100").contains("cleared_reason:归档清除验收");
     }
 
     @Test
@@ -186,21 +228,27 @@ class P064AcceptanceTest {
             .id(20L).entityType("projects").entityId(50L)
             .status(DeletionRequestServiceImpl.ST_DRAFT).build();
         when(deletionRequestMapper.selectById(20L)).thenReturn(draft);
-        mvc.perform(post("/api/v1/deletion-requests/20/purge"))
+        mvc.perform(post("/api/v1/deletion-requests/20/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"20\",\"clearedReason\":\"归档清除验收\"}"))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));
         verify(auditLogService, times(0)).append(any(AuditLog.class));
     }
 
     @Test
     void purgeFailsWhenRecordAlreadyPurged() throws Exception {
-        mvc.perform(post("/api/v1/deletion-requests/12/purge"))
+        mvc.perform(post("/api/v1/deletion-requests/12/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"12\",\"clearedReason\":\"归档清除验收\"}"))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(50002));
     }
 
     @Test
     void purgeFailsWhenRecordNotFound() throws Exception {
         when(deletionRequestMapper.selectById(999L)).thenReturn(null);
-        mvc.perform(post("/api/v1/deletion-requests/999/purge"))
+        mvc.perform(post("/api/v1/deletion-requests/999/purge")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"confirmTail\":\"999\",\"clearedReason\":\"归档清除验收\"}"))
             .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value(50001));
     }
 
@@ -224,10 +272,10 @@ class P064AcceptanceTest {
     void purgeAtomicUpdateRaceResilience() {
         when(deletionRequestMapper.update(isNull(), any(LambdaUpdateWrapper.class)))
             .thenReturn(1).thenReturn(0);
-        DeletionRequest first = service.purge(11L);
+        DeletionRequest first = service.purge(11L, "11", "本次清除原因");
         assertThat(first).isNotNull();
         verify(auditLogService, times(1)).append(any(AuditLog.class));
-        assertThatThrownBy(() -> service.purge(11L)).isInstanceOf(ServiceException.class);
+        assertThatThrownBy(() -> service.purge(11L, "11", "本次清除原因")).isInstanceOf(ServiceException.class);
         verify(auditLogService, times(1)).append(any(AuditLog.class));
     }
 }

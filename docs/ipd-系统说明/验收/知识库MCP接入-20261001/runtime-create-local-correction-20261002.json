@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-02T09:04:52.186865+00:00",
+  "mode": "create-local-correction",
+  "personAccount": "ipd-market",
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "project_knowledge_search"
+    ],
+    "actionCode": "C02",
+    "message": "上次草稿因加入未获支持的数字和推算被拒绝。请重新调用知识检索，仅核验海康威视资料中的研发投入一行；输出简短草稿，带已有退回意见、来源文件名、该行原句和对本项目适用性的一句局限。不要扩充其他公司或财务指标，不做换算和计算；未取得原始年报正文应明说。不要宣布动作完成或评审通过。",
+    "idempotencyKey": "codex-global-20261002-create-local-correction"
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105947110749892610",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-10-02T09:04:52Z",
+      "traceId": "d4e51dbfe9fe490ca05459961369b579"
+    }
+  }
+}

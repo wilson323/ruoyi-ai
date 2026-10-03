@@ -129,6 +129,11 @@ class P122AcceptanceTest {
         Project suspended = Project.builder().id(73L).status("SUSPENDED").delFlag("0")
             .currentStage("CONCEPT").name("s").mainGroupId(1L).build();
         when(projectMapper.selectById(73L)).thenReturn(suspended);
+        // 本例验证已加入项目的人员仍受暂停约束，不绕过成员守卫。
+        org.ruoyi.ipd.mapper.ProjectMemberMapper members =
+            org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMemberMapper.class);
+        projectService.setProjectMemberMapper(members);
+        when(members.selectCount(any())).thenReturn(1L);
         assertThatThrownBy(() -> projectService.advanceStage(73L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("暂停/归档");

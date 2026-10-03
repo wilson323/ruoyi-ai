@@ -88,17 +88,16 @@ class P121AcceptanceTest {
 
     private void stubCreateHappyPath() {
         when(productMapper.selectById(50L)).thenReturn(productOk());
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         // R214 死桩清理：a7e3540a 取号已改 selectMaxCodeSeqByYear 原生 SQL，selectList 桩不再被触达（UnnecessaryStubbing）
     }
 
     @Test
-    @DisplayName("AC-INC-12 S 级默认 1.5；奖金池 = 实际回款 500万×5%×1.5 = 37.5万；状态强制 DRAFT（ZK 实际回款口径）")
+    @DisplayName("AC-INC-12 S 级默认 1.5；奖金池 = 实际回款 500万×5%×1.5 = 37.5万；新建为待开工")
     void acInc12SDefaultAndBonusPool() {
         stubCreateHappyPath();
         Project created = service.create(draft("S", null, "5000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
-        assertThat(created.getStatus()).isEqualTo("DRAFT");
+        assertThat(created.getStatus()).isEqualTo("PENDING_START");
         assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
             .isEqualByComparingTo("375000");
     }

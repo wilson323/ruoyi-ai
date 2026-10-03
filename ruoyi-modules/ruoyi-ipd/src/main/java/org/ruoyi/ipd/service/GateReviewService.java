@@ -156,6 +156,10 @@ public class GateReviewService implements IGateReviewService {
      */
     private org.ruoyi.ipd.mapper.ProjectMapper projectMapper;
 
+    /** 小阶段已批准才允许 Gate 放行。未注入时既有签署测试保持原行为。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private StageAcceptanceService stageAcceptanceService;
+
     /** 测试口/可选注入：装配 gate→项目→组 归属链路所需的 ProjectMapper（null 表示未装配 → fail-closed）。 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setProjectMapper(org.ruoyi.ipd.mapper.ProjectMapper projectMapper) {
@@ -336,6 +340,9 @@ public class GateReviewService implements IGateReviewService {
             "Gate 已终态（" + gate.getStatus() + "），不可签署");
         // R24 接线：状态机守卫 preCheck（fail-closed）。守卫 null / 未登记迁移则抛业务异常。
         guardSupport.preCheck(STATUS_PENDING, status, "sign");
+        if (STATUS_APPROVED.equals(status) && stageAcceptanceService != null) {
+            stageAcceptanceService.assertGateActionsAccepted(gate);
+        }
         gate.setStatus(status);
         gateMapper.updateById(gate);
         audit(actor, gate, "REJECTED".equals(status) ? "GATE_REJECT" : "GATE_APPROVE",

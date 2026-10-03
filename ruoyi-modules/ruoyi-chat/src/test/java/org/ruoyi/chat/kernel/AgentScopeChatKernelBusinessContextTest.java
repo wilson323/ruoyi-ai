@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AgentScopeChatKernelBusinessContextTest {
     @TempDir Path workspace;
 
-    @Test void explicitBusinessPromptAndHistorySurviveWithoutEngineeringFilesOrAtPathExpansion() throws Exception {
+    @Test void explicitBusinessPromptAndHistorySurviveWithIsolatedWorkspaceContext() throws Exception {
         Path employee = workspace.resolve("P").resolve("U").resolve("business");
         Files.createDirectories(employee);
         Files.writeString(employee.resolve("AGENTS.md"),"WORKSPACE_ENGINEERING_CANARY_DO_NOT_INJECT");
@@ -36,7 +36,11 @@ class AgentScopeChatKernelBusinessContextTest {
         Model model = new Model() {
             public String getModelName(){return "stub-business";}
             public Flux<ChatResponse> stream(List<Msg> messages,List<ToolSchema> tools,GenerateOptions options) {
-                requests.add(List.copyOf(messages));
+                // Official memory flush/consolidation may call the same model independently.
+                // Only primary conversation calls carry this business system prompt.
+                if (messages.stream().anyMatch(message -> message.getTextContent().contains("EXPLICIT_BUSINESS_SYSTEM"))) {
+                    requests.add(List.copyOf(messages));
+                }
                 return Flux.just(new ChatResponse("stub-response-"+requests.size(),List.of(TextBlock.builder().text("EXPLICIT_HISTORY_REPLY").build()),null,Map.of(),"stop"));
             }
         };
@@ -55,7 +59,7 @@ class AgentScopeChatKernelBusinessContextTest {
         assertTrue(input.contains("EXPLICIT_USER_FACT"));assertTrue(input.contains("EXPLICIT_HISTORY_REPLY"));assertTrue(input.contains("SECOND_USER_FACT"));
         for(List<Msg> request:requests) {
             String text=request.stream().map(Msg::getTextContent).reduce("",(a,b)->a+"\n"+b);
-            assertFalse(text.contains("WORKSPACE_ENGINEERING_CANARY_DO_NOT_INJECT"));
+            assertTrue(text.contains("WORKSPACE_ENGINEERING_CANARY_DO_NOT_INJECT"), "official workspace context must consume this isolated persona");
             assertFalse(text.contains("AT_PATH_ENGINEERING_CANARY_DO_NOT_INJECT"));
             assertFalse(text.contains("<attached_file"));
             assertFalse(text.contains("万傲瑞达 V6600、ZKTime、ZKAccess3.5"),"cwd repository engineering rule must not reach business model");

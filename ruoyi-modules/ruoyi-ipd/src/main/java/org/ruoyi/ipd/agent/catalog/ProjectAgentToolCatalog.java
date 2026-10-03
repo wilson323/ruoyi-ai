@@ -4,14 +4,15 @@ import org.ruoyi.service.coding.harness.tool.ToolCapability;
 import org.ruoyi.service.coding.harness.tool.ToolDescriptor;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 项目智能体工具目录（W1 仅一个只读工具）。
+ * 项目智能体业务及官方基础工具目录。
  *
- * <p>工具安全元数据以既有自研 {@link ToolDescriptor} 声明，由 {@code ToolPolicyEngine}
- * 作为唯一裁决源（红线 D1：不另造白名单语义）。清单登记而本目录无实现的工具一律不可用。
+ * <p>工具安全元数据保留既有 {@link ToolDescriptor} 投影；实际授权由官方权限扩展
+ * 结合当前 IPD 身份与项目守卫裁决。目录登记不授予调用权限。清单未实现项明确不可用。
  */
 public final class ProjectAgentToolCatalog {
 
@@ -21,19 +22,49 @@ public final class ProjectAgentToolCatalog {
     /** 工具可用性投影。 */
     public record ToolStatus(String id, String name, boolean readOnly, boolean available, String reason) { }
 
-    private static final Map<String, ToolDescriptor> DESCRIPTORS = Map.of(
-        PROJECT_KNOWLEDGE_SEARCH,
-        new ToolDescriptor(PROJECT_KNOWLEDGE_SEARCH, EnumSet.of(ToolCapability.READ, ToolCapability.SEARCH),
-            true, 30_000L, 4_096L, 16_384L, false,
+    private static final Map<String, ToolDescriptor> DESCRIPTORS = descriptors();
+
+    /**
+     * 本地资料检索，加上清单里的服务标识。名称不参与能否调用。
+     *
+     * @return 工具安全描述
+     */
+    private static Map<String, ToolDescriptor> descriptors() {
+        Map<String, ToolDescriptor> map = new HashMap<>();
+        map.put(PROJECT_KNOWLEDGE_SEARCH, descriptor(PROJECT_KNOWLEDGE_SEARCH,
             "只读检索本项目已审核文档片段；项目范围由运行绑定，不接受模型传入"));
+        for (ProductLineMcpCatalog.Endpoint endpoint : ProductLineMcpCatalog.all()) {
+            map.put(endpoint.serviceId(), descriptor(endpoint.serviceId(),
+                "只读查询产线「" + endpoint.lineName() + "」；服务标识 " + endpoint.serviceId()));
+        }
+        return Map.copyOf(map);
+    }
+
+    private static ToolDescriptor descriptor(String toolId, String summary) {
+        return new ToolDescriptor(toolId, EnumSet.of(ToolCapability.READ, ToolCapability.SEARCH),
+            true, 30_000L, 4_096L, 16_384L, false, summary);
+    }
 
     private final CapabilityManifest manifest;
+    private final ProjectAgentNativeToolCatalog.Provider nativeReadiness;
+
+    public static final String NATIVE_TOOLS_VERSION = ProjectAgentNativeToolCatalog.VERSION;
+
+    public static List<String> nativeToolIds() { return ProjectAgentNativeToolCatalog.IDS; }
+    public static List<String> executionToolIds(List<String> businessIds) {
+        return ProjectAgentNativeToolCatalog.executionIds(businessIds);
+    }
 
     /**
      * @param manifest 内置清单
      */
     public ProjectAgentToolCatalog(CapabilityManifest manifest) {
-        this.manifest = manifest;
+        this(manifest, ProjectAgentNativeToolCatalog.unverified());
+    }
+
+    public ProjectAgentToolCatalog(CapabilityManifest manifest, ProjectAgentNativeToolCatalog.Provider nativeReadiness) {
+        this.manifest = java.util.Objects.requireNonNull(manifest);
+        this.nativeReadiness = java.util.Objects.requireNonNull(nativeReadiness);
     }
 
     /**
@@ -42,7 +73,9 @@ public final class ProjectAgentToolCatalog {
      * @return 状态列表
      */
     public List<ToolStatus> statuses() {
-        return manifest.tools().stream().map(t -> status(t.id())).toList();
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>(nativeToolIds());
+        manifest.tools().forEach(tool -> ids.add(tool.id()));
+        return ids.stream().map(this::status).toList();
     }
 
     /**
@@ -52,6 +85,12 @@ public final class ProjectAgentToolCatalog {
      * @return 状态
      */
     public ToolStatus status(String toolId) {
+        if (nativeToolIds().contains(toolId)) {
+            var readiness = nativeReadiness.status(toolId);
+            if (readiness == null) readiness = new ProjectAgentNativeToolCatalog.Readiness(false, "工具运行环境尚未核验");
+            return new ToolStatus(toolId, toolId, ProjectAgentNativeToolCatalog.readOnly(toolId),
+                readiness.available(), readiness.reason());
+        }
         CapabilityManifest.ToolEntry entry = manifest.tool(toolId).orElse(null);
         if (entry == null) {
             return new ToolStatus(toolId, null, false, false, "工具未在内置清单登记");
@@ -77,6 +116,7 @@ public final class ProjectAgentToolCatalog {
      * @return 描述；未实现为 null
      */
     public static ToolDescriptor descriptor(String toolId) {
-        return DESCRIPTORS.get(toolId);
+        ToolDescriptor nativeDescriptor = ProjectAgentNativeToolCatalog.descriptor(toolId);
+        return nativeDescriptor == null ? DESCRIPTORS.get(toolId) : nativeDescriptor;
     }
 }

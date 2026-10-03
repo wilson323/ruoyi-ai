@@ -14,6 +14,7 @@ import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.seed.ActionCatalog;
 import org.ruoyi.ipd.service.AiExecutionTrigger;
+import org.ruoyi.ipd.service.StageAcceptanceService;
 import org.ruoyi.ipd.service.StageActionService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +38,9 @@ public class StageActionController {
 
     private final StageActionService stageActionService;
     private final IpdPermission ipdPermission;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private StageAcceptanceService stageAcceptanceService;
     private final AiExecutionTrigger aiExecutionTrigger;
 
     /** 查询项目阶段动作列表，需 ipd:stage-action:list 权限 */
@@ -77,6 +81,22 @@ public class StageActionController {
         return ApiV1Response.ok(stageActionService.recordFields(
             id, body.actualDoneAt(), body.farValue(), body.frrValue(),
             body.certNo(), body.certPassedAt(), body.algoType(), String.valueOf(actor.id())));
+    }
+
+    /**
+     * 产线负责人批准已提交的小阶段。不走动作编辑权限，批准人由验收服务按产品线判定。
+     *
+     * @param id 动作实例
+     * @return 已写入确认人的动作
+     */
+    @PostMapping("/{id}/accept")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_STAGE_ACTION_EXECUTE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<StageAction> accept(@PathVariable Long id) {
+        if (stageAcceptanceService == null) {
+            throw new ServiceException("阶段验收未启用");
+        }
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(stageAcceptanceService.acceptAction(id, actor));
     }
 
     /** 深管交付物登记（BR-IPD-03 完成前置），需 ipd:stage-action:add 权限 */

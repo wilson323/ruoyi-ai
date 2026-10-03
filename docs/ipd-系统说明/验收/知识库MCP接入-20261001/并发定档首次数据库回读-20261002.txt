@@ -1,0 +1,4 @@
+@@transaction_isolation
+REPEATABLE-READ
+id	run_id	status	document_id	CHAR_LENGTH(a.content)	LOCATE('<think>',a.content)	content_sha256	status	content_sha256	document_count	content
+2105947182531211266	2105947110749892610	APPLIED	2105947307966066689	473	0	e1e0fe0250c9635a4d58777a312ee1a3a7d5fd8dd76684d0b5a4f64ed8de6e00	GENERATED	e1e0fe0250c9635a4d58777a312ee1a3a7d5fd8dd76684d0b5a4f64ed8de6e00	1	# C02 竞品分析 · 单行核验草稿\n\n**退回意见（沿用上次）**：上次草稿因加入未获支持的数字和推算被拒绝，本次仅核验一行。\n\n**核验对象**：海康威视 · 公司基础表"研发投入"一行\n\n**来源文件名**：`/Users/mac/WorkBuddy/2026-08-06-20-03-17/outputs/kb/competitors/海康威视.md`（知识库条目 `海康威视.md`，`as_of: 2026-09-21`）\n\n**该行原句**（按知识库正文逐字摘录）：\n> | 研发投入 | 42.13 亿元 (2024，研发费用率 12.83%) | 2024年报 |\n\n**对本项目（熵基互联 + 智能锁联动）的适用性局限（一句话）**：海康为视频与安防整体厂商，其研发投入覆盖摄像机/AI 视觉/机器人/存储等全栈，不应被当作"门禁/智能锁"子项的投入参照，且本行为知识库对 2024 年报的二次转述，**未取得海康威视原始 2024 年报正文**，故"42.13 亿元"与"12.83%"仅可视为待核验值，不进入差异化结论。

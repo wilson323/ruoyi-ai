@@ -86,6 +86,8 @@ __pycache__/
 # Runtime state / swarm / daemon caches (not deliverables)
 .swarm/
 .cursor/
+# PeerBridge 本地协调库（对话、租约、审计；不是业务库）
+.peerbridge/
 .zvec-grep/
 ruvector.db
 .claude-flow/daemon-state.json
@@ -129,3 +131,46 @@ agentdb.rvf.lock
 
 # git worktree 隔离构建目录（多会话工地惯例）
 .worktrees/
+
+# 本地第三方 Skill 别名：目标未版本化，来源/许可/启用独立审查后才分发。
+# 原始线程证据保持字节留本地；版本化交付仅记录脱敏摘要及SHA。
+/docs/ipd-系统说明/验收/知识库MCP接入-20261001/异常进程关闭线程-20261002.txt
+/docs/ipd-系统说明/验收/知识库MCP接入-20261001/异常进程线程-20261002.txt
+/.claude/skills/ask-matt
+/.claude/skills/claude-handoff
+/.claude/skills/code-review
+/.claude/skills/codebase-design
+/.claude/skills/diagnosing-bugs
+/.claude/skills/domain-modeling
+/.claude/skills/git-guardrails-claude-code
+/.claude/skills/grill-me
+/.claude/skills/grill-with-docs
+/.claude/skills/grilling
+/.claude/skills/handoff
+/.claude/skills/implement
+/.claude/skills/implement-spec
+/.claude/skills/improve-codebase-architecture
+/.claude/skills/karpathy-llm-wiki
+/.claude/skills/loop-me
+/.claude/skills/migrate-to-shoehorn
+/.claude/skills/prototype
+/.claude/skills/research
+/.claude/skills/resolving-merge-conflicts
+/.claude/skills/retro
+/.claude/skills/scaffold-exercises
+/.claude/skills/setup-matt-pocock-skills
+/.claude/skills/setup-pre-commit
+/.claude/skills/setup-ts-deep-modules
+/.claude/skills/tdd
+/.claude/skills/teach
+/.claude/skills/to-questionnaire
+/.claude/skills/to-spec
+/.claude/skills/to-tickets
+/.claude/skills/triage
+/.claude/skills/wait-what
+/.claude/skills/wayfinder
+/.claude/skills/wizard
+/.claude/skills/writing-beats
+/.claude/skills/writing-for-agents
+/.claude/skills/writing-fragments
+/.claude/skills/writing-shape

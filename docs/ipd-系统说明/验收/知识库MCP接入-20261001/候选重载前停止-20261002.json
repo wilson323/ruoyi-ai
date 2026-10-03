@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-02T09:00:30.270870+00:00",
+  "pid": 35150,
+  "activeRunsBefore": 0,
+  "signal": "SIGTERM",
+  "exitObserved": true,
+  "initialWaitSeconds": 30,
+  "initialWaitExceeded": true,
+  "forceKill": false
+}

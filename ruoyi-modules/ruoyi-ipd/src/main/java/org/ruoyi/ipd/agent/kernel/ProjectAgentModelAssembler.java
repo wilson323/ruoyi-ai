@@ -1,9 +1,14 @@
 package org.ruoyi.ipd.agent.kernel;
 
 import io.agentscope.core.model.Model;
+import io.agentscope.core.model.GenerateOptions;
+import io.agentscope.core.model.ExecutionConfig;
+import java.time.Duration;
 import io.agentscope.core.model.ModelCreationContext;
 import io.agentscope.core.model.ModelRegistry;
 import org.ruoyi.chat.kernel.KernelModelRequest;
+import org.ruoyi.ipd.service.ai.AiGateway;
+import java.util.function.Consumer;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -32,17 +37,24 @@ public class ProjectAgentModelAssembler {
     }
 
     private final Resolver resolver;
+    private final Consumer<String> endpointGuard;
 
     /** 生产装配。 */
-    public ProjectAgentModelAssembler() {
-        this(ModelRegistry::resolve);
+    public ProjectAgentModelAssembler(AiGateway gateway) {
+        this(ModelRegistry::resolve, Objects.requireNonNull(gateway, "gateway")::validateEndpoint);
     }
 
     /**
      * @param resolver 装配缝
      */
-    public ProjectAgentModelAssembler(Resolver resolver) {
+    ProjectAgentModelAssembler(Resolver resolver) {
+        this.resolver = Objects.requireNonNull(resolver, "test resolver");
+        this.endpointGuard = null; // 同包测试专用，不是生产构造。
+    }
+
+    ProjectAgentModelAssembler(Resolver resolver, Consumer<String> endpointGuard) {
         this.resolver = Objects.requireNonNull(resolver, "resolver");
+        this.endpointGuard = Objects.requireNonNull(endpointGuard, "endpointGuard");
     }
 
     /**
@@ -53,17 +65,17 @@ public class ProjectAgentModelAssembler {
      * @throws IllegalArgumentException 请求缺 modelName
      */
     public Model assemble(KernelModelRequest request) {
+        return assemble(request, null, null);
+    }
+
+    public Model assemble(KernelModelRequest request, Long personId, Long runId) {
         if (request == null || request.modelName() == null || request.modelName().isBlank()) {
             throw new IllegalArgumentException("modelName required");
         }
-        ModelCreationContext.Builder context = ModelCreationContext.builder();
-        if (request.apiKey() != null && !request.apiKey().isBlank()) {
-            context.apiKey(request.apiKey());
+        if (endpointGuard != null) {
+            endpointGuard.accept(request.apiHost());
         }
-        if (request.apiHost() != null && !request.apiHost().isBlank()) {
-            context.baseUrl(request.apiHost());
-        }
-        return resolver.resolve(registryKey(request), context.build());
+        return resolver.resolve(registryKey(request), org.ruoyi.chat.kernel.AgentScopeModelFactory.context(request, null, personId == null ? null : personId.toString(), runId == null ? null : runId.toString()));
     }
 
     /**
@@ -73,18 +85,6 @@ public class ProjectAgentModelAssembler {
      * @return 注册键
      */
     static String registryKey(KernelModelRequest request) {
-        String name = request.modelName().trim();
-        if (name.indexOf(':') >= 0) {
-            return name;
-        }
-        String provider = request.providerCode() == null ? "" : request.providerCode().trim().toLowerCase(Locale.ROOT);
-        String alias = switch (provider) {
-            case "zhipu", "glm" -> "glm";
-            case "qianwen", "dashscope" -> "dashscope";
-            case "ollama" -> "ollama";
-            case "openai", "deepseek", "qwen", "moonshot", "minimax", "custom_api" -> "openai";
-            default -> provider;
-        };
-        return alias.isEmpty() ? name : alias + ':' + name;
+        return org.ruoyi.chat.kernel.AgentScopeModelFactory.registryKey(request);
     }
 }

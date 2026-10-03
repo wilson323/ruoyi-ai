@@ -57,7 +57,7 @@ import { fileURLToPath } from 'node:url';
 // R212 孤儿棘轮门禁核心库（与扫描逻辑解耦；卡 7b76b7cd API-GATE-RATCHET）
 import {
   EXIT_BITS, GateEnvError, gitHead, gitShowHeadFile,
-  loadJsonFile, loadBaseline, validateWhitelist, classifyOrphans, writeBaseline, todayStr,
+  loadJsonFile, loadBaseline, validateWhitelist, classifyOrphans, writeBaseline, todayStr, javaMethodAfterMapping, javaSourceWithoutComments,
 } from './api-contract/orphan-gate-lib.mjs';
 
 // ---------- 默认扫描路径(R37 实测工作区; R212-S1: beRoot 由 REPO_ROOT 推断,去本机绝对路径硬编码) ----------
@@ -334,17 +334,18 @@ async function scanBackend(beRoot, ctrlDirs) {
     for (const f of list) {
       files.push(f);
       const src = await readFile(f, 'utf8');
+      const scanSrc = javaSourceWithoutComments(src);
       // 类级 @RequestMapping("/api/v1/xxx")
       let classPrefix = '';
       const reCls = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?["']([^"']+)["']/;
-      const clsM = reCls.exec(src);
+      const clsM = reCls.exec(scanSrc);
       if (clsM) classPrefix = clsM[1];
 
       // 方法级 @(Get|Post|Put|Delete|Patch)Mapping("/yyy") — 路径可选；
       // R215 五连修正：支持多属性注解 @GetMapping(value="/x", produces=...)（旧式要求引号后紧跟右括号，SSE 类端点被解析成类前缀幽灵路径，ai-copilot/resource 两条假孤儿即此因）
       const reMethod = /@(Get|Post|Put|Delete|Patch)Mapping\b\s*(?:\(\s*(?:(?:value|path)\s*=\s*)?(?:\{\s*)?["']([^"']*)["'][^)]*\))?/g;
       let mm;
-      while ((mm = reMethod.exec(src)) !== null) {
+      while ((mm = reMethod.exec(scanSrc)) !== null) {
         const method = mm[1].toUpperCase();
         const sub = mm[2] === undefined ? '' : mm[2];
         const fullPath = (classPrefix + sub).replace(/\/+/g, '/');
@@ -354,6 +355,7 @@ async function scanBackend(beRoot, ctrlDirs) {
           rawPath: fullPath,
           canonical: '/' + canonical,
           varNames,
+          methodName: javaMethodAfterMapping(scanSrc, reMethod.lastIndex),
           file: f,
           line: src.slice(0, mm.index).split('\n').length,
         });
@@ -539,7 +541,8 @@ async function main() {
     const beFilesContent = new Map(); // basename → 行数组（evidence 第3条机械校验）
     for (const f of beFiles) {
       const srcTxt = await readFile(f, 'utf8');
-      beFilesContent.set(basename(f), srcTxt.split('\n'));
+      const name = basename(f);
+      beFilesContent.set(name, beFilesContent.has(name) ? null : srcTxt.split('\n'));
     }
     const mirrorPath = join(opts.beRoot, 'docs/ipd-系统说明/开发计划-看板镜像.md');
     let mirrorText = '';
@@ -547,7 +550,7 @@ async function main() {
     catch { envErrors.push(`看板镜像文件不可读(卡号防伪降级): ${mirrorPath}`); }
 
     const wlDoc = await loadJsonFile(opts.whitelist, { required: true, label: '白名单' });
-    const wl = validateWhitelist(wlDoc, { beCanonicalSet, beFilesContent, mirrorText, today: todayStr() });
+    const wl = validateWhitelist(wlDoc, { beCanonicalSet, beFilesContent, beEndpoints: beEps, mirrorText, today: todayStr() });
     if (wl.errors.length > 0) {
       // 防伪失败: bit 2 叠加 + 该文件不作为豁免来源(全部豁免失效,继续分类让问题全量暴露)
       envErrors.push(`白名单六条防伪校验失败 ${wl.errors.length} 条:`, ...wl.errors);

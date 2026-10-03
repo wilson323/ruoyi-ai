@@ -121,6 +121,19 @@ public final class ActionCatalog {
     }
 
     /**
+     * 取某个 Gate 在动作目录里对应的大阶段。
+     *
+     * @param gateCode G1 到 G5
+     * @return 阶段编码；目录里没有这个 Gate 时为空
+     */
+    public static String stageOfGate(String gateCode) {
+        if (gateCode == null || gateCode.isBlank()) {
+            return null;
+        }
+        return ALL.stream().filter(a -> gateCode.equals(a.gate())).map(ActionDef::stage).findFirst().orElse(null);
+    }
+
+    /**
      * 按编码取目录定义；Z 系别名先归一再查（P1-8.2 / AC-IPD-17）。
      *
      * @param code 权威码或 Z01–Z05 别名
@@ -258,7 +271,7 @@ public final class ActionCatalog {
             case "C01", "C02", "C03", "C04", "C06" -> "MARKET_RESEARCH";
             case "P01" -> "PRD";
             case "D04" -> "TEST_REPORT";
-            case "C12", "D06", "V06" -> "REVIEW";
+            case "C11", "C12", "D06", "V06" -> "REVIEW";
             case "LC08" -> "RELEASE_NOTE";
             default -> null;
         };

@@ -1,0 +1,35 @@
+{
+  "scope": "磁盘候选包及本地源码；不证明所有类或进程协议能力，不把字符串未发现作为绝对不支持证据",
+  "candidateJar": "/Users/mac/Documents/ruoyi-ai/ruoyi-admin/target/ruoyi-admin.jar",
+  "embeddedLibraries": [
+    "BOOT-INF/lib/agentscope-harness-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-core-2.0.3.jar",
+    "BOOT-INF/lib/mcp-0.17.2.jar",
+    "BOOT-INF/lib/mcp-json-jackson2-0.17.2.jar",
+    "BOOT-INF/lib/mcp-json-0.17.2.jar",
+    "BOOT-INF/lib/mcp-core-0.17.2.jar",
+    "BOOT-INF/lib/agentscope-extensions-model-dashscope-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-mysql-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-rag-simple-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-model-ollama-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-model-openai-2.0.3.jar",
+    "BOOT-INF/lib/langchain4j-mcp-1.17.2-beta27.jar"
+  ],
+  "mcpCoreSha256": "2489902b00d9cfb77a9ec991adf5c3387da298a4154f526dc63cda9c187891ff",
+  "schemaClassMatchedLiterals": [
+    "2025-06-18",
+    "initialize"
+  ],
+  "localSourceJar": "/Users/mac/.m2/repository/io/modelcontextprotocol/sdk/mcp-core/0.17.2/mcp-core-0.17.2-sources.jar",
+  "sourceLines": [
+    {
+      "line": 45,
+      "text": "public static final String LATEST_PROTOCOL_VERSION = ProtocolVersions.MCP_2025_06_18;"
+    },
+    {
+      "line": 56,
+      "text": "public static final String METHOD_INITIALIZE = \"initialize\";"
+    }
+  ],
+  "runtimeModernProbe": "NOT_EXECUTED"
+}

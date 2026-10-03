@@ -1,12 +1,14 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.ruoyi.ipd.agent.service.DemandTriageRun;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.Product;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.Requirement;
 import org.ruoyi.ipd.dto.GuestDemandSubmitReq;
 import org.ruoyi.ipd.dto.GuestDemandSubmittedView;
@@ -15,6 +17,7 @@ import org.ruoyi.ipd.dto.GuestDemandView;
 import org.ruoyi.ipd.dto.PortalDemandTraceView;
 import org.ruoyi.ipd.dto.PublicProductView;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
@@ -39,7 +42,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * P4-1.1 游客需求提交模型与三路产品归属（页38；BR-REQ-01/02/02b/03/04）。
  * <ul>
  *   <li>免登录提交仅最小公开字段；响应仅返回 8 位查询码（^[A-Z0-9]{8}$），不暴露内部 ID / 人员。</li>
- *   <li>三路归属：productId 非空且产品在售（ACTIVE）→ 按「产品 1:1 项目」的在职 MARKET_PM/RD_PM 写双 PM（BR-REQ-04）；
+ *   <li>三路归属：productId 非空且产品为在售、在研或历史 ACTIVE → 按该产品下项目的在职 MARKET_PM/RD_PM 写双 PM；
  *       「其他/不确定」→ product_id=NULL 进入待指派池，不路由不通知（AC-PROD-08）。</li>
  *   <li>服务端校验 + honeypot 拒绝（audit action=spam_rejected）+ 同 IP 每小时 10 次限流（第 11 次 40011）。</li>
  *   <li>审计 entityType=guest_demand，action=submit，detail 含 ipHash/uaHash（不落原始 IP/UA）。</li>
@@ -91,6 +94,14 @@ public class GuestDemandService {
         this.personMapper = personMapper;
     }
 
+    private ProjectMapper projectMapper;
+
+    /** 生产环境注入后，同一产品上的后续项目也能参与双 PM 路由。 */
+    @Autowired(required = false)
+    public void setProjectMapper(ProjectMapper projectMapper) {
+        this.projectMapper = projectMapper;
+    }
+
     /** AC-PROD-09 事件类型（与 NotificationService.Types 目录同族，本地常量避免跨卡改动面扩大）。 */
     public static final String EVT_DEMAND_OVERDUE_UNASSIGNED = "DEMAND_OVERDUE_UNASSIGNED";
     /** AC-PROD-09 兜底期限：待指派超过 5 个工作日（BR-REQ-04a；口径见 {@link #subtractBusinessDays}）。 */
@@ -135,6 +146,17 @@ public class GuestDemandService {
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
         this.stateMachineGuard = stateMachineGuard;
+    }
+
+    /** 未挂产品线时接到分拣项目的现有创建运行。未装配则游客提交仍只落需求单。 */
+    private DemandTriageRun demandTriageRun;
+
+    /**
+     * @param demandTriageRun 分拣运行接线，可空
+     */
+    @Autowired(required = false)
+    public void setDemandTriageRun(DemandTriageRun demandTriageRun) {
+        this.demandTriageRun = demandTriageRun;
     }
 
     /** 守卫 preCheck 包装（fail-closed：守卫 null = 装配缺失，拒绝迁移）。 */
@@ -197,25 +219,34 @@ public class GuestDemandService {
             if (p == null) {
                 throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
             }
-            if (!"ACTIVE".equals(p.getStatus())) {
-                // 页38：40401 产品已下架
+            if (!portalProduct(p.getStatus())) {
+                // 页38：40401 产品已下架。在售和在研与旧的 ACTIVE 一样可以提交。
                 throw new IpdBusinessException(ApiV1ErrorCode.PRODUCT_INACTIVE);
             }
             r.setProductId(p.getId());
+            r.setProductLineId(p.getProductLineId());
             route = resolveDualPm(p, r);
         }
         r.setQueryCode(generateUniqueCode());
         requirementMapper.insert(r);
+        if (r.getProductLineId() == null && demandTriageRun != null) {
+            demandTriageRun.attach(r);
+        }
         audit("submit", r.getId(), ipHash, uaHash,
             "route=" + route + ";productId=" + r.getProductId() + ";mkt=" + r.getMarketPmId() + ";rd=" + r.getRdPmId());
         registerPostCommit(null, "SUBMITTED", "submit", null, r.getId());
         return new GuestDemandSubmittedView(r.getQueryCode(), r.getStatus());
     }
 
+    /** 门户可选产品：历史 ACTIVE，以及目录里的在售、在研。 */
+    private boolean portalProduct(String status) {
+        return "ACTIVE".equals(status) || Product.ST_ON_SALE.equals(status) || Product.ST_IN_RD.equals(status);
+    }
+
     /** 页38：GET /api/public/products——返回 status 并派生 listingStatus（ON_SALE/IN_DEV/OTHER）供三情形选择。 */
     public List<PublicProductView> publicProducts() {
         return productMapper.selectList(new LambdaQueryWrapper<Product>()
-                .eq(Product::getStatus, "ACTIVE")
+                .in(Product::getStatus, java.util.List.of("ACTIVE", Product.ST_ON_SALE, Product.ST_IN_RD))
                 .orderByAsc(Product::getProductName))
             .stream()
             .map(p -> new PublicProductView(p.getId(), p.getProductName(), p.getModelCode(), p.getStatus(),
@@ -381,7 +412,7 @@ public class GuestDemandService {
 
     /**
      * P4-1.3：路由后回写双 PM（AC-REQ-03；页40）。
-     * <p>BR-REQ-04：产品 1:1 项目（uk_products_project），取该项目在职 MARKET_PM/RD_PM 写双 PM，
+     * <p>该产品下的项目都参与，每个角色取加入最早的在职成员。products.project_id 只是首个项目指针。
      * 并发场景同 IP 同时双提同产品时走 MySQL 行锁/条件 UPDATE 守卫。
      * 仅 SUBMITTED 状态可路由（「待指派」口径=规格 batch-04 §L65：status=SUBMITTED + 双PM空，
      * 无独立 UNASSIGNED 状态词）；已路由/已受理/已撤回不再覆盖。
@@ -403,7 +434,7 @@ public class GuestDemandService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
         Product p = productMapper.selectById(r.getProductId());
-        if (p == null || !"ACTIVE".equals(p.getStatus())) {
+        if (p == null || !portalProduct(p.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.PRODUCT_INACTIVE);
         }
         String route = resolveDualPm(p, r);
@@ -569,16 +600,40 @@ public class GuestDemandService {
             .build());
     }
 
-    /** BR-REQ-04：产品 1:1 项目（uk_products_project），取该项目在职 MARKET_PM/RD_PM 写双 PM。 */
+    /**
+     * 取该产品下项目的在职市场 PM 和研发 PM。
+     * 同一产品上的项目都参与，每个角色取加入最早的在职成员。
+     */
     private String resolveDualPm(Product p, Requirement r) {
-        if (p.getProjectId() == null) {
+        List<Long> projectIds = new ArrayList<>();
+        if (p.getProjectId() != null) {
+            projectIds.add(p.getProjectId());
+        }
+        if (projectMapper != null && p.getId() != null) {
+            List<Project> attached = projectMapper.selectList(new LambdaQueryWrapper<Project>()
+                .eq(Project::getProductId, p.getId())
+                .orderByAsc(Project::getId));
+            if (attached != null) {
+                for (Project project : attached) {
+                    if (project.getId() != null && !projectIds.contains(project.getId())) {
+                        projectIds.add(project.getId());
+                    }
+                }
+            }
+        }
+        if (projectIds.isEmpty()) {
             return "no-project";
         }
-        // 防御拷贝后排序：不原地修改 mapper 返回的列表
-        List<ProjectMember> members = new ArrayList<>(projectMemberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
-            .eq(ProjectMember::getProjectId, p.getProjectId())
-            .isNull(ProjectMember::getExitDate)
-            .in(ProjectMember::getRole, "MARKET_PM", "RD_PM")));
+        List<ProjectMember> members = new ArrayList<>();
+        for (Long projectId : projectIds) {
+            List<ProjectMember> found = projectMemberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
+                .eq(ProjectMember::getProjectId, projectId)
+                .isNull(ProjectMember::getExitDate)
+                .in(ProjectMember::getRole, "MARKET_PM", "RD_PM"));
+            if (found != null) {
+                members.addAll(found);
+            }
+        }
         members.sort(Comparator.comparing(ProjectMember::getJoinDate,
             Comparator.nullsLast(Comparator.naturalOrder())));
         boolean routed = false;

@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-02T09:05:39.405126+00:00",
+  "mode": "apply-concurrent",
+  "personAccount": "ipd-market",
+  "responses": [
+    {
+      "http": 409,
+      "body": {
+        "code": 50002,
+        "message": "定档文档不存在",
+        "data": null,
+        "timestamp": "2026-10-02T09:05:39Z",
+        "traceId": "918cb9235df54fbf9d5f3d259325062b"
+      }
+    },
+    {
+      "http": 200,
+      "body": {
+        "code": 0,
+        "message": "待审核",
+        "data": {
+          "runId": "2105947110749892610",
+          "artifactId": "3a4db3208d314f04b6444b5ec6a15321",
+          "versionId": "2105947182531211266",
+          "versionNo": 1,
+          "documentId": "2105947307966066689",
+          "documentStatus": "GENERATED",
+          "indexStatus": "NOT_INDEXED",
+          "documentStatusLabel": "待审核"
+        },
+        "timestamp": "2026-10-02T09:05:39Z",
+        "traceId": "d4ae2c131eb54baab2cb0c89077bcce2"
+      }
+    },
+    {
+      "http": 409,
+      "body": {
+        "code": 50002,
+        "message": "定档文档不存在",
+        "data": null,
+        "timestamp": "2026-10-02T09:05:39Z",
+        "traceId": "d109179588b248979de36cfbf99b7d46"
+      }
+    }
+  ]
+}

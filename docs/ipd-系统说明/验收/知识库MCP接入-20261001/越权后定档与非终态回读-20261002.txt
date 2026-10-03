@@ -1,0 +1,4 @@
+run_id	document_id	status	status	document_count
+2105947110749892610	2105947307966066689	APPLIED	GENERATED	1
+nonterminal
+0

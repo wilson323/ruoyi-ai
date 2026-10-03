@@ -7,6 +7,7 @@ import org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion;
 import org.ruoyi.ipd.agent.mapper.IpdAgentArtifactVersionMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,6 +55,24 @@ public class MybatisArtifactVersionStore implements ArtifactVersionStore {
             .eq(IpdAgentArtifactVersion::getArtifactId, artifactId.trim())
             .orderByDesc(IpdAgentArtifactVersion::getVersionNo)
             .last("LIMIT 1")));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<IpdAgentArtifactVersion> findLatestForUpdate(String tenantId, Long runId, String artifactId) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("artifact row locking requires an active transaction");
+        }
+        if (tenantId == null || tenantId.isBlank() || runId == null || artifactId == null || artifactId.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<IpdAgentArtifactVersion>()
+            .eq(IpdAgentArtifactVersion::getTenantId, tenantId)
+            .eq(IpdAgentArtifactVersion::getRunId, runId)
+            .eq(IpdAgentArtifactVersion::getArtifactId, artifactId.trim())
+            .eq(IpdAgentArtifactVersion::getDelFlag, "0")
+            .orderByDesc(IpdAgentArtifactVersion::getVersionNo)
+            .last("LIMIT 1 FOR UPDATE")));
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,157 @@
+{
+  "at": "2026-10-02T18:14:00.046249+00:00",
+  "status": "PARTIAL",
+  "targeted": {
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "exit": 0
+  },
+  "full": {
+    "tests": 3733,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 24,
+    "exit": 1,
+    "cause": "旧技能目录测试仍精确断言只允许C02，与新增C01合同不符；待最小修复复跑"
+  },
+  "logs": [
+    {
+      "path": "/tmp/ipd-codex-ipd-new-nodes-20261002.log",
+      "sha256": "6aadcfcc555bc5073d37476b0ae3551e73783cc37dd0b777abfbcaeb5d79b0e0"
+    },
+    {
+      "path": "/tmp/ipd-codex-ipd-full-repair-20261002.log",
+      "sha256": "474112539cf8761ee3c648ab5c234da45c4c25bcfd375bc73fa45b7c90fef7e2"
+    }
+  ],
+  "runtime": {
+    "pid": 72014,
+    "sha256": "7ddc60b6125aca829450013540cb36976afd429f74a906838aceb17bdbfc5017",
+    "loaded": true,
+    "personInventory": "codex-fresh-rework-inventory-20261002T180404702070Z.json"
+  },
+  "aiflowAfterFailureNotificationFix": {
+    "tests": 149,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 0,
+    "log": "/tmp/ipd-codex-aiflow-failure-fix-full-20261002.log"
+  },
+  "chat": {
+    "tests": 331,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 0,
+    "log": "/tmp/ipd-codex-chat-full-20261002.log"
+  },
+  "ipdFinal": {
+    "tests": 3733,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 24,
+    "exit": 0,
+    "log": "/tmp/ipd-codex-ipd-full-final-20261002.log"
+  },
+  "package": {
+    "exit": 0,
+    "log": "/tmp/ipd-codex-admin-package-20261002.log",
+    "sha256": "7ddc60b6125aca829450013540cb36976afd429f74a906838aceb17bdbfc5017"
+  },
+  "redisIntegration": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mysqlIntegration": {
+    "tests": 18,
+    "failures": 1,
+    "errors": 1,
+    "skipped": 0,
+    "reason": "旧测试合同创建即开工，与当前创建PENDING_START/批准开工才建图冲突；修复进行中"
+  },
+  "mysqlFinal": {
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 0,
+    "log": "/tmp/ipd-codex-p131-real-final-20261002.log",
+    "scope": "真实受限本机MyBatis/Spring事务，测试夹具回滚；非HTTP业务批准"
+  },
+  "engineCompetition": "codex-e-engine-two-jvm-competition-20261002.json，独立复核只认Start/End QA切片；退出发生准备前非节点中断，未验证外部效果与原子fence",
+  "currentRuntime": {
+    "at": "2026-10-02T18:53:21.141596+00:00",
+    "oldPid": "58360",
+    "newPid": 89982,
+    "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-b70fdb60ffe1.jar",
+    "sha256": "b70fdb60ffe120a4ec3a37c36bec19ad77aa99d6b9c2479ff164c8b3aa7ed3ab",
+    "activeRunsBefore": 0,
+    "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-takeover-20261002.log",
+    "status": "VERIFIED_LISTENER_JAR",
+    "verifiedAt": "2026-10-02T18:54:11.101779+00:00"
+  },
+  "currentCheckpoint": "H4 MCP restored/one-source and full-knowledge queries verified; two final completions rejected, safe reason classification package pending; QA creation window held by G; all chat345/8 credential-contract failures retained",
+  "sourceDiagnosticRun": "2106095444625989634",
+  "frontendNode": {
+    "commit": "2dc5c04723536d07192c6f9f277a276bf8ecee50",
+    "remoteSame": true,
+    "isolatedTests": 41,
+    "types": "PASS",
+    "build": "PASS_NO_TS_DIAGNOSTICS",
+    "indexPreserved": true
+  },
+  "latestSharedFactoryTest": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "log": "/tmp/ipd-codex-managed-provider-tests-enabled-20261002.log",
+    "initialDefaultProfile": {
+      "tests": 0,
+      "notAcceptance": true,
+      "log": "/tmp/ipd-codex-managed-provider-tests-20261002.log"
+    }
+  },
+  "latestChatRegression": {
+    "tests": 345,
+    "errors": 8,
+    "failures": 0,
+    "status": "FAILED_FIXTURE_UNDER_REVIEW",
+    "log": "/tmp/ipd-codex-chat-provider-full-20261002.log"
+  },
+  "sourceDiagnosticVerdict": {
+    "McpSource": "SUCCESS",
+    "citationChars": 17201,
+    "runStatus": "FAILED",
+    "errorCode": "COMPLETION_REJECTED",
+    "artifacts": 0,
+    "modelCalls": 2,
+    "inputTokens": 11417,
+    "outputTokens": 1241
+  },
+  "currentPendingRefresh": {
+    "runId": "2106096765173243906",
+    "status": "FAILED",
+    "errorCode": "COMPLETION_REJECTED",
+    "sourceCount": 5,
+    "sourceStatuses": {
+      "project_knowledge_search:PARTIAL": 1,
+      "project_knowledge_search:SUCCESS": 3,
+      "FastGPT:SUCCESS": 1
+    },
+    "artifacts": 0
+  },
+  "completionReasonImplementation": {
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "log": "/tmp/ipd-codex-completion-reason-tests-20261002.log",
+    "unchangedGateConditions": true,
+    "loaded": false
+  }
+}

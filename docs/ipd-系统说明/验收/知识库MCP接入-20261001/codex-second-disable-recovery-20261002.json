@@ -1,0 +1,31 @@
+{
+  "observedAt": "2026-10-02T22:00:33.501239+00:00",
+  "status": "PARTIAL",
+  "scope": "current source anti-disable static contract only",
+  "exitCode": 0,
+  "output": "CONSUMER ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/kernel/AgentScopeChatKernel.java\nCONSUMER ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/PocKernelSupport.java\nCONSUMER ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/impl/CodingServiceImpl.java\nCONSUMER ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java\nconsumers=4 violations=0; static anti-disable contract only\n",
+  "sources": [
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/AGENTS.md",
+      "sha256": "07dd27767dc7516f50ff184b6dd0d042fb3e4501dd90c88f698a15af7b220946"
+    },
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/kernel/ChatOfficialCapabilities.java",
+      "sha256": "1f83fbecc29d3d2f03e2ee57a0e0c71f5b16c23491a4799d872758f37cc1b453"
+    },
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/impl/CodingServiceImpl.java",
+      "sha256": "f6fdd41ac79bad2f3017ab829e2677e472da8b525ef1dfc86e6da56fcc671466"
+    },
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "sha256": "641bfdc81ea582e2292801607e513c7f6f422c77e030cc476272929f81110553"
+    }
+  ],
+  "notValidated": [
+    "latest candidate package",
+    "runtime loading",
+    "full official capability business acceptance"
+  ],
+  "writerAttribution": "not established"
+}

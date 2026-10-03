@@ -37,6 +37,11 @@ public interface ArtifactVersionStore {
      */
     Optional<IpdAgentArtifactVersion> findLatest(Long runId, String artifactId);
 
+    /** 在调用方事务内锁定同租户、运行与产物的最新版本；不支持锁的实现必须拒绝。 */
+    default Optional<IpdAgentArtifactVersion> findLatestForUpdate(String tenantId, Long runId, String artifactId) {
+        throw new UnsupportedOperationException("artifact row locking is not supported");
+    }
+
     /**
      * 将 DRAFT 标记为 APPLIED 并回写 documentId（CAS：仅 DRAFT 可迁）。
      *

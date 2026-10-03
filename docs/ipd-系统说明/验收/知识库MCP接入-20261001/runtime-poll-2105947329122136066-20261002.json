@@ -1,0 +1,5025 @@
+{
+  "at": "2026-10-02T09:11:25.578346+00:00",
+  "mode": "poll",
+  "personAccount": "ipd-market",
+  "run": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105947329122136066",
+        "projectId": "9140005",
+        "agentId": "ipd_project_agent",
+        "status": "FAILED",
+        "actionCode": "C02",
+        "configSnapshot": {
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1",
+          "modelConfigId": "2104885081318375426",
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "project_knowledge_search",
+            "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+            "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+            "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+            "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+            "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+            "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+            "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+            "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+            "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+            "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+            "FastGPT-mcp-69cce71396a40120630b055e",
+            "FastGPT-mcp-69cce77b96a40120630b0c3d",
+            "FastGPT-mcp-69cce8b996a40120630b1d80",
+            "FastGPT-mcp-69cce8e096a40120630b1e68",
+            "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+            "FastGPT-mcp-69cce93796a40120630b2133",
+            "FastGPT-mcp-69cce91596a40120630b2017"
+          ]
+        },
+        "errorCode": "RUN_TIMEOUT",
+        "createdAt": "2026-10-02T09:05:45Z",
+        "finishedAt": "2026-10-02T09:10:45Z"
+      },
+      "timestamp": "2026-10-02T09:11:25Z",
+      "traceId": "1a81b26b8a8c4136a31c097782cda9b5"
+    }
+  },
+  "terminal": true,
+  "nextSeq": 613,
+  "events": [
+    {
+      "seq": 1,
+      "type": "RUN_STARTED",
+      "payload": {
+        "agentId": "ipd_project_agent",
+        "actionCode": "C02",
+        "projectFacts": "项目：熵基互联+智能锁联动\n阶段：概念\n产品：熵基互联+智能锁联动\n当前动作：竞品分析\n",
+        "modelConfigId": "2104885081318375426",
+        "capabilityPackCode": "market-research",
+        "capabilityPackVersion": "v1"
+      },
+      "createdAt": "2026-10-02T09:05:45Z"
+    },
+    {
+      "seq": 2,
+      "type": "STEP",
+      "payload": {
+        "kind": "SKILL_LOADED",
+        "name": "competitor-analysis-ipd",
+        "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+        "version": "1.1.0"
+      },
+      "createdAt": "2026-10-02T09:05:45Z"
+    },
+    {
+      "seq": 3,
+      "type": "STEP",
+      "payload": {
+        "kind": "INTENT",
+        "steps": [
+          "检索「竞品」「价格」「渠道」「技术方案」；无竞品名单则停止比较，只出缺项。",
+          "**目的裁剪**（用户声明时）：产品设计侧重功能矩阵；战略侧重格局与壁垒线索；融资材料侧重差异一页纸。未声明则四维齐全、篇幅克制。",
+          "对每个竞品填四维：功能、价格（币种/时间）、渠道、技术路线；每格附来源。",
+          "**可信度**：公开规格/报价页摘录=高；转述无出处=低（不得当已验证事实）。标注信息时效（资料中的日期）。",
+          "差异化机会仅基于有来源事实；推断标「推断」。可选：追平/差异/创新三层建议，须挂证据行。",
+          "输出「资料核对 / 对比表 / 差异机会 / 冲突与待确认 / 缺项清单」。不凑默认「5 家」。"
+        ],
+        "title": "意图判断",
+        "detail": "范围已明确，按计划执行。",
+        "needsPlan": true,
+        "questions": [],
+        "needsClarification": false
+      },
+      "createdAt": "2026-10-02T09:05:45Z"
+    },
+    {
+      "seq": 4,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T09:05:45Z"
+    },
+    {
+      "seq": 5,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>用户要求：核验本"
+      },
+      "createdAt": "2026-10-02T09:05:46Z"
+    },
+    {
+      "seq": 6,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目\"熵基互联+智能"
+      },
+      "createdAt": "2026-10-02T09:05:47Z"
+    },
+    {
+      "seq": 7,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁联动\"能力，"
+      },
+      "createdAt": "2026-10-02T09:05:48Z"
+    },
+    {
+      "seq": 8,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "输出不超过四百字的资料"
+      },
+      "createdAt": "2026-10-02T09:05:48Z"
+    },
+    {
+      "seq": 9,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "核验草稿，"
+      },
+      "createdAt": "2026-10-02T09:05:49Z"
+    },
+    {
+      "seq": 10,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "注明已查来源、"
+      },
+      "createdAt": "2026-10-02T09:05:49Z"
+    },
+    {
+      "seq": 11,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "适用性与未取得事项"
+      },
+      "createdAt": "2026-10-02T09:05:50Z"
+    },
+    {
+      "seq": 12,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n\n项目事实：\n- 项目：熵基互联+智能锁联动\n- 阶段：概念\n- 产品："
+      },
+      "createdAt": "2026-10-02T09:05:50Z"
+    },
+    {
+      "seq": 13,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联+"
+      },
+      "createdAt": "2026-10-02T09:05:50Z"
+    },
+    {
+      "seq": 14,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动\n-"
+      },
+      "createdAt": "2026-10-02T09:05:51Z"
+    },
+    {
+      "seq": 15,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 当前动作：竞品分析（C02）\n\n任务：核验智能锁联动能力，输出不超过400"
+      },
+      "createdAt": "2026-10-02T09:05:52Z"
+    },
+    {
+      "seq": 16,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "字的资料核验草稿。需要：\n"
+      },
+      "createdAt": "2026-10-02T09:05:53Z"
+    },
+    {
+      "seq": 17,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1. 读取当前"
+      },
+      "createdAt": "2026-10-02T09:05:53Z"
+    },
+    {
+      "seq": 18,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目事实\n3"
+      },
+      "createdAt": "2026-10-02T09:05:53Z"
+    },
+    {
+      "seq": 19,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ". 判断相关知识"
+      },
+      "createdAt": "2026-10-02T09:05:54Z"
+    },
+    {
+      "seq": 20,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库\n5. 注明已查来源、"
+      },
+      "createdAt": "2026-10-02T09:05:54Z"
+    },
+    {
+      "seq": 21,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "适用性、未取得事项"
+      },
+      "createdAt": "2026-10-02T09:05:54Z"
+    },
+    {
+      "seq": 22,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n约束：\n- 只调用与项目问题相关的工具\n- 不遍历全部库\n- 不"
+      },
+      "createdAt": "2026-10-02T09:05:54Z"
+    },
+    {
+      "seq": 23,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "扩写财务指标或无关竞品\n- 不自行宣称动作完成"
+      },
+      "createdAt": "2026-10-02T09:05:54Z"
+    },
+    {
+      "seq": 24,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "或评审通过\n-"
+      },
+      "createdAt": "2026-10-02T09:05:55Z"
+    },
+    {
+      "seq": 25,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 事实只能来自项目事实、本轮输入、project_knowledge_search返回"
+      },
+      "createdAt": "2026-10-02T09:05:55Z"
+    },
+    {
+      "seq": 26,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的已审核文档片段、或按"
+      },
+      "createdAt": "2026-10-02T09:05:55Z"
+    },
+    {
+      "seq": 27,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "正文命中的产品知识库片段\n"
+      },
+      "createdAt": "2026-10-02T09:05:55Z"
+    },
+    {
+      "seq": 28,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- 不访问"
+      },
+      "createdAt": "2026-10-02T09:05:55Z"
+    },
+    {
+      "seq": 29,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联网\n\n\"智能锁联动\"是与"
+      },
+      "createdAt": "2026-10-02T09:05:55Z"
+    },
+    {
+      "seq": 30,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联平台联动的智能锁功能。这是一个明确的产"
+      },
+      "createdAt": "2026-10-02T09:05:56Z"
+    },
+    {
+      "seq": 31,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "线产品——熵基互联（"
+      },
+      "createdAt": "2026-10-02T09:05:56Z"
+    },
+    {
+      "seq": 32,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Fast"
+      },
+      "createdAt": "2026-10-02T09:05:56Z"
+    },
+    {
+      "seq": 33,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "GPT-mcp-69"
+      },
+      "createdAt": "2026-10-02T09:05:57Z"
+    },
+    {
+      "seq": 34,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "cce91596a"
+      },
+      "createdAt": "2026-10-02T09:05:57Z"
+    },
+    {
+      "seq": 35,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "40120630b201"
+      },
+      "createdAt": "2026-10-02T09:05:58Z"
+    },
+    {
+      "seq": 36,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "7）。\n\n但是我需要先做项目知识库"
+      },
+      "createdAt": "2026-10-02T09:05:58Z"
+    },
+    {
+      "seq": 37,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "检索，看看本项目已有知识储备"
+      },
+      "createdAt": "2026-10-02T09:05:58Z"
+    },
+    {
+      "seq": 38,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。然后再判断是否需要调远端知识库。\n\n应该"
+      },
+      "createdAt": "2026-10-02T09:05:58Z"
+    },
+    {
+      "seq": 39,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "并行调用：\n1. project_k"
+      },
+      "createdAt": "2026-10-02T09:05:59Z"
+    },
+    {
+      "seq": 40,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "nowledge_search 查询\"智能锁联动\"\n2. project_knowledge_search 查询\"竞品\"或"
+      },
+      "createdAt": "2026-10-02T09:05:59Z"
+    },
+    {
+      "seq": 41,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"功能\"等基础事实\n3. 产线知识库「"
+      },
+      "createdAt": "2026-10-02T09:05:59Z"
+    },
+    {
+      "seq": 42,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联」查询智能锁联动能力"
+      },
+      "createdAt": "2026-10-02T09:06:00Z"
+    },
+    {
+      "seq": 43,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n\n等等"
+      },
+      "createdAt": "2026-10-02T09:06:00Z"
+    },
+    {
+      "seq": 44,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，我要"
+      },
+      "createdAt": "2026-10-02T09:06:01Z"
+    },
+    {
+      "seq": 45,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "先谨慎"
+      },
+      "createdAt": "2026-10-02T09:06:02Z"
+    },
+    {
+      "seq": 46,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "一点"
+      },
+      "createdAt": "2026-10-02T09:06:02Z"
+    },
+    {
+      "seq": 47,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，先"
+      },
+      "createdAt": "2026-10-02T09:06:03Z"
+    },
+    {
+      "seq": 48,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "只查"
+      },
+      "createdAt": "2026-10-02T09:06:04Z"
+    },
+    {
+      "seq": 49,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目知识"
+      },
+      "createdAt": "2026-10-02T09:06:04Z"
+    },
+    {
+      "seq": 50,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库看看"
+      },
+      "createdAt": "2026-10-02T09:06:05Z"
+    },
+    {
+      "seq": 51,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "是否已有事实"
+      },
+      "createdAt": "2026-10-02T09:06:06Z"
+    },
+    {
+      "seq": 52,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，再决定是否查远端。但是用户的指令\"核验本项目"
+      },
+      "createdAt": "2026-10-02T09:06:06Z"
+    },
+    {
+      "seq": 53,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动能力\"，主要是要看熵基互联"
+      },
+      "createdAt": "2026-10-02T09:06:06Z"
+    },
+    {
+      "seq": 54,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识"
+      },
+      "createdAt": "2026-10-02T09:06:06Z"
+    },
+    {
+      "seq": 55,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库里关于智能锁联动的事实"
+      },
+      "createdAt": "2026-10-02T09:06:07Z"
+    },
+    {
+      "seq": 56,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "是否与本项目相关——这是项目知识库没有的，所以"
+      },
+      "createdAt": "2026-10-02T09:06:07Z"
+    },
+    {
+      "seq": 57,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "需要查远端知识库。\n\n让我先并行"
+      },
+      "createdAt": "2026-10-02T09:06:07Z"
+    },
+    {
+      "seq": 58,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "调用：\n- project_knowledge_search \"智能锁联动\" 看本项目有什么资料\n- Fast"
+      },
+      "createdAt": "2026-10-02T09:06:07Z"
+    },
+    {
+      "seq": 59,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "GPT-mcp-69cce91596a40120630b2017 \"智能锁联动\" 看熵基互联"
+      },
+      "createdAt": "2026-10-02T09:06:07Z"
+    },
+    {
+      "seq": 60,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库有什么\n\n然后根据"
+      },
+      "createdAt": "2026-10-02T09:06:08Z"
+    },
+    {
+      "seq": 61,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "返回，再做下一步。\n\n不过我应该先做一次 project"
+      },
+      "createdAt": "2026-10-02T09:06:08Z"
+    },
+    {
+      "seq": 62,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "_knowledge_search，因为本项目知识库里可能有项目计划"
+      },
+      "createdAt": "2026-10-02T09:06:08Z"
+    },
+    {
+      "seq": 63,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、决策、概念阶段的资料——这些是"
+      },
+      "createdAt": "2026-10-02T09:06:08Z"
+    },
+    {
+      "seq": 64,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "优先来源。然后再决定是否需要远"
+      },
+      "createdAt": "2026-10-02T09:06:08Z"
+    },
+    {
+      "seq": 65,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端。\n\n但其实用户的指令是\"核验本项目智能锁联动能力\"，意思是去"
+      },
+      "createdAt": "2026-10-02T09:06:09Z"
+    },
+    {
+      "seq": 66,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "查看熵基互联"
+      },
+      "createdAt": "2026-10-02T09:06:09Z"
+    },
+    {
+      "seq": 67,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库"
+      },
+      "createdAt": "2026-10-02T09:06:10Z"
+    },
+    {
+      "seq": 68,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "中关于智能锁联动的资料"
+      },
+      "createdAt": "2026-10-02T09:06:10Z"
+    },
+    {
+      "seq": 69,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "对本项目的适用性。两个检索"
+      },
+      "createdAt": "2026-10-02T09:06:10Z"
+    },
+    {
+      "seq": 70,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "是必须并行做的，因为互不依赖。\n\n让我并行调用三个：\n- project_knowledge_search"
+      },
+      "createdAt": "2026-10-02T09:06:10Z"
+    },
+    {
+      "seq": 71,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " \"智能锁联动\" \n- project_knowledge_search"
+      },
+      "createdAt": "2026-10-02T09:06:11Z"
+    },
+    {
+      "seq": 72,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " \"竞"
+      },
+      "createdAt": "2026-10-02T09:06:12Z"
+    },
+    {
+      "seq": 73,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "品分析"
+      },
+      "createdAt": "2026-10-02T09:06:12Z"
+    },
+    {
+      "seq": 74,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"\n- 熵基互联知识库 \"智能锁联动"
+      },
+      "createdAt": "2026-10-02T09:06:13Z"
+    },
+    {
+      "seq": 75,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "能力\"\n\n这样既查了本项目资料，也"
+      },
+      "createdAt": "2026-10-02T09:06:13Z"
+    },
+    {
+      "seq": 76,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "查了产"
+      },
+      "createdAt": "2026-10-02T09:06:13Z"
+    },
+    {
+      "seq": 77,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "线资料。\n\n实际上竞"
+      },
+      "createdAt": "2026-10-02T09:06:14Z"
+    },
+    {
+      "seq": 78,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "品分析是当前动作，所以查本项目里竞品分析相关资料可能有用。但用户的具体任务是\"核验本"
+      },
+      "createdAt": "2026-10-02T09:06:14Z"
+    },
+    {
+      "seq": 79,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目智能锁联动能力\"，所以核心"
+      },
+      "createdAt": "2026-10-02T09:06:14Z"
+    },
+    {
+      "seq": 80,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "检索词是\"智能锁联动\"。\n\n让我先发起并"
+      },
+      "createdAt": "2026-10-02T09:06:14Z"
+    },
+    {
+      "seq": 81,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "行的检索。</think>\n\n我先并行核查"
+      },
+      "createdAt": "2026-10-02T09:06:15Z"
+    },
+    {
+      "seq": 82,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "两条事实源：本项目已审核文档 +熵基互联产线知识库。"
+      },
+      "createdAt": "2026-10-02T09:06:15Z"
+    },
+    {
+      "seq": 83,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "project_knowledge_search",
+        "toolCallId": "call_01a0fbdd3ec375558e81e87c"
+      },
+      "createdAt": "2026-10-02T09:06:16Z"
+    },
+    {
+      "seq": 84,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbdd3ec375558e81e87d"
+      },
+      "createdAt": "2026-10-02T09:06:16Z"
+    },
+    {
+      "seq": 85,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL",
+        "inputTokens": 8956,
+        "outputTokens": 742
+      },
+      "createdAt": "2026-10-02T09:06:16Z"
+    },
+    {
+      "seq": 86,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 4,
+        "tool": "project_knowledge_search",
+        "chars": 3520,
+        "query": "智能锁联动",
+        "preview": "【知识库向量｜出处：印尼_(ID_·_Bosch_dominant_+_TKDN_强制).md｜文档：18737492a07f7e26525c08d5657aedec\n# 印尼 (ID · Bosch dominant + TKDN 强制)\n\n**as_of:** 2026-08-27 · **tier:** P0 · **country:** 印度尼西亚 · **regions:** apac\n\n> 注：印尼市场 Bosch 在视频监控、消防、门禁与对讲等多产品线占主导地位；本地分销商 Sensorlink Indonesia 代理 Bosch 并提供 TKDN 合规选型清单；Hikvision Indonesia by GSI（PT. Pasifik Teknologi Indonesia）也是 4MP IP Box Camera 重要 SKU 供给方。本文件以印尼区域市场视角记录。\n\n## 1. 公司基础 (CT-08 + CT-09)\n\n| 字段 | 值 | 来源 |\n|------|----|------|\n| 区域 | 印度尼西亚（Republic of Indonesia） | - |\n| 主要 OEM 厂商 | Bosch Security & Safety Systems (Burr Ridge, IL, USA / Munich, Germany) | boschbuildingtechnologies.com |\n| 印尼本地分销商 | Sensorlink Indonesia（PT. Sensorlink Solusindo）；Hikvision Indonesia by GSI（PT. Pasifik Teknologi Indonesia） | sensorlink.co.id / hikvision-indonesia.com |\n| 关键监管 | TKDN 强制（部分行业 ≥40% 国产化） | 印尼工业部 |\n| 区域特征 | Bosch dominant；Hikvision 主流；多品牌格局 | - |\n【知识库向量｜出处：FAAC___Magnetic___Nice___CAME___Gunnebo___Wanzl___COMINFO.md｜文档：eb11035f8c770ca1eab4a3493e985cc4\n| COMINF",
+        "projectId": "9140005",
+        "toolCallId": "call_01a0fbdd3ec375558e81e87c",
+        "citationChars": 3520,
+        "citationSha256": "981591e867d9a0a725e4d3e4051be42880a89bd409a67e0c589ad53d511b14d0",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T09:06:16Z"
+    },
+    {
+      "seq": 87,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 1,
+        "tool": "FastGPT-mcp-69cce91596a40120630b2017",
+        "query": "智能锁联动能力",
+        "preview": "【产线知识库｜产线：熵基互联｜服务标识：FastGPT-mcp-69cce91596a40120630b2017｜远端声明出处：熵基互联小程序视频链接.docx、【视频指导】_熵基互联_操作视频①.md、熵基互联简介.docx、熵基互联_操作指导手册①.docx】\n远端返回资料：\n{\"dataset\":[{\"id\":\"67203b148321457ed9bb3960\",\"updateTime\":\"2025-11-26T13:18:03.394Z\",\"q\":\"# 熵基互联小程序操作视频\\n## 操作视频教程 | 熵基互联-ZQ2智能云考勤机操作视频\\n**视频链接**：[[remote-address-redacted]\",\"a\":\"熵基互联的ZQ2智能云考勤机操作视频教程，提供设备的详细使用指导。\",\"chunkIndex\":0,\"datasetId\":\"66d51dd1e6ac063d23b75264\",\"collectionId\":\"67203b148321457ed9bb3937\",\"sourceId\":\"dataset/66d51dd1e6ac063d23b75264/lTR3zV-熵基互联小程序视频链接.docx\",\"sourceName\":\"熵基互联小程序视频链接.docx\",\"score\":[{\"type\":\"embedding\",\"value\":0.7210162281990051,\"index\":10},{\"type\":\"fullText\",\"value\":0.7983870967741935,\"index\":0},{\"type\":\"rrf\",\"value\":0.015008081274532441,\"index\":0}],\"tokens\":109},{\"id\":\"67203b148321457ed9bb395b\",\"updateTime\":\"2025-11-26T13:18:03.388Z\",\"q\":\"# 熵基互联小程序操作视频\\n## 操作视频教程 | 熵基互联-ZQ3智能云考勤机操作视频\\n**视频链接**：[[remote-address-redacted]",
+        "lineName": "熵基互联",
+        "serviceId": "FastGPT-mcp-69cce91596a40120630b2017",
+        "sourceKind": "REMOTE_APPLICATION",
+        "toolCallId": "call_01a0fbdd3ec375558e81e87d",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T09:06:20Z"
+    },
+    {
+      "seq": 88,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "project_knowledge_search",
+        "toolCallId": "call_01a0fbdd3ec375558e81e87c"
+      },
+      "createdAt": "2026-10-02T09:06:20Z"
+    },
+    {
+      "seq": 89,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "FastGPT-mcp-69cce91596a40120630b2017",
+        "toolCallId": "call_01a0fbdd3ec375558e81e87d"
+      },
+      "createdAt": "2026-10-02T09:06:20Z"
+    },
+    {
+      "seq": 90,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T09:06:20Z"
+    },
+    {
+      "seq": 91,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>本项目"
+      },
+      "createdAt": "2026-10-02T09:06:26Z"
+    },
+    {
+      "seq": 92,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "检索"
+      },
+      "createdAt": "2026-10-02T09:06:27Z"
+    },
+    {
+      "seq": 93,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"智能锁联动\"返回"
+      },
+      "createdAt": "2026-10-02T09:06:27Z"
+    },
+    {
+      "seq": 94,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的是"
+      },
+      "createdAt": "2026-10-02T09:06:27Z"
+    },
+    {
+      "seq": 95,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "印尼市场"
+      },
+      "createdAt": "2026-10-02T09:06:28Z"
+    },
+    {
+      "seq": 96,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文件、FA"
+      },
+      "createdAt": "2026-10-02T09:06:29Z"
+    },
+    {
+      "seq": 97,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "AC/Magnetic"
+      },
+      "createdAt": "2026-10-02T09:06:30Z"
+    },
+    {
+      "seq": 98,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/Nice/C"
+      },
+      "createdAt": "2026-10-02T09:06:30Z"
+    },
+    {
+      "seq": 99,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "AME/G"
+      },
+      "createdAt": "2026-10-02T09:06:31Z"
+    },
+    {
+      "seq": 100,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "unnebo/W"
+      },
+      "createdAt": "2026-10-02T09:06:31Z"
+    },
+    {
+      "seq": 101,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "anzl/COMINFO"
+      },
+      "createdAt": "2026-10-02T09:06:32Z"
+    },
+    {
+      "seq": 102,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、Allegion Schlage"
+      },
+      "createdAt": "2026-10-02T09:06:32Z"
+    },
+    {
+      "seq": 103,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、dormakaba"
+      },
+      "createdAt": "2026-10-02T09:06:33Z"
+    },
+    {
+      "seq": 104,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " —— 这些是通行"
+      },
+      "createdAt": "2026-10-02T09:06:33Z"
+    },
+    {
+      "seq": 105,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门、"
+      },
+      "createdAt": "2026-10-02T09:06:34Z"
+    },
+    {
+      "seq": 106,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门"
+      },
+      "createdAt": "2026-10-02T09:06:35Z"
+    },
+    {
+      "seq": 107,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁厂家分析"
+      },
+      "createdAt": "2026-10-02T09:06:35Z"
+    },
+    {
+      "seq": 108,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "等"
+      },
+      "createdAt": "2026-10-02T09:06:36Z"
+    },
+    {
+      "seq": 109,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "竞"
+      },
+      "createdAt": "2026-10-02T09:06:36Z"
+    },
+    {
+      "seq": 110,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "品/对手硬件资料"
+      },
+      "createdAt": "2026-10-02T09:06:37Z"
+    },
+    {
+      "seq": 111,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，并不是"
+      },
+      "createdAt": "2026-10-02T09:06:37Z"
+    },
+    {
+      "seq": 112,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本"
+      },
+      "createdAt": "2026-10-02T09:06:38Z"
+    },
+    {
+      "seq": 113,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目\"熵基"
+      },
+      "createdAt": "2026-10-02T09:06:39Z"
+    },
+    {
+      "seq": 114,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联+智能锁联动\"项目的内部"
+      },
+      "createdAt": "2026-10-02T09:06:39Z"
+    },
+    {
+      "seq": 115,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "资料。也就是说，本"
+      },
+      "createdAt": "2026-10-02T09:06:39Z"
+    },
+    {
+      "seq": 116,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目文档里没有专门关于\""
+      },
+      "createdAt": "2026-10-02T09:06:39Z"
+    },
+    {
+      "seq": 117,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动\"的能力"
+      },
+      "createdAt": "2026-10-02T09:06:40Z"
+    },
+    {
+      "seq": 118,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "描述。\n\n远"
+      },
+      "createdAt": "2026-10-02T09:06:40Z"
+    },
+    {
+      "seq": 119,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端熵基互联"
+      },
+      "createdAt": "2026-10-02T09:06:41Z"
+    },
+    {
+      "seq": 120,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库返回了：\n"
+      },
+      "createdAt": "2026-10-02T09:06:42Z"
+    },
+    {
+      "seq": 121,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "1. 熵"
+      },
+      "createdAt": "2026-10-02T09:06:42Z"
+    },
+    {
+      "seq": 122,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "基互联小程序视频链接"
+      },
+      "createdAt": "2026-10-02T09:06:43Z"
+    },
+    {
+      "seq": 123,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " -"
+      },
+      "createdAt": "2026-10-02T09:06:44Z"
+    },
+    {
+      "seq": 124,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " ZQ2/Q3/102智能云考勤机操作视频（与"
+      },
+      "createdAt": "2026-10-02T09:06:44Z"
+    },
+    {
+      "seq": 125,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门禁/锁联动"
+      },
+      "createdAt": "2026-10-02T09:06:45Z"
+    },
+    {
+      "seq": 126,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "无直接证据）\n2. 【视频指导】_熵基互联_操作视频 - \"帮助企业实现智能考勤、门禁管理等\"\n3. 熵基互联简介"
+      },
+      "createdAt": "2026-10-02T09:06:45Z"
+    },
+    {
+      "seq": 127,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ".docx - 微信小程序轻应用"
+      },
+      "createdAt": "2026-10-02T09:06:45Z"
+    },
+    {
+      "seq": 128,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，场所管理、人员、考勤"
+      },
+      "createdAt": "2026-10-02T09:06:45Z"
+    },
+    {
+      "seq": 129,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、门禁、设备"
+      },
+      "createdAt": "2026-10-02T09:06:46Z"
+    },
+    {
+      "seq": 130,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "管理。**门"
+      },
+      "createdAt": "2026-10-02T09:06:46Z"
+    },
+    {
+      "seq": 131,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁: 刷卡/指纹/刷脸开门，远程开门，访客管理**\n4. "
+      },
+      "createdAt": "2026-10-02T09:06:46Z"
+    },
+    {
+      "seq": 132,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联_操作指导手册①.docx - 远程"
+      },
+      "createdAt": "2026-10-02T09:06:47Z"
+    },
+    {
+      "seq": 133,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "开门、时间"
+      },
+      "createdAt": "2026-10-02T09:06:47Z"
+    },
+    {
+      "seq": 134,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "段（"
+      },
+      "createdAt": "2026-10-02T09:06:48Z"
+    },
+    {
+      "seq": 135,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "24"
+      },
+      "createdAt": "2026-10-02T09:06:49Z"
+    },
+    {
+      "seq": 136,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "h通行默认"
+      },
+      "createdAt": "2026-10-02T09:06:49Z"
+    },
+    {
+      "seq": 137,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "时段）、通行权限组"
+      },
+      "createdAt": "2026-10-02T09:06:50Z"
+    },
+    {
+      "seq": 138,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、设备报警记录"
+      },
+      "createdAt": "2026-10-02T09:06:51Z"
+    },
+    {
+      "seq": 139,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n6"
+      },
+      "createdAt": "2026-10-02T09:06:51Z"
+    },
+    {
+      "seq": 140,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ". 设备"
+      },
+      "createdAt": "2026-10-02T09:06:52Z"
+    },
+    {
+      "seq": 141,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "详情 - 通行设置跳"
+      },
+      "createdAt": "2026-10-02T09:06:52Z"
+    },
+    {
+      "seq": 142,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "转到门禁助理，门禁记录+报警"
+      },
+      "createdAt": "2026-10-02T09:06:52Z"
+    },
+    {
+      "seq": 143,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "记录，考勤"
+      },
+      "createdAt": "2026-10-02T09:06:53Z"
+    },
+    {
+      "seq": 144,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "同步开启后"
+      },
+      "createdAt": "2026-10-02T09:06:54Z"
+    },
+    {
+      "seq": 145,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "自动同步开门"
+      },
+      "createdAt": "2026-10-02T09:06:54Z"
+    },
+    {
+      "seq": 146,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "记录到"
+      },
+      "createdAt": "2026-10-02T09:06:55Z"
+    },
+    {
+      "seq": 147,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "考勤\n\n但是"
+      },
+      "createdAt": "2026-10-02T09:06:55Z"
+    },
+    {
+      "seq": 148,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "注意一点"
+      },
+      "createdAt": "2026-10-02T09:06:56Z"
+    },
+    {
+      "seq": 149,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，远"
+      },
+      "createdAt": "2026-10-02T09:06:57Z"
+    },
+    {
+      "seq": 150,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端知识库**没有"
+      },
+      "createdAt": "2026-10-02T09:06:57Z"
+    },
+    {
+      "seq": 151,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "明确"
+      },
+      "createdAt": "2026-10-02T09:06:58Z"
+    },
+    {
+      "seq": 152,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出现"
+      },
+      "createdAt": "2026-10-02T09:06:59Z"
+    },
+    {
+      "seq": 153,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"智能锁\"概念"
+      },
+      "createdAt": "2026-10-02T09:06:59Z"
+    },
+    {
+      "seq": 154,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**——"
+      },
+      "createdAt": "2026-10-02T09:07:00Z"
+    },
+    {
+      "seq": 155,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "全部命中"
+      },
+      "createdAt": "2026-10-02T09:07:00Z"
+    },
+    {
+      "seq": 156,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "都是\"门禁设备"
+      },
+      "createdAt": "2026-10-02T09:07:01Z"
+    },
+    {
+      "seq": 157,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"、\"门"
+      },
+      "createdAt": "2026-10-02T09:07:01Z"
+    },
+    {
+      "seq": 158,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁设备\"，不是\""
+      },
+      "createdAt": "2026-10-02T09:07:02Z"
+    },
+    {
+      "seq": 159,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁\"。所谓"
+      },
+      "createdAt": "2026-10-02T09:07:02Z"
+    },
+    {
+      "seq": 160,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"智能锁联动"
+      },
+      "createdAt": "2026-10-02T09:07:03Z"
+    },
+    {
+      "seq": 161,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"，本意"
+      },
+      "createdAt": "2026-10-02T09:07:03Z"
+    },
+    {
+      "seq": 162,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "可能"
+      },
+      "createdAt": "2026-10-02T09:07:04Z"
+    },
+    {
+      "seq": 163,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "指门禁级别的\""
+      },
+      "createdAt": "2026-10-02T09:07:05Z"
+    },
+    {
+      "seq": 164,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能门"
+      },
+      "createdAt": "2026-10-02T09:07:05Z"
+    },
+    {
+      "seq": 165,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁\"与"
+      },
+      "createdAt": "2026-10-02T09:07:06Z"
+    },
+    {
+      "seq": 166,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "平台的"
+      },
+      "createdAt": "2026-10-02T09:07:06Z"
+    },
+    {
+      "seq": 167,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动。从设备描述"
+      },
+      "createdAt": "2026-10-02T09:07:06Z"
+    },
+    {
+      "seq": 168,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "看：\n- 门禁支持"
+      },
+      "createdAt": "2026-10-02T09:07:07Z"
+    },
+    {
+      "seq": 169,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "多种识别方式（刷卡"
+      },
+      "createdAt": "2026-10-02T09:07:07Z"
+    },
+    {
+      "seq": 170,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/指纹/刷脸"
+      },
+      "createdAt": "2026-10-02T09:07:08Z"
+    },
+    {
+      "seq": 171,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n- 远程开门"
+      },
+      "createdAt": "2026-10-02T09:07:08Z"
+    },
+    {
+      "seq": 172,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（小程序"
+      },
+      "createdAt": "2026-10-02T09:07:09Z"
+    },
+    {
+      "seq": 173,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、Web"
+      },
+      "createdAt": "2026-10-02T09:07:09Z"
+    },
+    {
+      "seq": 174,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n- 门禁"
+      },
+      "createdAt": "2026-10-02T09:07:10Z"
+    },
+    {
+      "seq": 175,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "权限组（人员+"
+      },
+      "createdAt": "2026-10-02T09:07:11Z"
+    },
+    {
+      "seq": 176,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备+时间段"
+      },
+      "createdAt": "2026-10-02T09:07:11Z"
+    },
+    {
+      "seq": 177,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n- 通证记录"
+      },
+      "createdAt": "2026-10-02T09:07:12Z"
+    },
+    {
+      "seq": 178,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "+"
+      },
+      "createdAt": "2026-10-02T09:07:13Z"
+    },
+    {
+      "seq": 179,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备"
+      },
+      "createdAt": "2026-10-02T09:07:14Z"
+    },
+    {
+      "seq": 180,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "报警联动\n- "
+      },
+      "createdAt": "2026-10-02T09:07:14Z"
+    },
+    {
+      "seq": 181,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "考勤同步（"
+      },
+      "createdAt": "2026-10-02T09:07:15Z"
+    },
+    {
+      "seq": 182,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "开门记录"
+      },
+      "createdAt": "2026-10-02T09:07:16Z"
+    },
+    {
+      "seq": 183,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "作为考勤）\n\n这就是"
+      },
+      "createdAt": "2026-10-02T09:07:16Z"
+    },
+    {
+      "seq": 184,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"门"
+      },
+      "createdAt": "2026-10-02T09:07:17Z"
+    },
+    {
+      "seq": 185,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁联动\"的能力"
+      },
+      "createdAt": "2026-10-02T09:07:17Z"
+    },
+    {
+      "seq": 186,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。从已锁产品看"
+      },
+      "createdAt": "2026-10-02T09:07:18Z"
+    },
+    {
+      "seq": 187,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，熵基互联"
+      },
+      "createdAt": "2026-10-02T09:07:18Z"
+    },
+    {
+      "seq": 188,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "小程序"
+      },
+      "createdAt": "2026-10-02T09:07:19Z"
+    },
+    {
+      "seq": 189,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动"
+      },
+      "createdAt": "2026-10-02T09:07:20Z"
+    },
+    {
+      "seq": 190,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁是考拉设备的"
+      },
+      "createdAt": "2026-10-02T09:07:20Z"
+    },
+    {
+      "seq": 191,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门"
+      },
+      "createdAt": "2026-10-02T09:07:21Z"
+    },
+    {
+      "seq": 192,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁远程联动。\n\n关于"
+      },
+      "createdAt": "2026-10-02T09:07:21Z"
+    },
+    {
+      "seq": 193,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本项目\"智能锁联动\"，可以理解为：\n1"
+      },
+      "createdAt": "2026-10-02T09:07:22Z"
+    },
+    {
+      "seq": 194,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": ". \"智能锁\""
+      },
+      "createdAt": "2026-10-02T09:07:22Z"
+    },
+    {
+      "seq": 195,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "是终端"
+      },
+      "createdAt": "2026-10-02T09:07:23Z"
+    },
+    {
+      "seq": 196,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "硬件"
+      },
+      "createdAt": "2026-10-02T09:07:23Z"
+    },
+    {
+      "seq": 197,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（智能门锁）\n2. \"联动\"是与"
+      },
+      "createdAt": "2026-10-02T09:07:23Z"
+    },
+    {
+      "seq": 198,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联平台联动\n3. 通过平台实现"
+      },
+      "createdAt": "2026-10-02T09:07:24Z"
+    },
+    {
+      "seq": 199,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：远程开门、权限"
+      },
+      "createdAt": "2026-10-02T09:07:24Z"
+    },
+    {
+      "seq": 200,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "管理、通行记录、报警、设备参数同步\n\n但是本项目自身"
+      },
+      "createdAt": "2026-10-02T09:07:24Z"
+    },
+    {
+      "seq": 201,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "定位——熵基互联+智能锁联动——这是\"互联"
+      },
+      "createdAt": "2026-10-02T09:07:25Z"
+    },
+    {
+      "seq": 202,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "+锁\"的产品"
+      },
+      "createdAt": "2026-10-02T09:07:25Z"
+    },
+    {
+      "seq": 203,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "-形态扩展。本"
+      },
+      "createdAt": "2026-10-02T09:07:26Z"
+    },
+    {
+      "seq": 204,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目本身文档里"
+      },
+      "createdAt": "2026-10-02T09:07:27Z"
+    },
+    {
+      "seq": 205,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "没有出现"
+      },
+      "createdAt": "2026-10-02T09:07:27Z"
+    },
+    {
+      "seq": 206,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "具体的内容。远端知识库里"
+      },
+      "createdAt": "2026-10-02T09:07:27Z"
+    },
+    {
+      "seq": 207,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "主要是现"
+      },
+      "createdAt": "2026-10-02T09:07:28Z"
+    },
+    {
+      "seq": 208,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "成的门禁联动"
+      },
+      "createdAt": "2026-10-02T09:07:28Z"
+    },
+    {
+      "seq": 209,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "能力。考勤+"
+      },
+      "createdAt": "2026-10-02T09:07:29Z"
+    },
+    {
+      "seq": 210,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门禁没有说"
+      },
+      "createdAt": "2026-10-02T09:07:29Z"
+    },
+    {
+      "seq": 211,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动。\n\n还需要"
+      },
+      "createdAt": "2026-10-02T09:07:30Z"
+    },
+    {
+      "seq": 212,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "注意可信"
+      },
+      "createdAt": "2026-10-02T09:07:30Z"
+    },
+    {
+      "seq": 213,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "度评估：\n- 远端知识库是应用的整理结果，不能等同于"
+      },
+      "createdAt": "2026-10-02T09:07:30Z"
+    },
+    {
+      "seq": 214,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "已核对原始"
+      },
+      "createdAt": "2026-10-02T09:07:31Z"
+    },
+    {
+      "seq": 215,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文档。本项目没有原文证据，只提供远端应用"
+      },
+      "createdAt": "2026-10-02T09:07:31Z"
+    },
+    {
+      "seq": 216,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "答复"
+      },
+      "createdAt": "2026-10-02T09:07:32Z"
+    },
+    {
+      "seq": 217,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\n- 本"
+      },
+      "createdAt": "2026-10-02T09:07:32Z"
+    },
+    {
+      "seq": 218,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目内部未检索"
+      },
+      "createdAt": "2026-10-02T09:07:33Z"
+    },
+    {
+      "seq": 219,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "到 0 命中（即没有本项目的描述）。但本地检索结果返回"
+      },
+      "createdAt": "2026-10-02T09:07:33Z"
+    },
+    {
+      "seq": 220,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的是按关键字"
+      },
+      "createdAt": "2026-10-02T09:07:33Z"
+    },
+    {
+      "seq": 221,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "命"
+      },
+      "createdAt": "2026-10-02T09:07:34Z"
+    },
+    {
+      "seq": 222,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "中的查询误命中的"
+      },
+      "createdAt": "2026-10-02T09:07:34Z"
+    },
+    {
+      "seq": 223,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "内容，比如\"印尼"
+      },
+      "createdAt": "2026-10-02T09:07:34Z"
+    },
+    {
+      "seq": 224,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "市场"
+      },
+      "createdAt": "2026-10-02T09:07:35Z"
+    },
+    {
+      "seq": 225,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"+\"lock_id\""
+      },
+      "createdAt": "2026-10-02T09:07:35Z"
+    },
+    {
+      "seq": 226,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "+\"DOMINANT\""
+      },
+      "createdAt": "2026-10-02T09:07:36Z"
+    },
+    {
+      "seq": 227,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（关键词锁）的命中"
+      },
+      "createdAt": "2026-10-02T09:07:36Z"
+    },
+    {
+      "seq": 228,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，这是"
+      },
+      "createdAt": "2026-10-02T09:07:37Z"
+    },
+    {
+      "seq": 229,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " doppkmode 的"
+      },
+      "createdAt": "2026-10-02T09:07:38Z"
+    },
+    {
+      "seq": 230,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "问题。\n\n也就是说：\n- 本项目"
+      },
+      "createdAt": "2026-10-02T09:07:38Z"
+    },
+    {
+      "seq": 231,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库：无\n"
+      },
+      "createdAt": "2026-10-02T09:07:38Z"
+    },
+    {
+      "seq": 232,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- "
+      },
+      "createdAt": "2026-10-02T09:07:39Z"
+    },
+    {
+      "seq": 233,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "远端知识库："
+      },
+      "createdAt": "2026-10-02T09:07:39Z"
+    },
+    {
+      "seq": 234,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "已查得原句"
+      },
+      "createdAt": "2026-10-02T09:07:40Z"
+    },
+    {
+      "seq": 235,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "多处"
+      },
+      "createdAt": "2026-10-02T09:07:40Z"
+    },
+    {
+      "seq": 236,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，以门禁设备+"
+      },
+      "createdAt": "2026-10-02T09:07:40Z"
+    },
+    {
+      "seq": 237,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "通行权限+远程开门+设备报警联动为主"
+      },
+      "createdAt": "2026-10-02T09:07:41Z"
+    },
+    {
+      "seq": 238,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，未明示\"智能锁\"产品字眼。\n\n应按本次要求"
+      },
+      "createdAt": "2026-10-02T09:07:41Z"
+    },
+    {
+      "seq": 239,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "输出 400 字以内的草稿。\n\n本次任务只输出\"资料"
+      },
+      "createdAt": "2026-10-02T09:07:41Z"
+    },
+    {
+      "seq": 240,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "核验草稿\"，"
+      },
+      "createdAt": "2026-10-02T09:07:42Z"
+    },
+    {
+      "seq": 241,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "不进入"
+      },
+      "createdAt": "2026-10-02T09:07:42Z"
+    },
+    {
+      "seq": 242,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "后续"
+      },
+      "createdAt": "2026-10-02T09:07:42Z"
+    },
+    {
+      "seq": 243,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "完整 C02 比较。资料核验需要注明：\n1. 已查来源\n2. "
+      },
+      "createdAt": "2026-10-02T09:07:43Z"
+    },
+    {
+      "seq": 244,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "适用性\n3. 未取得事项\n4. 可"
+      },
+      "createdAt": "2026-10-02T09:07:43Z"
+    },
+    {
+      "seq": 245,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "信度\n\n不输出"
+      },
+      "createdAt": "2026-10-02T09:07:44Z"
+    },
+    {
+      "seq": 246,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "竞品对比"
+      },
+      "createdAt": "2026-10-02T09:07:44Z"
+    },
+    {
+      "seq": 247,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、"
+      },
+      "createdAt": "2026-10-02T09:07:45Z"
+    },
+    {
+      "seq": 248,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "评审"
+      },
+      "createdAt": "2026-10-02T09:07:45Z"
+    },
+    {
+      "seq": 249,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "结论、财务指标。\n\n现在整理：</think>\n\n"
+      },
+      "createdAt": "2026-10-02T09:07:47Z"
+    },
+    {
+      "seq": 250,
+      "type": "TOOL_CALL",
+      "payload": {
+        "toolName": "project_knowledge_search",
+        "toolCallId": "call_01a0fbdea3c670a39e909669"
+      },
+      "createdAt": "2026-10-02T09:07:47Z"
+    },
+    {
+      "seq": 251,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL",
+        "inputTokens": 16066,
+        "outputTokens": 788
+      },
+      "createdAt": "2026-10-02T09:07:47Z"
+    },
+    {
+      "seq": 252,
+      "type": "SOURCE",
+      "payload": {
+        "hits": 8,
+        "tool": "project_knowledge_search",
+        "chars": 11331,
+        "query": "项目定位 客群 智能锁",
+        "preview": "【知识库向量｜出处：未知来源｜文档：catalog-sample-10pct\n测试抽样产品主档。产品线：智能锁产品。子品类：单机版酒店锁。系列：LH系列。型号：LH1000。资料清单：彩页、用户手册（单机版软件）。上市日期：未填。这是在售目录知识，不进入六阶段项目。\n【知识库向量｜出处：未知来源｜文档：catalog-sample-10pct\n测试抽样产品主档。产品线：智能锁产品。子品类：集中管理锁。系列：P3系列。型号：P3-W-700H。资料清单：彩页、快速使用指南。上市日期：未填。这是在售目录知识，不进入六阶段项目。\n【知识库向量｜出处：dormakaba.md｜文档：8a501aa989026bdba6809c70fef26f27\n# dormakaba\n\n**as_of:** 2026-10-01 · **tier:** P0 · **country:** 瑞士 · **regions:** eu\n\n## 1. 公司基础 (CT-08 + CT-09)\n\n| 字段 | 值 | 来源 |\n|------|----|------|\n| 英文名 | dormakaba Holding AG | Annual Report 2024/25 |\n| 股票代码 | DOKA.SW (SIX Swiss Exchange, 中盘股) | Annual Report 2024/25 |\n| 总部 | Rümlang, Zurich, Switzerland (Mühlebühlstrasse 23 Wetzikon) | Annual Report 2024/25 |\n| 成立 | 1862（dorma + kaba 2015 合并，合并前 dorma 1908、kaba 1862） | Annual Report 2024/25 \"160 years\" |\n| 上市 | SIX Swiss Exchange；DAX/瑞士 SMI MID 段 | Annual Report 2024/25 |\n| 员工数 | 15,425 FTE (FY2024/25)；>15,000 全球 | Annual Report 2024/25 |\n| 营收（最近一期 FY2024/25） | CHF 2,870.1 M（净销售） | Annual Report 2024/25 |\n| 毛利率",
+        "projectId": "9140005",
+        "toolCallId": "call_01a0fbdea3c670a39e909669",
+        "citationChars": 11331,
+        "citationSha256": "97ceb02ebe26db649722358bc0bc0d1da72af00ed166da31e5f0f9bc5fc7c19f",
+        "retrievalStatus": "SUCCESS"
+      },
+      "createdAt": "2026-10-02T09:07:48Z"
+    },
+    {
+      "seq": 253,
+      "type": "TOOL_RESULT",
+      "payload": {
+        "state": "SUCCESS",
+        "toolName": "project_knowledge_search",
+        "toolCallId": "call_01a0fbdea3c670a39e909669"
+      },
+      "createdAt": "2026-10-02T09:07:48Z"
+    },
+    {
+      "seq": 254,
+      "type": "STEP",
+      "payload": {
+        "kind": "MODEL_CALL"
+      },
+      "createdAt": "2026-10-02T09:07:48Z"
+    },
+    {
+      "seq": 255,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "<think>本项目知识"
+      },
+      "createdAt": "2026-10-02T09:07:55Z"
+    },
+    {
+      "seq": 256,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库没有"
+      },
+      "createdAt": "2026-10-02T09:07:55Z"
+    },
+    {
+      "seq": 257,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "本项目的\"智能锁联动\"自身定位/客"
+      },
+      "createdAt": "2026-10-02T09:07:55Z"
+    },
+    {
+      "seq": 258,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "群文档"
+      },
+      "createdAt": "2026-10-02T09:07:56Z"
+    },
+    {
+      "seq": 259,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。本"
+      },
+      "createdAt": "2026-10-02T09:07:56Z"
+    },
+    {
+      "seq": 260,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "地检索返回的是：\n- catalog-sample-10pct（产品"
+      },
+      "createdAt": "2026-10-02T09:07:56Z"
+    },
+    {
+      "seq": 261,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "目录样本，不进入六阶段项目）\n- 各种竞"
+      },
+      "createdAt": "2026-10-02T09:07:56Z"
+    },
+    {
+      "seq": 262,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "品档（dormakaba、立方"
+      },
+      "createdAt": "2026-10-02T09:07:57Z"
+    },
+    {
+      "seq": 263,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、"
+      },
+      "createdAt": "2026-10-02T09:07:58Z"
+    },
+    {
+      "seq": 264,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Alleg"
+      },
+      "createdAt": "2026-10-02T09:07:58Z"
+    },
+    {
+      "seq": 265,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "ion/"
+      },
+      "createdAt": "2026-10-02T09:07:59Z"
+    },
+    {
+      "seq": 266,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Schlage、AS"
+      },
+      "createdAt": "2026-10-02T09:07:59Z"
+    },
+    {
+      "seq": 267,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "SA AB"
+      },
+      "createdAt": "2026-10-02T09:08:00Z"
+    },
+    {
+      "seq": 268,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "LOY 等"
+      },
+      "createdAt": "2026-10-02T09:08:01Z"
+    },
+    {
+      "seq": 269,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "的"
+      },
+      "createdAt": "2026-10-02T09:08:01Z"
+    },
+    {
+      "seq": 270,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁产品"
+      },
+      "createdAt": "2026-10-02T09:08:02Z"
+    },
+    {
+      "seq": 271,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n\n"
+      },
+      "createdAt": "2026-10-02T09:08:02Z"
+    },
+    {
+      "seq": 272,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "也就是说，**本项目自己的\"熵基互联+智能锁联动\"立项"
+      },
+      "createdAt": "2026-10-02T09:08:02Z"
+    },
+    {
+      "seq": 273,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "资料"
+      },
+      "createdAt": "2026-10-02T09:08:03Z"
+    },
+    {
+      "seq": 274,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "："
+      },
+      "createdAt": "2026-10-02T09:08:04Z"
+    },
+    {
+      "seq": 275,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未"
+      },
+      "createdAt": "2026-10-02T09:08:04Z"
+    },
+    {
+      "seq": 276,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得**。\n\n"
+      },
+      "createdAt": "2026-10-02T09:08:05Z"
+    },
+    {
+      "seq": 277,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "远端知识库有"
+      },
+      "createdAt": "2026-10-02T09:08:05Z"
+    },
+    {
+      "seq": 278,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：\n- 熵"
+      },
+      "createdAt": "2026-10-02T09:08:05Z"
+    },
+    {
+      "seq": 279,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "基互联小程序端："
+      },
+      "createdAt": "2026-10-02T09:08:06Z"
+    },
+    {
+      "seq": 280,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "场所/人员/考勤/门禁/设备管理、远程开门、通"
+      },
+      "createdAt": "2026-10-02T09:08:07Z"
+    },
+    {
+      "seq": 281,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "行权限组"
+      },
+      "createdAt": "2026-10-02T09:08:07Z"
+    },
+    {
+      "seq": 282,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、考勤同步开门"
+      },
+      "createdAt": "2026-10-02T09:08:07Z"
+    },
+    {
+      "seq": 283,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "记录\n- 设备"
+      },
+      "createdAt": "2026-10-02T09:08:08Z"
+    },
+    {
+      "seq": 284,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "联动"
+      },
+      "createdAt": "2026-10-02T09:08:09Z"
+    },
+    {
+      "seq": 285,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "：考勤同步开启"
+      },
+      "createdAt": "2026-10-02T09:08:09Z"
+    },
+    {
+      "seq": 286,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "后"
+      },
+      "createdAt": "2026-10-02T09:08:10Z"
+    },
+    {
+      "seq": 287,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "系统自动"
+      },
+      "createdAt": "2026-10-02T09:08:11Z"
+    },
+    {
+      "seq": 288,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "将正常开门记录同步"
+      },
+      "createdAt": "2026-10-02T09:08:11Z"
+    },
+    {
+      "seq": 289,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "至考勤应用进行"
+      },
+      "createdAt": "2026-10-02T09:08:12Z"
+    },
+    {
+      "seq": 290,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "考勤计算\n- "
+      },
+      "createdAt": "2026-10-02T09:08:12Z"
+    },
+    {
+      "seq": 291,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备报警联动"
+      },
+      "createdAt": "2026-10-02T09:08:13Z"
+    },
+    {
+      "seq": 292,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "记录、固件版本检测升级、考勤"
+      },
+      "createdAt": "2026-10-02T09:08:13Z"
+    },
+    {
+      "seq": 293,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备人员下发增"
+      },
+      "createdAt": "2026-10-02T09:08:13Z"
+    },
+    {
+      "seq": 294,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "删、网络重新配置、设备解绑\n\n这些都是"
+      },
+      "createdAt": "2026-10-02T09:08:13Z"
+    },
+    {
+      "seq": 295,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联既有的\"门禁设备联动能力\"，但"
+      },
+      "createdAt": "2026-10-02T09:08:14Z"
+    },
+    {
+      "seq": 296,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "远"
+      },
+      "createdAt": "2026-10-02T09:08:14Z"
+    },
+    {
+      "seq": 297,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端知识库并未出现明确的\"智能锁\"字样——全部以\"门禁"
+      },
+      "createdAt": "2026-10-02T09:08:15Z"
+    },
+    {
+      "seq": 298,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备\"为主。\n\n未"
+      },
+      "createdAt": "2026-10-02T09:08:15Z"
+    },
+    {
+      "seq": 299,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得项：\n- 本"
+      },
+      "createdAt": "2026-10-02T09:08:16Z"
+    },
+    {
+      "seq": 300,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目自身"
+      },
+      "createdAt": "2026-10-02T09:08:16Z"
+    },
+    {
+      "seq": 301,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "立项"
+      },
+      "createdAt": "2026-10-02T09:08:17Z"
+    },
+    {
+      "seq": 302,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文档未"
+      },
+      "createdAt": "2026-10-02T09:08:17Z"
+    },
+    {
+      "seq": 303,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得"
+      },
+      "createdAt": "2026-10-02T09:08:18Z"
+    },
+    {
+      "seq": 304,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（项目阶段"
+      },
+      "createdAt": "2026-10-02T09:08:19Z"
+    },
+    {
+      "seq": 305,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/客"
+      },
+      "createdAt": "2026-10-02T09:08:19Z"
+    },
+    {
+      "seq": 306,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "群/价值"
+      },
+      "createdAt": "2026-10-02T09:08:19Z"
+    },
+    {
+      "seq": 307,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "定位"
+      },
+      "createdAt": "2026-10-02T09:08:20Z"
+    },
+    {
+      "seq": 308,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/上限均未取得）\n- 智能锁与\""
+      },
+      "createdAt": "2026-10-02T09:08:20Z"
+    },
+    {
+      "seq": 309,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门禁设备"
+      },
+      "createdAt": "2026-10-02T09:08:20Z"
+    },
+    {
+      "seq": 310,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"的同名关系"
+      },
+      "createdAt": "2026-10-02T09:08:20Z"
+    },
+    {
+      "seq": 311,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未取得明确证据\n- 智能"
+      },
+      "createdAt": "2026-10-02T09:08:21Z"
+    },
+    {
+      "seq": 312,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁是否支持蓝牙"
+      },
+      "createdAt": "2026-10-02T09:08:21Z"
+    },
+    {
+      "seq": 313,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "配"
+      },
+      "createdAt": "2026-10-02T09:08:22Z"
+    },
+    {
+      "seq": 314,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "网（"
+      },
+      "createdAt": "2026-10-02T09:08:22Z"
+    },
+    {
+      "seq": 315,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "只"
+      },
+      "createdAt": "2026-10-02T09:08:23Z"
+    },
+    {
+      "seq": 316,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "提到网络"
+      },
+      "createdAt": "2026-10-02T09:08:24Z"
+    },
+    {
+      "seq": 317,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "重建未"
+      },
+      "createdAt": "2026-10-02T09:08:24Z"
+    },
+    {
+      "seq": 318,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "提及蓝牙）\n- 价格"
+      },
+      "createdAt": "2026-10-02T09:08:25Z"
+    },
+    {
+      "seq": 319,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、"
+      },
+      "createdAt": "2026-10-02T09:08:25Z"
+    },
+    {
+      "seq": 320,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "渠道"
+      },
+      "createdAt": "2026-10-02T09:08:26Z"
+    },
+    {
+      "seq": 321,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、未明确协议/SDK"
+      },
+      "createdAt": "2026-10-02T09:08:27Z"
+    },
+    {
+      "seq": 322,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（未取得）\n-"
+      },
+      "createdAt": "2026-10-02T09:08:27Z"
+    },
+    {
+      "seq": 323,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 竞"
+      },
+      "createdAt": "2026-10-02T09:08:28Z"
+    },
+    {
+      "seq": 324,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "品名单（未取得"
+      },
+      "createdAt": "2026-10-02T09:08:28Z"
+    },
+    {
+      "seq": 325,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n- 智能"
+      },
+      "createdAt": "2026-10-02T09:08:29Z"
+    },
+    {
+      "seq": 326,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁的 SKU"
+      },
+      "createdAt": "2026-10-02T09:08:30Z"
+    },
+    {
+      "seq": 327,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 资料"
+      },
+      "createdAt": "2026-10-02T09:08:30Z"
+    },
+    {
+      "seq": 328,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（未取得）\n\n我"
+      },
+      "createdAt": "2026-10-02T09:08:31Z"
+    },
+    {
+      "seq": 329,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "需要"
+      },
+      "createdAt": "2026-10-02T09:08:32Z"
+    },
+    {
+      "seq": 330,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "输出"
+      },
+      "createdAt": "2026-10-02T09:08:32Z"
+    },
+    {
+      "seq": 331,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\""
+      },
+      "createdAt": "2026-10-02T09:08:33Z"
+    },
+    {
+      "seq": 332,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "不超过"
+      },
+      "createdAt": "2026-10-02T09:08:33Z"
+    },
+    {
+      "seq": 333,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "四百字"
+      },
+      "createdAt": "2026-10-02T09:08:34Z"
+    },
+    {
+      "seq": 334,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"草"
+      },
+      "createdAt": "2026-10-02T09:08:34Z"
+    },
+    {
+      "seq": 335,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "稿。\n\n"
+      },
+      "createdAt": "2026-10-02T09:08:35Z"
+    },
+    {
+      "seq": 336,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "格式"
+      },
+      "createdAt": "2026-10-02T09:08:36Z"
+    },
+    {
+      "seq": 337,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "："
+      },
+      "createdAt": "2026-10-02T09:08:36Z"
+    },
+    {
+      "seq": 338,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "草"
+      },
+      "createdAt": "2026-10-02T09:08:37Z"
+    },
+    {
+      "seq": 339,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "稿。注明"
+      },
+      "createdAt": "2026-10-02T09:08:37Z"
+    },
+    {
+      "seq": 340,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "已查来源、适用"
+      },
+      "createdAt": "2026-10-02T09:08:38Z"
+    },
+    {
+      "seq": 341,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "性"
+      },
+      "createdAt": "2026-10-02T09:08:38Z"
+    },
+    {
+      "seq": 342,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、未取得信息、可"
+      },
+      "createdAt": "2026-10-02T09:08:39Z"
+    },
+    {
+      "seq": 343,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "信度。不"
+      },
+      "createdAt": "2026-10-02T09:08:39Z"
+    },
+    {
+      "seq": 344,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "输出"
+      },
+      "createdAt": "2026-10-02T09:08:40Z"
+    },
+    {
+      "seq": 345,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " Gate。\n\n字数"
+      },
+      "createdAt": "2026-10-02T09:08:40Z"
+    },
+    {
+      "seq": 346,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " "
+      },
+      "createdAt": "2026-10-02T09:08:41Z"
+    },
+    {
+      "seq": 347,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "400 字以内。\n\n"
+      },
+      "createdAt": "2026-10-02T09:08:42Z"
+    },
+    {
+      "seq": 348,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "字数字"
+      },
+      "createdAt": "2026-10-02T09:08:42Z"
+    },
+    {
+      "seq": 349,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "数检查。"
+      },
+      "createdAt": "2026-10-02T09:08:42Z"
+    },
+    {
+      "seq": 350,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "</think>\n\n# 资料核验草稿｜熵基互联+"
+      },
+      "createdAt": "2026-10-02T09:08:43Z"
+    },
+    {
+      "seq": 351,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "智能锁联动（C02 前置核"
+      },
+      "createdAt": "2026-10-02T09:08:43Z"
+    },
+    {
+      "seq": 352,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "验）\n\n**已查来源**\n- 本项目已审核文档（project_knowledge_search，关键词\"智能锁联动\"/\"项目定位 "
+      },
+      "createdAt": "2026-10-02T09:08:43Z"
+    },
+    {
+      "seq": 353,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "客群 智能锁\"）：未"
+      },
+      "createdAt": "2026-10-02T09:08:43Z"
+    },
+    {
+      "seq": 354,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "命中本项目自身立项资料"
+      },
+      "createdAt": "2026-10-02T09:08:43Z"
+    },
+    {
+      "seq": 355,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "；返回"
+      },
+      "createdAt": "2026-10-02T09:08:44Z"
+    },
+    {
+      "seq": 356,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "内容为外部"
+      },
+      "createdAt": "2026-10-02T09:08:44Z"
+    },
+    {
+      "seq": 357,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "参考材料（ASSA"
+      },
+      "createdAt": "2026-10-02T09:08:45Z"
+    },
+    {
+      "seq": 358,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " ABLOY/H"
+      },
+      "createdAt": "2026-10-02T09:08:45Z"
+    },
+    {
+      "seq": 359,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "ID、Allegion-Schlage、dormakaba、"
+      },
+      "createdAt": "2026-10-02T09:08:45Z"
+    },
+    {
+      "seq": 360,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "立方/红门/富士智能/霍斯、印尼 Bosch"
+      },
+      "createdAt": "2026-10-02T09:08:46Z"
+    },
+    {
+      "seq": 361,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 市场档等）以及\"智能"
+      },
+      "createdAt": "2026-10-02T09:08:46Z"
+    },
+    {
+      "seq": 362,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁产品\""
+      },
+      "createdAt": "2026-10-02T09:08:46Z"
+    },
+    {
+      "seq": 363,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "采样目录标注"
+      },
+      "createdAt": "2026-10-02T09:08:46Z"
+    },
+    {
+      "seq": 364,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"不进入六阶段项目\"。\n- 远端"
+      },
+      "createdAt": "2026-10-02T09:08:47Z"
+    },
+    {
+      "seq": 365,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "知识库 Fast"
+      },
+      "createdAt": "2026-10-02T09:08:47Z"
+    },
+    {
+      "seq": 366,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "GPT-mcp-69"
+      },
+      "createdAt": "2026-10-02T09:08:48Z"
+    },
+    {
+      "seq": 367,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "cce91596a"
+      },
+      "createdAt": "2026-10-02T09:08:49Z"
+    },
+    {
+      "seq": 368,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "40120630b201"
+      },
+      "createdAt": "2026-10-02T09:08:49Z"
+    },
+    {
+      "seq": 369,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "7（产"
+      },
+      "createdAt": "2026-10-02T09:08:50Z"
+    },
+    {
+      "seq": 370,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "线：熵基"
+      },
+      "createdAt": "2026-10-02T09:08:50Z"
+    },
+    {
+      "seq": 371,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联）：命中《"
+      },
+      "createdAt": "2026-10-02T09:08:51Z"
+    },
+    {
+      "seq": 372,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联简介.doc"
+      },
+      "createdAt": "2026-10-02T09:08:51Z"
+    },
+    {
+      "seq": 373,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "x》《熵基"
+      },
+      "createdAt": "2026-10-02T09:08:52Z"
+    },
+    {
+      "seq": 374,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "互联_操作指导手册"
+      },
+      "createdAt": "2026-10-02T09:08:52Z"
+    },
+    {
+      "seq": 375,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "①.docx》《"
+      },
+      "createdAt": "2026-10-02T09:08:53Z"
+    },
+    {
+      "seq": 376,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "视频指导》一等奖，"
+      },
+      "createdAt": "2026-10-02T09:08:53Z"
+    },
+    {
+      "seq": 377,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "update"
+      },
+      "createdAt": "2026-10-02T09:08:54Z"
+    },
+    {
+      "seq": 378,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "Time 集中在"
+      },
+      "createdAt": "2026-10-02T09:08:54Z"
+    },
+    {
+      "seq": 379,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 2025-11-26 / 2025-"
+      },
+      "createdAt": "2026-10-02T09:08:55Z"
+    },
+    {
+      "seq": 380,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "12-03。\n\n**已有事实（适用本项目的远端摘"
+      },
+      "createdAt": "2026-10-02T09:08:55Z"
+    },
+    {
+      "seq": 381,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "录，未做核验原文校对）**\n- "
+      },
+      "createdAt": "2026-10-02T09:08:55Z"
+    },
+    {
+      "seq": 382,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "熵基互联是微信小程序轻应用，覆盖场所/人员/考勤/门禁/设备五"
+      },
+      "createdAt": "2026-10-02T09:08:56Z"
+    },
+    {
+      "seq": 383,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "类管理。\n- 门禁：刷卡/指纹/刷脸识别；远程开门；访"
+      },
+      "createdAt": "2026-10-02T09:08:56Z"
+    },
+    {
+      "seq": 384,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "客邀约与门"
+      },
+      "createdAt": "2026-10-02T09:08:56Z"
+    },
+    {
+      "seq": 385,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "禁权限。\n- 通行权限组 = 通行"
+      },
+      "createdAt": "2026-10-02T09:08:56Z"
+    },
+    {
+      "seq": 386,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "时间 + 通行设备 + 可通行人员；时间"
+      },
+      "createdAt": "2026-10-02T09:08:56Z"
+    },
+    {
+      "seq": 387,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "分段"
+      },
+      "createdAt": "2026-10-02T09:08:57Z"
+    },
+    {
+      "seq": 388,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "每天 ≤"
+      },
+      "createdAt": "2026-10-02T09:08:57Z"
+    },
+    {
+      "seq": 389,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "5，"
+      },
+      "createdAt": "2026-10-02T09:08:58Z"
+    },
+    {
+      "seq": 390,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "24h 默认不可"
+      },
+      "createdAt": "2026-10-02T09:08:59Z"
+    },
+    {
+      "seq": 391,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "编辑"
+      },
+      "createdAt": "2026-10-02T09:08:59Z"
+    },
+    {
+      "seq": 392,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n- "
+      },
+      "createdAt": "2026-10-02T09:09:00Z"
+    },
+    {
+      "seq": 393,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备详情"
+      },
+      "createdAt": "2026-10-02T09:09:01Z"
+    },
+    {
+      "seq": 394,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "—通行"
+      },
+      "createdAt": "2026-10-02T09:09:01Z"
+    },
+    {
+      "seq": 395,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设置跳"
+      },
+      "createdAt": "2026-10-02T09:09:02Z"
+    },
+    {
+      "seq": 396,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\""
+      },
+      "createdAt": "2026-10-02T09:09:03Z"
+    },
+    {
+      "seq": 397,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "门禁助理\""
+      },
+      "createdAt": "2026-10-02T09:09:04Z"
+    },
+    {
+      "seq": 398,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "；门禁记录与"
+      },
+      "createdAt": "2026-10-02T09:09:04Z"
+    },
+    {
+      "seq": 399,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备"
+      },
+      "createdAt": "2026-10-02T09:09:05Z"
+    },
+    {
+      "seq": 400,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "报警记录可查"
+      },
+      "createdAt": "2026-10-02T09:09:06Z"
+    },
+    {
+      "seq": 401,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/导出。\n- "
+      },
+      "createdAt": "2026-10-02T09:09:06Z"
+    },
+    {
+      "seq": 402,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备考勤同步开启后"
+      },
+      "createdAt": "2026-10-02T09:09:07Z"
+    },
+    {
+      "seq": 403,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，正常"
+      },
+      "createdAt": "2026-10-02T09:09:08Z"
+    },
+    {
+      "seq": 404,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "开门记录同步"
+      },
+      "createdAt": "2026-10-02T09:09:08Z"
+    },
+    {
+      "seq": 405,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "至考勤用于"
+      },
+      "createdAt": "2026-10-02T09:09:09Z"
+    },
+    {
+      "seq": 406,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "打卡"
+      },
+      "createdAt": "2026-10-02T09:09:10Z"
+    },
+    {
+      "seq": 407,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "计算"
+      },
+      "createdAt": "2026-10-02T09:09:10Z"
+    },
+    {
+      "seq": 408,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n- 来源：远"
+      },
+      "createdAt": "2026-10-02T09:09:11Z"
+    },
+    {
+      "seq": 409,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "端应用回答，"
+      },
+      "createdAt": "2026-10-02T09:09:11Z"
+    },
+    {
+      "seq": 410,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原始出处未"
+      },
+      "createdAt": "2026-10-02T09:09:12Z"
+    },
+    {
+      "seq": 411,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得（来源"
+      },
+      "createdAt": "2026-10-02T09:09:12Z"
+    },
+    {
+      "seq": 412,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "标注《加密工具》"
+      },
+      "createdAt": "2026-10-02T09:09:13Z"
+    },
+    {
+      "seq": 413,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）\n\n"
+      },
+      "createdAt": "2026-10-02T09:09:13Z"
+    },
+    {
+      "seq": 414,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "**为何不直接采用"
+      },
+      "createdAt": "2026-10-02T09:09:14Z"
+    },
+    {
+      "seq": 415,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "作为本"
+      },
+      "createdAt": "2026-10-02T09:09:15Z"
+    },
+    {
+      "seq": 416,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目的关键证据**\n-"
+      },
+      "createdAt": "2026-10-02T09:09:15Z"
+    },
+    {
+      "seq": 417,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 远端知识"
+      },
+      "createdAt": "2026-10-02T09:09:16Z"
+    },
+    {
+      "seq": 418,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "库返回的是应用整理"
+      },
+      "createdAt": "2026-10-02T09:09:17Z"
+    },
+    {
+      "seq": 419,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "结果"
+      },
+      "createdAt": "2026-10-02T09:09:18Z"
+    },
+    {
+      "seq": 420,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，不能等同于原始"
+      },
+      "createdAt": "2026-10-02T09:09:18Z"
+    },
+    {
+      "seq": 421,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文档核对原文。\n-"
+      },
+      "createdAt": "2026-10-02T09:09:19Z"
+    },
+    {
+      "seq": 422,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 远端仅提及\"门禁设备\"，未"
+      },
+      "createdAt": "2026-10-02T09:09:19Z"
+    },
+    {
+      "seq": 423,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "明示\"智能锁\"产品字"
+      },
+      "createdAt": "2026-10-02T09:09:20Z"
+    },
+    {
+      "seq": 424,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "眼；本项目"
+      },
+      "createdAt": "2026-10-02T09:09:20Z"
+    },
+    {
+      "seq": 425,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"智能锁联动\"的"
+      },
+      "createdAt": "2026-10-02T09:09:21Z"
+    },
+    {
+      "seq": 426,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"锁"
+      },
+      "createdAt": "2026-10-02T09:09:21Z"
+    },
+    {
+      "seq": 427,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"是否就是浮出"
+      },
+      "createdAt": "2026-10-02T09:09:22Z"
+    },
+    {
+      "seq": 428,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"门禁设备"
+      },
+      "createdAt": "2026-10-02T09:09:23Z"
+    },
+    {
+      "seq": 429,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"，未独立指向。\n"
+      },
+      "createdAt": "2026-10-02T09:09:23Z"
+    },
+    {
+      "seq": 430,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "- 本"
+      },
+      "createdAt": "2026-10-02T09:09:24Z"
+    },
+    {
+      "seq": 431,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目文档未取得：C"
+      },
+      "createdAt": "2026-10-02T09:09:25Z"
+    },
+    {
+      "seq": 432,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "02 客户"
+      },
+      "createdAt": "2026-10-02T09:09:25Z"
+    },
+    {
+      "seq": 433,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "名单、项目阶段"
+      },
+      "createdAt": "2026-10-02T09:09:26Z"
+    },
+    {
+      "seq": 434,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "定义、价值主张、客群边界。\n- 价格"
+      },
+      "createdAt": "2026-10-02T09:09:26Z"
+    },
+    {
+      "seq": 435,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、渠道、协议/SDK、"
+      },
+      "createdAt": "2026-10-02T09:09:26Z"
+    },
+    {
+      "seq": 436,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁型号 SKU、"
+      },
+      "createdAt": "2026-10-02T09:09:26Z"
+    },
+    {
+      "seq": 437,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "型号未取得。\n\n**未取得事项**（明示"
+      },
+      "createdAt": "2026-10-02T09:09:27Z"
+    },
+    {
+      "seq": 438,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "缺"
+      },
+      "createdAt": "2026-10-02T09:09:27Z"
+    },
+    {
+      "seq": 439,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项）\n-"
+      },
+      "createdAt": "2026-10-02T09:09:28Z"
+    },
+    {
+      "seq": 440,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 本项目立项资料与"
+      },
+      "createdAt": "2026-10-02T09:09:28Z"
+    },
+    {
+      "seq": 441,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目阶段描述"
+      },
+      "createdAt": "2026-10-02T09:09:29Z"
+    },
+    {
+      "seq": 442,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "、客"
+      },
+      "createdAt": "2026-10-02T09:09:29Z"
+    },
+    {
+      "seq": 443,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "群锁定在何处、产品"
+      },
+      "createdAt": "2026-10-02T09:09:30Z"
+    },
+    {
+      "seq": 444,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "形态"
+      },
+      "createdAt": "2026-10-02T09:09:31Z"
+    },
+    {
+      "seq": 445,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "描述。\n- 智能"
+      },
+      "createdAt": "2026-10-02T09:09:31Z"
+    },
+    {
+      "seq": 446,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁与\"门禁"
+      },
+      "createdAt": "2026-10-02T09:09:32Z"
+    },
+    {
+      "seq": 447,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备\"的同名"
+      },
+      "createdAt": "2026-10-02T09:09:32Z"
+    },
+    {
+      "seq": 448,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "关系未独立"
+      },
+      "createdAt": "2026-10-02T09:09:33Z"
+    },
+    {
+      "seq": 449,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "指向；"
+      },
+      "createdAt": "2026-10-02T09:09:33Z"
+    },
+    {
+      "seq": 450,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "产品名与门禁"
+      },
+      "createdAt": "2026-10-02T09:09:34Z"
+    },
+    {
+      "seq": 451,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "设备的同名"
+      },
+      "createdAt": "2026-10-02T09:09:34Z"
+    },
+    {
+      "seq": 452,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "映射在所提供的护出"
+      },
+      "createdAt": "2026-10-02T09:09:35Z"
+    },
+    {
+      "seq": 453,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:35Z"
+    },
+    {
+      "seq": 454,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "中未明确。\n- 价格、渠道、SDK"
+      },
+      "createdAt": "2026-10-02T09:09:35Z"
+    },
+    {
+      "seq": 455,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "/协议、各家锁型与供应链"
+      },
+      "createdAt": "2026-10-02T09:09:35Z"
+    },
+    {
+      "seq": 456,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "；门禁设备在智能锁联动上的边界未取得"
+      },
+      "createdAt": "2026-10-02T09:09:36Z"
+    },
+    {
+      "seq": 457,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "。\n- \"智能锁联动\"在本项目中的同"
+      },
+      "createdAt": "2026-10-02T09:09:36Z"
+    },
+    {
+      "seq": 458,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "义词/竞品名单"
+      },
+      "createdAt": "2026-10-02T09:09:37Z"
+    },
+    {
+      "seq": 459,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未取得"
+      },
+      "createdAt": "2026-10-02T09:09:37Z"
+    },
+    {
+      "seq": 460,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "（门禁类仅以\"门禁设备\"出现"
+      },
+      "createdAt": "2026-10-02T09:09:37Z"
+    },
+    {
+      "seq": 461,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "于远端描述，未提及具体锁型）。\n\n**"
+      },
+      "createdAt": "2026-10-02T09:09:37Z"
+    },
+    {
+      "seq": 462,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "可信度**\n- 远端适用为"
+      },
+      "createdAt": "2026-10-02T09:09:38Z"
+    },
+    {
+      "seq": 463,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "高（部署范围、本可集成"
+      },
+      "createdAt": "2026-10-02T09:09:38Z"
+    },
+    {
+      "seq": 464,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "）；原始原文"
+      },
+      "createdAt": "2026-10-02T09:09:39Z"
+    },
+    {
+      "seq": 465,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出处"
+      },
+      "createdAt": "2026-10-02T09:09:39Z"
+    },
+    {
+      "seq": 466,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "为\"护出护"
+      },
+      "createdAt": "2026-10-02T09:09:40Z"
+    },
+    {
+      "seq": 467,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "\"，"
+      },
+      "createdAt": "2026-10-02T09:09:40Z"
+    },
+    {
+      "seq": 468,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原始出处仅涉及应用"
+      },
+      "createdAt": "2026-10-02T09:09:41Z"
+    },
+    {
+      "seq": 469,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出口"
+      },
+      "createdAt": "2026-10-02T09:09:42Z"
+    },
+    {
+      "seq": 470,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "文献，原始中文护"
+      },
+      "createdAt": "2026-10-02T09:09:42Z"
+    },
+    {
+      "seq": 471,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原文未取得。竞品多体。\n-"
+      },
+      "createdAt": "2026-10-02T09:09:42Z"
+    },
+    {
+      "seq": 472,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": " 本项目内部"
+      },
+      "createdAt": "2026-10-02T09:09:43Z"
+    },
+    {
+      "seq": 473,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "未"
+      },
+      "createdAt": "2026-10-02T09:09:43Z"
+    },
+    {
+      "seq": 474,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得：所述（未"
+      },
+      "createdAt": "2026-10-02T09:09:44Z"
+    },
+    {
+      "seq": 475,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "取得）。原始原文仅涉及应用出口"
+      },
+      "createdAt": "2026-10-02T09:09:44Z"
+    },
+    {
+      "seq": 476,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原文与护出护，原始中文"
+      },
+      "createdAt": "2026-10-02T09:09:44Z"
+    },
+    {
+      "seq": 477,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原文未取得。\n\n**检验结果**：本项目\"智能锁联动\"在本"
+      },
+      "createdAt": "2026-10-02T09:09:44Z"
+    },
+    {
+      "seq": 478,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "项目文档与远端护护"
+      },
+      "createdAt": "2026-10-02T09:09:44Z"
+    },
+    {
+      "seq": 479,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护中均未取得独立证据护，不能作为护\"智能"
+      },
+      "createdAt": "2026-10-02T09:09:45Z"
+    },
+    {
+      "seq": 480,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "锁联动\"能力的护出护的依据"
+      },
+      "createdAt": "2026-10-02T09:09:45Z"
+    },
+    {
+      "seq": 481,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，"
+      },
+      "createdAt": "2026-10-02T09:09:45Z"
+    },
+    {
+      "seq": 482,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护出护与护"
+      },
+      "createdAt": "2026-10-02T09:09:46Z"
+    },
+    {
+      "seq": 483,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:46Z"
+    },
+    {
+      "seq": 484,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "原护出护护"
+      },
+      "createdAt": "2026-10-02T09:09:47Z"
+    },
+    {
+      "seq": 485,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:48Z"
+    },
+    {
+      "seq": 486,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "，需进一步限定为护"
+      },
+      "createdAt": "2026-10-02T09:09:48Z"
+    },
+    {
+      "seq": 487,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护护"
+      },
+      "createdAt": "2026-10-02T09:09:49Z"
+    },
+    {
+      "seq": 488,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护出护或护"
+      },
+      "createdAt": "2026-10-02T09:09:49Z"
+    },
+    {
+      "seq": 489,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:50Z"
+    },
+    {
+      "seq": 490,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护出护;或"
+      },
+      "createdAt": "2026-10-02T09:09:51Z"
+    },
+    {
+      "seq": 491,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:51Z"
+    },
+    {
+      "seq": 492,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "手护扩展与护"
+      },
+      "createdAt": "2026-10-02T09:09:52Z"
+    },
+    {
+      "seq": 493,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护护护"
+      },
+      "createdAt": "2026-10-02T09:09:53Z"
+    },
+    {
+      "seq": 494,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出护。如以下护"
+      },
+      "createdAt": "2026-10-02T09:09:54Z"
+    },
+    {
+      "seq": 495,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:54Z"
+    },
+    {
+      "seq": 496,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护护出护:\n- 护护"
+      },
+      "createdAt": "2026-10-02T09:09:55Z"
+    },
+    {
+      "seq": 497,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:55Z"
+    },
+    {
+      "seq": 498,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出护\"为本项目阶段护"
+      },
+      "createdAt": "2026-10-02T09:09:55Z"
+    },
+    {
+      "seq": 499,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出护与"
+      },
+      "createdAt": "2026-10-02T09:09:56Z"
+    },
+    {
+      "seq": 500,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "产品定价护出护"
+      },
+      "createdAt": "2026-10-02T09:09:56Z"
+    },
+    {
+      "seq": 501,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:57Z"
+    },
+    {
+      "seq": 502,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出护以下护出"
+      },
+      "createdAt": "2026-10-02T09:09:57Z"
+    },
+    {
+      "seq": 503,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护护"
+      },
+      "createdAt": "2026-10-02T09:09:58Z"
+    },
+    {
+      "seq": 504,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出护出以下护"
+      },
+      "createdAt": "2026-10-02T09:09:58Z"
+    },
+    {
+      "seq": 505,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "护"
+      },
+      "createdAt": "2026-10-02T09:09:59Z"
+    },
+    {
+      "seq": 506,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出以下护护"
+      },
+      "createdAt": "2026-10-02T09:09:59Z"
+    },
+    {
+      "seq": 507,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "出以下护护出以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:00Z"
+    },
+    {
+      "seq": 508,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:00Z"
+    },
+    {
+      "seq": 509,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:00Z"
+    },
+    {
+      "seq": 510,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:00Z"
+    },
+    {
+      "seq": 511,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:00Z"
+    },
+    {
+      "seq": 512,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:00Z"
+    },
+    {
+      "seq": 513,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:01Z"
+    },
+    {
+      "seq": 514,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:01Z"
+    },
+    {
+      "seq": 515,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:01Z"
+    },
+    {
+      "seq": 516,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:02Z"
+    },
+    {
+      "seq": 517,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:02Z"
+    },
+    {
+      "seq": 518,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:02Z"
+    },
+    {
+      "seq": 519,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:02Z"
+    },
+    {
+      "seq": 520,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:03Z"
+    },
+    {
+      "seq": 521,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:04Z"
+    },
+    {
+      "seq": 522,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:04Z"
+    },
+    {
+      "seq": 523,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:05Z"
+    },
+    {
+      "seq": 524,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:05Z"
+    },
+    {
+      "seq": 525,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:06Z"
+    },
+    {
+      "seq": 526,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:06Z"
+    },
+    {
+      "seq": 527,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:07Z"
+    },
+    {
+      "seq": 528,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:08Z"
+    },
+    {
+      "seq": 529,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:08Z"
+    },
+    {
+      "seq": 530,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:09Z"
+    },
+    {
+      "seq": 531,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:09Z"
+    },
+    {
+      "seq": 532,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:10Z"
+    },
+    {
+      "seq": 533,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:10Z"
+    },
+    {
+      "seq": 534,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:10Z"
+    },
+    {
+      "seq": 535,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:10Z"
+    },
+    {
+      "seq": 536,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:11Z"
+    },
+    {
+      "seq": 537,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:11Z"
+    },
+    {
+      "seq": 538,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:11Z"
+    },
+    {
+      "seq": 539,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:11Z"
+    },
+    {
+      "seq": 540,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:12Z"
+    },
+    {
+      "seq": 541,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:12Z"
+    },
+    {
+      "seq": 542,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:13Z"
+    },
+    {
+      "seq": 543,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:13Z"
+    },
+    {
+      "seq": 544,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:14Z"
+    },
+    {
+      "seq": 545,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:14Z"
+    },
+    {
+      "seq": 546,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:15Z"
+    },
+    {
+      "seq": 547,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:15Z"
+    },
+    {
+      "seq": 548,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:15Z"
+    },
+    {
+      "seq": 549,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:16Z"
+    },
+    {
+      "seq": 550,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:16Z"
+    },
+    {
+      "seq": 551,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:16Z"
+    },
+    {
+      "seq": 552,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:16Z"
+    },
+    {
+      "seq": 553,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:17Z"
+    },
+    {
+      "seq": 554,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:17Z"
+    },
+    {
+      "seq": 555,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:17Z"
+    },
+    {
+      "seq": 556,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:18Z"
+    },
+    {
+      "seq": 557,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:18Z"
+    },
+    {
+      "seq": 558,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:19Z"
+    },
+    {
+      "seq": 559,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:19Z"
+    },
+    {
+      "seq": 560,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:20Z"
+    },
+    {
+      "seq": 561,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:21Z"
+    },
+    {
+      "seq": 562,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:21Z"
+    },
+    {
+      "seq": 563,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:22Z"
+    },
+    {
+      "seq": 564,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:22Z"
+    },
+    {
+      "seq": 565,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:22Z"
+    },
+    {
+      "seq": 566,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:23Z"
+    },
+    {
+      "seq": 567,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:23Z"
+    },
+    {
+      "seq": 568,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:23Z"
+    },
+    {
+      "seq": 569,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:23Z"
+    },
+    {
+      "seq": 570,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:24Z"
+    },
+    {
+      "seq": 571,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:24Z"
+    },
+    {
+      "seq": 572,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:25Z"
+    },
+    {
+      "seq": 573,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:25Z"
+    },
+    {
+      "seq": 574,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:26Z"
+    },
+    {
+      "seq": 575,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:26Z"
+    },
+    {
+      "seq": 576,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:26Z"
+    },
+    {
+      "seq": 577,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:27Z"
+    },
+    {
+      "seq": 578,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:27Z"
+    },
+    {
+      "seq": 579,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:27Z"
+    },
+    {
+      "seq": 580,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:28Z"
+    },
+    {
+      "seq": 581,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:28Z"
+    },
+    {
+      "seq": 582,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:28Z"
+    },
+    {
+      "seq": 583,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:29Z"
+    },
+    {
+      "seq": 584,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:29Z"
+    },
+    {
+      "seq": 585,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:30Z"
+    },
+    {
+      "seq": 586,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:31Z"
+    },
+    {
+      "seq": 587,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:31Z"
+    },
+    {
+      "seq": 588,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:31Z"
+    },
+    {
+      "seq": 589,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:31Z"
+    },
+    {
+      "seq": 590,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:32Z"
+    },
+    {
+      "seq": 591,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:32Z"
+    },
+    {
+      "seq": 592,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:33Z"
+    },
+    {
+      "seq": 593,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:34Z"
+    },
+    {
+      "seq": 594,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:34Z"
+    },
+    {
+      "seq": 595,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:35Z"
+    },
+    {
+      "seq": 596,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:35Z"
+    },
+    {
+      "seq": 597,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:36Z"
+    },
+    {
+      "seq": 598,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:37Z"
+    },
+    {
+      "seq": 599,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:38Z"
+    },
+    {
+      "seq": 600,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:38Z"
+    },
+    {
+      "seq": 601,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:39Z"
+    },
+    {
+      "seq": 602,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:39Z"
+    },
+    {
+      "seq": 603,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:39Z"
+    },
+    {
+      "seq": 604,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:40Z"
+    },
+    {
+      "seq": 605,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:40Z"
+    },
+    {
+      "seq": 606,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:41Z"
+    },
+    {
+      "seq": 607,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:41Z"
+    },
+    {
+      "seq": 608,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:42Z"
+    },
+    {
+      "seq": 609,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:42Z"
+    },
+    {
+      "seq": 610,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:43Z"
+    },
+    {
+      "seq": 611,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:44Z"
+    },
+    {
+      "seq": 612,
+      "type": "TEXT_DELTA",
+      "payload": {
+        "text": "以下以下以下以下以下"
+      },
+      "createdAt": "2026-10-02T09:10:44Z"
+    },
+    {
+      "seq": 613,
+      "type": "ERROR",
+      "payload": {
+        "message": "运行超时，已终止",
+        "errorCode": "RUN_TIMEOUT"
+      },
+      "createdAt": "2026-10-02T09:10:45Z"
+    }
+  ],
+  "pollIncomplete": false
+}

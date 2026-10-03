@@ -1,0 +1,8 @@
+{
+  "probe": "Current CompletionGate counterexample; not a live model run or full application verdict",
+  "source": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+  "compilationExit": 0,
+  "executionExit": 0,
+  "probeSource": "import org.ruoyi.ipd.agent.service.ProjectAgentCompletionGate;\nimport java.util.Map;\npublic class Probe {public static void main(String[] args){\nvar g=new ProjectAgentCompletionGate();g.noteTool(\"project_knowledge_search\");g.noteSource(Map.of(\"hits\",1,\"preview\",\"研发费用率 12.83%\"));\nfor(String b:new String[]{\"研发费用率为12.83%。\",\"研发费用率为13.09%。\",\"研发费用率为117.53%。\"})System.out.println(b+\" => \"+g.reject(b));\nvar no=new ProjectAgentCompletionGate();no.noteTool(\"project_knowledge_search\");System.out.println(\"无命中且无未取得说明 => \"+no.reject(\"研发费用率为13.09%。\"));}}\n",
+  "output": "研发费用率为12.83%。 => null\n研发费用率为13.09%。 => null\n研发费用率为117.53%。 => null\n无命中且无未取得说明 => COMPLETION_REJECTED\n"
+}

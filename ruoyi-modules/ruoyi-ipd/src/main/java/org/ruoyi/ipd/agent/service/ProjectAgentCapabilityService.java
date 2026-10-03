@@ -74,10 +74,11 @@ public class ProjectAgentCapabilityService {
         List<ProjectAgentViews.Skill> skills = entry.skills().stream().map(skillCatalog::status)
             .map(s -> new ProjectAgentViews.Skill(s.name(), s.version(), s.sha256(), s.available(), s.reason()))
             .toList();
-        List<ProjectAgentViews.Tool> tools = entry.tools().stream().map(toolCatalog::status)
+        List<ProjectAgentViews.Tool> tools = ProjectAgentToolCatalog.executionToolIds(entry.tools()).stream().map(toolCatalog::status)
             .map(t -> new ProjectAgentViews.Tool(t.id(), t.name(), t.readOnly(), t.available(), t.reason()))
             .toList();
-        String reason = unavailableReason(skills, tools, anyModel);
+        String reason = unavailableReason(skills, tools.stream()
+            .filter(tool -> entry.tools().contains(tool.id())).toList(), anyModel);
         return new ProjectAgentViews.Pack(entry.code(), entry.version(), entry.name(), entry.description(),
             entry.stages() == null ? List.of() : entry.stages(),
             entry.actionCodes() == null ? List.of() : entry.actionCodes(),

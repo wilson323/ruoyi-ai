@@ -42,6 +42,7 @@ public class AgUiCopilotRun {
         void send(List<Map<String, Object>> events);
 
         void complete();
+        default void onDisconnect(Runnable cancellation) { }
     }
 
     private final AiCopilotService service;
@@ -92,7 +93,8 @@ public class AgUiCopilotRun {
         CopilotRunRegistryService.RunHandle handle =
             runRegistry == null ? null : runRegistry.register(actor, runId);
         AgUiSseSink guarded = cancelGuard(handle, out, tx);
-        executor.execute(() -> pushStream(actor, req, tx, guarded));
+        if (handle != null) { out.onDisconnect(() -> runRegistry.disconnect(handle)); }
+        executor.execute(() -> pushStream(actor, req, tx, guarded, handle));
     }
 
     /**
@@ -114,7 +116,6 @@ public class AgUiCopilotRun {
                 }
                 // 取消已置位：吞业务帧，仅终结一次 RUN_ERROR(CANCELLED)
                 if (cancelledFrameSent.compareAndSet(false, true)) {
-                    runRegistry.unregister(handle.runId());
                     out.send(tx.onError("CANCELLED", "run cancelled by client"));
                     out.complete();
                 }
@@ -122,7 +123,7 @@ public class AgUiCopilotRun {
 
             @Override
             public void complete() {
-                runRegistry.unregister(handle.runId());
+                runRegistry.complete(handle);
                 if (!cancelledFrameSent.get()) {
                     out.complete();
                 }
@@ -130,10 +131,14 @@ public class AgUiCopilotRun {
         };
     }
 
-    private void pushStream(IpdActor actor, AiCopilotReq req, AgUiFrameTranslator tx, AgUiSseSink out) {
+    private void pushStream(IpdActor actor, AiCopilotReq req, AgUiFrameTranslator tx, AgUiSseSink out,
+                            CopilotRunRegistryService.RunHandle handle) {
         AtomicBoolean terminated = new AtomicBoolean(false);
         try {
             service.chatStream(actor, req, new AiCopilotService.CopilotStreamSink() {
+                @Override public void bind(reactor.core.Disposable subscription) {
+                    if (handle != null) { handle.bind(subscription); }
+                }
                 @Override
                 public void meta(AiCopilotResp resp) {
                     out.send(tx.onMeta());

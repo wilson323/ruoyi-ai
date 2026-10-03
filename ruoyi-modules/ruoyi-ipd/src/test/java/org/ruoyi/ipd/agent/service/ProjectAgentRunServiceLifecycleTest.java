@@ -66,7 +66,7 @@ class ProjectAgentRunServiceLifecycleTest {
         assertThat(first.events().get(0).payload()).isInstanceOf(Map.class);
 
         sink.onToolCall("call-1", "project_knowledge_search");
-        sink.onSource(Map.of("hits", 2));
+        sink.onSource(Map.of("hits", 2, "retrievalStatus", "SUCCESS", "citationText", "检索资料"));
         sink.onText("结论");
         sink.onComplete();
 
@@ -137,6 +137,37 @@ class ProjectAgentRunServiceLifecycleTest {
     }
 
     @Test
+    void detachedDurableAguiPauseCanBeCancelledButOrdinaryWaitCannot() throws Exception {
+        for (boolean agui : new boolean[] {false, true}) {
+            var source = new RunServiceHarness(true, false, 4);
+            Long runId = Long.valueOf(source.service.create(ACTOR, PROJECT_ID,
+                c02(agui ? "life-pause-agui" : "life-pause-normal", MESSAGE)).runId());
+            var run = source.store.findRun(runId).orElseThrow();
+            run.setStatus("WAITING_APPROVAL");
+            var remote = new RunServiceHarness(true, false, 4);
+            remote.store.insertRun(run);
+            var cleanups = new java.util.concurrent.atomic.AtomicInteger();
+            remote.executor.setPausedCheckpointCleanup(r -> cleanups.incrementAndGet());
+            var payload = new java.util.LinkedHashMap<String, Object>();
+            payload.put("kind", "AWAIT_USER");
+            if (agui) {
+                payload.put("reason", "AGUI_INTERRUPT");
+                payload.put("pauseEpoch", 1); payload.put("checkpointVersion", 3);
+                payload.put("runId", String.valueOf(runId)); payload.put("threadId", String.valueOf(runId));
+                payload.put("ownerPersonId", String.valueOf(ACTOR.id()));
+                payload.put("interrupts", Map.of("i", Map.of("id", "i", "toolCallId", "call")));
+            }
+            remote.store.appendEvent(IpdAgentRunEvent.builder().runId(runId).tenantId(run.getTenantId())
+                .seq(1L).eventType("STEP").payload(new com.fasterxml.jackson.databind.ObjectMapper()
+                    .writeValueAsString(payload)).build());
+            assertThat(remote.service.cancel(ACTOR, runId).status())
+                .isEqualTo(agui ? "CANCELLED" : "CANCEL_REQUESTED");
+            assertThat(remote.store.terminalSeq(runId).isPresent()).isEqualTo(agui);
+            assertThat(cleanups.get()).isEqualTo(agui ? 1 : 0);
+        }
+    }
+
+    @Test
     @DisplayName("内核执行即抛异常：收口 FAILED + 唯一 ERROR(KERNEL_ERROR)，额度释放")
     void kernelFailureIsFinalizedOnce() {
         RunServiceHarness h = new RunServiceHarness(true, false, 1);
@@ -158,4 +189,33 @@ class ProjectAgentRunServiceLifecycleTest {
         assertThatThrownBy(call::run).isInstanceOfSatisfying(IpdBusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(code));
     }
+    @Test
+    void eventHttpProjectionHidesInternalReceiptWithoutChangingPersistenceOrToolArgs() throws Exception {
+        var h = new RunServiceHarness(true, false, 4);
+        Long runId = Long.valueOf(h.service.create(ACTOR, PROJECT_ID,
+            c02("life-public-event", MESSAGE)).runId());
+        String internal = "ipd.server.child.invocation";
+        var metadata = Map.of("agentscope.interruptKind", "permission_confirm", "toolName", "write_file",
+            "toolInput", Map.of(internal, "ordinary tool argument"), "toolContent", "original raw args",
+            "replyId", "reply", internal, "private locator");
+        h.executor.handle(runId).orElseThrow().onStep("AWAIT_USER", Map.of("reason", "AGUI_INTERRUPT",
+            internal, Map.of("actor", "private receipt"), "interrupts", Map.of("interrupt",
+                Map.of("id", "interrupt", "reason", "tool_call", "metadata", metadata))));
+        var event = h.service.events(ACTOR, runId, 0L).events().stream()
+            .filter(e -> e.type().equals("STEP") && "AWAIT_USER".equals(((Map<?, ?>)e.payload()).get("kind")))
+            .findFirst().orElseThrow();
+        var payload = (Map<?, ?>)event.payload();
+        assertThat(payload.containsKey(internal)).isFalse();
+        var pending = (Map<?, ?>)((Map<?, ?>)payload.get("interrupts")).get("interrupt");
+        var publicMetadata = (Map<?, ?>)pending.get("metadata");
+        assertThat(publicMetadata.containsKey(internal)).isFalse();
+        assertThat(publicMetadata.get("agentscope.interruptKind")).isEqualTo("permission_confirm");
+        assertThat(((Map<?, ?>)publicMetadata.get("toolInput")).get(internal))
+            .isEqualTo("ordinary tool argument");
+        assertThat(publicMetadata.get("toolContent")).isEqualTo("original raw args");
+        var stored = h.store.listEvents(runId, event.seq() - 1, 1).get(0).getPayload();
+        assertThat(stored).contains("private locator", "private receipt");
+        assertThat(event.seq()).isEqualTo(h.store.listEvents(runId, event.seq() - 1, 1).get(0).getSeq());
+    }
+
 }

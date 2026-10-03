@@ -11,6 +11,7 @@ import io.agentscope.core.tool.Toolkit;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import org.ruoyi.chat.kernel.AgentScopeModelFactory;
+import org.ruoyi.chat.kernel.ChatOfficialCapabilities;
 import org.ruoyi.chat.kernel.KernelModelRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,9 @@ public class CodingServiceImpl implements ICodingService {
 
     @Override
     public SseEmitter chat(CodingRequestBo bo, Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("Authenticated coding user is required");
+        }
         // 在建立 SSE 和调用模型前同步拒绝非受控工作区，让调用方获得明确错误。
         Path root = workspaceService.resolveRoot(bo.getWorkspacePath());
 
@@ -95,7 +99,8 @@ public class CodingServiceImpl implements ICodingService {
                     throw new IllegalStateException("模型未找到: " + bo.getModel()
                         + "，请在 chat_model 表配置该模型名称");
                 }
-                Model chatModel = AgentScopeModelFactory.create(KernelModelRequest.from(modelVo));
+                KernelModelRequest selectedModel = KernelModelRequest.from(modelVo);
+                Model chatModel = AgentScopeModelFactory.create(selectedModel);
 
                 // 2. 解析工作目录
                 Files.createDirectories(root);
@@ -114,7 +119,11 @@ public class CodingServiceImpl implements ICodingService {
                     toolkit.registerTool(tool);
                 }
                 String result;
-                try (HarnessAgent agent = HarnessAgent.builder().name("coding")
+                // The existing business tools own real host-workspace changes and their SSE receipts.
+                // Official filesystem/shell/memory/plan tools execute in a separate session sandbox;
+                // changes there are working artifacts, never silently claimed as host delivery.
+                Path runtimeWorkspace = Files.createTempDirectory("coding-native-runtime-");
+                var builder = HarnessAgent.builder().name("coding")
                     .model(chatModel).toolkit(toolkit).maxIters(30)
                     // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）；不设时SDK不套任何重试。
                     .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
@@ -123,11 +132,15 @@ public class CodingServiceImpl implements ICodingService {
                     // 此处显式声明与默认等价的配置，固化意图防官方默认漂移；溢出硬失败仅在 disableCompaction 时出现。
                     .compaction(CompactionConfig.builder().build())
                     .sysPrompt("你是编程助手。只操作当前受控工作目录；修改前读取文件，命令失败检查输出，"
-                        + "完成后简要总结。只能调用本次注册的工具：" + toolkit.getToolNames())
-                    .disableFilesystemTools().disableShellTool().disableMemoryTools()
-                    .disableMemoryHooks().disableTranscript().disableSubagents().disableDynamicSubagents()
-                    .disableDynamicSkills().disableDefaultWorkspaceSkills().skillsEnabled(false)
-                    .stateStore(new InMemoryAgentStateStore()).workspace(root).build()) {
+                        + "完成后简要总结。工作区写入和命令执行仍受官方权限检查。"
+                        + "readFile/writeFile/editFile/deleteFile/listDirectory/executeCommand 操作已授权业务工作目录并提供交付事件；"
+                        + "官方 read_file/write_file/execute 在隔离工作区处理本次运行草案，不能把其中的暂存文件当业务目录已交付。")
+                    .stateStore(new InMemoryAgentStateStore()).workspace(runtimeWorkspace);
+                var capabilities = ChatOfficialCapabilities.configure(builder, runtimeWorkspace, String.valueOf(userId),
+                    System.getProperty("chat.kernel.agentscope.sandbox-image", "python:3.13-alpine"),
+                    selectedModel.apiKey() == null ? java.util.List.of() : java.util.List.of(selectedModel.apiKey()));
+                try (HarnessAgent agent = builder.build()) {
+                    capabilities.bind(agent);
                     RuntimeContext context = RuntimeContext.builder().userId(String.valueOf(userId))
                         .sessionId(java.util.UUID.randomUUID().toString()).build();
                     Msg answer = agent.call(Msg.builder().role(MsgRole.USER).textContent(bo.getPrompt()).build(), context)

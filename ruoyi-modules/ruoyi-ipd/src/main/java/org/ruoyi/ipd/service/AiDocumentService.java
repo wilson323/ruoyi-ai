@@ -24,6 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.Objects;
 
 /**
  * AI 文档原始输出与不可丢失版本链服务（P1-10.1；主责 AC-AI-04 / AC-AI-06，BR-AI-03）。
@@ -79,6 +81,23 @@ public class AiDocumentService {
             return "已归档";
         }
         return status == null ? "" : status;
+    }
+
+    /**
+     * 读回已落库文档的状态。重复定档必须用这一行，不能把后来的审核结果写成待审核。
+     *
+     * @param documentId 文档主键
+     * @return 库内状态；行不存在或状态为空时为空
+     */
+    public Optional<String> statusOf(Long documentId) {
+        if (documentId == null) {
+            return Optional.empty();
+        }
+        AiDocument row = mapper.selectById(documentId);
+        if (row == null || row.getStatus() == null || row.getStatus().isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(row.getStatus());
     }
 
     /** AC-AI-03：未审核不可归档的对外文案（"须人工审核确认" 固定字面量） */
@@ -152,6 +171,26 @@ public class AiDocumentService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "项目可见性守卫未装配");
         }
         return projectAccess.requireVisible(actor, projectId);
+    }
+
+    private ProjectService projectReadAccess;
+
+    @Autowired(required = false)
+    public void setProjectReadAccess(ProjectService projectReadAccess) {
+        this.projectReadAccess = projectReadAccess;
+    }
+
+    /** 产物只读复用项目可见规则；真实 Person 和租户仍每次重新核验。 */
+    public String requireProjectReadable(IpdActor actor, Long projectId) {
+        if (projectAccess == null || projectReadAccess == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "项目只读守卫未装配");
+        }
+        String tenantId = projectAccess.requireVisible(actor, null);
+        org.ruoyi.ipd.domain.Project project = projectReadAccess.getVisibleById(projectId, actor);
+        if (!java.util.Objects.equals(tenantId, project.getTenantId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见");
+        }
+        return tenantId;
     }
 
     /** 仅真实流转行审计；幂等短路与并发重读分支不审计（避免同一流转双行）。 */
@@ -236,6 +275,32 @@ public class AiDocumentService {
             tokenPrompt, tokenCompletion, actor.id());
     }
 
+    /** AI 返工沿原文档链追加待审核版本，保留本次模型和用量；陈旧基准拒绝。 */
+    @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
+    @Transactional(rollbackFor = Exception.class)
+    public AiDocument reviseGeneratedAuthorized(IpdActor actor, Long projectId, String docType,
+                                                Long documentId, Long baseVersionId, String title,
+                                                String content, String model, Integer tokenPrompt,
+                                                Integer tokenCompletion) {
+        requireArg(actor != null && actor.id() != null, "actor 必填");
+        requireArg(documentId != null && baseVersionId != null, "文档和基准版本必填");
+        requireArg(title != null && !title.isBlank() && title.length() <= 200, "标题必填且不超过200字");
+        requireArg(content != null && !content.isBlank(), "返工正文必填");
+        requireProjectVisible(actor, projectId);
+        AiDocument head = lockedHead(documentId);
+        if (!Objects.equals(head.getProjectId(), projectId) || !Objects.equals(head.getDocType(), docType)
+            || !Objects.equals(head.getId(), baseVersionId) || STATUS_ARCHIVED.equals(head.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "文档基准已变化或不属于本次动作，请重新核对后返工");
+        }
+        AiDocument next = AiDocument.builder().projectId(projectId).docType(docType).title(title).content(content)
+            .model(model).tokenPrompt(tokenPrompt).tokenCompletion(tokenCompletion).status(STATUS_GENERATED)
+            .parentVersionId(head.getId()).versionNo(head.getVersionNo() + 1).contentSha256(sha256Hex(content)).build();
+        next.setCreateBy(actor.id());
+        try { mapper.insert(next); }
+        catch (DuplicateKeyException conflict) { throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT); }
+        return next;
+    }
+
     /**
      * 人工改版（AC-AI-04：审核通过后修改 ⇒ 生成新版本 v2，v1 保留）。
      * 基准版本必须为当前 HEAD；非 HEAD（并发被他人改过/拿旧版提交）→ STATE_CONFLICT
@@ -255,7 +320,7 @@ public class AiDocumentService {
         requireArg(baseVersionId != null, "baseVersionId 必填（声明基准版本）");
         requireArg(newContent != null && !newContent.isBlank(), "改版内容必填");
 
-        AiDocument head = head(documentId);
+        AiDocument head = lockedHead(documentId);
         if (!baseVersionId.equals(head.getId())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
@@ -391,12 +456,15 @@ public class AiDocumentService {
     }
 
     /**
-     * 审核拒绝（BR-AI-03 兜底：审核可拒绝已 REVIEWED 行，强制重新走审核流才能 ARCHIVED）。
-     * 仅 status=REVIEWED 行可拒绝（GENERATED 状态无须拒绝、ARCHIVED 终态不可拒、REJECTED 幂等）。
+     * 退回修改。当前链头上的待审核稿（GENERATED）或已审核稿（REVIEWED）可退回为 REJECTED。
+     * 意见只写在被退回的这一版 {@code review_comment} 上；后续 {@link #revise} 新版本回到
+     * GENERATED，不继承本版意见、审核人或已审核状态。待审核稿已不是链头时拒绝过时退回。
+     * ARCHIVED 不可退。已是 REJECTED 时原样返回，不覆盖意见、不重复审计。
      *
-     * @param versionId  版本行 ID
-     * @param operatorId 操作者（写入 reviewed_by 兜底；幂等拒绝时不覆盖）
-     * @param comment    拒绝原因（必填；落 review_comment 审计完整性）
+     * @param versionId  版本行 ID（意见绑定的那一版）
+     * @param operatorId 操作者（待审核稿写入 reviewed_by；已拒绝时不覆盖）
+     * @param comment    退回意见（必填；落在该版本行）
+     * @return 退回后的同一版本行
      */
     @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
@@ -413,22 +481,37 @@ public class AiDocumentService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "已归档行不可拒绝（终态）");
         }
-        if (!STATUS_REVIEWED.equals(row.getStatus())) {
+        String from = row.getStatus();
+        boolean pending = STATUS_GENERATED.equals(from);
+        if (pending) {
+            requireCurrentHead(versionId);
+        } else if (!STATUS_REVIEWED.equals(from)) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
-                "仅 REVIEWED 行可拒绝（GENERATED 状态请先 review）");
+                "仅待审核或已审核版本可退回");
         }
         Date now = Date.from(clock.instant());
-        int updated = mapper.update(null, Wrappers.<AiDocument>lambdaUpdate()
+        var update = Wrappers.<AiDocument>lambdaUpdate()
             .eq(AiDocument::getId, versionId)
-            .eq(AiDocument::getStatus, STATUS_REVIEWED)
+            .eq(AiDocument::getStatus, from)
             .set(AiDocument::getStatus, STATUS_REJECTED)
             .set(AiDocument::getReviewComment, comment)
-            .set(AiDocument::getReviewedAt, now));
+            .set(AiDocument::getReviewedAt, now);
+        if (pending) {
+            update.set(AiDocument::getReviewedBy, operatorId);
+        }
+        int updated = mapper.update(null, update);
         if (updated > 0) {
+            if (pending) {
+                // 写入后链头已变：抛出让本事务回滚，避免过时退回留下意见。
+                requireCurrentHead(versionId);
+            }
             row.setStatus(STATUS_REJECTED);
             row.setReviewComment(comment);
             row.setReviewedAt(now);
-            auditTransition(versionId, operatorId, STATUS_REVIEWED, STATUS_REJECTED, comment);
+            if (pending) {
+                row.setReviewedBy(operatorId);
+            }
+            auditTransition(versionId, operatorId, from, STATUS_REJECTED, comment);
             return row;
         }
         AiDocument reread = mapper.selectById(versionId);
@@ -436,6 +519,17 @@ public class AiDocumentService {
             return reread;
         }
         throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+    }
+
+    /**
+     * 待审核退回只允许打在当前链头上。版本在审核期间被改过则拒绝。
+     *
+     * @param versionId 调用方声明的版本行
+     */
+    private void requireCurrentHead(Long versionId) {
+        if (!versionId.equals(lockedHead(versionId).getId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "版本已变更，拒绝过时退回");
+        }
     }
 
     /**
@@ -491,7 +585,7 @@ public class AiDocumentService {
         requireArg(documentId != null, "documentId 必填");
         requireArg(actor != null && actor.id() != null, "actor 必填");
         List<AiDocument> chain = history(documentId);
-        requireProjectVisible(actor, chain.get(0).getProjectId());
+        requireProjectReadable(actor, chain.get(0).getProjectId());
         boolean fromOnChain = chain.stream().anyMatch(r -> fromVersionId.equals(r.getId()));
         boolean toOnChain = chain.stream().anyMatch(r -> toVersionId.equals(r.getId()));
         if (!fromOnChain || !toOnChain) {
@@ -563,14 +657,29 @@ public class AiDocumentService {
         return chain;
     }
 
-    /** 当前链头（最新版本）。 */
-    private AiDocument head(Long documentId) {
-        // 改走 selectChain 直查（规避 Spring AOP self-call 不拦截问题）
+    /** 所有链写入先锁不可变链根，再以当前读找链头；普通CTE只用于确定根ID。 */
+    private AiDocument lockedHead(Long documentId) {
         List<AiDocument> chain = mapper.selectChain(documentId);
         if (chain == null || chain.isEmpty()) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
-        return chain.get(chain.size() - 1);
+        AiDocument current = mapper.lockVersion(chain.get(0).getId());
+        if (current == null || current.getParentVersionId() != null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+        }
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        while (seen.add(current.getId())) {
+            AiDocument child = mapper.lockChild(current.getId());
+            if (child == null) return current;
+            if (!java.util.Objects.equals(current.getProjectId(), child.getProjectId())
+                    || !java.util.Objects.equals(current.getDocType(), child.getDocType())
+                    || child.getVersionNo() == null || current.getVersionNo() == null
+                    || child.getVersionNo() != current.getVersionNo() + 1) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+            }
+            current = child;
+        }
+        throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
     }
 
     /**

@@ -5,10 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.Product;
+import org.ruoyi.ipd.vo.ProductSellableCountryRow;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
+import org.ruoyi.ipd.service.ProductSellableCountryQuery;
 import org.ruoyi.ipd.service.ProductService;
 import org.ruoyi.ipd.vo.ProductVO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +35,7 @@ import java.util.Map;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductSellableCountryQuery sellableCountryQuery;
     private final IpdPermission ipdPermission;
 
     /** 查询产品列表，需 ipd:product:list 权限 */
@@ -40,7 +43,8 @@ public class ProductController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<ProductVO>> list(@RequestParam(required = false) String keyword) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(productService.list(keyword).stream().map(ProductVO::from).toList());
+        List<Product> rows = productService.list(keyword);
+        return ApiV1Response.ok(toVoList(rows));
     }
 
     /** 查询产品详情，需 ipd:product:query 权限 */
@@ -48,7 +52,8 @@ public class ProductController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProductVO> get(@PathVariable Long id) {
         ipdPermission.requireInternal();
-        return ApiV1Response.ok(ProductVO.from(IpdResources.requireOrNotFound(productService.getById(id), id, "产品")));
+        Product product = IpdResources.requireOrNotFound(productService.getById(id), id, "产品");
+        return ApiV1Response.ok(toVo(product));
     }
 
     /** 创建产品，需 ipd:product:add 权限 */
@@ -62,7 +67,7 @@ public class ProductController {
             throw new org.ruoyi.common.core.exception.ServiceException("产品来源非法（允许 ADMIN_IMPORT|PM_NEW）: " + src);
         }
         IpdActor actor = ipdPermission.requireProductCreator(src);
-        return ApiV1Response.ok(ProductVO.from(productService.create(req.toEntity(), actor.id())));
+        return ApiV1Response.ok(toVo(productService.create(req.toEntity(), actor.id())));
     }
 
     /** P1-1.2：编辑产品，需 ipd:product:edit */
@@ -70,7 +75,7 @@ public class ProductController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<ProductVO> update(@PathVariable Long id, @RequestBody org.ruoyi.ipd.dto.ProductUpdateReq req) {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
-        return ApiV1Response.ok(ProductVO.from(productService.update(id, req.toPatch(), actor.id(), actor.groupId(), actor.role())));
+        return ApiV1Response.ok(toVo(productService.update(id, req.toPatch(), actor.id(), actor.groupId(), actor.role())));
     }
 
     /**
@@ -96,7 +101,7 @@ public class ProductController {
         return ApiV1Response.ok(null);
     }
 
-    /** P1-1.1：解绑项目（产品 ↔ 项目双向 1:1），需 ipd:product:edit 权限 */
+    /** 解除一个项目与产品的归属。只清这个项目；若它是首个项目指针则一并清空指针。 */
     @PostMapping("/{id}/unbind-project")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP_BIND_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<Void> unbindProject(@PathVariable Long id, @RequestParam Long projectId) {
@@ -112,5 +117,26 @@ public class ProductController {
         IpdActor actor = ipdPermission.requireProductWriter(() -> productService.getById(id));
         productService.changeStatus(id, status, actor.id(), actor.groupId(), actor.role());
         return ApiV1Response.ok(null);
+    }
+
+    /** 单条产品附上只读国家。国家行只来自 product_sellable_countries。 */
+    private ProductVO toVo(Product product) {
+        return ProductVO.from(product, sellableCountryQuery.listByProductId(product.getId()));
+    }
+
+    /** 列表一次查出国家，避免逐条查询。 */
+    private List<ProductVO> toVoList(List<Product> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, List<ProductSellableCountryRow>> grouped = sellableCountryQuery.listByProductIds(
+            rows.stream().map(Product::getId).toList());
+        if (grouped == null) {
+            grouped = Map.of();
+        }
+        Map<Long, List<ProductSellableCountryRow>> countries = grouped;
+        return rows.stream()
+            .map(row -> ProductVO.from(row, countries.getOrDefault(row.getId(), List.of())))
+            .toList();
     }
 }

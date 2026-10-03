@@ -41,6 +41,31 @@ class StageActionServiceTest {
     private ProjectStageMapper projectStageMapper;
     private StageActionService service;
 
+    @Test
+    void generatedDocumentDeduplicatesByDocumentRatherThanAnyDeliverable() {
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+            new org.apache.ibatis.builder.MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(), "generated"),
+            Deliverable.class);
+        when(actionMapper.selectOne(any())).thenReturn(StageAction.builder().id(44L).build());
+        when(deliverableMapper.selectCount(any())).thenReturn(0L);
+        service.recordGeneratedDeliverable(100L, "C02", "新版本", 71L, 2L);
+        org.mockito.ArgumentCaptor<LambdaQueryWrapper> query = org.mockito.ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        org.mockito.Mockito.verify(deliverableMapper).selectCount(query.capture());
+        assertThat(query.getValue().getSqlSegment()).contains("file_url");
+        assertThat(query.getValue().getParamNameValuePairs().values()).contains(44L, "ai-document:71");
+        org.mockito.ArgumentCaptor<Deliverable> row = org.mockito.ArgumentCaptor.forClass(Deliverable.class);
+        org.mockito.Mockito.verify(deliverableMapper).insert(row.capture());
+        assertThat(row.getValue().getFileUrl()).isEqualTo("ai-document:71");
+    }
+
+    @Test
+    void sameGeneratedDocumentIsNotRegisteredTwice() {
+        when(actionMapper.selectOne(any())).thenReturn(StageAction.builder().id(44L).build());
+        when(deliverableMapper.selectCount(any())).thenReturn(1L);
+        service.recordGeneratedDeliverable(100L, "C02", "新版本", 71L, 2L);
+        org.mockito.Mockito.verify(deliverableMapper, org.mockito.Mockito.never()).insert(any(Deliverable.class));
+    }
+
     @BeforeEach
     void setUp() {
         actionMapper = mock(StageActionMapper.class);

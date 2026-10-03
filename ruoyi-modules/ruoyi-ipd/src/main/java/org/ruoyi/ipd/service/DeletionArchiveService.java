@@ -71,10 +71,7 @@ public class DeletionArchiveService implements IDeletionArchiveService {
         if (clearedReason == null || clearedReason.isBlank()) {
             throw new ServiceException("清除原因必填", ApiV1ErrorCode.PARAM_INVALID.getCode());
         }
-        return purge(requestId);
-    }
-
-    public DeletionRequest purge(Long requestId) {
+        // 唯一写入口：确认编号与原因校验后才允许鉴权、原子清除及审计。
         IpdActor admin = ipdPermission.requireAdmin();
         Long adminId = admin.id();
         DeletionRequest request = deletionRequestMapper.selectById(requestId);
@@ -109,7 +106,7 @@ public class DeletionArchiveService implements IDeletionArchiveService {
             .action("DELETE_ARCHIVE_PURGE")
             .entityType(request.getEntityType())
             .entityId(request.getEntityId())
-            .reason("deletion_request:" + requestId + ";purge_by:" + adminId)
+            .reason("deletion_request:" + requestId + ";purge_by:" + adminId + ";cleared_reason:" + clearedReason)
             .createTime(new Date(ts))
             .build());
         DeletionRequest refreshed = deletionRequestMapper.selectById(requestId);

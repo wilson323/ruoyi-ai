@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Product 软删除执行器（entityType=products，P0-6.2 / P1-1.1）。
- * <p>幂等：已软删不重复写。软删后释放项目侧 productId，保持双向 1:1 可重建。
+ * <p>幂等：已软删不重复写。软删后清空所有仍指向本产品的项目，不只清首个项目指针。
  */
 @Component
 @RequiredArgsConstructor
@@ -53,27 +53,19 @@ public class ProductSoftDeleteExecutor implements SoftDeleteExecutor<Product> {
         if (rows != 1) {
             throw new ServiceException("产品软删除未更新唯一记录: id=" + id);
         }
-        releaseProjectLink(id, product.getProjectId());
+        releaseProjectLinks(id);
     }
 
     /**
-     * 释放项目侧 1:1 指针（优先按产品上记录的 projectId）。
+     * 清空仍指向本产品的全部项目。一个产品可以有多个项目。
      *
      * @param productId 已软删产品 ID
-     * @param projectId 产品上记录的项目 ID，可为 null
      */
-    private void releaseProjectLink(Long productId, Long projectId) {
-        if (projectId == null) {
-            return;
-        }
-        Project project = projectMapper.selectById(projectId);
-        if (project == null || "1".equals(project.getDelFlag())) {
-            return;
-        }
-        if (productId.equals(project.getProductId())) {
-            project.setProductId(null);
-            projectMapper.updateById(project);
-        }
+    private void releaseProjectLinks(Long productId) {
+        projectMapper.update(null, new LambdaUpdateWrapper<Project>()
+            .eq(Project::getProductId, productId)
+            .eq(Project::getDelFlag, "0")
+            .set(Project::getProductId, null));
     }
 
     /**

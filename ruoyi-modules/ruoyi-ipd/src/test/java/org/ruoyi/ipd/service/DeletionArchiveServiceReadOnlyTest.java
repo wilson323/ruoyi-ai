@@ -78,7 +78,7 @@ class DeletionArchiveServiceReadOnlyTest {
     @Test
     @DisplayName("反射：purge 仍带 @Transactional(rollbackFor=Exception.class)——本次改动不污染 purge 写路径")
     void purgeAnnotationUntouched() throws NoSuchMethodException {
-        Method purge = DeletionArchiveService.class.getDeclaredMethod("purge", Long.class);
+        Method purge = DeletionArchiveService.class.getDeclaredMethod("purge", Long.class, String.class, String.class);
 
         Transactional tx = purge.getAnnotation(Transactional.class);
 

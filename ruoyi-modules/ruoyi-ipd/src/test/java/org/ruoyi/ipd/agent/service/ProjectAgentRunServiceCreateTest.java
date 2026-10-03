@@ -38,7 +38,7 @@ class ProjectAgentRunServiceCreateTest {
     private static final String MESSAGE = "请对本项目做竞品分析：功能、价格、渠道、技术路线";
 
     @Test
-    @DisplayName("成功：返回字符串 runId 与 PENDING；落库冻结快照；启动后 RUN_STARTED，再 SKILL_LOADED，再 INTENT")
+    @DisplayName("成功：返回字符串 runId 与 PENDING；落库冻结快照；启动后 RUN_STARTED，再 SKILL_SELECTED，再 INTENT")
     void createPersistsSnapshotAndStarts() {
         RunServiceHarness h = new RunServiceHarness(true, false, 4);
         ProjectAgentViews.RunStatus created = h.service.create(ACTOR, PROJECT_ID, c02("idem-key-0001", MESSAGE));
@@ -61,7 +61,7 @@ class ProjectAgentRunServiceCreateTest {
             .containsExactly("RUN_STARTED", "STEP", "STEP");
         Map<String, Object> skillStep = payload(events.get(1));
         Map<String, Object> intentStep = payload(events.get(2));
-        assertThat(skillStep.get("kind")).isEqualTo("SKILL_LOADED");
+        assertThat(skillStep.get("kind")).isEqualTo("SKILL_SELECTED");
         assertThat(skillStep).containsEntry("name", "competitor-analysis-ipd");
         assertThat(String.valueOf(skillStep.get("sha256"))).hasSize(64);
         assertThat(intentStep.get("kind")).isEqualTo("INTENT");
@@ -102,7 +102,7 @@ class ProjectAgentRunServiceCreateTest {
     void disabledRejectsWithoutWrites() {
         RunServiceHarness h = new RunServiceHarness(false, false, 4);
         assertThatThrownBy(() -> h.service.create(ACTOR, PROJECT_ID, c02("idem-key-0004", MESSAGE)))
-            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("ipd.project-agent.enabled=false");
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining(org.ruoyi.ipd.agent.ProjectAgentConstants.REASON_DISABLED);
 
         verifyNoInteractions(h.access);
         assertThat(h.store.runCount()).isZero();
@@ -166,6 +166,80 @@ class ProjectAgentRunServiceCreateTest {
         h.kernel.last().sink().onComplete();
         h.service.create(ACTOR, PROJECT_ID, c02("idem-key-0016", MESSAGE));
         assertThat(h.store.runCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("普通项目不得携带需求分拣 ID：拒绝且不写运行、不调用内核")
+    void ordinaryProjectCannotInjectDemandContext() {
+        RunServiceHarness h = new RunServiceHarness(true, false, 4);
+        AgentRunCreateReq base = c02("idem-demand-0001", MESSAGE);
+        AgentRunCreateReq req = new AgentRunCreateReq(base.capabilityPackCode(), base.capabilityPackVersion(),
+            base.modelConfigId(), base.skillNames(), base.toolIds(), base.actionCode(), base.message(),
+            base.idempotencyKey(), null, "42");
+
+        assertCode(() -> h.service.create(ACTOR, PROJECT_ID, req), ApiV1ErrorCode.PARAM_INVALID);
+        assertThat(h.store.runCount()).isZero();
+        assertThat(h.kernel.executions).isEmpty();
+    }
+
+    @Test
+    @DisplayName("固定分拣项目保留需求 ID 接线；非法需求 ID 在写运行前拒绝")
+    void triageProjectKeepsDemandInputAndRejectsMalformedIdBeforeWrites() {
+        RunServiceHarness h = new RunServiceHarness(true, true, 4);
+        org.mockito.Mockito.when(h.access.requireVisible(ACTOR, DemandTriageRun.TRIAGE_PROJECT_ID))
+            .thenReturn(AgentTestFixtures.TENANT);
+        AgentRunCreateReq base = c02("idem-demand-0002", MESSAGE);
+        AgentRunCreateReq invalid = new AgentRunCreateReq(base.capabilityPackCode(), base.capabilityPackVersion(),
+            base.modelConfigId(), base.skillNames(), base.toolIds(), base.actionCode(), base.message(),
+            base.idempotencyKey(), null, "not-an-id");
+        assertCode(() -> h.service.create(ACTOR, DemandTriageRun.TRIAGE_PROJECT_ID, invalid),
+            ApiV1ErrorCode.PARAM_INVALID);
+        assertThat(h.store.runCount()).isZero();
+
+        AgentRunCreateReq valid = new AgentRunCreateReq(base.capabilityPackCode(), base.capabilityPackVersion(),
+            base.modelConfigId(), base.skillNames(), base.toolIds(), base.actionCode(), base.message(),
+            base.idempotencyKey(), null, "42");
+        h.service.create(ACTOR, DemandTriageRun.TRIAGE_PROJECT_ID, valid);
+        h.runDeferred();
+        assertThat(h.kernel.last().spec().requirementId()).isEqualTo(42L);
+    }
+
+    @Test
+    void projectFactsFailureOccursBeforeReservationOrInsert() {
+        RunServiceHarness h = new RunServiceHarness(true, true, 1);
+        var projects = org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMapper.class);
+        org.mockito.Mockito.when(projects.selectById(PROJECT_ID))
+            .thenThrow(new IllegalStateException("project lookup failed"));
+        ProjectAgentRunService service = new ProjectAgentRunService(true, h.access,
+            AgentTestFixtures.planner(), h.store, null, null, projects, null, h.executor,
+            AgentTestFixtures.MAPPER, h.clock::get, java.time.Duration.ofSeconds(60));
+        assertThatThrownBy(() -> service.create(ACTOR, PROJECT_ID, c02("facts-fail-0001", MESSAGE)))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("project lookup failed");
+        assertThat(h.store.runInserts).hasValue(0);
+        assertThat(h.deferred).isEmpty();
+        assertThat(h.executor.tryReserve()).isTrue();
+        assertThat(h.executor.tryReserve()).isFalse();
+        h.executor.release();
+    }
+
+    @Test
+    void insertExceptionReturnsExactlyOneReservation() {
+        RunServiceHarness h = new RunServiceHarness(true, true, 1);
+        var runs = org.mockito.Mockito.mock(org.ruoyi.ipd.agent.store.AgentRunStore.class,
+            org.mockito.AdditionalAnswers.delegatesTo(h.store));
+        org.mockito.Mockito.doThrow(new IllegalStateException("run insert failed"))
+            .when(runs).insertRun(org.mockito.ArgumentMatchers.any());
+        var executor = new ProjectAgentRunExecutor(runs, h.kernel, AgentTestFixtures.MAPPER,
+            reactor.core.scheduler.Schedulers.fromExecutor(h.deferred::add), h.clock::get, 1);
+        ProjectAgentRunService service = new ProjectAgentRunService(true, h.access,
+            AgentTestFixtures.planner(), runs, executor, AgentTestFixtures.MAPPER,
+            h.clock::get, java.time.Duration.ofSeconds(60));
+        assertThatThrownBy(() -> service.create(ACTOR, PROJECT_ID, c02("insert-fail-0001", MESSAGE)))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("run insert failed");
+        assertThat(executor.tryReserve()).isTrue();
+        assertThat(executor.tryReserve()).isFalse();
+        executor.release();
+        assertThat(h.deferred).isEmpty();
     }
 
     private static Map<String, Object> payload(IpdAgentRunEvent event) {

@@ -1,8 +1,8 @@
 {
   "meta" : {
-    "ruleCount" : 89,
+    "ruleCount" : 93,
     "source" : "DefaultStateMachineGuard.initRules（后端守卫规则表导出，补遗 §5-1）",
-    "version" : "sha256:23cfd5ad571f6a1cbcb969383e57be5052634548b438f5ddfa16b3fae0a2e85d"
+    "version" : "sha256:516bf2c3b5d7c6747f673f3ba171aa18e0053f9f47c0e852d39f63f85547a3ae"
   },
   "rules" : [ {
     "crossDomain" : false,
@@ -382,6 +382,30 @@
     "fromState" : "INITIAL",
     "toState" : "DRAFT",
     "trigger" : "create"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "INITIAL",
+    "toState" : "PENDING_START",
+    "trigger" : "create"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "PENDING_START",
+    "toState" : "START_REJECTED",
+    "trigger" : "rejectStart"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "PENDING_START",
+    "toState" : "TEAMING",
+    "trigger" : "approveStart"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "project",
+    "fromState" : "START_REJECTED",
+    "toState" : "PENDING_START",
+    "trigger" : "resubmitStart"
   }, {
     "crossDomain" : false,
     "entityType" : "project",

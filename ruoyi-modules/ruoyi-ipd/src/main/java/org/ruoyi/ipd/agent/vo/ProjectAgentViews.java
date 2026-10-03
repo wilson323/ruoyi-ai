@@ -59,7 +59,21 @@ public final class ProjectAgentViews {
 
     /** #3 运行详情。 */
     public record Run(String runId, String projectId, String agentId, String status, String actionCode,
-                      ConfigSnapshot configSnapshot, String errorCode, String createdAt, String finishedAt) { }
+                      ConfigSnapshot configSnapshot, String errorCode, String createdAt, String finishedAt,
+                      List<ArtifactArchive> artifactArchives, Long pauseSeq) {
+        public Run(String runId, String projectId, String agentId, String status, String actionCode,
+                   ConfigSnapshot configSnapshot, String errorCode, String createdAt, String finishedAt,
+                   List<ArtifactArchive> artifactArchives) {
+            this(runId, projectId, agentId, status, actionCode, configSnapshot, errorCode, createdAt,
+                finishedAt, artifactArchives, null);
+        }
+        public Run(String runId, String projectId, String agentId, String status, String actionCode,
+                   ConfigSnapshot configSnapshot, String errorCode, String createdAt, String finishedAt) {
+            this(runId, projectId, agentId, status, actionCode, configSnapshot, errorCode, createdAt, finishedAt, List.of());
+        }
+    }
+    /** 原运行产物的权威定档关联，刷新后仍由同一详情口读取。 */
+    public record ArtifactArchive(String artifactId, String documentId) { }
 
     /**
      * 本人运行列表项。没有用户原文，也没有 inputDigest。
@@ -81,7 +95,59 @@ public final class ProjectAgentViews {
 
     /** 运行冻结的配置快照（同时是 ipd_agent_run.config_snapshot 的 JSON 形状）。 */
     public record ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
-                                 List<SkillRef> skills, List<String> toolIds) { }
+                                 List<SkillRef> skills, List<String> toolIds,
+                                 String previousRunId, String targetDocumentId, String baseVersionId,
+                                 String aguiInputDigest, String requirementId, String productLineId,
+                                 List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools,
+                                 List<String> executionToolIds) {
+        public ConfigSnapshot {
+            serverFrontendTools = serverFrontendTools == null ? List.of() : List.copyOf(serverFrontendTools);
+            executionToolIds = executionToolIds == null ? null : List.copyOf(executionToolIds);
+        }
+        /** 历史快照不自动扩大原生工具授权范围。 */
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds,
+                              String previousRunId, String targetDocumentId, String baseVersionId,
+                              String aguiInputDigest, String requirementId, String productLineId,
+                              List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, null);
+        }
+        public ConfigSnapshot withExecutionToolIds(List<String> ids) {
+            return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, ids);
+        }
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds,
+                              String previousRunId, String targetDocumentId, String baseVersionId,
+                              String aguiInputDigest, String requirementId, String productLineId) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId, List.of());
+        }
+        public ConfigSnapshot withServerFrontendTools(List<io.agentscope.core.agui.model.AguiTool> tools) {
+            return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId, tools, executionToolIds);
+        }
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds,
+                              String previousRunId, String targetDocumentId, String baseVersionId,
+                              String aguiInputDigest) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, null, null);
+        }
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds,
+                              String previousRunId, String targetDocumentId, String baseVersionId) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, null);
+        }
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds, null, null, null);
+        }
+    }
 
     /** 快照中的 Skill 引用。 */
     public record SkillRef(String name, String sha256) { }

@@ -35,13 +35,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * P1-1.1 [0 紧急] 产品与项目双向 1:1 绑定修复卡验收。
+ * 产品与项目绑定验收。一个产品可以有多个项目，一个项目只属于一个产品。
  *
  * <p>覆盖 7 个维度（≥6）：
  * <ol>
  *   <li>正例：项目 → 唯一产品 绑定成功（两端条件 UPDATE 都 affected=1 + 终态自洽 + 审计）</li>
- *   <li>反例：产品已绑 A，再绑 B → 拒绝 409 STATE_CONFLICT（条件 UPDATE 反映 0 + 终态不写审计）</li>
- *   <li>反例：产品 A 已绑项目 X，再绑项目 Y → 拒绝 409 STATE_CONFLICT</li>
+ *   <li>正例：产品已有项目 A，再挂项目 B → 成功，且不改写首个项目指针</li>
+ *   <li>反例：项目已属于其他产品 → 拒绝 409 STATE_CONFLICT</li>
  *   <li>解绑：解绑后 product.project_id / project.product_id 都为 null，可重新绑定</li>
  *   <li>跨组守卫：actor.groupId != product.groupId → 403 FORBIDDEN（非 SUPER_ADMIN）</li>
  *   <li>审计：bind/unbind 写 audit_logs（operator_id == actor.id，action 对应）</li>
@@ -162,28 +162,21 @@ class P1_1_1_BidirectionalBindingTest {
         verify(auditLogService, times(1)).append(eq(1L), eq("PRODUCT_BIND_PROJECT"), any(), any(), any());
     }
 
-    // ========== 维度 2：反例 —— 产品已绑 A，再绑 B 拒绝 ==========
-
     @Test
-    @DisplayName("维度2 反例：产品已绑 A，再绑 B → 拒绝 409 STATE_CONFLICT（A 未解绑）")
-    void bindProject_alreadyBoundToOther_reject409() {
-        Product p = product(3L, 9L /* 已绑 9 */, 7L);
+    @DisplayName("维度2：产品已有项目 A，再挂项目 B → 成功，且不改写首个项目指针")
+    void bindProject_secondProject_keepsFirstPointer() {
+        Product p = product(3L, 9L, 7L);
+        Project second = project(100L, null);
         when(productMapper.selectById(3L)).thenReturn(p);
+        when(projectMapper.selectById(100L)).thenReturn(second);
+        stubProjectUpdateApply(() -> second.setProductId(3L));
 
-        // 业务规则前置：product.projectId == 9，请求绑 100，应在条件 UPDATE 前已被业务规则拦下
-        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
-            service.bindProject(3L, 100L, 1L, 7L, "MARKET_PM"))
-            .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("产品已被占用")  // W28-2 info-disclosure 闭环：旧文案泄漏 projectId
-            .actual();
-        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+        service.bindProject(3L, 100L, 1L, 7L, "MARKET_PM");
 
-        // 拒绝路径：不再走条件 UPDATE（前置已拒绝）
+        assertThat(p.getProjectId()).isEqualTo(9L);
+        assertThat(second.getProductId()).isEqualTo(3L);
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
-        verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
-        // 不写审计
-        verify(auditLogService, never()).append(any(AuditLog.class));
-        verify(auditLogService, never()).append(anyLong(), any(), any(), any(), any());
+        verify(projectMapper, times(1)).update(isNull(), any(LambdaUpdateWrapper.class));
     }
 
     // ========== 维度 3：反例 —— 项目 A 已绑产品 X，再绑产品 Y 拒绝 ==========
@@ -199,7 +192,7 @@ class P1_1_1_BidirectionalBindingTest {
         assertThatThrownBy(() -> service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
             // W28-2 info-disclosure 闭环：错文案不泄漏 productId/projectId
-            .hasMessageContaining("项目已被占用");
+            .hasMessageContaining("已属于其他产品");
 
         // project 端条件 UPDATE 不应被触发（前置已拒绝）
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
@@ -385,19 +378,18 @@ class P1_1_1_BidirectionalBindingTest {
      * W28-2 medium info-disclosure 闭环：bindProject 错文案不泄漏当前已绑 projectId。
      */
     @Test
-    @DisplayName("W28-2 bind脱敏：产品已被占用文案不泄漏 productId/projectId")
-    void bindProject_infoDisclosure_productOccupied() {
-        Product p = product(3L, 100L /* 已被绑 100 */, 7L);
+    @DisplayName("产品已有首个项目时再挂另一个项目，不把指针编号写进错误")
+    void bindSecondProjectDoesNotExposePointer() {
+        Product p = product(3L, 100L, 7L);
+        Project second = project(9L, null);
         when(productMapper.selectById(3L)).thenReturn(p);
+        when(projectMapper.selectById(9L)).thenReturn(second);
+        stubProjectUpdateApply(() -> second.setProductId(3L));
 
-        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
-            service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
-            .isInstanceOf(IpdBusinessException.class)
-            .actual();
-        // 断言不泄漏 100
-        assertThat(ex.getMessage()).doesNotContain("100");
-        assertThat(ex.getMessage()).contains("产品");
-        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+        service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM");
+
+        assertThat(p.getProjectId()).isEqualTo(100L);
+        assertThat(second.getProductId()).isEqualTo(3L);
     }
 
     /**
@@ -436,7 +428,7 @@ class P1_1_1_BidirectionalBindingTest {
 
         assertThatThrownBy(() -> service.bindProject(3L, 9L, 1L, 7L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("条件更新冲突");
+            .hasMessageContaining("绑定冲突，请重试");
 
         // project 端条件 UPDATE 不应被触发（product 端失败 → 事务回滚）
         verify(projectMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));

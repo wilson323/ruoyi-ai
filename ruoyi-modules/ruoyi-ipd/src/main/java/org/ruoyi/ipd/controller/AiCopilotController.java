@@ -116,6 +116,9 @@ public class AiCopilotController {
         }
         AiCopilotReq req = new AiCopilotReq(projectId, message, java.util.List.of(), null, pageContext);
         CopilotRunRegistryService.RunHandle handle = runRegistry.register(actor, runId);
+        emitter.onCompletion(() -> runRegistry.disconnect(handle));
+        emitter.onTimeout(() -> { runRegistry.disconnect(handle); emitter.complete(); });
+        emitter.onError(error -> runRegistry.disconnect(handle));
         SSE_EXECUTOR.execute(() -> pushChunks(emitter, actor, req, handle));
         return emitter;
     }
@@ -138,12 +141,12 @@ public class AiCopilotController {
             service.chatStream(actor, req, runRegistry.guard(handle, new AiCopilotService.CopilotStreamSink() {
                 @Override
                 public void meta(AiCopilotResp resp) {
-                    sendFrame(emitter, "meta", resp);
+                    sendFrame(emitter, "meta", resp, handle);
                 }
 
                 @Override
                 public void delta(String token) {
-                    sendFrame(emitter, "delta", token);
+                    sendFrame(emitter, "delta", token, handle);
                 }
 
                 @Override
@@ -157,7 +160,7 @@ public class AiCopilotController {
                     if (resp.fillPayload() != null) {
                         done.put("fillPayload", resp.fillPayload());
                     }
-                    sendFrame(emitter, "done", done);
+                    sendFrame(emitter, "done", done, handle);
                     emitter.complete();
                 }
 
@@ -165,11 +168,12 @@ public class AiCopilotController {
                 public void error(String code, String message) {
                     sendFrame(emitter, "error", java.util.Map.of(
                         "code", code == null ? "" : code,
-                        "message", message == null ? "" : message));
+                        "message", message == null ? "" : message), handle);
                     emitter.complete();
                 }
             }));
         } catch (IpdBusinessException biz) {
+            runRegistry.disconnect(handle);
             // 同步前置错误（message 空 / 项目不可见）：推 error 帧 + complete（SSE 契约模式 B）
             log.warn("[AI-COPILOT-SSE] stream rejected: code={} msg={}",
                 biz.getErrorCode() == null ? "" : biz.getErrorCode().getCode(), biz.getMessage());
@@ -177,6 +181,7 @@ public class AiCopilotController {
                 biz.getErrorCode() == null ? "PARAM_INVALID" : String.valueOf(biz.getErrorCode().getCode()),
                 biz.getMessage(), log);
         } catch (Exception e) {
+            runRegistry.disconnect(handle);
             log.error("[AI-COPILOT-SSE] stream failed: actor={} messageLen={}", actor.id(),
                 req.message() == null ? 0 : req.message().length(), e);
             SseErrorEmitter.completeWithError(emitter, "INTERNAL_ERROR", "AI 副驾流式推送失败", log);
@@ -184,10 +189,11 @@ public class AiCopilotController {
     }
 
     /** 推一帧 SSE；客户端已断（IOException / IllegalStateException）静默吞——与 SseErrorEmitter 同款防御。 */
-    private static void sendFrame(SseEmitter emitter, String event, Object data) {
+    private void sendFrame(SseEmitter emitter, String event, Object data, CopilotRunRegistryService.RunHandle handle) {
         try {
             emitter.send(SseEmitter.event().name(event).data(data));
         } catch (IOException | IllegalStateException e) {
+            runRegistry.disconnect(handle);
             // 客户端已断开，静默（不再重复推 error，避免 SIGPIPE 噪声）
         }
     }

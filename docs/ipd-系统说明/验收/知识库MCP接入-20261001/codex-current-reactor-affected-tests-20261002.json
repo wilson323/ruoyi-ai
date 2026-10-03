@@ -1,0 +1,291 @@
+{
+  "observedAt": "2026-10-02T22:20:09.534235+00:00",
+  "status": "PARTIAL",
+  "scope": "current reactor 26 selected real suites, not Maven full module tests or runtime acceptance",
+  "exitCode": 1,
+  "totals": {
+    "tests found": 160,
+    "tests started": 160,
+    "tests successful": 159,
+    "tests failed": 1,
+    "tests skipped": 0,
+    "tests aborted": 0,
+    "containers failed": 0
+  },
+  "suites": [
+    {
+      "suite": "org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalogTest",
+      "containers failed": 0,
+      "tests found": 3,
+      "tests skipped": 0,
+      "tests started": 3,
+      "tests aborted": 0,
+      "tests successful": 3,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.AgentScopeProjectAgentKernelTest",
+      "containers failed": 0,
+      "tests found": 13,
+      "tests skipped": 0,
+      "tests started": 13,
+      "tests aborted": 0,
+      "tests successful": 13,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.OfficialAsyncToolAcceptanceTest",
+      "containers failed": 0,
+      "tests found": 1,
+      "tests skipped": 0,
+      "tests started": 1,
+      "tests aborted": 0,
+      "tests successful": 1,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.OfficialCapabilitiesAcceptanceTest",
+      "containers failed": 0,
+      "tests found": 2,
+      "tests skipped": 0,
+      "tests started": 2,
+      "tests aborted": 0,
+      "tests successful": 2,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInputTest",
+      "containers failed": 0,
+      "tests found": 9,
+      "tests skipped": 0,
+      "tests started": 9,
+      "tests aborted": 0,
+      "tests successful": 9,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiParentTranscriptTest",
+      "containers failed": 0,
+      "tests found": 3,
+      "tests skipped": 0,
+      "tests started": 3,
+      "tests aborted": 0,
+      "tests successful": 3,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAuthoritativeChildExecutionTest",
+      "containers failed": 0,
+      "tests found": 1,
+      "tests skipped": 0,
+      "tests started": 1,
+      "tests aborted": 0,
+      "tests successful": 1,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentMeteredModelTest",
+      "containers failed": 0,
+      "tests found": 12,
+      "tests skipped": 0,
+      "tests started": 12,
+      "tests aborted": 0,
+      "tests successful": 12,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentNativeProfileTest",
+      "containers failed": 0,
+      "tests found": 1,
+      "tests skipped": 0,
+      "tests started": 1,
+      "tests aborted": 0,
+      "tests successful": 1,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialCollaborationTest",
+      "containers failed": 0,
+      "tests found": 3,
+      "tests skipped": 0,
+      "tests started": 3,
+      "tests aborted": 0,
+      "tests successful": 3,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialHitlTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 6,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialPermissionsTest",
+      "containers failed": 0,
+      "tests found": 2,
+      "tests skipped": 0,
+      "tests started": 2,
+      "tests aborted": 0,
+      "tests successful": 2,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialSandboxTest",
+      "containers failed": 0,
+      "tests found": 2,
+      "tests skipped": 0,
+      "tests started": 2,
+      "tests aborted": 0,
+      "tests successful": 2,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialToolGovernanceTest",
+      "containers failed": 0,
+      "tests found": 5,
+      "tests skipped": 0,
+      "tests started": 5,
+      "tests aborted": 0,
+      "tests successful": 5,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentRuntimeAccessSinkTest",
+      "containers failed": 0,
+      "tests found": 3,
+      "tests skipped": 0,
+      "tests started": 3,
+      "tests aborted": 0,
+      "tests successful": 3,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentTemporaryStateStoreTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 6,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiCreateIntegrationTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 6,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseLifecycleTest",
+      "containers failed": 0,
+      "tests found": 3,
+      "tests skipped": 0,
+      "tests started": 3,
+      "tests aborted": 0,
+      "tests successful": 3,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseResumeServiceTest",
+      "containers failed": 0,
+      "tests found": 13,
+      "tests skipped": 0,
+      "tests started": 13,
+      "tests aborted": 0,
+      "tests successful": 13,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiProtocolTest",
+      "containers failed": 0,
+      "tests found": 13,
+      "tests skipped": 0,
+      "tests started": 13,
+      "tests aborted": 0,
+      "tests successful": 13,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiResumeValidationTest",
+      "containers failed": 0,
+      "tests found": 4,
+      "tests skipped": 0,
+      "tests started": 4,
+      "tests aborted": 0,
+      "tests successful": 4,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentCapabilityServiceTest",
+      "containers failed": 0,
+      "tests found": 5,
+      "tests skipped": 0,
+      "tests started": 5,
+      "tests aborted": 0,
+      "tests successful": 5,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunHandleTest",
+      "containers failed": 0,
+      "tests found": 20,
+      "tests skipped": 0,
+      "tests started": 20,
+      "tests aborted": 0,
+      "tests successful": 20,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceCreateTest",
+      "containers failed": 0,
+      "tests found": 12,
+      "tests skipped": 0,
+      "tests started": 12,
+      "tests aborted": 0,
+      "tests successful": 12,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceLifecycleTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 5,
+      "tests failed": 1
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProjectAgentAguiControllerTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 6,
+      "tests failed": 0
+    }
+  ],
+  "logs": {
+    "current": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/tests.log",
+    "currentSHA": "27bd628cb0a10f28a22f6cde2213f14320ea6eea8163372f4074619ff8d7bf65",
+    "firstIncompleteClasspath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/tests-classpath-red.log",
+    "mainTestCompile": "/tmp/ipd-coordinated-post-repair-test-compile-20261002.log"
+  },
+  "preflight": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/preflight.json",
+  "classpath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/classpath.txt",
+  "failures": [
+    "cancelWithoutLocalHandleStaysRequested expected CANCEL_REQUESTED actual CANCELLED"
+  ],
+  "backgroundFailureObserved": "MemoryMaintenanceMiddleware No active sandbox",
+  "shutdown": "0 active requests, 0 managed transports observed; process exit1",
+  "runtimeLoaded": false
+}

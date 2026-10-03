@@ -4,7 +4,7 @@
   "skills": [
     {
       "name": "beta-trial-feedback-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "058144a81f449f5c241cdf675625c46e558535ecce1667c8875d2fbed7b90ec8"
     },
     {
@@ -44,7 +44,7 @@
     },
     {
       "name": "competitor-analysis-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
     },
     {
@@ -59,7 +59,7 @@
     },
     {
       "name": "customer-feedback-quality-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "49bd4068c57150eff5bef01de6476d98afe9fd78d26b1373c75ca7aa89ae401d"
     },
     {
@@ -99,12 +99,12 @@
     },
     {
       "name": "gate-g5-90day-review-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "b4893ced92f42673f0cd495e830af653fa4837c322570eb21bc1fbfc6a3d6a45"
     },
     {
       "name": "gtm-launch-strategy-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "d39e94afb18200c9566c97edad6cb013c5e1d029329eb7386919e9dc7b3951af"
     },
     {
@@ -144,7 +144,7 @@
     },
     {
       "name": "market-opportunity-research-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "c116dac4094ed5dea7013a7952943f5482e1632880c40287b4f0130641223c28"
     },
     {
@@ -179,7 +179,7 @@
     },
     {
       "name": "product-prd-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "72b73d02172092814e0bc6c494f943932c7bbe27c851e1c02c9d78d21b85c47b"
     },
     {
@@ -199,7 +199,7 @@
     },
     {
       "name": "requirement-priority-roadmap-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "26ec59a7144c7d9e2f3b6eb0b1e5c2ec7fa36708ef53e26a06cdafd2b69f1879"
     },
     {
@@ -209,7 +209,7 @@
     },
     {
       "name": "sales-toolkit-ipd",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "sha256": "d80d4a86113e0ccd7bd1cac8566aa7fdb34cc8c1464e56731785f282bfb21b98"
     },
     {
@@ -233,6 +233,91 @@
       "id": "project_knowledge_search",
       "name": "项目资料检索",
       "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+      "name": "停车设备知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+      "name": "通道设备知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+      "name": "万傲瑞达 V6600知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+      "name": "安检设备知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "name": "门禁及梯控设备知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+      "name": "考勤知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+      "name": "E-ZKEco Pro知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+      "name": "智能视频知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+      "name": "人证核验知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+      "name": "消费知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce71396a40120630b055e",
+      "name": "云考勤设备知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce77b96a40120630b0c3d",
+      "name": "外协生态知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce8b996a40120630b1d80",
+      "name": "ZKTime知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce8e096a40120630b1e68",
+      "name": "ZKAccess3.5知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+      "name": "单机版消费epos知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce93796a40120630b2133",
+      "name": "熵基云联知识库",
+      "readOnly": true
+    },
+    {
+      "id": "FastGPT-mcp-69cce91596a40120630b2017",
+      "name": "熵基互联知识库",
+      "readOnly": true
     }
   ],
   "packs": [
@@ -240,18 +325,37 @@
       "code": "market-research",
       "version": "v1",
       "name": "商业/市场/竞品研究",
-      "description": "基于本项目已审核资料与用户输入开展竞品分析（功能/价格/渠道/技术路线），输出可追溯对比与缺项清单。",
+      "description": "基于权限内项目资料、产品知识与用户输入开展市场机会调研和竞品分析，输出可追溯证据、对比与缺项清单。",
       "stages": [
         "CONCEPT"
       ],
       "actionCodes": [
+        "C01",
         "C02"
       ],
       "skills": [
+        "market-opportunity-research-ipd",
         "competitor-analysis-ipd"
       ],
       "tools": [
-        "project_knowledge_search"
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
       ]
     }
   ]

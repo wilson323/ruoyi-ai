@@ -75,6 +75,32 @@ class MybatisAgentRunStoreTest {
     }
 
     @Test
+    void executionEpochHasExplicitVersionCasAndRequiresSameTransactionRowLock() {
+        IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
+        IpdAgentRunEventMapper events = mock(IpdAgentRunEventMapper.class);
+        MybatisAgentRunStore store = new MybatisAgentRunStore(runs, events);
+        when(runs.update(isNull(), any())).thenAnswer(call -> {
+            com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<IpdAgentRun> wrapper = call.getArgument(1);
+            assertThat(wrapper.getSqlSegment()).contains("version", "status", "id");
+            assertThat(wrapper.getSqlSet()).contains("version");
+            return 1;
+        });
+        when(runs.selectOne(any())).thenAnswer(call -> {
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> wrapper = call.getArgument(0);
+            assertThat(wrapper.getSqlSegment()).contains("FOR UPDATE");
+            return IpdAgentRun.builder().id(9L).version(4).status("RUNNING").build();
+        });
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+            () -> store.claimEpoch(9L, 3, EnumSet.of(AgentRunStatus.RUNNING)));
+        var transaction = org.ruoyi.ipd.agent.support.AgentOwnershipTestTransactions.create();
+        transaction.executeWithoutResult(status -> {
+            assertThat(store.claimEpoch(9L, 3, EnumSet.of(AgentRunStatus.RUNNING))).contains(4);
+            assertThat(store.lockEpoch(9L, 4)).isTrue();
+            assertThat(store.lockEpoch(9L, 3)).isFalse();
+        });
+    }
+
+    @Test
     @DisplayName("appendEvent：冲突 false；maxSeq/terminalSeq 口径")
     void eventAppendAndSeqQueries() {
         IpdAgentRunMapper runMapper = mock(IpdAgentRunMapper.class);
@@ -95,6 +121,52 @@ class MybatisAgentRunStoreTest {
         Optional<Long> term = store.terminalSeq(1L);
         assertThat(term).contains(7L);
         assertThat(store.listEvents(1L, 0L, 10)).hasSize(1);
+    }
+
+    @Test
+    void chineseStatusSearchKeepsOriginalTextArtifactUnionAndOuterScope() {
+        IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
+        MybatisAgentRunStore store = new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class));
+        when(runs.selectList(any())).thenAnswer(call -> {
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> filter = call.getArgument(0);
+            assertThat(filter.getSqlSegment()).contains("tenant_id", "project_id", "person_id", "action_code LIKE",
+                "status LIKE", "status IN", "id IN", "AND (", "ORDER BY", "LIMIT 20");
+            assertThat(filter.getParamNameValuePairs().values()).contains("tenant-a", 1001L, 11L,
+                "%失败%", "FAILED", 42L, 900L);
+            return List.of();
+        });
+        store.listOwnRuns(new AgentRunStore.OwnRunQuery("tenant-a", 1001L, 11L, null, null,
+            "失败", java.util.Set.of(42L), 900L, 20));
+    }
+
+    @Test
+    void statusSearchUsesOnlyExistingUiLabelsAndPreservesLiteralSearch() {
+        var labels = java.util.Map.of("排队中", "PENDING", "运行中", "RUNNING", "等待审批", "WAITING_APPROVAL",
+            "取消中", "CANCEL_REQUESTED", "已完成", "SUCCEEDED", "失败", "FAILED", "已取消", "CANCELLED");
+        for (var entry : labels.entrySet()) {
+            IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
+            when(runs.selectList(any())).thenAnswer(call -> {
+                com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> filter = call.getArgument(0);
+                assertThat(filter.getSqlSegment()).contains("status IN");
+                assertThat(filter.getParamNameValuePairs().values()).contains(entry.getValue(), "%" + entry.getKey() + "%");
+                return List.of();
+            });
+            new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class)).listOwnRuns(
+                new AgentRunStore.OwnRunQuery("tenant-a", 1001L, 11L, null, null, entry.getKey(),
+                    java.util.Set.of(), null, 20));
+        }
+        for (String text : List.of("执行中", "等确认", "FAILED", "%_")) {
+            IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
+            when(runs.selectList(any())).thenAnswer(call -> {
+                com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> filter = call.getArgument(0);
+                assertThat(filter.getSqlSegment()).contains("status LIKE").doesNotContain("status IN");
+                assertThat(filter.getParamNameValuePairs().values()).contains(LikePatterns.containsPattern(text));
+                return List.of();
+            });
+            new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class)).listOwnRuns(
+                new AgentRunStore.OwnRunQuery("tenant-a", 1001L, 11L, null, null, text,
+                    java.util.Set.of(), null, 20));
+        }
     }
 
     @Test

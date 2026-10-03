@@ -7,6 +7,7 @@ import org.ruoyi.ipd.agent.dto.AiFeedbackReq;
 import org.ruoyi.ipd.agent.service.AiFeedbackService;
 import org.ruoyi.ipd.agent.service.ProjectAgentCapabilityService;
 import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
+import org.ruoyi.ipd.agent.service.ProjectAgentAguiStream;
 import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
@@ -23,6 +24,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -43,6 +47,7 @@ public class ProjectAgentController {
     private final ProjectAgentRunService runService;
     private final AiFeedbackService feedbackService;
     private final IpdPermission ipdPermission;
+    private final ProjectAgentAguiStream aguiStream;
 
     /**
      * 合同 #1：能力目录（开关关闭仍 200+code=0，pack.available=false）。
@@ -70,6 +75,17 @@ public class ProjectAgentController {
                                                              @RequestBody AgentRunCreateReq req) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(runService.create(actor, parseId(projectId, "projectId"), req));
+    }
+
+    /** 回答持久中断并继续原运行，不创建另一运行。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/agent-runs/{runId}/resume")
+    public ApiV1Response<ProjectAgentViews.RunStatus> resume(@PathVariable String runId,
+            @RequestBody org.ruoyi.ipd.agent.dto.AgentRunResumeReq req) {
+        IpdActor actor = ipdPermission.requireInternal();
+        if (req == null) throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "中断响应不能为空");
+        return ApiV1Response.ok(runService.resume(actor, parseId(runId, "runId"),
+            req.expectedPauseSeq(), req.aguiInput()));
     }
 
     /**
@@ -124,6 +140,16 @@ public class ProjectAgentController {
                                                           @RequestParam(required = false) Long afterSeq) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(runService.events(actor, parseId(runId, "runId"), afterSeq));
+    }
+
+    /** 原运行的持久事件 AG-UI SSE；连接断开只停止读取，不取消后台。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping(value = "/agent-runs/{runId}/events/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamEvents(@PathVariable String runId,
+                                  @RequestParam(required = false) Long afterSeq,
+                                  @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return aguiStream.open(actor, parseId(runId, "runId"), afterSeq, lastEventId);
     }
 
     /**

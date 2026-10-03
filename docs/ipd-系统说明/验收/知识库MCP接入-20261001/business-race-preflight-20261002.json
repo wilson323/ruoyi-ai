@@ -1,0 +1,61 @@
+{
+  "database": "ipd_qa04",
+  "endpoint": "127.0.0.1:13306",
+  "status": "BLOCKED_ENVIRONMENT",
+  "tables": {
+    "projects": {
+      "columnCount": 31,
+      "missing": [
+        "product_line_id"
+      ]
+    },
+    "products": {
+      "columnCount": 16,
+      "missing": [
+        "product_line_id"
+      ]
+    },
+    "product_lines": {
+      "columnCount": 0,
+      "missing": [
+        "id",
+        "leader_person_id",
+        "status",
+        "del_flag"
+      ]
+    },
+    "stage_actions": {
+      "columnCount": 30,
+      "missing": []
+    },
+    "ai_documents": {
+      "columnCount": 19,
+      "missing": [
+        "review_comment"
+      ]
+    }
+  },
+  "missing": [
+    "projects.product_line_id",
+    "products.product_line_id",
+    "product_lines.id",
+    "product_lines.leader_person_id",
+    "product_lines.status",
+    "product_lines.del_flag",
+    "ai_documents.review_comment"
+  ],
+  "isolation": "REPEATABLE-READ",
+  "checkedAt": "2026-10-02T15:01:26.616769+00:00",
+  "evidenceScope": "本次ProjectStartService/StageAcceptanceService/AiDocumentService竞态修复的隔离库前置核验",
+  "operations": [
+    "读取本地mysql-client.cnf，不输出凭据",
+    "13306 ipd_qa04 information_schema.COLUMNS查询",
+    "读取当前事务隔离级别",
+    "ROLLBACK只读事务"
+  ],
+  "fixtureWrites": 0,
+  "ddlExecuted": false,
+  "productionWrites": false,
+  "acceptance": "BLOCKED_ENVIRONMENT，未执行本次真实服务并发验收；既有QA04测试通过不能替代本次验收",
+  "requiredAction": "仅在获准且具备本次业务Schema的隔离环境继续；本轮禁止DDL，不迁移现库"
+}

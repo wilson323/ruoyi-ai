@@ -51,3 +51,21 @@ orphan_gate
 persons_bk_b3_20260919
 shipment_ledgers
 xxx_backup_
+
+# === 第三批（4 个）：2026-10-02 门禁 1/2 阻断面吸收（A 级库证据逐条核实） ===
+# 背景：owner 2026-10-02 拍板 workflow/flow 双模块下线，offline SQL
+#   docs/script/sql/update/2026-10-02-workflow-modules-offline.sql 已 apply；
+#   实测 ipd_dev 中 t_workflow% 残留 = 0（information_schema.tables 直查）。
+# ipd_poc：跨库 schema 限定引用（db.table），脚本只查 ipd_dev → 纯误报。
+#   实测 SHOW DATABASES 含 ipd_poc，且 information_schema 中
+#   ipd_poc.agentscope_sessions 表真实存在 → 文档陈述正确，改文档即改错事实。
+# t_workflow_component：_probes/20260927-f-workflow-p0.md 的历史实测记录
+#   （SELECT 9 行/启用 9/软删 0），改写即篡改执行证据。
+# t_workflow_runtime / t_workflow_runtime_node：langgraph4j迁移AgentScope编排
+#   档案引用源表结构，属下线前历史事实快照。
+# 与 2026-09-28 棘轮拍板同性质：DB 不存在 + 文档陈述正确 + 无运行态影响 +
+#   全仓 commit 被阻断。改文档方案会歪曲事实陈述，违反 log.md 第 76 条先例。
+ipd_poc
+t_workflow_component
+t_workflow_runtime
+t_workflow_runtime_node

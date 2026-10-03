@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
@@ -184,7 +185,6 @@ class ProjectServiceConcurrencyTest {
     @DisplayName("撞号收口：insert 撞 uk_projects_code → 换新号重试成功，编码已重新生成")
     void create_retriesOnDuplicateKey_andSucceedsWithNewCode() {
         when(productMapper.selectById(50L)).thenReturn(product50());
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         // 忠实模拟 DB：撞号意味着该号已被并发事务提交，重试时取号必须能读到它（R179-P0
         // 起 nextCode 走原生 SQL selectMaxCodeSeqByYear），否则 nextCode() 会算出同一个号，
         // 重试永远撞同一堵墙（这也是 create() 里 project.setCode(null) 的意义——强制重新取号）。
@@ -201,10 +201,10 @@ class ProjectServiceConcurrencyTest {
         // 第一次取号得 001 并撞键，第二次必须换到 002 —— 证明重试真的重新取号，
         // 而不是拿同一个号反复撞。
         assertThat(created.getCode()).isEqualTo(PREFIX + "002");
-        assertThat(created.getCurrentStage()).isEqualTo("CONCEPT");
-        assertThat(created.getStatus()).isEqualTo("DRAFT");
+        assertThat(created.getCurrentStage()).isNull();
+        assertThat(created.getStatus()).isEqualTo("PENDING_START");
         verify(projectMapper, times(2)).insert(any(Project.class));
-        verify(projectBootstrapService).bootstrap(created.getId(), 1L);
+        verify(projectBootstrapService, never()).bootstrap(any(), any());
         verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
@@ -212,7 +212,6 @@ class ProjectServiceConcurrencyTest {
     @DisplayName("撞号收口：重试耗尽恰好 8 次 → 抛「项目编码冲突，请重试」")
     void create_givesUpAfterMaxRetry() {
         when(productMapper.selectById(50L)).thenReturn(product50());
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(0);
         doThrow(new DuplicateKeyException("Duplicate entry for key 'uk_projects_code'"))
             .when(projectMapper).insert(any(Project.class));

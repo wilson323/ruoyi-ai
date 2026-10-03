@@ -40,7 +40,10 @@ public class Project extends BaseEntity implements SoftDeletable {
     /** 项目名称 */
     private String name;
 
-    /** 归属产品（1:1 唯一 Q5，uk_projects_product）；软删对端时需可写 null */
+    /**
+     * 所属产品。产品是长期对象，项目是一次受治理的投资或变更。
+     * 多个项目可以指向同一产品。uk_projects_product 已删除。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long productId;
 

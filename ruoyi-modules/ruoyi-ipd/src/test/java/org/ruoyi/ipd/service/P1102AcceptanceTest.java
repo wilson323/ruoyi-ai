@@ -132,6 +132,7 @@ class P1102AcceptanceTest {
         // v1 已 REVIEWED；P1-10.3 后 head/history 统一走 selectChain 递归 CTE（升序链）
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED, "已审核 v1");
         when(mapper.selectChain(1L)).thenReturn(List.of(v1));
+        when(mapper.lockVersion(v1.getId())).thenReturn(v1);
 
         AiDocument v2 = service.revise(1L, 1L, "改版全文 v2", null, 7L);
 
@@ -280,15 +281,20 @@ class P1102AcceptanceTest {
     // 测 9 — reject 全状态机：GENERATED/REVIEWED/ARCHIVED/REJECTED 行为矩阵
     // -------------------------------------------------------------------
     @Test
-    @DisplayName("reject 状态机：GENERATED 拒 / REVIEWED 接受 / ARCHIVED 拒 / REJECTED 幂等")
+    @DisplayName("reject 状态机：待审核链头可退回 / REVIEWED 接受 / ARCHIVED 拒")
     void reject_stateMachineContract() {
-        // 1) GENERATED 行 reject ⇒ 必须先 review（拒绝以减少越权提交）
-        when(mapper.selectById(11L))
-            .thenReturn(row(11L, 1, null, AiDocumentService.STATUS_GENERATED, "v1 内容"));
-        assertThatThrownBy(() -> service.reject(11L, 99L, "原因 X"))
-            .isInstanceOf(IpdBusinessException.class)
-            .satisfies(e -> assertThat(((IpdBusinessException) e).getErrorCode())
-                .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT));
+        // 1) 当前链头 GENERATED ⇒ 退回，意见和操作者落在这一版，正文不动
+        AiDocument pending = row(11L, 1, null, AiDocumentService.STATUS_GENERATED, "v1 内容");
+        when(mapper.selectById(11L)).thenReturn(pending);
+        when(mapper.selectChain(11L)).thenReturn(List.of(pending));
+        when(mapper.lockVersion(pending.getId())).thenReturn(pending);
+        when(mapper.update(isNull(), any())).thenReturn(1);
+        AiDocument returned = service.reject(11L, 99L, "原因 X");
+        assertThat(returned.getStatus()).isEqualTo(AiDocumentService.STATUS_REJECTED);
+        assertThat(returned.getReviewComment()).isEqualTo("原因 X");
+        assertThat(returned.getReviewedBy()).isEqualTo(99L);
+        assertThat(returned.getContent()).isEqualTo("v1 内容");
+        assertThat(returned.getId()).isEqualTo(11L);
 
         // 2) ARCHIVED 行 reject ⇒ 终态不可拒
         when(mapper.selectById(12L))
@@ -305,5 +311,67 @@ class P1102AcceptanceTest {
         AiDocument rejected = service.reject(13L, 99L, "项目章程口径不一致");
         assertThat(rejected.getStatus()).isEqualTo(AiDocumentService.STATUS_REJECTED);
         assertThat(rejected.getReviewComment()).isEqualTo("项目章程口径不一致");
+    }
+
+    @Test
+    @DisplayName("待审核稿已不是链头：拒绝过时退回，零写入")
+    void reject_pendingNotHead_staleConflict() {
+        AiDocument v1 = row(11L, 1, null, AiDocumentService.STATUS_GENERATED, "v1 内容");
+        AiDocument v2 = row(12L, 2, 11L, AiDocumentService.STATUS_GENERATED, "v2 内容");
+        when(mapper.selectById(11L)).thenReturn(v1);
+        when(mapper.selectChain(11L)).thenReturn(List.of(v1, v2));
+        when(mapper.lockVersion(v1.getId())).thenReturn(v1);
+        when(mapper.lockChild(v1.getId())).thenReturn(v2);
+
+        assertThatThrownBy(() -> service.reject(11L, 99L, "过时意见"))
+            .isInstanceOf(IpdBusinessException.class)
+            .satisfies(e -> {
+                IpdBusinessException ibe = (IpdBusinessException) e;
+                assertThat(ibe.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+                assertThat(ibe.getMessage()).contains("版本已变更");
+            });
+
+        verify(mapper, never()).update(isNull(), any());
+        assertThat(v1.getStatus()).isEqualTo(AiDocumentService.STATUS_GENERATED);
+        assertThat(v1.getReviewComment()).isNull();
+    }
+
+    @Test
+    @DisplayName("普通快照仍是旧版：当前锁读发现新链头时拒绝退回")
+    void reject_currentLockReadRejectsNewHeadDespiteStaleSnapshot() {
+        AiDocument v1 = row(21L, 1, null, AiDocumentService.STATUS_GENERATED, "v1 内容");
+        AiDocument v2 = row(22L, 2, 21L, AiDocumentService.STATUS_GENERATED, "v2 内容");
+        when(mapper.selectById(21L)).thenReturn(v1);
+        when(mapper.selectChain(21L))
+            .thenReturn(List.of(v1));
+        when(mapper.lockVersion(21L)).thenReturn(v1);
+        when(mapper.lockChild(21L)).thenReturn(v2);
+
+
+        assertThatThrownBy(() -> service.reject(21L, 99L, "竞态意见"))
+            .isInstanceOf(IpdBusinessException.class)
+            .satisfies(e -> assertThat(((IpdBusinessException) e).getMessage()).contains("版本已变更"));
+
+        assertThat(v1.getStatus()).isEqualTo(AiDocumentService.STATUS_GENERATED);
+        assertThat(v1.getReviewComment()).isNull();
+    }
+
+    @Test
+    @DisplayName("退回后改版：新版本回到待审核，不继承旧意见")
+    void revise_afterReturn_doesNotCarryReview() {
+        AiDocument returned = row(1L, 1, null, AiDocumentService.STATUS_REJECTED, "旧正文");
+        returned.setReviewComment("请补充竞品口径");
+        returned.setReviewedBy(99L);
+        when(mapper.selectChain(1L)).thenReturn(List.of(returned));
+        when(mapper.lockVersion(returned.getId())).thenReturn(returned);
+
+        AiDocument next = service.revise(1L, 1L, "返工正文", null, 7L);
+
+        assertThat(next.getStatus()).isEqualTo(AiDocumentService.STATUS_GENERATED);
+        assertThat(next.getReviewComment()).isNull();
+        assertThat(next.getReviewedBy()).isNull();
+        assertThat(next.getParentVersionId()).isEqualTo(1L);
+        assertThat(returned.getStatus()).isEqualTo(AiDocumentService.STATUS_REJECTED);
+        assertThat(returned.getReviewComment()).isEqualTo("请补充竞品口径");
     }
 }

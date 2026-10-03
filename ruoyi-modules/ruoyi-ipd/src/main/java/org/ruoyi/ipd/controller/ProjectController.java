@@ -27,7 +27,10 @@ import org.ruoyi.ipd.service.GateCreationService;
 import org.ruoyi.ipd.service.GateReviewService;
 import org.ruoyi.ipd.service.LegacyImportService;
 import org.ruoyi.ipd.service.IProjectCertService;
+import org.ruoyi.ipd.domain.ProjectStage;
 import org.ruoyi.ipd.service.ProjectService;
+import org.ruoyi.ipd.service.ProjectStartService;
+import org.ruoyi.ipd.service.StageAcceptanceService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,6 +53,11 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private StageAcceptanceService stageAcceptanceService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProjectStartService projectStartService;
     private final GateEngine gateEngine;
     private final IProjectCertService projectCertService;
     private final LegacyImportService legacyImportService;
@@ -113,7 +121,8 @@ public class ProjectController {
         IpdActor actor = ipdPermission.requireProjectCreator();
         // 主组可选（2026-09-11 owner 拍板）：未选时后端权威自动归属操作人所在产品组（BR-ORG-01）
         return ApiV1Response.ok(projectService.create(
-            req.toEntity(), actor.id(), actor.groupId(), req.marketPmId(), req.rdPmId()));
+            req.toEntity(), actor.id(), actor.groupId(), req.marketPmId(), req.rdPmId(),
+            req.productLineId(), actor.role()));
     }
 
     /** 变更项目状态，需 ipd:project:edit 权限 */
@@ -122,6 +131,52 @@ public class ProjectController {
     public ApiV1Response<Project> changeStatus(@PathVariable Long id, @RequestParam String target) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(projectService.changeStatus(id, target, actor.id(), actor.groupId(), actor.role()));
+    }
+
+    /**
+     * 提交人提交当前大阶段验收。阶段编码取项目当前阶段，不接受客户端指定。
+     *
+     * @param id 项目
+     * @return 待产线负责人批准的阶段行
+     */
+    @PostMapping("/{id}/stage-acceptance")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<ProjectStage> submitStageAcceptance(@PathVariable Long id) {
+        if (stageAcceptanceService == null) {
+            throw new org.ruoyi.common.core.exception.ServiceException("阶段验收未启用");
+        }
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(stageAcceptanceService.submitStage(id, actor));
+    }
+
+    /** 产品线负责人批准开工。没有负责人时只有超管能批。 */
+    @PostMapping("/{id}/approve-start")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Project> approveStart(@PathVariable Long id) {
+        if (projectStartService == null) {
+            throw new org.ruoyi.common.core.exception.ServiceException("开工审批未启用");
+        }
+        return ApiV1Response.ok(projectStartService.approve(id, ipdPermission.requireInternal()));
+    }
+
+    /** 产品线负责人拒绝开工。项目保留，不另建。 */
+    @PostMapping("/{id}/reject-start")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Project> rejectStart(@PathVariable Long id) {
+        if (projectStartService == null) {
+            throw new org.ruoyi.common.core.exception.ServiceException("开工审批未启用");
+        }
+        return ApiV1Response.ok(projectStartService.reject(id, ipdPermission.requireInternal()));
+    }
+
+    /** 创建人再次提交开工。 */
+    @PostMapping("/{id}/resubmit-start")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_CREATE, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<Project> resubmitStart(@PathVariable Long id) {
+        if (projectStartService == null) {
+            throw new org.ruoyi.common.core.exception.ServiceException("开工审批未启用");
+        }
+        return ApiV1Response.ok(projectStartService.resubmit(id, ipdPermission.requireInternal()));
     }
 
     /** 推进项目阶段，需 ipd:project:edit 权限 */

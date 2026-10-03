@@ -109,6 +109,9 @@ class P423AcceptanceTest {
         });
         when(mapper.selectById(any())).thenAnswer(inv -> store.get((Long) inv.getArgument(0)));
         when(mapper.selectChain(any())).thenAnswer(inv -> chainOf((Long) inv.getArgument(0)));
+        when(mapper.lockVersion(any())).thenAnswer(inv -> store.get((Long) inv.getArgument(0)));
+        when(mapper.lockChild(any())).thenAnswer(inv -> store.values().stream()
+            .filter(r -> java.util.Objects.equals(r.getParentVersionId(), inv.getArgument(0))).findFirst().orElse(null));
         // 条件 UPDATE 语义模拟：仅当内存行当前状态 == 流转来源态才生效（与生产 SQL
         // review: eq status=GENERATED set REVIEWED / archive: eq status=REVIEWED set ARCHIVED 同构）
         when(mapper.update(isNull(), any())).thenAnswer(inv -> applyTransition(inv.getArgument(1)));
@@ -555,6 +558,10 @@ class P423AcceptanceTest {
     // ==================== HTTP 主链（controller 真实装配，权限 mock） ====================
 
     private MockMvc mvc() {
+        // HTTP授权入口必须装配权限守卫；这里仅授权该夹具项目，不放宽生产逻辑。
+        IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+        when(access.requireVisible(ACTOR, 77L)).thenReturn("000000");
+        documentService.setProjectAccess(access);
         IpdPermission permission = mock(IpdPermission.class);
         when(permission.requireInternal()).thenReturn(ACTOR);
         return MockMvcBuilders.standaloneSetup(

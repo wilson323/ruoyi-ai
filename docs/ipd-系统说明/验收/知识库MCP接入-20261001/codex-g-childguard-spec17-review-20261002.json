@@ -1,0 +1,34 @@
+{
+  "status": "VERIFIED_ISOLATED_SDK_CHILD_GUARD_AND_SPEC",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-child-guard-_9ra54d5",
+  "guardCompileExit": 0,
+  "guardProbeExit": 0,
+  "safeObservations": [
+    "ACTUAL_CHILD_GUARD_ACCEPT=true nativeSession=sub-0b1081aa-27a9-47f5-b744-60a1274721d5",
+    "ACTUAL_CHILD_GUARD_NEGATIVE6=PASS",
+    "ACTUAL_CHILD_GUARD_FINISHED_OLD_ASK=REJECT",
+    "ACTUAL_CHILD_GUARD_ACCEPT=true nativeSession=sub-6853f01e-25ff-4981-ae8e-c2fbda15cef3",
+    "ACTUAL_CHILD_GUARD_NEGATIVE6=PASS",
+    "ACTUAL_CHILD_GUARD_FINISHED_OLD_ASK=REJECT"
+  ],
+  "guardCoverage": "Two actual native spawned children with same id/name/input/raw distinct actor/SID. Correct original SID receipt accepted after storage mapping fix. Wrong childversion/session/user/canonical/raw and rootConfirm-withoutchild map rejected for each; after exact SDKConfirm finished checkpoint with freshversion oldASK rejected.",
+  "spec17Passed": 19,
+  "spec17CompileExit": 0,
+  "spec17ProbeExit": 0,
+  "spec17Checks": "Old13/14/15/16 normalized empty child, defensive immutable child list, every with preserves child, DTO has no childserver field, credential-safe toString; original16 checks retained",
+  "sourceHashes": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiCheckpointGuard.java": "a45cdd730e87143daefcd488f3136cf50346596ae7f4744a739f1f664a6a172b",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java": "9d2ae3063ff28f73c42f76ddd5ea2efb9a8b20fce94040afecbd043887c4a44e",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java": "c7dc339ebbc4ffa5d31615ec19fdec40aff965f9725b9b90d8fa434f0168e088",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStore.java": "6c28704047f699f27fe7d07295d630829dce9df39898aad03f766be8afdcdae3"
+  },
+  "limits": [
+    "True SDK producer and original exactConfirm consumer, in-memory state store",
+    "PauseCheckpoint constructed from actual saved tuple; no DB serverPause transaction exercised",
+    "Tests query identity/storage mapping, not authoritative cold factory ledger or locator entitlement",
+    "Finished and oldASK one combined native-completion test, not isolated branch attribution",
+    "Rootversion wrong and individually forged completedresult in stilllatestASK not independently covered in this child extension",
+    "Main target concurrentclean caused first compilation dependency failure; finalCP uses stable489libs+m2 and isolated source compile, no maintarget paths borrowed"
+  ],
+  "scaffoldFailure": "Original null expectation failed because compact constructor intentionally normalizes child resumes to immutable empty list; source-contract corrected assertion; old log retained."
+}

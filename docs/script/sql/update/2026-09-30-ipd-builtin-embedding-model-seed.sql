@@ -5,7 +5,9 @@
 --
 -- 落点：chat_model（平台模型登记表，category='vector' 即「用途」列；知识库/RAG
 --       EmbeddingModelFactory 按 model_name 读取）。
---   api_host 存 base URL http://171.43.138.237:9997/v1：Langchain4j OpenAiEmbeddingModel
+--   2026-10-01 内置地址改为本机 Ollama http://127.0.0.1:11434/v1，
+--   模型名改为 ollama list 的 qwen3-embedding:0.6b。本文件仍只 INSERT、不覆盖既有行。
+--   api_host 存 base URL：OpenAI 兼容嵌入客户端
 --   固定拼 POST {api_host}/embeddings，拼接后即用户原文；存全路径会拼成
 --   /v1/embeddings/embeddings（实测 404）。
 --   api_key = NULL：无鉴权；openai 供应商读取侧 NULL → 不发 Authorization 头；
@@ -29,16 +31,16 @@
 INSERT INTO chat_model (id, category, model_name, provider_code, model_describe, model_dimension,
                         model_show, api_host, api_key, create_dept, create_by, create_time,
                         update_by, update_time, remark, tenant_id)
-SELECT 2096618258030407681, 'vector', 'Qwen3-Embedding-0.6B', 'openai', 'Qwen3-Embedding-0.6B', 1024,
-       'N', 'http://171.43.138.237:9997/v1', NULL, 103, 1, NOW(),
+SELECT 2096618258030407681, 'vector', 'qwen3-embedding:0.6b', 'openai', 'qwen3-embedding:0.6b', 1024,
+       'N', 'http://127.0.0.1:11434/v1', NULL, 103, 1, NOW(),
        1, NOW(), '内置默认向量模型（无鉴权，2026-09-30 种子）', 0
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM chat_model
-    WHERE (category = 'vector' AND model_name = 'Qwen3-Embedding-0.6B' AND tenant_id = 0)
+    WHERE (category = 'vector' AND model_name = 'qwen3-embedding:0.6b' AND tenant_id = 0)
        OR id = 2096618258030407681
 );
 
 -- 回读核验：
 -- SELECT id, category, model_name, provider_code, model_dimension, api_host, api_key IS NULL AS key_null, tenant_id
---   FROM chat_model WHERE category = 'vector' AND model_name = 'Qwen3-Embedding-0.6B';
+--   FROM chat_model WHERE category = 'vector' AND model_name = 'qwen3-embedding:0.6b';

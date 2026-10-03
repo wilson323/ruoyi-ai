@@ -8,8 +8,53 @@ import java.util.Map;
  */
 public interface ProjectAgentEventSink {
 
+    /** 在模型或工具实际开始前验证当前执行所有权；生产sink绑定原run epoch。 */
+    default void requireActiveOwnership() { }
+
+    /** 生产运行原租约的执行版本；未绑定的 sink 不提供猜测值。 */
+    default long executionEpoch() {
+        throw new IllegalStateException("execution epoch is not bound");
+    }
+
+    /** SDK临时状态也在原run epoch事务保护下访问，不另建权限或状态源。 */
+    default <T> T withActiveOwnership(java.util.function.Supplier<T> action) {
+        requireActiveOwnership();
+        return action.get();
+    }
+
+    /** 注册该运行SDK临时checkpoint清理；终态在释放所有权之前执行。 */
+    default void registerTemporaryStateCleanup(Runnable cleanup) { }
+
+    /** 原终态事务已成功提交时的服务器回执；不是模型完成事件。 */
+    default void registerTerminalSuccessReceipt(Runnable receipt) {
+        throw new IllegalStateException("terminal commit receipt is not configured");
+    }
+
+    /** SDK资源finalizer在调用真实完成/错误之后、业务终态之前回收临时checkpoint。 */
+    default void releaseTemporaryState() { }
+
+    /** 官方中断必须持久化并暂停原运行，未装配时明确失败。 */
+    default void onAguiInterrupt(Map<String, io.agentscope.core.agui.event.AguiEvent.Interrupt> pending,
+                                 long checkpointVersion) {
+        throw new IllegalStateException("AG-UI pause handler is not configured");
+    }
+
+    /** Persist trusted child receipts and both checkpoints in the original run epoch transaction before WAIT CAS. */
+    default void onChildInterrupt(java.util.List<ProjectAgentChildLineageRegistry.ChildApproval> approvals,
+                                  long rootCheckpointVersion) {
+        throw new IllegalStateException("Original run child approval pause consumer is not configured");
+    }
+
+    /** 子恢复必须匹配原持久审批消费事件；默认实现不能授信。 */
+    default void requireChildResumeConsumed(ProjectAgentChildLineageRegistry.ChildApproval approval) {
+        throw new IllegalStateException("child consumed receipt guard is not configured");
+    }
+
+    /** 暂停保留服务器 checkpoint；不能按终态删除。 */
+    default boolean isPaused() { return false; }
+
     /**
-     * 执行步骤（如 SKILL_LOADED / MODEL_CALL）。
+     * 执行步骤（如 SKILL_SELECTED / MODEL_CALL）。
      *
      * @param kind 步骤类型
      * @param detail 步骤明细（不含凭据与推理原文）
@@ -46,6 +91,9 @@ public interface ProjectAgentEventSink {
      * @param delta 文本片段
      */
     void onText(String delta);
+
+    /** 原生最终消息的权威正文；实现沿同一TEXT_DELTA事件替换，默认兼容旧测试sink。 */
+    default void onFinalText(String fullText) { }
 
     /**
      * 产物草稿已落库（契约 ARTIFACT 事件）。

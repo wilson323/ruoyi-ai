@@ -4,6 +4,7 @@ import io.agentscope.core.model.Model;
 import io.agentscope.core.model.ModelCreationContext;
 import io.agentscope.core.model.ModelRegistry;
 import java.util.Locale;
+import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,13 +27,22 @@ final class KernelModelSelector {
 
     /** 选型 + 装配结果（registryKey 进 Agent 缓存键：换模型换实例）。 */
     record ModelPlan(String registryKey, Source source, Model model, String requestedKey,
-                     String configurationIdentity) {
+                     String configurationIdentity, List<String> knownSecrets) {
+        ModelPlan(String registryKey, Source source, Model model, String requestedKey, String configurationIdentity) {
+            this(registryKey, source, model, requestedKey, configurationIdentity, List.of());
+        }
 
         public ModelPlan {
             Objects.requireNonNull(registryKey, "registryKey");
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(model, "model");
             Objects.requireNonNull(configurationIdentity, "configurationIdentity");
+            knownSecrets = knownSecrets == null ? List.of() : List.copyOf(knownSecrets);
+        }
+
+        @Override public String toString() {
+            return "ModelPlan[registryKey=" + registryKey + ", source=" + source
+                + ", configurationIdentity=" + configurationIdentity + ", knownSecrets=<redacted>]";
         }
     }
 
@@ -74,7 +84,8 @@ final class KernelModelSelector {
         try {
             Model model = assembler.assemble(key, AgentScopeModelFactory.context(request, null, userId, sessionId));
             log.info("kernel_model operation=ROUTE status=SELECTED source=REQUEST registryKey={}", key);
-            return new ModelPlan(key, Source.REQUEST, model, key, request.configurationIdentity() + ":u" + userId + ":s" + sessionId);
+            return new ModelPlan(key, Source.REQUEST, model, key, request.configurationIdentity() + ":u" + userId + ":s" + sessionId,
+                request.apiKey() == null || request.apiKey().isBlank() ? List.of() : List.of(request.apiKey()));
         } catch (RuntimeException e) {
             log.warn("kernel_model operation=ROUTE status=REJECTED reason=ASSEMBLE_FAILED"
                     + " requestedKey={} errorType={}", key, e.getClass().getName());

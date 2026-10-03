@@ -67,9 +67,10 @@ public class GateEngine {
                 unfinished.add(code + " " + def.name() + "（未实例化）");
                 continue;
             }
-            if (!"DONE".equals(action.getStatus()) && !"NA".equals(action.getStatus())
-                && !historyExempt(project, action)) {
-                unfinished.add(code + " " + action.getActionName());
+            if (!actionAccepted(action, historyExempt(project, action))) {
+                String wait = "DONE".equals(action.getStatus()) && action.getConfirmedBy() == null
+                    ? "（待产线负责人批准）" : "";
+                unfinished.add(code + " " + action.getActionName() + wait);
             }
         }
         if (!unfinished.isEmpty()) {
@@ -107,13 +108,15 @@ public class GateEngine {
                 continue;
             }
             boolean exempt = historyExempt(project, action);
-            boolean ok = "DONE".equals(action.getStatus()) || "NA".equals(action.getStatus()) || exempt;
+            boolean ok = actionAccepted(action, exempt);
             String reason;
             if (LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark()) && exempt) {
                 reason = "历史缺失（BR-PROD-03）；来源=" + sourceLabel(level, code);
             } else if (LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark())) {
                 reason = "历史缺失标记不在豁免范围（动作阶段不早于申报阶段 "
                     + project.getDeclaredStage() + "），按未完成处理；来源=" + sourceLabel(level, code);
+            } else if ("DONE".equals(action.getStatus()) && action.getConfirmedBy() == null) {
+                reason = "已提交，待产线负责人批准；来源=" + sourceLabel(level, code);
             } else if (ok) {
                 reason = "已满足（" + action.getStatus() + "）；来源=" + sourceLabel(level, code);
             } else {
@@ -150,6 +153,20 @@ public class GateEngine {
      * @param action  阶段动作行
      * @return true 仅当该行的历史缺失标记落在申报范围内
      */
+    /**
+     * 动作是否已通过验收。不适用和历史缺失豁免保持原口径；完成还必须有产线负责人。
+     *
+     * @param action 动作实例
+     * @param exempt 历史缺失是否落在申报范围内
+     * @return 可以计入阶段门禁时为 true
+     */
+    private static boolean actionAccepted(StageAction action, boolean exempt) {
+        if (exempt || "NA".equals(action.getStatus())) {
+            return true;
+        }
+        return "DONE".equals(action.getStatus()) && action.getConfirmedBy() != null;
+    }
+
     private boolean historyExempt(Project project, StageAction action) {
         if (!LegacyImportService.HISTORY_MISSING.equals(action.getHistoryMark())) {
             return false;

@@ -1,0 +1,62 @@
+{
+  "status": "PARTIAL",
+  "source": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentMountedFoundationRuntime.java",
+      "sha256": "5aba9653fb65dcf6c4baa4b2d0fb79864ab82b9e6cf0272faba534f99f4ba3a7"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentSandboxPathFilesystem.java",
+      "sha256": "f8e85173bed4afb9a2039a705962278ba23b86985f9f6f09bbd2442db3bbc1a8"
+    }
+  ],
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-mounted-runtime-validated-20261002.patch",
+  "patchSha256": "82c7ad001cd411dd12e08f3f10cc120b0647d5bb3781d67e768ffb16a1f99bc2",
+  "probe": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/MountedResourceProbe.java",
+  "logs": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-resource-compile.log",
+      "sha256": "1602180388e819a0be833671f9ad07cb5d65ccf786ac8d2d349bbdddd371e49e"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-resource-compile-v2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-resource-runtime.log",
+      "sha256": "e1ade9982d1029ef26025b00a8b3e1fa8182e53c41861a11c94e2204fdca939d"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-resource-203-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-resource-203-runtime.log",
+      "sha256": "f7474969c00da6a0428886af59a79a175479018a8c0eb57fbbde6b261fb1436c"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-resource-203-runtime-v2.log",
+      "sha256": "c42b69c7d4cada0c9f464e3ac6f1b56c7d5fbbd516093284a0dc62f3fdffbe8d"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/lineage-native-child-203-runtime.log",
+      "sha256": "82d1e409466c2dd335a5e270729c3c5387cff77e13a1a175a9193fbc5561df86"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-owned-volume-cleanup.log",
+      "sha256": "7bb9b2fb29ec38b524ec21561d045b747c508109c6927d019afb2669b7392726"
+    }
+  ],
+  "actualSDK203": "final mounted12 assertions pass; initial helper /memory upload failed and preserved; helper /workspace fixed owning SDK203 upload boundary",
+  "actualSDK204": "original /memory helper version resource assertions passed; final /workspace version not yet rerun204",
+  "child203": "real streamEvents native agent_spawn 45events5stubcalls child owner1 DRAFT1 apply0 structured thinking absent public body retained",
+  "lifecycle": "archive actualcontent validated before close; history export checked via cold second runtime; 12 exact self-owned volumes rm exit0",
+  "assembly": "open(scope) -> configurePinnedFullCapabilities(...runtime.filesystem...) -> retain runtime across all memory background consumers -> verify archive success -> runtime.close(); execution runRW/historyRO/memoryRO; memory official FS separate RW helper; no host mount",
+  "pending": [
+    "combined mounted fullHarness child/session background consumer not yet tested",
+    "memory concurrent update conflict/audit not complete",
+    "cold lineage reconstruction incomplete",
+    "production ArtifactVersionStore/owner binding not present in fixture",
+    "session-tree canonical background mirror not validated"
+  ]
+}

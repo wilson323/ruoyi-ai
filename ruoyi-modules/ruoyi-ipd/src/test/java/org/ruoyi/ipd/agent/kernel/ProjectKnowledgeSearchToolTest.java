@@ -33,6 +33,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("dev")
 class ProjectKnowledgeSearchToolTest {
 
+    @Test
+    void sourceEventCarriesActualTypedIdsInsteadOfInferringFromSourceName() {
+        List<Map<String, Object>> recorded = new java.util.ArrayList<>();
+        var identity = new org.ruoyi.ipd.service.AiDocEmbeddingService.CitationSource(
+            "KNOWLEDGE_FRAGMENT", "doc-1", "100", "101", "资料.md", "NOT_PROJECT_DOCUMENT");
+        var typed = new ProjectKnowledgeSearchTool(1L, (p, t, q) ->
+            new RetrievalContext(1, 2, "原句", "原句", List.of(identity)), recorded::add);
+        typed.callAsync(param(Map.of("query", "资料"))).block();
+        assertThat(recorded).singleElement().satisfies(event -> {
+            assertThat(event.get("sourceEvidence").toString()).contains("KNOWLEDGE_FRAGMENT", "doc-1",
+                "knowledgeId=100", "fragmentId=101", "NOT_PROJECT_DOCUMENT");
+        });
+    }
+
     private static final Long BOUND = 20260929L;
 
     private final List<Long> retrievedProjects = new CopyOnWriteArrayList<>();
@@ -122,8 +136,119 @@ class ProjectKnowledgeSearchToolTest {
         assertThat(retrievedProjects).isEmpty();
     }
 
+    @Test
+    @DisplayName("零命中但向量故障：返回错误，保留故障而非伪装为没有资料")
+    void zeroHitsWithFailureRemainsError() {
+        String failure = ProjectKnowledgeVectorSearch.FAILURE_MARK + "服务暂不可用";
+        ProjectKnowledgeSearchTool failed = new ProjectKnowledgeSearchTool(BOUND,
+            (p, d, q) -> new RetrievalContext(0, failure.length(), failure), sources::add);
+        ToolResultBlock result = failed.callAsync(param(Map.of("query", "海康威视"))).block();
+        assertThat(result.getState().name()).isEqualTo("ERROR");
+        assertThat(result.getOutput().toString()).contains("服务暂不可用").doesNotContain("未检索到");
+        assertThat(sources).singleElement().satisfies(source ->
+            assertThat(source.get("retrievalStatus")).isEqualTo("FAILED"));
+    }
+
+    @Test
+    @DisplayName("局部故障且另有命中：保留片段和故障，标记部分成功")
+    void partialHitsKeepFailureAndEvidence() {
+        String block = ProjectKnowledgeVectorSearch.FAILURE_MARK + "向量不可用；原文：研发费用率12.83%";
+        ProjectKnowledgeSearchTool partial = new ProjectKnowledgeSearchTool(BOUND,
+            (p, d, q) -> new RetrievalContext(1, block.length(), block), sources::add);
+        ToolResultBlock result = partial.callAsync(param(Map.of("query", "研发"))).block();
+        // SDK text结果在Toolkit归一化前是RUNNING；此处验证它不是错误观察。
+        assertThat(result.getState().name()).isNotEqualTo("ERROR");
+        assertThat(result.getOutput().toString()).contains("向量不可用", "12.83%");
+        assertThat(sources).singleElement().satisfies(source ->
+            assertThat(source.get("retrievalStatus")).isEqualTo("PARTIAL"));
+    }
+
+    @Test
+    @DisplayName("真实零命中：仍返回未取得说明，区别于故障")
+    void emptyResultRemainsNoHit() {
+        ProjectKnowledgeSearchTool empty = new ProjectKnowledgeSearchTool(BOUND,
+            (p, d, q) -> new RetrievalContext(0, 0, ""), sources::add);
+        ToolResultBlock result = empty.callAsync(param(Map.of("query", "研发"))).block();
+        // SDK text结果在Toolkit归一化前是RUNNING；此处验证它不是错误观察。
+        assertThat(result.getState().name()).isNotEqualTo("ERROR");
+        assertThat(result.getOutput().toString()).contains("未取得：").contains("未检索到");
+        assertThat(sources).singleElement().satisfies(source ->
+            assertThat(source.get("retrievalStatus")).isEqualTo("NO_HIT"));
+    }
+
+    @Test
+    @DisplayName("无权和命中原句分开写，不把无权写成没有资料")
+    void deniedResultIsSeparateFromNoHit() {
+        String block = ProjectKnowledgeVectorSearch.FAILURE_MARK + "没有权限读取该知识库";
+        ProjectKnowledgeSearchTool denied = new ProjectKnowledgeSearchTool(BOUND,
+            (p, d, q) -> new RetrievalContext(0, block.length(), block), sources::add);
+        ToolResultBlock result = denied.callAsync(param(Map.of("query", "研发"))).block();
+        assertThat(result.getState().name()).isEqualTo("ERROR");
+        assertThat(result.getOutput().toString()).contains("无权：").contains("没有权限").doesNotContain("未取得");
+        assertThat(sources).singleElement().satisfies(source ->
+            assertThat(source.get("retrievalStatus")).isEqualTo("UNAUTHORIZED"));
+
+        sources.clear();
+        String quote = "【相关历史文档片段｜海康威视】研发费用率 12.83%";
+        ProjectKnowledgeSearchTool hit = new ProjectKnowledgeSearchTool(BOUND,
+            (p, d, q) -> new RetrievalContext(1, quote.length(), quote), sources::add);
+        ToolResultBlock quoted = hit.callAsync(param(Map.of("query", "研发费用率"))).block();
+        assertThat(quoted.getOutput().toString()).contains("命中原句：").contains("12.83%").doesNotContain("未取得");
+        assertThat(sources).singleElement().satisfies(source ->
+            assertThat(source.get("retrievalStatus")).isEqualTo("SUCCESS"));
+    }
+
     private static KernelToolGovernance governance(ToolDescriptor... descriptors) {
         return new KernelToolGovernance(new ToolPolicyEngine(List.of(descriptors)), HarnessPermissionMode.READ_ONLY,
             new InMemoryKernelToolEffectLedger(), new KernelToolCallTrace());
+    }
+    @Test
+    void fullSuccessfulEvidenceAndMixedFailureAreSeparated() {
+        String full = "原文".repeat(600) + "12.83%";
+        ProjectKnowledgeSearchTool successful = new ProjectKnowledgeSearchTool(BOUND,
+            (project, type, query) -> new RetrievalContext(1, full.length(), full), sources::add);
+        successful.callAsync(param(Map.of("query", "研发"))).block();
+        assertThat(sources.get(0).get("citationText")).isEqualTo(full);
+        assertThat((String) sources.get(0).get("preview")).hasSize(1000);
+        ProjectKnowledgeSearchTool mixed = new ProjectKnowledgeSearchTool(BOUND,
+            (project, type, query) -> new RetrievalContext(1, 100,
+                full + ProjectKnowledgeVectorSearch.FAILURE_MARK + "错误118.69"), sources::add);
+        mixed.callAsync(param(Map.of("query", "研发"))).block();
+        assertThat(sources.get(1).get("citationText")).isEqualTo("");
+    }
+
+    @Test
+    void partialResultPublishesOnlyExplicitSuccessfulCitation() {
+        String quote = "【产品知识片段｜原始资料】研发费用率12.83%";
+        String mixed = ProjectKnowledgeVectorSearch.FAILURE_MARK + "故障118.69\n" + quote;
+        ProjectKnowledgeSearchTool partial = new ProjectKnowledgeSearchTool(BOUND,
+            (p, d, q) -> new RetrievalContext(1, mixed.length(), mixed, quote), sources::add);
+        partial.callAsync(param(Map.of("query", "研发"))).block();
+        assertThat(sources).singleElement().satisfies(source -> {
+            assertThat(source.get("retrievalStatus")).isEqualTo("PARTIAL");
+            assertThat(source.get("citationStatus")).isEqualTo("SUCCESS");
+            assertThat(source.get("citationText")).isEqualTo(quote);
+            assertThat((String) source.get("citationText")).doesNotContain("118.69", "故障");
+        });
+    }
+    @Test
+    void partialToolTextSeparatesSourceLimitationsFromQuotedEvidence() {
+        String quote = "【产品知识片段 1｜正式资料.md｜出处：原文件】\n研发费用率12.83%\n";
+        String failure = ProjectKnowledgeVectorSearch.FAILURE_MARK + "缺失来源，错误数字118.69\n";
+        ToolResultBlock result = ProjectKnowledgeSearchTool.result(
+            new RetrievalContext(1, (failure + quote).length(), failure + quote, quote));
+        String text = result.getOutput().toString();
+        assertThat(text).contains("部分成功", "限制仅影响对应来源", "检索限制（不作引用）");
+        assertThat(text.substring(text.indexOf("命中原句："))).contains("12.83%")
+            .doesNotContain("118.69", "缺失来源", "检索失败");
+        assertThat(text.indexOf("12.83%")).isEqualTo(text.lastIndexOf("12.83%"));
+    }
+
+    @Test
+    void legacyMixedBlockWithoutIndependentCitationIsNeverLabelledAsQuote() {
+        String block = ProjectKnowledgeVectorSearch.FAILURE_MARK + "错误118.69；疑似原文12.83%";
+        String text = ProjectKnowledgeSearchTool.result(new RetrievalContext(1, block.length(), block))
+            .getOutput().toString();
+        assertThat(text).contains("部分成功", "未取得可独立引用").doesNotContain("命中原句：");
     }
 }

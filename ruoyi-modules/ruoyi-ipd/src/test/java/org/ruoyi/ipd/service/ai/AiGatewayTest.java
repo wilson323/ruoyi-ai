@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mock;
 /**
  * AI-STRAT-2 统一 AI 调用层单测：错误码白名单映射（表驱动）+ SSRF 前置复用验证。
  * <p>mock 合法性（docs/ipd-系统说明/mock合法性与已知死路登记-20260908.md）：
- * 本类不 mock Langchain4j ChatModel 假造响应——真模型路径靠 P422AcceptanceTest
+ * 本类不 mock 模型客户端假造响应——真模型路径靠 P422AcceptanceTest
  * 的 AiGateway 桩在 Service 层覆盖；本类只测「不依赖模型行为」的纯映射与前置防御。
  */
 @Tag("dev")
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 class AiGatewayTest {
 
     @Test
-    @DisplayName("mapFailure：Langchain4j 异常 → 白名单错误码（表驱动）")
+    @DisplayName("mapFailure：模型调用异常 → 白名单错误码（表驱动）")
     void mapFailureTable() {
         assertMap(new TimeoutException("t"), "TIMEOUT");
         assertMap(http(401), "AUTH_FAILED");

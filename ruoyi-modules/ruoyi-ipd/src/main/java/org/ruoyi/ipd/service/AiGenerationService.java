@@ -67,7 +67,7 @@ public class AiGenerationService implements IAiGenerationService {
     private final AiDocumentService documentService;
     private final AiModelConfigService modelConfigService;
     private final IAuditLogService auditLogService;
-    /** AI-STRAT-2（2026-09-10）：生成主链迁 Langchain4j 统一调用层；预算/限流/审计仍在本类。 */
+    /** AI-STRAT-2（2026-09-10）：生成主链走 AiGateway 统一调用层；预算/限流/审计仍在本类。 */
     private final AiGateway aiGateway;
     /** AI-STRAT-1（2026-09-11）：生成前同项目历史文档检索注入（RAG 增强；降级不阻塞）。 */
     private final AiDocEmbeddingService docEmbeddingService;

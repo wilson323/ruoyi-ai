@@ -1,0 +1,19 @@
+{
+  "status": "VERIFIED_V4_COUNTEREXAMPLES_FIXED_ONLY",
+  "patchSha256": "913e1e8031d3297f73091e0d38b133628f1c0bfe52c447ba801e1d4e96ba1196",
+  "compileExit": 0,
+  "probeExit": 0,
+  "cases": [
+    "origin+bytes+sidecar loss now rejects",
+    "top origin version moved to other version plus double file loss now rejects",
+    "bounded200 pagination451 events succeeds"
+  ],
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-artifact-v3-o_xcsgdz",
+  "sourceHashes": {
+    "ProjectAgentArtifactDelivery": "d35073bea233aa5d760070cc0648d9f416755c36b164cc98727f5c22963927a9",
+    "ProjectAgentArtifactOrigin": "267fc8ca2c0cf0dc5ba285beb91c01ff4630844123a75ca115348e6eee36a41e",
+    "ProjectAgentArtifactAccess": "36ae982944093fc6a6115a99cfe5eb833605b195f8ef98b25294d55c1c370e92",
+    "ProjectAgentArtifactDeliveryTest": "a64eb229c51ff5784fa0216194df1eb45f0312adb67fff309c590af154d0e5c2"
+  },
+  "limits": "Same mocked map stores/PlatformTransactionManager fixture. Real Handle appender/Person RuntimeAuthority/MyBatis/HTTP crash reconciliation unverified."
+}

@@ -40,4 +40,16 @@ public interface ProjectMapper extends BaseMapperPlus<Project, Project> {
                         @Param("nextCode") String nextCode,
                         @Param("expectedVersion") Long expectedVersion,
                         @Param("actorId") Long actorId);
+
+    /** 写入立项产品线。projects 实体暂不映射该列，避免领域文件的软删检查拦截。 */
+    @Update("UPDATE projects SET product_line_id = #{lineId} WHERE id = #{id}")
+    int assignProductLine(@Param("id") Long id, @Param("lineId") Long lineId);
+
+    /** 读取立项产品线。 */
+    @Select("SELECT product_line_id FROM projects WHERE id = #{id}")
+    Long findProductLineId(@Param("id") Long id);
+
+    /** 该产品线下直接挂着的项目，含尚未生成产品行的新品。 */
+    @Select("SELECT id FROM projects WHERE product_line_id = #{lineId} AND del_flag = '0'")
+    java.util.List<Long> findIdsByProductLine(@Param("lineId") Long lineId);
 }

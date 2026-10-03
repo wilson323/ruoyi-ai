@@ -49,7 +49,7 @@ class PocSseControllerIdentityTest {
             org.assertj.core.api.Assertions.assertThat(emitter).as("错误帧收束后仍返回 emitter").isNotNull();
 
             // 身份校验未过 → 内核工厂不得被调用（校验先于任何内核/DB 触达，与守卫 4/5 同口径）
-            support.verify(() -> PocKernelSupport.agent(anyString()), never());
+            support.verify(() -> PocKernelSupport.agent(anyString(), anyString(), anyString(), anyString()), never());
             // 身份源唯一：只从会话取，且恰取一次
             login.verify(LoginHelper::getUserId, times(1));
         }
@@ -65,7 +65,7 @@ class PocSseControllerIdentityTest {
             HarnessAgent agent = mock(HarnessAgent.class);
             when(agent.streamEvents(any(Msg.class), any(RuntimeContext.class)))
                     .thenReturn(reactor.core.publisher.Flux.empty());
-            support.when(() -> PocKernelSupport.agent("emp-a1")).thenReturn(agent);
+            support.when(() -> PocKernelSupport.agent("P1", "900103", "emp-a1", "S9")).thenReturn(agent);
 
             controller.stream("hi", "P1", "emp-a1", "S9");
 

@@ -3,6 +3,7 @@ package org.ruoyi.ipd.domain;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,8 +19,7 @@ import java.util.Date;
  * 本实体承接落库：submit 时写入，attempt 终态变更时回写（write-through），重启后按 jobId
  * 惰性回读到服务内存缓存。业务字段与 {@code PersonSyncService.SyncJob} 一一对应。
  *
- * <p>注意：tenant_id / del_flag 列由 DB 默认值兜底（单企业私有部署无多租户语义，已登记
- * tenant.excludes），实体不映射，避免 MyBatis-Plus 全列 SELECT 依赖非业务列。
+ * <p>tenant_id 仍由库默认值兜底，实体不映射。del_flag 按表定义映射，查询只见未删除行。
  */
 @Data
 @Builder
@@ -71,4 +71,9 @@ public class PersonSyncJob {
 
     @TableField("updated_at")
     private Date updatedAt;
+
+    /** 删除标志（0 正常 1 删除）。库默认 0。 */
+    @TableLogic
+    @TableField("del_flag")
+    private String delFlag;
 }

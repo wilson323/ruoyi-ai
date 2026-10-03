@@ -56,7 +56,7 @@ public class PocSseController {
             KernelScopeKey.Scope scope = KernelScopeKey.of(projectId, userId, agentId, sid);
             emitter.send(SseEmitter.event().name("scope").data(scope.slotId()));
             Msg msg = Msg.builder().role(MsgRole.USER).textContent(text).build();
-            PocKernelSupport.agent(agentId)
+            PocKernelSupport.agent(projectId, userId, agentId, sid)
                     .streamEvents(msg, scope.toRuntimeContext())
                     .subscribe(
                             ev -> sendEvent(emitter, ev),

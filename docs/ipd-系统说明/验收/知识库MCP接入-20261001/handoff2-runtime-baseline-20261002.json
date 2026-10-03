@@ -1,0 +1,348 @@
+{
+  "at": "2026-10-02T16:29:24.584274+00:00",
+  "accounts": [
+    {
+      "account": "ipd-admin",
+      "loginHttp": 200,
+      "loginCode": 0,
+      "reads": {
+        "/projects/2103659612308828162": {
+          "http": 200,
+          "body": {
+            "code": 0,
+            "message": "ok",
+            "data": {
+              "createDept": "-1",
+              "createBy": "-1",
+              "createTime": 1790386510000,
+              "updateBy": "-1",
+              "updateTime": 1790857002000,
+              "id": "2103659612308828162",
+              "code": "PRJ-2026-048",
+              "name": "R218-FIX10-存量导入-2-0925F11",
+              "productId": "2103659611897786370",
+              "templateType": "SOFTWARE",
+              "targetMarkets": "[\"CONSUMER\"]",
+              "level": "A",
+              "levelCoefficient": 1.0,
+              "targetSalesAmount": 200.0,
+              "targetChannelCount": 5,
+              "targetNps": 40,
+              "targetSceneCount": 2,
+              "currentStage": "CONCEPT",
+              "subStageVersion": "0",
+              "declaredStage": "DEV",
+              "source": "LEGACY",
+              "legacyEffectiveAt": 1785542400000,
+              "lastActivityAt": 1785542400000,
+              "missingHistoryAck": "1",
+              "catchupStatus": "IN_PROGRESS",
+              "status": "ACTIVE",
+              "mainGroupId": "9120002",
+              "tenantId": "000000",
+              "delFlag": "0"
+            },
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "11fad00c77a349059c64b14b014ebce1"
+          }
+        },
+        "/projects/2103659612308828162/agent-capabilities": {
+          "http": 200,
+          "body": {
+            "code": 0,
+            "message": "ok",
+            "data": {
+              "packs": [
+                {
+                  "code": "market-research",
+                  "version": "v1",
+                  "name": "商业/市场/竞品研究",
+                  "description": "基于本项目已审核资料与用户输入开展竞品分析（功能/价格/渠道/技术路线），输出可追溯对比与缺项清单。",
+                  "stages": [
+                    "CONCEPT"
+                  ],
+                  "actionCodes": [
+                    "C02"
+                  ],
+                  "available": true,
+                  "skills": [
+                    {
+                      "name": "competitor-analysis-ipd",
+                      "version": "1.1.0",
+                      "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+                      "available": true
+                    }
+                  ],
+                  "tools": [
+                    {
+                      "id": "project_knowledge_search",
+                      "name": "项目资料检索",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+                      "name": "停车设备知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+                      "name": "通道设备知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+                      "name": "万傲瑞达 V6600知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+                      "name": "安检设备知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+                      "name": "门禁及梯控设备知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+                      "name": "考勤知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+                      "name": "E-ZKEco Pro知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+                      "name": "智能视频知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+                      "name": "人证核验知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+                      "name": "消费知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce71396a40120630b055e",
+                      "name": "云考勤设备知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce77b96a40120630b0c3d",
+                      "name": "外协生态知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce8b996a40120630b1d80",
+                      "name": "ZKTime知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce8e096a40120630b1e68",
+                      "name": "ZKAccess3.5知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+                      "name": "单机版消费epos知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce93796a40120630b2133",
+                      "name": "熵基云联知识库",
+                      "readOnly": true,
+                      "available": true
+                    },
+                    {
+                      "id": "FastGPT-mcp-69cce91596a40120630b2017",
+                      "name": "熵基互联知识库",
+                      "readOnly": true,
+                      "available": true
+                    }
+                  ]
+                }
+              ],
+              "models": [
+                {
+                  "id": "2104885081318375426",
+                  "name": "MiniMax / MiniMax-M3",
+                  "available": true
+                },
+                {
+                  "id": "1",
+                  "name": "TEST / test-rag-20260923",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2104855400313536513",
+                  "name": "TEST / ssrf-probe",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103706333168578561",
+                  "name": "OPENAI / lane4-budgetprobe-97643",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103706310582251521",
+                  "name": "OPENAI / lane4-mock-97643",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103705889591570433",
+                  "name": "OPENAI / lane4-budgetprobe-97536",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103705861657505794",
+                  "name": "OPENAI / lane4-mock-97536",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103704332951138305",
+                  "name": "OPENAI / lane4-budgetprobe-97166",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103704310327062530",
+                  "name": "OPENAI / lane4-mock-97166",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                },
+                {
+                  "id": "2103703211184533505",
+                  "name": "OPENAI / lane4-mock",
+                  "available": false,
+                  "reason": "模型配置未启用"
+                }
+              ]
+            },
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "7d64df991768438b9cd14897f60e9161"
+          }
+        },
+        "/agent-runs/2106051018860044289": {
+          "http": 200,
+          "body": {
+            "code": 0,
+            "message": "ok",
+            "data": {
+              "runId": "2106051018860044289",
+              "projectId": "2103659612308828162",
+              "agentId": "ipd_project_agent",
+              "status": "SUCCEEDED",
+              "actionCode": "C02",
+              "configSnapshot": {
+                "capabilityPackCode": "market-research",
+                "capabilityPackVersion": "v1",
+                "modelConfigId": "2104885081318375426",
+                "skills": [
+                  {
+                    "name": "competitor-analysis-ipd",
+                    "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+                  }
+                ],
+                "toolIds": [
+                  "project_knowledge_search",
+                  "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+                ]
+              },
+              "createdAt": "2026-10-02T15:57:46Z",
+              "finishedAt": "2026-10-02T15:58:36Z"
+            },
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "306f148b121740fcaa57d76b4377228f"
+          }
+        },
+        "/ai-documents/2106051584776511490": {
+          "http": 404,
+          "body": {
+            "code": 50001,
+            "message": "资源不存在",
+            "data": null,
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "0c9f3bf5fdf54fd7941483af9a21177e"
+          }
+        }
+      }
+    },
+    {
+      "account": "ipd-leader",
+      "loginHttp": 200,
+      "loginCode": 0,
+      "reads": {
+        "/projects/2103659612308828162": {
+          "http": 403,
+          "body": {
+            "code": 30001,
+            "message": "无权访问该项目",
+            "data": null,
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "cb0c03ca39b741f0ba59ada90c6e436b"
+          }
+        },
+        "/projects/2103659612308828162/agent-capabilities": {
+          "http": 404,
+          "body": {
+            "code": 50001,
+            "message": "项目不可见",
+            "data": null,
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "11d73fdf005343899d63cef36dda67e7"
+          }
+        },
+        "/agent-runs/2106051018860044289": {
+          "http": 404,
+          "body": {
+            "code": 50001,
+            "message": "项目不可见",
+            "data": null,
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "be4a3f6c265c484e8348272bad4108b3"
+          }
+        },
+        "/ai-documents/2106051584776511490": {
+          "http": 404,
+          "body": {
+            "code": 50001,
+            "message": "资源不存在",
+            "data": null,
+            "timestamp": "2026-10-02T16:29:24Z",
+            "traceId": "c464867f269f445b8a48499933df6e29"
+          }
+        }
+      }
+    }
+  ],
+  "loadedJarSha256": "04ee9a0b9d11426070b3cf65dc8930c9f5afe47feda029c86dcb09178cd6f817"
+}

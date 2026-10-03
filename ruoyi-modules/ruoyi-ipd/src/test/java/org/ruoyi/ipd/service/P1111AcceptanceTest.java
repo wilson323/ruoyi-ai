@@ -107,7 +107,7 @@ class P1111AcceptanceTest {
     void gateRejectsWhenC12Open() {
         Project p = Project.builder().id(1111L).level("B").currentStage("CONCEPT").build();
         when(actionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(
-            StageAction.builder().actionCode("C11").actionName("Charter").status("DONE").build(),
+            StageAction.builder().actionCode("C11").actionName("Charter").status("DONE").confirmedBy(1L).build(),
             StageAction.builder().actionCode("C12").actionName("合规").status("IN_PROGRESS").build()));
         assertThatThrownBy(() -> gateEngine.check(p, "CONCEPT"))
             .isInstanceOf(ServiceException.class)
@@ -120,8 +120,8 @@ class P1111AcceptanceTest {
     void gatePassesWhenBlockersDone() {
         Project p = Project.builder().id(1111L).level("B").currentStage("CONCEPT").build();
         when(actionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(
-            StageAction.builder().actionCode("C11").actionName("Charter").status("DONE").build(),
-            StageAction.builder().actionCode("C12").actionName("合规").status("DONE").build()));
+            StageAction.builder().actionCode("C11").actionName("Charter").status("DONE").confirmedBy(1L).build(),
+            StageAction.builder().actionCode("C12").actionName("合规").status("DONE").confirmedBy(1L).build()));
         gateEngine.check(p, "CONCEPT");
         GateChecklistView view = gateEngine.explainChecklist(p, "CONCEPT");
         assertThat(view.items()).allMatch(i -> i.ok());
@@ -178,8 +178,8 @@ class P1111AcceptanceTest {
         assertThat(before.items()).extracting(i -> i.ok()).containsOnly(false);
 
         when(actionMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(
-            StageAction.builder().actionCode("C11").actionName("Charter").status("DONE").build(),
-            StageAction.builder().actionCode("C12").actionName("合规").status("DONE").build()));
+            StageAction.builder().actionCode("C11").actionName("Charter").status("DONE").confirmedBy(1L).build(),
+            StageAction.builder().actionCode("C12").actionName("合规").status("DONE").confirmedBy(1L).build()));
         GateChecklistView after = gateEngine.explainChecklist(p, "CONCEPT");
         assertThat(after.items()).extracting(i -> i.ok()).containsOnly(true);
     }

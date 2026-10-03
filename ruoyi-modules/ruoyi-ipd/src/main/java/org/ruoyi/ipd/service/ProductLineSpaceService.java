@@ -12,12 +12,14 @@ import org.ruoyi.ipd.domain.ProductLine;
 import org.ruoyi.ipd.domain.ProductLineMember;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.domain.Requirement;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductLineMapper;
 import org.ruoyi.ipd.mapper.ProductLineMemberMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.dao.DuplicateKeyException;
@@ -43,6 +45,13 @@ public class ProductLineSpaceService {
     private final PersonMapper personMapper;
     private final IAuditLogService auditLogService;
     private Clock clock = Clock.systemDefaultZone();
+    private RequirementMapper requirementMapper;
+
+    /** 生产环境注入后，空间才能列出已绑定该产品线的游客需求。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRequirementMapper(RequirementMapper requirementMapper) {
+        this.requirementMapper = requirementMapper;
+    }
 
     public void setClock(Clock clock) {
         this.clock = Objects.requireNonNull(clock);
@@ -308,7 +317,7 @@ public class ProductLineSpaceService {
         return product;
     }
 
-    /** 解绑仅改变产品线归属；产品与项目的双向 1:1 关联保持原样。 */
+    /** 解绑只改产品线。产品与项目的挂接不变：一个产品可有多个项目，project_id 仍是首个项目指针。 */
     @Transactional(rollbackFor = Exception.class)
     public Product unassignProduct(Long lineId, Long productId, IpdActor actor) {
         requireAdmin(actor);
@@ -354,24 +363,59 @@ public class ProductLineSpaceService {
             .orderByAsc(Product::getProductName));
     }
 
-    /** 团队目录只展示本人在职项目，不能凭空间成员身份获取其他项目进度。 */
+    /**
+     * 负责人和超管看本线全部项目。其他成员只看自己加入的项目，以及自己创建、尚未开工的项目。
+     */
     public List<Project> projects(Long lineId, IpdActor actor) {
         ProductLine line = requireActiveLine(lineId);
         requireMemberOrAdmin(actor, line);
+        java.util.LinkedHashMap<Long, Project> merged = new java.util.LinkedHashMap<>();
+        List<Long> directIds = projectMapper.findIdsByProductLine(lineId);
+        if (directIds != null && !directIds.isEmpty()) {
+            for (Project project : projectMapper.selectBatchIds(directIds)) {
+                if (project.getId() != null) merged.put(project.getId(), project);
+            }
+        }
         List<Long> productIds = productMapper.selectList(new LambdaQueryWrapper<Product>()
             .eq(Product::getProductLineId, lineId).eq(Product::getTenantId, tenant()))
             .stream().map(Product::getId).toList();
-        if (productIds.isEmpty()) return List.of();
-        List<Project> projects = projectMapper.selectList(new LambdaQueryWrapper<Project>()
-            .in(Project::getProductId, productIds).eq(Project::getTenantId, tenant())
-            .orderByAsc(Project::getName));
-        if ("SUPER_ADMIN".equals(actor.role()) || projects.isEmpty()) return projects;
+        if (!productIds.isEmpty()) {
+            for (Project project : projectMapper.selectList(new LambdaQueryWrapper<Project>()
+                .in(Project::getProductId, productIds).eq(Project::getTenantId, tenant()))) {
+                if (project.getId() != null) merged.put(project.getId(), project);
+            }
+        }
+        List<Project> projects = new java.util.ArrayList<>(merged.values());
+        boolean leader = actor.id() != null && actor.id().equals(line.getLeaderPersonId());
+        if ("SUPER_ADMIN".equals(actor.role()) || leader || projects.isEmpty()) return projects;
         Set<Long> memberProjectIds = projectMemberMapper.selectList(new LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getPersonId, actor.id())
             .in(ProjectMember::getProjectId, projects.stream().map(Project::getId).toList())
             .isNull(ProjectMember::getExitDate))
             .stream().map(ProjectMember::getProjectId).collect(Collectors.toSet());
-        return projects.stream().filter(project -> memberProjectIds.contains(project.getId())).toList();
+        return projects.stream().filter(project -> memberProjectIds.contains(project.getId())
+            || (unstarted(project) && actor.id() != null && actor.id().equals(project.getCreateBy()))).toList();
+    }
+
+    private boolean unstarted(Project project) {
+        return "PENDING_START".equals(project.getStatus()) || "START_REJECTED".equals(project.getStatus());
+    }
+
+    /** 只列出已经写上本产品线的需求，不猜测未绑定产品的需求归属。 */
+    public List<Requirement> demands(Long lineId, IpdActor actor) {
+        ProductLine line = requireActiveLine(lineId);
+        requireMemberOrAdmin(actor, line);
+        if (requirementMapper == null) return List.of();
+        LambdaQueryWrapper<Requirement> query = new LambdaQueryWrapper<Requirement>()
+            .orderByDesc(Requirement::getId)
+            .last("LIMIT 200");
+        if ("unspecified".equals(line.getLineCode())) {
+            query.and(wrapper -> wrapper.eq(Requirement::getProductLineId, lineId)
+                .or().isNull(Requirement::getProductLineId));
+        } else {
+            query.eq(Requirement::getProductLineId, lineId);
+        }
+        return requirementMapper.selectList(query);
     }
 
     private ProductLine requireActiveLine(Long lineId) {

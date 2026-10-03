@@ -1,0 +1,72 @@
+{
+  "observedAt": "2026-10-02T22:26:14.995721+00:00",
+  "status": "VERIFIED_TARGETED_ONLY",
+  "overall": "PARTIAL",
+  "exitCode": 0,
+  "totals": {
+    "tests found": 52,
+    "tests started": 52,
+    "tests successful": 52,
+    "tests failed": 0,
+    "tests skipped": 0,
+    "tests aborted": 0,
+    "containers failed": 0
+  },
+  "suites": [
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceLifecycleTest",
+      "containers failed": 0,
+      "tests found": 7,
+      "tests skipped": 0,
+      "tests started": 7,
+      "tests aborted": 0,
+      "tests successful": 7,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunHandleTest",
+      "containers failed": 0,
+      "tests found": 20,
+      "tests skipped": 0,
+      "tests started": 20,
+      "tests aborted": 0,
+      "tests successful": 20,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseResumeServiceTest",
+      "containers failed": 0,
+      "tests found": 13,
+      "tests skipped": 0,
+      "tests started": 13,
+      "tests aborted": 0,
+      "tests successful": 13,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiCreateIntegrationTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 6,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProjectAgentAguiControllerTest",
+      "containers failed": 0,
+      "tests found": 6,
+      "tests skipped": 0,
+      "tests started": 6,
+      "tests aborted": 0,
+      "tests successful": 6,
+      "tests failed": 0
+    }
+  ],
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/cancel-scope-tests.log",
+  "logSHA": "02fe5923d6d65109a32adb2e2d78c6379d7b3320bc5f7a7fd347c0ce947bae6d",
+  "compileLog": "/tmp/ipd-coordinated-cancel-scope-test-compile-20261002.log",
+  "sourceScope": "RunService cancellation scope and original paused checkpoint proof; legacy no-handle expectation preserved",
+  "runtimeLoaded": false
+}

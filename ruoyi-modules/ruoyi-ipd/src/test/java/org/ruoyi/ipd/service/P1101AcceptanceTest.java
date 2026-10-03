@@ -111,6 +111,7 @@ class P1101AcceptanceTest {
     void reviseAfterReview_appendsV2KeepsV1() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_REVIEWED);
         when(mapper.selectChain(1L)).thenReturn(List.of(v1));
+        when(mapper.lockVersion(v1.getId())).thenReturn(v1);
 
         AiDocument v2 = service.revise(1L, 1L, "人工改版全文 v2", null, 7L);
 
@@ -138,6 +139,8 @@ class P1101AcceptanceTest {
         AiDocument v2 = row(2L, 2, 1L, AiDocumentService.STATUS_GENERATED);
         // P1-10.3：head/history 统一走 selectChain 递归 CTE（升序链，链尾即 HEAD）
         when(mapper.selectChain(1L)).thenReturn(List.of(v1, v2));
+        when(mapper.lockVersion(v1.getId())).thenReturn(v1);
+        when(mapper.lockChild(v1.getId())).thenReturn(v2);
 
         assertThatThrownBy(() -> service.revise(1L, 1L, "基于旧版的改版", null, 7L))
             .isInstanceOf(IpdBusinessException.class)
@@ -151,6 +154,7 @@ class P1101AcceptanceTest {
     void revise_concurrentDuplicateKey_mappedToConflict() {
         AiDocument v1 = row(1L, 1, null, AiDocumentService.STATUS_GENERATED);
         when(mapper.selectChain(1L)).thenReturn(List.of(v1));
+        when(mapper.lockVersion(v1.getId())).thenReturn(v1);
         when(mapper.insert(any(AiDocument.class)))
             .thenThrow(new DuplicateKeyException("uk_ai_doc_parent"));
 

@@ -132,7 +132,7 @@ public class QdrantVectorStoreStrategy extends AbstractVectorStoreStrategy {
             float[] vector = normalize(embeddings.get(i));
             List<Float> values = new ArrayList<>();
             for (float value : vector) { values.add(value); }
-            // 原有 LangChain4j Qdrant payload 名和随机 UUID 点标识保留。
+            // Qdrant payload 名与随机 UUID 点标识沿用存量数据格式。
             var point = PointStruct.newBuilder().setId(PointId.newBuilder().setUuid(java.util.UUID.randomUUID().toString()))
                 .setVectors(io.qdrant.client.VectorsFactory.vectors(values))
                 .putPayload(TEXT_SEGMENT_KEY, JsonWithInt.Value.newBuilder().setStringValue(chunkList.get(i)).build())

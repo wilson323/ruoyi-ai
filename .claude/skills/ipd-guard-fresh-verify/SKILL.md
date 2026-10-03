@@ -1,6 +1,6 @@
 ---
 name: ipd-guard-fresh-verify
-description: 看板（Vibe Kanban @ 127.0.0.1:62250）任何 PUT 写入后强制 fresh GET 回读核验，禁止用推算总账数字、禁止用单卡 GET 代替 LIST 取基文、禁止把 422 当作失败。封装"PUT 200 ≠ 落库成功"的反复踩坑。
+description: 看板（Vibe Kanban @ 127.0.0.1:62250）任何 PUT 写入后强制 fresh GET 回读核验，禁止用推算总账数字、禁止用单卡 GET 代替 LIST 取基文、422 后核对真实状态，不能假定回滚或成功。封装"PUT 200 ≠ 落库成功"的反复踩坑。
 ---
 
 # ipd-guard-fresh-verify
@@ -28,14 +28,14 @@ PUT 返回 200 **不等于**真的落库。已实测的失败模式：
 **强制做法**：
 
 ```bash
-# 1. PUT 后立刻独立 GET 一次（不用缓存、不用之前 GET 的结果）
+# 1. PUT 后立刻独立 GET 一次，仅核对当前状态（不用缓存）
 curl -s "http://127.0.0.1:62250/api/tasks/<task_id>" \
   -H "Authorization: Bearer <token>" \
-  | jq '.description | length, .updated_at, .status'
+  | jq '{updated_at, status}'
 
-# 2. 若该卡是汇总卡 / 包含卡，还要 LIST 同父项目所有卡复核计数
+# 2. 每次写后都 fresh LIST 同项目全部卡，核对目标卡完整描述/marker；汇总另核计数
 curl -s "http://127.0.0.1:62250/api/projects/<project_id>/tasks" \
-  | jq '[.[] | select(.status=="done")] | length'
+  | jq '.[] | select(.id=="<task_id>") | {description, updated_at, status}'
 ```
 
 **禁止**用 PUT 前的 GET 内容做 diff 来判定落库——PUT 是整体替换语义，diff 工具看不出来。
@@ -51,7 +51,7 @@ curl -s "http://127.0.0.1:62250/api/projects/<project_id>/tasks" \
 curl -s "http://127.0.0.1:62250/api/projects/<project_id>/tasks" \
   | jq '.[] | select(.id=="<task_id>")'
 
-# 单卡 GET 只用于"我刚 PUT 完，要回读验证这一刻"——不能拿来做 PUT 前的基文
+# 单卡 GET 只用于写后状态回读；完整描述与 marker 必须用 fresh LIST 确认，不能拿单卡 GET 做 PUT 前的基文或内容验收
 ```
 
 ### 铁律 3：总账数字必须 fresh 拉 API 验证
@@ -78,7 +78,7 @@ curl -s "http://127.0.0.1:62250/api/projects/<project_id>/tasks" \
 
 每次看板写入交付前自检：
 
-- [ ] 写入后独立 GET 回读一次，确认 desc_len / status / marker 都符合预期
+- [ ] 写入后独立 GET 回读一次，确认 status 符合预期；另用 fresh LIST 核对完整描述、desc_len 和 marker
 - [ ] 取基文用的是 LIST 端点，不是单卡 GET
 - [ ] 总账数字是 fresh 拉的，不是推算的
 - [ ] 没有用 `blocked` 作为 status
@@ -95,7 +95,7 @@ curl -s "http://127.0.0.1:62250/api/projects/<project_id>/tasks" \
 
 ## 禁止清单
 
-- ❌ PUT 后用单卡 GET 复核对内容做判定
+- ❌ 用单卡 GET 作写前基文或完整内容依据；写后状态可由单卡 GET 核对，完整描述另用 fresh LIST 核对
 - ❌ 用 PUT 前缓存的内容做 diff
 - ❌ 推算总账数字（"之前 50 + 这次 3 = 现在 53"）
 - ❌ 把任何 `blocked` / `wontfix` / `pending` 当作合法 status

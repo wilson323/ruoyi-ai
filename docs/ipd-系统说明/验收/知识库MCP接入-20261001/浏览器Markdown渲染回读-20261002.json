@@ -1,0 +1,53 @@
+{
+  "markdown": {
+    "headings": 6,
+    "lists": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "tables": 1,
+    "unsafe": 0
+  },
+  "summaries": [
+    {
+      "height": 24,
+      "icons": [
+        {
+          "height": 16,
+          "width": 16
+        },
+        {
+          "height": 16,
+          "width": 16
+        }
+      ],
+      "open": false
+    },
+    {
+      "height": 24,
+      "icons": [
+        {
+          "height": 16,
+          "width": 16
+        },
+        {
+          "height": 16,
+          "width": 16
+        }
+      ],
+      "open": false
+    }
+  ],
+  "tables": [
+    {
+      "scrollWidth": 480,
+      "viewport": 289
+    }
+  ],
+  "url": "http://127.0.0.1:15666/ipd/workbench"
+}

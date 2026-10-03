@@ -32,7 +32,8 @@ import java.util.List;
  * 只做版本链存储（版本号+人工审核+sha256 摘要）；AI 生成/模型配置/预算属 P4-2，
  * 届时由生成侧调用 {@link AiDocumentService#createGenerated} 登记首环。
  * 历史版本只读：内容与摘要无任何 HTTP 更新通道，修正=产生新版本。
- * HTTP 入口统一经 {@link AiDocumentService#requireProjectVisible} /
+ * 读入口复用项目只读范围，写入口保持成员权限；分别经
+ * {@link AiDocumentService#requireProjectReadable} / {@link AiDocumentService#requireProjectVisible} /
  * {@link AiDocumentService#createGeneratedAuthorized} /
  * {@link AiDocumentService#diffAuthorized} 做项目可见性与路径链校验。
  */
@@ -111,7 +112,7 @@ public class AiDocumentController {
     @GetMapping
     public ApiV1Response<List<AiDocument>> listByProject(@RequestParam Long projectId) {
         IpdActor actor = ipdPermission.requireInternal();
-        aiDocumentService.requireProjectVisible(actor, projectId);
+        aiDocumentService.requireProjectReadable(actor, projectId);
         return ApiV1Response.ok(aiDocumentService.listByProject(projectId, String.valueOf(actor.id())));
     }
 
@@ -124,7 +125,7 @@ public class AiDocumentController {
     public ApiV1Response<List<AiDocument>> versions(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         List<AiDocument> chain = aiDocumentService.history(id);
-        aiDocumentService.requireProjectVisible(actor, chain.get(0).getProjectId());
+        aiDocumentService.requireProjectReadable(actor, chain.get(0).getProjectId());
         return ApiV1Response.ok(chain);
     }
 
@@ -137,7 +138,7 @@ public class AiDocumentController {
     public ApiV1Response<List<HistoryItem>> history(@PathVariable Long id) {
         IpdActor actor = ipdPermission.requireInternal();
         List<AiDocument> chain = aiDocumentService.history(id);
-        aiDocumentService.requireProjectVisible(actor, chain.get(0).getProjectId());
+        aiDocumentService.requireProjectReadable(actor, chain.get(0).getProjectId());
         return ApiV1Response.ok(chain.stream()
             .map(d -> new HistoryItem(d.getId(), d.getVersionNo(), d.getCreateBy(),
                 d.getCreateTime(), d.getStatus(), d.getReviewedBy(), d.getArchivedAt()))
@@ -158,9 +159,9 @@ public class AiDocumentController {
     }
 
     /**
-     * BR-AI-03 兜底：审核拒绝——REVIEWED → REJECTED（必须重新走审核才能归档）。
-     * 权限复用 OPERATION_AI_DOCUMENT_REVIEW（与 review 同行使）。
-     * versionId 必须落在路径文档链上。
+     * 退回修改：当前链头上的待审核稿（GENERATED）或已审核稿（REVIEWED）→ REJECTED。
+     * 意见写入该版本行，不带到后续新版本。待审核稿已不是链头时拒绝过时退回。
+     * 权限复用 OPERATION_AI_DOCUMENT_REVIEW。versionId 必须落在路径文档链上。
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/{id}/versions/{versionId}/reject")

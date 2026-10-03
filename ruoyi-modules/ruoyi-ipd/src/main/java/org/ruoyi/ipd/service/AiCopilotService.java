@@ -214,7 +214,7 @@ public class AiCopilotService implements IAiCopilotService {
             AiCallScope.of(config.getId(), actor, "copilot_stream"));
         String modelName = config.getModelName();
         final int[] totalChunks = {0};
-        aiGateway.stream(cfg, prompt, MAX_TOKENS, new BigDecimal("0.50"), new AiGateway.StreamHandler() {
+        sink.bind(aiGateway.stream(cfg, prompt, MAX_TOKENS, new BigDecimal("0.50"), new AiGateway.StreamHandler() {
             @Override
             public void onDelta(String token) {
                 totalChunks[0]++;
@@ -237,7 +237,8 @@ public class AiCopilotService implements IAiCopilotService {
                     0, 0, latency, modelName, "FAIL:" + code);
                 sink.error(code, "AI 副驾流式生成失败");
             }
-        });
+        }));
+
     }
 
     /**
@@ -245,6 +246,9 @@ public class AiCopilotService implements IAiCopilotService {
      * 事件契约与既有 {@code /chat/stream} 一致：meta（首帧结构化）/ delta（增量）/ done（末帧）/ error（错误）。
      */
     public interface CopilotStreamSink {
+        /** Bind the one physical provider subscription; early cancellation is handled by the run guard. */
+        default void bind(reactor.core.Disposable subscription) { }
+
         /** 首帧：意图 + 结构化数据 + sources（真流式时 answer 空、token 0，随后 delta 填充）。 */
         void meta(AiCopilotResp resp);
 
@@ -497,8 +501,8 @@ public class AiCopilotService implements IAiCopilotService {
             items.add(new AiCopilotResp.CopilotDataItem(
                 String.valueOf(t.getOrDefault("taskType", "TASK")),
                 String.valueOf(t.getOrDefault("title", "")),
-                String.valueOf(t.getOrDefault("hint", "")),
-                String.valueOf(t.getOrDefault("url", ""))));
+                copilotHint(t),
+                copilotLink(t)));
         }
         long latency = clock.millis() - start;
         // 意图兜底不调 AI：审计只记「分发意图」+ token=0；不假标 aiModel（避免门禁误为 AI 生成）
@@ -722,6 +726,26 @@ public class AiCopilotService implements IAiCopilotService {
         Object a = summary.get("currentAdvance");
         if (!(a instanceof Map)) a = summary.get("advance");
         return a instanceof Map ? (Map<String, Object>) a : Map.of();
+    }
+
+    /** 待办链接：工作台卡用 deepLink，旧测试数据用 url。 */
+    static String copilotLink(Map<String, Object> task) {
+        String url = textOrEmpty(task.get("url"));
+        return url.isEmpty() ? textOrEmpty(task.get("deepLink")) : url;
+    }
+
+    /** 待办说明：没有 hint 时用项目名，避免清单只有标题。 */
+    static String copilotHint(Map<String, Object> task) {
+        String hint = textOrEmpty(task.get("hint"));
+        return hint.isEmpty() ? textOrEmpty(task.get("projectName")) : hint;
+    }
+
+    private static String textOrEmpty(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() || "null".equals(text) ? "" : text;
     }
 
     @SuppressWarnings("unchecked")

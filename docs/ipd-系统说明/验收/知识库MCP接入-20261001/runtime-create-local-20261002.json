@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-02T08:37:48.331685+00:00",
+  "mode": "create-local",
+  "personAccount": "ipd-market",
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "project_knowledge_search"
+    ],
+    "actionCode": "C02",
+    "message": "请根据项目事实和已有退回意见，检索海康威视资料，形成简短的竞品证据核验草稿。准确引用研发投入原句、年份、金额和研发费用率，指出资料对本项目智能锁联动分析的局限及未取得事项。不要宣称完成动作或通过评审。",
+    "idempotencyKey": "codex-global-20261002-create-local"
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2105940299107823617",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-10-02T08:37:48Z",
+      "traceId": "354d08fe608d4069a7b34ce3debac177"
+    }
+  }
+}

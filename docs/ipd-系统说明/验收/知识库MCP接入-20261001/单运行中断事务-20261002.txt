@@ -1,0 +1,8 @@
+id	status	version
+2105935561859538946	RUNNING	0
+terminalEventsInserted	runsClosed
+1	1
+id	status	error_code
+2105935561859538946	FAILED	PROCESS_INTERRUPTED
+seq	event_type	error_code
+44	ERROR	PROCESS_INTERRUPTED

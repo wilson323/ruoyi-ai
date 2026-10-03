@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
  * L0-4 SSE 真流式（AI-STRAT-3，2026-09-23）：{@link AiCopilotService#chatStream} 编排 wiring 单测。
  *
  * <p><b>与 {@link org.ruoyi.ipd.service.ai.AiGatewayStreamingTest} 的分工（mock 合法性）</b>：
- * 本类 mock 的是<b>项目自有的 {@link AiGateway}</b>（不是 Langchain4j ChatModel），用 doAnswer 同步驱动
+ * 本类 mock 的是<b>项目自有的 {@link AiGateway}</b>（不是外部模型客户端），用 doAnswer 同步驱动
  * {@link AiGateway.StreamHandler} 回调，验证<b>服务编排契约</b>——意图分类、meta/delta/done/error 帧序列、
  * token 聚合、aiRole=streaming 单行审计（totalChunks/status/token）。「真逐段 token 到达」由
  * AiGatewayStreamingTest 走真 HTTP 打 mock server 独立证明（真活）；两层各司其职，不重复、不假造 AI 响应。

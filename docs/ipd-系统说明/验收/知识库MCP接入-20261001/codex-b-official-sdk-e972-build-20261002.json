@@ -1,0 +1,49 @@
+{
+  "pinnedCommit": "e9721285c63a37c10b1d07aa540408e57ba56ab2",
+  "version": "2.0.4-SNAPSHOT",
+  "status": "SDK_CANDIDATE_BUILD_VERIFIED_NOT_PRODUCT_UPGRADE",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-official-sdk-e972-tuitiuc8",
+  "log": "/tmp/ipd-b-official-sdk-e972-build-resumed-20261002.log",
+  "exit": 0,
+  "modules": {
+    "agentscope-core/target/surefire-reports": {
+      "rootAttributeTests": 2511,
+      "testcaseElements": 2511,
+      "uniqueCases": 2511,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9
+    },
+    "agentscope-extensions/agentscope-extensions-protocol/agentscope-extensions-agui/target/surefire-reports": {
+      "rootAttributeTests": 412,
+      "testcaseElements": 507,
+      "uniqueCases": 507,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "agentscope-extensions/agentscope-extensions-aistio/target/surefire-reports": {
+      "rootAttributeTests": 74,
+      "testcaseElements": 74,
+      "uniqueCases": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "agentscope-harness/target/surefire-reports": {
+      "rootAttributeTests": 1082,
+      "testcaseElements": 1082,
+      "uniqueCases": 1082,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 17
+    }
+  },
+  "jarSha256": {
+    "agentscope-core/target/agentscope-core-2.0.4-SNAPSHOT.jar": "52b243dbe7629ffd4b2a4789a975c1fb18498fc95539c8285973674eebbf36f4",
+    "agentscope-extensions/agentscope-extensions-protocol/agentscope-extensions-agui/target/agentscope-extensions-agui-2.0.4-SNAPSHOT.jar": "c5676f8d2e72d4040a142469331458e89ba6286e47af939acf8e046af9bb9bde",
+    "agentscope-extensions/agentscope-extensions-aistio/target/agentscope-extensions-aistio-2.0.4-SNAPSHOT.jar": "9930d902b2690cebb61a9195c43e6689fa14b65c96931670a82b0ae04c2b9e89",
+    "agentscope-harness/target/agentscope-harness-2.0.4-SNAPSHOT.jar": "f2da4faec2a71441f3035179b8843f8237cd376f6196bba847d32bdda5378d85"
+  },
+  "aguiExplanation": "19 XML suite root attributes sum412 but actual testcase elements507 unique507; Maven66 suite detail sums507. Root tests attributes undercount nested suite aggregation; no duplicated testcase."
+}

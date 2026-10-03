@@ -1,0 +1,76 @@
+{
+  "observedAt": "2026-10-02T22:28:40.805350+00:00",
+  "status": "VERIFIED_TARGETED_ONLY",
+  "overall": "PARTIAL",
+  "exitCode": 0,
+  "totals": {
+    "tests found": 27,
+    "tests started": 27,
+    "tests successful": 27,
+    "tests failed": 0,
+    "tests skipped": 0,
+    "tests aborted": 0,
+    "containers failed": 0
+  },
+  "suites": [
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiFrontendConsumerTest",
+      "containers failed": 0,
+      "tests found": 1,
+      "tests skipped": 0,
+      "tests started": 1,
+      "tests aborted": 0,
+      "tests successful": 1,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiFrontendBoundaryTest",
+      "containers failed": 0,
+      "tests found": 1,
+      "tests skipped": 0,
+      "tests started": 1,
+      "tests aborted": 0,
+      "tests successful": 1,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiParentTranscriptTest",
+      "containers failed": 0,
+      "tests found": 3,
+      "tests skipped": 0,
+      "tests started": 3,
+      "tests aborted": 0,
+      "tests successful": 3,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentAguiProtocolTest",
+      "containers failed": 0,
+      "tests found": 13,
+      "tests skipped": 0,
+      "tests started": 13,
+      "tests aborted": 0,
+      "tests successful": 13,
+      "tests failed": 0
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInputTest",
+      "containers failed": 0,
+      "tests found": 9,
+      "tests skipped": 0,
+      "tests started": 9,
+      "tests aborted": 0,
+      "tests successful": 9,
+      "tests failed": 0
+    }
+  ],
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/frontend-tests.log",
+  "logSHA": "f1e5791a5f74d659a660f3a552bfcfe51ed7b9a683f031b175e019ad9607dedd",
+  "scope": "official SDK ASK/genuine approval/frontend suspension/message resume; original converter registry retained",
+  "compileLogs": [
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/frontend-bridge-compile.log",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te/frontend-test-compile.log"
+  ],
+  "productionFrontendProviderVerified": false,
+  "runtimeLoaded": false
+}

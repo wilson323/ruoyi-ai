@@ -80,7 +80,7 @@ import static org.mockito.Mockito.when;
 @Tag("dev")
 @EnabledIfSystemProperty(named = "ipd.scope.mysql.enabled", matches = "true")
 class P131DatabaseIntegrationTest {
-    private static final Set<String> FIXTURE_TABLES = Set.of("products", "projects", "project_stages", "stage_actions");
+    private static final Set<String> FIXTURE_TABLES = Set.of("products", "projects", "project_stages", "stage_actions", "product_lines");
     private static final long OPERATOR = 7L;
     private final Map<String, List<Long>> created = new LinkedHashMap<>();
     private long nextId = 8_000_000_000_000_000L + Math.floorMod(new SecureRandom().nextLong(), 900_000_000_000_000L);
@@ -92,6 +92,7 @@ class P131DatabaseIntegrationTest {
     private DataSourceTransactionManager transactions;
     private ProjectMapper projects;
     private ProductMapper products;
+    private org.ruoyi.ipd.mapper.ProductLineMapper lines;
     private KpiRecordMapper kpis;
     private ProjectStageMapper stages;
     private StageActionMapper actions;
@@ -133,12 +134,14 @@ class P131DatabaseIntegrationTest {
             }));
         configuration.addMapper(ProjectMapper.class);
         configuration.addMapper(ProductMapper.class);
+        configuration.addMapper(org.ruoyi.ipd.mapper.ProductLineMapper.class);
         configuration.addMapper(ProjectStageMapper.class);
         configuration.addMapper(StageActionMapper.class);
         configuration.addMapper(KpiRecordMapper.class);
         SqlSessionTemplate sql = new SqlSessionTemplate(new MybatisSqlSessionFactoryBuilder().build(configuration));
         projects = sql.getMapper(ProjectMapper.class);
         products = sql.getMapper(ProductMapper.class);
+        lines = sql.getMapper(org.ruoyi.ipd.mapper.ProductLineMapper.class);
         kpis = sql.getMapper(KpiRecordMapper.class);
         stages = sql.getMapper(ProjectStageMapper.class);
         actions = sql.getMapper(StageActionMapper.class);
@@ -424,7 +427,7 @@ class P131DatabaseIntegrationTest {
     }
 
     @Test
-    void realProjectCreateBindsProductAndBootstrapsCompleteGraphBeforeAudit() {
+    void realProjectCreateBindsProductAndWaitsForStartApprovalBeforeAudit() {
         withRollback(() -> {
             long product = product();
             Project request = createRequest(product, "SOLUTION");
@@ -433,24 +436,30 @@ class P131DatabaseIntegrationTest {
             AtomicBoolean observed = new AtomicBoolean();
             doAnswer(call -> {
                 assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
+                assertThat(call.<Long>getArgument(3)).isEqualTo(request.getId());
                 assertThat(number("SELECT project_id FROM products WHERE id=?", product)).isEqualTo(request.getId());
-                assertCompleteGraph(request.getId(), "SOLUTION");
+                assertThat(scalar("SELECT status FROM projects WHERE id=?", request.getId())).isEqualTo("PENDING_START");
+                assertEmptyGraph(request.getId());
                 observed.set(true);
                 return null;
-            }).when(audit).append(any(AuditLog.class));
+            }).when(audit).append(org.mockito.ArgumentMatchers.eq(OPERATOR),
+                org.mockito.ArgumentMatchers.eq("PROJECT_CREATE"), org.mockito.ArgumentMatchers.eq("projects"),
+                any(Long.class), org.mockito.ArgumentMatchers.eq(request.getName()));
             IProjectCertService certs = mock(IProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
-            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
+            ProjectService service = projectCreationService(audit, gates, certs);
             Project result = service.create(request, OPERATOR, 900001L);
             assertThat(result.getId()).isPositive();
             assertThat(observed.get()).isTrue();
-            verify(audit, times(1)).append(any(AuditLog.class));
+            verify(audit, times(1)).append(org.mockito.ArgumentMatchers.eq(OPERATOR),
+                org.mockito.ArgumentMatchers.eq("PROJECT_CREATE"), org.mockito.ArgumentMatchers.eq("projects"),
+                org.mockito.ArgumentMatchers.eq(request.getId()), org.mockito.ArgumentMatchers.eq(request.getName()));
             verifyNoInteractions(gates);
         });
     }
 
     @Test
-    void createAuditFailureRestoresUncommittedProductAndRollsBackProjectStagesAndActions() {
+    void createAuditFailureRestoresUncommittedProductAndRollsBackPendingProject() {
         withRollback(() -> {
             long product = product();
             Project request = createRequest(product, "HARDWARE");
@@ -458,19 +467,23 @@ class P131DatabaseIntegrationTest {
             IAuditLogService audit = mock(IAuditLogService.class);
             GateEngine gates = mock(GateEngine.class);
             AtomicBoolean observed = new AtomicBoolean();
-            IllegalStateException original = new IllegalStateException("P131 forced audit failure after complete project graph");
+            IllegalStateException original = new IllegalStateException("P131 forced audit failure after pending project binding");
             doAnswer(call -> {
                 assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
+                assertThat(call.<Long>getArgument(3)).isEqualTo(request.getId());
                 assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isTrue();
                 assertThat(number("SELECT COUNT(*) FROM projects WHERE id=?", request.getId())).isEqualTo(1);
                 assertThat(number("SELECT project_id FROM products WHERE id=?", product)).isEqualTo(request.getId());
-                assertCompleteGraph(request.getId(), "HARDWARE");
+                assertThat(scalar("SELECT status FROM projects WHERE id=?", request.getId())).isEqualTo("PENDING_START");
+                assertEmptyGraph(request.getId());
                 observed.set(true);
                 throw original;
-            }).when(audit).append(any(AuditLog.class));
+            }).when(audit).append(org.mockito.ArgumentMatchers.eq(OPERATOR),
+                org.mockito.ArgumentMatchers.eq("PROJECT_CREATE"), org.mockito.ArgumentMatchers.eq("projects"),
+                any(Long.class), org.mockito.ArgumentMatchers.eq(request.getName()));
             IProjectCertService certs = mock(IProjectCertService.class);
             when(certs.syncFromProject(any(), any())).thenReturn(0);
-            ProjectService service = proxy(new ProjectService(projects, products, actions, kpis, audit, gates, bootstrap, certs, NoopTransactionManager.INSTANCE, null /* P2-6.2 */));
+            ProjectService service = projectCreationService(audit, gates, certs);
             assertThat(catchThrowable(() -> nested(() -> service.create(request, OPERATOR, 900001L)))).isSameAs(original);
             assertThat(observed.get()).isTrue();
             assertThat(request.getId()).isPositive();
@@ -478,10 +491,96 @@ class P131DatabaseIntegrationTest {
             assertThat(scalar("SELECT project_id FROM products WHERE id=?", product)).isNull();
             assertThat(number("SELECT COUNT(*) FROM projects WHERE id=?", request.getId())).isZero();
             assertEmptyGraph(request.getId());
-            verify(audit, times(1)).append(any(AuditLog.class));
+            verify(audit, times(1)).append(org.mockito.ArgumentMatchers.eq(OPERATOR),
+                org.mockito.ArgumentMatchers.eq("PROJECT_CREATE"), org.mockito.ArgumentMatchers.eq("projects"),
+                org.mockito.ArgumentMatchers.eq(request.getId()), org.mockito.ArgumentMatchers.eq(request.getName()));
             verifyNoInteractions(gates);
             // 产品在外层未提交事务中创建；这里只验证保存点恢复。外层随后回滚，独立连接核对四表零残留。
         });
+    }
+
+    @Test
+    void realStartApprovalBuildsCompleteGraphBeforeAudit() {
+        withRollback(() -> {
+            long product = product();
+            long line = fixtureLineWithoutLeader();
+            update("UPDATE products SET product_line_id=? WHERE id=?", line, product);
+            Project request = createRequest(product, "SOLUTION");
+            IAuditLogService creationAudit = mock(IAuditLogService.class);
+            IProjectCertService certs = mock(IProjectCertService.class);
+            Project pending = projectCreationService(creationAudit, mock(GateEngine.class), certs)
+                .create(request, OPERATOR, 900001L);
+            assertEmptyGraph(pending.getId());
+            IAuditLogService approvalAudit = mock(IAuditLogService.class);
+            AtomicBoolean observed = new AtomicBoolean();
+            doAnswer(call -> {
+                assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
+                assertThat(scalar("SELECT status FROM projects WHERE id=?", pending.getId())).isEqualTo("TEAMING");
+                assertCompleteGraph(pending.getId(), "SOLUTION");
+                observed.set(true);
+                return null;
+            }).when(approvalAudit).append(any(org.ruoyi.ipd.security.IpdActor.class), any(), any(), any(), any());
+            ProjectStartService starts = proxy(new ProjectStartService(projects, products, lines,
+                bootstrap, certs, approvalAudit, realGuard(approvalAudit)));
+            Project approved = starts.approve(pending.getId(),
+                new org.ruoyi.ipd.security.IpdActor(OPERATOR, "P131", "SUPER_ADMIN", 900001L));
+            assertThat(approved.getStatus()).isEqualTo("TEAMING");
+            assertThat(observed.get()).isTrue();
+            verify(approvalAudit, times(1)).append(any(org.ruoyi.ipd.security.IpdActor.class), any(), any(), any(), any());
+        });
+    }
+
+    @Test
+    void startApprovalAuditFailureRollsBackCompleteGraphAndRestoresPendingProject() {
+        withRollback(() -> {
+            long product = product();
+            long line = fixtureLineWithoutLeader();
+            update("UPDATE products SET product_line_id=? WHERE id=?", line, product);
+            IProjectCertService certs = mock(IProjectCertService.class);
+            Project pending = projectCreationService(mock(IAuditLogService.class), mock(GateEngine.class), certs)
+                .create(createRequest(product, "HARDWARE"), OPERATOR, 900001L);
+            IAuditLogService approvalAudit = mock(IAuditLogService.class);
+            AtomicBoolean observed = new AtomicBoolean();
+            IllegalStateException original = new IllegalStateException("P131 forced approval audit failure after complete graph");
+            doAnswer(call -> {
+                assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
+                assertThat(number("SELECT project_id FROM products WHERE id=?", product)).isEqualTo(pending.getId());
+                assertThat(scalar("SELECT status FROM projects WHERE id=?", pending.getId())).isEqualTo("TEAMING");
+                assertCompleteGraph(pending.getId(), "HARDWARE");
+                observed.set(true);
+                throw original;
+            }).when(approvalAudit).append(any(org.ruoyi.ipd.security.IpdActor.class), any(), any(), any(), any());
+            ProjectStartService starts = proxy(new ProjectStartService(projects, products, lines,
+                bootstrap, certs, approvalAudit, realGuard(approvalAudit)));
+            assertThat(catchThrowable(() -> nested(() -> starts.approve(pending.getId(),
+                new org.ruoyi.ipd.security.IpdActor(OPERATOR, "P131", "SUPER_ADMIN", 900001L)))))
+                .isSameAs(original);
+            assertThat(observed.get()).isTrue();
+            assertThat(scalar("SELECT status FROM projects WHERE id=?", pending.getId())).isEqualTo("PENDING_START");
+            assertThat(number("SELECT project_id FROM products WHERE id=?", product)).isEqualTo(pending.getId());
+            assertEmptyGraph(pending.getId());
+            verify(approvalAudit, times(1)).append(any(org.ruoyi.ipd.security.IpdActor.class), any(), any(), any(), any());
+        });
+    }
+
+    private ProjectService projectCreationService(IAuditLogService audit, GateEngine gates, IProjectCertService certs) {
+        ProjectService target = new ProjectService(projects, products, actions, kpis, audit, gates,
+            bootstrap, certs, NoopTransactionManager.INSTANCE, null);
+        target.setStateMachineGuard(realGuard(audit));
+        return proxy(target);
+    }
+
+    private org.ruoyi.ipd.service.impl.DefaultStateMachineGuard realGuard(IAuditLogService audit) {
+        var guard = new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(audit, mock(NotificationService.class));
+        guard.initRules();
+        return guard;
+    }
+
+    private long fixtureLineWithoutLeader() throws Exception {
+        long line = id("product_lines");
+        update("INSERT INTO product_lines (id,line_code,line_name,status,tenant_id,del_flag) VALUES (?,?,?,'ACTIVE','000000','0')",
+            line, "p131-" + line, "P131 fixture " + line);
+        return line;
     }
 
     private void assertCompleteGraph(long project, String template) throws Exception {

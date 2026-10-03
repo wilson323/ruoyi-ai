@@ -37,6 +37,9 @@ public class Requirement extends BaseEntity implements SoftDeletable {
      */
     private Long projectId;
 
+    /** 需求所属产品线。能确定产品时从产品复制，不能确定时留空。 */
+    private Long productLineId;
+
     /**
      * 来源 PORTAL_GUEST|INTERNAL
      */

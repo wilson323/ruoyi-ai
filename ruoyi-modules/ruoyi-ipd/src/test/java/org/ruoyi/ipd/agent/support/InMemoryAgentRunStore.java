@@ -98,6 +98,31 @@ public final class InMemoryAgentRunStore implements AgentRunStore {
         }
     }
 
+    @Override
+    public synchronized Optional<Integer> claimEpoch(Long id, Integer expected, Set<AgentRunStatus> statuses) {
+        var row = runs.get(id);
+        if (row == null || !Objects.equals(expected, row.getVersion()) || !statuses.contains(AgentRunStatus.valueOf(row.getStatus()))) return Optional.empty();
+        int next = expected == null ? 1 : Math.addExact(expected, 1);
+        row.setVersion(next);
+        return Optional.of(next);
+    }
+    @Override
+    public synchronized boolean lockEpoch(Long id, int epoch) {
+        var row = runs.get(id);
+        return row != null && Objects.equals(row.getVersion(), epoch);
+    }
+    @Override
+    public synchronized boolean hasExecutionOwner(Long id) {
+        return events.stream().anyMatch(e -> Objects.equals(e.getRunId(), id) && "STEP".equals(e.getEventType())
+            && e.getPayload() != null && e.getPayload().contains("\"kind\":\"EXECUTION_OWNER\""));
+    }
+    @Override
+    public synchronized List<IpdAgentRun> listRecoveryCandidates(Long afterId, int limit) {
+        return runs.values().stream().filter(r -> "PENDING".equals(r.getStatus()) || "RUNNING".equals(r.getStatus()) || "CANCEL_REQUESTED".equals(r.getStatus()))
+            .filter(r -> afterId == null || r.getId() > afterId).sorted(Comparator.comparing(IpdAgentRun::getId))
+            .limit(Math.min(50, Math.max(1, limit))).map(InMemoryAgentRunStore::copy).toList();
+    }
+
     /** {@inheritDoc} */
     @Override
     public synchronized boolean appendEvent(IpdAgentRunEvent event) {
@@ -150,6 +175,27 @@ public final class InMemoryAgentRunStore implements AgentRunStore {
             .filter(run -> text.isEmpty() || matchesText(run, text, query.artifactRunIds()))
             .sorted(Comparator.comparing(IpdAgentRun::getId).reversed())
             .limit(Math.min(50, Math.max(1, query.limit())))
+            .map(InMemoryAgentRunStore::copy)
+            .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public synchronized List<IpdAgentRun> listInterruptedCandidates(Date createdBefore, int limit) {
+        if (createdBefore == null) {
+            return List.of();
+        }
+        int page = Math.min(50, Math.max(1, limit));
+        Set<String> open = Set.of(
+            AgentRunStatus.PENDING.name(),
+            AgentRunStatus.RUNNING.name(),
+            AgentRunStatus.WAITING_APPROVAL.name(),
+            AgentRunStatus.CANCEL_REQUESTED.name());
+        return runs.values().stream()
+            .filter(run -> open.contains(run.getStatus()))
+            .filter(run -> run.getCreateTime() == null || run.getCreateTime().before(createdBefore))
+            .sorted(Comparator.comparing(IpdAgentRun::getId))
+            .limit(page)
             .map(InMemoryAgentRunStore::copy)
             .toList();
     }

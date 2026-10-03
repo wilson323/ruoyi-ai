@@ -1,0 +1,200 @@
+{
+  "capturedAt": "2026-10-02T15:30:31.580479+00:00",
+  "scope": "existing catalog endpoints; initialize/listTools/public query; no DB writes",
+  "sdk": "2.0.3",
+  "implementation": "ManagedMcpAsyncClient; isolated javac/java using existing surefire classpath",
+  "endpointAndContentRedacted": true,
+  "rows": [
+    {
+      "serviceId": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce71396a40120630b055e",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce77b96a40120630b0c3d",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce77b96a40120630b0c3d",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce8b996a40120630b1d80",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce8e096a40120630b1e68",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce8b996a40120630b1d80",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce71396a40120630b055e",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce8e096a40120630b1e68",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce91596a40120630b2017",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce93796a40120630b2133",
+      "status": "DISCOVERED",
+      "tools": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce91596a40120630b2017",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    },
+    {
+      "serviceId": "FastGPT-mcp-69cce93796a40120630b2133",
+      "status": "QUERY_RETURNED",
+      "contentBlocks": "1"
+    }
+  ],
+  "limitations": [
+    "QUERY_RETURNED means non-error protocol content, not independently verified knowledge or business completion",
+    "probe uses existing compiled classes; current source patch runtime loading is not proven"
+  ],
+  "sourceRegression": {
+    "productLineMcpQueryTests": {
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "finishedAt": "2026-10-02T08:38:50-07:00"
+    },
+    "sharedClientAndProviderTests": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "finishedAt": "2026-10-02T08:39:19-07:00"
+    },
+    "runtimeLoadedPatch": "PENDING_VALIDATION"
+  }
+}

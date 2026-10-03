@@ -15,6 +15,7 @@ QA-08 235 条 AC 自动真验证（机械跑，非手工判定）。
   PARTIAL     - 机器部分证 + 留 QA 复核
   FAIL        - 机器可证 + 实测不符合
   BLOCKED     - 依赖项未到位（前端 P0-10.* 未拉入/兄弟流 WIP/外部依赖/后端 16039 auth 链路坏）
+  ENV-LOGIN   - 原因含「登录失败」的 BLOCKED 收成 1 条环境阻塞，不进入产品通过率分母
 
 注：2026-09-07 起登录链路已修复（audit_log_chain_heads 已落库 + bootstrap 凭据），
     AC-AUTH-08~11 / AC-AUD-02/04/05 走真 Bearer Token 只读 HTTP 探针（写腿留 QA-03 矩阵）。
@@ -1553,26 +1554,45 @@ def main():
     cur.close()
     conn.close()
 
-    # 分类
-    pass_list = [r for r in results if r["status"] == "PASS"]
-    fail_list = [r for r in results if r["status"] == "FAIL"]
-    partial_list = [r for r in results if r["status"] == "PARTIAL"]
-    blocked_list = [r for r in results if r["status"] == "BLOCKED"]
-    unmeasured = [r for r in results
+    # 登录失败是一条环境阻塞，不按探针条数进入产品分母。
+    # 其余 BLOCKED 仍是产品缺口。明确不做的五条不在 249 条验收里。
+    def _reason(row):
+        evidence = row.get("evidence") or {}
+        reason = evidence.get("reason") if isinstance(evidence, dict) else ""
+        return reason if isinstance(reason, str) else ""
+
+    login_blocked = [r for r in results if r["status"] == "BLOCKED" and "登录失败" in _reason(r)]
+    login_ids = {r["id"] for r in login_blocked}
+    product = [r for r in results if r["id"] not in login_ids]
+    pass_list = [r for r in product if r["status"] == "PASS"]
+    fail_list = [r for r in product if r["status"] == "FAIL"]
+    partial_list = [r for r in product if r["status"] == "PARTIAL"]
+    blocked_list = [r for r in product if r["status"] == "BLOCKED"]
+    unmeasured = [r for r in product
                   if "DEPENDENCY" in (r.get("probe_type") or "")
                   or r.get("probe_type") == "UNVERIFIABLE"]
-    measured = [r for r in results if r not in unmeasured]
+    measured = [r for r in product if r not in unmeasured]
     measured_pass = [r for r in measured if r["status"] == "PASS"]
+    env_block = {
+        "id": "ENV-LOGIN",
+        "count": 1 if login_blocked else 0,
+        "covers": [r["id"] for r in login_blocked],
+        "reason": "16039 登录失败（服务不可达或凭据轮换）。演示环境变量不是验收凭据。",
+    }
 
     summary = {
         "card": "QA-08",
         "generated_at": now_iso(),
         "total_acs": len(results),
+        "product_total": len(product),
         "pass": len(pass_list),
         "partial": len(partial_list),
         "fail": len(fail_list),
         "blocked": len(blocked_list),
-        "pass_rate": round(len(pass_list) / max(len(results), 1) * 100, 1),
+        "env_block": env_block,
+        "out_of_scope": ["NO-PLAN", "NO-MEM", "NO-MULTI", "NO-MCP", "NO-READY"],
+        "pass_rate": round(len(pass_list) / max(len(product), 1) * 100, 1),
+        "catalog_pass_rate": round(len(pass_list) / max(len(results), 1) * 100, 1),
         "excluded_unmeasured": len(unmeasured),
         "measured_total": len(measured),
         "measured_pass": len(measured_pass),
@@ -1584,7 +1604,7 @@ def main():
         "by_probe_type": {},
     }
     # 阶段分布（P0/P1/P2/P3/P4）
-    for r in results:
+    for r in product:
         # 从 section 推断阶段（P0/P1/P2/P3/P4 from AC id prefix 不稳，用 section 关键词）
         sec = r["section"]
         for tag in ("环境与部署", "认证与权限", "审计日志", "参数配置"):
@@ -1623,14 +1643,18 @@ def main():
         "fail": fail_list,
         "partial": partial_list,
         "blocked": blocked_list,
-        "counts": {"fail": len(fail_list), "partial": len(partial_list), "blocked": len(blocked_list)},
+        "env_block": env_block,
+        "counts": {"fail": len(fail_list), "partial": len(partial_list),
+                   "blocked": len(blocked_list), "env_block": env_block["count"]},
     }, ensure_ascii=False, indent=2))
     sum_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2))
 
     print(f"\n=== QA-08 SUMMARY ===")
-    print(f"Total: {len(results)}  PASS: {len(pass_list)}  PARTIAL: {len(partial_list)}  "
-          f"FAIL: {len(fail_list)}  BLOCKED: {len(blocked_list)}")
-    print(f"Pass rate: {summary['pass_rate']}%")
+    print(f"Catalog: {len(results)}  Product denominator: {len(product)}  "
+          f"PASS: {len(pass_list)}  PARTIAL: {len(partial_list)}  "
+          f"FAIL: {len(fail_list)}  BLOCKED: {len(blocked_list)}  "
+          f"ENV-LOGIN covers {len(login_blocked)}")
+    print(f"Product pass rate: {summary['pass_rate']}%")
     print(f"Measured pass rate: {summary['measured_pass_rate']}% "
           f"({summary['measured_pass']}/{summary['measured_total']}, "
           f"excluded unmeasured {summary['excluded_unmeasured']})")

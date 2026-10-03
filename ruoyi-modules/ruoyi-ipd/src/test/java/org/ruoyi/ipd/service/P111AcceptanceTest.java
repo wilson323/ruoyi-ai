@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -126,40 +127,46 @@ class P111AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-PROD-01 已挂项目的产品再关联第二个项目 → 拒绝「一个产品仅对应一个项目」（409 STATE_CONFLICT）")
-    void productAlreadyBoundRejectsSecondProject() {
+    @DisplayName("已挂项目的产品再关联第二个项目 → 成功，且不改写首个项目指针")
+    void productAlreadyBoundAcceptsSecondProject() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
+        Project second = aliveProject(99L, null);
         when(productMapper.selectById(3L)).thenReturn(product);
+        when(projectMapper.selectById(99L)).thenReturn(second);
+        doAnswer(inv -> { second.setProductId(3L); return 1; })
+            .when(projectMapper).update(isNull(), any(LambdaUpdateWrapper.class));
 
-        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
-            productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("绑定冲突（产品:项目 = 1:1，产品已被占用）")
-            .actual();
-        assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
+        productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM");
+
+        assertThat(product.getProjectId()).isEqualTo(9L);
+        assertThat(second.getProductId()).isEqualTo(3L);
         verify(productMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
     }
 
     @Test
-    @DisplayName("创建项目：产品.projectId 已占 → 拒绝「一个产品仅对应一个项目」")
+    @DisplayName("创建项目：产品已有首个项目时仍可再立项，且不改写该指针")
     void createProjectWhenProductAlreadyHasProjectId() {
         Product product = aliveProduct(50L, Product.SRC_PM_NEW, 88L);
         when(productMapper.selectById(50L)).thenReturn(product);
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
 
-        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L, 7L))
-            .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("一个产品仅对应一个项目");
+        Project created = projectService.create(newProjectDraft(), 1L, 7L);
+
+        assertThat(created.getStatus()).isEqualTo("PENDING_START");
+        assertThat(product.getProjectId()).isEqualTo(88L);
     }
 
     @Test
-    @DisplayName("创建项目：同 productId 已有存活项目 → 拒绝 1:1")
+    @DisplayName("创建项目：同产品已有存活项目时，新项目仍进入待开工")
     void createProjectWhenProductTakenByOtherProject() {
-        when(productMapper.selectById(50L)).thenReturn(aliveProduct(50L, Product.SRC_PM_NEW, null));
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+        Product product = aliveProduct(50L, Product.SRC_PM_NEW, null);
+        when(productMapper.selectById(50L)).thenReturn(product);
+        when(projectMapper.selectMaxCodeSeqByYear(anyInt())).thenReturn(null);
 
-        assertThatThrownBy(() -> projectService.create(newProjectDraft(), 1L, 7L))
-            .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("1:1");
+        Project created = projectService.create(newProjectDraft(), 1L, 7L);
+
+        assertThat(created.getStatus()).isEqualTo("PENDING_START");
+        assertThat(product.getProjectId()).isEqualTo(created.getId());
     }
 
     @Test
@@ -235,7 +242,7 @@ class P111AcceptanceTest {
     }
 
     @Test
-    @DisplayName("项目已被其他产品占用 → 拒绝 1:1（409 STATE_CONFLICT）")
+    @DisplayName("项目已属于其他产品 → 拒绝（409 STATE_CONFLICT）")
     void projectTakenByOtherProduct() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, null);
         Project project = aliveProject(9L, 7L);
@@ -245,31 +252,33 @@ class P111AcceptanceTest {
         IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
             productService.bindProject(3L, 9L, 1L, 1L, "MARKET_PM"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("1:1")
+            .hasMessageContaining("已属于其他产品")
             .actual();
         assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
     }
 
     @Test
-    @DisplayName("AC-INC-36：代码路径无「一产品多项目池分摊」——冲突一律拒绝而非分摊")
-    void noMultiProjectPoolAllocation() {
+    @DisplayName("一个产品再挂第二个项目时，不走奖金池分摊")
+    void secondProjectDoesNotAllocatePool() {
         Product product = aliveProduct(3L, Product.SRC_PM_NEW, 9L);
+        Project second = aliveProject(99L, null);
         when(productMapper.selectById(3L)).thenReturn(product);
-        IpdBusinessException ex = (IpdBusinessException) assertThatThrownBy(() ->
-            productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM"))
-            .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("绑定冲突（产品:项目 = 1:1，产品已被占用）")
-            .actual();
-        assertThat(ex.getMessage()).doesNotContain("分摊").doesNotContain("池");
+        when(projectMapper.selectById(99L)).thenReturn(second);
+        doAnswer(inv -> { second.setProductId(3L); return 1; })
+            .when(projectMapper).update(isNull(), any(LambdaUpdateWrapper.class));
+
+        productService.bindProject(3L, 99L, 1L, 1L, "MARKET_PM");
+
+        assertThat(product.getProjectId()).isEqualTo(9L);
+        verify(auditLogService).append(anyLong(), org.mockito.ArgumentMatchers.eq("PRODUCT_BIND_PROJECT"),
+            any(), any(), any());
     }
 
     @Test
-    @DisplayName("创建项目成功后产品侧回填 projectId（创建入口 1:1）")
+    @DisplayName("产品还没有首个项目时，创建项目回填该指针")
     void createProjectBackfillsProduct() {
         Product product = aliveProduct(50L, Product.SRC_PM_NEW, null);
         when(productMapper.selectById(50L)).thenReturn(product);
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        // R214 死桩清理：a7e3540a 取号已改 selectMaxCodeSeqByYear 原生 SQL，selectList 桩不再被触达（UnnecessaryStubbing）
         when(projectMapper.insert(any(Project.class))).thenAnswer(inv -> {
             Project p = inv.getArgument(0);
             p.setId(501L);
@@ -290,8 +299,6 @@ class P111AcceptanceTest {
     void mainGroupFallbackToActorGroup() {
         Product product = aliveProduct(50L, Product.SRC_PM_NEW, null);
         when(productMapper.selectById(50L)).thenReturn(product);
-        when(projectMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        // R214 死桩清理：a7e3540a 取号已改 selectMaxCodeSeqByYear 原生 SQL，selectList 桩不再被触达（UnnecessaryStubbing）
         when(projectMapper.insert(any(Project.class))).thenAnswer(inv -> {
             Project p = inv.getArgument(0);
             p.setId(502L);

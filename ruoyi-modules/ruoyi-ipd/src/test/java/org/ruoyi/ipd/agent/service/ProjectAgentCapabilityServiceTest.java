@@ -32,7 +32,7 @@ import static org.ruoyi.ipd.agent.support.AgentTestFixtures.TENANT;
 class ProjectAgentCapabilityServiceTest {
 
     @Test
-    @DisplayName("开关关闭：返回完整目录，全部 pack available=false，原因含 enabled=false")
+    @DisplayName("开关关闭：返回完整目录，全部 pack available=false，返回明确不可用原因")
     void disabledReturnsUnavailablePacksWithReason() {
         IpdCopilotAccess access = visibleAccess();
         ProjectAgentCapabilityService service = service(false, access);
@@ -42,7 +42,7 @@ class ProjectAgentCapabilityServiceTest {
         assertThat(caps.packs()).isNotEmpty();
         assertThat(caps.packs()).allSatisfy(p -> {
             assertThat(p.available()).isFalse();
-            assertThat(p.unavailableReason()).contains("ipd.project-agent.enabled=false");
+            assertThat(p.unavailableReason()).contains(org.ruoyi.ipd.agent.ProjectAgentConstants.REASON_DISABLED);
             assertThat(p.unavailableReason()).isEqualTo(ProjectAgentConstants.REASON_DISABLED);
         });
         assertThat(caps.models()).isNotEmpty();
@@ -86,6 +86,27 @@ class ProjectAgentCapabilityServiceTest {
             .isInstanceOfSatisfying(IpdBusinessException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(ApiV1ErrorCode.PARAM_INVALID));
         verifyNoInteractions(access);
+    }
+
+    @Test
+    @DisplayName("基础查询未配置逐工具返回，已有知识包仍可用且保留完整工具目录")
+    void missingNativeProviderDoesNotDisableBusinessPack() {
+        var manifest = AgentTestFixtures.manifest();
+        var tools = new ProjectAgentToolCatalog(manifest, id ->
+            new org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalog.Readiness(
+                !"web_search".equals(id), "查询服务尚未配置"));
+        var service = new ProjectAgentCapabilityService(true, visibleAccess(), manifest,
+            AgentTestFixtures.skillCatalog(manifest), tools, AgentTestFixtures.modelCatalog());
+        var market = service.capabilities(ACTOR, PROJECT_ID).packs().stream()
+            .filter(pack -> "market-research".equals(pack.code())).findFirst().orElseThrow();
+        assertThat(market.available()).isTrue();
+        assertThat(market.tools().stream().map(ProjectAgentViews.Tool::id).toList())
+            .containsAll(ProjectAgentToolCatalog.nativeToolIds()).doesNotHaveDuplicates();
+        assertThat(market.tools()).anySatisfy(tool -> {
+            assertThat(tool.id()).isEqualTo("web_search");
+            assertThat(tool.available()).isFalse();
+            assertThat(tool.reason()).isEqualTo("查询服务尚未配置");
+        });
     }
 
     private static IpdCopilotAccess visibleAccess() {

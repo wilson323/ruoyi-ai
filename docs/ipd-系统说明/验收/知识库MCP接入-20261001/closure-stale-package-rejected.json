@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-02T08:51:47.620336+00:00",
+  "status": "REJECTED_STALE_NESTED_MODULES",
+  "modules": {
+    "ipd": {
+      "nested": "af7426f60f4c6e6509195786ad1f43b2c9990c5e7eeaee85e16eb17d2d9d4bfe",
+      "target": "ded6bf58b5249e2b575e62e2b233d9fa85743461ecb1b52b7da0c7952e771f5c"
+    },
+    "chat": {
+      "nested": "5aa944e751b522e6fe6210524438f85638e7bf0645df60fa275f57a8f1030de8",
+      "target": "b3c631f4f5cfe9b2ebb2db38dce46e2d9b8d2dfa87968c4cfccc8b9f3b2d64ec"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-02T16:50:50.326458+00:00",
+  "oldPid": null,
+  "newPid": 13520,
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-global-20261002-729e587af650.jar",
+  "sha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "activeRunsBefore": 0,
+  "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-global-20261002.log",
+  "status": "VERIFIED_LOCAL_RUNTIME_LOADED",
+  "atVerified": "2026-10-02T16:52:06.536233+00:00",
+  "http": {
+    "loginHttp": 200,
+    "loginCode": 0,
+    "projectReadHttp": 200,
+    "projectReadCode": 0,
+    "projectId": "2103659612308828162",
+    "actuatorUnauthenticatedHttp": 401
+  },
+  "listenerPid": "13520",
+  "openedJarMatches": true,
+  "jarHashVerified": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "priorPid": 53037,
+  "gracefulShutdown": "First loader refused after 10-second timeout; thread dump showed Spring lifecycle wait. Old process exited normally 16:50:27 UTC. Retry only after PID/listener absent. No force kill.",
+  "healthProbeCorrection": "Actuator requires basic auth and returned401; authenticated Person login/project GET200/code0 used as actual HTTP verification, not unauthenticated actuator."
+}

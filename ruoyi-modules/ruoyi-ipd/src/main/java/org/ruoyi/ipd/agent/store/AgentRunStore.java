@@ -102,6 +102,34 @@ public interface AgentRunStore {
     List<IpdAgentRun> listOwnRuns(OwnRunQuery query);
 
     /**
+     * 列出创建时间早于给定时刻、且仍停在非终态的运行。
+     * 仅供旧无owner记录只读诊断；日期不能证明执行者已停止。
+     *
+     * @param createdBefore 本次进程启动时刻（不含）
+     * @param limit 本页条数，实现限制在 1～50
+     * @return 待收口运行
+     */
+    List<IpdAgentRun> listInterruptedCandidates(Date createdBefore, int limit);
+
+    /** 在原运行行上领取新执行epoch；不得更改业务状态。 */
+    default Optional<Integer> claimEpoch(Long runId, Integer expectedVersion, Set<AgentRunStatus> statuses) {
+        throw new UnsupportedOperationException("execution epoch is not supported");
+    }
+
+    /** 必须在事务内锁原run行，再校验epoch，锁保持到所有业务写入提交。 */
+    default boolean lockEpoch(Long runId, int epoch) {
+        throw new UnsupportedOperationException("execution epoch is not supported");
+    }
+
+    /** 按runId分页扫描运行中的候选，日期不是死亡依据。 */
+    default List<IpdAgentRun> listRecoveryCandidates(Long afterId, int limit) {
+        throw new UnsupportedOperationException("recovery cursor is not supported");
+    }
+
+    /** 本方案写入过的owner标记；无标记的旧运行不能按租约缺失自动关闭。 */
+    default boolean hasExecutionOwner(Long runId) { return false; }
+
+    /**
      * 列表查询。text 为已去空白的搜索词，空串表示不按词过滤。
      *
      * @param tenantId 租户

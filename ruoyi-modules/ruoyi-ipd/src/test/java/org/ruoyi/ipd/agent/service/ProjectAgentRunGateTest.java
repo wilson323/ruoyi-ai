@@ -42,7 +42,7 @@ class ProjectAgentRunGateTest {
         assertThat(events).extracting(IpdAgentRunEvent::getEventType)
             .containsExactly("RUN_STARTED", "STEP", "STEP", "STEP")
             .doesNotContain("TOOL_CALL", "ARTIFACT");
-        assertThat(kinds(events)).containsExactly("SKILL_LOADED", "INTENT", "AWAIT_USER");
+        assertThat(kinds(events)).containsExactly("SKILL_SELECTED", "INTENT", "AWAIT_USER");
         assertThat(payload(events.get(3))).containsEntry("reason", "CLARIFICATION");
     }
 

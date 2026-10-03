@@ -36,14 +36,34 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
     }
 
     @Override
+    public void requireActiveOwnership() { delegate.requireActiveOwnership(); }
+    @Override
+    public <T> T withActiveOwnership(java.util.function.Supplier<T> action) { return delegate.withActiveOwnership(action); }
+    @Override
+    public void registerTemporaryStateCleanup(Runnable cleanup) { delegate.registerTemporaryStateCleanup(cleanup); }
+    @Override
+    public void releaseTemporaryState() { delegate.releaseTemporaryState(); }
+
+    @Override
     public void onStep(String kind, Map<String, Object> detail) {
         delegate.onStep(kind, detail);
+        recordStepUsage(kind, detail);
+    }
+
+    /** 执行器在epoch保护事务内调用，仅落既有账本，不再次进入事件/终态路径。 */
+    public void recordStepUsage(String kind, Map<String, Object> detail) {
         if (!"MODEL_CALL".equals(kind) || detail == null || !detail.containsKey("inputTokens")) {
             return;
         }
         int input = asInt(detail.get("inputTokens"));
         int output = asInt(detail.get("outputTokens"));
-        ledger.recordUsage(modelConfigId, actorId, SCENE, input, output, 0L, "ok", traceId);
+        String outcome = Objects.toString(detail.get("outcome"), "COMPLETE");
+        String status = switch (outcome) {
+            case "ERROR" -> "error";
+            case "CANCELLED" -> "cancelled";
+            default -> "ok";
+        };
+        ledger.recordUsage(modelConfigId, actorId, SCENE, input, output, 0L, status, traceId);
     }
 
     @Override
@@ -65,6 +85,8 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
     public void onText(String delta) {
         delegate.onText(delta);
     }
+
+    @Override public void onFinalText(String fullText) { delegate.onFinalText(fullText); }
 
     @Override
     public void onArtifact(String artifactId, String title, String contentHash, int version) {

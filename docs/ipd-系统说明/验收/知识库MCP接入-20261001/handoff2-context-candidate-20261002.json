@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-02T16:49:56.192587+00:00",
+  "jarSha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "modules": {
+    "chat": {
+      "nestedSha": "a9b66492406b31dd008b91cdd25a608ba89b64f2031ed31cef9e9bf28f097c00",
+      "targetSha": "a9b66492406b31dd008b91cdd25a608ba89b64f2031ed31cef9e9bf28f097c00",
+      "equal": true,
+      "contextIsolationSwitchesPresent": true
+    },
+    "ipd": {
+      "nestedSha": "6bf6118a249d6d9d14fad27035247ab5a00499c0f3cc2a0ee71c474e535222cd",
+      "targetSha": "6bf6118a249d6d9d14fad27035247ab5a00499c0f3cc2a0ee71c474e535222cd",
+      "equal": true,
+      "contextIsolationSwitchesPresent": true
+    },
+    "aiflow": {
+      "nestedSha": "f516471bd9cc0febb5483e614e64d3b9fd3e5fcf2f288f02c7a2234270946cb9",
+      "targetSha": "f516471bd9cc0febb5483e614e64d3b9fd3e5fcf2f288f02c7a2234270946cb9",
+      "equal": true
+    }
+  },
+  "agentscope": [
+    "agentscope-extensions-model-anthropic-2.0.3.jar",
+    "agentscope-core-2.0.3.jar",
+    "agentscope-extensions-model-ollama-2.0.3.jar",
+    "agentscope-extensions-redis-2.0.3.jar",
+    "agentscope-harness-2.0.3.jar",
+    "agentscope-extensions-model-dashscope-2.0.3.jar",
+    "agentscope-extensions-mysql-2.0.3.jar",
+    "agentscope-extensions-rag-simple-2.0.3.jar",
+    "agentscope-extensions-model-openai-2.0.3.jar"
+  ],
+  "redisson": [
+    "redisson-spring-boot-starter-3.51.0.jar",
+    "redisson-spring-data-35-3.51.0.jar",
+    "redisson-3.51.0.jar"
+  ],
+  "oldFramework": [],
+  "activeRuns": 0
+}

@@ -17,7 +17,8 @@ public final class ProjectAgentErrorTexts {
         "STREAM_ERROR", "模型输出中断，请稍后重试",
         "RUN_TIMEOUT", "运行超时，已终止",
         "AGENT_BUSY", "智能体繁忙，请稍后重试",
-        ProjectAgentCompletionGate.REJECTED, "检索未命中或结论越权，产物未生成");
+        "ARTIFACT_PERSIST", "产物没有保存下来，请稍后重试",
+        ProjectAgentCompletionGate.REJECTED, "没有取得可交付正文、检索依据不足或结论越权，产物未生成");
 
     private ProjectAgentErrorTexts() {
     }

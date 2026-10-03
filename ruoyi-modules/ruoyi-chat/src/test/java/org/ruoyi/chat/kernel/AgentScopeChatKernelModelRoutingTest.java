@@ -57,6 +57,7 @@ class AgentScopeChatKernelModelRoutingTest {
         private final Set<String> failingKeys = ConcurrentHashMap.newKeySet();
         private final Map<String, CountDownLatch> streamed = new ConcurrentHashMap<>();
         private final List<String> executedConfigurations = new CopyOnWriteArrayList<>();
+        private final List<String> primaryConfigurations = new CopyOnWriteArrayList<>();
 
         private CountDownLatch track(String key) {
             return streamed.computeIfAbsent(key, ignored -> new CountDownLatch(1));
@@ -97,6 +98,10 @@ class AgentScopeChatKernelModelRoutingTest {
         public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
             assembler.track(key).countDown();
             assembler.executedConfigurations.add(endpoint + "|" + credential);
+            if (messages.stream().anyMatch(message -> message.getRole() == io.agentscope.core.message.MsgRole.USER
+                    && "hi".equals(message.getTextContent()))) {
+                assembler.primaryConfigurations.add(endpoint + "|" + credential);
+            }
             return Flux.just(new ChatResponse("stub-" + UUID.randomUUID(),
                     List.of(TextBlock.builder().text("REPLY-" + key).build()), null, Map.of(), "stop"));
         }
@@ -199,13 +204,18 @@ class AgentScopeChatKernelModelRoutingTest {
             KernelModelRequest a = new KernelModelRequest("m1", "minimax", "test-key-a", "https://a.test/v1");
             KernelModelRequest b = new KernelModelRequest("m1", "minimax", "test-key-b", "https://b.test/v1");
             for (int i = 0; i < 3; i++) {
+                int before = assembler.executedConfigurations.size();
                 LatchSink sink = new LatchSink();
                 kernel.stream("P1", "U1", "emp-route", "S-C" + i, "hi", null, i == 1 ? b : a, sink);
                 assertTrue(sink.finished.await(30, TimeUnit.SECONDS), "第 " + i + " 轮应收尾");
                 assertTrue(sink.errors.isEmpty(), "第 " + i + " 轮不应失败: " + sink.errors);
+                String expected = i == 1 ? "https://b.test/v1|test-key-b" : "https://a.test/v1|test-key-a";
+                assertFalse(assembler.executedConfigurations.subList(before, assembler.executedConfigurations.size()).isEmpty());
+                assertTrue(assembler.executedConfigurations.subList(before, assembler.executedConfigurations.size())
+                    .stream().allMatch(expected::equals), "本轮正文及官方记忆调用都必须使用本轮配置");
             }
             assertEquals(List.of("https://a.test/v1|test-key-a", "https://b.test/v1|test-key-b",
-                    "https://a.test/v1|test-key-a"), assembler.executedConfigurations,
+                    "https://a.test/v1|test-key-a"), assembler.primaryConfigurations,
                     "配置更新后必须调用该轮的端点和凭据，回切也必须一致");
         }
     }
