@@ -27,6 +27,14 @@ import java.util.Locale;
  *   <li>{@code justauth.type.*.client-secret}、{@code sms.blends.*}、{@code mail.*}、
  *       {@code snail-job.token}、{@code ipd.hr.*} —— 全部有 enabled 开关或属可选集成，
  *       缺失只让对应功能不可用，不影响服务存活，归警告档。</li>
+ *   <li><b>对外邮件投递专项</b>（{@code inspectNotificationEmail}）：{@code ipd.notification.email.enabled=true}
+ *       时 {@code spring.mail.host} 必须是真的 SMTP 主机。父 {@code application.yml} 给它留了
+ *       {@code ${MAIL_HOST:smtp.localhost}} 兜底（<b>非空</b>），所以上面「空值即报错」的通用规则
+ *       抓不到它——开着开关却指向占位主机时，{@code JavaMailSender} 照常装配、启动无异常，
+ *       只有真正发信才抛 {@code MailException}（{@code EmailChannelHandler} 捕到只记
+ *       {@code [EMAIL-FAIL]} 日志）。<b>注意这是两套不同的邮件配置</b>：上面 {@code mail.*} 是
+ *       RuoYi 自带的邮件工具，IPD 通知走的是 Spring Boot 的 {@code spring.mail.*}，
+ *       两者同名不同源，别互相代入。</li>
  *   <li><b>关于 OSS</b>：本仓生产 OSS 凭据<b>不走环境变量</b>——{@code SystemApplicationRunner} 调
  *       {@code ISysOssConfigService.init()}，配置存在 {@code sys_oss_config} 表里。
  *       所以「生产 OSS 凭据缺失」没有可校验的环境变量，故本类不含 OSS 规则（详见报告）。</li>
@@ -212,8 +220,37 @@ public final class ProdConfigFailFastValidator {
 
         inspectDatasourceUrl(env, fatal, warning);
         inspectUploadPath(env, warning);
+        inspectNotificationEmail(env, warning);
 
         return new Report(List.copyOf(fatal), List.copyOf(warning));
+    }
+
+    /**
+     * 对外邮件投递专项：{@code ipd.notification.email.enabled=true} 时，{@code spring.mail.host}
+     * 必须是真实 SMTP 主机，不能是父 {@code application.yml} 的 {@code smtp.localhost} 兜底。
+     *
+     * <p>为什么不能用通用规则：通用规则只判「空值」，而该键有非空默认值，
+     * 于是「开着开关却发不出去」这种静默态永远抓不到。定在警告档——服务照常存活、
+     * 站内信不受影响（{@code inbox()} 只按 receiver_id 过滤，不筛投递状态），
+     * 坏的只是对外邮件这一条腿；与 {@code sys.upload.path} 同档同理。
+     */
+    private void inspectNotificationEmail(Environment env, List<Finding> warning) {
+        if (!isEnabled(env, "ipd.notification.email.enabled")) {
+            return;
+        }
+        String host = env.getProperty("spring.mail.host");
+        String normalized = host == null ? "" : host.trim().toLowerCase(Locale.ROOT);
+        boolean placeholder = normalized.isEmpty()
+                || "localhost".equals(normalized)
+                || normalized.endsWith(".localhost");
+        if (placeholder) {
+            warning.add(new Finding(Tier.WARNING, "spring.mail.host", "MAIL_HOST",
+                    "ipd.notification.email.enabled=true 但 spring.mail.host 是占位值 \""
+                            + (host == null ? "" : host) + "\"：JavaMailSender 能装配、启动无异常，"
+                            + "只有真正发信时才抛 MailException，被 EmailChannelHandler 吞成一条 "
+                            + "[EMAIL-FAIL] 日志。站内信不受影响，但所有对外邮件会静默发不出去。"
+                            + "请把 MAIL_HOST 指到真实 SMTP 主机，或把 ipd.notification.email.enabled 关回 false"));
+        }
     }
 
     /**

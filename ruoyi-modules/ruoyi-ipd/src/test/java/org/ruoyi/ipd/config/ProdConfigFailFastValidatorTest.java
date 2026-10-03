@@ -124,4 +124,51 @@ class ProdConfigFailFastValidatorTest {
                 .as("仅警告时 Runner 必须放行")
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    @DisplayName("场景4：IPD 邮件开关打开但 spring.mail.host 是 smtp.localhost 占位 → 警告档，且不阻断启动")
+    void notificationEmailPlaceholderHostWarns() {
+        MockEnvironment env = fullyConfigured()
+                .withProperty("ipd.notification.email.enabled", "true")
+                .withProperty("spring.mail.host", "smtp.localhost");
+
+        ProdConfigFailFastValidator.Report report = validator.inspect(env);
+        assertThat(report.failed()).as("邮件发不出去不影响服务存活，不得拒绝启动").isFalse();
+        assertThat(report.warning())
+                .as("fullyConfigured 本应 0 警告，故此处应恰好只有这条；"
+                        + "通用规则判空值抓不到非空占位值，只能靠专项检查报出")
+                .singleElement()
+                .satisfies(f -> {
+                    assertThat(f.configKey()).isEqualTo("spring.mail.host");
+                    assertThat(f.envVar()).isEqualTo("MAIL_HOST");
+                    assertThat(f.tier()).isEqualTo(ProdConfigFailFastValidator.Tier.WARNING);
+                });
+    }
+
+    @Test
+    @DisplayName("场景5：IPD 邮件开关打开且 host 为真实主机 → 0 警告（专项检查不得误伤）")
+    void notificationEmailRealHostPasses() {
+        MockEnvironment env = fullyConfigured()
+                .withProperty("ipd.notification.email.enabled", "true")
+                .withProperty("spring.mail.host", "smtp.example.com");
+
+        ProdConfigFailFastValidator.Report report = validator.inspect(env);
+        assertThat(report.failed()).isFalse();
+        assertThat(report.warning())
+                .as("真实主机不得被判为占位值")
+                .noneSatisfy(f -> assertThat(f.configKey()).isEqualTo("spring.mail.host"));
+    }
+
+    @Test
+    @DisplayName("场景6：IPD 邮件开关关闭（默认）时，host 是占位值也不报 —— 专项检查须受开关约束")
+    void notificationEmailDisabledDoesNotWarn() {
+        MockEnvironment env = fullyConfigured()
+                .withProperty("ipd.notification.email.enabled", "false")
+                .withProperty("spring.mail.host", "smtp.localhost");
+
+        ProdConfigFailFastValidator.Report report = validator.inspect(env);
+        assertThat(report.warning())
+                .as("开关关着就不该报：默认部署不该被这条规则点亮")
+                .noneSatisfy(f -> assertThat(f.configKey()).isEqualTo("spring.mail.host"));
+    }
 }
