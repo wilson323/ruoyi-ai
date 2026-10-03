@@ -395,4 +395,35 @@ class ProjectAgentAguiPauseResumeServiceTest {
         assertEquals(before,store.eventInserts.get());assertEquals(1,store.runInserts.get());
     }
 
+    @Test void childCompletionUsesOriginalConsumedReceiptAndSurvivesColdReadWithoutPublicLeak() throws Exception {
+        var pause=service.pauseChildren(handle,42L,0,List.of(boundChild("one","policy","nonce")));
+        var input=RunAgentInput.builder().threadId("42").runId("42").resume(pause.pending().keySet().stream()
+            .map(id->new AguiResume(id,"resolved",Map.of("approved",false))).toList()).build();
+        var result=service.consume(actor,handle,42L,pause.pauseSeq(),input,(a,r,p,i)->Map.of());
+        var completion=new org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion(
+            result.childResumes().get(0).approval(),1,"MODEL_STOP","private-child-result");
+        int before=store.eventInserts.get();service.recordChildCompletion(handle,42L,completion);
+        service.recordChildCompletion(handle,42L,completion);assertEquals(before+1,store.eventInserts.get());
+        var cold=new ProjectAgentAguiPauseResumeService(store,runs,mapper);
+        assertEquals(List.of(completion),cold.loadChildCompletions(handle,42L));
+        var event=store.listEvents(42L,before,200).get(0);
+        var publicEvent=ProjectAgentAguiPublicEvent.project(mapper,new org.ruoyi.ipd.agent.vo.ProjectAgentViews.Event(event.getSeq(),"STEP",mapper.readTree(event.getPayload()),null));
+        assertFalse(mapper.writeValueAsString(publicEvent).contains("private-child-result"));
+        assertTrue(event.getPayload().contains("private-child-result"));assertEquals(before+1,store.eventInserts.get());
+        assertThrows(IllegalStateException.class,()->service.recordChildCompletion(handle,42L,
+            new org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion(completion.approval(),1,"MODEL_STOP","changed-result")));
+    }
+    @Test void childAskingOrUnchangedCheckpointCannotBeRecordedAsCompletion() {
+        var pause=service.pauseChildren(handle,42L,0,List.of(child("locator","session","one")));
+        var input=RunAgentInput.builder().threadId("42").runId("42").resume(pause.pending().keySet().stream()
+            .map(id->new AguiResume(id,"resolved",Map.of("approved",false))).toList()).build();
+        var result=service.consume(actor,handle,42L,pause.pauseSeq(),input,(a,r,p,i)->Map.of());
+        var approval=result.childResumes().get(0).approval();int before=store.eventInserts.get();
+        assertThrows(IllegalArgumentException.class,()->service.recordChildCompletion(handle,42L,
+            new org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion(approval,1,"PERMISSION_ASKING","")));
+        assertThrows(IllegalArgumentException.class,()->service.recordChildCompletion(handle,42L,
+            new org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion(approval,0,"MODEL_STOP","")));
+        assertEquals(before,store.eventInserts.get());assertTrue(service.loadChildCompletions(handle,42L).isEmpty());
+    }
+
 }

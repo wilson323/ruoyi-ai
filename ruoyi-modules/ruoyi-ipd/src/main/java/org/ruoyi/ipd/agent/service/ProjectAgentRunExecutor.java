@@ -130,6 +130,16 @@ public class ProjectAgentRunExecutor {
             run.getPersonId() == null ? null : String.valueOf(run.getPersonId()), String.valueOf(run.getId()));
         return new ProjectAgentEventSink() {
             public void requireActiveOwnership() { handle.requireActiveOwnership(); }
+            public long executionEpoch() { return handle.executionEpoch(); }
+            public void registerTerminalSuccessReceipt(Runnable receipt) { handle.registerTerminalSuccessReceipt(receipt); }
+            public void onChildInterrupt(java.util.List<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildApproval> children,long version) {
+                handle.onChildInterrupt(children,version);
+            }
+            public void recordChildCompletion(org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion completion) { handle.recordChildCompletion(completion); }
+            public java.util.List<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion> loadChildCompletions() { return handle.loadChildCompletions(); }
+            public void requireChildResumeConsumed(org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildApproval approval) {
+                handle.requireChildResumeConsumed(approval);
+            }
             public <T> T withActiveOwnership(java.util.function.Supplier<T> action) { return handle.withActiveOwnership(action); }
             public void registerTemporaryStateCleanup(Runnable cleanup) { handle.registerTemporaryStateCleanup(cleanup); }
             public void releaseTemporaryState() { handle.releaseTemporaryState(); }
@@ -304,6 +314,13 @@ public class ProjectAgentRunExecutor {
         handle.setChildResumeGuard(approval -> {
             if (aguiPauseResume == null) throw new IllegalStateException("child consumed receipt service is not configured");
             aguiPauseResume.requireConsumedChild(handle, run.getId(), approval);
+        });
+        handle.setChildCompletionJournal(completion-> {
+            if(aguiPauseResume==null) throw new IllegalStateException("child completion journal is not configured");
+            aguiPauseResume.recordChildCompletion(handle,run.getId(),completion);
+        },()-> {
+            if(aguiPauseResume==null) throw new IllegalStateException("child completion reader is not configured");
+            return aguiPauseResume.loadChildCompletions(handle,run.getId());
         });
         if (handles.putIfAbsent(run.getId(), handle) != null) {
             handle.abandonOwnership();
@@ -551,6 +568,13 @@ public class ProjectAgentRunExecutor {
         handle.setChildResumeGuard(approval -> {
             if (aguiPauseResume == null) throw new IllegalStateException("child consumed receipt service is not configured");
             aguiPauseResume.requireConsumedChild(handle, run.getId(), approval);
+        });
+        handle.setChildCompletionJournal(completion-> {
+            if(aguiPauseResume==null) throw new IllegalStateException("child completion journal is not configured");
+            aguiPauseResume.recordChildCompletion(handle,run.getId(),completion);
+        },()-> {
+            if(aguiPauseResume==null) throw new IllegalStateException("child completion reader is not configured");
+            return aguiPauseResume.loadChildCompletions(handle,run.getId());
         });
         handles.put(run.getId(), handle);
         if (acquired != null) {

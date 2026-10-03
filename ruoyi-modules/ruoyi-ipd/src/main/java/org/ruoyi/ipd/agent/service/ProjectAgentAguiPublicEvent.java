@@ -21,6 +21,8 @@ public final class ProjectAgentAguiPublicEvent {
         removeInternal(payload); // 原 STEP 顶层的服务器 receipt 容器。
         if ("AGUI_RESUMED".equals(payload.path("kind").asText()) && payload instanceof ObjectNode object)
             object.remove(ProjectAgentAguiPauseResumeService.INTERNAL_RESUME_INTENT);
+        if ("CHILD_RESUME_COMPLETED".equals(payload.path("kind").asText()) && payload instanceof ObjectNode object)
+            object.remove(ProjectAgentAguiPauseResumeService.INTERNAL_CHILD_COMPLETION);
         if ("AWAIT_USER".equals(payload.path("kind").asText())
                 && "AGUI_INTERRUPT".equals(payload.path("reason").asText())) {
             JsonNode interrupts = payload.path("interrupts");

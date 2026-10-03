@@ -239,6 +239,22 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         runOwned(() -> childResumeGuard.accept(java.util.Objects.requireNonNull(approval)));
     }
 
+    private Consumer<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion> childCompletionWriter;
+    private java.util.function.Supplier<java.util.List<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion>> childCompletionReader;
+    public synchronized void setChildCompletionJournal(
+            Consumer<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion> writer,
+            java.util.function.Supplier<java.util.List<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion>> reader) {
+        childCompletionWriter=java.util.Objects.requireNonNull(writer);childCompletionReader=java.util.Objects.requireNonNull(reader);
+    }
+    @Override public synchronized void recordChildCompletion(org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion completion) {
+        if(childCompletionWriter==null) throw new IllegalStateException("child completion writer is not configured");
+        runOwned(()->childCompletionWriter.accept(java.util.Objects.requireNonNull(completion)));
+    }
+    @Override public synchronized java.util.List<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion> loadChildCompletions() {
+        if(childCompletionReader==null) throw new IllegalStateException("child completion reader is not configured");
+        return withActiveOwnership(()->java.util.List.copyOf(childCompletionReader.get()));
+    }
+
     /** 已拼好的助手全文。 */
     public String assistantText() {
         return fullText.toString();

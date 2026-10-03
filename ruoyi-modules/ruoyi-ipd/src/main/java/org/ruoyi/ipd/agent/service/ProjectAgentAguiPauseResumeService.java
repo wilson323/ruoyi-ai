@@ -19,6 +19,7 @@ import java.util.*;
 
 /** 在原 run/epoch 事务中记录中断及一次性消费，不创建第二运行、不导入客户端状态。 */
 public final class ProjectAgentAguiPauseResumeService {
+    public static final String INTERNAL_CHILD_COMPLETION = "ipd.server.child.completion";
     public static final String INTERNAL_RESUME_INTENT = "ipd.server.agui.resume.intent";
     private final AgentRunStore store;
     private final ProjectAgentRunService runs;
@@ -342,6 +343,41 @@ public final class ProjectAgentAguiPauseResumeService {
         });
     }
 
+    public void recordChildCompletion(ProjectAgentRunHandle handle,Long runId,
+            ProjectAgentChildLineageRegistry.ChildCompletion completion) {
+        requireHandle(handle,runId);Objects.requireNonNull(completion);
+        handle.withActiveOwnership(()-> {
+            requireConsumedChild(handle,runId,completion.approval());
+            if(completion.completedCheckpointVersion()<=completion.approval().checkpointVersion()
+                || !Set.of("MODEL_STOP","STRUCTURED_OUTPUT","ALL_TOOLS_DENIED").contains(completion.generateReason())
+                || completion.finalText()==null) throw new IllegalArgumentException("原子调用没有完成证据");
+            var existing=history(runId).completions().get(completionKey(completion));
+            if(existing!=null) {
+                if(!existing.equals(completion)) throw new IllegalStateException("原子完成证据冲突");
+                return null;
+            }
+            handle.onStep("CHILD_RESUME_COMPLETED",Map.of("executionEpoch",epoch(run(runId)),
+                INTERNAL_CHILD_COMPLETION,completion));
+            return null;
+        });
+    }
+    /** 不授予再次执行，只回读原持久结果，派发器还须核当前 factory 与 SDK 完成检查点。 */
+    public List<ProjectAgentChildLineageRegistry.ChildCompletion> loadChildCompletions(ProjectAgentRunHandle handle,Long runId) {
+        requireHandle(handle,runId);
+        return handle.withActiveOwnership(()-> {
+            var run=run(runId);
+            var root=KernelScopeKey.of(String.valueOf(run.getProjectId()),String.valueOf(run.getPersonId()),
+                ProjectAgentConstants.AGENT_ID,String.valueOf(runId));
+            var results=history(runId).completions().values().stream().toList();
+            for(var completion:results) if(!root.userId().equals(completion.approval().userId()))
+                throw new IllegalStateException("子完成证据归属错误");
+            return results;
+        });
+    }
+    private static String completionKey(ProjectAgentChildLineageRegistry.ChildCompletion completion) {
+        var approval=completion.approval();return approval.locator()+"\0"+approval.checkpointVersion()+"\0"+approval.replyId();
+    }
+
     /** SDK 子恢复执行前重核已消费的私有回执；定位字符串本身不产生授权。 */
     public void requireConsumedChild(ProjectAgentRunHandle handle,Long runId,ChildApproval approval) {
         requireHandle(handle,runId); Objects.requireNonNull(approval);
@@ -402,10 +438,10 @@ public final class ProjectAgentAguiPauseResumeService {
         if (recorded==null || recorded.isBlank() || !recorded.equals(requested))
             throw new IllegalArgumentException("当前中断已消费，恢复响应与原请求不一致");
     }
-    private record History(PauseCheckpoint latest, Map<Long,String> consumed,Map<Long,Long> consumedEpochs,Map<Long,ResumeIntent> intents,Map<Long,Long> effectiveEpochs) { }
+    private record History(PauseCheckpoint latest, Map<Long,String> consumed,Map<Long,Long> consumedEpochs,Map<Long,ResumeIntent> intents,Map<Long,Long> effectiveEpochs,Map<String,ProjectAgentChildLineageRegistry.ChildCompletion> completions) { }
     private History history(Long runId) {
         PauseCheckpoint latest=null; Map<Long,String> consumed=new HashMap<>();
-        Map<Long,Long> consumedEpochs=new HashMap<>(); Map<Long,ResumeIntent> intents=new HashMap<>(); Map<Long,Long> effectiveEpochs=new HashMap<>(); long after=0;
+        Map<Long,Long> consumedEpochs=new HashMap<>(); Map<Long,ResumeIntent> intents=new HashMap<>(); Map<Long,Long> effectiveEpochs=new HashMap<>(); Map<String,ProjectAgentChildLineageRegistry.ChildCompletion> completions=new LinkedHashMap<>(); long after=0;
         while (true) {
             var page=store.listEvents(runId,after,ProjectAgentConstants.EVENTS_PAGE_LIMIT);
             for (var event:page) {
@@ -427,6 +463,13 @@ public final class ProjectAgentAguiPauseResumeService {
                             if(intents.putIfAbsent(seq,intent)!=null) throw new IllegalStateException("持久恢复意图重复");
                         }
                     }
+                    if("CHILD_RESUME_COMPLETED".equals(kind)) {
+                        if(!data.hasNonNull(INTERNAL_CHILD_COMPLETION) || data.path("executionEpoch").asLong()<1)
+                            throw new IllegalStateException("子完成事件缺少私有证据");
+                        var completion=mapper.treeToValue(data.get(INTERNAL_CHILD_COMPLETION),ProjectAgentChildLineageRegistry.ChildCompletion.class);
+                        var previous=completions.putIfAbsent(completionKey(completion),completion);
+                        if(previous!=null && !previous.equals(completion)) throw new IllegalStateException("持久子完成证据冲突");
+                    }
                     if("AGUI_RESUME_RECOVERED".equals(kind)) {
                         long seq=data.path("pauseSeq").asLong();var intent=intents.get(seq);
                         if(intent==null || intent.executionEpoch()!=data.path("originalExecutionEpoch").asLong()
@@ -447,7 +490,7 @@ public final class ProjectAgentAguiPauseResumeService {
                             new com.fasterxml.jackson.core.type.TypeReference<Map<String,ChildApproval>>() {}):Map.of());
                 } catch (java.io.IOException invalid) { throw new IllegalStateException("中断事件无法读取",invalid); }
             }
-            if (page.isEmpty()) return new History(latest,Map.copyOf(consumed),Map.copyOf(consumedEpochs),Map.copyOf(intents),Map.copyOf(effectiveEpochs));
+            if (page.isEmpty()) return new History(latest,Map.copyOf(consumed),Map.copyOf(consumedEpochs),Map.copyOf(intents),Map.copyOf(effectiveEpochs),Collections.unmodifiableMap(completions));
         }
     }
     private IpdAgentRun run(Long runId) { return store.findRun(runId).orElseThrow(() -> new IllegalArgumentException("运行不存在")); }

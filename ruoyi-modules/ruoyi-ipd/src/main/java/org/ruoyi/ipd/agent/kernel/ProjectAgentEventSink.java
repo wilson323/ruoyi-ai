@@ -50,6 +50,13 @@ public interface ProjectAgentEventSink {
         throw new IllegalStateException("child consumed receipt guard is not configured");
     }
 
+    default void recordChildCompletion(ProjectAgentChildLineageRegistry.ChildCompletion completion) {
+        throw new IllegalStateException("child completion journal is not configured");
+    }
+    default java.util.List<ProjectAgentChildLineageRegistry.ChildCompletion> loadChildCompletions() {
+        throw new IllegalStateException("child completion reader is not configured");
+    }
+
     /** 暂停保留服务器 checkpoint；不能按终态删除。 */
     default boolean isPaused() { return false; }
 

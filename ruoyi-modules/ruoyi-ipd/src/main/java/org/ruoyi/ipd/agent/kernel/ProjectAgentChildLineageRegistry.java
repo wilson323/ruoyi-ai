@@ -70,6 +70,10 @@ public final class ProjectAgentChildLineageRegistry {
             return new ChildApproval(locator,userId,sessionId,checkpointVersion,replyId,selected,factory,parentCall);
         }
     }
+    /** 原 SDK 完成结果及已保存检查点；仅服务器原事件链存取，不是客户端权限。 */
+    public record ChildCompletion(ChildApproval approval,long completedCheckpointVersion,String generateReason,String finalText) {
+        public ChildCompletion { java.util.Objects.requireNonNull(approval);approval=approval.withCalls(approval.calls()); }
+    }
     private record FactoryBinding(FactoryDescriptor factory, ParentCall parent) { }
     private record ParentBinding(ParentCall parent) { }
     private final Object parentContextKey = new Object();

@@ -40,6 +40,12 @@ final class ProjectAgentRuntimeAccessSink implements ProjectAgentEventSink {
         requireActiveOwnership();
         delegate.registerTerminalSuccessReceipt(receipt);
     }
+    @Override public void recordChildCompletion(ProjectAgentChildLineageRegistry.ChildCompletion completion) {
+        requireActiveOwnership();delegate.recordChildCompletion(completion);
+    }
+    @Override public java.util.List<ProjectAgentChildLineageRegistry.ChildCompletion> loadChildCompletions() {
+        requireActiveOwnership();return delegate.loadChildCompletions();
+    }
     @Override public void requireChildResumeConsumed(ProjectAgentChildLineageRegistry.ChildApproval approval) {
         requireActiveOwnership();
         delegate.requireChildResumeConsumed(approval);

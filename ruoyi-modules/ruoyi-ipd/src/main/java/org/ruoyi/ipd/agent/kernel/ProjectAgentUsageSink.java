@@ -37,6 +37,24 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
 
     @Override
     public void requireActiveOwnership() { delegate.requireActiveOwnership(); }
+    @Override public long executionEpoch() { return delegate.executionEpoch(); }
+    @Override public void registerTerminalSuccessReceipt(Runnable receipt) { delegate.registerTerminalSuccessReceipt(receipt); }
+    @Override public boolean isPaused() { return delegate.isPaused(); }
+    @Override public void onAguiInterrupt(Map<String,io.agentscope.core.agui.event.AguiEvent.Interrupt> pending,long version) {
+        delegate.onAguiInterrupt(pending,version);
+    }
+    @Override public void onChildInterrupt(java.util.List<ProjectAgentChildLineageRegistry.ChildApproval> children,long version) {
+        delegate.onChildInterrupt(children,version);
+    }
+    @Override public void recordChildCompletion(ProjectAgentChildLineageRegistry.ChildCompletion completion) {
+        requireActiveOwnership();delegate.recordChildCompletion(completion);
+    }
+    @Override public java.util.List<ProjectAgentChildLineageRegistry.ChildCompletion> loadChildCompletions() {
+        requireActiveOwnership();return delegate.loadChildCompletions();
+    }
+    @Override public void requireChildResumeConsumed(ProjectAgentChildLineageRegistry.ChildApproval approval) {
+        delegate.requireChildResumeConsumed(approval);
+    }
     @Override
     public <T> T withActiveOwnership(java.util.function.Supplier<T> action) { return delegate.withActiveOwnership(action); }
     @Override

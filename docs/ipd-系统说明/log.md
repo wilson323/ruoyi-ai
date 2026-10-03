@@ -13628,3 +13628,70 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
 - 全门禁 `bash .claude/hooks/check-pre-commit.sh` → `passed=7 failed=0 skipped=0`，`EXIT=0`
   - 门禁 0 untracked 引用检测 PASS（351 staged 文件）；门禁 1/2 漂移 `drift_count=0`；门禁 2/2 合同↔spec↔code 对账 PASS；门禁 3 API 契约孤儿棘轮 PASS（vs baseline `-0 / +22`，白名单 24 条防伪 0 错）；门禁 4 shell 变量吞字节 0 违例；门禁 6 符号链接 PASS
 - 本 commit 的真实 hash、push 结果与远端基线核对：见下一条登记（commit 号只能在提交后取得，故自指登记拆为两条 commit）
+
+#### 自指回填：上一条 commit 的真实 hash 与 push 结果
+
+- commit `24ea0e813bc88bed2c76fede3043b41f6c64fa27`（message：`feat(agent): 整合兄弟会话在途 AgentScope 官方化改造并入库验收证据`）
+- push：`172031b6..24ea0e81  main -> main`，`PUSH_EXIT=0`
+- 远端基线核对：`origin/main == HEAD == 24ea0e81`，`git rev-list --left-right --count origin/main...HEAD` = `0 0`（零漂移）
+- 门禁第八次：`passed=7 failed=0 skipped=0`，`EXIT=0`
+
+---
+
+## 2026-10-02（晚）子智能体完成契约接入 + 假绿方法论留痕（第二次整合入库）
+
+**授权依据**：owner 指令「记得及时梳理工作树合并整合并提交推送」。
+
+### 一、本批变更定性（11 个文件，9 main + 2 test）
+
+兄弟会话在 17:04:33 / 17:06:18 / 17:08:26 / 17:09:53 四批写入，构成**同一原子变更**：给子智能体链路补「完成」契约，并强制所有事件 Sink 装饰器**逐方法显式 `@Override` 转发、禁止静默落回接口 default**（与 owner「禁止降级 / 禁止空实现 / 禁止双轨」同向）。核心语义：
+
+- 新增值类型 `ProjectAgentChildLineageRegistry.ChildCompletion`（`approval` + `completedCheckpointVersion` + `generateReason` + `finalText`），紧凑构造器 `requireNonNull(approval)` 且以 `approval.withCalls(approval.calls())` 归一。
+- `ProjectAgentEventSink` 新增 default 契约 `recordChildCompletion(...)` / `loadChildCompletions()`。
+- `ProjectAgentUsageSink` / `ProjectAgentRuntimeAccessSink` 逐方法转发，写路径先 `requireActiveOwnership()`，并把 `executionEpoch()` / `registerTerminalSuccessReceipt()` / `isPaused()` / `onAguiInterrupt()` / `onChildInterrupt()` / `requireChildResumeConsumed()` 全部显式实现。
+- AGUI 白名单新增保留键 `ipd.server.child.completion`（`ProjectAgentAguiPublicEvent.INTERNAL_CHILD_COMPLETION`）。
+- `ProjectAgentAguiPauseResumeService` 新增完成态持久化：`History` record 扩 `completions`，含 `completedCheckpointVersion <= approval.checkpointVersion()` 单调校验、幂等键 `locator + "\0" + checkpointVersion + "\0" + replyId`、四维隔离 `KernelScopeKey.of(projectId, personId, AGENT_ID, runId)`。
+- 代码内契约注释：「原 SDK 完成结果及已保存检查点；仅服务器原事件链存取，不是客户端权限」「不授予再次执行，只回读原持久结果，派发器还须核当前 factory 与 SDK 完成检查点」。
+
+**必须同批入库的理由**：新增测试 `ProjectAgentEventSinkDecoratorContractTest` 用反射断言装饰器对 `ProjectAgentEventSink` 每个方法都能解析到**非接口声明类**（`assertNotEquals(ProjectAgentEventSink.class, ...getDeclaringClass(), "decorator lost lifecycle: "+name)`），它守护的正是这 9 个 main 的契约；拆开入库会使测试失去被测对象或使 main 变更无回归保护。
+
+| 文件 | 增删 | 处置结论 |
+|---|---|---|
+| `kernel/ProjectAgentAguiInput.java` | +1/-1 | **原样入库**（保留键放行） |
+| `kernel/ProjectAgentChildLineageRegistry.java` | +4/-0 | **原样入库**（`ChildCompletion` 值类型） |
+| `kernel/ProjectAgentEventSink.java` | +7/-0 | **原样入库**（default 契约面） |
+| `kernel/ProjectAgentRuntimeAccessSink.java` | +6/-0 | **原样入库**（显式转发） |
+| `kernel/ProjectAgentUsageSink.java` | +18/-0 | **原样入库**（显式转发） |
+| `service/ProjectAgentAguiPauseResumeService.java` | +46/-3 | **原样入库**（完成态持久化） |
+| `service/ProjectAgentAguiPublicEvent.java` | +2/-0 | **原样入库**（`INTERNAL_CHILD_COMPLETION`） |
+| `service/ProjectAgentRunExecutor.java` | +24/-0 | **原样入库**（内部匿名装饰器转发） |
+| `service/ProjectAgentRunHandle.java` | +16/-0 | **原样入库**（完成态存取） |
+| `test/.../kernel/ProjectAgentEventSinkDecoratorContractTest.java` | 新增 A | **原样入库**（装饰器契约守护） |
+| `test/.../service/ProjectAgentAguiPauseResumeServiceTest.java` | +31/-0 | **原样入库**（完成态用例） |
+
+### 二、方法论留痕（本条为防再犯，非事后追述）
+
+**1. Maven 增量「Nothing to compile」是假绿形态。** 17:06:28–17:06:35 那轮 `TC_EXIT=0` + `BUILD SUCCESS` 仅耗时 6.510s，日志为 `[INFO] Nothing to compile - all classes are up to date.`；而源码 mtime 已是 17:06:18、SIZE 3033→3091，class 产物仍为 6827 字节（旧源码）。**`BUILD SUCCESS` + 退出码 0 不等于「当前源码编译通过」。** 判据必须以 `Compiling N source files` 行为真；取证手段为删 `target/classes` + `target/test-classes` 强制全量重编。
+
+**2. 并发写入时间窗会使上一轮绿证据失效。** 9 个 main 的 mtime 全为 17:08:26，正落在首轮编译窗口（17:08:22–17:08:45）内，故 17:09:07 跑出的 `Tests run: 2` **并未覆盖它们**。指纹包裹必须覆盖**闭包内全部文件**（本批 11 个），不能只查触发点。
+
+**3. zsh 变量不分词会使证据自造假象。** `FILES="a.java b.java"; shasum -a 256 $FILES` 在 zsh 下被当单参数 → `No such file or directory`，`H1_COUNT=0`，而 `H1_H2_DIFF=0` 实为**两个空文件比较**，不构成证据（该轮已自行声明作废）。修正为 `while IFS= read -r f` 逐行循环，清单动态取自 `git status --porcelain | grep '^ M'` 与 `git ls-files --others --exclude-standard`，不硬编码长串。
+
+**4. surefire tag 静默跳过仍需反证。** `pom.xml:478` 以 `<groups>${profiles.active}</groups>` 过滤（本批实测两个测试类 `@Tag` 计数均为 0）。以「`Tests run: 31`（非 0）」反证未被跳过，而非只看 BUILD SUCCESS。
+
+### 三、验证证据（全部指纹包裹，指纹前后无漂移）
+
+- 强制全量重编：`rm -rf ruoyi-modules/ruoyi-ipd/target/classes ruoyi-modules/ruoyi-ipd/target/test-classes` 后 `mvn -o -pl ruoyi-modules/ruoyi-ipd test-compile` → 17:10:31–17:10:55，`TC_EXIT=0`，`Compiling 695 source files → target/classes`，`Compiling 493 source files → target/test-classes`，`BUILD SUCCESS`；`H1_COUNT=11` / `H2_COUNT=11` / `H1_H2_DIFF_LINES=0`。
+- 真跑测试：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest='ProjectAgentEventSinkDecoratorContractTest,ProjectAgentAguiPauseResumeServiceTest' test` → 17:13:20–17:13:28，`T_EXIT=0`：
+  - `Tests run: 29, Failures: 0, Errors: 0, Skipped: 0 -- in ...ProjectAgentAguiPauseResumeServiceTest`
+  - `Tests run: 2, Failures: 0, Errors: 0, Skipped: 0 -- in ...ProjectAgentEventSinkDecoratorContractTest`
+  - 合计 `Tests run: 31, Failures: 0, Errors: 0, Skipped: 0`，`BUILD SUCCESS`
+- 指纹包裹复验：测试前后 `H1_VS_H3_DIFF=0`、`H1_VS_H4_DIFF=0`；mtime 稳定于 17:08:26 / 17:09:53，add 前已 4 分钟无写入（兄弟会话停止写入，`e0f7f0f6`「其他会话已停」豁免条件成立）。
+- add 纪律：路径式精确 add 11 项（禁 `git add -u` / `-A`），add 后 `STAGED=11` 且状态码为 `M`×10 + `A`×1，**无 `AM`**（无 staged 后二次写入）。
+- 门禁第九次：`bash .claude/hooks/check-pre-commit.sh` → 17:13:47–17:14:26，`GATE_EXIT=0`，`passed=7 failed=0 skipped=0`；门禁 0 `11 staged 文件,无 untracked 引用`、门禁 1/2 `drift_count=0`、门禁 2/2 thresholds 满足、门禁 3 孤儿棘轮无新孤儿/白名单防伪通过、门禁 6 符号链接 PASS。
+
+### 四、未登记事项（避免无事实基础的登记）
+
+本轮**不写** `--no-verify` 相关登记：`.git/hooks/pre-commit` 在本仓不存在，核验与提交均未使用该开关，无事实基础。
+
+- 本 commit 的真实 hash、push 结果与远端基线核对：见下一条登记（commit 号只能在提交后取得，故自指登记拆为两条 commit）

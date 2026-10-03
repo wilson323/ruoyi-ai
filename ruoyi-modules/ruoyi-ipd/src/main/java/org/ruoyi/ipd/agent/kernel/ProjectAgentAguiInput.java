@@ -133,7 +133,7 @@ public final class ProjectAgentAguiInput {
         for (var entry : value.entrySet()) {
             if (!(entry.getKey() instanceof String key)) throw new IllegalArgumentException("invalid UI metadata key");
             String normalized = key.replace("_", "").replace("-", "").replace(".", "").toLowerCase(Locale.ROOT);
-            if (RESERVED.contains(normalized) || "ipd.server.child.invocation".equals(key) || "ipd.server.agui.resume.intent".equals(key))
+            if (RESERVED.contains(normalized) || "ipd.server.child.invocation".equals(key) || "ipd.server.agui.resume.intent".equals(key) || "ipd.server.child.completion".equals(key))
                 throw new IllegalArgumentException("UI metadata cannot override server governance");
             copy.put(key, copyValue(entry.getValue()));
         }
