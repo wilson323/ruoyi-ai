@@ -77,14 +77,20 @@ jobs:
           RC=$?
           set -e
           echo "validate 退出码: $RC"
+          # 退出码语义：0=全绿 / 1=硬错误（数据损坏类，必须阻断）/ 2=软警告（可披露不阻断）
+          #
+          # 2026-10-03 修正假绿：原实现把「RC=1 是否阻断」挂在 secrets.STRICT_DOCS_LINK 上，
+          # 默认没人设该 secret → 恒走 warning 分支 → **本步骤无条件返回成功**，
+          # 而步骤名与日志文案都写着「硬错误，PR 阻断」。即：读代码以为门禁在生效，
+          # 实际它在任何情况下都不会让 PR 变红。现改为 RC=1 无条件阻断——
+          # 硬错误本来就是硬错误，不该需要一个没人会设的开关才生效。
+          # （RC=2 仍是警告：它覆盖的是「覆盖率阈值未达」与「反向未收录」两类
+          #   已被显式登记为未决/待补的情况，见 OD-AM-03 / OD-AM-01。）
           if [ "$RC" = "1" ]; then
-            echo "::error::acceptance-matrix 硬错误，PR 阻断"
-            if [ "${{ secrets.STRICT_DOCS_LINK }}" = "1" ]; then
-              exit 1
-            fi
-            echo "::warning::默认 WARN 模式（设 STRICT_DOCS_LINK=1 升级 ERROR）"
+            echo "::error::acceptance-matrix 硬错误（数据损坏类），PR 阻断"
+            exit 1
           elif [ "$RC" = "2" ]; then
-            echo "::warning::acceptance-matrix 软警告（@DisplayName 反向未收录，见 OD-AM-01）"
+            echo "::warning::acceptance-matrix 软警告（覆盖率阈值未达 / @DisplayName 反向待补），不阻断但须披露"
           fi
 
       - name: 报告归档

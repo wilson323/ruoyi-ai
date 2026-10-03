@@ -114,27 +114,45 @@ def scan_tests(test_root: Path):
 
 
 def decide(ac_id: str, evidence: dict):
-    """按 OD-AM-05 判定单条 AC 的链接结果。
+    """判定单条 AC 的**证据等级**（不直接给矩阵 status，见 grade_to_status）。
 
-    返回 (status, unitTestClass, integrationTestPath, note)
+    返回 (grade, unitTestClass, integrationTestPath, note)
+      grade = "method-unique"  全仓唯一的方法级证据
+              "class-only"     只在类级出现过
+              "none"           零证据
     """
     ev = evidence.get(ac_id)
     if not ev:
-        return ("manual", "", "", "无 @DisplayName / 测试类引用该 AC 编号，维持人工验收")
+        return ("none", None, None, "无 @DisplayName / 测试类引用该 AC 编号")
 
     methods = sorted(set(ev["methods"]))
     classes = sorted(ev["classes"])
 
     if len(methods) == 1:
         fqcn, method, rel = methods[0]
-        return ("covered", f"{fqcn}#{method}", rel,
+        return ("method-unique", f"{fqcn}#{method}", rel,
                 "OD-AM-05 自动链接：@DisplayName 携带该 AC 编号且全仓唯一")
     if methods:
         fqcn, _method, rel = methods[0]
-        return ("partial", fqcn, rel,
+        return ("class-only", fqcn, rel,
                 f"OD-AM-05 自动链接：该 AC 编号出现在 {len(methods)} 个方法中，不唯一，仅回填类级")
-    return ("partial", classes[0], "",
+    return ("class-only", classes[0], None,
             f"OD-AM-05 自动链接：该 AC 编号仅出现在测试类正文中（{len(classes)} 个类），无方法级唯一证据")
+
+
+def grade_to_status(grade: str) -> str:
+    """证据等级 → 矩阵 status。
+
+    **为什么 method-unique 也只映射到 partial 而不是 covered**：
+    schema 对 covered 的约束（acceptance-matrix.schema.json + 校验器规则 6）是
+    「必须给出 ≥1 个闭环该 AC 的 linkedCommits」。本链接器只能证明**测试证据在哪**，
+    证明不了**哪次提交闭环了这条 AC**——实测：拿 `git log -S<方法名> --reverse`
+    自动推「方法首次出现的提交」，与已入库人工填写的值 3/3 全不一致
+    （bind_locksSnapshot 自动推 d4365d6a vs 人工填 3b8d91c4 等）。
+    故自动链接**一律停在 partial**，covered 必须由人/审计给出闭环提交。
+    宁可少报，不造假证据——这正是本仓反复出现的失败模式。
+    """
+    return "partial" if grade in ("method-unique", "class-only") else "manual"
 
 
 def self_test() -> int:
@@ -162,17 +180,24 @@ def self_test() -> int:
         ok = False
 
     ev = {"AC-ZZZ-99": {"methods": [("a.B#C", "injectedProbe", "p/C.java")], "classes": {"a.B"}}}
-    status = decide("AC-ZZZ-99", ev)[0]
-    if status != "covered":
-        print(f"[FAIL] 唯一方法证据应判 covered，实得 {status}")
+    grade = decide("AC-ZZZ-99", ev)[0]
+    if grade != "method-unique":
+        print(f"[FAIL] 唯一方法证据应判 method-unique，实得 {grade}")
         ok = False
-    status2 = decide("AC-ZZZ-99", {"AC-ZZZ-99": {"methods": [("a.B#C", "m1", "p"), ("a.B#C", "m2", "p")],
-                                                  "classes": {"a.B"}}})[0]
-    if status2 != "partial":
-        print(f"[FAIL] 方法不唯一应判 partial，实得 {status2}")
+    grade2 = decide("AC-ZZZ-99", {"AC-ZZZ-99": {"methods": [("a.B#C", "m1", "p"), ("a.B#C", "m2", "p")],
+                                                 "classes": {"a.B"}}})[0]
+    if grade2 != "class-only":
+        print(f"[FAIL] 方法不唯一应判 class-only，实得 {grade2}")
         ok = False
-    if decide("AC-NOPE-01", {})[0] != "manual":
-        print("[FAIL] 零证据应判 manual")
+    if decide("AC-NOPE-01", {})[0] != "none":
+        print("[FAIL] 零证据应判 none")
+        ok = False
+    # 关键断言：自动链接**永远不产出 covered**（covered 需人工给出闭环提交）
+    if grade_to_status("method-unique") == "covered" or grade_to_status("class-only") != "partial":
+        print("[FAIL] 等级→状态映射被改坏：自动链接不得产出 covered")
+        ok = False
+    if grade_to_status("none") != "manual":
+        print("[FAIL] 零证据应映射 manual")
         ok = False
 
     print("[SELF-TEST] " + ("全部通过：斜杠展开 / 方法提取 / 三级判定均可复现" if ok else "存在失败项"))

@@ -3,17 +3,27 @@
 """
 ac-import.py — OD-AM-02 半自动批量导入脚本
 
-读 docs/ipd-系统说明/外部资源/IPD系统_验收清单.md，解析 237 条 AC 表行
-（匹配模式：^| AC-{MOD}-{NN}{sub}? | ...），输出 JSON draft 写到
+读 docs/ipd-系统说明/外部资源/IPD系统_验收清单.md，解析 249 条 AC 表行
+（匹配模式：^| **AC-{MOD}-{NN}{sub}?** 🆕 | ...），输出 JSON draft 写到
 docs/ipd-系统说明/治理/acceptance-matrix.imported-draft.json。
 
 行为：
 - 默认 --dry-run：不写文件，只打印 diff 报告
 - --write：写盘但不动原 acceptance-matrix.json（避免冲掉 10 条样板）
-- 复用 acceptance-matrix.json 已存在的字段（status / owner / notes 等），
-  未在 catalog 中出现的字段保持空白待 owner 补
+- 复用 acceptance-matrix.json 已存在的字段（status / owner / notes 等）
 
-退出码：0=成功；1=catalog 不存在；2=解析到 0 行（异常）；3=用户中断
+=== 2026-10-03 判据补齐：接上 OD-AM-05 证据链接 ===
+背景：原实现的 239 条新增行**一律填 status="manual" 且 notes 写「待 owner 补」**，
+即根本没尝试链接证据。但 `AC-ID-词表-20260907.md §3.2` 早在 2026-09-08 就拍板了
+OD-AM-05 回填规则，并明文写着「后续 scripts/ac-import.py 导入沿用」——即本脚本
+**违背了一条既定决策**。现接入 `scripts/lib/ac_evidence_link.py`：
+  covered  ← 该 ac_id 在全仓恰好出现在 1 条 @DisplayName 里且方法真实存在
+  partial  ← 出现过但不唯一，只回填类级（**不猜方法**，规则明文禁止凭相似度猜）
+  manual   ← 零证据，维持人工验收（**不编造**）
+auditLog 仍不自动填：该列已入库的 10 行里有 9 行的值在 ruoyi-ipd 源码中零命中（实测），
+属 OD-AM-04 未决项，自动填只会再生产一批假证据。
+
+退出码：0=成功；1=catalog 不存在；2=解析到 0 行 / 测试源码树缺失（异常，不降级）
 """
 import argparse
 import json
@@ -22,11 +32,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+from ac_evidence_link import decide, grade_to_status, scan_tests  # noqa: E402  OD-AM-05 证据链接器
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = REPO_ROOT / "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md"
 MATRIX_PATH = REPO_ROOT / "docs/ipd-系统说明/治理/acceptance-matrix.json"
 DRAFT_PATH = REPO_ROOT / "docs/ipd-系统说明/治理/acceptance-matrix.imported-draft.json"
 REPORT_PATH = REPO_ROOT / "docs/ipd-系统说明/治理/ac-import-diff-report.txt"
+TEST_SRC_ROOT = REPO_ROOT / "ruoyi-modules/ruoyi-ipd/src/test/java"
 
 # 匹配 catalog 中表格行：| AC-INC-01 | 标题文字 | 预期 | ☐ |
 #
@@ -113,16 +127,22 @@ def load_matrix(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def build_draft(parsed, existing_matrix):
-    """构造 draft JSON：保留矩阵已有行 + 解析出的 catalog 行（按 ac_id 去重合并）"""
+def build_draft(parsed, existing_matrix, evidence=None):
+    """构造 draft JSON：保留矩阵已有行 + 解析出的 catalog 行（按 ac_id 去重合并）
+
+    evidence：ac_evidence_link.scan_tests() 的结果。为 None 时退化为「全部 manual」
+    并如实标注——**不假装链过**。正常路径必须传入。
+    """
+    evidence = evidence or {}
     by_id = {}
     for row in existing_matrix.get("rows", []):
         by_id[row["ac_id"]] = row
     added = updated = unchanged = 0
+    linked = {"covered": 0, "partial": 0, "manual": 0}
     for r in parsed:
         ac = r["ac_id"]
         if ac in by_id:
-            # 已存在 → 若 title 为空则补，否则保留
+            # 已存在 → 若 title 为空则补，否则保留（已入库行的裁决不被导入覆盖）
             existing = by_id[ac]
             if not existing.get("title"):
                 existing["title"] = r["title"]
@@ -131,19 +151,25 @@ def build_draft(parsed, existing_matrix):
                 unchanged += 1
         else:
             category = ac.split("-")[1]
+            grade, unit_test, integ_path, note = decide(ac, evidence)
+            status = grade_to_status(grade)
+            linked[status] = linked.get(status, 0) + 1
+            linked[f"grade:{grade}"] = linked.get(f"grade:{grade}", 0) + 1
             by_id[ac] = {
                 "ac_id": ac,
                 "category": category,
                 "title": r["title"],
                 "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-                "unitTestClass": "",
-                "integrationTestPath": "",
-                "auditLog": "",
-                "status": "manual",
+                # schema 的 unitTestClass pattern 要求非空串匹配 FQN；
+                # 无值时必须是 null，填空串会被 ajv 拒掉。
+                "unitTestClass": unit_test,
+                "integrationTestPath": integ_path,
+                "auditLog": None,
+                "status": status,
                 "owner": "rd",
                 "linkedCommits": [],
                 "zkRef": None,
-                "notes": "OD-AM-02 半自动导入，unitTestClass/auditLog 待 owner 补",
+                "notes": note + "；无闭环提交证据故停 partial；auditLog 待 OD-AM-04 裁决后补",
             }
             added += 1
     return {
@@ -154,6 +180,8 @@ def build_draft(parsed, existing_matrix):
             "added": added,
             "updated": updated,
             "unchanged": unchanged,
+            "linked": linked,
+            "linker": "OD-AM-05 (scripts/lib/ac_evidence_link.py)",
             "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
         },
     }
@@ -199,13 +227,19 @@ def main():
     assert_count_matches_doc(CATALOG_PATH, len(parsed))
 
     matrix = load_matrix(MATRIX_PATH)
-    draft = build_draft(parsed, matrix)
+    # OD-AM-05：扫测试源码建立证据索引。源码树缺失时 scan_tests 直接 exit 2，
+    # 绝不降级成「全部 manual」假装跑过了。
+    evidence = scan_tests(TEST_SRC_ROOT)
+    draft = build_draft(parsed, matrix, evidence)
 
     print(f"catalog 解析: {len(parsed)} 条")
     print(f"draft 总计:   {draft['_stats']['draft_total']} 条")
     print(f"  新增: {draft['_stats']['added']}")
     print(f"  标题补全: {draft['_stats']['updated']}")
     print(f"  保持不变: {draft['_stats']['unchanged']}")
+    lk = draft["_stats"].get("linked", {})
+    print(f"  证据链接(OD-AM-05): covered={lk.get('covered', 0)} "
+          f"partial={lk.get('partial', 0)} manual={lk.get('manual', 0)}")
 
     if args.write:
         DRAFT_PATH.write_text(

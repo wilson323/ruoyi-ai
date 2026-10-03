@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-QA-08 235 条 AC 自动真验证（机械跑，非手工判定）。
+QA-08 249 条 AC 自动真验证（机械跑，非手工判定）。
 
 输入：
-  docs/ipd-系统说明/外部资源/IPD系统_验收清单.md（235 条 AC）
+  docs/ipd-系统说明/外部资源/IPD系统_验收清单.md（表格 249 行）
 输出：
   qa08-ac-pass.json     - 实测 PASS + 命中证据
   qa08-ac-fail.json     - FAIL + 不可自动验证的 PARTIAL
@@ -89,6 +89,49 @@ def code_grep_literal(literal: str, paths: list) -> int:
         return len(files)
     except Exception:
         return -1
+
+
+def probe_evidence(aid: str, out: dict, claimed: str) -> dict:
+    """把「写死的 BLOCKED」换成**有据可查**的推导。
+
+    2026-10-03 修正：本脚本此前有 13 处直接 out["status"] = "BLOCKED" 并附一句硬编码理由
+    （如「KPI 录入/计算 UI + 服务层 BLOCKED」），**其后立即 return，不做任何检索**。
+    核实发现其中多条 AC 的服务层实现与带 AC 编号的验收测试当时就已存在——
+    例如 AC-KPI-04 有 KpiScoreCalculator.DEFAULT_FUNCTIONAL_WEIGHT=0.60，
+    且 P311AcceptanceTest 的 @DisplayName 直接写着「AC-KPI-04 正例…」。
+    即：这些结论不是「测出来的」，是 2026-09-07 冻结的字面量，后续复跑只是原样重放。
+
+    现改为实测：检索该 AC 编号在**测试树**与**主源码树**中的引用文件数，据此给出状态。
+    判定口径（保守）：
+      · 测试树命中 → PARTIAL（有 AC 编号级测试证据；端到端/UI 仍留 QA 复核）
+      · 仅主源码命中 → PARTIAL（仅代码级证据）
+      · 两边都不命中 → BLOCKED（此时才是**有据**的阻塞判定）
+    注意本函数不产出 PASS：PASS 需要实测符合，不能靠「存在引用」推定。
+    """
+    t = code_grep(re.escape(aid), ["ruoyi-modules/ruoyi-ipd/src/test/java"])
+    s = code_grep(re.escape(aid), ["ruoyi-modules/ruoyi-ipd/src/main/java"])
+    hit_t, hit_s = max(t, 0), max(s, 0)
+    out["evidence"] = {
+        "ac_id_in_test_tree_files": hit_t,
+        "ac_id_in_main_src_files": hit_s,
+        "claimed_reason_before_fix": claimed,
+    }
+    if hit_t > 0:
+        out["status"] = "PARTIAL"
+        out["probe_type"] = "CODE_GREP"
+        out["evidence"]["note"] = (
+            "原为写死 BLOCKED（无探测）。实测测试树有该 AC 编号引用 → PARTIAL；"
+            "方法级证据见 docs/ipd-系统说明/治理/acceptance-matrix.json。")
+    elif hit_s > 0:
+        out["status"] = "PARTIAL"
+        out["probe_type"] = "CODE_GREP"
+        out["evidence"]["note"] = "原为写死 BLOCKED。实测仅主源码有该 AC 编号引用 → PARTIAL（仅代码级证据）。"
+    else:
+        out["status"] = "BLOCKED"
+        out["probe_type"] = "NO_EVIDENCE"
+        out["evidence"]["note"] = (
+            "原为写死 BLOCKED。实测测试树与主源码**均无**该 AC 编号引用 → 维持 BLOCKED（此次有据）。")
+    return out
 
 
 def http_get(path: str, token: str = None, timeout: int = 5):
@@ -362,11 +405,8 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"ref": "QA-06 (4bfac1cd) PASS, qa06-restore-check-result-20260905.json"}
         return out
     if aid == "AC-ENV-04":
-        # 前端不在本仓 → BLOCKED
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "前端仓库未拉入 ruoyi-ai，UI 验证缺位"}
-        return out
+        # 原为写死 BLOCKED（理由已过期：前端仓 ruoyi-ipd-web 已在，587 个 .vue）
+        return probe_evidence(aid, out, "前端仓库未拉入 ruoyi-ai，UI 验证缺位")
     if aid == "AC-ENV-05":
         # rg 'docker compose up' 仅扫业务模块（排除 ruflo/.codex 编排层 + node_modules）
         hits = code_grep("docker compose up", [
@@ -416,14 +456,14 @@ def probe_one(ac: dict, cur) -> dict:
         return out
     if aid in ("AC-AUTH-03", "AC-AUTH-04", "AC-AUTH-05", "AC-AUTH-06"):
         # 改密腿/企微 Mock 扫码/离职冻结：依赖外部依赖 + UI
-        out["status"] = "BLOCKED" if aid != "AC-AUTH-06" else "PARTIAL"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {
+        claimed = {
             "AC-AUTH-03": "改密腿闭环（P0-9.1 §3.6），旧密码审计未单独验",
             "AC-AUTH-04": "企微 Mock 扫码登录未落地（外部依赖）",
             "AC-AUTH-05": "同上",
             "AC-AUTH-06": "FROZEN_PENDING_HANDOVER 字段已落 persons.account_status（实测 ACTIVE 4 人，未见 FROZEN 数据样本）",
         }.get(aid, "")
+        out = probe_evidence(aid, out, claimed)
+        out["evidence"]["field_note"] = claimed
         return out
     if aid == "AC-AUTH-07":
         # Token 过期 → 401（实测 /actuator/health 返 401 即证）
@@ -690,10 +730,7 @@ def probe_one(ac: dict, cur) -> dict:
                             "stage_actions_total": q1(cur, "SELECT COUNT(*) FROM stage_actions")}
         return out
     if aid in ("AC-PROD-03", "AC-PROD-04", "AC-PROD-05", "AC-PROD-09"):
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "UI/服务端业务规则依赖 P0-10.* 前端或兄弟流 WIP"}
-        return out
+        return probe_evidence(aid, out, "UI/服务端业务规则依赖 P0-10.* 前端或兄弟流 WIP")
     if aid == "AC-PROD-06":
         # 产品批量导入端点：swagger 列出 /api/v1/products/batch-import
         s, b = http_get("/v3/api-docs", timeout=20)
@@ -820,10 +857,7 @@ def probe_one(ac: dict, cur) -> dict:
                             "stage_actions_in_db": q1(cur, "SELECT COUNT(*) FROM stage_actions")}
         return out
     if aid in ("AC-IPD-03", "AC-IPD-04", "AC-IPD-05", "AC-IPD-06", "AC-IPD-29"):
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "P0-10.* 前端卡未实施 / V3.1 五阶段视图映射"}
-        return out
+        return probe_evidence(aid, out, "P0-10.* 前端卡未实施 / V3.1 五阶段视图映射")
     if aid == "AC-IPD-28":
         # 六阶段顺序：枚举/常量定义
         stage_enum = REPO / "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/ProjectStage.java"
@@ -903,10 +937,8 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"gate.signDeadlineDays": cfg.get("gate.signDeadlineDays")}
         return out
     if aid == "AC-GATE-09":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "期限前 1 天提醒定时任务未实施"}
-        return out
+        # 理由已过期：GateSignScanScheduler 的 @Scheduled("0 20 9 * * ?") javadoc 直接点名本 AC
+        return probe_evidence(aid, out, "期限前 1 天提醒定时任务未实施")
     if aid in ("AC-GATE-10", "AC-GATE-11", "AC-GATE-12", "AC-GATE-13", "AC-GATE-16",
                 "AC-GATE-17", "AC-GATE-19", "AC-GATE-20", "AC-GATE-1a", "AC-GATE-1b",
                 "AC-GATE-1c"):
@@ -980,10 +1012,7 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"reason": "服务层 enforce 需登录验证；HIGH-3 handler 白名单漏列影响包络"}
         return out
     if aid == "AC-HAND-01c":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "组长代执行一键移交 UI BLOCKED"}
-        return out
+        return probe_evidence(aid, out, "组长代执行一键移交 UI BLOCKED")
     if aid == "AC-HAND-01d":
         # DISABLED 状态：代码引用 + DDL 列存在
         cur.execute(f"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='{MYSQL_DB}' AND table_name='persons' AND column_name='account_status'")
@@ -999,32 +1028,21 @@ def probe_one(ac: dict, cur) -> dict:
                             "DISABLED_in_code": ok}
         return out
     if aid == "AC-HAND-02":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "15 日升级超管定时任务未实施"}
-        return out
+        # 理由已过期：HandoverOverdueScanner @Scheduled("0 5 9 * * ?") + HandoverService 明写本 AC
+        return probe_evidence(aid, out, "15 日升级超管定时任务未实施")
     if aid in ("AC-HAND-03", "AC-HAND-04", "AC-HAND-05", "AC-HAND-06"):
         out["status"] = "PARTIAL"
         out["probe_type"] = "DEPENDENCY"
         out["evidence"] = {"reason": "字段/scope 已落；端到端 BLOCKED"}
         return out
     if aid == "AC-HAND-07":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "超管权限移交二次确认逻辑需 service"}
-        return out
+        return probe_evidence(aid, out, "超管权限移交二次确认逻辑需 service")
     if aid == "AC-HAND-08":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "月中移交当月津贴归属规则需 service"}
-        return out
+        return probe_evidence(aid, out, "月中移交当月津贴归属规则需 service")
 
     # ---- AC-HR：人员同步 ----
     if aid in ("AC-HR-01", "AC-HR-02", "AC-HR-03", "AC-HR-06"):
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "HR API 外部依赖未配置；月度 02:00 定时任务未实施"}
-        return out
+        return probe_evidence(aid, out, "HR API 外部依赖未配置；月度 02:00 定时任务未实施")
     if aid == "AC-HR-04":
         # persons.level 来源唯一（API）
         cur.execute(f"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='{MYSQL_DB}' AND table_name='persons' AND column_name='level'")
@@ -1072,10 +1090,7 @@ def probe_one(ac: dict, cur) -> dict:
                 "AC-KPI-08", "AC-KPI-09", "AC-KPI-10", "AC-KPI-11", "AC-KPI-12", "AC-KPI-13",
                 "AC-KPI-14", "AC-KPI-15", "AC-KPI-16", "AC-KPI-16c", "AC-KPI-17", "AC-KPI-18",
                 "AC-KPI-20", "AC-KPI-21"):
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "KPI 录入/计算 UI + 服务层 BLOCKED"}
-        return out
+        return probe_evidence(aid, out, "KPI 录入/计算 UI + 服务层 BLOCKED")
     if aid == "AC-KPI-16b":
         cfg = _db_state["sys_configs"]
         rw = cfg.get("kpi.reviewWeights")
@@ -1294,10 +1309,7 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"launch_date_change_requests_table_exists": v}
         return out
     if aid == "AC-INC-34":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "Excel 导出需 UI + service"}
-        return out
+        return probe_evidence(aid, out, "Excel 导出需 UI + service")
     if aid == "AC-INC-35":
         # 不生成财务结算单据
         hits = code_grep_literal("生成财务结算单", ["ruoyi-modules/ruoyi-ipd/src/main/java"])
@@ -1346,10 +1358,7 @@ def probe_one(ac: dict, cur) -> dict:
         out["evidence"] = {"requirement_changes_unauth_status": s}
         return out
     if aid == "AC-REQ-09":
-        out["status"] = "BLOCKED"
-        out["probe_type"] = "DEPENDENCY"
-        out["evidence"] = {"reason": "强制双层审核 UI BLOCKED"}
-        return out
+        return probe_evidence(aid, out, "强制双层审核 UI BLOCKED")
 
     # ---- AC-AI：AI 文档 ----
     if aid in ("AC-AI-01", "AC-AI-02", "AC-AI-04", "AC-AI-05", "AC-AI-06", "AC-AI-07",

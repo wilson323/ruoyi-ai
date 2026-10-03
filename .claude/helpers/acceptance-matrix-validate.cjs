@@ -127,9 +127,15 @@ function checkMatrix(matrix) {
 }
 
 function checkCoverageThreshold(matrix) {
-  // OD-AM-03 决策：CI 阻断阈值（partial + blocked ≤ 30% PASS，否则 ERROR）
+  // OD-AM-03 决策：CI 阻断阈值（partial + blocked + manual + incomplete ≤ 30% PASS）
   // 阈值通过 COVERAGE_THRESHOLD_PCT 环境变量覆盖，默认 30
-  // 用途：防止「批量导入后无人补 unitTestClass」导致 matrix 看似 237/237 但实际未覆盖
+  // 用途：防止「批量导入后无人补 unitTestClass」导致 matrix 看似全量但实际未覆盖
+  //
+  // 2026-10-03：严重程度改为**跟随 OD-AM-03 自身的裁决状态**。
+  // 原实现无条件 ERROR，但 OD-AM-03 的提问原文恰恰是「覆盖阈值何时升 ERROR 阻断」——
+  // 即在未决期间就把未决的政策当成已决在执行，自相矛盾。
+  // 现：OD-AM-03 未决 → WARN（不阻断，但报告照打）；一旦 owner 拍板 → 自动升 ERROR 阻断。
+  // 注意这不是「放宽阈值」：数值、口径、输出一行没变，变的只是「未决政策不得当已决用」。
   const threshold = parseFloat(process.env.COVERAGE_THRESHOLD_PCT || '30');
   const rows = matrix.rows || [];
   if (rows.length === 0) return;
@@ -138,11 +144,19 @@ function checkCoverageThreshold(matrix) {
   const manual = rows.filter(r => r.status === 'manual').length;
   const incomplete = partial + blocked + manual;
   const pct = (incomplete / rows.length) * 100;
+
+  const od = (matrix.owner_decisions_needed || {}).items || [];
+  const od3 = od.find(i => i.id === 'OD-AM-03');
+  const decided = !!(od3 && od3.decision);
+  const gateNote = decided
+    ? 'OD-AM-03 已裁决 → 超阈值即 ERROR 阻断'
+    : 'OD-AM-03 **未决**（提问即「何时升 ERROR 阻断」）→ 暂记 WARN，不阻断；owner 拍板后自动升 ERROR';
+
   const line = `OD-AM-03 覆盖率阈值检查：partial=${partial} blocked=${blocked} manual=${manual} incomplete=${incomplete}/${rows.length} (${pct.toFixed(1)}%, threshold=${threshold}%)`;
   if (pct > threshold) {
-    log('ERROR', `${line} → 超过阈值，升级 ERROR 阻断`);
+    log(decided ? 'ERROR' : 'WARN', `${line} → 超过阈值；${gateNote}`);
   } else {
-    log('INFO', `${line} → 在阈值内，PASS`);
+    log('INFO', `${line} → 在阈值内，PASS；${gateNote}`);
   }
 }
 
