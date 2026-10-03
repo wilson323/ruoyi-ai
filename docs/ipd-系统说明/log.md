@@ -14648,3 +14648,37 @@ application.yml 的默认值是 dev（SPRING_PROFILES_ACTIVE:dev）。由此产�
 **结论：多会话同仓并发时，暂存到提交之间存在真实竞态；提交后应回查内容是否真的落地。**
 
 - marker: log-ownership-and-shared-index-race-20261003
+
+### 八、镜像默认运行档改为 prod（owner 2026-10-03 拍板选 A）
+
+改动：根 Dockerfile 运行阶段新增 `ENV SPRING_PROFILES_ACTIVE=prod`。
+代码侧默认值（application.yml 第 114 行 `${SPRING_PROFILES_ACTIVE:dev}`）**未动**，
+本地 mvn spring-boot:run 不受影响。
+
+依据与影响面（均实测，非推断）：
+- 镜像此前未设该变量，回落 dev；dev 档下生产配置校验不执行、三个种子器会写库（见第五节）。
+- 根 compose 已显式设 prod，且显式传入的环境变量优先级高于镜像 ENV，故该路径行为不变；
+  本次改动只是让「直接 docker run 镜像」这条路径也安全。
+- 需要在容器里跑 dev 档时，显式传 `-e SPRING_PROFILES_ACTIVE=dev` 仍可覆盖。
+- 影响面另经排查：compose 中引用同一镜像的第二个服务是 upload-init，它覆盖了入口只做 chown、
+  不启 JVM，不受影响；对外发布工作流构建的是 docs/docker/ruoyi-ai/Dockerfile.backend 而非根
+  Dockerfile，故本次改动不触及对外发布的镜像。
+
+验证（实测）：
+- docker inspect 镜像 ENV 含 SPRING_PROFILES_ACTIVE=prod；
+- 不传任何运行档启动 → 日志 `The following 1 profile is active: "prod"`；
+- 显式传 -e SPRING_PROFILES_ACTIVE=dev → `"dev"`，覆盖有效。
+- 口径说明：上述确认的是「选了哪个档」。由此带来的后果（校验器生效 / 种子器不加载）
+  依据的是已核实的三处 @Profile 标注，**本次未在连库的完整环境上端到端复跑**。
+
+### 九、顺带发现：手册的构建标签与 compose 引用的标签不一致（未改，登记）
+
+手册（生产部署Runbook）给出的构建命令产出 `ipd-backend:<git-sha>` 与 `ipd-frontend:<git-sha>`；
+而根 docker-compose.yml 引用的是 `ipd-backend:latest` 与 `ipd-frontend:latest`。
+本机实测 `ipd-backend:latest` **不存在**。即照手册逐步执行到 `docker compose up -d` 时，
+编排找不到本地镜像（会尝试从默认仓库拉取并失败）。
+
+修法有两条（把 compose 的镜像标签改为可参数化 / 在手册里补一步打 latest 标签），属部署决策；
+且 docker-compose.yml 当前正被其它会话修改，**未擅自改动**。
+
+- marker: image-default-prod-and-tag-mismatch-20261003
