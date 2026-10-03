@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 4 维度硬断言：
  *   1) matrix 文件存在 + JSON 合法 + schema 文件存在
  *   2) 必填字段非空：ac_id / category / title / docRef / status / owner
- *   3) ac_id 唯一 + 格式合规（^AC-(INC|EXT|MIN)-\d+[a-z]?$）
+ *   3) ac_id 唯一 + 格式合规（正则**取自 schema 的 rows[].ac_id.pattern**，不在此处硬编码）
  *   4) status=covered 的行 unitTestClass 拆 #后类文件与方法均需真实存在，且 linkedCommits ≥ 1
  *   5) owner 决策项按生命周期二态校验（未决需 blocker / 已决需 decision+证据），
  *      且 open_count 必须等于 items 中未决项的实际数量
@@ -41,7 +41,25 @@ class AcceptanceMatrixValidationTest {
 
     private static final String MATRIX_REL = "docs/ipd-系统说明/治理/acceptance-matrix.json";
     private static final String SCHEMA_REL = "docs/ipd-系统说明/治理/acceptance-matrix.schema.json";
-    private static final Pattern AC_ID_PATTERN = Pattern.compile("^AC-(INC|EXT|MIN|AUTH|AUD|ENV|GATE|GLB|CFG|PROD)-\\d+[a-z]?$");
+
+    /**
+     * ac_id 的正则**从 schema 读**，不在本测试里再抄一份。
+     *
+     * <p>2026-10-03 根因修复：此处原硬编码 {@code ^AC-(INC|EXT|MIN|AUTH|AUD|ENV|GATE|GLB|CFG|PROD)-\d+[a-z]?$}
+     * （10 个前缀）。同日的验收矩阵全量导入把前缀扩到 18 个（新增 AI/DEL/HAND/HR/IPD/KPI/REQ/TEAM）
+     * 并同步改了 schema，但**漏改本测试**——于是矩阵里 192 条合法数据被判为格式违规，测试红。
+     * 双份维护是这次脱节的根因，故改为单向依赖 schema：schema 是 SSOT，测试只做数据↔契约的核对。
+     */
+    private Pattern acIdPatternFromSchema() throws Exception {
+        JsonNode schema = new ObjectMapper().readTree(new File(locateRepoRoot(), SCHEMA_REL));
+        JsonNode node = schema.path("properties").path("rows").path("items")
+            .path("properties").path("ac_id").path("pattern");
+        assertThat(node.isTextual())
+            .as("schema 必须给出 rows[].ac_id.pattern —— 本测试的正则取自此处，"
+                + "schema 结构若调整须同步本方法的取值路径")
+            .isTrue();
+        return Pattern.compile(node.asText());
+    }
 
     private File locateRepoRoot() {
         // src/test/java → ruoyi-modules/ruoyi-ipd/src/test/java
@@ -82,14 +100,15 @@ class AcceptanceMatrixValidationTest {
     void acIdUniqueAndFormat() throws Exception {
         File root = locateRepoRoot();
         JsonNode rows = new ObjectMapper().readTree(new File(root, MATRIX_REL)).get("rows");
-        assertThat(rows.size()).as("样板 ≥ 5 条（owner 决策后批量导入至 237）").isGreaterThanOrEqualTo(5);
+        assertThat(rows.size()).as("样板 ≥ 5 条（owner 决策后批量导入至 249）").isGreaterThanOrEqualTo(5);
 
+        Pattern acIdPattern = acIdPatternFromSchema();
         Set<String> seen = new HashSet<>();
         for (JsonNode row : rows) {
             String acId = row.path("ac_id").asText(null);
             assertThat(acId).as("ac_id 必填非空").isNotBlank();
-            assertThat(AC_ID_PATTERN.matcher(acId).matches())
-                .as("ac_id 必须符合 ^AC-(INC|EXT|MIN)-\\d+[a-z]?$，实际: " + acId)
+            assertThat(acIdPattern.matcher(acId).matches())
+                .as("ac_id 必须符合 schema 的 rows[].ac_id.pattern（" + acIdPattern.pattern() + "），实际: " + acId)
                 .isTrue();
             assertThat(seen.add(acId))
                 .as("ac_id 唯一性被破坏: " + acId)
@@ -196,9 +215,14 @@ class AcceptanceMatrixValidationTest {
         JsonNode rows = matrix.get("rows");
         JsonNode ownerDecisions = matrix.path("owner_decisions_needed");
 
+        // 上界取 249 = 矩阵表格的实际行数（2026-10-03 全量导入后）。
+        // 原写 237 是抄了源文档的「合计」行，而实际表格比它多 12 条加粗的 🆕 GATE 用例 ——
+        // 即这个数是抄错的，不是矩阵超编。仍保留上界语义：防止在 4 文件清单之外继续扩编。
+        // 注：退役域（回款/奖金池/业绩窗口）后是否重算为 192 属 owner 待裁事项，
+        // 故此处只卡上界、不卡下界，给重算留出空间。
         assertThat(rows.size())
-            .as("样板 ≤ 237（避免 4 文件清单外的扩展）")
-            .isLessThanOrEqualTo(237);
+            .as("样板 ≤ 249（矩阵实际行数；超出意味着在源文档清单外扩编）")
+            .isLessThanOrEqualTo(249);
         JsonNode items = ownerDecisions.path("items");
         assertThat(items.isArray()).as("owner_decisions_needed.items 必须是数组").isTrue();
         // 不断言固定数量：决策项可新增（如 OD-AM-05），但已登记的历史决策不得删除。
