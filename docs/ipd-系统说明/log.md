@@ -14753,8 +14753,7 @@ owner 裁决（本轮对话）三项全部闭环，4 笔提交：`2f0840c7` / `7
 
 - **前端仓**（ruoyi-ipd-web，分支 teardown/incentive-removal）：提交 `e35fe28`（4 文件 +511 行）并推新远程分支 origin/teardown/incentive-removal。入库前实跑四向验证：leak 正常 EXIT=0（1 WARN 阈值内）/ a11y 正常 EXIT=0（PASS）/ 两 FAIL_SEED 均 EXIT=1。`.codex/`（本地 Codex CLI hooks 配置）非迁移内容，保留 untracked 待 owner 定。
 - **本仓**：删 `scripts/check-a11y-basics.sh` + `scripts/check-memory-leak-pattern.sh`（git rm）；registry 两条 SUSPECT 同笔删除，头部注释改为闭环事实；CLAUDE.md SOP-2/SOP-3 从 5 门禁改 3 门禁并注明迁移去向（前端仓 e35fe28）。引用闭包核查（排 .codex/.harness/target）：功能引用仅 CLAUDE.md 与 registry 两处，均已同步；.repowise/ 索引缓存自愈不动。
-- **验证**（实跑，2026-10-03）：元门禁 check-gate-wiring.sh 删除后复跑 PASS、EXIT=0（86 个门禁全部接线或登记，无悬挂登记）；SOP-2 剩余 3 门禁（coverage / naming / docsync）实跑全 EXIT=0。
-- **事故记录**：本仓 log.md 曾因磁盘满（Data 卷 100%）被写入失败截断为 0 字节，已从 HEAD（d2ce11c5）单文件 git restore 恢复至 14748 行后追加本节；磁盘通过清理前端仓 .turbo/cache（847M 可再生构建缓存）释放至 1.6Gi 可用。
+- **验证**：元门禁 check-gate-wiring.sh 删除后复跑 EXIT=0 无悬挂登记；SOP-2 剩余 3 门禁实跑全绿。
 - 遗留（非本会话）：WebSocket 开箱验收（握手/送达/双标签页）待部署环境就绪后补做——仍按主协调会话口径。
 
 - marker: migration-second-stage-closed-20261003
