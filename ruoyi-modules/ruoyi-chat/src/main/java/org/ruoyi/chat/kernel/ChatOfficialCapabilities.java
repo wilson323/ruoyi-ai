@@ -6,6 +6,7 @@ import io.agentscope.core.agent.Agent;
 import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.middleware.MiddlewareBase;
 import io.agentscope.core.middleware.AgentInput;
+import io.agentscope.core.tracing.OtelTracingMiddleware;
 import io.agentscope.core.middleware.ReasoningInput;
 import io.agentscope.harness.agent.skill.runtime.SkillCatalog;
 import reactor.core.publisher.Flux;
@@ -14,6 +15,7 @@ import io.agentscope.core.skill.AgentSkill;
 import io.agentscope.harness.agent.HarnessAgent;
 import io.agentscope.harness.agent.IsolationScope;
 import io.agentscope.harness.agent.memory.MemoryConfig;
+import io.agentscope.harness.agent.sandbox.SandboxExecutionGuard;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
 import io.agentscope.harness.agent.sandbox.snapshot.LocalSnapshotSpec;
 import io.agentscope.harness.agent.skill.WorkspaceSkillRepository;
@@ -49,6 +51,12 @@ public final class ChatOfficialCapabilities implements SkillPromotionGate, Skill
 
     public static ChatOfficialCapabilities configure(HarnessAgent.Builder builder, Path workspace,
             String expectedUser, String image, List<String> knownSecrets) {
+        return configure(builder, workspace, expectedUser, image, knownSecrets, null);
+    }
+
+    /** Full assembly; {@code executionGuard} null keeps the SDK noop default (no cross-replica serialisation). */
+    public static ChatOfficialCapabilities configure(HarnessAgent.Builder builder, Path workspace,
+            String expectedUser, String image, List<String> knownSecrets, SandboxExecutionGuard executionGuard) {
         OfficialAgentTraceLogging.install();
         Objects.requireNonNull(workspace);
         if (image == null || image.isBlank()) { throw new IllegalArgumentException("Sandbox image is required"); }
@@ -58,8 +66,12 @@ public final class ChatOfficialCapabilities implements SkillPromotionGate, Skill
             .snapshotSpec(new LocalSnapshotSpec(workspace.resolve(".sandbox-snapshots")))
             .additionalRunArgs("--pull=never", "--cap-drop=ALL", "--security-opt=no-new-privileges");
         filesystem.isolationScope(IsolationScope.SESSION);
+        if (executionGuard != null) {
+            filesystem.executionGuard(executionGuard);
+        }
         capabilities.safeTranscript = new ChatSafeTranscriptStore(knownSecrets);
-        builder.filesystem(filesystem).middleware(capabilities)
+        // 官方 OTel 追踪（core.tracing）：未配 SDK 时 noop 零开销，构造器自带幂等 Reactor hook 注册。
+        builder.filesystem(filesystem).middleware(new OtelTracingMiddleware()).middleware(capabilities)
             .middleware(capabilities.safeTranscript).transcriptStore(capabilities.safeTranscript)
             .skillsEnabled(true)
             .enableSkillManageTool(SkillManageConfig.defaults())

@@ -26,7 +26,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
  * 间隔可配 ipd.notification.dispatch.interval-ms）；
  * AiTaskFallbackScanner 每 30s 轮询（R221 兜底扫描，同为常驻间隔任务；
- * 间隔可配 ipd.aiexec.fallback.interval-ms）。
+ * 间隔可配 ipd.aiexec.fallback.interval-ms）；
+ * ProjectAgentSandboxReaper 每小时 :23（沙箱孤儿容器超龄清扫，另含启动全量清扫，2026-10-03；
+ * 开关与窗口可配 ipd.agent.sandbox-reaper.enabled / orphan-ttl-hours）。
  */
 @Configuration
 @EnableScheduling

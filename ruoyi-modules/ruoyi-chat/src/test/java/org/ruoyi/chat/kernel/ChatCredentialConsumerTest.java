@@ -21,7 +21,7 @@ class ChatCredentialConsumerTest {
         try (var profile = mockStatic(ChatOfficialCapabilities.class);
              var kernel = new AgentScopeChatKernel(selector, () -> mock(MysqlAgentStateStore.class), workspace)) {
             profile.when(() -> ChatOfficialCapabilities.configure(any(HarnessAgent.Builder.class), any(Path.class),
-                anyString(), anyString(), anyList())).thenAnswer(call -> {
+                anyString(), anyString(), anyList(), any())).thenAnswer(call -> {
                     received.set(List.copyOf(call.getArgument(4)));
                     // Stop at the assembly seam: this test checks credential consumption, not Docker/model behavior.
                     throw new IllegalStateException("ASSEMBLY_SEAM_CAPTURED");

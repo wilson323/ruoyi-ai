@@ -16,6 +16,7 @@ import io.agentscope.core.state.AgentStateStore;
 import io.agentscope.core.state.AgentState;
 import org.redisson.api.RedissonClient;
 import io.agentscope.harness.agent.HarnessAgent;
+import io.agentscope.harness.agent.sandbox.SandboxExecutionGuard;
 import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
 import io.agentscope.harness.agent.gateway.LocalSessionTurnGate;
 import io.agentscope.harness.agent.gateway.SessionTurnGate;
@@ -68,6 +69,8 @@ public class AgentScopeChatKernel implements AutoCloseable {
     static final String DEFAULT_SANDBOX_IMAGE = "python:3.13-alpine";
 
     private io.agentscope.core.hook.Hook auditHook;
+    /** 跨副本沙箱执行互斥（复用共享 Redisson；无 Redisson 的直接构造保持 SDK noop 默认）。 */
+    private SandboxExecutionGuard sandboxExecutionGuard;
     private final KernelModelSelector modelSelector;
     private final Supplier<? extends AgentStateStore> stateStoreSupplier;
     private final Path workspaceRoot;
@@ -95,6 +98,10 @@ public class AgentScopeChatKernel implements AutoCloseable {
             @org.springframework.beans.factory.annotation.Qualifier("agentScopeAuditHook") io.agentscope.core.hook.Hook auditHook) {
         this(redisson, modelId, workspaceRoot);
         this.auditHook = auditHook;
+        if (redisson != null) {
+            this.sandboxExecutionGuard = new AgentScopeRedisSandboxGuard(redisson,
+                    "ruoyi:agentscope:chat:guard:");
+        }
         this.sandboxImage = sandboxImage == null || sandboxImage.isBlank()
                 ? DEFAULT_SANDBOX_IMAGE : sandboxImage;
     }
@@ -348,7 +355,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
                     .hook(auditHook);
             var capabilities = ChatOfficialCapabilities.configure(builder, workspace,
                 KernelScopeKey.of(projectId, userId, agentId, "assembly").userId(),
-                sandboxImage, plan.knownSecrets());
+                sandboxImage, plan.knownSecrets(), sandboxExecutionGuard);
             HarnessAgent built = builder
                     .toolkit(toolkit)
                     // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）。
