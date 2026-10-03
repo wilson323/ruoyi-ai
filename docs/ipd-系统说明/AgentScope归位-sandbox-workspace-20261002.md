@@ -173,7 +173,7 @@ public String normalize(String path, RuntimeContext rc)          // 实际入口
 
 #### `WorkspaceIndex`（372 行）/ `plan/PlanModeManager`
 
-`WorkspaceIndex` 是给 `RemoteFilesystemSpec` 加速远端 ls/glob/grep 的 SQLite 索引（`RemoteFilesystemSpec.workspaceIndex(WorkspaceIndex)`）。`PlanModeManager` 属 Plan Mode 子系统，**与本议题无关**（本项目两内核均未启用 Plan Mode）。
+`WorkspaceIndex` 是给 `RemoteFilesystemSpec` 加速远端 ls/glob/grep 的 SQLite 索引（`RemoteFilesystemSpec.workspaceIndex(WorkspaceIndex)`）。`PlanModeManager` 属 Plan Mode 子系统，**与本议题无关**（2026-10-02 晚起项目智能体内核已启用 Plan Mode、聊天内核仍未启用；Plan Mode 状态经 AgentStateStore 按 (userId, sessionId) 隔离，不触及本议题的沙箱/workspace 语义）。
 
 ### 1.3 已实证 · filesystem 与官方工具
 
@@ -695,6 +695,7 @@ public final class KernelScopeIdentity {
 | K7 | 官方 `WorkspaceManager` 每次操作经 `NamespaceFactory`，若守卫层有性能问题会放大到每次文件读 | 低 | 中 | 步骤 4 前先在真环境压一次带守卫的文件读 QPS |
 | K8 | 官方 `SandboxExecutionGuard` 与项目 `LocalSessionTurnGate` **双重加锁**导致死锁 | 低 | **高** | 二者锁序必须固定（先 guard 后 turn gate，或反之但全局唯一）；步骤 4 并发用例必须能观测到锁释放 |
 | K9 | 步骤 4 白名单若包装 `Sandbox.exec` 而不区分调用来源，会把官方 `read_file`/`grep_files`/`edit_file`/`list_files`/`glob_files` 的**自造 shell 命令一并拦死**（`BaseSandboxFilesystem` :95/:139/:174/:205/:290/:353/:395 全部内部调 `execute`） | **中** | **高**（功能全瘫） | 步骤 4 已加「内部调用标记」旁路设计 + 专门的回归负向用例（5 个文件工具必须仍可用） |
+| K10 | **官方工具自检 ASK 被授权面 ALLOW 压制**（已实证并已修复）：SDK 2.0.3 `PermissionEngine` 仅当工具 `checkPermissions` 自检 ASK 的 `decisionReason` 含 "safety" 才尊重之，否则穿透至 allowRule；`ProjectAgentOfficialPermissions.extend()` 曾把 `HarnessPlatformTools.NAMES`（含 plan_exit）全量 ALLOW，导致官方 plan_exit HITL 静默失效（模型退计划模式不问用户）。**任何未来给官方工具集全量 ALLOW 的授权面都会踩同一坑** | **高**（已实证） | **高** | 已修复：`extend()` 为 plan_exit 加显式 askRule。**机制已由 2.0.3 字节码完全实证（2026-10-02 22:0x，`PermissionEngine` + `lambda$checkPermission$3` 偏移 44-79）**：①决策流水 = DENY规则 → ASK规则 → 模式闸 → `tool.checkPermissions` → {DENY/ALLOW 直返；ASK 且 decisionReason 非空且 toLowerCase 含 "safety" 直返 ASK；**PASSTHROUGH / reason 为 null / reason 不含 safety 则落入放行侧**} → ALLOW规则 → BYPASS→ALLOW / DONT_ASK→DENY / 默认→ASK。②`checkAskRules`（偏移 41）命中即在 64 `areturn`，**结构上根本不进入 `checkAllowRules`**（位于 `continueAfterToolCheck` 偏移 0）——ask>allow 是分支顺序的必然，非配置巧合。③`PlanExitTool.checkPermissions` 的 decisionReason 实为 **null**：`PermissionDecision.ask(String)` 字节码只调 `.message(String)`（偏移 9/10），**从不设置 decisionReason**；故即使 reason 文本（本例为 "The agent wants to finish planning and start executing..."）不含 "safety" 也走不到，偏移 44 `ifnull 79` 直接进放行侧。**推论：任何『工具自检 ASK』在无显式 askRule 时一律无效，与工具无关**——新增官方工具若需人工确认，必须显式加 askRule。，契约测试 `ProjectAgentPlanModeHitlTest` **4 例**守护（第 4 例 `planModePermissionContract` 于 2026-10-02 21:5x 补「只读」权限契约覆盖；已变异自证：askRule→allowRule 后 4/4 全红）；新增官方工具自检 ASK 需求时逐一评估显式 askRule，不得依赖工具自检穿透 |
 
 ### 6.3 「未实证」清单（落地前必须补）
 
@@ -741,5 +742,6 @@ done
 | **v2** | **2026-10-02** | **② §4 新增「门禁 C2 目前是假绿」**：定位 `workspaceFor`(:363-367) 与 `ProjectAgentWorkspace.prepare`(:34-37) 两处 `Path` 链式手拼（三处 fail-closed **正确、非活漏洞**），但 `scope-key-statements.py:7` 唯一模式 `re.compile(r'\+\s*":"\s*\+')` **只认字符串拼接、看不见 `Path` 链式**（实测 EXIT=1）。收口点由 4 个修正为 **5 个**，层三门禁扩展新增「修 C2 假绿」为前置项，风险表新增 K0 | 主会话（独立复核） |
 | **v2** | **2026-10-02** | **③ §3.4 新增 3.4.1 节**：并入另两路独立发现作为「禁用默认值」的结构性佐证——`TranscriptRef:24-33` 紧凑构造器 `tenant` 空值**静默降级 `"default"`** 而同构造器 `agentId`/`sessionId` **是 throw**（同构造器两套失败语义）；`StoreBackedSubagentRegistry:46` `NAMESPACE` 固定 `["subagents","exposed"]` **无租户段**。RL4 措辞由「保守建议」升格为「结构性要求」 | 主会话（两路独立发现） |
 | **v2** | **2026-10-02** | **④ 顺带修正步骤 5 的镜像一致性**：门禁脚本改动需同时落到 `.agents/`（IDE 镜像）与 `.claude/`（事实源），项目 `skill-lint.sh` L5 会 `diff -r` 校验 | 本方案（落地时自查） |
+| **v3** | **2026-10-02** | **§1.3 L176 修正「两内核均未启用 Plan Mode」**（项目智能体内核当晚已启用）+ **§6.2 新增 K10**：实证 SDK 2.0.3 `PermissionEngine` 不尊重不含 "safety" 的工具自检 ASK，`ProjectAgentOfficialPermissions` 全量 ALLOW 曾使 plan_exit HITL 静默失效；修复=显式 askRule（引擎序 ask>allow），`ProjectAgentPlanModeHitlTest` 3/3 守护 | plan_exit HITL 闭环任务（交接单 t7） |
 
 > **v2 未变更的结论**：官方 14,228 行 vs 自研 33,103 行、可删上限 2,989 行 ≈ 9%、官方类引用数全 0、`disableWorkspaceContext()` 两装配点均未调用、`search_text` 不可替代——以上均为**主会话已独立复核确认成立**，原样保留。

@@ -452,11 +452,13 @@ public final class ProjectAgentAguiPauseResumeService {
                     var data=mapper.readTree(event.getPayload());
                     String kind=data.path("kind").asText();
                     if ("AGUI_RESUMED".equals(kind)) {
-                        long seq=data.path("pauseSeq").longValue();
+                        // pauseSeq/executionEpoch 历史版本同样落成字符串，longValue 恒 0 会让两次消费
+                        // 折到同一 key，误报「持久恢复意图重复」；asLong 兼容 STRING/INTEGER 两态。
+                        long seq=data.path("pauseSeq").asLong();
                         consumed.put(seq,data.path("inputDigest").asText(""));
                         if (data.hasNonNull("executionEpoch")) {
-                            consumedEpochs.put(seq,data.path("executionEpoch").longValue());
-                            effectiveEpochs.put(seq,data.path("executionEpoch").longValue());
+                            consumedEpochs.put(seq,data.path("executionEpoch").asLong());
+                            effectiveEpochs.put(seq,data.path("executionEpoch").asLong());
                         }
                         if(data.hasNonNull(INTERNAL_RESUME_INTENT)) {
                             ResumeIntent intent=mapper.treeToValue(data.get(INTERNAL_RESUME_INTENT),ResumeIntent.class);
@@ -484,7 +486,9 @@ public final class ProjectAgentAguiPauseResumeService {
                         throw new IllegalStateException("持久中断检查点不完整");
                     Map<String,AguiEvent.Interrupt> pending=mapper.convertValue(data.path("interrupts"),
                         new com.fasterxml.jackson.core.type.TypeReference<Map<String,AguiEvent.Interrupt>>() {});
-                    latest=new PauseCheckpoint(event.getSeq(),data.path("pauseEpoch").longValue(),data.path("checkpointVersion").longValue(),
+                    // AWAIT_USER 载荷的历史版本把这两个字段落成字符串；asLong 兼容 STRING/INTEGER 两态，
+                    // longValue 对 TextNode 恒 0，会把 checkpointVersion 读成 0 导致 resume 恒被 guard 拒绝。
+                    latest=new PauseCheckpoint(event.getSeq(),data.path("pauseEpoch").asLong(),data.path("checkpointVersion").asLong(),
                         data.path("threadId").asText(),data.path("runId").asText(),data.path("ownerPersonId").asText(),pending,
                         data.has(ProjectAgentChildLineageRegistry.INTERNAL_ORIGIN)?mapper.convertValue(data.get(ProjectAgentChildLineageRegistry.INTERNAL_ORIGIN),
                             new com.fasterxml.jackson.core.type.TypeReference<Map<String,ChildApproval>>() {}):Map.of());

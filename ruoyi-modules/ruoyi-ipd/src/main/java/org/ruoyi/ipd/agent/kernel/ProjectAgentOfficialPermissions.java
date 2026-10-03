@@ -10,6 +10,7 @@ import java.util.Set;
 
 /** 官方能力授权只作用于本次隔离工作区，不授予 IPD 审核、动作批准或 Gate 权限。 */
 public final class ProjectAgentOfficialPermissions {
+    private static final String PLAN_EXIT = "plan_exit";
     private static final Set<String> WORKSPACE_TOOLS = Set.of(
         "read_file", "write_file", "edit_file", "grep_files", "glob_files", "list_files", "execute",
         "web_fetch", "web_search", "memory_search", "memory_get", "memory_save", "session_search",
@@ -35,6 +36,11 @@ public final class ProjectAgentOfficialPermissions {
                 builder.addAllowRule(name, new PermissionRule(name, null, PermissionBehavior.ALLOW,
                     "project-agent-isolated-workspace"));
             }
+        }
+        // SDK 2.0.3 的工具自检 ASK 可能被 allowRule 覆盖；由官方 askRule 保留计划确认。
+        if (!existing.getAskRules().containsKey(PLAN_EXIT)) {
+            builder.addAskRule(PLAN_EXIT, new PermissionRule(PLAN_EXIT, null, PermissionBehavior.ASK,
+                "project-agent-plan-confirmation"));
         }
         return builder.build();
     }

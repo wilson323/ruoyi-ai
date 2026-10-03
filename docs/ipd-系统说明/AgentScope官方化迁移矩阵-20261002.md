@@ -25,7 +25,7 @@ LangChain4j 主链及根 POM 旧 BOM 已清除；aiflow 全图正在迁移，尚
 | 6 | 子 agent 编排 | `.subagent(...)` | ❌ disableSubagents+disableDynamicSubagents | **保持关闭**：本轮七分区是工程协作，不授权产品 subagents；IPD 单智能体单轨仍是业务语义（ProjectAgentController 单轨） |
 | 7 | 可插拔文件系统 | `.filesystem(...)` | ❌ disableFilesystemTools+disableShellTool | **保持关**：项目智能体是只读检索+文档生成，无沙箱执行需求（场景不适用） |
 | 8 | 沙箱 | `.filesystem(new DockerFilesystemSpec...)` | ❌ 同上 | 同上 |
-| 9 | 计划模式 | `.enablePlanMode()` | ❌ 未启用；IPD 用自有 WAITING_APPROVAL（STEP kind=AWAIT_USER） | **保持关**：IPD 审批流是产品语义且已基于官方扩展实现（不调内核迁状态）；开官方 plan mode 会引入 plans/PLAN.md 双事实源 |
+| 9 | 计划模式 | `.enablePlanMode()` | ✅ 已启用（2026-10-02 晚，项目智能体内核；契约测试 ProjectAgentPlanModeHitlTest 3/3 绿） | **已启用**（owner 2026-10-02「官方能力全量启用、禁止禁用」指令推翻本行原「保持关」裁决）：PLAN.md 仅模型侧视图，业务计划权威仍是 INTENT.steps/PlanAggregate；plan_exit 经 `ProjectAgentOfficialPermissions` 显式 askRule 恒 HITL（官方 allowRule 会压制工具自检 ASK，实证见归位文档 K10），复用 WAITING_APPROVAL 单轨 |
 | 10 | 技能装配 | `.skillRepository(...)` | ⚠️ 半应用：FrozenProjectAgentSkills（MiddlewareBase 扩展）注入，skillsEnabled(false) 关官方动态装配 | **保持现状**：技能晋升须 owner 拍板写 ipd_action_skill_map（业务闸门），官方动态装配会绕过该闸门 |
 | 11 | MCP 白名单 | `workspace/tools.json` | ✅ AgentScopeMcpToolProviderService + toolsConfig deny 3 项 | 已应用（自有实现） |
 | 12 | Channel 路由 | `agent.channel(...)`/`GatewayBootstrap` | ⚠️ 半应用：官方 gateway 的 SessionTurnGate/LocalSessionTurnGate/TurnLease 已 import；Channel 未用 | **待评估**：现有 WebSocket 单连接踢旧（1007）是业务语义；Channel 与其重叠度需专项对照 |
@@ -47,7 +47,7 @@ LangChain4j 主链及根 POM 旧 BOM 已清除；aiflow 全图正在迁移，尚
 | context(15) | CompactionMiddleware + CompactionConfig（已挂） | **首批归位候选**：被 DurableHarnessRunProcessor 用（CodingHarness 链）；随该链迁移后删除 |
 | loop(37) | core ReAct 循环 | CodingHarness 链迁移后删除（与官方循环重复最大户） |
 | model(38)+modelruntime(6) | extensions-model-*（openai/dashscope/ollama/anthropic） | AgentScopeModelFactory 已存在；CodingHarness 链的 RuoYiHarnessChatModelFactory 迁移后归并 |
-| plan(28) | core plan mode（保持关）+ IPD WAITING_APPROVAL（业务层） | HarnessPlanCommandService 是 CodingHarness 链组件；随链裁决 |
+| plan(28) | core plan mode（项目智能体内核已启用，plan_exit 走官方 ASK HITL）+ IPD WAITING_APPROVAL（业务层） | HarnessPlanCommandService 是 CodingHarness 链组件；随链裁决 |
 | approval(18) | core permission 三态管线 | AgentScope 轨已有四层防线；CodingHarness 链的 approval 随链裁决 |
 | tool(48) | harness tool(19)+tools(9) | `chat.kernel.tool.*` 治理层是本项目特性（基于官方扩展），保留；harness.tool 内部包随链裁决 |
 | artifact(15) | harness artifact(3) | 随链裁决 |
