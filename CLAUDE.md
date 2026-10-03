@@ -26,6 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 关联：`docs/ipd-系统说明/多会话并发工程-证据与自证工作规范-20261002.md`；测过测试还要过变异自证——测试在被故意弄坏之前，绿的什么都不是。
 
+**第 5 条硬动作（2026-10-03 14:41 补）：全仓计数前先确认扫描范围排掉了归档。** 本仓 `.codex/`（19,848 个 `.java`）与 `.harness/`（12,786 个）是历史工作树副本，含归档全仓 35,166 个 `.java`，而真实源码只有 **2,281** 个——归档是现役的 15 倍。`SecurityConfig.java` 全仓 63 份、真实源码 3 份。任何 `find` / `grep -r` 不带排除就会把归档里的旧实现当现役代码、把归档里的引用当「有人在调用」，产出「形状对、数值错」的结论（本轮已发生两次：一次把 yml 总数报成 402，实际跟踪入库只有 43；一次把命中文件数被 `head -10` 截断当成全量）。固定口径与完整证据见本仓 `AGENTS.md` §「构建 / 测试」同名条目；新增全仓扫描脚本必须把排除内置，不靠调用者记得加。
+
 ## Build & Run
 
 Build from repo root — this is a parent POM with `<modules>`, never build a submodule in isolation:
