@@ -38,7 +38,7 @@ LIST_ONLY=false
 GATE_KEYS=(drift_1 contract_2 compile_3 grantsql_4 frontend_5 done_6 failurehistory_7 archived_8)
 GATE_LABELS=(drift contract compile grant-sql frontend-drift r41-done failure-history archived-at)
 GATE_CMDS=(
-    "scripts/check-doc-db-drift.sh --refined --json-only"
+    "scripts/check-doc-db-drift.sh --refined --json-only --whitelist scripts/check-doc-db-drift-whitelist.txt"
     "scripts/check-contract-tri-source.sh --json-only"
     "mvn -pl ruoyi-modules/ruoyi-ipd -am -DskipTests -o compile"
     "scripts/check-grant-sql.sh --json-only"

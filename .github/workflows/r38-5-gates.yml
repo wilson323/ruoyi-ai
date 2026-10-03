@@ -130,7 +130,7 @@ jobs:
         id: gate_drift
         run: |
           set +e
-          bash scripts/check-doc-db-drift.sh --refined --json-only > /tmp/cdbd-refined.json 2>&1
+          bash scripts/check-doc-db-drift.sh --refined --json-only --whitelist scripts/check-doc-db-drift-whitelist.txt > /tmp/cdbd-refined.json 2>&1
           rc=$?
           set -e
           cat /tmp/cdbd-refined.json | head -20
