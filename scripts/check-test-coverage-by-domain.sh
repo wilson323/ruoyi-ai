@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 # R119 病根 #1 根除: 测试覆盖率量化
 # 扫 src/main/java/org/ruoyi/ipd/**/*.java vs src/test/java/org/ruoyi/ipd/**/*Test.java
-# 按 7 大业务域拆解覆盖度, 输出 SSOT 镜像
+# 按业务域拆解覆盖度, 输出 SSOT 镜像
 # 阈值 < 60% 阻断提交 (exit 1)
+#
+# 2026-10-03 退役域摘除: `coefficient`（系数变更，随「业绩窗口」退役）已从域清单移除。
+#   它是**永久假红**：该域零 Java 文件 → java_count=0 → cov=0 → 必然 < 60% 判 ❌ 且 exit 1。
+#   与它同形的还有 launch_date（同样 0 文件）——那不属于本次退役范围，未动，另登记。
+#   注: 本脚本未被 .claude/hooks/check-pre-commit.sh 调用，当前处于休眠态
+#   （安装入口是 scripts/install-coverage-pre-commit.sh），故此前无人发现它常年为红。
 
 set -e
-DOMAINS=(projects sop kpi audit handover launch_date coefficient)
+DOMAINS=(projects sop kpi audit handover launch_date)
 TOTAL_JAVA=0
 TOTAL_TEST=0
 REPORT="docs/ipd-系统说明/测试覆盖率-$(date +%Y%m%d).md"

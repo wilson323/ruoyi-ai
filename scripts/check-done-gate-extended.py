@@ -8,12 +8,16 @@ check-done-gate-extended.py — R43 修复扩展(不动兄弟 check-done-gate.py
 策略:不动兄弟脚本(撞车 0),新建独立扩展版,继承门禁 1+2(验收报告 + 业务表),
 不强校验门禁 4(HTTP 端点精确映射),改用"端点存在性"启发式校验。
 
-白名单 25 张(从 P0-10/P1-1/P1-2/P1-3/P1-4/P1-5/P1-6/P1-7/P1-8/P1-9/P2-1/P2-2/P2-3/P2-4/P2-5/P3-1/P3-2/P3-3/P3-4/P3-5/P3-6/P3-7/P3-8/P4-1/P4-2/P4-3 子集中筛出):
+白名单 21 张(从 P0-10/P1-1/P1-2/P1-3/P1-4/P1-5/P1-6/P1-7/P1-8/P1-9/P2-1/P2-2/P2-3/P2-4/P2-5/P3-1/P3-2/P3-3/P3-4/P3-5/P3-6/P3-7/P3-8/P4-1/P4-2/P4-3 子集中筛出):
 
   P0-3.1, P0-3.2, P0-3.3, P0-7.1, P0-7.2, P0-7.4, P0-8.1,
   P1-1.1, P1-2.1, P1-3.1, P1-4.1, P1-5.1, P1-6.2,
-  P2-1.1, P2-3.1, P2-5.1, P3-1.1, P3-2.1, P3-4.1, P3-5.1,
+  P2-1.1, P2-3.1, P2-5.1, P3-1.1, P3-2.1, P3-5.1,
   P4-1.1, P4-2.1
+
+  2026-10-03: P3-4.1（奖金池）随「回款台账/奖金池/业绩窗口」三域退役摘除——它映射的
+  `/api/v1/bonus/pools` 已无 Controller，端点存在性校验必然 `pass=False`，是永久假红。
+  三处集合（EXTENDED_CARDS / _TO_TABLES / _TO_ENDPOINTS）同步摘除，保持键集一致。
 
 门禁:
   - 门禁 1:验收报告存在(同兄弟)
@@ -45,7 +49,7 @@ ALT_CTRL_DIR = REPO_ROOT / "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/
 EXTENDED_CARDS = [
     "P0-3.1", "P0-3.2", "P0-3.3", "P0-7.1", "P0-7.2", "P0-7.4", "P0-8.1",
     "P1-1.1", "P1-2.1", "P1-3.1", "P1-4.1", "P1-5.1", "P1-6.2",
-    "P2-1.1", "P2-3.1", "P2-5.1", "P3-1.1", "P3-2.1", "P3-4.1", "P3-5.1",
+    "P2-1.1", "P2-3.1", "P2-5.1", "P3-1.1", "P3-2.1", "P3-5.1",
     "P4-1.1", "P4-2.1",
 ]
 
@@ -70,10 +74,9 @@ EXTENDED_CARD_TO_TABLES = {
     "P2-1.1": ["project_stages"],
     "P2-3.1": ["gate_reviews"],
     "P2-5.1": ["handover_records"],
-    # P3 阶段 — KPI / 绩效 / 奖金池 / 反馈
+    # P3 阶段 — KPI / 绩效 / 反馈
     "P3-1.1": ["kpi_records"],
     "P3-2.1": ["project_scores"],
-    "P3-4.1": ["bonus_pools"],
     "P3-5.1": ["kpi_records"],
     # P4 阶段 — 上市 / 复盘
     "P4-1.1": ["gate_reviews"],
@@ -100,7 +103,6 @@ EXTENDED_CARD_TO_ENDPOINTS = {
     "P2-5.1": ["/api/v1/handovers"],
     "P3-1.1": ["/api/v1/kpi-records"],
     "P3-2.1": ["/api/v1/projects/scores"],
-    "P3-4.1": ["/api/v1/bonus/pools"],
     "P3-5.1": ["/api/v1/kpi-records"],
     "P4-1.1": ["/api/v1/gates"],
     "P4-2.1": ["/api/v1/projects/post-launch-reviews"],
