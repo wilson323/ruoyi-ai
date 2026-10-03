@@ -14,6 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **前端**：拆分独立仓库（`ruoyi-web` / `ruoyi-admin`）；本仓库只含后端。
 - **核心信念**：**业务规则高于文档惯例，文档惯例高于系统实现**——开发说明书 G-04 硬约束。
 
+## 推送铁律（必读 · 2026-10-03 owner 明令）
+
+**推送目标只有两个仓：`wilson323/ruoyi-ai`（后端）与 `wilson323/ruoyi-admin`（前端），其余一律视为"别人的仓"严禁触碰。分支名必须由 owner 逐次指定；AI 不得主动建议任何 git 推送命令（包括"给你命令自己跑"的形式），owner 说"自动推送"时也只报"本地有 N 笔未推"，命令等 owner 索要。** 注意：后端仓配有一个 `upstream` 远端（ageerle/ruoyi-ai，原作者仓）——历史零推送（reflog 实测），严禁对其执行任何写操作。**该远端的写能力已于 2026-10-03 物理焊死**（`git remote set-url --push upstream DISABLED`），核验：`git remote -v` 应显示 `upstream DISABLED (push)`；拉取不受影响。
+
 ## 结论纪律（必读 · 2026-10-03 立）
 
 **报出的每个数字，必须先证明量它的尺子是对的。** 2026-10-03 一个会话内连犯五次同类错，形状完全相同——**读数来自一个从没验证过形状的仪器**：猜 JSON 字段名（写 `drift_rows`，真名是 `drift_tables`）数出 0，差点当成「没有漂移」；用 `git status --porcelain` 的非 `-z` 输出比路径，中文路径被八进制转义后匹配不上，0 命中实为 21；`awk 'NF>3'` 过滤 `-z` 输出把绝大多数行切掉；断言门禁「111 处会挡住提交」，实际提交路径带了 `--whitelist`，我跑的是另一种口径。
