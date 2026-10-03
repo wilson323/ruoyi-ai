@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
-"""独立临时夹具验证门禁读取/计数/全量扫描；不连接数据库或构建工程。"""
+"""独立临时夹具验证门禁读取/计数/全量扫描；不连接数据库或构建工程。
+
+本文件是「门禁自身的自证」：对每个门禁同时验证**干净输入必须放行**（EXIT=0）
+与**真违规必须拦下**（EXIT≠0）。只验「能红」不验「不乱红」时，门禁可以在正确
+代码上大面积误报而无人察觉——2026-10-03 实测 check-entity-complete.sh 报 61 处
+「Service 无 Controller」而真缺口为 0、check-tenant-excludes-apply.sh 报 74 处
+「重叠」而其中真信号为 0，都是这个形状。
+
+前端两个门禁（check-a11y-basics.sh / check-memory-leak-pattern.sh）已于
+2026-10-03 迁至前端仓 ruoyi-ipd-web（提交 e35fe28），本仓副本随 1bdd505c 删除；
+它们的同类自证在前端仓自己的测试里，本文件不再覆盖，只保留「副本不得回流」的断言。
+"""
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -25,6 +37,14 @@ class GateInputsTest(unittest.TestCase):
         self.write("front/src/locales/en.json", '{"example": "Example"}\n')
         self.write("docs/script/sql/schema.sql", "SELECT 1;\n")
         self.write("docs/ipd-系统说明/开发计划-看板镜像.md", "# 计划\n")
+        # 判定器按 "$REPO/scripts/lib/<name>" 定位（如 check-doc-code-sync.sh 的
+        # CHECKER="$REPO/scripts/lib/java-param-doc-check.py"）。夹具必须带一份，
+        # 否则判定器缺失会被门禁正确地判成「门禁失效」（EXIT=2）——那是门禁在尽责，
+        # 不是夹具该得到的结果。
+        lib_dst = self.root / "scripts/lib"
+        lib_dst.mkdir(parents=True, exist_ok=True)
+        for src in (REPO / "scripts/lib").glob("*.py"):
+            shutil.copy(src, lib_dst / src.name)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -56,46 +76,21 @@ class GateInputsTest(unittest.TestCase):
                                  "fixture", str(helper), str(self.root / "absent")], capture_output=True)
         self.assertNotEqual(result.returncode, 0)
 
-    def test_front_gates_missing_empty_clean_and_real_violations(self):
+    def test_front_gates_moved_out_of_this_repository_and_must_not_flow_back(self):
+        """前端两门禁已迁 ruoyi-ipd-web（e35fe28）。
+
+        原先这两个用例在本仓跑它们，迁移后本仓已无脚本可跑，用例必然 127 报错——
+        红的原因不是门禁有问题，是用例还在测不存在的东西。这里保留一条反向断言：
+        副本一旦回流本仓即失败（否则会出现「两仓各有一份、只跑其中一份」的分叉）。
+        它们完整的行为自证（干净输入放行 / 违规拦下 / 注释与测试物料不误报）随脚本
+        迁至前端仓，应在该仓的测试里维护，不在本文件重建。
+        """
         for name in ("check-a11y-basics.sh", "check-memory-leak-pattern.sh"):
             with self.subTest(name=name):
-                self.assertEqual(self.run_gate(name), 0, self.last_output)
-                self.assertNotEqual(self.run_gate(name, FRONT_DIR=str(self.root / "absent")), 0)
-                empty = self.root / "empty"; empty.mkdir(exist_ok=True)
-                self.assertNotEqual(self.run_gate(name, FRONT_DIR=str(empty)), 0)
-        for n in range(130):
-            self.write(f"front/src/clean-{n:03}.vue", "<template><span>hello</span></template>\n")
-        self.write("front/src/zz-violation.vue", '<img src="1"/>\n' * 4)
-        self.assertEqual(self.run_gate("check-a11y-basics.sh"), 1, self.last_output)
-        for n in range(4):
-            self.write(f"front/src/zz-leak-{n}.ts", "setInterval(() => {}, 1000);\n")
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 1, self.last_output)
-
-    def test_front_production_scope_and_ast_calls_ignore_test_material_and_comments(self):
-        for name in ("images.test.ts", "images.spec.ts", "__tests__/images.ts", "__mocks__/images.ts", "test-helpers/images.ts", "tests/images.vue", "spec/images.js"):
-            self.write("front/src/" + name, '<img src="x"/>\n' * 10)
-        self.assertEqual(self.run_gate("check-a11y-basics.sh"), 0, self.last_output)
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 0, self.last_output)
-        test_only = self.write("test-only/images.test.ts", '<img src="x"/>\n').parent
-        for name in ("check-a11y-basics.sh", "check-memory-leak-pattern.sh"):
-            self.assertNotEqual(self.run_gate(name, FRONT_DIR=str(test_only)), 0)
-        for n in range(4):
-            self.write(f"front/src/timer-{n}.ts", "// setTimeout(() => {}, 1);\n/* clearTimeout(1); */\nconst text = 'setInterval(clearTimeout(1))';\n")
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 0, self.last_output)
-        for n in range(4):
-            self.write(f"front/src/timer-{n}.ts", "const timer = setTimeout(() => {}, 1);\n")
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 1, self.last_output)
-        for n in range(4):
-            self.write(f"front/src/timer-{n}.ts", "const timer = setTimeout(() => {}, 1);\n// clearTimeout(timer);\nconst text = 'clearTimeout(timer)';\n")
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 1, self.last_output)
-        for n in range(4):
-            self.write(f"front/src/timer-{n}.ts", "const timer = window.setTimeout(() => {}, 1);\nwindow.clearTimeout(timer);\n")
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 0, self.last_output)
-        self.write("front/src/script.vue", "<template><div>setTimeout(clearTimeout(1))</div></template>\n<script setup lang=ts>\n// setTimeout(() => {}, 1);\nconst timer = setTimeout(() => {}, 1); clearTimeout(timer);\n</script>\n")
-        self.assertEqual(self.run_gate("check-memory-leak-pattern.sh"), 0, self.last_output)
-        self.assertNotEqual(self.run_gate("check-memory-leak-pattern.sh", GATE_TYPESCRIPT_ROOT=str(self.root / "missing-parser")), 0)
-        self.write("front/src/broken.ts", "const broken = ;\n")
-        self.assertNotEqual(self.run_gate("check-memory-leak-pattern.sh"), 0, self.last_output)
+                self.assertFalse(
+                    (REPO / "scripts" / name).exists(),
+                    f"{name} 已于 2026-10-03 迁至前端仓 ruoyi-ipd-web，本仓不应再出现副本",
+                )
 
     def test_source_gates_have_real_nonempty_inputs_and_late_violations(self):
         self.assertEqual(self.run_gate("check-doc-code-sync.sh"), 0, self.last_output)
@@ -106,8 +101,18 @@ class GateInputsTest(unittest.TestCase):
             self.write(f"ruoyi-modules/ruoyi-ipd/src/main/java/Clean{n:03}.java", f"public class Clean{n} {{}}\n")
         self.write("ruoyi-modules/ruoyi-ipd/src/main/java/zz.java", "public class bad_class {}\n")
         self.assertEqual(self.run_gate("check-naming-convention.sh"), 1, self.last_output)
-        self.write("ruoyi-modules/ruoyi-ipd/src/main/java/BadService.java", "public class BadService {\n" +
-                   "public String method() { return null; }\n" * 6 + "}\n")
+        # 规则 4 的唯一判据是「写了 @param 但名字与签名对不上」。原先这里只写「方法没
+        # 有 javadoc」——那属于规则 3「缺注释」，已按 owner 2026-10-03 决策降为 INFO、
+        # 不计违规（见脚本头部第 13-14 行与判定器 java-param-doc-check.py 的口径说明）。
+        # 用例必须喂规则 4 认得的形态，否则测的是「脚本对我们以为的违规不报红」这个假命题。
+        self.write("ruoyi-modules/ruoyi-ipd/src/main/java/BadService.java",
+                   "public class BadService {\n"
+                   "    /**\n"
+                   "     * 做点事。\n"
+                   "     * @param wrongName 这个名字在签名里不存在\n"
+                   "     */\n"
+                   "    public String method(String rightName) { return null; }\n"
+                   "}\n")
         self.assertEqual(self.run_gate("check-doc-code-sync.sh"), 1, self.last_output)
 
     def test_java_gates_clean_missing_seed_and_actual_violation(self):

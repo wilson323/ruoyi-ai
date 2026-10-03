@@ -333,6 +333,44 @@ run_hook_schema_gate() {
     fi
 }
 
+# ---------------------------------------------------------------------------
+# 门禁 8: 门禁自身的自证(2026-10-03 新增)
+# 病根: 一个门禁可以「能红」却「乱红」——只验 FAIL_SEED(故意弄坏必须报红)、
+#   不验「对已知良好的输入必须放行」时, 门禁会在正确代码上大面积误报而无人察觉。
+#   2026-10-03 实测两例: check-entity-complete.sh 报 61 处「Service 无 Controller」
+#   而真缺口为 0; check-tenant-excludes-apply.sh 报 74 处「重叠」而真信号为 0。
+#   scripts/test-audit-gate-inputs.py 正是干「干净输入必须放行 + 真违规必须拦下」
+#   这件事的, 但它此前**没有任何自动调用者**, 自己红了 5 个用例也无人知道。
+#   本门禁把它接到必经路径上, 使「门禁被改坏」在下一次提交时立刻可见。
+# 代价: 仅在本次提交触及门禁脚本或 hook 时执行(约 3s); 其余提交 SKIP, 不计时。
+# 自证能红: 把任一被测门禁改成恒绿(如 check-naming-convention.sh 只写 exit 0),
+#   本门禁应 FAIL —— 已实测(2026-10-03), 破坏后 12 用例中 1 个失败。
+# ---------------------------------------------------------------------------
+run_gate_selftest_gate() {
+    local t0 elapsed touched out rc
+    t0=$(date +%s)
+    touched=$(git diff --cached --name-only 2>/dev/null \
+        | grep -E '^(scripts/.*\.(sh|py)|\.claude/(hooks|helpers)/)' || true)
+    if [[ -z "$touched" ]]; then
+        echo "[check-pre-commit] ⏭ 门禁 8 SKIP: 本次未触及门禁脚本/hook"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
+    echo "[check-pre-commit] → 门禁 8: 门禁自身的自证(干净输入必须放行 + 真违规必须拦下)"
+    out=$(python3 "$REPO_ROOT/scripts/test-audit-gate-inputs.py" 2>&1); rc=$?
+    elapsed=$(( $(date +%s) - t0 ))
+    if [[ "$rc" -ne 0 ]]; then
+        echo "[check-pre-commit] ❌ 门禁 8 FAIL: 门禁自证未通过 (exit=$rc, elapsed=${elapsed}s)" >&2
+        printf '%s\n' "$out" | grep -E '^(FAIL|ERROR|AssertionError)' | head -10
+        echo "[check-pre-commit]   后果: 某个门禁的判定口径已被改坏, 它此后报出的结果不可信"
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+    echo "[check-pre-commit] ✅ 门禁 8 PASS: 门禁自证通过 (elapsed=${elapsed}s)"
+    PASSED=$((PASSED + 1))
+    return 0
+}
+
 run_snapshot_gate
 
 case "$MODE" in
@@ -345,6 +383,7 @@ case "$MODE" in
         run_shell_var_gate
         run_symlink_gate
         run_hook_schema_gate
+        run_gate_selftest_gate
         ;;
     drift)
         run_untracked_gate
