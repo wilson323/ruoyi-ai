@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistration;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 /**
@@ -25,8 +26,11 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  *   <li>本配置独立开关 {@code ipd.websocket.enabled}，默认 false，零风险共存</li>
  * </ul>
  *
- * <p>路径与平台配置一致：{@code /resource/websocket}（前端 message.ts 注释预期路径）。
- * 若平台同时开启 {@code websocket.enabled=true}，会冲突——本机默认保持 platform 关闭。
+ * <p>路径：{@code /api/v1/resource/websocket}（{@link IpdWebSocketProperties} 默认值，
+ * 与 IPD 业务端点前缀及前端 vite 代理规则一致）。平台 WS 是 {@code /resource/websocket}
+ * （不带 /api/v1），两者路径隔离。**别开平台键来开 IPD**：{@code websocket.enabled}
+ * 只控制平台端点；本配置只认 {@code ipd.websocket.enabled}（见父 application.yml
+ * 的 ipd.websocket 段，2026-10-03 显式补齐——此前任何 yml 都没有该键，端点从不注册）。
  *
  * <p>复用 platform 的 {@link PlusWebSocketHandler}：
  * 它从 {@code session.attributes.loginUser} 取 LoginUser（userId=persons.id，userType="ipd"），
@@ -47,7 +51,13 @@ public class IpdWebSocketConfig {
     private final PersonMapper personMapper;
 
     /**
-     * 注册端点：/resource/websocket + IPD 握手拦截器。
+     * 注册端点：/api/v1/resource/websocket + IPD 握手拦截器。
+     *
+     * <p>allowedOrigins 为空白时**不调用** setAllowedOrigins —— 2026-10-03 修正：
+     * 旧实现把空串原样传给 {@code setAllowedOrigins("")}，等于登记一个永不匹配的
+     * origin，开启后所有浏览器握手（WS 握手必带 Origin 头）一律 403。空白 → 不配置
+     * → Spring 默认仅同源可握手（与平台 SEC-LOW-4 的「空=同源」口径一致）。
+     * 非空时按逗号拆分（配置写 {@code https://a,https://b}）。
      */
     @Bean
     public WebSocketConfigurer ipdWebSocketConfigurer(HandshakeInterceptor ipdHandshakeInterceptor,
@@ -55,10 +65,17 @@ public class IpdWebSocketConfig {
         String path = properties.getPath();
         String origins = properties.getAllowedOrigins();
         log.info("ipd_websocket_endpoint_registered path={} allowedOrigins={}", path, origins);
-        return registry -> registry
-            .addHandler(ipdWebSocketHandler, path)
-            .addInterceptors(ipdHandshakeInterceptor)
-            .setAllowedOrigins(origins);
+        return registry -> {
+            WebSocketHandlerRegistration registration = registry
+                .addHandler(ipdWebSocketHandler, path)
+                .addInterceptors(ipdHandshakeInterceptor);
+            if (origins != null && !origins.isBlank()) {
+                registration.setAllowedOrigins(java.util.Arrays.stream(origins.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toArray(String[]::new));
+            }
+        };
     }
 
     /**

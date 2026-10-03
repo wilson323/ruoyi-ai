@@ -207,6 +207,20 @@ sa-token:
 
 # IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
 ipd:
+  # IPD 独立 WebSocket 端点（IpdWebSocketConfig；owner 裁决 2026-10-03：保留 IPD 独立键，
+  # 不与平台 websocket.enabled 合并——两套 Sa-Token 鉴权域不同，合并会同时激活平台端点并冲突）。
+  # 注意与 ipd.notification.websocket（通知投递渠道参数）是两码事：本段控制端点是否注册。
+  # 此前任何 yml 都没有 enabled 键 → @ConditionalOnProperty 永不成立 → 端点从不注册，
+  # 而文档教人开的却是平台键 websocket.enabled（开了也没用，还与 IPD 冲突）。
+  websocket:
+    # 总开关：默认 false（关闭时 IpdWebSocketConfig 整个不装配，实时推送退化为站内信
+    # ——ipd.notification.websocket.offline-fallback-to-inbox 兜底）。开启用环境变量
+    # IPD_WEBSOCKET_ENABLED=true，不要用平台的 websocket.enabled。
+    enabled: ${IPD_WEBSOCKET_ENABLED:false}
+    # 端点路径（与前端 vite 代理「/api/v1 不剥离」规则配套；平台是 /resource/websocket，两者隔离）
+    path: /api/v1/resource/websocket
+    # 跨域来源：prod 必须收敛到具体 origin（同 SEC-LOW-4 口径，不允许裸 *）；dev 可覆盖 '*'
+    allowed-origins: ${IPD_WEBSOCKET_ALLOWED_ORIGINS:}
   security:
     # Mock 初始化器（IpdMockDataInitializer）种子的初始密码来源
     # 父基线无默认：prod profile 必须在 application-prod.yml 或环境变量 IPD_INITIAL_PWD 显式注入，缺失则 fail-fast

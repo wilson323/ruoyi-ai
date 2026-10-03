@@ -112,7 +112,7 @@ ruoyi-extend/               # Auxiliary Spring Boot apps (run separately, not pa
 - Springdoc Swagger UI: `/swagger-ui.html` (6 OpenAPI groups defined under `springdoc.group-configs` in the parent `application.yml`; 3 of the 6 `packages-to-scan` — `org.ruoyi.demo`, `org.ruoyi.web`, `org.ruoyi.workflow` — have no matching package in the live tree, so those 3 groups render empty)
 - Actuator: `/actuator` — the **parent** `application.yml` deliberately narrows `management.endpoints.web.exposure.include` to `health,info,metrics,prometheus`, and `management.endpoint.health.show-details` is `WHEN_AUTHORIZED`. This is the prod baseline; only `application-dev.yml` overrides it to `include: '*'` + `show-details: ALWAYS` for local debugging. Do not assume an endpoint is live because some profile exposes it.
 - SSE stream (chat): `/resource/sse`
-- WebSocket: `/resource/websocket` (off by default — set `websocket.enabled=true`)
+- WebSocket: 平台端点 `/resource/websocket`（默认关，开用 `websocket.enabled=true`）；IPD 实时推送端点 `/api/v1/resource/websocket` 是**另一套独立配置**——开用 `ipd.websocket.enabled`（env `IPD_WEBSOCKET_ENABLED`），开平台键对 IPD 端点无效。IPD 关闭时通知退化为站内信兜底。
 
 ## Environment Setup
 
