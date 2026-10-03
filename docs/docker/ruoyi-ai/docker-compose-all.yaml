@@ -39,7 +39,12 @@ services:
       # Force TCP: during first-time initialization MySQL exposes a temporary
       # socket-only server. A socket ping would mark the service healthy before
       # the real network listener (used by the backend) is ready.
-      test: ["CMD", "mysqladmin", "ping", "--protocol=tcp", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      # 用 SELECT 1 而不是 mysqladmin ping：2026-10-03 在 mysql:8.0 上实测，口令错时
+      # mysqladmin ping 仍返回 EXIT=0（Access denied 也算「服务器活着」），
+      # 于是健康检查看不出凭证配错、也不会随 MYSQL_ROOT_PASSWORD 变化而失败。
+      # mysql -e 'SELECT 1' 实测：口令正确 EXIT=0、口令错误 EXIT=1，才是真的就绪判据。
+      # 口令取自容器内的 MYSQL_ROOT_PASSWORD（与第 26 行同一变量），yaml 里不再写明文。
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1' >/dev/null 2>&1"]
       interval: 15s
       timeout: 10s
       retries: 10

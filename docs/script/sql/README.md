@@ -1,8 +1,27 @@
 # SQL 脚本说明
 
-## 全新安装
+## 用途边界（先读这一段，避免装出一个「能启动但没有业务表」的库）
 
-执行 [ruoyi-ai.sql](ruoyi-ai.sql) 即可创建 `ruoyi-ai` 主库和 `snail_job` 调度库，并导入初始化数据。
+本目录的 `ruoyi-ai.sql` 是 **上游 RuoYi-AI 基线 dump**，不含任何 IPD 业务表。2026-10-03 实测：
+
+| 口径 | 数值 | 复现命令（在 `docs/script/sql/` 下执行） |
+| --- | --- | --- |
+| `ruoyi-ai.sql` 建表数 | 69 张唯一表（92 条建表语句） | `grep -oiE 'CREATE TABLE (IF NOT EXISTS )?[`a-zA-Z0-9_-]+' ruoyi-ai.sql \| awk '{print $NF}' \| tr -d '\`' \| sort -u \| wc -l` → 69 |
+| IPD 业务表 | **0 张** | `for t in projects persons gates requirements handover_records kpi_records audit_logs product_groups; do grep -c "$t" ruoyi-ai.sql; done` → 全部为 0 |
+| IPD 真实 schema 基线 | 166 张表 | `grep -c 'CREATE TABLE' ../../ipd-系统说明/schema-baseline-20261003.sql` → 166 |
+
+IPD 的建表 DDL 分散在 [update/](update/) 目录的 139 个脚本里，**没有**合并进 `ruoyi-ai.sql`。
+
+两条通道因此用途不同，别混用：
+
+- **上游 compose 通道**（[docs/docker/ruoyi-ai/docker-compose-all.yaml](../../docker/ruoyi-ai/docker-compose-all.yaml) 与 [Dockerfile.mysql](../../docker/ruoyi-ai/Dockerfile.mysql)）：只用于跑 RuoYi-AI 基线功能。用这条通道建的库**没有 IPD 业务表**，后端能正常启动、启动日志无异常，但每个 IPD 接口都会因 `Table doesn't exist` 报错。
+- **IPD 生产通道**（仓库根 [docker-compose.yml](../../../docker-compose.yml)，外接托管 MySQL）：建库走 [生产部署 Runbook](../../ipd-系统说明/治理/生产部署Runbook-20260909.md) 的人工流程，schema 以 `docs/ipd-系统说明/schema-baseline-20261003.sql` 为准。
+
+## 全新安装（仅上游 RuoYi-AI 基线）
+
+执行 [ruoyi-ai.sql](ruoyi-ai.sql) 创建 `ruoyi-ai` 主库和 `snail_job` 调度库，并导入初始化数据。
+
+> 注意：这一步得到的是**基线库**，不含 IPD 业务表（见上一节）。需要 IPD 业务表时不要走这条路径。
 
 ```sh
 mysql -uroot -p < ruoyi-ai.sql

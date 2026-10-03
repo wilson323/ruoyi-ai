@@ -35,7 +35,10 @@ services:
     healthcheck:
       # Do not let the socket-only initialization server satisfy the check.
       # The backend connects over TCP and must wait for that listener.
-      test: ["CMD", "mysqladmin", "ping", "--protocol=tcp", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      # 同 docker-compose-all.yaml：mysqladmin ping 在口令错时仍返回 EXIT=0，改用 SELECT 1；
+      # 口令取自本服务环境变量 MYSQL_ROOT_PASSWORD，不再在探针里写字面量
+      # （mysql 客户端要求 -p 与口令之间不得有空格）。
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1' >/dev/null 2>&1"]
       interval: 15s
       timeout: 10s
       retries: 10

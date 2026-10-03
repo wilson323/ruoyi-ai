@@ -21,10 +21,18 @@ services:
       IPD_AIMODEL_ENCRYPT_KEY: ${IPD_AIMODEL_ENCRYPT_KEY:?set IPD_AIMODEL_ENCRYPT_KEY}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      # 上传目录：容器内绝对路径，覆盖 application-prod.yml 的 sys.upload.path
+      # （Spring 宽松绑定：环境变量 SYS_UPLOAD_PATH 优先级高于 yml 文件值）。
+      # 原 yml 值是 Windows 路径 D:\DownLoad，在 Linux 容器上会静默建出畸形目录名。
+      SYS_UPLOAD_PATH: /app/upload
       JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs"
     depends_on:
       redis:
         condition: service_healthy
+      # 命名卷首次挂载时由 Docker 以 root:root 创建挂载点，非 root 的 ipd 用户写不进去，
+      # 故先由 upload-init 服务把卷目录 chown 给 ipd，再启动后端。
+      upload-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "curl -fs --user \"$$MONITOR_USERNAME:$$MONITOR_PASSWORD\" http://127.0.0.1:16039/actuator/health || exit 1"]
       interval: 30s
@@ -33,6 +41,20 @@ services:
       start_period: 90s
     volumes:
       - backend-logs:/app/logs
+      - ipd-upload:/app/upload
+
+  # 一次性初始化服务：把上传卷的属主改成镜像内的非 root 用户 ipd。
+  # 背景：命名卷挂到「镜像里不存在的路径」时，Docker 以 root:root 创建挂载点（实测确认），
+  # 而根 Dockerfile 以 USER ipd 运行、且不会创建该目录 → 后端能启动但上传写盘失败。
+  # 复用 backend 的镜像（同一 image 名，由上面的 build 产出），故容器内存在 ipd 用户。
+  # 幂等：重复 up 时再跑一次 chown 无副作用。
+  upload-init:
+    image: ipd-backend:latest
+    user: "0:0"
+    restart: "no"
+    entrypoint: ["sh", "-c", "chown -R ipd:ipd /app/upload"]
+    volumes:
+      - ipd-upload:/app/upload
 
   redis:
     image: redis:7-alpine
@@ -60,3 +82,5 @@ services:
 volumes:
   redis-data:
   backend-logs:
+  # 上传文件持久化卷（sys.upload.path / SYS_UPLOAD_PATH 指向的目录）
+  ipd-upload:
