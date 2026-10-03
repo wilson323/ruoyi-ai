@@ -36,7 +36,7 @@ check-cross-repo-cd-guard.sh	ACTIVE	跨仓文档目录守卫
 check-ddl-idempotent.sh	ACTIVE	DDL 幂等性检查，真实缺陷类
 check-demo-default-off.sh	ACTIVE	守护 CLAUDE.md 明写的 demo.enabled 默认 false 契约
 check-dispatch-sequence.sh	ACTIVE	事件派发时序检查，自证标记 6 处。建议接线
-check-doc-code-sync.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一，自证标记 3 处。建议接线
+check-doc-code-sync.sh	ACTIVE	SOP-2 承诺的 3 个门禁之一（2026-10-03 起另两个迁前端仓，见文件头备注），自证标记 3 处。建议接线
 check-doc-drift.sh	ACTIVE	文档漂移检查
 check-doc-line-refs.sh	ACTIVE	文档行号引用有效性检查
 check-e2e-block-gate.sh	ACTIVE	E2E 阻断门禁，自证标记 5 处。建议接线
@@ -50,7 +50,7 @@ check-mock-data-realism.sh	ACTIVE	Mock 数据真实性，自证标记 3 处。�
 check-mock-legality.sh	ACTIVE	Mock 合法性（Q2 回款口径等硬约束）
 check-module-boundary.sh	ACTIVE	模块边界检查，自证标记 5 处。建议接线（已知第 98/103 行 find 失败会静默少扫文件）
 check-multigates-sync.sh	ACTIVE	多 Gate 同步检查，自证标记 9 处 + 配套 selftest 脚本。建议接线
-check-naming-convention.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一（BP-001），自证标记 3 处。建议接线
+check-naming-convention.sh	ACTIVE	SOP-2 承诺的 3 个门禁之一（BP-001；2026-10-03 起另两个迁前端仓，见文件头备注），自证标记 3 处。建议接线
 check-param-drift.sh	ACTIVE	参数漂移检查
 check-permission-mirror-fe-be.sh	ACTIVE	权限前后端镜像对账，自证标记 7 处。建议接线
 check-permission-single-source.sh	ACTIVE	权限单一来源检查，自证标记 18 处 + 配套 selftest 脚本。建议接线

@@ -424,7 +424,7 @@ grep "BCP-014" docs/ipd-系统说明/BCP-Closure-Log.md | head -3  # ≥ 3 行
 - **BP-001~015 条目清单**：`docs/ipd-系统说明/最佳实践应用登记位-20260920.md`
 - **R141 治理报告**：`docs/ipd-系统说明/R141-最佳实践系统性梳理+完整充分应用到本项目开发体系-20260920.md`
 - **3 个 BCP-014 docs-only 设计文档**：`BCP-014-{frontend-code-review-适配设计,browser-business-testing-适配设计,pre-commit-best-practices-hook-设计}-20260920.md`
-- **5 个门禁脚本**：`scripts/check-{best-practices-coverage,naming-convention,doc-code-sync,memory-leak-pattern,a11y-basics}.sh`
+- **本仓 3 个门禁脚本**：`scripts/check-{best-practices-coverage,naming-convention,doc-code-sync}.sh`（check-memory-leak-pattern / check-a11y-basics 已于 2026-10-03 迁前端仓 ruoyi-ipd-web，提交 e35fe28，本仓副本随 1bdd505c 删除）
 - **BCP-Registry 反思段**：`docs/ipd-系统说明/BCP-Registry.md §十六`
 - **BCP-Closure-Log 闭环段**：`docs/ipd-系统说明/BCP-Closure-Log.md §三.3.20`
 
