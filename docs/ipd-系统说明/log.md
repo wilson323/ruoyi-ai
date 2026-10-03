@@ -14373,3 +14373,45 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
   未改 a11y / braud01 两处门禁；未重启 Docker。
 
 - marker: session-closeout-commit-and-fakeevidence-20261003
+
+## 2026-10-03 生产镜像构建通过 + 看板同步钩子两处缺陷修复
+
+### 一、生产镜像构建（部署就绪门禁里标注「仍须实际完成」的那一项）
+
+- Docker 元数据库只读阻塞已由 owner 重启解除（容器内跑 hello-world 成功）。
+- 重启后 weaviate-weaviate-1 未自动回来（属 compose 项目 weaviate，非 ruoyi-ai 主栈），
+  已用 docs/docker/weaviate/docker-compose.yml 拉起。其余容器全部按重启策略自动恢复。
+- docker build -t ipd-backend:verify-20261003 . 成功，镜像 1.09 GB，
+  manifest sha256:8d8e6888493651b2b337d09befa2e04d0462438104c4769b6077a28abf194588。
+- 冒烟：以 prod profile 启动容器，JVM 17.0.20.1 正常、应用加载到数据源阶段才失败
+  （容器内无 MySQL），证明打包与启动链完整，不是空壳镜像。
+- 未做：对真实 ipd_dev 库的完整启动验证。原因：那会在共享库上产生第二个写入者，
+  并有触发 DDL/迁移的风险，与本仓「单一写入者」纪律冲突。该验证须在隔离库上单独安排，
+  不能靠对生产库试跑替代。
+
+### 二、看板同步钩子 post-commit-update-kanban.cjs 两处缺陷（均实测复现）
+
+该钩子挂在 PostToolUse(Bash)，每次代码提交后把提交信息里的卡号交给 manage.py set，
+改写 SSOT 卡面状态格（manage.py 里 PLAN 就是那个名为「看板镜像」的 md，Markdown 为权威源）。
+本轮发现两处缺陷：
+
+- 切分失效：钩子取信息的格式串在正文占位符前没有换行，而切分正则要求两侧换行，
+  两者永不匹配，于是 subject 变成整条信息，提交正文连同分隔符被写进卡面状态格。
+  实测 e5bb1de1 顶掉 QA-08、3f53e937 顶掉 P0-9。
+- 卡号来源过宽：原从整条信息（含正文）提取卡号，正文顺带提及某卡即改写该卡；
+  而状态判定默认返回 done。两条提交的标题与这两张卡毫无关系，仅因正文提及即被改写。
+  这等于一台「把被讨论的卡刷成已完成」的机器，正是本仓反复治理的那类假绿。
+
+修复：切分正则两侧换行改为可选；卡号只从 subject 提取；抽出 planReconcile 作为
+main 的唯一数据源，方便用回归用例锁住「拿哪个字符串提卡号」这类改动。
+
+已恢复：两行被污染的卡面已从 HEAD 原文覆盖回去（列数 10、无正文分隔符、
+计划文件与 HEAD 一致）；manage.py check 报 has_drift=false，污染未传入看板 DB，
+且该污染从未被提交。
+
+回归用例：.claude/hooks/post-commit-update-kanban.test.cjs（6 项，node 直跑，无外部依赖）。
+自证能红已实测：把卡号口径改回整条信息、把状态判定改看整条信息、把切分正则改回旧式，
+三种变异均使用例转红退出 1；真身 6/6 绿退出 0。第一版用例只断言底层纯函数，
+在上述变异下仍为绿——已据此改成断言集成层出口 planReconcile，属用例自身的假绿被自查纠正。
+
+- marker: prod-image-built-and-kanban-hook-split-fix-20261003

@@ -13,6 +13,14 @@
  *   - 容错: 卡号无/错 → 静默失败；status 解析失败 → 默认 done
  *   - 防抖: 用 .codex/vibe-kanban/last-processed-commit-sha 跟踪，避免双触发
  *
+ * 2026-10-03 修复（两处缺陷，均已在真实 commit 上实测复现，都会污染 SSOT 卡面）:
+ *   - 切分失效: pretty 用 %s%n---BODY---%b，%b 前没有 %n，而此处切分正则要求
+ *     /\n---BODY---\n/，两者永不匹配 → subject 实际等于「整条 commit 消息」，
+ *     于是 commit 正文连同 ---BODY--- 分隔符一起被当作标题写进卡面状态格。
+ *     实测 e5bb1de1 / 3f53e937 两条 commit 使 QA-08、P0-9 两卡状态格被顶掉。
+ *   - 卡号来源过宽: 原从「整条消息」(含正文) 提取卡号，正文里顺带提及某卡即改写
+ *     该卡状态；而 detectStatus 默认返回 done → 能把尚未完成的卡刷成完成。
+ *
  * 安全: 使用 execFileSync 不经 shell，避免命令注入
  */
 
@@ -30,6 +38,44 @@ const LAST_SHA_FILE = path.join(STATE_DIR, 'last-processed-commit-sha');
 
 // 卡号提取正则（宽松版：覆盖本会话已知所有 commit 卡号格式）
 const CARD_REGEX = /\b(?:P[0-4]-\d+(?:\.\d+)?|HIGH-\d+(?:\.\d+)?(?:-\w+)?|MEDIUM-\d+(?:\.\d+)?(?:-\w+)?|LOW-\d+(?:\.\d+)?|SEC-[A-Z]+-[\w.-]+|SEC-[\w-]+|ROOT-R\d+(?:-[\w-]+)?|FIX-[\w-]+|GOVERNANCE-\d+|CONSISTENCY-\d+|DOC-[\w-]+|REFLECTION-\d+|DDL-[\w-]+|GUARD-\d+|WAVE[\w-]+|R\d+|AUD(?:-\w+)?-\d+|API-\d+|OPS(?:-\w+)?-\d+|QA-\d+|RISK-\d+|DB-\d+|DEF-\d+)\b/g;
+
+/**
+ * 切分 git log --pretty=%s%n---BODY---%n%b 的输出。
+ * 切分正则两侧换行皆可选：无论 git 是否为 %b 补出前导换行，都能正确切开。
+ * （2026-10-03 前此处写作 /\n---BODY---\n/，而 pretty 在 %b 前没有 %n，
+ *   两者永不匹配，导致 subject 变成整条消息、commit 正文被写进卡面。）
+ */
+function splitMessage(raw) {
+  const parts = String(raw || '').split(/\n?---BODY---\n?/);
+  const subject = (parts[0] || '').trim();
+  const body = parts.slice(1).join('\n');
+  return { subject, body, fullMessage: subject + '\n' + body };
+}
+
+/**
+ * 提取卡号——只认 subject。
+ * 理由：commit 正文里顺带提及某卡号（例如「QA-08 仍未实施」）不代表本次提交动过该卡；
+ * 以正文为准会把「讨论对象」误判成「改动对象」，配合 detectStatus 默认 done
+ * 直接把尚未完成的卡刷成完成（2026-10-03 实测 e5bb1de1/3f53e937 命中此路径）。
+ */
+function extractCards(subject) {
+  return Array.from(new Set(String(subject || '').match(CARD_REGEX) || []));
+}
+
+/**
+ * 一次 commit message → 本次要 reconcile 的卡号/状态/备注。
+ * main() 唯一的数据来源；回归用例也断言本函数，使「拿哪个字符串提卡号」「怎么切分」
+ * 这类改动无法绕过用例（2026-10-03：只断言纯函数的用例在变异下仍是绿的，属假绿）。
+ */
+function planReconcile(rawMessage) {
+  const { subject, fullMessage } = splitMessage(rawMessage);
+  return {
+    subject,
+    cards: extractCards(subject),
+    status: detectStatus(subject, fullMessage),
+    note: buildNote(subject),
+  };
+}
 
 function readStdin() {
   try {
@@ -134,26 +180,17 @@ function main() {
   }
 
   // 取 commit message (subject + body)
-  const messageOut = safeExecFile('git', ['log', '-1', '--pretty=%s%n---BODY---%b'], { cwd: REPO_ROOT });
+  const messageOut = safeExecFile('git', ['log', '-1', '--pretty=%s%n---BODY---%n%b'], { cwd: REPO_ROOT });
   if (!messageOut || !messageOut.stdout) {
     process.stderr.write('[post-commit-kanban] cannot read commit message, skipping\n');
     process.exit(0);
   }
-  const parts = messageOut.stdout.split(/\n---BODY---\n/);
-  const subject = parts[0] || '';
-  const fullMessage = subject + '\n' + (parts[1] || '');
-
-  // 提取卡号
-  const matches = Array.from(new Set(fullMessage.match(CARD_REGEX) || []));
+  const { cards: matches, status, note } = planReconcile(messageOut.stdout);
   if (matches.length === 0) {
     process.stderr.write(`[post-commit-kanban] ${headSha.slice(0, 7)} no card keys, skipping\n`);
     try { fs.writeFileSync(LAST_SHA_FILE, headSha); } catch (_) {}
     process.exit(0);
   }
-
-  // 解析 status（优先 subject，避免 body 描述误判）
-  const status = detectStatus(subject, fullMessage);
-  const note = buildNote(subject);
 
   let updated = 0;
   let skipped = 0;
@@ -198,4 +235,10 @@ function main() {
   process.exit(0);
 }
 
-main();
+// 纯函数导出供回归用例使用（.claude/hooks/post-commit-update-kanban.test.cjs）。
+// 仍以 `node <file>` 方式被 PostToolUse 钩子调用，require.main === module 成立。
+module.exports = { planReconcile, splitMessage, extractCards, detectStatus, buildNote };
+
+if (require.main === module) {
+  main();
+}
