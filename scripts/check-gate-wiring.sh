@@ -3,16 +3,25 @@
 #
 # 治的是「检查脚本从未被接线」这类问题——单看每个脚本自身是否正确，
 # 无法发现它压根没人跑。本脚本扫描 scripts/ 下所有 check-* / test-* 门禁，
-# 判定每个是否被 CI 语料引用；未被引用且未在人工清单登记的，判定失败。
+# 判定每个是否被真实执行；未被执行且未在人工清单登记的，判定失败。
 #
-# 接线语料（CI 硬接线）：
-#   .github/workflows/*.yml
-#   .claude/hooks/、.claude/helpers/（settings.json 路由的 hook/helper 均为机器接线）
-#   .claude/settings.json
-# 次级语料（harness 间接调用，不等于 CI 接线，单独报告）：
+# 接线判定（2026-10-03 起委托 scripts/lib/gate-wiring-detect.py，只认「真实执行」）：
+#   CI = .github/workflows/*.yml 的 run: 块内出现执行引用
+#        （paths: 触发过滤、步骤 name:、注释、echo 文案一律不算）
+#   本地hook = .claude/hooks / .claude/helpers / .claude/settings.json 的执行引用
+#        （含 VAR=…; bash "$VAR" 间接调用、perl/timeout 包装、JS spawn、
+#          Python 拼子进程命令；echo 提示文案不算）
+#   传递 = 被上述已接线脚本转手执行（如 check-write-endpoint-ownership.py
+#        被 ownership.sh 的 exec perl 包装执行；check-api-contract-fe-be.mjs
+#        被 check-staged-snapshot.py 拼 command 执行）—— 归入其调用方的类别
+# 次级语料（harness 间接调用，不等于接线，单独报告）：
 #   .harness/*.sh 顶层入口（gate.sh / loop.sh / verify.sh）。
 #   注意：只扫顶层脚本，不递归 .harness —— runs/ 是 438MB/3 万+ 文件的执行产物，
 #   引用记录不等于接线，且递归 grep 会让本脚本慢到超时（实测 >120s）。
+#
+# 2026-10-03 重写缘由：旧实现 `grep -rlF "$b" <目录>` 把纯字符串出现当接线，
+#   注释行也算。实测 7 个门禁被误判「已接 CI」（其中 3 个既未接线也未登记，
+#   对任何检查不可见）。「已接 CI: 42 / 0 孤儿」是虚高后的假全绿。
 #
 # 用法：
 #   bash scripts/check-gate-wiring.sh                          # 正常态，期望 EXIT=0
@@ -64,30 +73,58 @@ if [ "$total" -eq 0 ]; then
 fi
 
 wired=0; registered=0; harness_only=0; orphan_fail=0; stale_registry=0
-L_ACTIVE=""; L_SUSPECT=""; L_ORPHAN=""; L_HARNESS=""; L_STALE=""
+n_ci=0; n_hook=0
+L_ACTIVE=""; L_SUSPECT=""; L_ORPHAN=""; L_HARNESS=""; L_STALE=""; L_CI=""; L_HOOK=""
 
-# ── 3. 逐个判定 ──
+# ── 3. 逐个判定（经 scripts/lib/gate-wiring-detect.py，只认「真实执行」）──
+# 2026-10-03 重写：原实现是 `grep -rlF "$b" <目录>` —— 纯字符串出现即算接线，
+#   注释行、echo 文案、workflow 的 paths: 过滤、步骤 name: 全被当成接线。
+#   实测 7 个门禁因此被误判「已接 CI」，其中 3 个既未接线也未登记。
+#   现改为调检测器判定执行引用（含 CI 的 run: 块、shell 间接调用 VAR=…;bash "$VAR"、
+#   perl/timeout 包装、JS spawn、settings.json hook command、Python 子进程拼命令、
+#   以及沿已接线脚本的传递调用）。CI 与本地 hook 分开报告。
+DETECT="scripts/lib/gate-wiring-detect.py"
+if [ ! -f "$DETECT" ]; then
+  echo "[gate-wiring] FAIL: 检测器 $DETECT 不存在（2026-10-03 起为判定核心，非可选依赖）" >&2
+  exit 2
+fi
+CAND_NAMES="$(mktemp)"
+sed 's|.*/||' "$CAND_TMP" > "$CAND_NAMES"
+DET_TMP="$(mktemp)"
+if ! python3 "$DETECT" "$CAND_NAMES" > "$DET_TMP"; then
+  echo "[gate-wiring] FAIL: 检测器运行失败" >&2
+  rm -f "$CAND_NAMES" "$DET_TMP"; exit 2
+fi
+
+n_ci=0; n_hook=0
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   b="$(basename "$f")"
 
-  ci_hit=""
-  for d in .github/workflows .claude/hooks .claude/helpers; do
-    [ -d "$d" ] || continue
-    hit="$(grep -rlF "$b" "$d" 2>/dev/null | head -1)"
-    if [ -n "$hit" ]; then ci_hit="$hit"; break; fi
-  done
-  if [ -z "$ci_hit" ] && [ -f .claude/settings.json ] && grep -qF "$b" .claude/settings.json 2>/dev/null; then
-    ci_hit=".claude/settings.json"
+  det_line="$(grep -m1 "^$b$TAB" "$DET_TMP" 2>/dev/null)"
+  cls="NONE"; ev=""
+  if [ -n "$det_line" ]; then
+    cls="$(printf '%s' "$det_line" | cut -f2)"
+    ev="$(printf '%s' "$det_line" | cut -f3)"
+    ev="${ev#"$REPO_ROOT"/}"   # 检测器输出的绝对路径转仓库相对，报告更可读
   fi
-  if [ -n "$ci_hit" ]; then wired=$((wired+1)); continue; fi
-
-  h_hit=""
-  # 只扫 .harness 顶层入口脚本；runs/ 产物不算接线（见文件头注释）
+  # h_hit 仅作登记项的附注（.harness 顶层入口直连），不算接线 —— 语义同旧版
   h_hit="$(grep -lF "$b" .harness/*.sh 2>/dev/null | head -1)"
 
   act_line="$(grep -m1 "^$b$TAB" "$ACT_TMP" 2>/dev/null)"
   sus_line="$(grep -m1 "^$b$TAB" "$SUS_TMP" 2>/dev/null)"
+
+  if [ "$cls" = "CI" ]; then
+    n_ci=$((n_ci+1)); wired=$((wired+1))
+    L_CI="$L_CI  - $b  <-  $ev"$'\n'
+    continue
+  fi
+  if [ "$cls" = "HOOK" ]; then
+    n_hook=$((n_hook+1)); wired=$((wired+1))
+    L_HOOK="$L_HOOK  - $b  <-  $ev"$'\n'
+    continue
+  fi
+  # cls ∈ HARNESS(仅 .harness 直连) / SCRIPT(仅被未接线脚本调用) / NONE → 视为未接线
 
   if [ -n "$act_line" ]; then
     registered=$((registered+1))
@@ -105,6 +142,7 @@ while IFS= read -r f; do
     L_ORPHAN="$L_ORPHAN  FAIL  $b"$'\n'
   fi
 done < "$CAND_TMP"
+rm -f "$CAND_NAMES" "$DET_TMP"
 
 # ── 4. 清单失效：登记了但脚本已不存在（登记失效，会让人误以为它还在跑） ──
 while IFS="$TAB" read -r name _rest; do
@@ -124,11 +162,14 @@ echo "==========================================================================
 echo "[gate-wiring] 门禁接线元门禁"
 echo "================================================================================"
 printf '门禁脚本总数            : %s\n' "$total"
-printf '已接 CI                : %s\n' "$wired"
+printf '已接线合计              : %s  (CI %s + 本地hook %s)\n' "$wired" "$n_ci" "$n_hook"
 printf '未接线·已登记人工(ACTIVE) : %s\n' "$registered"
 printf '未接线·已隔离待裁决(SUSPECT): %s\n' "${n_suspect:-0}"
 printf '未接线·孤儿(判失败)     : %s\n' "$orphan_fail"
 printf '清单失效(脚本已删除)     : %s\n' "$stale_registry"
+
+[ -n "$L_CI" ] && { echo; echo "-- 已接 CI（${n_ci}）-------------------------------------------------------------"; printf '%s' "$L_CI"; }
+[ -n "$L_HOOK" ] && { echo; echo "-- 已接本地 hook（${n_hook}）-----------------------------------------------------"; printf '%s' "$L_HOOK"; }
 
 [ -n "$L_ACTIVE" ] && { echo; echo "-- 未接线但已登记为人工执行（${n_active}）---------------------------------------"; printf '%s' "$L_ACTIVE"; }
 if [ -n "$L_HARNESS" ]; then

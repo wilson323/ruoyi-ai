@@ -1,7 +1,9 @@
 # 元门禁（gate-wiring meta gate）— 让「检查脚本从未被接线」自动暴露
 # 触发：push / PR 修改 scripts/ 下门禁脚本、人工登记清单或本 workflow
 # 检查项：scripts/ 下所有 check-*/test-* 门禁脚本必须满足其一——
-#   1. 被 .github/workflows / .claude/hooks / .claude/helpers / .claude/settings.json 引用；
+#   1. 被真实执行（2026-10-03 起由 scripts/lib/gate-wiring-detect.py 判定：
+#      CI run: 块 / 本地 hook 执行引用 / 沿已接线脚本的传递调用。
+#      注释、echo 文案、paths: 过滤、步骤 name: 一律不算）；
 #   2. 在 scripts/gate-manual-registry.txt 显式登记（ACTIVE=人工执行；SUSPECT=待删除，不算已登记）。
 # 失败即阻断；退出码不吞（无 || echo / continue-on-error）。
 # 自证：本地 GATE_WIRING_FAIL_SEED=1 bash scripts/check-gate-wiring.sh 期望 EXIT=1。
