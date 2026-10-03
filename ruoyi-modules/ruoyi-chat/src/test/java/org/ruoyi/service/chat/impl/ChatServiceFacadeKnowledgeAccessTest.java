@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
-import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.trace.config.TraceProperties;
@@ -57,7 +56,6 @@ class ChatServiceFacadeKnowledgeAccessTest {
             mock(SseEmitterManager.class),
             mock(IChatMessageService.class),
             mock(ChatSessionOwnershipGuard.class),
-            mock(IWorkFlowStarterService.class),
             mock(IAgentService.class),
             mock(AgentScopeMcpToolProviderService.class),
             mock(TraceRecordService.class),
@@ -90,7 +88,6 @@ class ChatServiceFacadeKnowledgeAccessTest {
             mock(SseEmitterManager.class),
             mock(IChatMessageService.class),
             mock(ChatSessionOwnershipGuard.class),
-            mock(IWorkFlowStarterService.class),
             mock(IAgentService.class),
             mock(AgentScopeMcpToolProviderService.class),
             mock(TraceRecordService.class),

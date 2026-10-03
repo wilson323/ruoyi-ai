@@ -38,7 +38,6 @@ import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
-import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
 import org.ruoyi.common.sse.core.SseEmitterManager;
 import org.ruoyi.common.sse.dto.SseEventDto;
 import org.ruoyi.common.sse.dto.SseMessageDto;
@@ -73,7 +72,7 @@ import java.util.function.Consumer;
  * <p>口径：反射直测私有方法（ChatServiceFacadeKnowledgeAccessTest 仓内惯例）；
  * 帧出口走<b>真实</b> {@code SseMessageUtils} 编码路径（{@code SseMessageUtils} 静态初始化依赖
  * Spring 容器，经 mockStatic(hutool SpringUtil) 引导 MANAGER 为共享 mock，验证真实 SseMessageDto
- * 帧编码——比 mockStatic(SseMessageUtils) 更强）。12 参构造面由
+ * 帧编码——比 mockStatic(SseMessageUtils) 更强）。10 参构造面由
  * ChatServiceFacadeKnowledgeAccessTest 哨兵锁死，本类顺带复证新字段不进构造器。
  */
 @Tag("dev")
@@ -123,7 +122,6 @@ class ChatServiceFacadeKernelDelegateTest {
             mock(SseEmitterManager.class),
             chatMessageService,
             mock(ChatSessionOwnershipGuard.class),
-            mock(IWorkFlowStarterService.class),
             mock(IAgentService.class),
             provider,
             mock(TraceRecordService.class),
@@ -435,9 +433,10 @@ class ChatServiceFacadeKernelDelegateTest {
     void nativeKernelInjectionIsRequiredAndLegacyDependencyRemoved() throws Exception {
         var constructors = ChatServiceFacade.class.getDeclaredConstructors();
         assertEquals(1, constructors.length, "Spring使用唯一业务依赖构造器");
-        assertEquals(11, constructors[0].getParameterCount());
+        assertEquals(10, constructors[0].getParameterCount());
         assertTrue(java.util.Arrays.stream(constructors[0].getParameterTypes())
-            .noneMatch(type -> "ChatServiceFactory".equals(type.getSimpleName())));
+            .noneMatch(type -> "ChatServiceFactory".equals(type.getSimpleName())
+                || "IWorkFlowStarterService".equals(type.getSimpleName())));
         Field field = ChatServiceFacade.class.getDeclaredField("agentScopeChatKernel");
         var injection = field.getAnnotation(org.springframework.beans.factory.annotation.Autowired.class);
         assertNotNull(injection);

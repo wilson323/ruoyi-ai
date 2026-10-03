@@ -14,7 +14,7 @@
 |---|---|---|
 | Model | ✅ 绿 | AgentScopeModelFactory 统一轨；ExecutionConfig 双挂载（P1/2026-10-02）+ 第三装配点 CodingServiceImpl（P3/2026-10-02） |
 | Tool | ✅ 绿 | toolkit 白名单 + exposed.containsAll 校验 + toolsConfig deny + OwnershipMiddleware 四层防线 |
-| Memory | ✅ 绿（有意关） | 双 disable；业务记忆在 ipd 库表，MEMORY.md 不当事实源（AGENTS.md 红线） |
+| Memory | ✅ 绿（**默认开、非有意关**） | 2026-10-02 字节码实证：`HarnessAgent$Builder.<init` 即 `MemoryConfig.defaults()`，不调 `.memory()` 也已启用；唯一否决条件是无 model 或 `disableMemoryHooks()`。**本行原写「有意关 / 双 disable」为失实陈述，已更正**——主源树 `disableMemory*` 零命中。「MEMORY.md 不当事实源」成立，但实现方式是 **`consolidationPrompt` 文本约束**（chat 与 IPD 各一套），不是 disable 开关。业务记忆在 ipd 库表；团队共享走 `ProjectKnowledgeRetriever`（按 projectId 检索），**不走记忆** |
 | Context | ✅ 绿 | compaction 官方默认 + 显式固化；toolResultEviction defaults() |
 | Permission | ✅ 绿（有意不上规则式） | core 权限流 + 四层防线；stopOnReject=false（ReActAgent$Builder:4939 默认） |
 | **Quality(Verifier)** | ❌ **红** | **机器判定「运行完成」的 Verifier 不存在**（见 §二） |

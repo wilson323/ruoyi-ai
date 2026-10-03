@@ -4,16 +4,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.chat.base.ThreadContext;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.bo.chat.ChatMessageBo;
-import org.ruoyi.common.chat.domain.dto.request.WorkFlowRunner;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.enums.RoleType;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.chat.service.chat.IChatService;
-import org.ruoyi.common.chat.service.workFlow.IWorkFlowStarterService;
-import org.ruoyi.common.core.utils.ObjectUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.common.sse.core.SseEmitterManager;
@@ -87,9 +83,6 @@ public class ChatServiceFacade implements IChatService {
 
     private final ChatSessionOwnershipGuard chatSessionOwnershipGuard;
 
-    private final IWorkFlowStarterService workFlowStarterService;
-
-
     private final IAgentService agentService;
 
     private final AgentScopeMcpToolProviderService agentScopeMcpToolProviderService;
@@ -108,27 +101,17 @@ public class ChatServiceFacade implements IChatService {
      * @return SseEmitter
      */
     public SseEmitter sseChat(ChatRequest chatRequest) {
+        if (Boolean.TRUE.equals(chatRequest.getEnableWorkFlow())) {
+            if (chatRequest.getAgentId() != null) {
+                throw new IllegalArgumentException("对话模式参数冲突：工作流和智能体不能同时启用");
+            }
+            throw new IllegalArgumentException("旧工作流对话入口已退役，不能创建运行");
+        }
         Long userId = LoginHelper.getUserId();
         String tokenValue = StpUtil.getTokenValue();
         chatSessionOwnershipGuard.requireOwned(userId, chatRequest.getSessionId());
 
-        boolean workflowMode = Boolean.TRUE.equals(chatRequest.getEnableWorkFlow());
         boolean agentMode = chatRequest.getAgentId() != null;
-        if (workflowMode && agentMode) {
-            throw new IllegalArgumentException("对话模式参数冲突：工作流和智能体不能同时启用");
-        }
-
-        // 工作流模式。工作流引擎负责创建并持有自己的 SSE，必须在普通聊天连接创建前路由。
-        if (workflowMode) {
-            chatMessageService.saveChatMessage(
-                userId,
-                chatRequest.getSessionId(),
-                chatRequest.getContent(),
-                RoleType.USER.getName(),
-                chatRequest.getModel()
-            );
-            return handleWorkflowChat(chatRequest);
-        }
 
         // 智能体解析：传入 agentId 时按智能体绑定的模型覆盖 model 字段
         AgentVo agentVo = null;
@@ -178,23 +161,6 @@ public class ChatServiceFacade implements IChatService {
 
         TraceRunHandle traceRun = startRagTraceRun(chatRequest, userId);
         return handleKernelChat(chatRequest, agentVo, traceRun, null, currentMessageId);
-    }
-
-    /**
-     * 工作流模式。工作流运行时负责 SSE、节点执行和结束事件。
-     */
-    private SseEmitter handleWorkflowChat(ChatRequest chatRequest) {
-        WorkFlowRunner runner = chatRequest.getWorkFlowRunner();
-        if (ObjectUtils.isEmpty(runner) || StringUtils.isBlank(runner.getUuid())) {
-            throw new IllegalArgumentException("工作流模式必须提供 workFlowRunner.uuid");
-        }
-        log.info("处理工作流对话,会话:{},workflowUuid:{}", chatRequest.getSessionId(), runner.getUuid());
-        return workFlowStarterService.streaming(
-            ThreadContext.getCurrentUser(),
-            runner.getUuid(),
-            runner.getInputs() == null ? List.of() : runner.getInputs(),
-            chatRequest.getSessionId()
-        );
     }
 
     /** 记录既有聊天链路追踪。 */

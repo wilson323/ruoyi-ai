@@ -43,7 +43,9 @@ count_lines() {
   printf '%s' "$n"
 }
 
-SCAN_ROOTS="${HARNESS_SCAN_ROOTS:-$REPO_ROOT}"
+# 默认只检查可编译消费者；历史验收探针不是部署源码。
+# 显式扫描根仍保持不变，使 self-red 和独立样本不会被排除。
+SCAN_ROOTS="${HARNESS_SCAN_ROOTS:-$REPO_ROOT/ruoyi-modules $REPO_ROOT/ruoyi-admin $REPO_ROOT/ruoyi-common}"
 SKIP_POM="${HARNESS_SKIP_POM_GATES:-0}"
 
 # ---- 扫描宽度守卫 ----
@@ -208,8 +210,17 @@ echo "== [C5] call / streamEvents 调用点必须引用 RuntimeContext =="
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   [ -f "$f" ] || continue
-  grep -qE '\.(streamEvents|call)\(' "$f" || continue
-  grep -q 'HarnessAgent' "$f" || continue
+  # 按 SDK actor 类型识别调用接收者，不能把 receipt.call() 记录访问器当执行。
+  python3 - "$f" <<'PY_CALL' || continue
+import pathlib, re, sys
+source = pathlib.Path(sys.argv[1]).read_text()
+source = re.sub(r'/\*.*?\*/|//[^\n]*|"(?:\\.|[^"\\])*"', ' ', source, flags=re.S)
+actors = set(re.findall(r'\b(?:HarnessAgent|ReActAgent|Agent)\s+([A-Za-z_$][\w$]*)\b', source))
+actors.update(re.findall(r'\b(?:var|HarnessAgent|ReActAgent|Agent)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:HarnessAgent|ReActAgent)\.builder\(', source))
+calls = re.findall(r'\b([A-Za-z_$][\w$]*)\s*\.\s*(?:call|streamEvents|callStream)\s*\(', source)
+chained = re.search(r'\.getDelegate\s*\(\s*\)\s*\.\s*(?:call|streamEvents|callStream)\s*\(', source)
+sys.exit(0 if any(actor in actors for actor in calls) or chained else 1)
+PY_CALL
   if grep -qE 'RuntimeContext|toRuntimeContext\(\)' "$f"; then
     ok "$(rel "$f") 调用携带身份"
   else

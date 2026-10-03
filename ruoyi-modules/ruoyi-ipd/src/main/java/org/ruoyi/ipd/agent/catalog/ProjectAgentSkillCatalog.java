@@ -97,8 +97,10 @@ public class ProjectAgentSkillCatalog {
             }
             skill = repository.getSkill(entry.name());
         } catch (IOException | RuntimeException e) {
+            // 2026-10-03：末参带异常对象补齐 message/栈（15:06 skillNames 502 排查时观测缺口同款），
+            // 写法与 IpdServiceExceptionAdvice#handleUnexpected 的 type={}+末参 e 一致。
             log.warn("project_agent_skill operation=LOAD status=FAILED skill={} errorType={}",
-                entry.name(), e.getClass().getName());
+                entry.name(), e.getClass().getName(), e);
             return Inspection.rejected("Skill 仓库不可读");
         }
         String actualSha = sha256OfRaw(entry.name());

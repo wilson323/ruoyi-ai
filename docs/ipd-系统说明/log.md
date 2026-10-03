@@ -13790,3 +13790,24 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
 **9. 补 R25 要求的 commit 号**：上轮第 7 条接手登记写于提交之前故缺 hash，现补——本次收口提交 = **`0901355e65e596059e1066fbc4b9b974156618bc`**（2026-10-02 23:58:45 -0700，父 `24d999eb`，`4 files changed, 153 insertions(+), 5 deletions(-)`），门禁 `passed=7 failed=0 skipped=0`（手动与钩子内各跑一次），未 push（`## main...origin/main [ahead 4]`），兄弟在途完整保全。**本段与镜像对应回流段按「未获新授权不提交」保留在工作树**（本轮用户授权范围仅覆盖上批 4 文件的收口提交），由后续统一收口。
 
 - marker: npe-null-actioncode-closure-20261003
+
+---
+
+### skillNames 502 结案（重打窗口运行态劣化，非产品缺陷）+ catalog 观测缺口修复 + Long 契约决策备忘落位（skillnames-502-closure-20261003）
+
+**裁决**：上块第 7 条「技能加载路径独立缺陷，待查」**更正为已结案——非产品代码缺陷**。15:06:00 的 `Resource URL: null`×2 → `LOAD FAILED IOException`×2 → `ServletException`（客户端 502 空体）发生在兄弟「重打 `target/ruoyi-admin.jar` + 重启」窗口内（15:06:00 请求 / 15:06:14 优雅关闭 / 15:06:20 新进程起），运行实例的 classpath 资源解析在窗口内静默劣化。
+
+**证据（A 级，现查于 2026-10-03 00:52~01:01）**：
+
+1. **74:2 日志分布**——`logs/sys-console.log` 全量 31101 行（覆盖至 15:06:14 关闭）内 `Resource URL` 解析成功 74 次（URL 全指向 `.codex/ipd-dev/backups/` 下历次启动 jar 的 `jar:nested:...!/ipd-skills`），null 仅 2 次且集中在 15:06:00 同一请求（traceId `c18a0f66ade34311b8476ad1f647761d`，`load`+`status` 两次构造）。同加载器先成功后 null → 运行态劣化，排除 jar 内容缺失。
+2. **资源在场（目录条目级）**——当前启动包 `target/ruoyi-admin.jar`（Oct 3 00:47，328376488 B）嵌套 `BOOT-INF/lib/ruoyi-ipd-3.1.0.jar` 内 `ipd-skills/competitor-analysis-ipd/` 目录条目在（条目时间 10-02 20:46）；源码 `src/main/resources/ipd-skills/` 44 个技能目录同在。
+3. **同参数复现即绿**——完整包上重放 15:06 全同参数（`market-research@v1` + `skillNames=["competitor-analysis-ipd"]` + `actionCode=C02`，该技能与 C02 同属此包，`ipd_action_skill_map` 亦有 C02 绑定行）：200/code=0，runId `2106292509897465857`，终态回读 **SUCCEEDED**、actionCode=C02、无错误。R214 留库。
+4. **异常包络链完好**——`ProjectAgentController` 实际在 `org.ruoyi.ipd.controller` 包（`IpdServiceExceptionAdvice` basePackages 覆盖内），`@ExceptionHandler(IpdBusinessException)` 在（L45-56，STATE_CONFLICT→mapped httpStatus+code 包络）。15:06 之所以穿透成 `ServletException`，最可疑假设是窗口内类加载抛 Error（非 Exception，advice 接不住）——无栈无法定案，恰是观测缺口本身的代价。
+
+**本轮修复（catalog 观测缺口，kernel 之外的可落地面）**：`ProjectAgentSkillCatalog#inspect` 的 `LOAD status=FAILED` warn 由「只记 errorType」改为末参带异常对象（+3/-1，写法对齐 `IpdServiceExceptionAdvice#handleUnexpected`）。验证：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProjectAgentSkillCatalogTest test`（错峰、单模块、无 -am/clean）`Tests run: 5, Failures: 0, Errors: 0`，且测试输出直接显示 warn 后随完整堆栈（`at ...inspect(ProjectAgentSkillCatalog.java:94)`）——修复效果在测试日志中可视。首次编译为兄弟并发构建假红（`SopTemplateServiceTest` 找不到符号 + `target/classes` NoSuchFileException，AGENTS 已登记形态），错峰 45 秒重试即绿，与本轮改动无关。
+
+**kernel 侧观测缺口（①）不接手**：`AgentScopeProjectAgentKernel.java` 全程兄弟在途（` M`，+31/-8，mtime 00:45 仍在动，改动区 @@ -426/-482/-492/-504 集中 426~534 行且新增了第二个 FALLBACK warn 点），三处既有日志点 L220 MODEL / L233 BUILD / L451 FALLBACK 仍未加异常对象。按 OPS-09 不抢改；patch 建议一行式：三处 `e.getClass().getName()` 后追加 `, e` 末参（与 catalog 本轮修法完全同款），等 kernel 归属会话收口时带上。
+
+**③ Long 契约拍板材料落位**：`docs/ipd-系统说明/决策备忘-Long序列化全局契约-owner拍板-20261003.md`——选项 A 维持全局 Long→STRING（建议，零改动、`0901355e` 已钉契约）/ B 字段级收窄 / C 移除全局改前端，含拍板记录空表。C 类项，工程侧推进到此为止，等 owner。
+
+- marker: skillnames-502-closure-20261003
