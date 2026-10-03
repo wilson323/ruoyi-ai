@@ -2,6 +2,7 @@ package org.ruoyi.integration;
 
 import io.agentscope.core.model.Model;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -16,16 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for MiniMax provider.
  * These tests require a valid MINIMAX_API_KEY environment variable.
  */
+@Tag("dev")
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 class MinimaxIntegrationTest {
 
     private MinimaxServiceImpl minimaxService;
-    private String apiKey;
 
     @BeforeEach
     void setUp() {
         minimaxService = new MinimaxServiceImpl();
-        apiKey = System.getenv("MINIMAX_API_KEY");
     }
 
     @ParameterizedTest
@@ -44,7 +44,7 @@ class MinimaxIntegrationTest {
         ChatModelVo modelVo = new ChatModelVo();
         modelVo.setProviderCode(ChatModeType.MINIMAX.getCode());
         modelVo.setApiHost(apiHost);
-        modelVo.setApiKey(apiKey);
+        modelVo.setApiKey("env:MINIMAX_API_KEY");
         modelVo.setModelName(modelName);
 
         ChatRequest request = new ChatRequest();

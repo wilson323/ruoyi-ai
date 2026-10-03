@@ -29,8 +29,9 @@ public final class ProjectAgentCompletionGate {
 
     static final String SEARCH_TOOL = "project_knowledge_search";
 
-    /** 小数或百分数。纯整数不核，避免把步骤号和年份当成编造引用。 */
-    private static final Pattern MEASUREMENT = Pattern.compile("(?<!\\d)(\\d+\\.\\d+|\\d+%)(?!\\d)");
+    /** 小数、百分数及明确金额；无单位整数仍不核，避免把步骤号和年份当成引用。 */
+    private static final Pattern MEASUREMENT = Pattern.compile(
+        "(?<![\\d.])(\\d+(?:\\.\\d+)?)(?:[\\t ]*(%|％|[亿万千百]?(?:人民币元|美元|港元|欧元|元)))?(?![\\d.])");
 
     /** 只排除 Markdown 行首标题的章节号；标题中的价格等其他数字仍需来源。 */
     private static final Pattern HEADING_SECTION = Pattern.compile(
@@ -417,21 +418,19 @@ public final class ProjectAgentCompletionGate {
     }
 
     /**
-     * 抽出小数和百分数的数值部分。12.83% 与 12.83 视为同一个数。
-     *
-     * @param text 正文或原文
-     * @return 数值集合
+     * 保留百分比及明确金额单位，不允许同一裸数跨计量单位借证。
+     * 不换算金额规模或币种，不推断实体、期间或指标关系。
      */
     private static Set<String> measurementCores(String text) {
         Set<String> cores = new LinkedHashSet<>();
         String values = HEADING_SECTION.matcher(text == null ? "" : text).replaceAll("$1");
         Matcher matcher = MEASUREMENT.matcher(values);
         while (matcher.find()) {
-            String token = matcher.group(1);
-            if (token.endsWith("%")) {
-                token = token.substring(0, token.length() - 1);
-            }
-            cores.add(token);
+            String number = matcher.group(1);
+            String unit = matcher.group(2);
+            if (unit == null && !number.contains(".")) continue;
+            if ("％".equals(unit)) unit = "%";
+            cores.add(number + "|" + (unit == null ? "" : unit));
         }
         return cores;
     }

@@ -14,6 +14,12 @@ public enum AgentEventType {
     SOURCE,
     TEXT_DELTA,
     ARTIFACT,
+    /**
+     * 长期记忆写入回执（2026-10-03 新增）。回答交付之后的后台副作用结果，
+     * 与 {@link #ERROR} 分离：记忆写失败不再改写业务终态，改由本事件如实记账并可按它补写。
+     * 非终态事件。
+     */
+    MEMORY_RECEIPT,
     ERROR,
     RUN_FINISHED;
 

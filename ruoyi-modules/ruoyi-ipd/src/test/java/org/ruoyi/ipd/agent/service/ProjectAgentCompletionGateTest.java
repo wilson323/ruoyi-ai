@@ -236,6 +236,39 @@ class ProjectAgentCompletionGateTest {
     }
 
     @Test
+    void percentageCannotSupportAmountOrBareDecimal() {
+        ProjectAgentCompletionGate ratio = new ProjectAgentCompletionGate();
+        ratio.noteSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS",
+            "citationText", "研发费用率12.83%，增长率15%。"));
+        assertThat(ratio.reject("研发费用率12.83%。")).isNull();
+        assertThat(ratio.reject("费用12.83元。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(ratio.reject("费用12.83。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(ratio.reject("费用15元。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+
+    }
+
+    @Test
+    void amountCannotSupportPercentageOrDifferentMoneyUnit() {
+        ProjectAgentCompletionGate money = new ProjectAgentCompletionGate();
+        money.noteSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS",
+            "citationText", "研发费用12.83亿元，报价15元，美元报价2.5美元。"));
+        assertThat(money.reject("研发费用12.83亿元，报价15元，美元报价2.5美元。")).isNull();
+        assertThat(money.reject("研发费用率12.83%。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(money.reject("研发费用12.83万元。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(money.reject("研发费用12.83元。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(money.reject("报价15%。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(money.reject("报价2.5元。")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(money.reject("### 1.1 分析\n步骤1，年份2026，研发费用12.83 亿元。")).isNull();
+        assertThat(money.reject("<think>费用率12.83%</think>研发费用12.83亿元。")).isNull();
+
+        ProjectAgentCompletionGate plain = new ProjectAgentCompletionGate();
+        plain.noteSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "citationText", "评分12.83"));
+        assertThat(plain.reject("评分12.83")).isNull();
+        assertThat(plain.reject("费用12.83元")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+        assertThat(plain.reject("费用率12.83%")).isEqualTo(ProjectAgentCompletionGate.REJECTED);
+    }
+
+    @Test
     @DisplayName("没查到或无权时，正文里的百分数不能当出处")
     void missingOrDeniedSourceCannotSupportMeasurement() {
         ProjectAgentCompletionGate empty = new ProjectAgentCompletionGate();

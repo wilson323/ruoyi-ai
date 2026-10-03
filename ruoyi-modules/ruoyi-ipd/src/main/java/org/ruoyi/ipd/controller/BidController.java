@@ -3,11 +3,16 @@ package org.ruoyi.ipd.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.common.IpdResources;
 import org.ruoyi.ipd.domain.BidInvitation;
 import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
@@ -43,16 +48,60 @@ public class BidController {
     private final BidResponseService bidResponseService;
     private final IpdPermission ipdPermission;
     private final IpdAuthSession session;
+    private final ProjectMapper projectMapper;
+
+    /**
+     * 招标单归属守卫（横向越权防护，写库前执行）。
+     *
+     * <p>三要素：① actor 只来自会话（{@code ipdPermission.requireInternal()} 的返回值，
+     * 绝不接受入参传入）；② 归属解析在写库之前完成（id → 招标单 → 项目 → 项目主组）；③
+     * 失败即拒且统一「无权操作」文案——招标单不存在与无权操作同一分支，不泄漏存在性。
+     *
+     * <p>复用 {@link IpdIdorGuard#assertSameGroupIpd}（操作人组 vs 项目主组，与
+     * {@code BidP231Validator#assertProjectVisible}、{@code GateReviewService} 同口径），
+     * 不另造守卫。无项目挂靠的历史数据退化为「发起人本人或超管」。
+     *
+     * @param actor         会话身份
+     * @param invitationId  招标单 ID
+     * @throws IpdBusinessException {@link ApiV1ErrorCode#FORBIDDEN} 招标单不存在或跨组
+     */
+    private Long resolveInvitationGroup(IpdActor actor, Long invitationId) {
+        BidInvitation inv = bidInvitationService.getById(invitationId);
+        if (inv == null) {
+            // 统一 FORBIDDEN——不区分「不存在」与「无权限」，避免存在性探测
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
+        }
+        if (inv.getProjectId() == null) {
+            // 无项目挂靠的历史数据退化为「发起人本人或超管」；命中后回操作人自己的组 ID，
+            // 由调用点的 assertSameGroupIpd 统一放行——解析与断言两个职责分开，
+            // 端点方法体里能看到真正的归属断言（门禁 GUARD_RE 只扫端点方法体）。
+            IpdIdorGuard.requireSelfOrSuperAdmin(actor, inv.getCreateBy());
+            return actor.groupId();
+        }
+        Project project = projectMapper.selectById(inv.getProjectId());
+        // 项目不存在时 mainGroupId 传 null：assertSameGroupIpd 对非超管一律 FORBIDDEN
+        return project == null ? null : project.getMainGroupId();
+    }
+
+    /** 新建招标单：请求体里的 projectId 同样要过归属校验，避免建在别人项目下。 */
+    private void requireProjectGroup(IpdActor actor, Long projectId) {
+        if (projectId == null) {
+            return;
+        }
+        Project project = projectMapper.selectById(projectId);
+        IpdIdorGuard.assertSameGroupIpd(actor, project == null ? null : project.getMainGroupId());
+    }
 
     // ==================== 招标单 ====================
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/bid-invitations")
     public ApiV1Response<BidInvitation> createInvitation(@RequestBody BidInvitation invitation) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
         Person person = session.currentPerson();
         // 发起人身份服务端权威：供 listResponses 隐私过滤与审计使用（通用填充器取不到 IPD 独立会话）
         invitation.setCreateBy(person.getId());
+        requireProjectGroup(actor, invitation.getProjectId());
         return ApiV1Response.ok(bidInvitationService.create(invitation));
     }
 
@@ -77,7 +126,8 @@ public class BidController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/bid-invitations/{id}/publish")
     public ApiV1Response<BidInvitation> publishInvitation(@PathVariable Long id) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveInvitationGroup(actor, id));
         return ApiV1Response.ok(bidInvitationService.publish(id));
     }
 
@@ -100,21 +150,24 @@ public class BidController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PostMapping("/bid-invitations/{id}/pre-select-token")
     public ApiV1Response<BidInvitationService.ConfirmTokenView> preSelectToken(@PathVariable Long id) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveInvitationGroup(actor, id));
         return ApiV1Response.ok(bidInvitationService.issueConfirmToken(id));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/bid-invitations/{id}/withdraw")
     public ApiV1Response<BidInvitation> withdrawInvitation(@PathVariable Long id) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveInvitationGroup(actor, id));
         return ApiV1Response.ok(bidInvitationService.withdraw(id));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
     @PutMapping("/bid-invitations/{id}/close")
     public ApiV1Response<BidInvitation> closeInvitation(@PathVariable Long id) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveInvitationGroup(actor, id));
         return ApiV1Response.ok(bidInvitationService.close(id));
     }
 

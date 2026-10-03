@@ -147,6 +147,97 @@ class ProjectAgentRunPlannerActionSkillTest {
             .hasMessageContaining("Skill 不可用");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+        "[\"missing-new-binding\"]", "[]", "[\"market-opportunity-research-ipd\",\"competitor-analysis-ipd\"]"
+    })
+    void recoveryUsesFrozenSkillsWithoutConsultingChangedActionMapping(String changedBinding) {
+        var maps = mock(IpdActionSkillMapService.class);
+        var planner = planner(maps);
+        var req = AgentTestFixtures.c02("idem-frozen-map", "original");
+        var original = planner.plan(req);
+        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+            .actionCode("C02").skillNames(changedBinding).build());
+        org.mockito.Mockito.clearInvocations(maps);
+        var recovered = planner.plan(req, AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID,
+            AgentTestFixtures.ACTOR.id(), original.snapshot().skills());
+        assertThat(recovered.skills()).isEqualTo(original.skills());
+        assertThat(recovered.snapshot().skills()).isEqualTo(original.snapshot().skills());
+        org.mockito.Mockito.verifyNoInteractions(maps);
+    }
+
+    @Test
+    void frozenEmptySkillsRemainEmptyEvenWhenMappingCannotBeRead() {
+        var maps = mock(IpdActionSkillMapService.class);
+        when(maps.findByActionCode("C02")).thenThrow(new IllegalStateException("map unavailable"));
+        var plan = planner(maps).plan(AgentTestFixtures.c02("idem-empty-freeze", "original"),
+            AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), List.of());
+        assertThat(plan.skills()).isEmpty();
+        org.mockito.Mockito.verifyNoInteractions(maps);
+    }
+
+    @Test
+    void recoveryLoadsOnlyFrozenOrderRatherThanRequestOrCurrentMap() {
+        var maps = mock(IpdActionSkillMapService.class);
+        var manifest = AgentTestFixtures.manifest();
+        var catalog = AgentTestFixtures.skillCatalog(manifest);
+        var first = catalog.load("market-opportunity-research-ipd").orElseThrow();
+        var second = catalog.load(SKILL).orElseThrow();
+        var refs = List.of(new org.ruoyi.ipd.agent.vo.ProjectAgentViews.SkillRef(first.name(), first.sha256()),
+            new org.ruoyi.ipd.agent.vo.ProjectAgentViews.SkillRef(second.name(), second.sha256()));
+        var plan = planner(maps).plan(AgentTestFixtures.c02("idem-order-freeze", "original"),
+            AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), refs);
+        assertThat(plan.skills()).extracting(skill -> skill.name()).containsExactly(first.name(), second.name());
+        assertThat(plan.snapshot().skills()).isEqualTo(refs);
+        org.mockito.Mockito.verifyNoInteractions(maps);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"missing-original-resource", "competitor-analysis-ipd"})
+    void missingOriginalResourceOrWrongFrozenDigestCannotUseCurrentReplacement(String name) {
+        var maps = mock(IpdActionSkillMapService.class);
+        var refs = List.of(new org.ruoyi.ipd.agent.vo.ProjectAgentViews.SkillRef(name, "0".repeat(64)));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner(maps).plan(
+            AgentTestFixtures.c02("idem-missing-original", "original"), AgentTestFixtures.TENANT,
+            AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), refs))
+            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class);
+    }
+
+    @Test
+    void newRunsStillReadCurrentActionMappingAndRejectMissingBinding() {
+        var maps = mock(IpdActionSkillMapService.class);
+        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+            .actionCode("C02").skillNames("[\"missing-new-binding\"]").build());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner(maps).plan(
+            AgentTestFixtures.c02("idem-current-new", "new"))).hasMessageContaining("Skill 不可用");
+        org.mockito.Mockito.verify(maps).findByActionCode("C02");
+    }
+
+    @Test
+    void frozenIdentityMustBeCompleteUniqueAndKeepCurrentToolAvailability() {
+        var maps = mock(IpdActionSkillMapService.class);
+        var req = AgentTestFixtures.c02("idem-frozen-boundary", "original");
+        var planner = planner(maps);
+        var frozen = planner.plan(req).snapshot().skills();
+        for (var invalid : List.of(
+            List.of(new org.ruoyi.ipd.agent.vo.ProjectAgentViews.SkillRef(SKILL, null)),
+            List.of(new org.ruoyi.ipd.agent.vo.ProjectAgentViews.SkillRef(SKILL, "bad")),
+            List.of(frozen.get(0), frozen.get(0)))) {
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner.plan(req,
+                AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), invalid))
+                .hasMessageContaining("冻结身份无法核验");
+        }
+        var manifest = AgentTestFixtures.manifest();
+        var tools = mock(ProjectAgentToolCatalog.class);
+        when(tools.status("project_knowledge_search")).thenReturn(new ProjectAgentToolCatalog.ToolStatus(
+            "project_knowledge_search", "项目资料", true, false, "fixture unavailable"));
+        var unavailable = new ProjectAgentRunPlanner(manifest, AgentTestFixtures.skillCatalog(manifest),
+            tools, AgentTestFixtures.modelCatalog(), maps);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> unavailable.plan(req,
+            AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), frozen))
+            .hasMessageContaining("工具不可用");
+    }
+
     private static ProjectAgentRunPlanner planner(IpdActionSkillMapService maps) {
         CapabilityManifest manifest = AgentTestFixtures.manifest();
         return new ProjectAgentRunPlanner(manifest, AgentTestFixtures.skillCatalog(manifest),

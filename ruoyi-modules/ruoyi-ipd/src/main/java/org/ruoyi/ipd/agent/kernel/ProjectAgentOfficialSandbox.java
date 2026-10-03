@@ -18,8 +18,10 @@ public final class ProjectAgentOfficialSandbox {
         return managedFilesystem(workspace, image, sink).spec();
     }
 
-    public record ManagedFilesystem(SandboxFilesystemSpec spec, ProjectAgentVerifiedSnapshotSpec snapshots) {
+    public record ManagedFilesystem(SandboxFilesystemSpec spec, ProjectAgentVerifiedSnapshotSpec snapshots,
+                                    ProjectAgentBackgroundMemoryLifecycle lifecycle) {
         public java.util.List<ProjectAgentVerifiedSnapshotSpec.Receipt> verifyReleased() {
+            lifecycle.requireHealthy();
             return snapshots.verifyReleased();
         }
     }
@@ -31,9 +33,36 @@ public final class ProjectAgentOfficialSandbox {
             throw new IllegalArgumentException("Official sandbox image is required");
         }
         Path runWorkspace = workspace.toAbsolutePath().normalize();
-        var snapshots = new ProjectAgentVerifiedSnapshotSpec(runWorkspace.resolve(".sandbox-snapshots"));
+        var lifecycle = new ProjectAgentBackgroundMemoryLifecycle();
+        var snapshots = new ProjectAgentVerifiedSnapshotSpec(runWorkspace.resolve(".sandbox-snapshots"), lifecycle);
         DockerFilesystemSpec spec = new DockerFilesystemSpec()
             .client(new DockerSandboxClient() {
+                private io.agentscope.harness.agent.sandbox.Sandbox observed(SandboxState state) {
+                    var dockerState = (io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxState) state;
+                    return new io.agentscope.harness.agent.sandbox.impl.docker.DockerSandbox(dockerState) {
+                        @Override public void hydrateWorkspace(java.io.InputStream archive) throws Exception {
+                            // Explicit filesystem uploads only; start/cold restore calls protected hook directly.
+                            lifecycle.hydrate(dockerState.getSnapshot() == null ? dockerState.getSessionId()
+                                : dockerState.getSnapshot().getId(), archive, super::hydrateWorkspace);
+                        }
+                        @Override protected void doHydrateWorkspace(java.io.InputStream archive) throws Exception {
+                            try { super.doHydrateWorkspace(archive); }
+                            catch (Exception error) { lifecycle.recordFailure(error); throw error; }
+                        }
+                        @Override protected java.io.InputStream doPersistWorkspace() throws Exception {
+                            try { return super.doPersistWorkspace(); }
+                            catch (Exception error) { lifecycle.recordFailure(error); throw error; }
+                        }
+                    };
+                }
+                @Override public io.agentscope.harness.agent.sandbox.Sandbox create(
+                        io.agentscope.harness.agent.sandbox.WorkspaceSpec workspaceSpec, SandboxSnapshotSpec snapshotSpec,
+                        io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions options) {
+                    return observed(super.create(workspaceSpec, snapshotSpec, options).getState());
+                }
+                @Override public io.agentscope.harness.agent.sandbox.Sandbox resume(SandboxState state) {
+                    return observed(state);
+                }
                 @Override public SandboxState deserializeState(String json, SandboxSnapshotSpec snapshotSpec) {
                     SandboxState state = super.deserializeState(json, snapshotSpec);
                     // SDK203 only rebinds remote snapshots. Rebind this observer after cold resume too.
@@ -51,6 +80,6 @@ public final class ProjectAgentOfficialSandbox {
             sink.requireActiveOwnership();
             return () -> { };
         });
-        return new ManagedFilesystem(spec, snapshots);
+        return new ManagedFilesystem(spec, snapshots, lifecycle);
     }
 }

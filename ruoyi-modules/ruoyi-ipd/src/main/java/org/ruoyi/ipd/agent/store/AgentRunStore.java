@@ -131,6 +131,9 @@ public interface AgentRunStore {
         throw new UnsupportedOperationException("recovery cursor is not supported");
     }
 
+    /** 仅扫描已成功提交而仍缺检查点清理回执的原运行。 */
+    default List<IpdAgentRun> listCommittedCleanupCandidates(Long afterId, int limit) { return List.of(); }
+
     /** 本方案写入过的owner标记；无标记的旧运行不能按租约缺失自动关闭。 */
     default boolean hasExecutionOwner(Long runId) { return false; }
 

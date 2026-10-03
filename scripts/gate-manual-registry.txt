@@ -1,0 +1,83 @@
+# 人工执行清单 —— 未接入 CI 的门禁脚本显式登记
+#
+# 由 scripts/check-gate-wiring.sh 消费。每行格式：
+#   <脚本文件名><TAB><状态><TAB><理由 / 处置建议>
+#
+# 状态取值：
+#   ACTIVE    —— 判定为「该跑但没接线」，登记在册，人工/后续 CI 执行。
+#                备注含「建议接线」者建议尽快接进 .github/workflows/。
+#   SUSPECT   —— 判定为「已过时或已损坏」，**不作为已登记**。
+#                元门禁不因它失败，但会在报告里单独列出，等 owner 裁决删除。
+#
+# 判定口径（可复核，不靠印象）：
+#   1. 文件内含 FAIL_SEED / --self-test / --self-red / SELF_RED 标记
+#      → 作者曾证明它能变红 → 是真门禁 → ACTIVE，并在备注写「建议接线」。
+#   2. 名字带日期后缀（-20260923 / -20260926）或 "*-landed" / "-running"
+#      → 一次性落地核查，消费完毕即过时 → SUSPECT。
+#   3. 已知计数被 `|| echo 0` / `|| true` 污染的损坏脚本 → SUSPECT（行号见 /tmp/meta-gate.md）。
+#
+# 新增脚本而未接线时，元门禁会 FAIL —— 这正是本清单存在的意义。
+#
+# ─────────────────────────── ACTIVE ───────────────────────────
+check-a11y-basics.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一；自证标记 3 处。CI 里跑的是另一套 axe-scan.mjs，不等价。建议接线
+check-agentscope-abstract-baseline.sh	ACTIVE	AgentScope 抽象基线核查，自证标记 2 处。建议接线
+check-assertion-line-drift.sh	ACTIVE	断言与代码漂移，自证标记 3 处。建议接线
+check-async-configurer-duplication.sh	ACTIVE	Spring 异步配置器重复注册，真实缺陷类
+check-async-eventlistener.sh	ACTIVE	Spring 异步事件监听器误用，真实缺陷类
+check-async-unused-bean.sh	ACTIVE	未被引用的 @Async bean；已知第 33/50 行 `|| true` 会把读取失败当 0，接线前需先修
+check-bcp-unit-mismatch.sh	ACTIVE	BCP 计量单位不一致，自证标记 4 处。建议接线（已知第 35/44 行 `|| true`）
+check-cd-absolute-path.sh	ACTIVE	文档内绝对路径漂移，自证标记 4 处。建议接线
+check-charset-consistency.sh	ACTIVE	字符集一致性检查
+check-cross-repo-cd-guard.sh	ACTIVE	跨仓文档目录守卫
+check-ddl-idempotent.sh	ACTIVE	DDL 幂等性检查，真实缺陷类
+check-demo-default-off.sh	ACTIVE	守护 CLAUDE.md 明写的 demo.enabled 默认 false 契约
+check-dispatch-sequence.sh	ACTIVE	事件派发时序检查，自证标记 6 处。建议接线
+check-doc-code-sync.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一，自证标记 3 处。建议接线
+check-doc-drift.sh	ACTIVE	文档漂移检查
+check-doc-line-refs.sh	ACTIVE	文档行号引用有效性检查
+check-e2e-block-gate.sh	ACTIVE	E2E 阻断门禁，自证标记 5 处。建议接线
+check-e2e-fe-be.sh	ACTIVE	前后端 E2E 对账
+check-env-readiness.sh	ACTIVE	环境就绪度预检
+check-gate-self-red.sh	ACTIVE	「自证能红」存在性检查（自证标记 18 处）。当前只验标记存在、从不真跑，是本元门禁要补的缺口。建议接线
+check-kanban-section-shape.sh	ACTIVE	看板章节结构检查，自证标记 5 处。建议接线
+check-lint-reports-freshness.sh	ACTIVE	lint 报告新鲜度，自证标记 5 处。建议接线
+check-merge-gate-archived-at.sh	ACTIVE	被 .harness/gate.sh 间接调用，但不在 CI 语料内；接进 CI 可与 harness 路径合并
+check-memory-leak-pattern.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一，自证标记 3 处。建议接线
+check-mock-data-realism.sh	ACTIVE	Mock 数据真实性，自证标记 3 处。建议接线
+check-mock-legality.sh	ACTIVE	Mock 合法性（Q2 回款口径等硬约束）
+check-module-boundary.sh	ACTIVE	模块边界检查，自证标记 5 处。建议接线（已知第 98/103 行 find 失败会静默少扫文件）
+check-multigates-sync.sh	ACTIVE	多 Gate 同步检查，自证标记 9 处 + 配套 selftest 脚本。建议接线
+check-naming-convention.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一（BP-001），自证标记 3 处。建议接线
+check-param-drift.sh	ACTIVE	参数漂移检查
+check-permission-mirror-fe-be.sh	ACTIVE	权限前后端镜像对账，自证标记 7 处。建议接线
+check-permission-single-source.sh	ACTIVE	权限单一来源检查，自证标记 18 处 + 配套 selftest 脚本。建议接线
+check-r-line-count.sh	ACTIVE	log.md R 段行数核查，自证标记 4 处。建议接线
+check-reflection-convergence.sh	ACTIVE	反思收敛检查，自证标记 6 处。建议接线
+check-report-baseline-drift.sh	ACTIVE	报告基线漂移
+check-resource-not-found-pattern.sh	ACTIVE	资源未找到返回模式，自证标记 0；已知第 38/46 行 `|| true`
+check-rule-wiring.sh	ACTIVE	规则接线检查
+check-sse-contract.sh	ACTIVE	SSE 契约检查
+check-ssot-drift.sh	ACTIVE	单一来源漂移检查，自证标记 3 处。建议接线
+check-startup-failfast-advice.sh	ACTIVE	启动失败快速提示建议
+check-surefire-groups-coverage.sh	ACTIVE	Surefire groups 覆盖，自证标记 3 处。建议接线
+check-test-assertion-history.sh	ACTIVE	测试断言历史，自证标记 3 处。建议接线
+check-three-source-hash.sh	ACTIVE	三源哈希对账，自证标记 5 处。建议接线（已知第 73/104 行 `|| true`）
+check-time-redline.sh	ACTIVE	时间红线检查，自证标记 5 处。建议接线
+check-agentscope-capabilities-open.py	ACTIVE	AgentScope 能力开放核查，自证标记 3 处。建议接线
+check-done-gate-extended.py	ACTIVE	扩展 done gate；同族 check-done-gate.py 已接线，分裂维护。建议接线
+check-done-gate-summary.py	ACTIVE	done gate 汇总，自证标记 2 处。建议接线
+check-kanban-flip-silent-fail.py	ACTIVE	看板静默翻卡失败检测（历史真实事故模式）
+check-mysql-db-name-consistency.mjs	ACTIVE	MySQL 库名一致性
+check-round-doc-evidence.mjs	ACTIVE	轮次文档证据核验，自证标记 3 处。建议接线
+test-audit-gate-inputs.py	ACTIVE	lib/audit-gate-input.sh（gate_grep 双零修复）的回归测试，自证标记 1 处。根因修复无回归保护。建议接线
+test-staged-snapshot.py	ACTIVE	check-staged-snapshot.py 的测试对；被测脚本已接线，测试未接线
+#
+# ─────────────────────────── SUSPECT（不作为已登记，等 owner 裁决删除） ───────────────────────────
+check-ai-exec-engine-20260926.sh	SUSPECT	一次性落地核查（20260926 AI 执行引擎），已被后续实现取代
+check-ai-model-config-20260923.sh	SUSPECT	一次性落地核查（20260923 模型配置），已被后续实现取代
+check-copilot-rag-20260923.sh	SUSPECT	一次性落地核查（20260923 copilot RAG），已被后续实现取代
+check-rag-docType-20260923.sh	SUSPECT	一次性落地核查（20260923 RAG docType），已被后续实现取代
+check-m1m5-landed.sh	SUSPECT	一次性落地核查（"M1M5 是否已落地"），消费完毕即失效
+check-gep-running.sh	SUSPECT	运行时状态探针（gep 是否在跑），不是源码门禁，不该进 CI
+check-closure-rate.sh	SUSPECT	损坏：第 46/47 行 CLOSED/TOTAL 用 `|| echo 0`，读失败被当 0 喂闭环率判定。修好前不应进 CI
+check-building-blocks-coverage.sh	SUSPECT	损坏：第 80/226 行 `grep -c . || true` 双零原型，读失败被当 0 个 middleware。修好前不应进 CI

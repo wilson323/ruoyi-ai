@@ -38,6 +38,20 @@ public class IpdWebSecurityConfig implements WebMvcConfigurer {
         this.session = session;
     }
 
+    /** SSE 完成会由容器跨线程 ASYNC 派发；仍执行原登录和注解权限检查。 */
+    @org.springframework.context.annotation.Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<jakarta.servlet.Filter> ipdAsyncSaTokenContext() {
+        // 独立实例仅补 ASYNC；不接管官方 REQUEST bean 的默认注册。
+        var registration = new org.springframework.boot.web.servlet.FilterRegistrationBean<jakarta.servlet.Filter>(
+            new cn.dev33.satoken.filter.SaTokenContextFilterForJakartaServlet());
+        registration.setName("ipdAsyncSaTokenContext");
+        registration.addUrlPatterns("/api/v1/*");
+        registration.setDispatcherTypes(jakarta.servlet.DispatcherType.ASYNC);
+        registration.setAsyncSupported(true);
+        registration.setOrder(cn.dev33.satoken.util.SaTokenConsts.SA_TOKEN_CONTEXT_FILTER_ORDER);
+        return registration;
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new HandlerInterceptor() {

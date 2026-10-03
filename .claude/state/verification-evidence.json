@@ -1,0 +1,8 @@
+{
+  "updatedAt": "2026-10-03T18:03:40.838Z",
+  "project": "/Users/mac/Documents/ruoyi-ai",
+  "command": "SKIP_CONCURRENT_WRITE=1 python3 - <<'PY'\nimport pathlib\np = pathlib.Path('ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentBackgroundMemoryLifecycleTest.java')\ns = p.read_text()\ns = s.replace(\"        assertTrue(started.await(5, TimeUnit.SECONDS));\",\n              \"        assertTrue(await(started));\")\ns = s.replace(\"    private static RuntimeContext callContext() {\",\n'''    private static boolean await(CountDownLatch latch) {\n        try { return latch.await(5, TimeU",
+  "markers": [
+    "maven"
+  ]
+}

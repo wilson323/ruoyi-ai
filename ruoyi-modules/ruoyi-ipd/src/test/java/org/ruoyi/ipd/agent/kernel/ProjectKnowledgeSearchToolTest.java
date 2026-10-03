@@ -34,6 +34,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProjectKnowledgeSearchToolTest {
 
     @Test
+    void typedPartialSurvivesMergeAndPublishesOnlyHealthyCitation() {
+        var partial = new RetrievalContext(1, 4, "有效原句", "有效原句", List.of(),
+            org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.PARTIAL,
+            Map.of("ZERO_NORM", 1, "INDEX_NOT_READY", 2));
+        var merged = ProjectKnowledgeRetriever.merge(new RetrievalContext(1, 4, "正文命中"), partial);
+        assertThat(merged.status()).isEqualTo(org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.PARTIAL);
+        assertThat(merged.issueCounts()).isEqualTo(partial.issueCounts());
+        List<Map<String, Object>> events = new java.util.ArrayList<>();
+        var tool = new ProjectKnowledgeSearchTool(1L, (p, t, q) -> merged, events::add);
+        var result = tool.callAsync(param(Map.of("query", "资料"))).block();
+        assertThat(events).singleElement().satisfies(event -> {
+            assertThat(event.get("retrievalStatus")).isEqualTo("PARTIAL");
+            assertThat(event.get("issueCounts")).isEqualTo(partial.issueCounts());
+            assertThat(event.get("citationText")).isEqualTo("正文命中有效原句");
+        });
+        assertThat(result.getOutput().toString()).contains("部分成功", "ZERO_NORM", "有效原句");
+    }
+
+    @Test
     void sourceEventCarriesActualTypedIdsInsteadOfInferringFromSourceName() {
         List<Map<String, Object>> recorded = new java.util.ArrayList<>();
         var identity = new org.ruoyi.ipd.service.AiDocEmbeddingService.CitationSource(

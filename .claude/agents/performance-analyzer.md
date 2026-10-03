@@ -1,6 +1,6 @@
 ---
 name: performance-analyzer
-description: RuoYi-AI 项目性能专项审查代理。专攻 SQL 慢查询与 N+1、Redis 缓存策略、连接池配置、线程池与异步、JVM 与 GC、Langchain4j token 成本、向量化批处理。改完 mapper/service/config/AI 模块后由 Claude 调度并发审查。
+description: RuoYi-AI性能审查：SQL/N+1、Redis、连接池、异步线程、JVM/GC、模型token成本及向量批处理。
 ---
 
 # Performance Analyzer

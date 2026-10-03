@@ -22,7 +22,9 @@ import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.OssFileEntity;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.mapper.GateArbitrationMapper;
 import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.ruoyi.ipd.mapper.GateElementResultMapper;
@@ -31,6 +33,7 @@ import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.GateReviewObserverMapper;
 import org.ruoyi.ipd.mapper.OssFileMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
@@ -49,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -109,13 +113,18 @@ class GateSignQueueAcceptanceTest {
     private GateElementResultMapper resultMapper;
     @Mock
     private OssFileMapper ossFileMapper;
+    /** sign() 的 gate→项目→组 归属断言所需（R212-④ 同款注入点）。 */
+    @Mock
+    private ProjectMapper projectMapper;
 
     private GateReviewService service;
     private GateElementResultService submitService;
 
     private static final IpdActor MARKET = new IpdActor(301L, "陈市场", "MARKET_PM", 7L);
-    private static final IpdActor RD = new IpdActor(302L, "刘研发", "RD_PM", 8L);
+    private static final IpdActor RD = new IpdActor(302L, "刘研发", "RD_PM", 7L);
     private static final IpdActor SUPER = new IpdActor(303L, "系统管理员", "SUPER_ADMIN", null);
+    /** 他组成员：用于 sign() 跨组越权负例（组 ≠ 项目主组）。 */
+    private static final IpdActor OUTSIDER = new IpdActor(304L, "外组市场", "MARKET_PM", 8L);
 
     private Gate gate;
     /** 内存 gate_reviews 签名簿：insert / updateById / selectList 同源，可真断言「行数不增」。 */
@@ -142,6 +151,11 @@ class GateSignQueueAcceptanceTest {
     void setUp() {
         service = new GateReviewService(gateMapper, reviewMapper, memberMapper, personMapper,
             arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
+        // 归属断言 fail-closed：未装配 ProjectMapper 一律「无权操作」，故必须注入。
+        service.setProjectMapper(projectMapper);
+        lenient().when(projectMapper.selectById(PROJECT_ID))
+            .thenReturn(Project.builder().id(PROJECT_ID).mainGroupId(MARKET.groupId())
+                .status("ACTIVE").delFlag("0").build());
         org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
             new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, notificationService);
         guard.initRules();
@@ -331,6 +345,36 @@ class GateSignQueueAcceptanceTest {
         members.add(member(301L, "MARKET_PM")); // 只缺 RD_PM ⇒ 仍为有人的那侧落行
         openQueue();
         assertThat(reviewRows).extracting(GateReview::getReviewerType).containsExactly("MARKET_PM");
+    }
+
+    // ==================== ① 跨组越权负例（sign 归属断言） ====================
+
+    @Test
+    @DisplayName("归属断言：他组签署人（同为 MARKET_PM 但组≠项目主组）签署本组 gate ⇒ 无权操作")
+    void sign_actorGroupDiffersFromProjectGroup_rejected() {
+        openQueue();
+        int before = reviewRows.size();
+
+        assertThatThrownBy(() -> service.sign(GATE_ID, "APPROVE", "越权签署", OUTSIDER))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("无权操作");
+
+        // 拒绝发生在写库之前：签名簿不增行，gate 状态不被推进
+        assertThat(reviewRows).hasSize(before);
+        assertThat(reviewRows).allSatisfy(r -> assertThat(r.getDecision()).isNull());
+        verify(gateMapper, never()).updateById(any(Gate.class));
+    }
+
+    @Test
+    @DisplayName("归属断言：项目行缺失（归属链路不可解析）⇒ fail-closed 无权操作，不放行")
+    void sign_projectRowMissing_failsClosed() {
+        openQueue();
+        when(projectMapper.selectById(PROJECT_ID)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.sign(GATE_ID, "APPROVE", "同组签署", MARKET))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("无权操作");
+        assertThat(reviewRows).allSatisfy(r -> assertThat(r.getDecision()).isNull());
     }
 
     // ==================== ② sign 命中占位行走 UPDATE ====================

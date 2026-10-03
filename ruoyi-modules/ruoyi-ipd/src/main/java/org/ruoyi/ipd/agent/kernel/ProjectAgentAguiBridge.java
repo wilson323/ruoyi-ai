@@ -123,7 +123,13 @@ public final class ProjectAgentAguiBridge {
                     .filter(io.agentscope.core.message.TextBlock.class::isInstance)
                     .map(io.agentscope.core.message.TextBlock.class::cast)
                     .map(io.agentscope.core.message.TextBlock::getText).collect(java.util.stream.Collectors.joining("\n"));
-                stream.addInterrupt(new AguiEvent.Interrupt(interruptId,"tool_call",message,call.getId(),null,null,Map.copyOf(metadata)));
+                var responseSchema = ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(call.getName())
+                    ? ProjectAgentOutputContract.responseSchema(call.getInput()) : null;
+                if (responseSchema != null) {
+                    message = "请回答以下问题后继续本次运行";
+                    metadata.put("outputKind", "CLARIFICATION");
+                }
+                stream.addInterrupt(new AguiEvent.Interrupt(interruptId,"tool_call",message,call.getId(),responseSchema,null,Map.copyOf(metadata)));
             }
         }
     }

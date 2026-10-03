@@ -6,6 +6,7 @@
 # 自证能红：FAIL_SEED=1 → 故意伪造 R95 claim 命中 → exit 2
 
 set -eo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/audit-gate-input.sh"
 
 R_REPORTS_DIR="${R_REPORTS_DIR:-docs/ipd-系统说明}"
 REPORT_OUT="${REPORT_OUT:-docs/ipd-系统说明/R132-r-report-line-claims-dry-run-20260920.md}"
@@ -31,18 +32,20 @@ main() {
   local total_scanned=0
   local total_with_claim=0
   local total_self_described=0
+  local mismatches=0
   local report_body=""
 
   for n in 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99; do
     for f in "$R_REPORTS_DIR"/R${n}-*.md; do
       [ -f "$f" ] || continue
+      [ -s "$f" ] || { echo "[gate] 空报告: $f" >&2; exit 2; }
       total_scanned=$((total_scanned + 1))
       local filename
       filename=$(basename "$f")
       local actual
       actual=$(wc -l < "$f" | tr -d ' ')
       local claim
-      claim=$(grep -oE "约\s*[0-9]+\s*行|实测\s*[0-9]+\s*行|≈\s*[0-9]+\s*行" "$f" 2>/dev/null | head -1 | grep -oE "[0-9]+" | head -1) || true
+      claim=$(gate_grep -oE "约\s*[0-9]+\s*行|实测\s*[0-9]+\s*行|≈\s*[0-9]+\s*行" "$f" | sed -n '1p' | gate_grep -oE "[0-9]+" | sed -n '1p')
       claim=${claim:-"无"}
 
       if [ "$claim" = "无" ]; then
@@ -54,16 +57,27 @@ main() {
 
       # 检查是否符合「**报告状态**：✅ R{N} 落地（约/实测 X 行）」模式
       # 仅 status 行内的约 N 行 / 实测 N 行 才视为真自述
-      local in_status=$(grep -c "**报告状态**.*（约\|**报告状态**.*（实测" "$f" 2>/dev/null || echo 0)
+      local in_status
+      in_status=$(gate_grep -c -E '\*\*报告状态\*\*.*（(约|实测)' "$f")
       if [ "$in_status" -gt 0 ]; then
         total_self_described=$((total_self_described + 1))
-        report_body="${report_body}| ${filename} | ${actual} | ${claim} | 🔴 自述不符（需用户决定）|\n"
+        claim=$(gate_grep -E '\*\*报告状态\*\*.*（(约|实测)' "$f" | gate_grep -oE '(约|实测)[[:space:]]*[0-9]+[[:space:]]*行' | gate_grep -oE '[0-9]+' | sed -n '1p')
+        if [ "$claim" -ne "$actual" ]; then
+          mismatches=$((mismatches + 1))
+          report_body="${report_body}| ${filename} | ${actual} | ${claim} | 🔴 自述不符（需用户决定）|\n"
+        else
+          report_body="${report_body}| ${filename} | ${actual} | ${claim} | ✅ 一致|\n"
+        fi
       else
         report_body="${report_body}| ${filename} | ${actual} | ${claim} | ⚠️  非报告自述（业务引用）|\n"
       fi
     done
   done
 
+  if [ "$total_scanned" -eq 0 ]; then
+    echo "[gate] 没有R83-R99报告输入" >&2
+    exit 2
+  fi
   # 落档报告
   local ts
   ts=$(date +%Y%m%d-%H%M)
@@ -100,7 +114,8 @@ EOF
   echo "   扫描 $total_scanned 份，命中自述 $total_with_claim 份，真自述 $total_self_described 份"
 
   # 简短输出
-  echo -e "$report_body" | head -30
+  printf '%b\n' "$report_body" | sed -n '1,30p'
+  if [ "$mismatches" -gt 0 ]; then return 1; fi
 }
 
 main "$@"

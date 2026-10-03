@@ -27,11 +27,13 @@ class ProjectAgentLongTermMemoryMiddlewareTest {
     private final List<Msg> messages = List.of(Msg.builder().role(MsgRole.USER).textContent("要表格").build());
     private final AgentInput input = new AgentInput(messages);
 
+    private final ProjectAgentEventSink sink = mock(ProjectAgentEventSink.class);
+
     private ProjectAgentLongTermMemoryMiddleware middleware() {
         when(agent.getAgentState()).thenReturn(state);
         when(state.getContext()).thenReturn(messages);
         when(memory.retrieve(any())).thenReturn(Mono.empty());
-        return new ProjectAgentLongTermMemoryMiddleware(memory);
+        return new ProjectAgentLongTermMemoryMiddleware(memory, sink);
     }
 
     private AgentEvent rootSuccess() {
@@ -78,11 +80,70 @@ class ProjectAgentLongTermMemoryMiddlewareTest {
         subscription.dispose();
     }
 
-    @Test void recordFailureFailsMainChain() {
+    /**
+     * run 2106378468009717761 的直接反证：答案正文与 TEXT_MESSAGE_END 早已推送落库，
+     * 事后一个记忆抽取超时经 concatWith 冒泡进主流，整轮被改判 FAILED/STREAM_ERROR，
+     * 对外文案「模型输出中断」与事实相反。记忆是回答<b>之后</b>的副作用，失败不得改写终态，
+     * 但必须留下可查、可重试的持久回执——既不吞，也不伪装成功。
+     */
+    @Test void recordFailureDoesNotFailMainChainButWritesRetryableReceipt() {
         var middleware = middleware();
-        when(memory.record(messages)).thenReturn(Mono.error(new IllegalStateException("record failed")));
+        var timeout = new java.util.concurrent.TimeoutException("stream stalled");
+        when(memory.record(messages)).thenReturn(Mono.error(timeout));
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, timeout));
+
+        // 主链正常收尾：事件一个不少，也不抛错。
+        var success = rootSuccess();
+        var events = middleware.onAgent(agent, context, input, ignored -> Flux.just(success))
+            .collectList().block(Duration.ofSeconds(2));
+        assertThat(events).containsExactly(success);
+
+        @SuppressWarnings("unchecked")
+        var receiptCaptor = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(sink).onMemoryReceipt(receiptCaptor.capture());
+        assertThat(receiptCaptor.getValue())
+            .containsEntry("status", "WRITE_FAILED")
+            .containsEntry("errorType", "TimeoutException")
+            .containsEntry("retryable", true)
+            .containsEntry("saved", 0);
+    }
+
+    /** 记忆写成功同样要留痕，否则「写了多少」永远无法与「没写」区分。 */
+    @Test void successfulRecordWritesWrittenReceiptWithCounts() {
+        var middleware = middleware();
+        when(memory.record(messages)).thenReturn(Mono.empty());
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(3, 2, null));
+
+        middleware.onAgent(agent, context, input, ignored -> Flux.just(rootSuccess()))
+            .blockLast(Duration.ofSeconds(2));
+
+        @SuppressWarnings("unchecked")
+        var receiptCaptor = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(sink).onMemoryReceipt(receiptCaptor.capture());
+        assertThat(receiptCaptor.getValue())
+            .containsEntry("status", "WRITTEN")
+            .containsEntry("extracted", 3)
+            .containsEntry("saved", 2)
+            .containsEntry("retryable", false);
+    }
+
+    /**
+     * 回执写失败是另一类故障：连「失败过」这个事实都没留下，必须向上抛。
+     * 若此条也不抛，一次性抖动就变成永久无痕的数据缺失，正是本次要根除的机制。
+     */
+    @Test void receiptWriteFailureStillFailsMainChain() {
+        var middleware = middleware();
+        var timeout = new java.util.concurrent.TimeoutException("stream stalled");
+        when(memory.record(messages)).thenReturn(Mono.error(timeout));
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, timeout));
+        org.mockito.Mockito.doThrow(new IllegalStateException("receipt sink is not bound"))
+            .when(sink).onMemoryReceipt(any());
+
         assertThatThrownBy(() -> middleware.onAgent(agent, context, input, ignored -> Flux.just(rootSuccess()))
-            .blockLast(Duration.ofSeconds(2))).hasMessageContaining("record failed");
+            .blockLast(Duration.ofSeconds(2))).hasMessageContaining("receipt sink is not bound");
     }
 
     @Test void recallFailurePreventsModelCallAndRecording() {

@@ -25,6 +25,25 @@ class AiDocumentServiceChainAccessTest {
     private final AiDocumentService service = new AiDocumentService(mapper);
 
     @Test
+    void indexMaintenanceUsesSameVersionAndRechecksRealProjectPermissionInsideCommitCallback() {
+        AiDocument doc = document(10L, 100L, "PRD", null, 1);
+        doc.setStatus("REVIEWED");
+        when(mapper.selectById(10L)).thenReturn(doc);
+        IpdActor actor = new IpdActor(9L, "alice", "MARKET_PM", 1L);
+        IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+        service.setProjectAccess(access);
+        when(access.requireVisible(actor, 100L)).thenReturn("000000")
+            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN));
+        AiDocEmbeddingService embedding = mock(AiDocEmbeddingService.class);
+        service.setDocEmbeddingService(embedding);
+        org.mockito.Mockito.when(embedding.rebuildIndex(org.mockito.ArgumentMatchers.eq(doc), org.mockito.ArgumentMatchers.any()))
+            .thenAnswer(inv -> ((java.util.function.Supplier<?>) inv.getArgument(1)).get());
+        assertThatThrownBy(() -> service.rebuildIndexAuthorized(actor, 10L)).isInstanceOf(IpdBusinessException.class);
+        verify(mapper, never()).update(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(mapper, never()).insert(org.mockito.ArgumentMatchers.any(AiDocument.class));
+    }
+
+    @Test
     void historyRejectsCrossProjectParentLinkEvenWhenVersionNumbersAreConsecutive() {
         AiDocument root = document(10L, 100L, "PRD", null, 1);
         AiDocument foreignChild = document(11L, 200L, "PRD", 10L, 2);

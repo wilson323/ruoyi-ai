@@ -32,7 +32,7 @@ class IpdGateElementSeedInitializerTest {
     @DisplayName("Seed 33 项：14 否决位 isVeto='1'、19 非否决 '0'，无 Y/N 泄漏，enabled/status/version/dual 归一")
     void seedMapsVetoAndNormalizesFields() throws Exception {
         GateElementMapper mapper = mock(GateElementMapper.class);
-        when(mapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of());
         when(mapper.insert(any(GateElement.class))).thenReturn(1);
 
         new IpdGateElementSeedInitializer(mapper).run(null);
@@ -52,5 +52,86 @@ class IpdGateElementSeedInitializerTest {
         assertThat(all).allMatch(x -> "published".equals(x.getStatus()));
         assertThat(all).allMatch(x -> Integer.valueOf(1).equals(x.getVersion()));
         assertThat(all).allMatch(x -> "0".equals(x.getVetoDualRequired()));
+    }
+    @Test void oldNumberingBlocksAllSeedWritesWithoutOverwriting() throws Exception {
+        var mapper = mock(GateElementMapper.class);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(GateElement.builder().gateCode("G3")
+            .elementCode("G3-01").elementName("关键功能实现").isVeto("1").status("published").enabled("1").delFlag("0").build()));
+        new IpdGateElementSeedInitializer(mapper).run(null);
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
+    }
+
+    @Test void canonicalRowsAreIdempotentAndFieldConflictsWriteNothing() throws Exception {
+        var mapper = mock(GateElementMapper.class);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of());
+        when(mapper.insert(any(GateElement.class))).thenReturn(1);
+        var initializer = new IpdGateElementSeedInitializer(mapper);
+        initializer.run(null);
+        var captured = ArgumentCaptor.forClass(GateElement.class);
+        verify(mapper, times(33)).insert(captured.capture());
+        var rows = captured.getAllValues();
+        org.mockito.Mockito.clearInvocations(mapper);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(rows);
+        initializer.run(null);
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
+        for (var conflict : List.of(
+            GateElement.builder().gateCode("G2").elementCode("G2-6").elementName("认证与法规清单确认").isVeto("1").passStandard("旧否决标准").build(),
+            GateElement.builder().gateCode("G3").elementCode("G3-1").elementName("其他名称").isVeto("0").passStandard("其他标准").build())) {
+            when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(conflict));
+            initializer.run(null);
+        }
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
+    }
+
+    @Test void preflightConflictAfterMatchingRowsNeverPartiallySeeds() throws Exception {
+        var mapper = mock(GateElementMapper.class);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(
+            GateElement.builder().gateCode("G1").elementCode("G1-1").elementName("市场机会真实性")
+                .passStandard("≥5家目标客户一手验证或≥1家客户书面意向；客户ID、记录及附件可追；一手验证门槛可配置").isVeto("0").build(),
+            GateElement.builder().gateCode("G5").elementCode("G5-07").status("published").enabled("1").delFlag("0").build()));
+        new IpdGateElementSeedInitializer(mapper).run(null);
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
+    }
+    @Test void deletedCanonicalIdentifierIsAReadOnlyConflictNotAnEmptyTable() throws Exception {
+        var mapper = mock(GateElementMapper.class);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(
+            GateElement.builder().gateCode("G1").elementCode("G1-1").elementName("市场机会真实性")
+                .passStandard("≥5家目标客户一手验证或≥1家客户书面意向；客户ID、记录及附件可追；一手验证门槛可配置")
+                .isVeto("0").delFlag("1").build()));
+        new IpdGateElementSeedInitializer(mapper).run(null);
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
+        String sql = GateElementMapper.class.getMethod("selectSeedPreflightIncludingDeleted")
+            .getAnnotation(org.apache.ibatis.annotations.Select.class).value()[0];
+        assertThat(sql).contains("gate_review_elements").contains("del_flag");
+        assertThat(sql).doesNotContain("del_flag =", "del_flag='");
+    }
+    @Test void legalCustomDraftArchivedAndPublishedDefinitionsDoNotBlockCanonicalSeed() throws Exception {
+        var mapper = mock(GateElementMapper.class);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(
+            GateElement.builder().gateCode("G1").elementCode("CUSTOM-1").status("draft").delFlag("0").build(),
+            GateElement.builder().gateCode("G2").elementCode("G2-ARCH-01").status("archived").delFlag("0").build(),
+            GateElement.builder().gateCode("G1").elementCode("G1-8").status("published").delFlag("0").build()));
+        when(mapper.insert(any(GateElement.class))).thenReturn(1);
+        new IpdGateElementSeedInitializer(mapper).run(null);
+        verify(mapper, times(33)).insert(any(GateElement.class));
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
+    }
+    @Test void archivedDisabledLegacySeedDoesNotBlockCanonicalIdempotence() throws Exception {
+        var mapper = mock(GateElementMapper.class);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of());
+        when(mapper.insert(any(GateElement.class))).thenReturn(1);
+        var initializer = new IpdGateElementSeedInitializer(mapper);
+        initializer.run(null);
+        var captured = ArgumentCaptor.forClass(GateElement.class);
+        verify(mapper, times(33)).insert(captured.capture());
+        var rows = new java.util.ArrayList<>(captured.getAllValues());
+        rows.add(GateElement.builder().gateCode("G3").elementCode("G3-01").elementName("旧关键功能实现")
+            .isVeto("1").status("archived").enabled("0").delFlag("0").build());
+        org.mockito.Mockito.clearInvocations(mapper);
+        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(rows);
+        initializer.run(null);
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
     }
 }

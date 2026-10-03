@@ -23,10 +23,11 @@
 #   1 = fail（a11y 基础违规）
 #   2 = 脚本/参数错误
 
-set -o pipefail
+set -eo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/audit-gate-input.sh"
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FRONT_DIR="$REPO/../ruoyi-ipd-web/apps/web-antd/src"
+REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+FRONT_DIR="${FRONT_DIR:-$REPO/../ruoyi-ipd-web/apps/web-antd/src}"
 
 # === 自证能红 ===
 if [[ "${A11Y_FAIL_SEED:-0}" == "1" ]]; then
@@ -40,22 +41,18 @@ echo "=== 可访问性 a11y 基础检测 (BP-009) ==="
 VIOLATIONS=0
 INFO=0
 
-if [[ ! -d "$FRONT_DIR" ]]; then
-  echo "[SKIP] 前端目录不存在: $FRONT_DIR"
-  echo "  跨仓扫描由前端仓 agent 触发，本脚本仅在主仓扫描时跳过"
-  exit 0
-fi
+PRODUCTION_FILES=$(gate_frontend_files "$FRONT_DIR")
 
 # === 1. <img> 标签 alt 属性检测 ===
 echo "[STEP 1] <img> 标签 alt 属性检测..."
 
-IMG_FILES=$(grep -rlE "<img\s" "$FRONT_DIR" 2>/dev/null | head -20)
+IMG_FILES=$(gate_frontend_matching_files "<img\s" "$PRODUCTION_FILES")
 IMG_NO_ALT=0
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   # 简单检测：单行内 <img ... > 是否含 alt=
-  IMG_LINES=$(grep -nE "<img\s" "$f" 2>/dev/null)
+  IMG_LINES=$(gate_grep -nE "<img\s" "$f")
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
     if echo "$line" | grep -qE "alt\s*="; then
@@ -72,15 +69,15 @@ VIOLATIONS=$((VIOLATIONS + IMG_NO_ALT))
 # === 2. <button> 可访问文本 ===
 echo "[STEP 2] <button> 可访问文本检测..."
 
-BTN_FILES=$(grep -rlE "<button\s" "$FRONT_DIR" 2>/dev/null | head -20)
+BTN_FILES=$(gate_frontend_matching_files "<button\s" "$PRODUCTION_FILES")
 BTN_NO_LABEL=0
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   # 检测自闭合 button（无文本内容）：<button ... />
-  BTN_SELF=$(grep -cE "<button[^>]*\/>" "$f" 2>/dev/null || echo 0)
+  BTN_SELF=$(gate_grep -cE "<button[^>]*\/>" "$f")
   # 检测 button 含 aria-label 或包裹文本
-  BTN_LABEL=$(grep -cE "<button[^>]*(aria-label|title)" "$f" 2>/dev/null || echo 0)
+  BTN_LABEL=$(gate_grep -cE "<button[^>]*(aria-label|title)" "$f")
 
   if [[ $BTN_SELF -gt 0 ]] && [[ $BTN_LABEL -lt $BTN_SELF ]]; then
     BTN_NO_LABEL=$((BTN_NO_LABEL + 1))
@@ -93,14 +90,14 @@ INFO=$((INFO + BTN_NO_LABEL))
 # === 3. <input> label 关联检测 ===
 echo "[STEP 3] <input> label 关联检测..."
 
-INP_FILES=$(grep -rlE "<input\s" "$FRONT_DIR" 2>/dev/null | head -20)
+INP_FILES=$(gate_frontend_matching_files "<input\s" "$PRODUCTION_FILES")
 INP_NO_LABEL=0
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   # 启发式：input 数量 vs aria-label/htmlFor 数量
-  INP_NUM=$(grep -cE "<input\s" "$f" 2>/dev/null || echo 0)
-  ARIA_NUM=$(grep -cE "(aria-label|<label\s+htmlFor)" "$f" 2>/dev/null || echo 0)
+  INP_NUM=$(gate_grep -cE "<input\s" "$f")
+  ARIA_NUM=$(gate_grep -cE "(aria-label|<label\s+htmlFor)" "$f")
 
   if [[ $INP_NUM -gt 3 ]] && [[ $ARIA_NUM -lt $INP_NUM ]]; then
     INP_NO_LABEL=$((INP_NO_LABEL + 1))
@@ -113,13 +110,13 @@ INFO=$((INFO + INP_NO_LABEL))
 # === 4. ARIA 属性误用检测 ===
 echo "[STEP 4] ARIA 属性拼写误用检测..."
 
-ARIA_FILES=$(grep -rlE "aria-[a-z]+" "$FRONT_DIR" 2>/dev/null | head -20)
+ARIA_FILES=$(gate_frontend_matching_files "aria-[a-z]+" "$PRODUCTION_FILES")
 ARIA_BAD=0
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   # 误用：aria-lablel / aria-lbel 等拼写错误
-  BAD=$(grep -cE "aria-(lablel|lable|lablel|lablel|lablel|lablel)" "$f" 2>/dev/null || echo 0)
+  BAD=$(gate_grep -cE "aria-(lablel|lable|lablel|lablel|lablel|lablel)" "$f")
   ARIA_BAD=$((ARIA_BAD + BAD))
 done <<< "$ARIA_FILES"
 
@@ -129,13 +126,13 @@ VIOLATIONS=$((VIOLATIONS + ARIA_BAD))
 # === 5. 键盘事件支持检测 ===
 echo "[STEP 5] 键盘事件支持检测..."
 
-KB_FILES=$(grep -rlE "onClick\s*=" "$FRONT_DIR" 2>/dev/null | head -10)
+KB_FILES=$(gate_frontend_matching_files "onClick\s*=" "$PRODUCTION_FILES")
 KB_MISS=0
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
-  ONCLICK=$(grep -cE "onClick\s*=" "$f" 2>/dev/null || echo 0)
-  ONKEY=$(grep -cE "onKey(Down|Press|Up)\s*=" "$f" 2>/dev/null || echo 0)
+  ONCLICK=$(gate_grep -cE "onClick\s*=" "$f")
+  ONKEY=$(gate_grep -cE "onKey(Down|Press|Up)\s*=" "$f")
 
   if [[ $ONCLICK -gt 3 ]] && [[ $ONKEY -eq 0 ]]; then
     KB_MISS=$((KB_MISS + 1))

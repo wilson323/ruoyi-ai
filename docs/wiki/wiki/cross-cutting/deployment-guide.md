@@ -181,7 +181,7 @@ short-drama:
 
 | 现象 | 排查点 |
 |---|---|
-| 启动失败端口被占 | 检查 `killPortProcess(6039)` 是否执行；或 `-Dserver.port=xxxx` 换端口 |
+| 启动失败端口被占 | 当前[启动类](../../../../ruoyi-admin/src/main/java/org/ruoyi/RuoYiAIApplication.java)不会自动清理端口；核对实际配置与服务归属，本机 IPD 使用 16039，不终止其他服务 |
 | `demo.enabled=true` 拦截写操作 | dev 环境默认；生产应设 `false` |
 | 向量库连接失败 | 检查 `vector-store.type` 与 docker compose 内服务类型一致 |
 | 多租户串数据 | 检查新表是否在 `tenant.excludes` 登记 |

@@ -6,7 +6,6 @@ import io.agentscope.core.tool.AgentTool;
 import io.agentscope.core.tool.ToolCallParam;
 import io.agentscope.core.tool.Toolkit;
 import org.ruoyi.mcp.service.core.ManagedMcpAsyncClient;
-import io.agentscope.core.tool.mcp.McpClientWrapper;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.ruoyi.chat.kernel.tool.KernelGovernedTool;
 import org.ruoyi.chat.kernel.tool.KernelToolGovernance;
@@ -102,7 +101,7 @@ public final class ProductLineMcpTool implements AgentTool {
     @Override
     public String getDescription() {
         return "只读查询产线「" + endpoint.lineName() + "」的知识库。服务标识 "
-            + endpoint.serviceId() + "。";
+            + endpoint.serviceId() + "。operation=discover 可读取协议目录及参数摘要，仅作诊断；query 仍只消费唯一知识查询工具。";
     }
 
     /** {@inheritDoc} */
@@ -111,8 +110,14 @@ public final class ProductLineMcpTool implements AgentTool {
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
         schema.put("properties", Map.of("query", Map.of(
-            "type", "string", "description", "向该产线知识库提出的问题")));
-        schema.put("required", List.of("query"));
+            "type", "string", "description", "向该产线知识库提出的问题"),
+            "operation", Map.of("type", "string", "enum", List.of("query", "discover")),
+            "schemaDigest", Map.of("type", "string", "pattern", "^[0-9a-f]{64}$",
+                "description", "协议目录返回的参数摘要；不一致时拒绝调用")));
+        schema.put("oneOf", List.of(Map.of("required", List.of("query"),
+                "properties", Map.of("operation", Map.of("const", "query"))),
+            Map.of("required", List.of("operation"), "properties", Map.of("operation", Map.of("const", "discover")),
+                "not", Map.of("anyOf", List.of(Map.of("required", List.of("query")), Map.of("required", List.of("schemaDigest")))))));
         schema.put("additionalProperties", Boolean.FALSE);
         return schema;
     }
@@ -138,25 +143,50 @@ public final class ProductLineMcpTool implements AgentTool {
         String question = raw instanceof String written ? written.trim() : "";
         ToolUseBlock use = param == null ? null : param.getToolUseBlock();
         String toolCallId = use == null ? null : use.getId();
+        String operation = input.get("operation") == null ? "query" : String.valueOf(input.get("operation"));
+        Object digestValue = input.get("schemaDigest");
+        if (!java.util.Set.of("query", "operation", "schemaDigest").containsAll(input.keySet())
+            || !java.util.Set.of("query", "discover").contains(operation)
+            || (digestValue != null && (!(digestValue instanceof String digest) || !digest.matches("[0-9a-f]{64}")))
+            || ("discover".equals(operation) && (input.containsKey("query") || input.containsKey("schemaDigest")))) {
+            return Mono.just(finish("", toolCallId, query.codedFailure(endpoint, "LOCAL", "INVALID_QUERY",
+                "仅支持已授权的知识查询或只读协议目录诊断；不能选择任意协议工具或传入其他参数")));
+        }
+        if ("discover".equals(operation)) return Mono.fromCallable(() -> discoverOnce())
+            .subscribeOn(Schedulers.boundedElastic());
         if (question.isEmpty() || question.length() > 8000) {
             return Mono.just(finish("", toolCallId, query.codedFailure(
                 endpoint, "LOCAL", "INVALID_QUERY", "查询须为1至8000字的文本")));
         }
-        return Mono.fromCallable(() -> invokeOnce(question, toolCallId))
+        return Mono.fromCallable(() -> invokeOnce(question, toolCallId, (String) digestValue))
             .subscribeOn(Schedulers.boundedElastic());
     }
 
-    private ToolResultBlock invokeOnce(String question, String toolCallId) {
+    private ToolResultBlock invokeOnce(String question, String toolCallId, String schemaDigest) {
         ProductLineMcpQuery.Outcome outcome;
         if (sink != null) {
             sink.requireActiveOwnership();
         }
         try (LineSession session = sessions == null ? open(endpoint) : sessions.open()) {
-            outcome = query.invokeOutcome(endpoint, question, session);
+            outcome = query.invokeOutcome(endpoint, question, schemaDigest, session);
         } catch (Exception ex) {
             outcome = query.protocolFailureOutcome(endpoint, "INITIALIZE", ex);
         }
         return finish(question, toolCallId, outcome);
+    }
+
+    private ToolResultBlock discoverOnce() {
+        if (sink != null) sink.requireActiveOwnership();
+        try (LineSession session = sessions == null ? open(endpoint) : sessions.open()) {
+            String metadata = query.discover(endpoint, session);
+            if (sink != null) {
+                sink.requireActiveOwnership();
+                sink.onStep("MCP_DISCOVERY", Map.of("serviceId", endpoint.serviceId(), "diagnosticOnly", true));
+            }
+            return ToolResultBlock.text(metadata);
+        } catch (Exception failure) {
+            return ToolResultBlock.error(query.protocolFailure(endpoint, "LIST_TOOLS", failure));
+        }
     }
 
     private ToolResultBlock finish(String question, String toolCallId, String text) {
@@ -203,7 +233,7 @@ public final class ProductLineMcpTool implements AgentTool {
         source.put("preview", text == null ? "" : (text.length() > 1000 ? text.substring(0, 1000) : text));
         if (sink != null) {
             sink.requireActiveOwnership();
-            sink.onSource(source);
+            sink.onTrustedSource(source);
         }
         if (!hit && !noHit) {
             return ToolResultBlock.error(text == null ? "" : text);
@@ -218,7 +248,7 @@ public final class ProductLineMcpTool implements AgentTool {
      * @return 可列出工具的会话
      */
     private static LineSession open(Endpoint chosen) {
-        McpClientWrapper client = ManagedMcpAsyncClient.streamableHttp(
+        ManagedMcpAsyncClient client = ManagedMcpAsyncClient.streamableHttp(
             chosen.serviceId(), chosen.url(), Map.of(), TIMEOUT);
         if (client == null) {
             throw new IllegalStateException("官方客户端没有返回");
@@ -249,9 +279,9 @@ public final class ProductLineMcpTool implements AgentTool {
      */
     private static final class OfficialSession implements LineSession {
 
-        private final McpClientWrapper client;
+        private final ManagedMcpAsyncClient client;
 
-        private OfficialSession(McpClientWrapper client) {
+        private OfficialSession(ManagedMcpAsyncClient client) {
             this.client = client;
         }
 
@@ -261,6 +291,9 @@ public final class ProductLineMcpTool implements AgentTool {
             List<McpSchema.Tool> tools = client.listTools().block(TIMEOUT);
             return tools == null ? List.of() : tools;
         }
+
+        @Override public Map<String, Object> rawInputSchema(String name) { return client.rawInputSchema(name); }
+        @Override public McpSchema.ServerCapabilities serverCapabilities() { return client.serverCapabilities(); }
 
         /** {@inheritDoc} */
         @Override

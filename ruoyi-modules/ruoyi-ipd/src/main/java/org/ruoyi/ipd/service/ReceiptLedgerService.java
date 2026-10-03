@@ -2,6 +2,7 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Project;
@@ -39,8 +40,29 @@ public class ReceiptLedgerService implements IReceiptLedgerService {
     private final ReceiptLedgerMapper receiptLedgerMapper;
     private final ProjectMapper projectMapper;
 
+    /**
+     * 单笔退款冲减金额上限（可配置，<b>业务口径待 owner 拍板</b>）。
+     *
+     * <p>依据缺失说明：已检索 {@code docs/开发说明/开发说明书.md} BR-INC-14、
+     * {@code docs/ipd-系统说明/外部资源/IPD系统_AI开发主Prompt_v3.md:817,917}、
+     * {@code docs/ipd-系统说明/外部资源/IPD系统_验收清单.md:311-312}，退款规则只约束<b>时间</b>维度
+     * （窗口内当期冲减 / 窗口外不回溯），未规定任何<b>金额</b>上限；DDL
+     * {@code docs/script/sql/update/2026-09-06-ipd-receipt-ledger-table.sql} 的 net_amount 生成列
+     * 也没有 CHECK 约束。故不擅自拍数字，改为配置项：
+     * <ul>
+     *   <li>留空（默认）= 不额外设限，只受「累计冲减不超过当月回款额」约束；</li>
+     *   <li>填入正数 = 单次冲减金额不得超过该值，超出按 PARAM_INVALID 拒绝。</li>
+     * </ul>
+     * 撤销方式：删除 {@code ipd.receipt.refund-max-amount} 配置键即可回到默认。
+     */
+    @Value("${ipd.receipt.refund-max-amount:}")
+    BigDecimal refundMaxAmount;
+
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final String MONTH_PATTERN = "\\d{4}-(0[1-9]|1[0-2])";
+
+    /** receipt_amount / refund_amount 列宽 decimal(18,2)：整数部分最多 16 位，超出即无法入库（DDL 依据）。 */
+    private static final BigDecimal MAX_REPRESENTABLE_AMOUNT = new BigDecimal("1" + "0".repeat(16));
 
     /**
      * 录入回款（AC-INC-16c）
@@ -60,6 +82,22 @@ public class ReceiptLedgerService implements IReceiptLedgerService {
         if (ledger.getRefundAmount() == null) {
             ledger.setRefundAmount(BigDecimal.ZERO);
         }
+        // 首次录入即带 refundAmount 的旁路同样不得把净额打成负数（工程口径，理由同 recordRefund）
+        // 注意：此处 refundAmount 允许为 0（尚无退款），只拒负数 / 越界 / 超过回款额
+        if (ledger.getRefundAmount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "退款冲减金额不能为负数");
+        }
+        if (!isFinite(ledger.getRefundAmount())
+            || ledger.getRefundAmount().compareTo(MAX_REPRESENTABLE_AMOUNT) >= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "退款冲减金额不是有效数值或超出 decimal(18,2) 可表示范围: " + ledger.getRefundAmount());
+        }
+        if (ledger.getRefundAmount().compareTo(ledger.getReceiptAmount()) > 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "退款冲减金额不得超过当月回款金额（净额不得为负），回款=" + ledger.getReceiptAmount()
+                    + " 退款=" + ledger.getRefundAmount());
+        }
+        requireRefundWithinConfiguredCap(ledger.getRefundAmount());
         // AC-INC-32：项目存在性校验 + 上市日期为起算点
         Project project = projectMapper.selectById(ledger.getProjectId());
         if (project == null || "1".equals(project.getDelFlag())) {
@@ -90,9 +128,19 @@ public class ReceiptLedgerService implements IReceiptLedgerService {
     /**
      * 退款冲减（AC-INC-31/31b）
      * 窗口内退款 → 当期冲减；窗口外退款 → 不回溯扣减（拒绝）
+     *
+     * <p>金额上限（本轮补齐，<b>不是</b> AC-INC-31/31b 的一部分，二者只管时间维度）：
+     * <ol>
+     *   <li>金额必须为正、且在 decimal(18,2) 可表示范围内（见 {@link #requireRefundAmountValid}）；</li>
+     *   <li>累计冲减不得超过该行回款额，净额不得为负 —— <b>工程口径</b>，
+     *       开发说明书 / 验收清单 / DDL 均未规定金额上限，此处取「不产生负净额」的最小不变量；</li>
+     *   <li>可选的绝对金额上限 {@code ipd.receipt.refund-max-amount}，
+     *       <b>业务口径待 owner 拍板</b>，默认留空 = 不启用（见字段注释）。</li>
+     * </ol>
      */
     @Transactional(rollbackFor = Exception.class)
     public ReceiptLedger recordRefund(Long projectId, String month, BigDecimal refundAmount) {
+        requireRefundAmountValid(refundAmount, "退款冲减金额");
         ReceiptLedger existing = receiptLedgerMapper.selectOne(
             new LambdaQueryWrapper<ReceiptLedger>()
                 .eq(ReceiptLedger::getProjectId, projectId)
@@ -105,10 +153,75 @@ public class ReceiptLedgerService implements IReceiptLedgerService {
         if (!isInWindow(existing)) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "AC-INC-31：窗口外退款不做回溯扣减，月份=" + month);
         }
+        // 冲减上限校验：不得把该行净额打成负数（工程口径，见方法 javadoc）
+        BigDecimal alreadyRefunded = existing.getRefundAmount() != null
+            ? existing.getRefundAmount() : BigDecimal.ZERO;
+        BigDecimal outstanding = existing.getReceiptAmount() == null
+            ? BigDecimal.ZERO
+            : existing.getReceiptAmount().subtract(alreadyRefunded);
+        if (outstanding.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "该月份回款已全额冲减，不可继续冲减，月份=" + month);
+        }
+        if (refundAmount.compareTo(outstanding) > 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "退款冲减金额超过当前未冲减余额，月份=" + month
+                    + " 未冲减余额=" + outstanding.toPlainString()
+                    + " 本次冲减=" + refundAmount.toPlainString());
+        }
+        requireRefundWithinConfiguredCap(refundAmount);
         // AC-INC-31b：窗口内退款当期冲减
-        existing.setRefundAmount(existing.getRefundAmount().add(refundAmount));
+        existing.setRefundAmount(alreadyRefunded.add(refundAmount));
         receiptLedgerMapper.updateById(existing);
         return existing;
+    }
+
+    /**
+     * 退款冲减金额基础合法性：非 null、正数、在 decimal(18,2) 可表示范围内。
+     *
+     * <p>「非有限数（NaN / Infinity）」：{@link BigDecimal} 本身无法承载这两个值，HTTP 路径上由 Jackson
+     * 绑定 {@code BigDecimal} 字段时即以 400 拒掉；此处的等价防御是拒绝超出列宽的量级，
+     * 否则会在入库时被静默截断/溢出。DTO 侧 {@code ReceiptRefundReq.refundAmount @DecimalMin("0.01")}
+     * 只覆盖 HTTP 路径，内部调用方不经过 Bean Validation，故在 service 侧补齐。
+     */
+    private void requireRefundAmountValid(BigDecimal amount, String label) {
+        if (amount == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, label + "不能为空");
+        }
+        if (!isFinite(amount)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, label + "不是有效数值: " + amount);
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, label + "必须为正数");
+        }
+        if (amount.compareTo(MAX_REPRESENTABLE_AMOUNT) >= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                label + "超出 decimal(18,2) 可表示范围: " + amount.toPlainString());
+        }
+    }
+
+    /**
+     * 可配置单笔上限 {@code ipd.receipt.refund-max-amount}；留空（null）= 未启用，不额外设限。
+     * 业务口径待 owner 拍板，见字段注释。
+     */
+    private void requireRefundWithinConfiguredCap(BigDecimal amount) {
+        if (refundMaxAmount == null) {
+            return;
+        }
+        if (refundMaxAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            // 配置了非正数视为误配，忽略而不是全量拒单
+            return;
+        }
+        if (amount.compareTo(refundMaxAmount) > 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
+                "退款冲减金额超过配置上限 ipd.receipt.refund-max-amount="
+                    + refundMaxAmount.toPlainString() + "，本次=" + amount.toPlainString());
+        }
+    }
+
+    /** BigDecimal 恒为有限值；此处保留为显式护栏，便于将来换用 double 金额时不被静默移除。 */
+    private static boolean isFinite(BigDecimal amount) {
+        return amount != null;
     }
 
     /**

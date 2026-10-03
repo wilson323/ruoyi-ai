@@ -29,6 +29,8 @@ public interface IReceiptLedgerService {
 
     /** * 退款冲减（AC-INC-31/31b） */
     /** * 窗口内退款 → 当期冲减；窗口外退款 → 不回溯扣减（拒绝） */
+    /** * 金额侧：必须为正、在 decimal(18,2) 范围内，且累计冲减不得超过该行回款额（净额不得为负）； */
+    /** * 另有可配置单笔上限 {@code ipd.receipt.refund-max-amount}，业务口径待 owner 拍板，默认留空不启用。 */
     ReceiptLedger recordRefund(Long projectId, String month, BigDecimal refundAmount);
 
     /** * 计算达成率（AC-INC-16b/16d） */

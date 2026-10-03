@@ -289,6 +289,54 @@
       "expire": "2026-12-31",
       "added_by": "e2e-contract-stages-active-20260928",
       "evidence": "PersonController.java#listActive"
+    },
+    {
+      "path": "/api/v1/audit-rollback-counter",
+      "methods": [
+        "GET"
+      ],
+      "reason": "回滚率诊断端点：ipd.audit.rollback-counter.enabled 默认 false，未开启即不可达；为「审计时序改造是否值得」提供实测依据，无 UI 消费是预期形态",
+      "owner_card": "OPS-06",
+      "review_date": "2026-10-03",
+      "expire": "2026-11-03",
+      "added_by": "ae8",
+      "evidence": "AuditRollbackCounterController.java:49"
+    },
+    {
+      "path": "/api/v1/agent-runs/{VAR}/skill-reviews",
+      "methods": [
+        "GET"
+      ],
+      "reason": "兄弟会话 ruoyi-ai-b0 在途新增的技能评审回放端点，前端页面未完工（其移交文档 §5 已列为未结项）；接线完成后应清账",
+      "owner_card": "KB-PARTB-B0",
+      "review_date": "2026-10-03",
+      "expire": "2026-11-03",
+      "added_by": "ae8",
+      "evidence": "ProjectAgentController.java:53"
+    },
+    {
+      "path": "/api/v1/agent-runs/{VAR}/skill-reviews/{VAR}/review",
+      "methods": [
+        "POST"
+      ],
+      "reason": "同上：兄弟会话在途新增的技能评审提交端点，前端未接线",
+      "owner_card": "KB-PARTB-B0",
+      "review_date": "2026-10-03",
+      "expire": "2026-11-03",
+      "added_by": "ae8",
+      "evidence": "ProjectAgentController.java:60"
+    },
+    {
+      "path": "/api/v1/ai-documents/{VAR}/versions/{VAR}/rebuild-index",
+      "methods": [
+        "POST"
+      ],
+      "reason": "知识库索引重建运维端点，由索引服务内部触发、无 UI 消费；随本次工作树一并进入快照，登记后须复核是否保留",
+      "owner_card": "OPS-06",
+      "review_date": "2026-10-03",
+      "expire": "2026-11-03",
+      "added_by": "ae8",
+      "evidence": "AiDocumentController.java:104"
     }
   ]
 }

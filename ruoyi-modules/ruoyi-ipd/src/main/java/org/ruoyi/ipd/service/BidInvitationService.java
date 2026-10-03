@@ -533,12 +533,12 @@ public class BidInvitationService {
         changeLog.append(",\"after\":{\"title\":\"").append(escape(newTitle))
             .append("\",\"expireAt\":\"").append(newExpireAt).append("\"}");
         changeLog.append("}");
-        auditLogService.append(AuditLog.builder()
-            .operatorId(operatorId).action("modify_conditions").entityType("bid_invitation").entityId(id)
-            .afterData(changeLog.toString())
-            .reason(inv.getTitle())
-            .createTime(now()).build());
-        // 通知所有 PENDING 应标者
+        // 通知所有 PENDING 应标者（必须排在审计落库之前）：
+        // 审计 append 走 REQUIRES_NEW 独立事务提交，外层回滚撤不回它。
+        // 若先写审计再发通知，外层后续回滚（业务未改）时，
+        // 哈希链里却永久留下一条「修改招标条件成功」的假记录。
+        // 走 publishAfterCommit：延迟到宿主事务提交后独立事务发送，
+        // 发送失败只 WARN，绝不把外层事务打成 rollback-only（通知是副链，不反噬主链）。
         if (notificationService != null) {
             List<BidResponse> responders = bidResponseMapper.selectList(
                 new LambdaQueryWrapper<BidResponse>()
@@ -546,7 +546,7 @@ public class BidInvitationService {
                     .eq(BidResponse::getStatus, "PENDING"));
             for (BidResponse r : responders) {
                 if (r.getRdPmId() == null) continue;
-                notificationService.publish(r.getRdPmId(),
+                notificationService.publishAfterCommit(r.getRdPmId(),
                     NotificationService.Types.BID_CONDITIONS_CHANGED,
                     NotificationService.KIND_ACTION,
                     "bid_invitation", id,
@@ -555,6 +555,12 @@ public class BidInvitationService {
                     "/bid-invitations/" + id);
             }
         }
+        // 通知全部成功后，最后落审计——此时写审计即等价于「业务确实发生了」
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("modify_conditions").entityType("bid_invitation").entityId(id)
+            .afterData(changeLog.toString())
+            .reason(inv.getTitle())
+            .createTime(now()).build());
         return inv;
     }
 

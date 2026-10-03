@@ -43,26 +43,26 @@ class ProjectAgentSkillGovernanceTest {
         return KernelScopeKey.of("20260929", "11", ProjectAgentConstants.AGENT_ID, "101").toRuntimeContext();
     }
 
-    @Test void ownerReviewDefersAndProducesAnIdempotentReadableReceipt() throws Exception {
+    @Test void userReviewDefersAndPersistsCompleteCandidateInOriginalStep() throws Exception {
         var run = run();
         Path workspace = ProjectAgentWorkspace.prepare(root, "20260929", "11", "agent");
         var governance = new ProjectAgentSkillGovernance(workspace, run, new FrozenProjectAgentSkills(run.skills()));
         var filesystem = new LocalFilesystem(workspace);
         governance.bind(new WorkspaceManager(workspace, filesystem, null));
+        var sink = Mockito.mock(ProjectAgentEventSink.class);
+        governance.bindSink(sink);
         Path draftPath = Files.createDirectories(workspace.resolve("skills/_drafts/candidate"));
         Files.writeString(draftPath.resolve("SKILL.md"), "---\nname: candidate\ndescription: draft\n---\n# pending\n");
+        Files.createDirectories(draftPath.resolve("references/nested"));
+        Files.writeString(draftPath.resolve("references/nested/source.txt"), "verified source");
         var decision = governance.review(draft("candidate"), context()).block();
         assertThat(decision).isInstanceOf(SkillPromotionGate.PromotionDecision.Defer.class);
-        assertThat(((SkillPromotionGate.PromotionDecision.Defer) decision).reason())
-            .contains("待技能 owner 批准", "skills/_drafts/candidate", "状态回读");
-        try (var files = Files.list(draftPath)) {
-            Path receipt = files.filter(file -> file.getFileName().toString().startsWith(".ipd-review-101-"))
-                .findFirst().orElseThrow();
-            String body = Files.readString(receipt);
-            assertThat(body).contains("PENDING_OWNER_APPROVAL", "20260929", "11", "101");
-            governance.review(draft("candidate"), context()).block();
-            assertThat(Files.readString(receipt)).isEqualTo(body);
-        }
+        var captured = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        Mockito.verify(sink).onStep(Mockito.eq("SKILL_REVIEW_CANDIDATE"), captured.capture());
+        var bundle = (ProjectAgentSkillBundle) captured.getValue().get("bundle");
+        assertThat(bundle.files()).hasSize(2);
+        assertThat(captured.getValue()).containsEntry("personId", "11").containsEntry("runId", "101");
+        assertThat(((SkillPromotionGate.PromotionDecision.Defer) decision).reason()).contains("用户审核");
     }
 
     @Test void unapprovedDraftAndSameNameTamperingNeverReachOfficialPromptVisibility() {

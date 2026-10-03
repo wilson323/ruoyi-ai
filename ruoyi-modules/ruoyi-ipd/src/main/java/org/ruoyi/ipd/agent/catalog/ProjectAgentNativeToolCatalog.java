@@ -13,10 +13,14 @@ import java.util.Set;
 public final class ProjectAgentNativeToolCatalog {
     private ProjectAgentNativeToolCatalog() { }
     public static final String VERSION = "agentscope-harness-2.0.3";
+    /** 委派子智能体；超过 asyncToolTimeout 转后台，本轮不等待。 */
+    public static final String AGENT_SPAWN = "agent_spawn";
+    /** 阻塞等待转后台的工具（含被委派的子智能体）真正返回；委派后必须调用，否则产出无处可用。 */
+    public static final String WAIT_ASYNC_RESULTS = "wait_async_results";
     public static final List<String> IDS = List.of("read_file", "write_file", "edit_file",
         "grep_files", "glob_files", "list_files", "execute", "web_fetch", "web_search",
         "memory_get", "memory_search", "memory_save", "session_search", "session_list",
-        "session_history", "wait_async_results", "agent_list", "agent_send", "agent_spawn",
+        "session_history", WAIT_ASYNC_RESULTS, "agent_list", "agent_send", AGENT_SPAWN,
         "task_cancel", "task_list", "task_output", "load_skill_through_path",
         "deliver_artifact", "plan_enter", "plan_exit", "plan_write", "propose_skill",
         "reset_equipped_tools", "skill_manage", "todo_write");

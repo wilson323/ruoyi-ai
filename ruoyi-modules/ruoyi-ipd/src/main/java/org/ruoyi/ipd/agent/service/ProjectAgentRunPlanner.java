@@ -41,7 +41,15 @@ public class ProjectAgentRunPlanner {
 
     /** 校验通过后的冻结计划。 */
     public record RunPlan(PackEntry pack, Long modelConfigId, KernelModelRequest model, List<LoadedSkill> skills,
-                          List<String> toolIds, String actionCode, ConfigSnapshot snapshot) {
+                          List<String> toolIds, String actionCode, ConfigSnapshot snapshot, KernelModelRequest fallbackModel, Long fallbackModelConfigId) {
+        public RunPlan(PackEntry pack, Long modelConfigId, KernelModelRequest model, List<LoadedSkill> skills,
+                       List<String> toolIds, String actionCode, ConfigSnapshot snapshot, KernelModelRequest fallbackModel) {
+            this(pack, modelConfigId, model, skills, toolIds, actionCode, snapshot, fallbackModel, null);
+        }
+        public RunPlan(PackEntry pack, Long modelConfigId, KernelModelRequest model, List<LoadedSkill> skills,
+                       List<String> toolIds, String actionCode, ConfigSnapshot snapshot) {
+            this(pack, modelConfigId, model, skills, toolIds, actionCode, snapshot, null);
+        }
         /** 与业务选择分离；null 表示历史快照，不自动扩权。 */
         public List<String> executionToolIds() { return snapshot.executionToolIds(); }
     }
@@ -73,13 +81,18 @@ public class ProjectAgentRunPlanner {
 
     public io.agentscope.core.agui.model.RunAgentInput bindAguiInput(AgentRunCreateReq req,
             RunPlan plan, Long serverRunId) {
-        if (req.aguiInput() == null) return null;
+        if (req.aguiInput() == null) return io.agentscope.core.agui.model.RunAgentInput.builder()
+            .threadId(String.valueOf(serverRunId)).runId(String.valueOf(serverRunId))
+            .tools(List.of(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.clarificationTool())).build();
         var catalog = authorizedAguiFrontendTools(plan, req.aguiInput());
         try {
             var bound = org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.bind(req.aguiInput(),
                 String.valueOf(serverRunId), String.valueOf(serverRunId), catalog);
             org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.messages(bound, java.util.Map.of());
-            return bound;
+            var tools = new java.util.ArrayList<>(bound.getTools());
+            tools.removeIf(t -> org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(t.getName()));
+            tools.add(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.clarificationTool());
+            return org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.withFrontendTools(bound, List.copyOf(tools));
         } catch (IllegalArgumentException invalidInput) {
             throw invalid("AG-UI 输入不符合当前运行的协议或授权范围");
         }
@@ -88,12 +101,15 @@ public class ProjectAgentRunPlanner {
     public java.util.Map<String, io.agentscope.core.agui.model.AguiTool> authorizedAguiFrontendTools(
             RunPlan plan, io.agentscope.core.agui.model.RunAgentInput input) {
         java.util.Map<String, io.agentscope.core.agui.model.AguiTool> catalog = java.util.Map.of();
-        if (!input.getTools().isEmpty()) {
+        if (input.getTools().stream().anyMatch(t -> !org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(t.getName()))) {
             if (aguiFrontendToolResolver == null) throw conflict("前端工具授权目录尚未装配");
             catalog = aguiFrontendToolResolver.apply(plan, input);
             if (catalog == null) throw conflict("前端工具授权目录不可用");
         }
-        return java.util.Map.copyOf(catalog);
+        var result = new java.util.LinkedHashMap<>(catalog);
+        result.put(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.CLARIFICATION_TOOL,
+            org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.clarificationTool());
+        return java.util.Map.copyOf(result);
     }
 
     /**
@@ -162,18 +178,45 @@ public class ProjectAgentRunPlanner {
      * @throws IpdBusinessException PARAM_INVALID（不属于该能力包）/ STATE_CONFLICT（当前不可用）
      */
     public RunPlan plan(AgentRunCreateReq req) {
+        return plan(req, null, null, null, null);
+    }
+
+    /** 新运行仅可显式选择当前用户、当前项目已发布的技能。 */
+    public RunPlan plan(AgentRunCreateReq req, String tenantId, Long projectId, Long personId) {
+        return plan(req, tenantId, projectId, personId, null);
+    }
+
+    /** 恢复使用原摘要定位不可变发布版本；不能用最新技能替换原运行。 */
+    public RunPlan plan(AgentRunCreateReq req, String tenantId, Long projectId, Long personId,
+                        List<SkillRef> frozenSkills) {
         PackEntry pack = manifest.pack(req.capabilityPackCode(), req.capabilityPackVersion())
             .orElseThrow(() -> invalid("能力包不存在：" + req.capabilityPackCode() + "@" + req.capabilityPackVersion()));
         String actionCode = isBlank(req.actionCode()) ? null : req.actionCode().trim();
         if (actionCode != null && !pack.actionCodes().contains(actionCode)) {
             throw invalid("动作 " + actionCode + " 不在能力包适用范围内");
         }
-        List<String> explicitNames = distinct(req.skillNames());
-        List<String> actionBoundNames = resolveActionBoundSkillNames(actionCode);
-        List<LoadedSkill> skills = loadSkills(pack, explicitNames, actionBoundNames);
+        List<String> explicitNames;
+        List<String> actionBoundNames;
+        if (frozenSkills == null) {
+            explicitNames = distinct(req.skillNames());
+            actionBoundNames = resolveActionBoundSkillNames(actionCode);
+        } else {
+            // 恢复只使用原运行的配置；当前动作映射仅决定新运行，不是业务授权依据。
+            LinkedHashSet<String> names = new LinkedHashSet<>();
+            for (SkillRef frozen : frozenSkills) {
+                if (frozen == null || isBlank(frozen.name()) || frozen.sha256() == null
+                    || !frozen.sha256().matches("[a-fA-F0-9]{64}") || !names.add(frozen.name())) {
+                    throw conflict("原运行的技能冻结身份无法核验");
+                }
+            }
+            explicitNames = List.copyOf(names);
+            actionBoundNames = List.of();
+        }
+        List<LoadedSkill> skills = loadSkills(pack, explicitNames, actionBoundNames, tenantId, projectId, personId, frozenSkills);
         List<String> toolIds = distinct(req.toolIds());
+        List<String> selectableToolIds = ProjectAgentToolCatalog.executionToolIds(pack.tools());
         for (String toolId : toolIds) {
-            if (!pack.tools().contains(toolId)) {
+            if (!selectableToolIds.contains(toolId)) {
                 throw invalid("工具不属于该能力包：" + toolId);
             }
             ProjectAgentToolCatalog.ToolStatus status = toolCatalog.status(toolId);
@@ -184,13 +227,19 @@ public class ProjectAgentRunPlanner {
         Long modelConfigId = parseModelConfigId(req.modelConfigId());
         KernelModelRequest model = modelCatalog.resolve(modelConfigId).orElseThrow(() -> conflict(
             "模型不可用：" + req.modelConfigId() + "（" + modelCatalog.status(modelConfigId).reason() + "）"));
+        var fallbackSelection = modelCatalog.resolveFallbackSelection(model).orElse(null);
+        KernelModelRequest fallback = fallbackSelection == null ? null : fallbackSelection.request();
+        Long fallbackId = fallbackSelection == null ? null : fallbackSelection.modelConfigId();
         ConfigSnapshot snapshot = new ConfigSnapshot(pack.code(), pack.version(), String.valueOf(modelConfigId),
             skills.stream().map(s -> new SkillRef(s.name(), s.sha256())).toList(), toolIds,
             req.previousRunId(), req.targetDocumentId(), req.baseVersionId(),
             org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.digest(req.aguiInput()),
             req.requirementId(), req.productLineId())
-            .withExecutionToolIds(ProjectAgentToolCatalog.executionToolIds(toolIds));
-        return new RunPlan(pack, modelConfigId, model, List.copyOf(skills), toolIds, actionCode, snapshot);
+            .withExecutionToolIds(ProjectAgentToolCatalog.executionToolIds(toolIds))
+            .withModelFingerprint(org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.capture(modelConfigId, model, fallbackId, fallback))
+            .withModelIdentityVersion(1, fallbackId == null ? null : fallbackId.toString())
+            .withOutputContractVersion(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION);
+        return new RunPlan(pack, modelConfigId, model, List.copyOf(skills), toolIds, actionCode, snapshot, fallback, fallbackId);
     }
 
     /** 创建前复用运行装配的候选规则；服务标识必须来自服务端项目归属查询。 */
@@ -226,6 +275,11 @@ public class ProjectAgentRunPlanner {
      * @return 已加载技能
      */
     List<LoadedSkill> loadSkills(PackEntry pack, List<String> explicitNames, List<String> actionBoundNames) {
+        return loadSkills(pack, explicitNames, actionBoundNames, null, null, null, null);
+    }
+
+    private List<LoadedSkill> loadSkills(PackEntry pack, List<String> explicitNames, List<String> actionBoundNames,
+            String tenantId, Long projectId, Long personId, List<SkillRef> frozenSkills) {
         LinkedHashSet<String> explicit = new LinkedHashSet<>(explicitNames);
         LinkedHashSet<String> ordered = new LinkedHashSet<>();
         ordered.addAll(explicitNames);
@@ -233,12 +287,27 @@ public class ProjectAgentRunPlanner {
         List<LoadedSkill> skills = new ArrayList<>();
         for (String name : ordered) {
             boolean fromRequest = explicit.contains(name);
-            if (fromRequest && !pack.skills().contains(name)) {
+            String digest = null;
+            if (frozenSkills != null) {
+                digest = frozenSkills.stream().filter(ref -> name.equals(ref.name())).map(SkillRef::sha256)
+                    .findFirst().orElseThrow(() -> conflict("原运行没有冻结该技能：" + name));
+            }
+            boolean scoped = tenantId != null && projectId != null && personId != null;
+            // 内置技能继续受能力包约束；包外名字必须是本人本项目已发布的技能，不能按名字放行。
+            if (fromRequest && !pack.skills().contains(name)
+                && (!scoped || skillCatalog.load(name).isPresent())) {
                 throw invalid("Skill 不属于该能力包：" + name);
             }
-            Optional<LoadedSkill> loaded = skillCatalog.load(name);
+            Optional<LoadedSkill> loaded = scoped
+                ? skillCatalog.load(name, tenantId, projectId, personId, digest) : skillCatalog.load(name);
+            if (fromRequest && !pack.skills().contains(name) && loaded.isEmpty()) {
+                throw invalid("该技能尚未由你在当前项目审核发布：" + name);
+            }
             if (loaded.isEmpty()) {
                 throw conflict("Skill 不可用：" + name + "（" + skillCatalog.status(name).reason() + "）");
+            }
+            if (digest != null && !digest.equals(loaded.get().sha256())) {
+                throw conflict("原运行的技能摘要无法核验：" + name);
             }
             skills.add(loaded.get());
         }

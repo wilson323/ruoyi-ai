@@ -296,6 +296,43 @@ run_snapshot_gate() {
         FAILED=$((FAILED + 1))
     fi
 }
+# ---------------------------------------------------------------------------
+# 门禁 7：钩子输出契约（hook decision schema）
+# 病根：钩子往 stdout 吐非法 JSON 时，Claude Code **静默丢弃整份输出**——
+#   拦截类钩子等于没装，界面只在控制台刷一行红字。
+#   2026-10-03 实测：irreversible-guard（不可逆操作拦截）因写了顶层
+#   {"decision":"allow"} 而长期静默失效，递归删除一/二级目录一直没被拦。
+# 判据是**实跑钩子验输出**，不是 grep 源码——出事那两处写的是 JS 简写属性
+#   {decision, reason}，grep 字面量永远匹配不到（第一版门禁因此假绿，变异自证露馅）。
+# 注意：全局钩子（~/.claude/hooks）不在本仓版本控制内，改它们不会触发本门禁；
+#   所以本门禁的价值是**在提交时复核全局钩子当前是否健康**，不是拦下那次提交。
+# 单跑 ~2s；fast 模式同 untracked/棘轮先例仍跑
+# ---------------------------------------------------------------------------
+run_hook_schema_gate() {
+    local start_time
+    start_time=$(date +%s)
+    echo "[check-pre-commit] → 门禁 7: 钩子输出契约(实跑验 JSON 形状)"
+    if [[ ! -f "$REPO_ROOT/scripts/check-hook-decision-schema.sh" ]]; then
+        echo "[check-pre-commit] ❌ 门禁 7 FAIL: scripts/check-hook-decision-schema.sh 不存在"
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+    local out rc
+    out=$(bash "$REPO_ROOT/scripts/check-hook-decision-schema.sh" 2>&1)
+    rc=$?
+    local elapsed=$(( $(date +%s) - start_time ))
+    if [[ "$rc" -eq 0 ]]; then
+        echo "[check-pre-commit] ✅ 门禁 7 PASS: 钩子输出均符合契约 (elapsed=${elapsed}s)"
+        PASSED=$((PASSED + 1))
+    else
+        echo "[check-pre-commit] ❌ 门禁 7 FAIL: 存在违反输出契约的钩子 exit=$rc (elapsed=${elapsed}s)"
+        printf '%s\n' "$out" | tail -30
+        echo "[check-pre-commit]   后果: Claude Code 校验失败会丢弃整份输出 → 拦截类钩子静默失效"
+        echo "[check-pre-commit]   自证: HOOK_FAIL_SEED=1 bash scripts/check-hook-decision-schema.sh 应 EXIT=1"
+        FAILED=$((FAILED + 1))
+    fi
+}
+
 run_snapshot_gate
 
 case "$MODE" in
@@ -307,6 +344,7 @@ case "$MODE" in
         run_ratchet_gate
         run_shell_var_gate
         run_symlink_gate
+        run_hook_schema_gate
         ;;
     drift)
         run_untracked_gate
@@ -324,15 +362,21 @@ case "$MODE" in
         # R43-α 二轮: fast 模式仍跑 untracked 门禁 0(快速 < 1s,病根 ② 实质化)
         # R212: fast 模式也跑门禁 3(孤儿棘轮,单跑 ~0.1s,同 untracked 实质化先例)
         # R224: fast 模式也跑门禁 4(shell 变量吞字节,单跑 ~0.2s,同为实质化先例)
+        # 门禁 7: fast 模式也跑(实跑钩子 ~2s,病根是拦截静默失效,不能省)
         run_untracked_gate
         run_ratchet_gate
         run_shell_var_gate
         run_symlink_gate
+        run_hook_schema_gate
         SKIPPED=2
         echo "[check-pre-commit] ⚡ fast mode:跳过 doc↔db 与 contract tri-source 门禁(untracked 与孤儿棘轮门禁3 仍跑)"
         ;;
+    hooks)
+        # 独立模式:仅跑钩子输出契约(改钩子后快速预检)
+        run_hook_schema_gate
+        ;;
     *)
-        echo "[check-pre-commit] ❌ unknown mode: $MODE (支持: all|drift|contract|untracked|fast)" >&2
+        echo "[check-pre-commit] ❌ unknown mode: $MODE (支持: all|drift|contract|untracked|fast|hooks)" >&2
         exit 2
         ;;
 esac

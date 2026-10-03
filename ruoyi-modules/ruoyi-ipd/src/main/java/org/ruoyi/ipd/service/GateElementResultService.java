@@ -433,7 +433,7 @@ public class GateElementResultService implements IGateElementResultService {
             }
             Gate gate = gateMapper.selectById(r.getGateId());
             String gateCode = gate == null ? "?" : gate.getGateCode();
-            notificationService.publishDaily(r.getResponsiblePersonId(),
+            notificationService.publishDailyAfterCommit(r.getResponsiblePersonId(),
                 NotificationService.Types.GATE_CONDITION_OVERDUE, NotificationService.KIND_ACTION,
                 "gate_element_results", r.getId(),
                 "条件遗留项已逾期",

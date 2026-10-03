@@ -123,6 +123,7 @@ public final class ProjectKnowledgeSearchTool implements AgentTool {
         source.put("query", query);
         source.put("hits", hits);
         source.put("retrievalStatus", retrievalStatus(context));
+        source.put("issueCounts", context == null ? Map.of() : context.issueCounts());
         source.put("chars", context == null ? 0 : context.chars());
         source.put("preview", block.length() > PREVIEW_MAX_CHARS ? block.substring(0, PREVIEW_MAX_CHARS) : block);
         source.put("citationText", context == null ? "" : context.citationText());
@@ -178,7 +179,9 @@ public final class ProjectKnowledgeSearchTool implements AgentTool {
      */
     static String retrievalStatus(RetrievalContext context) {
         String block = context == null || context.block() == null ? "" : context.block();
-        boolean failed = block.contains(ProjectKnowledgeVectorSearch.FAILURE_MARK);
+        if (context != null && context.status() == org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.PARTIAL) return "PARTIAL";
+        boolean failed = block.contains(ProjectKnowledgeVectorSearch.FAILURE_MARK)
+            || context != null && context.status() == org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.FAILED;
         boolean hasHits = context != null && context.hits() > 0;
         if (failed && !hasHits) {
             return isDenied(block) ? "UNAUTHORIZED" : "FAILED";
@@ -212,6 +215,7 @@ public final class ProjectKnowledgeSearchTool implements AgentTool {
         if ("PARTIAL".equals(status)) {
             text.append("部分成功：已有命中；限制仅影响对应来源，不代表所有资料缺少出处。\n")
                 .append("检索限制（不作引用）：\n").append(failureDescriptions(block)).append('\n');
+            if (context != null && !context.issueCounts().isEmpty()) text.append("已审核文档索引限制：").append(context.issueCounts()).append('\n');
         }
         String citation = context == null ? "" : context.citationText();
         if (citation.isBlank()) {

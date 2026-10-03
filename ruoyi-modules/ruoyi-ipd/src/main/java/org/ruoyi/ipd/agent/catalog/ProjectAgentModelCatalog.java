@@ -101,42 +101,52 @@ public class ProjectAgentModelCatalog {
     /**
      * 按目录约定解析主模型的官方回退配置（AgentScope 2.0.3 fallbackModel 扩展点取数）。
      *
-     * <p>约定：同 provider 下 config_json 的 {@code fallbackFor} 等于主模型 modelName 的未删行
+     * <p>约定：任意 provider 下 config_json 的 {@code fallbackFor} 等于主模型 modelName 的未删行
      * （{@code @TableLogic} 已滤软删）。回退行不参与主选型，{@code is_active} 保持 0
      * （is_active 语义是全局唯一生效主模型，见 {@code AiModelConfigService#enable} 互斥清位），
-     * 本方法不按 is_active 判定。无约定行/字段不全 → {@link Optional#empty()}：
-     * 回退缺席是配置态而非错误，装配侧 fail-open，不阻断主模型运行。
+     * 本方法不按 is_active 判定。无约定行 → {@link Optional#empty()}；
+     * 命中多条约定、字段不全或自引用则明确拒绝，不能将配置故障冒充未配置。
      *
      * @param primary 主模型装配请求
      * @return 回退装配请求；无约定回退时为空
      */
+    public record ResolvedModel(Long modelConfigId, KernelModelRequest request) { }
+
     public Optional<KernelModelRequest> resolveFallback(KernelModelRequest primary) {
+        return resolveFallbackSelection(primary).map(ResolvedModel::request);
+    }
+
+    /** ID and parameters come from the same authoritative row read. */
+    public Optional<ResolvedModel> resolveFallbackSelection(KernelModelRequest primary) {
         if (primary == null || isBlank(primary.providerCode()) || isBlank(primary.modelName())) {
             return Optional.empty();
         }
         List<AiModelConfig> configs = mapper.selectList(new LambdaQueryWrapper<AiModelConfig>()
-            .eq(AiModelConfig::getProvider, primary.providerCode().trim())
             .orderByDesc(AiModelConfig::getUpdateTime)
             .orderByDesc(AiModelConfig::getId));
         if (configs == null) {
             return Optional.empty();
         }
         String primaryName = primary.modelName().trim();
-        for (AiModelConfig config : configs) {
-            if (config == null || isBlank(config.getModelName())
-                || config.getModelName().trim().equals(primaryName)) {
-                continue;
-            }
-            if (!primaryName.equals(fallbackOwner(config.getConfigJson()))) {
-                continue;
-            }
-            if (isBlank(config.getProvider()) || isBlank(config.getModelName())
-                || isBlank(config.getEndpointUrl())) {
-                continue;
-            }
-            return Optional.of(toRequest(config));
+        List<AiModelConfig> matches = configs.stream()
+            .filter(Objects::nonNull)
+            .filter(config -> primaryName.equals(fallbackOwner(config.getConfigJson())))
+            .toList();
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("主模型关联了多个备用模型，请保留唯一的备用配置");
         }
-        return Optional.empty();
+        if (matches.isEmpty()) return Optional.empty();
+        AiModelConfig config = matches.get(0);
+        if (isBlank(config.getProvider()) || isBlank(config.getModelName())
+            || isBlank(config.getEndpointUrl())) {
+            throw new IllegalArgumentException("备用模型配置不完整，请检查供应商、模型名称与端点");
+        }
+        if (config.getProvider().trim().equals(primary.providerCode().trim())
+            && config.getModelName().trim().equals(primaryName)) {
+            throw new IllegalArgumentException("备用模型不能指向主模型自身");
+        }
+        if (config.getId() == null) throw new IllegalArgumentException("备用模型配置编号缺失");
+        return Optional.of(new ResolvedModel(config.getId(), toRequest(config)));
     }
 
     /** config_json.fallbackFor 取值；无键/无效 JSON 返回 null（回退约定缺席）。 */

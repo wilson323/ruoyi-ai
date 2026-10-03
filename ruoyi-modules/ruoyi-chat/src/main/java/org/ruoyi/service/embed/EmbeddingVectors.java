@@ -5,6 +5,7 @@ import io.agentscope.core.message.TextBlock;
 import java.time.Duration;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import java.util.List;
 
 /** 同步业务边界上的 AgentScope 嵌入结果校验，不改变已有向量库。 */
@@ -16,7 +17,8 @@ public final class EmbeddingVectors {
     }
 
     public static float[] embed(EmbeddingModel model, String text, Duration timeout) {
-        double[] vector = model.embed(TextBlock.builder().text(text).build()).block(timeout);
+        double[] vector = Mono.defer(() -> model.embed(TextBlock.builder().text(text).build()))
+            .subscribeOn(Schedulers.boundedElastic()).block(timeout);
         return validate(model, vector);
     }
 
@@ -47,12 +49,21 @@ public final class EmbeddingVectors {
         if (timeout == null || timeout.isZero() || timeout.isNegative()) {
             throw new IllegalArgumentException("嵌入批次超时必须为正数");
         }
-        return Flux.fromIterable(texts)
+        long started = System.nanoTime();
+        Mono<List<float[]>> batch = Flux.fromIterable(texts)
             .concatMap(text -> Mono.defer(() -> model.embed(TextBlock.builder().text(text).build()))
+                // SDK Ollama performs transport.execute in fromCallable; cancellation must interrupt
+                // that worker rather than leave the caller blocked inside subscription.
+                .subscribeOn(Schedulers.boundedElastic())
                 .switchIfEmpty(Mono.error(new IllegalStateException("嵌入模型未返回向量")))
                 .map(vector -> validate(model, vector)))
-            .collectList()
-            .timeout(timeout)
-            .block();
+            .collectList();
+        // Include cold scheduler/operator assembly in the single batch budget.
+        long remaining = timeout.toNanos() - (System.nanoTime() - started);
+        if (remaining <= 0) {
+            throw reactor.core.Exceptions.propagate(new java.util.concurrent.TimeoutException("Embedding batch deadline exceeded"));
+        }
+        Duration budget = Duration.ofNanos(remaining);
+        return batch.timeout(budget).block(budget);
     }
 }

@@ -97,7 +97,7 @@ public class ProjectAgentModelAssembler {
      *
      * <p>回退请求与主请求同缝装配：endpointGuard 前置 + 原生 {@code ModelRegistry} 解析，
      * 不另造第二路由。未配置回退源、目录无回退行 → null（fail-open：回退缺席不阻断主模型，
-     * 业务闸门与主装配语义不变）；回退请求装配失败异常原样上抛，由调用方决定降级路径。
+     * 业务闸门与主装配语义不变）；已配置回退请求无效或装配失败直接拒绝，不能冒充回退缺席。
      *
      * @param primary 主模型装配请求
      * @param personId 运行人（context userId）
@@ -109,10 +109,18 @@ public class ProjectAgentModelAssembler {
             return null;
         }
         KernelModelRequest fallback = fallbackSource.apply(primary);
-        if (fallback == null || fallback.modelName() == null || fallback.modelName().isBlank()) {
-            return null;
+        return assembleConfiguredFallback(fallback, personId, runId);
+    }
+
+    /** Uses the frozen request without re-reading mutable model configuration. */
+    public Model assembleConfiguredFallback(KernelModelRequest fallback, Long personId, Long runId) {
+        if (fallback == null) return null;
+        if (fallback.providerCode() == null || fallback.providerCode().isBlank()
+            || fallback.apiHost() == null || fallback.apiHost().isBlank()) {
+            throw new IllegalArgumentException("备用模型配置不完整，请检查供应商与端点");
         }
-        return assemble(fallback, personId, runId);
+        return Objects.requireNonNull(assemble(fallback, personId, runId),
+            "配置的备用模型未能装配");
     }
 
     /**

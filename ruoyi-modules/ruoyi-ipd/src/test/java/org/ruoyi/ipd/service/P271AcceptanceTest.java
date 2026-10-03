@@ -83,7 +83,7 @@ class P271AcceptanceTest {
     private static final long TO_ID = 201L;
     private static final long PROJECT_ID = 12L;
 
-    /** selectCount 语义分类：FOR UPDATE=接手人活跃计数；含 role=幂等预检恒 0；其余=from 全清检查。 */
+    /** selectCount 语义分类：FOR UPDATE=接手人活跃计数；含 role=按项目/本人/角色/未退出识别原绑定，接手人预检为0；其余=from 全清检查。 */
     private long toActiveCount = 0L;
     private long fromRemainingActive = 0L;
 
@@ -126,7 +126,10 @@ class P271AcceptanceTest {
                 return toActiveCount;
             }
             if (seg != null && seg.contains("role")) {
-                return 0L;
+                // 原人在项目该角色的活绑定；接手人的幂等预检仍为零。
+                var values = w.getParamNameValuePairs().values();
+                return seg.contains("exit_date IS NULL") && values.contains(PROJECT_ID)
+                    && values.contains(FROM_ID) && values.contains("RD_PM") ? 1L : 0L;
             }
             return fromRemainingActive;
         });

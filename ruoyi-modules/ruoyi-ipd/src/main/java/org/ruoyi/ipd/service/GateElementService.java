@@ -81,7 +81,7 @@ public class GateElementService implements IGateElementService {
     private final IAuditLogService auditLogService;
     private final AuditLogMapper auditLogMapper;
 
-    /** 业务/超管列表：仅启用要素；草稿与归档天然不可见（enabled='0'）。 */
+    /** 业务列表：仅已发布且启用要素，草稿即使存量enabled='1'仍不可见。 */
     public List<GateElement> listByGate(String gateCode) {
         if (gateCode != null && !gateCode.isBlank() && !GATES.contains(gateCode)) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
@@ -89,6 +89,7 @@ public class GateElementService implements IGateElementService {
         return gateElementMapper.selectList(new LambdaQueryWrapper<GateElement>()
             .eq(gateCode != null && !gateCode.isBlank(), GateElement::getGateCode, gateCode)
             .eq(GateElement::getEnabled, "1")
+            .eq(GateElement::getStatus, STATUS_PUBLISHED)
             .orderByAsc(GateElement::getSortOrder)
             .orderByAsc(GateElement::getId));
     }

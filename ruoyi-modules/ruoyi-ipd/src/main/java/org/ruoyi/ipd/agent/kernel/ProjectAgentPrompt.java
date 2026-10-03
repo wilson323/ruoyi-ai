@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.agent.kernel;
 
 import org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog.LoadedSkill;
+import org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalog;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentToolCatalog;
 import org.ruoyi.ipd.agent.catalog.ProductLineMcpCatalog;
 import org.ruoyi.ipd.seed.ActionCatalog;
@@ -57,6 +58,16 @@ public final class ProjectAgentPrompt {
                 .append("工具被选中不代表已调用或已命中；远端回答不能自证动作完成、产物自审通过或业务验收通过。\n");
         }
         sb.append("2. 可用本次授权的官方能力获取资料、处理文件和在隔离工作区执行任务；具体操作必须通过权限与审批。不能引用其他项目的私有资料；互联网来源须注明出处，不能冒称项目已审核文档，不得声称做过未实际执行的检索。\n");
+        if (spec.toolIds().contains(ProjectAgentNativeToolCatalog.AGENT_SPAWN)) {
+            sb.append("委派纪律：你用 ").append(ProjectAgentNativeToolCatalog.AGENT_SPAWN)
+                .append(" 派出去的子智能体**不占用本轮**。该工具超过 30 秒会转后台，"
+                    + "立刻返回“已发起委派”，此时子智能体还没产出任何东西，")
+                .append("它的会话记录也还没写完——本运行的沙箱归档会在那一刻固化并逐字节核验，"
+                    + "子智能体仍在写就会核验不过、整轮直接失败。\n");
+            sb.append("所以：**凡是委派出去的工作，必须先用 ").append(ProjectAgentNativeToolCatalog.WAIT_ASYNC_RESULTS)
+                .append(" 阻塞等到子智能体真的返回**，再基于它实际检索到的资料作答。")
+                .append("没有等过就写结论，等于凭空编造——本轮会因为拿不到子智能体的产出而白跑。\n");
+        }
         sb.append("3. 不输出 Gate 评审通过或不通过的结论，评审结论由既有业务流程决定。\n");
         if (hasFacts) {
             sb.append("下方项目、阶段、产品和当前动作来自项目记录，只证明当前业务上下文，不是项目文档或审核证据；")

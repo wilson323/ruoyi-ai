@@ -6,7 +6,11 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.Gate;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.GateMaterialChecker;
@@ -41,6 +45,28 @@ public class GateMaterialController {
     private final GateMaterialUploadService gateMaterialUploadService;
     private final GateMapper gateMapper;
     private final IpdPermission ipdPermission;
+    private final ProjectMapper projectMapper;
+
+    /**
+     * Gate 归属守卫（横向越权防护，写库前执行）。
+     *
+     * <p>GET {@link #materials} 已有 gateId↔projectId 关联校验，但 upload 只有 gateId 一个入参，
+     * 组归属必须经 {@code gateId → Gate.projectId → Project.mainGroupId} 两级串联解析——
+     * 与读口自相矛盾的缺口在此补齐。actor 只来自会话；失败统一「无权操作」，不泄漏存在性。
+     * 复用 {@link IpdIdorGuard#assertSameGroupIpd}。
+     *
+     * @param gateId Gate ID
+     * @return Gate 所属项目的主组 ID（Gate/项目缺失时 fail-closed 抛 FORBIDDEN）
+     * @throws IpdBusinessException {@link ApiV1ErrorCode#FORBIDDEN} Gate 不存在或未挂项目
+     */
+    private Long resolveGateGroup(Long gateId) {
+        Gate gate = gateMapper.selectById(gateId);
+        if (gate == null || gate.getProjectId() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
+        }
+        Project project = projectMapper.selectById(gate.getProjectId());
+        return project == null ? null : project.getMainGroupId();
+    }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_GATE_REVIEW, type = "ipd")
     @GetMapping
@@ -60,7 +86,8 @@ public class GateMaterialController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiV1Response<Map<String, String>> upload(@PathVariable("gateId") Long gateId,
                                                      @RequestPart("file") MultipartFile file) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveGateGroup(gateId));
         return ApiV1Response.ok(gateMaterialUploadService.upload(gateId, file));
     }
 }

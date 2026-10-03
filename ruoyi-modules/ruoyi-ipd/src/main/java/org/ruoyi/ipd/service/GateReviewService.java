@@ -185,7 +185,16 @@ public class GateReviewService implements IGateReviewService {
         return "G3".equals(gateCode) || "G4".equals(gateCode) ? "RD_PM" : "MARKET_PM";
     }
 
-    /** 签署：写入本轮 GateReview，按签署矩阵推进 Gate 终态。 */
+    /**
+     * 签署：写入本轮 GateReview，按签署矩阵推进 Gate 终态。
+     *
+     * <p>对象级归属断言：角色复检之后补 gate → 项目 → 组 链路断言（同 inviteObservers
+     * R212-④ 口径），否则任一持签署角色者可向他组 gate 签署放行。
+     *
+     * <p><b>语义疑点（未改，待 owner 拍板）</b>：{@link #advance} 的放行条件是
+     * 「本轮已签数量 &gt;= 2」，而非「两方各签一次」，同一方连签两次即可凑满双签。
+     * 属业务规则，本方法不擅自修改。
+     */
     @Transactional(rollbackFor = Exception.class)
     public GateReview sign(Long gateId, String decision, String opinion, IpdActor actor) {
         Gate gate = requireGate(gateId);
@@ -194,6 +203,7 @@ public class GateReviewService implements IGateReviewService {
             throw new IpdBusinessException("decision 仅允许 APPROVE|REJECT");
         }
         requireAuthorized(gate.getGateCode(), actor);
+        assertGateProjectSameGroup(actor, gate);
         requireNotSigned(gate, actor.role());
 
         // R11 / A4 修复（预落待签占位行对偶，逐字对照 arbitrate() 对 openArbitration 预落行的

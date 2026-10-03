@@ -49,7 +49,7 @@ org.ruoyi.service/
 
 ## 视频生成（3 文件）
 
-参见 [video-AbstractVideoGenerationService.md](../raw/multimodal-source/video-AbstractVideoGenerationService.md)。
+参见 [video-AbstractVideoGenerationService.md](../../raw/multimodal-source/video-AbstractVideoGenerationService.md)。
 
 ```java
 public abstract class AbstractVideoGenerationService implements IVideoGenerationService {
@@ -79,7 +79,7 @@ public abstract class AbstractVideoGenerationService implements IVideoGeneration
 
 ## 音频生成（3 文件）
 
-参见 [audio-AbstractAudioGenerationService.md](../raw/multimodal-source/audio-AbstractAudioGenerationService.md)。
+参见 [audio-AbstractAudioGenerationService.md](../../raw/multimodal-source/audio-AbstractAudioGenerationService.md)。
 
 接口与视频类似：
 
@@ -98,7 +98,7 @@ public abstract class AbstractAudioGenerationService {
 
 ## 图像生成（4 文件）
 
-参见 [image-AbstractImageGenerationService.md](../raw/multimodal-source/image-AbstractImageGenerationService.md)。
+参见 [image-AbstractImageGenerationService.md](../../raw/multimodal-source/image-AbstractImageGenerationService.md)。
 
 接口同上。**实现最丰富**（4 个 provider）：
 
@@ -112,7 +112,7 @@ public abstract class AbstractAudioGenerationService {
 
 ## 多模态 Embedding（8 文件）
 
-参见 [embed-MultiModalEmbedModelService.md](../raw/multimodal-source/embed-MultiModalEmbedModelService.md)。
+参见 [embed-MultiModalEmbedModelService.md](../../raw/multimodal-source/embed-MultiModalEmbedModelService.md)。
 
 ```java
 public interface MultiModalEmbedModelService extends BaseEmbedModelService {
@@ -156,7 +156,7 @@ EmbeddingModelFactory.getEmbeddingModel(provider) → EmbeddingModel
 
 ## 工厂与路由
 
-视频 / 音频 / 图像生成都通过 factory 模式路由（参见 [chat-service-factory.md](../raw/chat-source/chat-service-factory.md)）：
+视频 / 音频 / 图像生成都通过 factory 模式路由（参见 [chat-service-factory.md](../../raw/chat-source/chat-service-factory.md)）：
 
 ```java
 VideoServiceFactory.getService(provider) → IVideoGenerationService

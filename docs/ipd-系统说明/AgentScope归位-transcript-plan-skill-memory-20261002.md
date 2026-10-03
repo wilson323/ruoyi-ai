@@ -489,3 +489,40 @@ private static String encode(String raw) {
 | `MEMORY.md` / `memory/YYYY-MM-DD.md` / `sessions/*.log.jsonl` 的字面量常量 | 仅 `memory.md:32-50` 文档描述，本轮未 grep 到对应 Java 常量 |
 | 4 层 skill 同名优先级 | 仅 `skill.md:182-197` 文档表格 |
 | `ProjectAgentWorkspace`（IPD 侧）与 `AgentScopeChatKernel.workspaceSegment` 是否会形成第二处路径隔离实现 | 子代理报告指出二者**是独立实现但同构**，本轮未逐行读 `ProjectAgentWorkspace.java` |
+
+---
+
+## 【owner 拍板 2026-10-03】两套记忆的明确分工
+
+此前官方文件记忆（SDK sandbox `memory/*.md`）与自研 `ipd_agent_memory` 表并存、都在真写、
+语义重叠且无任何同步代码。本节确立分工边界，**两者都保留，不合并**。
+
+### 分工
+
+| | 官方文件记忆（`memory/*.md`） | 自研 `ipd_agent_memory` 表 |
+|---|---|---|
+| **生命周期** | 单次运行 / 单个沙箱，随快照归档 | **跨运行、跨会话持久** |
+| **作用域** | 本次任务内的工作上下文 | 按 `project_id` + `person_id` 隔离 |
+| **回答的问题** | 「我这次已经读过什么、推过什么」 | 「**下次**我还记得你是谁、你怎么做事」 |
+| **内容特征** | 临时推理痕迹、阶段性结论 | PREFERENCE / FACT / OBSERVATION 三类结构化条目 |
+| **权威性** | 不承载业务事实 | 强制带「非权威个人工作笔记」标注；IPD 权限/审批/Gate 一律不查此表 |
+| **写入方** | SDK `memory_save`（实测 3 次调用） | `ProjectScopedLongTermMemory.record()`（每轮运行收尾，带 `MEMORY_RECEIPT` 回执） |
+
+### 判定依据（实测证据，非推理）
+
+- 自研表 16 行跨 5 次运行，三类分布 PREFERENCE 7 / FACT 6 / OBSERVATION 3，**全部 status=0（CANDIDATE）**；
+  实际内容如「用户偏好极简确认式回复」「验收类交互中用户偏好极简回复」——**跨会话的个人偏好**，
+  正是本表职责。
+- 官方记忆实测 `memory_search` 15 次、`memory_save` 3 次，全部发生在**单次运行内**——会话工作上下文，正是官方职责。
+
+### 明确不做的事
+
+- **不建同步代码**。两者语义不同，强行同步会制造「哪份是权威」的新问题。
+- **不把官方记忆当业务事实来源**。`memory/*.md` 随沙箱归档，其中出现的任何陈述都不得用于权限、审批或 Gate。
+- **不合并存储**。合并等于放弃官方能力的原生归档路径，且要自研一套跨运行记忆（本次明确不做）。
+
+### 已知质量观察（非分工问题，单独跟踪）
+
+自研表出现「本次指定的备用模型为 GLM-5.3-Flash」这类**单次会话内的事实**被归入 FACT。
+抽取 prompt 已禁止抽取审批/权限/金额类内容，但未禁止「一次性配置」进入长期记忆。
+建议后续在抽取判据中区分「可复用的稳定事实」与「本次会话的一次性设定」，避免长期记忆被一次性内容稀释。

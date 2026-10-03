@@ -75,21 +75,32 @@ public final class ProjectAgentProductionArtifacts implements ProjectAgentArtifa
                 "Executing actor workspace normalizer is required");
             return normalizer.normalize(path);
         });
-        var origin = new ProjectAgentArtifactOrigin(runs, sink::onArtifactPayload);
-        var delivery = target(binding, new ProjectAgentArtifactDelivery.RunOwnerTransaction() {
-            @Override public <T> T owned(java.util.function.Supplier<T> body) {
-                return sink.withActiveOwnership(body);
-            }
-        }, (ignored, runtime) -> claims.requireAuthorized(runtime, epoch), origin);
         return new Provider(claims, (runtime, request) -> sink.withActiveOwnership(() ->
             Objects.requireNonNull(transaction.execute(status -> {
                 claims.requireDelivery(runtime, epoch, request);
+                var origin = new ProjectAgentArtifactOrigin(runs, payload -> {
+                    boolean parent = Objects.equals(trustedRoot.getUserId(), runtime.getUserId())
+                        && Objects.equals(trustedRoot.getSessionId(), runtime.getSessionId());
+                    var visible = new java.util.LinkedHashMap<String,Object>(payload);
+                    var row = versions.findById(Long.valueOf(String.valueOf(payload.get("versionId")))).orElseThrow();
+                    if (parent && payload.get("attachment") instanceof ProjectAgentArtifactDelivery.Attachment attachment
+                        && !attachment.binary()) {
+                        if (!Objects.equals(row.getRunId(), spec.runId()) || !Objects.equals(row.getTenantId(), spec.tenantId())
+                            || !Objects.equals(row.getContentSha256(), org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog.sha256Hex(row.getContent())))
+                            throw new SecurityException("Document delivery receipt mismatch");
+                        visible.put("outputKind", "DOCUMENT"); visible.put("content", row.getContent());
+                    }
+                    sink.onArtifactPayload(java.util.Map.copyOf(visible));
+                    if (visible.containsKey("outputKind")) sink.onDocument(row.getId());
+                });
+                var delivery = target(binding, new ProjectAgentArtifactDelivery.RunOwnerTransaction() {
+                    @Override public <T> T owned(java.util.function.Supplier<T> body) { return sink.withActiveOwnership(body); }
+                }, (ignored, c) -> claims.requireAuthorized(c, epoch), origin);
                 var reservation = claims.reserve(runtime, epoch);
                 org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
                     new org.springframework.transaction.support.TransactionSynchronization() {
                         @Override public void afterCompletion(int completion) {
-                            if (completion == STATUS_COMMITTED) reservation.commit();
-                            else reservation.rollback();
+                            if (completion == STATUS_COMMITTED) reservation.commit(); else reservation.rollback();
                         }
                     });
                 var result = delivery.deliver(runtime, request);
@@ -97,6 +108,11 @@ public final class ProjectAgentProductionArtifacts implements ProjectAgentArtifa
                 return result;
             }), "Artifact transaction returned no result")));
 
+    }
+
+    public void verifyOutput(org.ruoyi.ipd.agent.domain.IpdAgentRun run,
+            org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion row) {
+        forOwnedRun(currentActor(run.getPersonId()), run.getId()).requireDocumentContent(row);
     }
 
     @Override

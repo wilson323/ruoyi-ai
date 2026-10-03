@@ -36,14 +36,22 @@ import reactor.core.publisher.Mono;
  * （{@code p{project}:u{person}} / {@code a{agent}:s{run}}）；预取 (runId, runId)
  * 或官方无参 (null, defaultSessionId) 槽拿到的是另一个空缓存对象。
  *
- * <p><b>失败语义</b>：召回或记录失败向主运行传播，合法空记忆不注入。
+ * <p><b>失败语义（2026-10-03 run 2106378468009717761 实测后修订）</b>：
+ * 召回失败向主运行传播（它决定本轮回答质量）；<b>记录失败不再改写业务终态</b>，
+ * 改为写 {@code MEMORY_RECEIPT} 持久回执（状态 / 错误类别 / 可重试）后正常收尾。
+ * 合法空记忆不注入。
  */
 final class ProjectAgentLongTermMemoryMiddleware implements MiddlewareBase {
 
-    private final ProjectScopedLongTermMemory longTermMemory;
+    private static final String RECEIPT_WRITTEN = "WRITTEN";
+    private static final String RECEIPT_WRITE_FAILED = "WRITE_FAILED";
 
-    ProjectAgentLongTermMemoryMiddleware(ProjectScopedLongTermMemory longTermMemory) {
+    private final ProjectScopedLongTermMemory longTermMemory;
+    private final ProjectAgentEventSink sink;
+
+    ProjectAgentLongTermMemoryMiddleware(ProjectScopedLongTermMemory longTermMemory, ProjectAgentEventSink sink) {
         this.longTermMemory = longTermMemory;
+        this.sink = java.util.Objects.requireNonNull(sink);
     }
 
     @Override
@@ -98,7 +106,17 @@ final class ProjectAgentLongTermMemoryMiddleware implements MiddlewareBase {
             }).defaultIfEmpty(input);
     }
 
-    /** PostCall 等价：正常完成才记录（取消/失败不记），记录完成后主链才完成。 */
+    /**
+     * PostCall 等价：正常完成才记录（取消/失败不记），记录完成后主链才完成。
+     *
+     * <p><b>2026-10-03 run 2106378468009717761 实测修订</b>：旧实现把
+     * {@code longTermMemory.record(...)} 直接 {@code concatWith} 到主流尾部，
+     * 抽取一旦超时，错误就沿主流冒泡，内核判 STREAM_ERROR、整轮落 FAILED，而此时
+     * 答案正文与 {@code TEXT_MESSAGE_END} 早已推送并落库——用户拿到的是完整回答，
+     * 系统告诉他「模型输出中断」。这里改为<b>错误不逃逸</b>：失败写 {@code MEMORY_RECEIPT}
+     * 持久回执（状态 / 错误类别 / 可重试标记）后正常结束主链。
+     * 回执本身写不进去才算真故障，那时才向上抛——不能把回执丢失也一并吞掉。
+     */
     private Mono<Void> recordConversation(Agent agent, RuntimeContext ctx) {
         AgentState state = agent instanceof io.agentscope.core.ReActAgent react
             ? react.getAgentState(ctx) : agent.getAgentState();
@@ -106,6 +124,34 @@ final class ProjectAgentLongTermMemoryMiddleware implements MiddlewareBase {
         if (context == null || context.isEmpty()) {
             return Mono.empty();
         }
-        return longTermMemory.record(context);
+        return longTermMemory.record(context)
+            .onErrorResume(failure -> {
+                ProjectScopedLongTermMemory.RecordOutcome outcome = longTermMemory.lastOutcome();
+                Throwable cause = outcome == null ? failure : outcome.failure();
+                receipt(RECEIPT_WRITE_FAILED, cause, true, 0, 0);
+                return Mono.empty();
+            })
+            .doOnSuccess(ignored -> {
+                ProjectScopedLongTermMemory.RecordOutcome outcome = longTermMemory.lastOutcome();
+                if (outcome != null && outcome.written()) {
+                    receipt(RECEIPT_WRITTEN, null, false, outcome.extracted(), outcome.saved());
+                }
+            });
+    }
+
+    /**
+     * 写本次运行的记忆持久回执。只记录类别与计数，不带异常原文、凭据或对话正文。
+     *
+     * <p>回执写失败必须向上抛：那意味着「连失败都没留下痕迹」，属于真故障，
+     * 静默吞掉会把一次性抖动变成永久无痕的数据缺失。
+     */
+    private void receipt(String status, Throwable failure, boolean retryable, int extracted, int saved) {
+        var payload = new java.util.LinkedHashMap<String, Object>();
+        payload.put("status", status);
+        payload.put("retryable", retryable);
+        payload.put("extracted", extracted);
+        payload.put("saved", saved);
+        payload.put("errorType", failure == null ? null : failure.getClass().getSimpleName());
+        sink.onMemoryReceipt(payload);
     }
 }

@@ -21,9 +21,10 @@ class ProjectAgentAguiCrashRecoveryTest {
     private final ObjectMapper mapper=AgentTestFixtures.MAPPER;
     private final ProjectAgentRunOwnership ownership=mock(ProjectAgentRunOwnership.class);
     private final List<Runnable> tasks=new ArrayList<>();
+    private final List<ProjectAgentRunOwnership.Lease> leases=new ArrayList<>();
     private record Pipeline(ProjectAgentRunService service,ProjectAgentRunExecutor executor,FakeProjectAgentKernel kernel) { }
     private Pipeline pipeline(boolean reject) {
-        when(ownership.acquire(anyLong())).thenAnswer(ignored->{var lease=mock(ProjectAgentRunOwnership.Lease.class);when(lease.held()).thenReturn(true);return Optional.of(lease);});
+        when(ownership.acquire(anyLong())).thenAnswer(ignored->{var lease=mock(ProjectAgentRunOwnership.Lease.class);when(lease.held()).thenReturn(true);leases.add(lease);return Optional.of(lease);});
         var scheduler=mock(Scheduler.class);
         when(scheduler.schedule(any(Runnable.class))).thenAnswer(inv->{if(reject)throw new RejectedExecutionException("fixture scheduling rejected");tasks.add(inv.getArgument(0));return reactor.core.Disposables.single();});
         when(scheduler.schedulePeriodically(any(Runnable.class),anyLong(),anyLong(),any())).thenReturn(reactor.core.Disposables.single());
@@ -50,6 +51,35 @@ class ProjectAgentAguiCrashRecoveryTest {
     private ProjectAgentRunRecovery recovery(Pipeline pipeline) {
         var recovery=new ProjectAgentRunRecovery(store,ownership,AgentOwnershipTestTransactions.create(),mapper);
         recovery.setResumeRecovery(run->pipeline.service().recoverAguiIntent(ACTOR,run.getId()));return recovery;
+    }
+    @Test void durablePauseReleasesLeaseAndColdServiceResumesOriginalRun() {
+        var first=pipeline(false);long id=pause(first);long seq=store.maxSeq(id);
+        assertEquals("WAITING_APPROVAL",store.findRun(id).orElseThrow().getStatus());
+        assertTrue(first.executor().handle(id).isEmpty());
+        assertFalse(leases.isEmpty());
+        leases.forEach(lease->verify(lease).close());
+        var cold=pipeline(false);
+        clearInvocations(ownership);
+        assertFalse(recovery(cold).recover(store.findRun(id).orElseThrow()));
+        verify(ownership,never()).acquire(anyLong());
+        assertTrue(store.terminalSeq(id).isEmpty());
+        cold.service().resume(ACTOR,id,seq,response(id));
+        tasks.remove(0).run();
+        assertEquals(1,cold.kernel().executions.size());
+        assertEquals(1,store.runInserts.get());
+        assertEquals("RUNNING",store.findRun(id).orElseThrow().getStatus());
+        cold.executor().handle(id).orElseThrow().abandonOwnership();
+    }
+    @Test void heldLeasePreventsColdRecoveryFromDispatchingConsumedIntent() {
+        var first=pipeline(false);long id=pause(first);
+        first.service().resume(ACTOR,id,store.maxSeq(id),response(id));
+        tasks.clear();var cold=pipeline(false);
+        when(ownership.acquire(id)).thenReturn(Optional.empty());
+        assertFalse(recovery(cold).recover(store.findRun(id).orElseThrow()));
+        assertEquals("RUNNING",store.findRun(id).orElseThrow().getStatus());
+        assertTrue(cold.kernel().executions.isEmpty());assertTrue(tasks.isEmpty());
+        assertTrue(store.terminalSeq(id).isEmpty());
+        first.executor().handle(id).orElseThrow().abandonOwnership();
     }
     @Test void committedIntentBeforeDispatchRestartsSameRunThroughOriginalRecovery() {
         var first=pipeline(false);long id=pause(first);long seq=store.maxSeq(id);

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.chat.kernel.KernelModelRequest;
 import org.ruoyi.ipd.agent.catalog.ProductLineMcpCatalog;
+import org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalog;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentToolCatalog;
 import org.ruoyi.ipd.agent.domain.IpdAgentRunEvent;
 import org.ruoyi.ipd.agent.model.AgentEventType;
@@ -191,6 +192,22 @@ class ProjectAgentPromptTest {
      * @param message 用户原话
      * @return 运行输入
      */
+    /**
+     * 委派纪律必须写进生产提示词：模型自己以为「等后台任务」是在等，
+     * 实际那 30 秒是转后台的卸载阈值，子智能体仍在跑，本运行的归档会当场固化并核验不过。
+     */
+    @Test void delegationGuidanceOnlyWhenSpawnToolIsAuthorized() {
+        var delegating = new ProjectAgentRunSpec(1L, PROJECT_ID, TENANT, ACTOR.id(), "C02", "帮我调研市场",
+            List.of(), List.of(ProjectAgentNativeToolCatalog.AGENT_SPAWN, ProjectAgentNativeToolCatalog.WAIT_ASYNC_RESULTS),
+            new KernelModelRequest("m", "openai", "k", "http://x"), Duration.ofSeconds(5));
+        String withSpawn = ProjectAgentPrompt.build(delegating);
+        assertThat(withSpawn).contains(ProjectAgentNativeToolCatalog.AGENT_SPAWN);
+        assertThat(withSpawn).contains(ProjectAgentNativeToolCatalog.WAIT_ASYNC_RESULTS);
+
+        // 没授权委派就不教它委派，避免提示词教出本次没有的能力。
+        assertThat(ProjectAgentPrompt.build(spec("帮我调研市场"))).doesNotContain("委派纪律");
+    }
+
     private static ProjectAgentRunSpec spec(String message) {
         return new ProjectAgentRunSpec(1L, PROJECT_ID, TENANT, ACTOR.id(), "C02", message,
             List.of(), List.of(), new KernelModelRequest("m", "openai", "k", "http://x"),

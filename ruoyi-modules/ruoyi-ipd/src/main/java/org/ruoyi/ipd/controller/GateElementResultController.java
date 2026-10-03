@@ -5,10 +5,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateElementResult;
+import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.mapper.GateMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.service.GateElementResultService;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +41,8 @@ public class GateElementResultController {
 
     private final GateElementResultService service;
     private final IpdPermission permission;
+    private final GateMapper gateMapper;
+    private final ProjectMapper projectMapper;
 
     public record JudgeRequest(@NotNull Long elementId,
                                @NotBlank String result,
@@ -119,15 +127,48 @@ public class GateElementResultController {
     }
 
     /**
+     * Gate 归属解析（只解析组 ID，不做断言——断言必须在端点方法体里显式调用，
+     * 否则 scripts/check-write-endpoint-ownership.sh 扫端点方法体时看不见）。
+     *
+     * <p>submit 只有一个 {@code gateId} 入参，组归属需经
+     * {@code gateId → Gate.projectId → Project.mainGroupId} 两级串联解析，
+     * 与 GateMaterialController.upload 同一条链路。
+     *
+     * <p>fail-closed：Gate 不存在 / 未挂项目 / 项目不存在 / 项目无主组 一律抛 FORBIDDEN，
+     * 不区分「不存在」与「无权」，不泄漏存在性。
+     *
+     * @param gateId Gate ID
+     * @return Gate 所属项目的主组 ID
+     * @throws IpdBusinessException {@link ApiV1ErrorCode#FORBIDDEN} 归属链任一环缺失
+     */
+    private Long resolveGateGroup(Long gateId) {
+        Gate gate = gateMapper.selectById(gateId);
+        if (gate == null || gate.getProjectId() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
+        }
+        Project project = projectMapper.selectById(gate.getProjectId());
+        if (project == null || project.getMainGroupId() == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作");
+        }
+        return project.getMainGroupId();
+    }
+
+    /**
      * 提交评审：[SEC-FIX-HIGH-1.1] 强制输出物守卫——
      * 全要素已判 + 否决项阻断（AC-GATE-15/19/20）+ 要素定义快照冻结 + 评审材料 + 会议纪要。
      * <p>[SEC-FIX-HIGH-1.1-FOLLOWUP] body 必填 materialsOssId + meetingMinutesOssId（Long）——
      * 由 ISysOssService.getById 解析 URL，**禁止任意外部 URL**（防 open-redirect/SSRF）。
+     *
+     * <p>归属校验：submit 是「材料真正挂到评审上」的动作（GateMaterialController.upload 只落
+     * OSS 侧材料），上一轮只堵了 upload 属于半条路——任意内部角色可对别人项目的 gateId
+     * 调 submit，写入 materialsUrl / meetingMinutesUrl / startedAt / signDueAt 并开启双签队列。
+     * 复用 {@link IpdIdorGuard#assertSameGroupIpd}，actor 只来自会话，校验在写库前。
      */
     @PostMapping("/submit")
     public ApiV1Response<GateView> submit(@PathVariable Long gateId,
                                           @Valid @RequestBody MandatoryOutputsReq req) {
         IpdActor actor = permission.requireInternal();
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveGateGroup(gateId));
         return ApiV1Response.ok(GateView.from(
             service.submit(gateId, req.materialsOssId(), req.meetingMinutesOssId(), actor)));
     }

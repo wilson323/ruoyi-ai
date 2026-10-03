@@ -5,6 +5,10 @@
 
 一句话定位：RuoYi-AI（Spring Boot 3.5.8 + Java 17 + AgentScope 的 Maven 多模块**后端**仓库，父 POM revision 3.1.0）正在二开改造为「IPD 产品经理管理系统」。前端在独立仓库（ruoyi-web / ruoyi-admin 前端），别在这里找 Vue 代码。
 
+## 工程任务的防复发入口
+
+后续工程任务先读正式前端 `.harness/skills/ipd-engineering-feedback/SKILL.md`，运行 `python3 /Users/mac/Documents/ruoyi-ipd-web/scripts/engineering_harness.py --root "$PWD" intake`。本仓 `bash .harness/verify.sh governance <原事项编号>` 复用同一工程验证器，保存真实失败与待反思问题，同事项回归后只启用固定工程检查项；不承担Java打包、已加载运行态或业务验收。原总画布/看板仍唯一，原官方AgentScope能力及业务owner/批准不变；未证明全IDE调用不可绕过，不自动提交推送。
+
 ## 当前任务范围与证据
 
 - 2026-10-02 最新用户目标优先：AgentScope 官方能力全量启用、禁止禁用、禁止降级，以 `/Users/mac/Documents/agentscope-java` 真实源码为参考确保完整应用。此指令覆盖 ADR-0077“按需关闭”及下文历史禁开口径；业务闸门（技能 owner 拍板、审批流、权限、文档审核、动作批准与 Gate）保留并经官方扩展点挂载。能力启用不授予具体业务操作权限；源码版本差异须现核，目标不等于运行验收，禁止静默回退或空实现。
@@ -61,6 +65,8 @@
 - 修改 `docs/wiki/**` 后必须跑 `node docs/wiki/wiki-lint.cjs`（无 CI 门禁，靠自觉）。
 
 ## Learned User Preferences
+
+- 对用户输出必须说人话：用简体中文直接说明具体事项、目前做到哪里、还缺什么，以及怎样才算做完。禁止用任务编号、卡号、状态码、内部缩写或配置键代替事项说明；必要技术名称须先解释含义，编号仅可作为附带查证信息。未完成事项必须区分“还要补实现”和“代码已改但尚未实际验收”，不得只报测试数量或堆术语。
 
 - 全局梳理 / 治理类任务：要用专业智能体与工具做蜂群并行，走「盘点 → 实施 → 验证 → 文档/看板同步」闭环，不要只给建议。
 - 执行中必须及时更新看板卡片状态（待办 / 进行中 / 阻塞 / 待审核 / 已完成）；证据不足时标 PARTIAL，不得提前标 done。

@@ -14,9 +14,8 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * P0-8 种子 SQL 一致性断言：33 要素 / 15 否决位 / G1..G5 分布 7/6/5/8/7 / 17 认证模板
- * （防种子文件与 v1 要素文档、v3 BR-IPD-05b 清单漂移；文件即事实，行数即口径）
- * R31 适配 PR#21 幂等化：种子 SQL 逐条 INSERT 已改 INSERT IGNORE 形态，计数 regex 兼容两种写法（口径不变）。
+ * 当前Java种子逐项遵循DOC-05已确认合同；旧SQL仅锁定历史事实，禁止视作新库权威。
+ * 历史SQL仍保留33项/15否决及认证模板；当前种子为33项/14否决。
  */
 @Tag("dev")
 class IpdSeedConsistencyTest {
@@ -46,7 +45,7 @@ class IpdSeedConsistencyTest {
     }
 
     @Test
-    @DisplayName("否决位 = 15（按要素表逐项 ❌；原文汇总行 14 与逐项表不一致，以逐项为准）")
+    @DisplayName("历史SQL固定15否决位（已被DOC-05覆盖；禁止作当前合同权威）")
     void vetoCount() throws IOException {
         String sql = seed();
         Matcher m = Pattern.compile("INSERT (?:IGNORE )?INTO gate_review_elements[^;]*?, '1', [0-9]+, '1',").matcher(sql);
@@ -55,6 +54,37 @@ class IpdSeedConsistencyTest {
             veto++;
         }
         assertThat(veto).isEqualTo(15);
+    }
+
+    @Test
+    @DisplayName("当前Java种子逐项等于DOC-05；历史SQL的G2-6否决显式标记，不作新权威")
+    void currentJavaMatchesOwnerContractEveryField() throws Exception {
+        var mapper = org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.GateElementMapper.class);
+        org.mockito.Mockito.when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(java.util.List.of());
+        new org.ruoyi.ipd.config.IpdGateElementSeedInitializer(mapper).run(null);
+        var captured = org.mockito.ArgumentCaptor.forClass(org.ruoyi.ipd.domain.GateElement.class);
+        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.times(33)).insert(captured.capture());
+        var actual = captured.getAllValues().stream().collect(java.util.stream.Collectors.toMap(
+            org.ruoyi.ipd.domain.GateElement::getElementCode, java.util.function.Function.identity()));
+        var expected = new java.util.LinkedHashMap<String,String[]>();
+        for (String line : Files.readAllLines(Paths.get("../../docs/ipd-系统说明/工程合同/DOC-05.md"))) {
+            if (!line.matches("^\\| G[1-5]-[1-9] \\|.*")) continue;
+            var fields = line.split("\\|", -1);
+            expected.put(fields[1].trim(), new String[]{fields[2].trim(), fields[4].trim(), "是".equals(fields[5].trim()) ? "1" : "0"});
+        }
+        assertThat(expected).hasSize(33);
+        assertThat(actual.keySet()).containsExactlyInAnyOrderElementsOf(expected.keySet());
+        expected.forEach((id, fields) -> {
+            var row = actual.get(id);
+            assertThat(row.getGateCode()).isEqualTo(id.substring(0, 2));
+            assertThat(row.getElementName()).as(id).isEqualTo(fields[0]);
+            assertThat(row.getPassStandard()).as(id).isEqualTo(fields[1]);
+            assertThat(row.getIsVeto()).as(id).isEqualTo(fields[2]);
+        });
+        assertThat(actual.values().stream().filter(row -> "1".equals(row.getIsVeto())).map(org.ruoyi.ipd.domain.GateElement::getElementCode))
+            .containsExactlyInAnyOrder("G1-2","G1-4","G1-5","G1-6","G1-7","G2-1","G2-3","G2-4","G2-5","G4-1","G4-2","G4-6","G5-3","G5-7");
+        assertThat(seed()).contains("'G2-6', '认证与法规清单确认'").contains("缺失或周期冲突=否决");
+        assertThat(actual.get("G2-6").getIsVeto()).isEqualTo("0");
     }
 
     @Test

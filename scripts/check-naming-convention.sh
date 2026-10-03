@@ -23,9 +23,10 @@
 #   1 = fail（命名违规）
 #   2 = 脚本/参数错误
 
-set -o pipefail
+set -eo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/audit-gate-input.sh"
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 # === 自证能红 ===
 if [[ "${NAMING_FAIL_SEED:-0}" == "1" ]]; then
@@ -39,17 +40,23 @@ echo "=== 命名规范检测 (BP-001) ==="
 VIOLATIONS=0
 SCANNED=0
 
+for tree in ruoyi-modules ruoyi-admin ruoyi-common; do
+  gate_require_tree "$REPO/$tree" -name "*.java"
+done
+FRONT_DIR="${FRONT_DIR:-$REPO/../ruoyi-ipd-web/apps/web-antd/src}"
+gate_require_tree "$FRONT_DIR" \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \)
+
 # === 1. Java 类名 PascalCase 检测 ===
 echo "[STEP 1] Java 类名 PascalCase 检测..."
 JAVA_FILES=$(find "$REPO/ruoyi-modules" "$REPO/ruoyi-admin" "$REPO/ruoyi-common" \
-  -name "*.java" -type f 2>/dev/null | head -100)
+  -name "*.java" -type f ! -path '*/target/*')
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   SCANNED=$((SCANNED + 1))
 
   # 类声明行：public class FooBar（PascalCase）或 interface FooBar
-  CLASS_NAME=$(grep -oE "(public |protected |private )?(class|interface|enum) [A-Z][a-zA-Z0-9]*" "$f" 2>/dev/null | head -1 | awk '{print $NF}')
+  CLASS_NAME=$(gate_grep -oE "^[[:space:]]*((public|protected|private|abstract|final|static|sealed|non-sealed)[[:space:]]+)*(class|interface|enum|record)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*" "$f" | awk 'NR==1 {print $NF}')
   if [[ -n "$CLASS_NAME" ]]; then
     # PascalCase 规则：首字母大写，后续不能有下划线
     if echo "$CLASS_NAME" | grep -qE "^[A-Z][a-zA-Z0-9]*$"; then
@@ -69,12 +76,12 @@ echo "[STEP 2] Java 常量 UPPER_SNAKE_CASE 启发式检测..."
 
 CONST_VIOL=0
 # 启发式：扫描 ruoyi-modules 下 Service/Config/Constants 类的 public static final 字段
-CONST_FILES=$(grep -rlE "(public |private |protected )?static final [A-Za-z_]+ [A-Z]" "$REPO/ruoyi-modules" 2>/dev/null | head -10)
+CONST_FILES=$(gate_grep --exclude-dir=target --include="*.java" --include="*.vue" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" -rlE "(public |private |protected )?static final [A-Za-z_]+ [A-Za-z_]" "$REPO/ruoyi-modules")
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   # 提取 final 字段名（避免方法/类）
-  FIELDS=$(grep -nE "(public |private |protected )?static final [A-Za-z<>?, ]+ [A-Za-z_][A-Za-z0-9_]*\s*=" "$f" 2>/dev/null \
-    | awk -F'= ' '{print $1}' | awk '{print $NF}' | head -5)
+  FIELDS=$(gate_grep -nE "(public |private |protected )?static final [A-Za-z<>?, ]+ [A-Za-z_][A-Za-z0-9_]*\s*=" "$f" \
+    | awk -F'= ' '{print $1}' | awk '{print $NF}')
   for cn in $FIELDS; do
     if echo "$cn" | grep -qE "^[A-Z][A-Z0-9_]*$"; then
       :
@@ -90,10 +97,10 @@ echo "  常量命名疑似违规: ${CONST_VIOL}（WARN 级，仅提示）"
 # === 3. 前端文件名 kebab-case 检测 ===
 echo "[STEP 3] 前端文件名 kebab-case 检测..."
 
-if [[ -d "$REPO/../ruoyi-ipd-web/apps/web-antd/src" ]]; then
-  FRONT_FILES=$(find "$REPO/../ruoyi-ipd-web/apps/web-antd/src" \
+if [[ -d "$FRONT_DIR" ]]; then
+  FRONT_FILES=$(find "$FRONT_DIR" \
     \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \) \
-    -type f 2>/dev/null | head -50)
+    -type f)
   FRONT_VIOL=0
 
   while IFS= read -r f; do

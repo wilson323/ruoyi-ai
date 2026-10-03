@@ -18,7 +18,7 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 | [modules/system-rbac-deep-dive.md](modules/system-rbac-deep-dive.md) | ruoyi-system — RBAC 实体关系 + 权限注解 + 数据权限 | 2026-09-04 |
 | [modules/system-listener-runner.md](modules/system-listener-runner.md) | ruoyi-system — 事件监听器与启动任务 | 2026-09-04 |
 | [modules/generator.md](modules/generator.md) | ruoyi-generator — 代码生成器 | 2026-09-04 |
-| [modules/common.md](modules/common.md) | ruoyi-common — 27 个共享库 | 2026-09-04 |
+| [modules/common.md](modules/common.md) | ruoyi-common — 24 个共享库（+1 BOM） | 2026-09-04 |
 | [modules/common-core-utilities.md](modules/common-core-utilities.md) | common — 核心工具层（core / json / doc / excel） | 2026-09-04 |
 | [modules/common-security-auth.md](modules/common-security-auth.md) | common — 安全认证层（security / satoken / encrypt / sensitive） | 2026-09-04 |
 | [modules/common-data.md](modules/common-data.md) | common — 数据层（mybatis / redis / tenant / trace） | 2026-09-04 |
@@ -41,7 +41,8 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 
 ## 统计
 
-- **raw 文件数**：49
+- **raw 文件数**：48
+- **快照漂移（2026-10-03 实测）**：48 份中与活文件一致 29 / 已漂移 16 / 源文件已删 1（`system-source/entity-cms-content.md`，对应实体已下线）/ 指向目录无法字节比对 2（`chat-source/agents-catalog.md`、`system-source/rbac-entities.md`）。引用 raw 快照结论前先核对活文件，漂移快照里的数字不可直接采信
 - **wiki 文章数**：20
 - **raw 总大小**：~430 KB
 - **wiki 总大小**：~210 KB
@@ -56,7 +57,7 @@ RuoYi-AI 项目知识库索引。基于 karpathy-llm-wiki 工作流生成：源�
 |---|---|---|
 | `raw/project-skeleton/` | 2 | 项目骨架（application-dev/prod yml） |
 | `raw/admin-source/` | 7 | ruoyi-admin 源码（启动 / controller / config / logback） |
-| `raw/chat-source/` | 8 | ruoyi-chat 核心（controller / factory / RAG trace / vector store） |
+| `raw/chat-source/` | 7 | ruoyi-chat 核心（controller / factory / RAG trace / vector store） |
 | `raw/system-source/` | 9 | ruoyi-system 核心（controller / listener / runner / entity） |
 | `raw/ipd-source/` | 3 | ruoyi-ipd 业务工作流（Gate 评审 / 阶段动作 / AI 执行引擎与节点智能体） |
 | `raw/multimodal-source/` | 4 | 多模态（视频 / 音频 / 图像 / Embedding） |

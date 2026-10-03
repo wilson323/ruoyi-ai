@@ -32,7 +32,50 @@ public record ProjectAgentRunSpec(Long runId, Long projectId, String tenantId, L
                                   String actionCode, String message, List<LoadedSkill> skills,
                                   List<String> toolIds, KernelModelRequest model, Duration timeout,
                                   Long requirementId, String catalogAppendix, String projectFacts, RunAgentInput aguiInput, List<Msg> serverResumeMessages,
-                                  List<String> executionToolIds, List<ChildResume> serverChildResumes) {
+                                  List<String> executionToolIds, List<ChildResume> serverChildResumes, FrozenModels frozenModels) {
+
+    /** In-memory resolved requests; absence is only for historical direct test/API compatibility. */
+    public record FrozenModels(KernelModelRequest primary, KernelModelRequest fallback,
+            org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity primaryIdentity,
+            org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity fallbackIdentity) {
+        public FrozenModels(KernelModelRequest primary, KernelModelRequest fallback) { this(primary, fallback, null, null); }
+        public FrozenModels {
+            Objects.requireNonNull(primary, "primary model");
+            if (primaryIdentity != null) {
+                if (!primaryIdentity.equals(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity.of(primaryIdentity.modelConfigId(), primary))
+                    || (fallback == null) != (fallbackIdentity == null)
+                    || (fallbackIdentity != null && !fallbackIdentity.equals(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity.of(fallbackIdentity.modelConfigId(), fallback)))) {
+                    throw new IllegalArgumentException("冻结模型身份与实际请求不一致");
+                }
+            } else if (fallbackIdentity != null) {
+                throw new IllegalArgumentException("主模型身份缺失");
+            }
+        }
+    }
+    public ProjectAgentRunSpec(Long runId, Long projectId, String tenantId, Long personId,
+                               String actionCode, String message, List<LoadedSkill> skills,
+                               List<String> toolIds, KernelModelRequest model, Duration timeout,
+                               Long requirementId, String catalogAppendix, String projectFacts,
+                               RunAgentInput aguiInput, List<Msg> serverResumeMessages,
+                               List<String> executionToolIds, List<ChildResume> serverChildResumes) {
+        this(runId, projectId, tenantId, personId, actionCode, message, skills, toolIds, model, timeout,
+            requirementId, catalogAppendix, projectFacts, aguiInput, serverResumeMessages,
+            executionToolIds, serverChildResumes, null);
+    }
+    public ProjectAgentRunSpec withFrozenModels(KernelModelRequest primary, KernelModelRequest fallback,
+                                                Long primaryId, Long fallbackId) {
+        var identities = new FrozenModels(primary, fallback,
+            org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity.of(primaryId, primary),
+            fallback == null ? null : org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity.of(fallbackId, fallback));
+        return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
+            toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput,
+            serverResumeMessages, executionToolIds, serverChildResumes, identities);
+    }
+    public ProjectAgentRunSpec withFrozenModels(KernelModelRequest primary, KernelModelRequest fallback) {
+        return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
+            toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput,
+            serverResumeMessages, executionToolIds, serverChildResumes, new FrozenModels(primary, fallback));
+    }
 
     /** 兼容原执行集合规格；子恢复数据只来自服务器审批消费。 */
     public ProjectAgentRunSpec(Long runId, Long projectId, String tenantId, Long personId,
@@ -101,7 +144,7 @@ public record ProjectAgentRunSpec(Long runId, Long projectId, String tenantId, L
      */
     public ProjectAgentRunSpec withCatalog(String catalogAppendix) {
         return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
-            toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput, serverResumeMessages, executionToolIds, serverChildResumes);
+            toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput, serverResumeMessages, executionToolIds, serverChildResumes, frozenModels);
     }
 
     /**
@@ -112,34 +155,34 @@ public record ProjectAgentRunSpec(Long runId, Long projectId, String tenantId, L
      */
     public ProjectAgentRunSpec withProjectFacts(String facts) {
         return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
-            toolIds, model, timeout, requirementId, catalogAppendix, facts, aguiInput, serverResumeMessages, executionToolIds, serverChildResumes);
+            toolIds, model, timeout, requirementId, catalogAppendix, facts, aguiInput, serverResumeMessages, executionToolIds, serverChildResumes, frozenModels);
     }
 
     /** 保留官方完整输入；此字段本身不授予业务权限。 */
     public ProjectAgentRunSpec withAguiInput(RunAgentInput input) {
         return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
-            toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, input, serverResumeMessages, executionToolIds, serverChildResumes);
+            toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, input, serverResumeMessages, executionToolIds, serverChildResumes, frozenModels);
     }
 
     /** 经原运行归属、审批及检查点 CAS 校验后得到的官方消息，不接受客户端 DTO 直接赋值。 */
     public ProjectAgentRunSpec withServerResumeMessages(List<Msg> messages) {
         return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
             toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput,
-            List.copyOf(Objects.requireNonNull(messages, "server resume messages")), executionToolIds, serverChildResumes);
+            List.copyOf(Objects.requireNonNull(messages, "server resume messages")), executionToolIds, serverChildResumes, frozenModels);
     }
 
     /** 服务器从原配置快照传入；与业务能力包 toolIds 分开，不接受客户端直接授权。 */
     public ProjectAgentRunSpec withExecutionToolIds(List<String> ids) {
         return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
             toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput,
-            serverResumeMessages, ids, serverChildResumes);
+            serverResumeMessages, ids, serverChildResumes, frozenModels);
     }
 
     /** 仅服务器审批消费后的子确认消息；不向创建 DTO 开放。 */
     public ProjectAgentRunSpec withServerChildResumes(List<ChildResume> resumes) {
         return new ProjectAgentRunSpec(runId, projectId, tenantId, personId, actionCode, message, skills,
             toolIds, model, timeout, requirementId, catalogAppendix, projectFacts, aguiInput,
-            serverResumeMessages, executionToolIds, List.copyOf(Objects.requireNonNull(resumes, "server child resumes")));
+            serverResumeMessages, executionToolIds, List.copyOf(Objects.requireNonNull(resumes, "server child resumes")), frozenModels);
     }
 
     /** 规范化并校验必填项。 */
@@ -148,6 +191,9 @@ public record ProjectAgentRunSpec(Long runId, Long projectId, String tenantId, L
         Objects.requireNonNull(projectId, "projectId");
         Objects.requireNonNull(personId, "personId");
         Objects.requireNonNull(model, "model");
+        if (frozenModels != null && !model.equals(frozenModels.primary())) {
+            throw new IllegalArgumentException("Frozen primary model does not match run input");
+        }
         serverResumeMessages = serverResumeMessages == null ? null : List.copyOf(serverResumeMessages);
         executionToolIds = executionToolIds == null ? null : List.copyOf(executionToolIds);
         serverChildResumes = serverChildResumes == null ? List.of() : List.copyOf(serverChildResumes);

@@ -22,10 +22,11 @@
 #   1 = fail（疑似内存泄漏模式）
 #   2 = 脚本/参数错误
 
-set -o pipefail
+set -eo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/audit-gate-input.sh"
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FRONT_DIR="$REPO/../ruoyi-ipd-web/apps/web-antd/src"
+REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+FRONT_DIR="${FRONT_DIR:-$REPO/../ruoyi-ipd-web/apps/web-antd/src}"
 
 # === 自证能红 ===
 if [[ "${LEAK_FAIL_SEED:-0}" == "1" ]]; then
@@ -38,96 +39,47 @@ echo "=== 内存泄漏模式检测 (BP-008) ==="
 
 VIOLATIONS=0
 
-# === 1. setInterval / setTimeout 未清理检测 ===
-echo "[STEP 1] setInterval/setTimeout 未清理检测..."
-
-if [[ -d "$FRONT_DIR" ]]; then
-  SI_FILES=$(grep -rlE "setInterval\s*\(|setTimeout\s*\(" "$FRONT_DIR" 2>/dev/null | head -30)
-  SI_COUNT=0
-
-  while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    SI_NUM=$(grep -cE "setInterval\s*\(" "$f" 2>/dev/null || echo 0)
-    ST_NUM=$(grep -cE "setTimeout\s*\(" "$f" 2>/dev/null || echo 0)
-    CLEAR_NUM=$(grep -cE "clearInterval\s*\(|clearTimeout\s*\(" "$f" 2>/dev/null || echo 0)
-
-    TOTAL_TIMER=$((SI_NUM + ST_NUM))
-    if [[ $TOTAL_TIMER -gt 0 ]] && [[ $CLEAR_NUM -lt $TOTAL_TIMER ]]; then
-      SI_COUNT=$((SI_COUNT + 1))
-      [[ $SI_COUNT -le 3 ]] && echo "  [WARN] $f → $TOTAL_TIMER 个 setInterval/setTimeout 但仅 $CLEAR_NUM 个 clear"
-    fi
-  done <<< "$SI_FILES"
-
-  echo "  定时器未清理疑似: $SI_COUNT"
-  VIOLATIONS=$((VIOLATIONS + SI_COUNT))
-fi
-
-# === 2. addEventListener 未 remove 检测 ===
-echo "[STEP 2] addEventListener 未 removeEventListener 检测..."
-
-if [[ -d "$FRONT_DIR" ]]; then
-  EL_FILES=$(grep -rlE "addEventListener\s*\(" "$FRONT_DIR" 2>/dev/null | head -20)
-  EL_COUNT=0
-
-  while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    ADD_NUM=$(grep -cE "addEventListener\s*\(" "$f" 2>/dev/null || echo 0)
-    REM_NUM=$(grep -cE "removeEventListener\s*\(" "$f" 2>/dev/null || echo 0)
-
-    if [[ $ADD_NUM -gt 0 ]] && [[ $REM_NUM -lt $ADD_NUM ]]; then
-      EL_COUNT=$((EL_COUNT + 1))
-      [[ $EL_COUNT -le 3 ]] && echo "  [WARN] $f → $ADD_NUM 个 addEventListener 但仅 $REM_NUM 个 remove"
-    fi
-  done <<< "$EL_FILES"
-
-  echo "  事件监听未清理疑似: $EL_COUNT"
-  VIOLATIONS=$((VIOLATIONS + EL_COUNT))
-fi
-
-# === 3. WebSocket / EventSource 未关闭 ===
-echo "[STEP 3] WebSocket/EventSource 未关闭检测..."
-
-if [[ -d "$FRONT_DIR" ]]; then
-  WS_FILES=$(grep -rlE "new WebSocket\s*\(|new EventSource\s*\(" "$FRONT_DIR" 2>/dev/null | head -20)
-  WS_COUNT=0
-
-  while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    WS_NUM=$(grep -cE "new WebSocket\s*\(|new EventSource\s*\(" "$f" 2>/dev/null || echo 0)
-    CLOSE_NUM=$(grep -cE "\.close\s*\(" "$f" 2>/dev/null || echo 0)
-
-    if [[ $WS_NUM -gt 0 ]] && [[ $CLOSE_NUM -lt $WS_NUM ]]; then
-      WS_COUNT=$((WS_COUNT + 1))
-      [[ $WS_COUNT -le 3 ]] && echo "  [WARN] $f → $WS_NUM 个 WebSocket/EventSource 但仅 $CLOSE_NUM 个 close"
-    fi
-  done <<< "$WS_FILES"
-
-  echo "  WebSocket/EventSource 未关闭疑似: $WS_COUNT"
-  VIOLATIONS=$((VIOLATIONS + WS_COUNT))
-fi
-
-# === 4. window 全局挂载未清理检测 ===
-echo "[STEP 4] window 全局挂载检测..."
-
-if [[ -d "$FRONT_DIR" ]]; then
-  WIN_FILES=$(grep -rlE "window\.[a-zA-Z]+\s*=" "$FRONT_DIR" 2>/dev/null | head -10)
-  WIN_COUNT=$(echo "$WIN_FILES" | grep -c "." 2>/dev/null || echo 0)
-  echo "  window 全局挂载文件数: ${WIN_COUNT}（INFO 级，不计入违规）"
-fi
+PRODUCTION_FILES=$(gate_frontend_files "$FRONT_DIR")
+CALL_COUNTS=$(gate_frontend_call_counts "$PRODUCTION_FILES")
+TIMER_MISS=0
+LISTENER_MISS=0
+SOCKET_MISS=0
+WINDOW_FILES=0
+while IFS=$'\t' read -r file timers clears adds removes sockets closes globals; do
+  if [ "${timers}" -gt "${clears}" ]; then
+    TIMER_MISS=$((TIMER_MISS + 1))
+    echo "  [WARN] ${file} → 实际定时器调用=${timers}，清理调用=${clears}（待核生命周期）"
+  fi
+  if [ "${adds}" -gt "${removes}" ]; then
+    LISTENER_MISS=$((LISTENER_MISS + 1))
+    echo "  [WARN] ${file} → 实际监听添加=${adds}，移除=${removes}（待核生命周期）"
+  fi
+  if [ "${sockets}" -gt "${closes}" ]; then
+    SOCKET_MISS=$((SOCKET_MISS + 1))
+    echo "  [WARN] ${file} → 实际连接创建=${sockets}，关闭=${closes}（待核生命周期）"
+  fi
+  if [ "${globals}" -gt 0 ]; then WINDOW_FILES=$((WINDOW_FILES + 1)); fi
+done <<< "$CALL_COUNTS"
+VIOLATIONS=$((TIMER_MISS + LISTENER_MISS + SOCKET_MISS))
+echo "  定时器调用/清理数量不足文件: ${TIMER_MISS}"
+echo "  监听调用/移除数量不足文件: ${LISTENER_MISS}"
+echo "  连接创建/关闭数量不足文件: ${SOCKET_MISS}"
+echo "  window全局写入文件: ${WINDOW_FILES}（INFO）"
+echo "  本检查是语法节点计数；不证明句柄配对、卸载清理或实际泄漏。"
 
 # === 总结 ===
 echo ""
 echo "=== 内存泄漏模式检测总结 (BP-008) ==="
-echo "  总疑似违规: $VIOLATIONS"
+echo "  总调用清理数量疑似不足: $VIOLATIONS"
 echo ""
 
 if [[ $VIOLATIONS -eq 0 ]]; then
-  echo "[PASS] 内存泄漏模式检测 PASS"
+  echo "[PASS] 生产源码调用/清理数量检查 PASS（不代表运行时无泄漏）"
   exit 0
 elif [[ $VIOLATIONS -le 3 ]]; then
-  echo "[WARN] 内存泄漏模式 WARN（$VIOLATIONS 个疑似泄漏，建议修复）"
+  echo "[WARN] 生产源码调用/清理数量检查 WARN（$VIOLATIONS 个调用清理数量疑似不足，建议修复）"
   exit 0
 else
-  echo "[FAIL] 内存泄漏模式 FAIL（$VIOLATIONS 个疑似泄漏，超过阈值 3）"
+  echo "[FAIL] 生产源码调用/清理数量检查 FAIL（$VIOLATIONS 个调用清理数量疑似不足，超过阈值 3）"
   exit 1
 fi

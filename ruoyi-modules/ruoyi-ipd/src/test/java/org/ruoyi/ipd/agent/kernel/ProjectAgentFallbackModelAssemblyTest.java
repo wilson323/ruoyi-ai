@@ -102,6 +102,43 @@ class ProjectAgentFallbackModelAssemblyTest {
             new KernelModelRequest("MiniMax-M3", " ", PLAIN_KEY, "https://example.invalid/v1"))).isEmpty();
     }
 
+    @Test
+    void configuredFallbackMissingRequiredFieldsIsRejectedRatherThanAbsent() {
+        for (String field : List.of("provider", "modelName", "endpointUrl")) {
+            AiModelConfig fallback = entity(9902L, "MiniMax-M2.7-highspeed",
+                "{\"fallbackFor\":\"MiniMax-M3\"}", false);
+            switch (field) {
+                case "provider" -> fallback.setProvider(" ");
+                case "modelName" -> fallback.setModelName(null);
+                case "endpointUrl" -> fallback.setEndpointUrl(" ");
+                default -> throw new AssertionError(field);
+            }
+            when(mapper.selectList(any())).thenReturn(List.of(fallback));
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> catalog().resolveFallback(PRIMARY))
+                .as(field).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("备用模型配置不完整");
+        }
+    }
+
+    @Test
+    void configuredFallbackCannotReferToPrimaryModelItself() {
+        when(mapper.selectList(any())).thenReturn(List.of(entity(9901L, "MiniMax-M3",
+            "{\"fallbackFor\":\"MiniMax-M3\"}", true)));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> catalog().resolveFallback(PRIMARY))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("不能指向主模型自身");
+    }
+
+    @Test
+    void anonymousFallbackRetainsExistingCredentialContract() {
+        AiModelConfig fallback = entity(9902L, "MiniMax-M2.7-highspeed",
+            "{\"fallbackFor\":\"MiniMax-M3\"}", false);
+        // decryptApiKey 的既有本地/匿名测试合同允许空密钥；具体 provider 校验由原生装配承担。
+        fallback.setApiKeyEncrypted(null);
+        when(mapper.selectList(any())).thenReturn(List.of(fallback));
+        var resolved = catalog().resolveFallback(PRIMARY);
+        assertThat(resolved).isPresent();
+        assertThat(resolved.orElseThrow().apiKey()).isEqualTo("");
+    }
+
     // ==================== 装配层：与主请求同缝 ====================
 
     @Test
@@ -152,6 +189,44 @@ class ProjectAgentFallbackModelAssemblyTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(
                 () -> assembler.assembleFallback(PRIMARY, 42L, 77L))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void configuredFallbackRequestWithMissingModelIsRejected() {
+        AtomicReference<Boolean> resolved = new AtomicReference<>();
+        var assembler = new ProjectAgentModelAssembler((key, context) -> {
+            resolved.set(true);
+            return mock(Model.class);
+        }).withFallbackSource(primary -> new KernelModelRequest(" ", "MiniMax", "",
+            "https://fallback.example.invalid/v1"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> assembler.assembleFallback(PRIMARY, 42L, 77L))
+            .isInstanceOf(IllegalArgumentException.class).hasMessage("modelName required");
+        assertThat(resolved.get()).isNull();
+    }
+
+    @Test
+    void configuredFallbackRequestMissingProviderOrEndpointIsRejected() {
+        for (KernelModelRequest request : List.of(
+            new KernelModelRequest("MiniMax-M2.7-highspeed", " ", "", "https://fallback.example.invalid/v1"),
+            new KernelModelRequest("MiniMax-M2.7-highspeed", "MiniMax", "", " "))) {
+            AtomicReference<Boolean> resolved = new AtomicReference<>();
+            var assembler = new ProjectAgentModelAssembler((key, context) -> {
+                resolved.set(true);
+                return mock(Model.class);
+            }).withFallbackSource(primary -> request);
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> assembler.assembleFallback(PRIMARY, 42L, 77L))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("备用模型配置不完整");
+            assertThat(resolved.get()).isNull();
+        }
+    }
+
+    @Test
+    void configuredFallbackResolverMustReturnActualModel() {
+        var assembler = new ProjectAgentModelAssembler((key, context) -> null)
+            .withFallbackSource(primary -> new KernelModelRequest("MiniMax-M2.7-highspeed", "MiniMax", "",
+                "https://fallback.example.invalid/v1"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> assembler.assembleFallback(PRIMARY, 42L, 77L))
+            .isInstanceOf(NullPointerException.class).hasMessage("配置的备用模型未能装配");
     }
 
     // ==================== 内核层：官方 Builder#fallbackModel 真实装配 ====================

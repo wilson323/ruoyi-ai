@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 
 /** Measures every official model consumer through the original run STEP/usage sink. */
 public final class ProjectAgentMeteredModel implements Model {
+    private final org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity;
     private final Model delegate;
     private final ProjectAgentEventSink sink;
     private final ProjectAgentEventSink accountingSink;
@@ -27,6 +28,12 @@ public final class ProjectAgentMeteredModel implements Model {
     /** 新调用验证业务访问权，已消费的可信用量按原执行租约记账。 */
     public ProjectAgentMeteredModel(Model delegate, ProjectAgentEventSink sink,
             ProjectAgentEventSink accountingSink) {
+        this(delegate, sink, accountingSink, null);
+    }
+
+    public ProjectAgentMeteredModel(Model delegate, ProjectAgentEventSink sink, ProjectAgentEventSink accountingSink,
+            org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity) {
+        this.identity = identity;
         this.delegate = Objects.requireNonNull(delegate);
         this.sink = Objects.requireNonNull(sink);
         this.accountingSink = Objects.requireNonNull(accountingSink);
@@ -44,7 +51,7 @@ public final class ProjectAgentMeteredModel implements Model {
         return Flux.defer(() -> {
             Call call = new Call(UUID.randomUUID().toString());
             sink.requireActiveOwnership();
-            sink.onStep("MODEL_CALL", Map.of("modelCallId", call.id, "phase", "START"));
+            sink.onModelCall(identity, Map.of("modelCallId", call.id, "phase", "START"));
             return Flux.defer(() -> delegate.stream(messages, tools, options))
                 .doOnNext(call::observe)
                 .doOnComplete(() -> call.finish("COMPLETE"))
@@ -86,7 +93,7 @@ public final class ProjectAgentMeteredModel implements Model {
                 detail.put("usageComplete", "COMPLETE".equals(outcome));
             }
             accountingSink.withActiveOwnership(() -> {
-                accountingSink.onStep("MODEL_CALL", Map.copyOf(detail));
+                accountingSink.onModelCall(identity, Map.copyOf(detail));
                 return null;
             });
         }

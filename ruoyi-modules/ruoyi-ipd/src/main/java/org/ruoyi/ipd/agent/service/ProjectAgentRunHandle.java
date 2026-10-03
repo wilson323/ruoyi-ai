@@ -41,6 +41,8 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     /** 有正文且产物插入失败时写入 FAILED 的错误码。 */
     static final String ARTIFACT_PERSIST = "ARTIFACT_PERSIST";
     private static final int FINISH_ATTEMPTS = 3;
+    /** 正文重放分页大小；只读事件，取满即续读，避免一次载入超长运行的全部事件。 */
+    private static final int TEXT_REPLAY_PAGE = 500;
 
     private final Long runId;
     private final String tenantId;
@@ -56,9 +58,15 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     /** 最近一次文本落库的时钟；0 表示本段还没开始计时。 */
     private long lastTextFlushAt;
     private final StringBuilder fullText = new StringBuilder();
-    private final ProjectAgentCompletionGate completion;
+    private ProjectAgentCompletionGate completion;
     /** Quality 域 V-2 产物校验器；生产默认实例，测试可注入替身。 */
     private ProjectAgentArtifactVerifier verifier = new ProjectAgentArtifactVerifier();
+    private final boolean outputContract;
+    private final Integer outputContractVersion;
+    private final boolean historicalOutputContract;
+    private final java.util.LinkedHashMap<Long, org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion> documents = new java.util.LinkedHashMap<>();
+    private java.util.function.Consumer<org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion> documentVerifier = row -> { throw new IllegalStateException("Trusted document verifier unavailable"); };
+    public void setDocumentVerifier(java.util.function.Consumer<org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion> verifier) { documentVerifier = java.util.Objects.requireNonNull(verifier); }
     private long seq;
     private boolean closed;
     private boolean paused;
@@ -83,6 +91,11 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
      */
     public ProjectAgentRunHandle(IpdAgentRun run, AgentRunStore store, ArtifactVersionStore artifactStore,
                                  ObjectMapper mapper, LongSupplier clock, Runnable onClosed) {
+        try {
+            this.outputContractVersion = run.getConfigSnapshot() == null ? null : mapper.readValue(run.getConfigSnapshot(), org.ruoyi.ipd.agent.vo.ProjectAgentViews.ConfigSnapshot.class).outputContractVersion();
+            this.outputContract = outputContractVersion != null;
+            this.historicalOutputContract = run.getConfigSnapshot() != null && outputContractVersion == null;
+        } catch (java.io.IOException invalid) { throw new IllegalStateException("Run output snapshot invalid", invalid); }
         this.runId = run.getId();
         this.tenantId = run.getTenantId();
         this.personId = run.getPersonId();
@@ -270,6 +283,72 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     }
 
     /**
+     * 以事件流为权威正文重建 {@code fullText}，跨 resume 轮次继承已刷出的助手正文。
+     *
+     * <p>暂停会释放原句柄，恢复走 {@code ProjectAgentRunExecutor#claimDetachedHandle} 新建句柄，
+     * 新句柄的 {@code fullText} 从空开始只累积本轮增量；不继承则收口产物只剩最后一轮正文，
+     * 之前轮次已刷出的交付内容全部丢失。实证：run 2106296461246337026 事件流累计 2750 字符
+     * （含 6 个章节标题），落库产物只有最后一轮 177 字符的收尾话术，因缺标题被
+     * {@code doc.heading.structure} 判 BLOCK 而驻留 VERIFYING；同一正文完整时两条通用规则均 PASS。
+     *
+     * <p>事件流就是前端实际渲染的正文，重放按 seq 升序拼接，{@code replace=true} 沿用
+     * {@link #onFinalText(String)} 的整体替换语义；尚未刷出的尾段从 {@code textBuffer} 补上，
+     * 因此可在 {@code flushText()} 之前调用而不重复计入。只读事件不写事件，重复调用结果一致。
+     * 事件流不可读时保留内存正文及检查点，拒绝成功收口；恢复可读后可重试原收口。
+     */
+    synchronized void restoreFlushedText() {
+        if (closed) return;
+        final String replay;
+        try { replay = replayTextDeltas(); }
+        catch (RuntimeException failure) {
+            throw failure instanceof TextReplayIncomplete ? failure
+                : new TextReplayIncomplete("authoritative text events cannot be read", failure);
+        }
+        fullText.setLength(0);
+        fullText.append(replay).append(textBuffer);
+        log.info("project_agent operation=TEXT_REPLAY status=RESTORED runId={} chars={}", runId, fullText.length());
+    }
+
+    /** 完整重放后才更新内存；空替换有效，异常页或载荷不能变成部分正文。 */
+    private String replayTextDeltas() {
+        StringBuilder replay = new StringBuilder();
+        long afterSeq = 0L;
+        while (true) {
+            List<IpdAgentRunEvent> page = store.listEvents(runId, afterSeq, TEXT_REPLAY_PAGE);
+            if (page == null) throw new TextReplayIncomplete("text event page is missing", null);
+            if (page.isEmpty()) break;
+            for (IpdAgentRunEvent event : page) {
+                if (event == null || event.getSeq() == null || event.getSeq() <= afterSeq)
+                    throw new TextReplayIncomplete("text event cursor did not advance", null);
+                afterSeq = event.getSeq();
+                if (!AgentEventType.TEXT_DELTA.name().equals(event.getEventType())) continue;
+                Map<String, Object> payload = parseReplayedPayload(event.getPayload());
+                if (!(payload.get("text") instanceof String text))
+                    throw new TextReplayIncomplete("text event has no string body", null);
+                if (Boolean.TRUE.equals(payload.get("replace"))) replay.setLength(0);
+                replay.append(text);
+            }
+            if (page.size() < TEXT_REPLAY_PAGE) break;
+        }
+        return replay.toString();
+    }
+
+    private Map<String, Object> parseReplayedPayload(String payload) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parsed = mapper.readValue(payload, Map.class);
+            if (parsed == null) throw new TextReplayIncomplete("text event body is missing", null);
+            return parsed;
+        } catch (JsonProcessingException | RuntimeException failure) {
+            throw new TextReplayIncomplete("text event body cannot be read", failure);
+        }
+    }
+
+    private static final class TextReplayIncomplete extends IllegalStateException {
+        TextReplayIncomplete(String message, Throwable cause) { super(message, cause); }
+    }
+
+    /**
      * 兼容无产物存储的调用（单测 / 旧装配）；不落 ARTIFACT。
      *
      * @param run 已进入 RUNNING 的运行
@@ -324,9 +403,24 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         write(type, payload);
     }
 
+    /**
+     * 长期记忆写入回执。独立事件类型而非 STEP：它是回答交付之后的后台副作用结果，
+     * 需要能被单独查询与补写，不能混在步骤流水里当执行过程看。
+     * 载荷只含状态 / 错误类别 / 计数，不含异常原文、凭据或对话正文。
+     */
+    @Override
+    public void onMemoryReceipt(Map<String, Object> receipt) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        if (receipt != null) {
+            payload.putAll(receipt);
+        }
+        append(AgentEventType.MEMORY_RECEIPT, payload);
+    }
+
     /** {@inheritDoc} */
     @Override
     public void onStep(String kind, Map<String, Object> detail) {
+        if (org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.STEP.equals(kind)) throw new SecurityException("Output role requires server receipt");
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("kind", kind);
         if (detail != null) {
@@ -357,16 +451,44 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onSource(Map<String, Object> source) {
-        completion.noteSource(source);
-        Map<String, Object> visible = new LinkedHashMap<>(source == null ? Map.of() : source);
-        Object citation = visible.remove("citationText");
-        if (citation instanceof String text) {
-            visible.put("citationChars", text.length());
-            visible.put("citationSha256", ProjectAgentSkillCatalog.sha256Hex(text));
-        }
+    @Override public void onSource(Map<String,Object> source) {
+        var visible = new LinkedHashMap<String,Object>(source == null ? Map.of() : source);
+        visible.remove("sourceReceiptVersion"); visible.remove("citationQuote"); visible.remove("citationQuoteSha256");
+        if (outputContract) visible.remove("citationText");
+        else completion.noteSource(visible);
+        visible.remove("citationText");
         append(AgentEventType.SOURCE, visible);
+    }
+
+    @Override public void onTrustedSource(Map<String,Object> source) {
+        if (source == null) throw new IllegalArgumentException("Trusted source missing");
+        if (source.get("projectId") != null && !String.valueOf(store.findRun(runId).orElseThrow().getProjectId()).equals(source.get("projectId")))
+            throw new SecurityException("Source project mismatch");
+        var visible = new LinkedHashMap<String,Object>(source);
+        visible.remove("sourceReceiptVersion"); visible.remove("citationQuote"); visible.remove("citationQuoteSha256");
+        Object citation = visible.remove("citationText");
+        {
+            String text = citation instanceof String value ? value : "";
+            String quote = text.substring(0, Math.min(text.length(), 8000));
+            visible.put("citationQuote", quote);
+            visible.put("citationQuoteSha256", ProjectAgentSkillCatalog.sha256Hex(quote));
+            visible.put("citationQuoteTruncated", text.length() > quote.length());
+        }
+        visible.put("sourceReceiptVersion", 1);
+        completion.noteSource(sourceForCompletion(visible));
+        append(AgentEventType.SOURCE, visible);
+    }
+
+    private Map<String,Object> sourceForCompletion(Map<String,Object> source) {
+        var copy = new LinkedHashMap<String,Object>(source);
+        copy.put("citationText", "");
+        if (Integer.valueOf(1).equals(source.get("sourceReceiptVersion"))) {
+            if (!(source.get("citationQuote") instanceof String quote) || quote.length() > 8000
+                || !ProjectAgentSkillCatalog.sha256Hex(quote).equals(source.get("citationQuoteSha256")))
+                throw new SecurityException("Source quote receipt mismatch");
+            copy.put("citationText", quote);
+        } else { copy.put("hits", 0); copy.put("sourceEvidence", List.of()); }
+        return copy;
     }
 
     /** {@inheritDoc} */
@@ -415,6 +537,58 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
             textBuffer.append(previousBuffer);
             lastTextFlushAt = previousFlushAt;
             if (!(failure instanceof ProjectAgentRunOwnership.OwnershipLost)) throw failure;
+        }
+    }
+
+    @Override public void onDocument(Long versionId) {
+        if (!Integer.valueOf(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION).equals(outputContractVersion)) throw new IllegalStateException("Run has no supported output contract");
+        var row = requireDocument(versionId, null);
+        var payload = Map.<String,Object>of("kind", org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.STEP,
+            "outputKind", "DOCUMENT", "documentVersionId", String.valueOf(versionId), "contentHash", row.getContentSha256(),
+            "outputContractVersion", org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION);
+        append(AgentEventType.STEP, payload);
+    }
+
+    private org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion requireDocument(Long id, String hash) {
+        if (artifactStore == null) throw new IllegalStateException("Artifact store unavailable");
+        var row = artifactStore.findById(id).orElseThrow(() -> new IllegalStateException("Document version unavailable"));
+        if (!java.util.Objects.equals(runId, row.getRunId()) || !java.util.Objects.equals(tenantId, row.getTenantId())
+            || (hash != null && !hash.equals(row.getContentSha256())) || row.getContent() == null
+            || !row.getContentSha256().equals(ProjectAgentSkillCatalog.sha256Hex(row.getContent())))
+            throw new SecurityException("Document version scope or hash mismatch");
+        documentVerifier.accept(row);
+        documents.put(id, row);
+        return row;
+    }
+
+    private void restoreDocumentReceipts() {
+        documents.clear();
+        completion = new ProjectAgentCompletionGate(actionCode);
+        long cursor = 0;
+        while (true) {
+            var page = store.listEvents(runId, cursor, TEXT_REPLAY_PAGE);
+            if (page.isEmpty()) return;
+            for (var event : page) {
+                if (event.getSeq() == null || event.getSeq() <= cursor || !runId.equals(event.getRunId()) || !tenantId.equals(event.getTenantId()))
+                    throw new SecurityException("Output receipt event scope mismatch");
+                cursor = event.getSeq();
+                try {
+                    var payload = mapper.readTree(event.getPayload());
+                    if ("TOOL_CALL".equals(event.getEventType()) || "TOOL_RESULT".equals(event.getEventType())) {
+                        completion.noteTool(payload.path("toolName").asText()); continue;
+                    }
+                    if ("SOURCE".equals(event.getEventType())) {
+                        completion.noteSource(sourceForCompletion(mapper.convertValue(payload,
+                            new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>() {}))); continue;
+                    }
+                    if (!"STEP".equals(event.getEventType())) continue;
+                    if (!org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.STEP.equals(payload.path("kind").asText())) continue;
+                    if (!"DOCUMENT".equals(payload.path("outputKind").asText())
+                        || payload.path("outputContractVersion").asInt() != org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION)
+                        throw new SecurityException("Output receipt contract mismatch");
+                    requireDocument(Long.valueOf(payload.path("documentVersionId").asText()), payload.path("contentHash").asText());
+                } catch (java.io.IOException invalid) { throw new IllegalStateException("Output receipt invalid", invalid); }
+            }
         }
     }
 
@@ -490,6 +664,11 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
                     closeCommitted(result.status(), result.won());
                 }
                 return result.won();
+            } catch (TextReplayIncomplete incomplete) {
+                // 不把恢复尾段作为合格产物；保留句柄、检查点和历史，允许原收口重试或取消。
+                log.error("project_agent operation=TEXT_REPLAY status=PENDING_RECOVERY runId={} errorType={}",
+                    runId, incomplete.getClass().getName());
+                return false;
             } catch (ProjectAgentRunOwnership.OwnershipLost lost) {
                 closeLost();
                 return false;
@@ -530,12 +709,28 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
             return new FinishResult(false, true, current);
         }
         seq = Math.max(seq, store.maxSeq(runId));
+        if (target == AgentRunStatus.SUCCEEDED && current != AgentRunStatus.CANCEL_REQUESTED
+            && (historicalOutputContract || outputContract && !Integer.valueOf(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION).equals(outputContractVersion)))
+            throw new IllegalStateException("Run output contract cannot be verified; create a linked new attempt");
+        // 收口正文以事件流为权威：跨 resume 轮次继承，避免产物只剩最后一轮增量。
+        if (target == AgentRunStatus.SUCCEEDED && current != AgentRunStatus.CANCEL_REQUESTED) restoreFlushedText();
         flushText();
+        if (outputContract && target == AgentRunStatus.SUCCEEDED && current != AgentRunStatus.CANCEL_REQUESTED) {
+            restoreDocumentReceipts();
+        }
         AgentRunStatus effective = current == AgentRunStatus.CANCEL_REQUESTED ? AgentRunStatus.CANCELLED : target;
         String code = effective == AgentRunStatus.FAILED ? errorCode : null;
         ProjectAgentCompletionGate.RejectionReason completionReason = null;
         if (effective == AgentRunStatus.SUCCEEDED) {
-            completionReason = completion.rejectionReason(fullText.toString());
+            completionReason = completion.rejectionReason(deliverableBody());
+            if (outputContract && actionCode != null && !actionCode.isBlank() && documents.isEmpty())
+                completionReason = ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH;
+            if (outputContract && !documents.isEmpty()) {
+                for (var document : documents.values()) {
+                    var rejected = completion.rejectionReason(document.getContent());
+                    if (rejected != null) { completionReason = rejected; break; }
+                }
+            }
             if (completionReason != null) {
                 effective = AgentRunStatus.FAILED;
                 code = ProjectAgentCompletionGate.REJECTED;
@@ -553,6 +748,16 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
             }
         }
         ProjectAgentArtifactVerifier.Verdict verifyVerdict = null;
+        if (outputContract && effective == AgentRunStatus.SUCCEEDED && !documents.isEmpty()) {
+            var gaps = new java.util.ArrayList<ProjectAgentArtifactVerifier.Gap>();
+            for (var document : documents.values()) {
+                for (var gap : verifier.evaluate(actionCode, document.getContent()).gaps())
+                    gaps.add(new ProjectAgentArtifactVerifier.Gap(gap.id(), gap.status(), gap.severity(),
+                        "versionId=" + document.getId() + ":" + gap.evidencePath(), gap.gapSummary()));
+            }
+            verifyVerdict = new ProjectAgentArtifactVerifier.Verdict(gaps.isEmpty() ? "PASS" : "GAPS", List.copyOf(gaps));
+            if (verifyVerdict.hasBlockingGaps()) effective = AgentRunStatus.VERIFYING;
+        }
         if (draft != null) {
             // Quality 域 V-2：产物已落库后机器校验；BLOCK 缺口停 VERIFYING 不判 FAILED（设计 §4.2/§4.3）。
             verifyVerdict = verifier.evaluate(actionCode, deliverableBody());
@@ -618,12 +823,14 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     }
 
     private String deliverableBody() {
+        if (outputContract && !documents.isEmpty()) return documents.values().stream()
+            .map(org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion::getContent).collect(java.util.stream.Collectors.joining("\n\n"));
         return ProjectAgentCompletionGate.deliverableBody(fullText.toString());
     }
 
     /** 有正文且已装配产物存储时，成功收口前必须先插入草稿。 */
     private boolean artifactRequired() {
-        return artifactStore != null && !deliverableBody().isEmpty();
+        return !outputContract && artifactStore != null && !deliverableBody().isEmpty();
     }
 
     /**

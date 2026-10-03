@@ -134,7 +134,7 @@ Kernel `assembleFallback` 异常被捕获为 `FALLBACK/SKIPPED` 并继续主模�
 
 ### 5.5 RAG 只在部分入口严格处理故障
 
-`service/AiDocEmbeddingService.java:241–249` 宽松入口异常返回 EMPTY；`AiCopilotService.java:605`、`AiGenerationService.java:147` 仍消费它。项目智能体 strict 入口已传播故障，不代表全项目都完成 FAILED/PARTIAL/NO_HIT/UNAUTHORIZED 区分。
+续接源码核验更正：以上早期“宽松入口异常返回 EMPTY”口径已过时。当前 `AiDocEmbeddingService.retrieveContext` 已把运行故障包装为明确业务错误，副驾及生成仍调用原同链；尚未完成的是坏向量、维度不一致及零向量被静默过滤，全部损坏时仍表现无结果，部分损坏缺少部分成功说明；已审核但未索引也未与合法无匹配区分。源码与原专测内容已核，尚不将此更正视为最新包加载或全检索五态验收。
 
 官方 `Knowledge`/旧 RAG API 明确弃用并指向应用层集成，所以没有使用旧 GenericRAGHook **不是漏接**；不能为了全量制造第二 RAG 链。
 

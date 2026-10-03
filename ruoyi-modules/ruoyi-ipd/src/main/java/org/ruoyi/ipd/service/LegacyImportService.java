@@ -51,8 +51,6 @@ public class LegacyImportService implements ILegacyImportService {
 
     /** Round 8 / R8-P0-10：批量导入单次最大行数（防连接池打爆） */
     public static final int MAX_BATCH_SIZE = 500;
-    /** Round 8 / R8-P0-10：并发导入最大并行度 */
-    public static final int IMPORT_BATCH_PARALLELISM = 8;
 
     private static final List<String> STAGE_ORDER = List.of(
         "CONCEPT", "PLAN", "DEV", "VALID", "LAUNCH", "LIFECYCLE");
@@ -148,7 +146,8 @@ public class LegacyImportService implements ILegacyImportService {
      * @return 逐行结果
      */
     /**
-     * Round 8 / R8-P0-10：并行导入——按行提交 CompletableFuture，受 IMPORT_BATCH_PARALLELISM 限流。
+     * Round 8 / R8-P0-10：并行导入——按行提交 CompletableFuture（注意：无并行度限流，
+     * 实际并发由 ForkJoinPool.commonPool 决定，仅受 MAX_BATCH_SIZE 上限约束）。
      * 业务异常（ServiceException）和数据访问异常（DataAccessException）逐行捕获不影响其他行；
      * 其它 RuntimeException（连接池耗尽 / DB 挂 / OOM）向上抛，由 Controller 统一处理。
      */

@@ -181,6 +181,9 @@ class ProjectAgentProductionArtifactsTransactionTest {
 
     private ProjectAgentExecutionClaims.ExecutionScope approved(
             ProjectAgentArtifactProviderFactory.Provider p) {
+        return approved(p, runtime);
+    }
+    private ProjectAgentExecutionClaims.ExecutionScope approved(ProjectAgentArtifactProviderFactory.Provider p, RuntimeContext executing) {
         var input =
                 Map.<String, Object>of(
                         "filePath",
@@ -193,7 +196,7 @@ class ProjectAgentProductionArtifactsTransactionTest {
                 .openApproved(
                         ToolCallParam.builder()
                                 .agent(actor)
-                                .runtimeContext(runtime)
+                                .runtimeContext(executing)
                                 .input(input)
                                 .toolUseBlock(
                                         ToolUseBlock.builder()
@@ -235,7 +238,8 @@ class ProjectAgentProductionArtifactsTransactionTest {
             assertThat(commits).isEqualTo(1);
             assertThat(rows).hasSize(1);
             assertThat(events).hasSize(1);
-            assertThat(events.get(0).getPayload()).contains("IPD_NATIVE_DELIVERY_V1");
+            assertThat(events.get(0).getPayload()).contains("IPD_NATIVE_DELIVERY_V1", "\"outputKind\":\"DOCUMENT\"", "完整正文");
+            verify(sink).onDocument(rows.values().iterator().next().getId());
             assertThatThrownBy(() -> provider.target().deliver(claim.runtime(), request()))
                     .isInstanceOf(SecurityException.class);
             var row = rows.values().iterator().next();
@@ -289,5 +293,34 @@ class ProjectAgentProductionArtifactsTransactionTest {
                 .hasMessageContaining("root identity mismatch");
         assertThat(rows).isEmpty();
         assertThat(events).isEmpty();
+    }
+    @Test void documentReceiptFailureRollsBackOriginalVersionAndArtifactTogether() throws Exception {
+        var factory = factory();
+        provider = factory.create(spec, runtime, sink, (a,c) -> {});
+        doAnswer(invocation -> {
+            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
+            assertThat(events).hasSize(1); assertThat(rows).hasSize(1);
+            var receipt = new IpdAgentRunEvent();
+            receipt.setEventType("STEP"); receipt.setRunId(spec.runId());
+            receipt.setPayload("{\"kind\":\"OUTPUT_TYPE\",\"outputKind\":\"DOCUMENT\"}");
+            events.add(receipt);
+            assertThat(events).hasSize(2);
+            throw new SecurityException("synthetic document receipt persistence failure");
+        }).when(sink).onDocument(any());
+        try (var claim = approved(provider)) {
+            assertThat(provider.target().deliver(claim.runtime(), request()).successful()).isFalse();
+            assertThat(rows).isEmpty(); assertThat(events).isEmpty();
+        }
+    }
+    @Test void authorizedChildDeliveryCannotClaimParentDocument() throws Exception {
+        provider = factory().create(spec, runtime, sink, (a,c) -> {});
+        var child = RuntimeContext.builder().userId(runtime.getUserId()).sessionId("child-session").build();
+        child.put(WorkspacePathNormalizer.class, WorkspacePathNormalizer.of("/workspace"));
+        try (var claim = approved(provider, child)) {
+            assertThat(provider.target().deliver(claim.runtime(), request()).successful()).isTrue();
+            assertThat(events).hasSize(1);
+            assertThat(events.get(0).getPayload()).doesNotContain("outputKind", "DOCUMENT");
+            verify(sink, never()).onDocument(any());
+        }
     }
 }

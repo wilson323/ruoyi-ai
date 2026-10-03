@@ -24,6 +24,8 @@ import java.util.Objects;
 final class ProjectAgentSkillGovernance implements SkillPromotionGate, SkillVisibilityFilter {
     private static final ObjectMapper JSON = new ObjectMapper();
     private volatile WorkspaceManager manager;
+    private volatile ProjectAgentEventSink sink;
+    public void bindSink(ProjectAgentEventSink sink) { this.sink = Objects.requireNonNull(sink); }
     private final ProjectAgentRunSpec run;
     private final FrozenProjectAgentSkills published;
 
@@ -52,29 +54,16 @@ final class ProjectAgentSkillGovernance implements SkillPromotionGate, SkillVisi
             AgentSkill actual = drafts.getSkill(candidate.name(), context);
             if (actual == null) { throw new IllegalStateException("Official draft does not exist"); }
             String draftPath = drafts.resolveSkillRoot(candidate.name());
-            var raw = filesystem.read(context, draftPath + "/SKILL.md", 0, 0);
-            if (!raw.isSuccess() || raw.fileData() == null || raw.fileData().content() == null) {
-                throw new IllegalStateException("Official draft cannot be read");
-            }
-            String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                .digest(raw.fileData().content().getBytes(StandardCharsets.UTF_8)));
-            String relative = draftPath + "/.ipd-review-" + run.runId() + "-" + digest + ".json";
-            String content = JSON.writeValueAsString(Map.of(
-                "status", "PENDING_OWNER_APPROVAL", "skillName", candidate.name(), "sha256", digest,
-                "projectId", String.valueOf(run.projectId()), "personId", String.valueOf(run.personId()),
-                "runId", String.valueOf(run.runId()), "draftPath", draftPath,
-                "reason", "Skill owner approval and catalog publication are required; action mapping is not an approval record."));
-            var existing = filesystem.read(context, relative, 0, 0);
-            if (!existing.isSuccess()) {
-                official.writeDraftSkillFile(context, relative, content);
-            }
-            var receipt = filesystem.read(context, relative, 0, 0);
-            if (!receipt.isSuccess() || receipt.fileData() == null
-                || !content.equals(receipt.fileData().content())) {
-                throw new IllegalStateException("Skill owner review receipt cannot be verified");
-            }
+            var bundle = ProjectAgentSkillBundle.capture(filesystem, context, draftPath, candidate.name());
+            var scan = io.agentscope.harness.agent.skill.curator.SkillSecurityScanner.scan(
+                bundle.skillName(), bundle.markdown(), bundle.textResources());
+            Objects.requireNonNull(sink, "Skill candidate event sink is required").onStep(
+                org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService.CANDIDATE,
+                Map.of("bundle", bundle, "personId", String.valueOf(run.personId()),
+                    "projectId", String.valueOf(run.projectId()), "runId", String.valueOf(run.runId()),
+                    "scanSummary", scan.verdict().name() + ": " + scan.reportText()));
             return (PromotionDecision) new PromotionDecision.Defer(Duration.ofHours(24),
-                "待技能 owner 批准并发布；草案：" + draftPath + "；状态回读：" + relative);
+                "待本次运行的用户审核新技能");
         });
     }
 

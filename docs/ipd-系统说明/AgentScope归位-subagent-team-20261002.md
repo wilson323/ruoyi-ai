@@ -452,7 +452,7 @@ public record Scope(String userId, String sessionId) {
 项目已有前端 SSE 直连内核，不需要暴露子 agent。且 `StoreBackedSubagentRegistry.NAMESPACE` 实测是**固定的 `["subagents","exposed"]`，零隔离**。因此：
 
 - 不装配 `GatewayBootstrap` / `HarnessGateway` / `ChannelManager`
-- 在 `ToolsConfig` 里显式 `deny` 掉一切能触发 `expose_to_user` 的路径（现有代码已 `deny` 了 `web_fetch/web_search/wait_async_results`，在 `AgentScopeProjectAgentKernel.java:260-261`）
+- ~~在 `ToolsConfig` 里显式 `deny` 掉一切能触发 `expose_to_user` 的路径~~ **【2026-10-03 实测更正：此项保护已不存在】** 该 deny 原写作 `toolsConfig.setDeny(List.of("web_fetch","web_search","wait_async_results"))`，由 commit `8310853e` 引入，随后被 commit `b757fa7a`（commit message 仅为 "test"，无任何说明）删除。当前 `AgentScopeProjectAgentKernel.java:435` 是 `ToolsConfig toolsConfig = new ToolsConfig();` 空对象，从未调用 `setDeny`；本文原先引用的 260-261 行号亦已漂移。**依据本条做过的安全判断全部失效，需重做。**
 - 若将来必须开启，需先给 `SubagentRecord.subagentId` 加 project 维前缀并在 `find()` 侧校验 `record.userId` 与当前 `RuntimeContext.userId` 一致——**这是新工作项，不在本次归位范围**
 
 ### 5.4 收口后的隔离保证
@@ -622,7 +622,7 @@ public record Scope(String userId, String sessionId) {
 
 | # | 风险 | 概率 | 影响 | 缓解 |
 |---|---|---|---|---|
-| R1 | 删 `disableSubagents()` 后官方工具面意外展开，暴露 `web_fetch`/`web_search` | 中 | 高（安全） | 现有 `ToolsConfig.setDeny` 已覆盖；步骤 1 验收项必须断言工具白名单 |
+| R1 | 删 `disableSubagents()` 后官方工具面意外展开，暴露 `web_fetch`/`web_search` | **中（实测已发生）** | 高（安全） | **~~现有 `ToolsConfig.setDeny` 已覆盖~~ —— 【2026-10-03 实测更正】该缓解措施已于 commit `b757fa7a` 被删除，**本项当前无 `ToolsConfig` 层缓解**。实际状态：`web_fetch` 仍可用（已真实调用成功），由 `ProjectAgentOfficialToolGovernance` 的 SSRF 出站防护部分兜底；`web_search` **既无 `ToolsConfig` deny 也无任何出站管控**，当前仅因缺 `TAVILY_API_KEY` 而处于不可用状态。一旦补上该密钥即等于开启一个由用户可控查询词驱动的无防护出站通道，**启用前必须先补同等出站管控**。 |
 | R2 | 官方 `inboxPush` 只按 sessionId 分桶，两个项目同号会话串扰 | 中（原判高，已降级） | **高** | 官方 key 为不透明串，**喂 `scope.slotId()`（四维）即解决**；门禁 `check-kernel-scope-key.sh` 第 2b 条强制 |
 | R2b | `HarnessAgent.name` 落进 `agents/<name>/tasks/` 路径，跨项目同 `agentId` 会碰撞 | 低 | 中 | `.name(scope.projectAgentName())`；当前 `ProjectAgentConstants.AGENT_ID` 为常量不重复，登记为待观察项 |
 | R3 | 归位后 run 状态机与官方 `AgentStateStore` 双写状态，导致恢复逻辑分叉 | 中 | 高 | 步骤 1 只开 subagent，**不换 stateStore**；stateStore 保持 `FailClosedAgentStateStore` / `ProjectAgentTemporaryStateStore` |

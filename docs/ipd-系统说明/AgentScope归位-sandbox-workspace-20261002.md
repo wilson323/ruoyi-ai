@@ -321,7 +321,7 @@ LocalFilesystemWithShell=0  CompositeFilesystem=0  ProjectAwareOverlay=0
 | `AGENTS.md`/`MEMORY.md` 两层读 | ✅ 官方独有 | ❌ | ① 官方更强 |
 | `MEMORY.md` 预算注入 + 截断 | ✅ `maxContextTokens` | ❌（记忆系统整体关闭） | ① 官方更强 |
 | `knowledge/` 目录索引式注入 | ✅ | ❌ | ① 官方更强 |
-| `tools.json` allow/deny + MCP | ✅ build 期一次性 | 仅 `toolsConfig.setDeny`（用的就是官方类，✅） | ② 等价 |
+| `tools.json` allow/deny + MCP | ✅ build 期一次性 | 仅 `toolsConfig.setDeny`（用的就是官方类，✅）——【2026-10-03 实测更正：`ToolsConfig.setDeny(List.of("web_fetch","web_search","wait_async_results"))` 已于 commit `b757fa7a`（commit message 仅 "test"）被删除，当前 `AgentScopeProjectAgentKernel.java:435` 为 `new ToolsConfig()` 空对象。`web_fetch` 实际仍可用并已真实调用成功（由 ProjectAgentOfficialToolGovernance 的 SSRF 防护部分兜底）；`web_search` 无任何出站管控，仅因缺 `TAVILY_API_KEY` 才不可用。依据原描述做的安全判断失效。】 | ② 等价 |
 | 会话日志 JSONL 落 workspace | ✅ | ❌（`disableSessionPersistence` + `disableTranscript`） | ① 官方更强 |
 | 显式相对路径写接口 + `startsWith` 校验 | ✅ `writeUtf8WorkspaceRelative` | ❌ | ① 官方更强 |
 

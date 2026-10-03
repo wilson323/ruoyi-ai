@@ -62,6 +62,13 @@ final class ProjectAgentRuntimeAccessSink implements ProjectAgentEventSink {
         delegate.onChildInterrupt(pending, checkpointVersion);
     }
     @Override public boolean isPaused() { return delegate.isPaused(); }
+    @Override public void onTrustedSource(Map<String,Object> source) { requireActiveOwnership(); delegate.onTrustedSource(source); }
+    @Override public void onDocument(Long versionId) { requireActiveOwnership(); delegate.onDocument(versionId); }
+    /** 记忆回执与其它事件同源：先验所有权再转发，装饰器不得让它退回接口默认实现。 */
+    @Override public void onMemoryReceipt(Map<String,Object> receipt) { requireActiveOwnership(); delegate.onMemoryReceipt(receipt); }
+    @Override public void onModelCall(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity, Map<String, Object> detail) {
+        delegate.onModelCall(identity, detail);
+    }
     @Override public void onStep(String kind, Map<String, Object> detail) { delegate.onStep(kind, detail); }
     @Override public void onToolCall(String id, String name) { delegate.onToolCall(id, name); }
     @Override public void onToolResult(String id, String name, String state) { delegate.onToolResult(id, name, state); }

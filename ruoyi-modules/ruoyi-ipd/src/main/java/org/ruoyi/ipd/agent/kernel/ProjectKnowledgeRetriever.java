@@ -117,8 +117,18 @@ public final class ProjectKnowledgeRetriever implements ProjectKnowledgeSearchTo
         String block = first.block() + second.block();
         var sources = new java.util.ArrayList<>(first.sources());
         sources.addAll(second.sources());
-        return new RetrievalContext(first.hits() + second.hits(), block.length(), block,
-            first.citationText() + second.citationText(), sources);
+        var issues = new java.util.LinkedHashMap<>(first.issueCounts());
+        second.issueCounts().forEach((key, count) -> issues.merge(key, count, Integer::sum));
+        int hits = first.hits() + second.hits();
+        boolean incomplete = first.status() == org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.PARTIAL
+            || first.status() == org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.FAILED
+            || second.status() == org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.PARTIAL
+            || second.status() == org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.FAILED;
+        return new RetrievalContext(hits, block.length(), block,
+            first.citationText() + second.citationText(), sources,
+            incomplete ? (hits > 0 ? org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.PARTIAL
+                : org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.FAILED)
+                : org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalStatus.SUCCESS, issues);
     }
 
     /**

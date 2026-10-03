@@ -139,7 +139,9 @@ class ProjectAgentRunServiceCreateTest {
         assertCode(() -> h.service.create(ACTOR, PROJECT_ID, new AgentRunCreateReq("market-research", "v1", "7001",
             List.of("create-prd"), tool, "C02", MESSAGE, "idem-key-0008")), ApiV1ErrorCode.PARAM_INVALID);
         assertCode(() -> h.service.create(ACTOR, PROJECT_ID, new AgentRunCreateReq("market-research", "v1", "7001",
-            skill, List.of("web_search"), "C02", MESSAGE, "idem-key-0009")), ApiV1ErrorCode.PARAM_INVALID);
+            skill, List.of("unknown-project-tool"), "C02", MESSAGE, "idem-key-0009")), ApiV1ErrorCode.PARAM_INVALID);
+        assertCode(() -> h.service.create(ACTOR, PROJECT_ID, new AgentRunCreateReq("market-research", "v1", "7001",
+            skill, List.of("web_search"), "C02", MESSAGE, "idem-native-unavailable")), ApiV1ErrorCode.STATE_CONFLICT);
         assertCode(() -> h.service.create(ACTOR, PROJECT_ID, new AgentRunCreateReq("market-research", "v1", "7001",
             skill, tool, "P01", MESSAGE, "idem-key-0010")), ApiV1ErrorCode.PARAM_INVALID);
         assertCode(() -> h.service.create(ACTOR, PROJECT_ID, new AgentRunCreateReq("market-research", "v1",

@@ -108,8 +108,23 @@ public final class IpdRolePermissionCatalog {
         // KPI 原始数据录入（组长/超管按月录入）
         IpdPermissionCode.OPERATION_KPI_RAW_CREATE,
         // 落地场景登记（MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN）
-        IpdPermissionCode.OPERATION_SCENARIO_LANDED_CREATE,
-        // 90 日回款预警扫描触发（组长/超管）
+        IpdPermissionCode.OPERATION_SCENARIO_LANDED_CREATE
+    );
+
+    /**
+     * 90 日回款预警扫描触发（仅 GROUP_LEADER / SUPER_ADMIN）。
+     *
+     * <p>[SEC-FIX-CATALOG-113] 原先该码放在 BUSINESS_WRITE——那是「内部四角色全员」集合，
+     * 与该行自己写的注释「（组长/超管）」自相矛盾，导致注解层对双 PM 也放行，
+     * 真正拦住的是方法体里的 {@code requireLeaderOrAdmin()}。两层口径不一致：注解层形同虚设，
+     * 且任何未来把方法体门挪走/删掉的改动都会立刻开出一个跨组批量写洞。
+     *
+     * <p>移出 BUSINESS_WRITE 并独立成集合，与 Controller javadoc 声明的授权面
+     * （GROUP_LEADER / SUPER_ADMIN）逐字对齐。修正后两层同严：注解层拒双 PM，
+     * 方法体 {@code requireLeaderOrAdmin()} 同样拒，口径一致且互为冗余。
+     * 不进 BUSINESS_WRITE 也避免未来新增「四角色可触」动作时被无声带上扫描权。
+     */
+    private static final Set<String> RECOVERY_LEADER_WRITE = unique(
         IpdPermissionCode.OPERATION_RECOVERY_CHECK_90D
     );
 
@@ -201,8 +216,8 @@ public final class IpdRolePermissionCatalog {
     );
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
-        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE, BONUS_APPROVAL_WRITE),
-        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, BONUS_APPROVAL_WRITE),
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE, BONUS_APPROVAL_WRITE, RECOVERY_LEADER_WRITE),
+        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, BONUS_APPROVAL_WRITE, RECOVERY_LEADER_WRITE),
         "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, KPI_CONFIG_WRITE),
         "RD_PM", merge(READ_SET, BUSINESS_WRITE, KPI_CONFIG_WRITE)
     );

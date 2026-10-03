@@ -14,6 +14,9 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
+import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.springframework.http.HttpStatus;
@@ -50,6 +53,29 @@ public class DemandController {
     private final ProductMapper productMapper;
     private final ProjectMapper projectMapper;
     private final PersonMapper personMapper;
+    private final IpdPermission ipdPermission;
+
+    /**
+     * 需求归属守卫（横向越权防护，写库前执行）。
+     *
+     * <p>需求表本身没有 groupId 字段，组归属只能经 {@code Requirement.productId → Product.groupId}
+     * 解析；本接口权限码 {@code OPERATION_PRODUCT_GROUP_BIND_PROJECT} 是产品组维度的，
+     * 故按「操作人组 == 需求所属产品组」收口，与 {@code BidP231Validator} /
+     * {@code GateReviewService} 的 {@link IpdIdorGuard#assertSameGroupIpd} 口径一致。
+     *
+     * <p>只校验需求自身的归属，不校验待关联项目的归属——跨组协同绑定项目正是本接口的业务目的，
+     * 若一并拦住会误伤合法流程（项目侧归属是 owner 待确认的业务问题，不在本次范围）。
+     *
+     * @param requirement 已加载的需求
+     * @return 需求所属产品组 ID（产品缺失时为 null，由调用点按 fail-closed 判 403）
+     */
+    private Long resolveDemandGroup(Requirement requirement) {
+        Product product = requirement.getProductId() == null
+            ? null
+            : productMapper.selectById(requirement.getProductId());
+        // 产品缺失与跨组统一由调用点的 assertSameGroupIpd 判 403，不泄漏该产品是否存在
+        return product == null ? null : product.getGroupId();
+    }
 
     /** 需求列表（可按产品/状态过滤；附产品名与双PM姓名）。 */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_GROUP, type = IpdAuthSession.LOGIN_TYPE)
@@ -125,7 +151,10 @@ public class DemandController {
     @PostMapping("/{id}/link-project")
     public ApiV1Response<Map<String, Object>> linkProject(@PathVariable Long id,
                                                           @RequestBody LinkProjectRequest request) {
+        IpdActor actor = ipdPermission.requireInternal();
         Requirement requirement = requireDemand(id);
+        // 归属校验排在任何写库之前；早于 R215-P2 分诊校验，保证越权者不触达业务规则
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveDemandGroup(requirement));
         // R215-P2：未分诊（双 PM 未分派）的需求不得关联项目，避免跳过 triage 直接 SCHEDULED
         if (requirement.getMarketPmId() == null || requirement.getRdPmId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

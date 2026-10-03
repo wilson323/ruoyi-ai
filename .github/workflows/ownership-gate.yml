@@ -1,0 +1,52 @@
+# 资源归属校验门禁 CI（新工作流，不修改任何既有 workflow）
+#
+# 目的：让「新写的写方法忘了做资源归属校验」在 PR 阶段就报红，
+#      而不是靠 code review 自觉。存量走 scripts/ownership-gate-exempt.txt 基线放行。
+#
+# 本 workflow 只做两件事：
+#   1. 跑判定（新端点有没有归属校验）
+#   2. 跑自证能红（门禁自己会不会是假绿）—— 这一步不能省：
+#      本项目已多次出现「检查在跑但没在检查」，只跑判定不跑自证无法区分。
+#
+# 依赖：只读 checkout，不需要 maven / JDK / 数据库（纯静态扫描）。
+
+name: ownership-gate
+
+on:
+  pull_request:
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/**/*.java'
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/**/*.java'
+      - 'scripts/check-write-endpoint-ownership.sh'
+      - 'scripts/check-write-endpoint-ownership.py'
+      - 'scripts/ownership-gate-exempt.txt'
+      - 'scripts/lib/audit-gate-input.sh'
+      - '.github/workflows/ownership-gate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/**/*.java'
+      - 'scripts/ownership-gate-exempt.txt'
+      - 'scripts/check-write-endpoint-ownership.py'
+
+permissions:
+  contents: read
+
+jobs:
+  ownership:
+    name: 写接口资源归属校验
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      - name: 归属校验门禁
+        # exit 0=通过 1=有违规 2=门禁自身错误（2 也是红，不许当通过）
+        run: bash scripts/check-write-endpoint-ownership.sh
+
+      - name: 自证能红（门禁自身有效性）
+        # 造一个真实的「新方法忘归属校验」样本，确认能红；
+        # 再给样本补上守卫，确认恢复绿。任一方向不成立即门禁失效。
+        run: bash scripts/check-write-endpoint-ownership.sh --self-red

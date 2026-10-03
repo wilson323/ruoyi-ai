@@ -18,10 +18,12 @@ RUN mvn -q -B -DskipTests package -pl ruoyi-admin -am
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+RUN command -v curl
 RUN groupadd -r ipd && useradd -r -g ipd ipd && mkdir -p /app/logs && chown -R ipd:ipd /app
 USER ipd
 COPY --from=build /src/ruoyi-admin/target/ruoyi-admin.jar /app/app.jar
 # 生产 JVM 参数与 PERF-P2-3 start.sh 对齐：G1GC + 堆上限 + OOM 时 HeapDump
+ENV SERVER_PORT=16039
 ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs"
 EXPOSE 16039
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]

@@ -70,4 +70,15 @@ class ProjectAgentModelAssemblerParametersTest {
         assertFalse(request.toString().contains("secret"));
         assertFalse(request.toString().contains("example.invalid"));
     }
+    @Test void frozenFallbackNeverRereadsMutableCatalog() {
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        var model = org.mockito.Mockito.mock(io.agentscope.core.model.Model.class);
+        var assembler = new ProjectAgentModelAssembler((key, context) -> model)
+            .withFallbackSource(primary -> { calls.incrementAndGet(); throw new IllegalStateException("must not query"); });
+        var frozen = new KernelModelRequest("GLM-5.3-Flash", "zhipu", "fixture", "https://fixture.example/v1");
+        assertSame(model, assembler.assembleConfiguredFallback(frozen, 1L, 2L));
+        assertNull(assembler.assembleConfiguredFallback(null, 1L, 2L));
+        assertEquals(0, calls.get());
+    }
+
 }

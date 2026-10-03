@@ -49,6 +49,37 @@ class AiGatewayTest {
     }
 
     @Test
+    void ollamaStatusAndUnknownEmbeddingFailureHaveExplicitSafeClassification() {
+        for (int code : new int[] {401, 403, 429, 500}) {
+            Throwable failure = new io.agentscope.core.embedding.EmbeddingException("secret input",
+                new io.agentscope.extensions.model.ollama.OllamaHttpClient.OllamaHttpException(
+                    "secret key", code, "secret body"), "model", "ollama");
+            assertMap(failure, code == 401 || code == 403 ? "AUTH_FAILED" : "HTTP_" + code);
+        }
+        assertMap(new io.agentscope.core.embedding.EmbeddingException("timeout-looking secret", "model", "ollama"),
+            "EMBEDDING_FAILED");
+    }
+
+    @Test
+    void embeddingDiagnosticsUseOnlyBoundedClassNamesAndIntegerStatusEvenForCauseCycles() {
+        var http = new io.agentscope.extensions.model.ollama.OllamaHttpClient.OllamaHttpException(
+            "secret key", 503, "secret body");
+        Throwable embedding = new io.agentscope.core.embedding.EmbeddingException("secret text", http, "m", "ollama");
+        assertEquals(503, AiGateway.ollamaHttpStatus(embedding));
+        assertEquals(java.util.List.of(embedding.getClass().getName(), http.getClass().getName()),
+            AiGateway.safeCauseTypes(embedding));
+        assertEquals("HTTP 503", AiGateway.mapFailure(embedding, 1).errorMessage());
+        var first = new RuntimeException("secret first");
+        var second = new RuntimeException("secret second");
+        first.initCause(second); second.initCause(first);
+        assertEquals(2, AiGateway.safeCauseTypes(first).size());
+        assertEquals("UNSUPPORTED_PROTOCOL", AiGateway.mapFailure(first, 1).errorCode());
+        Throwable chain = new IllegalStateException("never print");
+        for (int i = 0; i < 15; i++) chain = new RuntimeException("never print", chain);
+        assertEquals(8, AiGateway.safeCauseTypes(chain).size());
+    }
+
+    @Test
     @DisplayName("mapFailure：HTTP code 透传且不带响应 body（apiKey/原文不泄露面）")
     void mapFailureMessageWhitelist() {
         AiChatResult r = AiGateway.mapFailure(http(503), 42L);

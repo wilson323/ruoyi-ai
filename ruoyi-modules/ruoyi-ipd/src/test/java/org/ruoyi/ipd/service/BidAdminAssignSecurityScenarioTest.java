@@ -22,6 +22,7 @@ import org.ruoyi.ipd.domain.BidResponse;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
@@ -87,6 +88,9 @@ class BidAdminAssignSecurityScenarioTest {
     private IpdAuthSession session;
     @Mock
     private IpdAuthService authService;
+    /** 归属守卫用：adminAssign 走超管门控，不触达该 mapper，仅为满足构造签名。 */
+    @Mock
+    private ProjectMapper projectMapper;
 
     private BidInvitationService realService;
     private IpdPermission permission;
@@ -100,7 +104,7 @@ class BidAdminAssignSecurityScenarioTest {
         d1Guard.initRules();
         realService.setStateMachineGuard(d1Guard);
         permission = new IpdPermission(session, authService);
-        controller = new BidController(serviceMock, bidResponseService, permission, session);
+        controller = new BidController(serviceMock, bidResponseService, permission, session, projectMapper);
     }
 
     /** 以指定角色/组属构造会话身份（SEC-01 边界：角色只来自 IpdAuthSession.currentPerson）。 */

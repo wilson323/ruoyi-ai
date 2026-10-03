@@ -80,4 +80,23 @@ class ProjectAgentUsageSinkTest {
         verify(ledger).recordUsage(9L, "900101", ProjectAgentUsageSink.SCENE, 11, 7, 0L, "ok", "42");
         assertThat(steps.get()).isEqualTo(2);
     }
+    @Test void frozenIdentityOwnsPrimaryAndFallbackUsage() {
+        var primary = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(101L, "minimax", "MiniMax-M3");
+        var fallback = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(202L, "zhipu", "GLM-5.3-Flash");
+        var delegate = mock(ProjectAgentEventSink.class);
+        var ledger = mock(AiModelUsageLedgerService.class);
+        var sink = new ProjectAgentUsageSink(delegate, ledger, java.util.List.of(primary, fallback), "actor", "run");
+        sink.onStep("MODEL_CALL", Map.of("modelConfigId", "202", "inputTokens", 999));
+        verifyNoInteractions(ledger);
+        sink.onModelCall(primary, Map.of("phase", "START"));
+        sink.onModelCall(fallback, Map.of("phase", "END", "outcome", "ERROR", "usageAvailable", false));
+        verifyNoInteractions(ledger);
+        sink.onModelCall(primary, Map.of("inputTokens", 11, "outputTokens", 7));
+        sink.onModelCall(fallback, Map.of("inputTokens", 3, "outputTokens", 2));
+        verify(ledger).recordUsage(101L, "actor", ProjectAgentUsageSink.SCENE, 11, 7, 0L, "ok", "run");
+        verify(ledger).recordUsage(202L, "actor", ProjectAgentUsageSink.SCENE, 3, 2, 0L, "ok", "run");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> sink.onModelCall(
+            new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(202L, "zhipu", "GLM-5.3-Flash"), Map.of("inputTokens", 77)));
+        org.mockito.Mockito.verifyNoMoreInteractions(ledger);
+    }
 }

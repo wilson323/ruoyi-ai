@@ -17,8 +17,10 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
@@ -73,6 +75,9 @@ class P252AcceptanceTest {
     private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
+    /** sign() 的 gate→项目→组 归属断言所需（R212-④ 同款注入点）。 */
+    @Mock
+    private ProjectMapper projectMapper;
 
     private GateReviewService service;
 
@@ -96,6 +101,11 @@ class P252AcceptanceTest {
     void setUp() {
         service = new GateReviewService(gateMapper, reviewMapper, memberMapper,
             personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
+        // 归属断言 fail-closed：未装配 ProjectMapper 一律「无权操作」，故必须注入。
+        service.setProjectMapper(projectMapper);
+        lenient().when(projectMapper.selectById(11L))
+            .thenReturn(Project.builder().id(11L).mainGroupId(MARKET.groupId())
+                .status("ACTIVE").delFlag("0").build());
         // R24：装配真实守卫实例（已 initRules 注入 37 条规则）。
         org.ruoyi.ipd.service.impl.DefaultStateMachineGuard guard =
             new org.ruoyi.ipd.service.impl.DefaultStateMachineGuard(auditLogService, notificationService);

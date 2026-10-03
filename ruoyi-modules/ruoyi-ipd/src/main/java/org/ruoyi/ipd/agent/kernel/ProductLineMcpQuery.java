@@ -38,7 +38,7 @@ public final class ProductLineMcpQuery {
     public static final Set<String> REASON_CODES = Set.of(
         "TIMEOUT", "CANCELLED", "PROTOCOL_OR_TRANSPORT", "REMOTE_IS_ERROR",
         "NO_TOOLS", "AMBIGUOUS_TOOLS", "UNSUPPORTED_SCHEMA", "EMPTY_RESULT",
-        "INVALID_QUERY", "NO_ENDPOINT", "NO_CLIENT", "TOOLS_CAPABILITY_MISSING");
+        "INVALID_QUERY", "INVALID_ARGUMENTS", "SCHEMA_CHANGED", "NO_ENDPOINT", "NO_CLIENT", "TOOLS_CAPABILITY_MISSING");
 
     /** 仅限本机2.0.3/0.17.2/3.7.13及共享工厂源码已核的精确类，不接受远端或动态类名。 */
     private static final Set<String> SDK_CLASSES = Set.of(
@@ -80,6 +80,17 @@ public final class ProductLineMcpQuery {
          * @throws Exception 连接或协议失败
          */
         List<McpSchema.Tool> listTools() throws Exception;
+
+        /** 测试替身可使用 typed schema；生产会话必须返回同响应捕获的完整 schema。 */
+        default Map<String, Object> rawInputSchema(String name) throws Exception {
+            var matches = listTools().stream().filter(tool -> name.equals(tool.name())).toList();
+            if (matches.size() != 1 || matches.get(0).inputSchema() == null) return null;
+            return new com.fasterxml.jackson.databind.ObjectMapper()
+                .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                .convertValue(matches.get(0).inputSchema(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() { });
+        }
+
+        default McpSchema.ServerCapabilities serverCapabilities() { return null; }
 
         /**
          * 按协议工具名和其声明的参数调用一次。
@@ -150,6 +161,11 @@ public final class ProductLineMcpQuery {
 
     /** 生产调用的结构化结果；不通过远端正文携带SDK诊断。 */
     public Outcome invokeOutcome(Endpoint endpoint, String question, LineSession session) {
+        return invokeOutcome(endpoint, question, null, session);
+    }
+
+    /** 仍只消费已授权的单工具知识 query；摘要由同服务发现结果绑定，漂移不调用。 */
+    public Outcome invokeOutcome(Endpoint endpoint, String question, String expectedSchemaDigest, LineSession session) {
         if (endpoint == null) {
             return outcome(codedFailure(null, "LOCAL", "NO_ENDPOINT", "没有端点"));
         }
@@ -170,13 +186,86 @@ public final class ProductLineMcpQuery {
             if (tool.name() == null || tool.name().isBlank() || argument == null) {
                 return outcome(codedFailure(endpoint, "LIST_TOOLS", "UNSUPPORTED_SCHEMA", "没有唯一必填字符串参数"));
             }
+            Map<String, Object> schema = session.rawInputSchema(tool.name());
+            final com.networknt.schema.Schema validator;
+            final String digest;
+            try {
+                validator = schemaValidator(schema);
+                digest = schemaDigest(tool.name(), schema);
+            } catch (RuntimeException invalid) {
+                return outcome(codedFailure(endpoint, "LIST_TOOLS", "UNSUPPORTED_SCHEMA", "完整参数声明无法安全校验"));
+            }
+            if (expectedSchemaDigest != null && !expectedSchemaDigest.equals(digest))
+                return outcome(codedFailure(endpoint, "LIST_TOOLS", "SCHEMA_CHANGED", "协议工具参数声明已改变，请重新读取工具目录"));
+            Map<String, Object> arguments = Map.of(argument, question == null ? "" : question);
+            try {
+                if (!validator.validate(new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(arguments)).isEmpty())
+                    return outcome(codedFailure(endpoint, "LOCAL", "INVALID_ARGUMENTS", "查询不符合协议工具的完整参数要求"));
+            } catch (RuntimeException invalid) {
+                return outcome(codedFailure(endpoint, "LIST_TOOLS", "UNSUPPORTED_SCHEMA", "完整参数声明无法安全校验"));
+            }
             stage = "CALL_TOOL";
-            McpSchema.CallToolResult result = session.callTool(
-                tool.name(), Map.of(argument, question == null ? "" : question));
+            McpSchema.CallToolResult result = session.callTool(tool.name(), arguments);
             return outcome(presentResult(endpoint, result));
         } catch (Exception ex) {
             return protocolFailureOutcome(endpoint, stage, ex);
         }
+    }
+
+    /** 完整 schema 只作诊断，列出多个工具不意味着拥有这些工具的业务执行权。 */
+    public String discover(Endpoint endpoint, LineSession session) throws Exception {
+        var tools = session.listTools();
+        var declared = new ArrayList<Map<String, Object>>();
+        for (var tool : tools) {
+            var schema = session.rawInputSchema(tool.name());
+            schemaValidator(schema);
+            declared.add(Map.of("toolName", tool.name(), "inputSchema", schema,
+                "schemaDigest", schemaDigest(tool.name(), schema)));
+        }
+        var caps = session.serverCapabilities();
+        return "【产线知识库协议目录；仅诊断，不是知识命中或操作授权】\n"
+            + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of("tools", declared,
+                "capabilities", Map.of("tools", caps != null && caps.tools() != null,
+                    "resources", caps != null && caps.resources() != null, "prompts", caps != null && caps.prompts() != null)));
+    }
+
+    static String schemaDigest(String toolName, Map<String, Object> schema) {
+        try {
+            byte[] canonical = new com.fasterxml.jackson.databind.ObjectMapper()
+                .enable(com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                .writeValueAsBytes(Map.of("toolName", toolName, "inputSchema", schema));
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(canonical));
+        } catch (Exception invalid) { throw new IllegalArgumentException("schema digest unavailable", invalid); }
+    }
+
+    private static com.networknt.schema.Schema schemaValidator(Map<String, Object> schema) {
+        if (schema == null || schema.isEmpty()) throw new IllegalArgumentException("missing complete schema");
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var node = mapper.valueToTree(schema);
+        if (node.toString().length() > 262144) throw new IllegalArgumentException("schema exceeds limit");
+        requireOfflineSchema(node, 0);
+        var version = node.has("$schema") ? com.networknt.schema.SpecificationVersion.fromDialectId(node.path("$schema").asText())
+            .orElseThrow(() -> new IllegalArgumentException("unsupported schema dialect"))
+            : com.networknt.schema.SpecificationVersion.DRAFT_2020_12;
+        var registry = com.networknt.schema.SchemaRegistry.withDefaultDialect(version,
+            builder -> builder.resourceLoaders(loaders -> loaders.values(java.util.List::clear)));
+        var compiled = registry.getSchema(node);
+        compiled.initializeValidators();
+        return compiled;
+    }
+
+    /** 外部引用与标识不能触发网络解析；仅当前完整 schema 内的引用可用。 */
+    private static void requireOfflineSchema(com.fasterxml.jackson.databind.JsonNode node, int depth) {
+        if (depth > 64) throw new IllegalArgumentException("schema depth exceeds limit");
+        if (node.isObject()) {
+            for (String key : List.of("$ref", "$dynamicRef", "$recursiveRef")) {
+                if (node.has(key) && (!node.get(key).isTextual() || !node.get(key).asText().startsWith("#")))
+                    throw new IllegalArgumentException("external schema reference is not authorized");
+            }
+            if (node.has("$id") && !node.get("$id").asText().startsWith("#"))
+                throw new IllegalArgumentException("external schema identifier is not authorized");
+        }
+        if (node.isContainerNode()) node.forEach(child -> requireOfflineSchema(child, depth + 1));
     }
 
     /**

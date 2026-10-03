@@ -171,6 +171,16 @@
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/audit-log.py\" post 2>/dev/null || exit 0"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e 'const{spawnSync}=require('\\''child_process'\\'');const p=Buffer.from('\\''L1VzZXJzL21hYy9Eb2N1bWVudHMvcnVveWktYWkvLmNsYXVkZS9ob29rcy9ldm9sdmVyLXNpZ25hbC1kZXRlY3QuanM='\\'','\\''base64'\\'').toString('\\''utf8'\\'');const r=spawnSync(process.execPath,[p],{stdio:'\\''inherit'\\'',shell:false});if(r.error){console.error(r.error.message||String(r.error));process.exit(1)};process.exit(r.status==null?1:r.status)' evolver-signal-detect.js",
+            "timeout": 2
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -178,8 +188,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/hook-handler.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/hook-handler.cjs\" route'",
-            "timeout": 10000
+            "command": "node -e 'const{spawnSync}=require('\\''child_process'\\'');const p=Buffer.from('\\''L1VzZXJzL21hYy9Eb2N1bWVudHMvcnVveWktYWkvLmNsYXVkZS9ob29rcy9ldm9sdmVyLXRhc2stcmVjYWxsLmpz'\\'','\\''base64'\\'').toString('\\''utf8'\\'');const r=spawnSync(process.execPath,[p],{stdio:'\\''inherit'\\'',shell:false});if(r.error){console.error(r.error.message||String(r.error));process.exit(1)};process.exit(r.status==null?1:r.status)' evolver-task-recall.js",
+            "timeout": 5
           }
         ]
       }
@@ -194,7 +204,7 @@
           },
           {
             "type": "command",
-            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/auto-memory-hook.mjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/auto-memory-hook.mjs\" import'",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/auto-memory-hook.mjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/auto-memory-hook.mjs\" import' 1>&2",
             "timeout": 8000
           }
         ]
@@ -205,6 +215,25 @@
           {
             "type": "command",
             "command": "bash -c 'if [ -f docs/api.md ]; then cat docs/api.md 2>/dev/null; fi; if [ -f docs/database.md ]; then cat docs/database.md 2>/dev/null; fi; exit 0'"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/mac/Documents/ruoyi-ipd-web/scripts/engineering_harness.py --root \"${CLAUDE_PROJECT_DIR:-$PWD}\" intake",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e 'const{spawnSync}=require('\\''child_process'\\'');const p=Buffer.from('\\''L1VzZXJzL21hYy9Eb2N1bWVudHMvcnVveWktYWkvLmNsYXVkZS9ob29rcy9ldm9sdmVyLXNlc3Npb24tc3RhcnQuanM='\\'','\\''base64'\\'').toString('\\''utf8'\\'');const r=spawnSync(process.execPath,[p],{stdio:'\\''inherit'\\'',shell:false});if(r.error){console.error(r.error.message||String(r.error));process.exit(1)};process.exit(r.status==null?1:r.status)' evolver-session-start.js",
+            "timeout": 3
           }
         ]
       }
@@ -225,7 +254,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/auto-memory-hook.mjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/auto-memory-hook.mjs\" sync'",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/auto-memory-hook.mjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/auto-memory-hook.mjs\" sync' 1>&2",
             "timeout": 10000
           }
         ]
@@ -236,6 +265,15 @@
           {
             "type": "command",
             "command": "bash -c 'echo \"[Layer 1 收口清单] 说\\\"完成\\\"前逐条过：构建通过 / 检查通过 / 测试通过（真实执行有输出）/ 范围未越界 / 文档已同步 / 证据已入 plan.md / 遗留问题已列出 / 交接文件已写。依据 Skill session-finalization-gate。\" >&2; exit 0'"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e 'const{spawnSync}=require('\\''child_process'\\'');const p=Buffer.from('\\''L1VzZXJzL21hYy9Eb2N1bWVudHMvcnVveWktYWkvLmNsYXVkZS9ob29rcy9ldm9sdmVyLXNlc3Npb24tZW5kLmpz'\\'','\\''base64'\\'').toString('\\''utf8'\\'');const r=spawnSync(process.execPath,[p],{stdio:'\\''inherit'\\'',shell:false});if(r.error){console.error(r.error.message||String(r.error));process.exit(1)};process.exit(r.status==null?1:r.status)' evolver-session-end.js",
+            "timeout": 8
           }
         ]
       }
@@ -324,7 +362,8 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_FLOW_V3_ENABLED": "true",
-    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
+    "CLAUDE_FLOW_HOOKS_ENABLED": "true",
+    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
   },
   "claudeFlow": {
     "version": "3.0.0",
@@ -430,5 +469,19 @@
       "threatModel": true
     }
   },
-  "_comment": "Layer 3 — 硬闸门。Anthropic: 前两层告诉 AI 该怎么做，hooks 守住不能越过的红线。hooks 是确定性脚本，每次必跑，不依赖模型自觉。v2：新增发布命令闸门（Deploy 阶段人授权）+ 审计日志（可归因）；移除 git add -A 拦截（owner 工作流为自动 commit）。"
+  "_comment": "Project hooks cover only actual host events; not a universal enforcement boundary. Existing permission guards unchanged. No automatic commit/push. Engineering SessionStart intake presents evidence and bounded learned checks.",
+  "_evolver_managed": true,
+  "enabledPlugins": {
+    "ruflo-mods@ruflo": true,
+    "ruflo-swarm@ruflo": true,
+    "ruflo-console@ruflo": true
+  },
+  "extraKnownMarketplaces": {
+    "ruflo": {
+      "source": {
+        "source": "github",
+        "repo": "ruvnet/ruflo"
+      }
+    }
+  }
 }

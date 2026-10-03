@@ -20,6 +20,8 @@ public class ProjectAgentInterruptedRunCloser {
     private final long bootedAtMillis;
     private ProjectAgentRunRecovery recovery;
     private Long recoveryCursor;
+    private ProjectAgentRunExecutor executor;
+    private Long cleanupCursor;
 
     @Autowired
     public ProjectAgentInterruptedRunCloser(AgentRunStore store) {
@@ -34,6 +36,9 @@ public class ProjectAgentInterruptedRunCloser {
     @Autowired(required = false)
     public void setRecovery(ProjectAgentRunRecovery recovery) { this.recovery = recovery; }
 
+    @Autowired(required = false)
+    public void setExecutor(ProjectAgentRunExecutor executor) { this.executor = executor; }
+
     /** 是否能收口由成熟所有权锁+DB epoch共同决定。 */
     @org.springframework.scheduling.annotation.Scheduled(fixedDelayString = "${ipd.project-agent.recovery-scan-ms:30000}")
     public synchronized void recoverOwnedCandidates() {
@@ -47,6 +52,17 @@ public class ProjectAgentInterruptedRunCloser {
             }
         }
         recoveryCursor = rows.size() < PAGE ? null : rows.get(rows.size() - 1).getId();
+        if (executor != null) {
+            List<IpdAgentRun> cleanupRows = store.listCommittedCleanupCandidates(cleanupCursor, PAGE);
+            for (IpdAgentRun row : cleanupRows) {
+                try { executor.cleanupCommittedCheckpoint(row.getId()); }
+                catch (RuntimeException failure) {
+                    log.warn("project_agent operation=COMMITTED_CHECKPOINT_CLEANUP status=PENDING_RECOVERY runId={} errorType={}",
+                        row.getId(), failure.getClass().getName());
+                }
+            }
+            cleanupCursor = cleanupRows.size() < PAGE ? null : cleanupRows.get(cleanupRows.size() - 1).getId();
+        }
     }
 
     /** 仅提示待核查，不能把其他实例仍在执行的运行记为中断或已恢复。 */

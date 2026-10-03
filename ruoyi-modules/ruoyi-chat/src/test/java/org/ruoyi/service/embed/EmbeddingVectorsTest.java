@@ -19,6 +19,15 @@ class EmbeddingVectorsTest {
         };
     }
 
+    @org.junit.jupiter.api.BeforeAll
+    static void warmTimingInfrastructure() {
+        // Time assertions measure execution/cancellation, excluding JVM class loading.
+        Mono.just(1).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+            .timeout(java.time.Duration.ofSeconds(2)).block(java.time.Duration.ofSeconds(2));
+        reactor.core.publisher.Flux.just(1).concatMap(Mono::just).collectList()
+            .timeout(java.time.Duration.ofSeconds(2)).block(java.time.Duration.ofSeconds(2));
+    }
+
     @Test
     void preservesOrderAndRejectsInvalidVectors() {
         var vectors = EmbeddingVectors.embedAll(model(text -> new double[] {Double.parseDouble(text), 0}), List.of("2", "1"));
@@ -51,6 +60,27 @@ class EmbeddingVectorsTest {
         assertEquals(2, started.get());
         assertTrue(cancelled.get());
         assertTrue(elapsedMillis < 380, "deadline must not restart after the first vector: " + elapsedMillis);
+    }
+
+    @Test
+    void batchDeadlineInterruptsActualBlockingSupplierAndDoesNotStartNextChunk() throws Exception {
+        var started = new java.util.concurrent.atomic.AtomicInteger();
+        var interrupted = new java.util.concurrent.CountDownLatch(1);
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        EmbeddingModel blocking = model(text -> {
+            started.incrementAndGet(); entered.countDown();
+            try { Thread.sleep(1500); }
+            catch (InterruptedException cancellation) { interrupted.countDown(); Thread.currentThread().interrupt(); }
+            return new double[] {1, 0};
+        });
+        long before = System.nanoTime();
+        assertThrows(RuntimeException.class, () -> EmbeddingVectors.embedAll(blocking,
+            List.of("first", "must-not-start"), java.time.Duration.ofMillis(150)));
+        long elapsed = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before);
+        assertTrue(elapsed < 700, "blocking SDK supplier must not keep caller beyond deadline: " + elapsed);
+        assertTrue(entered.await(1, java.util.concurrent.TimeUnit.SECONDS));
+        assertTrue(interrupted.await(1, java.util.concurrent.TimeUnit.SECONDS), "current supplier must receive cancellation");
+        assertEquals(1, started.get());
     }
 
     @Test

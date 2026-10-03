@@ -51,6 +51,7 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class OfficialCapabilitiesAcceptanceTest {
     @TempDir Path root;
+    private final String acceptanceRun = "acceptance-run-" + java.util.UUID.randomUUID();
     private HarnessAgent harness;
     private InMemoryAgentStateStore harnessStore;
     private final java.util.concurrent.atomic.AtomicReference<ToolUseBlock> nextCall = new java.util.concurrent.atomic.AtomicReference<>();
@@ -98,7 +99,7 @@ class OfficialCapabilitiesAcceptanceTest {
             containerId = ((DockerSandboxState) sandbox.getState()).getContainerId();
             assertNotNull(containerId);
             assertEquals(0, docker("inspect", "--format", "{{.State.Running}}", containerId).exit());
-            RuntimeContext context = RuntimeContext.builder().userId("acceptance-person").sessionId("acceptance-run").build();
+            RuntimeContext context = RuntimeContext.builder().userId("acceptance-person").sessionId(acceptanceRun).build();
             context.put(SandboxAcquireResult.class, SandboxAcquireResult.userManaged(sandbox));
             var permission = PermissionContextState.builder().mode(PermissionMode.DONT_ASK);
             for (String name : new String[] {"write_file", "read_file", "execute"}) {
@@ -155,10 +156,13 @@ class OfficialCapabilitiesAcceptanceTest {
             when(model.getModelName()).thenReturn("docker-official-executor-contract");
             when(model.stream(any(), any(), any())).thenAnswer(invocation -> Flux.just(ChatResponse.builder()
                 .finishReason(modelResponses.get() == 0 ? "tool_calls" : "stop")
-                .content(modelResponses.getAndIncrement() == 0 ? List.of(nextCall.get()) : List.of(TextBlock.builder().text("done").build()))
+                .content(modelResponses.getAndIncrement() == 0 ? List.of(nextCall.get()) : List.of(TextBlock.builder().text("SESSION_EVIDENCE_" + acceptanceRun).build()))
                 .build()));
             harnessStore = new InMemoryAgentStateStore();
+            var managedFilesystem = ProjectAgentOfficialSandbox.managedFilesystem(workspace, "python:3.13-alpine", sink);
             harness = HarnessAgent.builder().name("docker-contract").model(model).toolkit(toolkit)
+                .middleware(managedFilesystem.lifecycle())
+                .memory(managedFilesystem.lifecycle().memoryConfig(ProjectAgentNativeProfile.memory(), model))
                 .middleware(new ProjectAgentOfficialToolGovernance(sink))
                 .middleware(new io.agentscope.core.middleware.MiddlewareBase() {
                     @Override public reactor.core.publisher.Flux<io.agentscope.core.event.AgentEvent> onActing(
@@ -179,13 +183,24 @@ class OfficialCapabilitiesAcceptanceTest {
                     }
                 })
                 .permissionContext(context.getAgentState().getPermissionContext())
-                .filesystem(ProjectAgentOfficialSandbox.filesystem(workspace, "python:3.13-alpine", sink)).workspace(workspace)
+                .filesystem(managedFilesystem.spec()).workspace(workspace)
                 .stateStore(harnessStore).maxIters(3).build();
+            managedFilesystem.lifecycle().bindWorkspace(harness.getWorkspaceManager());
         }
         RuntimeContext caller = RuntimeContext.builder().userId(context.getUserId()).sessionId(context.getSessionId()).build();
         {
             harness.streamEvents(List.of(Msg.builder().role(MsgRole.USER).textContent("execute acceptance operation").build()), caller)
                 .collectList().block(Duration.ofSeconds(40));
+            assertTrue(io.agentscope.harness.agent.memory.session.SessionTree.awaitMirrorQuiescence(10, TimeUnit.SECONDS),
+                "actual session mirror must drain for " + acceptanceRun);
+            try (var archives = Files.list(workspace.resolve(".sandbox-snapshots"))) {
+                assertTrue(archives.filter(path -> path.getFileName().toString().endsWith(".tar")).anyMatch(path -> {
+                    try {
+                        String bytes = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
+                        return bytes.contains(acceptanceRun + ".log.jsonl") && bytes.contains("SESSION_EVIDENCE_" + acceptanceRun);
+                    } catch (java.io.IOException failure) { throw new AssertionError(failure); }
+                }), "actual session archive marker must persist for " + acceptanceRun);
+            }
             var results = harnessStore.get(caller.getUserId(), caller.getSessionId(), "agent_state", AgentState.class).orElseThrow().getContext().stream().flatMap(msg -> msg.getContent().stream())
                 .filter(block -> block instanceof ToolResultBlock).map(block -> (ToolResultBlock) block)
                 .filter(result -> use.getId().equals(result.getId())).toList();

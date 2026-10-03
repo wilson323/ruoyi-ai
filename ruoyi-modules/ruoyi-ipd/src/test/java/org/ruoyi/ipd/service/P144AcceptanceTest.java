@@ -127,13 +127,13 @@ class P144AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-IPD-12 深管逾期：主责人（在册未退出）收 ACTION_OVERDUE 每日提醒（publishDaily 按日 dedup 通道）")
+    @DisplayName("AC-IPD-12 深管逾期：主责人（在册未退出）收 ACTION_OVERDUE 每日提醒（publishDailyAfterCommit 按日 dedup 通道）")
     void deepOverdue_ownerReminded_viaDailyDedupChannel() {
         when(actionMapper.selectList(any())).thenReturn(List.of(deepOverdue(1L, "MARKET_PM", 100L)));
         when(memberMapper.selectList(any())).thenReturn(List.of(activeMember(101L, "MARKET_PM")));
 
         assertThat(service.notifyOverdueActions()).isEqualTo(1);
-        verify(notificationService).publishDaily(eq(101L), eq(NotificationService.Types.ACTION_OVERDUE),
+        verify(notificationService).publishDailyAfterCommit(eq(101L), eq(NotificationService.Types.ACTION_OVERDUE),
             eq(NotificationService.KIND_ACTION), eq("stage_action"), eq(1L),
             anyString(), anyString(), eq("/projects/100"), any(Date.class));
     }
@@ -186,7 +186,7 @@ class P144AcceptanceTest {
         when(actionMapper.selectList(any())).thenReturn(List.of(a));
         when(memberMapper.selectList(any())).thenReturn(List.of(activeMember(101L, "MARKET_PM")));
         assertThat(service.notifyOverdueActions()).isEqualTo(1);
-        verify(notificationService).publishDaily(eq(101L), eq(NotificationService.Types.ACTION_OVERDUE),
+        verify(notificationService).publishDailyAfterCommit(eq(101L), eq(NotificationService.Types.ACTION_OVERDUE),
             eq(NotificationService.KIND_ACTION), eq("stage_action"), eq(2L),
             anyString(), anyString(), anyString(), any(Date.class));
     }
@@ -199,7 +199,7 @@ class P144AcceptanceTest {
 
         assertThat(service.notifyOverdueActions()).isZero();
         verify(notificationService, never())
-            .publishDaily(any(), any(), any(), any(), any(), any(), any(), any(), any());
+            .publishDailyAfterCommit(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: RuoYi-AI 项目通用 Java / Spring Boot 代码审查代理。审查架构合理性、可读性、可维护性、并发安全、错误处理、日志规范、Spring 用法。与 security-reviewer（业务安全）正交互补。
+description: RuoYi-AI Java/Spring代码审查：架构、可维护性、并发、错误处理、日志；业务安全交由security-reviewer。
 ---
 
 # Code Reviewer

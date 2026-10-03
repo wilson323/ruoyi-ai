@@ -62,7 +62,7 @@ public class ChatController {
 
 实际业务在 `ChatServiceFacade`（不是直接实现）。
 
-参见：[chat-controller.md](../raw/chat-source/chat-controller.md)。
+参见：[chat-controller.md](../../raw/chat-source/chat-controller.md)。
 
 ## Factory 模式 — ChatServiceFactory
 
@@ -93,14 +93,14 @@ public class ChatServiceFactory implements ApplicationContextAware {
 
 类似 factory 模式还用于：`RerankModelFactory`、`VectorStoreStrategyFactory`、`EmbeddingModelFactory`、`ResourceLoaderFactory`——都是「按类型路由」的可插拔架构。
 
-参见：[chat-service-factory.md](../raw/chat-source/chat-service-factory.md)。
+参见：[chat-service-factory.md](../../raw/chat-source/chat-service-factory.md)。
 
 ## 向量库配置 — VectorStoreProperties + McpSseConfig
 
 - `VectorStoreProperties` 绑定 `application.yml` 的 `vector-store.*` 段，支持 weaviate / milvus / qdrant 三选一
 - `McpSseConfig` 配置 MCP server 的 SSE 传输（HTTP-based MCP 而非 stdio）
 
-参见：[vector-store-properties.md](../raw/chat-source/vector-store-properties.md)、[mcp-sse-config.md](../raw/chat-source/mcp-sse-config.md)。
+参见：[vector-store-properties.md](../../raw/chat-source/vector-store-properties.md)、[mcp-sse-config.md](../../raw/chat-source/mcp-sse-config.md)。
 
 ## RAG 链路追踪 — argtrace 包
 

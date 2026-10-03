@@ -76,17 +76,17 @@
 # 系统 bash 3.2.57。所有集合查找用 awk 整词精确匹配,避免 grep -F 子串匹配
 # 误报(如 `audit_log` 子串会误命中 `audit_logs` 行)。
 
-set -u
-set -o pipefail
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/audit-gate-input.sh"
 
 # ---------------------------------------------------------------------------
 # 路径与哨兵
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 cd "$REPO_ROOT" || { echo "[check-doc-db-drift] ❌ cd $REPO_ROOT failed" >&2; exit 2; }
 
-MYSQL_CNF="$REPO_ROOT/.codex/ipd-dev/config/mysql-client.cnf"
+MYSQL_CNF="${MYSQL_CNF:-$REPO_ROOT/.codex/ipd-dev/config/mysql-client.cnf}"
 
 # 默认参数
 DB_NAME="ipd_dev"
@@ -190,9 +190,11 @@ for root in "${SCAN_ROOTS[@]}"; do
     echo "[check-doc-db-drift] ❌ scope root missing: $root" >&2
     exit 2
   fi
+  gate_require_tree "$root" -name '*.md'
+  doc_files=$(find "$root" -type f -name '*.md')
   while IFS= read -r f; do
     DOC_FILES_ALL+=("$f")
-  done < <(find "$root" -type f -name "*.md" 2>/dev/null)
+  done <<< "$doc_files"
 done
 DOC_COUNT=${#DOC_FILES_ALL[@]}
 [ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] scan scope=$SCOPE doc_count=$DOC_COUNT (sentinel >= 5)"
@@ -222,7 +224,7 @@ if ! mysql --defaults-file="$MYSQL_CNF" -N -B -e \
   exit 2
 fi
 
-DB_TABLE_COUNT=$(grep -c . "$DB_TXT" 2>/dev/null || echo 0)
+DB_TABLE_COUNT=$(gate_grep -c . "$DB_TXT")
 [ "$JSON_ONLY" -eq 0 ] && echo "[check-doc-db-drift] db_schema=$DB_NAME db_table_count=$DB_TABLE_COUNT"
 
 if [ "$DB_TABLE_COUNT" -lt 10 ]; then
@@ -814,6 +816,9 @@ awk -F'\t' -v minlen="$MIN_LEN" 'length($1) >= minlen {print $1}' "$HITS_TXT" | 
 # 4a-2 用 awk 把标识符与已知集合(白名单 ∪ DB)做精确匹配
 #   pass.txt:id ∈ 已知集合
 #   fail.txt:id ∉ 已知集合
+# awk 只有写入时才创建文件；零匹配也是正常结果，提前建空输出。
+: > "${HITS_TXT}.pass"
+: > "${HITS_TXT}.fail"
 awk -v wl="$WL_TXT" -v db="$DB_TXT" '
 BEGIN {
   while ((getline line < wl) > 0) { wl_set[line] = 1 }
@@ -854,7 +859,7 @@ fi
 # 4b) 反向:DB 表在文档中 0 引用
 {
   for f in "${DOC_FILES_ALL[@]}"; do
-    cat "$f" 2>/dev/null
+    cat "$f"
     printf '\n'
   done
 } > "$DOC_CONCAT_TXT"
@@ -862,7 +867,7 @@ fi
 > "$ORPHAN_TXT"
 while IFS= read -r t; do
   [ -z "$t" ] && continue
-  refs=$(grep -F -c -- "$t" "$DOC_CONCAT_TXT" 2>/dev/null || echo 0)
+  refs=$(gate_grep -F -c -- "$t" "$DOC_CONCAT_TXT")
   if [ "$refs" = "0" ]; then
     printf '%s\n' "$t" >> "$ORPHAN_TXT"
   fi

@@ -450,13 +450,20 @@ class ProjectAgentRunHandleTest {
     @Test
     void fullEvidenceStaysInternalAndArtifactUsesDeliveredBody() {
         InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        run.setConfigSnapshot("{\"outputContractVersion\":1}");
         ProjectAgentRunHandle subject = new ProjectAgentRunHandle(run, store, artifacts,
             AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
+        subject.setDocumentVerifier(row -> {});
+        String delivered = "# 费用结论\n费用率12.83%。";
+        var document = IpdAgentArtifactVersion.builder().tenantId(run.getTenantId()).runId(run.getId())
+            .artifactId("delivered-report").versionNo(1).title("report.md").content(delivered)
+            .contentSha256(org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog.sha256Hex(delivered)).status("DRAFT").delFlag("0").build();
+        artifacts.insert(document); subject.onDocument(document.getId());
         java.util.concurrent.atomic.AtomicReference<String> bound = new java.util.concurrent.atomic.AtomicReference<>();
         subject.whenSucceeded(bound::set);
         subject.onToolCall("c1", "project_knowledge_search");
-        subject.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "preview", "短预览",
-            "citationText", "内部原文".repeat(300) + "12.83%"));
+        subject.onTrustedSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "preview", "短预览",
+            "citationText", "原报价12.83%" + "授权正文".repeat(2200) + "不应持久化的全文尾部"));
         subject.onText("# 费用结论\n");
         subject.onText("<thi");
         subject.onText("nk>错误试算118.69</thi");
@@ -467,8 +474,17 @@ class ProjectAgentRunHandleTest {
             .isEqualTo("# 费用结论\n费用率12.83%。");
         assertThat(bound.get()).isEqualTo("# 费用结论\n费用率12.83%。");
         assertThat(store.events(run.getId()).stream().filter(e -> "SOURCE".equals(e.getEventType())))
-            .singleElement().satisfies(e -> assertThat(e.getPayload()).contains("citationChars", "citationSha256")
-                .doesNotContain("citationText", "内部原文"));
+            .singleElement().satisfies(e -> {
+                assertThat(e.getPayload()).contains("citationQuote", "citationQuoteSha256", "citationQuoteTruncated")
+                    .doesNotContain("citationText", "不应持久化的全文尾部", "错误试算");
+                try {
+                    var payload = AgentTestFixtures.MAPPER.readTree(e.getPayload());
+                    assertThat(payload.path("citationQuote").asText()).hasSize(8000);
+                    assertThat(payload.path("citationQuoteSha256").asText()).isEqualTo(
+                        org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog.sha256Hex(payload.path("citationQuote").asText()));
+                } catch (java.io.IOException failure) { throw new AssertionError(failure); }
+            });
+        assertThat(artifacts.size()).isEqualTo(1);
     }
 
     @Test

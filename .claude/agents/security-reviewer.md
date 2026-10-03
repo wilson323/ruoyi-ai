@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: RuoYi-AI 项目安全审查代理。专攻多租户过滤绕过、Sa-Token + JWT 配置、API RSA 加解密、XSS 过滤、SQL 注入、密钥硬编码。任何改动涉及 controller/service/config/yml 后由 Claude 调度并发审查。
+description: RuoYi-AI安全审查：租户隔离、Sa-Token/JWT、API加密、XSS、SQL注入及密钥泄露。
 ---
 
 # Security Reviewer

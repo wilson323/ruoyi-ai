@@ -17,6 +17,10 @@ import org.ruoyi.ipd.service.ai.BuiltinEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,7 +36,7 @@ import java.util.concurrent.Executors;
  * <ul>
  *   <li>入库：ai_documents 审核通过（REVIEWED）即 {@link #embedAsync} 异步向量化——
  *       固定窗口切片 + AiGateway.embed，经 EmbeddingModels 装配 AgentScope 原生嵌入客户端；失败只 WARN 不阻塞
- *       主流程（增强链路降级语义）；doc 级重建 = 先删后插（同 embedModel）。</li>
+ *       主流程（增强链路降级语义）；doc 级重建全量校验后锁版本并原子替换缓存。</li>
  *   <li>检索：{@link #retrieveContext} 同项目且当前仍为 REVIEWED 的未删除文档
  *       （含同 embedModel——向量空间一致性锚，
  *       换 embedding 模型后旧向量自动退出检索）余弦 top-K，预算内拼上下文块；
@@ -71,6 +75,75 @@ public class AiDocEmbeddingService {
     private final Environment environment;
     /** 内置向量首次生效只打一条 INFO。 */
     private final AtomicBoolean builtinLogged = new AtomicBoolean(false);
+
+    private TransactionTemplate indexTransaction;
+
+    @Autowired
+    public void setIndexTransactionManager(PlatformTransactionManager manager) {
+        indexTransaction = new TransactionTemplate(manager);
+        indexTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    /** 同一已审核版本的派生缓存维护，不改变审核/正文/版本链。 */
+    public int rebuildIndex(AiDocument doc, java.util.function.Supplier<String> authorize) {
+        return rebuildIndex(doc, authorize, resolveEmbedConfig());
+    }
+
+    private int rebuildIndex(AiDocument doc, java.util.function.Supplier<String> authorize, EmbedEndpoint cfg) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "索引生成不能在业务事务内执行");
+        }
+        if (indexTransaction == null) throw new IllegalStateException("索引事务未装配");
+        String tenant = authorize.get();
+        if (doc == null || doc.getId() == null || doc.getVersionNo() == null
+            || !AiDocumentService.STATUS_REVIEWED.equals(doc.getStatus())
+            || !java.util.Objects.equals(tenant, documentMapper.selectVersionTenant(doc.getId()))
+            || tenant == null || doc.getContent() == null || doc.getContent().isBlank()
+            || !AiDocumentService.sha256Hex(doc.getContent()).equals(doc.getContentSha256())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "文档版本或审核证据无效，不能重建索引");
+        }
+        // 固定不可变原文快照；网关调用期间不占用数据库锁或事务。
+        Long id = doc.getId(), projectId = doc.getProjectId();
+        Integer version = doc.getVersionNo();
+        String content = doc.getContent(), hash = doc.getContentSha256();
+        String type = doc.getDocType(), title = doc.getTitle();
+        if (cfg == null) throw new IllegalStateException("文档向量配置不可用");
+        List<String> chunks = splitChunks(content);
+        List<float[]> vectors = aiGateway.embed(new AiTestConfig("openai", cfg.endpoint(), cfg.apiKey(),
+            cfg.embedModel(), EMBED_TIMEOUT_MS), chunks);
+        if (vectors == null || vectors.size() != chunks.size() || chunks.isEmpty()) {
+            throw new IllegalStateException("文档向量返回数量不完整");
+        }
+        List<String> encoded = new ArrayList<>();
+        for (float[] vector : vectors) {
+            if (vectorIssue(vector, BuiltinEmbeddingModel.DIMENSION) != null) {
+                throw new IllegalStateException("文档向量维度或数值无效");
+            }
+            encoded.add(toJson(vector));
+        }
+        return indexTransaction.execute(status -> {
+            // 重读成员权限和租户，长调用期间撤权必须拒绝写入。
+            if (!tenant.equals(authorize.get())) throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
+            AiDocument current = documentMapper.lockVersion(id);
+            if (current == null || !AiDocumentService.STATUS_REVIEWED.equals(current.getStatus())
+                || !java.util.Objects.equals(projectId, current.getProjectId())
+                || !java.util.Objects.equals(version, current.getVersionNo())
+                || !tenant.equals(documentMapper.selectVersionTenant(id)) || !hash.equals(current.getContentSha256())
+                || !content.equals(current.getContent()) || !java.util.Objects.equals(type, current.getDocType())
+                || !java.util.Objects.equals(title, current.getTitle())
+                || !cfg.equals(resolveEmbedConfig())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "文档或嵌入配置已变化，请重新重建索引");
+            }
+            embeddingMapper.delete(new LambdaQueryWrapper<AiDocEmbedding>().eq(AiDocEmbedding::getDocId, id));
+            for (int i = 0; i < chunks.size(); i++) {
+                int inserted = embeddingMapper.insert(AiDocEmbedding.builder().docId(id).projectId(projectId)
+                    .docType(type).title(title).chunkSeq(i).chunkText(chunks.get(i))
+                    .embedModel(cfg.embedModel()).vectorJson(encoded.get(i)).tenantId(tenant).build());
+                if (inserted != 1) throw new IllegalStateException("文档索引切片写入未完成");
+            }
+            return chunks.size();
+        });
+    }
 
     /** 单线程守护异步池：向量化串行化（IPD 文档量级足够；失败不阻塞业务线程）。 */
     private final ExecutorService embedExecutor = Executors.newSingleThreadExecutor(r -> {
@@ -131,8 +204,18 @@ public class AiDocEmbeddingService {
     public record CitationSource(String sourceType, String documentId, String knowledgeId,
                                  String fragmentId, String sourceName, String reviewStatus) { }
 
+    public enum RetrievalStatus { SUCCESS, PARTIAL, NO_HIT, FAILED, UNAUTHORIZED }
+
     public record RetrievalContext(int hits, int chars, String block, String citationText,
-                                   List<CitationSource> sources) {
+                                   List<CitationSource> sources, RetrievalStatus status,
+                                   java.util.Map<String, Integer> issueCounts) {
+        public RetrievalContext(int hits, int chars, String block, String citationText,
+                                List<CitationSource> sources) {
+            this(hits, chars, block, citationText, sources,
+                block != null && block.contains("【知识库向量检索失败】")
+                    ? (hits > 0 ? RetrievalStatus.PARTIAL : RetrievalStatus.FAILED)
+                    : (hits > 0 ? RetrievalStatus.SUCCESS : RetrievalStatus.NO_HIT), java.util.Map.of());
+        }
         public RetrievalContext(int hits, int chars, String block, String citationText) {
             this(hits, chars, block, citationText, List.of());
         }
@@ -145,6 +228,8 @@ public class AiDocEmbeddingService {
         public RetrievalContext {
             citationText = hits > 0 && citationText != null ? citationText : "";
             sources = sources == null ? List.of() : List.copyOf(sources);
+            issueCounts = issueCounts == null ? java.util.Map.of() : java.util.Map.copyOf(issueCounts);
+            java.util.Objects.requireNonNull(status, "status");
         }
         static final RetrievalContext EMPTY = new RetrievalContext(0, 0, "");
     }
@@ -174,9 +259,17 @@ public class AiDocEmbeddingService {
             return;
         }
         AiDocument snapshot = doc;
+        String tenant;
+        try {
+            tenant = documentMapper.selectVersionTenant(doc.getId());
+        } catch (RuntimeException failure) {
+            log.warn("[AI-STRAT-1] 向量化失败（租户归属不可读）docId={} errorType={}",
+                doc.getId(), failure.getClass().getSimpleName());
+            return;
+        }
         if (embedOnCaller) {
             try {
-                embedSync(snapshot, cfg);
+                rebuildIndex(snapshot, () -> tenant, cfg);
             } catch (Exception e) {
                 log.warn("[AI-STRAT-1] 向量化失败降级（不阻塞业务）: docId={} model={} error={}",
                     snapshot.getId(), cfg.embedModel(), e.getMessage());
@@ -185,7 +278,7 @@ public class AiDocEmbeddingService {
         }
         embedExecutor.submit(() -> {
             try {
-                embedSync(snapshot, cfg);
+                rebuildIndex(snapshot, () -> tenant, cfg);
             } catch (Exception e) {
                 log.warn("[AI-STRAT-1] 向量化失败降级（不阻塞业务）: docId={} model={} error={}",
                     snapshot.getId(), cfg.embedModel(), e.getMessage());
@@ -202,33 +295,7 @@ public class AiDocEmbeddingService {
 
     /** 同步向量化（package-private 供单测）：切片 → embed → doc 级先删后插。 */
     void embedSync(AiDocument doc, EmbedEndpoint cfg) {
-        List<String> chunks = splitChunks(doc.getContent());
-        if (chunks.isEmpty()) {
-            return;
-        }
-        List<float[]> vectors = aiGateway.embed(
-            new AiTestConfig("openai", cfg.endpoint(), cfg.apiKey(), cfg.embedModel(), EMBED_TIMEOUT_MS), chunks);
-        if (vectors == null) {
-            log.warn("[AI-STRAT-1] embed 调用失败，本次跳过: docId={} model={}", doc.getId(), cfg.embedModel());
-            return;
-        }
-        embeddingMapper.delete(new LambdaQueryWrapper<AiDocEmbedding>()
-            .eq(AiDocEmbedding::getDocId, doc.getId())
-            .eq(AiDocEmbedding::getEmbedModel, cfg.embedModel()));
-        for (int i = 0; i < chunks.size(); i++) {
-            embeddingMapper.insert(AiDocEmbedding.builder()
-                .docId(doc.getId())
-                .projectId(doc.getProjectId())
-                .docType(doc.getDocType())
-                .title(doc.getTitle())
-                .chunkSeq(i)
-                .chunkText(chunks.get(i))
-                .embedModel(cfg.embedModel())
-                .vectorJson(toJson(vectors.get(i)))
-                .build());
-        }
-        log.info("[AI-STRAT-1] 向量化完成: docId={} projectId={} model={} chunks={}",
-            doc.getId(), doc.getProjectId(), cfg.embedModel(), chunks.size());
+        rebuildIndex(doc, () -> documentMapper.selectVersionTenant(doc.getId()), cfg);
     }
 
     /**
@@ -242,7 +309,12 @@ public class AiDocEmbeddingService {
      */
     public RetrievalContext retrieveContext(Long projectId, String docType, String query) {
         try {
-            return retrieveContextStrict(projectId, docType, query);
+            RetrievalContext context = retrieveContextStrict(projectId, docType, query);
+            if (context.status() == RetrievalStatus.PARTIAL || context.status() == RetrievalStatus.FAILED) {
+                throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                    "项目文档检索不完整，请检查文档索引后重试");
+            }
+            return context;
         } catch (IpdBusinessException e) {
             throw e;
         } catch (RuntimeException e) {
@@ -285,7 +357,7 @@ public class AiDocEmbeddingService {
         List<float[]> queryVec = aiGateway.embed(
             new AiTestConfig("openai", cfg.endpoint(), cfg.apiKey(), cfg.embedModel(), EMBED_TIMEOUT_MS),
             List.of(q));
-        if (queryVec == null || queryVec.isEmpty() || queryVec.get(0) == null) {
+        if (queryVec == null || queryVec.size() != 1 || vectorIssue(queryVec.get(0), -1) != null) {
             throw new IllegalStateException("文档向量返回为空");
         }
         // AI-STRAT-1 Phase 2（2026-09-23）：docType 非空时按类型过滤，索引 idx_emb_doctype 走
@@ -298,19 +370,38 @@ public class AiDocEmbeddingService {
             wrapper.eq(AiDocEmbedding::getDocType, docType.trim());
         }
         List<AiDocEmbedding> candidates = embeddingMapper.selectList(wrapper);
-        if (candidates.isEmpty()) {
-            return RetrievalContext.EMPTY;
-        }
+        if (candidates == null) throw new IllegalStateException("文档索引查询无有效响应");
+        java.util.Map<String, Integer> issues = new java.util.LinkedHashMap<>();
+        Set<Long> indexedIds = new java.util.HashSet<>();
         float[] qv = queryVec.get(0);
         record Scored(AiDocEmbedding emb, double score) { }
         List<Scored> scored = new ArrayList<>(candidates.size());
         for (AiDocEmbedding c : candidates) {
-            float[] v = fromJson(c.getVectorJson());
+            if (c == null || c.getDocId() == null || !approvedIds.contains(c.getDocId())) continue;
+            indexedIds.add(c.getDocId());
+            if (c.getChunkText() == null || c.getChunkText().isBlank()) {
+                issues.merge("EMPTY_CONTENT", 1, Integer::sum);
+                continue;
+            }
+            float[] v;
+            try {
+                v = JSON.readValue(c.getVectorJson(), float[].class);
+            } catch (Exception invalid) {
+                issues.merge("MALFORMED_VECTOR", 1, Integer::sum);
+                continue;
+            }
+            String issue = vectorIssue(v, qv.length);
+            if (issue != null) {
+                issues.merge(issue, 1, Integer::sum);
+                continue;
+            }
             double s = cosine(qv, v);
             if (s > 0) {
                 scored.add(new Scored(c, s));
             }
         }
+        int missing = approvedIds.size() - indexedIds.size();
+        if (missing > 0) issues.put("INDEX_NOT_READY", missing);
         scored.sort(Comparator.comparingDouble(Scored::score).reversed());
         StringBuilder sb = new StringBuilder();
         List<CitationSource> sources = new ArrayList<>();
@@ -331,10 +422,12 @@ public class AiDocEmbeddingService {
                 null, null, s.emb().getTitle(), AiDocumentService.STATUS_REVIEWED));
             hits++;
         }
-        if (hits == 0) {
-            return RetrievalContext.EMPTY;
+        if (hits == 0 && !issues.isEmpty()) {
+            throw new IllegalStateException("已审核文档索引不可用或不完整");
         }
-        return new RetrievalContext(hits, sb.length(), sb.toString(), sb.toString(), sources);
+        if (hits == 0) return RetrievalContext.EMPTY;
+        return new RetrievalContext(hits, sb.length(), sb.toString(), sb.toString(), sources,
+            issues.isEmpty() ? RetrievalStatus.SUCCESS : RetrievalStatus.PARTIAL, issues);
     }
 
     /**
@@ -450,12 +543,15 @@ public class AiDocEmbeddingService {
         }
     }
 
-    private static float[] fromJson(String vectorJson) {
-        try {
-            return JSON.readValue(vectorJson, float[].class);
-        } catch (Exception e) {
-            return new float[0];
+    private static String vectorIssue(float[] vector, int dimension) {
+        if (vector == null || vector.length == 0) return "EMPTY_VECTOR";
+        if (dimension >= 0 && vector.length != dimension) return "DIMENSION_MISMATCH";
+        double norm = 0;
+        for (float value : vector) {
+            if (!Float.isFinite(value)) return "NON_FINITE_VECTOR";
+            norm += (double) value * value;
         }
+        return norm == 0 ? "ZERO_NORM" : null;
     }
 
     /** 余弦相似度（维度不一致/零向量返回 -1，即不参与排序）。 */

@@ -16,7 +16,7 @@ raw:
 
 ### SystemApplicationRunner
 
-参见 [system-application-runner](../raw/system-source/system-application-runner.md)。
+参见 [system-application-runner](../../raw/system-source/system-application-runner.md)。
 
 ```java
 @Component
@@ -48,7 +48,7 @@ public class SystemApplicationRunner implements ApplicationRunner {
 
 ### SysUserImportListener（EasyExcel 集成）
 
-参见 [sys-user-import-listener](../raw/system-source/sys-user-import-listener.md)。
+参见 [sys-user-import-listener](../../raw/system-source/sys-user-import-listener.md)。
 
 ```java
 @Slf4j
@@ -86,7 +86,7 @@ public class SysUserImportListener implements ReadListener<SysUserImportVo> {
 
 ### UserActionListener（用户行为审计）
 
-参见 [user-action-listener](../raw/system-source/user-action-listener.md)。
+参见 [user-action-listener](../../raw/system-source/user-action-listener.md)。
 
 ```java
 @Component

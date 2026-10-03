@@ -10,6 +10,7 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.ruoyi.ipd.domain.AiDocEmbedding;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.domain.AiModelConfig;
 import org.ruoyi.ipd.mapper.AiDocEmbeddingMapper;
@@ -59,6 +60,12 @@ class AiDocEmbeddingServiceTest {
         aiGateway = mock(AiGateway.class);
         service = new AiDocEmbeddingService(embeddingMapper, documentMapper, modelConfigService, aiGateway);
         service.completeEmbedOnCallerForTest();
+        when(documentMapper.selectVersionTenant(101L)).thenReturn("000000");
+        when(documentMapper.lockVersion(101L)).thenReturn(doc("正文"));
+        var manager = mock(org.springframework.transaction.PlatformTransactionManager.class);
+        when(manager.getTransaction(any())).thenReturn(new org.springframework.transaction.support.SimpleTransactionStatus());
+        service.setIndexTransactionManager(manager);
+        when(embeddingMapper.insert(any(AiDocEmbedding.class))).thenReturn(1);
     }
 
 
@@ -83,7 +90,187 @@ class AiDocEmbeddingServiceTest {
 
     private static AiDocument doc(String content) {
         return AiDocument.builder().id(101L).projectId(9L).docType("PRD")
-            .title("需求文档").content(content).build();
+            .title("需求文档").content(content).status(AiDocumentService.STATUS_REVIEWED)
+            .versionNo(1).contentSha256(AiDocumentService.sha256Hex(content)).build();
+    }
+
+    @Test
+    void rebuildRejectsInvalidVectorsBeforeOpeningTransaction() {
+        var manager = mock(org.springframework.transaction.PlatformTransactionManager.class);
+        service.setIndexTransactionManager(manager);
+        stubEmbedEnabled("{}");
+        AiDocument document = reviewed("正文");
+        for (List<float[]> vectors : List.of(List.<float[]>of(), List.of(new float[]{1}),
+            List.of(new float[BuiltinEmbeddingModel.DIMENSION]))) {
+            when(aiGateway.embed(any(), anyList())).thenReturn(vectors);
+            assertThrows(IllegalStateException.class, () -> service.rebuildIndex(document, () -> "000000"));
+        }
+        when(aiGateway.embed(any(), anyList())).thenReturn(java.util.Collections.singletonList(null));
+        assertThrows(IllegalStateException.class, () -> service.rebuildIndex(document, () -> "000000"));
+        float[] nonFinite = healthyVector(); nonFinite[3] = Float.NaN;
+        when(aiGateway.embed(any(), anyList())).thenReturn(List.of(nonFinite));
+        assertThrows(IllegalStateException.class, () -> service.rebuildIndex(document, () -> "000000"));
+        verifyNoInteractions(manager);
+        verify(embeddingMapper, never()).delete(any());
+        verify(embeddingMapper, never()).insert(any(AiDocEmbedding.class));
+    }
+
+    @Test
+    void rebuildGeneratesOutsideTransactionAndRollsBackOnChangedDocument() {
+        var manager = mock(org.springframework.transaction.PlatformTransactionManager.class);
+        var tx = new org.springframework.transaction.support.SimpleTransactionStatus();
+        when(manager.getTransaction(any())).thenReturn(tx);
+        service.setIndexTransactionManager(manager);
+        stubEmbedEnabled("{}");
+        AiDocument original = reviewed("正文");
+        AiDocument changed = reviewed("被修改");
+        when(documentMapper.lockVersion(101L)).thenReturn(changed);
+        when(aiGateway.embed(any(), anyList())).thenAnswer(inv -> {
+            verifyNoInteractions(manager);
+            assertFalse(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive());
+            return List.of(healthyVector());
+        });
+        assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(original, () -> "000000"));
+        verify(manager).rollback(tx);
+        verifyNoInteractions(embeddingMapper);
+    }
+
+    @Test
+    void rebuildLocksAndAtomicallyReplacesAllOldModelChunksWithoutUpdatingDocument() {
+        var manager = mock(org.springframework.transaction.PlatformTransactionManager.class);
+        var tx = new org.springframework.transaction.support.SimpleTransactionStatus();
+        when(manager.getTransaction(any())).thenReturn(tx);
+        service.setIndexTransactionManager(manager);
+        stubEmbedEnabled("{}");
+        AiDocument original = reviewed("字".repeat(900));
+        when(documentMapper.lockVersion(101L)).thenReturn(original);
+        when(aiGateway.embed(any(), anyList())).thenReturn(List.of(healthyVector(), healthyVector()));
+        when(embeddingMapper.insert(any(AiDocEmbedding.class))).thenReturn(1);
+        assertEquals(2, service.rebuildIndex(original, () -> "000000"));
+        InOrder order = inOrder(aiGateway, manager, documentMapper, embeddingMapper);
+        order.verify(aiGateway).embed(any(), anyList());
+        order.verify(manager).getTransaction(any());
+        order.verify(documentMapper).lockVersion(101L);
+        order.verify(embeddingMapper).delete(org.mockito.ArgumentMatchers.argThat(w -> {
+            var wrapper = (com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) w;
+            String sql = wrapper.getSqlSegment();
+            return sql.contains("doc_id") && !sql.contains("embed_model");
+        }));
+        order.verify(embeddingMapper, times(2)).insert(any(AiDocEmbedding.class));
+        order.verify(manager).commit(tx);
+        verify(documentMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void rebuildRollbackRestoresOldCacheAfterSecondInsertFailureWithRealTransactionBoundary() {
+        List<String> cache = new java.util.ArrayList<>(List.of("old-display-model-cache"));
+        var manager = new org.springframework.transaction.support.AbstractPlatformTransactionManager() {
+            private List<String> before;
+            protected Object doGetTransaction() { return new Object(); }
+            protected void doBegin(Object tx, org.springframework.transaction.TransactionDefinition definition) {
+                before = List.copyOf(cache);
+            }
+            protected void doCommit(org.springframework.transaction.support.DefaultTransactionStatus status) { }
+            protected void doRollback(org.springframework.transaction.support.DefaultTransactionStatus status) {
+                cache.clear(); cache.addAll(before);
+            }
+        };
+        service.setIndexTransactionManager(manager);
+        stubEmbedEnabled("{}");
+        AiDocument document = reviewed("字".repeat(900));
+        when(documentMapper.lockVersion(101L)).thenReturn(document);
+        when(aiGateway.embed(any(), anyList())).thenAnswer(inv -> {
+            assertFalse(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive());
+            return List.of(healthyVector(), healthyVector());
+        });
+        when(embeddingMapper.delete(any())).thenAnswer(inv -> {
+            assertTrue(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive());
+            cache.clear(); return 1;
+        });
+        when(embeddingMapper.insert(any(AiDocEmbedding.class))).thenAnswer(inv -> {
+            if (!cache.isEmpty()) throw new IllegalStateException("second insert failure");
+            cache.add("new-chunk"); return 1;
+        });
+        assertThrows(IllegalStateException.class, () -> service.rebuildIndex(document, () -> "000000"));
+        assertEquals(List.of("old-display-model-cache"), cache);
+        assertFalse(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive());
+    }
+
+    @Test
+    void rebuildFailsClosedForRevokedPermissionStatusVersionTenantAndConfigDrift() {
+        stubEmbedEnabled("{}");
+        when(aiGateway.embed(any(), anyList())).thenReturn(List.of(healthyVector()));
+        AiDocument original = reviewed("正文");
+        for (AiDocument changed : List.of(reviewed("正文").setStatus("REJECTED"),
+            reviewed("正文").setVersionNo(2), reviewed("正文").setProjectId(77L))) {
+            when(documentMapper.lockVersion(101L)).thenReturn(changed);
+            assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(original, () -> "000000"));
+        }
+        when(documentMapper.lockVersion(101L)).thenReturn(original);
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(original, () -> {
+            if (calls.incrementAndGet() > 1) throw new IpdBusinessException(org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN);
+            return "000000";
+        }));
+        when(documentMapper.selectVersionTenant(101L)).thenReturn("other");
+        assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(original, () -> "000000"));
+        when(documentMapper.selectVersionTenant(101L)).thenReturn("000000");
+        when(aiGateway.embed(any(), anyList())).thenAnswer(inv -> {
+            stubEmbedEnabled(EMBED_CFG); return List.of(healthyVector());
+        });
+        assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(original, () -> "000000"));
+        verify(embeddingMapper, never()).delete(any());
+        verify(embeddingMapper, never()).insert(any(AiDocEmbedding.class));
+    }
+
+    @Test
+    void originalAsyncPathCannotReplaceCacheWhenAuthoritativeVersionIsRejected() {
+        stubEmbedEnabled("{}");
+        when(aiGateway.embed(any(), anyList())).thenReturn(List.of(healthyVector()));
+        when(documentMapper.lockVersion(101L)).thenReturn(reviewed("正文").setStatus("REJECTED"));
+        assertDoesNotThrow(() -> service.embedAsync(reviewed("正文")));
+        verify(documentMapper).lockVersion(101L);
+        verify(embeddingMapper, never()).delete(any());
+        verify(embeddingMapper, never()).insert(any(AiDocEmbedding.class));
+    }
+
+    @Test
+    void rebuildRejectsTamperedHashMissingDocumentAndExistingTransaction() {
+        stubEmbedEnabled("{}");
+        AiDocument doc = reviewed("正文"); doc.setContentSha256("tampered");
+        assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(doc, () -> "000000"));
+        verifyNoInteractions(aiGateway);
+        org.springframework.transaction.support.TransactionSynchronizationManager.setActualTransactionActive(true);
+        try {
+            assertThrows(IpdBusinessException.class,
+                () -> service.rebuildIndex(reviewed("正文"), () -> "000000"));
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.setActualTransactionActive(false);
+        }
+        when(aiGateway.embed(any(), anyList())).thenReturn(List.of(healthyVector()));
+        when(documentMapper.lockVersion(101L)).thenReturn(null);
+        assertThrows(IpdBusinessException.class, () -> service.rebuildIndex(reviewed("正文"), () -> "000000"));
+        verify(embeddingMapper, never()).delete(any());
+        verify(embeddingMapper, never()).insert(any(AiDocEmbedding.class));
+    }
+
+    @Test
+    void versionTenantQueryRequiresUndeletedDocumentAndProjectWithSameTenant() throws Exception {
+        String sql = String.join(" ", AiDocumentMapper.class.getMethod("selectVersionTenant", Long.class)
+            .getAnnotation(org.apache.ibatis.annotations.Select.class).value());
+        assertTrue(sql.contains("p.tenant_id = d.tenant_id"));
+        assertTrue(sql.contains("d.del_flag = '0'"));
+        assertTrue(sql.contains("p.del_flag = '0'"));
+    }
+
+    private static float[] healthyVector() {
+        float[] vector = new float[BuiltinEmbeddingModel.DIMENSION]; vector[0] = 1; return vector;
+    }
+
+    private static AiDocument reviewed(String content) {
+        AiDocument doc = doc(content); doc.setStatus(AiDocumentService.STATUS_REVIEWED);
+        doc.setVersionNo(1);
+        doc.setContentSha256(AiDocumentService.sha256Hex(content)); return doc;
     }
 
     // ---- 切片 ----
@@ -196,7 +383,7 @@ class AiDocEmbeddingServiceTest {
 
         // 归一化后经 embedSync 传递给 AiGateway 的 AiTestConfig.baseUrl 即为 base URL
         when(aiGateway.embed(any(AiTestConfig.class), anyList()))
-            .thenReturn(List.of(new float[]{1, 0}));
+            .thenReturn(List.of(healthyVector()));
         org.mockito.ArgumentCaptor<AiTestConfig> cap =
             org.mockito.ArgumentCaptor.forClass(AiTestConfig.class);
         service.embedSync(doc("正文"), cfg);
@@ -212,7 +399,7 @@ class AiDocEmbeddingServiceTest {
     void embedAsyncSkipsWhenRagOff() {
         stubEmbedEnabled("{}");
         when(aiGateway.embed(any(AiTestConfig.class), anyList()))
-            .thenReturn(List.of(new float[]{1f, 0f}));
+            .thenReturn(List.of(healthyVector()));
         service.embedAsync(doc("正文"));
         var captor = org.mockito.ArgumentCaptor.forClass(AiTestConfig.class);
         verify(aiGateway).embed(captor.capture(), anyList());
@@ -243,7 +430,7 @@ class AiDocEmbeddingServiceTest {
         when(modelConfigService.currentEnabled())
             .thenThrow(new IllegalStateException("no config"));
         when(aiGateway.embed(any(AiTestConfig.class), anyList()))
-            .thenReturn(List.of(new float[]{1f, 0f}));
+            .thenReturn(List.of(healthyVector()));
         assertDoesNotThrow(() -> service.embedAsync(doc("正文")));
         var captor = org.mockito.ArgumentCaptor.forClass(AiTestConfig.class);
         verify(aiGateway).embed(captor.capture(), anyList());
@@ -257,8 +444,8 @@ class AiDocEmbeddingServiceTest {
     @DisplayName("embedSync：gateway 失败返回 null → 不删旧片不插新片（保留现状）")
     void embedSyncFailureKeepsExisting() {
         when(aiGateway.embed(any(AiTestConfig.class), anyList())).thenReturn(null);
-        service.embedSync(doc("正文内容"), new AiDocEmbeddingService.EmbedEndpoint(
-            "http://embed.example.com/v1", "sk", "emb-1"));
+        assertThrows(IllegalStateException.class, () -> service.embedSync(doc("正文内容"),
+            new AiDocEmbeddingService.EmbedEndpoint("http://embed.example.com/v1", "sk-embed-key", "emb-1")));
         verify(embeddingMapper, never()).delete(any());
         verify(embeddingMapper, never()).insert(any(AiDocEmbedding.class));
     }
@@ -267,9 +454,11 @@ class AiDocEmbeddingServiceTest {
     @DisplayName("embedSync：成功 → doc 级先删后插（同 embedModel），片序 chunkSeq 从 0 连续")
     void embedSyncDeleteThenInsert() {
         when(aiGateway.embed(any(AiTestConfig.class), anyList()))
-            .thenReturn(List.of(new float[]{1, 0}, new float[]{0, 1}));
+            .thenReturn(List.of(healthyVector(), healthyVector()));
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.lockVersion(101L)).thenReturn(doc("字".repeat(900)));
         service.embedSync(doc("字".repeat(900)), new AiDocEmbeddingService.EmbedEndpoint(
-            "http://embed.example.com/v1", "sk", "emb-1"));
+            "http://embed.example.com/v1", "sk-embed-key", "emb-1"));
         InOrder order = inOrder(embeddingMapper);
         order.verify(embeddingMapper).delete(any());
         var cap = org.mockito.ArgumentCaptor.forClass(AiDocEmbedding.class);
@@ -277,7 +466,8 @@ class AiDocEmbeddingServiceTest {
         assertEquals(0, cap.getAllValues().get(0).getChunkSeq());
         assertEquals(1, cap.getAllValues().get(1).getChunkSeq());
         assertEquals("emb-1", cap.getAllValues().get(0).getEmbedModel());
-        assertEquals("[1.0,0.0]", cap.getAllValues().get(0).getVectorJson());
+        assertEquals("[" + "1.0," + "0.0,".repeat(BuiltinEmbeddingModel.DIMENSION - 2) + "0.0]",
+            cap.getAllValues().get(0).getVectorJson());
     }
 
     @Test
@@ -355,7 +545,8 @@ class AiDocEmbeddingServiceTest {
         assertTrue(ctx.chars() > 0);
 
         when(embeddingMapper.selectList(any())).thenReturn(List.of());
-        assertEquals(0, service.retrieveContext(9L, null, "查询").hits(), "候选空 → EMPTY");
+        assertThrows(org.ruoyi.ipd.common.IpdBusinessException.class,
+            () -> service.retrieveContext(9L, null, "查询"), "已审核但当前模型未索引必须可见失败");
     }
 
     @Test
@@ -418,7 +609,100 @@ class AiDocEmbeddingServiceTest {
         AiDocEmbedding bad = AiDocEmbedding.builder().docId(4L).projectId(9L).docType("PRD")
             .title("坏片").chunkSeq(0).chunkText("坏").embedModel("emb-1").vectorJson("not-json").build();
         when(embeddingMapper.selectList(any())).thenReturn(List.of(bad, good));
-        assertEquals(1, service.retrieveContext(9L, null, "查询").hits());
+        var result = service.retrieveContextStrict(9L, null, "查询");
+        assertEquals(1, result.hits());
+        assertEquals(AiDocEmbeddingService.RetrievalStatus.PARTIAL, result.status());
+        assertEquals(java.util.Map.of("MALFORMED_VECTOR", 1), result.issueCounts());
+        assertEquals(List.of("3"), result.sources().stream().map(AiDocEmbeddingService.CitationSource::documentId).toList());
+        assertFalse(result.citationText().contains("坏片"));
+        assertThrows(org.ruoyi.ipd.common.IpdBusinessException.class,
+            () -> service.retrieveContext(9L, null, "查询"));
+    }
+
+    @Test
+    void invalidQueryVectorsCannotBecomeNoHit() {
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(AiDocument.builder().id(3L).build()));
+        for (float[] query : List.of(new float[0], new float[]{0, 0},
+                new float[]{Float.NaN, 1}, new float[]{Float.POSITIVE_INFINITY, 1})) {
+            when(aiGateway.embed(any(AiTestConfig.class), anyList())).thenReturn(List.of(query));
+            assertThrows(IllegalStateException.class, () -> service.retrieveContextStrict(9L, null, "查询"));
+        }
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{1, 0}, new float[]{1, 0}));
+        assertThrows(IllegalStateException.class, () -> service.retrieveContextStrict(9L, null, "查询"));
+        verifyNoInteractions(embeddingMapper);
+    }
+
+    @Test
+    void damagedCandidatesAndMissingIndexesRemainVisible() {
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(
+            AiDocument.builder().id(3L).build(), AiDocument.builder().id(4L).build()));
+        when(aiGateway.embed(any(AiTestConfig.class), anyList())).thenReturn(List.of(new float[]{1, 0}));
+        var good = AiDocEmbedding.builder().docId(3L).chunkText("有效原句")
+            .vectorJson("[1,0]").build();
+        var reasons = java.util.Map.of("not-json", "MALFORMED_VECTOR", "[]", "EMPTY_VECTOR",
+            "null", "EMPTY_VECTOR", "[1]", "DIMENSION_MISMATCH", "[0,0]", "ZERO_NORM",
+            "[1e100,0]", "NON_FINITE_VECTOR");
+        reasons.forEach((json, reason) -> {
+            var bad = AiDocEmbedding.builder().docId(4L).chunkText("损坏内容").vectorJson(json).build();
+            when(embeddingMapper.selectList(any())).thenReturn(List.of(good, bad));
+            var partial = service.retrieveContextStrict(9L, null, "查询");
+            assertEquals(AiDocEmbeddingService.RetrievalStatus.PARTIAL, partial.status());
+            assertEquals(java.util.Map.of(reason, 1), partial.issueCounts());
+            assertFalse(partial.citationText().contains("损坏内容"));
+            when(embeddingMapper.selectList(any())).thenReturn(List.of(bad));
+            assertThrows(IllegalStateException.class, () -> service.retrieveContextStrict(9L, null, "查询"));
+        });
+        when(embeddingMapper.selectList(any())).thenReturn(List.of(good));
+        assertEquals(java.util.Map.of("INDEX_NOT_READY", 1),
+            service.retrieveContextStrict(9L, null, "查询").issueCounts());
+        when(documentMapper.selectList(any())).thenReturn(List.of(AiDocument.builder().id(3L).build()));
+        good.setVectorJson("[0,1]");
+        assertEquals(AiDocEmbeddingService.RetrievalStatus.NO_HIT,
+            service.retrieveContextStrict(9L, null, "查询").status());
+    }
+
+    @Test
+    void emptyCandidateContentNeverBecomesCitationOrSuccess() {
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(AiDocument.builder().id(3L).build()));
+        when(aiGateway.embed(any(AiTestConfig.class), anyList())).thenReturn(List.of(new float[]{1, 0}));
+        var good = AiDocEmbedding.builder().docId(3L).chunkText("有效原句").vectorJson("[1,0]").build();
+        for (String content : java.util.Arrays.asList(null, "", " \n\t")) {
+            var empty = AiDocEmbedding.builder().docId(3L).chunkText(content).vectorJson("[1,0]").build();
+            when(embeddingMapper.selectList(any())).thenReturn(List.of(empty));
+            assertThrows(IllegalStateException.class, () -> service.retrieveContextStrict(9L, null, "查询"));
+            assertThrows(org.ruoyi.ipd.common.IpdBusinessException.class,
+                () -> service.retrieveContext(9L, null, "查询"));
+            when(embeddingMapper.selectList(any())).thenReturn(List.of(empty, good));
+            var partial = service.retrieveContextStrict(9L, null, "查询");
+            assertEquals(1, partial.hits());
+            assertEquals(AiDocEmbeddingService.RetrievalStatus.PARTIAL, partial.status());
+            assertEquals(java.util.Map.of("EMPTY_CONTENT", 1), partial.issueCounts());
+            assertEquals(1, partial.sources().size());
+            assertTrue(partial.citationText().contains("有效原句"));
+            assertFalse(partial.citationText().contains("null"));
+        }
+    }
+
+    @Test
+    void finiteFloatMaximumVectorsRemainFiniteAndRetrievable() {
+        assertEquals(1.0, AiDocEmbeddingService.cosine(
+            new float[]{Float.MAX_VALUE, Float.MAX_VALUE},
+            new float[]{Float.MAX_VALUE, Float.MAX_VALUE}), 1e-12);
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(AiDocument.builder().id(3L).build()));
+        when(aiGateway.embed(any(AiTestConfig.class), anyList()))
+            .thenReturn(List.of(new float[]{Float.MAX_VALUE, Float.MAX_VALUE}));
+        var candidate = AiDocEmbedding.builder().docId(3L).chunkText("极值有效原句")
+            .vectorJson("[3.4028235e38,3.4028235e38]").build();
+        when(embeddingMapper.selectList(any())).thenReturn(List.of(candidate));
+        var result = service.retrieveContextStrict(9L, null, "查询");
+        assertEquals(AiDocEmbeddingService.RetrievalStatus.SUCCESS, result.status());
+        assertEquals(1, result.hits());
+        assertTrue(result.citationText().contains("极值有效原句"));
     }
 
     // ---- composePrompt（AiGenerationService 静态拼装） ----

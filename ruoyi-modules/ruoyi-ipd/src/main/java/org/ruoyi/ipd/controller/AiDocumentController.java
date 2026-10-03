@@ -99,6 +99,15 @@ public class AiDocumentController {
         return ApiV1Response.ok(aiDocumentService.review(versionId, actor.id()));
     }
 
+    /** 已审核版本的索引维护；复用原审核人员权限，但不触发审核状态流转。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/{id}/versions/{versionId}/rebuild-index")
+    public ApiV1Response<Integer> rebuildIndex(@PathVariable Long id, @PathVariable Long versionId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        requireVersionOnPathChain(id, versionId, actor);
+        return ApiV1Response.ok(aiDocumentService.rebuildIndexAuthorized(actor, versionId));
+    }
+
     /**
      * P1-3：按项目 ID 列 AI 文档（页14 项目详情-文档与交付物列表区）。
      * 权限码沿用 OPERATION_AI_DOCUMENT（ipd:ai-document:list，READ_SET 全员可见，对齐 versions/history/diff）。

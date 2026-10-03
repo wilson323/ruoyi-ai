@@ -16,6 +16,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.util.AuditHashChain;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.MDC;
@@ -70,6 +71,173 @@ public class AuditLogServiceImpl implements IAuditLogService {
     private final AuditLogMapper auditLogMapper;
     private final AuditChainHeadMapper chainHeadMapper;
     private final PersonMapper personMapper;
+
+    // ==================== 锚表判据（SEC-AUD-01 补：验链必须读锚行）====================
+    // 缺陷（2026-10-03）：三个验链出口（verifyChain / verifyChainStrict / verifyChainDetailed）
+    // 共用 verifyChainDetailed 的邻接哈希实现，全程不读 audit_log_chain_heads。锚表只在
+    // append / rebuildChain 被维护，验链侧一次都没读过 ⇒ 锚表对篡改完全无效，两类攻击可
+    // 静默通过「链完整」：
+    //   ① 删链尾 N 行：剩余行首尾仍邻接自洽（首行 prev 无前驱可验、末行 curr 无后继可验）；
+    //   ② 整表重排 / 尾部改写：攻击者按「prev=前驱 curr」重算全表哈希后逐行仍自洽。
+    // 修复 = 验链时同一次调用内读锚行，断言「锚表记录的链尾 == 表内实际链尾」。
+    // 事务语义（读取侧）：append 的锚 advance 与 audit_logs insert 在同一事务内提交，
+    // InnoDB MVCC 保证验链只可能看到「行与锚都已提交」或「两者都未提交」，读不到未提交锚。
+
+    /** 锚表判据结论码：锚行缺失，无法提供链尾证据（退化为邻接自洽，不编造断裂行）。 */
+    public static final String ANCHOR_MISSING = "ANCHOR_MISSING";
+    /** 锚表判据结论码：锚行存在但 last_seq 为空/0，且表内为空——空库病态，两侧一致故判通过。 */
+    public static final String ANCHOR_OK = "ANCHOR_OK";
+    /** 锚表判据结论码：锚表链尾 seq 大于表内实际链尾 seq——链尾被删（DELETE TAIL）。 */
+    public static final String ANCHOR_TRUNCATED = "ANCHOR_TRUNCATED";
+    /**
+     * 锚表判据结论码：表内链尾与锚表链尾不符——链尾被改写 / 整表重排 / 绕过 append 直写表。
+     * 两种形态：同 seq 不同 curr_hash，或表内链尾 seq 已超过锚表（锚被回退或未随写入推进）。
+     */
+    public static final String ANCHOR_TAIL_REWRITTEN = "ANCHOR_TAIL_REWRITTEN";
+    /** 锚表判据结论码：表内一行不剩而锚表仍记录着链——整表被清空。 */
+    public static final String ANCHOR_CLEARED = "ANCHOR_CLEARED";
+
+    /**
+     * 锚表判据快照（可区分两类篡改的结论码 + 证据四元组）。
+     *
+     * @param code           上列结论码之一
+     * @param anchorLastSeq  锚表 last_seq（锚行缺失时 null）
+     * @param anchorLastHash 锚表 last_hash（锚行缺失时 null）
+     * @param tableLastSeq   表内实际最大 seq（表空时 null）
+     * @param tableLastHash  表内实际最后一行的 curr_hash（表空时 null）
+     */
+    public record AnchorVerdict(String code, Long anchorLastSeq, String anchorLastHash,
+                                Long tableLastSeq, String tableLastHash) {
+        /** 锚证据与表内链尾是否一致（仅 {@link #ANCHOR_OK} 为真；{@code ANCHOR_MISSING} 不算一致，
+         *  但也不构成篡改证据——见 {@link #tampered()}）。 */
+        public boolean ok() {
+            return ANCHOR_OK.equals(code);
+        }
+
+        /** 锚表是否给出了「篡改」结论（截断 / 链尾被改写 / 整表被清空）。 */
+        public boolean tampered() {
+            return ANCHOR_TRUNCATED.equals(code)
+                || ANCHOR_TAIL_REWRITTEN.equals(code)
+                || ANCHOR_CLEARED.equals(code);
+        }
+    }
+
+    /**
+     * 带锚表判据的验链结果：行级判据（沿用 {@link AuditChainVerifyResult} 三条判据）
+     * ＋ 锚表判据（链尾一致性）。{@link #verdict()} 优先返回锚表结论码，使
+     * 「删链尾」与「整表重排」在结论上可区分，而非都退化成一个笼统的 BROKEN。
+     */
+    public record AnchoredChainVerifyResult(AuditChainVerifyResult chain, AnchorVerdict anchor) {
+        /** 行级判据结论（OK / HASH_BROKEN / GAP / BROKEN）。 */
+        public String chainVerdict() {
+            return chain.verdict();
+        }
+
+        /**
+         * 合并结论：锚表判据优先（锚给出篡改结论 ⇒ 一定是篡改，行级判据此时可能全绿——
+         * 这正是本缺陷的形态）；锚一致或锚缺失（无证据、非篡改）时退回行级三态结论。
+         */
+        public String verdict() {
+            return anchor.tampered() ? anchor.code() : chain.verdict();
+        }
+
+        /** 断裂行（行级 hashBroken + 锚不一致指向的链尾位，去重升序）。 */
+        public List<Long> mergedBroken() {
+            List<Long> merged = new ArrayList<>(chain.hashBroken());
+            merged.addAll(anchorBrokenSeqs(anchor));
+            return merged.stream().distinct().sorted().toList();
+        }
+    }
+
+    /**
+     * 锚表判据（SEC-AUD-01 补，2026-10-03）：锚表记录的链尾必须等于表内实际链尾。
+     *
+     * <p>注意「结尾方向」——判据不是「相等即通过」：
+     * <ul>
+     *   <li>锚 seq &gt; 表内最大 seq ⇒ {@code ANCHOR_TRUNCATED}。删链尾时锚表保留的是
+     *       <b>已不存在的旧尾巴</b>，其 seq 指向表内查无此行的位置，这是删尾的唯一指纹；</li>
+     *   <li>锚 seq == 表内最大 seq 但 last_hash != 链尾 curr_hash ⇒ {@code ANCHOR_TAIL_REWRITTEN}
+     *       （尾部被改写 / 整表重排后重算哈希）；</li>
+     *   <li>表内最大 seq &gt; 锚 seq ⇒ 同为 {@code ANCHOR_TAIL_REWRITTEN}（绕开 append 直写表、
+     *       或锚行被回拨）；</li>
+     *   <li>表空而锚有链 ⇒ {@code ANCHOR_CLEARED}（整表被清空）。</li>
+     * </ul>
+     *
+     * <p>与 {@link #rebuildChain()} 的关系：rebuild 按表内数据重算并把锚推到表内链尾，
+     * 故 rebuild 之后锚与表重新一致、验链判通过（本判据每次都现读锚与表，逻辑一致）。
+     * 反过来说 rebuild 是超管修复工具，能把「已被篡改的表」重新洗成自洽——本判据负责在
+     * rebuild <b>之前</b>把篡改喊出来，rebuild 的洗白属性属设计取舍，不由本处改动。
+     */
+    private AnchorVerdict checkAnchor(List<AuditLog> all) {
+        // mapper 缺失只可能出现在未注入的单元测试/裁剪装配里，容错退化为「无锚证据」，不抛 NPE
+        AuditChainHead head = chainHeadMapper == null ? null : chainHeadMapper.selectById(CHAIN_KEY_GLOBAL);
+        Long anchorSeq = head == null ? null : head.getLastSeq();
+        String anchorHash = head == null ? null : head.getLastHash();
+        AuditLog tail = all.isEmpty() ? null : all.get(all.size() - 1);
+        Long tableSeq = tail == null ? null : tail.getSeq();
+        String tableHash = tail == null ? null : tail.getCurrHash();
+        // 锚行缺失（未 sync-seed / 被清）：无链尾证据可断言，退化为邻接自洽判据，不编造断裂行
+        if (head == null || anchorSeq == null) {
+            return new AnchorVerdict(ANCHOR_MISSING, anchorSeq, anchorHash, tableSeq, tableHash);
+        }
+        if (all.isEmpty()) {
+            // 表空：锚 last_seq=0（未写过）算空链一致；锚有链尾则表被整表清空
+            return new AnchorVerdict(anchorSeq <= 0L ? ANCHOR_OK : ANCHOR_CLEARED,
+                anchorSeq, anchorHash, null, null);
+        }
+        if (anchorSeq > tableSeq) {
+            // 锚指向表内不存在的 seq —— 链尾被删（DELETE TAIL）的指纹
+            return new AnchorVerdict(ANCHOR_TRUNCATED, anchorSeq, anchorHash, tableSeq, tableHash);
+        }
+        if (anchorSeq < tableSeq) {
+            // 表比锚还长：绕开 append 直写表，或锚行被回拨（两者都算链尾被改写）
+            return new AnchorVerdict(ANCHOR_TAIL_REWRITTEN, anchorSeq, anchorHash, tableSeq, tableHash);
+        }
+        boolean hashMatch = nvl(anchorHash).equals(nvl(tableHash));
+        return new AnchorVerdict(hashMatch ? ANCHOR_OK : ANCHOR_TAIL_REWRITTEN,
+            anchorSeq, anchorHash, tableSeq, tableHash);
+    }
+
+    /**
+     * 带锚表判据的全链校验（2026-10-03 补，SEC-AUD-01）。
+     *
+     * <p>{@link #verifyChain()} / {@link #verifyChainStrict()} / {@link #verifyChainDetailed()}
+     * 三个历史出口全部委派到本方法，故三者一并获得「删链尾 / 整表重排不可绕过」的判据。
+     * 需要区分篡改类型时直接调本方法读 {@link AnchoredChainVerifyResult#verdict()}。
+     *
+     * <p><b>偏离既有约定之处（刻意）</b>：锚不一致的行被计入 {@code hashBroken}（而非 gaps），
+     * 因为锚证据与表内链尾不符就是篡改，且默认出口 {@link #verifyChain()} 只回报 hashBroken——
+     * 若归入 gaps，A 方案对 GAP 的宽容会让「删链尾」在默认出口上依旧显示「链完整」，即本缺陷原样。
+     * 代价是 {@code verdict()} 可能对不可 rebuild 修复的截断报 {@code HASH_BROKEN}，
+     * 故以 {@link AnchoredChainVerifyResult#verdict()} 的锚表结论码为准。
+     *
+     * <p><b>读快照一致性（2026-10-03 补）</b>：本方法的两次读（{@code selectList(audit_logs)}
+     * 与 {@code chainHeadMapper.selectById}）必须落在同一一致性快照内。否则若这两次读夹在一次并发
+     * {@link #append} 提交中间（先读表、后读锚），会看到「append 前的表 + append 后的锚」而误报
+     * {@link #ANCHOR_TRUNCATED}——假告警。{@code append} 的推锚与插行同属一个
+     * {@link Propagation#REQUIRES_NEW} 事务，故只加事务边界（不改任何写入侧语义）即可让两次读同快照。
+     * 注意：注解必须落在<b>被外部调用的最外层方法</b>上——三个历史出口之间是 self-invocation，
+     * 不走 Spring 代理，注解加在内部方法上对本调用链无效。
+     */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public AnchoredChainVerifyResult verifyChainAnchored() {
+        List<AuditLog> all = auditLogMapper.selectList(orderBySeqAsc());
+        AuditChainVerifyResult chain = verifyRows(all);
+        AnchorVerdict anchor = checkAnchor(all);
+        if (anchor.ok()) {
+            return new AnchoredChainVerifyResult(chain, anchor);
+        }
+        // 锚不一致：把受影响的链尾行并入 hashBroken 汇入旧出口（见上方「偏离既有约定」说明）
+        List<Long> hashBroken = new ArrayList<>(chain.hashBroken());
+        for (Long seq : anchorBrokenSeqs(anchor)) {
+            if (!hashBroken.contains(seq)) {
+                hashBroken.add(seq);
+            }
+        }
+        hashBroken.sort(Long::compareTo);
+        return new AnchoredChainVerifyResult(
+            new AuditChainVerifyResult(List.copyOf(hashBroken), chain.gaps(), chain.total()), anchor);
+    }
 
     /** 追加一条审计（独立事务：业务失败不回滚审计；①②③ P 变体：锚行悲观锁原子分配 seq/prevHash） */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
@@ -200,7 +368,13 @@ public class AuditLogServiceImpl implements IAuditLogService {
      * HTTP 端点 {@code GET /api/v1/audit-logs/verify} 的 {@code broken} 字段据此不再含 GAP，为兼容
      * 旧消费者如需 GAP 同时返回请改调 verifyChainStrict()。本表与原语义不是洞洞不可逆——一旦真发现
      * 「以 GAP 伪装篡改」场景随时可回滚为 verifyChainStrict()。
+     *
+     * <p><b>SEC-AUD-01 补（2026-10-03）</b>：本出口已含锚表判据（删链尾 / 整表重排 / 链尾被改写 /
+     * 整表被清空），这四类锚不一致的结论位计入 {@code hashBroken}——即默认出口也会报，不会再
+     * 对「链尾被删」返回「链完整」。代价是这类不可 rebuild 修复的篡改也会落在 hashBroken 里，
+     * 需区分类型时调 {@link #verifyChainAnchored()} 读其结论码。
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<Long> verifyChain() {
         return verifyChainDetailed().hashBroken();
     }
@@ -212,6 +386,7 @@ public class AuditLogServiceImpl implements IAuditLogService {
      * 默认场景请用 {@link #verifyChain()}。需区分「哈希不符」与「seq 缺行」时请用
      * {@link #verifyChainDetailed()}。
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<Long> verifyChainStrict() {
         return verifyChainDetailed().mergedBroken();
     }
@@ -229,8 +404,16 @@ public class AuditLogServiceImpl implements IAuditLogService {
      * <p>注：同一行可同时入两类（例如缺行且哈希也不符），故 {@code mergedBroken()}
      * 需去重才能等价于原 {@code broken}。
      */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AuditChainVerifyResult verifyChainDetailed() {
-        List<AuditLog> all = auditLogMapper.selectList(orderBySeqAsc());
+        return verifyChainAnchored().chain();
+    }
+
+    /**
+     * 行级判据（原先 {@code verifyChainDetailed} 的全部内容，原样搬出；DEF-9 三条判据不变）。
+     * 与锚表判据分离，使 {@link #verifyChainAnchored()} 能「行级 + 锚表」两级分别报告。
+     */
+    private static AuditChainVerifyResult verifyRows(List<AuditLog> all) {
         if (all.isEmpty()) {
             return new AuditChainVerifyResult(List.of(), List.of(), 0);
         }
@@ -258,6 +441,19 @@ public class AuditLogServiceImpl implements IAuditLogService {
             expectSeq = log.getSeq() + 1;
         }
         return new AuditChainVerifyResult(hashBroken, gaps, all.size());
+    }
+
+    /** 锚表判据指向的「受影响的链尾位」：改写类指表内链尾，截断/清空类指锚表记录的链尾 seq。 */
+    private static List<Long> anchorBrokenSeqs(AnchorVerdict anchor) {
+        if (ANCHOR_TAIL_REWRITTEN.equals(anchor.code()) && anchor.tableLastSeq() != null) {
+            return List.of(anchor.tableLastSeq());
+        }
+        if ((ANCHOR_TRUNCATED.equals(anchor.code()) || ANCHOR_CLEARED.equals(anchor.code()))
+            && anchor.anchorLastSeq() != null) {
+            // 截断缺失的正是「表内最大 seq+1 .. 锚 seq」这一段，表内无行可指；以锚 seq 作代表位
+            return List.of(anchor.anchorLastSeq());
+        }
+        return List.of();
     }
 
     /**

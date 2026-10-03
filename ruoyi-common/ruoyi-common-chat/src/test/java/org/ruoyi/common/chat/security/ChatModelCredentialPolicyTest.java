@@ -21,7 +21,7 @@ class ChatModelCredentialPolicyTest {
     @Test
     void nonAllowlistedProviderIsNoLongerMislabelledAsDeepSeekFailure() {
         assertDoesNotThrow(() -> ChatModelCredentialPolicy.requireTrustedConfiguration(
-            "minimax", "MiniMax-M2", "https://api.minimaxi.com/v1", "test-api-key"));
+            "minimax", "MiniMax-M2", "https://api.minimaxi.com/v1", "env:MINIMAX_API_KEY"));
         assertDoesNotThrow(() -> ChatModelCredentialPolicy.requireTrustedConfiguration(
             "qianwen", "qwq-plus-latest", "https://dashscope.aliyuncs.com/compatible-mode/v1",
             "sk-not-an-env-reference"));

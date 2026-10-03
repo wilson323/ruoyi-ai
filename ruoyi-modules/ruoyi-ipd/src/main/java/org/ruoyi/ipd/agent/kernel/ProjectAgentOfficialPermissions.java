@@ -14,7 +14,7 @@ public final class ProjectAgentOfficialPermissions {
     private static final Set<String> WORKSPACE_TOOLS = Set.of(
         "read_file", "write_file", "edit_file", "grep_files", "glob_files", "list_files", "execute",
         "web_fetch", "web_search", "memory_search", "memory_get", "memory_save", "session_search",
-        "session_list", "session_history", "deliver_artifact", "get_pending_completion");
+        "session_list", "session_history", "deliver_artifact", "get_pending_completion", ProjectAgentOutputContract.CLARIFICATION_TOOL);
 
     private ProjectAgentOfficialPermissions() { }
 

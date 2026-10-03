@@ -17,6 +17,14 @@ public final class ProjectAgentViews {
     private ProjectAgentViews() {
     }
 
+    /** Boxed nullable cursors remain JSON numbers despite the primary mapper's Long ID serializer. */
+    public static final class SequenceNumberSerializer extends com.fasterxml.jackson.databind.JsonSerializer<Long> {
+        @Override public void serialize(Long value, com.fasterxml.jackson.core.JsonGenerator generator,
+                com.fasterxml.jackson.databind.SerializerProvider provider) throws java.io.IOException {
+            generator.writeNumber(value);
+        }
+    }
+
     /**
      * Date → UTC ISO-8601（null 透传）。
      *
@@ -60,7 +68,9 @@ public final class ProjectAgentViews {
     /** #3 运行详情。 */
     public record Run(String runId, String projectId, String agentId, String status, String actionCode,
                       ConfigSnapshot configSnapshot, String errorCode, String createdAt, String finishedAt,
-                      List<ArtifactArchive> artifactArchives, Long pauseSeq) {
+                      List<ArtifactArchive> artifactArchives,
+                      @com.fasterxml.jackson.databind.annotation.JsonSerialize(using = SequenceNumberSerializer.class)
+                      Long pauseSeq) {
         public Run(String runId, String projectId, String agentId, String status, String actionCode,
                    ConfigSnapshot configSnapshot, String errorCode, String createdAt, String finishedAt,
                    List<ArtifactArchive> artifactArchives) {
@@ -99,7 +109,55 @@ public final class ProjectAgentViews {
                                  String previousRunId, String targetDocumentId, String baseVersionId,
                                  String aguiInputDigest, String requirementId, String productLineId,
                                  List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools,
-                                 List<String> executionToolIds) {
+                                 List<String> executionToolIds,
+                                 org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot modelFingerprint,
+                                 Integer modelIdentityVersion, String fallbackModelConfigId, Integer outputContractVersion) {
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                List<SkillRef> skills, List<String> toolIds, String previousRunId, String targetDocumentId,
+                String baseVersionId, String aguiInputDigest, String requirementId, String productLineId,
+                List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools, List<String> executionToolIds,
+                org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot modelFingerprint,
+                Integer modelIdentityVersion, String fallbackModelConfigId) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds, previousRunId,
+                targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, null);
+        }
+        public ConfigSnapshot withOutputContractVersion(Integer version) {
+            return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, version);
+        }
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds, String previousRunId,
+                              String targetDocumentId, String baseVersionId, String aguiInputDigest,
+                              String requirementId, String productLineId,
+                              List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools,
+                              List<String> executionToolIds,
+                              org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot modelFingerprint) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds, previousRunId,
+                targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, modelFingerprint, null, null);
+        }
+        public ConfigSnapshot withModelIdentityVersion(Integer version, String fallbackId) {
+            return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, modelFingerprint, version, fallbackId, outputContractVersion);
+        }
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                              List<SkillRef> skills, List<String> toolIds, String previousRunId,
+                              String targetDocumentId, String baseVersionId, String aguiInputDigest,
+                              String requirementId, String productLineId,
+                              List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools,
+                              List<String> executionToolIds) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds, previousRunId,
+                targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, null);
+        }
+        public ConfigSnapshot withModelFingerprint(org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot fingerprint) {
+            return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, fingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion);
+        }
         public ConfigSnapshot {
             serverFrontendTools = serverFrontendTools == null ? List.of() : List.copyOf(serverFrontendTools);
             executionToolIds = executionToolIds == null ? null : List.copyOf(executionToolIds);
@@ -117,7 +175,7 @@ public final class ProjectAgentViews {
         public ConfigSnapshot withExecutionToolIds(List<String> ids) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
                 previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
-                serverFrontendTools, ids);
+                serverFrontendTools, ids, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion);
         }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                               List<SkillRef> skills, List<String> toolIds,
@@ -128,7 +186,7 @@ public final class ProjectAgentViews {
         }
         public ConfigSnapshot withServerFrontendTools(List<io.agentscope.core.agui.model.AguiTool> tools) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
-                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId, tools, executionToolIds);
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId, tools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion);
         }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                               List<SkillRef> skills, List<String> toolIds,

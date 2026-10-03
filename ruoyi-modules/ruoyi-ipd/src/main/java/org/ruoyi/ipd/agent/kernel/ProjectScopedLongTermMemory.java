@@ -40,12 +40,65 @@ import reactor.core.scheduler.Schedulers;
  * <p><b>权威性红线</b>：召回文本一律带「非权威个人工作笔记」标注；
  * IPD 权限 / 动作审批 / 文档审核 / Gate 链路<b>不查本表</b>（AGENTS.md:77）。
  *
- * <p><b>失败语义</b>：合法空结果不注入记忆；抽取、配置和 DB 失败向主运行传播脱敏错误，禁止静默降级。
+ * <p><b>失败语义（2026-10-03 run 2106378468009717761 实测后修订）</b>：合法空结果不注入记忆。
+ * 抽取、配置和 DB 失败<b>不再改写业务终态</b>——该轮回答在抽取启动前已经推送给用户并落库，
+ * 记忆是回答<b>之后</b>的副作用，失败不得把已交付的结果倒改成失败（旧实现正是如此：
+ * 抽取 30 秒超时 → 主流抛错 → FAILED/STREAM_ERROR，对外文案「模型输出中断」与事实相反）。
+ * 改为：失败由 {@link ProjectAgentLongTermMemoryMiddleware} 写 {@code MEMORY_RECEIPT} 持久回执
+ * （状态、错误类别、是否可重试），既不吞掉也不伪装成功，可按回执补写。
+ * 召回仍在调用前发生，其失败仍应向主运行传播——它影响的是本轮回答质量，不是事后效果。
  */
 public final class ProjectScopedLongTermMemory implements LongTermMemory {
 
     private static final Logger log = LoggerFactory.getLogger(ProjectScopedLongTermMemory.class);
-    private static final Duration EXTRACT_TIMEOUT = Duration.ofSeconds(30);
+
+    /**
+     * 单个流片段之间的空闲期限：每来一片自动重置（javap 实测 reactor-core 3.8.7 的
+     * {@code Flux.timeout(Duration)} 语义即「两片之间最长间隔」）。<b>第一片也用同一个期限</b>。
+     *
+     * <p>取值依据与一次自我修正：初版设 5 秒，依据是「健康调用耗时几乎全花在持续吐字上」。
+     * 修复后真实服务连续 3 次运行的后台模型调用实测为 3/9/14、5/7/11、3/8/10 秒，**最长 14 秒**，
+     * 且零重试（5 秒期限一次都没被触发）。但这些只是<b>总耗时</b>，不等于片间间隔，
+     * 也没有首 token 延迟的实测值；短抽取提示词完全可能出现 &gt;5 秒的首 token 等待。
+     * 那样会误杀一次<b>健康</b>调用——比原缺陷隐蔽，因为它只表现为少写一条记忆、不再报错。
+     * 故放宽到 10 秒：仍比旧值 30 秒快 3 倍（挂死检测从 30 秒降到 10 秒），
+     * 又对健康调用留出足够余量。
+     *
+     * <p>误判的爆炸半径已被上一处修复封顶：最坏 10s×2 + 0.5s = 20.5 秒后写 WRITE_FAILED 回执，
+     * <b>不再改写业务终态</b>。宁可少写一条可重试的记忆，不可把已交付的回答判成失败。
+     */
+    private static final Duration EXTRACT_IDLE_TIMEOUT = Duration.ofSeconds(10);
+
+    /**
+     * 整轮抽取（含重试）的兜底总期限——<b>安全网，不是发现机制</b>。
+     *
+     * <p>分工必须说清，否则会把两个期限的作用搞反：
+     * <ul>
+     *   <li>{@link #EXTRACT_IDLE_TIMEOUT} 抓「死流」：连一片数据都不来，10 秒内暴露并进入重试。
+     *       挂死的发现速度<b>只由它决定</b>。</li>
+     *   <li>本总期限只抓「活着但异常慢」：每片都来、但整体拖很久。它对挂死发现速度<b>毫无贡献</b>。</li>
+     * </ul>
+     * 因此把它设小没有任何好处，只会让健康但偏慢的抽取被误杀。
+     *
+     * <p>取值依据：换包后真实服务实测两次记忆抽取耗时 14 秒与 11 秒（按 inputTokens 463/487 与
+     * MEMORY_RECEIPT 落库时刻双重佐证归属）。空闲 10s × 1 次重试 + 0.5s 退避的理论上界是 20.5 秒，
+     * 本总期限取 45 秒，使其在健康区间<b>永远不会被触及</b>，只在真正失控时才兜底。
+     * 初版 25 秒时余量仅 4.5 秒——一次 20 秒的健康抽取就会被砍成假的 WRITE_FAILED 回执，
+     * 业务终态虽不受影响（那正是本次修复的价值），但会误导后续「按回执补写」的判断。
+     */
+    private static final Duration EXTRACT_TIMEOUT = Duration.ofSeconds(45);
+
+    /**
+     * 抽取的<b>重试</b>次数（不含首次）。总模型调用数 = 本值 + 1。
+     *
+     * <p>命名刻意用「重试」而不是「尝试」：Reactor 的 {@code Retry.fixedDelay(n, …)} 里 n 是重试次数，
+     * 曾因按「总次数」理解而把最坏耗时算成 20.5s、实际却是 31s，超出兜底总期限而被中途截断。
+     * 当前取值使最坏耗时 = 2×10s + 1×0.5s = 20.5s &lt; {@link #EXTRACT_TIMEOUT} 的 25s。
+     *
+     * <p>重放安全：抽取只读模型、只写按内容 SHA 去重的表，重放不产生第二行。
+     */
+    private static final int EXTRACT_RETRIES = 1;
+    private static final Duration RETRY_BACKOFF = Duration.ofMillis(500);
 
     /** 抽取结果的行分隔符与前缀，模型必须严格照此输出。 */
     private static final String ITEM_PREFIX = "MEM|";
@@ -75,16 +128,20 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
      * 运行正常结束后由官方 {@code MiddlewareBase} 适配调用：抽取可复用事实与用户偏好并入库。
      *
      * <p>幂等：同一段来源文本经 SHA-256 摘要后在作用域内唯一，重放不产生第二行。
+     * 因此空闲挂死后按 {@link #EXTRACT_RETRIES} 有限重试是安全的。
      */
     @Override
     public Mono<Void> record(List<Msg> messages) {
         return Mono.<Void>defer(() -> {
             log.info("[ipd-memory] record triggered run={} messages={}",
                 runId, messages == null ? 0 : messages.size());
-            if (messages == null || messages.isEmpty()) return Mono.empty();
-            if (model == null) return Mono.error(new IllegalStateException("Memory extraction model is unavailable"));
+            if (messages == null || messages.isEmpty()) { lastOutcome = new RecordOutcome(0, 0, null); return Mono.empty(); }
+            if (model == null) {
+                lastOutcome = new RecordOutcome(0, 0, new IllegalStateException("Memory extraction model is unavailable"));
+                return Mono.error(lastOutcome.failure());
+            }
             String transcript = render(messages);
-            if (transcript.isBlank()) return Mono.empty();
+            if (transcript.isBlank()) { lastOutcome = new RecordOutcome(0, 0, null); return Mono.empty(); }
             return extract(transcript).flatMap(items -> Mono.fromRunnable(() -> {
                 int saved = 0;
                 for (String[] item : items) {
@@ -95,11 +152,28 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
                         .status(IpdAgentMemory.STATUS_CANDIDATE).delFlag("0").build();
                     saved += mapper.insertIgnoreDuplicate(memory);
                 }
+                lastOutcome = new RecordOutcome(items.size(), saved, null);
                 log.info("[ipd-memory] run={} project={} person={} extracted={} saved={}",
                     runId, projectId, personId, items.size(), saved);
             }).subscribeOn(Schedulers.boundedElastic()).then());
-        }).timeout(EXTRACT_TIMEOUT).onErrorMap(e -> memoryFailure("record", e));
+        }).timeout(EXTRACT_TIMEOUT)
+          .onErrorMap(e -> {
+              if (lastOutcome == null || lastOutcome.failure() == null) lastOutcome = new RecordOutcome(0, 0, e);
+              return memoryFailure("record", e);
+          });
     }
+
+    /** 抽取与入库的结果快照；{@link #record} 终止后读取，由调用方写持久回执。 */
+    public record RecordOutcome(int extracted, int saved, Throwable failure) {
+        public boolean written() { return failure == null; }
+    }
+
+    /**
+     * 最近一次 {@link #record} 的结果。{@code record} 的信号终止先于调用方读到本字段，
+     * 读到的必然是本次而非上一次的结局。
+     */
+    public RecordOutcome lastOutcome() { return lastOutcome; }
+    private volatile RecordOutcome lastOutcome;
 
     /**
      * 运行开始前召回本人在本项目的记忆，供模型参考。
@@ -118,6 +192,22 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
             })
             .onErrorMap(e -> memoryFailure("retrieve", e))
             .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    /**
+     * 只重试「传输/超时」类故障：它们换个连接通常就成功。认证、鉴权、额度、参数错误重试
+     * 只会把同一个确定性失败重复打三遍并推迟回执，必须第一次就如实记账。
+     */
+    private static boolean isRetryableExtractionFailure(Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current instanceof java.util.concurrent.TimeoutException
+                || current instanceof java.io.IOException
+                || current instanceof java.net.http.HttpTimeoutException) {
+                return true;
+            }
+            if (current.getCause() == current) break;
+        }
+        return false;
     }
 
     private IllegalStateException memoryFailure(String operation, Throwable failure) {
@@ -161,7 +251,13 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
         List<Msg> input = List.of(
             Msg.builder().role(MsgRole.USER).textContent(prompt).build());
         return reactor.core.publisher.Flux.defer(() -> model.stream(input, List.<ToolSchema>of(), null))
-            .timeout(EXTRACT_TIMEOUT)
+            // javap 实测 reactor-core 3.8.7：Flux.timeout(Duration) 本身就是「两片之间的空闲期限」，
+            // 每来一片自动重置。旧值 30 秒即空转 30 秒；调到 5 秒让传输停顿立刻暴露。
+            .timeout(EXTRACT_IDLE_TIMEOUT)
+            .retryWhen(reactor.util.retry.Retry.fixedDelay(EXTRACT_RETRIES, RETRY_BACKOFF)
+                .filter(ProjectScopedLongTermMemory::isRetryableExtractionFailure)
+                .doBeforeRetry(signal -> log.warn("[ipd-memory] extraction retry run={} attempt={} errorType={}",
+                    runId, signal.totalRetries() + 1, signal.failure().getClass().getSimpleName())))
             .collect(StringBuilder::new, this::appendText)
             .map(out -> {
                 List<String[]> items = new ArrayList<>();

@@ -12,6 +12,8 @@ import org.ruoyi.ipd.domain.RecoveryWarning;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ReceiptLedgerMapper;
 import org.ruoyi.ipd.mapper.RecoveryWarningMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +30,7 @@ import java.util.List;
  *
  * <p>核心契约：
  * <ul>
- *   <li>{@link #checkAndGenerate(LocalDate)} — 扫描所有上市后未满 90 日的项目，
+ *   <li>{@link #checkAndGenerate(IpdActor, LocalDate)} — 扫描归属范围内上市后未满 90 日的项目，
  *       计算回款比例，低于阈值（默认 0.25）写入 recovery_warnings（幂等：同日 (projectId, warningDate) 跳过）</li>
  *   <li>{@link #list(Long)} — 按项目列出预警（status filter 可选）</li>
  * </ul>
@@ -73,14 +75,22 @@ public class RecoveryWarningService implements IRecoveryWarningService {
     /**
      * 扫描所有上市后未满 90 日的项目，回款比例低于阈值的写入预警表。
      *
+     * <p>归属收口：actor 由控制器从会话传入（不接受客户端入参）。SUPER_ADMIN 扫全库；
+     * 其他角色（含 GROUP_LEADER）只扫 main_group_id 等于自己组的项目，
+     * 避免组长跨组批量写别人项目的预警行。
+     *
+     * @param actor 服务端会话身份
      * @param today 扫描当日（可空；为空时取系统当前日期）
      * @return 新增预警条数（幂等去重后）
      */
     @Transactional(rollbackFor = Exception.class)
-    public int checkAndGenerate(LocalDate today) {
+    public int checkAndGenerate(IpdActor actor, LocalDate today) {
+        IpdIdorGuard.requireAuthenticated(actor);
         LocalDate scanDate = today != null ? today : today();
         BigDecimal threshold = readThreshold();
-        log.info("90日回款预警扫描开始 scanDate={} threshold={}", scanDate, threshold);
+        boolean allGroups = "SUPER_ADMIN".equals(actor.role());
+        log.info("90日回款预警扫描开始 scanDate={} threshold={} actorGroup={} allGroups={}",
+            scanDate, threshold, actor.groupId(), allGroups);
 
         // 1) 取所有上市日期 ≤ scanDate 且 ≥ scanDate - 90 日的项目（已上市但未满 90 日）
         LocalDate minLaunch = scanDate.minusDays(WINDOW_DAYS - 1L); // 上市第 90 日仍计入
@@ -94,6 +104,12 @@ public class RecoveryWarningService implements IRecoveryWarningService {
 
         int saved = 0;
         for (Project project : projects) {
+            // 归属闸在写库前：非超管不得触达他组项目的预警行（fail-closed，组不匹配即跳过）
+            if (!allGroups && (actor.groupId() == null
+                || !actor.groupId().equals(project.getMainGroupId()))) {
+                log.debug("跳过项目 projectId={}：非本组项目", project.getId());
+                continue;
+            }
             if (project.getTargetSalesAmount() == null
                 || project.getTargetSalesAmount().compareTo(BigDecimal.ZERO) <= 0) {
                 log.debug("跳过项目 projectId={}：targetSalesAmount 为空/非正",

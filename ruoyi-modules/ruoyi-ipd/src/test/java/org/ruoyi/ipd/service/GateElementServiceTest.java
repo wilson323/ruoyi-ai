@@ -216,4 +216,27 @@ class GateElementServiceTest {
         assertThat(out.getIsVeto()).isEqualTo("1");
         assertThat(out.getVetoDualRequired()).isEqualTo("1");
     }
+    @Test void businessListExcludesEnabledDraftAndKeepsPublishedCustom() {
+        var assistant = new org.apache.ibatis.builder.MapperBuilderAssistant(
+            new com.baomidou.mybatisplus.core.MybatisConfiguration(), "gate-business-list-fixture");
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(assistant, GateElement.class);
+        var rows = java.util.List.of(
+            e("G1-1").setStatus("published").setEnabled("1"),
+            e("CUSTOM-1").setStatus("published").setEnabled("1"),
+            e("G1-DRAFT-1").setStatus("draft").setEnabled("1"),
+            e("CUSTOM-OFF").setStatus("published").setEnabled("0"));
+        when(mapper.selectList(any(LambdaQueryWrapper.class))).thenAnswer(call -> {
+            LambdaQueryWrapper<GateElement> query = call.getArgument(0);
+            String sql = query.getSqlSegment();
+            var values = query.getParamNameValuePairs().values();
+            return rows.stream().filter(row -> "1".equals(row.getEnabled()))
+                .filter(row -> !sql.contains("status =") || values.contains(row.getStatus())).toList();
+        });
+        assertThat(service.listByGate("G1")).extracting(GateElement::getElementCode)
+            .containsExactly("G1-1", "CUSTOM-1");
+        var captured = org.mockito.ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        Mockito.verify(mapper).selectList(captured.capture());
+        assertThat(captured.getValue().getSqlSegment()).contains("status =", "enabled =", "gate_code =");
+        assertThat(captured.getValue().getParamNameValuePairs().values()).contains("published", "1", "G1");
+    }
 }

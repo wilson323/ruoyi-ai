@@ -15,9 +15,7 @@ public record HarnessToolEffect(
     long settledAt,
     String resultMessageId,
     String error,
-    String committedResult,
-    HarnessEvent controlEvent,
-    boolean controlEventPublished
+    String committedResult
 ) {
 
     private static final String TERMINAL_CLOSURE_PREFIX = "terminal-closure-effect-";
@@ -32,7 +30,7 @@ public record HarnessToolEffect(
         }
         if (status == HarnessToolEffectStatus.PENDING
             && (settledAt != 0 || resultMessageId != null || error != null
-            || committedResult != null || controlEvent != null || controlEventPublished)) {
+            || committedResult != null)) {
             throw new IllegalArgumentException("Pending tool effect cannot have a settlement");
         }
         if (status == HarnessToolEffectStatus.COMMITTED
@@ -48,23 +46,8 @@ public record HarnessToolEffect(
         }
         if (status == HarnessToolEffectStatus.ABANDONED
             && (settledAt < startedAt || error == null || error.isBlank()
-            || committedResult != null || controlEvent != null || controlEventPublished)) {
+            || committedResult != null)) {
             throw new IllegalArgumentException("Abandoned tool effect requires an error");
-        }
-        if (controlEventPublished && controlEvent == null) {
-            throw new IllegalArgumentException(
-                "Published control event marker requires its durable event draft");
-        }
-        if (controlEvent != null && (committedResult == null || committedResult.isBlank()
-            || (status != HarnessToolEffectStatus.COMMITTED
-            && status != HarnessToolEffectStatus.SETTLED))) {
-            throw new IllegalArgumentException(
-                "Control event outbox requires a committed control result");
-        }
-        if (controlEvent != null && (controlEvent.sequence() != 0
-            || !toolCallId.equals(controlEvent.toolCallId()))) {
-            throw new IllegalArgumentException(
-                "Control event outbox must retain the exact call-bound event draft");
         }
     }
 
@@ -73,7 +56,7 @@ public record HarnessToolEffect(
                                             long now) {
         return new HarnessToolEffect(UUID.randomUUID().toString(), toolCallId, toolName,
             argumentsSha256, replaySafe, HarnessToolEffectStatus.PENDING, now, 0, null, null,
-            null, null, false);
+            null);
     }
 
     /** Durable intent used when terminalization, rather than a tool executor, owns the result. */
@@ -81,7 +64,7 @@ public record HarnessToolEffect(
                                                            String argumentsSha256, long now) {
         return new HarnessToolEffect(TERMINAL_CLOSURE_PREFIX + UUID.randomUUID(), toolCallId,
             toolName, argumentsSha256, false, HarnessToolEffectStatus.PENDING, now, 0, null,
-            null, null, null, false);
+            null, null);
     }
 
     public boolean terminalClosureIntent() {
@@ -103,13 +86,8 @@ public record HarnessToolEffect(
     }
 
     public HarnessToolEffect commit(String serializedResult, long now) {
-        return commit(serializedResult, null, now);
-    }
-
-    public HarnessToolEffect commit(String serializedResult, HarnessEvent event, long now) {
         if (status == HarnessToolEffectStatus.COMMITTED
-            && committedResult.equals(serializedResult)
-            && java.util.Objects.equals(controlEvent, event)) {
+            && committedResult.equals(serializedResult)) {
             return this;
         }
         requirePending("commit");
@@ -118,7 +96,7 @@ public record HarnessToolEffect(
         }
         return new HarnessToolEffect(effectId, toolCallId, toolName, argumentsSha256,
             replaySafe, HarnessToolEffectStatus.COMMITTED, startedAt, now, null, null,
-            serializedResult, event, false);
+            serializedResult);
     }
 
     /** Exact authoritative receipt semantics shared by live terminal closure and recovery. */
@@ -137,33 +115,9 @@ public record HarnessToolEffect(
         }
         String durableResult = status == HarnessToolEffectStatus.COMMITTED
             ? committedResult : null;
-        HarnessEvent durableEvent = status == HarnessToolEffectStatus.COMMITTED
-            ? controlEvent : null;
-        boolean eventPublished = status == HarnessToolEffectStatus.COMMITTED
-            && controlEventPublished;
         return new HarnessToolEffect(effectId, toolCallId, toolName, argumentsSha256,
             replaySafe, HarnessToolEffectStatus.SETTLED, startedAt, now, messageId, null,
-            durableResult, durableEvent, eventPublished);
-    }
-
-    public boolean hasPendingControlEvent() {
-        return controlEvent != null && !controlEventPublished;
-    }
-
-    public HarnessToolEffect markControlEventPublished() {
-        if (controlEvent == null) {
-            throw new IllegalStateException("Tool effect has no durable control event");
-        }
-        if (controlEventPublished) {
-            return this;
-        }
-        if (status != HarnessToolEffectStatus.COMMITTED
-            && status != HarnessToolEffectStatus.SETTLED) {
-            throw new IllegalStateException("Cannot publish control event in " + status);
-        }
-        return new HarnessToolEffect(effectId, toolCallId, toolName, argumentsSha256,
-            replaySafe, status, startedAt, settledAt, resultMessageId, error, committedResult,
-            controlEvent, true);
+            durableResult);
     }
 
     public HarnessToolEffect abandon(String reason, long now) {
@@ -176,8 +130,7 @@ public record HarnessToolEffect(
                 "Cannot abandon an uncertain non-replayable tool effect");
         }
         return new HarnessToolEffect(effectId, toolCallId, toolName, argumentsSha256,
-            replaySafe, HarnessToolEffectStatus.ABANDONED, startedAt, now, null, reason, null,
-            null, false);
+            replaySafe, HarnessToolEffectStatus.ABANDONED, startedAt, now, null, reason, null);
     }
 
     private void requirePending(String action) {

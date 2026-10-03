@@ -18,7 +18,7 @@
 #   4. grant-sql     ipd grant SQL 门禁(沿用)
 #   5. frontend-drift ipd 前端 drift(沿用)
 #   6. r41-done      39 张卡 done 门禁(R41 新增,QA 门禁矩阵)
-#   7. fail-blank    失败必现(空 failures.jsonl 时 fail)
+#   7. failure-history 历史失败记录格式检查（保留旧失败，不因非空永久失败）
 #   8. archived-at   archived_at 一致性门禁(沿用 R42-D)
 #
 # 退出码:
@@ -35,8 +35,8 @@ LIST_ONLY=false
 [[ "${1:-}" =~ --gate= ]] && GATE="${1#--gate=}"
 
 # 门禁列表(可扩展) — 三个 parallel indexed arrays(zsh 兼容)
-GATE_KEYS=(drift_1 contract_2 compile_3 grantsql_4 frontend_5 done_6 failblank_7 archived_8)
-GATE_LABELS=(drift contract compile grant-sql frontend-drift r41-done fail-blank archived-at)
+GATE_KEYS=(drift_1 contract_2 compile_3 grantsql_4 frontend_5 done_6 failurehistory_7 archived_8)
+GATE_LABELS=(drift contract compile grant-sql frontend-drift r41-done failure-history archived-at)
 GATE_CMDS=(
     "scripts/check-doc-db-drift.sh --refined --json-only"
     "scripts/check-contract-tri-source.sh --json-only"
@@ -44,7 +44,7 @@ GATE_CMDS=(
     "scripts/check-grant-sql.sh --json-only"
     "scripts/check-ipd-frontend-drift.sh"
     "python3 scripts/check-done-gate.py --all"
-    "bash -c '[[ -s .harness/evolve/failures.jsonl ]] && exit 1 || exit 0'"
+    "python3 -c 'import json,pathlib; p=pathlib.Path(\".harness/evolve/failures.jsonl\"); rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []; assert all(isinstance(x,dict) for x in rows); print(\"failure history records:\",len(rows))'"
     "scripts/check-merge-gate-archived-at.sh"
 )
 
@@ -80,8 +80,9 @@ run_gate() {
     echo ""
     echo "── [gate $key / $label] \$ $cmd"
     if [[ ! -f "$cmd_label" ]] && [[ "$cmd_label" != "mvn" ]] && [[ "$cmd_label" != "bash" ]] && [[ "$cmd_label" != "python3" ]]; then
-        echo "   ⚠ 脚本不存在: $cmd_label — 跳过(Layer 1 自动 / 留 owner 装)"
+        echo "   ⚠ 必需脚本不存在: $cmd_label — 拒绝，不跳过"
         SKIP=$((SKIP + 1))
+        FAIL=$((FAIL + 1))
         return
     fi
     if OUT=$(eval "$cmd" 2>&1); then
@@ -111,7 +112,7 @@ fi
 
 echo ""
 echo "════════ GEP GATE: PASS=$PASS FAIL=$FAIL SKIP=$SKIP ════════"
-if [[ $FAIL -gt 0 ]]; then
+if [[ $FAIL -gt 0 || $SKIP -gt 0 || $PASS -eq 0 ]]; then
     exit 1
 fi
 exit 0

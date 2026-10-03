@@ -12,7 +12,7 @@ raw:
 
 覆盖 4 个基础工具模块，是所有功能模块的依赖基石。共 127 个 Java 文件。
 
-参见：[modules/common.md § 27 子模块清单](../modules/common.md)、[security-config.md](../raw/common-source/security-config.md)。
+参见：[modules/common.md § 27 子模块清单](../modules/common.md)、[security-config.md](../../raw/common-source/security-config.md)。
 
 ## ruoyi-common-core（98 文件，最重）
 
@@ -84,7 +84,7 @@ springdoc:
 
 基于 **FastExcel**（阿里 EasyExcel 替代）的导入导出。
 
-参见 [ExcelDictFormat.md](../raw/common-source/ExcelDictFormat.md)。
+参见 [ExcelDictFormat.md](../../raw/common-source/ExcelDictFormat.md)。
 
 **关键注解**：
 
@@ -117,7 +117,7 @@ EasyExcel.read(inputStream, SysUserImportVo.class, new SysUserImportListener(use
 
 ## ruoyi-common-global-exception-handler
 
-参见 [global-exception-handler.md](../raw/common-source/global-exception-handler.md)。
+参见 [global-exception-handler.md](../../raw/common-source/global-exception-handler.md)。
 
 ```java
 @RestControllerAdvice

@@ -6,6 +6,7 @@ import io.agentscope.harness.agent.sandbox.snapshot.SandboxSnapshotSpec;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.LinkedHashMap;
@@ -17,11 +18,17 @@ import java.util.Objects;
 public final class ProjectAgentVerifiedSnapshotSpec implements SandboxSnapshotSpec {
     public record Receipt(String snapshotId, String sha256) { }
     private final Path basePath;
+    private final ProjectAgentBackgroundMemoryLifecycle lifecycle;
     private final java.util.Map<String, VerifiedSnapshot> issued = new LinkedHashMap<>();
     private final java.util.concurrent.atomic.AtomicBoolean failedPersist = new java.util.concurrent.atomic.AtomicBoolean();
 
     public ProjectAgentVerifiedSnapshotSpec(Path basePath) {
+        this(basePath, null);
+    }
+
+    ProjectAgentVerifiedSnapshotSpec(Path basePath, ProjectAgentBackgroundMemoryLifecycle lifecycle) {
         this.basePath = Objects.requireNonNull(basePath).toAbsolutePath().normalize();
+        this.lifecycle = lifecycle;
     }
 
     @Override
@@ -33,6 +40,7 @@ public final class ProjectAgentVerifiedSnapshotSpec implements SandboxSnapshotSp
 
     /** 未获取沙箱时返回空；已获取的每个官方 SESSION 都必须实际落盘并回读。 */
     public synchronized List<Receipt> verifyReleased() {
+        if (lifecycle != null) lifecycle.requireHealthy();
         if (failedPersist.get()) throw new IllegalStateException("Official sandbox snapshot persistence failed");
         return issued.values().stream().map(VerifiedSnapshot::requireReceipt).toList();
     }
@@ -46,9 +54,28 @@ public final class ProjectAgentVerifiedSnapshotSpec implements SandboxSnapshotSp
         @Override
         public synchronized void persist(InputStream archive) throws Exception {
             receipt = null;
+            Path candidate = null;
+            Exception persistFailure = null;
             try {
+                // 归档固化就是核验判生死的那一刻。此刻若还有被委派的子调用在写，
+                // 它的会话记录必然既不在归档里也不在主机暂存里，verifyArchive 会按设计拒绝，
+                // 整轮因此改判 FAILED（实证 runId 2106436968471633922 / 2106443323328794625）。
+                // 先等子调用真正收口，再固化——这是修复，不是把某个时长调大。
+                if (lifecycle != null) lifecycle.awaitNestedCallsSettled();
+                Files.createDirectories(basePath);
+                candidate = Files.createTempFile(basePath, ".ipd-snapshot-candidate-", ".tar");
                 var source = MessageDigest.getInstance("SHA-256");
-                super.persist(new DigestInputStream(archive, source));
+                try (var output = Files.newOutputStream(candidate)) {
+                    new DigestInputStream(archive, source).transferTo(output);
+                } catch (java.io.IOException error) {
+                    throw new io.agentscope.harness.agent.sandbox.SandboxException.SnapshotException(
+                        getId(), "Failed to stage sandbox snapshot", error);
+                }
+                // 必须在官方原子替换前核验候选，拒绝的完整归档不得覆盖旧恢复点。
+                if (lifecycle != null) try (var input = Files.newInputStream(candidate)) {
+                    lifecycle.verifyArchive(getId(), input);
+                }
+                try (var input = Files.newInputStream(candidate)) { super.persist(input); }
                 var restored = MessageDigest.getInstance("SHA-256");
                 try (var input = new DigestInputStream(super.restore(), restored)) {
                     input.transferTo(OutputStream.nullOutputStream());
@@ -57,11 +84,25 @@ public final class ProjectAgentVerifiedSnapshotSpec implements SandboxSnapshotSp
                 if (!expected.equals(HexFormat.of().formatHex(restored.digest()))) {
                     throw new IllegalStateException("Official sandbox snapshot digest mismatch");
                 }
+                if (lifecycle != null) try (var input = super.restore()) { lifecycle.verifyArchive(getId(), input); }
                 receipt = new Receipt(getId(), expected);
             } catch (Exception error) {
+                persistFailure = error;
+                if (lifecycle != null) lifecycle.recordFailure(error);
                 failed = true;
                 failedPersist.set(true);
                 throw error;
+            } finally {
+                if (candidate != null) try { Files.deleteIfExists(candidate); }
+                catch (java.io.IOException cleanupFailure) {
+                    if (lifecycle != null) lifecycle.recordFailure(cleanupFailure);
+                    failed = true;
+                    failedPersist.set(true);
+                    if (persistFailure != null) {
+                        if (java.util.Arrays.stream(persistFailure.getSuppressed()).noneMatch(error -> error == cleanupFailure))
+                            persistFailure.addSuppressed(cleanupFailure);
+                    } else throw cleanupFailure;
+                }
             }
         }
 
@@ -75,6 +116,7 @@ public final class ProjectAgentVerifiedSnapshotSpec implements SandboxSnapshotSp
                 if (!receipt.sha256().equals(HexFormat.of().formatHex(input.getMessageDigest().digest()))) {
                     throw new IllegalStateException("Official sandbox snapshot changed after release");
                 }
+                if (lifecycle != null) try (var archive = super.restore()) { lifecycle.verifyArchive(getId(), archive); }
                 return receipt;
             } catch (Exception error) {
                 throw new IllegalStateException("Official sandbox snapshot readback failed", error);

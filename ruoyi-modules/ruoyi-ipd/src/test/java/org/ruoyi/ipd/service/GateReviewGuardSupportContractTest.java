@@ -18,12 +18,14 @@ import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.GateArbitration;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.GateArbitrationMapper;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.GateReviewMapper;
 import org.ruoyi.ipd.mapper.GateReviewObserverMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -97,6 +99,9 @@ class GateReviewGuardSupportContractTest {
     private IAuditLogService auditLogService;
     @Mock
     private NotificationService notificationService;
+    /** sign() 的 gate→项目→组 归属断言所需（R212-④ 同款注入点）。 */
+    @Mock
+    private ProjectMapper projectMapper;
 
     private StateMachineGuard guard;
     private GateReviewService service;
@@ -121,6 +126,11 @@ class GateReviewGuardSupportContractTest {
     void setUp() {
         service = new GateReviewService(gateMapper, reviewMapper, memberMapper,
             personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
+        // 归属断言 fail-closed：未装配 ProjectMapper 一律「无权操作」，故必须注入。
+        service.setProjectMapper(projectMapper);
+        lenient().when(projectMapper.selectById(11L))
+            .thenReturn(Project.builder().id(11L).mainGroupId(MARKET.groupId())
+                .status("ACTIVE").delFlag("0").build());
         guard = mock(StateMachineGuard.class);
         service.setStateMachineGuard(guard);
         gate = new Gate();
@@ -174,6 +184,9 @@ class GateReviewGuardSupportContractTest {
     void preCheck_failClosedWhenGuardNotWired() {
         GateReviewService raw = new GateReviewService(gateMapper, reviewMapper, memberMapper,
             personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
+        // 归属断言照常装配：本用例只验「状态机守卫未装配」这一条 fail-closed 路径，
+        // 不应被 sign() 的项目归属守卫先行拦下而假绿。
+        raw.setProjectMapper(projectMapper);
         raw.sign(701L, "APPROVE", null, MARKET);
 
         assertThatThrownBy(() -> raw.sign(701L, "APPROVE", null, RD))

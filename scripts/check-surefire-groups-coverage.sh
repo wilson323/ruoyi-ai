@@ -5,37 +5,26 @@
 # 自证能红：FAIL_SEED=1 → 故意缺 @Tag("dev") → exit 2
 
 set -eo pipefail
-
-TEST_BASE="${TEST_BASE:-microservices}"
-SGC_FAIL_SEED="${SGC_FAIL_SEED:-0}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/audit-gate-input.sh"
+REPO="${REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+TEST_BASE="${TEST_BASE:-$REPO/ruoyi-modules}"
+POM_FILE="${POM_FILE:-$REPO/pom.xml}"
 
 main() {
-  echo "[防假绿-1] check-surefire-groups-coverage.sh 启动 (基线: R131)"
-
-  if [ "$SGC_FAIL_SEED" = "1" ]; then
-    echo "[防假绿-1] FAIL_SEED=1 → 故意跑不存在的测试基类"
-    echo "❌ Surefire groups 抑制 @Tag(dev) 缺失 → 静默跳过"
+  if [ "${SGC_FAIL_SEED:-0}" = "1" ]; then
+    echo "[gate] SGC_FAIL_SEED=1 自证失败"
     exit 2
   fi
-
-  if [ ! -d "$TEST_BASE" ]; then
-    echo "⚠️  $TEST_BASE 不存在"
-    exit 0
-  fi
-
-  # 检测 surefire 配置 vs @Tag 覆盖
-  local has_groups=0
-  local has_tag_dev=0
-  [ -f pom.xml ] && grep -q "<groups>" pom.xml && has_groups=1
-  find "$TEST_BASE" -name "*.java" -exec grep -l '@Tag("dev")' {} \; 2>/dev/null | head -1 | grep -q . && has_tag_dev=1
-
-  if [ "$has_groups" -eq 1 ] && [ "$has_tag_dev" -eq 0 ]; then
-    echo "🔴 surefire 配置了 <groups> 但无 @Tag(dev) 测试类"
+  gate_require_tree "$TEST_BASE" -path '*/test/*' -name '*.java'
+  [ -s "$POM_FILE" ] || { echo "[gate] pom输入缺失或为空: $POM_FILE" >&2; exit 2; }
+  local groups tags
+  groups=$(gate_grep -c '<groups>' "$POM_FILE")
+  tags=$(gate_grep -rl '@Tag("dev")' "$TEST_BASE" --include='*.java' --exclude-dir=target)
+  if [ "$groups" -gt 0 ] && [ -z "$tags" ]; then
+    echo "❌ groups已配置但没有@Tag(dev)测试"
     exit 2
   fi
-
-  echo "✅ surefire groups vs @Tag 覆盖匹配 (groups=$has_groups, tag_dev=$has_tag_dev)"
-  exit 0
+  echo "✅ 完整非空输入扫描完成"
 }
-
 main "$@"

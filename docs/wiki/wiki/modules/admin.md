@@ -19,13 +19,12 @@ raw:
 
 ## 主应用入口
 
-`org.ruoyi.RuoYiAIApplication` 是 Spring Boot 启动类，启动时做一件特别的事：**主动 kill 端口 6039 的进程**（`killPortProcess(6039)`，在 `main()` 最前面调用），再用 Windows 风格的 `netstat` / `taskkill` 命令实现（在 macOS/Linux 上 no-op 干净退出）。
+[org.ruoyi.RuoYiAIApplication](../../../../ruoyi-admin/src/main/java/org/ruoyi/RuoYiAIApplication.java) 是 Spring Boot 启动类，当前直接运行 Spring，**不会自动终止占用端口的进程**。历史自动清理代码不代表当前实现；发生端口冲突须核对实际服务归属，本机 IPD 使用配置端口 16039。
 
 ```java
 @SpringBootApplication
 public class RuoYiAIApplication {
     public static void main(String[] args) {
-        killPortProcess(6039);
         SpringApplication application = new SpringApplication(RuoYiAIApplication.class);
         application.setApplicationStartup(new BufferingApplicationStartup(2048));
         application.run(args);

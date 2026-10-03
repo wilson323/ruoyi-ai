@@ -19,6 +19,7 @@ final class ProjectAgentSkillRuntimeGuard implements MiddlewareBase {
     private final FrozenProjectAgentSkills approved;
     private final ProjectAgentEventSink ownership;
     private final String expectedUser;
+    private java.util.function.Supplier<io.agentscope.harness.agent.filesystem.AbstractFilesystem> filesystem;
 
     ProjectAgentSkillRuntimeGuard(FrozenProjectAgentSkills approved, ProjectAgentRunSpec run,
                                   ProjectAgentEventSink ownership) {
@@ -28,11 +29,22 @@ final class ProjectAgentSkillRuntimeGuard implements MiddlewareBase {
             ProjectAgentConstants.AGENT_ID, String.valueOf(run.runId())).userId();
     }
 
+    ProjectAgentSkillRuntimeGuard(FrozenProjectAgentSkills approved, ProjectAgentRunSpec run,
+            ProjectAgentEventSink ownership,
+            java.util.function.Supplier<io.agentscope.harness.agent.filesystem.AbstractFilesystem> filesystem) {
+        this(approved, run, ownership);
+        this.filesystem = Objects.requireNonNull(filesystem);
+    }
+
     @Override public int order() { return Integer.MAX_VALUE; }
 
     @Override public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
             Function<AgentInput, Flux<AgentEvent>> next) {
-        return Flux.defer(() -> { requireOwnership(context); return next.apply(input); });
+        return Flux.defer(() -> {
+            requireOwnership(context);
+            if (filesystem != null) approved.installInto(Objects.requireNonNull(filesystem.get()), context);
+            return next.apply(input);
+        });
     }
 
     @Override public Mono<String> onSystemPrompt(Agent agent, RuntimeContext context, String prompt) {

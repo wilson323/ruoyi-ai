@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
  *   <li>正常路径：compute 完整公式 4 因子 / freeze DRAFT→CONFIRMED / distribute 比例拆分</li>
  *   <li>边界：DISTRIBUTED 终态冻结幂等返回 / 0 回款 finalPool=0</li>
  *   <li>异常：projectId 不存在 / actualReceipts<0 / marketShare<0.40 / rdShare>0.60 / 项目无 levelCoefficient</li>
- *   <li>权限：本卡 service 层不测（IpdPermission 在 controller 层测）</li>
+ *   <li>权限：本类使用真实合法超管及关联项目；对象越权由 BonusPoolObjectAuthorizationTest 验证</li>
  *   <li>审计：freeze + distribute 各落 1 条 audit_log（用 mock verify）</li>
  *   <li>幂等：freeze 重复调用只写 1 次 / distribute 重复 DISTRIBUTED 不重写审计</li>
  * </ol>
@@ -178,6 +178,8 @@ class BonusPoolServiceTest {
     void distribute_alreadyDistributed_isIdempotent() {
         BonusPool existing = new BonusPool();
         existing.setId(700L);
+        existing.setProjectId(200L);
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
         existing.setStatus(BonusPoolService.STATUS_DISTRIBUTED);
         existing.setFinalPool(new BigDecimal("1000000"));
         existing.setDistributedAt(new Date());
@@ -262,6 +264,8 @@ class BonusPoolServiceTest {
     void distribute_marketShareBelowRange_throwsServiceException() {
         BonusPool existing = new BonusPool();
         existing.setId(800L);
+        existing.setProjectId(200L);
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
         existing.setStatus(BonusPoolService.STATUS_DRAFT);
         existing.setFinalPool(new BigDecimal("1000000"));
         when(bonusPoolMapper.selectById(800L)).thenReturn(existing);
@@ -352,6 +356,8 @@ class BonusPoolServiceTest {
     void freeze_alreadyConfirmed_isIdempotent() {
         BonusPool existing = new BonusPool();
         existing.setId(900L);
+        existing.setProjectId(200L);
+        when(projectMapper.selectById(200L)).thenReturn(sLevelProject());
         existing.setStatus(BonusPoolService.STATUS_CONFIRMED);
         existing.setFinalPool(new BigDecimal("500000"));
         when(bonusPoolMapper.selectById(900L)).thenReturn(existing);

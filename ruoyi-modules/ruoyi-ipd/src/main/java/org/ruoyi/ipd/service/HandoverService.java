@@ -131,6 +131,18 @@ public class HandoverService {
     /** 本人发起移交（DRAFT，等待接手人 accept）。 */
     @Transactional(rollbackFor = Exception.class)
     public HandoverRecord initiate(Long projectId, String role, Long toPersonId, String note, IpdActor operator) {
+        IpdIdorGuard.requireAuthenticated(operator);
+        Project project = projectMapper.selectById(projectId);
+        if (project == null || "1".equals(project.getDelFlag()))
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权操作该项目移交");
+        IpdIdorGuard.requireProjectTenantMatch(project);
+        Long activeRole = memberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, projectId)
+            .eq(ProjectMember::getPersonId, operator.id())
+            .eq(ProjectMember::getRole, role)
+            .isNull(ProjectMember::getExitDate));
+        if (activeRole == null || activeRole <= 0)
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "非该项目该角色在任负责人，无权发起移交");
         return createDraft(projectId, role, operator.id(), toPersonId, note, operator);
     }
 

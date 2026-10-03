@@ -8,6 +8,9 @@ import io.agentscope.core.model.ToolSchema;
 import io.agentscope.core.message.TextBlock;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -181,9 +184,10 @@ class ProjectScopedLongTermMemoryTest {
                 .content(List.of(TextBlock.builder().text("要表格").build())).build()));
         var recorder = new ProjectAgentMeteredModelTest.Recorder();
         var ledger = mock(org.ruoyi.ipd.service.AiModelUsageLedgerService.class);
-        var sink = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
+        var identity = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(123L, "fixture", "fixture-model");
+        var sink = new ProjectAgentUsageSink(recorder, ledger, List.of(identity), "person", "run");
         new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
-            new ProjectAgentMeteredModel(delegate, sink))
+            new ProjectAgentMeteredModel(delegate, sink, sink, identity))
             .record(userSaid("要表格")).block(Duration.ofSeconds(5));
         assertThat(recorder.ends).hasSize(1);
         assertThat(recorder.total("inputTokens")).isEqualTo(11);
@@ -196,9 +200,10 @@ class ProjectScopedLongTermMemoryTest {
         IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
         var recorder = new ProjectAgentMeteredModelTest.Recorder();
         var ledger = mock(org.ruoyi.ipd.service.AiModelUsageLedgerService.class);
-        var sink = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
+        var identity = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(123L, "fixture", "fixture-model");
+        var sink = new ProjectAgentUsageSink(recorder, ledger, List.of(identity), "person", "run");
         new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
-            new ProjectAgentMeteredModel(modelReturning("MEM|NONE|空"), sink))
+            new ProjectAgentMeteredModel(modelReturning("MEM|NONE|空"), sink, sink, identity))
             .record(userSaid("你好")).block(Duration.ofSeconds(5));
         assertThat(recorder.ends).hasSize(1);
         assertThat(recorder.ends.get(0)).doesNotContainKeys("inputTokens", "outputTokens");
@@ -272,5 +277,189 @@ class ProjectScopedLongTermMemoryTest {
             () -> new ProjectScopedLongTermMemory(PROJECT, null, RUN, mapper, null));
         org.junit.jupiter.api.Assertions.assertThrows(NullPointerException.class,
             () -> new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, null, null));
+    }
+
+    // ---------------------------------------------------------------------
+    // run 2106378468009717761（2026-10-03）：抽取流 93ae5117 挂死后空转满旧 30s
+    // 才被外层发现，errorType=TimeoutException。下列测试把「空闲期限 / 有限重试 /
+    // 可重试类别 / 结果记账」四件事钉死。
+    // ---------------------------------------------------------------------
+
+    /** 吐了第一片之后永远不再来片——真实故障的流形状。 */
+    private static reactor.core.publisher.Flux<ChatResponse> stallingAfterFirstChunk() {
+        return reactor.core.publisher.Flux.concat(
+            reactor.core.publisher.Flux.just(ChatResponse.builder()
+                .content(List.of(TextBlock.builder().text("MEM|PREFERENCE|要表格").build()))
+                .build()),
+            reactor.core.publisher.Flux.never());
+    }
+
+    /**
+     * 「慢但活着」不等于「死了」——本轮三次参数返工的共同内核，必须有行为测试钉住。
+     *
+     * <p>初版把流空闲期限设成 5 秒、兜底总期限 25 秒，两次都因为「没有对应实测」返工：
+     * 真实服务实测记忆抽取最长 14 秒，5 秒会掐断健康调用；25 秒只剩 4.5 秒余量，
+     * 一次 20 秒的健康抽取会被砍成假的 WRITE_FAILED 回执。教训不是「把参数调大」，
+     * 而是<b>两个期限抓的根本不是同一件事</b>：空闲期限抓「死流」，总期限只抓「活着但异常慢」。
+     *
+     * <p>本测试用一条「每 2 秒来一片、共约 6 秒」的慢流钉住：总耗时超过空闲期限（10s 的一半），
+     * 但每片间隔（2s）远小于空闲期限，因此必须<b>正常完成</b>。
+     * 若有人把总期限调回与慢流同量级、或误把空闲期限当成总期限，这里立刻红。
+     * 与 {@code stallingAfterFirstChunk()} 那条（吐一片后永不��来，必被掐断）构成对照。
+     */
+    @Test
+    @DisplayName("慢但持续有数据的流不被掐断——空闲期限抓的是死流不是慢流")
+    void slowButAliveStreamIsNotAbandoned() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        when(mapper.insertIgnoreDuplicate(any())).thenReturn(1);
+        Model delegate = mock(Model.class);
+        when(delegate.getModelName()).thenReturn("test");
+        // 3 片 × 2 秒间隔 = 总耗时约 6 秒；每片都到，间隔 2s < 空闲期限 10s
+        when(delegate.stream(any(), any(), any())).thenReturn(
+            reactor.core.publisher.Flux.interval(java.time.Duration.ofSeconds(2))
+                .take(3)
+                .map(i -> ChatResponse.builder()
+                    .content(List.of(TextBlock.builder().text("MEM|PREFERENCE|要表格").build()))
+                    .build()));
+
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, delegate);
+        long start = System.nanoTime();
+        memory.record(userSaid("要表格")).block(Duration.ofSeconds(30));
+        long elapsedSeconds = (System.nanoTime() - start) / 1_000_000_000L;
+
+        assertThat(memory.lastOutcome().failure())
+            .as("慢流必须正常完成；若被掐断说明空闲期限被误当成总期限")
+            .isNull();
+        assertThat(memory.lastOutcome().written()).isTrue();
+        assertThat(memory.lastOutcome().extracted()).isEqualTo(1);
+        assertThat(memory.lastOutcome().saved()).isEqualTo(1);
+        // 确认这条流真的「慢」过：否则本测试可能在参数收紧后仍然通过，失去对照意义。
+        assertThat(elapsedSeconds)
+            .as("测试前提：这条流必须慢于空闲期限的一半，否则测不出区分")
+            .isGreaterThanOrEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("挂死流在空闲期限内被掐断并立刻重试——不等整轮兜底期限（旧实现必红）")
+    void stallingStreamIsAbandonedOnIdleTimeoutAndRetried() throws Exception {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        Model delegate = mock(Model.class);
+        AtomicInteger calls = new AtomicInteger();
+        CountDownLatch retriedOnce = new CountDownLatch(1);
+        when(delegate.stream(any(), any(), any())).thenAnswer(invocation -> {
+            if (calls.incrementAndGet() >= 2) {
+                retriedOnce.countDown();
+            }
+            return stallingAfterFirstChunk();
+        });
+
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, delegate);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch terminated = new CountDownLatch(1);
+        memory.record(userSaid("要表格")).subscribe(
+            v -> terminated.countDown(),
+            t -> { failure.set(t); terminated.countDown(); },
+            terminated::countDown);
+
+        // 证伪点：第一次尝试在空闲期限（EXTRACT_IDLE_TIMEOUT，当前 10s）后被放弃并触发第二次调用。
+        // 窗口取 20s：必须大于「空闲期限 + 重试退避」，同时**必须显著小于旧实现的 30s**——
+        // 否则这条测试就不再能证伪「回退到 Flux.timeout(30s)」这个旧行为。20s 满足两个约束。
+        assertThat(retriedOnce.await(20, TimeUnit.SECONDS))
+            .as("第一次尝试应在空闲期限内被掐断并触发第二次模型调用")
+            .isTrue();
+
+        assertThat(terminated.await(25, TimeUnit.SECONDS))
+            .as("挂死流最终必须以失败终止，不得无限挂起")
+            .isTrue();
+        assertThat(failure.get()).isNotNull()
+            .hasMessageContaining("Long-term memory record failed")
+            .hasMessageNotContaining("null");
+        // 1 次首发 + EXTRACT_RETRIES(1) 次重试 = 2 次；两次都在空闲期限被掐断后按重试耗尽而终止，
+        // 不应触及 25s 整轮兜底（最坏 2×10s + 0.5s = 20.5s）。
+        assertThat(calls.get()).isEqualTo(2);
+        assertThat(memory.lastOutcome().failure()).isNotNull();
+        assertThat(memory.lastOutcome().written()).isFalse();
+        assertThat(memory.lastOutcome().extracted()).isZero();
+        assertThat(memory.lastOutcome().saved()).isZero();
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    @Test
+    @DisplayName("可重试故障（TimeoutException）重试一次即恢复，记账为成功写入")
+    void retryableTimeoutIsRetriedAndSucceeds() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        when(mapper.insertIgnoreDuplicate(any())).thenReturn(1);
+        Model delegate = mock(Model.class);
+        AtomicInteger calls = new AtomicInteger();
+        when(delegate.stream(any(), any(), any())).thenAnswer(invocation -> {
+            if (calls.incrementAndGet() == 1) {
+                throw new java.util.concurrent.TimeoutException("upstream stalled");
+            }
+            return reactor.core.publisher.Flux.just(ChatResponse.builder()
+                .content(List.of(TextBlock.builder().text("MEM|PREFERENCE|要表格").build())).build());
+        });
+
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, delegate);
+        memory.record(userSaid("要表格")).block(Duration.ofSeconds(15));
+
+        assertThat(calls.get()).isEqualTo(2);
+        assertThat(memory.lastOutcome().failure()).isNull();
+        assertThat(memory.lastOutcome().written()).isTrue();
+        assertThat(memory.lastOutcome().extracted()).isEqualTo(1);
+        assertThat(memory.lastOutcome().saved()).isEqualTo(1);
+        verify(mapper, times(1)).insertIgnoreDuplicate(any());
+    }
+
+    @Test
+    @DisplayName("确定性失败（auth failed）不重试——只调模型一次，不把同一个失败打三遍")
+    void deterministicFailureIsNotRetried() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        Model delegate = mock(Model.class);
+        when(delegate.stream(any(), any(), any()))
+            .thenAnswer(invocation -> { throw new IllegalStateException("auth failed"); });
+
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, delegate);
+        assertThatThrownBy(() -> memory.record(userSaid("x")).block(Duration.ofSeconds(15)))
+            .hasMessageContaining("Long-term memory record failed")
+            .hasMessageNotContaining("auth failed");
+
+        verify(delegate, times(1)).stream(any(), any(), any());
+        assertThat(memory.lastOutcome().failure()).isNotNull();
+        assertThat(memory.lastOutcome().written()).isFalse();
+        assertThat(memory.lastOutcome().extracted()).isZero();
+        assertThat(memory.lastOutcome().saved()).isZero();
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    @Test
+    @DisplayName("RecordOutcome 记账：extracted 是解析条数，saved 只数实际插入的行")
+    void recordOutcomeCountsOnlyActuallyInsertedRows() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        // 第一条新入库，第二条命中去重口返回 0 —— saved 必须如实反映为 1
+        when(mapper.insertIgnoreDuplicate(any())).thenReturn(1, 0);
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
+            modelReturning("MEM|PREFERENCE|要表格\nMEM|FACT|已确认走方案 B"));
+        memory.record(userSaid("给我表格；方案定了走 B")).block(Duration.ofSeconds(15));
+
+        assertThat(memory.lastOutcome().extracted()).isEqualTo(2);
+        assertThat(memory.lastOutcome().saved()).isEqualTo(1);
+        assertThat(memory.lastOutcome().failure()).isNull();
+        assertThat(memory.lastOutcome().written()).isTrue();
+        verify(mapper, times(2)).insertIgnoreDuplicate(any());
+    }
+
+    @Test
+    @DisplayName("RecordOutcome 记账：落库失败时 failure 非空且 written() 为 false")
+    void recordOutcomeMarksPersistenceFailure() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        when(mapper.insertIgnoreDuplicate(any())).thenThrow(new IllegalStateException("secret-db-url"));
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
+            modelReturning("MEM|PREFERENCE|要表格"));
+
+        assertThatThrownBy(() -> memory.record(userSaid("要表格")).block(Duration.ofSeconds(15)))
+            .hasMessageContaining("Long-term memory record failed")
+            .hasMessageNotContaining("secret-db-url");
+        assertThat(memory.lastOutcome().failure()).isNotNull();
+        assertThat(memory.lastOutcome().written()).isFalse();
     }
 }

@@ -1,0 +1,154 @@
+# scripts/ownership-gate-exempt.txt — 资源归属门禁的存量基线（豁免清单）
+#
+# 门禁：scripts/check-write-endpoint-ownership.py（配套公共函数 scripts/lib/audit-gate-input.sh）
+#
+# 每行格式：<控制器.java>#<方法名>\t<豁免理由>
+#   —— 理由是必填项，缺理由的行门禁会 exit 2 拒绝加载（防止「先加白名单让它过」）。
+#
+# 纪律（只减不增）：
+#   1. 本清单只允许删除，不允许新增。新写端点忘了归属校验 → 门禁直接报红，
+#      要放行必须先补校验；确认无归属概念才准加一行，并写明理由。
+#   2. 清单里某行对应的代码补了归属校验后，门禁会报「豁免已失效」并 exit 1，
+#      逼迫你回来删这一行 —— 防止基线变成僵尸白名单。
+#   3. 本清单为空时门禁 exit 1（不是 exit 0）。空清单 = 门禁什么都不判 = 假绿。
+#
+# 数据来源：ownership-inventory 逐条核出的分级（/tmp/ownership-inventory.md，2026-10-03）。
+# 数字口径：ruoyi-ipd controller 共 209 个写端点，其中 88 个带角色注解但无归属校验。
+# 分级分布见文件末尾统计。**存量修复（P4）完成后逐行删除对应条目。**
+#
+# ---- 2026-10-03 HIGH 7 条清零 ----
+# HIGH 7 条全部删除，原因分两类，都逐条读过控制器方法体 + 一跳服务：
+#   A 类 6 条（BidController close/publish/preSelectToken/withdraw、
+#            DemandController#linkProject、GateMaterialController#upload）：
+#      上一轮已在控制器里加了归属守卫，但守卫封装在私有 helper 里
+#      （requireInvitationWritable / requireDemandGroup / requireGateGroup），
+#      而门禁 GUARD_RE 只扫**端点方法体文本**，helper 名字不在 GUARD_TOKENS 里，
+#      于是被判成「无归属校验」，基线行一直留着（stale = exempt - found 也命中不到）。
+#      本轮把「解析归属」与「断言归属」拆开：私有 helper 只解析出目标组 ID
+#      （资源缺失时 fail-closed 抛 FORBIDDEN），端点方法体里显式调
+#      IpdIdorGuard.assertSameGroupIpd(actor, 解析结果) —— 门禁能看见，职责也更清晰。
+#   B 类 1 条（RecoveryWarningController#check90d）：真缺，控制器只有角色门
+#      requireLeaderOrAdmin()、actor 丢弃，service 无条件 selectList 全库项目逐个 insert。
+#      本轮 actor 传进 service（IRecoveryWarningService#checkAndGenerate(IpdActor, LocalDate)），
+#      非超管只扫 main_group_id 等于自己组的项目。
+#
+# 附：本清单只覆盖「带 @SaCheckPermission 且无归属校验」的端点。
+# 另有约 50 个写端点连角色注解都没有（inventory 口径 uncovered=150 中的 has_perm=False 部分），
+# 归属风险同样存在，但需要单独一轮定范围，本轮不纳入基线 —— 见文末「已知未覆盖面」。
+#
+# ---- 与 inventory 清单的口径差（2026-10-03 复核，均逐条核过）----
+# inventory 列 HIGH 11，本清单 HIGH 7，差的 4 条都不是漏报，各有原因：
+#   BidController#createInvitation    已在现网补 requireProjectGroup(actor, projectId) → 已合规
+#   KpiFunctionalMetricsController#upsert   同上（且注解已补，门禁判定为已合规）
+#   KpiFunctionalMetricsController#delete   同上
+#   ReceiptLedgerController#refund    该端点无 @SaCheckPermission（@IpdAudit adminOnly=true），
+#                                     不在 R3 判定面内 → 见文末「已知未覆盖面」第 1 条
+# 反向说明：inventory 表格里 KpiFunctionalMetrics 两条标「无注解」，
+# 但现网源码第 110/132 行确实已有 @SaCheckPermission，是 inventory 扫描后补上的。
+# 这类差异靠「以现网字节为准」解决，不靠同步两份文档。
+
+AdminPermanentDeleteController.java#execute	全局配置/登录/字典/扫描类，天然无归属概念
+AiCopilotController.java#cancelRun	全局配置/登录/字典/扫描类，天然无归属概念
+AiModelConfigController.java#create	全局配置/登录/字典/扫描类，天然无归属概念
+AiModelConfigController.java#enable	全局配置/登录/字典/扫描类，天然无归属概念
+AiModelConfigController.java#test	全局配置/登录/字典/扫描类，天然无归属概念
+AiModelConfigController.java#update	全局配置/登录/字典/扫描类，天然无归属概念
+AuditLogController.java#rebuildChain	全局配置/登录/字典/扫描类，天然无归属概念
+BidAiCompareController.java#aiCompare	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+BidAiDraftController.java#aiDraft	存量中危待修：能操作本组外数据，排期修（P4）
+BidController.java#adminAssign	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+BidController.java#modifyInvitation	存量中危待修：能操作本组外数据，排期修（P4）
+BidController.java#selectResponse	存量中危待修：能操作本组外数据，排期修（P4）
+BidResponseCheckController.java#aiCheck	存量中危待修：能操作本组外数据，排期修（P4）
+BonusPoolController.java#autoCompute	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+BonusPoolController.java#compute	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+BonusPoolController.java#previewCoefficient	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+BusinessConfigController.java#delete	全局配置/登录/字典/扫描类，天然无归属概念
+BusinessConfigController.java#upsert	全局配置/登录/字典/扫描类，天然无归属概念
+CertTemplateController.java#create	全局配置/登录/字典/扫描类，天然无归属概念
+CertTemplateController.java#remove	全局配置/登录/字典/扫描类，天然无归属概念
+ComplianceController.java#requestDeletion	存量中危待修：能操作本组外数据，排期修（P4）
+DeletionRequestController.java#adminDecision	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+DeletionRequestController.java#escalateOverdue	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+DeletionRequestController.java#leaderDecision	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+DeletionRequestController.java#submit	存量中危待修：能操作本组外数据，排期修（P4）
+DeletionRequestController.java#withdraw	存量中危待修：能操作本组外数据，排期修（P4）
+DemandController.java#triage	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+GateElementController.java#archive	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#copy	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#create	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#disable	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#duplicate	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#publish	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#restore	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#revert	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GateElementController.java#update	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+GatePrecheckController.java#arbitrationDivergences	存量中危待修：能操作本组外数据，排期修（P4）
+GatePrecheckController.java#precheck	存量中危待修：能操作本组外数据，排期修（P4）
+KpiRawRecordController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
+LandedScenarioController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
+LandedScenarioController.java#importBatch	存量中危待修：能操作本组外数据，排期修（P4）
+NegativeFeedbackController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
+NegativeFeedbackController.java#decide	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+NegativeFeedbackController.java#deleteById	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+NegativeFeedbackController.java#lift	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+NegativeFeedbackController.java#submit	存量中危待修：能操作本组外数据，排期修（P4）
+NotificationController.java#asyncDispatch	全局配置/登录/字典/扫描类，天然无归属概念
+NotificationController.java#dispatchPending	全局配置/登录/字典/扫描类，天然无归属概念
+NotificationController.java#markAllRead	全局配置/登录/字典/扫描类，天然无归属概念
+NotificationController.java#markRead	全局配置/登录/字典/扫描类，天然无归属概念
+P0EscalationController.java#check	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+P0EscalationController.java#resolve	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+ProductController.java#batchImport	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductGroupController.java#create	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductGroupController.java#remove	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductGroupController.java#updateLeader	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#appointLeader	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#assignProduct	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#create	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#deactivate	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#removeMember	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#rename	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProductLineSpaceController.java#review	存量中危待修：能操作本组外数据，排期修（P4）
+ProductLineSpaceController.java#unassignProduct	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProjectAgentController.java#feedback	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectAgentController.java#reverify	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectController.java#addCertItem	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectController.java#autoCreateGate	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectController.java#changeCertStatus	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectController.java#legacyImport	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProjectController.java#legacyImportBatch	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ProjectController.java#recordLaunchDate	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectController.java#resubmitStart	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectController.java#syncCertItems	存量中危待修：能操作本组外数据，排期修（P4）
+ProjectScoreTaskController.java#scan	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+ReceiptLedgerController.java#uploadVoucher	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
+RequirementChangeController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
+RequirementChangeController.java#sign	存量中危待修：能操作本组外数据，排期修（P4）
+RequirementChangeController.java#submit	存量中危待修：能操作本组外数据，排期修（P4）
+RolePermissionController.java#create	全局配置/登录/字典/扫描类，天然无归属概念
+RolePermissionController.java#delete	全局配置/登录/字典/扫描类，天然无归属概念
+RolePermissionController.java#reload	全局配置/登录/字典/扫描类，天然无归属概念
+SharedKpiController.java#confirm	存量中危待修：能操作本组外数据，排期修（P4）
+SharedKpiController.java#scanDeadlines	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+SwitchingAcceptanceController.java#lock	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+SwitchingAcceptanceController.java#run	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
+SystemConfigController.java#revert	全局配置/登录/字典/扫描类，天然无归属概念
+SystemConfigController.java#update	全局配置/登录/字典/扫描类，天然无归属概念
+
+# ---- 统计（ownership-inventory 分级）----
+#   HIGH    0
+#   MED     27
+#   LOW     10
+#   ADMIN   31
+#   EXEMPT  20
+#   合计    88
+
+# ---- 已知未覆盖面（本门禁不覆盖，别误读成「已安全」）----
+# 1. 不带 @SaCheckPermission 的写端点（约 50 个）：连角色注解都没有，
+#    归属校验无从谈起，但本门禁 R3 只判定「有角色注解」的端点，故不进基线。
+#    下一轮需单独定范围（要么要求补注解，要么整类豁免）。
+# 2. 一跳以外的传递调用：控制器 → 服务A → 服务B，守卫落在服务B 时不判定。
+#    刻意不做多跳：多跳解析的误报率会高到门禁被关掉，得不偿失。
+# 3. 守卫是「存在即算」判定，不判断守卫语义对不对 ——
+#    写了 requireSuperAdmin 但没查资源归属，本门禁看不出来。

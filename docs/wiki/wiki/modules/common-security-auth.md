@@ -12,13 +12,13 @@ raw:
 
 覆盖 4 个安全相关模块：安全配置、Sa-Token 封装、加解密、数据脱敏。
 
-参见：[modules/common.md § 27 子模块清单](../modules/common.md)、[security-config.md](../raw/common-source/security-config.md)。
+参见：[modules/common.md § 27 子模块清单](../modules/common.md)、[security-config.md](../../raw/common-source/security-config.md)。
 
 ## ruoyi-common-security（3 文件）
 
 Sa-Token 集成 + Web 安全配置。
 
-参见 [security-config.md](../raw/common-source/security-config.md)。
+参见 [security-config.md](../../raw/common-source/security-config.md)。
 
 **关键类**：
 
@@ -50,7 +50,7 @@ public class SecurityConfig implements WebMvcConfigurer {
 
 Sa-Token 静态操作封装。
 
-参见 [login-helper.md](../raw/common-source/login-helper.md)。
+参见 [login-helper.md](../../raw/common-source/login-helper.md)。
 
 **关键类**：
 
@@ -110,7 +110,7 @@ private String idCard;
 
 数据脱敏 —— 返回给前端前自动改写敏感字段。
 
-参见 [SensitiveService.md](../raw/common-source/SensitiveService.md)。
+参见 [SensitiveService.md](../../raw/common-source/SensitiveService.md)。
 
 **脱敏策略**：
 
@@ -138,4 +138,4 @@ private String phone;
 - **Sensitive 不抗爬虫**：脱敏是展示层，数据库存原值——爬虫直接读 DB 就能拿原值。**关键字段必须叠加 mybatis-encryptor**
 - **多租户 + 脱敏**：返回前要确认 tenantId 过滤（避免把 A 租户的脱敏数据返回给 B 租户）
 
-参见：[security-reviewer agent 文档 § 密钥管理](../../.claude/agents/security-reviewer.md)。
+参见：[security-reviewer agent 文档 § 密钥管理](../../../../.claude/agents/security-reviewer.md)。

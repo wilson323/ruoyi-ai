@@ -45,7 +45,7 @@ class AgentScopeRedisSandboxGuardTest {
 
     private static SandboxIsolationKey sessionKey(String sessionId) {
         return SandboxIsolationKey.resolve(IsolationScope.SESSION,
-                RuntimeContext.builder().sessionId(sessionId).build(), "chat-agent").orElseThrow();
+                RuntimeContext.builder().userId("guard-test-user").sessionId(sessionId).build(), "chat-agent").orElseThrow();
     }
 
     @Test

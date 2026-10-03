@@ -74,6 +74,68 @@ public class ProjectAgentRunService {
     private ProjectAgentAguiPauseResumeService.TrustedGuard aguiResumeGuard;
     private org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess;
     private org.springframework.transaction.support.TransactionTemplate verificationTransaction;
+    private ProjectAgentSkillReviewService skillReviews;
+
+    public void setSkillReviews(ProjectAgentSkillReviewService service) {
+        skillReviews = Objects.requireNonNull(service);
+    }
+
+    /** 审核候选只来自本人原运行的服务端事件，不接受客户端技能正文或审核身份。 */
+    public List<ProjectAgentSkillReviewService.SkillReview> skillReviews(IpdActor actor, Long runId) {
+        requireEnabled();
+        requireOwnRun(actor, runId);
+        return requireSkillReviews().list(allRunEvents(runId));
+    }
+
+    public ProjectAgentSkillReviewService.SkillReview reviewSkill(IpdActor actor, Long runId,
+            long candidateSeq, org.ruoyi.ipd.agent.dto.AgentSkillReviewReq req) {
+        requireEnabled();
+        if (req == null || req.approved() == null || req.sha256() == null
+            || !req.sha256().matches("[a-f0-9]{64}") || candidateSeq <= 0) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "请选择审核结果并刷新技能内容后再提交");
+        }
+        if (verificationTransaction == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "技能审核事务尚未装配");
+        }
+        return inVerificationTransaction(() -> {
+            requireOwnRun(actor, runId);
+            var locked = store.lockRunForVerification(runId).orElseThrow(() ->
+                new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "运行不存在"));
+            requireOwnRun(actor, locked);
+            var scope = new ProjectAgentSkillReviewService.ReviewScope(locked.getTenantId(), locked.getId(),
+                locked.getProjectId(), actor.id());
+            try {
+                return requireSkillReviews().review(scope, allRunEvents(runId), candidateSeq,
+                    req.approved(), req.sha256(), req.comment(), payload -> appendEvent(locked, AgentEventType.STEP, payload));
+            } catch (SecurityException forbidden) {
+                throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "只能审核自己运行产生的技能");
+            } catch (IllegalArgumentException invalid) {
+                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "技能审核内容不符合要求，请刷新后重试");
+            } catch (IllegalStateException conflict) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "技能内容或审核状态已改变，请刷新后重试");
+            }
+        });
+    }
+
+    private ProjectAgentSkillReviewService requireSkillReviews() {
+        if (skillReviews == null) throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "技能审核尚未装配");
+        return skillReviews;
+    }
+
+    private List<IpdAgentRunEvent> allRunEvents(Long runId) {
+        List<IpdAgentRunEvent> result = new ArrayList<>();
+        long cursor = 0;
+        for (;;) {
+            var page = store.listEvents(runId, cursor, 200);
+            if (page.isEmpty()) return List.copyOf(result);
+            for (var event : page) {
+                if (!Objects.equals(event.getRunId(), runId) || event.getSeq() <= cursor)
+                    throw new IllegalStateException("Skill review event cursor did not advance");
+                result.add(event);
+                cursor = event.getSeq();
+            }
+        }
+    }
 
     /** 驻留态收口复用原数据库事务；不包围其他执行器的 REQUIRES_NEW 生命周期。 */
     public void setVerificationTransaction(org.springframework.transaction.support.TransactionTemplate transaction) {
@@ -249,7 +311,7 @@ public class ProjectAgentRunService {
         if (existing != null) {
             return replay(existing, digest);
         }
-        RunPlan plan = planner.plan(req);
+        RunPlan plan = planner.plan(req, tenantId, projectId, actor.id());
         // 在占额度与落库前验证完整消息及真实前端工具授权；不能写库后才发现非法输入。
         var preparedAgui = org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.freeze(
             planner.bindAguiInput(req, plan, 0L));
@@ -265,7 +327,8 @@ public class ProjectAgentRunService {
         // 在占用额度前校验完整内核输入；实际 ID 由插入运行时生成。
         new ProjectAgentRunSpec(0L, projectId, tenantId, actor.id(), plan.actionCode(), req.message(),
             plan.skills(), plan.toolIds(), plan.model(), runTimeout, requirementId).withProjectFacts(projectFacts)
-            .withAguiInput(preparedAgui).withExecutionToolIds(plan.executionToolIds());
+            .withAguiInput(preparedAgui).withExecutionToolIds(plan.executionToolIds())
+            .withFrozenModels(plan.model(), plan.fallbackModel(), plan.modelConfigId(), plan.fallbackModelConfigId());
         if (!executor.tryReserve()) {
             throw new IpdBusinessException(ApiV1ErrorCode.RATE_LIMITED, "项目智能体并发运行已满，请稍后重试");
         }
@@ -289,6 +352,7 @@ public class ProjectAgentRunService {
             requirementId)
             .withProjectFacts(projectFacts)
             .withExecutionToolIds(plan.executionToolIds())
+            .withFrozenModels(plan.model(), plan.fallbackModel(), plan.modelConfigId(), plan.fallbackModelConfigId())
             .withAguiInput(preparedAgui == null ? null : org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.bind(
                 preparedAgui, String.valueOf(run.getId()), String.valueOf(run.getId()),
                 preparedAgui.getTools().stream().collect(java.util.stream.Collectors.toMap(
@@ -403,14 +467,15 @@ public class ProjectAgentRunService {
     /** 只读重建服务器冻结配置；额度、原 run 租约与消费 CAS 必须由执行器先取得。 */
     public ProjectAgentRunSpec prepareAguiResume(IpdActor actor, Long runId,
             io.agentscope.core.agui.model.RunAgentInput input) {
-        return prepareAguiConfiguration(actor,runId,input,false);
+        return prepareAguiConfiguration(actor,runId,input,false).spec();
     }
     /** 只读服务端 guard；状态不授予执行权，仍需原租约与私有意图。 */
     public ProjectAgentRunSpec prepareAguiPreflight(IpdActor actor,Long runId,io.agentscope.core.agui.model.RunAgentInput input) {
         var run=requireOwnRun(actor,runId);
-        return prepareAguiConfiguration(actor,runId,input,AgentRunStatus.RUNNING.name().equals(run.getStatus()));
+        return prepareAguiConfiguration(actor,runId,input,AgentRunStatus.RUNNING.name().equals(run.getStatus())).spec();
     }
-    private ProjectAgentRunSpec prepareAguiConfiguration(IpdActor actor,Long runId,
+    private record PreparedAgui(ProjectAgentRunSpec spec, RunPlan plan) { }
+    private PreparedAgui prepareAguiConfiguration(IpdActor actor,Long runId,
             io.agentscope.core.agui.model.RunAgentInput input,boolean recovery) {
         requireEnabled();
         IpdAgentRun run = requireOwnRun(actor, runId);
@@ -425,11 +490,27 @@ public class ProjectAgentRunService {
         if (snapshot == null || snapshot.skills() == null || snapshot.toolIds() == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "原运行配置无法恢复");
         }
+        if (!Integer.valueOf(org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION).equals(snapshot.outputContractVersion())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "原运行未保存输出类型合同；请创建关联的新尝试");
+        }
+        if (snapshot.modelFingerprint() == null || !Integer.valueOf(1).equals(snapshot.modelIdentityVersion())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "原运行未保存完整模型身份指纹，无法确认原配置；请创建关联的新尝试");
+        }
         AgentRunCreateReq frozen = new AgentRunCreateReq(snapshot.capabilityPackCode(), snapshot.capabilityPackVersion(),
             snapshot.modelConfigId(), snapshot.skills().stream().map(ProjectAgentViews.SkillRef::name).toList(),
             snapshot.toolIds(), run.getActionCode(), "", run.getIdempotencyKey(), snapshot.productLineId(),
             snapshot.requirementId(), snapshot.previousRunId(), snapshot.targetDocumentId(), snapshot.baseVersionId());
-        RunPlan plan = planner.plan(frozen);
+        RunPlan plan = planner.plan(frozen, run.getTenantId(), run.getProjectId(), actor.id(), snapshot.skills());
+        try {
+            org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.requireUnchanged(
+                snapshot.modelFingerprint(), plan.modelConfigId(), plan.model(), plan.fallbackModelConfigId(), plan.fallbackModel());
+        } catch (IllegalStateException changedModel) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, changedModel.getMessage());
+        }
+        if (!java.util.Objects.equals(snapshot.fallbackModelConfigId(), plan.snapshot().fallbackModelConfigId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "原运行的备用模型身份已改变");
+        }
         if (!snapshot.skills().equals(plan.snapshot().skills()) || !snapshot.toolIds().equals(plan.toolIds())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "原运行的技能或工具配置已改变");
         }
@@ -438,11 +519,13 @@ public class ProjectAgentRunService {
             snapshot.targetDocumentId(), snapshot.baseVersionId());
         if (productLineNames != null) planner.validateMcpSelection(
             productLineNames.selectServiceId(run.getProjectId()), plan.toolIds());
-        return new ProjectAgentRunSpec(runId, run.getProjectId(), run.getTenantId(), actor.id(), run.getActionCode(),
+        var preparedSpec = new ProjectAgentRunSpec(runId, run.getProjectId(), run.getTenantId(), actor.id(), run.getActionCode(),
             "", plan.skills(), plan.toolIds(), plan.model(), runTimeout, parseRequirementId(snapshot.requirementId()))
             .withProjectFacts(loadProjectFacts(run.getProjectId(), run.getActionCode(), snapshot.targetDocumentId(), snapshot.baseVersionId()))
             .withAguiInput(org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.freeze(input))
-            .withExecutionToolIds(snapshot.executionToolIds());
+            .withExecutionToolIds(snapshot.executionToolIds())
+            .withFrozenModels(plan.model(), plan.fallbackModel(), plan.modelConfigId(), plan.fallbackModelConfigId());
+        return new PreparedAgui(preparedSpec, plan);
     }
 
     /** 原失联恢复器入口：重核当前权限、原检查点及尚未开始的工具效果。 */
@@ -457,7 +540,7 @@ public class ProjectAgentRunService {
             var prepared=prepareAguiConfiguration(actor,runId,input,true);
             aguiResumeGuard.validate(actor,store.findRun(runId).orElseThrow(),recovered.pause(),input);
             aguiPauseResume.authorizeRecoveredIntent(handle,runId,recovered);
-            return prepared.withServerResumeMessages(recovered.messages()).withServerChildResumes(recovered.childResumes());
+            return prepared.spec().withServerResumeMessages(recovered.messages()).withServerChildResumes(recovered.childResumes());
         });
         return true;
     }
@@ -500,25 +583,25 @@ public class ProjectAgentRunService {
     /** Guard 只能获取服务器重新授权的前端工具 schema，不能用请求定义冒充目录。 */
     public java.util.Map<String, io.agentscope.core.agui.model.AguiTool> resolveAguiResumeTools(
             IpdActor actor, Long runId, io.agentscope.core.agui.model.RunAgentInput input) {
-        prepareAguiPreflight(actor, runId, input);
         IpdAgentRun run = requireOwnRun(actor, runId);
+        var prepared = prepareAguiConfiguration(actor, runId, input, AgentRunStatus.RUNNING.name().equals(run.getStatus()));
         ConfigSnapshot snapshot = frozenSnapshot(run);
-        var req = new AgentRunCreateReq(snapshot.capabilityPackCode(), snapshot.capabilityPackVersion(),
-            snapshot.modelConfigId(), snapshot.skills().stream().map(ProjectAgentViews.SkillRef::name).toList(),
-            snapshot.toolIds(), run.getActionCode(), "", run.getIdempotencyKey(), snapshot.productLineId(),
-            snapshot.requirementId(), snapshot.previousRunId(), snapshot.targetDocumentId(), snapshot.baseVersionId());
         var frozenTools = snapshot.serverFrontendTools();
         if (!input.getTools().isEmpty()) {
             var requested = input.getTools().stream().map(io.agentscope.core.agui.model.AguiTool::getName)
                 .collect(java.util.stream.Collectors.toSet());
             var original = frozenTools.stream().map(io.agentscope.core.agui.model.AguiTool::getName)
+                .filter(name -> !org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(name))
                 .collect(java.util.stream.Collectors.toSet());
-            if (requested.size() != input.getTools().size() || !requested.equals(original)) {
+            var externalRequested = requested.stream()
+                .filter(name -> !org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(name))
+                .collect(java.util.stream.Collectors.toSet());
+            if (requested.size() != input.getTools().size() || !externalRequested.equals(original)) {
                 throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "恢复不能改变原运行的前端工具");
             }
         }
         var effective = org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.withFrontendTools(input, frozenTools);
-        var catalog = planner.authorizedAguiFrontendTools(planner.plan(req), effective);
+        var catalog = planner.authorizedAguiFrontendTools(prepared.plan(), effective);
         try {
             var canonical = org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.freeze(
                 org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.bind(effective, String.valueOf(runId),
@@ -1050,12 +1133,16 @@ public class ProjectAgentRunService {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物校验未装配");
         }
         IpdAgentRun run = lockVerifyingRun(actor, runId);
-        IpdAgentArtifactVersion latest = latestArtifact(runId);
-        if (latest == null) {
-            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "校验驻留态缺少产物版本");
+        List<IpdAgentArtifactVersion> documents = reverifyDocuments(actor, run);
+        var gaps = new ArrayList<ProjectAgentArtifactVerifier.Gap>();
+        var verifier = new ProjectAgentArtifactVerifier();
+        for (var document : documents) {
+            for (var gap : verifier.evaluate(run.getActionCode(), document.getContent()).gaps()) {
+                gaps.add(new ProjectAgentArtifactVerifier.Gap(gap.id(), gap.status(), gap.severity(),
+                    "versionId=" + document.getId() + ":" + gap.evidencePath(), gap.gapSummary()));
+            }
         }
-        ProjectAgentArtifactVerifier.Verdict verdict =
-            new ProjectAgentArtifactVerifier().evaluate(run.getActionCode(), latest.getContent());
+        var verdict = new ProjectAgentArtifactVerifier.Verdict(gaps.isEmpty() ? "PASS" : "GAPS", List.copyOf(gaps));
         // 竞态收窄：校验与写 STEP 之间可能并发取消；写前二次确认仍驻留，避免终态事件后出现孤儿 STEP。
         if (verificationTransaction == null && !AgentRunStatus.VERIFYING.name().equals(reload(runId).getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行状态已变化，请刷新");
@@ -1063,9 +1150,52 @@ public class ProjectAgentRunService {
         // 复检证据先行、终态事件最后：终态事件出现后前端停止轮询，其后写入的事件不再送达。
         appendVerifyingStep(run, verdict);
         if (!verdict.hasBlockingGaps()) {
-            finishVerifying(run, AgentRunStatus.SUCCEEDED, latest.getContent());
+            finishVerifying(run, AgentRunStatus.SUCCEEDED, documents.stream()
+                .map(IpdAgentArtifactVersion::getContent).collect(java.util.stream.Collectors.joining("\n\n")));
         }
         return currentStatus(runId);
+    }
+
+    /** 新运行仅消费原服务端输出回执；旧运行保留原历史选取和可信正文校验。 */
+    private List<IpdAgentArtifactVersion> reverifyDocuments(IpdActor actor, IpdAgentRun run) {
+        var snapshot = frozenSnapshot(run);
+        if (snapshot == null || snapshot.outputContractVersion() == null) {
+            var legacy = latestArtifact(run.getId());
+            if (legacy == null) throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "校验驻留态缺少产物版本");
+            requireArtifactAccess().requireDocumentContent(actor, run.getId(), legacy);
+            return List.of(legacy);
+        }
+        if (snapshot.outputContractVersion() != org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION)
+            throw new IllegalStateException("Unsupported output contract");
+        var documents = new LinkedHashMap<Long, IpdAgentArtifactVersion>();
+        long cursor = 0;
+        while (true) {
+            var page = store.listEvents(run.getId(), cursor, 200);
+            if (page == null) throw new IllegalStateException("Output receipts unavailable");
+            if (page.isEmpty()) break;
+            for (var event : page) {
+                if (event.getSeq() == null || event.getSeq() <= cursor || !run.getId().equals(event.getRunId())
+                    || !run.getTenantId().equals(event.getTenantId())) throw new SecurityException("Output receipt scope mismatch");
+                cursor = event.getSeq();
+                if (!"STEP".equals(event.getEventType())) continue;
+                try {
+                    var payload = mapper.readTree(event.getPayload());
+                    if (!org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.STEP.equals(payload.path("kind").asText())) continue;
+                    if (!"DOCUMENT".equals(payload.path("outputKind").asText())
+                        || payload.path("outputContractVersion").asInt() != org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.VERSION)
+                        throw new SecurityException("Output receipt contract mismatch");
+                    Long id = Long.valueOf(payload.path("documentVersionId").asText());
+                    var row = artifactStore.findById(id).orElseThrow(() -> new IllegalStateException("Document version unavailable"));
+                    if (!run.getId().equals(row.getRunId()) || !run.getTenantId().equals(row.getTenantId())
+                        || !payload.path("contentHash").asText().equals(row.getContentSha256()))
+                        throw new SecurityException("Document receipt scope or hash mismatch");
+                    requireArtifactAccess().requireDocumentContent(actor, run.getId(), row);
+                    documents.put(id, row);
+                } catch (java.io.IOException invalid) { throw new IllegalStateException("Output receipt invalid", invalid); }
+            }
+        }
+        if (documents.isEmpty()) throw new IllegalStateException("Trusted document receipt unavailable");
+        return List.copyOf(documents.values());
     }
 
     /** VERIFYING 收口：CAS 迁移 + 终态事件 + 成功时补需求回写；状态被并发改变时拒绝。 */
@@ -1076,8 +1206,28 @@ public class ProjectAgentRunService {
         }
         if (target == AgentRunStatus.SUCCEEDED) {
             bindDemandAfterReverify(run, successBody);
+            appendTerminalEvent(run, AgentEventType.STEP,
+                Map.of("kind", "COMMITTED_CHECKPOINT_CLEANUP", "state", "PENDING", "receipt", "VERIFYING_SUCCEEDED"));
         }
         appendTerminalEvent(run, AgentEventType.RUN_FINISHED, Map.of("status", target.name()));
+        if (target == AgentRunStatus.SUCCEEDED) scheduleCommittedCheckpointCleanup(run.getId());
+    }
+
+    /** 数据库成功及回执先提交；失败留下原事件供已有恢复扫描重入。 */
+    private void scheduleCommittedCheckpointCleanup(Long runId) {
+        Runnable cleanup = () -> {
+            try { executor.cleanupCommittedCheckpoint(runId); }
+            catch (RuntimeException pending) {
+                log.warn("project_agent operation=COMMITTED_CHECKPOINT_CLEANUP status=PENDING_RECOVERY runId={} errorType={}",
+                    runId, pending.getClass().getName());
+            }
+        };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override public void afterCommit() { cleanup.run(); }
+                });
+        } else if (verificationTransaction == null) cleanup.run();
     }
 
     /**

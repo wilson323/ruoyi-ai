@@ -38,11 +38,6 @@ public class ChatRequest {
     private String content;
 
     /**
-     * 工作流请求体
-     */
-    private WorkFlowRunner workFlowRunner;
-
-    /**
      * 是否启用工作流
      */
     private Boolean enableWorkFlow = false;

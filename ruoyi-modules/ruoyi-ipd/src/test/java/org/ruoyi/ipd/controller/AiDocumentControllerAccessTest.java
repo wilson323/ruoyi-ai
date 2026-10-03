@@ -69,6 +69,29 @@ class AiDocumentControllerAccessTest {
     }
 
     @Test
+    void indexRebuildRejectsForeignVersionAndUsesExistingReviewPermissionWithoutReviewing() throws Exception {
+        when(mapper.selectChain(10L)).thenReturn(List.of(document(10L, 100L, null, 1, "REVIEWED")));
+        var embedding = mock(org.ruoyi.ipd.service.AiDocEmbeddingService.class);
+        documents.setDocEmbeddingService(embedding);
+        assertThatThrownBy(() -> controller.rebuildIndex(10L, 20L)).isInstanceOf(IpdBusinessException.class);
+        org.mockito.Mockito.verifyNoInteractions(embedding);
+        var permissionAnnotation = AiDocumentController.class.getMethod("rebuildIndex", Long.class, Long.class)
+            .getAnnotation(cn.dev33.satoken.annotation.SaCheckPermission.class);
+        assertThat(permissionAnnotation.value()).containsExactly(org.ruoyi.ipd.security.IpdPermissionCode.OPERATION_AI_DOCUMENT_REVIEW);
+        verify(mapper, never()).update(any(), any());
+    }
+
+    @Test
+    void indexRebuildRejectsInvisibleProjectBeforeEmbedding() {
+        when(mapper.selectChain(10L)).thenReturn(List.of(document(10L, 100L, null, 1, "REVIEWED")));
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND)).when(access).requireVisible(ACTOR, 100L);
+        var embedding = mock(org.ruoyi.ipd.service.AiDocEmbeddingService.class);
+        documents.setDocEmbeddingService(embedding);
+        assertThatThrownBy(() -> controller.rebuildIndex(10L, 10L)).isInstanceOf(IpdBusinessException.class);
+        org.mockito.Mockito.verifyNoInteractions(embedding);
+    }
+
+    @Test
     void listRejectsProjectOutsideActiveMembership() {
         doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
             .when(projectRead).getVisibleById(77L, ACTOR);

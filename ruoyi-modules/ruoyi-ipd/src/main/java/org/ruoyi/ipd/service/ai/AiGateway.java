@@ -128,8 +128,9 @@ public class AiGateway {
             return out;
         } catch (Exception e) {
             AiChatResult fail = mapFailure(e, elapsed(start));
-            log.warn("[AI] embed fail: model={} chunks={} errorCode={} latencyMs={}",
-                cfg.modelName(), texts.size(), fail.errorCode(), fail.latencyMs());
+            log.warn("[AI] embed fail: model={} chunks={} errorCode={} latencyMs={} causeTypes={} ollamaStatus={}",
+                cfg.modelName(), texts.size(), fail.errorCode(), fail.latencyMs(),
+                safeCauseTypes(e), ollamaHttpStatus(e));
             return null;
         }
     }
@@ -394,6 +395,11 @@ public class AiGateway {
             return AiChatResult.fail(code == 401 || code == 403 ? "AUTH_FAILED" : "HTTP_" + code,
                 "HTTP " + code, latencyMs);
         }
+        Integer ollamaStatus = ollamaHttpStatus(e);
+        if (ollamaStatus != null) {
+            return AiChatResult.fail(ollamaStatus == 401 || ollamaStatus == 403 ? "AUTH_FAILED" : "HTTP_" + ollamaStatus,
+                "HTTP " + ollamaStatus, latencyMs);
+        }
         Throwable connect = findInChain(e, java.net.ConnectException.class, java.net.UnknownHostException.class);
         if (connect != null) {
             return AiChatResult.fail("UNREACHABLE",
@@ -402,14 +408,36 @@ public class AiGateway {
         if (findInChain(e, java.net.http.HttpTimeoutException.class) != null) {
             return AiChatResult.fail("TIMEOUT", "gateway: timeout", latencyMs);
         }
+        if (findInChain(e, io.agentscope.core.embedding.EmbeddingException.class) != null) {
+            return AiChatResult.fail("EMBEDDING_FAILED", "gateway: embedding failed", latencyMs);
+        }
         return AiChatResult.fail("UNSUPPORTED_PROTOCOL",
             "gateway: " + e.getClass().getSimpleName(), latencyMs);
+    }
+
+    /** 只输出有界异常类名，不消费异常消息、响应体或请求数据。 */
+    static List<String> safeCauseTypes(Throwable failure) {
+        List<String> types = new ArrayList<>();
+        java.util.Set<Throwable> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        for (Throwable current = failure; current != null && types.size() < 8 && seen.add(current);
+             current = current.getCause()) {
+            types.add(current.getClass().getName());
+        }
+        return List.copyOf(types);
+    }
+
+    static Integer ollamaHttpStatus(Throwable failure) {
+        Throwable found = findInChain(failure,
+            io.agentscope.extensions.model.ollama.OllamaHttpClient.OllamaHttpException.class);
+        return found instanceof io.agentscope.extensions.model.ollama.OllamaHttpClient.OllamaHttpException http
+            ? http.getStatusCode() : null;
     }
 
     /** 全链扫描：返回第一个命中指定类型（isInstance）的异常；找不到返回 null（自引用 cause 不死循环）。 */
     private static Throwable findInChain(Throwable e, Class<?>... types) {
         Throwable cur = e;
-        while (cur != null) {
+        java.util.Set<Throwable> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        while (cur != null && seen.add(cur)) {
             for (Class<?> t : types) {
                 if (t.isInstance(cur)) {
                     return cur;

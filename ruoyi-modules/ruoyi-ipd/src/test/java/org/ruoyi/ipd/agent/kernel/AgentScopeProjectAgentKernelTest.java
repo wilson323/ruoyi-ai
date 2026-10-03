@@ -600,4 +600,48 @@ class AgentScopeProjectAgentKernelTest {
             }
         }
     }
+
+    /**
+     * run 2106378468009717761 的分类反证：记忆抽取的 TimeoutException 经脱敏包装成
+     * IllegalStateException 后冒泡进主流。旧判据只看顶层类型，于是报 STREAM_ERROR
+     * 「模型输出中断」，而正文与 TEXT_MESSAGE_END 早已推送落库——与事实相反。
+     * 包装类存在的目的是对外文案脱敏，不能让脱敏把真实原因一并掩盖。
+     */
+    @Test void wrappedTimeoutIsClassifiedAsRunTimeout() {
+        var wrapped = new IllegalStateException("Long-term memory record failed (TimeoutException)",
+            new java.util.concurrent.TimeoutException("stream stalled"));
+        assertThat(AgentScopeProjectAgentKernel.classifyStreamFailure(wrapped))
+            .isEqualTo(AgentScopeProjectAgentKernel.ERR_RUN_TIMEOUT);
+    }
+
+    /** 真实原因埋在两层之下也一样要能挖到。 */
+    @Test void deeplyWrappedTimeoutIsClassifiedAsRunTimeout() {
+        var wrapped = new RuntimeException("release failed",
+            new IllegalStateException("memory record failed",
+                new java.util.concurrent.TimeoutException("stalled")));
+        assertThat(AgentScopeProjectAgentKernel.classifyStreamFailure(wrapped))
+            .isEqualTo(AgentScopeProjectAgentKernel.ERR_RUN_TIMEOUT);
+    }
+
+    /** 没有超时的普通失败仍是流错误，不能因为「有 cause」就一律升级成超时。 */
+    @Test void nonTimeoutFailureStaysStreamError() {
+        assertThat(AgentScopeProjectAgentKernel.classifyStreamFailure(
+            new IllegalStateException("artifact mismatch", new java.io.IOException("disk"))))
+            .isEqualTo(AgentScopeProjectAgentKernel.ERR_STREAM_ERROR);
+    }
+
+    /** 自引用 cause 链防御：不能死循环，也不能 NPE。 */
+    @Test void selfReferencingCauseChainTerminates() {
+        var loop = new IllegalStateException("loop");
+        assertThat(AgentScopeProjectAgentKernel.classifyStreamFailure(loop))
+            .isEqualTo(AgentScopeProjectAgentKernel.ERR_STREAM_ERROR);
+        assertThat(AgentScopeProjectAgentKernel.rootCauseType(loop)).isNotBlank();
+    }
+
+    /** 顶层就是超时时保持原行为，不回归。 */
+    @Test void topLevelTimeoutStillClassifiedAsRunTimeout() {
+        assertThat(AgentScopeProjectAgentKernel.classifyStreamFailure(
+            new java.util.concurrent.TimeoutException("direct")))
+            .isEqualTo(AgentScopeProjectAgentKernel.ERR_RUN_TIMEOUT);
+    }
 }

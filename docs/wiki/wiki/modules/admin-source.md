@@ -22,7 +22,6 @@ raw:
 @SpringBootApplication
 public class RuoYiAIApplication {
     public static void main(String[] args) {
-        killPortProcess(6039);                  // ← 自杀式腾端口
         SpringApplication application = new SpringApplication(RuoYiAIApplication.class);
         application.setApplicationStartup(new BufferingApplicationStartup(2048));
         application.run(args);
@@ -32,10 +31,10 @@ public class RuoYiAIApplication {
 
 **关键细节**：
 
-1. **`killPortProcess(6039)`** 必须在 `SpringApplication.run()` 之前调用，否则端口被占 → 启动失败。Windows 风格用 `netstat -ano` + `taskkill /F /PID`；macOS/Linux 直接抛异常被 catch + 静默跳过（无副作用）。
+1. 当前启动类直接运行 Spring，**不会自动终止占用端口的进程**。出现端口冲突须核对服务归属；本机 IPD 按实际配置使用 16039，不终止其他服务。
 2. **`BufferingApplicationStartup(2048)`** 启用 Spring Boot 启动期事件缓冲（2048 条），用于 actuator 暴露 startup 端点，便于排查启动慢的 bean。
 
-参见：[ruoyi-ai-application.md](../raw/admin-source/ruoyi-ai-application.md)、。
+当前事实源：[RuoYiAIApplication.java](../../../../ruoyi-admin/src/main/java/org/ruoyi/RuoYiAIApplication.java)。[历史源码快照](../../raw/admin-source/ruoyi-ai-application.md)保留旧自动清理实现，仅作历史证据，不是当前启动行为。
 
 ## War 包支持 — RuoYiAIServletInitializer
 
@@ -79,7 +78,7 @@ public class MapperConflictResolver implements BeanDefinitionRegistryPostProcess
 
 **经验**：扩展 chat 模块时，如果遇到 `BeanDefinitionOverrideException`，先看这个 resolver 是否覆盖到对应 mapper 名，可能需要扩展匹配条件。
 
-参见：[mapper-conflict-resolver.md](../raw/admin-source/mapper-conflict-resolver.md)。
+参见：[mapper-conflict-resolver.md](../../raw/admin-source/mapper-conflict-resolver.md)。
 
 ## 首页 — IndexController
 
@@ -97,7 +96,7 @@ public class IndexController {
 
 `/` 路径返回欢迎语，强制 `@SaIgnore` 跳过登录校验。**前端单独部署**（`ruoyi-web` / `ruoyi-admin` 是独立仓库），后端只暴露 API；`/` 这个端点用于快速确认服务是否启动。
 
-参见：[index-controller.md](../raw/admin-source/index-controller.md)。
+参见：[index-controller.md](../../raw/admin-source/index-controller.md)。
 
 ## 认证入口 — AuthController
 
@@ -129,7 +128,7 @@ public class AuthController {
 - 限流（`@RateLimiter`）
 - API 加密（`@ApiEncrypt`）
 
-参见：[auth-controller.md](../raw/admin-source/auth-controller.md)。
+参见：[auth-controller.md](../../raw/admin-source/auth-controller.md)。
 
 ## 验证码 — CaptchaController
 
@@ -144,13 +143,13 @@ captcha:
   charLength: 4
 ```
 
-参见：[captcha-controller.md](../raw/admin-source/captcha-controller.md)、。
+参见：[captcha-controller.md](../../raw/admin-source/captcha-controller.md)、。
 
 ## 日志 — logback-plus.xml
 
 项目自定义的 logback 配置，**不在 classpath 默认的 logback-spring.xml 体系里**——直接叫 `logback-plus.xml` 是项目惯例。
 
-参见：[logback-plus-xml.md](../raw/admin-source/logback-plus-xml.md)、。
+参见：[logback-plus-xml.md](../../raw/admin-source/logback-plus-xml.md)、。
 
 ## 模块边界
 

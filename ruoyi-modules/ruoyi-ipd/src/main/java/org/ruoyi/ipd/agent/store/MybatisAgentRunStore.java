@@ -173,6 +173,22 @@ public class MybatisAgentRunStore implements AgentRunStore {
     }
 
     @Override
+    public List<IpdAgentRun> listCommittedCleanupCandidates(Long afterId, int limit) {
+        var filter = new LambdaQueryWrapper<IpdAgentRun>().eq(IpdAgentRun::getStatus, "SUCCEEDED")
+            .apply("EXISTS (SELECT 1 FROM ipd_agent_run_event e WHERE e.run_id = ipd_agent_run.id AND e.tenant_id = ipd_agent_run.tenant_id AND e.del_flag = '0' "
+                + "AND e.event_type = 'STEP' "
+                + "AND JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.kind')) = 'COMMITTED_CHECKPOINT_CLEANUP' "
+                + "AND JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.receipt')) = 'VERIFYING_SUCCEEDED' "
+                + "AND JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.state')) = 'PENDING')")
+            .apply("NOT EXISTS (SELECT 1 FROM ipd_agent_run_event e WHERE e.run_id = ipd_agent_run.id AND e.tenant_id = ipd_agent_run.tenant_id AND e.del_flag = '0' "
+                + "AND e.event_type = 'STEP' "
+                + "AND JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.kind')) = 'COMMITTED_CHECKPOINT_CLEANUP' "
+                + "AND JSON_UNQUOTE(JSON_EXTRACT(e.payload, '$.state')) = 'DONE')");
+        if (afterId != null) filter.gt(IpdAgentRun::getId, afterId);
+        return runMapper.selectList(filter.orderByAsc(IpdAgentRun::getId).last("LIMIT " + Math.min(50, Math.max(1, limit))));
+    }
+
+    @Override
     public boolean hasExecutionOwner(Long runId) {
         return eventMapper.selectCount(new LambdaQueryWrapper<IpdAgentRunEvent>()
             .eq(IpdAgentRunEvent::getRunId, runId).eq(IpdAgentRunEvent::getEventType, AgentEventType.STEP.name())

@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class ProjectAgentMeteredModelTest {
-    static final class Recorder implements ProjectAgentEventSink {
+    static class Recorder implements ProjectAgentEventSink {
         final List<Map<String, Object>> ends = new ArrayList<>();
         public synchronized void onStep(String kind, Map<String, Object> detail) {
             if ("END".equals(detail.get("phase"))) ends.add(detail);
@@ -184,10 +184,11 @@ class ProjectAgentMeteredModelTest {
         };
         var recorder = new Recorder();
         var ledger = mock(AiModelUsageLedgerService.class);
-        var sink = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
+        var identity = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(123L, "synthetic", "no-network-metering");
+        var sink = new ProjectAgentUsageSink(recorder, ledger, List.of(identity), "person", "run");
         var agent = io.agentscope.harness.agent.HarnessAgent.builder()
             .name("metering-test").workspace(workspace)
-            .model(new ProjectAgentMeteredModel(delegate, sink)).maxIters(4)
+            .model(new ProjectAgentMeteredModel(delegate, sink, sink, identity)).maxIters(4)
             .stateStore(new io.agentscope.core.state.InMemoryAgentStateStore()).build();
         var context = io.agentscope.core.agent.RuntimeContext.builder()
             .userId("synthetic-person").sessionId("owned-session").build();
@@ -284,7 +285,8 @@ class ProjectAgentMeteredModelTest {
         var providerCalls = new AtomicInteger();
         var recorder = new Recorder();
         var ledger = mock(AiModelUsageLedgerService.class);
-        var accounting = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
+        var identity = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(123L, "synthetic", "synthetic");
+        var accounting = new ProjectAgentUsageSink(recorder, ledger, List.of(identity), "person", "run");
         var spec = new ProjectAgentRunSpec(1L, 2L, "tenant", 3L, null, "synthetic", List.of(), List.of(),
             new org.ruoyi.chat.kernel.KernelModelRequest("synthetic", "synthetic", "synthetic", "https://synthetic.example"), null);
         var execution = new ProjectAgentRuntimeAccessSink(accounting, spec, ignored -> {
@@ -294,7 +296,7 @@ class ProjectAgentMeteredModelTest {
             providerCalls.incrementAndGet();
             active.set(false);
             return Flux.just(usage("response", 10, 5));
-        }), execution, execution.checkpointOwnership());
+        }), execution, execution.checkpointOwnership(), identity);
         metered.stream(List.of(), null, null).blockLast();
         verify(ledger).recordUsage(123L, "person", "project_agent", 10, 5, 0L, "ok", "run");
         assertEquals(1, recorder.ends.size());
@@ -318,6 +320,28 @@ class ProjectAgentMeteredModelTest {
             return Flux.just(usage("response", 10, 5));
         }), new Recorder(), accounting);
         assertThrows(IllegalStateException.class, () -> metered.stream(List.of(), null, null).blockLast());
+        verifyNoInteractions(ledger);
+    }
+    @Test void actualFallbackIdentityAppearsOnStartAndFailedEndWithoutFakeUsage() {
+        var events = new ArrayList<Map<String,Object>>();
+        var recorder = new Recorder() {
+            @Override public void onStep(String kind, Map<String,Object> detail) { events.add(detail); }
+        };
+        var identity = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(202L, "zhipu", "GLM-5.3-Flash");
+        var ledger = mock(AiModelUsageLedgerService.class);
+        var sink = new ProjectAgentUsageSink(recorder, ledger, List.of(identity), "person", "run");
+        var metered = new ProjectAgentMeteredModel(model(() -> Flux.error(new IllegalStateException("synthetic rejection"))), sink, sink, identity);
+        assertThrows(IllegalStateException.class, () -> metered.stream(List.of(), null, null).blockLast());
+        assertEquals(2, events.size());
+        for (var event : events) {
+            assertEquals("202", event.get("modelConfigId"));
+            assertEquals("zhipu", event.get("providerCode"));
+            assertEquals("GLM-5.3-Flash", event.get("modelName"));
+            assertFalse(event.containsKey("inputTokens"));
+        }
+        assertEquals("START", events.get(0).get("phase"));
+        assertEquals("ERROR", events.get(1).get("outcome"));
+        assertEquals(false, events.get(1).get("usageAvailable"));
         verifyNoInteractions(ledger);
     }
 }

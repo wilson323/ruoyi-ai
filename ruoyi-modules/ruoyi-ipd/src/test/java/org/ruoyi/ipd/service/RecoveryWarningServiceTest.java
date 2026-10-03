@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,10 @@ class RecoveryWarningServiceTest {
     private ISystemConfigService systemConfigService;
 
     private RecoveryWarningService service;
+
+    /** 超管：可扫全库，既有 6 个用例保持原语义不变。 */
+    private static final org.ruoyi.ipd.security.IpdActor ADMIN =
+        new org.ruoyi.ipd.security.IpdActor(1L, "超管", "SUPER_ADMIN", null);
 
     @BeforeEach
     void setup() {
@@ -95,7 +100,7 @@ class RecoveryWarningServiceTest {
             .thenReturn("0.25");
         when(warningMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
 
         assertThat(saved).isEqualTo(1);
         ArgumentCaptor<RecoveryWarning> captor = ArgumentCaptor.forClass(RecoveryWarning.class);
@@ -124,7 +129,7 @@ class RecoveryWarningServiceTest {
         when(systemConfigService.getValue(any(), any()))
             .thenReturn("0.25");
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
         assertThat(saved).isZero();
         verify(warningMapper, never()).insert(any(RecoveryWarning.class));
     }
@@ -137,7 +142,7 @@ class RecoveryWarningServiceTest {
         when(projectMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of());
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
         assertThat(saved).isZero();
         verify(warningMapper, never()).insert(any(RecoveryWarning.class));
     }
@@ -152,7 +157,7 @@ class RecoveryWarningServiceTest {
         when(systemConfigService.getValue(any(), any()))
             .thenReturn("0.25");
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
         assertThat(saved).isZero();
         verify(warningMapper, never()).insert(any(RecoveryWarning.class));
     }
@@ -167,7 +172,7 @@ class RecoveryWarningServiceTest {
         when(systemConfigService.getValue(any(), any()))
             .thenReturn("0.25");
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
         assertThat(saved).isZero();
     }
 
@@ -189,7 +194,7 @@ class RecoveryWarningServiceTest {
             .thenReturn("0.25");
         when(warningMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
         assertThat(saved).isZero();
         verify(warningMapper, never()).insert(any(RecoveryWarning.class));
     }
@@ -238,7 +243,7 @@ class RecoveryWarningServiceTest {
         when(systemConfigService.getValue(any(), any())).thenReturn("0.5");
         when(warningMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
-        int saved = service.checkAndGenerate(scanDate);
+        int saved = service.checkAndGenerate(ADMIN, scanDate);
         assertThat(saved).isEqualTo(1); // 40% < 50% 触发
     }
 
@@ -275,5 +280,53 @@ class RecoveryWarningServiceTest {
 
         List<RecoveryWarning> result = service.list(null);
         assertThat(result).hasSize(2);
+    }
+
+    // ==================== 横向越权负例：非超管不得跨组写预警 ====================
+
+    @Test
+    @DisplayName("跨组越权负例：GROUP_LEADER 触发扫描时，他组项目不被写入预警")
+    void crossGroupProject_skipped() {
+        LocalDate scanDate = LocalDate.of(2026, 9, 20);
+        Project foreign = project(202L, scanDate.minusDays(10), new BigDecimal("1000000"));
+        foreign.setMainGroupId(999999L); // 与 actor.groupId 不一致
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(foreign));
+        when(systemConfigService.getValue(any(), any())).thenReturn("0.25");
+
+        int saved = service.checkAndGenerate(new org.ruoyi.ipd.security.IpdActor(
+            1L, "组长", "GROUP_LEADER", 777001L), scanDate);
+
+        assertThat(saved).isZero();
+        verify(warningMapper, never()).insert(any(RecoveryWarning.class));
+        verify(receiptLedgerMapper, never()).selectList(any(LambdaQueryWrapper.class));
+    }
+
+    @Test
+    @DisplayName("同组回归：GROUP_LEADER 触发扫描时，本组项目正常写入预警")
+    void sameGroupProject_written() {
+        LocalDate scanDate = LocalDate.of(2026, 9, 20);
+        Project own = project(303L, scanDate.minusDays(10), new BigDecimal("1000000"));
+        own.setMainGroupId(777001L);
+        when(projectMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(own));
+        when(receiptLedgerMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(receipt(303L, new BigDecimal("100000"), BigDecimal.ZERO)));
+        when(systemConfigService.getValue(any(), any())).thenReturn("0.25");
+        when(warningMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        int saved = service.checkAndGenerate(new org.ruoyi.ipd.security.IpdActor(
+            1L, "组长", "GROUP_LEADER", 777001L), scanDate);
+
+        assertThat(saved).isEqualTo(1);
+        verify(warningMapper).insert(any(RecoveryWarning.class));
+    }
+
+    @Test
+    @DisplayName("actor 缺失 → UNAUTHORIZED，扫描不执行")
+    void nullActor_rejected() {
+        assertThatThrownBy(() -> service.checkAndGenerate(null, LocalDate.of(2026, 9, 20)))
+            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class)
+            .satisfies(e -> assertThat(((org.ruoyi.ipd.common.IpdBusinessException) e).getErrorCode())
+                .isEqualTo(org.ruoyi.ipd.common.ApiV1ErrorCode.UNAUTHORIZED));
+        verify(projectMapper, never()).selectList(any(LambdaQueryWrapper.class));
     }
 }

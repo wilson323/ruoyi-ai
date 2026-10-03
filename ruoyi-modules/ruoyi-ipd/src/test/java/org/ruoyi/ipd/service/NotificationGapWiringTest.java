@@ -365,7 +365,16 @@ class NotificationGapWiringTest {
     @Test
     @DisplayName("移交 initiate：DRAFT 建单成功 → 知会接手人待确认")
     void handover_createDraft_notifiesRecipient() {
-        when(projectMapper.selectById(300L)).thenReturn(projectOfGroup(20L));
+        Project sourceProject = projectOfGroup(20L);
+        sourceProject.setId(300L);
+        when(projectMapper.selectById(300L)).thenReturn(sourceProject);
+        when(projectMemberMapper.selectCount(org.mockito.ArgumentMatchers.argThat(wrapper -> {
+            var query = (LambdaQueryWrapper<ProjectMember>) wrapper;
+            var sql = query.getCustomSqlSegment();
+            var values = query.getParamNameValuePairs().values();
+            return sql.contains("exit_date IS NULL") && values.contains(300L)
+                && values.contains(1L) && values.contains("RD_PM");
+        }))).thenReturn(1L);
         when(personMapper.selectById(9L)).thenReturn(Person.builder()
             .id(9L).name("接手的研发PM").personType("RD_PM")
             .accountStatus("ACTIVE").employmentStatus("ACTIVE").build());

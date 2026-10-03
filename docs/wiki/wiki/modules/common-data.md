@@ -17,7 +17,7 @@ raw:
 
 MyBatis-Plus 配置 + 拦截器 + 自动填充。
 
-参见 [mybatis-plus-config.md](../raw/common-source/mybatis-plus-config.md)。
+参见 [mybatis-plus-config.md](../../raw/common-source/mybatis-plus-config.md)。
 
 **3 个核心拦截器**：
 
@@ -82,7 +82,7 @@ public void createOrder(OrderBo bo) { ... }
 
 多租户上下文传播。
 
-参见 [TenantHelper.md](../raw/common-source/TenantHelper.md)。
+参见 [TenantHelper.md](../../raw/common-source/TenantHelper.md)。
 
 **关键类**：
 

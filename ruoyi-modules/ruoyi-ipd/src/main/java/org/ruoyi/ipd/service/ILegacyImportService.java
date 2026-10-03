@@ -46,7 +46,7 @@ public interface ILegacyImportService {
     /** * @return 项目 + 标记编码列表 */
     LegacyImportResult importOne(LegacyImportReq req, Long operatorId);
 
-    /** * Round 8 / R8-P0-10：并行导入——按行提交 CompletableFuture，受 IMPORT_BATCH_PARALLELISM 限流。 */
+    /** * Round 8 / R8-P0-10：并行导入——按行提交 CompletableFuture（无并行度限流，仅受 MAX_BATCH_SIZE 上限约束）。 */
     /** * 业务异常（ServiceException）和数据访问异常（DataAccessException）逐行捕获不影响其他行； */
     /** * 其它 RuntimeException（连接池耗尽 / DB 挂 / OOM）向上抛，由 Controller 统一处理。 */
     List<LegacyImportRowResult> importBatch(List<LegacyImportReq> rows, Long operatorId);

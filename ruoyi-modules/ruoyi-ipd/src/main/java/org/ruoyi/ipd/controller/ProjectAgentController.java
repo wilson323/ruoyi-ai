@@ -49,6 +49,22 @@ public class ProjectAgentController {
     private final IpdPermission ipdPermission;
     private final ProjectAgentAguiStream aguiStream;
 
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping("/agent-runs/{runId}/skill-reviews")
+    public ApiV1Response<List<org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService.SkillReview>> skillReviews(
+            @PathVariable String runId) {
+        return ApiV1Response.ok(runService.skillReviews(ipdPermission.requireInternal(), parseId(runId, "runId")));
+    }
+
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/agent-runs/{runId}/skill-reviews/{candidateSeq}/review")
+    public ApiV1Response<org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService.SkillReview> reviewSkill(
+            @PathVariable String runId, @PathVariable String candidateSeq,
+            @RequestBody org.ruoyi.ipd.agent.dto.AgentSkillReviewReq req) {
+        return ApiV1Response.ok(runService.reviewSkill(ipdPermission.requireInternal(), parseId(runId, "runId"),
+            parseId(candidateSeq, "candidateSeq"), req));
+    }
+
     /**
      * 合同 #1：能力目录（开关关闭仍 200+code=0，pack.available=false）。
      *

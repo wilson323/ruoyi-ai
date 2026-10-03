@@ -1082,7 +1082,9 @@ public class BonusPoolService implements IBonusPoolService {
      */
     @Transactional(rollbackFor = Exception.class)
     public BonusPool freeze(Long id, String reason, IpdActor actor) {
+        org.ruoyi.ipd.security.IpdIdorGuard.requireRoleOrSuperAdmin(actor, "GROUP_LEADER");
         BonusPool pool = requireById(id);
+        requirePoolOperator(pool, actor);
         if (STATUS_CONFIRMED.equals(pool.getStatus()) || STATUS_DISTRIBUTED.equals(pool.getStatus())) {
             // 幂等：终态前不再流转
             return pool;
@@ -1093,7 +1095,6 @@ public class BonusPoolService implements IBonusPoolService {
         }
         // R217 拍板C 配套守卫（dangling-fk-survey.md §2.4/§3.2，幽灵项目 9140004 运行时暴露根因）：
         // 此前仅 compute 路径（buildPoolFromProjectWithAchievement）校验项目存在，freeze 未校验
-        requirePoolProjectPresent(pool);
         // ROOT-R3-P0-1：守卫 preCheck —— DRAFT -> CONFIRMED 合法
         preCheckGuard("bonus_pool", STATUS_DRAFT, STATUS_CONFIRMED, "freeze");
         pool.setStatus(STATUS_CONFIRMED);
@@ -1123,7 +1124,9 @@ public class BonusPoolService implements IBonusPoolService {
                                 BigDecimal marketShare,
                                 BigDecimal rdShare,
                                 IpdActor actor) {
+        org.ruoyi.ipd.security.IpdIdorGuard.requireRoleOrSuperAdmin(actor, "GROUP_LEADER");
         BonusPool pool = requireById(id);
+        requirePoolOperator(pool, actor);
         if (STATUS_DISTRIBUTED.equals(pool.getStatus())) {
             // 幂等：DISTRIBUTED 终态
             return pool;
@@ -1136,7 +1139,6 @@ public class BonusPoolService implements IBonusPoolService {
         calculateDistribution(marketShare, rdShare);
         // R217 拍板C 配套守卫（dangling-fk-survey.md §2.4/§3.2，幽灵项目 9140004 运行时暴露根因）：
         // 项目不存在的池禁止分配（同 freeze，写法参照 compute 路径 L763-765 的存在性判定）
-        requirePoolProjectPresent(pool);
         // R213-M1.1 owner 拍板（2026-09-24，卡 15d5e689）：分配前置业务门禁——
         // 项目必须存在 CONFIRMED 评定且 tierCoefficient 有效，否则 409/50002 业务拒绝；
         // bonus_allocations.contribution_rate 保持 DDL NOT NULL，不再出现 null 台账。
@@ -1276,20 +1278,26 @@ public class BonusPoolService implements IBonusPoolService {
      * projectMapper.selectById 查不到（物理不存在；Project.delFlag 为 @TableLogic，软删行同样返回 null，
      * del_flag 显式双判仅作防御冗余）→ 拒绝流转。
      *
-     * <p>projectMapper 未注入（本文件单/双参兼容构造器旧测试装配，先例见
-     * {@link #requireConfirmedContribution} 的 contributionMapper==null 放行）时跳过校验——
-     * Spring 装配走 4 参 @Autowired 构造器恒注入，生产路径守卫必生效。
+     * <p>对象权限在幂等返回之前校验：原组长必须与项目主组一致，超管保留原豁免；
+     * 不要求组长成为项目成员。projectMapper 未注入时拒绝流转，不能绕过对象授权。
      * 仅防未来再发，不做历史数据回填（owner 拍板：9140004 遗产组整组保留）。
      */
-    private void requirePoolProjectPresent(BonusPool pool) {
+    private void requirePoolOperator(BonusPool pool, IpdActor actor) {
+        Project project = requirePoolProjectPresent(pool);
+        org.ruoyi.ipd.security.IpdIdorGuard.requireProjectTenantMatch(project);
+        org.ruoyi.ipd.security.IpdIdorGuard.assertSameGroupIpd(actor, project.getMainGroupId());
+    }
+
+    private Project requirePoolProjectPresent(BonusPool pool) {
         if (projectMapper == null) {
-            return;
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "奖金池项目授权未装配");
         }
         Project poolProject = projectMapper.selectById(pool.getProjectId());
         if (poolProject == null || "1".equals(poolProject.getDelFlag())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "奖金池关联项目不存在或已归档: projectId=" + pool.getProjectId());
         }
+        return poolProject;
     }
 
     /**

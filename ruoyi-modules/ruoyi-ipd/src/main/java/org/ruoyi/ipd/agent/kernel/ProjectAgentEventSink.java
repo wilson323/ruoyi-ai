@@ -8,6 +8,32 @@ import java.util.Map;
  */
 public interface ProjectAgentEventSink {
 
+    /** Server retriever output, never an SDK/model SOURCE declaration. */
+    default void onTrustedSource(Map<String,Object> source) { onSource(source); }
+
+    /** Only the server artifact delivery adapter calls this after original file/row verification. */
+    default void onDocument(Long versionId) { throw new IllegalStateException("Trusted document receipt is not bound"); }
+
+    /** Trusted decorator path, separate from arbitrary SDK STEP metadata. */
+    default void onModelCall(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity, Map<String, Object> detail) {
+        var metadata = new java.util.LinkedHashMap<String, Object>(detail);
+        metadata.put("modelIdentityAvailable", identity != null);
+        if (identity != null) {
+            metadata.put("modelConfigId", identity.modelConfigId().toString());
+            metadata.put("modelName", identity.modelName());
+            metadata.put("providerCode", identity.providerCode());
+        }
+        onStep("MODEL_CALL", Map.copyOf(metadata));
+    }
+
+    /**
+     * 长期记忆写入回执。回答已交付之后的后台副作用结果，既不冒充业务终态也不被吞掉。
+     * 未绑定的 sink 显式失败，避免测试替身把回执悄悄丢掉。
+     */
+    default void onMemoryReceipt(Map<String, Object> receipt) {
+        throw new IllegalStateException("memory receipt is not bound");
+    }
+
     /** 在模型或工具实际开始前验证当前执行所有权；生产sink绑定原run epoch。 */
     default void requireActiveOwnership() { }
 

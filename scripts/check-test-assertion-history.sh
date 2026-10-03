@@ -5,47 +5,32 @@
 # 自证能红：FAIL_SEED=1 → 注入 assertTrue("现状保留") 模式 → exit 2
 
 set -eo pipefail
-
-TEST_BASE="${TEST_BASE:-microservices}"
-TAH_FAIL_SEED="${TAH_FAIL_SEED:-0}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/audit-gate-input.sh"
+REPO="${REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+TEST_BASE="${TEST_BASE:-$REPO/ruoyi-modules}"
+POM_FILE="${POM_FILE:-$REPO/pom.xml}"
 
 main() {
-  echo "[防假绿-2] check-test-assertion-history.sh 启动 (基线: R131)"
-
-  if [ "$TAH_FAIL_SEED" = "1" ]; then
-    echo "[防假绿-2] FAIL_SEED=1 → 注入 assertTrue(\"现状保留\") 软化断言"
-    echo "❌ 检测到 git history 中将硬断言改成软断言（assertTrue(\"现状\"））"
+  if [ "${TAH_FAIL_SEED:-0}" = "1" ]; then
+    echo "[gate] TAH_FAIL_SEED=1 自证失败"
     exit 2
   fi
-
-  if [ ! -d "$TEST_BASE" ]; then
-    echo "⚠️  $TEST_BASE 不存在"
-    exit 0
-  fi
-
-  # git blame 软化断言检测（assertTrue/assertEquals 被改成常量断言）
-  if ! command -v git >/dev/null 2>&1; then
-    echo "⚠️  git 不可用，跳过"
-    exit 0
-  fi
-
-  # 最近 30 commit 内 + 软化断言模式
-  local soft=0
-  while read -r h file; do
-    [ -f "$file" ] || continue
-    if grep -qE "assertTrue\([\"']现状|assertEquals\([\"']现状" "$file"; then
-      echo "❌ ${file}:${h} 软化断言"
-      soft=$((soft + 1))
-    fi
-  done < <(git log --since="30 days ago" --name-only --pretty=format: 2>/dev/null | grep -E "\.java$" | sort -u | head -20)
-
-  if [ "$soft" -gt 0 ]; then
-    echo "🔴 $soft 个文件含软化断言"
-    exit 2
-  fi
-
-  echo "✅ 最近 30 commit 无软化断言"
-  exit 0
+  gate_require_tree "$TEST_BASE" -path '*/test/*' -name '*.java'
+  command -v git >/dev/null || { echo "[gate] git不可用" >&2; exit 2; }
+  git -C "$REPO" rev-parse --verify HEAD >/dev/null || exit 2
+  # 历史命令失败不能成为空集合；同时扫描当前测试，包含尚未提交的断言。
+  local history
+  history=$(git -C "$REPO" log --since="30 days ago" --name-only --pretty=format:) || exit 2
+  python3 - "$TEST_BASE" <<'PYCODE'
+import pathlib,re,sys
+files=[p for p in pathlib.Path(sys.argv[1]).rglob('*.java') if 'test' in p.parts and 'target' not in p.parts]
+violations=[]
+for p in files:
+    if re.search(r"assert(?:True|Equals)\([\"']现状",p.read_text()): violations.append(str(p))
+for p in violations: print("❌ 软化断言:",p)
+sys.exit(2 if violations else 0)
+PYCODE
+  echo "✅ 完整非空输入扫描完成"
 }
-
 main "$@"

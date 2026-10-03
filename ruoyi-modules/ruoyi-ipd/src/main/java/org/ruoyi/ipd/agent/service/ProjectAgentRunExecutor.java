@@ -90,6 +90,57 @@ public class ProjectAgentRunExecutor {
 
     public void setOwnership(ProjectAgentRunOwnership ownership) { this.ownership = ownership; }
 
+    /** 冷服务沿原成功回执清理；租约+行锁阻止旧执行者和并发扫描，删除可重复。 */
+    public boolean cleanupCommittedCheckpoint(Long runId) {
+        if (ownership == null || finishTransaction == null || pausedCheckpointCleanup == null) return false;
+        var acquired = ownership.acquire(runId);
+        if (acquired.isEmpty()) return false;
+        var cleanupTransaction = new TransactionTemplate(java.util.Objects.requireNonNull(finishTransaction.getTransactionManager()));
+        cleanupTransaction.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        try (var lease = acquired.get()) {
+            return Boolean.TRUE.equals(cleanupTransaction.execute(tx -> {
+                var current = store.lockRunForVerification(runId).orElse(null);
+                if (current == null || !AgentRunStatus.SUCCEEDED.name().equals(current.getStatus()) || !lease.held()) return false;
+                boolean pending = false, done = false, succeeded = false;
+                long cursor = 0;
+                while (true) {
+                    var page = store.listEvents(runId, cursor, org.ruoyi.ipd.agent.ProjectAgentConstants.EVENTS_PAGE_LIMIT);
+                    if (page.isEmpty()) break;
+                    for (var event : page) {
+                        if (event.getSeq() <= cursor) throw new IllegalStateException("cleanup event cursor did not advance");
+                        cursor = event.getSeq();
+                        try {
+                            var payload = mapper.readTree(event.getPayload());
+                            if (AgentEventType.RUN_FINISHED.name().equals(event.getEventType())
+                                && "SUCCEEDED".equals(payload.path("status").asText())) succeeded = true;
+                            if (AgentEventType.STEP.name().equals(event.getEventType())
+                                && "COMMITTED_CHECKPOINT_CLEANUP".equals(payload.path("kind").asText())) {
+                                pending |= "PENDING".equals(payload.path("state").asText())
+                                    && "VERIFYING_SUCCEEDED".equals(payload.path("receipt").asText());
+                                done |= "DONE".equals(payload.path("state").asText());
+                            }
+                        } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) {
+                            throw new IllegalStateException("cleanup receipt cannot be read", invalid);
+                        }
+                    }
+                }
+                if (!pending || done || !succeeded || !lease.held()) return false;
+                // 仅删除原 SDK 临时会话；原运行、事件、产物及 SANDBOX_ARCHIVED 回执不删除。
+                pausedCheckpointCleanup.accept(current);
+                if (!lease.held()) throw new ProjectAgentRunOwnership.OwnershipLost();
+                try {
+                    String payload = mapper.writeValueAsString(java.util.Map.of("kind", "COMMITTED_CHECKPOINT_CLEANUP",
+                        "state", "DONE", "receipt", "VERIFYING_SUCCEEDED"));
+                    for (int attempt = 0; attempt < 3; attempt++) {
+                        if (store.appendEvent(ProjectAgentRunEvents.of(runId, current.getTenantId(), current.getPersonId(),
+                            store.maxSeq(runId) + 1, AgentEventType.STEP, payload, new Date(clock.getAsLong())))) return true;
+                    }
+                    throw new IllegalStateException("cleanup completion receipt rejected");
+                } catch (com.fasterxml.jackson.core.JsonProcessingException invalid) { throw new IllegalStateException(invalid); }
+            }));
+        }
+    }
+
     /**
      * 绑定既有用量账本。未绑定时模型步骤仍写入运行事件，但不落账。
      *
@@ -129,17 +180,27 @@ public class ProjectAgentRunExecutor {
      * @return 交给内核的事件出口
      */
     private ProjectAgentAguiPauseResumeService aguiPauseResume;
+    private java.util.function.BiConsumer<IpdAgentRun, org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion> documentVerifier;
+    public void setDocumentVerifier(java.util.function.BiConsumer<IpdAgentRun, org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion> verifier) {
+        documentVerifier = java.util.Objects.requireNonNull(verifier);
+    }
+
 
     /** Config 在原 RunService 构造后装配，避免另建服务轨或循环构造。 */
     public void setAguiPauseResume(ProjectAgentAguiPauseResumeService service) {
         aguiPauseResume = java.util.Objects.requireNonNull(service);
     }
 
-    private ProjectAgentEventSink usageSink(ProjectAgentRunHandle handle, IpdAgentRun run) {
+    private ProjectAgentEventSink usageSink(ProjectAgentRunHandle handle, IpdAgentRun run, ProjectAgentRunSpec spec) {
         if (usageLedger == null || run.getModelConfigId() == null) {
             return handle;
         }
-        ProjectAgentUsageSink usage = new ProjectAgentUsageSink(handle, usageLedger, run.getModelConfigId(),
+        java.util.List<org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity> identities = new java.util.ArrayList<>();
+        if (spec.frozenModels() != null && spec.frozenModels().primaryIdentity() != null) {
+            identities.add(spec.frozenModels().primaryIdentity());
+            if (spec.frozenModels().fallbackIdentity() != null) identities.add(spec.frozenModels().fallbackIdentity());
+        }
+        ProjectAgentUsageSink usage = new ProjectAgentUsageSink(handle, usageLedger, identities,
             run.getPersonId() == null ? null : String.valueOf(run.getPersonId()), String.valueOf(run.getId()));
         return new ProjectAgentEventSink() {
             public void requireActiveOwnership() { handle.requireActiveOwnership(); }
@@ -162,7 +223,16 @@ public class ProjectAgentRunExecutor {
             }
             public void onStep(String kind, Map<String, Object> detail) {
                 handle.onStep(kind, detail);
-                handle.runOwned(() -> usage.recordStepUsage(kind, detail));
+                // SDK steps cannot claim model identity or write token rows.
+            }
+            public void onTrustedSource(Map<String,Object> source) { handle.onTrustedSource(source); }
+            public void onDocument(Long versionId) { handle.onDocument(versionId); }
+            /** 记忆回执必须经执行器的真实句柄落库；退回接口默认实现会让回执永远丢失。 */
+            @Override public void onMemoryReceipt(java.util.Map<String,Object> receipt) { handle.onMemoryReceipt(receipt); }
+            public void onModelCall(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity, Map<String, Object> detail) {
+                usage.requireTrustedIdentity(identity);
+                handle.onModelCall(identity, detail);
+                handle.runOwned(() -> usage.recordModelUsage(identity, detail));
             }
             public void onToolCall(String id, String name) { usage.onToolCall(id, name); }
             public void onToolResult(String id, String name, String state) { usage.onToolResult(id, name, state); }
@@ -254,7 +324,7 @@ public class ProjectAgentRunExecutor {
                         var hit = catalog.hit();
                         handle.whenSucceeded(text -> demandBinder.apply(requirement, text, hit));
                     }
-                    handle.attach(kernel.execute(execution, usageSink(handle, run)));
+                    handle.attach(kernel.execute(execution, usageSink(handle, run, execution)));
                 } catch (RuntimeException failure) { handle.finish(AgentRunStatus.FAILED, "KERNEL_ERROR"); }
             });
         } catch (RuntimeException failure) {
@@ -308,6 +378,7 @@ public class ProjectAgentRunExecutor {
             try { if (acquired != null) acquired.close(); } finally { releaseReservation.run(); }
         });
         ownHandle.set(handle);
+        handle.setDocumentVerifier(row -> { if (documentVerifier == null) throw new IllegalStateException("Trusted document verification unavailable"); documentVerifier.accept(run, row); });
         handle.setFinishTransaction(finishTransaction);
         if (acquired != null) handle.setOwnership(acquired, run.getVersion());
         handle.registerTemporaryStateCleanup(() -> {
@@ -460,6 +531,7 @@ public class ProjectAgentRunExecutor {
                     handles.remove(run.getId());
                     releaseOnce.run();
                 });
+                handle.setDocumentVerifier(row -> { if (documentVerifier == null) throw new IllegalStateException("Trusted document verification unavailable"); documentVerifier.accept(current, row); });
                 handle.setFinishTransaction(finishTransaction);
                 handles.put(run.getId(), handle);
             }
@@ -570,6 +642,7 @@ public class ProjectAgentRunExecutor {
             if (watcher != null) watcher.dispose();
             try { if (acquired != null) acquired.close(); } finally { releaseReservation.run(); }
         });
+        handle.setDocumentVerifier(row -> { if (documentVerifier == null) throw new IllegalStateException("Trusted document verification unavailable"); documentVerifier.accept(run, row); });
         handle.setFinishTransaction(finishTransaction);
         handle.setAguiInterruptHandler((pending, version) -> {
             if (aguiPauseResume == null) throw new IllegalStateException("AG-UI pause service is not configured");
@@ -659,7 +732,7 @@ public class ProjectAgentRunExecutor {
             return;
         }
         try {
-            Disposable subscription = kernel.execute(spec, usageSink(handle, run));
+            Disposable subscription = kernel.execute(spec, usageSink(handle, run, spec));
             handle.attach(subscription);
         } catch (RuntimeException e) {
             log.error("project_agent operation=EXECUTE status=FAILED runId={} errorType={}",

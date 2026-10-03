@@ -61,24 +61,34 @@ public class ProjectAgentCapabilityService {
         if (projectId == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 必填");
         }
-        access.requireVisible(actor, projectId);
+        String tenantId = access.requireVisible(actor, projectId);
         List<ProjectAgentViews.Model> models = modelCatalog.statuses().stream()
             .map(m -> new ProjectAgentViews.Model(m.id(), m.name(), m.available(), m.reason()))
             .toList();
         boolean anyModel = models.stream().anyMatch(ProjectAgentViews.Model::available);
-        List<ProjectAgentViews.Pack> packs = manifest.packs().stream().map(p -> pack(p, anyModel)).toList();
+        var scopedSkills = skillCatalog.statuses(tenantId, projectId, actor.id());
+        var reviewed = scopedSkills.stream()
+            .filter(s -> manifest.skill(s.name()).isEmpty())
+            .map(s -> new ProjectAgentViews.Skill(s.name(), s.version(), s.sha256(), s.available(), s.reason())).toList();
+        var byName = scopedSkills.stream().collect(java.util.stream.Collectors.toMap(
+            ProjectAgentSkillCatalog.SkillStatus::name, java.util.function.Function.identity()));
+        List<ProjectAgentViews.Pack> packs = manifest.packs().stream().map(p -> pack(p, anyModel, reviewed, byName)).toList();
         return new ProjectAgentViews.Capabilities(packs, models);
     }
 
-    private ProjectAgentViews.Pack pack(PackEntry entry, boolean anyModel) {
-        List<ProjectAgentViews.Skill> skills = entry.skills().stream().map(skillCatalog::status)
+    private ProjectAgentViews.Pack pack(PackEntry entry, boolean anyModel, List<ProjectAgentViews.Skill> reviewed,
+            java.util.Map<String, ProjectAgentSkillCatalog.SkillStatus> scopedSkills) {
+        List<ProjectAgentViews.Skill> requiredSkills = entry.skills().stream()
+            .map(name -> scopedSkills.getOrDefault(name, skillCatalog.status(name)))
             .map(s -> new ProjectAgentViews.Skill(s.name(), s.version(), s.sha256(), s.available(), s.reason()))
             .toList();
         List<ProjectAgentViews.Tool> tools = ProjectAgentToolCatalog.executionToolIds(entry.tools()).stream().map(toolCatalog::status)
             .map(t -> new ProjectAgentViews.Tool(t.id(), t.name(), t.readOnly(), t.available(), t.reason()))
             .toList();
-        String reason = unavailableReason(skills, tools.stream()
+        String reason = unavailableReason(requiredSkills, tools.stream()
             .filter(tool -> entry.tools().contains(tool.id())).toList(), anyModel);
+        var skills = new java.util.ArrayList<>(requiredSkills);
+        skills.addAll(reviewed);
         return new ProjectAgentViews.Pack(entry.code(), entry.version(), entry.name(), entry.description(),
             entry.stages() == null ? List.of() : entry.stages(),
             entry.actionCodes() == null ? List.of() : entry.actionCodes(),

@@ -30,7 +30,32 @@ public class ProjectAgentSkillCatalog {
     public record SkillStatus(String name, String version, String sha256, boolean available, String reason) { }
 
     /** 已校验通过的 Skill 正文。 */
-    public record LoadedSkill(String name, String version, String sha256, String content) { }
+    public record LoadedSkill(String name, String version, String sha256, String content,
+                              org.ruoyi.ipd.agent.kernel.ProjectAgentSkillBundle bundle) {
+        public LoadedSkill(String name, String version, String sha256, String content) {
+            this(name, version, sha256, content, null);
+        }
+    }
+    public interface PublishedResolver {
+        Optional<LoadedSkill> load(String tenantId, Long projectId, Long personId, String name, String digest);
+        List<SkillStatus> statuses(String tenantId, Long projectId, Long personId);
+    }
+    private volatile PublishedResolver published;
+    public void setPublishedResolver(PublishedResolver resolver) { published = java.util.Objects.requireNonNull(resolver); }
+    public Optional<LoadedSkill> load(String name, String tenantId, Long projectId, Long personId, String digest) {
+        var reviewed = published == null ? Optional.<LoadedSkill>empty()
+            : published.load(tenantId, projectId, personId, name, digest);
+        if (reviewed.isPresent()) return reviewed;
+        var builtIn = load(name);
+        return builtIn.isPresent() && (digest == null || digest.equals(builtIn.get().sha256())) ? builtIn : Optional.empty();
+    }
+    public List<SkillStatus> statuses(String tenantId, Long projectId, Long personId) {
+        var result = new java.util.LinkedHashMap<String, SkillStatus>();
+        for (var status : statuses()) result.put(status.name(), status);
+        if (published != null) for (var status : published.statuses(tenantId, projectId, personId))
+            result.put(status.name(), status);
+        return List.copyOf(result.values());
+    }
 
     private final String resourceRoot;
     private final CapabilityManifest manifest;

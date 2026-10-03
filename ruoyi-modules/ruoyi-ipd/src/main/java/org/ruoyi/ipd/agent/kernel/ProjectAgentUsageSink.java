@@ -13,11 +13,45 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
 
     static final String SCENE = "project_agent";
 
+    private final java.util.Set<org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity> allowedIdentities;
     private final ProjectAgentEventSink delegate;
     private final AiModelUsageLedgerService ledger;
     private final Long modelConfigId;
     private final String actorId;
     private final String traceId;
+
+    /** Identity instances come from the frozen server spec, never from event fields. */
+    public ProjectAgentUsageSink(ProjectAgentEventSink delegate, AiModelUsageLedgerService ledger,
+            java.util.List<org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity> identities,
+            String actorId, String traceId) {
+        this.delegate = Objects.requireNonNull(delegate);
+        this.ledger = Objects.requireNonNull(ledger);
+        this.modelConfigId = null;
+        this.actorId = actorId; this.traceId = traceId;
+        this.allowedIdentities = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        this.allowedIdentities.addAll(identities);
+    }
+
+    @Override public void onTrustedSource(Map<String,Object> source) { requireActiveOwnership(); delegate.onTrustedSource(source); }
+    @Override public void onDocument(Long versionId) { requireActiveOwnership(); delegate.onDocument(versionId); }
+    /** 记忆回执与其它事件同源：先验所有权再转发，装饰器不得让它退回接口默认实现。 */
+    @Override public void onMemoryReceipt(Map<String,Object> receipt) { requireActiveOwnership(); delegate.onMemoryReceipt(receipt); }
+    @Override public void onModelCall(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity, Map<String, Object> detail) {
+        requireTrustedIdentity(identity);
+        delegate.onModelCall(identity, detail);
+        recordModelUsage(identity, detail);
+    }
+
+    public void requireTrustedIdentity(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity) {
+        if (allowedIdentities == null || identity == null || !allowedIdentities.contains(identity)) {
+            throw new IllegalArgumentException("模型调用身份不是本次运行冻结的服务端选择");
+        }
+    }
+
+    public void recordModelUsage(org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity identity, Map<String, Object> detail) {
+        requireTrustedIdentity(identity);
+        recordUsage(identity.modelConfigId(), detail);
+    }
 
     /**
      * @param delegate 原事件出口
@@ -28,6 +62,7 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
      */
     public ProjectAgentUsageSink(ProjectAgentEventSink delegate, AiModelUsageLedgerService ledger,
                                  Long modelConfigId, String actorId, String traceId) {
+        this.allowedIdentities = null;
         this.delegate = Objects.requireNonNull(delegate, "delegate");
         this.ledger = Objects.requireNonNull(ledger, "ledger");
         this.modelConfigId = Objects.requireNonNull(modelConfigId, "modelConfigId");
@@ -70,7 +105,12 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
 
     /** 执行器在epoch保护事务内调用，仅落既有账本，不再次进入事件/终态路径。 */
     public void recordStepUsage(String kind, Map<String, Object> detail) {
-        if (!"MODEL_CALL".equals(kind) || detail == null || !detail.containsKey("inputTokens")) {
+        if (allowedIdentities != null || !"MODEL_CALL".equals(kind)) return;
+        recordUsage(modelConfigId, detail);
+    }
+
+    private void recordUsage(Long actualModelConfigId, Map<String, Object> detail) {
+        if (detail == null || !detail.containsKey("inputTokens")) {
             return;
         }
         int input = asInt(detail.get("inputTokens"));
@@ -81,7 +121,7 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
             case "CANCELLED" -> "cancelled";
             default -> "ok";
         };
-        ledger.recordUsage(modelConfigId, actorId, SCENE, input, output, 0L, status, traceId);
+        ledger.recordUsage(actualModelConfigId, actorId, SCENE, input, output, 0L, status, traceId);
     }
 
     @Override

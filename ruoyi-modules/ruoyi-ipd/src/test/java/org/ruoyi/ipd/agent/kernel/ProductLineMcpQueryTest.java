@@ -58,7 +58,8 @@ class ProductLineMcpQueryTest {
             .block(Duration.ofSeconds(3));
         assertThat(textOf(result)).doesNotContain("must-not-leak", "private-endpoint");
         org.mockito.ArgumentCaptor<Map<String, Object>> capture = org.mockito.ArgumentCaptor.forClass(Map.class);
-        org.mockito.Mockito.verify(sink).onSource(capture.capture());
+        org.mockito.Mockito.verify(sink).onTrustedSource(capture.capture());
+        org.mockito.Mockito.verify(sink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
         assertThat(capture.getValue()).containsEntry("reasonCode", "TIMEOUT")
             .containsEntry("mcpFailureStage", "CALL_TOOL")
             .containsEntry("mcpFailureReason", "TIMEOUT")
@@ -93,7 +94,8 @@ class ProductLineMcpQueryTest {
             .block(Duration.ofSeconds(3));
         assertThat(failed.getState().name()).isEqualTo("ERROR");
         var capture = org.mockito.ArgumentCaptor.forClass(Map.class);
-        org.mockito.Mockito.verify(sink).onSource(capture.capture());
+        org.mockito.Mockito.verify(sink).onTrustedSource(capture.capture());
+        org.mockito.Mockito.verify(sink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
         assertThat(capture.getValue()).containsEntry("reasonCode", "REMOTE_IS_ERROR")
             .containsEntry("mcpFailureStage", "CALL_TOOL")
             .containsEntry("retrievalStatus", "FAILED")
@@ -107,7 +109,8 @@ class ProductLineMcpQueryTest {
         assertThat(handshake.callAsync(ToolCallParam.builder().input(Map.of("query", "公共说明")).build())
             .block(Duration.ofSeconds(3)).getState().name()).isEqualTo("ERROR");
         var opened = org.mockito.ArgumentCaptor.forClass(Map.class);
-        org.mockito.Mockito.verify(handshakeSink).onSource(opened.capture());
+        org.mockito.Mockito.verify(handshakeSink).onTrustedSource(opened.capture());
+        org.mockito.Mockito.verify(handshakeSink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
         assertThat(opened.getValue()).containsEntry("reasonCode", "TIMEOUT")
             .containsEntry("mcpFailureStage", "INITIALIZE")
             .doesNotContainKey("hits");
@@ -130,7 +133,8 @@ class ProductLineMcpQueryTest {
         var result = wrapper.callAsync(ToolCallParam.builder().input(Map.of("query", "公开说明")).build())
             .block(Duration.ofSeconds(3));
         var capture = org.mockito.ArgumentCaptor.forClass(Map.class);
-        org.mockito.Mockito.verify(sink).onSource(capture.capture());
+        org.mockito.Mockito.verify(sink).onTrustedSource(capture.capture());
+        org.mockito.Mockito.verify(sink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
         assertThat(capture.getValue()).containsEntry("mcpSdkFrames",
             List.of("io.modelcontextprotocol.client.McpAsyncClient#listToolsInternal:653"))
             .containsEntry("reasonCode", "PROTOCOL_OR_TRANSPORT");
@@ -294,7 +298,8 @@ class ProductLineMcpQueryTest {
         assertThat(session.onCall).hasValue(0);
         assertThat(textOf(result)).doesNotContain(maliciousName, "private.invalid", "token=secret");
         var capture = org.mockito.ArgumentCaptor.forClass(Map.class);
-        org.mockito.Mockito.verify(sink).onSource(capture.capture());
+        org.mockito.Mockito.verify(sink).onTrustedSource(capture.capture());
+        org.mockito.Mockito.verify(sink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
         assertThat(capture.getValue()).containsEntry("retrievalStatus", "FAILED")
             .containsEntry("reasonCode", "AMBIGUOUS_TOOLS")
             .containsEntry("mcpFailureStage", "LIST_TOOLS")
@@ -577,7 +582,8 @@ class ProductLineMcpQueryTest {
         var result = wrapper.callAsync(ToolCallParam.builder().input(Map.of("query", "公开参数")).build())
             .block(Duration.ofSeconds(3));
         var capture = org.mockito.ArgumentCaptor.forClass(Map.class);
-        org.mockito.Mockito.verify(sink).onSource(capture.capture());
+        org.mockito.Mockito.verify(sink).onTrustedSource(capture.capture());
+        org.mockito.Mockito.verify(sink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
         Map<String, Object> source = capture.getValue();
         assertThat(result.getState().name()).isNotEqualTo("ERROR");
         assertThat((String) source.get("preview")).hasSize(1000).doesNotContain("58.7%");
@@ -600,7 +606,8 @@ class ProductLineMcpQueryTest {
             ProductLineMcpTool.openWith(endpoint, sink, remote).callAsync(ToolCallParam.builder()
                 .input(Map.of("query", "公开参数")).build()).block(Duration.ofSeconds(3));
             var capture = org.mockito.ArgumentCaptor.forClass(Map.class);
-            org.mockito.Mockito.verify(sink).onSource(capture.capture());
+            org.mockito.Mockito.verify(sink).onTrustedSource(capture.capture());
+            org.mockito.Mockito.verify(sink, org.mockito.Mockito.never()).onSource(org.mockito.ArgumentMatchers.anyMap());
             assertThat(capture.getValue()).containsEntry("citationText", "").containsEntry("chars", 0);
             if (Boolean.TRUE.equals(response.isError())) {
                 assertThat(capture.getValue()).containsEntry("reasonCode", "REMOTE_IS_ERROR")

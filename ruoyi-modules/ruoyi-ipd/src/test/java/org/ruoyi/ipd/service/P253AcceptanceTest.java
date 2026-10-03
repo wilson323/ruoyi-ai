@@ -260,7 +260,7 @@ class P253AcceptanceTest {
         int count = service.scanOverdue(ADMIN);
 
         assertThat(count).isEqualTo(1);
-        verify(notificationService, times(1)).publishDaily(eq(900103L),
+        verify(notificationService, times(1)).publishDailyAfterCommit(eq(900103L),
             eq(NotificationService.Types.GATE_CONDITION_OVERDUE), eq(NotificationService.KIND_ACTION),
             eq("gate_element_results"), eq(9001L), anyString(), anyString(), anyString(), any(Date.class));
     }

@@ -4,7 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.domain.RecoveryWarning;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.service.RecoveryWarningService;
@@ -53,8 +55,11 @@ public class RecoveryWarningController {
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate scanDate
     ) {
         // 兕底与注解同严：注解限组长/超管，service 不再放宽
-        ipdPermission.requireLeaderOrAdmin();
-        int saved = recoveryWarningService.checkAndGenerate(scanDate);
+        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
+        // actor 只来自会话（不接受入参）；归属收口在 service 内逐项目做，超管扫全库、
+        // 其他角色只扫本组项目——避免组长跨组批量写别人项目的预警行
+        IpdIdorGuard.requireAuthenticated(actor);
+        int saved = recoveryWarningService.checkAndGenerate(actor, scanDate);
         return ApiV1Response.ok(saved);
     }
 

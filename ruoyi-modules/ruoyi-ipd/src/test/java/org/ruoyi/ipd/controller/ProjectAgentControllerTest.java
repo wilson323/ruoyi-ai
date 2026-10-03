@@ -58,6 +58,29 @@ class ProjectAgentControllerTest {
 
     private static final IpdActor ACTOR = new IpdActor(9001L, "alice", "MARKET_PM", 100L);
 
+    @Test void skillReviewsUseTrustedPersonAndOriginalRun() {
+        when(ipdPermission.requireInternal()).thenReturn(ACTOR);
+        when(runService.skillReviews(ACTOR, 9007199254740993L)).thenReturn(List.of());
+        assertThat(controller.skillReviews("9007199254740993").getCode()).isZero();
+        verify(runService).skillReviews(ACTOR, 9007199254740993L);
+    }
+
+    @Test void skillReviewDecisionDoesNotAcceptClientIdentityOrBody() {
+        when(ipdPermission.requireInternal()).thenReturn(ACTOR);
+        var req = new org.ruoyi.ipd.agent.dto.AgentSkillReviewReq(true, "a".repeat(64), "同意");
+        var review = new org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService.SkillReview(
+            "12", "my-review-skill", req.sha256(), "PUBLISHED", List.of(), "PASS", req.comment());
+        when(runService.reviewSkill(ACTOR, 77L, 12L, req)).thenReturn(review);
+        assertThat(controller.reviewSkill("77", "12", req).getData()).isSameAs(review);
+        verify(runService).reviewSkill(ACTOR, 77L, 12L, req);
+    }
+
+    @Test void skillReviewCannotBypassInternalLogin() {
+        when(ipdPermission.requireInternal()).thenThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "权限不足"));
+        assertThatThrownBy(() -> controller.skillReviews("77")).isInstanceOf(IpdBusinessException.class);
+        verify(runService, never()).skillReviews(any(), anyLong());
+    }
+
     @Test
     @DisplayName("#1 capabilities：字符串 projectId 透传，包络 code=0")
     void capabilities_ok() {

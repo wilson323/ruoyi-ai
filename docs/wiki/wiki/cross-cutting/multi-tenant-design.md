@@ -151,7 +151,7 @@ public void asyncTask() {
 - **租户**：粗粒度，按 `tenant_id` 切（公司 A / 公司 B 不能互看）
 - **数据权限**：细粒度，在同一租户内按部门 / 本人过滤（销售部 vs 财务部）
 
-数据权限通过 `@SaCheckDataScope` 注解 + `DataPermissionInterceptor` 拦截器实现。详见 [security-reviewer agent 文档](../../.claude/agents/security-reviewer.md)。
+数据权限通过 `@SaCheckDataScope` 注解 + `DataPermissionInterceptor` 拦截器实现。详见 [security-reviewer agent 文档](../../../../.claude/agents/security-reviewer.md)。
 
 ### 异步任务 / 定时任务
 

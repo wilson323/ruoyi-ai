@@ -16,6 +16,7 @@ import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.RequirementMapper;
 import org.ruoyi.ipd.security.IpdAuthSession;
+import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdRolePermissionCatalog;
 import org.springframework.http.HttpStatus;
@@ -54,12 +55,14 @@ class DemandDetailEndpointTest {
     @Mock private ProductMapper productMapper;
     @Mock private ProjectMapper projectMapper;
     @Mock private PersonMapper personMapper;
+    @Mock private IpdPermission ipdPermission;
 
     private DemandController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new DemandController(requirementMapper, productMapper, projectMapper, personMapper);
+        controller = new DemandController(requirementMapper, productMapper, projectMapper, personMapper,
+            ipdPermission);
     }
 
     private static Requirement demand() {

@@ -17,6 +17,7 @@ import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ReceiptLedger;
 import org.ruoyi.ipd.domain.RecoveryWarning;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.mapper.ReceiptLedgerMapper;
 import org.ruoyi.ipd.mapper.RecoveryWarningMapper;
 import org.springframework.stereotype.Service;
@@ -30,11 +31,12 @@ public interface IRecoveryWarningService {
     /** 可注入时钟（R156-A 根除债，仿 KpiRawRecordService 模式）。 */
     void setClock(java.time.Clock clock);
 
-    /** * 扫描所有上市后未满 90 日的项目，回款比例低于阈值的写入预警表。 */
+    /** * 扫描上市后未满 90 日的项目，回款比例低于阈值的写入预警表（归属范围内）。 */
     /** * */
+    /** * @param actor 服务端会话身份：SUPER_ADMIN 扫全库，其他角色只扫本组项目 */
     /** * @param today 扫描当日（可空；为空时取系统当前日期） */
     /** * @return 新增预警条数（幂等去重后） */
-    int checkAndGenerate(LocalDate today);
+    int checkAndGenerate(IpdActor actor, LocalDate today);
 
     /** * 按项目列出预警（按 warning_date DESC）。 */
     /** * */

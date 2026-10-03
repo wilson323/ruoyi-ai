@@ -345,6 +345,16 @@ public class AiDocumentService {
         return next;
     }
 
+    /** 重建已有已审核版本的检索缓存，不重新审核或生成文档版本。 */
+    public int rebuildIndexAuthorized(IpdActor actor, Long versionId) {
+        AiDocument row = mapper.selectById(versionId);
+        if (row == null) throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
+        requireProjectVisible(actor, row.getProjectId());
+        if (docEmbeddingService == null) throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+            "文档索引服务未装配");
+        return docEmbeddingService.rebuildIndex(row, () -> requireProjectVisible(actor, row.getProjectId()));
+    }
+
     /**
      * 人工审核通过（BR-AI-03）。仅流转 status + 审核落名三列，内容零触碰；
      * 已审核行幂等返回（不覆盖首位审核人）；ARCHIVED 行拒绝（需走归档流程）；

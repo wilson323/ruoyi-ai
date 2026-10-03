@@ -121,7 +121,16 @@ class HandoverGuardSupportContractTest {
     }
 
     private void stubCreateDraftHappyPath() {
-        when(projectMapper.selectById(100L)).thenReturn(new Project());
+        Project sourceProject = new Project();
+        sourceProject.setId(100L); sourceProject.setMainGroupId(10L);
+        when(projectMapper.selectById(100L)).thenReturn(sourceProject);
+        when(memberMapper.selectCount(org.mockito.ArgumentMatchers.argThat(wrapper -> {
+            var query = (com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProjectMember>) wrapper;
+            var sql = query.getCustomSqlSegment();
+            var values = query.getParamNameValuePairs().values();
+            return sql.contains("exit_date IS NULL") && values.contains(100L)
+                && values.contains(1L) && values.contains("MARKET_PM");
+        }))).thenReturn(1L);
         when(personMapper.selectById(2L)).thenReturn(eligibleRecipient());
         when(handoverMapper.selectCount(any())).thenReturn(0L);
     }
@@ -134,7 +143,7 @@ class HandoverGuardSupportContractTest {
         stubCreateDraftHappyPath();
         HandoverService service = newServiceWithGuard();
 
-        service.initiate(100L, "MARKET_PM", 2L, "交接", OPERATOR_FROM);
+        service.initiate(100L, "MARKET_PM", 2L, "交接", new IpdActor(1L, "old-pm", "MARKET_PM", 10L));
 
         verify(stateMachineGuard).preCheck(eq("handover_record"), isNull(), eq("DRAFT"), eq("create"));
         verify(stateMachineGuard).postCommit(eq("handover_record"), isNull(), eq("DRAFT"),
@@ -232,7 +241,7 @@ class HandoverGuardSupportContractTest {
         stubCreateDraftHappyPath();
         HandoverService bare = newServiceWithoutGuard();
 
-        assertThatThrownBy(() -> bare.initiate(100L, "MARKET_PM", 2L, "交接", OPERATOR_FROM))
+        assertThatThrownBy(() -> bare.initiate(100L, "MARKET_PM", 2L, "交接", new IpdActor(1L, "old-pm", "MARKET_PM", 10L)))
             .isInstanceOf(ServiceException.class)
             .hasMessage("状态机守卫未装配 entityType=handover_record from=null to=DRAFT");
     }

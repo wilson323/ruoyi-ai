@@ -85,6 +85,52 @@ class ProjectAgentOfficialToolGovernanceTest {
         verify(web, never()).checkPermissions(any(), any());
     }
 
+    /**
+     * web_search 出站治理正反控。
+     *
+     * <p>背景：文档三处曾把 {@code ToolsConfig.setDeny} 列为 web 工具的「已覆盖」安全缓解，
+     * 但该 deny 已被 commit {@code b757fa7a}（commit message 仅 "test"）删除，
+     * web_search 曾在完全无治理的状态下暴露给模型。本测试锁死补上的这道闸。
+     *
+     * <p>注意 web_search 的风险形态与 web_fetch <b>不同</b>：SDK 内目标端点写死为
+     * {@code https://api.tavily.com/search}，没有 SSRF 面；真实风险是模型生成的
+     * {@code query} 可被提示词注入诱导而夹带凭据发往第三方。
+     */
+    @Test void webSearchQueryCarryingCredentialsIsDeniedBeforeReachingTavily() {
+        var search = nativeTool("web_search");
+        var sink = mock(ProjectAgentEventSink.class);
+        var wrapper = new ProjectAgentOfficialToolGovernance.OwnedTool(search, sink);
+
+        // 反例：查询词夹带凭据 —— 必须 DENY，且不得下探到官方工具
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.DENY,
+            wrapper.checkPermissions(Map.of("query", "查一下 our password 是什么"), null)
+                .block().getBehavior());
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.DENY,
+            wrapper.checkPermissions(Map.of("query", "项目 apikey 泄漏排查"), null)
+                .block().getBehavior());
+        // 超长查询词同样是异常载荷
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.DENY,
+            wrapper.checkPermissions(Map.of("query", "x".repeat(501)), null).block().getBehavior());
+        // 空查询词
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.DENY,
+            wrapper.checkPermissions(Map.of("query", "   "), null).block().getBehavior());
+        verify(search, never()).checkPermissions(any(), any());
+    }
+
+    @Test void ordinaryWebSearchQueryIsNotBlockedByTheGovernance() {
+        var search = nativeTool("web_search");
+        when(search.checkPermissions(any(), any()))
+            .thenReturn(Mono.just(PermissionDecision.allow("authorized")));
+        var sink = mock(ProjectAgentEventSink.class);
+        var wrapper = new ProjectAgentOfficialToolGovernance.OwnedTool(search, sink);
+
+        // 正例：正常业务查询必须放行，不能把闸做成闭门
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.ALLOW,
+            wrapper.checkPermissions(Map.of("query", "智能锁联动 竞品分析 2026"), null)
+                .block().getBehavior());
+        verify(search).checkPermissions(any(), any());
+    }
+
     @Test void directNativeAllowWithoutOfficialActingBindingCannotExecute() {
         var nativeTool = nativeTool("execute");
         when(nativeTool.checkPermissions(any(), any())).thenReturn(Mono.just(PermissionDecision.allow("authorized")));

@@ -38,7 +38,7 @@ Maven profiles map Spring profiles one-to-one: `-Plocal` → `local`, `-Pdev` �
 
 ## Testing
 
-**Non-obvious gotcha — read first.** `maven-surefire-plugin` is configured (`pom.xml:464-476`) with `<groups>${profiles.active}</groups>` and `<excludedGroups>exclude</excludedGroups>`. This means:
+**Non-obvious gotcha — read first.** `maven-surefire-plugin` is configured in the root `pom.xml` `<build><plugins>` block with `<groups>${profiles.active}</groups>` and `<excludedGroups>exclude</excludedGroups>`. This means:
 
 - Under the default `dev` profile, **only tests annotated `@Tag("dev")` run**. A test without any `@Tag` is silently skipped.
 - Tests tagged `@Tag("exclude")` are always skipped.
@@ -50,7 +50,7 @@ When adding a new test class, add `@Tag("dev")` (or whichever profile you target
 
 ```
 ruoyi-admin/                # Spring Boot main, port 6039, controllers, OpenAPI grouping
-ruoyi-common/               # 27 shared library modules (BOM-managed)
+ruoyi-common/               # 24 shared library modules + ruoyi-common-bom (BOM-managed)
   ruoyi-common-core         # utilities, base entities, exceptions
   ruoyi-common-security     # Sa-Token + JWT integration
   ruoyi-common-chat         # AI model adapters, AI helpers
@@ -83,22 +83,22 @@ ruoyi-extend/               # Auxiliary Spring Boot apps (run separately, not pa
 
 ## Key Conventions & Gotchas
 
-- **Port 6039 auto-kill**: `RuoYiAIApplication.main()` (`ruoyi-admin/src/main/java/org/ruoyi/RuoYiAIApplication.java:31-67`) calls `killPortProcess(6039)` before startup. It uses `netstat`/`taskkill` (Windows-style commands) — works on Windows, no-ops cleanly on macOS/Linux. Override with `-Dserver.port=xxxx` if needed.
+- **Startup port ownership**: [RuoYiAIApplication.main()](ruoyi-admin/src/main/java/org/ruoyi/RuoYiAIApplication.java) starts Spring directly and does not kill a process on port 6039. A port conflict must be checked against the intended service; local IPD uses the configured 16039 port. Do not terminate unrelated processes.
 - **Demo mode** (parent `application.yml`, key `demo.enabled`): **default is now `false`** (R8-P0-2 flipped it). If someone flips it back to `true`, every write operation is blocked with "演示模式，不允许操作" on POST/PATCH/DELETE; the whitelist lives in the same block under `demo.excludes` (login, chat-send, system-session, …). Pass `-Ddemo.enabled=false` when you need deterministic behaviour. Do **not** cite line numbers for these keys — see the "cite keys, not line numbers" rule in `AGENTS.md`.
 - **Multi-tenant** is on by default (`tenant.enable=true`). Tenant filter is applied via MyBatis-Plus; tenant-shared tables are listed in the parent `application.yml` under `tenant.excludes`. New shared tables must be added there or they'll be incorrectly filtered. Note `trace_run` and `trace_node` are excluded because the trace writer runs on async threads without tenant context. Registering a table that does not exist yet is possible (and currently done: `person_roles` is listed while no such table exists in any local DB), so the excludes list is not a schema inventory.
 - **Sa-Token** JWT secret (parent `application.yml`, key `sa-token.jwt-secret-key`) is `${SA_TOKEN_JWT_SECRET_KEY:}` — an env placeholder **with no inline default**, so a missing env fails fast instead of silently using a shared key. `application-dev.yml` keeps a `devOnly-`prefixed fallback so local bootstrapping stays frictionless; that literal is committed, treat it as public and never reuse it outside dev. Guarded by `CredentialLiteralGuardTest`.
-- **Coding harness** (removed 2026-10-02 per ADR-0077): the self-built `org.ruoyi.service.coding.harness` chain and its `/coding/harness` controller were deleted in favor of the official `HarnessAgent.builder()` assembly; a 13-file pure-value closure survives under `harness/{tool,model}/` as the tool-governance contract (consumed by chat kernel & IPD agent). The `coding.harness.tools.execute-process` sandbox flags are gone; the only live key is `coding.harness.workspace.shared-root` (CodingWorkspaceService).
-- **Annotation processors** (`pom.xml:432-457`): five wired via `maven-compiler-plugin` — `therapi-runtime-javadoc-scribe`, `lombok`, `spring-boot-configuration-processor`, `mapstruct-plus-processor`, `lombok-mapstruct-binding`. Adding a new processor means updating `<annotationProcessorPaths>` or it won't run.
+- **Coding harness** (partially removed 2026-10-02 per ADR-0077): the self-built `org.ruoyi.service.coding.harness` **chain** and the `/coding/harness` controller were deleted in favor of the official `HarnessAgent.builder()` assembly; a 13-file pure-value closure survives under `harness/{tool,model}/` as the tool-governance contract (consumed by chat kernel & IPD agent). **The controller itself is NOT gone**: `ruoyi-modules/ruoyi-chat/.../controller/coding/CodingController.java` is still live, mounted at `@RequestMapping("/coding")` (not `/coding/harness`), and its ~7 legacy endpoints are gated by `@Value("${coding.legacy.enabled:false}")` — a key declared in **no** yml, so it defaults to `false`; a single environment variable turns it on. The `coding.harness.tools.execute-process` sandbox flags are gone; the only live key on the surviving `CodingWorkspaceService` is `coding.harness.workspace.shared-root`.
+- **Annotation processors** (root `pom.xml`, the `<annotationProcessorPaths>` list inside `maven-compiler-plugin`): five wired — `therapi-runtime-javadoc-scribe`, `lombok`, `spring-boot-configuration-processor`, `mapstruct-plus-processor`, `lombok-mapstruct-binding`. Adding a new processor means updating `<annotationProcessorPaths>` or it won't run.
 - **Java 17** is required. Virtual threads are gated off (`spring.threads.virtual.enabled: false`); toggle on if running JDK 21+.
-- **gRPC version pinning**: `pom.xml:67-70` pins `grpc-bom` to `1.62.2` to resolve Milvus SDK conflicts. Don't upgrade gRPC without re-testing Milvus integration.
+- **gRPC version pinning**: the root `pom.xml` `<properties>` block sets `<grpc.version>1.62.2</grpc.version>`, and `<dependencyManagement>` imports `grpc-bom` at that version, to resolve Milvus SDK conflicts. Don't upgrade gRPC without re-testing Milvus integration.
 - **Lombok + MapStruct-Plus** generate boilerplate; respect `@Data`, `@Builder`, `@RequiredArgsConstructor`, and the `IConvert` source pattern (interface + `Impl` suffix class — generator emits both).
 - **Trace package layout**: trace-related code lives under `argtrace.*` (recently moved out of `chat.*` per commit history); new trace code goes there, not in `chat/`.
 
 ## Endpoints (dev)
 
 - Backend API: http://localhost:6039
-- Springdoc Swagger UI: `/swagger-ui.html` (6 OpenAPI groups defined at `application.yml:227-239`)
-- Actuator: `/actuator` — all endpoints exposed; health details `ALWAYS`
+- Springdoc Swagger UI: `/swagger-ui.html` (6 OpenAPI groups defined under `springdoc.group-configs` in the parent `application.yml`; 3 of the 6 `packages-to-scan` — `org.ruoyi.demo`, `org.ruoyi.web`, `org.ruoyi.workflow` — have no matching package in the live tree, so those 3 groups render empty)
+- Actuator: `/actuator` — the **parent** `application.yml` deliberately narrows `management.endpoints.web.exposure.include` to `health,info,metrics,prometheus`, and `management.endpoint.health.show-details` is `WHEN_AUTHORIZED`. This is the prod baseline; only `application-dev.yml` overrides it to `include: '*'` + `show-details: ALWAYS` for local debugging. Do not assume an endpoint is live because some profile exposes it.
 - SSE stream (chat): `/resource/sse`
 - WebSocket: `/resource/websocket` (off by default — set `websocket.enabled=true`)
 
@@ -138,7 +138,9 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 | `/db-migration` | user-only | 新增业务表 / 加字段 / 加索引 / 新增 snailjob 任务 / 登记租户共享表。封装 DDL 模板、Entity 必备字段、回滚脚本生成 |
 | `agentscope-harness` | **自动发现** | 设计 / 评审 / 落地 agent harness：五层责任边界、任务状态机与多维预算、Context 管线与压缩、Action Plane 与 Permission 三态、Verifier 完成门禁、Trace→Harness Patch 反退化闭环。含本仓已实证的 AgentScope 2.0.3 API 面（区分“已实证 / 仅文档”）、四维隔离键收口规则、自研 harness ↔ AgentScope 契约对照表。**动 `io.agentscope:*` / `HarnessAgent.builder()` / `RuntimeContext` 前必读** |
 
-> **为何只有 `agentscope-harness` 是自动发现**：本 IDE（Qoder）的 skill 发现目录是 `.agents/skills/`，不是 `.claude/skills/`。上表前 4 个只在 `.claude/` 下，因此只能靠斜杠命令手动调；`agentscope-harness` 额外镜像了一份到 `.agents/skills/agentscope-harness/`，模型才会按 description 自动应用。`.gitignore:101` 忽略该目录，**fresh clone 必须重建镜像**。镜像与事实源必须字节一致：`skill-lint.sh` 的 L5 会 `diff -r` 校验，不一致直接 FAIL，防「文档说 A、运行时用 B」双轨。重建：`rm -rf .agents/skills/agentscope-harness && cp -R .claude/skills/agentscope-harness .agents/skills/`
+> **为何只有 `agentscope-harness` 是自动发现**：本 IDE（Qoder）的 skill 发现目录是 `.agents/skills/`，不是 `.claude/skills/`。上表前 4 个只在 `.claude/` 下，因此只能靠斜杠命令手动调；`agentscope-harness` 额外镜像了一份到 `.agents/skills/agentscope-harness/`，模型才会按 description 自动应用。`.gitignore` 里的 `.agents/skills/` 条目忽略该目录，**fresh clone 必须重建镜像**。重建：`rm -rf .agents/skills/agentscope-harness && cp -R .claude/skills/agentscope-harness .agents/skills/`
+>
+> **⚠️ 镜像现状（2026-10-03 实测，不是全量覆盖）**：`.claude/skills/` 有 84 个目录，`.agents/skills/` 只有 44 个。逐目录 `diff -r` 结果：**一致 39 个、已漂移 2 个**（`sparc-methodology`、`swarm-orchestration`）、**仅 `.agents/` 独有 3 个**（`memory-management`、`ruflo`、`security-audit`）、**仅 `.claude/` 独有 43 个**（含上表前 4 个与全部 `ipd-guard*`、`v3-*`）。那 2 个已漂移的镜像**不在任何门禁覆盖内** —— `agentscope-harness/scripts/skill-lint.sh` 的 L5 只对 `agentscope-harness` 一个 skill 做 `diff -r` 校验，不一致直接 FAIL；其余 skill 的镜像漂移没有任何自动检查会报红。若要扩到全量门禁需先改脚本。
 
 **ruflo 内置 30 个**：默认不主动调，需要时按名字调用。`swarm-orchestration` / `v3-swarm-coordination` / `sparc-methodology` 是重型武器，小改动别上。
 
@@ -190,7 +192,7 @@ echo $?  # 期望: 2（阻断）
 
 ```bash
 # 1. 文件存在 + 语法
-for f in .claude/skills/{ai-module-add,api-contract,db-migration,gen-test,agentscope-harness}/SKILL.md \
+for f in .claude/skills/{api-contract,db-migration,gen-test,agentscope-harness}/SKILL.md \
          .claude/agents/*.md; do [ -f "$f" ] && echo "✅ $f"; done
 node --check .claude/helpers/*.cjs
 bash -n .claude/hooks/*.sh
@@ -214,7 +216,7 @@ done
 # 5. Wiki 知识库完整性（karpathy-llm-wiki 验证）
 node docs/wiki/wiki-lint.cjs
 
-# 6. IPD 改造合规（ipd-系统说明 自动生成的检查脚本在 docs/ipd-系统说明/改造检查清单.md）
+# 6. IPD 改造合规（docs/ipd-系统说明/改造检查清单.md 是 Markdown 手册，含内嵌 bash 代码块供人手贴，**不是可执行脚本**，仓库里没有对应 .sh）
 # 手动检查 10 项 grep + CI 集成见 .github/workflows/ipd-migration-check.yml（待新增）
 ```
 
@@ -229,7 +231,7 @@ node docs/wiki/wiki-lint.cjs
 
 完整阅读路径详见 `README-IPD-OVERRIDE.md` §6。
 
-**禁止**：改 `docs/开发说明/` 现有任何文件（产品设计文档是「圣经」，不动）。所有修复方案在 `docs/ipd-系统说明/` 下新增。
+**禁止**：改 `docs/开发说明/` 现有任何文件的**业务决策**（产品设计文档是「圣经」，G-04）。**勘误级更新已获 owner 授权** —— 错字 / 失效引用 / 数字对齐可以改，但每处勘误须在 `docs/ipd-系统说明/log.md` 登记。当前口径以 `AGENTS.md` 的「`docs/开发说明/**`」条为准。工程修复与补充文档一律写到 `docs/ipd-系统说明/` 下。
 
 ### Wiki 知识库（RuoYi-AI 基线）
 
@@ -239,7 +241,7 @@ node docs/wiki/wiki-lint.cjs
 - **模块详解**：`docs/wiki/wiki/modules/<name>.md`（16 篇：admin / chat / system / generator / common / ipd + 扩展）
 - **跨模块主题**：`docs/wiki/wiki/cross-cutting/<name>.md`（3 篇：架构 / 多租户 / 部署）
 - **自动化栈**：`docs/wiki/wiki/automation/claude-code-setup.md`
-- **原始材料**：`docs/wiki/raw/<topic>/*.md`（49 个 verbatim 源文件）
+- **原始材料**：`docs/wiki/raw/<topic>/*.md`（48 个 verbatim 源文件。2026-10-03 实测快照与活文件比对：一致 29 / 已漂移 16 / 源文件已删 1（`system-source/entity-cms-content.md`）/ 指向目录无法比对 2。引用 raw 快照结论前先核对活文件，16 份漂移快照里的数字不可直接采信）
 - **lint 验证**：`node docs/wiki/wiki-lint.cjs`（每次改 wiki 跑一次）
 
 改造时**先查 wiki**了解 RuoYi-AI 基线实现，再读 `docs/ipd-系统说明/naming-convention.md` 和 `type-mapping.md` 决定新代码怎么写。
@@ -420,3 +422,20 @@ grep "BCP-014" docs/ipd-系统说明/BCP-Closure-Log.md | head -3  # ≥ 3 行
 SDK、Harness、知识/工具或多人协作改动先读 `docs/ipd-系统说明/AgentScope官方化-六计划总览-20261002.md` 对应P节，再按需读专项；它只细化总画布，不能取代总画布/唯一看板。先核六行缺口，按已认领allowedPaths实施。`ai-native-sdlc`负责工程方法，`agentscope-harness`用于本项目SDK装配合同；按改动选择api-contract/gen-test/db-migration，不照已退役技能模板或零测试默认写代码。宿主未实际执行hook时不能声称已被保护。工具、技能版本与调用链、正反例和当前2.0.3 API以真实证据为准。
 
 多Agent只读评审可并行，共享Java/计划文件主协调者串行集成、Maven target错峰。所有自研类必须实现SPI的名称门禁不采用；只检查已确证重复基础能力与生产双轨。版本化形成可审查差异和证据，提交/推送/发布仍需用户明确授权。Skill更新必须实际回归与镜像核验，不能由一次模型回答自动晋升全局。
+
+## Engineering feedback entry
+
+For engineering tasks, use the frontend project's `.harness/skills/ipd-engineering-feedback/SKILL.md` and `python3 /Users/mac/Documents/ruoyi-ipd-web/scripts/engineering_harness.py --root "$PWD" intake`. This repository's `.harness/verify.sh governance <existing-task-id>` reuses that runner. Failures produce reflection inputs; same-task regression can enable only fixed procedural checks. Java/runtime/business acceptance remains in the existing master plan. No automatic commit/push, permission changes or second product runtime.
+
+<!-- evolver-evolution-memory -->
+## Evolution Memory (Evolver)
+
+This project uses evolver for self-evolution. Hooks automatically:
+1. Inject recent evolution memory at session start
+2. Detect evolution signals during file edits
+3. Record outcomes at session end
+4. (Opt-in) Surface matching distilled capabilities for each prompt — set
+   `EVOLVER_RECALL_MODE=shadow` to preview, `enforce` to inject (default off).
+
+For substantive tasks, call `gep_recall` before work and `gep_record_outcome` after.
+Signals: log_error, perf_bottleneck, user_feature_request, capability_gap, deployment_issue, test_failure.

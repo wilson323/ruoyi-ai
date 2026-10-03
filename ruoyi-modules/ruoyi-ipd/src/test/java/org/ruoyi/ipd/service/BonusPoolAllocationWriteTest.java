@@ -47,6 +47,8 @@ import static org.mockito.Mockito.when;
 class BonusPoolAllocationWriteTest {
 
     @Mock
+    private org.ruoyi.ipd.mapper.ProjectMapper projectMapper;
+    @Mock
     private BonusPoolMapper bonusPoolMapper;
     @Mock
     private BonusAllocationMapper bonusAllocationMapper;
@@ -61,7 +63,13 @@ class BonusPoolAllocationWriteTest {
 
     @BeforeEach
     void setUp() {
-        service = new BonusPoolService(bonusPoolMapper);
+        service = new BonusPoolService(bonusPoolMapper, projectMapper);
+        when(projectMapper.selectById(org.mockito.ArgumentMatchers.anyLong())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0);
+            if (!java.util.Set.of(200L, 201L, 202L, 203L, 204L).contains(id)) return null;
+            var project = new org.ruoyi.ipd.domain.Project();
+            project.setId(id); project.setMainGroupId(1L); return project;
+        });
         service.setStateMachineGuard(stateMachineGuard);
         service.setBonusAllocationMapper(bonusAllocationMapper);
         service.setProjectMemberMapper(projectMemberMapper);

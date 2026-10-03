@@ -4,6 +4,7 @@ import io.agentscope.core.event.AgentResultEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.model.ChatUsage;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.ruoyi.service.coding.harness.model.HarnessPermissionMode;
 import org.ruoyi.service.coding.harness.tool.ToolPolicyEngine;
@@ -12,6 +13,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Tag("dev")
 class KernelFinalResponseTest {
     @Test void finalMessageCarriesReplacementAndRealUsageWithoutEmittingAnotherDelta() {
         ChatUsage usage = new ChatUsage(12, 8, 0);

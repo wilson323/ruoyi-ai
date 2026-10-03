@@ -26,3 +26,12 @@
 ## 用例格式
 
 见 `cases.template.md`。新用例复制该模板到 `cases/<name>.md`。
+
+
+## IPD 当前可执行入口（2026-10-03）
+
+工程验证器的固定正反例在前端 `scripts/test_engineering_harness.py` 与 `scripts/typecheck-error-count.test.mjs`，由 `.harness/verify.sh governance <原事项编号>` 实跑。原始case ID及验证器字节摘要进入receipt；缺样本、退出失败、输入变化不能晋升。前端完整profile还执行原类型、Vitest及构建命令。
+
+失败在现有 `.harness/evolve` 自动形成证据包；下次intake读取待反思及固定检查项。同事项后续完整通过才自动晋升支持的检查项，不从自由文本编造规则或修改权限。目录是私有本机证据，不是第二任务台账；新克隆不会自动带上本机经验。
+
+以上是确定性工具回归。模型/Skill行为评测须实际运行旧/新候选，同输入/权限/评分标准，检查最终环境状态；未运行时标未验证。原文 `ai-native metrics` 仅历史工具线索，不表示当前工具存在，不可用时不能跳过后直接判通过。新故障由工程助手补可复现正反例；不把反思日志数量当能力提升指标。

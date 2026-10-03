@@ -72,7 +72,9 @@ class ProjectAgentRunServiceLifecycleTest {
     @DisplayName("事件：afterSeq 增量不重复；终态事件送达前 terminal=false，送达后 true")
     void eventsAreIncrementalAndTerminalFlagIsExact() {
         RunServiceHarness h = new RunServiceHarness(true, false, 4);
-        Long runId = Long.valueOf(h.service.create(ACTOR, PROJECT_ID, c02("life-key-0002", MESSAGE)).runId());
+        Long runId = Long.valueOf(h.service.create(ACTOR, PROJECT_ID, new org.ruoyi.ipd.agent.dto.AgentRunCreateReq(
+            "market-research", "v1", String.valueOf(AgentTestFixtures.MODEL_ID), List.of("competitor-analysis-ipd"),
+            List.of("project_knowledge_search"), null, MESSAGE, "life-key-0002")).runId());
         ProjectAgentEventSink sink = h.kernel.last().sink();
 
         ProjectAgentViews.Events first = h.service.events(ACTOR, runId, 0L);
@@ -82,7 +84,7 @@ class ProjectAgentRunServiceLifecycleTest {
         assertThat(first.events().get(0).payload()).isInstanceOf(Map.class);
 
         sink.onToolCall("call-1", "project_knowledge_search");
-        sink.onSource(Map.of("hits", 2, "retrievalStatus", "SUCCESS", "citationText", "检索资料"));
+        sink.onTrustedSource(Map.of("hits", 2, "retrievalStatus", "SUCCESS", "citationText", "检索资料"));
         sink.onText("结论");
         sink.onComplete();
 
@@ -242,6 +244,9 @@ class ProjectAgentRunServiceLifecycleTest {
         ProjectAgentRunService svc = new ProjectAgentRunService(true, h.access, AgentTestFixtures.planner(),
             h.store, artifacts, null, null, null, h.executor, AgentTestFixtures.MAPPER, h.clock::get,
             Duration.ofSeconds(60));
+        // 本测试仅隔离复检状态和回写；真实来源/bytes/撤权由 ArtifactDeliveryTest 验证。
+        var trustedArtifacts = mock(org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess.class);
+        svc.setArtifactAccess(trustedArtifacts);
 
         // 取消：驻留态不经 CANCEL_REQUESTED，直接落 CANCELLED 并补 RUN_FINISHED。
         IpdAgentRun cancelRun = verifyingRun("key-verify-cancel");
@@ -256,8 +261,10 @@ class ProjectAgentRunServiceLifecycleTest {
         h.store.insertRun(passRun);
         artifacts.insert(artifact(passRun, "# 竞品分析\n\n完整正文。"));
         assertThat(svc.reverify(ACTOR, passRun.getId()).status()).isEqualTo("SUCCEEDED");
+        verify(trustedArtifacts).requireDocumentContent(org.mockito.ArgumentMatchers.eq(ACTOR),
+            org.mockito.ArgumentMatchers.eq(passRun.getId()), org.mockito.ArgumentMatchers.any());
         List<IpdAgentRunEvent> passEvents = h.store.events(passRun.getId());
-        assertThat(passEvents).extracting(IpdAgentRunEvent::getEventType).containsExactly("STEP", "RUN_FINISHED");
+        assertThat(passEvents).extracting(IpdAgentRunEvent::getEventType).containsExactly("STEP", "STEP", "RUN_FINISHED");
         assertThat(passEvents.get(0).getPayload()).contains("recheck").contains("PASS");
 
         // 复检仍缺口：保持 VERIFYING（幂等）；非驻留态复检拒绝。
@@ -281,6 +288,9 @@ class ProjectAgentRunServiceLifecycleTest {
         ProjectAgentRunService svc = new ProjectAgentRunService(true, h.access, AgentTestFixtures.planner(),
             h.store, artifacts, null, null, null, h.executor, AgentTestFixtures.MAPPER, h.clock::get,
             Duration.ofSeconds(60));
+        // 本测试仅隔离复检状态和回写；真实来源/bytes/撤权由 ArtifactDeliveryTest 验证。
+        var trustedArtifacts = mock(org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess.class);
+        svc.setArtifactAccess(trustedArtifacts);
 
         // 首跑路径的 SUCCEEDED 回调随句柄销毁丢失；复检收口必须按冻结快照补回写。
         IpdAgentRun bound = verifyingRun("key-verify-bind");
@@ -289,6 +299,8 @@ class ProjectAgentRunServiceLifecycleTest {
         String answer = "# 分拣结论\n产品线：attendance\n完整正文。";
         artifacts.insert(artifact(bound, answer));
         assertThat(svc.reverify(ACTOR, bound.getId()).status()).isEqualTo("SUCCEEDED");
+        verify(trustedArtifacts).requireDocumentContent(org.mockito.ArgumentMatchers.eq(ACTOR),
+            org.mockito.ArgumentMatchers.eq(bound.getId()), org.mockito.ArgumentMatchers.any());
         verify(binder).apply(77L, answer, null);
 
         // 无快照/无需求单的复检成功不触发回写。

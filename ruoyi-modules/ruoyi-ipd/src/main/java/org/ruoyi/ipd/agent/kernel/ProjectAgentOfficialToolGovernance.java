@@ -37,6 +37,16 @@ import reactor.core.publisher.Mono;
  * SDK 子智能体继承父 middleware，因此在 acting 前也保护其后来装配的工具。
  */
 public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase {
+
+    /** web_search 查询词长度上限：基础检索无需长查询，超长多半是被诱导的异常载荷。 */
+    private static final int WEB_QUERY_MAX_CHARS = 500;
+
+    /**
+     * 查询词中禁止出现的凭据/敏感词。与 {@code ProjectScopedLongTermMemory} 的兜底词表同源：
+     * 模型生成的文本不可信，提示词里的约束不如在这里硬拦可靠。
+     */
+    private static final java.util.Set<String> WEB_QUERY_FORBIDDEN = java.util.Set.of(
+        "password", "passwd", "secret", "apikey", "api_key", "token", "私钥", "口令", "密码");
     /** 仅已有业务工具的原生执行账本守卫可声明，普通 SDK 工具不得声明。 */
     public interface BusinessExecutionGuarded {
         boolean hasExecutionClaimGuard();
@@ -83,6 +93,13 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 throw new IllegalStateException("Official acting identity is outside the owning run");
             if (state != null) {
                 state.setPermissionContext(ProjectAgentOfficialPermissions.extend(state.getPermissionContext()));
+            }
+            for (ToolUseBlock use : input.toolCalls()) {
+                if (ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(use.getName())) {
+                    if (expectedScope != null && !Objects.equals(expectedScope.sessionId(), context.getSessionId()))
+                        throw new SecurityException("Child cannot request parent clarification");
+                    ProjectAgentOutputContract.responseSchema(use.getInput());
+                }
             }
             bind(agent.getToolkit());
             if (state != null) {
@@ -161,6 +178,10 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                     String reason = webBlockReason(input);
                     if (reason != null) return Mono.just(PermissionDecision.deny(reason));
                 }
+                if ("web_search".equals(getName())) {
+                    String reason = webSearchBlockReason(input);
+                    if (reason != null) return Mono.just(PermissionDecision.deny(reason));
+                }
                 Mono<PermissionDecision> decision = delegate instanceof ToolBase nativeTool
                     ? nativeTool.checkPermissions(input, context) : super.checkPermissions(input, context);
                 return decision.doOnNext(value -> {
@@ -176,6 +197,9 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 // 官方 EXPLORE/ACCEPT_EDITS 对只读工具可能先放行；出站约束仍须在实际调用前再检查。
                 if ("web_fetch".equals(getName()) && webBlockReason(param.getInput()) != null)
                     return Mono.error(new IllegalStateException("Web destination is not authorized"));
+                // 同 web_fetch：只读工具可能被官方 EXPLORE/ACCEPT_EDITS 预先放行，真实调用前须再查一次。
+                if ("web_search".equals(getName()) && webSearchBlockReason(param.getInput()) != null)
+                    return Mono.error(new IllegalStateException("Web search query is not authorized"));
                 var state = RuntimeContext.resolveAgentState(param.getRuntimeContext(), param.getAgent());
                 // All tools require the canonical SDK execution binding; business delegates
                 // still consume their existing execution ledger, without a second govern call.
@@ -253,6 +277,34 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                         "toolName", getName(), "state", "RETURNED")))
                     .doOnError(error -> sink.onStep("TOOL_EXECUTION", Map.of(
                         "toolName", getName(), "state", "FAILED")));
+        }
+
+        /**
+         * web_search 的出站治理。与 web_fetch 的风险形态<b>不同</b>，不可套用同一套校验：
+         * web_fetch 由调用方给 URL，威胁是 SSRF；web_search 的目标端点在 SDK 内写死为
+         * {@code https://api.tavily.com/search}，<b>没有 SSRF 面</b>。它的真实风险是两条：
+         * <ol>
+         *   <li><b>外泄</b>：{@code query} 完全由模型生成，受提示词注入影响时可能把本项目内的
+         *       凭据或客户资料夹带进查询词，而该词会被原样发往第三方检索服务。</li>
+         *   <li><b>不可信内容回流</b>：检索结果的标题/URL/摘要是外部可控内容，会作为工具结果
+         *       进入模型上下文，构成二次注入通道。</li>
+         * </ol>
+         * 此处只封第一条（可控、确定、可测），并把长度上限一并纳入。
+         * 第二条属内容可信度分级问题，需要更大的设计决策，<b>不在本方法范围内</b>。
+         */
+        private static String webSearchBlockReason(Map<String, Object> input) {
+            String query = Objects.toString(input.get("query"), "").trim();
+            if (query.isEmpty()) return "Web search query is required";
+            if (query.length() > WEB_QUERY_MAX_CHARS) {
+                return "Web search query exceeds authorized length";
+            }
+            String lower = query.toLowerCase(java.util.Locale.ROOT);
+            for (String forbidden : WEB_QUERY_FORBIDDEN) {
+                if (lower.contains(forbidden)) {
+                    return "Web search query must not carry credentials or secrets";
+                }
+            }
+            return null;
         }
 
         private static String webBlockReason(Map<String, Object> input) {

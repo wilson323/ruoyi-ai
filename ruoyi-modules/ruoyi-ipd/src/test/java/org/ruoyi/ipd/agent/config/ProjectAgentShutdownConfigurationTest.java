@@ -51,6 +51,8 @@ class ProjectAgentShutdownConfigurationTest {
             context.registerBean(org.ruoyi.service.knowledge.KnowledgeAccessGate.class, () -> mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class));
             context.registerBean(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class, () -> mock(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class));
             context.registerBean(org.ruoyi.ipd.service.ai.AiGateway.class, () -> mock(org.ruoyi.ipd.service.ai.AiGateway.class));
+            context.registerBean(org.springframework.transaction.PlatformTransactionManager.class,
+                () -> mock(org.springframework.transaction.PlatformTransactionManager.class));
             context.registerBean(org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalog.class,
                 () -> mock(org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalog.class));
             context.registerBean(org.ruoyi.ipd.mapper.IpdAgentMemoryMapper.class,

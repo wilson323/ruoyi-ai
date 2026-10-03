@@ -23,6 +23,11 @@ public interface AiDocumentMapper extends BaseMapperPlus<AiDocument, AiDocument>
     @Select("SELECT * FROM ai_documents WHERE id = #{id} AND del_flag = '0' FOR UPDATE")
     AiDocument lockVersion(@Param("id") Long id);
 
+    /** 索引维护显式核对文档与原项目同租户；两表任一软删/归属冲突均不可写缓存。 */
+    @Select("SELECT d.tenant_id FROM ai_documents d JOIN projects p ON p.id = d.project_id "
+        + "AND p.tenant_id = d.tenant_id WHERE d.id = #{id} AND d.del_flag = '0' AND p.del_flag = '0'")
+    String selectVersionTenant(@Param("id") Long id);
+
     /** 锁根后按父版本读取最新已提交子版本，避免重复读快照误判链头。 */
     @Select("SELECT * FROM ai_documents WHERE parent_version_id = #{parentId} AND del_flag = '0' FOR UPDATE")
     AiDocument lockChild(@Param("parentId") Long parentId);

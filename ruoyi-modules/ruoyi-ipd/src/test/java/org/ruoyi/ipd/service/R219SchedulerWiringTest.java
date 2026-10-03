@@ -217,7 +217,7 @@ class R219SchedulerWiringTest {
         when(memberMapper.selectList(any())).thenReturn(List.of(activeMember(101L, "MARKET_PM")));
 
         assertThat(svc.notifyOverdueActions()).isEqualTo(1);
-        verify(notificationService).publishDaily(eq(101L), eq("ACTION_OVERDUE"),
+        verify(notificationService).publishDailyAfterCommit(eq(101L), eq("ACTION_OVERDUE"),
             eq(NotificationService.KIND_ACTION), eq("stage_action"), eq(1L),
             anyString(), anyString(), eq("/projects/100"), any(Date.class));
     }
@@ -233,7 +233,7 @@ class R219SchedulerWiringTest {
             ProductGroup.builder().id(9L).leaderPersonId(555L).build());
 
         assertThat(svc.notifyOverdueActions()).isEqualTo(1);
-        verify(notificationService).publishDaily(eq(555L), eq("ACTION_OVERDUE"),
+        verify(notificationService).publishDailyAfterCommit(eq(555L), eq("ACTION_OVERDUE"),
             eq(NotificationService.KIND_ACTION), eq("stage_action"), eq(2L),
             anyString(), anyString(), anyString(), any(Date.class));
         verify(memberMapper, never()).selectList(any());
@@ -251,9 +251,9 @@ class R219SchedulerWiringTest {
             .thenReturn(List.of());
 
         assertThat(svc.notifyOverdueActions()).isEqualTo(2);
-        verify(notificationService).publishDaily(eq(101L), eq("ACTION_OVERDUE"), anyString(),
+        verify(notificationService).publishDailyAfterCommit(eq(101L), eq("ACTION_OVERDUE"), anyString(),
             eq("stage_action"), eq(3L), anyString(), anyString(), anyString(), any(Date.class));
-        verify(notificationService).publishDaily(eq(102L), eq("ACTION_OVERDUE"), anyString(),
+        verify(notificationService).publishDailyAfterCommit(eq(102L), eq("ACTION_OVERDUE"), anyString(),
             eq("stage_action"), eq(3L), anyString(), anyString(), anyString(), any(Date.class));
     }
 

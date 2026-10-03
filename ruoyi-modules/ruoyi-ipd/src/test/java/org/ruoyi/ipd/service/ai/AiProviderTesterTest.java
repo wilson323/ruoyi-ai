@@ -87,7 +87,47 @@ class AiProviderTesterTest {
         assertNotNull(req, "必须发请求");
         assertTrue(req.headers().firstValue("Authorization").orElse("").startsWith("Bearer "),
             "智谱用 Bearer 鉴权: " + req.headers().firstValue("Authorization"));
-        assertTrue(req.uri().getPath().contains("chat/completions"), "路径含 chat/completions: " + req.uri());
+        assertEquals("/api/paas/v4/chat/completions", req.uri().getPath());
+    }
+
+    @Test
+    void zhipuOriginAndOfficialFullBaseUseExactSameLocalRequestPath() throws Exception {
+        var capturedPath = new AtomicReference<String>();
+        var capturedBody = new AtomicReference<String>();
+        var server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            capturedPath.set(exchange.getRequestURI().toString());
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            byte[] response = "{}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+        try {
+            String origin = "http://127.0.0.1:" + server.getAddress().getPort();
+            for (String suffix : new String[] { "", "/", "/api/paas/v4", "/api/paas/v4/" }) {
+                assertTrue(new ZhipuTester().test(cfg("zhipu", origin + suffix, "fake-local-key")).success());
+                assertEquals("/api/paas/v4/chat/completions", capturedPath.get());
+                assertTrue(capturedBody.get().contains("\"max_tokens\":1"));
+                assertFalse(capturedBody.get().contains("thinking"));
+            }
+            // Empty 200 response is deliberately a connection result, not proof of a model answer.
+        } finally { server.stop(0); }
+    }
+
+    @Test
+    void zhipuRejectsUnknownOrAmbiguousBaseWithoutSendingRequests() {
+        AtomicReference<HttpRequest> captured = new AtomicReference<>();
+        HttpClient http = stubClient(resp(200, "{}"), captured);
+        for (String base : new String[] { "https://example.test/v1", "https://example.test/api/paas/v4/chat/completions",
+                "https://example.test/api/paas/v4?key=fake", "https://example.test/#fragment",
+                "https://fake@example.test", "ftp://example.test", "https://example.test/api/%70aas/v4", "" }) {
+            AiTestResult result = new ZhipuTester(http).test(cfg("glm", base, "fake-local-key"));
+            assertFalse(result.success());
+            assertEquals("INVALID_BASE_URL", result.errorCode());
+            assertNull(captured.get());
+        }
     }
 
     @Test

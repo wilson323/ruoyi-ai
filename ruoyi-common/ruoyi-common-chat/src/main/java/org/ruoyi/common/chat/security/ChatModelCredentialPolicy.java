@@ -16,6 +16,12 @@ public final class ChatModelCredentialPolicy {
     public static final String DEEPSEEK_API_HOST = "https://api.deepseek.com";
     public static final String PPIO_PROVIDER = "ppio";
     public static final String PPIO_API_HOST = "https://api.ppio.com/openai/v1";
+    public static final String MINIMAX_PROVIDER = "minimax";
+    private static final Set<String> MINIMAX_API_HOSTS = Set.of(
+        "https://api.minimax.io/v1", "https://api.minimax.io/anthropic",
+        "https://api.minimax.cn/v1", "https://api.minimax.cn/anthropic",
+        "https://api.minimaxi.com/v1", "https://api.minimaxi.com/anthropic"
+    );
     public static final String ATLAS_PROVIDER = "atlas";
     private static final Set<String> ATLAS_API_HOSTS = Set.of(
         "https://api.atlascloud.ai", "https://api.atlascloud.ai/",
@@ -75,6 +81,10 @@ public final class ChatModelCredentialPolicy {
                                                        String apiHost,
                                                        String apiKey) {
         requireSecureApiHost(apiHost);
+        if (MINIMAX_PROVIDER.equals(providerCode)) {
+            requireMinimaxConfiguration(providerCode, modelName, apiHost, apiKey);
+            return;
+        }
         if (ATLAS_PROVIDER.equals(providerCode)) {
             requireAtlasConfiguration(providerCode, modelName, apiHost, apiKey);
             return;
@@ -131,6 +141,8 @@ public final class ChatModelCredentialPolicy {
             expectedReference = "env:DEEPSEEK_API_KEY";
         } else if (PPIO_PROVIDER.equals(providerCode)) {
             expectedReference = "env:PPIO_API_KEY";
+        } else if (MINIMAX_PROVIDER.equals(providerCode)) {
+            expectedReference = "env:MINIMAX_API_KEY";
         } else if (ATLAS_PROVIDER.equals(providerCode)) {
             expectedReference = "env:ATLAS_API_KEY";
         } else {
@@ -155,13 +167,33 @@ public final class ChatModelCredentialPolicy {
                                                    String apiHost, String apiKey) {
         if (CustomApiCredentialPolicy.isCustomProvider(providerCode)) {
             CustomApiCredentialPolicy.requireConfiguration(providerCode, modelName, apiHost, apiKey);
+
         } else if (PPIO_PROVIDER.equals(providerCode)) {
             requirePpioConfiguration(providerCode, modelName, apiHost, apiKey);
         } else if (ATLAS_PROVIDER.equals(providerCode)) {
             requireAtlasConfiguration(providerCode, modelName, apiHost, apiKey);
         } else if (isDeepSeekConfiguration(providerCode, modelName)) {
             requireDeepSeekConfiguration(providerCode, modelName, apiHost, apiKey);
+        } else if (MINIMAX_PROVIDER.equals(providerCode)) {
+            requireMinimaxConfiguration(providerCode, modelName, apiHost, apiKey);
         }
+    }
+
+    /** MiniMax credentials are bound to its supported official protocol endpoints. */
+    public static void requireMinimaxConfiguration(String providerCode, String modelName,
+                                                   String apiHost, String apiKey) {
+        if (!MINIMAX_PROVIDER.equals(providerCode)) {
+            throw new IllegalArgumentException("MiniMax model provider is not trusted");
+        }
+        if (modelName == null || !modelName.matches("[A-Za-z0-9][A-Za-z0-9._/-]{0,254}")) {
+            throw new IllegalArgumentException("MiniMax model ID is invalid");
+        }
+        requireSecureApiHost(apiHost);
+        String normalized = apiHost.replaceAll("/+$", "");
+        if (!MINIMAX_API_HOSTS.contains(normalized)) {
+            throw new IllegalArgumentException("MiniMax API host is not allowlisted");
+        }
+        requireProviderReference(providerCode, apiKey);
     }
 
     /** Atlas credentials may only be sent to its official media API origin. */

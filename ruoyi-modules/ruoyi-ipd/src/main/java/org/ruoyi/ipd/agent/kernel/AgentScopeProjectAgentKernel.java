@@ -99,6 +99,31 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
     static final String ERR_MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE";
     static final String ERR_KERNEL_ERROR = "KERNEL_ERROR";
     static final String ERR_STREAM_ERROR = "STREAM_ERROR";
+
+    /**
+     * 运行失败的错误码判定。判定必须走完整异常链，不能只看顶层类型。
+     *
+     * <p>run 2106378468009717761 实测反证：记忆抽取的 {@link TimeoutException} 被脱敏包装成
+     * {@code IllegalStateException}，顶层 {@code instanceof} 判据落进 else，对外报
+     * {@code STREAM_ERROR}「模型输出中断」——而正文与结束事件早已推送落库，与事实相反。
+     * 包装类的存在正是为了让对外文案脱敏，不能反过来让脱敏把原因也一起掩盖。
+     */
+    static String classifyStreamFailure(Throwable err) {
+        for (Throwable current = err; current != null; current = current.getCause()) {
+            if (current instanceof TimeoutException) return ERR_RUN_TIMEOUT;
+            if (current.getCause() == current) break;
+        }
+        return ERR_STREAM_ERROR;
+    }
+
+    /** 异常链最深处的类型名，仅用于日志定位；自引用链防御性截断。 */
+    static String rootCauseType(Throwable err) {
+        Throwable current = err;
+        while (current != null && current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current == null ? "unknown" : current.getClass().getName();
+    }
     static final String ERR_RUN_TIMEOUT = "RUN_TIMEOUT";
 
     private final ProjectAgentModelAssembler modelAssembler;
@@ -187,7 +212,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         } catch(java.io.IOException unavailable) {throw new IllegalStateException("Original child workspace is unavailable",unavailable);}
     }
     private HarnessAgent.Builder officialFactoryBuilder(ProjectAgentRunSpec spec,Path workspace,FrozenProjectAgentSkills selectedSkills) {
-        return HarnessAgent.builder().name(ProjectAgentConstants.AGENT_ID).sysPrompt(ProjectAgentPrompt.build(spec))
+        return HarnessAgent.builder().name(ProjectAgentConstants.AGENT_ID).sysPrompt(ProjectAgentPrompt.build(spec) + ProjectAgentOutputContract.prompt())
             .skillRepository(selectedSkills).skillFilter(selectedSkills.filter()).workspace(workspace)
             .permissionContext(ProjectAgentOfficialPermissions.workspace()).maxIters(maxIters)
             // [AgentScope 2.0.3 陷阱 · 勿单独设置 .maxRetries(n)] 它不生效且无告警：ModelConfig.maxRetries 被
@@ -239,11 +264,11 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         List<Msg> messages;
         try {
             messages = !spec.serverChildResumes().isEmpty() && spec.serverResumeMessages() == null ? List.of() : spec.serverResumeMessages() != null ? spec.serverResumeMessages()
-                : spec.aguiInput() != null ? ProjectAgentAguiInput.messages(spec.aguiInput(), Map.of())
+                : spec.aguiInput() != null && !spec.aguiInput().getMessages().isEmpty() ? ProjectAgentAguiInput.messages(spec.aguiInput(), Map.of())
                 : List.of(Msg.builder().role(MsgRole.USER).textContent(spec.message()).build());
             if (messages.isEmpty() && spec.serverChildResumes().isEmpty()) throw new IllegalArgumentException("Agent input messages are required");
         } catch (RuntimeException invalidInput) {
-            try { managed.agent().close(); } finally {
+            try { managed.agent().close(); managed.filesystem().verifyReleased(); } finally {
                 if (managed.artifactProvider() != null) managed.artifactProvider().claims().close();
             }
             try {
@@ -259,7 +284,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         if (managed.requiresCommittedReceipt()) {
             try { sink.registerTerminalSuccessReceipt(() -> managed.terminalCommitted().set(true)); }
             catch (RuntimeException unavailableReceipt) {
-                try { agent.close(); } finally {
+                try { agent.close(); managed.filesystem().verifyReleased(); } finally {
                     if (managed.artifactProvider() != null) managed.artifactProvider().claims().close();
                 }
                 sink.onError(ERR_KERNEL_ERROR);
@@ -275,7 +300,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         });
         var runtimeContext = ProjectAgentAguiRuntimeContext.prepare(agent, spec.aguiInput(), scope.toRuntimeContext());
         var deadlineReached = new java.util.concurrent.atomic.AtomicBoolean();
-        return Flux.using(() -> agent,
+        return usingPreservingFailure(() -> agent,
                 a -> spec.serverChildResumes().isEmpty() ? a.streamEvents(messages, runtimeContext)
                     : new ProjectAgentChildResumeDispatcher(managed.subagentScope(),managed.state(),sink::requireChildResumeConsumed,
                         sink::recordChildCompletion,sink::loadChildCompletions)
@@ -288,6 +313,10 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                     try {
                         a.close();
                         if (managed.childConsumers() != null) managed.childConsumers().closeChildren();
+                        managed.filesystem().verifyReleased();
+                    } catch (RuntimeException cleanupFailure) {
+                        managed.filesystem().lifecycle().recordFailure(cleanupFailure);
+                        throw cleanupFailure;
                     } finally {
                         if (managed.artifactProvider() != null) managed.artifactProvider().claims().close();
                     }
@@ -315,6 +344,25 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .subscribe(bridge::dispatch, bridge::error, bridge::complete);
     }
 
+    static <T, R> Flux<T> usingPreservingFailure(java.util.concurrent.Callable<R> resource,
+        java.util.function.Function<R, org.reactivestreams.Publisher<T>> source,
+        java.util.function.Consumer<R> cleanup) {
+        return Flux.defer(() -> {
+            var upstreamFailure = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+            return Flux.using(resource,
+                owned -> Flux.defer(() -> Flux.from(source.apply(owned))).doOnError(upstreamFailure::set),
+                owned -> {
+                    try { cleanup.accept(owned); }
+                    catch (RuntimeException cleanupFailure) {
+                        Throwable original = upstreamFailure.get();
+                        if (original == null) throw cleanupFailure;
+                        if (original != cleanupFailure) original.addSuppressed(cleanupFailure);
+                        // 原错误仍向下游传播；清理已失败，不能继续执行seal/delete。
+                    }
+                });
+        });
+    }
+
     /**
      * 按运行装配 HarnessAgent（包级可见供装配面测试：不触发模型调用）。
      *
@@ -336,7 +384,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                                 ProjectAgentOfficialSandbox.ManagedFilesystem filesystem,
                                 ProjectAgentChildConsumers childConsumers) {
         boolean preserveCheckpoint(ProjectAgentRunSpec spec) {
-            return !terminalCommitted.get() && (requiresCommittedReceipt || preserveApprovalCheckpoint(spec, lineage));
+            return filesystem.lifecycle().failed() || !terminalCommitted.get() && (requiresCommittedReceipt || preserveApprovalCheckpoint(spec, lineage));
         }
     }
 
@@ -375,7 +423,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                     concrete.retrieve(personId, projectId, docType, query);
             }
             toolkit.registerAgentTool(KernelGovernedTool.wrap(
-                new InlineKnowledgeSearchTool(spec.projectId(), boundRetriever, sink::onSource), governance));
+                new InlineKnowledgeSearchTool(spec.projectId(), boundRetriever, sink::onTrustedSource), governance));
         }
         sink.requireActiveOwnership();
         ProductLineMcpTool.bind(toolkit, governance, spec, lineNames, sink);
@@ -387,6 +435,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         ToolsConfig toolsConfig = new ToolsConfig();
         FrozenProjectAgentSkills selectedSkills = new FrozenProjectAgentSkills(spec.skills());
         ProjectAgentSkillGovernance skillGovernance = new ProjectAgentSkillGovernance(workspace, spec, selectedSkills);
+        skillGovernance.bindSink(sink);
         var parentRef = new java.util.concurrent.atomic.AtomicReference<HarnessAgent>();
         var trustedScope = KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
             ProjectAgentConstants.AGENT_ID, String.valueOf(spec.runId()));
@@ -428,25 +477,32 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         ProjectAgentEventSink checkpointOwnership = checkpointOwnership(sink);
         ProjectAgentTemporaryStateStore temporaryState = new ProjectAgentTemporaryStateStore(stateStore,
             trustedScope, checkpointOwnership, subagentScope.lineage(), String.valueOf(spec.runId()));
-        sink.registerTemporaryStateCleanup(() -> {
-            if (terminalCommitted.get() || !requiresCommittedReceipt
-                && !preserveApprovalCheckpoint(spec, subagentScope.lineage())) temporaryState.sealAndDelete();
-        });
         org.ruoyi.chat.kernel.OfficialAgentTraceLogging.install();
         var filesystem = ProjectAgentOfficialSandbox.managedFilesystem(workspace, "python:3.13-alpine", sink);
+        sink.registerTemporaryStateCleanup(() -> {
+            if (terminalCommitted.get() || !requiresCommittedReceipt
+                && !preserveApprovalCheckpoint(spec, subagentScope.lineage())) {
+                filesystem.verifyReleased();
+                temporaryState.sealAndDelete();
+            }
+        });
         // 主运行、压缩、子调用和长期记忆抽取复用同一个计量/权限包装。
-        var meteredModel = new ProjectAgentMeteredModel(model, sink, checkpointOwnership);
+        var meteredModel = new ProjectAgentMeteredModel(model, sink, checkpointOwnership,
+            spec.frozenModels() == null ? null : spec.frozenModels().primaryIdentity());
         var longTermMemory = longTermMemoryMapper == null ? null
             : new ProjectScopedLongTermMemory(spec.projectId(), spec.personId(), spec.runId(),
                   longTermMemoryMapper, meteredModel);
         // 已配置的官方回退模型必须成功装配；失败向原运行错误链传播，不能静默跳过。
-        Model fallbackModel = modelAssembler.assembleFallback(spec.model(), spec.personId(), spec.runId());
+        Model fallbackModel = spec.frozenModels() == null
+            ? modelAssembler.assembleFallback(spec.model(), spec.personId(), spec.runId())
+            : modelAssembler.assembleConfiguredFallback(spec.frozenModels().fallback(), spec.personId(), spec.runId());
 
         HarnessAgent.Builder builder = officialFactoryBuilder(spec,workspace,selectedSkills)
+            .middleware(filesystem.lifecycle())
             .enableSkillManageTool(SkillManageConfig.defaults())
             .enableSkillPromotionGate(skillGovernance, skillGovernance)
             .enableSkillCurator(SkillCuratorConfig.defaults())
-            .memory(ProjectAgentNativeProfile.memory())
+            .memory(filesystem.lifecycle().memoryConfig(ProjectAgentNativeProfile.memory(), meteredModel))
             .enablePlanMode()
             .enableTaskList()
             .enableMetaTool(true)
@@ -457,7 +513,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .transcriptStore(safeTranscript)
             .middleware(subagentScope)
             .middleware(officialGovernance)
-            .middleware(new ProjectAgentSkillRuntimeGuard(selectedSkills, spec, sink))
+            .middleware(new ProjectAgentSkillRuntimeGuard(selectedSkills, spec, sink,
+                () -> java.util.Objects.requireNonNull(parentRef.get(), "Official root agent is not bound")
+                    .getWorkspaceManager().getFilesystem()))
             .model(meteredModel)
             .permissionContext(ProjectAgentOfficialPermissions.workspace())
             .hook(auditHook)
@@ -491,7 +549,8 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .workspace(workspace);
         if (fallbackModel != null) {
             // 回退调用同计量：主/回退 token 同账本，不留回退侧计量盲区。
-            builder.fallbackModel(new ProjectAgentMeteredModel(fallbackModel, sink, checkpointOwnership));
+            builder.fallbackModel(new ProjectAgentMeteredModel(fallbackModel, sink, checkpointOwnership,
+                spec.frozenModels() == null ? null : spec.frozenModels().fallbackIdentity()));
         }
         if (artifactProvider != null) builder.artifactDeliveryTarget(artifactProvider.target());
         if (childConsumers != null) builder.middleware(childConsumers);
@@ -503,7 +562,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         if (longTermMemory != null) {
             // 官方推荐 MiddlewareBase；2.0.3 父 Hook 亦真实接线，旧“仅子工厂”说明有误。
             // 按运行时 trustedScope 获取活状态，并等待记忆持久化回执后才结束流。
-            builder.middleware(new ProjectAgentLongTermMemoryMiddleware(longTermMemory));
+            builder.middleware(new ProjectAgentLongTermMemoryMiddleware(longTermMemory, sink));
         }
         HarnessAgent built;
         try { built = builder.build(); }
@@ -515,6 +574,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             // SDK build 与子任务会追加工具；统一在装配后和每次 acting 前挂官方权限扩展。
             parentRef.set(built);
             subagentScope.lineage().bindRoot(built);
+            filesystem.lifecycle().bindWorkspace(built.getWorkspaceManager());
             safeTranscript.bind(built.getWorkspaceManager());
             skillGovernance.bind(built.getWorkspaceManager());
             // AG-UI schemas are already server-bound by the planner; never overwrite a backend tool.
@@ -534,7 +594,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             return new ManagedAgent(built, temporaryState, subagentScope.lineage(), artifactProvider,
                 terminalCommitted, requiresCommittedReceipt, subagentScope, filesystem, childConsumers);
         } catch (RuntimeException failure) {
-            try { built.close(); } catch (RuntimeException cleanupFailure) { failure.addSuppressed(cleanupFailure); }
+            try { built.close(); filesystem.verifyReleased(); } catch (RuntimeException cleanupFailure) { failure.addSuppressed(cleanupFailure); }
             finally { if (artifactProvider != null) artifactProvider.claims().close(); }
             throw failure;
         }
@@ -832,10 +892,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         }
 
         private void error(Throwable err) {
-            boolean timeout = err instanceof TimeoutException;
-            log.error("project_agent operation=STREAM status=FAILED runId={} errorType={}",
-                runId, err.getClass().getName());
-            sink.onError(timeout ? ERR_RUN_TIMEOUT : ERR_STREAM_ERROR);
+            log.error("project_agent operation=STREAM status=FAILED runId={} errorType={} rootErrorType={}",
+                runId, err.getClass().getName(), rootCauseType(err));
+            sink.onError(classifyStreamFailure(err));
         }
 
         private boolean hasPendingPause() {

@@ -695,7 +695,7 @@ public class StageActionService implements IStageActionService {
                 + "」已逾期（截止 " + new java.text.SimpleDateFormat("yyyy-MM-dd").format(a.getDueDate()) + "），请尽快处理。";
             String actionUrl = a.getProjectId() == null ? null : "/projects/" + a.getProjectId();
             for (Long receiverId : receivers) {
-                notificationService.publishDaily(receiverId, NotificationService.Types.ACTION_OVERDUE,
+                notificationService.publishDailyAfterCommit(receiverId, NotificationService.Types.ACTION_OVERDUE,
                     NotificationService.KIND_ACTION, "stage_action", a.getId(), title, content, actionUrl, now);
                 sent++;
             }

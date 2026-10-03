@@ -57,6 +57,13 @@ public final class ProjectAgentAguiResumeValidation {
             if (response.isCancelled() && response.getPayload() != null) {
                 throw new IllegalArgumentException("取消响应不得携带结果");
             }
+            if (interrupt.metadata() != null && org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.CLARIFICATION_TOOL.equals(interrupt.metadata().get("toolName"))) {
+                if (!(interrupt.metadata().get("toolInput") instanceof Map<?,?> original)) throw new IllegalArgumentException("Original clarification missing");
+                @SuppressWarnings("unchecked") var questions = (Map<String,Object>)original;
+                var schema = org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.responseSchema(questions);
+                if (!schema.equals(interrupt.responseSchema())) throw new IllegalArgumentException("Original clarification schema changed");
+                if (response.isResolved()) org.ruoyi.ipd.agent.kernel.ProjectAgentOutputContract.validateAnswers(questions, response.getPayload());
+            }
             if (interrupt.expiresAt() != null
                     && !Instant.parse(interrupt.expiresAt()).isAfter(now)) {
                 throw new IllegalArgumentException("中断已过期");

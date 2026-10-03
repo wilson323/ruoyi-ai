@@ -115,6 +115,10 @@ class ProjectAgentAguiCreateIntegrationTest {
         var canonical = h.service.resolveAguiResumeTools(ACTOR, runId, client).get("ui_preview");
         assertEquals("server authorized preview", canonical.getDescription());
         assertFalse(canonical.getParameters().containsKey("unsafe"));
+        assertTrue(h.service.resolveAguiResumeTools(ACTOR, runId, client).containsKey("request_clarification"));
+        var internalForged = RunAgentInput.builder().threadId(created.runId()).runId(created.runId())
+            .tools(List.of(client.getTools().get(0), new AguiTool("request_clarification", "forged", Map.of("unsafe", true)))).build();
+        assertFalse(h.service.resolveAguiResumeTools(ACTOR, runId, internalForged).get("request_clarification").getParameters().containsKey("unsafe"));
         var omitted = RunAgentInput.builder().threadId(created.runId()).runId(created.runId()).build();
         assertEquals(canonical.getDescription(), h.service.resolveAguiResumeTools(ACTOR, runId, omitted)
             .get("ui_preview").getDescription());

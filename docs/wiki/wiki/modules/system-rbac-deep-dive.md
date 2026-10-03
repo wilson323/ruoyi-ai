@@ -16,11 +16,11 @@ raw:
 
 本篇深入 [modules/system.md](../modules/system.md) 的 RBAC 模型，覆盖实体关系、权限注解、数据权限范围、CMS 模块。
 
-参见：[rbac-entities](../raw/system-source/rbac-entities.md)、[entity-sys-user](../raw/system-source/entity-sys-user.md)。
+参见：[rbac-entities](../../raw/system-source/rbac-entities.md)、[entity-sys-user](../../raw/system-source/entity-sys-user.md)。
 
 ## 26 个实体分组
 
-参见 [rbac-entities.md](../raw/system-source/rbac-entities.md) 完整清单，按职责分 7 类：
+参见 [rbac-entities.md](../../raw/system-source/rbac-entities.md) 完整清单，按职责分 7 类：
 
 - **RBAC 核心**：SysUser / SysRole / SysMenu / SysDept / SysPost
 - **中间表**：SysUserRole / SysRoleMenu / SysUserPost / SysRoleDept
@@ -64,7 +64,7 @@ raw:
 
 ## 权限注解 4 件套
 
-参见：[login-helper](../raw/common-source/login-helper.md)。
+参见：[login-helper](../../raw/common-source/login-helper.md)。
 
 ```java
 @SaCheckLogin           // 1. 要求登录（默认所有 controller 都加）
@@ -87,7 +87,7 @@ raw:
 | `4` (DEPT_AND_CHILD) | 本部门及下级 | WHERE dept_id IN (本部门 + 所有下级) |
 | `5` (SELF) | 仅本人 | WHERE create_by = 当前用户 |
 
-详见 [security-reviewer agent 文档](../../.claude/agents/security-reviewer.md) § P0 边界。
+详见 [security-reviewer agent 文档](../../../../.claude/agents/security-reviewer.md) § P0 边界。
 
 ## SysMenu 的关键字段
 
@@ -112,7 +112,7 @@ public class SysMenu {
 
 ## 用户导入 — SysUserImportListener
 
-参见 [sys-user-import-listener](../raw/system-source/sys-user-import-listener.md)。
+参见 [sys-user-import-listener](../../raw/system-source/sys-user-import-listener.md)。
 
 基于 EasyExcel 的 `ReadListener<SysUserImportVo>`：
 
@@ -135,7 +135,7 @@ public class SysUserImportListener implements ReadListener<SysUserImportVo> {
 
 ## 用户行为审计 — UserActionListener
 
-参见 [user-action-listener](../raw/system-source/user-action-listener.md)。
+参见 [user-action-listener](../../raw/system-source/user-action-listener.md)。
 
 监听关键操作：
 - 登录成功 / 失败
@@ -150,7 +150,7 @@ public class SysUserImportListener implements ReadListener<SysUserImportVo> {
 
 ## 启动期任务 — SystemApplicationRunner
 
-参见 [system-application-runner](../raw/system-source/system-application-runner.md)。
+参见 [system-application-runner](../../raw/system-source/system-application-runner.md)。
 
 ```java
 @Component
@@ -173,7 +173,7 @@ public class SystemApplicationRunner implements ApplicationRunner {
 
 ## CMS — CmsContent
 
-参见 [entity-cms-content](../raw/system-source/entity-cms-content.md)。
+参见 [entity-cms-content](../../raw/system-source/entity-cms-content.md)。
 
 最近新增的 CMS 模块（commit history: `feat: add coding harness runtime and CMS module`），与 AI 内容生成配合：
 

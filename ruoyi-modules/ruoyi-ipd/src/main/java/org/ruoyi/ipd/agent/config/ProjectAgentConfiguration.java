@@ -77,14 +77,79 @@ public class ProjectAgentConfiguration {
 
     /** @return Skill 目录（ClasspathSkillRepository 读 ipd-skills） */
     @Bean
-    public ProjectAgentSkillCatalog projectAgentSkillCatalog(CapabilityManifest manifest) {
-        return new ProjectAgentSkillCatalog("ipd-skills", manifest);
+    public ProjectAgentSkillCatalog projectAgentSkillCatalog(CapabilityManifest manifest,
+            org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService reviews) {
+        var catalog = new ProjectAgentSkillCatalog("ipd-skills", manifest);
+        catalog.setPublishedResolver(new ProjectAgentSkillCatalog.PublishedResolver() {
+            public java.util.Optional<ProjectAgentSkillCatalog.LoadedSkill> load(String tenantId, Long projectId,
+                    Long personId, String name, String digest) {
+                return reviews.published(new org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService.ReviewScope(
+                    tenantId, null, projectId, personId), name, digest);
+            }
+            public java.util.List<ProjectAgentSkillCatalog.SkillStatus> statuses(String tenantId, Long projectId, Long personId) {
+                return reviews.publishedStatuses(new org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService.ReviewScope(
+                    tenantId, null, projectId, personId));
+            }
+        });
+        return catalog;
+    }
+
+    @Bean
+    public org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService projectAgentSkillReviewService(
+            AgentRunStore store, CapabilityManifest manifest,
+            @Value("${ipd.project-agent.workspace-root:${java.io.tmpdir}/ipd-project-agent-workspace}") Path workspaceRoot) {
+        return new org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService(store, workspaceRoot, manifest);
     }
 
     /** @return 工具目录 */
     @Bean
-    public ProjectAgentToolCatalog projectAgentToolCatalog(CapabilityManifest manifest) {
-        return new ProjectAgentToolCatalog(manifest);
+    public ProjectAgentToolCatalog projectAgentToolCatalog(CapabilityManifest manifest,
+            @Value("${ipd.project-agent.workspace-root:${java.io.tmpdir}/ipd-project-agent-workspace}") Path workspaceRoot,
+            @org.springframework.beans.factory.annotation.Qualifier("projectAgentStateStore") io.agentscope.core.state.AgentStateStore stateStore,
+            org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts artifactProvider,
+            @org.springframework.beans.factory.annotation.Qualifier(ProjectAgentOfficialCollaborationRedis.STORE_BEAN)
+                io.agentscope.harness.agent.filesystem.remote.store.BaseStore collaborationStore,
+            org.redisson.api.RedissonClient redisClient,
+            @org.springframework.beans.factory.annotation.Qualifier(ProjectAgentOfficialCollaborationRedis.CLIENT_BEAN)
+                redis.clients.jedis.UnifiedJedis collaborationClient) {
+        var stateReady = cachedNativePrerequisite(() -> stateStore != null && redisClient != null
+            && !redisClient.isShutdown() && !redisClient.isShuttingDown()
+            && redisClient.getRedisNodes(org.redisson.api.redisnode.RedisNodes.SINGLE)
+                .pingAll(2, java.util.concurrent.TimeUnit.SECONDS));
+        var collaborationReady = cachedNativePrerequisite(() -> collaborationStore != null
+            && collaborationClient != null && "PONG".equals(collaborationClient.ping()));
+        var readiness = new org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolReadiness(nativeReadinessWorkspace(workspaceRoot),
+            "python:3.13-alpine", () -> org.ruoyi.ipd.agent.kernel.ProjectAgentFoundationTools.nativeToolIds(),
+            stateReady, () -> artifactProvider != null, collaborationReady);
+        return new ProjectAgentToolCatalog(manifest, readiness);
+    }
+
+    /** Only the trusted JVM temporary base may use the platform's system alias. Custom roots stay literal. */
+    static Path nativeReadinessWorkspace(Path configured) {
+        Path temporaryBase = Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize();
+        Path defaultRoot = temporaryBase.resolve("ipd-project-agent-workspace");
+        Path requested = configured.toAbsolutePath().normalize();
+        if (!requested.equals(defaultRoot)) return requested;
+        try { return temporaryBase.toRealPath().resolve("ipd-project-agent-workspace"); }
+        catch (java.io.IOException unavailable) { return requested; }
+    }
+
+    /** Read-only provider probes are lazy and bounded by the existing client timeouts; failures never become ready. */
+    static java.util.function.BooleanSupplier cachedNativePrerequisite(java.util.function.BooleanSupplier probe) {
+        return new java.util.function.BooleanSupplier() {
+            private long checkedAt;
+            private boolean checked, available;
+            @Override public synchronized boolean getAsBoolean() {
+                long now = System.nanoTime();
+                if (!checked || now - checkedAt >= java.util.concurrent.TimeUnit.SECONDS.toNanos(10)) {
+                    try { available = probe.getAsBoolean(); }
+                    catch (RuntimeException unavailable) { available = false; }
+                    checkedAt = System.nanoTime();
+                    checked = true;
+                }
+                return available;
+            }
+        };
     }
 
     /** @return 模型目录（ai_model_configs 权威） */
@@ -270,12 +335,14 @@ public class ProjectAgentConfiguration {
             ObjectProvider<ProjectAgentKernel> kernel, ObjectMapper mapper,
             AiModelUsageLedgerService usageLedger,
             DemandCatalogBinder demandBinder, PlatformTransactionManager transactionManager,
+            org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts artifactProvider,
             org.ruoyi.ipd.agent.service.ProjectAgentRunOwnership ownership,
             @Value("${ipd.project-agent.max-concurrent-runs:4}") int maxConcurrentRuns) {
         ProjectAgentRunExecutor executor = new ProjectAgentRunExecutor(store, artifactStore,
             kernel.getIfAvailable(), mapper, Schedulers.boundedElastic(), System::currentTimeMillis,
             maxConcurrentRuns);
         executor.setUsageLedger(usageLedger);
+        executor.setDocumentVerifier(artifactProvider::verifyOutput);
         executor.setDemandBinder(demandBinder);
         TransactionTemplate finishTransaction = new TransactionTemplate(transactionManager);
         finishTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -304,7 +371,8 @@ public class ProjectAgentConfiguration {
             ProjectAgentModelCatalog modelCatalog,
             StageActionService stageActionService, ProductLineNameMapper lineNames,
             org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService skillReviews) {
         ProjectAgentRunService service = new ProjectAgentRunService(true, access, planner, store,
             artifactStore, documentService, projectMapper, productMapper, executor, mapper,
             System::currentTimeMillis, Duration.ofSeconds(Math.max(30, timeoutSeconds)));
@@ -316,6 +384,7 @@ public class ProjectAgentConfiguration {
         verificationTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         verificationTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         service.setVerificationTransaction(verificationTransaction);
+        service.setSkillReviews(skillReviews);
         return service;
     }
 

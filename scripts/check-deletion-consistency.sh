@@ -17,10 +17,11 @@
 #   ./scripts/check-deletion-consistency.sh FooService FooController
 #   ./scripts/check-deletion-consistency.sh --auto   # 扫所有 scan-dead-code.sh 输出的 HIGH 项
 
-set -u
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/audit-gate-input.sh"
 
 BACKEND_ROOT="${BACKEND_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-FRONTEND_ROOT="${FRONTEND_ROOT:-/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd}"
+FRONTEND_ROOT="${FRONTEND_ROOT:-$BACKEND_ROOT/../ruoyi-ipd-web/apps/web-antd}"
 DOCS_ROOT="${DOCS_ROOT:-/Users/mac/Documents/ZK-IPD}"
 
 MODE="manual"
@@ -43,23 +44,39 @@ if [ "$MODE" = "manual" ] && [ "${#TARGETS[@]}" -eq 0 ]; then
   exit 1
 fi
 
+gate_require_tree "$BACKEND_ROOT/ruoyi-modules/$MODULE/src" -name '*.java'
+gate_require_tree "$BACKEND_ROOT/ruoyi-modules/$MODULE/src/test" -name '*.java'
+# 注解Mapper模块可以没有XML；资源目录本身必须存在且有可读输入。
+gate_require_tree "$BACKEND_ROOT/ruoyi-modules/$MODULE/src/main/resources"
+gate_require_tree "$FRONTEND_ROOT/src" \( -name '*.ts' -o -name '*.tsx' -o -name '*.vue' \)
+gate_require_tree "$FRONTEND_ROOT/src/locales" -name '*.json'
+gate_require_tree "$BACKEND_ROOT/docs/script/sql" \( -name '*.sql' -o -name '*.md' \)
+ssot_file="$BACKEND_ROOT/docs/ipd-系统说明/开发计划-看板镜像.md"
+[ -s "$ssot_file" ] || { echo "[gate] SSOT输入缺失或为空" >&2; exit 2; }
+cat "$ssot_file" >/dev/null
+
 # --auto 模式：从最新 scan-dead-code 报告读 HIGH 项
 if [ "$MODE" = "auto" ]; then
-  latest=$(ls -t "${BACKEND_ROOT}/docs/ipd-系统说明/lint-reports/scan-dead-code-"*.json 2>/dev/null | head -1)
+  latest=$(ls -t "${BACKEND_ROOT}/docs/ipd-系统说明/lint-reports/scan-dead-code-"*.json | sed -n '1p')
   if [ -z "$latest" ]; then
     echo "[deletion] ❌ --auto 模式需要 scan-dead-code.sh 已跑过" >&2
     # R120 根除机制：exit 2 不标准，改为 exit 1（与 R119 reconcile-multi-source.sh 一致）
     exit 1
   fi
   echo "[deletion] --auto 从 $latest 抽取 HIGH 项..."
-  TARGETS=($(python3 -c "
+  targets_output=$(python3 -c "
 import json, sys
-with open('$latest') as f:
+with open(sys.argv[1]) as f:
     data = json.load(f)
+if not isinstance(data, list): raise ValueError('invalid scan report')
 for item in data:
     if item.get('risk') == 'HIGH':
         print(item['class'])
-" 2>/dev/null))
+" "$latest")
+  TARGETS=()
+  while IFS= read -r target; do
+    [ -z "$target" ] || TARGETS+=("$target")
+  done <<< "$targets_output"
   if [ "${#TARGETS[@]}" -eq 0 ]; then
     echo "[deletion] 无 HIGH 项，退出" >&2
     exit 0
@@ -68,7 +85,7 @@ for item in data:
 fi
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-OUTPUT_DIR="${BACKEND_ROOT}/docs/ipd-系统说明/lint-reports"
+OUTPUT_DIR="${OUTPUT_DIR:-${BACKEND_ROOT}/docs/ipd-系统说明/lint-reports}"
 mkdir -p "$OUTPUT_DIR"
 REPORT_MD="${OUTPUT_DIR}/deletion-consistency-${TIMESTAMP}.md"
 TMPDIR_CHECK=$(mktemp -d)
@@ -80,61 +97,62 @@ echo
 
 > "$TMPDIR_CHECK/all_results.txt"
 
+TOTAL_REFS=0
 for TARGET in "${TARGETS[@]}"; do
+  [[ "$TARGET" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { echo "[gate] 无效类名" >&2; exit 2; }
   echo ">>> 处理: $TARGET"
   echo "" >> "$TMPDIR_CHECK/all_results.txt"
   echo "## $TARGET" >> "$TMPDIR_CHECK/all_results.txt"
 
   # ---- 1. 后端 Java 引用 ----
   echo "  [1/7] 后端 Java 引用..."
-  be_refs=$(grep -rEn "\b${TARGET}\b" \
+  be_refs=$(gate_grep -rEn "\b${TARGET}\b" \
     "$BACKEND_ROOT/ruoyi-modules/${MODULE}/src" \
-    "$BACKEND_ROOT/ruoyi-common/${MODULE}/src" \
     --include='*.java' \
-    --exclude-dir=target --exclude-dir=worktrees 2>/dev/null \
-    | grep -vE "^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)" \
-    | grep -vE "/${TARGET}\.java:" \
+    --exclude-dir=target --exclude-dir=worktrees \
+    | gate_grep -vE "^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)" \
+    | gate_grep -vE "/${TARGET}\.java:" \
     | wc -l | tr -d ' ')
   echo "  - 后端 Java 引用（排除自身 + 注释）: $be_refs 行" >> "$TMPDIR_CHECK/all_results.txt"
 
   # ---- 2. 前端 TS 引用 ----
   echo "  [2/7] 前端 TS 引用..."
-  fe_refs=$(grep -rEn "\b${TARGET}\b" \
+  fe_refs=$(gate_grep -rEn "\b${TARGET}\b" \
     "$FRONTEND_ROOT/src" \
     --include='*.ts' --include='*.tsx' --include='*.vue' \
-    --exclude-dir=node_modules --exclude-dir=.pnpm-store 2>/dev/null \
+    --exclude-dir=node_modules --exclude-dir=.pnpm-store \
     | wc -l | tr -d ' ')
   echo "  - 前端 TS/Vue 引用: $fe_refs 行" >> "$TMPDIR_CHECK/all_results.txt"
 
   # ---- 3. Mapper XML 引用 ----
   echo "  [3/7] Mapper XML 引用..."
-  xml_refs=$(grep -rEn "\b${TARGET}\b" \
+  xml_refs=$(gate_grep -rEn "\b${TARGET}\b" \
     "$BACKEND_ROOT/ruoyi-modules/${MODULE}/src/main/resources" \
     --include='*.xml' \
-    2>/dev/null | wc -l | tr -d ' ')
+    | wc -l | tr -d ' ')
   echo "  - Mapper XML 引用: $xml_refs 行" >> "$TMPDIR_CHECK/all_results.txt"
 
   # ---- 4. SQL 脚本引用 ----
   echo "  [4/7] SQL 脚本引用..."
-  sql_refs=$(grep -rEn "\b${TARGET}\b|${TARGET,,}" \
+  sql_refs=$(gate_grep -rEn "\b${TARGET}\b|$(printf '%s' "$TARGET" | tr '[:upper:]' '[:lower:]')" \
     "$BACKEND_ROOT/docs/script/sql" \
     --include='*.sql' --include='*.md' \
-    2>/dev/null | wc -l | tr -d ' ')
+    | wc -l | tr -d ' ')
   echo "  - SQL 脚本引用: $sql_refs 行" >> "$TMPDIR_CHECK/all_results.txt"
 
   # ---- 5. i18n key 引用 ----
   echo "  [5/7] i18n key 引用..."
-  i18n_refs=$(grep -rEn "\"${TARGET}\"|\.${TARGET}\b" \
+  i18n_refs=$(gate_grep -rEn "\"${TARGET}\"|\.${TARGET}\b" \
     "$FRONTEND_ROOT/src/locales" \
     --include='*.json' \
-    2>/dev/null | wc -l | tr -d ' ')
+    | wc -l | tr -d ' ')
   echo "  - i18n key 引用: $i18n_refs 行" >> "$TMPDIR_CHECK/all_results.txt"
 
   # ---- 6. 看板/SSOT 引用 ----
   echo "  [6/7] 看板/SSOT 引用..."
   ssot_file="$BACKEND_ROOT/docs/ipd-系统说明/开发计划-看板镜像.md"
   if [ -f "$ssot_file" ]; then
-    ssot_refs=$(grep -cE "\b${TARGET}\b" "$ssot_file" 2>/dev/null || echo 0)
+    ssot_refs=$(gate_grep -cE "\b${TARGET}\b" "$ssot_file")
   else
     ssot_refs=0
   fi
@@ -142,12 +160,13 @@ for TARGET in "${TARGETS[@]}"; do
 
   # ---- 7. 测试引用 ----
   echo "  [7/7] 测试引用..."
-  test_refs=$(grep -rEn "\b${TARGET}\b" \
+  test_refs=$(gate_grep -rEn "\b${TARGET}\b" \
     "$BACKEND_ROOT/ruoyi-modules/${MODULE}/src/test" \
     --include='*.java' --include='*.xml' \
-    --exclude-dir=worktrees 2>/dev/null | wc -l | tr -d ' ')
+    --exclude-dir=worktrees | wc -l | tr -d ' ')
   echo "  - 测试引用: $test_refs 行" >> "$TMPDIR_CHECK/all_results.txt"
 
+  TOTAL_REFS=$((TOTAL_REFS + be_refs + fe_refs + xml_refs + sql_refs + i18n_refs + ssot_refs + test_refs))
   echo "" >> "$TMPDIR_CHECK/all_results.txt"
 done
 
@@ -199,4 +218,8 @@ EOF
 echo
 echo "==== 对账完成 ===="
 echo "报告: $REPORT_MD"
+if [ "$TOTAL_REFS" -gt 0 ]; then
+  echo "[FAIL] 仍有 $TOTAL_REFS 行引用，禁止删除"
+  exit 1
+fi
 exit 0
