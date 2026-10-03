@@ -14524,3 +14524,76 @@ main 的唯一数据源，方便用回归用例锁住「拿哪个字符串提卡
 `98f2f289` 本机校验器补 owner_decisions 条件分支。
 
 - marker: teardown-residue-and-ci-baseline-fix-20261003
+
+## 2026-10-03 生产镜像「隔离库端到端启动」实测：镜像能跑起来，但开箱即 unhealthy
+
+### 一、做了什么
+
+在**完全隔离**的 MySQL 8.0.46 + Redis 7 上把生产镜像真正启动了一次，全程未碰共享的 ipd_dev（13306）。
+隔离库建库走的是 `docs/ipd-系统说明/schema-baseline-20261003.sql`（166 张表），
+该文件经实测已含 Part A（agent_info 21 列 / knowledge_info 31 列 / knowledge_fragment 16 列，
+均高于 09-09 快照自述的 Part A 前基线 18/26/13），README 也把这条通道列为 IPD 生产通道的 schema 权威。
+
+**结论：能启动。** `Started RuoYiAIApplication in 14.346 seconds`，prod 档 fail-fast 校验器正常跑完，
+23 项警告 / 0 项致命（警告全是第三方登录密钥、短信供应商等未配置渠道）。
+隔离库侧 Threads_connected=41，证明确实建了真实连接、不是空转。
+
+### 二、三个发现
+
+**1. 第一次构建的镜像是旧的（方法学失误，记下来避免重犯）**
+首次构建 `ipd-backend:verify-20261003` 于 20:16:29 UTC，而补线提交 64593ee7（补 ProdConfigFailFastConfig
+把校验器接成 Bean）发生在 13:22:35 PDT = 20:22:35 UTC —— **镜像比修复早 6 分钟**，因此缺该类，
+prod 档启动直接抛 NoSuchBeanDefinitionException。
+我一度把本地时间 13:21 与 UTC 20:16 直接比大小，差点把「镜像太旧」误判成「类编译不出来」。
+**教训：跨时区比较前先统一口径。** 重新按 HEAD 构建后，jar 内该类已存在（旧 6 个 FailFast 类 → 新 7 个）。
+
+**2. 生产镜像开箱即 unhealthy —— 这是真正的部署阻塞**
+`/actuator/health` 返回 **HTTP 503 / status=DOWN**，根因是 Spring Boot 自动装配的两个探针在本部署里必然失败：
+
+- `MailHealthIndicator`：去连 `smtp.localhost:25`（父 yml 的占位默认值），连不上；
+- `ElasticsearchRestClientHealthIndicator`：去连 `localhost:9200`，ES 客户端在类路径上但本部署没有 ES。
+
+两者关掉后健康立即转 **HTTP 200 / status=UP**（已实测：只关 mail 则 ES 报错、只关 ES 则 mail 报错，
+两个都关才 UP）。根 compose 后端健康检查是 `curl -fs .../actuator/health`，
+对 DOWN 实例实测退出码 **22**（非 0）→ **后端容器按它自己声明的健康检查永远处于 unhealthy**。
+
+**范围要写准（避免夸大）**：根 compose 里前端的 depends_on 是普通列表形式，只等容器启动、不等健康，
+所以**前端仍会起来**；真正被顶住的是任何按健康状态放行的编排（k8s 的 liveness/readiness 探针、
+compose 里 condition: service_healthy 的服务），以及 docker ps 里的 unhealthy 标记。
+**未擅自改动** compose 或 yml —— 修法有两种（关掉这两个探针 / 给它们指向真实服务），
+属部署决策，等 owner 选。
+
+**3. 启动日志被 CannotFindDataSourceException 刷屏**
+`ruoyi-modules/ruoyi-chat/.../agent/manager/TableSchemaManager.java` 标了 `@DS("agent")`，
+且 `TableSchemaInitializer` 在启动时初始化全部表结构，于是每次启动反复抛
+`dynamic-datasource could not find a datasource named agent`（本次启动 7 次）。
+prod yml 的 dynamic.datasource 只定义了 master，根 compose 也只提供 master 的三项变量。
+类里 `@Autowired(required=false) DataSource agentDataSource` 让启动不失败，但 `@DS` 在调用期才路由，
+所以表现为运行期异常、且启动日志一片红。是「生产缺这个数据源」还是「这条代码路径该关掉」，需 owner 判。
+
+### 三、可复现配方（下次直接用，勿重复摸索）
+
+```
+docker run -d --name e2e-mysql -p 13399:3306 -e MYSQL_ROOT_PASSWORD=ipd_e2e_root \
+  -e MYSQL_DATABASE=ipd_dev mysql:8.0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+docker run -d --name e2e-redis -p 16399:6379 redis:7-alpine
+docker exec -i e2e-mysql mysql -uroot -pipd_e2e_root ipd_dev < docs/ipd-系统说明/schema-baseline-20261003.sql
+docker run -d --name e2e-app --add-host=host.docker.internal:host-gateway -p 16040:16039 \
+  -e SPRING_PROFILES_ACTIVE=prod \
+  -e SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL='jdbc:mysql://host.docker.internal:13399/ipd_dev?useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true' \
+  -e SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME=root \
+  -e SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD=ipd_e2e_root \
+  -e SPRING_REDIS_HOST=host.docker.internal -e SPRING_REDIS_PORT=16399 \
+  -e SA_TOKEN_JWT_SECRET_KEY=<任意32位以上> -e IPD_INITIAL_PWD='<任意>' \
+  -e MONITOR_USERNAME=verify -e MONITOR_PASSWORD='<任意>' \
+  -e MANAGEMENT_HEALTH_MAIL_ENABLED=false -e MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED=false \
+  ipd-backend:<tag>
+curl -s -u verify:<pwd> http://127.0.0.1:16040/actuator/health
+```
+
+要点：prod 档 `MONITOR_PASSWORD` 无默认值（空），**必须显式设**否则 /actuator/health 恒 401；
+Redis 的配置键是 `spring.redis.*`（prod yml）而非 `spring.data.redis.*`。
+
+**本次已把上述容器全部拆除**，未留残留；未对 13306 的 ipd_dev 执行任何写操作。
+
+- marker: prod-image-isolated-e2e-20261003
