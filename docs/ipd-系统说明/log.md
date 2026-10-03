@@ -14597,3 +14597,39 @@ Redis 的配置键是 `spring.redis.*`（prod yml）而非 `spring.data.redis.*`
 **本次已把上述容器全部拆除**，未留残留；未对 13306 的 ipd_dev 执行任何写操作。
 
 - marker: prod-image-isolated-e2e-20261003
+
+### 四、更正（同一提交内的错误，留痕不改史）
+
+上一节「可复现配方」的要点里我写了「Redis 的配置键是 spring.redis.*（prod yml）而非 spring.data.redis.*」——
+**这条是错的**。真实键是 spring.data.redis.*（prod yml 第 108-109 行：spring.data: 之下挂 redis:）。
+
+出错原因：我只 grep 了子键（两空格缩进的 redis:），看到命中就把结论写下了，没抬头看它挂在哪一级父键下。
+**更正后：SPRING_DATA_REDIS_HOST / SPRING_DATA_REDIS_PORT 才是有效变量。**
+该错误由并行调研智能体发现并由我复测确认；原文保留在上节，不静默改写。
+
+### 五、新增高危发现：镜像默认跑 dev 档，而 dev 档会往库里写种子数据
+
+对已构建镜像做 docker inspect 实测：**镜像未设 SPRING_PROFILES_ACTIVE**；
+application.yml 的默认值是 dev（SPRING_PROFILES_ACTIVE:dev）。由此产生两个叠加后果：
+
+- ProdConfigFailFastRunner 是 @Profile("prod")（该类第 30 行）→ **跑 dev 档时整套生产配置校验根本不存在**；
+- 三个种子器 IpdMockDataInitializer / IpdZkScenarioInitializer / IpdGateElementSeedInitializer
+  均为 @Profile("dev")，实测各有 2 / 7 / 1 处写库调用。
+
+后果：**只要部署时漏设 SPRING_PROFILES_ACTIVE=prod，应用就以 dev 档连上你给的那个库，
+把演示账号、ZK 场景、Gate 要素种子写进去**。若那个库是生产库，就是静默写入生产数据，
+且生产配置校验器全程不会报警。这条比健康探针更危险——它的后果是数据污染，不是状态显示。
+
+**未擅自改**：改镜像默认 profile、给种子器加保护、或加一步启动断言，都属部署决策，等 owner 定。
+
+### 六、并行调研智能体的独立结论（与我的实测互相印证，择要登记）
+
+- 独立复核确认旧镜像缺 ProdConfigFailFastConfig（其做法是解包镜像内的嵌套 jar，与我一致）；
+  并补测出旧镜像里那份 Validator 也偏旧（不含 inspectNotificationEmail 与 ipd.notification.email.enabled）。
+  该问题已随按 HEAD 重建镜像消除，属历史事实。
+- 上游通道 ruoyi-ai.sql 实测 92 条建表语句 / 69 张唯一表 / 67 条 DROP TABLE / 728 条 INSERT
+  （含登录所需种子 sys_user 3 条、sys_menu 162 条）。**本次隔离库只灌了结构、没有种子行**，
+  因此那次 E2E 未能验证登录等依赖种子数据的功能。
+- update/ 目录 139 个顶层脚本中，**16 个不遵循 YYYY-MM-DD- 命名**，按文件名升序排列会得到错误顺序；
+  且没有任何机读的「已应用哪些脚本」记录（唯一的 _ipd_schema_history 在基线里只有建表、无 INSERT）。
+  升级既有库这条路径存在顺序风险，本次未走该路径，登记备查。
