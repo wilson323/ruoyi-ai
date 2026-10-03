@@ -14716,3 +14716,33 @@ application.yml 的默认值是 dev（SPRING_PROFILES_ACTIVE:dev）。由此产�
 四个键的示例行已写入会话交付说明，须人工粘贴进 `.env.example`。
 
 - marker: deploy-trio-probes-agentro-imagetag-20261003
+
+## 2026-10-03 三项裁决落地：元门禁接线判定重写 + IPD WebSocket 显式配置 + 扫描范围门禁（主协调会话）
+
+owner 裁决（本轮对话）三项全部闭环，4 笔提交：`2f0840c7` / `7799c809` / `a2c054e0` + 前置 `339ff208`（守卫注释自纠）。
+
+### 1. 元门禁「注释即接线」根因修复（`2f0840c7`）
+
+- 新增 `scripts/lib/gate-wiring-detect.py`：只认**真实执行**——CI 只认 `run:` 块（paths:/name:/注释/echo 不算）、本地 hook 认四种实测形态（`VAR=…; bash "$VAR"` 间接调用 / `exec perl -- "$PY" "$GATE"` 包装器 / JS spawn 参数位 / settings.json hook command / Python 拼子进程命令），外加沿已接线脚本的**传递接线**（实测两例：ownership.py ← ownership.sh；api-contract-fe-be.mjs ← check-staged-snapshot.py）。
+- `check-gate-wiring.sh` 改调检测器；CI 与本地 hook 分开报告（owner 要求）。已接线从虚高的 **42** 修正为 **34**（CI 30 + hook 4）。
+- 4 个现形孤儿定案入登记表：mirror-vs-board.py ACTIVE（人工对账）；surefire-fake-green.sh ACTIVE（被 test-selection 版取代，按 workflow 注释保留）；a11y + memory-leak SUSPECT（**迁移只完成一半**：前端仓副本 untracked 未提交，本仓副本留至前端落地）。
+- 已知答案样本 15/15 全对；FAIL_SEED 双态验证过。检测器开发中自纠两处漏判（`if ! bash "$SCRIPT"` 的 `!` 不在命令位置字符集；perl 包装动词缺失）。
+
+### 2. IPD WebSocket 显式补配置（`7799c809`，按裁决保留 IPD 独立键）
+
+- application.yml 新增 `ipd.websocket` 段（enabled 默认 false 走 `IPD_WEBSOCKET_ENABLED`，path `/api/v1/resource/websocket`，allowed-origins prod 收敛）。与 `ipd.notification.websocket`（投递渠道参数）在注释里写明区别。
+- 修真 bug：原 `setAllowedOrigins("")` 空串 = 登记永不匹配的 origin → 开启后浏览器握手必 403；改为空白时不设置（Spring 同源默认）。
+- 修两处误导文档（IpdWebSocketConfig 假路径注释、CLAUDE.md 教开平台键）。
+- **口径自纠（owner 指出）**：「任何配置里都没有→永远不注册」说过满了，环境变量/启动参数仍可开启；本笔证明的是源码配置缺口。**运行实例级验收（Person 握手/通知送达/双标签页）未做**，待部署环境补。
+
+### 3. 扫描范围统一（`a2c054e0`）
+
+- 核查结论与直觉相反：**已提交门禁全部干净**（4 个根递归脚本均已排除 .codex，其余全部范围化）；污染在 AI 会话临时命令。规则文本由并发会话同刻落 AGENTS.md（事实源）+ CLAUDE.md（指针），本笔不重复。
+- 新增 `scripts/check-scan-scope-excludes.sh` 接入 static-gates 13/13：根递归且无排除 → FAIL。四向对照全过（正常绿/种子红/自证红/阴性放行）。开发中自纠三处：`find ./logs` 误报（根目标须独立成参）、文件级 AND 误报 10 个（改逐行）、**awk 动态正则与 grep -E 对 `\{?` 解析不一致**（改同引擎两级 grep）。
+
+### 仪器教训（本轮新增，已入会话记忆）
+
+- `git commit --only` 对 untracked 文件不生效（需先 add）；共享工作树下 add+commit 会被并发索引改写顶掉（同日实测：我的提交被整份换成别人的 log.md，门禁全绿无报错）。
+- Layer 3 inline 钩子把 `rm -rf /tmp/...`（绝对路径）当根删除拦截——`rm -r -f` 可绕，属已知文本匹配误伤面。
+
+- marker: adjudication-three-items-20261003
