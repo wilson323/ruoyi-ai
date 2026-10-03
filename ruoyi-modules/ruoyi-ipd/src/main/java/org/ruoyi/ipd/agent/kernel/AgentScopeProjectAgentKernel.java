@@ -189,7 +189,13 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         return HarnessAgent.builder().name(ProjectAgentConstants.AGENT_ID).sysPrompt(ProjectAgentPrompt.build(spec))
             .skillRepository(selectedSkills).skillFilter(selectedSkills.filter()).workspace(workspace)
             .permissionContext(ProjectAgentOfficialPermissions.workspace()).maxIters(maxIters)
-            .memory(ProjectAgentNativeProfile.memory()).modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
+            // [AgentScope 2.0.3 陷阱 · 勿单独设置 .maxRetries(n)] 它不生效且无告警：ModelConfig.maxRetries 被
+// ReActAgent.buildGenerateOptions() 降级为 ExecutionConfig.maxAttempts 注入 GenerateOptions 的
+// 【fallback 位】，而本行 modelExecutionConfig 在【primary 位】；mergeOptions 语义是
+// 「primary 非 null 即取 primary」，MODEL_DEFAULTS 6 字段全非 null（含 maxAttempts=3）故永远取不到。
+// 要改重试次数请改本行 ExecutionConfig，不要加 .maxRetries。
+            .memory(ProjectAgentNativeProfile.memory())
+            .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
             .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS);
     }
 
@@ -462,6 +468,11 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .toolkit(toolkit)
             .maxIters(maxIters)
             // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）；不设时SDK不套任何重试。
+            // [AgentScope 2.0.3 陷阱 · 勿单独设置 .maxRetries(n)] 它不生效且无告警：ModelConfig.maxRetries 被
+// ReActAgent.buildGenerateOptions() 降级为 ExecutionConfig.maxAttempts 注入 GenerateOptions 的
+// 【fallback 位】，而本行 modelExecutionConfig 在【primary 位】；mergeOptions 语义是
+// 「primary 非 null 即取 primary」，MODEL_DEFAULTS 6 字段全非 null（含 maxAttempts=3）故永远取不到。
+// 要改重试次数请改本行 ExecutionConfig，不要加 .maxRetries。
             .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
             .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)
             // 长对话压缩：官方 Builder 默认即装配全默认配置（主模型+官方摘要prompt+动态阈值）。

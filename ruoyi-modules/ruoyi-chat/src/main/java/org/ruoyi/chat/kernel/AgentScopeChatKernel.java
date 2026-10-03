@@ -352,6 +352,12 @@ public class AgentScopeChatKernel implements AutoCloseable {
             HarnessAgent built = builder
                     .toolkit(toolkit)
                     // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）。
+                    // [AgentScope 2.0.3 陷阱 · 勿单独设置 .maxRetries(n)] 它不生效且无任何告警。
+// 机制：ModelConfig.maxRetries 不是独立重试源——ReActAgent.buildGenerateOptions() 把它降级为
+// ExecutionConfig.maxAttempts 并注入 GenerateOptions 的【fallback 位】，而本行 modelExecutionConfig
+// 落在【primary 位】；mergeOptions/mergeConfigs 的语义是「primary 非 null 就取 primary」，
+// 而 ExecutionConfig.MODEL_DEFAULTS 的 6 个字段全非 null（含 maxAttempts=3），故 maxRetries 永远取不到。
+// 要改重试次数：改本行的 ExecutionConfig（builder().maxAttempts(n).build()），不要加 .maxRetries。
                     .modelExecutionConfig(ExecutionConfig.MODEL_DEFAULTS)
                     .toolExecutionConfig(ExecutionConfig.TOOL_DEFAULTS)
                     // 长对话压缩：官方 Builder 默认即装配全默认配置；此处显式声明固化意图防默认漂移。
