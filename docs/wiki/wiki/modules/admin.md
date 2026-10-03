@@ -97,6 +97,8 @@ coding:
 
 这是项目内置的 agent runtime（commit history 显示 `feat: add coding harness runtime and CMS module`），agent 在每个 chat 会话中可调用，预算 200 轮、600 次工具调用。`execute-process.enabled=true` 允许 agent shell 出本进程——**安全敏感点**，需要在生产环境评估。
 
+> **⚠️ 过时标注（2026-10-03 追加）**：上文逐字引用的 `coding.harness.tools.execute-process.enabled` 配置项**已不存在**——它随 ADR-0077 于 2026-10-02 删除（自建 coding harness 链与 `/coding/harness` controller 下线，改用官方 `HarnessAgent.builder()` 装配）。该键现不存在于任何 yml；本节 YAML 与「安全敏感点」评述均为**历史快照**，不得作为现役配置或安全评估依据。现役唯一相关键为 `coding.harness.workspace.shared-root`（挂在幸存的 `CodingWorkspaceService` 上）。依据：`docs/ipd-系统说明/ADR/ADR-0077-harness官方化基线与coding链摘除证据-20261002.md` 及根 CLAUDE.md「Coding harness」条。
+
 ## 测试约定
 
 Maven Surefire 配 `<groups>${profiles.active}</groups>`，意味着：

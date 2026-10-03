@@ -1,6 +1,6 @@
 {
   "version": "0.2.0",
-  "updated_at": "2026-10-03T13:02:15-07:00",
+  "updated_at": "2026-10-03T22:39:45.317-07:00",
   "_metadata": {
     "purpose": "ROOT-R4 P0-8 acceptance-matrix.json 三向关联 SSOT（249/249 条全量）",
     "scope": "2026-10-03 owner 授权批量导入：由 scripts/ac-import.py 解析 IPD系统_验收清单.md 全部 249 行，证据按 OD-AM-05 规则自动链接（scripts/lib/ac_evidence_link.py）。",
@@ -8,11 +8,11 @@
     "evidence_source": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md（AC 原文）+ ruoyi-modules/ruoyi-ipd/src/test/java（证据链接，OD-AM-05）",
     "coverage_stats_note": "本段为「按 rows 派生」的当前值，不是历史快照；.claude/helpers/acceptance-matrix-validate.cjs 会逐字段比对行内真值，不一致即报 ERROR（防手工填写导致声明与实况脱钩的假绿）。2026-10-03：covered 仅 6 条——自动链接一律停在 partial，因为 schema 要求 covered 必须给出「闭环该 AC 的 linkedCommits」，该提交无法机器推导（实测自动推导与人工填写 3/3 全不一致）。",
     "coverage_stats": {
-      "covered": 8,
+      "covered": 7,
       "partial": 163,
       "blocked": 0,
       "manual": 75,
-      "deprecated": 3,
+      "deprecated": 4,
       "total_sample": 249,
       "total_target": 249,
       "import_progress_pct": 100
@@ -84,13 +84,13 @@
       "unitTestClass": "org.ruoyi.ipd.service.P121AcceptanceTest#acInc15bARejectCustom",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P121AcceptanceTest.java",
       "auditLog": null,
-      "status": "covered",
+      "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
         "4158337b"
       ],
       "zkRef": null,
-      "notes": "DDL L564 注释显式 A 级=1.0；G-08 §5 红线；P121AcceptanceTest L129 'AC-INC-15b A 级录入 1.2 拒绝'；auditLog 原值「BONUS_LEVEL_COEFFICIENT」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
+      "notes": "【2026-10-03 退役】本条 AC（奖金池 A 级项目等级系数固定 1.0）所依附的「奖金池」域已按 owner 指令随 LC01/LC03 退役整体移除（依据：docs/ipd-系统说明/外部资源/IPD系统_六阶段标准动作清单_v3.md 文首「⚠️ v4 退役标注」节——LC01 回款跟踪、LC03 终算+奖金池核算 2026-10-03 退役，后端 BonusPoolService 等已删除）。退役后本条不得再作为开发或验收依据。历史口径留档：DDL L564 注释显式 A 级=1.0（G-08 §5 红线）；P121AcceptanceTest L135 \"AC-INC-15b A 级录入 1.2 拒绝\" 方法 2026-10-03 实测仍存在，是否随域删除属后端 teardown 流裁决，暂保留 unitTestClass/integrationTestPath 供追溯；linkedCommits 4158337b 为历史证据；auditLog 原值「BONUS_LEVEL_COEFFICIENT」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-INC-16",
