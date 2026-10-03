@@ -121,6 +121,11 @@ public interface AgentRunStore {
         throw new UnsupportedOperationException("execution epoch is not supported");
     }
 
+    /** 在校验驻留态事务中读取并锁定当前运行行，不返回普通查询缓存中的快照。 */
+    default Optional<IpdAgentRun> lockRunForVerification(Long runId) {
+        throw new UnsupportedOperationException("verification row locking is not supported");
+    }
+
     /** 按runId分页扫描运行中的候选，日期不是死亡依据。 */
     default List<IpdAgentRun> listRecoveryCandidates(Long afterId, int limit) {
         throw new UnsupportedOperationException("recovery cursor is not supported");

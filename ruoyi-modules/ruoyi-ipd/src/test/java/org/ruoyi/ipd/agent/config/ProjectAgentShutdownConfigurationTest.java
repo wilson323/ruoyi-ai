@@ -15,6 +15,7 @@ import static org.mockito.Mockito.*;
 
 @Tag("dev")
 class ProjectAgentShutdownConfigurationTest {
+    @org.junit.jupiter.api.io.TempDir java.nio.file.Path workspace;
     @Test
     void defaultInfiniteWaitBecomesFiniteAndPolicyIsPreserved() {
         GracefulShutdownManager manager = mock(GracefulShutdownManager.class);
@@ -50,9 +51,23 @@ class ProjectAgentShutdownConfigurationTest {
             context.registerBean(org.ruoyi.service.knowledge.KnowledgeAccessGate.class, () -> mock(org.ruoyi.service.knowledge.KnowledgeAccessGate.class));
             context.registerBean(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class, () -> mock(org.ruoyi.service.retrieval.KnowledgeRetrievalService.class));
             context.registerBean(org.ruoyi.ipd.service.ai.AiGateway.class, () -> mock(org.ruoyi.ipd.service.ai.AiGateway.class));
+            context.registerBean(org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalog.class,
+                () -> mock(org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalog.class));
+            context.registerBean(org.ruoyi.ipd.mapper.IpdAgentMemoryMapper.class,
+                () -> mock(org.ruoyi.ipd.mapper.IpdAgentMemoryMapper.class));
             context.registerBean(org.ruoyi.ipd.mapper.ProductLineNameMapper.class, () -> mock(org.ruoyi.ipd.mapper.ProductLineNameMapper.class));
             context.registerBean(org.ruoyi.ipd.service.IpdCopilotAccess.class, () -> mock(org.ruoyi.ipd.service.IpdCopilotAccess.class));
             context.registerBean(org.ruoyi.ipd.mapper.PersonMapper.class, () -> mock(org.ruoyi.ipd.mapper.PersonMapper.class));
+            context.registerBean(org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts.class,
+                () -> new org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts(
+                    mock(org.ruoyi.ipd.agent.store.AgentRunStore.class),
+                    mock(org.ruoyi.ipd.agent.store.ArtifactVersionStore.class),
+                    context.getBean(org.ruoyi.ipd.mapper.PersonMapper.class),
+                    context.getBean(org.ruoyi.ipd.service.IpdCopilotAccess.class),
+                    mock(org.springframework.transaction.PlatformTransactionManager.class), workspace));
+            context.registerBean(ProjectAgentOfficialCollaborationRedis.STORE_BEAN,
+                io.agentscope.harness.agent.filesystem.remote.store.BaseStore.class,
+                () -> mock(io.agentscope.harness.agent.filesystem.remote.store.BaseStore.class));
             context.registerBean("projectAgentStateStore", io.agentscope.core.state.AgentStateStore.class,
                 () -> mock(io.agentscope.core.state.AgentStateStore.class));
             context.registerBean("agentScopeAuditHook", io.agentscope.core.hook.Hook.class,

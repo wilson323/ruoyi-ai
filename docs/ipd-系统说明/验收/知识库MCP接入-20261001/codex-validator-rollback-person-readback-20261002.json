@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-03T04:37:34.891272+00:00",
+  "scope": "rollback readback; login and project GET only",
+  "expectedPid": 73908,
+  "processExit": 0,
+  "process": "73908 /Users/mac/tools/jdk-17/Contents/Home/bin/java -Xmx2g -Duser.timezone=Asia/Shanghai -jar /Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar --spring.profiles.active=ipd-local,dev --spring.config.additional-location=file:/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/config/application-ipd-local.yml --spring.data.redis.host=127.0.0.1 --spring.data.redis.port=16379 --server.port=16039 --server.address=127.0.0.1",
+  "businessRunCreated": false,
+  "jarPath": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "jarSha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "login": {
+    "http": 200,
+    "code": 0
+  },
+  "project": {
+    "http": 200,
+    "payload": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "createTime": 1788691076000,
+        "updateTime": 1790857002000,
+        "id": "9140005",
+        "code": "ZK-IAT-LOCK",
+        "name": "熵基互联+智能锁联动",
+        "productId": "9130005",
+        "templateType": "SOFTWARE",
+        "level": "A",
+        "levelCoefficient": 1.0,
+        "levelCoefficientReason": "P3-4.4 前置数据治理 2026-09-08 默认值补齐",
+        "currentStage": "CONCEPT",
+        "subStageVersion": "0",
+        "source": "NEW",
+        "missingHistoryAck": "0",
+        "status": "ACTIVE",
+        "mainGroupId": "9120002",
+        "tenantId": "000000",
+        "delFlag": "0"
+      },
+      "timestamp": "2026-10-03T04:37:38Z",
+      "traceId": "a0a36e6cd35b4b85934021c6cc6b76fd"
+    }
+  }
+}

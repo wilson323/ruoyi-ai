@@ -1,0 +1,107 @@
+{
+  "timestamp": "2026-10-03T04:04:26.823452+00:00",
+  "status": "PARTIAL_VERSION_BOUNDARY_VERIFIED",
+  "sources": {
+    "ProjectAgentPreparedTaskDispatch.java": "fed0e68c42280667657e8050702133f5aa8fa900d8bf6d3873c7ab2ab9fe176d",
+    "ProjectAgentOfficialTaskExecution.java": "67cff7361aff0f634c691101b4dcd351cdbee02ec22b2cfd1189fabea67a0496",
+    "ProjectAgentServiceAdapter.java": "c802dd4b1b9128ae74fb67ed055ebe1bafc4d183f8722284f9bb92148137f8c6",
+    "ProjectAgentOriginalTaskRunner.java": "389764ea7d58ea3ce945de4489859a07ed3a64c0c54e407324fc69dbe3e0e7b5",
+    "ProjectAgentServiceBindingsConfiguration.java": "82021bf6a3e7b5deed9d202d8831d9caca552c0cf2162d1dd902ef4ecb454ea7",
+    "ProjectAgentOfficialTaskRelay.java": "62018922b838190d5f085d44e2f2873dc15477c0f852bfa14be027bb26653503",
+    "ProjectAgentServiceAuthority.java": "dd80a0977592dfb6f62a41da2c0287f1c63ac1895f5da56f10e9357e88c3f4ee",
+    "ProjectAgentServiceRegistration.java": "bbb354e38d3143e69ac94d9b0f62f6fbf983fc2179d7e18089605631c19020a3",
+    "ProjectAgentServiceNativeSessions.java": "4f262425a05e7bbef30c33e85adae375015138265501cb48cc3a0fb89fe0c6c8",
+    "ProjectAgentServiceTaskStarter.java": "9722fe49e8b1d6af686e62735ce62b6928c997a83b26ce95af2bad81b63a46e3",
+    "ProjectAgentTaskPreparations.java": "a20f991eb3f6916948b4d9e3baf831f16d0af51e789d2403f2f77bc9c0e68290"
+  },
+  "sdk203Compile": {
+    "exit": 1,
+    "log": "/tmp/resources-service-compat-20261002/compile203.log",
+    "missingOfficialAPIs": [
+      "AgentTaskStarter",
+      "AgentTaskOutcome",
+      "AgentTaskToolContext",
+      "AgentTaskAssignment",
+      "CollaborationClient",
+      "FrameworkAdapter.handleAgentTask",
+      "AistioConfig.Builder.tenant/instanceKey/eventJournalDir"
+    ]
+  },
+  "sdk204CurrentProjectGrpcCompile": {
+    "exit": 0,
+    "log": "/tmp/resources-service-compat-20261002/compile.log",
+    "grpc": "1.62.2",
+    "protobuf": "4.29.3"
+  },
+  "actualOfficialAsdpProviderInit": {
+    "exit": 0,
+    "log": "/tmp/resources-service-compat-20261002/transport.log",
+    "target": "127.0.0.1:18471 proved vacant before probe",
+    "handshakeVerified": false,
+    "fullGrpcApiCompatible": false,
+    "missingGrpcAPI": "io.grpc.stub.BlockingClientCall for new BlockingV2 generated stub"
+  },
+  "pinnedSdkJars": {
+    "agentscope-core/target/agentscope-core-2.0.4-SNAPSHOT.jar": {
+      "recorded": "52b243dbe7629ffd4b2a4789a975c1fb18498fc95539c8285973674eebbf36f4",
+      "current": "52b243dbe7629ffd4b2a4789a975c1fb18498fc95539c8285973674eebbf36f4"
+    },
+    "agentscope-extensions/agentscope-extensions-protocol/agentscope-extensions-agui/target/agentscope-extensions-agui-2.0.4-SNAPSHOT.jar": {
+      "recorded": "c5676f8d2e72d4040a142469331458e89ba6286e47af939acf8e046af9bb9bde",
+      "current": "c5676f8d2e72d4040a142469331458e89ba6286e47af939acf8e046af9bb9bde"
+    },
+    "agentscope-extensions/agentscope-extensions-aistio/target/agentscope-extensions-aistio-2.0.4-SNAPSHOT.jar": {
+      "recorded": "9930d902b2690cebb61a9195c43e6689fa14b65c96931670a82b0ae04c2b9e89",
+      "current": "9930d902b2690cebb61a9195c43e6689fa14b65c96931670a82b0ae04c2b9e89"
+    },
+    "agentscope-harness/target/agentscope-harness-2.0.4-SNAPSHOT.jar": {
+      "recorded": "f2da4faec2a71441f3035179b8843f8237cd376f6196bba847d32bdda5378d85",
+      "current": "f2da4faec2a71441f3035179b8843f8237cd376f6196bba847d32bdda5378d85"
+    }
+  },
+  "pinnedCommit": "e9721285c63a37c10b1d07aa540408e57ba56ab2",
+  "priorSdkSuite": {
+    "testcaseElements": 4174,
+    "failed": 0,
+    "conditionalSkipped": 26,
+    "scope": "official core/agui/aistio/harness, not IPD integration"
+  },
+  "deploymentDiscovery": {
+    "goExecutable": false,
+    "aistiodBinary": false,
+    "aistioDockerImage": false,
+    "priorGoValidationImageStillAvailable": false,
+    "port50051": "Weaviate, not Service",
+    "ipd16039": "PID50240 older package"
+  },
+  "minimumImplementation": {
+    "pom": [
+      "root agentscope.version -> 2.0.4-SNAPSHOT pinned e9721285 artifact cohort",
+      "ruoyi-ipd add io.agentscope:agentscope-extensions-aistio:${agentscope.version}",
+      "all official AgentScope cohort must same version; no203/204 mixture",
+      "gRPC全官方APIrequires1.75.0; projectWeaviate1.62.2 pin needs regression beforechanging",
+      "protobuf current project4.29.3 matches204 generatedcode"
+    ],
+    "bindings": [
+      "copy reviewed servicebridge candidate typed classes",
+      "Configuration build trusted Deployment authority + original ProjectAgentRunService + actual official NativeRun owner/epoch/state adapters",
+      "local official Aistio instrument+durable event journal+bootstrap registration",
+      "original Person/action/document/Gate authority retained"
+    ],
+    "service": [
+      "official aistiod source build/read-only source into isolated output",
+      "all HTTP/gRPC/metrics/probe listeners loopback on proven-vacant ports",
+      "storage-driver postgres + durable local DSN resolved privately; memory not acceptance backend",
+      "product persistence PostgreSQL and hosted-store/runtime-host explicitly enabled",
+      "experimental capability scope only after source and dependency verification",
+      "real local bootstrap identity/tenant/namespace and owner permission contract",
+      "full Kubernetes surface needs real permitted cluster; do not disable capability to fake full acceptance"
+    ]
+  },
+  "limits": [
+    "No projectpom/reference/globaldependency mutation",
+    "NoService deployment orproductionregistration",
+    "Currentcompile successdoesnotprove realProvider handshake or end-to-end task approval",
+    "Localdeployment requires runtimebinary,durableDB and approvedidentity/config; not availableas existingverifieddeployment"
+  ]
+}

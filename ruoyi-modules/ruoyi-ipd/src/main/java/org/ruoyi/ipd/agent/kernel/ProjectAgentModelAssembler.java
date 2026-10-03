@@ -9,6 +9,7 @@ import io.agentscope.core.model.ModelRegistry;
 import org.ruoyi.chat.kernel.KernelModelRequest;
 import org.ruoyi.ipd.service.ai.AiGateway;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -38,6 +39,8 @@ public class ProjectAgentModelAssembler {
 
     private final Resolver resolver;
     private final Consumer<String> endpointGuard;
+    /** 回退模型请求源（官方 fallbackModel 扩展点取数缝；null = 未配置回退）。 */
+    private Function<KernelModelRequest, KernelModelRequest> fallbackSource;
 
     /** 生产装配。 */
     public ProjectAgentModelAssembler(AiGateway gateway) {
@@ -76,6 +79,40 @@ public class ProjectAgentModelAssembler {
             endpointGuard.accept(request.apiHost());
         }
         return resolver.resolve(registryKey(request), org.ruoyi.chat.kernel.AgentScopeModelFactory.context(request, null, personId == null ? null : personId.toString(), runId == null ? null : runId.toString()));
+    }
+
+    /**
+     * 绑定回退模型请求源（生产 = 模型目录 fallbackFor 约定；测试可注入替身）。
+     *
+     * @param source 主模型请求 → 回退模型请求；无回退返回 null
+     * @return 本装配器（链式）
+     */
+    public ProjectAgentModelAssembler withFallbackSource(Function<KernelModelRequest, KernelModelRequest> source) {
+        this.fallbackSource = source;
+        return this;
+    }
+
+    /**
+     * 装配官方回退模型（AgentScope 2.0.3 {@code ReActAgent/HarnessAgent Builder#fallbackModel} 形态）。
+     *
+     * <p>回退请求与主请求同缝装配：endpointGuard 前置 + 原生 {@code ModelRegistry} 解析，
+     * 不另造第二路由。未配置回退源、目录无回退行 → null（fail-open：回退缺席不阻断主模型，
+     * 业务闸门与主装配语义不变）；回退请求装配失败异常原样上抛，由调用方决定降级路径。
+     *
+     * @param primary 主模型装配请求
+     * @param personId 运行人（context userId）
+     * @param runId 运行（context sessionId）
+     * @return 回退模型；无回退配置时 null
+     */
+    public Model assembleFallback(KernelModelRequest primary, Long personId, Long runId) {
+        if (fallbackSource == null || primary == null) {
+            return null;
+        }
+        KernelModelRequest fallback = fallbackSource.apply(primary);
+        if (fallback == null || fallback.modelName() == null || fallback.modelName().isBlank()) {
+            return null;
+        }
+        return assemble(fallback, personId, runId);
     }
 
     /**

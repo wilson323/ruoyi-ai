@@ -65,6 +65,15 @@ public class IpdAgentMemory extends BaseEntity {
 
     private String status;
 
+    /** 框架租户列（手写 SQL 引用；租户隔离按 project_id，登记 tenant.excludes，此处恒 null）。 */
+    private String tenantId;
+
+    /** 逻辑删除标记（手写 SQL 引用；插入时未显式设值即 null，库默认 '0'）。 */
+    private String delFlag;
+
+    /** 备注（手写 SQL 引用，恒 null）。 */
+    private String remark;
+
     /** 该条是否为可召回态（候选与已晋升都可召回，废弃不可）。 */
     public boolean isRecallable() {
         return STATUS_CANDIDATE.equals(status) || STATUS_PROMOTED.equals(status);

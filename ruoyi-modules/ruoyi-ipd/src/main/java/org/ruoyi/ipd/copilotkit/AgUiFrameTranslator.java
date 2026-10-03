@@ -2,6 +2,9 @@ package org.ruoyi.ipd.copilotkit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.agentscope.core.agui.event.AguiEvent;
+import io.agentscope.core.agui.event.AguiEvent.JsonPatchOperation;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,7 +12,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * CopilotKit AG-UI 桥（2026-09-28，单轨融合）：四帧（meta/delta/done/error）→ AG-UI 事件翻译器。
+ * CopilotKit AG-UI 桥（2026-09-28，单轨融合；2026-10-02 载体换官方 record）：四帧（meta/delta/done/error）
+ * → AG-UI 事件翻译器。
  *
  * <p>映射语义（与前端 {@code ruoyi-ipd-web/docs/copilotkit单轨融合契约-20260928.md} 锁定）：
  * <ul>
@@ -47,15 +51,15 @@ public class AgUiFrameTranslator {
     }
 
     /** meta 帧 → RUN_STARTED（meta 自身无 AG-UI 对应字段，结构化数据已由既有链消费/前端契约承载）。 */
-    public List<Map<String, Object>> onMeta() {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<AguiEvent> onMeta() {
+        List<AguiEvent> out = new ArrayList<>();
         ensureRunStarted(out);
         return out;
     }
 
     /** delta 帧 → TEXT_MESSAGE_START（首个）+ TEXT_MESSAGE_CONTENT。空段跳过（与 AiGateway 空段过滤一致）。 */
-    public List<Map<String, Object>> onDelta(String token) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<AguiEvent> onDelta(String token) {
+        List<AguiEvent> out = new ArrayList<>();
         if (token == null || token.isEmpty()) {
             return out;
         }
@@ -63,9 +67,9 @@ public class AgUiFrameTranslator {
         if (!textOpen) {
             messageId = UUID.randomUUID().toString();
             textOpen = true;
-            out.add(AgUiEvents.textMessageStart(messageId));
+            out.add(AgUiEvents.textMessageStart(threadId, runId, messageId));
         }
-        out.add(AgUiEvents.textMessageContent(messageId, token));
+        out.add(AgUiEvents.textMessageContent(threadId, runId, messageId, token));
         return out;
     }
 
@@ -74,11 +78,11 @@ public class AgUiFrameTranslator {
      *
      * @param doneFrame 既有 done 帧载荷（{status,tokenPrompt,tokenCompletion,latencyMs,fillPayload?,card?}）
      */
-    public List<Map<String, Object>> onDone(Map<String, Object> doneFrame) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<AguiEvent> onDone(Map<String, Object> doneFrame) {
+        List<AguiEvent> out = new ArrayList<>();
         ensureRunStarted(out);
         if (textOpen) {
-            out.add(AgUiEvents.textMessageEnd(messageId));
+            out.add(AgUiEvents.textMessageEnd(threadId, runId, messageId));
             textOpen = false;
         }
         Object card = doneFrame == null ? null : doneFrame.get("card");
@@ -86,23 +90,19 @@ public class AgUiFrameTranslator {
         if (card instanceof Map<?, ?> c) {
             String toolCallId = UUID.randomUUID().toString();
             Object type = c.get("type");
-            out.add(AgUiEvents.toolCallStart(toolCallId, type == null ? "card" : String.valueOf(type)));
-            out.add(AgUiEvents.toolCallArgs(toolCallId, toJson(c.get("data"))));
-            out.add(AgUiEvents.toolCallEnd(toolCallId));
+            out.add(AgUiEvents.toolCallStart(threadId, runId, toolCallId, type == null ? "card" : String.valueOf(type)));
+            out.add(AgUiEvents.toolCallArgs(threadId, runId, toolCallId, toJson(c.get("data"))));
+            out.add(AgUiEvents.toolCallEnd(threadId, runId, toolCallId));
             // 契约 §4.3：TOOL_CALL_RESULT content = JSON.stringify({version, sourceRefs})（非 data JSON）
             Map<String, Object> resultBody = new LinkedHashMap<>();
             resultBody.put("version", c.get("version"));
             resultBody.put("sourceRefs", c.get("sourceRefs"));
-            out.add(AgUiEvents.toolCallResult(UUID.randomUUID().toString(), toolCallId, toJson(resultBody)));
+            out.add(AgUiEvents.toolCallResult(threadId, runId, toolCallId,
+                UUID.randomUUID().toString(), toJson(resultBody)));
         }
         if (fillPayload != null) {
-            Map<String, Object> op = new LinkedHashMap<>();
-            op.put("op", "add");
-            op.put("path", "/fillPayload");
-            op.put("value", fillPayload);
-            List<Object> patch = new ArrayList<>();
-            patch.add(op);
-            out.add(AgUiEvents.stateDelta(patch));
+            out.add(AgUiEvents.stateDelta(threadId, runId,
+                List.of(JsonPatchOperation.add("/fillPayload", fillPayload))));
         }
         out.add(AgUiEvents.runFinished(threadId, runId));
         finished = true;
@@ -110,10 +110,10 @@ public class AgUiFrameTranslator {
     }
 
     /** error 帧 → RUN_ERROR（code 语义沿用四帧 error 的既有错误码串，如 "50001"/"UNREACHABLE"）。 */
-    public List<Map<String, Object>> onError(String code, String message) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<AguiEvent> onError(String code, String message) {
+        List<AguiEvent> out = new ArrayList<>();
         ensureRunStarted(out);
-        out.add(AgUiEvents.runError(message, code));
+        out.add(AgUiEvents.runError(threadId, runId, message, code));
         finished = true;
         return out;
     }
@@ -123,7 +123,7 @@ public class AgUiFrameTranslator {
         return finished;
     }
 
-    private void ensureRunStarted(List<Map<String, Object>> out) {
+    private void ensureRunStarted(List<AguiEvent> out) {
         if (!runStarted) {
             runStarted = true;
             out.add(AgUiEvents.runStarted(threadId, runId));

@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.agent.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.ruoyi.ipd.domain.Product;
 import org.ruoyi.ipd.domain.ProductLine;
 import org.ruoyi.ipd.domain.Requirement;
@@ -107,6 +108,8 @@ public class DemandCatalogBinder {
                 line = null;
             }
         }
+        Long originalLineId = requirement.getProductLineId();
+        Long originalProductId = requirement.getProductId();
         boolean changed = false;
         if (line != null && requirement.getProductLineId() == null) {
             requirement.setProductLineId(line.getId());
@@ -119,7 +122,19 @@ public class DemandCatalogBinder {
             changed = true;
         }
         if (changed) {
-            requirementMapper.updateById(requirement);
+            LambdaUpdateWrapper<Requirement> update = new LambdaUpdateWrapper<Requirement>()
+                .eq(Requirement::getId, requirementId);
+            if (originalLineId == null) update.isNull(Requirement::getProductLineId);
+            else update.eq(Requirement::getProductLineId, originalLineId);
+            if (originalProductId == null) update.isNull(Requirement::getProductId);
+            else update.eq(Requirement::getProductId, originalProductId);
+            if (originalLineId == null && requirement.getProductLineId() != null)
+                update.set(Requirement::getProductLineId, requirement.getProductLineId());
+            if (originalProductId == null && requirement.getProductId() != null)
+                update.set(Requirement::getProductId, requirement.getProductId());
+            if (requirementMapper.update(null, update) != 1) {
+                throw new IllegalStateException("需求目录绑定发生冲突，请重新读取需求后重试");
+            }
             log.info("demand_bind requirementId={} lineSet={} productSet={}",
                 requirementId, requirement.getProductLineId() != null, requirement.getProductId() != null);
         }

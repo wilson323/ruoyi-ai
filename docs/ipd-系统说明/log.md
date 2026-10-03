@@ -13839,3 +13839,29 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
 **验证**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Lifecycle/FinishTransaction/Handle/Verifier/AgentRunStatus` 5 类 **53/53 绿**（新增 `reverifySuccessRebindsDemandFromFrozenSnapshot` / `verifyingFinishRetriesTerminalEventWrite`，`FlakyTerminalEventStore` 委托缝模拟 seq 冲突）。运行包未重载，代码级验证非运行态验收。
 
 - marker: verifier-v2-review-fix-20261003
+
+## 工作树整批整合：兄弟四项收口在途入库 + 三红修复（2026-10-03 02:05，主协调会话）
+
+**授权与摸底**：用户指令「系统性梳理分析所有工作树深度思考反思并整合工作树并合并提交推送」。现查：ruoyi-ai 无额外活动 worktree（`poc/agentscope-kernel` 分支无挂树），ipd-web 干净（HEAD=8c08585=origin/main）；ruoyi-ai 主树滞留 89 项（53 M / 2 D / 38 untracked，+1131/-586），HEAD=67cd2b50=origin/main。**24d999eb 已在 main 线性历史**（现查 `branch --contains`=main；上轮「在别轨」结论按分钟级时效作废）。兄弟在途最后活动：kernel 01:02 / SQL 01:28，接手时静默 24~50 分钟。
+
+**接手依据（OPS-09 三步法）**：①评审——兄弟线已自我收口：《验收/AgentScope官方能力全量启用-四项收口-20261003.md》总裁决四项全闭环（真实运行态：9 站 code=0 至 ARCHIVED / LTM `ipd_agent_memory` 落库 4 行非空壳 / AG-UI 全绿），并明确声明「未执行任何 git 提交（用户未明确要求）」——滞留原因即等本指令；其对本人 V-2 在途「未擅动、未回滚」（对称 OPS-09）。②验证——本会话全量 3984/0F/0E/28S BUILD SUCCESS。③史实保留——无撞号体系，收口报告文件名即溯源锚。
+
+**三红修复（全量首跑的 2F+1E，均兄弟收口报告 §6 预告的已知红，根因各异）**：
+
+1. **AguiProtocol 保留名契约**（病根①改主代码测试没跟上）：2c738ccd（更晚）「AG-UI 保留名纠错」把子代理思考帧改为 `ipd.subagent_thinking`（本仓不开官方 converter，避开保留名族 `subagent.*`；PublicEvent 对两名族同走 metadata 清理），24ea0e81（更早）旧断言未跟上——断言对齐纠错后契约，契约方向有提交演进依据，非改断言凑绿。
+2. **CronSentinel 哨兵口径豁免**：SandboxReaper `0 23 * * * ?` 每小时 :23 超龄清扫（孤儿 TTL 高频巡检是设计，改每日反而错），时位通配非「每日固定时刻型」——新增 `EXEMPT_FROM_DAILY_TIME_GUARD` 显式豁免（显式不静默，同 HrSyncJob 模式）；顺带下限 9→16 恢复哨兵强度（现状实测 16 个 cron 注解）。
+3. **ShutdownConfiguration 装配跟上**：工作树给 kernel 装配加 `ProjectAgentModelCatalog`（fallback 取数）与 `IpdAgentMemoryMapper`（LTM）参数，测试上下文补两个 mock bean（对照装配方法 16 参数逐一核齐）。
+
+三修定向 19/19 绿（AguiProtocol 13 + CronSentinel 3 + Shutdown 3）；修后全量 3984/0F/0E/28S BUILD SUCCESS（错峰单模块 -o 无 -am/clean，终验 02:03:50）。
+
+**整合内容**（单提交整批，模块间互相咬合不可拆）：LTM 收尾（IpdAgentMemory 实体补 tenantId/delFlag/remark、LongTermMemoryMiddleware 新文件、ScopedLongTermMemory、SQL 追加 ipd_app 逐表 GRANT）+ fallback 模型装配（ModelCatalog.resolveFallback → 2.0.3 Builder#fallbackModel 扩展点）+ kernel 协作线 15 文件（子智能体谱系/官方协作 Redis/沙箱/临时态/runtimeAccess）+ AG-UI 线（帧翻译/SubStageGuide/删 AgUiEventType 与 AgUiEventsSwarmTest）+ servicebridge 新域（ProjectAgentProductionArtifacts）+ 27 项 MCP 验收证据 + 四项收口报告 + 本人 kernel OTel 挂载 2 hunks（67cd2b50 滞留「待兄弟收口同批进」——本批兑现）+ 镜像/log.md 收编补记 + RunService/RunHandle/RunExecutor 剩余兄弟 hunks（artifactAccess/requireDocumentContent/onArtifactPayload）。
+
+**「提交不完整」病根活例治愈**：HEAD 上的 ShutdownConfigurationTest（M）引用 untracked `servicebridge/` 类——fresh clone 必炸；本批整批入库后引用闭合。
+
+**遗留登记**：16039 运行包未重载（本批含 kernel/装配变更，重载后 run 7/run 8 的 VERIFYING 驻留可走 cancel 或后续 reverify HTTP 端点收口）；kernel 三处 errorType-only warn（L220/L233/L451）仍未加异常对象——本轮 kernel 文件虽已收编但按最小变更不动业务逻辑，留观测缺口刀；fallback 真实切换需故障注入（兄弟报告 §6）；记忆 status=0 候选态晋升待 owner 拍板。
+
+- marker: worktree-integration-20261003
+
+**补记（02:15 首次 commit 被门禁拦后的两处处置）**：① pre-commit 孤儿棘轮报 2 条新孤儿（`POST /agent-runs/{id}/reverify` + `GET .../download`）——reverify 侧兄弟会话恰在本窗口于 ipd-web 补了前端消费 `reverifyAgentRun`（+5 未提交，V-3 接线进行中），重跑即消；download 侧为**门禁采集盲区假孤儿**：`ipdDownload`（http.ts blob GET）不在 reIpdCall 动词列表也不在 reIpdUpload 特例，前端 `downloadAgentRunArtifact` 真实消费被漏采——按 ipdUpload 盲区先例（R215）同构补 `reIpdDownload` 采集模式，修后门禁 REAL_EXIT=0（新孤儿 0）。教训：`mvn/node | tail; echo EXIT=$?` 假 0 雷区在门禁验证上同样适用，必须 `> log; echo $?` 后读。
+
+**补记二（02:2x，reverify 孤儿收口）**：staged-snapshot 门禁读 ipd-web **index 快照**而非工作树，兄弟的 `reverifyAgentRun`（+5）当时未 staged 故仍假孤儿；按 OPS-09 三步法单文件代入库（评审：纯 API 函数与兄弟 V-3 UI 在途零耦合、URL 精确匹配；验证 check:type EXIT=0）——ipd-web `bfe605e`（8c08585..bfe605e 已推送）。兄弟其余 6 M + 2 untracked（verification-gaps 组件等 V-3 接线）保留工作树待其自行收口。

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.tenant.helper.TenantHelper;
+import org.ruoyi.ipd.common.ApiV1ErrorCode;
+import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocEmbedding;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.domain.AiModelConfig;
@@ -34,7 +36,7 @@ import java.util.concurrent.Executors;
  *   <li>检索：{@link #retrieveContext} 同项目且当前仍为 REVIEWED 的未删除文档
  *       （含同 embedModel——向量空间一致性锚，
  *       换 embedding 模型后旧向量自动退出检索）余弦 top-K，预算内拼上下文块；
- *       兼容生成入口异常返回 {@link RetrievalContext#EMPTY}；项目智能体使用严格入口，故障保留为可见失败。</li>
+ *       生成和副驾入口将故障映射为可见业务错误；项目智能体使用严格入口保留原始故障。</li>
  *   <li>红线：BR-AI-04——切片原文只进 ai_doc_embeddings（业务库）与生成 prompt，
  *       不进审计（审计只记 contextHits/contextChars）；不进日志。</li>
  *   <li>RAG 配置：显式嵌入端点与模型两键齐全时保留已有配置兼容；两键全缺走
@@ -231,7 +233,7 @@ public class AiDocEmbeddingService {
 
     /**
      * 同项目且当前仍为 REVIEWED 的文档检索 top-K 相关片段并拼上下文块。
-     * 异常一律 EMPTY（调用方 contextHits=0 生成照常）。
+     * 无命中返回 EMPTY；检索故障转换为业务错误，禁止冒充无命中继续生成。
      * 块格式（来源标注 + 片段原文），供 generate 拼进 prompt。
      *
      * @param projectId 项目 ID（检索范围锚）
@@ -241,10 +243,13 @@ public class AiDocEmbeddingService {
     public RetrievalContext retrieveContext(Long projectId, String docType, String query) {
         try {
             return retrieveContextStrict(projectId, docType, query);
-        } catch (Exception e) {
-            log.warn("[AI-STRAT-1] 检索降级（生成照常，contextHits=0）: projectId={} error={}",
-                projectId, e.getMessage());
-            return RetrievalContext.EMPTY;
+        } catch (IpdBusinessException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            log.warn("[AI-STRAT-1] 检索失败: projectId={} errorType={}",
+                projectId, e.getClass().getSimpleName());
+            throw new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR,
+                "项目文档检索失败，请稍后重试或联系管理员检查检索服务");
         }
     }
 

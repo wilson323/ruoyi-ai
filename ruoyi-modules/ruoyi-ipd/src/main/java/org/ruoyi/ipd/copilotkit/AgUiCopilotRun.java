@@ -1,5 +1,7 @@
 package org.ruoyi.ipd.copilotkit;
 
+import io.agentscope.core.agui.event.AguiEvent;
+
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.dto.AiCopilotReq;
@@ -37,9 +39,9 @@ public class AgUiCopilotRun {
     static final int MAX_MESSAGE = 2000;
     static final int MAX_PAGE_CONTEXT = 4000;
 
-    /** AG-UI 事件下发口（控制器接 SseEmitter，测试接记录器）。 */
+    /** AG-UI 事件下发口（官方 AguiEvent record；控制器接 SseEmitter，测试接记录器）。 */
     public interface AgUiSseSink {
-        void send(List<Map<String, Object>> events);
+        void send(List<AguiEvent> events);
 
         void complete();
         default void onDisconnect(Runnable cancellation) { }
@@ -109,7 +111,7 @@ public class AgUiCopilotRun {
         AtomicBoolean cancelledFrameSent = new AtomicBoolean(false);
         return new AgUiSseSink() {
             @Override
-            public void send(List<Map<String, Object>> events) {
+            public void send(List<AguiEvent> events) {
                 if (!handle.isCancelled()) {
                     out.send(events);
                     return;

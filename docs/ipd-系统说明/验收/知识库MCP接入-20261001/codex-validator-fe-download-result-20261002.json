@@ -1,0 +1,15 @@
+{
+  "status": "VERIFIED_SOURCE_BUILD_ONLY",
+  "testExit": 0,
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "sourceSha": {
+    "apps/web-antd/src/api/ipd/auth.ts": "899565c33e5a82822bfdf6b0c04ad901adbd213a1f54535f7900f9b02270104a",
+    "apps/web-antd/src/api/ipd/http.ts": "0270485c23dcf7e143a96e54a052846e91c20f16c2e9b8ae0283b7d5e2b48d80",
+    "apps/web-antd/src/api/ipd/project-agent.ts": "0c72c919843ed845cd33f86516fc57ad11615786824565273c5f5ae49f7233b1",
+    "apps/web-antd/src/api/ipd/project-agent.test.ts": "c153d4b37073966afaeacc7c9bbe420d0a388bde81d5acede4c40562df8d2fa9",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "ee700237396dce425193fe0c59a5e805d71fa2957810040f15d360e28ade5af1",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "bb13a127ec9f57c794fc08052600c4eb1d136120050832544f969372b1823e52"
+  },
+  "runtime": "download actual new backend HTTP not yet exercised; Person authorization/failure behavior tested through mocked fetch"
+}

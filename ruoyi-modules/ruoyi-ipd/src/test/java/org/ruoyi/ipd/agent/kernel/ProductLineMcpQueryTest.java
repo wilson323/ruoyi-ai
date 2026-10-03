@@ -341,8 +341,11 @@ class ProductLineMcpQueryTest {
     void displayNameDoesNotAddAnotherTool() throws Exception {
         try (HarnessAgent agent = agent(names("万傲瑞达 V6600", null),
             List.of(ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH, ATTENDANCE))) {
-            assertThat(agent.getToolkit().getToolNames()).containsExactlyInAnyOrder(
-                ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH, ATTENDANCE);
+            var registered = agent.getToolkit().getToolNames();
+            assertThat(registered).contains(ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH, ATTENDANCE);
+            assertThat(registered).contains("read_file", "execute", "agent_spawn", "memory_get");
+            assertThat(registered.stream().filter(name -> ProductLineMcpCatalog.byServiceId(name) != null).toList())
+                .containsExactly(ATTENDANCE);
             assertThat(agent.getToolkit().getToolNames()).doesNotContain("Attendance_device_product");
             assertThat(agent.getToolkit().getToolNames()).doesNotContain(WANRUIDA);
         }
@@ -361,8 +364,11 @@ class ProductLineMcpQueryTest {
     void storedServiceLimitsTheRegisteredClient() throws Exception {
         try (HarnessAgent agent = agent(names("考勤", ATTENDANCE),
             List.of(ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH, ATTENDANCE, ZKTIME))) {
-            assertThat(agent.getToolkit().getToolNames()).containsExactlyInAnyOrder(
-                ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH, ATTENDANCE);
+            var registered = agent.getToolkit().getToolNames();
+            assertThat(registered).contains(ProjectAgentToolCatalog.PROJECT_KNOWLEDGE_SEARCH, ATTENDANCE);
+            assertThat(registered).contains("read_file", "execute", "agent_spawn", "memory_get");
+            assertThat(registered.stream().filter(name -> ProductLineMcpCatalog.byServiceId(name) != null).toList())
+                .containsExactly(ATTENDANCE);
             assertThat(agent.getToolkit().getToolNames()).doesNotContain("Attendance_device_product");
             assertThat(agent.getToolkit().getToolNames()).doesNotContain(ZKTIME);
         }

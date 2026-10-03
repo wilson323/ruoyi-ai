@@ -74,8 +74,8 @@ class ProjectAgentControllerTest {
     }
 
     @Test
-    @DisplayName("#1 开关关闭：service 返回 available=false 文案含开关键，Controller 原样包络")
-    void capabilities_disabledPack_passesThrough() {
+    @DisplayName("#1 运行服务不可用：Controller 原样返回不可用原因")
+    void capabilities_unavailableRunService_passesThrough() {
         when(ipdPermission.requireInternal()).thenReturn(ACTOR);
         ProjectAgentViews.Pack pack = new ProjectAgentViews.Pack(
             "market-research", "v1", "市场调研", "", List.of(), List.of(),
@@ -88,12 +88,12 @@ class ProjectAgentControllerTest {
         assertThat(resp.getCode()).isEqualTo(ApiV1Response.CODE_SUCCESS);
         assertThat(resp.getData().packs().get(0).available()).isFalse();
         assertThat(resp.getData().packs().get(0).unavailableReason())
-            .contains("ipd.project-agent.enabled=false");
+            .contains("项目智能体运行服务不可用");
     }
 
     @Test
-    @DisplayName("#2 create：透传 body；开关关闭 STATE_CONFLICT 含开关键")
-    void create_disabled_propagatesConflict() {
+    @DisplayName("#2 create：透传 body；运行服务不可用时拒绝创建")
+    void create_unavailableRunService_propagatesConflict() {
         when(ipdPermission.requireInternal()).thenReturn(ACTOR);
         AgentRunCreateReq req = new AgentRunCreateReq(
             "market-research", "v1", "7001", List.of("competitor-analysis-ipd"),
@@ -104,7 +104,7 @@ class ProjectAgentControllerTest {
 
         assertThatThrownBy(() -> controller.create("200", req))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("ipd.project-agent.enabled=false");
+            .hasMessageContaining("项目智能体运行服务不可用");
     }
 
     @Test
@@ -139,6 +139,14 @@ class ProjectAgentControllerTest {
         assertThat(controller.events("77", 3L).getData().nextSeq()).isEqualTo(3L);
         assertThat(controller.cancel("77").getData().status()).isEqualTo("CANCEL_REQUESTED");
         verify(runService).events(ACTOR, 77L, 3L);
+    }
+
+    @Test
+    void reverifyUsesTrustedPersonAndSameRun() {
+        when(ipdPermission.requireInternal()).thenReturn(ACTOR);
+        when(runService.reverify(ACTOR, 77L)).thenReturn(new ProjectAgentViews.RunStatus("77", "VERIFYING"));
+        assertThat(controller.reverify("77").getData().status()).isEqualTo("VERIFYING");
+        verify(runService).reverify(ACTOR, 77L);
     }
 
     @Test

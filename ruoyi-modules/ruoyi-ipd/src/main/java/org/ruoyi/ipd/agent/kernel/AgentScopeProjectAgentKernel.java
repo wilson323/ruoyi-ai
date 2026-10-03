@@ -20,6 +20,7 @@ import io.agentscope.core.tool.ToolkitConfig;
 import io.agentscope.core.state.InMemoryAgentStateStore;
 import io.agentscope.core.agent.Agent;
 import io.agentscope.core.agent.RuntimeContext;
+import io.agentscope.core.tracing.OtelTracingMiddleware;
 import io.agentscope.core.middleware.MiddlewareBase;
 import io.agentscope.core.middleware.AgentInput;
 import io.agentscope.core.middleware.ModelCallInput;
@@ -426,23 +427,20 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         childConsumersRef.set(childConsumers);
         ProjectAgentEventSink checkpointOwnership = checkpointOwnership(sink);
         ProjectAgentTemporaryStateStore temporaryState = new ProjectAgentTemporaryStateStore(stateStore,
-            KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
-                ProjectAgentConstants.AGENT_ID, String.valueOf(spec.runId())), checkpointOwnership, subagentScope.lineage());
+            trustedScope, checkpointOwnership, subagentScope.lineage(), String.valueOf(spec.runId()));
         sink.registerTemporaryStateCleanup(() -> {
             if (terminalCommitted.get() || !requiresCommittedReceipt
                 && !preserveApprovalCheckpoint(spec, subagentScope.lineage())) temporaryState.sealAndDelete();
         });
         org.ruoyi.chat.kernel.OfficialAgentTraceLogging.install();
         var filesystem = ProjectAgentOfficialSandbox.managedFilesystem(workspace, "python:3.13-alpine", sink);
-        // 官方 StaticLongTermMemoryHook 需要一个 core Memory；AgentState 在 build 之后才有，
-        // 故用官方 AgentStateMemoryView(Supplier) + AtomicReference 延迟解析，不自研 holder。
-        var agentStateRef = new java.util.concurrent.atomic.AtomicReference<io.agentscope.core.state.AgentState>();
-        var shortTermMemory = new io.agentscope.core.memory.AgentStateMemoryView(agentStateRef::get);
+        // 主运行、压缩、子调用和长期记忆抽取复用同一个计量/权限包装。
+        var meteredModel = new ProjectAgentMeteredModel(model, sink, checkpointOwnership);
         var longTermMemory = longTermMemoryMapper == null ? null
             : new ProjectScopedLongTermMemory(spec.projectId(), spec.personId(), spec.runId(),
-                  longTermMemoryMapper, model);
-        // 记忆抽取复用计量模型，token 成本与主运行同账，不留计量盲区。
-        var meteredModel = new ProjectAgentMeteredModel(model, sink, checkpointOwnership);
+                  longTermMemoryMapper, meteredModel);
+        // 已配置的官方回退模型必须成功装配；失败向原运行错误链传播，不能静默跳过。
+        Model fallbackModel = modelAssembler.assembleFallback(spec.model(), spec.personId(), spec.runId());
 
         HarnessAgent.Builder builder = officialFactoryBuilder(spec,workspace,selectedSkills)
             .enableSkillManageTool(SkillManageConfig.defaults())
@@ -465,6 +463,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .hook(auditHook)
             .middleware(deadline)
             .middleware(new OwnershipMiddleware(sink))
+            // 官方 OTel 追踪（core.tracing）：invoke_agent/chat/execute_tool span；未配 SDK 时 noop 零开销，
+            // 构造器自带幂等 Reactor hook 注册，不占 legacy TracerRegistry 路径。
+            .middleware(new OtelTracingMiddleware())
             .toolkit(toolkit)
             .maxIters(maxIters)
             // 模型/工具调用超时与重试套官方默认（模型5min+3次尝试，工具5min单次）；不设时SDK不套任何重试。
@@ -482,8 +483,16 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .filesystem(filesystem.spec())
             // SDK checkpoint与业务run状态分离，session使用可信person/run身份。
             .stateStore(temporaryState)
+            // 官方无参 getAgentState() 以 (null, defaultSessionId) 访问 store；设为裸 runId 使其与
+            // AG-UI 运行时 (runId, runId) 身份落同一 official 存储槽（storageSession 同走 Base64(runId)
+            // 分支），LTM 的 AgentStateMemoryView 读到的就是运行时真实短期记忆，不错槽。
+            .defaultSessionId(String.valueOf(spec.runId()))
             .toolsConfig(toolsConfig)
             .workspace(workspace);
+        if (fallbackModel != null) {
+            // 回退调用同计量：主/回退 token 同账本，不留回退侧计量盲区。
+            builder.fallbackModel(new ProjectAgentMeteredModel(fallbackModel, sink, checkpointOwnership));
+        }
         if (artifactProvider != null) builder.artifactDeliveryTarget(artifactProvider.target());
         if (childConsumers != null) builder.middleware(childConsumers);
         if (collaborationStore != null) {
@@ -492,8 +501,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             ProjectAgentOfficialCollaboration.attach(builder, collaboration, trustedScope);
         }
         if (longTermMemory != null) {
-            // 官方 Hook 实现，非自研平替；retrieve 出来的记忆带非权威标注。
-            builder.hook(new io.agentscope.core.memory.StaticLongTermMemoryHook(longTermMemory, shortTermMemory));
+            // 官方推荐 MiddlewareBase；2.0.3 父 Hook 亦真实接线，旧“仅子工厂”说明有误。
+            // 按运行时 trustedScope 获取活状态，并等待记忆持久化回执后才结束流。
+            builder.middleware(new ProjectAgentLongTermMemoryMiddleware(longTermMemory));
         }
         HarnessAgent built;
         try { built = builder.build(); }
@@ -504,7 +514,6 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         try {
             // SDK build 与子任务会追加工具；统一在装配后和每次 acting 前挂官方权限扩展。
             parentRef.set(built);
-            agentStateRef.set(built.getAgentState());
             subagentScope.lineage().bindRoot(built);
             safeTranscript.bind(built.getWorkspaceManager());
             skillGovernance.bind(built.getWorkspaceManager());

@@ -157,6 +157,14 @@ public class MybatisAgentRunStore implements AgentRunStore {
     }
 
     @Override
+    public Optional<IpdAgentRun> lockRunForVerification(Long runId) {
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())
+            throw new IllegalStateException("verification guard requires a transaction");
+        return Optional.ofNullable(runMapper.selectOne(new LambdaQueryWrapper<IpdAgentRun>()
+            .eq(IpdAgentRun::getId, runId).last("FOR UPDATE")));
+    }
+
+    @Override
     public List<IpdAgentRun> listRecoveryCandidates(Long afterId, int limit) {
         var filter = new LambdaQueryWrapper<IpdAgentRun>()
             .in(IpdAgentRun::getStatus, List.of("PENDING", "RUNNING", "CANCEL_REQUESTED"));

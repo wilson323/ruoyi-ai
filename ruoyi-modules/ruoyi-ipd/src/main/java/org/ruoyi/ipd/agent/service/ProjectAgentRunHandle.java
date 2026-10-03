@@ -430,6 +430,11 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         append(AgentEventType.ARTIFACT, payload);
     }
 
+    @Override
+    public void onArtifactPayload(Map<String, Object> payload) {
+        append(AgentEventType.ARTIFACT, Map.copyOf(payload));
+    }
+
     /** {@inheritDoc} */
     @Override
     public void onError(String errorCode) {

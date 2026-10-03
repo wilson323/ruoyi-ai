@@ -1,0 +1,23 @@
+{
+  "status": "TARGETED_SOURCE_VERIFIED_RUNTIME_PENDING",
+  "tests": {
+    "found": 23,
+    "started": 23,
+    "passed": 23,
+    "skipped": 0
+  },
+  "sourceSha": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentProductionArtifacts.java": "0923df7e1c37008b3baec38a32881a1c64ad58a42f47f7c9249f3a3cefd42ccc",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDelivery.java": "dcad0d50d489f11971644e231da3f18b3ae3533e690b1ab7be5bd206956abaa0",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactOrigin.java": "08818311f10b69226081e92f5e09c1b7b07d172211665ef46c8210b4503f2c54",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentProductionArtifactsTransactionTest.java": "7d47f57679b2e2b0068977627ada0132ae50d2f0be08b53df703d3d198ad5b9a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentApplyStatusTest.java": "5def883d2ae838b28ba6de62cdd3507a9c1fbb5747533668ffab04e975d924c4"
+  },
+  "scope": "ProductionArtifacts actual consumer with Spring AbstractPlatformTransactionManager transaction double, original ArtifactVersionStore/AgentRunStore doubles; includes reserve transaction, original event/hash, commit failure rollback cleanup, closed claim refusal, legacy apply guarded path and CAS rollback",
+  "sdk": "real 2.0.3 dependency jars plus current root-compiled main classes; new tests compiled to private tmp; shared target not written",
+  "limits": [
+    "Real MySQL rollback remains pending",
+    "Candidate running JAR not loaded by this validator",
+    "Frontend mocked fetch/download DOM evidence is not browser runtime acceptance"
+  ]
+}

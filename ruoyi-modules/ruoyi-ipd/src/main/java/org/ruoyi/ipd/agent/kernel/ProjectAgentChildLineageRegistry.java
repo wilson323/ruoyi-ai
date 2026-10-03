@@ -23,7 +23,8 @@ public final class ProjectAgentChildLineageRegistry {
     public record SuspensionSnapshot(String generateReason, CallSnapshot call, String resultState,
                                      String canonicalResultMetadata, String canonicalResultOutput) { }
     public record ParentCall(String nonce, String userId, String sessionId, CallSnapshot call,
-                             SuspensionSnapshot suspension, long checkpointVersion) {
+                             SuspensionSnapshot suspension, long checkpointVersion, FactoryDescriptor factory, ParentCall ancestor) {
+        public ParentCall(String nonce,String userId,String sessionId,CallSnapshot call,SuspensionSnapshot suspension,long checkpointVersion) { this(nonce,userId,sessionId,call,suspension,checkpointVersion,null,null); }
         public ParentCall(String nonce,String userId,String sessionId,CallSnapshot call) { this(nonce,userId,sessionId,call,null,-1); }
     }
     private final Map<String,SuspensionSnapshot> nativeSuspensions=new ConcurrentHashMap<>();
@@ -46,7 +47,7 @@ public final class ProjectAgentChildLineageRegistry {
         if(nativeReceipt==null)throw new SecurityException("Actual native parent suspension receipt missing");
         var saved=store.getVersioned(parent.userId(),parent.sessionId(),"agent_state",io.agentscope.core.state.AgentState.class);
         if(!saved.isPresent()||saved.version()<0)throw new SecurityException("Parent suspension checkpoint missing");
-        return new ParentCall(parent.nonce(),parent.userId(),parent.sessionId(),parent.call(),nativeReceipt,saved.version());
+        return new ParentCall(parent.nonce(),parent.userId(),parent.sessionId(),parent.call(),nativeReceipt,saved.version(),parent.factory(),parent.ancestor()==null?null:checkpointParent(parent.ancestor(),store));
     }
     public static void requireNativeSuspension(ParentCall parent) {
         if(parent==null||parent.suspension()==null||parent.checkpointVersion()<0
@@ -110,12 +111,24 @@ public final class ProjectAgentChildLineageRegistry {
     }
     RuntimeContext issueParentCall(Agent actor, RuntimeContext runtime, io.agentscope.core.message.ToolUseBlock call) {
         requireKnown(actor,runtime);
-        ParentBinding binding = new ParentBinding(new ParentCall(java.util.UUID.randomUUID().toString(),runtime.getUserId(),runtime.getSessionId(),CallSnapshot.of(call)));
+        var factory=factoryBindings.get(actualActor(actor));
+        ParentBinding binding = new ParentBinding(new ParentCall(java.util.UUID.randomUUID().toString(),runtime.getUserId(),runtime.getSessionId(),CallSnapshot.of(call),null,-1,
+            factory==null?null:factory.factory(),factory==null?null:factory.parent()));
         issuedParents.add(binding);
         // Only this registry can issue the identity-bearing object. No metadata/browser serialization.
         return RuntimeContext.builder().from(runtime).put(parentKey(),binding).build();
     }
     private String parentKey() { return getClass().getName()+":"+System.identityHashCode(parentContextKey); }
+    int childSpawnDepth(RuntimeContext runtime) {
+        var parent=parentBinding(runtime).parent();
+        int depth=1;
+        var seen=new java.util.HashSet<String>();
+        for(var current=parent;current!=null;current=current.ancestor()) {
+            if(!seen.add(current.sessionId())) throw new SecurityException("Original child ancestry is cyclic");
+            if(current.ancestor()!=null) depth++;
+        }
+        return depth;
+    }
     private ParentBinding parentBinding(RuntimeContext runtime) {
         Object raw=runtime.get(parentKey());
         if (!(raw instanceof ParentBinding binding) || !issuedParents.contains(binding)) throw new SecurityException("Unknown server parent call issuer");
@@ -130,21 +143,38 @@ public final class ProjectAgentChildLineageRegistry {
         ParentCall parent=parentBinding(runtime).parent();
         return awaiting.keySet().stream().anyMatch(key->{var invocation=origins.get(key.locator());
             var binding=invocation==null?null:factoryBindings.get(invocation.actor());
-            return binding!=null && binding.parent().equals(parent);});
+            if(binding==null)return false;
+            for(var current=binding.parent();current!=null;current=current.ancestor()) {
+                if(current.nonce().equals(parent.nonce()) && current.userId().equals(parent.userId())
+                    && current.sessionId().equals(parent.sessionId()) && current.call().equals(parent.call()))return true;
+            }
+            return false;});
     }
     RuntimeContext restoreParentContext(ParentCall parent, io.agentscope.core.state.AgentStateStore store) {
         requireCurrentAccess.run();
         requireNativeSuspension(parent);
         if (parent==null || !trustedRoot.getUserId().equals(parent.userId()) || !ownsSession(parent.userId(),parent.sessionId())) throw new SecurityException("Original parent receipt missing");
         var saved=store.getVersioned(parent.userId(),parent.sessionId(),"agent_state",io.agentscope.core.state.AgentState.class);
-        if (!saved.isPresent() || saved.version()!=parent.checkpointVersion()) throw new SecurityException("Original parent checkpoint missing or changed");
+        if (!saved.isPresent() || saved.version()!=parent.checkpointVersion()
+            || !parent.userId().equals(saved.value().getUserId()) || !parent.sessionId().equals(saved.value().getSessionId())) throw new SecurityException("Original parent checkpoint missing or changed");
         var messages=saved.value().getContext();
         var latest=messages.stream().filter(m->m.getRole()==io.agentscope.core.message.MsgRole.ASSISTANT).reduce((a,b)->b).orElseThrow();
         if (latest.getContentBlocks(io.agentscope.core.message.ToolUseBlock.class).stream().filter(t->CallSnapshot.of(t).equals(parent.call())).count()!=1
             || messages.stream().flatMap(m->m.getContentBlocks(io.agentscope.core.message.ToolResultBlock.class).stream()).anyMatch(t->parent.call().id().equals(t.getId())))
             throw new SecurityException("Original parent call is no longer unfinished");
+        // Re-admit the persisted native suspension only after its exact owning checkpoint was verified.
+        // A cold child can ask again without producing another parent suspension event.
+        nativeSuspensions.put(parent.nonce(),parent.suspension());
         ParentBinding binding=new ParentBinding(parent);issuedParents.add(binding);
         return RuntimeContext.builder().from(trustedRoot).sessionId(parent.sessionId()).put(parentKey(),binding).build();
+    }
+    Invocation invocationForSession(String session) {
+        String locator=sessionOrigins.get(session);
+        return locator==null?null:origins.get(locator);
+    }
+    void admitRestoredParent(Agent actor, RuntimeContext runtime, ParentCall parent) {
+        registerInvocation(actor,runtime);
+        invocationLocator(actor,runtime);
     }
     Invocation liveInvocation(ChildApproval approval) { return origins.get(approval.locator()); }
     void admitRestored(Agent actor, RuntimeContext runtime, ChildApproval approval) {

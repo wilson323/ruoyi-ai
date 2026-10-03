@@ -27,6 +27,15 @@ class ProjectAgentOfficialPermissionsTest {
             new PermissionEngine(inherited).checkPermission(tool("execute"), Map.of()).block().getBehavior());
     }
 
+    @Test void planConfirmationRemainsAskAndInheritedDenialWins() {
+        assertEquals(PermissionBehavior.ASK, new PermissionEngine(ProjectAgentOfficialPermissions.workspace())
+            .checkPermission(tool("plan_exit"), Map.of()).block().getBehavior());
+        var revoked = PermissionContextState.builder().addDenyRule("plan_exit",
+            new PermissionRule("plan_exit", null, PermissionBehavior.DENY, "revoked")).build();
+        assertEquals(PermissionBehavior.DENY, new PermissionEngine(ProjectAgentOfficialPermissions.extend(revoked))
+            .checkPermission(tool("plan_exit"), Map.of()).block().getBehavior());
+    }
+
     private static ToolBase tool(String name) {
         return new ToolBase(ToolBase.builder().name(name).description("official capability").inputSchema(Map.of())) { };
     }

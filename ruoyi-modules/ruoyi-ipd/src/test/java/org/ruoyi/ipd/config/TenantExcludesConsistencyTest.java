@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -28,6 +29,12 @@ class TenantExcludesConsistencyTest {
     private static final Pattern CREATE_TABLE_PAT = Pattern.compile(
         "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?[`']?([a-z_]+)[`']?\\s*\\(",
         Pattern.CASE_INSENSITIVE);
+    // Only this explicit module-retirement migration can narrow historical DDL coverage.
+    private static final Path RETIREMENT_SQL = SQL_DIR.resolve("2026-10-02-workflow-modules-offline.sql");
+    private static final Pattern DROP_TABLE_PAT = Pattern.compile(
+        "(?:^|;)\\s*DROP\\s+TABLE\\s+(?:IF\\s+EXISTS\\s+)?[`']?([a-z_]+)[`']?\\s*(?=;)",
+        Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+    private static final Pattern SQL_COMMENTS = Pattern.compile("/\\*.*?\\*/|--[^\\r\\n]*|#[^\\r\\n]*", Pattern.DOTALL);
     private static final Pattern EXCLUDE_ITEM_PAT = Pattern.compile("^\s*-\s+([a-z_]+)\s*$");
 
     private Set<String> ddlTables() throws IOException {
@@ -49,7 +56,48 @@ class TenantExcludesConsistencyTest {
                     } catch (IOException ignored) {}
                  });
         }
-        return result;
+        String retirement = Files.readString(RETIREMENT_SQL);
+        Set<String> candidates = retiredTables(retirement);
+        Set<String> consumers = new HashSet<>();
+        // Current repository module roots only; archived worktrees and temporary candidates are not consumers.
+        try (Stream<Path> roots = Files.list(REPO_ROOT)) {
+            for (Path moduleRoot : roots.filter(Files::isDirectory)
+                    .filter(x -> x.getFileName().toString().startsWith("ruoyi-")).toList()) {
+                try (Stream<Path> paths = Files.walk(moduleRoot)) {
+                    for (Path source : paths.filter(Files::isRegularFile)
+                            .filter(x -> x.toString().replace('\\', '/').contains("/src/main/"))
+                            .filter(x -> x.toString().endsWith(".java") || x.toString().endsWith(".xml")
+                                || x.toString().endsWith(".sql")).toList()) {
+                        consumers.addAll(consumerTables(Files.readString(source), candidates));
+                    }
+                }
+            }
+        }
+        return requiredDdlTables(result, retirement, consumers);
+    }
+
+    static Set<String> retiredTables(String sql) {
+        Set<String> retired = new HashSet<>();
+        Matcher matcher = DROP_TABLE_PAT.matcher(SQL_COMMENTS.matcher(sql).replaceAll(" "));
+        while (matcher.find()) retired.add(matcher.group(1).toLowerCase(Locale.ROOT));
+        return retired;
+    }
+
+    static Set<String> consumerTables(String source, Set<String> candidates) {
+        Set<String> referenced = new HashSet<>();
+        for (String table : candidates) {
+            if (Pattern.compile("(?<![a-z0-9_])" + Pattern.quote(table) + "(?![a-z0-9_])",
+                    Pattern.CASE_INSENSITIVE).matcher(source).find()) referenced.add(table);
+        }
+        return referenced;
+    }
+
+    static Set<String> requiredDdlTables(Set<String> created, String retirementSql, Set<String> consumers) {
+        Set<String> retired = retiredTables(retirementSql);
+        retired.removeAll(consumers); // A current mapper/entity/SQL reference keeps the original gate red.
+        Set<String> required = new HashSet<>(created);
+        required.removeAll(retired);
+        return required;
     }
 
     private Set<String> excludedTables() throws IOException {

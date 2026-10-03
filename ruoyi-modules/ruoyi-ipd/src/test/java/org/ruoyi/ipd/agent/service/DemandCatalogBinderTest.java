@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -51,10 +52,11 @@ class DemandCatalogBinderTest {
             .id(19L).lineCode("catalog-access").status("ACTIVE").build()));
         when(products.selectList(any())).thenReturn(List.of(), List.of(Product.builder()
             .id(31L).productCode("ZK-X").productLineId(19L).build()));
+        when(requirements.update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class))).thenReturn(1);
         binder().apply(7L, "结论\n产品线：catalog-access\n产品：ZK-X\n");
         assertThat(requirement.getProductLineId()).isEqualTo(19L);
         assertThat(requirement.getProductId()).isEqualTo(31L);
-        verify(requirements).updateById(eq(requirement));
+        verify(requirements).update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class));
     }
 
     @Test
@@ -68,7 +70,7 @@ class DemandCatalogBinderTest {
             ProductLine.builder().id(2L).lineCode("other").status("ACTIVE").build()));
         binder().apply(8L, "产品线：other\n");
         assertThat(requirement.getProductLineId()).isEqualTo(1L);
-        verify(requirements, never()).updateById(any(Requirement.class));
+        verify(requirements, never()).update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class));
     }
 
     @Test
@@ -111,9 +113,10 @@ class DemandCatalogBinderTest {
         when(requirements.selectById(12L)).thenReturn(requirement);
         when(lines.selectList(any())).thenReturn(List.of(ProductLine.builder()
             .id(19L).lineCode("catalog-access").status("ACTIVE").build()));
+        when(requirements.update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class))).thenReturn(1);
         binder().apply(12L, "产品线：未取得\n", new DemandCatalogBinder.CatalogHit("catalog-access", null));
         assertThat(requirement.getProductLineId()).isEqualTo(19L);
-        verify(requirements).updateById(eq(requirement));
+        verify(requirements).update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class));
     }
 
     @Test
@@ -123,7 +126,7 @@ class DemandCatalogBinderTest {
         when(lines.selectList(any())).thenReturn(List.of());
         binder().apply(13L, "产品线：other\n", new DemandCatalogBinder.CatalogHit("missing", null));
         assertThat(requirement.getProductLineId()).isNull();
-        verify(requirements, never()).updateById(any(Requirement.class));
+        verify(requirements, never()).update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class));
     }
 
     @Test
@@ -151,6 +154,21 @@ class DemandCatalogBinderTest {
         when(products.selectList(any())).thenReturn(List.of());
         assertThat(binder().open(15L).hit().lineCode()).isNull();
         assertThat(binder().open(15L).hit().productCode()).isNull();
+    }
+
+    @Test
+    void zeroUpdatedRowsIsAnExplicitConflict() {
+        Requirement requirement = Requirement.builder().id(16L).build();
+        when(requirements.selectById(16L)).thenReturn(requirement);
+        when(lines.selectList(any())).thenReturn(List.of(ProductLine.builder()
+            .id(19L).lineCode("catalog-access").status("ACTIVE").build()));
+        when(requirements.update(org.mockito.ArgumentMatchers.isNull(), any(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class))).thenReturn(0);
+        assertThatThrownBy(() -> binder().apply(16L, "产品线：catalog-access\n"))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("绑定发生冲突");
+        var captor = org.mockito.ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper.class);
+        verify(requirements).update(org.mockito.ArgumentMatchers.isNull(), captor.capture());
+        assertThat(captor.getValue().getSqlSegment()).contains("id", "product_line_id IS NULL", "product_id IS NULL");
+        assertThat(captor.getValue().getSqlSet()).contains("product_line_id").doesNotContain("title", "content");
     }
 
     private DemandCatalogBinder binder() {

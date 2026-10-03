@@ -178,13 +178,14 @@ class SubStageControllerTest {
         // 既有字段不变 + 两新键
         assertThat(value).containsEntry("subStageCode", "CONCEPT-S1").containsEntry("projectId", "7");
         assertThat(value).containsKeys("guideSteps", "advanceGate");
-        List<GuideStepView> steps = (List<GuideStepView>) value.get("guideSteps");
+        // wire Map 断言（事件经官方 encoder 序列化，嵌套载荷与线格式同构为 Map）
+        List<Map<String, Object>> steps = (List<Map<String, Object>>) value.get("guideSteps");
         assertThat(steps).isNotEmpty();
-        assertThat(steps.get(0).actionCode()).isEqualTo("C01");
-        AdvanceGateView gate = (AdvanceGateView) value.get("advanceGate");
-        assertThat(gate.nextSubStageCode()).isEqualTo("CONCEPT-S2");
-        assertThat(gate.advanceAllowed()).isFalse();
-        assertThat(gate.pendingBlockingCodes()).containsExactly("C12");
+        assertThat(steps.get(0).get("actionCode")).isEqualTo("C01");
+        Map<String, Object> gate = (Map<String, Object>) value.get("advanceGate");
+        assertThat(gate.get("nextSubStageCode")).isEqualTo("CONCEPT-S2");
+        assertThat(gate.get("advanceAllowed")).isEqualTo(false);
+        assertThat((List<String>) gate.get("pendingBlockingCodes")).containsExactly("C12");
         // 线格式 JSON 形状自证（两新键真实序列化下发）
         String json = new ObjectMapper().writeValueAsString(value);
         assertThat(json).contains("\"guideSteps\"").contains("\"advanceGate\"")

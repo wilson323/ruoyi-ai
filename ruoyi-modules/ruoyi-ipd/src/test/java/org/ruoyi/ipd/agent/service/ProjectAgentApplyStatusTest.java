@@ -30,6 +30,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -164,7 +165,7 @@ class ProjectAgentApplyStatusTest {
         when(harness.runs.listEvents(9L, (long) ProjectAgentConstants.EVENTS_PAGE_LIMIT,
             ProjectAgentConstants.EVENTS_PAGE_LIMIT)).thenReturn(List.of(
             step(201L, "{\"kind\":\"MODEL_CALL\",\"inputTokens\":4,\"outputTokens\":1}"),
-            IpdAgentRunEvent.builder().seq(202L).eventType(AgentEventType.TOOL_CALL.name())
+            IpdAgentRunEvent.builder().runId(9L).tenantId(TENANT).seq(202L).eventType(AgentEventType.TOOL_CALL.name())
                 .payload("{\"inputTokens\":100,\"outputTokens\":100}").build()));
         AiDocument doc = AiDocument.builder().id(8001L).status(AiDocumentService.STATUS_GENERATED).build();
         when(harness.documents.createGeneratedAuthorized(eq(ACTOR), eq(PROJECT_ID), eq("MARKET_RESEARCH"),
@@ -250,7 +251,14 @@ class ProjectAgentApplyStatusTest {
 
         verify(manager).rollback(status);
         verify(manager, never()).commit(any());
-        verify(harness.artifacts, never()).findById(any());
+        // 仅来源守卫读取一次原版本；CAS失败后不能再读版本回放或掩盖回滚。
+        verify(harness.artifacts, org.mockito.Mockito.times(1)).findById(71L);
+        var sequence = org.mockito.Mockito.inOrder(harness.artifacts, harness.documents);
+        sequence.verify(harness.artifacts).findLatestForUpdate(TENANT, 9L, "art-1");
+        sequence.verify(harness.artifacts).findById(71L);
+        sequence.verify(harness.documents).createGeneratedAuthorized(any(), any(), any(), any(), any(), any(), any(), any());
+        sequence.verify(harness.artifacts).markApplied(71L, 8001L);
+
     }
 
     @Test
@@ -413,6 +421,7 @@ class ProjectAgentApplyStatusTest {
 
     private static IpdAgentRunEvent step(long seq, String payload) {
         return IpdAgentRunEvent.builder()
+            .runId(9L).tenantId(TENANT)
             .seq(seq)
             .eventType(AgentEventType.STEP.name())
             .payload(payload)
@@ -422,6 +431,8 @@ class ProjectAgentApplyStatusTest {
     private static IpdAgentArtifactVersion version(String status, Long documentId) {
         return IpdAgentArtifactVersion.builder()
             .id(71L)
+            .runId(9L).tenantId(TENANT)
+            .contentSha256(contentHash())
             .artifactId("art-1")
             .versionNo(1)
             .title("产物")
@@ -429,6 +440,14 @@ class ProjectAgentApplyStatusTest {
             .status(status)
             .documentId(documentId)
             .build();
+    }
+
+    /** 与原 Handle ARTIFACT 事件相同的可信正文 SHA，不按字符串前缀猜附件类型。 */
+    private static String contentHash() {
+        try {
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                .digest("正文".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
     }
 
     /** 只装配 apply 需要的替身；内核与执行器不参与本次断言。 */
@@ -451,9 +470,34 @@ class ProjectAgentApplyStatusTest {
                 .actionCode("C02")
                 .build();
             when(runs.findRun(9L)).thenReturn(Optional.of(run));
+            var originEvent = IpdAgentRunEvent.builder().runId(9L).tenantId(TENANT).seq(10000L)
+                .eventType(AgentEventType.ARTIFACT.name())
+                .payload("{\"artifactId\":\"art-1\",\"title\":\"产物\",\"versionId\":\"71\",\"version\":1,\"contentHash\":\"" + contentHash() + "\"}").build();
+            // 特定用量测试覆盖 MODEL_CALL 页；原可信产物仍在同一 run 的后续事件页。
+            when(runs.listEvents(eq(9L), anyLong(), eq(ProjectAgentConstants.EVENTS_PAGE_LIMIT)))
+                .thenAnswer(call -> (long) call.getArgument(1) < 10000L ? List.of(originEvent) : List.of());
+            when(artifacts.findById(71L)).thenAnswer(call -> Optional.of(version(IpdAgentArtifactVersion.STATUS_DRAFT, null)));
+
             service = new ProjectAgentRunService(true, access, org.ruoyi.ipd.agent.support.AgentTestFixtures.planner(), runs, artifacts,
                 documents, null, null, executor, new ObjectMapper(), () -> 0L,
                 Duration.ofSeconds(60));
+            try {
+                var root = java.nio.file.Files.createTempDirectory("ipd-apply-origin-").toRealPath();
+                var origin = new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactOrigin(runs,
+                    payload -> { throw new SecurityException("Read fixture cannot issue origin"); });
+                var target = new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactDelivery(
+                    new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactDelivery.Binding(ACTOR, PROJECT_ID, TENANT, 9L, "readonly", "readonly"),
+                    access, runs, artifacts, new org.springframework.transaction.support.TransactionTemplate(
+                        mock(org.springframework.transaction.PlatformTransactionManager.class)),
+                    new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactDelivery.RunOwnerTransaction() {
+                        public <T> T owned(java.util.function.Supplier<T> body) { throw new SecurityException("Read fixture cannot deliver"); }
+                    }, root, () -> { throw new SecurityException("Read fixture cannot allocate"); },
+                    (binding, runtime) -> { throw new SecurityException("Read fixture cannot deliver"); }, origin);
+                service.setArtifactAccess(new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess((actor, runId) -> {
+                    if (!ACTOR.id().equals(actor.id()) || !Long.valueOf(9L).equals(runId)) throw new SecurityException("Original run identity mismatch");
+                    return target;
+                }));
+            } catch (java.io.IOException invalid) { throw new IllegalStateException(invalid); }
         }
     }
     @Test

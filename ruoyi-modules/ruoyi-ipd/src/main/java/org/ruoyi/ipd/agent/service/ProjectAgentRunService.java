@@ -72,6 +72,56 @@ public class ProjectAgentRunService {
     private org.ruoyi.ipd.mapper.ProductLineNameMapper productLineNames;
     private ProjectAgentAguiPauseResumeService aguiPauseResume;
     private ProjectAgentAguiPauseResumeService.TrustedGuard aguiResumeGuard;
+    private org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess;
+    private org.springframework.transaction.support.TransactionTemplate verificationTransaction;
+
+    /** 驻留态收口复用原数据库事务；不包围其他执行器的 REQUIRES_NEW 生命周期。 */
+    public void setVerificationTransaction(org.springframework.transaction.support.TransactionTemplate transaction) {
+        verificationTransaction = Objects.requireNonNull(transaction);
+    }
+
+    private <T> T inVerificationTransaction(java.util.function.Supplier<T> action) {
+        return verificationTransaction == null ? action.get()
+            : verificationTransaction.execute(status -> action.get());
+    }
+
+    private IpdAgentRun lockVerifyingRun(IpdActor actor, Long runId) {
+        IpdAgentRun observed = requireOwnRun(actor, runId);
+        IpdAgentRun run = observed;
+        if (verificationTransaction != null) {
+            // FOR UPDATE 返回当前行；不能在加锁后重新 selectById 读取事务一级缓存的旧快照。
+            run = store.lockRunForVerification(runId)
+                .orElseThrow(() -> new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "运行不存在"));
+            run = requireOwnRun(actor, run);
+            if (run.getVersion() == null || !Objects.equals(observed.getVersion(), run.getVersion())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行版本已变化，请刷新");
+            }
+        }
+        if (!AgentRunStatus.VERIFYING.name().equals(run.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行不在校验驻留态");
+        }
+        return run;
+    }
+
+    /** 官方附件的原版本／来源守卫；缺失装配时禁止定档和下载。 */
+    public void setArtifactAccess(org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess access) {
+        artifactAccess = Objects.requireNonNull(access);
+    }
+
+    /** 每次按真实 Person 和原运行重新验证权限，不接受客户端主机路径。 */
+    public byte[] downloadArtifact(IpdActor actor, Long runId, Long versionId) {
+        requireEnabled();
+        requireOwnRun(actor, runId);
+        return requireArtifactAccess().download(actor, runId, versionId);
+    }
+
+    private org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess requireArtifactAccess() {
+        if (artifactAccess == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物来源验证未装配");
+        }
+        return artifactAccess;
+    }
+
 
     /** 服务器配置装配真实 SDK 检查点／业务批准校验，不接受浏览器注入。 */
     public void setAguiPauseResume(ProjectAgentAguiPauseResumeService service,
@@ -279,6 +329,7 @@ public class ProjectAgentRunService {
         if (!IpdAgentArtifactVersion.STATUS_DRAFT.equals(seen.getStatus()) || seen.getId() == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物版本不可应用");
         }
+        requireArtifactAccess().requireDocumentContent(actor, runId, seen);
         String docType = requireArchiveDocType(run);
         return applyDraft(actor, run, seen, docType);
     }
@@ -552,8 +603,11 @@ public class ProjectAgentRunService {
         status = AgentRunStatus.valueOf(current.getStatus());
         if (status == AgentRunStatus.VERIFYING) {
             // 校验驻留态无执行器写入权，取消直接落终态，不经 CANCEL_REQUESTED。
-            finishVerifying(current, AgentRunStatus.CANCELLED, null);
-            return currentStatus(runId);
+            return inVerificationTransaction(() -> {
+                IpdAgentRun locked = lockVerifyingRun(actor, runId);
+                finishVerifying(locked, AgentRunStatus.CANCELLED, null);
+                return currentStatus(runId);
+            });
         }
         boolean detachedAguiPause = hasDurableAguiPause(current);
         if (AgentRunStatus.CANCELLABLE.contains(status)) {
@@ -962,6 +1016,10 @@ public class ProjectAgentRunService {
     private IpdAgentRun requireOwnRun(IpdActor actor, Long runId) {
         IpdAgentRun run = store.findRun(runId)
             .orElseThrow(() -> new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "运行不存在"));
+        return requireOwnRun(actor, run);
+    }
+
+    private IpdAgentRun requireOwnRun(IpdActor actor, IpdAgentRun run) {
         String tenantId = access.requireVisible(actor, run.getProjectId());
         if (!Objects.equals(tenantId, run.getTenantId()) || !Objects.equals(actor.id(), run.getPersonId())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "运行不存在");
@@ -983,14 +1041,15 @@ public class ProjectAgentRunService {
      * @return runId + 当前状态
      */
     public ProjectAgentViews.RunStatus reverify(IpdActor actor, Long runId) {
+        return inVerificationTransaction(() -> reverifyLocked(actor, runId));
+    }
+
+    private ProjectAgentViews.RunStatus reverifyLocked(IpdActor actor, Long runId) {
         requireEnabled();
         if (artifactStore == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物校验未装配");
         }
-        IpdAgentRun run = requireOwnRun(actor, runId);
-        if (!AgentRunStatus.VERIFYING.name().equals(run.getStatus())) {
-            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行不在校验驻留态");
-        }
+        IpdAgentRun run = lockVerifyingRun(actor, runId);
         IpdAgentArtifactVersion latest = latestArtifact(runId);
         if (latest == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "校验驻留态缺少产物版本");
@@ -998,7 +1057,7 @@ public class ProjectAgentRunService {
         ProjectAgentArtifactVerifier.Verdict verdict =
             new ProjectAgentArtifactVerifier().evaluate(run.getActionCode(), latest.getContent());
         // 竞态收窄：校验与写 STEP 之间可能并发取消；写前二次确认仍驻留，避免终态事件后出现孤儿 STEP。
-        if (!AgentRunStatus.VERIFYING.name().equals(reload(runId).getStatus())) {
+        if (verificationTransaction == null && !AgentRunStatus.VERIFYING.name().equals(reload(runId).getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行状态已变化，请刷新");
         }
         // 复检证据先行、终态事件最后：终态事件出现后前端停止轮询，其后写入的事件不再送达。
@@ -1015,15 +1074,15 @@ public class ProjectAgentRunService {
             new Date(clock.getAsLong()))) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行状态已变化，请刷新");
         }
-        appendTerminalEvent(run, AgentEventType.RUN_FINISHED, Map.of("status", target.name()));
         if (target == AgentRunStatus.SUCCEEDED) {
             bindDemandAfterReverify(run, successBody);
         }
+        appendTerminalEvent(run, AgentEventType.RUN_FINISHED, Map.of("status", target.name()));
     }
 
     /**
      * 终态事件写入：seq 撞唯一键时按新鲜 maxSeq 有界重试。CAS 已提交后写不进是
-     * 「终态无终态事件」的不可自愈态（前端按终态事件停轮询），重试耗尽只留痕、不回滚终态。
+     * 「终态无终态事件」的不可自愈态（前端按终态事件停轮询），重试耗尽抛错，由原事务回滚状态、复检事件和需求回写。
      */
     private void appendTerminalEvent(IpdAgentRun run, AgentEventType type, Map<String, Object> payload) {
         for (int attempt = 0; attempt < 3; attempt++) {
@@ -1033,25 +1092,18 @@ public class ProjectAgentRunService {
                 return;
             }
         }
-        log.warn("project_agent operation=VERIFY_FINISH status=EVENT_UNRESOLVED runId={} type={}",
-            run.getId(), type.name());
+        throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行结果暂未保存，请重试");
     }
 
     /**
      * 复检收口成功后补做需求回写。首跑路径在执行句柄的 SUCCEEDED 回调触发；VERIFYING
-     * 驻留销毁句柄后由这里按冻结快照重建上下文（hit 置空，回写器内按全文兜底），失败不阻断终态。
+     * 驻留销毁句柄后由这里按冻结快照重建上下文（hit 置空，回写器内按全文兜底），失败回滚复检事务。
      */
     private void bindDemandAfterReverify(IpdAgentRun run, String successBody) {
-        try {
-            ConfigSnapshot snapshot = frozenSnapshot(run);
-            String requirementId = snapshot == null ? null : snapshot.requirementId();
-            if (requirementId == null || successBody == null) {
-                return;
-            }
+        ConfigSnapshot snapshot = frozenSnapshot(run);
+        String requirementId = snapshot == null ? null : snapshot.requirementId();
+        if (requirementId != null && successBody != null) {
             executor.bindDemandOnReverify(Long.valueOf(requirementId), successBody);
-        } catch (RuntimeException bindEx) {
-            log.warn("project_agent operation=DEMAND_BIND status=FAILED runId={} errorType={}",
-                run.getId(), bindEx.getClass().getName(), bindEx);
         }
     }
 

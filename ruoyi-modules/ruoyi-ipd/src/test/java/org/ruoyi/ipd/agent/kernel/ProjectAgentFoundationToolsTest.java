@@ -69,9 +69,11 @@ class ProjectAgentFoundationToolsTest {
             require(ProjectAgentFoundationTools.webFetchTool()
                 .webFetch("http://127.0.0.1:" + server.getAddress().getPort() + "/fixture", 100)
                 .contains("fixture-web-content"), "WEB_FETCH_FIXTURE");
-            var invalidQuery = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
-                () -> ProjectAgentFoundationTools.webSearchTool().webSearch("", 1));
-            require("query is required".equals(invalidQuery.getMessage()), "WEB_SEARCH_SCHEMA");
+            // Runtime SDK 2.0.3 returns an explicit tool error before credentials or network access.
+            var search = ProjectAgentFoundationTools.webSearchTool();
+            for (String invalidQuery : new String[]{null, "", "   "}) {
+                require("Error: query is required".equals(search.webSearch(invalidQuery, 1)), "WEB_SEARCH_SCHEMA");
+            }
             System.out.println("TAVILY_KEY_PRESENT="
                 + !Objects.toString(System.getenv("TAVILY_API_KEY"), "").isBlank());
         } finally {
@@ -92,7 +94,7 @@ class ProjectAgentFoundationToolsTest {
         Path workspace = Files.createTempDirectory("foundation-full-defaults-");
         var scope = new ProjectAgentFoundationTools.Scope("1", "1", "999999999", workspace);
         var agent = ProjectAgentFoundationTools.configureFullCapabilities(
-            io.agentscope.harness.agent.HarnessAgent.builder().name("full-defaults-test").model(noNetworkModel),
+            io.agentscope.harness.agent.HarnessAgent.builder().name("full-defaults-test").workspace(workspace).model(noNetworkModel),
             scope, "alpine:3", new io.agentscope.core.state.InMemoryAgentStateStore(),
             new io.agentscope.harness.agent.transcript.FilesystemTranscriptStore(workspace.resolve("transcripts")),
             io.agentscope.harness.agent.memory.MemoryConfig.defaults(),

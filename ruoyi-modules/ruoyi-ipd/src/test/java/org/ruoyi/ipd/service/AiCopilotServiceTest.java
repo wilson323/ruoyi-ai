@@ -81,6 +81,20 @@ class AiCopilotServiceTest {
         when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
+    @Test
+    void documentRetrievalFailureStopsCopilotBeforeModelCall() {
+        stubEnabledConfig();
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a")))
+            .thenReturn(Map.of("currentAdvance", Map.of(), "tasks", List.of()));
+        when(docEmbeddingService.retrieveContext(eq(10L), isNull(), anyString()))
+            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "项目文档检索失败"));
+        var failure = assertThrows(IpdBusinessException.class,
+            () -> service.chat(SA, new AiCopilotReq(10L, "讲个笑话", List.of())));
+        assertEquals(ApiV1ErrorCode.INTERNAL_ERROR, failure.getErrorCode());
+        assertTrue(failure.getMessage().contains("项目文档检索失败"));
+        verifyNoInteractions(aiGateway);
+    }
+
     // ============ 意图分类（关键字命中；静态方法） ============
 
     @Test

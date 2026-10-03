@@ -260,6 +260,21 @@ async function scanFrontend(feApiDirs) {
       });
     }
 
+    // ipdDownload 是 blob GET 下载（http.ts：authenticatedRequest + responseType:'blob'），
+    // 同 ipdUpload 盲区先例——不在动词列表里，漏扫会把 project-agent.ts 的
+    // downloadAgentRunArtifact（GET /agent-runs/{id}/artifacts/versions/{id}/download）报成假孤儿。
+    const reIpdDownload = /ipdDownload\s*(?:<[^()]*>)?\s*\(\s*([`'"])(.+?)\1/g;
+    while ((m = reIpdDownload.exec(src)) !== null) {
+      calls.push({
+        kind: 'ipd',
+        method: 'GET',
+        rawPath: m[2],
+        file,
+        line: src.slice(0, m.index).split('\n').length,
+        isTest,
+      });
+    }
+
     // 模式 2: requestIpd / authenticatedRequest / requestPortal('path', { method: 'POST', ... }) 或 (..., 'POST')
     // R215 修正：① 函数名扩至 store 层 authenticatedRequest 与 portal 私有 requestPortal；
     // ② 第二参数改为可选（authenticatedRequest('/auth/me') 单参形式）；③ 支持一层嵌套泛型。

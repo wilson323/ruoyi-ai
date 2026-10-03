@@ -69,6 +69,7 @@ final class ProjectAgentRuntimeAccessSink implements ProjectAgentEventSink {
     @Override public void onText(String delta) { delegate.onText(delta); }
     @Override public void onFinalText(String text) { delegate.onFinalText(text); }
     @Override public void onArtifact(String id, String title, String hash, int version) { delegate.onArtifact(id, title, hash, version); }
+    @Override public void onArtifactPayload(Map<String, Object> payload) { delegate.onArtifactPayload(payload); }
     @Override public void onError(String code) { delegate.onError(code); }
     @Override public void onComplete() { delegate.onComplete(); }
 }

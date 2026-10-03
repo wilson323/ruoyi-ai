@@ -1,0 +1,9 @@
+{
+  "buildExit": 0,
+  "tsDiagnostics": [],
+  "appIndexExists": true,
+  "scrollbarDeclarationExists": true,
+  "scrollbarRefSnippet": "scrollbarRef: import(\"vue\").Ref<{\n        $el: HTMLElement;\n    } | null, {\n        $el: HTMLElement;\n    } | {\n        $el: HTMLElement;\n    } | null>;\n    scrollDirection: (direction: \"left\" | \"right\", distance?: number) => void",
+  "scrollbarRefAny": false,
+  "declarationSha": "dccd91cf13efb46f13a8941a1573f03ca6c3ca083415e0ad37f8c1d860093a61"
+}

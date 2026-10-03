@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 
 /** 官方 leaf 保持原类型；补接父级官方工具、审计 transcript 与业务 owner 生命周期。 */
 public final class ProjectAgentChildConsumers
-    implements ProjectAgentSubagentScopeMiddleware.ChildConsumer, MiddlewareBase {
+    implements ProjectAgentSubagentScopeMiddleware.ChildConsumer, MiddlewareBase, AutoCloseable {
     private final Supplier<HarnessAgent> parentAgent;
     private final RuntimeContext trustedRoot;
     private final TranscriptStore transcripts;
@@ -28,6 +28,34 @@ public final class ProjectAgentChildConsumers
     private final Function<RuntimeContext, Mono<Void>> ownerLifecycle;
     private final Runnable requireCurrentAccess;
     private java.util.function.Consumer<ChildFailure> failureSink;
+    private ProjectAgentChildLineageRegistry childLineage;
+    private final java.util.concurrent.atomic.AtomicBoolean childrenClosed=new java.util.concurrent.atomic.AtomicBoolean();
+    private volatile RuntimeException childCloseFailure;
+
+    /** DefaultAgentManager has no child-close ownership in SDK 2.0.3; this adapter owns every bound leaf. */
+    public synchronized void closeChildren() {
+        if(!childrenClosed.compareAndSet(false,true)) {
+            if(childCloseFailure!=null) throw childCloseFailure;
+            return;
+        }
+        var actualChildren=java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<HarnessAgent,Boolean>());
+        synchronized(boundChildren) { actualChildren.addAll(boundChildren.values()); }
+        RuntimeException failed=null;
+        for(var child:actualChildren) {
+            try { child.close(); }
+            catch(RuntimeException error) { if(failed==null) failed=error;else if(failed!=error) failed.addSuppressed(error); }
+        }
+        boundChildren.clear();
+        childCloseFailure=failed;
+        if(failed!=null) throw failed;
+    }
+    @Override public void close() { closeChildren(); }
+
+    public ProjectAgentChildConsumers childLineage(ProjectAgentChildLineageRegistry lineage) {
+        if(childLineage!=null && childLineage!=lineage) throw new SecurityException("Child lineage cannot be replaced");
+        childLineage=Objects.requireNonNull(lineage);
+        return this;
+    }
 
     public record ChildFailure(String parentSession, String childSession, String agentId,
                                String reasonCode, String exceptionCategory) { }
@@ -59,8 +87,9 @@ public final class ProjectAgentChildConsumers
     }
 
     @Override
-    public Agent bind(Agent officialLeaf, ProjectAgentFoundationTools.Scope scope, RuntimeContext context) {
+    public synchronized Agent bind(Agent officialLeaf, ProjectAgentFoundationTools.Scope scope, RuntimeContext context) {
         requireCurrentAccess.run();
+        if(childrenClosed.get()) throw new IllegalStateException("Child consumers are already closed");
         Objects.requireNonNull(failureSink, "Child failure audit sink must be bound before spawn");
         if (!(officialLeaf instanceof HarnessAgent child)) {
             throw new IllegalStateException("Official Harness leaf is required");
@@ -76,6 +105,12 @@ public final class ProjectAgentChildConsumers
                 child.getToolkit().registerAgentTool(nativeTool);
             }
         }
+        // Never share the parent's AgentSpawnTool object: its fixed depth would reset the SDK depth guard.
+        int depth=Objects.requireNonNull(childLineage,"Original child lineage must be bound before spawn")
+            .childSpawnDepth(context);
+        var manager=Objects.requireNonNull(parent.getSubagentAgentManager(),"Original official subagent manager required");
+        child.getToolkit().registerTool(new io.agentscope.harness.agent.tool.AgentSpawnTool(
+            manager,parent.getTaskRepository(),depth));
         child.getToolkit().registerMetaTool();
         child.getToolkit().registerAgentTool(new RuntimeNormalizedDeliveryTool(child, artifacts));
         boundChildren.put(child.getDelegate(), child);

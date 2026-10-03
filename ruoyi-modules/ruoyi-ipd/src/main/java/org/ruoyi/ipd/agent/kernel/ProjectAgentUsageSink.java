@@ -111,6 +111,8 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
         delegate.onArtifact(artifactId, title, contentHash, version);
     }
 
+    @Override public void onArtifactPayload(Map<String, Object> payload) { delegate.onArtifactPayload(payload); }
+
     @Override
     public void onError(String errorCode) {
         delegate.onError(errorCode);

@@ -1,7 +1,6 @@
 package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Project;
@@ -45,7 +44,6 @@ import java.util.stream.Collectors;
  * Round 8 / R8-P0-10：importBatch 异步化（@Async + 线程池限流）
  */
 @Service
-@RequiredArgsConstructor
 public class LegacyImportService implements ILegacyImportService {
 
     public static final String HISTORY_MISSING = "HISTORICAL_MISSING";
@@ -82,12 +80,21 @@ public class LegacyImportService implements ILegacyImportService {
     private final LegacyImportMapper legacyImportMapper;
     private final IAuditLogService auditLogService;
     private final ObjectProvider<LegacyImportService> self;
-    /** R8-P0-10：并行导入执行器。必须具名 mainExecutor（IpdPrimaryBeansConfig 提供，
-     * 2026-10-02 迁移自已下线的 ruoyi-aiflow）——上下文存在多个 Executor 子类型 bean
-     * （mainExecutor + common-core scheduledExecutorService），裸 Executor 构造注入会
-     * NoUniqueBeanDefinitionException（依赖根 lombok.config 的 copyableAnnotations）。 */
-    @Qualifier("mainExecutor")
+    /** R8-P0-10：并行导入使用迁移后的具名执行器，限定符必须落在构造参数上。 */
     private final Executor executor;
+
+    public LegacyImportService(ProjectService projectService, ProjectMapper projectMapper,
+                               StageActionMapper stageActionMapper, LegacyImportMapper legacyImportMapper,
+                               IAuditLogService auditLogService, ObjectProvider<LegacyImportService> self,
+                               @Qualifier("mainExecutor") Executor executor) {
+        this.projectService = projectService;
+        this.projectMapper = projectMapper;
+        this.stageActionMapper = stageActionMapper;
+        this.legacyImportMapper = legacyImportMapper;
+        this.auditLogService = auditLogService;
+        this.self = self;
+        this.executor = executor;
+    }
 
     /**
      * 单条存量导入。

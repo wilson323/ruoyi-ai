@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-10-03T03:53:22.416937+00:00",
+  "status": "PARTIAL",
+  "changes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialSandbox.java": "220e52e2524bcd2d558b7211e40b3833c1c318e43d0c2887e767b7d1deabe5b3",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentVerifiedSnapshotSpec.java": "20f452e2ce117b7b9faf3c12ab4eeca1e5aeee966cae63d527f5e6a28acc84a9",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentVerifiedSnapshotSpecTest.java": "339b2fa20cf3a1055c1baa56e7e0d8cb24b82b8aeef8d4080258a50f7f27f320"
+  },
+  "sdk": "actual Maven agentscope-harness 2.0.3",
+  "tests": {
+    "found": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/resources-snapshot-20261002/test-cold.log",
+    "original_failure": "/tmp/resources-snapshot-20261002/test.log"
+  },
+  "actual_docker": {
+    "exit": 0,
+    "log": "/tmp/resources-snapshot-20261002/docker-probe.log",
+    "snapshotSha256": "be43093f5831302574809828b95a5fb1fd411028e706d2e3c976970c30e1a6d9"
+  },
+  "boundary": "official LocalSandboxSnapshot persist+byte readback and official DockerSandboxClient cold rebind; no alternate harness or NoopSnapshotSpec",
+  "pending": [
+    "Kernel managed verifier terminal success binding",
+    "full source compilation",
+    "same-version runtime load",
+    "real Person business acceptance",
+    "full background task success evidence"
+  ]
+}

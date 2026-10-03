@@ -32,17 +32,14 @@ public final class ProjectAgentChildPreflight {
         Objects.requireNonNull(requireOriginalRunOwner).run();
         var root=KernelScopeKey.of(String.valueOf(spec.projectId()),String.valueOf(spec.personId()),ProjectAgentConstants.AGENT_ID,String.valueOf(spec.runId()));
         if(approval==null||approval.factory()==null||approval.parentCall()==null||!root.userId().equals(approval.userId())
-            ||!root.userId().equals(approval.parentCall().userId())||!root.sessionId().equals(approval.parentCall().sessionId()))
+            ||!root.userId().equals(approval.parentCall().userId()))
             throw new SecurityException("Original owning run child provenance missing");
         ProjectAgentChildLineageRegistry.requireNativeSuspension(approval.parentCall());
         var entries=officialFrozenBuilder.buildSubagentEntries(workspace).stream().filter(entry->entry.name().equals(approval.factory().name())).toList();
         if(entries.size()!=1)throw new SecurityException("Original official factory catalog missing or ambiguous");
         var expected=ProjectAgentChildLineageRegistry.frozenDescriptor(entries.get(0).name(),entries.get(0).declaration(),policyHash(spec));
         if(!expected.equals(approval.factory()))throw new SecurityException("Frozen official factory/configuration changed");
-        var parent=actualStore.getVersioned(root.userId(),root.sessionId(),"agent_state",AgentState.class);
-        requireOriginalRunOwner.run();
-        if(!parent.isPresent()||parent.version()!=approval.parentCall().checkpointVersion()||!root.userId().equals(parent.value().getUserId())||!root.sessionId().equals(parent.value().getSessionId()))throw new SecurityException("Original parent checkpoint version changed");
-        requireCall(parent.value(),approval.parentCall().call(),false);
+        requireParent(root,approval.parentCall(),actualStore,officialFrozenBuilder,workspace,spec,requireOriginalRunOwner,new HashSet<>());
         String childSlot=root.sessionId()+"/official/"+Base64.getUrlEncoder().withoutPadding().encodeToString(approval.sessionId().getBytes(StandardCharsets.UTF_8));
         var child=actualStore.getVersioned(root.userId(),childSlot,"agent_state",AgentState.class);
         requireOriginalRunOwner.run();
@@ -50,6 +47,26 @@ public final class ProjectAgentChildPreflight {
             throw new SecurityException("Original child checkpoint identity/version changed");
         if(approval.calls().isEmpty())throw new SecurityException("Original child ASK calls missing");
         approval.calls().forEach(call->requireCall(child.value(),call,true));
+    }
+    private static void requireParent(KernelScopeKey.Scope root,ProjectAgentChildLineageRegistry.ParentCall parent,
+            AgentStateStore store,HarnessAgent.Builder builder,Path workspace,ProjectAgentRunSpec spec,
+            Runnable owner,Set<String> visited) {
+        if(parent==null || !root.userId().equals(parent.userId()) || !visited.add(parent.sessionId()))
+            throw new SecurityException("Original native ancestry missing or cyclic");
+        ProjectAgentChildLineageRegistry.requireNativeSuspension(parent);
+        String slot=parent.sessionId();
+        if(!root.sessionId().equals(slot)) {
+            if(parent.factory()==null || parent.ancestor()==null) throw new SecurityException("Original nested parent factory missing");
+            var entries=builder.buildSubagentEntries(workspace).stream().filter(e->e.name().equals(parent.factory().name())).toList();
+            if(entries.size()!=1 || !ProjectAgentChildLineageRegistry.frozenDescriptor(entries.get(0).name(),entries.get(0).declaration(),policyHash(spec)).equals(parent.factory()))
+                throw new SecurityException("Original nested parent factory changed");
+            requireParent(root,parent.ancestor(),store,builder,workspace,spec,owner,visited);
+            slot=root.sessionId()+"/official/"+Base64.getUrlEncoder().withoutPadding().encodeToString(parent.sessionId().getBytes(StandardCharsets.UTF_8));
+        } else if(parent.factory()!=null || parent.ancestor()!=null) throw new SecurityException("Root cannot have a child ancestry");
+        var saved=store.getVersioned(root.userId(),slot,"agent_state",AgentState.class);owner.run();
+        if(!saved.isPresent() || saved.version()!=parent.checkpointVersion() || !parent.userId().equals(saved.value().getUserId()) || !parent.sessionId().equals(saved.value().getSessionId()))
+            throw new SecurityException("Original parent checkpoint identity/version changed");
+        requireCall(saved.value(),parent.call(),false);
     }
     private static void requireCall(AgentState state,ProjectAgentChildLineageRegistry.CallSnapshot call,boolean asking) {
         var latest=state.getContext().stream().filter(m->m.getRole()==MsgRole.ASSISTANT).reduce((a,b)->b).orElseThrow(()->new SecurityException("Original active assistant missing"));

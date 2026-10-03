@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@org.junit.jupiter.api.Tag("dev")
 class ProjectAgentChildConsumersTest {
     private static final Model NO_NETWORK = new Model() {
         public String getModelName() { return "no-network-fixture"; }
@@ -41,14 +42,17 @@ class ProjectAgentChildConsumersTest {
         Runnable access = () -> { if (!allowed.get()) throw new SecurityException("revoked"); };
         var guard = new ProjectAgentSubagentScopeMiddleware(scope, canonical, access,
             (leaf, trusted, context) -> leaf);
+        guard.lineage().bindPolicy(ProjectAgentChildLineageRegistry.hash("canonical-parent-fixture"));
         var parent = HarnessAgent.builder().name("canonical-parent").model(NO_NETWORK).workspace(workspace).build();
         try {
             guard.onReasoning(parent, canonical, null, input -> Flux.empty()).blockLast();
             var manager = parent.getSubagentAgentManager();
             var name = manager.getAgentFactories().keySet().iterator().next();
-            var child = (HarnessAgent) manager.createAgent(name, canonical);
+            var issued=guard.lineage().issueParentCall(parent,canonical,io.agentscope.core.message.ToolUseBlock.builder()
+                .id("canonical-spawn").name("agent_spawn").input(java.util.Map.of("agent_id",name)).build());
+            var child = (HarnessAgent) manager.createAgent(name, issued);
             try {
-                var trustedChild = RuntimeContext.builder(canonical).sessionId("independent-child").build();
+                var trustedChild = RuntimeContext.builder(issued).sessionId("independent-child").build();
                 assertThrows(SecurityException.class, () -> guard.lineage().requireKnown(child, trustedChild));
                 assertDoesNotThrow(() -> guard.onAgent(child, trustedChild, null, input -> Flux.empty()).blockLast());
                 assertDoesNotThrow(() -> guard.lineage().requireKnown(child, trustedChild));
@@ -97,7 +101,12 @@ class ProjectAgentChildConsumersTest {
         var manager = parent.getSubagentAgentManager();
         var child = (HarnessAgent) manager.createAgent(manager.getAgentFactories().keySet().iterator().next(), root);
         try {
-            consumers.bind(child, scope, root);
+            var lineage=new ProjectAgentChildLineageRegistry(root,()->{});
+            lineage.bindRoot(parent);
+            consumers.childLineage(lineage);
+            var parentCall=lineage.issueParentCall(parent,root,io.agentscope.core.message.ToolUseBlock.builder()
+                .id("fixture-spawn").name("agent_spawn").input(java.util.Map.of("agent_id","general-purpose")).build());
+            consumers.bind(child, scope, parentCall);
             var childContext = RuntimeContext.builder(root).sessionId("independent-child").build();
             var original = new IllegalStateException("private-exception-needle");
             assertSame(original, assertThrows(IllegalStateException.class, () -> consumers.onAgent(
@@ -112,4 +121,53 @@ class ProjectAgentChildConsumersTest {
             parent.close();
         }
     }
+    @Test
+    void registeredOfficialChildSpawnKeepsNativeMaximumDepth() throws Exception {
+        var workspace=Files.createTempDirectory("child-depth-test-");
+        var foundation=new ProjectAgentFoundationTools.Scope("1","2","3",workspace);
+        var root=RuntimeContext.builder().userId("p1:u2").sessionId("aproject:s3").build();
+        var parentRef=new AtomicReference<HarnessAgent>();
+        var consumerRef=new AtomicReference<ProjectAgentChildConsumers>();
+        var guard=new ProjectAgentSubagentScopeMiddleware(foundation,root,()->{},
+            (leaf,scope,context)->consumerRef.get().bind(leaf,scope,context));
+        guard.bindParent(parentRef::get);
+        guard.lineage().bindPolicy(ProjectAgentChildLineageRegistry.hash("native-depth-fixture"));
+        var consumers=new ProjectAgentChildConsumers(parentRef::get,root,
+            new FilesystemTranscriptStore(workspace.resolve("transcripts")),"fixture",
+            (context,request)->ArtifactDeliveryResult.success("fixture"),context->Mono.empty(),()->{})
+            .failureSink(failure->{throw new AssertionError(failure);}).childLineage(guard.lineage());
+        consumerRef.set(consumers);
+        var builder=HarnessAgent.builder().name("depth-parent").model(NO_NETWORK).workspace(workspace)
+            .middleware(guard).enableSkillManageTool(true).enablePlanMode().enableTaskList()
+            .enableSkillPromotionGate((candidate,context)->Mono.just(new SkillPromotionGate.PromotionDecision.Defer(
+                Duration.ofMinutes(1),"owner pending")),(skills,context)->skills);
+        var children=new java.util.ArrayList<HarnessAgent>();
+        try(var parent=builder.build()) {
+            parentRef.set(parent);guard.lineage().bindRoot(parent);
+            guard.onReasoning(parent,root,null,input->Flux.empty()).blockLast();
+            HarnessAgent actor=parent;RuntimeContext context=root;
+            for(int depth=1;depth<=3;depth++) {
+                var call=io.agentscope.core.message.ToolUseBlock.builder().id("spawn-"+depth).name("agent_spawn")
+                    .input(java.util.Map.of("agent_id","general-purpose","task","depth proof")).build();
+                var issued=guard.lineage().issueParentCall(actor,context,call);
+                assertEquals(depth,guard.lineage().childSpawnDepth(issued));
+                var child=(HarnessAgent)parent.getSubagentAgentManager().createAgent("general-purpose",issued);
+                children.add(child);
+                assertNotNull(child.getToolkit().getTool("agent_spawn"));
+                assertNotNull(child.getToolkit().getTool("agent_send"));
+                assertNotNull(child.getToolkit().getTool("agent_list"));
+                context=RuntimeContext.builder(issued).sessionId("trusted-depth-"+depth).build();
+                guard.onAgent(child,context,null,input->Flux.empty()).blockLast();
+                actor=child;
+            }
+            var call=io.agentscope.core.message.ToolUseBlock.builder().id("spawn-4").name("agent_spawn")
+                .input(java.util.Map.of("agent_id","general-purpose","task","must stop","timeout_seconds",10)).build();
+            var result=actor.getToolkit().getTool("agent_spawn").callAsync(io.agentscope.core.tool.ToolCallParam.builder()
+                .toolUseBlock(call).input(call.getInput()).agent(actor).runtimeContext(context).build()).block(Duration.ofSeconds(5));
+            assertNotNull(result);
+            assertTrue(result.getOutput().stream().filter(io.agentscope.core.message.TextBlock.class::isInstance)
+                .map(io.agentscope.core.message.TextBlock.class::cast).anyMatch(text->text.getText().contains("Maximum spawn depth exceeded (max=3)")));
+        } finally { children.forEach(HarnessAgent::close); }
+    }
+
 }

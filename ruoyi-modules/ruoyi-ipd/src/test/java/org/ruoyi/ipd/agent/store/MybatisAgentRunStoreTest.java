@@ -101,6 +101,26 @@ class MybatisAgentRunStoreTest {
     }
 
     @Test
+    void verificationLockReturnsCurrentMapperRowAndRejectsMissingTransaction() {
+        IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
+        MybatisAgentRunStore store = new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class));
+        IpdAgentRun current = IpdAgentRun.builder().id(9L).version(1).status("CANCELLED").build();
+        when(runs.selectOne(any())).thenAnswer(call -> {
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> wrapper = call.getArgument(0);
+            assertThat(wrapper.getSqlSegment()).contains("FOR UPDATE", "id");
+            assertThat(wrapper.getParamNameValuePairs().values()).contains(9L);
+            return current;
+        });
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+            () -> store.lockRunForVerification(9L));
+        var transaction = org.ruoyi.ipd.agent.support.AgentOwnershipTestTransactions.create();
+        transaction.executeWithoutResult(status -> {
+            assertThat(store.lockRunForVerification(9L)).containsSame(current);
+        });
+        org.mockito.Mockito.verify(runs, org.mockito.Mockito.never()).selectById(any(java.io.Serializable.class));
+    }
+
+    @Test
     @DisplayName("appendEvent：冲突 false；maxSeq/terminalSeq 口径")
     void eventAppendAndSeqQueries() {
         IpdAgentRunMapper runMapper = mock(IpdAgentRunMapper.class);

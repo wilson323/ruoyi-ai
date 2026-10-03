@@ -1,0 +1,7 @@
+{
+  "at": "2026-10-03T04:44:54.050047+00:00",
+  "pid": 4641,
+  "sha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "reason": "candidate LegacyImportService Executor multiple primary",
+  "status": "ROLLBACK_STARTING"
+}

@@ -22,8 +22,9 @@ class ProjectAgentAuthoritativeChildExecutionTest {
   var sink=mock(ProjectAgentEventSink.class,CALLS_REAL_METHODS);
   var foundation=new ProjectAgentFoundationTools.Scope("9","7","123",root);
   var scope=new ProjectAgentSubagentScopeMiddleware(foundation,ctx,()->{},(leaf,parent,rc)->leaf);
+  scope.lineage().bindPolicy(ProjectAgentChildLineageRegistry.hash(Map.of("fixture","authoritative-child-order","model","child-order")));
   var strictStore=new ProjectAgentTemporaryStateStore(store,kernelScope,sink,scope.lineage());
-  var governance=new ProjectAgentOfficialToolGovernance(sink,kernelScope,(actor,runtime)->{scope.lineage().requireKnown(actor,runtime);return true;});
+  var governance=new ProjectAgentOfficialToolGovernance(sink,kernelScope,(actor,runtime)->{scope.lineage().requireKnown(actor,runtime);return true;}).childLineage(scope.lineage());
   var replacements=new AtomicInteger();
   scope.onRegistered((actor,runtime)->{
    scope.lineage().requireKnown(actor,runtime);

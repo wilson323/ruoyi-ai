@@ -66,13 +66,19 @@ class ProjectAgentRunPlannerActionSkillTest {
         var kernel = new org.ruoyi.ipd.agent.kernel.AgentScopeProjectAgentKernel(
             assembler,
             (project, type, query) -> new org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalContext(0, 0, ""), workspace, 2);
-        var running = kernel.execute(spec(plan, req.message()), mock(org.ruoyi.ipd.agent.kernel.ProjectAgentEventSink.class, org.mockito.Mockito.CALLS_REAL_METHODS));
+        var lifecycle = org.ruoyi.ipd.agent.support.AgentKernelTestLifecycle.create();
+        var running = kernel.execute(spec(plan, req.message()), lifecycle);
         try {
             assertThat(invoked.await(3, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
             String prompt = captured.get().stream().filter(msg -> msg.getRole() == io.agentscope.core.message.MsgRole.SYSTEM)
                 .map(io.agentscope.core.message.Msg::getTextContent).collect(java.util.stream.Collectors.joining());
-            assertThat(prompt).contains("Skill: " + skillName).contains(firstKeyword).contains(secondKeyword);
-            assertThat(prompt.indexOf(plan.skills().get(0).content())).isEqualTo(prompt.lastIndexOf(plan.skills().get(0).content()));
+            String identity = "<skill-id>" + skillName + "_classpath-ipd-skills</skill-id>";
+            assertThat(prompt).contains("<available_skills>", "<name>" + skillName + "</name>",
+                "<version>" + plan.skills().get(0).version() + "</version>",
+                "<ipd-action>" + actionCode + "</ipd-action>", identity,
+                firstKeyword, secondKeyword);
+            assertThat(prompt.indexOf(identity)).isGreaterThanOrEqualTo(0)
+                .isEqualTo(prompt.lastIndexOf(identity));
         } finally { running.dispose(); }
     }
 

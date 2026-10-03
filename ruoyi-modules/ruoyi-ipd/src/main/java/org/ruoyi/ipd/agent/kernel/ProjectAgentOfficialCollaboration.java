@@ -39,9 +39,23 @@ public final class ProjectAgentOfficialCollaboration {
         LocalTeamClient client = new LocalTeamClient(owned);
         String namespace = scope.slotId();
         String team = "project-agent-run";
-        // 官方写入真实 meta 与 lead 成员；重复createTeam按SDK契约回读已有meta。
-        client.createTeam(new TeamCreateSpec(team, namespace,
-            "本次运行的技能专业任务协作", "project-agent", "", List.of())).block();
+        // SDK203重复createTeam抛TeamConflictException；冷恢复只能回读同run的既有团队。
+        try {
+            client.createTeam(new TeamCreateSpec(team, namespace,
+                "本次运行的技能专业任务协作", "project-agent", "", List.of())).block();
+        } catch (io.agentscope.harness.agent.team.TeamConflictException existingTeam) {
+            StoreItem meta = owned.get(List.of("teams", namespace, team), "meta");
+            if (meta == null || !team.equals(meta.value().get("name"))
+                || !namespace.equals(meta.value().get("namespace"))
+                || !"project-agent".equals(meta.value().get("leadRef"))) {
+                throw new IllegalStateException("Original official team identity is inconsistent", existingTeam);
+            }
+            var members = client.listMembers(namespace, team).block();
+            if (members == null || members.stream().noneMatch(member -> "lead".equals(member.memberName())
+                && "project-agent".equals(member.agentRef()) && member.isLead())) {
+                throw new IllegalStateException("Original official lead member is unavailable", existingTeam);
+            }
+        }
         TeamContext context = new TeamContext(team, namespace, "本次运行的技能专业任务协作",
             "lead", true, List.of(new TeamContext.MemberSnapshot("lead", "project-agent", "active")),
             List.of("listTasks", "listClaimableTasks", "createTask", "assignTask", "claimTask",
@@ -53,6 +67,13 @@ public final class ProjectAgentOfficialCollaboration {
         return new Assembly(client, context,
             new WorkspaceMessageBus(ownedFs, runtimeRoot + "/bus"),
             new WorkspaceAsyncToolRegistry(ownedFs, runtimeRoot + "/async-tools"));
+    }
+
+    /** 把已验证生产提供者挂到官方唯一 Builder，SDK 创建 Inbox/Teams/Async 消费者。 */
+    public static void attach(io.agentscope.harness.agent.HarnessAgent.Builder builder,
+            Assembly assembly, KernelScopeKey.Scope scope) {
+        Objects.requireNonNull(builder).teamsMode(assembly.teamClient(), assembly.teamContext(), scope.sessionId())
+            .messageBus(assembly.messageBus()).asyncToolRegistry(assembly.asyncToolRegistry());
     }
 
     /** 官方 delivery SPI只包装真实业务目标；onArtifact事件本身不能充当落库成功。 */

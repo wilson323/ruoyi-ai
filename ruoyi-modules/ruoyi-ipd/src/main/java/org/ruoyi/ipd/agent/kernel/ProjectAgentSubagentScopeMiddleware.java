@@ -114,7 +114,8 @@ public final class ProjectAgentSubagentScopeMiddleware implements MiddlewareBase
         bindRootIfAvailable(agent, context);
         authorize(context);
         if (trustedSession.equals(context.getSessionId())) { lineage.registerInvocation(agent, context); }
-        HarnessAgent harness = agent instanceof HarnessAgent direct ? direct : parentHarness.get();
+        Agent handle = trustedSession.equals(context.getSessionId()) ? parentHarness.get() : lineage.factoryHandle(agent);
+        HarnessAgent harness = agent instanceof HarnessAgent direct ? direct : handle instanceof HarnessAgent child ? child : null;
         if (harness != null && harness.getAgentId().equals(agent.getAgentId())
             && harness.getSubagentAgentManager() != null) {
             prepareFactories(harness);
@@ -143,6 +144,15 @@ public final class ProjectAgentSubagentScopeMiddleware implements MiddlewareBase
     record RestoredChild(Agent actor, RuntimeContext context) { }
     RestoredChild restoreChild(ProjectAgentChildLineageRegistry.ChildApproval approval,
                                io.agentscope.core.state.AgentStateStore store) {
+        return restoreChild(approval,store,approval.checkpointVersion());
+    }
+    /** Historical completion admits the original actor only for checkpoint verification, not execution. */
+    RestoredChild restoreCompletedChild(ProjectAgentChildLineageRegistry.ChildCompletion completion,
+                                        io.agentscope.core.state.AgentStateStore store) {
+        return restoreChild(completion.approval(),store,completion.completedCheckpointVersion());
+    }
+    private RestoredChild restoreChild(ProjectAgentChildLineageRegistry.ChildApproval approval,
+                                      io.agentscope.core.state.AgentStateStore store,long expectedVersion) {
         if(approval.factory()==null||approval.parentCall()==null) throw new SecurityException("Legacy child receipt has no factory/parent provenance");
         HarnessAgent root=java.util.Objects.requireNonNull(parentHarness.get());
         prepareFactories(root);
@@ -151,7 +161,8 @@ public final class ProjectAgentSubagentScopeMiddleware implements MiddlewareBase
         if(!expected.equals(approval.factory()))throw new SecurityException("Official child frozen factory/policy changed");
         var live=lineage.liveInvocation(approval);
         if(live!=null) {lineage.requireKnown(live.actor(),live.context());return new RestoredChild(java.util.Objects.requireNonNull(lineage.factoryHandle(live.actor())),live.context());}
-        var parent=lineage.restoreParentContext(approval.parentCall(),store);
+        restoreParentActor(approval.parentCall(),store);
+        var parent=restoredParentContext(approval.parentCall(),store);
         var factory=manager.getAgentFactories().get(approval.factory().name());
         if(factory==null)throw new SecurityException("Original official factory missing");
         Agent actual=factory.create(parent);
@@ -159,8 +170,40 @@ public final class ProjectAgentSubagentScopeMiddleware implements MiddlewareBase
         authorize(context);lineage.admitRestored(actual,context,approval);
         // Admission is based on server parent checkpoint + captured factory provenance, not the session string.
         var checkpoint=store.getVersioned(approval.userId(),approval.sessionId(),"agent_state",io.agentscope.core.state.AgentState.class);
-        if(!checkpoint.isPresent()||checkpoint.version()!=approval.checkpointVersion())throw new SecurityException("Original child checkpoint changed");
+        if(!checkpoint.isPresent()||checkpoint.version()!=expectedVersion)throw new SecurityException("Original child checkpoint changed");
         return new RestoredChild(actual,context);
+    }
+
+    private RuntimeContext restoredParentContext(ProjectAgentChildLineageRegistry.ParentCall parent,
+            io.agentscope.core.state.AgentStateStore store) {
+        // Only exact persisted native provenance plus admitted original actor can restore this private capability.
+        var context=lineage.restoreParentContext(parent,store);
+        context.put(contextKey,trustToken);
+        authorize(context);
+        return context;
+    }
+    RestoredChild restoreParentActor(ProjectAgentChildLineageRegistry.ParentCall parent,
+                                     io.agentscope.core.state.AgentStateStore store) {
+        if(trustedSession.equals(parent.sessionId())) {
+            return new RestoredChild(java.util.Objects.requireNonNull(parentHarness.get()),restoredParentContext(parent,store));
+        }
+        var live=lineage.invocationForSession(parent.sessionId());
+        if(live!=null) return new RestoredChild(java.util.Objects.requireNonNull(lineage.factoryHandle(live.actor())),
+            restoredParentContext(parent,store));
+        if(parent.factory()==null || parent.ancestor()==null) throw new SecurityException("Original nested parent factory/ancestry missing");
+        restoreParentActor(parent.ancestor(),store);
+        var upstream=restoredParentContext(parent.ancestor(),store);
+        var root=java.util.Objects.requireNonNull(parentHarness.get());
+        prepareFactories(root);
+        var manager=root.getSubagentAgentManager();
+        var expected=lineage.descriptor(parent.factory().name(),manager.getDeclaration(parent.factory().name()).orElse(null));
+        if(!expected.equals(parent.factory())) throw new SecurityException("Nested parent frozen factory changed");
+        var factory=manager.getAgentFactories().get(parent.factory().name());
+        if(factory==null) throw new SecurityException("Original nested parent factory missing");
+        var actor=factory.create(upstream);
+        var runtime=RuntimeContext.builder().from(upstream).sessionId(parent.sessionId()).build();
+        authorize(runtime);lineage.admitRestoredParent(actor,runtime,parent);
+        return new RestoredChild(actor,restoredParentContext(parent,store));
     }
 
     private final class GuardedFactory implements SubagentFactory {

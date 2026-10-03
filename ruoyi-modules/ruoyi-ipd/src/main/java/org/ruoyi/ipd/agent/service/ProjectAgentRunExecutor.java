@@ -170,6 +170,7 @@ public class ProjectAgentRunExecutor {
             public void onText(String text) { usage.onText(text); }
             public void onFinalText(String text) { usage.onFinalText(text); }
             public void onArtifact(String id, String title, String hash, int version) { usage.onArtifact(id, title, hash, version); }
+            public void onArtifactPayload(Map<String, Object> payload) { usage.onArtifactPayload(payload); }
             public void onError(String code) { usage.onError(code); }
             public void onComplete() { usage.onComplete(); }
         };

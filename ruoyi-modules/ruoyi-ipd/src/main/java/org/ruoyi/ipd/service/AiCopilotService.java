@@ -593,7 +593,7 @@ public class AiCopilotService implements IAiCopilotService {
     /**
      * AI-STRAT-1 Phase 2（2026-09-23）：RAG 第三档上下文 = 拉同项目已审核历史文档片段。
      * docType 非空时按类型过滤（idx_emb_doctype 索引，R184 阶段 3）；null/blank = 不过滤（向后兼容）。
-     * 失败/未配置/无命中返回 ""（降级不阻塞）。
+     * 无命中返回空上下文；检索故障通过业务错误包络或 SSE error 帧返回。
      */
     private String ragContextBlock(AiCopilotReq req) {
         if (docEmbeddingService == null || req.projectId() == null) {

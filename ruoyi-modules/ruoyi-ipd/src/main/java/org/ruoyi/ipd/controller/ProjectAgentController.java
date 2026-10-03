@@ -165,6 +165,14 @@ public class ProjectAgentController {
         return ApiV1Response.ok(runService.cancel(actor, parseId(runId, "runId")));
     }
 
+    /** 本人驻留产物复检，复用原运行及权限，不创建第二发送轨。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    @PostMapping("/agent-runs/{runId}/reverify")
+    public ApiV1Response<ProjectAgentViews.RunStatus> reverify(@PathVariable String runId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(runService.reverify(actor, parseId(runId, "runId")));
+    }
+
     /**
      * 合同 #6：点赞/点踩（targetType 仅 RUN_MESSAGE | ARTIFACT_VERSION）。
      *
@@ -199,6 +207,20 @@ public class ProjectAgentController {
         ApiV1Response<ProjectAgentViews.ArtifactApply> response = ApiV1Response.ok(applied);
         response.setMessage(applied.documentStatusLabel());
         return response;
+    }
+
+    /** 官方交付附件按原版本下载；对象权限和来源校验复用原运行服务。 */
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_AI_COPILOT, type = IpdAuthSession.LOGIN_TYPE)
+    @GetMapping(value = "/agent-runs/{runId}/artifacts/versions/{versionId}/download",
+        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public org.springframework.http.ResponseEntity<byte[]> downloadArtifact(@PathVariable String runId,
+                                                                           @PathVariable String versionId) {
+        IpdActor actor = ipdPermission.requireInternal();
+        byte[] bytes = runService.downloadArtifact(actor, parseId(runId, "runId"), parseId(versionId, "versionId"));
+        return org.springframework.http.ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .header("Content-Disposition", "attachment; filename=artifact-" + parseId(versionId, "versionId") + ".bin")
+            .body(bytes);
     }
 
     /**

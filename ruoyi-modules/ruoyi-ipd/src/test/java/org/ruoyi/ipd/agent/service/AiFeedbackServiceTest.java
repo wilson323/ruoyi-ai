@@ -120,12 +120,12 @@ class AiFeedbackServiceTest {
     }
 
     @Test
-    @DisplayName("开关关闭：STATE_CONFLICT + 消息含 ipd.project-agent.enabled=false，零写入")
-    void disabledRejectsWithoutWrite() {
+    @DisplayName("运行服务不可用：STATE_CONFLICT，零写入")
+    void unavailableRunServiceRejectsWithoutWrite() {
         assertThatThrownBy(() -> service(false).put(ACTOR, ProjectAgentConstants.TARGET_RUN_MESSAGE, "1",
             new AiFeedbackReq("UP", null)))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("ipd.project-agent.enabled=false");
+            .hasMessageContaining("项目智能体运行服务不可用");
         assertThat(feedback.size()).isZero();
     }
 

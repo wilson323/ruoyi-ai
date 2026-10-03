@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.copilotkit;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import io.agentscope.core.agui.event.AguiEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -75,13 +76,13 @@ class AgUiCopilotRunTest {
     private static final Person RD_PERSON = Person.builder()
         .id(2L).name("rd").personType("RD_PM").groupId(9L).build();
 
-    /** 记录型 AG-UI 下发口。 */
+    /** 记录型 AG-UI 下发口（官方 AguiEvent record）。 */
     private static final class RecordingSink implements AgUiCopilotRun.AgUiSseSink {
-        final List<Map<String, Object>> events = new ArrayList<>();
+        final List<AguiEvent> events = new ArrayList<>();
         boolean completed;
 
         @Override
-        public void send(List<Map<String, Object>> events) {
+        public void send(List<AguiEvent> events) {
             this.events.addAll(events);
         }
 
@@ -92,8 +93,8 @@ class AgUiCopilotRunTest {
 
         List<String> types() {
             List<String> t = new ArrayList<>();
-            for (Map<String, Object> e : events) {
-                t.add(String.valueOf(e.get("type")));
+            for (AguiEvent e : events) {
+                t.add(e.getType().name());
             }
             return t;
         }
@@ -155,8 +156,8 @@ class AgUiCopilotRunTest {
 
         assertEquals(List.of("RUN_STARTED", "TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT",
             "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_END", "RUN_FINISHED"), out.types());
-        assertEquals("thread-1", out.events.get(0).get("threadId"));
-        assertEquals("run-1", out.events.get(0).get("runId"));
+        assertEquals("thread-1", out.events.get(0).getThreadId());
+        assertEquals("run-1", out.events.get(0).getRunId());
         assertTrue(out.completed);
     }
 
@@ -176,10 +177,9 @@ class AgUiCopilotRunTest {
 
         assertEquals(List.of("RUN_STARTED", "TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT",
             "TEXT_MESSAGE_END", "STATE_DELTA", "RUN_FINISHED"), out.types());
-        List<?> patch = (List<?>) out.events.get(4).get("delta");
-        Map<?, ?> op = (Map<?, ?>) patch.get(0);
-        assertEquals("/fillPayload", op.get("path"));
-        Map<?, ?> value = (Map<?, ?>) op.get("value");
+        AguiEvent.JsonPatchOperation op = ((AguiEvent.StateDelta) out.events.get(4)).delta().get(0);
+        assertEquals("/fillPayload", op.path());
+        Map<?, ?> value = (Map<?, ?>) op.value();
         assertEquals("stage-action-fields", value.get("scene"));
         assertEquals("suggest", value.get("mode"));
         assertTrue(out.completed);
@@ -201,8 +201,8 @@ class AgUiCopilotRunTest {
                 List.of(new RunAgentInput.Context("projectId", "7")), Map.of(), null), out);
 
         assertEquals(List.of("RUN_STARTED", "RUN_ERROR"), out.types());
-        assertEquals("50001", out.events.get(1).get("code"));
-        assertEquals("项目不可见", out.events.get(1).get("message"));
+        assertEquals("50001", ((AguiEvent.RunError) out.events.get(1)).code());
+        assertEquals("项目不可见", ((AguiEvent.RunError) out.events.get(1)).message());
         assertTrue(out.completed);
     }
 
@@ -215,7 +215,7 @@ class AgUiCopilotRunTest {
         new AgUiCopilotRun(service, permission, DIRECT).execute(input("讲个笑话"), out);
 
         assertEquals(List.of("RUN_STARTED", "RUN_ERROR"), out.types());
-        assertEquals("20001", out.events.get(1).get("code"));
+        assertEquals("20001", ((AguiEvent.RunError) out.events.get(1)).code());
         assertTrue(out.completed);
     }
 
@@ -280,7 +280,7 @@ class AgUiCopilotRunTest {
                 List.of(new RunAgentInput.Message("m1", "user", null, "x".repeat(2001))),
                 List.of(), List.of(), Map.of(), null), out);
         assertEquals(List.of("RUN_STARTED", "RUN_ERROR"), out.types());
-        assertEquals("10001", out.events.get(1).get("code"));
+        assertEquals("10001", ((AguiEvent.RunError) out.events.get(1)).code());
         assertTrue(out.completed);
     }
 }

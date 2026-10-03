@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-03T04:35:45.581945+00:00",
+  "expectedPid": 67702,
+  "expectedSha256": "4b755197687501ff2f7b13674fadc824c173265db193ab9fece189db111d7199",
+  "process": {
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  "listener": {
+    "exit": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  "health": {
+    "exit": 7,
+    "stdout": "000",
+    "stderr": ""
+  },
+  "businessRunCreated": false
+}

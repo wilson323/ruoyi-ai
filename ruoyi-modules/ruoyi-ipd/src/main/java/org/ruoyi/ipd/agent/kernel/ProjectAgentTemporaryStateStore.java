@@ -11,15 +11,26 @@ final class ProjectAgentTemporaryStateStore implements AgentStateStore {
     private final KernelScopeKey.Scope scope;
     private final ProjectAgentEventSink sink;
     private final ProjectAgentChildLineageRegistry lineage;
+    /**
+     * 裸 sessionId（本仓 ipd 链 = runId 字符串）。官方无参 {@code getAgentState()} 以
+     * {@code (null, defaultSessionId)} 访问，AG-UI 运行时以 {@code (runId, runId)} 身份访问——
+     * 两者都不是复合 scope 身份；裸 runId 雪花全局唯一，认它不降低隔离强度。
+     */
+    private final String rawSessionId;
     private final Object monitor = new Object();
     private boolean sealed;
     private final Set<String> ownedSessions = new LinkedHashSet<>();
     ProjectAgentTemporaryStateStore(AgentStateStore delegate, KernelScopeKey.Scope scope, ProjectAgentEventSink sink) {
-        this(delegate, scope, sink, null);
+        this(delegate, scope, sink, null, null);
     }
     ProjectAgentTemporaryStateStore(AgentStateStore delegate, KernelScopeKey.Scope scope,
             ProjectAgentEventSink sink, ProjectAgentChildLineageRegistry lineage) {
+        this(delegate, scope, sink, lineage, null);
+    }
+    ProjectAgentTemporaryStateStore(AgentStateStore delegate, KernelScopeKey.Scope scope,
+            ProjectAgentEventSink sink, ProjectAgentChildLineageRegistry lineage, String rawSessionId) {
         this.delegate = delegate; this.scope = scope; this.sink = sink; this.lineage = lineage;
+        this.rawSessionId = rawSessionId;
     }
     private <T> T access(String user, String session, Supplier<T> action) {
         validateSlot(user, session);
@@ -34,13 +45,17 @@ final class ProjectAgentTemporaryStateStore implements AgentStateStore {
     }
     private boolean ownsSession(String session) {
         return Objects.equals(session, scope.sessionId())
+            || Objects.equals(session, rawSessionId)
+            || session != null && session.startsWith("sandbox/session/")
+                && ownsSession(session.substring("sandbox/session/".length()))
             || lineage != null && lineage.ownsSession(scope.userId(), session);
     }
     private void validateSlot(String user, String session) {
         boolean agentSlot = Objects.equals(user, scope.userId()) && ownsSession(session);
-        boolean sandboxSlot = user == null && session != null && session.startsWith("sandbox/session/")
-            && ownsSession(session.substring("sandbox/session/".length()));
-        if (!agentSlot && !sandboxSlot) throw new IllegalArgumentException("temporary checkpoint scope mismatch");
+        // 官方无参 getAgentState()（user=null）与 AG-UI 运行时身份（user=裸 runId）：session 拥有权
+        // 已把住隔离（雪花 runId 全局唯一），user 三态放行只接纳本 run 自身的官方内部访问。
+        boolean officialSlot = (user == null || Objects.equals(user, rawSessionId)) && ownsSession(session);
+        if (!agentSlot && !officialSlot) throw new IllegalArgumentException("temporary checkpoint scope mismatch");
     }
     private String storageSession(String user, String session) {
         if (Objects.equals(user, scope.userId()) && Objects.equals(session, scope.sessionId())) return session;

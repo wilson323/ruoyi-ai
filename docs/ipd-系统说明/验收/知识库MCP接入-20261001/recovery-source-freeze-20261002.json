@@ -1,0 +1,11 @@
+{
+  "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildLineageRegistry.java": "8fef157a8d21cd94eb5593e0fcd9e3f96174031e52a1e700a179d320a05655d0",
+  "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildPreflight.java": "fd95b9026e31829764a9fcca6a00fea52f541b9ecb62e976731ce59a9715aca3",
+  "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildResumeDispatcher.java": "9277a61840daedf09a3e880ede95cb64fe4fb7025b00077472c4a2d592096ee2",
+  "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java": "485007096342ff6bacff86106aa05cd580028d0a19935de4b98fe65804138ba8",
+  "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java": "5848ec13ddd261c9d212be336ee1892fef253439fafafd2a608170ddd2022cb6",
+  "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRecursiveChildPauseTest.java": "b7f47da699375311819f21ba5035df985aa73b32a2b6e24982cd3079aa82cc08",
+  "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentProductionPauseReleaseTest.java": "f8d323fe8c727db8ce393fc08c0f2b8c670732514607e107500f6060b8890e79",
+  "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAuthoritativeChildExecutionTest.java": "92bc9aaed365d99e69017ea785d495c3cfcba334ab5b884f235c022564464a5a",
+  "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java": "9a84d78aad4a09a9ffc362309ad917d8a65261b6f96ecf7c9ec2e2e97001d958"
+}

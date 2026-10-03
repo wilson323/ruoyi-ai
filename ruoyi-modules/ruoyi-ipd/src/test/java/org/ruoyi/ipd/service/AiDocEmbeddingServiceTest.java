@@ -285,20 +285,36 @@ class AiDocEmbeddingServiceTest {
         when(documentMapper.selectList(any())).thenThrow(new IllegalStateException("database unavailable"));
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
             () -> service.retrieveContextStrict(9L, null, "查询"));
-        assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null, "查询"));
+        var failure = org.junit.jupiter.api.Assertions.assertThrows(org.ruoyi.ipd.common.IpdBusinessException.class,
+            () -> service.retrieveContext(9L, null, "查询"));
+        assertEquals(org.ruoyi.ipd.common.ApiV1ErrorCode.INTERNAL_ERROR, failure.getErrorCode());
+        assertTrue(failure.getMessage().contains("项目文档检索失败"));
+        assertFalse(failure.getMessage().contains("database unavailable"));
+    }
+
+    @Test
+    void emptyEmbeddingResponseIsFailureRatherThanNoResults() {
+        stubEmbedEnabled(EMBED_CFG);
+        when(documentMapper.selectList(any())).thenReturn(List.of(AiDocument.builder().id(1L).build()));
+        when(aiGateway.embed(any(AiTestConfig.class), anyList())).thenReturn(List.of());
+        var failure = assertThrows(org.ruoyi.ipd.common.IpdBusinessException.class,
+            () -> service.retrieveContext(9L, null, "查询"));
+        assertEquals(org.ruoyi.ipd.common.ApiV1ErrorCode.INTERNAL_ERROR, failure.getErrorCode());
+        assertTrue(failure.getMessage().contains("项目文档检索失败"));
+        verifyNoInteractions(embeddingMapper);
     }
 
     // ---- retrieveContext ----
 
     @Test
-    @DisplayName("检索：query 空白/RAG 关/embed 失败 → EMPTY（生成照常）")
+    @DisplayName("检索：空查询与无审核文档返回 EMPTY，数据库故障返回业务错误")
     void retrieveContextDegradations() {
         stubEmbedEnabled(EMBED_CFG);
         AiDocEmbeddingService.RetrievalContext empty = service.retrieveContext(9L, null, "  ");
         assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, empty);
         assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null, null));
         assertEquals(AiDocEmbeddingService.RetrievalContext.EMPTY, service.retrieveContext(9L, null, "查询"),
-            "mock 默认 embed 返回 null → EMPTY（不抛）");
+            "没有审核文档，不发起向量调用");
 
         stubEmbedEnabled("{}");
         AiDocEmbeddingService.RetrievalContext ctx = service.retrieveContext(9L, null, "查询");

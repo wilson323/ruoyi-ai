@@ -95,6 +95,64 @@ public class ProjectAgentModelCatalog {
         if (config == null || unavailableReason(config) != null) {
             return Optional.empty();
         }
+        return Optional.of(toRequest(config));
+    }
+
+    /**
+     * 按目录约定解析主模型的官方回退配置（AgentScope 2.0.3 fallbackModel 扩展点取数）。
+     *
+     * <p>约定：同 provider 下 config_json 的 {@code fallbackFor} 等于主模型 modelName 的未删行
+     * （{@code @TableLogic} 已滤软删）。回退行不参与主选型，{@code is_active} 保持 0
+     * （is_active 语义是全局唯一生效主模型，见 {@code AiModelConfigService#enable} 互斥清位），
+     * 本方法不按 is_active 判定。无约定行/字段不全 → {@link Optional#empty()}：
+     * 回退缺席是配置态而非错误，装配侧 fail-open，不阻断主模型运行。
+     *
+     * @param primary 主模型装配请求
+     * @return 回退装配请求；无约定回退时为空
+     */
+    public Optional<KernelModelRequest> resolveFallback(KernelModelRequest primary) {
+        if (primary == null || isBlank(primary.providerCode()) || isBlank(primary.modelName())) {
+            return Optional.empty();
+        }
+        List<AiModelConfig> configs = mapper.selectList(new LambdaQueryWrapper<AiModelConfig>()
+            .eq(AiModelConfig::getProvider, primary.providerCode().trim())
+            .orderByDesc(AiModelConfig::getUpdateTime)
+            .orderByDesc(AiModelConfig::getId));
+        if (configs == null) {
+            return Optional.empty();
+        }
+        String primaryName = primary.modelName().trim();
+        for (AiModelConfig config : configs) {
+            if (config == null || isBlank(config.getModelName())
+                || config.getModelName().trim().equals(primaryName)) {
+                continue;
+            }
+            if (!primaryName.equals(fallbackOwner(config.getConfigJson()))) {
+                continue;
+            }
+            if (isBlank(config.getProvider()) || isBlank(config.getModelName())
+                || isBlank(config.getEndpointUrl())) {
+                continue;
+            }
+            return Optional.of(toRequest(config));
+        }
+        return Optional.empty();
+    }
+
+    /** config_json.fallbackFor 取值；无键/无效 JSON 返回 null（回退约定缺席）。 */
+    private static String fallbackOwner(String configJson) {
+        try {
+            JsonNode node = configJson == null || configJson.isBlank()
+                ? null : new ObjectMapper().readTree(configJson);
+            return node != null && node.hasNonNull("fallbackFor")
+                ? node.get("fallbackFor").asText().trim() : null;
+        } catch (Exception invalid) {
+            return null;
+        }
+    }
+
+    /** AiModelConfig → 内核装配请求（resolve/resolveFallback 同一映射口径；凭据内存解密）。 */
+    private KernelModelRequest toRequest(AiModelConfig config) {
         JsonNode parameters;
         try {
             parameters = config.getConfigJson() == null || config.getConfigJson().isBlank()
@@ -116,8 +174,8 @@ public class ProjectAgentModelCatalog {
         if (timeout != null) {
             timeout = timeout <= 0 ? 60_000 : Math.min(Math.max(timeout, 10_000), 120_000);
         }
-        return Optional.of(new KernelModelRequest(config.getModelName(), config.getProvider(),
-            modelConfigService.decryptApiKey(config), config.getEndpointUrl(), temperature, maxTokens, timeout));
+        return new KernelModelRequest(config.getModelName(), config.getProvider(),
+            modelConfigService.decryptApiKey(config), config.getEndpointUrl(), temperature, maxTokens, timeout);
     }
 
     private static ModelStatus status(AiModelConfig config) {

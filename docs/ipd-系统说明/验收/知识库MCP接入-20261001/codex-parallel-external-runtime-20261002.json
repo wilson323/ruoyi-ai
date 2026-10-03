@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-03T04:47:19.561608+00:00",
+  "pid": 7643,
+  "diskJarSha256": "8541dfa328d0ef17750ab56122efd8c1777eff5a6f1f985fde07dc381d85ecc5",
+  "diskJarMtime": 1791002653.2454035,
+  "processStart": "Fri Oct  2 21:46:07 2026",
+  "activeRunCounts": "",
+  "note": "external executor replaced root rollback; disk hash not sole loaded-byte proof"
+}

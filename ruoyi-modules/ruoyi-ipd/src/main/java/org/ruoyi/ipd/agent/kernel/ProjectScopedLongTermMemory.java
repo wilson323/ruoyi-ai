@@ -40,8 +40,7 @@ import reactor.core.scheduler.Schedulers;
  * <p><b>权威性红线</b>：召回文本一律带「非权威个人工作笔记」标注；
  * IPD 权限 / 动作审批 / 文档审核 / Gate 链路<b>不查本表</b>（AGENTS.md:77）。
  *
- * <p><b>失败语义</b>：记忆是便利层，<b>任何失败都不得影响运行</b>——
- * 抽取失败、模型不可用、DB 异常一律吞掉并降级为空记忆，只记 WARN。
+ * <p><b>失败语义</b>：合法空结果不注入记忆；抽取、配置和 DB 失败向主运行传播脱敏错误，禁止静默降级。
  */
 public final class ProjectScopedLongTermMemory implements LongTermMemory {
 
@@ -73,51 +72,33 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
     }
 
     /**
-     * 运行结束后由官方 {@code StaticLongTermMemoryHook} 调用：抽取可复用事实与用户偏好并入库。
+     * 运行正常结束后由官方 {@code MiddlewareBase} 适配调用：抽取可复用事实与用户偏好并入库。
      *
      * <p>幂等：同一段来源文本经 SHA-256 摘要后在作用域内唯一，重放不产生第二行。
      */
     @Override
     public Mono<Void> record(List<Msg> messages) {
-        // 显式类型见证：lambda 各分支均返回 null，不加会被推断成 Mono<Object> 而非 Mono<Void>
-        return Mono.<Void>fromCallable(() -> {
-                if (messages == null || messages.isEmpty() || model == null) {
-                    return null;
-                }
-                String transcript = render(messages);
-                if (transcript.isBlank()) {
-                    return null;
-                }
-                List<String[]> items = extract(transcript);
-                if (items.isEmpty()) {
-                    return null;
-                }
+        return Mono.<Void>defer(() -> {
+            log.info("[ipd-memory] record triggered run={} messages={}",
+                runId, messages == null ? 0 : messages.size());
+            if (messages == null || messages.isEmpty()) return Mono.empty();
+            if (model == null) return Mono.error(new IllegalStateException("Memory extraction model is unavailable"));
+            String transcript = render(messages);
+            if (transcript.isBlank()) return Mono.empty();
+            return extract(transcript).flatMap(items -> Mono.fromRunnable(() -> {
                 int saved = 0;
                 for (String[] item : items) {
-                    String kind = item[0];
-                    String content = item[1];
-                    if (!VALID_KINDS.contains(kind) || !acceptable(content)) {
-                        continue;
-                    }
+                    if (!VALID_KINDS.contains(item[0]) || !acceptable(item[1])) continue;
                     IpdAgentMemory memory = IpdAgentMemory.builder()
-                        .projectId(projectId)
-                        .personId(personId)
-                        .runId(runId)
-                        .kind(kind)
-                        .content(truncate(content, 2000))
-                        .sourceDigest(digest(content))
-                        .status(IpdAgentMemory.STATUS_CANDIDATE)
-                        .build();
+                        .projectId(projectId).personId(personId).runId(runId)
+                        .kind(item[0]).content(truncate(item[1], 2000)).sourceDigest(digest(item[1]))
+                        .status(IpdAgentMemory.STATUS_CANDIDATE).delFlag("0").build();
                     saved += mapper.insertIgnoreDuplicate(memory);
                 }
                 log.info("[ipd-memory] run={} project={} person={} extracted={} saved={}",
                     runId, projectId, personId, items.size(), saved);
-                return null;
-            })
-            .timeout(EXTRACT_TIMEOUT)
-            .doOnError(e -> log.warn("[ipd-memory] record 失败已降级（不影响运行）run={}", runId, e))
-            .onErrorResume(e -> Mono.empty())
-            .subscribeOn(Schedulers.boundedElastic());
+            }).subscribeOn(Schedulers.boundedElastic()).then());
+        }).timeout(EXTRACT_TIMEOUT).onErrorMap(e -> memoryFailure("record", e));
     }
 
     /**
@@ -135,10 +116,16 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
                 }
                 return renderRecall(rows);
             })
-            .doOnError(e -> log.warn("[ipd-memory] retrieve 失败已降级 project={} person={}",
-                projectId, personId, e))
-            .onErrorResume(e -> Mono.empty())
+            .onErrorMap(e -> memoryFailure("retrieve", e))
             .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private IllegalStateException memoryFailure(String operation, Throwable failure) {
+        // 异常消息和 cause 可能含连接串、模型请求或凭据；只传播操作和异常类别。
+        log.warn("[ipd-memory] operation={} failed run={} errorType={}",
+            operation, runId, failure.getClass().getSimpleName());
+        return new IllegalStateException("Long-term memory " + operation + " failed ("
+            + failure.getClass().getSimpleName() + ")");
     }
 
     /** 召回文本的固定外壳——「非权威」四个字必须由代码保证，不依赖模型或下游遵守。 */
@@ -154,7 +141,7 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
     }
 
     /** 调模型抽取，每行一条 {@code MEM|KIND|CONTENT}。 */
-    private List<String[]> extract(String transcript) {
+    private Mono<List<String[]>> extract(String transcript) {
         String prompt = """
             你在从一段人机对话里抽取「值得下次记住」的信息。
 
@@ -173,25 +160,21 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
 
         List<Msg> input = List.of(
             Msg.builder().role(MsgRole.USER).textContent(prompt).build());
-        StringBuilder out = new StringBuilder();
-        model.stream(input, List.<ToolSchema>of(), null)
+        return reactor.core.publisher.Flux.defer(() -> model.stream(input, List.<ToolSchema>of(), null))
             .timeout(EXTRACT_TIMEOUT)
-            .doOnNext(response -> appendText(out, response))
-            .blockLast(EXTRACT_TIMEOUT);
-
-        List<String[]> items = new ArrayList<>();
-        for (String line : out.toString().split("\\R")) {
-            String trimmed = line.trim();
-            if (!trimmed.startsWith(ITEM_PREFIX)) {
-                continue;
-            }
-            // 剥掉 "MEM|" 后剩 "KIND|CONTENT" 两段——不是三段（曾按 3 段写导致每条都被丢弃）
-            String[] parts = trimmed.substring(ITEM_PREFIX.length()).split("\\|", 2);
-            if (parts.length == 2 && !"NONE".equals(parts[0].trim().toUpperCase(Locale.ROOT))) {
-                items.add(new String[] {parts[0].trim().toUpperCase(Locale.ROOT), parts[1].trim()});
-            }
-        }
-        return items;
+            .collect(StringBuilder::new, this::appendText)
+            .map(out -> {
+                List<String[]> items = new ArrayList<>();
+                for (String line : out.toString().split("\\R")) {
+                    String trimmed = line.trim();
+                    if (!trimmed.startsWith(ITEM_PREFIX)) continue;
+                    String[] parts = trimmed.substring(ITEM_PREFIX.length()).split("\\|", 2);
+                    if (parts.length == 2 && !"NONE".equals(parts[0].trim().toUpperCase(Locale.ROOT))) {
+                        items.add(new String[] {parts[0].trim().toUpperCase(Locale.ROOT), parts[1].trim()});
+                    }
+                }
+                return items;
+            });
     }
 
     private void appendText(StringBuilder sink, ChatResponse response) {

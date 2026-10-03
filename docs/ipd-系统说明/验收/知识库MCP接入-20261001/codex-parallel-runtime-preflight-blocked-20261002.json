@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-03T05:02:18.405330+00:00",
+  "candidateSha256": "f79f686f9d3d60b776b499a925dfa4a9e1a46d4998e9b3fc2e31bacac184b76a",
+  "status": "BLOCKED_ACTIVE_RUNS",
+  "loaded": false,
+  "rows": [
+    {
+      "id": "2106246280081629185",
+      "projectId": "2101316086904410113",
+      "status": "WAITING_APPROVAL"
+    },
+    {
+      "id": "2106247275276722178",
+      "projectId": "2101316086904410113",
+      "status": "WAITING_APPROVAL"
+    }
+  ],
+  "restarted": false,
+  "cancelled": false,
+  "approved": false
+}

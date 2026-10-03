@@ -160,6 +160,7 @@ public class ProjectAgentConfiguration {
             KnowledgeAccessGate knowledgeAccessGate,
             KnowledgeRetrievalService knowledgeRetrievalService,
             AiGateway aiGateway,
+            org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalog modelCatalog,
             @org.springframework.beans.factory.annotation.Qualifier("projectAgentStateStore") io.agentscope.core.state.AgentStateStore stateStore,
             @Value("${ipd.project-agent.workspace-root:${java.io.tmpdir}/ipd-project-agent-workspace}") Path workspaceRoot,
             @Value("${ipd.project-agent.max-iters:8}") int maxIters,
@@ -182,7 +183,11 @@ public class ProjectAgentConfiguration {
             knowledgeSearch::search);
         // 传具体检索器。方法引用 retriever::retrieve 只会绑到三参接口，
         // 内核认不出具体类，人员传不进去，向量门禁会按未登录拒绝。
-        AgentScopeProjectAgentKernel kernel = new AgentScopeProjectAgentKernel(new ProjectAgentModelAssembler(aiGateway),
+        // 官方回退模型取数：模型目录 fallbackFor 约定（同 provider + config_json.fallbackFor=主模型名），
+        // 经 2.0.3 Builder#fallbackModel 扩展点装配；目录无回退行时该源返回 null（fail-open）。
+        ProjectAgentModelAssembler modelAssembler = new ProjectAgentModelAssembler(aiGateway)
+            .withFallbackSource(primary -> modelCatalog.resolveFallback(primary).orElse(null));
+        AgentScopeProjectAgentKernel kernel = new AgentScopeProjectAgentKernel(modelAssembler,
             retriever, workspaceRoot, maxIters, lineNames, auditHook);
         kernel.setStateStore(stateStore);
         // 长期记忆（官方 LongTermMemory SPI 自实现）：按项目+人分区，非业务权威
@@ -298,7 +303,8 @@ public class ProjectAgentConfiguration {
             @Value("${ipd.project-agent.run-timeout-seconds:300}") long timeoutSeconds,
             ProjectAgentModelCatalog modelCatalog,
             StageActionService stageActionService, ProductLineNameMapper lineNames,
-            org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess) {
+            org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess,
+            PlatformTransactionManager transactionManager) {
         ProjectAgentRunService service = new ProjectAgentRunService(true, access, planner, store,
             artifactStore, documentService, projectMapper, productMapper, executor, mapper,
             System::currentTimeMillis, Duration.ofSeconds(Math.max(30, timeoutSeconds)));
@@ -306,6 +312,10 @@ public class ProjectAgentConfiguration {
         service.setStageActionService(stageActionService);
         service.setProductLineNames(lineNames);
         service.setArtifactAccess(artifactAccess);
+        TransactionTemplate verificationTransaction = new TransactionTemplate(transactionManager);
+        verificationTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        verificationTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+        service.setVerificationTransaction(verificationTransaction);
         return service;
     }
 

@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-03T04:44:19.830319+00:00",
+  "expectedPid": 97118,
+  "verifiedJarSha256": "1be65055bd3ff90a3e9a643d11743fbbf2c6abccf14810309600dc2f37072c10",
+  "businessRunCreated": false,
+  "status": "BLOCKED_ENVIRONMENT",
+  "process": {
+    "exit": 1,
+    "stdout": ""
+  },
+  "listener": {
+    "exit": 1,
+    "stdout": ""
+  }
+}

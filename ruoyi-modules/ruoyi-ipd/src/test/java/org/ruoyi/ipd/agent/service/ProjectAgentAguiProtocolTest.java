@@ -81,7 +81,9 @@ class ProjectAgentAguiProtocolTest {
         bridge.accept(new ThinkingBlockDeltaEvent("reply","thought","child-secret-thought").withSource("child-1"));
         assertEquals(2, emitted.size());
         assertEquals("ipd.thinking", mapper.readTree(emitted.get(0)).get("name").asText());
-        assertEquals("subagent.thinking", mapper.readTree(emitted.get(1)).get("name").asText());
+        // 2c738ccd 保留名纠错：本仓不开官方 converter，子代理思考帧用 ipd.subagent_thinking
+        // 避开官方保留名族 subagent.*（PublicEvent 对两名族同走内部 metadata 清理）。
+        assertEquals("ipd.subagent_thinking", mapper.readTree(emitted.get(1)).get("name").asText());
         for (String json : emitted) {
             var event = mapper.readTree(json);
             assertTrue(event.hasNonNull("timestamp"));

@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@code NotificationOutboxScanner}——fixedDelayString 常驻间隔任务（每 30s），非每日固定时刻，
  *       正则天然不匹配 {@code cron=}，不参与 A/B；错峰表以「每 30s 轮询」口径登记，无撞时刻问题。</li>
  *   <li>{@code HrSyncJob}（00:00）——见 {@link #EXEMPT_FROM_REGISTRATION} 注释。</li>
+ *   <li>{@code ProjectAgentSandboxReaper}（每小时 :23）——见 {@link #EXEMPT_FROM_DAILY_TIME_GUARD} 注释。</li>
  * </ul>
  */
 @Tag("dev")
@@ -60,8 +61,17 @@ class SchedulingCronContractSentinelTest {
         "HrSyncJob", "HR 同步自有时段（00:00），占位符可配 + HrSyncProperties 登记，错峰表口径外——显式豁免"
     );
 
-    /** 发现下限：现有 9 个 cron 注解（GateSignScanScheduler 2 个），防正则失效导致全空假绿。 */
-    private static final int MIN_DISCOVERED_CRON_JOBS = 9;
+    /**
+     * SENT-0 解析豁免名单：ProjectAgentSandboxReaper#hourlyOrphanSweep cron {@code 0 23 * * * ?}
+     * 时位通配——每小时 :23 超龄清扫（孤儿 TTL 高频巡检），非「每日固定时刻型」，HH:mm 防撞与
+     * 错峰表登记口径均不适用；:23 刻意错开整点。它不被 dailyTimedJobs() 收录，SENT-1/2 天然不扫。
+     */
+    private static final Map<String, String> EXEMPT_FROM_DAILY_TIME_GUARD = Map.of(
+        "ProjectAgentSandboxReaper", "每小时 :23 超龄清扫（时位通配），非每日固定时刻型——防撞/登记口径外，显式豁免"
+    );
+
+    /** 发现下限：现有 16 个 cron 注解（GateSignScanScheduler 2 个），防正则失效导致全空假绿。 */
+    private static final int MIN_DISCOVERED_CRON_JOBS = 16;
 
     /** 一个 @Scheduled(cron=...) 命中项：类名 / 相对路径 / 行号 / 原始串 / 生效 cron / 时刻（不可解析为 null）；dayOfMonth 非空=每月固定日型。 */
     private record CronJob(String className, Path file, long line, String rawCron,
@@ -82,7 +92,7 @@ class SchedulingCronContractSentinelTest {
             .hasSizeGreaterThanOrEqualTo(MIN_DISCOVERED_CRON_JOBS);
         // 占位符 cron 必须能解析出默认时刻，否则等于给哨兵开后门
         List<String> unresolvable = jobs.stream()
-            .filter(j -> j.hour() == null)
+            .filter(j -> j.hour() == null && !EXEMPT_FROM_DAILY_TIME_GUARD.containsKey(j.className()))
             .map(CronJob::where).toList();
         assertThat(unresolvable)
             .as("以下 cron 解析不出「每日固定时刻」，哨兵无法守护——需要人看形态决定是否豁免：%s", unresolvable)

@@ -16,6 +16,7 @@ import org.ruoyi.ipd.domain.IpdAgentMemory;
 import org.ruoyi.ipd.mapper.IpdAgentMemoryMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -142,26 +143,122 @@ class ProjectScopedLongTermMemoryTest {
     }
 
     @Test
-    @DisplayName("record：无模型或无输入时静默跳过，不影响运行")
-    void recordIsSilentWhenUnavailable() {
+    @DisplayName("record：有输入但缺模型时明确失败")
+    void recordFailsWhenModelUnavailable() {
         IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
-        new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, null)
-            .record(userSaid("x")).block(Duration.ofSeconds(5));
+        assertThatThrownBy(() -> new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, null)
+            .record(userSaid("x")).block(Duration.ofSeconds(5)))
+            .hasMessageContaining("Long-term memory record failed");
         verify(mapper, never()).insertIgnoreDuplicate(any());
     }
 
     @Test
-    @DisplayName("record：模型抛错必须降级为空，不得让记忆失败传染到运行")
-    void recordDegradesOnModelError() {
+    @DisplayName("record：模型失败传播脱敏错误，不能冒充成功")
+    void recordPropagatesModelError() {
         IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
         Model broken = mock(Model.class);
         when(broken.getModelName()).thenReturn("broken");
         when(broken.stream(any(), any(), any()))
-            .thenReturn(reactor.core.publisher.Flux.error(new IllegalStateException("model down")));
+            .thenReturn(reactor.core.publisher.Flux.error(new IllegalStateException("secret-model-key")));
 
-        new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, broken)
-            .record(userSaid("x")).block(Duration.ofSeconds(15));
+        assertThatThrownBy(() -> new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, broken)
+            .record(userSaid("x")).block(Duration.ofSeconds(15)))
+            .hasMessageContaining("Long-term memory record failed")
+            .hasMessageNotContaining("secret-model-key")
+            .hasNoCause();
 
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    @Test void actualExtractionConsumesMeteredCumulativeUsageOnce() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        when(mapper.insertIgnoreDuplicate(any())).thenReturn(1);
+        Model delegate = mock(Model.class);
+        when(delegate.stream(any(), any(), any())).thenReturn(reactor.core.publisher.Flux.just(
+            ChatResponse.builder().id("extract-response").usage(new io.agentscope.core.model.ChatUsage(11, 2, 0))
+                .content(List.of(TextBlock.builder().text("MEM|PREFERENCE|").build())).build(),
+            ChatResponse.builder().id("extract-response").usage(new io.agentscope.core.model.ChatUsage(11, 7, 0))
+                .content(List.of(TextBlock.builder().text("要表格").build())).build()));
+        var recorder = new ProjectAgentMeteredModelTest.Recorder();
+        var ledger = mock(org.ruoyi.ipd.service.AiModelUsageLedgerService.class);
+        var sink = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
+        new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
+            new ProjectAgentMeteredModel(delegate, sink))
+            .record(userSaid("要表格")).block(Duration.ofSeconds(5));
+        assertThat(recorder.ends).hasSize(1);
+        assertThat(recorder.total("inputTokens")).isEqualTo(11);
+        assertThat(recorder.total("outputTokens")).isEqualTo(7);
+        verify(ledger).recordUsage(123L, "person", "project_agent", 11, 7, 0L, "ok", "run");
+        verify(mapper).insertIgnoreDuplicate(any());
+    }
+
+    @Test void actualExtractionWithoutUsageDoesNotInventLedgerTokens() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        var recorder = new ProjectAgentMeteredModelTest.Recorder();
+        var ledger = mock(org.ruoyi.ipd.service.AiModelUsageLedgerService.class);
+        var sink = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
+        new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
+            new ProjectAgentMeteredModel(modelReturning("MEM|NONE|空"), sink))
+            .record(userSaid("你好")).block(Duration.ofSeconds(5));
+        assertThat(recorder.ends).hasSize(1);
+        assertThat(recorder.ends.get(0)).doesNotContainKeys("inputTokens", "outputTokens");
+        org.mockito.Mockito.verifyNoInteractions(ledger);
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    @Test void extractionRetainsSubscriberContext() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        Model delegate = mock(Model.class);
+        AtomicReference<String> observed = new AtomicReference<>();
+        when(delegate.stream(any(), any(), any())).thenReturn(reactor.core.publisher.Flux.deferContextual(ctx -> {
+            observed.set(ctx.get("runDeadline"));
+            return reactor.core.publisher.Flux.just(ChatResponse.builder()
+                .content(List.of(TextBlock.builder().text("MEM|NONE|空").build())).build());
+        }));
+        new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, delegate)
+            .record(userSaid("你好")).contextWrite(ctx -> ctx.put("runDeadline", "owned-deadline"))
+            .block(Duration.ofSeconds(5));
+        assertThat(observed.get()).isEqualTo("owned-deadline");
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    @Test void outerDeadlineCancelsExtractionWithoutPersistence() throws Exception {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        Model delegate = mock(Model.class);
+        java.util.concurrent.CountDownLatch cancelled = new java.util.concurrent.CountDownLatch(1);
+        when(delegate.stream(any(), any(), any())).thenReturn(reactor.core.publisher.Flux.<ChatResponse>never()
+            .doOnCancel(cancelled::countDown));
+        assertThatThrownBy(() -> new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, delegate)
+            .record(userSaid("你好")).timeout(Duration.ofMillis(100)).block(Duration.ofSeconds(3)))
+            .hasCauseInstanceOf(java.util.concurrent.TimeoutException.class);
+        assertThat(cancelled.await(1, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    @Test void recallDatabaseFailureIsNotAnEmptyResult() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        when(mapper.recallForScope(anyLong(), anyLong(), anyInt()))
+            .thenThrow(new IllegalStateException("secret-db-url"));
+        assertThatThrownBy(() -> new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, null)
+            .retrieve(userSaid("x").get(0)).block(Duration.ofSeconds(5)))
+            .hasMessageContaining("Long-term memory retrieve failed")
+            .hasMessageNotContaining("secret-db-url").hasNoCause();
+    }
+
+    @Test void persistenceFailureIsNotSuccessfulRecording() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        when(mapper.insertIgnoreDuplicate(any())).thenThrow(new IllegalStateException("secret-db-url"));
+        assertThatThrownBy(() -> new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
+            modelReturning("MEM|PREFERENCE|要表格"))
+            .record(userSaid("要表格")).block(Duration.ofSeconds(5)))
+            .hasMessageContaining("Long-term memory record failed")
+            .hasMessageNotContaining("secret-db-url").hasNoCause();
+    }
+
+    @Test void emptyInputDoesNotRequireModel() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper, null)
+            .record(List.of()).block(Duration.ofSeconds(5));
         verify(mapper, never()).insertIgnoreDuplicate(any());
     }
 

@@ -66,6 +66,32 @@ class ProjectAgentOfficialCollaborationTest {
         assertThrows(IllegalArgumentException.class, () -> store.put(List.of(".."), "x", Map.of()));
     }
 
+    @Test void coldAssemblyReusesOfficialTeamAndDoesNotOverwriteTasks() {
+        var store = new InMemoryStore();
+        var scope = KernelScopeKey.of("101", "201", "project-agent", "301");
+        var sink = ownershipSink(new AtomicBoolean(true));
+        var fs = new LocalFilesystem(root, true, 16);
+        var first = ProjectAgentOfficialCollaboration.create(scope, store, fs, sink);
+        var created = first.teamClient().createTask(first.teamContext().namespace(),
+            first.teamContext().teamName(), "必须保留的任务", "冷恢复", List.of(), "").block();
+        var cold = ProjectAgentOfficialCollaboration.create(scope, store, fs, sink);
+        assertEquals(created.taskId(), cold.teamClient().listTasks(cold.teamContext().namespace(),
+            cold.teamContext().teamName()).block().get(0).taskId());
+    }
+
+    @Test void coldAssemblyRejectsMismatchedOriginalTeamIdentity() {
+        var store = new InMemoryStore();
+        var scope = KernelScopeKey.of("101", "201", "project-agent", "301");
+        var sink = ownershipSink(new AtomicBoolean(true));
+        var fs = new LocalFilesystem(root, true, 16);
+        ProjectAgentOfficialCollaboration.create(scope, store, fs, sink);
+        new ProjectAgentOfficialCollaboration.OwnedRunStore(store, scope, sink).put(
+            List.of("teams", scope.slotId(), "project-agent-run"), "meta",
+            Map.of("name", "project-agent-run", "namespace", scope.slotId(), "leadRef", "another-agent"));
+        assertThrows(IllegalStateException.class,
+            () -> ProjectAgentOfficialCollaboration.create(scope, store, fs, sink));
+    }
+
     private ProjectAgentEventSink ownershipSink(AtomicBoolean active) {
         var sink = mock(ProjectAgentEventSink.class, CALLS_REAL_METHODS);
         doAnswer(invocation -> { if (!active.get()) throw new IllegalStateException("ownership revoked"); return null; })

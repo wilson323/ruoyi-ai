@@ -161,7 +161,7 @@ class AgentScopeProjectAgentKernelTest {
         AtomicInteger texts = new AtomicInteger();
         RecordingSink sink = new RecordingSink(done) {
             @Override
-            public void onText(String delta) { texts.incrementAndGet(); }
+            public void onText(String delta) { super.onText(delta); texts.incrementAndGet(); }
         };
         ProjectAgentRunSpec run = new ProjectAgentRunSpec(1001L, 20260929L, "tenant-a", 11L,
             "C02", "question", List.of(), List.of(),
@@ -198,7 +198,7 @@ class AgentScopeProjectAgentKernelTest {
             (project, type, query) -> new RetrievalContext(0, 0, ""), workspaceRoot, 2);
         CountDownLatch text = new CountDownLatch(1);
         RecordingSink sink = new RecordingSink() {
-            @Override public void onText(String delta) { text.countDown(); }
+            @Override public void onText(String delta) { super.onText(delta); text.countDown(); }
         };
         int baseline = activeRequests();
         var execution = kernel.execute(spec(List.of()), sink);
@@ -538,6 +538,10 @@ class AgentScopeProjectAgentKernelTest {
 
     /** 仅记录错误码和工具结果，不落库。 */
     private static class RecordingSink implements ProjectAgentEventSink {
+        private final org.ruoyi.ipd.agent.service.ProjectAgentRunHandle lifecycle = org.ruoyi.ipd.agent.support.AgentKernelTestLifecycle.create();
+        @Override public void registerTerminalSuccessReceipt(Runnable receipt) { lifecycle.registerTerminalSuccessReceipt(receipt); }
+        @Override public void registerTemporaryStateCleanup(Runnable cleanup) { lifecycle.registerTemporaryStateCleanup(cleanup); }
+        @Override public void releaseTemporaryState() { lifecycle.releaseTemporaryState(); }
         final List<String> errors = new ArrayList<>();
         final List<String> toolCalls = new ArrayList<>();
         final List<String> toolResults = new ArrayList<>();
@@ -571,7 +575,10 @@ class AgentScopeProjectAgentKernelTest {
 
         @Override
         public void onText(String delta) {
+            lifecycle.onText(delta);
         }
+
+        @Override public void onFinalText(String text) { lifecycle.onFinalText(text); }
 
         @Override
         public void onArtifact(String artifactId, String title, String contentHash, int version) {
@@ -587,6 +594,7 @@ class AgentScopeProjectAgentKernelTest {
 
         @Override
         public void onComplete() {
+            lifecycle.onComplete();
             if (done != null) {
                 done.countDown();
             }

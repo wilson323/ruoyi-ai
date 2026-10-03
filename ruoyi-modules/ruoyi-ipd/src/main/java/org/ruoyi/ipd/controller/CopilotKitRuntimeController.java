@@ -1,5 +1,7 @@
 package org.ruoyi.ipd.controller;
 
+import io.agentscope.core.agui.encoder.AguiEventEncoder;
+import io.agentscope.core.agui.event.AguiEvent;
 import org.ruoyi.common.sse.core.SseErrorEmitter;
 import org.ruoyi.ipd.copilotkit.AgUiCopilotRun;
 import org.ruoyi.ipd.copilotkit.RunAgentInput;
@@ -26,6 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * CopilotKit AG-UI 桥（2026-09-28，单轨融合）：CopilotKit Runtime 兼容端点（多路由形态）。
@@ -43,8 +49,10 @@ import java.util.concurrent.Executors;
  * GET {runtimeUrl}/info 2xx → rest transport），不需要登录。基线 SecurityConfig 已 exclude {@code /copilotkit/**}
  * （见 application.yml security.excludes，与 /api/v1/** 同款 IPD 会话自管）。
  *
- * <p>线格式：每帧一个 AG-UI 事件 JSON，与官方 {@code @ag-ui/encoder} encodeSSE 同构（{@code data: {json}} 事件帧；
- * 官方 @ag-ui/client parseSSEStream 取帧内 data: 行 JSON.parse，按 type 分发）。
+ * <p>线格式：每帧一个 AG-UI 事件 JSON，由官方 {@link AguiEventEncoder}（AgentScope 2.0.3）序列化——
+ * {@code encodeToJson} 产事件 JSON，{@code data: {json}} 事件帧由 SseEmitter 组包（与官方 encode() 产帧同构；
+ * 官方 @ag-ui/client parseSSEStream 取帧内 data: 行 JSON.parse，按 type 分发）；空闲期发官方
+ * {@code keepAlive()} 注释帧防中间层断连（SSE 注释行前端可安全忽略）。
  */
 @Slf4j
 @RestController
@@ -57,6 +65,19 @@ public class CopilotKitRuntimeController {
     public static final String AGENT_ID = "ipd_copilot";
     /** 与 @copilotkit/runtime 1.74 契约兼容的版本标识（客户端仅信息展示，无强校验）。 */
     static final String RUNTIME_VERSION = "1.74.0";
+    /** 官方事件序列化器（AgentScope 2.0.3，无状态可共享）。 */
+    private static final AguiEventEncoder AGUI_ENCODER = new AguiEventEncoder();
+    /** SSE 数据帧 mediaType（显式 UTF-8：防 StringHttpMessageConverter 默认 ISO-8859-1 乱码中文）。 */
+    private static final MediaType JSON_UTF8 = MediaType.parseMediaType("application/json;charset=UTF-8");
+    /** 官方 keep-alive 心跳间隔（SSE_TIMEOUT_MS 内多拍防中间层空闲断连）。 */
+    static final long KEEP_ALIVE_INTERVAL_MS = 15_000L;
+    /** 心跳调度器（daemon 单线程，与 SSE_EXECUTOR 同款自管线程模式）。 */
+    private static final ScheduledExecutorService KEEP_ALIVE_SCHEDULER =
+        Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "ipd-copilotkit-agui-keepalive");
+            t.setDaemon(true);
+            return t;
+        });
 
     private final AiCopilotService service;
     private final IpdPermission ipdPermission;
@@ -138,24 +159,40 @@ public class CopilotKitRuntimeController {
         return ResponseEntity.ok().contentType(MediaType.TEXT_EVENT_STREAM).body(emitter);
     }
 
-    /** SseEmitter 事件下发适配（客户端已断开静默吞，与既有 ai-copilot sendFrame 防御一致）。 */
+    /** SseEmitter 事件下发适配（官方 encoder 序列化 + keep-alive 心跳；断开静默吞，与既有防御一致）。 */
     static AgUiCopilotRun.AgUiSseSink sseSink(SseEmitter emitter) {
         return new AgUiCopilotRun.AgUiSseSink() {
-            private Runnable cancellation = () -> { };
+            private final AtomicBoolean heartbeatStopped = new AtomicBoolean(false);
+            /** 官方 keep-alive 心跳：注释行交 SseEmitter 注释通道（不占 data 帧，前端 EventSource 安全忽略）。 */
+            private final ScheduledFuture<?> keepAlive = KEEP_ALIVE_SCHEDULER.scheduleAtFixedRate(() -> {
+                try {
+                    emitter.send(SseEmitter.event().comment(keepAliveComment()));
+                } catch (Exception e) {
+                    stopHeartbeat();
+                }
+            }, KEEP_ALIVE_INTERVAL_MS, KEEP_ALIVE_INTERVAL_MS, TimeUnit.MILLISECONDS);
+            private Runnable cancellation = this::stopHeartbeat;
+
+            private void stopHeartbeat() {
+                if (heartbeatStopped.compareAndSet(false, true)) {
+                    keepAlive.cancel(false);
+                }
+            }
+
             @Override public void onDisconnect(Runnable action) {
-                cancellation = action;
-                emitter.onCompletion(action);
-                emitter.onTimeout(() -> { action.run(); emitter.complete(); });
-                emitter.onError(error -> action.run());
+                cancellation = () -> { action.run(); stopHeartbeat(); };
+                emitter.onCompletion(cancellation);
+                emitter.onTimeout(() -> { action.run(); stopHeartbeat(); emitter.complete(); });
+                emitter.onError(error -> cancellation.run());
             }
             @Override
-            public void send(List<Map<String, Object>> events) {
+            public void send(List<AguiEvent> events) {
                 if (events == null) {
                     return;
                 }
-                for (Map<String, Object> event : events) {
+                for (AguiEvent event : events) {
                     try {
-                        emitter.send(SseEmitter.event().data(event));
+                        emitter.send(SseEmitter.event().data(AGUI_ENCODER.encodeToJson(event), JSON_UTF8));
                     } catch (IOException | IllegalStateException e) {
                         cancellation.run();
                         // 客户端已断开，静默（不重复推 error，避免 SIGPIPE 噪声）
@@ -165,6 +202,7 @@ public class CopilotKitRuntimeController {
 
             @Override
             public void complete() {
+                stopHeartbeat();
                 try {
                     emitter.complete();
                 } catch (Exception e) {
@@ -172,5 +210,10 @@ public class CopilotKitRuntimeController {
                 }
             }
         };
+    }
+
+    /** 官方 keepAlive() 产完整注释帧（": keep-alive"）——剥帧前缀取注释文本交 SseEmitter（内容随官方）。 */
+    private static String keepAliveComment() {
+        return AGUI_ENCODER.keepAlive().replaceFirst("^:\\s*", "").trim();
     }
 }

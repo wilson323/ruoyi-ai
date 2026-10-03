@@ -112,6 +112,11 @@ public interface ProjectAgentEventSink {
      */
     void onArtifact(String artifactId, String title, String contentHash, int version);
 
+    /** 官方交付的完整原产物凭据，必须在原owner事务持久化。 */
+    default void onArtifactPayload(Map<String, Object> payload) {
+        throw new IllegalStateException("artifact origin appender is not configured");
+    }
+
     /**
      * 执行失败（安全错误码，不含内部异常原文）。
      *

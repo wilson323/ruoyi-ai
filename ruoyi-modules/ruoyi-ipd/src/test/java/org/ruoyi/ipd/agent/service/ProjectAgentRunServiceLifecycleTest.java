@@ -300,7 +300,7 @@ class ProjectAgentRunServiceLifecycleTest {
     }
 
     @Test
-    @DisplayName("终态事件写入：seq 冲突按新鲜 maxSeq 重试；重试耗尽不悬挂终态")
+    @DisplayName("终态事件写入：seq 冲突按新鲜 maxSeq 重试；重试耗尽明确失败")
     void verifyingFinishRetriesTerminalEventWrite() {
         RunServiceHarness h = new RunServiceHarness(true, false, 4);
         FlakyTerminalEventStore flaky = new FlakyTerminalEventStore(h.store);
@@ -318,12 +318,12 @@ class ProjectAgentRunServiceLifecycleTest {
         assertThat(h.store.events(retryRun.getId()))
             .extracting(IpdAgentRunEvent::getEventType).containsExactly("RUN_FINISHED");
 
-        // 重试耗尽：终态已提交不可回滚，收口不抛异常，仅留痕。
+        // 未装配事务的旧构造只能证明显式失败；事务回滚由专用测试验证。
         flaky.terminalFailures = 3;
         IpdAgentRun exhaustedRun = verifyingRun("key-verify-exhausted");
         h.store.insertRun(exhaustedRun);
         artifacts.insert(artifact(exhaustedRun, "# 竞品分析\n完整正文。"));
-        assertThat(svc.cancel(ACTOR, exhaustedRun.getId()).status()).isEqualTo("CANCELLED");
+        assertCode(() -> svc.cancel(ACTOR, exhaustedRun.getId()), ApiV1ErrorCode.STATE_CONFLICT);
         assertThat(h.store.events(exhaustedRun.getId())).isEmpty();
     }
 

@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.copilotkit;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.agentscope.core.agui.encoder.AguiEventEncoder;
+import io.agentscope.core.agui.event.AguiEvent;
 import org.ruoyi.ipd.vo.SubStageView;
 
 import java.util.ArrayList;
@@ -14,7 +18,8 @@ import java.util.Map;
  * onDone{card} → TOOL_CALL_START/ARGS/END/RESULT 组 + RUN_FINISHED；STATE_DELTA 进度补丁
  * 插在 RUN_FINISHED 前（RUN_* 成对与末帧契约不破，见 AgUiFrameTranslator javadoc）。
  *
- * <p>纯函数、无状态、不落存储（与 AgUiCopilotRun 同一 C08 红线）；不改 AgUiEvents/AgUiFrameTranslator。
+ * <p>纯函数、无状态、不落存储（与 AgUiCopilotRun 同一 C08 红线）；对外签名保持 wire Map 形态，
+ * 内部经官方 AguiEventEncoder 序列化（REST 响应与 SSE 线格式同构，官方 optional 字段缺省不下发）。
  */
 public final class SubStageGuideTool {
 
@@ -22,6 +27,10 @@ public final class SubStageGuideTool {
     public static final String TOOL_NAME = "sub-stage.guide";
     /** 卡片协议版本（TOOL_CALL_RESULT content={version,sourceRefs}）。 */
     public static final int CARD_VERSION = 1;
+    /** 官方事件序列化器（AgentScope 2.0.3，无状态可共享）。 */
+    private static final AguiEventEncoder ENCODER = new AguiEventEncoder();
+    /** wire Map 反序列化器（官方 encoder JSON → Map，键序稳定）。 */
+    private static final ObjectMapper WIRE_JSON = new ObjectMapper();
 
     private SubStageGuideTool() {
     }
@@ -52,15 +61,40 @@ public final class SubStageGuideTool {
                                                            SubStageView guide, List<String> sourceRefs,
                                                            List<Object> progressPatch) {
         AgUiFrameTranslator tx = new AgUiFrameTranslator(threadId, runId);
-        List<Map<String, Object>> out = new ArrayList<>(tx.onDelta(introText));
+        List<AguiEvent> out = new ArrayList<>(tx.onDelta(introText));
         Map<String, Object> done = new LinkedHashMap<>();
         done.put("status", "ok");
         done.put("card", cardFrame(guide, sourceRefs));
         out.addAll(tx.onDone(done));
         if (progressPatch != null && !progressPatch.isEmpty()) {
             // RUN_FINISHED 恒为末帧（AgUiFrameTranslator 契约）——STATE_DELTA 插在其前
-            out.add(out.size() - 1, AgUiEvents.stateDelta(progressPatch));
+            out.add(out.size() - 1, AgUiEvents.stateDelta(threadId, runId, toPatchOps(progressPatch)));
         }
-        return out;
+        return toWireMaps(out);
+    }
+
+    /** RFC 6902 Map 操作（op/path/value[/from]）→ 官方 JsonPatchOperation。 */
+    private static List<AguiEvent.JsonPatchOperation> toPatchOps(List<Object> patch) {
+        List<AguiEvent.JsonPatchOperation> ops = new ArrayList<>(patch.size());
+        for (Object o : patch) {
+            Map<?, ?> m = (Map<?, ?>) o;
+            ops.add(new AguiEvent.JsonPatchOperation(String.valueOf(m.get("op")), String.valueOf(m.get("path")),
+                m.get("value"), m.get("from") == null ? null : String.valueOf(m.get("from"))));
+        }
+        return ops;
+    }
+
+    /** 官方事件 → wire Map（官方 encoder JSON 反序列化；与 SSE 线格式同构）。 */
+    private static List<Map<String, Object>> toWireMaps(List<AguiEvent> events) {
+        try {
+            List<Map<String, Object>> wire = new ArrayList<>(events.size());
+            for (AguiEvent e : events) {
+                wire.add(WIRE_JSON.readValue(ENCODER.encodeToJson(e),
+                    new TypeReference<LinkedHashMap<String, Object>>() { }));
+            }
+            return wire;
+        } catch (Exception e) {
+            throw new IllegalStateException("AG-UI 事件 wire 序列化失败", e);
+        }
     }
 }

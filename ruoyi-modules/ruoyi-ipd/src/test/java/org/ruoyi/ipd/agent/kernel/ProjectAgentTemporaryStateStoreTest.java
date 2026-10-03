@@ -69,6 +69,29 @@ class ProjectAgentTemporaryStateStoreTest {
         assertTrue(nativeStore.listSessionIds(SCOPE.userId()).isEmpty());
     }
 
+    @Test void officialNullAndAguiRunIdIdentitiesShareOneSlotButForeignAccessIsRejected() {
+        var nativeStore = new InMemoryAgentStateStore();
+        var store = new ProjectAgentTemporaryStateStore(nativeStore, SCOPE, new Sink(), null, "1234567");
+        String officialSlot = SCOPE.sessionId() + "/official/" + Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("1234567".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        // 官方无参 getAgentState() 以 (null, defaultSessionId=裸 runId) 访问。
+        store.saveIfVersion(null, "1234567", "agent_state", state(SCOPE), 0);
+        assertTrue(nativeStore.exists(SCOPE.userId(), officialSlot),
+            "官方 null 身份应落 official 存储槽而非裸 session 键");
+        assertTrue(store.get("1234567", "1234567", "agent_state", AgentState.class).isPresent(),
+            "AG-UI 运行时 (runId, runId) 身份应读到官方 BUILD 句柄写的同一槽");
+        assertTrue(store.get(null, "1234567", "agent_state", AgentState.class).isPresent());
+        // 复合 agent 身份访问裸 runId session 仍合法（ownsSession 认 rawSessionId）。
+        assertTrue(store.get(SCOPE.userId(), "1234567", "agent_state", AgentState.class).isPresent());
+        // 越权三拒：user 对但 session 属他 run；user=本 runId 但 session 属他 run；user 属他 run。
+        assertThrows(IllegalArgumentException.class,
+            () -> store.get(null, OTHER.sessionId(), "agent_state", AgentState.class));
+        assertThrows(IllegalArgumentException.class,
+            () -> store.get("1234567", OTHER.sessionId(), "agent_state", AgentState.class));
+        assertThrows(IllegalArgumentException.class,
+            () -> store.get("1234568", "1234567", "agent_state", AgentState.class));
+    }
+
     @Test void nativeCasConflictThrowsBeforeSdkOverwriteFallbackCanRun() {
         var nativeStore = spy(new InMemoryAgentStateStore());
         var store = new ProjectAgentTemporaryStateStore(nativeStore, SCOPE, new Sink());
@@ -116,6 +139,7 @@ class ProjectAgentTemporaryStateStoreTest {
 
     @Test void actualSdkSavesThinkingBeforeFinalizerDeletesCheckpointAndReportsCompletion() throws Exception {
         var writes = new AtomicInteger(); var sawThinking = new AtomicBoolean();
+        var archived = new AtomicBoolean();
         var nativeStore = new InMemoryAgentStateStore() {
             public long saveIfVersion(String u, String s, String key, State value, long expected) {
                 long version = super.saveIfVersion(u, s, key, value, expected);
@@ -127,12 +151,24 @@ class ProjectAgentTemporaryStateStoreTest {
         };
         nativeStore.save(OTHER.userId(), OTHER.sessionId(), "agent_state", state(OTHER));
         var sink = new Sink() {
-            public void onComplete() { assertFalse(nativeStore.exists(SCOPE.userId(), SCOPE.sessionId())); super.onComplete(); }
+            public void onStep(String kind, Map<String, Object> detail) {
+                if ("SANDBOX_ARCHIVED".equals(kind)) {
+                    assertTrue(detail.get("snapshots") instanceof List<?> receipts && !receipts.isEmpty());
+                    archived.set(true);
+                }
+            }
+            public void onComplete() {
+                assertTrue(writes.get() > 0); assertTrue(sawThinking.get());
+                assertTrue(archived.get(), "verified sandbox archive must precede business completion");
+                assertTrue(nativeStore.exists(SCOPE.userId(), SCOPE.sessionId()), "checkpoint survives until terminal commit receipt");
+                super.onComplete();
+                assertFalse(nativeStore.exists(SCOPE.userId(), SCOPE.sessionId()));
+            }
         };
         var execution = kernel(nativeStore).execute(spec(), sink);
         try {
             assertTrue(sink.done.await(40, TimeUnit.SECONDS));
-            assertTrue(sink.complete); assertTrue(sink.errors.isEmpty(), sink.errors.toString());
+            assertTrue(sink.complete, sink.errors.toString()); assertTrue(sink.errors.isEmpty(), sink.errors.toString());
             assertTrue(writes.get() > 0); assertTrue(sawThinking.get());
             assertFalse(nativeStore.exists(SCOPE.userId(), SCOPE.sessionId()));
             assertTrue(nativeStore.exists(OTHER.userId(), OTHER.sessionId()));
@@ -165,13 +201,17 @@ class ProjectAgentTemporaryStateStoreTest {
     private static class Sink implements ProjectAgentEventSink {
         final CountDownLatch done = new CountDownLatch(1); final List<String> errors = new CopyOnWriteArrayList<>();
         volatile boolean complete;
+        final org.ruoyi.ipd.agent.service.ProjectAgentRunHandle lifecycle = org.ruoyi.ipd.agent.support.AgentKernelTestLifecycle.create();
+        public void registerTerminalSuccessReceipt(Runnable receipt) { lifecycle.registerTerminalSuccessReceipt(receipt); }
+        public void registerTemporaryStateCleanup(Runnable cleanup) { lifecycle.registerTemporaryStateCleanup(cleanup); }
+        public void releaseTemporaryState() { lifecycle.releaseTemporaryState(); }
         public void onStep(String kind, Map<String, Object> detail) { }
         public void onToolCall(String id, String name) { }
         public void onToolResult(String id, String name, String result) { }
         public void onSource(Map<String, Object> source) { }
-        public void onText(String text) { }
+        public void onText(String text) { lifecycle.onText(text); }
         public void onArtifact(String id, String title, String hash, int version) { }
         public void onError(String error) { errors.add(error); done.countDown(); }
-        public void onComplete() { complete = true; done.countDown(); }
+        public void onComplete() { lifecycle.onComplete(); assertTrue(lifecycle.isClosed()); complete = true; done.countDown(); }
     }
 }

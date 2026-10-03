@@ -75,6 +75,20 @@ class AiGenerationRetryTest {
         when(modelConfigService.decryptApiKey(any(AiModelConfig.class))).thenReturn("sk-x");
     }
 
+    @Test
+    void documentRetrievalFailureStopsGenerationAndReleasesPermit() {
+        when(docEmbeddingService.retrieveContext(any(), any(), any()))
+            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "项目文档检索失败"));
+        int originalPermits = service.gate.availablePermits();
+        for (int attempt = 0; attempt < 4; attempt++) {
+            var failure = assertThrows(IpdBusinessException.class, () -> service.generate(ACTOR, req()));
+            assertEquals(ApiV1ErrorCode.INTERNAL_ERROR, failure.getErrorCode());
+            assertTrue(failure.getMessage().contains("项目文档检索失败"));
+            assertEquals(originalPermits, service.gate.availablePermits());
+        }
+        org.mockito.Mockito.verifyNoInteractions(aiGateway, documentService);
+    }
+
     private static AiGenerateReq req() {
         return new AiGenerateReq(77L, "PRD", "需求文档", "原始资料");
     }

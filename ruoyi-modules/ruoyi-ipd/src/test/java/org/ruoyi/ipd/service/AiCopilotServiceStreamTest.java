@@ -129,6 +129,21 @@ class AiCopilotServiceStreamTest {
             "currentAdvance", Map.of(), "tasks", List.of()));
     }
 
+    @Test
+    void documentRetrievalFailureProducesNoSuccessfulStreamFrames() {
+        stubEnabledConfig();
+        when(workbenchService.summary(any(), eq(10L), eq("tenant-a")))
+            .thenReturn(Map.of("currentAdvance", Map.of(), "tasks", List.of()));
+        when(docEmbeddingService.retrieveContext(eq(10L), isNull(), anyString()))
+            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.INTERNAL_ERROR, "项目文档检索失败"));
+        RecordingSink sink = new RecordingSink();
+        var failure = assertThrows(IpdBusinessException.class,
+            () -> service.chatStream(SA, new AiCopilotReq(10L, "讲个笑话", List.of()), sink));
+        assertEquals(ApiV1ErrorCode.INTERNAL_ERROR, failure.getErrorCode());
+        assertTrue(sink.events.isEmpty(), "同步前置错误由 Controller 发送 error 帧，服务不能发送 meta/done");
+        org.mockito.Mockito.verifyNoInteractions(aiGateway);
+    }
+
     private void stubEnabledConfig() {
         AiModelConfig cfg = AiModelConfig.builder().id(1L).provider("openai")
             .endpointUrl("https://chat.example.com/v1").apiKeyEncrypted("cipher")

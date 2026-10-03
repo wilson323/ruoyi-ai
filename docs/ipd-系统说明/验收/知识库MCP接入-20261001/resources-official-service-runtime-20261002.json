@@ -1,0 +1,133 @@
+{
+  "timestampUtc": "2026-10-03T04:17:09.206481+00:00",
+  "status": "VERIFIED_ISOLATED_OFFICIAL_SERVICE_NOT_IPD_CUTOVER",
+  "license": "Apache-2.0 official source LICENSE",
+  "sourceHead": "e9721285c63a37c10b1d07aa540408e57ba56ab2",
+  "sourceDigests": {
+    "go.mod": "01c55c168343dbe45ff720defba42c10b0d5a47137df110090037648efe9e5fd",
+    "go.sum": "e5c9d3fb54686afa79be32a457a531ac4cbcb4ccc3369e283bc1770cce48fee0",
+    "cmd/aistiod/main.go": "e2bedb2b16a8a8c35c1d24502da1ebbbd7c7cce3475e90c15acf491fe5fb2c81"
+  },
+  "toolchain": {
+    "bootstrap": "/Users/mac/tools/go-1.23/bin/go 1.23.4 was present outside PATH",
+    "downloaded": "go1.26.0 darwin/arm64",
+    "isolatedGopath": "/tmp/resources-service-runtime-20261002/gopath",
+    "isolatedGocache": "/tmp/resources-service-runtime-20261002/gocache",
+    "GOSUMDB": "sum.golang.org",
+    "officialToolchainModuleZipHash": "h1:lJzzTsXFQzfrSkuhjLAkY6sc1hxcB4rgbk6DOcFLg2A=",
+    "modVerify": "all modules verified",
+    "firstVerifyFailure": "TLS handshake timeout, retained mod-verify.log; one diagnosis-based retry verified",
+    "verifyLog": "/tmp/resources-service-runtime-20261002/mod-verify-retry.log"
+  },
+  "build": {
+    "command": "go build -mod=readonly -p=2 -o isolated/aistiod ./cmd/aistiod",
+    "exit": 0,
+    "binary": "/tmp/resources-service-runtime-20261002/aistiod",
+    "sha256": "565d7af6fb92f772d69ef1ecbc74dae87c9967a41a947bfa7c1016d02eb208ac",
+    "log": "/tmp/resources-service-runtime-20261002/build.log",
+    "referenceTreeGoModGoSumStatus": "git status --short go.mod go.sum empty; no reference mutation"
+  },
+  "deployment": {
+    "container": "resources-aistio-postgres-20261002",
+    "volume": "resources-aistio-postgres-data-20261002",
+    "postgresLoopbackPort": 18472,
+    "httpPort": 18473,
+    "grpcPort": 18474,
+    "metricsPort": 18475,
+    "probePort": 18476,
+    "privateCredentials": "/tmp/resources-service-runtime-20261002/service.env",
+    "postgresCredentials": "/tmp/resources-service-runtime-20261002/postgres.env",
+    "scope": "new standalone Service database only; no IPD database",
+    "ownedServicePid": 21749
+  },
+  "credentialsFileModesOnly": {
+    "postgres.env": "0o600",
+    "service.env": "0o600",
+    "registration-private.json": "0o600"
+  },
+  "runtimeTests": {
+    "health": {
+      "/healthz": {
+        "status": 200,
+        "body": "{\"status\":\"ok\"}"
+      },
+      "/readyz": {
+        "status": 200,
+        "body": "{\"status\":\"ok\"}"
+      },
+      "/api/v1/version": {
+        "status": 200,
+        "body": "{\"apiVersion\":\"v1alpha1\",\"component\":\"aistio\",\"experimental\":true,\"version\":\"0.2.0\"}"
+      },
+      "/api/v1/dp/healthz": {
+        "status": 401
+      }
+    },
+    "authorizedHttp": {
+      "dpHealthUnauthorized": {
+        "status": 401
+      },
+      "dpHealthAuthorized": {
+        "status": 200
+      },
+      "registration": {
+        "status": 201,
+        "agentId": "1ce72949-92b5-474f-8150-4ab6023ef3df",
+        "instanceId": "05571072-d295-4be7-9bde-8a4f43e58824",
+        "bindingId": "a4a42e51-9114-4466-b0c1-4c2247da6d94"
+      },
+      "kvWrite": {
+        "status": 200
+      },
+      "kvRead": {
+        "status": 200,
+        "body": {
+          "key": "durable-proof",
+          "value": {
+            "proof": "official-pg-persistent-20261002"
+          },
+          "version": 1,
+          "nsPath": "resources-test"
+        }
+      }
+    },
+    "ASDP": {
+      "SDK": "actual pinned 2.0.4-SNAPSHOT GrpcTransport with project gRPC1.62.2 protobuf4.29.3",
+      "positive": "real official ASDP report produced public.sessions resources-real-asdp-session count1 in dedicated new PostgreSQL",
+      "positiveLog": "/tmp/resources-service-compat-20261002/live-asdp.log",
+      "negative": "wrong credential officially rejected identity claim; resources-rejected-asdp-session absent from same new database",
+      "negativeLog": "/tmp/resources-service-compat-20261002/negative-asdp.log"
+    },
+    "restart": {
+      "oldOwnedPid": 1395,
+      "newOwnedPid": 21749,
+      "health": 200,
+      "coldKv": {
+        "status": 200,
+        "body": {
+          "key": "durable-proof",
+          "value": {
+            "proof": "official-pg-persistent-20261002"
+          },
+          "version": 1,
+          "nsPath": "resources-test"
+        }
+      },
+      "databaseSessionRows": "resources-real-asdp-session|1",
+      "databaseExit": 0
+    }
+  },
+  "recovery": {
+    "reuse": "read private service.env + launch-args.json; database volume and service.pid retained",
+    "scope": "only dedicated container/volume/binary/PID; no IPD DB, process, Weaviate50051 or external service",
+    "deployedListeners": "actual HTTP18473 and ASDP18474 bind127.0.0.1; standalone metrics/probe flag ports not observed as listeners"
+  },
+  "limits": [
+    "Official standalone mode enable-kubernetes=false authorized as deployment mode; not evidence Kubernetes Managed/Sandbox control plane",
+    "No IPD Person/runtime adapter binding, task lifecycle or new IPD package load",
+    "No project dependency upgrade; main root still2.0.3",
+    "Full grpc1.75 BlockingV2 compatibility pending root decision",
+    "Retention metadata test newly-created dedicatedService database; not customer acceptance",
+    "Original historical statement noGo available corrected: PATH omitted existingGo1.23 bootstrap"
+  ]
+}

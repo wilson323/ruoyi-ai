@@ -34,3 +34,8 @@ CREATE TABLE IF NOT EXISTS `ipd_agent_memory`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT ='IPD智能体长期记忆候选区(非业务权威)';
+
+-- 运行账号逐表授权（本库为表级 CRUD 形态，建表后必须补，否则运行时 INSERT 被拒）：
+-- 2026-10-03 实测踩坑：只建表不 GRANT，record 报 INSERT command denied。
+GRANT SELECT, INSERT, UPDATE, DELETE ON `ipd_dev`.`ipd_agent_memory` TO 'ipd_app'@'127.0.0.1';
+FLUSH PRIVILEGES;

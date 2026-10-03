@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-10-03T03:57:55.695312+00:00",
+  "status": "PARTIAL",
+  "sourceSha256": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialCollaboration.java": "a12956c9ce73d6e0743d7515a4c4056096714cce8b2cc6ee1358a6af1cacfecc",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialCollaborationTest.java": "eeb3302d3a9d9ca60e3331f52a295e64faf3e2cd6c669f969a5d50f4d9850bdf"
+  },
+  "sdk": "Maven agentscope-harness/extensions-redis 2.0.3",
+  "repair": "Official createTeam throws TeamConflictException. Cold assembly now verifies same namespace/name/leadRef and actual lead member before reusing original team. Tasks are not overwritten.",
+  "builderConsumer": "ProjectAgentOfficialCollaboration.attach -> teamsMode, messageBus, asyncToolRegistry",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/tmp/resources-collaboration-20261002/tests.log"
+  },
+  "productionProviderProbe": {
+    "redis": "IPD dedicated loopback 16379",
+    "backend": "real RedisStore",
+    "consumer": "official TeamTool create/read, cold RedisStore+LocalTeamClient readback, WorkspaceMessageBus inbox push/cold drain, revoked owner rejected",
+    "exit": 0,
+    "originalFailure": "/tmp/resources-collaboration-20261002/redis-probe.log",
+    "success": "/tmp/resources-collaboration-20261002/redis-probe-repaired.log",
+    "retainedTestScope": "p9140005:u201:aproject-agent:sresources57673163388375"
+  },
+  "limits": [
+    "Current Kernel/Configuration integration root-owned and not runtime verified",
+    "WorkspaceMessageBus is SDK single-process backend; cold readback is not cross-process concurrency proof",
+    "Service candidate uses 2.0.4-SNAPSHOT Aistio AgentTaskStarter API absent from project 2.0.3; full Service deployment remains pending",
+    "No production Person runtime acceptance or new package load evidence"
+  ]
+}
