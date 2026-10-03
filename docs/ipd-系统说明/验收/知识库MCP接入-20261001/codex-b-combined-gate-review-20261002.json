@@ -1,0 +1,64 @@
+{
+  "status": "ACCEPT_SCOPED_COMBINED_GATE_PROBE",
+  "base": "f456f79aaf31d9372558f2cff73875ab3dcbf6c3",
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "da3cae4f0a8b4d2598426737162abb5e8635db007febd1d7184fdf821929285b",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "04b640aec35eb3d80a07e5b08812d0860df10050f4e02293b0eb1bc4c26641c6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "ab6935fd1cfc7fca2c7373d3e0fb965fa6ab26d1d083a9f09341bdfca181b3a0",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "a41326d1be0068d2734e4d4c71d262f2c9c69b5749ed73bda08960547dab2730"
+  },
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-combined-gate-y1mvkgjh",
+  "compileExit": 0,
+  "identityObserved": 13,
+  "purposeObserved": 17,
+  "combinedResultsMatchAcceptedLogs": true,
+  "purposeExactC": true,
+  "identityExactG": true,
+  "unchangedVsHEAD": [
+    "noteSource",
+    "measurementsMatchQuotes",
+    "claimsGate"
+  ],
+  "logs": {
+    "compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ReviewProbe.log": "f8db3221377c22c12df29b1a712677c96815bebccde4213f3b5ba77f5dc287bb",
+    "PurposePeer.log": "47043e42cb61933bbc640052d145cdf87ca931f39579ed3b47203c876aac23b7"
+  },
+  "results": {
+    "identity": [
+      "资料编号：unknown 并非属于项目已审核文档 => null",
+      "资料编号：unknown 不等于是项目已审核文档 => null",
+      "资料编号：unknown 不是完整版本但来自项目已审核文档 => SOURCE_IDENTITY_MISMATCH",
+      "资料编号：12 系统知识片段；资料编号：123 来自项目已审核文档 => null",
+      "资料编号：123 来自项目已审核文档，作为项目已审核文档的资料编号：12 => SOURCE_IDENTITY_MISMATCH",
+      "资料编号：123 是系统知识片段，来自项目已审核文档的资料编号：12 => SOURCE_IDENTITY_MISMATCH",
+      "资料编号：unknown 如果取得后来自项目已审核文档才引用 => null",
+      "来自项目已审核文档的资料编号：12，资料编号：123 系统知识片段 => SOURCE_IDENTITY_MISMATCH",
+      "资料编号：123 来自项目已审核文档，来自项目已审核文档的资料编号：unknown => SOURCE_IDENTITY_MISMATCH",
+      "资料编号：12 系统知识片段，来自项目已审核文档的资料编号：123 => null",
+      "资料编号：123 如果价格未取得则说明，资料编号：12 来自项目已审核文档 => SOURCE_IDENTITY_MISMATCH",
+      "反例：资料编号：unknown 来自项目已审核文档 => null",
+      "资料编号：12 来自项目已审核文档，备注：不是完整版本 => SOURCE_IDENTITY_MISMATCH"
+    ],
+    "purpose": [
+      "用途声明是可选的，但必须先声明才能继续。 => SKILL_CONTRACT_MISMATCH",
+      "用途未声明，不构成阻塞；按默认四维执行。 => null",
+      "用途未声明，无须补充用途才能继续，按默认四维执行。 => null",
+      "用途未声明，必须先补竞品名单才能继续。 => null",
+      "用途未声明，无须补报价且必须先声明用途才能继续。 => SKILL_CONTRACT_MISMATCH",
+      "| G-06 | 目的裁剪（用户声明时） | 如果用户要求窄化才裁剪，但未声明用途仍阻塞 C02 | 未声明默认四维 | => SKILL_CONTRACT_MISMATCH",
+      "| G-01 | 候选竞品名单 | 阻塞目的裁剪及比较 | 未取得 | => null",
+      "用途已声明为融资，原始报价未取得，暂停融资输出。 => null",
+      "用途未声明，不构成阻塞，但竞品名单缺失阻塞 C02。 => null",
+      "用途未声明，竞品名单缺失阻塞 C02。 => null",
+      "用途未声明，原始报价缺失阻塞 C02 步骤2。 => null",
+      "用途未声明，无须补报价，但必须先声明用途。 => SKILL_CONTRACT_MISMATCH",
+      "用途未声明，如果缺报价则暂停，但用途未声明仍阻塞 C02。 => SKILL_CONTRACT_MISMATCH",
+      "用途未声明，目的可选且无须先声明，不阻塞。 => null",
+      "| G-06 | 目的裁剪（用户声明时） | 原始报价缺失阻塞 C02 步骤2 | 未声明默认四维 | => null",
+      "用途未声明，竞品名单缺失阻塞目的裁剪与四维比较。 => null",
+      "用途未声明，如果用户要求窄化，必须先声明用途。 => null"
+    ]
+  },
+  "limits": "single Gate javac/probe; current source not runtime; 30 observations not 30 JUnit; bounded explicit-ID/purpose grammar"
+}

@@ -1,0 +1,38 @@
+{
+  "runId": "2106047284264341506",
+  "projectId": "2103659612308828162",
+  "personId": "900101",
+  "databaseStatusAtRead": "FAILED",
+  "sourceFileSha256": "f6995a2ba0ed3eb5d1ba1355de71658565f02e32a4d48b2bf58a0ccda7e2d32e",
+  "verification": "SOURCE摘要逐字段与ipd_agent_run_event的run_id+seq只读查询一致；省略正文和模型内部推理",
+  "sources": [
+    {
+      "seq": 10,
+      "tool": "project_knowledge_search",
+      "hits": 7,
+      "retrievalStatus": "PARTIAL",
+      "citationStatus": "SUCCESS",
+      "citationChars": 12049,
+      "citationSha256": "84d2de273b02b6c9d95e384128830aea3ee00d3124e20bd23e73f1b63437a7de",
+      "missingSourceVisible": true,
+      "unknownSourceInPreview": false
+    },
+    {
+      "seq": 11,
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "hits": 1,
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": null,
+      "citationChars": 15607,
+      "citationSha256": "19120e48542a8df26310ecdfce4585af5f3d42bd47c60fc201f5daa5da827550",
+      "missingSourceVisible": false,
+      "unknownSourceInPreview": false
+    }
+  ],
+  "negativeControl": {
+    "idempotencyKey": "core-closure-invalid-market-20261002",
+    "databaseRunCount": 0,
+    "databaseVerification": "SELECT COUNT(*) FROM ipd_agent_run WHERE idempotency_key=指定key；只读退出0",
+    "httpSource": "主任务报告非法工具编号21 create HTTP400/code10001；此子任务独立核数据库零run写入，不冒充独立HTTP执行"
+  }
+}

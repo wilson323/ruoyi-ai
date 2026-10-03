@@ -1,0 +1,53 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernance.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernance.java
+@@ -135,6 +135,9 @@
+                 boolean businessGuarded = delegate instanceof KernelGovernedTool
+                     || delegate instanceof BusinessExecutionGuarded guarded && guarded.hasExecutionClaimGuard();
+                 if (businessGuarded) return execute(param);
++                // Official confirmation promotes this exact pending call to ALLOWED in its session state.
++                // Consume that decision without asking again; direct callers cannot forge a matching receipt.
++                if (hasOfficialAuthorization(param, state)) return execute(param);
+                 // 官方 SDK 自检没有业务账本副作用；按本次调用的官方权限上下文直接复查。
+                 return new PermissionEngine(permission).checkPermission(this, param.getInput())
+                     .flatMap(decision -> {
+@@ -156,6 +159,40 @@
+                         "toolName", getName(), "state", "RETURNED")))
+                     .doOnError(error -> sink.onStep("TOOL_EXECUTION", Map.of(
+                         "toolName", getName(), "state", "FAILED")));
++        }
++
++        private boolean hasOfficialAuthorization(ToolCallParam param,
++                io.agentscope.core.state.AgentState state) {
++            RuntimeContext context = param.getRuntimeContext();
++            var call = param.getToolUseBlock();
++            if (state == null || context == null || call == null || call.getId() == null
++                || context.getUserId() == null || context.getSessionId() == null
++                || !Objects.equals(state.getUserId(), context.getUserId())
++                || !Objects.equals(state.getSessionId(), context.getSessionId())
++                || !Objects.equals(param.getInput(), call.getInput())
++                || call.getState() != io.agentscope.core.message.ToolCallState.ALLOWED) {
++                return false;
++            }
++            for (var message : state.getContext()) {
++                for (var block : message.getContent()) {
++                    if (block instanceof ToolResultBlock result && Objects.equals(result.getId(), call.getId())) {
++                        return false; // The official result already consumed this exact call.
++                    }
++                }
++            }
++            for (int index = state.getContext().size() - 1; index >= 0; index--) {
++                var message = state.getContext().get(index);
++                if (message.getRole() != io.agentscope.core.message.MsgRole.ASSISTANT) continue;
++                return message.getContent().stream().anyMatch(block ->
++                    block instanceof io.agentscope.core.message.ToolUseBlock approved
++                        && approved.getState() == io.agentscope.core.message.ToolCallState.ALLOWED
++                        && Objects.equals(approved.getId(), call.getId())
++                        && Objects.equals(approved.getName(), getName())
++                        && Objects.equals(approved.getName(), call.getName())
++                        && Objects.equals(approved.getInput(), call.getInput())
++                        && Objects.equals(approved.getContent(), call.getContent()));
++            }
++            return false;
+         }
+ 
+         private static String webBlockReason(Map<String, Object> input) {

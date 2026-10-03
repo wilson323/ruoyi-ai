@@ -1,0 +1,34 @@
+{
+  "status": "READ_ONLY_CANDIDATE_READY",
+  "loader": "codex-runtime-load-20261002.py",
+  "currentGap": "Counts ipd_agent_run only; legacy ai_agent_tasks can still schedule outgoing C01; count-to-SIGTERM race",
+  "legacyOwningEvidence": "AiExecReviewHook -> AiExecutionTrigger transaction insert/afterCommit dispatch -> AiExecutionEngine dispatchCycle selects PENDING or due FAILED and claims RUNNING; attempts<3 FAILED with retry, >=3 DEAD",
+  "minimalLoaderSuggestion": "Add fail-closed count ai_agent_tasks del_flag0 status PENDING/RUNNING/FAILED, record safe IDs/status only; recheck both families immediately before SIGTERM; stop new admission/dispatch needed to close race fully",
+  "isolatedValidation": [
+    "mock counts agent0/legacy1 for each state reject before os.kill/Popen",
+    "both0 passes preflight only",
+    "DB error/non-numeric failclosed",
+    "final recheck newly1 reject"
+  ],
+  "unknownEffectEarliestNode": {
+    "path": "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java",
+    "existingGuard": "resume line114 rejects inFlight sideEffects; before runner line174 inFlight persisted then requireHeld",
+    "nextReversibleWork": "Audit production sideEffects classification completeness and isolated external-effect-then-checkpoint-fault negative resume; do not duplicate existing guard",
+    "fenceLimit": "runner receives node/state no fencing token for downstream side effect, lease before/after does not prove atomic receiver fence"
+  },
+  "projectAgentLimit": "READ_ONLY toolkit uses InMemoryKernelToolEffectLedger; PENDING is not persistent unknown-effect proof",
+  "scope": "No new plan or loader/source/index/target edits; evidence returns to existing EVDIR/canvas node only",
+  "productionEffectSet": [
+    "HttpRequest",
+    "MailSend",
+    "Dalle3",
+    "Tongyiwanx"
+  ],
+  "actualGap": {
+    "earliestPath": "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/node/AbstractWfNode.java:134",
+    "finding": "Generic onProcess retry loop max3 has no side-effect classifier. MailSendNode send line133 catches exception line162 as soft failure; unknown delivery may repeat before execution-plan inFlight resume guard can run.",
+    "testLimit": "WorkflowNativeDagContractTest unknownSideEffectCannotBeAutomaticallyRepeated uses fake runner directly throwing, not real AbstractWfNode retry loop; covers MailSend resume classification only",
+    "candidate": "First bound actual side-effect node internal retries; classify uncertain effect failclosed once, keep read-only retry; mock sender/HTTP/image delegate unknown-after-effect negative before any live calls",
+    "remaining": "Graph effect set matches four destructive/generation component enum names; Answer/Google outgoing nonrepeatable billing not covered, policy scope decision needed; no claims of atomic external fence"
+  }
+}

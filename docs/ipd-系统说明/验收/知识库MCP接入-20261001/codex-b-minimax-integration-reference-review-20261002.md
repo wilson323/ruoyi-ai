@@ -1,0 +1,11 @@
+# B MiniMax 集成测试凭据合同复核
+
+裁决：BLOCKED_PERMISSION（仅测试修补范围内无法保持真实resolver成功语义），未改test。六行：ruoyi-ai；MinimaxIntegrationTest环境条件启用的8参数例；仅该test/必要现fixture；ChatModelVo.apiKey配置引用；现明文env值不合引用合同且MINIMAX安全env引用也未纳生产白名单；原log及provider/resolver源码A级，生产策略裁决由A。
+
+原/tmp/ipd-codex-chat-provider-full-20261002.log保留：345 tests/0fail/8errors/0skip，八例均MinimaxIntegrationTest:53 Invalid model API key reference，尚未到SDK模型工厂。test:28 System.getenv(MINIMAX_API_KEY)→:46 setApiKey明文→MinimaxServiceImpl:43 resolveApiKeyForConfiguredEndpoint(minimax)→ChatModelVo:100 ChatModelCredentialPolicy.resolveApiKeyForUse→SecretReference。该构建测试只实例化model，不作真实推理；现env条件启用不能靠禁用/跳过移除8错误。
+
+生产ChatModelSecretReference:10–11允许env:DEEPSEEK/PPIO/ATLAS_API_KEY及CUSTOM_OPENAI/ANTHROPIC专名，不包含MINIMAX_API_KEY；requirePersistableReference:47严格拒绝明文及env:MINIMAX_API_KEY。因此不能只把test字符串换成MINIMAX引用声称根因修完。requireProviderReference:127–140只列这三官方provider，自定义另分支，同样无MiniMax绑定。
+
+进一步精度：runtime resolveApiKeyForUse:60只校消费provider与配置行provider一致，然后requireTrustedConfiguration:154–166；该函数对minimax无case，不执行requireProviderReference。故安全env缺口之下，理论上minimax行借其他allowlisted provider引用可以进入终端env读取，这是源码推导的凭据归属缺口（未执行/未使用其他密钥），不能采用来让本test变绿。早期消息将runtime也描述为严格provider-reference核对过强，已纠正给A。本例真正应决定官方MiniMax model/host/env引用绑定合同，不应借custom或deepseek凭据绕过。
+
+最小合法后续若A明确纳生产MiniMax凭据策略：env:MINIMAX_API_KEY需SecretReference精确白名单及CredentialPolicy同provider/model/官方host绑定+跨provider/host负例；test可只把apiKey明文变量改常量引用，保留8参数成功assert与原env启用条件。此生产改动超出本轮授权，当前未实施，不mock resolver、不改env/global、不写硬编码secret、不打印现env。test冻结原SHA63a82d6ab1c418e31e0f52e64475b1d991664d4928463ad7832437e1bd1ca407，未变；未Maven/target/出站。

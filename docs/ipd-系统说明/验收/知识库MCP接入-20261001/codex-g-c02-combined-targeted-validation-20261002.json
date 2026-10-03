@@ -1,0 +1,82 @@
+{
+  "status": "VERIFIED_COMBINED_TARGETED_ONLY",
+  "timestampUtc": "2026-10-02T20:15:18.464377+00:00",
+  "mainLog": "/tmp/ipd-codex-c02-combined-targeted-20261002.log",
+  "logSha256": "ff83e1dd4cfd69b9e25db9d2103baea3368c45ffcf31ee3541a4b1cb9dbb1d22",
+  "completeBuildSuccessMarker": true,
+  "cleanMarker": true,
+  "sourceFreeze": "codex-c02-combined-source-20261002.json",
+  "sourceHashMatches": true,
+  "sourceHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "da3cae4f0a8b4d2598426737162abb5e8635db007febd1d7184fdf821929285b",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "04b640aec35eb3d80a07e5b08812d0860df10050f4e02293b0eb1bc4c26641c6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "ab6935fd1cfc7fca2c7373d3e0fb965fa6ab26d1d083a9f09341bdfca181b3a0",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "a41326d1be0068d2734e4d4c71d262f2c9c69b5749ed73bda08960547dab2730"
+  },
+  "suites": [
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentCompletionGateTest",
+      "counts": {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "09b44c9cf714ddbc5c0ca88996267c9bb3d702a5659173f94ed918b2748517af",
+      "timestamp": null,
+      "mtimeUtc": "2026-10-02T20:14:53.757021+00:00"
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunHandleTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "198b5734b8888234758cbe3fab1da2c8c7a936cee8d67a9ded345abdea81d607",
+      "timestamp": null,
+      "mtimeUtc": "2026-10-02T20:14:53.615692+00:00"
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentPromptTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bfcdbebfb978af60d3de9c7886745fcd62c0522a4906d59fcadd0cb2b92ba635",
+      "timestamp": null,
+      "mtimeUtc": "2026-10-02T20:14:55.552761+00:00"
+    }
+  ],
+  "sum": {
+    "tests": 50,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "noXmlBeforeTerminalUsed": true,
+  "mainTargetWrittenByValidator": false,
+  "boundaries": [
+    "Targeted only, not full module",
+    "No runtime reload/API acceptance inferred"
+  ],
+  "preservedXml": [
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-g-c02-targeted-ProjectAgentCompletionGateTest-20261002.xml",
+      "sha256": "09b44c9cf714ddbc5c0ca88996267c9bb3d702a5659173f94ed918b2748517af"
+    },
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-g-c02-targeted-ProjectAgentRunHandleTest-20261002.xml",
+      "sha256": "198b5734b8888234758cbe3fab1da2c8c7a936cee8d67a9ded345abdea81d607"
+    },
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-g-c02-targeted-ProjectAgentPromptTest-20261002.xml",
+      "sha256": "bfcdbebfb978af60d3de9c7886745fcd62c0522a4906d59fcadd0cb2b92ba635"
+    }
+  ],
+  "mavenExitFromRootSession": 0,
+  "exitVerificationScope": "XML/log independently verified; process exit root session90722 supplied"
+}

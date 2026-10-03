@@ -1,0 +1,538 @@
+{
+  "status": "CREATED_PENDING_START_VERIFIED_NOT_PERMISSION_ACCEPTANCE",
+  "time": "2026-10-02T19:06:14.684344+00:00",
+  "scope": "local ipd_dev exact approved QA creation only",
+  "sessions": [
+    {
+      "actor": "900101",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900101",
+        "personType": "SUPER_ADMIN",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    },
+    {
+      "actor": "900102",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900102",
+        "personType": "GROUP_LEADER",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    },
+    {
+      "actor": "900103",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900103",
+        "personType": "MARKET_PM",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    },
+    {
+      "actor": "900104",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900104",
+        "personType": "RD_PM",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "actor": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines",
+      "request": {
+        "code": "qa-member-7d37b33e5fd2",
+        "name": "QA同组非成员独立空间-7d37b33e5fd2"
+      },
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": "2106098453477072898",
+        "code": "qa-member-7d37b33e5fd2",
+        "name": "QA同组非成员独立空间-7d37b33e5fd2",
+        "status": "ACTIVE",
+        "leaderPersonId": null,
+        "personId": null,
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 2,
+      "actor": "900102",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/join-applications",
+      "request": null,
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": "PENDING",
+        "leaderPersonId": null,
+        "personId": "900102",
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 3,
+      "actor": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/join-applications/900102/review",
+      "request": {
+        "approve": true
+      },
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": "ACTIVE",
+        "leaderPersonId": null,
+        "personId": "900102",
+        "reviewedBy": "900101",
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 4,
+      "actor": "900103",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/join-applications",
+      "request": null,
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": "PENDING",
+        "leaderPersonId": null,
+        "personId": "900103",
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 5,
+      "actor": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/join-applications/900103/review",
+      "request": {
+        "approve": true
+      },
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": "ACTIVE",
+        "leaderPersonId": null,
+        "personId": "900103",
+        "reviewedBy": "900101",
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 6,
+      "actor": "900104",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/join-applications",
+      "request": null,
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": "PENDING",
+        "leaderPersonId": null,
+        "personId": "900104",
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 7,
+      "actor": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/join-applications/900104/review",
+      "request": {
+        "approve": true
+      },
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": "ACTIVE",
+        "leaderPersonId": null,
+        "personId": "900104",
+        "reviewedBy": "900101",
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 8,
+      "actor": "900101",
+      "method": "PUT",
+      "path": "/api/v1/ipd/product-lines/2106098453477072898/leader/900102",
+      "request": null,
+      "http": 200,
+      "code": 0,
+      "response": {
+        "id": "2106098453477072898",
+        "code": "qa-member-7d37b33e5fd2",
+        "name": "QA同组非成员独立空间-7d37b33e5fd2",
+        "status": "ACTIVE",
+        "leaderPersonId": "900102",
+        "personId": null,
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    },
+    {
+      "step": 9,
+      "actor": "900103",
+      "method": "POST",
+      "path": "/api/v1/projects",
+      "request": {
+        "name": "QA同组非成员独立项目-7d37b33e5fd2",
+        "productId": null,
+        "templateType": "SOFTWARE",
+        "targetMarkets": "CN",
+        "level": "A",
+        "targetSalesAmount": 1,
+        "targetChannelCount": 0,
+        "targetNps": 0,
+        "targetSceneCount": 0,
+        "mainGroupId": "900001",
+        "marketPmId": "900103",
+        "rdPmId": "900104",
+        "productLineId": "2106098453477072898"
+      },
+      "http": 500,
+      "code": 90001,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": null,
+        "leaderPersonId": null,
+        "personId": null,
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    }
+  ],
+  "syntheticInputs": true,
+  "startExecuted": false,
+  "modelCalled": false,
+  "cleanupPerformed": false,
+  "preexisting": [],
+  "personDb": [
+    [
+      "900101",
+      "SUPER_ADMIN",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ],
+    [
+      "900102",
+      "GROUP_LEADER",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ],
+    [
+      "900103",
+      "MARKET_PM",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ],
+    [
+      "900104",
+      "RD_PM",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ]
+  ],
+  "allowance": [
+    [
+      "900103",
+      "L3",
+      "allowance.L3",
+      "2000"
+    ],
+    [
+      "900104",
+      "L3",
+      "allowance.L3",
+      "2000"
+    ]
+  ],
+  "lineId": "2106098453477072898",
+  "failureLookup": [
+    [
+      "2106098453477072898",
+      "qa-member-7d37b33e5fd2",
+      "QA同组非成员独立空间-7d37b33e5fd2",
+      "ACTIVE",
+      "900102"
+    ]
+  ],
+  "safeFailureType": "RuntimeError",
+  "safeFailure": "api_step_failed_or_unknown_9",
+  "residualDb": [
+    [
+      "2106098453477072898",
+      "qa-member-7d37b33e5fd2",
+      "ACTIVE",
+      "900102"
+    ],
+    [
+      "900102",
+      "ACTIVE",
+      "900101"
+    ],
+    [
+      "900103",
+      "ACTIVE",
+      "900101"
+    ],
+    [
+      "900104",
+      "ACTIVE",
+      "900101"
+    ],
+    [
+      "0"
+    ]
+  ],
+  "failureReasonSafe": "TARGET_MARKETS_INVALID_JSON",
+  "failureOwningSource": "ProjectService.insertNewProject:310",
+  "correctRequestContract": "DTO String targetMarkets must encode JSON country array; frontend project.ts:197 JSON.stringify",
+  "authorizedStep9SerializationCorrection": {
+    "time": "2026-10-02T19:07:38.808849+00:00",
+    "originalFailureRetained": true,
+    "apiCalls": [
+      {
+        "method": "POST",
+        "path": "/api/v1/projects",
+        "request": {
+          "name": "QA同组非成员独立项目-7d37b33e5fd2",
+          "productId": null,
+          "templateType": "SOFTWARE",
+          "targetMarkets": "[\"CN\"]",
+          "level": "A",
+          "targetSalesAmount": 1,
+          "targetChannelCount": 0,
+          "targetNps": 0,
+          "targetSceneCount": 0,
+          "mainGroupId": "900001",
+          "marketPmId": "900103",
+          "rdPmId": "900104",
+          "productLineId": "2106098453477072898"
+        },
+        "http": 200,
+        "body": {
+          "code": 0,
+          "message": "ok",
+          "data": {
+            "createBy": "900103",
+            "createTime": 1790968059266,
+            "updateTime": 1790968059266,
+            "id": "2106098805312069634",
+            "code": "PRJ-2026-902",
+            "name": "QA同组非成员独立项目-7d37b33e5fd2",
+            "templateType": "SOFTWARE",
+            "targetMarkets": "[\"CN\"]",
+            "level": "A",
+            "levelCoefficient": 1.0,
+            "targetSalesAmount": 1,
+            "targetChannelCount": 0,
+            "targetNps": 0,
+            "targetSceneCount": 0,
+            "source": "NEW",
+            "status": "PENDING_START",
+            "mainGroupId": "900001"
+          },
+          "timestamp": "2026-10-02T19:07:39Z",
+          "traceId": "bde24812a6074e9b83913961ea1df9f5"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/projects/2106098805312069634",
+        "http": 200,
+        "body": {
+          "code": 0,
+          "message": "ok",
+          "data": {
+            "createBy": "900103",
+            "createTime": 1790968059000,
+            "updateTime": 1790968059000,
+            "id": "2106098805312069634",
+            "code": "PRJ-2026-902",
+            "name": "QA同组非成员独立项目-7d37b33e5fd2",
+            "templateType": "SOFTWARE",
+            "targetMarkets": "[\"CN\"]",
+            "level": "A",
+            "levelCoefficient": 1.0,
+            "targetSalesAmount": 1.0,
+            "targetChannelCount": 0,
+            "targetNps": 0,
+            "targetSceneCount": 0,
+            "currentStage": "CONCEPT",
+            "subStageVersion": "0",
+            "source": "NEW",
+            "missingHistoryAck": "0",
+            "status": "PENDING_START",
+            "mainGroupId": "900001",
+            "tenantId": "000000",
+            "delFlag": "0"
+          },
+          "timestamp": "2026-10-02T19:07:39Z",
+          "traceId": "959600773278464db9832c5d11bf1cee"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/projects/2106098805312069634/members",
+        "http": 200,
+        "body": {
+          "code": 0,
+          "message": "ok",
+          "data": [
+            {
+              "id": "2106098805425315841",
+              "projectId": "2106098805312069634",
+              "personId": "900103",
+              "role": "MARKET_PM",
+              "memberType": "PRIMARY",
+              "lockedLevel": "L3",
+              "lockedAmount": "2000.00",
+              "joinDate": "Sat Oct 03 03:07:39 CST 2026",
+              "bonusEligible": "1"
+            },
+            {
+              "id": "2106098805517590530",
+              "projectId": "2106098805312069634",
+              "personId": "900104",
+              "role": "RD_PM",
+              "memberType": "PRIMARY",
+              "lockedLevel": "L3",
+              "lockedAmount": "2000.00",
+              "joinDate": "Sat Oct 03 03:07:39 CST 2026",
+              "bonusEligible": "1"
+            }
+          ],
+          "timestamp": "2026-10-02T19:07:39Z",
+          "traceId": "f2d35c3aac3a404cb9ccc874be471d38"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/projects/2106098805312069634/stages",
+        "http": 200,
+        "body": {
+          "code": 0,
+          "message": "ok",
+          "data": {
+            "stages": []
+          },
+          "timestamp": "2026-10-02T19:07:39Z",
+          "traceId": "3310fbe9f49348e580dee5f495d3a6cd"
+        }
+      }
+    ],
+    "finalDb": [
+      [
+        "2106098805312069634",
+        "QA同组非成员独立项目-7d37b33e5fd2",
+        "PENDING_START",
+        "900103",
+        "900001",
+        "2106098453477072898",
+        "NULL",
+        "[\"CN\"]"
+      ],
+      [
+        "900103",
+        "MARKET_PM",
+        "NULL"
+      ],
+      [
+        "900104",
+        "RD_PM",
+        "NULL"
+      ],
+      [
+        "0"
+      ],
+      [
+        "0"
+      ],
+      [
+        "900102"
+      ],
+      [
+        "900001"
+      ]
+    ]
+  },
+  "projectId": "2106098805312069634",
+  "windowReleased": true
+}

@@ -1,0 +1,36 @@
+{
+  "run": {
+    "runId": "2106049620076437505",
+    "projectId": "2103659612308828162",
+    "personId": "900101",
+    "status": "SUCCEEDED",
+    "errorCode": "",
+    "finishedAtDbClock": "2026-10-02 23:53:40"
+  },
+  "sources": [
+    {
+      "seq": "13",
+      "tool": "project_knowledge_search",
+      "hits": "8",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "citationChars": "10546",
+      "citationTextPersisted": "0",
+      "citationSha256": "9bc316269748dec3233ed2ab0be09807d1bfa2b5ae57540fc762990a3e526ee9"
+    },
+    {
+      "seq": "14",
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "hits": "1",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "NULL",
+      "citationChars": "10397",
+      "citationTextPersisted": "0",
+      "citationSha256": "e03599d0e0c4ff919a3db078031f6b068f5c191b3b5d4f6fcbd8fd759af78890"
+    }
+  ],
+  "invalidIdempotencyRunCount": 0,
+  "catalogSampleSourceAttachmentCount": 0,
+  "verification": "既有本机DB只读；不保存引用正文或模型思考；事件仍包含有限preview摘要",
+  "scope": "运行生成成功；产物应用/审核待主任务执行与独立回读；84缺失出处未恢复"
+}

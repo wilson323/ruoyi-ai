@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-02T19:32:40.420511+00:00",
+  "head": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-b-metadata-node-20261002.index",
+  "paths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java"
+  ],
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "c8428b39290b8c25974b4f97f84d8a38b655f000e51ba72881f1ab32330448e9",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "a9b553bd2561292723500b3d58fe1de833ab68bf8b93838ab92458b38bd09745"
+  },
+  "mainIndexBackup": "/Users/mac/Documents/ruoyi-ai/.git/codex-b-metadata-main-index-before-20261002",
+  "mainIndexEntriesBeforeSha256": "031e7bf53db914f1cd1db4cec637de6b37025d2858bebbc0866aa4027fb390ac",
+  "status": "VERIFIED_IMPLEMENTATION_NODE_COMMITTED",
+  "isolatedTests": 19,
+  "runtimeStatus": "LATEST_METADATA_NOT_LOADED",
+  "commit": "16b030a67ed9d55363a4fec1ba852088df6ad33f",
+  "normalHook": "8 PASS/0 FAIL/0 SKIP",
+  "loadedPid": 43168,
+  "loadedJarSha256": "8e80bb8198f30e681130d937325a8ac2bb5f8988c0bf5cdcd6be1b1033ce0354",
+  "alignedOwnPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java"
+  ],
+  "preservedMixedPaths": [],
+  "allOtherIndexEntriesBytePreserved": true,
+  "notFullBusinessAcceptance": true
+}

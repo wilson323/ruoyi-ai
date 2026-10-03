@@ -1,0 +1,45 @@
+{
+  "runId": "2106092487658545153",
+  "browserExistingTabs": 0,
+  "browserCoverage": "not covered; no existing lawful browser session",
+  "viteHttp": 200,
+  "sourceSha256": "b94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567",
+  "viteModuleSha256": "39ae5ee4a94c6a8a53dc7213b6b5d7d5e57da0edb85fd114328751c03191196c",
+  "viteSuppliesCapabilityPhrase": true,
+  "viteOwnPropertyGuard": true,
+  "viteUnauthorizedPhrase": true,
+  "sources": [
+    {
+      "seq": 8,
+      "retrievalStatus": "FAILED",
+      "reasonCode": "PROTOCOL_OR_TRANSPORT",
+      "stage": "INITIALIZE",
+      "sdkFrames": [
+        "io.modelcontextprotocol.json.McpJsonInternal#lambda$createDefaultMapper$2:67",
+        "io.modelcontextprotocol.json.McpJsonInternal#createDefaultMapper:62",
+        "io.modelcontextprotocol.json.McpJsonInternal#getDefaultMapper:30",
+        "io.modelcontextprotocol.json.McpJsonMapper#getDefault:97",
+        "io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport$Builder#build:825",
+        "org.ruoyi.mcp.service.core.ManagedMcpAsyncClient#streamableHttp:49"
+      ],
+      "frameSafe": true,
+      "frameCount": 6,
+      "unsafePreviewMarkers": false,
+      "previewSha256": "49b03ec0eb943b83557dd1eea331f63ed68ce90cde2e1ad07aa4c00da589fb14"
+    }
+  ],
+  "failedCount": 1,
+  "allFramesSafe": true,
+  "previewLeaksDetected": false,
+  "actualSdkClassWhitelistCount": 9,
+  "viteSourceMapOriginalHashes": [
+    "b94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567"
+  ],
+  "viteSourceMapMatchesFrozen": true,
+  "renderExpectedActualFailure": {
+    "retrieval": "failed",
+    "outcomeText": "没有查成",
+    "reasonText": "连接没有完成"
+  },
+  "renderCoverage": "served module/source map + original41 tests; no actual browser DOM history or live unauthorized SOURCE sample"
+}

@@ -1,0 +1,15 @@
+{
+  "status": "INDEPENDENT_METADATA_REJECTION_VERIFIED",
+  "compileExit": 0,
+  "probeExit": 0,
+  "safeOutput": "ACTUAL_ARTIFACT=SOURCE_IDENTITY_MISMATCH PASS=6",
+  "artifactHash": "348d99e516b08e5b89f8af19e6009437056f9b004806f00ac728bf405b943885",
+  "gateHash": "c8428b39290b8c25974b4f97f84d8a38b655f000e51ba72881f1ab32330448e9",
+  "temporaryDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-metadata-validator-z8jroove",
+  "promptReview": "Only fixed context/source authority descriptions added; hasFacts/local tool conditional; original source/model/tools/facts and frozen skill loading unchanged; business plaintext requested; no causal model claim",
+  "limits": [
+    "No Maven/shared target or model/network query",
+    "Exact real artifact rejected with source identity reason; fixed negatives allowed",
+    "Prompt effectiveness requires next loaded runtime, not proven by string assertions"
+  ]
+}

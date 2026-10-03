@@ -1,0 +1,27 @@
+{
+  "status": "VERIFIED_TEMP_HARNESS_STREAM_TASK_WAIT",
+  "sdk": "2.0.3",
+  "checks": {
+    "task barrier complete": true,
+    "state=SUCCESS": true,
+    "TASK_COMPLETED=true": true,
+    "MODEL_RECEIVED_BACKGROUND_RESULT=true": true,
+    "EVENT_TYPE=TOOL_RESULT_END": true
+  },
+  "hashes": {
+    "GStreamWaitProbe.java": "8d308de3d6e7dcf3880bd56040f16a4c02396ebcdacec63a68126f991453a2f6",
+    "stream-wait-count-assertion-failed.log": "92fa0219b702b6bdda247b87ea53cf73a278f1de12df7663f2b72a797e69e243",
+    "stream-wait-final.log": "e2e45416073b833ca3893709f396ee60038357c5747f8149985abf6a4ed2de64",
+    "stream-wait-clean.log": "0c608d3b0ed58585e2b8ce28d675e0baf97bb44f28112f57742ffa58547986e6"
+  },
+  "parameterRootCause": "ToolExecutor.executeCore validates ToolUseBlock.getContent at line204; original probe input(Map) did not fill raw content JSON. Not SDK defect.",
+  "realPath": "HarnessAgent.streamEvents -> stubModel ToolUseBlock(contentJSON,inputMap) -> Toolkit execution -> registered WaitAsyncResultsTool -> real WorkspaceTaskRepository LocalTaskRunSpec -> barrier complete -> ToolResultEnd SUCCESS -> model sees actual task result",
+  "finalCleanState": "explicit official InMemoryAgentStateStore, unique owned session, no directCall, all default consumers enabled",
+  "priorFailure": "first actual barrier SUCCESS failed overly narrow exactly2 stub-call assertion; second local default persisted session caused early reused output, excluded as proof; clean run trace+event checked",
+  "scope": [
+    "no real model or M3",
+    "synthetic task harmless local supplier only",
+    "no production Person/project permission acceptance",
+    "no main/index/target/reload/db write"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "status": "CONTEXT_SOURCE_BOUNDARY_CONFIRMED_PATCH_REVIEW_BLOCKED",
+  "sourceChain": [
+    "ProjectAgentRunService#loadProjectFacts:405-429 reads project name/currentStage/product name/action and optional rejection comment",
+    "ProjectAgentPrompt#renderProjectFacts formats four context rows",
+    "AgentScopeProjectAgentKernel#buildManagedAgent:270 uses ProjectAgentPrompt.build(spec)",
+    "ProjectAgentPrompt#build:34,39,55 allows facts and reviewed-document/KB sources but has no explicit metadata-vs-document identity statement"
+  ],
+  "facts": [
+    "No 已确认事实 heading in current prompt",
+    "Authorized context facts authoritative for current context, not PROJECT_DOCUMENT/REVIEWED evidence",
+    "No evidence proves model was induced by heading; causal attribution remains inference"
+  ],
+  "minimalSuggestion": [
+    "In hasFacts block state project/stage/product/action are project record context, not document or review evidence; may not label them as reviewed document",
+    "For local retrieval allow reviewed label only exact sourceEvidence PROJECT_DOCUMENT+REVIEWED; preserve KNOWNLEDGE_FRAGMENT/NOT_PROJECT_DOCUMENT and IDs, no same-name identity borrowing"
+  ],
+  "newGateFinding": "Current metadataSubject regex permits only separator after 项目上下文, so new direct affirmative test 项目上下文是项目已审核文档 misses subject and remains allowed; exact table row rejects; report to coordinator, no edit/test target",
+  "scope": "Read only; no skills/hash/database/globalbudget/AiGateway changes"
+}

@@ -1,0 +1,32 @@
+{
+  "timestampUtc": "2026-10-02T21:22:33.146065+00:00",
+  "scope": "local Person login and GET only",
+  "loginHttp": 200,
+  "loginCode": 0,
+  "reads": {
+    "/auth/me": {
+      "http": 200,
+      "code": 0,
+      "id": null,
+      "status": null
+    },
+    "/projects/2103659612308828162": {
+      "http": 200,
+      "code": 0,
+      "id": "2103659612308828162",
+      "status": "ACTIVE"
+    },
+    "/projects/2103659612308828162/agent-capabilities": {
+      "http": 200,
+      "code": 0,
+      "id": null,
+      "status": null
+    },
+    "/agent-runs/2106107313315135490": {
+      "http": 200,
+      "code": 0,
+      "id": null,
+      "status": "SUCCEEDED"
+    }
+  }
+}

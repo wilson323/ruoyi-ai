@@ -1,0 +1,15 @@
+{
+  "status": "READ_ONLY_CONTRACT_REVIEW",
+  "sourceHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "bb17c66df3a84c517343474751fa44e57bcc9765600712c96bb6751730d577a6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java": "87db6577e3aff8807d8212cf4bd4d6f769bcea91fcead4b609ac6d9dcd9adce3",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentWorkspace.java": "f32ce4a906d933250b2a439a7d348ef4b92625f744bb1d1d0eebadd92a754158",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java": "b51b55e1c3971f80b872d933eb66649eda71cdb0e4dfecf26fb04dcf433a6398",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java": "a36261d8a53604f40929d18f074600850bd3b54ce9807bb48afb7955fbd63c30"
+  },
+  "officialSdkSourceJar": "/Users/mac/.m2/repository/io/agentscope/agentscope-harness/2.0.3/agentscope-harness-2.0.3-sources.jar",
+  "officialSdkSourceSha": "6e30e9429eedc1551e858674b57541d94fd9b7b753550c844f3fe8bdbbf12034",
+  "pausedSkillSnapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-selected-skills-headf456-39lnsyuq/ruoyi-ai",
+  "pausedSkillStatus": "CONSTRUCTED_TEMP_NOT_COMPILED_OR_TESTED",
+  "limits": "no SDK capability execution probe; C owns it; no runtime/DB/index/source writes"
+}

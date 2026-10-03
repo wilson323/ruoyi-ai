@@ -1,0 +1,28 @@
+{
+  "status": "READ_ONLY_MINIMAL_C02_CLOSURE_PREANALYSIS_FINAL_GATE_PENDING",
+  "baseline": "verified thin reason two-file candidate on HEAD2bab",
+  "paths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java"
+  ],
+  "handleRequiredHunks": [
+    "Replace final completion field inline new ProjectAgentCompletionGate() with uninitialized final field.",
+    "After this.actionCode = run.getActionCode(), set this.completion = new ProjectAgentCompletionGate(this.actionCode)."
+  ],
+  "testsRequired": [
+    "Only c02OptionalPurposeBlockerCannotPersistArtifact method: recorded action C02, actual numbered G-06 table, zero artifact, FAILED/COMPLETION_REJECTED and fixed SKILL_CONTRACT_MISMATCH ERROR once.",
+    "Only recordedActionKeepsDefaultScopeAndOtherActionsCompatible method: C02 default-four-dimensions positive and C01 rule isolation positive."
+  ],
+  "testsDependencies": "Both methods use already existing IpdAgentRun builder, fixtures, InMemoryAgentRunStore/InMemoryArtifactVersionStore, Map, clock and assertions. No new imports/helper/ownership/transaction/store types required.",
+  "preserveThinBaseline": "Preserve thin candidate two original sourceEvidence fixture corrections and precise completionReason/raw-body exclusion assertions. Main current tests reverse/weaken these hunks; do not import that reversal.",
+  "excludeOtherWip": [
+    "TransactionTemplate/ownership/epoch/cleanup/callback changes",
+    "Artifact persistence InsertControlStore and imports",
+    "thinking-only and full-evidence/internal-think tests",
+    "Any original sourceEvidence fixture removal or completionReason assertion weakening"
+  ],
+  "errorWiring": "Existing thin reason uses completion.rejectionReason followed by enum.name into existing ERROR payload. Gate adding fixed enum SKILL_CONTRACT_MISMATCH needs no new Store/Schema/SDK or event type. Existing COMPLETION_REJECTED terminal code remains.",
+  "limitation": "Gate parser final freeze pending from G; no candidate written, no compile claim for this future four-path slice. Main WIP not copied."
+}

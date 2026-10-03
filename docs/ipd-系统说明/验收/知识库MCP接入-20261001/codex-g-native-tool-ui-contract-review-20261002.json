@@ -1,0 +1,96 @@
+{
+  "status": "PARTIAL_UI_CONTRACT_VERIFIED_BACKEND_NATIVE_TOOLS_NOT_CONNECTED",
+  "timestampUtc": "2026-10-02T20:21:19.502243+00:00",
+  "sourceHashes": {
+    "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.ts": "ef01c63eae7857a890dd7e5bf3a408c31803de5a9309680392c82964314b12c0",
+    "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ai-agent/capability-picker.vue": "f4413b3f195ca831c9545fef2901c4c0251ba9601a4073716dd49bfa31c2b3d4",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java": "b51b55e1c3971f80b872d933eb66649eda71cdb0e4dfecf26fb04dcf433a6398",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "bb17c66df3a84c517343474751fa44e57bcc9765600712c96bb6751730d577a6"
+  },
+  "sdkPrimarySource": {
+    "path": "/Users/mac/.m2/repository/io/agentscope/agentscope-harness/2.0.3/agentscope-harness-2.0.3-sources.jar",
+    "sha256": "6e30e9429eedc1551e858674b57541d94fd9b7b753550c844f3fe8bdbbf12034",
+    "version": "2.0.3",
+    "registrar": "HarnessAgent.java:2634-2671",
+    "protocolNames": [
+      "read_file",
+      "write_file",
+      "edit_file",
+      "grep_files",
+      "glob_files",
+      "list_files",
+      "execute",
+      "web_fetch",
+      "web_search",
+      "memory_get",
+      "memory_save",
+      "memory_search"
+    ]
+  },
+  "manifestToolIds": [
+    "project_knowledge_search",
+    "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+    "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+    "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+    "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+    "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+    "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+    "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+    "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+    "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+    "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+    "FastGPT-mcp-69cce71396a40120630b055e",
+    "FastGPT-mcp-69cce77b96a40120630b0c3d",
+    "FastGPT-mcp-69cce8b996a40120630b1d80",
+    "FastGPT-mcp-69cce8e096a40120630b1e68",
+    "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+    "FastGPT-mcp-69cce93796a40120630b2133",
+    "FastGPT-mcp-69cce91596a40120630b2017"
+  ],
+  "manifestToolsReadOnly": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "frontendTempTest": {
+    "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-fe-completion-reason-qhjlbobt/ruoyi-ipd-web",
+    "log": "/tmp/ipd-g-fe-native-name-catalogue-20261002.log",
+    "testExit": 0,
+    "tests": 20,
+    "failures": 0,
+    "existing": 19,
+    "newSyntheticCatalogueCase": 1,
+    "simulatedToolIds": [
+      "read_file",
+      "write_file",
+      "execute",
+      "web_fetch",
+      "memory_get"
+    ],
+    "notBackendRegistration": true
+  },
+  "ownershipEvidence": "codex-g-tool-capability-output-ownership-preflight-20261002.json",
+  "noCreateCancelApplyReloadOrModel": true,
+  "findings": [
+    "UI generic IDs and writable status can represent native tool families",
+    "Current catalogue+Kernel only knowledge/MCP; native types absent",
+    "All available pack tools are selected by default; selection does not grant business authority",
+    "CapabilityService marks pack unavailable if any listed tool unavailable; adding optional key-dependent tool can block whole pack",
+    "New native tool session/workspace/effect audit still unverified; current HTTP checks cover existing run output only"
+  ]
+}

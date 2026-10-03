@@ -1,0 +1,711 @@
+diff --git aruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java
+new file mode 100644
+index 0000000..af5b80c
+--- /dev/null
++++ bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java
+@@ -0,0 +1,119 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.Agent;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.event.AgentEvent;
++import io.agentscope.core.middleware.AgentInput;
++import io.agentscope.core.middleware.MiddlewareBase;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.artifact.ArtifactDeliveryTarget;
++import io.agentscope.harness.agent.memory.session.SessionTranscriptWriter;
++import io.agentscope.harness.agent.tool.ArtifactDeliveryTool;
++import io.agentscope.harness.agent.transcript.TranscriptStore;
++import reactor.core.publisher.Flux;
++import reactor.core.publisher.Mono;
++
++import java.util.Objects;
++import java.util.function.Function;
++import java.util.function.Supplier;
++
++/** 官方 leaf 保持原类型；补接父级官方工具、审计 transcript 与业务 owner 生命周期。 */
++public final class ProjectAgentChildConsumers
++    implements ProjectAgentSubagentScopeMiddleware.ChildConsumer, MiddlewareBase {
++    private final Supplier<HarnessAgent> parentAgent;
++    private final RuntimeContext trustedRoot;
++    private final TranscriptStore transcripts;
++    private final String tenant;
++    private final ArtifactDeliveryTarget artifacts;
++    private final Function<RuntimeContext, Mono<Void>> ownerLifecycle;
++    private final Runnable requireCurrentAccess;
++    private java.util.function.Consumer<ChildFailure> failureSink;
++
++    public record ChildFailure(String parentSession, String childSession, String agentId,
++                               String reasonCode, String exceptionCategory) { }
++
++    public ProjectAgentChildConsumers failureSink(java.util.function.Consumer<ChildFailure> sink) {
++        this.failureSink = Objects.requireNonNull(sink);
++        return this;
++    }
++    private final java.util.Map<String, HarnessAgent> boundChildren = new java.util.concurrent.ConcurrentHashMap<>();
++
++    public ProjectAgentChildConsumers(Supplier<HarnessAgent> parentAgent, RuntimeContext trustedRoot,
++                                       TranscriptStore transcripts, String tenant,
++                                       ArtifactDeliveryTarget artifacts,
++                                       Function<RuntimeContext, Mono<Void>> ownerLifecycle,
++                                       Runnable requireCurrentAccess) {
++        this.parentAgent = Objects.requireNonNull(parentAgent);
++        this.trustedRoot = Objects.requireNonNull(trustedRoot);
++        this.transcripts = Objects.requireNonNull(transcripts);
++        this.tenant = Objects.requireNonNull(tenant);
++        this.artifacts = Objects.requireNonNull(artifacts);
++        this.ownerLifecycle = Objects.requireNonNull(ownerLifecycle);
++        this.requireCurrentAccess = Objects.requireNonNull(requireCurrentAccess);
++    }
++
++    @Override
++    public int order() {
++        return Integer.MIN_VALUE + 2;
++    }
++
++    @Override
++    public Agent bind(Agent officialLeaf, ProjectAgentFoundationTools.Scope scope, RuntimeContext context) {
++        requireCurrentAccess.run();
++        Objects.requireNonNull(failureSink, "Child failure audit sink must be bound before spawn");
++        if (!(officialLeaf instanceof HarnessAgent child)) {
++            throw new IllegalStateException("Official Harness leaf is required");
++        }
++        HarnessAgent parent = Objects.requireNonNull(parentAgent.get(), "Parent must be bound before spawn");
++        for (String name : new String[]{"skill_manage", "propose_skill", "plan_enter", "plan_write",
++            "plan_exit", "todo_write"}) {
++            var nativeTool = parent.getToolkit().getTool(name);
++            if (nativeTool == null) {
++                throw new IllegalStateException("Required official parent tool is unavailable: " + name);
++            }
++            if (child.getToolkit().getTool(name) == null) {
++                child.getToolkit().registerAgentTool(nativeTool);
++            }
++        }
++        child.getToolkit().registerMetaTool();
++        child.getToolkit().registerTool(new ArtifactDeliveryTool(
++            child.getWorkspaceManager().getFilesystem(), artifacts));
++        boundChildren.put(child.getAgentId(), child);
++        return child;
++    }
++
++    @Override
++    public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
++                                   Function<AgentInput, Flux<AgentEvent>> next) {
++        if (trustedRoot.getSessionId().equals(context.getSessionId())) {
++            return next.apply(input);
++        }
++        return Flux.defer(() -> next.apply(input)).concatWith(Mono.defer(() -> {
++            requireCurrentAccess.run();
++            HarnessAgent child = agent instanceof HarnessAgent direct ? direct : boundChildren.get(agent.getAgentId());
++            if (child == null) {
++                return Mono.error(new IllegalStateException("Official Harness leaf is required"));
++            }
++            var state = RuntimeContext.resolveAgentState(context, child);
++            if (state != null) {
++                new SessionTranscriptWriter(child.getWorkspaceManager(), transcripts, tenant)
++                    .appendMessages(context, state.getContext(), child.getAgentId(), context.getSessionId());
++            }
++            // Only this trusted adapter normalizes the owner context; child session remains in audit.
++            RuntimeContext ownerContext = RuntimeContext.builder(context)
++                .userId(trustedRoot.getUserId()).sessionId(trustedRoot.getSessionId()).build();
++            ownerContext.put("ipd.audit.childSession", context.getSessionId());
++            return ownerLifecycle.apply(ownerContext).then(Mono.<AgentEvent>empty());
++        })).doOnError(error -> failureSink.accept(new ChildFailure(
++            trustedRoot.getSessionId(), context.getSessionId(), agent.getAgentId(),
++            "CHILD_EXECUTION_FAILED", safeExceptionCategory(error))));
++    }
++
++    private static String safeExceptionCategory(Throwable error) {
++        if (error instanceof SecurityException) { return "SecurityException"; }
++        if (error instanceof IllegalStateException) { return "IllegalStateException"; }
++        if (error instanceof IllegalArgumentException) { return "IllegalArgumentException"; }
++        return "ExecutionError";
++    }
++}
++
+diff --git aruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java
+new file mode 100644
+index 0000000..df8f5b8
+--- /dev/null
++++ bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java
+@@ -0,0 +1,79 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.Agent;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.event.AgentEvent;
++import io.agentscope.core.message.Msg;
++import io.agentscope.core.message.ThinkingBlock;
++import io.agentscope.core.middleware.AgentInput;
++import io.agentscope.core.middleware.MiddlewareBase;
++import io.agentscope.core.state.AgentState;
++import io.agentscope.core.state.AgentStateStore;
++import io.agentscope.core.state.State;
++import io.agentscope.core.state.VersionedState;
++import reactor.core.publisher.Flux;
++import reactor.core.publisher.Mono;
++
++import java.util.List;
++import java.util.Optional;
++import java.util.Set;
++import java.util.function.Function;
++
++/** 保留会话与 transcript 消费者，在官方持久化扩展点只移除结构化内部思考。 */
++public final class ProjectAgentDeliveryStateMiddleware implements MiddlewareBase {
++    @Override
++    public int order() { return Integer.MIN_VALUE; }
++
++    @Override
++    public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
++                                    Function<AgentInput, Flux<AgentEvent>> next) {
++        return next.apply(input).concatWith(Mono.defer(() -> {
++            AgentState state = RuntimeContext.resolveAgentState(context, agent);
++            if (state != null) state.contextMutable().replaceAll(ProjectAgentDeliveryStateMiddleware::delivery);
++            return Mono.<AgentEvent>empty();
++        }));
++    }
++
++    private static Msg delivery(Msg message) {
++        return message.withContent(message.getContent().stream()
++            .filter(block -> !(block instanceof ThinkingBlock)).toList());
++    }
++
++    private static State persistentCopy(State state) {
++        if (state instanceof AgentState agentState) {
++            AgentState copy = AgentState.fromJsonString(agentState.toJson());
++            copy.contextMutable().replaceAll(ProjectAgentDeliveryStateMiddleware::delivery);
++            return copy;
++        }
++        return state instanceof Msg message ? delivery(message) : state;
++    }
++
++    public static AgentStateStore persistentStore(AgentStateStore delegate) {
++        return new AgentStateStore() {
++            public void save(String user, String session, String key, State state) {
++                delegate.save(user, session, key, persistentCopy(state));
++            }
++            public void save(String user, String session, String key, List<? extends State> states) {
++                delegate.save(user, session, key, states.stream().map(ProjectAgentDeliveryStateMiddleware::persistentCopy).toList());
++            }
++            public boolean supportsVersioning() { return delegate.supportsVersioning(); }
++            public <T extends State> VersionedState<T> getVersioned(String user, String session, String key, Class<T> type) {
++                return delegate.getVersioned(user, session, key, type);
++            }
++            public long saveIfVersion(String user, String session, String key, State state, long version) {
++                return delegate.saveIfVersion(user, session, key, persistentCopy(state), version);
++            }
++            public <T extends State> Optional<T> get(String user, String session, String key, Class<T> type) {
++                return delegate.get(user, session, key, type);
++            }
++            public <T extends State> List<T> getList(String user, String session, String key, Class<T> type) {
++                return delegate.getList(user, session, key, type);
++            }
++            public boolean exists(String user, String session) { return delegate.exists(user, session); }
++            public void delete(String user, String session) { delegate.delete(user, session); }
++            public void delete(String user, String session, String key) { delegate.delete(user, session, key); }
++            public Set<String> listSessionIds(String user) { return delegate.listSessionIds(user); }
++            public void close() { delegate.close(); }
++        };
++    }
++}
+diff --git aruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java bruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java
+new file mode 100644
+index 0000000..96bd94d
+--- /dev/null
++++ bruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java
+@@ -0,0 +1,103 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.message.Msg;
++import io.agentscope.core.model.ChatResponse;
++import io.agentscope.core.model.GenerateOptions;
++import io.agentscope.core.model.Model;
++import io.agentscope.core.model.ToolSchema;
++import io.agentscope.core.state.InMemoryAgentStateStore;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.artifact.ArtifactDeliveryResult;
++import io.agentscope.harness.agent.memory.MemoryConfig;
++import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
++import io.agentscope.harness.agent.transcript.FilesystemTranscriptStore;
++import org.junit.jupiter.api.Test;
++import reactor.core.publisher.Flux;
++import reactor.core.publisher.Mono;
++
++import java.nio.file.Files;
++import java.time.Duration;
++import java.util.List;
++import java.util.concurrent.atomic.AtomicBoolean;
++import java.util.concurrent.atomic.AtomicReference;
++
++import static org.junit.jupiter.api.Assertions.*;
++
++class ProjectAgentChildConsumersTest {
++    private static final Model NO_NETWORK = new Model() {
++        public String getModelName() { return "no-network-fixture"; }
++        public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
++            return Flux.error(new AssertionError("Construction test must not call a model"));
++        }
++    };
++
++    @Test
++    void canonicalParentAllowsTrustedChildSessionAndRevocationClosesFactory() throws Exception {
++        var workspace = Files.createTempDirectory("child-canonical-test-");
++        var scope = new ProjectAgentFoundationTools.Scope("1", "2", "3", workspace);
++        var canonical = RuntimeContext.builder().userId("p1:u2").sessionId("aproject:s3").build();
++        var allowed = new AtomicBoolean(true);
++        Runnable access = () -> { if (!allowed.get()) throw new SecurityException("revoked"); };
++        var guard = new ProjectAgentSubagentScopeMiddleware(scope, canonical, access,
++            (leaf, trusted, context) -> leaf);
++        var parent = HarnessAgent.builder().name("canonical-parent").model(NO_NETWORK).workspace(workspace).build();
++        try {
++            guard.onReasoning(parent, canonical, null, input -> Flux.empty()).blockLast();
++            var manager = parent.getSubagentAgentManager();
++            var name = manager.getAgentFactories().keySet().iterator().next();
++            var child = (HarnessAgent) manager.createAgent(name, canonical);
++            try {
++                var trustedChild = RuntimeContext.builder(canonical).sessionId("independent-child").build();
++                assertDoesNotThrow(() -> guard.onAgent(child, trustedChild, null, input -> Flux.empty()).blockLast());
++                var forged = RuntimeContext.builder().userId(canonical.getUserId()).sessionId("independent-child").build();
++                assertThrows(SecurityException.class, () -> guard.onAgent(child, forged, null, input -> Flux.empty()));
++                allowed.set(false);
++                assertThrows(SecurityException.class, () -> manager.createAgent(name, canonical));
++                assertThrows(SecurityException.class, () -> guard.onActing(child, trustedChild, null, input -> Flux.empty()));
++            } finally {
++                child.close();
++            }
++        } finally {
++            parent.close();
++        }
++    }
++
++    @Test
++    void realDelegateFailurePublishesOnlyFixedCategoryAndKeepsOriginalError() throws Exception {
++        var workspace = Files.createTempDirectory("child-failure-test-");
++        var scope = new ProjectAgentFoundationTools.Scope("1", "2", "3", workspace);
++        var root = RuntimeContext.builder().userId("p1:u2").sessionId("aproject:s3").build();
++        var parentRef = new AtomicReference<HarnessAgent>();
++        var failure = new AtomicReference<ProjectAgentChildConsumers.ChildFailure>();
++        var transcripts = new FilesystemTranscriptStore(workspace.resolve("transcripts"));
++        var consumers = new ProjectAgentChildConsumers(parentRef::get, root, transcripts, "fixture",
++            (context, request) -> ArtifactDeliveryResult.success("DRAFT fixture"),
++            context -> Mono.empty(), () -> { }).failureSink(failure::set);
++        var parent = ProjectAgentFoundationTools.configureFullCapabilities(
++            HarnessAgent.builder().name("failure-parent").model(NO_NETWORK), scope, root, "alpine:3",
++            new InMemoryAgentStateStore(), transcripts, MemoryConfig.defaults(),
++            (candidate, context) -> Mono.just(new SkillPromotionGate.PromotionDecision.Defer(
++                Duration.ofMinutes(1), "owner pending")), (skills, context) -> skills,
++            (context, request) -> ArtifactDeliveryResult.success("DRAFT fixture")).build();
++        assertEquals(root.getSessionId(), parent.getDefaultSessionId());
++        parentRef.set(parent);
++        var manager = parent.getSubagentAgentManager();
++        var child = (HarnessAgent) manager.createAgent(manager.getAgentFactories().keySet().iterator().next(), root);
++        try {
++            consumers.bind(child, scope, root);
++            var childContext = RuntimeContext.builder(root).sessionId("independent-child").build();
++            var original = new IllegalStateException("private-exception-needle");
++            assertSame(original, assertThrows(IllegalStateException.class, () -> consumers.onAgent(
++                child.getDelegate(), childContext, null, input -> Flux.error(original)).blockLast()));
++            assertEquals("CHILD_EXECUTION_FAILED", failure.get().reasonCode());
++            assertEquals("IllegalStateException", failure.get().exceptionCategory());
++            assertEquals(root.getSessionId(), failure.get().parentSession());
++            assertEquals("independent-child", failure.get().childSession());
++            assertFalse(failure.get().toString().contains("private-exception-needle"));
++        } finally {
++            child.close();
++            parent.close();
++        }
++    }
++}
+diff --git aruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java
+new file mode 100644
+index 0000000..0dc8ddd
+--- /dev/null
++++ bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java
+@@ -0,0 +1,123 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.IsolationScope;
++import io.agentscope.harness.agent.memory.MemoryConfig;
++import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
++import io.agentscope.harness.agent.skill.curator.SkillVisibilityFilter;
++import io.agentscope.harness.agent.skill.curator.SkillCuratorConfig;
++import io.agentscope.harness.agent.artifact.ArtifactDeliveryTarget;
++import io.agentscope.harness.agent.transcript.TranscriptStore;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.state.AgentStateStore;
++import java.nio.file.Path;
++import java.util.Objects;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.tool.FilesystemTool;
++import io.agentscope.harness.agent.tool.ShellExecuteTool;
++import io.agentscope.harness.agent.tool.WebTools;
++import java.util.Map;
++import java.util.Set;
++
++/** 官方 2.0.3 原生基础工具；容器由 Harness 生命周期持有，不回落宿主 Shell。 */
++public final class ProjectAgentFoundationTools {
++    private ProjectAgentFoundationTools() { }
++    public static Set<String> nativeToolIds() {
++        return Set.of("read_file", "write_file", "edit_file", "grep_files", "glob_files", "list_files",
++            "execute", "web_fetch", "web_search", "memory_get", "memory_search", "memory_save",
++            "session_search", "session_list", "session_history", "wait_async_results",
++            "agent_list", "agent_send", "agent_spawn", "task_cancel", "task_list", "task_output",
++            "load_skill_through_path", "plan_enter", "plan_write", "plan_exit", "skill_manage",
++            "propose_skill", "todo_write", "reset_equipped_tools", "deliver_artifact");
++    }
++    public static DockerFilesystemSpec dockerFilesystem(String image) {
++        return dockerFilesystem(image, null);
++    }
++    public static DockerFilesystemSpec dockerFilesystem(String image, String workspaceVolume) {
++        if (image == null || image.isBlank()) throw new IllegalArgumentException("sandbox image is required");
++        if (workspaceVolume != null && !workspaceVolume.matches("ipd-agent-[a-z0-9-]{1,100}"))
++            throw new IllegalArgumentException("managed workspace volume name is invalid");
++        DockerFilesystemSpec spec = new DockerFilesystemSpec().image(image).workspaceRoot("/workspace")
++            .environment(Map.of()).network("none")
++            .additionalRunArgs(workspaceVolume == null
++                ? new String[]{"--cap-drop=ALL", "--security-opt=no-new-privileges"}
++                : new String[]{"--cap-drop=ALL", "--security-opt=no-new-privileges", "--mount",
++                    "type=volume,source=" + workspaceVolume + ",target=/workspace"});
++        return spec;
++    }
++    public record Scope(String projectId, String personId, String runId, Path managedWorkspace) {
++        public Scope {
++            for (String id : new String[]{projectId, personId, runId}) {
++                if (id == null || !id.matches("[0-9]+"))
++                    throw new IllegalArgumentException("trusted scope identifiers are required");
++            }
++            Objects.requireNonNull(managedWorkspace, "managedWorkspace");
++        }
++        public String volumeName() { return "ipd-agent-" + projectId + "-" + personId; }
++        public String runWorkingDirectory() { return "runs/" + runId; }
++        public RuntimeContext runtimeContext() {
++            return RuntimeContext.builder().userId(projectId + "-" + personId)
++                .sessionId(runId).build();
++        }
++    }
++
++    /** 新 Builder 保留官方 hooks/transcript/context/skills/subagents；调用方供应持久且已清洗的存储。 */
++    public static HarnessAgent.Builder configure(HarnessAgent.Builder builder, Scope scope,
++                                                 String image, AgentStateStore stateStore,
++                                                 TranscriptStore transcriptStore, MemoryConfig memory) {
++        return configure(builder, scope, scope.runtimeContext(), image, stateStore, transcriptStore, memory);
++    }
++
++    /** 生产调用必须传入既有 KernelScopeKey 产出的可信 RuntimeContext；不另拼隔离键。 */
++    public static HarnessAgent.Builder configure(HarnessAgent.Builder builder, Scope scope,
++                                                 RuntimeContext trustedRootContext, String image,
++                                                 AgentStateStore stateStore, TranscriptStore transcriptStore,
++                                                 MemoryConfig memory) {
++        Objects.requireNonNull(builder, "builder");
++        Objects.requireNonNull(scope, "scope");
++        Objects.requireNonNull(trustedRootContext.getUserId(), "trusted user identity");
++        Objects.requireNonNull(trustedRootContext.getSessionId(), "trusted session identity");
++        return builder.filesystem(dockerFilesystem(image, scope.volumeName()).isolationScope(IsolationScope.USER))
++            .workspace(scope.managedWorkspace()).defaultSessionId(trustedRootContext.getSessionId())
++            .stateStore(ProjectAgentDeliveryStateMiddleware.persistentStore(
++                Objects.requireNonNull(stateStore, "stateStore")))
++            .middleware(new ProjectAgentDeliveryStateMiddleware())
++            .transcriptStore(Objects.requireNonNull(transcriptStore, "transcriptStore"))
++            .transcriptTenant(scope.projectId() + "-" + scope.personId())
++            .memory(Objects.requireNonNull(memory, "memory"));
++    }
++
++    /** 官方可选消费者也启用；审批、技能可见性与产物目的地由业务 SPI 提供。 */
++    public static HarnessAgent.Builder configureFullCapabilities(
++        HarnessAgent.Builder builder, Scope scope, String image, AgentStateStore stateStore,
++        TranscriptStore transcriptStore, MemoryConfig memory, SkillPromotionGate skillApproval,
++        SkillVisibilityFilter skillVisibility, ArtifactDeliveryTarget artifactDelivery) {
++        return configureFullCapabilities(builder, scope, scope.runtimeContext(), image, stateStore,
++            transcriptStore, memory, skillApproval, skillVisibility, artifactDelivery);
++    }
++
++    public static HarnessAgent.Builder configureFullCapabilities(
++        HarnessAgent.Builder builder, Scope scope, RuntimeContext trustedRootContext, String image,
++        AgentStateStore stateStore, TranscriptStore transcriptStore, MemoryConfig memory,
++        SkillPromotionGate skillApproval, SkillVisibilityFilter skillVisibility,
++        ArtifactDeliveryTarget artifactDelivery) {
++        return configure(builder, scope, trustedRootContext, image, stateStore, transcriptStore, memory)
++            .enablePlanMode().enableTaskList().enableMetaTool(true).enablePendingToolRecovery(true)
++            .enableSkillManageTool(true)
++            .enableSkillPromotionGate(Objects.requireNonNull(skillApproval, "skillApproval"),
++                Objects.requireNonNull(skillVisibility, "skillVisibility"))
++            .enableSkillCurator(SkillCuratorConfig.defaults())
++            .artifactDeliveryTarget(Objects.requireNonNull(artifactDelivery, "artifactDelivery"));
++    }
++
++    public static FilesystemTool filesystemTool(Sandbox sandbox) {
++        return new FilesystemTool(new PinnedSandboxFilesystem(sandbox));
++    }
++    public static ShellExecuteTool shellTool(Sandbox sandbox) {
++        return new ShellExecuteTool(new PinnedSandboxFilesystem(sandbox));
++    }
++    public static WebTools.WebFetchTool webFetchTool() { return new WebTools.WebFetchTool(); }
++    public static WebTools.WebSearchTool webSearchTool() { return new WebTools.WebSearchTool(); }
++}
+diff --git aruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java
+new file mode 100644
+index 0000000..f97c4cd
+--- /dev/null
++++ bruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java
+@@ -0,0 +1,115 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.Agent;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.event.AgentEvent;
++import io.agentscope.core.middleware.AgentInput;
++import io.agentscope.core.middleware.ActingInput;
++import io.agentscope.core.middleware.MiddlewareBase;
++import io.agentscope.core.middleware.ReasoningInput;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.middleware.SubagentEntry;
++import io.agentscope.harness.agent.subagent.SubagentFactory;
++import reactor.core.publisher.Flux;
++
++import java.util.function.Function;
++
++/** 在动态注册刷新之后装饰官方 leaf 工厂，授权绑定可信父运行而非任意子 session。 */
++public final class ProjectAgentSubagentScopeMiddleware implements MiddlewareBase {
++    private final ProjectAgentFoundationTools.Scope scope;
++    private final Runnable requireCurrentAccess;
++    private final ChildConsumer childConsumer;
++    private final Object trustToken = new Object();
++    private final String contextKey;
++    private final String trustedUser;
++    private final String trustedSession;
++    private java.util.function.Supplier<HarnessAgent> parentHarness = () -> null;
++
++    @FunctionalInterface
++    public interface ChildConsumer {
++        Agent bind(Agent officialLeaf, ProjectAgentFoundationTools.Scope parent, RuntimeContext context);
++    }
++
++    public ProjectAgentSubagentScopeMiddleware(ProjectAgentFoundationTools.Scope scope,
++                                               Runnable requireCurrentAccess, ChildConsumer childConsumer) {
++        this(scope, scope.runtimeContext(), requireCurrentAccess, childConsumer);
++    }
++
++    public ProjectAgentSubagentScopeMiddleware(ProjectAgentFoundationTools.Scope scope,
++                                               RuntimeContext trustedRootContext,
++                                               Runnable requireCurrentAccess, ChildConsumer childConsumer) {
++        this.scope = java.util.Objects.requireNonNull(scope);
++        this.trustedUser = java.util.Objects.requireNonNull(trustedRootContext.getUserId());
++        this.trustedSession = java.util.Objects.requireNonNull(trustedRootContext.getSessionId());
++        this.requireCurrentAccess = java.util.Objects.requireNonNull(requireCurrentAccess);
++        this.childConsumer = java.util.Objects.requireNonNull(childConsumer);
++        this.contextKey = getClass().getName() + ":" + scope.runId();
++    }
++
++    public ProjectAgentSubagentScopeMiddleware bindParent(java.util.function.Supplier<HarnessAgent> parent) {
++        this.parentHarness = java.util.Objects.requireNonNull(parent);
++        return this;
++    }
++
++    @Override
++    public int order() {
++        return Integer.MIN_VALUE + 1;
++    }
++
++    private void authorize(RuntimeContext context) {
++        if (context == null || !trustedUser.equals(context.getUserId())) {
++            throw new SecurityException("project person scope is unavailable");
++        }
++        if (context.get(contextKey) != trustToken && !trustedSession.equals(context.getSessionId())) {
++            throw new SecurityException("trusted parent run is unavailable");
++        }
++        requireCurrentAccess.run();
++        context.put(contextKey, trustToken);
++    }
++
++    @Override
++    public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
++                                   Function<AgentInput, Flux<AgentEvent>> next) {
++        authorize(context);
++        return next.apply(input);
++    }
++
++    @Override
++    public Flux<AgentEvent> onReasoning(Agent agent, RuntimeContext context, ReasoningInput input,
++                                       Function<ReasoningInput, Flux<AgentEvent>> next) {
++        authorize(context);
++        HarnessAgent harness = agent instanceof HarnessAgent direct ? direct : parentHarness.get();
++        if (harness != null && harness.getAgentId().equals(agent.getAgentId())
++            && harness.getSubagentAgentManager() != null) {
++            var manager = harness.getSubagentAgentManager();
++            var entries = manager.getAgentFactories().entrySet().stream().map(entry ->
++                new SubagentEntry(entry.getKey(), "Governed official subagent",
++                    entry.getValue() instanceof GuardedFactory ? entry.getValue()
++                        : new GuardedFactory(entry.getValue()), manager.getDeclaration(entry.getKey()).orElse(null)))
++                .toList();
++            manager.refreshEntries(entries);
++        }
++        return next.apply(input);
++    }
++
++    @Override
++    public Flux<AgentEvent> onActing(Agent agent, RuntimeContext context, ActingInput input,
++                                    Function<ActingInput, Flux<AgentEvent>> next) {
++        authorize(context);
++        return next.apply(input);
++    }
++
++    private final class GuardedFactory implements SubagentFactory {
++        private final SubagentFactory official;
++
++        private GuardedFactory(SubagentFactory official) {
++            this.official = official;
++        }
++
++        @Override
++        public Agent create(RuntimeContext parent) {
++            authorize(parent);
++            return java.util.Objects.requireNonNull(childConsumer.bind(official.create(parent), scope, parent));
++        }
++    }
++}
+diff --git aruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java bruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java
+new file mode 100644
+index 0000000..50ecc1a
+--- /dev/null
++++ bruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java
+@@ -0,0 +1,136 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import com.sun.net.httpserver.HttpServer;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.sandbox.WorkspaceSpec;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClient;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions;
++import io.agentscope.harness.agent.sandbox.snapshot.NoopSnapshotSpec;
++import io.agentscope.harness.agent.tool.MemoryGetTool;
++import io.agentscope.harness.agent.tool.MemorySaveTool;
++import io.agentscope.harness.agent.workspace.WorkspaceManager;
++import org.junit.jupiter.api.Test;
++
++import java.net.InetSocketAddress;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Objects;
++
++class ProjectAgentFoundationToolsTest {
++
++    private static void require(boolean condition, String label) {
++        if (!condition) throw new AssertionError(label);
++        System.out.println(label + "=PASS");
++    }
++
++    @Test
++    void officialNativeFileShellMemoryAndWebFixture() throws Exception {
++        DockerSandboxClientOptions options = new DockerSandboxClientOptions()
++            .image("alpine:3").workspaceRoot("/workspace").network("none")
++            .additionalRunArgs("--cap-drop=ALL", "--security-opt=no-new-privileges");
++        Sandbox sandbox = new DockerSandboxClient().create(
++            new WorkspaceSpec(), new NoopSnapshotSpec(), options);
++        try {
++            sandbox.start();
++            var file = ProjectAgentFoundationTools.filesystemTool(sandbox);
++            require(!file.writeFile(null, "/workspace/probe.txt", "isolated-content")
++                .startsWith("Error"), "FILE_WRITE");
++            require(file.readFile(null, "/workspace/probe.txt", 0, 0)
++                .contains("isolated-content"), "FILE_READ");
++            var shell = ProjectAgentFoundationTools.shellTool(sandbox);
++            require(shell.execute(null, "printf isolated-shell", null, 5)
++                .contains("isolated-shell"), "NATIVE_SHELL");
++            require(shell.execute(null, "printf no", "../outside", 5)
++                .startsWith("Error"), "SHELL_WORKDIR_BOUNDARY");
++            require(shell.execute(null,
++                "test ! -e /Users/mac/Documents/ruoyi-ai && printf host-inaccessible", null, 5)
++                .contains("host-inaccessible"), "HOST_REPO_NOT_MOUNTED");
++            Path workspace = Files.createTempDirectory("foundation-memory-");
++            WorkspaceManager manager = new WorkspaceManager(
++                workspace, new PinnedSandboxFilesystem(sandbox));
++            require(new MemorySaveTool(manager)
++                .memorySave(null, "- synthetic isolated preference").startsWith("Saved"), "MEMORY_WRITE");
++            require(new MemoryGetTool(manager).memoryGet(null, "MEMORY.md", 1, 100)
++                .contains("synthetic isolated preference"), "MEMORY_READ");
++        } finally {
++            sandbox.shutdown();
++            System.out.println("OWN_CONTAINER_CLEANUP=RETURNED");
++        }
++        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
++        server.createContext("/fixture", exchange -> {
++            byte[] body = "fixture-web-content".getBytes();
++            exchange.sendResponseHeaders(200, body.length);
++            exchange.getResponseBody().write(body);
++            exchange.close();
++        });
++        server.start();
++        try {
++            require(ProjectAgentFoundationTools.webFetchTool()
++                .webFetch("http://127.0.0.1:" + server.getAddress().getPort() + "/fixture", 100)
++                .contains("fixture-web-content"), "WEB_FETCH_FIXTURE");
++            require(ProjectAgentFoundationTools.webSearchTool().webSearch("", 1)
++                .contains("query is required"), "WEB_SEARCH_SCHEMA");
++            System.out.println("TAVILY_KEY_PRESENT="
++                + !Objects.toString(System.getenv("TAVILY_API_KEY"), "").isBlank());
++        } finally {
++            server.stop(0);
++        }
++    }
++    @Test
++    void freshBuilderKeepsAllOfficialDefaultConsumers() throws Exception {
++        io.agentscope.core.model.Model noNetworkModel = new io.agentscope.core.model.Model() {
++            public String getModelName() { return "isolated-no-network-model"; }
++            public reactor.core.publisher.Flux<io.agentscope.core.model.ChatResponse> stream(
++                java.util.List<io.agentscope.core.message.Msg> messages,
++                java.util.List<io.agentscope.core.model.ToolSchema> tools,
++                io.agentscope.core.model.GenerateOptions options) {
++                throw new AssertionError("model must not be called in construction test");
++            }
++        };
++        Path workspace = Files.createTempDirectory("foundation-full-defaults-");
++        var scope = new ProjectAgentFoundationTools.Scope("1", "1", "999999999", workspace);
++        var agent = ProjectAgentFoundationTools.configureFullCapabilities(
++            io.agentscope.harness.agent.HarnessAgent.builder().name("full-defaults-test").model(noNetworkModel),
++            scope, "alpine:3", new io.agentscope.core.state.InMemoryAgentStateStore(),
++            new io.agentscope.harness.agent.transcript.FilesystemTranscriptStore(workspace.resolve("transcripts")),
++            io.agentscope.harness.agent.memory.MemoryConfig.defaults(),
++            (candidate, context) -> reactor.core.publisher.Mono.just(
++                new io.agentscope.harness.agent.skill.curator.SkillPromotionGate.PromotionDecision.Defer(
++                    java.time.Duration.ofMinutes(1), "fixture owner approval pending")),
++            (skills, context) -> skills,
++            (context, request) -> io.agentscope.harness.agent.artifact.ArtifactDeliveryResult.success("fixture only"))
++            .build();
++        try {
++            var names = agent.getToolkit().getToolNames();
++            require(names.containsAll(ProjectAgentFoundationTools.nativeToolIds()), "OFFICIAL31_ENABLED");
++            require(names.containsAll(java.util.Set.of("agent_list", "agent_send", "agent_spawn",
++                "task_cancel", "task_list", "task_output", "load_skill_through_path")), "OTHER_DEFAULT_CONSUMERS");
++            require(scope.runtimeContext().getSessionId().equals("999999999"), "RUN_CONTEXT");
++            require(scope.runWorkingDirectory().equals("runs/999999999"), "RUN_DIRECTORY_IDENTITY");
++        } finally {
++            agent.close();
++        }
++    }
++    @Test
++    void persistentCopyRemovesThinkingWithoutChangingLiveStateOrToolIdentity() {
++        var thought = io.agentscope.core.message.ThinkingBlock.builder().thinking("private-fixture-needle").build();
++        var text = io.agentscope.core.message.TextBlock.builder().text("delivered-fixture-body").build();
++        var tool = io.agentscope.core.message.ToolUseBlock.builder().id("call-fixture").name("read_file")
++            .input(java.util.Map.of("path", "draft.md")).content("{\"path\":\"draft.md\"}").build();
++        var message = io.agentscope.core.message.Msg.builder().role(io.agentscope.core.message.MsgRole.ASSISTANT)
++            .content(java.util.List.of(thought, text, tool)).build();
++        var live = io.agentscope.core.state.AgentState.builder().userId("project-person").sessionId("run")
++            .summary("summary-fixture").curIter(2).context(java.util.List.of(message)).build();
++        var delegate = new io.agentscope.core.state.InMemoryAgentStateStore();
++        var safe = ProjectAgentDeliveryStateMiddleware.persistentStore(delegate);
++        safe.save("project-person", "run", "agent", live);
++        var persisted = safe.get("project-person", "run", "agent", io.agentscope.core.state.AgentState.class).orElseThrow();
++        require(live.toJson().contains("private-fixture-needle"), "LIVE_STATE_UNCHANGED");
++        require(!persisted.toJson().contains("private-fixture-needle"), "PERSISTED_THINKING_REMOVED");
++        require(persisted.toJson().contains("delivered-fixture-body")
++            && persisted.toJson().contains("call-fixture") && persisted.getCurIter() == 2,
++            "DELIVERY_TOOLS_AND_STATE_PRESERVED");
++        require(safe.supportsVersioning() == delegate.supportsVersioning(), "VERSION_SUPPORT_UNCHANGED");
++    }
++}

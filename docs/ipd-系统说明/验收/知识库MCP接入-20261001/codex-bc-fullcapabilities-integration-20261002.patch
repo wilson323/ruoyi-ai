@@ -1,0 +1,864 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java
+@@ -7,6 +7,9 @@
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.ArrayList;
++import java.util.LinkedHashSet;
++import java.util.Objects;
+ 
+ /**
+  * 项目智能体工具目录（W1 仅一个只读工具）。
+@@ -21,6 +24,26 @@
+ 
+     /** 工具可用性投影。 */
+     public record ToolStatus(String id, String name, boolean readOnly, boolean available, String reason) { }
++
++    public static final String NATIVE_TOOLS_VERSION = "agentscope-harness-2.0.3";
++    private static final List<String> NATIVE_TOOLS = List.of("read_file", "write_file", "edit_file",
++        "grep_files", "glob_files", "list_files", "execute", "web_fetch", "web_search",
++        "memory_get", "memory_search", "memory_save", "session_search", "session_list",
++        "session_history", "wait_async_results", "agent_list", "agent_send", "agent_spawn",
++        "task_cancel", "task_list", "task_output", "load_skill_through_path",
++        "deliver_artifact", "plan_enter", "plan_exit", "plan_write", "propose_skill",
++        "reset_equipped_tools", "skill_manage", "todo_write");
++
++    public record ToolReadiness(boolean available, String reason) { }
++    @FunctionalInterface
++    public interface NativeToolReadiness { ToolReadiness status(String toolId); }
++
++    public static List<String> nativeToolIds() { return NATIVE_TOOLS; }
++    public static List<String> executionToolIds(List<String> businessIds) {
++        LinkedHashSet<String> ids = new LinkedHashSet<>(NATIVE_TOOLS);
++        if (businessIds != null) ids.addAll(businessIds);
++        return List.copyOf(ids);
++    }
+ 
+     private static final Map<String, ToolDescriptor> DESCRIPTORS = descriptors();
+ 
+@@ -37,6 +60,17 @@
+             map.put(endpoint.serviceId(), descriptor(endpoint.serviceId(),
+                 "只读查询产线「" + endpoint.lineName() + "」；服务标识 " + endpoint.serviceId()));
+         }
++        for (String id : NATIVE_TOOLS) {
++            EnumSet<ToolCapability> capabilities = EnumSet.of(ToolCapability.READ);
++            if (List.of("write_file", "edit_file", "memory_save", "plan_write", "propose_skill", "skill_manage", "todo_write", "deliver_artifact").contains(id)) capabilities.add(ToolCapability.WRITE);
++            if ("execute".equals(id)) capabilities.add(ToolCapability.EXECUTE);
++            if (List.of("web_fetch", "web_search").contains(id)) capabilities.add(ToolCapability.NETWORK);
++            if (id.contains("search") || id.equals("grep_files") || id.equals("glob_files")) capabilities.add(ToolCapability.SEARCH);
++            if (List.of("wait_async_results", "agent_send", "agent_spawn", "task_cancel", "plan_enter", "plan_exit", "reset_equipped_tools", "skill_manage", "load_skill_through_path", "deliver_artifact").contains(id)) capabilities.add(ToolCapability.CONTROL);
++            map.put(id, new ToolDescriptor(id, capabilities, !capabilities.contains(ToolCapability.WRITE)
++                && !capabilities.contains(ToolCapability.EXECUTE), 30_000L, 65_536L, 65_536L, false,
++                "官方基础工具；绑定可信项目、人员和运行范围，不能以工具名称绕过调用授权"));
++        }
+         return Map.copyOf(map);
+     }
+ 
+@@ -46,12 +80,22 @@
+     }
+ 
+     private final CapabilityManifest manifest;
++    private final NativeToolReadiness nativeReadiness;
+ 
+     /**
+      * @param manifest 内置清单
+      */
+     public ProjectAgentToolCatalog(CapabilityManifest manifest) {
++        this(manifest, id -> new ToolReadiness(false, "基础工具运行环境尚未装配"));
++    }
++
++    public ProjectAgentToolCatalog(CapabilityManifest manifest, NativeToolReadiness nativeReadiness) {
+         this.manifest = manifest;
++        this.nativeReadiness = Objects.requireNonNull(nativeReadiness);
++    }
++
++    public List<String> nativeReadinessFailures() {
++        return NATIVE_TOOLS.stream().filter(id -> !status(id).available()).toList();
+     }
+ 
+     /**
+@@ -60,7 +104,9 @@
+      * @return 状态列表
+      */
+     public List<ToolStatus> statuses() {
+-        return manifest.tools().stream().map(t -> status(t.id())).toList();
++        LinkedHashSet<String> ids = new LinkedHashSet<>(NATIVE_TOOLS);
++        manifest.tools().forEach(tool -> ids.add(tool.id()));
++        return ids.stream().map(this::status).toList();
+     }
+ 
+     /**
+@@ -70,6 +116,15 @@
+      * @return 状态
+      */
+     public ToolStatus status(String toolId) {
++        if (NATIVE_TOOLS.contains(toolId)) {
++            ToolReadiness readiness = nativeReadiness.status(toolId);
++            ToolDescriptor nativeDescriptor = DESCRIPTORS.get(toolId);
++            boolean available = readiness != null && readiness.available();
++            return new ToolStatus(toolId, toolId, !nativeDescriptor.hasCapability(ToolCapability.WRITE)
++                && !nativeDescriptor.hasCapability(ToolCapability.EXECUTE)
++                && !nativeDescriptor.hasCapability(ToolCapability.NETWORK), available,
++                available ? null : readiness == null ? "基础工具就绪检查未返回结果" : readiness.reason());
++        }
+         CapabilityManifest.ToolEntry entry = manifest.tool(toolId).orElse(null);
+         if (entry == null) {
+             return new ToolStatus(toolId, null, false, false, "工具未在内置清单登记");
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java
+@@ -123,7 +123,7 @@
+         List<LoadedSkill> skills = loadSkills(pack, explicitNames, actionBoundNames);
+         List<String> toolIds = distinct(req.toolIds());
+         for (String toolId : toolIds) {
+-            if (!pack.tools().contains(toolId)) {
++            if (!pack.tools().contains(toolId) && !ProjectAgentToolCatalog.nativeToolIds().contains(toolId)) {
+                 throw invalid("工具不属于该能力包：" + toolId);
+             }
+             ProjectAgentToolCatalog.ToolStatus status = toolCatalog.status(toolId);
+@@ -131,6 +131,7 @@
+                 throw conflict("工具不可用：" + toolId + "（" + status.reason() + "）");
+             }
+         }
++        toolIds = ProjectAgentToolCatalog.executionToolIds(toolIds);
+         Long modelConfigId = parseModelConfigId(req.modelConfigId());
+         KernelModelRequest model = modelCatalog.resolve(modelConfigId).orElseThrow(() -> conflict(
+             "模型不可用：" + req.modelConfigId() + "（" + modelCatalog.status(modelConfigId).reason() + "）"));
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java
+@@ -10,8 +10,8 @@
+ /**
+  * 项目智能体系统提示词组装（纯函数，可单测）。
+  *
+- * <p>Skill 正文由官方仓库按本次冻结 SHA/version/body 渐进发现与加载；
+- * 已选择与实际加载分别留证，不把选择清单冒称执行证据。
++ * <p>Skill 正文由原生 selected-only repository middleware 确定性注入（已过 sha256 校验），并以 STEP/SKILL_LOADED 事件留证；
++ * 不依赖模型自行调用 load_skill，避免“是否真的加载了正文”无法回读。
+  */
+ public final class ProjectAgentPrompt {
+ 
+@@ -56,7 +56,7 @@
+                 .append("没有原始出处时标注“远端应用回答，原始出处未取得”，不得编造文档名、页码或原句。")
+                 .append("工具被选中不代表已调用或已命中；远端回答不能自证动作完成、产物自审通过或业务验收通过。\n");
+         }
+-        sb.append("2. 可用本次授权的官方能力获取资料、处理文件和在隔离工作区执行任务；具体操作必须通过权限与审批。不能引用其他项目的私有资料；互联网来源须注明出处，不能冒称项目已审核文档，不得声称做过未实际执行的检索。\n");
++        sb.append("2. 可以使用本次实际提供的文件、Shell、Web 与记忆工具；文件与记忆只在授权项目和人员工作区内读写，不得读取工程配置、凭据或其他人的资料。工具返回与记忆不是认证业务事实，引用需保留出处；不得声称做过未实际执行的检索。\n");
+         sb.append("3. 不输出 Gate 评审通过或不通过的结论，评审结论由既有业务流程决定。\n");
+         if (hasFacts) {
+             sb.append("下方项目、阶段、产品和当前动作来自项目记录，只证明当前业务上下文，不是项目文档或审核证据；")
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentWorkspace.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentWorkspace.java
+@@ -33,22 +33,13 @@
+      */
+     public static Path prepare(Path root, String projectId, String userId, String agentId) throws IOException {
+         root = root.toAbsolutePath().normalize();
+-        // macOS system aliases are the only permitted ancestor links; application-controlled
+-        // ancestors and the configured root itself are never silently resolved through a link.
++        // Check every root ancestor before creation, including an existing symlink root.
+         Path ancestor = root.getRoot();
+-        for (Path component : root) {
+-            ancestor = ancestor.resolve(component);
++        for (Path part : root) {
++            ancestor = ancestor.resolve(part);
+             if (Files.isSymbolicLink(ancestor)) {
+-                Path expected = ancestor.equals(Path.of("/var")) ? Path.of("/private/var")
+-                    : ancestor.equals(Path.of("/tmp")) ? Path.of("/private/tmp") : null;
+-                if (ancestor.equals(root) || expected == null || !ancestor.toRealPath().equals(expected)) {
+-                    throw new IllegalStateException("workspace root symbolic link rejected");
+-                }
++                throw new IllegalStateException("workspace root symbolic link rejected");
+             }
+-        }
+-        Path parent = root.getParent();
+-        if (parent != null && Files.exists(parent)) {
+-            root = parent.toRealPath().resolve(root.getFileName()).normalize();
+         }
+         Path workspace = root.resolve(segment("projectId", projectId))
+             .resolve(segment("userId", userId))
+@@ -87,6 +78,34 @@
+         return workspace;
+     }
+ 
++    /** 调用方必须先通过项目权限校验；路径参数均来自服务端可信身份。 */
++    public static Path runWorkingDirectory(Path root, String projectId, String userId, String agentId,
++                                           String runId) throws IOException {
++        Path base = prepare(root, projectId, userId, agentId);
++        Path runs = authorizedPath(base, "runs");
++        Files.createDirectories(runs);
++        Path run = authorizedPath(base, "runs/" + segment("runId", runId));
++        Files.createDirectories(run);
++        return run;
++    }
++
++    /** 文件和官方 MEMORY.md/memory/ 均只解析在可信项目人员根内。 */
++    public static Path authorizedPath(Path base, String relative) throws IOException {
++        Path input = Path.of(relative);
++        if (input.isAbsolute() || relative.isBlank()) throw new IllegalArgumentException("relative workspace path required");
++        for (Path part : input) if (part.toString().equals("..")) throw new IllegalArgumentException("workspace traversal rejected");
++        Path canonical = base.toRealPath(LinkOption.NOFOLLOW_LINKS);
++        if (Files.isSymbolicLink(base)) throw new IllegalStateException("workspace symbolic link rejected");
++        Path resolved = canonical.resolve(input).normalize();
++        if (!resolved.startsWith(canonical)) throw new IllegalArgumentException("workspace path rejected");
++        Path current = canonical;
++        for (Path part : canonical.relativize(resolved)) {
++            current = current.resolve(part);
++            if (Files.isSymbolicLink(current)) throw new IllegalStateException("workspace symbolic link rejected");
++        }
++        return resolved;
++    }
++
+     private static String segment(String name, String value) {
+         if (value == null || value.isBlank() || value.equals(".")
+             || value.indexOf(':') >= 0 || value.indexOf('/') >= 0
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolContractTest.java
+@@ -0,0 +1,77 @@
++package org.ruoyi.ipd.agent.catalog;
++import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;import static org.assertj.core.api.Assertions.*;import java.util.*;import java.nio.file.*;import org.ruoyi.ipd.agent.support.AgentTestFixtures;import org.ruoyi.ipd.agent.service.ProjectAgentRunPlanner;import org.ruoyi.ipd.agent.kernel.ProjectAgentWorkspace;import org.ruoyi.ipd.agent.kernel.ProjectAgentPrompt;import org.ruoyi.ipd.agent.kernel.ProjectAgentRunSpec;import org.ruoyi.service.coding.harness.tool.ToolCapability;
++class ProjectAgentNativeToolContractTest {
++ @TempDir Path root;
++ @org.junit.jupiter.api.BeforeEach void canonicalAuthorizedRoot()throws Exception{root=root.toRealPath();}
++ @Test void nativeEffectsAreNotReadOnlyAndReadinessCannotSilentlyDropCapabilities(){
++ assertThat(ProjectAgentToolCatalog.nativeToolIds()).hasSize(31).doesNotHaveDuplicates();
++ var manifest=AgentTestFixtures.manifest();var missing=new ProjectAgentToolCatalog(manifest);
++ assertThat(missing.nativeReadinessFailures()).containsExactlyElementsOf(ProjectAgentToolCatalog.nativeToolIds());
++ var ready=new ProjectAgentToolCatalog(manifest,id->new ProjectAgentToolCatalog.ToolReadiness(true,null));
++ assertThat(ready.nativeReadinessFailures()).isEmpty();assertThat(ready.status("write_file").available()).isTrue();assertThat(ready.status("write_file").readOnly()).isFalse();
++ assertThat(ProjectAgentToolCatalog.descriptor("memory_save").hasCapability(ToolCapability.WRITE)).isTrue();
++ assertThat(ProjectAgentToolCatalog.descriptor("execute").hasCapability(ToolCapability.EXECUTE)).isTrue();
++ assertThat(ProjectAgentToolCatalog.descriptor("web_search").hasCapability(ToolCapability.NETWORK)).isTrue();
++ assertThat(ready.status("unknown").available()).isFalse();
++ }
++ @Test void plannerFreezesAllNativeToolsAndSelectedBusinessToolsWithoutSecondApi(){
++ var m=AgentTestFixtures.manifest();var ready=new ProjectAgentToolCatalog(m,id->new ProjectAgentToolCatalog.ToolReadiness(true,null));
++ var planner=new ProjectAgentRunPlanner(m,AgentTestFixtures.skillCatalog(m),ready,AgentTestFixtures.modelCatalog());
++ var plan=planner.plan(AgentTestFixtures.c02("native-test-0001","竞品分析"));
++ assertThat(plan.toolIds()).containsExactlyElementsOf(ProjectAgentToolCatalog.executionToolIds(List.of("project_knowledge_search")));
++ assertThat(plan.snapshot().toolIds()).isEqualTo(plan.toolIds());
++ var req=AgentTestFixtures.c02("native-test-explicit","竞品分析");
++ var explicit=new org.ruoyi.ipd.agent.dto.AgentRunCreateReq(req.capabilityPackCode(),req.capabilityPackVersion(),req.modelConfigId(),req.skillNames(),List.of("write_file","project_knowledge_search"),req.actionCode(),req.message(),req.idempotencyKey());
++ assertThat(planner.plan(explicit).toolIds()).containsExactlyElementsOf(plan.toolIds());assertThat(plan.toolIds()).doesNotHaveDuplicates();
++ var incomplete=new ProjectAgentToolCatalog(m,id->new ProjectAgentToolCatalog.ToolReadiness(!id.equals("web_search"),"provider未配置"));
++ var partialPlanner=new ProjectAgentRunPlanner(m,AgentTestFixtures.skillCatalog(m),incomplete,AgentTestFixtures.modelCatalog());
++ assertThat(partialPlanner.plan(AgentTestFixtures.c02("native-test-0002","竞品分析")).toolIds()).contains("web_search");
++ assertThat(incomplete.status("web_search").available()).isFalse();
++ var explicitWeb=new org.ruoyi.ipd.agent.dto.AgentRunCreateReq(req.capabilityPackCode(),req.capabilityPackVersion(),req.modelConfigId(),req.skillNames(),List.of("web_search"),req.actionCode(),req.message(),"native-web-missing");
++ assertThatThrownBy(()->partialPlanner.plan(explicitWeb)).hasMessageContaining("web_search");
++ }
++ @Test void authorizedProjectUserFilesAndMemoryCanReadWriteButOtherRootsAndLinksCannot()throws Exception{
++ Path base=ProjectAgentWorkspace.prepare(root,"project1","person1","ipd_project_agent");
++ assertThat(Files.readString(base.resolve("AGENTS.md"))).doesNotContain("read-only research").contains("owner approves publication");
++ Path oldRun=ProjectAgentWorkspace.runWorkingDirectory(root,"project1","person1","ipd_project_agent","oldrun");Files.writeString(oldRun.resolve("prior.txt"),"本人本项目历史");assertThat(Files.readString(ProjectAgentWorkspace.authorizedPath(base,"runs/oldrun/prior.txt"))).isEqualTo("本人本项目历史");
++ Path file=ProjectAgentWorkspace.authorizedPath(base,"report.txt");Files.writeString(file,"草稿");assertThat(Files.readString(file)).isEqualTo("草稿");
++ Path memory=ProjectAgentWorkspace.authorizedPath(base,"MEMORY.md");Files.writeString(memory,"个人偏好：简洁");assertThat(Files.readString(memory)).contains("个人偏好");
++ Path other=ProjectAgentWorkspace.prepare(root,"project1","person2","ipd_project_agent");Files.writeString(other.resolve("secret.txt"),"其他人员");
++ assertThatThrownBy(()->ProjectAgentWorkspace.authorizedPath(base,"../../person2/ipd_project_agent/secret.txt")).isInstanceOf(IllegalArgumentException.class);
++ assertThatThrownBy(()->ProjectAgentWorkspace.authorizedPath(base,other.resolve("secret.txt").toString())).isInstanceOf(IllegalArgumentException.class);
++ Files.createSymbolicLink(base.resolve("escape"),other);assertThatThrownBy(()->ProjectAgentWorkspace.authorizedPath(base,"escape/secret.txt")).isInstanceOf(IllegalStateException.class);
++ assertThat(ProjectAgentWorkspace.runWorkingDirectory(root,"project1","person1","ipd_project_agent","run1")).isNotEqualTo(ProjectAgentWorkspace.runWorkingDirectory(root,"project1","person1","ipd_project_agent","run2"));
++ }
++ @Test void promptKeepsFullCapabilitiesWithoutTurningMemoryIntoBusinessFacts(){
++ var m=AgentTestFixtures.manifest();var model=AgentTestFixtures.modelCatalog().resolve(AgentTestFixtures.MODEL_ID).orElseThrow();
++ var spec=new ProjectAgentRunSpec(1L,2L,"tenant",3L,"C02","分析",List.of(),ProjectAgentToolCatalog.executionToolIds(List.of()),model,java.time.Duration.ofSeconds(5));
++ assertThat(ProjectAgentPrompt.build(spec)).contains("可以使用本次实际提供的文件、Shell、Web 与记忆工具","记忆不是认证业务事实").doesNotContain("不能访问互联网");
++ }
++ @Test void updatedSkillVersionsReachActualModelStreamWithoutInternetBan()throws Exception{
++ var manifest=AgentTestFixtures.manifest();var catalog=AgentTestFixtures.skillCatalog(manifest);
++ for(String name:List.of("competitor-analysis-ipd","market-opportunity-research-ipd","ip-fto-precheck-ipd")){
++  var skill=catalog.load(name).orElseThrow();assertThat(skill.content()).doesNotContain("不联网", "禁止声称已联网");
++  var model=org.mockito.Mockito.mock(io.agentscope.core.model.Model.class);org.mockito.Mockito.when(model.getModelName()).thenReturn("native-contract-stub");
++  var captured=new java.util.concurrent.atomic.AtomicReference<List<io.agentscope.core.message.Msg>>();var called=new java.util.concurrent.CountDownLatch(1);
++  org.mockito.Mockito.when(model.stream(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any())).thenAnswer(inv->{captured.set(inv.getArgument(0));called.countDown();return reactor.core.publisher.Flux.just(io.agentscope.core.model.ChatResponse.builder().finishReason("stop").content(List.of(io.agentscope.core.message.TextBlock.builder().text("完成").build())).build());});
++  var assembler=org.mockito.Mockito.mock(org.ruoyi.ipd.agent.kernel.ProjectAgentModelAssembler.class);
++  org.mockito.Mockito.when(assembler.assemble(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any())).thenReturn(model);
++  var kernel=new org.ruoyi.ipd.agent.kernel.AgentScopeProjectAgentKernel(assembler,(project,type,q)->new org.ruoyi.ipd.service.AiDocEmbeddingService.RetrievalContext(0,0,""),root,2);
++  var modelRequest=AgentTestFixtures.modelCatalog().resolve(AgentTestFixtures.MODEL_ID).orElseThrow();
++  var spec=new ProjectAgentRunSpec(System.nanoTime(),20260929L,"tenant-a",11L,"C02","处理授权资料",List.of(skill),List.of(),modelRequest,java.time.Duration.ofSeconds(5));
++  var execution=kernel.execute(spec,org.mockito.Mockito.mock(org.ruoyi.ipd.agent.kernel.ProjectAgentEventSink.class,org.mockito.Mockito.CALLS_REAL_METHODS));
++  try {assertThat(called.await(5,java.util.concurrent.TimeUnit.SECONDS)).isTrue();String system=captured.get().stream().filter(m->m.getRole()==io.agentscope.core.message.MsgRole.SYSTEM).map(io.agentscope.core.message.Msg::getTextContent).collect(java.util.stream.Collectors.joining());assertThat(system).contains(skill.content(),"可以使用本次实际提供的文件、Shell、Web 与记忆工具").doesNotContain("不能访问互联网");if(name.equals("competitor-analysis-ipd"))assertThat(system).contains("未声明则四维齐全、篇幅克制。");}
++  finally {execution.dispose();}
++ }
++ }
++ @Test void existingCapabilityApiIncludesNativeStatusesWithoutDisablingAvailableBusinessPack(){
++ var manifest=AgentTestFixtures.manifest();var catalog=new ProjectAgentToolCatalog(manifest,id->new ProjectAgentToolCatalog.ToolReadiness(!id.equals("web_search"),"provider未配置"));
++ var access=org.mockito.Mockito.mock(org.ruoyi.ipd.service.IpdCopilotAccess.class);
++ org.mockito.Mockito.when(access.requireVisible(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any())).thenReturn("tenant-a");
++ var service=new org.ruoyi.ipd.agent.service.ProjectAgentCapabilityService(true,access,manifest,AgentTestFixtures.skillCatalog(manifest),catalog,AgentTestFixtures.modelCatalog());
++ var pack=service.capabilities(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID).packs().stream().filter(x->x.code().equals("market-research")).findFirst().orElseThrow();
++ assertThat(pack.available()).isTrue();assertThat(pack.tools()).extracting(org.ruoyi.ipd.agent.vo.ProjectAgentViews.Tool::id).containsAll(ProjectAgentToolCatalog.nativeToolIds());
++ assertThat(pack.tools().stream().filter(x->x.id().equals("web_search"))).singleElement().satisfies(x->assertThat(x.available()).isFalse());
++ org.mockito.Mockito.verify(access).requireVisible(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID);
++ }
++}
+--- a/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json
++++ b/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json
+@@ -44,8 +44,8 @@
+     },
+     {
+       "name": "competitor-analysis-ipd",
+-      "version": "1.1.0",
+-      "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
++      "version": "1.1.1",
++      "sha256": "39675e5d91d7220050e3bd49bd2113c5cb8873d4b84dc2c1014dc9ba6e4633fb"
+     },
+     {
+       "name": "cost-pricing-margin-ipd",
+@@ -109,8 +109,8 @@
+     },
+     {
+       "name": "ip-fto-precheck-ipd",
+-      "version": "1.0.0",
+-      "sha256": "84c6d73c45f7a3f133a0747ef239119647b73a9de965178cf637112fee186cfb"
++      "version": "1.0.1",
++      "sha256": "804dcdf2a1ea9389270bf193a2dba2a790ee06387819699f26ce0d50d898a031"
+     },
+     {
+       "name": "kpi-channel-coverage-ipd",
+@@ -144,8 +144,8 @@
+     },
+     {
+       "name": "market-opportunity-research-ipd",
+-      "version": "1.1.0",
+-      "sha256": "c116dac4094ed5dea7013a7952943f5482e1632880c40287b4f0130641223c28"
++      "version": "1.1.1",
++      "sha256": "c1a6a6c2a4e01cf0f29aea9bf90a2d6ce8e3f85060894031d91e389066871c6c"
+     },
+     {
+       "name": "mass-production-readiness-ipd",
+--- a/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/ip-fto-precheck-ipd/SKILL.md
++++ b/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/ip-fto-precheck-ipd/SKILL.md
+@@ -1,7 +1,7 @@
+ ---
+ name: ip-fto-precheck-ipd
+ description: "IPD 概念阶段动作 C10「知识产权与合规预检（含专利 FTO）」执行说明。深管强制检索报告留痕、非阻断；仅整理已有检索结论，禁止伪造专利或 FTO 结果。"
+-version: "1.0.0"
++version: "1.0.1"
+ ipd-action: "C10"
+ ipd-stage: "CONCEPT"
+ ---
+@@ -20,7 +20,7 @@
+ | 已有专利检索或 FTO 报告 | 结论来源 | 用户上传 / 项目资料 |
+ | 目标市场清单 | 合规准入关联提示 | 项目资料 / 用户 |
+ 
+-不联网检索专利库；工具与用户均未提供的检索结论视为「未取得」。
++可以使用本次实际可用的授权 Web 工具检索公开专利资料；工具与用户均未提供的检索结论视为「未取得」。工具返回与记忆不能代替正式法律审查。
+ 
+ ## 步骤
+ 
+--- a/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/competitor-analysis-ipd/SKILL.md
++++ b/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/competitor-analysis-ipd/SKILL.md
+@@ -1,7 +1,7 @@
+ ---
+ name: competitor-analysis-ipd
+ description: "IPD 概念阶段动作 C02「竞品分析（功能/价格/渠道/技术路线）」执行说明。四维可追溯对比；资料不足列缺项，禁止编造。"
+-version: "1.1.0"
++version: "1.1.1"
+ ipd-action: "C02"
+ ipd-stage: "CONCEPT"
+ ---
+@@ -14,7 +14,7 @@
+ 
+ ## 输入
+ 
+-本产品定位与客群、候选竞品名单、功能/价格/渠道/技术资料。仅本项目资料 + 用户输入；不联网。
++本产品定位与客群、候选竞品名单、功能/价格/渠道/技术资料。以授权项目资料、用户输入和本次实际调用的授权工具返回为来源；可用 Web 检索公开资料，文件、Shell 与记忆只在授权范围内使用。工具或记忆内容不能自证为项目已审核事实。
+ 
+ ## 步骤
+ 
+@@ -28,7 +28,7 @@
+ ## 禁止事项
+ 
+ - 禁止编造竞品名、价格、渠道、专利或客户。
+-- 禁止声称已联网或把模型常识当来源。
++- 禁止声称做过未实际执行的联网检索或把模型常识当来源。
+ - 禁止给出 Gate 签署结论。
+ 
+ 依据：QoderWork「竞品分析」（目的模板/可信度，改写）；上游 competitor-analysis；六阶段 C02；五大 Gate G1-3。
+--- a/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/market-opportunity-research-ipd/SKILL.md
++++ b/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/market-opportunity-research-ipd/SKILL.md
+@@ -1,7 +1,7 @@
+ ---
+ name: market-opportunity-research-ipd
+ description: "IPD 概念阶段动作 C01「市场机会与痛点调研」执行说明。分子问题收集证据并标可信度；禁止编造客户或意向。"
+-version: "1.1.0"
++version: "1.1.1"
+ ipd-action: "C01"
+ ipd-stage: "CONCEPT"
+ ---
+@@ -20,7 +20,7 @@
+ | 访谈纪要、走访、意向书 | 一手证据 | 用户优先 / 项目资料 |
+ | 二手行业材料 | 仅背景，不可替代一手 | 项目资料 |
+ 
+-事实只来自 `project_knowledge_search` 本项目片段或本轮用户输入。不联网；不确定字段标「未取得/不确定」。
++事实依据来自授权项目资料、本轮用户输入或本次实际调用的授权工具返回。可以使用可用的 Web 工具检索公开背景资料，文件、Shell 与记忆限授权范围；二手材料和记忆不能冒充一手客户验证。不确定字段标「未取得/不确定」。
+ 
+ ## 步骤
+ 
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityService.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityService.java
+@@ -74,10 +74,11 @@
+         List<ProjectAgentViews.Skill> skills = entry.skills().stream().map(skillCatalog::status)
+             .map(s -> new ProjectAgentViews.Skill(s.name(), s.version(), s.sha256(), s.available(), s.reason()))
+             .toList();
+-        List<ProjectAgentViews.Tool> tools = entry.tools().stream().map(toolCatalog::status)
++        List<ProjectAgentViews.Tool> tools = ProjectAgentToolCatalog.executionToolIds(entry.tools()).stream().map(toolCatalog::status)
+             .map(t -> new ProjectAgentViews.Tool(t.id(), t.name(), t.readOnly(), t.available(), t.reason()))
+             .toList();
+-        String reason = unavailableReason(skills, tools, anyModel);
++        String reason = unavailableReason(skills, tools.stream()
++            .filter(tool -> entry.tools().contains(tool.id())).toList(), anyModel);
+         return new ProjectAgentViews.Pack(entry.code(), entry.version(), entry.name(), entry.description(),
+             entry.stages() == null ? List.of() : entry.stages(),
+             entry.actionCodes() == null ? List.of() : entry.actionCodes(),
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRuntimeAccess.java
+@@ -0,0 +1,23 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import java.util.Objects;
++import org.ruoyi.ipd.security.IpdActor;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++
++/** Per-subscription membership revalidation using the trusted run identity. */
++public final class ProjectAgentRuntimeAccess {
++    private final IpdCopilotAccess access;
++    private final IpdActor actor;
++    private final Long projectId;
++
++    public ProjectAgentRuntimeAccess(IpdCopilotAccess access, IpdActor actor, Long projectId) {
++        this.access = Objects.requireNonNull(access);
++        this.actor = Objects.requireNonNull(actor);
++        this.projectId = Objects.requireNonNull(projectId);
++    }
++
++    /** Call inside each deferred tool permission and execution subscription. */
++    public void requireAuthorized() {
++        access.requireVisible(actor, projectId);
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSkillAuthorityAdapters.java
+@@ -0,0 +1,50 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.skill.AgentSkill;
++import io.agentscope.harness.agent.skill.curator.SkillCandidate;
++import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
++import io.agentscope.harness.agent.skill.curator.SkillVisibilityFilter;
++import reactor.core.publisher.Mono;
++import java.util.List;
++import java.util.Objects;
++
++/** Official SDK extension adapter; approvals must come from trusted business authority. */
++public final class ProjectAgentSkillAuthorityAdapters implements SkillVisibilityFilter, SkillPromotionGate {
++    public interface OwnerApprovalAuthority {
++        /** Verify exact body/version/resources and scope against a trusted published approval. */
++        boolean approved(AgentSkill skill, RuntimeContext context);
++        /** Review the exact draft; never infer approval from its name or self-authored metadata. */
++        Mono<PromotionDecision> review(SkillCandidate candidate, RuntimeContext context);
++    }
++    private final ProjectAgentRuntimeAccess access;
++    private final OwnerApprovalAuthority authority;
++    private final String userId;
++    private final String sessionId;
++
++    public ProjectAgentSkillAuthorityAdapters(ProjectAgentRuntimeAccess access,
++            OwnerApprovalAuthority authority, String userId, String sessionId) {
++        this.access = Objects.requireNonNull(access);
++        this.authority = Objects.requireNonNull(authority);
++        this.userId = Objects.requireNonNull(userId);
++        this.sessionId = Objects.requireNonNull(sessionId);
++    }
++    private void requireContext(RuntimeContext context) {
++        if (context == null || !userId.equals(context.getUserId())
++                || !sessionId.equals(context.getSessionId())) {
++            throw new SecurityException("Skill authority context mismatch");
++        }
++        access.requireAuthorized();
++    }
++    @Override public List<AgentSkill> filter(List<AgentSkill> candidates, RuntimeContext context) {
++        requireContext(context);
++        return candidates == null ? List.of() : candidates.stream().filter(Objects::nonNull)
++            .filter(skill -> authority.approved(skill, context)).toList();
++    }
++    @Override public Mono<PromotionDecision> review(SkillCandidate candidate, RuntimeContext context) {
++        return Mono.defer(() -> {
++            requireContext(context);
++            return Objects.requireNonNull(authority.review(Objects.requireNonNull(candidate), context));
++        });
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSkillAuthorityAdaptersTest.java
+@@ -0,0 +1,25 @@
++package org.ruoyi.ipd.agent.kernel;
++import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;import java.nio.file.*;import java.util.*;import java.time.*;import static org.assertj.core.api.Assertions.*;import static org.mockito.Mockito.*;import io.agentscope.core.agent.RuntimeContext;import io.agentscope.core.skill.AgentSkill;import io.agentscope.core.skill.repository.AgentSkillRepository;import io.agentscope.core.model.*;import io.agentscope.core.message.*;import io.agentscope.harness.agent.HarnessAgent;import io.agentscope.harness.agent.skill.curator.*;import org.ruoyi.ipd.agent.support.AgentTestFixtures;import org.ruoyi.ipd.service.IpdCopilotAccess;import reactor.core.publisher.*;
++class ProjectAgentSkillAuthorityAdaptersTest {
++ @TempDir Path root;
++ RuntimeContext ctx(){return RuntimeContext.builder().userId("project-person").sessionId("run").build();}
++ ProjectAgentRuntimeAccess access(IpdCopilotAccess x){return new ProjectAgentRuntimeAccess(x,AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID);}
++ @Test void officialModelConsumerRetainsOtherApprovedSkillsAndRejectsDraftSelfApproval()throws Exception{
++  var x=mock(IpdCopilotAccess.class);var owner=mock(ProjectAgentSkillAuthorityAdapters.OwnerApprovalAuthority.class);
++  var selected=new AgentSkill("selected","SELECTED_APPROVED", "selected body",Map.of());var other=new AgentSkill("other","OTHER_OWNER_APPROVED","other body",Map.of());
++  var draft=new AgentSkill(Map.of("name","draft","description","FORGED_SELF_APPROVAL","approved",true),"draft body",Map.of(),"workspace");
++  when(owner.approved(eq(selected),any())).thenReturn(true);when(owner.approved(eq(other),any())).thenReturn(true);
++  var adapter=new ProjectAgentSkillAuthorityAdapters(access(x),owner,"project-person","run");var repo=mock(AgentSkillRepository.class);when(repo.getAllSkills()).thenReturn(List.of(selected,other,draft));when(repo.getAllSkillNames()).thenReturn(List.of("selected","other","draft"));when(repo.getSkill(anyString())).thenAnswer(i->List.of(selected,other,draft).stream().filter(s->s.getName().equals(i.getArgument(0))).findFirst().orElse(null));when(repo.getSource()).thenReturn("typed-approval-fixture");
++  var model=mock(Model.class);when(model.getModelName()).thenReturn("no-network-stub");var calls=new java.util.concurrent.CopyOnWriteArrayList<List<Msg>>();when(model.stream(any(),any(),any())).thenAnswer(i->{calls.add(i.getArgument(0));return Flux.just(ChatResponse.builder().finishReason("stop").content(List.of(TextBlock.builder().text("done").build())).build());});
++  var agent=HarnessAgent.builder().name("authority-probe").workspace(root.toRealPath()).model(model).skillRepository(repo).enableSkillPromotionGate(adapter,adapter).build();
++  try{agent.call("test",ctx()).block(Duration.ofSeconds(10));String system=calls.stream().flatMap(List::stream).filter(m->m.getRole()==MsgRole.SYSTEM).map(Msg::getTextContent).collect(java.util.stream.Collectors.joining());assertThat(system).contains("SELECTED_APPROVED","OTHER_OWNER_APPROVED").doesNotContain("FORGED_SELF_APPROVAL");verify(owner,atLeastOnce()).approved(eq(other),any());verify(x,atLeastOnce()).requireVisible(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID);}
++  finally{agent.close();}
++ }
++ @Test void officialReviewAdapterUsesExactOwnerDecisionAndRevalidatesOnSubscription(){
++  var x=mock(IpdCopilotAccess.class);var owner=mock(ProjectAgentSkillAuthorityAdapters.OwnerApprovalAuthority.class);var adapter=new ProjectAgentSkillAuthorityAdapters(access(x),owner,"project-person","run");var candidate=new SkillCandidate("draft","description","exact draft body",List.of(),null,null,List.of());
++  var approve=new SkillPromotionGate.PromotionDecision.Approve("owner",List.of("ipd"),java.time.Instant.EPOCH);when(owner.review(eq(candidate),any())).thenReturn(Mono.just(approve));assertThat(adapter.review(candidate,ctx()).block()).isSameAs(approve);
++  var reject=new SkillPromotionGate.PromotionDecision.Reject("not approved","owner");when(owner.review(eq(candidate),any())).thenReturn(Mono.just(reject));assertThat(adapter.review(candidate,ctx()).block()).isSameAs(reject);
++  assertThatThrownBy(()->adapter.filter(List.of(),RuntimeContext.empty())).isInstanceOf(SecurityException.class);
++  when(x.requireVisible(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID)).thenThrow(new IllegalStateException("revoked"));assertThatThrownBy(()->adapter.review(candidate,ctx()).block()).hasMessageContaining("revoked");verify(owner,times(2)).review(eq(candidate),any());
++ }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java
+@@ -0,0 +1,104 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.IsolationScope;
++import io.agentscope.harness.agent.memory.MemoryConfig;
++import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
++import io.agentscope.harness.agent.skill.curator.SkillVisibilityFilter;
++import io.agentscope.harness.agent.skill.curator.SkillCuratorConfig;
++import io.agentscope.harness.agent.artifact.ArtifactDeliveryTarget;
++import io.agentscope.harness.agent.transcript.TranscriptStore;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.state.AgentStateStore;
++import java.nio.file.Path;
++import java.util.Objects;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.tool.FilesystemTool;
++import io.agentscope.harness.agent.tool.ShellExecuteTool;
++import io.agentscope.harness.agent.tool.WebTools;
++import java.util.Map;
++import java.util.Set;
++
++/** 官方 2.0.3 原生基础工具；容器由 Harness 生命周期持有，不回落宿主 Shell。 */
++public final class ProjectAgentFoundationTools {
++    private ProjectAgentFoundationTools() { }
++    public static Set<String> nativeToolIds() {
++        return Set.of("read_file", "write_file", "edit_file", "grep_files", "glob_files", "list_files",
++            "execute", "web_fetch", "web_search", "memory_get", "memory_search", "memory_save",
++            "session_search", "session_list", "session_history", "wait_async_results",
++            "agent_list", "agent_send", "agent_spawn", "task_cancel", "task_list", "task_output",
++            "load_skill_through_path", "plan_enter", "plan_write", "plan_exit", "skill_manage",
++            "propose_skill", "todo_write", "reset_equipped_tools", "deliver_artifact");
++    }
++    public static DockerFilesystemSpec dockerFilesystem(String image) {
++        return dockerFilesystem(image, null);
++    }
++    public static DockerFilesystemSpec dockerFilesystem(String image, String workspaceVolume) {
++        if (image == null || image.isBlank()) throw new IllegalArgumentException("sandbox image is required");
++        if (workspaceVolume != null && !workspaceVolume.matches("ipd-agent-[a-z0-9-]{1,100}"))
++            throw new IllegalArgumentException("managed workspace volume name is invalid");
++        DockerFilesystemSpec spec = new DockerFilesystemSpec().image(image).workspaceRoot("/workspace")
++            .environment(Map.of()).network("none")
++            .additionalRunArgs(workspaceVolume == null
++                ? new String[]{"--cap-drop=ALL", "--security-opt=no-new-privileges"}
++                : new String[]{"--cap-drop=ALL", "--security-opt=no-new-privileges", "--mount",
++                    "type=volume,source=" + workspaceVolume + ",target=/workspace"});
++        return spec;
++    }
++    public record Scope(String projectId, String personId, String runId, Path managedWorkspace) {
++        public Scope {
++            for (String id : new String[]{projectId, personId, runId}) {
++                if (id == null || !id.matches("[0-9]+"))
++                    throw new IllegalArgumentException("trusted scope identifiers are required");
++            }
++            Objects.requireNonNull(managedWorkspace, "managedWorkspace");
++        }
++        public String volumeName() { return "ipd-agent-" + projectId + "-" + personId; }
++        public String runWorkingDirectory() { return "runs/" + runId; }
++        public RuntimeContext runtimeContext() {
++            return RuntimeContext.builder().userId(projectId + "-" + personId)
++                .sessionId(runId).build();
++        }
++    }
++
++    /** 新 Builder 保留官方 hooks/transcript/context/skills/subagents；调用方供应持久且已清洗的存储。 */
++    public static HarnessAgent.Builder configure(HarnessAgent.Builder builder, Scope scope,
++                                                 String image, AgentStateStore stateStore,
++                                                 TranscriptStore transcriptStore, MemoryConfig memory) {
++        Objects.requireNonNull(builder, "builder");
++        Objects.requireNonNull(scope, "scope");
++        return builder.filesystem(dockerFilesystem(image, scope.volumeName()).isolationScope(IsolationScope.USER))
++            .workspace(scope.managedWorkspace()).defaultSessionId(scope.runId())
++            .stateStore(ProjectAgentDeliveryStateMiddleware.persistentStore(
++                Objects.requireNonNull(stateStore, "stateStore")))
++            .middleware(new ProjectAgentDeliveryStateMiddleware())
++            .transcriptStore(Objects.requireNonNull(transcriptStore, "transcriptStore"))
++            .transcriptTenant(scope.projectId() + "-" + scope.personId())
++            .memory(Objects.requireNonNull(memory, "memory"));
++    }
++
++    /** 官方可选消费者也启用；审批、技能可见性与产物目的地由业务 SPI 提供。 */
++    public static HarnessAgent.Builder configureFullCapabilities(
++        HarnessAgent.Builder builder, Scope scope, String image, AgentStateStore stateStore,
++        TranscriptStore transcriptStore, MemoryConfig memory, SkillPromotionGate skillApproval,
++        SkillVisibilityFilter skillVisibility, ArtifactDeliveryTarget artifactDelivery) {
++        return configure(builder, scope, image, stateStore, transcriptStore, memory)
++            .enablePlanMode().enableTaskList().enableMetaTool(true).enablePendingToolRecovery(true)
++            .enableSkillManageTool(true)
++            .enableSkillPromotionGate(Objects.requireNonNull(skillApproval, "skillApproval"),
++                Objects.requireNonNull(skillVisibility, "skillVisibility"))
++            .enableSkillCurator(SkillCuratorConfig.defaults())
++            .artifactDeliveryTarget(Objects.requireNonNull(artifactDelivery, "artifactDelivery"));
++    }
++
++    public static FilesystemTool filesystemTool(Sandbox sandbox) {
++        return new FilesystemTool(new PinnedSandboxFilesystem(sandbox));
++    }
++    public static ShellExecuteTool shellTool(Sandbox sandbox) {
++        return new ShellExecuteTool(new PinnedSandboxFilesystem(sandbox));
++    }
++    public static WebTools.WebFetchTool webFetchTool() { return new WebTools.WebFetchTool(); }
++    public static WebTools.WebSearchTool webSearchTool() { return new WebTools.WebSearchTool(); }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java
+@@ -0,0 +1,79 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.Agent;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.event.AgentEvent;
++import io.agentscope.core.message.Msg;
++import io.agentscope.core.message.ThinkingBlock;
++import io.agentscope.core.middleware.AgentInput;
++import io.agentscope.core.middleware.MiddlewareBase;
++import io.agentscope.core.state.AgentState;
++import io.agentscope.core.state.AgentStateStore;
++import io.agentscope.core.state.State;
++import io.agentscope.core.state.VersionedState;
++import reactor.core.publisher.Flux;
++import reactor.core.publisher.Mono;
++
++import java.util.List;
++import java.util.Optional;
++import java.util.Set;
++import java.util.function.Function;
++
++/** 保留会话与 transcript 消费者，在官方持久化扩展点只移除结构化内部思考。 */
++public final class ProjectAgentDeliveryStateMiddleware implements MiddlewareBase {
++    @Override
++    public int order() { return Integer.MIN_VALUE; }
++
++    @Override
++    public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
++                                    Function<AgentInput, Flux<AgentEvent>> next) {
++        return next.apply(input).concatWith(Mono.defer(() -> {
++            AgentState state = RuntimeContext.resolveAgentState(context, agent);
++            if (state != null) state.contextMutable().replaceAll(ProjectAgentDeliveryStateMiddleware::delivery);
++            return Mono.<AgentEvent>empty();
++        }));
++    }
++
++    private static Msg delivery(Msg message) {
++        return message.withContent(message.getContent().stream()
++            .filter(block -> !(block instanceof ThinkingBlock)).toList());
++    }
++
++    private static State persistentCopy(State state) {
++        if (state instanceof AgentState agentState) {
++            AgentState copy = AgentState.fromJsonString(agentState.toJson());
++            copy.contextMutable().replaceAll(ProjectAgentDeliveryStateMiddleware::delivery);
++            return copy;
++        }
++        return state instanceof Msg message ? delivery(message) : state;
++    }
++
++    public static AgentStateStore persistentStore(AgentStateStore delegate) {
++        return new AgentStateStore() {
++            public void save(String user, String session, String key, State state) {
++                delegate.save(user, session, key, persistentCopy(state));
++            }
++            public void save(String user, String session, String key, List<? extends State> states) {
++                delegate.save(user, session, key, states.stream().map(ProjectAgentDeliveryStateMiddleware::persistentCopy).toList());
++            }
++            public boolean supportsVersioning() { return delegate.supportsVersioning(); }
++            public <T extends State> VersionedState<T> getVersioned(String user, String session, String key, Class<T> type) {
++                return delegate.getVersioned(user, session, key, type);
++            }
++            public long saveIfVersion(String user, String session, String key, State state, long version) {
++                return delegate.saveIfVersion(user, session, key, persistentCopy(state), version);
++            }
++            public <T extends State> Optional<T> get(String user, String session, String key, Class<T> type) {
++                return delegate.get(user, session, key, type);
++            }
++            public <T extends State> List<T> getList(String user, String session, String key, Class<T> type) {
++                return delegate.getList(user, session, key, type);
++            }
++            public boolean exists(String user, String session) { return delegate.exists(user, session); }
++            public void delete(String user, String session) { delegate.delete(user, session); }
++            public void delete(String user, String session, String key) { delegate.delete(user, session, key); }
++            public Set<String> listSessionIds(String user) { return delegate.listSessionIds(user); }
++            public void close() { delegate.close(); }
++        };
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java
+@@ -0,0 +1,136 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import com.sun.net.httpserver.HttpServer;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.sandbox.WorkspaceSpec;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClient;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions;
++import io.agentscope.harness.agent.sandbox.snapshot.NoopSnapshotSpec;
++import io.agentscope.harness.agent.tool.MemoryGetTool;
++import io.agentscope.harness.agent.tool.MemorySaveTool;
++import io.agentscope.harness.agent.workspace.WorkspaceManager;
++import org.junit.jupiter.api.Test;
++
++import java.net.InetSocketAddress;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Objects;
++
++class ProjectAgentFoundationToolsTest {
++
++    private static void require(boolean condition, String label) {
++        if (!condition) throw new AssertionError(label);
++        System.out.println(label + "=PASS");
++    }
++
++    @Test
++    void officialNativeFileShellMemoryAndWebFixture() throws Exception {
++        DockerSandboxClientOptions options = new DockerSandboxClientOptions()
++            .image("alpine:3").workspaceRoot("/workspace").network("none")
++            .additionalRunArgs("--cap-drop=ALL", "--security-opt=no-new-privileges");
++        Sandbox sandbox = new DockerSandboxClient().create(
++            new WorkspaceSpec(), new NoopSnapshotSpec(), options);
++        try {
++            sandbox.start();
++            var file = ProjectAgentFoundationTools.filesystemTool(sandbox);
++            require(!file.writeFile(null, "/workspace/probe.txt", "isolated-content")
++                .startsWith("Error"), "FILE_WRITE");
++            require(file.readFile(null, "/workspace/probe.txt", 0, 0)
++                .contains("isolated-content"), "FILE_READ");
++            var shell = ProjectAgentFoundationTools.shellTool(sandbox);
++            require(shell.execute(null, "printf isolated-shell", null, 5)
++                .contains("isolated-shell"), "NATIVE_SHELL");
++            require(shell.execute(null, "printf no", "../outside", 5)
++                .startsWith("Error"), "SHELL_WORKDIR_BOUNDARY");
++            require(shell.execute(null,
++                "test ! -e /Users/mac/Documents/ruoyi-ai && printf host-inaccessible", null, 5)
++                .contains("host-inaccessible"), "HOST_REPO_NOT_MOUNTED");
++            Path workspace = Files.createTempDirectory("foundation-memory-");
++            WorkspaceManager manager = new WorkspaceManager(
++                workspace, new PinnedSandboxFilesystem(sandbox));
++            require(new MemorySaveTool(manager)
++                .memorySave(null, "- synthetic isolated preference").startsWith("Saved"), "MEMORY_WRITE");
++            require(new MemoryGetTool(manager).memoryGet(null, "MEMORY.md", 1, 100)
++                .contains("synthetic isolated preference"), "MEMORY_READ");
++        } finally {
++            sandbox.shutdown();
++            System.out.println("OWN_CONTAINER_CLEANUP=RETURNED");
++        }
++        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
++        server.createContext("/fixture", exchange -> {
++            byte[] body = "fixture-web-content".getBytes();
++            exchange.sendResponseHeaders(200, body.length);
++            exchange.getResponseBody().write(body);
++            exchange.close();
++        });
++        server.start();
++        try {
++            require(ProjectAgentFoundationTools.webFetchTool()
++                .webFetch("http://127.0.0.1:" + server.getAddress().getPort() + "/fixture", 100)
++                .contains("fixture-web-content"), "WEB_FETCH_FIXTURE");
++            require(ProjectAgentFoundationTools.webSearchTool().webSearch("", 1)
++                .contains("query is required"), "WEB_SEARCH_SCHEMA");
++            System.out.println("TAVILY_KEY_PRESENT="
++                + !Objects.toString(System.getenv("TAVILY_API_KEY"), "").isBlank());
++        } finally {
++            server.stop(0);
++        }
++    }
++    @Test
++    void freshBuilderKeepsAllOfficialDefaultConsumers() throws Exception {
++        io.agentscope.core.model.Model noNetworkModel = new io.agentscope.core.model.Model() {
++            public String getModelName() { return "isolated-no-network-model"; }
++            public reactor.core.publisher.Flux<io.agentscope.core.model.ChatResponse> stream(
++                java.util.List<io.agentscope.core.message.Msg> messages,
++                java.util.List<io.agentscope.core.model.ToolSchema> tools,
++                io.agentscope.core.model.GenerateOptions options) {
++                throw new AssertionError("model must not be called in construction test");
++            }
++        };
++        Path workspace = Files.createTempDirectory("foundation-full-defaults-");
++        var scope = new ProjectAgentFoundationTools.Scope("1", "1", "999999999", workspace);
++        var agent = ProjectAgentFoundationTools.configureFullCapabilities(
++            io.agentscope.harness.agent.HarnessAgent.builder().name("full-defaults-test").model(noNetworkModel),
++            scope, "alpine:3", new io.agentscope.core.state.InMemoryAgentStateStore(),
++            new io.agentscope.harness.agent.transcript.FilesystemTranscriptStore(workspace.resolve("transcripts")),
++            io.agentscope.harness.agent.memory.MemoryConfig.defaults(),
++            (candidate, context) -> reactor.core.publisher.Mono.just(
++                new io.agentscope.harness.agent.skill.curator.SkillPromotionGate.PromotionDecision.Defer(
++                    java.time.Duration.ofMinutes(1), "fixture owner approval pending")),
++            (skills, context) -> skills,
++            (context, request) -> io.agentscope.harness.agent.artifact.ArtifactDeliveryResult.success("fixture only"))
++            .build();
++        try {
++            var names = agent.getToolkit().getToolNames();
++            require(names.containsAll(ProjectAgentFoundationTools.nativeToolIds()), "OFFICIAL31_ENABLED");
++            require(names.containsAll(java.util.Set.of("agent_list", "agent_send", "agent_spawn",
++                "task_cancel", "task_list", "task_output", "load_skill_through_path")), "OTHER_DEFAULT_CONSUMERS");
++            require(scope.runtimeContext().getSessionId().equals("999999999"), "RUN_CONTEXT");
++            require(scope.runWorkingDirectory().equals("runs/999999999"), "RUN_DIRECTORY_IDENTITY");
++        } finally {
++            agent.close();
++        }
++    }
++    @Test
++    void persistentCopyRemovesThinkingWithoutChangingLiveStateOrToolIdentity() {
++        var thought = io.agentscope.core.message.ThinkingBlock.builder().thinking("private-fixture-needle").build();
++        var text = io.agentscope.core.message.TextBlock.builder().text("delivered-fixture-body").build();
++        var tool = io.agentscope.core.message.ToolUseBlock.builder().id("call-fixture").name("read_file")
++            .input(java.util.Map.of("path", "draft.md")).content("{\"path\":\"draft.md\"}").build();
++        var message = io.agentscope.core.message.Msg.builder().role(io.agentscope.core.message.MsgRole.ASSISTANT)
++            .content(java.util.List.of(thought, text, tool)).build();
++        var live = io.agentscope.core.state.AgentState.builder().userId("project-person").sessionId("run")
++            .summary("summary-fixture").curIter(2).context(java.util.List.of(message)).build();
++        var delegate = new io.agentscope.core.state.InMemoryAgentStateStore();
++        var safe = ProjectAgentDeliveryStateMiddleware.persistentStore(delegate);
++        safe.save("project-person", "run", "agent", live);
++        var persisted = safe.get("project-person", "run", "agent", io.agentscope.core.state.AgentState.class).orElseThrow();
++        require(live.toJson().contains("private-fixture-needle"), "LIVE_STATE_UNCHANGED");
++        require(!persisted.toJson().contains("private-fixture-needle"), "PERSISTED_THINKING_REMOVED");
++        require(persisted.toJson().contains("delivered-fixture-body")
++            && persisted.toJson().contains("call-fixture") && persisted.getCurIter() == 2,
++            "DELIVERY_TOOLS_AND_STATE_PRESERVED");
++        require(safe.supportsVersioning() == delegate.supportsVersioning(), "VERSION_SUPPORT_UNCHANGED");
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFullCapabilityIntegrationTest.java
+@@ -0,0 +1,14 @@
++package org.ruoyi.ipd.agent.kernel;
++import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;import java.nio.file.*;import java.util.*;import java.time.*;import static org.assertj.core.api.Assertions.*;import static org.mockito.Mockito.*;import io.agentscope.core.model.Model;import io.agentscope.harness.agent.HarnessAgent;import io.agentscope.harness.agent.memory.MemoryConfig;import io.agentscope.harness.agent.transcript.FilesystemTranscriptStore;import io.agentscope.core.state.InMemoryAgentStateStore;import io.agentscope.core.tool.*;import io.agentscope.core.message.*;import io.agentscope.harness.agent.artifact.ArtifactDeliveryResult;import org.ruoyi.ipd.agent.catalog.*;import org.ruoyi.ipd.agent.support.AgentTestFixtures;import org.ruoyi.ipd.agent.service.ProjectAgentRunPlanner;import reactor.core.publisher.Mono;
++class ProjectAgentFullCapabilityIntegrationTest {
++ @TempDir Path root;
++ @Test void fullBuilderAndDirectoryMatchPlannerFrozenSnapshotAndWaitStillExecutes()throws Exception{
++  var manifest=AgentTestFixtures.manifest();var catalog=new ProjectAgentToolCatalog(manifest,id->new ProjectAgentToolCatalog.ToolReadiness(!id.equals("web_search"),"provider missing"));var planner=new ProjectAgentRunPlanner(manifest,AgentTestFixtures.skillCatalog(manifest),catalog,AgentTestFixtures.modelCatalog());var plan=planner.plan(AgentTestFixtures.c02("full-native-0001","test"));assertThat(ProjectAgentFoundationTools.nativeToolIds()).containsExactlyInAnyOrderElementsOf(ProjectAgentToolCatalog.nativeToolIds());
++  var access=mock(org.ruoyi.ipd.service.IpdCopilotAccess.class);var authority=mock(ProjectAgentSkillAuthorityAdapters.OwnerApprovalAuthority.class);var scope=new ProjectAgentFoundationTools.Scope("1","1","999999999",root.toRealPath());var guard=new ProjectAgentRuntimeAccess(access,AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID);var adapter=new ProjectAgentSkillAuthorityAdapters(guard,authority,"1-1","999999999");
++  var model=mock(Model.class);when(model.getModelName()).thenReturn("no-external-call");when(model.stream(any(),any(),any())).thenThrow(new AssertionError("No model calls permitted in toolkit equality/wait probe"));
++  var toolkit=new Toolkit();toolkit.registerAgentTool(new ToolBase(ToolBase.builder().name("project_knowledge_search").description("selected business fixture").inputSchema(Map.of("type","object")).readOnly(true)){public Mono<ToolResultBlock> callAsync(ToolCallParam p){return Mono.just(ToolResultBlock.of(TextBlock.builder().text("fixture").build()));}});
++  var agent=ProjectAgentFoundationTools.configureFullCapabilities(HarnessAgent.builder().name("full-native-probe").model(model).toolkit(toolkit),scope,"alpine:3",new InMemoryAgentStateStore(),new FilesystemTranscriptStore(root.resolve("transcripts")),MemoryConfig.defaults(),adapter,adapter,(ctx,req)->ArtifactDeliveryResult.success("fixture")).build();
++  try{assertThat(agent.getToolkit().getToolNames()).containsExactlyInAnyOrderElementsOf(plan.toolIds());assertThat(plan.snapshot().toolIds()).isEqualTo(plan.toolIds());var wait=agent.getToolkit().getTool("wait_async_results");guard.requireAuthorized();var result=wait.callAsync(ToolCallParam.builder().agent(agent).runtimeContext(scope.runtimeContext()).toolUseBlock(ToolUseBlock.builder().id("wait-fixture").name("wait_async_results").input(Map.of("timeout_seconds",1,"wait_all",true)).build()).build()).block(Duration.ofSeconds(5));assertThat(result).isNotNull();verify(access).requireVisible(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID);verify(model,never()).stream(any(),any(),any());}
++  finally{agent.close();}
++ }
++}

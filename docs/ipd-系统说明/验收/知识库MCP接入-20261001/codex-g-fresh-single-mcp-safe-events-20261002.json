@@ -1,0 +1,257 @@
+{
+  "runId": "2106095444625989634",
+  "events": [
+    {
+      "seq": 1,
+      "type": "STEP",
+      "keys": [
+        "kind",
+        "epoch",
+        "fenceToken"
+      ]
+    },
+    {
+      "seq": 2,
+      "type": "RUN_STARTED",
+      "keys": [
+        "agentId",
+        "actionCode",
+        "projectFacts",
+        "modelConfigId",
+        "capabilityPackCode",
+        "capabilityPackVersion"
+      ]
+    },
+    {
+      "seq": 3,
+      "type": "STEP",
+      "keys": [
+        "kind",
+        "name",
+        "sha256",
+        "version"
+      ]
+    },
+    {
+      "seq": 4,
+      "type": "STEP",
+      "keys": [
+        "kind",
+        "steps",
+        "title",
+        "detail",
+        "needsPlan",
+        "questions",
+        "needsClarification"
+      ]
+    },
+    {
+      "seq": 5,
+      "type": "STEP",
+      "keys": [
+        "kind"
+      ],
+      "usage": {
+        "kind": "MODEL_CALL",
+        "inputTokens": null,
+        "outputTokens": null
+      }
+    },
+    {
+      "seq": 6,
+      "type": "TOOL_CALL",
+      "keys": [
+        "toolName",
+        "toolCallId"
+      ]
+    },
+    {
+      "seq": 7,
+      "type": "STEP",
+      "keys": [
+        "kind",
+        "inputTokens",
+        "outputTokens"
+      ],
+      "usage": {
+        "kind": "MODEL_CALL",
+        "inputTokens": 1473,
+        "outputTokens": 174
+      }
+    },
+    {
+      "seq": 8,
+      "type": "SOURCE",
+      "keys": [
+        "hits",
+        "tool",
+        "chars",
+        "query",
+        "preview",
+        "lineName",
+        "serviceId",
+        "sourceKind",
+        "toolCallId",
+        "citationChars",
+        "citationSha256",
+        "retrievalStatus"
+      ],
+      "safeFields": {
+        "retrievalStatus": "SUCCESS",
+        "hits": 1,
+        "citationChars": 17201,
+        "citationSha256": "9423376ef96ff6aff0f0a13424d1af1b72fbea14189e5a5da1f4c08dedfe0d65",
+        "chars": 17201,
+        "sourceKind": "REMOTE_APPLICATION",
+        "reasonCode": null,
+        "mcpFailureStage": null,
+        "mcpErrorTypes": null,
+        "mcpSdkFrames": null
+      },
+      "previewChars": 1000
+    },
+    {
+      "seq": 9,
+      "type": "TOOL_RESULT",
+      "keys": [
+        "state",
+        "toolName",
+        "toolCallId"
+      ]
+    },
+    {
+      "seq": 10,
+      "type": "STEP",
+      "keys": [
+        "kind"
+      ],
+      "usage": {
+        "kind": "MODEL_CALL",
+        "inputTokens": null,
+        "outputTokens": null
+      }
+    },
+    {
+      "seq": 11,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 12,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 13,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 14,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 15,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 16,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 17,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 18,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 19,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 20,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 21,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 22,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 23,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 24,
+      "type": "TEXT_DELTA",
+      "keys": [
+        "text"
+      ]
+    },
+    {
+      "seq": 25,
+      "type": "STEP",
+      "keys": [
+        "kind",
+        "inputTokens",
+        "outputTokens"
+      ],
+      "usage": {
+        "kind": "MODEL_CALL",
+        "inputTokens": 9944,
+        "outputTokens": 1067
+      }
+    },
+    {
+      "seq": 26,
+      "type": "ERROR",
+      "keys": [
+        "message",
+        "errorCode"
+      ],
+      "errorCode": "COMPLETION_REJECTED",
+      "messageChars": 27
+    }
+  ]
+}

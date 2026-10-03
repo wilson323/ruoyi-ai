@@ -1,0 +1,10 @@
+{
+  "atUtc": "2026-10-02T16:55:04.839600+00:00",
+  "sdk": "2.0.3",
+  "exitCode": 0,
+  "scope": "official initialize/listTools/public read-only query, single current selected service",
+  "records": [
+    "PROBE serviceId=FastGPT-mcp-693fdc63b24e7762a0dbfe86 status=DISCOVERED tools=1",
+    "PROBE serviceId=FastGPT-mcp-693fdc63b24e7762a0dbfe86 status=QUERY_RETURNED contentBlocks=1"
+  ]
+}

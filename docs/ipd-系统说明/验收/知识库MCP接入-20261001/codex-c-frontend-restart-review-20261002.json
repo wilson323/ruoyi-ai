@@ -1,0 +1,27 @@
+{
+  "status": "READ_ONLY_REVIEW_ACCEPTED_RUNTIME_PENDING",
+  "baseline": "2dc5c047",
+  "diffInsertions": 60,
+  "diffDeletions": 6,
+  "hashes": {
+    "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "fc132c771f9a8cee07b7105ca7a00b7d4d81e61c6a9f330f024624969784a611",
+    "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "75b51b9dc9383eabce4892c453377c14d1f683dfa49fa6789a446fe347b08eca",
+    "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "a7063f163e12ff44f45d25844d927c274dc5faf84a6c2137fec385457c103ea2",
+    "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "0770475019242cd4786cf1e678a736e24cd394a5806eb4212cc9f810f305c39e"
+  },
+  "accepted": [
+    "prepareNewAttempt only FAILED and inactive/not submitting; clears document-chain association and pending key, keeps detail action as intended binding and sanitizes current selection",
+    "Button only focuses existing external or panel textarea; no create/cancel/restore network action",
+    "Next explicit submitText uses original submit/buildRunInput/startRun, fresh UUID, requested action equality guard and original input idempotency reuse after create failures",
+    "No previousRunId/targetDocumentId/baseVersionId guessed for ordinary restart; explicit artifact rework path still exclusively carries association",
+    "Opening history/project switch clears stale association; old run/events/history retained",
+    "UI hides technical code while events unchanged; error message remains",
+    "No layout or new send track"
+  ],
+  "testEvidence": "New tests assert no API on button, explicit send once/fresh UUID/no association/copilot, error payload untouched; read-only review did not run tests",
+  "remainingValidation": [
+    "Browser external textarea focus not asserted in added test; source focusTaskInput reuses existing selector",
+    "Actual restart runtime/Person permission still pending; no claim failed run resumed or document-linked rework"
+  ],
+  "scope": "No frontend edits/build/target/network"
+}

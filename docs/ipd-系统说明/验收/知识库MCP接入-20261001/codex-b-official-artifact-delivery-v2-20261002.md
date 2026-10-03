@@ -1,0 +1,15 @@
+# Artifact receipt/RuntimeAuthority v2
+
+PARTIAL，v1静态prefix guard不再可整合。3新temp paths已编译，5/5实际JUnit。未改main/index/SDK/DB。
+
+六行缺口：ruoyi-ai temp；官方deliver_artifact原target；RuntimeAuthority与OwnedTargetFactory必须生产trusted注入；原artifact表/受控bytes+receipt sidecar；去prefix推断与session授信；源码/SDK真实工具/files/原事务fixtureA级候选。
+
+二进制不再由正文startswith判断。原server版本ID定位独立受控receipt.json，核versionId/tenant/run/raw byteLength/SHA与原row一致，文件读回SHA一致才认binary并拒文档apply；普通正文同prefix有text receipt仍允许。伪造普通正文JSON不产生binary权威；提供不同content的行、替换receipt.versionId、跨run、字节篡改均拒。receipt没有base64/body；raw .bin保留完整任意字节。force冲突与append保旧、原DRAFT、回滚bytes和sidecar清理测试保留。
+
+RuntimeContext user/session字符串检查已移除，改必须构造注入RuntimeAuthority.requireAuthorized(binding,runtime)。fixture用服务器持有原context对象身份，复制相同字符串不能通过；这是opaque/context持有者隔离测试，非正式Governance接线。生产必须挂实际Gov actor重查或非公开签发不可由model/user metadata创建的claim，不能把fixture callback抄作全局默认许可。
+
+ProjectAgentArtifactAccess提供原apply/download窄端口：OwnedTargetFactory.forOwnedRun(actor,runId)为server provider；requireDocumentContent先run匹配然后核authoritative row/附件，download(actor,runId,versionId)再Person匹配与当前access，无裸path/token。这不是新文档表/第二Task API；Controller尚未实现。
+
+root RunService/config 后续必须注入此instance，在已锁seen且DRAFT之后调用 artifactAccess.requireDocumentContent(actor,runId,seen)，替代v1static调用；配置实现Factory从原requireOwnRun/当前Person权限构造目标，RuntimeAuthority映射真实Gov，RunOwnerTransaction映射Handle.withActiveOwnership。接口缺实现不能假称已上线。原文件说明的API二进制attachment下载/FE标记+原seq事件需求保持。
+
+局限：真实MyBatis事务/生产授权/下载HTTP/FE未验；metadata和bytes都丢失时无独立trusted delivery-origin登记无法区分历史普通正文与丢失binary，必须原ARTIFACT事件持久附件receipt及恢复对账，不能重新靠prefix；只有meta丢失但bytes仍存在已fail-closed。sidecar未证明断电目录持久，孤儿恢复仍待实现。明确不以5test算生产二进制全闭环。

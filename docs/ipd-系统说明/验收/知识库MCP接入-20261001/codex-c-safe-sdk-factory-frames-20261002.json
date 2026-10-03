@@ -1,0 +1,33 @@
+{
+  "status": "PENDING_VALIDATION",
+  "scope": [
+    "ProductLineMcpQuery.java",
+    "ProductLineMcpQueryTest.java"
+  ],
+  "before": {
+    "Query": "7179d77954afa8c4ae8a15ace2d728c9463c329ec2ea0cc811659163fa76fe3e",
+    "Test": "5d50b3342b623b88a2c0e637bef6b759aebdeabdcecad411f2bf0fe91dd78a1a"
+  },
+  "after": {
+    "Query": "4fe0cb14255e87518d62899ef7f22b16370e15004daf153664afdaa420c47791",
+    "Test": "5a43c5a662301b438085e61fd215dee0d6f302086d76ed4e64d15af00353f55f"
+  },
+  "owning_source_candidates": [
+    "mcp-json 0.17.2 McpJsonInternal#createDefaultMapper:67 default provider unavailable",
+    "mcp-json 0.17.2 McpJsonInternal#addException:75 provider initialization failure",
+    "mcp-core 0.17.2 HttpClientStreamableHttpTransport$Builder#build:825 calls McpJsonMapper.getDefault",
+    "reactor-core 3.7.13 BlockingSingleSubscriber#blockingGet:87,122 nonblocking thread rejects blocking;129 timeout wrapper",
+    "reactor-core 3.7.13 Mono#block:1774,1802",
+    "local ManagedMcpAsyncClient#streamableHttp and initialize"
+  ],
+  "validation": {
+    "diff_check": 0,
+    "tests": "Not executed; A owns serialized Maven"
+  },
+  "limits": [
+    "Actual run INITIALIZE/IllegalStateException with null frames does not identify a throw site",
+    "No shared factory change; no outbound request; no DB/target/index writes",
+    "Same max8 causes/max64 inspected frames per cause/max8 retained frames; exact classes; safe method chars; no message/filename/URL",
+    "Reason codes and failure priority unchanged"
+  ]
+}

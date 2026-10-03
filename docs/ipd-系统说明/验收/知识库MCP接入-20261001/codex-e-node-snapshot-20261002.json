@@ -1,0 +1,42 @@
+{
+  "status": "PUSHED_REMOTE_VERIFIED",
+  "head": "2dd0be6f4f6cea335ce8e779e9d1a3e25935360b",
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-e-node-20261002.index",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-e-node-20261002-1xvhwfuz/ruoyi-ai",
+  "paths": [
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowStarter.java",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/service/WorkflowRuntimeZombieDisposeTest.java",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java"
+  ],
+  "hashes": {
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java": "668bd29b944676055679c6a88da806ef278e9aa48561263be7254ee19ca728eb",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java": "6199293036001af05f48be3e62f299035f40c98f9be2f01c2ac75ccb01a62815",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java": "92e49240d208040e183a75663566c8f800b7add9bc9113b5c95ea472e4fb5e02",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowStarter.java": "f5c986bfc4f413d5c62e0c219e93091741c04a99c22a0ba2d230a9bb556be6bb",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/service/WorkflowRuntimeZombieDisposeTest.java": "f4ddc8bf1a0c4bc450e79fc489786e5ae84ad8be33d7d55dbcc74bf15fdd6738",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java": "e35ff3a3113cbebf603cf2191a90bccc41dfc02d092a4a77f300f7037ee5697a"
+  },
+  "mainIndexEntriesBeforeSha256": "677c48087179afb70a25eb0b2f8d651a31f73655a0906da8921caed078ae09e9",
+  "candidateValidation": {
+    "moduleTests": 149,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "log": "/tmp/ipd-codex-e-isolated-module-20261002.log",
+    "scope": "exported HEAD+six exact paths, temporary target; existing offline Maven dependency cache",
+    "reactorAttempt": "failed at common-core Surefire tag/engine configuration before aiflow, preserved /tmp/ipd-codex-e-isolated-node-20261002.log"
+  },
+  "commit": "094acbc016ed5890a468cc04eaebeacd923ef90d",
+  "normalHook": "8 PASS/0 FAIL/0 SKIP",
+  "indexPolicy": "six committed own paths aligned to HEAD; every unrelated main-index entry byte-preserved",
+  "unrelatedIndexBeforeAfterSha256": "f7ce7d6eb2ee3e4c04263c9645a468ae5807470b8b08875e25b81b066d333a3a",
+  "at": "2026-10-02T18:13:42.031626+00:00",
+  "commitLog": "/tmp/ipd-codex-e-node-commit-supervised-20261002.log",
+  "initialUnsupservisedAttempt": "child ended without commit/output; same exact supervised transaction succeeded, no bypass",
+  "remoteMain": "094acbc016ed5890a468cc04eaebeacd923ef90d",
+  "pushLog": "/tmp/ipd-codex-e-node-push-20261002.log",
+  "remoteVerifiedAt": "2026-10-02T18:14:21.997749+00:00"
+}

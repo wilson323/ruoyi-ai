@@ -1,0 +1,77 @@
+{
+  "atUtc": "20261002T185435192325Z",
+  "mode": "poll",
+  "projectId": "2103659612308828162",
+  "loadedJarSha256": "b70fdb60ffe120a4ec3a37c36bec19ad77aa99d6b9c2479ff164c8b3aa7ed3ab",
+  "diagnosticOnly": false,
+  "previousRunId": "2106061095016882177",
+  "targetDocumentId": "2106061816428781569",
+  "runId": "2106095444625989634",
+  "sources": [
+    {
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "toolCallId": "call_01a0fdf7b43e78a3871b53c0",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": null,
+      "hits": 1,
+      "sourceEvidence": null,
+      "reasonCode": null,
+      "mcpFailureStage": null,
+      "mcpFailureReason": null,
+      "mcpErrorTypes": null,
+      "mcpSdkFrames": null,
+      "seq": 8,
+      "citationChars": 0,
+      "citationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "usage": [
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 1473,
+      "outputTokens": 174
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 9944,
+      "outputTokens": 1067
+    }
+  ],
+  "artifacts": [],
+  "run": {
+    "runId": "2106095444625989634",
+    "status": "FAILED",
+    "errorCode": "COMPLETION_REJECTED",
+    "actionCode": "C02",
+    "configSnapshot": {
+      "capabilityPackCode": "market-research",
+      "capabilityPackVersion": "v1",
+      "modelConfigId": "2104885081318375426",
+      "skills": [
+        {
+          "name": "competitor-analysis-ipd",
+          "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+        }
+      ],
+      "toolIds": [
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+      ],
+      "previousRunId": "2106082915170418689",
+      "targetDocumentId": "2106085620907540481",
+      "baseVersionId": "2106085620907540481"
+    },
+    "artifactArchives": []
+  },
+  "terminal": true,
+  "timedOutWaiting": false
+}

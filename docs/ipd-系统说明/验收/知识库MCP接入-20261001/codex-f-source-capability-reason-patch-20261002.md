@@ -1,0 +1,9 @@
+# F 来源能力诊断白话映射
+
+六行缺口：ruoyi-ipd-web；既有timeline-model SOURCE提示；仅timeline-model.ts及test；reasonCode；新后端TOOLS_CAPABILITY_MISSING未翻译，目标「知识库服务暂未提供查询能力」；A级后端固定枚举及前端own-property白名单已读。
+
+仅加SOURCE_REASONS自有白名单项，保留hasOwnProperty鉴别、未知远端键空原因、UNAUTHORIZED优先、NOT_PROJECT_DOCUMENT出处守卫。新增定向测试精确核失败白话与无SDK/内部原因码文本，UNAUTHORIZED不受该码影响，UNKNOWN状态不造失败；原原型成员/远端未知键与知识身份测试全部保留。无依赖、发送轨或布局变化。
+
+model before9fccccd32349c5d965c96a8edfa7f7c79f10a3a1de63895e7a48188f27c02fd1；afterb94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567。test beforee3ef8289a9482f1ef742479f983ba6b6e0ed06bf2b8fafd78796c5e49e9c4a1d；after897cddd32b4a867977d817dd807d7d5c3d87170454b24ed7ee7c39a9c1af93e2。
+
+PENDING_VALIDATION；git diff --check退出0。未Maven/target/全量前端三条/出站/DB；交A串行定向测试与必要type验证。

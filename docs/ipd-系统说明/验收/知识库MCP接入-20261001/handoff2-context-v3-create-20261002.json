@@ -1,0 +1,88 @@
+{
+  "at": "2026-10-02T16:52:25.387526+00:00",
+  "mode": "create",
+  "projectId": "2103659612308828162",
+  "previousRunId": "2106061095016882177",
+  "targetDocumentId": "2106061816428781569",
+  "versionsBefore": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": [
+        {
+          "createBy": "900101",
+          "createTime": 1790956801000,
+          "updateTime": 1790959022000,
+          "id": "2106051584776511490",
+          "projectId": "2103659612308828162",
+          "docType": "MARKET_RESEARCH",
+          "title": "C02 产物",
+          "model": "MiniMax-M3",
+          "tokenPrompt": 24173,
+          "tokenCompletion": 2843,
+          "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39",
+          "status": "REJECTED",
+          "versionNo": 1,
+          "reviewedBy": "900101",
+          "reviewedAt": 1790959022000,
+          "reviewComment": "退回：project_knowledge_search 实际同时检索权限内已审核项目文档及系统产品知识库。不得把产品知识库文件称作本项目已审核文档，也不得声称未引入项目外资料。EC-100仅为其他产品资料，不是产品D-0925F11参数。请重新调用两工具，逐条区分资料来源与当前项目适用性，缺失事实明确未取得，不下业务完成或Gate结论。",
+          "delFlag": "0"
+        },
+        {
+          "createBy": "900101",
+          "createTime": 1790959240000,
+          "updateTime": 1790959944000,
+          "id": "2106061816428781569",
+          "projectId": "2103659612308828162",
+          "docType": "MARKET_RESEARCH",
+          "title": "C02 产物",
+          "model": "MiniMax-M3",
+          "tokenPrompt": 127893,
+          "tokenCompletion": 4737,
+          "contentSha256": "ae42935aa03b525c6fb332ea3f267eda8929ca2dfcd5fcfc5bfdcaa8aebbb77a",
+          "status": "REJECTED",
+          "parentVersionId": "2106051584776511490",
+          "versionNo": 2,
+          "reviewedBy": "900101",
+          "reviewedAt": 1790959945000,
+          "reviewComment": "退回：上一版受工程仓库AGENTS规约误注入影响，未实际调用本次已选MCP工具，并捏造挂载工具数量。请实际调用本次两项已选工具，按真实返回区分项目已审核文档、系统产品知识库和其他产品资料；不得要求产品线展示名映射，不得推测工具数量，不得将EC-100等其他型号套入当前产品；缺失事实明确未取得，不下业务完成或Gate结论。",
+          "delFlag": "0"
+        }
+      ],
+      "timestamp": "2026-10-02T16:52:25Z",
+      "traceId": "1155ae1ae05145fd868f11049be33dc0"
+    }
+  },
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "project_knowledge_search",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    ],
+    "actionCode": "C02",
+    "previousRunId": "2106061095016882177",
+    "targetDocumentId": "2106061816428781569",
+    "baseVersionId": "2106061816428781569",
+    "message": "根据本次明确关联原文档的退回意见重新核对并修订。请实际调用本次两项工具，简短输出资料核对和缺项；正确区分权限内项目已审核文档、系统产品知识库及远端MCP其他产品资料，不把其他产品事实套入当前产品。缺失事实明确未取得，不推算数字，不宣称动作完成或Gate通过。",
+    "idempotencyKey": "ipd-handoff2-context-v3-20261002-create"
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2106064774604263425",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-10-02T16:52:25Z",
+      "traceId": "fdcf72ff9a124ba79b773f04d999d836"
+    }
+  }
+}

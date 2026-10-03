@@ -1,0 +1,43 @@
+{
+  "status": "PARTIAL",
+  "supersedes": "v3 legacy fallback invalidated by G triple loss/wrong top version evidence",
+  "files": [
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDelivery.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDelivery.java",
+      "sha256": "d35073bea233aa5d760070cc0648d9f416755c36b164cc98727f5c22963927a9"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactAccess.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactAccess.java",
+      "sha256": "36ae982944093fc6a6115a99cfe5eb833605b195f8ef98b25294d55c1c370e92"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactOrigin.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactOrigin.java",
+      "sha256": "267fc8ca2c0cf0dc5ba285beb91c01ff4630844123a75ca115348e6eee36a41e"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDeliveryTest.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDeliveryTest.java",
+      "sha256": "a64eb229c51ff5784fa0216194df1eb45f0312adb67fff309c590af154d0e5c2"
+    }
+  ],
+  "patchSha256": "913e1e8031d3297f73091e0d38b133628f1c0bfe52c447ba801e1d4e96ba1196",
+  "tests": {
+    "found": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/artifact-v4-tests.log",
+  "legacyAuthority": "original server ARTIFACT exact versionId/artifactId/version/contentHash under same tenant/run AND full UTF8 content hash",
+  "unknownAuthority": "fail closed trusted origin unavailable, no generated migration receipts",
+  "runtimeAuthorityStatus": "mandatory SPI retained; exact owner Gov ExecutionClaim API not received, coordination requested; no invented actor/claim",
+  "pending": [
+    "Independent G v4 probe",
+    "Actual Gov ExecutionClaim typed adapter awaiting API",
+    "Root Handle/DB transaction and API/FE integration",
+    "Storage durability/orphan reconciliation"
+  ]
+}

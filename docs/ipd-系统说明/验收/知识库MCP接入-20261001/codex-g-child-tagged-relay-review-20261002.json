@@ -1,0 +1,30 @@
+{
+  "status": "VERIFIED_TEMP_TAGGED_LIVE_ROUTE_ONLY",
+  "sourceSha256": "ead6587c1bf01dfe23a2d564bbc140bd9d90af40ef65bf113434f00e2d1fe8a3",
+  "logSha256": "45a95cd2b708f612bc03d7eebda51c8e649688f719eb6bc7f0e10a0e43ebfced",
+  "actualTests": {
+    "found": 2,
+    "passed": 2,
+    "failed": 0,
+    "aborted": 0,
+    "skipped": 0
+  },
+  "verified": [
+    "Actual native agent_spawn two distinct child actor/context pairs with identical tool id/name/input/raw and identical SDK source",
+    "Server-generated UUID per child session injected through real AgentEventEmitter forwarding context; actual confirm carries distinct locators",
+    "Lookup still verifies registered actor/context lineage and original tool fields; locator itself is only internal lookup, not standalone authority",
+    "Saved child checkpoint version wrong argument rejected; CAS concurrent two receipt consumers one winner/one reject; replay rejected",
+    "Original child ReActAgent.streamEvents exact ConfirmResult produces RETURNED effect once per child and real final file content"
+  ],
+  "gaps": [
+    "All capture/token/origin/consume maps and receipt check still test-local middleware, not main production relay",
+    "Tokens keyed child session, origins.put overwrites same token for multiple tools in one child acting turn; single-tool-per-child tested only",
+    "Version guard checks saved child version after parent complete; no assertion at capture that checkpoint already saved, no real transactional consume+resume or dispatch-failure recovery",
+    "CAS consumption occurs before SDK execution; failing dispatch after consume is not tested",
+    "No wrong token/forged client locator test, no changed underlying checkpoint version test",
+    "No DENY/refusal scenario executed, no ownership withdrawal in these two tests; previous live probe has withdrawal test",
+    "Direct ReActAgent stream resume does not exercise full Harness wrapper lifecycle",
+    "No actual EventBridge onAguiInterrupt, WAIT CAS, parent-completion prevention, checkpoint cleanup or HTTP/cold recovery"
+  ],
+  "scope": "No additional execution or production edits; independent read of exact source and original2/2 log"
+}

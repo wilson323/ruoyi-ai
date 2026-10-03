@@ -1,0 +1,78 @@
+{
+  "status": "PARTIAL_PAUSE_CANDIDATE_TARGETED_VERIFIED_WITH_TERMINATION_BLOCKERS",
+  "candidateSHA": {
+    "/tmp/ipd-agui-input-candidate/pause-lifecycle.patch": "dffdec8780b5a2579f8196138dd565cf16c52cca411eedc35dad8301758d1604",
+    "/tmp/ipd-agui-input-candidate/ProjectAgentRunHandle.java": "8d52f749f33f0178613aef40a7e8682a4dd77736b4ec904ba64dc8937d11eb57",
+    "/tmp/ipd-agui-input-candidate/ProjectAgentEventSink.java": "eceaad6e18aa6c21c3692d34bb30192dd6a5f32f49bfd8409bdec5add310f560",
+    "/tmp/ipd-agui-input-candidate/ProjectAgentRunExecutor.java": "e6cabbbba3be0060338aa20cd7386019ce3e1806ff159073eb206554b2153586"
+  },
+  "observedSourceSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseResumeService.java": "8fdbb50cf5bfa4dafac7ea48e10891e734359d42d955fc996fa90316bd65988e",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java": "9dd7ba736e258ed05bc79f691dbd74c6eff33d6cc4b9a442347829389760005a",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "2d07de787db4c0602f4a780ae2697d7d1a782f2bf9f723f833199c08b5d8c134"
+  },
+  "tests": {
+    "combinedCompileExit": 0,
+    "combinedTestExit": 0,
+    "PauseResumeServiceTests": 8,
+    "existingHandleTests": 20,
+    "total": 28,
+    "passed": 28,
+    "failed": 0,
+    "skip": 0,
+    "dependencyBoundary": "Stable10130 libs plus cached official agui2.0.3, JUnit/AssertJ and existing independently compiled AGUI source closure /tmp/ipd-agui-independent; main target not on classpath.",
+    "initialCompileFailure": "Missing cached AssertJ CP; original log preserved; add actual3.27.6jar and final compile0."
+  },
+  "realSDKOrder": {
+    "sdk": "2.0.3",
+    "order": [
+      "REQUIRE_CONFIRM",
+      "SAVE_CHECKPOINT",
+      "AGENT_RESULT",
+      "AGENT_END",
+      "EAGER_RESOURCE_CLEANUP",
+      "DOWNSTREAM_COMPLETE"
+    ],
+    "probeExit": 0,
+    "sdkStore": "Real SDK InMemoryAgentStateStore.saveIfVersion override recording actual lifecycle, no network/model."
+  },
+  "actualHandleLifecycle": {
+    "servicePauseBeforeFlagsAndDispose": true,
+    "successfulPauseDisposesOnceKeepsCheckpoint": true,
+    "handlerFailureNoPausedOrClosedAndNoDispose": true,
+    "cancelOnPausedClosedHandleReturns": false,
+    "cancelCheckpointCleanups": 0,
+    "probeExit": 0,
+    "storage": "Actual handle/service and same-contract in-memory store; mocked transaction manager cannot prove real DB rollback."
+  },
+  "blockingFindings": [
+    "Native RequireUserConfirmEvent occurs BEFORE SDK checkpoint save. Cache pending at that event, pause transaction only after saved root AgentResultEvent with PERMISSION_ASKING (and verify checkpoint version); suppress business completion for that paused result.",
+    "Flux.using defaults eager cleanup; waiting until complete is too late. Cleanup must check paused/releaseTemporaryState rather than unconditional managed.state.sealAndDelete.",
+    "Pause closes handle and removes it from executor. Current cancel changes WAITING_APPROVAL to CANCEL_REQUESTED then only uses existing handle; new paused-terminal cleanup path absent. Closed paused handle.cancel returns false and cleanup0.",
+    "Existing waiting timeout only scheduled for original pre-kernel intent; closed handles are skipped. Native paused TTL/termination and owned checkpoint cleanup are not wired."
+  ],
+  "usageSink": "Candidate wrapper forwards isPaused/onAguiInterrupt to handle. Source contract verified; no end-to-end current kernel pause usage consumer wired in patch.",
+  "notClaimed": [
+    "Real DB transaction rollback/CAS race across JVM",
+    "Durable resumed cold-JVM SDK receipt/owner approval",
+    "Production loaded runtime pause/cancel recovery"
+  ],
+  "effects": {
+    "mainWrite": false,
+    "targetWrite": false,
+    "indexWrite": false,
+    "reload": false,
+    "DBWrite": false,
+    "network": false
+  },
+  "evidenceSHA": {
+    "src/GSdkPauseOrderProbe.java": "61554cc7c4833d0b9f0100c33feddd5996d9d90500ae8b336896069ee1b91916",
+    "sdk-pause-order.log": "38dcddf558a7c683d7ebb899cbf82e8283c5497bc2ed3d6e2c41cae701f22b61",
+    "src/GPauseHandleLifecycleProbe.java": "c5c457c7b82a2c2d42980b34a82753f1516a37f0597db0f6e187dbb8b9c4b821",
+    "pause-handle-lifecycle.log": "fffcac7e4ffbb1751ef484fb0763e55688794ec03e9da68b7681eab529124b24",
+    "pause-combined-compile.log": "baca983385fa375ea1ccc44fc08cf41ae0db556e91f71f6312b60ee69fc0c8a0",
+    "pause-combined-compile-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pause-combined-tests.log": "801afac2e924ca3e0e2f2174e038f2ce2623a30b65453c02f46c9c27be29d8a0",
+    "pause-handle-probe-compile.log": "69df91beeccaf3b88a4b056546704ced06eeec3823f2917244f52b33926f22af"
+  }
+}

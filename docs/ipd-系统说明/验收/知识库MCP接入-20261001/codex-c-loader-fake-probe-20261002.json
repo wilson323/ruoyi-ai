@@ -1,0 +1,92 @@
+{
+  "status": "ISOLATED_GUARD_VERIFIED",
+  "loaderSha256": "61f7156acb25fe7e69cb00f7ba5b4fcafb50326097f2ab61f555d851ae572872",
+  "results": [
+    {
+      "case": "agent_active",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "legacy_pending",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "legacy_running",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "legacy_failed",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "query_failure",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "nonnumeric",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "unicode_decimal",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "second_agent_active",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "second_legacy_active",
+      "result": "REJECT",
+      "fakeActions": {
+        "kill": 0,
+        "Popen": 0
+      }
+    },
+    {
+      "case": "double_zero",
+      "result": "PASS",
+      "fakeActions": {
+        "kill": 1,
+        "Popen": 1
+      }
+    }
+  ],
+  "method": "AST extracts exact active check function, first check and final recheck+kill; replaces all subprocess/kill/Popen; omits unrelated package/copy/real process startup",
+  "limits": [
+    "No real subprocess DB/process control run",
+    "Initial queries identical for legacy states; case labels represent safe count projection",
+    "Double checks do not exclude new admission between final check and kill"
+  ]
+}

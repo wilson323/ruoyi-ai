@@ -1,0 +1,63 @@
+{
+  "status": "COUNTEREXAMPLE",
+  "scope": "actual SDK2.0.3 native parent Harness agent_spawn; main scope/governance/strictstore/EventBridge current reactor consumers, in-memory store and stub model; not full HTTP durable run acceptance",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-child-ask-mplpi_g1",
+  "compileExit": 0,
+  "probeExit": 0,
+  "safeEvents": [
+    "SAFE_EVENT=AGENT_START source=null",
+    "SAFE_EVENT=MODEL_CALL_START source=null",
+    "SAFE_EVENT=TOOL_CALL_START source=null",
+    "SAFE_EVENT=TOOL_CALL_DELTA source=null",
+    "SAFE_EVENT=TOOL_CALL_END source=null",
+    "SAFE_EVENT=MODEL_CALL_END source=null",
+    "SAFE_EVENT=TOOL_RESULT_START source=null",
+    "SAFE_EVENT=AGENT_START source=aagent:s123/general-purpose",
+    "SAFE_EVENT=MODEL_CALL_START source=aagent:s123/general-purpose",
+    "SAFE_EVENT=TOOL_CALL_START source=aagent:s123/general-purpose",
+    "SAFE_EVENT=TOOL_CALL_DELTA source=aagent:s123/general-purpose",
+    "SAFE_EVENT=TOOL_CALL_END source=aagent:s123/general-purpose",
+    "SAFE_EVENT=MODEL_CALL_END source=aagent:s123/general-purpose",
+    "SAFE_EVENT=REQUIRE_USER_CONFIRM source=aagent:s123/general-purpose",
+    "SAFE_EVENT=REQUEST_STOP source=aagent:s123/general-purpose",
+    "SAFE_EVENT=AGENT_END source=aagent:s123/general-purpose",
+    "SAFE_EVENT=TOOL_RESULT_TEXT_DELTA source=null",
+    "SAFE_EVENT=TOOL_RESULT_END source=null",
+    "SAFE_EVENT=MODEL_CALL_START source=null",
+    "SAFE_EVENT=TEXT_BLOCK_START source=null",
+    "SAFE_EVENT=TEXT_BLOCK_DELTA source=null",
+    "SAFE_EVENT=TEXT_BLOCK_END source=null",
+    "SAFE_EVENT=MODEL_CALL_END source=null",
+    "SAFE_EVENT=AGENT_RESULT source=null reason=MODEL_STOP",
+    "SAFE_EVENT=AGENT_END source=null",
+    "SAFE_ORDER=[REGISTERED:aagent:s123, LOAD:aagent:s123, REGISTERED:aagent:s123, LOAD:aagent:s123, REGISTERED:sub-14d3d640-2714-46b5-a95a-7b2a6c5ce04d, LOAD:aagent:s123/official/c3ViLTE0ZDNkNjQwLTI3MTQtNDZiNS1hOTVhLTdiMmE2YzVjZTA0ZA, REGISTERED:sub-14d3d640-2714-46b5-a95a-7b2a6c5ce04d, LOAD:aagent:s123/official/c3ViLTE0ZDNkNjQwLTI3MTQtNDZiNS1hOTVhLTdiMmE2YzVjZTA0ZA]",
+    "SAFE_SINK=onComplete argCount=0",
+    "SAFE_EFFECT=false",
+    "SAFE_SAVED=aagent:s123 exists=true state=present",
+    "SAFE_SAVED=aagent:s123 exists=true state=present",
+    "SAFE_SAVED=aagent:s123/official/c3ViLTE0ZDNkNjQwLTI3MTQtNDZiNS1hOTVhLTdiMmE2YzVjZTA0ZA exists=true state=present",
+    "SAFE_SAVED=aagent:s123/official/c3ViLTE0ZDNkNjQwLTI3MTQtNDZiNS1hOTVhLTdiMmE2YzVjZTA0ZA exists=true state=present"
+  ],
+  "sourceHashes": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "e81c42b7be1a6ddf19073b27fde324fbcee54b09b9071be09499eeb50f6ab188",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernance.java": "2be1d445234fb36a97b43a12452e74c3e0d09bf2f04d9db851a8971b40b1dea1",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java": "eda8374593d2b13d5aef0d3de87bb7c850bda8f2697207251ceb5a43a89b82ae",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiBridge.java": "bb3b32b7a4a5adc516a17c58edb7b62eb1f50a6c51b039a20993b1bca2589b52",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStore.java": "6c28704047f699f27fe7d07295d630829dce9df39898aad03f766be8afdcdae3",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialPermissions.java": "8d36ae0dff15501b60f126d1050d3a1b38a5c0f49c0fb908d62dac0a86be4a44"
+  },
+  "probeSha": "cc00b3f6fc5367ef4961f102ec02379d0052c29ea0bc8a3b5f9afa2960da4549",
+  "logSha": "486537c0038d42a8dd6cf85ce43d0c0fa0ffcd6f9b6822b6aa00f2c96db67d6a",
+  "observations": [
+    "Child REQUIRE_USER_CONFIRM then REQUEST_STOP/AGENT_END; no child AgentResult event exposed",
+    "Parent AgentResult MODEL_STOP and main EventBridge sink.onComplete, no onAguiInterrupt",
+    "Child write effect false; strict root and official child checkpoints remain present before actual Kernel cleanup",
+    "Does not simulate production cleanup or assert parent DB SUCCEEDED; actual sink completion would enter that existing terminal path"
+  ],
+  "limitations": [
+    "Factory leaf adapter identity as existing authoritative child test, not full configured child artifact/transcript consumers",
+    "ASK installed only on actual registered child to exercise native child rule without parent ASK; production custom rule source not tested",
+    "SDK/context store in memory, no database/HTTP writes or public model/network",
+    "First scaffold failure ConcurrentModificationException preserved after events; fixed snapshot iteration final exit0"
+  ]
+}

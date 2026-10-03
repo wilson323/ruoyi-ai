@@ -1,0 +1,103 @@
+{
+  "status": "PARTIAL_TEMP_COMBINATION_TESTED",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-bc-fullcapabilities-i_43_hsu",
+  "paths": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java": {
+      "before": "b51b55e1c3971f80b872d933eb66649eda71cdb0e4dfecf26fb04dcf433a6398",
+      "after": "0b9d2deebe6a17d814a648955f30b029fe27ba2abdfa947a847038470912829d"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java": {
+      "before": "a36261d8a53604f40929d18f074600850bd3b54ce9807bb48afb7955fbd63c30",
+      "after": "04e5753b5b79526747af4546d2bc456534b5efc8d4c15f778729b6d994291143"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java": {
+      "before": "6c5571e4cc3f980256d2b401728752b508c689115039cc104ed54e9e844a9b97",
+      "after": "ae06318b0ae21fd08358a951f47f9041db6b83fad13053a9b25f387e02600f81"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentWorkspace.java": {
+      "before": "769a28abf20108e1a071e787d14290fd7d1c5e6b671bc6f6e39e342343043084",
+      "after": "d857f5d2ebbec91d8e000f424dfe31bf724b9b8ea1a18eaf940e42024b0a4098"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolContractTest.java": {
+      "before": null,
+      "after": "ecefb61ea88f5b3c170bd47dcc10aa0f9238b706f4be886c5657961e62757177"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json": {
+      "before": "c0c96e54af047ba34fb08d046c2dbba8ed05b5001c65c7091e6ea47b628dd518",
+      "after": "1f19cc9257c4c175ded8eb3cf6eb21369ef185fb237fef1476fdccfda4948399"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/ip-fto-precheck-ipd/SKILL.md": {
+      "before": "84c6d73c45f7a3f133a0747ef239119647b73a9de965178cf637112fee186cfb",
+      "after": "804dcdf2a1ea9389270bf193a2dba2a790ee06387819699f26ce0d50d898a031"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/competitor-analysis-ipd/SKILL.md": {
+      "before": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+      "after": "39675e5d91d7220050e3bd49bd2113c5cb8873d4b84dc2c1014dc9ba6e4633fb"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/market-opportunity-research-ipd/SKILL.md": {
+      "before": "c116dac4094ed5dea7013a7952943f5482e1632880c40287b4f0130641223c28",
+      "after": "c1a6a6c2a4e01cf0f29aea9bf90a2d6ce8e3f85060894031d91e389066871c6c"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityService.java": {
+      "before": "6a0795e839dc21920c18ceeb6d02d8909f0795e30a3d6c131e43efa0fe4cf897",
+      "after": "63f6c3ed9f3316dd75e3d042d59166d7897f161ad3df1f6ea9bc05f3bca8f2b1"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRuntimeAccess.java": {
+      "before": null,
+      "after": "80d51e207394ce4ae4cdd57ba00a09fca555954a15f5f7bd70e0a975f7ced8fd"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSkillAuthorityAdapters.java": {
+      "before": null,
+      "after": "2f2d030fd737586afdc71f516a759e7ea7fb4da37f7805993876990b06328657"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSkillAuthorityAdaptersTest.java": {
+      "before": null,
+      "after": "4b6ba6e68d9fd5da74f3c623f549d08509c0400798648163379f36004a2e0c8d"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java": {
+      "before": null,
+      "after": "5972e68d3d7fe8d665b25b309e30e07bdd6a98b946f6482d666e6fa6a6326c98"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java": {
+      "before": null,
+      "after": "ff7f49d374854b3b0b789ee83342b352f9b399ec7cba524fd048e7c0f6b589e4"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java": {
+      "before": null,
+      "after": "ef2b31a273e6ca7ac031034cf2524ed4f7076840e9dfbcd9b2e77ef4dc79a60f"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFullCapabilityIntegrationTest.java": {
+      "before": null,
+      "after": "40a2e51fef30264c36fc29c039e1d9cd9adb435d479fa2bca4339dd0dea68b3a"
+    }
+  },
+  "patchSha": "d6b3ac6021b1ae92bc0064954ee851544c46cbbd1ebe46b5463f8bafc4ac9e1d",
+  "compileExit": 0,
+  "junitFound": 12,
+  "junitSucceeded": 12,
+  "junitFailed": 0,
+  "testLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-bc-fullcapabilities-i_43_hsu/tests-final.log",
+  "testLogSha": "87fa09fee37f3dd895d3231b2ff933c54894b9ffd89970adc9f7e06832d38000",
+  "runtimeDependency": {
+    "jar": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+    "ipd": "944a1bde48d58745411e2af3fdc9c36bbf1ffb71a015948591edfc897ed2faeb",
+    "fixtureSha": "b25a5de21c6a692558666ae6bac2c000f8de233a709b1f2b622bfeddb9c7054c",
+    "mainTargetBorrowed": false
+  },
+  "checks": [
+    "official C31 equals B catalog31",
+    "actual toolkit native31 union selected business equals Planner/ConfigSnapshot",
+    "pack perentry readiness preserves business availability",
+    "official visibility Model.stream retains other approved fixture and rejects selfapproval draft",
+    "official wait_async_results zero-task barrier actualcall",
+    "C FoundationTest3 actual Docker native/optionalbuilder/privacy-store tests"
+  ],
+  "pending": [
+    "Everytool and child runtime guard integration pending C/G proof",
+    "real ownerapproval record/endpoint absent: mock authority is mechanism only",
+    "WebSearch real provider missing",
+    "nonzero background task is separate G streamEvents evidence, zero task does not replace it"
+  ],
+  "priorLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-bc-fullcapabilities-i_43_hsu/tests.log",
+  "priorExitReason": "12 real successful tests but launcher expected11; fixed exactcount, no assertion removed"
+}

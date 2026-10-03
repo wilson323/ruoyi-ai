@@ -1,0 +1,42 @@
+{
+  "status": "TEMP_AUTHORITY_AND_OFFICIAL_CONTEXT_CONSUMER_VERIFIED_NOT_RUNTIME_COMPLETE",
+  "sdk": "e9721285c63a37c10b1d07aa540408e57ba56ab2 / 2.0.4-SNAPSHOT",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx",
+  "pathsSha256": {
+    "ProjectAgentServiceAuthority.java": "dd80a0977592dfb6f62a41da2c0287f1c63ac1895f5da56f10e9357e88c3f4ee",
+    "ProjectAgentServiceNativeSessions.java": "4f262425a05e7bbef30c33e85adae375015138265501cb48cc3a0fb89fe0c6c8",
+    "ProjectAgentServiceBindingsConfiguration.java": "82021bf6a3e7b5deed9d202d8831d9caca552c0cf2162d1dd902ef4ecb454ea7",
+    "ProjectAgentServiceAuthorityTest.java": "89fd79134ce5adc034b1443d25def533cbb0cf49f15d86f36b73d78c857f2b72"
+  },
+  "patchSha256": "046041fbaa3e669cdb97f4ac80d6b575991afdbfb9a437c921daf14494ebd623",
+  "compileExit": 0,
+  "tests": {
+    "newAuthority": 5,
+    "previousContracts": 5,
+    "failed": 0,
+    "skipped": 0,
+    "logs": [
+      "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/authority-realstream-tests.log",
+      "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ServiceLauncher-final.log"
+    ]
+  },
+  "realConsumers": [
+    "IpdCopilotAccess current Person/project/member checks with fake Mapper fixtures",
+    "JsonFileAgentStateStore disk writes/reopen restoration in @TempDir",
+    "AgentScopeAdapter.extractContext actual AgentState TextBlock/ThinkingBlock boundary",
+    "subscription-time current Person revalidation",
+    "external session to actual nativeSessionId remapping",
+    "Actual ReActAgent.streamEvents + official observer middleware + one stub Model.stream call: native user/session state selected, skill systemPrompt/full input and final answer exported, structured ThinkingBlock omitted"
+  ],
+  "notLive": [
+    "Mapper/RunService/Agent snapshot test mocked; additional ReActAgent real stream consumer uses stub Model; no live DB/Kernel/model/Service registration",
+    "approved Deployment operation authority must be installed by host, never requested by task payload"
+  ],
+  "pending": [
+    "Main Configuration/Kernel native observer registration and actual run adapter registry",
+    "Current main temporaryState.sealAndDelete prevents historical native-state restoration: persistent delivery-safe store/recovery integration needed, cannot claim full retained context",
+    "Official AgentTask envelope Issue/Team/discussion input and CollaborationTools currently not passed through approved request; task context consumer not complete",
+    "SessionIndex create/update only local synchronized; official shared-store CAS/multiinstance contention consumer not yet implemented",
+    "External Service auth/real deployment and restart/native provider tests not done"
+  ]
+}

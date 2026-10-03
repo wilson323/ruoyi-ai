@@ -1,0 +1,27 @@
+{
+  "at": "2026-10-03T03:49:40.552014+00:00",
+  "pid": "50240",
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "sha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "agentScopeJars": [
+    "BOOT-INF/lib/agentscope-extensions-model-anthropic-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-core-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-model-ollama-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-redis-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-harness-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-model-dashscope-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-mysql-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-rag-simple-2.0.3.jar",
+    "BOOT-INF/lib/agentscope-extensions-model-openai-2.0.3.jar"
+  ],
+  "info---format": {
+    "exit": 0,
+    "output": "29.7.2",
+    "error": ""
+  },
+  "image-inspect": {
+    "exit": 0,
+    "output": "sha256:2dd78ad5cf13a0b68f5134dc49aa9950203a8cf4b7463431b9f3b398287c5059",
+    "error": ""
+  }
+}

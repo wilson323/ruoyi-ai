@@ -1,0 +1,210 @@
+{
+  "status": "APPROVED_GRAPH_TWO_PROJECT_MEMBER_403_C05_ROLE_CONFLICT_NOT_MEMBER_ACCEPTANCE",
+  "runWindowJarSha256": "a44e858e9c72ccb2da0bf54a5ad2eeddd0026872a920feb250ce07a37e4a1470",
+  "pid": 31351,
+  "projectId": "2106098805312069634",
+  "lineId": "2106098453477072898",
+  "time": "2026-10-02T19:12:58.901680+00:00",
+  "negatives": [
+    {
+      "name": "advance",
+      "path": "/projects/2106098805312069634/advance-stage",
+      "response": {
+        "http": 403,
+        "body": {
+          "code": 30001,
+          "message": "非项目成员，无权访问",
+          "data": null,
+          "timestamp": "2026-10-02T19:13:02Z",
+          "traceId": "911ed8197f714bc4a54b4a7bd8ac71ad"
+        }
+      },
+      "beforeSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "afterSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "exactProtectedBusinessRowsUnchanged": true,
+      "hashScope": "projects/project_stages/products/project_members/exactC05; excludes independently scheduled C01/docs/tasks/notifications"
+    },
+    {
+      "name": "stageAcceptance",
+      "path": "/projects/2106098805312069634/stage-acceptance",
+      "response": {
+        "http": 403,
+        "body": {
+          "code": 30001,
+          "message": "非项目成员，无权访问",
+          "data": null,
+          "timestamp": "2026-10-02T19:13:02Z",
+          "traceId": "f35e40d1f29043e8b19d3c80a8304dd8"
+        }
+      },
+      "beforeSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "afterSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "exactProtectedBusinessRowsUnchanged": true,
+      "hashScope": "projects/project_stages/products/project_members/exactC05; excludes independently scheduled C01/docs/tasks/notifications"
+    },
+    {
+      "name": "c05Fields",
+      "path": "/stage-actions/2106100150559576066/fields",
+      "response": {
+        "http": 409,
+        "body": {
+          "code": 40004,
+          "message": "角色固定不可跨（市场PM/研发PM）",
+          "data": null,
+          "timestamp": "2026-10-02T19:13:03Z",
+          "traceId": "dec12492f7f24af59fa57501974ad089"
+        }
+      },
+      "beforeSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "afterSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "exactProtectedBusinessRowsUnchanged": true,
+      "hashScope": "projects/project_stages/products/project_members/exactC05; excludes independently scheduled C01/docs/tasks/notifications"
+    },
+    {
+      "name": "c05Transit",
+      "path": "/stage-actions/2106100150559576066/transit?target=IN_PROGRESS",
+      "response": {
+        "http": 409,
+        "body": {
+          "code": 40004,
+          "message": "角色固定不可跨（市场PM/研发PM）",
+          "data": null,
+          "timestamp": "2026-10-02T19:13:33Z",
+          "traceId": "77a7163c95724561a350d8eb9769fe8f"
+        }
+      },
+      "beforeSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "afterSha256": "c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3",
+      "exactProtectedBusinessRowsUnchanged": true,
+      "hashScope": "projects/project_stages/products/project_members/exactC05; excludes independently scheduled C01/docs/tasks/notifications"
+    }
+  ],
+  "retainedQaAuditAndOutputs": true,
+  "preflight": [
+    [
+      "PENDING_START",
+      "900103",
+      "900001",
+      "2106098453477072898"
+    ],
+    [
+      "900102",
+      "ACTIVE"
+    ],
+    [
+      "0"
+    ],
+    [
+      "2104885081318375426",
+      "MiniMax-M3"
+    ],
+    [
+      "900001",
+      "GROUP_LEADER",
+      "ACTIVE",
+      "ACTIVE"
+    ]
+  ],
+  "session": {
+    "id": "900102",
+    "personType": "GROUP_LEADER",
+    "groupId": "900001",
+    "accountStatus": "ACTIVE"
+  },
+  "approve": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "createBy": "900103",
+        "createTime": 1790968059000,
+        "updateBy": "-1",
+        "updateTime": 1790968379859,
+        "id": "2106098805312069634",
+        "code": "PRJ-2026-902",
+        "name": "QA同组非成员独立项目-7d37b33e5fd2",
+        "productId": "2106100149578108930",
+        "templateType": "SOFTWARE",
+        "targetMarkets": "[\"CN\"]",
+        "level": "A",
+        "levelCoefficient": 1.0,
+        "targetSalesAmount": 1.0,
+        "targetChannelCount": 0,
+        "targetNps": 0,
+        "targetSceneCount": 0,
+        "currentStage": "CONCEPT",
+        "subStageVersion": "0",
+        "source": "NEW",
+        "missingHistoryAck": "0",
+        "status": "TEAMING",
+        "mainGroupId": "900001",
+        "tenantId": "000000",
+        "delFlag": "0"
+      },
+      "timestamp": "2026-10-02T19:13:01Z",
+      "traceId": "b9746062a0d8421387ee64f32926f4f6"
+    }
+  },
+  "graph": [
+    [
+      "TEAMING",
+      "CONCEPT",
+      "2106100149578108930",
+      "900001",
+      "900103"
+    ],
+    [
+      "6"
+    ],
+    [
+      "69"
+    ],
+    [
+      "2106100149578108930",
+      "2106098453477072898",
+      "2106098805312069634",
+      "IN_RD"
+    ],
+    [
+      "900103",
+      "MARKET_PM"
+    ],
+    [
+      "900104",
+      "RD_PM"
+    ],
+    [
+      "2106100150559576066",
+      "C05",
+      "LIGHT",
+      "NOT_STARTED",
+      "2106100150354055170"
+    ]
+  ],
+  "safeFailureType": "RuntimeError",
+  "safeFailure": "negative_not_verified_c05Fields",
+  "windowReleased": true,
+  "taskAndDocReadback": [
+    [
+      "2106100152656728065",
+      "C01",
+      "EVENT",
+      "RUNNING",
+      "0",
+      "NULL",
+      "0",
+      "NULL"
+    ],
+    [
+      "C01",
+      "NOT_STARTED",
+      "NULL"
+    ],
+    [
+      "C05",
+      "NOT_STARTED",
+      "NULL"
+    ]
+  ]
+}

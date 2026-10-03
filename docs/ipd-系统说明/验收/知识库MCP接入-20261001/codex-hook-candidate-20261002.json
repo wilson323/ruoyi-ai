@@ -1,0 +1,9 @@
+{
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-hook-node-20261002.index",
+  "peer": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-hook-peer-djnl8twp/ruoyi-ipd-web",
+  "peer_head": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a",
+  "hook_sha256": "f74ad68c054e13d6461a4dffcbebd90d49d2db0d9519858208692cc84c215ffb",
+  "paths": [
+    ".claude/hooks/check-pre-commit.sh"
+  ]
+}

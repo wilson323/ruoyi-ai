@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-02T17:17:05.340699+00:00",
+  "method": "Cursor native UI New Agent + task prompt, user explicitly requested dispatch",
+  "tasks": [
+    {
+      "number": 1,
+      "uiTitle": "Cursor task 1 execution",
+      "promptFile": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/cursor-task-1-20261002.md",
+      "observed": "separate chat exists and active reading/thinking"
+    },
+    {
+      "number": 2,
+      "uiTitle": "Cursor task 2 diagnostics",
+      "promptFile": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/cursor-task-2-20261002.md",
+      "observed": "separate chat exists and active reading/thinking"
+    },
+    {
+      "number": 3,
+      "uiTitle": "Cursor task 3 permissions",
+      "promptFile": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/cursor-task-3-20261002.md",
+      "observed": "separate chat exists and active reading/thinking"
+    },
+    {
+      "number": 4,
+      "uiTitle": "Cursor task 4 workflow",
+      "promptFile": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/cursor-task-4-20261002.md",
+      "observed": "separate chat exists and active reading/thinking"
+    },
+    {
+      "number": 5,
+      "uiTitle": "Cursor task 5 acceptance",
+      "promptFile": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/cursor-task-5-20261002.md",
+      "observed": "separate chat exists and active reading/thinking"
+    }
+  ],
+  "previousCodexWriters": "F/G/E stopped and released source/Maven windows",
+  "coordinatorReserved": [
+    "main index and commits/push",
+    "runtime package build/load",
+    "master canvas/board/log"
+  ],
+  "status": "DISPATCHED_NOT_ACCEPTED"
+}

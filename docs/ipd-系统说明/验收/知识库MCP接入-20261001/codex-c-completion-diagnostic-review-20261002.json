@@ -1,0 +1,21 @@
+{
+  "status": "SOURCE_REVIEW_ACCEPTED_RUNTIME_PENDING",
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "b8a931e9d9b248a0cf874e92fb95212d8773d97697dcea9167a7c93a023bdbe6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "9fcd31fcbafa4b2434b85f37362c0a031b632fdb9a07d2492bc4d48c1d5c3049",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "4e51ba6d9f16e035a9c35043f49de10a3528e3ae06ad10fc0d89547ff2b530c9",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "5188bad60cb52c9a0b43829d05b9b1dd3d58df28440303b72ea49c00a4579cf5"
+  },
+  "baselineEvidence": "Read old current package Gate.class via javap; reject actually already had same five conditions/order, unlike old git HEAD",
+  "findings": [
+    "Fixed five enums same first-rejection order and unchanged generic COMPLETION_REJECTED",
+    "RunHandle effective SUCCEEDED only; cancellation precedence unchanged; transition, draft and transaction/ownership paths unchanged",
+    "Existing ERROR only adds enum.name; no additional event or raw text/citation/reason exception",
+    "Tests exercise five classifications/priority and generic compatibility; Handle tests assert existing ERROR enums"
+  ],
+  "limits": [
+    "No Maven/shared target run",
+    "Public SOURCE retains citationChars/hash/preview; TOOL_RESULT only state/id/name; cannot independently reconstruct complete numeric quote basis",
+    "Need next loaded package actual error enum before assigning prior generic rejection root cause"
+  ]
+}

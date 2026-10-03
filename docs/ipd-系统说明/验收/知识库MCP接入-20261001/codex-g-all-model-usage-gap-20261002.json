@@ -1,0 +1,42 @@
+{
+  "status": "CONFIRMED_FULL_DEFAULT_USAGE_GAP",
+  "sdk": "2.0.3",
+  "sourceHashesObserved": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "e110263673613cb7ac98fe63a4cbb5f945c386508ae2aab726ee184da700d6cd",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java": "e3eaf83fad99903341de89fa7e662744ce40a21a58de8f7e5f943792c83dd9d9",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java": "248f12a1c2844520dc1caba846e062c63b2d9b9120867e6be2f67dddcb83739f"
+  },
+  "probeSHA": "f28af6ae254b8bf4589619d23167cf61e4f3c960bb9463c7df6d332331124990",
+  "probeExit": 0,
+  "actualStubModelCalls": 3,
+  "actualReturnedUsageEach": {
+    "input": 10,
+    "output": 5
+  },
+  "actualReturnedTotals": {
+    "input": 30,
+    "output": 15
+  },
+  "mainStreamModelCallEndEvents": 2,
+  "eventBridgeVisibleTotals": {
+    "input": 20,
+    "output": 10
+  },
+  "gapTotals": {
+    "input": 10,
+    "output": 5
+  },
+  "rootCauseSource": [
+    "main EventBridge.dispatch only ModelCallEndEvent emits MODEL_CALL detail",
+    "ProjectAgentUsageSink records only MODEL_CALL with inputTokens",
+    "official MemoryFlushManager model.stream line157 consumes ChatResponse text without usage event emission",
+    "official MemoryConsolidator model.stream line192 same text reduce",
+    "official CompactionMiddleware constructs ConversationCompactor with direct model/flushManager"
+  ],
+  "limits": [
+    "No usage invented when SDK returns null",
+    "Compaction and child actual consumer usage not yet separately executed",
+    "No real model/network/business writes",
+    "source hashes read observations not clean HEAD or deployed parity proof"
+  ]
+}

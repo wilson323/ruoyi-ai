@@ -1,0 +1,76 @@
+{
+  "observedAt": "2026-10-02T16:03:01.478163+00:00",
+  "status": "PARTIAL",
+  "method": "read-only source, existing raw Surefire/log and independent authenticated HTTP artifacts; no Maven/database writes/PID operations",
+  "findings": [
+    {
+      "topic": "创建幂等",
+      "level": "SOURCE+UNIT",
+      "evidence": "ProjectAgentRunService.create/replay；ProjectAgentRunServiceCreateTest 12/12；同人同键同摘要回原 run，不同摘要 STATE_CONFLICT，插入竞争释放额度后回读",
+      "pending": "真实 HTTP 重发和双 JVM 同键竞争未由本审计执行"
+    },
+    {
+      "topic": "终态与所有权",
+      "level": "SOURCE+UNIT",
+      "evidence": "RunHandle.finishOnce、MybatisAgentRunStore.claimEpoch/lockEpoch；OwnershipTest 7/7、RedissonOwnershipTest 1/1、MiddlewareTest 1/1；终态有事件才回读，epoch CAS+租约防旧执行写入",
+      "pending": "真实 JVM 崩溃后 DB/Redis/工具副作用联合恢复未验证"
+    },
+    {
+      "topic": "原子产物收口",
+      "level": "SOURCE+UNIT",
+      "evidence": "RunHandle L414-458：事务内 draft insert→状态 CAS→ARTIFACT→终态；失败抛异常；ProjectAgentRunService.applyArtifact READ_COMMITTED 锁版本并 markApplied；重复已应用回读原 documentId",
+      "pending": "本审计未执行真实数据库事务故障注入或并发 apply"
+    },
+    {
+      "topic": "恢复",
+      "level": "SOURCE+UNIT_ONLY",
+      "evidence": "RunRecovery 不重放输入，仅成熟锁空闲且 EXECUTION_OWNER 的 PENDING/RUNNING/CANCEL_REQUESTED 收口；WAITING_APPROVAL 保留；旧 epoch fence；Redis integration 两条在本轮全量日志均 skipped",
+      "pending": "双客户端测试源码即使启用也只是同 JVM 两客户端，不能算跨 JVM 恢复"
+    },
+    {
+      "topic": "SOURCE故障",
+      "level": "SOURCE+UNIT+PRIOR_HTTP",
+      "evidence": "CompletionGate L48-74 unknown/FAILED/NO_HIT 不计命中，PARTIAL 只引用 citationStatus SUCCESS 的干净正文；独立业务验收 run3 保存本地8hit/MCP1hit均 SUCCESS metadata",
+      "pending": "全故障矩阵（超时/断连/空响应/未知状态）真实 HTTP 尚未齐全"
+    },
+    {
+      "topic": "跨运行返工文档链",
+      "level": "SOURCE+HTTP_CONFIRMED_GAP",
+      "evidence": "独立 HTTP 回读两文档 2106050740358258690 REJECTED v1 与 2106051584776511490 GENERATED v1 各独立链；RunService.applyDraft 固定 createGeneratedAuthorized；AiDocumentService L223 固定 parent null/version1",
+      "pending": "缺显式关联前尝试及目标文档基准的 AI 改版流程；不可宣告全局闭环"
+    }
+  ],
+  "criticalGap": "Cross-run rework creates independent v1 document chains rather than preserving the authoritative original document version chain.",
+  "minimumFix": "Explicitly bind rework to prior run/artifact/document and declared current base version; verify same project/action/authorized Person; lock existing chain head and append GENERATED AI revision with parent=head.id/version+1 and actual model/tokens; retain historical run/artifact. Never auto-merge unrelated documents merely by docType/title.",
+  "implementation": {
+    "status": "PENDING_RUNTIME_VALIDATION",
+    "requestAssociation": [
+      "previousRunId",
+      "targetDocumentId",
+      "baseVersionId"
+    ],
+    "storage": "existing ipd_agent_run.config_snapshot JSON; no DDL/table",
+    "backendTests": {
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": "/tmp/ipd-rework-chain-tests-final-20261002.log"
+    },
+    "frontendTests": {
+      "tests": 57,
+      "failures": 0,
+      "log": "/tmp/ipd-rework-frontend-tests-complete-20261002.log"
+    },
+    "contract": "old request constructors and no-association request digest preserved; applied artifacts exposed by existing own-run detail as artifactArchives; explicit UI rework reads existing document versions and uses original submitText/create path",
+    "pending": [
+      "root full tests/build/reload",
+      "actual authenticated cross-run apply original document chain v2 readback",
+      "cross-JVM crash recovery"
+    ],
+    "frontendTypecheck": {
+      "passed": true,
+      "log": "/tmp/ipd-rework-type-final-20261002.log"
+    }
+  }
+}

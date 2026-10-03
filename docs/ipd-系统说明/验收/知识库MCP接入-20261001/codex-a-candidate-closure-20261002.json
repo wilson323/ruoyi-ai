@@ -1,0 +1,1358 @@
+{
+  "status": "PARTIAL_STATIC_CLOSURE_REVIEW_NOT_A_COMMIT_ALLOWLIST",
+  "head": "2dd0be6f4f6cea335ce8e779e9d1a3e25935360b",
+  "candidateSeeds": [
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowStarter.java",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/service/WorkflowRuntimeZombieDisposeTest.java",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/catalog/ProjectAgentSkillCatalogTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetrieverFailureTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchToolTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java"
+  ],
+  "closure": [
+    {
+      "path": "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "668bd29b944676055679c6a88da806ef278e9aa48561263be7254ee19ca728eb",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "6199293036001af05f48be3e62f299035f40c98f9be2f01c2ac75ccb01a62815",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "92e49240d208040e183a75663566c8f800b7add9bc9113b5c95ea472e4fb5e02",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowStarter.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "f5c986bfc4f413d5c62e0c219e93091741c04a99c22a0ba2d230a9bb556be6bb",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/service/WorkflowRuntimeZombieDisposeTest.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "f4ddc8bf1a0c4bc450e79fc489786e5ae84ad8be33d7d55dbcc74bf15fdd6738",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java",
+      "headExists": false,
+      "gitStatus": "??",
+      "sha256": "e35ff3a3113cbebf603cf2191a90bccc41dfc02d092a4a77f300f7037ee5697a",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProductLineMcpCatalog.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "9fb437886a7faf426c0a69dd06ee9589c566fe24b93433fb280784bb05d3d5f0",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentModelCatalog.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "22485ebbae3011b32725991509c1e1ab4d838e37b1503e2e716ece8e285f68e8",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "b51b55e1c3971f80b872d933eb66649eda71cdb0e4dfecf26fb04dcf433a6398",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "01fccbe73a9d0152bb458ec6c49e550cab2c5a99b125c8ff46816471cafaeee9",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "f11e854f65d0db7656b8b564b9982f6fb7d88d66dcdd0e4e8c7371e8c84a7cfa",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "bb17c66df3a84c517343474751fa44e57bcc9765600712c96bb6751730d577a6",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/FrozenProjectAgentSkills.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "a51c04a9c81851389a1b465ddd93cac4d6c6ba7dc0d55d1b5aaeb4594ec44969",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "7aad1de05122e890815a57b1211aa68d8a938b1eae7e4a3c6af5b20e1c3c66a6",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "4b7e1bcd5c6fec29f1872af1e35ec40951fdc460401b49f4cdfeaf5b37811c26",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "7687a75871820bb472b1c8234c243facb499a1b86572d64e381dce10728277d3",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentModelAssembler.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "e158de21e70bff2084b2fddf0ecff8c7e971c02699c1112f9deef0e0bfe2ee45",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "c71e53634b86cd631ca79810225e36fbd11bc2ffc8621e457e1400d83c606efe",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "cb496a90e7c763bd9e70d13403bedbc0475ccf34816650b11235c4a5a1e55852",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStore.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "8b58575fb92743b175304eb7018122a4cc692f2fe36c84ef8abad10373652c36",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "e3eaf83fad99903341de89fa7e662744ce40a21a58de8f7e5f943792c83dd9d9",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "c1d0572f88a84fa4e1a7e3783dc6d50f1750c8ee4afe6c50c43477667fb1053e",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "134004bbb6a14f6f6a63b664b971616bf286bc60fcab1ae76497de81dbe4109e",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "5b87405cfe7a61699022163cb2a808c4e6471f5fb4c8f5edfa53c488b4aa2126",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "a1eb69d17ac26bc42181e693f2aabcb65c8fc20462e3ced55b8f3dc69961c2b1",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "3480af1f0b744bd7a225a3cd970af2ea9fcab01dc65961571f49afab952ce982",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandCatalogBinder.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "fe72836a8f6240bb518efab60ad033267a6e5deb598bb7b62bb819254837b834",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "3b14cf3375596316de063cc1bcedc1e95a51c1e075f6939323e8acd7e8615adc",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "d0dc20beb85534c9a56c56df6c636b7041f1bf837266f5ac9bc2488b10b8a404",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentErrorTexts.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "9ceae453711b90f7ec8c4bc703c0184a78e73e2310a57015db1143dd2d8338c2",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "12f28df2f9c5785d1cebdccdb52d34e9df5df603c12f6bce47c1409bb7dafc2a",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "7acf865a9145e0602dffc26e49e3765b4325bfb0b673d57dfd589f315f5d7904",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunOwnership.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "3cc90cb02102612cc8e48cc43ea87d9f56936b4c59ca2cf9e2bdc6fc244f52dd",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "f06af19ea8d3f40ba3e600281077afbee8a03a51d17848f7dc3e0a7518e4b319",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunRecovery.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "bcd8030e22e8db8145f6c27ae1a88bb83082ef5827bde6e3c95d9e77e6fc4438",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "248f12a1c2844520dc1caba846e062c63b2d9b9120867e6be2f67dddcb83739f",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "aadd945ae5e74a99b38f5dedcb66931b245de57b1aed50eae7ba22f6fcd0ecfe",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/ArtifactVersionStore.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "efb16923bdbd311e8283d15da6cedeb460def1c2a9102808e16bac3628f1880f",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "0c8f7fad3bfeb8acc45d5ac967f703065d4b4e33a36312fbf343257143048999",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/vo/ProjectAgentViews.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "52ce0b0a16c023a3fc01588d1dda25a339d01682d49f3ecf5a9b1fc3dc200a4e",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "2d42592dd17c6c1c90f125d291833a1b541d104bd25f38e797c90dc6ceb0a1a1",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "016aea8f95a185929587f4b87a14f7580c23618ba99bc216b96f81b5d8093751",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Requirement.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "df9b536e93a479bb4f4745efd5200639c9ee74ee3ed1476b6eb2e4e73010f94a",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/AiDocumentMapper.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "9f45254e27c7cb169861c943683163d320f08c6fdd0b6ab924ce51bb832f2f5c",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProductLineNameMapper.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "0370b4fec18cdb4b63b4b1076fba43182463f6fefc6bb6fb48bb3f6879e58800",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "044890db8be06badfa9110df542e1341ddf1f25584d744fa2422660569460943",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "ed9231010eddb713ef70714392a31be58e2e414d3e217a9cb845e8edc0bfb87f",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "697876707e35ed840bca9422d3519eab923242aa72ffafb111d246769cd7b962",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "46e142a5c27b8c15d7420caa9e7c710cbb6ffac8dfe507ac6e55ee2698185f2f",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "b751a366c068f5e8a98f75ffef7dfee438e0e9380c1714721d2e0daaa788b7f8",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "9dcd3d10934e37648453d18a1589082d0f861e0cc05c3aa0b76c406561a39077",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "3e3e09d083b2c130bb8d0747b7276311bd3951a52ce1849430c07d375fff9298",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "366516298275cb027ac5718b264f74e83adf3294cb99940764cd5809dbe1f164",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "7d2d0c90447198b26ecb2c9b392daad7b937626caa78f52c2b6cc4046b7d9941",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/impl/DefaultStateMachineGuard.java",
+      "headExists": true,
+      "gitStatus": "M ",
+      "sha256": "e9214ef1000b443ec833fb231177b719dcfeabd23b02c7895f7ca57ab0d26d2d",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "c0c96e54af047ba34fb08d046c2dbba8ed05b5001c65c7091e6ea47b628dd518",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/catalog/ProjectAgentSkillCatalogTest.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "6b06c1b5340b592a9303091b935db7da7fffbed366627187b3e4c0f262cc0200",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "d6fb690664bd64a84df1e16e521354ba422300947e69e66a199c15cd27c6a56b",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "47efe2d8cc5f19cb1187400e72a4a9384aabae66674fb33ccd762f6eee7be918",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetrieverFailureTest.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "7f18a8d10df7a7257c32370a4b2111450aa7fa3140c0702b8fb5b18353317c1d",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchToolTest.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "9432e5a007a032352b8a07254fde595fe6e600ee11092a768f3fc63b2b858008",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "b5558d71bb4d4121e6ce2f2fc0b48ad26075c777bcfb29972839b3b9e348c8c5",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "911a9cc35420c2bc3870fcf6bb41db3c6b6eafe691bc6cb6b814566e61a0d091",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "8bb9e816b9a7639e120042a144f47fb0c3fc3ab10839de82a41eb18197abcf03",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "43ddaeed3557bfaf06069fbbb56d7c8228f7189eb094207bbee7ac3c9d253bbe",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/support/AgentOwnershipTestTransactions.java",
+      "headExists": false,
+      "gitStatus": "A ",
+      "sha256": "33b6c1d8ef3e33237d93e872147a6adfa0f32c6f433724d5dbcd61cd4786d09d",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java",
+      "headExists": true,
+      "gitStatus": " M",
+      "sha256": "fd5c8b5e951ba82c712e2fdeaefc931ba362173295cd1a0c224a9ef439b611d0",
+      "seed": false
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "headExists": true,
+      "gitStatus": "MM",
+      "sha256": "5e333491c67803adf148d2620c37a8fde7e7f138e775084a224eebf143f21f02",
+      "seed": true
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java",
+      "headExists": false,
+      "gitStatus": "AM",
+      "sha256": "8999aa263981e8afcf167671f64abf6fce551e68294e0f68209626e624ec1736",
+      "seed": true
+    }
+  ],
+  "changedReferenceEdges": [
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/service/WorkflowRuntimeZombieDisposeTest.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/support/AgentOwnershipTestTransactions.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentModelAssembler.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProductLineMcpCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProductLineMcpCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentModelCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/vo/ProjectAgentViews.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProductLineNameMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/FrozenProjectAgentSkills.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunOwnership.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentModelAssembler.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStore.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/impl/DefaultStateMachineGuard.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/ProjectServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/StageAcceptanceServiceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchToolTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchToolTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchToolTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchToolTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetrieverFailureTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetrieverFailureTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetrieverFailureTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetrieverFailureTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearchTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProductLineMcpCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentModelAssembler.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProductLineNameMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowStarter.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowExecutionPlan.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java",
+      "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/service/WorkflowRuntimeService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/impl/DefaultStateMachineGuard.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/GateEngine.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageAcceptanceService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProductLineMcpCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProductLineNameMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProductLineMcpCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentTextSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProductLineNameMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentModelCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeRetriever.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/ArtifactVersionStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunOwnership.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunRecovery.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentModelAssembler.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandCatalogBinder.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentModelCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Requirement.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandCatalogBinder.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Requirement.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandCatalogBinder.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunRecovery.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunOwnership.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunRecovery.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/AiDocumentMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/ProjectService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProductLineNameMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Product.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/vo/ProjectAgentViews.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentModelCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/ArtifactVersionStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/StageActionService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/domain/Project.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandTriageRun.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentErrorTexts.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunOwnership.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/ArtifactVersionStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentErrorTexts.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentErrorTexts.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunOwnership.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/ArtifactVersionStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/AgentRunStore.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/DemandCatalogBinder.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentEventSink.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/AiDocumentMapper.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeFragmentHit.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java"
+    ],
+    [
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentErrorTexts.java"
+    ]
+  ],
+  "method": "Current declared package/import/FQCN/same-package class references; recursive only through changed source; no build or reflection/resource proof; preserves existing index."
+}

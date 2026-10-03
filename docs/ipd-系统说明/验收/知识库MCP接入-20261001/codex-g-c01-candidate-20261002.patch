@@ -1,0 +1,64 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json
++++ b/ruoyi-modules/ruoyi-ipd/src/main/resources/ipd-skills/capability-packs.json
+@@ -325,14 +325,16 @@
+       "code": "market-research",
+       "version": "v1",
+       "name": "商业/市场/竞品研究",
+-      "description": "基于本项目已审核资料与用户输入开展竞品分析（功能/价格/渠道/技术路线），输出可追溯对比与缺项清单。",
++      "description": "基于权限内项目资料、产品知识与用户输入开展市场机会调研和竞品分析，输出可追溯证据、对比与缺项清单。",
+       "stages": [
+         "CONCEPT"
+       ],
+       "actionCodes": [
++        "C01",
+         "C02"
+       ],
+       "skills": [
++        "market-opportunity-research-ipd",
+         "competitor-analysis-ipd"
+       ],
+       "tools": [
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlannerActionSkillTest.java
+@@ -72,6 +72,41 @@
+     }
+ 
+     @Test
++    void c01ExistingBindingIsFrozenWithoutInventingFacts() {
++        IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
++        when(maps.findByActionCode("C01")).thenReturn(IpdActionSkillMap.builder()
++            .actionCode("C01").skillNames("[\"market-opportunity-research-ipd\"]").build());
++        AgentRunCreateReq req = new AgentRunCreateReq("market-research", "v1",
++            String.valueOf(AgentTestFixtures.MODEL_ID), List.of(), List.of("project_knowledge_search"),
++            "C01", "请整理已提供的访谈和缺项", "idem-c01-skill-01");
++        var plan = planner(maps).plan(req);
++        assertThat(plan.actionCode()).isEqualTo("C01");
++        assertThat(plan.skills()).singleElement().satisfies(skill -> {
++            assertThat(skill.name()).isEqualTo("market-opportunity-research-ipd");
++            assertThat(skill.version()).isEqualTo("1.1.0");
++            assertThat(skill.sha256()).isEqualTo("c116dac4094ed5dea7013a7952943f5482e1632880c40287b4f0130641223c28");
++            assertThat(skill.content()).contains("访谈", "未取得", "禁止编造");
++        });
++        assertThat(plan.toolIds()).containsExactly("project_knowledge_search");
++    }
++
++    @Test
++    void marketPackDoesNotExpandOtherActionsOrExplicitSkills() {
++        IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
++        var planner = planner(maps);
++        var unrelatedAction = new AgentRunCreateReq("market-research", "v1",
++            String.valueOf(AgentTestFixtures.MODEL_ID), List.of(), List.of("project_knowledge_search"),
++            "C03", "请做分析", "idem-c03-deny-01");
++        org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner.plan(unrelatedAction))
++            .hasMessageContaining("不在能力包适用范围");
++        var unrelatedSkill = new AgentRunCreateReq("market-research", "v1",
++            String.valueOf(AgentTestFixtures.MODEL_ID), List.of("product-prd-ipd"), List.of(),
++            "C01", "请做分析", "idem-skill-deny-01");
++        org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner.plan(unrelatedSkill))
++            .hasMessageContaining("Skill 不属于该能力包");
++    }
++
++    @Test
+     @DisplayName("动作 skill_names 为 NULL：plan.skills 为空，系统提示不含技能名")
+     void nullActionBindingKeepsPromptFreeOfSkill() {
+         IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);

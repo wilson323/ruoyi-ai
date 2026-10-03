@@ -1,0 +1,25 @@
+# P131 真实数据库测试 fixture 独立复核
+
+当前PENDING_VALIDATION，尚未改测试。六行：ruoyi-ai；P131DatabaseIntegrationTest创建事务两例；仅该test；PENDING_START/状态守卫/6阶段69动作；现缺guard且create→图bootstrap合同已迁移，须按当前真实服务两阶段验证；原日志与当前源码A级，未Maven/target/DDL。
+
+原日志/tmp/ipd-codex-redis-mysql-integration-20261002.log:47-101：成功创建例ERROR和审计失败例FAIL均被状态机守卫未装配(null→PENDING_START)提前阻断，后者根本未触达强制审计异常。补fixture须真实DefaultStateMachineGuard(audit,NotificationService)并initRules，不mock preCheck放行。
+
+第二层合同冲突当前源码已确认：ProjectService.create→insertNewProject:303-325创建待开工PENDING_START、产品首指针、audit，不调用bootstrap。ProjectStartService.approve:59-68在批准后TEAMING、currentStage=CONCEPT、bootstrap6/69、cert及PROJECT_START_APPROVE审计。P131当前两例在create审计回调要求完整6/69图是旧合同，单补guard仍必失败。不能在fixture手动bootstrap而声称production create形成图，不能删除真实MyBatis/回滚断言假绿。已报协调者请求按新合同拆分创建待开工零图与开工完整图/审计失败回滚。
+
+测试修改前SHA256：996fa99003a24dc036c39649a109b7303dad08d84105564af6f8131d254e09fa。
+
+## 授权修正已实施
+
+协调者授权按当前待开工合同更新唯一test：原两create例改为PENDING_START/产品绑定且阶段动作零行，保留审计内真实事务断言、同原异常身份、保存点回滚产品指针/项目及独立连接无残留核对；没有手动bootstrap。fixture装真实DefaultStateMachineGuard并initRules。
+
+新增两个真实ProjectStartService.approve集成例：审批成功审计前验证TEAMING、完整6阶段/69动作与全部旧graph字段不变量；审批审计抛原异常后nested回滚恢复PENDING_START与产品绑定、阶段动作零行。审批走真实ProjectMapper/ProductMapper/ProductLineMapper、真实bootstrap和Spring事务代理。audit/通知/cert为测试外围mock，与原fixture一致，不mock数据库。使用新增隔离product_lines夹具（无负责人，因此原批准规则允许fixture SUPER_ADMIN），仅测试事务内插入且最终回滚，FIXTURE_TABLES加入该表以独立连接验零残留；不改现业务产品线/人员、不DDL。schema若缺列由A实际运行暴露，不跳过断言。
+
+状态PENDING_VALIDATION；git diff --check退出0，未Maven/target/数据库执行。修改后SHA256 e0dc18babc6a5061150d198fdaa36daef32935e2c696cb167b0e005347f4b67d
+
+## 真实20例复跑后的审计重载修正
+
+六行缺口：仓库ruoyi-ai；入口P131创建两例；边界仅原test；字段projects.status/products.project_id及审计实体ID；现回调拦旧append(AuditLog)，目标精确拦现append(Long,String,String,Long,String)；源码A级与/tmp/ipd-codex-p131-real-repair-20261002.log实际失败，修后待A复跑。
+
+ProjectService:324明确PROJECT_CREATE，1089-1093调用append(operatorId, action, "projects", id, name)。两创建测试此前doAnswer及verify仍指向未调用的append(AuditLog)，因此成功例observed=false、失败例实际未抛异常；不是事务生产路径失效。仅将两例四个stub/verify改为当前Long重载，限定OPERATOR/PROJECT_CREATE/projects/name，回调独立断言动态生成的ID等于request.id，verify精确核同ID。原事务、PENDING_START、零graph、失败原异常身份和保存点回滚断言全部保留。approve两新例未改。
+
+本次before SHA256 e0dc18babc6a5061150d198fdaa36daef32935e2c696cb167b0e005347f4b67d；after SHA256 27bb55e69a7b4ccd648b4fbce229b45078262e59d60b41ccc6c74c47d9ea39f5。git diff --check退出0；未运行Maven/target/DB。裁决PENDING_VALIDATION，交A唯一有依据复跑。

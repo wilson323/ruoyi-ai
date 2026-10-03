@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-02T16:59:26.657369+00:00",
+  "path": "/Users/mac/.codex/worktrees/agentscope-native-stack/ruoyi-ai",
+  "head": "3703f3a268929fa3a1eceee1ac993bb224d59a84",
+  "cleanTrackedUntrackedIgnored": true,
+  "headReachableOriginMain": true,
+  "appAttach": "refused ownerless ownership verification; normal Git cleanup explicitly authorized for this exact task worktree",
+  "operation": "git worktree remove without force",
+  "exitCode": 0,
+  "stderr": "",
+  "worktreesAfter": "worktree /Users/mac/Documents/ruoyi-ai\nHEAD b14818a36a74232988de47522566110ee03b781f\nbranch refs/heads/main\n\n"
+}

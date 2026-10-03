@@ -1,0 +1,9 @@
+{
+  "exit": 0,
+  "time": "2026-10-02T10:46:10.244911-07:00",
+  "main_index_entries_unchanged": true,
+  "commit": "2dd0be6f4f6cea335ce8e779e9d1a3e25935360b",
+  "paths": [
+    ".claude/hooks/check-pre-commit.sh"
+  ]
+}

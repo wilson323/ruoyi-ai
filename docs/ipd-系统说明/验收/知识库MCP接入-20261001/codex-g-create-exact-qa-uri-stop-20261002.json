@@ -1,0 +1,141 @@
+{
+  "status": "PARTIAL_STOPPED",
+  "time": "2026-10-02T19:05:52.216791+00:00",
+  "scope": "local ipd_dev exact approved QA creation only",
+  "sessions": [
+    {
+      "actor": "900101",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900101",
+        "personType": "SUPER_ADMIN",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    },
+    {
+      "actor": "900102",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900102",
+        "personType": "GROUP_LEADER",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    },
+    {
+      "actor": "900103",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900103",
+        "personType": "MARKET_PM",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    },
+    {
+      "actor": "900104",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900104",
+        "personType": "RD_PM",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "actor": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines",
+      "request": {
+        "code": "qa-member-7d37b33e5fd2",
+        "name": "QA同组非成员独立空间-7d37b33e5fd2"
+      },
+      "http": 404,
+      "code": 50001,
+      "response": {
+        "id": null,
+        "code": null,
+        "name": null,
+        "status": null,
+        "leaderPersonId": null,
+        "personId": null,
+        "reviewedBy": null,
+        "mainGroupId": null,
+        "productId": null,
+        "createBy": null
+      }
+    }
+  ],
+  "syntheticInputs": true,
+  "startExecuted": false,
+  "modelCalled": false,
+  "cleanupPerformed": false,
+  "preexisting": [],
+  "personDb": [
+    [
+      "900101",
+      "SUPER_ADMIN",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ],
+    [
+      "900102",
+      "GROUP_LEADER",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ],
+    [
+      "900103",
+      "MARKET_PM",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ],
+    [
+      "900104",
+      "RD_PM",
+      "900001",
+      "ACTIVE",
+      "ACTIVE",
+      "L3"
+    ]
+  ],
+  "allowance": [
+    [
+      "900103",
+      "L3",
+      "allowance.L3",
+      "2000"
+    ],
+    [
+      "900104",
+      "L3",
+      "allowance.L3",
+      "2000"
+    ]
+  ],
+  "failureLookup": [],
+  "safeFailureType": "RuntimeError",
+  "safeFailure": "api_step_failed_or_unknown_1"
+}

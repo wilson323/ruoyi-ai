@@ -1,0 +1,52 @@
+{
+  "reviewer": "C",
+  "verdict": "REJECT_APPLY",
+  "runId": "2106107313315135490",
+  "artifactId": "847d582f33fa4a4fa04528feb266dd0e",
+  "versionId": "2106108034513125377",
+  "status": "DRAFT",
+  "contentSha256": "ede24b5b6cfc6449fb75834ace486dd0127e2157357c4f1fdb3ec089bcc701a8",
+  "skill": {
+    "name": "competitor-analysis-ipd",
+    "runFrozenSha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+    "currentExactShaMatches": true,
+    "step2": "Purpose tailoring only when user declares; absent purpose defaults four dimensions with restrained length"
+  },
+  "blocking": [
+    {
+      "location": "G-06 plus section5 step6",
+      "issue": "Treats absence of declared purpose as required blocking prerequisite for step2 even while stating default exists",
+      "minimumCorrection": "Purpose is optional tailoring, use default four dimensions when not declared; remove blocking/required declaration and mandatory tailoring prerequisite; retain real missing competitor/product evidence gaps"
+    }
+  ],
+  "accepted": [
+    "Explicit project records distinguished from reviewed document evidence; reviewed project document unavailable",
+    "Knowledge fragments retain NOT_PROJECT_DOCUMENT identity; remote response expressly original source unavailable",
+    "ProductD not mapped, unrelated remote model parameters not promoted to ProductD facts",
+    "No C02 completed/Gate verdict; candidate missing-items report is appropriate if invalid prerequisite corrected"
+  ],
+  "sourceValidation": {
+    "localCalls": 11,
+    "mcpCalls": 1,
+    "totalSource": 12,
+    "actualToolCalls": 12,
+    "distinctLocalFragments": 38,
+    "matchedDocumentKnowledgeFragmentIds": 38,
+    "localScope": {
+      "userId": 0,
+      "projectId": null
+    },
+    "measurementTokens": "All decimals/percentages literal-present in retrieved local fragments",
+    "limits": [
+      "Corpus literal support not external authentication",
+      "Remote full returned body/original primary source not retained, do not claim whole remote facts independently verified",
+      "Draft prints some sourceType/reviewStatus internal identifiers despite prompt plain-language instruction; should be plain labels in user document"
+    ]
+  },
+  "usage": {
+    "modelEndedCalls": 5,
+    "inputTokens": 158402,
+    "outputTokens": 5544
+  },
+  "scope": "Direct read full artifact and exact skill, event counts, DB IDs/content scope; no apply/review/DONE/new model/maintarget/index changes"
+}

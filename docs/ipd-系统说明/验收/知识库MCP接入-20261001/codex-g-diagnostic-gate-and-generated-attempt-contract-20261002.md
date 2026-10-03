@@ -1,0 +1,23 @@
+# G 诊断拒绝与待审核版本新尝试合同（只读）
+
+裁决：DRAFT_ONLY；不改生产gate，不发模型、不修改文档状态。本次SOURCE取文成功与诊断产物被拒绝是不同事实。
+
+seq26 errorCode COMPLETION_REJECTED，安全message「没有取得可交付正文、检索依据不足或结论越权，产物未生成」，未记录具体拒绝分支。排除think后正文1188字符：只读安全诊断，竞品名单/价格/渠道/技术方案均「未取得」，明示不比较、不构成C02业务完成、不构成Gate结论、不定档、不审核；没有肯定Gate通过短语。SOURCE hits1意味着文本命中，不意味着竞品资料取得，正文对此区分正确。
+
+唯一小数正文片段「最高相似度约 0.74」。CompletionGate.reject先查blank/Gate/身份错标/零命中未声明/小数引用；本run非blank、SOURCE命中、无sourceEvidence身份表。候选是measurementsMatchQuotes严格字符串数值集合：约数0.74只有原可引用文本也含完全相同小数才能通过。尚待C对真实toolresult精确score只读布尔确认，不能凭约数猜这次实际分支；seq26 generic message自身不能证明是哪条规则。若源是更精确分数且不含0.74，则是现冻结精确数值合同拒绝，诊断写「约」不构成例外；业务上可能只是无关诊断评分，应优先后续真实诊断不写评分，不因想要绿放宽生产gate。诊断缺项文本本身没有C02完成/审批越权，不将其误称违反完整竞品交付要求。
+
+当前链证据：target/head2106085620907540481，项目2103659612308828162，MARKET_RESEARCH，v3 GENERATED；v1/v2 REJECTED保留原意见。v3无reviewComment。原create证据HTTP/DB HEAD一致。此处没有新增现场HTTP请求。
+
+新资料更新attempt合同与现API一致：POST /api/v1/projects/{projectId}/agent-runs，actionCode仍C02；previousRunId须本人本项目同动作已结束且存在APPLIED artifact的运行，targetDocumentId须该artifact.documentId，baseVersionId须当前链头v3 id；冻结本次真实模型/skill/tool，使用新的幂等键、资料更新明确输入，不假称v3被退回，不冒用v2退回意见。validateRework不要求HEAD为REJECTED；loadProjectFacts的commentForRework精确校验HEAD但只在REJECTED时取reviewComment，GENERATED返回null合法。
+
+run成功产物仍先DRAFT；独立核真实来源、当前产品适用性与缺项后再由root显式应用既有POST /api/v1/agent-runs/{runId}/artifacts/{artifactId}/apply。applyDraft重新validateRework并调用AiDocumentService.reviseGeneratedAuthorized，锁链头核project/docType/base及非ARCHIVED；建立parent=v3、versionNo4、statusGENERATED，保留本次模型/实际token，不改v3为REJECTED或REVIEWED、不自动批准。若HEAD已变化拒绝STATE_CONFLICT，不能重放过时base或原地覆写。
+
+helper regular仅REJECTED且有comment断言是工程采证脚本保守限制，当前生产API没有此限制。可由root单独审改helper明确资料更新模式允许GENERATED+无评论，必须保留完整previous/target/base校验及链头HTTP/DB一致；不能改生产服务迎合旧helper，不需要人为退回/审核v3来绕脚本。
+
+限制：此文件是可执行API合同草案，未创建新attempt/产物/版本，未证明完整H5业务或阶段门通过。证据：现RunService.validateRework/commentForRework/applyDraft，AiDocumentService.reviseGeneratedAuthorized，CompletionGate.reject/measurementCores，codex-fresh-rework-create-20261002T185417414513Z.json和G safe-events。
+
+独立逐分支验证补充：隔离temp javac实际未改CompletionGate源码退出0，反射真实deliverableBody/claimsGate/mislabelsKnownKnowledge/measurementCores退出0。safeResults：BODY_BLANK=false；CLAIMS_GATE=false；空身份证据下MISLABEL=false；BODY_HAS_NOT_OBTAINED=true；BODY_CORES=[0.74]。现存preview有精确score0.7407947778701782及其他小数，没有0.74；但preview1000<完整basis17201，完整basis未持久保留，不能排除后文另含0.74。源码+现存证据足够排除blank/Gate/knownIdentity/zeroHit拒绝候选，不足把最后数值分支晋升为这次A证据根因；裁决PENDING_FULL_BASIS，不外呼补证。记录codex-g-gate-readonly-branches-20261002.json。
+
+最小安全诊断方案（未实施）：在拥有完整in-memory basis的现CompletionGate.reject分支返回安全枚举BODY_EMPTY/GATE_CLAIM/SOURCE_IDENTITY_CONTRADICTION/NO_HIT_WITHOUT_DISCLOSURE/UNSUPPORTED_MEASUREMENT，既有errorCode仍COMPLETION_REJECTED，新增reasonCode只存分支类别；不记录数字值、引用正文、query、内部思考或异常message。unsupported分支可附unmatchedMeasurementCount及basisChars的数值计数，不能泄露内容。应由root授权Executor另行最小切片及分支正反测试，不改变判据、数值匹配或放行逻辑，不把此设计视为已实现。
+
+资料更新完整请求草案：codex-g-generated-v3-update-request-draft-20261002.json，C02技能competitor-analysis-ipd、两原工具project_knowledge_search+门禁梯控MCP、真实可用M3配置。独立新尝试previous仍是拥有已定档target的SUCCEEDED运行2106082915170418689，不是无artifact的失败诊断run。root调用前重核HEAD及权限并生成新key；不退回/审核、不自动apply或批准。

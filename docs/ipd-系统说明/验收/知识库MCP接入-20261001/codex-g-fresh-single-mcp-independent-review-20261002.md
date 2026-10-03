@@ -1,0 +1,15 @@
+# G 新包单 MCP 诊断独立复核
+
+裁决：MCP单次运行层部分闭环；恢复业务完成未闭环。run2106095444625989634；root提供新PID89982/JAR SHA b70fdb60ffe120a4ec3a37c36bec19ad77aa99d6b9c2479ff164c8b3aa7ed3ab；本分区独立只读原poll及DB事件，不重复外呼、不写库。
+
+DB seq8 SOURCE实际SUCCESS/hits1、REMOTE_APPLICATION、chars17201、citationChars17201、citationSha2569423376ef96ff6aff0f0a13424d1af1b72fbea14189e5a5da1f4c08dedfe0d65；preview1000字符。没有failure reason/stage/errorTypes/sdkFrames。它属于成功取得文本，不是NO_HIT/无结果，也不是initialize失败。hits1表示工具包装本次返回文本，不等同一篇权威已审核项目文档，不推远端内容全部可信/当前产品适用。
+
+poll helper记录citationChars0/空串SHA是采证错误：ProjectAgentRunHandle.onSource先把原citationText交completion.noteSource，再从公开SOURCE移除正文，写真实citationChars/citationSha256。helper却重新读取已移除citationText并覆盖真实字段，故不能用poll0断言没有引用。实际SOURCE没有contract/excerpt字段，这里不以猜测解释；源码和DB真实字段已核。需要root更正helper为保留payload现存citationChars/citationSha256，不要求重新调用MCP。
+
+MODEL_CALL共4事件，其中seq5/10是无token开始标记，seq7/25是两次调用实际用量：1473/174及9944/1067，合计input11417/output1241。不能把开始标记计成额外两次完成调用，不能将null当0或套其他run用量。存在TEXT_DELTA11～24，代表模型输出流，不代表交付正文获准。
+
+seq26 ERROR COMPLETION_REJECTED；poll终态FAILED、terminaltrue、非超时、artifacts空。C02诊断响应未通过正式完成门，因此不声称返工成功、文档生成/定档/审核/动作完成/Gate放行。单次MCP成功支持共享provider修复在当前原API运行路径恢复取文；不能外推4并发、完整H5链或所有消费者全部可用。
+
+全chat345测试中8项旧MinimaxAdapter credential合同失败需原样保留；本次两次真实ProjectAgent M3有token输出支持该入口可调用，不将旧适配器失败扩大为所有模型不可用，也不排除8失败造全绿。
+
+证据：codex-fresh-rework-poll-20261002T185435192325Z.json、codex-g-fresh-single-mcp-safe-events-20261002.json；ProductLineMcpTool.finish、ProjectAgentRunHandle.onSource、ProjectAgentCompletionGate.noteSource。只保留安全字段/长度/hash，没有query正文、模型内部推理、远端正文或秘密。最初只读SELECT误用type列失败，核真实event_type后读取成功，无任何写入。

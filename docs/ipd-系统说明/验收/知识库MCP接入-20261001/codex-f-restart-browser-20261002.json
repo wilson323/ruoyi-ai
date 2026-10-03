@@ -1,0 +1,45 @@
+{
+  "verdict": "VERIFIED_NARROW_UI",
+  "tests": {
+    "log": "/tmp/ipd-codex-f-restart-targeted-final-20261002.log",
+    "files": 2,
+    "passed": 49,
+    "panel": 27,
+    "timeline": 22
+  },
+  "browser": {
+    "person": "ipd-admin",
+    "projectId": "2103659612308828162",
+    "failedRun": "2106096765173243906",
+    "failureCodeVisibleCount": 0,
+    "errorText": "没有取得可交付正文、检索依据不足或结论越权，产物未生成",
+    "restartButton": "重新开始",
+    "clickResult": "focus existing TEXTAREA data-testid=ipd-ai-input",
+    "historyUnchangedAfterClick": true,
+    "historyAfterRefresh": true,
+    "historyCount": 13,
+    "newSendClicked": false,
+    "classicFallback": false
+  },
+  "screenshot": "codex-f-restart-browser-20261002.png",
+  "supply": "current WIP Vite, not whole HEAD candidate",
+  "modules": [
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+      "sourceSha256": "fc132c771f9a8cee07b7105ca7a00b7d4d81e61c6a9f330f024624969784a611",
+      "servedSha256": "3b57d6a08692fb386acf614d45dfa6771a5feb38605ad962d9b7c2ffb082b69f",
+      "http": 200
+    },
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+      "sourceSha256": "a7063f163e12ff44f45d25844d927c274dc5faf84a6c2137fec385457c103ea2",
+      "servedSha256": "11a590fb255987a044ddbdb5cb4cbbeaccaa114887f73c2eee5509a695cd2be9",
+      "http": 200
+    }
+  ],
+  "limitations": [
+    "no real new model send; create parameter semantics covered by API replacement test",
+    "root/G concurrent 19:25 running record already present before restart click; not caused by this UI action",
+    "ordinary model technical-source wording remains out of this UI patch"
+  ]
+}

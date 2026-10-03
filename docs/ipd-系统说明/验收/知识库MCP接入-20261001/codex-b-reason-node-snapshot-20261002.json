@@ -1,0 +1,30 @@
+{
+  "head": "2bab65e768c6f328dcf1a047a7ada0734762b970",
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-b-reason-node-20261002.index",
+  "paths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java"
+  ],
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "86f7f3e03729be1ea5ff5ee4870445727a88ad2ad858f1a14c6a63211e03191d",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "f3e95cec7541faa9bdf3ed62f77f890a23e24a8ae10ee6b44bed82f3219852ba"
+  },
+  "mainIndexBackup": "/Users/mac/Documents/ruoyi-ai/.git/codex-b-reason-main-index-before-20261002",
+  "status": "COMMITTED_PUSHED_REMOTE_VERIFIED",
+  "mainIndexEntriesBeforeSha256": "9fbec296d2d35efa191db8cefe1277e0eb1be384f2c985f254ce9ff08ea548f5",
+  "boundary": "candidate-only fixed reason and valid fixture; main Handle broader WIP untouched",
+  "commit": "f456f79aaf31d9372558f2cff73875ab3dcbf6c3",
+  "normalHooks": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "isolatedTests": 13,
+  "alignedOwnIndexPaths": [],
+  "preservedMixedOwnIndexPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java"
+  ],
+  "foreignIndexEntriesUnchanged": true,
+  "remoteHead": "f456f79aaf31d9372558f2cff73875ab3dcbf6c3"
+}

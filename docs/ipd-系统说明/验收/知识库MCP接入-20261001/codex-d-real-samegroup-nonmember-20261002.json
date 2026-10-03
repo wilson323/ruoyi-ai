@@ -1,0 +1,167 @@
+{
+  "at": "2026-10-02T18:36:34.340432+00:00",
+  "fixtureBackup": {
+    "project": [
+      {
+        "id": 2106072674957529089,
+        "code": "PRJ-2026-901",
+        "name": "QA-CT3负责人非成员项目",
+        "level": "A",
+        "remark": null,
+        "source": "NEW",
+        "status": "PENDING_START",
+        "del_flag": "0",
+        "create_by": 900101,
+        "tenant_id": "000000",
+        "update_by": null,
+        "product_id": null,
+        "target_nps": 0,
+        "archived_at": null,
+        "create_dept": null,
+        "create_time": "2026-10-03 01:23:49.000000",
+        "launch_date": null,
+        "update_time": "2026-10-03 01:23:49.000000",
+        "current_stage": "CONCEPT",
+        "main_group_id": 2096339266916327426,
+        "template_type": "SOFTWARE",
+        "catchup_status": null,
+        "declared_stage": null,
+        "target_markets": [
+          "国内"
+        ],
+        "product_line_id": 2106072393398095874,
+        "last_activity_at": null,
+        "lifecycle_status": null,
+        "level_coefficient": 1.0,
+        "sub_stage_version": 0,
+        "target_scene_count": 0,
+        "legacy_effective_at": null,
+        "missing_history_ack": "0",
+        "target_sales_amount": 1.0,
+        "target_channel_count": 0,
+        "current_sub_stage_code": null,
+        "level_coefficient_reason": null,
+        "last_sub_stage_gate_result": null
+      }
+    ],
+    "line": [
+      {
+        "id": 2106072393398095874,
+        "remark": null,
+        "status": "INACTIVE",
+        "del_flag": "0",
+        "create_by": 900101,
+        "line_code": "qa-ct3-leader-nm",
+        "line_name": "QA-CT3负责人非成员专用",
+        "tenant_id": "000000",
+        "update_by": 900101,
+        "create_dept": null,
+        "create_time": "2026-10-03 01:22:42.000000",
+        "update_time": "2026-10-03 01:23:50.000000",
+        "mcp_service_id": null,
+        "leader_person_id": 900101
+      }
+    ],
+    "lineMember": [
+      {
+        "id": 2106072393880440833,
+        "remark": null,
+        "status": "EXITED",
+        "del_flag": "0",
+        "create_by": 900102,
+        "exited_at": "2026-10-03 01:23:50.000000",
+        "joined_at": "2026-10-03 01:22:42.000000",
+        "person_id": 900102,
+        "tenant_id": "000000",
+        "update_by": 900102,
+        "create_dept": null,
+        "create_time": "2026-10-03 01:22:42.000000",
+        "reviewed_at": "2026-10-03 01:22:42.000000",
+        "reviewed_by": 900101,
+        "update_time": "2026-10-03 01:23:50.000000",
+        "product_line_id": 2106072393398095874
+      }
+    ]
+  },
+  "scope": "exact old QA rows only; no DDL/delete/approval",
+  "identity": {
+    "personId": "900102",
+    "account": "ipd-leader",
+    "role": "GROUP_LEADER",
+    "groupId": "900001"
+  },
+  "personSession": {
+    "id": "900102",
+    "username": "ipd-leader",
+    "personType": "GROUP_LEADER",
+    "groupId": "900001"
+  },
+  "validStageCount": 0,
+  "positiveReads": {
+    "/projects/2106072674957529089": {
+      "http": 200,
+      "code": 0,
+      "message": "ok"
+    },
+    "/projects/2106072674957529089/stages": {
+      "http": 200,
+      "code": 0,
+      "message": "ok"
+    },
+    "/ai-documents/2106072675242741762": {
+      "http": 404,
+      "code": 50001,
+      "message": "资源不存在"
+    }
+  },
+  "negativeWrites": {
+    "/projects/2106072674957529089/advance-stage": {
+      "http": 403,
+      "code": 30001,
+      "message": "非项目成员，无权访问"
+    },
+    "/projects/2106072674957529089/stage-acceptance": {
+      "http": 403,
+      "code": 30001,
+      "message": "非项目成员，无权访问"
+    }
+  },
+  "beforeNegativeSha256": "2d66edb6d238430afdb471bdefd6f21f897039ca82baecaa8a5e62ae2cd945f0",
+  "afterNegativeSha256": "2d66edb6d238430afdb471bdefd6f21f897039ca82baecaa8a5e62ae2cd945f0",
+  "negativeZeroBusinessChange": true,
+  "revokedReads": {
+    "/projects/2106072674957529089": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目"
+    },
+    "/projects/2106072674957529089/stages": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目"
+    },
+    "/ai-documents/2106072675242741762": {
+      "http": 404,
+      "code": 50001,
+      "message": "资源不存在"
+    }
+  },
+  "restoredSha256": "6e2625e81acaf33ae57f1242528ed36e258e94c056ed1f177001c58e01c74feb",
+  "originalSha256": "6e2625e81acaf33ae57f1242528ed36e258e94c056ed1f177001c58e01c74feb",
+  "restoredExact": true,
+  "limitation": "No original QA stage/action rows; submit rejects membership before absent-stage lookup, but valid-stage/action-accept negative unavailable within exact-row no-delete scope.",
+  "positiveDocumentList": {
+    "http": 200,
+    "code": 0,
+    "documentIds": [
+      "2106072675242741762"
+    ],
+    "targetPresent": true
+  },
+  "revokedDocumentList": {
+    "http": 403,
+    "code": 30001,
+    "message": "无权访问该项目"
+  },
+  "secondRestoredExactChangedFields": true
+}

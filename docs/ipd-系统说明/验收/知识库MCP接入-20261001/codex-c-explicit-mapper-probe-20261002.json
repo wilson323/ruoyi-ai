@@ -1,0 +1,47 @@
+{
+  "status": "ISOLATED_RUNTIME_VERIFIED",
+  "packageSha256": "7e8885791959580486df7b5db67804fd9da2adcf2cf43ad1454741c048675425",
+  "temporaryDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-explicit-mapper-_054u9ty",
+  "productionCompileExit": 0,
+  "probeCompileExit": 0,
+  "probeExit": 1,
+  "safeResults": [
+    "PROVIDER_COUNT=0",
+    "DEFAULT_MAPPER=IllegalStateException"
+  ],
+  "networkCalls": 0,
+  "databaseWrites": 0,
+  "scope": "Fresh actual Boot loader/dependencies, patched production Managed class compiled in temp; cold provider0 mapper+schema failures and complete streamableHttp construction/close; no initialize or tool call",
+  "safeFailureFrames": [
+    "io.modelcontextprotocol.json.schema.JsonSchemaInternal#lambda$createDefaultValidator$2",
+    "io.modelcontextprotocol.json.schema.JsonSchemaValidator#getDefault",
+    "io.modelcontextprotocol.client.McpClient$AsyncSpec#build",
+    "org.ruoyi.mcp.service.core.ManagedMcpAsyncClient#create",
+    "org.ruoyi.mcp.service.core.ManagedMcpAsyncClient#streamableHttp"
+  ],
+  "finding": "Explicit mapper removes mapper discovery but actual client construction reaches separate default schema-validator discovery under provider-missing TCCL; new scope requires coordinator decision",
+  "firstMapperOnlyFailurePreserved": true,
+  "secondProbeExit": 0,
+  "secondSafeResults": [
+    "PROVIDER_COUNT=0",
+    "DEFAULT_MAPPER=IllegalStateException",
+    "DEFAULT_SCHEMA=IllegalStateException",
+    "PATCHED_FACTORY=SUCCESS",
+    "CLOSE=COMPLETE"
+  ],
+  "probeSourceSha256": "501216847ea6eb6c7f5513f46cc524d298bee91e8fffe87580e9e385bc08f3e6",
+  "frozenHashes": {
+    "ManagedMcpAsyncClient.java": "b1dafa29c0639e2a20de74b3ff94825486628737c58949220b89a0228760fc7d",
+    "ManagedMcpAsyncClientTest.java": "20f8fe1dbec00948f353048f5a9ade3c44bc69240c40767dab0250844e867717"
+  },
+  "secondCloseMarkerLimitation": "Prior CLOSE=COMPLETE meant awaitPendingClose returned; it did not independently prove successful close",
+  "verifiedCloseProbeExit": 0,
+  "verifiedCloseSafeResults": [
+    "PROVIDER_COUNT=0",
+    "DEFAULT_MAPPER=IllegalStateException",
+    "DEFAULT_SCHEMA=IllegalStateException",
+    "PATCHED_FACTORY=SUCCESS",
+    "CLOSE=COMPLETE"
+  ],
+  "verifiedCloseMethod": "Reflect package-private closeCompletion then Mono.block(Duration); COMPLETE only printed after successful completion"
+}

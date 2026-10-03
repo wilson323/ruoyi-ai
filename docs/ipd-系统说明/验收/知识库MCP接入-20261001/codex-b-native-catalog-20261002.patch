@@ -1,0 +1,234 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java
+@@ -9,10 +9,10 @@
+ import java.util.Map;
+ 
+ /**
+- * 项目智能体工具目录（W1 仅一个只读工具）。
++ * 项目智能体业务及官方基础工具目录。
+  *
+- * <p>工具安全元数据以既有自研 {@link ToolDescriptor} 声明，由 {@code ToolPolicyEngine}
+- * 作为唯一裁决源（红线 D1：不另造白名单语义）。清单登记而本目录无实现的工具一律不可用。
++ * <p>工具安全元数据保留既有 {@link ToolDescriptor} 投影；实际授权由官方权限扩展
++ * 结合当前 IPD 身份与项目守卫裁决。目录登记不授予调用权限。清单未实现项明确不可用。
+  */
+ public final class ProjectAgentToolCatalog {
+ 
+@@ -46,12 +46,25 @@
+     }
+ 
+     private final CapabilityManifest manifest;
++    private final ProjectAgentNativeToolCatalog.Provider nativeReadiness;
++
++    public static final String NATIVE_TOOLS_VERSION = ProjectAgentNativeToolCatalog.VERSION;
++
++    public static List<String> nativeToolIds() { return ProjectAgentNativeToolCatalog.IDS; }
++    public static List<String> executionToolIds(List<String> businessIds) {
++        return ProjectAgentNativeToolCatalog.executionIds(businessIds);
++    }
+ 
+     /**
+      * @param manifest 内置清单
+      */
+     public ProjectAgentToolCatalog(CapabilityManifest manifest) {
+-        this.manifest = manifest;
++        this(manifest, ProjectAgentNativeToolCatalog.unverified());
++    }
++
++    public ProjectAgentToolCatalog(CapabilityManifest manifest, ProjectAgentNativeToolCatalog.Provider nativeReadiness) {
++        this.manifest = java.util.Objects.requireNonNull(manifest);
++        this.nativeReadiness = java.util.Objects.requireNonNull(nativeReadiness);
+     }
+ 
+     /**
+@@ -60,7 +73,9 @@
+      * @return 状态列表
+      */
+     public List<ToolStatus> statuses() {
+-        return manifest.tools().stream().map(t -> status(t.id())).toList();
++        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>(nativeToolIds());
++        manifest.tools().forEach(tool -> ids.add(tool.id()));
++        return ids.stream().map(this::status).toList();
+     }
+ 
+     /**
+@@ -70,6 +85,12 @@
+      * @return 状态
+      */
+     public ToolStatus status(String toolId) {
++        if (nativeToolIds().contains(toolId)) {
++            var readiness = nativeReadiness.status(toolId);
++            if (readiness == null) readiness = new ProjectAgentNativeToolCatalog.Readiness(false, "工具运行环境尚未核验");
++            return new ToolStatus(toolId, toolId, ProjectAgentNativeToolCatalog.readOnly(toolId),
++                readiness.available(), readiness.reason());
++        }
+         CapabilityManifest.ToolEntry entry = manifest.tool(toolId).orElse(null);
+         if (entry == null) {
+             return new ToolStatus(toolId, null, false, false, "工具未在内置清单登记");
+@@ -95,6 +116,7 @@
+      * @return 描述；未实现为 null
+      */
+     public static ToolDescriptor descriptor(String toolId) {
+-        return DESCRIPTORS.get(toolId);
++        ToolDescriptor nativeDescriptor = ProjectAgentNativeToolCatalog.descriptor(toolId);
++        return nativeDescriptor == null ? DESCRIPTORS.get(toolId) : nativeDescriptor;
+     }
+ }
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolCatalog.java
+@@ -0,0 +1,64 @@
++package org.ruoyi.ipd.agent.catalog;
++
++import org.ruoyi.service.coding.harness.tool.ToolCapability;
++import org.ruoyi.service.coding.harness.tool.ToolDescriptor;
++import java.util.EnumSet;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Objects;
++import java.util.Set;
++
++/** Exact official 2.0.3 full profile; provider readiness is separate from business-pack selection. */
++public final class ProjectAgentNativeToolCatalog {
++    private ProjectAgentNativeToolCatalog() { }
++    public static final String VERSION = "agentscope-harness-2.0.3";
++    public static final List<String> IDS = List.of("read_file", "write_file", "edit_file",
++        "grep_files", "glob_files", "list_files", "execute", "web_fetch", "web_search",
++        "memory_get", "memory_search", "memory_save", "session_search", "session_list",
++        "session_history", "wait_async_results", "agent_list", "agent_send", "agent_spawn",
++        "task_cancel", "task_list", "task_output", "load_skill_through_path",
++        "deliver_artifact", "plan_enter", "plan_exit", "plan_write", "propose_skill",
++        "reset_equipped_tools", "skill_manage", "todo_write");
++    public record Readiness(boolean available, String reason) {
++        public Readiness {
++            if (!available && (reason == null || reason.isBlank())) reason = "工具运行环境尚未核验";
++            if (available) reason = null;
++        }
++    }
++    @FunctionalInterface public interface Provider { Readiness status(String toolId); }
++    public static Provider unverified() { return id -> new Readiness(false, "工具运行环境尚未核验"); }
++    /** Actual registered IDs plus per-provider checks, supplied by host assembly; never inferred from a label. */
++    public static Provider providers(Set<String> registered, Map<String, Readiness> readiness) {
++        Set<String> names = Set.copyOf(Objects.requireNonNull(registered));
++        Map<String, Readiness> checks = Map.copyOf(Objects.requireNonNull(readiness));
++        return id -> !names.contains(id) ? new Readiness(false, "工具未在运行内核注册")
++            : checks.getOrDefault(id, new Readiness(false, "工具运行环境尚未核验"));
++    }
++    public static List<String> executionIds(List<String> businessIds) {
++        LinkedHashSet<String> ids = new LinkedHashSet<>(IDS);
++        if (businessIds != null) ids.addAll(businessIds);
++        return List.copyOf(ids);
++    }
++    public static ToolDescriptor descriptor(String id) {
++        if (!IDS.contains(id)) return null;
++        EnumSet<ToolCapability> effects = EnumSet.of(ToolCapability.READ);
++        if (List.of("write_file", "edit_file", "memory_save", "plan_write", "propose_skill",
++            "skill_manage", "todo_write", "deliver_artifact").contains(id)) effects.add(ToolCapability.WRITE);
++        if ("execute".equals(id)) effects.add(ToolCapability.EXECUTE);
++        if (List.of("web_fetch", "web_search").contains(id)) effects.add(ToolCapability.NETWORK);
++        if (id.contains("search") || id.equals("grep_files") || id.equals("glob_files")) effects.add(ToolCapability.SEARCH);
++        if (List.of("wait_async_results", "agent_send", "agent_spawn", "task_cancel", "plan_enter",
++            "plan_exit", "reset_equipped_tools", "skill_manage", "load_skill_through_path",
++            "deliver_artifact").contains(id)) effects.add(ToolCapability.CONTROL);
++        return new ToolDescriptor(id, effects, !effects.contains(ToolCapability.WRITE)
++            && !effects.contains(ToolCapability.EXECUTE) && !effects.contains(ToolCapability.NETWORK)
++            && !effects.contains(ToolCapability.CONTROL), 30_000L, 65_536L, 65_536L, false,
++            "官方工具；绑定当前项目和人员，由官方运行权限扩展逐调用校验");
++    }
++    public static boolean readOnly(String id) {
++        ToolDescriptor d = descriptor(id);
++        return d != null && !d.hasCapability(ToolCapability.WRITE) && !d.hasCapability(ToolCapability.EXECUTE)
++            && !d.hasCapability(ToolCapability.NETWORK) && !d.hasCapability(ToolCapability.CONTROL);
++    }
++}
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityService.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityService.java
+@@ -74,10 +74,11 @@
+         List<ProjectAgentViews.Skill> skills = entry.skills().stream().map(skillCatalog::status)
+             .map(s -> new ProjectAgentViews.Skill(s.name(), s.version(), s.sha256(), s.available(), s.reason()))
+             .toList();
+-        List<ProjectAgentViews.Tool> tools = entry.tools().stream().map(toolCatalog::status)
++        List<ProjectAgentViews.Tool> tools = ProjectAgentToolCatalog.executionToolIds(entry.tools()).stream().map(toolCatalog::status)
+             .map(t -> new ProjectAgentViews.Tool(t.id(), t.name(), t.readOnly(), t.available(), t.reason()))
+             .toList();
+-        String reason = unavailableReason(skills, tools, anyModel);
++        String reason = unavailableReason(skills, tools.stream()
++            .filter(tool -> entry.tools().contains(tool.id())).toList(), anyModel);
+         return new ProjectAgentViews.Pack(entry.code(), entry.version(), entry.name(), entry.description(),
+             entry.stages() == null ? List.of() : entry.stages(),
+             entry.actionCodes() == null ? List.of() : entry.actionCodes(),
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolCatalogTest.java
+@@ -0,0 +1,42 @@
++package org.ruoyi.ipd.agent.catalog;
++import org.junit.jupiter.api.Test;
++import static org.assertj.core.api.Assertions.*;
++import java.util.*;
++import org.ruoyi.service.coding.harness.tool.ToolCapability;
++class ProjectAgentNativeToolCatalogTest {
++    @Test void exactOfficialFullProfileAndExecutionUnionPreserveAllNames() {
++        assertThat(ProjectAgentNativeToolCatalog.IDS).hasSize(31).doesNotHaveDuplicates();
++        assertThat(ProjectAgentNativeToolCatalog.IDS).containsExactly("read_file", "write_file", "edit_file",
++            "grep_files", "glob_files", "list_files", "execute", "web_fetch", "web_search", "memory_get",
++            "memory_search", "memory_save", "session_search", "session_list", "session_history", "wait_async_results",
++            "agent_list", "agent_send", "agent_spawn", "task_cancel", "task_list", "task_output", "load_skill_through_path",
++            "deliver_artifact", "plan_enter", "plan_exit", "plan_write", "propose_skill", "reset_equipped_tools", "skill_manage", "todo_write");
++        assertThat(ProjectAgentToolCatalog.executionToolIds(List.of("project_knowledge_search", "read_file")))
++            .hasSize(32).containsAll(ProjectAgentNativeToolCatalog.IDS).contains("project_knowledge_search");
++        assertThat(ProjectAgentNativeToolCatalog.descriptor("wait_all")).isNull();
++    }
++    @Test void nativeEffectsAreNotReadOnlyAndProviderFailureNeverDisablesBusinessKnowledge() {
++        var manifest=new CapabilityManifest(1,List.of(),List.of(new CapabilityManifest.ToolEntry("project_knowledge_search","Knowledge",true)),List.of());
++        var checks=new HashMap<String,ProjectAgentNativeToolCatalog.Readiness>();
++        ProjectAgentNativeToolCatalog.IDS.forEach(id->checks.put(id,new ProjectAgentNativeToolCatalog.Readiness(true,null)));
++        checks.put("web_search",new ProjectAgentNativeToolCatalog.Readiness(false,"查询服务尚未配置"));
++        var catalog=new ProjectAgentToolCatalog(manifest,ProjectAgentNativeToolCatalog.providers(Set.copyOf(ProjectAgentNativeToolCatalog.IDS),checks));
++        assertThat(catalog.statuses()).hasSize(32);assertThat(catalog.status("web_search").available()).isFalse();
++        assertThat(catalog.status("web_search").reason()).isEqualTo("查询服务尚未配置");
++        assertThat(catalog.status("project_knowledge_search").available()).isTrue();
++        for(String id:List.of("write_file","execute","web_fetch","memory_save","agent_spawn","plan_enter")) {
++            assertThat(catalog.status(id).available()).as(id).isTrue();assertThat(catalog.status(id).readOnly()).as(id).isFalse();
++        }
++        assertThat(ProjectAgentToolCatalog.descriptor("write_file").hasCapability(ToolCapability.WRITE)).isTrue();
++        assertThat(ProjectAgentToolCatalog.descriptor("execute").hasCapability(ToolCapability.EXECUTE)).isTrue();
++        assertThat(ProjectAgentToolCatalog.descriptor("web_search").hasCapability(ToolCapability.NETWORK)).isTrue();
++    }
++    @Test void unregisteredUnverifiedUnknownAndNullReadinessStayExplicit() {
++        var provider=ProjectAgentNativeToolCatalog.providers(Set.of("read_file"),Map.of("write_file",new ProjectAgentNativeToolCatalog.Readiness(true,null)));
++        assertThat(provider.status("write_file").available()).isFalse();assertThat(provider.status("read_file").available()).isFalse();
++        assertThat(provider.status("read_file").reason()).isNotBlank();
++        var catalog=new ProjectAgentToolCatalog(new CapabilityManifest(1,List.of(),List.of(),List.of()),id->null);
++        assertThat(catalog.status("read_file").available()).isFalse();assertThat(catalog.status("unknown").available()).isFalse();
++        assertThat(catalog.statuses()).hasSize(31);
++    }
++}
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityServiceTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityServiceTest.java
+@@ -88,6 +88,27 @@
+         verifyNoInteractions(access);
+     }
+ 
++    @Test
++    @DisplayName("基础查询未配置逐工具返回，已有知识包仍可用且保留完整工具目录")
++    void missingNativeProviderDoesNotDisableBusinessPack() {
++        var manifest = AgentTestFixtures.manifest();
++        var tools = new ProjectAgentToolCatalog(manifest, id ->
++            new org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalog.Readiness(
++                !"web_search".equals(id), "查询服务尚未配置"));
++        var service = new ProjectAgentCapabilityService(true, visibleAccess(), manifest,
++            AgentTestFixtures.skillCatalog(manifest), tools, AgentTestFixtures.modelCatalog());
++        var market = service.capabilities(ACTOR, PROJECT_ID).packs().stream()
++            .filter(pack -> "market-research".equals(pack.code())).findFirst().orElseThrow();
++        assertThat(market.available()).isTrue();
++        assertThat(market.tools().stream().map(ProjectAgentViews.Tool::id).toList())
++            .containsAll(ProjectAgentToolCatalog.nativeToolIds()).doesNotHaveDuplicates();
++        assertThat(market.tools()).anySatisfy(tool -> {
++            assertThat(tool.id()).isEqualTo("web_search");
++            assertThat(tool.available()).isFalse();
++            assertThat(tool.reason()).isEqualTo("查询服务尚未配置");
++        });
++    }
++
+     private static IpdCopilotAccess visibleAccess() {
+         IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+         when(access.requireVisible(any(), eq(PROJECT_ID))).thenReturn(TENANT);

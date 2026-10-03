@@ -1,0 +1,13 @@
+{
+  "atUtc": "2026-10-02T16:55:45.490049+00:00",
+  "seconds": 11.267492,
+  "sdk": "2.0.3",
+  "productionTimeoutSeconds": 20,
+  "queryChars": 21,
+  "querySha256": "e31520919dbaaee2e1035154afae9f331d4a3cba8aa28278b217693e3e7a3074",
+  "exitCode": 0,
+  "records": [
+    "PROBE serviceId=FastGPT-mcp-693fdc63b24e7762a0dbfe86 status=DISCOVERED tools=1",
+    "PROBE serviceId=FastGPT-mcp-693fdc63b24e7762a0dbfe86 status=QUERY_RETURNED contentBlocks=1"
+  ]
+}

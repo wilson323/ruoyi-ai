@@ -1,0 +1,2857 @@
+{
+  "project_id": "01dcf15c-86bb-4c7b-957c-8fe44bddd10d",
+  "source_sha256": "24834260f4266fcf25f190246a05651c1628fc14c2db73ad175c2b0d6255c386",
+  "total": 296,
+  "counts": {
+    "unchanged": 296
+  },
+  "statuses": {
+    "done": 219,
+    "todo": 9,
+    "inreview": 10,
+    "cancelled": 46,
+    "inprogress": 12
+  },
+  "actions": [
+    {
+      "key": "P0-1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-7",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-8",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-9",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-10",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-4",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "P1-5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-7",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-8",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-9",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-10",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-11",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-7",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-8",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-7",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-VK-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-05",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "SEC-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "SEC-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "SEC-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "API-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-5.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-5.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-5.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-6.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-7.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-7.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-1.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-3.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-4.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-5.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-8.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-04",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-06",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-07",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-08",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-09",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "API-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-04",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-05",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-3.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-3.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-3.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-4.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-5.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-6.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-6.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-7.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-7.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-8.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-9.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-1.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-2.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-2.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-3.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-3.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-4.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-4.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-4.4",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "P1-5.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-6.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-6.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-7.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-8.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-9.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-9.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-10.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-10.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P1-11.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-1.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-2.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-2.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-3.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-3.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-3.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-4.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-4.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5.5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-6.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-6.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-7.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-7.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-7.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-7.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-8.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-1.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-1.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-1.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-2.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-2.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-3.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-3.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-3.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-4.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-4.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-4.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-4.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-5.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-6.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-6.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-7.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-8.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-8.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-8.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-1.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-1.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-1.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-1.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-2.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-2.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "QA-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "QA-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "QA-04",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "QA-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-06",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "P0-6.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-2.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-2.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-3.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-4.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P4-5.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "QA-05",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "QA-06",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "QA-07",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "QA-08",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "P0-10.1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-10.2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-10.3",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.4",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.5",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.6",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.7",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.8",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.9",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.10",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.11",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.12",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.13",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.14",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.15",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.16",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.17",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.18",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.19",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.20",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.21",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P0-10.22",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.23",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.24",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.25",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.26",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.27",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.28",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.29",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.30",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.31",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.32",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.33",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.34",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.35",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.36",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.37",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.38",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.39",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.40",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.41",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.42",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.43",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.44",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.45",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.46",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.47",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.48",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P0-10.49",
+      "action": "unchanged",
+      "status": "cancelled"
+    },
+    {
+      "key": "P3-4.5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P2-5.6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-2.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-8",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-10",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-11",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DOC-12",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-07",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-08",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-02",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "AUD-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "SEC-04",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "P0-3.4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-04",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-05",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-06",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-07",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-08",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-09",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "SEC-API-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "SEC-API-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "RISK-04",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "RISK-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "RISK-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "RISK-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-GOV-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DB-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "API-03",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "OPS-09",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DEF-1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AUD-GOV-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DEF-4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DEF-5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DEF-6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DEF-9",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AI-REG-01",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AI-REG-02",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "qa04-F",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AI-P3",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "P2-1.3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "P3-LOW",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AI-P1-1",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "AI-P1-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AI-P1-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "AI-P2-1",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "AI-P2-2",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "AI-P2-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "PLAN-P0-17",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "PLAN-ROOT-1",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "PLAN-ROOT-2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "PLAN-ROOT-3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "PLAN-AI-FULL",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "PLAN-KB-AUTO",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "PLAN-AUDIT-FULL",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "API-GATE-RATCHET",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "DATA-CLEAN-9140004",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A1",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A2",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A3",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A4",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A5",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A6",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A7",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A8",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A9",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A10",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A11",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A12",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "ORPHAN-A13",
+      "action": "unchanged",
+      "status": "done"
+    },
+    {
+      "key": "R242",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "R31",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "KB-PARTA-DEPLOY",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "KB-GATE-BLIND",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "KB-PARTB-B0",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "KB-PARTB-B1B2",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "KB-BEST-PRACTICE",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "GATE-CL-01",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "AC-PROD-09",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "AI-FUSION-L23",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "PLAN-R241-C2",
+      "action": "unchanged",
+      "status": "inreview"
+    },
+    {
+      "key": "PLAN-R232-P1",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "PLAN-R232-P2",
+      "action": "unchanged",
+      "status": "inprogress"
+    },
+    {
+      "key": "PLAN-R232-P3",
+      "action": "unchanged",
+      "status": "todo"
+    },
+    {
+      "key": "PLAN-R221-B4",
+      "action": "unchanged",
+      "status": "inreview"
+    }
+  ],
+  "board_total": 567,
+  "unmanaged_cards": [
+    {
+      "id": "ffeced46-34ed-4ad2-80ec-49f7a4066860",
+      "title": "[WORKSPACE-SPACE] 工作台·产品空间=工作空间落地（选择器+首项目阶段进度+待办快捷入口+四态防假绿）",
+      "status": "done"
+    },
+    {
+      "id": "007f0477-c2b1-48ab-9db1-741a80647c6f",
+      "title": "[R241][AgentScope-PoC] AgentScope 内核 PoC G1~G5 全绿（worktree poc/agentscope-kernel）。PoC 技术实验已通过。审核状态：待审核。",
+      "status": "done"
+    },
+    {
+      "id": "0493f098-89e5-4e51-93de-72fedb0cc871",
+      "title": "[R240][DEFECT] MetaObjectHandler.updateFill 吞 IPD 服务层 actor 绑定——业务表 update_by 恒 -1（待拍板）",
+      "status": "done"
+    },
+    {
+      "id": "9805017d-76d8-49aa-89fa-f404f3ab019d",
+      "title": "[R240][WP-VERIFY] 写链路三证律 HTTP+DB 验收（GateElement CRUD 全生命周期+审计链+轮换语义订正）",
+      "status": "done"
+    },
+    {
+      "id": "03fb14d6-ec9d-4373-9889-32188b057452",
+      "title": "[R238][收口复核] F1 兄弟抢先入库后的独立复核 + 前端连带 + F2 种子 apply + G-2 翻卡",
+      "status": "done"
+    },
+    {
+      "id": "a5415258-2f1a-4217-8948-00d8892f038f",
+      "title": "[R237] 测试蜂群轮：全量单元/集成/交付测试全绿 + chat 沙箱测试存量债修复",
+      "status": "done"
+    },
+    {
+      "id": "a4e82000-8eb9-4c04-8a96-bcd3a553eacc",
+      "title": "R30 §5-4 SwitcherNode→SpEL+D2 修复收口",
+      "status": "done"
+    },
+    {
+      "id": "4e3e12e9-3eac-419d-a2a9-ea5e6e87c80f",
+      "title": "G-2 Flw 三控制器权限注解：已修待合（阻塞=sys_menu 11 码零登记，需 owner 同轮配 SQL+授权+前端码）",
+      "status": "done"
+    },
+    {
+      "id": "4cfcca7b-d284-42db-a554-57dde770dcb1",
+      "title": "R28 蜂群轮：状态机接线 guard（§5-2）+ aiflow 重试/DEAD 语义（§5-3）+ 契约跨仓同步",
+      "status": "done"
+    },
+    {
+      "id": "ed22c61b-9689-463b-8634-f7e1ff9d0dc9",
+      "title": "[§5-1 跨仓] 状态机 Guard 规则表导出 JSON 契约链路（后端导出→前端派生消费）",
+      "status": "done"
+    },
+    {
+      "id": "c3cc9d85-7232-4f04-84dd-3ef7270af12e",
+      "title": "[R234] owner 四件积压拍板落地 + 测试异常根因根除（文案B/A收口/双码断言/权限码全套/超时预算）",
+      "status": "done"
+    },
+    {
+      "id": "6108275e-2787-46b8-bf89-7583308dcd5d",
+      "title": "[R3 跨仓] 页39 补登/撤回端点：前端 readiness 就绪，等后端 PublicPortalController.supplement()/withdraw() 端点交付 [✅ done 2026-09-27 · 双仓已交付并推送]",
+      "status": "done"
+    },
+    {
+      "id": "478d9ff9-9535-4031-a694-d197f7731096",
+      "title": "[R221][真活待补] Task15 Step3 三证阻塞于 16039 陈旧 JVM 重启窗口（owner 安排中）",
+      "status": "done"
+    },
+    {
+      "id": "f3f27872-9a40-4b09-8a64-14e38fc1df55",
+      "title": "[R221][收口] IPD 全阶段 AI 代理执行闭环：Task11-14 全链落地（ai-execute 孤儿终结+对话即填表+通知缺口+双智能体复审 PASS）",
+      "status": "done"
+    },
+    {
+      "id": "a946ab28-4466-479e-9b06-3f50dd6adcb4",
+      "title": "[R218-AC续跑缺陷台账] [U3 中] 15 条中低影响待排期项统一登记（分诊前不逐独立卡）",
+      "status": "done"
+    },
+    {
+      "id": "ef20c06a-1963-486c-8598-edb879a57b3c",
+      "title": "[零触发调度器接线批] [U1 中高] 三条已实现零调用扫描链统一接线：INVITATION 到期/遴选升级(TEAM-06/07/08) + ACTION_OVERDUE 深管逾期提醒(IPD-12) + 津贴台账 auto-scan(L4 D-1)",
+      "status": "done"
+    },
+    {
+      "id": "2bef6e0e-279f-4592-b603-f3983832f030",
+      "title": "[奖金池版本链500] [U1 高] 已 freeze 池二次 compute 撞 uk_bp_project 唯一键 → HTTP 500/90001，'可算新版本'承诺不可兑现",
+      "status": "done"
+    },
+    {
+      "id": "96b7b157-f6c9-4413-a620-7e15efbe15ba",
+      "title": "[AC-AUTH-09越权读] [U1 高] 同组非成员 PM 可读他人项目全量详情（IDOR 读腿）",
+      "status": "done"
+    },
+    {
+      "id": "b494f56e-d200-4250-8b17-df6a63fa2ba8",
+      "title": "[purge守卫塌缩] [U1 高] 归档清除 .notLike(remark) 对 remark IS NULL 三值逻辑恒不成立 → DELETE_ARCHIVE_PURGE 全库不可用",
+      "status": "done"
+    },
+    {
+      "id": "e697a401-e186-47ef-b313-650fde34cd2e",
+      "title": "[G5阶段字段错配] [U1 高] projects.status 判定用 LIFECYCLE/POST_LAUNCH 而状态机无该迁移 → 贡献度评定/distribute 对新项目永久不可达",
+      "status": "done"
+    },
+    {
+      "id": "a995a9e3-c2d3-45da-9163-fa776b6f2efc",
+      "title": "[GATE数据] [U1 高] Gate 元素目录双 seed 并存致 33→68 要素失真 + is_veto 'Y'/'1' 编码混存 15 条否决项静默失效",
+      "status": "done"
+    },
+    {
+      "id": "b4da8962-7bf9-4e1c-8fcb-9fa3f3b7c1f7",
+      "title": "[待拍][UPSTREAM-CRED] ChatModelCredentialPolicy.requireTrustedConfiguration else 缺守卫 → 新 provider 建客户端必抛",
+      "status": "done"
+    },
+    {
+      "id": "8500d227-c7ca-4a2f-9b10-ea253adbf5bd",
+      "title": "门禁红灯清理：字符集已清；E2E 契约缺口 / M1-M5 门禁群 / 测试标签治理待拍",
+      "status": "done"
+    },
+    {
+      "id": "e256007b-b4fb-408b-ba25-45e80d70ac76",
+      "title": "[AC-REQ-09] [U1 高] 需求池删除申请接入双层审核链：DeletionRequest 白名单补 requirements + RequirementSoftDeleteExecutor + entityExists 三分量补齐（R218 归因确诊真缺陷）",
+      "status": "done"
+    },
+    {
+      "id": "385fc84e-1305-44c1-a6ff-5cc3a3364b45",
+      "title": "[R215-E2E-B2][前端P1] 直读 cause.message 链路未透传后端原文（E2E-B ipdErrorText 修复覆盖盲区，25 页面 rejectText 型）",
+      "status": "done"
+    },
+    {
+      "id": "77ded7a0-108e-497a-a1b6-7809c5ea2d25",
+      "title": "[R215-GAP-B4][P3·后端] gates scan 三件套 + p0/escalation-chain/check 的 OPS-04 调度接线",
+      "status": "done"
+    },
+    {
+      "id": "341ae625-55b9-4a53-a969-ea994e692d08",
+      "title": "[R215-GAP-B3][P2·后端] negative-feedbacks/{id}/status 下线或补状态机守卫",
+      "status": "done"
+    },
+    {
+      "id": "e8d651d1-794b-4098-8f2e-5a635028127f",
+      "title": "[R215-GAP-B2][P2·后端] stage-actions/instantiate 触发方收口",
+      "status": "done"
+    },
+    {
+      "id": "25c535f7-c1a3-41e6-815b-04249e84fb27",
+      "title": "[R215-GAP-B1][P2·后端] kpi/shared/deadline-scan 补月度 @Scheduled（当前无人触发属空转）",
+      "status": "done"
+    },
+    {
+      "id": "83f68178-3135-4652-acd9-24f4fae1e6fd",
+      "title": "[R215-GAP-F11][P3·前端接线] KPI 生效规则说明面板 GET /kpi/rules",
+      "status": "done"
+    },
+    {
+      "id": "eedf10f1-acbe-43eb-8957-6c45831c59e7",
+      "title": "[R215-GAP-F10][P3·前端接线] 超管永久清除工作台：/admin/permanent-delete 2 端点",
+      "status": "done"
+    },
+    {
+      "id": "3ef76d39-a47e-4f63-a354-019a778acd6b",
+      "title": "[R215-GAP-F9][P2·前端接线] 研发PM「我的应标」列表 GET /bid-responses/by-rd-pm/{id}",
+      "status": "done"
+    },
+    {
+      "id": "76b72484-0ce1-4096-98f4-e3da53b7401e",
+      "title": "[R215-GAP-F8][P2·前端接线] SOP 模板项目实例化与快照查看",
+      "status": "done"
+    },
+    {
+      "id": "e9721c5c-c13f-40d5-b2e4-8616aeda39b9",
+      "title": "[R215-GAP-F7][P2·前端接线] 人员同步任务管理页：/person-sync/jobs 4 端点",
+      "status": "done"
+    },
+    {
+      "id": "dfc843ed-34de-4019-b3a0-f21cf8f8e1fa",
+      "title": "[R215-GAP-F6][P1·前端接线] 合规中心视图（A23 预留兑现）：/compliance/* 4 端点",
+      "status": "done"
+    },
+    {
+      "id": "ecc5a71c-5d1a-45dc-bcdc-b3426744f14d",
+      "title": "[R215-GAP-F5][P1·前端接线] 切换验收月度视图（A23 预留兑现）：/switching-acceptance 全 5 端点",
+      "status": "done"
+    },
+    {
+      "id": "f301541a-da00-46a4-a822-650af1c37459",
+      "title": "[R215-GAP-F4][P1·前端接线] P0 升级链处置视图：GET /p0/escalation-chain + POST /{id}/resolve",
+      "status": "done"
+    },
+    {
+      "id": "6a19499e-2f32-47b1-8a32-c696f9dc4c23",
+      "title": "[R215-GAP-F3][P1·前端接线] 人员复职操作入口 POST /persons/{id}/rehire（补齐状态闭环）",
+      "status": "done"
+    },
+    {
+      "id": "694d8f36-493b-4e02-a396-a8a179669fbc",
+      "title": "[R215-GAP-F2][P1·前端接线] 前端创建招标切换至校验型入口 POST /bid-invitations/p231-create",
+      "status": "done"
+    },
+    {
+      "id": "3cbab536-9312-49ee-8957-9214e761b84a",
+      "title": "[R215-GAP-F1][P1·前端接线] 招标单修改与超管指派入口：PUT /bid-invitations/{id}/modify + admin-assign",
+      "status": "done"
+    },
+    {
+      "id": "df893d81-6fe1-490b-9a6c-0b59aef218d6",
+      "title": "R215-KANBAN-BUG[工具] vibe-kanban LIST status 查询参数过滤失效",
+      "status": "done"
+    },
+    {
+      "id": "337c8f3d-5eb6-43b5-8672-154d3c9c417d",
+      "title": "R215-E2E-D[前端P2] 内容区组件双实例挂载→全站 API 双发",
+      "status": "done"
+    },
+    {
+      "id": "f4445a05-b5fc-4ba9-8206-85708a436eed",
+      "title": "R215-E2E-C[前端P0] 需求详情双缺口：后端无 GET /demands/{id} + 前端无 :id 路由→404",
+      "status": "done"
+    },
+    {
+      "id": "51a8e008-c227-4e2e-b6f2-88dd1515e01e",
+      "title": "R215-E2E-B[前端P0] ipd-error-text.ts 吞后端 message：50002/10001 统一映射误导文案",
+      "status": "done"
+    },
+    {
+      "id": "3c4c1ccd-7e4e-4952-a3fb-1a7918357fda",
+      "title": "R215-E2E-A[前端P0] 共担KPI页 projectId 用 InputNumber 致 19 位雪花 ID 精度丢失→403",
+      "status": "done"
+    },
+    {
+      "id": "6e1b4878-e0fa-4aa5-b622-1d55db32740c",
+      "title": "R215 权限可配置化·超管配置页前端 UI（role-permission.vue + 5 端点接通）",
+      "status": "done"
+    },
+    {
+      "id": "e5a86adc-9263-43d3-88c9-b4c6e23aaf29",
+      "title": "[AI-FUSION-B4][前端接线] ai-documents 视图接线：文档工作台 AI 生成/版本链/审核区（激活零调用封装，history 孤儿消亡）",
+      "status": "done"
+    },
+    {
+      "id": "e552051d-85f0-4637-a424-ee303c4429f8",
+      "title": "[AI-FUSION-B3][前端接线] Copilot 全局 AI 副驾：api/ipd/ai-copilot.ts + AiAssistFab/Drawer 全局组件（chat + SSE stream + 会话列表，消 3 孤儿）",
+      "status": "done"
+    },
+    {
+      "id": "f962ad81-1175-4b4c-8b18-eff49bf95f72",
+      "title": "N6：AiDocumentMapper.selectChain 版本链全量 500（代码级已修，runtime 待下次后端重启生效）",
+      "status": "done"
+    },
+    {
+      "id": "6650b179-3bcf-493a-b198-7a0b646ec61a",
+      "title": "R215-补：E2E 全链路 + 单测全量重跑销账（2419/0/0/23 · 需求四视图 · WS SENT · N6 发现）",
+      "status": "done"
+    },
+    {
+      "id": "9c2a8abc-4881-4b94-b209-3bce02343de8",
+      "title": "R215-DONE 门禁扫描器盲区修正+字段错位定性（96→87 孤儿全平反 C-FP、field 15→0）",
+      "status": "done"
+    },
+    {
+      "id": "8a088a71-31b3-44ac-ae3e-024f4b2098de",
+      "title": "R215-DATA deletion_requests 悬空外键僵尸行（entity_id 指向不存在表行）",
+      "status": "done"
+    },
+    {
+      "id": "5370d5a3-6f8c-4670-a87d-1e9f3128e74f",
+      "title": "R215-P3 /ipd/auth/login 登录成功后 redirect 回该路径自身 404",
+      "status": "done"
+    },
+    {
+      "id": "be31bc06-593d-4ffa-9864-dd40f85e6094",
+      "title": "R215-P2 需求分诊(triage)失败后 link-project 仍放行（顺序约束缺口）",
+      "status": "done"
+    },
+    {
+      "id": "44fda61a-c518-4a3c-8112-95cc6a5e8b63",
+      "title": "R215-P1 products 软删执行器级联置 null 撞 projects.product_id NOT NULL（admin 终审 500/90001）",
+      "status": "done"
+    },
+    {
+      "id": "e48bf56a-f999-4875-90ae-7bd20e8ac5a4",
+      "title": "R215-N1N2N3 奖金池/框架菜单前端权限闸缺失 + Controller javadoc 授权漂移（含 owner 拍板：freeze/distribute 是否放开 GROUP_LEADER）",
+      "status": "done"
+    },
+    {
+      "id": "2a02dffd-046b-42f8-b966-946fa24fa04f",
+      "title": "R215 全局闭环增量验证轮（T-V2 补齐+奖金池探针+双下拉实证）",
+      "status": "done"
+    },
+    {
+      "id": "dbe1b6a7-6cb7-4713-8237-86d044610e10",
+      "title": "[SEC-R212-B][U1高] 孤儿写端点跨组越权打包修复（members/stage-actions×2/observers-invite/cert-sync）+ public/demands 生产限流核实",
+      "status": "done"
+    },
+    {
+      "id": "9d50c5fd-6095-4342-91f1-ee37305dfe20",
+      "title": "[SEC-R212-A][U0高] qr-login 匿名端点仅凭 wecomUserId 签发 FULL JWT（无限流/无开关，Mock 恒定启用）——下线或改造",
+      "status": "done"
+    },
+    {
+      "id": "0ddd9f67-542f-4d64-8131-880b1734c4e5",
+      "title": "[R212] BUG: GET /api/v1/scenarios/landed projectId 后端必填 vs 前端无参调用 → landed-scenarios 页进入即 400",
+      "status": "done"
+    },
+    {
+      "id": "15d5e689-1167-46af-b5e6-0efd7d5a0fe8",
+      "title": "[R211c] BUG: distribute 无贡献度评定时 500（contribution_rate NOT NULL 与契约注释冲突）+ bonus_pools.project_id=9140004 悬空",
+      "status": "done"
+    },
+    {
+      "id": "d9bd1477-1187-4ba4-b122-99a6952c733f",
+      "title": "[R211c] 奖金池发放链路真活验证完成（freeze→distribute 三证）",
+      "status": "done"
+    },
+    {
+      "id": "8e751acf-b243-4c19-8a97-d7ca4d1747f1",
+      "title": "R211b 可见性遍历三小异常（奖金池空态文案/RD首帧菜单残留/org Mock描述）",
+      "status": "done"
+    },
+    {
+      "id": "a1797628-64a1-4041-8479-0e3ceb5c2c70",
+      "title": "check-meta-access-orphan.sh 四缺陷修复（FAIL_SEED 假自证/漏检孤儿/注释计数/吞错路径）",
+      "status": "done"
+    },
+    {
+      "id": "17324373-5f45-41cb-a724-0958b9d8e604",
+      "title": "后端 /auth/me 下发 ipd 真权限码（路由闸正修，解除通道未接通临时放行）",
+      "status": "done"
+    },
+    {
+      "id": "99167e74-3105-4668-bda9-a8644ba8d633",
+      "title": "R211b·前端路由闸误拦非超管 P0 已修复（hasAccess 通道未接通放行）",
+      "status": "done"
+    },
+    {
+      "id": "53576dd5-f24c-4d39-9344-a86d3647ef59",
+      "title": "[R183-Summary] 资料库与 IPD 全部功能关系梳理与完整实现（汇总）",
+      "status": "done"
+    },
+    {
+      "id": "a1af61b7-a134-467d-8e68-0ea64bbf2c4c",
+      "title": "[R183-S2] 阶段 2：AiCopilotService 接 RAG",
+      "status": "done"
+    },
+    {
+      "id": "5a2eedd3-e521-446a-b142-7b6bae291259",
+      "title": "[R183-S3] 阶段 3：retrieveContext 分 docType",
+      "status": "done"
+    },
+    {
+      "id": "3280f1e2-ef4b-4e7d-ae8a-0c93c327695d",
+      "title": "[R183-S1] 阶段 1：RAG 真活触发",
+      "status": "done"
+    },
+    {
+      "id": "e7b9289c-8670-48da-af86-84a3821c741d",
+      "title": "[STG-501-1] [U1 高] stage-actions 500 修复 (代码+DB+日志三方证据, owner-blocked 3 决策项)",
+      "status": "done"
+    },
+    {
+      "id": "9750f429-800b-4405-b82c-40fe1d9878d4",
+      "title": "[cancelled] test（空卡垃圾）",
+      "status": "cancelled"
+    },
+    {
+      "id": "641e3788-8a03-407c-94a4-5b75a1227d00",
+      "title": "[R39-9] R39 根因反思报告",
+      "status": "done"
+    },
+    {
+      "id": "f1ac76ac-8a1e-4f7a-b59c-1bd3f92c0312",
+      "title": "[R39-8] worktree commit + log.md 同步 + 看板镜像",
+      "status": "done"
+    },
+    {
+      "id": "4ee5cc14-6074-4c24-a3be-8a86003701b5",
+      "title": "[R39-7] 前端仓 3 P1 + vite root",
+      "status": "done"
+    },
+    {
+      "id": "a432d790-bd59-4420-a98a-8cae5483473f",
+      "title": "[R39-6] R39-孤儿端点评估-20260918.md 落盘",
+      "status": "done"
+    },
+    {
+      "id": "2bf2920f-5949-40a8-88e0-05e0b26f174d",
+      "title": "[R39-5] .claude/hooks/check-pre-commit.sh + .github/workflows/r38-5-gates.yml",
+      "status": "done"
+    },
+    {
+      "id": "7c043bee-ef5f-465f-971c-cdad5bd091cd",
+      "title": "[R39-4] check-contract-tri-source.sh 三向对账门禁",
+      "status": "done"
+    },
+    {
+      "id": "147c9a64-e042-4a57-835e-d40a6d4a89f2",
+      "title": "[R39-3] 门禁 3 精炼 --refined 模式",
+      "status": "done"
+    },
+    {
+      "id": "00d7cbd5-8c58-4736-8d03-048d94ddadc2",
+      "title": "[R39-2] worktree 隔离 /private/tmp/wt-r39-integration",
+      "status": "done"
+    },
+    {
+      "id": "6bb5c10c-fa08-4ddd-8810-8668db1870e1",
+      "title": "[R39-1] 4 路 CodeReview subagent 评审",
+      "status": "done"
+    },
+    {
+      "id": "7cda5423-8de4-45d3-8590-ca1f37021db1",
+      "title": "[R39] 治理轮汇总",
+      "status": "done"
+    },
+    {
+      "id": "4b565106-270d-4a93-98a8-e2ee9afc22de",
+      "title": "[FE-REDIRECT-1] [低] 修 redirect query 双重编码（URL 栏 %2526 → %26）",
+      "status": "done"
+    },
+    {
+      "id": "7a30c133-f191-4460-924a-29e4353e52db",
+      "title": "[FE-MYDOC-1] [U2 中] 「我的文档」端点补齐（myDocument.vue:71 Error 请求地址不存在）",
+      "status": "done"
+    },
+    {
+      "id": "9fa353e7-dc80-4f87-9ea1-727d9117f8d6",
+      "title": "[INTEG-SSE-2] [U2 中] 消息中心 SSE 端点实现（前端 message.ts:25 路径重复 + 后端 0 命中）",
+      "status": "done"
+    },
+    {
+      "id": "70c3a904-66a7-4498-94d4-73baf8879c2b",
+      "title": "[FE-P0] 登录后 /auth/me 平台票死循环（getUserInfoApi 走平台 client 调 IPD 端点）",
+      "status": "done"
+    },
+    {
+      "id": "d4910940-41ba-4e31-bff5-fde86aa4fb8e",
+      "title": "[AI-STRAT-2] [战略] 统一 AI 调用层：IPD AiChatClient 迁 Langchain4j（流式/重试/结构化输出）",
+      "status": "done"
+    },
+    {
+      "id": "3921a56e-6b70-48f6-bf01-a5a102867352",
+      "title": "[AI-STRAT-1] [战略] 资料库接知识库 RAG：项目文档向量化 + AI 生成上下文注入",
+      "status": "done"
+    },
+    {
+      "id": "9a38b8d8-e0ea-46c2-97db-9e74c621655f",
+      "title": "[PERSON-SYNC-P0] 人员同步落库 + Mock HR 适配器闭环（2026-09-10 全流程真库实测通过，R29.3 翻 done）",
+      "status": "done"
+    },
+    {
+      "id": "862b4808-ba0a-4eba-b036-93b1e8aeb54f",
+      "title": "[ORIGIN-R28.5-P2] 修 bid-invitations/:id/select 白屏——P1-5.2 confirmToken 两阶段流前端契约对齐",
+      "status": "done"
+    },
+    {
+      "id": "5470e9da-0ede-43fc-ad84-ff7290952e91",
+      "title": "[ORPHAN-DUP-CANCELLED] orphan",
+      "status": "cancelled"
+    },
+    {
+      "id": "69514c65-9d20-45ea-8df4-66377487334c",
+      "title": "[ORPHAN-DUP-CANCELLED] orphan",
+      "status": "cancelled"
+    },
+    {
+      "id": "ccd90b28-992a-4c77-89a7-1b53230f0d13",
+      "title": "[ORIGIN-R28.5] [接续 R28] AI 副驾悬浮入口 500 根因根治——AsyncConfigurer 拆 implements + 5 道防线 + smoke test",
+      "status": "done"
+    },
+    {
+      "id": "f3b9834f-cc8b-483c-8609-6626b3c83ddb",
+      "title": "[R28] [蜂群生产就绪] 前端3项P0+后端10项落地+根源修ai-test+双仓push",
+      "status": "done"
+    },
+    {
+      "id": "4df392e3-7fb4-46c8-9138-9b19963c0d4b",
+      "title": "[ROOT-R6-D1-WHITE-B] bid-invitations select 补 confirmToken 两阶段流",
+      "status": "done"
+    },
+    {
+      "id": "ddc2e0c2-5611-4a46-9a87-f59a531d19e8",
+      "title": "[ROOT-R6-D1-WHITE] auth/platform-token 后端补端点",
+      "status": "done"
+    },
+    {
+      "id": "f7af8f9d-c393-4e70-8544-d04db008f85f",
+      "title": "R27 治理轮：全局生产就绪审查+E2E实证+17项P0阻塞基线",
+      "status": "done"
+    },
+    {
+      "id": "20eae6d9-6c61-41a4-ac96-019dc24be0e3",
+      "title": "[R26] owner 完全授权执行：双线合入 main + origin 整合 + push 完成（g1-g6 收口轮）",
+      "status": "done"
+    },
+    {
+      "id": "f069e454-77a8-4539-97cd-8ca659c344e8",
+      "title": "[R25-修正轮] 生产就绪清单全量执行+五大根源根除（主协调轮汇总，已完成）",
+      "status": "done"
+    },
+    {
+      "id": "48b2b372-d2c0-4f06-94a8-173e1f6ed7fa",
+      "title": "[AM-BASELINE-TTL] [P3] 红名单条目逐条日期 + 超 14 天 WARN",
+      "status": "cancelled"
+    },
+    {
+      "id": "015a0d2c-9f3a-4ce0-8142-30ce8eda9f9a",
+      "title": "[AM-HELPER] [P3] withJudgedForGate 改名自暴露 + 测试三禁规范成文",
+      "status": "cancelled"
+    },
+    {
+      "id": "36542585-0b3e-44b3-93d5-0aeac503d2a0",
+      "title": "[AM-GUARD] [P2] GuardSourceUtils 抽取 + 6 处 A 类裸文本守卫改造",
+      "status": "cancelled"
+    },
+    {
+      "id": "a26185a5-806e-4574-b360-74c6d7d467fc",
+      "title": "[AM-CLOCK-2] [P2] 其余 10 类高风险时钟注入 Clock 缝",
+      "status": "cancelled"
+    },
+    {
+      "id": "bd978e2a-53cc-4c50-aff4-bb1e11469f24",
+      "title": "[AM-GRANT] [P1] 12 表补表级 GRANT 白名单 + p1-ddl-apply-check --strict 收口流程",
+      "status": "cancelled"
+    },
+    {
+      "id": "bde6be65-f7bc-4d38-95ae-423b3abdf198",
+      "title": "[AM-CLOCK-1] [P1] DeletionRequestService 残留 5 处 now() 收口 + 新增时钟静态守卫",
+      "status": "cancelled"
+    },
+    {
+      "id": "2b460c28-3c05-4a69-9a64-8bd6953a7729",
+      "title": "[AM-BASELINE-TTL] [P3] 红名单条目逐条日期 + 超 14 天 WARN",
+      "status": "done"
+    },
+    {
+      "id": "1e736519-bff1-428f-a005-73680e72f502",
+      "title": "[AM-HELPER] [P3] withJudgedForGate 改名自暴露 + 测试三禁规范成文",
+      "status": "done"
+    },
+    {
+      "id": "1d0b7fca-e9ca-4c59-9ab5-deb4de0e5c82",
+      "title": "[AM-GUARD] [P2] GuardSourceUtils 抽取 + 6 处 A 类裸文本守卫改造",
+      "status": "done"
+    },
+    {
+      "id": "5dbcb997-2bf8-4a3f-9a2b-2c95e4856b87",
+      "title": "[AM-CLOCK-2] [P2] 其余 10 类高风险时钟注入 Clock 缝",
+      "status": "done"
+    },
+    {
+      "id": "336ee1f5-802c-46e0-ac4d-a4972790af58",
+      "title": "[AM-CLOCK-1] [P1] DeletionRequestService 残留 5 处 now() 收口 + 新增时钟静态守卫",
+      "status": "done"
+    },
+    {
+      "id": "88877423-7311-49f6-a980-315b56de87e7",
+      "title": "[AM-GRANT] [P1] 12 表补表级 GRANT 白名单 + p1-ddl-apply-check --strict 收口流程",
+      "status": "done"
+    },
+    {
+      "id": "13a80d6d-9ea5-4f62-85dc-4b962af98d1f",
+      "title": "[AM-SQL] [U1] AiDocumentMapper.selectChain SQL 与 Javadoc 契约不符：CTE 缺向上找根段（链中间行调用 history/head 误判）",
+      "status": "done"
+    },
+    {
+      "id": "600cd8dc-81e8-45e9-8470-1223c93bd50f",
+      "title": "[FE-GLOBAL-R2] [U1 高] 全局契约对照：前端 3 组臆造端点修复 + 路由 404 根除（2 commit 已落 main）",
+      "status": "done"
+    },
+    {
+      "id": "3c1b603f-c9a7-4525-9283-0285add51a87",
+      "title": "[DICT-1] [U2 中] 工作台 17 类 taskType 字典先行落地（前端评审 P0 最小项）",
+      "status": "done"
+    },
+    {
+      "id": "e30c86a2-2263-49ca-ad4d-218c644ccb08",
+      "title": "[WB-17-1] [U1 高] 工作台任务类型扩展：taskType 1 类 → spec 页03 v3 17 类（原型 v2 现状 8 类起步）— 2026-09-08 第4轮: 4路评审1028行+拍板4项建议已落(WB-17-1-拍板4项建议-20260908.md,推荐方案 A+C+C+C,总~10人天)",
+      "status": "done"
+    },
+    {
+      "id": "67896f31-68a6-4793-a103-04b9be83f6ac",
+      "title": "[AUD-TRI-R2] [U1 高] 三方对照复核修正：9 处端点误判平反 + 真差距清单 + 执行计划(2026-09-08)",
+      "status": "done"
+    },
+    {
+      "id": "0f964bda-d1f3-4d2e-aaad-0c6157efac54",
+      "title": "[INC-1] [U1 高] 事故披露：merge 链式命令硬编码 PR 号，误合兄弟会话 PR #7（185 文件）且 merge commit 160fa25b 标题错位",
+      "status": "done"
+    },
+    {
+      "id": "6a3f9b4d-55cc-46be-8067-89064b2a0e99",
+      "title": "[A4注释已加-20260908] [裁决证据已补强-推荐定为P3-2.2存储表] [P-DATA-gap-2] project_scores 主表用途确认 — 2026-09-08 R5: 前端",
+      "status": "done"
+    },
+    {
+      "id": "67ffc283-13d6-4426-b3e0-fec823f23f84",
+      "title": "[P-DATA-gap-1] 季度奖金 distribute 贡献度门禁（缺口调查卡，R47 决策包）[R214 撞号勘误：原误染 P3-6.2 号 marker，正主为 5da0b29f；本卡身份按 manage.py L51 EXEMPT 注释与镜像 L3059 登记还原，done 结论不变 2026-09-24]",
+      "status": "done"
+    },
+    {
+      "id": "c70f5b6b-63f1-418a-a919-6da8f7ac9186",
+      "title": "[PUSH-DEFER-1] [U1 高] 本地 main→origin/main 待受控合并+push：dfb7828e 冲突未解（ahead 98 / behind 1，3 个移交文件合并冲突）",
+      "status": "done"
+    },
+    {
+      "id": "cc53b892-8072-47ca-b4d9-d44ea4374f0a",
+      "title": "[ROOT-R6] [汇总] 真活集成测试基建（原 ROOT-1 卡重命名对齐 KEY 体系）：IpdIntegrationTestBase 真跑",
+      "status": "done"
+    },
+    {
+      "id": "1092d1e4-d7b8-4c4d-9e2b-dde3c8ff9728",
+      "title": "[W28-4] [执行指南] 5 张 todo 卡具体缺口+实施命令清单(2026-09-07)",
+      "status": "done"
+    },
+    {
+      "id": "0f0c2504-6dc5-4ce0-8883-8a71a0ad271c",
+      "title": "[Batch-5 #1 偏离] Hikari maxPoolSize spec 60→实际 80 已上浮；连接超时 5s / p6spy=false ✓；未独立 commit 标 PERF-P1-3",
+      "status": "done"
+    },
+    {
+      "id": "55baedb1-c35d-48ca-b8c8-e041bd15c19a",
+      "title": "[Batch-5 #9 待补] DeletionArchiveService.listArchive 加 @Transactional(readOnly=true)",
+      "status": "done"
+    },
+    {
+      "id": "12f918a8-53de-4107-ac5a-e4d6b0c150cb",
+      "title": "[Batch-5 #10 待补] CoefficientChange/LaunchDateChange audit 合并框架 4 SQL → 1 批插入（PERF-P1-6 独立 commit）",
+      "status": "done"
+    },
+    {
+      "id": "a7549310-42dc-4365-83fb-8066e5062739",
+      "title": "[Batch-5 #4 待补] .github/workflows/gitleaks.yml CI 新建 扫描 application*.yml PEM 字面量",
+      "status": "done"
+    },
+    {
+      "id": "039c7f02-ec6a-4b76-a010-ec699019b5a3",
+      "title": "[Batch-5 #5 待补] README-IPD-OVERRIDE.md 增补 prod Hikari connectionTimeout 30s→5s 取舍披露 + BCrypt cost=10 +80 池/53% 水位数据",
+      "status": "done"
+    },
+    {
+      "id": "9494e405-9b3b-404e-ab51-d6c170445d52",
+      "title": "[Batch-5 #11 待补] scripts/start.sh -Xms2g -Xmx4g G1GC + HeapDumpPath；ZGC vs G1GC 选型待 owner 决策",
+      "status": "done"
+    },
+    {
+      "id": "de2dbad8-f898-406d-921e-cafafa844c5e",
+      "title": "[Batch-5 #12 待补] ruoyi-admin/src/main/resources/logback-spring.xml 新建 + springProfile dev INFO / prod WARN 双段",
+      "status": "done"
+    },
+    {
+      "id": "19308edb-7667-4135-8206-fb6861b108d9",
+      "title": "[Batch-5 #2 待补] SEC-MED-3 Withdraw 独立权限码 OPERATION_DELETION_REQUEST_WITHDRAW + Catalog 仅申请人角色登记 + Controller 注解切换 + 403 同返防侧信道",
+      "status": "done"
+    },
+    {
+      "id": "bd9a41ca-e4e9-4963-971f-a36dba14aaec",
+      "title": "[Batch-5 验证] prod hardening 12 项 4/4/4 落地报告(2026-09-07 05:00)—子代理 a9ff80a0439b38209",
+      "status": "done"
+    },
+    {
+      "id": "22a46eab-ed25-49b2-9846-5e9dd625ff3b",
+      "title": "[R8-P0-4 verification] api-decrypt.privateKey 验证 PASS(2026-09-07 05:00)—4 commit 清零+R9a 公钥 env 化+rebuttal f2ed9834",
+      "status": "done"
+    },
+    {
+      "id": "e11427e6-2a3a-42fb-bbcf-29123b1f8a9a",
+      "title": "[W28-2 fixup] ProductService.bind/unbind project.mainGroupId 守卫+错文案脱敏(2026-09-07 04:00-04:50)",
+      "status": "done"
+    },
+    {
+      "id": "3b39049d-b738-4e46-a2fc-7f99825db2c6",
+      "title": "[PERF-P0-3] [U1 高] AuditLogController.listByScope 接入 4-arg 游标分页 + 真库 P95<200ms 验证",
+      "status": "done"
+    },
+    {
+      "id": "de349746-a136-4b10-8d15-d2b253e74a21",
+      "title": "[W28-3] [汇总] 蜂群派单：12 张后端 U1 卡 4 批次并行实施(2026-09-07)",
+      "status": "done"
+    },
+    {
+      "id": "c2fa59a2-8d49-4261-8392-2363cdea4aaa",
+      "title": "[W28-2] [汇总] 蜂群 P1-1.1+P2-6.2 收口+PERF-02 typo 修复(2026-09-07 04:00-04:30)",
+      "status": "done"
+    },
+    {
+      "id": "286ebf6b-51c0-48e4-85fb-64e6aed0320f",
+      "title": "[D-10] 引入 application-common.yml 抽公共段(dev/prod 仅 override)",
+      "status": "done"
+    },
+    {
+      "id": "b7c2cb65-d278-437d-9d5e-db9223c40d87",
+      "title": "[D-9] DefaultStateMachineGuard fromState=\"null\" → \"INITIAL\" 语义化",
+      "status": "done"
+    },
+    {
+      "id": "45d50e6e-cbd6-43f1-adb5-f7f549505dcd",
+      "title": "[D-8] ComplianceController 双修(@Transactional 移 Service + Entity→VO)",
+      "status": "done"
+    },
+    {
+      "id": "dee66314-fcf1-4391-88b9-1ac76599b68d",
+      "title": "[D-6] Entity → VO 改造(6 处 Controller,排除 ComplianceController)",
+      "status": "done"
+    },
+    {
+      "id": "1da38d80-5f42-4a5f-ab0a-783039afcc4a",
+      "title": "[D-3] AiChatClient SSRF host allowlist + 内网 IP 黑名单",
+      "status": "done"
+    },
+    {
+      "id": "850205dc-3935-45e2-a8d8-132afe63fafe",
+      "title": "[W28-1] [汇总] 看板系统性梳理+蜂群派单 P0 闭环+治理范式固化(2026-09-07 04:00-04:20)",
+      "status": "done"
+    },
+    {
+      "id": "00e8d519-8ba4-478e-80ad-6fe9926fd565",
+      "title": "[SEC-RESIGN-GROUP] [汇总] PersonService.resign 跨组守卫（缺陷 D-1，防组长跨组冻结他人；12/12 绿）",
+      "status": "done"
+    },
+    {
+      "id": "5c9cfc1d-48f1-4208-a362-fcd64767a173",
+      "title": "[WAVE21-EXT] [汇总] batch-sync-commits.py 卡号映射扩展收口",
+      "status": "done"
+    },
+    {
+      "id": "54ca0dcb-d8ad-41df-a361-4ac15056e19b",
+      "title": "[WAVE21-A-VERIFY] [汇总] axe-scan 端到端实测闭环（ZK-IPD LIVE 首扫基线入库）",
+      "status": "done"
+    },
+    {
+      "id": "29384baf-b4b0-4207-ba9d-8cb961b0aabb",
+      "title": "[WAVE21] [汇总] A11y 自动化 CI+78 卡号批量 reconcile 映射",
+      "status": "done"
+    },
+    {
+      "id": "e4bd476f-b040-4ba2-89be-e9415c59dd9c",
+      "title": "[WAVE14-CONSOLIDATE] [汇总] 测试大盘 33→0 失败收口",
+      "status": "done"
+    },
+    {
+      "id": "79b9154a-29be-4036-9220-3d6269d85c3e",
+      "title": "[WAVE14-AUDIT-EXT] [汇总] 修正 commit message 撒谎——补齐 5 治理文件入库",
+      "status": "done"
+    },
+    {
+      "id": "63247919-ce22-4884-8378-1a18524c0aee",
+      "title": "[WAVE14-AUDIT] [汇总] WAVE14 审计治理（治理文件入库配套）",
+      "status": "done"
+    },
+    {
+      "id": "14ca1bc2-effa-456b-bdf3-e00b5c53912b",
+      "title": "[SEC-REV-round3-NF] [汇总] horizontal-privilege+audit-integrity+TOCTOU+input-validation（9 测）",
+      "status": "done"
+    },
+    {
+      "id": "1126883d-b8f0-42c6-85c1-58e6f75c54bf",
+      "title": "[SEC-REV-round3-AI] [汇总] ssrf redirect 拦截+testConnect 走 ProviderRegistry（8 测）",
+      "status": "done"
+    },
+    {
+      "id": "8892d51e-1dfd-4ffb-be58-8565aeb0f29b",
+      "title": "[SEC-REV-REQUIREMENT-CHANGE] [汇总] state-drift+observability+tenant-scope+gate-mismatch（10 测）",
+      "status": "done"
+    },
+    {
+      "id": "d6bb1fdb-9cef-42e4-bae8-e7b0304a7d16",
+      "title": "[SEC-REV-HANDOVER-02] [汇总] disableIfAllCleared 改原子 UPDATE 防 TOCTOU",
+      "status": "done"
+    },
+    {
+      "id": "520f697c-ea58-472d-835f-36e82145844c",
+      "title": "[SEC-REV-HANDOVER-01] [汇总] HandoverService 安全修复收口报告",
+      "status": "done"
+    },
+    {
+      "id": "52b8ce30-1d5c-4fef-bdcf-5bd885975f12",
+      "title": "[SEC-REV-GATE-ELEMENT] [汇总] GateElement 审计字段绑 actor 7 方法（6 测）",
+      "status": "done"
+    },
+    {
+      "id": "a2eb3b5e-1f50-475b-be76-c0def512a3a6",
+      "title": "[SEC-REV-BID] [汇总] BidController admin-assign 状态门禁+JSON escape（12 测）",
+      "status": "done"
+    },
+    {
+      "id": "910d640c-dec0-488e-9372-8d4e72cea45a",
+      "title": "[SEC-REV] [汇总] SEC-REV 系列伞卡（round3-NF/AI、REQ-CHANGE、GATE-ELEMENT、BID、HANDOVER-01/02）",
+      "status": "done"
+    },
+    {
+      "id": "669476a8-26fa-40c7-9aa6-2328d64ec80b",
+      "title": "[SEC-PersonSync-07] [汇总] PersonSyncService 6 道安全审查闭环",
+      "status": "done"
+    },
+    {
+      "id": "e096fe88-9f16-4a58-badb-dfc215e8f646",
+      "title": "[SEC-Person-HIGH] [汇总] PersonService rehire/unbindWecom 跨组+在职守卫+DTO @Size",
+      "status": "done"
+    },
+    {
+      "id": "414ea0e1-a60b-4240-972b-cd23dd135a44",
+      "title": "[SEC-MEDIUM] [汇总] KpiRecordService 状态机旁路+BidInvitation 信息泄露修复",
+      "status": "done"
+    },
+    {
+      "id": "54008dba-e45d-49ac-923a-2a0e8c7a37fb",
+      "title": "[SEC-LOW-4] [汇总] SEC-LOW-4 闭环（Wave3 Batch-2 同批）",
+      "status": "done"
+    },
+    {
+      "id": "00997be0-0110-4453-a495-08d75e371dd9",
+      "title": "[SEC-HIGH-2] [汇总] INITIAL_PWD 挪 env 注入",
+      "status": "done"
+    },
+    {
+      "id": "c37154c6-cbfc-4e8f-8b44-335054cd2a23",
+      "title": "[SEC-FIX-HIGH-5] [汇总] 注解层守卫+sink 校验+resource-bound 三件套（5.2 FOLLOWUP）",
+      "status": "done"
+    },
+    {
+      "id": "cf79416d-3996-497e-a827-98fd79a56c81",
+      "title": "[SEC-FIX-HIGH-1] [汇总] HIGH open-redirect 改 ossId+本地 Oss 映射（1.1 FOLLOWUP）",
+      "status": "done"
+    },
+    {
+      "id": "738f3f9a-4768-4abe-8c94-84241c1315f6",
+      "title": "[SEC-FIX-FOLLOWUP] [汇总] entity delFlag 契约恢复（StageAction/Deliverable）",
+      "status": "done"
+    },
+    {
+      "id": "11d2bb69-868a-4585-87cb-2aeb02b7dddf",
+      "title": "[SEC-FIX] [汇总] GateMaterialController 3 安全发现落地",
+      "status": "done"
+    },
+    {
+      "id": "8171680d-cb1b-4f04-b616-2e7fece09a00",
+      "title": "[SEC-06b] [汇总] BidController adminAssign 注解码错位修复",
+      "status": "done"
+    },
+    {
+      "id": "b15a22b5-7d83-4346-9876-f19949777dde",
+      "title": "[SEC-06] [汇总] 权限码常量化收口（23 Controller 147 处）",
+      "status": "done"
+    },
+    {
+      "id": "acc37286-a9dc-468c-80ce-3b6f2d8bc2fe",
+      "title": "[SEC-01b] [汇总] SEC-01b 配套加固（PersonService HIGH 授权闭环）",
+      "status": "done"
+    },
+    {
+      "id": "fa0d84e8-4b4f-45fe-9e59-e9998f990342",
+      "title": "[ROOT-R5] [汇总] ddl-field-usage-lint.cjs 核心正则 bug 修复",
+      "status": "done"
+    },
+    {
+      "id": "a87f218d-4615-4956-b4e3-5eb18a0cc3bb",
+      "title": "[ROOT-R4] [汇总] 根因 R4 验收矩阵真实落地",
+      "status": "done"
+    },
+    {
+      "id": "fcb9bda4-3fbb-44e4-be0f-4675d31a0c56",
+      "title": "[ROOT-R3] [汇总] DeletionRequest/BonusPool 守卫 fail-closed 同步修复",
+      "status": "done"
+    },
+    {
+      "id": "a5e95d3d-429b-45d0-9ffe-98ec1d6c2b5d",
+      "title": "[ROOT-R2] [汇总] Notification EMAIL/WebSocket 真实通道真实现",
+      "status": "done"
+    },
+    {
+      "id": "f6f209e3-8138-459b-bd19-ca560c1a5c22",
+      "title": "[ROOT-R1] [汇总] 根因 R1 治理收口（P1 5 项批次）",
+      "status": "done"
+    },
+    {
+      "id": "9de010e7-1a84-4d45-9527-67b835abba34",
+      "title": "[REFLECTION-2] [汇总] §8 深度反思：治理≠修复第 6 根因+R1~R5 治理卡实装",
+      "status": "done"
+    },
+    {
+      "id": "47bfebd3-e1f8-455c-84b5-cbd50282b350",
+      "title": "[R9] [汇总] 三份治理报告（六根因+P131 契约漂移+OPS-09 mutex 提案）",
+      "status": "done"
+    },
+    {
+      "id": "197fe99b-4d52-409e-8373-bc6ff525269c",
+      "title": "[R8] [汇总] R8-P0 收尾批次（prod hikari+run8 79/79+log 对账）",
+      "status": "done"
+    },
+    {
+      "id": "1a27ce5c-8982-48e4-aa4b-c0c8397a085d",
+      "title": "[R5] [汇总] R5 治理轮收口",
+      "status": "done"
+    },
+    {
+      "id": "1c1f929b-5ef2-422b-b093-59cee55b1a6d",
+      "title": "[R4] [汇总] acceptance-matrix.json 237 AC 三向关联+CI hook",
+      "status": "done"
+    },
+    {
+      "id": "7f48106f-4d68-4185-8459-8e3a2d820bf7",
+      "title": "[R3] [汇总] KpiRecordService 接入 StateMachineGuard（5 写入点）",
+      "status": "done"
+    },
+    {
+      "id": "35f359bb-04b4-41fe-968f-11c5bb406546",
+      "title": "[R2] [汇总] NotificationService 中间件化真实现（InApp/EMAIL/WEBSOCKET）",
+      "status": "done"
+    },
+    {
+      "id": "f23eee66-7df9-4393-a024-4ad1781c45de",
+      "title": "[R1] [汇总] R1 治理轮收口",
+      "status": "done"
+    },
+    {
+      "id": "0a965413-bad4-4121-9109-29b0c5d0696b",
+      "title": "[MEDIUM-2.2] [汇总] 公开招标应标者互见+7 日升级通知（含 2.3）",
+      "status": "done"
+    },
+    {
+      "id": "a5bb3e68-7b35-490f-8de5-a3afc30e56ee",
+      "title": "[MEDIUM-1.3] [汇总] Gate 列席（P1-6.2 映射）",
+      "status": "done"
+    },
+    {
+      "id": "b9d2e51c-f01b-4ce1-ae56-4b669a515259",
+      "title": "[HIGH-5.2] [汇总] personalCoefficient 个人系数（P3-4.1 映射）",
+      "status": "done"
+    },
+    {
+      "id": "41f2ebf9-44f4-4a9d-9582-542a936aff1b",
+      "title": "[HIGH-5.1] [汇总] 奖金分配区间（P3-4.2/4.4 映射）",
+      "status": "done"
+    },
+    {
+      "id": "91c4e89a-3cce-4d43-afd8-940998cf52be",
+      "title": "[HIGH-4.1] [汇总] KPI 月度截止日配置化+截止前 1 天 FYI 提醒",
+      "status": "done"
+    },
+    {
+      "id": "36911a6c-5fad-4cdf-944f-8e796b8fe441",
+      "title": "[HIGH-4] [汇总] P063 测试键名校正+防漂移反向用例",
+      "status": "done"
+    },
+    {
+      "id": "3125de99-acd4-4366-97d2-92703e1e20f4",
+      "title": "[HIGH-1.2] [汇总] selectResponse 落选修复（P2-3.1 映射）",
+      "status": "done"
+    },
+    {
+      "id": "6b632f68-eefc-4468-aa37-e5addf7e8e3c",
+      "title": "[GUARD-1] [汇总] DDL entity @TableLogic 一致性扫描+PreToolUse hook",
+      "status": "done"
+    },
+    {
+      "id": "1fb5b4d1-8a3d-4cc1-b71f-27bcfdfe1884",
+      "title": "[GOVERNANCE-6] [汇总] 治理卡 6：4 agent 安全+V12 走查闭环登记",
+      "status": "done"
+    },
+    {
+      "id": "6d8720ed-fa99-41f0-9631-37398a829a75",
+      "title": "[GOVERNANCE-5] [汇总] 治理卡 5：7 agent 并发+R6/P1剩/P2/49页闭环登记",
+      "status": "done"
+    },
+    {
+      "id": "460fda19-3366-4b9a-89bf-677bd60dc8e7",
+      "title": "[GOVERNANCE-4] [汇总] 治理卡 4：P1 5 项 6 agent 并发闭环登记",
+      "status": "done"
+    },
+    {
+      "id": "976863b2-7b2e-4425-9b6c-f45818e6c512",
+      "title": "[GOVERNANCE-3] [汇总] 治理卡 3：4 agent P0 路线图闭环登记",
+      "status": "done"
+    },
+    {
+      "id": "2a89fe16-9aa6-4482-ade0-ac043dadd912",
+      "title": "[GOVERNANCE-20260906] [汇总] ZK 矛盾真修订·勘误登记表（18 commit 台账）",
+      "status": "done"
+    },
+    {
+      "id": "f95e3547-1d44-4690-9be0-1f68c313e807",
+      "title": "[GOVERNANCE-2] [汇总] 治理卡 2：深度全局勘察 5 commit 闭环登记",
+      "status": "done"
+    },
+    {
+      "id": "201b0699-49c4-4e01-97a8-14df53458a14",
+      "title": "[GOVERNANCE-1] [汇总] 治理卡 1：7 agent 并发+4 道安全审查闭环登记",
+      "status": "done"
+    },
+    {
+      "id": "a4ecbc86-4c44-4a51-87fe-ee1fabc29f2f",
+      "title": "[DDL-LOGIC-LINT-CLEAN] [汇总] 6 entity 补 @TableLogic+SwitchingAcceptance 孤儿表 DDL",
+      "status": "done"
+    },
+    {
+      "id": "055e83c0-4dce-4c17-831d-bab5ebcbdcc5",
+      "title": "[CONSISTENCY-9] [汇总] L1-L5 权威源 B6 勘误注（API 唯一权威源）",
+      "status": "done"
+    },
+    {
+      "id": "8ca29e74-d3b5-4de9-9d68-a097b48d42da",
+      "title": "[CONSISTENCY-8] [汇总] 离职处置 B8 勘误注（先移交后禁用）",
+      "status": "done"
+    },
+    {
+      "id": "0fe20657-e0d6-4801-9d93-e0b8ceb220ee",
+      "title": "[CONSISTENCY-7] [汇总] 删除审核期限 F29 勘误注（2 个工作日保持）",
+      "status": "done"
+    },
+    {
+      "id": "bf4dbb80-59ee-4cc5-95f4-76b53f51270a",
+      "title": "[CONSISTENCY-6] [汇总] 双签期限 D17 勘误注（3 个自然日保持）",
+      "status": "done"
+    },
+    {
+      "id": "faad7166-b0c7-4178-b7ba-742b695803b7",
+      "title": "[CONSISTENCY-18] [汇总] dualPmProject C14 vs 附录 D.6.7 勘误注",
+      "status": "done"
+    },
+    {
+      "id": "dcfa1c0f-5d5e-443a-a78a-c13a7bc4f909",
+      "title": "[CONSISTENCY-17] [汇总] 奖金池基数 vs 达成率分子 v3 §3.9 同步说明",
+      "status": "done"
+    },
+    {
+      "id": "3e09aad0-f694-4837-96a5-adf2a07d795c",
+      "title": "[CONSISTENCY-16] [汇总] 游客负责人字段 v3 §3.10 待修订说明",
+      "status": "done"
+    },
+    {
+      "id": "4936541a-2897-4279-b388-3d060b3ff2b9",
+      "title": "[CONSISTENCY-15] [汇总] 毛利率门槛 v3 §3.6 显式列入（S≥40/A≥30/B≥25）",
+      "status": "done"
+    },
+    {
+      "id": "1143ebab-43ef-406b-91c6-8230b91b7202",
+      "title": "[CONSISTENCY-14] [汇总] G1-1 客户验证 I3 勘误注（≥5 家不分档）",
+      "status": "done"
+    },
+    {
+      "id": "6502419d-cb20-4b6e-93a3-9b8dcd74fff3",
+      "title": "[CONSISTENCY-12] [汇总] G2 否决项数汇总行 4→5 同步",
+      "status": "done"
+    },
+    {
+      "id": "9a3b86a2-ab4a-44da-9825-04574e35a6a4",
+      "title": "[CONSISTENCY-11] [汇总] 共担 KPI 月度截止 I5 衍生 5 工作日勘误注",
+      "status": "done"
+    },
+    {
+      "id": "b546271c-d67b-4ab7-8bdc-c756247fe632",
+      "title": "[CONSISTENCY-10] [汇总] 共担 KPI 录入人 I5 勘误注（决策产品组长）",
+      "status": "done"
+    },
+    {
+      "id": "06cd918c-3c9e-468b-875b-3b252fd4fad5",
+      "title": "[FE-PARITY] [汇总] P0-10.x 9 域",
+      "status": "done"
+    },
+    {
+      "id": "96fb6bcd-4f71-4493-afc4-b283fdca17b0",
+      "title": "[R6] [汇总] 治理卡",
+      "status": "done"
+    },
+    {
+      "id": "5c8ee558-3ffe-4b5b-8897-2d968176316e",
+      "title": "[DDL-AUTODISC] [汇总] P0-3.2 工具化",
+      "status": "done"
+    },
+    {
+      "id": "141c4926-61ab-4b02-a0a1-67451276242b",
+      "title": "[HIGH-3.2] [汇总] P2-7.3",
+      "status": "done"
+    },
+    {
+      "id": "9cd67257-f35f-4a97-8cab-84aae5fb11ec",
+      "title": "[HIGH-3.1] [汇总] P2-7.x",
+      "status": "done"
+    },
+    {
+      "id": "3d2d62da-5149-4f45-8bab-cff208e486a9",
+      "title": "[MEDIUM 安全] KpiSharedCollectionService.listSharedKpis IDOR——同租户用户越权访问其他项目共担 KPI",
+      "status": "done"
+    },
+    {
+      "id": "0457ce13-362e-4b0e-a713-85b73c461863",
+      "title": "[DONE] 后端 AllowanceLedgerController 补交付（页 33 后端阻塞修复）",
+      "status": "done"
+    },
+    {
+      "id": "c7767e3a-779d-4aab-8ddd-95579aa4c7f7",
+      "title": "[构建收口] ContributionService 编译排除残留——增量绿 clean 必炸，源码新改动从未生效",
+      "status": "done"
+    },
+    {
+      "id": "d81af12c-aea3-45ef-898c-49aa205d32ad",
+      "title": "[owner 裁决] ComplianceController 5 端点归属确认（无页码注释，前端零消费）",
+      "status": "done"
+    },
+    {
+      "id": "df7eba96-0d15-417e-8146-5305d830038e",
+      "title": "[前端缺口] 页03 站内信：NotificationController 5 端点零消费，notify store 纯本地",
+      "status": "done"
+    },
+    {
+      "id": "c5254e23-dda5-45f5-8ec1-8feaa76e83c4",
+      "title": "[前端缺口] 项目空间协作圈 Tab：ProjectCircleController 7 端点零消费",
+      "status": "done"
+    },
+    {
+      "id": "c108d7bf-1e64-4c97-ba88-27283b5138b0",
+      "title": "[DONE] 页 32 项目详情-KPI 接线（kpi.ts 抢救 + 三段预览）",
+      "status": "done"
+    },
+    {
+      "id": "56d97bb0-577b-4492-a5bc-ec4163d69fdc",
+      "title": "[P3-1.2-BACKEND] [U1 高] 共担 KPI 双组长确认读端点：GET /api/v1/kpi/shared",
+      "status": "done"
+    },
+    {
+      "id": "13821527-bfdc-4ca6-9e7f-d5bc1ccfa083",
+      "title": "[W3-Backend-B1] [U1 高] 津贴台账 AllowanceLedgerController 三端点补交付（list/pending-stop/auto-scan）",
+      "status": "done"
+    },
+    {
+      "id": "6c5878ba-39d2-4796-a9f4-6664e4c54d34",
+      "title": "[S2 红基线] pnpm run check:type 21 个错误——HEAD 已 commit 文件基线开工前就红",
+      "status": "done"
+    },
+    {
+      "id": "8548ffe7-acf7-42bd-99b0-302a8338bedb",
+      "title": "[DONE P0 高 ROI] 前端 3 模块路径单复数错误——后端 13 端点已交付零调用（已修复）",
+      "status": "done"
+    },
+    {
+      "id": "ede70a5b-30e2-48cc-8cd5-3b7857aba7cc",
+      "title": "[DONE P0 治理债] BonusPoolService.compute 写审计 + DuplicateKey 改 409",
+      "status": "done"
+    },
+    {
+      "id": "288e0d6b-3ad6-45a1-bac6-6ae904ca0a4c",
+      "title": "[数据治理] 真库 3 名在任超管收敛——owner 裁决保留哪一名",
+      "status": "done"
+    },
+    {
+      "id": "caf88bd5-3aa4-443c-8fe9-fa43d181a8c9",
+      "title": "[CONSISTENCY-13] [汇总] 直接上级 V3.1 §5.2/§5.3 勘误注（RACI A5）",
+      "status": "done"
+    },
+    {
+      "id": "37be0637-10ef-41d4-a5f8-8a20b433660e",
+      "title": "[CONSISTENCY-5] [汇总] 达成率阶梯 V3.1 §4.4 勘误注（v3 6 档含 1.2 超额档）",
+      "status": "done"
+    },
+    {
+      "id": "73a6ac06-7076-4600-bc24-f1ffac8e26c7",
+      "title": "[CONSISTENCY-4] [汇总] S/A/B 系数 V3.1 §4.3 勘误注（E21 固定值）",
+      "status": "done"
+    },
+    {
+      "id": "f29faeef-9b8a-4f35-b375-a7af13c606a1",
+      "title": "[CONSISTENCY-3] [汇总] 绩效系数取数 V3.1 §4.5 勘误注（Q3 改项目维度）",
+      "status": "done"
+    },
+    {
+      "id": "e8b6d8fc-f2c1-4f93-8d4a-2c4d90866c4a",
+      "title": "[CONSISTENCY-2] [汇总] 达成率口径 V3.1 §4.3 勘误注（BR-INC-04b 文字待修订）",
+      "status": "done"
+    },
+    {
+      "id": "66e13663-1b24-461c-a905-ad6f51333cf0",
+      "title": "[CONSISTENCY-1] [汇总] P3-4.x",
+      "status": "done"
+    },
+    {
+      "id": "000802d9-aae4-4605-afde-94bcdd76f610",
+      "title": "[治理卡] mvn test 全量存量失败清零（472 跑 18F+18E，A/B/C/D 四类）",
+      "status": "done"
+    },
+    {
+      "id": "2fbd2613-f0c6-4749-9750-f230e5e71c4b",
+      "title": "R8-P0-10 LegacyImportService 11600 IO 串行 + 异常吞",
+      "status": "done"
+    },
+    {
+      "id": "0b4bc1fc-160a-4fbb-be5d-e4e241b1da23",
+      "title": "R8-P0-9 ProjectCertService.changeStatus 乐观锁缺失",
+      "status": "done"
+    },
+    {
+      "id": "0ef463f1-6f66-4f6c-b3bd-1c92888bb536",
+      "title": "R8-P0-8 ProjectCertItem 软删注解缺失",
+      "status": "done"
+    },
+    {
+      "id": "eebc3941-b591-4b15-afdb-9ad30d745404",
+      "title": "R8-P0-7 ProductService.batchImportOnSale 100 SELECT",
+      "status": "done"
+    },
+    {
+      "id": "0aac25e1-d289-451e-aeb9-eac8b43baabc",
+      "title": "R8-P0-6 ProjectCertService.syncFromProject N+1",
+      "status": "done"
+    },
+    {
+      "id": "db78acb0-a564-40eb-a505-aa880666e72f",
+      "title": "R8-P0-5 LegacyImportService.markPastStages 循环单条 UPDATE",
+      "status": "done"
+    },
+    {
+      "id": "f38081fb-65fe-4e4c-b3c2-475323687c8f",
+      "title": "R8-P0-4 api-decrypt.privateKey 明文",
+      "status": "done"
+    },
+    {
+      "id": "6e7e0430-a639-4842-9512-665d77bf4e1f",
+      "title": "R8-P0-3 JWT secret 默认 26 字母",
+      "status": "done"
+    },
+    {
+      "id": "68644902-6204-4a7a-870d-52471203e4f4",
+      "title": "R8-P0-2 demo.enabled=true 默认阻断全部 IPD 写",
+      "status": "done"
+    },
+    {
+      "id": "ecd18ccf-ebe3-4a81-ab9a-248b967574e1",
+      "title": "R8-P0-1 租户 excludes 漏登 launch_date_change_requests / project_cert_items",
+      "status": "done"
+    },
+    {
+      "id": "73fb9329-3f9f-45f4-adbb-aad5fd723ca7",
+      "title": "[unmanaged 维持 inreview] [AUD-GOV-B-FIX-PACK-3] U2 长期 backlog（49 张 P0-10.* 前端=域合并已落地/cancelled非未做 + 18 张 SEC-LOW/PERF-P1-P2 需SEC评审 + 4 项 QA-04-D2 裁决见docs/ipd-系统说明/验收/）— 2026-09-08 本轮盘点结论 [✅ done 2026-09-26 · owner C8 拍板落地]",
+      "status": "done"
+    },
+    {
+      "id": "ebb646b7-08f0-4a18-a838-bb98c62a140e",
+      "title": "[AUD-GOV-B-FIX-PACK-2] U1 性能/审计补救包（PERF P0-1/2/3/4 + QA-05-P2/P3 + DEF-5/6/9）",
+      "status": "done"
+    },
+    {
+      "id": "2e4dfcfc-728c-4163-a071-a08b3bafbf9a",
+      "title": "[AUD-GOV-B-FIX-PACK-1] U0 部署门禁补救包（AC-INC-16b + AC-GATE-15 + AC-AUD-03 + 4 张部署门禁）",
+      "status": "done"
+    },
+    {
+      "id": "c75c0a13-4312-4c68-8576-a3dc471cace9",
+      "title": "[AUD-GOV-WAVE3] Agent C — Wave3 实施规格包（U0×5/U1×18/U2×19/不动×49）",
+      "status": "done"
+    },
+    {
+      "id": "138c30c7-782f-4702-af85-4142e89f0f4b",
+      "title": "[AUD-GOV-AC-CHECK] Agent B — AC 真值回对矩阵（237 条对账）",
+      "status": "done"
+    },
+    {
+      "id": "84d6af0b-2620-471b-a55b-118ecd77d9ab",
+      "title": "[SEC-NEW-MED-4] [汇总] api-decrypt RSA 512→2048 密钥对轮换",
+      "status": "done"
+    },
+    {
+      "id": "defd696c-8d8e-42a2-be6b-f131ec6ec300",
+      "title": "[SEC-NEW-MED-3] [汇总] application-prod.yml master 凭证 root/root→env 化",
+      "status": "done"
+    },
+    {
+      "id": "24bd02e1-53cd-4b52-87cc-a347769b948d",
+      "title": "[SEC-NEW-MED-2] [U0 部署门禁] application-prod.yml 池=p6spy=true+maxPoolSize=20+connectionTimeout=30s——100 并发雪崩回归",
+      "status": "done"
+    },
+    {
+      "id": "818d8b6e-71eb-4575-af42-d83391cf979c",
+      "title": "[SEC-NEW-MED-1] [汇总] SEC-NEW-MED-1 安全项闭环（Wave3 Batch-2 收口）",
+      "status": "done"
+    },
+    {
+      "id": "985c8a27-38ff-437d-9885-849b48f921ef",
+      "title": "[AUDIT-CHAIN-IMPL-C] [U0 紧急] 审计 hash 链顶层方案 C 实施入口——DDL-1~4 + J-1~7 同 PR 同 milestone",
+      "status": "done"
+    },
+    {
+      "id": "2b9c352a-a74e-4c18-b0b0-6384d5e68479",
+      "title": "[PERF-P0-2] [U1 高] BidInvitationService.expireOverdue N+1 + 全表扫 + L91 三元恒等冗余",
+      "status": "done"
+    },
+    {
+      "id": "ce3d06e9-8745-4a6a-8a33-1c744daeccfb",
+      "title": "[PERF-P0-1] [U1 高] DeletionRequestService.escalateOverdueLeaderReview N+1 写放大 + 缺 (status, leader_due_at) 索引",
+      "status": "done"
+    },
+    {
+      "id": "1df0d44d-ab85-4ddc-9b1b-d13007f7863b",
+      "title": "[SEC-HIGH-3] [汇总] 权限 advice 覆盖防漂移守卫 3 用例",
+      "status": "done"
+    },
+    {
+      "id": "6447e1df-c928-4d20-b20c-19741fbbd95f",
+      "title": "[SEC-HIGH-1] [汇总] BCrypt cost=10 连接水位配套（dev/prod 池 80）",
+      "status": "done"
+    },
+    {
+      "id": "cdb74075-977b-43fc-ac21-33f222126dc5",
+      "title": "[unmanaged 维持 inprogress] [AUD-GOV-LEDGER] [U2 中] 2026-09-05 治理轮总账——19 commit 时间线/DEF 闭环链/QA 卡结果/蜂群互证/未关项 — 2026-09-08 本轮盘点结论已append SSOT镜像末段",
+      "status": "done"
+    },
+    {
+      "id": "6ec6c153-2e8f-4800-bde6-463e6d3e0650",
+      "title": "[AUD-GOV-PERF-AUD] [U1 高] 跨 18 commit 性能审查——15 项 finding（P0×4 / P1×6 / P2×5）",
+      "status": "done"
+    },
+    {
+      "id": "396d17cc-e546-4c25-b591-e24d36bb6bef",
+      "title": "[AUD-GOV-SEC-AUD] [U1 高] 跨 18 commit 安全审查——22 项 finding（HIGH×5 / MED×7 / LOW×6 / INFO×4）",
+      "status": "done"
+    },
+    {
+      "id": "e707a1d2-478b-4b9f-94ee-95d8ecdf1ce1",
+      "title": "[QA-04-D2] [U2 中] DDL 卫生三合一：6 幻影列 / nextcode-unique.sql 必 1061 永不可执行 / 线上库 3 漂移列",
+      "status": "done"
+    },
+    {
+      "id": "112176c3-8160-4807-85d6-6fd09fdccced",
+      "title": "[QA-04-D1] [U1 高] gate_element_results 死表——Gate 要素逐项判定与遗留项跟踪无处落库（26 表映射缺口）",
+      "status": "done"
+    },
+    {
+      "id": "1d88d88c-32dd-401b-bece-6a29e822d38d",
+      "title": "[QA-05-P3] [U1 高] audit_logs 游标分页（50 万行 P95 超 9%）+ BCrypt 容量预算 + slow log 开启",
+      "status": "done"
+    },
+    {
+      "id": "608c79d3-04cb-491f-8539-27b87a88e71d",
+      "title": "[QA-05-P2] [U1 高] 审计 hash 链写串行化放大事务持池时间——每写 ORDER BY seq DESC 全表取 prev_hash",
+      "status": "done"
+    },
+    {
+      "id": "0f328488-3155-466c-a765-22b43251c6a4",
+      "title": "[QA-05-P1] [U0 紧急] dev/ipd-local 未配 Hikari 池参数致并发≥池容量即雪崩——100 并发登录/写全 30s 超时",
+      "status": "done"
+    },
+    {
+      "id": "728b1113-f2ed-439e-bcbc-dd69df63ea8b",
+      "title": "[BLOCKED 等子卡收口] P4-4 [汇总] 报表与导出 — 2026-09-08 2子卡 done=0活跃=2, 0子卡done不翻汇总",
+      "status": "cancelled"
+    },
+    {
+      "id": "eb781e5d-8877-4016-9976-5ee27f4dfda0",
+      "title": "[旧版平行卡，已由新卡 P3-4 承接并 done（2026-09-19 R94.5），关闭] P3-4 [汇总] 奖金池核算 — 2026-09-08 6子卡 done=4活跃=2, 2子卡未done不翻汇总(P3-4.1 inreview+1活跃)",
+      "status": "cancelled"
+    },
+    {
+      "id": "516b5b7a-2695-4acb-9191-59aa1bdf0327",
+      "title": "[旧版平行卡，已由新卡 P3-3 承接并 done（2026-09-19 R94.5），关闭] P3-3 [汇总] 月度津贴台账 — 2026-09-08 4子卡 done=3活跃=1, 1子卡未done不翻汇总",
+      "status": "cancelled"
+    },
+    {
+      "id": "2983e32f-1fe6-41ac-9438-b532e0f059ee",
+      "title": "[旧版平行卡，已由新卡 P3-1 承接并 done（2026-09-19 R94.5），关闭] P3-1 [汇总] KPI 结构 — 2026-09-08 4子卡 done=3活跃=1, 1子卡未done不翻汇总(本卡面注记非status翻卡)",
+      "status": "cancelled"
+    }
+  ],
+  "unmanaged_blocking": [],
+  "has_drift": false
+}

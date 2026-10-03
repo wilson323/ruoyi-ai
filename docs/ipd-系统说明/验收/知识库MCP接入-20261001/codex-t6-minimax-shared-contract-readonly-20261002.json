@@ -1,0 +1,22 @@
+{
+  "status": "BLOCKED_CONTRACT_POLICY",
+  "files": {
+    "ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/integration/MinimaxIntegrationTest.java": "63a82d6ab1c418e31e0f52e64475b1d991664d4928463ad7832437e1bd1ca407",
+    "ruoyi-common/ruoyi-common-chat/src/main/java/org/ruoyi/common/chat/security/ChatModelCredentialPolicy.java": "0ac5ebbbd2d5d46e6d079175aef0b3f8ca194285d980e11146f010dc6f690f19",
+    "ruoyi-common/ruoyi-common-chat/src/main/java/org/ruoyi/common/chat/security/ChatModelSecretReference.java": "d8857d4047329284af086f1f4c2b538a8f3db2ebf80bcc77d4d35e49e335a351"
+  },
+  "failureTests": 8,
+  "failureType": "IllegalArgumentException reference is not allowlisted",
+  "chain": "MinimaxIntegrationTest raw System.getenv API key -> ChatModelVo -> MinimaxServiceImpl -> CredentialPolicy -> SecretReference",
+  "facts": [
+    "test requires MINIMAX_API_KEY and attempts configured API host/model matrix; it is not a real stream assertion",
+    "production shared policy supports DeepSeek/PPIO/Atlas/custom references, not a MiniMax reference",
+    "existing IPD M3 runtime is a separate already-proven authorized gateway path"
+  ],
+  "notPerformed": [
+    "no environment/key output",
+    "no credential allowlist or access policy change",
+    "no deleting/skipping test to hide failure"
+  ],
+  "boundary": "schema/global permissions/keys/policy expansion excluded; no all-chat green claim; continue independent IPD nodes"
+}

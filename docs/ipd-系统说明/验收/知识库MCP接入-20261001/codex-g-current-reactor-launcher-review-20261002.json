@@ -1,0 +1,549 @@
+{
+  "status": "PARTIAL",
+  "observedAt": "2026-10-02T22:22:49.338028+00:00",
+  "scope": "Current reactor selected Jupiter assertions; not full module Maven or loaded runtime acceptance",
+  "launcherDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te",
+  "exitCode": 1,
+  "logSha256": "27bd628cb0a10f28a22f6cde2213f14320ea6eea8163372f4074619ff8d7bf65",
+  "suites": [
+    {
+      "name": "org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalogTest",
+      "found": 3,
+      "started": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.AgentScopeProjectAgentKernelTest",
+      "found": 13,
+      "started": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.OfficialAsyncToolAcceptanceTest",
+      "found": 1,
+      "started": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.OfficialCapabilitiesAcceptanceTest",
+      "found": 2,
+      "started": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInputTest",
+      "found": 9,
+      "started": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiParentTranscriptTest",
+      "found": 3,
+      "started": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentAuthoritativeChildExecutionTest",
+      "found": 1,
+      "started": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentMeteredModelTest",
+      "found": 12,
+      "started": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentNativeProfileTest",
+      "found": 1,
+      "started": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialCollaborationTest",
+      "found": 3,
+      "started": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialHitlTest",
+      "found": 6,
+      "started": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialPermissionsTest",
+      "found": 2,
+      "started": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialSandboxTest",
+      "found": 2,
+      "started": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialToolGovernanceTest",
+      "found": 5,
+      "started": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentRuntimeAccessSinkTest",
+      "found": 3,
+      "started": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.kernel.ProjectAgentTemporaryStateStoreTest",
+      "found": 6,
+      "started": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentAguiCreateIntegrationTest",
+      "found": 6,
+      "started": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseLifecycleTest",
+      "found": 3,
+      "started": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseResumeServiceTest",
+      "found": 13,
+      "started": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentAguiProtocolTest",
+      "found": 13,
+      "started": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentAguiResumeValidationTest",
+      "found": 4,
+      "started": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentCapabilityServiceTest",
+      "found": 5,
+      "started": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentRunHandleTest",
+      "found": 20,
+      "started": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceCreateTest",
+      "found": 12,
+      "started": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceLifecycleTest",
+      "found": 6,
+      "started": 6,
+      "passed": 5,
+      "failed": 1,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    },
+    {
+      "name": "org.ruoyi.ipd.controller.ProjectAgentAguiControllerTest",
+      "found": 6,
+      "started": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0,
+      "containerFailed": 0
+    }
+  ],
+  "totals": {
+    "found": 160,
+    "started": 160,
+    "passed": 159,
+    "failed": 1,
+    "skipped": 0,
+    "aborted": 0,
+    "containerFailed": 0
+  },
+  "classChecks": [
+    {
+      "class": "org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalogTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolCatalogTest.class",
+      "sha256": "0cdaa6245367303d20c619b00f5882773406b9e050e2891f0cfc4cfb66da5c9b",
+      "currentSha256": "0cdaa6245367303d20c619b00f5882773406b9e050e2891f0cfc4cfb66da5c9b",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.AgentScopeProjectAgentKernelTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernelTest.class",
+      "sha256": "0365ea7c323e656435afd748b2e61865973eee7cb97eb2aeaa3a2cbe650956dd",
+      "currentSha256": "0365ea7c323e656435afd748b2e61865973eee7cb97eb2aeaa3a2cbe650956dd",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.OfficialAsyncToolAcceptanceTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/OfficialAsyncToolAcceptanceTest.class",
+      "sha256": "3ca15b2c2d1ba84d5a1330f011a65ad122526bf574be2330d2b4a204d298d456",
+      "currentSha256": "3ca15b2c2d1ba84d5a1330f011a65ad122526bf574be2330d2b4a204d298d456",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.OfficialCapabilitiesAcceptanceTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/OfficialCapabilitiesAcceptanceTest.class",
+      "sha256": "46a0b791d961dd163932adb4101fe98db090c43c9119475b398e2773e12677f1",
+      "currentSha256": "46a0b791d961dd163932adb4101fe98db090c43c9119475b398e2773e12677f1",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInputTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiInputTest.class",
+      "sha256": "5c32d21302f8e410b25d057c08778331e712d7a421afb657a19fc81f8341bb95",
+      "currentSha256": "5c32d21302f8e410b25d057c08778331e712d7a421afb657a19fc81f8341bb95",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentAguiParentTranscriptTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiParentTranscriptTest.class",
+      "sha256": "f51951152dca09b2acd9b8c719cd3429fa25e5b8a0a06edb4e7f62e5a57a1f7e",
+      "currentSha256": "f51951152dca09b2acd9b8c719cd3429fa25e5b8a0a06edb4e7f62e5a57a1f7e",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentAuthoritativeChildExecutionTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentAuthoritativeChildExecutionTest.class",
+      "sha256": "15061033ed1077b310d77c7d889fb49b0067c7bc5d474302a3f5852c7e26cb4b",
+      "currentSha256": "15061033ed1077b310d77c7d889fb49b0067c7bc5d474302a3f5852c7e26cb4b",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentMeteredModelTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.class",
+      "sha256": "765bf214e2826199368c51068ab153550aacb65e127d5109b9877211609d54f9",
+      "currentSha256": "765bf214e2826199368c51068ab153550aacb65e127d5109b9877211609d54f9",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentNativeProfileTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentNativeProfileTest.class",
+      "sha256": "71b8bfb20bcfe684f738e6acb0e48d2eac5b1afa4e6ad9a061b359a95af5e520",
+      "currentSha256": "71b8bfb20bcfe684f738e6acb0e48d2eac5b1afa4e6ad9a061b359a95af5e520",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialCollaborationTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialCollaborationTest.class",
+      "sha256": "f855b6483db936e2a5d4afe9aef6af71a86635a620c29f154670a4c9d165aa69",
+      "currentSha256": "f855b6483db936e2a5d4afe9aef6af71a86635a620c29f154670a4c9d165aa69",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialHitlTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialHitlTest.class",
+      "sha256": "58706f56a31f64299a482b213cb9703642af6f0bb21d1a7f06da1c143c2dabf5",
+      "currentSha256": "58706f56a31f64299a482b213cb9703642af6f0bb21d1a7f06da1c143c2dabf5",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialPermissionsTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialPermissionsTest.class",
+      "sha256": "3859ff426e6f6ed6b8ebe46d2662b2ad95df89ce7cfec1187b4410cca1ba4506",
+      "currentSha256": "3859ff426e6f6ed6b8ebe46d2662b2ad95df89ce7cfec1187b4410cca1ba4506",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialSandboxTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialSandboxTest.class",
+      "sha256": "cfe7174cbd6cfa2f33ce151f9b1c073c0c87e1cc5880ff5da3017ea0b7337b67",
+      "currentSha256": "cfe7174cbd6cfa2f33ce151f9b1c073c0c87e1cc5880ff5da3017ea0b7337b67",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentOfficialToolGovernanceTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernanceTest.class",
+      "sha256": "3d2c865ec22bde8842b68a23f3662ac0c71f939d23bced42daa9b0e9f93d8434",
+      "currentSha256": "3d2c865ec22bde8842b68a23f3662ac0c71f939d23bced42daa9b0e9f93d8434",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentRuntimeAccessSinkTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentRuntimeAccessSinkTest.class",
+      "sha256": "ec220e9a749572b0f5045c34ea0c8a127ff0a5676604d9c35aa09632bcbcfdf1",
+      "currentSha256": "ec220e9a749572b0f5045c34ea0c8a127ff0a5676604d9c35aa09632bcbcfdf1",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.kernel.ProjectAgentTemporaryStateStoreTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStoreTest.class",
+      "sha256": "1fb0e42451a6a1ec62bddc6a83e86e91a481f7cdc3584c3e72d1389923430752",
+      "currentSha256": "1fb0e42451a6a1ec62bddc6a83e86e91a481f7cdc3584c3e72d1389923430752",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentAguiCreateIntegrationTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentAguiCreateIntegrationTest.class",
+      "sha256": "f1613fac9e9104acb1a524fd8738b64317228e2121269b24e1ca99f72f3a29da",
+      "currentSha256": "f1613fac9e9104acb1a524fd8738b64317228e2121269b24e1ca99f72f3a29da",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseLifecycleTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseLifecycleTest.class",
+      "sha256": "39d00bb336d4f383f53002864baca9ef3483273ff439637aadb77140f134b13d",
+      "currentSha256": "39d00bb336d4f383f53002864baca9ef3483273ff439637aadb77140f134b13d",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentAguiPauseResumeServiceTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseResumeServiceTest.class",
+      "sha256": "f473a8ed8fad127c1c01dd692cf95c93240ff1883dd757ab0ce768b71ef00216",
+      "currentSha256": "f473a8ed8fad127c1c01dd692cf95c93240ff1883dd757ab0ce768b71ef00216",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentAguiProtocolTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentAguiProtocolTest.class",
+      "sha256": "e3abc8641d8febd4cd0d10dc4adbe8291f200fca73e5b75d7622be36ce9b154e",
+      "currentSha256": "e3abc8641d8febd4cd0d10dc4adbe8291f200fca73e5b75d7622be36ce9b154e",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentAguiResumeValidationTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentAguiResumeValidationTest.class",
+      "sha256": "874cda08896f15bcc5ea52404baf169dfb981390e84c92382cddfe4074966e21",
+      "currentSha256": "874cda08896f15bcc5ea52404baf169dfb981390e84c92382cddfe4074966e21",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentCapabilityServiceTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityServiceTest.class",
+      "sha256": "15a84b3d6fceb2762fc2aac0d0b9f82ab4c253d7470dc9aecba0a8c259ce709b",
+      "currentSha256": "15a84b3d6fceb2762fc2aac0d0b9f82ab4c253d7470dc9aecba0a8c259ce709b",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentRunHandleTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.class",
+      "sha256": "8fd0732622ca3b260dbe19b7f4eb28321b82168f23abd15121a0f2de568472f3",
+      "currentSha256": "8fd0732622ca3b260dbe19b7f4eb28321b82168f23abd15121a0f2de568472f3",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceCreateTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentRunServiceCreateTest.class",
+      "sha256": "114af446b3cc42867dc4a36e2829264dae68f4d4ca174f9d0eb2a782512b5b48",
+      "currentSha256": "114af446b3cc42867dc4a36e2829264dae68f4d4ca174f9d0eb2a782512b5b48",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceLifecycleTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/agent/service/ProjectAgentRunServiceLifecycleTest.class",
+      "sha256": "1adeafc24a9001e68bf768121eb5af41959f7ad25f215edf1440678a07131f7d",
+      "currentSha256": "1adeafc24a9001e68bf768121eb5af41959f7ad25f215edf1440678a07131f7d",
+      "match": true
+    },
+    {
+      "class": "org.ruoyi.ipd.controller.ProjectAgentAguiControllerTest",
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes/org/ruoyi/ipd/controller/ProjectAgentAguiControllerTest.class",
+      "sha256": "acf6feb2affb88cfa98856ebc788a468477b7af1cf08cbaf9645dca6b1efc2f1",
+      "currentSha256": "acf6feb2affb88cfa98856ebc788a468477b7af1cf08cbaf9645dca6b1efc2f1",
+      "match": true
+    }
+  ],
+  "classpath": {
+    "entries": 464,
+    "directories": [
+      "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-reactor-launcher-kfoum_te",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/test-classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-core/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-doc/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-json/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-redis/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-social/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-ratelimiter/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-satoken/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-mybatis/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-translation/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-oss/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-web/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-log/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-trace/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-excel/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sms/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-tenant/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-security/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-idempotent/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sensitive/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-encrypt/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-websocket/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sse/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-system/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-chat/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-chat/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/classes"
+    ],
+    "reactorModules": [
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-core/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-doc/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-json/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-redis/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-social/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-ratelimiter/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-satoken/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-mybatis/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-translation/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-oss/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-web/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-log/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-trace/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-excel/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sms/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-tenant/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-security/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-idempotent/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sensitive/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-encrypt/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-websocket/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-sse/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-system/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-common/ruoyi-common-chat/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-chat/target/classes",
+      "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/target/classes"
+    ],
+    "oldProjectJars": [],
+    "junit": [
+      "/Users/mac/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.12.2/junit-jupiter-api-5.12.2.jar",
+      "/Users/mac/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.12.2/junit-jupiter-engine-5.12.2.jar",
+      "/Users/mac/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.12.2/junit-jupiter-params-5.12.2.jar",
+      "/Users/mac/.m2/repository/org/junit/platform/junit-platform-engine/1.12.2/junit-platform-engine-1.12.2.jar",
+      "/Users/mac/.m2/repository/org/junit/platform/junit-platform-commons/1.12.2/junit-platform-commons-1.12.2.jar",
+      "/Users/mac/.m2/repository/org/junit/platform/junit-platform-launcher/1.12.2/junit-platform-launcher-1.12.2.jar"
+    ]
+  },
+  "failure": {
+    "test": "ProjectAgentRunServiceLifecycleTest.cancelWithoutLocalHandleStaysRequested",
+    "expected": "CANCEL_REQUESTED",
+    "actual": "CANCELLED",
+    "interpretation": "Old no-owner fixture versus detached cancellation contract requires source/ownership review; do not silently change expectation"
+  },
+  "backgroundWarnings": {
+    "memoryNoActiveSandbox": 4,
+    "sessionMirrorUploadFailures": 5,
+    "memoryUploadFailure": 1,
+    "sandboxStopFailure": 1,
+    "meaning": "Actual async persistence failures; Docker test asserts synchronous write/read/shell/host canary/container cleanup but no successful memory/session mirror assertion. Passing assertions do not close background persistence."
+  },
+  "shutdown": "SDK logs 0 active requests and 0 managed HttpTransports; does not prove all async memory/transcript tasks succeeded",
+  "stalePreparationExcluded": true,
+  "writes": "Evidence only; no source/target/index/runtime mutation or rerun"
+}

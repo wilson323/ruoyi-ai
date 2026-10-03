@@ -1,0 +1,6 @@
+{
+  "path": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-peer-fe-frestart-head-20261002-ie3l0a24/ruoyi-ipd-web",
+  "head": "6fad407d0c8d73111d5b080d8d8b2b48341ef212",
+  "clean": true,
+  "purpose": "read-only current FE HEAD peer for backend normal snapshot hook; no FE WIP"
+}

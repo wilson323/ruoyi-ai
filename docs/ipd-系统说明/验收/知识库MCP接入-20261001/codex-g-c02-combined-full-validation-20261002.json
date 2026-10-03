@@ -1,0 +1,5026 @@
+{
+  "status": "VERIFIED_FULL_MODULE_TEST_SCOPE_ONLY",
+  "observedUtc": "2026-10-02T20:17:16.716164+00:00",
+  "log": "/tmp/ipd-codex-c02-combined-full-20261002.log",
+  "logSha256": "c5ffd9b684416ab1de2d8262fdaa8c7a2b244fd84dc282ba988965583a1dd18f",
+  "buildSuccessTerminalMarker": true,
+  "sourceHashesMatchFreeze": true,
+  "sourceHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "da3cae4f0a8b4d2598426737162abb5e8635db007febd1d7184fdf821929285b",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "04b640aec35eb3d80a07e5b08812d0860df10050f4e02293b0eb1bc4c26641c6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "ab6935fd1cfc7fca2c7373d3e0fb965fa6ab26d1d083a9f09341bdfca181b3a0",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "a41326d1be0068d2734e4d4c71d262f2c9c69b5749ed73bda08960547dab2730"
+  },
+  "runWindowBirthUnix": 1790972122.7594748,
+  "runWindowEndUnix": 1790972175.461669,
+  "xmlAndLogSuiteCount": 451,
+  "sum": {
+    "tests": 3758,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 26
+  },
+  "skippedSuites": [
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRedisOwnershipIntegrationTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      "xmlSha256": "e8ac60dc97c68261e1b49d3f2532f73580332026614c00fc43c1fdef7075c0af",
+      "mtimeUnix": 1790972147.663394
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P131DatabaseIntegrationTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 20
+      },
+      "xmlSha256": "c22df9cfacb526905bbf91756a2cb030b4a8dcf3f648a4b08271320fb16a953f",
+      "mtimeUnix": 1790972158.94114
+    },
+    {
+      "suite": "org.ruoyi.ipd.qa.Qa04MysqlConcurrencyTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 4
+      },
+      "xmlSha256": "1605efeac025388f22f3e84280fbb42c15065ec7ecee83ed88599da801f9dad5",
+      "mtimeUnix": 1790972143.0637288
+    }
+  ],
+  "suites": [
+    {
+      "suite": "org.ruoyi.ipd.service.ProductServiceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "245386f474240116827d7c779b03cbac3aecb9fcba8ae0427667e944842b6d65",
+      "mtimeUnix": 1790972152.2359984
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiCopilotServiceStreamTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ab076d9994126d5bdb5be5b49a90bd4619273c03f4428bbf5c71713b65fe2bd5",
+      "mtimeUnix": 1790972175.026956
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.PersonSyncSecurityScenarioTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "40355ae18db93f7a607e56f6a329abea1c6fbb2fcb0f7ffc6523076a82e4ace3",
+      "mtimeUnix": 1790972153.0379384
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiExecutionEngineTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3e4149f52c04d74c65f73db8807882efffee4aba620ebce42ee9c113fdc3776c",
+      "mtimeUnix": 1790972159.729417
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P256AcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5c5299d76b7d0ec9625f5a67afadccaf107cc3b6123459628800e3ad69238507",
+      "mtimeUnix": 1790972171.8333259
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BonusPoolZkFormulaFullTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d1fe586737f7b9ba752af2ea475fb2567040b3a6c4d2f22ed9b6bbbbb47d1fa5",
+      "mtimeUnix": 1790972172.1281297
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.WorkbenchServiceR27Test",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "046c98513d583f2bedcc72583e8c8f516a4b405423480690cce5c5e8f2fbc589",
+      "mtimeUnix": 1790972150.7544367
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.PersonRehireWecomGroupLimitAcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "091c8846500677b3e01f6cf0dbffc0ace16986fb5d5634f1bda886e3f4fdb8e6",
+      "mtimeUnix": 1790972152.242013
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRedisOwnershipIntegrationTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      "xmlSha256": "e8ac60dc97c68261e1b49d3f2532f73580332026614c00fc43c1fdef7075c0af",
+      "mtimeUnix": 1790972147.663394
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.FrozenProjectAgentSkillsTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f43aa7f253c8ce6dbdaf6a271135d1a307a8ca6c5dd120df97457f35b5eedb45",
+      "mtimeUnix": 1790972148.603437
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdAuthLoginAuditTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "64f926205207d4337a9554a8bf5753ded206cfe8d8afe54a8583f25df3d1a74a",
+      "mtimeUnix": 1790972156.6191247
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.GatePrecheckControllerTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "144ad4a75faae24891d7bcbd0312b4a27ba817a0709bcbeb829bb1fd949e9c0d",
+      "mtimeUnix": 1790972148.943364
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentCapabilityServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7dc728ec777a5ca8fb12e00d7b4a6b49846dfcad5070c9339c48eef54d70663d",
+      "mtimeUnix": 1790972146.7761953
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.KeyGateAggregatorTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c35b8986ba774d6dc13b5d159d297d2dd83f6b85af9cc39c66b193701408d530",
+      "mtimeUnix": 1790972150.5638337
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.GatePrepExecutorTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "89afc5b9de7a65a9cb039213f0d02528030abdc9cce94f30431bb24af0a52338",
+      "mtimeUnix": 1790972151.5643017
+    },
+    {
+      "suite": "org.ruoyi.ipd.dto.DtoWhitelistTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9c20dc99d8566f98ffbaac39a5a7777052ef9eb04e071e0401139d88d844c0e1",
+      "mtimeUnix": 1790972135.5305657
+    },
+    {
+      "suite": "org.ruoyi.ipd.seed.GuideScriptCatalogContractTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "313708277ac17b874602dceb99eb7f46b720a7f4a1bbadccf9378d2749e19a28",
+      "mtimeUnix": 1790972136.2539697
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.DirectExecutorsTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bd8de5cf8194e60afc758a911a61126131dd7698fe581866bcd72010aa35111d",
+      "mtimeUnix": 1790972151.6556554
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.model.AgentRunStatusTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "dbe67cf1ac32a3636d49980f9bba3992140cb58630ce59adfed41ee3a0931b07",
+      "mtimeUnix": 1790972145.6582148
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P262AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f99d2782e67b4a3a3d6e55ea8133102452d8a8c85826a6a8af1fbb0a877208b4",
+      "mtimeUnix": 1790972158.401043
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiDocEmbeddingServiceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "36c6b0b5a4dd66c6a783ed498709bb5bcf1e539e6dc46908d9ebc56e3660ba4f",
+      "mtimeUnix": 1790972159.6797278
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.PermanentDeleteServiceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6501aacfdfec95a53a034f73946a3ed66783257c2009f9a649e4b9bc2059a4a0",
+      "mtimeUnix": 1790972171.4894245
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.Lc04ContributionReconcileServiceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e577d9965aa233d6f4f708b125a645f666d8dc19695dc362506f0b498ed59d0a",
+      "mtimeUnix": 1790972156.7464669
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.store.MybatisArtifactVersionLockTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2aef093e629204f0d783b86d93f6afdaabbc6698d481a347a8e544177331feeb",
+      "mtimeUnix": 1790972148.7420192
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.PortalDemandTraceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6f298d10e5c08273467023ad40253345ec49f0d21f47d8b4796a26db2bcb54f0",
+      "mtimeUnix": 1790972158.9761064
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.NotificationOutboxScannerTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "57bf692512e6e5b9233defd2e1643f3a84319df0e01efd10d42df5d3c52d0927",
+      "mtimeUnix": 1790972152.0882242
+    },
+    {
+      "suite": "org.ruoyi.ipd.advice.IpdNotFoundBaselineParityTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e510ceaf8f0ab0e2fc7ed04e4cf84336acd9292776854563df1fa586d020bf98",
+      "mtimeUnix": 1790972143.1002347
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.DeleteAuditServiceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "53017d726d5a615c32013455f0a957a9a5ce5c4d58a8bc4f06e1a6b920ac8707",
+      "mtimeUnix": 1790972171.4668212
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.DeliverableDownloadEnvelopeTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "354dc4e0bad43a1ca5573d82d9953f31a1154666096d734bf367fcf87a94e0f9",
+      "mtimeUnix": 1790972171.8094866
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.R219DualConfigSourceSyncTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "97e36af9f35717e862adff4f64dd8c31b5a2ccaf5518d6748fc3cbe5310e473d",
+      "mtimeUnix": 1790972151.4156463
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.DemandLinkProjectTriageGuardTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "91a201002598b0d2fefd5d300df7a6fd325bd9da78a7d7e1d263b18933de8a87",
+      "mtimeUnix": 1790972149.976378
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P253AcceptanceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2b66993c80507267c294a823a38c354837ea7cca48a79633bdf764105a9f7775",
+      "mtimeUnix": 1790972159.5371869
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedCollectionServiceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c22a1cbbee7aa85fef2d84beff24eae7af9e1f477152f92664c28888961132ba",
+      "mtimeUnix": 1790972152.9177523
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.R218AcProd09WiringTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a5bb6a140ab01419067a4492a175c5efeca8f8bb9ae369f15bbb465ad15f502b",
+      "mtimeUnix": 1790972152.1649039
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.ContributionConfirmAggregatorTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f435bec2820d49603da17045e2ae4936729f0e97659536e0fe3ad61bc4d29c1e",
+      "mtimeUnix": 1790972150.7112577
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentApplyStatusTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "edf5fe224cfcc121644859f4274490b435b10b6d42214758372d1d295a62461c",
+      "mtimeUnix": 1790972147.8498085
+    },
+    {
+      "suite": "org.ruoyi.ipd.qa.Qa04SoftDeleteFilterTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f7ffa76474a0367d9cf640c0f996c7132a1f9c0a8851786cd10d73d02fd131ab",
+      "mtimeUnix": 1790972143.059055
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SystemConfigServiceCacheTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d6edcfae66fe97cf97d51cfb95ba3ee5fd150d8f2e0eb71a5381382a5586d94a",
+      "mtimeUnix": 1790972174.5534427
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.NotificationGapWiringTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7d92630acc98edbbaf2a5ca8f82b952384c41baf365cc5c53c804644f82b0b7d",
+      "mtimeUnix": 1790972159.2579236
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.BuiltinEmbeddingModelTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "909c99be80a720664aa0132ab9d986f4c9475f7f85eb99f53924aafde8544464",
+      "mtimeUnix": 1790972165.2180984
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiGatewayStreamingTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d5862afd7440e061b1f07745c8bc57e3218329cd8bb24c51954e9aa79050110a",
+      "mtimeUnix": 1790972165.3645418
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidResponseServiceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7442ca47fb445e0d420513c1a69586ed585877cc7010402513a142882210f256",
+      "mtimeUnix": 1790972152.4058104
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.R212AiAllowedHostsGateTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "00fff5a4b102460b40bee4ae8c475b5d7b30227946c828a916bd2c5a3a5223fd",
+      "mtimeUnix": 1790972152.4100573
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ContributionServiceTest",
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f8933a861bdbbb7d4958a7eb2cea5b33cef282b3025935b0b5ae38cc46c9c2f0",
+      "mtimeUnix": 1790972173.8374612
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiChatClientSsrfTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "daa906bdf318578f773bb9a89b5f68b8a39c64ef0cfc93b55a79b333fa0af5cf",
+      "mtimeUnix": 1790972165.2744715
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P162AcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9091db631ca912e602fc2fc29b217b0aec779a13a583a196769e09dd31e0f1bf",
+      "mtimeUnix": 1790972173.438498
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SubStageGuideOrchestratorTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c302289530bdcb08b5da224cc34959f366a56cb0c7c0aa056c7182c97a8df87c",
+      "mtimeUnix": 1790972158.5102136
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.WorkbenchControllerSummaryTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8fcde565f23b98249fc75e588b452118893dc2848fc22de6b4411aedda7af8f1",
+      "mtimeUnix": 1790972149.612199
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdAuthChangePasswordExceptionTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "aea80b962710c1e24e1beb76f948e34234885fe2b122b4cf7ce2f01ab3c085ae",
+      "mtimeUnix": 1790972158.3564136
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P383AcceptanceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "fc7431a4b0e91143a9d157cd2e196e42bd9c9481b8949de9dab6cd7e718ded13",
+      "mtimeUnix": 1790972171.8385644
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunGateTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "30436cfbf8c478a7b61de73422c916d861f693ef8c036e920e089534beb5a9df",
+      "mtimeUnix": 1790972147.4111006
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P0EscalationScanSchedulerTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "dc862753dfc524dcd78da8fa793bad1af846b4d89e5a1a25632c7f454775eea5",
+      "mtimeUnix": 1790972173.1567807
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.Sec02AuditCatalogAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ebd97883b5736113b3ab85ccd75c691887fc80e2497a4caf9fc5998a79b4645f",
+      "mtimeUnix": 1790972137.2668364
+    },
+    {
+      "suite": "org.ruoyi.ipd.qa.AcceptanceMatrixValidationTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d7b7b28c61e951540a90740bffdb468552f3c8d454343e82fae296185bcadaae",
+      "mtimeUnix": 1790972143.0794609
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P062AcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3fce84686469ce6118ad7e9ac71773fe8b0822e1980a5b3acf742b8c1fa14229",
+      "mtimeUnix": 1790972156.6558807
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.Lc04ContributionReconcileExecutorTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9c2f51387af63ad81c6500dc24fac704f08c6b21ce56cd63b847ee4d92f4d09a",
+      "mtimeUnix": 1790972151.6230428
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverGuardSupportContractTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "57a39995bb98702b0c6c766c09053dd048cca8199399e7c0f6a717e2c653f2bb",
+      "mtimeUnix": 1790972151.9088504
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P431AcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "792829b7dcb5da945f5f83c4dd4dab9c0eacb80f798995c76c9fbc82d3904060",
+      "mtimeUnix": 1790972151.844875
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AutoComputePersonalCoefficientAcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6881b5412e1ba0ebb545931d0449a242bf96b2cf4756548972aa277555e0d90f",
+      "mtimeUnix": 1790972173.8864756
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.PublicPortalSupplementWithdrawTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b54c50ad73cb018d4aca878740949bcc55b09df3cb38389aba9c210ccda4a965",
+      "mtimeUnix": 1790972149.5322745
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P034AcceptanceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "973c7f984f1ebb66c3eed52cdebc494e8d3934faf11d06268ed87365d1a836f6",
+      "mtimeUnix": 1790972158.7046473
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.NotificationDispatcherTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f20e172674d0dc181311dd4996af1e22930adacad6b602ebb51e0439dc0468dc",
+      "mtimeUnix": 1790972152.7769701
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.KpiFunctionalMetricsPermissionTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "43a36642d39daa8f114c2309d4080245e60b658cd598a27a5924f2d8954a47bf",
+      "mtimeUnix": 1790972142.7221894
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GatePrecheckServiceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "521180c2a929d3628f2ee4684d9941577c00dd94abaa5855c30599d425af60ca",
+      "mtimeUnix": 1790972158.8829985
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.SubStageAdvanceEndpointTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0fa3442e2d40bdcd85ee806fbba601869946da7b6b29d545733e78adbf390f41",
+      "mtimeUnix": 1790972150.0296314
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.PersonActiveEndpointContractTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "318fb5c2ebafadde702e43bc270437cc897ddd69c4f462dde1196a8135b09856",
+      "mtimeUnix": 1790972149.0886908
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P231AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bbd051f02ca7e53b93c67816ac8c70191eb16f36e9af499ec2239ea2e925acbf",
+      "mtimeUnix": 1790972158.5209134
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateEngineTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f367849da8987a4f33ee09813440e3a0e606348abe33b1fd5c268ef8b6e9e30d",
+      "mtimeUnix": 1790972152.8366597
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.Lc03SettlementReconcileExecutorTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f3e82c586e08bab8f7f6c59762ba51e1d1043e496d4deab76c84ad2bd1db7140",
+      "mtimeUnix": 1790972151.5990736
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProductLineSpaceServiceTest",
+      "counts": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c23110a99cafc9d60e64042ad6db3902327b1d4a31c556ada5d2242b7d17c233",
+      "mtimeUnix": 1790972173.0879424
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P1101AcceptanceTest",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "58083028917e986bec7561cbfd5e8f7617956824d4480b10b9dc0663ccedbdd4",
+      "mtimeUnix": 1790972173.957984
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiModelConfigServiceProviderTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2b2c89798f6ad02147bedd6dc9c84b20ea32326b5b7e6fd309f25717679db3a8",
+      "mtimeUnix": 1790972171.275534
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdIdorGuardTest",
+      "counts": {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f72e3b700bbae73803805b38ada68190bc31992bda1adb68c8af2070538c5da5",
+      "mtimeUnix": 1790972138.4100773
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiGenerationRetryTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "da98143605b280a5c0ba1c974fe0fcabd50351f37632bab046a9bfa43c092db4",
+      "mtimeUnix": 1790972151.7441025
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.NegativeFeedbackServiceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "808894caad11870b90009330d3e084ddb53917a8d045b0dda78f55d0109fdb22",
+      "mtimeUnix": 1790972152.0442786
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.WorkbenchServiceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8d38cb4312b6c31aebab55b2a88f7af5215615e2103f5135b080782abaaf86ec",
+      "mtimeUnix": 1790972157.3606796
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.GateMaterialControllerSecurityTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1e83d2d673c466de08fee5e148f6d8bb0dd31ad2bcf0f2030e08c58e5ded86bb",
+      "mtimeUnix": 1790972149.0390456
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiExecSchedulerWiringTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f454d6a4d229e23a0e9c5cff5ab09e63470f64f9cca0ba3c9f0fd7d0971395bc",
+      "mtimeUnix": 1790972151.2941663
+    },
+    {
+      "suite": "org.ruoyi.ipd.advice.Contract01MethodNotAllowedEnvelopeTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6b9660d3bf0046f78c3171f500d003696ec13f921b0cd553700b19717979556a",
+      "mtimeUnix": 1790972144.3813183
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.LaunchDateInitialRecordAcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d0fdae769b08a3ae45c2280bb044ad76b099eff6722fd2046797b4676e95731f",
+      "mtimeUnix": 1790972172.5310793
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.KpiRulesControllerTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b989dc53c4ea48b36a5ec3d9d371ff9633b1bacbdb53a304b6d54aebab48096b",
+      "mtimeUnix": 1790972150.1507504
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiModelConfigKernelBridgeTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5bcbd295ac3735f00fff45ae1474350f2c454b09d259243a60518e590180c07d",
+      "mtimeUnix": 1790972165.2012763
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementAuditJsonTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "28c8e5ea8ef7ab0973763a8f3ee520878e10051d2bf54b6184977e9a48ccd6a7",
+      "mtimeUnix": 1790972158.4136298
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P152AcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f66b859ed63619ec35a4fbbfbe05485ef9b08af6ece07f6e4f9e09930064f26b",
+      "mtimeUnix": 1790972152.2078152
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiRawRecordServiceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "85174e6b93c2acfec71c15fb0188a943618106956db989715059ea803f9c0aa7",
+      "mtimeUnix": 1790972174.012868
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateReviewObserverAcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7002c03aec6dcdf8382a3e2c41fc692e4db6c02ce8b45b39b5f3325ebb93fe87",
+      "mtimeUnix": 1790972159.5249317
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P331AcceptanceTest",
+      "counts": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "43883a7d1f4fbf7d29bf449454514d7b8d006bf4d6bb25349065bf0cf6974bb9",
+      "mtimeUnix": 1790972173.9073522
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P182AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "878fc1bcf5798273f899b8c9d3e6cd0441591db624ce796c91b8c05a924eea57",
+      "mtimeUnix": 1790972159.51337
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P252AcceptanceTest",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f0becfc1005d2ae6dadfdf39672aa920de5a85ad7e52466b96dad72c9d172595",
+      "mtimeUnix": 1790972159.7373855
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiCardBlindSignContractTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "777608d4c2d546f35d6ed2c6dd2bbbb9201e90fd6781980da2a20cbe1878e3f6",
+      "mtimeUnix": 1790972158.935374
+    },
+    {
+      "suite": "org.ruoyi.ipd.feedback.NegativeFeedbackServiceR27Test",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "861d428d8b82c93c2767d8fbaaac6b617e46ee9c6f3c3220085050fa3ee150ba",
+      "mtimeUnix": 1790972148.915892
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BonusPoolDistributionValidationAcceptanceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "111fd48e77cdf4485d1da88ddb0d6e499fdb12bc5b9d541960e75224bdb0f954",
+      "mtimeUnix": 1790972173.9492235
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.DemandTriageRunTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a25f67cf66305be5cabe7e98c67b949101b476a7d69d2cc8bdf22aab32e07dd3",
+      "mtimeUnix": 1790972147.71478
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.AllowanceLedgerControllerTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "63a2790d8a2d7755437ade9b90a198bb61a28cfb9899eae9d7205338ee529cc0",
+      "mtimeUnix": 1790972150.2333317
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProjectStagesEndpointContractTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "40a82731a2f764dc5e622b13e0e7da0de4355a3748bc203e465e6294301931dd",
+      "mtimeUnix": 1790972149.8738961
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.config.ProjectAgentShutdownConfigurationTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8c0989a89ba60402ef4ce2260f003a9be0d3710574639c2a4faca6eff2d53cc9",
+      "mtimeUnix": 1790972144.5657172
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P382AcceptanceTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9b98f4b6554dbfff448ecb4e85e3ab6e46c103f8440e2c61f750025e175ebe62",
+      "mtimeUnix": 1790972172.0227785
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentInterruptedRunCloserTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e836b5c5ce073b01697bbdd3a2cd3133d7022151018c54d67aa758495d08d282",
+      "mtimeUnix": 1790972147.299614
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P131AcceptanceTest",
+      "counts": {
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "08e192cb6d1ee4e386717bc0de84e800f6bb46b731c748efb0972e109e3b6cf7",
+      "mtimeUnix": 1790972172.5460305
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidResponsePaginationTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "90dfffef5e4eb6e09d8027d2200960c37ab5e63234864d3d47bbfa18c53c5b36",
+      "mtimeUnix": 1790972155.2116728
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.CertTemplateServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b52aaead11de3debd8155e01d155c02d978730aa983e1580f798b12ffaf1a8ee",
+      "mtimeUnix": 1790972174.7370763
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceLifecycleTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b9d88369da2b97a0636532fd710d0040815421ba6060fdc0d2104f7440e7cbd1",
+      "mtimeUnix": 1790972147.6586964
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiFunctionalMetricsServiceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "afd7e48614455c28b4d842991c158e9c25dbbe4d448536e5e9e43aad9de0f740",
+      "mtimeUnix": 1790972155.5981295
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P063AcceptanceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4acd2707086b19c5d49b80282e6c1c3b5d554b0c1b6a1b8f2409247029d2ea6c",
+      "mtimeUnix": 1790972155.2027862
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ReceiptVoucherUploadServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "edd58781fa5a158e48474ab1d2bbdac3e0231c1c2e7016b2fbcacc36cede1d86",
+      "mtimeUnix": 1790972156.8258457
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditChainHeadAppendContractTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4336537f1eec3951104807fde4131879cfa06101d1ae7571deb8d651d9d79548",
+      "mtimeUnix": 1790972159.8149073
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.ProviderRegistryTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8f895746ab62c0132b9b29e8a495484fbfeec0da458054a1861ed55fa920f6d3",
+      "mtimeUnix": 1790972166.155842
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GuestDemandTriageAttachTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "971bc951d55f6d35cdb90692c2786e6f9164ab433a0199d361b1e6d0f5a84b38",
+      "mtimeUnix": 1790972158.4649882
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.LegacyImportBatchRecordTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a05bca0d448ab568807a6eb57ade2a038b14978ac0e3efbe849fa8174c7da0ed",
+      "mtimeUnix": 1790972157.0811718
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunMcpSelectionTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7be3da352311c5e1b78cb1be2050304803a895a509a0eaacbf1e92d28dde4028",
+      "mtimeUnix": 1790972146.6565309
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdKnowledgeAccessGateTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bfeec923b9f1df89f53a8c94acd2a90685594a0088d1e47383878a15941123ea",
+      "mtimeUnix": 1790972142.7059364
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentTemporaryStateStoreTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "21921a13de69e16c9ff8775d736dfb4ab596742bef62f7e1be405b9d7a861b9d",
+      "mtimeUnix": 1790972147.9286342
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentOwnershipMiddlewareTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e4e3a03cdfad6ee3eb5fd8bfe792367c967349fd271061cb0e6824f23033538f",
+      "mtimeUnix": 1790972148.0242553
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverAcceptGuardTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "39fc69224881ebd71897af4861ab1adbfe2914ba4ceea61639a9debb8c364374",
+      "mtimeUnix": 1790972159.5006156
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P254AcceptanceTest",
+      "counts": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "634141a1ae5c81bf3c24a437b3e59d42abfdc6cf4435f740d06f49be218061c4",
+      "mtimeUnix": 1790972171.4479127
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectServiceConcurrencyTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "839fd5c15cb474e5433ba16583637ddc18473fcbc4620fcf834037d41ff596e6",
+      "mtimeUnix": 1790972174.804589
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.NodeAgentResolverTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "43b8e128bbcf63fda60d9bd4bc3020d47f5804eb04a85ff4c120f7a9d9f554e9",
+      "mtimeUnix": 1790972165.2380521
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P032HttpAcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5bc7a2621e6685fe2b7b16e18f9ac63e4050ec497c0324cad46c92415627ed49",
+      "mtimeUnix": 1790972151.238748
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.SubStageControllerTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "923221a9696ac05d5dc394af0d5d63d656a75528ee617f8456eb983c30cbc25d",
+      "mtimeUnix": 1790972149.0140862
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ComplianceServiceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "26c0c289deed5586ec05f1a3ecc7ab0344cb7d186e2953c56c5535392b4ae94c",
+      "mtimeUnix": 1790972171.499045
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P232AcceptanceTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "94b2283229ba5139046475243545941cec61cdc53fef16bbb4a0f7d319705b0f",
+      "mtimeUnix": 1790972158.4762616
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedCollectionDeadlineConfigAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0306f1bc164fd4a926bbcee2bf0fe5a45d567899e2c382621e8aa8aa59bbd2f0",
+      "mtimeUnix": 1790972173.893423
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P1102AcceptanceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "305ee94e57570272016bc256324ec6175a5cb437b626977916d015012b9bcd24",
+      "mtimeUnix": 1790972174.7415683
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.AiAgentTaskControllerQueryTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "aa96b06009c11d2601d46b790d4264099539236a03ac573d3e9b2dee0d45c487",
+      "mtimeUnix": 1790972149.3505046
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.LandedScenarioServiceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d6903cea57e214d8fddef1c8e861307a2b824eb10c330dbad78ddf15c4709b62",
+      "mtimeUnix": 1790972172.2721753
+    },
+    {
+      "suite": "org.ruoyi.ipd.common.IpdBusinessExceptionTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "85770cadf2f20642c164e7ebd57ff754fd9d814af9893052f8267ae03ba28f50",
+      "mtimeUnix": 1790972150.338664
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentModelAssemblerParametersTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c293e5a043e915bcc7d66faf4d242261d05fa2be40bc6436315b524118cab595",
+      "mtimeUnix": 1790972148.7112072
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdAuthSessionStpTypeTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8f6a71943fa96908d23bdc2e9917494a8cce35d6d2712561fc206c08cc508cd7",
+      "mtimeUnix": 1790972142.7301056
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BusinessConfigServiceTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d9d57b03fec9bc9ea617b99afdc9915c10fa5467176458a21d3ec88ec3784b31",
+      "mtimeUnix": 1790972155.5400877
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectStartServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2a6c2ad87f7b35f666dead895ad55e26e2a9e0eb816243a8baca9f2c08f085a0",
+      "mtimeUnix": 1790972155.2384236
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunServiceCreateTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d9acbdae1fc47093838cf2fd405962f91e452f19874ddfdb4f01da3b8a510897",
+      "mtimeUnix": 1790972147.2904997
+    },
+    {
+      "suite": "org.ruoyi.ipd.util.WorkdaysTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9512561a3e3bd38149cea3fca1dc1bea14c71d31d3868f81f92b747f9a9417a8",
+      "mtimeUnix": 1790972136.333676
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidSecurityRound2Test",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8deded769268fe749a387de0ecdec66ff5dc375c676e4a5b1a36b6f59db59297",
+      "mtimeUnix": 1790972173.945026
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P332AcceptanceTest",
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "344261c63178b11a1d99a8b64d139f9f9b001d4a6675c35ff2094c8a61d2d946",
+      "mtimeUnix": 1790972174.7697568
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentOwnedCreationTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4cbb430ff465cf3c285428f9262eb24e8cff6cdac2eabf997bc4f7bfb60c528c",
+      "mtimeUnix": 1790972147.494209
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverRollbackAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c9ed50e4e0473a397d821c92c64178d6442c8ae6b809888081b963191fb8d847",
+      "mtimeUnix": 1790972158.5146503
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiModelConfigSecurityRound3Test",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "167293add7af61f0faed29c9d3fa7e0127b16252716f20d45269dcd5e2fc4109",
+      "mtimeUnix": 1790972173.8792589
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.CoefficientChangeControllerListTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d67ae89eb24a39b43f44faf96bed7efacec7c2932aa69f8fdf08b9d38f7b8d13",
+      "mtimeUnix": 1790972149.8892226
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.NegativeFeedbackSecurityRound3Test",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "07494fbafe3bf342d40c220a925a8df587e035f8b4a8aa7f36a31898237055ef",
+      "mtimeUnix": 1790972173.8450503
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRedissonOwnershipTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f40bbad1931cc3d1285e7bce9872f9f3af0676e5b50b4e3af4e301c6218fc378",
+      "mtimeUnix": 1790972147.1188471
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.AgentEvidenceExecutorTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4d564915db81fc0a80a6f803f2d3f1f74834c5c5298034a1d66f3575e2151d7b",
+      "mtimeUnix": 1790972151.5254207
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.StageSignAggregatorTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e8a57b40acb9552ce483a292ba4113f6e178a32cebaa5614da7a589a065313ba",
+      "mtimeUnix": 1790972150.764073
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentIntentTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ef54984cb09140e61554dab895fd94c7f17594e46e4724e308143ed5cfec3711",
+      "mtimeUnix": 1790972147.8581915
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P251AcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4f8624c6d9e53f9f37a165c1b3bdc61c84478c01a85b06172cdc487d188cf99a",
+      "mtimeUnix": 1790972158.9196079
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P281AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "330754651bbeddad295cd9248e728d524bd49c026bd90635a08330f8c9e24877",
+      "mtimeUnix": 1790972152.898464
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProductLineMcpQueryTest",
+      "counts": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2c9bb9314d449f57987a9615f5d332651fef083079ddea5eb7ac4b39ced245e1",
+      "mtimeUnix": 1790972148.1487586
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P032AcceptanceTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7da4a861b6b8bdf92f5c202e3106243ef05980744298fca973f3ea0c880acf31",
+      "mtimeUnix": 1790972155.197665
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ScanOverdueTenantGuardAcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6c10779193c39259448754c87cee667d8c197f0b1c9fd5280b842a807a1123f6",
+      "mtimeUnix": 1790972172.1068647
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.HandoverAggregatorTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "64115b7aeab04acdc4cfad95b5ec5bc955bb1f41401cad161d2ed45726bf57a5",
+      "mtimeUnix": 1790972150.792113
+    },
+    {
+      "suite": "org.ruoyi.ipd.seed.ActionCatalogTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bf407929b8c92831f5e87a54274713dfb9a40b4d9d0b2b4c842381cd05ec6f86",
+      "mtimeUnix": 1790972136.2965896
+    },
+    {
+      "suite": "org.ruoyi.ipd.qa.Qa04EntityContractTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a9e99f2a25fd026670bf759f7a73afd2ab2339a2e3e97bef98bb8cc3751f6b45",
+      "mtimeUnix": 1790972143.0862546
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.DeleteAuditConcurrencyTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "804757823521587cfe6ec00c940e223bdb2a3353a0fa100e66cb2d11f66d44dc",
+      "mtimeUnix": 1790972158.5257778
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.PostLaunchReviewAccessTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b41944da9c0a815806ab23fb997c470c8385213220c3ee53513f22e8b7f5c554",
+      "mtimeUnix": 1790972150.1215956
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P054AcceptanceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ca1c7787cf40dee356c747662a8c65948f6ff60b07813e0091ee0b53f090edde",
+      "mtimeUnix": 1790972159.490633
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.LaunchDateChangeControllerListTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bacde433d7305f9ea9489d74c06939dce1f7f864fe0a6ade2d7375f75460634a",
+      "mtimeUnix": 1790972149.6984537
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementRestoreTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b2b955cdc1a9d32876af72e2d913418c5c88bce3f54e78ae656c36b4d0b7bbab",
+      "mtimeUnix": 1790972152.037638
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P381AcceptanceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c656d8a209c50397afce5224c8254eaa9e7ce998df4cc4bc122c8dbc5aff4e39",
+      "mtimeUnix": 1790972171.4576719
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementResultTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9881a3aba634587fb8620bc8120bbb252c365ac02b78bed47f5ac88099955404",
+      "mtimeUnix": 1790972171.8559082
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P132AcceptanceTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "fd92690c5ff43d1ae7a8105d3dbacc6154765da82f3752086672e162ead2940a",
+      "mtimeUnix": 1790972172.692091
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateSignScanSchedulerTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "459ee7d1b4667a7c0c421aaf42321de1d817c67de7c64dd15d6d01e428c4be65",
+      "mtimeUnix": 1790972158.4907107
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.GenerateExecutorTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "766b26ce2b936e97c239050d924570679481e02e002d090c1554233ab7d02aaf",
+      "mtimeUnix": 1790972151.5193527
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.AiDocumentControllerListByProjectTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6fd1ad351101bfc3c6b8e44e25033e21c9af6176c1dee36c5f494dd32aab6b6e",
+      "mtimeUnix": 1790972150.1278765
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.StageActionControllerInstantiateGuardTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "310260734598fb244979f33d89d61bca276cf84e5aefdd50e00db1dec6db3eee",
+      "mtimeUnix": 1790972149.8823378
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiModelEndpointValidatorTest",
+      "counts": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b56e25b9142eb80a0ba4355985e5f74b4c866f540e525b5d1f2357cce5925669",
+      "mtimeUnix": 1790972172.184769
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedConfirmConcurrencyTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0a9c4aa692463d780385833cbb1134bf83fc91c18a6e74ce54817d3bafc174ff",
+      "mtimeUnix": 1790972158.4237247
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ContributionVersionArchiveTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2e983a74f4792e76bc15ff12247fdc5c88abd6c054d5618528b3078891fb51b4",
+      "mtimeUnix": 1790972152.468951
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.SharedKpiControllerTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8298fe000f98d311493cdb9b3e15b06662d993cc3cffc401fb49f87032ff81e5",
+      "mtimeUnix": 1790972149.9719923
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdCopilotAccessTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b3c7233ffc5f5718a0792ba80c96bf0ef7540c54727f68082d1b6f40bc98ac3b",
+      "mtimeUnix": 1790972159.6993916
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P361AcceptanceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f4fda8342471afed0d86986baf5d3fd1d3ff1c07af9196ee940514715de60efb",
+      "mtimeUnix": 1790972173.9697082
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.DemandCatalogBinderTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "08df4a9373bf126f57bd931382e96050c3fef0d58943e79b4e31c2a5be214468",
+      "mtimeUnix": 1790972146.2695374
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProductSellableCountryQueryTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "255b1d5eb91a96587c3a8aa8084fdbbbaf8d3b31368bbbabfb10ab4ed56c1d4b",
+      "mtimeUnix": 1790972152.2313097
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SubStageGateStrictTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "dc1caec07c5145a1de1f36180ce19111bd3a60ff9fbbe86ba922950534e04aa5",
+      "mtimeUnix": 1790972155.2520936
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.KpiSharedReconcileExecutorTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7cb9a608f60e73ec6849461e0d39f4e4b296b55f1d5183d1d0beff8d1ad5f39c",
+      "mtimeUnix": 1790972151.4934585
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.SecApi01OperatorIdContractTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "394749531586e528a77da215a06ccd98fea3c97d2a3dbc27b2fc2613305f72c8",
+      "mtimeUnix": 1790972149.3547626
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiGatewayCancellationTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "75680d75ed74db606641ec5354eaac7466fd5b4305298141b2da9e04b1d02202",
+      "mtimeUnix": 1790972166.149579
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.WorkbenchTasksSliceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5c06520ecc48cf2f2d7b816e417252a7f1dae90d3fd8faa8e3e87c8df9aa7dbb",
+      "mtimeUnix": 1790972152.272521
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentCompletionGateTest",
+      "counts": {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "162323e3363511e8e26a14595e3d0c5eeb2b743390a4293e4347e18e438dd8df",
+      "mtimeUnix": 1790972147.4671915
+    },
+    {
+      "suite": "org.ruoyi.ipd.copilotkit.SubStageGuideToolTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ff75c93dc8010abf50b4634b9c0ed3216c2c5394b3414f47810fc520e846bb8f",
+      "mtimeUnix": 1790972142.923028
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidInvitationServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2f4ba2218ac8e93a86f421de86279cf93165337b70a345f5f43c2c3df1f20688",
+      "mtimeUnix": 1790972173.104448
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiSuggestionCardR2R3Test",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5dcf9adb094839a900013cbf88a2ef8327222ceea0bc94c9219317a26e7afff1",
+      "mtimeUnix": 1790972173.865932
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunFinishTransactionTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ef6af071538993e88344746831ba5d7beaed62e64490357ad766a0d89e3fd1e2",
+      "mtimeUnix": 1790972147.6070442
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.aiexec.ExecutorCoverageSentinelTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6b6c00542c86bc9b72796fc657c61e594534d51b05093c62ed3ae7013a747558",
+      "mtimeUnix": 1790972151.4442017
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.CopilotRunRegistryServiceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6ebfb5aa4994d67e8d8f82823e9fad0dffb3af2ed8b0ca603514f8bfb7551bf0",
+      "mtimeUnix": 1790972172.162943
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P261AcceptanceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "56798986ae9e4e8fcc89f21430574ff01c3b9c5846c0def11fc828882765147a",
+      "mtimeUnix": 1790972158.672635
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SopTemplateServiceTest",
+      "counts": {
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2dd3c58a6605242325433f4862f0ca0d7eff154a57a6385d8d2705635aa93d9d",
+      "mtimeUnix": 1790972151.724692
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BonusPoolPaginationContractTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2a4a2c222424ad1c1640042bf6055c377c9432808a2af87c2068f1b14462ad50",
+      "mtimeUnix": 1790972174.7748806
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.CorrectionLogServiceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8bf7b20a4124911bb9d3b6a079a47f57bc7fcb76e8ace9cb76e40f8edd35a1f8",
+      "mtimeUnix": 1790972152.340631
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.CoefficientChangeServiceApprovalGuardContractTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2181fbc2ffe99a86e483c009fdbca1fb27d75074d1d68a1d4e097c67e74689c8",
+      "mtimeUnix": 1790972151.760597
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedReconcileServiceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "87dfa52a7903ce836f124d3f0fca20e5f067d36f4b2c4d8f0fca47c1ec44514f",
+      "mtimeUnix": 1790972175.032985
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementAuditBindingTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "35c7a726ddab9a4429744ff77034a81b1837d605e6ef07eb835861a387917991",
+      "mtimeUnix": 1790972158.4178731
+    },
+    {
+      "suite": "org.ruoyi.ipd.seed.ActionExecModeMatrixSentinelTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "20af36e94b56a7adef8ec73c597dd92548c4cafdd3f417c67a46c03a0e6a3a66",
+      "mtimeUnix": 1790972136.307236
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P333AcceptanceTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "70cba5fc1e240ee0cac83fc68f72c1f534c558409b23b77af61cb7d85586aaee",
+      "mtimeUnix": 1790972174.5635784
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.PromptLenBucketTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "da110becb1f2903dcd1097c9402c6f6e479c5a4688e9205e79e5a80073eb538b",
+      "mtimeUnix": 1790972160.1823845
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P064AcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b42f38a7826594e9edb9e9e58dba3b1829701165ee2e103bd866bda0fbcda8ba",
+      "mtimeUnix": 1790972158.6546862
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P0EscalationServiceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c0bb7e406d55e299672df1319147305e3d1c38667922a27d3279777c979847f2",
+      "mtimeUnix": 1790972172.6514068
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P033AcceptanceTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1855cd0b01843f2514a6327aeb12d4282e9895db618a06cec4bc6f7419695174",
+      "mtimeUnix": 1790972155.6936874
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdPermissionPasswordScopeTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "15b8bd78c501446360b5d32091200f14d2870667394664e60c360099a6bc449f",
+      "mtimeUnix": 1790972142.744101
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SubStageGateServiceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7db8fd3a25f6360d9a0a7937371bc01d2ea0ea7698676cdad5f3b8a3e190a1d6",
+      "mtimeUnix": 1790972155.1920104
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.CopilotKitRuntimeControllerTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "80a649a674c65936264e6b96626977a669cec9804029ff19fe293d834cd86dd3",
+      "mtimeUnix": 1790972149.2601912
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedDeadlineSchedulerTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3541874ce8d361775ecaa904ea44d604bdb7a483690c37c129ba77249c376cc4",
+      "mtimeUnix": 1790972158.6775656
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P161AcceptanceTest",
+      "counts": {
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "18324f242ac0dad9c5ba46d45672b74e451411ccb77eda586f93e1d4a18b6e0e",
+      "mtimeUnix": 1790972172.423895
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.KeyGateArbitrationAggregatorTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bfdf6f04e091f9d0ceacda6ab4f630baa766057e5148fa7251806fab6503556d",
+      "mtimeUnix": 1790972150.7490652
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunPlannerActionSkillTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c5858d75f458edf8e8334ec014db566fd69ed18112c6e7ca7b508d8566e88271",
+      "mtimeUnix": 1790972146.136349
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidInvitationSelectConfirmTokenAcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8cfe842c84a239c11179becac3fe12fdc0b95eddf4ebc686d5d3f1d1776e8382",
+      "mtimeUnix": 1790972151.9002907
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.IpdWebSecurityConfigTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1260011285711dc2eea5a3a7649516eaf1b8fe426e7b75ce586e83dc1510c5a8",
+      "mtimeUnix": 1790972137.1092026
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdSubStageServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e6cf7780cab2e304dfede8525002346c29dcafd903fc0d5c4707ba38ffe5d862",
+      "mtimeUnix": 1790972159.8091738
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditLogCursorPagingTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d15c06ac3e1c7983e2d9698f44fb3166f28ae96b3467acd69b337abc49f970b6",
+      "mtimeUnix": 1790972151.331736
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.KpiFillAggregatorTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3e7f8a97ae50147531f9f7107ffb65a64744585d5e36de97bc4e50b2d5bbb3c3",
+      "mtimeUnix": 1790972150.674812
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StageActionServiceTest",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "29d7b634b1ef280480a00ef668bcfe8531e9c23a337520e8e18a4ebc9fd2c61c",
+      "mtimeUnix": 1790972158.3841467
+    },
+    {
+      "suite": "org.ruoyi.ipd.hr.HrSyncRulesTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "33106db96fed96b5d775e8df07e14ee5c8aece79bb10c47f1d14d5dc8000de4a",
+      "mtimeUnix": 1790972150.8299935
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentUsageSinkTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "83b907976c2fcb6082a946309a1a87453f70b13a8c8cea0ad5660ba198269770",
+      "mtimeUnix": 1790972148.053669
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.DeletionReviewAggregatorTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bf7c417605dc6574dd18d17046993a8884a0bc74bdfb39049a00f2bc39c308b6",
+      "mtimeUnix": 1790972150.7588964
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.ProdHikariConfigTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "52a851eaf8c868ca5d6dfff1a184fd29645c99c96ee9045f6156bf362caad6d4",
+      "mtimeUnix": 1790972137.207585
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateMandatoryOutputsAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7ae1f9d91fce9a6e788c70f0733424e92d5fdfe2d051deb52581e43f54bf51cf",
+      "mtimeUnix": 1790972151.429583
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.AuditLogControllerCursorTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1f1d1e64d1147a2352043b1f1459fcf5144363679836128cca1eab1cedd3e662",
+      "mtimeUnix": 1790972149.2655416
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiScoreCalculatorTest",
+      "counts": {
+        "tests": 44,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8a3e42d8c7e2c72f3474fc395de50ab85ff8a9a4845c61bd5471b2845432ef19",
+      "mtimeUnix": 1790972173.1807384
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.CoefficientChangeServiceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a3f40e556729f4f2f086155bc7c778ac1a5393de0d71d001c41176c95738d4e7",
+      "mtimeUnix": 1790972159.4799652
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StateMachineGuardRulesExportTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0767ae13ad68f52335fbaaa63f8398ca5c941c1d96a06bae5a71cbcfdbf1d9d7",
+      "mtimeUnix": 1790972157.3722303
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BonusPoolServiceTest",
+      "counts": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "97f7ce847858476b4c81517b6fb0a33c4143fe2a177cb87fc89a44a23b0e9594",
+      "mtimeUnix": 1790972152.8280883
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.IpdAuthMePermissionCodesTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "999441ddfd11fcf43e4388d2f27ceab6b12158aa8f11c18523c43c1b3a40d974",
+      "mtimeUnix": 1790972149.1897836
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.LaunchDateChangeServiceApprovalGuardContractTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "211cee879c73eb9e26fe1753c336820d04f2fa55b9e8bfbb47805e8bf43a2930",
+      "mtimeUnix": 1790972172.4297347
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.RequirementChangeConcurrencyTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bc9dcb2b105a3e14a0ba0d73f32047c9c4805bd497f5bc971f6ba3f9e3fc194d",
+      "mtimeUnix": 1790972172.1146483
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.R212PublicDemandTraceRateLimitWiringTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e4e9e4df885bd59889a5f85d737b30e0a78cddf2ee4303f0cdfc6577bd9bdaa4",
+      "mtimeUnix": 1790972152.8850057
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.Sec03WithdrawSideChannelTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e171a7020f634eac9d8d889de29382e569c5afd9af1e8245c34003aa061ac8b3",
+      "mtimeUnix": 1790972149.8541539
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SwitchingAcceptanceServiceTest",
+      "counts": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b66ad9885b0f720a38746ed43b596001151bbbefbd7c2e5af33c1e2bb304fabd",
+      "mtimeUnix": 1790972152.0306005
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementDuplicateTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "537ff96d8bce38a4c32ab5b9fba342f24367453f6eb91980d1f38e71ad4a17cb",
+      "mtimeUnix": 1790972173.9128134
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiModelBudgetServiceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "abac2d4600e05411b964ac5085ad806c06713440b8972f66289434d2622b2e0f",
+      "mtimeUnix": 1790972159.7716522
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateLegacyScanSchedulerTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f5860193c9d882b8053325d88594885d04b3406521a8f5209f49e9f3984f4fa3",
+      "mtimeUnix": 1790972175.0377157
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P345AcceptanceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4aa89e0858e0280c1daf5609dd13e97a0b9fd1d452be5e8d09ba772963ea9a55",
+      "mtimeUnix": 1790972158.4814136
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiGatewayEndpointGuardTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "22303b94a281b501bce08b35e613a607ee81938231d5ef7adac0228d2d982dc0",
+      "mtimeUnix": 1790972165.3592288
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.OPS05AcceptanceTest",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "455ced05764fb024b40ad981b567f5852ba4df3dcb6ba0d55120f419c63ec52a",
+      "mtimeUnix": 1790972159.6931655
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.AgentScopeProjectAgentKernelTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "31801202508574b64de8b8e97793f221153cb3db3e59341cd161406ac1eeaa12",
+      "mtimeUnix": 1790972148.566824
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P271AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4ffff22b0973ab5d26e9a04c94c2e34b7284e837de7e5778bb691cea2f003547",
+      "mtimeUnix": 1790972152.4208522
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P441AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b7ea2fed799c1671f301af1804e2767620b6ded760adc9ef1a92c3a00f4f9b46",
+      "mtimeUnix": 1790972171.7614634
+    },
+    {
+      "suite": "org.ruoyi.ipd.approval.ApprovalGuardSupportTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "248e734b73469fe56b3f055912e770d0739e49881a555c6e6b8a455f0390c12b",
+      "mtimeUnix": 1790972175.0446854
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StateMachineGuardTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "26e00c63d1b5e3ff44dc595f1e9f070eb94db44fcb361d18e56cb053af233cab",
+      "mtimeUnix": 1790972151.4241436
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProjectAgentControllerTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "95226edadaa0ec4a93063ce142ff2a76a3f054e78a65bfdd069120634cfc36bd",
+      "mtimeUnix": 1790972149.1850808
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.DeletionArchiveServiceReadOnlyTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "68ee17bbded8e5523764696dfd58d0d7f4700f48a08f2255388a1a00b8064eb0",
+      "mtimeUnix": 1790972171.8153744
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectScoreArchiveServiceListArchiveTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d703469ee16fe6cc224cb6695f80ea92b38e4a3f8feb1b0f3689b020ddf29501",
+      "mtimeUnix": 1790972172.189323
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P074AcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9c4f2e9d69fc000b20a77974fc3f7fdd2e767c615fb03f8f3a03f8e0e2d75da4",
+      "mtimeUnix": 1790972152.202362
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdRolePermissionConfigServiceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e955f7391f52498dab0d3eecba5d13891631b1d0e735ed60039a10ee01ef905d",
+      "mtimeUnix": 1790972172.2257485
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P323AcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "75eb9b39fffa8e651e802d0d97af93caef4f25fb706acfcbabcfa606cb11b26f",
+      "mtimeUnix": 1790972171.3991914
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StateMachineGuardContractTest",
+      "counts": {
+        "tests": 123,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "23e1bb6dcb0edd7df6b79a559df045dec308ba2d27275226a576014febf8c250",
+      "mtimeUnix": 1790972171.985717
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.RsaPemLiteralAbsentTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "77b1a34c864543e2798fa17d4114191d703a599cbffbf23cbda0dd0de580d22d",
+      "mtimeUnix": 1790972137.1188252
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditTraceWiringTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7eb5704285656a746f3981f6546abc6489a2afb5200c352b15710508145216b7",
+      "mtimeUnix": 1790972171.7783797
+    },
+    {
+      "suite": "org.ruoyi.ipd.hr.HrApiClientTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f9e699222e7bbdcaff0bf0bab749e374a532b86cd9cf86624ccab165edb2c16d",
+      "mtimeUnix": 1790972150.8241262
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P112AcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e93b514b9e02064d16907cec74ceb49e4466f5cb679f26f4b7fece070d6cdca6",
+      "mtimeUnix": 1790972158.7261846
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProductControllerNotFoundTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8370719c5cd67c855a25b71f58bc6f8e64ed5233d8a143a3b4daef072ec6b3c4",
+      "mtimeUnix": 1790972149.6920044
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.PostLaunchReviewAccessTest$Endpoints",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7679a14f88c90e13ded102a00b3ad499d5fac0823082becbe8dbabd8fdc62ac7",
+      "mtimeUnix": 1790972150.116116
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P413AcceptanceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "43b8e46636388846fbbbfeaf6a27fc442f02374e654b307317eddf622f4ac8d6",
+      "mtimeUnix": 1790972171.8281271
+    },
+    {
+      "suite": "org.ruoyi.ipd.advice.Api03AcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "93a8140b90c330f1f9381c4ddc9b37dcf697d37f2350c89eb375ce11456faedb",
+      "mtimeUnix": 1790972144.3733127
+    },
+    {
+      "suite": "org.ruoyi.ipd.util.AuditHashChainTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "010a2fcc9fe6555a24dbee1f108fc72e9a7a601bae7adce57cda1e1caf279e6e",
+      "mtimeUnix": 1790972136.3516064
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.PermissionAdviceCoverageTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1690b795a19f850c19ba82049cf64fad355bfa4c5a31fbcd2df41a9c452f67ff",
+      "mtimeUnix": 1790972138.0055542
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiGatewayCompletionGuardTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a114e76c8a899420d19981025e21e4d4e516c5c0824b65895943bd6b74a933b9",
+      "mtimeUnix": 1790972160.1739073
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditAnomalySchedulerWiringTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3b2230d419e59270ffe315f2e9982d014bcfd9750996b118c23bb802a8a023d1",
+      "mtimeUnix": 1790972174.7642877
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.PromptTypeTemplateTest",
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c194502cd660e08efe335b2dde6c66c1c5954b7a72f81d36d2accfb336f28e5b",
+      "mtimeUnix": 1790972165.2096713
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StateMachineGuardD1WiringTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3b2e03691b0089f7176f4209ba3651be0f6f29b2bc4fd88563721427656e4dae",
+      "mtimeUnix": 1790972156.938385
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunListTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "173f7a599970b2c1671be8edd631f735d52fe78c0a58556572c22710cb47b271",
+      "mtimeUnix": 1790972147.1274667
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P274AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "61a7699d84975130aec5a6ef36ba18079341b4c50d685f0c9ac1095061338240",
+      "mtimeUnix": 1790972151.802182
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.RecoveryWarningServiceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "990c7f39cd41f36426f44cec07865a0222f30467c7795ed06022c20416df26ad",
+      "mtimeUnix": 1790972152.15543
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.channel.EmailChannelHandlerTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8ac605ab1578d738f271b1358ed727a18e7b337cf97628b76553bbce3baefbfb",
+      "mtimeUnix": 1790972159.3110182
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.CloseoutAggregatorTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "58f75881c50e6da3d32a84a05fb0229f65dc49e321fed9668e03d673efbd6e20",
+      "mtimeUnix": 1790972150.7402086
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProjectControllerTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8837db24f8ee17e1d631e6f7b6f0005877dcb99ed08f6ab257d30ed6ef173b72",
+      "mtimeUnix": 1790972149.1947184
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementResultServiceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "86f935555c3eae7e2195fdd112bdea9bafde306fdc64c14c9e17bf817f82d45e",
+      "mtimeUnix": 1790972150.9990528
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectBootstrapServiceTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d1df9d854df7be28dc9d8104ee9e5d256dc578ea7c58bedf3cb966ccc21811dc",
+      "mtimeUnix": 1790972171.7661176
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P142AttachmentAcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "dc921b2ef64a80f61b665a8250a68d1abc5cfb17be429a43c79d7851d59859cb",
+      "mtimeUnix": 1790972159.2352273
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiRulesServiceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b12bdf088098a6940da7c3438ab73cbb15b3505232e877bac7f9011f40b9350c",
+      "mtimeUnix": 1790972159.426303
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.IpdMockDataInitializerTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "313b28601b3e95743ec86273c64acbbda271b65c3be861625dfe187982d12c36",
+      "mtimeUnix": 1790972136.8352907
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidInvitationSelectResponseLostNotificationAcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "92517c992632b74071bf2504198d7b8d5a92505857e19d95eec2b011f12c96a7",
+      "mtimeUnix": 1790972159.7213666
+    },
+    {
+      "suite": "org.ruoyi.ipd.copilotkit.AgUiEventsSwarmTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ef3882e62c082b0d05dbb96c461f924b77c9ce0b72a3d33103c80d10605a8319",
+      "mtimeUnix": 1790972142.8924665
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.ProductLinePermissionContractTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "70deb96a2927fb80839f316cebb9e2728e3a296db926a9006beed349666da6c0",
+      "mtimeUnix": 1790972138.3462741
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P422AcceptanceTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e8eede662f2122a33226ba0c1d4076a6c3a1861d2bf9f131f3f33dea7448e3b3",
+      "mtimeUnix": 1790972155.1631172
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectServiceTest",
+      "counts": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "30c577a0d3490d51f2b1a873343e48c3021183a608418308c85406d7bc24e8c1",
+      "mtimeUnix": 1790972173.8183222
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.KpiSharedConfirmControllerTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0b9303e87765f6a22f4f99e87fc1ec23f712014efd42a983d730ae55ba697223",
+      "mtimeUnix": 1790972150.3308392
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.R218AcReq09DeletionChainTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ed4c15075f34fdf7b32d6bfe32725a9d40cd5264ba3525a01cd7f93deaf501f5",
+      "mtimeUnix": 1790972158.7328093
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiProviderTesterTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5381600c90da4b9af2fe7db683b97fe336babc52340ad7a6203937aa4dc11886",
+      "mtimeUnix": 1790972165.3549297
+    },
+    {
+      "suite": "org.ruoyi.ipd.advice.DefectBAdviceAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "701cb86beab9abf02cd90a8ee52808e41103cd9cd0f793e10a1e34b4596d197d",
+      "mtimeUnix": 1790972144.2444212
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StageActionServiceTransactionAnnotationTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ae0350f802aa5cb7aa3cc9942eb94c7439563e593956346914b89b481717fe74",
+      "mtimeUnix": 1790972152.0961587
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P312AcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "dce6f31f2c768b9112124d07d987fa57a9a7588f0d6df359d94e3f6a313226df",
+      "mtimeUnix": 1790972157.000707
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementServiceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "332f497998adb5bcd6836af2c46c68550d4683e64803d903e3d2d63dfc077edb",
+      "mtimeUnix": 1790972158.3963706
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.PromptLenBucketLoggerTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4ef3c105e9c899dfb34e7ac9eb41775b071989ce199eb403110418b6e2aa4243",
+      "mtimeUnix": 1790972165.2140234
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.IpdAuthControllerConcurrencyTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9e45b98d962ae6d96b123f76aca72eb183b554eb3a298a8977a04138717602c8",
+      "mtimeUnix": 1790972149.1455753
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.SchedulingCronContractSentinelTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e71a2cb4c4b2474ae74c5ab6424f89bac13142d3b7019eff955b7d4dd0cd1380",
+      "mtimeUnix": 1790972137.0955129
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.P073AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e0b3c67b2adcd04e62afd1f0f57dd6e0a8ef11c131ef30732f49b8ad8a0e1644",
+      "mtimeUnix": 1790972137.7705467
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdRolePermissionDbOverrideContractTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5f761775c9be93e5246c5c0786dd642fefe30b65c6ed29f31a83b8c539f01359",
+      "mtimeUnix": 1790972138.4339726
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P171AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2af8bdc072a6f8545678769a66db86da813ceb2727f4d017b16c48c32a5c3c75",
+      "mtimeUnix": 1790972159.5043576
+    },
+    {
+      "suite": "org.ruoyi.ipd.menu.IpdPrimaryNavigationTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f5e209849af349b554e5c7c963d8140480705da568a16d29ce448502eff79db9",
+      "mtimeUnix": 1790972150.8008308
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.RequirementChangeSecurityRound2Test",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3d1d286fbe2172d29bebff93d150bb818e8095399305c43fba6d0219e7589db2",
+      "mtimeUnix": 1790972152.9107857
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.BonusPoolApprovalPermissionContractTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "194403ca12c1f4c7277fb42d10378d99edd31ec94dd30879ad9323abd15f8201",
+      "mtimeUnix": 1790972137.258572
+    },
+    {
+      "suite": "org.ruoyi.ipd.copilotkit.AgUiCopilotRunTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "799c8c197b306939afd01148688bf5bb489a36683837011f65562d49656d4033",
+      "mtimeUnix": 1790972142.8858244
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateSignQueueAcceptanceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2265e4f81d8537e7329f2749b046271bf700ebe7fdf020170b2c5c79ce4bc273",
+      "mtimeUnix": 1790972172.311538
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverTransferSuperAdminForceLogoutAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "23aac728b3ece7b5c8149789fd810b66c8b66ce0e739936d64588a916a4bf13f",
+      "mtimeUnix": 1790972157.1010323
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.R212OrphanWriteEndpointAuthorizationTest",
+      "counts": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7af970352920aa981154b98f3823e4055cd4c3cc0ce72ba491c6d9da7aba9651",
+      "mtimeUnix": 1790972137.7092838
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P141AcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "262124d10428aa85c91ec377837a58bb9ac3b29aa7cb881972088de8188a8f9d",
+      "mtimeUnix": 1790972158.429549
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ResourceSseControllerTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "42baa46d6b108f058f6456ffcfd0ce3da8717692de72e1a383979973d715bb5d",
+      "mtimeUnix": 1790972149.5897238
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiExecutionEngineTransactionAnnotationTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "238836a21c26b3edf46eeab17249de371472638906493c8a05d47d85b0761a8f",
+      "mtimeUnix": 1790972172.1334949
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P191AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f98c2aefa6f2da8877d20a1d40b16d22e8e058665a96467ed8d04c1b0bc6ab4e",
+      "mtimeUnix": 1790972173.463842
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.ControllerPermissionAnnotationContractTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "63385bc96b11eb03d1fca7160f246d671721963f0172e46290d016776068d62d",
+      "mtimeUnix": 1790972142.7516274
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P322AcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a19e8c1f5d92e422160571b4351121fc8867702c36d1e6c5f73ba4da99cf9ed1",
+      "mtimeUnix": 1790972171.8015132
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalogTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "22326955f8e7d9aff7d5b009ce4410a2eb261fcdbed08a8e9640bd3e7dae1458",
+      "mtimeUnix": 1790972145.60068
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.DeletionRequestServiceTest",
+      "counts": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8283bc4edf3ea69226789aa2020e4e4b7db5346bc5bdea7c041803b54a302752",
+      "mtimeUnix": 1790972174.795201
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.AiFeedbackServiceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b9a0355ae9bdacff202ce3fee5899b9c7a0b6122b98fd03340cc5b95a76f5b70",
+      "mtimeUnix": 1790972146.6880066
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectKnowledgeVectorSearchTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7516bcb89c28aea54fe1ad004ee44b0be6e41cc056ccc6fe8f1885152e725cbb",
+      "mtimeUnix": 1790972147.994593
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.StrategicChangeAggregatorTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f635bd049c08e921e679fa6f7eb83bf08a6acdf92d16cd43590b979e7ee31807",
+      "mtimeUnix": 1790972150.5485587
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedCollectionServiceK04Test",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "06f27f5454955c71509a446ce3c76e685a76515a7b5d16fac9597c542e493006",
+      "mtimeUnix": 1790972172.258577
+    },
+    {
+      "suite": "org.ruoyi.ipd.copilotkit.AgUiFrameTranslatorTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b5c6a9948f69017752db86ba9e4039a3be8e3b74f7cc192d25165b6e4b7b4603",
+      "mtimeUnix": 1790972142.7726722
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.P073BehaviorAcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b177140e5c09b95aba6dee880054b95f65849054920584b0ed8d01e67d2258b5",
+      "mtimeUnix": 1790972142.6469245
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiGatewayTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "389e532fda00e7a4c24ca73380e416b6097b642a8f6e50e798ca6ba22c5c4d08",
+      "mtimeUnix": 1790972165.1977267
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P222AcceptanceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "09bf7133667cc0e0c57025f0ea572c1f6090d6f9300bb6223c6edc5288dbfaa8",
+      "mtimeUnix": 1790972153.0536075
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P412AcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "13b755d3c3135667664299cbcdbdc7e166b89c179a3f249806830df785e1a33e",
+      "mtimeUnix": 1790972171.9959507
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ReceiptLedgerRecordReceiptTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "554acd81df82d07ed1dea7cc70d85597df131c0325571259e81ac791f6e14b69",
+      "mtimeUnix": 1790972173.9632318
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentCatalogBindTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1e51056ab5fb52e8e9e4e305dd13bd863e0ac7666d6b43d7e2e51ae2ef17aa9d",
+      "mtimeUnix": 1790972147.5181694
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdActionWriterMemberTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8f8ccdb9daa5509f4d8f98f9a55454e496a109806ae7332b852a30dfb5b8478b",
+      "mtimeUnix": 1790972137.4512398
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.StageActionControllerAiExecuteTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "fe860ed668c86bf98f2de00119b77d4aee3688e5aff13ec7b03f601dd8833d03",
+      "mtimeUnix": 1790972149.0451312
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.DeletionRequestGuardSupportContractTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7d898c83c5404fda294cec8436ce4fd31ecfa8807c88b189a62bc8836d84dacd",
+      "mtimeUnix": 1790972173.723983
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P122AcceptanceTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5558d9313140e89669d6e92b23dd3f2cc277832447332c1a0470c5437f3ab3a5",
+      "mtimeUnix": 1790972159.2727168
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidAiDraftTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f6a0936942eb86f5c380b8e5af42f9b10d1d08b6ca6edeadb08b935b799cbe5d",
+      "mtimeUnix": 1790972158.6903331
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverServiceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b4eaa15b86bb920a1389a0707e2471b06c1d792d97b79b36e6c218b737889661",
+      "mtimeUnix": 1790972158.5322347
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StageActionServiceInstantiateBatchTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4219548236f82439c64d0d7e2e8461e1b04f89b965f38eb4288a17e2810e4c58",
+      "mtimeUnix": 1790972158.8869786
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.CoefficientChangeControllerGetTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "34ea715fcd93c3fd441186b7e6c85abca27bb415cc87b1a739b7e54b675f5b7e",
+      "mtimeUnix": 1790972149.2900748
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditChainSymmetryTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ee5eddd702f996961934011a2311396d0707e73898d6e59a25ef8a2f602a7127",
+      "mtimeUnix": 1790972158.7113814
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P341AcceptanceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7c754140b62069bb98bf801a1326562476867f4b8efccdfc1ad9c77987ec4e86",
+      "mtimeUnix": 1790972153.1207063
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.Sec02AcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c510e1f27b0eb2cb202d8d3af18f13a1644f46ed12b84481617a0a15bda1ac0f",
+      "mtimeUnix": 1790972137.789022
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ReceiptLedgerCalculateAchievementRateTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d478036b4938526618d45b76e8a4a25ccb4e6a36a08d61420bb8383a3e18c7da",
+      "mtimeUnix": 1790972159.9782794
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectScoreMyTasksTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9d766fc4e5b5ff77138a728301fbe9f7093ef798a5be5227879577f49cd37021",
+      "mtimeUnix": 1790972172.3197808
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P1_1_1_BidirectionalBindingTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1e644b0cb95f92cc3cafe06b1caef3feabdbac78d6c34e4e92d2cfb78d7a93cc",
+      "mtimeUnix": 1790972155.2463303
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P144AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7bf83bf31f401f58fd1aabb544da22ed4ed68353b4cb0422f058a309d8545972",
+      "mtimeUnix": 1790972156.7753823
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.DeletionRequestControllerReviewQueueTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1f4d11a3739eb1258a0b93c9e59e335a2394f5c6ec2ec408ebd602826bd6a358",
+      "mtimeUnix": 1790972149.6195772
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P423AcceptanceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "70733a159c0d34270b5ee7eadf468f671fe47493d1523421e0a67c53c3e8d3a5",
+      "mtimeUnix": 1790972155.4151099
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P241AcceptanceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f2082a1392aa312567db0da3b28ab06cd6cac7095959f489b863cbe58b261069",
+      "mtimeUnix": 1790972173.096414
+    },
+    {
+      "suite": "org.ruoyi.ipd.seed.IpdSeedConsistencyTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "438c830c1110999c526f7fb92b566cabfdb135c6d6e56dc4e720853247fc3b74",
+      "mtimeUnix": 1790972136.2068179
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectKnowledgeFragmentTextSearchTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3cb5da374c6dc721cada27b3862bb7f91a69859375c5276c36777dc075c55d0a",
+      "mtimeUnix": 1790972147.999495
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiRecordServiceTest",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1cc621e92be1a73850294dadcde8e98c9e3709c1b4760fa9aa599247894bd943",
+      "mtimeUnix": 1790972153.0765986
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProductGroupServiceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2d18914a790c740f25adb4e7de9bfe2509d2c46b5bfaa958152c2fadff2c4ec2",
+      "mtimeUnix": 1790972158.456322
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P131DatabaseIntegrationTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 20
+      },
+      "xmlSha256": "c22df9cfacb526905bbf91756a2cb030b4a8dcf3f648a4b08271320fb16a953f",
+      "mtimeUnix": 1790972158.94114
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateEngineHistoryMissingScopeAcceptanceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "78fe96f48d0ba1ac3b8ad7744768b85c2efac92255a2e232ca2c2ea59daed201",
+      "mtimeUnix": 1790972159.708494
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdPageParamGuardTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "526c1035bd8848458b68a4f6abfaac40f99bbbfb0a1ec97bc0e7efd1b3a27962",
+      "mtimeUnix": 1790972138.3804617
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateAutoCreateAcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b2e1f423ec01b54b985820601a61e8ee77db19ff22c1a0d71815fa0391da6045",
+      "mtimeUnix": 1790972171.84838
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P313AcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b2533d27e2e9a9f7fd5df98a36c99f7bd30c94df979669d970f7817a87d35c3d",
+      "mtimeUnix": 1790972157.2269285
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdPermissionRegistryTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "11d03b68d71c18c1d8a8abfedef43ec1af653f577f6472290d4f6f0c670331be",
+      "mtimeUnix": 1790972138.428087
+    },
+    {
+      "suite": "org.ruoyi.ipd.domain.AiAgentTaskContractTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "339aa2e0a2a80c3a8505618b2877b16ee6081ceadad79c4816cb5dc23ed71d90",
+      "mtimeUnix": 1790972175.0409787
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.Sec04AcceptanceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5a1a6e7bf40bf68c33abb6ab37b61a064bb95693e56996c0aa6000f0eb8a1a75",
+      "mtimeUnix": 1790972137.7384024
+    },
+    {
+      "suite": "org.ruoyi.ipd.common.P041AcceptanceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "346746a9747ea45dd49f1dfcec8ac589950cfa91a17dd9c51fe64311c5d1491f",
+      "mtimeUnix": 1790972150.3452334
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunOwnershipTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6d2b0c5f1489413b3a93f1f85cab98c7b1b05d46187aed9ef400c469ea6a55f3",
+      "mtimeUnix": 1790972146.353415
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P273AcceptanceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ee4300f9571a48a778dd143e99ae558cd507e341f84297ca06ea00d8fc769e34",
+      "mtimeUnix": 1790972153.0278254
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdActionSkillMapServiceTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "25312ff20ba7c5b4038bf0068ad62fedd692c86c059ad534a48e439a9e4d4335",
+      "mtimeUnix": 1790972152.3029869
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P213PersonStateAcceptanceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e9ecde2cf6c4b63b9b683e3742705343a25fd9b10b458b29847b8dd654ad7a66",
+      "mtimeUnix": 1790972158.4984202
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P142AcceptanceTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "abb424b7908a40235adc9e9223a01b474d56cd68f6ee5d7f0cf23bede13d929d",
+      "mtimeUnix": 1790972158.5369172
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.LaunchDateChangeControllerGetTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a09c3bd45171f4bb0029acaa9874d421c0137d73f6c693a6120cb3282b78dbe1",
+      "mtimeUnix": 1790972149.981726
+    },
+    {
+      "suite": "org.ruoyi.ipd.hr.HrSignatureUtilTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "daaf958e884116b46fed53c83e0ea08c5606089ba960ccdf9f41472312a879a6",
+      "mtimeUnix": 1790972150.8815026
+    },
+    {
+      "suite": "org.ruoyi.ipd.hr.HrPersonMirrorIngestServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "942f450876e9fd4feed9a485218522937d44e86faf9a729d2255aea489467286",
+      "mtimeUnix": 1790972150.8690002
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiAgentTaskQueryServiceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4cd2ddb768e3d5843efc5c3852c9d2ef1e5f4ef58bdd009f16ec0f41fbd00464",
+      "mtimeUnix": 1790972156.9500868
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P192AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "63211bb03f821a762be136ba533c42ec7b5f69a8f82d26b362ef8eb226c6497a",
+      "mtimeUnix": 1790972172.2630992
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P321AcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "36b6b06b9c8442f99c489b0e2ce2d8c85746616db046e47ea1076f025ec029f4",
+      "mtimeUnix": 1790972171.8216949
+    },
+    {
+      "suite": "org.ruoyi.ipd.copilotkit.RunAgentInputJsonTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e54e8966af452150865e87053671412786204b02bf04595dbb0ac5ea6126a7bf",
+      "mtimeUnix": 1790972142.8992426
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiSuggestionServiceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9d59b9083094d4c34e3605357fa554af11c75bb92ac14e42383c6d6d013aa27d",
+      "mtimeUnix": 1790972160.0100331
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementPublishTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c48bea4441855b74b872f4a562a014be65380e8c56534acff412d02214d26b49",
+      "mtimeUnix": 1790972159.4958282
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiDocumentGeneratedRevisionTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e828edfd33d94c63bd7af809444cd56107d929886683f59203d181e1ad8ee3d2",
+      "mtimeUnix": 1790972155.2158124
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.store.MybatisAgentRunStoreTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5a1c80e0f38090b68da16244d7a8a6390913c568d2e9201aa52f977f332d6c19",
+      "mtimeUnix": 1790972148.8872235
+    },
+    {
+      "suite": "org.ruoyi.ipd.websocket.IpdHandshakeInterceptorTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0b54115401f867e1e8d99e8cf285d4c6da8b9958e4f6bb82bef6a187ca00af9e",
+      "mtimeUnix": 1790972136.1768389
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P411AcceptanceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "aa820de716e293bc620e7287b750445a19d9f51734605fcc66cb4c2c9d445b7a",
+      "mtimeUnix": 1790972171.480424
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P1111AcceptanceTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8483ec2eefe2429c28d67864ca4b0a49ed7bc5d036237833f66c05655a2882d3",
+      "mtimeUnix": 1790972172.0658479
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StageActionTransitGuardContractTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6db4582abc0cb905ab5f269c681b07ceaddf5c51d5e174621810b9986d21a601",
+      "mtimeUnix": 1790972174.5714145
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.ProjectGateChecklistVisibilityTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3321e697403864a3ec398a5c1dc638db587d3587670d016ca2f05d3669b7b2b3",
+      "mtimeUnix": 1790972149.6072922
+    },
+    {
+      "suite": "org.ruoyi.ipd.advice.Api01AcceptanceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "016d35c076e3581dc7e473740b5d659a38f19c6cbcb1259bfe0511d2c47d7d49",
+      "mtimeUnix": 1790972144.2543778
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P121AcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7ca097bc5f6517d03c8fa093db45c7f5cfd45d76280870aedcce7bf1d7ba0450",
+      "mtimeUnix": 1790972159.7152426
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.RnewPermissionContractTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "583977fdc30909b65685b9046287cb867d81d72c010a5fb7f39a39c996e88037",
+      "mtimeUnix": 1790972138.4393969
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiModelUsageLedgerServiceTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "29cb2fca0762ccab7c4c0f89c066b3881746792c100e03ca6eadbcc625fc7027",
+      "mtimeUnix": 1790972172.0983355
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.R219SchedulerWiringTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0eef8c8b9b2be85defc1eeccf3b73c947809553cd5ac8a93f93d19c6c86b7ad2",
+      "mtimeUnix": 1790972152.996934
+    },
+    {
+      "suite": "org.ruoyi.ipd.workbench.WorkbenchTaskContractDriftTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ea44fe476077a1873b93b114185186e28e8c56fa59262a541cb023d85521b769",
+      "mtimeUnix": 1790972150.796952
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P342AcceptanceTest",
+      "counts": {
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6f0c828f3c7e7748941347b013cc240af616cf9cf54054f3bc0aeb8a63c37dd7",
+      "mtimeUnix": 1790972157.2357886
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P231BidInvitationCreateAcceptanceTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ba1af18ef4f03973da595877660bdce1e3c87f9de3023c3fe4ad58f6b0a5ebe2",
+      "mtimeUnix": 1790972171.5061984
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.Sec01AcceptanceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "66f34ee8258dff2cda09ef3bea3be6fa6eb5bc1d43a65180ffdccf6cb104225d",
+      "mtimeUnix": 1790972138.335412
+    },
+    {
+      "suite": "org.ruoyi.ipd.advice.Qa07ErrorContractAcceptanceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "af8c3a14149a9d6a10f7b193f2e4e0e55b7ce11509d69132d7fead0ea5c92b95",
+      "mtimeUnix": 1790972144.3901334
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.PersonGroupBoundarySecurityScenarioTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e1ece69495437b04862e5baa7f6742b0b13faf01c0e3793e9f3af9d534da102c",
+      "mtimeUnix": 1790972157.0955276
+    },
+    {
+      "suite": "org.ruoyi.ipd.copilotkit.CommandDegraderTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4e16ce0da16b68ac0338edad71c0346765b504fce73275bd1f223529b1a6d36c",
+      "mtimeUnix": 1790972142.909243
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.StageAcceptanceServiceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "4ffc66653bc8fb085789756cf92363bd49484990b2607657abc583c42710b51a",
+      "mtimeUnix": 1790972158.6642418
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ai.AiGatewayAccountingTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "512aebaf0b8e79ff8f2d36cf3837ab60be97e4fae82171df92f04e23e83b0c96",
+      "mtimeUnix": 1790972171.3067298
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditLogAppendTransactionContractTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ac9dd0597a7df4c615638b419528c274402130ac86cc512db460846c6c0ad083",
+      "mtimeUnix": 1790972173.7418416
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiExecEventHookTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "59b996ce293af70b80c38051c3ef6b283d9e261d0f1efd65996bf99a93060159",
+      "mtimeUnix": 1790972158.4081895
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.channel.WebSocketChannelHandlerTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "74e1e5d604837cccfa86ac7fc6a1a9f95192ed92afe34e761ec3c0fffefe6daa",
+      "mtimeUnix": 1790972159.3664699
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdAuthServiceTest",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5e07dcb215e1cedea11b1fdfd5a8224fb02d8e44aafba01b0ad045ac3dcc6144",
+      "mtimeUnix": 1790972175.020412
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverInitiateAuthTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "efc3502a2910ada6b9c76537964a7d46fc5e9017b2b5ec79d46d835005350048",
+      "mtimeUnix": 1790972172.124055
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditLogEventListenerTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e262c5b7e53329dfeae5f60b782d688a895e5a56e60ae358d7dedaea32f93791",
+      "mtimeUnix": 1790972158.5459867
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IpdPublicKnowledgeServiceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7c41303dc6ac13c7bf21881dcab3fbfc7cf03fb018d04dbb3dc23bd3c288a8e4",
+      "mtimeUnix": 1790972152.19502
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P242AcceptanceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7f27289a71733b113f93aa5684c4d533205aa682c4cfe3923bc49f261ea337cd",
+      "mtimeUnix": 1790972172.4727807
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiSuggestionP3ScenesTest",
+      "counts": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "09ca4bac6493d9db105842864c4c5e92750e3eb419a626647e74e8ccc85a036d",
+      "mtimeUnix": 1790972153.0992208
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiCopilotServiceTest",
+      "counts": {
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "becfbeecf4c47e323ee6a727d20b5667f7ce0f1259bc0a27b257a16d47c32df2",
+      "mtimeUnix": 1790972159.859408
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BonusPoolZkFormulaTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3af9c316f38333c1b0de7759a70ec80f5d414498efca1e82dc76a088c15f3b31",
+      "mtimeUnix": 1790972153.1051264
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedK04WeightConfigTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bbedb9c48ceac1c372f6d23b28664cb88872f68b67926ef5223fb6d9b23cd718",
+      "mtimeUnix": 1790972151.8495028
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.LaunchDateDualSignGuardAcceptanceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bc752ac1ebeb86b18ad1fea4091e57b23ba2610c16997f26b6ab511a9b78d9c4",
+      "mtimeUnix": 1790972174.7327015
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P414AcceptanceTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "49d105d64a6327b5ef68b4edd6c34a9df56c6849dc67ad8e2cf85dd13719bbae",
+      "mtimeUnix": 1790972158.90808
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P223PersonSyncRetryAcceptanceTest",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f1f533110605c5574fe02734c02cf68f06d82fe691999a9a83bc98e2b210c23f",
+      "mtimeUnix": 1790972171.672983
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditAnomalyScanServiceTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "756e0a31f540e6cd7d7081f9afd9719f0a30aa830b5f861353b5580a4af7da8b",
+      "mtimeUnix": 1790972157.1148067
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditEventDataAiTrailTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "a878ab2b44bb2adc7c42ab4075fbc3165b45440ef51d28f7c381454f249fb073",
+      "mtimeUnix": 1790972172.4870403
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P272AcceptanceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0c39bd65f7860b90b5793f8a8e6d8cce71edc336046c6dee47ef02dae4a61448",
+      "mtimeUnix": 1790972152.8797164
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectKnowledgeSearchToolTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "39a7ee7a47657ea7d5be331e7f4aeeb389f428c9332d597f8015e29aa0a6ffd3",
+      "mtimeUnix": 1790972148.0348814
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.DeletionRequestControllerMyRequestsTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0baa41ab8c2d9cedc59aaf61446f8f964afc10e3e9c250e2e165d997ad8b0133",
+      "mtimeUnix": 1790972149.3293746
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P143AcceptanceTest",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5b30fe698c31928af8c5ec37431142a6d0d1f5d760918eca2d8cab9bf84fd100",
+      "mtimeUnix": 1790972158.7213168
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectKnowledgeRetrieverFailureTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ebe7bc476445f2147fdd2d1cc6980a2b0df0837a6bb9d25bcf2caa843dc5cb4c",
+      "mtimeUnix": 1790972148.0775378
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalogParametersTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "56706ce43953318af7fde57c1fc32476fa387ca73b8d7a2798d8a8de4b233e7b",
+      "mtimeUnix": 1790972145.6503892
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditChainGapHashSplitTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2067e02faf0a208300e76d68fa46dcb272694633c60e47e29d52b917c7edc44b",
+      "mtimeUnix": 1790972159.7750533
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiSharedConfirmServiceTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c1e642b5d8645b35b5667da9f379e786448d50b37261efd063fa5e9bc276e4b5",
+      "mtimeUnix": 1790972153.002843
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectScoreScheduleCronTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "56b33e61870362faf3b06db95cd3073622c0d905f4eac1e7d62de0fcbc6c6214",
+      "mtimeUnix": 1790972151.7540286
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AuditPayloadJsonGuardTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ac9d1d4807142e670a066d92afed98d29c767a4da104e7611b2313f75e9ba715",
+      "mtimeUnix": 1790972153.1105883
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.KpiRecordRuleVersionServiceTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "8dc225468dba0545ee1f97ebf6c54e10dcb1038f296a98002f0469872eebe6e0",
+      "mtimeUnix": 1790972159.4842932
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateMaterialCheckerTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "889b01cc0adf59dcd1cf80fcb2cb9dc7a88e1aa59b44561bef05f93bc25c5de4",
+      "mtimeUnix": 1790972152.091972
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.ProdConfigDeltaGuardTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "effb2652e704f5f4a1c7469ec24d597ad60c218fc424d2db2eb81d056226efab",
+      "mtimeUnix": 1790972136.5108044
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BonusPoolAllocationWriteTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d6ac7d7420f3d34bf37cc97f5db19517fcc7cb1d522e5f305f214afe4f81ee60",
+      "mtimeUnix": 1790972172.4914649
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.DemandDetailEndpointTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "67a47aa5eed910758a2d6aae99c842fad6f5ecbd63689b6de0aac6b49fce30e0",
+      "mtimeUnix": 1790972149.601353
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiCopilotFillPageTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2021eb38d3a1c24ff67c5f719377e52e91d10fe27ee825061c3dc735af3cbbf4",
+      "mtimeUnix": 1790972159.5306983
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P111AcceptanceTest",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3dd817411985ee4da3168005567337eacbd524570f4ca852d4a3e5245e1f0641",
+      "mtimeUnix": 1790972158.391676
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateReviewGuardSupportContractTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "2b47ecc538ba838a3c592354a396cc5c683b55f2f91e7ac758356f7d557632a7",
+      "mtimeUnix": 1790972173.1712842
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.IpdIdorGuardSameGroupTest",
+      "counts": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b8e8a869afae82f95209790a48c9634be10687c387d1df47fd2e5a83d1f2cad2",
+      "mtimeUnix": 1790972142.7385747
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiExecutionTriggerTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "d4b2c53882c243f0742dfeb5a28998408a87f4e99c6bd2ab510845fc862b6813",
+      "mtimeUnix": 1790972159.5198982
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentPromptTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "7bf0ac827155fced63295792006f8d56d0e006ce56f0c751ee5edf5bd5a406ec",
+      "mtimeUnix": 1790972148.6878464
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.IpdGateElementSeedInitializerTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "eb88ab4a8ed2d575291bace555450b9d83f89fd9b127cf4b8bfb77af40f71e63",
+      "mtimeUnix": 1790972136.4686615
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.WorkbenchTasksControllerWiringTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e6617f4a301049fa38466fe371c4343ed39c5280e63b7707418e7778a984ce13",
+      "mtimeUnix": 1790972150.000095
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiDocumentTeamReadAccessTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "e1bcf8d00ea2fe04e46b7c6c388e5e3f1aebbe5b67fded1c1144324933cfd81c",
+      "mtimeUnix": 1790972174.7805004
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P2_6_2_DualSignStageGuardTest",
+      "counts": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b5480fb6118e7ac51ecae43cb1e5dd1458c7eccb3e2644caf7e799bc8163d683",
+      "mtimeUnix": 1790972171.4953446
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidAiCompareTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1168b2cc59e1add0c4682de448e7792dba4bf95d31042f55c4e13fdcf6ac0525",
+      "mtimeUnix": 1790972159.472889
+    },
+    {
+      "suite": "org.ruoyi.ipd.audit.IpdAuditAspectTest",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "da3b906b25ebc6cad58fbaf973de001951e4e58aaa5aff078d0670146e65f90e",
+      "mtimeUnix": 1790972150.4923806
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.service.ProjectAgentRunHandleTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "222b3de094d6ffe5b07895e3b1052165e28e353a88ece3432b1f9e903c468a48",
+      "mtimeUnix": 1790972147.3991392
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.HandoverDisableConcurrencyTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6183c9ed7655757bfe37bf3d626f37cdf1489f2fb8b50593bf64f4091457e9be",
+      "mtimeUnix": 1790972152.7895944
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P343AcceptanceTest",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "78190ec0c9f13a1d825c5d5a7314a3b4dde43a06d6cb60bca0e0c0cd81408652",
+      "mtimeUnix": 1790972157.0141592
+    },
+    {
+      "suite": "org.ruoyi.ipd.qa.Qa04MysqlConcurrencyTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 4
+      },
+      "xmlSha256": "1605efeac025388f22f3e84280fbb42c15065ec7ecee83ed88599da801f9dad5",
+      "mtimeUnix": 1790972143.0637288
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.AiDocumentControllerAccessTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "eef8cf6f41335ec9d6c176961bfe86c55c6b4ebb74205499466dba2e9bbe21af",
+      "mtimeUnix": 1790972149.1378777
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiCardC08SubmitChainTest",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "593bbc81f5a08104303a831347111e407373bfd0983b59b8f8390cd4558650ec",
+      "mtimeUnix": 1790972155.1864164
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.ProjectServiceListFilterTest",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1730cc474b2f13b8df194d4b2f4d82fc7865c9d89d4e726a7e37843412f10cb9",
+      "mtimeUnix": 1790972172.039936
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.TenantExcludesConsistencyTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "c0cbce89664bcc525488517173e62536336eb1477fc6f0fa10c6bf03203280b4",
+      "mtimeUnix": 1790972137.2531927
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiSuggestionCardTest",
+      "counts": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "bb7ca7caaa419720f14b7a82a3bac2a8642f9bc223e7141f9bdfdcaff2ad22f7",
+      "mtimeUnix": 1790972152.38476
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidResponseCheckTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "48b75a337bf9b39be3a7e89b1e56bdc84c9544f1fc57972030c719ff7fb4a1d7",
+      "mtimeUnix": 1790972172.0586953
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.WorkbenchSummaryMultiTypeShapeTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "0e5767d0c960deb6d452fe3bcb857999cd4beea2abbf50b97c215914438c539a",
+      "mtimeUnix": 1790972158.891317
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P421AcceptanceTest",
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "3e38a6173b789ce6de9bac0914b98b4febc42fdb0cca53311532177ba885c4ba",
+      "mtimeUnix": 1790972157.2178123
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.SubStageProgressServiceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9ad98a344904b044636afc2a938363117795cc04f42d2fc6f1e6e92cef83f29c",
+      "mtimeUnix": 1790972173.3998344
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.WebSocketOriginGuardTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "87246d0e38752b212eb3ea7aaaf2adf1226565f6a733fe517bfb41669fcf6b4d",
+      "mtimeUnix": 1790972136.481059
+    },
+    {
+      "suite": "org.ruoyi.ipd.security.SecApi02StpInterfaceTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "ce20eaf940213c9db4cee566eced01af02f2ad0f61acd80a813fcace0314e21e",
+      "mtimeUnix": 1790972142.6753602
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.PmDirectoryControllerTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "93bdfddc74a9758f06f184e787105886ff149407055c93699a659c6d67efc16d",
+      "mtimeUnix": 1790972149.9333603
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.ActuatorNarrowTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9b830db3a823febc7efd8416a57f548121cc5ad767ba175ba7481bfa3ca6ce17",
+      "mtimeUnix": 1790972136.4946284
+    },
+    {
+      "suite": "org.ruoyi.ipd.seed.SubStageSeedSqlContractTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "5352981fe54b818d4bfda714937c7d6251c655c6ab8f9e1874296f2a977ca49f",
+      "mtimeUnix": 1790972136.277518
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.Lc03SettlementReconcileServiceTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "f1e814485adf9f0233b35aa44c490dda25c9c48b8f86bfbe12a070e46bbe7296",
+      "mtimeUnix": 1790972158.5051894
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiDocumentServiceChainAccessTest",
+      "counts": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "86d6290599f52451fb5f61639bbe2334e9c5a65d96bb3fc01cce8e9128a75e73",
+      "mtimeUnix": 1790972152.1605306
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.AiExecAuditRegistryTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "16c8c7f79945b517c10d22e6f1f539e6c4b8835e00aff9c626ba4cf4ed0469b7",
+      "mtimeUnix": 1790972157.1306255
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.P311AcceptanceTest",
+      "counts": {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "b23c4ae130325332195849cb4072aee97e5339ee3c5bb7a4958862eab3e6a119",
+      "mtimeUnix": 1790972155.6075478
+    },
+    {
+      "suite": "org.ruoyi.ipd.qa.ServiceBareClockGuardTest",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "9ae52581411e7d61b1948a2a48cc14459024fae293caf827c50d48da29b8a484",
+      "mtimeUnix": 1790972143.0405333
+    },
+    {
+      "suite": "org.ruoyi.ipd.controller.QrLoginSecurityGateTest",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1e3acf30c2dd0a2d0fb2b43aee2b2d8fcdb87ff88666dce9382faa39cebfb68b",
+      "mtimeUnix": 1790972149.0577998
+    },
+    {
+      "suite": "org.ruoyi.ipd.agent.kernel.ProjectAgentFinalResponseTest",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "6f8a8024b4001e7820b318443bbf6d7981f5fb57ac3bf4d287b29c6d2a09284e",
+      "mtimeUnix": 1790972148.702897
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.BidAdminAssignSecurityScenarioTest",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "becaa20d46edbbed24ae2fbfda881e5797eb1e8f1f9aa777f39d2c7b30a6ed27",
+      "mtimeUnix": 1790972173.36793
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.GateElementArchiveTest",
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "1bfa51a2a81afd371403109cf8a9814fd99a5543e603406dc7add860fd7c1d75",
+      "mtimeUnix": 1790972151.4348657
+    },
+    {
+      "suite": "org.ruoyi.ipd.config.CredentialLiteralGuardTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "34647c29d1de688d1ce28025c586ea3b03695a7e17b31d7cefe12cd9034c7736",
+      "mtimeUnix": 1790972137.1687799
+    },
+    {
+      "suite": "org.ruoyi.ipd.service.IncentiveCaseCReceiptChainTest",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xmlSha256": "441c4260d3178a4573c4965228bdec848267be063c2112421da8d52cbc05bd6e",
+      "mtimeUnix": 1790972173.736357
+    }
+  ],
+  "mainTargetWrittenByValidator": false,
+  "boundaries": [
+    "26 skipped are not acceptance",
+    "No new runtime load/API/browser completion inferred"
+  ]
+}

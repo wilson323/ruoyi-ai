@@ -1,0 +1,11 @@
+{
+  "ProjectAgentOfficialToolGovernance": "c17b29851fcf910f78bbbc523ed47f9f5d1a1a533ee546d87599ebcf89451e35",
+  "ProjectAgentOfficialPermissions": "8d36ae0dff15501b60f126d1050d3a1b38a5c0f49c0fb908d62dac0a86be4a44",
+  "ProjectAgentOfficialSandbox": "b024ae7e4dc13cd88babcb0862a1de1269679625e486eb6842dfbae1dd46c8af",
+  "ProjectAgentNativeProfile": "717acdfd99e106e71b413e5dffd6682f27499a1598a9e478d20fedb129825b1e",
+  "ProjectAgentSkillGovernance": "3c1c1632a06c38d4a22cfdcc563af240ab341b1cf02e347c05c8c7bc1b77aff4",
+  "ProjectAgentSkillRuntimeGuard": "6b7389fb1d50006568ddf07e0ccc3e7bf2b5379d8a4d752e695ddc21e11b6c92",
+  "ProjectAgentSafeTranscriptStore": "c8c6a2ca7a8d84625c19e9e674c218830f970510aea4c979701f03ebde7c6cec",
+  "ProjectAgentOfficialCollaboration": "13df3592936cfcb695fb1cab3fcad88546041a609b1623d403d93d6959a4e029",
+  "FrozenProjectAgentSkills": "9f6b56335608cc54280681e782e01d5f1b2ed177a8cb6047d4851958f790f262"
+}

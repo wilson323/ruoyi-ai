@@ -1,0 +1,167 @@
+{
+  "capturedAtUtc": "2026-10-02T16:57:22.685344+00:00",
+  "runId": "2106064774604263425",
+  "artifact": {
+    "id": "2106065336133488642",
+    "sha256": "04c5d042700a3796c9b2ef54dca4de9b4d90e04289a04651488d6c5573947557",
+    "status": "DRAFT",
+    "version": 1,
+    "artifactId": "69b9c84f9fe34eb088c9d0c7920a093e",
+    "documentId": null,
+    "computedSha256": "04c5d042700a3796c9b2ef54dca4de9b4d90e04289a04651488d6c5573947557",
+    "containsThink": false,
+    "chars": 2689
+  },
+  "calls": [
+    {
+      "seq": 10,
+      "tool": "project_knowledge_search"
+    },
+    {
+      "seq": 11,
+      "tool": "project_knowledge_search"
+    },
+    {
+      "seq": 12,
+      "tool": "project_knowledge_search"
+    },
+    {
+      "seq": 13,
+      "tool": "project_knowledge_search"
+    },
+    {
+      "seq": 36,
+      "tool": "project_knowledge_search"
+    },
+    {
+      "seq": 37,
+      "tool": "project_knowledge_search"
+    },
+    {
+      "seq": 38,
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    },
+    {
+      "seq": 54,
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    },
+    {
+      "seq": 55,
+      "tool": "project_knowledge_search"
+    }
+  ],
+  "sources": [
+    {
+      "seq": 15,
+      "toolCallId": "chatcmpl-tool-88b4a65ba69853f7",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "PARTIAL",
+      "citationStatus": "SUCCESS",
+      "hits": 4,
+      "citationChars": 9334,
+      "citationSha256": "18cca1a552601fee99e128d69066db2cb9c62926ab9f1ed44cfacae060782b3f",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 16,
+      "toolCallId": "chatcmpl-tool-ab934fd40cf08fb0",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 8,
+      "citationChars": 9536,
+      "citationSha256": "c904937f7194aed91ec1174d9a5e1b491062bd40a33f2c8b5be26502a9958895",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 17,
+      "toolCallId": "chatcmpl-tool-b54ce96ec23855c0",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 8,
+      "citationChars": 9512,
+      "citationSha256": "54840a6da52813d0d84749a0efd4787f2e28343929dec433a63aadbbfd9efdf2",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 18,
+      "toolCallId": "chatcmpl-tool-a531175fc4a08b57",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 4,
+      "citationChars": 168,
+      "citationSha256": "f94e971100cbed6c6ba4da3bfbd3dbeabf8c1a620ed3ea61804c1a2ce0eecd19",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 40,
+      "toolCallId": "chatcmpl-tool-adc95edffcd9867a",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "PARTIAL",
+      "citationStatus": "SUCCESS",
+      "hits": 2,
+      "citationChars": 944,
+      "citationSha256": "6222c41947c9c9cefb90940ee1376324c037054f330a7c2f71d601d87ccf8a59",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 41,
+      "toolCallId": "chatcmpl-tool-aaf6876809dc357a",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 8,
+      "citationChars": 10582,
+      "citationSha256": "4b42cfb8bb82a1d10794517b437436d3c4019a15598554300cc0480c394c2009",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 42,
+      "toolCallId": "chatcmpl-tool-a116f0487bd9e8fa",
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "retrievalStatus": "FAILED",
+      "citationStatus": null,
+      "hits": 0,
+      "citationChars": 0,
+      "citationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 57,
+      "toolCallId": "chatcmpl-tool-88842097b13ac3c3",
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "retrievalStatus": "FAILED",
+      "citationStatus": null,
+      "hits": 0,
+      "citationChars": 0,
+      "citationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hasFullCitation": false
+    },
+    {
+      "seq": 58,
+      "toolCallId": "chatcmpl-tool-98487c308531bceb",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "PARTIAL",
+      "citationStatus": "SUCCESS",
+      "hits": 5,
+      "citationChars": 10220,
+      "citationSha256": "4c8b2ac63cb7b778bd40add552be8a636c0948e6e934dd3ea1e5577b78916ed8",
+      "hasFullCitation": false
+    }
+  ],
+  "projectAuthority": [
+    {
+      "reviewedProjectDocuments": 0
+    }
+  ],
+  "bodyReview": {
+    "verdict": "DO_NOT_APPLY_OR_APPROVE",
+    "reason": "Section1.2 declares knowledge-vector template/framework hits as reviewed project documents, while project reviewed/archived rows are zero. MCP failure disclosed accurately but does not supply citable remote evidence.",
+    "misattributedPhrase": "按知识库向量出处命中的、明确属于已审核文档的，仅为以下模板/框架文件",
+    "engineeringRuleLeakRemoved": true,
+    "mcpFailureDisclosed": true,
+    "c02Done": false
+  }
+}

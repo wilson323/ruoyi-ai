@@ -1,0 +1,370 @@
+{
+  "atUtc": "20261002T185942856709Z",
+  "mode": "poll",
+  "projectId": "2103659612308828162",
+  "loadedJarSha256": "b70fdb60ffe120a4ec3a37c36bec19ad77aa99d6b9c2479ff164c8b3aa7ed3ab",
+  "diagnosticOnly": false,
+  "previousRunId": "2106061095016882177",
+  "targetDocumentId": "2106061816428781569",
+  "runId": "2106096765173243906",
+  "sources": [
+    {
+      "tool": "project_knowledge_search",
+      "toolCallId": "call_01a0fdfc76c474628c218590",
+      "retrievalStatus": "PARTIAL",
+      "citationStatus": "SUCCESS",
+      "hits": 4,
+      "sourceEvidence": [
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "cfa002a6376df18397af9e4c70e2a2f3",
+          "fragmentId": "2033199209131880604",
+          "sourceName": "ASSA_ABLOY_含_HID_Gunnebo_SKIDATA.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ],
+      "reasonCode": null,
+      "mcpFailureStage": null,
+      "mcpFailureReason": null,
+      "mcpErrorTypes": null,
+      "mcpSdkFrames": null,
+      "seq": 14,
+      "citationChars": 10054,
+      "citationSha256": "99487be270537bf010c52c5c53df508a9c586424e498126d1dc9380df4a3f7a9"
+    },
+    {
+      "tool": "project_knowledge_search",
+      "toolCallId": "call_01a0fdfc76c474628c218591",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 8,
+      "sourceEvidence": [
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880457",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880502",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880500",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-02",
+          "fragmentId": "2033199209131880491",
+          "sourceName": "D-02_模板A_产品主档L2.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ],
+      "reasonCode": null,
+      "mcpFailureStage": null,
+      "mcpFailureReason": null,
+      "mcpErrorTypes": null,
+      "mcpSdkFrames": null,
+      "seq": 15,
+      "citationChars": 11016,
+      "citationSha256": "a3e7b6a4bab6c48f0af386d2a6ab715d51f2499b5635065eb843f1857125005c"
+    },
+    {
+      "tool": "project_knowledge_search",
+      "toolCallId": "call_01a0fdfc76c474628c218592",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 8,
+      "sourceEvidence": [
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880499",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880459",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880502",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-04",
+          "fragmentId": "2033199209131880504",
+          "sourceName": "D-04_模板C_客户案例L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ],
+      "reasonCode": null,
+      "mcpFailureStage": null,
+      "mcpFailureReason": null,
+      "mcpErrorTypes": null,
+      "mcpSdkFrames": null,
+      "seq": 16,
+      "citationChars": 10980,
+      "citationSha256": "f0e80e70b5b75e45229871fd28ce090c8cb309aa9ac520ad57411a3b3d941dea"
+    },
+    {
+      "tool": "project_knowledge_search",
+      "toolCallId": "call_01a0fdfc76c474628c218593",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": "SUCCESS",
+      "hits": 8,
+      "sourceEvidence": [
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880496",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-04",
+          "fragmentId": "2033199209131880505",
+          "sourceName": "D-04_模板C_客户案例L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880456",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880460",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "cfa002a6376df18397af9e4c70e2a2f3",
+          "fragmentId": "2033199209131880604",
+          "sourceName": "ASSA_ABLOY_含_HID_Gunnebo_SKIDATA.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "d7d6c92f4ffa6dab7eea40b54f0244ab",
+          "fragmentId": "2033199209131880607",
+          "sourceName": "Allegion_全开口方案玩家.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "c807ad2d258af4d409c66cba6b1d3359",
+          "fragmentId": "2033199209131880613",
+          "sourceName": "Bayzat___Jisr___ZenHR___Darwinbox.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ],
+      "reasonCode": null,
+      "mcpFailureStage": null,
+      "mcpFailureReason": null,
+      "mcpErrorTypes": null,
+      "mcpSdkFrames": null,
+      "seq": 17,
+      "citationChars": 11161,
+      "citationSha256": "043e5b51b40e5f59c3ede14c61d2eea9dd30802701f06ce16ded91c93f86d5ea"
+    },
+    {
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "toolCallId": "call_01a0fdfc76c474628c218594",
+      "retrievalStatus": "SUCCESS",
+      "citationStatus": null,
+      "hits": 1,
+      "sourceEvidence": null,
+      "reasonCode": null,
+      "mcpFailureStage": null,
+      "mcpFailureReason": null,
+      "mcpErrorTypes": null,
+      "mcpSdkFrames": null,
+      "seq": 18,
+      "citationChars": 13513,
+      "citationSha256": "c093ae1c1d70a5d67dcde51a4a91e0fd2c2aa6d0d55d3efd118b6cf08f303796"
+    }
+  ],
+  "usage": [
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 1683,
+      "outputTokens": 355
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 27889,
+      "outputTokens": 5050
+    }
+  ],
+  "artifacts": [],
+  "run": {
+    "runId": "2106096765173243906",
+    "status": "FAILED",
+    "errorCode": "COMPLETION_REJECTED",
+    "actionCode": "C02",
+    "configSnapshot": {
+      "capabilityPackCode": "market-research",
+      "capabilityPackVersion": "v1",
+      "modelConfigId": "2104885081318375426",
+      "skills": [
+        {
+          "name": "competitor-analysis-ipd",
+          "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+        }
+      ],
+      "toolIds": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+      ],
+      "previousRunId": "2106082915170418689",
+      "targetDocumentId": "2106085620907540481",
+      "baseVersionId": "2106085620907540481"
+    },
+    "artifactArchives": []
+  },
+  "terminal": true,
+  "timedOutWaiting": false
+}

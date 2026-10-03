@@ -1,0 +1,73 @@
+{
+  "reviewer": "C",
+  "verdict": "REJECT_APPLY",
+  "runId": "2106100085770162178",
+  "artifactId": "f65e74bf6c454b00b66826f15f9e8e7d",
+  "versionId": "2106100961339510786",
+  "contentSha256": "348d99e516b08e5b89f8af19e6009437056f9b004806f00ac728bf405b943885",
+  "artifactStatus": "DRAFT",
+  "documentId": null,
+  "httpRun": {
+    "http": 200,
+    "code": 0,
+    "status": "SUCCEEDED"
+  },
+  "head": {
+    "id": "2106085620907540481",
+    "versionNo": 3,
+    "status": "GENERATED",
+    "evidence": "direct DB; attempted single-document GET returned HTTPError, not relied upon"
+  },
+  "previous": {
+    "runId": "2106082915170418689",
+    "personId": "900101",
+    "status": "SUCCEEDED",
+    "appliedArtifacts": 1
+  },
+  "sourceCounts": {
+    "localPARTIAL": 3,
+    "localSUCCESS": 3,
+    "mcpSUCCESS": 2,
+    "total": 8
+  },
+  "calls_count": 8,
+  "modelCalls": 3,
+  "inputTokens": 68886,
+  "outputTokens": 7573,
+  "identityValidation": {
+    "requestedDistinctFragments": 22,
+    "matched": 22,
+    "allDocumentAndKnowledgeIdsMatch": true,
+    "scope": {
+      "userId": 0,
+      "projectId": null,
+      "scopeType": "PERSON"
+    },
+    "sourceType": "KNOWLEDGE_FRAGMENT",
+    "reviewStatus": "NOT_PROJECT_DOCUMENT"
+  },
+  "blockingFindings": [
+    {
+      "section": "1.1 来源层级与用途",
+      "finding": "Project context facts (project/product/stage/action) labeled 项目已审核文档（最高） without any PROJECT_DOCUMENT/REVIEWED source identity in this run",
+      "impact": "Unsupported source-authority assertion; do not apply as current original-document candidate until corrected"
+    }
+  ],
+  "acceptedLimits": [
+    "Draft explicitly states product D positioning not obtained and generic competitor data is not product-specific comparison",
+    "No C02 completed or Gate pass claim found; missing-items report and inference labels retained",
+    "MCP labeled remote application answer and original source verification required"
+  ],
+  "numericValidation": {
+    "localLiteralSupportMissing": [
+      "99%"
+    ],
+    "remainingDecimalPercentTokensLiteralPresentInRetrievedLocalFragments": true,
+    "limitations": [
+      "Literal source support is not factual authentication; dates/financial claims remain knowledge corpus statements",
+      "99% product spec attributable only to remote application answer in artifact; full remote body not persisted for independent fact check",
+      "No externally authenticated corporate/product/financial primary documents fetched"
+    ]
+  },
+  "scope": "HTTP run GET and local DB SELECT; no apply/review/new query/business writes; no full draft or internal think/secret published"
+}

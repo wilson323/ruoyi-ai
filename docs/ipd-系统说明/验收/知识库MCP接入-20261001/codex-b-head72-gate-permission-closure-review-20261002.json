@@ -1,0 +1,25 @@
+{
+  "head": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "gatePaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java"
+  ],
+  "permissionPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java"
+  ],
+  "sha256": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "c8428b39290b8c25974b4f97f84d8a38b655f000e51ba72881f1ab32330448e9",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "a9b553bd2561292723500b3d58fe1de833ab68bf8b93838ab92458b38bd09745",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java": "c725ba66d118e0c15d8a06ffe59f9f0b6a48da032d465dffbb3392888eec7c5a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java": "464487d9c71367492d9e0da0baf213ebcd5fcaf63ae8280c4a65cb6c13e08f6f"
+  },
+  "gateClosure": "two paths standalone on current HEAD: fixed enum/rejectionReason already HEAD; Java stdlib only new predicate; existing JUnit/AssertJ deps",
+  "permissionClosure": "two paths static minimal; setter @Autowired uses HEAD existing @Mapper ProjectMapper/ProjectMemberMapper and HEAD IpdIdorGuard; Lombok required constructor remains session+auth; StageActionService five-field constructor/paused guard already HEAD",
+  "validation": "static HEAD symbol/dependency inspection only; not compile/Bean runtime proof",
+  "risks": [
+    "bare constructors ordinary action writes now fail closed unless fixture invokes setter",
+    "wrongResponsibility test checks exception class but not exact409/code; source retains409 ROLE_LOCKED",
+    "metadata checker intentionally narrow exact source-subject table and prefix prose; not universal provenance or syntax validator"
+  ]
+}

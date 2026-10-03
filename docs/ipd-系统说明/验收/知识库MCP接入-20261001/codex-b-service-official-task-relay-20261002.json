@@ -1,0 +1,54 @@
+{
+  "status": "PARTIAL",
+  "sdkCommit": "e9721285c63a37c10b1d07aa540408e57ba56ab2",
+  "version": "2.0.4-SNAPSHOT",
+  "files": [
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentOfficialTaskRelay.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOfficialTaskRelay.java",
+      "sha256": "62018922b838190d5f085d44e2f2873dc15477c0f852bfa14be027bb26653503"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentTaskPreparations.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentTaskPreparations.java",
+      "sha256": "a20f991eb3f6916948b4d9e3baf831f16d0af51e789d2403f2f77bc9c0e68290"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentOriginalTaskRunner.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOriginalTaskRunner.java",
+      "sha256": "389764ea7d58ea3ce945de4489859a07ed3a64c0c54e407324fc69dbe3e0e7b5"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentOfficialTaskExecution.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOfficialTaskExecution.java",
+      "sha256": "67cff7361aff0f634c691101b4dcd351cdbee02ec22b2cfd1189fabea67a0496"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentOfficialTaskRelayTest.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOfficialTaskRelayTest.java",
+      "sha256": "2ef39e3cd5c77fa733ffa29a1e0698f46a93d31f1df51720c228608cd25fbd1b"
+    }
+  ],
+  "patchSha256": "924ed9d09e9514d21b720efba4fccb65ddb37d90cdb729aba12d900128deea26",
+  "tests": {
+    "relay": 6,
+    "authority": 5,
+    "adapter": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "logs": [
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/relay-tests-six-final.log",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/AuthorityLauncher-task-integration.log",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ServiceLauncher-task-integration.log"
+  ],
+  "scope": "temp public official middleware; no SDK/shared source modification",
+  "pending": [
+    "Actual main Kernel/Planner/Configuration hooks absent",
+    "Mock RunService create models original Kernel install hook; no database business acceptance",
+    "Team waiting pending task is control-plane fixture, not real Service acceptance",
+    "Transient preparations replay/recovery and duplicate-idempotency outcome continuity pending",
+    "Original child TaskRepository sharing and approval resume pending",
+    "Service deployment and paired SDK upgrade pending"
+  ]
+}

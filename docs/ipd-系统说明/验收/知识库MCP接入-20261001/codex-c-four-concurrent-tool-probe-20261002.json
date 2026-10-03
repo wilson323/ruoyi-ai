@@ -1,0 +1,53 @@
+{
+  "atUtc": "2026-10-02T18:21:50.088528+00:00",
+  "scope": "one synchronized four-call batch, real tool/factory, latest temporary diagnostic overlay, no model or DB writes",
+  "questionEvidence": [
+    {
+      "seq": 22,
+      "chars": 2,
+      "sha256": "d1c45dd2fc21d63ff5ce66c67eb21dd583d473d90b42d28fa4729ef22920ee7d"
+    },
+    {
+      "seq": 23,
+      "chars": 2,
+      "sha256": "0f4371a7a9cf224a9bdda25ea4f7cc8edc82bf3bb9d51af68b586cba0bc04fd4"
+    },
+    {
+      "seq": 24,
+      "chars": 2,
+      "sha256": "c35ffb529d5d4bac4d074312abfdd793aa2d84770c4554d5fd3758dbc21841ed"
+    },
+    {
+      "seq": 25,
+      "chars": 4,
+      "sha256": "ef600aa6f736cf26babe75905ec5d2b89d3c2f4b8631510296cbaf37b8d665b9"
+    }
+  ],
+  "probeSourceSha256": "a5bdb81ff52990ed653969c1b8681b087c1410c6392616910cdc2d8abcbde7e4",
+  "compileExitCode": 0,
+  "requests": 4,
+  "requestsPerQuestion": 1,
+  "productionToolFinallyClosesClient": true,
+  "probeExitCode": 0,
+  "sources": [
+    {
+      "sourceSeq": 23,
+      "retrievalStatus": "SUCCESS"
+    },
+    {
+      "sourceSeq": 22,
+      "retrievalStatus": "SUCCESS"
+    },
+    {
+      "sourceSeq": 25,
+      "retrievalStatus": "SUCCESS"
+    },
+    {
+      "sourceSeq": 24,
+      "retrievalStatus": "SUCCESS"
+    }
+  ],
+  "privateLogPath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-engine-competition-yssvrnps/mcp-four-call-private.log",
+  "status": "PROBE_EXECUTED",
+  "conclusion": "Historical initialization failure root cause remains unknown; no further outbound retry authorized by this experiment."
+}

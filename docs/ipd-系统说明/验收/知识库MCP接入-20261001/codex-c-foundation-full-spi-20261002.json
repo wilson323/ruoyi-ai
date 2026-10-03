@@ -1,0 +1,27 @@
+{
+  "status": "TEMP_VALIDATED_NOT_PRODUCTION_BOUND",
+  "jdk": "standalone javac actual installed SDK 2.0.3; 489 extracted dependency cache; no main Maven target",
+  "tests": {
+    "found": 3,
+    "started": 3,
+    "passed": 3,
+    "failed": 0
+  },
+  "files": {
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java": "ff7f49d374854b3b0b789ee83342b352f9b399ec7cba524fd048e7c0f6b589e4",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java": "5972e68d3d7fe8d665b25b309e30e07bdd6a98b946f6482d666e6fa6a6326c98",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java": "ef2b31a273e6ca7ac031034cf2524ed4f7076840e9dfbcd9b2e77ef4dc79a60f"
+  },
+  "logs": {
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/foundation-full-junit.log": "108b475d0fd1b69f374a67288e31f924676bfe87cdbeb66f1d40ee49bafa53e2",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/deliveryprivacy-stream.log": "9b4f340fedeebb4b5836826d7fdd98559b9677e32534edfbab4e5408b049ba58",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/memoryhook-stream.log": "09746d40e1021114f6cd34d607e48fb37561e76363617b34b3222adc766c0f82"
+  },
+  "limitations": [
+    "authenticated Tavily search PENDING_CONFIG",
+    "artifact callback fixture DRAFT, not ArtifactVersionStore production binding",
+    "structured ThinkingBlock removal; no blanket plain text secret filter",
+    "typed child scope integration still in progress"
+  ],
+  "patchSha256": "aebd89f848108afa075c718bca39994db9f7a65d9c6723181c09005a07b82704"
+}

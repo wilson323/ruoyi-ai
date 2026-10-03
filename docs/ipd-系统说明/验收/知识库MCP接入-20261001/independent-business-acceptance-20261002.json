@@ -1,0 +1,130 @@
+{
+  "validator": "independent_business_acceptance",
+  "observedAt": "2026-10-02T16:00:01.794508+00:00",
+  "method": "read-only localhost authenticated HTTP; credentials omitted",
+  "runId": "2106051018860044289",
+  "status": "PARTIAL",
+  "runStatus": "SUCCEEDED",
+  "sources": [
+    {
+      "hits": 8,
+      "tool": "project_knowledge_search",
+      "chars": 11375,
+      "query": "竞品分析 价格 渠道 技术方案 EC-100 产品D",
+      "projectId": "2103659612308828162",
+      "toolCallId": "call_01a0fd5612b37bc1a9bb3b6a",
+      "citationChars": 11375,
+      "citationSha256": "fce0c6788531d896da6518f4ce312c07d9ec1e02c737d1ab603929cded1dd3db",
+      "citationStatus": "SUCCESS",
+      "retrievalStatus": "SUCCESS"
+    },
+    {
+      "hits": 1,
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "chars": 7915,
+      "query": "门禁梯控设备 EC-100 竞品 价格 渠道 技术方案",
+      "lineName": "门禁及梯控设备",
+      "serviceId": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "sourceKind": "REMOTE_APPLICATION",
+      "toolCallId": "call_01a0fd5615527161aededfbf",
+      "citationChars": 7915,
+      "citationSha256": "8db1b07562814b6de0cd3b76fa6a343559d1a54dce02db353fe0d60b131f0700",
+      "retrievalStatus": "SUCCESS"
+    }
+  ],
+  "draftSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39",
+  "confirmed": [
+    "New attempt retained previous run and rejected document references",
+    "Current project product is productD; draft explicitly excludes EC-100 as current product facts",
+    "Two actual tool calls and persisted SOURCE metadata present",
+    "No Gate decision in output",
+    "Third apply document 2106051584776511490 read back via authoritative ai-documents versions API",
+    "Third document GENERATED version 1 in its own chain; same authoritative document system, not same version chain as second rejected document"
+  ],
+  "draftIssues": [
+    "Local tool heading overstates all sources as project-reviewed documents; sources include system knowledge fragments",
+    "Claim of no project-external material conflicts with admitted remote EC-100 product material"
+  ],
+  "pending": [
+    "Reviewer approval deliberately not performed: draft has inaccurate source-scope language",
+    "Reviewed-only retrieval visibility and index database state not independently verified"
+  ],
+  "documentVersionsHttp": {
+    "route": "/api/v1/ai-documents/2106051584776511490/versions",
+    "code": 0,
+    "rows": [
+      {
+        "id": "2106051584776511490",
+        "projectId": "2103659612308828162",
+        "docType": "MARKET_RESEARCH",
+        "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39",
+        "status": "GENERATED",
+        "versionNo": 1
+      }
+    ]
+  },
+  "indexBoundary": {
+    "applyResponse": "NOT_INDEXED",
+    "independentDatabaseRead": "not performed; no claim of physical vector index absence"
+  },
+  "rejectedDocumentVersionsHttp": {
+    "code": 0,
+    "rows": [
+      {
+        "id": "2106050740358258690",
+        "projectId": "2103659612308828162",
+        "docType": "MARKET_RESEARCH",
+        "contentSha256": "f712f08a0a5e4e36d01888ce652771ffdcb611073844e4b51633cc15503a74a0",
+        "status": "REJECTED",
+        "versionNo": 1,
+        "reviewComment": "本机链路验收退回：检索资料为 EC-100，但当前项目为产品D-0925F11，报告不得将不同产品规格说成当前产品参数；资料文件存在也不等于本项目实现就绪。保留原运行及产物证据，后续修订另开尝试。"
+      }
+    ]
+  },
+  "limitations": [
+    "Both generated attempts remain independent document chains (each v1). This matches separate new artifacts but does not prove revision-chain linking."
+  ],
+  "rework_source_review": {
+    "status": "PARTIAL",
+    "mode": "READ_ONLY",
+    "reviewed_at": "2026-10-02T09:16:00-07:00",
+    "verified_source": [
+      "三元组冻结进入 configSnapshot 和幂等摘要；无关联请求摘要兼容历史",
+      "关联运行本人、同项目、同动作、终态及 APPLIED 文档关系检查",
+      "文档锁链头和 baseVersionId CAS、追加 parent/versionNo，保留模型和本次 token",
+      "复用原 submitText/create 和唯一 ai_documents 定档入口；未新增副驾发送"
+    ],
+    "findings": [
+      {
+        "priority": "P1",
+        "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+        "line": 188,
+        "problem": "显式关联返工仍按 docType 在全部独立链中挑最新退回意见，可能把另一链意见注入目标链运行。",
+        "validation_needed": "两条同类型退回链；显式返工旧链时只注入其基准版本意见。"
+      },
+      {
+        "priority": "P1",
+        "file": "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+        "line": 416,
+        "problem": "返工发送失败或需补选时关联保留，普通后续提问及历史切换未清除，可能隐式继承旧三元组。",
+        "validation_needed": "返工失败/补选后取消或普通新任务不能继承关联；明确重试可保留。"
+      },
+      {
+        "priority": "P2",
+        "file": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+        "line": 705,
+        "problem": "创建时基准仅检查数字，链 HEAD/CAS 到定档才验证；已陈旧请求仍可能耗费模型调用。",
+        "validation_needed": "创建前验证目标链基准，apply 继续保留事务内 CAS。"
+      }
+    ],
+    "test_evidence": {
+      "path": "/tmp/ipd-rework-chain-tests-final-20261002.log",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "limitation": "读取已有原始输出，未自行重新运行；上述场景未覆盖。"
+    },
+    "runtime_acceptance": "尚未验证新运行包及真实同链 v2 定档；不能宣称闭环。"
+  }
+}

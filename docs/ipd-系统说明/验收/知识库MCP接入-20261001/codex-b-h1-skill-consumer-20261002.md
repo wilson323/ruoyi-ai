@@ -1,0 +1,15 @@
+# H1 实际技能消费者探针
+
+裁决：current WIP 消费探针闭合，真实运行质量仍REJECT_APPLY；不是HEAD最小闭包验收。
+
+数据库只读run2106107313315135490：STEP seq3 SKILL_LOADED competitor-analysis-ipd/1.1.0/hash f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2；seq4 INTENT步骤2逐字保留用户声明时及未声明默认四维。因此规划提取未丢默认分支。
+
+生产链：Planner加载冻结LoadedSkill；Executor以spec.skills正文做ProjectAgentIntent.decide，publishIntent写STEP后kernel.execute；Kernel.sysPrompt(ProjectAgentPrompt.build(spec)).middleware(new FrozenProjectAgentSkills(spec.skills()))；FrozenSkills重新核classpath rawSHA/version/content并onSystemPrompt注入整正文。SDK依赖缓存2.0.3 sources ReActAgent:805–808实际串行调用middleware.onSystemPrompt；此源码只作调用解释，消费结论来自下述真正Model.stream stub。
+
+只读取主target/classes、test-classes和Surefire java.class.path，临时编译改造既有modelInputExcludesImplicitEngineeringContextButKeepsExplicitBusinessFactsAndSkills及JUnit launcher，临时classes置classpath首位。没有全dirty重新编译、没有写主target。实际选择本地检索工具但stub只返回正文，无tool call/出站。Model.stream入参Msg串联捕获确认默认步骤2原句、用户声明时、项目事实、selected-skills marker以及不要输出sourceType/reviewStatus和未经核对不得宣称高可信等规则。JUnit实际found/started/pass=1，失败0。首两次探针因猜测文案/未选工具条件断言失败，日志保留；按实际源码精确文案及选中工具再测通过，不放宽期望。
+
+精度：捕获为system+固定canary user messages；user句不含这些规则，因此证明规则进入模型输入，未单独保存完整输入。不是该真实run每轮完整系统输入回放；真实线上输入未持久保存，不伪造其证据。root告知8e80加载产物与主classes一致，本探针只独立freeze class hashes，未另核加载JAR hash。
+
+最小根因：不是manifest登记缺失或步骤提取丢失，模型在已有默认规则下仍把用途升级阻塞；缺少对可选默认规则的确定性输出验收。白话规则目前只在选中PROJECT_KNOWLEDGE_SEARCH时注入，真实run本地6SOURCE表明经过该工具；探针确认此条件输入包含规则，正文仍泄出字段是执行遵循失败，不可仅盲目叠加强调prompt。
+
+可逆修补路径建议（未实施）：在原CompletionGate/输出质量校验中仅针对C02绑定冻结技能且未声明用途的上下文，识别把用途声明肯定升级必须/阻塞的反例，与合法默认四维/用途可选/真实名单缺项区分；该上下文当前Gate不知action/用户目的，需先root裁决小型结构合同，不能全正文正则硬拦目的。内部字段白话可在既有最终展示/交付合同按已知结构字段转换或固定拒绝，不改SOURCE后台审计、不原文全局替换或篡改证据。两项都须保留原draft、独立再做，不自动apply，不开放dynamicSkills/subagent/PlanMode；本分区仅调查/probe，未改生产。

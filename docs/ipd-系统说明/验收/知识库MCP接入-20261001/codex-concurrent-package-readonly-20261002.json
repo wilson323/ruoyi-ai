@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-02T20:41:41.909398+00:00",
+  "listener_pids": [
+    "91326"
+  ],
+  "candidate_path": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "candidate_sha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "runtime_loaded_parity": "NOT_PROVEN",
+  "classes": {
+    "AgentScopeProjectAgentKernel": {
+      "packaged": true,
+      "sha256": "8790eebc1afbfe58ea91eeb598f64ba736bb4e3e070262019f0e116ec5d74666"
+    },
+    "ProjectAgentOfficialToolGovernance": {
+      "packaged": false
+    },
+    "ProjectAgentSkillGovernance": {
+      "packaged": false
+    },
+    "ProjectAgentNativeProfile": {
+      "packaged": false
+    }
+  },
+  "module_path": "BOOT-INF/lib/ruoyi-ipd-3.1.0.jar",
+  "module_sha256": "944a1bde48d58745411e2af3fdc9c36bbf1ffb71a015948591edfc897ed2faeb",
+  "packaged_kernel_method_symbol_presence": [
+    "disableFilesystemTools",
+    "disableShellTool",
+    "disableMemoryTools",
+    "disableMemoryHooks",
+    "disableTranscript",
+    "disableWorkspaceContext",
+    "disableAtPathExpansion",
+    "disableSubagents",
+    "disableDynamicSubagents",
+    "disableDynamicSkills",
+    "disableDefaultWorkspaceSkills",
+    "skillsEnabled"
+  ],
+  "method_symbol_scope": "Constant pool presence only; not standalone call execution proof"
+}

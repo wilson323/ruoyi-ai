@@ -1,0 +1,11 @@
+# 固定完成拒绝原因最小候选：隔离闭合
+
+HEAD72归档，仅RunHandle固定原因接线和原RunHandleTest两个拒绝断言＋一个成功SOURCE夹具修正。未借入当前RunSpec/Store/epoch/Kernel等WIP。精确patch及before/after SHA见同名文件。
+
+finish只有有效SUCCEEDED分支第一次计算rejectionReason，CAS重试沿用固定原因；CANCEL_REQUESTED仍优先，取消不附原因。失败仍COMPLETION_REJECTED；既有ERROR增加completionReason固定enum.name，不增加事件，不加入引用、模型正文或异常。原错误字段和message保留。
+
+首次实际候选13测试12过1失败：successPathHasMonotonicSeqAndSingleTerminal旧SOURCE只有hits1，无retrievalStatus。基线换回HEAD原Handle、仅跑同一case仍失败，预期RUN_FINISHED实际ERROR。HEAD Gate只把SUCCESS/PARTIAL命中视为有效。故temp测试补SUCCESS、citationText竞品分析、合法知识片段身份；不删TOOL_CALL/SOURCE，原seq、文本、SUCCEEDED、单terminal与callback断言完整保留。两拒绝case精确固定原因并检查ERROR不含模型正文。
+
+最终离线Maven原HandleTest：13 tests，0fail/0error/0skip，退出0，40.998秒；生产640、测试427源实际编译。使用已有~/.m2缓存、未-am，非全reactor验证。首次失败与baseline日志保留。同名JSON列实际日志及SHA。
+
+该候选与当前加载WIP有意不同：只增加观测字段，不纳当前原生finalText、epoch事务、产物先插入等改变；未声明运行包已加载此HEAD切片。主源码/index/target/DB未写；仅临时目录及原证据。root可按精确patch审查，不应整文件覆盖dirty源码。

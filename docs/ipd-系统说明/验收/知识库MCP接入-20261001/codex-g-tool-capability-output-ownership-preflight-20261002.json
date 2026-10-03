@@ -1,0 +1,53 @@
+{
+  "timestampUtc": "2026-10-02T20:18:19.295159+00:00",
+  "scope": "Person login + GET only; output ownership negative checks",
+  "checks": [
+    {
+      "account": "ipd-admin",
+      "personId": "900101",
+      "path": "/agent-runs/2106107313315135490",
+      "http": 200,
+      "code": 0,
+      "hasData": true,
+      "runStatus": "SUCCEEDED",
+      "runId": "2106107313315135490"
+    },
+    {
+      "account": "ipd-admin",
+      "personId": "900101",
+      "path": "/agent-runs/2106107313315135490/events?afterSeq=0",
+      "http": 200,
+      "code": 0,
+      "hasData": true,
+      "eventCount": 123,
+      "eventTypes": {
+        "STEP": 13,
+        "RUN_STARTED": 1,
+        "TEXT_DELTA": 71,
+        "TOOL_CALL": 12,
+        "SOURCE": 12,
+        "TOOL_RESULT": 12,
+        "ARTIFACT": 1,
+        "RUN_FINISHED": 1
+      },
+      "nextSeq": 123,
+      "terminal": true
+    },
+    {
+      "account": "ipd-leader",
+      "personId": "900102",
+      "path": "/agent-runs/2106107313315135490",
+      "http": 404,
+      "code": 50001,
+      "hasData": false
+    },
+    {
+      "account": "ipd-leader",
+      "personId": "900102",
+      "path": "/agent-runs/2106107313315135490/events?afterSeq=0",
+      "http": 404,
+      "code": 50001,
+      "hasData": false
+    }
+  ]
+}

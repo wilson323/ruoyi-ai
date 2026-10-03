@@ -1,0 +1,49 @@
+{
+  "status": "PARTIAL",
+  "verifiedSlice": "WorkflowEngine.run/resume + WorkflowRuntimeService + WorkflowRuntimeNodeService + JdbcCheckpointSaver across two JVMs",
+  "notVerified": [
+    "no HTTP resume endpoint",
+    "PID 13520 was not reloaded",
+    "no concurrent dual-replica lock collision",
+    "aiflow full suite not rerun"
+  ],
+  "command": "python3 docs/ipd-系统说明/验收/知识库MCP接入-20261001/run-workflow-engine-recovery-probe.py --jar ruoyi-admin/target/ruoyi-admin.jar --classes ruoyi-modules/ruoyi-aiflow/target/classes --execute --out /tmp/engine-recovery-probe-result.json",
+  "commandExitCode": 0,
+  "adminJarSha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "probeSourceSha256": "1e055e5e951e5745154d1ec3071c1aba4a6bfe00d9a8a62d58e8bcebb7bfb697",
+  "runnerSha256": "7958084c428ab63db2acb09385aee4f8a574166b24a5b2fb4ca0f44c65ba404a",
+  "workflowEngineSha256": "d427bfcf3d2315496e7f76ce5f0c640c2a5ccc65be732f25529a23854cfcabd9",
+  "workflowEngineBeforeSha256": "64fc1d06b811a0bab97a9cc923c36c6b26e10749e49c96ecd320d92f94373030",
+  "temporaryDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-engine-recovery-z5lefc0m",
+  "retainedRuntimes": [297, 298],
+  "cases": [
+    {
+      "kind": "replay",
+      "workflowId": 136,
+      "runtimeId": 301,
+      "runtimeUuid": "67cf7daa1d3e41dc88165cd06f2dd11f",
+      "phases": ["fail", "resume"],
+      "exitCodes": [0, 0],
+      "db": "status 3; A one success; B attempts f26e33070fc64fae9a0ffea2c6505176 and fc66a5257f8244a4abb99b97754a9534; C input engine-A-B; seenB equals the newer attempt"
+    },
+    {
+      "kind": "effect",
+      "workflowId": 137,
+      "runtimeId": 302,
+      "runtimeUuid": "f6054264a01242d4a2ddc4f9591b84de",
+      "phases": ["fail", "resume"],
+      "exitCodes": [0, 0],
+      "db": "status 4; only A; MailSend B has no runtime node; checkpoint inFlight is B; remark contains 副作用节点结果尚未确认，禁止自动重放"
+    },
+    {
+      "kind": "parallel",
+      "workflowId": 138,
+      "runtimeId": 303,
+      "runtimeUuid": "5171517718d543cca6a9a95c481f7a11",
+      "phases": ["fail", "verify"],
+      "exitCodes": [0, 0],
+      "db": "B8 and B9 have no runtime node; checkpoint completed is only A; B1-B7 already entered runNode and persisted status 3 before the checkpoint fault"
+    }
+  ],
+  "disabledLeftovers": [133, 134, 135]
+}

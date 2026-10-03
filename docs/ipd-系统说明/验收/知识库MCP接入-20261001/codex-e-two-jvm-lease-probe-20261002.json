@@ -1,0 +1,39 @@
+{
+  "scope": "production MySQL RunLease only; no Engine or business table writes",
+  "atUtc": "2026-10-02T17:51:48.912810+00:00",
+  "databaseEndpoint": "127.0.0.1:13306/ipd_dev",
+  "compileExitCode": 0,
+  "temporaryDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-lease-validator-lknsk__7",
+  "sourceSha256": "e73b9769172fdf777cade148cd7bb64fe7bdaeaba2915cb507ed5ce0dc15f2af",
+  "compiledClassSha256": "e3bdb62b7fe4a801b2c29e5ffb3cf0c95cd52fc9f34e8d368994df54a8aebec5",
+  "probeSha256": "f93d98cb775699d4db5ea7bab06eb17221815a0c85548db94362f1b2dc1caa4e",
+  "initialFailures": [
+    "Readiness check initially assumed first stdout line; corrected to explicit marker",
+    "Initial probe used default3306; authentication rejected before GET_LOCK. Corrected to actual existing WorkflowEngineRecoveryProbe endpoint13306. No business writes."
+  ],
+  "checks": [
+    {
+      "name": "two_jvm_exclusion",
+      "holderPid": 50912,
+      "contenderExitCode": 0,
+      "marker": "LEASE_REJECTED",
+      "passed": true
+    },
+    {
+      "name": "normal_release_reacquire",
+      "exitCodes": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "probe_process_termination_releases_lock",
+      "terminatedProbePid": 50956,
+      "holderExitCode": 143,
+      "nextJvmExitCode": 0,
+      "passed": true
+    }
+  ],
+  "status": "VERIFIED_LEASE_ONLY"
+}

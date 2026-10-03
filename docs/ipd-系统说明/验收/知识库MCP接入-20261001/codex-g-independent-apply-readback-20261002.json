@@ -1,0 +1,58 @@
+{
+  "/ai-documents/2106085620907540481/versions": {
+    "http": 200,
+    "code": 0,
+    "data": [
+      {
+        "id": "2106051584776511490",
+        "projectId": "2103659612308828162",
+        "parentVersionId": null,
+        "versionNo": 1,
+        "status": "REJECTED",
+        "indexStatus": null,
+        "model": "MiniMax-M3",
+        "tokenPrompt": 24173,
+        "tokenCompletion": 2843,
+        "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39"
+      },
+      {
+        "id": "2106061816428781569",
+        "projectId": "2103659612308828162",
+        "parentVersionId": "2106051584776511490",
+        "versionNo": 2,
+        "status": "REJECTED",
+        "indexStatus": null,
+        "model": "MiniMax-M3",
+        "tokenPrompt": 127893,
+        "tokenCompletion": 4737,
+        "contentSha256": "ae42935aa03b525c6fb332ea3f267eda8929ca2dfcd5fcfc5bfdcaa8aebbb77a"
+      },
+      {
+        "id": "2106085620907540481",
+        "projectId": "2103659612308828162",
+        "parentVersionId": "2106061816428781569",
+        "versionNo": 3,
+        "status": "GENERATED",
+        "indexStatus": null,
+        "model": "MiniMax-M3",
+        "tokenPrompt": 42833,
+        "tokenCompletion": 4331,
+        "contentSha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8"
+      }
+    ]
+  },
+  "/agent-runs/2106082915170418689": {
+    "http": 200,
+    "code": 0,
+    "data": {
+      "runId": "2106082915170418689",
+      "status": "SUCCEEDED",
+      "artifactArchives": [
+        {
+          "artifactId": "77f8283b1a6849798dc6b39ce4da4f9b",
+          "documentId": "2106085620907540481"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "status": "DRAFT_ONLY_NOT_APPLIED_NOT_COMPILED",
+  "allowedPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java"
+  ],
+  "beforeHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java": "b614896b31af9c02cb9b77ea2d8a6c61bf981cfb112db44307bd927d1eae9f1d",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java": "adf23dc18eeca82a856c7c82ee3c4cf98f312130f238ae9e1ae0cbb17c8d2911"
+  },
+  "note": "Backend full-suite compilation freeze respected; patch generated in memory only. Query q remains unchanged, labels only from current frontend agentRunStatusMeta."
+}

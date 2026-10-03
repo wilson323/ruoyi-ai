@@ -1,0 +1,54 @@
+{
+  "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/kernel/AgentScopeChatKernel.java": {
+    "sourceSHA": "634eeee4eb1200d103d4ea0787884fcae96ae96160f3ecf376e2dc5f64c5a82a",
+    "workingCalls": {
+      ".disableSubagents()": 0,
+      ".disableDynamicSubagents()": 0,
+      ".disableDynamicSkills()": 0
+    },
+    "headCalls": {
+      ".disableSubagents()": 1,
+      ".disableDynamicSubagents()": 1,
+      ".disableDynamicSkills()": 1
+    }
+  },
+  "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/PocKernelSupport.java": {
+    "sourceSHA": "8abd80e7f90d48ed21fa02ec305fa993f2da7b95939354ce6d494f3eed72332f",
+    "workingCalls": {
+      ".disableSubagents()": 0,
+      ".disableDynamicSubagents()": 0,
+      ".disableDynamicSkills()": 0
+    },
+    "headCalls": {
+      ".disableSubagents()": 0,
+      ".disableDynamicSubagents()": 0,
+      ".disableDynamicSkills()": 0
+    }
+  },
+  "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": {
+    "sourceSHA": "641bfdc81ea582e2292801607e513c7f6f422c77e030cc476272929f81110553",
+    "workingCalls": {
+      ".disableSubagents()": 0,
+      ".disableDynamicSubagents()": 0,
+      ".disableDynamicSkills()": 0
+    },
+    "headCalls": {
+      ".disableSubagents()": 1,
+      ".disableDynamicSubagents()": 1,
+      ".disableDynamicSkills()": 1
+    }
+  },
+  "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/impl/CodingServiceImpl.java": {
+    "sourceSHA": "f6fdd41ac79bad2f3017ab829e2677e472da8b525ef1dfc86e6da56fcc671466",
+    "workingCalls": {
+      ".disableSubagents()": 0,
+      ".disableDynamicSubagents()": 0,
+      ".disableDynamicSkills()": 0
+    },
+    "headCalls": {
+      ".disableSubagents()": 1,
+      ".disableDynamicSubagents()": 1,
+      ".disableDynamicSkills()": 1
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "observedAt": "2026-10-02T22:18:22.172972+00:00",
+  "mainTestCompileExitCode": 0,
+  "mainTestCompileLog": "/tmp/ipd-coordinated-post-repair-test-compile-20261002.log",
+  "antiDisableExitCode": 0,
+  "antiDisableOutput": "CONSUMER ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/kernel/AgentScopeChatKernel.java\nCONSUMER ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/PocKernelSupport.java\nCONSUMER ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/impl/CodingServiceImpl.java\nCONSUMER ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java\nconsumers=4 violations=0; static anti-disable contract only\n",
+  "changes": [
+    {
+      "path": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStoreTest.java",
+      "before": "65915d81b751f8e653c57f618f4d097ba946774f0679dfe1806bc6c83ddd8158",
+      "after": "1f9a88acbf93f7a7b74dbf32ed694242162dcfe798d38915f739de5d4cd83581"
+    }
+  ],
+  "authorizedTestFixtureSHA": "1f9a88acbf93f7a7b74dbf32ed694242162dcfe798d38915f739de5d4cd83581",
+  "fixtureBytecodeGate": "old3/5 detected, exact source javac0 followed by verified30/40 before tests",
+  "status": "PENDING_VALIDATION",
+  "runtimeLoaded": false
+}

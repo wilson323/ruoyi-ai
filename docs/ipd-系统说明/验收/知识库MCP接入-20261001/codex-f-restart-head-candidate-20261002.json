@@ -1,0 +1,47 @@
+{
+  "head": "2dc5c04723536d07192c6f9f277a276bf8ecee50",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-restart-head-hn4f473l/ruoyi-ipd-web",
+  "patch": "codex-f-restart-head-candidate-20261002.patch",
+  "patchSha256": "ce21df25754afd966acb2f33e622356c69d4942d9518c9b11b47e67d1281cccb",
+  "paths": [
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts"
+  ],
+  "hashes": {
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "fc132c771f9a8cee07b7105ca7a00b7d4d81e61c6a9f330f024624969784a611",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "75b51b9dc9383eabce4892c453377c14d1f683dfa49fa6789a446fe347b08eca",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "a7063f163e12ff44f45d25844d927c274dc5faf84a6c2137fec385457c103ea2",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "0770475019242cd4786cf1e678a736e24cd394a5806eb4212cc9f810f305c39e"
+  },
+  "boundary": "HEAD archive + exact4 restoration diff only; no new dependencies/main dirty/node_modules/index",
+  "status": "ISOLATED_CANDIDATE_VERIFIED",
+  "install": "offline/frozen/ignore-scripts exit0 downloaded0 no new dependencies",
+  "targeted": {
+    "exitCode": 0,
+    "tests": 49,
+    "files": 2,
+    "panel": 27,
+    "timeline": 22
+  },
+  "types": {
+    "exitCode": 0,
+    "diagnosticCount": 0,
+    "scopePackages": 37,
+    "actualTasks": 1
+  },
+  "candidateHashesAfter": {
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "fc132c771f9a8cee07b7105ca7a00b7d4d81e61c6a9f330f024624969784a611",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "75b51b9dc9383eabce4892c453377c14d1f683dfa49fa6789a446fe347b08eca",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "a7063f163e12ff44f45d25844d927c274dc5faf84a6c2137fec385457c103ea2",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "0770475019242cd4786cf1e678a736e24cd394a5806eb4212cc9f810f305c39e"
+  },
+  "topLevelModuleLinksChecked": 4519,
+  "mainSourceModuleLinks": [],
+  "logs": {
+    "install": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-restart-head-hn4f473l/install.log",
+    "targeted": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-restart-head-hn4f473l/targeted.log",
+    "types": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-restart-head-hn4f473l/types.log"
+  }
+}

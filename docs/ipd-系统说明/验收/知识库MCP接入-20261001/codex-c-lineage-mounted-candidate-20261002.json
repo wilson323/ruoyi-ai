@@ -1,0 +1,82 @@
+{
+  "status": "PARTIAL",
+  "scope": "temp-only; no main/index/target/DB/model writes",
+  "source": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java",
+      "sha256": "07aaf2459f565bb01968b0434102717822dce4dc51fcef58b8348807fbcb00ab"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java",
+      "sha256": "aaac7017ad920c56bad97347973c7630b07bc8f044f2df48bc19a6a717f0377c"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildLineageRegistry.java",
+      "sha256": "c21eb92d3a418dbade740f4e62f13f8c2e9543f21be558e500403171a2156412"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java",
+      "sha256": "ff7f49d374854b3b0b789ee83342b352f9b399ec7cba524fd048e7c0f6b589e4"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java",
+      "sha256": "7519254b46551eeaa1604440976a1e39d904ee328fe3b2cdf87cf69b102079a7"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java",
+      "sha256": "e837f1973caf72c62e714a42f587cd2830a70abd756aaf12ce3dd20a1776db21"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentMountedFoundationRuntime.java",
+      "sha256": "4b56548f5d650acdd201c75ec4f677fc428793cd0a622b68369e6cf817955a84"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentPinnedFoundationRuntime.java",
+      "sha256": "4401a666d79df943b8045c09c040d2c186f2fd7026148ec352f867cf404dca9a"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentSandboxPathFilesystem.java",
+      "sha256": "f8e85173bed4afb9a2039a705962278ba23b86985f9f6f09bbd2442db3bbc1a8"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java",
+      "sha256": "0cc555f6a0478264b0b347e65e2944b102826c68683bd478e3e865e2bbbe46b4"
+    }
+  ],
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-lineage-mounted-candidate-20261002.patch",
+  "patchSha256": "dd8e44332477787f00b421d3d08546c43ba1b9429171011e1429ffb3886e59c1",
+  "logs": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/sdk203-lineage-mount-compile.log",
+      "sha256": "d09d8c5ed8869c2d17f236741e28b9be1f4563a6879020e41dc347dcf10b718d"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/sdk203-lineage-mount-compile-v2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/sdk203-lineage-junit.log",
+      "sha256": "dd62c9d280e5d43e9b422bfb77d222f31346c1c75e1459dc8bc69de39f8ab398"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/sdk204-lineage-mount-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/sdk204-lineage-junit.log",
+      "sha256": "79fd39f03e0eed449f430f26712ca9b5d0e4de47187624b35498ff868c2d52b4"
+    }
+  ],
+  "validation": {
+    "sdk203": "10 sources compile; ChildConsumers 2 tests pass; first compile missing JUnit preserved then corrected CP",
+    "sdk204": "10 sources compile; full consumer 5 tests pass",
+    "mount": "compile only, actual Docker resource protection still pending"
+  },
+  "consumerContract": "Share exact guard.lineage() instance with Governance. requireKnown(Agent actor,RuntimeContext ctx) before effect; no sub UUID permission. Official factory real delegate registered then opaque-parent-authorized actual invocation session registered. current access checked each call.",
+  "limits": [
+    "live JVM lineage only; cold lineage reconstruction not complete",
+    "fixture owner/artifact callbacks not production owner approval/ArtifactVersionStore binding",
+    "mounted runtime write isolation not yet executed",
+    "global memory quiescence is not success proof"
+  ]
+}

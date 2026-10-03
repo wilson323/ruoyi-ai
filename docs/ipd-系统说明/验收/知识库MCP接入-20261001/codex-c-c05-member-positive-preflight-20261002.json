@@ -1,0 +1,37 @@
+{
+  "status": "READ_ONLY_READY_NOT_EXECUTED",
+  "projectId": "2106098805312069634",
+  "actorPersonId": "900104",
+  "account": "ipd-rd",
+  "actionId": "2106100150559576066",
+  "actionCode": "C05",
+  "ownerRole": "RD_PM",
+  "depth": "LIGHT",
+  "before": "NOT_STARTED",
+  "versionBefore": 0,
+  "request": {
+    "method": "POST",
+    "path": "/api/v1/stage-actions/2106100150559576066/transit?target=IN_PROGRESS",
+    "body": null
+  },
+  "authorizationScope": "Do not execute until root verifies new package and explicitly releases write window",
+  "expected": {
+    "http": 200,
+    "code": 0,
+    "status": "IN_PROGRESS",
+    "version": 1,
+    "confirmedBy": null,
+    "confirmedAt": null,
+    "actualDoneAt": null
+  },
+  "protected": {
+    "projectProtectedHash": "120e1e9cb0dedab8d08b706ced8f9141a9fd427f84255ac1d677797dd8a31ba4",
+    "otherActionCount": 68,
+    "otherActionsCanonicalSha256": "3a36eadacea30a1ecd249659066c467337be09a94d8f00c18122f3ffff093524",
+    "hashMethod": "SELECT ordered JSON rows then Python json.dumps sort_keys=True,separators comma colon -> SHA256; avoids GROUP_CONCAT truncation"
+  },
+  "helper": "safe.accounts()[ipd-rd] login in memory; assert Person900104 session; exact GET action prior state then one POST query param no body; repeat target idempotence if root authorizes, verify no second audit; safe HTTP fields and DB before/after protection only",
+  "nonmember": "900105/ipd-rd2 missing safe credential; blocked, no guessed passwords/role edits",
+  "source": "StageActionController transit uses request param target/reason, requireActionWriter; service skips DONE validation for IN_PROGRESS, existing guard/CAS/audit; project TEAMING not SUSPENDED/ARCHIVED; member900104 RD_PM exitNULL del0",
+  "scope": "No transition HTTP request or business write performed; two mistaken optional Person role/status SELECT failed1054, corrected id+username only"
+}

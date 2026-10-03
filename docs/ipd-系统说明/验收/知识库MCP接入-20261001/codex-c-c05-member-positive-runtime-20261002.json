@@ -1,0 +1,58 @@
+{
+  "before": {
+    "action": {
+      "status": "NOT_STARTED",
+      "version": 0,
+      "updateBy": 900102,
+      "confirmedAt": null,
+      "confirmedBy": null,
+      "actualDoneAt": null
+    },
+    "projectHash": "dfe6392234a0ab8c325355a8766259b1ac78942a7fae7b2e7ced22e4f88b1628",
+    "otherHash": "3a36eadacea30a1ecd249659066c467337be09a94d8f00c18122f3ffff093524",
+    "otherCount": 68,
+    "audit": 0
+  },
+  "personId": "900104",
+  "actionId": "2106100150559576066",
+  "pid": 43168,
+  "jarSha256": "8e80bb8198f30e681130d937325a8ac2bb5f8988c0bf5cdcd6be1b1033ce0354",
+  "preparationCorrection": "First session assertion expected flat id, actual /auth/me data.person.id; no transit was sent before correction",
+  "memberHttp": {
+    "http": 200,
+    "code": 0
+  },
+  "afterMember": {
+    "action": {
+      "status": "IN_PROGRESS",
+      "version": 1,
+      "updateBy": 900104,
+      "confirmedAt": null,
+      "confirmedBy": null,
+      "actualDoneAt": null
+    },
+    "projectHash": "dfe6392234a0ab8c325355a8766259b1ac78942a7fae7b2e7ced22e4f88b1628",
+    "otherHash": "3a36eadacea30a1ecd249659066c467337be09a94d8f00c18122f3ffff093524",
+    "otherCount": 68,
+    "audit": 1
+  },
+  "wrongRoleHttp": {
+    "http": 409,
+    "code": 40004
+  },
+  "afterWrongRole": {
+    "action": {
+      "status": "IN_PROGRESS",
+      "version": 1,
+      "updateBy": 900104,
+      "confirmedAt": null,
+      "confirmedBy": null,
+      "actualDoneAt": null
+    },
+    "projectHash": "dfe6392234a0ab8c325355a8766259b1ac78942a7fae7b2e7ced22e4f88b1628",
+    "otherHash": "3a36eadacea30a1ecd249659066c467337be09a94d8f00c18122f3ffff093524",
+    "otherCount": 68,
+    "audit": 1
+  },
+  "status": "VERIFIED"
+}

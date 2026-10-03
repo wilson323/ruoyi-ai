@@ -1,0 +1,21 @@
+{
+  "headBefore": "094acbc016ed5890a468cc04eaebeacd923ef90d",
+  "commit": "74e4723bb5008582ce99587ce8136abfab14de16",
+  "paths": [
+    ".claude/hooks/check-pre-commit.sh",
+    "scripts/test-staged-snapshot.py"
+  ],
+  "hashes": {
+    ".claude/hooks/check-pre-commit.sh": "72ee8d7ddd7a1a991923c52c83739cf7f9374af1b2776f6b738654109ac54023",
+    "scripts/test-staged-snapshot.py": "ff4e9ba83cd20c6346e0d53bc23dac3e3657e0049b38cea8872e4303a707df7b"
+  },
+  "controls": 16,
+  "testsLog": "/tmp/ipd-codex-ratchet-index-controls-20261002.log",
+  "normalHookLog": "/tmp/ipd-codex-index-ratchet-node-commit-20261002.log",
+  "peerHead": "2dc5c04723536d07192c6f9f277a276bf8ecee50",
+  "originalMainIndexEntriesSha": "4b190a18371d55bcde6e9cae409c4ef9711b502d380bbca62e947031e53f34f3",
+  "indexPolicy": "only two owned paths aligned; all other main-index entries byte-preserved",
+  "normalHook": "8 PASS/0 FAIL/0 SKIP",
+  "pushed": true,
+  "includedInRemoteHead": "206ad0a21dde1816acddf8102cc299062eeb830d"
+}

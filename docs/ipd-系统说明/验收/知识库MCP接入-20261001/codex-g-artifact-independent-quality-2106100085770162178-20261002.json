@@ -1,0 +1,447 @@
+{
+  "verdict": "REJECT_APPLY",
+  "runId": "2106100085770162178",
+  "artifactId": "f65e74bf6c454b00b66826f15f9e8e7d",
+  "bodySha256": "348d99e516b08e5b89f8af19e6009437056f9b004806f00ac728bf405b943885",
+  "sourceCount": 8,
+  "toolCalls": 8,
+  "sources": [
+    {
+      "status": "PARTIAL",
+      "hits": 4,
+      "chars": 10018,
+      "sha256": "433639322a0fb2503b6adf0dcb876d73e3096252d408b5bc8551a62f6461e030",
+      "identities": [
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "cfa002a6376df18397af9e4c70e2a2f3",
+          "fragmentId": "2033199209131880604",
+          "sourceName": "ASSA_ABLOY_含_HID_Gunnebo_SKIDATA.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "6dc324e8075d9faac90ee82570313f88",
+          "fragmentId": "2033199209131880606",
+          "sourceName": "Allegion_Schlage.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ]
+    },
+    {
+      "status": "SUCCESS",
+      "hits": 8,
+      "chars": 11846,
+      "sha256": "86f293964cf0704beef9fbbbd8a519a57bfcf7e2926a7817aad23480c621b60c",
+      "identities": [
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880502",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880457",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880500",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "355bc8e8ff690970c146f3652b645008",
+          "fragmentId": "2033199209131880759",
+          "sourceName": "友商竞品库完善报告.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ]
+    },
+    {
+      "status": "SUCCESS",
+      "hits": 8,
+      "chars": 10777,
+      "sha256": "5190f5bf027245910aca75fa452382731f7b7c716a227f6b222d13d7cb5b057f",
+      "identities": [
+        {
+          "documentId": "D-04",
+          "fragmentId": "2033199209131880505",
+          "sourceName": "D-04_模板C_客户案例L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880497",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880496",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-05",
+          "fragmentId": "2033199209131880514",
+          "sourceName": "D-05_模板D_故障树L4.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ]
+    },
+    {
+      "status": "SUCCESS",
+      "hits": 1,
+      "chars": 15782,
+      "sha256": "9fc2210668ba63ba84beb0d6e95fe5393542d251e8353ba3932267efa8b1db21",
+      "identities": []
+    },
+    {
+      "status": "PARTIAL",
+      "hits": 5,
+      "chars": 11059,
+      "sha256": "310095863a87f5db0b00891db2a7afb96e660463eabb53297b478a624deaabf2",
+      "identities": [
+        {
+          "documentId": "20929c2d4904d26da9a137a27ad18120",
+          "fragmentId": "2033199209131880670",
+          "sourceName": "Rosslare.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ]
+    },
+    {
+      "status": "SUCCESS",
+      "hits": 8,
+      "chars": 11891,
+      "sha256": "0c64380f3cc9be7dac4a5dc0e53a46287906cdd6f95f4bccbf4bf753d32c5a93",
+      "identities": [
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880457",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "355bc8e8ff690970c146f3652b645008",
+          "fragmentId": "2033199209131880759",
+          "sourceName": "友商竞品库完善报告.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "B-03",
+          "fragmentId": "2033199209131880470",
+          "sourceName": "B-03_元数据字段字典.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880497",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ]
+    },
+    {
+      "status": "PARTIAL",
+      "hits": 6,
+      "chars": 2229,
+      "sha256": "17bf107fe70734ad2407dba24bc13152df88fcdfb32901050a09c4319c39d0ab",
+      "identities": [
+        {
+          "documentId": "KB-CF-2026-09-09",
+          "fragmentId": "2033199209131880451",
+          "sourceName": "产品知识库内容框架.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "2e2279b68ed068ef1264dc598d5bb28a",
+          "fragmentId": "2033199209131880708",
+          "sourceName": "大华_DSS.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-02",
+          "fragmentId": "2033199209131880482",
+          "sourceName": "D-02_模板A_产品主档L2.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-03",
+          "fragmentId": "2033199209131880494",
+          "sourceName": "D-03_模板B_解决方案L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-04",
+          "fragmentId": "2033199209131880503",
+          "sourceName": "D-04_模板C_客户案例L3.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "D-05",
+          "fragmentId": "2033199209131880510",
+          "sourceName": "D-05_模板D_故障树L4.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ]
+    },
+    {
+      "status": "SUCCESS",
+      "hits": 1,
+      "chars": 14804,
+      "sha256": "51f8a9b1578bc1951a6e105f9336f7d55902903c80c7152bf4f1171045027a13",
+      "identities": []
+    }
+  ],
+  "modelMarkers": [
+    {
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "inputTokens": 1683,
+      "outputTokens": 396
+    },
+    {
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "inputTokens": 24034,
+      "outputTokens": 674
+    },
+    {
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "inputTokens": 43169,
+      "outputTokens": 6503
+    }
+  ],
+  "httpRun": {
+    "http": 200,
+    "code": 0,
+    "status": "SUCCEEDED"
+  },
+  "versions": [
+    {
+      "id": "2106051584776511490",
+      "status": "REJECTED",
+      "versionNo": 1,
+      "parentVersionId": null,
+      "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39"
+    },
+    {
+      "id": "2106061816428781569",
+      "status": "REJECTED",
+      "versionNo": 2,
+      "parentVersionId": "2106051584776511490",
+      "contentSha256": "ae42935aa03b525c6fb332ea3f267eda8929ca2dfcd5fcfc5bfdcaa8aebbb77a"
+    },
+    {
+      "id": "2106085620907540481",
+      "status": "GENERATED",
+      "versionNo": 3,
+      "parentVersionId": "2106061816428781569",
+      "contentSha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8"
+    }
+  ],
+  "blockers": [
+    "project context metadata classified as highest reviewed project document without supporting source identity",
+    "candidate system notes promoted to high confidence official cross-validation",
+    "missing competitor set but expanded comparative four dimensions and conditional opportunities"
+  ],
+  "limits": [
+    "full remote citation not persisted; cannot independently certify all numeric statements",
+    "no new query/apply/review/DB write; no internal reasoning read"
+  ]
+}

@@ -1,0 +1,13 @@
+# G hook 索引核验独立复核
+
+裁决：VERIFIED_IMPLEMENTATION_ONLY。本次两路径变更未削减API合同判据，未加入端点白名单。只读源码/diff及原始控制日志；未提交、未改源码或运行主target。
+
+run_ratchet_gate由工作树node改调用既有check-staged-snapshot.py。后者导出BE与FE真实索引blob，再执行BE索引内原check-api-contract-fe-be.mjs，保留原checker退出码；checker缺失、符号链接、不合并索引、不支持对象/路径及索引执行中变化均拒绝。GIT_INDEX_FILE只传给其所属git目录，避免commit --only事务索引污染另一仓。合同checker本次diff为空，原baseline/white-list/ratchet判断仍由同一checker执行，不是模拟checker替代真实门禁。
+
+新增两个控制测试抽取真实run_ratchet_gate函数，临时fixture使good-index/bad-worktree通过、bad-index/good-worktree拒绝。fixture的contract checker是刻意最小替身，因此证明hook路由到索引及拒绝传播，不单独证明全部真实API判据；既有helper的完整16控制日志 /tmp/ipd-codex-ratchet-index-controls-20261002.log 为Ran16/OK。未重复运行共享目标。
+
+缺helper改为FAILED+return1，python失败也进入FAILED；但node缺失SKIP仍是历史规则，并未在本切片改成failclosed，不能把整个门禁描述为所有环境均failclosed。源码注释仍写旧node直接调用/旧时间，属于旧描述，不影响路由结论。
+
+IPD_FE_REPO_ROOT可选择peer仓根，helper核该仓索引而非工作树。由root显式设置为与FE HEAD一致的临时cleanclone，可避免未提交FE状态影响受审BE提交，仍执行同一合同判据；该选择是信任输入，不会自动证明clone匹配指定HEAD，需root保留clone HEAD与真实FE HEAD对应证据。不得任意选造假的FE仓称已通过当前FE合同。
+
+观察hash：hook72ee8d7ddd7a1a991923c52c83739cf7f9374af1b2776f6b738654109ac54023；test ff4e9ba83cd20c6346e0d53bc23dac3e3657e0049b38cea8872e4303a707df7b；helper8532a45bcbabc6c0b4ac722253234a56203db9d0978503b633becbafa44a06e6。提交/后续变更后应再核hash。

@@ -1,0 +1,73 @@
+{
+  "status": "PENDING_VALIDATION",
+  "observedUtc": "2026-10-02T17:38:00Z",
+  "frontendHead": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a",
+  "backendHead": "29b64b97c1729335abe22955b06a7597d68a9fab",
+  "backendPid": 13520,
+  "loadedJarSha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "frontendPid": 38773,
+  "projectId": "2103659612308828162",
+  "person": "ipd-admin",
+  "rejectedDocumentId": "2106061816428781569",
+  "rejectedDocumentStatus": "REJECTED",
+  "draftArtifactId": "69b9c84f9fe34eb088c9d0c7920a093e",
+  "draftArtifactStatus": "DRAFT",
+  "approved": false,
+  "rework": {
+    "actionCode": "C02",
+    "previousRunId": "2106061095016882177",
+    "targetDocumentId": "2106061816428781569",
+    "baseVersionId": "2106061816428781569",
+    "interceptedCreate": "browser fetch rejected before network; no new row",
+    "ordinarySendAfterFailure": {
+      "previousRunId": null,
+      "targetDocumentId": null,
+      "baseVersionId": null,
+      "actionCode": "C02",
+      "note": "C02 remains because the page action is still selected"
+    },
+    "liveRunId": "2106074253571919874",
+    "liveThenCancelled": "CANCELLED",
+    "finishedAtDbClock": "2026-10-03 01:31:20"
+  },
+  "history": {
+    "refreshKeptRunIds": [
+      "2106064774604263425",
+      "2106061095016882177",
+      "2106051018860044289",
+      "2106049620076437505",
+      "2106047284264341506"
+    ],
+    "searchFAILED": ["2106047284264341506"],
+    "searchChineseFailureDidNotReturnFailedRun": true
+  },
+  "v3SourceOutcomesAfterFrontendAdapt": {
+    "runId": "2106064774604263425",
+    "部分查到": 3,
+    "已查到": 4,
+    "没有查成": 2,
+    "reasonRows": 0,
+    "reasonCodeLoaded": false
+  },
+  "tests": [
+    {
+      "command": "pnpm exec vitest run --config vitest.ipd.config.mts apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts",
+      "exitCode": 0,
+      "passed": 37,
+      "localTime": "2026-10-02T10:36:44-07:00"
+    },
+    {
+      "command": "pnpm exec vitest run --config vitest.ipd.config.mts apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.test.ts",
+      "exitCode": 0,
+      "passed": 4
+    }
+  ],
+  "notRun": ["typecheck", "full vitest", "build:antd"],
+  "changedFiles": {
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": "d4fc0d9f6cbded480a381542c9d1a7666b1deea1b6e872b6dc63fda48aac64c9",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts": "afcd2b9c8314d8c15f4536e33a56c17e836a1d32d6a344bf6f2264a72f9fda81",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "fd364c3b62716f39f3bda9b8426c6a33d8c920a70985353969375771ff25b5bc",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "c27f2210d34d52c1c20adadc1fb746136c80d35c958d61756c66b1d217760d9b"
+  },
+  "diffStat": "4 files, +205/-1"
+}

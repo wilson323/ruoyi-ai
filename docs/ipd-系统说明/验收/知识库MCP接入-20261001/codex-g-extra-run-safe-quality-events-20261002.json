@@ -1,0 +1,130 @@
+{
+  "runId": "2106103242814394369",
+  "events": [
+    {
+      "seq": "5",
+      "type": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "seq": "8",
+      "type": "TOOL_CALL",
+      "toolName": "project_knowledge_search",
+      "toolCallId": "chatcmpl-tool-82b011f854e3aa95",
+      "state": null
+    },
+    {
+      "seq": "9",
+      "type": "MODEL_CALL",
+      "inputTokens": 1619,
+      "outputTokens": 273
+    },
+    {
+      "seq": "10",
+      "type": "SOURCE",
+      "tool": "project_knowledge_search",
+      "retrievalStatus": "PARTIAL",
+      "hits": 4,
+      "citationStatus": "SUCCESS",
+      "citationChars": 10028,
+      "citationSha256": "ac649457120a911b53296a8337470f1c6b254a497e0566ffda1e1a56c6b82284",
+      "sourceEvidence": [
+        {
+          "documentId": "b09ba371ff67aa3ab9ce75c041824a01",
+          "fragmentId": "2033199209131880600",
+          "sourceName": "ADI___Wesco-Anixter.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "347bcd99c0727253636a043be52d0e10",
+          "fragmentId": "2033199209131880601",
+          "sourceName": "ADP___Workday___SAP_SuccessFactors.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "8795972a4f49d95ae2b22454e91733b8",
+          "fragmentId": "2033199209131880602",
+          "sourceName": "ASSA_ABLOY___HID.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        },
+        {
+          "documentId": "7aa2404a1e498e39c656a32aeabeab41",
+          "fragmentId": "2033199209131880603",
+          "sourceName": "ASSA_ABLOY_含_HID,_FY2024_财报增量.md",
+          "sourceType": "KNOWLEDGE_FRAGMENT",
+          "knowledgeId": "2097275993856180226",
+          "reviewStatus": "NOT_PROJECT_DOCUMENT"
+        }
+      ],
+      "sourceKind": null,
+      "mcpFailureStage": null,
+      "reasonCode": null
+    },
+    {
+      "seq": "11",
+      "type": "TOOL_RESULT",
+      "toolName": "project_knowledge_search",
+      "toolCallId": "chatcmpl-tool-82b011f854e3aa95",
+      "state": "SUCCESS"
+    },
+    {
+      "seq": "12",
+      "type": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "seq": "15",
+      "type": "TOOL_CALL",
+      "toolName": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "toolCallId": "chatcmpl-tool-ba889906ea3c1514",
+      "state": null
+    },
+    {
+      "seq": "16",
+      "type": "MODEL_CALL",
+      "inputTokens": 6621,
+      "outputTokens": 177
+    },
+    {
+      "seq": "17",
+      "type": "SOURCE",
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "retrievalStatus": "SUCCESS",
+      "hits": 1,
+      "citationStatus": null,
+      "citationChars": 18239,
+      "citationSha256": "4fca00ba9b518b4a14207dfe3d2064ccfc861fcc25cea9efb50af70b257317a9",
+      "sourceEvidence": null,
+      "sourceKind": "REMOTE_APPLICATION",
+      "mcpFailureStage": null,
+      "reasonCode": null
+    },
+    {
+      "seq": "18",
+      "type": "TOOL_RESULT",
+      "toolName": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "toolCallId": "chatcmpl-tool-ba889906ea3c1514",
+      "state": "SUCCESS"
+    },
+    {
+      "seq": "19",
+      "type": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "seq": "87",
+      "type": "MODEL_CALL",
+      "inputTokens": 15484,
+      "outputTokens": 1238
+    }
+  ]
+}

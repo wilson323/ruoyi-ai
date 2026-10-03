@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-02T19:35:45.724384+00:00",
+  "head": "2dc5c04723536d07192c6f9f277a276bf8ecee50",
+  "index": "/Users/mac/Documents/ruoyi-ipd-web/.git/codex-f-restart-node-20261002.index",
+  "paths": [
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts"
+  ],
+  "hashes": {
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "fc132c771f9a8cee07b7105ca7a00b7d4d81e61c6a9f330f024624969784a611",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "75b51b9dc9383eabce4892c453377c14d1f683dfa49fa6789a446fe347b08eca",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "a7063f163e12ff44f45d25844d927c274dc5faf84a6c2137fec385457c103ea2",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "0770475019242cd4786cf1e678a736e24cd394a5806eb4212cc9f810f305c39e"
+  },
+  "mainIndexBackup": "/Users/mac/Documents/ruoyi-ipd-web/.git/codex-f-restart-main-index-before-20261002",
+  "mainIndexEntriesBeforeSha256": "7dc0849470543bbd30b21ab4a49eae2538025ec0f2919575cc89762227ef6c26",
+  "status": "VERIFIED_LIMITED_UI_NODE_COMMITTED",
+  "isolatedTests": 49,
+  "isolatedTypeExit": 0,
+  "realBrowser": "codex-f-restart-browser-20261002.json",
+  "commit": "6fad407d0c8d73111d5b080d8d8b2b48341ef212",
+  "alignedOwnPreviouslyHeadEntries": [
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts"
+  ],
+  "preservedPreviouslyMixedEntries": [],
+  "allOtherIndexEntriesBytePreserved": true,
+  "buildLog": "/tmp/ipd-codex-f-restart-build-final-20261002.log",
+  "buildTasks": 11,
+  "cachedTasks": 10,
+  "tsDiagnostics": 0,
+  "declarations": 95,
+  "scrollbarRef": "vue.Ref, not any",
+  "notFullBusinessAcceptance": true
+}

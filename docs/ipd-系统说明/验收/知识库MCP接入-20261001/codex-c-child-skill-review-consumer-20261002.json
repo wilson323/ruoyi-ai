@@ -1,0 +1,96 @@
+{
+  "status": "PARTIAL",
+  "sdk": "actual2.0.3",
+  "source": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildSkillReview.java",
+      "sha256": "8a950ce2f717569bf4125e257a747340fca599edaceeb957f0bcf6078cabee77"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java",
+      "sha256": "d875c7e38ff2dd036539eb81192ddf0879e56d6ce657acff8d0e71c74eb3770e"
+    }
+  ],
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-child-skill-review-consumer-20261002.patch",
+  "patchSha256": "831d52be5d925ba827429b831c553292b6ae29adc4c8325a19f70b9d9c967fd0",
+  "probe": {
+    "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/MountedChildSkillReviewProbe.java",
+    "sha256": "ff4fb6240fcf44a8689b08392514dceb2e6e64ec65f853801ab2b042dc9f97e4"
+  },
+  "logs": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-lineage-regression.log",
+      "sha256": "1339ad03b1ac93613b908fb5d626b573467ec0f53a0516c8a0c53a191b9baf35"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-owned-cleanup.log",
+      "sha256": "3cbbb2b11e250ec62a1e6a4795d9f179183090a2fa2e656ca91150dcfe54a037"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-compile-v4.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-compile-v5.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-final-compile.log",
+      "sha256": "d95538c844678c62be80ba979979754c1d4da391816fb21642225a2955991cd1"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-final-runtime.log",
+      "sha256": "fc7179da346d4131f9f99defc365fbfe9c87efa9545fb1091887ea55afd9bb98"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-runtime-v2.log",
+      "sha256": "7b61eedf90eca1fc4fea8b07f6249074606f4394dfabaf5ce5820a19e65d739c"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-runtime-v3.log",
+      "sha256": "08e09b2ad8816accef6aea0060dab161be9c6c1df4d8cb07fcfd26979b77fb4d"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-runtime-v4.log",
+      "sha256": "e00d4908edd453edaae3fdc2818be6e18cb3135c7653d7347ed87109497451cf"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-runtime-v5.log",
+      "sha256": "0f91040290a22818088a12552c49492a645d756a9948c86ce0aaa5e56d91a6b2"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-real-runtime.log",
+      "sha256": "a47844b185fe559cbdb83a9db14d42e28d7a826285bdff8bf51425b7b154518e"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-review-compile-v2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-skill-review-compile.log",
+      "sha256": "246ae8deb4a1d51f6cad09796757d01446914af9a352f979d78cdcb68bf63d00"
+    }
+  ],
+  "validation": {
+    "nativeChild": "real parent.streamEvents -> agent_spawn -> native child propose_skill(body+script) -> actual same-lineage invocation -> read/write/read receipt",
+    "final": "37events4stubcalls/PENDING_OWNER_APPROVAL persisted; actualbody/resources2 SHA match; revoked denied/missingdraft denied; negative receipt zerochange; lineage2JUnit pass",
+    "cleanup": "18 exact owned volumes rm0"
+  },
+  "failuresPreserved": [
+    "repository defaultreadonly blocked proposal; corrected official constructor writable=true",
+    "actual203 WorkspaceSkillRepository constructor mismatch fixed",
+    "probe JsonUtils wrongmethod compile fixed; all prior logs retained"
+  ],
+  "productionContract": "ownerConsumer(invocation) uses invocation.child.getWorkspaceManager filesystem + invocation.childContext; authorization callback main SkillGovernance.requireOwnerContext(invocation.ownerContext), same guard.lineage requireKnown, fresh project/person access before reads and before receipt write. Existing main PENDING_OWNER_APPROVAL status/noapprove/noactionmap retained. Official child skill tools now bound actualchild repos instead of copiedparent repos.",
+  "limits": [
+    "fresh access/rootowner callbacks in isolated probe use controlled identity/revocation; production DB permission hook not integrated",
+    "receipt official filesystem persistence real; not business DB review or publication",
+    "receipt readwrite is idempotent but no distributed CAS snapshot for concurrent draft edits",
+    "204 latestconsumer unverified",
+    "artifact delivery production store separate pending"
+  ]
+}

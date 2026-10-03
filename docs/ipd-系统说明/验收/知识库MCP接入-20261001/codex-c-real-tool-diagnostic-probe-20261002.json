@@ -1,0 +1,24 @@
+{
+  "status": "PROBE_EXECUTED",
+  "atUtc": "2026-10-02T18:19:30.063100+00:00",
+  "jarSha256": "7ddc60b6125aca829450013540cb36976afd429f74a906838aceb17bdbfc5017",
+  "sourceHashes": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java": "7179d77954afa8c4ae8a15ace2d728c9463c329ec2ea0cc811659163fa76fe3e",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java": "a156902ca876087a018ac08f15009235614bb433e400ef3d95e074993ecca187",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-engine-competition-yssvrnps/McpToolDiagnosticProbe.java": "287b342913ac0b2428c52f311bcc4e25303fbe27e43ccce278a93b7612e86b37"
+  },
+  "attempts": 1,
+  "scope": "real ProductLineMcpTool.callAsync boundedElastic and Managed factory; diagnostics overlay only; no model/DB writes",
+  "compileExitCode": 0,
+  "questionChars": 2,
+  "questionSha256": "d1c45dd2fc21d63ff5ce66c67eb21dd583d473d90b42d28fa4729ef22920ee7d",
+  "productionOpenDisassemblyUnchanged": true,
+  "probeExitCode": 0,
+  "sources": [
+    {
+      "retrievalStatus": "SUCCESS"
+    }
+  ],
+  "privateLogPath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-engine-competition-yssvrnps/mcp-real-diag-private.log",
+  "diagnosticsNotLoadedTo16039": true
+}

@@ -1,0 +1,33 @@
+{
+  "status": "DRAFT_ONLY_NOT_SENT",
+  "rootInvocationRequired": true,
+  "method": "POST",
+  "path": "/api/v1/projects/2103659612308828162/agent-runs",
+  "preconditions": [
+    "real owner Person session",
+    "current HTTP and DB head still equals v3/base",
+    "previous run terminal same owner/project/action and APPLIED target",
+    "capability skill/tool/model still available",
+    "fresh idempotency key"
+  ],
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "project_knowledge_search",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    ],
+    "actionCode": "C02",
+    "previousRunId": "2106082915170418689",
+    "targetDocumentId": "2106085620907540481",
+    "baseVersionId": "2106085620907540481",
+    "idempotencyKey": "ROOT_MUST_GENERATE_FRESH_KEY_AFTER_HEAD_RECHECK",
+    "message": "本次为当前待审核文档的资料更新新尝试，不是退回重做。实际调用本次两项已选工具，依真实返回逐条区分项目已审核文档、系统产品知识库和其他产品资料，核对当前产品适用性。仅有本厂资料不能充当外部竞品；竞品名单、价格、渠道和技术资料缺失均明确写未取得。不编造或概括未被来源支持的数值，不以检索相似度当产品事实；不宣称C02完成或Gate通过。按C02技能输出有依据的资料更新正文及缺项，保留历史版本，不自动定档、审核或批准。"
+  },
+  "automaticApply": false,
+  "reviewOrReject": false
+}

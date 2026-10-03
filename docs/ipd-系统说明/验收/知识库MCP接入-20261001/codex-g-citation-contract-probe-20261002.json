@@ -1,0 +1,12 @@
+{
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-citation-format-veiys5bz",
+  "javacExit": 0,
+  "probeExit": 0,
+  "safeResults": [
+    "0:null",
+    "1:null",
+    "2:SOURCE_IDENTITY_MISMATCH",
+    "3:SOURCE_IDENTITY_MISMATCH"
+  ],
+  "gateSha256": "c8428b39290b8c25974b4f97f84d8a38b655f000e51ba72881f1ab32330448e9"
+}

@@ -1,0 +1,51 @@
+{
+  "status": "LIMITED_COVERAGE_INVALIDATED_BY_PEER_PROBE",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-gate-readable-fix-ehkj_dgt/ruoyi-ai",
+  "candidatePaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java"
+  ],
+  "beforeHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "496644da74dfc0c9e9eb05d478f2308442b5b0412dc6754b9fe8cdad6693fe98",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "08c7a718cee6aa84d9b0b8e22e4113573aea3373e78f872c75ef5dde4727ac80"
+  },
+  "afterHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "1d0ed4386683e09679515327d03568797713d52a15fd60a1504e79c865213bab",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "4d1551a61716670c9665a239a0a50e6d42b2c66af93ad51aa8838842e27f6d26"
+  },
+  "patch": "codex-g-readable-source-identity-fix-20261002.patch",
+  "mavenExit": 0,
+  "testCounts": {
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "log": "/tmp/ipd-g-readable-gate-narrow-final-20261002.log",
+  "preservedFailureLog": "/tmp/ipd-g-readable-gate-attempt1-20261002.log",
+  "failure": "22/1: generic negatedBefore wrongly treated unrelated not-full-version as denial of reviewed identity; corrected adjacent reviewed-role negation",
+  "newTest": "readableIdentityRequiresExactReviewedEvidenceWithSameTitle",
+  "boundaries": [
+    "No main source/index/target writes",
+    "No business DB/model/network effects",
+    "C02 purpose predicate and measurement rules unchanged",
+    "Offline cached org.ruoyi dependencies; no reactor/install",
+    "Temp reused prior independent member snapshot, not claimed exact HEAD72 plus only Gate paths"
+  ],
+  "cases": [
+    "same-title KB Chinese id claiming reviewed rejected",
+    "unknown Chinese/ASCII id claiming reviewed rejected",
+    "ID prefix1234 does not borrow reviewed123",
+    "unrelated missing material does not negate reviewed claim",
+    "Chinese ID table KB/unknown reviewed rejected",
+    "correct KB nonreviewed/real reviewed allowed",
+    "same-line and semicolon multiple identities retain own scope",
+    "unknown not-reviewed/missing/conditional/counterexample allowed",
+    "unrelated not-full-version affirmative reviewed still rejects via existing regression",
+    "generic discussion of reviewed documents does not assert referenced identity"
+  ],
+  "peerDefects": [
+    "forward reviewed predicate borrowed by previous ID",
+    "parallel negation phrases false rejected"
+  ]
+}

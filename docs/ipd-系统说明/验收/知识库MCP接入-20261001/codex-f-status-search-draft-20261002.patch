@@ -1,0 +1,93 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStore.java
+@@ -14,6 +14,7 @@
+ 
+ import java.util.Date;
+ import java.util.List;
++import java.util.Map;
+ import java.util.Optional;
+ import java.util.Set;
+ 
+@@ -26,6 +27,11 @@
+ @Repository
+ @RequiredArgsConstructor
+ public class MybatisAgentRunStore implements AgentRunStore {
++
++    /** 与项目运行列表现有中文状态标签一致；不改变数据库状态枚举。 */
++    private static final Map<String, String> STATUS_LABELS = Map.of(
++        "PENDING", "排队中", "RUNNING", "运行中", "WAITING_APPROVAL", "等待审批",
++        "CANCEL_REQUESTED", "取消中", "SUCCEEDED", "已完成", "FAILED", "失败", "CANCELLED", "已取消");
+ 
+     private final IpdAgentRunMapper runMapper;
+     private final IpdAgentRunEventMapper eventMapper;
+@@ -185,10 +191,15 @@
+         if (!text.isEmpty()) {
+             String pattern = LikePatterns.containsPattern(text);
+             Set<Long> hits = query.artifactRunIds() == null ? Set.of() : query.artifactRunIds();
++            List<String> labelStatuses = STATUS_LABELS.entrySet().stream()
++                .filter(entry -> entry.getValue().contains(text)).map(Map.Entry::getKey).toList();
+             filter.and(nested -> {
+                 nested.apply("action_code LIKE {0} ESCAPE '\\\\'", pattern)
+                     .or()
+                     .apply("status LIKE {0} ESCAPE '\\\\'", pattern);
++                if (!labelStatuses.isEmpty()) {
++                    nested.or().in(IpdAgentRun::getStatus, labelStatuses);
++                }
+                 if (!hits.isEmpty()) {
+                     nested.or().in(IpdAgentRun::getId, hits);
+                 }
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/store/MybatisAgentRunStoreTest.java
+@@ -124,6 +124,52 @@
+     }
+ 
+     @Test
++    void chineseStatusSearchKeepsOriginalTextArtifactUnionAndOuterScope() {
++        IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
++        MybatisAgentRunStore store = new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class));
++        when(runs.selectList(any())).thenAnswer(call -> {
++            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> filter = call.getArgument(0);
++            assertThat(filter.getSqlSegment()).contains("tenant_id", "project_id", "person_id", "action_code LIKE",
++                "status LIKE", "status IN", "id IN", "AND (", "ORDER BY", "LIMIT 20");
++            assertThat(filter.getParamNameValuePairs().values()).contains("tenant-a", 1001L, 11L,
++                "%失败%", "FAILED", 42L, 900L);
++            return List.of();
++        });
++        store.listOwnRuns(new AgentRunStore.OwnRunQuery("tenant-a", 1001L, 11L, null, null,
++            "失败", java.util.Set.of(42L), 900L, 20));
++    }
++
++    @Test
++    void statusSearchUsesOnlyExistingUiLabelsAndPreservesLiteralSearch() {
++        var labels = java.util.Map.of("排队中", "PENDING", "运行中", "RUNNING", "等待审批", "WAITING_APPROVAL",
++            "取消中", "CANCEL_REQUESTED", "已完成", "SUCCEEDED", "失败", "FAILED", "已取消", "CANCELLED");
++        for (var entry : labels.entrySet()) {
++            IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
++            when(runs.selectList(any())).thenAnswer(call -> {
++                com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> filter = call.getArgument(0);
++                assertThat(filter.getSqlSegment()).contains("status IN");
++                assertThat(filter.getParamNameValuePairs().values()).contains(entry.getValue(), "%" + entry.getKey() + "%");
++                return List.of();
++            });
++            new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class)).listOwnRuns(
++                new AgentRunStore.OwnRunQuery("tenant-a", 1001L, 11L, null, null, entry.getKey(),
++                    java.util.Set.of(), null, 20));
++        }
++        for (String text : List.of("执行中", "等确认", "FAILED", "%_")) {
++            IpdAgentRunMapper runs = mock(IpdAgentRunMapper.class);
++            when(runs.selectList(any())).thenAnswer(call -> {
++                com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<IpdAgentRun> filter = call.getArgument(0);
++                assertThat(filter.getSqlSegment()).contains("status LIKE").doesNotContain("status IN");
++                assertThat(filter.getParamNameValuePairs().values()).contains(LikePatterns.containsPattern(text));
++                return List.of();
++            });
++            new MybatisAgentRunStore(runs, mock(IpdAgentRunEventMapper.class)).listOwnRuns(
++                new AgentRunStore.OwnRunQuery("tenant-a", 1001L, 11L, null, null, text,
++                    java.util.Set.of(), null, 20));
++        }
++    }
++
++    @Test
+     @DisplayName("MybatisAiFeedbackStore：insert 冲突 false；updateRating 按影响行数")
+     void feedbackStoreDuplicateAndUpdate() {
+         IpdAiFeedbackMapper mapper = mock(IpdAiFeedbackMapper.class);

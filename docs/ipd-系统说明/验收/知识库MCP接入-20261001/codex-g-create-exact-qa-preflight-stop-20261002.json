@@ -1,0 +1,42 @@
+{
+  "status": "PARTIAL_STOPPED",
+  "time": "2026-10-02T19:05:34.858343+00:00",
+  "scope": "local ipd_dev exact approved QA creation only",
+  "sessions": [
+    {
+      "actor": "900101",
+      "http": 200,
+      "code": 0,
+      "person": {
+        "id": "900101",
+        "personType": "SUPER_ADMIN",
+        "groupId": "900001",
+        "accountStatus": "ACTIVE",
+        "employmentStatus": null,
+        "level": null
+      }
+    }
+  ],
+  "steps": [],
+  "syntheticInputs": true,
+  "startExecuted": false,
+  "modelCalled": false,
+  "cleanupPerformed": false,
+  "preexisting": [],
+  "allowance": [
+    [
+      "900103",
+      "L3",
+      "allowance.L3",
+      "2000"
+    ],
+    [
+      "900104",
+      "L3",
+      "allowance.L3",
+      "2000"
+    ]
+  ],
+  "safeFailureType": "AssertionError",
+  "safeFailure": "precondition_or_validation_failed"
+}

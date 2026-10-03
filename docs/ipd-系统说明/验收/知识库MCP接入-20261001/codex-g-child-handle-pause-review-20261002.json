@@ -1,0 +1,21 @@
+{
+  "status": "VERIFIED_HANDLE_ISOLATED_CONSUMER",
+  "sourceSha256": "e0f08300fdd47f9a6e25b19adbfc13ca0075f7b7d2ed2a00f0ed1e815b72bb1d",
+  "rootCompiledHandlePath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-root-child-handle-wy7bwfjq/classes/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.class",
+  "compileExit": 0,
+  "probeExit": 0,
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-child-handle-5mb2ztxh",
+  "cases": [
+    "mandatory handler absent: no pause/release/dispose/cleanup, originalRUNNING remains",
+    "real PlatformTransactionManager commit failure with rollback fixture: no pause/release/dispose/cleanup, originalRUNNING restored",
+    "success transaction returns WAIT: pausedtrue/dispose1/close1, cleanup0, late onComplete and finishSUCCEEDED blocked, no terminal event",
+    "empty approvals: rejection keeps RUNNING and subscription live"
+  ],
+  "limitations": [
+    "Uses actual Handle compiled by root and actual memory AgentRunStore; transaction manager explicitly snapshots/restores simulated status, not MyBatis durable CAS/DB rollback",
+    "ChildApproval fixture only exercises Handle contract; no producer identity authorization proved here",
+    "Executor two handler registrations/service pauseChildren chain not compiled or runtime verified",
+    "No new network/model/DB writes or main target changes"
+  ],
+  "probeSha256": "0afe4536190e8653f35603522307c3849b98026a38d99965fcf73f8aaf825cc9"
+}

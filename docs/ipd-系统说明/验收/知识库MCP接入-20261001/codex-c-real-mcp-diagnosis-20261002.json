@@ -1,0 +1,128 @@
+{
+  "status": "PARTIAL_STAGE_LOCALIZED_UNIQUE_CAUSE_UNKNOWN",
+  "runId": "2106082915170418689",
+  "atUtc": "2026-10-02T18:11:18.308674+00:00",
+  "dbExitCode": 0,
+  "safeSourceRows": [
+    [
+      "18",
+      "project_knowledge_search",
+      "PARTIAL",
+      "NULL",
+      "NULL",
+      "NULL"
+    ],
+    [
+      "19",
+      "project_knowledge_search",
+      "SUCCESS",
+      "NULL",
+      "NULL",
+      "NULL"
+    ],
+    [
+      "20",
+      "project_knowledge_search",
+      "SUCCESS",
+      "NULL",
+      "NULL",
+      "NULL"
+    ],
+    [
+      "21",
+      "project_knowledge_search",
+      "SUCCESS",
+      "NULL",
+      "NULL",
+      "NULL"
+    ],
+    [
+      "22",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FAILED",
+      "PROTOCOL_OR_TRANSPORT",
+      "INITIALIZE",
+      "IllegalStateException"
+    ],
+    [
+      "23",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FAILED",
+      "PROTOCOL_OR_TRANSPORT",
+      "INITIALIZE",
+      "IllegalStateException"
+    ],
+    [
+      "24",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FAILED",
+      "PROTOCOL_OR_TRANSPORT",
+      "INITIALIZE",
+      "IllegalStateException"
+    ],
+    [
+      "25",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FAILED",
+      "PROTOCOL_OR_TRANSPORT",
+      "INITIALIZE",
+      "IllegalStateException"
+    ],
+    [
+      "44",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FAILED",
+      "PROTOCOL_OR_TRANSPORT",
+      "INITIALIZE",
+      "IllegalStateException"
+    ],
+    [
+      "45",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "FAILED",
+      "PROTOCOL_OR_TRANSPORT",
+      "INITIALIZE",
+      "IllegalStateException"
+    ],
+    [
+      "46",
+      "project_knowledge_search",
+      "SUCCESS",
+      "NULL",
+      "NULL",
+      "NULL"
+    ],
+    [
+      "47",
+      "project_knowledge_search",
+      "SUCCESS",
+      "NULL",
+      "NULL",
+      "NULL"
+    ],
+    [
+      "48",
+      "project_knowledge_search",
+      "SUCCESS",
+      "NULL",
+      "NULL",
+      "NULL"
+    ]
+  ],
+  "sourceCount": 13,
+  "logLineRange": [
+    494,
+    6106
+  ],
+  "logWhitelistTermCounts": {
+    "IllegalStateException": 0,
+    "McpTransportException": 0,
+    "NoSuchMethodError": 0,
+    "ClassNotFoundException": 0,
+    "block()/blockFirst": 0,
+    "MCP": 0,
+    "mcp_client": 0
+  },
+  "logRawOutputStored": false,
+  "note": "Source 7 project (1 PARTIAL + 6 SUCCESS) and 6 MCP FAILED = 13; previous reviewer statement of 8 project/14 total was a counting error, corrected before artifact decision."
+}

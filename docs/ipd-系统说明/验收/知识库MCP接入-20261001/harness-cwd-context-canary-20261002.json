@@ -1,0 +1,44 @@
+{
+  "capturedAtUtc": "2026-10-02T16:44:45.451850+00:00",
+  "probeExit": 0,
+  "modelCalls": 0,
+  "scope": "official SDK filesystem only; no business DB writes or repository body output",
+  "sdkVersion": "2.0.3",
+  "sourcesByteParityVerified": [
+    "HarnessAgent",
+    "HarnessAgentBuilderSupport",
+    "LocalFilesystemSpec",
+    "WorkspaceManager",
+    "WorkspaceContextMiddleware"
+  ],
+  "processCwd": "/Users/mac/Documents/ruoyi-ai",
+  "workspaceAgentsPath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-project-agent-workspace/2103659612308828162/900101/ipd_project_agent/AGENTS.md",
+  "workspaceChars": 61,
+  "workspaceSha256": "0486e7ded0bb43d5da7d1e9e58278bf21c1150e198f4ceb9de8cd91456693704",
+  "loadedEqualsRepo": true,
+  "loadedEqualsWorkspace": false,
+  "loadedContainsSplitRule": true,
+  "loadedChars": 11589,
+  "loadedSha256": "6504ca3039a63486ee1f4a86fbca0cce52ab6d272dd01439f9cbf9eeacbf7049",
+  "remediation": "official disableWorkspaceContext, disableAtPathExpansion, explicit LocalFilesystemSpec.project(workspace); retains upper USER namespace and tool-result eviction filesystem",
+  "remediationValidation": {
+    "status": "SOURCE_AND_DIRECTED_TEST_VERIFIED",
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "model": "stub Model through real official HarnessAgent; no outbound model call",
+    "preserved": [
+      "projectFacts",
+      "selected frozen skill body",
+      "literal @references"
+    ],
+    "excluded": [
+      "repository engineering split rule",
+      "workspace persona",
+      "attached_file expansion"
+    ],
+    "firstFailure": "Surefire module cwd had no AGENTS.md; fixed test repository ancestor lookup, original log preserved",
+    "runtimeRevalidation": "PENDING_NEW_PACKAGE_REAL_RUN"
+  }
+}

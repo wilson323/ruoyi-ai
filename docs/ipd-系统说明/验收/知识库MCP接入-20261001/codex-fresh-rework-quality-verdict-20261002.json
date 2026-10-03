@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-02T18:09:08.789676+00:00",
+  "reviewer": "A",
+  "verdict": "ALLOW_APPLY",
+  "runId": "2106082915170418689",
+  "artifactId": "77f8283b1a6849798dc6b39ce4da4f9b",
+  "contentSha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8",
+  "actualSourceCalls": {
+    "project_knowledge_search": 7,
+    "MCP": 6,
+    "total": 13
+  },
+  "reportedCalls": {
+    "project_knowledge_search": 7,
+    "MCP": 6,
+    "total": 13
+  },
+  "reason": "A实际正文与SOURCE/TOOL_RESULT核对，B独立复核：仅可保存缺项报告为原ai_documents GENERATED待审核，不认可C02动作完成/Gate。真实M1/M2缺事实停止比较符合技能，未冒称MCP成功或将其他型号套入当前产品。",
+  "actualArtifactState": "DRAFT/documentId=null",
+  "positive": "正文明确知识片段NOT_PROJECT_DOCUMENT，不再冒称项目已审核文档；其他型号不套用当前产品。",
+  "status": "VERIFIED_MISSING_REPORT_ONLY",
+  "correction": "C独立摘要先前口算8+6=14有误；A亲查SOURCE13条，G独立TOOL_CALL/RESULT/SOURCE三类均13。没有次数缺陷，不增加计数补丁。",
+  "verifiedAt": "2026-10-02T18:15:15.327097+00:00",
+  "independentReview": "codex-g-independent-artifact-quality-20261002.md",
+  "limitations": [
+    "全部出处WorkBuddy概括过宽，审核时须逐条回来源",
+    "目的裁剪并非无条件必填，M7/M9/M10不能成为新增业务门禁",
+    "MCP六次失败；此稿不是完成的竞品分析"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "at": "2026-10-02T17:10:27.322808+00:00",
+  "worktree": "/Users/mac/.codex/worktrees/agentscope-native-stack/ruoyi-ipd-web",
+  "originalHead": "f358795a124804e6c3a68d25b4b0ebc89f751740",
+  "branchRetained": "codex/agentscope-native-stack-20261002",
+  "formalMainCommit": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a",
+  "remoteMainVerified": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a",
+  "backup": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/frontend-task-worktree-20261002T100925",
+  "files": {
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts": {
+      "originalSha256": "c2925ddc9f5933f09a768bdbfd7814aec5ab000143169de9128cfaf1e58a8341",
+      "mainSha256": "8480b384932bd9e991b0995123bf39fd89c1762730f78e2de6b391a75dca855c",
+      "backupSha256": "c2925ddc9f5933f09a768bdbfd7814aec5ab000143169de9128cfaf1e58a8341"
+    },
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": {
+      "originalSha256": "e0a2c2ba4365cc36efc2ae8932cf0530beacfe2d1b7eff0815e5c09996a94abb",
+      "mainSha256": "9d5990b93b480119487635db44c8961b6964f78263e1bfdb275e0600f46b2860",
+      "backupSha256": "e0a2c2ba4365cc36efc2ae8932cf0530beacfe2d1b7eff0815e5c09996a94abb"
+    }
+  },
+  "binaryPatchSha256": "f05a8e73e8cccd94ad5a2a88c889e099073fd01c32056a2d2fc2566702a30c00",
+  "restorePatchRoundtripVerified": true,
+  "restoreVerification": "HEAD original files plus git apply binary patch in isolated backup/restore-check-2; exit0 and exact byte equality",
+  "ignoredEntries": 277,
+  "ignoredCategoryCounts": {
+    "generated-cache": 22,
+    "generated-check-log": 12,
+    "installed-dependency": 22,
+    "generated-build": 221
+  },
+  "untrackedNonIgnored": [],
+  "preservedIgnored": [
+    "apps/web-antd/.turbo/turbo-build$colon$prod.log",
+    "apps/web-antd/.turbo/turbo-typecheck.log",
+    "packages/@core/base/design/.turbo/turbo-build.log",
+    "packages/@core/base/icons/.turbo/turbo-build.log",
+    "packages/@core/base/shared/.turbo/turbo-build.log",
+    "packages/@core/base/typings/.turbo/turbo-build.log",
+    "packages/@core/composables/.turbo/turbo-build.log",
+    "packages/@core/ui-kit/form-ui/.turbo/turbo-build.log",
+    "packages/@core/ui-kit/layout-ui/.turbo/turbo-build.log",
+    "packages/@core/ui-kit/menu-ui/.turbo/turbo-build.log",
+    "packages/@core/ui-kit/popup-ui/.turbo/turbo-build.log",
+    "packages/@core/ui-kit/tabs-ui/.turbo/turbo-build.log"
+  ],
+  "unclassifiedIgnored": [],
+  "integrationProof": {
+    "replaceFinalTextRetained": true,
+    "executionOwnerHidden": true,
+    "finalTextReplacementTestRetained": true,
+    "ownerHiddenTestRetained": true,
+    "mainHasToolCallId": true,
+    "mainHasErrorState": true,
+    "mainDoesNotInferAllStepsCompleted": true
+  },
+  "appArchiveCapability": "attach_worktree refused: This worktree is owned by another task; archive not attempted",
+  "cleanup": "NOT_REMOVED. Ordinary remove rejects2tracked edits; recoverable force removal requires root decision retaining branch and verified backup. Ignored dependency symlinks targets outside worktree must never be followed/deleted."
+}

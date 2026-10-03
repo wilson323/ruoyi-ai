@@ -1,0 +1,9 @@
+# FE HEAD最小恢复补丁候选
+
+裁决：限定候选验证通过。固定HEAD2dc5c04723536d07192c6f9f277a276bf8ecee50已有association/action/focusTaskInput/sanitizeSelection/原submit/create单轨。当前四文件相对HEAD仅本刀恢复60insert/6delete，不需要其他dirty文件或新依赖。
+
+精确hunks：Panel openHistory清准备态3行、prepareNewAttempt10行、FAILED白话按钮替换；PanelTest增FAILED类型与1新case；Timeline单行移除error尾码；TimelineTest新增审计payload保留case及旧E1断言纠正。完整patch codex-f-restart-head-candidate-20261002.patch可直接对该HEAD审查应用。
+
+从git archive固定HEAD全导出后只copy四个冻结文件。offline/frozen/ignore-scripts安装0下载，没借主node_modules；4519模块链接检查无指向主Documents仓。独立targeted Panel27+Timeline22=49PASS，typecheckexit0/0TS诊断（37scope、1实际task）；无stub/新依赖支持切片。日志在JSON指向隔离目录，不是主源码工作区测试结果。
+
+候选hash与主冻结四文件一致，精确patchhash见JSON。未改主source/index/target、未commit。真实浏览器本刀已单独验证，但当前WIP供应不等于候选已提交/全产品生产就绪。

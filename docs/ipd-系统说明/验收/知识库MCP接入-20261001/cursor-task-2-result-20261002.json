@@ -1,0 +1,154 @@
+{
+  "status": "PENDING_VALIDATION",
+  "task": "cursor-task-2-mcp-failure-diag-20261002",
+  "atUtc": "2026-10-02T17:27:15Z",
+  "head": "29b64b97c1729335abe22955b06a7597d68a9fab",
+  "loadedPackageSha256": "729e587af6504d12ebdf20e4320141f688408fafeda15511482931e2ad8e1003",
+  "loadedPid": 13520,
+  "patchLoaded": false,
+  "productionAllSucceeded": false,
+  "v3RunId": "2106064774604263425",
+  "v3McpSourceFailures": [
+    {
+      "seq": 42,
+      "retrievalStatus": "FAILED",
+      "hits": 0,
+      "reasonCode": null,
+      "stagePresent": false,
+      "previewHasUrl": false
+    },
+    {
+      "seq": 57,
+      "retrievalStatus": "FAILED",
+      "hits": 0,
+      "reasonCode": null,
+      "stagePresent": false,
+      "previewHasUrl": false
+    }
+  ],
+  "v3RootCause": "UNKNOWN_EXCEPTION_DISCARDED_BY_LOADED_CATCH",
+  "reasonCodeContract": {
+    "field": "reasonCode",
+    "when": "retrievalStatus=FAILED and the safe marker parsed",
+    "codes": [
+      "TIMEOUT",
+      "CANCELLED",
+      "PROTOCOL_OR_TRANSPORT",
+      "REMOTE_IS_ERROR",
+      "NO_TOOLS",
+      "AMBIGUOUS_TOOLS",
+      "UNSUPPORTED_SCHEMA",
+      "EMPTY_RESULT",
+      "INVALID_QUERY",
+      "NO_ENDPOINT",
+      "NO_CLIENT"
+    ],
+    "stages": [
+      "LOCAL",
+      "INITIALIZE",
+      "LIST_TOOLS",
+      "CALL_TOOL"
+    ],
+    "hits": {
+      "SUCCESS": 1,
+      "NO_HIT": 0,
+      "FAILED": "omitted"
+    },
+    "timeoutSeconds": {
+      "TIMEOUT": 20
+    },
+    "compat": [
+      "mcpFailureStage",
+      "mcpFailureReason",
+      "mcpErrorTypes"
+    ]
+  },
+  "tests": {
+    "command": "mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProductLineMcpQueryTest -Dsurefire.failIfNoSpecifiedTests=false test",
+    "isolatedTargetRequested": "/tmp/cursor-task2-mcp-20261002/target",
+    "isolatedTargetHonored": false,
+    "wroteMainModuleTarget": true,
+    "exitCode": 0,
+    "testsRun": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "finishedUtc": "2026-10-02T17:22:43Z"
+  },
+  "probe": {
+    "sdk": "2.0.3",
+    "client": "ManagedMcpAsyncClient.streamableHttp",
+    "serviceId": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+    "queryChars": 21,
+    "querySha256": "e31520919dbaaee2e1035154afae9f331d4a3cba8aa28278b217693e3e7a3074",
+    "timeoutSeconds": 20,
+    "attempts": 1,
+    "exitCode": 0,
+    "initialize": "OK",
+    "listTools": "OK",
+    "toolCount": 1,
+    "requiredStringArgs": 1,
+    "call": "OK",
+    "isError": false,
+    "contentBlocks": 1,
+    "textChars": 10278,
+    "hasSourceName": true,
+    "elapsedMs": 2893,
+    "sideObservation": "LifecycleInitializer logged McpTransportException SSE 405 Method not allowed; the same attempt still returned a non-error tool result. Not assigned as the v3 root cause.",
+    "stdoutHadUrlOrQuestion": false
+  },
+  "filesSha256": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java": "a35e2cb9d1e067ff00aee35999ccdd017724afa96cc01da4a44ac9e8014ada05",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java": "96314ac1f266bf99cbe21b91d13f39739755356171167faf151e839c423bd080",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java": "5124e6129bf66b438b34ec9782fcef5a2774309ed947802fd3b33c208eb22a65"
+  },
+  "diffVsIndex": "+315/-16 across the three Java files",
+  "diffVsHead": "three new files; index already had +893 before the unstaged diagnostic delta",
+  "untouched": [
+    "ManagedMcpAsyncClient.java",
+    "task1 source and completion gate",
+    "canvas",
+    "kanban mirror",
+    "log.md",
+    "commit",
+    "reload"
+  ],
+  "followUp20261002T1920Z": {
+    "status": "PARTIAL",
+    "javaChanged": false,
+    "newProjectRun": false,
+    "listener": {
+      "port": 16039,
+      "pid": 31351,
+      "startedLocal": "2026-10-02 12:10:28",
+      "jarSha256": "a44e858e9c72ccb2da0bf54a5ad2eeddd0026872a920feb250ce07a37e4a1470"
+    },
+    "http405": {
+      "closedFromSource": true,
+      "request": "GET Accept:text/event-stream after POST returns mcp-session-id",
+      "throwSite": "ResponseSubscribers non-SSE line -> McpTransportException Invalid SSE response",
+      "swallowedBy": "HttpClientStreamableHttpTransport reconnect onErrorComplete -> LifecycleInitializer.handleException warn",
+      "isInitializeRootCause": false
+    },
+    "framedInitialize": {
+      "runId": "2106092487658545153",
+      "seq": 8,
+      "reason": "Builder.build called McpJsonMapper.getDefault because jsonMapper was null; ServiceLoader failure wrapped at McpJsonInternal.createDefaultMapper:67",
+      "loadedJarAvoidsThrowSite": true
+    },
+    "laterRunsBeforeThisProcess": [
+      {
+        "runId": "2106095444625989634",
+        "mcp": "REMOTE_APPLICATION SUCCESS citationChars=17201",
+        "terminal": "FAILED COMPLETION_REJECTED",
+        "completionReason": null
+      },
+      {
+        "runId": "2106096765173243906",
+        "mcp": "REMOTE_APPLICATION SUCCESS citationChars=13513",
+        "terminal": "FAILED COMPLETION_REJECTED",
+        "completionReason": null
+      }
+    ]
+  }
+}

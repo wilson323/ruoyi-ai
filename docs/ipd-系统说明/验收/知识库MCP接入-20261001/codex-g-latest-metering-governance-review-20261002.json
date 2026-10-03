@@ -1,0 +1,72 @@
+{
+  "status": "PARTIAL_SOURCE_AND_ISOLATED_TESTS_VERIFIED",
+  "sourceSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java": "7043a6b1c01dcac0f4b5ccda109cf3f46a5345fe2d2babaaa042a7a7df53df6f",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java": "0ec89cadfd3ee8abb5e0440638184c180dadc9df827de6b2f5620163fc622502",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernance.java": "a2c938131ed7b72a1263f153c926b5ade9dc4841578b65ea8b12f0c9a399bfa0",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "603f85789a2edb1839c7cd1c3cf2e3ab8aa3386acb841c927aa29b6bba3d381a",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiBridge.java": "76fb7c515866014b856162fb0fbb0a196fd31a3773c4f3a301edf76f07aa9026",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java": "4c9a5b2decb1ed11f89b0954cfdba82da8bcc0ac165d6befc0df645a551e11eb",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialHitlTest.java": "ac3a8917cea7e7814e1f90a3e3a481abd6fe47ffcb5eab1d07aeb21791b3ed6a"
+  },
+  "tests": {
+    "metering": {
+      "found": 10,
+      "passed": 10,
+      "fail": 0,
+      "skip": 0,
+      "exit": 0,
+      "sourceExactPriorFreeze": true
+    },
+    "officialHitl": {
+      "found": 6,
+      "passed": 6,
+      "fail": 0,
+      "skip": 0,
+      "compileExit": 0,
+      "exit": 0,
+      "providedOriginalLog": "/tmp/ipd-official-hitl-isolated-20261002/test-final.log",
+      "providedOriginalLogSHA": "72031ace7e93ea5e14565807e5fade5e016586a94d70c8decacdf2494944e812"
+    }
+  },
+  "evidenceSHA": {
+    "foreign-child-scope.log": "48a945f076f4b217709fa80eab8ce3164d34c75f1f6e1ee2fc2adc956e2aa02c",
+    "latest-hitl-independent.log": "73f0c03610aceb2da7892e382c2c4c9e1ee334164e889d265e799446774c849c",
+    "latest-hitl-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "junit-independent-revalidation.log": "dfc3f5df746d56c41e82e0545ad8f992b4a5e6d34d92b9a5b9f8749d2e84644d",
+    "GForeignChildScopeProbe.java": "7e248db6a89dc18effa84570f286c42609a1b2e28a65384e9d88e21f22d42ef9"
+  },
+  "receiptReview": {
+    "stateInstanceIdentityKey": true,
+    "agentInstanceExactBinding": true,
+    "userSessionBinding": true,
+    "parameterInputAndRawContentChecks": true,
+    "singleConsumptionCAS": true,
+    "existingResultStopsReplay": true,
+    "newWrapperOrColdJVMReceiptAbsentFailClosed": true,
+    "httpConfirmationOwnerAndRunValidation": "NOT_IMPLEMENTED_IN_OBSERVED_PROJECT_CONTROLLER"
+  },
+  "newCounterexample": {
+    "owningSession": "owning-run",
+    "foreignRootSessionAllowed": false,
+    "unregisteredUuidChildSessionAllowed": true,
+    "syntheticEffects": 1,
+    "scope": "Mock trusted Agent/AgentState + actual onActing/wrapper consumer, no HTTP, external tool, model or DB; demonstrates missing authoritative child lineage, not proven public exploit.",
+    "minimalSuggestion": "Resolve child scope from registered native parent-child mapping bound to this owning run; a sub-UUID format alone is insufficient."
+  },
+  "aguiBoundary": {
+    "completeOfficialChildEventBeforeBusinessFilter": true,
+    "parentBodyFiltersNonblankSource": true,
+    "meteringSharedDecoratorNotBridgeTokenEvents": true,
+    "nativeRequireUserConfirmToProjectWaitingApprovalResume": "PENDING",
+    "normalStreamResourceCleanupDeletesTemporaryState": true,
+    "noClaimOfBusinessRuntimeVerification": true
+  },
+  "effects": {
+    "mainSource": false,
+    "mainTarget": false,
+    "packageReload": false,
+    "network": false,
+    "businessDB": false
+  }
+}

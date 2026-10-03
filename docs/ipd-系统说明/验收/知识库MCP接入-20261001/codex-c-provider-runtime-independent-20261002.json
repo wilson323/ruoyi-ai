@@ -1,0 +1,64 @@
+{
+  "verdict": "CLIENT_QUERY_RECOVERY_VERIFIED_BUSINESS_RUN_FAILED",
+  "runId": "2106095444625989634",
+  "http": {
+    "status": 200,
+    "code": 0,
+    "terminal": true
+  },
+  "database": {
+    "status": "FAILED",
+    "errorCode": "COMPLETION_REJECTED",
+    "personId": "900101",
+    "projectId": "2103659612308828162",
+    "modelConfigId": "2104885081318375426",
+    "toolIds": [
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    ],
+    "previousRunId": "2106082915170418689",
+    "baseVersionId": "2106085620907540481",
+    "targetVersionNo": 3,
+    "targetStatus": "GENERATED"
+  },
+  "source": {
+    "seq": 8,
+    "retrievalStatus": "SUCCESS",
+    "hits": 1,
+    "sourceKind": "REMOTE_APPLICATION",
+    "chars": 17201,
+    "citationChars": 17201,
+    "citationSha256": "9423376ef96ff6aff0f0a13424d1af1b72fbea14189e5a5da1f4c08dedfe0d65",
+    "failureFieldsAbsent": true
+  },
+  "toolResult": {
+    "seq": 9,
+    "state": "SUCCESS",
+    "bodyPersisted": false
+  },
+  "usage": {
+    "modelCalls": 2,
+    "completedCallUsage": [
+      [
+        1473,
+        174
+      ],
+      [
+        9944,
+        1067
+      ]
+    ],
+    "inputSum": 11417,
+    "outputSum": 1241,
+    "startEventsHaveNoUsage": true
+  },
+  "artifactCount": 0,
+  "artifactArchiveCount": 0,
+  "pollHelperDefect": "Handle removes citationText and writes citationChars/citationSha256; helper recomputes length of absent citationText as zero, overwriting actual stored diagnostics",
+  "evidenceLimits": [
+    "SUCCESS means non-isError nonempty remote text through production initialize/listTools/callTool; not verified factual knowledge",
+    "Protocol remote tool name is used from SDK listTools in source, but not independently persisted; event toolName is catalog service ID",
+    "Frozen config captures modelConfigId, not immutable complete model credentials/config",
+    "No new query or business write; HTTP used existing Person session from safe local login, run/events GET only"
+  ],
+  "readQueryCorrection": "Initial ai_documents version column lookup returned1054; inspected owning domain/columns and corrected to version_no=3"
+}

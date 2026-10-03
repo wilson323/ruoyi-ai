@@ -1,0 +1,13 @@
+{
+  "status": "LOCAL_HELPER_INPUT_UPDATED_NOT_EXECUTED",
+  "beforeSha256": "019fd0af5d26773db758935fd81e31e1aaebfdd5d6513a584b3f76be5f6651fc",
+  "afterSha256": "a2ebf5e1514626ccf6afe8b6d3459db84d8ad1db6637896dddd11b723f90bea0",
+  "astParsed": true,
+  "pendingReviewGuardAndNoApprovalTextRetained": true,
+  "change": "bounded independent review feedback in existing refresh-pending input only",
+  "notPerformed": [
+    "no API write",
+    "no model call",
+    "no business Prompt or Skill change"
+  ]
+}

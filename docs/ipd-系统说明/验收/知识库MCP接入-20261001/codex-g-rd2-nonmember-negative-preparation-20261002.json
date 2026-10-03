@@ -1,0 +1,42 @@
+{
+  "status": "BLOCKED_CREDENTIAL_EVIDENCE_PENDING_LOADED_PATCH",
+  "personId": "900105",
+  "username": "ipd-rd2",
+  "projectId": "2106098805312069634",
+  "actionId": "2106100150559576066",
+  "role": "RD_PM",
+  "groupId": "900001",
+  "credentialChecks": {
+    "originalConfigDirectory": "No matching account/person key or username fixture found; values not printed/copied",
+    "safeAccountsHelper": "username absent",
+    "testsAndOriginalEvidenceFixtureScan": "Only G current report marker; no usable login fixture"
+  },
+  "httpExecuted": false,
+  "mutationExecuted": false,
+  "mustRequireBeforeExecute": [
+    "root verified loaded member patch hash",
+    "actual existing safe credential (no password reset)",
+    "real /auth/me person900105 roleRD_PM group900001 ACTIVE",
+    "fresh DB not projectmember / action existingC05 LIGHTNOT_STARTED"
+  ],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/api/v1/stage-actions/2106100150559576066/fields",
+      "body": {
+        "actualDoneAt": 1790969317020
+      },
+      "inputMeaning": "valid Date millisecond serialization for denial test, never asserts QA work was actually completed; must not be applied",
+      "expectedHttp": 403,
+      "expectedCode": 30001
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/stage-actions/2106100150559576066/transit?target=IN_PROGRESS",
+      "body": null,
+      "expectedHttp": 403,
+      "expectedCode": 30001
+    }
+  ],
+  "zeroWriteContract": "Before/after full exactC05+project+stages+members+product rows stable sha; per request hash scope excludes authorized concurrent C01/doc/task. On unexpected success stop, preserve evidence, no second request/no SQL rewind. No DONE/accept/model/audit deletion."
+}

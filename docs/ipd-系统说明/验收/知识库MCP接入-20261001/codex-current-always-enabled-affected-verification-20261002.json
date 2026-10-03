@@ -1,0 +1,59 @@
+{
+  "status": "PARTIAL",
+  "initial": {
+    "exitCode": 1,
+    "suites": [
+      "service.ProjectAgentAguiPauseResumeServiceTest",
+      "service.ProjectAgentRunHandleTest",
+      "service.ProjectAgentRunServiceCreateTest",
+      "service.ProjectAgentRunServiceLifecycleTest",
+      "service.ProjectAgentAguiPublicEventTest",
+      "kernel.ProjectAgentAguiInputTest",
+      "kernel.ProjectAgentRuntimeAccessSinkTest",
+      "service.ProjectAgentCapabilityServiceTest",
+      "config.ProjectAgentShutdownConfigurationTest"
+    ],
+    "sourceStable": true,
+    "sourceChanges": [],
+    "log": "/tmp/ipd-coordinated-current-affected-20261002/tests.log",
+    "found": 89,
+    "started": 89,
+    "successful": 77,
+    "failed": 12,
+    "skipped": 0,
+    "aborted": 0,
+    "logSha256": "2acdec97ff9b3b1d03fb0d5e2700a8225035079ed079714d27c163838ca5eb0c"
+  },
+  "repair": {
+    "exitCode": 0,
+    "suites": [
+      "service.ProjectAgentAguiPauseResumeServiceTest",
+      "service.ProjectAgentRunHandleTest",
+      "service.ProjectAgentRunServiceCreateTest",
+      "service.ProjectAgentRunServiceLifecycleTest",
+      "service.ProjectAgentAguiPublicEventTest",
+      "kernel.ProjectAgentAguiInputTest",
+      "kernel.ProjectAgentRuntimeAccessSinkTest",
+      "service.ProjectAgentCapabilityServiceTest",
+      "config.ProjectAgentShutdownConfigurationTest"
+    ],
+    "sourceStable": true,
+    "sourceChanges": [],
+    "log": "/tmp/ipd-coordinated-current-affected-repair-20261002/tests.log",
+    "found": 89,
+    "started": 89,
+    "successful": 89,
+    "failed": 0,
+    "skipped": 0,
+    "aborted": 0,
+    "logSha256": "1fec86b7b4ea421f8e3bbb3f09b55a0de6bcfe8e0e574572a112682ab3a9f808"
+  },
+  "scope": "Actual current reactor classes, nine affected suites; no candidate reload or HTTP/DB/browser production acceptance. Original failures retained.",
+  "compileLog": "/tmp/ipd-coordinated-always-enabled-test-compile-20261002.log",
+  "pending": [
+    "Real child preconsume factory/SuspensionSnapshot preflight",
+    "Final resource/provider wiring and artifact authority transactions/API",
+    "Recursive recovery and complete Service capability lifecycle",
+    "Candidate source/package/runtime parity and business acceptance"
+  ]
+}

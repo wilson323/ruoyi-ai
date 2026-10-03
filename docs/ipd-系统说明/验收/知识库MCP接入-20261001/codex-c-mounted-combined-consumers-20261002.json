@@ -1,0 +1,73 @@
+{
+  "status": "PARTIAL",
+  "SDK": "actual2.0.3 stable10130 CP, no204 jars",
+  "source": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentMountedFoundationRuntime.java",
+      "sha256": "b1903e4a466bdb7d6d97eb6c232053615a40e33138622ed7544dff92d3543562"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentSessionRestore.java",
+      "sha256": "cf0b0ad7139154f73e3b315971c6af0539ee6fa3674d468d48dd09d964d2b9eb"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java",
+      "sha256": "d01d48850f720cba52574f2d0d6d74fcd0783d11fa8437f3555946a45df26178"
+    }
+  ],
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-mounted-combined-consumers-20261002.patch",
+  "patchSha256": "0f78c3405ccc0d2c5a7a6a1bbd6e2192f1c6dcaca63c2caea57317e5b1c873a3",
+  "logs": [
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-fullchild-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-fullchild-runtime.log",
+      "sha256": "a1a663ad7795b982fb74bdb83cc7fb6999723a69d4c9f7c40df04020bbfc9281"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-coldsession-runtime.log",
+      "sha256": "0b1e41d89571ccd0551c212f2a1e834a5153a10bc0ffee22910062b0f7fe7e9b"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-coldsession-restore-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-coldsession-restore-runtime.log",
+      "sha256": "12ec1e282ab5fec8be26b2d415bd4579314054ca93caba2ccd6af1bcaf2b8c7d"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-slowmemory-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-slowmemory-runtime.log",
+      "sha256": "2c561a2928fb1f714a349eb78fbf0441d05bdd17e41b0c26e63991a79bbfff46"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-owner-typed-compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/mounted-combined-cleanup.log",
+      "sha256": "790e8c23628ff21036dd07b7f5701109b6c6569b27b554ecb4da6111d62820ff"
+    }
+  ],
+  "results": {
+    "mountedNativeChild": "45events 5stubcalls owner1 DRAFT1 apply0 public body persisted structured thinking absent",
+    "coldSessionBefore": "list/search true history false",
+    "coldSessionAfterOfficialRestore": "list/history/search publicbody true",
+    "slowMemory": "7s model delay actual completed, cold memory file grep true before cleanup",
+    "cleanup": "8 exact owned volumes rm0"
+  },
+  "assembly": "route actual agents paths persistently; use official SessionTree canonical restore before local-only session_history; await official mirrors before shutdown, timeout retain; typed ChildInvocation exposes actual child manager and context to production owner consumer",
+  "pending": [
+    "typed ownerConsumer new setter only compiled, real PENDING_OWNER persistence not wired",
+    "actual ArtifactVersionStore receipt not fixture",
+    "global queue drains do not prove every async task succeeded; actualcontent separately checked",
+    "cold lineage cannot trust transcript or UUID; trusted backend parentrun/child actor issuance record required before factory rehydration",
+    "latest helper/agents/close/restore version204 not rerun"
+  ]
+}

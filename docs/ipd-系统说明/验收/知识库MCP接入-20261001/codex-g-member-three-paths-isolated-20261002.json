@@ -1,0 +1,52 @@
+{
+  "status": "THREE_PATH_ISOLATED_IMPLEMENTATION_VERIFIED",
+  "head": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-g-member-head72-e8joo4vd",
+  "log": "/tmp/ipd-g-member-three-paths-48-tests-20261002.log",
+  "mavenExit": 0,
+  "paths": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java": "c725ba66d118e0c15d8a06ffe59f9f0b6a48da032d465dffbb3392888eec7c5a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java": "464487d9c71367492d9e0da0baf213ebcd5fcaf63ae8280c4a65cb6c13e08f6f",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java": "58a4e236888aa066f9f2bc129a8c8cec67697733e622e0ecd8de5bdee0ff9f39"
+  },
+  "testResults": [
+    {
+      "name": "org.ruoyi.ipd.security.IpdPermissionPasswordScopeTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.service.StageActionServiceTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.security.IpdActionWriterMemberTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.security.IpdPermissionRegistryTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.security.Sec01AcceptanceTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "scope": "HEAD72+only3overlays; offline cached module dependencies; no runtime acceptance",
+  "total": 48,
+  "sec01Diff": "diff --git a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java\nindex 553edc01..678c96d4 100644\n--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java\n+++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java\n@@ -196,7 +196,13 @@ class Sec01AcceptanceTest {\n     @DisplayName(\"\u9636\u6bb5\u52a8\u4f5c transit \u5ba1\u8ba1 operator \u53d6\u4f1a\u8bdd\u8eab\u4efd\u5b57\u7b26\u4e32\")\n     void stageActionTransitOperatorComesFromSession() {\n         loginAs(MARKET_PM_ID, \"MARKET_PM\");\n+        org.ruoyi.ipd.mapper.ProjectMapper projects = org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMapper.class);\n+        org.ruoyi.ipd.mapper.ProjectMemberMapper members = org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMemberMapper.class);\n+        ipdPermission.setActionWriteMappers(projects, members);\n+        when(projects.selectById(11L)).thenReturn(Project.builder().id(11L).tenantId(\"000000\").build());\n+        when(members.selectCount(any())).thenReturn(1L); // \u5f53\u524d\u4f1a\u8bdd\u662f\u8be5\u9879\u76ee\u7684\u5728\u4efb\u6210\u5458\u3002\n         StageAction action = new StageAction();\n+        action.setProjectId(11L);\n         action.setOwnerRole(\"MARKET_PM\");\n         when(stageActionService.getById(5L)).thenReturn(action);\n         when(stageActionService.transit(anyLong(), anyString(), any(), anyString())).thenReturn(action);\n"
+}

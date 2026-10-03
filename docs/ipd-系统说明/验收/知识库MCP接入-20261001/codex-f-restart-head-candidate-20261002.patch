@@ -1,0 +1,138 @@
+diff --git a/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts b/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts
+index 1eaf822..398b962 100644
+--- a/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts
++++ b/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts
+@@ -55,7 +55,7 @@ const CAPS: ProjectAgentCapabilities = {
+ 
+ /** 运行详情替身。 */
+ function detailOf(
+-  status: 'RUNNING' | 'SUCCEEDED' | 'WAITING_APPROVAL',
++  status: 'FAILED' | 'RUNNING' | 'SUCCEEDED' | 'WAITING_APPROVAL',
+   actionCode: null | string = 'A-01',
+ ) {
+   return {
+@@ -119,6 +119,34 @@ afterEach(() => {
+ });
+ 
+ describe('ProjectAgentPanel', () => {
++  it('prepares an editable new attempt after failure without resuming or guessing the historical prompt', async () => {
++    const failed = { ...detailOf('FAILED'), errorCode: 'COMPLETION_REJECTED' };
++    vi.mocked(listProjectAgentRuns).mockResolvedValue([{ ...historyRow('run-1'), status: 'FAILED' }]);
++    vi.mocked(fetchAgentRun).mockResolvedValue(failed);
++    vi.mocked(fetchAgentRunEvents).mockResolvedValue({ events: [], nextSeq: 0, terminal: true });
++    const wrapper = await mountPanel();
++    await wrapper.find('.run-history button').trigger('click');
++    await flushPromises();
++    expect(wrapper.text()).not.toContain('COMPLETION_REJECTED');
++    expect(wrapper.find('[data-testid="panel-restart"]').text()).toBe('重新开始');
++    await wrapper.find('[data-testid="panel-restart"]').trigger('click');
++    expect(createProjectAgentRun).not.toHaveBeenCalled();
++    expect(cancelAgentRun).not.toHaveBeenCalled();
++    expect(wrapper.find('[data-testid="panel-message"]').element).toHaveProperty('value', '');
++    expect(wrapper.find('.run-history').text()).toContain('失败');
++    expect(await wrapper.vm.submitText('重新核对这次资料')).toBe('started');
++    expect(createProjectAgentRun).toHaveBeenCalledTimes(1);
++    const input = vi.mocked(createProjectAgentRun).mock.calls[0]![1];
++    expect(input).toMatchObject({ message: '重新核对这次资料', actionCode: 'A-01' });
++    expect(input.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
++    expect(input).not.toHaveProperty('previousRunId');
++    expect(input).not.toHaveProperty('targetDocumentId');
++    expect(input).not.toHaveProperty('baseVersionId');
++    expect(failed.errorCode).toBe('COMPLETION_REJECTED');
++    expect(streamCopilot).not.toHaveBeenCalled();
++    wrapper.unmount();
++  });
++
+   it('shows the backend reason when the feature is off and never falls back to the copilot stream', async () => {
+     vi.mocked(fetchProjectAgentCapabilities).mockRejectedValue(
+       new IpdRequestError('x', 403, 30001, 'http', '项目智能体功能未开启，请联系管理员'),
+diff --git a/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue b/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue
+index 4051dcd..b4ba8d0 100644
+--- a/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue
++++ b/apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue
+@@ -180,6 +180,9 @@ const {
+  */
+ async function openHistory(id: string): Promise<void> {
+   lastTask.value = '';
++  reworkAssociation.value = null;
++  reworkActionCode.value = null;
++  pendingKey = null;
+   if (await agent.openRun(id)) focusPane('cards');
+ }
+ 
+@@ -347,6 +350,16 @@ function focusTaskInput(): void {
+   messageBox.value?.focus();
+ }
+ 
++/** 失败后的新尝试只准备当前输入框；不猜历史提问、不续跑或绑定旧文档链。 */
++function prepareNewAttempt(): void {
++  if (status.value !== 'FAILED' || active.value || submitting.value) return;
++  reworkAssociation.value = null;
++  reworkActionCode.value = detail.value?.actionCode?.trim() || null;
++  pendingKey = null;
++  selection.value = sanitizeSelection(capabilities.value, selection.value);
++  focusTaskInput();
++}
++
+ /**
+  * 按已确认计划再开一次运行。
+  *
+@@ -628,9 +641,12 @@ function onMessageKeydown(event: KeyboardEvent): void {
+         />
+       </Teleport>
+ 
+-      <p v-if="terminal && detail?.errorCode" class="panel-warn" data-testid="panel-error-code">
+-        失败码：{{ detail.errorCode }}
+-      </p>
++      <div v-if="status === 'FAILED'" class="panel-warn" data-testid="panel-new-attempt">
++        <p>本次运行未能生成产物。重新开始会创建新尝试，原运行仍保留；请在输入框说明这次任务后发送。</p>
++        <Button size="small" :disabled="submitting || active" data-testid="panel-restart" @click="prepareNewAttempt">
++          重新开始
++        </Button>
++      </div>
+       <FeedbackBar v-if="terminal" target-type="RUN_MESSAGE" :target-id="runId" label="本次运行" />
+     </template>
+   </section>
+diff --git a/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts b/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts
+index b4b69d2..4e13e32 100644
+--- a/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts
++++ b/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts
+@@ -23,6 +23,14 @@ function ev(seq: number, type: AgentRunEvent['type'], payload: unknown = {}): Ag
+ }
+ 
+ describe('RunTimeline', () => {
++  it('renders the user error message without exposing its audit code', () => {
++    const event = ev(1, 'ERROR', { code: 'COMPLETION_REJECTED', message: '检索依据不足，产物未生成' });
++    const wrapper = mount(RunTimeline, { props: { events: [event], hasRun: true } });
++    expect(wrapper.text()).toContain('检索依据不足，产物未生成');
++    expect(wrapper.text()).not.toContain('COMPLETION_REJECTED');
++    expect(event.payload).toEqual({ code: 'COMPLETION_REJECTED', message: '检索依据不足，产物未生成' });
++  });
++
+   it('shows the idle hint and no items before any run', () => {
+     const wrapper = mount(RunTimeline, { props: { events: [], hasRun: false } });
+     expect(wrapper.find('[data-testid="timeline-idle"]').exists()).toBe(true);
+@@ -73,7 +81,9 @@ describe('RunTimeline', () => {
+     const link = items[2]!.find('a');
+     expect(link.attributes('href')).toBe('https://example.com');
+     expect(link.attributes('rel')).toBe('noopener noreferrer');
+-    expect(items[3]!.text()).toContain('模型超时（E1）');
++    expect(items[3]!.find('[role="alert"]').text()).toBe('模型超时');
++    expect(items[3]!.text()).not.toContain('E1');
++    expect(wrapper.props('events')[4]?.payload).toEqual({ code: 'E1', message: '模型超时' });
+   });
+ 
+   it('renders think tags as a folded reasoning block and the answer as the body', () => {
+diff --git a/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue b/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue
+index d594d9d..44f129a 100644
+--- a/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue
++++ b/apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue
+@@ -336,7 +336,7 @@ async function onReworkArtifact(artifactId: string): Promise<void> {
+           </template>
+           <template v-else-if="row.item.kind === 'error'">
+             <span class="item-error" role="alert">
+-              {{ row.item.message || '智能体返回错误' }}<template v-if="row.item.code">（{{ row.item.code }}）</template>
++              {{ row.item.message || '智能体返回错误' }}
+             </span>
+           </template>
+           <template v-else-if="row.item.kind === 'run-finished'">

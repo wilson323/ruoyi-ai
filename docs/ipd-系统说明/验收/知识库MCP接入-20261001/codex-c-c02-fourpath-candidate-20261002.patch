@@ -1,0 +1,362 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
+@@ -23,7 +23,8 @@
+         GATE_AUTHORITY_CLAIM,
+         SOURCE_IDENTITY_MISMATCH,
+         MISSING_RETRIEVAL_DISCLOSURE,
+-        UNSUPPORTED_MEASUREMENT
++        UNSUPPORTED_MEASUREMENT,
++        SKILL_CONTRACT_MISMATCH
+     }
+ 
+     static final String SEARCH_TOOL = "project_knowledge_search";
+@@ -34,6 +35,12 @@
+     /** 只排除 Markdown 行首标题的章节号；标题中的价格等其他数字仍需来源。 */
+     private static final Pattern HEADING_SECTION = Pattern.compile(
+         "(?m)^([ ]{0,3}#{1,6}[\\t ]+)\\d+(?:\\.\\d+)+(?:[.)])?(?=[\\t ]+\\S)");
++
++    private final String actionCode;
++
++    public ProjectAgentCompletionGate() { this(null); }
++
++    public ProjectAgentCompletionGate(String actionCode) { this.actionCode = actionCode; }
+ 
+     private boolean searchInvoked;
+     private boolean anyHit;
+@@ -164,7 +171,50 @@
+         if (searchInvoked && !measurementsMatchQuotes(body)) {
+             return RejectionReason.UNSUPPORTED_MEASUREMENT;
+         }
++        if ("C02".equals(actionCode) && blocksOptionalPurpose(body)) {
++            return RejectionReason.SKILL_CONTRACT_MISMATCH;
++        }
+         return null;
++    }
++
++    /** 只核用途本身的肯定阻塞声明，不把竞品名单等其他缺项借作用途阻塞。 */
++    private static boolean blocksOptionalPurpose(String body) {
++        for (String raw : body.split("\\R")) {
++            String line = raw.strip().replace("**", "").replace("`", "");
++            if (line.startsWith(">")) continue;
++            if (line.startsWith("|")) {
++                String[] cells = line.split("\\|", -1);
++                // 缺项表：编号 / 缺项 / 影响 / 处置。只看紧邻缺项的影响列。
++                if (cells.length >= 5 && cells[1].strip().matches("[A-Za-z]+[-－]?\\d+")) {
++                    String subject = cells[2].strip();
++                    if (subject.matches("^(?:目的裁剪|用途(?:声明)?|目的声明)(?:[（(：:].*|$)" )
++                        && (subject.contains("用户声明时") || line.contains("未声明")
++                            || line.contains("默认四维") || subject.contains("可选"))
++                        && affirmativePurposeBlock(cells[3].strip())) return true;
++                }
++            } else if (line.matches("^(?:[-*] |\\d+[.、] )?(?:用途未声明|未声明用途|目的裁剪.{0,20}可选|用途声明.{0,20}可选|目的声明.{0,20}可选).{0,60}")) {
++                if (affirmativePurposeBlock(line)) return true;
++            }
++        }
++        return false;
++    }
++
++    private static boolean affirmativePurposeBlock(String statement) {
++        for (String segment : statement.split("(?:但是|但|然而|并且|且)")) {
++            if (segment.strip().matches("^(?:若|如果|如有|当|引用|例如|假设).*")) continue;
++            boolean conditional = false;
++            for (String raw : segment.split("[，,；;。]")) {
++                String clause = raw.strip();
++                if (clause.matches("^(?:若|如果|如有|当|引用|例如|假设).*")) conditional = true;
++                if (conditional) continue;
++                if (clause.matches(".*(?:不阻塞|不应阻塞|不是阻塞|不构成阻塞|无需|无须|不必|并非必需|不得作为阻塞).*")) continue;
++                // 明确其他缺项的主语不继承前句用途；只接受用途本身或省略主语的用途声明/影响谓词。
++                boolean purpose = clause.matches("^(?:用途|目的裁剪|目的声明).*")
++                    || clause.matches("^(?:必须(?:先)?声明|必需(?:条件|前置)|未声明|阻塞(?:\\s*C02|\\s*步骤)).*");
++                if (purpose && clause.matches(".*(?:阻塞(?:\\s*C02)?|必须(?:先|补|声明)|必需(?:条件|前置)|才能继续).*")) return true;
++            }
++        }
++        return false;
+     }
+ 
+     /** 先按 documentId 核对，同名标题不能互相借用身份。 */
+@@ -204,38 +254,83 @@
+         return value.matches("^(?:项目已审核文档|已审核项目文档|已审核文档)(?:[（(\\s].*|$)");
+     }
+ 
+-    /** 每条引用独立核对完整标识，不让同行的其他来源借用类型或审核状态。 */
++    /** 每条引用独立核对完整标识；白话资料编号与 documentId 使用同一身份。 */
+     private boolean explicitIdentityContradiction(String body) {
+         for (String part : body.split("[\\r\\n；;。]")) {
+             Matcher fields = Pattern.compile(
+-                "(documentId|sourceType|reviewStatus)=([^\\s|｜，,；;。】]+)").matcher(part);
++                "(?<![\\p{L}\\p{N}_])(documentId|sourceType|reviewStatus)=([^\\s|｜，,；;。】（）()]+)"
++                    + "|资料编号[：:][\\t ]*([^\\s|｜，,；;。】（）()]+)").matcher(part);
+             Map<String, String> reference = new java.util.LinkedHashMap<>();
++            int from = 0;
+             while (fields.find()) {
+-                String key = fields.group(1);
+-                // 一条引用每个键只有一个值；重复键意味着下一条引用开始。
++                String key = fields.group(1) == null ? "documentId" : fields.group(1);
++                String value = fields.group(1) == null ? fields.group(3) : fields.group(2);
++                // 重复身份键开始下一引用；只把本条文本交给审核宣称判定。
+                 if (reference.containsKey(key)) {
+-                    if (identityContradiction(reference, part)) return true;
++                    int boundary = referenceBoundary(part, from, fields.start());
++                    if (identityContradiction(reference, part.substring(from, boundary))) return true;
+                     reference.clear();
+-                }
+-                reference.put(key, fields.group(2));
+-            }
+-            if (identityContradiction(reference, part)) return true;
+-        }
+-        return false;
+-    }
+-
+-    /** 字段顺序可变，但每条引用只对照自己明确写出的 documentId。 */
++                    from = boundary;
++                }
++                reference.put(key, value);
++            }
++            if (identityContradiction(reference, part.substring(from))) return true;
++        }
++        return false;
++    }
++
++    /** 下一编号前的归属谓词属于下一引用，不能留给上一正式文档。 */
++    private static int referenceBoundary(String part, int from, int fieldStart) {
++        int boundary = fieldStart;
++        int comma = Math.max(part.lastIndexOf('，', fieldStart), part.lastIndexOf(',', fieldStart));
++        if (comma >= from) boundary = comma + 1;
++        Matcher preceding = Pattern.compile(
++            "(?:作为|来自|属于|是)(?:项目已审核文档|已审核项目文档|已审核文档)的[\\t ]*$")
++            .matcher(part.substring(from, fieldStart));
++        if (preceding.find()) boundary = Math.min(boundary, from + preceding.start());
++        return boundary;
++    }
++
++    /** 显式编号的审核归属必须有本次正式文档正证；未知编号不能借同名标题。 */
+     private boolean identityContradiction(Map<String, String> reference, String part) {
+         String documentId = reference.get("documentId");
+         if (documentId == null) return false;
++        if (part.stripLeading().matches("^(?:反例|错误示例|禁止示例)[：:].*")) return false;
++        boolean reviewedClaim = affirmativeReviewedClaim(part);
++        if (reviewedClaim && evidence.stream().noneMatch(item -> documentId.equals(item.documentId)
++            && "PROJECT_DOCUMENT".equals(item.sourceType) && "REVIEWED".equals(item.reviewStatus))) return true;
+         for (Evidence item : evidence) {
+             if (!documentId.equals(item.documentId)) continue;
+             String claimedType = reference.get("sourceType");
+             String claimedReview = reference.get("reviewStatus");
+             if (claimedType != null && !claimedType.equals(item.sourceType)) return true;
+             if (claimedReview != null && !claimedReview.equals(item.reviewStatus)) return true;
+-            if ("KNOWLEDGE_FRAGMENT".equals(item.sourceType)
+-                && claimsReviewedRole(part) && !specificallyDeniesReviewed(part)) return true;
++            if ("KNOWLEDGE_FRAGMENT".equals(item.sourceType) && reviewedClaim) return true;
++        }
++        return false;
++    }
++
++    private static boolean affirmativeReviewedClaim(String part) {
++        for (String cell : part.split("[|｜]")) {
++            if (reviewedClassification(cell.replace("**", "").replace("`", "").trim())) return true;
++        }
++        String[] claims = {"属于已审核文档", "属于项目已审核文档", "作为项目已审核文档",
++            "来自项目已审核文档", "来自已审核文档", "是项目已审核文档",
++            "来自已审核项目文档", "属于已审核项目文档", "是已审核项目文档",
++            "sourceType=PROJECT_DOCUMENT", "reviewStatus=REVIEWED"};
++        for (String claim : claims) {
++            int from = 0;
++            while (from < part.length()) {
++                int at = part.indexOf(claim, from);
++                if (at < 0) break;
++                String prefix = part.substring(0, at);
++                prefix = prefix.substring(Math.max(prefix.lastIndexOf('，'), prefix.lastIndexOf(',')) + 1);
++                if (!prefix.matches(".*(?:不|未|没|不能|不应|不得|禁止|不要|并非|不等于|未被认定为)(?:能|可|将|应|会)?$|.*(?:不是|不属于|不能作为|不代表)(?:项目)?$")
++                    && !conditionalAfter(part, at, claim.length())
++                    && !part.substring(at + claim.length()).matches("^(?:未取得|未命中).*")
++                    && !prefix.matches(".*(?:若|如果|如有).*")) return true;
++                from = at + claim.length();
++            }
+         }
+         return false;
+     }
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
+@@ -14,6 +14,54 @@
+  */
+ @Tag("dev")
+ class ProjectAgentCompletionGateTest {
++
++    @Test
++    void readableIdentityRequiresExactReviewedEvidenceWithSameTitle() {
++        ProjectAgentCompletionGate gate = new ProjectAgentCompletionGate();
++        gate.noteSource(Map.of("hits", 2, "retrievalStatus", "SUCCESS", "citationText", "受控正文",
++            "sourceEvidence", java.util.List.of(
++                Map.of("sourceType", "KNOWLEDGE_FRAGMENT", "documentId", "12", "knowledgeId", "100",
++                    "sourceName", "同名.md", "reviewStatus", "NOT_PROJECT_DOCUMENT"),
++                Map.of("sourceType", "PROJECT_DOCUMENT", "documentId", "123",
++                    "sourceName", "同名.md", "reviewStatus", "REVIEWED"))));
++        for (String rejected : java.util.List.of(
++            "同名.md（资料编号：12）来自项目已审核文档",
++            "同名.md（资料编号：unknown）来自项目已审核文档",
++            "资料编号：unknown 其他材料未取得，但来自项目已审核文档",
++            "资料编号：unknown 若其他资料能取得，但该资料来自项目已审核文档",
++            "来自项目已审核文档的资料编号：12，资料编号：123 系统知识片段",
++            "资料编号：123 来自项目已审核文档，来自项目已审核文档的资料编号：unknown",
++            "同名.md documentId=unknown 来自项目已审核文档",
++            "同名.md（资料编号：1234）来自项目已审核文档",
++            "| 同名.md（资料编号：12） | 已审核项目文档 |",
++            "| 同名.md（资料编号：unknown） | 已审核项目文档 |",
++            "资料编号：123 来自项目已审核文档，作为项目已审核文档的资料编号：12",
++            "资料编号：123 是系统知识片段，来自项目已审核文档的资料编号：12",
++            "资料编号：123 来自项目已审核文档 作为项目已审核文档的资料编号：12",
++            "资料编号：123 来自项目已审核文档；资料编号：12 来自项目已审核文档")) {
++            assertThat(gate.rejectionReason(rejected)).as(rejected)
++                .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SOURCE_IDENTITY_MISMATCH);
++        }
++        for (String allowed : java.util.List.of(
++            "同名.md（资料编号：12）是系统知识片段，不是项目已审核文档",
++            "同名.md（资料编号：123）来自项目已审核文档",
++            "资料编号：123 来自项目已审核文档；资料编号：12 系统知识片段",
++            "资料编号：12 系统知识片段，来自项目已审核文档的资料编号：123",
++            "资料编号：123 来自项目已审核文档 资料编号：12 系统知识片段",
++            "资料编号：12 系统知识片段 资料编号：123 来自项目已审核文档",
++            "资料编号：unknown 不是项目已审核文档",
++            "资料编号：unknown 并非属于项目已审核文档",
++            "资料编号：unknown 不等于是项目已审核文档",
++            "资料编号：unknown 正在查询已审核文档的使用规范",
++            "资料编号：unknown 项目已审核文档未取得",
++            "| 同名.md（资料编号：12） | 不是已审核项目文档 |",
++            "资料编号：12 不能作为项目已审核文档",
++            "| 同名.md（资料编号：123） | 已审核项目文档 |",
++            "如果资料编号：unknown 来自项目已审核文档，才可引用",
++            "反例：资料编号：unknown 来自项目已审核文档")) {
++            assertThat(gate.rejectionReason(allowed)).as(allowed).isNull();
++        }
++    }
+ 
+     @Test
+     @DisplayName("项目上下文不得冒作审核文档；否定、条件和层级定义不拒绝")
+@@ -286,4 +334,54 @@
+         }
+     }
+ 
++    @org.junit.jupiter.api.Test
++    void c02PurposeDefaultCannotBecomeBlockingRequirement() {
++        String realRow = "| G-06 | **目的裁剪**（产品设计侧重功能矩阵 / 战略侧重格局与壁垒 / 融资材料侧重差异一页纸），按 C02 步骤 2「**用户声明时**」裁剪 | 阻塞 C02 步骤 2 | 由项目方/需求方在本次任务中显式声明用途；未声明则按规则四维齐全、篇幅克制 |";
++        assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(realRow))
++            .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
++        assertThat(new ProjectAgentCompletionGate().rejectionReason(realRow)).isNull();
++        assertThat(new ProjectAgentCompletionGate("C01").rejectionReason(realRow)).isNull();
++    }
++
++    @org.junit.jupiter.api.Test
++    void c02PurposeDefaultKeepsOtherMissingFactsAndConditionalStatements() {
++        for (String text : java.util.List.of(
++            "用途未声明，按四维齐全、篇幅克制，不阻塞。",
++            "| G-06 | 目的裁剪（用户声明时） | 可选，不阻塞 | 默认四维 |",
++            "用途已声明为产品设计；竞品名单未取得，停止比较。",
++            "| G-08 | 用途声明（已声明融资用途） | 阻塞融资材料输出：原始报价未取得 | 补报价 |",
++            "目的裁剪不是阻塞条件，无需先声明用途。",
++            "若用途未声明，默认四维；如果声明用途则裁剪。",
++            "> 引用错误示例：用途未声明必须先补齐才能继续。",
++            "| G-01 | 候选竞品名单 | 阻塞目的裁剪和比较 | 未取得 |")) {
++            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(text)).as(text).isNull();
++        }
++        assertThat(new ProjectAgentCompletionGate("C02").rejectionReason("用途未声明，必须先声明才能继续"))
++            .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
++    }
++    @Test
++    void optionalPurposeNegationAndAffirmativeContrastStayDistinct() {
++        for (String body : java.util.List.of(
++            "用途未声明，不构成阻塞；按默认四维执行。",
++            "用途未声明，不构成阻塞，但竞品名单缺失阻塞 C02。",
++            "用途未声明，竞品名单缺失阻塞 C02。",
++            "用途未声明，必须先补竞品名单才能继续。",
++            "用途未声明，竞品名单缺失阻塞目的裁剪与四维比较",
++            "用途未声明，如果用户要求窄化，必须先声明用途",
++            "用途未声明，无须补充用途才能继续，按默认四维执行。",
++            "用途未声明时，若按默认四维执行，不构成阻塞条件。",
++            "| G-06 | 目的裁剪（用户声明时） | 不构成阻塞 C02 步骤2 | 未声明默认四维 |",
++            "| G-06 | 目的裁剪（用户声明时） | 如果用户要求窄化，必须先声明用途 | 未声明默认四维 |")) {
++            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(body)).as(body).isNull();
++        }
++        for (String body : java.util.List.of(
++            "用途声明是可选的，但必须先声明才能继续。",
++            "用途未声明，无须补报价且必须先声明用途才能继续",
++            "| G-06 | 目的裁剪（用户声明时） | 如果用户要求窄化才裁剪，但未声明用途仍阻塞 C02 | 未声明默认四维 |",
++            "| G-06 | 目的裁剪（用户声明时） | 用途可选，但未声明阻塞 C02 步骤2 | 未声明默认四维 |")) {
++            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(body)).as(body)
++                .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
++            assertThat(new ProjectAgentCompletionGate("C01").rejectionReason(body)).as(body).isNull();
++        }
++    }
+ }
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java
+@@ -49,7 +49,7 @@
+     /** 最近一次文本落库的时钟；0 表示本段还没开始计时。 */
+     private long lastTextFlushAt;
+     private final StringBuilder fullText = new StringBuilder();
+-    private final ProjectAgentCompletionGate completion = new ProjectAgentCompletionGate();
++    private final ProjectAgentCompletionGate completion;
+     private long seq;
+     private boolean closed;
+     private long lastStatusProbe;
+@@ -69,6 +69,7 @@
+         this.tenantId = run.getTenantId();
+         this.personId = run.getPersonId();
+         this.actionCode = run.getActionCode();
++        this.completion = new ProjectAgentCompletionGate(this.actionCode);
+         this.store = store;
+         this.artifactStore = artifactStore;
+         this.mapper = mapper;
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java
+@@ -267,4 +267,52 @@
+             .contains("\"completionReason\":\"GATE_AUTHORITY_CLAIM\"")
+             .doesNotContain("建议 Gate 签署");
+     }
++    @Test
++    @DisplayName("C02 使用运行记录动作合同：可选用途冒作阻塞时拒绝草稿")
++    void c02OptionalPurposeBlockerCannotPersistArtifact() {
++        IpdAgentRun c02 = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)
++            .projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id())
++            .agentId("ipd_project_agent").actionCode("C02").status(AgentRunStatus.RUNNING.name())
++            .idempotencyKey("key-c02-default-contract").build();
++        store.insertRun(c02);
++        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
++        ProjectAgentRunHandle c02Handle = new ProjectAgentRunHandle(c02, store, artifacts,
++            AgentTestFixtures.MAPPER, clock::get, () -> { });
++        c02Handle.onText("| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞 C02 步骤2 | 未声明则按规则四维齐全、篇幅克制。 |");
++        c02Handle.onComplete();
++        c02Handle.onComplete();
++
++        assertThat(artifacts.size()).isZero();
++        assertThat(store.findRun(c02.getId()).orElseThrow().getStatus()).isEqualTo("FAILED");
++        assertThat(store.findRun(c02.getId()).orElseThrow().getErrorCode())
++            .isEqualTo(ProjectAgentCompletionGate.REJECTED);
++        assertThat(store.events(c02.getId())).extracting(IpdAgentRunEvent::getEventType)
++            .doesNotContain("ARTIFACT", "RUN_FINISHED");
++        assertThat(store.events(c02.getId()).stream().filter(e -> "ERROR".equals(e.getEventType())))
++            .singleElement().satisfies(e -> assertThat(e.getPayload())
++                .contains("SKILL_CONTRACT_MISMATCH").doesNotContain("目的裁剪"));
++    }
++
++    @Test
++    @DisplayName("C02 默认四维可生成草稿；其他动作不借用 C02 用途规则")
++    void recordedActionKeepsDefaultScopeAndOtherActionsCompatible() {
++        Map<String, String> cases = Map.of(
++            "C02", "用途未声明，不阻塞；按默认四维齐全、篇幅克制。竞品名单未取得，暂不比较。",
++            "C01", "| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞步骤2 | 未声明则四维齐全、篇幅克制。 |");
++        cases.forEach((action, body) -> {
++            IpdAgentRun recorded = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)
++                .projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id())
++                .agentId("ipd_project_agent").actionCode(action).status(AgentRunStatus.RUNNING.name())
++                .idempotencyKey("key-default-contract-" + action).build();
++            store.insertRun(recorded);
++            InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
++            ProjectAgentRunHandle scoped = new ProjectAgentRunHandle(recorded, store, artifacts,
++                AgentTestFixtures.MAPPER, clock::get, () -> { });
++            scoped.onText(body);
++            scoped.onComplete();
++            assertThat(store.findRun(recorded.getId()).orElseThrow().getStatus()).isEqualTo("SUCCEEDED");
++            assertThat(artifacts.size()).isEqualTo(1);
++        });
++    }
++
+ }

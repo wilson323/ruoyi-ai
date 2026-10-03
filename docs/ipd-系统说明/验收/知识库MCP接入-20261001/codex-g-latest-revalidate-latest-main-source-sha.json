@@ -1,0 +1,7 @@
+{
+  "main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiCheckpointGuard.java": "6b36d6bec5c1c2b7caf17b0c5100057e787dd0cdfc4a272aa328ca1bcc5ea863",
+  "main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java": "b5d96e42bdc81d44b01dcbc37b694f97992b266acd3bbfe852e47138fe50f6b7",
+  "main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java": "0ec89cadfd3ee8abb5e0440638184c180dadc9df827de6b2f5620163fc622502",
+  "main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRuntimeAccessSink.java": "d30e99a7e974843bbe02891d29ac0973ece98ce1403ae7ef66bcd0bcc8bcc579",
+  "test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java": "2ad67e3e5491db1dc6648a90bca3f54d863be1884c0269f13817af3a6e30c8da"
+}

@@ -1,0 +1,28 @@
+{
+  "status": "PURE_PROVIDER_PROBE_EXECUTED",
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-088030cd0dda.jar",
+  "jarSha256": "088030cd0dda58c998ec957f5a514cfd8673525049747d84b4791c0994aa7d81",
+  "temporaryDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-mcp-provider-tccl-jnisrins",
+  "compileExitCode": 0,
+  "probeExitCode": 0,
+  "probeSourceSha256": "06001ffa81de801d618c14f2c27d07d83960c09fd06aaa66d575f8811d9ab59e",
+  "dependencyHashes": {
+    "mcp-json-jackson2-0.17.2.jar": "dbe542c16244de30872ce5edcf1795ef4101acd4ac400e8c8081b0048feac0a7",
+    "mcp-0.17.2.jar": "03933059322e5d64f2d305701338f0a3b894a2c983079b44b675b63ea12798b0",
+    "mcp-json-0.17.2.jar": "6df99ef400836bd213d63895684eb066d36e1a9b759bd38342c32a6b9b0b6e4f",
+    "mcp-core-0.17.2.jar": "2489902b00d9cfb77a9ec991adf5c3387da298a4154f526dc63cda9c187891ff"
+  },
+  "safeResults": [
+    "PROVIDER_COUNT LAUNCHED_TCCL 1",
+    "MAPPER_RESULT LAUNCHED_TCCL SUCCESS io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper",
+    "PROVIDER_COUNT SYSTEM_TCCL 0",
+    "MAPPER_RESULT SYSTEM_TCCL FAILURE java.lang.IllegalStateException",
+    "SAFE_FRAME SYSTEM_TCCL io.modelcontextprotocol.json.McpJsonInternal#lambda$createDefaultMapper$2:67",
+    "SAFE_FRAME SYSTEM_TCCL io.modelcontextprotocol.json.McpJsonInternal#createDefaultMapper:62",
+    "SAFE_FRAME SYSTEM_TCCL io.modelcontextprotocol.json.McpJsonInternal#getDefaultMapper:30",
+    "SAFE_FRAME SYSTEM_TCCL io.modelcontextprotocol.json.McpJsonMapper#getDefault:97"
+  ],
+  "networkCalls": 0,
+  "businessWrites": 0,
+  "limitation": "Real Boot LaunchedClassLoader type with extracted actual libs, no running Spring app or real process TCCL observation; candidate reproducible mechanism, not proof of original throw site."
+}

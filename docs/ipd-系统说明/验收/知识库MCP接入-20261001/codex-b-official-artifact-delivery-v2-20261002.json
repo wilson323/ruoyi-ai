@@ -1,0 +1,41 @@
+{
+  "status": "PARTIAL",
+  "supersedes": "codex-b-official-artifact-delivery-20261002 prefix-only guard is invalid for integration",
+  "files": [
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDelivery.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDelivery.java",
+      "sha256": "7dd049ac00b598d33c2792bb6dab2ecc2c6b2550bd04949df9c2ab3f82e91c43"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactAccess.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactAccess.java",
+      "sha256": "36ae982944093fc6a6115a99cfe5eb833605b195f8ef98b25294d55c1c370e92"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDeliveryTest.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDeliveryTest.java",
+      "sha256": "95b3a829654e7231d2ae7d22b998a03908d5552d443f5c36411a18065520ea97"
+    }
+  ],
+  "patchSha256": "5b908184f9b88c25a3da09157b7d9290d949afbc69f092565e6c8436d60cbe62",
+  "tests": {
+    "found": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/artifact-access-tests-final.log",
+  "productionSeams": [
+    "RuntimeAuthority.requireAuthorized(binding,runtime) mandatory; root must use current Gov actor or opaque server claim",
+    "ProjectAgentArtifactAccess.OwnedTargetFactory.forOwnedRun(actor,runId) must authenticate root existing Person/project/run",
+    "RunService instance artifactAccess.requireDocumentContent(actor,runId,seen) after locked DRAFT lookup; static prefix guard removed"
+  ],
+  "pending": [
+    "No real RuntimeAuthority or OwnedTargetFactory production bean",
+    "No main RunService/Configuration/controller/FE wiring",
+    "No real MyBatis rollback test",
+    "Attachment sidecar durability/orphan recovery missing",
+    "Missing both bytes and sidecar cannot distinguish legacy text from lost binary without original trusted delivery-origin event; root must persist/reconcile attachment receipt in original event chain before integration"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "status": "VERIFIED_ISOLATED_FIXTURE_NOT_RUNTIME",
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/memoryhook-cold-stream.log",
+  "logSha256": "e350035b4b1e799ddec56ebd88a757a3337f0db79f4b99bc888896f922946fc0",
+  "probe": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/MemoryHookStreamProbe.java",
+  "probeSha256": "7c5e9c18d76a516faf64373fceec25d3f6655f59b8d36c39c8d41305c28230ab",
+  "mainModelCalls": 1,
+  "memoryModelCalls": 1,
+  "memoryQuiescent": true,
+  "coldContainerMemoryHookWritten": true,
+  "ownVolumeCleanupExit": 0,
+  "networkModelCalls": 0
+}

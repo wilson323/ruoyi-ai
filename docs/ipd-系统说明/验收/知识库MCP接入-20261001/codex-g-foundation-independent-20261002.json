@@ -1,0 +1,82 @@
+{
+  "status": "PARTIAL_REAL_NATIVE_VALIDATED_ISOLATION_GAPS",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-foundation-independent-0t2zm9ih",
+  "sdkVersion": "2.0.3",
+  "candidateSourceSHA": "6c7efffbd60c7e4f06cacf155b3f16f95597d7491ab10fb550f5dd5f2e6ce93a",
+  "evidenceHashes": {
+    "GProbe.java": "edadc3da2f38e8618efb65600025a737b3a5fed991a4b5b230ca3f27cc06c412",
+    "GSessionProbe.java": "e70cf5c63257cd38bd71c18467f0e21bd6e09ab562f788e8db11825da26052b5",
+    "GFullDefaultProbe.java": "aa5ceb5b256fa5aa0aecfbae803c6ae97ff4eec8b2f838336191f9ec6eb0483e",
+    "GWebProbe.java": "6265dd350e202a2926457a2129e3170b30a8ece62f443b18c986d290eadbe189",
+    "probe.log": "20e1fe9273f208b33c49598e6d9fda0864d28cbff4b770049c43cc76152080a1",
+    "session-probe-final.log": "31942d48ded385d41e1747098860c72c49edd1b7d0451c5b171b5e9644cfb865",
+    "session-probe-valid-input.log": "976f2c331beb412c6432cdd985d9db90e70c65487c18d3052514a83064fb91e0",
+    "session-probe-direct.log": "0e41a74235666faa5d90c0a69765e36ecda64d378a2be143f87e09345468032c",
+    "full-default.log": "18aa6d29679ec4fd40853a117aad596a24245b121ce6fae2a38f8107e741beca",
+    "web-probe.log": "e036de4539b663e94f17dab98dce366ade1733cd594ddfece5452fd15c2235db",
+    "web-probe-status.log": "d99ed88c6587c4b6052709df1ce1a8054b5eb9c800b8f4717d4faaa3e488006c",
+    "result.json": "230a22a75248d53a1eb767b18651dbee0187c80444f09ce1b55f2a3a5d95695b"
+  },
+  "compileExit": 0,
+  "dockerProbeExit": 0,
+  "ownedVolumeCleanup": [
+    0,
+    0
+  ],
+  "ownedContainersShutdown": 3,
+  "positive": [
+    "native file write/read across new Docker container",
+    "native MemorySave and cold MemoryGet/MemorySearch",
+    "native harmless Shell printf",
+    "workdir traversal rejected",
+    "host repository absent",
+    "different UUID volumes file/memory absent",
+    "official SessionTree records with real SessionList/History/Search",
+    "Docker builder restricted configuration exact16",
+    "unrestricted default builder actual23 names",
+    "public RFC9110 official webFetch status200/IETF marker"
+  ],
+  "negativeActual": {
+    "outsideWorkspaceEtcPasswdDenied": false,
+    "sameVolumeSiblingRunDenied": false,
+    "webSearchProviderAvailable": false
+  },
+  "wait": {
+    "ToolkitCall": "ERROR schema validation content null, preserved both empty and correct input",
+    "registeredAgentToolCall": "real callable; with restricted builder no task repository, with default builder empty task repository result; no completed async task/barrier test yet",
+    "state": "RUNNING default ToolResultState, not business runtime success"
+  },
+  "fullDefaultNames": [
+    "agent_list",
+    "agent_send",
+    "agent_spawn",
+    "edit_file",
+    "execute",
+    "glob_files",
+    "grep_files",
+    "list_files",
+    "load_skill_through_path",
+    "memory_get",
+    "memory_save",
+    "memory_search",
+    "read_file",
+    "session_history",
+    "session_list",
+    "session_search",
+    "task_cancel",
+    "task_list",
+    "task_output",
+    "wait_async_results",
+    "web_fetch",
+    "web_search",
+    "write_file"
+  ],
+  "limits": [
+    "23 registration is not all SDK application acceptance",
+    "session fixtures synthetic, no model/transcript sanitization acceptance",
+    "no real WebSearch because TAVILY absent",
+    "webFetch one public primary page only; no SSRF/permission coverage",
+    "memory volume persistence alone not tenant authorization or concurrent CAS",
+    "no main/index/target/business DB writes; no model call; no existing containers touched"
+  ]
+}

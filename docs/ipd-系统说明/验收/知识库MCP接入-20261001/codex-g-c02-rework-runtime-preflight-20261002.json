@@ -1,0 +1,257 @@
+{
+  "timestampUtc": "2026-10-02T20:09:53.293474+00:00",
+  "scope": "local Person login + HTTP GET + DB READ ONLY; no create/cancel/apply/review/reload",
+  "login": {
+    "account": "ipd-admin",
+    "http": 200,
+    "code": 0,
+    "person": {
+      "id": "900101",
+      "username": "ipd-admin"
+    }
+  },
+  "http": {
+    "/projects/2103659612308828162/agent-capabilities": {
+      "http": 200,
+      "code": 0,
+      "models": [
+        {
+          "id": "2104885081318375426",
+          "name": "MiniMax / MiniMax-M3",
+          "available": true,
+          "reason": null
+        }
+      ],
+      "packs": [
+        {
+          "code": "market-research",
+          "version": "v1",
+          "available": true,
+          "unavailableReason": null,
+          "actionCodes": [
+            "C01",
+            "C02"
+          ],
+          "tools": [
+            {
+              "id": "project_knowledge_search",
+              "name": "项目资料检索",
+              "readOnly": true,
+              "available": true,
+              "reason": null
+            },
+            {
+              "id": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+              "name": "门禁及梯控设备知识库",
+              "readOnly": true,
+              "available": true,
+              "reason": null
+            }
+          ]
+        }
+      ]
+    },
+    "/ai-documents/2106085620907540481/versions": {
+      "http": 200,
+      "code": 0,
+      "versions": [
+        {
+          "id": "2106051584776511490",
+          "projectId": "2103659612308828162",
+          "docType": "MARKET_RESEARCH",
+          "versionNo": 1,
+          "status": "REJECTED",
+          "parentVersionId": null,
+          "reviewedBy": "900101",
+          "reviewedAt": 1790959022000,
+          "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39"
+        },
+        {
+          "id": "2106061816428781569",
+          "projectId": "2103659612308828162",
+          "docType": "MARKET_RESEARCH",
+          "versionNo": 2,
+          "status": "REJECTED",
+          "parentVersionId": "2106051584776511490",
+          "reviewedBy": "900101",
+          "reviewedAt": 1790959945000,
+          "contentSha256": "ae42935aa03b525c6fb332ea3f267eda8929ca2dfcd5fcfc5bfdcaa8aebbb77a"
+        },
+        {
+          "id": "2106085620907540481",
+          "projectId": "2103659612308828162",
+          "docType": "MARKET_RESEARCH",
+          "versionNo": 3,
+          "status": "GENERATED",
+          "parentVersionId": "2106061816428781569",
+          "reviewedBy": null,
+          "reviewedAt": null,
+          "contentSha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8"
+        }
+      ]
+    },
+    "/agent-runs/2106082915170418689": {
+      "http": 200,
+      "code": 0,
+      "run": {
+        "runId": "2106082915170418689",
+        "projectId": "2103659612308828162",
+        "status": "SUCCEEDED",
+        "actionCode": "C02",
+        "errorCode": null,
+        "configSnapshot": {
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1",
+          "modelConfigId": "2104885081318375426",
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "project_knowledge_search",
+            "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+          ],
+          "previousRunId": "2106061095016882177",
+          "targetDocumentId": "2106061816428781569",
+          "baseVersionId": "2106061816428781569"
+        },
+        "artifactArchives": [
+          {
+            "artifactId": "77f8283b1a6849798dc6b39ce4da4f9b",
+            "documentId": "2106085620907540481"
+          }
+        ]
+      }
+    },
+    "/agent-runs/2106107313315135490": {
+      "http": 200,
+      "code": 0,
+      "run": {
+        "runId": "2106107313315135490",
+        "projectId": "2103659612308828162",
+        "status": "SUCCEEDED",
+        "actionCode": "C02",
+        "errorCode": null,
+        "configSnapshot": {
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1",
+          "modelConfigId": "2104885081318375426",
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "project_knowledge_search",
+            "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+          ],
+          "previousRunId": "2106082915170418689",
+          "targetDocumentId": "2106085620907540481",
+          "baseVersionId": "2106085620907540481"
+        },
+        "artifactArchives": []
+      }
+    }
+  },
+  "db": {
+    "document": [
+      {
+        "id": "2106085620907540481",
+        "sha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8",
+        "status": "GENERATED",
+        "docType": "MARKET_RESEARCH",
+        "projectId": "2103659612308828162",
+        "versionNo": 3,
+        "reviewedAt": null,
+        "reviewedBy": null,
+        "parentVersionId": "2106061816428781569"
+      }
+    ],
+    "runs": [
+      {
+        "id": "2106082915170418689",
+        "status": "SUCCEEDED",
+        "personId": "900101",
+        "projectId": "2103659612308828162",
+        "actionCode": "C02",
+        "modelConfigId": "2104885081318375426",
+        "configSnapshot": {
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "project_knowledge_search",
+            "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+          ],
+          "baseVersionId": "2106061816428781569",
+          "modelConfigId": "2104885081318375426",
+          "previousRunId": "2106061095016882177",
+          "targetDocumentId": "2106061816428781569",
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1"
+        }
+      },
+      {
+        "id": "2106107313315135490",
+        "status": "SUCCEEDED",
+        "personId": "900101",
+        "projectId": "2103659612308828162",
+        "actionCode": "C02",
+        "modelConfigId": "2104885081318375426",
+        "configSnapshot": {
+          "skills": [
+            {
+              "name": "competitor-analysis-ipd",
+              "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+            }
+          ],
+          "toolIds": [
+            "project_knowledge_search",
+            "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+          ],
+          "baseVersionId": "2106085620907540481",
+          "modelConfigId": "2104885081318375426",
+          "previousRunId": "2106082915170418689",
+          "targetDocumentId": "2106085620907540481",
+          "capabilityPackCode": "market-research",
+          "capabilityPackVersion": "v1"
+        }
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "2106083518261002242",
+        "runId": "2106082915170418689",
+        "sha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8",
+        "status": "APPLIED",
+        "versionNo": 1,
+        "artifactId": "77f8283b1a6849798dc6b39ce4da4f9b",
+        "documentId": "2106085620907540481"
+      },
+      {
+        "id": "2106108034513125377",
+        "runId": "2106107313315135490",
+        "sha256": "ede24b5b6cfc6449fb75834ace486dd0127e2157357c4f1fdb3ec089bcc701a8",
+        "status": "DRAFT",
+        "versionNo": 1,
+        "artifactId": "847d582f33fa4a4fa04528feb266dd0e",
+        "documentId": null
+      }
+    ],
+    "model": [
+      {
+        "id": "2104885081318375426",
+        "name": "MiniMax-M3",
+        "active": 1,
+        "deleted": "0",
+        "provider": "MiniMax"
+      }
+    ]
+  }
+}

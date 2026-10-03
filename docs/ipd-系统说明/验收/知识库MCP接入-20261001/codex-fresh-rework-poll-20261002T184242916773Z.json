@@ -1,0 +1,93 @@
+{
+  "atUtc": "20261002T184242916773Z",
+  "mode": "poll",
+  "projectId": "2103659612308828162",
+  "loadedJarSha256": "7e8885791959580486df7b5db67804fd9da2adcf2cf43ad1454741c048675425",
+  "diagnosticOnly": false,
+  "previousRunId": "2106061095016882177",
+  "targetDocumentId": "2106061816428781569",
+  "runId": "2106092487658545153",
+  "sources": [
+    {
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "toolCallId": "call_01a0fdece7d07ef3b2733c4c",
+      "retrievalStatus": "FAILED",
+      "citationStatus": null,
+      "hits": null,
+      "sourceEvidence": null,
+      "reasonCode": "PROTOCOL_OR_TRANSPORT",
+      "mcpFailureStage": "INITIALIZE",
+      "mcpFailureReason": "PROTOCOL_OR_TRANSPORT",
+      "mcpErrorTypes": "IllegalStateException",
+      "mcpSdkFrames": [
+        "io.modelcontextprotocol.json.McpJsonInternal#lambda$createDefaultMapper$2:67",
+        "io.modelcontextprotocol.json.McpJsonInternal#createDefaultMapper:62",
+        "io.modelcontextprotocol.json.McpJsonInternal#getDefaultMapper:30",
+        "io.modelcontextprotocol.json.McpJsonMapper#getDefault:97",
+        "io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport$Builder#build:825",
+        "org.ruoyi.mcp.service.core.ManagedMcpAsyncClient#streamableHttp:49"
+      ],
+      "seq": 8,
+      "citationChars": 0,
+      "citationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "usage": [
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 1473,
+      "outputTokens": 170
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 1669,
+      "outputTokens": 350
+    }
+  ],
+  "artifacts": [
+    {
+      "artifactId": "3a51f177c2b144ffa5e85ef2c4a72c7d",
+      "versionId": "2106092536887091202",
+      "version": 1,
+      "title": "C02 产物",
+      "contentHash": "a89fd2bbec9df0cadfe81b14f0de05ed618085ccd89a5f99a4cb84c5e5037493",
+      "status": null
+    }
+  ],
+  "run": {
+    "runId": "2106092487658545153",
+    "status": "SUCCEEDED",
+    "errorCode": null,
+    "actionCode": "C02",
+    "configSnapshot": {
+      "capabilityPackCode": "market-research",
+      "capabilityPackVersion": "v1",
+      "modelConfigId": "2104885081318375426",
+      "skills": [
+        {
+          "name": "competitor-analysis-ipd",
+          "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+        }
+      ],
+      "toolIds": [
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+      ],
+      "previousRunId": "2106082915170418689",
+      "targetDocumentId": "2106085620907540481",
+      "baseVersionId": "2106085620907540481"
+    },
+    "artifactArchives": []
+  },
+  "terminal": true,
+  "timedOutWaiting": false
+}

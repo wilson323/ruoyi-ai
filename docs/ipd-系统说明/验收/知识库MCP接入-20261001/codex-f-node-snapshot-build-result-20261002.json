@@ -1,0 +1,33 @@
+{
+  "status": "VERIFIED_CANDIDATE_ONLY",
+  "snapshot": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-node-20261002-qkvu9o37/ruoyi-ipd-web",
+  "sixFrozenHashesMatch": {
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": true,
+    "apps/web-antd/package.json": true,
+    "pnpm-lock.yaml": true
+  },
+  "tests": {
+    "files": 2,
+    "passed": 41,
+    "timelineModel": 20,
+    "runTimeline": 21
+  },
+  "typecheckActualTasks": 1,
+  "buildExit": 0,
+  "buildTasks": 11,
+  "tsDiagnosticCount": 0,
+  "scrollbarDeclaration": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-node-20261002-qkvu9o37/ruoyi-ipd-web/packages/@core/ui-kit/tabs-ui/dist/use-tabs-view-scroll.d.ts",
+  "scrollbarRefDeclaration": "import(\"vue\").Ref<{\n        $el: HTMLElement;\n    } | null, {\n        $el: HTMLElement;\n    } | {\n        $el: HTMLElement;\n    } | null>;",
+  "scrollbarDeclarationSha256": "dccd91cf13efb46f13a8941a1573f03ca6c3ca083415e0ad37f8c1d860093a61",
+  "appIndexExists": true,
+  "logs": [
+    "/tmp/ipd-codex-f-isolated-supported-tests-20261002.log",
+    "/tmp/ipd-codex-f-isolated-supported-types-20261002.log",
+    "/tmp/ipd-codex-f-isolated-build-20261002.log",
+    "/tmp/ipd-codex-f-isolated-build-stubs-20261002.log",
+    "/tmp/ipd-codex-f-isolated-build-supported-20261002.log"
+  ]
+}

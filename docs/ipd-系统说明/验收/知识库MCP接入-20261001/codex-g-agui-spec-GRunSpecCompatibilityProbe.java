@@ -1,0 +1,15 @@
+import org.ruoyi.ipd.agent.kernel.ProjectAgentRunSpec;import org.ruoyi.ipd.agent.dto.AgentRunCreateReq;import org.ruoyi.chat.kernel.KernelModelRequest;import io.agentscope.core.agui.model.RunAgentInput;import io.agentscope.core.message.*;import java.util.*;
+public class GRunSpecCompatibilityProbe {
+ static void ok(boolean value,String name){if(!value)throw new AssertionError(name);System.out.println(name+"=PASS");}
+ public static void main(String[]a){var model=new KernelModelRequest("stub","stub","SYNTHETIC_SECRET_KEY","https://synthetic.example");var input=RunAgentInput.builder().threadId("thread").runId("run").state(Map.of("secret","SYNTHETIC_AGUI_SECRET")).build();var messages=new ArrayList<Msg>();messages.add(Msg.builder().role(MsgRole.USER).textContent("SYNTHETIC_RESUME_SECRET").build());
+ var old13=new ProjectAgentRunSpec(1L,2L,"tenant",3L,"C02","SYNTHETIC_USER_SECRET",List.of(),List.of(),model,null,4L,"catalog","facts");ok(old13.aguiInput()==null&&old13.serverResumeMessages()==null,"old13");
+ var old14=new ProjectAgentRunSpec(1L,2L,"tenant",3L,"C02","SYNTHETIC_USER_SECRET",List.of(),List.of(),model,null,4L,"catalog","facts",input);ok(old14.aguiInput()==input&&old14.serverResumeMessages()==null,"old14");
+ var spec=old14.withServerResumeMessages(messages);messages.clear();ok(spec.serverResumeMessages().size()==1,"defensiveCopy");boolean immutable=false;try{spec.serverResumeMessages().clear();}catch(UnsupportedOperationException e){immutable=true;}ok(immutable,"immutableList");
+ var copied=spec.withCatalog("new-catalog").withProjectFacts("new-facts").withAguiInput(input);ok(copied.serverResumeMessages().equals(spec.serverResumeMessages())&&copied.aguiInput()==input&&copied.runId().equals(1L)&&copied.requirementId().equals(4L),"copyPreservesAguiAndResume");
+ ok(!spec.toString().contains("SYNTHETIC_"),"specCredentialAndBodySafeToString");
+ var dto13=new AgentRunCreateReq("pack","1","model",List.of(),List.of(),"C02","synthetic","key",null,null,"prev","doc","v3");ok(dto13.aguiInput()==null&&dto13.previousRunId().equals("prev"),"dtoOld13");
+ var dto14=new AgentRunCreateReq("pack","1","model",List.of(),List.of(),"C02","synthetic","key",null,null,"prev","doc","v3",input);ok(dto14.aguiInput()==input,"dtoTyped14");ok(Arrays.stream(AgentRunCreateReq.class.getRecordComponents()).noneMatch(c->c.getName().equals("serverResumeMessages")),"clientDtoCannotAssignServerMessages");
+ var mutableAguiMessages=new ArrayList<io.agentscope.core.agui.model.AguiMessage>(); mutableAguiMessages.add(io.agentscope.core.agui.model.AguiMessage.userMessage("m1","synthetic")); var borrowedInput=RunAgentInput.builder().threadId("thread").runId("run").messages(mutableAguiMessages).build(); var borrowedSpec=old13.withAguiInput(borrowedInput); mutableAguiMessages.clear(); System.out.println("AGUI_SOURCE_LIST_MUTATION_REACHES_SPEC="+borrowedSpec.aguiInput().getMessages().isEmpty());
+ System.out.println("DTO_TOSTRING_EXPOSES_AGUI_SYNTHETIC_SECRET="+dto14.toString().contains("SYNTHETIC_AGUI_SECRET"));
+ }
+}

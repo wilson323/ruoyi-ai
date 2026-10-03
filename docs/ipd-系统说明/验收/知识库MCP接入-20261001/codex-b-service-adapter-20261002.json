@@ -1,0 +1,33 @@
+{
+  "status": "TEMP_CONTRACT_5_TESTS_VERIFIED_SERVICE_INTEGRATION_PENDING",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx",
+  "sdkCommit": "e9721285c63a37c10b1d07aa540408e57ba56ab2",
+  "sdkVersion": "2.0.4-SNAPSHOT",
+  "sourceSha256": {
+    "ProjectAgentServiceAdapter.java": "c802dd4b1b9128ae74fb67ed055ebe1bafc4d183f8722284f9bb92148137f8c6",
+    "ProjectAgentServiceRegistration.java": "bbb354e38d3143e69ac94d9b0f62f6fbf983fc2179d7e18089605631c19020a3",
+    "ProjectAgentServiceContractTest.java": "60637a535c9a74190f5bd109366c19ab672b0291b58cfd11cb2b4cfe892898b4",
+    "ProjectAgentServiceTaskStarter.java": "9722fe49e8b1d6af686e62735ce62b6928c997a83b26ce95af2bad81b63a46e3"
+  },
+  "patchSha256": "02c35de3c8c5cb5e7970db8189e39ba321a40a2beafa55ef72fcbd93025187e4",
+  "compileExit": 0,
+  "tests": {
+    "found": 5,
+    "successful": 5,
+    "failed": 0,
+    "skipped": 0,
+    "exit": 0,
+    "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/tests-native-preserve.log"
+  },
+  "previousFailures": [
+    "tests.log JUnit6 engine/1.12 launcher discovery failure",
+    "tests-aligned.log 5executed4pass1backpressure overflow"
+  ],
+  "pending": [
+    "TrustedBindingResolver/TrustedSessions real authority and durable session-run mapping",
+    "Actual Service registration bootstrap/event journal/endpoints/SSE deployment",
+    "Task errors/timeouts safe reporting and lifecycle recovery",
+    "No product Maven dependency upgrade/install/reload/external registration executed",
+    "Actual scopedNative must resolve same trusted session and delivery-safe official AgentState. Temp preserves full official context and native todo list; mocked consumer assertions are not production wiring proof."
+  ]
+}

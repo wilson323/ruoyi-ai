@@ -1,0 +1,11 @@
+{
+  "selectedPaths": 449,
+  "configStagedBlobsPreserved": [
+    "ruoyi-admin/src/main/resources/application-dev.yml",
+    "ruoyi-admin/src/main/resources/application.yml"
+  ],
+  "otherEntriesUnchanged": true,
+  "beforeIndexSha": "e6204e45bad76de04d102bc07cb33fefc63a6b7d89caa32d4ef8026cc1a7d0a7",
+  "afterIndexSha": "7ef06900f3ff865d51df39af28b9c67fc75c6ace6683ccfbe50ac4c4f2d83be4",
+  "candidateTree": "0a82c736f468028d59c26a2ec2b940564a9e0364"
+}

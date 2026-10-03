@@ -1,0 +1,15 @@
+# E 真实 Engine 双 JVM 竞争准备
+
+PENDING_VALIDATION。仅准备WorkflowEngineCompetitionProbe.java，未编译、未启动JVM、未写DB、未写target。继承原真实Mapper/Start-End夹具工具，不调用模型、邮件或外部工具，不DDL。
+
+A确认新aiflow与整包后，将原WorkflowEngineRecoveryProbe.java及新CompetitionProbe一并javac到独立临时classes，覆盖真实新Engine/Plan/RuntimeService/Starter与必要类的已验证classes，不使用旧Engine混入；保存所有实际类哈希。
+
+每个实验新建fixture：prepare调用原fail replay，只建停用QA定义的Start A、End B、End C并故障留下FAIL+checkpoint。解析PROBE_RESULT取得新runtimeUuid，不用旧297–303或真实业务运行。
+
+实验1：owner同runtime resume，探针派生生产Saver.acquireRun在super真正取得MySQL锁后输出ENGINE_OWNER_HELD并等待stdin（仅探针屏障，业务源码无钩子）。此时owner在恢复准备写之前暂停；contender独立JVM对同runtime生产Engine.resume。要求ENGINE_LOSER_ZERO_WRITES，wfState仍null，runtime/node/checkpoint完整列hash前后相同。owner仍存活。stdin换行释放屏障，owner必须成功且QA定义仍停用。再用terminal模式尝试已成功runtime，必须ENGINE_TERMINAL_ZERO_WRITES，零写终态拒绝。
+
+实验2：第二个独立新fixture；owner到ENGINE_OWNER_HELD后只终止该探针PID；recover JVM生产Engine.resume必须成功，验证进程退出锁释放与Engine可恢复。不kill服务PID。
+
+消息边界：当前WorkflowMessageUtil.saveWorkflowMessage的实际持久化调用为注释todo，无消息表写；本探针userId/sessionId=null且无SSE，不能伪称验收了真实聊天消息持久化。源码+零进入wfState覆盖拒绝分支；业务消息未来接线须另验。
+
+失败保留：任何非零退出、hash变化、未按屏障取得锁均停止；保留QA定义和运行，不删除，不重试同成功副作用。随机夹具只Start/End的效果为QA数据库行；A按现授权单次调度。结果必须单列Engine竞争零写与终止恢复，不能由原纯Jdbc租约3项推广。

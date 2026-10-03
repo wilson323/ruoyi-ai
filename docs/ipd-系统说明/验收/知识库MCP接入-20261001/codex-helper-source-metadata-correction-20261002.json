@@ -1,0 +1,9 @@
+{
+  "cause": "RunHandle removes citationText; old helper fabricated empty length/hash",
+  "originalEvidencePreserved": "codex-fresh-rework-poll-20261002T185435192325Z.json",
+  "independentSourceChars": 17201,
+  "independentSourceSha256": "9423376ef96ff6aff0f0a13424d1af1b72fbea14189e5a5da1f4c08dedfe0d65",
+  "scope": "helper only, no production source/runtime/DB/query change",
+  "validation": "AST PASS; original API read-only poll exact length/hash/status matches independent HTTP/DB",
+  "correctedEvidence": "codex-fresh-rework-poll-20261002T185751378893Z.json"
+}

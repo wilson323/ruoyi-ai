@@ -1,0 +1,69 @@
+{
+  "status": "SDK_HITL_VERIFIED_PROJECT_INTEGRATION_BLOCKED",
+  "temp": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-hitl-yqhf66_o",
+  "sdk": "2.0.3",
+  "probeHashes": {
+    "src/GHitlProbe.java": "9ab5dba5622e93479a07a644f697732c5dcd9df6cf3fa45debe24fbdd5c0015a",
+    "src/GChildSourceProbe.java": "a7e81ede93401730284a21ed510ad3089df91c2b78b320fa524f507cb434a7ca",
+    "src/GChildErrorSourceProbe.java": "653d621cb56945c30ae50aa5b28c999adb86db49985f5da33dce4b47b189b82b",
+    "probe-member.log": "be0e0bba2ec7c1ef2fafed09d8b035f24d38486605a2aa22d1b7570ea7e3bccf",
+    "probe.log": "7d3ecfbd1957c2319ec603017a0b9e407626ef8a257886580a62385214c7768f",
+    "child-source.log": "bd913df8c728f6896d613ed2b0841d6addbd472bca06b3e65cb5357f223a2cf7",
+    "child-error-source.log": "879b6f6d25dce180a663b430c8b7e5db583a6926fa0fe1b03e7b55feb8e39cb9",
+    "compile-member.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "tempGovernanceSourceHashes": {
+    "ProjectAgentEventSink.java": "d59455a4270a7a179e29d8730193c08555895bf914b55591bd9c2096c25494d0",
+    "ProjectAgentOfficialPermissions.java": "8d36ae0dff15501b60f126d1050d3a1b38a5c0f49c0fb908d62dac0a86be4a44",
+    "ProjectAgentOfficialToolGovernance.java": "c17b29851fcf910f78bbbc523ed47f9f5d1a1a533ee546d87599ebcf89451e35",
+    "ProjectAgentRuntimeAccess.java": "80d51e207394ce4ae4cdd57ba00a09fca555954a15f5f7bd70e0a975f7ced8fd"
+  },
+  "mainObservedSourceHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "2664c4dc96e0d41df0c78692356f815ff7fefd426a4a8d0b648bd3b7505a958c",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java": "1df7037632659ef0e2a249f3b619cb899ccb77c77e9f213005483cec9d42ad27",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectAgentController.java": "27f4094f314cb516b15e497fde7a43b230598ae3455fb5932d353e569d5834ad",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiStream.java": "94d406d7c475c2f425815f80ed531e48e082f4832a79a87ae0bf3132129c923b",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentTemporaryStateStore.java": "ba8eebe798128989c82bf74b4e32240faf00de719cab93b9859e50029d105185"
+  },
+  "compileExit": 0,
+  "hitlProbeExit": 0,
+  "nativePositive": {
+    "firstRequireUserConfirm": true,
+    "preConfirmationEffects": 0,
+    "sameSessionOfficialConfirmMetadata": "Msg.METADATA_CONFIRM_RESULTS List<ConfirmResult> captured exact ToolUseBlock",
+    "approvedEffects": 1,
+    "approvedResult": "SUCCESS",
+    "rejectedEffects": 0
+  },
+  "wrappedCounterexample": {
+    "approvedUserConfirmResult": true,
+    "approvedResult": "ERROR",
+    "approvedEffects": 0,
+    "reason": "OwnedTool second PermissionEngine sees original ASK despite SDK accepted toolCall ALLOWED",
+    "rejectedEffects": 0,
+    "membershipRevokedResume": "IllegalStateException/effects0; B RuntimeAccess injected with mock IpdCopilotAccess, not real DB"
+  },
+  "projectRuntimeGaps": [
+    "RequireUserConfirmEvent is not dispatched into original durable run STEP confirmation contract",
+    "Current WAITING_APPROVAL only intent CLARIFICATION/PLAN_CONFIRM before kernel; no tool confirmation resume endpoint found",
+    "Kernel stream normal completion calls bridge.complete and Flux.using cleanup closes/seals/deletes checkpoint, so SDK paused ASK context not kept",
+    "No tested original-run same seq/owner CAS confirmation recovery; source-only no HTTP mutation",
+    "ProjectAgentAguiStream disconnect closes observer subscription only, no background cancellation; must preserve this"
+  ],
+  "childSource": {
+    "actualRootSource": null,
+    "actualChildSource": "owned-parent-session/general-purpose",
+    "rootTextChars": 21,
+    "childTextChars": 20,
+    "rootModelEndSource": null,
+    "childModelEndSource": "owned-parent-session/general-purpose",
+    "rule": "Preserve full events in official AGUI channel before father business text dispatch filter. Do not treat source-filter as usage/error/artifact drop policy."
+  },
+  "limits": [
+    "No native ASK disabled or replaced by blanket ALLOW for HITL",
+    "Separate child source synthetic probe explicitly authorizes only harmless agent_spawn, no real model/file/shell/project writes",
+    "No mutation main/index/target/reload, no crosschat messaging",
+    "Formal artifact callback remains independent DRAFT, no apply/owner approval implied",
+    "Default-source semantics proven this official builder/stream path, not arbitrary custom outer EventSource injection"
+  ]
+}

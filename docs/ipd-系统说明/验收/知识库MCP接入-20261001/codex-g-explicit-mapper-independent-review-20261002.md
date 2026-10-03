@@ -1,0 +1,41 @@
+# G 显式 Mapper 独立审查
+
+源码切片认可，PENDING_VALIDATION。只读当前Managed源码/Test与实际0.17.2 jar字节码；尚待C冻结及冷缓存修复正例、A编译/新包真实运行。没有写生产源码/target/网络/DB。
+
+实际SDK唯一META-INF/services/io.modelcontextprotocol.json.McpJsonMapperSupplier来自mcp-json-jackson2-0.17.2.jar。JacksonMcpJsonMapperSupplier.get字节码是new JacksonMcpJsonMapper(new ObjectMapper())。默认getDefault通过ServiceLoader.load(supplierClass)依赖TCCL；显式调用同供应者绕开发现，JSON语义与当前唯一默认provider一致，无新Jackson配置或依赖版本。
+
+Managed.streamableHttp只新增builder.jsonMapper供应者实例。URI rawPath/rawQuery/origin拼接、headers customizeRequest、稳定客户端name、request/initializationTimeout、协议capabilities/clientInfo保持原逻辑。create入口未变；initialize/listTools/callTool closed守卫、幂等close/CLOSING/有限超时/force-close/awaitPendingClose未变。显式Mapper每新transport实例创建，与旧全局default单实例对象寿命不同，但它无业务状态，不改变请求协议；实际并发需新运行验证。
+
+现JUnit streamableHttpConstructionDoesNotDependOnContextProviderDiscovery验证空TCCL构建与cleanup，不联网。但McpJsonInternal.defaultJsonMapper静态缓存若已初始化，旧实现也可能构建成功，因此该test单独不足以证明冷缓存反例。原codex-e-mcp-provider-tccl-probe实际Boot LaunchedClassLoader fresh实例已证明System TCCL provider0/getDefault失败与Launched成功；C需同fresh loader新增显式factory构建成功证据并保留其类/hash。纯构建不得称真实initialize/listTools/callTool完成。
+
+覆盖边界：IPD ProductLineMcpTool.open调用Managed.streamableHttp，适用本刀。框架AgentScopeMcpToolProviderService:160/163自己建SSE/Streamable transport后调用Managed.create，未经过新增jsonMapper行，因此兼容保持但该消费者provider风险未由本刀关闭。不要将IPD修复扩大为所有市场transport已解决；若后续确需迁到共享构建必须单独范围与回归。
+
+当前审查SHA：
+/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClient.java 7ff4f5df0c36d1ce1d070954c22f8802c00d03f6537452d582b417cb43a2361e
+/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClientTest.java 20f8fe1dbec00948f353048f5a9ade3c44bc69240c40767dab0250844e867717
+
+## C fresh loader 正例暴露的依赖阻断
+
+C反馈真正System TCCL cold loader下显式mapper已越过旧getDefault mapper异常，但Managed.create转在JsonSchemaValidator.getDefault→JsonSchemaInternal.lambda$createDefaultValidator$2失败。故单显式mapper尚不足以使共享工厂cold loader构建通过；当前不认可完整构建正例。需由owner获授权后显式复用现SDK schema供应者并独立cold loader反例/正例。此条为C原始实验反馈，G未把其反馈包装成自己执行证据；待读取C结果文件交叉核。
+
+## 显式 Schema 供应者独立语义核验
+
+实际0.17.2 AsyncSpec公开jsonSchemaValidator(JsonSchemaValidator)。唯一service provider JacksonJsonSchemaValidatorSupplier.get创建DefaultJsonSchemaValidator；字节码证实内部final ObjectMapper、Draft202012 SchemaRegistry和ConcurrentHashMap schemaCache。当前create显式实例与默认provider相同schema语义，每client局部实例不引入新全局共享；不由此形式化证明第三方所有并发正确性。create的变更覆盖market与IPD Managed client构建，streamableHttp Mapper覆盖仍限该入口。timeouts/clientname/headers/endpoint/close合同未变。
+
+正式mapper根因已由协调者原位证据确认；schema候选失败只在fresh loader隔离构建发生，未声称正式运行曾发生schema失败。等待完整工厂cold正例、真实新包请求及生命周期回读。
+
+## 冻结产物复核
+
+已直接读取codex-c-explicit-mapper-probe-20261002.json与.java：第一次mapper-only仍schema失败被保留；第二cold fresh实际7e888依赖provider0、default mapper/schema均IllegalStateException，新完整streamableHttp factory成功，temp生产/probe编译0、second probe0，无initialize/network。认可隔离构建切片，未升级为真实查询。
+
+清理证据尚有小缺口：probe调用awaitPendingClose后打印CLOSE=COMPLETE，但生产awaitPendingClose内部catch并吞回关闭失败，仅warn；这个marker只能证明等待调用返回，不能独立证明close成功。已要求C改probe通过closeCompletion.block真实结果再打印或降级为WAIT_RETURNED，不改生产close合同。
+
+冻结源码hash复核：
+ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClient.java b1dafa29c0639e2a20de74b3ff94825486628737c58949220b89a0228760fc7d
+ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClientTest.java 20f8fe1dbec00948f353048f5a9ade3c44bc69240c40767dab0250844e867717
+
+## 最终源码裁决
+
+VERIFIED_IMPLEMENTATION_ONLY。独立现查Managed与Test确切SHA均等于C冻结值（b1dafa29c0639e2a20de74b3ff94825486628737c58949220b89a0228760fc7d、20f8fe1dbec00948f353048f5a9ade3c44bc69240c40767dab0250844e867717）。同默认供应者、原API/headers/endpoint/clientname/lifecycle保持，cold provider0默认mapper/schema失败与显式完整构建正例充分覆盖本次实现机制。Maven/正式运行由A独立绑定，不在此等待或推定成功。cleanup marker不作为单独close成功证据，以上实现裁决不依赖该marker。真实initialize/远端query及全部consumer运行仍待验。
+
+C已修正probe关闭证据，独立读取JSON确认verifiedCloseProbeExit=0，方法为closeCompletion反射返回Mono后block真实结果，成功才COMPLETE；旧awaitPendingClose marker局限保留。无initialize/network，此补充关闭结果仅覆盖隔离构建客户端。

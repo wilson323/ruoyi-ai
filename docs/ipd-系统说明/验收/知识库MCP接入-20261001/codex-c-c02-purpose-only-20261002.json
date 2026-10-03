@@ -1,0 +1,34 @@
+{
+  "status": "FROZEN_TEMP_PURPOSE_ONLY_VERIFIED",
+  "before": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "496644da74dfc0c9e9eb05d478f2308442b5b0412dc6754b9fe8cdad6693fe98",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "08c7a718cee6aa84d9b0b8e22e4113573aea3373e78f872c75ef5dde4727ac80"
+  },
+  "after": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "3fe2c138a9c1d6f91df81b8675a530f4d2a2e5ecb7aeca66044fec89dd6af998",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "b69b19480e4bffe07d2502d33b8b9a16069f585ae1b626278339863227d31b41"
+  },
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-c02-negative-5nbsuz8k",
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-c02-purpose-only-20261002.patch",
+  "patchSha256": "808e60511ae7a821ddc07f1a604357524d22c3f4b85ef4f57540a9cede106768",
+  "compileExit": 0,
+  "junitExit": 0,
+  "tests": 22,
+  "failures": 0,
+  "skipped": 0,
+  "actualDraftIsolatedPurpose": "5441 chars C02 rejected/C01 allowed; no SOURCE reconstructed",
+  "probeAfter": [
+    "actual5441C02=SKILL_CONTRACT_MISMATCH",
+    "actual5441C01=null",
+    "default=null",
+    "negatedTable=null",
+    "conditionalTable=null",
+    "conditionalNegation=null",
+    "notBlocker=null",
+    "unnecessary=null",
+    "purposeOptionalContradiction=SKILL_CONTRACT_MISMATCH",
+    "tableContradiction=SKILL_CONTRACT_MISMATCH"
+  ],
+  "scope": "Only affirmativePurposeBlock implementation plus one precise positive/negative test method; blocksOptionalPurpose unchanged; no identity/numeric/Store/SDK/main changes.",
+  "limits": "Standalone cached JUnit classpath validation, not Maven/module compile or production runtime; condition recognition remains bounded tested vocabulary."
+}

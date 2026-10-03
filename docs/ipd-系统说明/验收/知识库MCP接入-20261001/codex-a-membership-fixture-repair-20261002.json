@@ -1,0 +1,11 @@
+{
+  "before": {
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java": "2516940fd03ab8ebacb6d18d7ef560f1253791d74815575401eaa855f259f33a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P2_6_2_DualSignStageGuardTest.java": "e26be02197651f0119f587dc2eeea1d34d3be42a07768f7dd9810390784b7e12"
+  },
+  "after": {
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P122AcceptanceTest.java": "fd5c8b5e951ba82c712e2fdeaefc931ba362173295cd1a0c224a9ef439b611d0",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P2_6_2_DualSignStageGuardTest.java": "b2b2d418c4f393fc5ae6df4e795563c6b18d64110021c5f93ec337f427270087"
+  },
+  "scope": "membership fixture only; existing assertions unchanged"
+}

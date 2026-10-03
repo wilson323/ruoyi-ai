@@ -1,0 +1,50 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentPreparedTaskDispatch.java
+@@ -0,0 +1,23 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import io.agentscope.core.state.*;
++import io.agentscope.extensions.aistio.adapter.*;
++import java.util.*;
++/** Trusted host recovery adapter over the existing official state store; not a Task endpoint. */
++public final class ProjectAgentPreparedTaskDispatch {
++ public record Identity(String deploymentId,String tenantId,Long personId,Long projectId,String taskId,String attemptId,long generation,String idempotencyKey) {
++  public Identity { Objects.requireNonNull(deploymentId);Objects.requireNonNull(tenantId);Objects.requireNonNull(personId);Objects.requireNonNull(projectId);Objects.requireNonNull(taskId);Objects.requireNonNull(attemptId);Objects.requireNonNull(idempotencyKey); }
++ }
++ public record Receipt(Identity identity,String phase,String outcomeHash) implements State {}
++ public interface TrustedDeployment { void authorize(Identity identity); ProjectAgentOfficialTaskRelay.PreparedTask rebuild(Identity identity); }
++ private final AgentStateStore store;private final TrustedDeployment deployment;
++ public ProjectAgentPreparedTaskDispatch(AgentStateStore store,TrustedDeployment deployment){this.store=Objects.requireNonNull(store);this.deployment=Objects.requireNonNull(deployment);if(!store.supportsVersioning())throw new IllegalArgumentException("Versioned official state store required");}
++ private String user(Identity i){return "ipd:"+i.tenantId()+":"+i.projectId()+":"+i.personId();}
++ private static final String KEY="ipd_prepared_task_dispatch";
++ private VersionedState<Receipt> load(Identity i){deployment.authorize(i);var v=store.getVersioned(user(i),i.idempotencyKey(),KEY,Receipt.class);if(v.value()!=null&&!v.value().identity().equals(i))throw new SecurityException("Prepared task identity collision");return v;}
++ /** Called only by verified server deployment; credentials and tool objects never enter this state. */
++ void register(Identity i){var v=load(i);if(v.value()!=null)return;if(store.saveIfVersion(user(i),i.idempotencyKey(),KEY,new Receipt(i,"REGISTERED",""),v.version())==AgentStateStore.UNVERSIONED){if(load(i).value()==null)throw new IllegalStateException("Prepared task registration conflict");}}
++ public ProjectAgentOfficialTaskRelay.PreparedTask recover(Identity i){var v=load(i);if(v.value()==null)throw new SecurityException("Prepared task not registered");if(!v.value().phase().equals("REGISTERED"))throw new IllegalStateException("Prepared task outcome already claimed");var task=deployment.rebuild(i);deployment.authorize(i);var ctx=task.officialContext().get(AgentTaskToolContext.class);if(ctx==null||!i.taskId().equals(ctx.taskId())||ctx.taskToken()==null||ctx.taskToken().isBlank()||task.officialContext().get(AgentTaskOutcome.State.class)==null)throw new SecurityException("Rebuilt task context mismatch");return task;}
++ /** Single CAS winner can hand the original outcome to official finish; crash after claim needs reconciliation. */
++ public Optional<AgentTaskOutcome> claim(Identity i,AgentTaskOutcome.State state){var v=load(i);if(v.value()==null||!v.value().phase().equals("REGISTERED"))return Optional.empty();var outcome=state.take();if(outcome==null)return Optional.empty();deployment.authorize(i);var receipt=new Receipt(i,"OUTCOME_CLAIMED",hash(outcome.toString()));long next=store.saveIfVersion(user(i),i.idempotencyKey(),KEY,receipt,v.version());return next==AgentStateStore.UNVERSIONED?Optional.empty():Optional.of(outcome);}
++ private static String hash(String s){try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(java.security.NoSuchAlgorithmException x){throw new IllegalStateException(x);}}
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentPreparedTaskDispatchTest.java
+@@ -0,0 +1,21 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import org.junit.jupiter.api.Test;import static org.assertj.core.api.Assertions.*;
++import io.agentscope.core.state.*;import io.agentscope.core.agent.RuntimeContext;import io.agentscope.core.middleware.AgentInput;import io.agentscope.extensions.aistio.adapter.*;import java.util.*;import java.util.concurrent.*;import java.util.concurrent.atomic.*;
++class ProjectAgentPreparedTaskDispatchTest {
++ final ProjectAgentPreparedTaskDispatch.Identity id=new ProjectAgentPreparedTaskDispatch.Identity("approved-host-fixture","tenant",1L,2L,"task","attempt",1,"existing-run-idem");
++ static final class FixtureDeployment implements ProjectAgentPreparedTaskDispatch.TrustedDeployment {
++  volatile boolean permitted=true;final AtomicInteger rebuilt=new AtomicInteger();
++  public void authorize(ProjectAgentPreparedTaskDispatch.Identity i){if(!permitted||!i.deploymentId().equals("approved-host-fixture")||!i.personId().equals(1L)||!i.projectId().equals(2L))throw new SecurityException("Deployment delegation unavailable");}
++  public ProjectAgentOfficialTaskRelay.PreparedTask rebuild(ProjectAgentPreparedTaskDispatch.Identity i){authorize(i);rebuilt.incrementAndGet();return new ProjectAgentOfficialTaskRelay.PreparedTask(new AgentInput(List.of()),RuntimeContext.builder().put(AgentTaskToolContext.class,new AgentTaskToolContext(i.taskId(),"fixture-fresh-token")).put(AgentTaskOutcome.State.class,new AgentTaskOutcome.State()).build(),Map.of());}
++ }
++ @Test void officialVersionedStateColdObjectRecoveryAndIdentityBoundaries(){var store=new InMemoryAgentStateStore();var host=new FixtureDeployment();var a=new ProjectAgentPreparedTaskDispatch(store,host);a.register(id);a.register(id);var b=new ProjectAgentPreparedTaskDispatch(store,host);assertThat(b.recover(id).officialContext().get(AgentTaskToolContext.class).taskId()).isEqualTo("task");assertThat(host.rebuilt).hasValue(1);host.permitted=false;assertThatThrownBy(()->b.recover(id)).isInstanceOf(SecurityException.class);host.permitted=true;var other=new ProjectAgentPreparedTaskDispatch.Identity("approved-host-fixture","tenant",1L,2L,"other-task","attempt",1,"existing-run-idem");assertThatThrownBy(()->b.register(other)).hasMessageContaining("collision");}
++ @Test void originalOutcomeStateHasSingleTakeAndUnversionedBackendIsRejected()throws Exception{var state=new AgentTaskOutcome.State();state.submit(new AgentTaskOutcome("succeeded","actual result","",List.of()));var n=new AtomicInteger();var pool=Executors.newFixedThreadPool(2);try{var fs=List.of(pool.submit(()->{if(state.take()!=null)n.incrementAndGet();}),pool.submit(()->{if(state.take()!=null)n.incrementAndGet();}));for(var f:fs)f.get();assertThat(n).hasValue(1);}finally{pool.shutdownNow();}assertThatThrownBy(()->new ProjectAgentPreparedTaskDispatch(org.mockito.Mockito.mock(AgentStateStore.class),new FixtureDeployment())).hasMessageContaining("Versioned");}
++ @Test void isolatedRedisColdClientAndCrossClientCasHaveOneOutcomeWinner()throws Exception{
++  int port;try(var socket=new java.net.ServerSocket(0,0,java.net.InetAddress.getLoopbackAddress())){port=socket.getLocalPort();}
++  var server=new ProcessBuilder("/opt/homebrew/bin/redis-server","--bind","127.0.0.1","--port",String.valueOf(port),"--save","","--appendonly","no").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start();org.redisson.api.RedissonClient first=null,second=null,third=null;
++  try {var config=new org.redisson.config.Config();config.useSingleServer().setAddress("redis://127.0.0.1:"+port).setConnectionMinimumIdleSize(1).setConnectionPoolSize(2);first=org.redisson.Redisson.create(config);var store=org.ruoyi.chat.kernel.AgentScopeRedisStateStores.create(first,"b:isolated:prepared:");var host=new FixtureDeployment();new ProjectAgentPreparedTaskDispatch(store,host).register(id);first.shutdown();first=null;
++   second=org.redisson.Redisson.create(config);var cold=org.ruoyi.chat.kernel.AgentScopeRedisStateStores.create(second,"b:isolated:prepared:");var a=new ProjectAgentPreparedTaskDispatch(cold,host);third=org.redisson.Redisson.create(config);var otherStore=org.ruoyi.chat.kernel.AgentScopeRedisStateStores.create(third,"b:isolated:prepared:");var b=new ProjectAgentPreparedTaskDispatch(otherStore,host);var s1=a.recover(id).officialContext().get(AgentTaskOutcome.State.class);var s2=b.recover(id).officialContext().get(AgentTaskOutcome.State.class);new AgentTaskOutcomeTool().submit(RuntimeContext.builder().put(AgentTaskOutcome.State.class,s1).build(),"succeeded","result-one","",List.of());new AgentTaskOutcomeTool().submit(RuntimeContext.builder().put(AgentTaskOutcome.State.class,s2).build(),"succeeded","result-two","",List.of());var pool=Executors.newFixedThreadPool(2);try{var gate=new CountDownLatch(1);var f1=pool.submit(()->{gate.await();return a.claim(id,s1);});var f2=pool.submit(()->{gate.await();return b.claim(id,s2);});gate.countDown();assertThat((f1.get().isPresent()?1:0)+(f2.get().isPresent()?1:0)).isEqualTo(1);}finally{pool.shutdownNow();}
++   assertThatThrownBy(()->new ProjectAgentPreparedTaskDispatch(cold,host).recover(id)).hasMessageContaining("already claimed");var receipt=cold.get("ipd:tenant:2:1",id.idempotencyKey(),"ipd_prepared_task_dispatch",ProjectAgentPreparedTaskDispatch.Receipt.class).orElseThrow();assertThat(receipt.toString()).doesNotContain("fixture-fresh-token","result-one","result-two");
++  }finally{if(first!=null)first.shutdown();if(second!=null)second.shutdown();if(third!=null)third.shutdown();server.destroy();server.waitFor(3,TimeUnit.SECONDS);if(server.isAlive())server.destroyForcibly();}
++ }
++}

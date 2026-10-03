@@ -1,0 +1,16 @@
+package org.ruoyi.ipd.agent.service;
+import java.util.*;import java.util.concurrent.atomic.*;import org.ruoyi.ipd.agent.support.*;import org.ruoyi.ipd.agent.domain.*;import org.ruoyi.ipd.agent.model.*;import org.ruoyi.ipd.agent.kernel.*;import org.springframework.transaction.support.*;import org.springframework.transaction.TransactionDefinition;
+public class GChildHandleProbe {
+ static void check(boolean ok,String m){if(!ok)throw new AssertionError(m);}
+ public static void main(String[] args){for(String mode:List.of("missing","txfail","success","empty")){
+ var store=new InMemoryAgentRunStore();var run=IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT).projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id()).status("RUNNING").idempotencyKey("g-child-"+mode).build();store.insertRun(run);
+ var close=new AtomicInteger();var cleanup=new AtomicInteger();var dispose=new AtomicInteger();var handle=new ProjectAgentRunHandle(run,store,AgentTestFixtures.MAPPER,()->1000L,close::incrementAndGet);
+ handle.registerTemporaryStateCleanup(cleanup::incrementAndGet);handle.attach(new reactor.core.Disposable(){public void dispose(){dispose.incrementAndGet();}public boolean isDisposed(){return dispose.get()>0;}});
+ var manager=new AbstractPlatformTransactionManager(){protected Object doGetTransaction(){return new Object();}protected void doBegin(Object t,TransactionDefinition d){}protected void doCommit(DefaultTransactionStatus st){if(mode.equals("txfail"))throw new IllegalStateException("commit failure");}protected void doRollback(DefaultTransactionStatus st){store.forceStatus(run.getId(),AgentRunStatus.RUNNING);}};manager.setRollbackOnCommitFailure(true);var tx=new TransactionTemplate(manager);
+ var original=new ArrayList<ProjectAgentChildLineageRegistry.ChildApproval>();original.add(new ProjectAgentChildLineageRegistry.ChildApproval("server-locator","person","child",2L,"reply",List.of()));
+ if(!mode.equals("missing"))handle.setChildInterruptHandler((list,version)->{check(version==3L,"root version");try{list.clear();throw new AssertionError("mutable approvals");}catch(UnsupportedOperationException expected){}tx.executeWithoutResult(st->store.forceStatus(run.getId(),AgentRunStatus.WAITING_APPROVAL));});
+ boolean failed=false;try{handle.onChildInterrupt(mode.equals("empty")?List.of():original,3L);}catch(IllegalStateException|IllegalArgumentException expected){failed=true;}
+ if(mode.equals("success")){check(!failed&&handle.isPaused(),"success pause");check(close.get()==1&&dispose.get()==1,"release once");handle.releaseTemporaryState();handle.onComplete();check(cleanup.get()==0,"checkpoint retained");check(store.findRun(run.getId()).orElseThrow().getStatus().equals("WAITING_APPROVAL"),"no success terminal");check(store.events(run.getId()).isEmpty(),"no terminal event");check(!handle.finish(AgentRunStatus.SUCCEEDED,null),"late success blocked");}
+ else {check(failed&&!handle.isPaused(),"failure stays active");check(close.get()==0&&dispose.get()==0&&cleanup.get()==0,"failure no release");check(store.findRun(run.getId()).orElseThrow().getStatus().equals("RUNNING"),"rollback status");handle.requireActiveOwnership();}
+ System.out.println("CASE="+mode+" PASS paused="+handle.isPaused()+" close="+close+" dispose="+dispose+" cleanup="+cleanup);
+ }} }

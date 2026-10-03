@@ -1,0 +1,18 @@
+{
+  "runId": "2106095444625989634",
+  "compileExit": 0,
+  "probeExit": 0,
+  "safeResults": [
+    "BODY_BLANK=false",
+    "CLAIMS_GATE=false",
+    "IDENTITY_MISLABEL_EMPTY_EVIDENCE=false",
+    "BODY_CORES=[0.74]",
+    "PREVIEW_CORES=[49.174, 5.1, 0.7407947778701782, 55.314, 5.2]",
+    "BODY_HAS_NOT_OBTAINED=true"
+  ],
+  "basisComplete": false,
+  "storedPreviewChars": 1000,
+  "citationChars": 17201,
+  "rootcause": "PENDING_FULL_BASIS",
+  "productionSourceUnmodified": true
+}

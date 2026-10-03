@@ -1,0 +1,13 @@
+# HEAD72两组独立提交闭包只读复核
+
+裁决：两组各自具备静态最小闭包，编译/生产注入待主协调验证；不以静态导入声称构建通过。实际HEAD72b4c3f022412c93ee260f64af282377bab7d3ba。
+
+Gate只需CompletionGate.java/Test两路径：HEAD已含固定RejectionReason/rejectionReason与原身份解析，新差异31行谓词+23行反例，无新import或Kernel依赖。新增只用JDK；测试用HEAD既有JUnit/AssertJ。不能复用旧HEAD缺类结论。无公共dirty依赖。该补强只覆盖明确元数据主体归属，未解决所有语法变体/官方高可信证明。
+
+权限只需IpdPermission.java+新IpdActionWriterMemberTest.java。已读HEAD ProjectMapper/ProjectMemberMapper均@Mapper，守卫IpdIdorGuard.requireProjectMemberOrSuperAdmin在HEAD已存在。生产@Component+既有Lombok必需构造器session/auth合同未变，新非final Mapper字段通过required @Autowired setter注入，无新配置Bean或构造循环可见。HEAD StageActionService已五个final字段与暂停/归档守卫，新测试不依赖dirty服务构造扩展。测试是Mapper替身+真实守卫，不是生产Spring Bean启动证明。
+
+顺序源码：requireInternal/session/scope→action supplier→null拒绝→SUPER_ADMIN原豁免→职责不匹配409 ROLE_LOCKED→缺Mapper403 fail-closed→本项目存在/租户/当前成员（exit_date IS NULL）。既有Controller四入口调用requireActionWriter，服务暂停守卫仍在权限后，职责不匹配不会提前DB读。超管不要求成员依赖，BOTH同职责仍须成员。
+
+边界风险：手动new IpdPermission(session,auth)的普通写fixture现在必须安装setter；未安装拒绝是预期fail-closed，不代表生产Bean已经注入。新增wrongResponsibility测试只断exception类别，不能据此宣称具体409/code已由测试验证，但源码精确保留两值。原session/auth初始化/查询合约未变，无DDL/新增Mapper方法。
+
+hash及精确路径见JSON。本分区未跑Maven/target，未改源码/index/commit。

@@ -1,0 +1,43 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
+@@ -201,8 +201,13 @@
+ 
+     private static boolean affirmativePurposeBlock(String statement) {
+         if (statement.matches("^(?:若|如果|如有|当|引用|例如|假设).*")) return false;
+-        if (statement.matches(".*(?:不阻塞|不应阻塞|不是阻塞|无需|不必|可选|并非必需|不得作为阻塞).*")) return false;
+-        return statement.matches(".*(?:阻塞(?:\\s*C02)?|必须(?:先|补|声明)|必需(?:条件|前置)|才能继续).*" );
++        for (String raw : statement.split("[，,；;。]|(?:但是|但|然而)")) {
++            String clause = raw.strip();
++            if (clause.matches("^(?:若|如果|如有|当|引用|例如|假设).*")) continue;
++            if (clause.matches(".*(?:不阻塞|不应阻塞|不是阻塞|不构成阻塞|无需|无须|不必|并非必需|不得作为阻塞).*")) continue;
++            if (clause.matches(".*(?:阻塞(?:\\s*C02)?|必须(?:先|补|声明)|必需(?:条件|前置)|才能继续).*")) return true;
++        }
++        return false;
+     }
+ 
+     /** 先按 documentId 核对，同名标题不能互相借用身份。 */
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
+@@ -311,4 +311,22 @@
+         assertThat(new ProjectAgentCompletionGate("C02").rejectionReason("用途未声明，必须先声明才能继续"))
+             .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
+     }
++    @Test
++    void optionalPurposeNegationAndAffirmativeContrastStayDistinct() {
++        for (String body : java.util.List.of(
++            "用途未声明，不构成阻塞；按默认四维执行。",
++            "用途未声明，无须补充用途才能继续，按默认四维执行。",
++            "用途未声明时，若按默认四维执行，不构成阻塞条件。",
++            "| G-06 | 目的裁剪（用户声明时） | 不构成阻塞 C02 步骤2 | 未声明默认四维 |",
++            "| G-06 | 目的裁剪（用户声明时） | 如果用户要求窄化，必须先声明用途 | 未声明默认四维 |")) {
++            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(body)).as(body).isNull();
++        }
++        for (String body : java.util.List.of(
++            "用途声明是可选的，但必须先声明才能继续。",
++            "| G-06 | 目的裁剪（用户声明时） | 用途可选，但未声明阻塞 C02 步骤2 | 未声明默认四维 |")) {
++            assertThat(new ProjectAgentCompletionGate("C02").rejectionReason(body)).as(body)
++                .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SKILL_CONTRACT_MISMATCH);
++            assertThat(new ProjectAgentCompletionGate("C01").rejectionReason(body)).as(body).isNull();
++        }
++    }
+ }

@@ -1,0 +1,137 @@
+diff --git a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java
+@@ -242,38 +242,68 @@
+         return value.matches("^(?:项目已审核文档|已审核项目文档|已审核文档)(?:[（(\\s].*|$)");
+     }
+ 
+-    /** 每条引用独立核对完整标识，不让同行的其他来源借用类型或审核状态。 */
++    /** 每条引用独立核对完整标识；白话资料编号与 documentId 使用同一身份。 */
+     private boolean explicitIdentityContradiction(String body) {
+         for (String part : body.split("[\\r\\n；;。]")) {
+             Matcher fields = Pattern.compile(
+-                "(documentId|sourceType|reviewStatus)=([^\\s|｜，,；;。】]+)").matcher(part);
++                "(?<![\\p{L}\\p{N}_])(documentId|sourceType|reviewStatus)=([^\\s|｜，,；;。】（）()]+)"
++                    + "|资料编号[：:][\\t ]*([^\\s|｜，,；;。】（）()]+)").matcher(part);
+             Map<String, String> reference = new java.util.LinkedHashMap<>();
++            int from = 0;
+             while (fields.find()) {
+-                String key = fields.group(1);
+-                // 一条引用每个键只有一个值；重复键意味着下一条引用开始。
++                String key = fields.group(1) == null ? "documentId" : fields.group(1);
++                String value = fields.group(1) == null ? fields.group(3) : fields.group(2);
++                // 重复身份键开始下一引用；只把本条文本交给审核宣称判定。
+                 if (reference.containsKey(key)) {
+-                    if (identityContradiction(reference, part)) return true;
++                    if (identityContradiction(reference, part.substring(from, fields.start()))) return true;
+                     reference.clear();
+-                }
+-                reference.put(key, fields.group(2));
+-            }
+-            if (identityContradiction(reference, part)) return true;
+-        }
+-        return false;
+-    }
+-
+-    /** 字段顺序可变，但每条引用只对照自己明确写出的 documentId。 */
++                    from = fields.start();
++                }
++                reference.put(key, value);
++            }
++            if (identityContradiction(reference, part.substring(from))) return true;
++        }
++        return false;
++    }
++
++    /** 显式编号的审核归属必须有本次正式文档正证；未知编号不能借同名标题。 */
+     private boolean identityContradiction(Map<String, String> reference, String part) {
+         String documentId = reference.get("documentId");
+         if (documentId == null) return false;
++        if (part.stripLeading().matches("^(?:反例|错误示例|禁止示例)[：:].*")) return false;
++        boolean reviewedClaim = affirmativeReviewedClaim(part);
++        if (reviewedClaim && evidence.stream().noneMatch(item -> documentId.equals(item.documentId)
++            && "PROJECT_DOCUMENT".equals(item.sourceType) && "REVIEWED".equals(item.reviewStatus))) return true;
+         for (Evidence item : evidence) {
+             if (!documentId.equals(item.documentId)) continue;
+             String claimedType = reference.get("sourceType");
+             String claimedReview = reference.get("reviewStatus");
+             if (claimedType != null && !claimedType.equals(item.sourceType)) return true;
+             if (claimedReview != null && !claimedReview.equals(item.reviewStatus)) return true;
+-            if ("KNOWLEDGE_FRAGMENT".equals(item.sourceType)
+-                && claimsReviewedRole(part) && !specificallyDeniesReviewed(part)) return true;
++            if ("KNOWLEDGE_FRAGMENT".equals(item.sourceType) && reviewedClaim) return true;
++        }
++        return false;
++    }
++
++    private static boolean affirmativeReviewedClaim(String part) {
++        for (String cell : part.split("[|｜]")) {
++            if (reviewedClassification(cell.replace("**", "").replace("`", "").trim())) return true;
++        }
++        String[] claims = {"属于已审核文档", "属于项目已审核文档", "作为项目已审核文档",
++            "来自项目已审核文档", "来自已审核文档", "是项目已审核文档",
++            "来自已审核项目文档", "属于已审核项目文档", "是已审核项目文档",
++            "sourceType=PROJECT_DOCUMENT", "reviewStatus=REVIEWED"};
++        for (String claim : claims) {
++            int from = 0;
++            while (from < part.length()) {
++                int at = part.indexOf(claim, from);
++                if (at < 0) break;
++                if (!part.substring(0, at).matches(".*(?:不|未|没|不能|不应|不得|禁止|不要)(?:能|可|将|应|会)?$|.*(?:不是|不属于|不能作为|不代表)(?:项目)?$")
++                    && !conditionalAfter(part, at, claim.length())
++                    && !part.substring(at + claim.length()).matches("^(?:未取得|未命中).*")
++                    && !part.substring(0, at).matches(".*(?:若|如果|如有).*")) return true;
++                from = at + claim.length();
++            }
+         }
+         return false;
+     }
+diff --git a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java
+@@ -14,6 +14,45 @@
+  */
+ @Tag("dev")
+ class ProjectAgentCompletionGateTest {
++
++    @Test
++    void readableIdentityRequiresExactReviewedEvidenceWithSameTitle() {
++        ProjectAgentCompletionGate gate = new ProjectAgentCompletionGate();
++        gate.noteSource(Map.of("hits", 2, "retrievalStatus", "SUCCESS", "citationText", "受控正文",
++            "sourceEvidence", java.util.List.of(
++                Map.of("sourceType", "KNOWLEDGE_FRAGMENT", "documentId", "12", "knowledgeId", "100",
++                    "sourceName", "同名.md", "reviewStatus", "NOT_PROJECT_DOCUMENT"),
++                Map.of("sourceType", "PROJECT_DOCUMENT", "documentId", "123",
++                    "sourceName", "同名.md", "reviewStatus", "REVIEWED"))));
++        for (String rejected : java.util.List.of(
++            "同名.md（资料编号：12）来自项目已审核文档",
++            "同名.md（资料编号：unknown）来自项目已审核文档",
++            "资料编号：unknown 其他材料未取得，但来自项目已审核文档",
++            "同名.md documentId=unknown 来自项目已审核文档",
++            "同名.md（资料编号：1234）来自项目已审核文档",
++            "| 同名.md（资料编号：12） | 已审核项目文档 |",
++            "| 同名.md（资料编号：unknown） | 已审核项目文档 |",
++            "资料编号：123 来自项目已审核文档；资料编号：12 来自项目已审核文档")) {
++            assertThat(gate.rejectionReason(rejected)).as(rejected)
++                .isEqualTo(ProjectAgentCompletionGate.RejectionReason.SOURCE_IDENTITY_MISMATCH);
++        }
++        for (String allowed : java.util.List.of(
++            "同名.md（资料编号：12）是系统知识片段，不是项目已审核文档",
++            "同名.md（资料编号：123）来自项目已审核文档",
++            "资料编号：123 来自项目已审核文档；资料编号：12 系统知识片段",
++            "资料编号：123 来自项目已审核文档 资料编号：12 系统知识片段",
++            "资料编号：12 系统知识片段 资料编号：123 来自项目已审核文档",
++            "资料编号：unknown 不是项目已审核文档",
++            "资料编号：unknown 正在查询已审核文档的使用规范",
++            "资料编号：unknown 项目已审核文档未取得",
++            "| 同名.md（资料编号：12） | 不是已审核项目文档 |",
++            "资料编号：12 不能作为项目已审核文档",
++            "| 同名.md（资料编号：123） | 已审核项目文档 |",
++            "如果资料编号：unknown 来自项目已审核文档，才可引用",
++            "反例：资料编号：unknown 来自项目已审核文档")) {
++            assertThat(gate.rejectionReason(allowed)).as(allowed).isNull();
++        }
++    }
+ 
+     @Test
+     @DisplayName("项目上下文不得冒作审核文档；否定、条件和层级定义不拒绝")

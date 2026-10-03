@@ -1,0 +1,23 @@
+{
+  "version": "2.0.3",
+  "jars": [
+    {
+      "path": "/Users/mac/.m2/repository/io/agentscope/agentscope-core/2.0.3/agentscope-core-2.0.3.jar",
+      "sha256": "7f1ec0f9c5afd1388554275efc78f58cb05692b634453695cf404eb79f7cfda4"
+    },
+    {
+      "path": "/Users/mac/.m2/repository/io/agentscope/agentscope-core/2.0.3/agentscope-core-2.0.3-sources.jar",
+      "sha256": "a1219ae6e50265484b248bc016a4978ccaa35a5786a1c6b9d90dad42608b154e"
+    },
+    {
+      "path": "/Users/mac/.m2/repository/io/agentscope/agentscope-harness/2.0.3/agentscope-harness-2.0.3.jar",
+      "sha256": "e6f6f5c39d8e16ca5c2ea3727b56dbcfa8fd408ef54a0018c0c9416251beb1a0"
+    },
+    {
+      "path": "/Users/mac/.m2/repository/io/agentscope/agentscope-harness/2.0.3/agentscope-harness-2.0.3-sources.jar",
+      "sha256": "6e30e9429eedc1551e858674b57541d94fd9b7b753550c844f3fe8bdbbf12034"
+    }
+  ],
+  "classpath": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/foundation-cp.txt",
+  "classpathSha256": "044b595da13be1c70d6fda0463fe9b492b9cc19f792c07f419a9a1e7a9fdf6c7"
+}

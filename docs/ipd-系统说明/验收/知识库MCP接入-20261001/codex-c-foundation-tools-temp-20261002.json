@@ -1,0 +1,124 @@
+{
+  "status": "PARTIAL_TEMP_IMPLEMENTED_REAL_NATIVE_RUNTIME_VALIDATED_WEB_SEARCH_PROVIDER_BLOCKED",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94",
+  "allowedCandidatePaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java"
+  ],
+  "candidateHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java": "6c7efffbd60c7e4f06cacf155b3f16f95597d7491ab10fb550f5dd5f2e6ce93a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java": "35eb590867d31f985925b9db04250c126378a88955d0e3c42f90bce1accace98"
+  },
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-foundation-tools-temp-20261002.patch",
+  "sdkVersions": {
+    "installedCore": "2.0.3",
+    "installedHarness": "2.0.3",
+    "comparisonRepo": "2.0.4-SNAPSHOT"
+  },
+  "defaultNativeNames": [
+    "edit_file",
+    "execute",
+    "glob_files",
+    "grep_files",
+    "list_files",
+    "memory_get",
+    "memory_save",
+    "memory_search",
+    "read_file",
+    "session_history",
+    "session_list",
+    "session_search",
+    "wait_async_results",
+    "web_fetch",
+    "web_search",
+    "write_file"
+  ],
+  "owningAPIs": [
+    "HarnessAgent.Builder.filesystem(SandboxFilesystemSpec)",
+    "DockerFilesystemSpec.image/workspaceRoot/environment/network/additionalRunArgs",
+    "DockerSandboxClient.create(WorkspaceSpec,SandboxSnapshotSpec,DockerSandboxClientOptions)",
+    "FilesystemTool(AbstractFilesystem).writeFile/readFile",
+    "ShellExecuteTool(AbstractSandboxFilesystem).execute",
+    "MemorySaveTool(WorkspaceManager).memorySave",
+    "MemoryGetTool(WorkspaceManager).memoryGet",
+    "WebTools.WebFetchTool.webFetch",
+    "WebTools.WebSearchTool.webSearch"
+  ],
+  "realProbe": {
+    "dockerVersion": "29.7.2",
+    "existingImage": "alpine:3",
+    "network": "none",
+    "noHostMount": true,
+    "modelCalls": 0,
+    "compileExit": 0,
+    "junitExit": 0,
+    "tests": 1,
+    "failures": 0,
+    "skips": 0,
+    "checks": [
+      "native file write/read",
+      "native shell printf",
+      "relative workdir traversal rejected",
+      "host project absent inside container",
+      "native memory_save/get",
+      "native WebFetch local HTTP fixture",
+      "native WebSearch blank schema"
+    ],
+    "tavilyKeyPresentInAgentProcess": false,
+    "webSearchRealSuccess": false
+  },
+  "sourceEvidence": {
+    "HarnessAgent.java": "default flags1239-1241 false; registrations2634-2671",
+    "LocalFilesystemSpec.java": "ROOTED default; inheritEnv=false; host sh-c implementation not OS isolation",
+    "WebTools.java": "search uses exact TAVILY_API_KEY; no-key explicit config error; fetch only http/s check, no SSRF protection",
+    "AgentScopeProjectAgentKernel.java": "explicit disables284-287; web deny261; exposed subset guard305; workspace person/project prepare230"
+  },
+  "minimalIntegrationRequired": [
+    "Root Kernel native16 plus selected business tools; register/wrap native after builder so defaults cannot bypass ownership/governance; expose equality checked against frozen native16 union business, unknown defaults fail.",
+    "Keep official Docker filesystem instead of LocalFilesystemSpec for execute; no host shell fallback; real readiness daemon plus local image plus Tavily provider prior to run.",
+    "B catalog true WRITE/EXECUTE/NETWORK descriptors and Planner frozen native16; no global READ_ONLY blocking native writes.",
+    "Memory workspace person/project scoped and persisted safely; run file workspace scoped; no engineering AGENTS or host cwd injection, memory not reviewed project document.",
+    "Web HTTP(S) tooling needs authorized egress/SSRF/credentials boundaries via existing governance; native WebSearch only official Tavily, no key reuse or fake search fallback."
+  ],
+  "boundaries": [
+    "No main/source/index/target modifications; no business DB/model invocation.",
+    "Only owned temporary SDK Docker containers started/removed through official shutdown; existing containers untouched.",
+    "Local HTTP fixture only; no real external WebSearch called.",
+    "Tavily absent observed current agent process; running JVM env/secure credential store not yet checked.",
+    "Candidate assembly/test draft awaits root full Kernel/governance integration and formatting review; not all capabilities completed."
+  ],
+  "persistenceProbe": {
+    "exit": 0,
+    "realColdContainerFileAndMemoryPersist": true,
+    "managedVolumeApi": "DockerFilesystemSpec.additionalRunArgs(--mount,type=volume,source=<managed project/person volume>,target=/workspace)",
+    "ownedTempVolumeCleanupExit": 0,
+    "run2PathAbsent": true,
+    "run1AccessFromRun2Denied": false,
+    "limitation": "different run paths only; no claim sibling run access denied. Need production filesystem route/workdir governance scoped run prefix while shared memory remains person/project root. Concurrent memory CAS/audit not delivered by SDK append."
+  },
+  "scopedTavilyConfig": {
+    "currentProcessKeyPresent": false,
+    "projectScopedConfigMentions": false,
+    "scope": [
+      ".codex/ipd-dev config suffixes",
+      "ruoyi-admin/src/main/resources",
+      "ruoyi-ipd/src/main/resources"
+    ],
+    "notChecked": "running JVM env or global credential stores not read"
+  },
+  "officialWebCredentialAPI": "WebSearchTool has no credentialRef/endpoint setter in installed 2.0.3, reads TAVILY_API_KEY env fixed Tavily endpoint. Runtime-controlled project credential injection before JVM launch needed; no second client/fallback/global env mutation.",
+  "stillDisabledCapabilityAudit": {
+    "memoryHooks": "disabled; removes official memory extraction/consolidation using configured/main model. Need scoped approved memory and token accounting, not hidden raw think storage.",
+    "transcript": "disabled; removes transcript middleware/session history persistence. Need durable sanitized delivery transcript + tenant/person/session, no raw internal thought storage.",
+    "workspaceContext": "disabled; removes project/person workspace context/MEMORY/AGENTS loading. Need business-authored isolated context, no engineering cwd AGENTS.",
+    "atPathExpansion": "disabled; removes @path expansion. Need run-root authorized path/symlink boundary.",
+    "subagents": "disabled; removes standard task/subagent tools; child run permission/tool/budget/ownership boundaries needed.",
+    "dynamicSubagents": "disabled; prevents dynamic subagent definitions; scoped reviewed definitions needed.",
+    "dynamicSkills": "disabled; skips dynamic refresh/discovery; exact frozen classpath skill still middleware-injected, not proof full SDK dynamic skills.",
+    "defaultWorkspaceSkills": "disabled; omits layer4 filesystem-backed source only, not all repositories.",
+    "skillsEnabled(false)": "sets SkillFilter.none; core discovery tools disabled despite custom frozen middleware skill injection.",
+    "enableAgentTracingLog(false)": "diagnostic log disabled; privacy-safe observability needed, not output raw thought/credentials."
+  },
+  "sdkApplicationVerdict": "16 native tools verified subset only, not entire SDK application. Current source comparison2.0.4-SNAPSHOT cannot substitute installed2.0.3 or authorize upgrade; public Docker/file/memory/Web APIs needed here already in2.0.3.",
+  "lifecycle": "Provision project/person managed named volume via approved runtime setup; pass official DockerFilesystemSpec mount, no host bind; run acquires own container, official shutdown removes container while named volume survives; next run mounts same volume; unique run cwd prefixes; volume retention/deletion explicit separate policy."
+}

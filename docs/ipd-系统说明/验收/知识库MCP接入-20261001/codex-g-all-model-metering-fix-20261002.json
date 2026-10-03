@@ -1,0 +1,56 @@
+{
+  "status": "VERIFIED_TEMP_IMPLEMENTATION_ONLY",
+  "temp": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-model-metering-6tm05t7t",
+  "allowedCandidatePaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java"
+  ],
+  "beforeSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "825dfd6a5c8114cb0317541c336c9090d54fb46be5792be35d2019052bc15588",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java": "e3eaf83fad99903341de89fa7e662744ce40a21a58de8f7e5f943792c83dd9d9",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java": null,
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java": null
+  },
+  "afterSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "5b75a9176aabb5171c105bbc65d3d773924e3d8147820b70d0326e01b3fbda4e",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java": "0ec89cadfd3ee8abb5e0440638184c180dadc9df827de6b2f5620163fc622502",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java": "7043a6b1c01dcac0f4b5ccda109cf3f46a5345fe2d2babaaa042a7a7df53df6f",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java": "4c9a5b2decb1ed11f89b0954cfdba82da8bcc0ac165d6befc0df645a551e11eb"
+  },
+  "patchSHA": "0aaaec95e38b707c5deef2762c6dbb86d29e00662c4085a72688e9ea41440532",
+  "compile": {
+    "decoratorUsageSink": 0,
+    "kernelWithFrozenClosure": 0,
+    "junit": 0,
+    "warnings": "Kernel existing deprecated Hook warnings10, no errors"
+  },
+  "tests": {
+    "found": 10,
+    "started": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "log": "codex-g-metering-junit-all-consumers-final-log-20261002.log"
+  },
+  "actualConsumers": [
+    "Full default Harness stream main+real background wait+memory flush:3 actual calls /3 originalledger rows/30input15output",
+    "Original EventBridge token-free end simulation adds no duplicate ledger row",
+    "Official ConversationCompactor + MemoryFlushManager real compact:2 calls20/10",
+    "Official default general-purpose child factory actually invokes inherited metered parent model and accounts all its actual calls"
+  ],
+  "boundaries": [
+    "Each Flux subscription independent UUID and terminalCAS",
+    "Official2.0.3 OpenAIResponseParser streaming ChatUsage is cumulative snapshot, last snapshot per responseID; no sum repeated cumulative chunks",
+    "Distinct provider response IDs account separate observed retry usage",
+    "External retry subscriptions each charge only own actual reported usage once",
+    "Error/cancel knownusage goes existingledger statuserror/cancelled; no usage no tokenfields/no ledgerfake0",
+    "No real network/model/DB/run/create/apply/reload/main/index/target write",
+    "Kernel compiled using stable10130 libs489 plus exact temp closure snapshots, not cleanHEAD or whole module Maven",
+    "Alternate SDK custom modelResolver/explicit compaction model must also be decorated if later configured; current Kernel only shared parent model/default capture",
+    "Internal provider attempts without usage or response identity cannot be invented; current adapter snapshot semantics verified owning source, not arbitrary unknown incremental adapters",
+    "Epoch revoked before final sink write still fail-closed; durable cancelled usage write after lost ownership not claimed"
+  ],
+  "failedProbeRetained": "Initial child test mistook builder name general-purpose-subagent for registered agent_id; source proves general-purpose.9pass1fail log retained; corrected final10pass."
+}

@@ -1,0 +1,288 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMountedFoundationRuntime.java
+@@ -0,0 +1,121 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.harness.agent.filesystem.AbstractFilesystem;
++import io.agentscope.harness.agent.filesystem.RoutedSandboxFilesystem;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.memory.MemoryBackgroundTasks;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.sandbox.WorkspaceSpec;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClient;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions;
++import io.agentscope.harness.agent.sandbox.snapshot.NoopSnapshotSpec;
++
++import java.util.Map;
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++/** 执行容器独有 run 可写盘，历史/记忆只读挂载；原生记忆 API 走单独官方可写 backend。 */
++public final class ProjectAgentMountedFoundationRuntime implements AutoCloseable {
++    private final ProjectAgentFoundationTools.Scope scope;
++    private final String image;
++    private final Sandbox execution;
++    private final Sandbox memory;
++    private final RoutedSandboxFilesystem filesystem;
++    private boolean closed;
++
++    private ProjectAgentMountedFoundationRuntime(ProjectAgentFoundationTools.Scope scope, String image,
++                                                  Sandbox execution, Sandbox memory) {
++        this.scope = scope;
++        this.image = image;
++        this.execution = execution;
++        this.memory = memory;
++        var run = new PinnedSandboxFilesystem(execution);
++        var persistent = new PinnedSandboxFilesystem(memory);
++        var root = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace");
++        var daily = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/memory");
++        var skills = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/skills");
++        var sessions = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/.agentscope");
++        var agents = new ProjectAgentSandboxPathFilesystem(persistent, "/workspace/agents");
++        this.filesystem = new RoutedSandboxFilesystem(run, Map.of(
++            "/MEMORY.md", root, "/workspace/MEMORY.md", root,
++            "/memory/", daily, "/workspace/memory/", daily,
++            "/skills/", skills, "/workspace/skills/", skills,
++            "/.agentscope/", sessions, "/workspace/.agentscope/", sessions,
++            "/agents/", agents, "/workspace/agents/", agents));
++    }
++
++    public static ProjectAgentMountedFoundationRuntime open(String image,
++        ProjectAgentFoundationTools.Scope scope) throws Exception {
++        java.util.Objects.requireNonNull(scope);
++        if (image == null || image.isBlank()) { throw new IllegalArgumentException("Sandbox image is required"); }
++        String base = scope.volumeName();
++        Sandbox execution = create(image, "/workspace", "--mount", "type=volume,source=" + base
++            + "-run-" + scope.runId() + ",target=/workspace", "--mount", "type=volume,source=" + base
++            + "-history,target=/history,readonly", "--mount", "type=volume,source=" + base
++            + "-memory,target=/memory,readonly");
++        Sandbox memory = create(image, "/workspace", "--mount", "type=volume,source=" + base
++            + "-memory,target=/workspace");
++        try {
++            execution.start();
++            memory.start();
++            var initialized = memory.exec(null, "mkdir -p /workspace/memory /workspace/skills /workspace/.agentscope /workspace/agents", 10);
++            if (!initialized.ok()) { throw new IllegalStateException("Memory directories could not be initialized"); }
++            return new ProjectAgentMountedFoundationRuntime(scope, image, execution, memory);
++        } catch (Exception error) {
++            try { execution.shutdown(); } catch (Exception cleanup) { error.addSuppressed(cleanup); }
++            try { memory.shutdown(); } catch (Exception cleanup) { error.addSuppressed(cleanup); }
++            throw error;
++        }
++    }
++
++    private static Sandbox create(String image, String root, String... mounts) throws Exception {
++        String[] args = new String[mounts.length + 2];
++        args[0] = "--cap-drop=ALL";
++        args[1] = "--security-opt=no-new-privileges";
++        System.arraycopy(mounts, 0, args, 2, mounts.length);
++        var options = new DockerSandboxClientOptions().image(image).workspaceRoot(root)
++            .network("none").additionalRunArgs(args);
++        options.setEnvironment(Map.of());
++        return new DockerSandboxClient().create(new WorkspaceSpec(), new NoopSnapshotSpec(), options);
++    }
++
++    public RoutedSandboxFilesystem filesystem() {
++        if (closed) { throw new IllegalStateException("Sandbox runtime is closed"); }
++        return filesystem;
++    }
++
++    public Set<String> volumeNames() {
++        return Set.of(scope.volumeName() + "-run-" + scope.runId(),
++            scope.volumeName() + "-history", scope.volumeName() + "-memory");
++    }
++
++    private void exportHistory() throws Exception {
++        String target = "/history/runs/" + scope.runId();
++        Sandbox exporter = create(image, "/history", "--mount", "type=volume,source="
++            + scope.volumeName() + "-run-" + scope.runId() + ",target=/run,readonly", "--mount",
++            "type=volume,source=" + scope.volumeName() + "-history,target=/history");
++        try {
++            exporter.start();
++            var result = exporter.exec(null, "mkdir -p /history/runs && if [ -d " + target
++                + " ]; then diff -qr /run " + target + "; else cp -a /run " + target + "; fi", 30);
++            if (!result.ok()) { throw new IllegalStateException("Run history export failed or conflicts with its existing snapshot"); }
++        } finally {
++            exporter.shutdown();
++        }
++    }
++
++    @Override
++    public synchronized void close() throws Exception {
++        if (closed) { return; }
++        if (!MemoryBackgroundTasks.awaitQuiescence(30, TimeUnit.SECONDS)) {
++            throw new IllegalStateException("Background memory tasks are still active; runtime retained");
++        }
++        if (!io.agentscope.harness.agent.memory.session.SessionTree.awaitMirrorQuiescence(30, TimeUnit.SECONDS)) {
++            throw new IllegalStateException("Session mirrors are still active; runtime retained");
++        }
++        exportHistory();
++        execution.shutdown();
++        memory.shutdown();
++        closed = true;
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSessionRestore.java
+@@ -0,0 +1,25 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.harness.agent.memory.session.SessionTree;
++import io.agentscope.harness.agent.workspace.WorkspaceManager;
++
++/** 恢复官方 canonical session cache；调用方必须先核真实 person/project 访问权。 */
++public final class ProjectAgentSessionRestore {
++    private ProjectAgentSessionRestore() { }
++
++    public static void restore(WorkspaceManager manager, RuntimeContext context,
++                               String agentId, String sessionId, Runnable requireCurrentAccess) {
++        requireCurrentAccess.run();
++        if (agentId == null || !agentId.matches("[A-Za-z0-9_-]+")
++            || sessionId == null || !sessionId.matches("[A-Za-z0-9_:-]+")) {
++            throw new IllegalArgumentException("Canonical session identity is required");
++        }
++        String relative = "agents/" + agentId + "/sessions/" + sessionId + ".jsonl";
++        var tree = new SessionTree(manager.resolveSessionContextFile(context, agentId, sessionId),
++            manager.getWorkspace(), manager.getFilesystem(), manager.getIndex(), relative)
++            .setRuntimeContext(context);
++        tree.load();
++        tree.syncFromLog();
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java
+@@ -0,0 +1,133 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.agent.Agent;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.event.AgentEvent;
++import io.agentscope.core.middleware.AgentInput;
++import io.agentscope.core.middleware.MiddlewareBase;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.artifact.ArtifactDeliveryTarget;
++import io.agentscope.harness.agent.memory.session.SessionTranscriptWriter;
++import io.agentscope.harness.agent.tool.ArtifactDeliveryTool;
++import io.agentscope.harness.agent.transcript.TranscriptStore;
++import reactor.core.publisher.Flux;
++import reactor.core.publisher.Mono;
++
++import java.util.Objects;
++import java.util.function.Function;
++import java.util.function.Supplier;
++
++/** 官方 leaf 保持原类型；补接父级官方工具、审计 transcript 与业务 owner 生命周期。 */
++public final class ProjectAgentChildConsumers
++    implements ProjectAgentSubagentScopeMiddleware.ChildConsumer, MiddlewareBase {
++    private final Supplier<HarnessAgent> parentAgent;
++    private final RuntimeContext trustedRoot;
++    private final TranscriptStore transcripts;
++    private final String tenant;
++    private final ArtifactDeliveryTarget artifacts;
++    private final Function<RuntimeContext, Mono<Void>> ownerLifecycle;
++    private final Runnable requireCurrentAccess;
++    private java.util.function.Consumer<ChildFailure> failureSink;
++    private Function<ChildInvocation, Mono<Void>> authoritativeOwnerLifecycle;
++
++    public record ChildInvocation(HarnessAgent child, RuntimeContext childContext,
++                                  RuntimeContext ownerContext, String parentSession) { }
++
++    public ProjectAgentChildConsumers ownerConsumer(Function<ChildInvocation, Mono<Void>> consumer) {
++        this.authoritativeOwnerLifecycle = Objects.requireNonNull(consumer);
++        return this;
++    }
++
++    public record ChildFailure(String parentSession, String childSession, String agentId,
++                               String reasonCode, String exceptionCategory) { }
++
++    public ProjectAgentChildConsumers failureSink(java.util.function.Consumer<ChildFailure> sink) {
++        this.failureSink = Objects.requireNonNull(sink);
++        return this;
++    }
++    private final java.util.Map<Agent, HarnessAgent> boundChildren = java.util.Collections.synchronizedMap(
++        new java.util.IdentityHashMap<>());
++
++    public ProjectAgentChildConsumers(Supplier<HarnessAgent> parentAgent, RuntimeContext trustedRoot,
++                                       TranscriptStore transcripts, String tenant,
++                                       ArtifactDeliveryTarget artifacts,
++                                       Function<RuntimeContext, Mono<Void>> ownerLifecycle,
++                                       Runnable requireCurrentAccess) {
++        this.parentAgent = Objects.requireNonNull(parentAgent);
++        this.trustedRoot = Objects.requireNonNull(trustedRoot);
++        this.transcripts = Objects.requireNonNull(transcripts);
++        this.tenant = Objects.requireNonNull(tenant);
++        this.artifacts = Objects.requireNonNull(artifacts);
++        this.ownerLifecycle = Objects.requireNonNull(ownerLifecycle);
++        this.requireCurrentAccess = Objects.requireNonNull(requireCurrentAccess);
++    }
++
++    @Override
++    public int order() {
++        return Integer.MIN_VALUE + 2;
++    }
++
++    @Override
++    public Agent bind(Agent officialLeaf, ProjectAgentFoundationTools.Scope scope, RuntimeContext context) {
++        requireCurrentAccess.run();
++        Objects.requireNonNull(failureSink, "Child failure audit sink must be bound before spawn");
++        if (!(officialLeaf instanceof HarnessAgent child)) {
++            throw new IllegalStateException("Official Harness leaf is required");
++        }
++        HarnessAgent parent = Objects.requireNonNull(parentAgent.get(), "Parent must be bound before spawn");
++        for (String name : new String[]{"skill_manage", "propose_skill", "plan_enter", "plan_write",
++            "plan_exit", "todo_write"}) {
++            var nativeTool = parent.getToolkit().getTool(name);
++            if (nativeTool == null) {
++                throw new IllegalStateException("Required official parent tool is unavailable: " + name);
++            }
++            if (child.getToolkit().getTool(name) == null) {
++                child.getToolkit().registerAgentTool(nativeTool);
++            }
++        }
++        child.getToolkit().registerMetaTool();
++        child.getToolkit().registerTool(new ArtifactDeliveryTool(
++            child.getWorkspaceManager().getFilesystem(), artifacts));
++        boundChildren.put(child.getDelegate(), child);
++        return child;
++    }
++
++    @Override
++    public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
++                                   Function<AgentInput, Flux<AgentEvent>> next) {
++        if (trustedRoot.getSessionId().equals(context.getSessionId())) {
++            return next.apply(input);
++        }
++        return Flux.defer(() -> next.apply(input)).concatWith(Mono.defer(() -> {
++            requireCurrentAccess.run();
++            HarnessAgent child = agent instanceof HarnessAgent direct ? direct : boundChildren.get(agent);
++            if (child == null) {
++                return Mono.error(new IllegalStateException("Official Harness leaf is required"));
++            }
++            var state = RuntimeContext.resolveAgentState(context, child);
++            if (state != null) {
++                new SessionTranscriptWriter(child.getWorkspaceManager(), transcripts, tenant)
++                    .appendMessages(context, state.getContext(), child.getAgentId(), context.getSessionId());
++            }
++            // Only this trusted adapter normalizes the owner context; child session remains in audit.
++            RuntimeContext ownerContext = RuntimeContext.builder(context)
++                .userId(trustedRoot.getUserId()).sessionId(trustedRoot.getSessionId()).build();
++            ownerContext.put("ipd.audit.childSession", context.getSessionId());
++            Mono<Void> ownerResult = authoritativeOwnerLifecycle == null
++                ? ownerLifecycle.apply(ownerContext)
++                : authoritativeOwnerLifecycle.apply(new ChildInvocation(
++                    child, context, ownerContext, trustedRoot.getSessionId()));
++            return ownerResult.then(Mono.<AgentEvent>empty());
++        })).doOnError(error -> failureSink.accept(new ChildFailure(
++            trustedRoot.getSessionId(), context.getSessionId(), agent.getAgentId(),
++            "CHILD_EXECUTION_FAILED", safeExceptionCategory(error))));
++    }
++
++    private static String safeExceptionCategory(Throwable error) {
++        if (error instanceof SecurityException) { return "SecurityException"; }
++        if (error instanceof IllegalStateException) { return "IllegalStateException"; }
++        if (error instanceof IllegalArgumentException) { return "IllegalArgumentException"; }
++        return "ExecutionError";
++    }
++}
++

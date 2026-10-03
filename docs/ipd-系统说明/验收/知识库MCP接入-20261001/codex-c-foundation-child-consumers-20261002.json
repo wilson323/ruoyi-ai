@@ -1,0 +1,85 @@
+{
+  "status": "TEMP_VERIFIED_BUSINESS_BINDING_PENDING",
+  "sdk": "actual installed 2.0.3, not reference 2.0.4",
+  "files": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java": {
+      "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumers.java",
+      "sha256": "f5ac2d2f6e0fac28bfdaa9d33d7809503a13f890a24e76f567c8330b6a76ac9a"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java": {
+      "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentDeliveryStateMiddleware.java",
+      "sha256": "ff7f49d374854b3b0b789ee83342b352f9b399ec7cba524fd048e7c0f6b589e4"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java": {
+      "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentChildConsumersTest.java",
+      "sha256": "435eab683ad6fcca2c46f1acdc799a403b38ee76f45749060dbdc22be4832ca7"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java": {
+      "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java",
+      "sha256": "3268d6793266646e67709af4ee5014195f7470cbed9d46183d0733d9ad07f358"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java": {
+      "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java",
+      "sha256": "bc6108f87c97e10d6d9a03dad8d50a6da868d843f2758af07151cec5ce8e65c9"
+    },
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java": {
+      "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java",
+      "sha256": "ef2b31a273e6ca7ac031034cf2524ed4f7076840e9dfbcd9b2e77ef4dc79a60f"
+    }
+  },
+  "patchSha256": "447facb95bed7d6a72f9b8a84ed3e0f16547addf884c92a29e25c4e834e7900e",
+  "tests": {
+    "found": 5,
+    "started": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "actualPositiveNativeSpawn": {
+    "stubModelCalls": 5,
+    "draftDeliveries": 1,
+    "autoApply": 0,
+    "childOwnerLifecycleCallback": 1,
+    "childTranscriptFiles": 1,
+    "childTranscriptPublicBody": true,
+    "childTranscriptTools": [
+      "write_file",
+      "deliver_artifact"
+    ],
+    "childTranscriptRawThinking": false,
+    "ownedVolumeCleanupExit": 0
+  },
+  "actualFailureNativeSpawn": {
+    "stubModelCalls": 3,
+    "safeFailure": "CHILD_EXECUTION_FAILED",
+    "exceptionCategory": "IllegalStateException",
+    "parentRecoveredPublicBody": true,
+    "draftDeliveries": 0,
+    "autoApply": 0,
+    "ownedVolumeCleanupExit": 0
+  },
+  "logs": {
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/foundation-child-full-junit-final.log": "fabad16f7084e3e011b3d22f2936a7baf1460deeee88aa006eab7af96806c71c",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-consumers-stream.log": "7cd8ba92a1285a78d0009e2d6ee9a81663f3a49d5d7461aaf5ad6115ad90fc07",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-consumers-native-spawn.log": "5d32965e16db68f7930a80a29dfa6cb9ef14bf44365103f6b2c2ba9359abded6",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-consumers-native-spawn-v2.log": "baf0ffa3876375aecc2fe27e92edd290a3dca2b4e389da27f540907d5bc50236",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-consumers-native-spawn-v3.log": "c176b201b3d9c036bb519adf6884a6ea57620446b49eb3198404146424520a5e",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-failure-native-spawn.log": "8fd197a1c45d2f40951060dd51a3cf7d578434349b7eca2cde2b0765546bde47",
+    "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/memoryhook-cold-stream.log": "e350035b4b1e799ddec56ebd88a757a3337f0db79f4b99bc888896f922946fc0"
+  },
+  "pending": [
+    "real production ArtifactVersionStore DRAFT binding",
+    "production owner approval lifecycle and canonical context adapter integration",
+    "opaque parent trust reconstruction for independently restored child after JVM restart",
+    "official trace/raw native error tool-result redaction",
+    "authenticated Tavily provider absent in both current agent and BE environment",
+    "204 full SDK/Service registry and API parity awaiting pinned reactor artifacts"
+  ],
+  "boundaries": [
+    "no SDK events fabricated; safe failure is typed business callback",
+    "no parent terminal status mutation",
+    "SDK native leaf and dynamic refresh retained",
+    "models must be supplied already wrapped with G usage decorator, including memory/compaction overrides",
+    "no main source/index/target/network model/DB writes"
+  ]
+}

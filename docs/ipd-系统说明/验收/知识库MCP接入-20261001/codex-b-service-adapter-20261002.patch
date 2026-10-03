@@ -1,0 +1,260 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceAdapter.java
+@@ -0,0 +1,105 @@
++package org.ruoyi.ipd.agent.servicebridge;
++
++import io.agentscope.extensions.aistio.FrameworkAdapter;
++import io.agentscope.extensions.aistio.model.*;
++import io.agentscope.extensions.aistio.adapter.AgentTaskStarter;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
++import org.ruoyi.ipd.security.IpdActor;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import reactor.core.publisher.Mono;
++import java.util.*;
++import java.util.function.Consumer;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++/** Service framework extension over the existing IPD run/event authority. */
++public final class ProjectAgentServiceAdapter implements FrameworkAdapter {
++    public record SessionBinding(IpdActor actor, Long projectId, Long runId) { }
++    public interface TrustedSessions {
++        SessionBinding resolve(String sessionId);
++        org.ruoyi.ipd.agent.dto.AgentRunCreateReq conversationRequest(String sessionId,String content);
++        SessionBinding registrationScope();
++        void onCreated(String sessionId,Long runId);
++    }
++    private final ProjectAgentRunService runs;
++    private final IpdCopilotAccess access;
++    private final TrustedSessions sessions;
++    private final AgentTaskStarter tasks;
++    private final FrameworkAdapter scopedNative;
++    private volatile Consumer<SessionEvent> emit;
++    private static final ObjectMapper JSON=new ObjectMapper();
++    public ProjectAgentServiceAdapter(ProjectAgentRunService runs, IpdCopilotAccess access,
++            TrustedSessions sessions, AgentTaskStarter tasks, FrameworkAdapter scopedNative) {
++        this.runs=Objects.requireNonNull(runs);this.access=Objects.requireNonNull(access);
++        this.sessions=Objects.requireNonNull(sessions);this.tasks=Objects.requireNonNull(tasks);
++        this.scopedNative=Objects.requireNonNull(scopedNative);
++    }
++    public String frameworkName(){return "ipd-agentscope";}
++    public String frameworkVersion(){return "2.0.4-SNAPSHOT";}
++    public boolean canHandle(Object target){return target==runs;}
++    public void attach(Object target,Consumer<SessionEvent> consumer){if(!canHandle(target))throw new IllegalArgumentException("IPD run authority required");emit=Objects.requireNonNull(consumer);}
++    public void detach(){emit=null;}
++    private SessionBinding binding(String sessionId){var b=Objects.requireNonNull(sessions.resolve(sessionId));access.requireVisible(b.actor(),b.projectId());var run=runs.get(b.actor(),b.runId());if(!String.valueOf(b.projectId()).equals(run.projectId()))throw new SecurityException("Service session project mismatch");return b;}
++    @Override public Mono<Void> handleAgentTask(AgentTaskAssignment assignment){return tasks.start(assignment);}
++    /** The supplied official adapter must be bound to this trusted session and delivery-safe state. */
++    @Override public Mono<ContextSnapshot> extractContext(String sessionId){return Mono.defer(()->{
++        binding(sessionId);return scopedNative.extractContext(sessionId);
++    });}
++    @Override public Mono<MessagePage> listMessages(String sessionId,int offset,int limit){return Mono.fromCallable(()->{
++        if(offset<0||limit<1||limit>1000)throw new IllegalArgumentException("Invalid message page");var b=binding(sessionId);
++        List<MessagePage.MessageItem> all=new ArrayList<>();long cursor=0;
++        for(;;){var page=runs.events(b.actor(),b.runId(),cursor);for(var e:page.events())if("TEXT_DELTA".equals(e.type())&&e.payload() instanceof Map<?,?> payload&&payload.get("text") instanceof String text){all.add(MessagePage.MessageItem.of(Math.toIntExact(e.seq()),"assistant",text));}
++            if(page.nextSeq()<=cursor||page.terminal())break;cursor=page.nextSeq();}
++        return MessagePage.of(sessionId,all,offset,limit);
++    });}
++    @Override public Mono<List<Map<String,Object>>> listTasks(String sessionId){return Mono.defer(()->{
++        var b=binding(sessionId);var run=runs.get(b.actor(),b.runId());
++        var execution=Map.<String,Object>of("id",run.runId(),"subject",run.actionCode()==null?"IPD execution":run.actionCode(),"state",run.status(),"owner",String.valueOf(b.actor().id()),"frameworkMeta",Map.of("businessApproval",false));
++        return scopedNative.listTasks(sessionId).map(nativeTasks->{var all=new ArrayList<Map<String,Object>>(nativeTasks);all.add(execution);return List.copyOf(all);});
++    });}
++    @Override public Mono<Void> handleCommand(String sessionId,String command,byte[] params){return Mono.defer(()->{var b=binding(sessionId);
++        if(COMMAND_ABORT.equals(command)||COMMAND_TERMINATE.equals(command)){runs.cancel(b.actor(),b.runId());return Mono.empty();}
++        return scopedNative.handleCommand(sessionId,command,params);
++    });}
++    @Override public Mono<List<Inventory.SubagentInfo>> listSubagents(){return Mono.defer(()->{var b=sessions.registrationScope();access.requireVisible(b.actor(),b.projectId());return scopedNative.listSubagents();});}
++    @Override public Mono<List<Inventory.WorkspaceInfo>> listWorkspaces(){return Mono.defer(()->{var b=sessions.registrationScope();access.requireVisible(b.actor(),b.projectId());return scopedNative.listWorkspaces();});}
++    @Override public Mono<List<Map<String,Object>>> listSubagentTasks(String sessionId){return Mono.defer(()->{binding(sessionId);return scopedNative.listSubagentTasks(sessionId);});}
++    @Override public Mono<Void> cancelSubagentTask(String sessionId,String taskId){return Mono.defer(()->{binding(sessionId);return scopedNative.cancelSubagentTask(sessionId,taskId);});}
++    @Override public Mono<Void> setPlanMode(String sessionId,byte[] params){return Mono.defer(()->{binding(sessionId);return scopedNative.setPlanMode(sessionId,params);});}
++    @Override public Mono<Void> injectUserMessage(String sessionId,String content){return Mono.defer(()->{binding(sessionId);return runConversationTurn(sessionId,content).then();});}
++    @Override public Mono<String> runConversationTurn(String sessionId,String content){return Mono.defer(()->{binding(sessionId);var b=binding(sessionId);var req=Objects.requireNonNull(sessions.conversationRequest(sessionId,content));
++        if(!Objects.equals(content,req.message()))throw new SecurityException("Conversation input binding mismatch");
++        Long id=Long.valueOf(runs.create(b.actor(),b.projectId(),req).runId());sessions.onCreated(sessionId,id);
++        var published=new java.util.concurrent.atomic.AtomicLong(0);
++        return reactor.core.publisher.Flux.interval(java.time.Duration.ZERO,java.time.Duration.ofMillis(100)).onBackpressureLatest()
++            .concatMap(tick->Mono.fromCallable(()->{access.requireVisible(b.actor(),b.projectId());var page=runs.events(b.actor(),id,published.get());publish(sessionId,page.events());published.set(page.nextSeq());return runs.get(b.actor(),id);}))
++            .filter(run->Set.of("SUCCEEDED","FAILED","CANCELLED").contains(run.status())).next()
++            .flatMap(run->{if(!"SUCCEEDED".equals(run.status()))return Mono.error(new IllegalStateException("IPD conversation execution failed"));
++                return Mono.fromCallable(()->{var delivery=new StringBuilder();long cursor=0;
++                    for(;;){var page=runs.events(b.actor(),id,cursor);
++                        for(var event:page.events())if("TEXT_DELTA".equals(event.type())&&event.payload() instanceof Map<?,?> payload
++                            &&payload.get("text") instanceof String text){if(Boolean.TRUE.equals(payload.get("replace")))delivery.setLength(0);delivery.append(text);}
++                        if(page.nextSeq()<=cursor||page.terminal())break;cursor=page.nextSeq();}
++                    return delivery.toString();});});});}
++    @Override public Set<String> capabilities(){var all=new LinkedHashSet<>(scopedNative.capabilities());all.addAll(Set.of(CAP_CONTEXT_QUERY,CAP_MESSAGE_QUERY,CAP_TASK_QUERY,CAP_AGENT_TASK,CAP_SESSION_COMMAND,CAP_SESSION_ABORT));return Set.copyOf(all);}
++    private void publish(String sessionId,List<ProjectAgentViews.Event> events){
++        Consumer<SessionEvent> consumer=emit;if(consumer==null)return;
++        for(var event:events){String type=switch(event.type()){
++            case "RUN_STARTED"->SessionEvent.SESSION_START;case "TEXT_DELTA"->SessionEvent.MESSAGE;
++            case "TOOL_CALL"->SessionEvent.TOOL_CALL;case "TOOL_RESULT"->SessionEvent.TOOL_RESULT;
++            case "RUN_FINISHED","ERROR"->SessionEvent.SESSION_END;default->"ipd."+event.type().toLowerCase(Locale.ROOT);};
++            var payload=event.payload() instanceof Map<?,?> map?map:Map.of();
++            var builder=SessionEvent.builder(sessionId,type).role(SessionEvent.ROLE_ASSISTANT);
++            if(payload.get("text") instanceof String text)builder.content(text);
++            if(payload.get("toolName") instanceof String name)builder.toolName(name);
++            try{builder.frameworkMeta(JSON.writeValueAsBytes(Map.of("ipdSeq",event.seq(),"ipdType",event.type(),"ipdPayload",event.payload()==null?Map.of():event.payload())));consumer.accept(builder.build());}
++            catch(Exception reportingFailure){/* SDK bypass contract: reporting never breaks IPD execution. */}
++        }
++    }
++    /** Read-only SSE projection; cursor belongs to the existing IPD persisted event stream. */
++    public List<String> sseAfter(String sessionId,long after,long lastEventId){var b=binding(sessionId);long cursor=Math.max(after,lastEventId);if(cursor<0)throw new IllegalArgumentException("Invalid cursor");var page=runs.events(b.actor(),b.runId(),cursor);List<String> frames=new ArrayList<>();for(var event:page.events()){
++        try{frames.add("id: "+event.seq()+"\nevent: ipd."+event.type().toLowerCase(Locale.ROOT)+"\ndata: "+JSON.writeValueAsString(Map.of("runId",String.valueOf(b.runId()),"sequence",event.seq(),"type",event.type(),"payload",event.payload()==null?Map.of():event.payload(),"occurredAt",event.createdAt()==null?"":event.createdAt()))+"\n\n");}
++        catch(java.io.IOException e){throw new IllegalStateException("Cannot encode delivery event");}}
++        return List.copyOf(frames);
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceRegistration.java
+@@ -0,0 +1,40 @@
++package org.ruoyi.ipd.agent.servicebridge;
++
++import io.agentscope.extensions.aistio.Aistio;
++import io.agentscope.extensions.aistio.AistioConfig;
++import io.agentscope.extensions.aistio.SessionBridge;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import java.nio.file.Path;
++import java.net.URI;
++import java.util.Objects;
++
++/** Official HTTP registration factory; constructing config performs no registration. */
++public final class ProjectAgentServiceRegistration {
++    public interface BootstrapCredential { String resolve(); }
++    private ProjectAgentServiceRegistration() { }
++    public static AistioConfig config(String controlPlane, String callbackOrigin, String tenant,
++            String namespace, String stableInstanceKey, int contractPort, Path eventJournal,
++            BootstrapCredential credential) {
++        requireLocalOrigin(controlPlane);requireLocalOrigin(callbackOrigin);
++        if(tenant==null||tenant.isBlank()||namespace==null||namespace.isBlank()
++            ||stableInstanceKey==null||stableInstanceKey.isBlank()||contractPort<1||contractPort>65535)
++            throw new IllegalArgumentException("Trusted registration scope required");
++        String token=Objects.requireNonNull(credential.resolve());if(token.isBlank())throw new IllegalArgumentException("Registration credential missing");
++        return AistioConfig.builder("ipd-project-agent").controlPlaneHttp(controlPlane).tenant(tenant)
++            .namespace(namespace).instanceKey(stableInstanceKey).internalToken(token)
++            .contractHttpHost("127.0.0.1").contractHttpPort(contractPort).publicBaseUrl(callbackOrigin)
++            .eventJournalDir(Objects.requireNonNull(eventJournal).toAbsolutePath().normalize().toString())
++            .enableEvents(true).startHttp(true).startGrpc(false).startHttpRegister(true).build();
++    }
++    /** Only call after local Service setup and runtime integration have been authorized. */
++    public static SessionBridge instrument(ProjectAgentRunService target,ProjectAgentServiceAdapter adapter,AistioConfig config){
++        return Aistio.instrument(target,config,adapter);
++    }
++    private static void requireLocalOrigin(String value){
++        URI uri=URI.create(Objects.requireNonNull(value));if(!"http".equals(uri.getScheme())
++            ||!java.util.Set.of("localhost","127.0.0.1","host.docker.internal").contains(uri.getHost())
++            ||uri.getRawUserInfo()!=null||uri.getRawQuery()!=null||uri.getRawFragment()!=null
++            ||!(uri.getPath()==null||uri.getPath().isEmpty()||"/".equals(uri.getPath())))
++            throw new IllegalArgumentException("Approved local Service origin required");
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceContractTest.java
+@@ -0,0 +1,25 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;import static org.assertj.core.api.Assertions.*;import static org.mockito.Mockito.*;import static org.mockito.ArgumentMatchers.*;import java.util.*;import java.nio.file.*;import java.time.*;import org.ruoyi.ipd.agent.support.AgentTestFixtures;import org.ruoyi.ipd.agent.service.ProjectAgentRunService;import org.ruoyi.ipd.agent.vo.ProjectAgentViews;import org.ruoyi.ipd.service.IpdCopilotAccess;import io.agentscope.extensions.aistio.FrameworkAdapter;import io.agentscope.extensions.aistio.adapter.AgentTaskStarter;import io.agentscope.extensions.aistio.model.*;import io.agentscope.extensions.aistio.transport.CollaborationClient;import com.fasterxml.jackson.databind.ObjectMapper;import reactor.core.publisher.Mono;
++class ProjectAgentServiceContractTest {
++ @TempDir Path root;
++ ProjectAgentViews.Run run(String state){return new ProjectAgentViews.Run("901",String.valueOf(AgentTestFixtures.PROJECT_ID),"ipd_project_agent",state,"C02",new ProjectAgentViews.ConfigSnapshot("market-research","1","model",List.of(),List.of("read_file","project_knowledge_search")),null,null,null);}
++ AgentTaskAssignment assignment(long generation,String command){return new AgentTaskAssignment("attempt","task","service-run","node",generation,command,"context","fixture-only-task","fixture-only-attempt","session",new byte[0],0);}
++ ProjectAgentServiceTaskStarter.TrustedBindingResolver resolver(){return new ProjectAgentServiceTaskStarter.TrustedBindingResolver(){public ProjectAgentServiceTaskStarter.Binding resolve(AgentTaskAssignment a){return bound();}public void recordRun(AgentTaskAssignment a,ProjectAgentServiceTaskStarter.Binding b,Long id){assertThat(id).isEqualTo(901L);}};}
++ ProjectAgentServiceTaskStarter.Binding bound(){return new ProjectAgentServiceTaskStarter.Binding(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,AgentTestFixtures.c02("upstream-key-0001","analysis"),901L);}
++ @Test void taskWaitsThroughRunningAndApprovalThenReportsGenerationNotBusinessCompletion()throws Exception{
++  var runs=mock(ProjectAgentRunService.class);var access=mock(IpdCopilotAccess.class);var client=mock(CollaborationClient.class);var resolver=mock(ProjectAgentServiceTaskStarter.TrustedBindingResolver.class);when(resolver.resolve(any())).thenReturn(bound());when(client.taskContext(any(),any())).thenReturn(new ObjectMapper().readTree("{\"task\":{\"version\":2}}"));when(runs.create(any(),any(),any())).thenReturn(new ProjectAgentViews.RunStatus("901","RUNNING"));when(runs.get(any(),eq(901L))).thenReturn(run("RUNNING"),run("WAITING_APPROVAL"),run("SUCCEEDED"));
++  var starter=new ProjectAgentServiceTaskStarter(runs,access,client,resolver,Duration.ofMillis(1),Duration.ofSeconds(3));starter.start(assignment(1,"start")).block(Duration.ofSeconds(4));var req=org.mockito.ArgumentCaptor.forClass(org.ruoyi.ipd.agent.dto.AgentRunCreateReq.class);verify(runs).create(eq(AgentTestFixtures.ACTOR),eq(AgentTestFixtures.PROJECT_ID),req.capture());assertThat(req.getValue().idempotencyKey()).isEqualTo(ProjectAgentServiceTaskStarter.idempotencyKey(assignment(1,"start"))).isNotEqualTo(ProjectAgentServiceTaskStarter.idempotencyKey(assignment(2,"start")));verify(resolver).recordRun(any(),eq(bound()),eq(901L));verify(runs,times(3)).get(any(),eq(901L));verify(client).finish(eq("task"),any(),eq(2L),eq("succeeded"),contains("approval remain pending"),argThat(v->v instanceof Map<?,?> m&&Boolean.FALSE.equals(m.get("businessApproval"))),eq(List.of()),eq(List.of()));verify(client,never()).fail(any(),any(),anyLong(),any(),any());
++ }
++ @Test void failedAndCancelledExecutionNeverReportsSuccessfulTask()throws Exception{
++  for(String state:List.of("FAILED","CANCELLED")){var runs=mock(ProjectAgentRunService.class);var access=mock(IpdCopilotAccess.class);var client=mock(CollaborationClient.class);when(client.taskContext(any(),any())).thenReturn(new ObjectMapper().readTree("{\"task\":{\"version\":1}}"));when(runs.create(any(),any(),any())).thenReturn(new ProjectAgentViews.RunStatus("901","RUNNING"));when(runs.get(any(),any())).thenReturn(run(state));var starter=new ProjectAgentServiceTaskStarter(runs,access,client,resolver(),Duration.ofMillis(1),Duration.ofSeconds(2));starter.start(assignment(1,"start")).block(Duration.ofSeconds(3));verify(client).fail(eq("task"),any(),eq(1L),eq(state.equals("FAILED")?"ipd_run_failed":"ipd_run_cancelled"),any());verify(client,never()).finish(any(),any(),anyLong(),any(),any(),any(),any(),any());}
++ }
++ @Test void cancelOnlyExistingRunAndRevocationPreventsNewDispatch(){
++  var runs=mock(ProjectAgentRunService.class);var access=mock(IpdCopilotAccess.class);var client=mock(CollaborationClient.class);var starter=new ProjectAgentServiceTaskStarter(runs,access,client,resolver(),Duration.ofMillis(1),Duration.ofSeconds(2));starter.start(assignment(1,"cancel")).block();verify(runs).cancel(AgentTestFixtures.ACTOR,901L);verify(runs,never()).create(any(),any(),any());verifyNoInteractions(client);when(access.requireVisible(any(),any())).thenThrow(new SecurityException("revoked"));assertThatThrownBy(()->starter.start(assignment(2,"start")).block()).hasMessageContaining("revoked");verify(runs,never()).create(any(),any(),any());
++ }
++ @Test void sseCursorAndAbortUseExistingOwnershipAndDoNotApproveBusiness(){
++  var runs=mock(ProjectAgentRunService.class);var access=mock(IpdCopilotAccess.class);var sessions=mock(ProjectAgentServiceAdapter.TrustedSessions.class);when(sessions.resolve("session")).thenReturn(new ProjectAgentServiceAdapter.SessionBinding(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,901L));when(runs.get(any(),any())).thenReturn(run("FAILED"));when(runs.events(any(),eq(901L),eq(8L))).thenReturn(new ProjectAgentViews.Events(List.of(new ProjectAgentViews.Event(9,"SOURCE",Map.of("status","SUCCESS"),"date"),new ProjectAgentViews.Event(10,"ERROR",Map.of("reason","资料不足"),"date")),10,true));var nativeAdapter=mock(FrameworkAdapter.class);when(nativeAdapter.capabilities()).thenReturn(Set.of(FrameworkAdapter.CAP_PLAN_MODE));var adapter=new ProjectAgentServiceAdapter(runs,access,sessions,a->Mono.empty(),nativeAdapter);var frames=adapter.sseAfter("session",7,8);assertThat(frames).hasSize(2);assertThat(frames.get(0)).startsWith("id: 9\nevent: ipd.source\n").contains("SUCCESS");assertThat(frames.get(1)).startsWith("id: 10\nevent: ipd.error\n");assertThat(adapter.capabilities()).contains(FrameworkAdapter.CAP_PLAN_MODE,FrameworkAdapter.CAP_AGENT_TASK);var nativeContext=ContextSnapshot.builder("session").framework("agentscope").systemPrompt("approved skill instructions").build();when(nativeAdapter.extractContext("session")).thenReturn(Mono.just(nativeContext));assertThat(adapter.extractContext("session").block()).isSameAs(nativeContext);when(nativeAdapter.listTasks("session")).thenReturn(Mono.just(List.of(Map.of("id","native-todo","state","pending"))));assertThat(adapter.listTasks("session").block()).hasSize(2).anySatisfy(task->assertThat(task.get("id")).isEqualTo("native-todo"));adapter.handleCommand("session",FrameworkAdapter.COMMAND_ABORT,new byte[0]).block();verify(runs).cancel(AgentTestFixtures.ACTOR,901L);verify(runs,never()).create(any(),any(),any());when(access.requireVisible(any(),any())).thenThrow(new SecurityException("revoked"));assertThatThrownBy(()->adapter.sseAfter("session",0,0)).hasMessageContaining("revoked");
++ }
++ @Test void registrationConfigUsesOfficialHttpAndDurableOutboxWithoutStartingNetwork(){
++  var config=ProjectAgentServiceRegistration.config("http://127.0.0.1:19000","http://host.docker.internal:19001","ipd","qa","stable-instance",19001,root,()->"fixture-only-bootstrap");assertThat(config.startHttpRegister()).isTrue();assertThat(config.startGrpc()).isFalse();assertThat(config.startHttp()).isTrue();assertThat(config.enableEvents()).isTrue();assertThat(config.instanceKey()).isEqualTo("stable-instance");assertThat(config.eventJournalDir()).isEqualTo(root.toAbsolutePath().normalize().toString());assertThatThrownBy(()->ProjectAgentServiceRegistration.config("http://example.com","http://127.0.0.1:19001","ipd","qa","stable",19001,root,()->"fixture")).isInstanceOf(IllegalArgumentException.class);
++ }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceTaskStarter.java
+@@ -0,0 +1,78 @@
++package org.ruoyi.ipd.agent.servicebridge;
++
++import io.agentscope.extensions.aistio.adapter.AgentTaskStarter;
++import io.agentscope.extensions.aistio.model.AgentTaskAssignment;
++import io.agentscope.extensions.aistio.transport.CollaborationClient;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import org.ruoyi.ipd.agent.dto.AgentRunCreateReq;
++import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
++import org.ruoyi.ipd.security.IpdActor;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import reactor.core.publisher.Mono;
++import reactor.core.publisher.Flux;
++import reactor.core.scheduler.Schedulers;
++import java.time.Duration;
++import java.util.*;
++import java.nio.charset.StandardCharsets;
++import java.security.MessageDigest;
++import java.util.HexFormat;
++
++/** Official AgentTask extension; dispatches through the single IPD run service. */
++public final class ProjectAgentServiceTaskStarter implements AgentTaskStarter {
++    public record Binding(IpdActor actor, Long projectId, AgentRunCreateReq request, Long existingRunId) { }
++    /** Resolve a server-approved Service identity/workspace binding; never trust payload Person IDs. */
++    public interface TrustedBindingResolver {
++        Binding resolve(AgentTaskAssignment assignment);
++        void recordRun(AgentTaskAssignment assignment,Binding trustedBinding,Long runId);
++    }
++    private final ProjectAgentRunService runs;
++    private final IpdCopilotAccess access;
++    private final CollaborationClient collaboration;
++    private final TrustedBindingResolver bindings;
++    private final Duration poll;
++    private final Duration deadline;
++    public ProjectAgentServiceTaskStarter(ProjectAgentRunService runs, IpdCopilotAccess access,
++            CollaborationClient collaboration, TrustedBindingResolver bindings, Duration poll, Duration deadline) {
++        this.runs=Objects.requireNonNull(runs);this.access=Objects.requireNonNull(access);
++        this.collaboration=Objects.requireNonNull(collaboration);this.bindings=Objects.requireNonNull(bindings);
++        this.poll=Objects.requireNonNull(poll);this.deadline=Objects.requireNonNull(deadline);
++        if(poll.isNegative()||poll.isZero()||deadline.isNegative()||deadline.isZero())throw new IllegalArgumentException("Positive timing required");
++    }
++    @Override public Mono<Void> start(AgentTaskAssignment assignment) {
++        return Mono.defer(()->{
++            Objects.requireNonNull(assignment);if(assignment.agentTaskId()==null||assignment.agentTaskId().isBlank()
++                ||assignment.taskToken()==null||assignment.taskToken().isBlank()||assignment.generation()<0)
++                return Mono.error(new IllegalArgumentException("Invalid official task delivery"));
++            Binding bound=Objects.requireNonNull(bindings.resolve(assignment));access.requireVisible(bound.actor(),bound.projectId());
++            if("cancel".equals(assignment.command())) {
++                if(bound.existingRunId()==null)return Mono.error(new IllegalStateException("Task has no existing IPD run"));
++                runs.cancel(bound.actor(),bound.existingRunId());return Mono.empty();
++            }
++            var context=collaboration.taskContext(assignment.agentTaskId(),assignment.taskToken());
++            long version=context.path("task").path("version").asLong();
++            collaboration.start(assignment.agentTaskId(),assignment.taskToken(),version);
++            var req=Objects.requireNonNull(bound.request());
++            var request=new AgentRunCreateReq(req.capabilityPackCode(),req.capabilityPackVersion(),req.modelConfigId(),
++                req.skillNames(),req.toolIds(),req.actionCode(),req.message(),idempotencyKey(assignment),
++                req.productLineId(),req.requirementId(),req.previousRunId(),req.targetDocumentId(),req.baseVersionId());
++            Long runId=Long.valueOf(runs.create(bound.actor(),bound.projectId(),request).runId());
++            bindings.recordRun(assignment,bound,runId);
++            return Flux.interval(Duration.ZERO,poll).onBackpressureLatest().concatMap(tick->Mono.fromCallable(()->{
++                access.requireVisible(bound.actor(),bound.projectId());return runs.get(bound.actor(),runId);
++            }).subscribeOn(Schedulers.boundedElastic())).filter(run->Set.of("SUCCEEDED","FAILED","CANCELLED").contains(run.status()))
++                .next().timeout(deadline).flatMap(run->Mono.fromRunnable(()->{
++                    long current=collaboration.taskContext(assignment.agentTaskId(),assignment.taskToken()).path("task").path("version").asLong();
++                    if("SUCCEEDED".equals(run.status()))collaboration.finish(assignment.agentTaskId(),assignment.taskToken(),current,
++                        "succeeded","IPD generation completed; document review and business approval remain pending",
++                        Map.of("ipdRunId",run.runId(),"ipdStatus",run.status(),"businessApproval",false),List.of(),List.of());
++                    else collaboration.fail(assignment.agentTaskId(),assignment.taskToken(),current,
++                        "CANCELLED".equals(run.status())?"ipd_run_cancelled":"ipd_run_failed","IPD execution did not complete successfully");
++                })).then();
++        }).subscribeOn(Schedulers.boundedElastic());
++    }
++    static String idempotencyKey(AgentTaskAssignment task) {
++        try{return "service-"+HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
++            (task.agentTaskId()+":"+task.attemptId()+":"+task.generation()).getBytes(StandardCharsets.UTF_8)));}
++        catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
++    }
++}

@@ -1,0 +1,41 @@
+{
+  "status": "PENDING_VALIDATION_FROZEN",
+  "atUtc": "2026-10-02T18:14:33.571302+00:00",
+  "files": [
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java",
+      "before": "7aad1de05122e890815a57b1211aa68d8a938b1eae7e4a3c6af5b20e1c3c66a6",
+      "after": "7179d77954afa8c4ae8a15ace2d728c9463c329ec2ea0cc811659163fa76fe3e"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+      "before": "4b7e1bcd5c6fec29f1872af1e35ec40951fdc460401b49f4cdfeaf5b37811c26",
+      "after": "a156902ca876087a018ac08f15009235614bb433e400ef3d95e074993ecca187"
+    },
+    {
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java",
+      "before": "d6fb690664bd64a84df1e16e521354ba422300947e69e66a199c15cd27c6a56b",
+      "after": "5d50b3342b623b88a2c0e637bef6b759aebdeabdcecad411f2bf0fe91dd78a1a"
+    }
+  ],
+  "diffCheckExit": 0,
+  "testsExecuted": false,
+  "mavenExecuted": false,
+  "outboundExecuted": false,
+  "targetWritten": false,
+  "indexWritten": false,
+  "newSourceField": "mcpSdkFrames",
+  "newReasonCode": "TOOLS_CAPABILITY_MISSING",
+  "limits": {
+    "causeDepth": 8,
+    "frames": 8,
+    "examinedFramesPerCause": 64,
+    "simpleClassNameLength": 100,
+    "methodNameLength": 100
+  },
+  "sdkExactClasses": [
+    "io.agentscope.core.tool.mcp.McpAsyncClientWrapper",
+    "io.modelcontextprotocol.client.McpAsyncClient",
+    "io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport"
+  ]
+}

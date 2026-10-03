@@ -1,0 +1,47 @@
+{
+  "status": "TARGETED_CONSUMER_VERIFIED_PAUSED_TIMEOUT_PENDING",
+  "observedSourceSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java": "57c5c7cd32ee05d6ed0b39df62182cf88739876d27581b4d17d96171b5b5e3b8",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java": "a385fcd2b86556a343d7dda71feafabc5ee228bffa368f4a4aa33aa350d3c8cf"
+  },
+  "executorCompileExit": 0,
+  "consumerCompileExit": 0,
+  "consumerProbeExit": 0,
+  "actualCases": [
+    "same original run WAIT→new lease+epoch2→prepare CAS RUN→kernel once, quota occupied, no duplicate RUN_STARTED/INTENT",
+    "prepare validation failure retains WAIT and checkpoint; no kernel, handle released, quota returned",
+    "schedule rejection after consume RUN→FAILED terminal, owned checkpoint cleanup1, no kernel, quota returned",
+    "paused CANCEL_REQUESTED no old handle→new lease+epoch→original handle.cancel→CANCELLED cleanup1",
+    "pause resumed handle1 then resume epoch3 handle2; late handle1.abandon/cancel cannot remove handle2 or return handle2 quota"
+  ],
+  "testFixtureBoundary": "Actual Executor/Handle/InMemoryAgentRunStore + scheduler/lease/transaction-manager doubles, synthetic kernel invocation. Real DB rollback, Redis contention, durable SDK resume not proven. Main target absent from CP.",
+  "sourceOnlyConfirmed": [
+    "handles.remove(runId, ownHandle.get()) protects replacement map entry",
+    "releaseOnce CAS prevents double quota release",
+    "RunService.cancel now fallback calls finishDetachedCancellation when no handle",
+    "Usage wrapper delegates native paused and interrupt callbacks"
+  ],
+  "remaining": [
+    "Native pause timeout not scheduled; existing scheduleAwaitTimeout only original pre-kernel intent await; closed paused handle timeout skipped.",
+    "Cross-JVM resume contention and callback rollback require real DB/lease acceptance.",
+    "Checkpoint cleanup namespace/epoch Config wiring not exercised against Redis by this probe.",
+    "Kernel must pause only after official SDK save root AgentResult PERMISSION_ASKING, not RequireUserConfirm or onComplete."
+  ],
+  "priorEvidence": "codex-g-pause-lifecycle-review-20261002.json preserves pre-detached-cancel gap; newest source fixes cancellation helper as separately tested here.",
+  "evidenceSHA": {
+    "src/GResumeExecutorConsumerProbe.java": "ba6e8e1b4952c4c2a1ea94de081b2683bc06a82976c6df526a38cf5eb98bdac1",
+    "resume-executor-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resume-consumer-compile.log": "d1da499bc3d26087c1c97cba6edf21dc72e634b173429b52c92a858943a31c40",
+    "resume-consumer.log": "09f1c72477b4914d2e1d2f0651265f5d49fb6812c946b185e3f2c9866c6e9a09",
+    "resume-consumer-compile-final.log": "d1da499bc3d26087c1c97cba6edf21dc72e634b173429b52c92a858943a31c40",
+    "resume-consumer-final.log": "6d7cad62834102baafe2c5cf7ba64f0e3dbedf9f3cca7647ae35464a410b81cb"
+  },
+  "effects": {
+    "mainWrite": false,
+    "targetWrite": false,
+    "indexWrite": false,
+    "reload": false,
+    "DBWrite": false,
+    "network": false
+  }
+}

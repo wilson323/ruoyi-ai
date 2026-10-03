@@ -1,0 +1,42 @@
+{
+  "status": "PARTIAL",
+  "supersedes": "v2 lost bytes+sidecar legacy fallthrough invalidated",
+  "files": [
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDelivery.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDelivery.java",
+      "sha256": "f2eea43fafaf28c65fd4743debc5e9f01d7a477c95b82409150deb6f454a30f7"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactAccess.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactAccess.java",
+      "sha256": "36ae982944093fc6a6115a99cfe5eb833605b195f8ef98b25294d55c1c370e92"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactOrigin.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactOrigin.java",
+      "sha256": "6f099e617178408b0427e0537b82984f07e5caa32c77af89b72053f933f5cd16"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDeliveryTest.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDeliveryTest.java",
+      "sha256": "af21ad4c7aa4076557396371817c3c80d222b3f38680f02e356c199c1a8449b3"
+    }
+  ],
+  "patchSha256": "bd65198368a66df613789c85d694d8c4e4cfbd8c9a0bc9b797dc7e3c65c7413b",
+  "tests": {
+    "found": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/artifact-origin-tests.log",
+  "originStore": "original ipd_agent_run_event ARTIFACT attachmentOrigin=IPD_NATIVE_DELIVERY_V1, no table/DDL",
+  "writeAuthority": "Mandatory root Handle OwnedArtifactAppender owns seq/epoch; candidate has no direct appendEvent/sequence allocation",
+  "pending": [
+    "Real root Handle receipt callback and rollback seq restoration",
+    "Real RuntimeAuthority/OwnedTargetFactory and Person delegation",
+    "True MyBatis transaction rollback and event visibility",
+    "HTTP/FE and filesystem crash/orphan reconciliation"
+  ]
+}

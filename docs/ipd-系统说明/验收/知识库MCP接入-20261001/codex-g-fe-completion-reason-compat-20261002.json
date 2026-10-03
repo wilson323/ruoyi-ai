@@ -1,0 +1,39 @@
+{
+  "status": "VERIFIED_FE_REASON_PAYLOAD_COMPATIBILITY_ONLY",
+  "timestampUtc": "2026-10-02T20:13:14.092424+00:00",
+  "frontendHead": "6fad407d0c8d73111d5b080d8d8b2b48341ef212",
+  "tempSnapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-fe-completion-reason-qhjlbobt/ruoyi-ipd-web",
+  "productionSourceHashes": {
+    "apps/web-antd/src/api/ipd/project-agent.ts": "ec3c884e8a200b6e8d1d73f8ffdce6593fac133974a288fea3cd9878425ea3e9",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": "b94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "a7063f163e12ff44f45d25844d927c274dc5faf84a6c2137fec385457c103ea2",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "fc132c771f9a8cee07b7105ca7a00b7d4d81e61c6a9f330f024624969784a611",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.ts": "5f8be39d860e8a185964bc16988bf8056d036ccb92a1d077694d8757b7677c6b"
+  },
+  "currentEqualsHeadSnapshot": {
+    "apps/web-antd/src/api/ipd/project-agent.ts": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": true,
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.ts": true
+  },
+  "testCounts": {
+    "timelineModel": 20,
+    "runTimeline": 24,
+    "projectAgentPanel": 27,
+    "sum": 71,
+    "failures": 0
+  },
+  "newTempOnlyCases": 2,
+  "newPayloadShape": {
+    "errorCode": "COMPLETION_REJECTED",
+    "completionReason": "SKILL_CONTRACT_MISMATCH",
+    "message": "没有取得可交付正文、检索依据不足或结论越权，产物未生成"
+  },
+  "missingMessageFallback": "智能体返回错误",
+  "testExit": 0,
+  "log": "/tmp/ipd-g-fe-completion-reason-compat-actual-20261002.log",
+  "cacheDir": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-fe-completion-reason-qhjlbobt/ruoyi-ipd-web/.vitest-cache",
+  "mainSourceChanged": false,
+  "networkModelCalls": false
+}

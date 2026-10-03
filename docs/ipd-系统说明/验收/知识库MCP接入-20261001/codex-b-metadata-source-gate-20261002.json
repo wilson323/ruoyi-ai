@@ -1,0 +1,26 @@
+{
+  "before": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "b8a931e9d9b248a0cf874e92fb95212d8773d97697dcea9167a7c93a023bdbe6",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "4e51ba6d9f16e035a9c35043f49de10a3528e3ae06ad10fc0d89547ff2b530c9"
+  },
+  "sixLines": [
+    "ruoyi-ai",
+    "完成门来源身份",
+    "Gate/Test独占",
+    "既有SOURCE_IDENTITY_MISMATCH",
+    "拒绝元数据肯定升级，否定/条件/定义保留",
+    "真实artifact表行+源码A级"
+  ],
+  "after": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "c8428b39290b8c25974b4f97f84d8a38b655f000e51ba72881f1ab32330448e9",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "a9b553bd2561292723500b3d58fe1de833ab68bf8b93838ab92458b38bd09745"
+  },
+  "probeDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-metadata-gate-rcp4jmek",
+  "compileExit": 0,
+  "probeExit": 0,
+  "probeSummary": "PASS cases=8\n",
+  "contract": "only explicit metadata source subject/classification table or affirmative prose; exact ID identity rule unchanged; no numeric relaxation; same fixed reason",
+  "provenanceGap": "high-confidence official cross-validation absent structured provenance; not intercepted by metadata classifier; separate factual validation needed",
+  "JUnit": "pending root targeted",
+  "repair": "first probe failed because prose subject boundary required table delimiter; separated prose prefix while keeping table cell boundary"
+}

@@ -1,0 +1,20 @@
+{
+  "status": "SOURCE_REVIEW_ONLY_PENDING_RUNTIME_INTEGRATION",
+  "files": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiStream.java": "94d406d7c475c2f425815f80ed531e48e082f4832a79a87ae0bf3132129c923b",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java": "248f12a1c2844520dc1caba846e062c63b2d9b9120867e6be2f67dddcb83739f",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiBridge.java": "d8a9962d3f53f8483f03f14724b8c21fdb98ad29624c959bd775952f7cd4c1df"
+  },
+  "confirmed_owning_source": [
+    "Stream first read uses original runs.events ownership before SSE response; each next page repeats events authorization",
+    "RunService terminal is terminalSeq <= delivered seq rather than terminal status alone; paginated replay does not claim terminal on first200 events",
+    "SseEmitter completion/timeout/error disposes observation subscription, no run.cancel call",
+    "Last-Event-ID and afterSeq parse nonnegative and max; only last frame of persisted event carries seq cursor"
+  ],
+  "limits": [
+    "Independent source inspection, not HTTP disconnect/replay acceptance",
+    "Kernel/Controller candidate patch not applied by root",
+    "Native HITL pause/resume still pending",
+    "Not blanket proof of all frontend/runtime behavior"
+  ]
+}

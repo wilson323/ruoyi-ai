@@ -1,0 +1,33 @@
+{
+  "status": "PARTIAL",
+  "files": [
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentPreparedTaskDispatch.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentPreparedTaskDispatch.java",
+      "sha256": "fed0e68c42280667657e8050702133f5aa8fa900d8bf6d3873c7ab2ab9fe176d"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentPreparedTaskDispatchTest.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentPreparedTaskDispatchTest.java",
+      "sha256": "7874d7b4207f8d9954953d669b5b4d0c001ee500c56275da47e5cb6a1ab4eacd"
+    }
+  ],
+  "patchSha256": "40bd280d078a3e8ba048e42f410c4344b611e61fe7a456b33fbbf14f2366b05e",
+  "tests": {
+    "found": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/prepared-tests-two-clients.log",
+  "sdk": "pinned e972 2.0.4 core/aistio; existing 2.0.3 Redis extension and Redisson351 production adapter actual binary compatibility exercised",
+  "scope": "Owned ephemeral Redis loopback process, random port, no auth or persisted disks; process finally terminated. No application Redis/DB write.",
+  "pending": [
+    "Real deployment operator-to-Person owner delegation absent",
+    "TrustedDeployment is mandatory fixture SPI, not production approval",
+    "StateStore CAS winner before official finish has crash reconciliation window",
+    "Cold client/object reconstruction tested; application JVM/process restart not tested",
+    "Receipt is control state only, not full TaskEnvelope/tool/client/token serialization",
+    "Requires integrating server recovery lifecycle with existing original run and official starter; no main integration"
+  ]
+}

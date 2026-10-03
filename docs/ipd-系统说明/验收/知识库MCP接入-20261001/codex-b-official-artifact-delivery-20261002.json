@@ -1,0 +1,35 @@
+{
+  "status": "PARTIAL",
+  "files": [
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDelivery.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDelivery.java",
+      "sha256": "bac31515350409435b34287bb72aaed48de39623e8311345d6be1dc05beaf333"
+    },
+    {
+      "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/ProjectAgentArtifactDeliveryTest.java",
+      "target": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentArtifactDeliveryTest.java",
+      "sha256": "a5bfb8b44ba2e0decd4d2511df7b030f75ab4bd0b77fb0f4a1965a61d42c761b"
+    }
+  ],
+  "patchSha256": "9522a6d4b1c079e0627f9e935c1b9b8a78620ed2ff11c004cbf223cb0d563e42",
+  "mandatoryGuardPatch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-b-official-artifact-delivery-20261002-mandatory-apply-guard.patch",
+  "guardSourceBaselineSha256": "295195a089f09db1924507c84ee7c4d563341644ffe8be3a9c66a02bcddb763e",
+  "tests": {
+    "found": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-service-e972-1kcyr2jx/artifact-tests-durable-final.log",
+  "boundary": "Official pinned204 ArtifactDeliveryTool and real LocalFilesystem/file bytes; Spring real transaction callbacks but in-memory ArtifactVersionStore/owner fixtures; no DB rollback acceptance",
+  "pending": [
+    "Root withActiveOwnership adapter and real MyBatis transaction",
+    "Mandatory binary apply guard not applied/compiled on whole RunService",
+    "Authenticated download controller/FE receipt integration absent",
+    "Root storage provider/config/account permission not wired",
+    "Orphan cleanup after crash or IO failure before synchronization requires reconciliation",
+    "Filesystem directory durability/power failure not proved",
+    "Event sequence/ARTIFACT reporting original handle transaction needs root integration"
+  ]
+}

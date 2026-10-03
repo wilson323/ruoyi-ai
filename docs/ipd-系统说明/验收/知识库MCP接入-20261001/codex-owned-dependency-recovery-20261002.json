@@ -1,0 +1,2962 @@
+{
+  "status": "CLEANED_VERIFIED_RECOVERABLE_FROM_ORIGINAL_JAR",
+  "authorized_scope": "attachment line9 verified task worktree cleanup; exact current task generated dependencies only",
+  "directory": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/frozen-libs",
+  "archive": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "archive_sha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "entries": [
+    {
+      "name": "perfmark-api-0.26.0.jar",
+      "bytes": 6816,
+      "sha256": "b7d23e93a34537ce332708269a0d1404788a5b5e1949e82f5535fce51b3ea95b",
+      "restore_member": "BOOT-INF/lib/perfmark-api-0.26.0.jar"
+    },
+    {
+      "name": "tika-parser-cad-module-3.3.0.jar",
+      "bytes": 33539,
+      "sha256": "21a2b53f47ba794741a32ed4cc3ee2d157f96db7a3d9823261347b85c3466f81",
+      "restore_member": "BOOT-INF/lib/tika-parser-cad-module-3.3.0.jar"
+    },
+    {
+      "name": "smallrye-common-constraint-2.6.0.jar",
+      "bytes": 13749,
+      "sha256": "90563f245d5a55b71980d9cebbe9cfe2adbec6a092c6350256cb1327e9b2938b",
+      "restore_member": "BOOT-INF/lib/smallrye-common-constraint-2.6.0.jar"
+    },
+    {
+      "name": "reflections-0.9.10.jar",
+      "bytes": 129763,
+      "sha256": "6eecd8b68f937e7220cf4da839403730e102cc31d25ccf5685a2dba0ea8d7553",
+      "restore_member": "BOOT-INF/lib/reflections-0.9.10.jar"
+    },
+    {
+      "name": "dify-java-client-1.2.7.jar",
+      "bytes": 556756,
+      "sha256": "03e62a50b1a60ecab596f6765ec464edf75bc7d3f45d50304c26646c472041a3",
+      "restore_member": "BOOT-INF/lib/dify-java-client-1.2.7.jar"
+    },
+    {
+      "name": "curvesapi-1.08.jar",
+      "bytes": 117159,
+      "sha256": "ad95b08b8bbf9d7d17e5e00814898fa23324f32bc5b62f1a37801e6a56ce0079",
+      "restore_member": "BOOT-INF/lib/curvesapi-1.08.jar"
+    },
+    {
+      "name": "micrometer-core-1.15.6.jar",
+      "bytes": 864517,
+      "sha256": "ca85989a46d2c68f903dfec0390564921a1a11c87d0d62a22eb1d71db8b323ae",
+      "restore_member": "BOOT-INF/lib/micrometer-core-1.15.6.jar"
+    },
+    {
+      "name": "warm-flow-plugin-ui-sb-web-1.8.2.jar",
+      "bytes": 6464,
+      "sha256": "206646de08572e5d288e4080ae46d56c5c1b20b9b03bfcaf4c3f6c894315e837",
+      "restore_member": "BOOT-INF/lib/warm-flow-plugin-ui-sb-web-1.8.2.jar"
+    },
+    {
+      "name": "commons-pool2-2.12.1.jar",
+      "bytes": 152289,
+      "sha256": "5273c8bc8c0dca2211175c0d27efbd7228efae99689aac001a8e1ef8e872e9ef",
+      "restore_member": "BOOT-INF/lib/commons-pool2-2.12.1.jar"
+    },
+    {
+      "name": "sa-token-jackson-1.44.0.jar",
+      "bytes": 5440,
+      "sha256": "6b4194bbf51dc077135d0b9cd78b526f6d9368d3a3433ba2136833dba842db13",
+      "restore_member": "BOOT-INF/lib/sa-token-jackson-1.44.0.jar"
+    },
+    {
+      "name": "ruoyi-common-sensitive-3.1.0.jar",
+      "bytes": 8894,
+      "sha256": "da22d2a8d84861528ae5df25d6efa08e7d35bf0b1f518c89fa58019f15513f1d",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-sensitive-3.1.0.jar"
+    },
+    {
+      "name": "mybatis-plus-spring-boot3-starter-3.5.14.jar",
+      "bytes": 20116,
+      "sha256": "aa41581770c0a5812d123f9f50ff95b4f8d8266c7fea61c47d177340f2ac560a",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-spring-boot3-starter-3.5.14.jar"
+    },
+    {
+      "name": "fontbox-3.0.7.jar",
+      "bytes": 1647097,
+      "sha256": "8149d9897ab504f7a3f3797d552cd8925ef58149b4de3fb470eb46d747e68f86",
+      "restore_member": "BOOT-INF/lib/fontbox-3.0.7.jar"
+    },
+    {
+      "name": "anyline-data-jdbc-mysql-8.7.2-20250603.jar",
+      "bytes": 21768,
+      "sha256": "4fceb51954b3b8d128e9640d7ea6b907218cf1988163c2ea9c2ee4b30396292d",
+      "restore_member": "BOOT-INF/lib/anyline-data-jdbc-mysql-8.7.2-20250603.jar"
+    },
+    {
+      "name": "mybatis-plus-annotation-3.5.14.jar",
+      "bytes": 19098,
+      "sha256": "0025fdf1a4c70e07664d4f82e0be4a3615a6e4d6a2deb67b20d1f47fe2422c92",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-annotation-3.5.14.jar"
+    },
+    {
+      "name": "jackson-datatype-jdk8-2.19.4.jar",
+      "bytes": 36413,
+      "sha256": "c0e0dc3039f9a37a099b2602838f833ea8c15c56445a0eb5463d0c7e0c355da2",
+      "restore_member": "BOOT-INF/lib/jackson-datatype-jdk8-2.19.4.jar"
+    },
+    {
+      "name": "grpc-util-1.62.2.jar",
+      "bytes": 97987,
+      "sha256": "3c7103e6f3738571e3aeda420fe2a6ac68e354534d8b66f41897b6755b48b735",
+      "restore_member": "BOOT-INF/lib/grpc-util-1.62.2.jar"
+    },
+    {
+      "name": "knife4j-openapi3-ui-4.4.0.jar",
+      "bytes": 3642148,
+      "sha256": "db35f7960c5041a65d8714084541fa7145b1d0c71e73e39fb09fb9f67e702f61",
+      "restore_member": "BOOT-INF/lib/knife4j-openapi3-ui-4.4.0.jar"
+    },
+    {
+      "name": "spring-boot-3.5.8.jar",
+      "bytes": 1901382,
+      "sha256": "d968c32be2f38778ca8e9959b09f1aea93f63e5ecc0373dbe40001040bb3dd63",
+      "restore_member": "BOOT-INF/lib/spring-boot-3.5.8.jar"
+    },
+    {
+      "name": "annotations-4.1.1.4.jar",
+      "bytes": 3120,
+      "sha256": "ba734e1e84c09d615af6a09d33034b4f0442f8772dec120efb376d86a565ae15",
+      "restore_member": "BOOT-INF/lib/annotations-4.1.1.4.jar"
+    },
+    {
+      "name": "commons-logging-1.3.5.jar",
+      "bytes": 73737,
+      "sha256": "6d7a744e4027649fbb50895df9497d109f98c766a637062fe8d2eabbb3140ba4",
+      "restore_member": "BOOT-INF/lib/commons-logging-1.3.5.jar"
+    },
+    {
+      "name": "picocli-4.7.7.jar",
+      "bytes": 417640,
+      "sha256": "f86e30fffd10d2b13b8caa8d4b237a7ee61f2ffccf5b1941de718b765d235bf8",
+      "restore_member": "BOOT-INF/lib/picocli-4.7.7.jar"
+    },
+    {
+      "name": "httpcore-4.4.16.jar",
+      "bytes": 327891,
+      "sha256": "6c9b3dd142a09dc468e23ad39aad6f75a0f2b85125104469f026e52a474e464f",
+      "restore_member": "BOOT-INF/lib/httpcore-4.4.16.jar"
+    },
+    {
+      "name": "okhttp-5.3.2.jar",
+      "bytes": 767,
+      "sha256": "e720a383fdc3eb1df4aac77a085e61b7730837364151de867093fdbcafcb44aa",
+      "restore_member": "BOOT-INF/lib/okhttp-5.3.2.jar"
+    },
+    {
+      "name": "ruoyi-ipd-3.1.0.jar",
+      "bytes": 3308073,
+      "sha256": "944a1bde48d58745411e2af3fdc9c36bbf1ffb71a015948591edfc897ed2faeb",
+      "restore_member": "BOOT-INF/lib/ruoyi-ipd-3.1.0.jar"
+    },
+    {
+      "name": "anyline-data-8.7.2-20250603.jar",
+      "bytes": 606665,
+      "sha256": "fa867c1631887df7e56ef9f50027c384ad487b0ab457d5fdf8532c9518f0da8e",
+      "restore_member": "BOOT-INF/lib/anyline-data-8.7.2-20250603.jar"
+    },
+    {
+      "name": "jna-5.13.0.jar",
+      "bytes": 1879325,
+      "sha256": "66d4f819a062a51a1d5627bffc23fac55d1677f0e0a1feba144aabdd670a64bb",
+      "restore_member": "BOOT-INF/lib/jna-5.13.0.jar"
+    },
+    {
+      "name": "aws-xml-protocol-2.28.22.jar",
+      "bytes": 102270,
+      "sha256": "6068d2af7b42b22b1db8633c11a2bdcee5a014f4bf1d6384d7377b48c9c268ed",
+      "restore_member": "BOOT-INF/lib/aws-xml-protocol-2.28.22.jar"
+    },
+    {
+      "name": "snakeyaml-2.4.jar",
+      "bytes": 339825,
+      "sha256": "ef779af5d29a9dde8cc70ce0341f5c6f7735e23edff9685ceaa9d35359b7bb7f",
+      "restore_member": "BOOT-INF/lib/snakeyaml-2.4.jar"
+    },
+    {
+      "name": "retrofit-2.9.0.jar",
+      "bytes": 125435,
+      "sha256": "e6ea1929c46852f5bec66ab3357da383476cef4e8d1deefdbf195b79cc4d6581",
+      "restore_member": "BOOT-INF/lib/retrofit-2.9.0.jar"
+    },
+    {
+      "name": "dashscope-sdk-java-2.22.9.jar",
+      "bytes": 2695526,
+      "sha256": "963b1e342cca275b232c59fbdced5b7b4345815c38591ce02cbe2b8e3eaef838",
+      "restore_member": "BOOT-INF/lib/dashscope-sdk-java-2.22.9.jar"
+    },
+    {
+      "name": "ruoyi-common-ratelimiter-3.1.0.jar",
+      "bytes": 9528,
+      "sha256": "bc6bdbba7396596fb04c613d6b0f4326542701fea9db9ad0d4da92c0f040081c",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-ratelimiter-3.1.0.jar"
+    },
+    {
+      "name": "ruoyi-aiflow-3.1.0.jar",
+      "bytes": 395788,
+      "sha256": "8335971657c6067401bdfb60565b355788d8e250654c513af22e418a28e2e25c",
+      "restore_member": "BOOT-INF/lib/ruoyi-aiflow-3.1.0.jar"
+    },
+    {
+      "name": "bcprov-jdk18on-1.83.jar",
+      "bytes": 8492458,
+      "sha256": "82cf3a2af766c3bc874f6d36b9f20a8b99a8f09762dc776e8a227a45d8daaafb",
+      "restore_member": "BOOT-INF/lib/bcprov-jdk18on-1.83.jar"
+    },
+    {
+      "name": "okio-3.16.4.jar",
+      "bytes": 78430,
+      "sha256": "c9964f394c4cd32b79bf338afbfa2f2297221eee08311787061cea55f87dd60e",
+      "restore_member": "BOOT-INF/lib/okio-3.16.4.jar"
+    },
+    {
+      "name": "third-party-jackson-core-2.28.22.jar",
+      "bytes": 535001,
+      "sha256": "e009173c665ab2139aea7d4d5cab1a02225bcbaf4f250699973c2b2a16a7701a",
+      "restore_member": "BOOT-INF/lib/third-party-jackson-core-2.28.22.jar"
+    },
+    {
+      "name": "velocity-engine-core-2.3.jar",
+      "bytes": 531308,
+      "sha256": "b086cee8fd8183e240b4afcf54fe38ec33dd8eb0da414636e5bf7aa4d9856629",
+      "restore_member": "BOOT-INF/lib/velocity-engine-core-2.3.jar"
+    },
+    {
+      "name": "protobuf-java-4.29.3.jar",
+      "bytes": 1870554,
+      "sha256": "442db5991a11974d72127353be7d7e7abdf8d943d83b16668cb2e336d7392f54",
+      "restore_member": "BOOT-INF/lib/protobuf-java-4.29.3.jar"
+    },
+    {
+      "name": "jakarta.websocket-client-api-2.1.1.jar",
+      "bytes": 42635,
+      "sha256": "e8fe8c1dff948385a461dbc85dec5467cbe350f065ec1a0f3bfed53b79e7b102",
+      "restore_member": "BOOT-INF/lib/jakarta.websocket-client-api-2.1.1.jar"
+    },
+    {
+      "name": "ruoyi-common-encrypt-3.1.0.jar",
+      "bytes": 51216,
+      "sha256": "e3ca930c97ebed6f5308fb976b85d37218f0ad88625d51b0fc15dc7d8098b61f",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-encrypt-3.1.0.jar"
+    },
+    {
+      "name": "spring-boot-admin-client-3.5.5.jar",
+      "bytes": 60287,
+      "sha256": "16d986614751f43f563c859a70b8cd43aba2da3498ad9f9cf63407c213eb3b0c",
+      "restore_member": "BOOT-INF/lib/spring-boot-admin-client-3.5.5.jar"
+    },
+    {
+      "name": "animal-sniffer-annotations-1.23.jar",
+      "bytes": 3109,
+      "sha256": "9ffe526bf43a6348e9d8b33b9cd6f580a7f5eed0cf055913007eda263de974d0",
+      "restore_member": "BOOT-INF/lib/animal-sniffer-annotations-1.23.jar"
+    },
+    {
+      "name": "jul-to-slf4j-2.0.17.jar",
+      "bytes": 6349,
+      "sha256": "a7afcd23b9cfd1475e55c94f943b808c5922035e7e2c2a5c65a487a4106bc538",
+      "restore_member": "BOOT-INF/lib/jul-to-slf4j-2.0.17.jar"
+    },
+    {
+      "name": "parso-2.0.14.jar",
+      "bytes": 139008,
+      "sha256": "3b7e7a32915e04caed5dba31be1430aa57b4f9fa2b3d0ab0ed29067510d16575",
+      "restore_member": "BOOT-INF/lib/parso-2.0.14.jar"
+    },
+    {
+      "name": "spring-data-keyvalue-3.5.6.jar",
+      "bytes": 137532,
+      "sha256": "be47134a33fd70eb28a217c334c25fa846a5fa1b48f2e2cc74beb899ff19d26e",
+      "restore_member": "BOOT-INF/lib/spring-data-keyvalue-3.5.6.jar"
+    },
+    {
+      "name": "netty-codec-4.1.128.Final.jar",
+      "bytes": 357369,
+      "sha256": "d2aad8198820b1d0856fa93fe0ac6f1935bd950a48ab2b85e5b4adbdfc5fa7b4",
+      "restore_member": "BOOT-INF/lib/netty-codec-4.1.128.Final.jar"
+    },
+    {
+      "name": "lock4j-redisson-spring-boot-starter-2.2.7.jar",
+      "bytes": 5748,
+      "sha256": "612aff3029184d909d0d993983346bcf23c27a6af9f90aa37563f7aeb6f83a12",
+      "restore_member": "BOOT-INF/lib/lock4j-redisson-spring-boot-starter-2.2.7.jar"
+    },
+    {
+      "name": "kotlin-reflect-1.9.25.jar",
+      "bytes": 3222101,
+      "sha256": "0f8386ddfd69e7f454a1e6b90b271dccd901d96a257fdf633ecf052fb8951d9f",
+      "restore_member": "BOOT-INF/lib/kotlin-reflect-1.9.25.jar"
+    },
+    {
+      "name": "wildfly-client-config-1.0.1.Final.jar",
+      "bytes": 47396,
+      "sha256": "80a4e963ce94ebb043ecb0f2c0e77d327f23dc87d81350b863752eedfa2c3bb3",
+      "restore_member": "BOOT-INF/lib/wildfly-client-config-1.0.1.Final.jar"
+    },
+    {
+      "name": "JavaEWAH-1.2.3.jar",
+      "bytes": 170567,
+      "sha256": "d65226949713c4c61a784f41c51167e7b0316f93764398ebba9e4336b3d954c2",
+      "restore_member": "BOOT-INF/lib/JavaEWAH-1.2.3.jar"
+    },
+    {
+      "name": "okhttp-sse-5.3.2.jar",
+      "bytes": 14858,
+      "sha256": "3f1e0001ab6ae0f8e33c9c10a1243810fffb96418d23b193c11aeebd72bcf0fb",
+      "restore_member": "BOOT-INF/lib/okhttp-sse-5.3.2.jar"
+    },
+    {
+      "name": "logging-interceptor-5.3.2.jar",
+      "bytes": 19629,
+      "sha256": "86574a5e35f483e6d6ba97beaf84420996dffca19f4d5cf3a41636365d403239",
+      "restore_member": "BOOT-INF/lib/logging-interceptor-5.3.2.jar"
+    },
+    {
+      "name": "spring-tx-6.2.14.jar",
+      "bytes": 285555,
+      "sha256": "a6f754fba28d6210d5e32fc2d9ba73722bae64defa84eddc68da89bdcb021fb0",
+      "restore_member": "BOOT-INF/lib/spring-tx-6.2.14.jar"
+    },
+    {
+      "name": "hibernate-validator-8.0.3.Final.jar",
+      "bytes": 1330712,
+      "sha256": "2ad24670fd08e21d3f43d3105d5326bd5ef6b01e819c5cd103823866b954517e",
+      "restore_member": "BOOT-INF/lib/hibernate-validator-8.0.3.Final.jar"
+    },
+    {
+      "name": "gson-2.13.2.jar",
+      "bytes": 289901,
+      "sha256": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0",
+      "restore_member": "BOOT-INF/lib/gson-2.13.2.jar"
+    },
+    {
+      "name": "minlog-1.3.1.jar",
+      "bytes": 5923,
+      "sha256": "5d4d632cfbebfe0a7644501cc303570b691406181bee65e9916b921c767d7c72",
+      "restore_member": "BOOT-INF/lib/minlog-1.3.1.jar"
+    },
+    {
+      "name": "mcp-json-jackson2-0.17.2.jar",
+      "bytes": 9639,
+      "sha256": "dbe542c16244de30872ce5edcf1795ef4101acd4ac400e8c8081b0048feac0a7",
+      "restore_member": "BOOT-INF/lib/mcp-json-jackson2-0.17.2.jar"
+    },
+    {
+      "name": "opentelemetry-semconv-incubating-1.40.0-alpha.jar",
+      "bytes": 196838,
+      "sha256": "b73e725e970e3120670d3e64b8ff058fba495b0e8040b259b50dd38e030380e4",
+      "restore_member": "BOOT-INF/lib/opentelemetry-semconv-incubating-1.40.0-alpha.jar"
+    },
+    {
+      "name": "netty-transport-native-unix-common-4.1.128.Final.jar",
+      "bytes": 44326,
+      "sha256": "8563e2229149d942988d4a7a0ec7c01b9a05def52ad2844633de25c5c0a6869f",
+      "restore_member": "BOOT-INF/lib/netty-transport-native-unix-common-4.1.128.Final.jar"
+    },
+    {
+      "name": "http-auth-aws-eventstream-2.28.22.jar",
+      "bytes": 8705,
+      "sha256": "33135143c2f39bfc0a06bd925a2bf6dd569902d6533ed04703ebc59ebd2518b6",
+      "restore_member": "BOOT-INF/lib/http-auth-aws-eventstream-2.28.22.jar"
+    },
+    {
+      "name": "spring-boot-autoconfigure-3.5.8.jar",
+      "bytes": 2084153,
+      "sha256": "2fb1592cb9c16835525e46304fd35879cbacc9808656a6ea9635aadbf30261c8",
+      "restore_member": "BOOT-INF/lib/spring-boot-autoconfigure-3.5.8.jar"
+    },
+    {
+      "name": "warm-flow-mybatis-plus-sb-starter-1.8.2.jar",
+      "bytes": 4020,
+      "sha256": "7d5abce8fbbf7476b0ff7843473db40c39d953e4434d9bb4015e422c2403cab3",
+      "restore_member": "BOOT-INF/lib/warm-flow-mybatis-plus-sb-starter-1.8.2.jar"
+    },
+    {
+      "name": "nimbus-jose-jwt-10.0.2.jar",
+      "bytes": 800610,
+      "sha256": "960b978a6cd6cbc3319648adc73959789f6742a2bf1e8dd0c843dbc91624218a",
+      "restore_member": "BOOT-INF/lib/nimbus-jose-jwt-10.0.2.jar"
+    },
+    {
+      "name": "bcpkix-jdk18on-1.83.jar",
+      "bytes": 1161454,
+      "sha256": "d3c4c6b700c74ef8164bb15e549d939721b8f14fc0ff89fe19b220243bcfcbd8",
+      "restore_member": "BOOT-INF/lib/bcpkix-jdk18on-1.83.jar"
+    },
+    {
+      "name": "ruoyi-common-idempotent-3.1.0.jar",
+      "bytes": 8476,
+      "sha256": "909e597c793ead477210606490b9999bbdd3434c321094066088c02f71db3a52",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-idempotent-3.1.0.jar"
+    },
+    {
+      "name": "swagger-core-jakarta-2.2.36.jar",
+      "bytes": 251161,
+      "sha256": "4b05633d2dc70e39b2f075a3f1b1ab2220c5e0e88e8ebad124ef09fbe3a3ed95",
+      "restore_member": "BOOT-INF/lib/swagger-core-jakarta-2.2.36.jar"
+    },
+    {
+      "name": "kotlin-stdlib-jdk8-1.9.25.jar",
+      "bytes": 967,
+      "sha256": "f94fdf78390ce9be30383bf039c5a935caea33b11f037fc7f86bbcee19287e5a",
+      "restore_member": "BOOT-INF/lib/kotlin-stdlib-jdk8-1.9.25.jar"
+    },
+    {
+      "name": "mybatis-plus-spring-3.5.14.jar",
+      "bytes": 30704,
+      "sha256": "6fb3cb9853690a294b81cdb398347dde434ac96eb8e59980b9029d4be786ee61",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-spring-3.5.14.jar"
+    },
+    {
+      "name": "ehcache-3.10.9.jar",
+      "bytes": 2321120,
+      "sha256": "f22d97693b02b5b95169799340c009862f4935082130b630bb64780dbafaf718",
+      "restore_member": "BOOT-INF/lib/ehcache-3.10.9.jar"
+    },
+    {
+      "name": "jsoup-1.21.2.jar",
+      "bytes": 500363,
+      "sha256": "f05496e255734759f0d4b5632da7b24f81313147c78c69e90ad045d096191344",
+      "restore_member": "BOOT-INF/lib/jsoup-1.21.2.jar"
+    },
+    {
+      "name": "therapi-runtime-javadoc-0.15.0.jar",
+      "bytes": 87751,
+      "sha256": "9cdcc9b96de1d0077e9df14a637bea96ad564730159e256f250ce72c4c105d34",
+      "restore_member": "BOOT-INF/lib/therapi-runtime-javadoc-0.15.0.jar"
+    },
+    {
+      "name": "openai-java-client-okhttp-4.8.0.jar",
+      "bytes": 32931,
+      "sha256": "ab9c39d43745ab017dbe65f76e4b1f07b814515114582722884f48a38e9d19ed",
+      "restore_member": "BOOT-INF/lib/openai-java-client-okhttp-4.8.0.jar"
+    },
+    {
+      "name": "adapter-rxjava2-2.9.0.jar",
+      "bytes": 14396,
+      "sha256": "e8b76fa20c7a69d2069b72b3cc71c23c259b27e3b809fa67255a2921558cfb4b",
+      "restore_member": "BOOT-INF/lib/adapter-rxjava2-2.9.0.jar"
+    },
+    {
+      "name": "org.eclipse.jgit-7.6.0.202603022253-r.jar",
+      "bytes": 3381453,
+      "sha256": "a19bf441905167b3ae6a5dd58f1954abfb243add420e3820705dd5bde3e35603",
+      "restore_member": "BOOT-INF/lib/org.eclipse.jgit-7.6.0.202603022253-r.jar"
+    },
+    {
+      "name": "swagger-models-jakarta-2.2.36.jar",
+      "bytes": 140032,
+      "sha256": "bcf9adc6c86c9082aec573987b9ed09e2254392a5c84e5b4972dd57f5ca66997",
+      "restore_member": "BOOT-INF/lib/swagger-models-jakarta-2.2.36.jar"
+    },
+    {
+      "name": "proto-google-common-protos-2.29.0.jar",
+      "bytes": 2030846,
+      "sha256": "ee9c751f06b112e92b37f75e4f73a17d03ef2c3302c6e8d986adbcc721b63cb0",
+      "restore_member": "BOOT-INF/lib/proto-google-common-protos-2.29.0.jar"
+    },
+    {
+      "name": "jackson-dataformat-yaml-2.19.4.jar",
+      "bytes": 60229,
+      "sha256": "998e652806c49ca59e2b6432c4edc37580c4702cb6189d10e6053d0b7982c2e7",
+      "restore_member": "BOOT-INF/lib/jackson-dataformat-yaml-2.19.4.jar"
+    },
+    {
+      "name": "hutool-jwt-5.8.40.jar",
+      "bytes": 22949,
+      "sha256": "89cedf619f872446a3e94307ea29cdcafee7bbc83e56bd940fbb646f409d8615",
+      "restore_member": "BOOT-INF/lib/hutool-jwt-5.8.40.jar"
+    },
+    {
+      "name": "poi-ooxml-5.5.1.jar",
+      "bytes": 2052603,
+      "sha256": "bd7be2fdfe3fd2c1684fa813351c2798fd636b44f6236e0674500d4f8ff1c2f9",
+      "restore_member": "BOOT-INF/lib/poi-ooxml-5.5.1.jar"
+    },
+    {
+      "name": "warm-flow-plugin-ui-core-1.8.2.jar",
+      "bytes": 25212,
+      "sha256": "727c8a6ef6cbc81cbc963ccb1ab1ca9e1a1bc5d7c982e6ce435d9aa9908536a7",
+      "restore_member": "BOOT-INF/lib/warm-flow-plugin-ui-core-1.8.2.jar"
+    },
+    {
+      "name": "j2objc-annotations-2.8.jar",
+      "bytes": 9301,
+      "sha256": "f02a95fa1a5e95edb3ed859fd0fb7df709d121a35290eff8b74dce2ab7f4d6ed",
+      "restore_member": "BOOT-INF/lib/j2objc-annotations-2.8.jar"
+    },
+    {
+      "name": "okio-jvm-3.16.4.jar",
+      "bytes": 383010,
+      "sha256": "2196b993cd34dbbd919e7e01f57a4781b58bee80f86106163e287c20343a96a7",
+      "restore_member": "BOOT-INF/lib/okio-jvm-3.16.4.jar"
+    },
+    {
+      "name": "smallrye-common-annotation-2.6.0.jar",
+      "bytes": 7509,
+      "sha256": "da783e44d5796134f751384d4ceb76ec89817c3ff19bc6e752151f9d0c2e3510",
+      "restore_member": "BOOT-INF/lib/smallrye-common-annotation-2.6.0.jar"
+    },
+    {
+      "name": "spring-expression-6.2.14.jar",
+      "bytes": 317834,
+      "sha256": "49a709799f0c5ca912ee845058a2ff82c8d5faf2dd05cd46105cda4ef8e6a6d0",
+      "restore_member": "BOOT-INF/lib/spring-expression-6.2.14.jar"
+    },
+    {
+      "name": "anyline-log-8.7.2-20250603.jar",
+      "bytes": 3449,
+      "sha256": "b97614990840a3d5fefb0a8d851fbce532f029d57f776227deb914c46ed23b36",
+      "restore_member": "BOOT-INF/lib/anyline-log-8.7.2-20250603.jar"
+    },
+    {
+      "name": "tika-parser-mail-commons-3.3.0.jar",
+      "bytes": 15477,
+      "sha256": "bf05c0f8fc94991ae949a8ba433158c56147487cc19c3af634d149314ea94099",
+      "restore_member": "BOOT-INF/lib/tika-parser-mail-commons-3.3.0.jar"
+    },
+    {
+      "name": "swagger-annotations-2.2.8.jar",
+      "bytes": 42083,
+      "sha256": "0afcdfe4a7775fcce51d105b8f7c8ca514676c16bea571423503d838777f11dd",
+      "restore_member": "BOOT-INF/lib/swagger-annotations-2.2.8.jar"
+    },
+    {
+      "name": "neo4j-bolt-connection-pooled-6.0.2.jar",
+      "bytes": 24501,
+      "sha256": "b817e374f88013f348dca36b83c1c0352fe4a3ca3aca66f9772b658e6b6c9702",
+      "restore_member": "BOOT-INF/lib/neo4j-bolt-connection-pooled-6.0.2.jar"
+    },
+    {
+      "name": "sdk-core-2.28.22.jar",
+      "bytes": 969041,
+      "sha256": "8fdb3eaab4777b19414ff4e971fb56b2f8293c26f231ba4836259ccc190676fa",
+      "restore_member": "BOOT-INF/lib/sdk-core-2.28.22.jar"
+    },
+    {
+      "name": "rome-utils-2.1.0.jar",
+      "bytes": 8734,
+      "sha256": "6e1c3b022dff4cf7492acddbba22356f424ade3d869a42a2a4d74a28454334a4",
+      "restore_member": "BOOT-INF/lib/rome-utils-2.1.0.jar"
+    },
+    {
+      "name": "webjars-locator-lite-1.1.2.jar",
+      "bytes": 8590,
+      "sha256": "47558475838d64b24a6478164a54b804db18a7e7bb199a9f632ba2bf0d30dae3",
+      "restore_member": "BOOT-INF/lib/webjars-locator-lite-1.1.2.jar"
+    },
+    {
+      "name": "ruoyi-common-tenant-3.1.0.jar",
+      "bytes": 23472,
+      "sha256": "b43169530327422e45bbcce91c7ac8cc10cddcf32bc6bdafff0f8f07ace97abd",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-tenant-3.1.0.jar"
+    },
+    {
+      "name": "objenesis-3.3.jar",
+      "bytes": 49423,
+      "sha256": "02dfd0b0439a5591e35b708ed2f5474eb0948f53abf74637e959b8e4ef69bfeb",
+      "restore_member": "BOOT-INF/lib/objenesis-3.3.jar"
+    },
+    {
+      "name": "tika-parser-pdf-module-3.3.0.jar",
+      "bytes": 144302,
+      "sha256": "4230cb35e2692e6cc0ff3010679e0b3fdb6d321a4f80bfcd52cc03ad56af1d92",
+      "restore_member": "BOOT-INF/lib/tika-parser-pdf-module-3.3.0.jar"
+    },
+    {
+      "name": "knife4j-core-4.4.0.jar",
+      "bytes": 59318,
+      "sha256": "ec9d540ba371bb1efe0087f26822c837b23ea88035a357310a7fb7bcbb7d5105",
+      "restore_member": "BOOT-INF/lib/knife4j-core-4.4.0.jar"
+    },
+    {
+      "name": "testcontainers-1.21.3.jar",
+      "bytes": 17790130,
+      "sha256": "ef934ddac6f42759d71c303a2844544a56cf381b33437149955d3d8c992bec5d",
+      "restore_member": "BOOT-INF/lib/testcontainers-1.21.3.jar"
+    },
+    {
+      "name": "anyline-core-8.7.2-20250603.jar",
+      "bytes": 1508049,
+      "sha256": "aef949c53f06148ca1d9efd8126d2b6eb1051f973a9ed2381dd127fb314fda9c",
+      "restore_member": "BOOT-INF/lib/anyline-core-8.7.2-20250603.jar"
+    },
+    {
+      "name": "httpcore-nio-4.4.16.jar",
+      "bytes": 368896,
+      "sha256": "4018736ede2d321034e8517ea90baefb31831a8608afccc446d8a699fb1d00d4",
+      "restore_member": "BOOT-INF/lib/httpcore-nio-4.4.16.jar"
+    },
+    {
+      "name": "mcp-0.17.2.jar",
+      "bytes": 1853,
+      "sha256": "03933059322e5d64f2d305701338f0a3b894a2c983079b44b675b63ea12798b0",
+      "restore_member": "BOOT-INF/lib/mcp-0.17.2.jar"
+    },
+    {
+      "name": "springdoc-openapi-starter-webmvc-api-2.8.13.jar",
+      "bytes": 42580,
+      "sha256": "ed09c7fe7b4a68e0e0408f89b157f607e10e9374815067de3d04675abce1e4b9",
+      "restore_member": "BOOT-INF/lib/springdoc-openapi-starter-webmvc-api-2.8.13.jar"
+    },
+    {
+      "name": "activation-1.1.1.jar",
+      "bytes": 69409,
+      "sha256": "ae475120e9fcd99b4b00b38329bd61cdc5eb754eee03fe66c01f50e137724f99",
+      "restore_member": "BOOT-INF/lib/activation-1.1.1.jar"
+    },
+    {
+      "name": "tika-parser-ocr-module-3.3.0.jar",
+      "bytes": 40091,
+      "sha256": "f8e422542094fe088471a27b66f468765af20e23c2a929e6a680a9b925603e05",
+      "restore_member": "BOOT-INF/lib/tika-parser-ocr-module-3.3.0.jar"
+    },
+    {
+      "name": "spring-websocket-6.2.14.jar",
+      "bytes": 445252,
+      "sha256": "d81971e780337973e51f2bb54a791ce593274cd1ab47697ef9e65ecd890b7b78",
+      "restore_member": "BOOT-INF/lib/spring-websocket-6.2.14.jar"
+    },
+    {
+      "name": "avatar-generator-1.1.0.jar",
+      "bytes": 55014,
+      "sha256": "68cae097b2a0dc071141236061064b8a5c448d6f4697e24e15e9be25164544d9",
+      "restore_member": "BOOT-INF/lib/avatar-generator-1.1.0.jar"
+    },
+    {
+      "name": "JustAuth-1.16.7.jar",
+      "bytes": 330653,
+      "sha256": "e82b0d26422846a0f7d2a7b202b4943a5c5b173656889eea4924d122a1e2a866",
+      "restore_member": "BOOT-INF/lib/JustAuth-1.16.7.jar"
+    },
+    {
+      "name": "xmpcore-6.1.11.jar",
+      "bytes": 142953,
+      "sha256": "8f7033c579b99fa0d9d6ddcb9448875b5e4b577c350002278ce46997d678b737",
+      "restore_member": "BOOT-INF/lib/xmpcore-6.1.11.jar"
+    },
+    {
+      "name": "jhighlight-1.1.1.jar",
+      "bytes": 238829,
+      "sha256": "eb53b74cb90817d62147ac5b68add72cd4b361c91a27ea845bb0b16ae929a8b6",
+      "restore_member": "BOOT-INF/lib/jhighlight-1.1.1.jar"
+    },
+    {
+      "name": "weaviate-1.21.3.jar",
+      "bytes": 1924,
+      "sha256": "092872d73626bf60e2f90077907ec6ca7c170524b0baf4e039824142c8ecf6ad",
+      "restore_member": "BOOT-INF/lib/weaviate-1.21.3.jar"
+    },
+    {
+      "name": "jsqlparser-5.2.jar",
+      "bytes": 1236910,
+      "sha256": "e10ade9feefcfb9ab1b8e33d9222b992b4ef2f494537edc4180494188a0c39a5",
+      "restore_member": "BOOT-INF/lib/jsqlparser-5.2.jar"
+    },
+    {
+      "name": "jakarta.json-api-2.1.3.jar",
+      "bytes": 48629,
+      "sha256": "bc934142805ea1d794f1440563965a3861a2a9fb7414ecd3fe44f26500734414",
+      "restore_member": "BOOT-INF/lib/jakarta.json-api-2.1.3.jar"
+    },
+    {
+      "name": "netty-resolver-4.1.128.Final.jar",
+      "bytes": 37903,
+      "sha256": "3ac2b8f0a00fec785a0648172fbb8bac6a8e8f54e7d5aa958790e5de70504b6b",
+      "restore_member": "BOOT-INF/lib/netty-resolver-4.1.128.Final.jar"
+    },
+    {
+      "name": "txw2-4.0.6.jar",
+      "bytes": 73265,
+      "sha256": "fcc749785412ef3806fde1ce70f93ef5a0065dcc47fe449bc871db0795cb11af",
+      "restore_member": "BOOT-INF/lib/txw2-4.0.6.jar"
+    },
+    {
+      "name": "mybatis-plus-extension-3.5.14.jar",
+      "bytes": 178947,
+      "sha256": "4be8d2fca173af32174f655cae9b818a1f0bd42fe7d5cba085468978bab32dfd",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-extension-3.5.14.jar"
+    },
+    {
+      "name": "swagger-ui-5.28.1.jar",
+      "bytes": 1137097,
+      "sha256": "34317fd577413ca3c417bda911e936fe57db0a685c26a2f9871668209e111767",
+      "restore_member": "BOOT-INF/lib/swagger-ui-5.28.1.jar"
+    },
+    {
+      "name": "netty-resolver-dns-4.1.128.Final.jar",
+      "bytes": 188347,
+      "sha256": "271c27748fcae5e68bee74af81a150d1c40b4c213d836dcb15843c090a452c4a",
+      "restore_member": "BOOT-INF/lib/netty-resolver-dns-4.1.128.Final.jar"
+    },
+    {
+      "name": "asm-9.7.1.jar",
+      "bytes": 126093,
+      "sha256": "8cadd43ac5eb6d09de05faecca38b917a040bb9139c7edeb4cc81c740b713281",
+      "restore_member": "BOOT-INF/lib/asm-9.7.1.jar"
+    },
+    {
+      "name": "poi-ooxml-lite-5.5.1.jar",
+      "bytes": 5995475,
+      "sha256": "e6e37adeb6d6ee8b40ec491ad955d934d8f99827ab050f105b18286e59b1d9e7",
+      "restore_member": "BOOT-INF/lib/poi-ooxml-lite-5.5.1.jar"
+    },
+    {
+      "name": "zstd-jni-1.5.7-4.jar",
+      "bytes": 7409448,
+      "sha256": "e7f064bf1eab83fa785cf587f657f09649e3b0af6f27caa5382416953b5a35f8",
+      "restore_member": "BOOT-INF/lib/zstd-jni-1.5.7-4.jar"
+    },
+    {
+      "name": "prometheus-metrics-config-1.3.10.jar",
+      "bytes": 33388,
+      "sha256": "d20ea739f1af130d67d6a8e67a0fd00169cd4e62dca7fa29c5f2ae656b7587f9",
+      "restore_member": "BOOT-INF/lib/prometheus-metrics-config-1.3.10.jar"
+    },
+    {
+      "name": "spring-webmvc-6.2.14.jar",
+      "bytes": 1092437,
+      "sha256": "56ea9178217399f2ddc399c00338152003da6dbf9a75fe0f986ea064613798a1",
+      "restore_member": "BOOT-INF/lib/spring-webmvc-6.2.14.jar"
+    },
+    {
+      "name": "kotlin-stdlib-1.9.25.jar",
+      "bytes": 1718956,
+      "sha256": "f9cdcdbff1f5de85380ae526977e683726c2aa42db1ed6e6e50ae89e496e95fd",
+      "restore_member": "BOOT-INF/lib/kotlin-stdlib-1.9.25.jar"
+    },
+    {
+      "name": "jakarta.mail-api-2.1.5.jar",
+      "bytes": 237267,
+      "sha256": "aa493753acb7a8c45ba8f4c9cf1230a74e20237056dd5b5c8bc86c583e8cfa0e",
+      "restore_member": "BOOT-INF/lib/jakarta.mail-api-2.1.5.jar"
+    },
+    {
+      "name": "sms4j-provider-3.3.5.jar",
+      "bytes": 209218,
+      "sha256": "eb92105fddc2e06b402c2657b0fc13ad8f65b4627f6f1e03670ff42f439535d9",
+      "restore_member": "BOOT-INF/lib/sms4j-provider-3.3.5.jar"
+    },
+    {
+      "name": "milvus-sdk-java-2.6.17.jar",
+      "bytes": 6001475,
+      "sha256": "3e493d64fa094a0d1034195133be16fbb8d8ca390e896d34e8d04e5bd88f180b",
+      "restore_member": "BOOT-INF/lib/milvus-sdk-java-2.6.17.jar"
+    },
+    {
+      "name": "neo4j-java-driver-5.28.10.jar",
+      "bytes": 579284,
+      "sha256": "79e95c1280b931be54377473033e54fb4d6a8cbc1d33eb7c2d5664656a8a8877",
+      "restore_member": "BOOT-INF/lib/neo4j-java-driver-5.28.10.jar"
+    },
+    {
+      "name": "jackson-module-parameter-names-2.19.4.jar",
+      "bytes": 10394,
+      "sha256": "91a1f2f1b595c4d5c902a7d6d383354a3ba9bf87b19bdf1d473f55306f79c6e5",
+      "restore_member": "BOOT-INF/lib/jackson-module-parameter-names-2.19.4.jar"
+    },
+    {
+      "name": "netty-nio-client-2.28.22.jar",
+      "bytes": 287571,
+      "sha256": "62e45e6e73bbff90e6f015d9e06e0c4e5d9df1b74e91578043a0569aee42777d",
+      "restore_member": "BOOT-INF/lib/netty-nio-client-2.28.22.jar"
+    },
+    {
+      "name": "retries-spi-2.28.22.jar",
+      "bytes": 31271,
+      "sha256": "ac5a8f62d6eb4971e7a6c84ad87f035cbecad3a6743ead3add9b5091c6241dd7",
+      "restore_member": "BOOT-INF/lib/retries-spi-2.28.22.jar"
+    },
+    {
+      "name": "sms4j-comm-3.3.5.jar",
+      "bytes": 18959,
+      "sha256": "e8cf994dd42185877b6909ae5ab9c37f3082c492e10ad64328f929d470f1cd44",
+      "restore_member": "BOOT-INF/lib/sms4j-comm-3.3.5.jar"
+    },
+    {
+      "name": "itu-1.14.0.jar",
+      "bytes": 57633,
+      "sha256": "5cf40ab0cc77828ab2b875b1f3ecd71c8295d7721933476abc2e08fddcea164a",
+      "restore_member": "BOOT-INF/lib/itu-1.14.0.jar"
+    },
+    {
+      "name": "juniversalchardet-2.5.0.jar",
+      "bytes": 245229,
+      "sha256": "ceb271653ed99e15ffe52e4aedecdef8918434f19a4378a67f7ebe0ea8439058",
+      "restore_member": "BOOT-INF/lib/juniversalchardet-2.5.0.jar"
+    },
+    {
+      "name": "jboss-logging-3.6.1.Final.jar",
+      "bytes": 61853,
+      "sha256": "5e08a4b092dc85b337f0910a740571d8720cfa565fabd880a8caf94a657ca416",
+      "restore_member": "BOOT-INF/lib/jboss-logging-3.6.1.Final.jar"
+    },
+    {
+      "name": "tika-parser-apple-module-3.3.0.jar",
+      "bytes": 59023,
+      "sha256": "df3d63e218d28f9253dffae9579165db38b246ddf133e1633e281872211663a7",
+      "restore_member": "BOOT-INF/lib/tika-parser-apple-module-3.3.0.jar"
+    },
+    {
+      "name": "lombok-1.18.40.jar",
+      "bytes": 2029451,
+      "sha256": "b764c3a1b0c86748c9e2e80d64e03d45402ce3edeb631fa81e30a56bffa6daf3",
+      "restore_member": "BOOT-INF/lib/lombok-1.18.40.jar"
+    },
+    {
+      "name": "sa-token-jakarta-servlet-1.44.0.jar",
+      "bytes": 9669,
+      "sha256": "d92b25147d9ef3c1f08ecc23ca68bb1e27b03702a5a9507a72fd8dc6720706ec",
+      "restore_member": "BOOT-INF/lib/sa-token-jakarta-servlet-1.44.0.jar"
+    },
+    {
+      "name": "ruoyi-system-3.1.0.jar",
+      "bytes": 719643,
+      "sha256": "65ab42cad59842beddcc72bc4b473249cde12f9fab0738b190adb1879f19a194",
+      "restore_member": "BOOT-INF/lib/ruoyi-system-3.1.0.jar"
+    },
+    {
+      "name": "grpc-api-1.62.2.jar",
+      "bytes": 297099,
+      "sha256": "2e896944cf513e0e5cfd32bcd72c89601a27c6ca56916f84b20f3a13bacf1b1f",
+      "restore_member": "BOOT-INF/lib/grpc-api-1.62.2.jar"
+    },
+    {
+      "name": "spring-messaging-6.2.14.jar",
+      "bytes": 618730,
+      "sha256": "c1469220b9bd60a7a5cedd5e6b93331a766083408461560bbd5fb4352365a833",
+      "restore_member": "BOOT-INF/lib/spring-messaging-6.2.14.jar"
+    },
+    {
+      "name": "ruoyi-common-satoken-3.1.0.jar",
+      "bytes": 17000,
+      "sha256": "4d6fbd18331054b32122aa3ea94898270c53f78976134673246b1d8158f3fe18",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-satoken-3.1.0.jar"
+    },
+    {
+      "name": "tika-parser-mail-module-3.3.0.jar",
+      "bytes": 27320,
+      "sha256": "7b6c4621a3a7c43476a82d372383dcb8d07331d081770fc5ea59aa3c1272fc33",
+      "restore_member": "BOOT-INF/lib/tika-parser-mail-module-3.3.0.jar"
+    },
+    {
+      "name": "mcp-json-0.17.2.jar",
+      "bytes": 10304,
+      "sha256": "6df99ef400836bd213d63895684eb066d36e1a9b759bd38342c32a6b9b0b6e4f",
+      "restore_member": "BOOT-INF/lib/mcp-json-0.17.2.jar"
+    },
+    {
+      "name": "tika-parser-image-module-3.3.0.jar",
+      "bytes": 62512,
+      "sha256": "866be0e0d13f6bbade66abf0578ecbb23abf01a6dc2b6cf4de55aa01e6eadf8c",
+      "restore_member": "BOOT-INF/lib/tika-parser-image-module-3.3.0.jar"
+    },
+    {
+      "name": "jspecify-1.0.0.jar",
+      "bytes": 3819,
+      "sha256": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab",
+      "restore_member": "BOOT-INF/lib/jspecify-1.0.0.jar"
+    },
+    {
+      "name": "bcutil-jdk18on-1.83.jar",
+      "bytes": 707261,
+      "sha256": "ee7d0eb4e74de70a735f7fb36b604dd5c6ad35720d50b914604db042114a0185",
+      "restore_member": "BOOT-INF/lib/bcutil-jdk18on-1.83.jar"
+    },
+    {
+      "name": "agentscope-extensions-model-dashscope-2.0.3.jar",
+      "bytes": 126064,
+      "sha256": "d6ce6ca7720a1425c01ece4777e4dd6c42eda9b35367b148f17c07185ee8965f",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-model-dashscope-2.0.3.jar"
+    },
+    {
+      "name": "mapstruct-plus-1.5.0.jar",
+      "bytes": 30512,
+      "sha256": "e860bb8f2cf38d708b9208e2f5d9eceb585dd75c181d87452b87392a18336b8f",
+      "restore_member": "BOOT-INF/lib/mapstruct-plus-1.5.0.jar"
+    },
+    {
+      "name": "s3-2.28.22.jar",
+      "bytes": 3619525,
+      "sha256": "a3a8ebb3091723ff2e525de6ed60c7e82332dc66633526d9e8ab8d23ad5e5787",
+      "restore_member": "BOOT-INF/lib/s3-2.28.22.jar"
+    },
+    {
+      "name": "HdrHistogram-2.2.2.jar",
+      "bytes": 177206,
+      "sha256": "22d1d4316c4ec13a68b559e98c8256d69071593731da96136640f864fa14fad8",
+      "restore_member": "BOOT-INF/lib/HdrHistogram-2.2.2.jar"
+    },
+    {
+      "name": "opencensus-api-0.31.1.jar",
+      "bytes": 355405,
+      "sha256": "f1474d47f4b6b001558ad27b952e35eda5cc7146788877fc52938c6eba24b382",
+      "restore_member": "BOOT-INF/lib/opencensus-api-0.31.1.jar"
+    },
+    {
+      "name": "ruoyi-common-mail-3.1.0.jar",
+      "bytes": 14037,
+      "sha256": "7c1bcbfff6ee1cd1e146869254396732329bfb20fd69ca239b709ec4ed43e607",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-mail-3.1.0.jar"
+    },
+    {
+      "name": "netty-codec-http2-4.1.128.Final.jar",
+      "bytes": 499528,
+      "sha256": "4679b5de556ae5458733f844657d912de21fdb969724b6cbd5b1942aa094c9e6",
+      "restore_member": "BOOT-INF/lib/netty-codec-http2-4.1.128.Final.jar"
+    },
+    {
+      "name": "undertow-servlet-2.3.20.Final.jar",
+      "bytes": 525694,
+      "sha256": "0b8b0d5b9a9d9d4e6ffb748681e1026a1453d709530e673391407945decf01bd",
+      "restore_member": "BOOT-INF/lib/undertow-servlet-2.3.20.Final.jar"
+    },
+    {
+      "name": "commons-io-2.16.1.jar",
+      "bytes": 508826,
+      "sha256": "f41f7baacd716896447ace9758621f62c1c6b0a91d89acee488da26fc477c84f",
+      "restore_member": "BOOT-INF/lib/commons-io-2.16.1.jar"
+    },
+    {
+      "name": "neo4j-bolt-connection-routed-6.0.2.jar",
+      "bytes": 61996,
+      "sha256": "5301c92aee13ac5b10a2e8626b017523ac05e91e5dee1f904f183376dd8d7e5e",
+      "restore_member": "BOOT-INF/lib/neo4j-bolt-connection-routed-6.0.2.jar"
+    },
+    {
+      "name": "agentscope-extensions-model-openai-2.0.3.jar",
+      "bytes": 141871,
+      "sha256": "ecfb8f439eeb1f82dedada75817fd470212a195448e0186eedc6c6b98f5e5c4f",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-model-openai-2.0.3.jar"
+    },
+    {
+      "name": "poi-ooxml-full-5.5.1.jar",
+      "bytes": 14246039,
+      "sha256": "dbc7c6e6108ceb9f151c2fc866a2b287d48af3a10b05425da21315eec16ce022",
+      "restore_member": "BOOT-INF/lib/poi-ooxml-full-5.5.1.jar"
+    },
+    {
+      "name": "elasticsearch-java-8.18.8.jar",
+      "bytes": 14194208,
+      "sha256": "b80faabcc96e769c14a3dad7ec9483819e8d70ba0390a4cdebc4404eb572a2d6",
+      "restore_member": "BOOT-INF/lib/elasticsearch-java-8.18.8.jar"
+    },
+    {
+      "name": "mybatis-plus-spring-boot-autoconfigure-3.5.14.jar",
+      "bytes": 39098,
+      "sha256": "9dba8513d98c3d0307c19ae3727aa2c40ec8466cf2d959cbad98e57bedecd2fd",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-spring-boot-autoconfigure-3.5.14.jar"
+    },
+    {
+      "name": "spring-data-commons-3.5.6.jar",
+      "bytes": 1525209,
+      "sha256": "c39f4574d3ed9d463c078e7fa4899ea393fe3f6c8aed0fdbf164661a5cf4f5a7",
+      "restore_member": "BOOT-INF/lib/spring-data-commons-3.5.6.jar"
+    },
+    {
+      "name": "tika-parser-code-module-3.3.0.jar",
+      "bytes": 36861,
+      "sha256": "f36b6cc765feaa12e9d2aba4d3802e93a361c26ae250fc8d8abea887aef0c8a0",
+      "restore_member": "BOOT-INF/lib/tika-parser-code-module-3.3.0.jar"
+    },
+    {
+      "name": "prometheus-metrics-model-1.3.10.jar",
+      "bytes": 90912,
+      "sha256": "945ace48cc8d9d09f87bac0d8fbbc13e70b29c5c74b103c6fee0b9df09343148",
+      "restore_member": "BOOT-INF/lib/prometheus-metrics-model-1.3.10.jar"
+    },
+    {
+      "name": "hutool-core-5.8.40.jar",
+      "bytes": 1500560,
+      "sha256": "d6bedc908cba480cd12dbe6f8422fa60c0da31030b58a68c3c077f555fc0cbbc",
+      "restore_member": "BOOT-INF/lib/hutool-core-5.8.40.jar"
+    },
+    {
+      "name": "jsonschema-module-jackson-4.38.0.jar",
+      "bytes": 33871,
+      "sha256": "36fbd3f1c27379c3ba8420ac2cb0b42411f7bc3b3df8bdd11d8d7e024a1c28ca",
+      "restore_member": "BOOT-INF/lib/jsonschema-module-jackson-4.38.0.jar"
+    },
+    {
+      "name": "p6spy-3.9.1.jar",
+      "bytes": 128891,
+      "sha256": "197aa64a6676da578dac1097824accda7a89d5ab21c0829e05bfde92a176f4a1",
+      "restore_member": "BOOT-INF/lib/p6spy-3.9.1.jar"
+    },
+    {
+      "name": "sms4j-spring-boot-starter-3.3.5.jar",
+      "bytes": 16280,
+      "sha256": "a4a6634188398d91fe4c45277fcc0e7dec26dd742fa8a2ec9b7e9eab96f4cc00",
+      "restore_member": "BOOT-INF/lib/sms4j-spring-boot-starter-3.3.5.jar"
+    },
+    {
+      "name": "undertow-websockets-jsr-2.3.20.Final.jar",
+      "bytes": 174447,
+      "sha256": "dc50faec5be7e8a8037df3a2945b37905523413ac592d29afb90b7c85909e5b6",
+      "restore_member": "BOOT-INF/lib/undertow-websockets-jsr-2.3.20.Final.jar"
+    },
+    {
+      "name": "xnio-api-3.8.16.Final.jar",
+      "bytes": 588677,
+      "sha256": "3572098fe1687dabd90f0222080fb158f63ca771c42ef1d39974434849f78bc4",
+      "restore_member": "BOOT-INF/lib/xnio-api-3.8.16.Final.jar"
+    },
+    {
+      "name": "tika-parser-zip-commons-3.3.0.jar",
+      "bytes": 42959,
+      "sha256": "77a69900d4585d101862fc14a0c5bae6860c1fda1a49f1e1cf2591742d3f1400",
+      "restore_member": "BOOT-INF/lib/tika-parser-zip-commons-3.3.0.jar"
+    },
+    {
+      "name": "jackson-databind-2.19.4.jar",
+      "bytes": 1679441,
+      "sha256": "b781c431be870deb0bf84421e99e774c256a701f4ba678df80248f55cd16ff74",
+      "restore_member": "BOOT-INF/lib/jackson-databind-2.19.4.jar"
+    },
+    {
+      "name": "junrar-7.5.8.jar",
+      "bytes": 163902,
+      "sha256": "7d45487c6f83f2e5e4eaf03b9ab700df468d5b278230cea0642bdd0b5f995e61",
+      "restore_member": "BOOT-INF/lib/junrar-7.5.8.jar"
+    },
+    {
+      "name": "guava-33.1.0-jre.jar",
+      "bytes": 3053247,
+      "sha256": "346aec0eb8c8987360c8a264e70ff10c2fba760446eb27e8ab07e78e787a75fe",
+      "restore_member": "BOOT-INF/lib/guava-33.1.0-jre.jar"
+    },
+    {
+      "name": "aws-core-2.28.22.jar",
+      "bytes": 177960,
+      "sha256": "1a43bfd0c7c5e02092ed7da94bf91cbc0223b826486c113fbe3e3e8093d79933",
+      "restore_member": "BOOT-INF/lib/aws-core-2.28.22.jar"
+    },
+    {
+      "name": "lang-tag-1.7.jar",
+      "bytes": 11170,
+      "sha256": "e8c1c594e2425bdbea2d860de55c69b69fc5d59454452449a0f0913c2a5b8a31",
+      "restore_member": "BOOT-INF/lib/lang-tag-1.7.jar"
+    },
+    {
+      "name": "jackson-annotations-2.19.4.jar",
+      "bytes": 79311,
+      "sha256": "ab26383fa3c10c0df1ffd1bb035d81161c059b1af71927d73c24473c058baa16",
+      "restore_member": "BOOT-INF/lib/jackson-annotations-2.19.4.jar"
+    },
+    {
+      "name": "opentelemetry-instrumentation-annotations-support-2.27.0-alpha.jar",
+      "bytes": 33859,
+      "sha256": "e144b9e11b70d2c0090ab0ccf32432e78f8311910f31b6a304d9cb90a2e02e17",
+      "restore_member": "BOOT-INF/lib/opentelemetry-instrumentation-annotations-support-2.27.0-alpha.jar"
+    },
+    {
+      "name": "ruoyi-common-security-3.1.0.jar",
+      "bytes": 11548,
+      "sha256": "76ca2dfee4ea0a8900e53ff4f3144daf332ac73950772e458df43c8fef5a1951",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-security-3.1.0.jar"
+    },
+    {
+      "name": "pgvector-0.1.6.jar",
+      "bytes": 11768,
+      "sha256": "3ccd6a4114e9cbc9f811419bebf41df51d8963a742b7e495d51a7afc6c795504",
+      "restore_member": "BOOT-INF/lib/pgvector-0.1.6.jar"
+    },
+    {
+      "name": "commons-csv-1.11.0.jar",
+      "bytes": 56173,
+      "sha256": "b697fe3f94cfc4f7e2a87bddf78d15cd10d8c86cbe56ae9196a62d6edbf6b76d",
+      "restore_member": "BOOT-INF/lib/commons-csv-1.11.0.jar"
+    },
+    {
+      "name": "micrometer-observation-1.15.6.jar",
+      "bytes": 74998,
+      "sha256": "193454b2a7002a6148851a7970034f1ac8cec98f2186258a11671df84237bdcb",
+      "restore_member": "BOOT-INF/lib/micrometer-observation-1.15.6.jar"
+    },
+    {
+      "name": "junit-4.13.2.jar",
+      "bytes": 384581,
+      "sha256": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3",
+      "restore_member": "BOOT-INF/lib/junit-4.13.2.jar"
+    },
+    {
+      "name": "sms4j-api-3.3.5.jar",
+      "bytes": 16998,
+      "sha256": "ac215c11a7ff6053f428e09b39c636a92e8d7916ae1348502cdcfc58009645a9",
+      "restore_member": "BOOT-INF/lib/sms4j-api-3.3.5.jar"
+    },
+    {
+      "name": "micrometer-jakarta9-1.15.6.jar",
+      "bytes": 32799,
+      "sha256": "79ef8bc949e6b26c42b6f0315ee36aff9e8e1d4e1da29a11479d49f67767e5a8",
+      "restore_member": "BOOT-INF/lib/micrometer-jakarta9-1.15.6.jar"
+    },
+    {
+      "name": "grpc-stub-1.62.2.jar",
+      "bytes": 49978,
+      "sha256": "fb4ca679a4214143406c65ac4167b2b5e2ee2cab1fc101566bb1c4695d105e36",
+      "restore_member": "BOOT-INF/lib/grpc-stub-1.62.2.jar"
+    },
+    {
+      "name": "google-api-client-2.6.0.jar",
+      "bytes": 301866,
+      "sha256": "4ce2d30c647311098995a679562d2605903a9e7710da2e2ea1b17d062062f0c4",
+      "restore_member": "BOOT-INF/lib/google-api-client-2.6.0.jar"
+    },
+    {
+      "name": "spring-boot-admin-starter-client-3.5.5.jar",
+      "bytes": 2319,
+      "sha256": "931bee3cee7645bf0ac3abe7d42aa0f4cf5501b96ce9c78685f56ade0ab8eb80",
+      "restore_member": "BOOT-INF/lib/spring-boot-admin-starter-client-3.5.5.jar"
+    },
+    {
+      "name": "jempbox-1.8.17.jar",
+      "bytes": 51818,
+      "sha256": "ded9c81038dd1bbcba18f07e1028d70c9ceaf0b48ac56cea8ab6ec2c255fc1b3",
+      "restore_member": "BOOT-INF/lib/jempbox-1.8.17.jar"
+    },
+    {
+      "name": "com.sun.xml.bind-jaxb-core-4.0.6.jar",
+      "bytes": 234637,
+      "sha256": "22b7e93e9e25cf1264fd436e0ffaa54bb05aa8b076acbee1a5325386cb8f80b8",
+      "restore_member": "BOOT-INF/lib/com.sun.xml.bind-jaxb-core-4.0.6.jar"
+    },
+    {
+      "name": "reflectasm-1.11.9.jar",
+      "bytes": 72265,
+      "sha256": "712b44da79a5b7f47a28cbfcb3d8ecfc872fae349c48aa4d3e38a5d69956afce",
+      "restore_member": "BOOT-INF/lib/reflectasm-1.11.9.jar"
+    },
+    {
+      "name": "jodd-util-6.3.0.jar",
+      "bytes": 337658,
+      "sha256": "e5c676715897124101f74900dd1f98ebbcad9da3ab2dffbac6e7712612094427",
+      "restore_member": "BOOT-INF/lib/jodd-util-6.3.0.jar"
+    },
+    {
+      "name": "mysql-connector-j-9.5.0.jar",
+      "bytes": 2602851,
+      "sha256": "f2ca3dfaf00d4aa311470db7ea3051962944ba0cb60005a2f75467549c39f425",
+      "restore_member": "BOOT-INF/lib/mysql-connector-j-9.5.0.jar"
+    },
+    {
+      "name": "dynamic-datasource-spring-4.3.1.jar",
+      "bytes": 89632,
+      "sha256": "65b69459e4020248b392b8e1e581790c3bb6089bd5502ea38f6870f3f1734787",
+      "restore_member": "BOOT-INF/lib/dynamic-datasource-spring-4.3.1.jar"
+    },
+    {
+      "name": "apache-mime4j-dom-0.8.13.jar",
+      "bytes": 354236,
+      "sha256": "b31d88db955079cd3be745b21ef27c76ab868306688a7e54ad75646e916bfd67",
+      "restore_member": "BOOT-INF/lib/apache-mime4j-dom-0.8.13.jar"
+    },
+    {
+      "name": "content-type-2.3.jar",
+      "bytes": 8877,
+      "sha256": "60349793e006fba96b532cb0c21e10e969fe0db8d87f91c3b9eaf82ba2998895",
+      "restore_member": "BOOT-INF/lib/content-type-2.3.jar"
+    },
+    {
+      "name": "logback-core-1.5.21.jar",
+      "bytes": 639441,
+      "sha256": "0825ac1fc5296369121e5423e397c52d125b0e3fae743cfc0d8e416159f14f44",
+      "restore_member": "BOOT-INF/lib/logback-core-1.5.21.jar"
+    },
+    {
+      "name": "sms4j-core-3.3.5.jar",
+      "bytes": 22889,
+      "sha256": "8acf6f7288991555384be0ab8a305d675d16559f13fbc869c925abb2c05bfc48",
+      "restore_member": "BOOT-INF/lib/sms4j-core-3.3.5.jar"
+    },
+    {
+      "name": "docker-java-transport-zerodep-3.4.2.jar",
+      "bytes": 2278844,
+      "sha256": "582b772e0c52fa9d24710617ef610655465edd9a2930b0db75fc8667d6a8d02b",
+      "restore_member": "BOOT-INF/lib/docker-java-transport-zerodep-3.4.2.jar"
+    },
+    {
+      "name": "jcip-annotations-1.0-1.jar",
+      "bytes": 4722,
+      "sha256": "4fccff8382aafc589962c4edb262f6aa595e34f1e11e61057d1c6a96e8fc7323",
+      "restore_member": "BOOT-INF/lib/jcip-annotations-1.0-1.jar"
+    },
+    {
+      "name": "avatar-generator-cat-1.1.0.jar",
+      "bytes": 6053229,
+      "sha256": "b570c86aa976e7a39724355166917b5c42d77abbea975171daa853a720d500a3",
+      "restore_member": "BOOT-INF/lib/avatar-generator-cat-1.1.0.jar"
+    },
+    {
+      "name": "spring-jdbc-6.2.14.jar",
+      "bytes": 475077,
+      "sha256": "cb97d60427aeec486ee6465c98817a16de7634dfdee2497c9a0c2cba7f44100c",
+      "restore_member": "BOOT-INF/lib/spring-jdbc-6.2.14.jar"
+    },
+    {
+      "name": "scribejava-java8-8.3.1.jar",
+      "bytes": 3257,
+      "sha256": "4e5d7315cc74e5f21e4f56313ffb1329a467af7d0276993dea2d692dd789fae9",
+      "restore_member": "BOOT-INF/lib/scribejava-java8-8.3.1.jar"
+    },
+    {
+      "name": "mapstruct-1.6.3.jar",
+      "bytes": 34069,
+      "sha256": "00b52467f31d482f8673b0b74306f4be0a305cdce31e587bc1b3d7bf779f1dbf",
+      "restore_member": "BOOT-INF/lib/mapstruct-1.6.3.jar"
+    },
+    {
+      "name": "agentscope-core-2.0.3.jar",
+      "bytes": 824469,
+      "sha256": "7f1ec0f9c5afd1388554275efc78f58cb05692b634453695cf404eb79f7cfda4",
+      "restore_member": "BOOT-INF/lib/agentscope-core-2.0.3.jar"
+    },
+    {
+      "name": "checker-qual-3.49.5.jar",
+      "bytes": 238219,
+      "sha256": "508c83c62c344f6f7ee28f47b88a8797d6116d043bfd1ca0576c828dd1df2880",
+      "restore_member": "BOOT-INF/lib/checker-qual-3.49.5.jar"
+    },
+    {
+      "name": "grpc-context-1.62.2.jar",
+      "bytes": 295,
+      "sha256": "9959747df6a753119e1c1a3dff01aa766d2455f5e4860acaa305359e1d533a05",
+      "restore_member": "BOOT-INF/lib/grpc-context-1.62.2.jar"
+    },
+    {
+      "name": "redis-authx-core-0.1.1-beta2.jar",
+      "bytes": 18264,
+      "sha256": "cc56edb08b3df8562cddac108dca61907d21cc4ad04de05e9f5d1b01058390af",
+      "restore_member": "BOOT-INF/lib/redis-authx-core-0.1.1-beta2.jar"
+    },
+    {
+      "name": "knife4j-openapi3-jakarta-spring-boot-starter-4.4.0.jar",
+      "bytes": 39073,
+      "sha256": "e6866d139aa580e1a5b95c0b1c201486b0f69505e1519073109146ad31212d20",
+      "restore_member": "BOOT-INF/lib/knife4j-openapi3-jakarta-spring-boot-starter-4.4.0.jar"
+    },
+    {
+      "name": "bcjmail-jdk18on-1.83.jar",
+      "bytes": 119134,
+      "sha256": "56899c8ae858c65ca1942c2aca571aaa425cf4d3ee803f98d46fe70d1e0ec469",
+      "restore_member": "BOOT-INF/lib/bcjmail-jdk18on-1.83.jar"
+    },
+    {
+      "name": "spring-oxm-6.2.14.jar",
+      "bytes": 59903,
+      "sha256": "69bc42d78612e669092d4e1ec2dbd63dd08f855500cb2f6876417bdfa9824957",
+      "restore_member": "BOOT-INF/lib/spring-oxm-6.2.14.jar"
+    },
+    {
+      "name": "jakarta.websocket-api-2.1.1.jar",
+      "bytes": 23856,
+      "sha256": "beadb92c26d04da653f6d2db2532b549b7a0dbe59c6e22c23e55bd03617f0120",
+      "restore_member": "BOOT-INF/lib/jakarta.websocket-api-2.1.1.jar"
+    },
+    {
+      "name": "mybatis-plus-core-3.5.14.jar",
+      "bytes": 375614,
+      "sha256": "470c1132fec422ca8f06ae5c530dd109d5d554f4e4749ddd6fb6d8f72c17f8fc",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-core-3.5.14.jar"
+    },
+    {
+      "name": "jsonschema-generator-4.38.0.jar",
+      "bytes": 163594,
+      "sha256": "ade4aeb301db4028ac6bcba016c31405677e37aae6eebaf13c99de3fdb3531b4",
+      "restore_member": "BOOT-INF/lib/jsonschema-generator-4.38.0.jar"
+    },
+    {
+      "name": "anyline-environment-spring-data-jdbc-8.7.2-20250603.jar",
+      "bytes": 45292,
+      "sha256": "e85c8d2c040255fc70cf4fd95395dd4134bd03fe4cd1d7f154b4588b07a70ffd",
+      "restore_member": "BOOT-INF/lib/anyline-environment-spring-data-jdbc-8.7.2-20250603.jar"
+    },
+    {
+      "name": "wildfly-common-1.5.4.Final.jar",
+      "bytes": 284642,
+      "sha256": "9fda3caf8bd528dec56ebc70daf78f5a9ff5d0bfcea8b3e41ab7ae838747e46a",
+      "restore_member": "BOOT-INF/lib/wildfly-common-1.5.4.Final.jar"
+    },
+    {
+      "name": "annotations-13.0.jar",
+      "bytes": 17536,
+      "sha256": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478",
+      "restore_member": "BOOT-INF/lib/annotations-13.0.jar"
+    },
+    {
+      "name": "ruoyi-common-trace-3.1.0.jar",
+      "bytes": 76578,
+      "sha256": "95c83e1aaf1468e4fc1b8fbc742c873d4317d8eab6bdf49b3b4735bd874e24f5",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-trace-3.1.0.jar"
+    },
+    {
+      "name": "google-http-client-1.44.2.jar",
+      "bytes": 295511,
+      "sha256": "390618d7b51704240b8fd28e1230fa35d220f93f4b4ba80f63e38db00dacb09e",
+      "restore_member": "BOOT-INF/lib/google-http-client-1.44.2.jar"
+    },
+    {
+      "name": "jackson-datatype-jsr310-2.19.4.jar",
+      "bytes": 136960,
+      "sha256": "070af4d7c345cf975ff783138050678e6194e5bb88ab489385d0311a5fcb1585",
+      "restore_member": "BOOT-INF/lib/jackson-datatype-jsr310-2.19.4.jar"
+    },
+    {
+      "name": "ruoyi-common-sse-3.1.0.jar",
+      "bytes": 37545,
+      "sha256": "de4ec3e72f557d8fe2c867c8e9d274e999b2f3ad0d80ae1cc8306d9da6ee6120",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-sse-3.1.0.jar"
+    },
+    {
+      "name": "prometheus-metrics-core-1.3.10.jar",
+      "bytes": 96261,
+      "sha256": "a856dbad954222a835c9085abc9a136586eb60495f17ef8ac903dfb8be3b4f15",
+      "restore_member": "BOOT-INF/lib/prometheus-metrics-core-1.3.10.jar"
+    },
+    {
+      "name": "google-oauth-client-1.36.0.jar",
+      "bytes": 81744,
+      "sha256": "8fee7bbe7aaee214ce461f0cd983e3c438fd43941697394391aaa01edb7d703b",
+      "restore_member": "BOOT-INF/lib/google-oauth-client-1.36.0.jar"
+    },
+    {
+      "name": "jai-imageio-core-1.4.0.jar",
+      "bytes": 628053,
+      "sha256": "8ad3c68e9efffb10ac87ff8bc589adf64b04a729c5194c079efd0643607fd72a",
+      "restore_member": "BOOT-INF/lib/jai-imageio-core-1.4.0.jar"
+    },
+    {
+      "name": "commons-compress-1.27.1.jar",
+      "bytes": 1087319,
+      "sha256": "293d80f54b536b74095dcd7ea3cf0a29bbfc3402519281332495f4420d370d16",
+      "restore_member": "BOOT-INF/lib/commons-compress-1.27.1.jar"
+    },
+    {
+      "name": "mybatis-plus-jsqlparser-common-3.5.14.jar",
+      "bytes": 9821,
+      "sha256": "1976718b2928c9a7c3e3aebd9b2127a7fe58fdede93b61fff0ae8d1dc083fb6f",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-jsqlparser-common-3.5.14.jar"
+    },
+    {
+      "name": "warm-flow-plugin-modes-sb-1.8.2.jar",
+      "bytes": 12881,
+      "sha256": "56944827ae673d8b7ddd7e7dafb692c9d83a8fa287a4638427167cd8c00c26b5",
+      "restore_member": "BOOT-INF/lib/warm-flow-plugin-modes-sb-1.8.2.jar"
+    },
+    {
+      "name": "classmate-1.7.1.jar",
+      "bytes": 68227,
+      "sha256": "cc3299e5df4fc24180e69477c890d07d38db79dd2decc0ef20e74a986897c0a1",
+      "restore_member": "BOOT-INF/lib/classmate-1.7.1.jar"
+    },
+    {
+      "name": "warm-flow-mybatis-plus-sb3-starter-1.8.2.jar",
+      "bytes": 2136,
+      "sha256": "c4732102c7d1811d08a8ece2d58fcc2de9c156e95b73169b9e287142640bea79",
+      "restore_member": "BOOT-INF/lib/warm-flow-mybatis-plus-sb3-starter-1.8.2.jar"
+    },
+    {
+      "name": "opentelemetry-semconv-1.40.0.jar",
+      "bytes": 18581,
+      "sha256": "27eb65c14b91487cc25d35bd6f455193aac981d1ebe1b9472d5160cece573ba4",
+      "restore_member": "BOOT-INF/lib/opentelemetry-semconv-1.40.0.jar"
+    },
+    {
+      "name": "failureaccess-1.0.2.jar",
+      "bytes": 4740,
+      "sha256": "8a8f81cf9b359e3f6dfa691a1e776985c061ef2f223c9b2c80753e1b458e8064",
+      "restore_member": "BOOT-INF/lib/failureaccess-1.0.2.jar"
+    },
+    {
+      "name": "jjwt-api-0.13.0.jar",
+      "bytes": 140754,
+      "sha256": "5af8a971c7215acb6c3708794a3912c56eb7066ca3b1ee73f87988c9e0d6c067",
+      "restore_member": "BOOT-INF/lib/jjwt-api-0.13.0.jar"
+    },
+    {
+      "name": "xmpbox-3.0.7.jar",
+      "bytes": 141225,
+      "sha256": "a5307d87764103e6194bbfb800a8f79acbad2df32d59dabca2252abf923c401a",
+      "restore_member": "BOOT-INF/lib/xmpbox-3.0.7.jar"
+    },
+    {
+      "name": "java-libpst-0.9.3.jar",
+      "bytes": 108461,
+      "sha256": "039cd61635ded94dba67f909d3b1763e13f9c23d02f9750eb6259af10e1dabdb",
+      "restore_member": "BOOT-INF/lib/java-libpst-0.9.3.jar"
+    },
+    {
+      "name": "prometheus-metrics-exposition-formats-1.3.10.jar",
+      "bytes": 2097175,
+      "sha256": "a970d6de00a6fa3c9b62ebec1e45f70d42b88d16a19e5ef1621c1f9e89ba3c9f",
+      "restore_member": "BOOT-INF/lib/prometheus-metrics-exposition-formats-1.3.10.jar"
+    },
+    {
+      "name": "anthropic-java-client-okhttp-2.14.0.jar",
+      "bytes": 35586,
+      "sha256": "6f185c45a655c358ae86551b213e4f08bff05918dab5b19e588ee2223c662f7e",
+      "restore_member": "BOOT-INF/lib/anthropic-java-client-okhttp-2.14.0.jar"
+    },
+    {
+      "name": "protobuf-java-util-4.29.3.jar",
+      "bytes": 76479,
+      "sha256": "426bbe64d5beff09458a2b011a65e20db80e3be54034886a329d3732d59c933c",
+      "restore_member": "BOOT-INF/lib/protobuf-java-util-4.29.3.jar"
+    },
+    {
+      "name": "agentscope-extensions-mysql-2.0.3.jar",
+      "bytes": 40852,
+      "sha256": "2e156ac9042a64977f0e42f8559a32b1b6b5dca9314c0b40f6ec4457a807476c",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-mysql-2.0.3.jar"
+    },
+    {
+      "name": "mapstruct-plus-object-convert-1.5.0.jar",
+      "bytes": 3208,
+      "sha256": "707a1f04cec51866fbfd853cabc8c7715a8f42c808c033e4cdfde18cbae5e7aa",
+      "restore_member": "BOOT-INF/lib/mapstruct-plus-object-convert-1.5.0.jar"
+    },
+    {
+      "name": "kotlin-stdlib-jdk7-1.9.25.jar",
+      "bytes": 961,
+      "sha256": "fb5373dd761b4e93e3f538c5e853bba38a71143a181536e8f193ed6e4eddb3b8",
+      "restore_member": "BOOT-INF/lib/kotlin-stdlib-jdk7-1.9.25.jar"
+    },
+    {
+      "name": "xnio-nio-3.8.16.Final.jar",
+      "bytes": 111648,
+      "sha256": "cee1ad9674ff4615f492a314a986c77b7c223ae03255c77aacc60c6cea62d59c",
+      "restore_member": "BOOT-INF/lib/xnio-nio-3.8.16.Final.jar"
+    },
+    {
+      "name": "jackson-module-kotlin-2.19.4.jar",
+      "bytes": 187400,
+      "sha256": "440a2533aa6523296a58c4798ad920cd77b1b819ccc6fbd9e96c81d53794ed90",
+      "restore_member": "BOOT-INF/lib/jackson-module-kotlin-2.19.4.jar"
+    },
+    {
+      "name": "jakarta.mail-2.0.5.jar",
+      "bytes": 727296,
+      "sha256": "f48001755a4a591bb1b602965337fcf316d794c43783052f88ede05130539358",
+      "restore_member": "BOOT-INF/lib/jakarta.mail-2.0.5.jar"
+    },
+    {
+      "name": "crt-core-2.28.22.jar",
+      "bytes": 17776,
+      "sha256": "e5ef8346512a272fd3ac715cd92b20e84420ca0d2205a98ca60c39ca16484840",
+      "restore_member": "BOOT-INF/lib/crt-core-2.28.22.jar"
+    },
+    {
+      "name": "jaxb-api-2.3.0.jar",
+      "bytes": 125632,
+      "sha256": "883007989d373d19f352ba9792b25dec21dc7d0e205a710a93a3815101bb3d03",
+      "restore_member": "BOOT-INF/lib/jaxb-api-2.3.0.jar"
+    },
+    {
+      "name": "fastexcel-support-0.0.1.jar",
+      "bytes": 455122,
+      "sha256": "11b94a947cfb9c03678063af15788f090b2c1326b1b9e6100f9027228d508482",
+      "restore_member": "BOOT-INF/lib/fastexcel-support-0.0.1.jar"
+    },
+    {
+      "name": "tika-parser-webarchive-module-3.3.0.jar",
+      "bytes": 19733,
+      "sha256": "08a53b6cc0cb53d2371a340ae39799458e064a1ea7fe64d771b0ba5c764033cc",
+      "restore_member": "BOOT-INF/lib/tika-parser-webarchive-module-3.3.0.jar"
+    },
+    {
+      "name": "byte-buddy-1.17.8.jar",
+      "bytes": 9018553,
+      "sha256": "2b5ddc8c1f4234bdb7cb45338a8e10a13e0e3ca473e91d5d821d681127ea8ba1",
+      "restore_member": "BOOT-INF/lib/byte-buddy-1.17.8.jar"
+    },
+    {
+      "name": "arns-2.28.22.jar",
+      "bytes": 15822,
+      "sha256": "d4996c1bbc2b9194e125e15181ee5bfe689024241f87a1e2b124612c8d07976a",
+      "restore_member": "BOOT-INF/lib/arns-2.28.22.jar"
+    },
+    {
+      "name": "tika-parser-html-module-3.3.0.jar",
+      "bytes": 55625,
+      "sha256": "bc750d16c3c05ad182ebcce667c6611812ac183fb78f55794d12e9248dddf475",
+      "restore_member": "BOOT-INF/lib/tika-parser-html-module-3.3.0.jar"
+    },
+    {
+      "name": "jackcess-4.0.10.jar",
+      "bytes": 1320122,
+      "sha256": "adf3f6f513c888f158862b00cf2db51ad6309732105e6de4bfd747670f60a033",
+      "restore_member": "BOOT-INF/lib/jackcess-4.0.10.jar"
+    },
+    {
+      "name": "vorbis-java-tika-0.8.jar",
+      "bytes": 24941,
+      "sha256": "a1b62281a99aec10dc69db1d2f8250952dca5841eedf1167b6b6f9585e2d0d26",
+      "restore_member": "BOOT-INF/lib/vorbis-java-tika-0.8.jar"
+    },
+    {
+      "name": "jboss-threads-3.7.0.Final.jar",
+      "bytes": 119801,
+      "sha256": "42dcd39a28cc42aa18ff153995d24d756bdca23a6c298654461e59cfe5e15c33",
+      "restore_member": "BOOT-INF/lib/jboss-threads-3.7.0.Final.jar"
+    },
+    {
+      "name": "parsson-1.0.5.jar",
+      "bytes": 118767,
+      "sha256": "c01a91785e9ca71ed921174b614968c703133f6d9acc5e74eace1083d8824c1c",
+      "restore_member": "BOOT-INF/lib/parsson-1.0.5.jar"
+    },
+    {
+      "name": "swagger-annotations-jakarta-2.2.36.jar",
+      "bytes": 50579,
+      "sha256": "8dd775fd27e56b3b26b9bef5ad2ab225a872e978047be77dc80fe0fe609a6419",
+      "restore_member": "BOOT-INF/lib/swagger-annotations-jakarta-2.2.36.jar"
+    },
+    {
+      "name": "s3-transfer-manager-2.28.22.jar",
+      "bytes": 248958,
+      "sha256": "1aa2ffc90264e4f437231b4c13bd0a09e542025351e6886719b801421841d4a3",
+      "restore_member": "BOOT-INF/lib/s3-transfer-manager-2.28.22.jar"
+    },
+    {
+      "name": "jackcess-encrypt-4.0.3.jar",
+      "bytes": 83928,
+      "sha256": "d40a7871ac1dc6343cd2e433c3ee484eb59cdff728b7a1e22dcfc8b3f400a18a",
+      "restore_member": "BOOT-INF/lib/jackcess-encrypt-4.0.3.jar"
+    },
+    {
+      "name": "tika-parser-microsoft-module-3.3.0.jar",
+      "bytes": 785070,
+      "sha256": "ab3d369d23ca919ed9e5e23a4b948b0d5b6c0eba028ddfd42087995573bbce67",
+      "restore_member": "BOOT-INF/lib/tika-parser-microsoft-module-3.3.0.jar"
+    },
+    {
+      "name": "metadata-extractor-2.19.0.jar",
+      "bytes": 764623,
+      "sha256": "e51bb454ed08ea2bfcc3ad147d088ad1aa73a999e0072563f8ae50021a2fcadb",
+      "restore_member": "BOOT-INF/lib/metadata-extractor-2.19.0.jar"
+    },
+    {
+      "name": "ruoyi-common-json-3.1.0.jar",
+      "bytes": 15378,
+      "sha256": "568671b23372de389b4a947247cfc32efb93a5943c21d710d57447cc1d80cef0",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-json-3.1.0.jar"
+    },
+    {
+      "name": "spring-boot-actuator-autoconfigure-3.5.8.jar",
+      "bytes": 843042,
+      "sha256": "dbdd033d6dd4714c251456e02a6aecf385ee61712041d75b08479716ad7ec669",
+      "restore_member": "BOOT-INF/lib/spring-boot-actuator-autoconfigure-3.5.8.jar"
+    },
+    {
+      "name": "mybatis-spring-3.0.5.jar",
+      "bytes": 82680,
+      "sha256": "5a9bcbc3e6d7586a1a301177b9a355a4c46080c0c6a568b8c434fae027fa3e3b",
+      "restore_member": "BOOT-INF/lib/mybatis-spring-3.0.5.jar"
+    },
+    {
+      "name": "LatencyUtils-2.0.3.jar",
+      "bytes": 29779,
+      "sha256": "a32a9ffa06b2f4e01c5360f8f9df7bc5d9454a5d373cd8f361347fa5a57165ec",
+      "restore_member": "BOOT-INF/lib/LatencyUtils-2.0.3.jar"
+    },
+    {
+      "name": "simple-http-1.0.5.jar",
+      "bytes": 34199,
+      "sha256": "e42d851b4d05b9ead5f712e479fa7e647cc9d47a185b0f3117a0b9aa2693ff2b",
+      "restore_member": "BOOT-INF/lib/simple-http-1.0.5.jar"
+    },
+    {
+      "name": "checksums-2.28.22.jar",
+      "bytes": 9339,
+      "sha256": "3b93f312a65d575a5d2a7529e42598d09d573ef4c36dd2f05703626f9b5d0ad5",
+      "restore_member": "BOOT-INF/lib/checksums-2.28.22.jar"
+    },
+    {
+      "name": "jbig2-imageio-3.0.4.jar",
+      "bytes": 143798,
+      "sha256": "29cb2951622f10acf61fd0656c4e6fa5562194a9095f7a1d26aa426e2f6b17eb",
+      "restore_member": "BOOT-INF/lib/jbig2-imageio-3.0.4.jar"
+    },
+    {
+      "name": "client-5.3.0.jar",
+      "bytes": 3008837,
+      "sha256": "fc491aa2a9b8cde3cbfb0e4e5aedc112d2a242dc0e7526425ec5bfc7d9ecab9b",
+      "restore_member": "BOOT-INF/lib/client-5.3.0.jar"
+    },
+    {
+      "name": "listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
+      "bytes": 2199,
+      "sha256": "b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99",
+      "restore_member": "BOOT-INF/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+    },
+    {
+      "name": "opencensus-contrib-http-util-0.31.1.jar",
+      "bytes": 23415,
+      "sha256": "3ea995b55a4068be22989b70cc29a4d788c2d328d1d50613a7a9afd13fdd2d0a",
+      "restore_member": "BOOT-INF/lib/opencensus-contrib-http-util-0.31.1.jar"
+    },
+    {
+      "name": "annotations-2.0.1.jar",
+      "bytes": 74557,
+      "sha256": "893b2203a27e4a8ba9d16cd6ed6e9f730736b4878a6bfffeff06861f32e6631b",
+      "restore_member": "BOOT-INF/lib/annotations-2.0.1.jar"
+    },
+    {
+      "name": "tika-parser-font-module-3.3.0.jar",
+      "bytes": 14331,
+      "sha256": "c98c19e858e89c1180aaa6f770d192fb382f25d2208e4722bec964d416a4586d",
+      "restore_member": "BOOT-INF/lib/tika-parser-font-module-3.3.0.jar"
+    },
+    {
+      "name": "anthropic-java-2.14.0.jar",
+      "bytes": 346,
+      "sha256": "1ddae0fff0d1910b0595976064df49459904ef92da212d3cae7f78bb7776659e",
+      "restore_member": "BOOT-INF/lib/anthropic-java-2.14.0.jar"
+    },
+    {
+      "name": "ruoyi-common-core-3.1.0.jar",
+      "bytes": 196706,
+      "sha256": "eeaa153ef5a8f492599621b3d27c6121b4b3791b129dfe85295cab49554b145f",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-core-3.1.0.jar"
+    },
+    {
+      "name": "elasticsearch-rest-client-8.18.8.jar",
+      "bytes": 74292,
+      "sha256": "bccf534576d8ffedc6912021c1d9ebe13b4bc07d8c36094a34d3798bf1609efb",
+      "restore_member": "BOOT-INF/lib/elasticsearch-rest-client-8.18.8.jar"
+    },
+    {
+      "name": "pdfbox-tools-3.0.7.jar",
+      "bytes": 104880,
+      "sha256": "d0ea0a235f50e6b4339f65d4899770b2bd5a8c506519e7a68aa23c84d1efd533",
+      "restore_member": "BOOT-INF/lib/pdfbox-tools-3.0.7.jar"
+    },
+    {
+      "name": "converter-jackson-2.9.0.jar",
+      "bytes": 4092,
+      "sha256": "7d94ccd114408ce1b1e30c52d0e412acf3285ea2d3debd734d17558a629c3b28",
+      "restore_member": "BOOT-INF/lib/converter-jackson-2.9.0.jar"
+    },
+    {
+      "name": "oauth2-oidc-sdk-11.23.1.jar",
+      "bytes": 902596,
+      "sha256": "170303aec2fd3974a14f1edc940e40d334b33fa2a9c3e206b9d2aa12d23d5428",
+      "restore_member": "BOOT-INF/lib/oauth2-oidc-sdk-11.23.1.jar"
+    },
+    {
+      "name": "pdfbox-io-3.0.7.jar",
+      "bytes": 48216,
+      "sha256": "b9a838291978069086efbcd1f62b81b9e4a6016e61dd2c68104ee9f4c2ff997b",
+      "restore_member": "BOOT-INF/lib/pdfbox-io-3.0.7.jar"
+    },
+    {
+      "name": "lettuce-core-6.6.0.RELEASE.jar",
+      "bytes": 2095147,
+      "sha256": "724bcbd011e9e846e92a7a3f583db7478e2dba635bb844248217d0161b8cdba6",
+      "restore_member": "BOOT-INF/lib/lettuce-core-6.6.0.RELEASE.jar"
+    },
+    {
+      "name": "hamcrest-3.0.jar",
+      "bytes": 126373,
+      "sha256": "5d66b6a4a680755cb6ed7cb104fa7835ef644667586ff0737adeb977c39ecdbc",
+      "restore_member": "BOOT-INF/lib/hamcrest-3.0.jar"
+    },
+    {
+      "name": "anyline-environment-spring-8.7.2-20250603.jar",
+      "bytes": 9536,
+      "sha256": "0b53b0f7416e3a47ac736915a9d6434ad1b2cfea79ad53e2e8b8b86bdb954f34",
+      "restore_member": "BOOT-INF/lib/anyline-environment-spring-8.7.2-20250603.jar"
+    },
+    {
+      "name": "opentelemetry-context-1.49.0.jar",
+      "bytes": 49307,
+      "sha256": "17de3c85b341240b3b216c43adbd244c9fbd39c9e5448306d56460f80599a76b",
+      "restore_member": "BOOT-INF/lib/opentelemetry-context-1.49.0.jar"
+    },
+    {
+      "name": "hutool-http-5.8.40.jar",
+      "bytes": 121816,
+      "sha256": "8db461e3d6486f7cd4efc4d2cb344e0e31850e47c8db763b9ada9cafdc43d5aa",
+      "restore_member": "BOOT-INF/lib/hutool-http-5.8.40.jar"
+    },
+    {
+      "name": "smallrye-common-function-2.6.0.jar",
+      "bytes": 55186,
+      "sha256": "cfe75a781014af514bc17e58df79b3983324b1cb9719714abe227defe1585dda",
+      "restore_member": "BOOT-INF/lib/smallrye-common-function-2.6.0.jar"
+    },
+    {
+      "name": "redisson-spring-boot-starter-3.51.0.jar",
+      "bytes": 15612,
+      "sha256": "805d1e5bba7a0c13d54819cf3693fd6ca33b2353d987e0189f05506040a5538a",
+      "restore_member": "BOOT-INF/lib/redisson-spring-boot-starter-3.51.0.jar"
+    },
+    {
+      "name": "profiles-2.28.22.jar",
+      "bytes": 49815,
+      "sha256": "ecf0942fb77fe56ff8d9fa61a7ef7cd003a2303fe75ca824c4442df4fc4a6202",
+      "restore_member": "BOOT-INF/lib/profiles-2.28.22.jar"
+    },
+    {
+      "name": "jackson-core-2.19.4.jar",
+      "bytes": 591409,
+      "sha256": "466ae4dc4f7054f51525f4211df411d9a64d65cc169995d32bf49e20e6f586e5",
+      "restore_member": "BOOT-INF/lib/jackson-core-2.19.4.jar"
+    },
+    {
+      "name": "spring-boot-jarmode-tools-3.5.8.jar",
+      "bytes": 51688,
+      "sha256": "295eaeaa2359c24af6ca5c34a125a2839b4ea33092236997593abdb56c0186cf",
+      "restore_member": "BOOT-INF/lib/spring-boot-jarmode-tools-3.5.8.jar"
+    },
+    {
+      "name": "jsonschema-module-swagger-2-4.38.0.jar",
+      "bytes": 18918,
+      "sha256": "b76c0df657bcf88cca46d7ad540938552e10127a7c28d2136f62b631666997c1",
+      "restore_member": "BOOT-INF/lib/jsonschema-module-swagger-2-4.38.0.jar"
+    },
+    {
+      "name": "httpcore5-5.3.6.jar",
+      "bytes": 909490,
+      "sha256": "8fb4528d3e970aca440523a1bd698a389fa710ecfea4c5c6096698b86d1669ce",
+      "restore_member": "BOOT-INF/lib/httpcore5-5.3.6.jar"
+    },
+    {
+      "name": "hutool-extra-5.8.40.jar",
+      "bytes": 244258,
+      "sha256": "9209b50a467a87cbf6d3e4860acd711ddb5c0b9dc3021944a4fee6da2deb5656",
+      "restore_member": "BOOT-INF/lib/hutool-extra-5.8.40.jar"
+    },
+    {
+      "name": "okhttp-jvm-5.3.2.jar",
+      "bytes": 868403,
+      "sha256": "c771f48075b763f6c322055e21129a94b7de4c1faf3f8f58ace320b0c9517a30",
+      "restore_member": "BOOT-INF/lib/okhttp-jvm-5.3.2.jar"
+    },
+    {
+      "name": "micrometer-commons-1.15.6.jar",
+      "bytes": 49152,
+      "sha256": "30ad985adb93e0bdafb02741c75d546c9dc45403e956e0f5ae865fac4280d18d",
+      "restore_member": "BOOT-INF/lib/micrometer-commons-1.15.6.jar"
+    },
+    {
+      "name": "commons-math3-3.6.1.jar",
+      "bytes": 2213560,
+      "sha256": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+      "restore_member": "BOOT-INF/lib/commons-math3-3.6.1.jar"
+    },
+    {
+      "name": "anyline-data-jdbc-8.7.2-20250603.jar",
+      "bytes": 313783,
+      "sha256": "7b276ab5b84b55170b89ad1e0714465a14ea3b09ff9d800cdb2ebfe7cd44d64d",
+      "restore_member": "BOOT-INF/lib/anyline-data-jdbc-8.7.2-20250603.jar"
+    },
+    {
+      "name": "duct-tape-1.0.8.jar",
+      "bytes": 25402,
+      "sha256": "31cef12ddec979d1f86d7cf708c41a17da523d05c685fd6642e9d0b2addb7240",
+      "restore_member": "BOOT-INF/lib/duct-tape-1.0.8.jar"
+    },
+    {
+      "name": "commons-codec-1.18.0.jar",
+      "bytes": 373045,
+      "sha256": "ba005f304cef92a3dede24a38ad5ac9b8afccf0d8f75839d6c1338634cf7f6e4",
+      "restore_member": "BOOT-INF/lib/commons-codec-1.18.0.jar"
+    },
+    {
+      "name": "poi-5.4.1.jar",
+      "bytes": 2996461,
+      "sha256": "da5abf42da4604c5a7bca38956af6e9d6f196d9b6d4cb7eabee4f480b580d505",
+      "restore_member": "BOOT-INF/lib/poi-5.4.1.jar"
+    },
+    {
+      "name": "zai-sdk-0.3.5.jar",
+      "bytes": 718535,
+      "sha256": "354ad9007df3ccfd0dd52d07a92af75da25d73ec4b3dedf69ef1aea69500c184",
+      "restore_member": "BOOT-INF/lib/zai-sdk-0.3.5.jar"
+    },
+    {
+      "name": "spring-aop-6.2.14.jar",
+      "bytes": 420267,
+      "sha256": "8196d9765c73d1cc81d83d40937dbd78763ef0c3f71f0cdade252d0b9db99157",
+      "restore_member": "BOOT-INF/lib/spring-aop-6.2.14.jar"
+    },
+    {
+      "name": "pdfbox-3.0.7.jar",
+      "bytes": 2064397,
+      "sha256": "7cefa717622330951b4343abf1e5d36bccb11f4ba245d78aaa73251d08fec623",
+      "restore_member": "BOOT-INF/lib/pdfbox-3.0.7.jar"
+    },
+    {
+      "name": "tree-sitter-0.24.4.jar",
+      "bytes": 974060,
+      "sha256": "1dfebefc616049956ade6c4e85534d8c656a391da2a3a56a610f8d345e715745",
+      "restore_member": "BOOT-INF/lib/tree-sitter-0.24.4.jar"
+    },
+    {
+      "name": "caffeine-3.2.3.jar",
+      "bytes": 1020615,
+      "sha256": "ca70c90a5d1ce1511880ce9c93d4ad22108f61111d3daf91eb52762b571bd179",
+      "restore_member": "BOOT-INF/lib/caffeine-3.2.3.jar"
+    },
+    {
+      "name": "neo4j-bolt-connection-netty-6.0.2.jar",
+      "bytes": 295955,
+      "sha256": "86a36929fa51bce37c6961c0a02d7589fccb4c12bf929cf23de674c4fd762312",
+      "restore_member": "BOOT-INF/lib/neo4j-bolt-connection-netty-6.0.2.jar"
+    },
+    {
+      "name": "auto-value-annotations-1.10.4.jar",
+      "bytes": 7493,
+      "sha256": "e1c45e6beadaef9797cb0d9afd5a45621ad061cd8632012f85582853a3887825",
+      "restore_member": "BOOT-INF/lib/auto-value-annotations-1.10.4.jar"
+    },
+    {
+      "name": "fastexcel-1.3.0.jar",
+      "bytes": 552056,
+      "sha256": "09cbf0a09721d89745bd347ebe0fe0d2ffd9344df14c21059c8b89f570012368",
+      "restore_member": "BOOT-INF/lib/fastexcel-1.3.0.jar"
+    },
+    {
+      "name": "redisson-3.51.0.jar",
+      "bytes": 2779523,
+      "sha256": "7cc15d584ad10d399c6e96713d2c6871c638fb362883679273a9eceb82fc834e",
+      "restore_member": "BOOT-INF/lib/redisson-3.51.0.jar"
+    },
+    {
+      "name": "ruoyi-common-doc-3.1.0.jar",
+      "bytes": 19543,
+      "sha256": "d0cdfa05e9ec221a04ae0c51a252e00103708cdbb32d58bb2587feb713f88a12",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-doc-3.1.0.jar"
+    },
+    {
+      "name": "netty-codec-dns-4.1.128.Final.jar",
+      "bytes": 67363,
+      "sha256": "bb9a96f2457e21a70a7edba2f0b88ebc5f06ca8851f62153ccc69c0e9dc8e208",
+      "restore_member": "BOOT-INF/lib/netty-codec-dns-4.1.128.Final.jar"
+    },
+    {
+      "name": "scribejava-core-8.3.1.jar",
+      "bytes": 136513,
+      "sha256": "69d84ff0a35a1b4392f86ea8a9b30895d5ade6d3e634ef5c5bdc6a8724972bb8",
+      "restore_member": "BOOT-INF/lib/scribejava-core-8.3.1.jar"
+    },
+    {
+      "name": "ruoyi-common-web-3.1.0.jar",
+      "bytes": 53012,
+      "sha256": "8c7173f32f7aec4048ac76ad9f7d1bd720b6e78b16dae2fed596f5197558fe60",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-web-3.1.0.jar"
+    },
+    {
+      "name": "openai-java-4.8.0.jar",
+      "bytes": 342,
+      "sha256": "97acba83a63652461814fbff187b77c6ca6f526aa2c5db658b6118ec6c06f946",
+      "restore_member": "BOOT-INF/lib/openai-java-4.8.0.jar"
+    },
+    {
+      "name": "json-smart-2.5.2.jar",
+      "bytes": 122358,
+      "sha256": "4fbdedb0105cedc7f766b95c297d2e88fb6a560da48f3bbaa0cc538ea8b7bf71",
+      "restore_member": "BOOT-INF/lib/json-smart-2.5.2.jar"
+    },
+    {
+      "name": "spring-beans-6.2.14.jar",
+      "bytes": 891358,
+      "sha256": "a1518e1d6dc56ff9c3b5151fc129739cb6ae57b34269997ae2c8c196c15a7569",
+      "restore_member": "BOOT-INF/lib/spring-beans-6.2.14.jar"
+    },
+    {
+      "name": "jakarta.activation-api-2.1.4.jar",
+      "bytes": 67380,
+      "sha256": "c9db52100ce6c8aac95cc39075f95720d2e561b11f8051b81c121ad4effd7004",
+      "restore_member": "BOOT-INF/lib/jakarta.activation-api-2.1.4.jar"
+    },
+    {
+      "name": "protocol-core-2.28.22.jar",
+      "bytes": 44334,
+      "sha256": "851553e37c4f6c653d0a437a831cf66b31b977aa02b815f69415eb9a45504fc0",
+      "restore_member": "BOOT-INF/lib/protocol-core-2.28.22.jar"
+    },
+    {
+      "name": "ruoyi-common-sms-3.1.0.jar",
+      "bytes": 7103,
+      "sha256": "c3207e4605489451931895d6d00f7fd7b2ff44058bc60f725a7cbc0216c03350",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-sms-3.1.0.jar"
+    },
+    {
+      "name": "commons-exec-1.6.0.jar",
+      "bytes": 69316,
+      "sha256": "13dcf3850478ef8de5d24d298a60eed5e8305eb20538fe632c82ea1dff6b5ea0",
+      "restore_member": "BOOT-INF/lib/commons-exec-1.6.0.jar"
+    },
+    {
+      "name": "agentscope-extensions-model-anthropic-2.0.3.jar",
+      "bytes": 50207,
+      "sha256": "d9d2cb2bb26bfb745b0fb55be6aacfe865e47d7c601583a38a2cd2214aba5987",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-model-anthropic-2.0.3.jar"
+    },
+    {
+      "name": "rxjava-2.2.21.jar",
+      "bytes": 2356379,
+      "sha256": "59df6541a840018f0f4c899aae4f4c1f4383f4c16feb5268615fbe384d28501c",
+      "restore_member": "BOOT-INF/lib/rxjava-2.2.21.jar"
+    },
+    {
+      "name": "dynamic-datasource-creator-4.3.1.jar",
+      "bytes": 60919,
+      "sha256": "787b7945686339858102674124579ddd14c80a80b5aa6b3dc432150d265107b2",
+      "restore_member": "BOOT-INF/lib/dynamic-datasource-creator-4.3.1.jar"
+    },
+    {
+      "name": "slf4j-api-2.0.17.jar",
+      "bytes": 69908,
+      "sha256": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832",
+      "restore_member": "BOOT-INF/lib/slf4j-api-2.0.17.jar"
+    },
+    {
+      "name": "dom4j-2.1.4.jar",
+      "bytes": 324655,
+      "sha256": "235a9167a8a199be04b5326d92927ca0adeb90d11f69fe2e821b34ce8433b591",
+      "restore_member": "BOOT-INF/lib/dom4j-2.1.4.jar"
+    },
+    {
+      "name": "grpc-netty-shaded-1.62.2.jar",
+      "bytes": 9753575,
+      "sha256": "b3f1823ef30ca02ac721020f4b6492248efdbd0548c78e893d5d245cbca2cc60",
+      "restore_member": "BOOT-INF/lib/grpc-netty-shaded-1.62.2.jar"
+    },
+    {
+      "name": "ruoyi-common-excel-3.1.0.jar",
+      "bytes": 56293,
+      "sha256": "92787f82910323e1152d47ba096388962e23a211fa2b7b388279918d0db53bf9",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-excel-3.1.0.jar"
+    },
+    {
+      "name": "ruoyi-common-redis-3.1.0.jar",
+      "bytes": 42251,
+      "sha256": "8449d75c10db2e5bfe006d370c74be8ff1ef3648ce94d51fb41ddc24f42e6509",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-redis-3.1.0.jar"
+    },
+    {
+      "name": "ruoyi-common-log-3.1.0.jar",
+      "bytes": 23317,
+      "sha256": "3e70fef3acd47de5b2d96342a1fd7703352e6c5d2e9b4138b2b469fab70314a4",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-log-3.1.0.jar"
+    },
+    {
+      "name": "jedis-6.0.0.jar",
+      "bytes": 941417,
+      "sha256": "649ab60fb183a0d41aee702c7e1093b0296c79d6c4a773768f6577a97864f245",
+      "restore_member": "BOOT-INF/lib/jedis-6.0.0.jar"
+    },
+    {
+      "name": "google-http-client-apache-v2-1.44.2.jar",
+      "bytes": 11666,
+      "sha256": "104596bb9296a403a5150b8e3b72dc16d9ca0b0f94b1287348ada5825e19298d",
+      "restore_member": "BOOT-INF/lib/google-http-client-apache-v2-1.44.2.jar"
+    },
+    {
+      "name": "docker-java-api-3.4.2.jar",
+      "bytes": 486972,
+      "sha256": "6789d68f95904cf274a6410fdfcc5530976bc94197c856909459bb8c64db557b",
+      "restore_member": "BOOT-INF/lib/docker-java-api-3.4.2.jar"
+    },
+    {
+      "name": "agentscope-extensions-model-ollama-2.0.3.jar",
+      "bytes": 81614,
+      "sha256": "c966ae79df8e4e44146dc7f97ca940f2e3962dd93ce373bccf44cc40d625a00f",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-model-ollama-2.0.3.jar"
+    },
+    {
+      "name": "jjwt-0.13.0.jar",
+      "bytes": 2339,
+      "sha256": "d9eed7982516f6ee3072ed8b7f3183d79422d4bcdf0595f4f68260e32b205113",
+      "restore_member": "BOOT-INF/lib/jjwt-0.13.0.jar"
+    },
+    {
+      "name": "anthropic-java-core-2.14.0.jar",
+      "bytes": 7909586,
+      "sha256": "5255abc32133271b981a809b5250401927cd836dcb40aa953d5bafdcada0fe6e",
+      "restore_member": "BOOT-INF/lib/anthropic-java-core-2.14.0.jar"
+    },
+    {
+      "name": "opentelemetry-api-incubator-1.61.0-alpha.jar",
+      "bytes": 90466,
+      "sha256": "0f3f4eacb0a29579cb56e94bfbb75fab6aa4e893e7c1e37e91da874d06dbc7ce",
+      "restore_member": "BOOT-INF/lib/opentelemetry-api-incubator-1.61.0-alpha.jar"
+    },
+    {
+      "name": "undertow-core-2.3.20.Final.jar",
+      "bytes": 2306028,
+      "sha256": "d136d75592efde90068bf81556339e93ba1c9489089c8a3880e6c805a2630ca6",
+      "restore_member": "BOOT-INF/lib/undertow-core-2.3.20.Final.jar"
+    },
+    {
+      "name": "spring-jcl-6.2.14.jar",
+      "bytes": 24540,
+      "sha256": "9b38c795847bdb1f1c714b3eb2052ac063448316ae8bca97148687c56f55fe8e",
+      "restore_member": "BOOT-INF/lib/spring-jcl-6.2.14.jar"
+    },
+    {
+      "name": "ruoyi-common-websocket-3.1.0.jar",
+      "bytes": 24880,
+      "sha256": "83353d0af414b908d5a74a40edfd5da2904c8ad6ad16968e292fa7031f805145",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-websocket-3.1.0.jar"
+    },
+    {
+      "name": "jjwt-jackson-0.13.0.jar",
+      "bytes": 9431,
+      "sha256": "e5ca43b49deca1ad818b2572f0af4d902370205089bdcd15d5dbb6095d17416b",
+      "restore_member": "BOOT-INF/lib/jjwt-jackson-0.13.0.jar"
+    },
+    {
+      "name": "log4j-to-slf4j-2.24.3.jar",
+      "bytes": 23834,
+      "sha256": "c7f2b0c612a4eb05b1587d1c880eb4cf5f4f53850676a8ede8da2b8fabb4f73f",
+      "restore_member": "BOOT-INF/lib/log4j-to-slf4j-2.24.3.jar"
+    },
+    {
+      "name": "tika-parser-crypto-module-3.3.0.jar",
+      "bytes": 19766,
+      "sha256": "fc387fb3063a111921b58e63d239abba6a426b9e8e093d92cc1dfe28d727ba0b",
+      "restore_member": "BOOT-INF/lib/tika-parser-crypto-module-3.3.0.jar"
+    },
+    {
+      "name": "xz-1.12.jar",
+      "bytes": 168792,
+      "sha256": "3e158a87bd73d8afb4b6e8239c013b7d049c48563f45860ce99cd2e448cf4a6b",
+      "restore_member": "BOOT-INF/lib/xz-1.12.jar"
+    },
+    {
+      "name": "utils-2.28.22.jar",
+      "bytes": 224753,
+      "sha256": "e8ee35db21424a50860452388c822ebbb13b8c2467d9df9e8df65a6b39d3d1de",
+      "restore_member": "BOOT-INF/lib/utils-2.28.22.jar"
+    },
+    {
+      "name": "java-jwt-3.18.2.jar",
+      "bytes": 57560,
+      "sha256": "b5cd12b6db70a39f8c3d688e6fac930bd32d9a7f5d0e584e8a554a3e42cbfbf1",
+      "restore_member": "BOOT-INF/lib/java-jwt-3.18.2.jar"
+    },
+    {
+      "name": "opentelemetry-api-1.49.0.jar",
+      "bytes": 158832,
+      "sha256": "a813c9a92b82a4ffa3a62e88216a9e9ef9a407fcd41614fe596b2895167ed638",
+      "restore_member": "BOOT-INF/lib/opentelemetry-api-1.49.0.jar"
+    },
+    {
+      "name": "tika-parser-miscoffice-module-3.3.0.jar",
+      "bytes": 154094,
+      "sha256": "c3d936046d588b20c6ffe4cb2524825b98e81b79cb8c1ae08f88340d12c905bb",
+      "restore_member": "BOOT-INF/lib/tika-parser-miscoffice-module-3.3.0.jar"
+    },
+    {
+      "name": "dynamic-datasource-spring-boot3-starter-4.3.1.jar",
+      "bytes": 12540,
+      "sha256": "3dfec38d957e40028df057649096e08f9e785312d7a644712912c5909a66d59d",
+      "restore_member": "BOOT-INF/lib/dynamic-datasource-spring-boot3-starter-4.3.1.jar"
+    },
+    {
+      "name": "httpasyncclient-4.1.5.jar",
+      "bytes": 181512,
+      "sha256": "0c1877489a9d1ba4fa50f6cfcab11d1123618858cb31d56afaab5afdd5064d99",
+      "restore_member": "BOOT-INF/lib/httpasyncclient-4.1.5.jar"
+    },
+    {
+      "name": "commons-lang3-3.17.0.jar",
+      "bytes": 673587,
+      "sha256": "6ee731df5c8e5a2976a1ca023b6bb320ea8d3539fbe64c8a1d5cb765127c33b4",
+      "restore_member": "BOOT-INF/lib/commons-lang3-3.17.0.jar"
+    },
+    {
+      "name": "json-20250107.jar",
+      "bytes": 81363,
+      "sha256": "85d4c1ab192d3117fd02c7fff1ec0fe63ade45cf56def7fe950ef060cf06e99f",
+      "restore_member": "BOOT-INF/lib/json-20250107.jar"
+    },
+    {
+      "name": "vorbis-java-core-0.8.jar",
+      "bytes": 121084,
+      "sha256": "879bb0c8923fea686609e207fd9050ab246e001868341c725929405e755cf68e",
+      "restore_member": "BOOT-INF/lib/vorbis-java-core-0.8.jar"
+    },
+    {
+      "name": "sa-token-jwt-1.44.0.jar",
+      "bytes": 14760,
+      "sha256": "79c3c59cdbf109415c41395d78fa3e4e5a04e155e37f6a4578c7bd7c85938237",
+      "restore_member": "BOOT-INF/lib/sa-token-jwt-1.44.0.jar"
+    },
+    {
+      "name": "spring-boot-configuration-metadata-3.5.8.jar",
+      "bytes": 28417,
+      "sha256": "1bc641696aee33302fc6a0de16dfb8d047f9f88dbeed4e1471c147d1d58eae48",
+      "restore_member": "BOOT-INF/lib/spring-boot-configuration-metadata-3.5.8.jar"
+    },
+    {
+      "name": "agentscope-harness-2.0.3.jar",
+      "bytes": 958082,
+      "sha256": "e6f6f5c39d8e16ca5c2ea3727b56dbcfa8fd408ef54a0018c0c9416251beb1a0",
+      "restore_member": "BOOT-INF/lib/agentscope-harness-2.0.3.jar"
+    },
+    {
+      "name": "prometheus-metrics-exposition-textformats-1.3.10.jar",
+      "bytes": 23349,
+      "sha256": "8dd118ac15a4162ac586f42ff69e8ca3efa8b1291d870c89a678f8f72de62e44",
+      "restore_member": "BOOT-INF/lib/prometheus-metrics-exposition-textformats-1.3.10.jar"
+    },
+    {
+      "name": "filters-2.0.235-1.jar",
+      "bytes": 382939,
+      "sha256": "a37202f03eae99ab1faf2a89eeaee3665c8489f45b1aeb0d5926d78a54c613bf",
+      "restore_member": "BOOT-INF/lib/filters-2.0.235-1.jar"
+    },
+    {
+      "name": "SparseBitSet-1.3.jar",
+      "bytes": 25843,
+      "sha256": "f76b85adb0c00721ae267b7cfde4da7f71d3121cc2160c9fc00c0c89f8c53c8a",
+      "restore_member": "BOOT-INF/lib/SparseBitSet-1.3.jar"
+    },
+    {
+      "name": "mybatis-plus-jsqlparser-3.5.14.jar",
+      "bytes": 98775,
+      "sha256": "38dc820c5c3ce30350252865213f0afe33094d33eab54ec1ffa07c4b54124db3",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-jsqlparser-3.5.14.jar"
+    },
+    {
+      "name": "lock4j-core-2.2.7.jar",
+      "bytes": 28671,
+      "sha256": "213e63236f68aede8179c57356599e80de54e1115c39100e2e7b803c6649e343",
+      "restore_member": "BOOT-INF/lib/lock4j-core-2.2.7.jar"
+    },
+    {
+      "name": "springdoc-openapi-starter-common-2.8.13.jar",
+      "bytes": 539119,
+      "sha256": "33eae47200e1e4ff549408313cb35b60a76df0308c5cc92cf274e156d2cea30b",
+      "restore_member": "BOOT-INF/lib/springdoc-openapi-starter-common-2.8.13.jar"
+    },
+    {
+      "name": "netty-handler-4.1.128.Final.jar",
+      "bytes": 580770,
+      "sha256": "d9e3fd9b839cb207030ffd385d5b3c087dbf746a643056db544f16318573975f",
+      "restore_member": "BOOT-INF/lib/netty-handler-4.1.128.Final.jar"
+    },
+    {
+      "name": "org.glassfish.jaxb-jaxb-core-4.0.6.jar",
+      "bytes": 137909,
+      "sha256": "ebbd274207b4860d0dc6e2d44d6dbdb5945cede01222d2e50661d45f5d46c0f7",
+      "restore_member": "BOOT-INF/lib/org.glassfish.jaxb-jaxb-core-4.0.6.jar"
+    },
+    {
+      "name": "client-1.17.0.jar",
+      "bytes": 4880361,
+      "sha256": "950783739787740b2471bbb9321f4fe168ccf0e7582f48253c46f575202677ce",
+      "restore_member": "BOOT-INF/lib/client-1.17.0.jar"
+    },
+    {
+      "name": "ruoyi-common-mybatis-3.1.0.jar",
+      "bytes": 62589,
+      "sha256": "63c8f76dd50077b3898fe621fe06a83589495b0cd902a464095b5c6d412c9f9b",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-mybatis-3.1.0.jar"
+    },
+    {
+      "name": "hamcrest-core-3.0.jar",
+      "bytes": 2403,
+      "sha256": "b78a3a81692f421cc01fc17ded9a45e9fb6f3949c712f8ec4d01da6b8c06bc6e",
+      "restore_member": "BOOT-INF/lib/hamcrest-core-3.0.jar"
+    },
+    {
+      "name": "jaxb-impl-4.0.6.jar",
+      "bytes": 923147,
+      "sha256": "6316f34f83dae7f9ae525cf02ed14098a64ddb9c08f0ef18eac668479a3c1e93",
+      "restore_member": "BOOT-INF/lib/jaxb-impl-4.0.6.jar"
+    },
+    {
+      "name": "reactive-streams-1.0.4.jar",
+      "bytes": 11640,
+      "sha256": "f75ca597789b3dac58f61857b9ac2e1034a68fa672db35055a8fb4509e325f28",
+      "restore_member": "BOOT-INF/lib/reactive-streams-1.0.4.jar"
+    },
+    {
+      "name": "dynamic-datasource-spring-boot-common-4.3.1.jar",
+      "bytes": 19236,
+      "sha256": "fc515688a954ca21498b3c9c4e96b9b79724f55df027153fe497087935931711",
+      "restore_member": "BOOT-INF/lib/dynamic-datasource-spring-boot-common-4.3.1.jar"
+    },
+    {
+      "name": "google-http-client-gson-1.44.2.jar",
+      "bytes": 12822,
+      "sha256": "1119b66685195310375b717de2215d6c5d14fa8ed9f57e07b4fecd461e7b9db7",
+      "restore_member": "BOOT-INF/lib/google-http-client-gson-1.44.2.jar"
+    },
+    {
+      "name": "jmatio-1.5.jar",
+      "bytes": 75551,
+      "sha256": "70db8cf9a1818072f290fd464f14a8369c9c58993e6640128a6e8a6379d67ac7",
+      "restore_member": "BOOT-INF/lib/jmatio-1.5.jar"
+    },
+    {
+      "name": "hutool-captcha-5.8.40.jar",
+      "bytes": 18963,
+      "sha256": "e2399d2b7df56d69a171dfaa4689c36b83e3776fd92295cab5b18e631efad65f",
+      "restore_member": "BOOT-INF/lib/hutool-captcha-5.8.40.jar"
+    },
+    {
+      "name": "jakarta.validation-api-3.0.2.jar",
+      "bytes": 93298,
+      "sha256": "291c25e6910cc6a7ebd96d4c6baebf6d7c37676c5482c2d96146e901b62c1fc9",
+      "restore_member": "BOOT-INF/lib/jakarta.validation-api-3.0.2.jar"
+    },
+    {
+      "name": "grpc-protobuf-lite-1.62.2.jar",
+      "bytes": 7854,
+      "sha256": "79997989a8c2b5bf4dd18182a2df2e2f668703d68ba7c317e7a07809d33f91f4",
+      "restore_member": "BOOT-INF/lib/grpc-protobuf-lite-1.62.2.jar"
+    },
+    {
+      "name": "hutool-json-5.8.40.jar",
+      "bytes": 65501,
+      "sha256": "68bb349878026635731016142885c1b09b6ff9c288f71f99f4625c5cae56474c",
+      "restore_member": "BOOT-INF/lib/hutool-json-5.8.40.jar"
+    },
+    {
+      "name": "json-utils-2.28.22.jar",
+      "bytes": 33223,
+      "sha256": "d1f938908af9d8a5857513f0c17a2596a6065d0b12e8c18b3dc92b6020b54eb4",
+      "restore_member": "BOOT-INF/lib/json-utils-2.28.22.jar"
+    },
+    {
+      "name": "netty-transport-4.1.128.Final.jar",
+      "bytes": 521536,
+      "sha256": "dc9107aae931cb5cf59471835358f68b4cb9548c9fb0a9fe06acf2a3d3d422f2",
+      "restore_member": "BOOT-INF/lib/netty-transport-4.1.128.Final.jar"
+    },
+    {
+      "name": "jakarta.xml.bind-api-4.0.4.jar",
+      "bytes": 131188,
+      "sha256": "c507ca69a8c6dd11bf4afeec9e0d412c4fa3933fffb0a84680ea5727e8472124",
+      "restore_member": "BOOT-INF/lib/jakarta.xml.bind-api-4.0.4.jar"
+    },
+    {
+      "name": "hutool-crypto-5.8.40.jar",
+      "bytes": 125351,
+      "sha256": "718a2620295932ffe4564c1374ca500af93dcc159cac23c3a1602629c0425785",
+      "restore_member": "BOOT-INF/lib/hutool-crypto-5.8.40.jar"
+    },
+    {
+      "name": "tika-parser-audiovideo-module-3.3.0.jar",
+      "bytes": 67276,
+      "sha256": "ee7cd97974ffb82635e50b9b81e64e18723a11ccd9e8bc0c25aa1d22250a9746",
+      "restore_member": "BOOT-INF/lib/tika-parser-audiovideo-module-3.3.0.jar"
+    },
+    {
+      "name": "reactor-core-3.7.13.jar",
+      "bytes": 1897777,
+      "sha256": "bde6ac455f4845c103bc1e033a46bc3553a65c1441bd172a48b8b877e267236c",
+      "restore_member": "BOOT-INF/lib/reactor-core-3.7.13.jar"
+    },
+    {
+      "name": "netty-tcnative-classes-2.0.74.Final.jar",
+      "bytes": 37388,
+      "sha256": "194874cf723794dd409fd1e728cd91ffbcff0584d73b4d8a1ad0d69d04acf9b3",
+      "restore_member": "BOOT-INF/lib/netty-tcnative-classes-2.0.74.Final.jar"
+    },
+    {
+      "name": "checksums-spi-2.28.22.jar",
+      "bytes": 8044,
+      "sha256": "428777806932b4e9b388b1b073e5a88e11ba9d54f2cd15ec3c4b7a8cd1a8a0e5",
+      "restore_member": "BOOT-INF/lib/checksums-spi-2.28.22.jar"
+    },
+    {
+      "name": "HikariCP-6.3.3.jar",
+      "bytes": 171931,
+      "sha256": "709f378c05756280939ce50fc1b1f1a53bb8e1899dc1b249f21f12703640b48b",
+      "restore_member": "BOOT-INF/lib/HikariCP-6.3.3.jar"
+    },
+    {
+      "name": "grpc-protobuf-1.62.2.jar",
+      "bytes": 5224,
+      "sha256": "66a0b196318bdfd817d965d2d82b9c81dfced8eb08c0f7510fcb728d2994237a",
+      "restore_member": "BOOT-INF/lib/grpc-protobuf-1.62.2.jar"
+    },
+    {
+      "name": "agentscope-extensions-redis-2.0.3.jar",
+      "bytes": 55107,
+      "sha256": "e9e1829406f8fc508c3c7a47b3426b8cb8dac1f728beb68d16aff7e1e5062ba1",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-redis-2.0.3.jar"
+    },
+    {
+      "name": "jcl-over-slf4j-2.0.17.jar",
+      "bytes": 18423,
+      "sha256": "affd06771589ebfe454bb11315a4f466ecaa135b95f3e7939534cf1d2fd7064c",
+      "restore_member": "BOOT-INF/lib/jcl-over-slf4j-2.0.17.jar"
+    },
+    {
+      "name": "eventstream-1.0.1.jar",
+      "bytes": 30193,
+      "sha256": "0c37d8e696117f02c302191b8110b0d0eb20fa412fce34c3a269ec73c16ce822",
+      "restore_member": "BOOT-INF/lib/eventstream-1.0.1.jar"
+    },
+    {
+      "name": "commons-collections4-4.5.0.jar",
+      "bytes": 898652,
+      "sha256": "00f93263c267be201b8ae521b44a7137271b16688435340bf629db1bac0a5845",
+      "restore_member": "BOOT-INF/lib/commons-collections4-4.5.0.jar"
+    },
+    {
+      "name": "tika-parser-text-module-3.3.0.jar",
+      "bytes": 127769,
+      "sha256": "aa3a31937bbb590637c40559b73b30c2051f150f47ec4838cb5e6a99180cd03f",
+      "restore_member": "BOOT-INF/lib/tika-parser-text-module-3.3.0.jar"
+    },
+    {
+      "name": "jwarc-0.35.0.jar",
+      "bytes": 348966,
+      "sha256": "75ee2f169bcc3786fae9b9a52d5de6355155efb608460bc7c99fc2270031a9ca",
+      "restore_member": "BOOT-INF/lib/jwarc-0.35.0.jar"
+    },
+    {
+      "name": "sqlite-jdbc-3.49.1.0.jar",
+      "bytes": 14317659,
+      "sha256": "5c8609d2ca341deb8c6f71778974b5ba4995c7d32d7c7c89d9392a3e72c39291",
+      "restore_member": "BOOT-INF/lib/sqlite-jdbc-3.49.1.0.jar"
+    },
+    {
+      "name": "jakarta.annotation-api-2.1.1.jar",
+      "bytes": 26141,
+      "sha256": "5f65fdaf424eee2b55e1d882ba9bb376be93fb09b37b808be6e22e8851c909fe",
+      "restore_member": "BOOT-INF/lib/jakarta.annotation-api-2.1.1.jar"
+    },
+    {
+      "name": "micrometer-registry-prometheus-1.15.10.jar",
+      "bytes": 42461,
+      "sha256": "cd419eebf123f5bda1c680a5b8a2060344fadb2c98ab7cd710481c693995cdc0",
+      "restore_member": "BOOT-INF/lib/micrometer-registry-prometheus-1.15.10.jar"
+    },
+    {
+      "name": "dd-plist-1.29.jar",
+      "bytes": 102196,
+      "sha256": "ac0fd09594a58dcff566837b2f1d7456a4ce701e2a4b2482d96981527880e96a",
+      "restore_member": "BOOT-INF/lib/dd-plist-1.29.jar"
+    },
+    {
+      "name": "sa-token-spring-boot3-starter-1.44.0.jar",
+      "bytes": 13230,
+      "sha256": "2093ce50ddb303d9905a1bd57488c8a9475d381fdcf3bb2d3a661864c259de43",
+      "restore_member": "BOOT-INF/lib/sa-token-spring-boot3-starter-1.44.0.jar"
+    },
+    {
+      "name": "tika-parser-xml-module-3.3.0.jar",
+      "bytes": 36163,
+      "sha256": "072143477e123bba909acf3fbdc32dc8ca6a41684704af592defb998dd79e12a",
+      "restore_member": "BOOT-INF/lib/tika-parser-xml-module-3.3.0.jar"
+    },
+    {
+      "name": "coze-api-0.4.2.jar",
+      "bytes": 1101199,
+      "sha256": "1a80b936e138462afc2ed3d36de5727b8edd75a95042330f611c7398706012b1",
+      "restore_member": "BOOT-INF/lib/coze-api-0.4.2.jar"
+    },
+    {
+      "name": "auth-2.28.22.jar",
+      "bytes": 232356,
+      "sha256": "2d1344db3196b1468ef7c57ae07c53be9d088646e272ab3d3249cea98dcc5ce3",
+      "restore_member": "BOOT-INF/lib/auth-2.28.22.jar"
+    },
+    {
+      "name": "netty-transport-classes-epoll-4.1.128.Final.jar",
+      "bytes": 147683,
+      "sha256": "17b355fd1c9c3df2706c0ea9324c7ece65f2ca7498de0e822ef90823d75bbe6d",
+      "restore_member": "BOOT-INF/lib/netty-transport-classes-epoll-4.1.128.Final.jar"
+    },
+    {
+      "name": "warm-flow-core-1.8.2.jar",
+      "bytes": 203211,
+      "sha256": "00fccba054cb4ac148bbcd055167b8b3a7286ca850153f6ef2888ccebb8effd4",
+      "restore_member": "BOOT-INF/lib/warm-flow-core-1.8.2.jar"
+    },
+    {
+      "name": "rome-2.1.0.jar",
+      "bytes": 258165,
+      "sha256": "d4e0bb6857a25ee15e2082be6e83e1da897cfbabb025bfe01ae00346d7db7c78",
+      "restore_member": "BOOT-INF/lib/rome-2.1.0.jar"
+    },
+    {
+      "name": "ruoyi-common-chat-3.1.0.jar",
+      "bytes": 113831,
+      "sha256": "14eacc5b8032bd6a18b664bbed87ab9af2a937cc1d1ebd74de0ff73bcfde164c",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-chat-3.1.0.jar"
+    },
+    {
+      "name": "ruoyi-common-social-3.1.0.jar",
+      "bytes": 40319,
+      "sha256": "a7a727964da72cdea445ef9552980b63c82008cb0fb11b7ebe055f35ee33ae71",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-social-3.1.0.jar"
+    },
+    {
+      "name": "opentelemetry-instrumentation-api-2.27.0.jar",
+      "bytes": 243701,
+      "sha256": "e9928acbe8867fa84102c6a40c35266f39eef7f72c566884270565434b315c07",
+      "restore_member": "BOOT-INF/lib/opentelemetry-instrumentation-api-2.27.0.jar"
+    },
+    {
+      "name": "dec-0.1.2.jar",
+      "bytes": 98115,
+      "sha256": "615c0c3efef990d77831104475fba6a1f7971388691d4bad1471ad84101f6d52",
+      "restore_member": "BOOT-INF/lib/dec-0.1.2.jar"
+    },
+    {
+      "name": "httpcore5-h2-5.3.6.jar",
+      "bytes": 242521,
+      "sha256": "479a8aa5e6f99030a2a446a68d1f62320698932746f811fc656a1ea06b94184d",
+      "restore_member": "BOOT-INF/lib/httpcore5-h2-5.3.6.jar"
+    },
+    {
+      "name": "spring-context-support-6.2.14.jar",
+      "bytes": 175458,
+      "sha256": "6f3f01570bc448bfe2bc289b560ea0abd6250ef75398fcf4d17a4db1648470b4",
+      "restore_member": "BOOT-INF/lib/spring-context-support-6.2.14.jar"
+    },
+    {
+      "name": "identity-spi-2.28.22.jar",
+      "bytes": 30963,
+      "sha256": "c6e6f806651f038cddc4a5fd8498c779f970fbac76b76d9bedc38ab8e7f48ecf",
+      "restore_member": "BOOT-INF/lib/identity-spi-2.28.22.jar"
+    },
+    {
+      "name": "log4j-api-2.24.3.jar",
+      "bytes": 348513,
+      "sha256": "5b4a0a0cd0e751ded431c162442bdbdd53328d1f8bb2bae5fc1bbeee0f66d80f",
+      "restore_member": "BOOT-INF/lib/log4j-api-2.24.3.jar"
+    },
+    {
+      "name": "http-auth-2.28.22.jar",
+      "bytes": 17475,
+      "sha256": "6a3ef1dd14505a48e44f6cdc59ca6b1ea36b136347a2910cbc027bf917776044",
+      "restore_member": "BOOT-INF/lib/http-auth-2.28.22.jar"
+    },
+    {
+      "name": "kryo-5.6.2.jar",
+      "bytes": 373885,
+      "sha256": "4e8b1d2f4977187af8a51a957329722dc1cdc56a7c94fbb5a791e82897629cff",
+      "restore_member": "BOOT-INF/lib/kryo-5.6.2.jar"
+    },
+    {
+      "name": "warm-flow-plugin-json-1.8.2.jar",
+      "bytes": 11705,
+      "sha256": "66f82284f2b9bb3dae695eba9f2ebb12d8c1dfd17ae0c62437697950feba6fa6",
+      "restore_member": "BOOT-INF/lib/warm-flow-plugin-json-1.8.2.jar"
+    },
+    {
+      "name": "jaxb-runtime-4.0.6.jar",
+      "bytes": 920148,
+      "sha256": "1c0d57f8c25f9605d5a2f7ad0a87581893776ac85b00b101b2651258edaa9118",
+      "restore_member": "BOOT-INF/lib/jaxb-runtime-4.0.6.jar"
+    },
+    {
+      "name": "ognl-3.2.10.jar",
+      "bytes": 249736,
+      "sha256": "44f47e5929d33dbf62de0b81b69dd9aaf668367899cc60055f843f92bcee57a9",
+      "restore_member": "BOOT-INF/lib/ognl-3.2.10.jar"
+    },
+    {
+      "name": "mcp-core-0.17.2.jar",
+      "bytes": 496639,
+      "sha256": "2489902b00d9cfb77a9ec991adf5c3387da298a4154f526dc63cda9c187891ff",
+      "restore_member": "BOOT-INF/lib/mcp-core-0.17.2.jar"
+    },
+    {
+      "name": "endpoints-spi-2.28.22.jar",
+      "bytes": 13168,
+      "sha256": "99471e1dac603cc5684c40718fb4eab55ca9faee9a7c596e34c9f7327bf935c1",
+      "restore_member": "BOOT-INF/lib/endpoints-spi-2.28.22.jar"
+    },
+    {
+      "name": "netty-common-4.1.128.Final.jar",
+      "bytes": 724595,
+      "sha256": "575d810342b2400faf8085b8fc0bde09432daf6e8b927c4dcb246f0ee5b3e98f",
+      "restore_member": "BOOT-INF/lib/netty-common-4.1.128.Final.jar"
+    },
+    {
+      "name": "error_prone_annotations-2.43.0.jar",
+      "bytes": 20390,
+      "sha256": "48272e75c16e1f7bdc7bd19529ccacd5ee170404701d7f5a23441bb5847957f5",
+      "restore_member": "BOOT-INF/lib/error_prone_annotations-2.43.0.jar"
+    },
+    {
+      "name": "regions-2.28.22.jar",
+      "bytes": 875188,
+      "sha256": "1de44d958c8da0995e3ce516783f92b644a6380471cc8bed61e0e9aa33a6d49b",
+      "restore_member": "BOOT-INF/lib/regions-2.28.22.jar"
+    },
+    {
+      "name": "accessors-smart-2.5.2.jar",
+      "bytes": 30358,
+      "sha256": "9b8a7bc43861d6156c021166d941fb7dddbe4463e2fa5ee88077e4b01452a836",
+      "restore_member": "BOOT-INF/lib/accessors-smart-2.5.2.jar"
+    },
+    {
+      "name": "poi-scratchpad-5.5.1.jar",
+      "bytes": 1913107,
+      "sha256": "24c3f407eff517432d5cfd5628b6b8a091f94c1dbb7481384599b5a0fbeedeb9",
+      "restore_member": "BOOT-INF/lib/poi-scratchpad-5.5.1.jar"
+    },
+    {
+      "name": "google-auth-library-credentials-1.23.0.jar",
+      "bytes": 6373,
+      "sha256": "d982eda20835e301dcbeec4d083289a44fdd06e9a35ce18449054f4ffd3f099f",
+      "restore_member": "BOOT-INF/lib/google-auth-library-credentials-1.23.0.jar"
+    },
+    {
+      "name": "docker-java-transport-3.4.2.jar",
+      "bytes": 38631,
+      "sha256": "bc9981224fdc2d4726566fc723470601ceb14378265c865b4c203146a4e39765",
+      "restore_member": "BOOT-INF/lib/docker-java-transport-3.4.2.jar"
+    },
+    {
+      "name": "aws-query-protocol-2.28.22.jar",
+      "bytes": 69394,
+      "sha256": "07bdf877dcd4f482131ca760b90be2a5a3f20fd9ab5c21106015c63a0e267f4d",
+      "restore_member": "BOOT-INF/lib/aws-query-protocol-2.28.22.jar"
+    },
+    {
+      "name": "springdoc-openapi-starter-webmvc-ui-2.8.13.jar",
+      "bytes": 23131,
+      "sha256": "a3620ca464cd9a8059a8eff0e02cbbea90776cba1cac518d0524a2cfda9275db",
+      "restore_member": "BOOT-INF/lib/springdoc-openapi-starter-webmvc-ui-2.8.13.jar"
+    },
+    {
+      "name": "spring-context-6.2.14.jar",
+      "bytes": 1358097,
+      "sha256": "05679a271a011c13c5b2b50a5dc26a8face1424e9a6718ec7fbd5e29c9a550b3",
+      "restore_member": "BOOT-INF/lib/spring-context-6.2.14.jar"
+    },
+    {
+      "name": "cache-api-1.1.1.jar",
+      "bytes": 51281,
+      "sha256": "9f34e007edfa82a7b2a2e1b969477dcf5099ce7f4f926fb54ce7e27c4a0cd54b",
+      "restore_member": "BOOT-INF/lib/cache-api-1.1.1.jar"
+    },
+    {
+      "name": "hutool-setting-5.8.40.jar",
+      "bytes": 37437,
+      "sha256": "62f42d38c976cb2f22f116025ac3e9f505e0754b24f3b8e06bcf1d84ec3863ea",
+      "restore_member": "BOOT-INF/lib/hutool-setting-5.8.40.jar"
+    },
+    {
+      "name": "ip2region-2.7.0.jar",
+      "bytes": 12763,
+      "sha256": "382603eb3bff74bb70913f29f7a620ab006851b4867a41cbd78b77a00fd2ef69",
+      "restore_member": "BOOT-INF/lib/ip2region-2.7.0.jar"
+    },
+    {
+      "name": "ruoyi-common-oss-3.1.0.jar",
+      "bytes": 27389,
+      "sha256": "2443bd04bb72d21f4f79760e90788e6cbbd308570778d24496aedd5b3330584d",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-oss-3.1.0.jar"
+    },
+    {
+      "name": "sa-token-spring-boot-autoconfig-1.44.0.jar",
+      "bytes": 20636,
+      "sha256": "078ece370ea6b364ac3e6a74850e89d55be1455ec5ee770e481a112ecd88255d",
+      "restore_member": "BOOT-INF/lib/sa-token-spring-boot-autoconfig-1.44.0.jar"
+    },
+    {
+      "name": "istack-commons-runtime-4.1.2.jar",
+      "bytes": 25788,
+      "sha256": "7fd6792361f4dd00f8c56af4a20cecc0066deea4a8f3dec38348af23fc2296ee",
+      "restore_member": "BOOT-INF/lib/istack-commons-runtime-4.1.2.jar"
+    },
+    {
+      "name": "tika-core-3.3.0.jar",
+      "bytes": 789013,
+      "sha256": "6fe7d68bd955f350617adfc3f4f5cbbcdd904a3258bd0d910242f102344afaaf",
+      "restore_member": "BOOT-INF/lib/tika-core-3.3.0.jar"
+    },
+    {
+      "name": "adapter-rxjava3-2.12.0.jar",
+      "bytes": 14374,
+      "sha256": "1dea5891fe716933a0121dd58db31ab8b3510b0fdafe01365dcdd68935360956",
+      "restore_member": "BOOT-INF/lib/adapter-rxjava3-2.12.0.jar"
+    },
+    {
+      "name": "google-auth-library-oauth2-http-1.23.0.jar",
+      "bytes": 268839,
+      "sha256": "f2bf739509b5f3697cb1bf33ff9dc27e8fc886cedb2f6376a458263f793ed133",
+      "restore_member": "BOOT-INF/lib/google-auth-library-oauth2-http-1.23.0.jar"
+    },
+    {
+      "name": "netty-buffer-4.1.128.Final.jar",
+      "bytes": 354500,
+      "sha256": "25befb6b203b492ead32a50e7374a250504a4b8bcc62bbb89592efdf33fe3e9e",
+      "restore_member": "BOOT-INF/lib/netty-buffer-4.1.128.Final.jar"
+    },
+    {
+      "name": "annotations-2.28.22.jar",
+      "bytes": 13757,
+      "sha256": "4d3239c0c7c86fd4fbebcfe17c1015dd6f84119f248cfb20a28be2012bb30147",
+      "restore_member": "BOOT-INF/lib/annotations-2.28.22.jar"
+    },
+    {
+      "name": "openai-java-core-4.8.0.jar",
+      "bytes": 28861199,
+      "sha256": "a2a9d0f4e7a3bcb150968b513076cb7601a045f33250d3e790594346aa85c4da",
+      "restore_member": "BOOT-INF/lib/openai-java-core-4.8.0.jar"
+    },
+    {
+      "name": "httpclient5-5.5.1.jar",
+      "bytes": 959302,
+      "sha256": "2e1e5d0ccf60d078bac6e3b029076afa8433a6a6d93eefdb46bce50720b58b7d",
+      "restore_member": "BOOT-INF/lib/httpclient5-5.5.1.jar"
+    },
+    {
+      "name": "anyline-environment-spring-data-8.7.2-20250603.jar",
+      "bytes": 2334,
+      "sha256": "989ed4dd682885aea420feaef73eea74d01b9a1e716968789e70e2406324a076",
+      "restore_member": "BOOT-INF/lib/anyline-environment-spring-data-8.7.2-20250603.jar"
+    },
+    {
+      "name": "javassist-3.30.2-GA.jar",
+      "bytes": 794714,
+      "sha256": "eba37290994b5e4868f3af98ff113f6244a6b099385d9ad46881307d3cb01aaf",
+      "restore_member": "BOOT-INF/lib/javassist-3.30.2-GA.jar"
+    },
+    {
+      "name": "netty-codec-http-4.1.128.Final.jar",
+      "bytes": 681418,
+      "sha256": "764c42966dcc9df85413e20e0a7f97d3cb682219772fb8dca326e0a2f0e5f5f3",
+      "restore_member": "BOOT-INF/lib/netty-codec-http-4.1.128.Final.jar"
+    },
+    {
+      "name": "spring-boot-actuator-3.5.8.jar",
+      "bytes": 703877,
+      "sha256": "5a670f4a51f3646e69aa37d4f23915d813cb2fb0d020987055462e599a6b8f7e",
+      "restore_member": "BOOT-INF/lib/spring-boot-actuator-3.5.8.jar"
+    },
+    {
+      "name": "hutool-log-5.8.40.jar",
+      "bytes": 54376,
+      "sha256": "f68fd24e84a6b8f355a00456ae5776dde6ec2834f1ff49774463c365b337dbc8",
+      "restore_member": "BOOT-INF/lib/hutool-log-5.8.40.jar"
+    },
+    {
+      "name": "tika-parser-news-module-3.3.0.jar",
+      "bytes": 20422,
+      "sha256": "60baebb526ef09982637bf70b4e673344017fb321f34c7957e443691a9bebcf2",
+      "restore_member": "BOOT-INF/lib/tika-parser-news-module-3.3.0.jar"
+    },
+    {
+      "name": "smallrye-common-cpu-2.6.0.jar",
+      "bytes": 15473,
+      "sha256": "066ee2fdef8524907a29ad679a86b4a1b5e314eb5776e6441ed45ff2533cc6f2",
+      "restore_member": "BOOT-INF/lib/smallrye-common-cpu-2.6.0.jar"
+    },
+    {
+      "name": "tika-parser-xmp-commons-3.3.0.jar",
+      "bytes": 16752,
+      "sha256": "65950b33cda5a752906a5fdb1b23213ff1a2dcc7c77c3ddd2ab58b7876428cb0",
+      "restore_member": "BOOT-INF/lib/tika-parser-xmp-commons-3.3.0.jar"
+    },
+    {
+      "name": "prometheus-metrics-tracer-common-1.3.10.jar",
+      "bytes": 3282,
+      "sha256": "835826a5728d9da8512186b67676d2ba68828713f0c0050753ce2bc718dd9acb",
+      "restore_member": "BOOT-INF/lib/prometheus-metrics-tracer-common-1.3.10.jar"
+    },
+    {
+      "name": "anyline-oro-8.7.2-20250603.jar",
+      "bytes": 94283,
+      "sha256": "a8da9ea9542c328b919821a7e16d54f1d7892bd970f445a648cb8f4e40bf5a4b",
+      "restore_member": "BOOT-INF/lib/anyline-oro-8.7.2-20250603.jar"
+    },
+    {
+      "name": "tika-parser-pkg-module-3.3.0.jar",
+      "bytes": 34469,
+      "sha256": "76a9f73e4cea1563a5712fca9991f2f96078006dd0642ce9214739307657f9be",
+      "restore_member": "BOOT-INF/lib/tika-parser-pkg-module-3.3.0.jar"
+    },
+    {
+      "name": "jsr305-3.0.2.jar",
+      "bytes": 19936,
+      "sha256": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7",
+      "restore_member": "BOOT-INF/lib/jsr305-3.0.2.jar"
+    },
+    {
+      "name": "jdom2-2.0.6.1.jar",
+      "bytes": 327806,
+      "sha256": "0b20f45e3a0fd8f0d12cdc5316b06776e902b1365db00118876f9175c60f302c",
+      "restore_member": "BOOT-INF/lib/jdom2-2.0.6.1.jar"
+    },
+    {
+      "name": "retries-2.28.22.jar",
+      "bytes": 63105,
+      "sha256": "3014871ec207919e5682b0936b5298f00918a58a8c0b2714b1383b529498882e",
+      "restore_member": "BOOT-INF/lib/retries-2.28.22.jar"
+    },
+    {
+      "name": "apache-mime4j-core-0.8.13.jar",
+      "bytes": 126365,
+      "sha256": "00496c123926395d59e5dfdfc8342c607600c6c9e6e6dcab981a673b62481cdf",
+      "restore_member": "BOOT-INF/lib/apache-mime4j-core-0.8.13.jar"
+    },
+    {
+      "name": "rxjava-3.1.12.jar",
+      "bytes": 2665456,
+      "sha256": "1808a433ef55dcc2965523e512ab914a5d0d727228a2683ed7559d7cccf44e37",
+      "restore_member": "BOOT-INF/lib/rxjava-3.1.12.jar"
+    },
+    {
+      "name": "spring-boot-properties-migrator-3.5.8.jar",
+      "bytes": 22118,
+      "sha256": "48190ce21905b32d206ccc1c996c634e89ff9bd567ea7a171dc5159cb43f41bf",
+      "restore_member": "BOOT-INF/lib/spring-boot-properties-migrator-3.5.8.jar"
+    },
+    {
+      "name": "tomcat-embed-el-10.1.49.jar",
+      "bytes": 264301,
+      "sha256": "7ae8a4308313b77c3ebe1941aa215cd9a355c836f10773498360fdd0c7548d69",
+      "restore_member": "BOOT-INF/lib/tomcat-embed-el-10.1.49.jar"
+    },
+    {
+      "name": "http-auth-spi-2.28.22.jar",
+      "bytes": 45761,
+      "sha256": "b79d1a26ab83b7e8cb7ccd29671c9c134c73aad8c0f91a39c2b8ebdd61376460",
+      "restore_member": "BOOT-INF/lib/http-auth-spi-2.28.22.jar"
+    },
+    {
+      "name": "opentelemetry-instrumentation-api-incubator-2.27.0-alpha.jar",
+      "bytes": 239473,
+      "sha256": "991a817ef0cf97aa53e35744c8ab47667526c665701ab3084af00336cec7e3ed",
+      "restore_member": "BOOT-INF/lib/opentelemetry-instrumentation-api-incubator-2.27.0-alpha.jar"
+    },
+    {
+      "name": "tree-sitter-bash-0.23.3.jar",
+      "bytes": 1161496,
+      "sha256": "b8a9b604722836699322ad9aaf124cf1d20336b421f1f38d54bd1662060830c8",
+      "restore_member": "BOOT-INF/lib/tree-sitter-bash-0.23.3.jar"
+    },
+    {
+      "name": "spring-web-6.2.14.jar",
+      "bytes": 2092273,
+      "sha256": "268d4b21c9b66c11f7266d6fb46883ada4f2018421b4d7bf86964998ca5e0c0e",
+      "restore_member": "BOOT-INF/lib/spring-web-6.2.14.jar"
+    },
+    {
+      "name": "http-client-spi-2.28.22.jar",
+      "bytes": 87341,
+      "sha256": "30c79a893ee9d863ec0780ca2d65cb2508af8478c9971fb320b2c64113b3ec6a",
+      "restore_member": "BOOT-INF/lib/http-client-spi-2.28.22.jar"
+    },
+    {
+      "name": "ruoyi-generator-3.1.0.jar",
+      "bytes": 82113,
+      "sha256": "fbdbb00b397da4b881602e41ec34eb0b83a397ebf465f233ed136d17c2dffa17",
+      "restore_member": "BOOT-INF/lib/ruoyi-generator-3.1.0.jar"
+    },
+    {
+      "name": "http-auth-aws-2.28.22.jar",
+      "bytes": 211491,
+      "sha256": "e85f1c56394d36ac6088958669a358544d8f14a8cf0bcc1255a9634d1c399d24",
+      "restore_member": "BOOT-INF/lib/http-auth-aws-2.28.22.jar"
+    },
+    {
+      "name": "agentscope-extensions-rag-simple-2.0.3.jar",
+      "bytes": 133361,
+      "sha256": "38d33105aac78426928201f488424a74152cf1e8ee4219489f8d5ab8e274d959",
+      "restore_member": "BOOT-INF/lib/agentscope-extensions-rag-simple-2.0.3.jar"
+    },
+    {
+      "name": "json-schema-validator-2.0.0.jar",
+      "bytes": 576833,
+      "sha256": "ee940241043ae01801df5954bc3744bf723c449ff0da719f97e1b9a6889739d7",
+      "restore_member": "BOOT-INF/lib/json-schema-validator-2.0.0.jar"
+    },
+    {
+      "name": "angus-activation-2.0.3.jar",
+      "bytes": 26729,
+      "sha256": "a6bd35c538cf90fff941ad6258c40c08fca0b5c9c3f536c657114f27ce0527a7",
+      "restore_member": "BOOT-INF/lib/angus-activation-2.0.3.jar"
+    },
+    {
+      "name": "warm-flow-mybatis-plus-core-1.8.2.jar",
+      "bytes": 60935,
+      "sha256": "5e8f43cfa733a34a47fd161db8fa37ec6e6db02997562395e4da910386a79a5c",
+      "restore_member": "BOOT-INF/lib/warm-flow-mybatis-plus-core-1.8.2.jar"
+    },
+    {
+      "name": "opentelemetry-reactor-3.1-2.27.0-alpha.jar",
+      "bytes": 21114,
+      "sha256": "be1db19d7861a5a878c2329fb7b2c9ad35a15d898460b6a1e70a399b95af54a5",
+      "restore_member": "BOOT-INF/lib/opentelemetry-reactor-3.1-2.27.0-alpha.jar"
+    },
+    {
+      "name": "postgresql-42.7.8.jar",
+      "bytes": 1116727,
+      "sha256": "2a32a9dcbc42d67a50ad3a0de5efd102c8d2be46720045f2cbd6689f160ab7c7",
+      "restore_member": "BOOT-INF/lib/postgresql-42.7.8.jar"
+    },
+    {
+      "name": "mybatis-3.5.16.jar",
+      "bytes": 1818073,
+      "sha256": "1814d02fccd8dbeadf628cbac8962b1edaab9bfa67e8585c6a3663c48bd8953d",
+      "restore_member": "BOOT-INF/lib/mybatis-3.5.16.jar"
+    },
+    {
+      "name": "httpclient-4.5.14.jar",
+      "bytes": 785639,
+      "sha256": "c8bc7e1c51a6d4ce72f40d2ebbabf1c4b68bfe76e732104b04381b493478e9d6",
+      "restore_member": "BOOT-INF/lib/httpclient-4.5.14.jar"
+    },
+    {
+      "name": "jjwt-impl-0.13.0.jar",
+      "bytes": 482009,
+      "sha256": "b351baaa302889a416e83683f110948017cee671303262522d4ba477688ca89f",
+      "restore_member": "BOOT-INF/lib/jjwt-impl-0.13.0.jar"
+    },
+    {
+      "name": "ruoyi-chat-3.1.0.jar",
+      "bytes": 1424124,
+      "sha256": "e44da74705409b708d6beb28afc2ba93406de2bd11c29e2c24e4689bee552536",
+      "restore_member": "BOOT-INF/lib/ruoyi-chat-3.1.0.jar"
+    },
+    {
+      "name": "neo4j-bolt-connection-6.0.2.jar",
+      "bytes": 93991,
+      "sha256": "0fa0a8c5e5969189495a2071c7059fdd066fbff7ed6174d8e6b65269e0bf5cef",
+      "restore_member": "BOOT-INF/lib/neo4j-bolt-connection-6.0.2.jar"
+    },
+    {
+      "name": "grpc-core-1.62.2.jar",
+      "bytes": 632829,
+      "sha256": "18439902c473a2c1511e517d13b8ae796378850a8eda43787c6ba778fa90fcc5",
+      "restore_member": "BOOT-INF/lib/grpc-core-1.62.2.jar"
+    },
+    {
+      "name": "spring-core-6.2.14.jar",
+      "bytes": 1979921,
+      "sha256": "de0702e72397f1ebb7aa930a9f5ae72ab16c5c7ae40d7f7af65786aa5542f902",
+      "restore_member": "BOOT-INF/lib/spring-core-6.2.14.jar"
+    },
+    {
+      "name": "sa-token-core-1.44.0.jar",
+      "bytes": 245188,
+      "sha256": "5f6498b1650653e6ac16269e5bcf34b200afe5d17b958ad65ddba1e145e2363f",
+      "restore_member": "BOOT-INF/lib/sa-token-core-1.44.0.jar"
+    },
+    {
+      "name": "mapstruct-plus-spring-boot-starter-1.5.0.jar",
+      "bytes": 6202,
+      "sha256": "da14059018af89b07f169f67ddc5d3436ea4feaaabebe48c666214d14fd9557e",
+      "restore_member": "BOOT-INF/lib/mapstruct-plus-spring-boot-starter-1.5.0.jar"
+    },
+    {
+      "name": "redisson-spring-data-35-3.51.0.jar",
+      "bytes": 257192,
+      "sha256": "fcf3cab0e07c3a11f8fe2c1dce1edd77a1b239662cae7d404e45f5b8fdb613b0",
+      "restore_member": "BOOT-INF/lib/redisson-spring-data-35-3.51.0.jar"
+    },
+    {
+      "name": "xmlbeans-5.3.0.jar",
+      "bytes": 2211661,
+      "sha256": "6cc69da3b4d35b83c5e477cd4daba204e44109833e34af2b9a8a2c8788289917",
+      "restore_member": "BOOT-INF/lib/xmlbeans-5.3.0.jar"
+    },
+    {
+      "name": "spring-data-redis-3.5.6.jar",
+      "bytes": 2271898,
+      "sha256": "bf6da09b5223ed3e03d2fe9a8c7f150fc26cc284aa4992766840e4fb396d9f50",
+      "restore_member": "BOOT-INF/lib/spring-data-redis-3.5.6.jar"
+    },
+    {
+      "name": "warm-flow-plugin-vue3-ui-1.8.2.jar",
+      "bytes": 1003559,
+      "sha256": "b01c0fa08e61309a25057ddf57fbd081fd812e1b579a59e687f0946c04dbceaa",
+      "restore_member": "BOOT-INF/lib/warm-flow-plugin-vue3-ui-1.8.2.jar"
+    },
+    {
+      "name": "aspectjweaver-1.9.25.jar",
+      "bytes": 2190658,
+      "sha256": "a7ec6d1f7dd819d743e3a20f95609ec91e41f0b7b4e542b2ff62cfa0eb69b67e",
+      "restore_member": "BOOT-INF/lib/aspectjweaver-1.9.25.jar"
+    },
+    {
+      "name": "tika-parsers-standard-package-3.3.0.jar",
+      "bytes": 13540,
+      "sha256": "a14ef78612ae6dccbaf2a0ab266d129663265b03e46c72767bb789e80593b917",
+      "restore_member": "BOOT-INF/lib/tika-parsers-standard-package-3.3.0.jar"
+    },
+    {
+      "name": "ruoyi-common-translation-3.1.0.jar",
+      "bytes": 18459,
+      "sha256": "0de147ee1d2a7c3adbd160e0dc86882027a2c7110c23b9879a86974b6ad27808",
+      "restore_member": "BOOT-INF/lib/ruoyi-common-translation-3.1.0.jar"
+    },
+    {
+      "name": "mybatis-plus-3.5.14.jar",
+      "bytes": 5777,
+      "sha256": "cff9526b0f7f32f80242e9bc01dd972809daa03b571ecacfd07638680c631463",
+      "restore_member": "BOOT-INF/lib/mybatis-plus-3.5.14.jar"
+    },
+    {
+      "name": "logback-classic-1.5.21.jar",
+      "bytes": 308056,
+      "sha256": "b2523f7b0dabf4386c81312f0371d267e3a9fbce409046f16b042bf68571ba4a",
+      "restore_member": "BOOT-INF/lib/logback-classic-1.5.21.jar"
+    },
+    {
+      "name": "ruoyi-workflow-3.1.0.jar",
+      "bytes": 280775,
+      "sha256": "bd866321067a5f383d515110a7507a9f99f917734dbfc4ffbfabdcbfaa50ed2a",
+      "restore_member": "BOOT-INF/lib/ruoyi-workflow-3.1.0.jar"
+    },
+    {
+      "name": "metrics-spi-2.28.22.jar",
+      "bytes": 27262,
+      "sha256": "0222464cd9c331f4d0077b72655e4924b097b0b4b83d137566c2825189aa81aa",
+      "restore_member": "BOOT-INF/lib/metrics-spi-2.28.22.jar"
+    },
+    {
+      "name": "commons-text-1.10.0.jar",
+      "bytes": 238400,
+      "sha256": "770cd903fa7b604d1f7ef7ba17f84108667294b2b478be8ed1af3bffb4ae0018",
+      "restore_member": "BOOT-INF/lib/commons-text-1.10.0.jar"
+    },
+    {
+      "name": "jakarta.servlet-api-6.0.0.jar",
+      "bytes": 347613,
+      "sha256": "c034eb1afb158987dbb53a5fea0cadf611c8dae8daadd59c44d9d5ab70129cef",
+      "restore_member": "BOOT-INF/lib/jakarta.servlet-api-6.0.0.jar"
+    },
+    {
+      "name": "tika-parser-digest-commons-3.3.0.jar",
+      "bytes": 18436,
+      "sha256": "48608b90ec9f9ec65b2466e31b2fd8ba32923db2a616fd70ed5c144a8d47be3c",
+      "restore_member": "BOOT-INF/lib/tika-parser-digest-commons-3.3.0.jar"
+    }
+  ],
+  "count": 489,
+  "bytes": 338818919,
+  "owner_confirmation": "G metering remapped to B stable-cp; no active JVM; src/classes/logs retained",
+  "at": "2026-10-02T20:59:20.579602+00:00",
+  "cleaned_at": "2026-10-02T20:59:41.729577+00:00",
+  "retained": [
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/probe-correct-group.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/compile-frozen.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/classes",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/probe.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/probe-consumer-final.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/compile.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/cp.txt",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/probe-final.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/probe-frozen.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/compile-final.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/compile-consumer-final.log",
+    "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl/src"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "head": "f456f79aaf31d9372558f2cff73875ab3dcbf6c3",
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-c02-contract-node-20261002.index",
+  "paths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java"
+  ],
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "da3cae4f0a8b4d2598426737162abb5e8635db007febd1d7184fdf821929285b",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "04b640aec35eb3d80a07e5b08812d0860df10050f4e02293b0eb1bc4c26641c6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "8339c0f80dec0bfc09ca5fd8d89e4b16a6c09d6e5e0ec0e5997882e30053acd0",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "2313dc077bc9019ed1d6b51b6e17176e127eb5321d9666163d8d0b481672cafc"
+  },
+  "mainIndexBackup": "/Users/mac/Documents/ruoyi-ai/.git/codex-c02-contract-main-index-before-20261002",
+  "mainIndexEntriesBeforeSha256": "9fbec296d2d35efa191db8cefe1277e0eb1be384f2c985f254ce9ff08ea548f5",
+  "status": "COMMITTED_PUSHED_REMOTE_VERIFIED",
+  "isolatedTests": 38,
+  "mainTargeted": 50,
+  "boundary": "minimal four paths; Handle original mixed WIP not copied",
+  "mainFull": {
+    "tests": 3758,
+    "passed": 3732,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 26
+  },
+  "latestConstraint": "tool restoration pending; this bounded Gate node not entire project completion",
+  "commit": "2db6d4ef551d2966e5ac7c7a40084f304d6802b6",
+  "normalHooks": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "alignedOwnIndexPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java"
+  ],
+  "preservedMixedOwnIndexPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java"
+  ],
+  "foreignIndexEntriesUnchanged": true,
+  "remote_verified_commit": "2db6d4ef551d2966e5ac7c7a40084f304d6802b6",
+  "remote_verified_at": "2026-10-02T20:39:37.685856+00:00"
+}

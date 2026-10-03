@@ -1,0 +1,190 @@
+{
+  "status": "READ_ONLY_INVENTORY_NOT_ACCEPTANCE",
+  "mode": "inventory",
+  "time": "2026-10-02T18:50:11.241688+00:00",
+  "database": "ipd_dev",
+  "inventory": {
+    "persons": [
+      {
+        "id": "900101",
+        "person_type": "SUPER_ADMIN",
+        "group_id": "900001",
+        "account_status": "ACTIVE",
+        "employment_status": "ACTIVE",
+        "del_flag": "0"
+      },
+      {
+        "id": "900102",
+        "person_type": "GROUP_LEADER",
+        "group_id": "900001",
+        "account_status": "ACTIVE",
+        "employment_status": "ACTIVE",
+        "del_flag": "0"
+      },
+      {
+        "id": "900103",
+        "person_type": "MARKET_PM",
+        "group_id": "900001",
+        "account_status": "ACTIVE",
+        "employment_status": "ACTIVE",
+        "del_flag": "0"
+      },
+      {
+        "id": "900104",
+        "person_type": "RD_PM",
+        "group_id": "900001",
+        "account_status": "ACTIVE",
+        "employment_status": "ACTIVE",
+        "del_flag": "0"
+      }
+    ],
+    "project": [
+      {
+        "id": "2106072674957529089",
+        "name": "QA-CT3负责人非成员项目",
+        "status": "PENDING_START",
+        "product_id": "NULL",
+        "product_line_id": "2106072393398095874",
+        "main_group_id": "2096339266916327426",
+        "create_by": "900101",
+        "current_stage": "CONCEPT",
+        "del_flag": "0"
+      }
+    ],
+    "line": [
+      {
+        "id": "2106072393398095874",
+        "line_code": "qa-ct3-leader-nm",
+        "status": "INACTIVE",
+        "leader_person_id": "900101",
+        "del_flag": "0"
+      }
+    ],
+    "line_members": [
+      {
+        "id": "2106072394400534530",
+        "person_id": "900101",
+        "status": "ACTIVE",
+        "del_flag": "0"
+      },
+      {
+        "id": "2106072393880440833",
+        "person_id": "900102",
+        "status": "EXITED",
+        "del_flag": "0"
+      }
+    ],
+    "project_members": [
+      {
+        "id": "2106072675020443650",
+        "person_id": "900101",
+        "role": "MEMBER",
+        "exit_date": "NULL",
+        "del_flag": "0"
+      }
+    ],
+    "document": [
+      {
+        "id": "2106072675242741762",
+        "project_id": "2106072674957529089",
+        "doc_type": "PRD",
+        "status": "GENERATED",
+        "parent_version_id": "NULL",
+        "version_no": "1"
+      }
+    ],
+    "stages": [],
+    "actions": [],
+    "models": [
+      {
+        "id": "1",
+        "provider": "TEST",
+        "model_name": "test-rag-20260923",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103703211184533505",
+        "provider": "OPENAI",
+        "model_name": "lane4-mock",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103704310327062530",
+        "provider": "OPENAI",
+        "model_name": "lane4-mock-97166",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103704332951138305",
+        "provider": "OPENAI",
+        "model_name": "lane4-budgetprobe-97166",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103705861657505794",
+        "provider": "OPENAI",
+        "model_name": "lane4-mock-97536",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103705889591570433",
+        "provider": "OPENAI",
+        "model_name": "lane4-budgetprobe-97536",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103706310582251521",
+        "provider": "OPENAI",
+        "model_name": "lane4-mock-97643",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2103706333168578561",
+        "provider": "OPENAI",
+        "model_name": "lane4-budgetprobe-97643",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2104855400313536513",
+        "provider": "TEST",
+        "model_name": "ssrf-probe",
+        "is_active": "0",
+        "del_flag": "0"
+      },
+      {
+        "id": "2104885081318375426",
+        "provider": "MiniMax",
+        "model_name": "MiniMax-M3",
+        "is_active": "1",
+        "del_flag": "0"
+      }
+    ]
+  },
+  "sessionEvidence": "DB Person inventory only; credentials files are not authenticated sessions. Root must verify actual Person session before any API mutation.",
+  "mutationGate": "EXPLICIT_ROOT_CALL_ONLY; no mutation code exists",
+  "contract": {
+    "approvalApi": "POST /api/v1/projects/2106072674957529089/approve-start",
+    "approver": "exact current line leader; SUPER_ADMIN only if leader is absent",
+    "negativeCandidate": "900102 only after fresh same-group and nonmember readback; current main_group must not be inferred from person role",
+    "lightActionCandidate": "C05 / RD_PM / CONCEPT / LIGHT; actual instantiated id required",
+    "negativeApi": "POST /api/v1/stage-actions/{actualId}/fields and /transit; accept requires legally DONE first to avoid state 400 masking member denial",
+    "completion": "Real RD_PM project member supplies actualDoneAt through fields and legally transits; do not invent completion dates/evidence or write SQL DONE",
+    "approvalEffects": [
+      "product creation and projects product_id/status/current_stage",
+      "six project_stages and catalog stage_actions",
+      "project certification synchronization",
+      "PROJECT_START_APPROVE audit",
+      "onBootstrapped may insert AI task and dispatch engine after commit; model/AI outputs and events may follow"
+    ],
+    "compensation": "Approval is not a reversible fixture toggle. Preserve products/stages/actions/tasks/documents/events/audit. Restore only separately authorized temporary membership/group fields after fresh conflict checks; do not delete or rewind approval history.",
+    "alternative": "If inactive CT3 is unsuitable, root may create an independently named QA project using POST /api/v1/projects on a verified ACTIVE QA line with same real users, mainGroupId and member PMs, then exact leader approve-start; no business project reuse."
+  }
+}

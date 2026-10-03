@@ -1,0 +1,31 @@
+{
+  "base": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-reason-head72-moptbcw7/ruoyi-ai",
+  "before": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "ee01008c2a369a9ec5f282bcaba6566b73fcc10dc3ec644544b8b3c361055cb1",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "4c2418702c0619d1022fa7369e31b35acf349d9624fe29703ce11b0c6cdd6dae"
+  },
+  "after": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "86f7f3e03729be1ea5ff5ee4870445727a88ad2ad858f1a14c6a63211e03191d",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "f3e95cec7541faa9bdf3ed62f77f890a23e24a8ae10ee6b44bed82f3219852ba"
+  },
+  "status": "VERIFIED_ISOLATED_CANDIDATE",
+  "compileProduction": 640,
+  "compileTest": 427,
+  "tests": 13,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "reasonAssertionsPassed": true,
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-reason-head72-moptbcw7/handle-test.log",
+  "boundary": "HEAD72 archive + only Handle fixed-reason hunks and two existing test assertions; existing offline ~/.m2 artifacts; no -am",
+  "mavenExit": 0,
+  "finalLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-reason-head72-moptbcw7/handle-test-final.log",
+  "baselineLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-reason-head72-moptbcw7/baseline-test.log",
+  "baselineResult": "original HEAD Handle same success fixture fails identically; 1 test/1 failure",
+  "logs": {
+    "handle-test.log": "b2cfa1acd5b762836814800a93869185a0a85bac1aa2f9b46f212e3fab3f00b8",
+    "baseline-test.log": "cb8ce94d1a2e980fcaed9d82bd1987501b54dc7a331c688fb511ddfa4f4e8dd2",
+    "handle-test-final.log": "3f54c5d59e45db36684605366b57f0d782ec24fabfbcb581b46a28723bbbc1b0"
+  }
+}

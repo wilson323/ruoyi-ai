@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-02T21:11:07.459765+00:00",
+  "status": "VERIFIED_PREVIOUS_BASELINE_LISTENER_HTTP_NOT_FULL_CAPABILITY_ACCEPTANCE",
+  "newPid": 50240,
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "sha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "activeTaskCountsBefore": {
+    "projectAgent": 0,
+    "legacyGeneration": 0
+  },
+  "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-runtime-restore-20261002.log",
+  "main_source_or_target_modified": false,
+  "full_capability_package_loaded": false,
+  "listener_verified_at": "2026-10-02T21:14:07.576452+00:00",
+  "http": {
+    "health": {
+      "status": 401,
+      "body_sha256": "8f6b37f8a7b66b042ac97f44bebdd84080de51bebb0053f60e1df779339ffd95",
+      "code": 401,
+      "health_status": null
+    },
+    "authMe": {
+      "status": 401,
+      "body_sha256": "b161e1878d131c6b56bbf0ad9256051a6afac259c308120c422b6d716b6be430",
+      "code": 20001,
+      "health_status": null
+    }
+  }
+}

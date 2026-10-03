@@ -1,0 +1,43 @@
+{
+  "status": "CONFIRMED_LOCAL_PARSER_BOUNDARY_GAPS",
+  "gateSha256": "496644da74dfc0c9e9eb05d478f2308442b5b0412dc6754b9fe8cdad6693fe98",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-c02-negative-5nbsuz8k",
+  "compileExit": 0,
+  "probeExit": 0,
+  "actualDraftChars": 5441,
+  "actualDraftSha256": "ede24b5b6cfc6449fb75834ace486dd0127e2157357c4f1fdb3ec089bcc701a8",
+  "results": [
+    "actual5441C02=SKILL_CONTRACT_MISMATCH",
+    "actual5441C01=null",
+    "default=null",
+    "negatedTable=null",
+    "conditionalTable=null",
+    "conditionalNegation=SKILL_CONTRACT_MISMATCH",
+    "notBlocker=SKILL_CONTRACT_MISMATCH",
+    "unnecessary=SKILL_CONTRACT_MISMATCH",
+    "purposeOptionalContradiction=null",
+    "tableContradiction=null"
+  ],
+  "expectedAllow": [
+    "conditionalNegation",
+    "notBlocker",
+    "unnecessary"
+  ],
+  "expectedReject": [
+    "purposeOptionalContradiction",
+    "tableContradiction"
+  ],
+  "recognizedPositiveNegative": [
+    "actual5441C02 rejected",
+    "actual5441C01 allowed",
+    "default allowed",
+    "negatedTable allowed",
+    "conditionalTable allowed"
+  ],
+  "boundary": "No sources reconstructed/no citationText invented. Actual draft tested with no source invocation only to isolate purpose rule; not evidence of production measurement behavior. No main writes or network. Scope only optional-purpose parser.",
+  "artifactHashes": {
+    "Probe.java": "6ce9abf63a23eb8aef19d865ccaa1328bb40c45ade890ec88165762bc8d56c8e",
+    "probe.log": "2cef9893a07ab38b2ff605b20cd3372d36364598e981c61f1d2aa63b0715ae76",
+    "compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

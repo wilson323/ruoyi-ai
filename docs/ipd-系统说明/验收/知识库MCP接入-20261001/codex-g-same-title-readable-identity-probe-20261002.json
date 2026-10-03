@@ -1,0 +1,28 @@
+{
+  "status": "CONFIRMED_PARSER_GAP",
+  "sourceSha256": "496644da74dfc0c9e9eb05d478f2308442b5b0412dc6754b9fe8cdad6693fe98",
+  "sourcePath": "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-same-title-identity-b8jxoqrp",
+  "javacExit": 0,
+  "probeExit": 0,
+  "cases": [
+    "KB Chinese ID claiming reviewed",
+    "unknown Chinese ID claiming reviewed",
+    "KB Chinese ID correctly nonreviewed",
+    "project Chinese ID correctly reviewed",
+    "KB documentId claiming reviewed",
+    "project documentId correctly reviewed",
+    "unknown documentId claiming reviewed"
+  ],
+  "results": [
+    "0:null",
+    "1:null",
+    "2:null",
+    "3:null",
+    "4:SOURCE_IDENTITY_MISMATCH",
+    "5:null",
+    "6:null"
+  ],
+  "network": false,
+  "sourceChanged": false
+}

@@ -1,0 +1,9 @@
+{
+  "status": "PENDING_VALIDATION",
+  "checks": "git diff --check pending below; Maven not run",
+  "files": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowEngine.java": "6199293036001af05f48be3e62f299035f40c98f9be2f01c2ac75ccb01a62815",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/WorkflowEngineLeaseBoundaryTest.java": "e35ff3a3113cbebf603cf2191a90bccc41dfc02d092a4a77f300f7037ee5697a"
+  },
+  "behavior": "owned business failure status persists first; template/message/connection notifications individually best effort; original failure retained"
+}

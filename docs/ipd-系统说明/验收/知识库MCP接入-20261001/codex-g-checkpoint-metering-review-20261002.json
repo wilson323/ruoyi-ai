@@ -1,0 +1,70 @@
+{
+  "status": "MAIN_MODEL_TARGETED_VERIFIED_GUARD_NATIVE_SUSPEND_TEMP_CANDIDATE",
+  "mainSourceSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java": "b5d96e42bdc81d44b01dcbc37b694f97992b266acd3bbfe852e47138fe50f6b7",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java": "2ad67e3e5491db1dc6648a90bca3f54d863be1884c0269f13817af3a6e30c8da",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiCheckpointGuard.java": "6b36d6bec5c1c2b7caf17b0c5100057e787dd0cdfc4a272aa328ca1bcc5ea863",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java": "adcbcb42a727478605e07027ea9eaf64e0a49faeca7c1ce56c44d0f829dff12c"
+  },
+  "mainAuthorizedWrite": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java",
+  "newMainTestCases": [
+    "reportedUsageSurvivesMembershipWithdrawalButNewCallsDoNot",
+    "reportedUsageCannotWriteAfterOriginalRunOwnershipIsLost"
+  ],
+  "newMainTests": {
+    "compiled": 0,
+    "exit": 0,
+    "found": 12,
+    "passed": 12,
+    "fail": 0,
+    "skip": 0
+  },
+  "initialRevocationCounterexample": {
+    "reportedUsage": [
+      10,
+      5
+    ],
+    "actualProviderCalls": 1,
+    "ledgerInvocations": 0,
+    "newModelDenied": true,
+    "source": "Old2arg finish required freshACL; baseline log retained."
+  },
+  "checkpointProducer": {
+    "sdk": "2.0.3",
+    "realHarnessSave": true,
+    "ASKINGStoredVersion": 1,
+    "SuspendedStoredCallState": "ALLOWED",
+    "suspendedResultInSavedContext": false,
+    "originalFinishedNegativeFailed": true,
+    "rootFinishedFixNegativePass": true,
+    "rootMainSuspendPositiveStillFails": "Expected persisted suspended result that official ReActAgent intentionally does not store.",
+    "tempSuspendCandidateCompileExit": 0,
+    "tempSuspendCandidateExit": 0,
+    "passedCases": 19,
+    "cases": "actualASK/ordinarySUSPEND positive, wrong version/missing/owner/savedscope/raw/name/input/id negatives, finishedASK negative",
+    "candidateBeforeSHA": "6b36d6bec5c1c2b7caf17b0c5100057e787dd0cdfc4a272aa328ca1bcc5ea863",
+    "candidateAfterSHA": "6b36d6bec5c1c2b7caf17b0c5100057e787dd0cdfc4a272aa328ca1bcc5ea863",
+    "semanticBoundary": "Resume kind/pending derived from trusted persisted official interruption. For ordinary SUSPEND require saved ALLOWED exact call and no completed matching result; do not add fictional suspended result to checkpoint. Guard validation itself does not consume/write."
+  },
+  "owningSDK": "ReActAgent2711 pending results not stored;2776-2788 separates completed/pending;3285-3299 transient TOOL_SUSPENDED result.",
+  "configStaticReview": "Config supplies actual server stateStore, live runs.resolveAguiResumeTools authoritative frontend catalog; no direct client AgentState. Not actual SpringBoot/HTTP/DurableDB proof.",
+  "scan": "Current official Kernel no disabled File/Shell/Web/Memory/Session/Sub or skillsEnabled(false)/subagentsEnabled(false)/disableDynamic; enablePlanMode retained. Snapshot not proof running10130 package integrated.",
+  "limits": [
+    "Fresh start check remains on execution sink; finished accounting original-owner fence only tested synthetic provider real ChatUsage/in-memory ledger mocks.",
+    "Real HTTP/toolconfirm/durable consume requires root runtime window.",
+    "SDK saved provider checks not claim all malformed input combinations or all pause/epoch races."
+  ],
+  "evidenceSHA": {
+    "src/GSavedCheckpointGuardProbe.java": "2473d6bb460fe0a2bf74b9d5fb8cfefc2c3911399f98f2d51c9becaecaf9ae91",
+    "saved-guard.log": "e77df98ab5e714b563405aa25eeebc2bdf0b4a31534b75d78415974557d860f6",
+    "saved-guard-extended-final.log": "a9a6784e0715882e0b1af525a4b6f2ddc933d09ded699c5215ced8dc527de007",
+    "saved-guard-afterfix.log": "d2367f0fb8d750d7b9183e70531c7cc6bd370ce735d4a7012ff8a4aded4a7f1e",
+    "suspend-candidate-src/ProjectAgentAguiCheckpointGuard.java": "6b36d6bec5c1c2b7caf17b0c5100057e787dd0cdfc4a272aa328ca1bcc5ea863",
+    "suspend-candidate-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "suspend-candidate.log": "ff13d61f0a3f313a870dc54e71324e55af9ad0f9fd83f583bc1ae948ae6ca1ad",
+    "src/GRevokedUsageProbe.java": "6573bce01be784a2df88d252afb19afa7d3970f45473e63a74c4e9c6fc97a52c",
+    "revoked-usage.log": "f66fee2426a79f2ef57dde32212df627dd2758a42462b8178f591679c1b494f1",
+    "metering-withdraw-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "metering-withdraw-tests.log": "4122e9721fbd35eea416d7386cb4714bb2b858b2a5b1137b833b87974411d605"
+  }
+}

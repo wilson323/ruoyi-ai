@@ -1,0 +1,31 @@
+{
+  "status": "COUNTEREXAMPLE",
+  "candidatePatchSha256": "bd65198368a66df613789c85d694d8c4e4cfbd8c9a0bc9b797dc7e3c65c7413b",
+  "originalJUnit": {
+    "found": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "aborted": 0
+  },
+  "originalLogSha": "6b39734b5da3f8d0fddde47e688f380c0988cfc42c124a3a5cad183e0d657309",
+  "independentTemp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-artifact-v3-o_xcsgdz",
+  "compileExit": 0,
+  "probeExit": 0,
+  "actualCases": {
+    "originAndBytesAndSidecarLost": "binary requireDocumentContent returned normally: FAIL_OPEN",
+    "originTopVersionMovedToOtherVersionAndBothFilesLost": "binary requireDocumentContent returned normally: FAIL_OPEN",
+    "451EventsWithActual200PageLimit": "normal origin readback/delivery SUCCESS"
+  },
+  "rootCause": "requireDocumentContent issued.isEmpty and no bytes or sidecar returns legacy. Unknown receipt cannot prove legacy text, so loss of origin removes durable classification. Origin scope/hash checks protect matched events only; changed version or marker is ignored.",
+  "authority": "record requires active transaction, injected OwnedArtifactAppender, then event readback; this is conditional on trusted server appender not arbitrary model payload. Interfaces alone do not prove actual Handle seq/epoch/CAS or event provenance.",
+  "gaps": [
+    "Test manager simulates rollback on maps; no actual MyBatis isolation, transaction participation/read-your-writes or sequence rollback proof",
+    "CandidateAccess delegates OwnedTargetFactory; real actor/Person visibility/owner production injection not tested",
+    "Events mock original tests ignores limit; G bounded pagination now verifies normal 451-event path, not concurrency or duplicated/truncated mapper pages",
+    "No main Handle appender integration, no seq restoration after append/readback fail",
+    "No production HTTP download/apply integration or loaded runtime proof"
+  ],
+  "recommendation": "Keep absence of origin as unknown for native attachment apply; choose authoritative existing row/event identity contract or conservatively fail closed when evidence missing. Do not assign binary authority solely from ordinary text prefix. Preserve legacy-text compatibility via explicit trusted historical provenance if available.",
+  "writes": "Only new temp and EVDIR evidence; main/index/target untouched"
+}

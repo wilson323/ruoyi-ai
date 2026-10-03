@@ -1,0 +1,147 @@
+{
+  "status": "LATEST_SOURCE_TARGETED_VERIFIED_WITH_RUNTIME_LIMITS",
+  "latestMainSourceSnapshotSHA": {
+    "main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiCheckpointGuard.java": "6b36d6bec5c1c2b7caf17b0c5100057e787dd0cdfc4a272aa328ca1bcc5ea863",
+    "main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java": "b5d96e42bdc81d44b01dcbc37b694f97992b266acd3bbfe852e47138fe50f6b7",
+    "main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java": "0ec89cadfd3ee8abb5e0440638184c180dadc9df827de6b2f5620163fc622502",
+    "main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRuntimeAccessSink.java": "d30e99a7e974843bbe02891d29ac0973ece98ce1403ae7ef66bcd0bcc8bcc579",
+    "test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java": "2ad67e3e5491db1dc6648a90bca3f54d863be1884c0269f13817af3a6e30c8da"
+  },
+  "compileExit": 0,
+  "realSDKGuard": {
+    "passed": 19,
+    "exit": 0,
+    "actualMainNotTempCandidate": true
+  },
+  "metering": {
+    "tests": 12,
+    "passed": 12,
+    "fail": 0,
+    "skip": 0,
+    "exit": 0,
+    "actualMainNotTempCandidate": true
+  },
+  "redisCleanup": {
+    "actualLocalRedisPort": 16379,
+    "actualCurrentAdapterCompiled": true,
+    "compileExit": 0,
+    "probeExit": 0,
+    "randomPrivateUUIDKeyPrefix": true,
+    "realSDKPausedRootAndOfficialNamespaceStatesSaved": true,
+    "ACLWithdrawnStillOwnedRootAndOfficialOnlyDeleted": true,
+    "UnrelatedSameOwnedUserSessionPreserved": true,
+    "LostRunOwnerCleanupRejectedStatePreserved": true,
+    "FinalPrivateUUIDKeysDeleted": 6,
+    "limits": "Config namespace deletion logic and RuntimeAccessSink.checkpointOwnership actual consumer; root and official namespace states independently produced by actual Harness SDK, not a native parent→child spawn/production Config bean/HTTP/fulldurable resume test. Original-run owner guard simulated; real Redis adapter/version/save/delete exercised."
+  },
+  "disableInvestigation": {
+    "currentProductionConsumers": 4,
+    "currentViolations": 0,
+    "scannerControls": 11,
+    "workingSnapshot": {
+      "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/kernel/AgentScopeChatKernel.java": {
+        "sourceSHA": "634eeee4eb1200d103d4ea0787884fcae96ae96160f3ecf376e2dc5f64c5a82a",
+        "workingCalls": {
+          ".disableSubagents()": 0,
+          ".disableDynamicSubagents()": 0,
+          ".disableDynamicSkills()": 0
+        },
+        "headCalls": {
+          ".disableSubagents()": 1,
+          ".disableDynamicSubagents()": 1,
+          ".disableDynamicSkills()": 1
+        }
+      },
+      "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/chat/poc/kernel/PocKernelSupport.java": {
+        "sourceSHA": "8abd80e7f90d48ed21fa02ec305fa993f2da7b95939354ce6d494f3eed72332f",
+        "workingCalls": {
+          ".disableSubagents()": 0,
+          ".disableDynamicSubagents()": 0,
+          ".disableDynamicSkills()": 0
+        },
+        "headCalls": {
+          ".disableSubagents()": 0,
+          ".disableDynamicSubagents()": 0,
+          ".disableDynamicSkills()": 0
+        }
+      },
+      "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": {
+        "sourceSHA": "641bfdc81ea582e2292801607e513c7f6f422c77e030cc476272929f81110553",
+        "workingCalls": {
+          ".disableSubagents()": 0,
+          ".disableDynamicSubagents()": 0,
+          ".disableDynamicSkills()": 0
+        },
+        "headCalls": {
+          ".disableSubagents()": 1,
+          ".disableDynamicSubagents()": 1,
+          ".disableDynamicSkills()": 1
+        }
+      },
+      "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/service/coding/impl/CodingServiceImpl.java": {
+        "sourceSHA": "f6fdd41ac79bad2f3017ab829e2677e472da8b525ef1dfc86e6da56fcc671466",
+        "workingCalls": {
+          ".disableSubagents()": 0,
+          ".disableDynamicSubagents()": 0,
+          ".disableDynamicSkills()": 0
+        },
+        "headCalls": {
+          ".disableSubagents()": 1,
+          ".disableDynamicSubagents()": 1,
+          ".disableDynamicSkills()": 1
+        }
+      }
+    },
+    "readOnlyAnchors": [
+      "check-agentscope-capabilities-open.py33 has positive detector string and production reader/prints; no source writes.",
+      "check-staged-snapshot.py export_index writes only TemporaryDirectory snapshot dest; no working source restore.",
+      "block-dangerous-git.sh checkout/restore exact anchors are blocking pattern list, not executions."
+    ],
+    "historicalContent": "HEAD AgentScopeChatKernel/CodingServiceImpl/AgentScopeProjectAgentKernel each contain3 exact disables (total9); currentworking0. Exact old source content exists, but this is not proof of writer/trigger.",
+    "sourceChangedDuringObservation": "First bounded Kernel read showed3disable lines; next all-modules scan only test3 while officialwriter was working. No filesystem attribution asserted.",
+    "writerOrigin": "UNKNOWN; no exact modifying hook/script established."
+  },
+  "runSpec16": {
+    "sourceSHA": "5ac9dec0300f2b666444b0500ac98f2717ab756e52ac30f1960b177ffb89bc1b",
+    "dtoSHA": "c7dc339ebbc4ffa5d31615ec19fdec40aff965f9725b9b90d8fa434f0168e088",
+    "compileExit": 0,
+    "probeExit": 0,
+    "passedAssertions": 14,
+    "old13_14_15ExecutionToolsNull": true,
+    "executionToolIdsDefensiveCopyAndUnmodifiable": true,
+    "allWithPreserveExecutionTools": true,
+    "nullHistoricalNotEvidenceOfCapabilityDisabled": true,
+    "notClaimed": "Null cannot prove actual historical builder registration or loaded runtime capability. SDK raw input alias observation remains separate from validated server normalization."
+  },
+  "hookSHA": {
+    "scripts/check-agentscope-capabilities-open.py": "94ac7de49df49ecb4b19535a764b91e6c1ca781f3bc2971c2e3d8a36d3f0208d",
+    "scripts/check-staged-snapshot.py": "8532a45bcbabc6c0b4ac722253234a56203db9d0978503b633becbafa44a06e6",
+    ".claude/hooks/block-dangerous-git.sh": "234922b83c0a1737ee7300806c21ac0f389b07aaeb65c2d71ccedafbc5e1ea4b",
+    ".claude/hooks/check-pre-commit.sh": "72ee8d7ddd7a1a991923c52c83739cf7f9374af1b2776f6b738654109ac54023"
+  },
+  "evidenceSHA": {
+    "latest-main-source-sha.json": "d3a51216b15416aa03bfd498d0435ca89efddf2a1802b93abf0c1d8bf176a9dd",
+    "latest-main-consumers-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "latest-main-guard19.log": "9f6c49cff9d869c561821f162f54c4fc7babac58ccf27783e5d8e9aefebd90c8",
+    "latest-main-meter12.log": "828d01d7b5c97ac80f8b11496a62cc9ee6c04afd3267637e0484b0665486b9e1",
+    "src/GRedisPausedCleanupProbe.java": "f62ac34bd8f9bff93c606c108e2497ce3bebfeb14d87d99cba017b2d416799d9",
+    "redis-paused-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redis-adapter-current-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redis-paused-cleanup.log": "c0316931dfc9125c0cede453b5369a68807620e782c30a3979d4c17c11c87ce5",
+    "disable-readonly-investigation.json": "700c18f06b4cd5f3cbc15e17e0501ad44e4e0222ca64e8c21c8fdbc2502d93e6",
+    "disable-scanner-selftest.log": "fbca275fe2c2134f5435b33ca00e4422faa1b680d76f31e690b2838a89153c78",
+    "disable-scanner-current.log": "3283ed68ead14a581082023aae671898a5ffff57b67b3061553d9623502cc3e4",
+    "src/GRunSpec16CompatibilityProbe.java": "2c00be6943605cea2d46f99831f8c9c007cff9eb95c4476064e109aed48693c3",
+    "spec16-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "spec16-compatibility.log": "92670ee071ff15e2487d2f83efbde8cd69075b70df51a447965d2ca9771a1ee6"
+  },
+  "effects": {
+    "mainSourceWrite": false,
+    "sharedTarget": false,
+    "index": false,
+    "packageReload": false,
+    "businessDB": false,
+    "RedisOnlyOwnRandomFixture": true,
+    "externalModel": false
+  }
+}

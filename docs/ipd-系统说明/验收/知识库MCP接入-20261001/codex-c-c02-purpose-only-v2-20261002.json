@@ -1,0 +1,44 @@
+{
+  "status": "FROZEN_TEMP_PURPOSE_ONLY_V2_VERIFIED",
+  "before": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "496644da74dfc0c9e9eb05d478f2308442b5b0412dc6754b9fe8cdad6693fe98",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "08c7a718cee6aa84d9b0b8e22e4113573aea3373e78f872c75ef5dde4727ac80"
+  },
+  "after": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "e381caeeda36d969d4d4071ea4ed22beff1c5ea92867b2bd3000246cea51ee2d",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "7ea86a00a9d94106de570c15b31f5447e735091207f630955628c6a972b5d369"
+  },
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-c02-negative-5nbsuz8k",
+  "patch": "/Users/mac/Documents/ruoyi-ai/docs/ipd-系统说明/验收/知识库MCP接入-20261001/codex-c-c02-purpose-only-v2-20261002.patch",
+  "patchSha256": "5ed3d78815b9493196cabac7fc93b5c95fac1f6ca6e9111af176383e1fb92d45",
+  "compileExit": 0,
+  "junitExit": 0,
+  "tests": 22,
+  "failures": 0,
+  "skipped": 0,
+  "actualDraftIsolatedPurpose": "5441 chars C02 rejected/C01 allowed; no SOURCE reconstructed",
+  "probeAfter": [
+    "actual5441C02=SKILL_CONTRACT_MISMATCH",
+    "actual5441C01=null",
+    "default=null",
+    "negatedTable=null",
+    "conditionalTable=null",
+    "conditionalNegation=null",
+    "notBlocker=null",
+    "unnecessary=null",
+    "purposeOptionalContradiction=SKILL_CONTRACT_MISMATCH",
+    "tableContradiction=SKILL_CONTRACT_MISMATCH"
+  ],
+  "scope": "Only affirmativePurposeBlock plus one added precise test method; bounded purpose predicates, contrast/conjunction boundaries; no identity/main changes",
+  "limits": "Standalone cached JUnit classpath validation, not Maven/module compile or production runtime; condition recognition remains bounded tested vocabulary.",
+  "newPeerCases": "3 unrelated competitor-blocker allow, 2 mixed conditional/negation followed explicit purpose blocker reject",
+  "otherAfter": [
+    "null",
+    "null",
+    "null",
+    "SKILL_CONTRACT_MISMATCH",
+    "SKILL_CONTRACT_MISMATCH"
+  ],
+  "priorEvidencePreserved": true,
+  "formatOnlyRevision": true
+}

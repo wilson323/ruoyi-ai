@@ -1,0 +1,443 @@
+{
+  "status": "PARTIAL",
+  "capturedAt": "2026-10-02T15:59:52.603396+00:00",
+  "scope": "Read-only real Person HTTP; no permission changes, writes, or DDL",
+  "projectId": "2103659612308828162",
+  "checks": [
+    {
+      "role": "leader",
+      "route": "/api/v1/auth/me",
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "personId": "900102",
+      "personType": "GROUP_LEADER",
+      "reviewPermission": true
+    },
+    {
+      "role": "leader",
+      "route": "/api/v1/agent-runs/2106049620076437505",
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见"
+    },
+    {
+      "role": "leader",
+      "route": "/api/v1/agent-runs/2106049620076437505/events",
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见"
+    },
+    {
+      "role": "leader",
+      "route": "/api/v1/ai-documents/2106050740358258690/versions",
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见"
+    },
+    {
+      "role": "admin",
+      "route": "/api/v1/auth/me",
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "personId": "900101",
+      "personType": "SUPER_ADMIN",
+      "reviewPermission": true
+    },
+    {
+      "role": "admin",
+      "route": "/api/v1/agent-runs/2106049620076437505",
+      "http": 200,
+      "code": 0,
+      "message": "ok"
+    },
+    {
+      "role": "admin",
+      "route": "/api/v1/agent-runs/2106049620076437505/events",
+      "http": 200,
+      "code": 0,
+      "message": "ok"
+    },
+    {
+      "role": "admin",
+      "route": "/api/v1/ai-documents/2106050740358258690/versions",
+      "http": 200,
+      "code": 0,
+      "message": "ok"
+    }
+  ],
+  "limits": [
+    "Leader denial occurs at project membership before owner comparison; same-project cross-owner denial not live validated",
+    "Only two real users sampled; no full role/member removal matrix",
+    "Review permission existence verified; review write deliberately excluded"
+  ],
+  "authorizedFix": {
+    "status": "PENDING_RUNTIME_VALIDATION",
+    "changedSources": [
+      {
+        "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/AiDocumentController.java",
+        "sha256": "9b31b1855437349496593946141e2948684105ed626e2248b0c3359377f2684a"
+      },
+      {
+        "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocumentService.java",
+        "sha256": "ecfb961bba9bc746ceec87d6f347a8a5302c760e8a6c2f9ed7e5d4d501f805b9"
+      },
+      {
+        "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/controller/AiDocumentControllerAccessTest.java",
+        "sha256": "f29f8d041984151ec336d27c194a0da5fd45916b47b4f1afdfc03f23fbe0ab13"
+      },
+      {
+        "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/AiDocumentServiceChainAccessTest.java",
+        "sha256": "0ba622229a12a314ce7789b881d29169b076303c6c6dbc50f5da30d9999d70a4"
+      },
+      {
+        "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/AiDocumentTeamReadAccessTest.java",
+        "sha256": "77cec845ce8f512cc70788114a0bb00c94846351fe37b41fe03dea82cc6f2ed1"
+      }
+    ],
+    "tests": {
+      "count": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": "/tmp/ipd-team-read-authorization-20261002.log"
+    },
+    "boundary": "Only document read guard uses existing ProjectService read visibility; write/run owner guards unchanged",
+    "runtimeLoaded": false
+  },
+  "currentRuntimeChecks": [
+    {
+      "capturedAtUtc": "2026-10-02T16:38:05.877436+00:00",
+      "candidatePid": 53037,
+      "scope": "Person login + GET; only proven cross-owner POST cancel/apply denial",
+      "checks": [
+        {
+          "account": "ipd-admin",
+          "path": "/auth/login",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/auth/me",
+          "http": 200,
+          "code": 0,
+          "personId": "900101",
+          "personType": "SUPER_ADMIN"
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/projects/9140005",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/ai-documents?projectId=9140005",
+          "http": 200,
+          "code": 0,
+          "rows": 6
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/ai-documents/2105450857645502465/versions",
+          "http": 200,
+          "code": 0,
+          "rows": 1
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/ai-documents/2105450857645502465/history",
+          "http": 200,
+          "code": 0,
+          "rows": 1
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/ai-documents/2105450857645502465/diff?from=2105450857645502465&to=2105450857645502465",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/agent-runs/2105573715944271874/events",
+          "http": 200,
+          "code": 0,
+          "events": 74
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/agent-runs/2105784759262130178/events",
+          "http": 404,
+          "code": 50001,
+          "message": "运行不存在"
+        },
+        {
+          "account": "ipd-admin",
+          "path": "/ai-documents/2106050740358258690/versions",
+          "http": 200,
+          "code": 0,
+          "rows": 1
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/auth/login",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/auth/me",
+          "http": 200,
+          "code": 0,
+          "personId": "900102",
+          "personType": "GROUP_LEADER"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/projects/9140005",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/ai-documents?projectId=9140005",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/ai-documents/2105450857645502465/versions",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/ai-documents/2105450857645502465/history",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/ai-documents/2105450857645502465/diff?from=2105450857645502465&to=2105450857645502465",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/agent-runs/2105573715944271874/events",
+          "http": 404,
+          "code": 50001,
+          "message": "项目不可见"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/agent-runs/2105784759262130178/events",
+          "http": 404,
+          "code": 50001,
+          "message": "项目不可见"
+        },
+        {
+          "account": "ipd-leader",
+          "path": "/ai-documents/2106050740358258690/versions",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-market",
+          "path": "/auth/login",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-market",
+          "path": "/auth/me",
+          "http": 200,
+          "code": 0,
+          "personId": "900103",
+          "personType": "MARKET_PM"
+        },
+        {
+          "account": "ipd-market",
+          "path": "/projects/9140005",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-market",
+          "path": "/ai-documents?projectId=9140005",
+          "http": 200,
+          "code": 0,
+          "rows": 6
+        },
+        {
+          "account": "ipd-market",
+          "path": "/ai-documents/2105450857645502465/versions",
+          "http": 200,
+          "code": 0,
+          "rows": 1
+        },
+        {
+          "account": "ipd-market",
+          "path": "/ai-documents/2105450857645502465/history",
+          "http": 200,
+          "code": 0,
+          "rows": 1
+        },
+        {
+          "account": "ipd-market",
+          "path": "/ai-documents/2105450857645502465/diff?from=2105450857645502465&to=2105450857645502465",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-market",
+          "path": "/agent-runs/2105573715944271874/events",
+          "http": 404,
+          "code": 50001,
+          "message": "运行不存在"
+        },
+        {
+          "account": "ipd-market",
+          "path": "/agent-runs/2105784759262130178/events",
+          "http": 200,
+          "code": 0,
+          "events": 160
+        },
+        {
+          "account": "ipd-market",
+          "path": "/ai-documents/2106050740358258690/versions",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-market",
+          "path": "/agent-runs/2105573715944271874/cancel",
+          "http": 404,
+          "code": 50001,
+          "message": "运行不存在"
+        },
+        {
+          "account": "ipd-market",
+          "path": "/agent-runs/2105573715944271874/artifacts/readonly-denied-probe/apply",
+          "http": 404,
+          "code": 50001,
+          "message": "运行不存在"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/auth/login",
+          "http": 200,
+          "code": 0
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/auth/me",
+          "http": 200,
+          "code": 0,
+          "personId": "900104",
+          "personType": "RD_PM"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/projects/9140005",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/ai-documents?projectId=9140005",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/ai-documents/2105450857645502465/versions",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/ai-documents/2105450857645502465/history",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/ai-documents/2105450857645502465/diff?from=2105450857645502465&to=2105450857645502465",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/agent-runs/2105573715944271874/events",
+          "http": 404,
+          "code": 50001,
+          "message": "项目不可见"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/agent-runs/2105784759262130178/events",
+          "http": 404,
+          "code": 50001,
+          "message": "项目不可见"
+        },
+        {
+          "account": "ipd-rd",
+          "path": "/ai-documents/2106050740358258690/versions",
+          "http": 403,
+          "code": 30001,
+          "message": "无权访问该项目"
+        }
+      ],
+      "leaderPositive": "BLOCKED_TEST_DATA: no project linked to existing leader product lines by direct or product fallback assignment",
+      "databaseContext": {
+        "adminRun": {
+          "id": "2105573715944271874",
+          "projectId": "9140005",
+          "personId": "900101",
+          "status": "SUCCEEDED",
+          "eventsAfterDeniedOps": 74,
+          "artifactsAfterDeniedOps": 1
+        },
+        "marketRun": {
+          "id": "2105784759262130178",
+          "projectId": "9140005",
+          "personId": "900103",
+          "status": "SUCCEEDED"
+        },
+        "currentLeaders": [
+          {
+            "lineId": "2104976987897462785",
+            "personId": "900102",
+            "status": "ACTIVE"
+          },
+          {
+            "lineId": "2104977377011433474",
+            "personId": "900104",
+            "status": "INACTIVE"
+          }
+        ],
+        "leaderLinkedProjectsDirectAndProductFallback": 0
+      },
+      "limits": [
+        "Four available Person credentials; no frozen/first-login/leaver HTTP samples",
+        "No current leader-linked project; positive team-reader HTTP and leader removal are pending",
+        "Negative cancel/apply status unchanged on terminated admin run; no complete all-table before/after mutation proof"
+      ]
+    }
+  ]
+}

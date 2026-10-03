@@ -1,0 +1,55 @@
+{
+  "status": "ROOT_CAUSE_CONFIRMED_PARTIAL",
+  "sourceObservedHashes": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseResumeService.java": "a892898879a5d1f95462be0c22c2c7598383b8a6f6e4665c1d255c79c2ea05cf",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiCheckpointGuard.java": "a45cdd730e87143daefcd488f3136cf50346596ae7f4744a739f1f664a6a172b",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "67a58668dc9573378695e0eba931291ce804538926de456fa7c6d6b7d4845c5e",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunExecutor.java": "1016b43b6ea5ee2baf188be47ce100c19cea2636a1b710f30638bee9457e11d4",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java": "bd2e9939a2588bc1358f765ae4ca7ca56289756350088dae10549f0c882b09dc",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildResumeDispatcher.java": "d5c47256a25c408cfff3470b4e4d6ca27b9b7ce4abde88c426de5157866e6141",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildLineageRegistry.java": "1926f15aef575ac47740ba705aaa68efcb4c4b9c1611beefe4ea1324eba0162e",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java": "2d7128148614c5221138726ffa1f80d431d6c186a4683cac303eb4d0c6e535ed"
+  },
+  "earliestMechanism": "Approval acceptance transaction and actual SDK dispatch/completion are distinct stages; one-time acceptance is persisted only as digest/epoch, original normalized answers and native resume messages stay in process memory. Persistence lacks durable replayable intent and stage-aware recovery.",
+  "exactChain": [
+    "RunService.resumeAgui: prepare -> consume -> withServerResumeMessages/withServerChildResumes",
+    "PauseResume.consume: WAITING_APPROVAL->RUNNING and AGUI_RESUMED payload pauseSeq/pauseEpoch/checkpointVersion/executionEpoch/inputDigest -> returns messages in memory",
+    "Executor.resumePrepared: after withActiveOwnership TX return scheduler.schedule; rejection catches RUNNING and finishFAILED",
+    "Before Kernel executes, default detached checkpoint cleanup still installed; terminalFAILED cleanup may delete pause checkpoints",
+    "After Kernel enters, preserveApprovalCheckpoint can retain SDK state but terminalFAILED + replayConsumed only returns current status; no durable dispatch recovery",
+    "ChildResumeDispatcher claimDispatch before actual SDK stream subscription; comments require explicit durable recovery transition, current consumption API only acceptsWAIT and persistedapproval history lacks response content"
+  ],
+  "confirmedCounterexample": {
+    "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-hitl-yqhf66_o/resume-consumer-final.log",
+    "case": "scheduleReject=PASS epoch=2 cleanup=1",
+    "meaning": "Previously executed actual Executor isolated consumer kernel0, FAILED+cleanup1; current same rejection chain independently source-confirmed, not claiming refreshed runtime"
+  },
+  "failureWindows": [
+    "consume commit then schedule reject: known no SDK dispatch but answer consumed/FAILED/checkpoint removal",
+    "process exit after consume commit before runnable: RUNNING + expiredowner but full response not durable; digest cannot reconstruct approve/deny",
+    "one of several childeffects succeeds then laterchild fails: partial external effects, no safe blanket retry, dispatch memory claim/completion history must reconcile exactcalls",
+    "exacteffect occurs then checkpoint/save acknowledgement fails: unknown outcome must not retransmit automatically"
+  ],
+  "minimalRootFix": [
+    "Use existing originalrun STEP/private event payload to persist normalized safe approval decisions bound to pauseSeq/epoch/callidentity/version in same acceptanceTX; do not retain internal reasoning/credentials or arbitrary browserstate",
+    "Differentiate accepted/dispatch-started/call-completed via originalevent kinds under same run+epoch; durablelease recovery reconstructs originalofficialConfirm solely from servercall snapshots+storeddecision",
+    "Known pre-dispatch scheduler failure: preserve checkpoint and restore recoverable WAIT with newserver pause receipt/audit; do not reuse consumed CAS silently or deleteaudit",
+    "Dispatch-started unknowneffect: preserve resources, classify unknown and reconcile exactsaved completion before re-dispatch; no automaticALLOW/re-send",
+    "A callback receipt is terminal DBcommit evidence only, not approval or external effectcompletion. cleanuppolicy must evaluate unresolveddispatch/call receipts even onFAILED, retaining recoverydata",
+    "Keep storagekey derivation separate from originalSDKsession identity, version immutable per nativecheckpoint; namespace nevergrantactor authority"
+  ],
+  "meaningfulRegressionCases": [
+    "Rejectscheduler after acceptance: kernelcalls0, no deletion, answerrecoverable and subsequent exactattempt executes once",
+    "Kill isolated process immediately after accepted eventcommit: cold reconstructionsamePerson/run/call/responsedigest, freshACL and newepoch, no duplicateSTART/INTENT",
+    "Two children samecallID: first completes, second fails beforedispatch; retry cannot repeat firsteffect",
+    "Effect executed but checkpointack throws: classifyUNKNOWN preservebytes/checkpoints; no automaticretry",
+    "Transactioncommitfailure: normalizedresponse event/status rollback, no dispatch; outerrollback cannot uncommit terminalREQUIRES_NEW",
+    "Wrongactor/SID/version/changedparameter cannot benefit from recoveryintent; no callback/module wildcard grants"
+  ],
+  "closedMechanisms": [
+    "Original child SID vs mapped storage key corrected and realproducer tests pass",
+    "Handle REQUIRES_NEW terminalcommit with actual suspend/resume counterexample fixed; unsupported suspend failsclosed",
+    "Terminalcleanup failure no longer rewrites committed success asFAILED; partial cleanup still requires reconciliation"
+  ],
+  "limits": "Read-only current sources and prior raw probes; no fresh businessnetwork/DBwrites, no claims currentloadedruntime or MyBatis fulljourney validated."
+}

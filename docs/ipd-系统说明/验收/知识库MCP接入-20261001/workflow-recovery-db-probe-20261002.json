@@ -1,0 +1,52 @@
+{
+  "scope": "production WorkflowExecutionPlan/JdbcCheckpointSaver/WfState + real local MySQL across fresh JVMs; JDBC mapper adapter; synthetic read-only runners; not full WorkflowEngine HTTP acceptance",
+  "adminJarSha256": "1bf9484af62cf8611246cf2febbe3036505442007f61b2f73ed22b18726eb789",
+  "sourceSha256": "465c2b21b534f8a8176f860aee3572fca3ed9a4902373ef165bbbc4bbe0d4390",
+  "retainedHistory": true,
+  "temporaryDirectory": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-f-recovery-probe-52wsah6f",
+  "cases": [
+    {
+      "thread": "fprobe75d1aa2a346847f18646a9fa43",
+      "kind": "readonly",
+      "phases": [
+        {
+          "phase": "fail",
+          "exitCode": 0,
+          "stdout": "PROBE_RESULT thread=fprobe75d1aa2a346847f18646a9fa43 phase=fail effect=false runtimeId=297 calls=[A, B] failed=true successfulBAttempts=1\n",
+          "stderr": ""
+        },
+        {
+          "phase": "resume",
+          "exitCode": 0,
+          "stdout": "PROBE_RESULT thread=fprobe75d1aa2a346847f18646a9fa43 phase=resume effect=false runtimeId=297 calls=[B, C] failed=false successfulBAttempts=2\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "thread": "fprobe1833437250a841a9897b4beb34",
+      "kind": "effect",
+      "phases": [
+        {
+          "phase": "fail",
+          "exitCode": 0,
+          "stdout": "PROBE_RESULT thread=fprobe1833437250a841a9897b4beb34 phase=fail effect=true runtimeId=298 calls=[A, B] failed=true successfulBAttempts=1\n",
+          "stderr": ""
+        },
+        {
+          "phase": "resume",
+          "exitCode": 0,
+          "stdout": "PROBE_RESULT thread=fprobe1833437250a841a9897b4beb34 phase=resume effect=true runtimeId=298 calls=[] failed=true successfulBAttempts=1\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ],
+  "status": "VERIFIED_LOCAL_SYNTHETIC_DB_PROBE",
+  "independentDbReadback": {
+    "sql": "SELECT w.uuid,w.is_enable,r.id,COUNT(n.id),SUM(n.status=3) FROM ipd_dev.t_workflow w JOIN ipd_dev.t_workflow_runtime r ON r.workflow_id=w.id JOIN ipd_dev.t_workflow_runtime_node n ON n.workflow_runtime_id=r.id WHERE w.uuid IN ('fprobe75d1aa2a346847f18646a9fa43','fprobe1833437250a841a9897b4beb34') GROUP BY w.uuid,w.is_enable,r.id; SELECT r.uuid,wn.title,n.status,n.output FROM ipd_dev.t_workflow_runtime_node n JOIN ipd_dev.t_workflow_runtime r ON r.id=n.workflow_runtime_id JOIN ipd_dev.t_workflow_node wn ON wn.id=n.node_id WHERE r.uuid IN ('fprobe75d1aa2a346847f18646a9fa43','fprobe1833437250a841a9897b4beb34') ORDER BY n.id; SELECT thread_id,COUNT(*) FROM ipd_dev.t_workflow_checkpoint WHERE thread_id IN ('fprobe75d1aa2a346847f18646a9fa43','fprobe1833437250a841a9897b4beb34') GROUP BY thread_id;",
+    "exitCode": 0,
+    "stdout": "fprobe75d1aa2a346847f18646a9fa43\t0\t297\t4\t4\nfprobe1833437250a841a9897b4beb34\t0\t298\t2\t2\nfprobe75d1aa2a346847f18646a9fa43\tf-recovery-probe-A\t3\t{\"output\": \"old-A\"}\nfprobe75d1aa2a346847f18646a9fa43\tf-recovery-probe-B\t3\t{\"output\": \"old-B\"}\nfprobe75d1aa2a346847f18646a9fa43\tf-recovery-probe-B\t3\t{\"output\": \"retry-B\"}\nfprobe75d1aa2a346847f18646a9fa43\tf-recovery-probe-C\t3\t{\"output\": \"retry-C\"}\nfprobe1833437250a841a9897b4beb34\tf-recovery-probe-A\t3\t{\"output\": \"old-A\"}\nfprobe1833437250a841a9897b4beb34\tf-recovery-probe-B\t3\t{\"output\": \"old-B\"}\nfprobe1833437250a841a9897b4beb34\t4\nfprobe75d1aa2a346847f18646a9fa43\t9\n",
+    "stderr": ""
+  }
+}

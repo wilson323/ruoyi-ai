@@ -1,0 +1,29 @@
+{
+  "status": "ISOLATED_TARGETED_VERIFIED",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-c-provider-node-20261002-va6cq528/ruoyi-ai",
+  "baseHead": "094acbc016ed5890a468cc04eaebeacd923ef90d",
+  "command": "mvn -o -pl ruoyi-modules/ruoyi-chat -Dtest=ManagedMcpAsyncClientTest -Dprofiles.active= -Dgroups= test",
+  "exitCode": 0,
+  "surefire": {
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  "cases": [
+    "streamableHttpConstructionDoesNotDependOnContextProviderDiscovery",
+    "stalledGracefulCloseIsBoundedAndForceClosedWithObservableFailure",
+    "realClientClosesTransportExactlyOnceAfterCancellation",
+    "gracefulFailureIsVisibleAndForceCloses"
+  ],
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-c-provider-node-20261002-va6cq528/managed-test.log",
+  "sourceHashes": {
+    "ManagedMcpAsyncClient.java": "b1dafa29c0639e2a20de74b3ff94825486628737c58949220b89a0228760fc7d",
+    "ManagedMcpAsyncClientTest.java": "20f8fe1dbec00948f353048f5a9ade3c44bc69240c40767dab0250844e867717"
+  },
+  "dependencyBoundary": "Offline module-only build, no -am; uses pre-existing ~/.m2 installed project-module/external artifacts, not a complete HEAD reactor build; snapshot module target only",
+  "limits": [
+    "No main source/index/target modification",
+    "4 targeted tests plus prior cold-loader pure-runtime evidence; does not prove remote query/network success"
+  ]
+}

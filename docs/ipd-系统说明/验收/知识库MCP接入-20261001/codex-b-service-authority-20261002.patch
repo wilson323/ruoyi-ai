@@ -1,0 +1,186 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceAuthority.java
+@@ -0,0 +1,69 @@
++package org.ruoyi.ipd.agent.servicebridge;
++
++import io.agentscope.core.state.AgentStateStore;
++import io.agentscope.core.state.State;
++import io.agentscope.extensions.aistio.model.AgentTaskAssignment;
++import org.ruoyi.ipd.agent.dto.AgentRunCreateReq;
++import org.ruoyi.ipd.agent.store.AgentRunStore;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import org.ruoyi.ipd.mapper.PersonMapper;
++import org.ruoyi.ipd.security.IpdActor;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import java.util.Objects;
++
++/** Server deployment binding, never populated from task payload or Service endpoint parameters. */
++public final class ProjectAgentServiceAuthority implements ProjectAgentServiceAdapter.TrustedSessions,
++        ProjectAgentServiceTaskStarter.TrustedBindingResolver {
++    public record Deployment(Long personId, Long projectId, Long registrationRunId,
++                             AgentRunCreateReq approvedRequest) {
++        public Deployment { Objects.requireNonNull(personId);Objects.requireNonNull(projectId);
++            Objects.requireNonNull(registrationRunId);Objects.requireNonNull(approvedRequest); }
++    }
++    public record SessionIndex(Long personId, Long projectId, Long runId) implements State { }
++    private static final String KEY="ipd_service_binding";
++    private final Deployment deployment;
++    private final PersonMapper people;
++    private final IpdCopilotAccess access;
++    private final ProjectAgentRunService runs;
++    private final AgentRunStore runStore;
++    private final AgentStateStore state;
++    public ProjectAgentServiceAuthority(Deployment deployment,PersonMapper people,IpdCopilotAccess access,
++            ProjectAgentRunService runs,AgentRunStore runStore,AgentStateStore state) {
++        this.deployment=Objects.requireNonNull(deployment);this.people=Objects.requireNonNull(people);
++        this.access=Objects.requireNonNull(access);this.runs=Objects.requireNonNull(runs);
++        this.runStore=Objects.requireNonNull(runStore);this.state=Objects.requireNonNull(state);
++        registrationScope();
++    }
++    public String userId(){return "ipd:"+deployment.projectId()+":"+deployment.personId();}
++    private IpdActor actor(){var person=people.selectById(deployment.personId());
++        if(person==null||!deployment.personId().equals(person.getId()))throw new SecurityException("Service Person unavailable");
++        var actor=new IpdActor(person.getId(),person.getName(),person.getPersonType(),person.getGroupId());
++        access.requireVisible(actor,deployment.projectId());return actor;}
++    private ProjectAgentServiceAdapter.SessionBinding own(Long id){var actor=actor();var run=runs.get(actor,id);
++        if(!String.valueOf(deployment.projectId()).equals(run.projectId()))throw new SecurityException("Service run project mismatch");
++        return new ProjectAgentServiceAdapter.SessionBinding(actor,deployment.projectId(),id);}
++    /** Called only by authenticated host registration, with an existing owned run. No HTTP endpoint. */
++    public synchronized void bindExistingSession(String sessionId,Long runId){validateSession(sessionId);var own=own(runId);
++        var existing=state.get(userId(),sessionId,KEY,SessionIndex.class);
++        if(existing.isPresent())throw new IllegalStateException("Service session already bound");
++        state.save(userId(),sessionId,KEY,new SessionIndex(own.actor().id(),own.projectId(),runId));}
++    public ProjectAgentServiceAdapter.SessionBinding resolve(String sessionId){validateSession(sessionId);
++        var index=state.get(userId(),sessionId,KEY,SessionIndex.class).orElseThrow(()->new SecurityException("Unbound Service session"));
++        if(!deployment.personId().equals(index.personId())||!deployment.projectId().equals(index.projectId()))throw new SecurityException("Service session scope mismatch");
++        return own(index.runId());}
++    public AgentRunCreateReq conversationRequest(String sessionId,String content){resolve(sessionId);
++        if(content==null||content.isBlank())throw new IllegalArgumentException("Conversation input required");
++        var r=deployment.approvedRequest();return new AgentRunCreateReq(r.capabilityPackCode(),r.capabilityPackVersion(),r.modelConfigId(),r.skillNames(),r.toolIds(),r.actionCode(),content,
++            "service-turn-"+java.util.UUID.randomUUID(),r.productLineId(),r.requirementId(),r.previousRunId(),r.targetDocumentId(),r.baseVersionId());}
++    public ProjectAgentServiceAdapter.SessionBinding registrationScope(){return own(deployment.registrationRunId());}
++    public synchronized void onCreated(String sessionId,Long runId){resolve(sessionId);var own=own(runId);
++        state.save(userId(),sessionId,KEY,new SessionIndex(own.actor().id(),own.projectId(),runId));}
++    public ProjectAgentServiceTaskStarter.Binding resolve(AgentTaskAssignment assignment){var bound=resolve(assignment.sessionId());
++        String tenant=access.requireVisible(bound.actor(),bound.projectId());
++        var prior=runStore.findByIdempotencyKey(tenant,bound.actor().id(),ProjectAgentServiceTaskStarter.idempotencyKey(assignment));
++        Long id=prior.map(row->{own(row.getId());return row.getId();}).orElse(null);
++        return new ProjectAgentServiceTaskStarter.Binding(bound.actor(),bound.projectId(),deployment.approvedRequest(),id);}
++    public void recordRun(AgentTaskAssignment assignment,ProjectAgentServiceTaskStarter.Binding bound,Long id){
++        var actual=resolve(assignment.sessionId());if(!actual.actor().id().equals(bound.actor().id())||!actual.projectId().equals(bound.projectId()))throw new SecurityException("Task scope mismatch");onCreated(assignment.sessionId(),id);}
++    private static void validateSession(String id){if(id==null||id.isBlank()||id.length()>200||!id.matches("[A-Za-z0-9_.:-]+"))throw new SecurityException("Invalid Service session");}
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceNativeSessions.java
+@@ -0,0 +1,40 @@
++package org.ruoyi.ipd.agent.servicebridge;
++
++import io.agentscope.extensions.aistio.FrameworkAdapter;
++import io.agentscope.extensions.aistio.adapter.AgentScopeAdapter;
++import java.lang.reflect.InvocationTargetException;
++import java.lang.reflect.Proxy;
++import java.util.Objects;
++import java.util.function.LongFunction;
++import reactor.core.publisher.Mono;
++
++/** Complete official adapter forwarding. Host supplies the actual run adapter; never builds another agent. */
++public final class ProjectAgentServiceNativeSessions {
++    public record NativeRun(AgentScopeAdapter adapter,String sessionId) {
++        public NativeRun { Objects.requireNonNull(adapter);if(sessionId==null||sessionId.isBlank())throw new IllegalArgumentException("Native session required"); }
++    }
++    private ProjectAgentServiceNativeSessions() { }
++    public static FrameworkAdapter bind(ProjectAgentServiceAuthority authority,
++            LongFunction<NativeRun> actualRunAdapters) {
++        Objects.requireNonNull(authority);Objects.requireNonNull(actualRunAdapters);
++        return (FrameworkAdapter)Proxy.newProxyInstance(FrameworkAdapter.class.getClassLoader(),
++            new Class<?>[]{FrameworkAdapter.class},(proxy,method,args)->{
++                if(method.getDeclaringClass()==Object.class){return switch(method.getName()){
++                    case "toString"->"IPD scoped official adapter";case "hashCode"->System.identityHashCode(proxy);
++                    case "equals"->proxy==args[0];default->throw new IllegalStateException();};}
++                java.util.function.Supplier<Object> invoke=()->{
++                    var bound=args!=null&&args.length>0&&args[0] instanceof String session
++                        ?authority.resolve(session):authority.registrationScope();
++                    var nativeRun=Objects.requireNonNull(actualRunAdapters.apply(bound.runId()),"Actual run native adapter unavailable");
++                    Object[] forwarded=args==null?null:args.clone();
++                    if(forwarded!=null&&forwarded.length>0&&forwarded[0] instanceof String)forwarded[0]=nativeRun.sessionId();
++                    try{return method.invoke(nativeRun.adapter(),forwarded);}catch(InvocationTargetException e){
++                        if(e.getCause() instanceof RuntimeException r)throw r;throw new IllegalStateException("Official adapter invocation failed",e.getCause());
++                    }catch(ReflectiveOperationException e){throw new IllegalStateException("Official adapter contract mismatch",e);}
++                };
++                // Every deferred query revalidates Person/project membership at subscription time.
++                if(Mono.class.isAssignableFrom(method.getReturnType()))return Mono.defer(()->(Mono<?>)invoke.get());
++                return invoke.get();
++            });
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceBindingsConfiguration.java
+@@ -0,0 +1,28 @@
++package org.ruoyi.ipd.agent.servicebridge;
++
++import io.agentscope.core.state.AgentStateStore;
++import io.agentscope.extensions.aistio.FrameworkAdapter;
++import io.agentscope.extensions.aistio.transport.CollaborationClient;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import org.ruoyi.ipd.agent.store.AgentRunStore;
++import org.ruoyi.ipd.mapper.PersonMapper;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import java.time.Duration;
++import java.util.function.LongFunction;
++
++/** Typed bean factory for host Configuration. Construction performs no Service registration/network call. */
++public final class ProjectAgentServiceBindingsConfiguration {
++    private ProjectAgentServiceBindingsConfiguration() { }
++    public record Bindings(ProjectAgentServiceAuthority authority,FrameworkAdapter nativeAdapter,
++            ProjectAgentServiceTaskStarter taskStarter,ProjectAgentServiceAdapter adapter) { }
++    public static Bindings create(ProjectAgentServiceAuthority.Deployment approvedDeployment,
++            PersonMapper people,IpdCopilotAccess access,ProjectAgentRunService runs,AgentRunStore runStore,
++            AgentStateStore officialStateStore,CollaborationClient officialCollaboration,
++            LongFunction<ProjectAgentServiceNativeSessions.NativeRun> actualRunAdapters,
++            Duration poll,Duration deadline) {
++        var authority=new ProjectAgentServiceAuthority(approvedDeployment,people,access,runs,runStore,officialStateStore);
++        var nativeAdapter=ProjectAgentServiceNativeSessions.bind(authority,actualRunAdapters);
++        var tasks=new ProjectAgentServiceTaskStarter(runs,access,officialCollaboration,authority,poll,deadline);
++        return new Bindings(authority,nativeAdapter,tasks,new ProjectAgentServiceAdapter(runs,access,authority,tasks,nativeAdapter));
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentServiceAuthorityTest.java
+@@ -0,0 +1,37 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;
++import static org.assertj.core.api.Assertions.*;import static org.mockito.Mockito.*;import static org.mockito.ArgumentMatchers.*;
++import java.nio.file.Path;import java.util.*;
++import org.ruoyi.ipd.agent.support.AgentTestFixtures;import org.ruoyi.ipd.agent.store.AgentRunStore;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
++import org.ruoyi.ipd.domain.Person;import org.ruoyi.ipd.domain.Project;
++import org.ruoyi.ipd.mapper.*;import org.ruoyi.ipd.service.*;
++import io.agentscope.core.state.*;import io.agentscope.core.agent.Agent;
++import io.agentscope.core.message.*;import io.agentscope.extensions.aistio.adapter.AgentScopeAdapter;
++class ProjectAgentServiceAuthorityTest {
++ @TempDir Path dir;
++ static class Fixture {
++  final PersonMapper people=mock(PersonMapper.class);final ProjectMapper projects=mock(ProjectMapper.class);
++  final ProjectMemberMapper members=mock(ProjectMemberMapper.class);final IpdAuthService auth=mock(IpdAuthService.class);
++  final ProjectAgentRunService runs=mock(ProjectAgentRunService.class);final AgentRunStore store=mock(AgentRunStore.class);
++  final Person person=new Person();final IpdCopilotAccess access=new IpdCopilotAccess(people,auth,projects,members);
++  Fixture(){person.setId(AgentTestFixtures.ACTOR.id());person.setName("Person fixture");person.setPersonType("MARKET_PM");person.setGroupId(AgentTestFixtures.ACTOR.groupId());person.setTenantId("tenant");person.setAccountStatus("ACTIVE");person.setEmploymentStatus("ACTIVE");when(people.selectById(person.getId())).thenReturn(person);when(auth.scopeOf(person)).thenReturn(IpdAuthService.Scope.FULL);var project=new Project();project.setId(AgentTestFixtures.PROJECT_ID);project.setTenantId("tenant");when(projects.selectById(project.getId())).thenReturn(project);when(members.selectCount(any())).thenReturn(1L);when(runs.get(any(),any())).thenReturn(new ProjectAgentViews.Run("901",String.valueOf(project.getId()),"ipd_project_agent","SUCCEEDED","C02",null,null,null,null));}
++  ProjectAgentServiceAuthority authority(AgentStateStore states){return new ProjectAgentServiceAuthority(new ProjectAgentServiceAuthority.Deployment(person.getId(),AgentTestFixtures.PROJECT_ID,901L,AgentTestFixtures.c02("server-approved-key","approved request")),people,access,runs,store,states);}
++ }
++ @Test void durableBindingUsesCurrentPersonAndRejectsUnknownOrTamperedSession(){var f=new Fixture();var states=new JsonFileAgentStateStore(dir);var wired=ProjectAgentServiceBindingsConfiguration.create(new ProjectAgentServiceAuthority.Deployment(f.person.getId(),AgentTestFixtures.PROJECT_ID,901L,AgentTestFixtures.c02("approved-key","approved input")),f.people,f.access,f.runs,f.store,states,mock(io.agentscope.extensions.aistio.transport.CollaborationClient.class),id->{throw new IllegalStateException("unregistered run");},java.time.Duration.ofMillis(20),java.time.Duration.ofSeconds(3));assertThat(wired.taskStarter()).isNotNull();var a=wired.authority();a.bindExistingSession("session",901L);var restarted=f.authority(new JsonFileAgentStateStore(dir));assertThat(restarted.resolve("session").actor().id()).isEqualTo(f.person.getId());assertThatThrownBy(()->restarted.resolve("unknown")).isInstanceOf(SecurityException.class);states.save(a.userId(),"session", "ipd_service_binding",new ProjectAgentServiceAuthority.SessionIndex(999L,AgentTestFixtures.PROJECT_ID,901L));assertThatThrownBy(()->a.resolve("session")).hasMessageContaining("scope mismatch");}
++ @Test void revokedMembershipAndChangedPersonBlockExistingSession(){var f=new Fixture();var a=f.authority(new JsonFileAgentStateStore(dir));a.bindExistingSession("session",901L);when(f.members.selectCount(any())).thenReturn(0L);assertThatThrownBy(()->a.resolve("session")).isInstanceOf(RuntimeException.class);f.person.setAccountStatus("FROZEN");assertThatThrownBy(()->a.resolve("session")).isInstanceOf(RuntimeException.class);}
++ @Test void newConversationKeepsApprovedBusinessConfigurationAndRejectsOtherProject(){var f=new Fixture();var a=f.authority(new JsonFileAgentStateStore(dir));a.bindExistingSession("session",901L);var r=a.conversationRequest("session","new prompt");assertThat(r.message()).isEqualTo("new prompt");assertThat(r.actionCode()).isEqualTo("C02");assertThat(r.modelConfigId()).isEqualTo(AgentTestFixtures.c02("k","m").modelConfigId());when(f.runs.get(any(),eq(902L))).thenReturn(new ProjectAgentViews.Run("902","99999","ipd_project_agent","SUCCEEDED","C02",null,null,null,null));assertThatThrownBy(()->a.onCreated("session",902L)).hasMessageContaining("project mismatch");assertThat(a.resolve("session").runId()).isEqualTo(901L);}
++ @Test void actualOfficialContextConsumerPreservesMessagesAndRevalidatesAtSubscription(){var f=new Fixture();var a=f.authority(new JsonFileAgentStateStore(dir));a.bindExistingSession("session",901L);var text=Msg.builder().role(MsgRole.ASSISTANT).content(List.of(TextBlock.builder().text("actual context delivery").build(),ThinkingBlock.builder().thinking("fixture private thought").build())).build();var state=AgentState.builder().sessionId("901").context(List.of(text)).build();var agent=mock(Agent.class);when(agent.getAgentState()).thenReturn(state);var official=new AgentScopeAdapter();official.attach(agent,event->{});var nativeAdapter=ProjectAgentServiceNativeSessions.bind(a,id->{assertThat(id).isEqualTo(901L);return new ProjectAgentServiceNativeSessions.NativeRun(official,"901");});var snapshot=nativeAdapter.extractContext("session").block();assertThat(snapshot.getSessionId()).isEqualTo("901");assertThat(snapshot.getMessages()).hasSize(1);assertThat(snapshot.getMessages().get(0).content()).isEqualTo("actual context delivery");assertThat(snapshot.getMessages().toString()).doesNotContain("fixture private thought");assertThat(new String(snapshot.getFrameworkState(),java.nio.charset.StandardCharsets.UTF_8)).doesNotContain("fixture private thought");var deferred=nativeAdapter.extractContext("session");f.person.setEmploymentStatus("LEFT");assertThatThrownBy(deferred::block).isInstanceOf(RuntimeException.class);}
++ @Test void actualReActStreamObserverResolvesNativeUserAndSessionWithoutExternalModel(){
++  var f=new Fixture();var a=f.authority(new JsonFileAgentStateStore(dir));a.bindExistingSession("service-session",901L);
++  var calls=new java.util.concurrent.atomic.AtomicInteger();var official=new AgentScopeAdapter();
++  io.agentscope.core.model.Model stub=new io.agentscope.core.model.Model(){public String getModelName(){return "no-network-fixture";}
++   public reactor.core.publisher.Flux<io.agentscope.core.model.ChatResponse> stream(List<Msg> messages,List<io.agentscope.core.model.ToolSchema> tools,io.agentscope.core.model.GenerateOptions options){calls.incrementAndGet();return reactor.core.publisher.Flux.just(io.agentscope.core.model.ChatResponse.builder().content(List.of(ThinkingBlock.builder().thinking("fixture private stream thought").build(),TextBlock.builder().text("actual streamed answer").build())).build());}};
++  var agent=io.agentscope.core.ReActAgent.builder().name("service-native-fixture").sysPrompt("approved fixture skill instructions").model(stub).middleware(official.middleware()).build();
++  official.attach(agent,event->{});var runtime=io.agentscope.core.agent.RuntimeContext.builder().userId(a.userId()).sessionId("native-901").build();
++  agent.streamEvents(List.of(Msg.builder().role(MsgRole.USER).textContent("actual input").build()),runtime).blockLast(java.time.Duration.ofSeconds(3));
++  var nativeAdapter=ProjectAgentServiceNativeSessions.bind(a,id->new ProjectAgentServiceNativeSessions.NativeRun(official,"native-901"));
++  var snapshot=nativeAdapter.extractContext("service-session").block();assertThat(calls.get()).isEqualTo(1);assertThat(snapshot.getSystemPrompt()).isEqualTo("approved fixture skill instructions");
++  assertThat(snapshot.getMessages().toString()).contains("actual input","actual streamed answer").doesNotContain("fixture private stream thought");assertThat(snapshot.getSessionId()).isEqualTo("native-901");
++ }
++}

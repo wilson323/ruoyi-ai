@@ -1,0 +1,22 @@
+{
+  "status": "ACCEPT_SCOPED_PEER_FINAL_PRIOR_CANDIDATE_INVALIDATED",
+  "candidateGateSha": "1d0ed4386683e09679515327d03568797713d52a15fd60a1504e79c865213bab",
+  "probeLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-readable-review-r2h8j28f/probe.log",
+  "probeLogSha": "f7286ae8a9859165b75d9c34ea07bcc22c4fcd1d62650954d3c46f3c16b3b4dd",
+  "candidateTestsReportedByG": "22 passed; independently probed 7 variants",
+  "runtime": false,
+  "peerFinal": {
+    "status": "ACCEPT_SCOPED_CANDIDATE",
+    "gateSha": "a5a06d8d51db1b3fa7efd2a695bc4a0ffa9fb9f070d29cd8259afd00e380ec57",
+    "testSha": "f140545dc3b288e43ed90d502b70effe0dddadc9932d83d5463d99482807805a",
+    "independentObservedCases": 13,
+    "expectedResultsMatched": 13,
+    "probeLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-readable-peer-final-ul_lxg6x/probe.log",
+    "probeSha": "f8db3221377c22c12df29b1a712677c96815bebccde4213f3b5ba77f5dc287bb",
+    "mavenLogRead": "/tmp/ipd-g-readable-gate-peer-final-20261002.log",
+    "junitTests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

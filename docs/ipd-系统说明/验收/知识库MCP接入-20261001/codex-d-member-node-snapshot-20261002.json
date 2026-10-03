@@ -1,0 +1,33 @@
+{
+  "head": "16b030a67ed9d55363a4fec1ba852088df6ad33f",
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-d-member-node-20261002.index",
+  "paths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java"
+  ],
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java": "c725ba66d118e0c15d8a06ffe59f9f0b6a48da032d465dffbb3392888eec7c5a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java": "464487d9c71367492d9e0da0baf213ebcd5fcaf63ae8280c4a65cb6c13e08f6f",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java": "58a4e236888aa066f9f2bc129a8c8cec67697733e622e0ecd8de5bdee0ff9f39"
+  },
+  "mainIndexBackup": "/Users/mac/Documents/ruoyi-ai/.git/codex-d-member-main-index-before-20261002",
+  "mainIndexEntriesBeforeSha256": "b719bc123bf4f8a972cfc70c04522a8ca996af3551bd22c8ba83b45216de0b47",
+  "status": "VERIFIED_LIMITED_MEMBER_NODE_COMMITTED",
+  "isolatedTests": 48,
+  "loadedPid": 43168,
+  "loadedJarSha256": "8e80bb8198f30e681130d937325a8ac2bb5f8988c0bf5cdcd6be1b1033ce0354",
+  "runtimePositive": "codex-c-c05-member-positive-runtime-20261002.json",
+  "runtimeNegativeLimit": "same-role nonmember900105 missing preexisting safe credential; no password guessing/reset/role change",
+  "commit": "e2aad11bcea80f1c16f7326a1d785300a1f097db",
+  "normalHook": "8 PASS/0 FAIL/0 SKIP",
+  "alignedOwnPaths": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java"
+  ],
+  "preservedMixedPaths": [],
+  "allOtherIndexEntriesBytePreserved": true,
+  "initialIndexAlignError": "new owned test required update-index --add; first owned Permission path had aligned, all foreign entries verified unchanged before bounded correction",
+  "notFullPermissionOrBusinessAcceptance": true
+}

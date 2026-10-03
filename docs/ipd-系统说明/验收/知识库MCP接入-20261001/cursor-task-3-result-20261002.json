@@ -1,0 +1,286 @@
+{
+  "status": "PARTIAL",
+  "verdict": "已加载包上的负责人非成员正反权限已用真实 Person 走通；阶段行是空的，同组非成员推进阶段未测。",
+  "runtime": {
+    "pid": 13520,
+    "startedLocal": "2026-10-02 09:50:50 -0700",
+    "listen": "127.0.0.1:16039",
+    "jar": ".codex/ipd-dev/backups/ruoyi-admin.codex-global-20261002-729e587af650.jar",
+    "jarShaPrefix": "729e587af650",
+    "backendHead": "29b64b97c1729335abe22955b06a7597d68a9fab",
+    "frontendHead": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a",
+    "reloadedThisTask": false
+  },
+  "identities": [
+    {
+      "username": "ipd-admin",
+      "personId": "900101",
+      "personType": "SUPER_ADMIN"
+    },
+    {
+      "username": "ipd-leader",
+      "personId": "900102",
+      "personType": "GROUP_LEADER"
+    },
+    {
+      "username": "ipd-market",
+      "personId": "900103",
+      "personType": "MARKET_PM"
+    },
+    {
+      "username": "ipd-rd",
+      "personId": "900104",
+      "personType": "RD_PM"
+    }
+  ],
+  "fixture": {
+    "lineId": "2106072393398095874",
+    "lineCode": "qa-ct3-leader-nm",
+    "lineName": "QA-CT3负责人非成员专用",
+    "projectId": "2106072674957529089",
+    "projectCode": "PRJ-2026-901",
+    "projectName": "QA-CT3负责人非成员项目",
+    "projectStatus": "PENDING_START",
+    "currentStage": "CONCEPT",
+    "mainGroupId": "2096339266916327426",
+    "leaderDuringPositiveRead": "900102",
+    "projectMembers": [
+      {
+        "personId": "900101",
+        "role": "MEMBER",
+        "exitDate": null
+      }
+    ],
+    "leaderIsProjectMember": false,
+    "documentId": "2106072675242741762",
+    "documentStatus": "GENERATED",
+    "kept": true,
+    "deleted": false,
+    "finalLineStatus": "INACTIVE",
+    "finalLeaderPersonId": "900101",
+    "leaderSpaceStatus": "EXITED",
+    "adminSpaceStatus": "ACTIVE",
+    "disable": "管理员把组长从 900102 改派到 900101，900102 退出该 QA 空间，随后停用产品线。行未删除。",
+    "firstCreate": "targetMarkets 传 CN 时 MySQL JSON 列拒绝并回滚，projects 同名行数为 0；重试使用 [\"国内\"]。"
+  },
+  "protectedBusiness": {
+    "beforeSha256": "ac66ba4f191d2f18704b8acc5fd47e405ae34e331be476df8606f6468835d146",
+    "afterSha256": "ac66ba4f191d2f18704b8acc5fd47e405ae34e331be476df8606f6468835d146",
+    "unchanged": true,
+    "covers": "900101-900104 的角色和产品组、两条既有产品线及成员、900102 在职项目成员数仍为 0"
+  },
+  "positiveReadsAs900102": {
+    "list": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "ids": [
+        "2106072674957529089"
+      ],
+      "count": 1
+    },
+    "detail": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "project": {
+        "id": "2106072674957529089",
+        "name": "QA-CT3负责人非成员项目",
+        "status": "PENDING_START",
+        "currentStage": "CONCEPT",
+        "mainGroupId": "2096339266916327426",
+        "code": "PRJ-2026-901"
+      }
+    },
+    "stages": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "count": 0
+    },
+    "documents": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "rows": [
+        {
+          "id": "2106072675242741762",
+          "status": "GENERATED",
+          "title": "QA-CT3产物只读",
+          "docType": "PRD",
+          "versionNo": 1
+        }
+      ]
+    },
+    "lineProjects": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "ids": [
+        "2106072674957529089"
+      ]
+    }
+  },
+  "beforeRejection": {
+    "project": "2106072674957529089\tPENDING_START\tCONCEPT\t2096339266916327426\t2106072393398095874\t2026-10-03 01:23:49",
+    "members": "900101\tMEMBER",
+    "stages": "",
+    "documents": "2106072675242741762\tGENERATED\t1\t2026-10-03 01:23:49",
+    "agentRuns": "0",
+    "otherRun": "SUCCEEDED\t263",
+    "sha256": "7858b66eb14c4499954aeb7740677b2daa8547319b6434da99bb89a124fd3153"
+  },
+  "negativeWritesAs900102": {
+    "advanceStage": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权操作",
+      "data": null
+    },
+    "agentRun": {
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见",
+      "data": null
+    },
+    "archive": {
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见",
+      "data": null
+    },
+    "stageAcceptance": {
+      "http": 400,
+      "code": 10001,
+      "message": "项目阶段未建立: CONCEPT",
+      "data": null
+    },
+    "applyOtherRun": {
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见",
+      "data": null
+    }
+  },
+  "afterRejection": {
+    "project": "2106072674957529089\tPENDING_START\tCONCEPT\t2096339266916327426\t2106072393398095874\t2026-10-03 01:23:49",
+    "members": "900101\tMEMBER",
+    "stages": "",
+    "documents": "2106072675242741762\tGENERATED\t1\t2026-10-03 01:23:49",
+    "agentRuns": "0",
+    "otherRun": "SUCCEEDED\t263",
+    "sha256": "7858b66eb14c4499954aeb7740677b2daa8547319b6434da99bb89a124fd3153"
+  },
+  "rejectionBusinessUnchanged": true,
+  "eventIsolation": {
+    "runId": "2105949000288038914",
+    "ownerPersonId": "900103",
+    "projectId": "9140005",
+    "dbStatus": "SUCCEEDED",
+    "dbEventCount": 263,
+    "ownerHttp": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "eventCount": 200
+    },
+    "superAdminHttp": {
+      "http": 404,
+      "code": 50001,
+      "message": "运行不存在",
+      "eventCount": null
+    },
+    "lineLeaderHttp": {
+      "http": 404,
+      "code": 50001,
+      "message": "项目不可见",
+      "eventCount": null
+    },
+    "note": "本人接口返回一页 200 条，库内事件数仍是 263。超管得到运行不存在。负责人得到项目不可见，因为该运行所属项目不是本次 QA 项目。"
+  },
+  "afterReassign": {
+    "detail": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目",
+      "data": null
+    },
+    "documents": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目",
+      "data": null
+    },
+    "stages": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目",
+      "data": null
+    },
+    "list": {
+      "http": 200,
+      "code": 0,
+      "message": "ok",
+      "ids": [],
+      "count": 0
+    }
+  },
+  "afterLeave": {
+    "detail": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目",
+      "data": null
+    },
+    "documents": {
+      "http": 403,
+      "code": 30001,
+      "message": "无权访问该项目",
+      "data": null
+    }
+  },
+  "afterDeactivateRoleReads": {
+    "900101": {
+      "detail": 200,
+      "documents": 200,
+      "stages": 200
+    },
+    "900103": {
+      "detail": 403,
+      "documents": 403,
+      "stages": 403,
+      "code": 30001
+    },
+    "900104": {
+      "detail": 403,
+      "documents": 403,
+      "stages": 403,
+      "code": 30001
+    },
+    "900102": {
+      "detail": 403,
+      "documents": 403,
+      "stages": 403,
+      "code": 30001
+    }
+  },
+  "serviceTest": {
+    "command": "mvn -o -pl ruoyi-modules/ruoyi-ipd -Dproject.build.directory=/tmp/cursor-task-3-target -Dtest=AiDocumentTeamReadAccessTest test",
+    "cwd": "/Users/mac/Documents/ruoyi-ai",
+    "finishedLocal": "2026-10-02T10:26:43-07:00",
+    "exitCode": 0,
+    "testsRun": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "isolation": "project.build.directory 未被 Maven 采用，Surefire 报告写进了模块 target/surefire-reports。编译日志为 Nothing to compile，没有重写主 classes。",
+    "replacesHttpPositive": false
+  },
+  "sourceDiff": [],
+  "unverified": [
+    "同组且非项目成员时，advanceStage 是否拒绝。本次项目主组 2096339266916327426，900102 的组是 900001，403 来自跨组守卫。",
+    "有 project_stages 行时的阶段内容。本次阶段接口 HTTP 200，行数为 0。",
+    "stage-acceptance 在已有阶段行时对非成员是否拒绝。本次在写库前返回项目阶段未建立。",
+    "本次没有重新打包或加载 16039。"
+  ]
+}

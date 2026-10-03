@@ -1,0 +1,30 @@
+{
+  "status": "SOURCE_SLICE_VERIFIED_NOT_LOADED",
+  "pathsSha256": {
+    "src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentToolCatalog.java": "e94489aae7db8311ba3e49b8494317ce6fafc72e76af2394c864606f7945ee65",
+    "src/main/java/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolCatalog.java": "595c21d73c7dafe12f00ac7d001f054af447896b4295e0a8714d8ada1da8cd03",
+    "src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityService.java": "63f6c3ed9f3316dd75e3d042d59166d7897f161ad3df1f6ea9bc05f3bca8f2b1",
+    "src/test/java/org/ruoyi/ipd/agent/catalog/ProjectAgentNativeToolCatalogTest.java": "52dac73ea9ce062921e8aaf5643458adb473c995cf14c68c622f9bf72d9803bd",
+    "src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCapabilityServiceTest.java": "a10c204ea4d4858f66a959501e3e0e67751421c25cc9c058a1626de7c5d43a51"
+  },
+  "patchSha256": "9b90d511f9fb90f8db189e067ff36f5dcc69fa10c9ee6b84259f09b57fd90a51",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-native-catalog-lloabvy4",
+  "compileExit": 0,
+  "tests": {
+    "found": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-native-catalog-lloabvy4/tests.log"
+  },
+  "dependencyBaseline": "10130 candidate fixed runtime libraries / actual official SDK2.0.3; current skill resources copied only for existing Capability tests, not changed",
+  "scope": "Only five paths; Planner/Kernel/Configuration/pom/index/main target/DB untouched",
+  "pending": [
+    "Configuration must inject actual registered IDs and per-provider readiness; default native status unverified",
+    "Planner final frozen toolIds/snapshot must union31+business via executionToolIds, request remains business selections",
+    "Current full Kernel builder flags read; this slice did not run actual current Kernel suite or reload",
+    "SDK204/Service complete scope independent; 31 is actual203 fullprofile protocol not universal Service catalogue"
+  ],
+  "beforeTests": "Existing CapabilityServiceTest before body reconstructed by exact removal of inserted method; production two before hashes captured prior mutation in codex-b-native-catalog-before-20261002.json",
+  "commentOnlyAfterTest": "ToolCatalog Javadoc clarified official permissions after successful compile; no semantic changes after test"
+}

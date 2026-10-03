@@ -1,0 +1,33 @@
+{
+  "status": "PUSHED_REMOTE_VERIFIED",
+  "head": "74e4723bb5008582ce99587ce8136abfab14de16",
+  "index": "/Users/mac/Documents/ruoyi-ai/.git/codex-c-provider-node-20261002.index",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-c-provider-node-20261002-va6cq528/ruoyi-ai",
+  "paths": [
+    "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClient.java",
+    "ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClientTest.java"
+  ],
+  "hashes": {
+    "ruoyi-modules/ruoyi-chat/src/main/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClient.java": "b1dafa29c0639e2a20de74b3ff94825486628737c58949220b89a0228760fc7d",
+    "ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/mcp/service/core/ManagedMcpAsyncClientTest.java": "20f8fe1dbec00948f353048f5a9ade3c44bc69240c40767dab0250844e867717"
+  },
+  "mainIndexEntriesBeforeSha256": "1671b13567f33bf22650b7132fd9865bbdf4e6abeb2d4483495d1123f8628bd1",
+  "peerHeadSnapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-c-peer-head-20261002-d9o7vfgc/ruoyi-ipd-web",
+  "peerHead": "2dc5c04723536d07192c6f9f277a276bf8ecee50",
+  "peerScope": "clean local clone of FE HEAD, no current FE staged or WIP borrowed",
+  "validatedHead": "094acbc016ed5890a468cc04eaebeacd923ef90d",
+  "headAdvanceScope": "only independently verified hook+controls node; runtime provider source/test unchanged",
+  "commit": "206ad0a21dde1816acddf8102cc299062eeb830d",
+  "normalHook": "8 PASS/0 FAIL/0 SKIP",
+  "commitLog": "/tmp/ipd-codex-c-provider-node-commit-final-20261002.log",
+  "indexPolicy": "only two owned provider paths aligned; every other main-index entry byte-preserved",
+  "runtimeQuery": {
+    "runId": "2106095444625989634",
+    "sourceStatus": "SUCCESS",
+    "citationChars": 17201,
+    "runStatus": "FAILED",
+    "errorCode": "COMPLETION_REJECTED",
+    "notBusinessAcceptance": true
+  },
+  "remoteHead": "206ad0a21dde1816acddf8102cc299062eeb830d"
+}

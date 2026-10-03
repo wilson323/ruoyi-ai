@@ -1,0 +1,148 @@
+{
+  "at": "2026-10-02T17:01:33.247973+00:00",
+  "status": "VERIFIED_INDEPENDENT_26_PATH_SOURCE_BUILD_CLOSURE",
+  "scope": "HEAD f358795 + exactly26 current frontend paths; third-party installed dependencies reused via hardlinks, workspace symlinks resolve isolated candidate; not fresh dependency install or full business acceptance",
+  "candidate": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-fe-26-closure-rnic4dco",
+  "head": "f358795a124804e6c3a68d25b4b0ebc89f751740",
+  "paths": [
+    "apps/web-antd/src/api/ipd/ai-document.ts",
+    "apps/web-antd/src/api/ipd/project-agent.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-review-actions.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-version-review.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-version-review.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/intent-card.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.ts",
+    "apps/web-antd/src/views/ipd/_shared/assistant-turn.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/assistant-turn.vue",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.css",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.test.ts",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.ts"
+  ],
+  "sourceHashes": {
+    "apps/web-antd/src/api/ipd/ai-document.ts": "1120e15f0e561b8e8d4e871b6d13af0f80cfae66b3da5ee4111eca359fe4bb6a",
+    "apps/web-antd/src/api/ipd/project-agent.ts": "ec3c884e8a200b6e8d1d73f8ffdce6593fac133974a288fea3cd9878425ea3e9",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.test.ts": "9048d3598ed7ae80ebb0ce98c14ae7cadcd801616430c38680f980978c1ddb60",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.ts": "13a8ebef64b06596aff75c83acc78fcc3a6378ce833a1976af1f8736698e9715",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.vue": "8d54dc0b3790b27d8baba0d64c9a5be84a2741c0127c8a068fd0c496be7c9e36",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.test.ts": "e56199dc26f54127d2b024195fc42732cae9467c7458d580a185be7a79e65623",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.ts": "ef01c63eae7857a890dd7e5bf3a408c31803de5a9309680392c82964314b12c0",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-review-actions.ts": "8f734bdcf0cb209c9fbe46eb38e6c4beced0b02e41ca512ad8eb7d8e66d339b6",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-version-review.test.ts": "c3115f8665d076f0a0afd4b5671b876d0cd9c2b316134e0e56aea0e7b05b0a3d",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-version-review.vue": "137e295b919b1a712d5b7dd0c78682a79d110702456cbd393c451528cb582777",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/intent-card.vue": "5b1b96df550fd913766e555a97395321231b0d2d6d192d2445243f3d22f65f07",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "7446b61e83f11e2b7517a64bfa3cd04dcf819ebfae6b9147fd61d099445ec1e2",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "8e5d257db119b58e3bcc7d5628ef970bd3485b560b640ff9d66e028c39969dc7",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "99255a3f8c71012c1fae984f8df1cf8714d3e2671a7e8d9cdb10eb685663aa1b",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "d86cc37961221f486782483d14343b90621e64a857810d00f785b1f77d150e15",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts": "8480b384932bd9e991b0995123bf39fd89c1762730f78e2de6b391a75dca855c",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": "9d5990b93b480119487635db44c8961b6964f78263e1bfdb275e0600f46b2860",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.test.ts": "99b3e4cf5a947d8583e93571306ef815e866fd0a831a3687ed995763be420368",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.ts": "5f336d67d35071de2dcba682956c4c5796bb404fadeced90e5cc81673ded85d4",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.test.ts": "e6faaea410cbf0452746559dbcb01c60b921b19ec87e53788f869c9f9d9d581f",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.ts": "5f8be39d860e8a185964bc16988bf8056d036ccb92a1d077694d8757b7677c6b",
+    "apps/web-antd/src/views/ipd/_shared/assistant-turn.test.ts": "3eebb4b264d268c30402fb100f2c468d4f816f7ead6b0f1213693542bf88b186",
+    "apps/web-antd/src/views/ipd/_shared/assistant-turn.vue": "1a35743937c81100a55f116a857b9d9a77fd4253dc8049904afeda9a7fdf4a31",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.css": "8bfe679356f9801f56906d54a259aadb34b1d23e68f52f9d0a0676a648e04983",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.test.ts": "e67698753636e03067e18c7592f15ed1fdb5e4adb1da64665d6f11459b100adc",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.ts": "2a2380b9be8f253b12f76c45f8458eef685874430a5dbc514c896de97a534b2d"
+  },
+  "unchangedHeadFilesVerified": 2020,
+  "unexpectedHeadFileDifferences": [],
+  "targetedTestFiles": 10,
+  "targetedTests": 112,
+  "checks": {
+    "stub": {
+      "exit": 0
+    },
+    "tests": {
+      "exit": 0,
+      "passed": 112
+    },
+    "types": {
+      "exit": 0,
+      "cachedTasks": 0,
+      "executedTasks": 1
+    },
+    "build": {
+      "exit": 0,
+      "cachedTasks": 0,
+      "executedTasks": 11,
+      "distIndexExists": true
+    }
+  },
+  "logs": {
+    "stub": "/tmp/ipd-fe-26-stub-20261002.log",
+    "tests": "/tmp/ipd-fe-26-tests-20261002.log",
+    "types": "/tmp/ipd-fe-26-types-20261002.log",
+    "build": "/tmp/ipd-fe-26-build-20261002.log"
+  },
+  "typescriptDiagnostics": {
+    "stub": [],
+    "tests": [],
+    "types": [],
+    "build": []
+  },
+  "declarationFileCount": 95,
+  "scrollbarDeclarations": [
+    {
+      "path": "packages/@core/ui-kit/tabs-ui/dist/use-tabs-view-scroll.d.ts",
+      "scrollbarRefLines": [
+        "scrollbarRef: import(\"vue\").Ref<{"
+      ]
+    }
+  ],
+  "dependencyIsolation": {
+    "nodeModulesTrees": 37,
+    "sampleWorkspaceResolved": "/private/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-fe-26-closure-rnic4dco/packages/icons"
+  },
+  "additionalSourcePathsRequired": [],
+  "limitations": [
+    "10 relevant test files only, not all frontend tests.",
+    "Browser/HTTP live acceptance belongs to separately loaded primary runtime; isolated build output was not deployed.",
+    "node_modules are installed baseline dependencies, not freshly resolved from lockfile."
+  ],
+  "mainCurrentHashes": {
+    "apps/web-antd/src/api/ipd/ai-document.ts": "1120e15f0e561b8e8d4e871b6d13af0f80cfae66b3da5ee4111eca359fe4bb6a",
+    "apps/web-antd/src/api/ipd/project-agent.ts": "ec3c884e8a200b6e8d1d73f8ffdce6593fac133974a288fea3cd9878425ea3e9",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.test.ts": "9048d3598ed7ae80ebb0ce98c14ae7cadcd801616430c38680f980978c1ddb60",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.ts": "13a8ebef64b06596aff75c83acc78fcc3a6378ce833a1976af1f8736698e9715",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/artifact-live-preview.vue": "8d54dc0b3790b27d8baba0d64c9a5be84a2741c0127c8a068fd0c496be7c9e36",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.test.ts": "e56199dc26f54127d2b024195fc42732cae9467c7458d580a185be7a79e65623",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/capability-selection.ts": "ef01c63eae7857a890dd7e5bf3a408c31803de5a9309680392c82964314b12c0",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-review-actions.ts": "8f734bdcf0cb209c9fbe46eb38e6c4beced0b02e41ca512ad8eb7d8e66d339b6",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-version-review.test.ts": "c3115f8665d076f0a0afd4b5671b876d0cd9c2b316134e0e56aea0e7b05b0a3d",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/document-version-review.vue": "137e295b919b1a712d5b7dd0c78682a79d110702456cbd393c451528cb582777",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/intent-card.vue": "5b1b96df550fd913766e555a97395321231b0d2d6d192d2445243f3d22f65f07",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts": "7446b61e83f11e2b7517a64bfa3cd04dcf819ebfae6b9147fd61d099445ec1e2",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue": "8e5d257db119b58e3bcc7d5628ef970bd3485b560b640ff9d66e028c39969dc7",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts": "99255a3f8c71012c1fae984f8df1cf8714d3e2671a7e8d9cdb10eb685663aa1b",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue": "d86cc37961221f486782483d14343b90621e64a857810d00f785b1f77d150e15",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts": "8480b384932bd9e991b0995123bf39fd89c1762730f78e2de6b391a75dca855c",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts": "9d5990b93b480119487635db44c8961b6964f78263e1bfdb275e0600f46b2860",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.test.ts": "99b3e4cf5a947d8583e93571306ef815e866fd0a831a3687ed995763be420368",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/tool-call-rows.ts": "5f336d67d35071de2dcba682956c4c5796bb404fadeced90e5cc81673ded85d4",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.test.ts": "e6faaea410cbf0452746559dbcb01c60b921b19ec87e53788f869c9f9d9d581f",
+    "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.ts": "5f8be39d860e8a185964bc16988bf8056d036ccb92a1d077694d8757b7677c6b",
+    "apps/web-antd/src/views/ipd/_shared/assistant-turn.test.ts": "3eebb4b264d268c30402fb100f2c468d4f816f7ead6b0f1213693542bf88b186",
+    "apps/web-antd/src/views/ipd/_shared/assistant-turn.vue": "1a35743937c81100a55f116a857b9d9a77fd4253dc8049904afeda9a7fdf4a31",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.css": "8bfe679356f9801f56906d54a259aadb34b1d23e68f52f9d0a0676a648e04983",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.test.ts": "e67698753636e03067e18c7592f15ed1fdb5e4adb1da64665d6f11459b100adc",
+    "apps/web-antd/src/views/ipd/_shared/safe-markdown.ts": "2a2380b9be8f253b12f76c45f8458eef685874430a5dbc514c896de97a534b2d"
+  },
+  "main26AllMatchCandidate": true,
+  "scrollbarRefDeclarationNotAny": true
+}

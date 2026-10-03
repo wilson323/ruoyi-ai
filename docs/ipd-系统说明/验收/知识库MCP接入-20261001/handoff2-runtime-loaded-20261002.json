@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-02T16:36:22.440189+00:00",
+  "oldPid": "31789",
+  "newPid": 53037,
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-global-20261002-1bf9484af62c.jar",
+  "sha256": "1bf9484af62cf8611246cf2febbe3036505442007f61b2f73ed22b18726eb789",
+  "activeRunsBefore": 0,
+  "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-global-20261002.log",
+  "status": "HTTP_AUTH_READY",
+  "verifiedAt": "2026-10-02T16:37:14.979219+00:00",
+  "actualJarSha256": "1bf9484af62cf8611246cf2febbe3036505442007f61b2f73ed22b18726eb789",
+  "openJarVerified": true,
+  "oldPidGone": true
+}

@@ -1,0 +1,49 @@
+{
+  "atUtc": "2026-10-02T19:33:09.934751+00:00",
+  "status": "PARTIAL",
+  "loadedPid": 31351,
+  "loadedJarSha256": "a44e858e9c72ccb2da0bf54a5ad2eeddd0026872a920feb250ce07a37e4a1470",
+  "loadedLatestMetadataAndMembership": false,
+  "frontendRecovery": {
+    "tests": 49,
+    "failures": 0,
+    "typeExit": 0,
+    "realBrowserEvidence": "codex-f-restart-browser-20261002.json",
+    "limitedTo": "white-language failure, focus-only restart, refreshed persisted history; no model send"
+  },
+  "backendTargetedFresh": {
+    "tests": 81,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "log": "/tmp/ipd-codex-fresh-metadata-permission-targeted-20261002.log"
+  },
+  "initialTargetedPreserved": {
+    "tests": 51,
+    "failures": 3,
+    "log": "/tmp/ipd-codex-metadata-prompt-password-targeted-20261002.log",
+    "diagnosis": "Maven skipped compiling; executed Prompt/Gate output differed from current source; fresh compilation passed"
+  },
+  "backendFull": {
+    "tests": 3752,
+    "failures": 0,
+    "errors": 1,
+    "skips": 26,
+    "log": "/tmp/ipd-codex-fresh-metadata-permission-full-20261002.log",
+    "openError": "Sec01AcceptanceTest.stageActionTransitOperatorComesFromSession FORBIDDEN; fixture diagnosis assigned D"
+  },
+  "quality": "Run2106100085770162178 SUCCEEDED but REJECT_APPLY; DRAFT retained; original v3 GENERATED unchanged",
+  "isolatedCandidates": {
+    "metadataGate": 19,
+    "permission": 35,
+    "loaderFakeControls": 10
+  },
+  "newRecoveryFinding": "MailSend catches transport failure and returns SUCCESS; side-effect retry loop also needs stop-on-unknown. E minimal patch not frozen/loaded",
+  "openLimits": [
+    "QA04 missing dedicated credentials/schema; no DDL",
+    "MINIMAX raw-key integration contract 8 errors preserved",
+    "real same-role nonmember account900105 missing safe credential evidence",
+    "owner approval and full lifecycle acceptance not performed",
+    "atomic external fencing not proven"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "status": "COUNTEREXAMPLE_OUTER_TRANSACTION",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-handle-commit-54j7jzqc",
+  "compileExit": 0,
+  "probeExit": 0,
+  "sourceObservedSha256": "53f33a8d5ca6d3a4b5db8662f890df040602f68948a646ac39b6d2ececb3165e",
+  "compiledClassSha256": "c828c7317bc42a0d90399fc360d1d5cb79373ffc342a4b98545bca6301f3676f",
+  "logSha256": "f948b48855e3767980cc39bb0c9116347fd07d767395d9bc810952a083e00ba8",
+  "cases": {
+    "success": "receipt1 cleanup1 commits1 SUCCEEDED close1; receipt sees activefalse",
+    "commitfailure": "receipt0 cleanup0 commits0 rollback RUNNING events0 close0 after3attempts",
+    "cleanupfailure": "receipt1 cleanup1 SUCCEEDED remains; UNRESOLVED cleanup logged; no terminal retry",
+    "leaseLostAfterCommit": "receipt0 cleanup0 SUCCEEDED committed close1; checkpoint kept",
+    "outerRequiredRollback": "receipt1 cleanup1 commits0 active=true close1 occurs before outerrollback; rollback RUNNING events0, externalcleanup irreversible"
+  },
+  "rootCause": "TransactionTemplate default REQUIRED may participate. Returning execute does not mean underlying outer transaction committed; cleanupCommitted and closeCommitted run prematurely.",
+  "additionalObservations": [
+    "finishOnce onSucceeded callback still inside transaction; its external effects can similarly precede rollback if callback writes outside DB",
+    "Standalone success uses actual PlatformTransactionManager lifecycle; lease condition supplied held fixture",
+    "Rollback store modeled mutable row/events restored by doRollback; no MyBatis durable transaction proof",
+    "Loser finish and real lease expiry race after held() check not independently exercised; callback lock is coordination not atomic external fence",
+    "Cleanup exception may have partly deleted resources before throw; log alone cannot assert allcheckpoint preserved"
+  ],
+  "recommendation": "Bind receipt/cleanup and lease/close release to real TransactionSynchronization.afterCommit and appropriate rollback recovery, or enforce verified independent REQUIRES_NEW terminal transaction contract. Preserve seq/text restoration and avoid releasing ownership before actual commit.",
+  "writes": "temp/evidence only; no DB/runtime/main/target writes"
+}

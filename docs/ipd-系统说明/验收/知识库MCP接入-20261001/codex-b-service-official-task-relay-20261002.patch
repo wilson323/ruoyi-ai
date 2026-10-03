@@ -1,0 +1,279 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOfficialTaskRelay.java
+@@ -0,0 +1,39 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import io.agentscope.core.agent.*;
++import io.agentscope.core.event.*;
++import io.agentscope.core.middleware.*;
++import io.agentscope.core.tool.AgentTool;
++import io.agentscope.extensions.aistio.adapter.AgentTaskToolContext;
++import io.agentscope.extensions.aistio.adapter.AgentTaskOutcome;
++import reactor.core.publisher.*;
++import java.util.*;
++import java.util.function.Function;
++
++/** Official onAgent extension: dispatch carrier never calls a model; only original IPD runner executes. */
++public final class ProjectAgentOfficialTaskRelay implements MiddlewareBase {
++    public record PreparedTask(AgentInput input,RuntimeContext officialContext,Map<String,AgentTool> tools) { }
++    @FunctionalInterface public interface OriginalRunExecutor { Mono<io.agentscope.core.message.Msg> execute(PreparedTask task); }
++    @FunctionalInterface public interface CurrentAuthority { void requireAuthorized(); }
++    private final String taskId;
++    private final Set<String> officialActions;
++    private final CurrentAuthority authority;
++    private final OriginalRunExecutor originalRunner;
++    public ProjectAgentOfficialTaskRelay(String taskId,Set<String> officialActions,CurrentAuthority authority,OriginalRunExecutor originalRunner) {
++        this.taskId=Objects.requireNonNull(taskId);this.officialActions=Set.copyOf(officialActions);
++        this.authority=Objects.requireNonNull(authority);this.originalRunner=Objects.requireNonNull(originalRunner);
++    }
++    @Override public int order(){return Integer.MIN_VALUE;}
++    @Override public Flux<AgentEvent> onAgent(Agent agent,RuntimeContext context,AgentInput input,Function<AgentInput,Flux<AgentEvent>> next) {
++        return Flux.defer(()->{
++            authority.requireAuthorized();var task=context.get(AgentTaskToolContext.class);
++            if(task==null||!taskId.equals(task.taskId())||context.get(AgentTaskOutcome.State.class)==null)
++                return Flux.error(new SecurityException("Official task context mismatch"));
++            Map<String,AgentTool> tools=new LinkedHashMap<>();
++            var names=new LinkedHashSet<>(officialActions);names.add("task.submit_result");
++            names.remove("task.complete");names.remove("task.fail");
++            for(String name:names){AgentTool tool=agent.getToolkit().getTool(name);if(tool!=null)tools.put(name,tool);}
++            if(!tools.containsKey("task.submit_result"))return Flux.error(new IllegalStateException("Official task outcome tool missing"));
++            return originalRunner.execute(new PreparedTask(input,context,Map.copyOf(tools))).map(AgentResultEvent::new).cast(AgentEvent.class).flux();
++        });
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentTaskPreparations.java
+@@ -0,0 +1,61 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.tool.Toolkit;
++import io.agentscope.extensions.aistio.adapter.AgentTaskToolContext;
++import io.agentscope.extensions.aistio.adapter.AgentTaskOutcome;
++import org.ruoyi.ipd.agent.domain.IpdAgentRun;
++import org.ruoyi.ipd.security.IpdActor;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import java.util.*;
++import java.util.concurrent.ConcurrentHashMap;
++
++/** Trusted pre-create dispatch rendezvous, not a Task API or persistent business authority. */
++public final class ProjectAgentTaskPreparations {
++    private record Entry(IpdActor actor,Long projectId,String tenantId,ProjectAgentOfficialTaskRelay.PreparedTask task) { }
++    private final Map<String,Entry> entries=new ConcurrentHashMap<>();
++    private final IpdCopilotAccess access;
++    public ProjectAgentTaskPreparations(IpdCopilotAccess access){this.access=Objects.requireNonNull(access);}
++    void publish(IpdActor actor,Long projectId,String key,ProjectAgentOfficialTaskRelay.PreparedTask task){
++        var entry=new Entry(actor,projectId,access.requireVisible(actor,projectId),task);
++        Entry previous=entries.putIfAbsent(key,entry);
++        if(previous!=null&&(!previous.actor().id().equals(actor.id())||!previous.projectId().equals(projectId)))throw new SecurityException("Task preparation collision");
++    }
++    public Optional<List<String>> findPlannedToolIds(IpdActor actor,Long projectId,String key){
++        if(!entries.containsKey(key))return Optional.empty();
++        return Optional.of(plannedToolIds(actor,projectId,key));
++    }
++    public List<String> plannedToolIds(IpdActor actor,Long projectId,String key){Entry e=required(actor,projectId,key);return List.copyOf(e.task().tools().keySet());}
++    private Entry required(IpdActor actor,Long projectId,String key){Entry e=entries.get(key);String tenant=access.requireVisible(actor,projectId);
++        if(e==null||!e.actor().id().equals(actor.id())||!e.projectId().equals(projectId)||!e.tenantId().equals(tenant))throw new SecurityException("Unbound original task run");return e;}
++    /** Called on the original built agent before governance wraps every actual tool. */
++    public void install(IpdActor actor,IpdAgentRun row,Toolkit originalTools,RuntimeContext originalContext){
++        Entry e=required(actor,row.getProjectId(),row.getIdempotencyKey());
++        if(!e.actor().id().equals(row.getPersonId())||!e.tenantId().equals(row.getTenantId()))throw new SecurityException("Task run owner mismatch");
++        RuntimeContext task=e.task().officialContext();
++        originalContext.put(AgentTaskToolContext.class,task.get(AgentTaskToolContext.class));
++        originalContext.put(AgentTaskOutcome.State.class,task.get(AgentTaskOutcome.State.class));
++        originalContext.put("agentTaskManaged",Boolean.TRUE);
++        originalContext.put("teamLeader",task.get("teamLeader"));
++        originalContext.put(io.agentscope.harness.agent.subagent.task.TaskRepository.SUPPRESS_COMPLETION_CALLBACK,Boolean.TRUE);
++        e.task().tools().values().forEach(tool -> originalTools.registerAgentTool(new io.agentscope.core.tool.AgentTool() {
++            public String getName(){return tool.getName();}
++            public String getDescription(){return tool.getDescription();}
++            public Map<String,Object> getParameters(){return tool.getParameters();}
++            public boolean isReadOnly(){return tool.isReadOnly();}
++            public Boolean getStrict(){return tool.getStrict();}
++            public Map<String,Object> getOutputSchema(){return tool.getOutputSchema();}
++            public boolean isReturnDirect(){return tool.isReturnDirect();}
++            public reactor.core.publisher.Mono<io.agentscope.core.message.ToolResultBlock> callAsync(io.agentscope.core.tool.ToolCallParam param){
++                return reactor.core.publisher.Mono.defer(()->{
++                    required(actor,row.getProjectId(),row.getIdempotencyKey());
++                    var runtime=param.getRuntimeContext();var bound=runtime==null?null:runtime.get(AgentTaskToolContext.class);
++                    var expected=task.get(AgentTaskToolContext.class);
++                    if(bound==null||expected==null||!expected.taskId().equals(bound.taskId())||!expected.taskToken().equals(bound.taskToken()))
++                        return reactor.core.publisher.Mono.error(new SecurityException("Task tool context mismatch"));
++                    return tool.callAsync(param);
++                });
++            }
++        }));
++    }
++    void release(String key){entries.remove(key);}
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOriginalTaskRunner.java
+@@ -0,0 +1,40 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import io.agentscope.core.message.*;
++import io.agentscope.extensions.aistio.model.AgentTaskAssignment;
++import org.ruoyi.ipd.agent.dto.AgentRunCreateReq;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import reactor.core.publisher.*;
++import java.time.Duration;
++import java.util.*;
++
++/** Dispatches exclusively through existing IPD create/get; never calls another agent/model. */
++public final class ProjectAgentOriginalTaskRunner implements ProjectAgentOfficialTaskRelay.OriginalRunExecutor {
++    private final ProjectAgentRunService runs;private final IpdCopilotAccess access;
++    private final ProjectAgentServiceTaskStarter.TrustedBindingResolver bindings;
++    private final AgentTaskAssignment assignment;private final ProjectAgentTaskPreparations preparations;
++    private final Duration poll,deadline;
++    public ProjectAgentOriginalTaskRunner(ProjectAgentRunService runs,IpdCopilotAccess access,
++        ProjectAgentServiceTaskStarter.TrustedBindingResolver bindings,AgentTaskAssignment assignment,
++        ProjectAgentTaskPreparations preparations,Duration poll,Duration deadline){
++        this.runs=Objects.requireNonNull(runs);this.access=Objects.requireNonNull(access);this.bindings=Objects.requireNonNull(bindings);
++        this.assignment=Objects.requireNonNull(assignment);this.preparations=Objects.requireNonNull(preparations);
++        this.poll=Objects.requireNonNull(poll);this.deadline=Objects.requireNonNull(deadline);
++        if(poll.isZero()||poll.isNegative()||deadline.isZero()||deadline.isNegative())throw new IllegalArgumentException("Positive timing required");}
++    public Mono<Msg> execute(ProjectAgentOfficialTaskRelay.PreparedTask task){return Mono.defer(()->{
++        var bound=bindings.resolve(assignment);access.requireVisible(bound.actor(),bound.projectId());var r=bound.request();
++        String input=task.input().msgs().stream().map(Msg::getTextContent).filter(Objects::nonNull).collect(java.util.stream.Collectors.joining("\n\n"));
++        if(input.isBlank())return Mono.error(new IllegalArgumentException("Official task input missing"));
++        String key=ProjectAgentServiceTaskStarter.idempotencyKey(assignment);
++        preparations.publish(bound.actor(),bound.projectId(),key,task);
++        var req=new AgentRunCreateReq(r.capabilityPackCode(),r.capabilityPackVersion(),r.modelConfigId(),r.skillNames(),r.toolIds(),r.actionCode(),input,key,r.productLineId(),r.requirementId(),r.previousRunId(),r.targetDocumentId(),r.baseVersionId());
++        Long id;
++        try{id=Long.valueOf(runs.create(bound.actor(),bound.projectId(),req).runId());bindings.recordRun(assignment,bound,id);}
++        catch(RuntimeException e){preparations.release(key);return Mono.error(new IllegalStateException("Original IPD task dispatch failed"));}
++        return Flux.interval(Duration.ZERO,poll).onBackpressureLatest().concatMap(tick->Mono.fromCallable(()->{access.requireVisible(bound.actor(),bound.projectId());return runs.get(bound.actor(),id);}).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()))
++            .filter(run->Set.of("SUCCEEDED","FAILED","CANCELLED").contains(run.status())).next().timeout(deadline)
++            .flatMap(run->{if(!"SUCCEEDED".equals(run.status()))return Mono.error(new IllegalStateException("Original IPD execution "+run.status().toLowerCase(Locale.ROOT)));
++                return Mono.just(Msg.builder().role(MsgRole.ASSISTANT).textContent("Original IPD execution finished; official submitted outcome governs task completion.").generateReason(io.agentscope.core.message.GenerateReason.MODEL_STOP).build());})
++            .doOnCancel(()->runs.cancel(bound.actor(),id)).doFinally(signal->preparations.release(key));
++    });}
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOfficialTaskExecution.java
+@@ -0,0 +1,38 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import io.agentscope.extensions.aistio.adapter.*;
++import io.agentscope.extensions.aistio.model.AgentTaskAssignment;
++import io.agentscope.extensions.aistio.transport.CollaborationClient;
++import io.agentscope.harness.agent.HarnessAgent;
++import org.ruoyi.ipd.agent.service.ProjectAgentRunService;
++import org.ruoyi.ipd.service.IpdCopilotAccess;
++import reactor.core.publisher.Mono;
++import java.time.Duration;
++import java.util.*;
++
++/** Public SDK lifecycle with an IPD dispatch-only middleware; no second business task API. */
++public final class ProjectAgentOfficialTaskExecution implements AgentTaskStarter {
++    @FunctionalInterface public interface DispatchCarrierFactory {
++        /** Host-owned authorized workspace/full builder; must install relay before any model execution. */
++        HarnessAgent create(AgentTaskAssignment assignment,ProjectAgentOfficialTaskRelay relay);
++    }
++    private final CollaborationClient client;private final ProjectAgentRunService runs;
++    private final IpdCopilotAccess access;private final ProjectAgentServiceTaskStarter.TrustedBindingResolver bindings;
++    private final ProjectAgentTaskPreparations preparations;private final DispatchCarrierFactory carrierFactory;
++    private final Duration poll,deadline;
++    public ProjectAgentOfficialTaskExecution(CollaborationClient client,ProjectAgentRunService runs,IpdCopilotAccess access,
++        ProjectAgentServiceTaskStarter.TrustedBindingResolver bindings,ProjectAgentTaskPreparations preparations,
++        DispatchCarrierFactory carrierFactory,Duration poll,Duration deadline){
++        this.client=Objects.requireNonNull(client);this.runs=Objects.requireNonNull(runs);this.access=Objects.requireNonNull(access);
++        this.bindings=Objects.requireNonNull(bindings);this.preparations=Objects.requireNonNull(preparations);
++        this.carrierFactory=Objects.requireNonNull(carrierFactory);this.poll=Objects.requireNonNull(poll);this.deadline=Objects.requireNonNull(deadline);}
++    public Mono<Void> start(AgentTaskAssignment assignment){return Mono.defer(()->{
++        var bound=bindings.resolve(assignment);access.requireVisible(bound.actor(),bound.projectId());
++        var envelope=client.taskContext(assignment.agentTaskId(),assignment.taskToken());Set<String> actions=new LinkedHashSet<>();
++        for(var action:envelope.path("availableActions"))actions.add(action.asText());
++        var relay=new ProjectAgentOfficialTaskRelay(assignment.agentTaskId(),actions,
++            ()->access.requireVisible(bound.actor(),bound.projectId()),
++            new ProjectAgentOriginalTaskRunner(runs,access,bindings,assignment,preparations,poll,deadline));
++        return Mono.using(()->carrierFactory.create(assignment,relay),
++            carrier->new HarnessAgentTaskStarter(()->carrier,client).start(assignment),HarnessAgent::close);
++    }).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());}
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/servicebridge/ProjectAgentOfficialTaskRelayTest.java
+@@ -0,0 +1,86 @@
++package org.ruoyi.ipd.agent.servicebridge;
++import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;
++import static org.assertj.core.api.Assertions.*;import static org.mockito.Mockito.*;import static org.mockito.ArgumentMatchers.*;
++import java.nio.file.Path;import java.util.*;import java.time.Duration;import java.util.concurrent.atomic.AtomicInteger;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import io.agentscope.core.*;import io.agentscope.core.agent.*;import io.agentscope.core.message.*;import io.agentscope.core.model.*;import io.agentscope.core.tool.Toolkit;
++import io.agentscope.extensions.aistio.adapter.*;import io.agentscope.extensions.aistio.model.*;import io.agentscope.extensions.aistio.transport.CollaborationClient;
++import io.agentscope.harness.agent.HarnessAgent;
++import org.ruoyi.ipd.agent.domain.IpdAgentRun;import org.ruoyi.ipd.agent.service.ProjectAgentRunService;import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
++import org.ruoyi.ipd.agent.support.AgentTestFixtures;import org.ruoyi.ipd.service.IpdCopilotAccess;
++class ProjectAgentOfficialTaskRelayTest {
++ @TempDir Path dir;
++ final ObjectMapper json=new ObjectMapper();
++ AgentTaskAssignment assignment(){return new AgentTaskAssignment("attempt","task","service-run","node",1,"dispatch","","fixture-task-token","fixture-attempt-token","service-session",new byte[0],1);}
++ ProjectAgentViews.Run run(String status){return new ProjectAgentViews.Run("901",String.valueOf(AgentTestFixtures.PROJECT_ID),"ipd_project_agent",status,"C02",null,null,null,null);}
++ CollaborationClient client(boolean leader)throws Exception{var c=mock(CollaborationClient.class);when(c.taskContext(any(),any())).thenReturn(json.readTree("{\"task\":{\"status\":\"running\",\"version\":4,\"leaderTask\":"+leader+"},\"issue\":{\"title\":\"Issue actual input\"},\"team\":{\"role\":\"Researcher\"},\"discussionInputs\":[{\"body\":\"Team discussion evidence\"}],\"taskToken\":\"fixture-credential-must-not-reach-model\",\"headers\":{\"Authorization\":\"fixture-header-must-not-reach-model\"},\"availableActions\":[\"issue.get\"]}"));when(c.tools(any(),any())).thenReturn(json.readTree("[{\"name\":\"issue.get\",\"description\":\"Read assigned Issue\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}]"));when(c.callTool(any(),any(),eq("issue.get"),any(),any())).thenReturn(json.readTree("{\"title\":\"actual refreshed Issue\"}"));return c;}
++ @Test void officialTaskStarterFullEnvelopeCollaborationAndOutcomeReachSingleOriginalRun()throws Exception{
++  var c=client(false);var runs=mock(ProjectAgentRunService.class);var access=mock(IpdCopilotAccess.class);when(access.requireVisible(any(),any())).thenReturn(AgentTestFixtures.TENANT);
++  var prepared=new ProjectAgentTaskPreparations(access);var binding=new ProjectAgentServiceTaskStarter.Binding(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,AgentTestFixtures.c02("unused-key","approved template"),null);
++  var resolver=new ProjectAgentServiceTaskStarter.TrustedBindingResolver(){public ProjectAgentServiceTaskStarter.Binding resolve(AgentTaskAssignment a){return binding;}public void recordRun(AgentTaskAssignment a,ProjectAgentServiceTaskStarter.Binding b,Long id){assertThat(id).isEqualTo(901L);}};
++  var originalCalls=new AtomicInteger();var outerCalls=new AtomicInteger();var captured=new java.util.concurrent.atomic.AtomicReference<String>();
++  Model original=new Model(){public String getModelName(){return "original-no-network-model";}public reactor.core.publisher.Flux<ChatResponse> stream(List<Msg> msgs,List<ToolSchema> schemas,GenerateOptions opts){
++   captured.set(msgs.stream().map(msg -> Objects.toString(msg.getTextContent(), "") + msg.getContent().stream().filter(block -> block instanceof ToolResultBlock).map(block -> ((ToolResultBlock)block).getOutput().stream().filter(out -> out instanceof TextBlock).map(out -> ((TextBlock)out).getText()).collect(java.util.stream.Collectors.joining(" "))).collect(java.util.stream.Collectors.joining(" "))).collect(java.util.stream.Collectors.joining("\n")));int n=originalCalls.incrementAndGet();assertThat(schemas.stream().map(ToolSchema::getName).toList()).contains("issue.get","task.submit_result").doesNotContain("task.complete","task.fail");
++   ContentBlock block=n==1?ToolUseBlock.builder().id("issue-call").name("issue.get").input(Map.of()).content("{}").build():n==2?ToolUseBlock.builder().id("outcome-call").name("task.submit_result").input(Map.of("outcome","succeeded","result","actual full deliverable")).content("{\"outcome\":\"succeeded\",\"result\":\"actual full deliverable\"}").build():TextBlock.builder().text("actual delivery finished").build();return reactor.core.publisher.Flux.just(ChatResponse.builder().content(List.of(block)).build());}};
++  when(runs.create(any(),any(),any())).thenAnswer(inv->{var req=inv.getArgument(2,org.ruoyi.ipd.agent.dto.AgentRunCreateReq.class);assertThat(req.message()).contains("Issue actual input","Researcher","Team discussion evidence").doesNotContain("fixture-credential-must-not-reach-model","fixture-header-must-not-reach-model");
++   var row=new IpdAgentRun();row.setId(901L);row.setPersonId(AgentTestFixtures.ACTOR.id());row.setProjectId(AgentTestFixtures.PROJECT_ID);row.setTenantId(AgentTestFixtures.TENANT);row.setIdempotencyKey(req.idempotencyKey());
++   var tools=new Toolkit();var context=RuntimeContext.builder().userId("trusted-person").sessionId("native-901").build();prepared.install(AgentTestFixtures.ACTOR,row,tools,context);
++   var inner=ReActAgent.builder().name("original-ipd-agent").sysPrompt("IPD approval remains authoritative").model(original).toolkit(tools).build();inner.streamEvents(List.of(Msg.builder().role(MsgRole.USER).textContent(req.message()).build()),context).blockLast(Duration.ofSeconds(5));return new ProjectAgentViews.RunStatus("901","RUNNING");});when(runs.get(any(),any())).thenReturn(run("SUCCEEDED"));
++  var relay=new ProjectAgentOfficialTaskRelay("task",Set.of("issue.get","task.complete","task.fail"),()->access.requireVisible(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID),new ProjectAgentOriginalTaskRunner(runs,access,resolver,assignment(),prepared,Duration.ofMillis(5),Duration.ofSeconds(5)));
++  Model outer=new Model(){public String getModelName(){return "dispatch-only";}public reactor.core.publisher.Flux<ChatResponse> stream(List<Msg> m,List<ToolSchema> t,GenerateOptions o){outerCalls.incrementAndGet();throw new AssertionError("Dispatch carrier must never call Model");}};
++  try(var carrier=HarnessAgent.builder().name("official-task-dispatch-carrier").workspace(dir).model(outer).middleware(relay).build()){
++   new ProjectAgentOfficialTaskExecution(c,runs,access,resolver,prepared,(assigned,officialRelay)->HarnessAgent.builder().name("configured-dispatch-carrier").workspace(dir.resolve("configured")).model(outer).middleware(officialRelay).build(),Duration.ofMillis(5),Duration.ofSeconds(5)).start(assignment()).block(Duration.ofSeconds(10));
++   assertThat(outerCalls.get()).isZero();assertThat(originalCalls.get()).isEqualTo(3);assertThat(captured.get()).contains("Team discussion evidence","actual refreshed Issue").doesNotContain("fixture-credential-must-not-reach-model");
++   verify(runs,times(1)).create(any(),any(),any());verify(c).callTool(eq("task"),eq("fixture-task-token"),eq("issue.get"),any(),eq("issue-call"));
++   verify(c).finish(eq("task"),eq("fixture-task-token"),eq(4L),eq("succeeded"),any(),eq("actual full deliverable"),any(),any());verify(c,never()).fail(any(),any(),anyLong(),any(),any());
++  }
++ }
++ @Test void failedCancelledAndRevokedOriginalExecutionNeverFinishSuccessfully()throws Exception{
++  for(String state:List.of("failed","cancelled","revoked")){var c=client(false);var relay=new ProjectAgentOfficialTaskRelay("task",Set.of("issue.get"),()->{if(state.equals("revoked"))throw new SecurityException("IPD authority revoked");},task->reactor.core.publisher.Mono.error(new IllegalStateException("Original IPD execution "+state)));
++   Model outer=new Model(){public String getModelName(){return "dispatch-only";}public reactor.core.publisher.Flux<ChatResponse> stream(List<Msg> m,List<ToolSchema> t,GenerateOptions o){throw new AssertionError("No outer model");}};
++   try(var carrier=HarnessAgent.builder().name("negative-dispatch").workspace(dir.resolve(state)).model(outer).middleware(relay).build()){
++    assertThatThrownBy(()->new HarnessAgentTaskStarter(()->carrier,c).start(assignment()).block(Duration.ofSeconds(5))).isInstanceOf(RuntimeException.class);
++    verify(c).fail(eq("task"),any(),eq(4L),eq("agent_failed"),any());verify(c,never()).finish(any(),any(),anyLong(),eq("succeeded"),any(),any(),any(),any());
++   }
++  }
++ }
++ @Test void teamWaitingUsesOfficialSubmittedOutcomeAndNeverBecomesSuccess()throws Exception{
++  var c=client(true);var relay=new ProjectAgentOfficialTaskRelay("task",Set.of("issue.get"),()->{},task->{
++   var outcome=task.tools().get("task.submit_result");var use=ToolUseBlock.builder().id("wait-outcome").name("task.submit_result").input(Map.of("outcome","waiting","result","partial evidence","reason","Waiting for delegated task","pending_task_ids",List.of("real-control-plane-task-fixture"))).build();
++   return outcome.callAsync(io.agentscope.core.tool.ToolCallParam.builder().toolUseBlock(use).input(use.getInput()).runtimeContext(task.officialContext()).build()).thenReturn(Msg.builder().role(MsgRole.ASSISTANT).textContent("waiting").generateReason(GenerateReason.MODEL_STOP).build());});
++  Model outer=new Model(){public String getModelName(){return "dispatch-only";}public reactor.core.publisher.Flux<ChatResponse> stream(List<Msg> m,List<ToolSchema> t,GenerateOptions o){throw new AssertionError("No outer model");}};
++  try(var carrier=HarnessAgent.builder().name("waiting-dispatch").workspace(dir).model(outer).middleware(relay).build()){
++   new HarnessAgentTaskStarter(()->carrier,c).start(assignment()).block(Duration.ofSeconds(5));verify(c).finish(eq("task"),any(),eq(4L),eq("waiting"),contains("Waiting"),eq("partial evidence"),any(),any());verify(c,never()).finish(any(),any(),anyLong(),eq("succeeded"),any(),any(),any(),any());
++  }
++ }
++ @Test void preparedToolsRejectOtherOwnerTenantAndRuntimeRevocationBeforeRegistration(){
++  var access=mock(IpdCopilotAccess.class);when(access.requireVisible(any(),any())).thenReturn(AgentTestFixtures.TENANT);var preparations=new ProjectAgentTaskPreparations(access);
++  var context=RuntimeContext.builder().sessionId("service").put(AgentTaskToolContext.class,new AgentTaskToolContext("task","fixture-only")).put(AgentTaskOutcome.State.class,new AgentTaskOutcome.State()).build();
++  preparations.publish(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,"key",new ProjectAgentOfficialTaskRelay.PreparedTask(new io.agentscope.core.middleware.AgentInput(List.of()),context,Map.of()));
++  var row=new IpdAgentRun();row.setPersonId(999L);row.setProjectId(AgentTestFixtures.PROJECT_ID);row.setTenantId(AgentTestFixtures.TENANT);row.setIdempotencyKey("key");var tools=new Toolkit();
++  assertThatThrownBy(()->preparations.install(AgentTestFixtures.ACTOR,row,tools,RuntimeContext.empty())).hasMessageContaining("owner mismatch");row.setPersonId(AgentTestFixtures.ACTOR.id());row.setTenantId("other-tenant");
++  assertThatThrownBy(()->preparations.install(AgentTestFixtures.ACTOR,row,tools,RuntimeContext.empty())).hasMessageContaining("owner mismatch");
++  when(access.requireVisible(any(),any())).thenThrow(new SecurityException("revoked"));assertThatThrownBy(()->preparations.plannedToolIds(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,"key")).hasMessageContaining("revoked");assertThat(tools.getToolNames()).isEmpty();
++ }
++ @Test void cancellingOfficialTaskSubscriptionCancelsExistingOriginalRun()throws Exception{
++  var c=client(false);var runs=mock(ProjectAgentRunService.class);var access=mock(IpdCopilotAccess.class);when(access.requireVisible(any(),any())).thenReturn(AgentTestFixtures.TENANT);var entered=new java.util.concurrent.CountDownLatch(1);var cancelled=new java.util.concurrent.CountDownLatch(1);
++  when(runs.create(any(),any(),any())).thenReturn(new ProjectAgentViews.RunStatus("901","RUNNING"));when(runs.get(any(),any())).thenAnswer(inv->{entered.countDown();return run("RUNNING");});when(runs.cancel(any(),eq(901L))).thenAnswer(inv->{cancelled.countDown();return new ProjectAgentViews.RunStatus("901","CANCEL_REQUESTED");});
++  var binding=new ProjectAgentServiceTaskStarter.Binding(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,AgentTestFixtures.c02("k","template"),null);var resolver=new ProjectAgentServiceTaskStarter.TrustedBindingResolver(){public ProjectAgentServiceTaskStarter.Binding resolve(AgentTaskAssignment a){return binding;}public void recordRun(AgentTaskAssignment a,ProjectAgentServiceTaskStarter.Binding b,Long id){}};
++  var relay=new ProjectAgentOfficialTaskRelay("task",Set.of("issue.get"),()->{},new ProjectAgentOriginalTaskRunner(runs,access,resolver,assignment(),new ProjectAgentTaskPreparations(access),Duration.ofMillis(5),Duration.ofSeconds(10)));
++  Model outer=new Model(){public String getModelName(){return "dispatch-only";}public reactor.core.publisher.Flux<ChatResponse> stream(List<Msg> m,List<ToolSchema> s,GenerateOptions o){throw new AssertionError("No outer model");}};
++  try(var carrier=HarnessAgent.builder().name("cancel-dispatch").workspace(dir).model(outer).middleware(relay).build()){
++   var subscription=new HarnessAgentTaskStarter(()->carrier,c).start(assignment()).subscribe();assertThat(entered.await(3,java.util.concurrent.TimeUnit.SECONDS)).isTrue();subscription.dispose();assertThat(cancelled.await(3,java.util.concurrent.TimeUnit.SECONDS)).isTrue();verify(runs,times(1)).cancel(AgentTestFixtures.ACTOR,901L);verify(c,never()).finish(any(),any(),anyLong(),eq("succeeded"),any(),any(),any(),any());
++  }
++ }
++ @Test void collaborationToolRevalidatesAtInvocationAndPreservesMetadata(){
++  var access=mock(IpdCopilotAccess.class);when(access.requireVisible(any(),any())).thenReturn(AgentTestFixtures.TENANT);var preparations=new ProjectAgentTaskPreparations(access);var effects=new AtomicInteger();
++  io.agentscope.core.tool.AgentTool delegate=new io.agentscope.core.tool.AgentTool(){public String getName(){return "issue.get";}public String getDescription(){return "fixture canonical tool";}public Map<String,Object> getParameters(){return Map.of("type","object");}public Boolean getStrict(){return Boolean.TRUE;}public Map<String,Object> getOutputSchema(){return Map.of("type","object");}public boolean isReadOnly(){return true;}public boolean isReturnDirect(){return true;}public reactor.core.publisher.Mono<ToolResultBlock> callAsync(io.agentscope.core.tool.ToolCallParam p){effects.incrementAndGet();return reactor.core.publisher.Mono.just(ToolResultBlock.text("fixture response"));}};
++  var context=RuntimeContext.builder().sessionId("native").put(AgentTaskToolContext.class,new AgentTaskToolContext("task","fixture-bound-token")).put(AgentTaskOutcome.State.class,new AgentTaskOutcome.State()).build();
++  preparations.publish(AgentTestFixtures.ACTOR,AgentTestFixtures.PROJECT_ID,"key",new ProjectAgentOfficialTaskRelay.PreparedTask(new io.agentscope.core.middleware.AgentInput(List.of()),context,Map.of("issue.get",delegate)));
++  var row=new IpdAgentRun();row.setPersonId(AgentTestFixtures.ACTOR.id());row.setProjectId(AgentTestFixtures.PROJECT_ID);row.setTenantId(AgentTestFixtures.TENANT);row.setIdempotencyKey("key");var tools=new Toolkit();preparations.install(AgentTestFixtures.ACTOR,row,tools,context);var tool=tools.getTool("issue.get");
++  assertThat(tool.getStrict()).isTrue();assertThat(tool.getOutputSchema()).isEqualTo(delegate.getOutputSchema());assertThat(tool.isReadOnly()).isTrue();assertThat(tool.isReturnDirect()).isTrue();
++  var param=io.agentscope.core.tool.ToolCallParam.builder().runtimeContext(context).input(Map.of()).build();tool.callAsync(param).block();assertThat(effects.get()).isEqualTo(1);
++  var pending=tool.callAsync(param);when(access.requireVisible(any(),any())).thenThrow(new SecurityException("revoked"));assertThatThrownBy(pending::block).hasMessageContaining("revoked");assertThat(effects.get()).isEqualTo(1);
++  doReturn(AgentTestFixtures.TENANT).when(access).requireVisible(any(),any());var foreign=RuntimeContext.builder().put(AgentTaskToolContext.class,new AgentTaskToolContext("other-task","fixture-other-token")).build();assertThatThrownBy(()->tool.callAsync(io.agentscope.core.tool.ToolCallParam.builder().runtimeContext(foreign).input(Map.of()).build()).block()).hasMessageContaining("context mismatch");assertThat(effects.get()).isEqualTo(1);
++ }
++}

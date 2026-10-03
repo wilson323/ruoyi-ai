@@ -1,0 +1,29 @@
+{
+  "scope": "current frontend working tree; no isolated commit snapshot",
+  "diagnostics": {
+    "types": [],
+    "full-tests": [],
+    "build": []
+  },
+  "declarations": 88,
+  "scrollbarRef": [
+    {
+      "path": "/Users/mac/Documents/ruoyi-ipd-web/packages/@core/ui-kit/tabs-ui/dist/use-tabs-view-scroll.d.ts",
+      "line": "scrollbarRef: import(\"vue\").Ref<{"
+    }
+  ],
+  "tests": {
+    "passed": 1906,
+    "skipped": 37
+  },
+  "build": {
+    "successful": 11,
+    "cached": 10,
+    "executed": 1
+  },
+  "log_sha256": {
+    "types": "a29d61667231408ffab156ac3b950a1b1a642efb8664d09fca993737058fbbb6",
+    "full-tests": "d73491035d6d1cf68fb5fe918399ea354b6466b587f5e6fb8fd811069252f843",
+    "build": "2b402f2e1fec3abf58ccbd0a5b1cb7cb213fbbc4e63731cb01000dee0fc9bc26"
+  }
+}

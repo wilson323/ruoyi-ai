@@ -1,0 +1,139 @@
+{
+  "status": "PARTIAL",
+  "observed_at": "2026-10-02T20:41:01.860891+00:00",
+  "goal": "官方能力全量启用；业务语义通过官方扩展点保留",
+  "scope": "当前源码只读审查；不是当前运行包或生产验收",
+  "sources": {
+    "AgentScopeProjectAgentKernel.java": "d9bf5701d3efe47d6486efa72f26d2d84eb2106c90ea06af10d67b861f75d27b",
+    "ProjectAgentOfficialToolGovernance.java": "28e84f085ca462c8010f96c9f58393c3481ce6bc7a4650e5687d651888e50dfe",
+    "ProjectAgentSkillGovernance.java": "3c1c1632a06c38d4a22cfdcc563af240ab341b1cf02e347c05c8c7bc1b77aff4",
+    "ProjectAgentNativeProfile.java": "717acdfd99e106e71b413e5dffd6682f27499a1598a9e478d20fedb129825b1e",
+    "ProjectAgentEventSink.java": "7687a75871820bb472b1c8234c243facb499a1b86572d64e381dce10728277d3"
+  },
+  "findings": [
+    "当前Kernel已移除多数旧disable设置；仍有当前选中技能filter及临时checkpoint终态清理，尚不能证明全能力持久链完整",
+    "OfficialToolGovernance逐次验证sink执行租约；此文件未接逐次项目成员权限回查",
+    "SkillGovernance精确内容校验防止同名草案覆盖，但仅当前冻结技能可见；review仅Defer，真实owner批准路径尚待实现",
+    "当前Kernel没有artifactDeliveryTarget接线；不能证明官方deliver_artifact已完整应用"
+  ],
+  "validation_required": [
+    "31官方工具真实consumer与业务扩展",
+    "逐次撤权及子智能体继承",
+    "持久化前过滤原始内部推理",
+    "owner批准执行及官方草案晋升",
+    "官方产物交付走原DRAFT/审核链"
+  ],
+  "main_source_changed": false,
+  "independent_evidence": [
+    {
+      "file": "codex-b-native-tool-contract-20261002.json",
+      "sha256": "879d9b7710743f155c17e8ae85a29c912857cdc46d5b9f606701175da717f2f0",
+      "status": "TEMP_IMPLEMENTED_TESTED_PENDING_KERNEL_PROVIDER_INTEGRATION"
+    },
+    {
+      "file": "codex-g-all-model-usage-gap-20261002.json",
+      "sha256": "9b5e8da7dddccc1bf6274064bcf62b311bb8cba24750726a3428961a1ec8e357",
+      "status": "CONFIRMED_FULL_DEFAULT_USAGE_GAP"
+    },
+    {
+      "file": "codex-g-official-governance-consumer-20261002.json",
+      "sha256": "c97aabda0ccbb3c65d3166b9b6d4dc50945f86f9cd4fa3e92ce5992e2fd35f04",
+      "status": "VERIFIED_TEMP_PERMISSION_RULES_MEMBER_INJECTION_ONLY"
+    },
+    {
+      "file": "codex-g-harness-stream-wait-validation-20261002.json",
+      "sha256": "ac49a8e1436cbb2b6be7c05832f5307bf8fd90f42132768ee0b2fbdc09940a35",
+      "status": "VERIFIED_TEMP_HARNESS_STREAM_TASK_WAIT"
+    },
+    {
+      "file": "codex-concurrent-package-readonly-20261002.json",
+      "sha256": "647895b5996da37df6cdc8c58ef7c5aec60b00bb317fb6cfdcb19d2df2f98e84",
+      "status": "READONLY_PACKAGE_PROBE"
+    }
+  ],
+  "confirmed_usage_gap": {
+    "actual_calls": 3,
+    "actual_usage": {
+      "input": 30,
+      "output": 15
+    },
+    "main_event_calls": 2,
+    "main_event_usage": {
+      "input": 20,
+      "output": 10
+    },
+    "scope": "synthetic real Harness consumer; not real provider bill"
+  },
+  "candidate_scope": "31 tool catalogue/planner/pack/owner-authority SPI: 8 isolated tests passed; actual owner approvals remain pending; unified Model usage repair underway",
+  "service_scope_expanded_by_user_at": "2026-10-02T20:53:11.887785+00:00",
+  "service_references": [
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/create-managed-agent.md",
+      "sha256": "4c8cbfae845c67edf3cf060d23b7ddab4f7615afe4cf7d61290160e974592ea2",
+      "official_url": "https://java.agentscope.io/v2/zh/service/create-managed-agent",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/register-agentscope-agent.md",
+      "sha256": "b018ad0dc241ddc07c5ef5de9fc92e3442527eab014bfcd723ab9884a1bf2bfb",
+      "official_url": "https://java.agentscope.io/v2/zh/service/register-agentscope-agent",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/connect-hosted-agent.md",
+      "sha256": "1359162273cbb8eb45a321aaf2979836fb95c28c54b36b226de05526a453a06e",
+      "official_url": "https://java.agentscope.io/v2/zh/service/connect-hosted-agent",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/endpoints.md",
+      "sha256": "61878017b2a084f6a9173c0abdf1e31945e11d0429bc43c81cdd2be1ce4ee0a1",
+      "official_url": "https://java.agentscope.io/v2/zh/service/endpoints",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/issues.md",
+      "sha256": "7e73bb5c6d2a44770f5c67764736649139971c8f6e010879768c49d8dd1c5cec",
+      "official_url": "https://java.agentscope.io/v2/zh/service/issues",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/sse-events.md",
+      "sha256": "7b16ca4646ff7398d1e183816922c2d396cbdd82ecb1305afac2c8383a9d4bc8",
+      "official_url": "https://java.agentscope.io/v2/zh/service/sse-events",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/inbox.md",
+      "sha256": "609c152b6b0a8468222239ceca7893f54aadcff5ff148e3c55d2f52d0cbc29a0",
+      "official_url": "https://java.agentscope.io/v2/zh/service/inbox",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/create-team.md",
+      "sha256": "ba2d4dfccb69223cc922146afa28b070b8ba0a457823a6fa4b0332d6e7860354",
+      "official_url": "https://java.agentscope.io/v2/zh/service/create-team",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/workflows.md",
+      "sha256": "fce220ca6c78cc9ecab2f40b8fc27f6f2fdda1affa1932a118628245d519d3bb",
+      "official_url": "https://java.agentscope.io/v2/zh/service/workflows",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/automation.md",
+      "sha256": "e43624c8e65e5019bb722f1f5b05c2c7c49a6106cf8574e002da0b910057d6d9",
+      "official_url": "https://java.agentscope.io/v2/zh/service/automation",
+      "preview_document": true
+    },
+    {
+      "path": "/Users/mac/Documents/agentscope-java/docs/v2/zh/service/channels.md",
+      "sha256": "adb7b096eacf527d353028086eb06ede962d6544e0085776c8874a014f95c186",
+      "official_url": "https://java.agentscope.io/v2/zh/service/channels",
+      "preview_document": true
+    }
+  ],
+  "service_current": "Docker inventory has no AgentScope Service stack; no global Go executable; official-source Docker Go build validation and SDK2.0.3 extension resolution started",
+  "service_business_invariant": "Service task terminal is not IPD artifact apply, document owner review, action approval, Gate or acceptance."
+}

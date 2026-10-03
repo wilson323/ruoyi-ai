@@ -1,0 +1,342 @@
+{
+  "captured_at_utc": "2026-10-02T23:27:40.765502+00:00",
+  "scope": "R242 AG-UI existing project-agent run / persistent seq / SSE observer",
+  "declared_sdk": "input/resume independently verified against 2.0.3; shared dependency upgrade requires new candidate validation",
+  "status": "PARTIAL",
+  "files": [
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/pom.xml",
+      "sha256": "bef193eccc234828bb9d4edbd284d99ba20395f876b5019c0fb7e7b751c7c9dd",
+      "bytes": 11622
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/ProjectAgentController.java",
+      "sha256": "b2da1e99d65c56b1b963d8f990dcb8537e72e2ef1064f65a792c644cd3437447",
+      "bytes": 10529
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiBridge.java",
+      "sha256": "bb3b32b7a4a5adc516a17c58edb7b62eb1f50a6c51b039a20993b1bca2589b52",
+      "bytes": 8976
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiProjection.java",
+      "sha256": "57f4549fe913d4bf1baab2de42d6737c358855bc6bee135fb43f02a8b6edb4df",
+      "bytes": 2670
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiStream.java",
+      "sha256": "ca5e2432160546bb95e62534d986d31cfa80d2574ed5b9da40ddea9964a817c0",
+      "bytes": 5869
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiProtocolTest.java",
+      "sha256": "2c4cf4d9a5575677c1f097071a063b71b96139b0fb894e4a6728dc1071f342b2",
+      "bytes": 11836
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/controller/ProjectAgentAguiControllerTest.java",
+      "sha256": "ae29fa85ecce154d054f6472f9fb6bf174994f1026cd73fce6f964be22489ca9",
+      "bytes": 4091
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiParentTranscriptTest.java",
+      "sha256": "b66bae490e5e6d6ae2ce7fc4e447b731bfd3e7158dee0d0f2314ebdbad1b2815",
+      "bytes": 2513
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/api/ipd/project-agent-agui.ts",
+      "sha256": "8481af8536d490ac0de62695e5b582dc536fab7cab2980bd0da790d32bb5c93a",
+      "bytes": 3697
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/api/ipd/project-agent-agui.test.ts",
+      "sha256": "5827da0ec02d236b33ac2749e9646c40287845ac7b263ac78f5467703369efc3",
+      "bytes": 4542
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.ts",
+      "sha256": "4251f3a21b150c364fb29a1f77bbbcb677aa7281b0e010d4abe6c75e54577bd3",
+      "bytes": 22078
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/use-project-agent-run.test.ts",
+      "sha256": "e4da3d372636b8a71ab2e7b92a78e0df0fb09ba1306744ed1eaeba3e6c2765ef",
+      "bytes": 33999
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.test.ts",
+      "sha256": "c1b245ec88875e127fcdef5896a965b4fcc35f0093519cd8c9b32b0a7b56fce0",
+      "bytes": 35654
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiInput.java",
+      "sha256": "72b3a25e4844eff05e33c606913b07034494b8e6cec9832cedf297c08468b054",
+      "bytes": 7793
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiInputTest.java",
+      "sha256": "c079d1b62beb67a5388d89c1223e418f9656103cb76bba99a80d7fcd186927a3",
+      "bytes": 9511
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiResumeValidation.java",
+      "sha256": "c453200a333ec2be171a2944003297ed89c6bf93b800ade70573640289bd423c",
+      "bytes": 3498
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiResumeValidationTest.java",
+      "sha256": "c9424e0b388a12222f1d885ad140860772ca621e45b23eeec08ff9a4c1e74925",
+      "bytes": 3188
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseResumeService.java",
+      "sha256": "a892898879a5d1f95462be0c22c2c7598383b8a6f6e4665c1d255c79c2ea05cf",
+      "bytes": 24880
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunPlanner.java",
+      "sha256": "3c139769697ac6aae866fd2268f129c5178950165dc2ad8b7b99f995c1f1b0d9",
+      "bytes": 15334
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java",
+      "sha256": "bd2e9939a2588bc1358f765ae4ca7ca56289756350088dae10549f0c882b09dc",
+      "bytes": 53062
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/vo/ProjectAgentViews.java",
+      "sha256": "179e290f64931719f2f5938121932db46b3b5019e79eed643587d2f01cab9471",
+      "bytes": 9734
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java",
+      "sha256": "c7dc339ebbc4ffa5d31615ec19fdec40aff965f9725b9b90d8fa434f0168e088",
+      "bytes": 4271
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunResumeReq.java",
+      "sha256": "e58b1b66450508ee093a468fb1ad7bd539b70d5de90e08a80c00d80b3c716500",
+      "bytes": 256
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java",
+      "sha256": "9d2ae3063ff28f73c42f76ddd5ea2efb9a8b20fce94040afecbd043887c4a44e",
+      "bytes": 9944
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseResumeServiceTest.java",
+      "sha256": "6fc7e46a253ab0396b45b57d7a01a3c358af48cddc58e8e1fef6249e7a6e9177",
+      "bytes": 24018
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiCreateIntegrationTest.java",
+      "sha256": "8523990486facb37349d387ce50f3fba531516c711c0577066fc3336780e4859",
+      "bytes": 11959
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPauseLifecycleTest.java",
+      "sha256": "bcf0fc8c5b0336c6bb6278bec789900c4c582b69904dfc32939b27b06a5a4f3c",
+      "bytes": 2209
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/api/ipd/project-agent.ts",
+      "sha256": "953b1359678a3b1651df9a4b56fbc6c200c060a6686fafe485668328c090e64b",
+      "bytes": 13940
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/api/ipd/project-agent.test.ts",
+      "sha256": "2dbc03cdc0e44667f5571c7d64018fbd36aa8d9237e54dd27b42e237e8cb1df3",
+      "bytes": 11376
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/agui-interrupt.ts",
+      "sha256": "52a91ff64431fecff3e3858485f590c5f877b57e0aa734fd28f6d07bc8ca5ac2",
+      "bytes": 6993
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/agui-interrupt.test.ts",
+      "sha256": "37778ff6350e36ec63f8f7e0cfa61b6193e6a432a6505298cc4e7659ef187d40",
+      "bytes": 3058
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/agui-interrupt-form.vue",
+      "sha256": "b843d60c007344318c061bc804ee20a7127142b57dd8e19a892f67b15a8f00cd",
+      "bytes": 5936
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/agui-interrupt-form.test.ts",
+      "sha256": "3085e2b55fd7c995dacd771985b7393cefb5d1245e3ed4851fb7a24e594b2a07",
+      "bytes": 3042
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+      "sha256": "1165b88b49cc1ad387b18eb739d9ddbae28eebfa170f41066825e17d099818ec",
+      "bytes": 17435
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts",
+      "sha256": "0770475019242cd4786cf1e678a736e24cd394a5806eb4212cc9f810f305c39e",
+      "bytes": 19964
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ipd-web",
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/project-agent-panel.vue",
+      "sha256": "827df75b13d7dda53c410e245390cf27c3c78c77c236e3e6bfef721151d2d2fc",
+      "bytes": 26159
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiFrontendConsumerTest.java",
+      "sha256": "833f534e006482f360643feecbda3a40d4c8c167873fe06ed12de9f8fc7e17f3",
+      "bytes": 6756
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiFrontendBoundaryTest.java",
+      "sha256": "73d7cb27cce141de827b36628877a3428935740867355738a3b1b443be2bdcf0",
+      "bytes": 3852
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunServiceLifecycleTest.java",
+      "sha256": "dfcc905d597039b94b1ccd52fd117522d9eedd6b03e63b57f55b82035a7201e1",
+      "bytes": 12613
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPublicEvent.java",
+      "sha256": "828de6a97e0af9dd45c88ac7d13798072059652f78ef6a7fc78b41ac59614603",
+      "bytes": 3560
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentAguiPublicEventTest.java",
+      "sha256": "5807a2ffb56b93f243022fb95873dcaeecddb6c007015673754b936c3d34678f",
+      "bytes": 7639
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentAguiRuntimeContext.java",
+      "sha256": "c03a16ff880e1fc844a7f0c0a5329291e8befe476a9b4fcaf140a589d8eb0dbb",
+      "bytes": 1238
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildLineageRegistry.java",
+      "sha256": "1926f15aef575ac47740ba705aaa68efcb4c4b9c1611beefe4ea1324eba0162e",
+      "bytes": 19664
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentChildResumeDispatcher.java",
+      "sha256": "d5c47256a25c408cfff3470b4e4d6ca27b9b7ce4abde88c426de5157866e6141",
+      "bytes": 6619
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java",
+      "sha256": "beb6496e3ed776cb704a120042e4bd36f4e3807800c3ced5fa9b9be39ce1ab59",
+      "bytes": 10003
+    },
+    {
+      "root": "/Users/mac/Documents/ruoyi-ai",
+      "path": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernance.java",
+      "sha256": "da470c7edcf67a2f8dc7cb5652987a8006ab768b48eabc7d2272ee9280fde2cf",
+      "bytes": 15370
+    }
+  ],
+  "pending": [
+    "Latest frozen backend formal compile/tests and package/runtime parity",
+    "Actual Person network disconnect/reconnect, refresh, multi-pause resume and cancellation",
+    "Actual DB rollback and concurrent resume ownership",
+    "Real server-authorized external frontend-tool catalog/runtime acceptance",
+    "Unsupported dynamic UI schema shapes require further implementation/acceptance"
+  ],
+  "inventory_note": "Current source hashes; shared files include coordinated changes by other owners. Not runtime/package parity proof.",
+  "validation": {
+    "frontend_targeted": "109/109; includes HITL and pauseSeq history tests",
+    "frontend_typecheck": {
+      "log": "/tmp/ipd-agui-hitl-typecheck-20261002.log",
+      "exit_code": 0,
+      "cached": 0
+    },
+    "backend_independent": {
+      "protocol": 13,
+      "input": 9,
+      "pause_resume": 11,
+      "resume_validation": 4,
+      "create_prepare_catalog": 5,
+      "lifecycle": 3
+    },
+    "official_composite_snapshot": "129/129 JUnit passed for exact sources.sha256 in /tmp/ipd-official-composite-root-20261002; not all latest source hashes"
+  },
+  "latest_narrow_validation": {
+    "create_snapshot_tests": 6,
+    "pause_resume_tests": 13,
+    "compile_exit": 0,
+    "runtime": "PENDING_VALIDATION",
+    "note": "executionToolIds distinct from business toolIds; historical null preserved; canonical frontend tools preserved"
+  },
+  "frontend_converter_validation": {
+    "baseline": "actual203 SDK same consumer exit 1",
+    "candidate": "actual203 SDK same consumer exit 0; five boundaries passed",
+    "formal_junit": "source added, javac 0, coordinator execution pending",
+    "production_provider": "PENDING_VALIDATION"
+  },
+  "latest_metadata_child_work": {
+    "input_tests": 10,
+    "public_event_tests": 6,
+    "http_original_entry_test": 1,
+    "child_pause_tests": 17,
+    "create_snapshot_race_tests": 7,
+    "independent_compile_exit": 0,
+    "runtime": "PENDING_VALIDATION",
+    "cold_child_factory": "PENDING_VALIDATION"
+  },
+  "descriptor_copy_validation": {
+    "pause_resume_tests": 21,
+    "compile_exit": 0,
+    "source": "actual main Registry withCalls preserves factory and parentCall",
+    "limitations": [
+      "formal coordinated build/tests pending",
+      "recursive parent and repeated ASK still pending",
+      "HTTP DB recovery pending"
+    ]
+  }
+}

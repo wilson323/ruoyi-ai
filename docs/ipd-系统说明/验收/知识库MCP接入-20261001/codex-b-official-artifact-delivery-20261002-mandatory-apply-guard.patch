@@ -1,0 +1,10 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunService.java
+@@ -274,6 +274,7 @@
+         if (!IpdAgentArtifactVersion.STATUS_DRAFT.equals(seen.getStatus()) || seen.getId() == null) {
+             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物版本不可应用");
+         }
++        org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactDelivery.requireDocumentContent(seen);
+         String docType = requireArchiveDocType(run);
+         return applyDraft(actor, run, seen, docType);
+     }

@@ -1,0 +1,36 @@
+{
+  "projectId": "2103659612308828162",
+  "runId": "2106096765173243906",
+  "browser": "Chrome existing localhost tab",
+  "personVisible": "ipd-admin",
+  "login": "UI demo shortcut automatic fill; no credential read or literal; no storage read",
+  "historyAfterRefresh": true,
+  "search": "失败 returns subset including completed rows whose body may match; not status-only filter; search input resets on refresh",
+  "failedStatusAndNoArtifact": true,
+  "sourceSuccessRetained": true,
+  "automaticClassicFallback": false,
+  "visibleTechnicalCode": [
+    "失败码：COMPLETION_REJECTED",
+    "错误尾部(COMPLETION_REJECTED)"
+  ],
+  "recoveryNewAttemptButtonObserved": false,
+  "reasoningObserved": false,
+  "screenshot": "codex-f-browser-failed-20261002.png",
+  "screenshotBrowserCdp": "timeout; native Chrome capture saved",
+  "supply": "current main WIP Vite source; not whole HEAD candidate acceptance",
+  "modules": [
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts",
+      "http": 200,
+      "sourceSha256": "b94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567",
+      "servedSha256": "39ae5ee4a94c6a8a53dc7213b6b5d7d5e57da0edb85fd114328751c03191196c"
+    },
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+      "http": 200,
+      "sourceSha256": "fd364c3b62716f39f3bda9b8426c6a33d8c920a70985353969375771ff25b5bc",
+      "servedSha256": "0d72db81f716d15467bf85c2fad043046312d550971f69161d9056070d1f88c1"
+    }
+  ],
+  "businessWrites": false
+}

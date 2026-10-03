@@ -1,0 +1,28 @@
+{
+  "status": "VERIFIED_CURRENT_CANDIDATE_CANARY_NOT_HEAD_ACCEPTANCE",
+  "runId": "2106107313315135490",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-h1-stream-1kvgrw_d",
+  "testsFound": 1,
+  "testsStarted": 1,
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "sourceHashes": {
+    "kernel/ProjectAgentPrompt.java": "87db6577e3aff8807d8212cf4bd4d6f769bcea91fcead4b609ac6d9dcd9adce3",
+    "kernel/FrozenProjectAgentSkills.java": "a51c04a9c81851389a1b465ddd93cac4d6c6ba7dc0d55d1b5aaeb4594ec44969",
+    "kernel/AgentScopeProjectAgentKernel.java": "bb17c66df3a84c517343474751fa44e57bcc9765600712c96bb6751730d577a6",
+    "service/ProjectAgentRunPlanner.java": "a36261d8a53604f40929d18f074600850bd3b54ce9807bb48afb7955fbd63c30",
+    "service/ProjectAgentRunExecutor.java": "12f28df2f9c5785d1cebdccdb52d34e9df5df603c12f6bce47c1409bb7dafc2a"
+  },
+  "classHashes": {
+    "kernel/ProjectAgentPrompt.java": "473657c4546330112531c1da28003ec744ec6666bf03ecf4a38b7ed2437b42a9",
+    "kernel/FrozenProjectAgentSkills.java": "cb60ae773789adb17c0800e6ba84ea2094aa1ee23c68002aa795fb78f43cc92b",
+    "kernel/AgentScopeProjectAgentKernel.java": "8790eebc1afbfe58ea91eeb598f64ba736bb4e3e070262019f0e116ec5d74666",
+    "service/ProjectAgentRunPlanner.java": "8ee7c1c4e58c4b1868fa830bfc9ee5725aa226944d890602ac4b9818f27a51d4",
+    "service/ProjectAgentRunExecutor.java": "d2730738bc43e653eae1fd6fcfc3350ffa893c957bc10a393e1c0e2aabc60af8"
+  },
+  "probeSourceSha": "e698cce3bbff579842dcbe697199f0a2fb832eed83d5f3845f8e802dec9d58ae",
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-h1-stream-1kvgrw_d/run-selected.log",
+  "sdkVersion": "2.0.3",
+  "loadedJarParity": "root reports loaded 8e80 matches main classes; this probe independently hashes classes, did not independently hash loaded jar",
+  "runtimeStep2": "**目的裁剪**（用户声明时）：产品设计侧重功能矩阵；战略侧重格局与壁垒线索；融资材料侧重差异一页纸。未声明则四维齐全、篇幅克制。"
+}

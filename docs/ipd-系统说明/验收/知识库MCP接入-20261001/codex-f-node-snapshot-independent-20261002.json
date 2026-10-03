@@ -1,0 +1,132 @@
+{
+  "fourFiles": [
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.ts",
+      "snapshot": "b94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567",
+      "main": "b94a72b6ad50ea6191a2eb3a28d7d01edf402004e5839d2729a4785b22de3567",
+      "matchesFrozen": true,
+      "matchesMain": true
+    },
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/timeline-model.test.ts",
+      "snapshot": "897cddd32b4a867977d817dd807d7d5c3d87170454b24ed7ee7c39a9c1af93e2",
+      "main": "897cddd32b4a867977d817dd807d7d5c3d87170454b24ed7ee7c39a9c1af93e2",
+      "matchesFrozen": true,
+      "matchesMain": true
+    },
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.vue",
+      "snapshot": "fd364c3b62716f39f3bda9b8426c6a33d8c920a70985353969375771ff25b5bc",
+      "main": "fd364c3b62716f39f3bda9b8426c6a33d8c920a70985353969375771ff25b5bc",
+      "matchesFrozen": true,
+      "matchesMain": true
+    },
+    {
+      "path": "apps/web-antd/src/views/ipd/_shared/ai-agent/run-timeline.test.ts",
+      "snapshot": "7d169356b7c9113dd8cf535fbd4a93e06132a601e670c83016962671540ebf1a",
+      "main": "7d169356b7c9113dd8cf535fbd4a93e06132a601e670c83016962671540ebf1a",
+      "matchesFrozen": true,
+      "matchesMain": true
+    }
+  ],
+  "nodeModulesDirs": 37,
+  "inspectedLinks": 538,
+  "linksIntoMain": [],
+  "missingWorkspaceMain": [
+    {
+      "package": "@vben/turbo-run",
+      "entry": "./dist/index.mjs",
+      "path": "scripts/turbo-run"
+    },
+    {
+      "package": "@vben/tailwind-config",
+      "entry": "./dist/index.mjs",
+      "path": "internal/tailwind-config"
+    },
+    {
+      "package": "@vben/vsh",
+      "entry": "./dist/index.mjs",
+      "path": "scripts/vsh"
+    },
+    {
+      "package": "@vben/vite-config",
+      "entry": "./dist/index.mjs",
+      "path": "internal/vite-config"
+    },
+    {
+      "package": "@vben/eslint-config",
+      "entry": "./dist/index.mjs",
+      "path": "internal/lint-configs/eslint-config"
+    },
+    {
+      "package": "@vben/node-utils",
+      "entry": "./dist/index.mjs",
+      "path": "internal/node-utils"
+    },
+    {
+      "package": "@vben-core/typings",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/base/typings"
+    },
+    {
+      "package": "@vben-core/composables",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/composables"
+    },
+    {
+      "package": "@vben-core/design",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/base/design"
+    },
+    {
+      "package": "@vben-core/icons",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/base/icons"
+    },
+    {
+      "package": "@vben-core/form-ui",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/ui-kit/form-ui"
+    },
+    {
+      "package": "@vben-core/layout-ui",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/ui-kit/layout-ui"
+    },
+    {
+      "package": "@vben-core/popup-ui",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/ui-kit/popup-ui"
+    },
+    {
+      "package": "@vben-core/tabs-ui",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/ui-kit/tabs-ui"
+    },
+    {
+      "package": "@vben-core/menu-ui",
+      "entry": "./dist/index.mjs",
+      "path": "packages/@core/ui-kit/menu-ui"
+    }
+  ],
+  "relativeDependencyClosureFiles": 28,
+  "closureDiffersFromMain": [],
+  "unresolvedRelativeImports": [],
+  "externalImportAnchors": [
+    "#/api/ipd/auth",
+    "@vben/hooks",
+    "@vben/stores",
+    "@vue/test-utils",
+    "ant-design-vue",
+    "dompurify",
+    "marked",
+    "pinia",
+    "vitest",
+    "vue"
+  ],
+  "discardedCommentImportAnchors": [
+    ".../ipd-error-text",
+    "../views/ipd/_shared/ipd-error-text"
+  ],
+  "closureScope": "Focused relative-import text traversal; workspace barrels and conditional exports inspected separately, not claimed exhaustive compiler graph"
+}

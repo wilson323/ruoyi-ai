@@ -1,0 +1,64 @@
+{
+  "at": "2026-10-02T16:37:02.035695+00:00",
+  "mode": "reject",
+  "projectId": "2103659612308828162",
+  "previousRunId": "2106051018860044289",
+  "targetDocumentId": "2106051584776511490",
+  "versionsBefore": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": [
+        {
+          "createBy": "900101",
+          "createTime": 1790956801000,
+          "updateTime": 1790956801000,
+          "id": "2106051584776511490",
+          "projectId": "2103659612308828162",
+          "docType": "MARKET_RESEARCH",
+          "title": "C02 产物",
+          "content": "# 知识引用链本机验收报告（修订）\n\n**一、工具1实际返回（project_knowledge_search 本项目已审核文档）**\n命中片段出处：产品知识库内容框架.md（L1 #7 竞品对照模板）、D-03_模板B_解决方案L3.md（竞品对比）、企业微信.md、Genetec___Milestone_Canon.md、ADI___Wesco-Anixter.md、ADP___Workday___SAP_SuccessFactors.md、ASSA_ABLOY___HID.md（路径 `…/outputs/kb/competitors/`）。本次未检索到任何\"产品D-0925F11\"规格及本项目竞品名单/价格/渠道/技术方案记录。\n\n**二、工具2实际返回（产线知识库 FastGPT-mcp-693fdc63b24e7762a0dbfe86，门禁及梯控设备产线）**\n远端资料全部源自《【功能操作说明】_EC-100_门禁梯控.md》（datasetId 66d517aee6ac063d23b738e9，updateTime 2025-11-26），内容为 EC-100 电梯控制器技术参数（ZM200 核心板、可控楼层 10、万傲瑞达 V6000 软件）、安装布线、在万傲瑞达软件上添加 EC-100 设备流程。**资料中的 EC-100 是独立产品，与当前项目产品D-0925F11不是同一产品，不得作为当前项目产品规格、竞品或参数依据。**\n\n**三、核对结论**\n本项目竞品名单、价格、渠道、技术方案均未取得；资料文件存在 ≠ 本项目实现就绪 ≠ 业务已验收。原证据保留（运行 ID 2106049620076437505、已退回文档 2106050740358258690），后续修订另开尝试。**本稿不下 Gate 评审结论；评审结论由既有业务流程决定。**\n\n---\n\n字条约 360。证据全部出自上述两次工具实际返回，未联网、未引入项目外资料、未将 EC-100 绑定为产品D-0925F11 参数。",
+          "model": "MiniMax-M3",
+          "tokenPrompt": 24173,
+          "tokenCompletion": 2843,
+          "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39",
+          "status": "GENERATED",
+          "versionNo": 1,
+          "delFlag": "0"
+        }
+      ],
+      "timestamp": "2026-10-02T16:37:02Z",
+      "traceId": "c209c5f57c754371b683e703631da10d"
+    }
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "createBy": "900101",
+        "createTime": 1790956801000,
+        "updateTime": 1790956801000,
+        "id": "2106051584776511490",
+        "projectId": "2103659612308828162",
+        "docType": "MARKET_RESEARCH",
+        "title": "C02 产物",
+        "content": "# 知识引用链本机验收报告（修订）\n\n**一、工具1实际返回（project_knowledge_search 本项目已审核文档）**\n命中片段出处：产品知识库内容框架.md（L1 #7 竞品对照模板）、D-03_模板B_解决方案L3.md（竞品对比）、企业微信.md、Genetec___Milestone_Canon.md、ADI___Wesco-Anixter.md、ADP___Workday___SAP_SuccessFactors.md、ASSA_ABLOY___HID.md（路径 `…/outputs/kb/competitors/`）。本次未检索到任何\"产品D-0925F11\"规格及本项目竞品名单/价格/渠道/技术方案记录。\n\n**二、工具2实际返回（产线知识库 FastGPT-mcp-693fdc63b24e7762a0dbfe86，门禁及梯控设备产线）**\n远端资料全部源自《【功能操作说明】_EC-100_门禁梯控.md》（datasetId 66d517aee6ac063d23b738e9，updateTime 2025-11-26），内容为 EC-100 电梯控制器技术参数（ZM200 核心板、可控楼层 10、万傲瑞达 V6000 软件）、安装布线、在万傲瑞达软件上添加 EC-100 设备流程。**资料中的 EC-100 是独立产品，与当前项目产品D-0925F11不是同一产品，不得作为当前项目产品规格、竞品或参数依据。**\n\n**三、核对结论**\n本项目竞品名单、价格、渠道、技术方案均未取得；资料文件存在 ≠ 本项目实现就绪 ≠ 业务已验收。原证据保留（运行 ID 2106049620076437505、已退回文档 2106050740358258690），后续修订另开尝试。**本稿不下 Gate 评审结论；评审结论由既有业务流程决定。**\n\n---\n\n字条约 360。证据全部出自上述两次工具实际返回，未联网、未引入项目外资料、未将 EC-100 绑定为产品D-0925F11 参数。",
+        "model": "MiniMax-M3",
+        "tokenPrompt": 24173,
+        "tokenCompletion": 2843,
+        "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39",
+        "status": "REJECTED",
+        "versionNo": 1,
+        "reviewedBy": "900101",
+        "reviewedAt": 1790959022086,
+        "reviewComment": "退回：project_knowledge_search 实际同时检索权限内已审核项目文档及系统产品知识库。不得把产品知识库文件称作本项目已审核文档，也不得声称未引入项目外资料。EC-100仅为其他产品资料，不是产品D-0925F11参数。请重新调用两工具，逐条区分资料来源与当前项目适用性，缺失事实明确未取得，不下业务完成或Gate结论。",
+        "delFlag": "0"
+      },
+      "timestamp": "2026-10-02T16:37:02Z",
+      "traceId": "711d6e3a5a4a48c99e45c6e72814fe9c"
+    }
+  }
+}

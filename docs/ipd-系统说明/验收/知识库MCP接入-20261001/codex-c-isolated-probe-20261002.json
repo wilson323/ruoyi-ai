@@ -1,0 +1,22 @@
+{
+  "compileExit": 0,
+  "probeExit": 0,
+  "tests": [
+    "untrustedToolNamesCannotChangeFailureClassificationOrDiagnosis",
+    "diagnosisRequiresLocalFailurePrefixAndItsFinalMarker",
+    "multipleRemoteToolsAreNotGuessed",
+    "protocolDiagnosticsKeepStageAndTimeoutTypeButNeverExceptionSecrets",
+    "handshakeListCallCancelTimeoutAndRemoteErrorStayDistinct",
+    "protocolCallsRunOffReactiveThreadsAndSessionClosesAfterFailure"
+  ],
+  "stdout": "PASS untrustedToolNamesCannotChangeFailureClassificationOrDiagnosis\nPASS diagnosisRequiresLocalFailurePrefixAndItsFinalMarker\nPASS multipleRemoteToolsAreNotGuessed\nPASS protocolDiagnosticsKeepStageAndTimeoutTypeButNeverExceptionSecrets\nPASS handshakeListCallCancelTimeoutAndRemoteErrorStayDistinct\nPASS protocolCallsRunOffReactiveThreadsAndSessionClosesAfterFailure\n",
+  "stderr": "OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\n",
+  "hashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java": "7aad1de05122e890815a57b1211aa68d8a938b1eae7e4a3c6af5b20e1c3c66a6",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java": "4b7e1bcd5c6fec29f1872af1e35ec40951fdc460401b49f4cdfeaf5b37811c26",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQueryTest.java": "d6fb690664bd64a84df1e16e521354ba422300947e69e66a199c15cd27c6a56b"
+  },
+  "isolatedRoot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/codex-c-mcp-20261002-xh2ayhzk",
+  "method": "javac -proc:none to isolated directory; six explicit test methods invoked reflectively; no Maven; cached dependency classpath read from existing Surefire XML",
+  "status": "TARGETED_PROBE_PASSED_PENDING_MAVEN_RUNTIME"
+}

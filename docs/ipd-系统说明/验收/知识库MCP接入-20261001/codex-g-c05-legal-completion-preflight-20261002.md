@@ -1,0 +1,9 @@
+# G C05合法轻管完成只读预检
+
+裁决：DRAFT_ONLY；不写字段、不推进DONE、不accept。900104是当前RD_PM项目成员，创建人是900103 MARKET_PM，不把900104称creator。C05真实id2106100150559576066，LIGHT/NOT_STARTED，catalog无FAR/证书等valueFields。
+
+最低合同：真实900104 Person会话→POST /stage-actions/{id}/transit?target=IN_PROGRESS；实际完成QA技术可行性预研且有可审说明后，POST /fields仅actualDoneAt真实完成日即可，日期由真实API序列化合同传递、不发假文件；再POST /transit?target=DONE。validateCompletion轻管只需actualDoneAt，深管文件要求不适用；stateMachineGuard禁止NOT_STARTED直接DONE，不以SQL造DONE绕过。完成清空确认人，批准需既有StageAcceptanceService；root另行授权，不能预检当实际完成依据。
+
+独立新缺口（源码级）：IpdPermission.requireActionWriter179～188只有内部actor、动作存在、SUPER_ADMIN/ownerRole/BOTH；没有项目成员或组范围守卫。StageActionService.fields/transit均调用assertProjectWritable627～639，该方法只核项目存在/软删/暂停归档，无actor/member。当前900102 GROUP_LEADER获得409是role拒绝；无法证明同角色非项目成员被拒绝。需root授权精准写切片后以真实同角色非成员夹具验证；不改Person角色、不SQL调整成员、不在本分区擅修源码。acceptedProject/action批准是另条StageAcceptance成员守卫，不抵销上述写入口缺口。
+
+现行API成功轻管登记仅满足字段合同，不等于真实业务调研完整/模型成功或Gate通过。自动C01任务持续允许写，与C05测试保持区分，审计/任务/产物保留。

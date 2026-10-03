@@ -1,0 +1,15 @@
+{
+  "atUtc": "2026-10-02T20:33:19.696625+00:00",
+  "pid": "91326",
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "jarSha256": "10130f7efb0ea4cd9d567908a1f6ba51f7d78e015dafec53479b913db02ca0cd",
+  "rootDidNotReloadThisPackage": true,
+  "combinedSourceDrift": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": false,
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": false,
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": false,
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": false
+  },
+  "currentHead": "2db6d4ef551d2966e5ac7c7a40084f304d6802b6",
+  "scope": "read-only unknown concurrent writer checkpoint; no kill or reload"
+}

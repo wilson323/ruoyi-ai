@@ -1,0 +1,298 @@
+{
+  "atUtc": "20261002T185932528331Z",
+  "mode": "create",
+  "projectId": "2103659612308828162",
+  "loadedJarSha256": "b70fdb60ffe120a4ec3a37c36bec19ad77aa99d6b9c2479ff164c8b3aa7ed3ab",
+  "diagnosticOnly": false,
+  "previousRunId": "2106082915170418689",
+  "targetDocumentId": "2106085620907540481",
+  "capabilities": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "packs": [
+          {
+            "code": "market-research",
+            "version": "v1",
+            "name": "商业/市场/竞品研究",
+            "description": "基于权限内项目资料、产品知识与用户输入开展市场机会调研和竞品分析，输出可追溯证据、对比与缺项清单。",
+            "stages": [
+              "CONCEPT"
+            ],
+            "actionCodes": [
+              "C01",
+              "C02"
+            ],
+            "available": true,
+            "skills": [
+              {
+                "name": "market-opportunity-research-ipd",
+                "version": "1.1.0",
+                "sha256": "c116dac4094ed5dea7013a7952943f5482e1632880c40287b4f0130641223c28",
+                "available": true
+              },
+              {
+                "name": "competitor-analysis-ipd",
+                "version": "1.1.0",
+                "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2",
+                "available": true
+              }
+            ],
+            "tools": [
+              {
+                "id": "project_knowledge_search",
+                "name": "项目资料检索",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+                "name": "停车设备知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+                "name": "通道设备知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+                "name": "万傲瑞达 V6600知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+                "name": "安检设备知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+                "name": "门禁及梯控设备知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+                "name": "考勤知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+                "name": "E-ZKEco Pro知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+                "name": "智能视频知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+                "name": "人证核验知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+                "name": "消费知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce71396a40120630b055e",
+                "name": "云考勤设备知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce77b96a40120630b0c3d",
+                "name": "外协生态知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce8b996a40120630b1d80",
+                "name": "ZKTime知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce8e096a40120630b1e68",
+                "name": "ZKAccess3.5知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+                "name": "单机版消费epos知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce93796a40120630b2133",
+                "name": "熵基云联知识库",
+                "readOnly": true,
+                "available": true
+              },
+              {
+                "id": "FastGPT-mcp-69cce91596a40120630b2017",
+                "name": "熵基互联知识库",
+                "readOnly": true,
+                "available": true
+              }
+            ]
+          }
+        ],
+        "models": [
+          {
+            "id": "2104885081318375426",
+            "name": "MiniMax / MiniMax-M3",
+            "available": true
+          },
+          {
+            "id": "1",
+            "name": "TEST / test-rag-20260923",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2104855400313536513",
+            "name": "TEST / ssrf-probe",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103706333168578561",
+            "name": "OPENAI / lane4-budgetprobe-97643",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103706310582251521",
+            "name": "OPENAI / lane4-mock-97643",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103705889591570433",
+            "name": "OPENAI / lane4-budgetprobe-97536",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103705861657505794",
+            "name": "OPENAI / lane4-mock-97536",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103704332951138305",
+            "name": "OPENAI / lane4-budgetprobe-97166",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103704310327062530",
+            "name": "OPENAI / lane4-mock-97166",
+            "available": false,
+            "reason": "模型配置未启用"
+          },
+          {
+            "id": "2103703211184533505",
+            "name": "OPENAI / lane4-mock",
+            "available": false,
+            "reason": "模型配置未启用"
+          }
+        ]
+      },
+      "timestamp": "2026-10-02T18:59:32Z",
+      "traceId": "b598363c837447be9b30e1d292f815af"
+    }
+  },
+  "previous": {
+    "runId": "2106082915170418689",
+    "projectId": "2103659612308828162",
+    "status": "SUCCEEDED",
+    "actionCode": "C02",
+    "artifactArchives": [
+      {
+        "artifactId": "77f8283b1a6849798dc6b39ce4da4f9b",
+        "documentId": "2106085620907540481"
+      }
+    ]
+  },
+  "versions": [
+    {
+      "id": "2106051584776511490",
+      "parentVersionId": null,
+      "versionNo": 1,
+      "status": "REJECTED",
+      "contentSha256": "b4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39",
+      "reviewComment": "退回：project_knowledge_search 实际同时检索权限内已审核项目文档及系统产品知识库。不得把产品知识库文件称作本项目已审核文档，也不得声称未引入项目外资料。EC-100仅为其他产品资料，不是产品D-0925F11参数。请重新调用两工具，逐条区分资料来源与当前项目适用性，缺失事实明确未取得，不下业务完成或Gate结论。"
+    },
+    {
+      "id": "2106061816428781569",
+      "parentVersionId": "2106051584776511490",
+      "versionNo": 2,
+      "status": "REJECTED",
+      "contentSha256": "ae42935aa03b525c6fb332ea3f267eda8929ca2dfcd5fcfc5bfdcaa8aebbb77a",
+      "reviewComment": "退回：上一版受工程仓库AGENTS规约误注入影响，未实际调用本次已选MCP工具，并捏造挂载工具数量。请实际调用本次两项已选工具，按真实返回区分项目已审核文档、系统产品知识库和其他产品资料；不得要求产品线展示名映射，不得推测工具数量，不得将EC-100等其他型号套入当前产品；缺失事实明确未取得，不下业务完成或Gate结论。"
+    },
+    {
+      "id": "2106085620907540481",
+      "parentVersionId": "2106061816428781569",
+      "versionNo": 3,
+      "status": "GENERATED",
+      "contentSha256": "d26e346264dbed18a710fd216803109d7b4151e6b9d27d767deb6a9a1c77e7b8",
+      "reviewComment": null
+    }
+  ],
+  "httpDbHeadMatch": true,
+  "dbHead": [
+    "2106085620907540481",
+    "2103659612308828162",
+    "MARKET_RESEARCH",
+    "GENERATED",
+    "3"
+  ],
+  "request": {
+    "capabilityPackCode": "market-research",
+    "capabilityPackVersion": "v1",
+    "modelConfigId": "2104885081318375426",
+    "skillNames": [
+      "competitor-analysis-ipd"
+    ],
+    "toolIds": [
+      "project_knowledge_search",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    ],
+    "actionCode": "C02",
+    "previousRunId": "2106082915170418689",
+    "targetDocumentId": "2106085620907540481",
+    "baseVersionId": "2106085620907540481",
+    "idempotencyKey": "codex-fresh-rework-20261002T185932528331Z",
+    "message": "当前待审核缺项稿的知识库查询故障已修复。本次另开关联资料刷新尝试，按本次冻结C02技能取得项目知识和已选产品线知识库资料，生成可独立检查的竞品分析资料稿。逐条区分项目已审核文档、系统知识片段和其他产品资料；缺失事实写未取得，不编造数字、不把其他产品参数用于当前产品。数字引用保持来源原值，不报告检索相似度等技术指标。保留当前文档待审核状态，不退回、不审核、不自动定档，不宣称动作完成或Gate通过。"
+  },
+  "response": {
+    "http": 200,
+    "body": {
+      "code": 0,
+      "message": "ok",
+      "data": {
+        "runId": "2106096765173243906",
+        "status": "PENDING"
+      },
+      "timestamp": "2026-10-02T18:59:32Z",
+      "traceId": "09fa9f801e2d419e9065dd1d97233d81"
+    }
+  }
+}

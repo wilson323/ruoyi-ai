@@ -1,0 +1,49 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java
+@@ -278,4 +278,46 @@
+             parent.close();
+         }
+     }
++
++    @Test void reportedUsageSurvivesMembershipWithdrawalButNewCallsDoNot() {
++        var active = new java.util.concurrent.atomic.AtomicBoolean(true);
++        var providerCalls = new AtomicInteger();
++        var recorder = new Recorder();
++        var ledger = mock(AiModelUsageLedgerService.class);
++        var accounting = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
++        var spec = new ProjectAgentRunSpec(1L, 2L, "tenant", 3L, null, "synthetic", List.of(), List.of(),
++            new org.ruoyi.chat.kernel.KernelModelRequest("synthetic", "synthetic", "synthetic", "https://synthetic.example"), null);
++        var execution = new ProjectAgentRuntimeAccessSink(accounting, spec, ignored -> {
++            if (!active.get()) throw new IllegalStateException("synthetic membership withdrawn");
++        });
++        var metered = new ProjectAgentMeteredModel(model(() -> {
++            providerCalls.incrementAndGet();
++            active.set(false);
++            return Flux.just(usage("response", 10, 5));
++        }), execution, execution.checkpointOwnership());
++        metered.stream(List.of(), null, null).blockLast();
++        verify(ledger).recordUsage(123L, "person", "project_agent", 10, 5, 0L, "ok", "run");
++        assertEquals(1, recorder.ends.size());
++        assertThrows(IllegalStateException.class, () -> metered.stream(List.of(), null, null).blockLast());
++        assertThrows(IllegalStateException.class, execution::requireActiveOwnership);
++        assertEquals(1, providerCalls.get());
++        verifyNoMoreInteractions(ledger);
++    }
++
++    @Test void reportedUsageCannotWriteAfterOriginalRunOwnershipIsLost() {
++        var owned = new java.util.concurrent.atomic.AtomicBoolean(true);
++        var ownerSink = mock(ProjectAgentEventSink.class);
++        doAnswer(invocation -> {
++            if (!owned.get()) throw new IllegalStateException("synthetic owner lost");
++            return ((Supplier<?>) invocation.getArgument(0)).get();
++        }).when(ownerSink).withActiveOwnership(any());
++        var ledger = mock(AiModelUsageLedgerService.class);
++        var accounting = new ProjectAgentUsageSink(ownerSink, ledger, 123L, "person", "run");
++        var metered = new ProjectAgentMeteredModel(model(() -> {
++            owned.set(false);
++            return Flux.just(usage("response", 10, 5));
++        }), new Recorder(), accounting);
++        assertThrows(IllegalStateException.class, () -> metered.stream(List.of(), null, null).blockLast());
++        verifyNoInteractions(ledger);
++    }
+ }

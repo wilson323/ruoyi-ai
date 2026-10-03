@@ -1,0 +1,22 @@
+{
+  "base": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-prompt-head72-nb5566lf/ruoyi-ai",
+  "paths": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java": "87db6577e3aff8807d8212cf4bd4d6f769bcea91fcead4b609ac6d9dcd9adce3",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPromptTest.java": "e084e4acf6be0b264db8d79b8f36b948f005d8172a0dcb7ff6199931f20ae55e"
+  },
+  "status": "PENDING_CLOSURE",
+  "mavenExit": 1,
+  "testsExecuted": 0,
+  "requestedTests": [
+    "ProjectAgentPromptTest",
+    "AgentScopeProjectAgentKernelTest"
+  ],
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-prompt-head72-nb5566lf/prompt-tests.log",
+  "logSha256": "7ad73ab2b241c3917d24a2eb8a6f8709bdc4b0261a3f7d63427a3001a3110309",
+  "dependencyBoundary": "HEAD72 git archive + exactly two frozen paths; offline existing ~/.m2 cache; no reactor -am; no other dirty sources",
+  "currentHashes": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.java": "87db6577e3aff8807d8212cf4bd4d6f769bcea91fcead4b609ac6d9dcd9adce3",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentPromptTest.java": "e084e4acf6be0b264db8d79b8f36b948f005d8172a0dcb7ff6199931f20ae55e"
+  }
+}

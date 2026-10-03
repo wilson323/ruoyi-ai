@@ -1,0 +1,214 @@
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationTools.java
+@@ -0,0 +1,99 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerFilesystemSpec;
++import io.agentscope.harness.agent.HarnessAgent;
++import io.agentscope.harness.agent.IsolationScope;
++import io.agentscope.harness.agent.memory.MemoryConfig;
++import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
++import io.agentscope.harness.agent.skill.curator.SkillVisibilityFilter;
++import io.agentscope.harness.agent.skill.curator.SkillCuratorConfig;
++import io.agentscope.harness.agent.artifact.ArtifactDeliveryTarget;
++import io.agentscope.harness.agent.transcript.TranscriptStore;
++import io.agentscope.core.agent.RuntimeContext;
++import io.agentscope.core.state.AgentStateStore;
++import java.nio.file.Path;
++import java.util.Objects;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.tool.FilesystemTool;
++import io.agentscope.harness.agent.tool.ShellExecuteTool;
++import io.agentscope.harness.agent.tool.WebTools;
++import java.util.Map;
++import java.util.Set;
++
++/** 官方 2.0.3 原生基础工具；容器由 Harness 生命周期持有，不回落宿主 Shell。 */
++public final class ProjectAgentFoundationTools {
++    private ProjectAgentFoundationTools() { }
++    public static Set<String> nativeToolIds() {
++        return Set.of("read_file", "write_file", "edit_file", "grep_files", "glob_files", "list_files",
++            "execute", "web_fetch", "web_search", "memory_get", "memory_search", "memory_save",
++            "session_search", "session_list", "session_history", "wait_async_results");
++    }
++    public static DockerFilesystemSpec dockerFilesystem(String image) {
++        return dockerFilesystem(image, null);
++    }
++    public static DockerFilesystemSpec dockerFilesystem(String image, String workspaceVolume) {
++        if (image == null || image.isBlank()) throw new IllegalArgumentException("sandbox image is required");
++        if (workspaceVolume != null && !workspaceVolume.matches("ipd-agent-[a-z0-9-]{1,100}"))
++            throw new IllegalArgumentException("managed workspace volume name is invalid");
++        DockerFilesystemSpec spec = new DockerFilesystemSpec().image(image).workspaceRoot("/workspace")
++            .environment(Map.of()).network("none")
++            .additionalRunArgs(workspaceVolume == null
++                ? new String[]{"--cap-drop=ALL", "--security-opt=no-new-privileges"}
++                : new String[]{"--cap-drop=ALL", "--security-opt=no-new-privileges", "--mount",
++                    "type=volume,source=" + workspaceVolume + ",target=/workspace"});
++        return spec;
++    }
++    public record Scope(String projectId, String personId, String runId, Path managedWorkspace) {
++        public Scope {
++            for (String id : new String[]{projectId, personId, runId}) {
++                if (id == null || !id.matches("[0-9]+"))
++                    throw new IllegalArgumentException("trusted scope identifiers are required");
++            }
++            Objects.requireNonNull(managedWorkspace, "managedWorkspace");
++        }
++        public String volumeName() { return "ipd-agent-" + projectId + "-" + personId; }
++        public String runWorkingDirectory() { return "runs/" + runId; }
++        public RuntimeContext runtimeContext() {
++            return RuntimeContext.builder().userId(projectId + "-" + personId)
++                .sessionId(runId).build();
++        }
++    }
++
++    /** 新 Builder 保留官方 hooks/transcript/context/skills/subagents；调用方供应持久且已清洗的存储。 */
++    public static HarnessAgent.Builder configure(HarnessAgent.Builder builder, Scope scope,
++                                                 String image, AgentStateStore stateStore,
++                                                 TranscriptStore transcriptStore, MemoryConfig memory) {
++        Objects.requireNonNull(builder, "builder");
++        Objects.requireNonNull(scope, "scope");
++        return builder.filesystem(dockerFilesystem(image, scope.volumeName()).isolationScope(IsolationScope.USER))
++            .workspace(scope.managedWorkspace()).defaultSessionId(scope.runId())
++            .stateStore(Objects.requireNonNull(stateStore, "stateStore"))
++            .transcriptStore(Objects.requireNonNull(transcriptStore, "transcriptStore"))
++            .transcriptTenant(scope.projectId() + "-" + scope.personId())
++            .memory(Objects.requireNonNull(memory, "memory"));
++    }
++
++    /** 官方可选消费者也启用；审批、技能可见性与产物目的地由业务 SPI 提供。 */
++    public static HarnessAgent.Builder configureFullCapabilities(
++        HarnessAgent.Builder builder, Scope scope, String image, AgentStateStore stateStore,
++        TranscriptStore transcriptStore, MemoryConfig memory, SkillPromotionGate skillApproval,
++        SkillVisibilityFilter skillVisibility, ArtifactDeliveryTarget artifactDelivery) {
++        return configure(builder, scope, image, stateStore, transcriptStore, memory)
++            .enablePlanMode().enableTaskList().enableMetaTool(true).enablePendingToolRecovery(true)
++            .enableSkillManageTool(true)
++            .enableSkillPromotionGate(Objects.requireNonNull(skillApproval, "skillApproval"),
++                Objects.requireNonNull(skillVisibility, "skillVisibility"))
++            .enableSkillCurator(SkillCuratorConfig.defaults())
++            .artifactDeliveryTarget(Objects.requireNonNull(artifactDelivery, "artifactDelivery"));
++    }
++
++    public static FilesystemTool filesystemTool(Sandbox sandbox) {
++        return new FilesystemTool(new PinnedSandboxFilesystem(sandbox));
++    }
++    public static ShellExecuteTool shellTool(Sandbox sandbox) {
++        return new ShellExecuteTool(new PinnedSandboxFilesystem(sandbox));
++    }
++    public static WebTools.WebFetchTool webFetchTool() { return new WebTools.WebFetchTool(); }
++    public static WebTools.WebSearchTool webSearchTool() { return new WebTools.WebSearchTool(); }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentFoundationToolsTest.java
+@@ -0,0 +1,109 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import com.sun.net.httpserver.HttpServer;
++import io.agentscope.harness.agent.filesystem.sandbox.PinnedSandboxFilesystem;
++import io.agentscope.harness.agent.sandbox.Sandbox;
++import io.agentscope.harness.agent.sandbox.WorkspaceSpec;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClient;
++import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions;
++import io.agentscope.harness.agent.sandbox.snapshot.NoopSnapshotSpec;
++import io.agentscope.harness.agent.tool.MemoryGetTool;
++import io.agentscope.harness.agent.tool.MemorySaveTool;
++import io.agentscope.harness.agent.workspace.WorkspaceManager;
++import org.junit.jupiter.api.Test;
++
++import java.net.InetSocketAddress;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Objects;
++
++class ProjectAgentFoundationToolsTest {
++
++    private static void require(boolean condition, String label) {
++        if (!condition) throw new AssertionError(label);
++        System.out.println(label + "=PASS");
++    }
++
++    @Test
++    void officialNativeFileShellMemoryAndWebFixture() throws Exception {
++        DockerSandboxClientOptions options = new DockerSandboxClientOptions()
++            .image("alpine:3").workspaceRoot("/workspace").network("none")
++            .additionalRunArgs("--cap-drop=ALL", "--security-opt=no-new-privileges");
++        Sandbox sandbox = new DockerSandboxClient().create(
++            new WorkspaceSpec(), new NoopSnapshotSpec(), options);
++        try {
++            sandbox.start();
++            var file = ProjectAgentFoundationTools.filesystemTool(sandbox);
++            require(!file.writeFile(null, "/workspace/probe.txt", "isolated-content")
++                .startsWith("Error"), "FILE_WRITE");
++            require(file.readFile(null, "/workspace/probe.txt", 0, 0)
++                .contains("isolated-content"), "FILE_READ");
++            var shell = ProjectAgentFoundationTools.shellTool(sandbox);
++            require(shell.execute(null, "printf isolated-shell", null, 5)
++                .contains("isolated-shell"), "NATIVE_SHELL");
++            require(shell.execute(null, "printf no", "../outside", 5)
++                .startsWith("Error"), "SHELL_WORKDIR_BOUNDARY");
++            require(shell.execute(null,
++                "test ! -e /Users/mac/Documents/ruoyi-ai && printf host-inaccessible", null, 5)
++                .contains("host-inaccessible"), "HOST_REPO_NOT_MOUNTED");
++            Path workspace = Files.createTempDirectory("foundation-memory-");
++            WorkspaceManager manager = new WorkspaceManager(
++                workspace, new PinnedSandboxFilesystem(sandbox));
++            require(new MemorySaveTool(manager)
++                .memorySave(null, "- synthetic isolated preference").startsWith("Saved"), "MEMORY_WRITE");
++            require(new MemoryGetTool(manager).memoryGet(null, "MEMORY.md", 1, 100)
++                .contains("synthetic isolated preference"), "MEMORY_READ");
++        } finally {
++            sandbox.shutdown();
++            System.out.println("OWN_CONTAINER_CLEANUP=RETURNED");
++        }
++        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
++        server.createContext("/fixture", exchange -> {
++            byte[] body = "fixture-web-content".getBytes();
++            exchange.sendResponseHeaders(200, body.length);
++            exchange.getResponseBody().write(body);
++            exchange.close();
++        });
++        server.start();
++        try {
++            require(ProjectAgentFoundationTools.webFetchTool()
++                .webFetch("http://127.0.0.1:" + server.getAddress().getPort() + "/fixture", 100)
++                .contains("fixture-web-content"), "WEB_FETCH_FIXTURE");
++            require(ProjectAgentFoundationTools.webSearchTool().webSearch("", 1)
++                .contains("query is required"), "WEB_SEARCH_SCHEMA");
++            System.out.println("TAVILY_KEY_PRESENT="
++                + !Objects.toString(System.getenv("TAVILY_API_KEY"), "").isBlank());
++        } finally {
++            server.stop(0);
++        }
++    }
++    @Test
++    void freshBuilderKeepsAllOfficialDefaultConsumers() throws Exception {
++        io.agentscope.core.model.Model noNetworkModel = new io.agentscope.core.model.Model() {
++            public String getModelName() { return "isolated-no-network-model"; }
++            public reactor.core.publisher.Flux<io.agentscope.core.model.ChatResponse> stream(
++                java.util.List<io.agentscope.core.message.Msg> messages,
++                java.util.List<io.agentscope.core.model.ToolSchema> tools,
++                io.agentscope.core.model.GenerateOptions options) {
++                throw new AssertionError("model must not be called in construction test");
++            }
++        };
++        Path workspace = Files.createTempDirectory("foundation-full-defaults-");
++        var scope = new ProjectAgentFoundationTools.Scope("1", "1", "999999999", workspace);
++        var agent = ProjectAgentFoundationTools.configure(
++            io.agentscope.harness.agent.HarnessAgent.builder().name("full-defaults-test").model(noNetworkModel),
++            scope, "alpine:3", new io.agentscope.core.state.InMemoryAgentStateStore(),
++            new io.agentscope.harness.agent.transcript.FilesystemTranscriptStore(workspace.resolve("transcripts")),
++            io.agentscope.harness.agent.memory.MemoryConfig.defaults()).build();
++        try {
++            var names = agent.getToolkit().getToolNames();
++            require(names.containsAll(ProjectAgentFoundationTools.nativeToolIds()), "NATIVE16_DEFAULTS");
++            require(names.containsAll(java.util.Set.of("agent_list", "agent_send", "agent_spawn",
++                "task_cancel", "task_list", "task_output", "load_skill_through_path")), "OTHER_DEFAULT_CONSUMERS");
++            require(scope.runtimeContext().getSessionId().equals("999999999"), "RUN_CONTEXT");
++            require(scope.runWorkingDirectory().equals("runs/999999999"), "RUN_DIRECTORY_IDENTITY");
++        } finally {
++            agent.close();
++        }
++    }
++}

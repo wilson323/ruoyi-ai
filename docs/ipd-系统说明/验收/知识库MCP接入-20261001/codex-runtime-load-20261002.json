@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-02T19:40:22.299926+00:00",
+  "oldPid": "31351",
+  "newPid": 43168,
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-8e80bb8198f3.jar",
+  "sha256": "8e80bb8198f30e681130d937325a8ac2bb5f8988c0bf5cdcd6be1b1033ce0354",
+  "activeRunsBefore": 0,
+  "activeTaskCountsBefore": {
+    "projectAgent": 0,
+    "legacyGeneration": 0
+  },
+  "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-takeover-20261002.log",
+  "status": "VERIFIED_LISTENER_JAR",
+  "verifiedAt": "2026-10-02T19:41:06.108843+00:00",
+  "listenerPid": 43168,
+  "openedImmutableJar": true,
+  "sdkVersion": "2.0.3",
+  "sdkCount": 9,
+  "redissonVersion": "3.51.0",
+  "testedClassHashes": {
+    "org/ruoyi/ipd/agent/kernel/ProjectAgentPrompt.class": "473657c4546330112531c1da28003ec744ec6666bf03ecf4a38b7ed2437b42a9",
+    "org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.class": "3a0ac6875805e9c9ea218f6ffb8edafa79ffb1ae1ee400e7a253f29901a884d0",
+    "org/ruoyi/ipd/security/IpdPermission.class": "1b42aa65b6bda7326a3df0f65a3d1745daf61f8bccfa1d4167e8978e8f5b0185",
+    "org/ruoyi/workflow/workflow/node/AbstractWfNode.class": "9d9a213c2ea79278b2cba5c4b5db6f9ba774f8c9b964addd878e30e3bb1daa2d",
+    "org/ruoyi/workflow/workflow/node/mailSend/MailSendNode.class": "33c4bf84dee5c1a6d13466c30fabfa94261fa0b797d73c5668b286f910591654"
+  },
+  "boundary": "Current tested worktree package; not clean HEAD or full production acceptance. Pre-stop active queries do not eliminate new admission races."
+}

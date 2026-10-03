@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-02T19:10:28.659611+00:00",
+  "oldPid": "89982",
+  "newPid": 31351,
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-a44e858e9c72.jar",
+  "sha256": "a44e858e9c72ccb2da0bf54a5ad2eeddd0026872a920feb250ce07a37e4a1470",
+  "activeRunsBefore": 0,
+  "log": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/logs/codex-takeover-20261002.log",
+  "status": "VERIFIED_LISTENER_JAR",
+  "verifiedAt": "2026-10-02T19:12:08.289564+00:00"
+}

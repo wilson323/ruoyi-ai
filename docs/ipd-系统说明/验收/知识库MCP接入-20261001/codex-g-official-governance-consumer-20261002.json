@@ -1,0 +1,42 @@
+{
+  "status": "VERIFIED_TEMP_PERMISSION_RULES_MEMBER_INJECTION_ONLY",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-governance-86om_9nl",
+  "dependencyJar": "ruoyi-admin.codex-takeover-20261002-10130f7efb0e.jar",
+  "libraries": 489,
+  "sourceHashes": {
+    "ProjectAgentEventSink.java": "7687a75871820bb472b1c8234c243facb499a1b86572d64e381dce10728277d3",
+    "ProjectAgentNativeProfile.java": "717acdfd99e106e71b413e5dffd6682f27499a1598a9e478d20fedb129825b1e",
+    "ProjectAgentOfficialPermissions.java": "e012bdabb039a2d767c4342015af236079ce61e0e9f54619e27615de724185b9",
+    "ProjectAgentOfficialSandbox.java": "b024ae7e4dc13cd88babcb0862a1de1269679625e486eb6842dfbae1dd46c8af",
+    "ProjectAgentOfficialToolGovernance.java": "b47e17ff8e399f811bec29a2ec355f11936460d4789e2d56741847a497d013f7",
+    "GGovernanceProbe.java": "83b8e743705849e02001a1d033f8415ef0bbf51dfa036db0aaede688a88781cf",
+    "ProjectAgentRuntimeAccess.java": "80d51e207394ce4ae4cdd57ba00a09fca555954a15f5f7bd70e0a975f7ced8fd"
+  },
+  "compileExit": 0,
+  "probeExit": 0,
+  "checks": [
+    "INACTIVE_GROUP_BYPASS=false",
+    "ASK_PRESERVED=true",
+    "ASK_EXECUTION_DENIED=true",
+    "LOCAL_WEB_DENIED=true",
+    "B_ADAPTER_REVOKED_SECOND_PERMISSION=true",
+    "EXISTING_ASK_RULE_STILL_BLOCKS=true",
+    "EXISTING_DENY_RULE_STILL_BLOCKS=true",
+    "B_ADAPTER_REVOKED_BEFORE_EXECUTION=true"
+  ],
+  "mainMembershipHook": "Absent in inspected OfficialToolGovernance snapshot; sink requireActiveOwnership guards run epoch only. B RuntimeAccess injected through temp sink callback proves adapter behavior, not main integration",
+  "sourceReview": {
+    "OfficialSandbox": "snapshot of SESSION/LocalSnapshotSpec provider construction, no claim workspace-root/path enforcement",
+    "NativeProfile": "memory prompts are semantics only; do not guarantee no secrets/raw think persisted",
+    "SkillGovernance": "inspected prior/current main changes; content exact approved-run filtering/review receipt do not equal authoritative owner approval; B typed authority mock tests pending real owner entry",
+    "ChildInheritance": "SDK DefaultAgentManager passes parent userId with new child session; source inheritance not actual child spawn acceptance; exact parent session guard needs explicit compatible child scope contract",
+    "Web": "local URL check denied before delegate; DNS checked independently from actual HTTP connect, no atomic DNS binding proof"
+  },
+  "limits": [
+    "No actual business membership DB writes or model call",
+    "ASK/DENY tests native ToolBase mocks+real PermissionEngine",
+    "B adapter member revoke mocked owning service, real service source rereads Person/tenant/member",
+    "No main/index/target writes",
+    "all failed temp compile/scaffold logs preserved"
+  ]
+}

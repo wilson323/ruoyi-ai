@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-02T16:40:56.822146+00:00",
+  "queries": {
+    "chain": {
+      "sql": "SELECT id,parent_version_id,version_no,status,model,token_prompt,token_completion,content_sha256,review_comment FROM ai_documents WHERE id IN (2106051584776511490,2106061816428781569) ORDER BY version_no",
+      "exit": 0,
+      "output": "id\tparent_version_id\tversion_no\tstatus\tmodel\ttoken_prompt\ttoken_completion\tcontent_sha256\treview_comment\n2106051584776511490\tNULL\t1\tREJECTED\tMiniMax-M3\t24173\t2843\tb4eaf61b1e4b4393f9ce1b6faea9196d908059dddd8c2ede93bc33fc8cd8bd39\t退回：project_knowledge_search 实际同时检索权限内已审核项目文档及系统产品知识库。不得把产品知识库文件称作本项目已审核文档，也不得声称未引入项目外资料。EC-100仅为其他产品资料，不是产品D-0925F11参数。请重新调用两工具，逐条区分资料来源与当前项目适用性，缺失事实明确未取得，不下业务完成或Gate结论。\n2106061816428781569\t2106051584776511490\t2\tGENERATED\tMiniMax-M3\t127893\t4737\tae42935aa03b525c6fb332ea3f267eda8929ca2dfcd5fcfc5bfdcaa8aebbb77a\tNULL\n",
+      "error": ""
+    },
+    "contentEquality": {
+      "sql": "SELECT COUNT(*) FROM ai_documents d JOIN ipd_agent_artifact_version a ON a.content_hash=d.content_sha256 WHERE d.id=2106061816428781569",
+      "exit": 1,
+      "output": "",
+      "error": "ERROR 1054 (42S22) at line 1: Unknown column 'a.content_hash' in 'on clause'\n"
+    },
+    "run": {
+      "sql": "SELECT id,status,person_id,config_snapshot FROM ipd_agent_run WHERE id=2106061095016882177",
+      "exit": 0,
+      "output": "id\tstatus\tperson_id\tconfig_snapshot\n2106061095016882177\tSUCCEEDED\t900101\t{\"skills\": [{\"name\": \"competitor-analysis-ipd\", \"sha256\": \"f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2\"}], \"toolIds\": [\"project_knowledge_search\", \"FastGPT-mcp-693fdcafb24e7762a0dc0325\", \"FastGPT-mcp-693fdccdb24e7762a0dc04b5\", \"FastGPT-mcp-693fdd09b24e7762a0dc0880\", \"FastGPT-mcp-693fdcbeb24e7762a0dc0422\", \"FastGPT-mcp-693fdc63b24e7762a0dbfe86\", \"FastGPT-mcp-693fdceeb24e7762a0dc05de\", \"FastGPT-mcp-693fdcfdb24e7762a0dc07e2\", \"FastGPT-mcp-693fdcdcb24e7762a0dc054b\", \"FastGPT-mcp-693fdca1b24e7762a0dc0247\", \"FastGPT-mcp-693fdc8eb24e7762a0dc0169\", \"FastGPT-mcp-69cce71396a40120630b055e\", \"FastGPT-mcp-69cce77b96a40120630b0c3d\", \"FastGPT-mcp-69cce8b996a40120630b1d80\", \"FastGPT-mcp-69cce8e096a40120630b1e68\", \"FastGPT-mcp-69cce8ff96a40120630b1f6d\", \"FastGPT-mcp-69cce93796a40120630b2133\", \"FastGPT-mcp-69cce91596a40120630b2017\"], \"baseVersionId\": \"2106051584776511490\", \"modelConfigId\": \"2104885081318375426\", \"previousRunId\": \"2106051018860044289\", \"targetDocumentId\": \"2106051584776511490\", \"capabilityPackCode\": \"market-research\", \"capabilityPackVersion\": \"v1\"}\n",
+      "error": ""
+    },
+    "staleKeyRows": {
+      "sql": "SELECT COUNT(*) FROM ipd_agent_run WHERE idempotency_key='ipd-handoff2-20261002-rework-stale-create'",
+      "exit": 0,
+      "output": "COUNT(*)\n0\n",
+      "error": ""
+    }
+  }
+}

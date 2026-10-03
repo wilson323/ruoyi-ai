@@ -1,0 +1,27 @@
+{
+  "runId": "2106103242814394369",
+  "projectId": "2103659612308828162",
+  "personId": "900101",
+  "status": "SUCCEEDED",
+  "actionCode": "C02",
+  "capabilityPackCode": "market-research",
+  "modelConfigId": "2104885081318375426",
+  "idempotencyKeySha256": "041c62110cc3d612e5bc9499e3094d821c57040a8de18b6d8f1bcd6b88bac98a",
+  "idempotencyKeyPrefix": "h4-jar-a44e858e-20261002",
+  "requestDigest": "f2ef4508d112a15216a6bcf6659dd2819f8c8ac928171dd0d9f374ecbb365af4",
+  "inputDigest": "69106671593f1482d7505c4478ae69a27aa3d6a6d076fa235c071e8a75855f00",
+  "inputChars": "84",
+  "createdAtDb": "2026-10-03 03:25:17",
+  "startedAtDb": "2026-10-03 03:25:17",
+  "finishedAtDb": "2026-10-03 03:26:23",
+  "configSafe": {
+    "toolIds": [
+      "project_knowledge_search",
+      "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+    ],
+    "skillNames": null,
+    "previousRunId": null,
+    "targetDocumentId": null,
+    "baseVersionId": null
+  }
+}

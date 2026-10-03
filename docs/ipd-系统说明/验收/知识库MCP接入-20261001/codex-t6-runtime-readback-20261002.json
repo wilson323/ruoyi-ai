@@ -1,0 +1,12 @@
+{
+  "atUtc": "2026-10-02T20:06:38.452141+00:00",
+  "pid": "43168",
+  "jar": "/Users/mac/Documents/ruoyi-ai/.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-20261002-8e80bb8198f3.jar",
+  "sha256": "8e80bb8198f30e681130d937325a8ac2bb5f8988c0bf5cdcd6be1b1033ce0354",
+  "exactOpenedJarVerified": true,
+  "activeCounts": {
+    "agent": 0,
+    "legacy": 0
+  },
+  "boundary": "read-only checkpoint, no reload; pending new Gate source not loaded"
+}

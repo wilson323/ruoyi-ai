@@ -1,0 +1,104 @@
+{
+  "status": "DRY_RUN_NOT_SENT",
+  "calls": [
+    {
+      "actorPersonId": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines",
+      "body": {
+        "code": "qa-member-7d37b33e5fd2",
+        "name": "QA同组非成员独立空间-7d37b33e5fd2"
+      },
+      "expected": "ACTIVE line with returned string id; no leader yet"
+    },
+    {
+      "actorPersonId": "900102",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/join-applications",
+      "body": null,
+      "expected": "PENDING membership"
+    },
+    {
+      "actorPersonId": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/join-applications/900102/review",
+      "body": {
+        "approve": true
+      },
+      "expected": "ACTIVE membership; reviewer SUPER_ADMIN before leader appointment"
+    },
+    {
+      "actorPersonId": "900103",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/join-applications",
+      "body": null,
+      "expected": "PENDING membership"
+    },
+    {
+      "actorPersonId": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/join-applications/900103/review",
+      "body": {
+        "approve": true
+      },
+      "expected": "ACTIVE membership; reviewer SUPER_ADMIN before leader appointment"
+    },
+    {
+      "actorPersonId": "900104",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/join-applications",
+      "body": null,
+      "expected": "PENDING membership"
+    },
+    {
+      "actorPersonId": "900101",
+      "method": "POST",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/join-applications/900104/review",
+      "body": {
+        "approve": true
+      },
+      "expected": "ACTIVE membership; reviewer SUPER_ADMIN before leader appointment"
+    },
+    {
+      "actorPersonId": "900101",
+      "method": "PUT",
+      "path": "/api/v1/ipd/product-lines/{returnedLineId}/leader/900102",
+      "body": null,
+      "expected": "leader900102 is ACTIVE line member; no global role change"
+    },
+    {
+      "actorPersonId": "900103",
+      "method": "POST",
+      "path": "/api/v1/projects",
+      "body": {
+        "name": "QA同组非成员独立项目-7d37b33e5fd2",
+        "productId": null,
+        "templateType": "SOFTWARE",
+        "targetMarkets": "CN",
+        "level": "A",
+        "targetSalesAmount": 1,
+        "targetChannelCount": 0,
+        "targetNps": 0,
+        "targetSceneCount": 0,
+        "mainGroupId": "900001",
+        "marketPmId": "900103",
+        "rdPmId": "900104",
+        "productLineId": "{returnedLineId}"
+      },
+      "expected": "PENDING_START; creator900103 MARKET_PM + member900104 RD_PM; candidate900102 NOT project member; stages/actions zero"
+    }
+  ],
+  "identity": "Actual DB Person identities checked; root must authenticate each actor and read session role/permissions, never forge role headers",
+  "placeholderRule": "Only returnedLineId substitution is required; never infer id",
+  "qaBaselines": "1/0/0/0 and SOFTWARE/CN/A are explicit synthetic QA inputs, not sales or product facts",
+  "allowancePreflight": "Existing allowance.Lx for actual PM levels must be positive; missing config is blocker, no config mutation",
+  "rootStartGate": {
+    "automatic": false,
+    "actorPersonId": "900102",
+    "method": "POST",
+    "path": "/api/v1/projects/{returnedProjectId}/approve-start",
+    "requires": "Explicit separate root call after readback of exact line/project/owner/nonmember/same group and AI effects review"
+  },
+  "compensation": "Keep new QA records and audits. Before start optionally root may deactivate dedicated line through existing API; after start preserve products/stages/actions/tasks/artifacts/events/cert/audit; no SQL rewind/delete. Membership leave/remove are separate legitimate audited operations, no automatic cleanup.",
+  "acceptance": "Creation alone is not permission acceptance; actual C05 valid fields/transit/accept negative tests are separate; empty graph/400 is not 403 evidence."
+}

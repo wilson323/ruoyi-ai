@@ -1,0 +1,79 @@
+{
+  "status": "PENDING_VALIDATION",
+  "task": "cursor-task-1-source-gate-20261002",
+  "checkedAt": "2026-10-02T10:28:32-07:00",
+  "head": {
+    "backend": "29b64b97c1729335abe22955b06a7597d68a9fab",
+    "frontend": "2797223d4c68490e9eeb9b4c75a718f937ce3c3a"
+  },
+  "runtimeLoaded": false,
+  "catalogSample10pct": {
+    "fragments": 84,
+    "attachments": 0,
+    "mutated": false
+  },
+  "tests": [
+    {
+      "command": "mvn -o -pl ruoyi-modules/ruoyi-ipd -Dproject.build.directory=/tmp/cursor-task1-target -Dtest=ProjectAgentCompletionGateTest,AiDocEmbeddingServiceTest,ProjectKnowledgeVectorSearchTest,ProjectKnowledgeFragmentTextSearchTest,ProjectKnowledgeSearchToolTest,ProjectKnowledgeRetrieverFailureTest,AgentScopeProjectAgentKernelTest test",
+      "cwd": "/Users/mac/Documents/ruoyi-ai",
+      "finishedAt": "2026-10-02T10:26:32-07:00",
+      "exitCode": 0,
+      "testsRun": 78,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "outputDirectory": "ruoyi-modules/ruoyi-ipd/target",
+      "note": "project.build.directory override did not apply; /tmp/cursor-task1-target was not created"
+    },
+    {
+      "command": "mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProjectAgentCompletionGateTest test",
+      "cwd": "/Users/mac/Documents/ruoyi-ai",
+      "finishedAt": "2026-10-02T10:28:32-07:00",
+      "exitCode": 0,
+      "testsRun": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "sourceEvidenceContract": {
+    "knowledgeFragment": {
+      "sourceType": "KNOWLEDGE_FRAGMENT",
+      "documentId": "knowledge_fragment.doc_id",
+      "knowledgeId": "knowledge_fragment.knowledge_id as string",
+      "fragmentId": "knowledge_fragment.id as string, required",
+      "sourceName": "knowledge_attach.name",
+      "reviewStatus": "NOT_PROJECT_DOCUMENT"
+    },
+    "projectDocument": {
+      "sourceType": "PROJECT_DOCUMENT",
+      "documentId": "ai_documents.id as decimal string",
+      "knowledgeId": null,
+      "fragmentId": null,
+      "sourceName": "document title",
+      "reviewStatus": "REVIEWED"
+    },
+    "omittedWhen": "knowledge row missing documentId, knowledgeId, fragmentId, or sourceName, or reviewStatus is REVIEWED"
+  },
+  "intersectionFiles": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java"
+  ],
+  "notTouched": [
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpQuery.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProductLineMcpTool.java",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java"
+  ],
+  "sha256": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "c30c23477ee702626ce04093ad873a1ad7eef1ffa81e42d0bcf2a4be0184b89f",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeVectorSearch.java": "be75df7e589e35f0fa09dddceeee076b47df83d12095df32c8e1a2b9145b5696",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectKnowledgeSearchTool.java": "a1eb69d17ac26bc42181e693f2aabcb65c8fc20462e3ced55b8f3dc69961c2b1",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/mapper/ProjectKnowledgeFragmentMapper.java": "d5dd44afbf2d7cfe373427cffcc3d760b4c6aeff76e4813c80d66d67d85e0369",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/AiDocEmbeddingService.java": "46e142a5c27b8c15d7420caa9e7c710cbb6ffac8dfe507ac6e55ee2698185f2f",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/config/ProjectAgentConfiguration.java": "01fccbe73a9d0152bb458ec6c49e550cab2c5a99b125c8ff46816471cafaeee9"
+  },
+  "unverified": [
+    "package on 127.0.0.1:16039 does not contain this patch",
+    "project 2103659612308828162 was not re-run",
+    "pre-fix Surefire log for embedAsyncSkipsWhenRagOff was not captured"
+  ]
+}

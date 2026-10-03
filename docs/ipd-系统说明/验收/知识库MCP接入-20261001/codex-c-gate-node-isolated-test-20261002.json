@@ -1,0 +1,26 @@
+{
+  "status": "ISOLATED_GATE_TARGETED_VERIFIED",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-gate-node-20261002-iz3qg_o1/ruoyi-ai",
+  "baseHead": "206ad0a2",
+  "exitCode": 0,
+  "command": "mvn -o -pl ruoyi-modules/ruoyi-ipd -Dprofiles.active= -Dgroups= -Dtest=ProjectAgentCompletionGateTest test",
+  "surefire": {
+    "tests": "18",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  "compiledMainSources": 640,
+  "compiledTestSources": 427,
+  "hashes": {
+    "ProjectAgentCompletionGate.java": "b8a931e9d9b248a0cf874e92fb95212d8773d97697dcea9167a7c93a023bdbe6",
+    "ProjectAgentCompletionGateTest.java": "4e51ba6d9f16e035a9c35043f49de10a3528e3ae06ad10fc0d89547ff2b530c9"
+  },
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-gate-node-20261002-iz3qg_o1/gate-test.log",
+  "dependencyBoundary": "Offline module-only -pl without -am uses existing ~/.m2 project/external artifacts; module source/test compile complete, not whole HEAD reactor compilation",
+  "limits": [
+    "No main index/source/target writes",
+    "No extra WIP copied or compilation exclusions",
+    "Not production acceptance or new package runtime classification"
+  ]
+}

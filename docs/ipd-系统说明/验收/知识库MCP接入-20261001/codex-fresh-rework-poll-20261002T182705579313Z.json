@@ -1,0 +1,86 @@
+{
+  "atUtc": "20261002T182705579313Z",
+  "mode": "poll",
+  "projectId": "2103659612308828162",
+  "loadedJarSha256": null,
+  "diagnosticOnly": false,
+  "previousRunId": "2106061095016882177",
+  "targetDocumentId": "2106061816428781569",
+  "runId": "2106088393019568130",
+  "sources": [
+    {
+      "tool": "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+      "toolCallId": "call_01a0fdde01f97da3897b8603",
+      "retrievalStatus": "FAILED",
+      "citationStatus": null,
+      "hits": null,
+      "sourceEvidence": null,
+      "reasonCode": "PROTOCOL_OR_TRANSPORT",
+      "mcpFailureStage": "INITIALIZE",
+      "mcpFailureReason": "PROTOCOL_OR_TRANSPORT",
+      "mcpErrorTypes": "IllegalStateException",
+      "mcpSdkFrames": null,
+      "seq": 8,
+      "citationChars": 0,
+      "citationSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "usage": [
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 1473,
+      "outputTokens": 170
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": null,
+      "outputTokens": null
+    },
+    {
+      "kind": "MODEL_CALL",
+      "inputTokens": 1669,
+      "outputTokens": 374
+    }
+  ],
+  "artifacts": [
+    {
+      "artifactId": "5f9c4850c4f54161a1419373c6406fe9",
+      "versionId": "2106088438884282369",
+      "version": 1,
+      "title": "C02 产物",
+      "contentHash": "1f4f309e8144130cbb5c97d22a783fad0e4609e1713cf6a9660e6eaaad278d3b",
+      "status": null
+    }
+  ],
+  "run": {
+    "runId": "2106088393019568130",
+    "status": "SUCCEEDED",
+    "errorCode": null,
+    "actionCode": "C02",
+    "configSnapshot": {
+      "capabilityPackCode": "market-research",
+      "capabilityPackVersion": "v1",
+      "modelConfigId": "2104885081318375426",
+      "skills": [
+        {
+          "name": "competitor-analysis-ipd",
+          "sha256": "f6f7d41621e897096980e338b4375256626672a25e8060f24d52cefaaf5f0ad2"
+        }
+      ],
+      "toolIds": [
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86"
+      ],
+      "previousRunId": "2106082915170418689",
+      "targetDocumentId": "2106085620907540481",
+      "baseVersionId": "2106085620907540481"
+    },
+    "artifactArchives": []
+  },
+  "terminal": true,
+  "timedOutWaiting": false
+}

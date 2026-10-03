@@ -1,0 +1,9 @@
+# G额外现包运行质量独立复核
+
+裁决：来源身份与缺项报告正例，C02业务完成未闭环；不apply/审核。run2106103242814394369 SUCCEEDED，owner900101，工程幂等前缀h4-jar-a44e858e-20261002；不推断B触发。产物9580acbdc996494ab0f38955de2ccb12/version1/id2106103516815691778 DRAFT/documentNULL/SHA51523e5b121c14f3982313dfb17287116b16cc08450b1d3edbc5a0b2656fb1db。
+
+实际两工具各一次：本地project_knowledge_search SOURCEseq10 PARTIAL/hits4/citationSUCCESS/10028chars，四条sourceEvidence全部KNOWLEDGE_FRAGMENT/NOT_PROJECT_DOCUMENT；MCPseq17 SUCCESS/hits1/18239chars/REMOTE_APPLICATION，无结构project审核身份。两TOOL_RESULT均SUCCESS不能抹去本地PARTIAL状态。正文明确两份材料「都不算本项目已审核文档」，已审核竞品资料未取得；远端仅产线应用整理的规格片段，不升级为官方原文交叉核验/已审核事实。没有比价或产品数字结论，只有缺项说明；停止比较并明示不具备资料，未宣称动作完成/Gate放行。源码gate成功和runSUCCEEDED可作为此窄层正例，不扩大完整竞品分析/完整返工链。
+
+实际3次完成MODEL_CALL token1619/273、6621/177、15484/1238，合input23724/output1688；另3个null开始标记不计额外完成调用，null不当0。现SOURCE仅preview截断及hash，完整basis不持久，不能据截断独立复核每句全文；但四结构来源身份可实核其拒绝冒认。知识片段取文不等于真实当前产品竞品齐备。
+
+正文有工程文件路径出处及要求用户补齐事实清单，属于产品输出质量待review点；没有因此伪造已审核身份。当前保持DRAFT，无文档写入/人工审核，额外正例不替代主线资料更新新attempt。safe事件证据codex-g-extra-run-safe-quality-events-20261002.json，不保存原提问/内部推理/远端正文/秘密。900105安全凭据仍blocked，没有猜测密码。

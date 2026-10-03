@@ -1,0 +1,21 @@
+{
+  "status": "PARTIAL_TYPED_FACTORY_SCOPE_VALIDATED",
+  "exit": 0,
+  "source": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/candidate/org/ruoyi/ipd/agent/kernel/ProjectAgentSubagentScopeMiddleware.java",
+  "sourceSha256": "614ed2887687cf968b24352c06093bb4f624ca79754a9a159fc8469467d02342",
+  "probe": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/ChildScopeProbe.java",
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-sdk203-capabilities-r7cjme94/child-scope-probe-final.log",
+  "logSha256": "e4ceaf1adc9a917e3a382cbf4603d68a52256b1ab230f063f77bfb84f3957ba9",
+  "verified": [
+    "official leaf factory retained",
+    "trusted parent independent child session allowed",
+    "forged same-user child session denied",
+    "revoked factory denied"
+  ],
+  "pending": [
+    "real streamEvents child governance test",
+    "child transcript/owner/artifact bindings",
+    "permissionMode comparison",
+    "crossJVM materialization trusted marker reconstruction"
+  ]
+}

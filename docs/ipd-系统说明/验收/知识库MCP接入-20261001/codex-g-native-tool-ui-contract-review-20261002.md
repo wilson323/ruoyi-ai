@@ -1,0 +1,15 @@
+# G 原生工具能力 UI / toolIds 独立只读审查
+
+裁决：PARTIAL。FE可表示文件、Shell、Web和记忆条目，不是界面协议只允许知识/MCP；当前正式后端的这四类原生工具尚未接通。没有新create/cancel/apply/reload、模型/远端查询或主源码修改。
+
+官方2.0.3 owning sourceJar已独立读取：HarnessAgent2634–2671按开关注册Memory/Filesystem/Shell及Web。FilesystemTool实际协议名read_file/write_file/edit_file/grep_files/glob_files/list_files；ShellExecuteTool.NAME=execute；WebTools标注web_fetch/web_search（search需TAVILY_API_KEY）；Memory工具标注memory_get/memory_save/memory_search。没有用2.0.4或臆造SDK名。
+
+FE Tool条目为string id/name/readOnly/available/reason；picker按后端数组渲染、已支持“可写”标识，不按readOnly硬过滤。selectPack/buildRunInput保留服务端原ID，包code/version与当前model/skills/tools必须匹配本次目录，伪造或不可用项拒提交；不把市场MCP ID自行换成工具协议名。临时HEAD6fad快照模拟服务端目录包含read_file/write_file/execute/web_fetch/memory_get，正例显示与提交原ID，负例MCP市场伪ID/停用工具拒绝，现测试19+临时1共20/0通过。此为界面表示合同验证，模拟目录不是后端实际注册或原生执行验收。
+
+当前BE manifest实有18工具：1本地search+17MCP服务ID；ToolCatalog未实现工具available=false，WRITE/EXECUTE/NETWORK等被W1只读规则拒；Kernel仅注册本地search+MCP，HarnessPermissionMode固定READ_ONLY，disableFilesystemTools/disableShellTool/disableMemoryTools，toolsConfig deny web_fetch/web_search/wait_async_results，另有exposed必须包含于本次toolIds的校验。必须修改真实目录、实现注册与作用域治理接线才有新能力，不能只把SDK开关全放开。
+
+两项现合同需主线显式纳入整合：选择包时默认勾上全部available工具，自动选择并不授予项目/审核/系统文件或任意Shell权限；CapabilityService将任一列入pack但不可用工具视为“必需工具”并使整个pack不可用，新增缺凭据的WebSearch不能无意阻断原可用工具。现CreateRunInput没有工具路径/域名/命令授权专用字段，仅冻结toolIds与用户任务；G未新增认证/批准口，最终作用域与效果处理由原业务权限/治理边界核定。
+
+真实Person会话输出隔离已本机HTTP验证：900101本人run详情200/0、123事件200/0 terminaltrue；900102其他Person同run详情和events均404/50001/dataNULL。只读事件审计12TOOL_CALL/12TOOL_RESULT/12SOURCE与既有产物1、终态1一致；不输出query或内部推理。源码requireOwnRun每次重读可见性并校验tenant+personId。此只证明现有知识/MCP运行输出本人隔离，不证明未来SDK文件、Shell、网页、记忆路径/网络/持久效果已隔离，不扩大原生工具生产就绪。
+
+所有具体ID、源/SKD包SHA、temp日志和HTTP负例存同目录JSON，未启用新能力包或写业务库。

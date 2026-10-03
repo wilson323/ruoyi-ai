@@ -1,0 +1,25 @@
+{
+  "base": "2bab65e768c6f328dcf1a047a7ada0734762b970",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-c-reason-head2bab-eshvbhpb/ruoyi-ai",
+  "after": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandle.java": "86f7f3e03729be1ea5ff5ee4870445727a88ad2ad858f1a14c6a63211e03191d",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentRunHandleTest.java": "f3e95cec7541faa9bdf3ed62f77f890a23e24a8ae10ee6b44bed82f3219852ba"
+  },
+  "boundary": "HEAD2bab archive plus exactly two frozen reason candidate files",
+  "status": "VERIFIED_ISOLATED_CANDIDATE_ON_HEAD2BAB",
+  "exitCode": 0,
+  "compileProduction": 640,
+  "compileTest": 428,
+  "tests": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sourceHashStillFrozen": true,
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-c-reason-head2bab-eshvbhpb/handle-test.log",
+  "logSha256": "e4ddbac56e2fdee1b7066e94e8b5891af358faa2b324361974bbddc7be62aa6e",
+  "command": "mvn -o -pl ruoyi-modules/ruoyi-ipd -Dprofiles.active= -Dgroups= -Dtest=ProjectAgentRunHandleTest test",
+  "dependencyBoundary": "Module-only offline uses existing local Maven installed project/external dependencies; no -am, not clean full reactor build.",
+  "mainBoundary": "No main source/index/target edits, no external calls."
+}

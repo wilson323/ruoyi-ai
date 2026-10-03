@@ -1,0 +1,7 @@
+# G 全模型计量独立反例
+
+裁决：未闭环。官方2.0.3全默认HarnessAgent.streamEvents无网络stubModel每次真实返回ChatUsage(10,5)，实际3次调用=30/15，主stream ModelCallEndEvent仅2条=20/10。原正式事件桥只转这些ModelCallEndEvent为MODEL_CALL，现有UsageSink仅此步骤落账；默认记忆消费者额外调用因此漏计。
+
+官方MemoryFlushManager157和MemoryConsolidator192直接model.stream并reduce正文；CompactionMiddleware另构造ConversationCompactor直接使用模型。不能仅以main结束事件证明全模型计量，不能关闭memory或编写token0。最小方向应在本次模型配置建成后的官方Model扩展统一捕获每次实际usage（含memory/compaction/子agent模型），保留本run/actor/config归属、避免现桥重复计；无usage保持null。具体接线由root协调，不在本组改main。
+
+探针只无害后台supplier和stub，无M3/业务run/create/load/主target写。compaction/child单独实测仍PENDING，不能用源码候选推出生产计量完整。

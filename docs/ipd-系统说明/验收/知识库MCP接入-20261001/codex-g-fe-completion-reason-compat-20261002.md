@@ -1,0 +1,11 @@
+# G FE 新完成拒绝原因兼容审查
+
+裁决：VERIFIED_FE_REASON_PAYLOAD_COMPATIBILITY_ONLY。当前 FE HEAD6fad407d0c8d73111d5b080d8d8b2b48341ef212，五个相关生产文件均与独立该HEAD快照逐字一致。临时快照仅补两条新诊断payload组件测试，Vite/Vitest cache在temp，复用现依赖只读，不改主源码、依赖、index、target，无模型或真实请求。
+
+后端 ProjectAgentRunHandle.writeTerminal 实际输出 errorCode=COMPLETION_REJECTED、固定安全message，以及新增completionReason=SKILL_CONTRACT_MISMATCH；message仍由 ProjectAgentErrorTexts 固定表生成，不放原始异常/源码。FE AgentRunEvent.payload为unknown，没有对新reason做枚举解码或新增协议分支。timeline-model ERROR分支只取code/errorCode和message/detail，不将completionReason放入viewmodel。run-timeline.vue只渲染row.item.message，既不渲染code也不dump payload；缺文案仍用“智能体返回错误”。
+
+现ProjectAgentPanel FAILED态显示既有白话及“重新开始”入口；原发送还是submitText→agent.create→createProjectAgentRun，无新增发送或副驾轨。既有失败重开用例验证不自动create/cancel、不透出COMPLETION_REJECTED、不streamCopilot；本次未改交互。
+
+独立实际payload正例：有固定message时显示该白话，SKILL_CONTRACT_MISMATCH/COMPLETION_REJECTED/completionReason均不出现在用户文本，事件对象原值保留、未apply；缺message时只显示已有白话兜底，不显示新reason枚举。实际3测试文件71项全通过：timeline-model20、run-timeline24（原22+临时2）、project-agent-panel27。
+
+边界：前端仍接受后端提供的message/detail文本，不能把此测试扩大为任意恶意payload都能自动脱敏；本次兼容结论基于现BE固定文案合同。没有实际新包ERROR浏览器验收，不代表全页面验收、用途规则或完整C02交付完成。原日志和五文件SHA见同名JSON。

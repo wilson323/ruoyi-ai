@@ -1,0 +1,410 @@
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/AgentScopeProjectAgentKernel.java
+@@ -286,7 +286,7 @@
+             .transcriptStore(safeTranscript)
+             .middleware(officialGovernance)
+             .middleware(new ProjectAgentSkillRuntimeGuard(selectedSkills, spec, sink))
+-            .model(model)
++            .model(new ProjectAgentMeteredModel(model, sink))
+             .permissionContext(ProjectAgentOfficialPermissions.workspace())
+             .hook(auditHook)
+             .middleware(deadline)
+@@ -545,7 +545,9 @@
+             } else if (event instanceof ModelCallStartEvent) {
+                 sink.onStep("MODEL_CALL", Map.of());
+             } else if (event instanceof ModelCallEndEvent end) {
+-                sink.onStep("MODEL_CALL", modelCallDetail(end.getUsage()));
++                // The shared Model decorator meters main, memory, compaction and child calls.
++                // Keep native stream lifecycle visible without a second token-bearing STEP.
++                sink.onStep("MODEL_CALL", Map.of("phase", "STREAM_END"));
+             } else if (event instanceof ExceedMaxItersEvent) {
+                 sink.onStep("EXCEED_MAX_ITERS", Map.of());
+             }
+--- a/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentUsageSink.java
+@@ -57,7 +57,13 @@
+         }
+         int input = asInt(detail.get("inputTokens"));
+         int output = asInt(detail.get("outputTokens"));
+-        ledger.recordUsage(modelConfigId, actorId, SCENE, input, output, 0L, "ok", traceId);
++        String outcome = Objects.toString(detail.get("outcome"), "COMPLETE");
++        String status = switch (outcome) {
++            case "ERROR" -> "error";
++            case "CANCELLED" -> "cancelled";
++            default -> "ok";
++        };
++        ledger.recordUsage(modelConfigId, actorId, SCENE, input, output, 0L, status, traceId);
+     }
+ 
+     @Override
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModel.java
+@@ -0,0 +1,84 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.message.Msg;
++import io.agentscope.core.model.ChatResponse;
++import io.agentscope.core.model.ChatUsage;
++import io.agentscope.core.model.GenerateOptions;
++import io.agentscope.core.model.Model;
++import io.agentscope.core.model.ToolSchema;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Objects;
++import java.util.UUID;
++import java.util.concurrent.atomic.AtomicBoolean;
++import reactor.core.publisher.Flux;
++
++/** Measures every official model consumer through the original run STEP/usage sink. */
++public final class ProjectAgentMeteredModel implements Model {
++    private final Model delegate;
++    private final ProjectAgentEventSink sink;
++
++    public ProjectAgentMeteredModel(Model delegate, ProjectAgentEventSink sink) {
++        this.delegate = Objects.requireNonNull(delegate);
++        this.sink = Objects.requireNonNull(sink);
++    }
++
++    @Override public String getModelName() { return delegate.getModelName(); }
++    @Override public boolean supportsNativeStructuredOutput() { return delegate.supportsNativeStructuredOutput(); }
++    @Override public boolean supportsNativeStructuredOutputWithTools() {
++        return delegate.supportsNativeStructuredOutputWithTools();
++    }
++    @Override public int getContextWindowSize() { return delegate.getContextWindowSize(); }
++
++    @Override public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools,
++            GenerateOptions options) {
++        return Flux.defer(() -> {
++            Call call = new Call(UUID.randomUUID().toString());
++            sink.requireActiveOwnership();
++            sink.onStep("MODEL_CALL", Map.of("modelCallId", call.id, "phase", "START"));
++            return Flux.defer(() -> delegate.stream(messages, tools, options))
++                .doOnNext(call::observe)
++                .doOnComplete(() -> call.finish("COMPLETE"))
++                .doOnError(error -> call.finish("ERROR"))
++                .doOnCancel(() -> call.finish("CANCELLED"));
++        });
++    }
++
++    private final class Call {
++        private final String id;
++        private final Map<String, ChatUsage> snapshots = new LinkedHashMap<>();
++        private final AtomicBoolean finished = new AtomicBoolean();
++        private Call(String id) { this.id = id; }
++
++        private synchronized void observe(ChatResponse response) {
++            ChatUsage usage = response.getUsage();
++            if (usage == null || usage.getInputTokens() < 0 || usage.getOutputTokens() < 0) return;
++            // Official 2.0.3 OpenAI parser reports per-response cumulative usage, usually last chunk.
++            // Replace snapshots, never add cumulative chunks. Distinct retry response IDs are distinct usage.
++            snapshots.put(response.getId(), usage);
++        }
++
++        private synchronized void finish(String outcome) {
++            if (!finished.compareAndSet(false, true)) return;
++            Map<String, Object> detail = new LinkedHashMap<>();
++            detail.put("modelCallId", id);
++            detail.put("phase", "END");
++            detail.put("outcome", outcome);
++            detail.put("usageAvailable", !snapshots.isEmpty());
++            if (!snapshots.isEmpty()) {
++                long input = 0;
++                long output = 0;
++                for (ChatUsage usage : snapshots.values()) {
++                    input = Math.addExact(input, usage.getInputTokens());
++                    output = Math.addExact(output, usage.getOutputTokens());
++                }
++                detail.put("inputTokens", Math.toIntExact(input));
++                detail.put("outputTokens", Math.toIntExact(output));
++                detail.put("usageComplete", "COMPLETE".equals(outcome));
++            }
++            sink.requireActiveOwnership();
++            sink.onStep("MODEL_CALL", Map.copyOf(detail));
++        }
++    }
++}
+--- /dev/null
++++ b/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentMeteredModelTest.java
+@@ -0,0 +1,281 @@
++package org.ruoyi.ipd.agent.kernel;
++
++import io.agentscope.core.message.Msg;
++import io.agentscope.core.model.ChatResponse;
++import io.agentscope.core.model.ChatUsage;
++import io.agentscope.core.model.GenerateOptions;
++import io.agentscope.core.model.Model;
++import io.agentscope.core.model.ToolSchema;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.function.Supplier;
++import org.junit.jupiter.api.Tag;
++import org.junit.jupiter.api.Test;
++import org.ruoyi.ipd.service.AiModelUsageLedgerService;
++import reactor.core.publisher.Flux;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++@Tag("dev")
++class ProjectAgentMeteredModelTest {
++    static final class Recorder implements ProjectAgentEventSink {
++        final List<Map<String, Object>> ends = new ArrayList<>();
++        public synchronized void onStep(String kind, Map<String, Object> detail) {
++            if ("END".equals(detail.get("phase"))) ends.add(detail);
++        }
++        public void onToolCall(String id, String name) { }
++        public void onToolResult(String id, String name, String state) { }
++        public void onSource(Map<String, Object> source) { }
++        public void onText(String text) { }
++        public void onArtifact(String id, String title, String hash, int version) { }
++        public void onError(String error) { }
++        public void onComplete() { }
++        int total(String key) {
++            return ends.stream().filter(end -> end.containsKey(key))
++                .mapToInt(end -> ((Number) end.get(key)).intValue()).sum();
++        }
++    }
++
++    private static Model model(Supplier<Flux<ChatResponse>> response) {
++        return new Model() {
++            public String getModelName() { return "synthetic"; }
++            public int getContextWindowSize() { return 8192; }
++            public boolean supportsNativeStructuredOutput() { return true; }
++            public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
++                return response.get();
++            }
++        };
++    }
++
++    private static ChatResponse usage(String id, int input, int output) {
++        return ChatResponse.builder().id(id).content(List.of())
++            .usage(new ChatUsage(input, output, 0)).build();
++    }
++
++    @Test void cumulativeSnapshotsAndRepeatedColdSubscriptionsAreIndependent() {
++        var sink = new Recorder();
++        var metered = new ProjectAgentMeteredModel(model(() -> Flux.just(
++            usage("response", 10, 2), usage("response", 10, 5))), sink);
++        var cold = metered.stream(List.of(), null, null);
++        cold.blockLast();
++        cold.blockLast();
++        assertEquals(2, sink.ends.size());
++        assertEquals(20, sink.total("inputTokens"));
++        assertEquals(10, sink.total("outputTokens"));
++        assertNotEquals(sink.ends.get(0).get("modelCallId"), sink.ends.get(1).get("modelCallId"));
++    }
++
++    @Test void officialModelCapabilitiesSurviveDecoration() {
++        var metered = new ProjectAgentMeteredModel(model(Flux::empty), new Recorder());
++        assertEquals(8192, metered.getContextWindowSize());
++        assertTrue(metered.supportsNativeStructuredOutput());
++        assertTrue(metered.supportsNativeStructuredOutputWithTools());
++    }
++
++    @Test void missingUsageDoesNotInventZeroOrReachLedger() {
++        var sink = new Recorder();
++        new ProjectAgentMeteredModel(model(() -> Flux.just(
++            ChatResponse.builder().id("unknown").content(List.of()).build())), sink)
++            .stream(List.of(), null, null).blockLast();
++        assertFalse(sink.ends.get(0).containsKey("inputTokens"));
++        assertFalse(sink.ends.get(0).containsKey("outputTokens"));
++        var ledger = mock(AiModelUsageLedgerService.class);
++        new ProjectAgentUsageSink(sink, ledger, 123L, "person", "run")
++            .onStep("MODEL_CALL", sink.ends.get(0));
++        verifyNoInteractions(ledger);
++    }
++
++    @Test void errorPersistsOnlyKnownUsageOnceWithErrorOutcome() {
++        var sink = new Recorder();
++        var metered = new ProjectAgentMeteredModel(model(() -> Flux.concat(
++            Flux.just(usage("failed", 3, 1)), Flux.error(new IllegalStateException("synthetic")))), sink);
++        assertThrows(IllegalStateException.class, () -> metered.stream(List.of(), null, null).blockLast());
++        assertEquals(1, sink.ends.size());
++        assertEquals(3, sink.total("inputTokens"));
++        assertEquals("ERROR", sink.ends.get(0).get("outcome"));
++        var ledger = mock(AiModelUsageLedgerService.class);
++        new ProjectAgentUsageSink(sink, ledger, 123L, "person", "run")
++            .onStep("MODEL_CALL", sink.ends.get(0));
++        verify(ledger).recordUsage(123L, "person", "project_agent", 3, 1, 0L, "error", "run");
++    }
++
++    @Test void cancellationPersistsKnownUsageOnce() {
++        var sink = new Recorder();
++        new ProjectAgentMeteredModel(model(() -> Flux.concat(
++            Flux.just(usage("cancelled", 4, 2)), Flux.never())), sink)
++            .stream(List.of(), null, null).take(1).blockLast();
++        assertEquals(1, sink.ends.size());
++        assertEquals(4, sink.total("inputTokens"));
++        assertEquals("CANCELLED", sink.ends.get(0).get("outcome"));
++    }
++
++    @Test void missingUsageOnErrorAndCancellationStaysUnknown() {
++        var error = new Recorder();
++        assertThrows(IllegalStateException.class, () -> new ProjectAgentMeteredModel(
++            model(() -> Flux.error(new IllegalStateException("synthetic"))), error)
++            .stream(List.of(), null, null).blockLast());
++        assertFalse(error.ends.get(0).containsKey("inputTokens"));
++        var cancelled = new Recorder();
++        var subscription = new ProjectAgentMeteredModel(model(Flux::never), cancelled)
++            .stream(List.of(), null, null).subscribe();
++        subscription.dispose();
++        assertEquals(1, cancelled.ends.size());
++        assertFalse(cancelled.ends.get(0).containsKey("inputTokens"));
++    }
++
++    @Test void retrySubscriptionsAndDistinctProviderResponsesAreNotDoubleCounted() {
++        var sink = new Recorder();
++        var attempts = new AtomicInteger();
++        new ProjectAgentMeteredModel(model(() -> attempts.incrementAndGet() == 1
++            ? Flux.concat(Flux.just(usage("failed-attempt", 2, 1)),
++                Flux.error(new IllegalStateException("synthetic")))
++            : Flux.just(usage("successful-attempt", 10, 5))), sink)
++            .stream(List.of(), null, null).retry(1).blockLast();
++        assertEquals(2, sink.ends.size());
++        assertEquals(12, sink.total("inputTokens"));
++        assertEquals(6, sink.total("outputTokens"));
++        var internal = new Recorder();
++        new ProjectAgentMeteredModel(model(() -> Flux.just(usage("attempt-a", 2, 1),
++            usage("attempt-b", 10, 4), usage("attempt-b", 10, 5))), internal)
++            .stream(List.of(), null, null).blockLast();
++        assertEquals(1, internal.ends.size());
++        assertEquals(12, internal.total("inputTokens"));
++        assertEquals(6, internal.total("outputTokens"));
++    }
++
++    @org.junit.jupiter.api.io.TempDir java.nio.file.Path workspace;
++
++    @Test void fullDefaultMemoryAndMainCallsUseSameLedgerWithoutBridgeDuplicates() {
++        var calls = new AtomicInteger();
++        var receivedTask = new java.util.concurrent.atomic.AtomicBoolean();
++        Model delegate = new Model() {
++            public String getModelName() { return "no-network-metering"; }
++            public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools,
++                    GenerateOptions options) {
++                int call = calls.incrementAndGet();
++                if (call == 1) {
++                    return Flux.just(ChatResponse.builder().id("response-" + call)
++                        .usage(new ChatUsage(10, 5, 0))
++                        .content(List.of(io.agentscope.core.message.ToolUseBlock.builder()
++                            .id("wait-call").name("wait_async_results")
++                            .input(Map.of("timeout_seconds", 5, "task_ids", "owned-task"))
++                            .content("{\"timeout_seconds\":5,\"task_ids\":\"owned-task\"}")
++                            .build())).finishReason("tool_calls").build());
++                }
++                for (Msg message : messages) {
++                    for (var block : message.getContent()) {
++                        if (block instanceof io.agentscope.core.message.ToolResultBlock result) {
++                            for (var output : result.getOutput()) {
++                                if (output instanceof io.agentscope.core.message.TextBlock text
++                                    && text.getText().contains("owned-background-result")) {
++                                    receivedTask.set(true);
++                                }
++                            }
++                        }
++                    }
++                }
++                return Flux.just(ChatResponse.builder().id("response-" + call)
++                    .usage(new ChatUsage(10, 5, 0))
++                    .content(List.of(io.agentscope.core.message.TextBlock.builder()
++                        .text("safe-finished").build())).finishReason("stop").build());
++            }
++        };
++        var recorder = new Recorder();
++        var ledger = mock(AiModelUsageLedgerService.class);
++        var sink = new ProjectAgentUsageSink(recorder, ledger, 123L, "person", "run");
++        var agent = io.agentscope.harness.agent.HarnessAgent.builder()
++            .name("metering-test").workspace(workspace)
++            .model(new ProjectAgentMeteredModel(delegate, sink)).maxIters(4)
++            .stateStore(new io.agentscope.core.state.InMemoryAgentStateStore()).build();
++        var context = io.agentscope.core.agent.RuntimeContext.builder()
++            .userId("synthetic-person").sessionId("owned-session").build();
++        try {
++            var task = agent.getTaskRepository().putTask(context, "owned-task", "worker", "owned-session",
++                new io.agentscope.harness.agent.subagent.task.TaskRunSpec.LocalTaskRunSpec(() -> {
++                    try { Thread.sleep(1500); }
++                    catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
++                    return "owned-background-result";
++                }));
++            var events = agent.streamEvents(Msg.builder()
++                .role(io.agentscope.core.message.MsgRole.USER).textContent("Synthetic wait test").build(),
++                context).collectList().block(java.time.Duration.ofSeconds(30));
++            assertNotNull(events);
++            assertTrue(task.isCompleted());
++            assertTrue(receivedTask.get());
++            // Same token-free lifecycle STEP as the proposed production EventBridge change.
++            events.stream().filter(event -> event instanceof io.agentscope.core.event.ModelCallEndEvent)
++                .forEach(event -> sink.onStep("MODEL_CALL", Map.of("phase", "STREAM_END")));
++            assertEquals(3, calls.get());
++            assertEquals(3, recorder.ends.size());
++            assertEquals(30, recorder.total("inputTokens"));
++            assertEquals(15, recorder.total("outputTokens"));
++            verify(ledger, times(3)).recordUsage(123L, "person", "project_agent", 10, 5, 0L, "ok", "run");
++        } finally {
++            agent.close();
++        }
++    }
++
++    @Test void officialCompactionAndFlushShareMeteredModel() {
++        var calls = new AtomicInteger();
++        var recorder = new Recorder();
++        var metered = new ProjectAgentMeteredModel(model(() -> {
++            int call = calls.incrementAndGet();
++            return Flux.just(ChatResponse.builder().id("compact-" + call)
++                .usage(new ChatUsage(10, 5, 0))
++                .content(List.of(io.agentscope.core.message.TextBlock.builder()
++                    .text("synthetic summary").build())).build());
++        }), recorder);
++        var manager = new io.agentscope.harness.agent.workspace.WorkspaceManager(workspace);
++        var flush = new io.agentscope.harness.agent.memory.MemoryFlushManager(manager, metered);
++        var compactor = new io.agentscope.harness.agent.memory.compaction.ConversationCompactor(metered, flush);
++        var messages = new ArrayList<Msg>();
++        for (int index = 0; index < 6; index++) {
++            messages.add(Msg.builder().role(io.agentscope.core.message.MsgRole.USER)
++                .textContent("synthetic conversation " + index).build());
++        }
++        var compacted = compactor.compactIfNeeded(io.agentscope.core.agent.RuntimeContext.empty(), messages,
++            io.agentscope.harness.agent.memory.compaction.CompactionConfig.builder()
++                .triggerMessages(2).keepMessages(1).keepTokens(0).build(), "agent", "session")
++            .block(java.time.Duration.ofSeconds(10));
++        assertNotNull(compacted);
++        assertTrue(compacted.isPresent());
++        assertEquals(2, calls.get());
++        assertEquals(2, recorder.ends.size());
++        assertEquals(20, recorder.total("inputTokens"));
++        assertEquals(10, recorder.total("outputTokens"));
++    }
++
++    @Test void defaultChildFactoryUsesParentMeteredModel() {
++        var calls = new AtomicInteger();
++        var recorder = new Recorder();
++        var metered = new ProjectAgentMeteredModel(model(() -> {
++            int call = calls.incrementAndGet();
++            return Flux.just(ChatResponse.builder().id("child-" + call)
++                .usage(new ChatUsage(10, 5, 0))
++                .content(List.of(io.agentscope.core.message.TextBlock.builder()
++                    .text("synthetic child result").build())).finishReason("stop").build());
++        }), recorder);
++        var parent = io.agentscope.harness.agent.HarnessAgent.builder()
++            .name("metered-parent").workspace(workspace).model(metered)
++            .stateStore(new io.agentscope.core.state.InMemoryAgentStateStore()).build();
++        var context = io.agentscope.core.agent.RuntimeContext.builder()
++            .userId("synthetic-person").sessionId("owned-parent-session").build();
++        io.agentscope.core.agent.Agent child = null;
++        try {
++            child = parent.getSubagentAgentManager().createAgent("general-purpose", context);
++            var result = parent.getSubagentAgentManager()
++                .invokeAgent(child, "owned-child-session", "synthetic-person", "Synthetic child prompt", context)
++                .block(java.time.Duration.ofSeconds(30));
++            assertNotNull(result);
++            assertTrue(calls.get() > 0);
++            assertEquals(calls.get(), recorder.ends.size());
++            assertEquals(calls.get() * 10, recorder.total("inputTokens"));
++            assertEquals(calls.get() * 5, recorder.total("outputTokens"));
++        } finally {
++            if (child instanceof io.agentscope.harness.agent.HarnessAgent harness) harness.close();
++            parent.close();
++        }
++    }
++}

@@ -1,0 +1,163 @@
+{
+  "status": "E6_MINIMAL_CANDIDATE_CLOSURE_VERIFIED",
+  "baseHead": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-effect-node-gmeaqf7a/ruoyi-ai",
+  "command": "mvn -o -pl ruoyi-modules/ruoyi-aiflow -Dprofiles.active= -Dgroups= test",
+  "exitCode": 0,
+  "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/c-effect-node-gmeaqf7a/effect-full-test.log",
+  "logSha256": "cb0d62eac05f6c1ac2e3d9b43109fcfc9349741982feb0623649bcacf474a543",
+  "candidatePaths": [
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WfComponentNameEnum.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowGraphBuilder.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/node/AbstractWfNode.java",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/node/mailSend/MailSendNode.java",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/node/AbstractWfNodeRetryDeadTest.java",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/node/MailSendUnknownEffectTest.java"
+  ],
+  "sourceSha256": {
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WfComponentNameEnum.java": "421675aad1cda3df444a215abee9586c1174138fc2efdef914abeb042283ab5c",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/WorkflowGraphBuilder.java": "f653e9e2a8c0632d6838ae062c239cdc1a8009b5daf8d9c3054efa95a7c186f0",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/node/AbstractWfNode.java": "d00c2f25e1ec3873f4e9eb636e96f7987136b864dc8a2a8f5c5a7c8db9b8fffb",
+    "ruoyi-modules/ruoyi-aiflow/src/main/java/org/ruoyi/workflow/workflow/node/mailSend/MailSendNode.java": "74a7cf44657b8786b3d5c019bb92039254beeb4402344a6ec1de67d014b8f906",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/node/AbstractWfNodeRetryDeadTest.java": "bb93c483ee6f85de87967baba591263e39d4978d4d2b86394ef0f7edf9a4c2ef",
+    "ruoyi-modules/ruoyi-aiflow/src/test/java/org/ruoyi/workflow/workflow/node/MailSendUnknownEffectTest.java": "7c451d7c3b8411930e29b9292734bba5a4dcc65e01119d9ad8eb688cb0e4c756"
+  },
+  "snapshotAndMainMatchFreeze": true,
+  "suites": [
+    {
+      "name": "org.ruoyi.workflow.service.WorkflowRuntimeZombieDisposeTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.util.WorkflowSseLifecycleContractTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.WfStateParallelInputTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.WorkflowEngineLeaseBoundaryTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.WorkflowGraphBuilderNextRouteTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.WorkflowNodeStreamTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.checkpoint.CheckpointStateSerializationRoundTripTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.checkpoint.JdbcCheckpointSaverContractTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.checkpoint.LegacyWorkflowCheckpointCompatibilityTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.checkpoint.WorkflowCheckpointResumeIntegrationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.checkpoint.WorkflowNativeDagContractTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.checkpoint.WorkflowRunLeaseTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.node.AbstractWfNodeRetryDeadTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.node.MailSendUnknownEffectTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.node.SwitcherNodeFailureSemanticsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.node.knowledgeRetrieval.KnowledgeRetrievalNodeAccessTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.node.switcher.SwitcherNodeSpelTest",
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.ruoyi.workflow.workflow.node.switcher.SwitcherSpelSandboxTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 152,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "dependencyBoundary": "Offline module-only Maven uses already installed project and external artifacts in local ~/.m2 cache; not a clean all-reactor dependency closure/build proof. No other WIP copied into snapshot.",
+  "scopeBoundary": "Only isolated snapshot target written. Main source/index/target untouched by this validation. No real mail/HTTP/business writes or external model/MCP calls.",
+  "commitClosure": "Exactly six candidatePaths on base HEAD72; no extra source dependency required for this module compile and tests. No commit performed."
+}

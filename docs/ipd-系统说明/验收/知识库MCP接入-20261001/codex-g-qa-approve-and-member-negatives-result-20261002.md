@@ -1,0 +1,13 @@
+# G 合法QA开工与成员负例
+
+裁决：合法开工/图及项目级两403闭环，C05成员拒绝未闭环，自动AI尚未结束。执行新PID31351/JARa44e858e9c72ccb2da0bf54a5ad2eeddd0026872a920feb250ce07a37e4a1470窗口（root已核加载）；本组未重载/改配置。窗口已释放。
+
+真实900102登录与auth/me精确GROUP_LEADER/group900001/ACTIVE；DB核在职、线2106098453477072898 ACTIVE leader900102、项目2106098805312069634 PENDING_START/creator900103、候选非projectmember、唯一active模型M3。仅一次POST approve-start200/code0。新产品2106100149578108930 IN_RD/productLineId专线/projectId专QA；项目TEAMING/CONCEPT，6 stages/69 actions。成员仍只有900103 MARKET_PM及900104 RD_PM，900102非成员。
+
+两项目级负例advance-stage、stage-acceptance均403/code30001「非项目成员，无权访问」，有效图真实存在。各请求前后projects/project_stages/products/project_members/exactC05全行hash一致c2ffe00cd10659912ff79448d29110e485b16967f25f4fea4dc1dbc2b179a3f3。范围明确排除独立自动C01及docs/tasks/notifications，不能把后台允许写入说成全库零变化。
+
+有效C05 id2106100150559576066，CONCEPT/RD_PM/LIGHT/NOT_STARTED。fields与transit?target=IN_PROGRESS各一次409/code40004「角色固定不可跨（市场PM/研发PM）」；hash同值零业务变化。IpdPermission.requireActionWriter角色检查先行，因此GROUP_LEADER负责人不能覆盖RD_PM角色的成员拒绝分支。本两项不是403，未宣称member负例通过；不得改变Person角色/权限迎合测试。要覆盖member分支需root设计真实同角色非成员QA候选，不擅扩夹具。不DONE/accept/审核/定档。
+
+任务实际回读：2106100152656728065 C01/EVENT/RUNNING/attempt0/triggeredByNULL/createBy0/aiDocIdNULL；C01和C05仍NOT_STARTED/confirmedByNULL，ai_documents无行（19:13:33Z）。这证明先前C01调度源码预期已真实发生，但不是生成成功。自动任务、产品、阶段、成员、审计及后续文档全部保留；没有SQL回退/清理。模型可能仍运行，root后续只读回读，不能重复approve或人工再派发。
+
+原分步HTTP/DB及安全证据：codex-g-qa-approve-and-member-negatives-20261002.json。初脚本期待C05四403而停止后，按同一既授权范围独立一次transit确认409；没有重复fields或advance/stageAcceptance请求。报告所有实际失败，不排除409造全绿。

@@ -1,0 +1,87 @@
+{
+  "head": "72b4c3f022412c93ee260f64af282377bab7d3ba",
+  "snapshot": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-g-member-head72-e8joo4vd",
+  "overlays": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/IpdPermission.java": "c725ba66d118e0c15d8a06ffe59f9f0b6a48da032d465dffbb3392888eec7c5a",
+    "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/IpdActionWriterMemberTest.java": "464487d9c71367492d9e0da0baf213ebcd5fcaf63ae8280c4a65cb6c13e08f6f"
+  },
+  "dependencyBoundary": "Offline Maven module test uses existing local m2 dependency artifacts; no production runtime proof; no network/resolution/parent target writes",
+  "tests": [
+    "IpdActionWriterMemberTest",
+    "IpdPermissionRegistryTest",
+    "IpdPermissionPasswordScopeTest",
+    "StageActionServiceTest"
+  ],
+  "localDependencyJars": {
+    "ruoyi-common-sensitive/3.1.0/ruoyi-common-sensitive-3.1.0.jar": "da22d2a8d84861528ae5df25d6efa08e7d35bf0b1f518c89fa58019f15513f1d",
+    "ruoyi-common-idempotent/3.1.0/ruoyi-common-idempotent-3.1.0.jar": "909e597c793ead477210606490b9999bbdd3434c321094066088c02f71db3a52",
+    "ruoyi-common-social/3.1.0/ruoyi-common-social-3.1.0.jar": "a7a727964da72cdea445ef9552980b63c82008cb0fb11b7ebe055f35ee33ae71",
+    "ruoyi-common-mybatis/3.1.0/ruoyi-common-mybatis-3.1.0.jar": "63c8f76dd50077b3898fe621fe06a83589495b0cd902a464095b5c6d412c9f9b",
+    "ruoyi-chat/3.1.0/ruoyi-chat-3.1.0.jar": "ac5c145d53a2aea1ff4893467e55533c0c958cc0a01cdc8608ff2618b08d088e",
+    "ruoyi-workflow/3.1.0/ruoyi-workflow-3.1.0.jar": "bd866321067a5f383d515110a7507a9f99f917734dbfc4ffbfabdcbfaa50ed2a",
+    "ruoyi-aiflow/3.1.0/ruoyi-aiflow-3.1.0.jar": "24b1156cbb0c42abf0b06626ba2551177d34e2998cf247c03f121b16e1d6e258",
+    "ruoyi-ipd/3.1.0/ruoyi-ipd-3.1.0.jar": "016c64366959a97b02be5983bcfb92a6c9398b63f75e255a7f343084a8b1f363",
+    "ruoyi-common-oss/3.1.0/ruoyi-common-oss-3.1.0.jar": "2443bd04bb72d21f4f79760e90788e6cbbd308570778d24496aedd5b3330584d",
+    "ruoyi-common-security/3.1.0/ruoyi-common-security-3.1.0.jar": "76ca2dfee4ea0a8900e53ff4f3144daf332ac73950772e458df43c8fef5a1951",
+    "ruoyi-generator/3.1.0/ruoyi-generator-3.1.0.jar": "fbdbb00b397da4b881602e41ec34eb0b83a397ebf465f233ed136d17c2dffa17",
+    "ruoyi-common-json/3.1.0/ruoyi-common-json-3.1.0.jar": "568671b23372de389b4a947247cfc32efb93a5943c21d710d57447cc1d80cef0",
+    "ruoyi-common-doc/3.1.0/ruoyi-common-doc-3.1.0.jar": "d0cdfa05e9ec221a04ae0c51a252e00103708cdbb32d58bb2587feb713f88a12",
+    "ruoyi-common-log/3.1.0/ruoyi-common-log-3.1.0.jar": "3e70fef3acd47de5b2d96342a1fd7703352e6c5d2e9b4138b2b469fab70314a4",
+    "ruoyi-common-mail/3.1.0/ruoyi-common-mail-3.1.0.jar": "7c1bcbfff6ee1cd1e146869254396732329bfb20fd69ca239b709ec4ed43e607",
+    "ruoyi-common-tenant/3.1.0/ruoyi-common-tenant-3.1.0.jar": "b43169530327422e45bbcce91c7ac8cc10cddcf32bc6bdafff0f8f07ace97abd",
+    "ruoyi-common-redis/3.1.0/ruoyi-common-redis-3.1.0.jar": "8449d75c10db2e5bfe006d370c74be8ff1ef3648ce94d51fb41ddc24f42e6509",
+    "ruoyi-common-web/3.1.0/ruoyi-common-web-3.1.0.jar": "8c7173f32f7aec4048ac76ad9f7d1bd720b6e78b16dae2fed596f5197558fe60",
+    "ruoyi-common-websocket/3.1.0/ruoyi-common-websocket-3.1.0.jar": "83353d0af414b908d5a74a40edfd5da2904c8ad6ad16968e292fa7031f805145",
+    "ruoyi-common-trace/3.1.0/ruoyi-common-trace-3.1.0.jar": "95c83e1aaf1468e4fc1b8fbc742c873d4317d8eab6bdf49b3b4735bd874e24f5",
+    "ruoyi-common-encrypt/3.1.0/ruoyi-common-encrypt-3.1.0.jar": "e3ca930c97ebed6f5308fb976b85d37218f0ad88625d51b0fc15dc7d8098b61f",
+    "ruoyi-common-satoken/3.1.0/ruoyi-common-satoken-3.1.0.jar": "4d6fbd18331054b32122aa3ea94898270c53f78976134673246b1d8158f3fe18",
+    "ruoyi-common-translation/3.1.0/ruoyi-common-translation-3.1.0.jar": "0de147ee1d2a7c3adbd160e0dc86882027a2c7110c23b9879a86974b6ad27808",
+    "ruoyi-common-excel/3.1.0/ruoyi-common-excel-3.1.0.jar": "92787f82910323e1152d47ba096388962e23a211fa2b7b388279918d0db53bf9",
+    "ruoyi-common-ratelimiter/3.1.0/ruoyi-common-ratelimiter-3.1.0.jar": "bc6bdbba7396596fb04c613d6b0f4326542701fea9db9ad0d4da92c0f040081c",
+    "ruoyi-common-sms/3.1.0/ruoyi-common-sms-3.1.0.jar": "c3207e4605489451931895d6d00f7fd7b2ff44058bc60f725a7cbc0216c03350",
+    "ruoyi-common-core/3.1.0/ruoyi-common-core-3.1.0.jar": "eeaa153ef5a8f492599621b3d27c6121b4b3791b129dfe85295cab49554b145f",
+    "ruoyi-system/3.1.0/ruoyi-system-3.1.0.jar": "65ab42cad59842beddcc72bc4b473249cde12f9fab0738b190adb1879f19a194",
+    "ruoyi-admin/3.1.0/ruoyi-admin-3.1.0.jar": "87945e8fdc8d7632bd5a59f745c20a5918ebc2b65ee21d0f0ad0fb4cbf4b6bc8",
+    "ruoyi-common-sse/3.1.0/ruoyi-common-sse-3.1.0.jar": "de4ec3e72f557d8fe2c867c8e9d274e999b2f3ad0d80ae1cc8306d9da6ee6120",
+    "ruoyi-common-chat/3.1.0/ruoyi-common-chat-3.1.0.jar": "14eacc5b8032bd6a18b664bbed87ab9af2a937cc1d1ebd74de0ff73bcfde164c"
+  },
+  "testResults": [
+    {
+      "name": "org.ruoyi.ipd.security.IpdPermissionPasswordScopeTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.service.StageActionServiceTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.security.IpdActionWriterMemberTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "org.ruoyi.ipd.security.IpdPermissionRegistryTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "exactRoleProbeCompileExit": 0,
+  "exactRoleProbeExit": 0,
+  "exactRoleSafeResults": [
+    "WRONG_ROLE_HTTP=409;CODE=ROLE_LOCKED;PROJECT_MEMBER_LOOKUP=ZERO"
+  ],
+  "localDependenciesUnchanged": true,
+  "mavenExit": 0,
+  "status": "ISOLATED_IMPLEMENTATION_VERIFIED",
+  "log": "/tmp/ipd-g-member-head72-isolated-tests-20261002.log"
+}

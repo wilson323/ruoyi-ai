@@ -1,0 +1,63 @@
+{
+  "status": "VERIFIED_TEMP_IMPLEMENTATION_ONLY_PROJECT_HITL_BLOCKED",
+  "sdk": "2.0.3",
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/g-official-hitl-yqhf66_o",
+  "sourcePath": "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentOfficialToolGovernance.java",
+  "beforeSHA": "c17b29851fcf910f78bbbc523ed47f9f5d1a1a533ee546d87599ebcf89451e35",
+  "afterSHA": "5fbcd2c5a81ed8fccba0a40a6ceedc50432b72d16776ea16f71f25d454927c1f",
+  "patchSHA": "9eb7a56b1d2d271229e25b156329890794f40c171ba12d0b855c705509537ccc",
+  "files": {
+    "src/ProjectAgentOfficialToolGovernance.java": "5fbcd2c5a81ed8fccba0a40a6ceedc50432b72d16776ea16f71f25d454927c1f",
+    "src/GHitlProbe.java": "2947f03dfc49d3ac2310d0e36ebf6a51a69f8d98ee3edecf4338c9e1d3c97d27",
+    "src/GConfirmReceiptProbe.java": "a5f62fd473932c3a49873a3db7457aac3ae62944107ea007cf8e42fd9da65c6e",
+    "compile-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "probe-confirm-final.log": "e05bde117cfc5e3ac9e7b2f157f4c9f4fb2c130b8ca4c7a1735c1f932711daf1",
+    "receipt-controls-final.log": "1c11ee8a574e29c3e6543f9a4bae81e8660645e4ed91bb0e9a614fea09190518",
+    "governance-regression-final.log": "26cc463c65feb83c54033900ea265c91821ef569742bd8de053c0da626f960a1",
+    "src/GChildErrorSourceProbe.java": "736161b51f24a68b5a9c260cadfa333376320f849a80b3e4e917eded0ff9a780",
+    "child-error-result-state.log": "bdaa43b90f1d6fd81df9c1d2856b763d2fab2e1eb1271196defb39fa7b9516d2"
+  },
+  "execution": {
+    "compileExit": 0,
+    "realHarnessCases": 6,
+    "realHarnessExit": 0,
+    "receiptControls": 6,
+    "receiptControlsExit": 0,
+    "governanceRegressionExit": 0,
+    "junitCount": null
+  },
+  "realHarness": {
+    "nativeConfirmEffect": 1,
+    "nativeRejectEffect": 0,
+    "wrappedConfirmEffect": 1,
+    "wrappedRejectEffect": 0,
+    "memberRevokedEffect": 0,
+    "differentSessionEffect": 0,
+    "differentSessionUserConfirmEvent": false
+  },
+  "receiptControls": [
+    "exact receipt effect1",
+    "wrong session effect0",
+    "ALLOWED without receipt effect0",
+    "already consumed receipt effect0",
+    "tampered input effect0",
+    "original DENY without receipt effect0"
+  ],
+  "limitations": [
+    "Authoritative AgentState/RuntimeContext must be created by trusted production session/owner adapter; no new public confirm endpoint implemented.",
+    "Cross-session SDK ignores receipt rather than emitting a project HTTP rejection; project API ownership validation remains missing.",
+    "Current main sink callback is lease ownership; mocked B typed membership adapter proves injected guard behavior only, not production wiring.",
+    "No durable project WAITING_APPROVAL for native ASK or same original run/seq resume; existing normal terminal cleanup deletes checkpoint.",
+    "Existing bind remove/register preset metadata issue is B/root separate repair; unchanged by this patch.",
+    "No new permission-mode override or automatic approval; SDK-confirmed ALLOWED state deliberately uses SDK semantics, including no second permission engine check.",
+    "Child native exception still returns parent TOOL_RESULT SUCCESS; C owns safe typed failure adapter."
+  ],
+  "sideEffects": {
+    "network": false,
+    "businessDatabaseWrite": false,
+    "mainSourceWrite": false,
+    "mainTargetWrite": false,
+    "indexWrite": false,
+    "reload": false
+  }
+}

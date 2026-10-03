@@ -1,0 +1,17 @@
+# 动作写成员守卫最小切片
+
+六行缺口（编辑前）：
+1. 仓库ruoyi-ai；只写security/IpdPermission.java及精确权限测试。
+2. 真实入口StageActionController.fields/transit均requireActionWriter，另deliverables/ai-execute同入口共享。
+3. requireActionWriter现在只核内部会话/动作存在/ownerRole，服务assertProjectWritable仅核存在和暂停归档。
+4. 实表stage_actions.project_id→projects.id，project_members.project_id/person_id/exit_date；原IdorGuard负责现成员/租户，使用现mapper。
+5. 目标保留SUPER_ADMIN与ownerRole先行语义，仅同role普通actor额外复用现project member guard；不改服务/控制器/DDL/角色。
+6. A级源/真实QA图，当前leader409不能证明同role成员拒绝；测试和当前HTTP加载待root验证。
+
+before IpDPermission SHA7b382fe8c912769f9ca2558210f6d919be8672b08c4413a8b66888fb6bb09415。
+
+补丁freeze：仅IpdPermission+新精确IpdActionWriterMemberTest两源码路径。保留@RequiredArgsConstructor原session/authService两参构造，生产@Autowired必需setter注入现ProjectMapper/ProjectMemberMapper；无需改所有既有构造调用。角色错仍409且不查项目，超管原return；普通角色匹配后依赖未注入403failclosed，再调用静态原IdorGuard.requireProjectMemberOrSuperAdmin。无新认证口/配置/DDL，无StageActionService/Controller修改。
+
+9测试：同组同角色非member拒绝；current member exactproject/person/exit_dateISNULL查询通过；BOTH也核member；错role保留顺序且零projectlookup；超管原例外；依赖缺失failclosed；其他project不能借成员且missingproject不查members；missingaction拒绝；真实StageActionService暂停项目guard仍拒绝且零update。所有测试待root定向Maven；本组未构建main target，不声称编译通过。
+
+afterSHA permission c725ba66d118e0c15d8a06ffe59f9f0b6a48da032d465dffbb3392888eec7c5a；test464487d9c71367492d9e0da0baf213ebcd5fcaf63ae8280c4a65cb6c13e08f6f。git diff --check通过。当前已加载JAR尚非此补丁；独立源码复核/定向测试/新包真实同role非member HTTP仍需root闭包。

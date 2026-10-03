@@ -1,0 +1,60 @@
+{
+  "status": "PARTIAL",
+  "owner": "本 AGUI 聊天独自接管",
+  "tests": {
+    "found": 113,
+    "started": 113,
+    "successful": 113,
+    "failed": 0,
+    "skipped": 0,
+    "aborted": 0
+  },
+  "engine": "JUnit Platform current reactor",
+  "log": "/tmp/ipd-single-owner-preflight-tests-20261002/recovery-wired-tests.log",
+  "logSha256": "991e6c8721e20c0581849e745484d2260f908a18b9fbb52d8652e1a9d2abe237",
+  "compileLog": "/tmp/ipd-single-owner-recovery-wired-test-compile-20261002.log",
+  "compileSeconds": 39.085,
+  "pending": [
+    "递归恢复与再次 ASK",
+    "实际 DB/跨进程/新运行包断线恢复",
+    "资源会话隔离与真实归档",
+    "产物及完整 Service 接线"
+  ],
+  "latest": {
+    "tests": {
+      "found": 123,
+      "started": 123,
+      "successful": 123,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0
+    },
+    "compileLog": "/tmp/ipd-single-owner-crash-pipeline-test-compile-20261002.log",
+    "compileSeconds": 50.128,
+    "log": "/tmp/ipd-single-owner-preflight-tests-20261002/crash-pipeline-tests.log",
+    "logSha256": "75815d4a9512a1d3eb367290426b9efc071dbbe7c1b7de2ff41b6695ddd8a6e2",
+    "scope": "15 current reactor JUnit suites. Includes original Service/Executor/Recovery with memory store and fake SDK; not real DB or cross-JVM acceptance."
+  },
+  "latestChildRecoveryVerification": {
+    "status": "PARTIAL",
+    "compileLog": "/tmp/ipd-single-owner-sibling-selection-compile-20261002.log",
+    "compileSeconds": 36.376,
+    "testsLog": "/tmp/ipd-single-owner-preflight-tests-20261002/final-child-repeat-journal-tests.log",
+    "tests": {
+      "found": 131,
+      "successful": 131,
+      "failed": 0,
+      "skipped": 0,
+      "aborted": 0
+    },
+    "twoApprovalsSdkLog": "/tmp/ipd-single-owner-repeat-pause-20261002/two-approvals-tests.log",
+    "scope": "18 reactor JUnit suites and actual SDK 2.0.3 two approvals fixture; not live DB/cross-JVM/browser acceptance",
+    "pending": [
+      "recursive native parents",
+      "multiple sibling cold completion replay acceptance",
+      "editedArgs exact official semantics",
+      "full official resource/Service/artifact integration",
+      "candidate/source/runtime parity and real Person disconnect journey"
+    ]
+  }
+}

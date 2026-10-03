@@ -1,0 +1,73 @@
+{
+  "before": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "c8428b39290b8c25974b4f97f84d8a38b655f000e51ba72881f1ab32330448e9",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "a9b553bd2561292723500b3d58fe1de833ab68bf8b93838ab92458b38bd09745"
+  },
+  "status": "VERIFIED_ISOLATED_GATE_TESTS_RUNTIME_PENDING",
+  "after": {
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGate.java": "496644da74dfc0c9e9eb05d478f2308442b5b0412dc6754b9fe8cdad6693fe98",
+    "/Users/mac/Documents/ruoyi-ai/ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/service/ProjectAgentCompletionGateTest.java": "08c7a718cee6aa84d9b0b8e22e4113573aea3373e78f872c75ef5dde4727ac80"
+  },
+  "temp": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-c02-gate-bua0as_v",
+  "tests": 21,
+  "passed": 21,
+  "failed": 0,
+  "bodyChars": 5441,
+  "bodySha256": "ede24b5b6cfc6449fb75834ace486dd0127e2157357c4f1fdb3ec089bcc701a8",
+  "fullBodyResults": {
+    "C02_noRetrieval": "SKILL_CONTRACT_MISMATCH",
+    "C01_noRetrieval": null,
+    "C02_originalSources": "UNSUPPORTED_MEASUREMENT",
+    "C01_originalSources": "UNSUPPORTED_MEASUREMENT"
+  },
+  "logs": {
+    "C02Launcher.log": "9921b4035c0382562c91af6b4692bb224e6a4bfd1496ed1f27b9cd812869828a",
+    "FullBodyProbe.log": "5c31d76ebb7b7448d01c7033623083a7f8e743025817934553471415e971c6ae",
+    "fullbody-final.log": "d393477c4410c4fea355609fe53d11ab80d953e12c341324b3fa01651ff0e3c3",
+    "compile-final.log": "f74a1a9b9a15510eb2ca1ee38b287d9cc386565894df516ec1f13f32ecc19f96"
+  },
+  "reconstructionStatus": "RECONSTRUCTION_BASIS_INCOMPLETE",
+  "reconstructionLimitation": "persisted SOURCE removes full citationText after production noteSource; numeric first rejection in reconstructed probe cannot establish production inconsistency",
+  "rootHandleReview": "constructor uses persisted actionCode; current new negative fixture lacks actual G06 numbered-row layout; parent notified",
+  "cPurposePeerReview": {
+    "status": "REJECT_CLOSURE_SCOPE_GAP",
+    "candidateGateSha": "3fe2c138a9c1d6f91df81b8675a530f4d2a2e5ecb7aeca66044fec89dd6af998",
+    "probeLog": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-purpose-peer-whb2d82s/probe-final.log",
+    "probeSha": "25ebcfd04e8324e0977ba2115d874dfc2a2a1f896e379bf79107df9f798f1a4b",
+    "observedCases": 10,
+    "newConfirmedGaps": 5
+  },
+  "cPurposeV2PeerReview": {
+    "status": "REJECT_CLOSURE_SCOPE_GAP",
+    "gateSha": "cdbbf3e8b479e1937c55b599d2aa36cb6379e43aae5114bc0f2651b52323700f",
+    "observedCases": 17,
+    "priorFiveFixed": true,
+    "additionalFalseRejects": 2,
+    "log": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-purpose-v2-peer-8y4c6wdk/probe-final.log",
+    "logSha": "62fe777e0ff5393ec25ad4cfba781bfbe892850a698c9c12f4b0deb3da24a066",
+    "formatOnlyRefreezeSha": "e381caeeda36d969d4d4071ea4ed22beff1c5ea92867b2bd3000246cea51ee2d",
+    "formatRefreezeLimit": "C reports formatting only; original semantic probe hash preserved"
+  },
+  "cPurposeV3PeerReview": {
+    "status": "ACCEPT_SCOPED_CANDIDATE",
+    "gateSha": "f0d8ec7c88fa45a4903df18655b066dc64661f0cac0a62a9afa4d41799280fcf",
+    "testSha": "d1e128b001c8f815f788c1e084fd15965c7164f0fb8b50c0d451c9fca08c887e",
+    "observedCases": 17,
+    "expectedMatched": 17,
+    "completeBodyNoSources": {
+      "C02": "SKILL_CONTRACT_MISMATCH",
+      "C01": null
+    },
+    "logs": {
+      "probe.log": {
+        "path": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-purpose-v3-peer-qaro0_4o/probe.log",
+        "sha": "47043e42cb61933bbc640052d145cdf87ca931f39579ed3b47203c876aac23b7"
+      },
+      "fullbody.log": {
+        "path": "/var/folders/8l/6tnv8ssd2vs0h8463rnv66b00000gn/T/ipd-b-purpose-v3-peer-qaro0_4o/fullbody.log",
+        "sha": "d393477c4410c4fea355609fe53d11ab80d953e12c341324b3fa01651ff0e3c3"
+      }
+    },
+    "limitation": "tested grammar only; no persisted-SOURCE full-basis reconstruction or runtime acceptance"
+  }
+}

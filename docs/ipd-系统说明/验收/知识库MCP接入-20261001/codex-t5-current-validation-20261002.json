@@ -1,0 +1,74 @@
+{
+  "atUtc": "2026-10-02T20:05:52.895428+00:00",
+  "status": "PARTIAL",
+  "loadedPid": 43168,
+  "loadedJarSha256": "8e80bb8198f30e681130d937325a8ac2bb5f8988c0bf5cdcd6be1b1033ce0354",
+  "loadedLatestMetadataAndMembership": true,
+  "frontendRecovery": {
+    "tests": 49,
+    "failures": 0,
+    "typeExit": 0,
+    "realBrowserEvidence": "codex-f-restart-browser-20261002.json",
+    "limitedTo": "white-language failure, focus-only restart, refreshed persisted history; no model send"
+  },
+  "backendTargetedFresh": {
+    "tests": 81,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "log": "/tmp/ipd-codex-fresh-metadata-permission-targeted-20261002.log"
+  },
+  "initialTargetedPreserved": {
+    "tests": 51,
+    "failures": 3,
+    "log": "/tmp/ipd-codex-metadata-prompt-password-targeted-20261002.log",
+    "diagnosis": "Maven skipped compiling; executed Prompt/Gate output differed from current source; fresh compilation passed"
+  },
+  "backendFull": {
+    "tests": 3752,
+    "passed": 3726,
+    "failures": 0,
+    "errors": 0,
+    "skips": 26,
+    "log": "/tmp/ipd-codex-metadata-permission-full-final-20261002.log",
+    "boundary": "worktree current at 8e; latest un-loaded Gate changes only targeted so far"
+  },
+  "quality": "Run2106107313315135490 SUCCEEDED but two independent REJECT_APPLY for optional purpose treated as blocking; DRAFT847d582f33fa4a4fa04528feb266dd0e retained; v3GENERATED unchanged",
+  "isolatedCandidates": {
+    "metadataGate": 19,
+    "permission": 35,
+    "loaderFakeControls": 10
+  },
+  "newRecoveryFinding": "MailSend previously swallowed transport failure as SUCCESS; six-file unknown-effect fix tested, loaded, committed and remote verified; atomic external fencing remains unproven",
+  "openLimits": [
+    "QA04 missing dedicated credentials/schema; no DDL",
+    "MINIMAX raw-key integration contract 8 errors preserved",
+    "real same-role nonmember account900105 missing safe credential evidence",
+    "owner approval and full lifecycle acceptance not performed",
+    "atomic external fencing not proven"
+  ],
+  "recovery": {
+    "tests": 152,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "commit": "2bab65e768c6f328dcf1a047a7ada0734762b970",
+    "remoteVerified": true,
+    "normalHooks": 8,
+    "loaded": true,
+    "noRealExternalMailSent": true
+  },
+  "newSourceNotLoaded": {
+    "c02DefaultScopeAndHandleTargeted": 41,
+    "readableSourceIdentity": "G exact bounded identity patch accepted after B13 independent inputs, applied main; module/runtime validation pending",
+    "thinFixedReason": {
+      "commit": "f456f79aaf31d9372558f2cff73875ab3dcbf6c3",
+      "isolatedTests": 13,
+      "normalHooks": 8,
+      "remoteVerified": true,
+      "twoMixedIndexEntriesPreserved": true,
+      "loadedInEarlierWorktreePackage": true
+    },
+    "c02Purpose": "C v1 independent rejection for three false rejections/two escapes; v2 scoped repair22 pureJUnit passed, B peer review pending; not loaded"
+  }
+}

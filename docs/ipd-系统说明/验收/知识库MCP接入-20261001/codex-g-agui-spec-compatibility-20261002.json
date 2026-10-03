@@ -1,0 +1,37 @@
+{
+  "status": "SOURCE_COMPILE_AND_COMPATIBILITY_VERIFIED_WITH_SHALLOW_INPUT_LIMIT",
+  "sourceSHA": {
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/kernel/ProjectAgentRunSpec.java": "02d47ca8c0e24d053ffa31b081926bcf86d14ac7e72563ba792d62d1dd725248",
+    "ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/agent/dto/AgentRunCreateReq.java": "c7dc339ebbc4ffa5d31615ec19fdec40aff965f9725b9b90d8fa434f0168e088"
+  },
+  "dependency": "io.agentscope:agentscope-extensions-agui:2.0.3 actual cached jar (not present in old10130 runtime libs)",
+  "compileExit": 0,
+  "probeExit": 0,
+  "assertionsPassed": 9,
+  "assertions": [
+    "RunSpec old13 defaults AGUI/resume null",
+    "RunSpec old14 retains typed AGUI/resume null",
+    "resume source list mutation does not change frozen list",
+    "resume frozen list rejects mutation",
+    "withCatalog/withProjectFacts/withAguiInput preserve resume and IDs",
+    "RunSpec tostring excludes synthetic modelkey/userbody/AGUIstate/resumebody",
+    "DTO old13 preserves previousRunId and defaults AGUI null",
+    "DTO typed14 retains official input",
+    "DTO cannot assign serverResumeMessages record field"
+  ],
+  "observations": {
+    "dtoTostringLeaksSyntheticAguiState": false,
+    "aguiSourceMessagesListMutationChangesFrozenSpec": true,
+    "scope": "Official RunAgentInput copies state/forwardedprops maps shallowly but wraps list sources with unmodifiable views; RunSpec references input. This is memory alias evidence, not HTTP attack."
+  },
+  "limits": [
+    "No ABI issue compiling old constructor source calls; no claim of binary compatibility for all unknown precompiled users.",
+    "serverResumeMessages list defensive copy is shallow; Msg internals not deep-freeze verified.",
+    "No model/network/DB/main/index/target writes; no unrelated chat files edited."
+  ],
+  "evidenceSHA": {
+    "src/GRunSpecCompatibilityProbe.java": "e69215ac8431881f057b05b87594953fa153ab1d6837f5bf7186b142278d7b93",
+    "spec-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "spec-compatibility-final.log": "3dfedc612e319a9e7df0b459c8f5b98b2820baa9a731a4ca8e31c7043826578b"
+  }
+}
