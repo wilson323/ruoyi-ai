@@ -14786,3 +14786,68 @@ owner 裁决（本轮对话）三项全部闭环，4 笔提交：`2f0840c7` / `7
    勿重复处理。
 
 - marker: infra-change-notice-20261003
+
+## 2026-10-03 16:4x 全局漂移审计的时效复核（引用该报告前必读）
+
+`docs/ipd-系统说明/全局漂移审计-20261003.md`（19 个 P0）**是快照，不是现状**。
+其证据基线为 `366d1960`，复核时 HEAD 已到 `e60d598d`，**甩开 45 个提交**。逐条用
+当前字节重验（两条独立复核 + 主协调者抽查），结果如下——**引用任何一条前请重新复核**。
+
+**已修复（6 条）**：P0-01 生产编排端口断裂（`b1fd9af9`，Dockerfile/compose 三处已对齐 16039）、
+P0-03 dev 明文 SnailJob 令牌（`bf16d4f1`，改 `${SNAIL_JOB_TOKEN:}`）、
+P0-06 审计链验不出删尾部（`b1fd9af9`，新增锚点校验 `ANCHOR_TRUNCATED`；**未跑真库删尾实测**）、
+P0-11 r25 工作流三层失效（`b1fd9af9` 重写，但见下方「新切口」）、
+P0-12 三个门禁扫不存在的 `microservices/`（现值均为 `$REPO/ruoyi-modules`）、
+P0-16 `|| echo 0` 双零恒为 0（随脚本迁前端仓消解，前端仓已改 `gate_grep`）。
+
+**部分修复（4 条）**：P0-02（新增 4 项必备守门，但 `start.sh` 的 `exec env -i` 丢凭证那半未修）、
+P0-04（Java 种子已改 IPD 内容，残留 **G2-6 两源打架**：SQL `is_veto='1'` vs Java `isVeto="N"`）、
+P0-08（logout/refresh 已补审计，`DemandController`/`PermanentDeleteService`/`StageActionService` 部分写路径仍无）、
+P0-17（吞码已修，12 条空壳 `CREATE TABLE` 仍在喂 doc↔db 哨兵）。
+
+**仍存在（9 条）**：P0-05 Java 种子绕过否决项发布门禁、P0-07 无自动验链调度（21 个 `@Scheduled` 无一调验链）、
+P0-09 事务毒化（28 处裸 `publish(` 未迁 `publishAfterCommit`）、P0-10 `IpdAuditAspect` 两条静默丢审计、
+P0-13 权限双轨零交集校验、P0-14 三/四套 IPD 角色定义、P0-15 权限码文档↔码册差集（码册 91 条、docs-only 63 条）、
+P0-18 AgentScope 能力口径四方分裂、P0-19 能力开关零配置面。
+
+**新切口（P0-11 修复的副作用）**：该工作流现在要求 `IPD_FRONTEND_REPOSITORY` /
+`IPD_SPEC_REPOSITORY` + 两个 40 位 commit，未配即 `exit 1` —— 11 个检查由「静默不触发」
+变成「显式变红」，**仍不会执行**。且其文件头第 2 行明写设计规则「非零结果、缺输入、
+未执行均阻断；不使用可选secret降低门禁」——所以「缺配置时跳过」与既有设计直接冲突，
+**不建议按此改**（主协调者 2026-10-03 16:2x 已撤回该建议）。依赖分析：11 个检查中
+7 个真读跨仓检出的 `FRONTEND_ROOT`/`DOCS_ROOT`，只有 4 个不依赖跨仓
+（死代码扫描、租户白名单对账、实体完整性、shell 变量吞字节），而这 4 个里
+**2 个本地实跑就是红的**（见下条）。
+
+**两个门禁的判据误报（不是代码缺口）**：
+- `check-entity-complete.sh` 报 61 处「Service 无 Controller」，**真缺口 0**。成因四类：
+  7 处是脚本用 `sed 's/Impl$//'` 凭空造名（`AuditLogServiceImpl` → `AuditLogService`，
+  而真接口是 `IAuditLogService`）；**36 处是拿接口名去 Controller 里搜，而 Controller
+  注入的是实现类名**；13 处有合法非 Controller 消费者；5 处无生产消费者但有单测。
+  它的 F2「Mapper 无 Service」7 处亦全为误报（消费方是 `MybatisXxxStore`/`Query` 形态，
+  脚本只扫 `*Service*.java`）。**但 F1 里藏着一个真信号**：`RequirementPool`
+  （`ipd/domain/RequirementPool.java`，`@TableName("requirement_pools")`）主代码零引用、
+  无 Mapper、无 DDL，是真孤儿。
+- `check-tenant-excludes-apply.sh` 报「重叠 74」，**报的正是设计预期**（整张 IPD 库排除
+  租户过滤是本仓既定设计，配置文件逐表登记了理由）。**真信号在反方向**：3 个实体未登记
+  （`p0_escalation_chain`、`permanent_delete_audit`、`my_initiated_task_view`）。经复核
+  **当前不是活跃缺陷而是理论风险**：租户拦截器在租户号为空时整表放行、不加条件，而这两张表
+  只被 `/api/v1/**` 与 `@Scheduled` 访问（IPD 用独立登录类型，基线 `StpUtil` 未登录 →
+  租户号为空）。发作条件是「某条新路径在租户号非空且 ≠000000 的线程里碰这两张表」。
+  另有解析缺陷：`awk` 的 `in_tenant` 标志置位后永不复位，把 `demo.excludes` 的 12 条 URL
+  也并了进来（报告写 114，真值 102）。
+  修法建议是**修判据**（不是加白名单豁免——那是豁免掉全部输出、留下零真信号），待 owner 拍板。
+
+**另一个真信号：P0 升级链只做了一半。** `P0EscalationService.recordP0Unresolved`
+（往链表写记录）全仓 11 处命中中 6 处全在测试里、**生产调用方为 0**；而
+`P0EscalationScanScheduler` 的注释自述「2026-09-25 只接了扫描推进那半边」。
+后果是**静默不工作**：链表永远为空 → 每天 09:35 扫空表 → 规格要求「同一 P0 连续两次
+未处置升级到双方组长」永不触发、组长永不收到通知、**且不报任何错**，页面永远空白。
+更根本的是它依赖的「P0 事件」上游在代码里不存在，所以这是功能未建完，不是接线遗漏。
+
+**引用纪律**：该报告的「所有 P0 均已主协调者独立验证」保证的是**验证当时**成立。
+同批被证伪的还有两处非 P0 结论：§六-5 的两个新类已入库（登记命中 1 处 / 2 处，对照组
+`ProjectAgentRunOwnership` 28 处证明检索口径可用）；「54 个动作没有实现逻辑」已在报告
+附录里被自身更正为「统一走通用动作引擎」。
+
+- marker: audit-snapshot-recheck-20261003
