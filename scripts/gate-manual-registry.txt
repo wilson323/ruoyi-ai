@@ -19,12 +19,11 @@
 # 新增脚本而未接线时，元门禁会 FAIL —— 这正是本清单存在的意义。
 #
 # ─────────────────────────── ACTIVE ───────────────────────────
-# 2026-10-03 修正（元门禁接线判定重写后现形）：下方旧注释声称
-#   check-a11y-basics.sh / check-memory-leak-pattern.sh「已移出本仓、不再登记」
-#   与事实不符——本仓 scripts/ 下两个文件仍在，前端仓的副本
-#   ruoyi-ipd-web/{scripts/*.sh, .github/workflows/static-gates.yml} 至今
-#   untracked 未提交。迁移只完成一半。改登记为 SUSPECT 挂住，
-#   前端副本提交落地后再删本仓副本并同步 CLAUDE.md SOP-2/SOP-3。
+# 2026-10-03 当日二段闭环：check-a11y-basics.sh / check-memory-leak-pattern.sh
+#   迁移已完成——前端副本随 ruoyi-ipd-web 提交 e35fe28（分支
+#   teardown/incentive-removal）入库并接前端 CI（static-gates.yml，
+#   含 FAIL_SEED 自证）；本仓副本与下方两条 SUSPECT 登记同笔删除，
+#   CLAUDE.md SOP-2/SOP-3 已同步改为 3 门禁。此两门禁的运行位置是前端仓。
 check-agentscope-abstract-baseline.sh	ACTIVE	AgentScope 抽象基线核查，自证标记 2 处。建议接线
 check-assertion-line-drift.sh	ACTIVE	断言与代码漂移，自证标记 3 处。建议接线
 check-async-configurer-duplication.sh	ACTIVE	Spring 异步配置器重复注册，真实缺陷类
@@ -87,5 +86,3 @@ check-closure-rate.sh	SUSPECT	损坏：第 46/47 行 CLOSED/TOTAL 用 `|| echo 0
 check-building-blocks-coverage.sh	SUSPECT	损坏：第 80/226 行 `grep -c . || true` 双零原型，读失败被当 0 个 middleware。修好前不应进 CI
 check-mirror-vs-board.py	ACTIVE	人工对账工具（看板镜像 vs 真实看板）；check-commit-truthfulness.sh 整改提示引用其人工流程；无自动化调用方，属刻意人工执行
 check-surefire-fake-green.sh	ACTIVE	已被 check-test-selection-fake-green.sh 取代（CI 接的是后者）；保留作历史判据参考，见 ipd-test-selection-gate.yml:16 注释「保留该文件不动」；仅人工调用
-check-a11y-basics.sh	SUSPECT	迁移前端仓未闭环：前端副本 untracked 未提交，本仓副本保留至前端落地后删除；期间 CLAUDE.md SOP-2 仍指向本仓副本
-check-memory-leak-pattern.sh	SUSPECT	迁移前端仓未闭环：前端副本 untracked 未提交，本仓副本保留至前端落地后删除；期间 CLAUDE.md SOP-2 仍指向本仓副本

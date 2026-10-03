@@ -316,7 +316,7 @@ Single-context 布局（仓库根）。当前未创建 `CONTEXT.md`（按 mattpo
 2. **`docs/ipd-系统说明/BCP-Registry.md §六` + `§十六`** —— 飞轮闭环度量（13/13 = 100%）+ 5 钻撞根因覆盖率（39/80 = 48.75%）+ R141 SOP 复盘
 3. **`docs/ipd-系统说明/R141-最佳实践系统性梳理+完整充分应用到本项目开发体系-20260920.md`** —— 治理报告主体（5 阶段 + 三源对账实证段 + 撞车 0 + 撞号预防）
 
-### SOP-2 提交前必跑（5 门禁脚本）
+### SOP-2 提交前必跑（3 门禁脚本）
 
 ```bash
 cd /Users/mac/Documents/ruoyi-ai
@@ -329,17 +329,16 @@ bash scripts/check-naming-convention.sh
 
 # 3. 注释与代码一致（BP-002）
 bash scripts/check-doc-code-sync.sh
-
-# 4. 内存泄漏模式（BP-008）
-bash scripts/check-memory-leak-pattern.sh
-
-# 5. 可访问性 a11y（BP-009）
-bash scripts/check-a11y-basics.sh
 ```
+
+# BP-008 / BP-009（内存泄漏模式 / a11y 基础）已于 2026-10-03 迁至前端仓
+# ruoyi-ipd-web（scripts/ 两脚本 + lib/audit-gate-input.sh + static-gates.yml，
+# 提交 e35fe28，分支 teardown/incentive-removal），本仓副本已删。
+# 这两项改在前端仓跑：cd /Users/mac/Documents/ruoyi-ipd-web && bash scripts/check-memory-leak-pattern.sh
 
 任何 1 项非零退出 = FAIL；修复后重试。**跳出门禁 = 撞车 0 让路边界严守破例**。
 
-### SOP-3 自证能红 + FAIL_SEED 双向触发（5 脚本标配）
+### SOP-3 自证能红 + FAIL_SEED 双向触发（3 脚本标配）
 
 提交前除正常态 PASS 外，必跑 FAIL_SEED 注入验证（避开单绿恐惧）：
 
@@ -349,11 +348,10 @@ cd /Users/mac/Documents/ruoyi-ai
 BP_FAIL_SEED=1 bash scripts/check-best-practices-coverage.sh     # EXIT=1
 NAMING_FAIL_SEED=1 bash scripts/check-naming-convention.sh        # EXIT=1
 DOCSYNC_FAIL_SEED=1 bash scripts/check-doc-code-sync.sh          # EXIT=1
-LEAK_FAIL_SEED=1 bash scripts/check-memory-leak-pattern.sh       # EXIT=1
-A11Y_FAIL_SEED=1 bash scripts/check-a11y-basics.sh               # EXIT=1
 ```
 
-5/5 EXIT=1 = FAIL_SEED 双向触发 PASS（单绿恐惧 = 误报；双绿才算真绿）。
+3/3 EXIT=1 = FAIL_SEED 双向触发 PASS（单绿恐惧 = 误报；双绿才算真绿）。
+# BP-008/BP-009 的 FAIL_SEED（LEAK_/A11Y_）随脚本迁前端仓，在前端仓验证。
 
 ### SOP-4 撞号预防映射表严守（主协调 push 前必跑）
 
