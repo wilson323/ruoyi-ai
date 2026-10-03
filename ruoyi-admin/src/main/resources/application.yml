@@ -33,6 +33,18 @@ websocket:
   # prod 走父基线或显式收敛到具体 origin（hook 阻断由用户手动合并）。
   allowedOrigins: ''
 
+--- # 跨域（CORS）
+cors:
+  # 允许跨域的来源清单，逗号分隔；留空 = 不放开任何跨域来源（仅同源可访问）。
+  # 生产是同源部署（前端由 nginx 反代 /api，见根 docker-compose.yml 的 frontend 服务），
+  # 不需要放开；确需跨域时用环境变量显式列举，例如：
+  #   CORS_ALLOWED_ORIGINS=https://ipd.example.com,https://ipd-admin.example.com
+  # 不允许写 '*'：通配 + 允许凭证会让任意第三方站点在受害者浏览器里读取本系统全部接口响应。
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  # 是否允许跨域请求携带浏览器凭证（Cookie / 客户端证书）；仅在 allowed-origins 非空时有意义。
+  # 鉴权走 Authorization: Bearer 请求头，不读 Cookie（common-satoken.yml: is-read-cookie=false），故默认关闭。
+  allow-credentials: ${CORS_ALLOW_CREDENTIALS:false}
+
 --- # 小程序对话 WebSocket 兜底默认模型（前端未传 model 且无智能体绑定时使用）
 chat:
   default-model: deepseek-v4-flash
@@ -312,6 +324,13 @@ tenant:
     - contributions
     # R9 补登：coefficient_change_requests / cms_content 为新 DDL 表，无多租户语义
     # （person_roles 已于 2026-09-06 owner 裁决不建表，2026-09-09 清理残留登记）
+    # 【2026-10-03 实测更正】原文「cms_content 为新 DDL 表」不成立：现行树全库无该表 DDL
+    # （schema-baseline-20261003.sql 166 张表里没有；docs/script/sql/ 全部脚本 grep 无 CREATE TABLE），
+    # 也无 Java 实体/Mapper（基线期的 CmsContent 实体已随模块拆除删除，只剩 wiki 快照留痕：
+    # docs/wiki/raw/system-source/entity-cms-content.md 的 @TableName("cms_content")）。
+    # 但保留这条登记是**既有 owner 裁决**、不是待清项：R189-D（2026-09-23）「冗余登记不删
+    # （重复登记无副作用）」；R226 A3（2026-09-26）「原『从 excludes 移除』分支作废、yml 零变更」。
+    # 本次只更正描述，列表不动。
     - coefficient_change_requests
     - cms_content
     - negative_feedbacks
@@ -399,6 +418,12 @@ tenant:
     # R220 测试波次收口（2026-09-26）：WB-17-1 草案缺表 DDL（20260925-wb171-draft-missing-tables.sql）
     # 自带「按仓内规约补登 tenant.excludes」TODO——3 张表含 tenant_id 默认 000000 但单企业语义，
     # 超前登记先例同 person_roles（表未 apply 不报错，apply 后即受保护）
+    # 【2026-10-03 实测复核】这 3 张表尚未建表：schema-baseline-20261003.sql（166 张表）里没有，
+    # docs/script/sql/ 下唯一出处正是 20260925-wb171-draft-missing-tables.sql，该脚本文首自标
+    # 「DRAFT 草稿（待 owner 拍板 + DBA 窗口 apply，未对真库执行任何 DDL）」。
+    # 这是**已被裁定过的在途状态**、不是待清项：R226 A3（2026-09-26）判定三表「DDL 草稿已备
+    # （幂等建表，源 12f36996），属『待 owner apply』在途非反模式」，原『从 excludes 移除』
+    # 分支作废、yml 零变更。本次只补充现状描述，列表不动。
     - saved_items
     - change_implementations
     - change_implementation_evidence
