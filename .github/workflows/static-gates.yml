@@ -58,7 +58,7 @@ concurrency:
 
 jobs:
   static-gates:
-    name: 静态门禁（12 项）
+    name: 静态门禁（13 项）
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -300,6 +300,27 @@ jobs:
           set -e
           if [ "$rc" -eq 0 ]; then
             echo "::error::门禁自证失败：注入 DOCSYNC_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 13/13：根递归扫描必须内置归档排除（2026-10-03 owner 裁决「统一扫描范围」的机械化）──
+      # 影响面：不带排除的全仓 grep/find 会把 .codex/.harness 历史归档当现役代码
+      #（本机与 CI 检出读数不同；实测全仓 .java 报 35,166 / 真实 2,281）。
+      # 口径全文见 AGENTS.md §「构建 / 测试」同名条目。
+      - name: 13/13 根递归扫描排除
+        run: bash scripts/check-scan-scope-excludes.sh
+
+      - name: 自证能红 · 根递归扫描排除
+        env:
+          SCAN_SCOPE_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-scan-scope-excludes.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 SCAN_SCOPE_FAIL_SEED 后仍返回 0，说明门禁是假绿"
             exit 1
           fi
           echo "✅ 自证能红（exit=$rc），门禁确实会拦"
