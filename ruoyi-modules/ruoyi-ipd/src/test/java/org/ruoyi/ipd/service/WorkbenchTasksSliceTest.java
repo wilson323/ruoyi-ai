@@ -36,14 +36,14 @@ import static org.mockito.Mockito.when;
 
 /**
  * WB-17-1 S0 切片契约测试：{@code WorkbenchService.tasks()} 过滤视图
- * （spec 页03 §4「tasks?bucket=&type=&limit=&projectId=」，前端 17 类 tab 数据面）。
+ * （spec 页03 §4「tasks?bucket=&type=&limit=&projectId=」，前端 16 类 tab 数据面；bonus_lock 已随奖金池退役移除）。
  *
  * <p>钉死契约（非实现镜像断言）：
- * ①type 17 类合法值零误杀 + 非法值 fail-closed 400；②bucket 值域 pending|overdue，
+ * ①type 16 类合法值零误杀 + 非法值 fail-closed 400；②bucket 值域 pending|overdue，
  * completed/initiated 指向正确数据源契约的 fail-closed 文案；③limit 缺省 50/上限 200/
  * total=截断前命中数；④overdue 与 summary stats.overdue 同规则（dueDate before now）；
  * ⑤排序 urgent&gt;high&gt;normal + dueDate 升序 null 垫底；⑥与 summary 的 pendingType
- * 键集共用同一 ALL_TASK_TYPES 权威（17 类全通过滤校验）。
+ * 键集共用同一 ALL_TASK_TYPES 权威（16 类全通过滤校验）。
  *
  * <p>聚合器以 mock 投递合成卡（仅测调度/过滤层，不伪造业务数据源——聚合器自身真数据
  * 由各 *AggregatorTest 守）。@Tag("dev") 项目级 surefire 守门。
@@ -127,7 +127,7 @@ class WorkbenchTasksSliceTest {
     /* ---------- 2. type 过滤 ---------- */
 
     @Test
-    @DisplayName("#2 type=deletion_review 仅投该类卡（17 类 tab 数据面核心断言）")
+    @DisplayName("#2 type=deletion_review 仅投该类卡（16 类 tab 数据面核心断言）")
     void typeFilterKeepsOnlyMatchingCards() {
         Map<String, Object> r = service.tasks(ACTOR, null, null, "deletion_review", null);
         assertThat(tasksOf(r)).hasSize(2)
@@ -144,12 +144,12 @@ class WorkbenchTasksSliceTest {
     }
 
     @Test
-    @DisplayName("#4 spec 页03 权威 17 类全部通过 type 校验（与 summary pendingType 键集同源零漂移）")
-    void allSeventeenAuthoritativeTypesPassValidation() {
+    @DisplayName("#4 spec 页03 权威类全部通过 type 校验（bonus_lock 已随奖金池退役移除，17→16；与 summary pendingType 键集同源零漂移）")
+    void allSixteenAuthoritativeTypesPassValidation() {
         for (String type : List.of("stage_sign", "key_gate", "key_gate_arbitration", "deletion_review",
             "waiver_review", "handover", "rd_replacement", "contribution_confirm", "receipt_review",
             "retirement_review", "strategic_change", "capacity_approval", "kpi_fill",
-            "change_implementation", "change_verify", "bonus_lock", "closeout")) {
+            "change_implementation", "change_verify", "closeout")) {
             Map<String, Object> r = service.tasks(ACTOR, null, null, type, null);
             assertThat(tasksOf(r)).as("type=%s 合法值不得抛", type)
                 .allSatisfy(m -> assertThat(m.get("taskType")).isEqualTo(type));

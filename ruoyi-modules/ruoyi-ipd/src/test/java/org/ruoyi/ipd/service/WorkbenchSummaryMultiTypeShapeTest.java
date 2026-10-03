@@ -34,9 +34,9 @@ import static org.mockito.Mockito.lenient;
  * 本类把「9 类 implemented 聚合器同时投递」的真实形状一次性锁死，防三类回归：
  * <ol>
  *   <li><b>类型回归</b>：卡面 taskType 回退成早期硬编码 "stage_action"（WB-17-1 立卡病根），
- *       或某实现类投出 17 类枚举之外的值</li>
+ *       或某实现类投出 16 类枚举之外的值（bonus_lock 已于 2026-10-03 随奖金池退役移除）</li>
  *   <li><b>包络回归</b>：前端既有消费形状被破坏——顶层 stats/tasks/deletionPending/currentAdvance、
- *       stats 四老字段 Integer 装箱、pendingType 17 键全量预置（implemented&gt;0 / PLANNED=0）</li>
+ *       stats 四老字段 Integer 装箱、pendingType 16 键全量预置（implemented&gt;0 / PLANNED=0）</li>
  *   <li><b>卡字段回归</b>：聚合器契约 13 必填键（WorkbenchAggregator javadoc）缺键</li>
  * </ol>
  *
@@ -53,10 +53,10 @@ class WorkbenchSummaryMultiTypeShapeTest {
         "stage_sign", "key_gate", "key_gate_arbitration", "deletion_review", "handover",
         "contribution_confirm", "strategic_change", "closeout", "kpi_fill");
 
-    /** 剩余 8 类 PLANNED（pendingType 必须预置 0 键，缺表 4 + 口径待拍板 4）。 */
+    /** 剩余 7 类 PLANNED（pendingType 必须预置 0 键；bonus_lock 已于 2026-10-03 随奖金池退役摘除，17→16）。 */
     private static final List<String> PLANNED_TYPES = List.of(
         "waiver_review", "rd_replacement", "receipt_review", "retirement_review",
-        "capacity_approval", "change_implementation", "change_verify", "bonus_lock");
+        "capacity_approval", "change_implementation", "change_verify");
 
     /** WorkbenchAggregator.collect 卡契约 13 必填键。 */
     private static final List<String> CARD_CONTRACT_KEYS = List.of(
@@ -151,9 +151,9 @@ class WorkbenchSummaryMultiTypeShapeTest {
     }
 
     @Test
-    @DisplayName("9 类 implemented 同时投递：tasks 保序 9 类；pendingType 17 键（implemented 各=1 / PLANNED 各=0）")
+    @DisplayName("9 类 implemented 同时投递：tasks 保序 9 类；pendingType 16 键（implemented 各=1 / PLANNED 各=0）")
     @SuppressWarnings("unchecked")
-    void nineImplementedTypesCoexist_pendingTypeFull17Keys() {
+    void nineImplementedTypesCoexist_pendingTypeFull16Keys() {
         List<Map<String, Object>> cards = new ArrayList<>();
         for (String t : IMPLEMENTED_TYPES) {
             cards.add(card(t, cards.size() + 1, null));
@@ -170,7 +170,7 @@ class WorkbenchSummaryMultiTypeShapeTest {
         assertThat(stats.get("myInitiated")).isEqualTo(2);
 
         Map<String, Integer> pendingType = (Map<String, Integer>) stats.get("pendingType");
-        assertThat(pendingType).as("17 类键全量").hasSize(17);
+        assertThat(pendingType).as("16 类键全量").hasSize(16);
         for (String t : IMPLEMENTED_TYPES) {
             assertThat(pendingType.get(t)).as("implemented %s 计数", t).isEqualTo(1);
         }
@@ -180,7 +180,7 @@ class WorkbenchSummaryMultiTypeShapeTest {
     }
 
     @Test
-    @DisplayName("类型值域锁死：taskType 永不回退早期硬编码 stage_action，且全部 ∈ pendingType 17 键（=ALL_TASK_TYPES）")
+    @DisplayName("类型值域锁死：taskType 永不回退早期硬编码 stage_action，且全部 ∈ pendingType 16 键（=ALL_TASK_TYPES）")
     @SuppressWarnings("unchecked")
     void taskTypeNeverRegressesToLegacyLiteralAndStaysInEnum() {
         List<Map<String, Object>> cards = List.of(
@@ -194,7 +194,7 @@ class WorkbenchSummaryMultiTypeShapeTest {
             .doesNotContain("stage_action");
         assertThat(tasks).allSatisfy(t ->
             assertThat(((Map<String, Integer>) stats.get("pendingType")).keySet())
-                .as("taskType=%s 必须在 17 类枚举内", t.get("taskType"))
+                .as("taskType=%s 必须在 16 类枚举内", t.get("taskType"))
                 .contains((String) t.get("taskType")));
     }
 
