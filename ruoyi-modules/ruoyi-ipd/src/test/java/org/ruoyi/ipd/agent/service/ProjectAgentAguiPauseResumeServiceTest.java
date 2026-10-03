@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.ruoyi.ipd.agent.domain.IpdAgentRun;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
 import org.ruoyi.ipd.agent.support.InMemoryAgentRunStore;
+import org.ruoyi.ipd.config.IpdPrimaryBeansConfig;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
@@ -19,7 +20,15 @@ import static org.mockito.Mockito.*;
 
 /** 实际 handle/内存 store 的状态与事件验证；事务管理器替身不证明真实 DB 回滚。 */
 class ProjectAgentAguiPauseResumeServiceTest {
-    private final ObjectMapper mapper=new ObjectMapper();
+    /**
+     * 生产同源 mapper：写入与读回必须用同一个 @Primary bean 形态。
+     *
+     * <p>裸 {@code new ObjectMapper()} 把 long 写成 JSON INTEGER，而生产的 @Primary mapper
+     * （{@link IpdPrimaryBeansConfig#objectMapper()}）无条件注册 Long→ToStringSerializer，
+     * 事件载荷里所有原生 long 恒为 JSON STRING。用裸 mapper 跑测试会造出生产写入路径
+     * 不可能产生的形态，使 {@code longValue()} 回退恒绿（AGENTS.md 假绿第三形态）。
+     */
+    private final ObjectMapper mapper=new IpdPrimaryBeansConfig().objectMapper();
     private final InMemoryAgentRunStore store=new InMemoryAgentRunStore();
     private final ProjectAgentRunService runs=mock(ProjectAgentRunService.class);
     private final IpdActor actor=new IpdActor(7L,"owner","PM",null);
@@ -424,6 +433,50 @@ class ProjectAgentAguiPauseResumeServiceTest {
         assertThrows(IllegalArgumentException.class,()->service.recordChildCompletion(handle,42L,
             new org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildCompletion(approval,0,"MODEL_STOP","")));
         assertEquals(before,store.eventInserts.get());assertTrue(service.loadChildCompletions(handle,42L).isEmpty());
+    }
+
+    /**
+     * 钉住事件载荷的数值形态契约，并复现 2026-10-02 两起 resume 503 的根因。
+     *
+     * <p>@Primary mapper 把 AWAIT_USER 的 checkpointVersion/pauseEpoch 与 AGUI_RESUMED 的
+     * pauseSeq/executionEpoch 落成 JSON STRING；读回侧若用 {@code longValue()}（TextNode 恒 0），
+     * 两次消费会折到同一 key 并抛「持久恢复意图重复」——单次消费的运行不触发，
+     * ≥2 次消费的运行恒卡死 WAITING_APPROVAL。
+     */
+    @Test void stringPayloadKeepsDistinctKeysAcrossTwoConsumptions() throws Exception {
+        ProjectAgentAguiPauseResumeService.TrustedGuard guard=(a,r,p,i)->Map.of();
+        var first=service.pause(handle,42L,1,pending());
+        var await=mapper.readTree(store.listEvents(42L,first.pauseSeq()-1,200).get(0).getPayload());
+        assertEquals("AWAIT_USER",await.get("kind").asText());
+        assertTrue(await.get("checkpointVersion").isTextual(),"checkpointVersion 必须是 JSON STRING（@Primary Long→ToStringSerializer）");
+        assertTrue(await.get("pauseEpoch").isTextual(),"pauseEpoch 必须是 JSON STRING");
+        assertEquals(1,await.get("checkpointVersion").asLong());
+
+        var firstInput=RunAgentInput.builder().threadId("42").runId("42")
+            .resume(List.of(new AguiResume("reply:call","resolved",Map.of("approved",true,"reason","第一次")))).build();
+        assertTrue(service.consume(actor,handle,42L,first.pauseSeq(),firstInput,guard).consumed());
+        var resumed=mapper.readTree(store.listEvents(42L,first.pauseSeq(),200).get(0).getPayload());
+        assertEquals("AGUI_RESUMED",resumed.get("kind").asText());
+        assertTrue(resumed.get("pauseSeq").isTextual(),"pauseSeq 必须是 JSON STRING");
+        assertTrue(resumed.get("executionEpoch").isTextual(),"executionEpoch 必须是 JSON STRING");
+        assertEquals(first.pauseSeq(),resumed.get("pauseSeq").asLong());
+
+        var second=service.pause(handle,42L,2,pending());
+        assertTrue(second.pauseSeq()>first.pauseSeq());
+        var secondInput=RunAgentInput.builder().threadId("42").runId("42")
+            .resume(List.of(new AguiResume("reply:call","resolved",Map.of("approved",false,"reason","第二次")))).build();
+        assertTrue(service.consume(actor,handle,42L,second.pauseSeq(),secondInput,guard).consumed());
+
+        // 两条 AGUI_RESUMED 同时在场：history() 重放必须按真实 pauseSeq 分桶，不得折到同一 key。
+        // 回退成 longValue() 时，此处先抛「持久恢复意图重复」（两个 intent 折到 key 0）。
+        assertTrue(service.replayConsumed(actor,42L,second.pauseSeq(),secondInput));
+        // 分桶未串位：第二个 pauseSeq 存的是第二次摘要，拿第一次响应去重放必须被拒。
+        assertThrows(IllegalArgumentException.class,
+            ()->service.replayConsumed(actor,42L,second.pauseSeq(),firstInput));
+        var latest=service.loadConsumedIntent(handle,42L,second.pauseSeq());
+        assertNotNull(latest);
+        assertEquals(second.pauseSeq(),latest.intent().pauseSeq());
+        assertEquals(2,latest.intent().checkpointVersion());
     }
 
 }

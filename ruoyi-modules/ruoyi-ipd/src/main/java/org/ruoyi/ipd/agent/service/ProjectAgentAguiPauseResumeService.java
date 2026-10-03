@@ -452,8 +452,10 @@ public final class ProjectAgentAguiPauseResumeService {
                     var data=mapper.readTree(event.getPayload());
                     String kind=data.path("kind").asText();
                     if ("AGUI_RESUMED".equals(kind)) {
-                        // pauseSeq/executionEpoch 历史版本同样落成字符串，longValue 恒 0 会让两次消费
-                        // 折到同一 key，误报「持久恢复意图重复」；asLong 兼容 STRING/INTEGER 两态。
+                        // 事件载荷走 @Primary ObjectMapper（IpdPrimaryBeansConfig 无条件注册
+                        // Long→ToStringSerializer），pauseSeq/executionEpoch 在库里恒为 JSON STRING——
+                        // 这是当前活跃契约而非历史遗留形态。longValue 对 TextNode 恒 0，会让两次消费
+                        // 折到同一 key，误报「持久恢复意图重复」；读回侧只能用 asLong。
                         long seq=data.path("pauseSeq").asLong();
                         consumed.put(seq,data.path("inputDigest").asText(""));
                         if (data.hasNonNull("executionEpoch")) {
@@ -486,8 +488,9 @@ public final class ProjectAgentAguiPauseResumeService {
                         throw new IllegalStateException("持久中断检查点不完整");
                     Map<String,AguiEvent.Interrupt> pending=mapper.convertValue(data.path("interrupts"),
                         new com.fasterxml.jackson.core.type.TypeReference<Map<String,AguiEvent.Interrupt>>() {});
-                    // AWAIT_USER 载荷的历史版本把这两个字段落成字符串；asLong 兼容 STRING/INTEGER 两态，
-                    // longValue 对 TextNode 恒 0，会把 checkpointVersion 读成 0 导致 resume 恒被 guard 拒绝。
+                    // 同上：AWAIT_USER 的 pauseEpoch/checkpointVersion 也由 @Primary ObjectMapper 落成 JSON STRING
+                    // （当前契约，非历史版本）；longValue 对 TextNode 恒 0，会把 checkpointVersion 读成 0
+                    // 导致 resume 恒被 guard 拒绝。契约由 ProjectAgentAguiPauseResumeServiceTest 用生产同源 mapper 钉住。
                     latest=new PauseCheckpoint(event.getSeq(),data.path("pauseEpoch").asLong(),data.path("checkpointVersion").asLong(),
                         data.path("threadId").asText(),data.path("runId").asText(),data.path("ownerPersonId").asText(),pending,
                         data.has(ProjectAgentChildLineageRegistry.INTERNAL_ORIGIN)?mapper.convertValue(data.get(ProjectAgentChildLineageRegistry.INTERNAL_ORIGIN),

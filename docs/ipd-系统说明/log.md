@@ -13695,3 +13695,74 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
 本轮**不写** `--no-verify` 相关登记：`.git/hooks/pre-commit` 在本仓不存在，核验与提交均未使用该开关，无事实基础。
 
 - 本 commit 的真实 hash、push 结果与远端基线核对：见下一条登记（commit 号只能在提交后取得，故自指登记拆为两条 commit）
+
+
+### 当前用户接续多专业并行（codex-parallel-reclosure-20261002）
+用户本轮明确要求基于未闭环立即多专业并行，接续原R242和唯一总画布。原实施聊天已查idle；历史读取工具因Codex历史数据库损坏失败，改据实际源码与原验收证据接续，不修宿主数据库。root唯一Kernel/Configuration/Executor集成、shared target/候选包/16039/镜像和总画布；recovery独占ChildResumeDispatcher/ChildLineageRegistry/ChildPreflight/SubagentScopeMiddleware及其专用测试；resources独占OfficialSandbox和新增VerifiedSnapshotSpec及专用测试；validation只读main与独立证据。已有在途差异逐项读取后保留，未提交推送、未DDL。
+任务图：R1递归父恢复与再次ASK/原父结果（实际SDK反例及冷恢复定向验收）和R2官方快照真实归档（失败不能成功、SESSION隔离）并行，V1独立扫描/旧包实查与业务门禁验证并行；R1/R2/V1→I1原production provider接线与串行编译/回归→I2候选指纹/无活跃出站安全重载→I3真实Person/DB/来源/产物/暂停恢复验收。失败保原日志且有诊断至多两次修复，未知副作用不重放。当前RUNNING/PARTIAL；旧50240/10130仍不能证明新源生效。
+
+### plan_exit HITL 收口：环境真链 + 契约覆盖补强 + 变异自证（plan-exit-hitl-truechain-20261002）
+
+**根因（已实证，K10 已由兄弟会话登记于归位文档 §6.2）**：SDK 2.0.3 `PermissionEngine` 仅尊重 `decisionReason` 含 "safety" 的工具自检 ASK；`ProjectAgentOfficialPermissions.extend()` 曾把 `HarnessPlatformTools.NAMES`（含 `plan_exit`）全量 ALLOW，致官方 plan_exit HITL 静默失效。修复=`extend()` 为 `plan_exit` 加显式 askRule。
+
+**本轮接手后的实际执行与新增证据**：
+
+1. **契约测试 3/3 绿复跑确认**（21:35，指纹 `f4c5c77c7c8dd6b7`，跑测前后一致）。trace 逐行复现契约：`plan_enter`/`plan_write` POST_ACTING=SUCCESS → `plan_exit` 仅 PRE_ACTING 无 POST_ACTING → `POST_CALL ended on a tool-call turn with no final text reply`（即中断等批准）→ 恢复后 `完成`。
+
+2. **补测试覆盖缺口（本轮新增第 4 例）**：`planExitRejectionKeepsPlanModeReadOnly` 名称与 DisplayName 均声称「只读终态」，但原实现**只断言 `isPlanModeActive`**，「只读」本身零断言（名称承诺 > 断言覆盖面）。新增 `planModePermissionContract` 把该契约钉在权限层：`plan_exit` ∈ askRules 且 ∉ denyRules；`plan_enter`/`plan_write` ∈ allowRules 且 ∉ askRules。**未采用驱动第二轮模型的方案**——实测 plan_exit 的 ASK 中断**不终止同一轮内 ReAct 循环**，首段 `streamEvents` 连续消耗 6 次模型调用（#0–#5），按序号分支的脚本模型不可靠（首版尝试即因此红，已废弃）。
+
+3. **变异自证能红（关键，防假绿）**：
+   - 正常态 `Tests run: 4, Failures: 0, Skipped: 0`（`@Tag("dev")` 生效非静默跳过）；
+   - 变异体 `addAskRule(PLAN_EXIT, ASK)` → `addAllowRule(..., ALLOW)`（= 修复前缺陷态，代码仍可编译）→ **4/4 全红**，新用例给出精确信息「plan_exit 必须在 askRules——否则官方 allowRule 会压制工具自检 ASK，HITL 静默失效」；
+   - **首两次变异注入均无效**（正则未命中 → 跑的是未变异代码；按行删除多吃 `return builder.build();` → 编译错误、测试根本没跑），已记录：**变异必须确认「测试确实跑了」而非只看 BUILD FAILURE**。
+
+4. **环境真链（G2）**：`ruoyi-admin/target/ruoyi-admin.jar` 重建（21:44:13，BUILD SUCCESS）；后端 16039 重启带新产物（PID 7643，参数逐字复刻原实例：profiles=ipd-local,dev / redis.port=16379 / server.address=127.0.0.1）。**运行态实证** `ProjectAgentOfficialPermissions.class` 内含 `plan_exit`/`PLAN_EXIT`/`project-agent-plan-confirmation`；认证链通（`code=0` 拿到 Bearer token，person 900101）；`ipd_dev` 库 165 表 6 张 agent 表；Redis 16379 / MySQL 13306 / Weaviate 28080 全通。**期间兄弟会话曾于 21:44:54 用旧 backup jar 抢跑重启**，已重新接管。回滚路径 `.codex/ipd-dev/backups/ruoyi-admin.codex-takeover-*.jar` 完好。
+
+5. **t8 裁决口径**：环境侧**已就绪**，但**真链不作为 plan_exit 的验收手段**——真链用真实 LLM，其自主决定何时退出计划模式，10 次跑可能 9 次「没看到 plan_exit 中断」且均非 bug。真链定位为**冒烟**（已过），plan_exit 行为验收归契约测试。
+
+6. **并发观测（教训）**：本会话曾在 14:36 观测到三装配点 7 个 `disable*()`，并在 14:58/15:09/21:04 兄弟会话分批移除后**持续播报两小时未重采基线**；21:39 实测全仓 `disable*()` 已归零。裁决稿已加文首效力声明标注 §1.1–1.3、§1.7 步骤 1–2 失效。**「格式工整的审计报告」不携带时效性——证据的格式会伪装证据的时效。**
+
+- marker: plan-exit-hitl-truechain-20261002
+
+### 方法论沉淀：多会话并发工程·证据与自证工作规范（evidence-discipline-20261002）
+将本轮 6 次真实失误提炼为可复用规范，落 `docs/ipd-系统说明/多会话并发工程-证据与自证工作规范-20261002.md`（8 节 + 收口自检清单）：①第三方 API 事实只认 `javap` 对锁定 JAR（2 次镜像污染实证）②审计结论必须带「观测时刻+HEAD+近 N 分钟改动」三元组（1 次 2 小时过期播报）③变异自证（3 次变异未生效 + 1 次恒真式废测试）④校验失败先怀疑校验器（3 次自造误报）⑤编辑他人文件用 assert-first（2 次正确中止）⑥并发让路纪律 ⑦文档加效力声明而非静默改 ⑧并行环境半衰期（环境层+产物层双层踩坑）。总纲：**绿色的报告/测试/门禁只证明「存在」，不证明「对」也不证明「仍有效」。**
+
+### plan_exit HITL 真链全通 + resume 503 双根因修复（plan-exit-hitl-e2e-resume-fix-20261002）
+
+接续 plan-exit-hitl-truechain-20261002。上轮裁决「真链不作为验收手段」本轮被推翻：真链实际全部跑通，并暴露两个仅真链可发现的 resume 503 bug（契约测试与单测均未覆盖）。
+
+**1. plan_exit HITL 三链路真链验收（G2，全部 HTTP 实证）**：
+- 暂停：run `2106255353728475137` seq295 / run `2106255841005936642` seq110，中断 toolName=plan_exit、reason=tool_call、interruptKind=permission_confirm，run 停 WAITING_APPROVAL；plan_enter/plan_write 正常放行（模型可自由规划）。
+- 拒绝：run1 resume{approved:false} → 200 → 模型留在 PLAN 继续修订计划（大量 TEXT_MESSAGE 无业务动作）→ 终态 SUCCEEDED。
+- 批准：run2 resume{approved:true} → 200 → `TOOL_EXECUTION toolName=plan_exit state=RETURNED/SUCCESS`（seq114/115）→ 模型转执行阶段调 todo_write（进入 BUILD 行为证据）。
+- 幂等闸门：重复 resume 已消费中断 → 409 code=50002「运行正在恢复」。
+
+**2. resume 503 根因①（AWAIT_USER 载荷字符串化）**：DB 事件 payload 里 checkpointVersion/pauseEpoch 为 JSON STRING（"1"），`history()` 重建用 `JsonNode.longValue()` 读 TextNode 恒 0（jshell 实证：TextNode("1").longValue()=0、asLong()=1），pause.checkpointVersion=0 ≠ Redis 真实 version=1 → checkpoint guard 恒拒 → resume 恒 503 code=90002「原运行检查点已变更或不存在」（traceId 5997748c/5532dc83/86e49617 三次必现）。排查链：Redis 键布局/数据形态实证 + MONITOR 抓 guard 真实 GET + 反编译 7643 jar 字节码 + SDK 源码逐层（VersionedState/parseVersion/RedissonClientAdapter/JacksonJsonCodec）+ `JSON_TYPE()` 终判字段类型。修复：`ProjectAgentAguiPauseResumeService` L487 两处 `.longValue()` → `.asLong()`。
+
+**3. resume 503 根因②（AGUI_RESUMED 载荷同坑，多轮消费卡死）**：修复①后 run2 第二次消费起 resume 又 503，msg=「持久恢复意图重复」（traceId 89043543/66e20ac1）。DB 实证 AGUI_RESUMED 事件仅两条（seq112 pauseSeq="110"、seq140 pauseSeq="138"）无重复——但 `history()` L455 `data.path("pauseSeq").longValue()` 把 "110"/"138" 都读成 0，`intents.putIfAbsent(0,...)` 第二次命中同 key 误报重复，且 consumed/consumedEpochs/effectiveEpochs 同折 key=0。单次消费的 run 不触发（run1 deny 链未炸），≥2 次消费的 run 恒卡死 WAITING_APPROVAL。修复：L455/458/459 三处 → `.asLong()`。全仓排查 JsonNode.longValue() 漏网点已清零（余 3 处为 java.lang.Number 对象方法，安全）。修复后 run2 seq424/516/2063 三轮 resume 全 200 至终态 SUCCEEDED（checkpoint 1→5）。
+
+**4. admin jar 组装事实（aiflow/workflow offline）**：提交 `172031b6` 已 offline 两模块；磁盘 `ChatServiceFacade`（兄弟在途 M）已退役旧工作流入口（删 IWorkFlowStarterService 注入，enableWorkFlow=true 直接拒）。`-pl ruoyi-admin` 打包不内嵌 offline 模块，若 repo 里 ruoyi-chat jar 仍是旧版（依赖 aiflow）→ 启动报 IWorkFlowStarterService bean 缺失死循环。解法：按磁盘现态重编 `ruoyi-modules/ruoyi-chat` install 再打 admin（22:28/22:52 两版均验证）。
+
+**5. 附带发现（未修，登记待办）**：① actionCode=null → `ActionCatalog.docTypeOf(null)` NPE（traceId e19dbc48，既有边界 bug）；② AWAIT_USER/AGUI_RESUMED 写入侧 pause() 传原生 long + 标准 Jackson，但落库成 STRING 的成因待查（旧包版本疑点；asLong 修复兼容两态不受影响）→ **2026-10-02 23:20 已查明并结案**：非旧包版本，是 @Primary ObjectMapper（`IpdPrimaryBeansConfig`）无条件 Long→ToStringSerializer，属当前活跃契约，「旧包版本疑点」假设作废，详见 marker `payload-long-string-rootcause-20261002`；③ e2e 脚本自身 bug：resume 后 find_interrupt 传 list 崩溃（不影响验收，验收用手动构造正确格式补齐）。
+
+- marker: plan-exit-hitl-e2e-resume-fix-20261002
+
+### 事件载荷 long 落库 STRING 的真根因 + 测试假绿结构消除（payload-long-string-rootcause-20261002）
+
+上轮附带待办②（「写入侧 long 落库成 STRING 的成因待查」）本轮结案。只读排查为主，主代码只改注释，**生产语义零变化**。
+
+**1. 根因确证（推翻「旧包版本疑点」）**：`ipd_agent_run_event.payload` 由 `ProjectAgentRunHandle#toJson`（`mapper.writeValueAsString(payload)`）序列化，mapper 是 Spring 注入的 **@Primary ObjectMapper** = `IpdPrimaryBeansConfig#objectMapper()`（2026-10-02 随 ruoyi-aiflow/ruoyi-workflow 下线从原 BeanConfig 原样迁移，类注释自述「按删除前行为原样恢复，参数零改动」）。该 bean 无条件注册 `Long.class → ToStringSerializer.instance`，因此写入侧所有原生 long（pauseEpoch / checkpointVersion / pauseSeq / executionEpoch）在库里**恒为 JSON STRING**——这是**当前活跃契约**，不是历史遗留数据，也不是旧包版本差异。对照：基线 `ruoyi-common-json` 的 `JacksonConfig` 用 `BigNumberSerializer`（仅超出 JS 安全整数 ±2^53-1 才转字符串），但它以 Module bean 形式只作用于自动配置 mapper、**非 @Primary**，被 `IpdPrimaryBeansConfig` 顶掉 → 110/138/1/2/3 这类小数值也全部字符串化。
+
+**2. 结论修正（注释是事实错误）**：`asLong()` 不是「兼容历史版本的兼容层」，而是**长期必需**的读回姿势。commit `01b19303` 在 `ProjectAgentAguiPauseResumeService` 写的两处注释（「历史版本把这两个字段落成字符串」）与事实相反，已改正为指明 @Primary mapper 契约并注明「回退成 longValue 必红」。本轮主代码改动 +11/-5 **全为注释行**（`git diff` 过滤注释后为空），故**不需重打包/重启**。现查运行态（本轮只跑过 `-pl ruoyi-modules/ruoyi-ipd ... test`，未动 ruoyi-admin/target）：监听 16039 的进程 PID 80310 起于 22:52:08，而磁盘 `ruoyi-admin/target/ruoyi-admin.jar` 已被兄弟会话于 23:27 重打（328342552B）——进程加载的是启动当时的包，磁盘新包未被重载，两者不一致属兄弟在途，不由本轮处置（也不影响本轮结论：注释与测试改动无需任何重载）。
+
+**3. 假绿结构（AGENTS.md 假绿第三形态 / WB-17-1 同类）已消除**：`ProjectAgentAguiPauseResumeServiceTest` 原为裸 `new ObjectMapper()`，写入与读回共用同一裸 mapper → 载荷恒 JSON INTEGER，是**生产写入路径不可能产生的形态**；这正是「29/29 全绿却挡不住两起生产 resume 503」的原因。已换成生产同源 `new IpdPrimaryBeansConfig().objectMapper()`，并新增复现用例 `stringPayloadKeepsDistinctKeysAcrossTwoConsumptions`（pause→consume→pause→consume，两条 AGUI_RESUMED 同场；断言 checkpointVersion/pauseEpoch/pauseSeq/executionEpoch 均 `isTextual()`、分桶不串位（拿第一次响应重放第二次 pauseSeq 必被拒）、`loadConsumedIntent` 取回真实 pauseSeq/checkpointVersion）。
+
+**4. 自证能红（会拦的门禁本地实跑）**：临时把 `history()` 的 `data.path("pauseSeq").asLong()` 回退成 `.longValue()` → `Tests run: 30, Failures: 6, Errors: 9`（**15/30 红**，含新用例，报错形态与生产一致：「持久恢复意图重复」/「子恢复没有当前执行 epoch 的持久消费凭据」）；从备份恢复后复跑 `Tests run: 30, Failures: 0, Errors: 0` BUILD SUCCESS。换 mapper 的收益是**整个测试类都成了哨兵**，而非只有新用例。命令：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=ProjectAgentAguiPauseResumeServiceTest test`（错峰单模块、不带 -am/clean；模块 pom `<groups combine.self="override"/>` 已清空 tag 过滤，无 @Tag 静默跳过）。
+
+**5. 暴露面收敛（按最小变更不扩大改动）**：① 全仓 main 的 `path(...).longValue()/intValue()` 链式 JsonNode 数值读取 = **0 处**；余 4 处 `n.longValue()`（`AgUiCopilotRun:256`、`IpdAuditAspect:175`、`AiSuggestionService:759`、`ProjectAgentRunHandle:167`）逐一复核为 `instanceof Number` 守卫或 `Long` 装箱，安全（**修正上轮「剩 3 处」的计数口径**）。② 这些 payload 字段的全部读回点（`ProjectAgentRunService` L1020/1021/1046 + `PauseResumeService` 全部）均已 `asLong()`。③ ruoyi-ipd 另有 48 个测试类用裸 mapper，其中触碰事件载荷/handle 的 7 个类里**只有 1 处**数值读回（`ProjectAgentAguiProtocolTest:101`）且已用 `asLong()` → 无潜伏缺陷，不扫改；`ProjectAgentRunFinishTransactionTest:226` 的匿名 mapper 是序列化故障注入夹具，形态无关。
+
+**6. 仍开放（需 owner 拍板，本轮不改）**：`Long → ToStringSerializer` 是**无条件全局契约**（与 IPD `/api/v1` 字符串 ID 约定一致）。改成 `BigNumberSerializer` 或给事件载荷单开 mapper 会牵动前端事件投影与 API 契约 baseline，属独立决策项。附带待办① actionCode=null → `ActionCatalog.docTypeOf(null)` NPE（traceId e19dbc48）仍未修。
+
+**7. R25 接手登记（本次收口提交）**：本次按 pathspec 只提交 4 个文件（`ProjectAgentAguiPauseResumeService.java` 仅注释、`ProjectAgentAguiPauseResumeServiceTest.java`、本 log.md、看板镜像），因两文件为共写 SSOT，提交时会一并带入兄弟在途的**登记性追加**。逐段处置结论（均为文档追加、零删除、不改代码语义，故一律「原样入库」）：log.md 的 `codex-parallel-reclosure-20261002`、`plan-exit-hitl-truechain-20261002`、`evidence-discipline-20261002` 三段；镜像的「本轮并行回流 / 运行态回流 / 本轮运行阻塞更正 / plan_exit HITL 收口回流 / 当前并行协调实查 / 并发状态独立反例回流」六段。实证：两文件 `git diff --numstat HEAD` 的 deleted 列均为 **0**（纯追加，本节登记自身也在追加列内故不引具体增量数字），无任何删除或改写行；无编号撞号，故不触发 `ORIGIN-` 前缀。**排除项（不入本次提交，保留工作树由原会话自行收口）**：其余 47 个 M 文件与 2 个 D 文件（最大为 `ProjectAgentChildResumeDispatcher.java` +101/-11）、全部 39 个未跟踪文件（24 个在 `验收/知识库MCP接入-20261001/`、15 个为兄弟新源码/新测试（含 1 个 agentscope-harness skill 的新增自测脚本））、`harness-contract-check.sh`(+14/-3)、`AgentScope官方化-Quality域Verifier缺口设计-20261002.md`(+1/-1)、`codex-validator-initial-review-20261002.md`(+20/-0)。**口径更正**：上轮汇报的「裁决文档 +655 行兄弟回流」在当前工作树**不可复现**（该文档现为 +1/-1，`AgentScope能力启用裁决-…ADR-0077失效声明更正-20261002.md` 已无差异），故不以该数字作排除依据，排除一律按上列 pathspec 实证列举。
+
+- marker: payload-long-string-rootcause-20261002
