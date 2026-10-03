@@ -14682,3 +14682,37 @@ application.yml 的默认值是 dev（SPRING_PROFILES_ACTIVE:dev）。由此产�
 且 docker-compose.yml 当前正被其它会话修改，**未擅自改动**。
 
 - marker: image-default-prod-and-tag-mismatch-20261003
+
+### 十、三项部署决策落地（owner 2026-10-03 拍板：健康探针关 / agent 数据源补+只读 / 镜像标签参数化）
+
+改动（docker-compose.yml + Runbook 三节，提交号见本节登记的 commit）：
+
+1. **健康探针**：backend 环境加 `MANAGEMENT_HEALTH_MAIL_ENABLED=false` 与
+   `MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED=false`。依据：Spring 见类路径有 mail / ES 依赖
+   即自动装配探针，分别连占位地址 smtp.localhost:25 与 localhost:9200，生产两者均未部署，
+   实测 `/actuator/health` 恒 503。将来真部署后删两行即恢复。
+2. **agent 数据源**：`@DS("agent")`（AI 查表四工具）此前生产无对应数据源，启动抛 7 次
+   CannotFindDataSourceException。现 compose 提供 `SPRING_DATASOURCE_DYNAMIC_DATASOURCE_AGENT_URL/_USERNAME/_PASSWORD`
+   （宽松绑定，不需要改 application-prod.yml——该文件被 hook 阻断，环境变量同等生效）。
+   账号/密码设为缺值即渲染失败（宁可不部署，不让 AI 拿可写账号直查生产库）；
+   URL 默认复用 `IPD_DB_URL`。只读账号创建语句已入 Runbook 三.5。
+3. **镜像标签参数化**：backend / upload-init / frontend 的 image 行改为
+   `${IPD_BACKEND_IMAGE:-ipd-backend:latest}` / `${IPD_FRONTEND_IMAGE:-ipd-frontend:latest}`，
+   修掉「手册构 `<git-sha>`、编排引用 `latest`、本机 latest 不存在 → up -d 必失败」。
+   upload-init 与 backend 共用同一变量，天然同标签。Runbook 三.3 补使用说明。
+
+验证（全部实测，一次性隔离环境 MySQL 8.4.9 + schema-baseline 166 表 + 独立 Redis，用完即删）：
+
+- **compose 渲染三口径**：全量 env 渲染成功（agent URL 嵌套默认生效、镜像变量生效、
+  backend/upload-init 同标签）；缺 `IPD_DB_AGENT_USER` 渲染失败且报错带指引；不设镜像变量回落 latest。
+- **运行时 A/B（同镜像 ipd-backend:proddefault-1414、同库、唯一差异是三个 agent 变量）**：
+  有 agent 变量 → 启动成功 17.8s、CannotFindDataSourceException **0 次**；无 → **7 次**。
+  零值过阳性对照（已知串 'Started RuoYiAIApplication' 计数=1，仪器未失明）。
+- **健康端点**：探针关闭后 `/actuator/health` HTTP **200**（带 Basic 认证）。
+- **只读实证**：`ipd_ro` 对 ipd 库执行 INSERT，退出码 1（拒绝写入）；GRANT 仅 SELECT。
+
+未做（留 owner 手动）：`.env.example` 被 `.env*` 保护规则整体拒读写，本次新增的
+`IPD_BACKEND_IMAGE / IPD_FRONTEND_IMAGE / IPD_DB_AGENT_USER / IPD_DB_AGENT_PASSWORD`
+四个键的示例行已写入会话交付说明，须人工粘贴进 `.env.example`。
+
+- marker: deploy-trio-probes-agentro-imagetag-20261003

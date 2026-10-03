@@ -5,7 +5,10 @@
 services:
   backend:
     build: .
-    image: ipd-backend:latest
+    # 镜像标签可参数化（2026-10-03 owner 拍板）：默认 latest 兼容旧行为，
+    # 生产部署应在 .env 显式设 IPD_BACKEND_IMAGE=ipd-backend:<git-sha>（见 Runbook 三.3）。
+    # upload-init 复用同一变量，保证两个服务引用的必然是同一个镜像。
+    image: ${IPD_BACKEND_IMAGE:-ipd-backend:latest}
     restart: unless-stopped
     ports:
       - "16039:16039"
@@ -21,6 +24,21 @@ services:
       IPD_AIMODEL_ENCRYPT_KEY: ${IPD_AIMODEL_ENCRYPT_KEY:?set IPD_AIMODEL_ENCRYPT_KEY}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      # 关掉两个探不到真实服务的健康检查（2026-10-03 owner 拍板）：
+      # 类路径里存在 mail / elasticsearch 依赖时 Spring 会自动装配对应检查项，
+      # 分别去连占位地址 smtp.localhost:25 与 localhost:9200 —— 生产两者均未部署，
+      # 探针恒 DOWN，/actuator/health 恒 503（实测）。将来真部署邮件服务器 / ES 时
+      # 删掉这两行对应键即可恢复探针。
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
+      MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED: "false"
+      # AI 查表路径的 agent 数据源（2026-10-03 owner 拍板：补 + 只读账号）。
+      # TableSchemaManager 等 @DS("agent") 代码此前在生产无可用数据源（仅 master），
+      # 启动即抛 7 次 CannotFindDataSourceException，AI 查表工具全灭。
+      # URL 默认复用主库地址；账号/密码必填，Runbook 三.5 提供只读账号创建语句 ——
+      # 故意设为缺值即渲染失败：宁可不部署，也不让 AI 拿可写账号直查生产库。
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_AGENT_URL: ${IPD_DB_AGENT_URL:-${IPD_DB_URL:?set IPD_DB_URL}}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_AGENT_USERNAME: ${IPD_DB_AGENT_USER:?set IPD_DB_AGENT_USER (只读账号, 见 Runbook)}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_AGENT_PASSWORD: ${IPD_DB_AGENT_PASSWORD:?set IPD_DB_AGENT_PASSWORD}
       # 上传目录：容器内绝对路径，覆盖 application-prod.yml 的 sys.upload.path
       # （Spring 宽松绑定：环境变量 SYS_UPLOAD_PATH 优先级高于 yml 文件值）。
       # 原 yml 值是 Windows 路径 D:\DownLoad，在 Linux 容器上会静默建出畸形目录名。
@@ -49,7 +67,7 @@ services:
   # 复用 backend 的镜像（同一 image 名，由上面的 build 产出），故容器内存在 ipd 用户。
   # 幂等：重复 up 时再跑一次 chown 无副作用。
   upload-init:
-    image: ipd-backend:latest
+    image: ${IPD_BACKEND_IMAGE:-ipd-backend:latest}
     user: "0:0"
     restart: "no"
     entrypoint: ["sh", "-c", "chown -R ipd:ipd /app/upload"]
@@ -69,7 +87,7 @@ services:
       retries: 5
 
   frontend:
-    image: ipd-frontend:latest
+    image: ${IPD_FRONTEND_IMAGE:-ipd-frontend:latest}
     # 前端镜像由 ruoyi-ipd-web 仓 apps/web-antd/Dockerfile 构建（nginx 托管 + /api 反代）
     restart: unless-stopped
     ports:
