@@ -14328,3 +14328,48 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
   未动另两处同族默认不阻断的门禁（已登记待 owner）/ 未跑 QA-08 全量（需活环境，仅做函数级验证）。
 
 - marker: owner-three-tasks-executed-20261003
+
+- 2026-10-03 13:5x **本批收尾：提交 + 假证据清理 + 两处定性更正 + Docker 阻塞登记**：
+
+  **提交**：`e5bb1de1`（10 文件，+4983/−1261），pre-commit 门禁 **8/8 通过**。
+  注：提交前曾被门禁 1/2（doc↔db 漂移）拦下一次，原因是**我自己写进 log.md 的措辞**——
+  `` `ac_id.pattern` `` 这种「反引号包裹的 表.字段」形态命中了扫描器的 S1 规则，被当成表名 `ac_id`
+  （它是 JSON 字段名，不是数据库表）。已改措辞（写成「schema 里 ac_id 的 pattern 与 category 的 enum
+  两个字段」），**未改门禁规则**——规则本身没错，是我用了会被合理误读的写法。
+  另：兄弟提交 `bf16d4f1`（拆除回款台账/奖金池/业绩窗口三域）已把本会话在途的部分文件一并入库
+  （ac_evidence_link.py / static-gates.yml / check-doc-code-sync.sh 的首次入库均在该提交），属既定
+  「共享 index 捎带」现象，内容无损，本提交只落后续增量。
+
+  **假证据清理（OD-AM-04 前置）**：已入库矩阵 10 行里有 **9 行的 auditLog 值在 ruoyi-ipd 源码中零命中**
+  （MEMBER_LEVEL_LOCK / BONUS_CALC / PERMISSION_DENIED / AUDIT_QUERY 等），只有 `GATE_REJECTED`
+  真实存在（命中 9 个文件）。已把这 9 个**置为 null** 并在 notes 注明「原值 XX 实测零命中，属假证据」。
+  这不是政策决定（OD-AM-04 未决的是「**如何**映射」，不是「要不要保留假值」），属数据完整性修复。
+  清理后：schema 校验 249 行 0 不合规；校验器 EXIT=2（仅剩 OD-AM-03 阈值警告）。
+
+  **定性更正（我之前说错的地方，留痕）**：我上一轮把 `.github/workflows/a11y-ci.yml` 的 `STRICT_A11Y`
+  与 `braud01-audit-grant.yml` 的 `STRICT_BRAUD01_LINT` 与 docs-link-check 那处并称「同族假绿」——
+  **不准确，现更正**：这两处是**文档里写明的分阶段决定**，不是假绿。
+  · a11y 文件头写「默认 WARN，可选 secret STRICT_A11Y=1 升级为 ERROR（owner 决策 P0-9 落地 30 天后启用）」；
+  · braud01 文件头写「默认 WARN（与 R25 一致）」，且其任务卡本身是「等 owner 真库 DCL apply 授权」。
+  **真正的问题要小得多、也不一样**：a11y 那个「30 天」的**对照点从未指定**
+  （`ROOT-R4-文档口径统一-20260906.md:183` 只写「P0-9 落地 30 天后升级」，与未决的 OD-AM-03 同一句话），
+  所以「启用」不会自己发生；两处的启用开关都挂在**默认空缺、且不留在仓库里的仓库密钥**上，
+  无痕迹可查。属**潜在治理缺口**而非当下假绿。**未擅自改动**（改 a11y 需先定「30 天」起算点；
+  改 braud01 需先有 owner 的真库授权）。
+
+  **Docker 阻塞（未擅自处置）**：生产镜像构建**第二次失败**，但**这次与磁盘无关**——宿主已腾出
+  **20 GB**（`/System/Volumes/Data` 96%）。失败原因为 Docker 自身元数据库被锁只读：
+  `write /var/lib/desktop-containerd/daemon/io.containerd.metadata.v1.bolt/meta.db: read-only file system`。
+  实测守护进程仍响应（`docker version` 正常、`docker ps` 正常），但**一切写操作全被拒**——
+  `docker run --rm hello-world` 与 `docker builder prune -f` 同样报只读，故 CLI 层无免重启修法。
+  根因：Docker Desktop 虚拟盘 `Docker.raw` 被分配为 460G（实际占 14G，稀疏文件），
+  早先宿主盘满时虚拟机内文件系统被切成只读，宿主腾出空间后**不会自动恢复**，需重启 Docker Desktop。
+  **未执行重启**：当前在跑的容器含 `aip-base-mysql` / `aip-base-redis` / `weaviate-weaviate-1` /
+  `ruoyi-ai-minio` / taskview 三件套 / 一个 agentscope-sandbox，重启会同时中断它们，
+  且可能有其它会话正依赖该 MySQL 做迁移或测试（SOP-5 明确「不杀其他会话的进程」，重启等价于批量杀）。
+  **待 owner 一句话决定**，命令：`docker desktop restart`（容器按 restart 策略会自动回来，中断窗口约 1–2 分钟）。
+
+  **本轮未做**：未 push（远端推送仍需用户明确授权）；未跑 QA-08 全量（需活环境）；
+  未改 a11y / braud01 两处门禁；未重启 Docker。
+
+- marker: session-closeout-commit-and-fakeevidence-20261003

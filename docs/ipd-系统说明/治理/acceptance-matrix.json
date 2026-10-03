@@ -65,14 +65,14 @@
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
       "unitTestClass": "org.ruoyi.ipd.service.P241AcceptanceTest#bind_locksSnapshot",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P241AcceptanceTest.java",
-      "auditLog": "MEMBER_LEVEL_LOCK",
+      "auditLog": null,
       "status": "covered",
       "owner": "rd",
       "linkedCommits": [
         "3b8d91c4"
       ],
       "zkRef": null,
-      "notes": "R15 勘误：原指向 P034AcceptanceTest#testAC02 但 P034 为 AC-CFG 配置类且无该方法，真覆盖在 P241AcceptanceTest#bind_locksSnapshot（AC-INC-02 正例：L2 成员绑定 ⇒ lockedLevel=L2 / lockedAmount=1500）。DDL L126 project_members.locked_level；G-08 红线。"
+      "notes": "R15 勘误：原指向 P034AcceptanceTest#testAC02 但 P034 为 AC-CFG 配置类且无该方法，真覆盖在 P241AcceptanceTest#bind_locksSnapshot（AC-INC-02 正例：L2 成员绑定 ⇒ lockedLevel=L2 / lockedAmount=1500）。DDL L126 project_members.locked_level；G-08 红线。；auditLog 原值「MEMBER_LEVEL_LOCK」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-INC-15b",
@@ -81,14 +81,14 @@
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
       "unitTestClass": "org.ruoyi.ipd.service.P121AcceptanceTest#acInc15bARejectCustom",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P121AcceptanceTest.java",
-      "auditLog": "BONUS_LEVEL_COEFFICIENT",
+      "auditLog": null,
       "status": "covered",
       "owner": "rd",
       "linkedCommits": [
         "4158337b"
       ],
       "zkRef": null,
-      "notes": "DDL L564 注释显式 A 级=1.0；G-08 §5 红线；P121AcceptanceTest L129 'AC-INC-15b A 级录入 1.2 拒绝'"
+      "notes": "DDL L564 注释显式 A 级=1.0；G-08 §5 红线；P121AcceptanceTest L129 'AC-INC-15b A 级录入 1.2 拒绝'；auditLog 原值「BONUS_LEVEL_COEFFICIENT」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-INC-16",
@@ -97,7 +97,7 @@
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
       "unitTestClass": null,
       "integrationTestPath": null,
-      "auditLog": "BONUS_CALC",
+      "auditLog": null,
       "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
@@ -106,7 +106,7 @@
         "311007a5"
       ],
       "zkRef": "ZK-16",
-      "notes": "【2026-10-03 退役】本行所属「奖金池」域已按 owner 指令整体移除（连同回款台账、业绩窗口），覆盖它的 P342AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。linkedCommits 为历史证据，保留仅供追溯，不得再作为开发或验收依据。退役前口径：P342 L28 'AC-INC-16 实际回款 1000000 × 5% = 50000'"
+      "notes": "【2026-10-03 退役】本行所属「奖金池」域已按 owner 指令整体移除（连同回款台账、业绩窗口），覆盖它的 P342AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。linkedCommits 为历史证据，保留仅供追溯，不得再作为开发或验收依据。退役前口径：P342 L28 'AC-INC-16 实际回款 1000000 × 5% = 50000'；auditLog 原值「BONUS_CALC」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-INC-16b",
@@ -115,14 +115,14 @@
       "docRef": "docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md",
       "unitTestClass": null,
       "integrationTestPath": null,
-      "auditLog": "RECEIPT_LEDGER_REJECT",
+      "auditLog": null,
       "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
         "fb2b1627"
       ],
       "zkRef": "ZK-16",
-      "notes": "【2026-10-03 退役】本行属于「回款台账」域，该域已按 owner 指令整体移除，覆盖它的 P341AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。退役前证据：P341 L78 'AC-INC-16b 口径验证：source=SHIPMENT ⇒ 拒绝（必须是 RECEIPT）'"
+      "notes": "【2026-10-03 退役】本行属于「回款台账」域，该域已按 owner 指令整体移除，覆盖它的 P341AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。退役前证据：P341 L78 'AC-INC-16b 口径验证：source=SHIPMENT ⇒ 拒绝（必须是 RECEIPT）'；auditLog 原值「RECEIPT_LEDGER_REJECT」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-INC-17h",
@@ -131,7 +131,7 @@
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
       "unitTestClass": null,
       "integrationTestPath": null,
-      "auditLog": "BONUS_TIER_COEFFICIENT",
+      "auditLog": null,
       "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
@@ -139,7 +139,7 @@
         "4158337b"
       ],
       "zkRef": null,
-      "notes": "【2026-10-03 退役】bonus.achievementTiers 达成区间系数属「奖金池」域，该域已按 owner 指令整体移除，覆盖它的 P343AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。退役前证据：P343 L159 'AC-INC-16 + AC-INC-17: 最终奖金池 = 基础奖金池 x 阶梯系数'"
+      "notes": "【2026-10-03 退役】bonus.achievementTiers 达成区间系数属「奖金池」域，该域已按 owner 指令整体移除，覆盖它的 P343AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。退役前证据：P343 L159 'AC-INC-16 + AC-INC-17: 最终奖金池 = 基础奖金池 x 阶梯系数'；auditLog 原值「BONUS_TIER_COEFFICIENT」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-AUTH-09",
@@ -148,14 +148,14 @@
       "docRef": "docs/ipd-系统说明/验收/QA-03-权限与审计矩阵实测-20260905.md",
       "unitTestClass": "org.ruoyi.ipd.security.Sec02AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec02AcceptanceTest.java",
-      "auditLog": "PERMISSION_DENIED",
+      "auditLog": null,
       "status": "covered",
       "owner": "qa",
       "linkedCommits": [
         "32482420"
       ],
       "zkRef": null,
-      "notes": "QA-03 矩阵 L5 越权 401 全绿；SEC-AUD HIGH-3 修复（handler 白名单补 6 Controller）；Sec02 L26 'AC-AUTH-09：跨组项目/产品对非超管一律不可见'"
+      "notes": "QA-03 矩阵 L5 越权 401 全绿；SEC-AUD HIGH-3 修复（handler 白名单补 6 Controller）；Sec02 L26 'AC-AUTH-09：跨组项目/产品对非超管一律不可见'；auditLog 原值「PERMISSION_DENIED」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-AUTH-08",
@@ -164,14 +164,14 @@
       "docRef": "docs/ipd-系统说明/验收/QA-03-权限与审计矩阵实测-20260905.md",
       "unitTestClass": "org.ruoyi.ipd.security.Sec01AcceptanceTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/security/Sec01AcceptanceTest.java",
-      "auditLog": "PERMISSION_DENIED",
+      "auditLog": null,
       "status": "covered",
       "owner": "qa",
       "linkedCommits": [
         "32482420"
       ],
       "zkRef": null,
-      "notes": "Sec01 L130/L140/L150 3 个 @DisplayName 全覆盖 AC-AUTH-08 正反向；DEF-7 闭环证据"
+      "notes": "Sec01 L130/L140/L150 3 个 @DisplayName 全覆盖 AC-AUTH-08 正反向；DEF-7 闭环证据；auditLog 原值「PERMISSION_DENIED」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-AUD-04",
@@ -180,14 +180,14 @@
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
       "unitTestClass": "org.ruoyi.ipd.service.P054AcceptanceTest#ownScopeInvokesSelectPage",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P054AcceptanceTest.java",
-      "auditLog": "AUDIT_QUERY",
+      "auditLog": null,
       "status": "covered",
       "owner": "rd",
       "linkedCommits": [
         "32482420"
       ],
       "zkRef": null,
-      "notes": "P054 L53 'AC-AUD-04：本人范围 — 调用 selectPage 时透传 page+wrapper，wrapper 不为 null'；G-03 硬约束"
+      "notes": "P054 L53 'AC-AUD-04：本人范围 — 调用 selectPage 时透传 page+wrapper，wrapper 不为 null'；G-03 硬约束；auditLog 原值「AUDIT_QUERY」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-AUD-07",
@@ -196,7 +196,7 @@
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
       "unitTestClass": "org.ruoyi.ipd.util.AuditHashChainTest",
       "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/util/AuditHashChainTest.java",
-      "auditLog": "AUDIT_SCHEMA_ASSERT",
+      "auditLog": null,
       "status": "covered",
       "owner": "rd",
       "linkedCommits": [
@@ -204,7 +204,7 @@
         "7cae2138"
       ],
       "zkRef": null,
-      "notes": "DDL L486-508 注释显式；G-03 硬约束；AuditHashChainTest 7 测全绿"
+      "notes": "DDL L486-508 注释显式；G-03 硬约束；AuditHashChainTest 7 测全绿；auditLog 原值「AUDIT_SCHEMA_ASSERT」2026-10-03 实测在 ruoyi-ipd 源码零命中，属假证据，已置 null，待 OD-AM-04 裁决后按 Sec02AuditCatalog 对齐"
     },
     {
       "ac_id": "AC-GATE-15",
