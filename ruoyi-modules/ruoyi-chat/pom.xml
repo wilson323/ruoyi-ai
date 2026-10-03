@@ -219,6 +219,42 @@
     </dependencies>
 
     <build>
+        <!--
+          ============================================================================
+          测试执行口径（2026-10-03 登记）：本模块的 *IT.java 默认**不执行**，且这不是疏漏。
+          ============================================================================
+          现状（实测，非推断）：src/test 下有 6 个 *IT.java，它们全部 @Tag("dev")，
+          但把 "看起来有集成测试" 变成 "其实从不执行" 的原因有两层：
+            1) maven-surefire-plugin 默认 includes 只含 **/Test*.java、**/*Test.java、
+               **/*Tests.java、**/*TestCase.java —— `*IT.java` 不在其中；根 pom 未覆写
+               <includes>。
+            2) 仓库未配置 maven-failsafe-plugin（登记时全仓逐 pom 核对：无任何 pom 声明该插件），
+               故没有第二条通道。
+          结果：这 6 个类会被编译（test-compile 阶段），但 surefire 一个都不会跑，
+          报告里也不会出现。
+
+          为什么不接 failsafe 把它们纳入 CI（判断依据，逐类实测）：
+            · AgentScopeKernelPocIT        硬依赖本机 MySQL jdbc:mysql://127.0.0.1:13306/
+                                           ipd_poc 真库（@BeforeAll 即建 DataSource）。
+                                           CI 的 ipd-test-gate job 是 ubuntu-latest 且无 services，
+                                           接入必红 —— 这是不接入 CI 的决定性理由。
+            · ThreeVectorStoresDockerIT    需 RAG_DOCKER_IT=true（未设则整类自跳过）且本机
+                                           Docker 起三套向量库：Weaviate 127.0.0.1:28080 /
+                                           Milvus http://127.0.0.1:19530 / Qdrant 127.0.0.1。
+            · AgentScopeStreamingPocIT     需 MINIMAX_API_KEY（自跳过）。
+            · AgentScopeChatKernelResilienceIT / AgentScopeKernelConcurrencyPocIT /
+              AgentScopeRagPocIT           自含（无外部基础设施引用），但按 ADR
+                                           《agentscope-验收口径基准》K-02 属"内核全链路
+                                           集成实证（@Tag("dev") 真库）"，定位是波次验收时
+                                           在专用工作树用真库手工跑的 POC，不是每次 PR 的回归。
+          结论：它们是**按设计的真库/PoC 集成测试**，不接入默认 CI（故也不引 failsafe，
+          以免留下一个「声明了却从不运行」的空机制）。需要时按上述前置条件手工跑，例如：
+            mvn -pl ruoyi-modules/ruoyi-chat test -Dtest=AgentScopeRagPocIT
+            mvn -pl ruoyi-modules/ruoyi-chat test -Dtest=AgentScopeKernelConcurrencyPocIT
+          （-Dtest 会覆盖 surefire 的 includes，故命名后缀是 IT 也能被显式选中。）
+          若将来要把其中自含的几类纳入 CI 回归，须先补 failsafe、按类排除真库类，
+          并在 .github/workflows/ipd-test-gate.yml 同步 glob —— 三者缺一即回到空机制。
+        -->
         <plugins>
             <!--
               [G1 PoC] 类路径重复类硬门禁(maven-enforcer-plugin + extra-enforcer-rules)

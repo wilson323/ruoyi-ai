@@ -36,6 +36,17 @@ import org.ruoyi.service.knowledge.impl.UserIdShareKnowledgeAccessGate;
  * personId 待写入侧同步改用 person id 后再补。
  * 检索装配开关（knowledge.retrieval.access-filter.enabled）默认关闭，
  * PUBLIC 收紧面在开启前零运行态影响。
+ * <p>
+ * <b>开启该开关的前置条件（2026-10-03 显式登记，未满足前不要打开）</b>：
+ * 须先让上面的 ipd 分支在运行态真正可命中——即 IPD 用户的检索调用方能解析出
+ * {@code currentPerson()}（做法：IPD 前端改走 Person 会话，或建立 sys_user→person 映射）。
+ * 原因：本类 {@code retrievalAccessProfile()} 在 ipd 分支不可命中时只能返回
+ * {@link RetrievalAccessProfile#FAIL_CLOSED_PUBLIC}。此时若打开开关，maxSensitivity 会对
+ * <b>所有</b>身份（含 SUPER_ADMIN / GROUP_LEADER）一律收成 PUBLIC —— 非 PUBLIC 知识库
+ * （含各 PM 自建 INTERNAL 库）召回被整体收窄，这是**功能回退且不换回任何安全收益**
+ * （角色本就无法被区分，收紧只是把所有人一起关小）。故正确顺序是：先通身份，再开开关；
+ * 两者都就绪后再补归属键（见上 P1-1）。开关自身的开/关行为差异由 chat 侧
+ * KnowledgeRetrievalBridgeAssemblyTest 覆盖（disabledSwitch… / enabledSwitch… 两用例）。
  *
  * @author ruoyi
  * @date 2026-09-28

@@ -26,6 +26,22 @@
 #   护栏条件写反、阈值配错、或被后续改动悄悄削弱，表现同样是「检查通过」，
 #   与真的通过无法区分。只跑正向用例证明不了任何事：把 check 改成 `return 0`
 #   也能通过正向用例。故先跑 selftest（13 用例，含 10 条阻断分支），自测不绿则门禁无意义。
+#
+# 2026-10-03 扩测模块：受测范围由 ruoyi-ipd 扩到 +ruoyi-chat。
+#   背景：本 workflow 只跑 `-pl ruoyi-modules/ruoyi-ipd`，而 ruoyi-chat 有 79 个
+#   @Tag("dev") 测试类（surefire 实测 364 用例）从不进 CI —— 与「只编译不验证」
+#   同型的「看起来有测试、其实不执行」。实测 chat 当前全绿（364/0/0），纳入零风险。
+#   为什么不整反应堆 `mvn test`：本门禁的红名单基线是**按模块 glob** 比对的
+#   （脚本 DEFAULT_REPORT_GLOB/DEFAULT_SRC_GLOB 只覆盖 ipd），换成整反应堆会把
+#   ruoyi-common-* 12 个 + ruoyi-admin 2 个共 14 个未经基线的测试类一并卷入——它们一旦
+#   有红，就是「基线之外的新增红」，会立刻冻结全部 PR（正是本文件开头警示的场景）。
+#   故只加已验证全绿的 chat，并同步把比对 glob 放宽到受测模块，
+#   避免「测试跑了但结果不进比对」的空跑。
+#
+# 未接入：ruoyi-chat 的 6 个 *IT.java（真库/PoC 集成测试，见 ruoyi-chat/pom.xml 注释）。
+#   surefire 默认 includes 不含 `*IT.java`，仓库也未配 failsafe，故它们只编译不执行。
+#   其中 AgentScopeKernelPocIT 硬依赖本机 MySQL 127.0.0.1:13306 + ipd_poc 库，
+#   本 job（ubuntu-latest，无 services）不具备该基础设施，强行接入必红，故保持不接入。
 
 name: ipd-test-gate
 
@@ -72,29 +88,39 @@ jobs:
         run: python3 scripts/ci/ipd-test-red-baseline-selftest.py
 
       # 分两步而非 `-pl ... -am test`：-am 会连带跑依赖模块的测试，
-      # 其失败噪音与耗时都与本门禁无关；先跳测装依赖，再只跑 IPD 模块。
+      # 其失败噪音与耗时都与本门禁无关；先跳测装依赖，再只跑受测模块。
       - name: 装依赖模块到本地仓（跳测试）
         shell: bash
-        run: mvn -B -ntp -DskipTests install -pl ruoyi-modules/ruoyi-ipd -am
+        run: mvn -B -ntp -DskipTests install -pl ruoyi-modules/ruoyi-ipd,ruoyi-modules/ruoyi-chat -am
 
       # 显式清空：CI 虽是全新 checkout，但增量构建残留会让基线混入幽灵报告
       # （本机实测曾混入 3 份上次跑的旧 XML，其中 2 个类的源文件已删除，
       #   导致 total_tests 虚高 15）。脚本另有 mtime 离群检测兜底。
       - name: 清空历史 surefire 报告
         shell: bash
-        run: rm -rf ruoyi-modules/ruoyi-ipd/target/surefire-reports
+        run: |
+          rm -rf ruoyi-modules/ruoyi-ipd/target/surefire-reports
+          rm -rf ruoyi-modules/ruoyi-chat/target/surefire-reports
 
       # failure.ignore=true：让全部测试跑完并产出完整报告，红绿判定交给基线比对。
       # 若在此处直接失败，就只能看到第一个错，看不到「新增了哪些红」。
-      - name: 跑 IPD 全量测试
+      - name: 跑受测模块全量测试（ruoyi-ipd + ruoyi-chat）
         shell: bash
-        run: mvn -B -ntp -pl ruoyi-modules/ruoyi-ipd test -Dmaven.test.failure.ignore=true
+        run: mvn -B -ntp -pl ruoyi-modules/ruoyi-ipd,ruoyi-modules/ruoyi-chat test -Dmaven.test.failure.ignore=true
 
+      # glob 必须与「跑哪些模块」一致：跑了两模块却只读 ipd 报告，chat 的红就永远
+      # 进不了比对——测试白跑（本门禁开篇警示的同型问题）。--src-glob 用于
+      # 「静默跳过」检测（有源文件无报告即阻断），同样须覆盖两个受测模块。
+      # 注意参数顺序：--reports/--src-glob 是 argparse 顶层选项，必须写在 `check`
+      # 子命令**之前**；写在后面会被判 unrecognized arguments 而直接失败（已实测）。
       - name: 与红名单基线比对
         shell: bash
         run: |
           set -uo pipefail
-          python3 scripts/ci/ipd-test-red-baseline.py check \
+          python3 scripts/ci/ipd-test-red-baseline.py \
+            --reports 'ruoyi-modules/*/target/surefire-reports/TEST-*.xml' \
+            --src-glob 'ruoyi-modules/*/src/test/java/**/*Test.java' \
+            check \
             --baseline scripts/ci/ipd-test-red-baseline.txt
 
       # 阻断时人工要看的就是这些 XML；if-no-files-found=error 兼作「测试确实跑过」的旁证
@@ -103,6 +129,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ipd-surefire-reports
-          path: ruoyi-modules/ruoyi-ipd/target/surefire-reports/
+          path: |
+            ruoyi-modules/ruoyi-ipd/target/surefire-reports/
+            ruoyi-modules/ruoyi-chat/target/surefire-reports/
           if-no-files-found: error
           retention-days: 14
