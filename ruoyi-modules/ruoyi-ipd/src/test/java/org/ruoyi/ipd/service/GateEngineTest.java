@@ -67,9 +67,9 @@ class GateEngineTest {
     }
 
     @Test
-    @DisplayName("S 级必做集 = 全部阻断动作 38 项")
-    void sLevelRequiredIs38() {
-        assertThat(engine.requiredCodes("S")).hasSize(38);
+    @DisplayName("S 级必做集 = 全部阻断动作 36 项（LC01/LC03 退役后）")
+    void sLevelRequiredIs36() {
+        assertThat(engine.requiredCodes("S")).hasSize(36);
     }
 
     @Test
@@ -144,10 +144,10 @@ class GateEngineTest {
     }
 
     @Test
-    @DisplayName("A 级：未配置从严回落 S 全集 38 项")
+    @DisplayName("A 级：未配置从严回落 S 全集 36 项")
     void aLevelUnconfiguredFallsBackToS() {
         when(configService.getValue(GateEngine.A_LEVEL_CONFIG_KEY, "")).thenReturn("");
-        assertThat(engine.requiredCodes("A")).hasSize(38);
+        assertThat(engine.requiredCodes("A")).hasSize(36);
     }
 
     @Test

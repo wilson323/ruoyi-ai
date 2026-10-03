@@ -1,6 +1,7 @@
 ---
 name: code-reviewer
 description: RuoYi-AI Java/Spring代码审查：架构、可维护性、并发、错误处理、日志；业务安全交由security-reviewer。
+tools: Read, Grep, Glob
 ---
 
 # Code Reviewer

@@ -32,7 +32,9 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
  *   <li>守卫 5 {@link #requireSuperAdmin(IpdActor)}——W5-E-2.2 adminDecision /
  *       W5-E-2.3 autoScan 的 SUPER_ADMIN 方法内硬校验模式（与 Controller requireAdmin 同严）</li>
  *   <li>守卫 6 {@link #assertSameGroupIpd(IpdActor, Long)}——ProductService.bindProject / unbindProject
- *       「actor 归属产品组 vs. 项目主组」同款横向越权守卫（commit 后台安全审查 W28-2 cross-group-idor 闭环）</li>
+ *       「actor 归属产品组 vs. 项目主组」同款横向越权守卫（commit 后台安全审查 W28-2 cross-group-idor 闭环）。
+ *       <b>统一口径 LEAD-GROUP-01：全仓跨组写判定唯一真源，GROUP_LEADER 无跨组豁免（同 MARKET_PM / RD_PM），
+ *       唯一豁免是 SUPER_ADMIN。写路径禁止本地手写角色分支。</b></li>
  * </ul>
  *
  * <p>设计约定：
@@ -174,6 +176,15 @@ public final class IpdIdorGuard {
     /**
      * 守卫 6：操作人归属组与目标业务对象归属组一致性。
      * 详见 javadoc 守卫列表。W28-2 commit 后台安全审查 high cross-group-idor 闭环。
+     *
+     * <p><b>统一口径 LEAD-GROUP-01（组长跨组不放行）</b>：本方法是全仓「跨组写操作判定」的唯一真源。
+     * 依据 BR-ORG-06 三层权限矩阵（v3 主 Prompt L408-421）——产品组长在「查看项目 / 编辑项目 /
+     * 删除初审 / 导出审计日志」四行一律限定「本组」，无一行授予跨组，「全部」只属超级管理员；
+     * BR-ORG-05 授予组长的跨组能力仅限<b>可查看</b>；G-09 / BR-ORG-04 明确「不做代理组长 / 代审人机制」。
+     *
+     * <p>因此：<b>GROUP_LEADER 在此与 MARKET_PM / RD_PM 同口径——跨组一律拒绝，无豁免</b>。
+     * 全仓任何写路径需要跨组判定时必须调用本方法，禁止本地手写角色分支
+     * （历史反例：{@code BidP231Validator.assertProjectVisible} 曾对组长无条件放行，已收口至此处）。
      */
     public static void assertSameGroupIpd(IpdActor actor, Long objectGroupId) {
         requireAuthenticated(actor);

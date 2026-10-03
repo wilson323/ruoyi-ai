@@ -9,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -75,8 +74,6 @@ class WorkbenchSummaryMultiTypeShapeTest {
     @Mock
     private DeletionRequestMapper deletionRequestMapper;
     @Mock
-    private CoefficientChangeRequestMapper coefficientChangeRequestMapper;
-    @Mock
     private LaunchDateChangeRequestMapper launchDateChangeRequestMapper;
 
     private final IpdActor actor = new IpdActor(99L, "root", "SUPER_ADMIN", null);
@@ -91,9 +88,9 @@ class WorkbenchSummaryMultiTypeShapeTest {
         lenient().when(stageActionMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of());
         lenient().when(notificationService.unreadCount(any(Long.class))).thenReturn(5L);
-        // 我发起的三表各 1 → stats.myInitiated=3
+        // 我发起的两表各 1（删除 + 上市日期）→ stats.myInitiated=2
+        // （原为三表：系数变更单 coefficient_change_requests 已随「算钱」层下线）
         lenient().when(deletionRequestMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-        lenient().when(coefficientChangeRequestMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
         lenient().when(launchDateChangeRequestMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
     }
 
@@ -150,7 +147,7 @@ class WorkbenchSummaryMultiTypeShapeTest {
         }
         return new WorkbenchService(projectMapper, projectMemberMapper, stageActionMapper,
             notificationService, aggregators,
-            deletionRequestMapper, coefficientChangeRequestMapper, launchDateChangeRequestMapper);
+            deletionRequestMapper, launchDateChangeRequestMapper);
     }
 
     @Test
@@ -170,7 +167,7 @@ class WorkbenchSummaryMultiTypeShapeTest {
         Map<String, Object> stats = (Map<String, Object>) result.get("stats");
         assertThat(stats.get("pending")).isEqualTo(9);
         assertThat(stats.get("unread")).isEqualTo(5);
-        assertThat(stats.get("myInitiated")).isEqualTo(3);
+        assertThat(stats.get("myInitiated")).isEqualTo(2);
 
         Map<String, Integer> pendingType = (Map<String, Integer>) stats.get("pendingType");
         assertThat(pendingType).as("17 类键全量").hasSize(17);
@@ -253,7 +250,7 @@ class WorkbenchSummaryMultiTypeShapeTest {
             new FixedAggregator("kpi_fill", List.of(card("kpi_fill", 4, null)), 0));
         WorkbenchService service = new WorkbenchService(projectMapper, projectMemberMapper,
             stageActionMapper, notificationService, aggregators,
-            deletionRequestMapper, coefficientChangeRequestMapper, launchDateChangeRequestMapper);
+            deletionRequestMapper, launchDateChangeRequestMapper);
 
         Map<String, Object> result = service.summary(actor, null);
         Map<String, Object> stats = (Map<String, Object>) result.get("stats");

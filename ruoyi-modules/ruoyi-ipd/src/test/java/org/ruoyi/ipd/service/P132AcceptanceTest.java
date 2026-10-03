@@ -39,11 +39,11 @@ class P132AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-PROD-02：硬件模板挂载 69 动作且硬件适用集非 NA")
+    @DisplayName("AC-PROD-02：硬件模板挂载 67 动作且硬件适用集非 NA")
     void hardwareMountsApplicableActions() {
         f.putProject(21L, "HARDWARE", "[\"国内\"]");
         assertThat(f.bootstrap.bootstrap(21L, 7L)).isEqualTo(6);
-        assertThat(f.actions).hasSize(69);
+        assertThat(f.actions).hasSize(67);
         assertThat(statusOf("P04")).isEqualTo("NOT_STARTED");
         assertThat(statusOf("D03")).isEqualTo("NOT_STARTED");
         assertThat(statusOf("V11")).isEqualTo("NOT_STARTED");
@@ -78,7 +78,7 @@ class P132AcceptanceTest {
         assertThat(blockingOf("C10")).isEqualTo("0");
         assertThat(statusOf("P06")).isEqualTo("NOT_STARTED");
         assertThat(statusOf("C04")).isEqualTo("NOT_STARTED");
-        assertThat(f.actions).filteredOn(a -> "DEEP".equals(a.getDepth())).hasSize(43);
+        assertThat(f.actions).filteredOn(a -> "DEEP".equals(a.getDepth())).hasSize(41);
     }
 
     private String statusOf(String code) {

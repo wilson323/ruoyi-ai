@@ -1,6 +1,7 @@
 ---
 name: security-reviewer
 description: RuoYi-AI安全审查：租户隔离、Sa-Token/JWT、API加密、XSS、SQL注入及密钥泄露。
+tools: Read, Grep, Glob
 ---
 
 # Security Reviewer

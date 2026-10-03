@@ -11,7 +11,6 @@ import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.domain.ProjectScore;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.security.IpdActor;
@@ -46,7 +45,7 @@ import java.util.regex.Pattern;
  *   <li>{@link KpiScoreCalculator}：综合得分公式（默认 w=0.6）</li>
  *   <li>{@link ProjectScoreService#weighted}：自评 20/40/40 加权</li>
  *   <li>{@link AllowanceLedgerService#calcFinalAmount}：津贴封顶</li>
- *   <li>{@link BonusPoolService#tierCoefficientOf}：达成率阶梯系数</li>
+ *   <li>达成率六档阶梯系数（AC-INC-17h；原复用 BonusPoolService，就地保留于 {@link PerformanceTierLadder}）</li>
  * </ul>
  */
 @Slf4j
@@ -95,7 +94,6 @@ public class KpiRecordService {
     private final KpiRecordMapper kpiRecordMapper;
     private final ProjectScoreMapper projectScoreMapper;
     private final AllowanceLedgerMapper allowanceLedgerMapper;
-    private final BonusPoolMapper bonusPoolMapper;
     /** ROOT-R1 P0-7 字面量迁移：KPI 默认值（停发阈值 60；B-RULE-02 配套）来源 */
     private final IBusinessConfigService businessConfigService;
     /** ROOT-R3-P0-2：跨状态机守卫（可选注入，nullable 兼容旧测试；Wave17 KPI 状态机接入） */
@@ -111,28 +109,25 @@ public class KpiRecordService {
     }
 
     public KpiRecordService() {
-        this(null, null, null, null, null);
+        this(null, null, null, null);
     }
 
     /** ROOT-R1 P0-7：注入 IBusinessConfigService（Spring 装配入口） */
     public KpiRecordService(KpiRecordMapper kpiRecordMapper,
                             ProjectScoreMapper projectScoreMapper,
                             AllowanceLedgerMapper allowanceLedgerMapper,
-                            BonusPoolMapper bonusPoolMapper,
                             IBusinessConfigService businessConfigService) {
         this.kpiRecordMapper = kpiRecordMapper;
         this.projectScoreMapper = projectScoreMapper;
         this.allowanceLedgerMapper = allowanceLedgerMapper;
-        this.bonusPoolMapper = bonusPoolMapper;
         this.businessConfigService = businessConfigService;
     }
 
-    /** 旧测试兼容构造器：4 依赖，不带 IBusinessConfigService */
+    /** 旧测试兼容构造器：3 依赖，不带 IBusinessConfigService */
     public KpiRecordService(KpiRecordMapper kpiRecordMapper,
                             ProjectScoreMapper projectScoreMapper,
-                            AllowanceLedgerMapper allowanceLedgerMapper,
-                            BonusPoolMapper bonusPoolMapper) {
-        this(kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, bonusPoolMapper, null);
+                            AllowanceLedgerMapper allowanceLedgerMapper) {
+        this(kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, null);
     }
 
     /**
@@ -402,7 +397,7 @@ public class KpiRecordService {
         } else {
             // 加权汇总默认 0~100，映射到 0~1 达成率范围 → 取阶梯系数 → ×100
             BigDecimal achievementRate = weighted;
-            BigDecimal tier = BonusPoolServiceBridge.tierCoefficientOf(bonusPoolMapper, achievementRate);
+            BigDecimal tier = PerformanceTierLadder.coefficientOf(achievementRate);
             comprehensive = tier.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP);
         }
         result.put(COMPREHENSIVE_LEVEL, comprehensive);
@@ -696,12 +691,16 @@ public class KpiRecordService {
     }
 
     /**
-     * 内部桥：复用 {@link BonusPoolService#tierCoefficientOf(BigDecimal)}，
-     * 不直接依赖 Spring 注入，避免循环依赖。
+     * 绩效达成率六档阶梯（AC-INC-17h 口径：120%→1.2 / 100%→1.0 / 85%→0.8 / 70%→0.6 / 50%→0.3 / &lt;50%→0）。
+     *
+     * <p><b>原为 {@code BonusPoolServiceBridge}，随奖金池（算钱层）删除后就地保留</b>：
+     * 本 6 桶 KPI 聚合属「保留」范围（绩效采集），其 COMPREHENSIVE 桶的取数口径必须与拆除前
+     * 逐位一致，否则 KPI 数值会静默漂移。原实现对传入 mapper 只做 null 判断、从不读表，
+     * 故删掉 mapper 依赖不改变任何计算结果。
      */
-    private static final class BonusPoolServiceBridge {
-        private static BigDecimal tierCoefficientOf(BonusPoolMapper mapper, BigDecimal achievementRate) {
-            if (mapper == null) return BigDecimal.ZERO;
+    private static final class PerformanceTierLadder {
+        private static BigDecimal coefficientOf(BigDecimal achievementRate) {
+            if (achievementRate == null) return BigDecimal.ZERO;
             // 简化：本服务无 projectId → 直接走默认 6 档阶梯
             BigDecimal[] thresholds = { new BigDecimal("120"), new BigDecimal("100"), new BigDecimal("85"),
                 new BigDecimal("70"), new BigDecimal("50"), BigDecimal.ZERO };

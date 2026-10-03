@@ -126,7 +126,8 @@ class AiSuggestionP3ScenesTest {
     // ---- 白名单 ----
 
     /**
-     * SCENES 21 场景镜像清单（R227 7 + AI-P3 4 + L2 每页 AI 入口补全 10，2026-09-28）。
+     * SCENES 20 场景镜像清单（R227 7 + AI-P3 4 + L2 每页 AI 入口补全 10 中的 9，2026-09-28；
+     * {@code bonus.fairness-analyze} 已于 2026-10-03 随「奖金池」功能块退役移除）。
      * 与 AiSuggestionService.SCENES 逐字对齐——本清单若与 Service 漂移，
      * sceneWhitelistExact 双向断言必红（禁「现状放行」式假绿）。
      */
@@ -138,15 +139,15 @@ class AiSuggestionP3ScenesTest {
         "demand.dedupe", "change.impact-analyze", "handover.checklist-generate",
         "report.nl-query",
         "demand.classify", "demand.priority", "bid.evaluate-proposal",
-        "kpi.monthly-summary", "kpi.contributor-summary", "bonus.fairness-analyze",
+        "kpi.monthly-summary", "kpi.contributor-summary",
         "timeline.storyline", "report.trend-analyze", "audit.anomaly-detect",
         "product.name-classify");
 
     @Test
-    @DisplayName("SCENES 白名单恰为 R227 7 + AI-P3 4 + L2 10 = 21，双向断言无增删漂移")
+    @DisplayName("SCENES 白名单恰为 R227 7 + AI-P3 4 + L2 9 = 20，双向断言无增删漂移")
     void sceneWhitelistExact() {
-        assertEquals(21, EXPECTED_SCENES.size(), "镜像清单自身必须 21");
-        assertEquals(21, AiSuggestionService.SCENES.size(),
+        assertEquals(20, EXPECTED_SCENES.size(), "镜像清单自身必须 20");
+        assertEquals(20, AiSuggestionService.SCENES.size(),
             "SCENES 实态: " + AiSuggestionService.SCENES);
         assertTrue(AiSuggestionService.SCENES.containsAll(EXPECTED_SCENES),
             "缺场景: " + EXPECTED_SCENES.stream()
@@ -309,7 +310,7 @@ class AiSuggestionP3ScenesTest {
     }
 
     @Test
-    @DisplayName("report 成功：静态目录注入 prompt（四端点），全局维度免 projectId")
+    @DisplayName("report 成功：静态目录注入 prompt（三端点；奖金导出端点已随奖金池退役移除），全局维度免 projectId")
     void reportNavigatesWithCatalog() {
         enableModel();
         stubChatOk();
@@ -318,7 +319,7 @@ class AiSuggestionP3ScenesTest {
 
         String prompt = capturedPrompt();
         assertTrue(prompt.contains("/api/v1/report/project-summary"), prompt);
-        assertTrue(prompt.contains("export/bonus"), prompt);
+        assertTrue(prompt.contains("export/allowance"), prompt);
         assertTrue(prompt.contains("上月各项目绩效汇总在哪看"), prompt);
     }
 

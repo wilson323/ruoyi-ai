@@ -47,8 +47,6 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_CONTRIBUTION_QUERY,
         // P3-8.2：负反馈查询（全员可读）
         IpdPermissionCode.OPERATION_NEGATIVE_FEEDBACK_QUERY,
-        // P3-4.4：奖金池详情/列表（内部全员可读；写操作仅超管）
-        IpdPermissionCode.OPERATION_BONUS_POOL_QUERY,
         // AC-COMP-01/04/05：合规读（内部全员，角色范围 service 二次校验）
         IpdPermissionCode.OPERATION_COMPLIANCE_READ,
         // R-NEW-SEC-5：G5 复盘待办读（对象级由 service 限定为该项目在职成员）
@@ -84,7 +82,6 @@ public final class IpdRolePermissionCatalog {
         // SEC-MED-3：撤返码独立登记（仅申请人角色可用——与 SUBMIT 同集合，因角色级别无
         // 法区分 actor 与资源 ownership；具体 IDOR 校验由 service 维持 + 全 NOT_FOUND 防侧信道）
         IpdPermissionCode.OPERATION_DELETION_REQUEST_WITHDRAW,
-        IpdPermissionCode.OPERATION_COEFFICIENT_PROPOSE,
         // P1-10.1：AI 文档登记原始输出 / 人工改版 / 人工审核（BR-AI-03）
         IpdPermissionCode.OPERATION_AI_DOCUMENT_CREATE,
         IpdPermissionCode.OPERATION_AI_DOCUMENT_REVISE,
@@ -128,10 +125,9 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_RECOVERY_CHECK_90D
     );
 
-    /** 组长初审删除申请 + 系数定值确认。 */
+    /** 组长初审删除申请。 */
     private static final Set<String> DELETION_LEADER = unique(
         IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER,
-        IpdPermissionCode.OPERATION_COEFFICIENT_CONFIRM,
         // P3-6.2：产品组长确认贡献度（仅 GROUP_LEADER）
         IpdPermissionCode.OPERATION_CONTRIBUTION_CONFIRM,
         // P3-8.2：负反馈认定/解除（仅 GROUP_LEADER / SUPER_ADMIN）
@@ -178,9 +174,6 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_SOP_TEMPLATE_EDIT,
         IpdPermissionCode.OPERATION_AI_MODEL_EDIT,
         IpdPermissionCode.OPERATION_BID_INVITATION_ADMIN_ASSIGN,
-        // P3-4.4：奖金池核算（资金敏感；R215-N1 拍板后 freeze/distribute 拆出归组长+超管，
-        // compute 仍仅超管；service 无二次校验，注解即终审）
-        IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE,
         // R-NEW-SEC-5 + P3-7.1 合并裁决：锁定/解锁采用拆细码 LOCK/UNLOCK（Controller 注解实际消费）；
         // :admin 码保留常量但无注解消费端，不登记进目录避免 CatalogDrift 守卫误报
         IpdPermissionCode.OPERATION_SWITCHING_ACCEPTANCE_LOCK,
@@ -204,20 +197,12 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_KPI_CONFIG
     );
 
-    /**
-     * R215-N1 拍板（owner 2026-09-24：「组长可以操作，超管全部完整有权可用」）：
-     * 奖金池冻结/分配为涉钱审批动作，授予 GROUP_LEADER + SUPER_ADMIN；
-     * 不授予 MARKET_PM / RD_PM（compute 仍归 ADMIN_WRITE 仅超管）。
-     * 独立成集合不进 BUSINESS_WRITE，避免双 PM 误继承。
-     */
-    private static final Set<String> BONUS_APPROVAL_WRITE = unique(
-        IpdPermissionCode.OPERATION_BONUS_POOL_FREEZE,
-        IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE
-    );
+    // 2026-10-03 owner 决策：退役「奖金池」业务域，原 BONUS_APPROVAL_WRITE 集合
+    // （freeze/distribute 授予 GROUP_LEADER + SUPER_ADMIN）已随四码一并删除。
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
-        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE, BONUS_APPROVAL_WRITE, RECOVERY_LEADER_WRITE),
-        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, BONUS_APPROVAL_WRITE, RECOVERY_LEADER_WRITE),
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE, RECOVERY_LEADER_WRITE),
+        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, RECOVERY_LEADER_WRITE),
         "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, KPI_CONFIG_WRITE),
         "RD_PM", merge(READ_SET, BUSINESS_WRITE, KPI_CONFIG_WRITE)
     );

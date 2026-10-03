@@ -90,9 +90,10 @@ class StateMachineGuardTest {
     @Test
     @DisplayName("拒绝跨域：未登记的跨域 trigger → postCommit 不写审计不通知（仅记日志）")
     void rejectCrossDomainNoOp() {
-        // 2026-09-09 C3：DRAFT->DISTRIBUTED|distribute 已补登记（BonusPool DRAFT 直分路径合法化），
-        // 但 trigger=skipSteps 未登记 → postCommit 应 no-op（不发审计不发通知）
-        guard.postCommit("bonus_pool", "DRAFT", "DISTRIBUTED", "skipSteps",
+        // 该 entityType 的 from→to 已登记、但 trigger=skipSteps 未登记 → postCommit 应 no-op
+        // （不发审计不发通知）。样本原为 bonus_pool DRAFT->DISTRIBUTED|skipSteps，随「算钱」层下线移除，
+        // 换用同型的 contribution（INITIAL->DRAFT|fill 已登记），跨域拒绝行为口径不变。
+        guard.postCommit("contribution", "DRAFT", "DISTRIBUTED", "skipSteps",
             1L, 100L, new Date());
 
         // 不应触发任何跨域副作用
@@ -161,9 +162,10 @@ class StateMachineGuardTest {
         assertThat(guard.isAllowed("deletion_request", "ADMIN_REVIEW", "WITHDRAWN", "withdraw")).isTrue();
         guard.preCheck("deletion_request", "ADMIN_REVIEW", "WITHDRAWN", "withdraw");
 
-        // *->CONFIRMED 合法（CONFIRMED 是 bonus_pool 已知终态）
-        assertThat(guard.isAllowed("bonus_pool", "DRAFT", "CONFIRMED", "freeze")).isTrue();
-        guard.preCheck("bonus_pool", "DRAFT", "CONFIRMED", "freeze");
+        // *->ARCHIVED 合法（ARCHIVED 是 kpi_record 已知终态；样本原为 bonus_pool 的 CONFIRMED，
+        // 该终态集随「算钱」层下线移除，此处换同型的 kpi_record 终态，通配收敛行为口径不变）
+        assertThat(guard.isAllowed("kpi_record", "EDITING", "ARCHIVED", "archive")).isTrue();
+        guard.preCheck("kpi_record", "EDITING", "ARCHIVED", "archive");
 
         // 通配到非终态仍非法（如 *->DRAFT 不是终态）
         assertThat(guard.isAllowed("deletion_request", "DRAFT", "DRAFT", "noop")).isFalse();

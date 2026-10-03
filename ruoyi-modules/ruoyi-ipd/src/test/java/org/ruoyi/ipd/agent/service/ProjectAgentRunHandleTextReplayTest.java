@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.agent.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.domain.*;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
 import org.ruoyi.ipd.agent.store.*;
@@ -8,6 +9,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 /** Real RunHandle with controlled event-store faults; not a database acceptance test. */
+@Tag("dev")
 class ProjectAgentRunHandleTextReplayTest {
  private IpdAgentRunEvent event(long seq,String payload){return IpdAgentRunEvent.builder().seq(seq).eventType("TEXT_DELTA").payload(payload).build();}
  private AgentRunStore store(){var s=mock(AgentRunStore.class);when(s.findRun(9L)).thenReturn(Optional.of(IpdAgentRun.builder().id(9L).status("RUNNING").build()));when(s.transition(anyLong(),any(),any(),any(),any())).thenReturn(true);when(s.appendEvent(any())).thenReturn(true);return s;}

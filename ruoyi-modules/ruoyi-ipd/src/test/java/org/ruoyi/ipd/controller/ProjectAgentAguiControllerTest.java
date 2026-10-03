@@ -2,6 +2,7 @@ package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.service.*;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.security.*;
@@ -11,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /** 正式接线候选的身份与权限验证；不发送模型请求、不写业务数据。 */
+@Tag("dev")
 class ProjectAgentAguiControllerTest {
     private final IpdPermission permission = mock(IpdPermission.class);
     private final ProjectAgentAguiStream stream = mock(ProjectAgentAguiStream.class);

@@ -160,15 +160,22 @@ rd_replacement:
   table: null                   # 待定（原型双表 vs project_members 扩展，14 问 Q4-Q6）
   notes: "域完全未建模"
 
-receipt_review:
-  implemented: false
-  table: receipt_ledger
-  notes: "域已建表但流程未贯通"
-
 retirement_review:
   implemented: false
   table: null                   # 待定（原型新表 vs 复用 deletion_requests，14 问 Q7-Q9）
   notes: "域完全未建模"
+
+
+receipt_review:
+  implemented: false
+  table: receipt_ledgers
+  notes: 槽位随「算钱」层下线后保留但未实现（无代码聚合器）；数据源 receipt_ledgers 表仍存在，
+        库内 28 行真实数据待 owner 决定是否同步从 WorkbenchDecisionBucket 移除（待裁决 D-7）。
+
+bonus_lock:
+  implemented: false
+  notes: 槽位随「算钱」层下线后保留但未实现（无代码聚合器）；待 owner 决定是否同步从
+        WorkbenchDecisionBucket 移除（待裁决 D-7）。
 
 capacity_approval:
   implemented: false
@@ -183,6 +190,3 @@ change_verify:
   implemented: false
   notes: "域已建但验证动作流程未贯通"
 
-bonus_lock:
-  implemented: false
-  notes: "域已建（奖金分配表）但锁定流程未贯通"

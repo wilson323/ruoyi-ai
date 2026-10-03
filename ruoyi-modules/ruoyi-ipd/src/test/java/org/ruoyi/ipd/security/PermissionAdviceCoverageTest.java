@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * SEC-HIGH-3（CWE-693）：权限 advice 覆盖面防漂移守卫。
  * <p>背景：IpdPermissionExceptionHandler 曾用 {@code assignableTypes = {...7 个 Controller}} 白名单限定，
- * 漏列 AuditLog / Bid / CoefficientChange / LaunchDateChange / ProductGroup / SystemConfig 6 个 Controller——
+ * 漏列 AuditLog / Bid / LaunchDateChange / ProductGroup / SystemConfig 6 个 Controller——
  * 这些 Controller 的 @SaCheckPermission 拒绝时 NotPermissionException 落到基线 SaTokenExceptionHandler，
  * 返回 R&lt;&gt; 包络而非 IPD ApiV1Response，前端解析失败白屏。
  * <p>修复：注解改为 {@code basePackages = "org.ruoyi.ipd.controller"}，新增 Controller 自动覆盖。
@@ -61,7 +61,6 @@ class PermissionAdviceCoverageTest {
     private static final List<String> FORMERLY_MISSED_CONTROLLERS = List.of(
         "AuditLogController",
         "BidController",
-        "CoefficientChangeController",
         "LaunchDateChangeController",
         "ProductGroupController",
         "SystemConfigController"

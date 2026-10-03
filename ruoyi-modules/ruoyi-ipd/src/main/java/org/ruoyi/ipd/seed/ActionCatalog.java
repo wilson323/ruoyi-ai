@@ -6,8 +6,10 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import java.util.List;
 
 /**
- * IPD 六阶段标准动作清单 v3 目录（69 动作 = 深管 42 / 轻管 27，阻断 38 / 非阻断 31）
- * 来源：docs/ipd-系统说明/外部资源/IPD系统_六阶段标准动作清单_v3.md（已按 Gavin 全部决策定稿）
+ * IPD 六阶段标准动作清单 v3 目录（67 动作 = 深管 40 / 轻管 27，阻断 36 / 非阻断 31）
+ * 来源：docs/ipd-系统说明/外部资源/IPD系统_六阶段标准动作清单_v3.md（已按 Gavin 全部决策定稿）；
+ * 文首「v4 退役标注」节：LC01（上市后销售与回款跟踪）与 LC03（上市后6个月终算）已于 2026-10-03
+ * 随「回款台账」「奖金池」功能块退役，故本目录由 v3 的 69 动作同步为 67 动作。
  *
  * 设计说明：动作编码体系（C01/P01/D05/C12/D11/V10...）与阶段/深度/阻断属性是流程定义事实，
  * 编译期固化于本目录；项目等级裁剪规则（A 级必做集、B 级清单）由超管在 system_configs 后台配置（v3 原文），
@@ -84,10 +86,9 @@ public final class ActionCatalog {
         new ActionDef("L06", "系统上架", "LAUNCH", "MARKET_PM", "DEEP", true, "ALL", "", false, "", "AI_DIRECT"),
         new ActionDef("L07", "GTM就绪评审", "LAUNCH", "BOTH", "DEEP", true, "ALL", "", false, "G4", "HUMAN_GATE"),
         new ActionDef("L08", "正式上市发布(录入上市日期)", "LAUNCH", "MARKET_PM", "DEEP", true, "ALL", "LAUNCH_DATE", false, "", "AI_DIRECT"),
-        // ===== 阶段六 生命周期 LIFECYCLE（9：深 8 / 轻 1；阻断 7）=====
-        new ActionDef("LC01", "上市后销售与回款跟踪", "LIFECYCLE", "MARKET_PM", "DEEP", true, "ALL", "", false, "", "AI_DIRECT"),
+        // ===== 阶段六 生命周期 LIFECYCLE（7：深 6 / 轻 1；阻断 5）=====
+        // LC01 / LC03 已于 2026-10-03 退役（回款台账 / 奖金池功能块下线），不再作开发或验收依据
         new ActionDef("LC02", "上市后90天复盘", "LIFECYCLE", "BOTH", "DEEP", true, "ALL", "", false, "G5", "HUMAN_GATE"),
-        new ActionDef("LC03", "上市后6个月终算(回款达成率+奖金池)", "LIFECYCLE", "MARKET_PM", "DEEP", true, "ALL", "", false, "", "AI_DIRECT"),
         new ActionDef("LC04", "双PM贡献度评定", "LIFECYCLE", "BOTH", "DEEP", true, "ALL", "", false, "", "AI_DIRECT"),
         new ActionDef("LC05", "客户反馈与质量问题处理", "LIFECYCLE", "MARKET_PM", "DEEP", false, "ALL", "", false, "", "AI_DIRECT"),
         new ActionDef("LC06", "版本迭代与维护发布", "LIFECYCLE", "RD_PM", "LIGHT", false, "ALL", "", false, "", "AI_DIRECT"),

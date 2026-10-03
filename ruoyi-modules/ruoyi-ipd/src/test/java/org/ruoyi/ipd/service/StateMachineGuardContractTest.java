@@ -62,7 +62,7 @@ class StateMachineGuardContractTest {
     /* ====================== 0. 哨兵：规则数 ====================== */
 
     @Test
-    @DisplayName("哨兵：种子规则总数=93（原89条 + 产品线开工审批4条，17机）")
+    @DisplayName("哨兵：种子规则总数=86（93 − 奖金池4 + 系数变更3，随「算钱」层下线）")
     void sentinelRuleCount() {
         // 增删规则必须同步修改本断言与下方表驱动行——防止规则表与测试悄然漂移
         // 2026-09-09 双线合并：R24线 settleTimeout-APPROVED（gate 5→6）+ R25线 DRAFT直分已并
@@ -71,12 +71,13 @@ class StateMachineGuardContractTest {
         // R33 一期（2026-09-27）：kpi_shared_confirm 接线 3 条（create/recapture/secondSign）50→53
         // D-1 批次（蜂群 SWARM-A）：6 台 36 条接线规则 53→89
         // 产品线开工合同：创建待开工/批准/拒绝/重新提交四边，89→93。
+        // 「算钱」层下线：移除 bonus_pool 4 条 + coefficient_change 3 条，93→86。
         assertThat(guard.ruleCount())
             .as("规则总数变化=契约变更，必须显式过本测试 + code review")
-            .isEqualTo(93);
+            .isEqualTo(86);
     }
 
-    /* ====================== 1. 表驱动：93 条规则合法迁移 ====================== */
+    /* ====================== 1. 表驱动：86 条规则合法迁移 ====================== */
 
     @ParameterizedTest(name = "[{index}] 合法 {0}")
     @CsvSource({
@@ -93,11 +94,6 @@ class StateMachineGuardContractTest {
         "deletion_request, ADMIN_REVIEW, REJECTED, adminReject",
         "deletion_request, LEADER_REVIEW, WITHDRAWN, withdraw",
         "deletion_request, LEADER_REVIEW, ADMIN_REVIEW, escalateOverdue",
-        // ---- bonus_pool（4，含 2026-09-09 补登的 DRAFT 直分）----
-        "bonus_pool, INITIAL, DRAFT, compute",
-        "bonus_pool, DRAFT, CONFIRMED, freeze",
-        "bonus_pool, CONFIRMED, DISTRIBUTED, distribute",
-        "bonus_pool, DRAFT, DISTRIBUTED, distribute",
         // ---- gate_review（6，含 R24线 settleTimeout-APPROVED 补登）----
         "gate_review, PENDING, APPROVED, sign",
         "gate_review, PENDING, REJECTED, sign",
@@ -109,10 +105,6 @@ class StateMachineGuardContractTest {
         "launch_date_change, INITIAL, PENDING_SECOND, propose",
         "launch_date_change, PENDING_SECOND, CONFIRMED, secondSign",
         "launch_date_change, PENDING_SECOND, REJECTED, secondSign",
-        // ---- coefficient_change（3）----
-        "coefficient_change, INITIAL, PENDING_LEADER, propose",
-        "coefficient_change, PENDING_LEADER, CONFIRMED, leaderApprove",
-        "coefficient_change, PENDING_LEADER, REJECTED, leaderReject",
         // ---- contribution（5）----
         "contribution, INITIAL, DRAFT, fill",
         "contribution, DRAFT, SUBMITTED, submit",
@@ -220,11 +212,8 @@ class StateMachineGuardContractTest {
         // 终态复活：WITHDRAWN 再提交
         "deletion_request, WITHDRAWN, LEADER_REVIEW, submit",
         // 终态倒退：DISTRIBUTED 退 CONFIRMED
-        "bonus_pool, DISTRIBUTED, CONFIRMED, freeze",
         // 未登记倒退：CONFIRMED 解冻回 DRAFT
-        "bonus_pool, CONFIRMED, DRAFT, unfreeze",
         // 跳级：INITIAL 直分（必须先 compute 成 DRAFT）
-        "bonus_pool, INITIAL, CONFIRMED, distribute",
         // reopen 白名单外：APPROVED 不可 reopen（仅 REJECTED/ABSTAINED_TIMEOUT）
         "gate_review, APPROVED, PENDING, reopen",
         // 自环未登记
@@ -232,7 +221,6 @@ class StateMachineGuardContractTest {
         // 终态倒退：CONFIRMED 回签
         "launch_date_change, CONFIRMED, PENDING_SECOND, secondSign",
         // 自环未登记
-        "coefficient_change, PENDING_LEADER, PENDING_LEADER, propose",
         // CONFIRMED 无 reject 路径（仅 SUBMITTED 可 reject）
         "contribution, CONFIRMED, DRAFT, reject",
         // 终态复活：ROLLED_BACK 重建
@@ -276,9 +264,11 @@ class StateMachineGuardContractTest {
     @Test
     @DisplayName("from=null→INITIAL：isAllowed 路径（Java null 表示创建迁移）")
     void nullFromMappedToInitialIsAllowed() {
-        // bonus_pool:INITIAL->DRAFT|compute 已登记；from=null 应映射到 INITIAL 后命中
-        assertThat(guard.isAllowed("bonus_pool", null, "DRAFT", "compute")).isTrue();
-        assertThatCode(() -> guard.preCheck("bonus_pool", null, "DRAFT", "compute"))
+        // contribution:INITIAL->DRAFT|fill 已登记；from=null 应映射到 INITIAL 后命中
+        // （样本原为 bonus_pool:INITIAL->DRAFT|compute，该规则随「算钱」层下线移除；
+        //   本用例验的是「from=null→INITIAL」这一通用归一化行为，与具体状态机无关，故换同型规则。）
+        assertThat(guard.isAllowed("contribution", null, "DRAFT", "fill")).isTrue();
+        assertThatCode(() -> guard.preCheck("contribution", null, "DRAFT", "fill"))
             .doesNotThrowAnyException();
     }
 
@@ -310,7 +300,7 @@ class StateMachineGuardContractTest {
     @Test
     @DisplayName("postCommit 收到未登记迁移：no-op 不抛不写审计（已提交事务不可反向破坏）")
     void postCommitUnregisteredNoOp() {
-        guard.postCommit("bonus_pool", "DRAFT", "DISTRIBUTED", "skipSteps", 1L, 100L, new Date());
+        guard.postCommit("contribution", "DRAFT", "DISTRIBUTED", "skipSteps", 1L, 100L, new Date());
         verifyNoInteractions(auditLogService);
         verifyNoInteractions(notificationService);
     }

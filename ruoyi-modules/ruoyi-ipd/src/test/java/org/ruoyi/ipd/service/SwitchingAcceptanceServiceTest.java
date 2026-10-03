@@ -13,7 +13,6 @@ import org.ruoyi.ipd.dto.SwitchingAcceptanceUnlockReq;
 import org.ruoyi.ipd.mapper.ContributionMapper;
 import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.mapper.SwitchingAcceptanceMapper;
@@ -37,7 +36,7 @@ import static org.mockito.Mockito.when;
  *
  * <p>覆盖 6 维度：
  * <ol>
- *   <li>正常路径：run → 5 类校验全过 + diffRate=0 + passed=true</li>
+ *   <li>正常路径：run → 4 类校验全过 + diffRate=0 + passed=true</li>
  *   <li>边界：month=YYYY-MM 格式校验；2026-9 拒</li>
  *   <li>异常：非超管 lock 抛 403；run 未执行直接 lock 抛 SWITCHING_NOT_RUN</li>
  *   <li>权限：run/get/list 内部全员；lock/unlock 仅超管</li>
@@ -54,9 +53,8 @@ class SwitchingAcceptanceServiceTest {
     @Mock private SwitchingAcceptanceMapper switchingAcceptanceMapper;
     @Mock private IpdPermission ipdPermission;
 
-    /** P0-9 真实对账适配：6 个数据源 mock（空表 → 5 类校验全过；全对账走真实计算路径）。 */
+    /** P0-9 真实对账适配：5 个数据源 mock（空表 → 4 类校验全过；全对账走真实计算路径）。 */
     private AllowanceLedgerMapper allowanceLedgerMapper;
-    private BonusPoolMapper bonusPoolMapper;
     private ProjectScoreMapper projectScoreMapper;
     private NegativeFeedbackMapper negativeFeedbackMapper;
     private ContributionMapper contributionMapper;
@@ -76,20 +74,17 @@ class SwitchingAcceptanceServiceTest {
         // R28 P0-9 适配：runChecks 已改为真实对账，6 mapper 未注入时 fail-closed（passed=false）。
         // 测试注入空表 mock（selectList→空列表）走真实计算路径且全部通过。
         allowanceLedgerMapper = org.mockito.Mockito.mock(AllowanceLedgerMapper.class);
-        bonusPoolMapper = org.mockito.Mockito.mock(BonusPoolMapper.class);
         projectScoreMapper = org.mockito.Mockito.mock(ProjectScoreMapper.class);
         negativeFeedbackMapper = org.mockito.Mockito.mock(NegativeFeedbackMapper.class);
         contributionMapper = org.mockito.Mockito.mock(ContributionMapper.class);
         handoverMapper = org.mockito.Mockito.mock(HandoverMapper.class);
         service.setAllowanceLedgerMapper(allowanceLedgerMapper);
-        service.setBonusPoolMapper(bonusPoolMapper);
         service.setProjectScoreMapper(projectScoreMapper);
         service.setNegativeFeedbackMapper(negativeFeedbackMapper);
         service.setContributionMapper(contributionMapper);
         service.setHandoverMapper(handoverMapper);
         // lenient：仅 run 系用例真正消费，lock/unlock/isMonthLocked 用例不触 runChecks
         org.mockito.Mockito.lenient().when(allowanceLedgerMapper.selectList(any())).thenReturn(List.of());
-        org.mockito.Mockito.lenient().when(bonusPoolMapper.selectList(any())).thenReturn(List.of());
         org.mockito.Mockito.lenient().when(projectScoreMapper.selectList(any())).thenReturn(List.of());
         org.mockito.Mockito.lenient().when(negativeFeedbackMapper.selectList(any())).thenReturn(List.of());
         org.mockito.Mockito.lenient().when(contributionMapper.selectList(any())).thenReturn(List.of());
@@ -122,7 +117,7 @@ class SwitchingAcceptanceServiceTest {
      * ============================================================ */
 
     @Test
-    @DisplayName("run：5 类校验全过 + diffRate=0 + passed=true")
+    @DisplayName("run：4 类校验全过 + diffRate=0 + passed=true")
     void run_cleanMonth_allChecksPassed() {
         when(ipdPermission.requireInternal()).thenReturn(internalActor());
         when(switchingAcceptanceMapper.selectOne(any())).thenReturn(null);
@@ -135,9 +130,9 @@ class SwitchingAcceptanceServiceTest {
         var report = service.run(VALID_MONTH);
         assertThat(report.passed()).isTrue();
         assertThat(report.diffRate()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(report.checks()).hasSize(5);
-        assertThat(report.summary().get("totalChecks")).isEqualTo(5);
-        assertThat(report.summary().get("passedChecks")).isEqualTo(5);
+        assertThat(report.checks()).hasSize(4);
+        assertThat(report.summary().get("totalChecks")).isEqualTo(4);
+        assertThat(report.summary().get("passedChecks")).isEqualTo(4);
         assertThat(report.summary().get("failedChecks")).isEqualTo(0);
         assertThat(report.isLocked()).isFalse();
         verify(switchingAcceptanceMapper).insert(any(SwitchingAcceptance.class));
@@ -164,17 +159,18 @@ class SwitchingAcceptanceServiceTest {
     }
 
     @Test
-    @DisplayName("run：数据源未注入 → 5 类校验全 fail-closed（passed=false，禁止假通过）")
+    @DisplayName("run：数据源未注入 → 4 类校验全 fail-closed（passed=false，禁止假通过）")
     void run_dataSourceMissing_failClosed() {
         when(ipdPermission.requireInternal()).thenReturn(internalActor());
         when(switchingAcceptanceMapper.selectOne(any())).thenReturn(null);
         when(switchingAcceptanceMapper.insert(any(SwitchingAcceptance.class))).thenAnswer(inv -> 1);
 
-        // 无 6 mapper 的裸服务：P0-9 真实对账后数据源缺失必须显式失败而非静默通过
+        // 无 5 mapper 的裸服务：P0-9 真实对账后数据源缺失必须显式失败而非静默通过
+        // （原为 6 mapper / 5 类校验，ALLOWANCE_LOCKED_MATCH 随「算钱」层下线移除）
         var bare = new SwitchingAcceptanceService(switchingAcceptanceMapper, ipdPermission);
         var report = bare.run(VALID_MONTH);
         assertThat(report.passed()).isFalse();
-        assertThat(report.checks()).hasSize(5);
+        assertThat(report.checks()).hasSize(4);
         assertThat(report.checks()).allSatisfy(c -> {
             assertThat(c.passed()).isFalse();
             assertThat(c.note()).contains("未注入");

@@ -60,9 +60,6 @@ BidController.java#adminAssign	方法体已有 requireAdmin/requireSuperAdmin �
 BidController.java#modifyInvitation	存量中危待修：能操作本组外数据，排期修（P4）
 BidController.java#selectResponse	存量中危待修：能操作本组外数据，排期修（P4）
 BidResponseCheckController.java#aiCheck	存量中危待修：能操作本组外数据，排期修（P4）
-BonusPoolController.java#autoCompute	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
-BonusPoolController.java#compute	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
-BonusPoolController.java#previewCoefficient	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
 BusinessConfigController.java#delete	全局配置/登录/字典/扫描类，天然无归属概念
 BusinessConfigController.java#upsert	全局配置/登录/字典/扫描类，天然无归属概念
 CertTemplateController.java#create	全局配置/登录/字典/扫描类，天然无归属概念
@@ -122,7 +119,6 @@ ProjectController.java#recordLaunchDate	存量中危待修：能操作本组外�
 ProjectController.java#resubmitStart	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectController.java#syncCertItems	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectScoreTaskController.java#scan	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
-ReceiptLedgerController.java#uploadVoucher	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
 RequirementChangeController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
 RequirementChangeController.java#sign	存量中危待修：能操作本组外数据，排期修（P4）
 RequirementChangeController.java#submit	存量中危待修：能操作本组外数据，排期修（P4）

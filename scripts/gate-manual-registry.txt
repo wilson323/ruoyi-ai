@@ -19,7 +19,10 @@
 # 新增脚本而未接线时，元门禁会 FAIL —— 这正是本清单存在的意义。
 #
 # ─────────────────────────── ACTIVE ───────────────────────────
-check-a11y-basics.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一；自证标记 3 处。CI 里跑的是另一套 axe-scan.mjs，不等价。建议接线
+# 2026-10-03：check-a11y-basics.sh 与 check-memory-leak-pattern.sh 已移出本仓 ——
+#   二者扫的是前端源码（FRONT_DIR 原默认指向兄弟仓库 ../ruoyi-ipd-web），在本仓 CI
+#   无法运行（干净检出无兄弟仓库，实测输入缺失一律 exit=2）。owner 决策后已挪至
+#   ruoyi-ipd-web/.github/workflows/static-gates.yml，故不再登记为本仓门禁。
 check-agentscope-abstract-baseline.sh	ACTIVE	AgentScope 抽象基线核查，自证标记 2 处。建议接线
 check-assertion-line-drift.sh	ACTIVE	断言与代码漂移，自证标记 3 处。建议接线
 check-async-configurer-duplication.sh	ACTIVE	Spring 异步配置器重复注册，真实缺陷类
@@ -42,7 +45,6 @@ check-gate-self-red.sh	ACTIVE	「自证能红」存在性检查（自证标记 1
 check-kanban-section-shape.sh	ACTIVE	看板章节结构检查，自证标记 5 处。建议接线
 check-lint-reports-freshness.sh	ACTIVE	lint 报告新鲜度，自证标记 5 处。建议接线
 check-merge-gate-archived-at.sh	ACTIVE	被 .harness/gate.sh 间接调用，但不在 CI 语料内；接进 CI 可与 harness 路径合并
-check-memory-leak-pattern.sh	ACTIVE	SOP-2 承诺的 5 个门禁之一，自证标记 3 处。建议接线
 check-mock-data-realism.sh	ACTIVE	Mock 数据真实性，自证标记 3 处。建议接线
 check-mock-legality.sh	ACTIVE	Mock 合法性（Q2 回款口径等硬约束）
 check-module-boundary.sh	ACTIVE	模块边界检查，自证标记 5 处。建议接线（已知第 98/103 行 find 失败会静默少扫文件）

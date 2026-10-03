@@ -1,17 +1,18 @@
 {
-  "version": "0.1.0",
-  "updated_at": "2026-09-06T18:50:00+08:00",
+  "version": "0.1.1",
+  "updated_at": "2026-10-03T12:20:00+08:00",
   "_metadata": {
     "purpose": "ROOT-R4 P0-8 acceptance-matrix.json 三向关联样板（10/237 条）",
     "scope": "本会话仅入 10 条样板，剩余 227 条 AC 由 owner 决策后批量导入",
     "schema_ref": "./acceptance-matrix.schema.json",
     "evidence_source": "docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md（19 commit 闭环对账）",
+    "coverage_stats_note": "本段为「按 rows 派生」的当前值，不是历史快照；.claude/helpers/acceptance-matrix-validate.cjs 会逐字段比对行内真值，不一致即报 ERROR（防手工填写导致声明与实况脱钩的假绿）。",
     "coverage_stats": {
-      "covered": 5,
-      "partial": 3,
-      "blocked": 2,
+      "covered": 6,
+      "partial": 1,
+      "blocked": 0,
       "manual": 0,
-      "deprecated": 0,
+      "deprecated": 3,
       "total_sample": 10,
       "total_target": 237,
       "import_progress_pct": 4.2
@@ -84,10 +85,10 @@
       "category": "INC",
       "title": "奖金池基数 = 实际回款 × 5% × 项目等级系数（ZK 实际回款口径，2026-09-06 owner 裁决 [CONSISTENCY-1]）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P342AcceptanceTest",
-      "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P342AcceptanceTest.java",
+      "unitTestClass": null,
+      "integrationTestPath": null,
       "auditLog": "BONUS_CALC",
-      "status": "covered",
+      "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
         "5fb4fd42",
@@ -95,40 +96,40 @@
         "311007a5"
       ],
       "zkRef": "ZK-16",
-      "notes": "B-RULE-02 闭环 + owner 裁决 [CONSISTENCY-1] 改口径为实际回款；P342 L28 'AC-INC-16 实际回款 1000000 × 5% = 50000'"
+      "notes": "【2026-10-03 退役】本行所属「奖金池」域已按 owner 指令整体移除（连同回款台账、业绩窗口），覆盖它的 P342AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。linkedCommits 为历史证据，保留仅供追溯，不得再作为开发或验收依据。退役前口径：P342 L28 'AC-INC-16 实际回款 1000000 × 5% = 50000'"
     },
     {
       "ac_id": "AC-INC-16b",
       "category": "INC",
       "title": "回款口径硬约束：source 必须 = RECEIPT（拒绝 SHIPMENT）；金额必须为正数",
       "docRef": "docs/ipd-系统说明/验收/AC-真值回对矩阵-2026-09-05-237条对账.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P341AcceptanceTest",
-      "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P341AcceptanceTest.java",
+      "unitTestClass": null,
+      "integrationTestPath": null,
       "auditLog": "RECEIPT_LEDGER_REJECT",
-      "status": "covered",
+      "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
         "fb2b1627"
       ],
       "zkRef": "ZK-16",
-      "notes": "P341 L78 'AC-INC-16b 口径验证：source=SHIPMENT ⇒ 拒绝（必须是 RECEIPT）'；AC-GLB-09 原阻塞项已结清"
+      "notes": "【2026-10-03 退役】本行属于「回款台账」域，该域已按 owner 指令整体移除，覆盖它的 P341AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。退役前证据：P341 L78 'AC-INC-16b 口径验证：source=SHIPMENT ⇒ 拒绝（必须是 RECEIPT）'"
     },
     {
       "ac_id": "AC-INC-17h",
       "category": "INC",
       "title": "奖金达成区间系数实现（Infinity=1.2 / 120=1.0 / 85=0.8 / 70=0.6 / 50=0.3 / 0=0）",
       "docRef": "docs/ipd-系统说明/外部资源/IPD系统_验收清单.md",
-      "unitTestClass": "org.ruoyi.ipd.service.P343AcceptanceTest",
-      "integrationTestPath": "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/service/P343AcceptanceTest.java",
+      "unitTestClass": null,
+      "integrationTestPath": null,
       "auditLog": "BONUS_TIER_COEFFICIENT",
-      "status": "covered",
+      "status": "deprecated",
       "owner": "rd",
       "linkedCommits": [
         "7cae2138",
         "4158337b"
       ],
       "zkRef": null,
-      "notes": "bonus.achievementTiers 区间制已实现；G-08 §5 红线；P343 L159 'AC-INC-16 + AC-INC-17: 最终奖金池 = 基础奖金池 x 阶梯系数'"
+      "notes": "【2026-10-03 退役】bonus.achievementTiers 达成区间系数属「奖金池」域，该域已按 owner 指令整体移除，覆盖它的 P343AcceptanceTest 随域删除，故 unitTestClass/integrationTestPath 置 null。退役前证据：P343 L159 'AC-INC-16 + AC-INC-17: 最终奖金池 = 基础奖金池 x 阶梯系数'"
     },
     {
       "ac_id": "AC-AUTH-09",

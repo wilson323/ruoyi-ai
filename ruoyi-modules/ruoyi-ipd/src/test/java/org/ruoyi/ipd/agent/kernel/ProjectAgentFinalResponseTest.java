@@ -5,9 +5,11 @@ import io.agentscope.core.event.AgentResultEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.Map;
 import static org.mockito.Mockito.*;
 
+@Tag("dev")
 class ProjectAgentFinalResponseTest {
     @Test void finalResultReplacesAccumulatedBodyOnlyWhenDifferent() throws Exception {
         ProjectAgentEventSink sink = mock(ProjectAgentEventSink.class);

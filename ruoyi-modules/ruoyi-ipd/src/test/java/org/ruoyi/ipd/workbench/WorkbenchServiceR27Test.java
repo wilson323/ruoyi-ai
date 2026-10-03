@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.workbench.domain.MyInitiatedTask;
-import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -49,7 +48,6 @@ class WorkbenchServiceR27Test {
     @Mock private StageActionMapper stageActionMapper;
     @Mock private NotificationService notificationService;
     @Mock private DeletionRequestMapper deletionRequestMapper;
-    @Mock private CoefficientChangeRequestMapper coefficientChangeRequestMapper;
     @Mock private LaunchDateChangeRequestMapper launchDateChangeRequestMapper;
 
     private WorkbenchService service;
@@ -66,7 +64,7 @@ class WorkbenchServiceR27Test {
         service = new WorkbenchService(
             projectMapper, projectMemberMapper, stageActionMapper, notificationService,
             java.util.List.of(),  // aggregators 为空（myInitiated/myPendingApprovals 不走 aggregator）
-            deletionRequestMapper, coefficientChangeRequestMapper, launchDateChangeRequestMapper);
+            deletionRequestMapper, launchDateChangeRequestMapper);
     }
 
     /* ====================== 1. myInitiated ====================== */
@@ -76,19 +74,18 @@ class WorkbenchServiceR27Test {
     void myInitiated_aggregatesThreeSources() {
         long personId = 900101L;
         when(deletionRequestMapper.selectCount(any())).thenReturn(2L);
-        when(coefficientChangeRequestMapper.selectCount(any())).thenReturn(1L);
         when(launchDateChangeRequestMapper.selectCount(any())).thenReturn(3L);
 
         List<MyInitiatedTask> result = service.myInitiated(personId);
 
         assertThat(result).isNotNull();
-        // 期望：2+1+3 = 6 条 task（类型分别为 DELETION/COEFFICIENT/LAUNCH_DATE）
-        assertThat(result).hasSize(6);
+        // 期望：2+3 = 5 条 task（类型 DELETION / LAUNCH_DATE）。
+        // 原为 2+1+3=6（多一条 COEFFICIENT），系数变更单已随「算钱」层下线，故 COEFFICIENT 卡不再产生。
+        assertThat(result).hasSize(5);
         long deletion = result.stream().filter(t -> "DELETION".equals(t.getTaskType())).count();
-        long coefficient = result.stream().filter(t -> "COEFFICIENT".equals(t.getTaskType())).count();
         long launchDate = result.stream().filter(t -> "LAUNCH_DATE".equals(t.getTaskType())).count();
+        assertThat(result).noneMatch(t -> "COEFFICIENT".equals(t.getTaskType()));
         assertThat(deletion).isEqualTo(2);
-        assertThat(coefficient).isEqualTo(1);
         assertThat(launchDate).isEqualTo(3);
     }
 
@@ -107,7 +104,6 @@ class WorkbenchServiceR27Test {
     void myPendingApprovals_aggregatesThreeSources() {
         long personId = 900101L;
         when(deletionRequestMapper.selectList(any())).thenReturn(java.util.Collections.emptyList());
-        when(coefficientChangeRequestMapper.selectList(any())).thenReturn(java.util.Collections.emptyList());
         when(launchDateChangeRequestMapper.selectList(any())).thenReturn(java.util.Collections.emptyList());
 
         List<MyInitiatedTask> result = service.myPendingApprovals(personId);

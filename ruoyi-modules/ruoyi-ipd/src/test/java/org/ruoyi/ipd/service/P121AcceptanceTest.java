@@ -25,7 +25,14 @@ import static org.mockito.Mockito.when;
 import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
 /**
- * P1-2.1 验收：四基准必填、系数默认/区间、奖金池算例、服务端 DRAFT。
+ * P1-2.1 验收：四基准必填、系数默认/区间、服务端 DRAFT。
+ *
+ * <p><b>「算钱」层下线后的存续理由</b>：本类原含 3 条奖金池算例（目标销售额 ×5% × 等级系数），
+ * 随 {@code BonusPoolService} / {@code ProjectService.computeBonusPool} 一并移除。
+ * 但 AC-INC-15 / 15b / 15c 三条验收项（等级系数默认值、区间、A 级锁定 1.0、非默认须走双签流程）
+ * 属<b>项目立项校验</b>而非算钱，且被 {@code docs/ipd-系统说明/治理/acceptance-matrix.json}
+ * 以 {@code unitTestClass} 字段直接引用本类文件路径——删类会让该矩阵对账门禁报红。
+ * 故保留本类，仅摘掉 3 条金额断言；系数相关断言逐条未动。
  * <p>形态为 Mockito 单元验收；真库/HTTP 另见 QA 卡，不得据此标 done。
  */
 @Tag("dev")
@@ -92,34 +99,28 @@ class P121AcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC-INC-12 S 级默认 1.5；奖金池 = 实际回款 500万×5%×1.5 = 37.5万；新建为待开工")
+    @DisplayName("AC-INC-12 S 级默认 1.5；新建为待开工（奖金池算例随「算钱」层下线移除）")
     void acInc12SDefaultAndBonusPool() {
         stubCreateHappyPath();
         Project created = service.create(draft("S", null, "5000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
         assertThat(created.getStatus()).isEqualTo("PENDING_START");
-        assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
-            .isEqualByComparingTo("375000");
     }
 
     @Test
-    @DisplayName("AC-INC-13 A 级默认 1.0；奖金池 = 实际回款 500万×5%×1.0 = 25万（ZK 实际回款口径）")
+    @DisplayName("AC-INC-13 A 级默认 1.0（奖金池算例随「算钱」层下线移除）")
     void acInc13ADefault() {
         stubCreateHappyPath();
         Project created = service.create(draft("A", null, "5000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.0");
-        assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
-            .isEqualByComparingTo("250000");
     }
 
     @Test
-    @DisplayName("AC-INC-14 B 级默认 0.8；奖金池 = 实际回款 200万×5%×0.8 = 8万（ZK 实际回款口径）")
+    @DisplayName("AC-INC-14 B 级默认 0.8（奖金池算例随「算钱」层下线移除）")
     void acInc14BDefault() {
         stubCreateHappyPath();
         Project created = service.create(draft("B", null, "2000000"), 1L, 7L);
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("0.8");
-        assertThat(ProjectService.computeBonusPool(created.getTargetSalesAmount(), created.getLevelCoefficient()))
-            .isEqualByComparingTo("80000");
     }
 
     @Test

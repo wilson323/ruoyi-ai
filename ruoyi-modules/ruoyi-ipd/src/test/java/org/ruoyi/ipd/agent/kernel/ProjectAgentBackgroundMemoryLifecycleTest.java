@@ -18,10 +18,12 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.Tag;
 import reactor.core.publisher.Flux;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Tag("dev")
 class ProjectAgentBackgroundMemoryLifecycleTest {
     @TempDir Path root;
     private static final String MEMORY = "memory/2026-10-03.md";

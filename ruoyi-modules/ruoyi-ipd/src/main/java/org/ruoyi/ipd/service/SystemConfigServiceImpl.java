@@ -71,18 +71,19 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
     static final String KPI_SHARED_WEIGHT_KEY = "kpi.sharedWeight";
 
     /**
-     * R219 台账②（AC-CFG-02）：双配置源漂移两键。运行态消费方（GateElementResultService /
-     * GateReviewService 的 resolveSignDeadlineDays、BonusPoolService 的 readActivePoolRate）
-     * 优先读 ipd_business_config，异常才回退本表——PUT /system-configs 只写 system 行会形成
-     * 「API 200 + invalidated=true 但实际生效值不变」黑洞。本集合内的键写代理同步两源。
+     * R219 台账②（AC-CFG-02）：双配置源漂移键。运行态消费方（GateElementResultService /
+     * GateReviewService 的 resolveSignDeadlineDays）优先读 ipd_business_config，异常才回退本表
+     * ——PUT /system-configs 只写 system 行会形成「API 200 + invalidated=true 但实际生效值不变」
+     * 黑洞。本集合内的键写代理同步两源。
+     *
+     * <p>原含 {@code bonus.poolRate}（奖金池基数比例），随「算钱」层下线移除。库中该键的存量行
+     * 保留不动（本轮禁止写库 / DDL），只是不再有代码读写它。
      */
     static final Set<String> DUAL_SOURCE_KEYS = Set.of(
-        BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS,
-        BusinessConfigKeys.BONUS_POOL_RATE);
+        BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS);
 
     /**
-     * R219 台账②：解析源服务。setter + {@code required=false} 注入（对齐 BonusPoolService
-     * 先例），避免波及 3 个 {@code new SystemConfigServiceImpl(mapper, versionMapper)} 测试构造点；
+     * R219 台账②：解析源服务。setter + {@code required=false} 注入，避免波及 3 个 {@code new SystemConfigServiceImpl(mapper, versionMapper)} 测试构造点；
      * 单测未注入时写代理静默跳过，行为与修复前一致。
      */
     private IBusinessConfigService businessConfigService;

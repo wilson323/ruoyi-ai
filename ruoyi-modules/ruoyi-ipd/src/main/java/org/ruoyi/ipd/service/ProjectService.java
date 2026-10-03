@@ -73,7 +73,7 @@ public class ProjectService implements IProjectService {
     private final StageActionMapper stageActionMapper;
     private final KpiRecordMapper kpiRecordMapper;
     /** R149 B2：PM 维度项目列表角色过滤（在职 MARKET_PM/RD_PM）所需 mapper。
-     * 走 setter 模式（仿 BonusPoolService.setProjectMemberMapper），
+     * 走 setter 模式，
      * nullable 兼容 P122AcceptanceTest / P131DatabaseIntegrationTest 等
      * 旧 10 参构造器入口（不破坏既有兄弟测试）。 */
     @Autowired(required = false)
@@ -111,13 +111,17 @@ public class ProjectService implements IProjectService {
     }
     private Date now() { return Date.from(clock.instant()); }
 
-    /**
-     * R219 台账①（AC-CFG-01）：面值单一源收敛——指向 BonusPoolService 默认常量；
-     * 运行期实际生效值走 {@code bonus.poolRate}（{@link BonusPoolService#readActivePoolRate()}，
-     * ROOT-R1 P0-7 已接线），本常量仅作无配置/旧契约回退。
-     */
-    public static final BigDecimal BONUS_POOL_RATE = BonusPoolService.DEFAULT_CONFIG_POOL_RATE;
     private static final Set<String> TEMPLATE_TYPES = Set.of("HARDWARE", "SOFTWARE", "SOLUTION");
+    /**
+     * S/B 差异化系数区间（随「算钱」层下线，{@code BonusPoolService} 已删除，
+     * 区间面值在此就地保留，避免校验静默放宽）。口径未变：S ∈ [1.5, 2.0]、B ∈ [0.6, 0.8]。
+     * 待 owner 裁决 D-2：本字段是否随算钱层彻底移除（涉及 REST 契约 + G1 双签历史，见 /tmp/teardown-backend.md）。
+     */
+    private static final BigDecimal COEF_S_MIN = new BigDecimal("1.5");
+    private static final BigDecimal COEF_S_MAX = new BigDecimal("2.0");
+    private static final BigDecimal COEF_B_MIN = new BigDecimal("0.6");
+    private static final BigDecimal COEF_B_MAX = new BigDecimal("0.8");
+
     private static final BigDecimal DEFAULT_COEF_S = new BigDecimal("1.5");
     private static final BigDecimal DEFAULT_COEF_A = new BigDecimal("1.0");
     private static final BigDecimal DEFAULT_COEF_B = new BigDecimal("0.8");
@@ -401,27 +405,6 @@ public class ProjectService implements IProjectService {
         projectMemberMapper.insert(builder.build());
     }
 
-    /**
-     * BR-INC-04：奖金池 = 目标销售额 × 5% × 差异化系数（AC-INC-12/13/14 算例）。
-     *
-     * @param targetSales  目标销售额（元）
-     * @param coefficient  差异化系数
-     * @return 奖金池金额
-     */
-    public static BigDecimal computeBonusPool(BigDecimal targetSales, BigDecimal coefficient) {
-        return computeBonusPool(targetSales, coefficient, BONUS_POOL_RATE);
-    }
-
-    /**
-     * R219 台账①：配置化重载——调用方传入 {@link BonusPoolService#readActivePoolRate()}
-     * 的实时 poolRate，不再钉死默认面值。
-     */
-    public static BigDecimal computeBonusPool(BigDecimal targetSales, BigDecimal coefficient, BigDecimal poolRate) {
-        if (targetSales == null || coefficient == null || poolRate == null) {
-            throw new ServiceException("计算奖金池需要目标销售额与差异化系数");
-        }
-        return targetSales.multiply(poolRate).multiply(coefficient);
-    }
 
     /**
      * 状态机迁移（非法迁移拒绝）；归档不可再迁出。
@@ -1030,11 +1013,8 @@ public class ProjectService implements IProjectService {
         }
         BigDecimal coefficient = project.getLevelCoefficient();
         switch (level) {
-            // R219 台账①：区间/文案改由 BonusPoolService 常量单一源拼装，消除面值与提示语两套字面量漂移
-            case "S" -> requireCoefficient("S", coefficient,
-                BonusPoolService.COEFFICIENT_S_MIN, BonusPoolService.COEFFICIENT_S_MAX);
-            case "B" -> requireCoefficient("B", coefficient,
-                BonusPoolService.COEFFICIENT_B_MIN, BonusPoolService.COEFFICIENT_B_MAX);
+            case "S" -> requireCoefficient("S", coefficient, COEF_S_MIN, COEF_S_MAX);
+            case "B" -> requireCoefficient("B", coefficient, COEF_B_MIN, COEF_B_MAX);
             case "A" -> {
                 // AC-INC-15b：A 固定 1.0；客户端显式录入非 1.0 拒绝；服务端默认已写 1.0
                 if (coefficient == null || coefficient.compareTo(DEFAULT_COEF_A) != 0) {
@@ -1060,15 +1040,13 @@ public class ProjectService implements IProjectService {
      */
     public static void validateCoefficientRange(String level, BigDecimal coefficient) {
         switch (level == null ? "" : level) {
-            case "S" -> requireCoefficient("S", coefficient,
-                BonusPoolService.COEFFICIENT_S_MIN, BonusPoolService.COEFFICIENT_S_MAX);
-            case "B" -> requireCoefficient("B", coefficient,
-                BonusPoolService.COEFFICIENT_B_MIN, BonusPoolService.COEFFICIENT_B_MAX);
+            case "S" -> requireCoefficient("S", coefficient, COEF_S_MIN, COEF_S_MAX);
+            case "B" -> requireCoefficient("B", coefficient, COEF_B_MIN, COEF_B_MAX);
             default -> throw new ServiceException("仅 S/B 级可校验差异化系数区间");
         }
     }
 
-    /** R219 台账①：区间边界改 BigDecimal（与 BonusPoolService 常量同源），文案按实际边界拼装。 */
+    /** 区间边界改 BigDecimal，文案按实际边界拼装。 */
     private static void requireCoefficient(String level, BigDecimal coefficient, BigDecimal min, BigDecimal max) {
         if (coefficient == null) {
             throw new ServiceException("该级别差异化系数必填");

@@ -4,10 +4,12 @@ import io.agentscope.core.agui.event.AguiEvent;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.domain.IpdAgentRun;
 import org.ruoyi.ipd.agent.support.InMemoryAgentRunStore;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+@Tag("dev")
 class ProjectAgentAguiPauseLifecycleTest {
  private ProjectAgentRunHandle handle() {var run=IpdAgentRun.builder().id(42L).personId(7L).tenantId("t").status("RUNNING").version(1).idempotencyKey("pause42").build();var store=new InMemoryAgentRunStore();store.insertRun(run);return new ProjectAgentRunHandle(run,store,new ObjectMapper(),()->1000L,()->{});}
  private Map<String,AguiEvent.Interrupt> pending(){return Map.of("i",new AguiEvent.Interrupt("i","tool_call",null,"call",null,null,Map.of()));}

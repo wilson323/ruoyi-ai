@@ -74,7 +74,6 @@
 |---|---|
 | `kpi_records` | `KpiRecord` |
 | `allowance_ledgers` | `AllowanceLedger` |
-| `bonus_pools` | `BonusPool` |
 
 ### 2.8 配置与 AI
 
@@ -104,7 +103,7 @@
 | 业务截止 | `deadline` | `gate.submission_deadline` |
 | 系统计算时间戳 | `due_at` | `gate.sign_due_at` |
 | 状态枚举 | `status`（用字典值，不用 enum） | `project.status = 'DRAFT'` |
-| 金额字段 | `<noun>` (DECIMAL(18,2)) | `bonus_pool`、`sales_target` |
+| 金额字段 | `<noun>` (DECIMAL(18,2)) | `allowance`、`sales_target` |
 | 比例字段 | `<noun>_<ratio>` | `contribution_ratio` |
 | 布尔字段 | `is_<adj>` 或 `<verb>_ed` | `is_active`、`is_blocking` |
 | 责任人 | `assignee_id` / `responsible_id` | — |
@@ -118,7 +117,7 @@
 |---|---|
 | `project_id` | `projectId` |
 | `create_time` | `createTime` |
-| `bonus_pool` | `bonusPool` |
+| `sales_target` | `salesTarget` |
 | `is_blocking` | `isBlocking` |
 | `due_at` | `dueAt` |
 | `del_flag` | `delFlag` |
@@ -216,8 +215,6 @@ org.ruoyi.chat.*              # 沿用（AI 核心）
 | POST | `/api/v1/handovers` | 项目移交 | — |
 | GET / POST | `/api/v1/kpi/...` | KPI | — |
 | GET | `/api/v1/allowance/ledgers` | 津贴台账 | — |
-| POST | `/api/v1/bonus/calculate` | 奖金池核算 | — |
-| GET | `/api/v1/bonus/pools/:id` | 奖金池详情 | — |
 | POST | `/api/v1/requirements` | 游客提交（免鉴权） | — |
 | GET | `/api/v1/requirements/track/:code` | 游客查询 | — |
 | POST | `/api/v1/deletion-requests` | 发起删除申请 | — |

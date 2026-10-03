@@ -9,16 +9,18 @@ import java.math.BigDecimal;
  * <p>字段语义：
  * <ul>
  *   <li>{@code allowanceFinalAmount}：该项目下全体人员当月津贴 finalAmount 合计（多项目叠加后）</li>
- *   <li>{@code bonusFinalPool}：该项目已落库奖金池 finalPool 合计（按 BonusPool.status 取 DRAFT/CONFIRMED/DISTRIBUTED）</li>
  *   <li>{@code avgWeightedScore}：该项目下项目绩效评定 weightedScore 平均值（按 personId × pmRole 去重）</li>
  * </ul>
  *
  * <p>不重复计数口径：
  * <ul>
  *   <li>allowance_ledgers 自然键 = (personId, projectId, month) —— SELECT SUM(finalAmount) GROUP BY projectId WHERE month=?</li>
- *   <li>bonus_pools 自然键 = projectId —— SELECT SUM(finalPool) GROUP BY projectId WHERE status IN (...)</li>
  *   <li>project_scores 自然键 = (projectId, personId, pmRole) —— SELECT AVG(weightedScore) GROUP BY projectId WHERE status='CONFIRMED'</li>
  * </ul>
+ *
+ * <p><b>奖金池列已随「算钱」层下线移除</b>：原 {@code bonusFinalPool} / {@code bonusRowCount}
+ * 两列直读 {@code bonus_pools} 表，属算钱口径，故一并删除。表本身保留在库中（不做 DDL），
+ * 仅本 DTO 不再暴露对应列——前端若仍消费这两列需同步改版。
  */
 public record ReportSummaryRow(
     Long projectId,
@@ -26,10 +28,8 @@ public record ReportSummaryRow(
     String projectName,
     String month,
     BigDecimal allowanceFinalAmount,
-    BigDecimal bonusFinalPool,
     BigDecimal avgWeightedScore,
     Integer allowanceRowCount,
-    Integer bonusRowCount,
     Integer scoreRowCount
 ) {
 }

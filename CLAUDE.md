@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 技术栈，AI 内核已全量切换 AgentScope，叠加 11 条硬约束（G-01~G-11） + 49 页 IPD 业务页面 + 69 动作 + 5 Gate 双签 + KPI / 奖金池核算。
+**本仓库正在从 RuoYi-AI 二开改造为「IPD 产品经理管理系统」**——单企业私有部署的中文 IPD（Integrated Product Development）产品工作平台。基于 `wilson323/ruoyi-ai`（原始基线） fork，保留 RuoYi-AI 的 Spring Boot 3.5.8 技术栈，AI 内核已全量切换 AgentScope，叠加 11 条硬约束（G-01~G-11） + 48 页 IPD 业务页面 + 67 动作 + 5 Gate 双签 + KPI / 月度津贴核算。
 
 - **基线**：Spring Boot 3.5.8 + Java 17 + AgentScope 2.0.3。Parent Maven project (revision `3.1.0`)。多租户、多模型（DeepSeek / Zhipu / OpenAI / etc.）、RAG、MCP tools、Supervisor-mode 多 agent。
 - **目标**：IPD 产品经理管理系统。详见 `README-IPD-OVERRIDE.md`（优先级高于本文件）和 `docs/开发说明/`（产品设计）+ `docs/ipd-系统说明/`（改造工程指南）。
@@ -226,7 +226,7 @@ node docs/wiki/wiki-lint.cjs
 
 1. **`README-IPD-OVERRIDE.md`**（仓库根）—— 改造方向总览，优先级**高于**根目录 README.md
 2. **`docs/开发说明/spec/_公共规范.md`** —— UI / 视觉 / 文案 / 术语「宪法」
-3. **`docs/开发说明/spec/_导航地图.md`** —— 49 页清单 + 跳转关系 + 权限矩阵
+3. **`docs/开发说明/spec/_导航地图.md`** —— 48 页清单 + 跳转关系 + 权限矩阵
 4. **`docs/ipd-系统说明/改造检查清单.md`** —— 静态检查 + CI 集成方案
 
 完整阅读路径详见 `README-IPD-OVERRIDE.md` §6。
@@ -251,13 +251,13 @@ node docs/wiki/wiki-lint.cjs
 7 个核心外部资源原文已入库 `docs/ipd-系统说明/外部资源/`（v2 / 历史件已清理，git 历史可查）：
 
 - `IPD系统_AI开发主Prompt_v3.md` ⭐⭐⭐⭐⭐（1377 行，唯一权威规格）
-- `IPD系统_六阶段标准动作清单_v3.md` ⭐⭐⭐⭐⭐（69 动作：深管 42 / 轻管 27）
+- `IPD系统_六阶段标准动作清单_v3.md` ⭐⭐⭐⭐⭐（**67 有效动作：深管 40 / 轻管 27**；原 v3 为 69 动作，**LC01 回款跟踪 / LC03 终算+奖金池 已于 2026-10-03 退役**，见该文件文首「v4 退役标注」节 —— 退役动作不得再作为开发或验收依据）
 - `IPD系统_五大Gate评审要素_v1.md` ⭐⭐⭐⭐（33 项要素 + 14 否决项）
 - `IPD系统_验收清单.md` ⭐⭐⭐⭐（237 条 AC，v2.1）
 - `IPD系统_开发执行规则_AI必读.md` ⭐⭐⭐⭐⭐（11 条硬约束 G-01~G-11）
 - `IPD系统_冲突裁决与最终待确认清单.md` ⭐⭐⭐⭐
 - `IPD系统_待确认决策表_v2.md` ⭐⭐⭐（33 项决策已全部回填 v3）
-- 另有 `assets_公共规范-通用.md` / `design-specs_后台-RuoYi-AI.md`（前端规范）与 `mock-data.js`（演示数据，Q2=回款口径）
+- 另有 `assets_公共规范-通用.md` / `design-specs_后台-RuoYi-AI.md`（前端规范）与 `mock-data.js`（演示数据）
 
 详见 `docs/ipd-系统说明/fork-原与外部资源清单.md`。
 

@@ -32,6 +32,10 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class BusinessConfigServiceTest {
 
+    // 注：本类原以 BusinessConfigKeys.BONUS_POOL_RATE 作为「任意 NUMBER 型配置键」的样本跑通用
+    // 缓存/解析/写穿透用例。该键随「算钱」层下线移除，故样本换为仍在册的 gate.dualSignCount
+    // （同为 NUMBER 型）。用例验的是通用行为，与具体键无关，断言口径未变。
+
     private IpdBusinessConfigMapper configMapper;
     private IpdBusinessConfigVersionMapper versionMapper;
     private IBusinessConfigService service;
@@ -65,11 +69,11 @@ class BusinessConfigServiceTest {
     @Test
     @DisplayName("① 字符串读 + 缓存命中：同 key 第二次读不命中 DB")
     void getString_caches() {
-        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.BONUS_POOL_RATE, "0.0500", "NUMBER"));
+        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0500", "NUMBER"));
         // 第一次：DB
-        String v1 = service.getString(BusinessConfigKeys.BONUS_POOL_RATE);
+        String v1 = service.getString(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT);
         // 第二次：缓存
-        String v2 = service.getString(BusinessConfigKeys.BONUS_POOL_RATE);
+        String v2 = service.getString(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT);
         assertThat(v1).isEqualTo("0.0500");
         assertThat(v2).isEqualTo("0.0500");
         verify(configMapper, times(1)).selectOne(any()); // 仅 1 次 DB
@@ -108,8 +112,8 @@ class BusinessConfigServiceTest {
     @Test
     @DisplayName("⑥ 异常：非数字字符串抛 ServiceException")
     void getBigDecimal_throwsOnNonNumeric() {
-        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.BONUS_POOL_RATE, "abc", "NUMBER"));
-        assertThatThrownBy(() -> service.getBigDecimal(BusinessConfigKeys.BONUS_POOL_RATE))
+        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "abc", "NUMBER"));
+        assertThatThrownBy(() -> service.getBigDecimal(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT))
                 .isInstanceOf(RuntimeException.class);
     }
 
@@ -124,8 +128,8 @@ class BusinessConfigServiceTest {
     @Test
     @DisplayName("⑧ 写穿透：update 后缓存失效，下次读即新值")
     void update_invalidatesCache() {
-        IpdBusinessConfig cfgOld = cfg(BusinessConfigKeys.BONUS_POOL_RATE, "0.0500", "NUMBER");
-        IpdBusinessConfig cfgNew = cfg(BusinessConfigKeys.BONUS_POOL_RATE, "0.0700", "NUMBER");
+        IpdBusinessConfig cfgOld = cfg(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0500", "NUMBER");
+        IpdBusinessConfig cfgNew = cfg(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0700", "NUMBER");
         // 第一次读（update 内 requireConfig）：返旧值
         // 第二次读（update 后 getString）：写穿透后走 selectOne 返新值
         when(configMapper.selectOne(any())).thenReturn(cfgOld, cfgNew);
@@ -134,30 +138,30 @@ class BusinessConfigServiceTest {
         when(configMapper.selectById(1L)).thenReturn(cfgNew);
         when(versionMapper.insert((IpdBusinessConfigVersion) any())).thenReturn(1);
 
-        service.update(BusinessConfigKeys.BONUS_POOL_RATE, "0.0700", 1L);
+        service.update(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0700", 1L);
         // 缓存被 invalidate，下次读走 DB 拿新值
-        String newValue = service.getString(BusinessConfigKeys.BONUS_POOL_RATE);
+        String newValue = service.getString(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT);
         assertThat(newValue).isEqualTo("0.0700");
     }
 
     @Test
     @DisplayName("⑨ invalidateAll：批量失效缓存")
     void invalidateAll_clearsCache() {
-        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.BONUS_POOL_RATE, "0.0500", "NUMBER"));
-        service.getString(BusinessConfigKeys.BONUS_POOL_RATE);
+        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0500", "NUMBER"));
+        service.getString(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT);
         service.invalidateAll();
         // 再次读取应重新走 DB
-        service.getString(BusinessConfigKeys.BONUS_POOL_RATE);
+        service.getString(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT);
         verify(configMapper, times(2)).selectOne(any());
     }
 
     @Test
     @DisplayName("⑩ 写穿透失败抛 ServiceException")
     void update_throwsOnUpdateFailure() {
-        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.BONUS_POOL_RATE, "0.0500", "NUMBER"));
+        when(configMapper.selectOne(any())).thenReturn(cfg(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0500", "NUMBER"));
         when(versionMapper.update((IpdBusinessConfigVersion) any(), any(com.baomidou.mybatisplus.core.conditions.Wrapper.class))).thenReturn(1);
         when(configMapper.update(any(), any())).thenReturn(0); // 主表更新失败
-        assertThatThrownBy(() -> service.update(BusinessConfigKeys.BONUS_POOL_RATE, "0.0700", 1L))
+        assertThatThrownBy(() -> service.update(BusinessConfigKeys.GATE_DUAL_SIGN_COUNT, "0.0700", 1L))
                 .isInstanceOf(RuntimeException.class);
     }
 

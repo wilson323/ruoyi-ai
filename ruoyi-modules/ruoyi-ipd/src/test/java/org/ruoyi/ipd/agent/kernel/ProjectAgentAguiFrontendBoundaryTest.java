@@ -1,10 +1,13 @@
 package org.ruoyi.ipd.agent.kernel;
+
+import org.junit.jupiter.api.Tag;
 import com.fasterxml.jackson.databind.*;
 import io.agentscope.core.agui.model.*;
 import io.agentscope.core.event.*;
 import io.agentscope.core.message.*;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
+@Tag("dev")
 class ProjectAgentAguiFrontendBoundaryTest {
  static final RunAgentInput INPUT=RunAgentInput.builder().threadId("42").runId("42")
      .tools(List.of(new AguiTool("frontend","canonical",Map.of("type","object")))).build();

@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +43,8 @@ import static org.mockito.Mockito.when;
  *   <li>PUBLIC + requiredLevel/slaDays 写入 content 扩展</li>
  *   <li>审计写入 CREATE_P231 动作</li>
  *   <li>HIGH authorization：project 不存在 → NOT_FOUND；跨组 MARKET_PM → FORBIDDEN；SUPER_ADMIN 跨组放行</li>
+ *   <li>统一口径 LEAD-GROUP-01（2026-10-03 收口）：GROUP_LEADER 跨组 → FORBIDDEN（与 MARKET_PM 恒等）、
+ *       GROUP_LEADER 同组 → 放行、拒绝发生在落库前</li>
  * </ul>
  */
 @Tag("dev")
@@ -289,5 +292,86 @@ class P231BidInvitationCreateAcceptanceTest {
         BidInvitation result = validator.createValidated(req, superAdmin);
         assertThat(result.getId()).isEqualTo(600L);
         assertThat(result.getCreateBy()).isEqualTo(1L);
+    }
+
+    // ===== 统一口径 LEAD-GROUP-01：产品组长跨组不放行（2026-10-03 收口）=====
+    // 历史行为：assertProjectVisible 对 GROUP_LEADER 无条件 return，组长可在他组项目下建招标单。
+    // 该分支与 IpdIdorGuard.assertSameGroupIpd（只豁免超管）冲突，也与 BR-ORG-06 冲突
+    // （组长在「查看/编辑项目、删除初审、导出审计」四行一律「本组」，「全部」只属超管）。
+    // 现已改为委托 IpdIdorGuard，组长与 MARKET_PM / RD_PM 同口径。
+
+    @Test
+    @DisplayName("LEAD-GROUP-01：GROUP_LEADER 跨组建招标单 → FORBIDDEN（历史为无条件放行，本次收口）")
+    void groupLeader_crossGroup_forbidden() {
+        // 项目 1000L 属于 group 99；组长在 group 10 —— 跨组
+        when(projectMapper.selectById(1000L)).thenAnswer(inv -> {
+            Project p = new Project();
+            p.setId(1000L);
+            p.setMainGroupId(99L);
+            return p;
+        });
+
+        IpdActor groupLeader = new IpdActor(300L, "Bob-Leader", "GROUP_LEADER", 10L);
+
+        CreateBidInvitationRequest req = baseRequest();
+        req.setMode("ONE_TO_ONE");
+        req.setTargetPersonId(200L);
+
+        assertThatThrownBy(() -> validator.createValidated(req, groupLeader))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessage("无权操作")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+
+        // 拒绝发生在落库前——不得有任何写入
+        verify(bidInvitationMapper, never()).insert(any(BidInvitation.class));
+    }
+
+    @Test
+    @DisplayName("LEAD-GROUP-01：GROUP_LEADER 同组建招标单 → 放行（组长并未被一律拒绝）")
+    void groupLeader_sameGroup_allowed() {
+        // setUp 默认项目 mainGroupId=10L；组长也在 group 10 —— 同组
+        IpdActor groupLeader = new IpdActor(300L, "Bob-Leader", "GROUP_LEADER", 10L);
+
+        CreateBidInvitationRequest req = baseRequest();
+        req.setMode("ONE_TO_ONE");
+        req.setTargetPersonId(200L);
+
+        when(bidInvitationMapper.insert(any(BidInvitation.class))).thenAnswer(inv -> {
+            BidInvitation arg = inv.getArgument(0);
+            arg.setId(601L);
+            return 1;
+        });
+
+        BidInvitation result = validator.createValidated(req, groupLeader);
+        assertThat(result.getId()).isEqualTo(601L);
+        assertThat(result.getCreateBy()).isEqualTo(300L);
+    }
+
+    @Test
+    @DisplayName("LEAD-GROUP-01：组长与 MARKET_PM 跨组结果恒等（口径无角色分叉）")
+    void groupLeaderAndMarketPm_crossGroup_semanticsIdentical() {
+        when(projectMapper.selectById(1000L)).thenAnswer(inv -> {
+            Project p = new Project();
+            p.setId(1000L);
+            p.setMainGroupId(99L);
+            return p;
+        });
+
+        CreateBidInvitationRequest req = baseRequest();
+        req.setMode("ONE_TO_ONE");
+        req.setTargetPersonId(200L);
+
+        IpdActor groupLeader = new IpdActor(300L, "Bob-Leader", "GROUP_LEADER", 10L);
+        IpdActor marketPm = new IpdActor(100L, "Alice-PM", "MARKET_PM", 10L);
+
+        // 两个角色同组号 10、同跨组项目 99 —— 必须得到完全一致的错误码与文案
+        IpdBusinessException leaderEx = org.junit.jupiter.api.Assertions.assertThrows(
+            IpdBusinessException.class, () -> validator.createValidated(req, groupLeader));
+        IpdBusinessException pmEx = org.junit.jupiter.api.Assertions.assertThrows(
+            IpdBusinessException.class, () -> validator.createValidated(req, marketPm));
+
+        assertThat(leaderEx.getErrorCode()).isEqualTo(pmEx.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        assertThat(leaderEx.getMessage()).isEqualTo(pmEx.getMessage());
     }
 }

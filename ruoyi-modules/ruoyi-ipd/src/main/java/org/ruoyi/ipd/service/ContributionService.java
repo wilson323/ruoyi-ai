@@ -40,7 +40,8 @@ import java.util.Set;
  * <ul>
  *   <li>五维度权重：立项主导 25 + 差异化创新 25 + 上市节奏 20 + 市场结果 20 + 协同领导力 10 = 100</li>
  *   <li>市场 PM 比例 ∈ [0.40, 0.65]；研发 PM 比例 = 1.0 - market（联动）</li>
- *   <li>tierCoefficient = 五维度加权得分 / 100（落入 BonusPoolService 4 因子叠加）</li>
+ *   <li>tierCoefficient = 五维度加权得分 / 100（<b>待 owner 裁决 D-3</b>：原作为 BonusPoolService
+ *       4 因子叠加的乘数随算钱层下线；其唯一算钱消费方已删除，本列现仅承载五维评分本身）</li>
  *   <li>入口仅在 G5 上市后 90 天复盘阶段开放；评定人 = 双 PM 自评 + 各自产品组长</li>
  * </ul>
  *
@@ -192,10 +193,14 @@ public class ContributionService implements IContributionService {
     }
 
     /**
-     * 五维度加权得分 → tierCoefficient（ZK-IPD §三.2.5 修正因子）。
+     * 五维度加权得分 → tierCoefficient（ZK-IPD §三.2.5）。
      * <p>{@code tier = (dim1×25 + dim2×25 + dim3×20 + dim4×20 + dim5×10) / 10000}
-     * <p>五维度全 100 分 ⇒ tier = 1.00（最高修正）；全 0 分 ⇒ tier = 0.00（无修正）。
-     * 结果保留 2 位小数（HALF_UP），落入 {@code BonusPoolService} 4 因子叠加。
+     * <p>五维度全 100 分 ⇒ tier = 1.00；全 0 分 ⇒ tier = 0.00。结果保留 2 位小数（HALF_UP）。
+     *
+     * <p><b>待 owner 裁决 D-3</b>：本列原是奖金池 4 因子公式的乘数（算钱）。奖金池已下线，
+     * 该列现已无任何算钱消费方；但它同时是 {@code toView} 里 {@code weightsValid} 的判据、
+     * 且被贡献度版本归档与审计 JSON 引用，删除会连带打断<b>保留范围</b>的五维自评审批链。
+     * 故本轮保留列与计算，只移除「乘进金额」这一层语义。是否彻底删列请 owner 裁决。
      */
     public static BigDecimal computeTierCoefficient(BigDecimal dimInitiation, BigDecimal dimInnovation,
                                                     BigDecimal dimLaunch, BigDecimal dimMarketResult,

@@ -5,12 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Deliverable;
 import org.ruoyi.ipd.domain.GateElement;
 import org.ruoyi.ipd.domain.GateReview;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.domain.Requirement;
 import org.ruoyi.ipd.domain.StageAction;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,8 @@ class Qa04EntityContractTest {
         assertThat(tableName(Deliverable.class)).isEqualTo("deliverables");
         assertThat(tableName(GateReview.class)).isEqualTo("gate_reviews");
         assertThat(tableName(GateElement.class)).isEqualTo("gate_review_elements");
-        assertThat(tableName(BonusPool.class)).isEqualTo("bonus_pools");
+        // bonus_pools：实体已随「算钱」层删除，但库中表仍保留（本轮不做 DDL）——
+        // 故此处不再有实体可校验，映射契约改由 docs/ipd-系统说明/type-mapping.md 记录。
         assertThat(tableName(KpiRecord.class)).isEqualTo("kpi_records");
         assertThat(tableName(AuditLog.class)).isEqualTo("audit_logs");
     }
@@ -66,7 +67,8 @@ class Qa04EntityContractTest {
     void jsonColumnsBindToStringPerTypeMappingContract() throws Exception {
         // type-mapping.md §1.4：JSONB/JSON → MySQL 原生 JSON，实体侧 String + JSON 契约
         assertThat(field(Project.class, "targetMarkets").getType()).isEqualTo(String.class);
-        assertThat(field(BonusPool.class, "distributions").getType()).isEqualTo(String.class);
+        // 同上：BonusPool.distributions 随实体删除，替换为仍在库内的 JSON 列契约样本。
+        assertThat(field(Requirement.class, "elementSnapshot").getType()).isEqualTo(String.class);
         assertThat(field(KpiRecord.class, "sharedDetail").getType()).isEqualTo(String.class);
         assertThat(field(AuditLog.class, "afterData").getType()).isEqualTo(String.class);
         assertThat(field(AuditLog.class, "beforeData").getType()).isEqualTo(String.class);

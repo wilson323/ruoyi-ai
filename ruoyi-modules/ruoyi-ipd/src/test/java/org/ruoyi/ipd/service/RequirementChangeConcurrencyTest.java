@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
  *   <li>红：临时撤掉 CAS 谓词/requireCasHit（模拟旧 updateById 双写）→ ②③④⑤ 因
  *       「未抛并发冲突」断言失败而红、⑥ 因 wrapper 谓词断言而红；恢复 CAS 后全绿</li>
  *   <li>既有测试（RequirementChangeSecurityRound2Test / P262AcceptanceTest /
- *       P2_6_2_DualSignStageGuardTest）补 CAS 命中 stub 后保持绿</li>
+ *       P262DualSignStageGuardTest）补 CAS 命中 stub 后保持绿</li>
  * </ul>
  *
  * <p>R-8 红线：「;」字符串聚合签名串为存量存储行为，本文件不引入新存储形态（零变更）。

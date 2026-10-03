@@ -82,7 +82,10 @@ sys.exit(1 if errs else 0)
 run_hook() {
   local hook="$1" event="$2"; shift 2
   local label="$event $(basename "$hook")"
-  [ -f "$hook" ] || return 0
+  # 2026-10-03 修复假绿计数：原为 `|| return 0`，钩子缺失时静默跳过，
+  # 而调用方无条件 scanned+1 —— 在 CI（没有 ~/.claude/hooks/）里会打印
+  # 「实跑 9 个钩子 ✅ PASS」,实际只测了 5 个。现改为返回 1 并记录缺失。
+  [ -f "$hook" ] || { echo "[SKIP] 钩子文件不存在，未纳入校验：$hook" >&2; return 1; }
   case "$hook" in *.sh) local runner=(bash "$hook");; *) local runner=(node "$hook");; esac
 
   local i=0
@@ -92,6 +95,7 @@ run_hook() {
     out=$(printf '%s' "$payload" | "${runner[@]}" 2>/dev/null)
     verify "$event" "$out" "$label  [payload#$i]"
   done
+  return 0
 }
 
 R="$ROOT"
@@ -116,25 +120,42 @@ STOP_PAYLOADS=(
 )
 
 scanned=0
-for h in "$G/hooks/irreversible-guard.cjs" "$R/.claude/hooks/block-dangerous-git.sh" \
-         "$G/hooks/premature-done-guard.cjs"; do
-  run_hook "$h" PreToolUse "${BASH_PAYLOADS[@]}"; scanned=$((scanned+1))
+required=0
+skipped=()
+# 仓内钩子：CI 里必须存在。缺失即计入 violations——否则门禁在 CI 里
+# 一个钩子都没跑到却仍打印「✅ PASS」，是比原缺陷更隐蔽的假绿。
+run_required() { local h="$1" e="$2"; shift 2; required=$((required+1));
+                 if run_hook "$h" "$e" "$@"; then scanned=$((scanned+1)); else skipped+=("$h"); fi; }
+# 全局钩子（~/.claude/hooks/）：只存在于开发机，CI 里没有属正常，缺失仅提示。
+run_optional() { local h="$1" e="$2"; shift 2;
+                 if run_hook "$h" "$e" "$@"; then scanned=$((scanned+1)); else skipped+=("$h"); fi; }
+
+run_required "$R/.claude/hooks/block-dangerous-git.sh" PreToolUse "${BASH_PAYLOADS[@]}"
+run_required "$R/.claude/helpers/sensitive-field-guard.cjs" PreToolUse "${EDIT_PAYLOADS[@]}"
+run_required "$R/.claude/helpers/ratchet-data-guard.cjs" PreToolUse "${EDIT_PAYLOADS[@]}"
+run_required "$R/.claude/helpers/ssot-write-guard.cjs" PreToolUse "${EDIT_PAYLOADS[@]}"
+run_required "$R/.claude/helpers/ipd-frontend-drift-guard.cjs" PreToolUse "${EDIT_PAYLOADS[@]}"
+run_required "$R/.claude/hooks/pre-java-yml-write.sh" PreToolUse "${EDIT_PAYLOADS[@]}"
+
+run_optional "$G/hooks/irreversible-guard.cjs" PreToolUse "${BASH_PAYLOADS[@]}"
+run_optional "$G/hooks/premature-done-guard.cjs" PreToolUse "${BASH_PAYLOADS[@]}"
+run_optional "$G/hooks/reflection-gate.cjs" Stop "${STOP_PAYLOADS[@]}"
+
+missing_required=0
+for h in ${skipped[@]+"${skipped[@]}"}; do
+  case "$h" in "$R"/*) missing_required=$((missing_required+1));; esac
 done
-for h in "$G/hooks/reflection-gate.cjs"; do
-  run_hook "$h" Stop "${STOP_PAYLOADS[@]}"; scanned=$((scanned+1))
-done
-for h in "$R/.claude/helpers/sensitive-field-guard.cjs" "$R/.claude/helpers/ratchet-data-guard.cjs" \
-         "$R/.claude/helpers/ssot-write-guard.cjs" "$R/.claude/helpers/ipd-frontend-drift-guard.cjs" \
-         "$R/.claude/hooks/pre-java-yml-write.sh"; do
-  run_hook "$h" PreToolUse "${EDIT_PAYLOADS[@]}"; scanned=$((scanned+1))
-done
+if [ "$missing_required" -gt 0 ]; then
+  violations+=("(钩子覆盖)"$'\n'"    仓内钩子缺失 $missing_required 个（共需 $required 个）—— CI 中必须存在，"
+$'\n'"    否则本门禁没测到任何东西却仍报 PASS")
+fi
 
 if [ "$FAIL_SEED" = "1" ]; then
   echo "[HOOK_FAIL_SEED] 注入假阳性以验证门禁自身会红：顶层 decision='allow'"
   violations+=("(FAIL_SEED 注入)"$'\n'"    顶层 decision='allow' 非法（只接受 approve|block）")
 fi
 
-echo "校验钩子输出契约…  实跑 $scanned 个钩子 × 多路 payload"
+echo "校验钩子输出契约…  实跑 $scanned 个钩子 × 多路 payload（仓内必需 $required 个，缺失 ${#skipped[@]} 个）"
 
 if [ ${#violations[@]} -eq 0 ]; then
   echo "✅ PASS：所有钩子的输出都符合契约"

@@ -328,6 +328,20 @@ def cmd_check(args) -> int:
               "疑似编译跳过、@Tag 过滤变化或套件中断，不是真的全绿", file=sys.stderr)
         return 1
 
+    # 2026-10-03：防「基线虚高」造成的**反向**假绿。
+    # 背景：基线记 1938、实际执行 4270（失真 2.2 倍），于是下界阈值只有 1744 ——
+    # 可以无感删掉 59% 的测试，门禁依然全绿。原判定只防骤降，不防基线比现实高，
+    # 恰好漏掉了最危险的方向：基线永远追不上实际的增长，于是失去保护力。
+    # 这里加上界：实际远超基线时告警，提示基线该重跑 extract 了。
+    if total_floor is not None and total_floor > 0 and total > total_floor * args.max_total_ratio:
+        print(f"⚠️  [基线虚高] 测试总数 {total} 已是基线 {total_floor} 的 "
+              f"{total / total_floor:.1f} 倍（阈值 {args.max_total_ratio:.0%}）。"
+              f"下界阈值被架空到 {int(total_floor * args.min_total_ratio)}，"
+              f"可无感删除 {total - int(total_floor * args.min_total_ratio)} 个测试而不报警。\n"
+              f"    处置：跑 `extract` 重生成基线（勿手改），或调 --min-total-ratio。",
+              file=sys.stderr)
+        return 1
+
     new_reds = sorted(reds - baseline_set)
     fixed = sorted(baseline_set - reds)
 
@@ -398,6 +412,9 @@ def main() -> int:
     p_ck.add_argument("--baseline", required=True, help="基线文件路径")
     p_ck.add_argument("--min-total-ratio", type=float, default=0.9,
                       help="测试总数相对基线的最低比例，低于则判为套件未正常执行（默认 0.9）")
+    p_ck.add_argument("--max-total-ratio", type=float, default=1.5,
+                      help="测试总数相对基线的最高倍数，超过则判为基线虚高、"
+                           "下界保护被架空，要求重跑 extract（默认 1.5；设 0 关闭）")
     p_ck.add_argument("--ttl-days", type=int, default=DEFAULT_TTL_DAYS,
                       help=f"AM-BASELINE-TTL 超期阈值（默认 {DEFAULT_TTL_DAYS} 天）——"
                            "check 会 WARN 挂账超期的基线红，不阻断（渐进版）")

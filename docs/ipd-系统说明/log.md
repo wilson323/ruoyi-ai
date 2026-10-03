@@ -13993,3 +13993,195 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
   子智能体链路不可达」不成立，不要按「缺工具」去改；②工作树 200+ 处未提交改动来自多个会话，
   动手前先对齐在途改动，**都不要自行 commit**。
   本会话授权边界（commit/push/分支/合并/发布/DDL/数据删除/全局配置修改）已原样传递给接手方。
+- 2026-10-03 12:25 **R216 拆除后全局构建阻断根因修复轮（主协调会话，OPS-09 登记）**：
+  背景：owner 指令拆除「回款台账 / 奖金池 / 业绩窗口」三域后，跑全模块反应堆 `mvn -o test`，
+  在 **ruoyi-common-core** 的 `testCompile` 阶段即失败，其后 35 个模块全部 SKIPPED——
+  即全局构建被一个与拆除无关的文件掐断。
+  **根因**：`ruoyi-common-core/src/test/java/org/ruoyi/common/core/config/ApplicationConfigSmokeTest.java`
+  的工作树版本被追加了 `import org.junit.jupiter.api.Tag;` 与 `@Tag("dev")`。
+  该模块 pom **刻意不引入任何测试框架**（无 junit、无 spring-boot-starter-test），
+  且该类本身**没有 @Test 方法**、靠 `scripts/run-async-smoke-test.sh` 以 `javac` + `main()` 直接跑；
+  加 `@Tag` 既让模块编译失败，又对 surefire 毫无作用（无 @Test 方法的类本就不会被执行），
+  属于典型的「为了让它被跑到而做的改动，实际什么都没跑到，只赔上一次全局构建失败」。
+  **处置**：删除 JUnit import 与注解（净变化 = 只加 javadoc 禁令说明），
+  并在类注释里写明「本类不是 JUnit 测试类，禁止加 @Tag/@Test，否则全反应堆会被掐断」，
+  附 2026-10-03 这次实际事故作为依据，避免下一个人重复同一动作。
+  **OPS-09 登记**：该文件在工作树中带有**非本会话**的 modified 标记，PreToolUse 并发写守卫已拦截本次编辑；
+  经 `git diff` 复核确认该改动为破坏全仓编译的坏改动（非兄弟会话正当在途工作），
+  按既定协议以 `SKIP_CONCURRENT_WRITE=1` + python 精确替换绕道，并在此登记。
+  **同批修复（同一根因家族）**：`docs/ipd-系统说明/治理/acceptance-matrix.json` 中
+  AC-INC-16 / AC-INC-16b / AC-INC-17h 三行的 `unitTestClass` 仍指向已随域删除的
+  P342/P341/P343AcceptanceTest，导致 `AcceptanceMatrixValidationTest.coveredRowsHaveEvidence`
+  报红（拆除后 ipd 全模块 4012 测仅此 1 失败）。处置：三行置 `status=deprecated`、
+  `unitTestClass`/`integrationTestPath` 置 null、linkedCommits 保留为历史证据，
+  注明所辖域已于 2026-10-03 整体退役。
+  同时修正 `_metadata.coverage_stats`：原声明值（covered=5/partial=3/blocked=2）
+  与行内派生真值长期不符（实际 covered=9/partial=1）却无人报红——
+  已在 `.claude/helpers/acceptance-matrix-validate.cjs` 增加**派生校验**：
+  coverage_stats 每个字段必须等于按 rows 数出来的真值，否则 ERROR。
+  与验收矩阵里 open_count 那个字段的既有做法同法（计数一律按行派生，不手工填），
+  双向变异自证通过（改声明值→红；把退役行指回不存在类→红；复原→绿）。
+- 2026-10-03 12:20 **口径更正：「54 个动作没有实现逻辑 / 78% 动作无逻辑」不成立（独立复核会话，docs-only）**：
+  背景——此前一轮审计给出「67 个 IPD 动作里 54 个（78%）没有实现逻辑」，该措辞被判定失实，本轮独立复核后落盘更正，
+  追加于 `docs/ipd-系统说明/全局漂移审计-20261003.md` **文末附录（标注「非九路审计原文」）**。
+  **修正结论**：那 54 个动作**不是没有逻辑**，而是**不写专属实现、统一走同一套通用动作引擎**；
+  保护层由引擎统一提供，与动作有没有专属代码无关。原文把「实现方式不同」读成了「保护缺失」，两者结论相反。
+  **代码实证（`HEAD=b1fd9af9`，8/8 项全部命中，无一项落空）**：
+  Controller 层 `StageActionController.java` 8 个端点各 1 个 `@SaCheckPermission`（`:48/62/75/93/104/121/134/149`）+
+  `ipdPermission.requireActionWriter` 对象级归属（`:66/78/108/157`，本体 `IpdPermission.java:191-205`，含角色锁 409 与
+  `IpdIdorGuard.requireProjectMemberOrSuperAdmin`）；Service 层 `StageActionService.transit()`（`:145-210`）内
+  `assertProjectWritable`（`:627-639`）、深浅管状态白名单（`:57-59` 常量 / `:152-158` 判定）、NA 原因必填（`:162-164`）、
+  C12 生安合规锁（`:165-169`）、`validateCompletion`（`:333-353`）、状态机守卫缺失即拒绝（`preCheckGuard:567-573`）、
+  乐观锁（`StageAction.java:63-65` 的 `@Version` + `:188-191` 判定）、审计追加写（`:200-205` 等三处）。
+  **用词同步更正**：原文「`@SaCheckPermission` **两道**权限校验」查无实据——全类只有 8 处、每端点 1 个；
+  真正成「两道」的是**注解 + 程序式门**，复述时不要照抄「两道注解」。
+  **补充实证**：全模块改 `StageAction.status` 的只有 `StageActionService:183` 一处；
+  `StageAcceptanceService:87-99` 只在 DONE 前提下写确认人、`LegacyImportService.markPastStages:240` 只写历史标记
+  （注释自陈「status 保持 NOT_STARTED，不伪造 DONE」）→「状态迁移唯一入口」成立，通用引擎不是可绕开的旁路。
+  **数字可复现性**：67 ✅ 可复现（文档口径，`外部资源/IPD系统_六阶段标准动作清单_v3.md:34`，深 40/轻 27）；
+  69 ✅ 可复现（代码口径，`ActionCatalog.java` 实有 69 条 `ActionDef`，深 42/轻 27，`:88` LC01、`:90` LC03 仍在）；
+  **54 ❌ 未能确证**（全仓 `docs/` + `.claude/` 检索该计数与措辞零命中，从未落盘）；**78% ⚠️ 自相矛盾**
+  （`54/67 = 80.6%`，`54/69 = 78.26%`——78% 只在分母取 69 时成立，故「67 个动作里…（78%）」一句内部打架）。
+  **留痕用途**：禁止后续会话再引用「78% 动作无逻辑」；需表达实现深度时改用「统一走通用动作引擎，
+  `transit()` 是状态迁移唯一入口」。同类纪律本报告 §六.2 已有先例（`IpdIdorGuard` 150/167 未引用 ≠ 有 IDOR 漏洞，
+  因它们多走 `IpdPermission.requireXxx()`）——**「某手段没被使用」≠「没有保护」**。
+  **本轮未做**：未跑 `mvn`/未跑测试、未起服务、未发 HTTP，未做端到端验证；仅静态阅读当前工作树字节。
+  未改任何 Java 源码，未改动该报告上半部分的九路审计原文。
+- 2026-10-03 12:45 **R216 追加：根因再下潜一层 + 防线 4 接线（同轮）**：
+  上面那条结论「根因 = 有人加了 @Tag」**只对了一半，已纠正**。实测（临时把该测试文件移走，
+  模块内一个 surefire 可见测试类都不剩，再跑 `mvn -o test -pl ruoyi-common/ruoyi-common-core`）
+  仍然报同一条错：
+  `groups/excludedGroups require TestNG, JUnit48+ or JUnit 5 (a specific engine required on classpath)`。
+  故**真正根因**是：父 pom 对全部模块统一打开 surefire 的 `groups`/`excludedGroups`，
+  这隐含一个从未被写下来、也从未被门禁检查的前提——**每个模块的测试类路径上必须有 JUnit 引擎**；
+  而 `ruoyi-common-core` 是 6 个 ruoyi-common 模块里**唯一没声明测试框架**的
+  （另 5 个：chat / mybatis / sse / trace 用 spring-boot-starter-test，social 用 junit-jupiter + mockito-core）。
+  该模块因此**从诞生起就无法单独 `mvn test`**，一进全反应堆就把 36 个模块一起掐断；
+  加 @Tag 只是让它提前在 testCompile 就炸，把同一个病显影得更早而已。
+  **处置**：给 `ruoyi-common-core/pom.xml` 补 `org.junit.jupiter:junit-jupiter`（test 作用域，
+  版本由 spring-boot-dependencies BOM 管理，写法对齐 ruoyi-common-social），
+  并在该依赖处写明「此依赖不可删：父 pom 的 groups 配置要求每个模块都有 JUnit 引擎，
+  缺了不是本模块红而是整个反应堆掐断」。
+  **顺带查出的第二个真问题（有定义无接线）**：`scripts/run-async-smoke-test.sh` 全仓**零调用**——
+  不在任何 CI workflow、不在任何门禁脚本，等于 R28.5「防线 4」（禁止
+  ApplicationConfig implements AsyncConfigurer）**从未真正生效过**。
+  **处置**：把 `ApplicationConfigSmokeTest` 从「无 JUnit 注解的 public class + static main() + 外部 javac 脚本」
+  改为标准 JUnit 5 测试（5 个 `@Test`，`@Tag("dev")`），并删除已无人调用的 `run-async-smoke-test.sh`。
+  防线 4 从此由每次 `mvn test` 负责执行，不再依赖任何人记得手跑脚本。
+  **自证能红**：给 `ApplicationConfig` 注入 `implements AsyncConfigurer` → 精确报红
+  （`doesNotImplementAsyncConfigurer` 1 失败，断言消息含冲突原因）；还原后与 HEAD 字节一致。
+  **同类隐患普查**：逐模块比对「有 src/test 但自身 pom 无测试框架声明」，结果**只此一处**，
+  修完即无残留（故本轮不新增门禁脚本——按仓库铁律 6「同一错误重复 ≥2 次才写进规则」，
+  本次是首次；根因说明已三处落档：生产类注释、pom 依赖注释、本 log，复发即可直接升级为门禁）。
+- 2026-10-03 12:25 **R216 补：Gate 要素规格补退役标注（文档侧，未改写原文）**：
+  只读侦察发现 `docs/ipd-系统说明/外部资源/IPD系统_五大Gate评审要素_v1.md`（33 项要素 + 否决项，
+  Gate 评审的唯一依据）**此前没有任何退役标注**，而它内部有 5 处引用了已随域删除的数据源：
+  ①「G4 特殊规则」的「6 个月回款统计窗口」起算原点；②同节「G4 通过后自动生成 LC03 终算待办」；
+  ③**G5-1「销售达成情况」——通过标准「90 天累计达成率 ≥ 25%」的取数源正是已删的回款台账 LC01**；
+  ④「G5 特殊规则」的「G5 不终算奖金——奖金终算在 6 个月（LC03）」；⑤「G5 输出物」的「销售/回款台账（LC01）」。
+  **处置**：按本仓既定模式（动作清单与验收清单两份外部资源已用同一模式）**追加**「v2 退役标注」节，
+  v1 原文逐字保留、一字未改；节内逐条引用原文、明确「不受影响的部分」（G1~G4 其余要素、
+  G5-2~G5-7、双签与 14 项否决项定义），并把 G5-1 的口径问题列为**owner 裁定项**（三选一：
+  改口径 / 保留回款但改人工录入 / 退役该要素），未擅自给出口径。
+  **未决口径期间的口径**：G5-1 不得作为可通过/不可通过的判定依据（算不出来），相关验收项按「待重算」处理。
+  **踩坑留痕（重要）**：第一版标注用「追加后行号」做定位（如「L187 → 现 L233」），
+  结果我每改一次这段说明，后面行号就整体位移一次，自己写的对照表当场失准——
+  已改为**文本锚点定位**（"G4 特殊规则"节 / G5-1 行 / "G5 输出物"节），并在节内写明
+  「定位请用锚点不要用行号，本文件被编辑时行号会整体位移，本项目已有因行号漂移导致断言失准的先例」。
+  教训：给「会被继续编辑的文件」写引用，锚点 > 行号。
+
+- 2026-10-03 12:30 **门禁与验收矩阵体检轮（ruoyi-ai-ae 会话，3 智能体并行）**：
+  **① 修好：`scripts/ac-import.py` 静默漏条**。ROW_RE 不匹配加粗形式（AC 编号被 `**` 包裹）的行，
+  12 条 AC（GATE-14~21 / 1a~1d）被整行丢弃；丢完恰好 237 条 = 文档标题声明值，缺陷完全隐形。
+  已放开加粗包裹 + 加硬刻度 `EXPECTED_AC_COUNT=249`（双向可证：正常 EXIT=0 / 回退正则 EXIT=2）。
+  **连带更正**：`IPD系统_验收清单.md` 实际含 **249 条 AC**，标题写的 237 已过期（勘误级，待 owner 确认改标题）。
+  **② 修好：`scripts/check-hook-decision-schema.sh` 假绿计数**。钩子缺失时静默跳过但计数仍加 1，
+  CI 中会打印「实跑 9 个 ✅ PASS」实际只测 5 个。已区分「仓内必需 6 个 / 全局可选 3 个」，仓内缺失即 FAIL。
+  三场景实测：开发机 9 个 PASS / 模拟 CI 6 个 PASS / 移走一个仓内钩子 EXIT=1。
+  **③ `static-gates.yml` 从 6 门禁扩到 10 门禁**，逐条实测 EXIT=0，8 个自证步骤全部真能变红。
+  **④ 命名门禁两处违规清掉**：改名 `P1_1_1_BidirectionalBindingTest` → `P111BidirectionalBindingTest`、
+  `P2_6_2_DualSignStageGuardTest` → `P262DualSignStageGuardTest`，同步 `RequirementChangeConcurrencyTest.java:50` 注释。
+  依据：同目录约 70 个同类测试类全部无下划线（`P111AcceptanceTest` / `P262AcceptanceTest` 已存在），编号溯源不丢。
+  实测：门禁 EXIT 由 1 变 0，自证仍 EXIT=1，`mvn -o test-compile -pl ruoyi-modules/ruoyi-ipd` **BUILD SUCCESS**。
+  **⑤ 推翻「67 个动作里 54 个（78%）无实现逻辑」**：该说法既无代码也无文档出处，且 78% 与 67 自相矛盾（54/67=80.6%）。
+  已在 `全局漂移审计-20261003.md` 追加更正附录（87 行，逐条给行号）。附带确证 `ActionCatalog.java` 的
+  LC01(:88) / LC03(:90) 仍在代码中，**运行期实为 69 条**，v3 文档的 67 条口径尚未生效。
+  **⑥ 推翻漂移审计的 P0-01 / P0-02**：端口链与 fail-fast 在 HEAD 上均已修复——
+  `Dockerfile:26 ENV SERVER_PORT=16039` 加 `docker-compose.yml:14` 注入、`ProdConfigFailFastRunner`
+  为 `@Component @Profile("prod")` 且 `ruoyi-admin/pom.xml:87` 依赖 ruoyi-ipd。二者均于 `b1fd9af9` 落地，
+  即该审计基线 `366d1960` 之后 → **该文档落后一个提交**，其 P0-01 / P0-02 与 4 处数字均已过期。
+  **⑦ 推翻「G2/G3/G4 应双签」**：主 Prompt §3.6 与 Gate 要素文档一致确认只有 G1/G5 双签否决，
+  `GateReviewService.isDualSignGate` 返回 G1 或 G5 与规格逐字吻合，**代码无错**，是 CLAUDE.md 概括句「5 Gate 双签」不精确。
+  **未做**：未 commit / 未 push / 未改 `application-prod.yml`（hook 按设计阻断，须人工编辑）/ 未动兄弟会话在途文件。
+
+- 2026-10-03 12:5x **owner 三裁决执行：①改门禁判据 ②挪跨仓门禁 ③接进 CI（ruoyi-ai-ae 会话）**：
+
+  **① 改门禁（不再强制写注释）**：`scripts/check-doc-code-sync.sh` 原本名实不符——头部第 4 条规则自称查「签名变更后 JavaDoc 参数列表未同步」，但实现里那条只打 INFO 从不影响退出码；**退出码唯一由「有没有写 javadoc」（`VIOLATIONS=$JAVADOC_MISS`）驱动**。owner 裁决本项目不强制逐方法写注释，故重构为：规则 3（javadoc 缺失）降为 INFO；规则 4（`@param` 与签名对不上）升为**唯一判据**。
+  判定器改用新增的 `scripts/lib/java-param-doc-check.py`（字符级扫描，跟踪字符串/字符字面量与 `()`/`<>`/`[]` 深度）。**为何弃用正则**：连续 4 轮正则版本的抽样伪阳性为 3/3 全假——多行签名被当成零参数、参数内注解 `@Pattern(regexp="a|b,c")` 被当成参数名；正则无法可靠提取参数名。该判定器自带 `--self-test`（就地注入一个改错名的 `@param` 并断言它确实报违规）。口径刻意收窄以免变成变相强制：**只检查已经写了 `@param` 的方法**（一个 `@param` 都没写 = 没写参数文档，不计违规）。输入缺失一律 exit 2，绝不降级成「0 条通过」。
+  实测：941 个公开方法 / 其中 150 个写了 `@param` / 0 处不一致 → 正常 EXIT=0；`DOCSYNC_FAIL_SEED=1` → EXIT=1；真注入一处改错名的 `@param` → EXIT=1 且报出精确位置；还原后 EXIT=0。
+  **连带修好 4 处真实漂移**（判据生效后立刻抓到，非新引入）：`AiDocumentService` 缺 `@param operatorId`、`DeletionArchiveService` 缺 `confirmTail`/`clearedReason`、`AllowanceLedgerService` 缺 `draft`、`KpiSharedConfirmService` 缺 `actor`/`projectId`/`period`。
+
+  **② 挪（跨仓门禁迁到前端仓 CI）**：`check-memory-leak-pattern.sh`（BP-008）与 `check-a11y-basics.sh`（BP-009）扫的是**前端源码**，原 `FRONT_DIR` 默认指向兄弟仓库 `../ruoyi-ipd-web/apps/web-antd/src`。它们在后端仓 CI 里**结构上不可能通过**——CI 是干净检出，没有兄弟仓库目录，实测输入缺失一律 exit=2。owner 裁决后：
+  · 后端仓 `git rm` 两个脚本；`scripts/check-best-practices-coverage.sh` 的 `required_scripts` 由 5 项收敛为 3 项（只校验留在本仓、且能在本仓 CI 运行的门禁；15 条 BP 登记位结构检查不受影响）。
+  · 前端仓新增 `scripts/{check-memory-leak-pattern.sh,check-a11y-basics.sh}`（`FRONT_DIR` 默认改指本仓 `apps/web-antd/src`）、`scripts/lib/audit-gate-input.sh`、`.github/workflows/static-gates.yml`（2 门禁 + 2 自证步骤 + `permissions: contents: read` + concurrency + paths 过滤）。
+  · 前端仓实测：两门禁 EXIT=0；`*_FAIL_SEED=1` EXIT=1；`FRONT_DIR` 指不存在目录 EXIT=2。
+  **连带修好门禁 1**：脚本搬走后 `check-gate-wiring.sh` 报「2 条失效登记」（注册表仍指向已迁走的路径）→ 已从 `scripts/gate-manual-registry.txt` 删除这 2 行并就地写明迁移原因；现报「85 个门禁全部已接线或显式登记，无未登记孤儿」EXIT=0，自证仍 EXIT=1。
+
+  **③ 接进 CI**：`.github/workflows/static-gates.yml` 由 10 门禁扩到 **12 门禁 / 23 个 step**（新增 11 命名规范、12 注释与代码一致性，两者都带 `*_FAIL_SEED` 自证步骤）。全量重跑结果：**门禁 12/12 绿、自证 10/10 真能变红**（门禁 4「资源不存在错误码」与门禁 5「启动期 failfast」无自证入口，是目前已知的覆盖缺口，已在文件头如实标注）。文件头同时记录了 6 个**未采纳**的候选门禁及不采纳理由。
+  连带清掉命名门禁两处违规：`git mv` 改名 `P1_1_1_BidirectionalBindingTest` → `P111BidirectionalBindingTest`、`P2_6_2_DualSignStageGuardTest` → `P262DualSignStageGuardTest`，同步类声明与 `RequirementChangeConcurrencyTest.java:50` 注释（同目录约 70 个同类测试类均无下划线，编号溯源不丢）；`mvn -o test-compile -pl ruoyi-modules/ruoyi-ipd` BUILD SUCCESS。
+
+  **发现但未擅改（交 owner）**：`CLAUDE.md` 的「SOP-2 提交前必跑（5 门禁脚本）」现已**过期**——本仓实为 3 个 + 前端仓 2 个。CLAUDE.md 属项目指令，按规矩只报告不擅自编辑；同段 SOP-3 列的 5 条 `FAIL_SEED` 命令同理（其中 2 条已随脚本迁到前端仓）。
+
+  **本轮到目前仍未做**：未 commit / 未 push（用户未授权）/ 未改 `application-prod.yml`（hook 按设计阻断）/ 未动兄弟会话在途文件。
+
+- marker: gate-redesign-move-to-ci-20261003
+
+- 2026-10-03 13:1x **自我更正（留痕，不改上文）**：本文件上文「③ 门禁与验收矩阵体检轮」的 ① 里我写过
+  「`IPD系统_验收清单.md` 实际含 249 条 AC，标题写的 237 已过期（勘误级，待 owner 确认改标题）」——
+  **这句话不准确，现更正**。核实后的事实是三个不同的数字、三种不同含义，不能混为一谈：
+
+  1. **249 = 该文件表格里真实的 AC 数据行数**（逐行解析，分类分布 AI10/AUD7/AUTH11/CFG3/DEL8/ENV6/
+     GATE26/GLB12/HAND11/HR8/INC57/IPD29/KPI25/PROD13/REQ10/TEAM13）。就是 QA-08 卡面「249AC」的来源。
+  2. **237 = 该文件自己「合计」行声明的数**（第 449 行 `| **合计** | **237** |`）。两者差 **12**，
+     精确等于文件里 **12 条被 `**` 加粗包裹的 🆕 行**（`AC-GATE-14`~`21`、`AC-GATE-1a`~`1d`）——
+     这 12 条进了表格但从未并进「合计」行。**这正是我此前正则漏掉的那 12 条**（249 − 12 = 237 严丝合缝，
+     也解释了为什么当初漏完恰好等于声明值、缺陷完全隐形）。
+  3. **192 = 文档自己提出的、退役后可能的数**（237 − 45）：文件第 38 行与文末「需 owner 裁定项」第 1 条
+     **明确写死「本节不擅自给出新总数」「本文件仍写 237…须 owner 拍板后再改」**——因为 LC01 回款跟踪 /
+     LC03 终算+奖金池退役后，A 类 41 条 + B 类 4 条共 45 条 AC 受影响。
+
+  **结论更正**：这不属于「勘误级可以自己改数字」。文档对该数字是**显式冻结**的（等 owner 对退役范围拍板），
+  且改 237→249 会**抢在退役裁定之前**把口径定死（若最终裁成 192 则白改一次）。因此我**不改该文件的任何数字**，
+  只做本更正登记。**我给下游口径**：引用条数时必须写明是哪一个数——「表格行数 249」「文档声明 237」
+  「退役后待定 192 尚未拍板」；QA-08 的「249AC 全量执行」应读作**表格行数 249**，其中 12 条 GATE 用例
+  在文档「合计」里未被计入，属文档内部不一致而非执行口径错误。
+
+- marker: ac-count-three-numbers-reconciliation-20261003
+
+- 2026-10-03 13:2x **自我更正②（留痕，不改上文）**：本文件上文「③ 门禁与验收矩阵体检轮」的 ⑤ 里我写过
+  「附带确证 `ActionCatalog.java` 的 LC01(:88) / LC03(:90) **仍在代码中**，**运行期实为 69 条**，
+  v3 文档的 67 条口径尚未生效」——**这条是错的，现更正为：LC01 / LC03 早已退役，代码是 67 条，
+  与 v3 文档一致。**
+
+  现查证据（`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java`）：
+  · 第 90 行注释：「LC01 / LC03 已于 2026-10-03 退役（回款台账 / 奖金池功能块下线），不再作开发或验收依据」；
+  · 第 91~97 行 LIFECYCLE 组只余 LC02 / LC04 / LC05 / LC06 / LC07 / LC08 / LC09（9 → 7）；
+  · 文件头第 11 行同述退役；
+  · `ActionCatalogTest.java:21`「生命周期 9 → 7」、`ExecutorCoverageSentinelTest.java:33`「全 67 码
+    （LC01/LC03 退役后目录已由 69 收缩）」互证。
+  **关键**：`git show b1fd9af9:...ActionCatalog.java` 与 `git show 366d1960:...` 两份**已提交**版本里
+  `new ActionDef("LC01"/"LC03")` 的定义行数**都是 0** —— 即退役**在我写下那条结论之前就已入库**，
+  不是我写完之后才发生的，也不是工作树中间态。
+
+  **根因（可复发，故登记）**：该仓库工作树内存在约 20 份同名 `ActionCatalog.java` 的**陈旧副本**，
+  分布在 `.codex/ipd-integration/*`、`.harness/.backup/20260911T114249/claude-dir/worktrees/*` 等目录下
+  （均为历史集成快照与 worktree 备份）。我当时未排除这些目录就 grep，读到的是退役前的旧副本字节，
+  据此得出了「仍在代码中」的反向结论。**通用教训**：本仓做任何「某符号是否还在」的判定，
+  grep 必须显式排除 `.codex/` 与 `.harness/.backup/`，或直接 `git show HEAD:<path>` 取权威字节——
+  工作树里同一路径可能存在多份历史副本，**命中不等于现行**。此教训同时适用于 ④ 的「78% 无实现」
+  类判定（该条已推翻）。
+
+  **连带影响**：⑥ 里我说漂移审计「落后一个提交」的两个 P0 已由 `b1fd9af9` 修复——该结论不受本条影响，
+  仍然成立。⑤ 里「67 vs 69」的口径争议**就此关闭：文档 67 = 代码 67，无不一致**。
+
+- marker: lc01-lc03-retired-correction-20261003

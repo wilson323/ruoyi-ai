@@ -917,8 +917,16 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                 return;
             }
             if (protectChildCheckpoint && !childPauseRequested) {
-                sink.onError(ERR_STREAM_ERROR);
-                return;
+                // protectChildCheckpoint 是「曾经拦截过结果事件」的单向标记，只置真不清零。
+                // 子智能体完成 / 批准批完之后条件早已不成立，标记却仍在，
+                // 旧实现在此报 STREAM_ERROR（文案「模型输出中断」）——把健康运行误判为失败，
+                // 且文案与事实相反。根因是拿历史标记表达当前状态。
+                // 这里改为按当前实况判定：条件已不成立即清标记并走正常收尾；
+                // 条件仍成立说明确实还在等，保持非终态、不得报成功也不得报失败。
+                if (childLineage != null && childLineage.hasPendingChildApprovals()) {
+                    return; // 仍在等子智能体批准：维持非终态，等子运行收口后再收口本轮
+                }
+                protectChildCheckpoint = false;
             }
             if (!sink.isPaused() && !childPauseRequested) sink.onComplete();
         }

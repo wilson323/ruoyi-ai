@@ -59,7 +59,9 @@ public class DeletionArchiveService implements IDeletionArchiveService {
     /**
      * 二次确认清除：IPD 超管会话 → 原子更新 remark → 写 PURGE 审计。
      *
-     * @param requestId 删除申请 ID
+     * @param requestId     删除申请 ID
+     * @param confirmTail   二次确认串，必须等于申请编号的字符串形式
+     * @param clearedReason 清除原因（写入 remark 与 PURGE 审计）
      * @return 更新后的申请
      */
     @Transactional(rollbackFor = Exception.class)

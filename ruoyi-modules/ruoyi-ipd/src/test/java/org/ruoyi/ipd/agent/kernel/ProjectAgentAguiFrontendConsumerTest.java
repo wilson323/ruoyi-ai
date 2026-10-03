@@ -1,4 +1,6 @@
 package org.ruoyi.ipd.agent.kernel;
+
+import org.junit.jupiter.api.Tag;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.agui.model.*;
 import io.agentscope.core.event.*;
@@ -13,6 +15,7 @@ import java.nio.file.*;import java.time.Duration;import java.util.*;import java.
 import reactor.core.publisher.Flux;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+@Tag("dev")
 class ProjectAgentAguiFrontendConsumerTest {
  @org.junit.jupiter.api.io.TempDir Path root;
  @org.junit.jupiter.api.Test void actualSdkFrontendResume() throws Exception {

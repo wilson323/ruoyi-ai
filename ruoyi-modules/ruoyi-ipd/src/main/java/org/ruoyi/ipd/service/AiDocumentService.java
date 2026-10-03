@@ -310,6 +310,7 @@ public class AiDocumentService {
      * @param baseVersionId 调用方声明的基准版本（乐观锁用途）
      * @param newContent    改版全文
      * @param title         新标题（空则沿用 HEAD）
+     * @param operatorId    改版操作人（写入审计与版本行 createdBy）
      * @return 新版本行 v(n+1)（status=GENERATED，需重新人工审核）
      */
     @CacheEvict(cacheNames = CacheNames.IPD_AI_DOC_CHAIN, allEntries = true)

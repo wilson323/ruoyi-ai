@@ -106,6 +106,7 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
      * </pre>
      * 其中 baseAmount = 单项目基础额（锁定评级对应），capMultiplier 默认 2.0。
      *
+     * @param draft          津贴台账草稿（就地填充 finalAmount 与 capApplied）
      * @param baseAmountList 单项目基础额列表（同一人员的不同项目）
      * @param capMultiplier  封顶倍数（可为 null，默认 2.0）
      * @return AllowanceLedger 草稿（finalAmount + capApplied 已填充）

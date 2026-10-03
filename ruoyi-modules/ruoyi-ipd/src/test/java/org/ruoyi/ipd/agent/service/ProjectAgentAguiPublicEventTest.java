@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.agui.encoder.AguiEventEncoder;
 import io.agentscope.core.agui.event.AguiEvent;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("dev")
 class ProjectAgentAguiPublicEventTest {
     private static final String KEY = ProjectAgentAguiPublicEvent.INTERNAL_ORIGIN;
     private final ObjectMapper mapper = new ObjectMapper();

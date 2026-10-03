@@ -17,6 +17,8 @@ on:
     paths:
       - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/**/*.java'
       - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/**/*.java'
+      # 归属断言入口由此包源码自动发现——改它会让门禁判据静默变窄而不重跑
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/**/*.java'
       - 'scripts/check-write-endpoint-ownership.sh'
       - 'scripts/check-write-endpoint-ownership.py'
       - 'scripts/ownership-gate-exempt.txt'
@@ -26,6 +28,7 @@ on:
     branches: [main]
     paths:
       - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/**/*.java'
+      - 'ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/security/**/*.java'
       - 'scripts/ownership-gate-exempt.txt'
       - 'scripts/check-write-endpoint-ownership.py'
 

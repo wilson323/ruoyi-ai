@@ -1,0 +1,305 @@
+# 静态门禁聚合 CI（纯静态扫描，秒级，无需 JDK / maven / 数据库）
+#
+# 目的：收编 12 个「本地 pre-commit 会拦、推到 CI 却放过去」的门禁。
+#      每批收编前逐个实测 exit=0 + FAIL_SEED 注入 exit!=0（2026-10-03），
+#      确保不会把当前 main 打红，也不会收编假绿门禁。
+#
+# 本 workflow 只做两件事：
+#   1. 跑判定
+#   2. 跑自证能红（门禁自己会不会是假绿）—— 有自证参数的才加
+#
+# 依赖：只读 checkout。纯 grep/awk/python3，无数据库、无构建。
+#
+# 退出码语义（照 ownership-gate.yml 先例）：
+#   0=通过  1=有违规（红）  2=门禁自身错误（红，不许当通过）
+#
+# ⚠️ 禁止在本文件里用 `|| echo` 或 `continue-on-error`：
+#    r38-5-gates.yml 曾用 `|| echo` 吞掉退出码，文件头写着「fail → 阻断 PR」，
+#    实际 step 恒绿 —— 注释承诺阻断、代码不阻断。这类假绿最难发现，因为
+#    读头部会以为门禁在生效。
+#
+# ⚠️ 收编前必须在「CI 等价环境」实测，不能只测本地工作树：
+#    本机有兄弟仓库和 $HOME/.claude 全局钩子，CI 的干净 checkout 两者都没有。
+#    实测被此条拦下的候选（2026-10-03，原始退出码）：
+#      - check-memory-leak-pattern.sh / check-a11y-basics.sh
+#        本机 exit=0，但 FRONT_DIR 默认指向兄弟仓库 ../ruoyi-ipd-web/apps/web-antd/src，
+#        CI 无此目录 → gate_frontend_files 返回 2 → 收编即 CI 恒红。
+#        （实测：FRONT_DIR=/tmp/__no_such_frontend__ → exit=2 "输入目录不存在"）
+#      - check-mock-data-realism.sh    本机 exit=2（24 个测试文件命中 mock 值域启发式）
+#      - check-r-line-count.sh         本机 exit=2（16 份 R 报告自述行数与实测差 >2）
+#      - check-permission-mirror-fe-be.sh 本机 exit=1（2026-10-03 实测时为「后端独有 4 个
+#        ipd:bonus-pool:* 码」；同日后端退役奖金池域后转为「前端独有 2 个 ipd:coefficient:* 码」，
+#        仍 exit=1），且前端码册来自兄弟仓库，CI 同样不可达
+#      - check-cd-absolute-path.sh     本机 exit=2；且它是 pre-commit 门禁（只扫
+#        `git diff --cached`），CI checkout 无 staged 改动 → 恒 PASS，收编即造假绿
+
+name: static-gates
+
+on:
+  pull_request:
+    paths:
+      - 'ruoyi-modules/**'
+      - 'ruoyi-admin/**'
+      - 'ruoyi-common/**'
+      - 'scripts/**'
+      - 'docs/ipd-系统说明/**'
+      - 'application*.yml'
+      - '.github/workflows/static-gates.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-gates:
+    name: 静态门禁（12 项）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      # ── 门禁 1/12：Gate 门禁孤儿（有定义无接线）────────────────
+      # 影响面 P1：Gate 是本项目核心业务骨架，孤儿 = 业务规则写了但永远不触发。
+      - name: 1/12 Gate 门禁接线
+        run: bash scripts/check-gate-wiring.sh
+
+      - name: 自证能红 · Gate 门禁接线
+        env:
+          GATE_WIRING_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-gate-wiring.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 2/12：demo.enabled 误开 ────────────────────────
+      # 影响面 P0：误开一次 = 全部 IPD 写操作返回「演示模式，不允许操作」，
+      # 生产直接瘫。纯 yml grep，<1s，极低成本极高收益。
+      - name: 2/12 demo 默认关闭
+        run: bash scripts/check-demo-default-off.sh
+
+      # 该脚本没有 FAIL_SEED 入口（--strict 只把警告升级为错误，不是自证入口，
+      # 干净输入下必然返回 0，无法证明门禁会红）。故自证改为真实变异。
+      # 变异必须复用门禁自己的 awk 判据（demo: 段下第一个 enabled:），
+      # 否则改到别的 enabled: 行，门禁根本读不到 —— 那样自证是假的。
+      # 本地实测:注入后 exit=1 且精确报 "parent demo.enabled=true"，还原后工作树干净。
+      - name: 自证能红 · demo 默认关闭（变异注入）
+        run: |
+          set +e
+          TARGET="ruoyi-admin/src/main/resources/application.yml"
+          if [ ! -f "$TARGET" ]; then
+            echo "::error::自证无法进行：目标 yml 不存在，门禁判据可能已失效"
+            exit 1
+          fi
+          cp "$TARGET" /tmp/demo-gate-backup.yml
+          trap 'cp /tmp/demo-gate-backup.yml "$TARGET"' EXIT
+          awk '/^demo:/{flag=1} flag && /^  enabled: false$/{sub(/false/,"true"); print; flag=0; next} {print}' \
+            "$TARGET" > /tmp/demo-gate-mutated.yml
+          if cmp -s "$TARGET" /tmp/demo-gate-mutated.yml; then
+            echo "::error::变异未生效：未在 demo: 段下找到 '  enabled: false'，门禁判据可能已变"
+            exit 1
+          fi
+          cp /tmp/demo-gate-mutated.yml "$TARGET"
+          bash scripts/check-demo-default-off.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：把 demo.enabled 改成 true 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 3/12：权限码双源 ────────────────────────────
+      # 影响面 P0：权限码出现第二处真源 = 越权风险，且与前端镜像交叉。
+      - name: 3/12 权限码单一真源
+        run: bash scripts/check-permission-single-source.sh
+
+      - name: 自证能红 · 权限码单一真源
+        env:
+          PERM_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-permission-single-source.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 PERM_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 4/12：NOT_FOUND 错误码统一 ────────────────────
+      # 无自证参数（脚本未实现），只跑判定。
+      - name: 4/12 资源不存在错误码模式
+        run: bash scripts/check-resource-not-found-pattern.sh
+
+      # ── 门禁 5/12：启动期 failfast ────────────────────────
+      # 兜底 advice 吞掉配置冲突异常 = 启动期配置错配变静默运行，故障难查。
+      # 无自证参数（脚本未实现），只跑判定。
+      - name: 5/12 启动期 failfast 提示
+        run: bash scripts/check-startup-failfast-advice.sh
+
+      # ── 门禁 6/12：测试断言行号漂移 ───────────────────────
+      # 防止断言被改成假绿（配合已在 CI 的 check-surefire-fake-green.sh）。
+      - name: 6/12 测试断言行号漂移
+        run: bash scripts/check-assertion-line-drift.sh
+
+      - name: 自证能红 · 测试断言行号漂移
+        env:
+          ALD_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-assertion-line-drift.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 ALD_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 7/12：最佳实践登记位结构（SOP-2 强制门禁）──────
+      # 只校验登记位文档结构与所引用门禁入口存在，不证明实践已执行 ——
+      # 脚本自己会打印 [PENDING_VALIDATION]，别把它的 PASS 读成「最佳实践已落地」。
+      # 判据：15 条 BP 条目 × 8 个非空字段 + 5 个门禁脚本存在且带注入标记。
+      - name: 7/12 最佳实践登记位结构
+        run: bash scripts/check-best-practices-coverage.sh
+
+      - name: 自证能红 · 最佳实践登记位结构
+        env:
+          BP_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-best-practices-coverage.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 BP_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 8/12：Surefire groups 覆盖（SOP-2 强制门禁）────
+      # 防假绿类型 1：pom 配了 <groups> 过滤、但测试没有 @Tag("dev")，
+      # 结果是「测试全绿」——因为一个都没跑。纯静态，不执行 mvn。
+      - name: 8/12 Surefire groups 覆盖
+        run: bash scripts/check-surefire-groups-coverage.sh
+
+      - name: 自证能红 · Surefire groups 覆盖
+        env:
+          SGC_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-surefire-groups-coverage.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 SGC_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 9/12：钩子输出契约 ──────────────────────────
+      # 钩子吐的 JSON 不合约，Claude Code 会**静默丢弃整份输出** —— 拦截类钩子
+      # 等于没装（irreversible-guard 曾因此长期失效）。故本门禁不 grep 源码，
+      # 而是喂 payload 实跑钩子、验 stdout 形状（grep 版本对 JS 简写属性假绿）。
+      # ⚠️ CI 与本地覆盖范围不同，别把 CI 的 PASS 读成「全部钩子已验」：
+      #    脚本探针 9 个钩子，其中 3 个在 $HOME/.claude/hooks/（irreversible-guard /
+      #    premature-done-guard / reflection-gate），CI 无此目录 → 静默跳过，
+      #    实际只验到仓库内跟踪的 6 个（.claude/helpers/*.cjs + .claude/hooks/*）。
+      #    实测（2026-10-03，HOME 指向无 .claude 的临时目录）：仍 exit=0。
+      - name: 9/12 钩子输出契约
+        run: bash scripts/check-hook-decision-schema.sh
+
+      - name: 自证能红 · 钩子输出契约
+        env:
+          HOOK_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-hook-decision-schema.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 HOOK_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 10/12：三源对账 hash（SOP-8）───────────────────
+      # 判据：BCP-Registry §六 与 BCP-Closure-Log §四 的每条登记，都必须能在
+      # log.md 里找到（子集校验，不是三源全等 —— 全等语义在真实数据上恒 FAIL）。
+      # 三个输入文件均在仓库内且已提交，CI 可读。
+      - name: 10/12 三源对账 hash
+        run: bash scripts/check-three-source-hash.sh
+
+      - name: 自证能红 · 三源对账 hash
+        env:
+          THREE_SOURCE_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-three-source-hash.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 THREE_SOURCE_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 11/12：命名规范（SOP-2 强制门禁）──────────────
+      # 覆盖度：类名 PascalCase + 常量 + 前端文件名。脚本自报「全仓扫 2225 个 Java」。
+      # 收编前置修复（2026-10-03）：原本报 2 个测试类名违规，已按同仓 70 个同类
+      # 测试类的既有惯例改名（P1_1_1_/P2_6_2_ → P111/P262），现为 0 违规。
+      - name: 11/12 命名规范
+        run: bash scripts/check-naming-convention.sh
+
+      - name: 自证能红 · 命名规范
+        env:
+          NAMING_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-naming-convention.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 NAMING_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"
+
+      # ── 门禁 12/12：注释与代码一致性（SOP-2 强制门禁）────────
+      # ⚠️ 别把本 step 的 PASS 读成「注释覆盖够」：owner 2026-10-03 决策本项目
+      #    **不强制**每个公开方法写注释，故「javadoc 缺失」只打 INFO（当前 118 条）。
+      #    本门禁的唯一判据是「**已经写了 @param 的** javadoc 里参数名与签名对不上」
+      #    ——即文档漂移，不是注释覆盖率。判定器为字符级扫描
+      #    (scripts/lib/java-param-doc-check.py)，不用正则（正则版本伪阳性抽查 3/3 全假）。
+      - name: 12/12 注释与代码一致性
+        run: bash scripts/check-doc-code-sync.sh
+
+      - name: 自证能红 · 注释与代码一致性
+        env:
+          DOCSYNC_FAIL_SEED: '1'
+        run: |
+          set +e
+          bash scripts/check-doc-code-sync.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::门禁自证失败：注入 DOCSYNC_FAIL_SEED 后仍返回 0，说明门禁是假绿"
+            exit 1
+          fi
+          echo "✅ 自证能红（exit=$rc），门禁确实会拦"

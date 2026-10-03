@@ -16,12 +16,15 @@ root = Path(sys.argv[1])
 registries = sorted((root / 'docs/ipd-系统说明').glob('最佳实践应用登记位-*.md'))
 if not registries:
     sys.exit('[FAIL] required registry missing')
+# 2026-10-03：BP-008（内存泄漏）/ BP-009（a11y）两个门禁扫的是**前端源码**
+# （原 FRONT_DIR 默认指向兄弟仓库 ../ruoyi-ipd-web）。它们在本仓 CI 里无法运行
+# ——干净检出没有兄弟仓库，实测输入缺失一律 exit=2。故 owner 决策后挪到
+# ruoyi-ipd-web 自己的 CI（该仓 .github/workflows/static-gates.yml），
+# 本清单随之由 5 项收敛为 3 项：只校验留在本仓、且能在本仓 CI 运行的门禁。
 required_scripts = {
     'scripts/check-best-practices-coverage.sh': 'BP_FAIL_SEED',
     'scripts/check-naming-convention.sh': 'NAMING_FAIL_SEED',
     'scripts/check-doc-code-sync.sh': 'DOCSYNC_FAIL_SEED',
-    'scripts/check-memory-leak-pattern.sh': 'LEAK_FAIL_SEED',
-    'scripts/check-a11y-basics.sh': 'A11Y_FAIL_SEED',
 }
 for name, marker in required_scripts.items():
     file = root / name

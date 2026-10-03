@@ -7,9 +7,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Tag("dev")
 class ProjectAgentRuntimeAccessSinkTest {
     @Test void revokedAccessIsReadAgainAndPreventsTheNextEffect() {
         var delegate = mock(ProjectAgentEventSink.class, CALLS_REAL_METHODS);

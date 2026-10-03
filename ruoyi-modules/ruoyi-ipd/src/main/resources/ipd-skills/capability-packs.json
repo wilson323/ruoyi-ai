@@ -1,6 +1,6 @@
 {
   "manifestVersion": 1,
-  "comment": "项目智能体内置能力清单（随 JAR 交付）。skills[].sha256 = SKILL.md 原始字节 SHA-256，加载时校验；不一致即该 Skill 不可用。DB 表 ipd_capability_pack(+item) 的种子与本清单同源（W2 起 DB 可覆盖/扩展）。",
+  "comment": "项目智能体内置能力清单（随 JAR 交付）。2026-10-03：LC01「上市后销售与回款跟踪」/ LC03「上市后6个月终算」退役，其 Skill（monthly-receipt-tracking-ipd / six-month-receipt-settlement-ipd）已随之下线移除。skills[].sha256 = SKILL.md 原始字节 SHA-256，加载时校验；不一致即该 Skill 不可用。DB 表 ipd_capability_pack(+item) 的种子与本清单同源（W2 起 DB 可覆盖/扩展）。",
   "skills": [
     {
       "name": "beta-trial-feedback-ipd",
@@ -153,11 +153,6 @@
       "sha256": "3ed7b86063a23e64c81bdb06a9122c615f87c275c256d28ccb02ff2fbf9b1053"
     },
     {
-      "name": "monthly-receipt-tracking-ipd",
-      "version": "1.0.0",
-      "sha256": "963ca7f4ef180a30c360143c17cef2894303069ae6d90d8ad85a4e42b41b8e2b"
-    },
-    {
       "name": "overseas-localization-verify-ipd",
       "version": "1.0.0",
       "sha256": "8a3111ac22a507bf3af8728385ace48c1c8255cf5dc3e673683bd5b903ad8857"
@@ -211,11 +206,6 @@
       "name": "sales-toolkit-ipd",
       "version": "1.1.0",
       "sha256": "d80d4a86113e0ccd7bd1cac8566aa7fdb34cc8c1464e56731785f282bfb21b98"
-    },
-    {
-      "name": "six-month-receipt-settlement-ipd",
-      "version": "1.0.0",
-      "sha256": "6269293a4f28d5498ddf4d50165e6658bc28be3f97fdbc29d528fbeee3e66a00"
     },
     {
       "name": "solution-pilot-delivery-ipd",

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.agui.event.AguiEvent;
 import io.agentscope.core.agui.model.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.domain.IpdAgentRun;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
 import org.ruoyi.ipd.agent.support.InMemoryAgentRunStore;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /** 实际 handle/内存 store 的状态与事件验证；事务管理器替身不证明真实 DB 回滚。 */
+@Tag("dev")
 class ProjectAgentAguiPauseResumeServiceTest {
     /**
      * 生产同源 mapper：写入与读回必须用同一个 @Primary bean 形态。

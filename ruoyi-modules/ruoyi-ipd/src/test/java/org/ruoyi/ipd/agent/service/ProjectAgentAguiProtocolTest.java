@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.event.*;
 import io.agentscope.core.model.ChatUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.kernel.ProjectAgentAguiBridge;
 import org.ruoyi.ipd.agent.kernel.ProjectAgentEventSink;
 import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
@@ -14,6 +15,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Tag("dev")
 class ProjectAgentAguiProtocolTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final List<String> emitted = new ArrayList<>();

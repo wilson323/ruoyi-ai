@@ -20,7 +20,7 @@ import java.util.Date;
 import java.util.Set;
 
 /**
- * R236 节点智能体证据执行器：AI_DIRECT ∧ DEEP ∧ 无 valueFields 的 17 个动作。
+ * R236 节点智能体证据执行器：AI_DIRECT ∧ DEEP ∧ 无 valueFields 的 15 个动作。
  * 智能体（{@code agent_info} 中 {@code IPD-<动作码>} 行）出证据正文 → 经**已治理的**
  * {@link AiGenerationService#generate} 落 {@code ai_documents} → 同一正文上传 OSS 挂为交付物
  * （BR-IPD-03 深管 ≥1 交付物）→ {@code transit(DONE)}。
@@ -28,6 +28,11 @@ import java.util.Set;
  * <p><b>LC03 让渡（R232-LC03 终算对账执行者接管）</b>：LC03 原属本执行器 18 码，现改由
  * {@link Lc03SettlementReconcileExecutor} 确定性对账（零 LLM）接管——终算对账需 stored vs
  * 公式复算的硬对账而非 LLM 证据，故本执行器码集 18→17、种子 SQL 亦不再为 IPD-LC03 建行。
+ *
+ * <p><b>LC01 退役（2026-10-03）</b>：LC01（上市后销售与回款跟踪）已随「回款台账」功能块从
+ * {@link org.ruoyi.ipd.seed.ActionCatalog} 整体退役（原 v3 的 69 动作 → 67 动作）。该动作已不在
+ * 目录内，本执行器同步让出该码：码集 16→15。种子 SQL 中历史遗留的 {@code IPD-LC01} 建行由
+ * 「待 owner 拍板」清理脚本草稿负责删除，本类不感知。
  *
  * <p><b>{@code supportsSchedule()=false}（契约 §7 B4，安全红线）</b>：本执行器把 LLM 产物直接
  * 作为 DONE 的门禁交付物，**没有独立人审环节**。若放开调度，SCHEDULE 每日自动派发会让
@@ -51,10 +56,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AgentEvidenceExecutor implements AiActionExecutor {
 
-    /** 16 码（契约 §7.3，R232-LC03 让出 LC03、R232-LC04 让出 LC04 后）：AI_DIRECT ∧ DEEP ∧ 无 valueFields，含动态深度码 V11。 */
+    /** 15 码（契约 §7.3，R232-LC03 让出 LC03、R232-LC04 让出 LC04、2026-10-03 退役让出 LC01 后）：AI_DIRECT ∧ DEEP ∧ 无 valueFields，含动态深度码 V11。 */
     static final Set<String> CODES = Set.of(
         "C07", "C09", "C10", "P02", "P12", "V03", "V09", "V10",
-        "V11", "V12", "L02", "L06", "LC01", "LC05",
+        "V11", "V12", "L02", "L06", "LC05",
         "LC07", "LC09");
 
     private final StageActionService stageActionService;

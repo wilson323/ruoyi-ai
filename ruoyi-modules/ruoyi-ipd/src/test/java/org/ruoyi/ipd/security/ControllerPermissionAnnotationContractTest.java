@@ -34,10 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@code SharedKpiController}</li>
  *   <li>{@code RequirementChangeController}</li>
  *   <li>{@code SwitchingAcceptanceController}</li>
- *   <li>{@code CoefficientChangeController}</li>
  *   <li>{@code PostLaunchReviewController}</li>
  *   <li>{@code HandoverController}</li>
- *   <li>{@code BonusPoolController}</li>
  * </ul>
  *
  * <p>实现简化：用 {@code Class.getProtectionDomain().getCodeSource().getLocation()} 拿到
@@ -56,10 +54,8 @@ class ControllerPermissionAnnotationContractTest {
         "org.ruoyi.ipd.controller.SharedKpiController",
         "org.ruoyi.ipd.controller.RequirementChangeController",
         "org.ruoyi.ipd.controller.SwitchingAcceptanceController",
-        "org.ruoyi.ipd.controller.CoefficientChangeController",
         "org.ruoyi.ipd.controller.PostLaunchReviewController",
-        "org.ruoyi.ipd.controller.HandoverController",
-        "org.ruoyi.ipd.controller.BonusPoolController"
+        "org.ruoyi.ipd.controller.HandoverController"
     );
 
     /**

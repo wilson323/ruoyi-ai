@@ -4,6 +4,7 @@ import io.agentscope.core.event.AgentEvent;
 import io.agentscope.core.event.TextBlockDeltaEvent;
 import io.agentscope.core.event.ToolCallStartEvent;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /** 验证真实业务消费者：子事件协议保留，但不得污染父正文及工具步骤。 */
+@Tag("dev")
 class ProjectAgentAguiParentTranscriptTest {
     private final ProjectAgentEventSink sink = mock(ProjectAgentEventSink.class);
 

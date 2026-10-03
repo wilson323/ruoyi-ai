@@ -113,9 +113,12 @@ public class NotificationService implements INotificationService {
         public static final String KPI_DUE_SOON = "KPI_DUE_SOON";
         /** R232-W14：共担 KPI 对账台账产出，知会产品组长真人复核（ACTION，处置权在人） */
         public static final String KPI_RECONCILE_LEDGER = "KPI_RECONCILE_LEDGER";
-        /** R232-LC03：上市后6个月终算对账台账产出，知会产品组长真人复核（ACTION，奖金池金额与分配由人决定） */
-        public static final String SETTLEMENT_RECONCILE_LEDGER = "SETTLEMENT_RECONCILE_LEDGER";
-        /** R232-LC04：双PM贡献度评定对账台账产出，知会产品组长真人复核（ACTION，评定与分配由 G5 真人签署链决定） */
+        // R232-LC03 的 SETTLEMENT_RECONCILE_LEDGER 通知类型已于 2026-10-03 删除：LC03 动作与
+        // Lc03SettlementReconcileExecutor 一并退役，该类型在生产代码中已零引用（不可能再产出）。
+        /** R232-LC04：双PM贡献度评定对账台账产出，知会产品组长真人复核（ACTION，评定与分配由 G5 真人签署链决定）。
+         *  <p>当前 Lc04ContributionReconcileExecutor 已随「算钱」层下线删除，故本类型暂为孤儿；
+         *  但 LC04 动作仍在 {@code ActionCatalog} 中（文档侧保留有效，动作与实现的对应关系待确认），
+         *  故常量暂留，不做删除。 */
         public static final String CONTRIBUTION_RECONCILE_LEDGER = "CONTRIBUTION_RECONCILE_LEDGER";
         /** MEDIUM-1.3：Gate 列席人员邀请通知 */
         public static final String GATE_OBSERVER_INVITED = "GATE_OBSERVER_INVITED";

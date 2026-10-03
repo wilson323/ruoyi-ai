@@ -30,8 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * R221 接线对账哨兵（spec §2.1 第三条）：防「矩阵登记了但没人实现」假绿。
  * 豁免名单 = 分批接线期未接码，只减不增（棘轮）；清零后删豁免集。
  *
- * <p><b>R236 棘轮到底</b>：剩余 61 码全接线后 {@code WIRED} = 全 69 码、{@code EXEMPT} 清零，
- * 按棘轮约定豁免集退化为空集常量（保留常量本身以锁死「禁止回调」语义）。
+ * <p><b>R236 棘轮到底</b>：剩余 61 码全接线后 {@code WIRED} = 全 67 码（LC01/LC03 退役后目录已由 69 收缩），
+ * {@code EXEMPT} 仅余 LC04，按棘轮约定豁免集只减不增（保留常量本身以锁死「禁止回调」语义）。
  * 并新增四条对账，把原先靠人肉核对的规则表机制化（AGENTS.md 病根③根除）：
  * ①无两个执行器重复认领同一码；②动态深度码不得归零交付物执行器；③命名约定 {@code IPD-<code>}
  * 与种子 SQL 逐码对账；④前端 execMode 静态映射与 {@code ActionCatalog} 逐码跨仓对账。
@@ -43,19 +43,48 @@ class ExecutorCoverageSentinelTest {
 
     /**
      * R232-W14 批次（兄弟车道，本轮不碰其码集）：首切片 4 码 + 对账执行器 K01-K04。
-     * R236 批次：剩余 61 码全接线 → WIRED = 全 69 码，豁免清零。
+     * R236 批次：剩余 61 码全接线；2026-10-03 LC01/LC03 退役后目录由 69 → 67。
      */
-    private static final Set<String> WIRED = ActionCatalog.ALL.stream()
+    private static final Set<String> CATALOG_CODES = ActionCatalog.ALL.stream()
         .map(ActionDef::code)
         .collect(Collectors.toUnmodifiableSet());
 
-    /** 豁免集已清零（棘轮到底）；禁止回调为非空——新增豁免等于静默漏接线。 */
-    private static final Set<String> EXEMPT = Set.of();
+    /**
+     * <b>⚠ 随「算钱」层下线保留的豁免码</b>。
+     *
+     * <p>LC03（上市后6个月终算：回款达成率+奖金池）已于 2026-10-03 从 {@code ActionCatalog}
+     * 整体退役（69 → 67），不再需要豁免；LC04（双PM贡献度评定对账）的执行器
+     * {@code Lc04ContributionReconcileExecutor} 及其对账 Service 已随奖金池 / 回款台账一并删除——
+     * 该动作的业务内容<b>整个就是算钱</b>，不存在可保留的「非算钱」残余；但其动作码仍留在目录里
+     * （文档侧 LC04 保留有效，后端实现待确认），故仅 LC04 仍登记为豁免。
+     *
+     * <p>生产影响：引擎遇 LC04 任务时 {@code executorByCode} 取不到执行器，
+     * 走既有 fail 分支「无已接线执行器」（{@code AiExecResult.fail}）——<b>显式报错，不会静默算错</b>。
+     */
+    private static final Set<String> EXEMPT = Set.of("LC04");
+
+    /**
+     * 节点智能体种子 SQL 中**已退役但尚未清理**的建行码。
+     *
+     * <p>LC01（上市后销售与回款跟踪）已随「回款台账」从目录退役，本执行器也让出了该码，但
+     * {@code docs/script/sql/update/20260927-ipd-node-agents.sql} 是**已应用的迁移**，按本轮纪律
+     * 禁止改写（改了会造成新装库/老库分叉）。历史遗留的 {@code IPD-LC01} 建行由
+     * {@code 2026-10-03-ipd-retire-lc01-lc03-draft.sql}（待 owner 拍板、未 apply）负责 DELETE。
+     */
+    private static final Set<String> RETIRED_SEEDED_CODES = Set.of("LC01");
+
+    /** 实际已接线码集 = 目录码 − 豁免码。 */
+    private static final Set<String> WIRED = CATALOG_CODES.stream()
+        .filter(c -> !EXEMPT.contains(c))
+        .collect(Collectors.toUnmodifiableSet());
 
     /** 消费 LLM 的执行器码集 = 必须有 {@code IPD-<code>} 智能体行的码（其余档位零 LLM，建行即假配置）。 */
     private static final Set<String> LLM_CONSUMING = union(GenerateExecutor.CODES, AgentEvidenceExecutor.CODES);
 
-    /** 构造签名以磁盘现态为准（R236：GenerateExecutor 5 参——+NodeAgentResolver；AgentEvidenceExecutor 4 参；R232-LC03：Lc03SettlementReconcileExecutor 4 参）。 */
+    /**
+     * 构造签名以磁盘现态为准（R236：GenerateExecutor 5 参——+NodeAgentResolver；AgentEvidenceExecutor 4 参）。
+     * 原含 Lc03/Lc04 两个对账执行器（各 4 参），随「算钱」层下线移除（见 EXEMPT 注释 / D-4）。
+     */
     private static List<AiActionExecutor> executors() {
         return List.of(
             new LightDirectExecutor(null),
@@ -63,8 +92,6 @@ class ExecutorCoverageSentinelTest {
             new GenerateExecutor(null, null, null, null, null),
             new GatePrepExecutor(null, null, null, null, null, null),
             new KpiSharedReconcileExecutor(null, null, null, null),
-            new Lc03SettlementReconcileExecutor(null, null, null, null),
-            new Lc04ContributionReconcileExecutor(null, null, null, null),
             new AgentEvidenceExecutor(null, null, null, null));
     }
 
@@ -157,21 +184,25 @@ class ExecutorCoverageSentinelTest {
 
     /**
      * R236 新增（契约 §1 裁决 B）：命名约定 {@code IPD-<code>} 是隐式契约，改名即静默解绑 →
-     * 与种子 SQL 逐码对账。只校验**消费 LLM 的 40 码**（GenerateExecutor 24 + AgentEvidenceExecutor 16）；
-     * 其余 28 码执行器为确定性逻辑，种子不得为其建行（建行即装饰性假配置）。
+     * 与种子 SQL 逐码对账。只校验**消费 LLM 的 39 码**（GenerateExecutor 24 + AgentEvidenceExecutor 15）；
+     * 其余码执行器为确定性逻辑，种子不得为其建行（建行即装饰性假配置）。
      *（R232-LC03：LC03 改由 Lc03SettlementReconcileExecutor 确定性对账，零 LLM，不再建行。
-     * LC04 同：Lc04ContributionReconcileExecutor 确定性对账，零 LLM，不再建行。）
+     * LC04 同：Lc04ContributionReconcileExecutor 确定性对账，零 LLM，不再建行。
+     * 2026-10-03：LC01 退役，AgentEvidenceExecutor 让出该码 → 消费 LLM 码集 40 → 39。）
      *
      * <p>双向用一次集合相等断言表达：缺行 → 该节点永久走降级路径；多行 → 零 LLM 档位的装饰性假配置。
+     * 已退役但种子未清理的 {@code IPD-LC01} 行按 {@link #RETIRED_SEEDED_CODES} 显式登记，不算「多行」。
      */
     @Test
     void seedSqlRowsMatchLlmConsumingCodesExactly() throws IOException {
         Path sql = locateSeedSql();
         // 部分检出/CI 稀疏检出可能没有 docs 目录：跳过而非假绿通过
         Assumptions.assumeTrue(sql != null, "未定位到 docs/script/sql/update 下的 R236 节点智能体种子，跳过对账");
+        Set<String> expected = new HashSet<>(LLM_CONSUMING);
+        expected.addAll(RETIRED_SEEDED_CODES);
         assertThat(seededCodes(Files.readString(sql, StandardCharsets.UTF_8)))
-            .as("种子 %s 实际建行的码集须与消费 LLM 的执行器码集完全一致", sql.getFileName())
-            .containsExactlyInAnyOrderElementsOf(LLM_CONSUMING);
+            .as("种子 %s 实际建行的码集须 = 消费 LLM 的执行器码集 ∪ 已退役待清理码", sql.getFileName())
+            .containsExactlyInAnyOrderElementsOf(expected);
     }
 
     /** 同一 {@code agent_name} 不得重复建行（幂等守卫会吞掉第二条，故重复只在文件层面暴露）。 */
@@ -216,9 +247,9 @@ class ExecutorCoverageSentinelTest {
     void scheduleWiredCodesExcludeFillTableAndHumanGate() {
         AiExecutionEngine engine = new AiExecutionEngine(null, executors(), null, null);
         assertThat(engine.wiredActionCodes()).isEqualTo(WIRED);
-        // R236 排除面：AgentEvidence 16（LLM 产物即 DONE 门禁证据，无独立人审环节 → 仅 PASSIVE 人触发，契约 §7 B4）、
-        // DeepDirect 4（需人确认对话填表载荷）、Kpi 4（防调度每日堆台账）、Lc03 对账 1（同 Kpi，防调度堆台账）、
-        // Lc04 对账 1（同 Lc03，防调度堆台账）、
+        // R236 排除面：AgentEvidence 15（LLM 产物即 DONE 门禁证据，无独立人审环节 → 仅 PASSIVE 人触发，契约 §7 B4）、
+        // DeepDirect 4（需人确认对话填表载荷）、Kpi 4（防调度每日堆台账）、
+        // Lc04 对账 1（同 Kpi，防调度堆台账）、
         // GatePrep 5（HUMAN_GATE）；
         // 只剩 GenerateExecutor 24（草稿待人审，日级 dedup 通知）+ LightDirectExecutor 14（纯确定性）。
         Set<String> expected = union(GenerateExecutor.CODES, LightDirectExecutor.CODES);
@@ -239,9 +270,12 @@ class ExecutorCoverageSentinelTest {
 
     @Test
     void exemptionRatchetOnlyShrinks() {
-        // 棘轮基线：R232-W14 批次后豁免数 = 69 - 8 = 61；R236 批次接线 61 码 → 豁免清零。禁止回调大。
-        assertThat(EXEMPT).hasSize(0);
-        assertThat(WIRED).hasSize(69);
+        // 棘轮基线：R232-W14 批次后豁免数 = 69 - 8 = 61；R236 批次接线 61 码 → 豁免清零；
+        // 「算钱」层下线新增 LC04 一码豁免；2026-10-03 LC01/LC03 退役后目录由 69 → 67，
+        // 实际接线 = 67 − 1（LC04）= 66。豁免集只减不增（棘轮）。
+        assertThat(CATALOG_CODES).hasSize(67);
+        assertThat(EXEMPT).hasSize(1);
+        assertThat(WIRED).hasSize(66);
     }
 
     /**

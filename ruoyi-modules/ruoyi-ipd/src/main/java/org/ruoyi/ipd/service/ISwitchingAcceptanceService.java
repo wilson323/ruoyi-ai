@@ -15,7 +15,6 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.domain.NegativeFeedback;
@@ -25,7 +24,6 @@ import org.ruoyi.ipd.dto.SwitchingAcceptanceReport.CheckResult;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceReport;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceUnlockReq;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.ContributionMapper;
 import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
@@ -48,7 +46,6 @@ public interface ISwitchingAcceptanceService {
     void setAllowanceLedgerMapper(AllowanceLedgerMapper m);
 
     /** AC-INC-50：差异率 < 1% 才允许 lock */
-    void setBonusPoolMapper(BonusPoolMapper m);
 
     /** AC-INC-50：差异率 < 1% 才允许 lock */
     void setProjectScoreMapper(ProjectScoreMapper m);

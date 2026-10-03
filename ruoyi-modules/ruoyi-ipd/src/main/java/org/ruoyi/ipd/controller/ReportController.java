@@ -20,15 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>{@code GET /api/v1/report/project-summary} — 项目绩效汇总列表</li>
  *   <li>{@code GET /api/v1/report/export/allowance} — 津贴台账导出</li>
- *   <li>{@code GET /api/v1/report/export/bonus} — 奖金台账导出</li>
  *   <li>{@code GET /api/v1/report/export/project} — 项目汇总导出</li>
  * </ul>
  *
  * <p>权限梯度：
  * <ul>
  *   <li>列表 / 津贴导出 / 项目汇总导出 → 内部全员（service 二次校验 actor 范围）</li>
- *   <li>奖金台账导出 → GROUP_LEADER + SUPER_ADMIN（资金敏感）</li>
  * </ul>
+ *
+ * <p><b>2026-10-03</b>：{@code GET /api/v1/report/export/bonus}（奖金台账导出）已随
+ * 「奖金池」功能块退役一并删除，端点与本文档同步移除。
  *
  * <p>不依赖注解级权限（兼容 OPS-09 兄弟在途工作模式），改走 service.requireInternal + requireLeaderOrAdmin 二段门禁。
  */
@@ -65,17 +66,6 @@ public class ReportController {
             @RequestParam(required = false) Long personId) {
         IpdActor actor = ipdPermission.requireInternal();
         return ApiV1Response.ok(ipdReportService.exportAllowance(month, projectId, personId, actor));
-    }
-
-    /**
-     * P4-4.1 §2.2：奖金台账导出（AC-INC-34）—— 仅 GROUP_LEADER / SUPER_ADMIN。
-     */
-    @GetMapping("/export/bonus")
-    public ApiV1Response<ReportExportResult> exportBonus(
-            @RequestParam Long projectId,
-            @RequestParam(required = false) String status) {
-        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
-        return ApiV1Response.ok(ipdReportService.exportBonus(projectId, status, actor));
     }
 
     /**

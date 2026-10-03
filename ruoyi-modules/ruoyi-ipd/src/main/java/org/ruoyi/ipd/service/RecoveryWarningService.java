@@ -7,10 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.domain.ReceiptLedger;
 import org.ruoyi.ipd.domain.RecoveryWarning;
 import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ReceiptLedgerMapper;
 import org.ruoyi.ipd.mapper.RecoveryWarningMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
@@ -58,7 +56,6 @@ public class RecoveryWarningService implements IRecoveryWarningService {
 
     private final RecoveryWarningMapper recoveryWarningMapper;
     private final ProjectMapper projectMapper;
-    private final ReceiptLedgerMapper receiptLedgerMapper;
     private final ISystemConfigService systemConfigService;
 
     /** 可注入时钟（R156-A 根除债，仿 KpiRawRecordService 模式）。 */
@@ -75,6 +72,13 @@ public class RecoveryWarningService implements IRecoveryWarningService {
     /**
      * 扫描所有上市后未满 90 日的项目，回款比例低于阈值的写入预警表。
      *
+     * <p><b>⚠ 本服务已随「回款台账」下线而停用（fail-closed）</b>：回款分子原先直读
+     * {@code receipt_ledgers}，该表已不再有写入路径。若继续按原逻辑跑，分子恒为 0，
+     * 会给<b>每一个</b>上市未满 90 日的项目批量写入「回款比例 0%」的假预警——
+     * 这正是「静默给出错误结论而非报错」的最坏形态。
+     * 故此处直接短路返回 0 并留日志：功能已下线，不产生任何数据。
+     * 待 owner 裁决是否整体删除本服务（见 /tmp/teardown-backend.md 待裁决项 D-1）。
+     *
      * <p>归属收口：actor 由控制器从会话传入（不接受客户端入参）。SUPER_ADMIN 扫全库；
      * 其他角色（含 GROUP_LEADER）只扫 main_group_id 等于自己组的项目，
      * 避免组长跨组批量写别人项目的预警行。
@@ -86,6 +90,11 @@ public class RecoveryWarningService implements IRecoveryWarningService {
     @Transactional(rollbackFor = Exception.class)
     public int checkAndGenerate(IpdActor actor, LocalDate today) {
         IpdIdorGuard.requireAuthenticated(actor);
+        log.warn("90日回款预警扫描已停用：回款台账（receipt_ledgers）随「算钱」层下线，"
+            + "回款分子无数据源，继续执行将按分子=0 批量写入假预警，故 fail-closed 返回 0");
+        return 0;
+        // ↓↓↓ 以下为停用前的实现，保留供 owner 裁决「是否恢复 / 是否整体删除」时对照，勿直接启用 ↓↓↓
+        /*
         LocalDate scanDate = today != null ? today : today();
         BigDecimal threshold = readThreshold();
         boolean allGroups = "SUPER_ADMIN".equals(actor.role());
@@ -122,7 +131,7 @@ public class RecoveryWarningService implements IRecoveryWarningService {
                 toLocalDate(project.getLaunchDate()),
                 scanDate);
 
-            // 累计回款（窗口内累计净回款，含 6 月窗口外也可计入——用户口径是"上市后 90 日累计"，简化直接 sum 所有 receipt_ledger）
+            // 
             BigDecimal recoverySum = sumReceipts(project.getId());
             BigDecimal recoveryRate = recoverySum.divide(
                 project.getTargetSalesAmount(), 4, RoundingMode.HALF_UP);
@@ -163,6 +172,7 @@ public class RecoveryWarningService implements IRecoveryWarningService {
         log.info("90日回款预警扫描完成 scanDate={} scanned={} saved={}",
             scanDate, projects.size(), saved);
         return saved;
+        */
     }
 
     /**
@@ -197,25 +207,6 @@ public class RecoveryWarningService implements IRecoveryWarningService {
             log.warn("阈值读取非数值，回退默认 {}：{}", DEFAULT_THRESHOLD, e.getMessage());
             return DEFAULT_THRESHOLD;
         }
-    }
-
-    /**
-     * 累计某项目全部 receipt_ledger 的净回款（receiptAmount - refundAmount）。
-     */
-    BigDecimal sumReceipts(Long projectId) {
-        if (receiptLedgerMapper == null) return BigDecimal.ZERO;
-        List<ReceiptLedger> all = receiptLedgerMapper.selectList(
-            Wrappers.<ReceiptLedger>lambdaQuery()
-                .eq(ReceiptLedger::getProjectId, projectId)
-                .eq(ReceiptLedger::getSource, "RECEIPT")
-        );
-        BigDecimal sum = BigDecimal.ZERO;
-        for (ReceiptLedger r : all) {
-            BigDecimal receipt = r.getReceiptAmount() != null ? r.getReceiptAmount() : BigDecimal.ZERO;
-            BigDecimal refund = r.getRefundAmount() != null ? r.getRefundAmount() : BigDecimal.ZERO;
-            sum = sum.add(receipt.subtract(refund));
-        }
-        return sum;
     }
 
     /**

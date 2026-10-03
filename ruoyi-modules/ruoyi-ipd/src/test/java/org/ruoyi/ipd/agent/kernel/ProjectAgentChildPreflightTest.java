@@ -1,4 +1,6 @@
 package org.ruoyi.ipd.agent.kernel;
+
+import org.junit.jupiter.api.Tag;
 import io.agentscope.core.agent.*;
 import io.agentscope.core.message.*;
 import io.agentscope.core.middleware.*;
@@ -12,6 +14,7 @@ import java.util.*;import java.nio.file.*;import java.time.*;import java.util.co
 import reactor.core.publisher.*;
 import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;import static org.mockito.Mockito.*;
+@Tag("dev")
 class ProjectAgentChildPreflightTest {
  @TempDir Path root;
  @Test void coldFactoryRestoresOriginalChildAndParent() { run(PermissionBehavior.ASK,true,true); }

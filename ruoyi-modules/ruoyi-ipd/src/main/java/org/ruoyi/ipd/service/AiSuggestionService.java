@@ -63,11 +63,12 @@ import java.util.Set;
  *       只记 promptLen 不记原文（BR-AI-04）。</li>
  * </ul>
  *
- * <p>场景白名单（21 个）：R227-C1 首批 7 个 + AI-P3 场景包 4 个（demand.dedupe /
+ * <p>场景白名单（20 个）：R227-C1 首批 7 个 + AI-P3 场景包 4 个（demand.dedupe /
  * change.impact-analyze / handover.checklist-generate / report.nl-query）+ L2 每页 AI 入口
- * 补全 10 个（2026-09-28，AI 能力用户故事 US-L2-05/07/08/12~14/16~19）。
- * 新增 10 场景均为纯文本轻场景：不出 card、不进 STRUCTURED_SCENES；其中素材驱动场景
- * （demand.classify / demand.priority / bid.evaluate-proposal / kpi.* / bonus.fairness-analyze /
+ * 补全 10 个（2026-09-28，AI 能力用户故事 US-L2-05/07/08/12~14/16~19）中保留 9 个
+ * （{@code bonus.fairness-analyze} 已于 2026-10-03 随「奖金池」功能块退役移除）。
+ * 新增场景均为纯文本轻场景：不出 card、不进 STRUCTURED_SCENES；其中素材驱动场景
+ * （demand.classify / demand.priority / bid.evaluate-proposal / kpi.* /
  * report.trend-analyze / audit.anomaly-detect / product.name-classify）userPrompt 必填，
  * 防无数据编造；输出只出建议值，采纳/评分/发放一律人工（BR-AI-05 口径）。
  *
@@ -100,7 +101,7 @@ public class AiSuggestionService {
         "report.nl-query",
         // L2 每页 AI 入口补全（2026-09-28，US-L2-05/07/08/12/13/14/16/17/18/19）
         "demand.classify", "demand.priority", "bid.evaluate-proposal",
-        "kpi.monthly-summary", "kpi.contributor-summary", "bonus.fairness-analyze",
+        "kpi.monthly-summary", "kpi.contributor-summary",
         "timeline.storyline", "report.trend-analyze", "audit.anomaly-detect",
         "product.name-classify");
 
@@ -110,7 +111,7 @@ public class AiSuggestionService {
         "demand.dedupe", "report.nl-query",
         // L2 补全的素材驱动场景（缺数据素材的解读=编造风险，一律 userPrompt 必填）
         "demand.classify", "demand.priority", "bid.evaluate-proposal",
-        "kpi.monthly-summary", "kpi.contributor-summary", "bonus.fairness-analyze",
+        "kpi.monthly-summary", "kpi.contributor-summary",
         "report.trend-analyze", "audit.anomaly-detect", "product.name-classify");
 
     /** R232-P1-02：结构化输出场景（响应体增 card 字段）；3 轻场景保持纯文本零变化。 */
@@ -917,11 +918,10 @@ public class AiSuggestionService {
         return h;
     }
 
-    /** AI-P3 report.nl-query：静态报告目录（与 ReportController 四端点同源；改端点需同步此常量）。 */
+    /** AI-P3 report.nl-query：静态报告目录（与 ReportController 三端点同源；改端点需同步此常量）。 */
     static final String REPORT_CATALOG =
         "- GET /api/v1/report/project-summary?month=YYYY-MM —— 项目绩效汇总列表（分页）\n"
         + "- GET /api/v1/report/export/allowance?month=YYYY-MM —— 补贴台账导出（xlsx）\n"
-        + "- GET /api/v1/report/export/bonus?projectId= —— 奖金分配导出（xlsx）\n"
         + "- GET /api/v1/report/export/project?month=YYYY-MM —— 项目汇总导出（xlsx）\n";
 
     /** demand.dedupe：同项目既有需求清单（前 30 条，标题+状态；正文不进 prompt 防超长）。 */
@@ -1075,9 +1075,6 @@ public class AiSuggestionService {
             case "kpi.contributor-summary" ->
                 "你是绩效分析助手。根据用户提供的成员贡献素材，按「自评 20% + 双组长 40/40」框架做事实归集摘要（每人：关键产出/证据/贡献度建议区间），"
                 + "并明确标注「AI 仅建议分，评分人必须真人」。markdown 分节输出，缺数据标「待归集」。";
-            case "bonus.fairness-analyze" ->
-                "你是激励分析助手。根据用户提供的奖金池分配素材（池金额/达成系数/贡献度/绩效档），复算六档阶梯分配并输出合理性检查：逐人数值复算表、"
-                + "偏离均值告警（|偏离|>20% 标注）、口径疑点（≤3 条）。金额仅作建议区，不构成发放依据。markdown 分节输出。";
             case "timeline.storyline" ->
                 "你是项目叙事助手。根据以下项目上下文与用户补充的关键事件素材，按时间顺序生成项目故事线叙述稿（背景→关键节点→当前状态→下一步），供 PM 汇报使用。markdown 分节输出。";
             case "report.trend-analyze" ->
@@ -1167,14 +1164,14 @@ public class AiSuggestionService {
     }
 
     /**
-     * L2 补全（2026-09-28）：聚合维度场景——KPI/奖金池/审计/产品线，projectId 可空（=全局聚合，
+     * L2 补全（2026-09-28）：聚合维度场景——KPI/审计/产品线，projectId 可空（=全局聚合，
      * 带项目则校验可见性并注入项目上下文）；与项目维度场景（bid.evaluate-proposal / timeline.storyline，
      * projectId 必填）区分。【接手登记】原调用点（L221/L840）先于定义落盘导致编译红，
      * 本定义按同日场景包注释语义补齐（ORIGIN- 史实见 log.md）。
      */
     private static boolean isAggregateScene(String scene) {
         return scene.equals("kpi.monthly-summary") || scene.equals("kpi.contributor-summary")
-            || scene.equals("bonus.fairness-analyze") || scene.equals("audit.anomaly-detect")
+            || scene.equals("audit.anomaly-detect")
             || scene.equals("product.name-classify");
     }
 }

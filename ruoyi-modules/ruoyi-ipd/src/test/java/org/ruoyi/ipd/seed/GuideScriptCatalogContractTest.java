@@ -57,7 +57,7 @@ class GuideScriptCatalogContractTest {
     /** §3.2.8 四级精确码集。 */
     private static final Set<String> BIND_CODES = Set.of("C01", "C02", "C03", "C04", "C06", "C07",
         "C08", "C11", "C12", "P01", "P02", "P12", "P13", "D05", "D06", "V03", "V06", "V07", "V09",
-        "V10", "V11", "L01", "L02", "L03", "L04", "L07", "L08", "LC01", "LC02", "LC03", "LC05",
+        "V10", "V11", "L01", "L02", "L03", "L04", "L07", "L08", "LC02", "LC05",
         "LC09", "K01", "K02", "K03", "K04");
     private static final Set<String> WEAK_CODES = Set.of("V12", "L06", "LC08");
     private static final Set<String> CANDIDATE_CODES = Set.of("C10", "P03", "P05", "P06", "P08",
@@ -73,10 +73,10 @@ class GuideScriptCatalogContractTest {
     }
 
     @Test
-    @DisplayName("69 行齐，且码集与 ActionCatalog.ALL 全等（禁改名口径）")
-    void coversAll69CodesExactly() {
+    @DisplayName("67 行齐，且码集与 ActionCatalog.ALL 全等（禁改名口径）")
+    void coversAllCatalogCodesExactly() {
         List<GuideScript> all = GuideScriptCatalog.all();
-        assertThat(all).hasSize(69);
+        assertThat(all).hasSize(67);
         Set<String> catalogCodes = ActionCatalog.ALL.stream()
             .map(a -> a.code()).collect(Collectors.toSet());
         assertThat(all.stream().map(GuideScript::actionCode).collect(Collectors.toSet()))
@@ -84,7 +84,7 @@ class GuideScriptCatalogContractTest {
     }
 
     @Test
-    @DisplayName("§3.2.8 四级码集精确断言：36 绑定 / 3 弱 / 12 候选 / 18 不绑定")
+    @DisplayName("§3.2.8 四级码集精确断言：34 绑定 / 3 弱 / 12 候选 / 18 不绑定（LC01/LC03 退役后）")
     void bindLevelDistributionMatchesSSOT() {
         assertThat(codesOf(BindLevel.BIND)).containsExactlyInAnyOrderElementsOf(BIND_CODES);
         assertThat(codesOf(BindLevel.WEAK)).containsExactlyInAnyOrderElementsOf(WEAK_CODES);

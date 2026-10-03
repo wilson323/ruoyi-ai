@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.agui.event.AguiEvent;
 import io.agentscope.core.agui.model.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.support.*;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
 import reactor.core.scheduler.Scheduler;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.*;
 import static org.ruoyi.ipd.agent.support.AgentTestFixtures.*;
 
 /** 实际 Service/Executor/Recovery 管线，内存 store 与替身 SDK；不冒充真实 DB/跨 JVM。 */
+@Tag("dev")
 class ProjectAgentAguiCrashRecoveryTest {
     private final InMemoryAgentRunStore store=new InMemoryAgentRunStore();
     private final RunServiceHarness accessFixture=new RunServiceHarness(true,false,4);

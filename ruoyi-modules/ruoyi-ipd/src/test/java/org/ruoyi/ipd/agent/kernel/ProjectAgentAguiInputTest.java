@@ -3,9 +3,11 @@ package org.ruoyi.ipd.agent.kernel;
 import io.agentscope.core.agui.model.*;
 import io.agentscope.core.message.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("dev")
 class ProjectAgentAguiInputTest {
     @Test void frozenInputOwnsAllMutableSourceCollections() {
         var messages = new ArrayList<>(List.of(AguiMessage.userMessage("m", "original")));

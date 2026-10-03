@@ -12,8 +12,10 @@ import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import java.util.*;import java.nio.file.*;import java.time.*;import java.util.concurrent.atomic.*;import java.util.function.*;
 import reactor.core.publisher.*;
 import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.*;import static org.mockito.Mockito.*;
 @org.junit.jupiter.api.Tag("dev")
+@Tag("dev")
 class ProjectAgentRecursiveChildPauseTest {
  @TempDir Path root;
  @Test void recursiveColdPermissionPauseReturnsExactResultsToEachNativeParent() { run(PermissionBehavior.ASK,true,true); }

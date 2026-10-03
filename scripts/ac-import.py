@@ -29,11 +29,20 @@ DRAFT_PATH = REPO_ROOT / "docs/ipd-系统说明/治理/acceptance-matrix.importe
 REPORT_PATH = REPO_ROOT / "docs/ipd-系统说明/治理/ac-import-diff-report.txt"
 
 # 匹配 catalog 中表格行：| AC-INC-01 | 标题文字 | 预期 | ☐ |
+#
+# 2026-10-03 修复静默漏条：清单里部分行把 AC 编号写成 `| **AC-GATE-14** 🆕 |`，
+# 原正则要求编号紧跟在 `| ` 之后，导致这 12 条（AC-GATE-14~21 / 1a~1d）
+# **整行被丢弃且无任何提示**。更隐蔽的是丢完恰好剩 237 条，与文档标题声明的
+# 「237 条」数值吻合，把缺陷完全盖住——典型的假绿。
+# 现放开编号两侧的 `**` 加粗包裹，并由 assert_count_matches_doc() 兜底。
 ROW_RE = re.compile(
-    r"^\|\s*(?P<ac>AC-[A-Z]+-\d+[a-z]?)(?:\s*[⚠️🆕\s]*)?\s*\|\s*"
+    r"^\|\s*\*{0,2}\s*(?P<ac>AC-[A-Z]+-\d+[a-z]?)\s*\*{0,2}"
+    r"(?:\s*[⚠️🆕\s]*)?\s*\|\s*"
     r"(?P<title>[^|]+?)\s*\|\s*[^|]+\s*\|\s*[☐☑]\s*\|\s*$"
 )
 AC_ID_RE = re.compile(r"^AC-[A-Z]+-\d+[a-z]?$")
+# 文档标题声明的总数，如「IPD 237 条 AC 验收清单（P0-P4）」
+DOC_COUNT_RE = re.compile(r"(\d+)\s*条\s*AC")
 
 
 def parse_catalog(path: Path):
@@ -56,6 +65,48 @@ def parse_catalog(path: Path):
     return rows
 
 
+# 已核实的清单真实条数（2026-10-03 逐行实测）。
+#
+# 为什么用硬刻度而不是「对文档标题声明数」：
+# 原缺陷丢完恰好剩 237 条，与标题声明的 237 条**数值相同**，任何
+# 「parsed < declared 才报错」的对账都会放行——即对原始缺陷是假绿。
+# 因此这里锁死一个独立实测出的刻度，解析数与之不符（无论增或减）即失败。
+# 新增 AC 时本常量需一并更新，这是刻意的摩擦：条数变化必须被显式确认。
+EXPECTED_AC_COUNT = 249
+
+
+def assert_count_matches_doc(path: Path, parsed_count: int):
+    """兜底：解析条数必须等于 EXPECTED_AC_COUNT。
+
+    2026-10-03 静默漏条事故中，ROW_RE 无法匹配 `| **AC-GATE-14** 🆕 |` 形式的行，
+    12 条 AC 被整行丢弃且无任何提示，丢完恰好等于文档标题声明的 237，完全隐形。
+    本函数是第二道防线：即便 ROW_RE 被改坏，「解析数 ≠ 249」也会立刻失败。
+    另附带对账文档标题声明数，仅作提示（该标题当前过期，待勘误）。
+    """
+    if not path.exists():
+        sys.stderr.write(f"[ERROR] catalog 不存在: {path}\n")
+        sys.exit(1)
+    if parsed_count != EXPECTED_AC_COUNT:
+        sys.stderr.write(
+            f"[FATAL] 解析出 {parsed_count} 条，与已核实刻度 {EXPECTED_AC_COUNT} 条不符 —— "
+            f"要么 ROW_RE 漏匹配了某些行格式，要么清单确实增删了 AC。\n"
+            f"        若确认是清单变更，请同步更新脚本里的 EXPECTED_AC_COUNT 常量。\n"
+        )
+        sys.exit(2)
+    declared = None
+    for line in path.read_text(encoding="utf-8").splitlines()[:20]:
+        m = DOC_COUNT_RE.search(line)
+        if m:
+            declared = int(m.group(1))
+            break
+    if declared is not None and declared != parsed_count:
+        print(
+            f"[WARN] 文档标题仍声明 {declared} 条，实际 {parsed_count} 条 —— "
+            f"标题数字过期，属勘误级问题，请在 docs/ipd-系统说明/log.md 登记后修正。"
+        )
+    print(f"[OK] 解析条数与已核实刻度一致: {parsed_count}")
+
+
 def load_matrix(path: Path):
     if not path.exists():
         return {"rows": []}
@@ -63,7 +114,7 @@ def load_matrix(path: Path):
 
 
 def build_draft(parsed, existing_matrix):
-    """构造 draft JSON：保留已有 10 条样板 + 解析出 237 条（去重合并）"""
+    """构造 draft JSON：保留矩阵已有行 + 解析出的 catalog 行（按 ac_id 去重合并）"""
     by_id = {}
     for row in existing_matrix.get("rows", []):
         by_id[row["ac_id"]] = row
@@ -145,6 +196,7 @@ def main():
     if not parsed:
         sys.stderr.write("[ERROR] catalog 解析到 0 行，请检查 ROW_RE 模式\n")
         sys.exit(2)
+    assert_count_matches_doc(CATALOG_PATH, len(parsed))
 
     matrix = load_matrix(MATRIX_PATH)
     draft = build_draft(parsed, matrix)

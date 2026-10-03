@@ -200,7 +200,6 @@ public class BaseEntity implements Serializable {
 所有金额一律 `DECIMAL(18, 2)`，**禁止 float / double / real / numeric**（开发说明书 §6.3）：
 
 ```sql
-bonus_pool      DECIMAL(18, 2) NOT NULL DEFAULT 0
 allowance       DECIMAL(18, 2) NOT NULL DEFAULT 0
 sales_actual    DECIMAL(18, 2) NOT NULL DEFAULT 0
 level_coefficient DECIMAL(5, 2) NOT NULL DEFAULT 1.0

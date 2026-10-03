@@ -11,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * R221 矩阵哨兵（spec §2.1 断言 + 统计棘轮）。
- * 矩阵权威 = IPD全阶段AI代理执行闭环设计-20260926.md 附录 A（H5/D40/G24）。
+ * 矩阵权威 = IPD全阶段AI代理执行闭环设计-20260926.md 附录 A（H5/D38/G24）；
+ * LC01 / LC03 于 2026-10-03 退役后 AI_DIRECT 由 40 → 38（原附录 A 的 D40）。
  */
 @Tag("dev")
 class ActionExecModeMatrixSentinelTest {
@@ -39,9 +40,9 @@ class ActionExecModeMatrixSentinelTest {
         long h = ActionCatalog.ALL.stream().filter(d -> "HUMAN_GATE".equals(d.execMode())).count();
         long direct = ActionCatalog.ALL.stream().filter(d -> "AI_DIRECT".equals(d.execMode())).count();
         long gen = ActionCatalog.ALL.stream().filter(d -> "AI_GENERATE".equals(d.execMode())).count();
-        assertThat(ActionCatalog.ALL).hasSize(69);
+        assertThat(ActionCatalog.ALL).hasSize(67);
         assertThat(h).as("HUMAN_GATE 数须与附录 A 定案一致").isEqualTo(5);
-        assertThat(direct).isEqualTo(40);
+        assertThat(direct).isEqualTo(38);
         assertThat(gen).isEqualTo(24);
     }
 

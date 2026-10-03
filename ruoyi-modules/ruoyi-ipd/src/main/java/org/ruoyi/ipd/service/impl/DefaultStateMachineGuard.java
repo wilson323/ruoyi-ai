@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>规则元数据全部在内存（ConcurrentHashMap），无新增表（与任务「不动 DDL」一致）</li>
  *   <li>种子规则由 {@link #initRules()} 在 Spring {@code @PostConstruct} 阶段注入，覆盖：
- *       IDeletionRequestService 6 条合法迁移 + BonusPoolService 3 条合法迁移 + 4 条终态收敛通配；
+ *       IDeletionRequestService 6 条合法迁移 + 4 条终态收敛通配；
  *       2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）补登 5 台 ad-hoc 状态机 19 条
  *       + KpiRecordService 7 条（含 *→ARCHIVED 通配），共 8 台机器 36 条单一事实源</li>
  *   <li>preCheck 三段判定：① 精确匹配 ② 通配「*」+ 已知终态收敛 ③ 其余非法抛 IpdBusinessException</li>
@@ -49,9 +49,6 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     /** DeletionRequest 已知终态：DELETED / REJECTED / WITHDRAWN */
     private static final Set<String> DELETION_TERMINAL =
         Set.of("DELETED", "REJECTED", "WITHDRAWN");
-    /** BonusPool 已知终态：CONFIRMED（freeze 后不可再变） / DISTRIBUTED */
-    private static final Set<String> BONUS_POOL_TERMINAL =
-        Set.of("CONFIRMED", "DISTRIBUTED");
     /** KpiRecord 已知终态：APPROVED / REJECTED / ARCHIVED（2026-09-09 治理轮补登，配套 *→ARCHIVED 通配） */
     private static final Set<String> KPI_RECORD_TERMINAL =
         Set.of("APPROVED", "REJECTED", "ARCHIVED");
@@ -73,7 +70,7 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     }
 
     /**
-     * Spring 启动后注入种子规则（覆盖 DeletionRequest / BonusPool 状态机全量合法迁移 + 终态收敛）
+     * Spring 启动后注入种子规则（覆盖 DeletionRequest 等状态机全量合法迁移 + 终态收敛）
      */
     @PostConstruct
     public void initRules() {
@@ -142,50 +139,6 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("组长逾期自动升级超管（PERF-P0-1 批量 UPDATE）")
             .build());
 
-        // ---- BonusPool 状态机：DRAFT→CONFIRMED→DISTRIBUTED ----
-        // P1-4 语义化：注册 INITIAL→DRAFT 创建迁移（业务语义：create new bonus pool）
-        // 守卫层 preCheck 接受 fromState=Java null，isAllowed 内部映射到字面量 "INITIAL" 再与规则表 key 拼接
-        // 修复前 BonusPoolService.compute 真环境 fail-closed 400「守卫层未登记该迁移」
-        register(StateTransitionRule.builder()
-            .key("bonus_pool:INITIAL->DRAFT|compute")
-            .entityType("bonus_pool")
-            .fromState("INITIAL")     // P1-4 语义化:创建迁移 = INITIAL 状态
-            .toState("DRAFT")
-            .trigger("compute")
-            .crossDomain(false)
-            .description("奖金池 compute：INITIAL→DRAFT（初始创建迁移，业务新建）")
-            .build());
-        register(StateTransitionRule.builder()
-            .key("bonus_pool:DRAFT->CONFIRMED|freeze")
-            .entityType("bonus_pool")
-            .fromState("DRAFT")
-            .toState("CONFIRMED")
-            .trigger("freeze")
-            .crossDomain(false)
-            .description("奖金池 freeze：DRAFT→CONFIRMED（冻结后禁止回滚）")
-            .build());
-        register(StateTransitionRule.builder()
-            .key("bonus_pool:CONFIRMED->DISTRIBUTED|distribute")
-            .entityType("bonus_pool")
-            .fromState("CONFIRMED")
-            .toState("DISTRIBUTED")
-            .trigger("distribute")
-            .crossDomain(true)        // 跨域：触发津贴账本写入
-            .description("奖金池 distribute：CONFIRMED→DISTRIBUTED（跨域→写入 AllowanceLedger）")
-            .build());
-        // 2026-09-09 C3 缺陷修复：BonusPoolService.distribute 业务上允许 DRAFT/CONFIRMED 两入口
-        // （「仅 DRAFT/CONFIRMED 可分配」），但此前只登记了 CONFIRMED 路径——DRAFT 入口时 service
-        // 硬编码传 from=CONFIRMED 绕过守卫。补登记 DRAFT 直分路径（未冻结确认即分配，同样写账本）
-        register(StateTransitionRule.builder()
-            .key("bonus_pool:DRAFT->DISTRIBUTED|distribute")
-            .entityType("bonus_pool")
-            .fromState("DRAFT")
-            .toState("DISTRIBUTED")
-            .trigger("distribute")
-            .crossDomain(true)        // 跨域：同 CONFIRMED 路径，分配即写 bonus_allocations 台账
-            .description("奖金池 distribute：DRAFT→DISTRIBUTED（未冻结直分，跨域→写台账）")
-            .build());
-
         // ---- 2026-09-09 治理轮（P1-2 集中化第一步：登记不接线）----
         // 其余状态机的 Service 仍用各自 ad-hoc 守卫（本轮不改行为）；本表先作单一事实源。
         // 接线时参照 KpiRecordService 的 setter 注入 + preCheckGuard/registerPostCommit 模式。
@@ -251,28 +204,6 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .description("第二签 REJECT 终态")
             .build());
 
-        // ---- CoefficientChange 状态机：INITIAL→PENDING_LEADER→CONFIRMED/REJECTED（组长单审）----
-        register(StateTransitionRule.builder()
-            .key("coefficient_change:INITIAL->PENDING_LEADER|propose")
-            .entityType("coefficient_change")
-            .fromState("INITIAL").toState("PENDING_LEADER").trigger("propose")
-            .crossDomain(false)
-            .description("提议系数变更（创建迁移）")
-            .build());
-        register(StateTransitionRule.builder()
-            .key("coefficient_change:PENDING_LEADER->CONFIRMED|leaderApprove")
-            .entityType("coefficient_change")
-            .fromState("PENDING_LEADER").toState("CONFIRMED").trigger("leaderApprove")
-            .crossDomain(false)
-            .description("组长通过终态")
-            .build());
-        register(StateTransitionRule.builder()
-            .key("coefficient_change:PENDING_LEADER->REJECTED|leaderReject")
-            .entityType("coefficient_change")
-            .fromState("PENDING_LEADER").toState("REJECTED").trigger("leaderReject")
-            .crossDomain(false)
-            .description("组长驳回终态")
-            .build());
 
         // ---- Contribution 状态机：INITIAL/DRAFT→SUBMITTED→CONFIRMED（组长可退回 DRAFT）----
         register(StateTransitionRule.builder()
@@ -946,9 +877,6 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
     private boolean isTerminalState(String entityType, String toState) {
         if ("deletion_request".equals(entityType)) {
             return DELETION_TERMINAL.contains(toState);
-        }
-        if ("bonus_pool".equals(entityType)) {
-            return BONUS_POOL_TERMINAL.contains(toState);
         }
         if ("kpi_record".equals(entityType)) {
             return KPI_RECORD_TERMINAL.contains(toState);

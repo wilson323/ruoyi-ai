@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.mockito.ArgumentCaptor;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -24,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /** 真实成员守卫与原角色/暂停层次，不以 mock 权限返回值代替成员判断。 */
+@Tag("dev")
 class IpdActionWriterMemberTest {
     private IpdAuthSession session;
     private IpdAuthService auth;

@@ -186,6 +186,9 @@ public class KpiSharedConfirmService {
      * <p>权限口径与 {@code KpiSharedCollectionService.listSharedKpis} 同严：
      * actor 必填、项目须存在、租户须匹配、非 SUPER_ADMIN 须为项目在职成员。
      *
+     * @param actor        当前操作人（必填，id 为空即未认证）
+     * @param projectId    项目 ID（必填，非 SUPER_ADMIN 须为项目在职成员）
+     * @param period       KPI 周期（YYYY-MM）
      * @param statusFilter PENDING=待确认 / CONFIRMED=已确认 / OVERDUE=已逾期（派生）；null=全部
      */
     public List<KpiSharedConfirmView> listConfirms(IpdActor actor, Long projectId,

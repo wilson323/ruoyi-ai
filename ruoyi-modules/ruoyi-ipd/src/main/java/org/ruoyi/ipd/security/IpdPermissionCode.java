@@ -75,10 +75,9 @@ public interface IpdPermissionCode {
      */
     String OPERATION_HANDOVER_CANCEL = "ipd:handover:cancel";
 
-    /** AC-INC-15c：双PM 联合提议系数 */
-    String OPERATION_COEFFICIENT_PROPOSE = "ipd:coefficient:propose";
-    /** AC-INC-15c：产品组长确认系数 */
-    String OPERATION_COEFFICIENT_CONFIRM = "ipd:coefficient:confirm";
+    // 2026-10-03 owner 决策：退役「业绩窗口（含系数变更）」业务域。
+    // ipd:coefficient:propose / ipd:coefficient:confirm 两码已删除——其 Controller/Service/
+    // Mapper/Entity 先期已删，本处仅余常量定义与 catalog 授权条目（孤儿码）。数据库表保留。
 
     /** OPS-05：站内通知收件箱（本人） */
     String OPERATION_NOTIFICATION_READ = "ipd:notification:read";
@@ -109,14 +108,9 @@ public interface IpdPermissionCode {
     /** P3-1.x：KPI 考核查询（内部四角色） */
     String OPERATION_KPI_QUERY = "ipd:kpi:query";
 
-    /** P3-4.4：奖金池查询 */
-    String OPERATION_BONUS_POOL_QUERY = "ipd:bonus-pool:query";
-    /** P3-4.4：奖金池计算 */
-    String OPERATION_BONUS_POOL_COMPUTE = "ipd:bonus-pool:compute";
-    /** P3-4.4：奖金池冻结 */
-    String OPERATION_BONUS_POOL_FREEZE = "ipd:bonus-pool:freeze";
-    /** P3-4.4：奖金池分配 */
-    String OPERATION_BONUS_POOL_DISTRIBUTE = "ipd:bonus-pool:distribute";
+    // 2026-10-03 owner 决策：退役「奖金池」业务域。
+    // ipd:bonus-pool:{query,compute,freeze,distribute} 四码已删除——Controller/Service/
+    // Mapper/Entity 先期已删，本处仅余常量定义与 catalog 授权条目（孤儿码）。数据库表保留。
 
     /** 上市后复盘创建 */
     String OPERATION_POST_LAUNCH_REVIEW_CREATE = "ipd:post-launch-review:create";

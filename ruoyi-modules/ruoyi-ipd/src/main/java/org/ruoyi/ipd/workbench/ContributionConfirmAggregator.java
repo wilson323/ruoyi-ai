@@ -69,7 +69,7 @@ public class ContributionConfirmAggregator implements WorkbenchAggregator {
         task.put("priority", "normal"); // 无期限字段，恒 normal
         task.put("ownerRole", null); // 组长确认是具体人职责，非角色
         task.put("dueDate", null);
-        task.put("isBlocking", "1"); // 未确认则 tierCoefficient 未落定，阻断奖金池计算，值域 '1'/'N'
+        task.put("isBlocking", "1"); // 未确认则五维评分未落定（原文：阻断奖金池计算），值域 '1'/'N'
         task.put("deepLink", "/ipd/incentive/contribution");
         return task;
     }

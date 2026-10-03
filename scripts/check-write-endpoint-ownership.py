@@ -81,8 +81,11 @@ EXEMPT_FILE = os.environ.get("OWNERSHIP_EXEMPT_FILE") or os.path.join(
 )
 
 # ---------------------------------------------------------------- 污染目录排除
-# 与 scripts/lib/audit-gate-input.sh 的 gate_source_files 保持同一套规则。
-# 只排除 .harness/ 是不够的：实测 .codex/ 下另有 442 份 ipd/controller/*.java
+# 与 scripts/lib/audit-gate-input.sh 的 gate_source_files **共享同一套污染目录**
+# （由 test_pollution_dirs_match_shared_rule 钉住，漂了就 exit 1）。
+# 两者有意不等：shell 侧多排 test/spec/__tests__ 等测试目录，因为它的扫描面可能含
+# 测试源码；本门禁只扫 main 下的 controller，那些目录对本门禁没有意义。
+# **只排除 .harness/ 是不够的**：实测 .codex/ 下另有 442 份 ipd/controller/*.java
 # （ipd-integration 阶段快照 + ruflo 草稿），不排除统计会翻数倍。
 POLLUTION_DIRS = (".harness", ".codex", ".worktrees", "worktrees", "target", "node_modules", ".git")
 
@@ -738,6 +741,79 @@ public class OwnershipGateHelperOkSeedController {
 '''
 
 
+SHARED_GATE_LIB = os.path.join(
+    REPO_ROOT, "scripts/lib/audit-gate-input.sh"
+)
+# shell 侧额外排除的测试目录：本门禁只扫 main 源码，这些对本门禁无意义，
+# 列出是为了「只多不少、绝不少」这条不变式可被自动检查。
+SHELL_ONLY_POLLUTION = (
+    "test", "tests", "spec", "__tests__", "__mocks__", "test-helpers",
+)
+
+
+def test_pollution_dirs_match_shared_rule():
+    """污染目录清单必须与 scripts/lib 的公共函数**同步**，否则统计会悄悄漂。
+
+    为什么要有这道：公共排除函数在 shell 里，本门禁在 Python 里，两处各写一份。
+    写的人只改一处的话，门禁仍会跑、仍会报绿，但**扫描面悄悄变了**
+    （漏排一个 .codex/ 就会把 442 份快照算进去）。没有这道检查的话，
+    这种漂移要等到数字对不上才有人发现。
+    不变式：Python 侧必须是 shell 侧的**子集**（只多不少）。
+    """
+    if not os.path.isfile(SHARED_GATE_LIB):
+        fail("公共排除函数不存在: %s" % SHARED_GATE_LIB, 2)
+    with open(SHARED_GATE_LIB, encoding="utf-8") as fh:
+        sh = fh.read()
+    shell_dirs = set(re.findall(r"! -path '\*/([^/']+)/\*'", sh))
+    mine = set(POLLUTION_DIRS)
+    missing = sorted(shell_dirs - mine - set(SHELL_ONLY_POLLUTION))
+    if missing:
+        fail(
+            "污染目录清单与公共排除函数漂移：scripts/lib/audit-gate-input.sh 排除了 %s，"
+            "本门禁没排 —— 扫描面会悄悄变大（漏排 .codex/ 会多算 442 份快照）"
+            % missing,
+            1,
+        )
+    sys.stderr.write(
+        "[ownership-gate] 自证能红 ✅ 污染目录清单与公共排除函数同步"
+        "（本门禁 %d 项，含 shell 侧 %d 项测试目录豁免）\n"
+        % (len(mine), len(shell_dirs - mine))
+    )
+
+
+def test_pollution_dirs_actually_excluded():
+    """正向对照：污染目录里的 .java 必须**真的**不被扫到。
+
+    上一道只比对了清单文字。这一道造真文件验证行为 ——
+    清单写对了但 os.walk 剪枝写错的话，照样会多扫。
+    """
+    import shutil
+    import tempfile
+
+    tmp = tempfile.mkdtemp(prefix="ownership-gate-pollution-")
+    try:
+        for d in POLLUTION_DIRS:
+            sub = os.path.join(tmp, d, "org", "ruoyi", "ipd", "controller")
+            os.makedirs(sub, exist_ok=True)
+            with open(os.path.join(sub, "Ghost.java"), "w", encoding="utf-8") as fh:
+                fh.write("class Ghost {}\n")
+        keep = os.path.join(tmp, "org", "ruoyi", "ipd", "controller")
+        os.makedirs(keep, exist_ok=True)
+        with open(os.path.join(keep, "Real.java"), "w", encoding="utf-8") as fh:
+            fh.write("class Real {}\n")
+        found = {os.path.basename(f) for f in source_files(tmp)}
+        if found != {"Real.java"}:
+            fail(
+                "污染目录没被真正排除：期望只扫到 ['Real.java']，实际扫到 %s" % sorted(found)
+            )
+        sys.stderr.write(
+            "[ownership-gate] 自证能红 ✅ %d 个污染目录的正向对照通过（只扫到 Real.java）\n"
+            % len(POLLUTION_DIRS)
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_strip_preserves_geometry():
     """屏蔽注释必须**长度与行数都守恒**，否则 file:line 证据会偏移。
 
@@ -886,6 +962,8 @@ def self_red():
 def main():
     if "--self-red" in sys.argv[1:]:
         test_strip_preserves_geometry()
+        test_pollution_dirs_match_shared_rule()
+        test_pollution_dirs_actually_excluded()
         self_red()
     list_mode = "--list" in sys.argv[1:]
 

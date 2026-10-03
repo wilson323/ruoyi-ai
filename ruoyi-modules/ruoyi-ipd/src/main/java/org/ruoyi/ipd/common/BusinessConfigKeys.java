@@ -10,13 +10,13 @@ package org.ruoyi.ipd.common;
  *   <li>键名须与 ipd_business_config.config_key 完全一致</li>
  *   <li>删除/重命名前必须先查 lint（勘察卡 §7 docs-link-validate.cjs）</li>
  *   <li>新增业务参数先在 DDL seed 注册，再在本类加常量</li>
+ *   <li><b>bonus.* 前缀键（poolRate / windowMonths / achievementTiers / coefficient.* 等 21 键）
+ *       已随「算钱」层下线移除</b>：库中 {@code ipd_business_config} / {@code system_configs}
+ *       的存量行<b>不删除</b>（本轮禁止写库 / DDL），仅代码不再引用。清理需 owner 另行拍板。</li>
  * </ul>
  */
 public final class BusinessConfigKeys {
     private BusinessConfigKeys() {}
-
-    /** 奖金池基数比例（默认 0.0500；B-RULE-01 / ZK-05） */
-    public static final String BONUS_POOL_RATE = "bonus.poolRate";
 
     /** KPI 停发阈值（默认 60；ZK-13） */
     public static final String KPI_STOP_THRESHOLD = "kpi.stopThreshold";
@@ -38,9 +38,6 @@ public final class BusinessConfigKeys {
 
     /** 删除申请组长审核超时自动升级超管的小时数（默认 48；B-RULE-05） */
     public static final String DELETION_ESCALATE_TIMEOUT_HOURS = "deletion.escalateTimeoutHours";
-
-    /** 项目绩效系数取数策略（PROJECT_SCORE / WEIGHTED_AVG / LAST_QUARTER；P3-4.5 BR-INC-07） */
-    public static final String BONUS_PERFORMANCE_STRATEGY = "bonus.performance.strategy";
 
     // ------------------------------------------------------------------
     // R149 batch2b A5：GROUP 维度审批人配置（按产品组覆盖 GLOBAL 默认）

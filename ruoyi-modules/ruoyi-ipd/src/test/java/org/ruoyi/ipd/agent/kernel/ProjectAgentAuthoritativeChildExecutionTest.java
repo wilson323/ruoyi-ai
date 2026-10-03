@@ -11,7 +11,12 @@ import io.agentscope.harness.agent.filesystem.spec.LocalFilesystemSpec;
 import java.util.*;import java.nio.file.*;import java.time.*;import java.util.concurrent.atomic.*;import java.util.function.*;
 import reactor.core.publisher.*;
 import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.*;import static org.mockito.Mockito.*;
+// 2026-10-03：补 @Tag("dev")。surefire 配置了 <groups>${profiles.active}</groups>，
+// 无 tag 的测试类在 dev profile 下**整类不执行**且无任何提示——本类测的是子智能体
+// 权威执行边界（权限相关），静默不跑等于没有这层保护。
+@Tag("dev")
 class ProjectAgentAuthoritativeChildExecutionTest {
  @TempDir Path root;
  @Test void realChildToolExecutionUsesRegisteredActorBeforeStrictCheckpointLoad() {

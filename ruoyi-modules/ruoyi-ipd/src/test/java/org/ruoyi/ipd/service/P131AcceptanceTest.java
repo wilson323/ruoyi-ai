@@ -74,13 +74,13 @@ class P131AcceptanceTest {
     }
 
     @Test
-    void bootstrapInsertsExactlySixtyNineActionsAcrossAllStages() {
+    void bootstrapInsertsExactlySixtySevenActionsAcrossAllStages() {
         assertThat(f.bootstrap.bootstrap(13L, 7L)).isEqualTo(6);
-        assertThat(f.actions).hasSize(69);
+        assertThat(f.actions).hasSize(67);
         assertThat(f.actions).extracting(StageAction::getActionCode)
             .containsExactlyInAnyOrderElementsOf(ActionCatalog.ALL.stream().map(ActionDef::code).toList());
         assertThat(f.actions).extracting(StageAction::getId).doesNotHaveDuplicates();
-        assertThat(f.actions).filteredOn(a -> "DEEP".equals(a.getDepth())).hasSize(42);
+        assertThat(f.actions).filteredOn(a -> "DEEP".equals(a.getDepth())).hasSize(40);
         assertThat(f.actions).filteredOn(a -> "LIGHT".equals(a.getDepth())).hasSize(27);
         assertThat(f.actions).allSatisfy(action -> {
             assertThat(action.getId()).isPositive();
@@ -113,7 +113,7 @@ class P131AcceptanceTest {
             stageSizes.merge(stage.getStageCode(), 1, Integer::sum);
         }
         assertThat(stageSizes).containsExactlyInAnyOrderEntriesOf(Map.of(
-            "CONCEPT", 12, "PLAN", 13, "DEV", 11, "VALID", 12, "LAUNCH", 8, "LIFECYCLE", 13));
+            "CONCEPT", 12, "PLAN", 13, "DEV", 11, "VALID", 12, "LAUNCH", 8, "LIFECYCLE", 11));
     }
 
     @Test
@@ -125,7 +125,7 @@ class P131AcceptanceTest {
             assertThat(action.getIsBlocking()).isEqualTo(def.blocking() ? "1" : "0");
             assertThat(action.getIsBioFeature()).isEqualTo(def.bioFeature() ? "1" : "0");
         }
-        assertThat(f.actions).filteredOn(a -> "1".equals(a.getIsBlocking())).hasSize(38);
+        assertThat(f.actions).filteredOn(a -> "1".equals(a.getIsBlocking())).hasSize(36);
         assertThat(f.actions).filteredOn(a -> "1".equals(a.getIsBioFeature()))
             .extracting(StageAction::getActionCode).containsExactlyInAnyOrder("C12", "D11", "V10");
     }
@@ -146,8 +146,8 @@ class P131AcceptanceTest {
         assertThat(f.bootstrap.bootstrap(99L, 7L)).isEqualTo(6);
         assertThat(f.stages).filteredOn(s -> s.getProjectId().equals(13L)).hasSize(6);
         assertThat(f.stages).filteredOn(s -> s.getProjectId().equals(99L)).hasSize(6);
-        assertThat(f.actions).filteredOn(a -> a.getProjectId().equals(13L)).hasSize(69);
-        assertThat(f.actions).filteredOn(a -> a.getProjectId().equals(99L)).hasSize(69);
+        assertThat(f.actions).filteredOn(a -> a.getProjectId().equals(13L)).hasSize(67);
+        assertThat(f.actions).filteredOn(a -> a.getProjectId().equals(99L)).hasSize(67);
         verify(f.stageMapper, times(2)).insertBatch(anyList(), anyInt());
         verify(f.actionMapper, times(2)).insertBatch(anyList(), anyInt());
     }
@@ -180,8 +180,8 @@ class P131AcceptanceTest {
     void solutionTemplateDeepensV11WithoutChangingOtherCatalogDepths() {
         f.projects.get(13L).setTemplateType("SOLUTION");
         assertThat(f.bootstrap.bootstrap(13L, 7L)).isEqualTo(6);
-        assertThat(f.actions).hasSize(69);
-        assertThat(f.actions).filteredOn(a -> "DEEP".equals(a.getDepth())).hasSize(43);
+        assertThat(f.actions).hasSize(67);
+        assertThat(f.actions).filteredOn(a -> "DEEP".equals(a.getDepth())).hasSize(41);
         assertThat(f.actions).filteredOn(a -> "LIGHT".equals(a.getDepth())).hasSize(26);
         for (StageAction action : f.actions) {
             ActionDef def = ActionCatalog.byCode(action.getActionCode());

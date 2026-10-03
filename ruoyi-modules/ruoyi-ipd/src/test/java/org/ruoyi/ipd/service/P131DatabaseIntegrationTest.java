@@ -258,7 +258,7 @@ class P131DatabaseIntegrationTest {
                 orphan, project, nextId++);
             Map<String, List<Map<String, Object>>> before = graphSnapshot(project);
             assertThat(count("project_stages", project)).isEqualTo(6);
-            assertThat(count("stage_actions", project)).isEqualTo(70);
+            assertThat(count("stage_actions", project)).isEqualTo(68);
             assertServiceCode(() -> nested(() -> bootstrap.bootstrap(project, OPERATOR)), ApiV1ErrorCode.STATE_CONFLICT);
             assertThat(graphSnapshot(project)).isEqualTo(before);
         });
@@ -370,12 +370,12 @@ class P131DatabaseIntegrationTest {
             long project = project("HARDWARE");
             StageActionMapper failing = spy(actions);
             IllegalStateException original = new IllegalStateException("P131 forced action failure after real SQL");
-            // R30 批量语义重写：stages(6) + actions(69) 两批真实 SQL 全部落库后抛异常，
+            // R30 批量语义重写：stages(6) + actions(67) 两批真实 SQL 全部落库后抛异常，
             // 验证两类新图行整体回滚（原第 10 条单条失败语义的批量等价）。
             doAnswer(call -> {
                 List<StageAction> list = call.getArgument(0);
                 assertThat(actions.insertBatch(list, call.getArgument(1))).isTrue();
-                assertThat(count("stage_actions", project)).isEqualTo(69);
+                assertThat(count("stage_actions", project)).isEqualTo(67);
                 assertThat(count("project_stages", project)).isEqualTo(6);
                 throw original;
             }).when(failing).insertBatch(any(), anyInt());
@@ -588,7 +588,7 @@ class P131DatabaseIntegrationTest {
         List<Map<String, Object>> stageRows = rows("SELECT * FROM project_stages WHERE project_id=? ORDER BY sort_order,id", project);
         List<Map<String, Object>> actionRows = rows("SELECT * FROM stage_actions WHERE project_id=? ORDER BY action_code,id", project);
         assertThat(stageRows).hasSize(6);
-        assertThat(actionRows).hasSize(69);
+        assertThat(actionRows).hasSize(67);
         assertThat(stageRows).extracting(row -> row.get("stage_code"))
             .containsExactly("CONCEPT", "PLAN", "DEV", "VALID", "LAUNCH", "LIFECYCLE");
         Set<Long> allIds = new HashSet<>();
@@ -604,7 +604,7 @@ class P131DatabaseIntegrationTest {
         }
         Map<String, ActionDef> definitions = new HashMap<>();
         for (ActionDef def : ActionCatalog.ALL) definitions.put(def.code(), def);
-        assertThat(definitions).hasSize(69);
+        assertThat(definitions).hasSize(67);
         Set<String> found = new HashSet<>();
         int deep = 0;
         for (Map<String, Object> row : actionRows) {

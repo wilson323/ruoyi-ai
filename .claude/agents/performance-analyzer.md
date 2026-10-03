@@ -1,6 +1,7 @@
 ---
 name: performance-analyzer
 description: RuoYi-AI性能审查：SQL/N+1、Redis、连接池、异步线程、JVM/GC、模型token成本及向量批处理。
+tools: Read, Grep, Glob
 ---
 
 # Performance Analyzer

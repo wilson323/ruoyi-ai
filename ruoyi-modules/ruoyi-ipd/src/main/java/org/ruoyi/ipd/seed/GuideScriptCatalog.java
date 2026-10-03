@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 方法论话术目录（Track C1）：69 动作 ×（绑定强度 + pm-skills 真名 + command 链 + 引导话术）。
+ * 方法论话术目录（Track C1）：67 动作 ×（绑定强度 + pm-skills 真名 + command 链 + 引导话术）。
  *
  * <p>存储形态决策见 Track-C 详稿 C1.0（R236 先例：纯派生数据放目录旁，哨兵测试锁定）。
  * 数据源 = §3-pm-skills映射.md §3.2 逐行转写（skill/command 只用 §3.1 真名，禁改 ActionCatalog 名称口径）。
@@ -242,20 +242,12 @@ public final class GuideScriptCatalog {
             "生成发布说明；上市日期录入后锁定（全部后置 KPI 起算原点，修改需双签+审计）。");
     }
 
-    // ---- 阶段六 LIFECYCLE（9，§3.2.6）----
+    // ---- 阶段六 LIFECYCLE（7，§3.2.6；LC01/LC03 已于 2026-10-03 退役，不再登记引导脚本）----
     static {
-        add("LC01", BindLevel.BIND,
-            List.of("sql-queries", "metrics-dashboard", "cohort-analysis"),
-            List.of("/write-query", "/setup-metrics", "/analyze-cohorts"),
-            "月度回款台账取数+看板追踪+分批 cohort 对比（cohort 部分为推断）；口径=实际回款（Gavin Q2 决策）。");
         add("LC02", BindLevel.BIND,
             List.of("retro", "summarize-meeting"),
             List.of("/sprint retro", "/meeting-notes"),
             "复盘落到负责人+期限明确的行动项，产出 90 天复盘报告+纪要（G5 双签否决）。");
-        add("LC03", BindLevel.BIND,
-            List.of("sql-queries", "metrics-dashboard"),
-            List.of("/write-query", "/setup-metrics"),
-            "回款达成率取数与口径核对；奖金池核算本身为表单计算，技能绑定仅覆盖取数与指标定义（推断）。");
         none("LC04", "治理评定走结构化评定表登记（三方评定=双 PM+各自产品组长，五维度市场 40-65%/研发 35-60%）：AI 不代评，仅做区间校验提醒。");
         add("LC05", BindLevel.BIND,
             List.of("sentiment-analysis", "analyze-feature-requests"),
@@ -296,7 +288,7 @@ public final class GuideScriptCatalog {
             "销售报备+交付验收记录取数+覆盖率口径定义。");
     }
 
-    /** 69 条全量（不可变，插入序 = C→P→D→V→L→LC→K）。 */
+    /** 67 条全量（不可变，插入序 = C→P→D→V→L→LC→K）。 */
     public static List<GuideScript> all() {
         return Collections.unmodifiableList(new ArrayList<>(SCRIPTS.values()));
     }

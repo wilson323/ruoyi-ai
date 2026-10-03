@@ -8,6 +8,10 @@
  *         ac_id 必须符合 ^AC-(INC|EXT|MIN)-\d+[a-z]?$
  *   反向：src/test/java 下的测试类若 @DisplayName 含 AC-INC-* 编号，必须在 matrix 中
  *         出现（owner OD-AM-01 决策前用「弱反向」：仅 WARN 不阻断）
+ *   派生：_metadata.coverage_stats 必须等于 rows 里逐 status 数出来的真值。
+ *         （2026-10-03 加：原声明值 covered=5/partial=3/blocked=2 与行内真值
+ *           covered=9/partial=1 长期不符却无人报红——声明与实况脱钩就是假绿。
+ *           同 owner_decisions_needed.open_count 的做法：一切计数以行为准，不手工填。）
  *
  * 触发：本地 `node .claude/helpers/acceptance-matrix-validate.cjs`
  *      CI：.github/workflows/docs-link-check.yml 周日 02:00 + PR 触发
@@ -165,6 +169,39 @@ function checkReverse(matrix, acIds) {
   }
 }
 
+function checkDeclaredStats(matrix) {
+  // 声明值必须等于行内派生真值。手工填写的计数一旦与 rows 脱钩，
+  // 总结面板就会显示一个没人核对过的数字——本仓已把它当假绿的一种。
+  const rows = matrix.rows || [];
+  const declared = (matrix._metadata || {}).coverage_stats;
+  if (!declared) {
+    log('WARN', '_metadata.coverage_stats 缺失（无法核对声明与实况是否一致）');
+    return;
+  }
+  const actual = {
+    covered: rows.filter(r => r.status === 'covered').length,
+    partial: rows.filter(r => r.status === 'partial').length,
+    blocked: rows.filter(r => r.status === 'blocked').length,
+    manual: rows.filter(r => r.status === 'manual').length,
+    deprecated: rows.filter(r => r.status === 'deprecated').length,
+    total_sample: rows.length,
+  };
+  for (const [k, v] of Object.entries(actual)) {
+    if (declared[k] === undefined) {
+      log('ERROR', `_metadata.coverage_stats 缺字段 ${k}（按 rows 派生应为 ${v}）`);
+    } else if (declared[k] !== v) {
+      log('ERROR', `_metadata.coverage_stats.${k} 声明 ${declared[k]} ≠ 行内派生真值 ${v}`);
+    }
+  }
+  // 行内状态若不在 schema 枚举内，count 会漏计——单独报，避免它静默逃过上面的比对。
+  const known = new Set(['covered', 'partial', 'blocked', 'manual', 'deprecated']);
+  for (const r of rows) {
+    if (!known.has(r.status)) {
+      log('ERROR', `行 ${r.ac_id} 的 status=${r.status} 不在枚举内，计数会失真`);
+    }
+  }
+}
+
 function main() {
   if (!fs.existsSync(MATRIX_PATH)) {
     log('ERROR', `acceptance-matrix.json 不存在: ${MATRIX_PATH}`);
@@ -189,6 +226,7 @@ function main() {
   const acIds = checkMatrix(matrix);
   checkReverse(matrix, acIds);
   checkCoverageThreshold(matrix);
+  checkDeclaredStats(matrix);
 
   console.log('');
   console.log('=== acceptance-matrix-validate 总结 ===');

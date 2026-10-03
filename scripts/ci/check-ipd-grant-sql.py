@@ -97,15 +97,18 @@ def selftest() -> int:
                 failures.append(f"{name}: 期望缺 {expect_missing} 表, 实得 {got}")
 
         # 阻断分支：单表缺失必须被抓到
+        # 样本表用 kpi_shared_confirms（表仍在、代码仍读写）。原样本 receipt_ledgers 已随
+        # 「算钱」层下线不再有代码写入路径，用它做样本会让自测失去「真实受保护表」的意义。
+        # TABLES 清单本身不动：本轮不 DROP 任何表（无 DDL），清单仍是受 GRANT 门禁保护的表集合。
         d = root / "missing_one"
         d.mkdir()
         (d / "partial.sql").write_text(
             "".join("-- GRANT SELECT, INSERT, UPDATE, DELETE ON ipd_dev.{t} TO 'ipd_app'@'127.0.0.1';\n"
-                    .format(t=t) for t in TABLES if t != "receipt_ledgers"),
+                    .format(t=t) for t in TABLES if t != SAMPLE_TABLE),
             encoding="utf-8")
         got = check_sql_tree(d)
-        if got != ["receipt_ledgers"]:
-            failures.append(f"阻断分支单表缺失: 期望 ['receipt_ledgers'], 实得 {got}")
+        if got != [SAMPLE_TABLE]:
+            failures.append(f"阻断分支单表缺失: 期望 ['{SAMPLE_TABLE}'], 实得 {got}")
 
         # 阻断分支：授权给别的账号不算 ipd_app 白名单登记
         d = root / "wrong_user"

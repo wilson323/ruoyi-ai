@@ -7,7 +7,9 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 /**
  * IPD 业务参数（ROOT-R1 业务参数配置化根治，P0-5）
  * <p>与 system_configs 区别：本表专管"影响业务结果计算"的参数
- * （奖金池基数/KPI 门槛/冷静期/双签人数/阶梯系数），与系统参数（治理/审计/通知）解耦。
+ * （KPI 门槛/冷静期/双签人数/Gate 签字期限等），与系统参数（治理/审计/通知）解耦。
+ * <p>原「奖金池基数/阶梯系数」类 {@code bonus.*} 参数已随「奖金池」功能块于 2026-10-03 退役，
+ * 存量行保留在库中，代码不再引用。
  * <p>作用域 GLOBAL|GROUP|PROJECT；缓存 TTL 默认 60s（0=不缓存）；版本号用于订阅与历史链。
  */
 @TableName(value = "ipd_business_config", autoResultMap = true)
@@ -17,7 +19,7 @@ public class IpdBusinessConfig extends BaseEntity {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    /** 参数键（如 bonus.poolRate / kpi.stopThreshold / deletion.cooldownDays / gate.dualSignCount） */
+    /** 参数键（如 kpi.stopThreshold / deletion.cooldownDays / gate.dualSignCount） */
     @TableField("config_key")
     private String configKey;
 

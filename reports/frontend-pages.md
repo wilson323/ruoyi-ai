@@ -89,7 +89,6 @@
 | IpdKpiScore | kpi/project-score | 项目绩效评定（卡号 P0-10.31） |
 | IpdIncentive | incentive | 激励管理 |
 | IpdAllowance | incentive/allowance | 津贴台账（卡号 P0-10.33） |
-| IpdBonusPool | incentive/bonus-pool | 奖金池核算（卡号 P0-10.34） |
 | IpdContribution | incentive/contribution | 贡献度评定（卡号 P0-10.35） |
 | IpdNegativeFeedback | incentive/negative-feedback | 负反馈执行（卡号 P0-10.36） |
 | IpdAiAssistant | ai-assistant | AI 文档助手 |

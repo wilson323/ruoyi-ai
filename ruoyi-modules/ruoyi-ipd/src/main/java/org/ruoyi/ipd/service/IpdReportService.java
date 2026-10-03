@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
@@ -15,7 +14,6 @@ import org.ruoyi.ipd.domain.ProjectScore;
 import org.ruoyi.ipd.dto.ReportExportResult;
 import org.ruoyi.ipd.dto.ReportSummaryRow;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
@@ -64,18 +62,12 @@ public class IpdReportService {
         "月份", "人员ID", "姓名", "工号", "项目ID", "项目编号", "项目名称", "锁定评级",
         "基础额(元)", "终额(元)", "是否封顶", "停发原因", "停开始日期", "台账ID", "创建时间");
 
-    /** 奖金台账导出列头（14 列，中文固定） */
-    private static final List<String> BONUS_HEADERS = List.of(
-        "奖金池ID", "项目ID", "项目编号", "项目名称", "目标销售额(元)", "奖金池比率",
-        "基础池(元)", "难度系数", "达成率", "档位系数", "终池(元)", "状态", "计算时间", "分配时间");
-
-    /** 项目汇总导出列头（10 列，中文固定） */
+    /** 项目汇总导出列头（8 列，中文固定）——奖金池列随「算钱」层下线一并移除 */
     private static final List<String> PROJECT_SUMMARY_HEADERS = List.of(
-        "月份", "项目ID", "项目编号", "项目名称", "津贴终额合计(元)", "奖金终池合计(元)",
-        "加权绩效平均分", "津贴行数", "奖金行数", "绩效行数");
+        "月份", "项目ID", "项目编号", "项目名称", "津贴终额合计(元)",
+        "加权绩效平均分", "津贴行数", "绩效行数");
 
     private final AllowanceLedgerMapper allowanceLedgerMapper;
-    private final BonusPoolMapper bonusPoolMapper;
     private final ProjectScoreMapper projectScoreMapper;
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
@@ -120,7 +112,6 @@ public class IpdReportService {
         List<Project> projects = projectMapper.selectList(pj);
 
         Map<Long, BigDecimal> allowanceSum = sumAllowanceByProject(month, projects);
-        Map<Long, BigDecimal> bonusSum = sumBonusByProject(projects);
         Map<Long, BigDecimal> scoreAvg = avgScoreByProject(projects);
 
         List<ReportSummaryRow> all = new ArrayList<>(projects.size());
@@ -132,10 +123,8 @@ public class IpdReportService {
                 safe(p.getName()),
                 month,
                 allowanceSum.getOrDefault(p.getId(), BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP),
-                bonusSum.getOrDefault(p.getId(), BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP),
                 avg == null ? null : avg.setScale(2, RoundingMode.HALF_UP),
                 allowanceCountByProject(month, p.getId()),
-                bonusCountByProject(p.getId()),
                 scoreCountByProject(p.getId())));
         }
 
@@ -231,67 +220,6 @@ public class IpdReportService {
     }
 
     /**
-     * P4-4.1 §2.2：奖金台账导出（AC-INC-34）。
-     *
-     * <p>范围：projectId 必填（奖金池按项目维度聚合）；actor 可见过滤。
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public ReportExportResult exportBonus(Long projectId,
-                                          String status,
-                                          IpdActor actor) {
-        // BR-INC-15：资金台账导出 service 层二次校验（防注解层漂移）
-        ipdPermission.requireLeaderOrAdmin();
-        if (projectId == null) {
-            throw new IpdBusinessException("导出奖金台账必须指定 projectId");
-        }
-        validateProjectVisible(projectId, actor);
-
-        LambdaQueryWrapper<BonusPool> q = new LambdaQueryWrapper<>();
-        q.eq(BonusPool::getProjectId, projectId);
-        if (status != null && !status.isBlank()) {
-            q.eq(BonusPool::getStatus, status);
-        }
-        q.orderByDesc(BonusPool::getCalculatedAt);
-        List<BonusPool> list = bonusPoolMapper.selectList(q);
-        if (list.size() > MAX_EXPORT_SIZE) {
-            list = list.subList(0, MAX_EXPORT_SIZE);
-        }
-
-        Project pj = projectMapper.selectById(projectId);
-
-        List<Map<String, Object>> rows = new ArrayList<>(list.size());
-        for (BonusPool b : list) {
-            Map<String, Object> row2 = new LinkedHashMap<>();
-            row2.put("奖金池ID", b.getId());
-            row2.put("项目ID", b.getProjectId());
-            row2.put("项目编号", pj == null ? "" : safe(pj.getCode()));
-            row2.put("项目名称", pj == null ? "" : safe(pj.getName()));
-            row2.put("目标销售额(元)", b.getTargetSales() == null ? BigDecimal.ZERO.setScale(2) : b.getTargetSales().setScale(2, RoundingMode.HALF_UP));
-            row2.put("奖金池比率", b.getPoolRate() == null ? BigDecimal.ZERO.setScale(4) : b.getPoolRate().setScale(4, RoundingMode.HALF_UP));
-            row2.put("基础池(元)", b.getBasePool() == null ? BigDecimal.ZERO.setScale(2) : b.getBasePool().setScale(2, RoundingMode.HALF_UP));
-            row2.put("难度系数", b.getCoefficient() == null ? BigDecimal.ZERO.setScale(2) : b.getCoefficient().setScale(2, RoundingMode.HALF_UP));
-            row2.put("达成率", b.getAchievementRate() == null ? BigDecimal.ZERO.setScale(4) : b.getAchievementRate().setScale(4, RoundingMode.HALF_UP));
-            row2.put("档位系数", b.getTierCoefficient() == null ? BigDecimal.ZERO.setScale(2) : b.getTierCoefficient().setScale(2, RoundingMode.HALF_UP));
-            row2.put("终池(元)", b.getFinalPool() == null ? BigDecimal.ZERO.setScale(2) : b.getFinalPool().setScale(2, RoundingMode.HALF_UP));
-            row2.put("状态", safe(b.getStatus()));
-            row2.put("计算时间", b.getCalculatedAt() == null ? "" : b.getCalculatedAt().toString());
-            row2.put("分配时间", b.getDistributedAt() == null ? "" : b.getDistributedAt().toString());
-            rows.add(row2);
-        }
-
-        appendExportAudit(actor, "BONUS_POOL", list.size(),
-            "projectId=" + projectId + " status=" + status);
-
-        Map<String, Object> filters = new LinkedHashMap<>();
-        filters.put("projectId", projectId);
-        if (status != null) filters.put("status", status);
-        filters.put("scope", scopeLabel(actor));
-
-        return new ReportExportResult("bonus", rows.size(),
-            BONUS_HEADERS, rows, filters, actor.name(), nowIso());
-    }
-
-    /**
      * P4-4.1 §2.3：项目汇总导出。
      *
      * <p>范围：month 必填 + 可选 productId + actor 可见过滤。
@@ -320,14 +248,11 @@ public class IpdReportService {
         if (projects.size() > MAX_EXPORT_SIZE) projects = projects.subList(0, MAX_EXPORT_SIZE);
 
         Map<Long, BigDecimal> allowanceSum = sumAllowanceByProject(month, projects);
-        Map<Long, BigDecimal> bonusSum = sumBonusByProject(projects);
         Map<Long, BigDecimal> scoreAvg = avgScoreByProject(projects);
 
         List<Map<String, Object>> rows = new ArrayList<>(projects.size());
         for (Project p : projects) {
             BigDecimal allow = allowanceSum.getOrDefault(p.getId(), BigDecimal.ZERO)
-                .setScale(2, RoundingMode.HALF_UP);
-            BigDecimal bonus = bonusSum.getOrDefault(p.getId(), BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
             BigDecimal avg = scoreAvg.get(p.getId());
             Map<String, Object> row = new LinkedHashMap<>();
@@ -336,10 +261,8 @@ public class IpdReportService {
             row.put("项目编号", safe(p.getCode()));
             row.put("项目名称", safe(p.getName()));
             row.put("津贴终额合计(元)", allow);
-            row.put("奖金终池合计(元)", bonus);
             row.put("加权绩效平均分", avg == null ? "" : avg.setScale(2, RoundingMode.HALF_UP));
             row.put("津贴行数", allowanceCountByProject(month, p.getId()));
-            row.put("奖金行数", bonusCountByProject(p.getId()));
             row.put("绩效行数", scoreCountByProject(p.getId()));
             rows.add(row);
         }
@@ -420,28 +343,6 @@ public class IpdReportService {
         LambdaQueryWrapper<AllowanceLedger> q = new LambdaQueryWrapper<>();
         q.eq(AllowanceLedger::getMonth, month).eq(AllowanceLedger::getProjectId, projectId);
         return Math.toIntExact(allowanceLedgerMapper.selectCount(q));
-    }
-
-    private Map<Long, BigDecimal> sumBonusByProject(List<Project> projects) {
-        if (projects.isEmpty()) return Map.of();
-        List<Long> pids = projects.stream().map(Project::getId).collect(Collectors.toList());
-        LambdaQueryWrapper<BonusPool> q = new LambdaQueryWrapper<>();
-        q.in(BonusPool::getProjectId, pids);
-        // 三态都计入：DRAFT / CONFIRMED / DISTRIBUTED（不重复计数）
-        List<BonusPool> all = bonusPoolMapper.selectList(q);
-        Map<Long, BigDecimal> out = new HashMap<>();
-        for (BonusPool b : all) {
-            out.merge(b.getProjectId(),
-                b.getFinalPool() == null ? BigDecimal.ZERO : b.getFinalPool(),
-                BigDecimal::add);
-        }
-        return out;
-    }
-
-    private int bonusCountByProject(Long projectId) {
-        LambdaQueryWrapper<BonusPool> q = new LambdaQueryWrapper<>();
-        q.eq(BonusPool::getProjectId, projectId);
-        return Math.toIntExact(bonusPoolMapper.selectCount(q));
     }
 
     /**

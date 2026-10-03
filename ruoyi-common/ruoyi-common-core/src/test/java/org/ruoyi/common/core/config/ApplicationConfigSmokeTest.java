@@ -1,86 +1,89 @@
 package org.ruoyi.common.core.config;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.Executor;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * R28.5 防线 4 配套静态测试：验证 ApplicationConfig 不实现 AsyncConfigurer。
+ * R28.5 防线 4：ApplicationConfig 异步装配的结构断言。
  *
- * <p>不依赖 JUnit/spring-boot-starter-test（ruoyi-common-core 不引入测试框架，
- * 加依赖会改已跟踪 pom.xml 触发兄弟会话冲突风险）。
- * 用 JDK 反射 + main 方法做断言，通过 {@code scripts/run_async_smoke_test.sh} 调用。
+ * <p>设计意图：如果有人把 {@code implements AsyncConfigurer} 加回 ApplicationConfig，
+ * 这里立刻报红，不必等到生产环境第一次 {@code @Async} 派发才炸
+ * （届时抛 {@code IllegalStateException: Only one AsyncConfigurer may exist}，
+ * 与 Spring Boot 默认的 applicationTaskExecutorAsyncConfigurer 冲突）。
  *
- * <p>设计意图：每次启动期如果有人误把 {@code implements AsyncConfigurer} 加回来，
- * 跑这个 smoke 立刻失败（不必等到生产第一次 @Async 调用才暴露 IllegalStateException）。
+ * <p><b>本类 2026-10-03 的形态变更，改动者请注意：</b>
+ * 原实现是「无 JUnit 注解的 public class + static main()」，靠
+ * {@code scripts/run-async-smoke-test.sh} 用 javac + java 直接跑；那个脚本
+ * <b>全仓零调用</b>（不在 CI、不在任何门禁），等于防线 4 从未真正生效。
+ * 起因是 ruoyi-common-core 当时刻意不引入测试框架，于是有人为「让 surefire 跑到它」
+ * 加了 {@code @Tag("dev")}——该注解对没有 @Test 方法的类本就无效，surefire 不会执行它，
+ * 代价却是整个 36 模块反应堆在本模块 {@code testCompile} 处被掐断。
+ * 现改为标准 JUnit 5 测试，并给本模块补上 junit-jupiter（test 作用域）：
+ * 父 pom 的 surefire 统一打开 {@code groups/excludedGroups}，缺 JUnit 引擎的模块
+ * 连一个测试类都没有也会失败——所以那个依赖是必需的，不是可选项。
+ * 原脚本已随之退役删除，防线 4 现在由每次 {@code mvn test} 负责执行。
  *
  * <p>规约：docs/ipd-系统说明/架构规约-禁止implements-AsyncConfigurer-20260909.md
  *
  * @see ApplicationConfig
  */
-public class ApplicationConfigSmokeTest {
+@Tag("dev")
+@DisplayName("R28.5 防线 4：ApplicationConfig 禁止 implements AsyncConfigurer")
+class ApplicationConfigSmokeTest {
 
-    private static int passed = 0;
-    private static int failed = 0;
+    private static final String TARGET = "org.ruoyi.common.core.config.ApplicationConfig";
 
-    public static void main(String[] args) throws Exception {
-        System.out.println("▶ R28.5 ApplicationConfig smoke test (静态反射)");
-        testDoesNotImplementAsyncConfigurer();
-        testHasEnableAsyncAnnotation();
-        testExposesTaskExecutorBean();
-        testExposesAsyncUncaughtExceptionHandlerBean();
-        testGetAsyncExecutorReturnsExecutorType();
-        System.out.println("----------------------------------------");
-        System.out.println("PASSED=" + passed + " FAILED=" + failed);
-        System.exit(failed > 0 ? 1 : 0);
-    }
-
-    /** 防线 4 核心：禁止 implements AsyncConfigurer（与 Spring Boot 默认 applicationTaskExecutorAsyncConfigurer 冲突） */
-    static void testDoesNotImplementAsyncConfigurer() throws Exception {
-        Class<?> cls = Class.forName("org.ruoyi.common.core.config.ApplicationConfig");
-        boolean impl = AsyncConfigurer.class.isAssignableFrom(cls);
-        check(!impl,
+    @Test
+    @DisplayName("禁止 implements AsyncConfigurer（与 Spring Boot 默认 Bean 冲突）")
+    void doesNotImplementAsyncConfigurer() throws Exception {
+        Class<?> cls = Class.forName(TARGET);
+        assertFalse(AsyncConfigurer.class.isAssignableFrom(cls),
             "ApplicationConfig 禁止 implements AsyncConfigurer（与 Spring Boot 默认 Bean 冲突，"
-                + "运行期首次 @Async 派发会抛 IllegalStateException: Only one AsyncConfigurer may exist）");
+                + "运行期首次 @Async 派发会抛 IllegalStateException: Only one AsyncConfigurer may exist）。"
+                + "实际类：" + cls.getName());
     }
 
-    /** 必须标 @EnableAsync 才会激活 @Async 派发 */
-    static void testHasEnableAsyncAnnotation() throws Exception {
-        Class<?> cls = Class.forName("org.ruoyi.common.core.config.ApplicationConfig");
-        EnableAsync ea = cls.getAnnotation(EnableAsync.class);
-        check(ea != null, "ApplicationConfig 必须标 @EnableAsync");
+    @Test
+    @DisplayName("必须标 @EnableAsync，否则 @Async 不会派发")
+    void hasEnableAsyncAnnotation() throws Exception {
+        Class<?> cls = Class.forName(TARGET);
+        assertNotNull(cls.getAnnotation(EnableAsync.class),
+            "ApplicationConfig 必须标 @EnableAsync，否则 @Async 永远不派发");
     }
 
-    /** getAsyncExecutor() 必须 @Bean 暴露（Spring Boot 默认 AsyncConfigurer 按类型找 Executor） */
-    static void testExposesTaskExecutorBean() throws Exception {
+    @Test
+    @DisplayName("getAsyncExecutor() 必须 @Bean 暴露（容器按类型找 Executor）")
+    void exposesTaskExecutorBean() throws Exception {
         Method m = ApplicationConfig.class.getDeclaredMethod("getAsyncExecutor");
-        Bean bean = m.getAnnotation(Bean.class);
-        check(bean != null, "getAsyncExecutor() 必须标 @Bean（容器才能识别为 taskExecutor）");
+        assertNotNull(m.getAnnotation(Bean.class),
+            "getAsyncExecutor() 必须标 @Bean，容器才能把它识别为 taskExecutor");
     }
 
-    /** getAsyncUncaughtExceptionHandler() 必须 @Bean 暴露 */
-    static void testExposesAsyncUncaughtExceptionHandlerBean() throws Exception {
+    @Test
+    @DisplayName("getAsyncUncaughtExceptionHandler() 必须 @Bean 暴露")
+    void exposesAsyncUncaughtExceptionHandlerBean() throws Exception {
         Method m = ApplicationConfig.class.getDeclaredMethod("getAsyncUncaughtExceptionHandler");
-        Bean bean = m.getAnnotation(Bean.class);
-        check(bean != null, "getAsyncUncaughtExceptionHandler() 必须标 @Bean（容器才能识别异常处理器）");
+        assertNotNull(m.getAnnotation(Bean.class),
+            "getAsyncUncaughtExceptionHandler() 必须标 @Bean，容器才能把它识别为异常处理器");
     }
 
-    /** getAsyncExecutor() 返回类型必须是 java.util.concurrent.Executor（接口契约） */
-    static void testGetAsyncExecutorReturnsExecutorType() throws Exception {
+    @Test
+    @DisplayName("getAsyncExecutor() 返回类型必须是 java.util.concurrent.Executor")
+    void getAsyncExecutorReturnsExecutorType() throws Exception {
         Method m = ApplicationConfig.class.getDeclaredMethod("getAsyncExecutor");
-        check(java.util.concurrent.Executor.class.isAssignableFrom(m.getReturnType()),
-            "getAsyncExecutor() 返回类型必须是 java.util.concurrent.Executor（实际=" + m.getReturnType().getName() + "）");
-    }
-
-    static void check(boolean cond, String msg) {
-        if (cond) {
-            passed++;
-            System.out.println("  ✅ " + msg);
-        } else {
-            failed++;
-            System.out.println("  ❌ " + msg);
-        }
+        assertTrue(Executor.class.isAssignableFrom(m.getReturnType()),
+            "getAsyncExecutor() 返回类型必须是 java.util.concurrent.Executor，实际="
+                + m.getReturnType().getName());
     }
 }

@@ -11,12 +11,14 @@ import io.agentscope.harness.agent.tool.MemoryGetTool;
 import io.agentscope.harness.agent.tool.MemorySaveTool;
 import io.agentscope.harness.agent.workspace.WorkspaceManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+@Tag("dev")
 class ProjectAgentFoundationToolsTest {
 
     private static void require(boolean condition, String label) {

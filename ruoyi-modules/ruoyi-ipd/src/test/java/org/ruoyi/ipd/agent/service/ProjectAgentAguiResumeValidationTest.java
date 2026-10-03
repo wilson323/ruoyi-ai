@@ -7,8 +7,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("dev")
 class ProjectAgentAguiResumeValidationTest {
     private static final Instant NOW = Instant.parse("2026-10-02T12:00:00Z");
     private final ProjectAgentAguiResumeValidation.Binding binding =

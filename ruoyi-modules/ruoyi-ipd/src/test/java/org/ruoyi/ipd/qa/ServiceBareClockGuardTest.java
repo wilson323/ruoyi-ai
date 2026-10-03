@@ -54,8 +54,8 @@ class ServiceBareClockGuardTest {
      */
     private static final Set<String> LEGACY_WHITELIST = Set.of(
         "AuditLogServiceImpl", "BaiduTester", "BidInvitationService",
-        "BidResponseService", "BonusPoolService", "BusinessConfigServiceImpl",
-        "CertTemplateService", "CoefficientChangeService", "ComplianceService",
+        "BidResponseService", "BusinessConfigServiceImpl",
+        "CertTemplateService", "ComplianceService",
         "ContributionService", "CorrectionLogServiceImpl", "DefaultStateMachineGuard",
         "DefaultTester", "DeleteAuditService", "DeletionArchiveService", "GateService",
         "GuestDemandService", "HrSyncService", "IpdAuthService", "IpdReportService",
@@ -65,8 +65,7 @@ class ServiceBareClockGuardTest {
         "OllamaTester", "OpenAiCompatibleTester", "PersonSyncService",
         "PostLaunchReviewService", "ProductGroupService", "ProductService",
         "ProjectBootstrapService", "ProjectCertServiceImpl", "ProjectMemberServiceImpl",
-        "ProjectScoreArchiveService", "ProjectScoreScheduleService", "ReceiptLedgerService",
-        "RequirementChangeService", "RequirementStateMachine", "SopTemplateService",
+        "ProjectScoreArchiveService", "ProjectScoreScheduleService", "RequirementChangeService", "RequirementStateMachine", "SopTemplateService",
         "StageActionService", "SystemConfigServiceImpl", "WebSocketChannelHandler",
         "WorkbenchService", "ZhipuTester");
 

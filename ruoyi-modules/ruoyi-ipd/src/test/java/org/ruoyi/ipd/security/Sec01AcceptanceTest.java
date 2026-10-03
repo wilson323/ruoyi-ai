@@ -11,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.controller.CertTemplateController;
-import org.ruoyi.ipd.controller.CoefficientChangeController;
 import org.ruoyi.ipd.controller.DeletionRequestController;
 import org.ruoyi.ipd.controller.GateElementController;
 import org.ruoyi.ipd.controller.IpdAuthController;
@@ -254,7 +253,7 @@ class Sec01AcceptanceTest {
         List<Class<?>> controllers = List.of(
             ProjectController.class, ProductController.class, StageActionController.class,
             CertTemplateController.class, GateElementController.class,
-            IpdAuthController.class, DeletionRequestController.class, CoefficientChangeController.class);
+            IpdAuthController.class, DeletionRequestController.class);
         List<String> offenders = new ArrayList<>();
         for (Class<?> type : controllers) {
             RequestMapping root = type.getAnnotation(RequestMapping.class);

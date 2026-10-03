@@ -10,13 +10,13 @@ import org.ruoyi.ipd.dto.CreateBidInvitationRequest;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
-import java.util.Objects;
 
 /**
  * P2-3.1 招标单校验型创建（P2-3.1；AC-TEAM-01/02；BR-TEAM-03）。
@@ -27,7 +27,8 @@ import java.util.Objects;
  *
  * <p>校验规则（与 CreateBidInvitationRequest 注解对称，服务端再保一次防绕过）：
  * <ul>
- *   <li>projectId 存在 + 归属校验：非 GROUP_LEADER 角色时 actor.groupId() == project.mainGroupId()（超管跳过）</li>
+ *   <li>projectId 存在 + 归属校验（统一口径 LEAD-GROUP-01）：actor.groupId() == project.mainGroupId()，
+ *       唯一跨组豁免为 SUPER_ADMIN；产品组长与其他角色同口径，详见 {@code assertProjectVisible} javadoc</li>
  *   <li>mode ∈ {ONE_TO_ONE, PUBLIC}；否则 PARAM_INVALID</li>
  *   <li>ONE_TO_ONE：targetPersonId 必填</li>
  *   <li>PUBLIC：targetPersonId 必须 null；requiredLevel/slaDays 可选且写扩展字段</li>
@@ -140,8 +141,18 @@ public class BidP231Validator {
 
     /**
      * HIGH authorization：operator 对 req.projectId 可见性校验。
-     * <p>规则：project 不存在 → NOT_FOUND；非 GROUP_LEADER 角色（SUPPER_ADMIN 例外放行），
-     * 须 actor.groupId() == project.mainGroupId()，否则 FORBIDDEN（跨组拒绝）。
+     *
+     * <p><b>统一口径 LEAD-GROUP-01（组长跨组不放行）</b>：project 不存在 → NOT_FOUND；
+     * 其余角色一律须 actor.groupId() == project.mainGroupId()，唯一跨组豁免是 SUPER_ADMIN。
+     *
+     * <p>依据（BR-ORG-06 三层权限矩阵，v3 主 Prompt L408-421）：矩阵中「查看项目 / 编辑项目 /
+     * 删除初审 / 导出审计日志」四行对产品组长一律限定为「本组」，无一行授予组长跨组；
+     * 「全部」只出现在超级管理员列。BR-ORG-05 授予组长的跨组能力仅限<b>可查看</b>本组 PM 参与的项目，
+     * 不含写操作。G-09 / BR-ORG-04 明确「不做代理组长 / 代审人机制」，业务上不存在跨组代管。
+     *
+     * <p>本方法此前手写角色分支并对 GROUP_LEADER 无条件 return，是全仓唯一的「从宽」口径
+     * （同组判定真源见 {@link IpdIdorGuard#assertSameGroupIpd}，已由本方法改为委托，消灭第 4 份同构拷贝）。
+     *
      * <p>测试口（projectMapper null）降级为放行，避免破坏既有 mock 单测。
      */
     private void assertProjectVisible(Long projectId, IpdActor operator) {
@@ -153,12 +164,8 @@ public class BidP231Validator {
         if (project == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
-        if ("GROUP_LEADER".equals(operator.role())) return;
-        if ("SUPER_ADMIN".equals(operator.role())) return;
-        if (!Objects.equals(project.getMainGroupId(), operator.groupId())) {
-            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN,
-                "无权在该项目下创建招标单（跨 group 拒绝）");
-        }
+        // LEAD-GROUP-01：跨组判定不再本地手写，委托 SEC-02 同组守卫真源，组长无跨组豁免。
+        IpdIdorGuard.assertSameGroupIpd(operator, project.getMainGroupId());
     }
 
     /** 扩展字段追加到 content 末尾（隐藏 JSON 片段，前端透明）。 */

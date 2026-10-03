@@ -92,3 +92,23 @@
 - Never re-run a command to see omitted output; expand the marker instead.
 - For structure-level questions about a large indexed file ("what's in here", "which function handles X"), `get_context(["path"], include=["skeleton"])` returns the file with bodies elided — every signature plus the bodies of the most central symbols — at a fraction of the cost of a full Read.
 <!-- REPOWISE_DISTILL:END -->
+
+## 构建互斥（2026-10-03 新增，治本）
+
+**同一模块禁止多个 Maven 进程并行。** 本仓曾出现 19 路 agent 同时对
+`ruoyi-modules/ruoyi-ipd` 跑 `mvn`，全部写同一个 `target/`，字节码在测试运行途中
+被重写，表现为 `NoClassDefFoundError` → Mockito `Unfinished mocking session` 级联，
+**单次产生 979 个假错误**，且全模块基线数字无法复现（同一天先后拿到
+4224/0、4270/0、4305/0、27 失败、979 错误五种互斥结论，全部是构建产物互相覆盖所致）。
+
+**约定：所有 mvn 调用一律走包装器**
+
+```bash
+bash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd
+```
+
+它按「模块 + 阶段」取互斥锁（`mkdir` 原子性），拿不到锁就排队（默认 40 分钟上限，
+超时以退出码 75 明确失败，绝不并行写同一 target/），退出时用 trap 释放。
+
+**判读测试数字的前提**：只有在无并发构建污染的窗口下跑出的全模块结果才作数。
+拿不到干净窗口时**如实写「未验证」**，不得把被污染的数字当通过或当失败。

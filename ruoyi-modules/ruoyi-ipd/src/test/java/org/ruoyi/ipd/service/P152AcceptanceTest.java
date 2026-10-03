@@ -44,9 +44,9 @@ class P152AcceptanceTest {
     }
 
     @Test
-    @DisplayName("S 级必做 38；B 级权威 10 不硬凑 14")
+    @DisplayName("S 级必做 36；B 级权威 10 不硬凑 14")
     void sAndBSizes() {
-        assertThat(engine.requiredCodes("S")).hasSize(38);
+        assertThat(engine.requiredCodes("S")).hasSize(36);
         assertThat(engine.requiredCodes("B"))
             .containsExactlyElementsOf(ActionCatalog.B_LEVEL_BLOCKING_CODES)
             .hasSize(10);

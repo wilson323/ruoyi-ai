@@ -49,7 +49,9 @@ public class Gate extends BaseEntity implements SoftDeletable {
     private Integer currentRound;
 
     /**
-     * Gate 系数（G1 双签决定，bonus.coefficientDecider）
+     * Gate 系数（G1 双签决定）。
+     * <p>原注释引用的 {@code bonus.coefficientDecider} 配置键已随「奖金池」功能块于 2026-10-03 退役，
+     * 库中存量行保留、代码不再读写。
      */
     private BigDecimal gateCoefficient;
 

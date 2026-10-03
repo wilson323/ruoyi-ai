@@ -16,6 +16,20 @@
     </description>
 
     <dependencies>
+        <!--
+          测试引擎：本模块自身没有 JUnit 测试类，但这个依赖不能省。
+          父 pom 对全部模块统一打开 surefire 的 groups/excludedGroups（按 profiles.active 过滤标签），
+          而 surefire 3.5.3 在缺少 JUnit 引擎时会直接失败：
+          「groups/excludedGroups require TestNG, JUnit48+ or JUnit 5 (a specific engine required on classpath)」。
+          后果不是本模块一个模块红，而是整个 36 模块反应堆在本模块处掐断（2026-10-03 实测：
+          连一个 surefire 可见测试类都没有时依然失败，所以「删掉测试文件」并不能绕过）。
+          版本由 spring-boot-dependencies BOM 管理，不写 version；写法对齐 ruoyi-common-social。
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- 全局 JSON 实现单一化，与原生向量客户端一致，保留属性迁移器运行能力。 -->
         <dependency><groupId>org.json</groupId><artifactId>json</artifactId><version>20250107</version></dependency>
         <!-- Spring框架基本的核心工具 -->

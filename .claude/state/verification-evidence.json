@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-03T18:03:40.838Z",
+  "updatedAt": "2026-10-03T19:56:14.847Z",
   "project": "/Users/mac/Documents/ruoyi-ai",
-  "command": "SKIP_CONCURRENT_WRITE=1 python3 - <<'PY'\nimport pathlib\np = pathlib.Path('ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/agent/kernel/ProjectAgentBackgroundMemoryLifecycleTest.java')\ns = p.read_text()\ns = s.replace(\"        assertTrue(started.await(5, TimeUnit.SECONDS));\",\n              \"        assertTrue(await(started));\")\ns = s.replace(\"    private static RuntimeContext callContext() {\",\n'''    private static boolean await(CountDownLatch latch) {\n        try { return latch.await(5, TimeU",
+  "command": "cd /Users/mac/Documents/ruoyi-ai\nbash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd -Dtest='ActionCatalogTest' -DfailIfNoTests=false 2>&1 | grep -E \"Tests run:|BUILD\" | head -3\necho\necho \"=== 工作树统计\"\ngit status --porcelain | awk '{print substr($0,1,2)}' | sort | uniq -c\necho \"未跟踪文件数: $(git ls-files --others --exclude-standard | wc -l | tr -d ' ')\"\necho\necho \"=== 新增的 SQL 清理草稿与删除的技能目录\"\nls -1 docs/script/sql/update/ | grep \"2026-10-03-ipd-retire\" || echo \"  未见草稿\"\nls -d ruoyi-modules/ruoy",
   "markers": [
     "maven"
   ]

@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.*;import lombok.*;import org.ruoyi.co
 public class SystemConfig extends BaseEntity {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
-    /** 参数键（如 bonus.salesSource / allowance.L3 / gate.signDeadlineDays） */
+    /** 参数键（如 allowance.L3 / kpi.stopThreshold / gate.signDeadlineDays） */
     @TableField("config_key")
     private String configKey;
     @TableField("config_value")

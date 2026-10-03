@@ -13,6 +13,7 @@ import io.agentscope.harness.agent.memory.MemoryConfig;
 import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
 import io.agentscope.harness.agent.transcript.FilesystemTranscriptStore;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @org.junit.jupiter.api.Tag("dev")
+@Tag("dev")
 class ProjectAgentChildConsumersTest {
     private static final Model NO_NETWORK = new Model() {
         public String getModelName() { return "no-network-fixture"; }

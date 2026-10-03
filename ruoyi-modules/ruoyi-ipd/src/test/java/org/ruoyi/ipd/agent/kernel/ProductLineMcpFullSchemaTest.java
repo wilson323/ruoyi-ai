@@ -1,5 +1,8 @@
 package org.ruoyi.ipd.agent.kernel;
+
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;import io.modelcontextprotocol.spec.McpSchema;import org.ruoyi.ipd.agent.catalog.ProductLineMcpCatalog;import java.util.*;import static org.junit.jupiter.api.Assertions.*;
+@Tag("dev")
 class ProductLineMcpFullSchemaTest {
  static class Session implements ProductLineMcpQuery.LineSession {
   Map<String,Object> schema;int calls;int lists;Map<String,Object> arguments;

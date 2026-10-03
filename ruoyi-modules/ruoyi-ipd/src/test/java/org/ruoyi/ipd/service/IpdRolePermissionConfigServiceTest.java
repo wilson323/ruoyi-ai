@@ -33,10 +33,20 @@ import static org.mockito.Mockito.when;
  * <p>覆盖：写路径三重拒绝（未知角色 / 元权限码 / 查重）、删除 NOT_FOUND、
  * reload 脏行过滤（未知角色 + 元码忽略）、启动加载异常降级不阻断、有效快照分层。
  * catalog 合并语义另见 IpdRolePermissionDbOverrideContractTest（纯 JVM 契约）。
+ *
+ * <p><b>2026-10-03 样本码替换说明</b>：本类原先借用奖金池两码当对照样本（compute / distribute）；
+ * 奖金池业务域退役后该两码已删。本类测的是「配置服务校验与降级」，不依赖具体业务码，故替换为
+ * 两个仍然存续的样本码（{@link #ADMIN_ONLY_SAMPLE} 非默认码 / {@link #LEADER_DEFAULT_SAMPLE}
+ * 组长默认码），断言语义与替换前逐条等价。
  */
 @Tag("dev")
 @DisplayName("R215：角色权限配置服务校验与降级")
 class IpdRolePermissionConfigServiceTest {
+
+    /** 样本码 A：仅 SUPER_ADMIN 默认持有（非 GROUP_LEADER 默认集）——增授/查重/降级用例。 */
+    private static final String ADMIN_ONLY_SAMPLE = IpdPermissionCode.OPERATION_PERMANENT_DELETE;
+    /** 样本码 B：GROUP_LEADER 默认持有（DELETION_LEADER 集合）——收回/快照基准线用例。 */
+    private static final String LEADER_DEFAULT_SAMPLE = IpdPermissionCode.OPERATION_CONTRIBUTION_CONFIRM;
 
     private IpdRolePermissionMapper mapper;
     private IpdRolePermissionConfigService service;
@@ -68,7 +78,7 @@ class IpdRolePermissionConfigServiceTest {
         when(mapper.selectCount(any())).thenReturn(0L);
 
         assertThatThrownBy(() -> service.create(
-            new RolePermissionReq("HACKER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT", "R215")))
+            new RolePermissionReq("HACKER", ADMIN_ONLY_SAMPLE, "GRANT", "R215")))
             .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("未知角色");
         verify(mapper, never()).insert(any(IpdRolePermission.class));
@@ -91,7 +101,7 @@ class IpdRolePermissionConfigServiceTest {
         when(mapper.selectCount(any())).thenReturn(1L);
 
         assertThatThrownBy(() -> service.create(new RolePermissionReq(
-            "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT", "R215")))
+            "GROUP_LEADER", ADMIN_ONLY_SAMPLE, "GRANT", "R215")))
             .isInstanceOf(IpdBusinessException.class)
             .satisfies(e -> assertThat(((IpdBusinessException) e).getErrorCode())
                 .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT));
@@ -103,14 +113,14 @@ class IpdRolePermissionConfigServiceTest {
     void create_grantsAndReloads() {
         when(mapper.selectCount(any())).thenReturn(0L);
         when(mapper.selectList(any())).thenReturn(List.of(
-            row(9L, "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT")));
+            row(9L, "GROUP_LEADER", ADMIN_ONLY_SAMPLE, "GRANT")));
 
         IpdRolePermission created = service.create(new RolePermissionReq(
-            "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT", "R215 端到端"));
+            "GROUP_LEADER", ADMIN_ONLY_SAMPLE, "GRANT", "R215 端到端"));
 
         verify(mapper).insert(any(IpdRolePermission.class));
         assertThat(created.getEffect()).isEqualTo("GRANT");
-        assertThat(IpdRolePermissionCatalog.has("GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE))
+        assertThat(IpdRolePermissionCatalog.has("GROUP_LEADER", ADMIN_ONLY_SAMPLE))
             .as("create 后无需重启即生效").isTrue();
     }
 
@@ -123,22 +133,22 @@ class IpdRolePermissionConfigServiceTest {
                 .isEqualTo(ApiV1ErrorCode.NOT_FOUND));
 
         when(mapper.selectById(9L)).thenReturn(
-            row(9L, "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT"));
+            row(9L, "GROUP_LEADER", ADMIN_ONLY_SAMPLE, "GRANT"));
         when(mapper.selectList(any())).thenReturn(List.of());
 
         service.delete(9L);
 
         verify(mapper).deleteById(9L);
-        assertThat(IpdRolePermissionCatalog.has("GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE))
-            .as("删覆盖行后回退 Java 默认（leader 无 compute）").isFalse();
+        assertThat(IpdRolePermissionCatalog.has("GROUP_LEADER", ADMIN_ONLY_SAMPLE))
+            .as("删覆盖行后回退 Java 默认（leader 默认集不含该码）").isFalse();
     }
 
     @Test
     @DisplayName("⑥ reload 过滤脏行：未知角色、元权限码进不了覆盖层")
     void reload_filtersDirtyRows() {
         when(mapper.selectList(any())).thenReturn(List.of(
-            row(1L, "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT"),
-            row(2L, "HACKER_ROLE", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT"),
+            row(1L, "GROUP_LEADER", ADMIN_ONLY_SAMPLE, "GRANT"),
+            row(2L, "HACKER_ROLE", ADMIN_ONLY_SAMPLE, "GRANT"),
             row(3L, "SUPER_ADMIN", IpdPermissionCode.OPERATION_ROLE_PERMISSION_CONFIG_EDIT, "REVOKE")));
 
         service.reload();
@@ -167,8 +177,8 @@ class IpdRolePermissionConfigServiceTest {
     @DisplayName("⑧ 有效快照：四层结构齐全且 effective=默认∪GRANT−REVOKE")
     void effectiveSnapshot_layers() {
         when(mapper.selectList(any())).thenReturn(List.of(
-            row(1L, "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE, "GRANT"),
-            row(2L, "GROUP_LEADER", IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE, "REVOKE")));
+            row(1L, "GROUP_LEADER", ADMIN_ONLY_SAMPLE, "GRANT"),
+            row(2L, "GROUP_LEADER", LEADER_DEFAULT_SAMPLE, "REVOKE")));
         service.reload();
 
         Map<String, Map<String, List<String>>> snap = service.effectiveSnapshot();
@@ -177,10 +187,10 @@ class IpdRolePermissionConfigServiceTest {
         Map<String, List<String>> leader = snap.get("GROUP_LEADER");
         assertThat(leader.keySet()).containsExactly("javaDefault", "dbGrant", "dbRevoke", "effective");
         assertThat(leader.get("javaDefault"))
-            .contains(IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE)
-            .doesNotContain(IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE);
+            .contains(LEADER_DEFAULT_SAMPLE)
+            .doesNotContain(ADMIN_ONLY_SAMPLE);
         assertThat(leader.get("effective"))
-            .contains(IpdPermissionCode.OPERATION_BONUS_POOL_COMPUTE)
-            .doesNotContain(IpdPermissionCode.OPERATION_BONUS_POOL_DISTRIBUTE);
+            .contains(ADMIN_ONLY_SAMPLE)
+            .doesNotContain(LEADER_DEFAULT_SAMPLE);
     }
 }

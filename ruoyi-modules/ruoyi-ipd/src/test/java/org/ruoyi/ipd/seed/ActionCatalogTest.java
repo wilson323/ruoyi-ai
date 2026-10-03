@@ -14,26 +14,27 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 69 动作目录一致性断言（动作清单 v3 统计总览行）：
- * 总数 69 = 深管 42 / 轻管 27；阻断 38 / 非阻断 31；
- * 阶段分布 12/13/11/12/8/9/4；Gate 关联 7；编码唯一；B 级阻断集 10 项。
- * （清单原文口径：概念 12/计划 13/开发 11/验证 12/发布 8/生命周期 9/KPI 归集 4）
+ * 67 动作目录一致性断言（动作清单 v3 + 文首「v4 退役标注」）：
+ * 总数 67 = 深管 40 / 轻管 27；阻断 36 / 非阻断 31；
+ * 阶段分布 12/13/11/12/8/7/4；Gate 关联 5；编码唯一；B 级阻断集 10 项。
+ * （v3 原文口径 69 = 概念 12/计划 13/开发 11/验证 12/发布 8/生命周期 9/KPI 归集 4；
+ *  LC01 / LC03 已于 2026-10-03 随回款台账 / 奖金池退役，生命周期 9 → 7）
  */
 @Tag("dev")
 class ActionCatalogTest {
 
     @Test
-    @DisplayName("总数 69 = 深管 42 / 轻管 27；阻断 38 / 非阻断 31")
+    @DisplayName("总数 67 = 深管 40 / 轻管 27；阻断 36 / 非阻断 31")
     void totals() {
-        assertThat(ActionCatalog.ALL).hasSize(69);
-        assertThat(ActionCatalog.ALL.stream().filter(a -> "DEEP".equals(a.depth())).count()).isEqualTo(42);
+        assertThat(ActionCatalog.ALL).hasSize(67);
+        assertThat(ActionCatalog.ALL.stream().filter(a -> "DEEP".equals(a.depth())).count()).isEqualTo(40);
         assertThat(ActionCatalog.ALL.stream().filter(a -> "LIGHT".equals(a.depth())).count()).isEqualTo(27);
-        assertThat(ActionCatalog.ALL.stream().filter(ActionDef::blocking).count()).isEqualTo(38);
+        assertThat(ActionCatalog.ALL.stream().filter(ActionDef::blocking).count()).isEqualTo(36);
         assertThat(ActionCatalog.ALL.stream().filter(a -> !a.blocking()).count()).isEqualTo(31);
     }
 
     @Test
-    @DisplayName("阶段分布 12/13/11/12/8/9/4（LC 含 K4）")
+    @DisplayName("阶段分布 12/13/11/12/8/7/4（LC 含 K4）")
     void stageDistribution() {
         Map<String, Long> byStage = ActionCatalog.ALL.stream()
             .collect(Collectors.groupingBy(ActionDef::stage, Collectors.counting()));
@@ -42,14 +43,14 @@ class ActionCatalogTest {
         assertThat(byStage.get("DEV")).isEqualTo(11);
         assertThat(byStage.get("VALID")).isEqualTo(12);
         assertThat(byStage.get("LAUNCH")).isEqualTo(8);
-        assertThat(byStage.get("LIFECYCLE")).isEqualTo(13); // 9 LC + 4 KPI 归集
+        assertThat(byStage.get("LIFECYCLE")).isEqualTo(11); // 7 LC + 4 KPI 归集
     }
 
     @Test
     @DisplayName("编码唯一 + 前缀合法 + 主责/深度白名单")
     void codesAndEnums() {
         Set<String> codes = ActionCatalog.ALL.stream().map(ActionDef::code).collect(Collectors.toSet());
-        assertThat(codes).hasSize(69);
+        assertThat(codes).hasSize(67);
         for (ActionDef a : ActionCatalog.ALL) {
             assertThat(a.code()).matches("[A-Z]{1,2}[0-9]{2}"); // C01 1字母 / LC01 2字母
             assertThat(Set.of("MARKET_PM", "RD_PM", "BOTH", "GROUP_LEADER")).contains(a.ownerRole());

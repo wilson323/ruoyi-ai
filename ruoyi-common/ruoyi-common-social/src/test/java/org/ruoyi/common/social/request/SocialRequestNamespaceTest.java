@@ -8,12 +8,14 @@ import me.zhyd.oauth.model.AuthCallback;
 import me.zhyd.oauth.model.AuthToken;
 import me.zhyd.oauth.utils.HttpUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @org.junit.jupiter.api.Tag("dev")
+@Tag("dev")
 class SocialRequestNamespaceTest {
     private AuthConfig config() {
         return AuthConfig.builder().clientId("fixture-corp").clientSecret("fixture-secret")

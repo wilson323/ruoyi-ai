@@ -89,7 +89,7 @@ public class Contribution extends BaseEntity implements SoftDeletable {
     private BigDecimal rdSelfMarketResult;
     private BigDecimal rdSelfLeadership;
 
-    /** 五维度修正因子 tierCoefficient = 五维度加权得分 / 100 */
+    /** 五维度加权得分 tierCoefficient = 加权 / 100（原奖金池乘数；算钱层下线后仅承载评分，待裁决 D-3） */
     private BigDecimal tierCoefficient;
 
     /** 市场 PM 自评备注 */

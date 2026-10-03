@@ -4,12 +4,14 @@ import io.agentscope.core.agui.model.*;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.dto.AgentRunCreateReq;
 import org.ruoyi.ipd.agent.support.RunServiceHarness;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.ruoyi.ipd.agent.support.AgentTestFixtures.*;
 
+@Tag("dev")
 class ProjectAgentAguiCreateIntegrationTest {
     private AgentRunCreateReq req(String key, RunAgentInput input) {
         var old = c02(key, "请对本项目做竞品分析：功能、价格、渠道、技术路线");

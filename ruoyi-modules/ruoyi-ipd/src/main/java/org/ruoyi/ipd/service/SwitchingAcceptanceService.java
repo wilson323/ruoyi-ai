@@ -9,7 +9,6 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.BonusPool;
 import org.ruoyi.ipd.domain.Contribution;
 import org.ruoyi.ipd.domain.HandoverRecord;
 import org.ruoyi.ipd.domain.NegativeFeedback;
@@ -19,7 +18,6 @@ import org.ruoyi.ipd.dto.SwitchingAcceptanceReport;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceReport.CheckResult;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceUnlockReq;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.ContributionMapper;
 import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
@@ -47,12 +45,12 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>AC-INC-50：对账差异率 < 1% 才允许 lock</li>
  *   <li>AC-INC-51：锁定月份所有账务写操作返回 SWITCHING_LOCKED（联动 Allowance / Bonus / NF / Contribution）</li>
- *   <li>5 类校验：ALLOWANCE_LOCKED_MATCH / BONUS_POOL_RATE / CONTRIB_TIER_RANGE / NF_REENTRY_GUARD / KPI_BONUS_LINKAGE</li>
+ *   <li>4 类校验：KPI_FINALIZED_RATIO / NF_CLOSED_LOOP / CONTRIB_COMPLETENESS / HANDOVER_ARCHIVE_COMPLETENESS</li>
  * </ul>
  *
  * <p>状态：每 D 一 一 对账记录（uk_switching_month）；run / lock / unlock 状态机。
  * <p>本期简化：5 类校验中只有"格式 / 存在性"判定；具体数值由外部数据驱动（run 时拉取）。
- * 真实数据走 AllowanceService / BonusPoolService / NegativeFeedbackService / ContributionService 接口。
+ * 真实数据走 AllowanceService / NegativeFeedbackService / ContributionService / ProjectScoreService 接口。
  */
 @Service
 @RequiredArgsConstructor
@@ -72,14 +70,12 @@ public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
 
     /* ---------- P0-9：真实对账数据源（nullable setter；生产 Spring 装配，单测显式 mock） ---------- */
     private AllowanceLedgerMapper allowanceLedgerMapper;
-    private BonusPoolMapper bonusPoolMapper;
     private ProjectScoreMapper projectScoreMapper;
     private NegativeFeedbackMapper negativeFeedbackMapper;
     private ContributionMapper contributionMapper;
     private HandoverMapper handoverMapper;
 
     @Autowired(required = false) public void setAllowanceLedgerMapper(AllowanceLedgerMapper m) { this.allowanceLedgerMapper = m; }
-    @Autowired(required = false) public void setBonusPoolMapper(BonusPoolMapper m) { this.bonusPoolMapper = m; }
     @Autowired(required = false) public void setProjectScoreMapper(ProjectScoreMapper m) { this.projectScoreMapper = m; }
     @Autowired(required = false) public void setNegativeFeedbackMapper(NegativeFeedbackMapper m) { this.negativeFeedbackMapper = m; }
     @Autowired(required = false) public void setContributionMapper(ContributionMapper m) { this.contributionMapper = m; }
@@ -297,19 +293,21 @@ public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
      * =========================================================== */
 
     /**
-     * 5 类校验（P0-9 真实对账替换桩实现；2026-09-09 R28）。
+     * 4 类校验（P0-9 真实对账替换桩实现；2026-09-09 R28）。
      * <ul>
-     *   <li>ALLOWANCE_LOCKED_MATCH — 月内台账 final_amount 合计 vs bonus_pools.final_pool 合计（容差 0.01）</li>
      *   <li>KPI_FINALIZED_RATIO — project_scores 月窗口 FINALIZED 占比（无数据空过）</li>
      *   <li>NF_CLOSED_LOOP — triggerMonth 当月 DRAFT/PENDING_DECISION 未闭环必须为 0</li>
-     *   <li>CONTRIB_COMPLETENESS — 月内提交评定须到 CONFIRMED 且 tier ∈ [0,1]</li>
+     *   <li>CONTRIB_COMPLETENESS — 月内提交评定须到 CONFIRMED</li>
      *   <li>HANDOVER_ARCHIVE_COMPLETENESS — 月内 COMPLETED 记录 archived_at 必须全部非空</li>
      * </ul>
-     * 数据源缺失 fail-closed（禁假通过）；口径备注：bonus_pools 无 month 列，按 distributedAt 归属月。
+     * 数据源缺失 fail-closed（禁假通过）。
+     *
+     * <p><b>ALLOWANCE_LOCKED_MATCH 已随「算钱」层下线移除</b>：该校验本体是
+     * 「allowance_ledgers.final_amount 合计 vs bonus_pools.final_pool 合计」，
+     * 两侧有一侧（奖金池）已不再有写入路径，保留即成永不成立的死校验。
      */
     private List<CheckResult> runChecks(String monthStr) {
-        List<CheckResult> checks = new ArrayList<>(5);
-        checks.add(checkAllowanceVsBonusPool(monthStr));
+        List<CheckResult> checks = new ArrayList<>(4);
         checks.add(checkKpiFinalizedRatio(monthStr));
         checks.add(checkNegativeFeedbackClosedLoop(monthStr));
         checks.add(checkContributionCompleteness(monthStr));
@@ -332,34 +330,7 @@ public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
             java.util.Date.from(ym.plusMonths(1).atDay(1).atStartOfDay(z).toInstant())};
     }
 
-    /** ① 月内台账 final_amount 合计 vs bonus_pools.final_pool 合计（distributedAt 归属月，容差 0.01）。 */
-    private CheckResult checkAllowanceVsBonusPool(String month) {
-        if (allowanceLedgerMapper == null || bonusPoolMapper == null) {
-            return dataSourceMissing("ALLOWANCE_LOCKED_MATCH", "allowanceLedgerMapper/bonusPoolMapper");
-        }
-        BigDecimal ledgerSum = allowanceLedgerMapper.selectList(new LambdaQueryWrapper<AllowanceLedger>()
-                .eq(AllowanceLedger::getMonth, month)
-                .eq(AllowanceLedger::getDelFlag, "0"))
-            .stream().map(AllowanceLedger::getFinalAmount)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        java.util.Date[] w = monthWindow(month);
-        BigDecimal poolSum = bonusPoolMapper.selectList(new LambdaQueryWrapper<BonusPool>()
-                .eq(BonusPool::getDelFlag, "0")
-                .ge(BonusPool::getDistributedAt, w[0]).lt(BonusPool::getDistributedAt, w[1]))
-            .stream().map(BonusPool::getFinalPool)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal diff = ledgerSum.subtract(poolSum);
-        return CheckResult.builder()
-            .name("ALLOWANCE_LOCKED_MATCH")
-            .passed(diff.abs().compareTo(new BigDecimal("0.01")) < 0)
-            .expected(poolSum).actual(ledgerSum).diff(diff)
-            .note("allowance_ledgers.final_amount 合计 vs bonus_pools.final_pool 合计（distributedAt 归属月）")
-            .build();
-    }
-
-    /** ② project_scores FINALIZED 占比（scoredAt 月窗口）；无数据空过。 */
+    /** ① project_scores FINALIZED 占比（scoredAt 月窗口）；无数据空过。 */
     private CheckResult checkKpiFinalizedRatio(String month) {
         if (projectScoreMapper == null) {
             return dataSourceMissing("KPI_FINALIZED_RATIO", "projectScoreMapper");
@@ -378,7 +349,7 @@ public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
             .note("FINALIZED " + finalized + "/" + total).build();
     }
 
-    /** ③ NF 闭环：triggerMonth=当月，DRAFT/PENDING_DECISION 未闭环必须为 0（EXECUTED/LIFTED/REJECTED 均闭环）。 */
+    /** ② NF 闭环：triggerMonth=当月，DRAFT/PENDING_DECISION 未闭环必须为 0（EXECUTED/LIFTED/REJECTED 均闭环）。 */
     private CheckResult checkNegativeFeedbackClosedLoop(String month) {
         if (negativeFeedbackMapper == null) {
             return dataSourceMissing("NF_CLOSED_LOOP", "negativeFeedbackMapper");
@@ -394,7 +365,7 @@ public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
             .note("未闭环=" + open + "，已闭环=" + (rows.size() - open)).build();
     }
 
-    /** ④ Contribution 完整度：月内 submittedAt 记录须到 CONFIRMED 且 tierCoefficient ∈ [0,1]。 */
+    /** ③ Contribution 完整度：月内 submittedAt 记录须到 CONFIRMED。 */
     private CheckResult checkContributionCompleteness(String month) {
         if (contributionMapper == null) {
             return dataSourceMissing("CONTRIB_COMPLETENESS", "contributionMapper");
@@ -405,17 +376,14 @@ public class SwitchingAcceptanceService implements ISwitchingAcceptanceService {
             .ge(Contribution::getSubmittedAt, w[0]).lt(Contribution::getSubmittedAt, w[1]));
         long unconfirmed = rows.stream().filter(r ->
             !Contribution.ST_CONFIRMED.equals(r.getStatus())).count();
-        long tierBad = rows.stream().filter(r -> r.getTierCoefficient() == null
-            || r.getTierCoefficient().compareTo(BigDecimal.ZERO) < 0
-            || r.getTierCoefficient().compareTo(BigDecimal.ONE) > 0).count();
         return CheckResult.builder().name("CONTRIB_COMPLETENESS")
-            .passed(unconfirmed == 0 && tierBad == 0)
-            .expected("unconfirmed=0, tier∈[0,1]")
-            .actual("unconfirmed=" + unconfirmed + ", tierOutOfRange=" + tierBad)
-            .note("月内提交评定完整度").build();
+            .passed(unconfirmed == 0)
+            .expected("unconfirmed=0")
+            .actual("unconfirmed=" + unconfirmed)
+            .note("月内提交评定完整度（tierCoefficient 区间校验随算钱层下线移除）").build();
     }
 
-    /** ⑤ Handover 归档完成度：月内 COMPLETED 记录 archived_at 必须全部非空。 */
+    /** ④ Handover 归档完成度：月内 COMPLETED 记录 archived_at 必须全部非空。 */
     private CheckResult checkHandoverArchiveCompleteness(String month) {
         if (handoverMapper == null) {
             return dataSourceMissing("HANDOVER_ARCHIVE_COMPLETENESS", "handoverMapper");

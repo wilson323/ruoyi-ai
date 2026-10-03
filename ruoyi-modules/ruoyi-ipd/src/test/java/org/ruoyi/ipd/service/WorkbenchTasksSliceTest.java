@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -61,7 +60,6 @@ class WorkbenchTasksSliceTest {
     @Mock private StageActionMapper stageActionMapper;
     @Mock private NotificationService notificationService;
     @Mock private DeletionRequestMapper deletionRequestMapper;
-    @Mock private CoefficientChangeRequestMapper coefficientChangeRequestMapper;
     @Mock private LaunchDateChangeRequestMapper launchDateChangeRequestMapper;
     @Mock private WorkbenchAggregator aggA;
     @Mock private WorkbenchAggregator aggB;
@@ -78,7 +76,7 @@ class WorkbenchTasksSliceTest {
     void setUp() {
         service = new WorkbenchService(projectMapper, projectMemberMapper, stageActionMapper,
             notificationService, List.of(aggA, aggB),
-            deletionRequestMapper, coefficientChangeRequestMapper, launchDateChangeRequestMapper);
+            deletionRequestMapper, launchDateChangeRequestMapper);
         Project p1 = new Project();
         p1.setId(7L);
         p1.setName("项目7");

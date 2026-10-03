@@ -15,7 +15,6 @@ import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.KpiRecord;
 import org.ruoyi.ipd.domain.ProjectScore;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
-import org.ruoyi.ipd.mapper.BonusPoolMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.security.IpdActor;
@@ -66,8 +65,6 @@ class KpiRecordServiceTest {
     private ProjectScoreMapper projectScoreMapper;
     @Mock
     private AllowanceLedgerMapper allowanceLedgerMapper;
-    @Mock
-    private BonusPoolMapper bonusPoolMapper;
     /** ROOT-R3-P0-2：跨状态机守卫 mock（Wave17 KPI 状态机接入） */
     @Mock
     private StateMachineGuard stateMachineGuard;
@@ -82,7 +79,7 @@ class KpiRecordServiceTest {
     @BeforeEach
     void setUp() {
         service = new KpiRecordService(kpiRecordMapper, projectScoreMapper,
-            allowanceLedgerMapper, bonusPoolMapper);
+            allowanceLedgerMapper);
         // ROOT-R3-P0-2：注入 mock 守卫（Wave17 KPI 状态机测试前置条件）
         service.setStateMachineGuard(stateMachineGuard);
     }
@@ -330,7 +327,7 @@ class KpiRecordServiceTest {
             .thenReturn(new BigDecimal("75"));
 
         KpiRecordService serviceWithConfig = new KpiRecordService(
-            kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, bonusPoolMapper, businessConfigService);
+            kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, businessConfigService);
 
         // 触发 _queryCalculatorValue 的间接路径：calculateFunctionalKpi
         List<KpiSourceItem> items = serviceWithConfig.calculateFunctionalKpi(actor, PERIOD);

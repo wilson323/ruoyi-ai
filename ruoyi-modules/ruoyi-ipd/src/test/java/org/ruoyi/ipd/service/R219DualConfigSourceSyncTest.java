@@ -100,15 +100,18 @@ class R219DualConfigSourceSyncTest {
     }
 
     @Test
-    @DisplayName("scale 漂移不算变更：0.05 对 0.0500 数值相等 → 双源均不重复写")
+    @DisplayName("scale 漂移不算变更：3 对 3.0 数值相等 → 双源均不重复写")
+    // 样本键原为 bonus.poolRate（奖金池比率），随「算钱」层下线移除；
+    // 本用例验的是「双源同步的 scale 漂移短路」这一通用行为，与具体键无关，故改用仍在双源集合内的
+    // gate.signDeadlineDays，断言口径不变。
     void scaleDrift_treatedAsNumericEqual() {
         when(systemConfigMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(row(BusinessConfigKeys.BONUS_POOL_RATE, "0.05"));
-        when(businessConfigService.getString(BusinessConfigKeys.BONUS_POOL_RATE)).thenReturn("0.0500");
+            .thenReturn(row(BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS, "3"));
+        when(businessConfigService.getString(BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS)).thenReturn("3.0");
 
-        service.update(BusinessConfigKeys.BONUS_POOL_RATE, "0.0500", 9L);
+        service.update(BusinessConfigKeys.GATE_SIGN_DEADLINE_DAYS, "3.0", 9L);
 
-        // system 侧 0.05 == 0.0500 短路；business 侧 0.0500 == 0.0500 幂等跳过
+        // system 侧 3 == 3.0 短路；business 侧 3.0 == 3.0 幂等跳过
         verify(businessConfigService, never()).update(any(), any(), any());
     }
 

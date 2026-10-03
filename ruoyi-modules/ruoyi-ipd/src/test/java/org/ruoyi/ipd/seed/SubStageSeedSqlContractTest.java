@@ -45,6 +45,17 @@ class SubStageSeedSqlContractTest {
 
     /** §2.8 不变量⑤：脏数据码词形上不得出现在任何小阶段映射（真库实查 A01/A02/A1/A2 共 42 行） */
     private static final Set<String> DIRTY_CODES = Set.of("A01", "A02", "A1", "A2");
+
+    /**
+     * 2026-10-03 已退役动作码：LC01（上市后销售与回款跟踪）/ LC03（上市后6个月终算）。
+     *
+     * <p>这两条已从 {@code ActionCatalog}（69 → 67）与 {@code GuideScriptCatalog} 删除，但
+     * {@code 2026-09-28-ipd-action-skill-map-seed.sql} 是**已应用的迁移**，按本轮纪律禁止改写其内容
+     * （改了会造成「新装库没有、老库还有」的分叉）。故映射 seed 仍保留这 2 行，由
+     * {@code docs/script/sql/update/2026-10-03-ipd-retire-lc01-lc03-draft.sql}（待 owner 拍板、未 apply）
+     * 负责 DELETE。本常量把这段「已知差异」显式登记，避免断言退化成「现状放行」。
+     */
+    private static final Set<String> RETIRED_ACTION_CODES = Set.of("LC01", "LC03");
     /**
      * §2.8 不变量③例外登记（主计划 §2.8 现文：Gate 行 = 含评审动作的小阶段，不要求 sort 最大；
      * LIFECYCLE-S2/G5 为业务事实例外——90 天复盘先于停产退出；G3 已回正落 DEV-S3（sort 最大，非例外））。
@@ -126,10 +137,9 @@ class SubStageSeedSqlContractTest {
     // ---------------------------------------------------------------- 回归二：映射 seed 形状
 
     @Test
-    @DisplayName("不变量①⑤：69 映射行 = ActionCatalog 全集、动作码唯一、零脏数据")
+    @DisplayName("不变量①⑤：映射行 = ActionCatalog 全集 ∪ 已退役码（LC01/LC03 待清理脚本 DELETE）、动作码唯一、零脏数据")
     void mapCoversAllCatalogCodesWithoutDirty() throws IOException {
         List<MapRow> rows = parseMaps();
-        assertThat(rows).hasSize(69);
         Set<String> mapCodes = new HashSet<>();
         for (MapRow r : rows) {
             assertThat(mapCodes.add(r.actionCode())).as("动作码唯一: %s", r.actionCode()).isTrue();
@@ -137,7 +147,15 @@ class SubStageSeedSqlContractTest {
                 .doesNotContain(r.actionCode());
         }
         Set<String> catalogCodes = ActionCatalog.ALL.stream().map(ActionDef::code).collect(java.util.stream.Collectors.toSet());
-        assertThat(mapCodes).containsExactlyInAnyOrderElementsOf(catalogCodes);
+        Set<String> expected = new HashSet<>(catalogCodes);
+        expected.addAll(RETIRED_ACTION_CODES);
+        // 既不多（新增动作未进 seed / 多建行）也不少（目录动作在 seed 缺行）
+        assertThat(mapCodes).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(rows).hasSize(catalogCodes.size() + RETIRED_ACTION_CODES.size());
+        // 已退役码确实只来自登记表，防止把「未知多行」混进已知差异
+        Set<String> extraInSeed = new HashSet<>(mapCodes);
+        extraInSeed.removeAll(catalogCodes);
+        assertThat(extraInSeed).containsExactlyInAnyOrderElementsOf(RETIRED_ACTION_CODES);
     }
 
     @Test

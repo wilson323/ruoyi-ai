@@ -1,8 +1,8 @@
 {
   "meta" : {
-    "ruleCount" : 93,
+    "ruleCount" : 86,
     "source" : "DefaultStateMachineGuard.initRules（后端守卫规则表导出，补遗 §5-1）",
-    "version" : "sha256:516bf2c3b5d7c6747f673f3ba171aa18e0053f9f47c0e852d39f63f85547a3ae"
+    "version" : "sha256:8ec713361066feaf2cc9bb7beaba6bf093f79a52fc4f2d45b5017b04a56a5d84"
   },
   "rules" : [ {
     "crossDomain" : false,
@@ -64,48 +64,6 @@
     "fromState" : "PENDING",
     "toState" : "WITHDRAWN",
     "trigger" : "withdraw"
-  }, {
-    "crossDomain" : true,
-    "entityType" : "bonus_pool",
-    "fromState" : "CONFIRMED",
-    "toState" : "DISTRIBUTED",
-    "trigger" : "distribute"
-  }, {
-    "crossDomain" : false,
-    "entityType" : "bonus_pool",
-    "fromState" : "DRAFT",
-    "toState" : "CONFIRMED",
-    "trigger" : "freeze"
-  }, {
-    "crossDomain" : true,
-    "entityType" : "bonus_pool",
-    "fromState" : "DRAFT",
-    "toState" : "DISTRIBUTED",
-    "trigger" : "distribute"
-  }, {
-    "crossDomain" : false,
-    "entityType" : "bonus_pool",
-    "fromState" : "INITIAL",
-    "toState" : "DRAFT",
-    "trigger" : "compute"
-  }, {
-    "crossDomain" : false,
-    "entityType" : "coefficient_change",
-    "fromState" : "INITIAL",
-    "toState" : "PENDING_LEADER",
-    "trigger" : "propose"
-  }, {
-    "crossDomain" : false,
-    "entityType" : "coefficient_change",
-    "fromState" : "PENDING_LEADER",
-    "toState" : "CONFIRMED",
-    "trigger" : "leaderApprove"
-  }, {
-    "crossDomain" : false,
-    "entityType" : "coefficient_change",
-    "fromState" : "PENDING_LEADER",
-    "toState" : "REJECTED",
-    "trigger" : "leaderReject"
   }, {
     "crossDomain" : false,
     "entityType" : "contribution",

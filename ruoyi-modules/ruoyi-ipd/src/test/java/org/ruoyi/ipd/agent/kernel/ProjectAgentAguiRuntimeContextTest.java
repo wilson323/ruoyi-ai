@@ -5,9 +5,11 @@ import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.agui.model.RunAgentInput;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
+@Tag("dev")
 class ProjectAgentAguiRuntimeContextTest {
     @Test void officialProtocolMetadataKeepsTrustedIsolationAndDoesNotImportClientState() {
         Object authority = new Object();

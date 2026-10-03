@@ -14,9 +14,22 @@ public final class IpdEntityType {
 
     /** 现值即契约：与存量调用点字面量一一对应，新增实体时在此登记。 */
     public static final String PERSONS = "persons";
+    /**
+     * <b>回款台账常量——保留但已无代码引用，值绝对不可改。</b>
+     *
+     * <p>回款台账（receipt_ledgers）已随「算钱」层下线，但本常量<b>刻意保留</b>：
+     * {@code entityType} 进审计哈希链（{@code canonicalOf}），库中已有 49 条
+     * {@code entity_type='receipt_ledger'} 的历史审计行。删除或改写该常量会让这 49 条
+     * 历史行校验失败、审计链断裂，且属于不可逆的合规风险。
+     * 如 owner 日后确需清理，必须先单独裁决审计链迁移方案，不得在本层顺手删。
+     */
     public static final String RECEIPT_LEDGER = "receipt_ledger";
     public static final String PERSON_SYNC_JOBS = "person_sync_jobs";
     public static final String HR_SYNC = "hr_sync";
+    /**
+     * 系数变更申请常量——同 {@link #RECEIPT_LEDGER}：功能已下线，常量保留以维持
+     * 历史审计行（coefficient_change_requests）的哈希链可校验性。
+     */
     public static final String COEFFICIENT_CHANGE_REQUESTS = "coefficient_change_requests";
     public static final String LAUNCH_DATE_CHANGE_REQUESTS = "launch_date_change_requests";
     public static final String PROJECTS = "projects";

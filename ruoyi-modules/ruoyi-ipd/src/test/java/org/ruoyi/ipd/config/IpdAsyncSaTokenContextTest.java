@@ -11,7 +11,12 @@ import java.util.EnumSet;
 import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Tag;
 
+// 2026-10-03：补 @Tag("dev")。surefire 的 <groups>${profiles.active}</groups> 会把
+// 无 tag 的测试类整类跳过且无任何提示。本类验证异步线程的 Sa-Token 上下文绑定与
+// 清理（含未授权失败路径），漏跑等于放弃会话串号这层保护。
+@Tag("dev")
 class IpdAsyncSaTokenContextTest {
     @Test void asyncRegistrationDoesNotReplaceOfficialRequestFilterOrExpandPaths() throws Exception {
         var registration = new IpdWebSecurityConfig(mock(IpdAuthSession.class)).ipdAsyncSaTokenContext();

@@ -64,7 +64,7 @@ Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
 - `docs/ipd-系统说明/naming-convention.md` —— 表命名 + 字段命名 + API 路径
 
 ### 外部资源（原文已填充，2026-09-04）
-- `docs/ipd-系统说明/外部资源/`：7 个核心（v3 Prompt / 六阶段清单 v3 / 五大Gate要素 / 验收清单 v2.1 = 237 条 AC / AI必读 / 冲突裁决 / 决策表 v2）+ 前端规范 2 件 + `mock-data.js`（Q2 = 回款口径）
+- `docs/ipd-系统说明/外部资源/`：7 个核心（v3 Prompt / 六阶段清单 v3 / 五大Gate要素 / 验收清单 v2.1 = 237 条 AC / AI必读 / 冲突裁决 / 决策表 v2）+ 前端规范 2 件 + `mock-data.js`
 - 清单与适配状态见 `fork-原与外部资源清单.md`
 
 ### RuoYi-AI 基线知识

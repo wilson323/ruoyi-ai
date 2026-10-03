@@ -2,14 +2,12 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import org.ruoyi.ipd.domain.CoefficientChangeRequest;
 import org.ruoyi.ipd.domain.DeletionRequest;
 import org.ruoyi.ipd.domain.LaunchDateChangeRequest;
 import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.domain.StageAction;
-import org.ruoyi.ipd.mapper.CoefficientChangeRequestMapper;
 import org.ruoyi.ipd.mapper.DeletionRequestMapper;
 import org.ruoyi.ipd.mapper.LaunchDateChangeRequestMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -105,7 +103,6 @@ public class WorkbenchService implements IWorkbenchService {
      * 「我发起的」计数的数据源 mapper（P1-4）：
      * <ul>
      *   <li>{@link DeletionRequestMapper}：deletion_requests.create_by = 当前人</li>
-     *   <li>{@link CoefficientChangeRequestMapper}：coefficient_change_requests.create_by = 当前人</li>
      *   <li>{@link LaunchDateChangeRequestMapper}：launch_date_change_requests.create_by = 当前人</li>
      * </ul>
      * 三类业务单据由当前人发起的总数（del_flag='0' 软过滤）= stats.myInitiated。
@@ -113,7 +110,6 @@ public class WorkbenchService implements IWorkbenchService {
      * 才是"由我发起的"权威口径（领域字段可能与创建人分离）。
      */
     private final DeletionRequestMapper deletionRequestMapper;
-    private final CoefficientChangeRequestMapper coefficientChangeRequestMapper;
     private final LaunchDateChangeRequestMapper launchDateChangeRequestMapper;
 
     /**
@@ -164,8 +160,9 @@ public class WorkbenchService implements IWorkbenchService {
         stats.put("overdue", (int) overdue);
         stats.put("unread", (int) notificationService.unreadCount(actor.id()));
         stats.put("completed", (int) completed);
-        // 我发起的（P1-4）：deletion_requests + coefficient_change_requests + launch_date_change_requests
-        // 三张业务单据表 create_by = 当前人 的总数（跨聚合「我发起的」徽标）
+        // 我发起的（P1-4）：deletion_requests + launch_date_change_requests
+        // 两张业务单据表 create_by = 当前人 的总数（跨聚合「我发起的」徽标）
+        // （coefficient_change_requests 已于 2026-10-03 随「业绩窗口/系数变更」功能块退役，见 countMyInitiated）
         stats.put("myInitiated", countMyInitiated(actor.id()));
         // 按类型计数（设计 §5）：17 类 key 预置 0（无数据类也返回），供前端按类型过滤/展示
         Map<String, Integer> pendingType = new LinkedHashMap<>();
@@ -289,12 +286,10 @@ public class WorkbenchService implements IWorkbenchService {
         }
         long deletion = deletionRequestMapper.selectCount(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getCreateBy, actorId));
-        long coefficient = coefficientChangeRequestMapper.selectCount(new LambdaQueryWrapper<CoefficientChangeRequest>()
-            .eq(CoefficientChangeRequest::getCreateBy, actorId));
         long launchDate = launchDateChangeRequestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
             .eq(LaunchDateChangeRequest::getCreateBy, actorId));
         // 防御性截断到 int 范围（实际业务不可能超 int 上限）
-        long total = deletion + coefficient + launchDate;
+        long total = deletion + launchDate;
         return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
     }
 
@@ -379,17 +374,17 @@ public class WorkbenchService implements IWorkbenchService {
 
     /** 任务类型常量（聚合视图卡 taskType 字段）。 */
     public static final String TASK_TYPE_DELETION_REQUEST = "DELETION";
-    public static final String TASK_TYPE_COEFFICIENT_CHANGE = "COEFFICIENT";
     public static final String TASK_TYPE_LAUNCH_DATE_CHANGE = "LAUNCH_DATE";
     public static final String TASK_TYPE_STAGE_ACTION = "STAGE_ACTION";
     /** 来源表名常量。 */
     public static final String TABLE_DELETION_REQUESTS = "deletion_requests";
-    public static final String TABLE_COEFFICIENT_CHANGE_REQUESTS = "coefficient_change_requests";
     public static final String TABLE_LAUNCH_DATE_CHANGE_REQUESTS = "launch_date_change_requests";
 
     /**
      * 我发起的（R27 P0-6）：三张业务单据表（删除/系数/上市日期）按 create_by=personId 聚合。
-     * <p>每张表 count>0 即生成对应 {@link MyInitiatedTask} 视图卡；总数=三表 count 之和。
+     * <p>每张表 count>0 即生成对应 {@link MyInitiatedTask} 视图卡。
+     * <p>原为「删除 / 系数变更 / 上市日期」三表；系数变更单（coefficient_change_requests）
+     *     已随算钱层下线，本方法现只聚合<b>删除 + 上市日期</b>两表。
      * <p>personId=null 返空列表（防御性，避免 SQL 拼接 NULL）。
      * <p>注意：本方法返回 N 条"虚拟视图卡"（每表 count 条数）；实际业务单据详情仍走各业务单据的 list 接口，
      * 此处仅作为工作台「我发起的」徽标 + 列表的聚合视图，避免前端多次调用。
@@ -401,8 +396,6 @@ public class WorkbenchService implements IWorkbenchService {
         }
         long deletionCount = deletionRequestMapper.selectCount(new LambdaQueryWrapper<DeletionRequest>()
             .eq(DeletionRequest::getCreateBy, personId));
-        long coefficientCount = coefficientChangeRequestMapper.selectCount(new LambdaQueryWrapper<CoefficientChangeRequest>()
-            .eq(CoefficientChangeRequest::getCreateBy, personId));
         long launchDateCount = launchDateChangeRequestMapper.selectCount(new LambdaQueryWrapper<LaunchDateChangeRequest>()
             .eq(LaunchDateChangeRequest::getCreateBy, personId));
 
@@ -411,7 +404,6 @@ public class WorkbenchService implements IWorkbenchService {
         // 真实业务单据详情通过 sourceId 二次查询各业务 list 接口。
         // 若需精确单据视图，可在此调用 selectList(byId) 替换 selectCount。
         appendPlaceholderCards(result, TASK_TYPE_DELETION_REQUEST, TABLE_DELETION_REQUESTS, deletionCount);
-        appendPlaceholderCards(result, TASK_TYPE_COEFFICIENT_CHANGE, TABLE_COEFFICIENT_CHANGE_REQUESTS, coefficientCount);
         appendPlaceholderCards(result, TASK_TYPE_LAUNCH_DATE_CHANGE, TABLE_LAUNCH_DATE_CHANGE_REQUESTS, launchDateCount);
         return result;
     }
@@ -421,7 +413,6 @@ public class WorkbenchService implements IWorkbenchService {
      * <p>审批态映射（按各表状态机）：
      * <ul>
      *   <li>deletion_requests：LEADER_REVIEW / ADMIN_REVIEW（leader_id=personId）</li>
-     *   <li>coefficient_change_requests：PENDING_LEADER（leader_id=personId）</li>
      *   <li>launch_date_change_requests：PENDING_SECOND（approver_id=personId）</li>
      * </ul>
      * <p>personId=null 返空列表（防御性）。
@@ -450,23 +441,6 @@ public class WorkbenchService implements IWorkbenchService {
                 .build());
         }
 
-        // 2) coefficient_change_requests：PENDING_LEADER（组长审批）
-        List<CoefficientChangeRequest> coefficientRows = coefficientChangeRequestMapper.selectList(
-            new LambdaQueryWrapper<CoefficientChangeRequest>()
-                .eq(CoefficientChangeRequest::getStatus, "PENDING_LEADER"));
-        for (CoefficientChangeRequest row : coefficientRows) {
-            result.add(MyInitiatedTask.builder()
-                .id(row.getId())
-                .taskType(TASK_TYPE_COEFFICIENT_CHANGE)
-                .sourceId(row.getId())
-                .sourceTable(TABLE_COEFFICIENT_CHANGE_REQUESTS)
-                .title(row.getReason() != null ? row.getReason() : "COEFFICIENT#" + row.getProjectId())
-                .status(row.getStatus())
-                .initiatorId(row.getCreateBy())
-                .approverId(personId)
-                .createdAt(row.getCreateTime())
-                .build());
-        }
 
         // 3) launch_date_change_requests：PENDING_SECOND（第二人复核）
         List<LaunchDateChangeRequest> launchDateRows = launchDateChangeRequestMapper.selectList(

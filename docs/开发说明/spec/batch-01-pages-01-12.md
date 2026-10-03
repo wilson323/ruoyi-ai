@@ -529,7 +529,7 @@ Then GET /api/projects/:id/cert-checklist?markets=SA 返回 SABER/SASO 认证项
 | ① 发起 | `/projects?create=1` 触发 modal 自动打开；选择 mode=recruitment |
 | ② 处理 | 选择 readyRecruitments → 锁定 customer_problem/target_launch_date/strategic_level；服务端校验 hr.allowCrossRole=false 保证 marketPm≠rdPm（BR-TEAM-08） |
 | ③ 审核 | 无审批；服务端在原招募原子事务中校验 ready_to_convert 状态 |
-| ④ 结果 | 创建项目 lifecycle=ACTIVE；自动生成六阶段 + 69 动作 instances；选 targetMarkets 后调 `/api/projects/:id/cert-checklist` 带出认证项；返回 projectId → `refresh(projectId)` |
+| ④ 结果 | 创建项目 lifecycle=ACTIVE；自动生成六阶段 + 67 动作 instances；选 targetMarkets 后调 `/api/projects/:id/cert-checklist` 带出认证项；返回 projectId → `refresh(projectId)` |
 | ⑤ 记录 | `entityType=project, action=create / update`，before/after 含 recruitmentId、projectCode、targetSales、levelCoefficient |
 | ⑥ 归档 | 关联招募 status=CLOSED（保持完整历史）；项目绑定 ProjectMember 评级快照（BR-INC-02） |
 
@@ -708,7 +708,7 @@ And 审计 entityType=project, action=update, before=1.5, after=1.8
 - 可见角色：项目 owner / 协同 PM / product_lead 监督 / super_admin
 - 优先级：P0（系统核心页）
 - 关联 BR：BR-IPD-01 ~ BR-IPD-09 / BR-DUAL-02 / BR-GATE-01 ~ 04 / BR-IPD-05b / BR-IPD-06
-- 现有实现：部分（69 动作 seed 缺失，深管/轻管视觉未严格区分）
+- 现有实现：部分（67 动作 seed 缺失，深管/轻管视觉未严格区分）
 
 ### 2. 页面布局
 - 区块顺序：scope-banner → catchup-banner → project-summary → **stage-list（六阶段折叠面板，DEEP 卡片 / LIGHT 行式严格区分）** → CloseoutReadiness → other-projects
@@ -767,7 +767,7 @@ And 审计 entityType=project, action=update, before=1.5, after=1.8
 - **缺失接口（7 项）**：stage-actions CRUD 3 项 + cert-checklist + gates/elements 2 项 + gates/arbitrate + gate element-results（合计 7）
 - **缺失状态机环节（5 个）**：① BR-IPD-06 阶段门禁校验（38/25/14 分级，错误码 40001）② BR-IPD-05b 认证清单自动带出 ③ BR-GATE-01b 33 项要素三态判定 ④ BR-GATE-06 仲裁升级 ⑤ C12 全等级阻断自动挂载 ⑥ **BR-GATE-04 超期 ABSTAINED_TIMEOUT 自动弃权（gate.signDeadlineDays=3 自然日，无 cron 触发）**
 - **验收覆盖度**：现状 3 条 AC / v3 应有 6 条 AC（缺"命中否决项硬阻断"+"D11 FAR/FRR 强制"+"C12 自动挂载"3 条）
-- **现状不足**：69 动作未 seed 完整；DEEP/LIGHT 字段校验逻辑未分离；视觉未严格区分 DEEP 卡片/LIGHT 行式
+- **现状不足**：67 动作未 seed 完整；DEEP/LIGHT 字段校验逻辑未分离；视觉未严格区分 DEEP 卡片/LIGHT 行式
 
 ### 7. 验收用例
 ```
@@ -821,7 +821,7 @@ And 审计 entityType=gate, action=sign（自动弃权），status pill 由 PEND
 | `source.payload` | object | — | field-key→任意 | server | `{}` | — |
 | `source.checklist` | array | — | `{label, done}` | server | — | — |
 | `source.revision` | int | — | — | server | — | — |
-| 🔴 `source.actionCode` | string | — | C01-C12/P01-P13/D01-D11/V01-V12/L01-L08/LC01-LC09 | server | — | 69 动作 |
+| 🔴 `source.actionCode` | string | — | C01-C12/P01-P13/D01-D11/V01-V12/L01-L08/LC01-LC09 | server | — | 67 动作 |
 | 🔴 `source.isBlocking` | bool | — | — | server | false | BR-IPD-06 |
 | 🔴 `source.farValue` / `frrValue` | decimal(10,6) | 条件 | — | server | null | D11 必填 |
 | 🔴 `source.certNo` / `certPassedAt` | string/date | 条件 | — | server | null | V02 |
@@ -862,7 +862,7 @@ And 审计 entityType=gate, action=sign（自动弃权），status pill 由 PEND
 - **缺失接口（3 项）**：`PATCH /api/stage-actions/:id` / `POST .../deliverables` / `POST .../sop-preview`
 - **缺失状态机环节（5 个）**：① G-10 DEEP/LIGHT 字段校验逻辑分离（现状统一处理）② D11 FAR/FRR 强制（action=register_farfrr）③ V02 certNo/certPassedAt 强制（action=register_cert）④ DEEP SOP 强制展示 ⑤ 阻断性动作门禁联动 stage-advance（40001）
 - **验收覆盖度**：现状 3 条 AC / v3 应有 6 条 AC（缺"LIGHT 三字段无附件入口"+"D11 强制 FAR/FRR"+"DEEP 交付物缺失阻断"3 条）
-- **现状不足**：未实现 G-10 严格三字段（LIGHT UI 仍保留评审证据上传入口）；69 动作未 seed；DEEP 阻断性动作未联动 stage-advance 校验
+- **现状不足**：未实现 G-10 严格三字段（LIGHT UI 仍保留评审证据上传入口）；67 动作未 seed；DEEP 阻断性动作未联动 stage-advance 校验
 
 ### 7. 验收用例
 ```
@@ -899,7 +899,7 @@ And 提交后 entityType=stage_action, action=complete_light
 |---|---|---|---|
 | 缺失字段 | 0（全部用现有） | 见各页 | **约 66 项**（captchaToken/refreshToken/层级/state/wecom/auth/criticality/deadline/cert/markets/bioFeature/coefficient/far/frr/certNo/certPassedAt/lightPayload/actionCode/isBlocking/depth 等） |
 | 缺失接口 | 现状代码已实现约 28 个 | 见各页 | **约 34 项**（refresh/wecom OAuth 3 项 / audit verify+scope / 通用 deletion 3 项 / projects 详情+cert+stage-advance / bids 4 项 / legacy-import / catchup callback / stage-actions CRUD / gate elements+arbitrate） |
-| 缺失状态机环节 | 现状仅覆盖基础登录、看板、删除双层、IPD 主线 | v3 全部 BR-xxx | **约 45+ 环节**（BR-PROD-01 三路来源、BR-TEAM-01~10 招标组队、BR-GATE-01b 33 项要素三态、BR-KPI-05 共担归集、BR-INC-04b 回款口径、BR-INC-05 双签定值、BR-INC-11 无产出停发、BR-IPD-05b 认证带出、BR-IPD-06 门禁分级、BR-USER-06 离职先移交后禁用等） |
+| 缺失状态机环节 | 现状仅覆盖基础登录、看板、删除双层、IPD 主线 | v3 全部 BR-xxx | **约 45+ 环节**（BR-PROD-01 三路来源、BR-TEAM-01~10 招标组队、BR-GATE-01b 33 项要素三态、BR-KPI-05 共担归集、BR-INC-11 无产出停发、BR-IPD-05b 认证带出、BR-IPD-06 门禁分级、BR-USER-06 离职先移交后禁用等） |
 | 验收覆盖度 | 36 条 AC | 60 条 AC | **缺 24 条 AC** |
 
 # 全局一致性锚点

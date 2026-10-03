@@ -420,7 +420,7 @@ Given 批量批次包含项目和研发/市场子流程
 When 任意子流程组长选择拒绝
 Then 批次状态为 rejected
 And 所有项目责任保持原值
-And 不产生部分转移或部分奖金变更
+And 不产生部分转移或部分津贴额度变更
 ```
 
 **用例 3：产品长期责任续接**
@@ -669,7 +669,7 @@ And 页面提示请修改第三方人员源
 | ③ 审核 | 对应产品组长在复核接口中批准或驳回；被驳回记录具体意见。 |
 | ④ 结果 | 批准后状态为 `reviewed`，项目综合得分刷新；驳回后返回责任PM修改。 |
 | ⑤ 记录 | 写入 `kpi_record / submit`、`attachment / create|delete`、`kpi_record / approve|reject` 审计；审计：entityType=kpi_record, action=submit / approve / reject；entityType=attachment, action=create / delete。 |
-| ⑥ 归档 | 复核后的KPI参与后续项目绩效和奖金计算；历史修订和证据保留。 |
+| ⑥ 归档 | 复核后的KPI参与后续项目绩效评定；历史修订和证据保留。 |
 
 ## 6. 现状 vs v3 差距（量化）
 
@@ -755,7 +755,7 @@ And 审计不产生删除记录
 - 其他角色默认只读。
 - 进入录入弹窗后显示本周期产品组归集范围。
 - 录入弹窗显示实际数据来源和统计口径。
-- K01 输入实际回款（`bonus.salesSource=RECEIPT`）。
+- K01 输入实际销量/出货数量。
 - K02 输入实际签约渠道或集成商数量。
 - K03 输入 NPS 原始值和有效样本数（`kpi.npsMinSample` 默认 ≥30）。
 - K04 输入实际落地场景数和有效验收记录。
@@ -815,15 +815,15 @@ And 审计不产生删除记录
 | ① 发起 | 每月归集窗口打开后，系统按产品组和项目创建 K01–K04 周期记录，投递产品组长任务。 |
 | ② 处理 | 产品组长填入实际值、数据来源、样本量、证据说明和附件；服务端计算达成率和自动分（`automaticSharedScore`）。 |
 | ③ 审核 | 产品组长复核统计周期、单位和证据；截止日为次月第 5 个工作日 18:00（`kpi.monthlyDeadlineDay`），逾期升级超级管理员。 |
-| ④ 结果 | 复核通过后进入季度对账和上市六个月终算，锁定后供 KPI、津贴和奖金使用。 |
+| ④ 结果 | 复核通过后进入季度对账，锁定后供 KPI 绩效评定和津贴计算使用。 |
 | ⑤ 记录 | 写入 `kpi_record / submit|update|approve|reject|lock`、`/ deadline_reminder`、`/ deadline_escalated` 审计；审计：entityType=kpi_record, action=submit / update / approve / reject / lock / deadline_reminder / deadline_escalated。 |
 | ⑥ 归档 | 锁定记录作为绩效结算依据，不允许覆盖或删除；历史来源、样本和证据永久保留。 |
 
-> ⚙️ 跨页守护（D.6.6 第 4 条）：共担 KPI 月度归集（BR-KPI-05 次月第 5 工作日 18:00）—— 30 共担 KPI 归集页 cron 任务 `kpi_monthly_collect_cron`（每月 1 日 09:00 创建周期 + 5 日 18:00 截止扫描）服务端执行：`deadlineAt < now() AND submitted=false` → 自动升级超级管理员（`entityType=kpi_record, action=deadline_escalated`）并写入通知；锁定后供 31 项目绩效评定 + 34 奖金池 + 33 津贴台账取数。
+> ⚙️ 跨页守护（D.6.6 第 4 条）：共担 KPI 月度归集（BR-KPI-05 次月第 5 工作日 18:00）—— 30 共担 KPI 归集页 cron 任务 `kpi_monthly_collect_cron`（每月 1 日 09:00 创建周期 + 5 日 18:00 截止扫描）服务端执行：`deadlineAt < now() AND submitted=false` → 自动升级超级管理员（`entityType=kpi_record, action=deadline_escalated`）并写入通知；锁定后供 31 项目绩效评定 + 33 津贴台账取数。
 
 ## 6. 现状 vs v3 差距（量化）
 
-- **缺失字段（10 个）**：`period`、`deadlineAt`、`reminderLevel`、`quarterlyStatus`、`isLocked`、`collectorRole`（产品组长角色映射）、`nps_min_sample`、`monthly_deadline_day`、`source_mode`（K01 回款源）、`window_id`。
+- **缺失字段（10 个）**：`period`、`deadlineAt`、`reminderLevel`、`quarterlyStatus`、`isLocked`、`collectorRole`（产品组长角色映射）、`nps_min_sample`、`monthly_deadline_day`、`source_mode`（K01 销量数据源）、`window_id`。
 - **缺失接口（9 个）**：上方 API 清单中标注"缺失（🔴 新增）"的全部 9 个。
 - **缺失定时任务（1 个）**：v3 BR-KPI-05 要求每月扫描即将截止和已逾期周期，目前无 cron job。
 - **缺失状态机环节（2 个）**：v3 BR-KPI-05 逾期升级未实现；季度对账状态机未实现。
@@ -873,7 +873,7 @@ Given 项目已过上市后 6 个月且归集已复核
 When 超级管理员执行终算
 Then 记录状态变为 locked
 And 后续修改接口返回 50002 节点已处理
-And 共担KPI结果进入项目绩效和奖金计算
+And 共担KPI结果进入项目绩效评定
 ```
 
 ---
@@ -941,7 +941,6 @@ And 共担KPI结果进入项目绩效和奖金计算
 | `comment` | string | 条件 | 文本 | 评定表 | 空 | 驳回必须填写 |
 | `submittedBy` | string | 否 | UUID | 评分人 | 空 | 只读 |
 | `lockedAt` | datetime | 否 | ISO时间 | 锁定人 | 空 | 锁定后只读 |
-| `performanceCoefficient` | number | 只读 | 0/0.3/0.6/0.8/1 | `bonus.performanceTiers` | 0 | 由综合分映射 |
 
 ## 4. API 接口清单
 
@@ -960,9 +959,9 @@ And 共担KPI结果进入项目绩效和奖金计算
 | ① 发起 | 项目上市后 30 日内（`kpi.reviewDaysAfterLaunch=30`），市场PM、研发PM 和各自产品组长收到项目绩效评定任务。 |
 | ② 处理 | 四类角色分别填写自评或评定分、证据说明和意见，服务端按 20/40/40 计算双PM综合分。 |
 | ③ 审核 | 产品组长对相应评分卡批准或驳回；驳回必须填写原因，责任人修改后重提；**评分卡审批超期 3 个自然日（gate.signDeadlineDays）未签署 → 自动转 ABSTAINED_TIMEOUT，按主导方意见执行（v3 BR-GATE-04），并写审计 entityType=gate, action=sign（自动弃权）**。 |
-| ④ 结果 | 全部评分卡通过后形成市场PM和研发PM综合得分，映射为成功奖金绩效系数（`bonus.performanceTiers`）。综合得分计算结果 → 进入 34 奖金池核算页；`bonus.performanceTiers` 与 4 个算例见附录 D.6.5 |
+| ④ 结果 | 全部评分卡通过后形成市场PM和研发PM综合得分，作为项目绩效结论落库，并进入 32 项目详情-KPI 考核页 |
 | ⑤ 记录 | 写入 `kpi_record / submit|approve|reject|lock` 审计；审计：entityType=kpi_record, action=submit / approve / reject / lock。 |
-| ⑥ 归档 | 锁定结果作为奖金计算输入，保留规则版本、评分人、时间和证据。 |
+| ⑥ 归档 | 锁定结果作为项目绩效结论，保留规则版本、评分人、时间和证据。 |
 
 ## 6. 现状 vs v3 差距（量化）
 
@@ -989,7 +988,6 @@ And 修改任何权重都不允许直接提交
 Given 市场PM自评80、市场组长90、研发组长85
 When 评分卡全部通过
 Then 市场PM综合分 = 80×20%+90×40%+85×40% = 86
-And 综合分参与成功奖金绩效系数映射
 And 结果显示完整计算过程
 ```
 
@@ -1008,7 +1006,7 @@ Given 项目绩效综合分已经锁定
 When 用户尝试修改评分
 Then 返回 50002 节点已处理
 And 页面显示锁定人、锁定时间和规则版本
-And 奖金计算使用锁定快照
+And 后续绩效结论使用锁定快照
 ```
 
 **用例 5：组长驳回**
@@ -1017,7 +1015,7 @@ Given 产品组长对整体方案不认可
 When 调用 decision=rejected 并填写意见
 Then 状态回到 draft|rejected
 And 方案提交人和维度责任人收到通知
-And 不得进入奖金计算
+And 不得进入绩效评定
 ```
 
 ---
@@ -1058,7 +1056,7 @@ And 不得进入奖金计算
 - 项目详情页只读用户进入时显示只读 banner。
 - 项目未启用双PM时显示空状态和配置提示。
 - 页面显示KPI数据截止时间。
-- 页面不直接展示津贴和奖金金额。
+- 页面不直接展示津贴金额。
 - 页面底部可显示 KPI 完成度对项目绩效的影响说明。
 
 ## 3. 字段模型
@@ -1277,7 +1275,7 @@ When 生成本月津贴
 Then 市场PM反馈因子为 0
 And 研发PM反馈因子为 0.5
 And 两者分别显示停发和减半
-And 奖金计算复用同一负反馈记录
+And 津贴计算复用同一负反馈记录
 ```
 
 **用例 3：多项目2倍封顶**
@@ -1309,249 +1307,6 @@ And 写入扫描、停发单和确认审计（entityType=allowance_ledger, actio
 
 ---
 
-# 34. 激励管理-奖金池核算
-
-## 1. 页面元信息
-
-- 编号：34
-- 名称：激励管理-奖金池核算
-- URL 路径：`/performance`，使用 `PerformanceV31Panel` 下方回款面板；建议新增 `/performance?tab=bonus`
-- 页面性质：回款台账、六个月核算窗口、奖金池和成功奖金生成
-- 主用角色：市场PM、研发PM、市场产品组长、研发产品组长、超级管理员
-- 可见角色：项目相关人员
-- 优先级：P3
-- 关联规则：BR-INC-04（奖金池=目标销售额×5%×差异化系数）、BR-INC-04b（达成率按回款）、BR-INC-05（差异化系数S=1.5/A=1.0/B=0.8）、BR-INC-06（6档阶梯区间制，禁止等值判定）、BR-INC-07（绩效系数5档映射）、BR-INC-08（每人成功奖金公式）、BR-INC-14（退款不回溯）
-- 现有实现：部分（`PerformanceV31Panel` FinalRulesPages.jsx:19-30 含回款台账、窗口、战略等级变更、回款复核；server.mjs:1420 `POST /api/performance/bonuses/:projectId/generate` 已实现 `pool = base × 0.05 × bonus_pool_coeff` 和 `salesLadderCoefficient`、`performanceCoefficient`；缺失奖金池计算引擎、6档阶梯区间匹配显式化、4 个算例 A/B/C/D、负反馈系数与个人奖金的完整计算 `feedbackCoeff` 显式映射、绩效系数来源（项目分锁定）、贡献度联动）
-
-## 2. 页面布局
-
-- 页面显示项目、目标销售额、实际上市日期、六个月回款窗口。
-- 窗口未形成时显示实际上市日期缺失提示。
-- 回款录入区供双PM登记实际回款或退款。
-- 录入字段包括金额、发生日期、客户/说明。
-- 每条回款必须上传银行回单、账单或其他证据。
-- 回款状态显示草稿、已提交、已纳入或已排除窗口。
-- 窗口外退款保留记录但不回溯奖金（BR-INC-14）。
-- 页面显示目标回款、周期内净回款和核算状态。
-- 生成六个月净回款核算后进入双组长复核。
-- 双组长批准后由超级管理员锁定。
-- 页面显示战略等级 S/A/B 及差异化系数。
-- 页面显示达成率和阶梯系数。
-- 页面显示功能/共担KPI综合得分和绩效系数。
-- 页面显示贡献度市场/研发比例。
-- 页面显示负反馈系数。
-- 页面显示两人奖金草稿。
-- 页面显示总额、公式输入、计算过程和版本。
-- 生成按钮仅超级管理员可用。
-- 锁定时必须两笔奖金同时存在。
-- 页面提供算例 A/B/C/D 结果展示。
-- 算例 A 默认展示：500万目标、S级、90%回款、55%/45%贡献、市场绩效0=80。
-
-## 3. 字段模型
-
-| 字段名 | 类型 | 必填 | 取值/枚举 | 数据源 | 默认 | 校验 |
-|---|---|---:|---|---|---|---|
-| `projectId` | string | 是 | UUID | 当前项目 | 无 | 活动双PM项目 |
-| `actualLaunchDate` | date | 是 | L08上市日期 | `dual_pm_assignments` | 无 | 未设置禁止计算 |
-| `windowStart` | date | 是 | 上市日 | 服务端 | 无 | 只读 |
-| `windowEnd` | date | 是 | 上市后6个月 | 服务端 `bonus.monthsWindow=6` | 无 | 只读 |
-| `targetSales` | number | 是 | 元 | 立项基线 | 无 | 大于0 |
-| `targetReceipts` | number | 是 | 元 | V3.1目标口径 | `targetSales` | 大于0 |
-| `entryType` | enum | 是 | `receipt/refund` | 回款表单 | `receipt` | 只接受两值 |
-| `amount` | number | 是 | 元 | 回款表单 | 0 | 正数 |
-| `occurredOn` | date | 是 | `YYYY-MM-DD` | 回款表单 | 空 | 需在窗口内或保留记录 |
-| `description` | string | 是 | ≥4字符 | 回款表单 | 空 | 客户、回款单号等 |
-| `inBonusWindow` | boolean | 只读 | true/false | 服务端 | true | 窗口判定 |
-| `evidenceCount` | integer | 只读 | ≥0 | `receipt_evidence` | 0 | 草稿提交前必须≥1 |
-| `netReceipts` | number | 只读 | 元 | 核算表 | 0 | 回款减窗口内退款 |
-| `strategicLevel` | enum | 是 | `S/A/B` | `dual_pm_assignments` | `A` | 变更需审批 |
-| `differentialCoefficient` | number | 是 | S=1.5/A=1.0/B=0.8 | 系统参数 `bonus.coefficient.{S,A,B}` | 无 | 后台可配 |
-| `achievementRate` | number | 只读 | % | `netReceipts/targetReceipts*100` | 0 | 非负 |
-| `ladderCoefficient` | number | 只读 | 0/0.3/0.6/0.8/1.0/1.2 | 系统参数 `bonus.achievementTiers` | 0 | 6 档区间匹配 |
-| `projectScore` | number | 是 | 0–100 | 项目绩效 | 0 | 锁定快照 |
-| `performanceCoefficient` | number | 只读 | 0/0.3/0.6/0.8/1.0 | `bonus.performanceTiers` | 0 | 项目分映射 |
-| `contributionPct` | number | 是 | 市场40–65、研发35–60 | 贡献度 | 无 | 合计100 |
-| `feedbackCoefficient` | number | 只读 | 0/0.5/1 | 负反馈 | 1 | 最低锁定值 |
-| `bonusPool` | number | 只读 | 元 | 计算引擎 | 0 | 目标销售额×5%×系数 |
-| `calculatedAmount` | number | 只读 | 元 | 计算引擎 | 0 | 两人分别计算 |
-| `ruleVersion` | string | 是 | `performance-v31` | `dual_pm_assignments` | 无 | 锁定版本 |
-| `calculationTrace` | object | 是 | 输入、步骤、结果 | 新增计算表 | 空 | 不可变 |
-| `status` | enum | 是 | `draft/locked` | `bonus_settlements` | `draft` | 两笔必须成对 |
-
-## 4. API 接口清单
-
-- `GET /api/performance/receipts/:projectId` — final-rules.mjs:307
-- `POST /api/performance/receipts/:projectId` — final-rules.mjs:308
-- `POST /api/performance/receipts/:id/evidence` — final-rules.mjs:309
-- `POST /api/performance/receipts/:id/submit` — final-rules.mjs:310
-- `POST /api/performance/receipts/:projectId/settlement` — final-rules.mjs:311
-- `POST /api/performance/receipts/:projectId/settlement-decision` — final-rules.mjs:312
-- `POST /api/performance/bonus-calculate/preview` — 缺失（🔴 新增）
-- `POST /api/performance/bonus-calculate/confirm` — 缺失（🔴 新增）
-- `POST /api/performance/bonuses/:projectId/generate` — server.mjs:1420
-- `POST /api/performance/bonuses/:id/lock` — server.mjs:1456
-- `GET /api/admin/system-config/bonus` — 缺失（🔴 新增）
-
-## 5. 闭环剧本
-
-| 环节 | 内容 |
-|---|---|
-| ① 发起 | 实际上市日期后双PM登记窗口内回款、退款和证据；页面显示六个月窗口。 |
-| ② 处理 | 服务端计算窗口内净回款、达成率、阶梯系数和奖金池；退款只冲减窗口内净额（BR-INC-14）。 |
-| ③ 审核 | 双组长复核回款台账，超级管理员锁定；贡献度和项目绩效必须同时锁定后才能生成个人奖金。 |
-| ④ 结果 | 生成市场PM和研发PM两笔草稿，按贡献比例、绩效系数、负反馈系数计算金额。 |
-| ⑤ 记录 | 写入 `receipt / create`、`receipt_settlement / generate|decide|lock`、`bonus_pool / generate|lock` 审计；审计：entityType=receipt, action=create / update；entityType=receipt_settlement, action=generate / decide / lock；entityType=bonus_pool, action=generate / preview / confirm / lock。 |
-| ⑥ 归档 | 两笔奖金锁定后不可修改；周期外退款和锁定后结果保持历史不变。 |
-
-**完整公式（v3 BR-INC-04~08）：**
-
-```text
-奖金池 = 立项时上市 6 个月目标销售额
-       × bonus.poolRate（默认 0.05）
-       × 项目差异化系数（`bonus.coefficient.{S,A,B}`）
-
-达成率 = 六个月窗口内净实际回款 ÷ 目标回款 × 100%
-
-阶梯系数（6 档区间制，按阈值从高到低逐档匹配，禁 `===` 与浮点容差） = {
-  0     ，达成率 < 50%
-  0.3   ，50% ≤ 达成率 < 70%
-  0.6   ，70% ≤ 达成率 < 85%
-  0.8   ，85% ≤ 达成率 < 100%
-  1.0   ，100% ≤ 达成率 ≤ 120%
-  1.2   ，达成率 > 120%
-}
-
-绩效系数（5 档映射） = {
-  1.0   ，综合得分 ≥ 95
-  0.8   ，85 ≤ 综合得分 < 95
-  0.6   ，70 ≤ 综合得分 < 85
-  0.3   ，60 ≤ 综合得分 < 70
-  0     ，综合得分 < 60
-}
-
-每人成功奖金 =
-  奖金池
-  × 阶梯系数
-  × 贡献度比例（市场 40-65% / 研发 35-60%，和恒 100%）
-  × 绩效系数
-  × 负反馈系数（0 / 0.5 / 1，锁定取最低）
-```
-
-**算例 A 手工核算（与 v3 P3 验收一致）：**
-
-```text
-输入：
-目标销售额 = 5,000,000 元
-项目等级 = S
-差异化系数 = 1.5
-六个月净回款 = 4,500,000 元
-达成率 = 4,500,000 ÷ 5,000,000 × 100% = 90%
-阶梯系数 = 0.8（85% ≤ 90% < 100%）
-市场贡献度 = 55%
-研发贡献度 = 45%
-市场项目分 = 85
-研发项目分 = 85
-绩效系数 = 0.8（85 ≤ 85 < 95）
-无负反馈，负反馈系数 = 1
-
-奖金池 = 5,000,000 × 5% × 1.5 = 375,000 元
-
-市场PM奖金 = 375,000 × 0.8 × 55% × 0.8 × 1 = 132,000 元
-研发PM奖金 = 375,000 × 0.8 × 45% × 0.8 × 1 = 108,000 元
-```
-
-**算例 B 手工核算（验证 1.2 档）：**
-
-```text
-输入：达成率 = 130% → 阶梯系数 = 1.2；项目分 ≥ 95 → 绩效系数 = 1.0
-
-市场PM奖金 = 375,000 × 1.2 × 55% × 1.0 × 1 = 247,500 元（v3 P3 验收 24.75 万）
-研发PM奖金 = 375,000 × 1.2 × 45% × 1.0 × 1 = 202,500 元
-```
-
-**算例 C 手工核算（验证 70% 档）：**
-
-```text
-输入：目标 500 万、窗口内回款 350 万 → 达成率 = 70% → 阶梯系数 = 0.6
-
-奖金池 = 375,000 元
-市场PM奖金 = 375,000 × 0.6 × 55% × 0.8 × 1 = 99,000 元
-研发PM奖金 = 375,000 × 0.6 × 45% × 0.8 × 1 = 81,000 元
-```
-
-**算例 D 手工核算（验证 120% 端点，禁等值判定）：**
-
-```text
-输入 1：达成率 = 120% → 阶梯系数 = 1.0（100% ≤ 120% ≤ 120%）
-  市场PM奖金 = 375,000 × 1.0 × 55% × 1.0 × 1 = 206,250 元（v3 P3 验收 20.625 万）
-
-输入 2：达成率 = 120.1% → 阶梯系数 = 1.2（> 120%）
-  市场PM奖金 = 375,000 × 1.2 × 55% × 1.0 × 1 = 247,500 元（v3 P3 验收 24.75 万）
-
-输入 3：达成率 = 99.99% → 阶梯系数 = 0.8（85% ≤ 99.99% < 100%）
-  校验：1.0 档下界为 100%，不含 99.99%（验证禁止 `===` 与浮点容差）
-```
-
-## 6. 现状 vs v3 差距（量化）
-
-- **缺失字段（4 个）**：`ProjectMember.lockedLevel`（v3 BR-INC-02 按接手时评级快照）、`ProjectMember.lockedAmount`（v3 BR-INC-02 锁定津贴额度）、`bonusEligible`（v3 BR-INC-12 退出标志）、`calculationTrace`（v3 计算输入/步骤/结果完整快照）。
-- **缺失接口（3 个）**：`POST /api/performance/bonus-calculate/preview`、`POST /api/performance/bonus-calculate/confirm`、`GET /api/admin/system-config/bonus`。
-- **缺失状态机环节（3 个）**：v3 BR-INC-04 阶梯区间匹配必须按阈值从高到低逐档匹配（当前 `salesLadderCoefficient` 已使用排序数组但缺少显式区间边界提示）；v3 BR-INC-07 绩效系数必须由项目锁定分映射（当前 `performanceCoefficient(score, rules)` 已实现映射但前端未展示项目分来源）；v3 BR-INC-08 必须成对锁定（当前 server 已实现成对锁定但需前端显示）。
-- **缺失前端算例展示**：当前 `PerformanceV31Panel` 未提供 A/B/C/D 四个算例的可视化验证。
-- **验收用例覆盖度**：v3 验收清单 AC-INC-17a~17h 共 8 条 + AC-INC-29 算例，当前覆盖 3 条，缺失 5 条 + 4 个算例。
-
-## 7. 验收用例
-
-**用例 1：算例A端到端核算**
-```text
-Given 目标500万、S=1.5、净回款450万、项目分85、贡献55/45
-When 执行奖金计算预览
-Then 奖金池为 375000 元
-And 阶梯系数 = 0.8
-And 绩效系数 = 0.8
-And 市场奖金 = 132000 元、研发奖金 = 108000 元
-And calculationTrace 逐项保存输入和结果
-```
-
-**用例 2：六档阶梯边界**
-```text
-Given 达成率分别为 99.99%、100%、120%、120.1%
-When 执行阶梯计算
-Then 阶梯系数分别为 0.8、1.0、1.0、1.2
-And 不使用 equalityTolerance 或浮点等值判断
-And 99.99% 不会被误判为 1.0
-```
-
-**用例 3：负反馈系数**
-```text
-Given 某负反馈已锁定且主责为市场PM、连带为研发PM
-When 生成奖金
-Then negative feedback factor 取两笔记录中最低值
-And 市场PM奖金按 0 处理或按规则降低
-And 研发PM按连带规则减半
-And 结果保留负反馈引用 ID
-```
-
-**用例 4：窗口外退款**
-```text
-Given 退款发生在窗口结束后
-When 生成六个月净回款
-Then 该退款只留台账记录
-And net_receipts 不被回溯扣减
-And 已锁定 奖金结果不变
-```
-
-**用例 5：成对锁定**
-```text
-Given 市场或研发奖金仅有一笔草稿
-When 超级管理员执行锁定
-Then 返回 50002 节点已处理
-And 两笔必须同时生成后成对锁定
-And 锁定记录包含规则版本、计算版本和完整参数
-```
-
----
-
 # 35. 贡献度评定
 
 ## 1. 页面元信息
@@ -1572,8 +1327,8 @@ And 锁定记录包含规则版本、计算版本和完整参数
 - 副标题"双方提案 · 双组长确认"。
 - 顶部显示实际上市日期、90天复盘截止日。
 - 页面显示市场PM和研发PM比例输入。
-- 市场比例范围 40–65%（`bonus.contribution.marketRange`）。
-- 研发比例范围 35–60%（`bonus.contribution.rdRange`）。
+- 市场比例范围 40–65%。
+- 研发比例范围 35–60%。
 - 研发比例由 100% 减市场比例自动计算（前端联动校验）。
 - 页面固定显示五维度：立项主导、差异化创新、上市节奏、市场结果、协同领导力。
 - 五维度显示各自权重：25%、25%、20%、20%、10%。
@@ -1594,8 +1349,6 @@ And 锁定记录包含规则版本、计算版本和完整参数
 - 页面不提供直接按职位等分。
 - 页面不提供超出范围比例。
 - 页面不提供技术委员会角色。
-- 页面显示贡献度结果对第 34 页奖金的影响说明。
-- 页面不直接显示个人奖金金额。
 - 页面建议显示计算版本和来源。
 
 ## 3. 字段模型
@@ -1629,7 +1382,6 @@ And 锁定记录包含规则版本、计算版本和完整参数
 - `GET /api/performance/overview?projectId=<projectId>` — server.mjs:1141
 - `POST /api/performance/contributions/:projectId/decision` — 缺失（🔴 新增）
 - `POST /api/performance/contribution-evidence` — 缺失（🔴 新增）
-- `GET /api/admin/system-config/bonus` — 缺失（🔴 新增）
 
 ## 5. 闭环剧本
 
@@ -1637,15 +1389,15 @@ And 锁定记录包含规则版本、计算版本和完整参数
 |---|---|
 | ① 发起 | 项目上市后 90 天复盘窗口开始，双PM收到贡献度评定任务。 |
 | ② 处理 | 双PM共同填写市场/研发比例、五维度评分和证据；服务端校验 40–65、35–60 及合计 100。 |
-| ③ 审核 | 双PM和各自产品组长分别确认；任一意见不一致则记录驳回和整改依据。市场 40-65% / 研发 35-60% 和恒 100%；锁定后用于 34 奖金池核算（算例见附录 D.6.5） |
-| ④ 结果 | 四方确认后贡献度方案锁定，市场/研发比例作为第 34 页奖金分配输入。 |
+| ③ 审核 | 双PM和各自产品组长分别确认；任一意见不一致则记录驳回和整改依据。|
+| ④ 结果 | 四方确认后贡献度方案锁定，市场/研发比例作为激励台账的分配依据。 |
 | ⑤ 记录 | 写入 `kpi_record / submit|approve|reject|lock` 审计；审计：entityType=kpi_record, action=submit / approve / reject / lock。 |
-| ⑥ 归档 | 锁定后比例和五维评分不可覆盖；作为奖金池和成功奖金的永久结算依据。 |
+| ⑥ 归档 | 锁定后比例和五维评分不可覆盖；作为贡献度分配的永久依据。 |
 
 ## 6. 现状 vs v3 差距（量化）
 
 - **缺失字段（5 个）**：`dimensionEvidence` 数组、`dimensionWeights`（五维固定权重 25/25/20/20/10）、`reviewDeadline`（90天计算锚点）、`lockedAt`、`calculationVersion`。
-- **缺失接口（3 个）**：`POST /api/performance/contributions/:projectId/decision`（组长驳回）、`POST /api/performance/contribution-evidence`（维度证据上传）、`GET /api/admin/system-config/bonus`（参数键 `bonus.contribution.{marketRange, rdRange}`）。
+- **缺失接口（2 个）**：`POST /api/performance/contributions/:projectId/decision`（组长驳回）、`POST /api/performance/contribution-evidence`（维度证据上传）。
 - **缺失状态机环节（2 个）**：v3 BR-INC-09 四方确认状态机未实现（仅有 `confirm` 接口）；五维权重合计校验未实现。
 - **缺失表（1 个）**：`contribution_dimension_evidence` 表（维度证据存储）。
 - **验收用例覆盖度**：v3 验收清单 AC-INC-22~27 共 6 条，当前覆盖 3 条，缺失 3 条（维度证据、四方锁定、超级管理员复核）。
@@ -1676,7 +1428,7 @@ Given 市场PM、研发PM、市场组长、研发组长均已确认
 When 第四个确认完成
 Then 状态变为 locked
 And contribution lock 时间写入
-And 奖金计算使用 marketPct/rdPct
+And 激励台账分配使用 marketPct/rdPct
 ```
 
 **用例 4：组长驳回**
@@ -1685,13 +1437,13 @@ Given 产品组长对整体方案不认可
 When 调用 decision=rejected 并填写意见
 Then 状态回到 draft|rejected
 And 方案提交人和维度责任人收到通知
-And 不得进入奖金计算
+And 不得进入绩效评定
 ```
 
 **用例 5：历史追溯**
 ```text
 Given 贡献度已锁定
-When 用户查看奖金计算输入
+When 用户查看贡献度锁定结果
 Then 页面显示市场/研发比例、五维快照、锁定时间和规则版本
 And 不显示"待确认"或临时方案
 ```
@@ -1705,12 +1457,12 @@ And 不显示"待确认"或临时方案
 - 编号：36
 - 名称：负反馈执行
 - URL 路径：`/performance?tab=feedback`
-- 页面性质：四种触发情形、责任认定、整改和奖金/津贴影响
+- 页面性质：四种触发情形、责任认定、整改和津贴影响
 - 主用角色：产品组长、超级管理员
 - 发起角色：当前项目可见用户
 - 优先级：P3
 - 关联规则：BR-INC-10（四种触发情形、主责停发、连带减半）、BR-INC-11（连续 2 个月无实质产出停发）、BR-INC-12（退出）
-- 现有实现：部分（`PerformancePage` App.jsx:415-430 feedback tab 仅实现发起表单；server.mjs:1248 `POST /api/performance/feedback` 已实现四种 `feedbackType` 与责任映射（market_window_missed→双主责、requirement_rework→市场主责/研发连带、parameter_copy→研发主责/市场连带、quality_incident→研发主责/市场连带）；缺失负反馈详情抽屉、双组长确认、整改提交/复核、关闭、奖金系数 0/0.5/1 调整、津贴影响自动联动）
+- 现有实现：部分（`PerformancePage` App.jsx:415-430 feedback tab 仅实现发起表单；server.mjs:1248 `POST /api/performance/feedback` 已实现四种 `feedbackType` 与责任映射（market_window_missed→双主责、requirement_rework→市场主责/研发连带、parameter_copy→研发主责/市场连带、quality_incident→研发主责/市场连带）；缺失负反馈详情抽屉、双组长确认、整改提交/复核、关闭、津贴影响自动联动）
 
 ## 2. 页面布局
 
@@ -1719,12 +1471,12 @@ And 不显示"待确认"或临时方案
 - 发起表单包含事件类型、事实说明、证据编号或附件说明。
 - 四种事件类型以中文名称显示。
 - 页面显示每种类型的主责方和连带方。
-- 事件台账显示项目、触发类型、责任、奖金系数、状态、创建时间。
+- 事件台账显示项目、触发类型、责任、津贴处理结果、状态、创建时间。
 - 产品组长和超级管理员看到当前待处理节点。
 - 事件详情展开或打开 `NegativeFeedbackDrawer`。
 - 详情显示双组长和超级管理员确认链。
 - 详情显示津贴影响：主责停发、连带减半。
-- 详情显示奖金影响：贡献度系数降低或取消分配资格。
+- 详情显示津贴影响：主责停发、连带减半。
 - 详情显示整改说明、整改证据和复核状态。
 - 页面不提供申请人直接确认。
 - 页面不提供删除负反馈。
@@ -1734,11 +1486,11 @@ And 不显示"待确认"或临时方案
 - 页面显示参数堆砌/对标抄袭的研发PM主责、市场PM连带。
 - 页面显示质量事故的研发PM主责、市场PM连带。
 - 页面显示"主责方"与"连带方"标签。
-- 页面显示奖金系数可选值 0、0.5、1。
+- 页面显示津贴处理可选值：停发 / 减半。
 - 页面显示超级管理员锁定状态。
 - 页面显示整改任务和关闭按钮。
 - 页面不把负反馈作为独立绩效分数。
-- 页面不直接修改已锁定奖金历史结果。
+- 页面不直接修改已锁定津贴历史结果。
 - 页面提供按类型、项目、状态筛选。
 - 页面提供证据附件查看。
 - 页面不提供前端硬编码责任关系；责任映射由服务端或配置返回。
@@ -1755,7 +1507,6 @@ And 不显示"待确认"或临时方案
 | `evidence` | array | 否 | 附件 | 附件表 | 空 | 可追加 |
 | `marketResponsibility` | enum | 是 | `primary/linked/none` | 服务端映射 | 空 | 由类型决定 |
 | `rdResponsibility` | enum | 是 | `primary/linked/none` | 服务端映射 | 空 | 由类型决定 |
-| `bonusFactor` | number | 是 | 0/0.5/1 | 双组长/超级管理员 | 1 | 复核时确定 |
 | `marketLeadDecision` | enum | 是 | `pending/approved/rejected` | 确认表 | `pending` | 组长节点 |
 | `rdLeadDecision` | enum | 是 | `pending/approved/rejected` | 确认表 | `pending` | 组长节点 |
 | `adminDecision` | enum | 是 | `pending/approved/rejected` | 确认表 | `pending` | 超级管理员节点 |
@@ -1769,7 +1520,6 @@ And 不显示"待确认"或临时方案
 | `closedBy` | string | 否 | UUID | 超级管理员 | 空 | 只读 |
 | `closedAt` | datetime | 否 | ISO时间 | 服务端 | 空 | 只读 |
 | `allowanceImpact` | object | 只读 | 停发/减半/正常 | 绩效台账 | 空 | 关联人员 |
-| `bonusImpact` | object | 只读 | 0/0.5/1 | 奖金结算 | 空 | 关联结算 |
 
 ## 4. API 接口清单
 
@@ -1789,28 +1539,28 @@ And 不显示"待确认"或临时方案
 | 环节 | 内容 |
 |---|---|
 | ① 发起 | 任何项目可见用户选择四种触发类型之一，填写事实说明和证据，发起负反馈。 |
-| ② 处理 | 服务端按类型写入市场PM和研发PM主责/连带关系，初始奖金系数为 1，进入双组长确认。 |
-| ③ 审核 | 市场、研发产品组长分别确认，超级管理员在双组长后锁定；可选择奖金系数 0、0.5 或 1 并填写意见。 |
-| ④ 结果 | 锁定后主责方津贴停发、连带方津贴减半；奖金计算使用负反馈系数和责任结果。 |
+| ② 处理 | 服务端按类型写入市场PM和研发PM主责/连带关系，进入双组长确认。 |
+| ③ 审核 | 市场、研发产品组长分别确认，超级管理员在双组长后锁定；可选择津贴处理为停发或减半并填写意见。 |
+| ④ 结果 | 锁定后主责方津贴停发、连带方津贴减半。 |
 | ⑤ 记录 | 写入 `negative_feedback / create|approve|reject|lock|remediation|remediation_reviewed|closed` 审计；审计：entityType=negative_feedback, action=create / approve / reject / lock / remediation / remediation_reviewed / closed。 |
-| ⑥ 归档 | 负反馈及结果永久保留；已锁定的奖金系数和津贴影响不可被后续操作覆盖。 |
+| ⑥ 归档 | 负反馈及结果永久保留；已锁定的津贴影响不可被后续操作覆盖。 |
 
 **v3 BR-INC-10 四种触发映射：**
 
 | 触发情形 | 市场PM责任 | 研发PM责任 | 规则动作 |
 |---|---|---|---|
-| `market_window_missed` | primary | primary | 双PM共同主责；主责方津贴停发，奖金系数按锁定结果 |
+| `market_window_missed` | primary | primary | 双PM共同主责；主责方津贴停发，连带方津贴减半 |
 | `requirement_rework` | primary | linked | 市场PM主责，研发PM连带；主责停发、连带减半 |
 | `parameter_copy` | linked | primary | 研发PM主责，市场PM连带；主责停发、连带减半 |
 | `quality_incident` | linked | primary | 研发PM主责，市场PM连带；主责停发、连带减半 |
 
 ## 6. 现状 vs v3 差距（量化）
 
-- **缺失字段（10 个）**：`bonusFactor`（默认 1，需在 `decision` 接口赋值）、`marketLeadRemediationDecision`、`rdLeadRemediationDecision`、`remediationNote`、`remediationEvidence`、`remediationSubmittedAt`、`closedBy`、`closedAt`、`allowanceImpact`、`bonusImpact`（部分已在 db.mjs 表结构中存在但前端未读取展示）。
+- **缺失字段（8 个）**：`marketLeadRemediationDecision`、`rdLeadRemediationDecision`、`remediationNote`、`remediationEvidence`、`remediationSubmittedAt`、`closedBy`、`closedAt`、`allowanceImpact`（部分已在 db.mjs 表结构中存在但前端未读取展示）。
 - **缺失接口（4 个）**：`GET /api/performance/feedback?projectId`、`GET /api/performance/feedback/:id`、`GET /api/performance/feedback/:id/attachments`、`POST /api/performance/feedback/:id/attachments`、`GET /api/admin/system-config/performance/feedback`。
 - **缺失状态机环节（2 个）**：v3 BR-INC-10 整改提交/复核/关闭三阶段状态机当前仅服务端子流程存在，前端无详情；v3 BR-INC-11 连续两个月无实质产出停发联动未实现。
 - **缺失责任映射显式化**：当前服务端在 `create` 时硬编码映射（server.mjs:1254），缺少配置表 `performance_feedback_type_config`。
-- **验收用例覆盖度**：v3 验收清单 AC-INC-30~35 共 6 条，当前覆盖 2 条（创建、初始责任映射），缺失 4 条（双组长确认、整改、关闭、津贴/奖金影响）。
+- **验收用例覆盖度**：v3 验收清单 AC-INC-30~35 共 6 条，当前覆盖 2 条（创建、初始责任映射），缺失 4 条（双组长确认、整改、关闭、津贴影响）。
 
 ## 7. 验收用例
 
@@ -1831,7 +1581,7 @@ When 系统写入责任映射
 Then 市场PM=primary
 And 研发PM=linked
 And 津贴显示市场停发、研发减半
-And 奖金系数由后续确认写入
+And 津贴处理由后续确认写入
 ```
 
 **用例 3：参数堆砌或对标抄袭**
@@ -1850,7 +1600,7 @@ Given 用户选择 quality_incident 且提交证据
 When 双组长和超级管理员依次确认
 Then 记录状态最终为 lock
 And 研发主责方津贴停发、市场连带方连降
-And 奖金计算引用该负反馈的 bonus_factor
+And 津贴计算引用该负反馈的处理结果
 ```
 
 **用例 5：整改关闭**
@@ -1859,7 +1609,7 @@ Given 负反馈已 lock 且 resolved=0
 When 双PM提交整改说明和证据
 Then 状态进入 remediation_review
 And 两位组长均 approved 后超级管理员才能 close
-And close 操作返回最终 bonusFactor 并写入审计（entityType=negative_feedback, action=closed）
+And close 操作返回最终津贴处理结果并写入审计（entityType=negative_feedback, action=closed）
 ```
 
 ---
@@ -1871,12 +1621,12 @@ And close 操作返回最终 bonusFactor 并写入审计（entityType=negative_f
 - 编号：37
 - 名称：项目详情-激励台账
 - URL 路径：建议 `/projects/:projectId/incentives`；当前可由 `/performance?tab=overview` 和 `/performance?tab=allowance`、`/performance?tab=contribution` 组合访问
-- 页面性质：项目级KPI、津贴、奖金、贡献度和发放记录汇总
+- 页面性质：项目级KPI、津贴、贡献度和发放记录汇总
 - 主用角色：市场PM、研发PM
 - 可见角色：所有项目可见用户
 - 优先级：P3
 - 关联规则：BR-INC-15（台账定位，不是正式工资单）、BR-KPI-08、BR-INC-04~09、BR-AUD-01
-- 现有实现：部分（`PerformancePage` App.jsx:415-430 overview + allowance + contribution tab 已聚合；server.mjs:1141 `GET /api/performance/overview` 已聚合 assignment/kpis/scores/feedbacks/allowances/contribution/bonuses；缺失项目详情内嵌的独立激励台账 URL、奖金池计算输入摘要、负反馈/奖金/贡献度的因果关系时间线、导出接口）
+- 现有实现：部分（`PerformancePage` App.jsx:415-430 overview + allowance + contribution tab 已聚合；server.mjs:1141 `GET /api/performance/overview` 已聚合 assignment/kpis/scores/feedbacks/allowances/contribution；缺失项目详情内嵌的独立激励台账 URL、负反馈/津贴/贡献度的因果关系时间线、导出接口）
 
 ## 2. 页面布局
 
@@ -1897,25 +1647,21 @@ And close 操作返回最终 bonusFactor 并写入审计（entityType=negative_f
 - 页面显示贡献度区。
 - 贡献度区显示市场/研发比例、五维结果和锁定状态。
 - 页面提供进入第35页的链接。
-- 页面显示奖金区。
-- 奖金区显示目标销售额、净回款、达成率、奖金池、梯度和个人金额。
-- 页面提供进入第34页的链接。
 - 页面显示负反馈摘要。
-- 负反馈区显示事件类型、主责/连带、奖金系数和状态。
+- 负反馈区显示事件类型、主责/连带、停发或减半处理结果和状态。
 - 页面提供进入第36页的链接。
 - 页面显示项目结算状态。
-- 状态包括KPI未复核、津贴未锁定、贡献度未锁定、奖金未锁定、已结项。
+- 状态包括KPI未复核、津贴未锁定、贡献度未锁定、已结项。
 - 页面显示"可结项/暂不可结项"摘要。
 - 可结项条件复用 `GET /api/performance/closeout-readiness/:projectId`。
 - 页面显示最后更新时间。
 - 页面提供导出当前项目台账入口。
 - 导出内容只包含当前项目和当前权限范围。
 - 页面不提供直接编辑已锁定金额。
-- 页面不提供直接修改目标销售额。
 - 页面不提供删除台账。
 - 页面不提供修改KPI历史。
 - 页面建议提供按时间线排序的结算事件。
-- 时间线显示提交、复核、锁定、停发和奖金生成事件。
+- 时间线显示提交、复核、锁定和停发事件。
 
 ## 3. 字段模型
 
@@ -1938,13 +1684,6 @@ And close 操作返回最终 bonusFactor 并写入审计（entityType=negative_f
 | `contribution.marketPct` | number | 条件 | 40–65 | 贡献度表 | 空 | 与rd合计100 |
 | `contribution.rdPct` | number | 条件 | 35–60 | 贡献度表 | 空 | 与market合计100 |
 | `contribution.status` | enum | 是 | `draft/submitted/locked` | 贡献度表 | `draft` | 状态机 |
-| `bonuses` | array | 否 | | `bonus_settlements` | 空 | 必须两条 |
-| `bonus.bonusPool` | number | 只读 | 元 | 奖金表 | 0 | 目标销售额×5%×系数 |
-| `bonus.netReceipts` | number | 只读 | 元 | 回款核算 | 0 | 周期内回款减退款 |
-| `bonus.achievementRate` | number | 只读 | % | 奖金表 | 0 | 非负 |
-| `ladderCoefficient` | number | 只读 | 0–1.2 | 奖金表 | 0 | 按系统参数 `bonus.achievementTiers` 6 档区间匹配 |
-| `bonus.calculatedAmount` | number | 只读 | 元 | 奖金表 | 0 | 两位小数 |
-| `bonus.status` | enum | 是 | `draft/locked` | 奖金表 | `draft` | 成对锁定 |
 | `feedbacks` | array | 否 | 负反馈记录 | `negative_feedbacks` | 空 | 只读 |
 | `settlementStatus` | enum | 是 | `not_ready/ready/locked` | readiness计算 | `not_ready` | 结项门槛 |
 | `isReadOnly` | boolean | 是 | true/false | 项目/产品状态 | false | 结项或退市后true |
@@ -1954,10 +1693,8 @@ And close 操作返回最终 bonusFactor 并写入审计（entityType=negative_f
 
 - `GET /api/performance/overview?projectId=<projectId>` — server.mjs:1141
 - `GET /api/performance/closeout-readiness/:projectId` — closure.mjs:409
-- `GET /api/performance/receipts/:projectId` — final-rules.mjs:307
 - `GET /api/performance/allowances?projectId=<projectId>&period=<YYYY-MM>` — 缺失（🔴 新增统一查询）
 - `GET /api/performance/contributions/:projectId` — 缺失（🔴 新增详情查询）
-- `GET /api/performance/bonuses/:projectId` — 缺失（🔴 新增统一查询）
 - `GET /api/performance/feedback?projectId=<projectId>` — 缺失（🔴 新增查询）
 - `GET /api/audit-logs?projectId=<projectId>&entityType=project` — server.mjs:2209
 - `GET /api/projects/:id/incentives/export` — 缺失（🔴 新增）
@@ -1968,26 +1705,26 @@ And close 操作返回最终 bonusFactor 并写入审计（entityType=negative_f
 | 环节 | 内容 |
 |---|---|
 | ① 发起 | 用户从项目详情点击"激励台账"，或从绩效入口进入指定项目。 |
-| ② 处理 | 页面汇总基线、KPI、津贴、贡献度、回款、奖金和负反馈，按项目依赖顺序展示。 |
-| ③ 审核 | 各模块按原闭环复核：KPI由组长、贡献度由四方、津贴由组长/超级管理员、奖金由双组长/超级管理员。 |
-| ④ 结果 | 页面显示当前可结项状态；若KPI、津贴、贡献度或奖金未锁定，结项准备度不通过。 |
+| ② 处理 | 页面汇总基线、KPI、津贴、贡献度和负反馈，按项目依赖顺序展示。 |
+| ③ 审核 | 各模块按原闭环复核：KPI由组长、贡献度由四方、津贴由组长/超级管理员。 |
+| ④ 结果 | 页面显示当前可结项状态；若KPI、津贴或贡献度未锁定，结项准备度不通过。 |
 | ⑤ 记录 | 台账读取不写审计；导出和任何参数展示配置写审计；审计：entityType=incentive_ledger_export, action=export；entityType=allowance_stop_order, action=create / decide。 |
 | ⑥ 归档 | 项目结项或产品退市后，所有激励字段只读，导出和历史查看仍可用。 |
 
 ## 6. 现状 vs v3 差距（量化）
 
 - **缺失字段（2 个）**：`settlementStatus`（结项准备度摘要字段）、`updatedAt`（聚合字段）。
-- **缺失接口（5 个）**：`GET /api/performance/allowances` 统一查询、`GET /api/performance/contributions/:projectId` 详情查询、`GET /api/performance/bonuses/:projectId` 统一查询、`GET /api/performance/feedback?projectId` 查询、`GET /api/projects/:id/incentives/export` 导出接口。
+- **缺失接口（4 个）**：`GET /api/performance/allowances` 统一查询、`GET /api/performance/contributions/:projectId` 详情查询、`GET /api/performance/feedback?projectId` 查询、`GET /api/projects/:id/incentives/export` 导出接口。
 - **缺失页面（1 个）**：`<ProjectIncentivesPage>` 独立组件；当前依赖 `/performance` 全局 tab。
 - **缺失因果关系时间线**：v3 BR-INC-15 要求台账聚合与因果回溯，目前各 tab 独立，无统一时间线。
 - 🔴 必须引用附录 D.6.5 4 个算例作为验收标准
-- **验收用例覆盖度**：v3 验收清单 AC-INC-36~40 共 5 条台账要求，当前覆盖 1 条，缺失 4 条（项目聚合、奖金摘要、导出、跨模块追溯）。
+- **验收用例覆盖度**：v3 验收清单 AC-INC-36~40 共 5 条台账要求，当前覆盖 1 条，缺失 4 条（项目聚合、津贴摘要、导出、跨模块追溯）。
 
 ## 7. 验收用例
 
 **用例 1：项目级汇总**
 ```text
-Given 项目A已启用双PM且存在部分KPI、津贴、贡献度、奖金数据
+Given 项目A已启用双PM且存在部分KPI、津贴、贡献度数据
 When 用户进入 /projects/A/incentives
 Then 页面只显示项目A的数据
 And 各模块状态与独立页面一致
@@ -1996,7 +1733,7 @@ And 不把项目B数据混入汇总
 
 **用例 2：结项准备度**
 ```text
-Given KPI未全部 reviewed、津贴未全部 locked 或奖金未成对 locked
+Given KPI未全部 reviewed、津贴未全部 locked 或贡献度未锁定
 When 打开结项准备度
 Then readiness 显示 not_ready
 And 页面列出具体缺项
@@ -2014,9 +1751,9 @@ And 页面不显示编辑或重新生成按钮
 
 **用例 4：跨模块追溯**
 ```text
-Given 奖金已锁定
-When 用户点击奖金金额或达成率
-Then 可以看到回款核算、绩效系数、贡献度和规则版本
+Given 津贴台账已锁定
+When 用户点击津贴金额
+Then 可以看到绩效系数、贡献度和规则版本
 And 不要求用户分别打开多个全局tab
 And 台账中保留各模块记录ID
 ```

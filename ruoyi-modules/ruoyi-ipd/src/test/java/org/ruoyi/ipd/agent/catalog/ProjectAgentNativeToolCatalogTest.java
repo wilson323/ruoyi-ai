@@ -1,8 +1,10 @@
 package org.ruoyi.ipd.agent.catalog;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import static org.assertj.core.api.Assertions.*;
 import java.util.*;
 import org.ruoyi.service.coding.harness.tool.ToolCapability;
+@Tag("dev")
 class ProjectAgentNativeToolCatalogTest {
     @Test void exactOfficialFullProfileAndExecutionUnionPreserveAllNames() {
         assertThat(ProjectAgentNativeToolCatalog.IDS).hasSize(31).doesNotHaveDuplicates();

@@ -7,17 +7,27 @@
 # R224 收敛 6→3：TraceContextTest / MinimaxEmbeddingProviderTest /
 #   AliBaiLianRerankModelServiceTest 已补 @Tag("dev")，默认 dev 下实测执行且全绿
 #   （trace Tests run: 2；chat Tests run: 7）。
-# 剩余 3 条各自的阻塞原因（不是同一件事，勿一并处理）：
-#   common-core 1 条 → 【R226-B1 复核改判：刻意设计，非缺陷】该测试为 main 方法 +
-#     JDK 反射形态（类注释明记"不依赖 JUnit，加依赖会改已跟踪 pom 触发兄弟会话冲突"），
-#     真实执行通道是 scripts/run-async-smoke-test.sh（2026-09-26 实跑 PASSED=5 FAILED=0）。
-#     保留记账防"Surefire 没跑=没测"的误读，勿为其加 JUnit 依赖。
-#   Minimax 2 条 → 【R226-B1 已修上游缺陷本体】requireTrustedConfiguration else 已改为
-#     isDeepSeekConfiguration 同型守卫（行为锁见 common-chat ChatModelCredentialPolicyTest 4 例全绿）；
-#     但两测试仍跑不了：其 apiKey="test-api-key"/本地 http mock 仍被
-#     ChatModelSecretReference env 引用白名单 + requireSecureApiHost(https) 拒绝，
-#     属"minimax provider 系统性支持"范畴（host/引用白名单扩容 + 测试改造），另立专卡，
-#     补 @Tag 只会把 24 个误判错换成引用白名单错。修好后再删行。
-ruoyi-common/ruoyi-common-core/src/test/java/org/ruoyi/common/core/config/ApplicationConfigSmokeTest.java
-ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/integration/MinimaxIntegrationTest.java
-ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/service/chat/impl/provider/MinimaxServiceImplTest.java
+# R216 收敛 3→2（2026-10-03）：common-core 那 1 条已闭环，按本文件"修好一条就删一行"的规矩删行。
+#   common-core 1 条 → 【已闭环】ApplicationConfigSmokeTest 由「main 方法 + JDK 反射 +
+#     外部 javac 脚本」改为标准 JUnit 5 测试（5 个 @Test + @Tag("dev")）。
+#     连带两处必改：① ruoyi-common-core 补 junit-jupiter（test 作用域）——该依赖不可省，
+#     父 pom 的 surefire groups/excludedGroups 要求每个模块测试类路径上有 JUnit 引擎，
+#     缺了不是本模块红而是整个 37 模块反应堆在它这里被掐断（已实测：该模块连一个
+#     surefire 可见测试类都没有时同样失败）；
+#     ② 删除原 scripts/run-async-smoke-test.sh —— 它全仓零调用（不在任何 CI、不在任何门禁），
+#     等于 R28.5「防线 4」从未真正生效；现由每次 mvn test 执行。
+#     实测证据：全反应堆 mvn -o test → ruoyi-common-core "Tests run: 5, Failures: 0, Errors: 0"。
+# R216 收敛 2→0（2026-10-03，本文件就此清空）：Minimax 2 条经实测已可执行，
+#   原注释所述"两测试仍跑不了"已过期；门禁亦自报"基线可收敛"，故按规矩删行。
+#     实测证据：mvn -o test -pl ruoyi-modules/ruoyi-chat
+#       -Dtest=MinimaxServiceImplTest,MinimaxIntegrationTest
+#       → surefire 报告 MinimaxIntegrationTest tests=8 / MinimaxServiceImplTest tests=3，
+#         两者 failures=0 errors=0 skipped=0。
+#     原注释称两者会被 ChatModelSecretReference 的 env 引用白名单与
+#     requireSecureApiHost(https) 拒绝，属上游缺陷；该缺陷本体已由 R226-B1 的
+#     isDeepSeekConfiguration 同型守卫修复（行为锁见 common-chat ChatModelCredentialPolicyTest），
+#     补 @Tag 后即可真跑——当时的"另立专卡"随之关闭。
+#     MinimaxIntegrationTest 另带 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY")，
+#     这是**显式声明的条件启用**：条件不满足时 JUnit 会把容器记为 skipped 并写进 surefire
+#     报告，与本基线治理的"整类不被 Surefire 选中、连报告都不产生"是两回事，不属本基线管辖。
+# 本文件当前无条目 = 全仓没有整类静默跳过的测试类。若再出现，先修再入基线，禁止直接加行。

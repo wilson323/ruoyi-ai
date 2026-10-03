@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.agent.kernel;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.ruoyi.ipd.agent.domain.IpdAgentRun;
 import org.ruoyi.ipd.agent.service.*;
 import org.ruoyi.ipd.agent.store.AgentRunStore;
@@ -11,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /** 拒绝生产装饰器静默落回接口的空/default生命周期实现。 */
+@Tag("dev")
 class ProjectAgentEventSinkDecoratorContractTest {
     private void requireWholeContract(ProjectAgentEventSink sink) throws Exception {
         for(var method:ProjectAgentEventSink.class.getDeclaredMethods())
