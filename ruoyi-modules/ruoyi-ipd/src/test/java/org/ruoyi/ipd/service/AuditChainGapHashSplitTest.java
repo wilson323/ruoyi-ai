@@ -158,4 +158,22 @@ class AuditChainGapHashSplitTest {
         // 兼容出口回归锁：verifyChain() 必须逐字等于 mergedBroken()
         assertThat(service.verifyChain()).containsExactly(3L);
     }
+
+    @Test
+    @DisplayName("⑥ GAP 即告警默认（2026-10-03 收口）：纯缺行哈希自洽 → verifyChain() 非空；tolerateGap=true 恢复 A 方案宽容")
+    void gapAlarmsByDefaultWithExplicitToleranceSwitch() {
+        Date t0 = new Date(1788700060000L);
+        AuditLog r1 = consistentRow(50L, 1L, AuditHashChain.GENESIS, "LOGIN", t0);
+        // seq=3：跳过 2（中段整段被删的形态），prev 仍锚定 r1 的 currHash → 哈希链自洽，纯 GAP
+        AuditLog r3 = consistentRow(51L, 3L, r1.getCurrHash(), "EXPORT", new Date(t0.getTime() + 120_000L));
+        when(auditLogMapper.selectList(any())).thenReturn(List.of(r1, r3));
+
+        // 默认出口严态：删整段审计行必须告警，不再静默显示「链完整」
+        assertThat(service.verifyChain()).containsExactly(3L);
+        assertThat(service.verifyChain(false)).containsExactly(3L);
+        // 显式宽容开关：恢复 ADR-0076 A 方案旧口径（只报 hashBroken → 空）
+        assertThat(service.verifyChain(true)).isEmpty();
+        // 分列出口不受开关影响，GAP 明细（含数量）始终可读——不存在静默宽容
+        assertThat(service.verifyChainDetailed().gaps()).containsExactly(3L);
+    }
 }

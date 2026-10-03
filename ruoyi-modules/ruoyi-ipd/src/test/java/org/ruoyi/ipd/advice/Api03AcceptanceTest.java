@@ -80,7 +80,8 @@ class Api03AcceptanceTest {
             new IpdActor(actor.getId(), actor.getName(), actor.getPersonType(), actor.getGroupId()));
         // 注入真实生产 advice（非本地替身），才能证明 IpdAuthInputException 专用 handler 真的生效。
         mvc = MockMvcBuilders
-            .standaloneSetup(new IpdAuthController(authService, session, auditAttempt, permission))
+            .standaloneSetup(new IpdAuthController(authService, session, auditAttempt, permission,
+                mock(org.ruoyi.ipd.service.IAuditLogService.class)))
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
             .setControllerAdvice(new IpdServiceExceptionAdvice())
             .build();

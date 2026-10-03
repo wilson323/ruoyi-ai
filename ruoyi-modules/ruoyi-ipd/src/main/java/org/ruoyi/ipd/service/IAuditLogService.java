@@ -19,6 +19,12 @@ public interface IAuditLogService {
 
     public List<Long> verifyChain();
 
+    /**
+     * 显式宽容开关重载（2026-10-03 审计链收口）：{@code tolerateGap=true} 恢复 ADR-0076 A 方案
+     * 旧口径（只报哈希断裂，GAP 不告警）；{@code false} 等价 {@link #verifyChain()} 严态默认。
+     */
+    public List<Long> verifyChain(boolean tolerateGap);
+
     public List<Long> verifyChainStrict();
 
     public AuditChainVerifyResult verifyChainDetailed();

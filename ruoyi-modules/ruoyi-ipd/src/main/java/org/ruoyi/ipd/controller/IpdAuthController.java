@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.controller;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -10,16 +11,19 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.ApiV1Response;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.springframework.beans.factory.annotation.Value;
+import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.security.IpdRolePermissionCatalog;
 import org.ruoyi.ipd.service.AuditAttemptService;
+import org.ruoyi.ipd.service.IAuditLogService;
 import org.ruoyi.ipd.service.IpdAuthInputException;
 import org.ruoyi.ipd.service.IpdAuthService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 /** IPD认证边界；请求只接受凭据，不接受人员ID、角色或scope。 */
@@ -31,6 +35,7 @@ public class IpdAuthController {
     private final IpdAuthSession session;
     private final AuditAttemptService auditAttempt;
     private final IpdPermission permission;
+    private final IAuditLogService auditLogService;
 
     /**
      * R214/U0 安全开关：企微 Mock 扫码登录端点是否启用（生产默认 false）。
@@ -113,11 +118,33 @@ public class IpdAuthController {
     /**
      * logout 幂等守卫（[CONSISTENCY-18] 2026-09-06）：
      * 同一 token 重复 logout 不报错；token 已撤销/过期直接返回 ok。
+     *
+     * <p>审计收口（2026-10-03）：logout 此前全程无审计——成功登出补一条 {@code LOGOUT} 审计，
+     * 字段口径与 {@code IpdAuthService} 的 LOGIN 审计一致（{@code entityType=persons}、
+     * {@code operatorId=entityId=本人}，operatorName/role 由 append 单点补齐）。
+     * token 已撤销/过期（{@code currentPerson} 抛 {@link NotLoginException}）时不落审计、
+     * 幂等 ok 语义保持不变——身份不可靠时不编造操作人（与 {@code IpdAuthService.auditFail} 同口径）。
      */
     @PostMapping("/logout")
     public ApiV1Response<Void> logout() {
+        Person person = null;
         if (session.tokenValue() != null) {
+            try {
+                person = session.currentPerson();
+            } catch (NotLoginException ignored) {
+                // 幂等守卫保留：token 已撤销/过期时原语义直接返回 ok，不因补审计改变行为
+            }
             session.logout();
+        }
+        if (person != null) {
+            auditLogService.append(AuditLog.builder()
+                .operatorId(person.getId())
+                .operatorName(person.getName())
+                .action("LOGOUT")
+                .entityType("persons")
+                .entityId(person.getId())
+                .createTime(new Date())
+                .build());
         }
         return ApiV1Response.ok();
     }
@@ -138,6 +165,16 @@ public class IpdAuthController {
             session.logout();
         }
         String newToken = session.login(person);
+        // 审计收口（2026-10-03）：refresh 此前全程无审计——换签成功补一条 TOKEN_REFRESH 审计，
+        // 字段口径与 IpdAuthService 的 LOGIN 审计完全一致（entityType=persons，operatorId=本人）
+        auditLogService.append(AuditLog.builder()
+            .operatorId(person.getId())
+            .operatorName(person.getName())
+            .action("TOKEN_REFRESH")
+            .entityType("persons")
+            .entityId(person.getId())
+            .createTime(new Date())
+            .build());
         return ApiV1Response.ok(new LoginView(newToken, "Bearer", session.timeout(),
             authService.scopeOf(person).name(), "1".equals(person.getMustChangePwd()), PersonView.from(person)));
     }

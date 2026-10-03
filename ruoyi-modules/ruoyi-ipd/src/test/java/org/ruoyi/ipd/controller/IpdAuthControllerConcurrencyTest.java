@@ -30,6 +30,9 @@ class IpdAuthControllerConcurrencyTest {
     private IpdAuthSession session;
     @Mock
     private org.ruoyi.ipd.service.IpdAuthService authService;
+    // 2026-10-03 审计收口：refresh/logout 已写审计（TOKEN_REFRESH/LOGOUT），须 mock 供构造注入
+    @Mock
+    private org.ruoyi.ipd.service.IAuditLogService auditLogService;
 
     @InjectMocks
     private IpdAuthController controller;

@@ -152,7 +152,8 @@ class DefectBAdviceAcceptanceTest {
         MockMvc authMvc = MockMvcBuilders
             .standaloneSetup(new IpdAuthController(
                 mock(IpdAuthService.class), mock(IpdAuthSession.class), mock(AuditAttemptService.class),
-                mock(org.ruoyi.ipd.security.IpdPermission.class)))
+                mock(org.ruoyi.ipd.security.IpdPermission.class),
+                mock(org.ruoyi.ipd.service.IAuditLogService.class)))
             .setControllerAdvice(new IpdPermissionExceptionHandler(), new IpdServiceExceptionAdvice())
             .build();
 

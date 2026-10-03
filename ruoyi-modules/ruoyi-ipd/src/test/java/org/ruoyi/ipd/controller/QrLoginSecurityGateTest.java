@@ -65,7 +65,8 @@ class QrLoginSecurityGateTest {
     @BeforeEach
     void setUp() {
         IpdAuthService authService = new IpdAuthService(personMapper, auditLogService);
-        controller = new IpdAuthController(authService, session, null, null);
+        // 第 5 参 auditLogService=null：wecom 端点不走控制器审计（审计在 IpdAuthService 内落），本类不涉 refresh/logout
+        controller = new IpdAuthController(authService, session, null, null, null);
     }
 
     // ───────── ① 开关：关闭态（红脸自证） ─────────

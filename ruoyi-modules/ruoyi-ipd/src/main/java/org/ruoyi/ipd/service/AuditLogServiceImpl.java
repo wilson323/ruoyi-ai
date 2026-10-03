@@ -358,32 +358,42 @@ public class AuditLogServiceImpl implements IAuditLogService {
     }
 
     /**
-     * 全链校验（默认出口，P0-17 A 方案）：只报告「哈希不符」行——hash 必连续是安全红线；
-     * seq 缺行（GAP）成因不同（删行/事务回滚/InnoDB 自增值不回填），允许可验业务将其视为通过，
-     * 严态语义（既判 hash 也判 gap）请用 {@link #verifyChainStrict()}。
+     * 全链校验（默认出口）：返回断裂/缺行的 seq 合并列表（空 = 链完整）——「GAP 即告警」严态。
      *
-     * <p><b>语义变更说明（2026-09-11 R30 收口）</b>：原实现返 {@code mergedBroken()}（hash+GAP 合井），该
-     * 语义下真库 16 GAP 长期报警，DEF-9 卡挂 5+ 周。owner 拍板走 A 方案：接受 + 标记不连续区间。修正后
-     * verifyChain() 默认对 GAP 宽容（仅作为详查入口 {@link #verifyChainDetailed()} 仍保留分列报告）；
-     * HTTP 端点 {@code GET /api/v1/audit-logs/verify} 的 {@code broken} 字段据此不再含 GAP，为兼容
-     * 旧消费者如需 GAP 同时返回请改调 verifyChainStrict()。本表与原语义不是洞洞不可逆——一旦真发现
-     * 「以 GAP 伪装篡改」场景随时可回滚为 verifyChainStrict()。
+     * <p><b>语义变更（2026-10-03 审计链收口）</b>：P0-17 A 方案（2026-09-11 R30 owner 拍板，ADR-0076
+     * 登记）原默认对 GAP 宽容、只报 hashBroken——「删整段中段审计行」在默认出口静默显示「链完整」。
+     * 本次收口前核实：主源码在役调用方为零（HTTP {@code GET /api/v1/audit-logs/verify} 走
+     * {@link #verifyChainDetailed()} 分列报告，{@code broken}/{@code gaps}/{@code chain} 三字段本就
+     * 含 GAP；{@code scripts/verify-prod.sh} 只数行数不调本方法），严化默认不破坏任何在役消费者，
+     * 故默认改回与 {@link #verifyChainStrict()} 同口径。ADR-0076 登记的 17 处遗留 GAP 基线不受影响，
+     * 监控口径继续走 HTTP 端点分列字段（新增 GAP 仍须单独归因）。旧宽容口径保留为显式开关：
+     * {@link #verifyChain(boolean)} 传 {@code true}。
      *
-     * <p><b>SEC-AUD-01 补（2026-10-03）</b>：本出口已含锚表判据（删链尾 / 整表重排 / 链尾被改写 /
-     * 整表被清空），这四类锚不一致的结论位计入 {@code hashBroken}——即默认出口也会报，不会再
-     * 对「链尾被删」返回「链完整」。代价是这类不可 rebuild 修复的篡改也会落在 hashBroken 里，
-     * 需区分类型时调 {@link #verifyChainAnchored()} 读其结论码。
+     * <p><b>SEC-AUD-01（2026-10-03）</b>：本出口含锚表判据（删链尾 / 整表重排 / 链尾被改写 /
+     * 整表被清空），锚不一致的结论位计入 {@code hashBroken}；需区分篡改类型时调
+     * {@link #verifyChainAnchored()} 读其结论码。
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<Long> verifyChain() {
-        return verifyChainDetailed().hashBroken();
+        return verifyChainDetailed().mergedBroken();
+    }
+
+    /**
+     * 全链校验（显式宽容开关）：{@code tolerateGap=true} 只报哈希断裂行（ADR-0076 A 方案旧口径，
+     * 接受「seq 缺行 = 删行/事务回滚/InnoDB 自增值不回填」类空洞不告警）；{@code false} 等价
+     * {@link #verifyChain()}。GAP 明细（含数量）无论开关与否都可在
+     * {@link #verifyChainDetailed()} 的 {@code gaps} 字段读出，不存在静默宽容。
+     */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public List<Long> verifyChain(boolean tolerateGap) {
+        return tolerateGap ? verifyChainDetailed().hashBroken() : verifyChain();
     }
 
     /**
      * 全链校验（严态出口，兼容历史）：返回断裂/缺行的 seq 合并列表（空 = 链完整）。
      *
-     * <p>语义与分列改造前完全一致，供「不可接受 GAP」场景（历史验收脚本/复盘/取证）继续使用；
-     * 默认场景请用 {@link #verifyChain()}。需区分「哈希不符」与「seq 缺行」时请用
+     * <p>2026-10-03 收口后与默认出口 {@link #verifyChain()} 语义一致（默认已改严态）；保留本方法
+     * 供历史引用与显式语义自文档化。需区分「哈希不符」与「seq 缺行」时请用
      * {@link #verifyChainDetailed()}。
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
