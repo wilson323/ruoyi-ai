@@ -13811,3 +13811,31 @@ marker: worktree-recommendations-execution-20261002。用户授权「按照建�
 **③ Long 契约拍板材料落位**：`docs/ipd-系统说明/决策备忘-Long序列化全局契约-owner拍板-20261003.md`——选项 A 维持全局 Long→STRING（建议，零改动、`0901355e` 已钉契约）/ B 字段级收窄 / C 移除全局改前端，含拍板记录空表。C 类项，工程侧推进到此为止，等 owner。
 
 - marker: skillnames-502-closure-20261003
+
+**补记（2026-10-03 01:10，并发收编事实）**：上块四文件（catalog java + 决策备忘 + log.md + 镜像）在本人 `git add` 之后、自行提交之前，被兄弟会话 01:04:00 的收编提交 **`6e142411`**（「chore: 收编 chat 门面绿修改与验收支撑资产…」）连同它自己的 8 个文件一并带入——多会话共享 index 的并发窗口，非有意混提。已逐字核验 HEAD 内四文件与本人编辑一致（catalog L100-103 注释与 `, e);` 修复、marker `skillnames-502-closure-20261003` 在 log.md ×2/镜像 ×1、决策备忘全文在），内容无丢失无篡改；按「不做历史重写、不动兄弟活跃期 HEAD」不拆提交，登记在此。另：本人门禁跑时报的「门禁 0：29 处 untracked 引用」引用方为兄弟 manifest json 引其未提交 java，非本人四文件引入，该状态随 6e142411 收编后消失。
+
+## AgentScope 官方化缺口 12356 落地（2026-10-03 01:15，主协调会话）
+
+**范围**：10-02 裁决报告 6 项缺口中的 #1/#2/#3/#5/#6（#4 版本升级另立项）。多智能体并行：2 只读探针（agency-harness：gemini 接入面/ModelFactory 透传链取证；状态机与前端 assertNever 哨兵取证）+ 主会话串行写（OPS-09）。
+
+**#1 Quality 域 Verifier V-2**：新增 `ProjectAgentArtifactVerifier`（代码级规则注册表：通用规则 heading/placeholder 两条 BLOCK，动作级表空待 owner §七.2）；`AgentRunStatus` 加 `VERIFYING` 驻留态（不属 ACTIVE/CANCELLABLE，取消直达 CANCELLED）；挂点 RunHandle#finishOnce 产物落库后；STEP `kind=VERIFY_GAPS` 不新增事件枚举；`RunService#reverify` 复检（证据先行终态最后）；前端 project-agent.ts union+三 switch 同步（assertNever 强制）。实施记录见设计文档 §九。
+
+**#2 OTel tracing**：`OtelTracingMiddleware` 挂两内核 builder 链（v2.0.3 源码实证：未配 SDK noop 零开销、构造器自带幂等 hook，不走 legacy TracerRegistry）。
+
+**#5 gemini**：ruoyi-chat pom 加 `agentscope-extensions-model-gemini:2.0.3`，SPI+providerAlias 透传零代码（jar 内 META-INF/services 实证）；传递依赖 google-genai:1.45.0 已预取本地仓。
+
+**#3/#6 落档**：ADR-0077 新增 §8 生态扩展台账（接入 2 项 / 有意不用含实证理由 / Evaluation 黄域另立维持）。
+
+**验证**：ruoyi-ipd 定向 5 类 51/51 绿（AgentRunStatus 5 + Verifier 6 新 + Handle 21 含 4 既有 fixture 补标题契约断言未动 + Lifecycle 9 含新用例 + FinishTransaction 10）；全量 ipd 3982 跑本改动面全绿（余 3 红 AguiProtocol/CronSentinel/ShutdownConfiguration 均兄弟在途/既有交付，git status M 归属已核）；ruoyi-chat test-compile BUILD SUCCESS；前端 check:type 通过 + project-agent.test.ts 16/16。曾遇一次并发假红（FinishTransaction 首跑 FAILURE 复跑即绿，AGENTS 已登记形态）。
+
+**限制**：V-3 前端缺口列表/复检按钮未做（reverify 无 HTTP 端点，api-contract 孤儿棘轮故服务级先行）；127.0.0.1:16039 运行包未重载，以上为代码级验证非运行态验收。
+
+- marker: agentscope-gap-12356-impl-20261003
+
+### Verifier V-2 收口：CodeReview 三项修复（verifier-v2-review-fix-20261003）
+
+**CodeReview 裁决「需修复后提交」三项已修（2026-10-03 01:38）**：M1 需求回写丢失（finishVerifying SUCCEEDED 分支按冻结快照 ConfigSnapshot.requirementId 补回写，Executor#bindDemandOnReverify，hit 置空全文兜底，不动兄弟在途 Configuration）；M2 终态事件与 CAS 非原子（appendTerminalEvent 新鲜 maxSeq 有界重试 3 次，耗尽 log.warn 不回滚终态）；m1 复检/取消竞态孤儿 STEP（写 STEP 前二次 reload）。kernel terminalCommitted 检查点滞留登记为已知边界不修（涉兄弟在途 kernel），见设计文档 §九.8。
+
+**验证**：`mvn -o -pl ruoyi-modules/ruoyi-ipd -Dtest=Lifecycle/FinishTransaction/Handle/Verifier/AgentRunStatus` 5 类 **53/53 绿**（新增 `reverifySuccessRebindsDemandFromFrozenSnapshot` / `verifyingFinishRetriesTerminalEventWrite`，`FlakyTerminalEventStore` 委托缝模拟 seq 冲突）。运行包未重载，代码级验证非运行态验收。
+
+- marker: verifier-v2-review-fix-20261003

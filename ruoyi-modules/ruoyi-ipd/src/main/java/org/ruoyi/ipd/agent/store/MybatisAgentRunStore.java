@@ -31,7 +31,7 @@ public class MybatisAgentRunStore implements AgentRunStore {
     /** 与项目运行列表现有中文状态标签一致；不改变数据库状态枚举。 */
     private static final Map<String, String> STATUS_LABELS = Map.of(
         "PENDING", "排队中", "RUNNING", "运行中", "WAITING_APPROVAL", "等待审批",
-        "CANCEL_REQUESTED", "取消中", "SUCCEEDED", "已完成", "FAILED", "失败", "CANCELLED", "已取消");
+        "CANCEL_REQUESTED", "取消中", "VERIFYING", "校验中", "SUCCEEDED", "已完成", "FAILED", "失败", "CANCELLED", "已取消");
 
     private final IpdAgentRunMapper runMapper;
     private final IpdAgentRunEventMapper eventMapper;

@@ -106,7 +106,7 @@ agent.call() 结束 → artifact 落库（GENERATED）后 → VerifyMiddleware.a
 2. 首批种子动作选哪 2~3 个（候选：市场需求文档、Gate 评审材料、深管动作交付物——已有明确章节要求的最先受益）；
 3. VERIFYING 是否对前端可见为独立状态名（建议：白话「校验中」，与「待审核」区分）。
 
-## 八、边界与不做清单
+## 八、边界与不做清单（维持）
 
 - 不做模型自评（让 LLM 给自己的产物打分）——那会把判定拉回概率面；
 - 不做跨版本 Evaluation（黄域另立）；
@@ -114,4 +114,25 @@ agent.call() 结束 → artifact 落库（GENERATED）后 → VerifyMiddleware.a
 - 不新增事件枚举、不新建第二套文档表；
 - 规则表达式 DSL 不求全，STRUCTURAL/REFERENTIAL 起步，CONTENT 仅做阈值类断言（长度/占位检测），语义级判断留给人。
 
+## 九、实施记录（2026-10-03，V-2 代码级落地）
+
+**已落地（本轮，均与 owner 2026-10-02「官方能力全量启用」指令对齐）**：
+
+1. **V-2 以代码级规则注册表形态落地，替代 §4.1 的 DDL 表（V-1）**：新增 `ProjectAgentArtifactVerifier`（ruoyi-ipd agent/service）——规则是静态注册表随版本发布（验收标准 4「运行时不可动态增删」由此免费获得）；通用规则两条（`doc.heading.structure` STRUCTURAL/BLOCK、`doc.placeholder.content` CONTENT/BLOCK，占位标记 ≥2 处才 BLOCK）；`ACTION_RULES` 首批为空，待 §七.2 owner 拍板种子动作后登记（未登记前不编造章节要求）。
+2. **挂点在 RunHandle#finishOnce 产物落库后、CAS 迁移前**（非 Middleware：校验对象是已落库的 artifact 正文，业务事务边界内）；BLOCK 缺口 → `effective=VERIFYING` + `code=null`，写 STEP `kind=VERIFY_GAPS`（含 checks 数组）替代终态事件——复用 STEP 载体，不新增事件枚举（红线维持）。
+3. **状态机**：`AgentRunStatus` 新增 `VERIFYING` 驻留态；`canTransitTo`：`RUNNING→VERIFYING`、`VERIFYING→SUCCEEDED|CANCELLED`；不属 ACTIVE（无执行器写入权，重启恢复不收口）、不属 CANCELLABLE（取消不经 CANCEL_REQUESTED，RunService#cancel 驻留分支直达 CANCELLED）。
+4. **复检**：`ProjectAgentRunService#reverify`（服务级方法，HTTP 暴露留 V-3）——复检 STEP 证据先行、RUN_FINISHED 终态事件最后（前端 terminal 轮询不丢事件）；仍缺口幂等驻留。
+5. **前端**：`project-agent.ts` union + 三 switch 加 `VERIFYING`（白话「校验中」/processing，§七.3 按建议落地；非终态、可取消）——assertNever 穷尽哨兵强制同步。
+6. **与 CompletionGate 零重叠**：完成门管来源与越权宣称（判 FAILED），Verifier 只管产物结构形态（判 VERIFYING）；人工审核链（ai_documents / ipd:ai-document:review）语义未动。
+7. **验证（2026-10-03 01:0x，错峰单模块 -o 无 -am/clean）**：`AgentRunStatusTest 5/5` + `ProjectAgentArtifactVerifierTest 6/6`（新）+ `ProjectAgentRunHandleTest 21/21`（含新驻留用例；4 个既有用例 fixture 正文补标题适配新通用规则，所测契约断言未动）+ `ProjectAgentRunServiceLifecycleTest 9/9`（含新 reverify/cancel 用例）+ `ProjectAgentRunFinishTransactionTest 10/10`；前端 `check:type` 通过 + `project-agent.test.ts 16/16`。全量 ipd 3982 跑，本改动面全绿；余 3 红（AguiProtocol/CronSentinel/ShutdownConfiguration）均兄弟会话在途/既有交付，不在本刀 pathspec。
+8. **CodeReview 修复（2026-10-03 01:38 收口轮，审查结论「需修复后提交」三项全修）**：
+   - **M1 需求回写副作用丢失**：VERIFYING 驻留销毁执行句柄后，首跑路径 `handle.whenSucceeded`（Executor 注册的 demandBinder 回写）不再可达，分拣类运行的需求单绑定会静默丟。修复：`finishVerifying` 的 SUCCEEDED 分支按冻结快照 `ConfigSnapshot.requirementId` 重建上下文补回写（`Executor#bindDemandOnReverify`，hit 置空由回写器全文兜底；不动兄弟在途 Configuration），失败 log.warn 不阻断终态——与首跑路径语义（RunHandle SUCCEEDED 分支）对齐。
+   - **M2 终态事件与 CAS 非原子**：CAS 已提交后事件写失败（seq 撞唯一键）会形成「终态无终态事件」不可自愈态（前端按终态事件停轮询，后续 cancel/reverify 被状态机拒绝）。修复：`appendTerminalEvent` 按新鲜 maxSeq 有界重试 3 次，耗尽 log.warn 留痕、不回滚终态。
+   - **m1 复检/取消竞态**：reverify 状态校验与 STEP 写入之间的窗口内并发取消会产生终态事件后孤儿 STEP。修复：写 STEP 前二次 reload 确认仍驻留，窗口收窄（完全消除需事务级原子，侵入不值）。
+   - **已知边界（登记不修）**：kernel terminalCommitted 检查点（terminalSuccessReceipt）在 VERIFYING 驻留销毁句柄后同样滞留——涉及兄弟在途 kernel 文件，本轮不触碰，待 kernel 收口刀一并处理。
+   - 验证：53/53 绿（LifecycleTest 11 含新增 `reverifySuccessRebindsDemandFromFrozenSnapshot` / `verifyingFinishRetriesTerminalEventWrite` 两用例；`FlakyTerminalEventStore` 委托缝模拟 seq 冲突）。
+
+**未落地（待办）**：V-3 前端缺口列表展示 + 复检按钮；§七.1 DDL 表是否立项（代码级注册表已覆盖 v1.1.0「非必选」口径）；§七.2 首批种子动作拍板。
+
 - marker agentscope-quality-verifier-gap-design-20261002
+- marker agentscope-quality-verifier-v2-impl-20261003

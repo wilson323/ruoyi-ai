@@ -109,6 +109,19 @@ public class ProjectAgentRunExecutor {
     }
 
     /**
+     * VERIFYING 复检收口成功后的需求回写；语义同执行句柄的 SUCCEEDED 回调（hit 置空，
+     * 回写器内按全文兜底匹配）。未绑定回写器或无需求单时不动作。
+     *
+     * @param requirementId 冻结快照里的需求单 ID
+     * @param answer 复检通过时的产物正文
+     */
+    public void bindDemandOnReverify(Long requirementId, String answer) {
+        if (demandBinder != null && requirementId != null) {
+            demandBinder.apply(requirementId, answer, null);
+        }
+    }
+
+    /**
      * 有账本时在内核出口外包一层，把模型结束步骤的 token 写入既有账本。
      *
      * @param handle 运行句柄

@@ -8,7 +8,9 @@ import java.util.Set;
  *
  * <pre>
  * PENDING ──▶ RUNNING ──▶ SUCCEEDED
- *    │           │  ▲ └──▶ FAILED
+ *    │           │  ▲ ├──▶ VERIFYING ──▶ SUCCEEDED
+ *    │           │  │ │       └──▶ CANCELLED
+ *    │           │  │ └──▶ FAILED
  *    │           ▼  │
  *    │     WAITING_APPROVAL
  *    │           │
@@ -19,12 +21,17 @@ import java.util.Set;
  * <p>终态三选一：SUCCEEDED / FAILED / CANCELLED；一旦进入终态不可再迁移。
  * 取消先落 {@link #CANCEL_REQUESTED}，此后迟到的模型帧不再写入业务事件，
  * 最终只由 CAS 胜者写入唯一终态事件（RUN_FINISHED 或 ERROR）。
+ *
+ * <p>VERIFYING 是产物校验驻留态（Quality 域 V-2）：产物已落库但机器校验有
+ * BLOCK 级缺口，等待补证据后复检；不属 ACTIVE（无执行器写入权，重启恢复不收口），
+ * 取消走直接 VERIFYING→CANCELLED（不经 CANCEL_REQUESTED）。
  */
 public enum AgentRunStatus {
     PENDING,
     RUNNING,
     WAITING_APPROVAL,
     CANCEL_REQUESTED,
+    VERIFYING,
     SUCCEEDED,
     FAILED,
     CANCELLED;
@@ -60,9 +67,10 @@ public enum AgentRunStatus {
         return switch (this) {
             case PENDING -> target == RUNNING || target == CANCELLED || target == FAILED;
             case RUNNING -> target == WAITING_APPROVAL || target == CANCEL_REQUESTED
-                || target == SUCCEEDED || target == FAILED;
+                || target == VERIFYING || target == SUCCEEDED || target == FAILED;
             case WAITING_APPROVAL -> target == RUNNING || target == CANCEL_REQUESTED || target == FAILED;
             case CANCEL_REQUESTED -> target == CANCELLED || target == FAILED;
+            case VERIFYING -> target == SUCCEEDED || target == CANCELLED;
             case SUCCEEDED, FAILED, CANCELLED -> false;
         };
     }

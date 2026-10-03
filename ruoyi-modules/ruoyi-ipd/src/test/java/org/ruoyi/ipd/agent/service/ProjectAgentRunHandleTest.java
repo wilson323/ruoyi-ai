@@ -77,7 +77,7 @@ class ProjectAgentRunHandleTest {
         InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
         ProjectAgentRunHandle withArtifacts = new ProjectAgentRunHandle(run, store, artifacts,
             AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
-        withArtifacts.onText("竞品分析正文");
+        withArtifacts.onText("# 竞品分析\n竞品分析正文");
         withArtifacts.onComplete();
 
         List<IpdAgentRunEvent> events = store.events(run.getId());
@@ -88,6 +88,27 @@ class ProjectAgentRunHandleTest {
         String versionId = String.valueOf(artifacts.listByRunIds(List.of(run.getId())).get(0).getId());
         assertThat(events.get(1).getPayload()).contains("\"versionId\":\"" + versionId + "\"");
         assertThat(versionId).doesNotContain("artifactId");
+    }
+
+    @Test
+    @DisplayName("产物校验驻留：BLOCK 缺口停 VERIFYING、写 VERIFY_GAPS 步骤、无终态事件")
+    void blockingGapsResideInVerifyingWithoutTerminal() {
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunHandle withArtifacts = new ProjectAgentRunHandle(run, store, artifacts,
+            AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
+        withArtifacts.onText("草稿正文，无标题且 TODO 待补充 TODO");
+        withArtifacts.onComplete();
+
+        IpdAgentRun after = store.findRun(run.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("VERIFYING");
+        assertThat(after.getErrorCode()).isNull();
+        List<IpdAgentRunEvent> events = store.events(run.getId());
+        assertThat(events).extracting(IpdAgentRunEvent::getEventType)
+            .containsExactly("TEXT_DELTA", "ARTIFACT", "STEP");
+        assertThat(events.get(2).getPayload()).contains("VERIFY_GAPS").contains("doc.heading.structure");
+        assertThat(events.stream().filter(e -> AgentEventType.valueOf(e.getEventType()).isTerminal()))
+            .as("驻留态不写终态事件，复检或取消才收口").isEmpty();
+        assertThat(closedCallbacks).hasValue(1);
     }
 
     @Test
@@ -236,7 +257,7 @@ class ProjectAgentRunHandleTest {
             AgentTestFixtures.MAPPER, clock::get, closedCallbacks::incrementAndGet);
         withArtifacts.onToolCall("call-1", "project_knowledge_search");
         withArtifacts.onSource(Map.of("hits", 0));
-        withArtifacts.onText("公开价格未取得");
+        withArtifacts.onText("# 公开价格\n公开价格未取得");
         withArtifacts.onComplete();
 
         assertThat(artifacts.size()).isEqualTo(1);
@@ -293,8 +314,8 @@ class ProjectAgentRunHandleTest {
     @DisplayName("C02 默认四维可生成草稿；其他动作不借用 C02 用途规则")
     void recordedActionKeepsDefaultScopeAndOtherActionsCompatible() {
         Map<String, String> cases = Map.of(
-            "C02", "用途未声明，不阻塞；按默认四维齐全、篇幅克制。竞品名单未取得，暂不比较。",
-            "C01", "| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞步骤2 | 未声明则四维齐全、篇幅克制。 |");
+            "C02", "# 结论\n用途未声明，不阻塞；按默认四维齐全、篇幅克制。竞品名单未取得，暂不比较。",
+            "C01", "# 缺项表\n| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞步骤2 | 未声明则四维齐全、篇幅克制。 |");
         cases.forEach((action, body) -> {
             IpdAgentRun recorded = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)
                 .projectId(AgentTestFixtures.PROJECT_ID).personId(AgentTestFixtures.ACTOR.id())
@@ -436,13 +457,15 @@ class ProjectAgentRunHandleTest {
         subject.onToolCall("c1", "project_knowledge_search");
         subject.onSource(Map.of("hits", 1, "retrievalStatus", "SUCCESS", "preview", "短预览",
             "citationText", "内部原文".repeat(300) + "12.83%"));
+        subject.onText("# 费用结论\n");
         subject.onText("<thi");
         subject.onText("nk>错误试算118.69</thi");
         subject.onText("nk>费用率12.83%。<think>未闭合思考13.09");
         subject.onComplete();
         assertThat(store.findRun(run.getId()).orElseThrow().getStatus()).isEqualTo("SUCCEEDED");
-        assertThat(artifacts.listByRunIds(List.of(run.getId())).get(0).getContent()).isEqualTo("费用率12.83%。");
-        assertThat(bound.get()).isEqualTo("费用率12.83%。");
+        assertThat(artifacts.listByRunIds(List.of(run.getId())).get(0).getContent())
+            .isEqualTo("# 费用结论\n费用率12.83%。");
+        assertThat(bound.get()).isEqualTo("# 费用结论\n费用率12.83%。");
         assertThat(store.events(run.getId()).stream().filter(e -> "SOURCE".equals(e.getEventType())))
             .singleElement().satisfies(e -> assertThat(e.getPayload()).contains("citationChars", "citationSha256")
                 .doesNotContain("citationText", "内部原文"));

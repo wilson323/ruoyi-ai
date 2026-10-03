@@ -3,7 +3,15 @@ package org.ruoyi.ipd.agent.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.ruoyi.ipd.agent.domain.IpdAgentArtifactVersion;
+import org.ruoyi.ipd.agent.domain.IpdAgentRun;
 import org.ruoyi.ipd.agent.domain.IpdAgentRunEvent;
+import org.ruoyi.ipd.agent.model.AgentEventType;
+import org.ruoyi.ipd.agent.model.AgentRunStatus;
+import org.ruoyi.ipd.agent.store.AgentRunStore;
+import org.ruoyi.ipd.agent.support.AgentTestFixtures;
+import org.ruoyi.ipd.agent.support.InMemoryAgentRunStore;
+import org.ruoyi.ipd.agent.support.InMemoryArtifactVersionStore;
 import org.ruoyi.ipd.agent.kernel.ProjectAgentEventSink;
 import org.ruoyi.ipd.agent.support.FakeProjectAgentKernel;
 import org.ruoyi.ipd.agent.support.RunServiceHarness;
@@ -11,10 +19,18 @@ import org.ruoyi.ipd.agent.vo.ProjectAgentViews;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 
+import java.time.Duration;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.ruoyi.ipd.agent.support.AgentTestFixtures.ACTOR;
 import static org.ruoyi.ipd.agent.support.AgentTestFixtures.OTHER_ACTOR;
 import static org.ruoyi.ipd.agent.support.AgentTestFixtures.PROJECT_ID;
@@ -216,6 +232,175 @@ class ProjectAgentRunServiceLifecycleTest {
         var stored = h.store.listEvents(runId, event.seq() - 1, 1).get(0).getPayload();
         assertThat(stored).contains("private locator", "private receipt");
         assertThat(event.seq()).isEqualTo(h.store.listEvents(runId, event.seq() - 1, 1).get(0).getSeq());
+    }
+
+    @Test
+    @DisplayName("校验驻留：cancel 直接落 CANCELLED；reverify 修复后收口 SUCCEEDED 且 STEP 先于 RUN_FINISHED；仍缺口幂等驻留")
+    void verifyingResidenceSupportsCancelAndReverify() {
+        RunServiceHarness h = new RunServiceHarness(true, false, 4);
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunService svc = new ProjectAgentRunService(true, h.access, AgentTestFixtures.planner(),
+            h.store, artifacts, null, null, null, h.executor, AgentTestFixtures.MAPPER, h.clock::get,
+            Duration.ofSeconds(60));
+
+        // 取消：驻留态不经 CANCEL_REQUESTED，直接落 CANCELLED 并补 RUN_FINISHED。
+        IpdAgentRun cancelRun = verifyingRun("key-verify-cancel");
+        h.store.insertRun(cancelRun);
+        artifacts.insert(artifact(cancelRun, "TODO 待补充 TODO 无标题"));
+        assertThat(svc.cancel(ACTOR, cancelRun.getId()).status()).isEqualTo("CANCELLED");
+        assertThat(h.store.events(cancelRun.getId()))
+            .extracting(IpdAgentRunEvent::getEventType).containsExactly("RUN_FINISHED");
+
+        // 复检通过：STEP（复检证据）先于 RUN_FINISHED（终态事件最后，前端轮询不丢事件）。
+        IpdAgentRun passRun = verifyingRun("key-verify-pass");
+        h.store.insertRun(passRun);
+        artifacts.insert(artifact(passRun, "# 竞品分析\n\n完整正文。"));
+        assertThat(svc.reverify(ACTOR, passRun.getId()).status()).isEqualTo("SUCCEEDED");
+        List<IpdAgentRunEvent> passEvents = h.store.events(passRun.getId());
+        assertThat(passEvents).extracting(IpdAgentRunEvent::getEventType).containsExactly("STEP", "RUN_FINISHED");
+        assertThat(passEvents.get(0).getPayload()).contains("recheck").contains("PASS");
+
+        // 复检仍缺口：保持 VERIFYING（幂等）；非驻留态复检拒绝。
+        IpdAgentRun gapRun = verifyingRun("key-verify-gap");
+        h.store.insertRun(gapRun);
+        artifacts.insert(artifact(gapRun, "TODO 再补 TODO"));
+        assertThat(svc.reverify(ACTOR, gapRun.getId()).status()).isEqualTo("VERIFYING");
+        assertThat(h.store.events(gapRun.getId()))
+            .extracting(IpdAgentRunEvent::getEventType).containsExactly("STEP");
+        assertCode(() -> svc.reverify(ACTOR, passRun.getId()), ApiV1ErrorCode.STATE_CONFLICT);
+        assertCode(() -> svc.reverify(OTHER_ACTOR, gapRun.getId()), ApiV1ErrorCode.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("复检收口：按冻结快照补需求回写；无快照不触发")
+    void reverifySuccessRebindsDemandFromFrozenSnapshot() {
+        RunServiceHarness h = new RunServiceHarness(true, false, 4);
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        DemandCatalogBinder binder = mock(DemandCatalogBinder.class);
+        h.executor.setDemandBinder(binder);
+        ProjectAgentRunService svc = new ProjectAgentRunService(true, h.access, AgentTestFixtures.planner(),
+            h.store, artifacts, null, null, null, h.executor, AgentTestFixtures.MAPPER, h.clock::get,
+            Duration.ofSeconds(60));
+
+        // 首跑路径的 SUCCEEDED 回调随句柄销毁丢失；复检收口必须按冻结快照补回写。
+        IpdAgentRun bound = verifyingRun("key-verify-bind");
+        bound.setConfigSnapshot("{\"requirementId\":\"77\"}");
+        h.store.insertRun(bound);
+        String answer = "# 分拣结论\n产品线：attendance\n完整正文。";
+        artifacts.insert(artifact(bound, answer));
+        assertThat(svc.reverify(ACTOR, bound.getId()).status()).isEqualTo("SUCCEEDED");
+        verify(binder).apply(77L, answer, null);
+
+        // 无快照/无需求单的复检成功不触发回写。
+        IpdAgentRun bare = verifyingRun("key-verify-bare");
+        h.store.insertRun(bare);
+        artifacts.insert(artifact(bare, "# 竞品分析\n完整正文。"));
+        assertThat(svc.reverify(ACTOR, bare.getId()).status()).isEqualTo("SUCCEEDED");
+        verifyNoMoreInteractions(binder);
+    }
+
+    @Test
+    @DisplayName("终态事件写入：seq 冲突按新鲜 maxSeq 重试；重试耗尽不悬挂终态")
+    void verifyingFinishRetriesTerminalEventWrite() {
+        RunServiceHarness h = new RunServiceHarness(true, false, 4);
+        FlakyTerminalEventStore flaky = new FlakyTerminalEventStore(h.store);
+        InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
+        ProjectAgentRunService svc = new ProjectAgentRunService(true, h.access, AgentTestFixtures.planner(),
+            flaky, artifacts, null, null, null, h.executor, AgentTestFixtures.MAPPER, h.clock::get,
+            Duration.ofSeconds(60));
+
+        // 终态事件首次写入撞 seq：按新鲜 maxSeq 重试后必须写入成功，终态不悬挂。
+        flaky.terminalFailures = 1;
+        IpdAgentRun retryRun = verifyingRun("key-verify-retry");
+        h.store.insertRun(retryRun);
+        artifacts.insert(artifact(retryRun, "# 竞品分析\n完整正文。"));
+        assertThat(svc.cancel(ACTOR, retryRun.getId()).status()).isEqualTo("CANCELLED");
+        assertThat(h.store.events(retryRun.getId()))
+            .extracting(IpdAgentRunEvent::getEventType).containsExactly("RUN_FINISHED");
+
+        // 重试耗尽：终态已提交不可回滚，收口不抛异常，仅留痕。
+        flaky.terminalFailures = 3;
+        IpdAgentRun exhaustedRun = verifyingRun("key-verify-exhausted");
+        h.store.insertRun(exhaustedRun);
+        artifacts.insert(artifact(exhaustedRun, "# 竞品分析\n完整正文。"));
+        assertThat(svc.cancel(ACTOR, exhaustedRun.getId()).status()).isEqualTo("CANCELLED");
+        assertThat(h.store.events(exhaustedRun.getId())).isEmpty();
+    }
+
+    private static IpdAgentRun verifyingRun(String idempotencyKey) {
+        return IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT).projectId(PROJECT_ID)
+            .personId(ACTOR.id()).agentId("ipd_project_agent")
+            .status(AgentRunStatus.VERIFYING.name()).idempotencyKey(idempotencyKey).build();
+    }
+
+    private static IpdAgentArtifactVersion artifact(IpdAgentRun run, String content) {
+        return IpdAgentArtifactVersion.builder().runId(run.getId()).artifactId("doc-" + run.getId())
+            .versionNo(1).content(content).status(IpdAgentArtifactVersion.STATUS_DRAFT)
+            .tenantId(AgentTestFixtures.TENANT).build();
+    }
+
+    /** 终态事件写入缝：前 N 次模拟 (run_id, seq) 撞唯一键返回 false，其余全部委托。 */
+    private static final class FlakyTerminalEventStore implements AgentRunStore {
+        private final InMemoryAgentRunStore delegate;
+        volatile int terminalFailures;
+
+        FlakyTerminalEventStore(InMemoryAgentRunStore delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public boolean appendEvent(IpdAgentRunEvent event) {
+            if (AgentEventType.valueOf(event.getEventType()).isTerminal() && terminalFailures-- > 0) {
+                return false;
+            }
+            return delegate.appendEvent(event);
+        }
+
+        @Override
+        public boolean insertRun(IpdAgentRun run) {
+            return delegate.insertRun(run);
+        }
+
+        @Override
+        public Optional<IpdAgentRun> findRun(Long runId) {
+            return delegate.findRun(runId);
+        }
+
+        @Override
+        public Optional<IpdAgentRun> findByIdempotencyKey(String tenantId, Long personId, String idempotencyKey) {
+            return delegate.findByIdempotencyKey(tenantId, personId, idempotencyKey);
+        }
+
+        @Override
+        public boolean transition(Long runId, Set<AgentRunStatus> expected, AgentRunStatus target,
+                                  String errorCode, Date at) {
+            return delegate.transition(runId, expected, target, errorCode, at);
+        }
+
+        @Override
+        public List<IpdAgentRunEvent> listEvents(Long runId, long afterSeq, int limit) {
+            return delegate.listEvents(runId, afterSeq, limit);
+        }
+
+        @Override
+        public long maxSeq(Long runId) {
+            return delegate.maxSeq(runId);
+        }
+
+        @Override
+        public Optional<Long> terminalSeq(Long runId) {
+            return delegate.terminalSeq(runId);
+        }
+
+        @Override
+        public List<IpdAgentRun> listOwnRuns(AgentRunStore.OwnRunQuery query) {
+            return delegate.listOwnRuns(query);
+        }
+
+        @Override
+        public List<IpdAgentRun> listInterruptedCandidates(Date createdBefore, int limit) {
+            return delegate.listInterruptedCandidates(createdBefore, limit);
+        }
     }
 
 }

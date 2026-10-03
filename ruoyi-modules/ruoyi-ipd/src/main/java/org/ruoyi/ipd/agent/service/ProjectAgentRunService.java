@@ -35,9 +35,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
 import java.util.function.LongSupplier;
@@ -49,6 +52,8 @@ import java.util.function.LongSupplier;
  * 产物 apply 只调 {@link AiDocumentService#createGeneratedAuthorized}，不改其审核语义。
  */
 public class ProjectAgentRunService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProjectAgentRunService.class);
 
     private final boolean enabled;
     private final IpdCopilotAccess access;
@@ -545,6 +550,11 @@ public class ProjectAgentRunService {
         }
         IpdAgentRun current = reload(runId);
         status = AgentRunStatus.valueOf(current.getStatus());
+        if (status == AgentRunStatus.VERIFYING) {
+            // 校验驻留态无执行器写入权，取消直接落终态，不经 CANCEL_REQUESTED。
+            finishVerifying(current, AgentRunStatus.CANCELLED, null);
+            return currentStatus(runId);
+        }
         boolean detachedAguiPause = hasDurableAguiPause(current);
         if (AgentRunStatus.CANCELLABLE.contains(status)) {
             store.transition(runId, EnumSet.of(status), AgentRunStatus.CANCEL_REQUESTED, null,
@@ -962,6 +972,130 @@ public class ProjectAgentRunService {
     private IpdAgentRun reload(Long runId) {
         return store.findRun(runId)
             .orElseThrow(() -> new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "运行不存在"));
+    }
+
+    /**
+     * 校验驻留态复检（Quality 域 V-2）：只对本人 VERIFYING 运行重跑机器校验。
+     * 无 BLOCK 缺口即转 SUCCEEDED；仍有缺口保持 VERIFYING（幂等，可重复复检）。
+     *
+     * @param actor 会话身份
+     * @param runId 运行 ID
+     * @return runId + 当前状态
+     */
+    public ProjectAgentViews.RunStatus reverify(IpdActor actor, Long runId) {
+        requireEnabled();
+        if (artifactStore == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物校验未装配");
+        }
+        IpdAgentRun run = requireOwnRun(actor, runId);
+        if (!AgentRunStatus.VERIFYING.name().equals(run.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行不在校验驻留态");
+        }
+        IpdAgentArtifactVersion latest = latestArtifact(runId);
+        if (latest == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "校验驻留态缺少产物版本");
+        }
+        ProjectAgentArtifactVerifier.Verdict verdict =
+            new ProjectAgentArtifactVerifier().evaluate(run.getActionCode(), latest.getContent());
+        // 竞态收窄：校验与写 STEP 之间可能并发取消；写前二次确认仍驻留，避免终态事件后出现孤儿 STEP。
+        if (!AgentRunStatus.VERIFYING.name().equals(reload(runId).getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行状态已变化，请刷新");
+        }
+        // 复检证据先行、终态事件最后：终态事件出现后前端停止轮询，其后写入的事件不再送达。
+        appendVerifyingStep(run, verdict);
+        if (!verdict.hasBlockingGaps()) {
+            finishVerifying(run, AgentRunStatus.SUCCEEDED, latest.getContent());
+        }
+        return currentStatus(runId);
+    }
+
+    /** VERIFYING 收口：CAS 迁移 + 终态事件 + 成功时补需求回写；状态被并发改变时拒绝。 */
+    private void finishVerifying(IpdAgentRun run, AgentRunStatus target, String successBody) {
+        if (!store.transition(run.getId(), EnumSet.of(AgentRunStatus.VERIFYING), target, null,
+            new Date(clock.getAsLong()))) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "运行状态已变化，请刷新");
+        }
+        appendTerminalEvent(run, AgentEventType.RUN_FINISHED, Map.of("status", target.name()));
+        if (target == AgentRunStatus.SUCCEEDED) {
+            bindDemandAfterReverify(run, successBody);
+        }
+    }
+
+    /**
+     * 终态事件写入：seq 撞唯一键时按新鲜 maxSeq 有界重试。CAS 已提交后写不进是
+     * 「终态无终态事件」的不可自愈态（前端按终态事件停轮询），重试耗尽只留痕、不回滚终态。
+     */
+    private void appendTerminalEvent(IpdAgentRun run, AgentEventType type, Map<String, Object> payload) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            IpdAgentRunEvent event = ProjectAgentRunEvents.of(run.getId(), run.getTenantId(), run.getPersonId(),
+                store.maxSeq(run.getId()) + 1, type, toJson(payload), new Date(clock.getAsLong()));
+            if (store.appendEvent(event)) {
+                return;
+            }
+        }
+        log.warn("project_agent operation=VERIFY_FINISH status=EVENT_UNRESOLVED runId={} type={}",
+            run.getId(), type.name());
+    }
+
+    /**
+     * 复检收口成功后补做需求回写。首跑路径在执行句柄的 SUCCEEDED 回调触发；VERIFYING
+     * 驻留销毁句柄后由这里按冻结快照重建上下文（hit 置空，回写器内按全文兜底），失败不阻断终态。
+     */
+    private void bindDemandAfterReverify(IpdAgentRun run, String successBody) {
+        try {
+            ConfigSnapshot snapshot = frozenSnapshot(run);
+            String requirementId = snapshot == null ? null : snapshot.requirementId();
+            if (requirementId == null || successBody == null) {
+                return;
+            }
+            executor.bindDemandOnReverify(Long.valueOf(requirementId), successBody);
+        } catch (RuntimeException bindEx) {
+            log.warn("project_agent operation=DEMAND_BIND status=FAILED runId={} errorType={}",
+                run.getId(), bindEx.getClass().getName(), bindEx);
+        }
+    }
+
+    /** 复检结果挂 STEP，与首次校验（RunHandle#writeVerifyGapsStep）同构，recheck=true 区分。 */
+    private void appendVerifyingStep(IpdAgentRun run, ProjectAgentArtifactVerifier.Verdict verdict) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("kind", "VERIFY_GAPS");
+        payload.put("verdict", verdict.verdict());
+        payload.put("title", "产物校验复检");
+        payload.put("detail", "复检结论：" + verdict.summary());
+        List<Map<String, Object>> checks = new ArrayList<>(verdict.gaps().size());
+        for (ProjectAgentArtifactVerifier.Gap gap : verdict.gaps()) {
+            Map<String, Object> check = new LinkedHashMap<>();
+            check.put("id", gap.id());
+            check.put("status", gap.status());
+            check.put("severity", gap.severity().name());
+            check.put("evidencePath", gap.evidencePath());
+            check.put("gapSummary", gap.gapSummary());
+            checks.add(check);
+        }
+        payload.put("checks", checks);
+        payload.put("recheck", true);
+        appendEvent(run, AgentEventType.STEP, payload);
+    }
+
+    private void appendEvent(IpdAgentRun run, AgentEventType type, Map<String, Object> payload) {
+        IpdAgentRunEvent event = ProjectAgentRunEvents.of(run.getId(), run.getTenantId(), run.getPersonId(),
+            store.maxSeq(run.getId()) + 1, type, toJson(payload), new Date(clock.getAsLong()));
+        if (!store.appendEvent(event)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "事件序号冲突，请重试");
+        }
+    }
+
+    /** 校验驻留态产物行取 versionNo 最大（并列取 id 最大）；无行返回 null。 */
+    private IpdAgentArtifactVersion latestArtifact(Long runId) {
+        IpdAgentArtifactVersion latest = null;
+        for (IpdAgentArtifactVersion row : artifactStore.listByRunIds(List.of(runId))) {
+            if (latest == null || row.getVersionNo() > latest.getVersionNo()
+                || (row.getVersionNo().intValue() == latest.getVersionNo().intValue()
+                    && row.getId() > latest.getId())) {
+                latest = row;
+            }
+        }
+        return latest;
     }
 
     private ProjectAgentViews.RunStatus currentStatus(Long runId) {

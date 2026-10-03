@@ -32,7 +32,7 @@ class ProjectAgentRunFinishTransactionTest {
     void terminalEventFailureRollsBackSuccessAndArtifactThenCommitsFailure() {
         Fixture f = new Fixture();
         f.rejectTerminalOnce = true;
-        f.handle.onText("正文");
+        f.handle.onText("# 标题\n正文");
         f.handle.onComplete();
         assertThat(f.state).isEqualTo(AgentRunStatus.FAILED);
         assertThat(f.artifacts).isEmpty();
@@ -47,7 +47,7 @@ class ProjectAgentRunFinishTransactionTest {
     @Test
     void successReleasesOnlyAfterCommit() {
         Fixture f = new Fixture();
-        f.handle.onText("正文");
+        f.handle.onText("# 标题\n正文");
         f.handle.onComplete();
         assertThat(f.state).isEqualTo(AgentRunStatus.SUCCEEDED);
         assertThat(f.artifacts).hasSize(1);
@@ -61,7 +61,7 @@ class ProjectAgentRunFinishTransactionTest {
     void cancellationCommitsNoArtifact() {
         Fixture f = new Fixture();
         f.state = AgentRunStatus.CANCEL_REQUESTED;
-        f.handle.onText("正文");
+        f.handle.onText("# 标题\n正文");
         f.handle.onComplete();
         assertThat(f.state).isEqualTo(AgentRunStatus.CANCELLED);
         assertThat(f.artifacts).isEmpty();
@@ -73,7 +73,7 @@ class ProjectAgentRunFinishTransactionTest {
     void persistentFailureDoesNotPretendToCloseOrRelease() {
         Fixture f = new Fixture();
         f.rejectAllEvents = true;
-        f.handle.onText("正文");
+        f.handle.onText("# 标题\n正文");
         f.handle.onComplete();
         assertThat(f.state).isEqualTo(AgentRunStatus.RUNNING);
         assertThat(f.events).isEmpty();
@@ -103,7 +103,7 @@ class ProjectAgentRunFinishTransactionTest {
     void refreshesSequenceFromPersistedEvents() {
         Fixture f = new Fixture();
         f.events.add(IpdAgentRunEvent.builder().seq(5L).eventType("SOURCE").build());
-        f.handle.onText("正文");
+        f.handle.onText("# 标题\n正文");
         f.handle.onComplete();
         assertThat(f.events).extracting(IpdAgentRunEvent::getSeq).containsExactly(5L, 6L, 7L, 8L);
     }
@@ -112,7 +112,7 @@ class ProjectAgentRunFinishTransactionTest {
     void serializationFailureDoesNotPersistFakeEvent() {
         Fixture f = new Fixture();
         f.rejectSerialization = true;
-        f.handle.onText("正文");
+        f.handle.onText("# 标题\n正文");
         f.handle.onComplete();
         assertThat(f.events).isEmpty();
         assertThat(f.state).isEqualTo(AgentRunStatus.RUNNING);

@@ -49,6 +49,13 @@
             <artifactId>agentscope-extensions-model-openai</artifactId>
             <version>${agentscope.version}</version>
         </dependency>
+        <!-- [AgentScope 官方化] Gemini 官方模型扩展：SPI 注册 gemini: 前缀 provider，
+             AgentScopeModelFactory.providerAlias default 分支透传，零代码改动即接入。 -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-model-gemini</artifactId>
+            <version>${agentscope.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.ruoyi</groupId>

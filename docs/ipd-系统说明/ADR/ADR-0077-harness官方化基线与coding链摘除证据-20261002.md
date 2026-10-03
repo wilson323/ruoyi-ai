@@ -94,4 +94,31 @@
 - 摘链分片验收：`grep -rl "org.ruoyi.service.coding.harness" --include="*.java" ruoyi-modules/**/src/main` 归零（保留清单迁出后）+ `mvn -o -pl ruoyi-modules/ruoyi-chat test` 全绿 + `bash .claude/skills/agentscope-harness/scripts/verify.sh`（含 `--self-red` EXIT=0）+ langchain4j 棘轮维持 0。
 - 本 ADR 为 docs-only，无代码变更；marker 见 log.md。
 
+## 8. 生态扩展接入与有意不用清单（2026-10-03 增补，官方能力全量启用指令的落地台账）
+
+依据 owner 2026-10-02「AgentScope 官方能力全量启用、禁止禁用、禁止降级」指令，对官方 2.0.3 全部扩展模块逐一处置（版本差异均以 v2.0.3 git tag + 本地 .m2 jar 双重实证，官方仓 HEAD 为 2.0.4-SNAPSHOT 不可混用）：
+
+### 8.1 本轮新接入（2 项）
+
+| 模块 | 接入方式 | 证据 |
+|---|---|---|
+| core.tracing（OTel） | `OtelTracingMiddleware` 挂入两内核 builder 链（IPD 内核 OwnershipMiddleware 后、Chat configure 链首），未配 SDK 时官方 noop 零开销；构造器自带幂等 Reactor hook 注册，不占 legacy TracerRegistry 路径；ot api 1.61.0 + reactor-3.1 本就是 core 的 compile 依赖，零新增依赖 | 两内核源码 + `mvn -o -pl ruoyi-modules/ruoyi-chat test-compile` BUILD SUCCESS |
+| extensions-model-gemini | ruoyi-chat pom 加依赖即接入：SPI（META-INF/services/io.agentscope.core.model.spi.ModelProvider → GeminiModelProvider）+ `AgentScopeModelFactory.providerAlias` default 分支透传 `gemini:` 前缀 + 模型目录数据驱动无白名单，零代码改动 | jar 内 SPI 文件 unzip 实证；传递依赖 google-genai:1.45.0 已预取 |
+
+### 8.2 有意不用（禁止降级例外，均有实证理由）
+
+| 模块 | 不用理由 | 证据 |
+|---|---|---|
+| extensions-model-openai-official | **2.0.4 专属，v2.0.3 tag 无此模块**；项目钉 2.0.3，升版另立项 | `git show v2.0.3:modules/` 目录清单 |
+| RAG 扩展（bailian/dify/ragflow/haystack） | 双轨红线：项目自建 Weaviate + rag-simple 嵌入链已验收，引入即双轨 | AGENTS 双轨禁令 + 既有验收链 |
+| Starters ×12 / A2A / service（Vault/Sandbox 服务/Temporal） | ADR-0077 原有边界维持：RuoYi 自有 ProjectAgentConfiguration 手工装配，无 Spring Boot starter 场景；service 控制面不入本刀 | 本 ADR 前文边界节 |
+| extensions-scheduler / judge / training / studio / mem / channel 等 | 无对应业务场景；chat 内核与 IPD 运行链无消费方 | 主代码 import 面 grep（2026-10-02 轮） |
+| core.credential / core.workspace 包 | 无凭据提供器与 workspace 消费场景；沙箱走 harness 内置 filesystem | 同上 |
+
+### 8.3 Evaluation（黄域）
+
+跨版本行为评估不随本轮落地，维持《Quality 域 Verifier 缺口设计》§八「黄域另立」边界；技能级已有 SHA-256 清单比对，行为级基线待 owner 另立专项。
+
+- marker adr-0077-ecosystem-registry-20261003
+
 - marker adr-0077-harness-official-baseline-20261002

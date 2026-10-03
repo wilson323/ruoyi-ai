@@ -17,9 +17,11 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -55,6 +57,8 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     private long lastTextFlushAt;
     private final StringBuilder fullText = new StringBuilder();
     private final ProjectAgentCompletionGate completion;
+    /** Quality 域 V-2 产物校验器；生产默认实例，测试可注入替身。 */
+    private ProjectAgentArtifactVerifier verifier = new ProjectAgentArtifactVerifier();
     private long seq;
     private boolean closed;
     private boolean paused;
@@ -91,6 +95,11 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         this.onClosed = onClosed == null ? () -> { } : onClosed;
         this.seq = store.maxSeq(runId);
         this.lastStatusProbe = clock.getAsLong();
+    }
+
+    /** Quality 域 V-2 校验器注入；空引用回落默认实例。 */
+    public void setVerifier(ProjectAgentArtifactVerifier verifier) {
+        this.verifier = verifier == null ? new ProjectAgentArtifactVerifier() : verifier;
     }
 
     /** 生产执行器绑定同数据源事务；直接构造的内存测试保留兼容。 */
@@ -538,13 +547,26 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
                 throw new ArtifactPersistenceFailure(failure);
             }
         }
+        ProjectAgentArtifactVerifier.Verdict verifyVerdict = null;
+        if (draft != null) {
+            // Quality 域 V-2：产物已落库后机器校验；BLOCK 缺口停 VERIFYING 不判 FAILED（设计 §4.2/§4.3）。
+            verifyVerdict = verifier.evaluate(actionCode, deliverableBody());
+            if (verifyVerdict.hasBlockingGaps()) {
+                effective = AgentRunStatus.VERIFYING;
+                code = null;
+            }
+        }
         if (!store.transition(runId, EnumSet.of(current), effective, code, new Date(clock.getAsLong()))) {
             throw new FinishRace();
         }
         if (draft != null) {
             writeArtifactEvent(draft);
         }
-        writeTerminal(effective, code, completionReason);
+        if (effective == AgentRunStatus.VERIFYING) {
+            writeVerifyGapsStep(verifyVerdict);
+        } else {
+            writeTerminal(effective, code, completionReason);
+        }
         if (effective == AgentRunStatus.SUCCEEDED) {
             try { onSucceeded.accept(deliverableBody()); } catch (RuntimeException bindEx) {
                 log.warn("project_agent operation=DEMAND_BIND status=FAILED runId={} errorType={}", runId, bindEx.getClass().getName());
@@ -689,6 +711,27 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         write(AgentEventType.TEXT_DELTA, payload);
         textBuffer.setLength(0);
         lastTextFlushAt = clock.getAsLong();
+    }
+
+    /** 校验缺口挂 STEP（kind=VERIFY_GAPS 复用既有事件类型，不新增枚举；缺口可寻址）。 */
+    private void writeVerifyGapsStep(ProjectAgentArtifactVerifier.Verdict verdict) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("kind", "VERIFY_GAPS");
+        payload.put("verdict", ProjectAgentArtifactVerifier.Verdict.GAPS);
+        payload.put("title", "产物校验");
+        payload.put("detail", "产物已生成，机器校验发现缺口，等待补证据后复检。" + verdict.summary());
+        List<Map<String, Object>> checks = new ArrayList<>();
+        for (ProjectAgentArtifactVerifier.Gap gap : verdict.gaps()) {
+            Map<String, Object> check = new LinkedHashMap<>();
+            check.put("id", gap.id());
+            check.put("status", gap.status());
+            check.put("severity", gap.severity().name());
+            check.put("evidencePath", gap.evidencePath());
+            check.put("gapSummary", gap.gapSummary());
+            checks.add(check);
+        }
+        payload.put("checks", checks);
+        write(AgentEventType.STEP, payload);
     }
 
     private void writeTerminal(AgentRunStatus status, String errorCode,

@@ -41,12 +41,27 @@ class AgentRunStatusTest {
     @Test
     @DisplayName("sourcesOf 与 canTransitTo 一致")
     void sourcesMatchTransitionTable() {
-        assertThat(AgentRunStatus.sourcesOf(AgentRunStatus.SUCCEEDED)).containsExactly(AgentRunStatus.RUNNING);
+        assertThat(AgentRunStatus.sourcesOf(AgentRunStatus.SUCCEEDED))
+            .containsExactlyInAnyOrder(AgentRunStatus.RUNNING, AgentRunStatus.VERIFYING);
         assertThat(AgentRunStatus.sourcesOf(AgentRunStatus.CANCELLED))
-            .containsExactlyInAnyOrder(AgentRunStatus.PENDING, AgentRunStatus.CANCEL_REQUESTED);
+            .containsExactlyInAnyOrder(AgentRunStatus.PENDING, AgentRunStatus.CANCEL_REQUESTED, AgentRunStatus.VERIFYING);
         assertThat(AgentRunStatus.sourcesOf(AgentRunStatus.PENDING)).isEmpty();
         assertThat(AgentRunStatus.sourcesOf(AgentRunStatus.RUNNING))
             .isEqualTo(EnumSet.of(AgentRunStatus.PENDING, AgentRunStatus.WAITING_APPROVAL));
+    }
+
+    @Test
+    @DisplayName("VERIFYING 驻留态：只能去 SUCCEEDED/CANCELLED，不属于 ACTIVE/可取消两段式")
+    void verifyingIsResidentNotActive() {
+        assertThat(AgentRunStatus.RUNNING.canTransitTo(AgentRunStatus.VERIFYING)).isTrue();
+        assertThat(AgentRunStatus.VERIFYING.canTransitTo(AgentRunStatus.SUCCEEDED)).isTrue();
+        assertThat(AgentRunStatus.VERIFYING.canTransitTo(AgentRunStatus.CANCELLED)).isTrue();
+        assertThat(AgentRunStatus.VERIFYING.canTransitTo(AgentRunStatus.FAILED))
+            .as("校验驻留只收口成功或取消，不判失败").isFalse();
+        assertThat(AgentRunStatus.VERIFYING.canTransitTo(AgentRunStatus.RUNNING))
+            .as("驻留态不回运行，复检只收口终态").isFalse();
+        assertThat(AgentRunStatus.ACTIVE).doesNotContain(AgentRunStatus.VERIFYING);
+        assertThat(AgentRunStatus.CANCELLABLE).doesNotContain(AgentRunStatus.VERIFYING);
     }
 
     @Test
