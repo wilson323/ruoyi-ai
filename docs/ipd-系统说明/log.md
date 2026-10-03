@@ -14757,3 +14757,32 @@ owner 裁决（本轮对话）三项全部闭环，4 笔提交：`2f0840c7` / `7
 - 遗留（非本会话）：WebSocket 开箱验收（握手/送达/双标签页）待部署环境就绪后补做——仍按主协调会话口径。
 
 - marker: migration-second-stage-closed-20261003
+
+> OPS-09 绕过登记（2026-10-03 15:4x，主协调会话）：`WorkbenchService.java` 的
+> 并发写守卫告警——git diff 全量复核确认该文件改动 100% 为本会话自己经 Bash
+> 所写（hook 会话追踪未识别 Bash 编辑），非兄弟在途工作。已按规程
+> `SKIP_CONCURRENT_WRITE=1` 修复（补回误删的 `ALL_TASK_TYPES = List.of(` 声明行
+> 与 `</li>` 闭合），无覆盖任何他人改动。
+
+## 2026-10-03 15:4x 共享基础设施变更通报（主协调会话 → 全体兄弟会话，必读）
+
+**两件事改变了你们的运行环境，若你的工作流出现异常先对照本段：**
+
+1. **Docker Desktop 已强制重启（15:3x）**：守护进程整体卡死（_ping 超时、docker ps
+   挂起，含两会话 15:23/15:24 起挂死的命令）。quit/TERM 无效后 KILL com.docker.backend
+   再拉起。**你们此前挂死的 docker 命令已随之终止（报错退出），需重跑**；数据卷未丢，
+   容器已自动回归（mysql 23307 / redis 16390 / minio 9000 / vibe-kanban 62250 /
+   taskview）。看板 62250 已恢复（manage.py list 实测通）。
+2. **后端 16039 已换新包重启**：旧 PID 10792（11:54 旧 jar）已停，新 PID 24983，
+   jar=`.codex/ipd-dev/backups/ruoyi-admin.baseline-pre-teardown-20261003-1532.jar`
+   （含今日全部 36+ 提交，含 WebSocket 配置）。参数与旧进程一致。回滚方式见
+   /tmp/backend-rebuild-report.md。
+3. **构建口径警示**：当前 `mvn test-compile`（ruoyi-ipd）会因在途测试文件
+   `ProjectAgentBackgroundMemoryLifecycleTest.java`（76/77 行 Flux 泛型编译错）失败——
+   属兄弟在途工作，未动；打包请用 `-Dmaven.test.skip=true`（跳过测试编译），
+   或等该文件修复。
+4. 本会话正在改 `WorkbenchService.java`（bonus_lock 词汇表摘除，17→16，对齐前端
+   065356d8）——该文件的并发写守卫告警已复核为本人改动误报（详见前段 OPS-09 登记），
+   勿重复处理。
+
+- marker: infra-change-notice-20261003

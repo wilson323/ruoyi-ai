@@ -35,7 +35,8 @@ import java.util.Objects;
  * 真实数据源（无任何 mock）：
  * - 待我处理 / 临期超期 / 已完成：WorkbenchAggregator 聚合器列表统一投递
  *   （P1 方向 B：taskType 按域拆分到 org.ruoyi.ipd.workbench 各实现，summary() 只做调度；
- *   WB-17-1 现态已实现 9 类（清单见 ALL_TASK_TYPES javadoc），剩余 8 类登记同下）；
+ *   WB-17-1 现态已实现 9 类（清单见 ALL_TASK_TYPES javadoc），剩余 7 类登记同下；
+ *   （bonus_lock 已于 2026-10-03 随奖金池退役摘除，17→16）；
  * - 未读通知：notification_events（receiver = 当前人，unread）；
  * - 我的当前推进：当前项目 currentStage 的第一个未完成动作（stageActionMapper 仅剩此职责 + completed 已移入 StageSignAggregator）。
  *
@@ -65,10 +66,9 @@ public class WorkbenchService implements IWorkbenchService {
      *     旧登记「DDL 仅草案未 apply」作废）：waiver_review / rd_replacement /
      *     retirement_review / capacity_approval——Java 实体/Mapper/写入 API 全零，
      *     投递 pending_expr 与链路语义待 owner 拍板（缺表4类-14问澄清）</li>
-     *   <li>锚/态缺 2 类：receipt_review——receipt_ledgers 实为销售回款台账，
+     *   <li>锚/态缺 1 类：receipt_review——receipt_ledgers 实为销售回款台账，
      *     无 status/reviewer 锚列，「收据待审」单据态不存在（扩列 vs 新表待拍板）；
-     *     bonus_lock——bonus_pools 状态机仅 DRAFT→CONFIRMED→DISTRIBUTED，
-     *     无「待锁定」前置态（新增态+生产者 vs DRAFT+窗口派生，口径二选一待拍板）</li>
+     *     bonus_lock——已于 2026-10-03 随奖金池退役从词汇表移除（原「锚/态缺」条目作废）</li>
      *   <li>真缺表 2 类：change_implementation / change_verify——change_implementations /
      *     change_implementation_evidence 真库无表（DDL 草稿
      *     20260925-wb171-draft-missing-tables.sql 未 apply，待 owner 拍板 + DBA 窗口）</li>
@@ -87,8 +87,11 @@ public class WorkbenchService implements IWorkbenchService {
     /** tasks() limit 契约：默认 50，上限 200（防拉全表拖垮工作台）。 */
     private static final int TASKS_DEFAULT_LIMIT = 50;
     private static final int TASKS_MAX_LIMIT = 200;
+    // 2026-10-03：bonus_lock 已随「奖金池」域退役移除（17→16，与前端 WORKBENCH_TASK_TYPE_TEXT 对齐；
+    // 该类型本就无生产锚态，见下方 javadoc 历史说明）。receipt_review 虽属已退役的回款台账域，
+    // 但它是「spec 页03 权威 17 类」词汇表成员，说明书口径修订属 owner 决策，暂保留。
     private static final List<String> ALL_TASK_TYPES = List.of(
-        "bonus_lock", "capacity_approval", "change_implementation", "change_verify",
+        "capacity_approval", "change_implementation", "change_verify",
         "closeout", "contribution_confirm", "deletion_review", "handover",
         "key_gate", "key_gate_arbitration", "kpi_fill", "rd_replacement",
         "receipt_review", "retirement_review", "stage_sign", "strategic_change", "waiver_review");
