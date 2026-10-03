@@ -14,6 +14,23 @@
 #   - 不覆盖 R30+ 治理 hook(避免撞车)
 #   - 安装方式:pre-commit.d/ 子目录方式,不直接覆盖 .git/hooks/pre-commit
 #   - 链路:.githooks/pre-commit → .git/hooks/pre-commit → 调 pre-commit.d/*.sh → 调本 hook
+#
+# ============================================================================
+# 2026-10-03 现状核实(接线前必读：直接接线会立刻冻结所有 Java 提交)
+# ============================================================================
+# ① **本 hook 当前没有任何东西调用它**。全仓 grep 只命中它自己、
+#    `scripts/install-coverage-pre-commit.sh`(安装脚本)与文档——不在
+#    `.claude/hooks/check-pre-commit.sh` 的门禁链里。即它现在不保护任何提交。
+# ② 本文件头部描述的三段式安装链(`.githooks/` → `.git/hooks/pre-commit` →
+#    `pre-commit.d/*.sh`)**在本仓已不存在**。本仓走 `git config core.hooksPath`
+#    = `.claude/hooks`，活动入口是 `.claude/hooks/pre-commit` → `check-pre-commit.sh`。
+#    照旧描述去安装会装到一个没人读的目录。
+# ③ **不要直接接线**：它调用的 `scripts/check-test-coverage-by-domain.sh` 当前
+#    实测为红——`projects` 40% / `sop` 11% / `kpi` 56% / `launch_date` 0 文件
+#    (阈值 60%)。接线即等于「任何带 .java 的提交一律被拒」。那 4 个域的处置
+#    (补测试 / 调阈值 / 退役该域)是独立决策，先定完再接线。
+#    (注：已退役的 `coefficient` 域于同日从该脚本 DOMAINS 摘除，属另一笔。)
+# ============================================================================
 
 set -e
 
