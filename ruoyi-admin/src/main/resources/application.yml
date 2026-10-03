@@ -280,6 +280,9 @@ tenant:
     # 链路追踪监控表：运维需跨租户全局查看，且 trace_node 在异步线程写入、租户上下文不传播，故排除租户过滤
     - trace_run
     - trace_node
+    # 智能体长期记忆：record() 走官方 StaticLongTermMemoryHook 的异步调度线程，无会话租户上下文；
+    # 隔离靠 project_id + person_id 复合条件（见 ProjectScopedLongTermMemory / IpdAgentMemoryMapper）
+    - ipd_agent_memory
     # IPD 单企业私有部署：26+2 张业务表统一排除租户过滤（表结构带 tenant_id 默认 000000，无多租户语义）
     # 26 张基线表 + 2 张 Round 8 新增表（launch_date_change_requests / project_cert_items）
     - persons

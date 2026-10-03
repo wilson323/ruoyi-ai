@@ -127,6 +127,21 @@ public class ProjectAgentConfiguration {
         return recovery;
     }
 
+    @Bean
+    public org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts projectAgentProductionArtifacts(
+            AgentRunStore runs, ArtifactVersionStore versions, PersonMapper persons, IpdCopilotAccess access,
+            PlatformTransactionManager transactionManager,
+            @Value("${ipd.project-agent.workspace-root:${java.io.tmpdir}/ipd-project-agent-workspace}") Path workspaceRoot) {
+        return new org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts(runs, versions, persons,
+            access, transactionManager, workspaceRoot.resolve(".artifact-delivery"));
+    }
+
+    @Bean
+    public org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess projectAgentArtifactAccess(
+            org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts provider) {
+        return new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess(provider);
+    }
+
     /**
      * 官方执行内核（恒定装配）。
      *
@@ -149,7 +164,11 @@ public class ProjectAgentConfiguration {
             @Value("${ipd.project-agent.workspace-root:${java.io.tmpdir}/ipd-project-agent-workspace}") Path workspaceRoot,
             @Value("${ipd.project-agent.max-iters:8}") int maxIters,
             ProductLineNameMapper lineNames,
+            org.ruoyi.ipd.agent.servicebridge.ProjectAgentProductionArtifacts artifactProvider,
+            @org.springframework.beans.factory.annotation.Qualifier(ProjectAgentOfficialCollaborationRedis.STORE_BEAN)
+                io.agentscope.harness.agent.filesystem.remote.store.BaseStore collaborationStore,
             IpdCopilotAccess runtimeAccess, PersonMapper runtimePersons,
+            org.ruoyi.ipd.mapper.IpdAgentMemoryMapper memoryMapper,
             @org.springframework.beans.factory.annotation.Qualifier("agentScopeAuditHook") io.agentscope.core.hook.Hook auditHook) {
         configureFiniteShutdown(shutdownManager());
         ProjectKnowledgeVectorSearch knowledgeSearch = new ProjectKnowledgeVectorSearch(
@@ -166,6 +185,10 @@ public class ProjectAgentConfiguration {
         AgentScopeProjectAgentKernel kernel = new AgentScopeProjectAgentKernel(new ProjectAgentModelAssembler(aiGateway),
             retriever, workspaceRoot, maxIters, lineNames, auditHook);
         kernel.setStateStore(stateStore);
+        // 长期记忆（官方 LongTermMemory SPI 自实现）：按项目+人分区，非业务权威
+        kernel.setLongTermMemoryMapper(memoryMapper);
+        kernel.setArtifactProviderFactory(artifactProvider);
+        kernel.setCollaborationStore(collaborationStore);
         kernel.setRuntimeAccess(spec -> requireCurrentRuntimeAccess(runtimeAccess, runtimePersons, spec));
         return kernel;
     }
@@ -274,13 +297,15 @@ public class ProjectAgentConfiguration {
             ProjectAgentRunExecutor executor, ObjectMapper mapper,
             @Value("${ipd.project-agent.run-timeout-seconds:300}") long timeoutSeconds,
             ProjectAgentModelCatalog modelCatalog,
-            StageActionService stageActionService, ProductLineNameMapper lineNames) {
+            StageActionService stageActionService, ProductLineNameMapper lineNames,
+            org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess) {
         ProjectAgentRunService service = new ProjectAgentRunService(true, access, planner, store,
             artifactStore, documentService, projectMapper, productMapper, executor, mapper,
             System::currentTimeMillis, Duration.ofSeconds(Math.max(30, timeoutSeconds)));
         service.setModelCatalog(modelCatalog);
         service.setStageActionService(stageActionService);
         service.setProductLineNames(lineNames);
+        service.setArtifactAccess(artifactAccess);
         return service;
     }
 

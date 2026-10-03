@@ -57,7 +57,11 @@ public final class ProjectAgentAguiPublicEvent {
         }
         if ("CUSTOM".equals(type)) {
             String name = frame.path("name").asText();
-            if (name.startsWith("subagent.")) removeInternal(frame.path("value").path("metadata"));
+            // 官方保留名族 subagent.*（官方 converter 打开时）与本仓 ipd.subagent_thinking 同走清理，
+            // 否则改名后该帧的内部 metadata 会漏出。
+            if (name.startsWith("subagent.") || name.startsWith("ipd.subagent_")) {
+                removeInternal(frame.path("value").path("metadata"));
+            }
         }
     }
 

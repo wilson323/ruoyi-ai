@@ -97,6 +97,28 @@ class ActionCatalogTest {
         assertThat(v11.applicable()).isEqualTo("SOL");
         assertThat(v11.blocking()).isFalse();
     }
+    /**
+     * 回归：省略 {@code actionCode} 的创建请求曾在生产 500。
+     *
+     * <p>链路：{@code ProjectAgentRunService#loadProjectFacts → ActionCatalog.docTypeOf(null)
+     * → resolveCode(null) → ALIASES.getOrDefault(null, null)}。
+     * {@code ALIASES} 由 {@code Map.of} 构造，其 {@code MapN.probe} 会对 null 调
+     * {@code hashCode()} 抛 NPE；而 {@code actionCode} 在 {@code AgentRunCreateReq} 契约上可空。
+     *
+     * <p>2026-10-02 22:43 真人员旅程验收实测：不带 actionCode → {@code code=90001}；
+     * 带 actionCode=C01 → {@code code=0} 且 run SUCCEEDED。
+     */
+    @Test
+    @DisplayName("空动作码：resolveCode/docTypeOf 返回 null 而非 NPE（省略 actionCode 的创建请求 500 回归）")
+    void nullActionCodeIsNotAnNpe() {
+        assertThat(ActionCatalog.resolveCode(null)).isNull();
+        assertThat(ActionCatalog.docTypeOf(null)).isNull();
+        // 非空路径不得回退：别名归一与 docType 归类都保持原语义
+        assertThat(ActionCatalog.resolveCode("Z01")).isEqualTo("D11");
+        assertThat(ActionCatalog.resolveCode("C01")).isEqualTo("C01");
+        assertThat(ActionCatalog.docTypeOf("C01")).isEqualTo("MARKET_RESEARCH");
+    }
+
     @Test
     @DisplayName("Z 系别名归一：Z01-05 解析为 D11/V10/C12/V11/V12（主 Prompt v3 L513-517）")
     void aliasResolution() {

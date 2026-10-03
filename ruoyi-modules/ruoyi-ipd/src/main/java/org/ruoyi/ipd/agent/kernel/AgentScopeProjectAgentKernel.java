@@ -27,6 +27,7 @@ import io.agentscope.core.middleware.ActingInput;
 import java.time.Duration;
 import java.util.function.Function;
 import io.agentscope.harness.agent.HarnessAgent;
+import org.ruoyi.ipd.mapper.IpdAgentMemoryMapper;
 import io.agentscope.harness.agent.skill.curator.SkillCuratorConfig;
 import io.agentscope.harness.agent.tool.SkillManageConfig;
 import io.agentscope.harness.agent.memory.compaction.CompactionConfig;
@@ -105,9 +106,15 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
     private final int maxIters;
     private final ProductLineNameMapper lineNames;
     private final io.agentscope.core.hook.Hook auditHook;
+    private volatile IpdAgentMemoryMapper longTermMemoryMapper;
     private io.agentscope.core.state.AgentStateStore stateStore = new InMemoryAgentStateStore();
     private java.util.function.Consumer<ProjectAgentRunSpec> runtimeAccess = spec -> { };
     private ProjectAgentArtifactProviderFactory artifactProviderFactory;
+    private io.agentscope.harness.agent.filesystem.remote.store.BaseStore collaborationStore;
+
+    public void setCollaborationStore(io.agentscope.harness.agent.filesystem.remote.store.BaseStore store) {
+        collaborationStore = Objects.requireNonNull(store, "Official collaboration store is required");
+    }
 
     /**
      * @param modelAssembler 模型装配
@@ -150,6 +157,14 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
     /** 生产配置复用SDK Redis状态存储；业务完成仍由原run/事件权威。 */
     public void setStateStore(io.agentscope.core.state.AgentStateStore store) {
         this.stateStore = Objects.requireNonNull(store, "stateStore");
+    }
+
+    /**
+     * 绑定长期记忆存储；未绑定时本仓不挂官方 LongTermMemory hook（记忆能力缺席，
+     * **不是**降级开关——装配层不存在「关掉记忆」这个动作）。
+     */
+    public void setLongTermMemoryMapper(IpdAgentMemoryMapper mapper) {
+        this.longTermMemoryMapper = mapper;
     }
 
     /** 生产配置绑定当前 Person/租户/项目权限的原业务访问服务；不导入 SDK 权限快照。 */
@@ -255,14 +270,18 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         var deadlineReached = new java.util.concurrent.atomic.AtomicBoolean();
         return Flux.using(() -> agent,
                 a -> spec.serverChildResumes().isEmpty() ? a.streamEvents(messages, runtimeContext)
-                    : new ProjectAgentChildResumeDispatcher(managed.subagentScope(),managed.state(),sink::requireChildResumeConsumed)
+                    : new ProjectAgentChildResumeDispatcher(managed.subagentScope(),managed.state(),sink::requireChildResumeConsumed,
+                        sink::recordChildCompletion,sink::loadChildCompletions)
                         .resume(a,runtimeContext,spec.serverChildResumes().stream().map(item ->
                             new ProjectAgentChildResumeDispatcher.Resume(item.approval(),item.messages())).toList(),messages),
                 a -> {
                     deadline.cancel();
-                    if (!sink.isPaused()) a.interrupt(runtimeContext);
+                    if (!sink.isPaused() && !bridge.hasPendingPause()) a.interrupt(runtimeContext);
                     // close 失败必须向流传播并保留检查点，不能在 finally 内删掉恢复依据。
-                    try { a.close(); } finally {
+                    try {
+                        a.close();
+                        if (managed.childConsumers() != null) managed.childConsumers().closeChildren();
+                    } finally {
                         if (managed.artifactProvider() != null) managed.artifactProvider().claims().close();
                     }
                     try {
@@ -275,6 +294,12 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                         // 旧owner只释放SDK资源，不得清理新epoch的checkpoint。
                     }
                 })
+            .concatWith(Mono.defer(() -> {
+                // 官方 SESSION release 先于流完成；警告日志不能作为归档成功证据。
+                var receipts = managed.filesystem().verifyReleased();
+                if (!receipts.isEmpty()) sink.onStep("SANDBOX_ARCHIVED", Map.of("snapshots", receipts));
+                return Mono.empty();
+            }))
             // takeUntilOther 的伴随流须正常发信号才能取消主订阅；伴随流报错只向下游报错。
             .takeUntilOther(Mono.delay(spec.timeout()).doOnNext(ignored -> deadlineReached.set(true)))
             .concatWith(Mono.defer(() -> deadlineReached.get()
@@ -300,7 +325,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                                 ProjectAgentChildLineageRegistry lineage,
                                 ProjectAgentArtifactProviderFactory.Provider artifactProvider,
                                 java.util.concurrent.atomic.AtomicBoolean terminalCommitted,
-                                boolean requiresCommittedReceipt, ProjectAgentSubagentScopeMiddleware subagentScope) {
+                                boolean requiresCommittedReceipt, ProjectAgentSubagentScopeMiddleware subagentScope,
+                                ProjectAgentOfficialSandbox.ManagedFilesystem filesystem,
+                                ProjectAgentChildConsumers childConsumers) {
         boolean preserveCheckpoint(ProjectAgentRunSpec spec) {
             return !terminalCommitted.get() && (requiresCommittedReceipt || preserveApprovalCheckpoint(spec, lineage));
         }
@@ -356,10 +383,12 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         var parentRef = new java.util.concurrent.atomic.AtomicReference<HarnessAgent>();
         var trustedScope = KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
             ProjectAgentConstants.AGENT_ID, String.valueOf(spec.runId()));
+        var childConsumersRef = new java.util.concurrent.atomic.AtomicReference<ProjectAgentChildConsumers>();
         var subagentScope = new ProjectAgentSubagentScopeMiddleware(
             new ProjectAgentFoundationTools.Scope(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
                 String.valueOf(spec.runId()), workspace), trustedScope.toRuntimeContext(),
-            sink::requireActiveOwnership, (leaf, parent, context) -> leaf).bindParent(parentRef::get);
+            sink::requireActiveOwnership, (leaf, parent, context) ->
+                childConsumersRef.get() == null ? leaf : childConsumersRef.get().bind(leaf, parent, context)).bindParent(parentRef::get);
         subagentScope.lineage().bindPolicy(ProjectAgentChildPreflight.policyHash(spec));
         subagentScope.onRegistered((actor, context) -> {
             io.agentscope.core.ReActAgent actual = actor instanceof HarnessAgent child
@@ -380,6 +409,15 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         boolean requiresCommittedReceipt = true;
         ProjectAgentSafeTranscriptStore safeTranscript = new ProjectAgentSafeTranscriptStore(
             spec.model().apiKey() == null ? List.of() : List.of(spec.model().apiKey()));
+        ProjectAgentChildConsumers childConsumers = artifactProvider == null ? null :
+            new ProjectAgentChildConsumers(parentRef::get, trustedScope.toRuntimeContext(), safeTranscript,
+                spec.tenantId(), artifactProvider.target(),
+                context -> Mono.fromRunnable(sink::requireActiveOwnership), sink::requireActiveOwnership)
+                .failureSink(failure -> sink.onStep("CHILD_EXECUTION_FAILED", Map.of(
+                    "childSession", failure.childSession(), "reason", failure.reasonCode(),
+                    "category", failure.exceptionCategory())))
+                .childLineage(subagentScope.lineage());
+        childConsumersRef.set(childConsumers);
         ProjectAgentEventSink checkpointOwnership = checkpointOwnership(sink);
         ProjectAgentTemporaryStateStore temporaryState = new ProjectAgentTemporaryStateStore(stateStore,
             KernelScopeKey.of(String.valueOf(spec.projectId()), String.valueOf(spec.personId()),
@@ -389,6 +427,17 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                 && !preserveApprovalCheckpoint(spec, subagentScope.lineage())) temporaryState.sealAndDelete();
         });
         org.ruoyi.chat.kernel.OfficialAgentTraceLogging.install();
+        var filesystem = ProjectAgentOfficialSandbox.managedFilesystem(workspace, "python:3.13-alpine", sink);
+        // 官方 StaticLongTermMemoryHook 需要一个 core Memory；AgentState 在 build 之后才有，
+        // 故用官方 AgentStateMemoryView(Supplier) + AtomicReference 延迟解析，不自研 holder。
+        var agentStateRef = new java.util.concurrent.atomic.AtomicReference<io.agentscope.core.state.AgentState>();
+        var shortTermMemory = new io.agentscope.core.memory.AgentStateMemoryView(agentStateRef::get);
+        var longTermMemory = longTermMemoryMapper == null ? null
+            : new ProjectScopedLongTermMemory(spec.projectId(), spec.personId(), spec.runId(),
+                  longTermMemoryMapper, model);
+        // 记忆抽取复用计量模型，token 成本与主运行同账，不留计量盲区。
+        var meteredModel = new ProjectAgentMeteredModel(model, sink, checkpointOwnership);
+
         HarnessAgent.Builder builder = officialFactoryBuilder(spec,workspace,selectedSkills)
             .enableSkillManageTool(SkillManageConfig.defaults())
             .enableSkillPromotionGate(skillGovernance, skillGovernance)
@@ -405,7 +454,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .middleware(subagentScope)
             .middleware(officialGovernance)
             .middleware(new ProjectAgentSkillRuntimeGuard(selectedSkills, spec, sink))
-            .model(new ProjectAgentMeteredModel(model, sink, checkpointOwnership))
+            .model(meteredModel)
             .permissionContext(ProjectAgentOfficialPermissions.workspace())
             .hook(auditHook)
             .middleware(deadline)
@@ -419,12 +468,22 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             // 此处显式声明与默认等价的配置，固化意图防官方默认漂移；溢出硬失败仅在 disableCompaction 时出现。
             .compaction(CompactionConfig.builder().build())
             // 官方 provider 负责文件与命令执行，缺失镜像明确失败，不回退主机执行。
-            .filesystem(ProjectAgentOfficialSandbox.filesystem(workspace, "python:3.13-alpine", sink))
+            .filesystem(filesystem.spec())
             // SDK checkpoint与业务run状态分离，session使用可信person/run身份。
             .stateStore(temporaryState)
             .toolsConfig(toolsConfig)
             .workspace(workspace);
         if (artifactProvider != null) builder.artifactDeliveryTarget(artifactProvider.target());
+        if (childConsumers != null) builder.middleware(childConsumers);
+        if (collaborationStore != null) {
+            var collaboration = ProjectAgentOfficialCollaboration.create(trustedScope, collaborationStore,
+                new io.agentscope.harness.agent.filesystem.local.LocalFilesystem(workspace, true, 16), sink);
+            ProjectAgentOfficialCollaboration.attach(builder, collaboration, trustedScope);
+        }
+        if (longTermMemory != null) {
+            // 官方 Hook 实现，非自研平替；retrieve 出来的记忆带非权威标注。
+            builder.hook(new io.agentscope.core.memory.StaticLongTermMemoryHook(longTermMemory, shortTermMemory));
+        }
         HarnessAgent built;
         try { built = builder.build(); }
         catch (RuntimeException failure) {
@@ -434,6 +493,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         try {
             // SDK build 与子任务会追加工具；统一在装配后和每次 acting 前挂官方权限扩展。
             parentRef.set(built);
+            agentStateRef.set(built.getAgentState());
             subagentScope.lineage().bindRoot(built);
             safeTranscript.bind(built.getWorkspaceManager());
             skillGovernance.bind(built.getWorkspaceManager());
@@ -452,7 +512,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             }
             officialGovernance.bind(built.getToolkit());
             return new ManagedAgent(built, temporaryState, subagentScope.lineage(), artifactProvider,
-                terminalCommitted, requiresCommittedReceipt, subagentScope);
+                terminalCommitted, requiresCommittedReceipt, subagentScope, filesystem, childConsumers);
         } catch (RuntimeException failure) {
             try { built.close(); } catch (RuntimeException cleanupFailure) { failure.addSuppressed(cleanupFailure); }
             finally { if (artifactProvider != null) artifactProvider.claims().close(); }
@@ -717,16 +777,13 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             if (event.getSource() != null && !event.getSource().isBlank()) return;
             if (event instanceof io.agentscope.core.event.AgentEndEvent && childLineage != null && childLineage.hasPendingChildApprovals()) {
                 protectChildCheckpoint = true;
-                long rootVersion = checkpointVersion.getAsLong();
-                pendingChildren = childLineage.checkpointApprovals(childState, rootVersion);
-                sink.onChildInterrupt(pendingChildren, rootVersion);
-                childPauseRequested = true;
+                // 只收集暂停；官方释放、归档与最终检查点保存必须仍持有原租约。
                 return;
             }
             if (event instanceof io.agentscope.core.event.AgentResultEvent result) {
                 var pending = agui.pendingInterrupts();
                 if (!pending.isEmpty()) {
-                    sink.onAguiInterrupt(pending, checkpointVersion.getAsLong());
+                    protectChildCheckpoint = true;
                     return;
                 }
                 String finalText = org.ruoyi.chat.kernel.KernelFinalResponse.text(result.getResult(), accumulated.toString());
@@ -761,7 +818,25 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             sink.onError(timeout ? ERR_RUN_TIMEOUT : ERR_STREAM_ERROR);
         }
 
+        private boolean hasPendingPause() {
+            return protectChildCheckpoint || !agui.pendingInterrupts().isEmpty()
+                || childLineage != null && childLineage.hasPendingChildApprovals();
+        }
+
         private void complete() {
+            // Child-only resumption can suspend again without executing or ending the original parent.
+            // Publish from its already persisted checkpoint; never manufacture a parent END/result.
+            if (childLineage != null && childLineage.hasPendingChildApprovals() && !childPauseRequested) {
+                protectChildCheckpoint = true;
+                long rootVersion = checkpointVersion.getAsLong();
+                pendingChildren = childLineage.checkpointApprovals(childState, rootVersion);
+                sink.onChildInterrupt(pendingChildren, rootVersion);
+                childPauseRequested = true;
+            }
+            if (!childPauseRequested && !agui.pendingInterrupts().isEmpty()) {
+                sink.onAguiInterrupt(agui.pendingInterrupts(), checkpointVersion.getAsLong());
+                return;
+            }
             if (protectChildCheckpoint && !childPauseRequested) {
                 sink.onError(ERR_STREAM_ERROR);
                 return;

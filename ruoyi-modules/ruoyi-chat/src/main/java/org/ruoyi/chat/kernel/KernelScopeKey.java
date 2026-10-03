@@ -14,17 +14,33 @@ import io.agentscope.core.agent.RuntimeContext;
  *       = {@code p{projectId}:u{userId}:a{agentId}:s{sessionId}},四维全收口于一个字符串
  * </ul>
  *
- * <p><b>store 事实(2026-10-02 实读修正)</b>:生产用
+ * <p><b>store 事实(2026-10-02 字节码实证修正)</b>:生产用
  * {@code AgentScopeRedisStateStores.create(RedissonClient, keyPrefix)} →
  * 官方 {@code io.agentscope.extensions.redis.state.RedisAgentStateStore},<b>不是</b>
- * {@code MysqlAgentStateStore}(后者本仓仅测试代码 import;注意别与
- * {@code MysqlDistributedStore} 混淆——被 {@code @Deprecated(since="2.1", forRemoval=true)}
- * 标注的是 <b>DistributedStore 那个</b>,{@code MysqlAgentStateStore} 本身无类级弃用注解)。
- * 官方 {@code RedisAgentStateStore} 的 Redis key 结构是
- * {@code {prefix}{sessionId}:{stateKey}}——<b>其 key 本身不含 userId</b>,
- * userId 维度由调用方传入的 sessionId 参数承载。故四维隔离的落点
- * <b>取决于调用方传进去的复合 sessionId 字符串</b>,这也是 fail-closed 校验必须前移的原因:
- * 一旦某个调用点绕过 {@link #of} 直接传原始 sessionId,user/project/agent 三维会静默丢失。
+ * {@code MysqlAgentStateStore}(后者本仓仅测试代码 import)。
+ * 官方 {@code RedisAgentStateStore} 的 Redis 键结构经 {@code javap -c} 实证为:
+ * <pre>
+ *   private static String slotId(String user, String session) {   // 配方 "\u0001/\u0001"
+ *       return normalizeUser(user) + "/" + session;
+ *   }
+ *   private String getStateKey(String slot, String stateKey) {    // 配方 "\u0001\u0001:\u0001"
+ *       return keyPrefix + slot + ":" + stateKey;
+ *   }
+ *   // = {keyPrefix}{normalizeUser(user)}/{sessionId}:{stateKey}
+ * </pre>
+ * 代入本仓复合键后形如
+ * {@code agentscope:session:pP1:u900103/aemp-a1:sS1:agent_state}:
+ * <b>userId 是 {@code /} 之前的独立一段</b>(空 userId 归一化为
+ * {@code __anon__}),并非「由 sessionId 捎带」。故四维里
+ * <b>project 与 user 落在 user 段、agent 与 session 落在 sessionId 段,四维全部直接进键</b>。
+ *
+ * <p><b>历史错误(2026-10-02 前注释,已由字节码推翻)</b>:曾记载键为
+ * {@code {prefix}{sessionId}:{stateKey}}、userId「不落键」,并据此推出
+ * 「绕过 {@link #of} 会丢 user/project/agent 三维」。该结论不成立——
+ * 绕过 {@link #of} 只会丢 <b>project</b>(在 user 段内)与 <b>agent</b>(在 session 段内);
+ * <b>user 维由 {@code user} 形参独立承载,不会丢</b>。修正后本仓隔离强度<b>强于</b>原注释所述。
+ * 但「业务代码禁止手工拼键、一律经 {@link #of}」的纪律<b>依然必要</b>:
+ * 手工拼接仍可污染 user 段与 session 段,绕过 {@code validateSegment} 的注入拒绝。
  *
  * <p>fail-closed 校验:任何原始段含 {@code ':'} 或 {@code ".."} 直接拒绝(防复合 key 注入伪造别桶地址);
  * userId 允许为空 → 降级 SESSION 语义(与 IsolationScope.USER 空 userId 降级 SESSION 对齐,
@@ -59,8 +75,13 @@ public final class KernelScopeKey {
          * 四维收口 slotId(复合 userId + ":" + 复合 sessionId)。
          *
          * <p>用途:turn gate 串行化键({@code TURN_GATE.acquire(scope.slotId())})与测试/回读比对。
-         * <b>不是</b>任何 store 的落库键——官方 {@code RedisAgentStateStore} 的 Redis key 是
-         * {@code {prefix}{sessionId}:{stateKey}},不含 userId 段;本方法不参与持久化键构成。
+         * <b>不是</b>本仓任何 store 的落库键——落库键由 {@link #userId()} 与 {@link #sessionId()}
+         * 两个形参分别交给官方 store 合成(见类注释的键结构实证)。
+         *
+         * <p><b>命名注意</b>:官方 {@code RedisAgentStateStore} 也有一个私有静态
+         * {@code slotId(String user, String session)},且它<b>正是落库键的第一段拼接来源</b>;
+         * 本方法是<b>同名不同物</b>(本仓用 {@code ':'} 分隔且含四维,官方用 {@code '/'} 分隔且只有两维)。
+         * 读官方源码或本仓代码时务必确认是哪一个,避免语义串台。
          */
         public String slotId() {
             return userId + ":" + sessionId;

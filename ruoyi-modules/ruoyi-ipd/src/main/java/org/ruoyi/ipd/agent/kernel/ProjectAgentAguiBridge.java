@@ -41,7 +41,10 @@ public final class ProjectAgentAguiBridge {
         // 思考原文不进入业务事件表；保留官方扩展事件与子任务来源供 UI 显示活动状态。
         if (source instanceof ThinkingBlockDeltaEvent) {
             encoded.add(encoder.encodeToJson(new AguiEvent.Custom(context.getThreadId(), context.getRunId(),
-                source.getSource() == null ? "ipd.thinking" : "subagent.thinking",
+                // "subagent.*" 是官方 SubagentEventConverter 的保留名族（thinking/lifecycle/require_confirm/
+                // text/tool_call/tool_result）。本仓的 value 形状是 {active, source}，与官方 {name, delta, source}
+                // 同名异构；若日后打开 emitSubagentEventsAsNative，两族会在同名前缀下 schema 冲突。
+                source.getSource() == null ? "ipd.thinking" : "ipd.subagent_thinking",
                 Map.of("active", true, "source", source.getSource() == null ? "" : source.getSource()),
                 System.currentTimeMillis(), null)));
         } else {

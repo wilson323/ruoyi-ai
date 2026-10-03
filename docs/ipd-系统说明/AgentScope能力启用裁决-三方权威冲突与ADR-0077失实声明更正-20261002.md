@@ -1,3 +1,27 @@
+> ## ⚠️ 效力声明（2026-10-02 21:39 补记，必须先读）
+>
+> **本文件 §1.1–§1.3、§1.7 步骤 1–2 的核心前提已失效。**
+>
+> 21:39 实测：**全仓主源树 AgentScope `disable*()` 调用 = 0**。§1.1 记述的「7 个 disable」
+> 是 **14:36 的历史快照**，兄弟会话已在 14:58 / 15:09 / 21:04 分批移除（`log.md:13500-13520`
+> 记录了第五会话与第六会话之间的一轮拉锯）。**主协调者当时未重采基线、持续播报过期快照，
+> 属观测纪律失误**，在此显式更正。
+>
+> 剩余 4 处 `.disable` 命中经逐条核实**与 AgentScope 能力无关**：
+> `GateElementController.java:65`（业务 `gateElementService.disable(id)`）、
+> `AiCopilotService.java:185/370/553`（字符串字面量 `"config.disabled"`）。
+>
+> **仍然有效的章节**：§1.4（镜像版本陷阱）、§1.5（owner 裁决）、§1.6（官方三开关的字节码实证——
+> 那是对官方 API 的分析，与本仓是否调用无关）、§1.7 步骤 3–4（门禁升级）、§1.8（自我反思）、
+> §2、§3 全部、§4–§六。
+>
+> **已失效的章节**：§1.1、§1.2、§1.3（前提不成立）、§1.7 步骤 1–2（无 disable 可配置）。
+>
+> **配套规范**：[多会话并发工程·证据与自证工作规范](多会话并发工程-证据与自证工作规范-20261002.md)
+> ——本轮 6 次真实失误的提炼：javap 实证纪律 / 时效三元组 / 变异自证 / 校验器优先怀疑 / assert-first 编辑 / 并发让路。
+
+---
+
 # AgentScope 能力启用裁决：三方权威冲突 + ADR-0077 失实声明更正
 
 - 类型：**docs-only 裁决稿**，零 Java 变更，零配置变更
@@ -6,7 +30,8 @@
 - 适用范围：本文件**不裁决业务该走哪条路**，只裁决「**谁有权决定能力开关**」，并更正 ADR-0077 与工作树的 8 条不一致
 - 上游裁决来源：owner 本轮指令「官方能力全量启用、禁止禁用、禁止降级」+「严格基于官方的 AgentScope 融合本项目」+ 14:53 裁决「**可以是可配置但是必须要全部完整默认可用**」
 - **修订记录**：15:09 owner 追问后撤回 §1.7 步骤 3 原门禁升级方案（过度设计），替换方案与五条反思见 **§1.8**；15:5x 完成 TranscriptStore 回退与 PoC 装配复核，**基线快照的 PoC P0 结论予以撤回**，见 **§3.5**
-- 文档状态：裁决已定，**实施未启动**（并发写入者占用写窗口，见 §4）
+- 文档状态：裁决已定；**§1.7 步骤 1–2 已由兄弟会话在代码层完成**（21:39 实测 disable 归零）；
+  本会话已实施步骤 3 的相关修复（`FailClosedAgentStateStore` 方案 D、`KernelScopeKey` 注释纠错）与 t3（plan_exit HITL 3/3 绿）
 
 ---
 
@@ -543,6 +568,633 @@ ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/chat/poc/kernel/   ← 迁入�
 > **本轮未执行**：`PocKernelSupport.java` 当前为 `MM`（暂存区+工作区双改），属并发写入者在途文件。迁移需先取得写窗口。
 > **迁移前须 owner 确认**：`chat.kernel.poc.enabled` 是否有人在本地/联调环境依赖；`.codex/ipd-dev/config/mysql-app.cnf` 是否为分发仓内文件、是否含真实口令。
 
+### 3.6.5 上述两项前置确认：主协调者自查结论（无需 owner 回答，20:40 完成）
+
+#### (1) `.codex/ipd-dev/config/mysql-app.cnf` —— **不在分发面，无泄漏**
+
+| 检查项 | 命令 | 结果 |
+|---|---|---|
+| 是否被 git 跟踪 | `git ls-files --error-unmatch` | **未跟踪**（`did not match any file(s) known to git`） |
+| 是否被 ignore | `git check-ignore -v` | **`.gitignore:83` → `.codex/`** |
+| 全历史全分支是否曾提交 | `git log --all --diff-filter=A -- .codex` | **从未** |
+| `.codex` 目录跟踪文件数 | `git ls-files .codex \| wc -l` | **0** |
+| 磁盘权限 | `ls -la` | `-rw-------`（**0600**，仅属主可读，正确） |
+| 内容 | 脱敏查看 | `[client]` + `user` / `password` / `protocol` / `host` / `port`，**含真实值** |
+
+**结论**：**分发仓内不存在该文件，也不存在任何含其内容的 commit。** 风险不在「泄漏」，而在**代码与本地环境的耦合**——`PocKernelSupport.java:114` 硬依赖这条本地路径，fresh clone 后该功能必然抛 `IllegalStateException("repo root with .codex/ipd-dev/config/mysql-app.cnf not found")`（`:133`）。这是**可移植性缺陷，不是安全缺陷**。
+
+补充：主源树**无任何硬编码口令字面量**（`grep 'password\s*=\s*"|setPassword("' ruoyi-modules/*/src/main` → 0 命中）。
+
+#### (2) `chat.kernel.poc.enabled` —— **一次性验证开关，已闭环，无人依赖**
+
+| 检查项 | 结果 |
+|---|---|
+| yml / properties | **0 命中** |
+| `scripts/start.sh` / `.vscode/` / `.github/` | **0 命中** |
+| 测试代码设置点 | **0**（仅 `PocSseApplication.java:14` 的**用法注释**） |
+| git 历史中出现该键的 commit | 6 个，**全部是文档/验收证据入库**，非配置启用 |
+
+**唯一一次实际启用**（`log.md:13123`）：2026-09-29 为补 D9 真链 HTTP 证据，以命令行参数 `--chat.kernel.poc.enabled=true` 重启 16039（kill 旧 PID 23115 → `mvn -o package` → 新 PID 30760），owner 当轮指令为「都做，你来重启」。证据归档 `验收/D轮-生产就绪独立验证-20260929/d9-poc-truechain-20260929.json`，看板镜像 `:5958` 记「**原 PENDING_VALIDATION 闭环**」。
+
+**结论**：这是**一次已完成的验证动作**，不是常驻依赖。**无人依赖该开关**（除复现该次验证外）。
+
+#### (3) 附带发现：本次「撤回 P0」与项目历史一致
+
+`log.md:13392` 载有一段**早前会话的实证纠正**——某兄弟报告称「main 源树 HTTP 可达零 disable 不经四维隔离」并定级 P0，该轮已将其纠正为：
+
+> 「`PocSseController.java:39` 有 `@ConditionalOnProperty(..., matchIfMissing=false)`，且 `ruoyi-admin/src/main/resources/` 全量 yml **无该键**（grep 零命中）→ **默认不装配、HTTP 不可达**；`:56` 明确 `KernelScopeKey.of(...)` + `:53-54` userId 恒从 LoginHelper 推导（fail-closed）→ **是经四维隔离的**。……**属休眠态加固项（P1/P2），非活跃 P0**。」
+
+> 即：基线快照 `AgentScope归位-基线快照-20261002.json` 的 `P0-待裁决` 定级，**在本轮之前就已被项目历史否定过一次**。本轮 §3.5.2 的撤回与之一致，非孤证。**该快照的定级类结论应整体作废。**
+
+## 3.7 【文档纠错】`KernelScopeKey` 对官方 Redis 键结构的描述与字节码不符
+
+> 复核时刻 20:5x · 主协调者 `javap` 实证 · 对象：`io.agentscope.extensions.redis.state.RedisAgentStateStore`（2.0.3）
+
+### 3.7.1 官方键结构的真实构造（字节码还原）
+
+常量池 `BootstrapMethods` 取出的拼接配方 + 调用点还原：
+
+```java
+// 静态私有方法
+private static String slotId(String user, String session) {
+    if (session == null || session.isBlank()) throw new IllegalArgumentException("sessionId must not be blank");
+    return normalizeUser(user) + "/" + session;          // 配方 "/"  (BS#13)
+}
+private String getStateKey(String slot, String stateKey) {
+    return keyPrefix + slot + ":" + stateKey;            // 配方 ":"  (BS#15)
+}
+private static String normalizeUser(String user) {
+    return (user == null || user.isBlank()) ? "__anon__" : user;   // 常量 ANON_USER
+}
+```
+
+`saveVersioned` / `exists` / `delete` 等全部路径的实测调用链：
+```
+2:  invokestatic  slotId(user, session)      →  slot
+11: invokevirtual getStateKey(slot, stateKey) →  key
+```
+
+**真实键结构**：
+
+```
+{keyPrefix}{normalizeUser(user)}/{sessionId}:{stateKey}
+```
+
+本仓代入 `KernelScopeKey` 的复合键后，实际形如：
+
+```
+agentscope:session:pP1:u900103/aemp-a1:sS1:agent_state
+              └── 复合 userId ──┘ └── 复合 sessionId ──┘ └ stateKey
+```
+
+常量：`DEFAULT_KEY_PREFIX="agentscope:session:"`、`ANON_USER="__anon__"`、`HASH_SUFFIX=":_hash"`、`LIST_SUFFIX=":list"`、`KEYS_SUFFIX=":_keys"`。
+
+### 3.7.2 本仓注释的三处错误
+
+`KernelScopeKey.java:23-27` 现有表述：
+
+> 官方 `RedisAgentStateStore` 的 Redis key 结构是 `{prefix}{sessionId}:{stateKey}`——**其 key 本身不含 userId**，userId 维度由调用方传入的 sessionId 参数承载。故四维隔离的落点**取决于调用方传进去的复合 sessionId 字符串**……一旦某个调用点绕过 `of` 直接传原始 sessionId，user/project/agent 三维会静默丢失。
+
+| # | 注释断言 | 字节码事实 | 判定 |
+|---|---|---|---|
+| 1 | 键为 `{prefix}{sessionId}:{stateKey}` | `{prefix}{user}/{sessionId}:{stateKey}` | ❌ **少一段** |
+| 2 | 「其 key 本身不含 userId」 | `normalizeUser(user)` 是**独立前缀段**，位于 `/` 之前 | ❌ **反了** |
+| 3 | 「绕过 `of` 传原始 sessionId → user/project/agent **三维**静默丢失」 | 绕过只影响 **project**（在 user 段内）与 **agent**（在 session 段内）；**user 维由 `user` 参数独立承载，不会丢** | ❌ **多算一维** |
+
+### 3.7.3 结论修正
+
+- **隔离强度比注释描述的更强，不是更弱。** 四个维度（project / user 走 `user` 段，agent / session 走 `sessionId` 段）**全部进入 Redis 键**，不存在「user 维靠 sessionId 捎带」这种间接承载。
+- 该注释建立在一条**未经实证的官方键结构假设**上，而这条假设与字节码相反。修正方向：**先 `javap` 读键构造，再据此判断隔离是否成立**——否则隔离论证会建立在一个错误前提上，且**错误方向是偏乐观**（注释让人以为 user 维更脆弱）。
+- **注释中仍然成立的部分**：① 官方空 userId 降级到 `__anon__`（`normalizeUser` 字节码确认，且与本仓 `ANONYMOUS_USER_SEGMENT` 常量同值，属有意对齐）；② 复合键必须经 `KernelScopeKey.of` 构造、业务代码禁止手工拼键（防复合键注入伪造别桶）；③ `slotId()`（本仓方法）不参与落库键——**这条也是错的**，见下。
+
+> **附带纠错**：`KernelScopeKey.java:61-64` 称 `Scope#slotId()`「**不是**任何 store 的落库键……本方法不参与持久化键构成」。按 §3.7.1，**官方内部有一个同名语义的 `RedisAgentStateStore.slotId(user, session)`，且它正是落库键的第一段拼接来源**。本仓 `Scope#slotId()`（复合 userId + ":" + 复合 sessionId）与之**同名不同物**——本仓的用 `:` 分隔且含四个维度，官方的用 `/` 分隔且只有 user + session 两维。**同名易混淆，建议重命名本仓方法（如 `turnGateKey()`）**，其真实用途仅 turn gate 串行化。
+>
+> **本轮未执行重命名**——`KernelScopeKey` 非并发在途文件，但改动会波及 `AgentScopeChatKernel` / `PocSseController` / `ProjectAgent*` 多处调用点，属需要独立窗口的改动。
+
+## 3.8 记忆（Memory）实现：官方最佳实践符合度判定
+
+> 复核时刻 21:0x · 主协调者亲验 · 官方 API 全部 `javap` 2.0.3 实证
+> 官方文档源：`https://java.agentscope.io/v2/zh/integration/memory/{index,overview}`（owner 20:55 指定）
+
+### 3.8.1 官方记忆是**两层正交**，不是一层
+
+**[实证] 2.0.3 JAR 实证**：
+
+**第一层 · 会话内记忆** `io.agentscope.core.memory.Memory`（SPI）
+```java
+public interface Memory {
+    void saveTo(AgentStateStore, String user, String session);   // 官方把记忆持久化委托给状态存储
+    void loadFrom(AgentStateStore, String user, String session);
+    void addMessage(Msg);  List<Msg> getMessages();  void deleteMessage(int);  void clear();
+}
+```
+实现三个：`StateBackedMemory(AgentState)` / `InMemoryMemory()` / `AgentStateMemoryView(Supplier<AgentState>)`
+
+**第二层 · 长期记忆** `io.agentscope.core.memory.LongTermMemory`（跨会话，SPI）
+```java
+public interface LongTermMemory {
+    Mono<Void>  record(List<Msg>);   // 记录
+    Mono<String> retrieve(Msg);      // 检索
+}
+```
+挂载点在 **`ReActAgent.Builder`**：`longTermMemory(...)` / `longTermMemoryMode(LongTermMemoryMode)` / `longTermMemoryAsyncRecord(boolean)`；
+`LongTermMemoryMode` = `AGENT_CONTROL` / `STATIC_CONTROL` / `BOTH`；
+配套 `LongTermMemoryTools`（`recordToMemory` / `retrieveFromMemory` / `wrap`）与 `StaticLongTermMemoryHook(LongTermMemory, Memory[, boolean])`。
+官方后端三选一：**Mem0 / 百炼(Bailian) / ReMe**。
+
+> **分层陷阱（本节核心）**：官方文档以「记忆」为题，但代码里是两层**正交**能力——`harness.agent.memory.MemoryConfig` 管「**一次运行内**上下文如何压缩/沉淀」，`core.memory.LongTermMemory` 管「**跨运行**记住什么」。只看文档的「记忆」二字，容易把「已接 `MemoryConfig`」误读为「已用 AgentScope 记忆」，**长期记忆那一层会完全不被看见**。
+
+### 3.8.2 本仓符合度逐项判定
+
+| 官方能力 | 本仓实现 | 符合度 |
+|---|---|---|
+| harness `MemoryConfig`（flush + consolidation） | `ChatOfficialCapabilities.java:71-75` 显式配置两个 prompt | ✅ **已用** |
+| `Memory` SPI 的 `saveTo/loadFrom`（记忆持久化委托 `AgentStateStore`） | 全仓 **零引用** | ❌ **未接** |
+| `LongTermMemory`（跨会话长期记忆） | 全仓 **零挂载** | ❌ **未接** |
+| `LongTermMemoryMode` / `LongTermMemoryTools` / `StaticLongTermMemoryHook` | **零引用** | ❌ 未接 |
+| Mem0 / 百炼 / ReMe | **pom 零命中** | ❌ 未接 |
+| 记忆相关 yml 配置键 | **零命中** | ❌ 无运行时配置面 |
+
+**本仓记忆配置的实际内容**（`ChatOfficialCapabilities.java:72-75`，逐字）：
+```
+flushPrompt:        "Extract sourced reusable preferences and observations. Never store secrets
+                     or raw internal reasoning. Memory and plans are working notes, not permission
+                     or business approval. User identity is the authenticated chat user."
+consolidationPrompt: "Consolidate sourced working notes without secrets or raw internal reasoning.
+                     Memory does not approve skills, business operations or permissions.
+                     Keep within %d tokens and %d characters."
+```
+→ 正面满足 ADR-0077 §2 规则 3 与 `AGENTS.md:77` 对「记忆不得自动成为业务权威」的要求。
+
+### 3.8.3 `OfficialMemoryCompletionMiddleware` 判定：**协作，非双轨**
+
+**[实证]** 28 行，`MiddlewareBase`，`order() = Integer.MAX_VALUE`（SDK 2.0.3 降序排列 → 最外层）。逻辑：在 agent 事件流结束后 `concatWith` 一个 `Mono`，调 `MemoryBackgroundTasks.awaitQuiescence(5, SECONDS)`；未静默则抛 `IllegalStateException`。
+
+**它解的问题**：harness 的记忆 flush/consolidate 是**后台异步**（`MemoryBackgroundTasks`），而沙箱会被释放——两者竞态会导致 flush 落盘不完整。
+
+**判定**：经**官方 `MiddlewareBase` 扩展点**实现的生命周期护栏，针对的是官方记忆的异步语义，**不重复实现任何官方能力**，**不构成双轨**。方向正确。
+
+### 3.8.4 接入约束（若日后决定接长期记忆）
+
+**[实证]** `HarnessAgent.Builder` **没有** `longTermMemory` 透传方法（`javap` 全量方法表确认）。官方路径只在 `ReActAgent.Builder` 上。唯一接法：
+
+```java
+HarnessAgent.builder().fromAgent(
+    ReActAgent.builder().longTermMemory(m).longTermMemoryMode(LongTermMemoryMode.BOTH).build());
+```
+
+### 3.8.5 定级与待决策
+
+**不是 bug，是能力缺口。** 业务真相在 MySQL、记忆定位为「working notes」，不接长期记忆不影响现有业务正确性。
+
+但按 owner「全量启用、禁止功能降级」口径，**官方长期记忆能力在本仓完全空白**应登记为**待决策项**：
+
+> **待决策**：IPD 的产品经理 / 数字员工是否需要「跨会话记住用户偏好」？
+> - 若**需要** → 须选定后端（Mem0 需按 metadata 做多租户过滤，与本仓四维键天然契合；百炼为云托管；ReMe 偏工作区级轨迹摘要），并解决 §3.8.4 的 `fromAgent` 装配路径。
+> - 若**不需要** → 应在文档显式登记「长期记忆为**有意不启用**」及其理由，**避免下一个执行者把它当成漏接的缺陷重���发现**。
+
+**本轮未做**：`ChatOfficialCapabilities` 非当前并发在途文件，但改动会影响三装配点档位一致性，需与 §1.7 实施窗口合并。
+
+## 3.9 【重要】`FailClosedAgentStateStore` 在当前装配下**不生效**（inert）
+
+> 复核时刻 21:0x · 主协调者亲验 · 全链 `javap` 字节码闭环
+
+### 3.9.1 官方冲突策略的默认解析（字节码）
+
+`ReActAgent` 私有构造器，offset 216-234：
+```
+216: getfield      Builder.conflictPolicy
+221: ifnull        231
+224: getfield      Builder.conflictPolicy      ← 显式设置则用之
+228: goto          234
+231: getstatic     ConflictPolicy.OVERWRITE    ← 未设置则 OVERWRITE
+234: putfield      this.conflictPolicy
+```
+
+**本仓 `ConflictPolicy` 全仓零命中**（`grep -rn "ConflictPolicy" ruoyi-modules/*/src ruoyi-common/*/src` → 0），
+且 **`HarnessAgent.Builder` 无 `conflictPolicy` 透传方法**（`javap` 全量方法表确认；`ReActAgent.Builder` 有该 setter，但 harness 未暴露）。
+
+> **结论：经 `HarnessAgent.builder()` 装配的三个生产装配点，生效策略恒为 `ConflictPolicy.OVERWRITE`，且当前 API 面无法更改。**
+
+### 3.9.2 三档策略分别调用哪个 store 方法
+
+`private long persistAgentStateCas(String user, String session, String key, AgentState, long, int)`，offset 157-168：
+
+```
+157: getstatic     ReActAgent$3.$SwitchMap$...ConflictPolicy:[I
+164: invokevirtual ConflictPolicy.ordinal()
+168: tableswitch { 1: 196, 2: 323, 3: 337, default: 546 }
+```
+
+| 档 | 分支内实际调用 | 语义 |
+|---|---|---|
+| **1 = OVERWRITE** | **`AgentStateStore.save(user, session, key, State)`**（offset 283） | **无条件覆盖，不做 CAS** |
+| 2 = FAIL | `getVersioned(...)` → `saveIfVersion(...)`（347 / 472） | 版本相等才写，冲突抛 `ConcurrentSessionModificationException` |
+| 3 = APPEND_MERGE | `getVersioned(...)` → `saveIfVersion(...)` | 重载基线后追加合并重试 |
+| default | `new IllegalStateException(String.valueOf(conflictPolicy))`（546-565） | 非法档位硬失败 |
+
+### 3.9.3 交叉结论：包装器只守了用不到的那条路
+
+`FailClosedAgentStateStore.java:21-27` 的唯一行为是：
+```java
+public long saveIfVersion(..., long expected) {
+    long version = delegate.saveIfVersion(...);
+    if (delegate.supportsVersioning() && version == UNVERSIONED) {
+        throw new IllegalStateException("native chat state CAS conflict");
+    }
+    return version;
+}
+```
+而 `save(user, session, key, State)`（`:15-17`）与 `save(..., List)`（`:18-20`）是**零校验直通**。
+
+| 事实 | 来源 |
+|---|---|
+| 生效策略 = OVERWRITE | §3.9.1 字节码 + 本仓零设置 + harness 无透传 |
+| OVERWRITE 走 `save()`，**不走** `saveIfVersion()` | §3.9.2 offset 283 |
+| 本仓 `save()` 是直通 | `FailClosedAgentStateStore.java:15-20` |
+
+> **闭环结论**：`FailClosedAgentStateStore` 的 fail-closed 断言挂在 `saveIfVersion` 上，而当前装配下**该方法根本不会被调用**。这层防护在生产路径上 **inert（不生效）**，其类注释宣称的「阻止 Harness 2.0.3 未暴露的默认覆盖恢复」**未达成**。
+
+### 3.9.4 定级与影响
+
+| 项 | 判定 |
+|---|---|
+| 缺陷类型 | **防护性代码未生效**（不是功能缺失，是「以为有、实则无」） |
+| 实际行为 | 同一 `(user, session)` 上并发运行 → 状态**静默互相覆盖**（last-writer-wins），无异常、无日志 |
+| 现有缓解 | 本仓有 turn gate（`TURN_GATE.acquire(scope.slotId())`）做 turn 级串行化，**可能**已覆盖主要竞态窗口——**本轮未验证其覆盖度** |
+| 定级 | **中**（并发正确性，非安全泄漏）。但**认知危害大于实际危害**：后续维护者会因这层包装而误判并发安全已受保护 |
+
+### 3.9.5 【已闭环】turn gate 覆盖度核查：三条线**三套机制，无一能覆盖 CAS 竞态**
+
+主协调者 21:0x 亲验，结论推翻了 §3.9.4 里「turn gate 可能已覆盖主要竞态窗口」的乐观假设。
+
+| 装配点 | 串行化机制 | 作用域 | 锁粒度 | 能否覆盖同 session 的状态 CAS 竞态 |
+|---|---|---|---|---|
+| **chat** | 官方 `LocalSessionTurnGate`（`AgentScopeChatKernel.java:78`） | **仅进程内** | `scope.slotId()` = 四维 | ❌ **多副本部署不成立** |
+| **IPD** | 自研 `ProjectAgentRunOwnership`（Redisson `RFencedLock`） | **跨节点** ✅ | **`runId`** | ❌ **锁键维度不对** |
+| **coding** | **无**（`CodingServiceImpl` 零 Gate/Lock/Semaphore 命中） | — | — | ❌ **无任何保护** |
+
+**逐条依据**：
+
+1. **chat 线** — `LocalSessionTurnGate` 实证为纯进程内实现：
+   ```java
+   public final class LocalSessionTurnGate implements SessionTurnGate {
+     private final ConcurrentHashMap<String, Semaphore> gates;   // ← 纯 JVM
+   }
+   ```
+   2.0.3 JAR 中 `SessionTurnGate` **只有这一个实现类**（`unzip -l` 确认：无 Redis/Distributed 版）。
+   → 单副本下有效；**多副本部署时同一 `slotId` 的两个请求会落在不同 JVM，锁不互斥**。
+
+2. **IPD 线** — `ProjectAgentRunOwnership.java:24`：
+   ```java
+   RFencedLock lock = redisson.getFencedLock("ipd:project-agent:owner:" + runId);
+   ```
+   锁键是 **`runId`**，而 `runId` 是**每次运行**的标识。**同一 `(user, session)` 上的两次并发运行 = 两个不同 runId = 两把不同的锁 = 零互斥。**
+   该锁保护的是「**运行所有权**」（哪个执行者有权跑这次运行），**不是状态存储的 CAS**——两者是不同维度。
+
+3. **coding 线** — `CodingServiceImpl` 全文零 `Gate` / `Lock` / `acquire` / `synchronized` / `Semaphore` 命中；且其 state store 是 `InMemoryAgentStateStore`（进程内）。
+
+> **闭环结论**：`FailClosedAgentStateStore` 想防的那个竞态，**三条线都没有被 turn gate 防住**。
+> → **§3.9.5 的方案 A（只删断言、改注释）不安全**——那等于删掉一层本来就无效的假防护，但**不补任何真防护**。
+> → **方案 D（在 store 侧做真 CAS）成为唯一正确解**：它与锁粒度无关，与副本数无关，只依赖 `getVersioned` / `saveIfVersion` 的正确实现。
+
+### 3.9.6 顺带记录：三线三套串行化机制本身是「全局一致性」的反例
+
+| 维度 | chat | IPD | coding |
+|---|---|---|---|
+| 状态存储 | Redis（官方）+ FailClosed 包装 | Redis | **InMemory** |
+| 冲突策略 | 官方默认 OVERWRITE | 同 | 同 |
+| 串行化 | 官方 in-JVM Semaphore | 自研 Redisson FencedLock（按 runId） | **无** |
+
+三者在**同一件事（防并发）**上用了三种不同机制、覆盖三种不同边界。**这与 §3.8 的记忆 prompt 分叉、§3.7 的键构造误判同属一类：本仓四装配点各自演化，已无统一合同。** 建议纳入 §1.7「四装配点档位一致性」的登记范畴。
+
+### 3.9.7 修复选项（结论已定，待拍板，本轮未动 Java）
+
+| 方案 | 做法 | 代价 |
+|---|---|---|
+| **A. 诚实降级** | 删除 `FailClosedAgentStateStore` 的 CAS 断言（或整类），改注释写明「当前 OVERWRITE 策略下不生效，依赖 turn gate 串行化」 | 最小改动，消除认知危害 |
+| **B. 改用 ReActAgent 直装** | 放弃 `HarnessAgent.builder()`，改走 `HarnessAgent.builder().fromAgent(ReActAgent.builder().conflictPolicy(FAIL)…)` | 失去 harness 装配面，**与「官方 HarnessAgent 是唯一装配面」裁决冲突** |
+| **C. 补透传** | 向官方提 issue 要 `HarnessAgent.Builder.conflictPolicy` 透传 | 依赖上游，本仓无法自解 |
+| **D. 在 store 侧做真防护** | `save(...)` 内自行做 `getVersioned` 比对后再写 | 把 CAS 语义下沉到包装器，**能真正生效**，但与官方 store 实现耦合 |
+
+> **结论：选 D**（turn gate 覆盖度已核查为不足，见 §3.9.5）。A 方案被否——它不补防护。
+> **实施前提**：`FailClosedAgentStateStore.save(...)` 内改做「先 `getVersioned` 取基线版本 → 比较 → 再写」，使 OVERWRITE 路径也具备 CAS 语义。**改动局限于本仓包装器，不触碰官方类，不破坏 HarnessAgent 单一装配面。**
+> **风险**：本仓包装器将不再只是「CAS 断言」，而是**真正实现乐观锁**——须补并发单测（两线程写同 key，断言一方抛错）。
+
+### 3.9.8 附：官方 Redis store **无 TTL**
+
+**[实证]** `RedisAgentStateStore.Builder` 全部方法仅 `keyPrefix` / 四种 client 注入 / `clientAdapter` / `build`，**无 TTL 项**；Lua 脚本无 `EXPIRE`。→ 状态键在 Redis 中**永不过期**，需依赖调用方显式 `delete`。
+
+## 3.10 记忆落盘路径：三条线各不相同，且**真正的落点在沙箱内**
+
+> 复核时刻 21:1x · 主协调者亲验
+
+### 3.10.1 官方记忆写入走 `filesystem` 抽象（[实证] `ms-api` 字节码 + 主协调者复核）
+
+官方 `WorkspaceManager.appendUtf8WorkspaceRelative` / `writeUtf8WorkspaceRelative` 的分支结构：
+
+```java
+if (this.filesystem == null) { writeLocalFile(rel, content); return; }   // 宿主磁盘分支
+this.filesystem.uploadFiles(rc, ...);                                      // filesystem 分支
+```
+
+**即：官方记忆的落点由 `filesystem` 抽象决定。** 而本仓三个装配点**全部**经 `ChatOfficialCapabilities` 设了 `DockerFilesystemSpec`。
+
+> **推论（本轮未完全闭环，见 3.10.4）**：记忆落在 **Docker 沙箱内**，而**不是**传入的宿主 workspace 目录。
+
+记忆的实际文件形态（`WorkspaceConstants` / `MemoryConsolidator` 常量实证）：
+
+| 路径 | 内容 |
+|---|---|
+| `MEMORY.md` | 策展后的长期记忆（官方定义：**跨天、跨会话**知识真源） |
+| `memory/YYYY-MM-DD.md` | 当日流水账，**append-only**，格式 `\n## Memory Flush — %s\n%s\n` |
+| `memory/.consolidation_state` | consolidation 水位（`WATERMARK_KEY="watermark"`，`MAX_CAS_RETRIES=5`） |
+| `memory/archive*.md` | 归档 |
+
+### 3.10.2 三条线传入的 workspace 路径**各不相同**
+
+| 装配点 | workspace 来源 | 是否稳定 | 是否有 session 维 |
+|---|---|---|---|
+| **chat** | `AgentScopeChatKernel.java:93` `@Value("${chat.kernel.agentscope.workspace-root:${java.io.tmpdir}/agentscope-workspace}")`，`:328` `createWorkspace(workspaceRoot, projectId, userId, agentId)` | ✅ 固定根 | ❌ **无 session 维** |
+| **IPD** | `AgentScopeProjectAgentKernel.java:339` `ProjectAgentWorkspace.prepare(workspaceRoot, projectId, userId, agentId)`；`ProjectAgentWorkspace.java:53-55` 三级 resolve | ✅ 固定根 | ❌ **无 session 维** |
+| **coding** | `CodingServiceImpl.java:125` **`Files.createTempDirectory("coding-native-runtime-")`** | ❌ **每次运行全新目录** | ❌ 无 |
+
+**chat / IPD 两条线的 workspace 按 `(projectId, userId, agentId)` 三级分桶**（`ProjectAgentWorkspace.java:53-55`，含符号链接 fail-closed 校验：`:37-51` 逐级 `toRealPath()` 比对，拒绝 symlink 逃逸）。**无 session 维 → 同一用户同一智能体的不同会话共享同一工作区。**
+
+**coding 线每次运行新建临时目录，且从不清理**——该目录既是工作区又是 `LocalSnapshotSpec` 的基准路径（`ChatOfficialCapabilities` 内部 `workspace.resolve(".sandbox-snapshots")`），**运行结束即成为孤儿目录**。
+
+### 3.10.3 由此得出的三条结论
+
+1. **coding 线的记忆必然不跨运行**——workspace 每次全新，且 `CodingServiceImpl:138` 还额外用了 `InMemoryAgentStateStore`（进程重启即丢）。
+2. **chat / IPD 线的记忆在宿主侧路径是稳定的**（`/tmp/agentscope-workspace/{projectId}/{userId}/{agentId}`），但**由于落点在沙箱内，宿主路径稳定 ≠ 记忆存活**。
+3. **无 session 维**意味着工作区（及其中的一切文件）在同用户同智能体的多个会话间**共享**。这对「跨会话记忆」是**特性**，但对「会话隔离」是**边界放宽**——需确认 `IsolationScope.SESSION` 的沙箱层是否补上了这层隔离。
+
+### 3.10.4 【未闭环】沙箱快照的 take / restore 时机未查实
+
+**[实证已确认]** 官方快照 SPI 存在：
+```java
+public interface SandboxSnapshotSpec { SandboxSnapshot build(String id); }
+public interface SandboxSnapshot {
+    void persist(InputStream) throws Exception;
+    InputStream restore()   throws Exception;
+    boolean isRestorable()  throws Exception;
+    String getId();  String getType();
+    default boolean isPersistenceEnabled();
+}
+// LocalSnapshotSpec.build(id) → new LocalSandboxSnapshot(basePath, id)
+```
+
+**未查实**：`SandboxSnapshotSpec.build(...)` 的**调用方**、`persist()` / `restore()` 的**触发时机**、以及 `isPersistenceEnabled()` 在 `DockerFilesystemSpec` + `LocalSnapshotSpec` 组合下的**实际取值**。
+
+> **因此本文件无法断言「本仓的记忆在运行结束后是否存活」。** 在这条查实前，§3.8.4 记的「consolidationPrompt 覆盖丢失跨会话语义」**到底是不是真缺陷，尚不能定论**：
+> - 若沙箱快照**生效** → 记忆跨运行存活 → 丢失跨会话语义是**真缺陷**（高优先级）。
+> - 若快照**不生效** → 记忆本就不跨运行 → 丢失的是一个**用不上的**能力（低优先级），但**coding 线每次新建临时目录**这一条仍是独立成立的缺陷。
+
+**已将「沙箱快照 take/restore 时机」列为最高优先待查项**，已在 §5 登记。
+
+## 3.11 记忆开关真相：**默认全开且官方无「关闭」入口**（推翻项目文档）
+
+> 复核时刻 21:0x · `memory-track` 报告 + 主协调者独立复核
+
+### 3.11.1 记忆是**默认装配**，`.memory(...)` 调不调都在
+
+**[实证]** `HarnessAgent$Builder.<init>` offset 82-86：
+```
+MemoryConfig.defaults();  putfield memoryConfig
+```
+`memoryConfig` 字段**构造即有值**。`build()` offset 1079-1288 的装配判定只有两个否决条件：
+```
+1080: memoryConfig.model()            // 独立的记忆模型
+1105: ifnull → 1289                   // ← 无 model → 整段跳过
+1110: disableMemoryHooks? → 1289      // ← 显式关钩子 → 整段跳过
+```
+只要 `.model(...)` 非空**且**未调 `disableMemoryHooks()`，以下三者**无条件**装入：
+`MemoryFlushMiddleware`(1150) / `MemoryConsolidator`(1203) / `MemoryMaintenanceMiddleware`(1249)。
+
+> **推论**：本仓 7 行 `disableSubagents` 等 disable **从未包含记忆开关**；记忆一直是开的，且**开不关都一样**（除非整个 agent 不给 model）。
+
+### 3.11.2 【文档纠错】项目文档「Memory 有意关 / 双 disable」是**假的**
+
+`docs/ipd-系统说明/AgentScope官方化-Quality域Verifier缺口设计-20261002.md:17` 原文：
+
+> `| Memory | ✅ 绿（有意关） | 双 disable；业务记忆在 ipd 库表，MEMORY.md 不当事实源（AGENTS.md 红线） |`
+
+**[实证] 主源树 `disableMemory` 零命中**（`grep -rn "disableMemory" ruoyi-modules/*/src/main ruoyi-common/*/src/main` → 0）。
+`disableMemoryHooks()` 仅出现在两个**测试**文件（`AgentScopeKernelConcurrencyPocIT.java:281`、`AgentScopeAuditHookTest.java:45`）。
+
+| # | 该文档断言 | 事实 | 判定 |
+|---|---|---|---|
+| 1 | 「Memory 有意关」 | 记忆默认全开 | ❌ |
+| 2 | 「双 disable」 | 主源树零 `disableMemory*` | ❌ |
+| 3 | 「MEMORY.md 不当事实源（AGENTS.md 红线）」 | **这条对**——本仓靠 `consolidationPrompt` 约束，见 §3.8.2 | ✅ 成立 |
+
+> **修正**：记忆的「不当事实源」是靠 **prompt 约束**实现的，**不是**靠 disable 开关。
+> **这正是 §3.8.4 那个缺陷的根源**——维护者想「关掉记忆的记忆功能」，实际改的是 `consolidationPrompt`（记忆的**内容**），而记忆**机制**从未被关。于是「关记忆」这个诉求被转嫁成了「改记忆内容」——**手段与目标错配**，跨会话语义的丢失就是这个错配的副作用。
+
+### 3.11.3 隔离作用域：三个生效装配点**全部是 SESSION**（含 coding）
+
+**[实证]** 官方从 filesystem spec 推导 `isolationScope`（`HarnessAgent$Builder` 无 `isolationScope(...)` 公开方法）：
+```
+353: getstatic IsolationScope.USER          // 默认
+387-413: sandboxFilesystemSpec != null → 取 sandbox.getIsolationScope()   ← 本仓走这条
+```
+
+| 装配点 | 设置点 | 生效值 |
+|---|---|---|
+| chat | `ChatOfficialCapabilities.java:60` `filesystem.isolationScope(IsolationScope.SESSION)` | **SESSION** |
+| IPD | `ProjectAgentOfficialSandbox.java:49` 同 | **SESSION** |
+| **coding** | 经 `CodingServiceImpl.java:139` → `ChatOfficialCapabilities.configure` → `:62` `builder.filesystem(filesystem)` + `:60` | **SESSION** |
+| `ProjectAgentFoundationTools.java:83` | `IsolationScope.USER` | 未接线扩展点，**非生效装配点** |
+
+> **一处智能体误报已纠正**：`memory-track` 报告称「`CodingServiceImpl` 不设 filesystem spec，取默认 `USER`」。**该结论错误**——coding 线经 `ChatOfficialCapabilities.configure`（`CodingServiceImpl.java:139`）拿到了 `DockerFilesystemSpec` 与 `IsolationScope.SESSION`。**三个生效装配点的隔离作用域一致，均为 SESSION。**
+
+### 3.11.4 与 owner「可配置」裁决的关系
+
+owner 裁决是「可配置，但默认必须全部完整可用」。就**记忆**而言：
+
+| 官方提供的能力 | 能否做成「配置化关闭」 |
+|---|---|
+| 记忆**机制**（flush/consolidation/maintenance 三个中间件） | ✅ 可——唯一入口是硬编码调 `.disableMemoryHooks()`，可改为条件调用 |
+| 记忆**内容**（flushPrompt / consolidationPrompt） | ✅ 可——已是可配置项 |
+| 记忆**持久化**（`Memory.saveTo/loadFrom`） | ⚠️ 官方未在本仓装配面暴露该 SPI（见 §3.8.2），**无法配置** |
+
+> **结论**：记忆是**可以**做到「默认全开 + 配置化关闭」的，但**必须显式实现**——官方只给了 `disableMemoryHooks()` 这一个硬开关，没有默认关闭的配置面。§1.7 步骤 1 的 `OfficialCapabilityConfig` 应当**包含 `memory` 键**（默认 `true`），关闭时调 `disableMemoryHooks()`。
+
+## 3.12 【owner 直接提问】记忆能力完整度 + 多人/团队隔离判定
+
+> owner 21:09 提问：①记忆能力是否完整实现 ②不同人之间记忆不同、同一团队同一项目怎么处理
+> 前提（owner 明示）：「基于默认是开的，不需要关掉」——故本节**不再讨论开关**，只判定**能力完整度与隔离语义**。
+
+### 3.12.1 问题①：记忆能力完整度
+
+| 层 | 状态 | 依据 |
+|---|---|---|
+| **机制装配** | ✅ **完整** | 三个中间件自动装入、零 `disableMemory*`（§3.11.1 / §3.11.2） |
+| **按人隔离** | ✅ **成立** | 见 §3.12.2 |
+| **跨会话内容语义** | ⚠️ **有损** | 官方 `consolidationPrompt` 被整体替换，「MEMORY.md = 跨天跨会话知识真源」指令丢失（§3.8.4） |
+| **运行间存活** | ❓ **待验** | 沙箱快照 take/restore 时机未查实（§3.10.4） |
+| **官方 StateBacked 持久化** | ❌ **未接** | `Memory.saveTo/loadFrom(AgentStateStore,…)` 全仓零引用（§3.8.2） |
+| **`LongTermMemory` 长期记忆** | ❌ **未接** | 全仓零挂载；三个官方后端零依赖（§3.8.2） |
+
+> **一句话判定**：**机制完整、隔离正确、语义有损、持久性待验。**
+> 「完整实现」若指「官方记忆三件套都装上了」→ **是**；若指「官方的记忆能力面被完整交付」→ **否**（缺 StateBacked 持久化与 LongTermMemory 两层）。
+
+### 3.12.2 问题②：不同人之间 / 同一团队同一项目
+
+#### 已实证的分区事实
+
+| 事实 | 依据 |
+|---|---|
+| 工作区路径 = `root/{projectId}/{userId}/{agentId}` | `ProjectAgentWorkspace.java:53-55` 三级 `resolve` |
+| **无 session 维** | 同上——同一人同一智能体的所有会话共用一个工作区 |
+| 运行上下文 = 复合 userId `p{projectId}:u{userId}` + 复合 sessionId `a{agentId}:s{sessionId}` | `KernelScopeKey.java:88-90` |
+| 记忆文件 = `MEMORY.md` + `memory/YYYY-MM-DD.md`，落在该工作区内 | `MemoryConsolidator` / `WorkspaceConstants` 常量 |
+| 三个生效装配点隔离作用域统一为 `IsolationScope.SESSION` | §3.11.3 |
+
+#### 判定矩阵
+
+| 场景 | 当前行为 | 是否符合预期 |
+|---|---|---|
+| **不同人**（userA vs userB，同项目同智能体） | 工作区路径不同 → **各自独立 `MEMORY.md`**，天然隔离 | ✅ **正是要的** |
+| **同一人，不同会话** | 工作区无 session 维 → **同一份 `MEMORY.md`** | ✅ 跨会话记忆成立 |
+| **同项目、同团队、不同人** | 工作区含 `userId` → **各人记忆完全独立，不共享** | ⚠️ **记忆层无共享** |
+| **同项目、同团队** | ✅ **但走的是另一条通道**——见下 | ✅ 符合设计 |
+
+#### 项目级共享走的是「知识库」，不是「记忆」
+
+**[实证]** `ProjectKnowledgeRetriever.retrieve(personId, projectId, docType, query)`（`:51`）三路合并检索：
+
+```java
+knowledge = knowledgeVectors.search(projectId, personId, query);   // 向量检索
+text     = textSearch.search(projectId, query);                    // 全文检索
+docs     = vectors.retrieve(projectId, docType, query);            // 文档检索
+return merge(merge(knowledge, text), docs);
+```
+
+**按 `projectId` 检索、DB/向量库承载、会话内按需检索**——这是**团队共享事实**的通道，**与 per-user 记忆完全分离**。
+
+> **设计判定：这套分离是正确的，不应合并。**
+>
+> | 通道 | 作用域 | 载体 | 权威性 | 生命周期 |
+> |---|---|---|---|---|
+> | **记忆**（`MEMORY.md`） | **个人**（per user+project+agent） | 沙箱工作区文件 | ⚠️ **非权威**，仅 working notes | 跨会话 |
+> | **知识库**（`ProjectKnowledgeRetriever`） | **项目**（per projectId） | 向量库 + 全文 + 文档表 | ✅ 权威事实 | 长期 |
+> | **业务表**（MySQL） | 业务 | 关系表 | ✅ 唯一权威 | 永久 |
+>
+> 这与 ADR-0077 §2 规则 3 / `AGENTS.md:77`「记忆不得自动成为业务权威」**完全自洽**：
+> **共享的走知识库（权威、可审计），个人的走记忆（草稿、跨会话便利）。**
+> 若把团队共享塞进 `MEMORY.md`，就等于让一个**非权威、per-user、活在工作区里**的载体承担团队知识——那才是真正的设计错误。
+
+#### 对 owner 的直接回答
+
+- **「不同人之间记忆不同」** → **已经是这样**，天然按 userId 隔离，无需改动。
+- **「同一个团队同一个项目怎么处理」** → **走项目知识库，不走记忆**。记忆刻意保持 per-user 不共享，这是对的。若业务上确实需要「个人记忆在团队内可见」，正确做法是**增加一条记忆晋升到知识库的流程**（需 owner 拍板），而不是放开记忆的 userId 隔离。
+
+## 3.13 【实施记录】owner 21:11「按建议完整实现」——第一批已落地
+
+> 实施时刻 21:1x · **并发写入者仍在活跃**（21:12 实测近 20 分钟内 19 个 main java 被改，
+> `AgentScopeProjectAgentKernel.java` 21:04:13 刚动），故本批**只做不在其飞行中的文件**。
+
+### 3.13.1 本批交付（4 个文件）
+
+| # | 文件 | 改动 | 验证 |
+|---|---|---|---|
+| 1 | `chat/kernel/FailClosedAgentStateStore.java` | **方案 D 落地**：`save(...)` 内自建基线版本 → `saveIfVersion` CAS → 冲突 fail-closed。构造器补 `Objects.requireNonNull` | `javac` EXIT=0 |
+| 2 | `chat/kernel/FailClosedAgentStateStoreTest.java`（新建） | 7 条用例，含**确定性竞速注入**（fake store 在「基线读出后」抢先写） | **7/7 绿** |
+| 3 | `chat/kernel/KernelScopeKey.java` | 按 §3.7 字节码实证**改写键结构注释**（原注释三处断言全错）；`slotId()` 补「与官方同名不同物」警告 | `javac` EXIT=0 |
+| 4 | `docs/…/AgentScope官方化-Quality域Verifier缺口设计-20261002.md` | 按 §3.11.2 更正「Memory 有意关 / 双 disable」失实陈述 | 文档 |
+
+**方案 D 的实现要点**（`FailClosedAgentStateStore.java`）：
+```java
+private void writeWithOptimisticLock(String user, String session, String key, State value) {
+    if (!delegate.supportsVersioning()) { delegate.save(...); return; }
+    long baseline = delegate.getVersioned(user, session, key, (Class<State>) value.getClass()).version();
+    if (baseline == UNVERSIONED) { delegate.save(...); return; }   // 无法建基线 → 退化
+    if (delegate.saveIfVersion(user, session, key, value, baseline) == UNVERSIONED) {
+        throw new IllegalStateException("native chat state CAS conflict on key=" + key
+            + " expectedVersion=" + baseline);
+    }
+}
+```
+**首次写入不会被自己挡住**：`RedisAgentStateStore.getVersioned` 对不存在的键返回 `lconst_0`（版本 0），
+配合 `saveIfVersion(expected=0)` 的 create-if-absent 语义，基线为 0 → 写入成功（`javap` 实证）。
+
+### 3.13.2 自证能红（变异验证）——**且抓到过自己写的废测试**
+
+| 轮次 | 变异 | 结果 |
+|---|---|---|
+| 第 1 轮 | `save()` 退回 `delegate.save(...)` | ❌ **测试仍全绿 → 判定测试无效** |
+| 第 2 轮 | 同上，改写为确定性竞速用例后 | ✅ **1 条失败 → 测试有效** |
+
+**第 1 轮失败的原因**（记入教训）：原并发断言 `succeeded + conflicted == writers` 是**恒真式**
+（每个写者不是成功就是抛异常），`succeeded >= 1` 亦近乎必然成立——**该断言抓不到任何东西**。
+改为「fake store 在 `getVersioned` 取基线后注入一次竞对写入」，使 CAS 失败条件**确定性可复现**。
+
+> **本轮再次实证了 §1.8 反思 6**：静态断言的**存在**不等于它**守得住**。
+> 本次若不做变异验证，就会交付一个「7/7 全绿但抓不到缺陷」的测试——
+> 与本文件 §3.9 的 `FailClosedAgentStateStore` 缺陷、以及 §3.2 的门禁逃逸，属**完全同型**。
+
+### 3.13.3 本批**未做**及原因
+
+| 项 | 原因 |
+|---|---|
+| 7 个 `disable` → 配置化（§1.7 步骤 1-2） | 直接改 3 个装配点，**并发写入者正在写这三个文件** |
+| `consolidationPrompt` 恢复官方跨会话语义（§3.8.4） | 需改 `ChatOfficialCapabilities`（共享热点）+ `ProjectAgentNativeProfile`；且**其必要性取决于 §3.10.4 沙箱快照链是否查实** |
+| 门禁升级（§1.8 替换方案） | 需与实现同步，依赖上一项 |
+| PoC 迁 test 树（§3.6.4） | `PocKernelSupport.java` 仍在脏区 |
+| `Scope#slotId()` 重命名为 `turnGateKey()` | 会波及多文件调用点，需独立窗口；本批**只加警告注释**，未改签名 |
+
+## 3.14 【已闭环】沙箱快照链查实：记忆是 **per-session**，不是跨会话
+
+> 复核时刻 22:2x · 主协调者亲验 `javap` 字节码 · **本条闭合 §3.10.4 的最高优先待查项**
+
+### 3.14.1 完整调用链（2.0.3 实证）
+
+```
+SandboxLifecycleMiddleware.acquireForCall(rc)  →  SandboxManager.acquire(ctx, rc)     // 调用前：恢复
+SandboxLifecycleMiddleware.releaseForCall(rc)  →  SandboxManager.persistState(...)    // 调用后：持久化
+```
+
+- 全 JAR 扫描确认：**`persistState` 的唯一调用方是 `SandboxLifecycleMiddleware`**；
+- `SandboxManager.carryOverPersistedSnapshotId(sandbox, id, spec)`：恢复旧状态时把**旧快照 id** 带进新沙箱（偏移 73 `spec.build(oldId)` → 78 `setSnapshot`），使 `persistState` 覆盖**同一快照槽位**；
+- `SandboxSnapshot.isPersistenceEnabled()` 默认 **`true`**（`iconst_1; ireturn`），`LocalSandboxSnapshot` **未覆写**；
+- 本仓 `ChatOfficialCapabilities:58` 设 `.snapshotSpec(new LocalSnapshotSpec(workspace.resolve(".sandbox-snapshots")))`，`DockerFilesystemSpec` 有对应 setter（`snapshotSpec(...)`）→ **持久化链路已接通**。
+
+### 3.14.2 状态键：`IsolationScope` 决定跨不跨会话
+
+`SessionSandboxStateStore.slotSessionId(SandboxIsolationKey)` 的 `tableswitch {1 to 4}`，四个拼接配方（常量池实证）：
+
+| IsolationScope | slot sessionId 格式 | 含 sessionId？ |
+|---|---|---|
+| `SESSION`（**本仓**） | `sandbox/session/{sessionId}` | ✅ 含 |
+| `USER` | `sandbox/user/{userId}/{sessionId}` | ✅ **仍含** |
+| `AGENT` | `sandbox/agent/{agentId}` | ❌ **不含** |
+| `GLOBAL` | `sandbox/global` | ❌ |
+
+**⇒ 结论：**
+- **同 session 跨调用：记忆持久** ✅（`acquire` 恢复 + `release` 落盘）
+- **不同 session：记忆不共享** ❌
+
+### 3.14.3 对 §3.8.4 / §3.10 的定级修正
+
+| 原判定 | 修正后 |
+|---|---|
+| §3.8.4「`consolidationPrompt` 覆盖丢失官方跨会话语义」是**高优先级缺陷** | ❌ **降级为无实际影响**。官方默认 prompt 承诺的「cross-session knowledge」在 `IsolationScope.SESSION` 下**本就不可达**；本仓把覆盖改回官方原文也不会得到跨会话记忆。**该覆盖不是缺陷，是无效动作。** |
+| §3.10「chat/IPD 工作区无 session 维 → 同人跨会话共享工作区」 | ⚠️ **表述不准确**。宿主 workspace 路径确无 session 维，但**记忆实际落在沙箱内**，而沙箱按 `sandbox/session/{复合 sessionId}` 分槽 → **实际仍按 session 隔离**。 |
+
+### 3.14.4 若产品确需跨会话记忆：唯一可行形态及其代价
+
+| 方案 | 隔离键 | 效果 | 代价 |
+|---|---|---|---|
+| 现状 `SESSION` | `sandbox/session/a{agentId}:s{sessionId}` | 记忆不跨会话 | — |
+| 改 `AGENT` + 复合 agentId | `sandbox/agent/p{projectId}:u{userId}:a{AGENT_ID}` | ✅ 同人同项目跨会话共享记忆；✅ 不同人/不同项目仍隔离 | ⚠️ **会话间不再隔离工作区文件**——transcript、草稿、临时文件一并跨会话共享 |
+| 改 `AGENT` + 现有常量 `AGENT_ID` | `sandbox/agent/{常量}` | **全体项目全体用户共享一个沙箱** | ❌❌ **跨租户泄漏，绝对禁止** |
+
+> **判读**：跨会话记忆在当前隔离设计下**不是一个开关，而是一次隔离语义变更**。
+> 它必须以「同 user+project 跨会话共享工作区」为前提被 owner 明确接受——因为记忆不是唯一跨会话的东西，**沙箱里的一切都会跟着跨会话**。
+>
+> **本轮不动**：该变更影响三个装配点的 `IsolationScope`，且与 §1.7 的能力配置化同属一类需拍板事项。**登记为待决策，不擅自实施。**
+
 ## 四、并发写入观测（让路依据，非指控）
 
 **[实证]** 观测窗口 14:36:19–14:36:54，同一工作树内出现密集写入：
@@ -571,6 +1223,7 @@ ruoyi-modules/ruoyi-chat/src/test/java/org/ruoyi/chat/poc/kernel/   ← 迁入�
   1. 各能力的**装配条件**（默认 `false` 的字段在何处被读取、满足什么条件才真正装配）——需追 `build()` 方法体。
   2. ~~`TranscriptStore` 回退分支未定位~~ → **已于 §3.5 完成字节码实证**（两分支结构），并确认四装配点均走 `ChatSafeTranscriptStore`，不落默认路径。
   3. **§3.3 末条**（`disableSessionPersistence()` / `disableDefaultWorkspaceSkills()` 在主 agent 上零消费）——若属实则为**无效防护**，会产生安全假象。
+  0. ~~沙箱快照 build/persist/restore 调用方与触发时机~~ → **已于 §3.14 完整闭环**：记忆为 per-session，§3.8.4 的 prompt 覆盖判定**降级为无实际影响**。
   4. IPD 内核四维隔离与权限扩展点冲突的完整结论：`ipd-kernel` 报告本轮**只收到截断稿**，其 G1/G4/G5/G14/G16-G22 等条目**未经主协调者复核**，不得直接作为实施依据。
   5. **`ProjectAgentOfficialCollaboration` 系死代码**——实测全仓仅 3 处自身声明，**零生产调用方**（`kernel/ProjectAgentOfficialCollaboration.java:26/27`、`config/ProjectAgentOfficialCollaborationRedis.java:21`）。mtime 13:47 / 14:02，**早于 14:36 并发窗口**，并非该窗口新建。即：官方 team/messageBus/asyncToolRegistry 协作能力**本轮确认仍未接入**。
 - 门禁规则草案（`capability-matrix` 产出）本轮**仅采纳主协调者亲自复现的 B1/B2 两例**；其 8 条正则盲区与 `scope-key-statements.py` 的 8 条盲区**未逐条复现**，标注为**待复核**。

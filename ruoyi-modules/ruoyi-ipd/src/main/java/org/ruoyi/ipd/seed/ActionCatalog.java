@@ -111,9 +111,18 @@ public final class ActionCatalog {
     public static final java.util.Map<String, String> ALIASES = java.util.Map.of(
         "Z01", "D11", "Z02", "V10", "Z03", "C12", "Z04", "V11", "Z05", "V12");
 
-    /** 别名归一：Z 系编码解析为权威编码；未知编码原样返回 */
+    /**
+     * 别名归一：Z 系编码解析为权威编码；未知编码原样返回。
+     *
+     * <p><b>空值契约</b>：{@code code} 为 null 时返回 null。
+     * {@link #ALIASES} 是 {@link java.util.Map#of} 构造的不可变 Map，
+     * 其 {@code getOrDefault(null, …)} 会在 {@code MapN.probe} 内对 null 调 {@code hashCode()}
+     * 而抛 NPE；而 {@code actionCode} 在 {@code AgentRunCreateReq} 契约上是**可空**的
+     * （{@code ProjectAgentRunService#loadProjectFacts → docTypeOf} 会直接透传），
+     * 故此处必须先挡 null，否则省略动作码的创建请求会 500。
+     */
     public static String resolveCode(String code) {
-        return ALIASES.getOrDefault(code, code);
+        return code == null ? null : ALIASES.getOrDefault(code, code);
     }
 
     public static List<ActionDef> byStage(String stage) {
@@ -267,7 +276,12 @@ public final class ActionCatalog {
      *         明写 docType 为空时 RAG 退回不按类型过滤（向后兼容），不得为此编造类型
      */
     public static String docTypeOf(String code) {
-        return switch (resolveCode(code)) {
+        // 字符串 switch 会对选择器调 hashCode()，null 选择器直接 NPE；先归一再判空。
+        String resolved = resolveCode(code);
+        if (resolved == null) {
+            return null;
+        }
+        return switch (resolved) {
             case "C01", "C02", "C03", "C04", "C06" -> "MARKET_RESEARCH";
             case "P01" -> "PRD";
             case "D04" -> "TEST_REPORT";
