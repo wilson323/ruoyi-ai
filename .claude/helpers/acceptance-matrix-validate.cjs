@@ -216,6 +216,45 @@ function checkDeclaredStats(matrix) {
   }
 }
 
+function checkOwnerDecisions(matrix) {
+  // 与 schema 里 owner_decisions_needed.items 的条件分支同一条规则：
+  // decision 为非空字符串 => decided_by / decided_at / evidence_commit 三者必填，
+  // 且 evidence_commit 须匹配 ^[0-9a-f]{7,40}$；未决（无 decision）=> 必须有 blocker。
+  //
+  // 为什么要在本机重复一遍：该条件由 CI 的 ajv 步骤承担，而本脚本原先不实现它，
+  // 于是 2026-10-03 出现「本机 errors=0、CI 必红」的窗口——OD-AM-01/02 标为已决却缺
+  // evidence_commit，本地提交前拿不到任何信号。这里补齐，让本机结论与 CI 一致。
+  const od = matrix.owner_decisions_needed;
+  if (!od) {
+    log('WARN', 'owner_decisions_needed 缺失（无法核对决策项闭环字段）');
+    return;
+  }
+  const items = od.items || [];
+  const SHA = /^[0-9a-f]{7,40}$/;
+  for (const it of items) {
+    const id = it.id || '(无 id)';
+    const decided = typeof it.decision === 'string' && it.decision.length > 0;
+    if (decided) {
+      for (const f of ['decided_by', 'decided_at', 'evidence_commit']) {
+        if (it[f] === undefined || it[f] === null || it[f] === '') {
+          log('ERROR', `${id} 已决（decision 非空）但缺 ${f}；CI 的 ajv 会硬阻断`);
+        }
+      }
+      if (typeof it.evidence_commit === 'string' && !SHA.test(it.evidence_commit)) {
+        log('ERROR', `${id} 的 evidence_commit=${it.evidence_commit} 不是 7-40 位十六进制提交号`);
+      }
+    } else if (!it.blocker) {
+      log('ERROR', `${id} 未决（无 decision）却也没有 blocker 原文`);
+    }
+  }
+  // open_count 是派生值：与 items 中「无有效 decision」的项数必须一致。
+  const derivedOpen = items.filter(
+    it => !(typeof it.decision === 'string' && it.decision.length > 0)).length;
+  if (od.open_count !== derivedOpen) {
+    log('ERROR', `owner_decisions_needed.open_count 声明 ${od.open_count} ≠ 派生真值 ${derivedOpen}`);
+  }
+}
+
 function main() {
   if (!fs.existsSync(MATRIX_PATH)) {
     log('ERROR', `acceptance-matrix.json 不存在: ${MATRIX_PATH}`);
@@ -241,6 +280,7 @@ function main() {
   checkReverse(matrix, acIds);
   checkCoverageThreshold(matrix);
   checkDeclaredStats(matrix);
+  checkOwnerDecisions(matrix);
 
   console.log('');
   console.log('=== acceptance-matrix-validate 总结 ===');
