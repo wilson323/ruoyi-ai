@@ -165,8 +165,25 @@ class P254AcceptanceTest {
         lenient().when(arbitrationMapper.selectList(any())).thenAnswer(inv -> new ArrayList<>(arbitrationRows));
         lenient().when(arbitrationMapper.updateById(any(GateArbitration.class))).thenReturn(1);
         lenient().when(systemConfigService.getIntValue(eq("gate.signDeadlineDays"), eq(3))).thenReturn(3);
-        lenient().when(memberMapper.selectList(any()))
-            .thenReturn(List.of(member(301L, "MARKET_PM"), member(302L, "RD_PM")));
+        // 按 wrapper 角色过滤（真库 SQL 语义）：signerPersonId(role) 取首个命中必须按角色命中，
+        // 无条件全量返回会让 RD_PM 解析到 301（MARKET 成员）误触发防串签
+        List<ProjectMember> memberPool = List.of(member(301L, "MARKET_PM"), member(302L, "RD_PM"));
+        lenient().when(memberMapper.selectList(any())).thenAnswer(inv -> {
+            com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> w =
+                (com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) inv.getArgument(0);
+            w.getSqlSegment();
+            java.util.Collection<Object> values = w.getParamNameValuePairs().values();
+            boolean market = values.contains("MARKET_PM");
+            boolean rd = values.contains("RD_PM");
+            if (market && rd) {
+                return memberPool;
+            }
+            if (market || rd) {
+                String role = market ? "MARKET_PM" : "RD_PM";
+                return memberPool.stream().filter(m -> role.equals(m.getRole())).toList();
+            }
+            return memberPool;
+        });
         lenient().when(gateMapper.update(any(), any())).thenReturn(1);
         // 扫描类用例的入口查询；返回内存 gate（单 gate 单次扫描）
         lenient().when(gateMapper.selectList(any())).thenReturn(List.of(gate));

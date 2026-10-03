@@ -191,9 +191,11 @@ public class GateReviewService implements IGateReviewService {
      * <p>对象级归属断言：角色复检之后补 gate → 项目 → 组 链路断言（同 inviteObservers
      * R212-④ 口径），否则任一持签署角色者可向他组 gate 签署放行。
      *
-     * <p><b>语义疑点（未改，待 owner 拍板）</b>：{@link #advance} 的放行条件是
-     * 「本轮已签数量 &gt;= 2」，而非「两方各签一次」，同一方连签两次即可凑满双签。
-     * 属业务规则，本方法不擅自修改。
+     * <p><b>防自签/防串签（2026-10-03 修复）</b>：除角色门（requireAuthorized）与同角色判重
+     * （requireNotSigned）外，reviewerId 参与比对——同一 reviewerId 不得在本轮以另一角色行
+     * 出现（防同人双角色连签凑满双签）；本人角色行的指定签署人（占位行 reviewerId 优先，
+     * 退回在册成员解析）与 actor.id 不符即拒（防 A 角色他人代签）。见
+     * {@link #requireSignerIdentity}。</p>
      */
     @Transactional(rollbackFor = Exception.class)
     public GateReview sign(Long gateId, String decision, String opinion, IpdActor actor) {
@@ -204,13 +206,15 @@ public class GateReviewService implements IGateReviewService {
         }
         requireAuthorized(gate.getGateCode(), actor);
         assertGateProjectSameGroup(actor, gate);
-        requireNotSigned(gate, actor.role());
+        List<GateReview> currentRoundRows = roundRows(gate.getId(), gate.getCurrentRound());
+        requireNotSigned(gate, actor.role(), currentRoundRows);
+        requireSignerIdentity(gate, actor, currentRoundRows);
 
         // R11 / A4 修复（预落待签占位行对偶，逐字对照 arbitrate() 对 openArbitration 预落行的
         // 「提交=原行落决策 UPDATE，无行退回 INSERT」范式）：本轮本角色若已有 decision=NULL
         // 占位行（openSignQueue 预落），签署走 UPDATE 原行；无占位行（存量在途 gate / 旧路径）
         // 退回 INSERT，行为兼容。
-        GateReview placeholder = roundRows(gate.getId(), gate.getCurrentRound()).stream()
+        GateReview placeholder = currentRoundRows.stream()
             .filter(r -> actor.role().equals(r.getReviewerType()) && r.getDecision() == null)
             .findFirst().orElse(null);
         GateReview row;
@@ -432,12 +436,47 @@ public class GateReviewService implements IGateReviewService {
     }
 
     /** 同轮同角色重复签署拒绝（并发窗口由 uk_gr_gate_type_round 唯一约束兜底）。 */
-    private void requireNotSigned(Gate gate, String reviewerType) {
+    private void requireNotSigned(Gate gate, String reviewerType, List<GateReview> roundRows) {
         // R11 / A4：只统计已决行——decision=NULL 待签占位行不算已签（否则预落后本人永无法签署）
-        boolean already = roundRows(gate.getId(), gate.getCurrentRound()).stream()
+        boolean already = roundRows.stream()
             .anyMatch(r -> reviewerType.equals(r.getReviewerType()) && r.getDecision() != null);
         if (already) {
             throw new IpdBusinessException("本轮您已签署，不可重复签署");
+        }
+    }
+
+    /**
+     * 防自签/防串签（2026-10-03 修复双签缺口）：reviewerId 落库后首次参与签署比对。
+     *
+     * <p><b>防自签</b>：同一 reviewerId 在本轮以<b>另一角色</b>的行出现（占位或已决均算——
+     * 占位行 reviewerId 即该角色的指定签署人，同人被指定双角色时双签已退化为单人行，
+     * 第二签必须拦）⇒ 拒绝。此前同一人以 MARKET_PM+RD_PM 连签两行即可凑满
+     * {@code decided.size() >= 2} 直接放行 Gate。</p>
+     *
+     * <p><b>防串签</b>：本人角色在本轮的指定签署人（占位行 reviewerId 优先；无占位行退回
+     * {@link #signerPersonId} 在册成员解析）与 {@code actor.id()} 不符 ⇒ 拒绝——杜绝持角色
+     * 的第三人替在册签署人代签。指定人解析不到（数据治理缺失态：无占位行且该角色无在册
+     * 成员）⇒ 放行，与 {@link #openSignQueue} 的「解析不到签署人跳过不抛错」同口径；
+     * 落库 reviewerId=actor.id 仍如实记录实际签署人，审计可追。</p>
+     *
+     * <p>多租户：reviewerId 为 personId（单企业部署内全局唯一），比对不涉租户列；
+     * 行查询走 {@link #roundRows}，租户过滤由 MyBatis-Plus 拦截器统一施加。</p>
+     */
+    private void requireSignerIdentity(Gate gate, IpdActor actor, List<GateReview> roundRows) {
+        boolean selfDualRole = roundRows.stream()
+            .anyMatch(r -> !actor.role().equals(r.getReviewerType())
+                && actor.id() != null && actor.id().equals(r.getReviewerId()));
+        if (selfDualRole) {
+            throw new IpdBusinessException("同一人不得在同一 Gate 评审中以双角色连签（防自签）");
+        }
+        GateReview ownRoleRow = roundRows.stream()
+            .filter(r -> actor.role().equals(r.getReviewerType()))
+            .findFirst().orElse(null);
+        Long designated = ownRoleRow != null && ownRoleRow.getReviewerId() != null
+            ? ownRoleRow.getReviewerId()
+            : signerPersonId(gate, actor.role());
+        if (designated != null && !designated.equals(actor.id())) {
+            throw new IpdBusinessException("本角色签署人非本人，不可代签（防串签）");
         }
     }
 
