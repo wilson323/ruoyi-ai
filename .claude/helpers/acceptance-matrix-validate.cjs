@@ -5,9 +5,9 @@
  *   正向：matrix 中的 unitTestClass 在 src/test/java 下能找到对应 .java 文件
  *         matrix 中的 docRef 在 docs/ 下能找到对应 .md 文件
  *         status=covered 的 AC 必须有 linkedCommits 且长度 ≥ 1
- *         ac_id 必须符合 ^AC-(INC|EXT|MIN)-\d+[a-z]?$
- *   反向：src/test/java 下的测试类若 @DisplayName 含 AC-INC-* 编号，必须在 matrix 中
- *         出现（owner OD-AM-01 决策前用「弱反向」：仅 WARN 不阻断）
+ *         ac_id 必须符合 schema 的 rows[].ac_id.pattern（当前 18 个模块前缀）
+ *   反向：src/test/java 下的测试类若 @DisplayName 含任一模块前缀的验收编号，必须在
+ *         matrix 中出现（owner OD-AM-01 决策前用「弱反向」：仅 WARN 不阻断）
  *   派生：_metadata.coverage_stats 必须等于 rows 里逐 status 数出来的真值。
  *         （2026-10-03 加：原声明值 covered=5/partial=3/blocked=2 与行内真值
  *           covered=9/partial=1 长期不符却无人报红——声明与实况脱钩就是假绿。
@@ -47,6 +47,49 @@ function readJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
+/**
+ * 验收编号正则的**唯一来源** = schema 的 `rows[].ac_id.pattern`。
+ *
+ * 2026-10-03 之前本文件同时存在四份互不一致的副本：
+ *   :8   头部注释        3 个前缀
+ *   :83  行内注释        「17 个模块前缀」
+ *   :84  正向校验代码    18 个前缀
+ *   :168 反向校验代码    **3 个前缀**（INC|EXT|MIN）
+ * 而 schema 自己说明 EXT 与 MIN 当前 0 条 AC 使用 —— 即反向校验认的三个前缀里
+ * 有两个是空的。实测后果：3074 条 @DisplayName 共含 **133** 个不同验收编号，
+ * 反向校验只看得到 **28** 个，**105 个（79%）被静默漏掉**。它报绿，但它看不见
+ * 八成输入；且本脚本已被 CI 调用（.github/workflows/docs-link-check.yml），
+ * 属于「已接线的检查在假绿」。现改为从 schema 取一次、两处共用。
+ *
+ * 取不到 schema 就抛错，不退回任何内置正则：宁可直接失败，也不要拿一个更窄的
+ * 正则静默漏检 —— 后者正是本次要根治的形状。
+ */
+let _acIdPatternCache = null;
+function acIdPattern() {
+  if (_acIdPatternCache !== null) return _acIdPatternCache;
+  const schema = readJson(SCHEMA_PATH);
+  const prop = schema && schema.properties && schema.properties.rows
+    && schema.properties.rows.items && schema.properties.rows.items.properties
+    && schema.properties.rows.items.properties.ac_id;
+  const p = prop && prop.pattern;
+  if (typeof p !== 'string' || p === '') {
+    throw new Error('schema 未给出 rows[].ac_id.pattern —— 本脚本的编号正则取自 schema，'
+      + '结构若调整须同步此处取值路径');
+  }
+  _acIdPatternCache = p;
+  return _acIdPatternCache;
+}
+
+/** 带锚，用于整串匹配（正向）。 */
+function acIdRegex() {
+  return new RegExp(acIdPattern());
+}
+
+/** 去锚 + 全局，用于在正文里扫出所有编号（反向）。 */
+function acIdRegexGlobal() {
+  return new RegExp(acIdPattern().replace(/^\^/, '').replace(/\$$/, ''), 'g');
+}
+
 function listFiles(dir, suffix) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
@@ -80,8 +123,8 @@ function checkMatrix(matrix) {
     }
     acIds.add(row.ac_id);
 
-    // 2. ac_id 格式（17 个模块前缀，OD-AM-02 批量导入时同步扩充）
-    if (!/^AC-(INC|EXT|MIN|AUTH|AUD|ENV|GATE|GLB|CFG|PROD|AI|DEL|HAND|HR|IPD|KPI|REQ|TEAM)-\d+[a-z]?$/.test(row.ac_id)) {
+    // 2. ac_id 格式（前缀集合的唯一来源 = schema，见 acIdPattern()，本处不再内联正则）
+    if (!acIdRegex().test(row.ac_id)) {
       log('ERROR', `ac_id 格式不合规: ${row.ac_id}`);
     }
 
@@ -161,11 +204,13 @@ function checkCoverageThreshold(matrix) {
 }
 
 function checkReverse(matrix, acIds) {
-  // 软反向：扫描测试类 @DisplayName 含 AC-INC-* 编号但不在 matrix 中 → WARN
+  // 软反向：扫描测试类 @DisplayName 含任一模块前缀的验收编号但不在 matrix 中 → WARN
   const javaFiles = listFiles(TEST_DIR, '.java');
   const referencedInDisplayName = new Set();
   const dispRe = /@DisplayName\s*\(\s*"([^"]*)"\s*\)/g;
-  const acRe = /AC-(INC|EXT|MIN)-\d+[a-z]?/g;
+  // 前缀集合与正向校验共用同一来源（schema）；2026-10-03 前此处硬编码
+  // INC|EXT|MIN 三个前缀，实测漏掉 105/133（79%）的引用。
+  const acRe = acIdRegexGlobal();
   for (const f of javaFiles) {
     const src = fs.readFileSync(f, 'utf8');
     let m;
@@ -276,8 +321,14 @@ function main() {
 
   log('INFO', `acceptance-matrix.json 加载：${(matrix.rows || []).length} 行（version=${matrix.version}）`);
 
-  const acIds = checkMatrix(matrix);
-  checkReverse(matrix, acIds);
+  let acIds = new Set();
+  try {
+    acIds = checkMatrix(matrix);
+    checkReverse(matrix, acIds);
+  } catch (e) {
+    // 取不到 schema 正则时立刻硬错误，不退回内置正则静默漏检（理由见 acIdPattern 注释）
+    log('ERROR', `验收编号正则取值失败，正向/反向校验未完成: ${e.message}`);
+  }
   checkCoverageThreshold(matrix);
   checkDeclaredStats(matrix);
   checkOwnerDecisions(matrix);

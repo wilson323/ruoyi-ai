@@ -33,7 +33,14 @@ for d in "${DOMAINS[@]}"; do
   else
     cov=0
   fi
-  if [ "$cov" -lt 60 ]; then
+  # 域内零个主源码文件 ≠ 覆盖率不达标，是「本域当前无实现」。
+  # 2026-10-03 修：此前零文件走 cov=0 < 60 → ❌ → OVERALL_FAIL=1，使本门禁**恒红**
+  #   （launch_date 实测 java=0 test=0，与代码健康度无关）。恒红会让「接线即冻结
+  #   所有 Java 提交」，且掩盖真实的三个红域。改为显式跳过并标明原因——报告里
+  #   仍显示 0/0，可见性不丢；OVERALL_FAIL 只由「有实现但覆盖不足」的域决定。
+  if [ "$java_count" -eq 0 ]; then
+    status="SKIP(域内零文件)"
+  elif [ "$cov" -lt 60 ]; then
     status="❌"
     OVERALL_FAIL=1
   else

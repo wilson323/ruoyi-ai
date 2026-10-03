@@ -34,6 +34,20 @@
 
 set -e
 
+# ---------------------------------------------------------------------------
+# owner 紧急绕过：SKIP_COVERAGE_GATE=1
+# 2026-10-03 补齐。此前本文件第 74 行的报错信息、安装器
+# (scripts/install-coverage-pre-commit.sh:56) 与安装说明
+# (docs/ipd-系统说明/pre-commit-安装说明-20260919.md:34/70/125) 共 4 处
+# 教用户用 `SKIP_COVERAGE_GATE=1 git commit` 绕过，但**全仓没有任何一行
+# 代码读取这个变量** —— 逃生口是假的，照文档操作仍会被拦住且不知原因。
+# 要么让承诺成真，要么删掉承诺；此处选择让承诺成真。
+# ---------------------------------------------------------------------------
+if [ "${SKIP_COVERAGE_GATE:-0}" = "1" ]; then
+  echo "[pre-commit-coverage] SKIP_COVERAGE_GATE=1 → 跳过覆盖率门禁（owner 紧急绕过，本次未校验）"
+  exit 0
+fi
+
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 SCRIPT="$ROOT/scripts/check-test-coverage-by-domain.sh"
 
