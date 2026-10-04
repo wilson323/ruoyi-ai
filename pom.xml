@@ -464,6 +464,12 @@
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>-parameters</arg>
+                        <!-- 让废弃 API 在编译日志里带 文件:行号 出现。
+                             此前根 pom 未开此项，导致本仓没有任何机制能自动发现
+                             废弃调用（2026-10-04 审计：AgentScope 2.0.3 的 Hook /
+                             LongTermMemory 等 9 个 forRemoval 类型长期在使用中而无人察觉）。
+                             未启用 -Werror / failOnWarning，故仅打印警告，不会阻断构建。 -->
+                        <arg>-Xlint:deprecation</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
