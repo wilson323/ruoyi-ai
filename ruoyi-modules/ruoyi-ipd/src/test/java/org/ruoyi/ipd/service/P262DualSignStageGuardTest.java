@@ -78,8 +78,6 @@ class P262DualSignStageGuardTest {
     @Mock private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;
     @Mock private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
     @Mock private GateEngine gateEngine;
-    @Mock private ProjectBootstrapService projectBootstrapService;
-    @Mock private IProjectCertService projectCertService;
     @Mock private RequirementChangeService requirementChangeService;
 
     private RequirementChangeService reqChangeService;

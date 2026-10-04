@@ -66,8 +66,6 @@ class StateMachineGuardD1WiringTest {
     @Mock private KpiRecordMapper kpiRecordMapper;
     @Mock private IAuditLogService auditLogService;
     @Mock private GateEngine gateEngine;
-    @Mock private ProjectBootstrapService projectBootstrapService;
-    @Mock private IProjectCertService projectCertService;
     @Mock private PlatformTransactionManager txManager;
     @Mock private RequirementChangeService requirementChangeService;
 

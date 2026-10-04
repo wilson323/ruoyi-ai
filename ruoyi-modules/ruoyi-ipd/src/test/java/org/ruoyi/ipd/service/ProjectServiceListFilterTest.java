@@ -63,8 +63,6 @@ class ProjectServiceListFilterTest {
     @Mock private ProjectMemberMapper projectMemberMapper;
     @Mock private IAuditLogService auditLogService;
     @Mock private GateEngine gateEngine;
-    @Mock private ProjectBootstrapService projectBootstrapService;
-    @Mock private IProjectCertService projectCertService;
     @Mock private PlatformTransactionManager transactionManager;
     @Mock private RequirementChangeService requirementChangeService;
 

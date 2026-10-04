@@ -34,8 +34,6 @@ class P122AcceptanceTest {
     @Mock private ProductMapper productMapper;
     @Mock private IAuditLogService auditLogService;
     @Mock private GateEngine gateEngine;
-    @Mock private ProjectBootstrapService projectBootstrapService;
-    @Mock private IProjectCertService projectCertService;
     @Mock private org.ruoyi.ipd.mapper.StageActionMapper stageActionMapper;
     @Mock private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
     @Mock private LaunchDateChangeRequestMapper launchDateChangeRequestMapper;

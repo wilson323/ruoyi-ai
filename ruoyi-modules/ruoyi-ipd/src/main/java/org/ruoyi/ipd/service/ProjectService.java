@@ -75,7 +75,7 @@ public class ProjectService implements IProjectService {
     /** R149 B2：PM 维度项目列表角色过滤（在职 MARKET_PM/RD_PM）所需 mapper。
      * 走 setter 模式，
      * nullable 兼容 P122AcceptanceTest / P131DatabaseIntegrationTest 等
-     * 旧 10 参构造器入口（不破坏既有兄弟测试）。 */
+     * 旧构造器入口（不破坏既有兄弟测试）。 */
     @Autowired(required = false)
     private ProjectMemberMapper projectMemberMapper;
 
