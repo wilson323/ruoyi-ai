@@ -68,6 +68,31 @@ class ProjectAgentBackgroundMemoryLifecycleTest {
         assertTrue(owner.liveNestedSessions().isEmpty(), "子智能体跑完后必须从未收口集合里摘掉");
     }
 
+    @Test void sameSessionCallsRemainOwnedUntilEverySubscriptionSettles() {
+        var owner = new ProjectAgentBackgroundMemoryLifecycle();
+        Agent child = mock(Agent.class); when(child.getName()).thenReturn("general-purpose-subagent");
+        reactor.core.publisher.Sinks.Many<AgentEvent> firstEnd = reactor.core.publisher.Sinks.many().unicast().onBackpressureBuffer();
+        reactor.core.publisher.Sinks.Many<AgentEvent> secondEnd = reactor.core.publisher.Sinks.many().unicast().onBackpressureBuffer();
+        var first = owner.onAgent(child, callContext(), null, input -> firstEnd.asFlux());
+        var second = owner.onAgent(child, callContext(), null, input -> secondEnd.asFlux());
+        assertTrue(owner.liveNestedSessions().isEmpty(), "未订阅的调用不能登记为在途");
+        first.subscribe(); var pending = second.subscribe();
+        assertEquals(2, owner.liveNestedSessions().size(), "同会话并行调用必须独立计数");
+        firstEnd.tryEmitComplete();
+        assertEquals(1, owner.liveNestedSessions().size(), "先结束的调用不能解除仍在执行的调用");
+        assertThrows(IllegalStateException.class, () -> owner.awaitNestedCallsSettled(0));
+        pending.dispose();
+        assertTrue(owner.liveNestedSessions().isEmpty());
+    }
+
+    @Test void synchronousDelegateFailureDoesNotLeakNestedRegistration() {
+        var owner = new ProjectAgentBackgroundMemoryLifecycle();
+        Agent child = mock(Agent.class); when(child.getName()).thenReturn("general-purpose-subagent");
+        assertThrows(IllegalArgumentException.class, () -> owner.onAgent(child, callContext(), null,
+            input -> { throw new IllegalArgumentException("delegate failed"); }).blockLast());
+        assertTrue(owner.liveNestedSessions().isEmpty());
+    }
+
     /** 根运行自己就在归档固化的调用栈上，算成待收口会让门禁永远等自己。 */
     @Test void rootCallIsNeverCountedAsPendingNestedWork() {
         var owner = new ProjectAgentBackgroundMemoryLifecycle();

@@ -66,7 +66,7 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
      * 单纯调大 {@link #QUIESCE_BUDGET_SECONDS}（已实测 30→120）对本故障毫无作用。
      */
     private final java.util.Set<String> liveNestedSessions = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private final java.util.concurrent.atomic.AtomicLong anonymousCalls = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicLong callIds = new java.util.concurrent.atomic.AtomicLong();
     private volatile io.agentscope.harness.agent.workspace.WorkspaceManager workspace;
     private Throwable failure;
 
@@ -111,7 +111,9 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
         if (name == null || org.ruoyi.ipd.agent.ProjectAgentConstants.AGENT_ID.equals(name)) return NestedCall.NONE;
         String session = context == null ? null : context.getSessionId();
         String key = session == null || session.isBlank()
-            ? "call#" + anonymousCalls.incrementAndGet() : name + "/" + session;
+            ? name + "/unknown" : name + "/" + session;
+        // Session identity can repeat across concurrent calls; settlement belongs to one subscription.
+        key += "#" + callIds.incrementAndGet();
         liveNestedSessions.add(key);
         return new NestedCall(key);
     }
@@ -168,44 +170,46 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
 
     @Override public Flux<AgentEvent> onAgent(Agent agent, RuntimeContext context, AgentInput input,
             Function<AgentInput, Flux<AgentEvent>> next) {
-        requireCallSession(agent, context);
-        var call = beginCall(agent, context);
-        // Registered before official hooks: their dispatch completes before this outer terminal gate.
-        return next.apply(input).materialize().concatMap(signal -> {
-            if (signal.isOnComplete() || signal.isOnError()) {
-                // 先解除登记再排空：根运行的终态门禁要把子调用一并等进来，子调用自己不能被自己等住。
-                call.settle(liveNestedSessions);
-                try { drain(); }
-                catch (RuntimeException ioFailure) {
-                    if (signal.isOnError()) {
-                        Throwable original = signal.getThrowable();
-                        if (original != ioFailure) original.addSuppressed(ioFailure);
-                        return reactor.core.publisher.Mono.just(signal);
-                    }
-                    return reactor.core.publisher.Mono.error(ioFailure);
-                }
-            }
-            return reactor.core.publisher.Mono.just(signal);
-        }).<AgentEvent>dematerialize().transform(reactor.core.publisher.Operators.<AgentEvent, AgentEvent>lift((source, downstream) ->
-            new reactor.core.CoreSubscriber<AgentEvent>() {
-                public reactor.util.context.Context currentContext() { return downstream.currentContext(); }
-                public void onSubscribe(org.reactivestreams.Subscription upstream) {
-                    downstream.onSubscribe(new org.reactivestreams.Subscription() {
-                        public void request(long count) { upstream.request(count); }
-                        public void cancel() {
-                            // Stop the producer first; drain still finishes inside the call before outer SDK release.
-                            try { upstream.cancel(); } catch (RuntimeException cancelFailure) { recordFailure(cancelFailure); }
-                            finally {
-                                call.settle(liveNestedSessions);
-                                try { drain(); } catch (RuntimeException ignored) { /* sticky receipt protects checkpoint */ }
-                            }
+        return Flux.defer(() -> {
+            requireCallSession(agent, context);
+            var call = beginCall(agent, context);
+            // Registered before official hooks: their dispatch completes before this outer terminal gate.
+            return Flux.defer(() -> next.apply(input)).materialize().concatMap(signal -> {
+                if (signal.isOnComplete() || signal.isOnError()) {
+                    // 先解除登记再排空：根运行的终态门禁要把子调用一并等进来，子调用自己不能被自己等住。
+                    call.settle(liveNestedSessions);
+                    try { drain(); }
+                    catch (RuntimeException ioFailure) {
+                        if (signal.isOnError()) {
+                            Throwable original = signal.getThrowable();
+                            if (original != ioFailure) original.addSuppressed(ioFailure);
+                            return reactor.core.publisher.Mono.just(signal);
                         }
-                    });
+                        return reactor.core.publisher.Mono.error(ioFailure);
+                    }
                 }
-                public void onNext(AgentEvent event) { downstream.onNext(event); }
-                public void onError(Throwable error) { downstream.onError(error); }
-                public void onComplete() { downstream.onComplete(); }
-            }));
+                return reactor.core.publisher.Mono.just(signal);
+            }).<AgentEvent>dematerialize().transform(reactor.core.publisher.Operators.<AgentEvent, AgentEvent>lift((source, downstream) ->
+                new reactor.core.CoreSubscriber<AgentEvent>() {
+                    public reactor.util.context.Context currentContext() { return downstream.currentContext(); }
+                    public void onSubscribe(org.reactivestreams.Subscription upstream) {
+                        downstream.onSubscribe(new org.reactivestreams.Subscription() {
+                            public void request(long count) { upstream.request(count); }
+                            public void cancel() {
+                                // Stop the producer first; drain still finishes inside the call before outer SDK release.
+                                try { upstream.cancel(); } catch (RuntimeException cancelFailure) { recordFailure(cancelFailure); }
+                                finally {
+                                    call.settle(liveNestedSessions);
+                                    try { drain(); } catch (RuntimeException ignored) { /* sticky receipt protects checkpoint */ }
+                                }
+                            }
+                        });
+                    }
+                    public void onNext(AgentEvent event) { downstream.onNext(event); }
+                    public void onError(Throwable error) { downstream.onError(error); }
+                    public void onComplete() { downstream.onComplete(); }
+                }));
+        });
     }
 
     public void drain() {
