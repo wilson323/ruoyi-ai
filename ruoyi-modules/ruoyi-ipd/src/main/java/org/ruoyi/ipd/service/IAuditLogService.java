@@ -29,6 +29,17 @@ public interface IAuditLogService {
 
     public AuditChainVerifyResult verifyChainDetailed();
 
+    /**
+     * 带锚表判据的全链校验（SEC-AUD-01）——唯一保留「篡改类型」结论码的出口。
+     *
+     * <p>另外三个出口（{@link #verifyChain()} / {@link #verifyChainStrict()} /
+     * {@link #verifyChainDetailed()}）只回 {@link AuditChainVerifyResult} 的四态 verdict，
+     * 无法区分「删链尾 / 链尾被改写 / 整表被清空 / 锚行缺失」；需要按成因归因的消费方
+     * （如定时自检 {@code AuditChainIntegrityScheduler}）读本方法的
+     * {@code anchor().code()}。实现与语义见 {@link AuditLogServiceImpl#verifyChainAnchored()}。
+     */
+    public AuditLogServiceImpl.AnchoredChainVerifyResult verifyChainAnchored();
+
     public long rebuildChain();
 
     public IPage<AuditLog> listByOperatorIds(List<Long> operatorIds, int pageNo, int pageSize, Long beforeSeq);

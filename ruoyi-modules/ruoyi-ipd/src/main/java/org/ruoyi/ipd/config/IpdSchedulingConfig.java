@@ -28,7 +28,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * AiTaskFallbackScanner 每 30s 轮询（R221 兜底扫描，同为常驻间隔任务；
  * 间隔可配 ipd.aiexec.fallback.interval-ms）；
  * ProjectAgentSandboxReaper 每小时 :23（沙箱孤儿容器超龄清扫，另含启动全量清扫，2026-10-03；
- * 开关与窗口可配 ipd.agent.sandbox-reaper.enabled / orphan-ttl-hours）。
+ * 开关与窗口可配 ipd.agent.sandbox-reaper.enabled / orphan-ttl-hours）；
+ * AuditChainIntegrityScheduler 03:30（审计链完整性定时自检：验链锚表判据 + 基线外新增 GAP 告警，2026-10-03；
+ * 开关与已知基线可配 ipd.audit.chain-verify.enabled / baseline-gaps——夜间低谷时段，与 00:00 及 09:00~10:05 家族均不撞）。
  */
 @Configuration
 @EnableScheduling

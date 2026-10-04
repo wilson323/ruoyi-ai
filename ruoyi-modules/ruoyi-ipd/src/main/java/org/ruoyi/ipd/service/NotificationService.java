@@ -131,6 +131,8 @@ public class NotificationService implements INotificationService {
         public static final String AUDIT_ANOMALY_BULK_WRITE = "AUDIT_ANOMALY_BULK_WRITE";
         /** AI-P3 #7：非超管角色执行敏感动作（PERMANENT_DELETE/REBUILD_CHAIN/TRANSFER_SUPER_ADMIN） */
         public static final String AUDIT_ANOMALY_SENSITIVE_OFFROLE = "AUDIT_ANOMALY_SENSITIVE_OFFROLE";
+        /** 审计链完整性定时自检（AuditChainIntegrityScheduler）：哈希断裂 / 锚表判据异常 / 基线外新增 GAP，FYI 给全体在任超管 */
+        public static final String AUDIT_CHAIN_BROKEN = "AUDIT_CHAIN_BROKEN";
 
         private Types() {
         }
