@@ -462,4 +462,53 @@ class ProjectScopedLongTermMemoryTest {
         assertThat(memory.lastOutcome().failure()).isNotNull();
         assertThat(memory.lastOutcome().written()).isFalse();
     }
+
+    /**
+     * 抽取判定为「无可记内容」不是写入也不是失败：它是第三种结局。
+     *
+     * <p>旧实现 {@code written()} 只判 {@code failure == null}，本轮因此被记成 WRITTEN，
+     * 于是空轮在回执里与「真的记住了一条」同形。模型对 {@code MEM|NONE|空} 的原生回应
+     * 是最常见的一种空轮形态（提示词明确要求这么答），必须走的正是这条真实路径。
+     */
+    @Test
+    @DisplayName("RecordOutcome 记账：抽取到 0 条为「无结果」态，既非写入也非失败")
+    void zeroExtractionIsNoResultNotWritten() {
+        IpdAgentMemoryMapper mapper = mock(IpdAgentMemoryMapper.class);
+        var memory = new ProjectScopedLongTermMemory(PROJECT, PERSON, RUN, mapper,
+            modelReturning("MEM|NONE|空"));
+
+        memory.record(userSaid("今天天气不错")).block(Duration.ofSeconds(15));
+
+        var outcome = memory.lastOutcome();
+        assertThat(outcome.failure()).isNull();
+        assertThat(outcome.extracted()).isZero();
+        assertThat(outcome.noResult()).isTrue();
+        assertThat(outcome.written()).isFalse();
+        verify(mapper, never()).insertIgnoreDuplicate(any());
+    }
+
+    /** 三态互斥且完备：任一 RecordOutcome 上恰有一个状态成立，不允许重叠，也不允许空档。 */
+    @Test
+    @DisplayName("RecordOutcome 记账：无结果 / 已写入 / 失败 三态互斥且完备")
+    void recordOutcomeStatesAreMutuallyExclusiveAndExhaustive() {
+        var outcomes = List.of(
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, null),
+            new ProjectScopedLongTermMemory.RecordOutcome(1, 1, null),
+            new ProjectScopedLongTermMemory.RecordOutcome(2, 0, null),
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, new IllegalStateException("boom")));
+
+        assertThat(outcomes).allSatisfy(outcome -> {
+            int holding = (outcome.noResult() ? 1 : 0) + (outcome.written() ? 1 : 0)
+                + (outcome.failure() != null ? 1 : 0);
+            assertThat(holding).as("三态恰有一个成立，outcome=%s", outcome).isEqualTo(1);
+        });
+
+        // 边界逐条钉死：0 条不是写入；抽取 ≥1 条且未失败才是写入；有 failure 一律不是写入。
+        assertThat(outcomes.get(0).noResult()).isTrue();
+        assertThat(outcomes.get(0).written()).isFalse();
+        assertThat(outcomes.get(1).written()).isTrue();
+        assertThat(outcomes.get(2).written()).isTrue();
+        assertThat(outcomes.get(3).noResult()).isFalse();
+        assertThat(outcomes.get(3).written()).isFalse();
+    }
 }

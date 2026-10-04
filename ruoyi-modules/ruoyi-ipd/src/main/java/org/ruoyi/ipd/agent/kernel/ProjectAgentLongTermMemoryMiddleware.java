@@ -40,11 +40,24 @@ import reactor.core.publisher.Mono;
  * 召回失败向主运行传播（它决定本轮回答质量）；<b>记录失败不再改写业务终态</b>，
  * 改为写 {@code MEMORY_RECEIPT} 持久回执（状态 / 错误类别 / 可重试）后正常收尾。
  * 合法空记忆不注入。
+ *
+ * <p><b>回执三态互斥（2026-10-03 补）</b>：{@code NO_RESULT}（本轮没有值得记忆的内容）、
+ * {@code WRITTEN}（抽取到并已尝试入库）、{@code WRITE_FAILED}（抽取或入库失败）三者
+ * 恰有一个成立，且每个正常完成的运行都会落下其中一个。补第三态之前，抽取到 0 条被贴成
+ * {@code WRITTEN}，空对话上下文则连回执都不落——前者让「没记住」冒充「记住了」，
+ * 后者让「没抽取」与「抽取失败」都只表现为「查不到记录」。
  */
 final class ProjectAgentLongTermMemoryMiddleware implements MiddlewareBase {
 
     private static final String RECEIPT_WRITTEN = "WRITTEN";
     private static final String RECEIPT_WRITE_FAILED = "WRITE_FAILED";
+    /**
+     * 无结果：本轮没有值得记忆的内容（空对话 / 转录为空 / 模型判定 NONE）。
+     *
+     * <p>与 {@link #RECEIPT_WRITTEN}、{@link #RECEIPT_WRITE_FAILED} 互斥，且<b>不是失败</b>：
+     * 补这第三态之前，抽取到 0 条被贴上 WRITTEN，事后按 status 统计会把空轮算成写入轮。
+     */
+    private static final String RECEIPT_NO_RESULT = "NO_RESULT";
 
     private final ProjectScopedLongTermMemory longTermMemory;
     private final ProjectAgentEventSink sink;
@@ -122,6 +135,10 @@ final class ProjectAgentLongTermMemoryMiddleware implements MiddlewareBase {
             ? react.getAgentState(ctx) : agent.getAgentState();
         List<Msg> context = state.getContext();
         if (context == null || context.isEmpty()) {
+            // 抽取根本没启动，但结局同样是「无结果」：不落回执照样是静默缺口——
+            // 它与「抽取跑了但失败」都只表现为「查不到任何记忆记录」，事后无法区分。
+            // 空上下文还可能意味着读错了 state 槽（见类注释的执行身份一节），更需留痕。
+            receipt(RECEIPT_NO_RESULT, null, false, 0, 0);
             return Mono.empty();
         }
         return longTermMemory.record(context)
@@ -133,7 +150,12 @@ final class ProjectAgentLongTermMemoryMiddleware implements MiddlewareBase {
             })
             .doOnSuccess(ignored -> {
                 ProjectScopedLongTermMemory.RecordOutcome outcome = longTermMemory.lastOutcome();
-                if (outcome != null && outcome.written()) {
+                if (outcome == null) {
+                    return;
+                }
+                if (outcome.noResult()) {
+                    receipt(RECEIPT_NO_RESULT, null, false, outcome.extracted(), outcome.saved());
+                } else if (outcome.written()) {
                     receipt(RECEIPT_WRITTEN, null, false, outcome.extracted(), outcome.saved());
                 }
             });

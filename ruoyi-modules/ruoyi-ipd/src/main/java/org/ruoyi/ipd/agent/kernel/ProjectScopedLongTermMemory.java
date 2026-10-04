@@ -163,9 +163,24 @@ public final class ProjectScopedLongTermMemory implements LongTermMemory {
           });
     }
 
-    /** 抽取与入库的结果快照；{@link #record} 终止后读取，由调用方写持久回执。 */
+    /**
+     * 抽取与入库的结果快照；{@link #record} 终止后读取，由调用方写持久回执。
+     *
+     * <p><b>三态互斥（2026-10-03 补）</b>：{@link #noResult()}、{@link #written()}、
+     * {@code failure != null} 三者恰有一个成立，不再有交集。旧形态只有「已写入 / 写失败」两态，
+     * 且 {@code written()} 仅判 {@code failure == null}——抽取到 0 条因此被写进 WRITTEN，
+     * 「本轮没有值得记的内容」与「真的记住了一条」在回执里同形，
+     * 事后按 status 统计必然把空轮算成写入轮。
+     */
     public record RecordOutcome(int extracted, int saved, Throwable failure) {
-        public boolean written() { return failure == null; }
+        /** 已写入：抽取到至少一条且未失败。 */
+        public boolean written() { return failure == null && extracted > 0; }
+
+        /**
+         * 无结果：抽取到 0 条且未失败——空对话、转录为空、模型判定无可记内容都归此态。
+         * 这是「本次没有可记的事」，不是故障，也不得与「已写入」合并成一态。
+         */
+        public boolean noResult() { return failure == null && extracted == 0; }
     }
 
     /**

@@ -30,10 +30,15 @@ class ProjectAgentLongTermMemoryMiddlewareTest {
     private final ProjectAgentEventSink sink = mock(ProjectAgentEventSink.class);
 
     private ProjectAgentLongTermMemoryMiddleware middleware() {
+        return middleware(sink);
+    }
+
+    /** 每次换一个 sink，否则同一替身会累积多轮回执，验证「恰好一条」时必然误判。 */
+    private ProjectAgentLongTermMemoryMiddleware middleware(ProjectAgentEventSink target) {
         when(agent.getAgentState()).thenReturn(state);
         when(state.getContext()).thenReturn(messages);
         when(memory.retrieve(any())).thenReturn(Mono.empty());
-        return new ProjectAgentLongTermMemoryMiddleware(memory, sink);
+        return new ProjectAgentLongTermMemoryMiddleware(memory, target);
     }
 
     private AgentEvent rootSuccess() {
@@ -127,6 +132,96 @@ class ProjectAgentLongTermMemoryMiddlewareTest {
             .containsEntry("extracted", 3)
             .containsEntry("saved", 2)
             .containsEntry("retryable", false);
+    }
+
+    /**
+     * 「本轮没有值得记的内容」是第三种结局，不是成功也不是失败。
+     *
+     * <p>抽取到 0 条（模型判定 NONE、转录为空）走的是正常完成，旧实现给它贴 WRITTEN 状态，
+     * 于是「什么都没记住」与「记住了一条」在回执里同形——事后按 status 统计必然把空轮算成写入轮。
+     * 这里要求第三态 NO_RESULT，且明确不是 WRITE_FAILED。
+     */
+    @Test void zeroExtractionWritesNoResultReceiptInsteadOfWritten() {
+        var middleware = middleware();
+        when(memory.record(messages)).thenReturn(Mono.empty());
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, null));
+
+        middleware.onAgent(agent, context, input, ignored -> Flux.just(rootSuccess()))
+            .blockLast(Duration.ofSeconds(2));
+
+        @SuppressWarnings("unchecked")
+        var receiptCaptor = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(sink).onMemoryReceipt(receiptCaptor.capture());
+        assertThat(receiptCaptor.getValue())
+            .containsEntry("status", "NO_RESULT")
+            .containsEntry("retryable", false)
+            .containsEntry("extracted", 0)
+            .containsEntry("saved", 0);
+        assertThat(receiptCaptor.getValue().get("status")).isNotEqualTo("WRITTEN");
+        assertThat(receiptCaptor.getValue().get("status")).isNotEqualTo("WRITE_FAILED");
+    }
+
+    /**
+     * 空对话上下文是同一类静默缺口：抽取根本没启动，旧实现连回执都不落，
+     * 与「抽取跑了但失败」在系统里都是「查不到任何记录」。
+     */
+    @Test void emptyConversationContextAlsoWritesNoResultReceipt() {
+        var middleware = middleware();
+        when(state.getContext()).thenReturn(List.of());
+
+        middleware.onAgent(agent, context, input, ignored -> Flux.just(rootSuccess()))
+            .blockLast(Duration.ofSeconds(2));
+
+        verify(memory, never()).record(any());
+        @SuppressWarnings("unchecked")
+        var receiptCaptor = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(sink).onMemoryReceipt(receiptCaptor.capture());
+        assertThat(receiptCaptor.getValue())
+            .containsEntry("status", "NO_RESULT")
+            .containsEntry("retryable", false);
+    }
+
+    /**
+     * 三态互斥：同一份代码在三种真实结局下必须产出三个互不相同的 status。
+     * 只要任意两态塌成一个值，事后就无法从回执判断该轮到底发生过什么。
+     */
+    @Test void threeOutcomesAreMutuallyExclusive() {
+        var statuses = new java.util.LinkedHashSet<String>();
+
+        // 1) 抽取到 0 条 —— 无事可记
+        var noResultSink = mock(ProjectAgentEventSink.class);
+        when(memory.record(messages)).thenReturn(Mono.empty());
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, null));
+        statuses.add(recordAndCaptureStatus(middleware(noResultSink), noResultSink));
+
+        // 2) 正常抽取 —— 已写入
+        var writtenSink = mock(ProjectAgentEventSink.class);
+        when(memory.record(messages)).thenReturn(Mono.empty());
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(2, 1, null));
+        statuses.add(recordAndCaptureStatus(middleware(writtenSink), writtenSink));
+
+        // 3) 写异常 —— 失败
+        var failedSink = mock(ProjectAgentEventSink.class);
+        var timeout = new java.util.concurrent.TimeoutException("stream stalled");
+        when(memory.record(messages)).thenReturn(Mono.error(timeout));
+        when(memory.lastOutcome()).thenReturn(
+            new ProjectScopedLongTermMemory.RecordOutcome(0, 0, timeout));
+        statuses.add(recordAndCaptureStatus(middleware(failedSink), failedSink));
+
+        assertThat(statuses).containsExactlyInAnyOrder("NO_RESULT", "WRITTEN", "WRITE_FAILED");
+    }
+
+    private String recordAndCaptureStatus(ProjectAgentLongTermMemoryMiddleware middleware,
+            ProjectAgentEventSink target) {
+        middleware.onAgent(agent, context, input, ignored -> Flux.just(rootSuccess()))
+            .blockLast(Duration.ofSeconds(2));
+        @SuppressWarnings("unchecked")
+        var receiptCaptor = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(target).onMemoryReceipt(receiptCaptor.capture());
+        return String.valueOf(receiptCaptor.getValue().get("status"));
     }
 
     /**
