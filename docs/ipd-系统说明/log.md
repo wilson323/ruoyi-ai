@@ -14851,3 +14851,170 @@ P0-18 AgentScope 能力口径四方分裂、P0-19 能力开关零配置面。
 附录里被自身更正为「统一走通用动作引擎」。
 
 - marker: audit-snapshot-recheck-20261003
+
+## 2026-10-03 生产就绪七路并行核查 + 四项修复
+
+**引用本段前请先读「未证实 / 明确不写成结论的部分」——本节把已证、未证、待拍板分开写。**
+
+### 判定：不能上生产
+
+三类阻塞，性质不同：
+1. **一条可利用的跨组越权**（已修，见下）。
+2. **一批「实现了、测过了、有的还写进文档，但一次都没执行过」的功能**：向量库检索链
+   （三路独立收敛）、模型配置缺 `embedEndpoint`/`embedModel` 致向量化静默跳过、
+   `.harness/evolve/failures.jsonl` 零数据行（项目说明宣称的 evolver 自进化回路从未记录过一条）、
+   P0 升级链写半边零调用、Neo4j 排除被覆盖、`__BACKCOMPAT__` 兼容重载零调用方。
+3. **验证层自身至少 11 处「绿不等于验过」**：`check-cd-absolute-path` 结构性恒绿（只扫暂存区）；
+   `check-lint-reports-freshness` 先读后比再无条件回写（回归只被报出一次、第二次起当成新基线
+   永久接受）；`check-gate-self-red` 注入故障种子后不清理；`check-deletion-consistency` 被自身
+   输入的坏 JSON 搞崩仍照给退出码；`check-commit-completeness` 零 stdout 不告诉你为什么红；
+   `check-doc-drift` / `check-doc-link` 超时无输出；`check-cross-repo-contract` 的 awk 多字节缺陷
+   使本地与 CI 结论可能不同；前端 `pnpm run check:type` 因 turbo 缓存热而**不执行即报绿**
+   （CI 的 `typecheck-no-new-errors.yml` 用的就是它）；`scripts/test-audit-gate-inputs.py`
+   存在但无调用方、自身红 5 个用例无人知晓（已于 4d8a975a 修并接线为门禁 8）；
+   两处判据误报（`check-entity-complete` 61 处假问题真信号 0、
+   `check-tenant-excludes-apply` 74 处假问题真信号 0）。
+   **根因不是「门禁写得差」，是「从没要求过任何检查先证明自己能红」。** 反例是
+   `scripts/check-write-endpoint-ownership.py` + `ownership-gate-exempt.txt`——逐行强制理由、
+   只准删不准增、空清单 exit 1 而非 0、自陈三条未覆盖面。**这一套才是该被复制的模板。**
+
+### 已修复并提交
+
+**`c21f4de2` 招标遴选跨组越权链收口**
+- 病灶一：`BidInvitationService.selectResponse` 的 4 参入口**同时就是 HTTP 端点**，却以字符串
+  哨兵 `"__BACKCOMPAT__"` 决定是否跳过「缺失/不匹配/过期」三道检查——**校验开关由外部输入决定**。
+  该哨兵只服务于 3 参兼容重载，而后者生产代码零调用方（仅 3 个测试调用）。
+- 病灶二：`BidInvitation.confirmToken` 无 `@JsonIgnore`，随招标单详情返回，而详情端点无归属校验
+  → 跨组调用方可直接取到二次确认凭证。
+- 病灶三：`BidController#selectResponse` / `#modifyInvitation` 原本**登记在豁免清单**
+  （「存量中危待修：能操作本组外数据，排期 P4」）。
+- 叠加后果：任意内部用户可对任意产品组的 PUBLIC 招标单自造应标并自我遴选
+  （`BidResponseService.submit` 第 118 行只在 `ONE_TO_ONE` 下限制；PUBLIC 下任何内部研发 PM
+  均可应标，`rdPmId` 由服务端填提交者本人），共 2 个请求完成。
+- **现网数据实测（只读查询）**：11 条招标单 PUBLIC 6 / ONE_TO_ONE 5；当前 OPEN 的 2 条均为
+  `ONE_TO_ONE` 且待选应标数 0；全库 `bid_responses` 4 拒/3 中/3 撤、**零 PENDING**；
+  OPEN 单中 `confirm_token` 非空 0 条。**故当前无活跃可利用目标，但离可用只差一次正常业务操作。**
+- 自证：编译 rc=0；相关 5 类 48/48 通过；**变异自证**——哨兵装回后 8 用例中恰好 AC#6 变红且
+  行号落在断言上，还原后全绿；拥有权门禁豁免基线 84→82 且「未登记未校验 = 0」。
+- **该洞此前完全无测试覆盖**：原测试类 AC#1~AC#5 覆盖四种 token 情形，无一条碰哨兵。
+
+**`bdd831bc` 跨仓契约门禁三处抽取缺陷**（`scripts/check-cross-repo-contract.sh`）
+- ① 中文前驱触发 `awk: towc: multibyte conversion failure`（BWK awk 按字节切 `substr(s,i,1)`）
+  → 脚本不中止、照给退出码，但本地与 Linux gawk/mawk 抽取结果不同。改 `LC_ALL=C awk`。
+- ② `https://` 被判成注释起点（判据只认 `[A-Za-z0-9]` 与引号，而 `//` 前是冒号）→ 整行截断。
+  判据补 `prev == ":"`。
+- ③ 行尾注释前的代码被丢弃（截断分支只把前缀赋回 `line` 就 `break`，前缀从未进 `out`）。
+  改为先写 `out` 再清空。
+- 自证：从脚本里 sed 抽出 awk 片段本身（非手抄）喂五组用例，行为全部正确。
+- **未证实**：三处修复在当前代码树上**没有产生可测量的变化**——修复前后孤儿端点均为
+  `47（baseline=43 新孤儿=5 已收敛=1）`。这些缺陷确实在丢端点（隔离复现已证），
+  但当前孤儿数的成因不是它们。**不声称修复了孤儿虚增。**
+
+**`87bcb729` 门禁 8 触发条件补全**
+- touched 模式原为 `^scripts/.*\.(sh|py)`，于是 `c21f4de2` 改了
+  `scripts/ownership-gate-exempt.txt`（**门禁读取的数据文件**）时门禁 8 照报 SKIP。
+  放宽为 `^(scripts/|\.claude/(hooks|helpers)/)`。本次提交本身即实证：门禁 8 立刻按新模式执行并通过。
+
+**`55e93631` 补齐两张缺失表的迁移片段**
+- `p0_escalation_chain` / `permanent_delete_audit` 在 `docs/script/sql/update/` 下**从来没有建表
+  语句**——本机无害（活库有表），但任何一次干净重建（换机器/灾备/上生产）都会缺这两张表。
+- 按活库 `SHOW CREATE TABLE` 现网字节回写；逐列对照 `information_schema` 15/15 一致；
+  `check-ddl-applied --static` 由失败转为通过。
+- **未在真库执行本片段**（需建临时 schema = 写操作）；验证是结构级的。
+- 这两张表被三条独立线索同时指向：数据层租户归属、迁移层缺片段、调用链零调用。
+
+### 未证实 / 明确不写成结论的部分
+
+- **没有跑过浏览器入口。** 前端进程全程未起（15666/80/5666 closed），37 个 `*-live.test.ts`
+  走真实 HTTP 的用例**全部被跳过**。故「接口能通、登录能用、页面能跑」类结论**一条都没有**，
+  上限只能说到「后端可对外提供 API 服务」。
+- **t1 后端跑测一路未返回**，该维度空白。
+- **`check-cross-repo-contract` 的「新孤儿 5 条」成因未定位。**
+- **本地/CI 一致性只在本机证到**：该 awk 缺陷是 macOS BWK awk 特有，**CI 侧表现无证据**。
+- **审计链是 GAP 不是全绿**：`/api/v1/audit-logs/verify` 返回 `chain:"GAP"`、17 个缺失序号、
+  `hashBroken:[]`、`total:9806`。哈希未断说明无篡改迹象，但序号有洞，成因未查。
+- **前端 XSS 完全未查**（代码在独立仓 `ruoyi-ipd-web`，不在本次范围）。
+- **`application-prod.yml` 的真实密钥配置无人复核到位**——`sensitive-field-guard.cjs` 阻断一切
+  对该文件的写入，t6 按指示跳过。
+
+### 两处失实注释（**需 owner 手动改，工具阻断**）
+
+`application-prod.yml:292` 注释称初始口令「缺失则启动 fail-fast」，但
+`ProdConfigFailFastValidator` 第 131-136 行对同一键的规则是 **WARNING 档**，其规则文本自己写着
+「当前 prod 下本项无消费方（只有 `@Profile("dev")` 的 Initializer 读它）……注释宣称「缺失则
+启动 fail-fast」是失实的，**请一并修正注释**」。代码给注释判了失实、还留了待办，没人去做。
+
+同类需一并收紧：`spring.boot.admin.client.password: ${MONITOR_PASSWORD:}` 的**空默认值**——
+`SecurityConfig` 第 105-107 行那个 Bean **无任何条件注解**、无条件绑定该键做 `/actuator/**`
+的 Basic 认证，故未配该变量时 `ruoyi:`（空口令）即有效凭据。走编排安全（compose 用 `:?` 强制），
+绕过编排直接跑 jar 则会中。暴露面限于 health/info/metrics/prometheus（prod 父配置已收窄）。
+
+### 其他已定位未修
+
+- **Neo4j 排除被本地配置档整条替换**：父 `application.yml:96-97` 排除 `Neo4jAutoConfiguration`，
+  而 `.codex/ipd-dev/config/application-ipd-local.yml:7-10` 也定义了同一键、列表里只有两条 Redis
+  ——**Spring 列表属性是高优先级整条替换、不是合并**，于是 Neo4j 排除被静默取消、健康探针复活并
+  报 DOWN、`/actuator/health` 恒 503。**生产不受影响**（prod/dev 档均未重定义该列表）。
+  典型形态：**带警告注释的保护被另一个文件无意取消，且无任何警告。**
+- **开发环境 CORS 会挡登录**：`cors.allowed-origins` 默认空 → 任何「来源 ≠ 后端自身」的带 Origin
+  请求一律 403（实测：不带 Origin 401、Origin 等于后端自身 401、Origin 不同 403）。
+  **生产没事**（`nginx.conf` 用 `proxy_set_header Host $host` 透传，同源）；**开发会中**
+  （`vite.config.mts` 该代理 `changeOrigin: true` 把 Host 改写成 `127.0.0.1:16039`，而 Origin
+  仍是页面来源）。易误读点：`.codex/ipd-dev/config/application-ipd-local.yml:92` 的
+  `allowed-origins: "*"` **不在 `cors:` 段下、在 `ipd.websocket:` 段下**，管的是 WebSocket。
+- **前端 34 个测试文件不在任何 CI 跑测范围**：全仓 228 个，只有 `apps/web-antd` 下 194 个被
+  `vitest.ipd.config.mts` 白名单收进来；t2 做集合比对确认磁盘 194 = 跑过 194，故缺口精确为 34 个
+  （含 `packages/stores` 的 `access.test.ts` / `user.test.ts`，管权限与用户状态）。
+- **跑门禁不是只读操作**：本轮实跑共改写 4 个已跟踪文件（`.harness/lint-reports-snapshot.txt`、
+  `规则接线率-20261003.md` +53 行、`字符集一致性-20261003.md` 时间戳、`测试覆盖率-20261003.md`
+  数字），t3 已逐个还原并实测干净。**含义：在共享工作树上跑门禁会让别人的树莫名变脏。**
+
+### 本轮犯的仪器错误（8 次，全部属「读数不像自己的错」这一类）
+
+1. `grep "boot:"` 漏掉 `spring.boot.admin.client:`（点号非冒号）→ 差点得出「键不存在、prod 起不来」。
+2. `perl -e 'alarm...' ... | tail` 读的是 `tail` 的退出码，把 EXIT=2 报成 0。
+3. 命令标题写「真正判为 FATAL 的规则键名」，实际 grep 抓了两档全部规则。
+4. 引用会话开始时的 `M` 状态当作实时证据（我自己的记忆里就写着「审计报告是快照不是现状」）。
+5. 拿「兄弟端点都有守卫」推断「这是漏调」，未先查 `ownership-gate-exempt.txt`——
+   实际是登记在案、有意延后的 P4 风险。
+6. 用 `perl` 正则做变异把代码改成语法错误 → `BUILD FAILURE` 来自**编译失败**而非用例变红，
+   该实验无效，还原重做。
+7. 列比对正则写 `[a-z_]+`，匹配不了含数字的 `p0_event_id` → 误报「文件少一列」。
+8. 用 `-N` + `\G` 调 mysql 客户端，客户端不认该组合。
+另 t4 独立犯同类一次（裸 `3306` 匹配把 `127.0.0.1:13306` 的子串也数进去，报「11 条连到 3306」
+而真值 0）。**两个独立会话各自发生，说明这是系统性的，不是谁不小心。**
+
+### 根因归纳（五层）
+
+**表象**：互不相干的六类问题。**共同形状**：全都不是「代码写错」，而是**用来判断对错的东西本身
+不可信**——代码坏了会报错，仪器坏了会安静地说「一切正常」。
+**结构化根因**：① 只验「能不能红」、不验「会不会乱红」；② 检查的自证没有接线；
+③ 用字符串匹配冒充语义判断；④ 只验「零件齐不齐」、不验「装没装上」；
+⑤ **修复经常停在「我这半边改好了」，没人负责「对面那半边的入口存不存在」**
+（向量库＝改了配置半边没加供给半边；P0 升级链＝有实现零调用；`__BACKCOMPAT__`＝有兼容入口
+零调用方却从公网可达——同一形状的三个实例）。
+
+### 待 owner 拍板（均未执行）
+
+- **`getInvitation`/`listInvitations` 的读取规则**：**不能简单加同组守卫**——公开招标与一对一
+  邀请都要求跨组研发 PM 能读到招标单，加同组守卫会把应标流程掐死。需先定「谁有权读一条招标单」。
+  可复用的既有语义：`BidResponseService.submit` 已实现「ONE_TO_ONE → 仅被指定者可应标；
+  PUBLIC → 任意内部可应标」。
+- **豁免清单尚有 25 条 MED P4 中危写端点**（当前豁免基线 82 条），逐条需各自确认归属语义。
+- **向量库**：补齐（编排加服务 + 注入 `VECTOR_STORE_*` + `.env.example` 补变量，另需模型侧
+  `embedEndpoint`/`embedModel`）还是**明确关掉**并把智能体知识检索工具摘掉。
+- **MySQL/Redis/后端的启动固化**：三者均为手动脚本、无守护、开机不自启；后端一停就没人管库，
+  **失效时长得像「服务故障」而非「没人启动」**——本会话正是这么被误判的（实测因果：15:32
+  后端被主动优雅停掉，库随后才无人管，不是「连不上库把进程搞死」）。
+- **门禁改造三项**：`check-lint-reports-freshness` 不再无条件回写；会改写已跟踪文档的门禁加
+  只读模式；turbo 那条 `check:type` 加 `--force`。
+- **前端 34 个测试文件补进 CI + 起后端跑 37 个 live 用例**（在 `ruoyi-ipd-web` 仓）。
+
+### 一处对既有结论的更正
+
+`全局漂移审计-20261003.md:36` 称「全仓 `git grep SERVER_PORT` = 0 命中，无任何注入点」并据此把
+P0-01 定为「容器化链路必然起不来」。**该句在 HEAD 上已不成立**：实测命中
+`Dockerfile:26 ENV SERVER_PORT=16039` 与 `docker-compose.yml:17 SERVER_PORT: "16039"`，
+且 `log.md:14110` 已记录该修复。引用该审计报告前必须按当前字节复核。
+
+- marker: prod-readiness-7lane-20261003
