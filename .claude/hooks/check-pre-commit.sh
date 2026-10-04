@@ -349,8 +349,12 @@ run_hook_schema_gate() {
 run_gate_selftest_gate() {
     local t0 elapsed touched out rc
     t0=$(date +%s)
+    # 2026-10-03 收窄了缺口：原模式只认 scripts/ 下的 .sh / .py，于是改了
+    # scripts/ownership-gate-exempt.txt（**门禁读取的数据文件**）时自证照报 SKIP——
+    # 「改了门禁的输入，但自证没跑」正是本门禁要防的形态。改为 scripts/ 全目录，
+    # 覆盖 .sh / .py / .txt / .mjs / .json 等一切门禁实现与其输入。
     touched=$(git diff --cached --name-only 2>/dev/null \
-        | grep -E '^(scripts/.*\.(sh|py)|\.claude/(hooks|helpers)/)' || true)
+        | grep -E '^(scripts/|\.claude/(hooks|helpers)/)' || true)
     if [[ -z "$touched" ]]; then
         echo "[check-pre-commit] ⏭ 门禁 8 SKIP: 本次未触及门禁脚本/hook"
         SKIPPED=$((SKIPPED + 1))
