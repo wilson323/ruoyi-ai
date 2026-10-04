@@ -142,6 +142,21 @@ public class P0EscalationService implements IP0EscalationService {
      * @return 触发的升级数（影响行数）
      */
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 诊断用：当前处于 PENDING 的链行总数（不分是否已达阈值）。
+     *
+     * <p>存在理由：升级链的**写入方** {@code recordP0Unresolved} 目前在生产代码里零调用方
+     * ——它依赖的上游「P0 阻塞事件」这个域尚未建。此时表恒空，{@link #checkEscalation()} 恒返回 0，
+     * 与「今天确实没有该升级的」在上层日志里**完全无法区分**。调度器据此计数把两者分开，
+     * 免得这条链「看起来在跑、其实什么都没做」。
+     */
+    public long pendingCount() {
+        QueryWrapper<P0EscalationChain> q = new QueryWrapper<>();
+        q.eq("status", STATUS_PENDING);
+        Long n = chainMapper.selectCount(q);
+        return n == null ? 0L : n;
+    }
+
     public int checkEscalation() {
         QueryWrapper<P0EscalationChain> q = new QueryWrapper<>();
         q.eq("status", STATUS_PENDING)
@@ -162,8 +177,10 @@ public class P0EscalationService implements IP0EscalationService {
     /**
      * 单条升级：发通知 + 翻状态为 ESCALATED。
      *
-     * <p>通知策略：复用 {@link NotificationService#publish}，按 persons.person_type='GROUP_LEADER' 各自成行；
+     * <p>通知策略：复用 {@link NotificationService#publishAfterCommit}，按 persons.person_type='GROUP_LEADER' 各自成行；
      * NotificationEvent.content 字段标识 receiver_role='BOTH_LEADERS'（无独立列）。
+     * 调用链 {@code checkEscalation()}（{@code @Transactional}）→ 本方法：走 afterCommit 版，
+     * 宿主回滚（含本方法末尾把链行翻 ESCALATED 失败）时不会留下一条「P0 已升级」的假催办。
      *
      * @return 是否成功升级
      */
@@ -196,7 +213,7 @@ public class P0EscalationService implements IP0EscalationService {
 
         // 3. 给每个 GROUP_LEADER 发一条通知
         for (Person leader : leaders) {
-            notificationService.publish(
+            notificationService.publishAfterCommit(
                 leader.getId(),
                 NOTIFY_TYPE,
                 NotificationService.KIND_ACTION,

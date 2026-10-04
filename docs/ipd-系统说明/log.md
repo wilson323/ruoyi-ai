@@ -15393,3 +15393,52 @@ PUBLIC 模式本就公开征集，全员可见。
   仅能靠 404 与 200+空 区分该 id 是否存在。是否要一并收口属口径选择，未动。
 - 兄弟会话在途的 `BidInvitationServiceTest`（通知发布 `publishAfterCommit` 改造）未触碰，
   故可见性测试另建独立文件 `BidInvitationVisibilityTest`。
+
+---
+
+## 2026-10-03 P0 升级链「静默冒充正常」收口（第一步：让缺口可被发现）
+
+### 事实（三路独立验证）
+`P0EscalationService.recordP0Unresolved`（升级链的**唯一写入方**）在**生产代码里零调用方**：
+全仓搜索（排除 `.codex/`、`.harness/` 归档）、归档目录反查、`git grep` over `rev-list --all`
+三种方式交叉验证一致——它只出现在声明、接口、javadoc、测试与文档里，**从未作为调用出现过**。
+它依赖的上游「P0 阻塞事件」这个域也没建：全仓 live Java 搜 `"P0"` 零命中（该零已用
+`P0-10.23` 反验工具有效）。
+
+后果：表恒空 → 每日 09:35 调度必然 `escalated=0`，而这与「今天确实没有该升级的」
+**打出的日志完全一样**。这条链看起来在跑，其实什么都没做。
+
+### 规格侧是「有规则、有判据、无验收」
+- 规格明文在冻结件里：`IPD系统_五大Gate评审要素_v1.md` G3 特殊规则「连续 2 次出现 P0 阻塞
+  未升级 → 自动升级双方产品组长」；G3-4 要素判据「无 P0 级阻塞；有则已升级并明确责任人」，
+  责任人为研发PM。`R148.1` §C4 已登记为「业务功能缺失」，拍板选项选②，工作量估 2 小时。
+- 该判据**已被 seed 进库**（`IpdGateElementSeedInitializer` 的 G3-4 字符串 + 对应 seed SQL），
+  承载实体 `GateElementResult` 也在。**两头都在，中间那根线没人接。**
+- **但它一条 AC 都没有**：验收清单 237 条与 acceptance-matrix 249 行里搜
+  `P0 阻塞` / `连续 2 次` / `escalat` 全为 0（对照组 GATE 类目 26 行证明检索有效）；
+  模糊命中 13 行逐条读后全是同形不同义。**这正是它半途而废却没被任何门禁拦下的直接原因。**
+  易认错的邻居：`AC-GATE-07`「第 3 轮评审 → 双方组长自动列席」是另一机制（按评审轮次触发）。
+
+### 本轮做了什么（不改变任何业务行为）
+把「表空」与「无到期行」分开：
+- `P0EscalationService` 新增 `pendingCount()`（不分是否达阈值的 PENDING 行数）。
+- `P0EscalationScanScheduler`：`escalated == 0 && pendingCount() == 0` 时升为 **WARN** 并明确
+  写出「写入侧未接线、这条规则从未真正生效」，而不是继续打与「无到期行」相同的 INFO。
+  升级判定与通知路径原样未动。
+
+### 自证
+`P0EscalationScanSchedulerTest` 3 → 6 例（零升级时必探 `pendingCount`；有升级动作时短路不探；
+有 PENDING 行但未达阈值照常探）。变异自证：把探测分支断开 → 2 例红，还原后 6/6 绿。
+
+### 未做（需 owner 先拍板，这是第二步）
+真正修复要建「**P0 阻塞的稳定身份**」：`recordP0Unresolved(projectId, p0EventId, nextThresholdAt)`
+靠 `(project_id, p0_event_id, status=PENDING)` 做 upsert 计数，而 `GateElementResult.id`
+每次评审都是新行、**每次都会变** ⇒ 拿它当 p0EventId 则计数永远是 1、永远升不了级；
+现有任何实体都不提供跨评审稳定的 P0 身份。所以 §C4 当时估的 2 小时实为「建功能」而非「接线」。
+
+需 owner 先定：**P0 阻塞由谁判定、身份怎么跨评审保持**（同一风险的跟踪号？每项目一条滚动记录？）。
+在此之前不接上游——接错信号源等于把一条永不满意的规则挂到错误的输入上。
+另：是否把它补进 AC 基线（如新增 AC-GATE-22）本身也是 owner 决定。
+
+未证实项：`p0_escalation_chain` 实时行数未取到（DB 凭证被权限拦下），仅引用了
+2026-09-24 的文档快照（0 行）。

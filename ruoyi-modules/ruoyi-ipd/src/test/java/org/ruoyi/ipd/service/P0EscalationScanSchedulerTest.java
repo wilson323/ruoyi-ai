@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,5 +71,39 @@ class P0EscalationScanSchedulerTest {
         scheduler.dailyEscalationCheck();
 
         verify(p0EscalationService).checkEscalation();
+    }
+
+    // ===== 2026-10-03 补：把「表空（写入侧未接线）」与「无到期行」分开 =====
+
+    @Test
+    @DisplayName("escalated=0 时探测 pendingCount —— 这一探就是区分「表空」与「无到期行」的关键")
+    void zeroEscalated_probesPendingCount() {
+        when(p0EscalationService.checkEscalation()).thenReturn(0);
+        when(p0EscalationService.pendingCount()).thenReturn(0L);
+
+        scheduler.dailyEscalationCheck();
+
+        verify(p0EscalationService, times(1)).pendingCount();
+    }
+
+    @Test
+    @DisplayName("escalated>0 时短路，不再探 pendingCount（有升级动作即证明写入侧通着）")
+    void escalatedNonZero_skipsPendingCountProbe() {
+        when(p0EscalationService.checkEscalation()).thenReturn(1);
+
+        scheduler.dailyEscalationCheck();
+
+        verify(p0EscalationService, never()).pendingCount();
+    }
+
+    @Test
+    @DisplayName("有 PENDING 行但未达阈值：仍探 pendingCount，且不当作「写入侧未接线」")
+    void pendingRowsButNoneDue_stillProbes() {
+        when(p0EscalationService.checkEscalation()).thenReturn(0);
+        when(p0EscalationService.pendingCount()).thenReturn(5L);
+
+        scheduler.dailyEscalationCheck();
+
+        verify(p0EscalationService, times(1)).pendingCount();
     }
 }

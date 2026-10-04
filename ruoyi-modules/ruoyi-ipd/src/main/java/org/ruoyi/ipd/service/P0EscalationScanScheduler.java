@@ -47,9 +47,26 @@ public class P0EscalationScanScheduler {
     /**
      * 每日 09:35 P0 升级链阈值检查（状态翻转 + publish 永久去重，重跑静默）。
      */
+    /**
+     * 每日 09:35 P0 升级链阈值检查（状态翻转 + publish 永久去重，重跑静默）。
+     *
+     * <p>2026-10-03 补：**把「表空」与「无到期行」分开**。此前两者都打同一句 INFO，
+     * 而升级链的写入方在生产代码里零调用方（它依赖的上游「P0 阻塞事件」域尚未建），
+     * 于是这条链会**每天静默跑完、看起来一切正常**。现在表空时升为 WARN 并明确标注
+     * 「生产者未接线、未升级判定从未真正生效」，让缺口可被日志/告警发现而不是靠人记得。
+     * 不改变任何业务行为：升级判定与通知路径原样。
+     */
     @Scheduled(cron = "0 35 9 * * ?")
     public void dailyEscalationCheck() {
         int escalated = p0EscalationService.checkEscalation();
+        if (escalated == 0 && p0EscalationService.pendingCount() == 0L) {
+            log.warn("P0EscalationScanScheduler: scanDate={} escalated=0 pendingRows=0 —— "
+                + "升级链表为空。已知缺口：recordP0Unresolved 在生产代码里零调用方，"
+                + "上游「P0 阻塞事件」域尚未建，故「连续 2 次 P0 未升级 → 升级双方组长」"
+                + "这条规则从未真正生效（写入侧未接线）。本条不代表「今天没有需要升级的」。",
+                LocalDate.now(clock));
+            return;
+        }
         log.info("P0EscalationScanScheduler: scanDate={} escalated={}", LocalDate.now(clock), escalated);
     }
 }
