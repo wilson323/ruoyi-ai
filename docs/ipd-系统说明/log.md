@@ -15083,6 +15083,65 @@ P0-01 定为「容器化链路必然起不来」。**该句在 HEAD 上已不成
   `OUTPUT_DIR=.../lint-reports`。这些产物会**被 freshness 门禁计入**，即后者的「新增报告数」
   部分来自前者自己的尾气。未改——属跨门禁口径决定。
 
+## 2026-10-03 拥有权门禁的「尺子」本身两个方向都在错（实测，未修）
+
+### 起因
+本日按豁免清单派 6 路只读智能体逐簇判定归属规则时，D 路指出
+`DeletionRequestController#submit/#leaderDecision` 的豁免理由与字节不符。追下去发现
+根因不在那两行，而在**门禁读不到那 7 个 Service 的源码**。
+
+### 三条实测（同一份脚本、同一次运行口径）
+
+| 版本 | `--list` 待分类数 | 说明 |
+|---|---|---|
+| 现状（HEAD） | **82** | 索引只收 `*Service.java` |
+| 只修索引与解析 | **76** | 少了 6 条，但其中 1 条是**误消** |
+| 修索引 **且** 剔除弱名字 | **88** | 比现状**多 6 条真缺口** |
+
+**只修索引 = 让门禁少报、把真缺口盖住**，故未单独修，只把结论写进脚本注释。
+
+### 两处缺口（都已用副本实验证实，未改工作树）
+
+1. **索引漏实现文件**：第 398 行只收 `fn.endswith("Service.java")`，而
+   `DeletionRequestServiceImpl.java` 这类以 `ServiceImpl.java` 结尾且**没有同名接口**的
+   实现文件整个不在索引里。实测这类有 7 个：`AuditLog` / `BusinessConfig` /
+   `CorrectionLog` / `DeletionRequest` / `ProjectCert` / `ProjectMember` / `SystemConfig`。
+   它们的端点一律被判「无归属校验」，**即使校验就写在实现里**。
+2. **解析退回接口**：`resolve_service` 剥掉开头 `I` 后找 `ProjectCertService`，该文件不存在
+   → 退回 `IProjectCertService`（只有方法声明、**没有方法体**）→ `method_body` 取不到东西
+   → 整段漏判。这正是该函数 docstring 自己警告过的形态。
+
+### 两个方向的具体错项
+
+- **误消（假阴性，危险方向）**：`ProjectController#addCertItem`。
+  其服务方法 `ProjectCertServiceImpl#addManual`（:198-230）实际**没有归属校验**——
+  只有 `requireProject(projectId)`（:199，纯存在性）、字段校验、插入、审计。
+  但 `GUARD_TOKENS` 里有 `requireProject`（:172），名字撞车 → 判为「有校验」。
+  实测 `ProjectCertServiceImpl#requireProject`（:276-282）体为
+  `selectById` + 判空/delFlag + 抛「项目不存在」——**不含任何归属判定**。
+  另查其余 6 处 `requireProject` 定义（AiSuggestion / Contribution /
+  KpiSharedCollection / Product / ProjectScoreArchive / SubStageProgress），同样不含归属判定。
+- **被弱名字掩盖的真缺口（6 条）**：剔除 `requireProject` 与 `requireAuthenticated`
+  （后者只证明已登录，不证明拥有）后新暴露：
+  `AllowanceLedgerController#confirmStop`、`BidController#submitResponse`、
+  `BidController#withdrawResponse`、`ContributionController#adjustMarketShare`、
+  `#confirm`、`#preview`、`#saveSelf`。
+- **确属假阳性（修索引后应消失，共 5 条）**：`DeletionRequestController#submit`
+  （服务 :154 调 `requireSubmitTargetAllowed`，:569-602 三段式）、`#withdraw`
+  （:242 + :253-257 限申请人）、`#leaderDecision`（:281 + :288-294 限本组组长，已亲验）、
+  `#adminDecision`、`ProjectController#syncCertItems`（走 `syncFromProjectAuthorized`，
+  该法 :132-134 有 `IpdIdorGuard`）。**这 5 条的理由栏写的是「能操作本组外数据」，与字节不符。**
+
+### 为什么不当场修
+
+修索引本身是对的，但**单独修会让数字变小而真相更大**（82→76，真实是 88）。
+要一并做的是剔除弱名字并**重设基线**（88 > 82，属"只减不增"棘轮的**上调**），
+而新暴露的 6 条还要逐条做业务归属判定。这是一次改变判定口径的动作，
+不是顺手修——按本仓纪律列出待拍板。**当前状态是"宁可多报"的保守侧，不动它比半修安全。**
+
+脚本内已就地写入本结论（`resolve_service` docstring，14 行注释，行为零变化，
+`--list` 仍为 82，已实测核对）。
+
 
 ## 2026-10-03 本地开发栈启动固化：`scripts/ipd-dev-up.sh`
 

@@ -408,6 +408,20 @@ def resolve_service(svc_idx, cls):
     `DeliverableService.java`（真身）。**必须优先取实现**：命中接口文件时
     method_body 找不到任何方法体，归属校验会被整段漏掉
     （实测漏掉 DeliverableController.upload）。
+
+    ⚠️ 2026-10-03 复核：本节与上面的索引条件**已知有两处缺口，故意未修**——
+    ① 索引只收 `*Service.java`，实现文件叫 `*ServiceImpl.java` 且无同名接口的
+    7 个 Service 不在索引内（AuditLog / BusinessConfig / CorrectionLog /
+    DeletionRequest / ProjectCert / ProjectMember / SystemConfig）；
+    ② 剥 `I` 后找 `ProjectCertService` 找不到时退回接口文件（无方法体）。
+    实测把两处都修好后，待分类数**从 82 降到 76**，但同一批实验显示其中 1 条是误消
+    （`ProjectCertServiceImpl.requireProject` 是纯存在性检查，却因 GUARD_TOKENS 里
+    有 `requireProject` 而被当成归属校验），而**同时剔除弱 token
+    `requireProject` / `requireAuthenticated` 后数会升到 88**（多出 6 条此前被弱 token
+    掩盖的真缺口：AllowanceLedger#confirmStop、Bid#submitResponse、Bid#withdrawResponse、
+    Contribution#adjustMarketShare/#confirm/#preview/#saveSelf）。
+    只修索引 = 让门禁少报、把真缺口盖住，故**不单独修**；要与弱 token 清理
+    一并做并重设基线（属改变判定口径的决定，见 log.md 2026-10-03 段）。
     """
     # 先剥开头的 I 找实现类
     if len(cls) > 1 and cls[0] == "I" and cls[1].isupper():
