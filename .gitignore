@@ -110,7 +110,14 @@ ruvector.db
 /.repowise-workspace/
 /.mcp.json
 /.claude/CLAUDE.md
-/.vscode/
+# 2026-10-04 owner 改判：.vscode/settings.json 是「构建环境正确性」配置，不是
+# 工具产物，必须随仓发布——否则 fresh clone/换机器上 IDE 语言服务会重新开启
+# 后台自动编译，向 target/classes 偷写字节码（其自带 JRE 为 21，与本仓 JDK 17 撕裂），
+# 造成「class 文件瞬时失踪又复现」的假错。其余文件（尤其 mcp.json 含本机绝对路径）
+# 维持忽略。
+# 注意：必须先 /.vscode/* 再 !/...，写 /.vscode/ 会让 git 无法下探、负向规则失效。
+/.vscode/*
+!/.vscode/settings.json
 tests/a11y/node_modules/
 tests/a11y/reports/a11y-report-2*
 

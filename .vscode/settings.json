@@ -1,0 +1,17 @@
+{
+    "java.compile.nullAnalysis.mode": "disabled",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.autobuild.enabled": false,
+    "files.watcherExclude": {
+        "**/target/**": true,
+        "**/.codex/**": true,
+        "**/.harness/**": true
+    },
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "/Users/mac/tools/jdk-17/Contents/Home",
+            "default": true
+        }
+    ]
+}
