@@ -136,29 +136,48 @@ public class BidInvitationService {
      * OPS-05 通知系统就绪前由审计行承载“落选通知可查”留痕）。
      */
     /**
-     * P1-5.2：3 参兼容入口（仅测试 / 老调用方）—— 跳过 confirmToken 校验。
-     * 正式流程必须走 4 参入口（HTTP 端点 /api/v1/bid-invitations/{id}/select）。
+     * P1-5.2：3 参兼容入口（仅测试 / 老调用方）—— 不校验 confirmToken。
+     *
+     * <p>2026-10-03 安全收口：本入口不再经由 4 参入口转发。原实现让 4 参入口在收到
+     * 字符串哨兵 {@code "__BACKCOMPAT__"} 时跳过校验，而 4 参入口同时就是 HTTP 端点
+     * （{@code BidController#selectResponse} 的 {@code @RequestParam String confirmToken}）——
+     * 于是<b>校验开关由外部输入决定</b>：任何调用方把该字符串原样塞进请求参数，就能跳过
+     * 缺失 / 不匹配 / 过期三道检查。现改为两个入口各自独立：4 参入口<b>永远</b>校验，
+     * 3 参入口直接进主体，字符串不再参与任何分支判断。
      */
     public BidInvitation selectResponse(Long invitationId, Long responseId, Long operatorId) {
-        return selectResponse(invitationId, responseId, "__BACKCOMPAT__", operatorId);
+        return doSelectResponse(requireOpen(invitationId), responseId, operatorId);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public BidInvitation selectResponse(Long invitationId, Long responseId, String confirmToken, Long operatorId) {
         BidInvitation inv = requireOpen(invitationId);
-        // P1-5.2：confirmToken 校验（防误点击 / CSRF；24h 过期）
-        // 内部 backcompat 路径用 "__BACKCOMPAT__" 跳过
-        if (!"__BACKCOMPAT__".equals(confirmToken)) {
-            if (confirmToken == null || confirmToken.isBlank()) {
-                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "缺少 confirmToken（前端须先调 /pre-select-token）");
-            }
-            if (inv.getConfirmToken() == null || !inv.getConfirmToken().equals(confirmToken)) {
-                throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "confirmToken 不匹配，请重新拉取预演");
-            }
-            if (inv.getConfirmTokenExpires() == null || inv.getConfirmTokenExpires().before(now())) {
-                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "confirmToken 已过期（24h），请重新拉取预演");
-            }
+        assertConfirmToken(inv, confirmToken);
+        return doSelectResponse(inv, responseId, operatorId);
+    }
+
+    /** P1-5.2：confirmToken 校验（防误点击 / CSRF；24h 过期）。无任何可绕过的旁路。 */
+    private void assertConfirmToken(BidInvitation inv, String confirmToken) {
+        if (confirmToken == null || confirmToken.isBlank()) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "缺少 confirmToken（前端须先调 /pre-select-token）");
         }
+        if (inv.getConfirmToken() == null || !inv.getConfirmToken().equals(confirmToken)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "confirmToken 不匹配，请重新拉取预演");
+        }
+        if (inv.getConfirmTokenExpires() == null || inv.getConfirmTokenExpires().before(now())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "confirmToken 已过期（24h），请重新拉取预演");
+        }
+    }
+
+    /**
+     * 遴选主体（不含 confirmToken 校验）：两个入口共用。
+     *
+     * <p>事务语义与收口前一致：4 参入口带 {@code @Transactional}，主体在其事务内执行；
+     * 3 参入口原本经自调用（{@code this.} 转发）到达 4 参方法，Spring 代理不介入、
+     * 事实上无事务，此处直接调用私有方法，保持同一语义，行为不变。
+     */
+    private BidInvitation doSelectResponse(BidInvitation inv, Long responseId, Long operatorId) {
+        Long invitationId = inv.getId();
         BidResponse resp = bidResponseMapper.selectById(responseId);
         if (resp == null || !resp.getInvitationId().equals(invitationId)) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "应标记录不存在或不属于该招标单");
@@ -212,9 +231,11 @@ public class BidInvitationService {
             .createTime(now()).build());
         // HIGH-1.2 落选通知：镜像 adminAssign 行 332-355 模式
         // 中标者 ⇒ BID_WON；其余落选 PENDING ⇒ BID_LOST（dedupKey 幂等，重复不重发）
+        // selectResponse 为 @Transactional，走 publishAfterCommit：宿主回滚（如 CAS/守卫判定失败）时
+        // 中标与落选通知均不发出，避免投标人收到与库内状态不符的「你中标了/你落选了」。
         if (notificationService != null) {
             if (resp.getRdPmId() != null) {
-                notificationService.publish(resp.getRdPmId(),
+                notificationService.publishAfterCommit(resp.getRdPmId(),
                     NotificationService.Types.BID_WON,
                     NotificationService.KIND_ACTION,
                     "bid_invitation", invitationId,
@@ -224,7 +245,7 @@ public class BidInvitationService {
             }
             for (BidResponse loser : losers) {
                 if (loser.getRdPmId() == null) continue;
-                notificationService.publish(loser.getRdPmId(),
+                notificationService.publishAfterCommit(loser.getRdPmId(),
                     NotificationService.Types.BID_LOST,
                     NotificationService.KIND_ACTION,
                     "bid_invitation", invitationId,
@@ -291,7 +312,9 @@ public class BidInvitationService {
         if (affected > 0 && notificationService != null) {
             for (BidInvitation inv : overdue) {
                 if (inv.getCreateBy() == null) continue;
-                notificationService.publish(inv.getCreateBy(),
+                // expireOverdue 为 @Transactional：走 publishAfterCommit 延迟到批量置 EXPIRED 提交后发送，
+                // 回滚时创建人不会收到「招标已到期」的假提醒。
+                notificationService.publishAfterCommit(inv.getCreateBy(),
                     NotificationService.Types.BID_EXPIRED_NO_RESPONSE,
                     NotificationService.KIND_ACTION,
                     "bid_invitation", inv.getId(),
@@ -658,8 +681,10 @@ public class BidInvitationService {
             .reason(inv.getTitle())
             .createTime(now()).build());
         // Bug#6 中危：兄弟路径门禁对等 —— 中标者 BID_WON；其他 PENDING 应标者 BID_LOST（保持与 selectResponse 一致语义）
+        // adminAssign 为 @Transactional，走 publishAfterCommit（同 selectResponse）：宿主回滚时
+        // 「管理员指派给您 / 已指派他人」两条通知都不发出。
         if (notificationService != null) {
-            notificationService.publish(targetPersonId,
+            notificationService.publishAfterCommit(targetPersonId,
                 NotificationService.Types.BID_WON,
                 NotificationService.KIND_ACTION,
                 "bid_invitation", id,
@@ -672,7 +697,7 @@ public class BidInvitationService {
                 .ne(BidResponse::getRdPmId, targetPersonId));
             for (BidResponse loser : losers) {
                 if (loser.getRdPmId() == null) continue;
-                notificationService.publish(loser.getRdPmId(),
+                notificationService.publishAfterCommit(loser.getRdPmId(),
                     NotificationService.Types.BID_LOST,
                     NotificationService.KIND_ACTION,
                     "bid_invitation", id,

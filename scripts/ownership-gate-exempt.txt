@@ -57,8 +57,6 @@ AuditLogController.java#rebuildChain	全局配置/登录/字典/扫描类，天�
 BidAiCompareController.java#aiCompare	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
 BidAiDraftController.java#aiDraft	存量中危待修：能操作本组外数据，排期修（P4）
 BidController.java#adminAssign	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
-BidController.java#modifyInvitation	存量中危待修：能操作本组外数据，排期修（P4）
-BidController.java#selectResponse	存量中危待修：能操作本组外数据，排期修（P4）
 BidResponseCheckController.java#aiCheck	存量中危待修：能操作本组外数据，排期修（P4）
 BusinessConfigController.java#delete	全局配置/登录/字典/扫描类，天然无归属概念
 BusinessConfigController.java#upsert	全局配置/登录/字典/扫描类，天然无归属概念

@@ -127,6 +127,22 @@ class BidControllerOwnershipGuardTest {
     }
 
     @Test
+    @DisplayName("selectResponse 跨组 → FORBIDDEN，且不调 service.selectResponse（2026-10-03 P4 清零）")
+    void selectResponse_crossGroup() {
+        givenCrossGroupInvitation();
+        assertForbidden(() -> controller.selectResponse(INVITATION_ID, 2001L, "ABC234"));
+        verify(bidInvitationService, never()).selectResponse(anyLong(), anyLong(), any(), anyLong());
+    }
+
+    @Test
+    @DisplayName("modifyInvitation 跨组 → FORBIDDEN，且不调 service.modifyInvitation（2026-10-03 P4 清零）")
+    void modifyInvitation_crossGroup() {
+        givenCrossGroupInvitation();
+        assertForbidden(() -> controller.modifyInvitation(INVITATION_ID, "新标题", "新条件", null));
+        verify(bidInvitationService, never()).modifyInvitation(anyLong(), any(), any(), any(), anyLong());
+    }
+
+    @Test
     @DisplayName("createInvitation 指向他人项目 → FORBIDDEN，且不落库")
     void createInvitation_crossGroup() {
         when(ipdPermission.requireInternal()).thenReturn(attacker());

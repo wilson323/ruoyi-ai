@@ -97,6 +97,32 @@ class BidInvitationSelectConfirmTokenAcceptanceTest {
     }
 
     @Test
+    @DisplayName("AC#6 兼容哨兵 __BACKCOMPAT__ 不再能跳过校验（回归：2026-10-03 跨组越权链）")
+    void backcompatSentinelNoLongerBypassesTokenCheck() {
+        when(bidInvitationMapper.selectByIdForUpdate(5001L)).thenReturn(invitation);
+        // 4 参入口同时就是 HTTP 端点（BidController#selectResponse 的 @RequestParam confirmToken）。
+        // 收口前该入口在收到这个字符串哨兵时会跳过「缺失/不匹配/过期」三道检查——校验开关由
+        // 外部输入决定，任何调用方把哨兵塞进请求参数即可替任意产品组遴选。收口后它必须与
+        // 任何其它错误 token 同样被拒，且不得进入遴选主体（否则会写库、发中标/落选通知）。
+        assertThatThrownBy(() -> bidInvitationService.selectResponse(5001L, 2001L, "__BACKCOMPAT__", 700L))
+            .isInstanceOf(IpdBusinessException.class)
+            .matches(e -> ((IpdBusinessException) e).getErrorCode() == ApiV1ErrorCode.PARAM_INVALID);
+        verify(bidResponseMapper, never()).selectById(any());
+    }
+
+    @Test
+    @DisplayName("AC#7 3 参兼容入口仍不校验 token（不因收口而改变其既有契约）")
+    void threeArgCompatEntryStillSkipsTokenCheck() {
+        // 3 参入口是「仅测试 / 老调用方」的兼容契约，本次收口只切断哨兵从 HTTP 可达，
+        // 不改它的语义；本用例锁住这一点，防止将来有人「顺手」把两个入口合并回互相转发。
+        when(bidInvitationMapper.selectByIdForUpdate(5001L)).thenReturn(invitation);
+        when(bidResponseMapper.selectById(2001L)).thenReturn(null);
+        assertThatThrownBy(() -> bidInvitationService.selectResponse(5001L, 2001L, 700L))
+            .isInstanceOf(IpdBusinessException.class)
+            .matches(e -> ((IpdBusinessException) e).getErrorCode() == ApiV1ErrorCode.NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("AC#3 selectResponse confirmToken 已过期 ⇒ STATE_CONFLICT")
     void selectExpiredToken_rejected() {
         invitation.setConfirmTokenExpires(new Date(System.currentTimeMillis() - 1000L));

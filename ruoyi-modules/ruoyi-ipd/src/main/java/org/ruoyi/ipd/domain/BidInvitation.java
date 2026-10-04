@@ -2,6 +2,7 @@ package org.ruoyi.ipd.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -73,7 +74,15 @@ public class BidInvitation extends BaseEntity implements SoftDeletable {
     /**
      * P1-5.2：遴选二次确认 token（6 字符随机）——调 /select 时须带此 token 校验。
      * 由 /pre-select-token 端点生成，24h 后失效。SELECTED 后清空。
+     *
+     * <p>2026-10-03 安全收口：本字段<b>不得</b>随实体序列化外发。它是二次确认的
+     * 唯一凭证，而招标单详情/列表端点的可见范围大于「本产品组」（公开招标与
+     * 一对一邀请都要求跨组研发 PM 能读到招标单），一旦随实体返回，跨组调用方
+     * 即可直接拿到凭证去调 /select。前端只从 /pre-select-token 的
+     * {@code ConfirmTokenView} 取 token（{@code api/ipd/bid.ts} + 遴选页两阶段流），
+     * 不从详情响应里读，故此处加 {@code @JsonIgnore} 不影响现有流程。
      */
+    @JsonIgnore
     private String confirmToken;
 
     /**

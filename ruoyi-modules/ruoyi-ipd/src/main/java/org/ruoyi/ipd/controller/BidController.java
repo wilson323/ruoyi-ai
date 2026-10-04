@@ -137,7 +137,11 @@ public class BidController {
             @PathVariable Long id,
             @RequestParam Long responseId,
             @RequestParam String confirmToken) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        // 2026-10-03 P4 存量清零：本端点原登记在 scripts/ownership-gate-exempt.txt
+        // （「存量中危待修：能操作本组外数据」），与同文件 publish / withdraw / close /
+        // preSelectToken 同口径补归属守卫——SELECTED 决定谁中标，必须限本产品组。
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveInvitationGroup(actor, id));
         Person person = session.currentPerson();
         return ApiV1Response.ok(bidInvitationService.selectResponse(id, responseId, confirmToken, person.getId()));
     }
@@ -181,7 +185,9 @@ public class BidController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String content,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") java.util.Date expireAt) {
-        ipdPermission.requireInternal();
+        IpdActor actor = ipdPermission.requireInternal();
+        // 2026-10-03 P4 存量清零：同 selectResponse——原登记豁免，改招标条件属本组写操作。
+        IpdIdorGuard.assertSameGroupIpd(actor, resolveInvitationGroup(actor, id));
         Person person = session.currentPerson();
         return ApiV1Response.ok(bidInvitationService.modifyInvitation(id, title, content, expireAt, person.getId()));
     }
