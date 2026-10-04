@@ -29,8 +29,19 @@ public final class KernelEventFrames {
 
     private final ToolPolicyEngine toolPolicy;
     private final HarnessPermissionMode permissionMode;
+    private final org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy;
 
     public KernelEventFrames(ToolPolicyEngine toolPolicy, HarnessPermissionMode permissionMode) {
+        this(toolPolicy, permissionMode,
+            org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.ON_REQUEST);
+    }
+
+    public KernelEventFrames(ToolPolicyEngine toolPolicy, HarnessPermissionMode permissionMode,
+                             org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy) {
+        if (approvalPolicy == null) {
+            throw new IllegalArgumentException("Approval policy is required");
+        }
+        this.approvalPolicy = approvalPolicy;
         if (toolPolicy == null) {
             throw new IllegalArgumentException("Tool policy engine is required");
         }
@@ -56,7 +67,7 @@ public final class KernelEventFrames {
             String callId = isBlank(toolCall.getToolCallId()) ? "kernel-uncorrelated" : toolCall.getToolCallId();
             String toolName = isBlank(toolCall.getToolCallName()) ? "kernel-unknown" : toolCall.getToolCallName();
             ToolPolicyEvaluation evaluation = toolPolicy.evaluate(
-                ToolInvocation.of(callId, toolName, Map.of()), permissionMode, null);
+                ToolInvocation.of(callId, toolName, Map.of()), permissionMode, approvalPolicy, null);
             sink.onMcpTool(toolName, statusOf(evaluation), evaluation.reason());
         }
     }

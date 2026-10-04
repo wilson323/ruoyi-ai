@@ -46,4 +46,34 @@ class OfficialCapabilitiesBusinessGateRegressionTest {
             verify(delegate, never()).callAsync(any());
         }
     }
+
+    /** 聊天内核现行配置（FULL_ACCESS + NEVER）：官方能力直接放行执行，且全部留痕。 */
+    @Test
+    void fullAccessWithNeverApprovalExecutesRegisteredCapabilities() {
+        for (ToolCapability capability : List.of(ToolCapability.WRITE, ToolCapability.EXECUTE, ToolCapability.NETWORK)) {
+            AgentTool delegate = mock(AgentTool.class);
+            when(delegate.getName()).thenReturn("official_tool");
+            when(delegate.getDescription()).thenReturn("registered capability");
+            when(delegate.getParameters()).thenReturn(Map.of("type", "object"));
+            when(delegate.callAsync(any())).thenReturn(reactor.core.publisher.Mono.just(
+                io.agentscope.core.message.ToolResultBlock.text("ok")));
+            ToolDescriptor descriptor = new ToolDescriptor("official_tool", Set.of(capability),
+                false, 1_000L, 1_024L, 1_024L, false, "official capability");
+            var governance = new KernelToolGovernance(new ToolPolicyEngine(List.of(descriptor)),
+                HarnessPermissionMode.FULL_ACCESS,
+                org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER,
+                new InMemoryKernelToolEffectLedger(), new KernelToolCallTrace());
+            var tool = KernelGovernedTool.wrap(delegate, governance);
+            Map<String, Object> input = Map.of("arg", "v");
+            var decision = tool.checkPermissions(input, null).block();
+            assertNotNull(decision);
+            assertEquals(PermissionBehavior.ALLOW, decision.getBehavior(), capability.name());
+            var param = ToolCallParam.builder().toolUseBlock(new ToolUseBlock("c1", "official_tool", input)).build();
+            var result = tool.callAsync(param).block();
+            assertNotNull(result);
+            assertNotEquals(ToolResultState.ERROR, result.getState(), capability.name());
+            verify(delegate, times(1)).callAsync(any());
+        }
+    }
 }
+

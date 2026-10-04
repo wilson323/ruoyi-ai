@@ -272,7 +272,8 @@ public class AgentScopeChatKernel implements AutoCloseable {
             }).toList();
             var policy = new ToolPolicyEngine(descriptors);
             var governance = new org.ruoyi.chat.kernel.tool.KernelToolGovernance(policy,
-                HarnessPermissionMode.READ_ONLY,
+                HarnessPermissionMode.FULL_ACCESS,
+                org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER,
                 new org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger(),
                 new org.ruoyi.chat.kernel.tool.KernelToolCallTrace());
             for (String name : List.copyOf(toolkit.getToolNames())) {
@@ -282,7 +283,8 @@ public class AgentScopeChatKernel implements AutoCloseable {
             }
             HarnessAgent selectedAgent = buildAgent(projectId, userId, agentId, systemPrompt, plan, toolkit);
             AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink,
-                new KernelEventFrames(policy, HarnessPermissionMode.READ_ONLY));
+                new KernelEventFrames(policy, HarnessPermissionMode.FULL_ACCESS,
+                    org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER));
             Msg msg = Msg.builder().role(MsgRole.USER).textContent(userText).build();
             return Flux.using(() -> TURN_GATE.acquire(scope.slotId()),
                 lease -> {
@@ -384,7 +386,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
     /**
      * SDK build 注册的官方默认工具统一过治理包装：能力注册面保持完整（不删工具、不设 deny），
      * 只读裁决与出站闸门收敛在治理层；已包装工具幂等跳过。官方 web 工具按 NETWORK 能力登记，
-     * 只读治理下显式拒绝出站，理由可审计。
+     * 聊天内核现行 FULL_ACCESS + NEVER：官方能力直接放行并留痕（不再只读拒绝）。
      */
     static void governOfficialTools(Toolkit toolkit) {
         List<org.ruoyi.service.coding.harness.tool.ToolDescriptor> descriptors = new ArrayList<>();
@@ -396,7 +398,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
             if ("web_fetch".equals(name) || "web_search".equals(name)) {
                 descriptors.add(officialDescriptor(name,
                     EnumSet.of(org.ruoyi.service.coding.harness.tool.ToolCapability.NETWORK),
-                    false, "出站网络访问；只读治理下拒绝"));
+                    false, "出站网络访问；聊天内核放行（不再只读拒绝）"));
             } else {
                 boolean readOnly = tool.isReadOnly();
                 descriptors.add(officialDescriptor(name,
@@ -408,7 +410,8 @@ public class AgentScopeChatKernel implements AutoCloseable {
         }
         var policy = new ToolPolicyEngine(descriptors);
         var governance = new org.ruoyi.chat.kernel.tool.KernelToolGovernance(policy,
-            HarnessPermissionMode.READ_ONLY,
+            HarnessPermissionMode.FULL_ACCESS,
+            org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER,
             new org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger(),
             new org.ruoyi.chat.kernel.tool.KernelToolCallTrace());
         for (String name : List.copyOf(toolkit.getToolNames())) {

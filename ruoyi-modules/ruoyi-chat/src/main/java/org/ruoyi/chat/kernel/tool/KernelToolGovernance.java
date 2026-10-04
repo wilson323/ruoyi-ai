@@ -43,6 +43,7 @@ public final class KernelToolGovernance {
 
     private final ToolPolicyEngine policy;
     private final HarnessPermissionMode permissionMode;
+    private final org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy;
     private final KernelToolEffectLedger ledger;
     private final KernelToolCallTrace trace;
     private final AtomicLong sequence = new AtomicLong();
@@ -54,8 +55,18 @@ public final class KernelToolGovernance {
                                 HarnessPermissionMode permissionMode,
                                 KernelToolEffectLedger ledger,
                                 KernelToolCallTrace trace) {
+        this(policy, permissionMode,
+                org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.ON_REQUEST, ledger, trace);
+    }
+
+    public KernelToolGovernance(ToolPolicyEngine policy,
+                                HarnessPermissionMode permissionMode,
+                                org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy,
+                                KernelToolEffectLedger ledger,
+                                KernelToolCallTrace trace) {
         this.policy = Objects.requireNonNull(policy, "policy");
         this.permissionMode = Objects.requireNonNull(permissionMode, "permissionMode");
+        this.approvalPolicy = Objects.requireNonNull(approvalPolicy, "approvalPolicy");
         this.ledger = Objects.requireNonNull(ledger, "ledger");
         this.trace = Objects.requireNonNull(trace, "trace");
     }
@@ -79,7 +90,7 @@ public final class KernelToolGovernance {
         String callId = "kgov-" + sequence.incrementAndGet();
         String argsSha = argumentsSha256(args);
         ToolPolicyEvaluation evaluation =
-                policy.evaluate(ToolInvocation.of(callId, toolName, args), permissionMode, null);
+                policy.evaluate(ToolInvocation.of(callId, toolName, args), permissionMode, approvalPolicy, null);
         KernelToolCallDecision decision = KernelToolCallDecision.of(
                 callId, toolName, argsSha,
                 evaluation.decision(), evaluation.code(), evaluation.reason(), System.currentTimeMillis());
