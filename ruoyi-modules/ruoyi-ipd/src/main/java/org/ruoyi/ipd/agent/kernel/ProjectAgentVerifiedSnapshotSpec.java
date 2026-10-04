@@ -57,11 +57,9 @@ public final class ProjectAgentVerifiedSnapshotSpec implements SandboxSnapshotSp
             Path candidate = null;
             Exception persistFailure = null;
             try {
-                // 归档固化就是核验判生死的那一刻。此刻若还有被委派的子调用在写，
-                // 它的会话记录必然既不在归档里也不在主机暂存里，verifyArchive 会按设计拒绝，
-                // 整轮因此改判 FAILED（实证 runId 2106436968471633922 / 2106443323328794625）。
-                // 先等子调用真正收口，再固化——这是修复，不是把某个时长调大。
-                if (lifecycle != null) lifecycle.awaitNestedCallsSettled();
+                // SDK has already generated the archive. Root-only settlement belongs before
+                // doPersistWorkspace; waiting here cannot add bytes and can block sibling calls.
+                if (lifecycle != null) lifecycle.requireHealthy();
                 Files.createDirectories(basePath);
                 candidate = Files.createTempFile(basePath, ".ipd-snapshot-candidate-", ".tar");
                 var source = MessageDigest.getInstance("SHA-256");

@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.PersonMapper;
@@ -34,6 +33,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.lenient;
 
@@ -90,10 +90,6 @@ class P222AcceptanceTest {
         lenient().when(personMapper.updateById(any(Person.class))).thenReturn(1);
         // 默认 stub：selectCount 返 0L（无活跃项目）
         lenient().when(memberMapper.selectCount(any())).thenReturn(0L);
-        // 默认 stub：通知派发返非 null（避免 NPE；测试具体场景时显式 stub 列表）
-        lenient().when(notificationService.publish(anyLong(), anyString(), anyString(),
-            anyString(), anyLong(), anyString(), anyString(), anyString()))
-            .thenReturn(NotificationEvent.builder().id(1L).build());
     }
 
     private Person person(Long id, String emp, String acc, String wecom, Long groupId, String type) {
@@ -229,8 +225,8 @@ class P222AcceptanceTest {
         // audit 仅首次 RESIGN（1 参）+ REVOKE_SESSIONS（5 参）各一条（wecom 已空无 UNBIND_WECHAT），二次不重写
         verify(auditLogService, times(1)).append(any(AuditLog.class));
         verify(auditLogService, times(1)).append(anyLong(), any(), any(), any(), any());
-        // publish 仅首次发本人通知 1 条（无本组/对方/超管 stub 均返空 list），二次不重写
-        verify(notificationService, times(1)).publish(anyLong(), anyString(), anyString(),
+        // publishAfterCommit 仅首次登记本人通知 1 条（无本组/对方/超管 stub 均返空 list），二次不重写
+        verify(notificationService, times(1)).publishAfterCommit(anyLong(), anyString(), anyString(),
             anyString(), anyLong(), anyString(), anyString(), anyString());
         verify(ipdAuthSession, times(1)).revokeAll(anyLong());
     }
@@ -256,7 +252,7 @@ class P222AcceptanceTest {
         assertThat(result.notificationsSent()).isEqualTo(4);
         ArgumentCaptor<String> kinds = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Long> receivers = ArgumentCaptor.forClass(Long.class);
-        verify(notificationService, times(4)).publish(receivers.capture(), anyString(),
+        verify(notificationService, times(4)).publishAfterCommit(receivers.capture(), anyString(),
             kinds.capture(), anyString(), anyLong(), anyString(), anyString(),
             anyString());
         assertThat(receivers.getAllValues()).containsExactlyInAnyOrder(906L, 10L, 11L, 1L);
@@ -311,7 +307,7 @@ class P222AcceptanceTest {
         assertThat(escalated).isEqualTo(1);
         ArgumentCaptor<String> eventType = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> kind = ArgumentCaptor.forClass(String.class);
-        verify(notificationService).publish(eq(1L), eventType.capture(), kind.capture(),
+        verify(notificationService).publishAfterCommit(eq(1L), eventType.capture(), kind.capture(),
             anyString(), eq(908L), anyString(), anyString(), anyString());
         assertThat(eventType.getValue()).isEqualTo(PersonService.EVT_RESIGN_ESCALATION);
         assertThat(kind.getValue()).isEqualTo(NotificationService.KIND_ACTION);
@@ -337,8 +333,7 @@ class P222AcceptanceTest {
         int escalated = hrSyncService.escalateStaleResignations(15, admin);
 
         assertThat(escalated).isZero();
-        verify(notificationService, never()).publish(anyLong(), anyString(), anyString(),
-            anyString(), anyLong(), anyString(), anyString(), anyString());
+        verifyNoInteractions(notificationService);
     }
 
     // ===== 复职路径: rehire 仅 RESIGNED → ACTIVE（明确允许分支） =====

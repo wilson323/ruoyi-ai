@@ -256,12 +256,24 @@ public class AuditChainIntegrityScheduler {
         }
         String title = "审计链完整性告警：" + finding.summary();
         String content = finding.detail();
+        int notified = 0;
+        List<Long> failedRecipients = new ArrayList<>();
         for (Person admin : admins) {
-            notificationService.publishDaily(admin.getId(), NotificationService.Types.AUDIT_CHAIN_BROKEN,
-                NotificationService.KIND_FYI, SRC_AUDIT_CHAIN_VERIFY, NOTIFY_SOURCE_ID,
-                title, content, ACTION_URL, now);
+            try {
+                notificationService.publishDaily(admin.getId(), NotificationService.Types.AUDIT_CHAIN_BROKEN,
+                    NotificationService.KIND_FYI, SRC_AUDIT_CHAIN_VERIFY, NOTIFY_SOURCE_ID,
+                    title, content, ACTION_URL, now);
+                notified++;
+            } catch (Exception failure) {
+                failedRecipients.add(admin.getId());
+                log.error("[IPD] 审计链完整性告警通知失败 personId={}", admin.getId(), failure);
+            }
         }
-        log.info("[IPD] 审计链完整性告警已通知超管 {} 人：{}", admins.size(), finding.summary());
+        if (!failedRecipients.isEmpty()) {
+            throw new IllegalStateException("审计链告警通知部分失败：成功 " + notified
+                + " 人，失败收件人=" + failedRecipients);
+        }
+        log.info("[IPD] 审计链完整性告警已通知超管 {} 人：{}", notified, finding.summary());
     }
 
     /** 在任超管（与 AuditAnomalyScanService.activeSuperAdmins 同口径：ACTIVE 双状态 + 未软删）。 */

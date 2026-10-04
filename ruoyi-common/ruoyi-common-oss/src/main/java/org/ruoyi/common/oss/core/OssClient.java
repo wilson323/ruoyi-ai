@@ -493,6 +493,31 @@ public class OssClient {
     /**
      * 服务商
      */
+    /** 专用保密桶必须明确为私有且实际无桶策略/公开 ACL。读取失败一律拒绝。 */
+    public void assertPrivateBucket() {
+        if (getAccessPolicy() != AccessPolicyType.PRIVATE) throw new OssException("附件存储必须为私有桶");
+        try {
+            try {
+                var policy = client.getBucketPolicy(builder -> builder.bucket(properties.getBucketName())).join();
+                if (policy.policy() != null && !policy.policy().isBlank()) throw new OssException("附件私有桶不得配置访问策略");
+            } catch (java.util.concurrent.CompletionException failure) {
+                Throwable cause = failure.getCause();
+                if (!(cause instanceof software.amazon.awssdk.services.s3.model.S3Exception error)
+                    || error.awsErrorDetails() == null || !"NoSuchBucketPolicy".equals(error.awsErrorDetails().errorCode())) {
+                    throw new OssException("无法确认附件桶访问策略");
+                }
+            }
+            var acl = client.getBucketAcl(builder -> builder.bucket(properties.getBucketName())).join();
+            for (var grant : acl.grants()) {
+                if (grant.grantee() != null && grant.grantee().type() == software.amazon.awssdk.services.s3.model.Type.GROUP) {
+                    throw new OssException("附件桶存在公开访问授权");
+                }
+            }
+        } catch (java.util.concurrent.CompletionException failure) {
+            throw new OssException("无法确认附件桶访问权限");
+        }
+    }
+
     public String getConfigKey() {
         return configKey;
     }

@@ -53,6 +53,12 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
     }
     private final ProjectAgentEventSink sink;
     private ProjectAgentExecutionClaims executionClaims;
+    private java.util.function.Predicate<io.agentscope.core.skill.AgentSkill> frozenSkillReader = skill -> false;
+    public ProjectAgentOfficialToolGovernance selectedSkillReads(
+            java.util.function.Predicate<io.agentscope.core.skill.AgentSkill> approvedSnapshot) {
+        this.frozenSkillReader = Objects.requireNonNull(approvedSnapshot);
+        return this;
+    }
     private ProjectAgentChildLineageRegistry childLineage;
     public ProjectAgentOfficialToolGovernance childLineage(ProjectAgentChildLineageRegistry lineage) {
         this.childLineage=Objects.requireNonNull(lineage);return this;
@@ -120,7 +126,7 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 AgentTool original = toolkit.getTool(name);
                 if (original instanceof OwnedTool) continue;
                 toolkit.removeTool(name);
-                toolkit.registerAgentTool(new OwnedTool(original, sink, executionClaims, childLineage));
+                toolkit.registerAgentTool(new OwnedTool(original, sink, executionClaims, childLineage, frozenSkillReader));
             }
         }
     }
@@ -132,14 +138,21 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
         private final ProjectAgentEventSink sink;
         private final Map<AgentState, Map<String, BoundCall>> calls = new IdentityHashMap<>();
         private record BoundCall(Agent agent, String userId, String sessionId,
-                                 ToolUseBlock call, AtomicBoolean consumed) { }
+                                 ToolUseBlock call, AtomicBoolean consumed, Map<String,Object> frozenReadInput) { }
 
         OwnedTool(AgentTool delegate, ProjectAgentEventSink sink) { this(delegate, sink, null); }
         OwnedTool(AgentTool delegate, ProjectAgentEventSink sink, ProjectAgentExecutionClaims executionClaims) {
             this(delegate,sink,executionClaims,null);
         }
         OwnedTool(AgentTool delegate, ProjectAgentEventSink sink, ProjectAgentExecutionClaims executionClaims, ProjectAgentChildLineageRegistry childLineage) {
+            this(delegate, sink, executionClaims, childLineage, skill -> false);
+        }
+        private final java.util.function.Predicate<io.agentscope.core.skill.AgentSkill> frozenSkillReader;
+        OwnedTool(AgentTool delegate, ProjectAgentEventSink sink, ProjectAgentExecutionClaims executionClaims,
+                  ProjectAgentChildLineageRegistry childLineage,
+                  java.util.function.Predicate<io.agentscope.core.skill.AgentSkill> frozenSkillReader) {
             super(metadata(delegate));
+            this.frozenSkillReader = frozenSkillReader;
             this.childLineage=childLineage;
             this.executionClaims = executionClaims;
             this.delegate = delegate;
@@ -174,6 +187,19 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 PermissionContextState context) {
             return Mono.defer(() -> {
                 sink.requireActiveOwnership();
+                if ("load_skill_through_path".equals(getName())) {
+                    synchronized (calls) {
+                        boolean approved = calls.values().stream().flatMap(bound -> bound.values().stream())
+                            .anyMatch(bound -> !bound.consumed().get() && bound.frozenReadInput() != null
+                                && Objects.equals(bound.frozenReadInput(), input));
+                        return Mono.just(approved ? PermissionDecision.allow("Read this run's frozen skill instructions")
+                            : PermissionDecision.deny("Skill read is outside this run's frozen instructions"));
+                    }
+                }
+                if ("execute".equals(getName())) {
+                    try { ProjectAgentOfficialCommandPolicy.canonicalInput(input); }
+                    catch (IllegalArgumentException rejected) { return Mono.just(PermissionDecision.deny(rejected.getMessage())); }
+                }
                 if ("web_fetch".equals(getName())) {
                     String reason = webBlockReason(input);
                     if (reason != null) return Mono.just(PermissionDecision.deny(reason));
@@ -194,6 +220,10 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
             return Mono.defer(() -> {
                 sink.requireActiveOwnership();
                 Objects.requireNonNull(param, "Tool execution context is required");
+                if ("load_skill_through_path".equals(getName()) && !isFrozenSkillRead(param.getInput(), param.getRuntimeContext()))
+                    return Mono.error(new SecurityException("Skill read is outside this run's frozen instructions"));
+                // A native ALLOW rule can bypass checkPermissions; never bypass literal argv authorization.
+                if ("execute".equals(getName())) ProjectAgentOfficialCommandPolicy.canonicalInput(param.getInput());
                 // 官方 EXPLORE/ACCEPT_EDITS 对只读工具可能先放行；出站约束仍须在实际调用前再检查。
                 if ("web_fetch".equals(getName()) && webBlockReason(param.getInput()) != null)
                     return Mono.error(new IllegalStateException("Web destination is not authorized"));
@@ -220,7 +250,10 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 var bound = calls.get(state);
                 binding = bound == null ? null : bound.get(requested.getId());
             }
-            if (binding == null || runtime == null || binding.agent() != param.getAgent()
+            if (binding == null || runtime == null
+                || ("load_skill_through_path".equals(getName())
+                    && !Objects.equals(binding.frozenReadInput(), param.getInput()))
+                || binding.agent() != param.getAgent()
                 || !Objects.equals(binding.userId(), runtime.getUserId())
                 || !Objects.equals(binding.sessionId(), runtime.getSessionId())
                 || !Objects.equals(state.getUserId(), runtime.getUserId())
@@ -252,8 +285,18 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 throw new IllegalStateException("Official call-scoped identity mismatch");
             synchronized (calls) {
                 calls.computeIfAbsent(state, ignored -> new HashMap<>()).putIfAbsent(call.getId(),
-                    new BoundCall(agent, runtime.getUserId(), runtime.getSessionId(), call, new AtomicBoolean()));
+                    new BoundCall(agent, runtime.getUserId(), runtime.getSessionId(), call, new AtomicBoolean(),
+                        "load_skill_through_path".equals(getName()) && isFrozenSkillRead(call.getInput(), runtime)
+                            ? Map.copyOf(call.getInput()) : null));
             }
+        }
+
+        private boolean isFrozenSkillRead(Map<String,Object> input, RuntimeContext runtime) {
+            if (runtime == null || input == null || input.size() != 2
+                || !"SKILL.md".equals(input.get("path")) || !(input.get("skillId") instanceof String skillId)) return false;
+            var catalog = runtime.get(io.agentscope.harness.agent.skill.runtime.SkillCatalog.class);
+            var entry = catalog == null ? null : catalog.get(skillId);
+            return entry != null && frozenSkillReader.test(entry.skill());
         }
 
         private Mono<ToolResultBlock> execute(ToolCallParam param) {
@@ -265,11 +308,11 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 executing=ToolCallParam.builder(param).runtimeContext(scoped).build();
             } else executing=param;
             Mono<ToolResultBlock> execution;
-            if (executionClaims == null) execution = Mono.defer(() -> delegate.callAsync(executing));
+            if (executionClaims == null) execution = Mono.defer(() -> delegate.callAsync(delegateInput(executing)));
             else execution = Mono.using(() -> executionClaims.openApproved(executing), scope ->
                 Mono.deferContextual(context -> {
                     executionClaims.requireReactive(context, scope.runtime(), executionClaims.binding());
-                    return delegate.callAsync(ToolCallParam.builder(executing).runtimeContext(scope.runtime()).build());
+                    return delegate.callAsync(delegateInput(ToolCallParam.builder(executing).runtimeContext(scope.runtime()).build()));
                 }).contextWrite(scope::contextWrite), ProjectAgentExecutionClaims.ExecutionScope::close);
             return execution.flatMap(result -> childLineage!=null && "agent_spawn".equals(getName()) && childLineage.parentNeedsPause(executing.getRuntimeContext())
                     ? Mono.error(new io.agentscope.core.tool.ToolSuspendException("Original child approval pending")) : Mono.just(result))
@@ -277,6 +320,14 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                         "toolName", getName(), "state", "RETURNED")))
                     .doOnError(error -> sink.onStep("TOOL_EXECUTION", Map.of(
                         "toolName", getName(), "state", "FAILED")));
+        }
+
+        private ToolCallParam delegateInput(ToolCallParam original) {
+            // Preserve original approved input for the canonical execution claim and audit binding.
+            // Only the official delegate receives the equivalent shell-quoted literal argv.
+            return "execute".equals(getName())
+                ? ToolCallParam.builder(original).input(ProjectAgentOfficialCommandPolicy.canonicalInput(original.getInput())).build()
+                : original;
         }
 
         /**

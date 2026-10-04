@@ -10,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.KpiRecord;
-import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
@@ -89,8 +88,6 @@ class P313AcceptanceTest {
         when(productGroupMapper.selectById(11L)).thenReturn(group(11L, 901L));
         when(productGroupMapper.selectById(12L)).thenReturn(group(12L, 902L));
         when(kpiRecordMapper.selectCount(any())).thenReturn(0L);
-        when(notificationService.publish(any(), any(), any(), any(), any(Long.class), any(), any(), any()))
-            .thenReturn(NotificationEvent.builder().id(1L).build());
         LocalDate scanDate = YearMonth.of(2026, 9).atEndOfMonth()
             .plusDays(9); // 2026-10-08 截止后的第 1 天
 
@@ -99,11 +96,12 @@ class P313AcceptanceTest {
 
         assertThat(result.day1Reminders()).isEqualTo(2);
         assertThat(result.day3Escalations()).isZero();
-        verify(notificationService, org.mockito.Mockito.times(2)).publish(
+        verify(notificationService, org.mockito.Mockito.times(2)).publishAfterCommit(
             any(), eq("KPI_SHARED_DEADLINE_DAY1"), eq("ACTION"), any(),
             any(Long.class), any(), any(), any());
-        verify(notificationService, never()).publish(
+        verify(notificationService, never()).publishAfterCommit(
             any(), eq("KPI_SHARED_DEADLINE_DAY3"), any(), any(), any(Long.class), any(), any(), any());
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(Long.class), any(), any(), any());
         verify(auditLogService, org.mockito.Mockito.times(2)).append(any(AuditLog.class));
     }
 
@@ -117,15 +115,13 @@ class P313AcceptanceTest {
         when(personMapper.selectList(any())).thenReturn(List.of(
             person(901L, "SUPER_ADMIN", null), person(902L, "SUPER_ADMIN", null)));
         when(kpiRecordMapper.selectCount(any())).thenReturn(0L);
-        when(notificationService.publish(any(), any(), any(), any(), any(Long.class), any(), any(), any()))
-            .thenReturn(NotificationEvent.builder().id(1L).build());
         LocalDate scanDate = YearMonth.of(2026, 9).atEndOfMonth().plusDays(11);
 
         KpiSharedCollectionService.DeadlineScanResult result = service.scanMonthlyDeadlines(
             scanDate, YearMonth.of(2026, 9), 5);
 
         assertThat(result.day3Escalations()).isEqualTo(2);
-        verify(notificationService, org.mockito.Mockito.times(2)).publish(
+        verify(notificationService, org.mockito.Mockito.times(2)).publishAfterCommit(
             any(), eq("KPI_SHARED_DEADLINE_DAY3"), eq("ACTION"), any(),
             any(Long.class), any(), any(), any());
     }
@@ -142,6 +138,7 @@ class P313AcceptanceTest {
         assertThat(result.skippedProjects()).isEqualTo(1);
         assertThat(result.day1Reminders()).isZero();
         assertThat(result.day3Escalations()).isZero();
+        verify(notificationService, never()).publishAfterCommit(any(), any(), any(), any(), any(Long.class), any(), any(), any());
         verify(notificationService, never()).publish(any(), any(), any(), any(), any(Long.class), any(), any(), any());
         verify(projectMemberMapper, never()).selectList(any());
     }
@@ -205,8 +202,6 @@ class P313AcceptanceTest {
         when(personMapper.selectById(101L)).thenReturn(person(101L, "MARKET_PM", 11L));
         when(productGroupMapper.selectById(11L)).thenReturn(group(11L, 901L));
         when(kpiRecordMapper.selectCount(any())).thenReturn(0L);
-        when(notificationService.publish(any(), any(), any(), any(), any(Long.class), any(), any(), any()))
-            .thenReturn(NotificationEvent.builder().id(1L).build());
 
         LocalDate scanDate = LocalDate.of(2026, 10, 9); // 9月归集→10/8截止→D+1
 
@@ -226,7 +221,7 @@ class P313AcceptanceTest {
         ArgumentCaptor<Long> receiverCaptor = ArgumentCaptor.forClass(Long.class);
         ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Long> sourceIdCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(notificationService, times(2)).publish(
+        verify(notificationService, times(2)).publishAfterCommit(
             receiverCaptor.capture(),
             eventTypeCaptor.capture(),
             eq(NotificationService.KIND_ACTION),

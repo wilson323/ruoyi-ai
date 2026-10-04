@@ -309,7 +309,16 @@ jobs:
       #（本机与 CI 检出读数不同；实测全仓 .java 报 35,166 / 真实 2,281）。
       # 口径全文见 AGENTS.md §「构建 / 测试」同名条目。
       - name: 13/13 根递归扫描排除
-        run: bash scripts/check-scan-scope-excludes.sh
+        run: |
+          set -euo pipefail
+          bash scripts/check-scan-scope-excludes.sh
+          python3 scripts/lib/scan-scope-test.py
+
+      - name: Maven 工作树互斥正反例（假 Maven，不写构建产物）
+        run: python3 scripts/lib/mvn-locked-test.py
+
+      - name: 生产验收正反例（临时本机 HTTP 与假 Compose）
+        run: python3 scripts/lib/production-gates-test.py
 
       - name: 自证能红 · 根递归扫描排除
         env:

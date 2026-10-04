@@ -37,6 +37,39 @@ import static org.ruoyi.ipd.agent.support.AgentTestFixtures.TENANT;
 @Tag("dev")
 class AiFeedbackServiceTest {
 
+    @Test
+    void adoptionIsImmutableAndSeparateFromRating() {
+        when(access.requireVisible(ACTOR, PROJECT_ID)).thenReturn(TENANT);
+        Long runId = seedOwnRun();
+        var version = IpdAgentArtifactVersion.builder().tenantId(TENANT).runId(runId)
+            .artifactId("adopt").status("APPLIED").delFlag("0").build();
+        artifacts.insert(version);
+        var service = service(true);
+        service.put(ACTOR, "ARTIFACT_VERSION", version.getId().toString(), new AiFeedbackReq("DOWN", "需修改"));
+        var run = runs.findRun(runId).orElseThrow();
+        service.recordArtifactAdoption(run, version, ACTOR.id());
+        service.recordArtifactAdoption(run, version, ACTOR.id());
+        assertThat(feedback.size()).isEqualTo(2);
+        assertThat(feedback.updates).hasValue(0);
+        assertThat(feedback.find("ARTIFACT_VERSION", version.getId(), ACTOR.id()).orElseThrow().getRating()).isEqualTo("DOWN");
+        assertThat(feedback.find("ARTIFACT_ADOPTION", version.getId(), ACTOR.id()).orElseThrow().getRating()).isEqualTo("UP");
+        assertCode(() -> service.put(ACTOR, "ARTIFACT_ADOPTION", version.getId().toString(), new AiFeedbackReq("DOWN", null)), ApiV1ErrorCode.PARAM_INVALID);
+    }
+
+    @Test
+    void adoptionRejectsWrongRunOrPersonAndFailedInsert() {
+        Long runId = seedOwnRun();
+        var run = runs.findRun(runId).orElseThrow();
+        var version = IpdAgentArtifactVersion.builder().id(71L).tenantId(TENANT).runId(runId + 1).build();
+        assertCode(() -> service(true).recordArtifactAdoption(run, version, ACTOR.id()), ApiV1ErrorCode.STATE_CONFLICT);
+        version.setRunId(runId);
+        assertCode(() -> service(true).recordArtifactAdoption(run, version, OTHER_ACTOR.id()), ApiV1ErrorCode.STATE_CONFLICT);
+        var failed = mock(org.ruoyi.ipd.agent.store.AiFeedbackStore.class);
+        var service = new AiFeedbackService(true, access, runs, artifacts, failed, clock::get);
+        assertCode(() -> service.recordArtifactAdoption(run, version, ACTOR.id()), ApiV1ErrorCode.STATE_CONFLICT);
+        assertThat(feedback.size()).isZero();
+    }
+
     private final InMemoryAgentRunStore runs = new InMemoryAgentRunStore();
     private final InMemoryArtifactVersionStore artifacts = new InMemoryArtifactVersionStore();
     private final InMemoryAiFeedbackStore feedback = new InMemoryAiFeedbackStore();

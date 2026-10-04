@@ -73,7 +73,7 @@ public class DemandCatalogBinder {
      * @param answer 助手全文，可空
      */
     public void apply(Long requirementId, String answer) {
-        apply(requirementId, answer, null);
+        throw missingTenant();
     }
 
     /**
@@ -84,6 +84,11 @@ public class DemandCatalogBinder {
      * @param hit 运行开始时的目录匹配，可空
      */
     public void apply(Long requirementId, String answer, CatalogHit hit) {
+        throw missingTenant();
+    }
+
+    public void apply(Long requirementId, String answer, CatalogHit hit, String tenantId) {
+        tenantId = requiredTenant(tenantId);
         if (requirementId == null) {
             return;
         }
@@ -92,18 +97,21 @@ public class DemandCatalogBinder {
         if (lineCode == null && productCode == null) {
             return;
         }
-        Requirement requirement = requirementMapper.selectById(requirementId);
+        Requirement requirement = requirementMapper.selectOne(new LambdaQueryWrapper<Requirement>()
+            .eq(Requirement::getId, requirementId).apply("tenant_id = {0}", tenantId));
         if (requirement == null) {
             return;
         }
-        ProductLine line = uniqueLine(lineCode);
-        Product product = uniqueProduct(productCode);
+        ProductLine line = uniqueLine(lineCode, tenantId);
+        Product product = uniqueProduct(productCode, tenantId);
         if (line != null && product != null && product.getProductLineId() != null
             && !product.getProductLineId().equals(line.getId())) {
             return;
         }
         if (line == null && product != null && product.getProductLineId() != null) {
-            line = lineMapper.selectById(product.getProductLineId());
+            line = lineMapper.selectOne(new LambdaQueryWrapper<ProductLine>()
+                .eq(ProductLine::getId, product.getProductLineId()).eq(ProductLine::getStatus, "ACTIVE")
+                .eq(ProductLine::getTenantId, tenantId));
             if (line == null || !"ACTIVE".equals(line.getStatus()) || UNSPECIFIED.equals(line.getLineCode())) {
                 line = null;
             }
@@ -123,7 +131,7 @@ public class DemandCatalogBinder {
         }
         if (changed) {
             LambdaUpdateWrapper<Requirement> update = new LambdaUpdateWrapper<Requirement>()
-                .eq(Requirement::getId, requirementId);
+                .eq(Requirement::getId, requirementId).apply("tenant_id = {0}", tenantId);
             if (originalLineId == null) update.isNull(Requirement::getProductLineId);
             else update.eq(Requirement::getProductLineId, originalLineId);
             if (originalProductId == null) update.isNull(Requirement::getProductId);
@@ -147,19 +155,26 @@ public class DemandCatalogBinder {
      * @return 提示摘录和结构化编码
      */
     public BindContext open(Long requirementId) {
+        throw missingTenant();
+    }
+
+    public BindContext open(Long requirementId, String tenantId) {
+        tenantId = requiredTenant(tenantId);
         StringBuilder sb = new StringBuilder();
         Requirement requirement = null;
         if (requirementId != null) {
-            requirement = requirementMapper.selectById(requirementId);
+            requirement = requirementMapper.selectOne(new LambdaQueryWrapper<Requirement>()
+            .eq(Requirement::getId, requirementId).apply("tenant_id = {0}", tenantId));
+            if (requirement == null) throw new org.ruoyi.ipd.common.IpdBusinessException(
+                org.ruoyi.ipd.common.ApiV1ErrorCode.NOT_FOUND, "需求不在当前租户范围内");
             if (requirement != null) {
                 appendFact(sb, "本张需求标题：", requirement.getTitle());
                 appendFact(sb, "本张需求内容：", requirement.getContent());
             }
         }
         List<ProductLine> lineRows = lineMapper.selectList(new LambdaQueryWrapper<ProductLine>()
-            .eq(ProductLine::getStatus, "ACTIVE")
-            .orderByAsc(ProductLine::getId)
-            .last("LIMIT 40"));
+            .eq(ProductLine::getStatus, "ACTIVE").eq(ProductLine::getTenantId, tenantId)
+            .orderByAsc(ProductLine::getId));
         java.util.LinkedHashMap<Long, String> lineCodes = new java.util.LinkedHashMap<>();
         List<String> listedLines = new ArrayList<>();
         sb.append("可写回的产品线，每行「编码 名称」：\n");
@@ -172,32 +187,46 @@ public class DemandCatalogBinder {
                 String code = line.getLineCode().trim();
                 lineCodes.put(line.getId(), code);
                 listedLines.add(code);
-                sb.append(code).append(' ')
-                    .append(line.getLineName() == null ? "" : oneLine(line.getLineName())).append('\n');
+                if (sb.length() < 8000) sb.append(code).append(' ')
+                    .append(line.getLineName() == null ? "" : shortName(line.getLineName())).append('\n');
             }
         }
-        List<Product> productRows = productMapper.selectList(new LambdaQueryWrapper<Product>()
-            .orderByAsc(Product::getId)
-            .last("LIMIT 120"));
-        List<String> listedProducts = new ArrayList<>();
+        // 所有候选限定在上面有效目录线；完整匹配不受提示摘录上限影响。
+        List<Product> productRows = lineCodes.isEmpty() ? List.of()
+            : productMapper.selectList(new LambdaQueryWrapper<Product>()
+                .in(Product::getProductLineId, lineCodes.keySet()).eq(Product::getTenantId, tenantId).orderByAsc(Product::getId));
+        String haystack = requirement == null ? "" : haystack(requirement);
+        List<Product> matches = productRows == null ? List.of() : productRows.stream()
+            .filter(p -> lineCodes.containsKey(p.getProductLineId()))
+            .filter(p -> (usable(p.getProductCode()) != null && containsToken(haystack, p.getProductCode().trim()))
+                || (usable(p.getModelCode()) != null && containsToken(haystack, p.getModelCode().trim())))
+            .toList();
+        String matchedProduct = matches.size() == 1
+            ? firstCode(matches.get(0).getProductCode(), matches.get(0).getModelCode()) : null;
+        int shown = 0;
+        List<Product> promptProducts = new ArrayList<>(matches);
+        if (productRows != null) for (Product p : productRows) if (!matches.contains(p)) promptProducts.add(p);
         sb.append("可写回的产品，每行「编码 名称 产品线编码」：\n");
         if (productRows != null) {
-            for (Product product : productRows) {
+            for (Product product : promptProducts) {
                 String code = firstCode(product.getProductCode(), product.getModelCode());
                 String lineCode = product.getProductLineId() == null
                     ? null : lineCodes.get(product.getProductLineId());
                 if (code == null || lineCode == null) {
                     continue;
                 }
-                listedProducts.add(code);
+                if (shown >= 120 || sb.length() >= 16000) continue;
+                shown++;
                 sb.append(code).append(' ')
-                    .append(product.getProductName() == null ? "" : oneLine(product.getProductName()))
+                    .append(product.getProductName() == null ? "" : shortName(product.getProductName()))
                     .append(' ').append(lineCode).append('\n');
             }
         }
-        String haystack = requirement == null ? "" : haystack(requirement);
+        if (productRows != null && shown < productRows.size()) {
+            sb.append("目录摘录已限长，完整目录唯一匹配已执行；未取得唯一依据时不要猜测。\n");
+        }
         return new BindContext(sb.toString(), new CatalogHit(
-            uniqueListedCode(haystack, listedLines), uniqueListedCode(haystack, listedProducts)));
+            uniqueListedCode(haystack, listedLines), matchedProduct));
     }
 
     /**
@@ -207,7 +236,21 @@ public class DemandCatalogBinder {
      * @return 提示摘录
      */
     public String promptAppendix(Long requirementId) {
-        return open(requirementId).appendix();
+        throw missingTenant();
+    }
+
+    public String promptAppendix(Long requirementId, String tenantId) {
+        return open(requirementId, tenantId).appendix();
+    }
+
+    private static org.ruoyi.ipd.common.IpdBusinessException missingTenant() {
+        return new org.ruoyi.ipd.common.IpdBusinessException(org.ruoyi.ipd.common.ApiV1ErrorCode.PARAM_INVALID,
+            "需求目录必须指定可信租户范围");
+    }
+
+    private static String requiredTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) throw missingTenant();
+        return tenantId;
     }
 
     private static String codeFor(String structured, Pattern mark, String answer) {
@@ -290,6 +333,11 @@ public class DemandCatalogBinder {
         return null;
     }
 
+    private static String shortName(String value) {
+        String name = oneLine(value);
+        return name.length() <= 256 ? name : name.substring(0, 256);
+    }
+
     private static String oneLine(String value) {
         return value.replace('\n', ' ').replace('\r', ' ').trim();
     }
@@ -313,12 +361,12 @@ public class DemandCatalogBinder {
         return codes.size() == 1 ? codes.iterator().next() : null;
     }
 
-    private ProductLine uniqueLine(String code) {
+    private ProductLine uniqueLine(String code, String tenantId) {
         if (code == null) {
             return null;
         }
         List<ProductLine> rows = lineMapper.selectList(new LambdaQueryWrapper<ProductLine>()
-            .eq(ProductLine::getLineCode, code)
+            .eq(ProductLine::getLineCode, code).eq(ProductLine::getTenantId, tenantId)
             .eq(ProductLine::getStatus, "ACTIVE"));
         if (rows == null || rows.size() != 1) {
             return null;
@@ -327,13 +375,13 @@ public class DemandCatalogBinder {
         return UNSPECIFIED.equals(line.getLineCode()) ? null : line;
     }
 
-    private Product uniqueProduct(String code) {
+    private Product uniqueProduct(String code, String tenantId) {
         if (code == null) {
             return null;
         }
         Set<Long> ids = new LinkedHashSet<>();
         Product chosen = null;
-        for (Product row : listByCode(code)) {
+        for (Product row : listByCode(code, tenantId)) {
             if (row.getId() == null || !ids.add(row.getId())) {
                 continue;
             }
@@ -342,11 +390,11 @@ public class DemandCatalogBinder {
         return ids.size() == 1 ? chosen : null;
     }
 
-    private List<Product> listByCode(String code) {
+    private List<Product> listByCode(String code, String tenantId) {
         List<Product> byCode = productMapper.selectList(new LambdaQueryWrapper<Product>()
-            .eq(Product::getProductCode, code));
+            .eq(Product::getProductCode, code).eq(Product::getTenantId, tenantId));
         List<Product> byModel = productMapper.selectList(new LambdaQueryWrapper<Product>()
-            .eq(Product::getModelCode, code));
+            .eq(Product::getModelCode, code).eq(Product::getTenantId, tenantId));
         ArrayList<Product> merged = new ArrayList<>();
         if (byCode != null) {
             merged.addAll(byCode);

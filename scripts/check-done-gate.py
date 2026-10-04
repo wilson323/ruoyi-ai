@@ -7,11 +7,11 @@
 1. 验收报告存在（docs/ipd-系统说明/验收/<卡号>-*.md）
 2. 业务表非 0 行（按卡号映射业务表）
 3. DDL apply（按卡号映射 DDL 文件，检查真库索引/列存在）
-4. HTTP 200（按卡号映射 HTTP 端点，真活探测；health 401/403 亦认定实例在线，
-   端点探测可经 env IPD_GATE_TOKEN 附鉴权头）
+4. 正式16039完整Person会话与业务HTTP200/code0包络（拒跳转；
+   会话从 env IPD_GATE_TOKEN 读取，缺会话或无端点映射不得通过）
 5. 测试形态（GATE-CL-01 修订，owner 拍板口径 2026-09）：
    tier1 容器级 @SpringBootTest（永久根治形态）→ pass；
-   tier2 测试链（Mockito/MockMvc）+ 门禁4 运行实例 HTTP 链实测 200 → pass
+   tier2 测试链（Mockito/MockMvc）+ 门禁4 正式实例完整Person与业务HTTP/code0链实测 → pass
         （拍板原文「承认运行实例 HTTP 链+测试链为有效真活证据」）；
    tier3 仅进程内 MockMvc 或纯 Mock 链、无运行实例证据 → fail 且如实报测试形态。
    防钻空子：所有形态判定先剥字符串字面量+剥块/行注释，注释里写 @SpringBootTest
@@ -26,6 +26,7 @@
 边界：只读探针，不改任何代码 / 不 commit / 不 push。
 """
 
+import importlib.util
 import json
 import os
 import re
@@ -39,8 +40,11 @@ ACCEPTANCE_DIR = REPO_ROOT / "docs/ipd-系统说明/验收"
 TEST_DIR = REPO_ROOT / "ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd"
 SQL_DIR = REPO_ROOT / "docs/script/sql/update"
 
-# 后端真活实例（按 memory「IPD 真活后端实例端口表」）
-BACKEND_PORTS = [16049, 16040, 16099, 16039]
+# 正式IPD后端固定地址；环境变量和其他端口不能替代验收实例。
+BACKEND_URL = "http://127.0.0.1:16039"
+_probe_spec = importlib.util.spec_from_file_location("ipd_done_http_probe", REPO_ROOT / "scripts/lib/prod-http-probe.py")
+HTTP_PROBE = importlib.util.module_from_spec(_probe_spec)
+_probe_spec.loader.exec_module(HTTP_PROBE)
 
 # 卡号 → 业务表映射（按镜像 allowedPaths + 主责 AC）
 CARD_TO_TABLES = {
@@ -116,7 +120,7 @@ def check_business_tables(card_id):
             stderr=subprocess.DEVNULL, timeout=5,
         ).decode().strip()
     except Exception as e:
-        return {"pass": False, "reason": f"docker mysql 不可达: {e}"}
+        return {"pass": False, "reason": "docker mysql 不可达；凭据与命令细节不输出"}
 
     results = {}
     for t in tables:
@@ -129,97 +133,53 @@ def check_business_tables(card_id):
             count = int(out.strip().split("\n")[-1])
             results[t] = count
         except Exception as e:
-            results[t] = f"error: {e}"
+            results[t] = "QUERY_FAILED"
 
-    zero_tables = [t for t, c in results.items() if c == 0]
+    zero_tables = [t for t, c in results.items() if not isinstance(c, int) or c <= 0]
     if zero_tables:
         return {
             "pass": False,
-            "reason": f"业务表 0 行: {zero_tables}",
+            "reason": f"业务表无数据或查询未取得证据: {zero_tables}",
             "rows": results,
         }
     return {"pass": True, "rows": results}
 
 
 def check_ddl_apply(card_id):
-    """门禁 3：DDL apply（按卡号映射 DDL 文件，检查真库索引/列存在）"""
-    # 找 SQL 文件（按卡号匹配）
-    if not SQL_DIR.exists():
-        return {"pass": True, "reason": "SQL 目录不存在，跳过", "skipped": True}
-
-    patterns = [
-        f"*{card_id.lower().replace('.', '')}*.sql",
-        f"*{card_id.replace('.', '-')}*.sql",
-    ]
-    sql_files = []
-    for pat in patterns:
-        sql_files.extend(SQL_DIR.glob(pat))
-
-    if not sql_files:
-        return {"pass": True, "reason": "卡号无 DDL 文件，跳过", "skipped": True}
-
-    # 简单检查：DDL 文件存在即认为已 apply（完整检查需要解析 SQL 并查真库索引/列）
-    return {
-        "pass": True,
-        "reason": f"DDL 文件存在（{len(sql_files)} 个），完整 apply 检查需解析 SQL",
-        "files": [str(f.name) for f in sql_files],
-        "note": "建议集成 p1-ddl-apply-check.py 做完整检查",
-    }
+    """SQL 文件只证明待核来源；没有真实结构/应用回执不得判通过。"""
+    patterns = [f"*{card_id.lower().replace('.', '')}*.sql",
+                f"*{card_id.replace('.', '-')}*.sql"]
+    files = sorted({f.name for pat in patterns for f in SQL_DIR.glob(pat)}) if SQL_DIR.exists() else []
+    return {"pass": False, "state": "UNVERIFIED", "files": files,
+            "reason": "未取得本事项真实库的结构与应用证据；SQL 文件存在或无匹配均不能证明已应用。"
+                      "请按既有只读 p1-ddl-apply-check.py 核验；不适用须明确登记事项范围。"}
 
 
 def check_http_endpoints(card_id):
-    """门禁 4：HTTP 200（按卡号映射 HTTP 端点，真活探测）"""
+    """正式16039上先核完整Person，再核业务code0包络；不跟随跳转。"""
     endpoints = CARD_TO_ENDPOINTS.get(card_id, [])
     if not endpoints:
-        return {"pass": True, "reason": "卡号无 HTTP 端点映射，跳过", "skipped": True}
+        return {"pass": False, "state": "UNVERIFIED",
+                "reason": "未登记本事项业务端点，不能以跳过作为真实HTTP证据"}
 
-    # 找真活后端端口：health 200=完全在线；401/403=实例在线但 actuator 鉴权
-    # （GATE-CL-01 修订：旧版把 401 当"无实例"，与端口表实况不符——16039 现查即 401）
-    backend = None
-    backend_state = None
-    for port in BACKEND_PORTS:
-        try:
-            urllib.request.urlopen(f"http://127.0.0.1:{port}/actuator/health", timeout=2)
-            backend, backend_state = port, "health=200"
-            break
-        except urllib.error.HTTPError as e:
-            if e.code in (401, 403) and backend is None:
-                backend, backend_state = port, f"health={e.code}(在线,鉴权)"
-        except Exception:
-            continue
-
-    if not backend:
-        return {
-            "pass": False,
-            "reason": f"无真活后端实例（探测端口: {BACKEND_PORTS}）",
-        }
-
-    # 端点探测恒需 200；受保护端点可经 env IPD_GATE_TOKEN 提供鉴权头（不落盘凭证）
     token = os.environ.get("IPD_GATE_TOKEN", "").strip()
     results = {}
+    try:
+        HTTP_PROBE.probe(BACKEND_URL, "/api/v1/auth/me", token)
+    except Exception:
+        return {"pass": False, "state": "UNVERIFIED", "backend_port": 16039,
+                "reason": "正式后端完整Person会话未验证；凭据与异常细节不输出"}
     for ep in endpoints:
-        url = f"http://127.0.0.1:{backend}{ep}"
         try:
-            req = urllib.request.Request(url)
-            if token:
-                req.add_header("Authorization", token)
-            resp = urllib.request.urlopen(req, timeout=5)
-            results[ep] = resp.status
-        except urllib.error.HTTPError as e:
-            results[ep] = e.code
-        except Exception as e:
-            results[ep] = f"error: {e}"
-
-    failed = [ep for ep, code in results.items() if code != 200]
-    if failed:
-        return {
-            "pass": False,
-            "reason": f"HTTP 端点非 200: {failed}",
-            "results": results,
-            "backend_port": backend,
-            "backend_state": backend_state,
-        }
-    return {"pass": True, "results": results, "backend_port": backend, "backend_state": backend_state}
+            HTTP_PROBE.probe(BACKEND_URL, ep, token)
+            results[ep] = "HTTP200_CODE0"
+        except Exception:
+            results[ep] = "UNVERIFIED"
+    failed = [ep for ep, result in results.items() if result != "HTTP200_CODE0"]
+    return {"pass": not failed, "state": "UNVERIFIED" if failed else "VERIFIED",
+            "reason": "业务HTTP/code0证据未验证" if failed else "完整Person和业务HTTP/code0已验证",
+            "results": results, "backend_port": 16039,
+            "backend_state": "FULL_PERSON"}
 
 
 def _strip_java_noise(text):
@@ -240,7 +200,7 @@ def check_test_type(card_id, http_gate=None):
     """门禁 5：测试形态（GATE-CL-01 修订，owner 拍板口径 2026-09）。
 
     tier1 容器级 @SpringBootTest（永久根治形态）→ pass；
-    tier2 测试链（Mockito/MockMvc）+ 门禁4 运行实例 HTTP 链 200 实测 → pass
+    tier2 测试链（Mockito/MockMvc）+ 门禁4 正式实例完整Person与业务HTTP/code0链实测 → pass
          （拍板原文：承认运行实例 HTTP 链+测试链为有效真活证据）；
     tier3 仅进程内 MockMvc / 纯 Mock 链，无运行实例证据 → fail，
          reason 如实报告测试真实形态（不再出现「测试类型未知」式误判）。
@@ -278,7 +238,7 @@ def check_test_type(card_id, http_gate=None):
         if live:
             return {
                 "pass": True,
-                "test_type": "运行实例 HTTP 链(门禁4实测200) + Mock 测试链（owner 拍板口径有效真活证据）",
+                "test_type": "正式16039完整Person与业务HTTP/code0链(门禁4实测) + Mock 测试链（owner 拍板口径有效真活证据）",
                 "file": rel,
                 "note": "容器级 @SpringBootTest 套件为永久根治形态，本 pass 依拍板口径承认现组合证据",
             }
@@ -346,7 +306,7 @@ def main():
         print(f"  {'✓ PASS' if g['pass'] else '✗ FAIL'}: {g.get('reason')}")
     print()
 
-    print("[4/5] 门禁 4：HTTP 200...")
+    print("[4/5] 门禁 4：正式16039完整Person与业务HTTP/code0...")
     gates["http_endpoints"] = check_http_endpoints(card_id)
     g = gates["http_endpoints"]
     if g.get("skipped"):
@@ -362,7 +322,8 @@ def main():
     print()
 
     # 汇总
-    failed_gates = [k for k, v in gates.items() if not v["pass"] and not v.get("skipped")]
+    failed_gates = [k for k, v in gates.items() if not v["pass"] and not v.get("skipped") and v.get("state") != "UNVERIFIED"]
+    unverified_gates = [k for k, v in gates.items() if v.get("state") == "UNVERIFIED" or v.get("skipped")]
     passed_gates = [k for k, v in gates.items() if v["pass"]]
     skipped_gates = [k for k, v in gates.items() if v.get("skipped")]
 
@@ -377,6 +338,9 @@ def main():
             print(f"  - {k}: {gates[k].get('reason')}")
         print("\n根治：补充真活证据后再翻 done")
         overall = "FAIL"
+    elif unverified_gates:
+        print(f"\n{card_id} 翻 done 门禁 UNVERIFIED：{unverified_gates}")
+        overall = "UNVERIFIED"
     else:
         print(f"\n✓ {card_id} 翻 done 门禁 PASS")
         overall = "PASS"
@@ -388,13 +352,14 @@ def main():
         "failed_gates": failed_gates,
         "passed_gates": passed_gates,
         "skipped_gates": skipped_gates,
+        "unverified_gates": unverified_gates,
     }
 
     if json_out:
         Path(json_out).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\nJSON 报告已写入: {json_out}")
 
-    sys.exit(0 if overall == "PASS" else 1)
+    sys.exit(0 if overall == "PASS" else 2 if overall == "UNVERIFIED" else 1)
 
 
 if __name__ == "__main__":

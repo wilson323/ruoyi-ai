@@ -15442,3 +15442,294 @@ PUBLIC 模式本就公开征集，全员可见。
 
 未证实项：`p0_escalation_chain` 实时行数未取到（DB 凭证被权限拦下），仅引用了
 2026-09-24 的文档快照（0 行）。
+
+## 2026-10-03 taskType 契约登记漂移收口（表头计数 + 4 类「待建」的表其实早已建）
+
+> OPS-09 登记：本次编辑 `docs/ipd-系统说明/workbench-tasktype-契约登记.yaml` 与
+> `ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/workbench/WorkbenchTaskContractDriftTest.java`
+> 时，两文件均处于「git modified 且非本会话编辑」被并发写守卫拦截。实测 mtime 均为
+> 2026-10-03 15:51:16，距编辑时刻已闲置 6.2 小时，无活跃并发写者；改动为定点字符串替换
+> （替换前断言锚点恰好命中 1 次），不覆盖他人在途内容，故按本仓既定 OPS-09 做法执行并在此登记。
+> 前 6.2 小时那次编辑正是当天 `bonus_lock` 退役，表头「8」即那次遗留。
+
+### 病灶
+工作台 taskType 的唯一登记处 `workbench-tasktype-契约登记.yaml` 自身漂移，且没有任何门禁会报红：
+
+- 表头写「未实现 8 类」，实际 **7 类**。
+- `waiver_review` / `rd_replacement` / `retirement_review` / `capacity_approval` 四条 `table`
+  写 `null # 待建/待定`，而对应的 **5 张表**（`gate_waivers` / `rd_replacements` /
+  `rd_replacement_approvals` / `product_retirements` / `multi_project_capacity_approvals`）
+  早已由 `2026-09-08-ipd-c-batch-4-tables-draft.sql` 于 2026-09-09 apply 落库（ipd_dev 实测均 0 行）。
+
+根因：`WorkbenchTaskContractDriftTest` 只校验 `implemented: true` 的 9 条；`implemented: false`
+的 7 条**无任何字段校验**，这类漂移永远不会有门禁变红。
+
+### 一处「复核后不成立」的指令（未照抄）
+任务书称 `receipt_ledgers` 实测 26 行、登记写 28 属漂移。复核**不成立**：
+现役库 `SELECT COUNT(*) FROM receipt_ledgers` = **28**（`del_flag` 全为 0、`tenant_id` 全 000000、
+`COUNT(DISTINCT id)` 亦为 28）。26 是 `information_schema.tables.table_rows` 的 InnoDB **估算值**
+（同表 `ENGINE=InnoDB`）——同一把「拿估算值当精确值」的尺子错法。**登记值 28 正确，未改。**
+
+### 收口
+- yaml：表头 8→7；4 条 `table` 改为真实表名并注明 apply 日期与行数；`change_implementation` /
+  `change_verify` 补 `table: null` + `pending_tables`（点名尚未建的两张表）。
+- 测试新增两用例：
+  ① `unimplementedEntriesHaveRequiredFields` —— 未实现恰 7 类、表头计数须等于实际条数、
+     每条须显式登记 `table` 字段（无数据源写 `null`）与非空 `notes`；
+  ② `declaredTablesMatchLiveSchema` —— 登记的表名必须存在于真实库基准
+     `docs/ipd-系统说明/schema-baseline-20261003.sql`（该文件 2026-10-03 实测与现役库 ipd_dev
+     逐表一致，**166/166 表名零差**，是这条链上唯一可离线复现的尺子）；登记为待建的必须点名
+     `pending_tables`，且这些表**确实不存在**。
+
+### 自证
+`bash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd -Dtest=WorkbenchTaskContractDriftTest`
+→ **6 用例 0 失败**（原 4 + 新 2）。
+
+变异自证 **5/5 变红**（逐次改 yaml 触发，随后还原；最终字节与备份一致）：
+M1 表头改回 8 → 红（表头计数断言）；M2 `gate_waivers` 改回 `table: null` → 红（`pending_tables` 断言）；
+M3 `pending_tables` 写成真实存在的 `gate_waivers` → 红；M4 `product_retirements` 改成不存在的表名 → 红；
+M5 删掉 `change_verify` 的 `table` 字段 → 红。
+
+障碍记录：兄弟会话在途的 `ProjectAgentOfficialSandboxTest.java` 编译失败
+（`Flux<Object>` → `Flux<AgentEvent>` 不兼容），挡住整个模块的 testCompile。**未去改它**，
+改用 `-Dmaven.compiler.failOnError=false` 让其余文件正常编译后单独跑本用例。
+
+### 未做 / 未证实
+- **未改** `WorkbenchService.java` javadoc 里的「剩余 8 类登记」（同为 8→7 的同类漂移，
+  但在 Java 源码、超出本次范围且会触发编译）；仅在此登记，待 owner 决定是否一并收口。
+- `saved_items` 那一行 `tenant.excludes` 登记**未删**（任务 2 结论）：
+  (a) 表确实不存在 ✓（ipd_dev 166 张表无、`schema-baseline-20261003.sql` 无）；
+  (b) 排除归档后零代码引用 ✓（全仓仅 2 处命中：DDL 草稿
+      `20260925-wb171-draft-missing-tables.sql` 自身，以及 `application.yml` 那一行登记）。
+  但该行上方注释（2026-10-03 写）已明确记载 **R226 A3（2026-09-26）裁定这是「已被裁定过的在途状态、
+  不是待清项」「原『从 excludes 移除』分支作废、yml 零变更」**，且本仓有 `person_roles` 超前登记先例。
+  ⇒ 有明确计划与既有裁定，按任务书「有明确计划就别删」**不删，仅汇报**。
+- 变异自证只覆盖 yaml 侧输入；**未覆盖「基线文件本身过期」**这一情形（测试在离线环境取不到真库），
+  故在测试 javadoc 与断言消息里写明「表结构变更后须重新生成基准」。
+- 本次改动**未提交**（本轮禁止任何 git 操作）。
+
+---
+
+## 2026-10-04 规格与种子互相矛盾收口：G2-6 否决位对齐 + 预检不再整批锁死
+
+### 事实（逐项对拍 + 三路独立核对）
+`gate_review_elements` 有两份互相矛盾的种子：SQL 侧
+`docs/script/sql/update/2026-09-05-ipd-p0-seed-elements.sql`，Java 侧
+`IpdGateElementSeedInitializer`（DOC-05 口径）。逐项对拍结果：
+**pass_standard 33/33 全不同**、**element_name 2/33 不同**（G2-1 / G4-8 的空格差异）、
+**is_veto 1/33 不同（只有 G2-6）**；SQL 记 15 个否决位，Java 记 14 个。
+
+裁决依据**四处**独立同向，逐条复核：
+① `工程合同/DOC-05.md` 覆盖表 O01 行「决策1：G2-6 保留但 `isVeto=false`…G2 只剩 1/3/4/5，
+全体14项」，且自述「覆盖旧建议的冲突部分」；
+② 建表 DDL 的 `is_veto` 列注释「（14 项…）」与表注释「（33 项+14 否决项）」；
+③ 动作清单 v3 文首「33 项要素 / 14 项否决项」；
+④ 验收基线 `外部资源/IPD系统_验收清单.md` 的 **AC-GLB-12**「33 项要素全部可判定，
+**14 项否决项**全部生效」。
+**结论：Java（DOC-05）为准，SQL 的 G2-6 否决位是过期口径。**
+跑错的方向是**错误否决**——`GateElementResultService.submit` 命中否决位即抛
+「命中否决项无法提交通过」，G2 计划评审被硬卡，与 DOC-05「清单未完成仍可通过 G2、
+改在 G4 核实际结果」相反。
+
+### 库侧真实历史（实测；我第一版判断被自己的证据推翻，留痕如下）
+**我第一版写的「该库从未 apply 过那份 SQL seed」是错的**，先用文本特征（`pass_standard LIKE
+'✅%' OR LIKE '%=否决%'` 命中 0 行）就下了因果结论——那是拿文本反推安装史，仪器选错了。
+改用 id 复验即翻面：33 项规范编号行的 id 恰为 **1948090500–1948090532**，
+正是那份 SQL seed 自己的 id 段 ⇒ **该 seed 确实 apply 过 ipd_dev**。
+
+真实时序（三路互证：id 段 / `update_time` / 仓库脚本）：
+
+| 时点 | 库内 G2-6 | 来源 |
+|---|---|---|
+| 2026-09-05 | `'1'`（15 否决位）+「缺失或周期冲突=否决」 | `2026-09-05-ipd-p0-seed-elements.sql`（id 段为证） |
+| 2026-09-06 | 被写成 `'1'`（14→15「与规格对齐」） | `2026-09-06-ipd-p161-gate-element-lifecycle.sql` 第 3 段 |
+| 2026-10-03 20:00 | 一次性批量改回 `'0'` + DOC-05 文本，**14 否决位** | 33 行 `update_time` 同为该时刻 |
+| 2026-10-04（本次） | 仍是 `'0'`；97 行；SQL seed 文本特征命中 0 行 | 本次实测 |
+
+⇒ 现网**已是 DOC-05 口径**，对齐脚本在该库 **0 行受影响**（可作「幂等 + 不误伤」的现成验证）。
+⇒ 但那次 2026-10-03 的批量改写**在仓库里没有对应的可重放迁移**（已实测：全仓除归档外，
+没有任何已提交脚本把这些行的 `pass_standard` 改成 DOC-05 文本）
+⇒ **新库若照迁移顺序 apply 那份 SQL seed，会重新得到 15 否决位与「=否决」文本。**
+这正是本轮对齐脚本的价值：给这个修正留一条可重放的路径。
+
+### ⚠️ 方向对立的已提交脚本（本轮最重要的发现，需 owner 处置）
+`2026-09-06-ipd-p161-gate-element-lifecycle.sql` 第 3 段是**反方向**，且自述「按 DOC-05 翻正」：
+
+```sql
+UPDATE gate_review_elements SET is_veto = '1' WHERE element_code = 'G2-6' AND is_veto = '0';
+```
+
+**该自述是误读**：它引用的是「DOC-05（…五大Gate评审要素_v1.md L103）」，
+把 DOC-05 的**来源标注**当成了 DOC-05 的主张。DOC-05 的 G2-6 行 `isVeto` 列写的是 **否**，
+来源列的「要素原稿:103**被决策1覆盖**」意思是「原稿第 103 行的否决设定**已被决策1覆盖**」，
+「103」是被覆盖的原稿位置，不是依据。
+
+更要紧的是**它的 WHERE 看着幂等、实际是单向翻转**（`AND is_veto='0'`）：
+对一个已正确的库重复 apply 就会把它改回错的 15 ⇒ **apply 顺序会决定结果**，
+本轮的 2026-10-04 对齐脚本与它方向相反，谁后跑谁生效。
+**处置 P161 那一段需单独授权，本轮未动该文件**（不在本卡独占写范围内）。
+
+「15」方向并非无人主张：它有已提交脚本、有明确理由，输在四处同向反证上，
+而不是输在「没人提过」。四处即：DOC-05 明文 14、建表 DDL 注释 14、动作清单 v3 文首 14、
+**AC-GLB-12 基线「14 项否决项全部生效」**。
+其中 2026-09-06 曾提出「AC-GLB-12 需复核为 15」，但承接复核的 `P1-6.2` 卡
+（`开发计划-看板镜像.md`）2026-09-08 回写时**仍按 14 记录**并保留
+「G2 规划放行不豁免 G4 实际结果」——**该建议未被采纳**。
+
+### 本轮做了什么
+1. 新增 `docs/script/sql/update/2026-10-04-ipd-g2-6-veto-align.sql`：把 G2-6 的
+   `is_veto` 与 `pass_standard` **一并对齐**到 DOC-05（只动 G2-6 这一行）。
+   连带改文本的理由：原文写「缺失或周期冲突=否决」，只改否决位会让该行自相矛盾——
+   展示给评审人的标准说「=否决」，系统却不再否决。
+   两条 UPDATE 各带回滚守卫可重跑；文本段以 SQL 原文作 WHERE 守卫，**不覆盖人工改写过的行**。
+   文末给了回滚段。原 SQL 种子未改写（已应用迁移不改正文，与 LC01/LC03 同一处理）。
+2. `IpdGateElementSeedInitializer` 预检：「任一要素漂移即整批中止」改为**逐行诊断**。
+   - 规范编号已存在但漂移（含软删除、同编号多行、字段不一致）→ 逐行 ERROR +
+     **保留原值不覆盖**，**不再中止整批**，其余缺号要素照常补种。
+   - **整批中止只保留一种情形**：旧零填充编号（`G3-01` 一类）仍 published+enabled+未删——
+     此时补种规范编号会并存两套编号，正是原设计要防的「追加第二套33项」。
+   原中止是**单向锁死的静默失效**：只写一行 ERROR、应用照常启动，于是
+   「任一要素漂移 ⇒ 全部要素永远无法补种」。
+3. 两份冻结规格**只追加、不改原文**的勘误标注：
+   - `外部资源/IPD系统_五大Gate评审要素_v1.md` 新增「v3 勘误标注」节：说清本文件里
+     15 与 14 两个数字**各自的出处与算法**（15 按 G2 逐项 ❌ 计、14 按 Gate 汇总行计，
+     分歧点只有 G2-6），声明当前权威为 **14 项否决 + G2-6 非否决**，并说明
+     G2-6 的通过标准也换了（不能只摘否决位）。
+   - `外部资源/IPD系统_六阶段标准动作清单_v3.md` 的 v4 退役标注节新增「v4-a 勘误」：
+     第 4 条「代码侧尚未同步：`ActionCatalog` 仍含 LC01/LC03，运行期 seed 仍 69 条」
+     已被现状推翻（实测 **67** 条、带引号 `"LC01"`/`"LC03"` **0 命中**、DEEP 40 / LIGHT 27 /
+     阻断 36，与目录 javadoc 自述一致）；第 1/2/3 条同日复核后**仍然成立**。
+
+### 自证
+- 相关测试 **13 例全绿**（`IpdGateElementSeedInitializerTest` 9 + `IpdSeedConsistencyTest` 4），
+  0 失败 0 跳过（`mvn -o test -pl ruoyi-modules/ruoyi-ipd`，经 `scripts/mvn-locked.sh`）。
+- 把真库 97 行逐行喂两套规则对拍：旧规则 `PASS(seen=33)`、新规则 `PASS(seen=33, drift=0)`
+  ⇒ 本次改动在现网库上**行为中性**（只解除锁死，不产生新写入）。
+- **变异自证三处，均先弄坏再还原**：
+  - 漂移分支恢复成 `return`（旧的整批中止）→ **2 例红**
+    （`driftedRowDoesNotBlockSeedingOfMissingElements`、
+    `deletedCanonicalIdentifierIsAReadOnlyConflictNotAnEmptyTable`）→ 还原复绿。
+  - 旧编号的整批中止改成 `continue` → **2 例红**
+    （`liveLegacyNumberedRowAbortsWholeBatchToAvoidTwoNumberingSets`、
+    `oldNumberingBlocksAllSeedWritesWithoutOverwriting`）→ 还原复绿。
+  - 删掉对齐脚本 `is_veto` 段的幂等守卫 → **1 例红**
+    （`g26AlignmentScriptStaysScopedAndIdempotent`）→ 还原复绿。
+  注：第 3 处首次尝试时被并行会话挡住——`ProjectAgentOfficialSandboxTest.java` 当时
+  编译不过（`Flux<Object>` 不能转 `Flux<AgentEvent>`），整个模块 testCompile 失败；
+  该文件非本次改动引入，稍后其修复后已补跑成功。
+
+### 未做 / 遗留（需 owner 决策，未擅自执行）
+- **【最需 owner 决定】P161 第 3 段要不要处置**：它方向与本轮对齐脚本相反，且**重复 apply 会
+  把正确的库翻回 15**（见上「方向对立的已提交脚本」）。三条路：① 保留但在其头部标注已作废；
+  ② 删掉该段；③ 什么都不做，承担「谁后跑谁生效」的风险。
+  **它不在本卡独占写范围（本卡只独占 `2026-10-04-*.sql`），本轮未动，请 owner 或主协调者定。**
+- **其余 32 项的文本无迁移可重放**（不是「文本漂移未修」——现网库文本已是 DOC-05 口径，
+  漂移只在 SQL seed **文件**里）：若新库 apply 了那份 seed，32 项文本会是旧措辞。
+  对齐需 UPDATE 33 行业务配置，而「是否曾被人工改写」在库里没有标记，
+  与本仓「存量冲突只诊断、禁止覆盖」的既定政策冲突 ⇒ 列为 owner 决策项，未擅自执行。
+- **SQL 种子文件本身仍是过期口径**（G2-6 记 `'1'`、文本「=否决」）。按「已应用迁移不改写正文」未动它。
+  该文件头部已有「15 vs 14」的差异说明，但**未指向 DOC-05 覆盖**——不改原文的限制下，
+  已在 `IPD系统_五大Gate评审要素_v1.md`（否决项的来源行）追加了权威口径，锚点回到源头。
+- 未验证「应用启动后预检日志在真库上的实际输出」——需起服务（会与并行会话抢端口），未做。
+- **未取到 2026-10-03 20:00 那次批量改写的执行记录**（谁的会话、哪条命令）：仓库里没有对应脚本，
+  `.codex/` 下亦未逐文件追（该目录是归档副本）。仅以 `update_time` 同一时刻 + 现值推断为
+  一次性批量 UPDATE。**旁证**：`GateElementService` 对已发布行改定义字段一律判 409
+  （`hasDefinitionChange`），所以那次改写**不可能走应用接口**，只能是直接 SQL。
+- 本次改动**未提交**（本轮禁止任何 git 操作）。
+
+---
+
+## 2026-10-03 22:2x 说明书勘误：工作台 taskType 词表 17→16（bonus_lock 随奖金池退役对齐）
+
+### 授权与范围
+- **授权原文**（`CLAUDE.md` 同段，`AGENTS.md:25` 逐字同）：`docs/开发说明/**` 是产品设计事实源（"圣经"，G-04）：产品业务决策不可改；owner 已授权**勘误级更新**（错字 / 失效引用 / 数字对齐），勘误须在 `docs/ipd-系统说明/log.md` 登记。
+- **本次只做**：删失效引用（`bonus_lock`）+ 数字对齐（17→16）。**不动任何业务含义**——不增删其它类型名、不改顺序、不改描述文本。
+- **改动范围**：`docs/开发说明/spec/batch-01-pages-01-12.md`，仅第 165 行与第 180 行。
+
+### 原文 → 改后
+| 行 | 原文 | 改后 |
+|---|---|---|
+| 165 | `🔴 17 类 taskType：… / `change_verify` / `bonus_lock` / `closeout`` | `🔴 16 类 taskType：… / `change_verify` / `closeout`` |
+| 180 | `服务端按 user + role 聚合 17 类待办（… / change_verify / bonus_lock / closeout）` | `服务端按 user + role 聚合 16 类待办（… / change_verify / closeout）` |
+
+两行内其余 16 个类型名逐字未动，顺序未动。
+
+### 依据：bonus_lock 确已退役
+**退役标注出处**：`docs/ipd-系统说明/外部资源/IPD系统_六阶段标准动作清单_v3.md` 文首「⚠️ v4 退役标注（2026-10-03 追加 · 不改写 v3 原文）」。该节原句：
+> | **LC03** | 上市后 6 个月终算：回款达成率 + 奖金池核算 | owner 决定移除「奖金池」与「业绩窗口」功能块；后端 `BonusPoolService` / `Lc03SettlementReconcileService` / `Lc03SettlementReconcileExecutor` 已删除 | **2026-10-03** |
+
+**须如实说明的缺口**：该退役标注退的是 **LC01 / LC03 两条动作**（回款台账 / 奖金池功能块），**全文没有出现 `bonus_lock` 这个字面量**。`bonus_lock` 与「奖金池」的对应关系由下列现役证据建立（均排除 `.codex/` `.harness/` 等归档副本后现查）：
+1. `ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/service/WorkbenchService.java:43` —— 「（bonus_lock 已于 2026-10-03 随奖金池退役摘除，17→16）」；
+2. 同文件 `ALL_TASK_TYPES` 常量（声明在 :107）实为 **16** 条，且不含 `bonus_lock`；
+3. 前端 `ruoyi-ipd-web/apps/web-antd/src/views/ipd/_shared/ipd-enums.test.ts:202` —— 「WORKBENCH_TASK_TYPE_TEXT 工作台任务类型 **16 类**」；实查该常量键集 **16** 个、无 `bonus_lock`；
+4. `docs/ipd-系统说明/workbench-tasktype-契约登记.yaml` —— 「# bonus_lock 已随奖金池域退役移出当前词汇表；保留历史依据，不再登记为现役槽位。」；
+5. `docs/ipd-系统说明/开发计划-看板镜像.md` —— 「生产已退役bonus_lock成16类，测试/登记仍17」。
+
+**集合自证（机器比对，非目测）**：spec 原文 17 个名字去掉 `bonus_lock` 后为 16 个，与 `ALL_TASK_TYPES` **集合完全相等**（双向差集皆空）；前端键集亦与之相等。
+
+### 自证（改动只限这两行）
+- 只读 `git diff --numstat -- <该文件>`：`2  2`（2 增 2 删），仅 1 个文件；
+- `git diff -U0` 逐行差异只出现 `@@ -165 +165 @@` 与 `@@ -180 +180 @@` 两个 hunk，无第三处；
+- 改后复查本文件：`bonus_lock` 仅剩 :189 一处、`17 类` 仅剩 :158/:161/:187/:190 四处，**均为未授权改动项，未动**。
+- 回滚方式：把 :165 与 :180 的 `16 类` 改回 `17 类`、并在 `change_verify` 与 `closeout` 之间补回 `bonus_lock`（两行、零依赖、无连带）。
+- 本次改动**未提交**（本轮禁止任何 git 操作）。
+
+### 未做 / 遗留（交 owner 与主协调者，未擅自执行）
+- **本文件其余 5 处同源失效引用未动**（数字/叙述引用，超出本次授权的那两行）：:158 `taskTypeNames 17 类枚举`；:161 `pendingType 17 类细分枚举`；:187 `缺失字段（2 项）… 17 类细分`；:189 `缺失状态机环节（9 类）… / bonus_lock / closeout`（此处摘掉 `bonus_lock` 会把「9 类」变「8 类」，属改数，未动）；:190 `… 17 类细分 2 条`。
+- **另一文件同类失效引用未动**：`docs/开发说明/开发说明书.md:962` 「缺 17 类任务类型细分枚举」。
+- **与 `WorkbenchService.java` javadoc（:57-66）的判断存在张力，须 owner 裁**：该 javadoc 明写「说明书口径是否跟着退役属 owner 决策（G-04……），在本段里替它改数是越权」——即上一轮代码车道**刻意没有**改 spec 页03:165。本轮所依据的是 CLAUDE.md / AGENTS.md 里 owner 已给的「勘误级更新（错字 / 失效引用 / 数字对齐）」总授权，与「业务决策不可改」不冲突（退役本身是 2026-10-03 owner 已决事项）。**若 owner 认为该数字属「随退役冻结、须另行拍板」，本条可整段回滚**（回滚方式见上）。
+- **一条可比先例已核，并说明为何判其不适用**：log.md「ac-count-three-numbers-reconciliation-20261003」（:14140-14153）裁定 `IPD系统_验收清单.md` 的 237→249 **不属于**勘误级可以自己改数字。本次判其不适用于本例：那次该 doc **显式冻结**该数字（原文写「本文件仍写 237……须 owner 拍板后再改」）且**退役范围尚未拍板**；本处 spec 文件**无任何数字冻结条款**（全文搜 `冻结 / 不擅 / owner 拍板 / 勘误` 在数字口径上零命中），且奖金池退役**已决定且已在代码 / 前端 / 契约登记三处落地**。**这是判断，不是事实，故留痕供复核。**
+
+## 2026-10-03 22:45 工作台两个「我的」读端点去掉 personId（越权读口）+ javadoc 与实读表对齐
+
+### 授权与范围
+主调度派单：修复 `WorkbenchController` 的 `myInitiated` / `myPendingApprovals`——两端点接受调用方**任意指定**
+的 `personId`（`long pid = personId != null ? personId : actor.id();`），而其正上方 javadoc 声称
+「personId 缺省 = 当前登录人（从会话推导，SEC-API-01 强制）」。注释声称强制、代码却放行任意值。
+独占文件仅 `WorkbenchController.java` 与其测试类；`WorkbenchService.java` 未动（另会话在途）。
+
+### 判定：去掉参数（不加角色校验）
+- 前端生产调用点两处均不传参：`ruoyi-ipd-web/apps/web-antd/src/views/ipd/workbench/index.vue:368 / :376`；
+  `server-16039.log` 真实请求行亦无查询串。
+- 页03 规格（`docs/开发说明/spec/batch-01-pages-01-12.md`）字段模型与接口清单无 personId；§5② 明写
+  「服务端按 user + role 聚合」。
+- 仓内带 personId 的先例形状不同，不构成代查授权：`AllowanceLedgerController:68-76`（按月全员台账，
+  管理报表的过滤条件）、`BidController:203-206`（写操作 + `requireAdmin`）。
+- 无任何「领导看下属工作台」功能（前后端两仓已搜）。
+
+### 改了什么
+`ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/controller/WorkbenchController.java`
+- L74-78 `myInitiated()` / L88-92 `myPendingApprovals()`：删 `personId` 参数，改传 `actor.id()`；
+- L65-72 javadoc：点名为 `deletion_requests` 与 `launch_date_change_requests`（**不写死张数**——写死张数
+  正是「3 张（删除/系数/上市日期）」漂移的原因；系数变更表已随业绩窗口域下线）；
+- 新增 `WorkbenchControllerReadScopeTest`（`@Tag("dev")`，4 条）。
+
+### OPS-09 绕过登记（按 hook 要求）
+编辑本文件时 `pre-java-yml-write.sh` 报「已被其他会话修改」。**该报警为误报**：本会话先用 Edit 改动、
+后用 `cp` 从备份还原，`cp` 不经 Edit 工具，故 hook 的「连续编辑」记账断裂。复核用字节比对而非 git：
+文件 sha256 = 备份 sha256 = `daf6a0775ab3860ea340944848b8699715d51045645b6e32ffc25fcf0f2ff116`，
+`diff` 无差异 ⇒ 内容确为本人所改，无兄弟覆盖。故以 `SKIP_CONCURRENT_WRITE=1` 完成最后一处 javadoc 改动。
+
+### 自证
+- `bash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd -Dtest='Workbench*'` → Tests run: 54,
+  Failures: 0, Errors: 0（含新增 4 条）。testCompile 未被兄弟在途文件挡住，未使用
+  `-Dmaven.compiler.failOnError=false`。
+- 变异自证（逐条做，非一次全改）：把 `myInitiated` 单独改回缺陷形态 → 恰好 1 条红
+  （`myInitiated_ignoresForeignPersonId`，`expected:<我的单据> but was:<别人的单据>`）；把
+  `myPendingApprovals` 单独改回 → 恰好 1 条红（`myPendingApprovals_ignoresForeignPersonId`，
+  `expected:<我的待审> but was:<别人的待审>`）。两次均仅对应那条红，其余 53 条绿。
+- 向后兼容实测：带 `?personId=<他人>` 请求返回 **200**（非 4xx）且仍是本人数据。
+- `bash scripts/check-doc-code-sync.sh` → `@param 与签名不一致: 0`，PASS EXIT=0。
+
+### 未做 / 遗留
+- 未跑前端测试套件、未改前端仓。前端 `fetchMyInitiated(personId?)` 的可选参数现为**死参数**
+  （传了不生效），建议前端仓单独收口并同步 `workbench.test.ts:206-223`。
+- 未起真后端做端到端 HTTP；证据为 standalone MockMvc（真路由/参数绑定/JSON），不含 Sa-Token 过滤器链、
+  真 service 与真 SQL。
+- `WorkbenchService.java` 未改、未重审（另会话在途）；本修复依赖「service 以 personId 为准」这一现状。
+- 本次改动**未提交**（本轮禁止任何 git 操作）。
+
+
+## 2026-10-04 采纳反馈、审计自检与工作台契约接续
+
+当前用户授权完整执行，Codex主协调按原总画布系统主干登记三叶子事项并仅更新对应本地卡。四处记忆规则错引勘误至ADR-0077 §2规则3；废弃SQL注释与现实对齐，不改SQL。版本采纳事件、通知失败隔离已实现并由PID60197固定SHA41bd163214d5加载；后端71+40定向、MySQL七隔离场景及采纳/通知真实事务回滚通过，前端1940通过37既有跳过及类型/构建通过。双真实Person接口证明新包按会话限定。原“从未进运行包”被嵌套JAR及历史日志否定。未替用户审核或定档真实产物、未自动晋升、未提交推送、未改真实审计链。详见验收/采纳反馈与审计自检-20261004.md；自然03:30与真实收件仍未观测，全业务生产就绪不据此宣称。

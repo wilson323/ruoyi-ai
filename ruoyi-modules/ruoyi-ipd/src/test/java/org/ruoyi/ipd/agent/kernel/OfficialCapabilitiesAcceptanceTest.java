@@ -27,9 +27,6 @@ import io.agentscope.core.tool.ToolCallParam;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.harness.agent.filesystem.sandbox.SandboxBackedFilesystem;
 import io.agentscope.harness.agent.sandbox.SandboxAcquireResult;
-import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandbox;
-import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClient;
-import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxClientOptions;
 import io.agentscope.harness.agent.sandbox.impl.docker.DockerSandboxState;
 import io.agentscope.harness.agent.tool.FilesystemTool;
 import io.agentscope.harness.agent.tool.ShellExecuteTool;
@@ -57,6 +54,7 @@ class OfficialCapabilitiesAcceptanceTest {
     private final java.util.concurrent.atomic.AtomicReference<ToolUseBlock> nextCall = new java.util.concurrent.atomic.AtomicReference<>();
     private final AtomicInteger modelResponses = new AtomicInteger();
     private String actualContainerId;
+    private final java.util.Set<String> actualContainerIds = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private boolean realContainerWriteVerified;
 
     @Test
@@ -86,21 +84,10 @@ class OfficialCapabilitiesAcceptanceTest {
         Path workspace = Files.createDirectory(root.resolve("workspace"));
         Path hostCanary = root.resolve("host-only-canary.txt");
         Files.writeString(hostCanary, "HOST_ONLY_ACCEPTANCE_CANARY");
-        var sandboxContext = ProjectAgentOfficialSandbox.filesystem(
-            workspace, "python:3.13-alpine", mock(ProjectAgentEventSink.class))
-            .toSandboxContext(workspace);
-        var client = (DockerSandboxClient) sandboxContext.getClient();
-        DockerSandbox sandbox = (DockerSandbox) client.create(sandboxContext.getWorkspaceSpec(),
-            sandboxContext.getSnapshotSpec(), (DockerSandboxClientOptions) sandboxContext.getClientOptions());
-        String containerId = null;
+        // The actual Harness below owns acquisition, snapshot persistence and release.
+        // A separately created caller-managed sandbox has no registered call lifecycle.
         try {
-            sandbox.start();
-            assertTrue(sandbox.isRunning());
-            containerId = ((DockerSandboxState) sandbox.getState()).getContainerId();
-            assertNotNull(containerId);
-            assertEquals(0, docker("inspect", "--format", "{{.State.Running}}", containerId).exit());
             RuntimeContext context = RuntimeContext.builder().userId("acceptance-person").sessionId(acceptanceRun).build();
-            context.put(SandboxAcquireResult.class, SandboxAcquireResult.userManaged(sandbox));
             var permission = PermissionContextState.builder().mode(PermissionMode.DONT_ASK);
             for (String name : new String[] {"write_file", "read_file", "execute"}) {
                 // ToolBase's official matcher uses null for a tool-name-level approval;
@@ -109,44 +96,54 @@ class OfficialCapabilitiesAcceptanceTest {
             }
             AgentState state = AgentState.builder().permissionContext(permission.build()).build();
             context.setAgentState(state);
-            Agent agent = mock(Agent.class);
-            when(agent.getAgentState()).thenReturn(state);
             SandboxBackedFilesystem filesystem = new SandboxBackedFilesystem();
             Toolkit toolkit = new Toolkit();
             toolkit.registerTool(new FilesystemTool(filesystem));
             toolkit.registerTool(new ShellExecuteTool(filesystem));
             var sink = mock(ProjectAgentEventSink.class);
             // The helper executes through actual Harness onActing and ToolExecutor.
-            String write = call(toolkit, sink, workspace, "write_file", Map.of("path", "reports/native.txt", "content", "NATIVE_REAL_CONTENT"), agent, context);
+            String write = call(toolkit, sink, workspace, "write_file", Map.of("path", "reports/native.txt", "content", "NATIVE_REAL_CONTENT"), context);
             assertTrue(write.contains("Written to"), write);
-            String read = call(toolkit, sink, workspace, "read_file", Map.of("path", "reports/native.txt"), agent, context);
+            String read = call(toolkit, sink, workspace, "read_file", Map.of("path", "reports/native.txt"), context);
             assertTrue(read.contains("NATIVE_REAL_CONTENT"), read);
             assertTrue(realContainerWriteVerified, "container effect must be checked before official release");
-            String shell = call(toolkit, sink, workspace, "execute", Map.of("command", "cat reports/native.txt; printf '\nREAL_SHELL_MARKER\n'"), agent, context);
+            // The original command contract allows finite file-based Python, not shell chains or inline source.
+            // Create the probe through the actual official file tool so execution still proves durable container effects.
+            String probe = "from pathlib import Path\nimport sys\n"
+                + "print(Path('reports/native.txt').read_text())\nprint('REAL_SHELL_MARKER')\n"
+                + "if len(sys.argv) > 1:\n    assert not Path(sys.argv[1]).exists(), 'host canary unexpectedly mounted'\n"
+                + "    print('HOST_NOT_MOUNTED')\n";
+            String probeWrite = call(toolkit, sink, workspace, "write_file",
+                Map.of("path", "reports/native_probe.py", "content", probe), context);
+            assertTrue(probeWrite.contains("Written to"), probeWrite);
+            String shell = call(toolkit, sink, workspace, "execute", Map.of("command", "python3 reports/native_probe.py"), context);
             assertTrue(shell.contains("Exit code: 0"), shell);
             assertTrue(shell.contains("NATIVE_REAL_CONTENT"), shell);
             assertTrue(shell.contains("REAL_SHELL_MARKER"), shell);
-            String hostRead = call(toolkit, sink, workspace, "read_file", Map.of("path", hostCanary.toString()), agent, context);
+            String hostRead = call(toolkit, sink, workspace, "read_file", Map.of("path", hostCanary.toString()), context);
             assertFalse(hostRead.contains("HOST_ONLY_ACCEPTANCE_CANARY"), hostRead);
-            String hostShell = call(toolkit, sink, workspace, "execute", Map.of("command", "test ! -e '" + hostCanary + "' && printf HOST_NOT_MOUNTED"), agent, context);
+            String quotedHostCanary = "'" + hostCanary.toString().replace("'", "'\\''") + "'";
+            String hostShell = call(toolkit, sink, workspace, "execute",
+                Map.of("command", "python3 reports/native_probe.py " + quotedHostCanary), context);
             assertTrue(hostShell.contains("Exit code: 0"), hostShell);
             assertTrue(hostShell.contains("HOST_NOT_MOUNTED"), hostShell);
             assertEquals("HOST_ONLY_ACCEPTANCE_CANARY", Files.readString(hostCanary));
             verify(sink, atLeast(3)).requireActiveOwnership();
         } finally {
             if (harness != null) harness.close();
-            if (actualContainerId != null) assertNotEquals(0, docker("inspect", actualContainerId).exit());
-            sandbox.close();
-            assertFalse(sandbox.isRunning(), "SDK close must stop the actual sandbox");
-            if (containerId != null) {
-                assertNotEquals(0, docker("inspect", "--format", "{{.State.Running}}", containerId).exit(),
-                    "SDK close must remove its owned container, not merely clear a field");
+            assertFalse(actualContainerIds.isEmpty(), "official Harness must have acquired a real owned container");
+            for (String ownedContainer : actualContainerIds) {
+                CommandResult inspection = docker("inspect", "--format", "{{.State.Running}}", ownedContainer);
+                assertNotEquals(0, inspection.exit(),
+                    "official release/close must remove every container acquired by this test");
+                assertTrue(inspection.output().toLowerCase(java.util.Locale.ROOT).contains("no such object"),
+                    "cleanup must prove removal; daemon or command failure is not removal: " + inspection.output());
             }
         }
     }
 
     private String call(Toolkit toolkit, ProjectAgentEventSink sink, Path workspace, String name,
-            Map<String, Object> input, Agent unusedAgent, RuntimeContext context) throws Exception {
+            Map<String, Object> input, RuntimeContext context) throws Exception {
         ToolUseBlock use = ToolUseBlock.builder().id("acceptance-" + java.util.UUID.randomUUID()).name(name)
             .content(new ObjectMapper().writeValueAsString(input)).input(input).build();
         nextCall.set(use);
@@ -170,6 +167,8 @@ class OfficialCapabilitiesAcceptanceTest {
                             java.util.function.Function<io.agentscope.core.middleware.ActingInput, reactor.core.publisher.Flux<io.agentscope.core.event.AgentEvent>> next) {
                         var acquired = runtime.get(SandboxAcquireResult.class);
                         actualContainerId = ((DockerSandboxState) acquired.getSandbox().getState()).getContainerId();
+                        assertNotNull(actualContainerId, "official onActing must observe its actual sandbox");
+                        actualContainerIds.add(actualContainerId);
                         return next.apply(acting).doOnComplete(() -> {
                             if ("write_file".equals(nextCall.get().getName())) {
                                 try {

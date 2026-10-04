@@ -41,7 +41,8 @@ docker-compose up -d
 # 4. 等待健康
 echo "[INFO] 等待 backend 健康..."
 for i in $(seq 1 30); do
-  if curl -fs http://127.0.0.1:16039/actuator/health >/dev/null 2>&1; then
+  container_id=$(docker-compose ps -q backend)
+  if [ -n "$container_id" ] && [ "$(docker inspect --format '{{.State.Health.Status}}' "$container_id" 2>/dev/null)" = healthy ]; then
     echo "[OK] backend 已就绪 (第 ${i} 次尝试)"
     break
   fi
@@ -54,7 +55,7 @@ done
 
 # 5. 触发系统级验收
 echo "[INFO] 触发系统级验收..."
-bash scripts/verify-prod.sh || echo "[WARN] verify-prod.sh 退出非零，详见日志"
+bash scripts/verify-prod.sh || { echo "[ERROR] 系统验收未通过，不能报告部署完成" >&2; exit 1; }
 
 echo "[DONE] 启动完成。"
 echo "[HINT] 访问 http://127.0.0.1:16039 (API) / http://127.0.0.1 (前端 nginx 80→5666)"

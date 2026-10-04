@@ -39,7 +39,7 @@ class ProjectAgentCatalogBindTest {
             .status("PENDING").agentId("project-agent").build();
         store.insertRun(run);
         DemandCatalogBinder.CatalogHit hit = new DemandCatalogBinder.CatalogHit("catalog-access", "ZK-X");
-        when(binder.open(7L)).thenReturn(new DemandCatalogBinder.BindContext("附录", hit));
+        when(binder.open(7L, "t")).thenReturn(new DemandCatalogBinder.BindContext("附录", hit));
         ProjectAgentRunSpec spec = new ProjectAgentRunSpec(11L, 9190003L, "t", 900101L, null,
             "门禁考勤一体机要刷脸", List.of(), List.of(),
             new KernelModelRequest("MiniMax-M3", "MiniMax", "sk", "https://example.invalid"),
@@ -49,7 +49,7 @@ class ProjectAgentCatalogBindTest {
         kernel.last().sink().onText("正文");
         kernel.last().sink().onComplete();
 
-        verify(binder).apply(7L, "正文", hit);
+        verify(binder).apply(7L, "正文", hit, "t");
         String started = store.listEvents(11L, 0, 20).stream()
             .filter(event -> AgentEventType.RUN_STARTED.name().equals(event.getEventType()))
             .map(IpdAgentRunEvent::getPayload)

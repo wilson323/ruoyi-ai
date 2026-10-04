@@ -63,26 +63,31 @@ public class WorkbenchController {
     }
 
     /**
-     * 我发起的（R27 P0-6）：聚合 3 张业务单据（删除/系数/上市日期）create_by=personId。
-     * <p>personId 缺省 = 当前登录人（从会话推导，SEC-API-01 强制）。
+     * 我发起的（R27 P0-6）：聚合 {@code deletion_requests} 与
+     * {@code launch_date_change_requests} 中 create_by=本人 的单据。
+     *
+     * <p><b>查询范围只取会话身份</b>（SEC-API-01）：本端点语义是「我的」，不接受调用方
+     * 指定 personId——允许传参即等于任何内部用户都能读到别人的单据标题（W5-E 同类越权读口）。
+     * 前端固定不传参；即使请求带上 {@code ?personId=} 也会被忽略，仍返回本人数据。
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/my-initiated")
-    public ApiV1Response<List<MyInitiatedTask>> myInitiated(@RequestParam(required = false) Long personId) {
+    public ApiV1Response<List<MyInitiatedTask>> myInitiated() {
         IpdActor actor = ipdPermission.requireInternal();
-        long pid = personId != null ? personId : actor.id();
-        return ApiV1Response.ok(workbenchService.myInitiated(pid));
+        return ApiV1Response.ok(workbenchService.myInitiated(actor.id()));
     }
 
     /**
-     * 待我审批的（R27 P0-6）：聚合 3 张业务单据中处于审批态的记录。
-     * <p>personId 缺省 = 当前登录人（从会话推导，SEC-API-01 强制）。
+     * 待我审批的（R27 P0-6）：聚合业务单据中处于审批态、且本人确有权办理的记录。
+     *
+     * <p><b>查询范围只取会话身份</b>（SEC-API-01）：审批归属由 personId 推导角色后判定
+     * （SUPER_ADMIN→ADMIN_REVIEW / GROUP_LEADER→LEADER_REVIEW），因此传他人的 id 不只是
+     * 读到别人的清单，而是拿到别人的<b>角色视角</b>。故同 {@link #myInitiated()} 不接受 personId。
      */
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/my-pending-approvals")
-    public ApiV1Response<List<MyInitiatedTask>> myPendingApprovals(@RequestParam(required = false) Long personId) {
+    public ApiV1Response<List<MyInitiatedTask>> myPendingApprovals() {
         IpdActor actor = ipdPermission.requireInternal();
-        long pid = personId != null ? personId : actor.id();
-        return ApiV1Response.ok(workbenchService.myPendingApprovals(pid));
+        return ApiV1Response.ok(workbenchService.myPendingApprovals(actor.id()));
     }
 }

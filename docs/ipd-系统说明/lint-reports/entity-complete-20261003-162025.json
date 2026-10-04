@@ -1,0 +1,12 @@
+{
+  "timestamp": "20261003-162025",
+  "module": "ruoyi-ipd",
+  "scan_base": "ruoyi-modules/ruoyi-ipd/src/main/java",
+  "caliber": "O-6-2: entity=@TableName/@Table annotation; F1=BaseMapper generic; F2/F3=word-ref in consumer layer",
+  "totals": {
+    "entity": 77, "mapper": 78, "service": 140, "controller": 72
+  },
+  "f1_no_mapper": ["MyInitiatedTask","RequirementPool"],
+  "f2_no_service": ["IpdAgentArtifactVersionMapper","IpdAgentMemoryMapper","IpdAgentRunEventMapper","IpdAgentRunMapper","IpdAiFeedbackMapper","ProductSellableCountryMapper","ProjectKnowledgeFragmentMapper"],
+  "f3_no_controller": ["AiDocEmbeddingService","AiModelBudgetService","AiModelUsageLedgerService","AuditAnomalyScanService","AuditLogService","BusinessConfigService","CorrectionLogService","DeletionRequestService","DeliverableService","GateService","HrOrganizationIngestService","HrPersonMirrorIngestService","IAiCopilotService","IAiGenerationService","IAiModelConfigService","IAllowanceLedgerService","IAllowanceService","IBidResponseService","ICertTemplateService","IComplianceService","IContributionService","ICorrectionLogService","IDeleteAuditService","IDeletionArchiveService","IGateCreationService","IGateElementResultService","IGateElementService","IGateReviewService","IGateService","IKpiFunctionalMetricsService","IKpiRawRecordService","IKpiRecordRuleVersionService","IKpiRulesService","ILandedScenarioService","ILaunchDateChangeService","ILegacyImportService","INegativeFeedbackService","INotificationService","IP0EscalationService","IpdPublicKnowledgeService","IPermanentDeleteService","IProductGroupService","IProductService","IProjectBootstrapService","IProjectCircleService","IProjectScoreArchiveService","IProjectScoreService","IProjectService","IRecoveryWarningService","IRequirementChangeService","ISopTemplateService","ISwitchingAcceptanceService","IWorkbenchService","KpiRecordRuleVersionService","KpiSharedReconcileService","ProjectAgentAguiPauseResumeService","ProjectCertService","ProjectMemberService","ProjectScoreService","SubStageGateService","SystemConfigService"]
+}

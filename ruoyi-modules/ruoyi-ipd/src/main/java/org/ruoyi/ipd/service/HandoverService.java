@@ -395,7 +395,8 @@ public class HandoverService {
             NotificationService.KIND_ACTION, SRC_HANDOVER, rec.getId(),
             "移交待确认：项目" + projectId + " 角色" + role,
             "你被指定为项目 " + projectId + " 的" + role + "移交接手人，请在 " + DEADLINE_DAYS + " 日内确认。",
-            "/ipd/handovers/inbox");
+            // 前端移交页路由是 /ipd/handover（收件箱为该页内双栏，非独立子路由）。
+            "/ipd/handover");
         return rec;
     }
 
@@ -770,7 +771,9 @@ public class HandoverService {
             String content = "handoverId=" + rec.getId() + " from=" + rec.getFromPersonId() + " to=" + rec.getToPersonId()
                 + " deadlineAt=" + rec.getDeadlineAt();
             try {
-                notificationService.publish(superAdminId, EVT_OVERDUE_ESCALATION, NotificationService.KIND_ACTION,
+                // scanOverdueDrafts 为 @Transactional：走 publishAfterCommit 延迟到本轮扫描提交后独立事务
+                // 发送，宿主回滚时不误发「移交超期升级」告警。注意：本方法不再抛出，下方 catch 已成防御分支。
+                notificationService.publishAfterCommit(superAdminId, EVT_OVERDUE_ESCALATION, NotificationService.KIND_ACTION,
                     SRC_HANDOVER, rec.getId(), title, content, "/handover/" + rec.getId());
             } catch (Exception e) {
                 log.warn("P2-7.4 AC-HAND-02 publish escalation failed for handoverId={}", rec.getId(), e);

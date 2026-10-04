@@ -39,10 +39,15 @@ public class ProductSoftDeleteExecutor implements SoftDeleteExecutor<Product> {
      * @param id 产品主键
      */
     @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void softDelete(Long id) {
         Product product = productMapper.selectById(id);
         if (product == null || "1".equals(product.getDelFlag())) {
             return;
+        }
+        if ("1".equals(product.getRetirementLocked()) || productMapper.isRetirementLockedForUpdate(id)) {
+            throw new org.ruoyi.ipd.common.IpdBusinessException(org.ruoyi.ipd.common.ApiV1ErrorCode.STATE_CONFLICT,
+                "该产品已退市并只读，不能删除历史记录或解除项目关联");
         }
         // 实体带 @TableLogic，updateById 会把逻辑删除字段从 SET 子句剔除致静默失效（R216 实测回归），
         // 与 PersonSoftDeleteExecutor 同款显式 UPDATE 保证 del_flag 真实落库。

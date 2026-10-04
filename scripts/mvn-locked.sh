@@ -9,7 +9,7 @@
 # 用法：把 `mvn` 换成 `bash scripts/mvn-locked.sh <原参数...>`
 # 例：  bash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd
 #
-# 行为：按模块 + phase 取锁。持锁期间其它进程排队等待（默认上限 40 分钟），
+# 行为：按真实工作树根目录统一取锁（所有模块和阶段共享）。持锁期间其它进程排队等待（默认上限 40 分钟），
 # 拿不到锁就明确报错退出，绝不并行写同一 target/。
 # 释放锁用 trap，保证被中断/超时也会释放。
 
@@ -21,24 +21,9 @@ WAIT_SECONDS="${RUOYI_MVN_LOCK_WAIT:-2400}"
 
 mkdir -p "$LOCK_DIR"
 
-PLUGIN="root"
-PHASE="other"
-prev=""
-for a in "$@"; do
-  case "$prev" in
-    -pl|--projects) PLUGIN="$a" ;;
-    -am|-amd|--also-make) PHASE="reactor" ;;
-  esac
-  case "$a" in
-    compile) PHASE="compile" ;;
-    test-compile) PHASE="test-compile" ;;
-    test) [ "$PHASE" = "other" ] && PHASE="test" ;;
-    package) PHASE="package" ;;
-  esac
-  prev="$a"
-done
-# -am 会连带构建依赖模块，那些模块的 target 同样会被写；用 reactor 粒度串行化
-KEY="$(printf '%s' "$PLUGIN" | tr -c 'A-Za-z0-9._-' '_')__${PHASE}"
+# reactor 的 -am/-amd 会触及依赖/依赖方，模块列表与阶段名都不能隔离 target。
+# 同一工作树统一串行；不同工作树的 target 独立，可并行构建。
+KEY="$(printf '%s' "$REPO_ROOT" | shasum -a 256 | awk '{print $1}')"
 LOCK="$LOCK_DIR/$KEY.lock"
 
 acquire() {

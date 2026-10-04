@@ -103,6 +103,11 @@ class P252AcceptanceTest {
             personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
         // 归属断言 fail-closed：未装配 ProjectMapper 一律「无权操作」，故必须注入。
         service.setProjectMapper(projectMapper);
+        ProjectService visibility = org.mockito.Mockito.mock(ProjectService.class);
+        service.setProjectVisibility(visibility);
+        org.mockito.Mockito.lenient().when(visibility.getVisibleById(org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> Project.builder()
+                .id(inv.getArgument(0)).tenantId("000000").build());
         lenient().when(projectMapper.selectById(11L))
             .thenReturn(Project.builder().id(11L).mainGroupId(MARKET.groupId())
                 .status("ACTIVE").delFlag("0").build());
@@ -118,6 +123,7 @@ class P252AcceptanceTest {
         gate.setStatus("PENDING");
         gate.setCurrentRound(1);
         gate.setStartedAt(new Date());
+        org.mockito.Mockito.lenient().when(gateMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> gate);
         signedRows.clear();
 
         lenient().when(gateMapper.selectById(501L)).thenReturn(gate);
@@ -203,7 +209,7 @@ class P252AcceptanceTest {
         service.sign(501L, "REJECT", "否决：G1-2 基准值缺失", RD);
 
         assertThat(gate.getStatus()).isEqualTo("REJECTED");
-        verify(notificationService, times(2)).publish(anyLong(), eq("GATE_REJECTED"),
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), eq("GATE_REJECTED"),
             eq("ACTION"), eq("gate"), eq(501L), anyString(), anyString(), anyString());
     }
 
@@ -213,7 +219,7 @@ class P252AcceptanceTest {
         service.sign(501L, "REJECT", "直接否决", MARKET);
 
         assertThat(gate.getStatus()).isEqualTo("REJECTED");
-        verify(notificationService, times(1)).publish(eq(301L), eq("GATE_REJECTED"),
+        verify(notificationService, times(1)).publishAfterCommit(eq(301L), eq("GATE_REJECTED"),
             eq("ACTION"), eq("gate"), eq(501L), anyString(), anyString(), anyString());
     }
 

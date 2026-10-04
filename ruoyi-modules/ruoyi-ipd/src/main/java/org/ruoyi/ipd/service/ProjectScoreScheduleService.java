@@ -246,21 +246,28 @@ public class ProjectScoreScheduleService {
         publishTaskReminderFor(task, task.getPersonId(), eventType, content, scanDate);
     }
 
+    /**
+     * 逾期提醒发布。两个调用点（scanLaunchedProjects 直接调用、publishTaskReminder 转发）都在
+     * {@code scanLaunchedProjects}（{@code @Transactional}）内，故走
+     * {@link NotificationService#publishAfterCommit}：延迟到本轮扫描提交后独立事务发送。原实现
+     * 在事务内直发，扫描中途失败回滚时被提醒人仍会收到一条指向未落库待办的催办。
+     */
     private void publishTaskReminderFor(ProjectScoreTask task, Long receiverId, String eventType,
                                          String content, LocalDate scanDate) {
         if (receiverId == null || notificationService == null) {
             return;
         }
-        notificationService.publish(receiverId, eventType, NotificationService.KIND_ACTION,
+        notificationService.publishAfterCommit(receiverId, eventType, NotificationService.KIND_ACTION,
             "PROJECT_SCORE_TASK", task.getId(), "项目绩效待办逾期", content, task.getActionUrl());
         auditAction("PROJECT_SCORE_TASK_REMIND", task.getProjectId(), task, eventType);
     }
 
+    /** 升级超管。调用点 scanLaunchedProjects 为 {@code @Transactional}，走 publishAfterCommit 防回滚后误发。 */
     private void publishEscalation(ProjectScoreTask task, Long adminId, LocalDate scanDate) {
         if (adminId == null) {
             return;
         }
-        notificationService.publish(adminId, "PROJECT_SCORE_TASK_ESCALATION", NotificationService.KIND_ACTION,
+        notificationService.publishAfterCommit(adminId, "PROJECT_SCORE_TASK_ESCALATION", NotificationService.KIND_ACTION,
             "PROJECT_SCORE_TASK", task.getId(), "项目绩效待办升级", "上市后 90 日未完成评定，请超管介入",
             task.getActionUrl());
         auditAction("PROJECT_SCORE_TASK_ESCALATE", task.getProjectId(), task, "day3");

@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * 按 actionCode 查库绑定 Skill：有绑定且 classpath 有 SKILL.md 则进入系统提示；
- * NULL 绑定不注入技能名。
+ * 新绑定动作缺技能时拒绝空能力运行；历史冻结空技能不受新配置影响。
  */
 @Tag("dev")
 class ProjectAgentRunPlannerActionSkillTest {
@@ -118,8 +118,8 @@ class ProjectAgentRunPlannerActionSkillTest {
     }
 
     @Test
-    @DisplayName("动作 skill_names 为 NULL：plan.skills 为空，系统提示不含技能名")
-    void nullActionBindingKeepsPromptFreeOfSkill() {
+    @DisplayName("新绑定动作缺执行技能：拒绝空能力运行")
+    void nullActionBindingRejectsEmptyCapabilityRun() {
         IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
         when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").subStageCode("CONCEPT-S2").skillNames(null).sortOrder(1).build());
@@ -128,11 +128,8 @@ class ProjectAgentRunPlannerActionSkillTest {
         AgentRunCreateReq req = new AgentRunCreateReq("market-research", "v1",
             String.valueOf(AgentTestFixtures.MODEL_ID), List.of(), List.of("project_knowledge_search"),
             "C02", "请做竞品分析", "idem-action-skill-02");
-        ProjectAgentRunPlanner.RunPlan plan = planner.plan(req);
-
-        assertThat(plan.skills()).isEmpty();
-        String prompt = ProjectAgentPrompt.build(spec(plan, req.message()));
-        assertThat(prompt).doesNotContain("Skill: " + SKILL).doesNotContain(SKILL);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner.plan(req))
+            .hasMessageContaining("尚未配置执行技能");
     }
 
     @Test
@@ -153,6 +150,8 @@ class ProjectAgentRunPlannerActionSkillTest {
     })
     void recoveryUsesFrozenSkillsWithoutConsultingChangedActionMapping(String changedBinding) {
         var maps = mock(IpdActionSkillMapService.class);
+        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+            .actionCode("C02").skillNames("[\"competitor-analysis-ipd\"]").build());
         var planner = planner(maps);
         var req = AgentTestFixtures.c02("idem-frozen-map", "original");
         var original = planner.plan(req);
@@ -216,6 +215,8 @@ class ProjectAgentRunPlannerActionSkillTest {
     @Test
     void frozenIdentityMustBeCompleteUniqueAndKeepCurrentToolAvailability() {
         var maps = mock(IpdActionSkillMapService.class);
+        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+            .actionCode("C02").skillNames("[\"competitor-analysis-ipd\"]").build());
         var req = AgentTestFixtures.c02("idem-frozen-boundary", "original");
         var planner = planner(maps);
         var frozen = planner.plan(req).snapshot().skills();

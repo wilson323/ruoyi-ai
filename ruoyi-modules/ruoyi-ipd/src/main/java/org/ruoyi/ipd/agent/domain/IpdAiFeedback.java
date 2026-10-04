@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 
 /**
- * AI 点赞/点踩事实行（ipd_ai_feedback）。唯一键 (target_type, target_id, person_id)：
- * 同一人对同一目标只保留一条，再次提交为本人更新。
+ * AI 反馈与内部采纳事件事实行（ipd_ai_feedback）。唯一键 (target_type, target_id, person_id)：
+ * 点赞同一人对同一目标只保留一条，再次提交为本人更新；内部采纳事件仅首次写入。
  *
  * <p>与激励域 {@code NegativeFeedback}（质量事故负反馈）无关，不得混用。
  */
@@ -30,13 +30,13 @@ public class IpdAiFeedback extends BaseEntity {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     private String tenantId;
-    /** RUN_MESSAGE / ARTIFACT_VERSION。 */
+    /** RUN_MESSAGE / ARTIFACT_VERSION；内部 ARTIFACT_ADOPTION 绑定已采纳版本，不覆盖点赞。 */
     private String targetType;
     private Long targetId;
     /** 目标所属项目（授权锚点，写入时由服务端解析，不信任请求）。 */
     private Long projectId;
     private Long personId;
-    /** UP / DOWN。 */
+    /** 点赞为 UP / DOWN；内部采纳事件固定 UP，不代表审核或知识晋升。 */
     private String rating;
     private String reason;
     @Version

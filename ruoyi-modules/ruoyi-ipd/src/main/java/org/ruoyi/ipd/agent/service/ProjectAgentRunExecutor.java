@@ -166,9 +166,9 @@ public class ProjectAgentRunExecutor {
      * @param requirementId 冻结快照里的需求单 ID
      * @param answer 复检通过时的产物正文
      */
-    public void bindDemandOnReverify(Long requirementId, String answer) {
+    public void bindDemandOnReverify(Long requirementId, String answer, String tenantId) {
         if (demandBinder != null && requirementId != null) {
-            demandBinder.apply(requirementId, answer, null);
+            demandBinder.apply(requirementId, answer, null, tenantId);
         }
     }
 
@@ -319,10 +319,10 @@ public class ProjectAgentRunExecutor {
                     ProjectAgentRunSpec execution = spec;
                     if (execution.requirementId() != null && demandBinder != null) {
                         Long requirement = execution.requirementId();
-                        var catalog = demandBinder.open(requirement);
+                        var catalog = demandBinder.open(requirement, run.getTenantId());
                         if (catalog.appendix() != null && !catalog.appendix().isBlank()) execution = execution.withCatalog(catalog.appendix());
                         var hit = catalog.hit();
-                        handle.whenSucceeded(text -> demandBinder.apply(requirement, text, hit));
+                        handle.whenSucceeded(text -> demandBinder.apply(requirement, text, hit, run.getTenantId()));
                     }
                     handle.attach(kernel.execute(execution, usageSink(handle, run, execution)));
                 } catch (RuntimeException failure) { handle.finish(AgentRunStatus.FAILED, "KERNEL_ERROR"); }
@@ -679,13 +679,13 @@ public class ProjectAgentRunExecutor {
             DemandCatalogBinder.CatalogHit catalogHit = null;
             if (spec.requirementId() != null && demandBinder != null) {
                 Long requirementId = spec.requirementId();
-                DemandCatalogBinder.BindContext catalog = demandBinder.open(requirementId);
+                DemandCatalogBinder.BindContext catalog = demandBinder.open(requirementId, run.getTenantId());
                 if (catalog.appendix() != null && !catalog.appendix().isBlank()) {
                     spec = spec.withCatalog(catalog.appendix());
                 }
                 catalogHit = catalog.hit();
                 DemandCatalogBinder.CatalogHit hit = catalogHit;
-                handle.whenSucceeded(text -> demandBinder.apply(requirementId, text, hit));
+                handle.whenSucceeded(text -> demandBinder.apply(requirementId, text, hit, run.getTenantId()));
             }
             Map<String, Object> started = new LinkedHashMap<>();
             started.put("agentId", run.getAgentId());

@@ -94,10 +94,15 @@ public class GuestDemandService {
         this.personMapper = personMapper;
     }
 
+    @Autowired(required = false)
     private ProjectMapper projectMapper;
 
-    /** 生产环境注入后，同一产品上的后续项目也能参与双 PM 路由。 */
     @Autowired(required = false)
+    private ProductRetirementService retirementService;
+
+    public void setProductRetirementService(ProductRetirementService retirementService) {
+        this.retirementService = retirementService;
+    }
     public void setProjectMapper(ProjectMapper projectMapper) {
         this.projectMapper = projectMapper;
     }
@@ -190,6 +195,7 @@ public class GuestDemandService {
     }
 
 
+    @Transactional(rollbackFor = Exception.class)
     public GuestDemandSubmittedView submit(GuestDemandSubmitReq req, String clientIp, String userAgent) {
         String ipHash = sha256Short(clientIp);
         String uaHash = sha256Short(userAgent);
@@ -219,8 +225,8 @@ public class GuestDemandService {
             if (p == null) {
                 throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
             }
-            if (!portalProduct(p.getStatus())) {
-                // 页38：40401 产品已下架。在售和在研与旧的 ACTIVE 一样可以提交。
+            if (!portalProduct(p.getStatus()) || isProductMarketingStopped(p)) {
+                // 页38：40401 产品已下架/已退市/已停止营销。
                 throw new IpdBusinessException(ApiV1ErrorCode.PRODUCT_INACTIVE);
             }
             r.setProductId(p.getId());
@@ -228,14 +234,29 @@ public class GuestDemandService {
             route = resolveDualPm(p, r);
         }
         r.setQueryCode(generateUniqueCode());
+        String uploadToken = GuestDemandAttachmentService.newUploadToken();
+        r.setUploadTokenHash(GuestDemandAttachmentService.tokenHash(uploadToken));
         requirementMapper.insert(r);
         if (r.getProductLineId() == null && demandTriageRun != null) {
-            demandTriageRun.attach(r);
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override public void afterCommit() { demandTriageRun.attach(r); }
+                });
+            } else {
+                demandTriageRun.attach(r);
+            }
         }
         audit("submit", r.getId(), ipHash, uaHash,
             "route=" + route + ";productId=" + r.getProductId() + ";mkt=" + r.getMarketPmId() + ";rd=" + r.getRdPmId());
         registerPostCommit(null, "SUBMITTED", "submit", null, r.getId());
-        return new GuestDemandSubmittedView(r.getQueryCode(), r.getStatus());
+        return new GuestDemandSubmittedView(r.getQueryCode(), r.getStatus(), uploadToken);
+    }
+
+    private boolean isProductMarketingStopped(Product p) {
+        if (p == null) return true;
+        if ("1".equals(p.getRetirementLocked())) return true;
+        if (retirementService != null && retirementService.isMarketingStopped(p.getId())) return true;
+        return false;
     }
 
     /** 门户可选产品：历史 ACTIVE，以及目录里的在售、在研。 */
@@ -247,8 +268,10 @@ public class GuestDemandService {
     public List<PublicProductView> publicProducts() {
         return productMapper.selectList(new LambdaQueryWrapper<Product>()
                 .in(Product::getStatus, java.util.List.of("ACTIVE", Product.ST_ON_SALE, Product.ST_IN_RD))
+                .ne(Product::getRetirementLocked, "1")
                 .orderByAsc(Product::getProductName))
             .stream()
+            .filter(p -> !isProductMarketingStopped(p))
             .map(p -> new PublicProductView(p.getId(), p.getProductName(), p.getModelCode(), p.getStatus(),
                 deriveListingStatus(p)))
             .toList();
@@ -328,7 +351,7 @@ public class GuestDemandService {
             ? toIsoUtc(new Date(submittedAt.getTime() + TRACE_WITHDRAW_HOURS * 3_600_000L)) : null;
         return new PortalDemandTraceView(r.getQueryCode(), r.getStatus(),
             maskCustomerName(r.getCustomerName()), withinWindow, beforeAcceptance, deadline,
-            List.copyOf(timeline), List.of());
+            List.copyOf(timeline), GuestDemandAttachmentService.publicEntries(r));
     }
 
     /** 受理后更后段状态映射为 timeline 节点（无独立时间戳字段，occurredAt 取 updateTime）；其余返回 null。 */

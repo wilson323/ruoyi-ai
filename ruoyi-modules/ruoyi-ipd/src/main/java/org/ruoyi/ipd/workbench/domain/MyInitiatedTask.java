@@ -13,24 +13,34 @@ import java.util.Date;
 /**
  * 我发起 / 我审批聚合任务卡（R27 P0-6：Workbench 路径 myInitiated + myPendingApprovals）。
  *
- * <p>三种业务单据（deletion_requests / coefficient_change_requests / launch_date_change_requests）
- * + 阶段动作（stage_actions）的统一视图卡。WorkbenchService.myInitiated / myPendingApprovals 返回该类型，
+ * <p><b>现役来源是业务单据表 deletion_requests 与 launch_date_change_requests 两张</b>
+ * （本注释不复述张数；读法以 {@code WorkbenchService.myInitiated / myPendingApprovals}
+ * 方法体里实际用到的 mapper 为准）。WorkbenchService 返回该类型，
  * 前端按 taskType 渲染「我发起的 / 待我审批」两个分组。
  *
+ * <p>另有两处来源曾在本卡设计里，现已不在视图内：
+ * <ul>
+ *   <li>coefficient_change_requests——随「业绩窗口 / 系数变更」功能块退役，2026-10-03 起不再聚合；</li>
+ *   <li>阶段动作（stage_actions）——本卡自 2026-09-22 起预留该来源，但<b>后端至今无任何生产者</b>
+ *       （见 {@code WorkbenchService.TASK_TYPE_STAGE_ACTION} 的 javadoc）；接线与否属产品决策，
+ *       未接线前不会出现 {@code taskType=STAGE_ACTION} 的卡。</li>
+ * </ul>
+ *
  * <p>本类是查询结果 VO 投影：保留 Domain 形态（@TableName + Serializable）以便未来若需要做单表持久化时
- * 直接复用；当前业务是三表 + 阶段动作的聚合视图，实际写入仍走各业务单据表，不写本表。
+ * 直接复用；实际写入仍走各业务单据表，不写本表。
  *
  * <p>字段语义：
  * <ul>
- *   <li>{@code id}：业务单据/动作主键（sourceId 同值）</li>
- *   <li>{@code taskType}：DELETION_REQUEST / COEFFICIENT_CHANGE / LAUNCH_DATE_CHANGE / STAGE_ACTION</li>
- *   <li>{@code sourceId}：业务单据/动作主键（同 id）</li>
- *   <li>{@code sourceTable}：deletion_requests / coefficient_change_requests / launch_date_change_requests / stage_actions</li>
- *   <li>{@code title}：业务单据/动作的展示标题</li>
- *   <li>{@code status}：业务单据/动作的状态</li>
+ *   <li>{@code id}：业务单据主键（sourceId 同值）</li>
+ *   <li>{@code taskType}：现役 DELETION / LAUNCH_DATE（常量名为长形式、值为短形式，见
+ *       {@code WorkbenchService.TASK_TYPE_*}）</li>
+ *   <li>{@code sourceId}：业务单据主键（同 id）</li>
+ *   <li>{@code sourceTable}：现役 deletion_requests / launch_date_change_requests</li>
+ *   <li>{@code title}：业务单据的展示标题</li>
+ *   <li>{@code status}：业务单据的状态</li>
  *   <li>{@code initiatorId}：发起人 personId（myInitiated 模式）</li>
  *   <li>{@code approverId}：当前待审批人 personId（myPendingApprovals 模式）</li>
- *   <li>{@code createdAt}：业务单据/动作的创建时间</li>
+ *   <li>{@code createdAt}：业务单据的创建时间</li>
  * </ul>
  *
  * <p>@author R177-A2 agent 2026-09-22
@@ -49,11 +59,11 @@ public class MyInitiatedTask implements Serializable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    /** 任务类型：DELETION_REQUEST / COEFFICIENT_CHANGE / LAUNCH_DATE_CHANGE / STAGE_ACTION */
+    /** 任务类型：现役 {@code DELETION} / {@code LAUNCH_DATE}（取值以 WorkbenchService 响应为准） */
     @TableField("task_type")
     private String taskType;
 
-    /** 业务单据/动作的主键（同 id） */
+    /** 业务单据主键（同 id） */
     @TableField("source_id")
     private Long sourceId;
 

@@ -313,8 +313,15 @@ class ProjectAgentRunHandleTest {
     @Test
     @DisplayName("C02 默认四维可生成草稿；其他动作不借用 C02 用途规则")
     void recordedActionKeepsDefaultScopeAndOtherActionsCompatible() {
+        // C02 夹具必须是「真的」四维齐全：规格要求覆盖功能/价格/渠道/技术路线，
+        // 只写一句「按默认四维齐全」而不列出维度，是假夹具——Verifier 按规格判缺口，
+        // 运行会停在 VERIFYING。首句保留：它是完成门「用途未声明不阻塞」的负例。
         Map<String, String> cases = Map.of(
-            "C02", "# 结论\n用途未声明，不阻塞；按默认四维齐全、篇幅克制。竞品名单未取得，暂不比较。",
+            "C02", "# 结论\n用途未声明，不阻塞；按默认四维齐全、篇幅克制。竞品名单未取得，暂不比较。\n"
+                + "## 功能\n对比各竞品的功能与特性覆盖范围。\n"
+                + "## 价格\n对比各竞品的定价与售价区间。\n"
+                + "## 渠道\n对比各竞品的渠道与分销方式。\n"
+                + "## 技术路线\n对比各竞品的技术路线与技术架构。",
             "C01", "# 缺项表\n| 编号 | 缺项 | 影响 | 处理 |\n| G-06 | 目的裁剪（用户声明时） | 阻塞步骤2 | 未声明则四维齐全、篇幅克制。 |");
         cases.forEach((action, body) -> {
             IpdAgentRun recorded = IpdAgentRun.builder().tenantId(AgentTestFixtures.TENANT)

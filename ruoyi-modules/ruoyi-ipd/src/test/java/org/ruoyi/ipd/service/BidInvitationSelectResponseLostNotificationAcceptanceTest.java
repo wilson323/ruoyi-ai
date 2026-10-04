@@ -112,7 +112,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
         bidInvitationService.selectResponse(1002L, 2001L, MARKET_PM);
 
         // 中标者 ⇒ BID_WON
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             eq(WINNER_RD_PM),
             eq(NotificationService.Types.BID_WON),
             eq(NotificationService.KIND_ACTION),
@@ -123,7 +123,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
             anyString()
         );
         // 两个 loser 各 ⇒ 1 BID_LOST
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             eq(LOSER1_RD_PM),
             eq(NotificationService.Types.BID_LOST),
             eq(NotificationService.KIND_ACTION),
@@ -133,7 +133,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
             anyString(),
             anyString()
         );
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             eq(LOSER2_RD_PM),
             eq(NotificationService.Types.BID_LOST),
             eq(NotificationService.KIND_ACTION),
@@ -144,7 +144,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
             anyString()
         );
         // 总 3 条通知：1 winner BID_WON + 2 loser BID_LOST
-        verify(notificationService, times(3)).publish(
+        verify(notificationService, times(3)).publishAfterCommit(
             anyLong(), anyString(), anyString(), anyString(), anyLong(),
             anyString(), anyString(), anyString()
         );
@@ -170,7 +170,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
 
         bidInvitationService.selectResponse(1003L, 3001L, MARKET_PM);
 
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             eq(ONE_TO_ONE_TARGET_RD_PM),
             eq(NotificationService.Types.BID_WON),
             eq(NotificationService.KIND_ACTION),
@@ -178,7 +178,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
             eq(1003L),
             anyString(), anyString(), anyString()
         );
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             eq(EXTRA_LOSER_RD_PM),
             eq(NotificationService.Types.BID_LOST),
             eq(NotificationService.KIND_ACTION),
@@ -187,7 +187,7 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
             anyString(), anyString(), anyString()
         );
         // 总 2 条通知：1 winner + 1 loser
-        verify(notificationService, times(2)).publish(
+        verify(notificationService, times(2)).publishAfterCommit(
             anyLong(), anyString(), anyString(), anyString(), anyLong(),
             anyString(), anyString(), anyString()
         );
@@ -213,13 +213,13 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
         bidInvitationService.selectResponse(1002L, 2001L, MARKET_PM);
 
         // 中标人 NEVER 收 BID_LOST
-        verify(notificationService, never()).publish(
+        verify(notificationService, never()).publishAfterCommit(
             eq(WINNER_RD_PM),
             eq(NotificationService.Types.BID_LOST),
             anyString(), anyString(), anyLong(), anyString(), anyString(), anyString()
         );
         // 中标人恰好收 1 条 BID_WON
-        verify(notificationService, times(1)).publish(
+        verify(notificationService, times(1)).publishAfterCommit(
             eq(WINNER_RD_PM),
             eq(NotificationService.Types.BID_WON),
             anyString(), anyString(), anyLong(), anyString(), anyString(), anyString()
@@ -257,17 +257,17 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
             .isEqualTo(ApiV1ErrorCode.STATE_CONFLICT);
 
         // 通知总数稳定为 2（第一次调用产生）：1 winner BID_WON + 1 loser BID_LOST
-        verify(notificationService, times(1)).publish(
+        verify(notificationService, times(1)).publishAfterCommit(
             eq(WINNER_RD_PM),
             eq(NotificationService.Types.BID_WON),
             anyString(), anyString(), anyLong(), anyString(), anyString(), anyString()
         );
-        verify(notificationService, times(1)).publish(
+        verify(notificationService, times(1)).publishAfterCommit(
             eq(LOSER1_RD_PM),
             eq(NotificationService.Types.BID_LOST),
             anyString(), anyString(), anyLong(), anyString(), anyString(), anyString()
         );
-        verify(notificationService, times(2)).publish(
+        verify(notificationService, times(2)).publishAfterCommit(
             anyLong(), anyString(), anyString(), anyString(), anyLong(),
             anyString(), anyString(), anyString()
         );
@@ -283,4 +283,14 @@ class BidInvitationSelectResponseLostNotificationAcceptanceTest {
         inv.setCreateBy(MARKET_PM);
         return inv;
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

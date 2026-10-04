@@ -5,6 +5,8 @@ import io.agentscope.core.shutdown.GracefulShutdownConfig;
 import io.agentscope.core.shutdown.GracefulShutdownManager;
 import org.ruoyi.ipd.agent.ProjectAgentConstants;
 import org.ruoyi.ipd.agent.catalog.CapabilityManifest;
+import org.ruoyi.ipd.agent.catalog.ProjectAgentPackCatalog;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentModelCatalog;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentSkillCatalog;
 import org.ruoyi.ipd.agent.catalog.ProjectAgentToolCatalog;
@@ -159,14 +161,20 @@ public class ProjectAgentConfiguration {
         return new ProjectAgentModelCatalog(mapper, modelConfigService);
     }
 
+    /** 管理配置与内置包从同一目录解析，每次新请求重新读取当前租户配置。 */
+    @Bean
+    public ProjectAgentPackCatalog projectAgentPackCatalog(CapabilityManifest manifest, JdbcTemplate jdbc, ObjectMapper mapper) {
+        return new ProjectAgentPackCatalog(manifest, jdbc, mapper);
+    }
+
     /** @return 校验与冻结（含按 actionCode 查库绑定 Skill） */
     @Bean
     public ProjectAgentRunPlanner projectAgentRunPlanner(CapabilityManifest manifest,
                                                          ProjectAgentSkillCatalog skills,
                                                          ProjectAgentToolCatalog tools,
                                                          ProjectAgentModelCatalog models,
-                                                         IpdActionSkillMapService skillMapService) {
-        return new ProjectAgentRunPlanner(manifest, skills, tools, models, skillMapService);
+                                                         IpdActionSkillMapService skillMapService, ProjectAgentPackCatalog packs) {
+        return new ProjectAgentRunPlanner(manifest, skills, tools, models, skillMapService, packs);
     }
 
     @Bean
@@ -372,7 +380,8 @@ public class ProjectAgentConfiguration {
             StageActionService stageActionService, ProductLineNameMapper lineNames,
             org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactAccess artifactAccess,
             PlatformTransactionManager transactionManager,
-            org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService skillReviews) {
+            org.ruoyi.ipd.agent.service.ProjectAgentSkillReviewService skillReviews,
+            AiFeedbackService adoptionFeedback) {
         ProjectAgentRunService service = new ProjectAgentRunService(true, access, planner, store,
             artifactStore, documentService, projectMapper, productMapper, executor, mapper,
             System::currentTimeMillis, Duration.ofSeconds(Math.max(30, timeoutSeconds)));
@@ -385,6 +394,7 @@ public class ProjectAgentConfiguration {
         verificationTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         service.setVerificationTransaction(verificationTransaction);
         service.setSkillReviews(skillReviews);
+        service.setAdoptionFeedback(adoptionFeedback);
         return service;
     }
 
@@ -402,8 +412,8 @@ public class ProjectAgentConfiguration {
     @Bean
     public ProjectAgentCapabilityService projectAgentCapabilityService(
             IpdCopilotAccess access, CapabilityManifest manifest, ProjectAgentSkillCatalog skills,
-            ProjectAgentToolCatalog tools, ProjectAgentModelCatalog models) {
-        return new ProjectAgentCapabilityService(true, access, manifest, skills, tools, models);
+            ProjectAgentToolCatalog tools, ProjectAgentModelCatalog models, ProjectAgentPackCatalog packs) {
+        return new ProjectAgentCapabilityService(true, access, manifest, skills, tools, models, packs);
     }
 
     /** @return 反馈服务 */

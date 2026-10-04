@@ -1,0 +1,22 @@
+-- 附件与分拣字段回滚会移除字段数据；执行前备份，禁止自动执行。
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'upload_token_hash');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN upload_token_hash', 'SELECT "upload_token_hash absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'attachments_json');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN attachments_json', 'SELECT "attachments_json absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_run_id');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN triage_run_id', 'SELECT "triage_run_id absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_status');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN triage_status', 'SELECT "triage_status absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_error');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN triage_error', 'SELECT "triage_error absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_attempt');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN triage_attempt', 'SELECT "triage_attempt absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_person_id');
+SET @ipd_ddl = IF(@ipd_column_exists > 0, 'ALTER TABLE requirements DROP COLUMN triage_person_id', 'SELECT "triage_person_id absent"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;

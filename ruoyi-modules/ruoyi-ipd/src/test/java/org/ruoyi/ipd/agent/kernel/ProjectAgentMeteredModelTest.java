@@ -149,13 +149,26 @@ class ProjectAgentMeteredModelTest {
 
     @Test void fullDefaultMemoryAndMainCallsUseSameLedgerWithoutBridgeDuplicates() {
         var calls = new AtomicInteger();
+        var mainCalls = new AtomicInteger();
+        var flushCalls = new AtomicInteger();
+        var consolidationCalls = new AtomicInteger();
+        var starts = new java.util.concurrent.ConcurrentHashMap<String, Integer>();
         var receivedTask = new java.util.concurrent.atomic.AtomicBoolean();
         Model delegate = new Model() {
             public String getModelName() { return "no-network-metering"; }
             public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools,
                     GenerateOptions options) {
                 int call = calls.incrementAndGet();
-                if (call == 1) {
+                String prompt = messages.stream().flatMap(message -> message.getContent().stream())
+                    .filter(block -> block instanceof io.agentscope.core.message.TextBlock)
+                    .map(block -> ((io.agentscope.core.message.TextBlock) block).getText())
+                    .collect(java.util.stream.Collectors.joining("\n"));
+                boolean flush = prompt.contains("You are a memory extraction assistant.");
+                boolean consolidation = prompt.contains("You are a memory consolidation assistant.");
+                if (flush) flushCalls.incrementAndGet();
+                else if (consolidation) consolidationCalls.incrementAndGet();
+                else mainCalls.incrementAndGet();
+                if (!flush && !consolidation && mainCalls.get() == 1) {
                     return Flux.just(ChatResponse.builder().id("response-" + call)
                         .usage(new ChatUsage(10, 5, 0))
                         .content(List.of(io.agentscope.core.message.ToolUseBlock.builder()
@@ -182,7 +195,13 @@ class ProjectAgentMeteredModelTest {
                         .text("safe-finished").build())).finishReason("stop").build());
             }
         };
-        var recorder = new Recorder();
+        var recorder = new Recorder() {
+            @Override public synchronized void onStep(String kind, Map<String, Object> detail) {
+                if ("START".equals(detail.get("phase")))
+                    starts.merge((String) detail.get("modelCallId"), 1, Integer::sum);
+                super.onStep(kind, detail);
+            }
+        };
         var ledger = mock(AiModelUsageLedgerService.class);
         var identity = new org.ruoyi.ipd.agent.model.ProjectAgentModelIdentity(123L, "synthetic", "no-network-metering");
         var sink = new ProjectAgentUsageSink(recorder, ledger, List.of(identity), "person", "run");
@@ -193,6 +212,12 @@ class ProjectAgentMeteredModelTest {
         var context = io.agentscope.core.agent.RuntimeContext.builder()
             .userId("synthetic-person").sessionId("owned-session").build();
         try {
+            // Seed through the official filesystem so maintenance has real durable input even
+            // when it races the asynchronous flush. Do not disable either memory consumer.
+            String daily = "memory/" + java.time.LocalDate.now() + ".md";
+            var filesystem = agent.getWorkspaceManager().getFilesystem();
+            filesystem.write(context, daily, "- Verified synthetic preference for concise output.\n");
+            assertTrue(filesystem.exists(context, daily));
             var task = agent.getTaskRepository().putTask(context, "owned-task", "worker", "owned-session",
                 new io.agentscope.harness.agent.subagent.task.TaskRunSpec.LocalTaskRunSpec(() -> {
                     try { Thread.sleep(1500); }
@@ -208,11 +233,22 @@ class ProjectAgentMeteredModelTest {
             // Same token-free lifecycle STEP as the proposed production EventBridge change.
             events.stream().filter(event -> event instanceof io.agentscope.core.event.ModelCallEndEvent)
                 .forEach(event -> sink.onStep("MODEL_CALL", Map.of("phase", "STREAM_END")));
-            assertEquals(3, calls.get());
-            assertEquals(3, recorder.ends.size());
-            assertEquals(30, recorder.total("inputTokens"));
-            assertEquals(15, recorder.total("outputTokens"));
-            verify(ledger, times(3)).recordUsage(123L, "person", "project_agent", 10, 5, 0L, "ok", "run");
+            assertTrue(io.agentscope.harness.agent.memory.MemoryBackgroundTasks.awaitQuiescence(
+                30, java.util.concurrent.TimeUnit.SECONDS), "All official background consumers must settle before accounting assertions");
+            assertEquals(2, mainCalls.get(), "The wait tool requires exactly two main model calls");
+            assertEquals(1, flushCalls.get(), "Official memory extraction must actually consume the metered model");
+            assertEquals(1, consolidationCalls.get(), "Seeded daily memory must actually reach official maintenance");
+            int consumedCalls = mainCalls.get() + flushCalls.get() + consolidationCalls.get();
+            assertEquals(consumedCalls, calls.get());
+            assertEquals(consumedCalls, starts.size());
+            starts.values().forEach(count -> assertEquals(1, count, "Each call must start exactly once"));
+            var endedIds = recorder.ends.stream().map(end -> (String) end.get("modelCallId"))
+                .collect(java.util.stream.Collectors.toSet());
+            assertEquals(starts.keySet(), endedIds, "Every started call must end, including both memory consumers");
+            assertEquals(consumedCalls, recorder.ends.size(), "Bridge lifecycle events cannot duplicate usage receipts");
+            assertEquals(consumedCalls * 10, recorder.total("inputTokens"));
+            assertEquals(consumedCalls * 5, recorder.total("outputTokens"));
+            verify(ledger, times(consumedCalls)).recordUsage(123L, "person", "project_agent", 10, 5, 0L, "ok", "run");
         } finally {
             agent.close();
         }

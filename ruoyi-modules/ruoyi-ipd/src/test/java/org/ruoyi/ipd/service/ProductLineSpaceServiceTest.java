@@ -47,6 +47,7 @@ class ProductLineSpaceServiceTest {
     @Mock ProjectMemberMapper projectMembers;
     @Mock PersonMapper persons;
     @Mock IAuditLogService audit;
+    @Mock org.ruoyi.ipd.mapper.RequirementMapper requirements;
     ProductLineSpaceService service;
 
     private static final IpdActor ADMIN = new IpdActor(1L, "管理员", "SUPER_ADMIN", 1L);
@@ -62,11 +63,13 @@ class ProductLineSpaceServiceTest {
         TableInfoHelper.initTableInfo(assistant, Product.class);
         TableInfoHelper.initTableInfo(assistant, Project.class);
         TableInfoHelper.initTableInfo(assistant, ProjectMember.class);
+        TableInfoHelper.initTableInfo(assistant, org.ruoyi.ipd.domain.Requirement.class);
     }
 
     @BeforeEach
     void setUp() {
         service = new ProductLineSpaceService(lines, members, products, projects, projectMembers, persons, audit);
+        service.setRequirementMapper(requirements);
     }
 
     private static ProductLine line() {
@@ -82,6 +85,35 @@ class ProductLineSpaceServiceTest {
     private static Person activePerson(Long id) {
         return Person.builder().id(id).tenantId("000000")
             .accountStatus("ACTIVE").employmentStatus("ACTIVE").build();
+    }
+
+    @Test
+    void unspecifiedDemandListingExplicitlyFiltersTenantBeforeNullProductLineBranch() {
+        ProductLine unspecified = line();
+        unspecified.setLineCode("unspecified");
+        when(lines.selectById(10L)).thenReturn(unspecified);
+        when(requirements.selectList(any())).thenAnswer(invocation -> {
+            LambdaQueryWrapper<org.ruoyi.ipd.domain.Requirement> query = invocation.getArgument(0);
+            assertThat(query.getSqlSegment()).contains("tenant_id =", "product_line_id", "IS NULL");
+            assertThat(query.getParamNameValuePairs().values()).contains("000000");
+            return List.of(); // 其他租户无产品线需求被数据库 WHERE 排除。
+        });
+        assertThat(service.demands(10L, ADMIN)).isEmpty();
+    }
+
+    @Test
+    void crossTenantUnboundDemandCannotBeRetriedEvenByAdmin() {
+        ProductLine unspecified = line();
+        unspecified.setLineCode("unspecified");
+        when(lines.selectById(10L)).thenReturn(unspecified);
+        when(requirements.selectOne(any())).thenAnswer(invocation -> {
+            LambdaQueryWrapper<org.ruoyi.ipd.domain.Requirement> query = invocation.getArgument(0);
+            assertThat(query.getSqlSegment()).contains("id =", "tenant_id =");
+            assertThat(query.getParamNameValuePairs().values()).contains("000000", 42L);
+            return null; // 需求 ID 存在于其他租户，受显式条件过滤。
+        });
+        assertThatThrownBy(() -> service.requireTriageDemand(10L, 42L, ADMIN, true))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("需求不在当前产品线空间");
     }
 
     @Test
@@ -245,6 +277,45 @@ class ProductLineSpaceServiceTest {
     }
 
     @Test
+    void retirementLockedProductCannotBeAssignedOrUnassignedEvenByAdmin() {
+        when(lines.selectOne(any(LambdaQueryWrapper.class))).thenReturn(line());
+        Product product = Product.builder().id(21L).tenantId("000000").retirementLocked("1")
+            .status(Product.ST_INACTIVE).build();
+        when(products.selectById(21L)).thenReturn(product);
+        assertThatThrownBy(() -> service.assignProduct(10L, 21L, ADMIN))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("退市并只读");
+        product.setProductLineId(10L);
+        when(products.selectOne(any(LambdaQueryWrapper.class))).thenReturn(product);
+        assertThatThrownBy(() -> service.unassignProduct(10L, 21L, ADMIN))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("退市并只读");
+        verify(products, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        org.mockito.Mockito.verifyNoInteractions(audit);
+    }
+
+    @Test
+    void lockedRowReadBlocksStaleUnlockedProjectionBeforeAssignmentWrite() {
+        when(lines.selectOne(any(LambdaQueryWrapper.class))).thenReturn(line());
+        when(products.selectById(21L)).thenReturn(Product.builder().id(21L).tenantId("000000")
+            .retirementLocked("0").build());
+        when(products.isRetirementLockedForUpdate(21L)).thenReturn(true);
+        assertThatThrownBy(() -> service.assignProduct(10L, 21L, ADMIN))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("退市并只读");
+        verify(products).isRetirementLockedForUpdate(21L);
+        verify(products, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        org.mockito.Mockito.verifyNoInteractions(audit);
+    }
+
+    @Test
+    void identicalExistingProductLineRemainsAnIdempotentReadEvenWhenLocked() {
+        when(lines.selectOne(any(LambdaQueryWrapper.class))).thenReturn(line());
+        Product existing = Product.builder().id(21L).tenantId("000000").productLineId(10L).retirementLocked("1").build();
+        when(products.selectById(21L)).thenReturn(existing);
+        assertThat(service.assignProduct(10L, 21L, ADMIN)).isSameAs(existing);
+        verify(products, never()).update(isNull(), any(LambdaUpdateWrapper.class));
+        org.mockito.Mockito.verifyNoInteractions(audit);
+    }
+
+    @Test
     void onlyAdminCanUnassignInactiveProductWithoutActiveProject() {
         assertThatThrownBy(() -> service.unassignProduct(10L, 21L, APPLICANT))
             .isInstanceOf(IpdBusinessException.class);
@@ -310,4 +381,26 @@ class ProductLineSpaceServiceTest {
             ProjectMember.builder().projectId(31L).personId(APPLICANT.id()).build()));
         assertThat(service.projects(10L, APPLICANT)).extracting(Project::getId).containsExactly(31L);
     }
+    @Test
+    void triageRetryRejectsOrdinaryMemberAndForeignDemandBeforeRunCreation() {
+        when(lines.selectById(10L)).thenReturn(line());
+        when(members.selectOne(any(LambdaQueryWrapper.class))).thenReturn(member(APPLICANT.id(), "ACTIVE"));
+        assertThatThrownBy(() -> service.requireTriageDemand(10L, 42L, APPLICANT, true))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("负责人");
+        verify(requirements, never()).selectOne(any());
+        when(requirements.selectOne(any())).thenReturn(org.ruoyi.ipd.domain.Requirement.builder()
+            .id(42L).productLineId(99L).build());
+        assertThatThrownBy(() -> service.requireTriageDemand(10L, 42L, ADMIN, true))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("当前产品线");
+    }
+
+    @Test
+    void triageDemandCanBeReadByMemberAndRetriedByLeaderWithinSpace() {
+        when(lines.selectById(10L)).thenReturn(line());
+        when(members.selectOne(any(LambdaQueryWrapper.class))).thenReturn(member(LEADER.id(), "ACTIVE"));
+        var demand = org.ruoyi.ipd.domain.Requirement.builder().id(42L).productLineId(10L).build();
+        when(requirements.selectOne(any())).thenReturn(demand);
+        assertThat(service.requireTriageDemand(10L, 42L, LEADER, true)).isSameAs(demand);
+    }
+
 }

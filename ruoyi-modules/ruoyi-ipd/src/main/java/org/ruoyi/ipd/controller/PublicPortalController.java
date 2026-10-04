@@ -34,6 +34,18 @@ import java.util.List;
 public class PublicPortalController {
 
     private final GuestDemandService guestDemandService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.ruoyi.ipd.service.GuestDemandAttachmentService attachments;
+
+    @PostMapping(value = "/demands/{code}/attachments", consumes = "multipart/form-data")
+    public ApiV1Response<org.ruoyi.ipd.service.GuestDemandAttachmentService.AttachmentView> uploadAttachment(
+        @PathVariable String code,
+        @org.springframework.web.bind.annotation.RequestHeader("X-Upload-Token") String uploadToken,
+        @org.springframework.web.bind.annotation.RequestParam String fileKey,
+        @org.springframework.web.bind.annotation.RequestPart("file") org.springframework.web.multipart.MultipartFile file
+    ) throws java.io.IOException {
+        return ApiV1Response.ok(attachments.upload(code, uploadToken, fileKey, file));
+    }
 
     public PublicPortalController(GuestDemandService guestDemandService) {
         this.guestDemandService = guestDemandService;

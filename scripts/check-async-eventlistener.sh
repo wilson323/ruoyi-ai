@@ -18,6 +18,7 @@ echo "▶ R28.5 治理门禁：扫描 @Async + @EventListener 同方法组合"
 # 用 awk：在同一文件内，@Async 后 5 行内有 @EventListener 视为同方法
 HITS=$(find . -type f -name "*.java" \
   -not -path "*/.codex/*" \
+  -not -path "*/.harness/*" \
   -not -path "*/.claude/worktrees/*" \
   -not -path "*/target/*" \
   -not -path "*/.git/*" \

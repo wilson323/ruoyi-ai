@@ -20,6 +20,11 @@ import java.util.Map;
 /**
  * 删除审批任务投递（taskType=deletion_review，WB-17-1 P0 逻辑原地迁入）：
  * 组长 = 待初审每条 1 卡；超管 = 待终审每条 1 卡；其余角色空。
+ *
+ * <p><b>组长侧两条路径都要过主组判定</b>：组长只应看到「删除目标属于本人所辖产品组」的初审卡，
+ * 与写路径 {@code DeletionRequestServiceImpl#leaderDecision} 的 fail-closed 主组校验同口径。
+ * 判定能力未装配（{@code deletionRequestService == null}）时组长侧不投递（fail-closed）；
+ * 超管侧不做该判定（终审不按组切分）。
  */
 @Component
 @Order(2)
@@ -28,7 +33,7 @@ public class DeletionReviewAggregator implements WorkbenchAggregator {
 
     private final DeletionRequestMapper deletionRequestMapper;
 
-    /** 与审批写路径共用目标组解析；仅副驾受信租户路径使用。 */
+    /** 与审批写路径共用目标组解析；组长侧两条路径都用，未装配时组长侧 fail-closed。 */
     private DeletionRequestServiceImpl deletionRequestService;
 
     @Autowired
@@ -74,7 +79,11 @@ public class DeletionReviewAggregator implements WorkbenchAggregator {
             if (trustedTenantId != null && !trustedTenantId.equals(request.getTenantId())) {
                 continue;
             }
-            if (trustedTenantId != null && !adminSide
+            // 组长侧主组判定与 trustedTenantId 无关：它原本被 `trustedTenantId != null &&` 罩着，
+            // 于是普通会话路径（该参数为 null）完全不按组过滤，组长会拿到该租户下全部 LEADER_REVIEW 行
+            // ——越权读，与 WorkbenchService.myPendingApprovals 修过的 D2 同一形状。
+            // 只有上面那句租户比对受 trustedTenantId 约束；超管侧不做组判定。
+            if (!adminSide
                 && (deletionRequestService == null
                     || !deletionRequestService.isTargetInLeaderGroup(actor, request))) {
                 continue;

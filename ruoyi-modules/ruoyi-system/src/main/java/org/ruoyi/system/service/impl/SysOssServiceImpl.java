@@ -65,6 +65,9 @@ import java.util.Map;
 @Service
 public class SysOssServiceImpl implements ISysOssService, OssService {
 
+    @Value("${ipd.demand.attachments.storage-config-key:ipd-demand-private}")
+    private String demandPrivateConfigKey = "ipd-demand-private";
+    private boolean demandPrivate(SysOssVo value) { return value != null && demandPrivateConfigKey.equals(value.getService()); }
     private final SysOssMapper baseMapper;
 
     private final ConfigService configService;
@@ -90,7 +93,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     public TableDataInfo<SysOssVo> queryPageList(SysOssBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SysOss> lqw = buildQueryWrapper(bo);
         Page<SysOssVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        List<SysOssVo> filterResult = StreamUtils.toList(result.getRecords(), this::matchingUrl);
+        List<SysOssVo> filterResult = result.getRecords().stream().filter(value -> !demandPrivate(value)).map(this::matchingUrl).toList();
         result.setRecords(filterResult);
         return TableDataInfo.build(result);
     }
@@ -107,7 +110,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         SysOssServiceImpl ossService = SpringUtils.getAopProxy(this);
         for (Long id : ossIds) {
             SysOssVo vo = ossService.getById(id);
-            if (ObjectUtil.isNotNull(vo)) {
+            if (ObjectUtil.isNotNull(vo) && !demandPrivate(vo)) {
                 try {
                     list.add(this.matchingUrl(vo));
                 } catch (Exception ignored) {
@@ -131,7 +134,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         SysOssServiceImpl ossService = SpringUtils.getAopProxy(this);
         for (Long id : StringUtils.splitTo(ossIds, Convert::toLong)) {
             SysOssVo vo = ossService.getById(id);
-            if (ObjectUtil.isNotNull(vo)) {
+            if (ObjectUtil.isNotNull(vo) && !demandPrivate(vo)) {
                 try {
                     list.add(this.matchingUrl(vo).getUrl());
                 } catch (Exception ignored) {
@@ -148,7 +151,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         List<OssDTO> list = new ArrayList<>();
         for (Long id : StringUtils.splitTo(ossIds, Convert::toLong)) {
             SysOssVo vo = SpringUtils.getAopProxy(this).getById(id);
-            if (ObjectUtil.isNotNull(vo)) {
+            if (ObjectUtil.isNotNull(vo) && !demandPrivate(vo)) {
                 try {
                     vo.setUrl(this.matchingUrl(vo).getUrl());
                     list.add(BeanUtil.toBean(vo, OssDTO.class));
@@ -172,6 +175,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
             SysOss::getCreateTime, params.get("beginCreateTime"), params.get("endCreateTime"));
         lqw.eq(ObjectUtil.isNotNull(bo.getCreateBy()), SysOss::getCreateBy, bo.getCreateBy());
         lqw.eq(StringUtils.isNotBlank(bo.getService()), SysOss::getService, bo.getService());
+        lqw.ne(SysOss::getService, demandPrivateConfigKey);
         lqw.orderByAsc(SysOss::getOssId);
         return lqw;
     }
@@ -185,7 +189,8 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     @Cacheable(cacheNames = CacheNames.SYS_OSS, key = "#ossId")
     @Override
     public SysOssVo getById(Long ossId) {
-        return baseMapper.selectVoById(ossId);
+        SysOssVo value = baseMapper.selectVoById(ossId);
+        return demandPrivate(value) ? null : value;
     }
 
 
@@ -198,7 +203,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     @Override
     public void download(Long ossId, HttpServletResponse response) throws IOException {
         SysOssVo sysOss = SpringUtils.getAopProxy(this).getById(ossId);
-        if (ObjectUtil.isNull(sysOss)) {
+        if (ObjectUtil.isNull(sysOss) || demandPrivate(sysOss)) {
             throw new ServiceException("文件数据不存在!");
         }
         OssClient storage = OssFactory.instance(sysOss.getService());
@@ -212,6 +217,50 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
     @Override
     public void downloadFile(Long ossId, HttpServletResponse response) throws IOException {
         download(ossId, response);
+    }
+
+    @Override
+    public SysOssVo getPrivateById(Long ossId, String configKey) {
+        if (!demandPrivateConfigKey.equals(configKey)) throw new ServiceException("需求附件私有配置不匹配");
+        SysOssVo value = baseMapper.selectVoById(ossId);
+        if (!demandPrivate(value)) return null;
+        value.setUrl(null);
+        return value;
+    }
+
+    @Override
+    public SysOssVo uploadPrivate(MultipartFile file, String configKey) {
+        if (!demandPrivateConfigKey.equals(configKey)) throw new ServiceException("需求附件私有存储未配置");
+        OssClient storage = OssFactory.instance(configKey);
+        storage.assertPrivateBucket();
+        String name = file.getOriginalFilename();
+        String suffix = StringUtils.substring(name, name.lastIndexOf("."), name.length());
+        SysOssExt ext = new SysOssExt();
+        ext.setFileSize(file.getSize());
+        ext.setContentType(file.getContentType());
+        try {
+            UploadResult uploaded = storage.uploadSuffix(file.getBytes(), suffix, ContentTypeUtil.getContentType(suffix, file.getContentType()));
+            return buildResultEntity(name, suffix, configKey, uploaded, ext, storage);
+        } catch (IOException failure) { throw new ServiceException("需求附件存储上传失败"); }
+    }
+
+    @Override
+    public void downloadPrivate(Long ossId, String configKey, HttpServletResponse response) throws IOException {
+        SysOssVo stored = getPrivateById(ossId, configKey);
+        if (stored == null || !configKey.equals(stored.getService())) throw new ServiceException("需求附件存储不匹配");
+        OssClient storage = OssFactory.instance(configKey);
+        storage.assertPrivateBucket();
+        var body = storage.download(stored.getFileName(), response::setContentLengthLong);
+        FileUtils.setAttachmentResponseHeader(response, stored.getOriginalName());
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        body.writeTo(response.getOutputStream());
+    }
+
+    @Override
+    public void cleanupUploadedObject(Long ossId, String configKey, String objectKey) {
+        // 即使上传事务已经回滚，objectKey仍可定位对象；先删对象再清理可选元数据。
+        OssFactory.instance(configKey).delete(objectKey);
+        if (ossId != null) baseMapper.deleteById(ossId);
     }
 
     /**
@@ -371,6 +420,10 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
                 throw new ServiceException("保存OSS文件元数据失败");
             }
             SysOssVo sysOssVo = MapstructUtils.convert(oss, SysOssVo.class);
+            if (demandPrivateConfigKey.equals(configKey)) {
+                sysOssVo.setUrl(null);
+                return sysOssVo;
+            }
             return this.matchingUrl(sysOssVo);
         } catch (RuntimeException | Error failure) {
             cleanupFailedUpload(insertedOssId, uploadResult.getFilename(), storage, failure);
@@ -422,6 +475,9 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
             // 做一些业务上的校验,判断是否需要校验
         }
         List<SysOss> list = baseMapper.selectByIds(ids);
+        if (list.stream().anyMatch(value -> demandPrivateConfigKey.equals(value.getService()))) {
+            throw new ServiceException("需求附件必须通过需求业务处理");
+        }
         for (SysOss sysOss : list) {
             OssClient storage = OssFactory.instance(sysOss.getService());
             storage.delete(sysOss.getUrl());
@@ -436,6 +492,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
      * @return oss 匹配Url的OSS对象
      */
     private SysOssVo matchingUrl(SysOssVo oss) {
+        if (demandPrivate(oss)) throw new ServiceException("需求附件必须通过需求授权接口访问");
         OssClient storage = OssFactory.instance(oss.getService());
         // 仅修改桶类型为 private 的URL，临时URL时长为120s
         if (AccessPolicyType.PRIVATE == storage.getAccessPolicy()) {

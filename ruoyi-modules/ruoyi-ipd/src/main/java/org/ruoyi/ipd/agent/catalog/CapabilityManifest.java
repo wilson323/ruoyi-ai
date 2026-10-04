@@ -35,7 +35,14 @@ public record CapabilityManifest(int manifestVersion, List<SkillEntry> skills, L
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PackEntry(String code, String version, String name, String description,
                             List<String> stages, List<String> actionCodes,
-                            List<String> skills, List<String> tools) { }
+                            List<String> skills, List<String> tools) {
+        public PackEntry {
+            stages = stages == null ? List.of() : List.copyOf(stages);
+            actionCodes = actionCodes == null ? List.of() : List.copyOf(actionCodes);
+            skills = skills == null ? List.of() : List.copyOf(skills);
+            tools = tools == null ? List.of() : List.copyOf(tools);
+        }
+    }
 
     /** 规范化：空列表替代 null，避免调用方判空。 */
     public CapabilityManifest {

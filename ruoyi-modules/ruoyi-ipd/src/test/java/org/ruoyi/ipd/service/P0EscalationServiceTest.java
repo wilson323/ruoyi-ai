@@ -112,7 +112,7 @@ class P0EscalationServiceTest {
     }
 
     @Test
-    @DisplayName("③ 升级触发：count >= 2 触发 NotificationService.publish")
+    @DisplayName("③ 升级触发：count >= 2 触发 事务提交后通知")
     void checkEscalation_triggers() {
         when(chainMapper.selectList(any(Wrapper.class)))
             .thenReturn(List.of(chain(10L, 20L, 2, P0EscalationService.STATUS_PENDING)));
@@ -123,8 +123,12 @@ class P0EscalationServiceTest {
         int escalated = service.checkEscalation();
 
         assertThat(escalated).isEqualTo(1);
-        verify(notificationService, times(2)).publish(anyLong(), any(), any(), any(), anyLong(),
-            any(), any(), any());
+        for (Long receiver : List.of(101L, 102L)) {
+            verify(notificationService).publishAfterCommit(eq(receiver), eq(P0EscalationService.NOTIFY_TYPE),
+                eq(NotificationService.KIND_ACTION), eq("p0_escalation_chain"), eq(1L),
+                eq("P0 升级：项目 10 连续 2 次未处置"), any(), eq("/workbench/p0?projectId=10"));
+        }
+        verifyNoMoreInteractions(notificationService);
         verify(chainMapper).update(any(), any(Wrapper.class));
     }
 
@@ -138,8 +142,7 @@ class P0EscalationServiceTest {
         int escalated = service.checkEscalation();
 
         assertThat(escalated).isEqualTo(0);
-        verify(notificationService, never()).publish(anyLong(), any(), any(), any(), anyLong(),
-            any(), any(), any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -187,4 +190,14 @@ class P0EscalationServiceTest {
         boolean ok = service.resolve(999L, "x");
         assertThat(ok).isFalse();
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

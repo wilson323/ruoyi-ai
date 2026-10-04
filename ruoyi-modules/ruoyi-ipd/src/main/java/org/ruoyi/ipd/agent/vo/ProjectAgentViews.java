@@ -111,7 +111,25 @@ public final class ProjectAgentViews {
                                  List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools,
                                  List<String> executionToolIds,
                                  org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot modelFingerprint,
-                                 Integer modelIdentityVersion, String fallbackModelConfigId, Integer outputContractVersion) {
+                                 Integer modelIdentityVersion, String fallbackModelConfigId, Integer outputContractVersion,
+                                 org.ruoyi.ipd.agent.catalog.CapabilityManifest.PackEntry frozenPack) {
+        public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
+                List<SkillRef> skills, List<String> toolIds, String previousRunId, String targetDocumentId,
+                String baseVersionId, String aguiInputDigest, String requirementId, String productLineId,
+                List<io.agentscope.core.agui.model.AguiTool> serverFrontendTools, List<String> executionToolIds,
+                org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot modelFingerprint,
+                Integer modelIdentityVersion, String fallbackModelConfigId, Integer outputContractVersion) {
+            this(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds, previousRunId,
+                targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId,
+                outputContractVersion, null);
+        }
+        public ConfigSnapshot withFrozenPack(org.ruoyi.ipd.agent.catalog.CapabilityManifest.PackEntry pack) {
+            return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
+                serverFrontendTools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId,
+                outputContractVersion, pack);
+        }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                 List<SkillRef> skills, List<String> toolIds, String previousRunId, String targetDocumentId,
                 String baseVersionId, String aguiInputDigest, String requirementId, String productLineId,
@@ -125,7 +143,7 @@ public final class ProjectAgentViews {
         public ConfigSnapshot withOutputContractVersion(Integer version) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
                 previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
-                serverFrontendTools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, version);
+                serverFrontendTools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, version, frozenPack);
         }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                               List<SkillRef> skills, List<String> toolIds, String previousRunId,
@@ -141,7 +159,7 @@ public final class ProjectAgentViews {
         public ConfigSnapshot withModelIdentityVersion(Integer version, String fallbackId) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
                 previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
-                serverFrontendTools, executionToolIds, modelFingerprint, version, fallbackId, outputContractVersion);
+                serverFrontendTools, executionToolIds, modelFingerprint, version, fallbackId, outputContractVersion, frozenPack);
         }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                               List<SkillRef> skills, List<String> toolIds, String previousRunId,
@@ -156,7 +174,7 @@ public final class ProjectAgentViews {
         public ConfigSnapshot withModelFingerprint(org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.Snapshot fingerprint) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
                 previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
-                serverFrontendTools, executionToolIds, fingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion);
+                serverFrontendTools, executionToolIds, fingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion, frozenPack);
         }
         public ConfigSnapshot {
             serverFrontendTools = serverFrontendTools == null ? List.of() : List.copyOf(serverFrontendTools);
@@ -175,7 +193,7 @@ public final class ProjectAgentViews {
         public ConfigSnapshot withExecutionToolIds(List<String> ids) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
                 previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId,
-                serverFrontendTools, ids, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion);
+                serverFrontendTools, ids, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion, frozenPack);
         }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                               List<SkillRef> skills, List<String> toolIds,
@@ -186,7 +204,7 @@ public final class ProjectAgentViews {
         }
         public ConfigSnapshot withServerFrontendTools(List<io.agentscope.core.agui.model.AguiTool> tools) {
             return new ConfigSnapshot(capabilityPackCode, capabilityPackVersion, modelConfigId, skills, toolIds,
-                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId, tools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion);
+                previousRunId, targetDocumentId, baseVersionId, aguiInputDigest, requirementId, productLineId, tools, executionToolIds, modelFingerprint, modelIdentityVersion, fallbackModelConfigId, outputContractVersion, frozenPack);
         }
         public ConfigSnapshot(String capabilityPackCode, String capabilityPackVersion, String modelConfigId,
                               List<SkillRef> skills, List<String> toolIds,

@@ -70,6 +70,19 @@ public class Requirement extends BaseEntity implements SoftDeletable {
      */
     private String queryCode;
 
+    /** 仅哈希持久化，明文上传凭据只在提交响应返回。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String uploadTokenHash;
+    /** 附件存储编号与完整性元数据；公开接口只投影名称和大小。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String attachmentsJson;
+    private Long triageRunId;
+    /** 原分拣真实成员，仅供幂等恢复，不授予权限。 */
+    private Long triagePersonId;
+    private String triageStatus;
+    private String triageError;
+    private Integer triageAttempt;
+
     /**
      * 状态 SUBMITTED|ACCEPTED|EVALUATING|SCHEDULED|PROCESSING|CLOSED|ARCHIVED
      */

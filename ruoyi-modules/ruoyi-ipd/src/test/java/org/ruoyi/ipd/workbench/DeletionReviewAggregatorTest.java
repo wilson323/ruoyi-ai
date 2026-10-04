@@ -75,6 +75,15 @@ class DeletionReviewAggregatorTest {
     void collect_leaderGetsLeaderReviewCards() {
         IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
         Date past = new Date(System.currentTimeMillis() - 86400000L);
+        // dr1/dr2 的 entityType 用单数是**测试专有陷阱**（已确认，不指向生产缺陷）——整条结论只靠读码：
+        // ① 建单入口有白名单 DeletionRequestServiceImpl.SUPPORTED_ENTITY_TYPES（projects / products /
+        //    persons / cert_templates / gates / requirements，六项全为复数），单数在建单那一刻即被拒
+        //    （PARAM_INVALID）；且 deletionRequestMapper.insert 全后端只有 submit() 一个调用点，
+        //    故生产产生不出单数行。
+        // ② resolveScope 的 switch 亦只认复数，单数落 default → scope.groupId()=null → 组长侧判定恒 false。
+        // 旁证（覆盖白名单上线前可能存在的历史行）：2026-10-03 现查真库 deletion_requests.entity_type
+        // 亦全为复数；该查询由主协调执行，非本文件作者复测，故只作旁证不单独支撑结论。
+        // 故本用例靠下方「判定放行」的桩才拿得到 2 张卡；若改成注入真判定服务，会掉到 0 张。
         DeletionRequest dr1 = DeletionRequest.builder()
             .id(501L).entityType("project").entityId(10L).status("LEADER_REVIEW")
             .leaderDueAt(past).build();
@@ -83,6 +92,11 @@ class DeletionReviewAggregatorTest {
             .leaderDueAt(null).build();
         when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(List.of(dr1, dr2));
+        // 本用例只验卡字段组装，不验归属：把主组判定桩成放行（归属本身由下面两条 plain-path 用例覆盖）。
+        // 注意「不注入 = fail-closed」是本类刻意的语义，所以这里必须显式注入。
+        DeletionRequestServiceImpl scopeService = mock(DeletionRequestServiceImpl.class);
+        when(scopeService.isTargetInLeaderGroup(any(), any())).thenReturn(true);
+        aggregator.setDeletionRequestService(scopeService);
 
         List<Map<String, Object>> tasks = aggregator.collect(leader, new LinkedHashMap<>(), new Date());
 
@@ -125,6 +139,58 @@ class DeletionReviewAggregatorTest {
 
         assertThat(tasks).isEmpty();
         verify(deletionRequestMapper, never()).selectList(any());
+    }
+
+    @Test
+    @DisplayName("[D2 同形状] 普通会话路径下组长也只看本组：修前该路径完全不按组过滤")
+    void plainPathLeaderIsScopedToOwnGroup() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        Project own = Project.builder().id(10L).mainGroupId(10L).build();
+        Project foreign = Project.builder().id(11L).mainGroupId(20L).build();
+        DeletionRequest ownRequest = DeletionRequest.builder()
+            .id(501L).entityType("projects").entityId(10L).status("LEADER_REVIEW").build();
+        DeletionRequest foreignRequest = DeletionRequest.builder()
+            .id(502L).entityType("projects").entityId(11L).status("LEADER_REVIEW").build();
+        when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(ownRequest, foreignRequest));
+        when(projectMapper.selectById(10L)).thenReturn(own);
+        when(projectMapper.selectById(11L)).thenReturn(foreign);
+        aggregator.setDeletionRequestService(realScopeService());
+
+        // 关键：走的是普通会话路径（3 参 collect，trustedTenantId 恒为 null）——修复前这条路径不按组过滤
+        List<Map<String, Object>> tasks = aggregator.collect(leader, new LinkedHashMap<>(), new Date());
+
+        assertThat(tasks).extracting(t -> t.get("id")).containsExactly("DEL-501");
+        verify(projectMapper).selectById(10L);
+        verify(projectMapper).selectById(11L);
+    }
+
+    @Test
+    @DisplayName("[D2 同形状] 普通会话路径下组长侧未装配归属判定 ⇒ 不投递（fail-closed，不越权放行）")
+    void plainPathLeaderWithoutScopeServiceFailsClosed() {
+        IpdActor leader = new IpdActor(3L, "leader", "GROUP_LEADER", 10L);
+        DeletionRequest dr = DeletionRequest.builder()
+            .id(505L).entityType("projects").entityId(10L).status("LEADER_REVIEW").build();
+        when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(dr));
+        // 刻意不注入 deletionRequestService
+
+        List<Map<String, Object>> tasks = aggregator.collect(leader, new LinkedHashMap<>(), new Date());
+
+        assertThat(tasks).isEmpty();
+    }
+
+    @Test
+    @DisplayName("普通会话路径下超管侧不受归属判定影响（终审不按组切分，修复不误伤）")
+    void plainPathAdminIsNotScoped() {
+        IpdActor admin = new IpdActor(99L, "root", "SUPER_ADMIN", null);
+        DeletionRequest dr = DeletionRequest.builder()
+            .id(506L).entityType("projects").entityId(30L).status("ADMIN_REVIEW").build();
+        when(deletionRequestMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(dr));
+        // 同样刻意不注入 deletionRequestService——超管侧本就不该走该判定
+
+        List<Map<String, Object>> tasks = aggregator.collect(admin, new LinkedHashMap<>(), new Date());
+
+        assertThat(tasks).extracting(t -> t.get("id")).containsExactly("DEL-506");
     }
 
     @Test
@@ -187,5 +253,13 @@ class DeletionReviewAggregatorTest {
         assertThat(tasks).extracting(t -> t.get("id")).containsExactly("DEL-501");
         verify(projectMapper).selectById(10L);
         verify(projectMapper).selectById(11L);
+    }
+
+    /** 真 DeletionRequestServiceImpl（只桩 projectMapper），用于验证归属判定确实在链路里跑。 */
+    private DeletionRequestServiceImpl realScopeService() {
+        return new DeletionRequestServiceImpl(
+            deletionRequestMapper, mock(ISystemConfigService.class), mock(IAuditLogService.class),
+            mock(DeleteAuditService.class), mock(ProjectMemberMapper.class), projectMapper,
+            mock(GateMapper.class), mock(ProductMapper.class), mock(PersonMapper.class));
     }
 }

@@ -54,6 +54,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -318,7 +319,11 @@ class R212OrphanWriteEndpointAuthorizationTest {
         assertThat(service.inviteObservers(GATE_ID, List.of(PERSON_ID), "SALES", GROUP_LEADER_A)).isEqualTo(1);
 
         verify(observerMapper).insert(any(GateReviewObserver.class));
-        verify(notificationService).publish(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(notificationService).publishAfterCommit(PERSON_ID,
+            NotificationService.Types.GATE_OBSERVER_INVITED, NotificationService.KIND_ACTION,
+            "gate", GATE_ID, "Gate G1 邀请您列席",
+            "您被邀请作为 SALES 角色列席 Gate G1 评审（MEDIUM-1.3），请提交列席意见",
+            "/reviews/gate/" + GATE_ID);
     }
 
     @Test
@@ -331,7 +336,7 @@ class R212OrphanWriteEndpointAuthorizationTest {
 
         verify(invitePersonMapper, never()).selectById(any());
         verify(observerMapper, never()).insert(any(GateReviewObserver.class));
-        verify(notificationService, never()).publish(any(), any(), any(), any(), any(), any(), any(), any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test

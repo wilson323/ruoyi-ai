@@ -189,7 +189,7 @@ class ProjectAgentRunVerificationTransactionTest {
         Fixture f = new Fixture();
         f.snapshot = "{\"requirementId\":\"77\"}";
         doThrow(new IllegalStateException("binding unavailable"))
-            .when(f.binder).apply(eq(77L), anyString(), isNull());
+            .when(f.binder).apply(eq(77L), anyString(), isNull(), eq(AgentTestFixtures.TENANT));
         assertThatThrownBy(() -> f.service.reverify(AgentTestFixtures.ACTOR, 9L))
             .isInstanceOf(IllegalStateException.class);
         assertThat(f.state).isEqualTo(AgentRunStatus.VERIFYING);
@@ -207,7 +207,7 @@ class ProjectAgentRunVerificationTransactionTest {
             .containsExactly("STEP", "STEP", "RUN_FINISHED");
         assertThat(f.tx.commits).isEqualTo(1);
         assertThat(f.tx.rollbacks).isZero();
-        verify(f.binder).apply(77L, "# 结论\n完整正文。", null);
+        verify(f.binder).apply(77L, "# 结论\n完整正文。", null, AgentTestFixtures.TENANT);
         assertThatThrownBy(() -> f.service.reverify(AgentTestFixtures.ACTOR, 9L))
             .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class);
         assertThat(f.events).hasSize(3);

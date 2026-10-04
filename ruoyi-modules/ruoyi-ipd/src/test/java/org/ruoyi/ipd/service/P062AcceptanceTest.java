@@ -36,6 +36,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -192,4 +193,19 @@ class P062AcceptanceTest {
         verify(productMapper, never()).update(isNull(), any());
         verify(auditLogService).append(anyLong(), eq(DeleteAuditService.ACTION_DELETE_NOOP), any(), any(), any());
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+    void approvedDeletionExecutorCannotRemoveRetiredProductHistoryOrItsProjectLinks(boolean initiallyLocked) {
+        Product product = new Product();
+        product.setId(5L); product.setDelFlag("0"); product.setRetirementLocked(initiallyLocked ? "1" : "0");
+        when(productMapper.selectById(5L)).thenReturn(product);
+        if (!initiallyLocked) when(productMapper.isRetirementLockedForUpdate(5L)).thenReturn(true);
+        var executor = new ProductSoftDeleteExecutor(productMapper, projectMapper);
+        assertThatThrownBy(() -> executor.softDelete(5L))
+            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class).hasMessageContaining("不能删除历史记录");
+        verify(productMapper, never()).update(any(), any());
+        org.mockito.Mockito.verifyNoInteractions(projectMapper, auditLogService);
+        assertThat(product.getDelFlag()).isEqualTo("0");
+    }
+
 }

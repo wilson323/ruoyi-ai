@@ -1,11 +1,11 @@
 # =====================================================================
 # IPD 工作台 taskType 数据源契约登记（B 批次机制 1，2026-09-08 立）
 # =====================================================================
-# 目的：防「写入侧与查询侧语义不对偶」（病根二）。17 类 taskType 每类一张契约卡，
+# 目的：防「写入侧与查询侧语义不对偶」（病根二）。现役 16 类 taskType 每类一张契约卡，
 #   登记数据表、查询锚点、未办态表达、写入时机。聚合器实现与配套测试的取值
 #   必须与本登记一致；新增一类任务 = 先登记契约再写聚合器。
 # 一致性测试：ruoyi-modules/ruoyi-ipd/src/test/java/org/ruoyi/ipd/workbench/
-#   WorkbenchTaskContractDriftTest.java（17 类键集 == WorkbenchService.ALL_TASK_TYPES；
+#   WorkbenchTaskContractDriftTest.java（现役 16 类键集 == WorkbenchService.ALL_TASK_TYPES；
 #   已实现类的 taskType 字面量与聚合器源码一致；关键状态常量与登记值一致）。
 # 证据基础：2026-09-08 四路只读蜂群盘点（9 聚合器逐文件读源码 + 配套 Service
 #   写入路径 + 真库 DDL/数据探针），字段值以磁盘现态源码为准。
@@ -19,8 +19,8 @@
 # =====================================================================
 
 meta:
-  authority: "spec 页03:165 权威 17 类枚举"
-  all_types_source: "WorkbenchService.ALL_TASK_TYPES（L44-49）"
+  authority: "spec 页03:165 原17类枚举；奖金池退役后现役16类（原规格只读）"
+  all_types_source: "WorkbenchService.ALL_TASK_TYPES"
   write_timing_values:
     ALLOCATE: "分配即落行（预建占位行，IS NULL / 状态值查待办）"
     SUBMIT: "提交才落行（首查即带语义状态）"
@@ -147,23 +147,27 @@ kpi_fill:
   owner_field: personId
   notes: "DDL 注释 default 'DRAFT' 与代码 EDITING 漂移（无 CHECK 不挡落库，DDL 注释债）"
 
-# ------------------------- 未实现 8 类（PLANNED）-------------------------
-# 建模前须先过 docs/ipd-系统说明/缺表4类-14问澄清-20260908.md 的 owner 拍板
+# ------------------------- 未实现 7 类（PLANNED）-------------------------
+# 表侧已收口（2026-10-03 实测复核）：缺表 4 类的 5 张表由
+#   2026-09-08-ipd-c-batch-4-tables-draft.sql 于 2026-09-09 按 owner「以上全部都要完整执行」
+#   授权 apply 落库（ipd_dev 现查均 0 行）；14 问澄清已拍板，建模缺口转入 Java 侧
+#   （实体/Mapper/写入 API 全零，见 WorkbenchService.ALL_TASK_TYPES javadoc）。
+#   数据源表仍处草案态的只剩 change_implementation / change_verify（见各条 pending_tables）。
 
 waiver_review:
   implemented: false
-  table: null                   # 待建（原型 gate_waivers 独立表）
-  notes: "域完全未建模；14 问澄清 Q1-Q3"
+  table: gate_waivers           # 已建（C 批次 DDL 2026-09-09 apply，真库 0 行）
+  notes: "表已建；Java 侧全零未建模（实体/Mapper/写入 API），投递 pending_expr 与链路语义待定；14 问 Q1-Q5 已拍板"
 
 rd_replacement:
   implemented: false
-  table: null                   # 待定（原型双表 vs project_members 扩展，14 问 Q4-Q6）
-  notes: "域完全未建模"
+  table: rd_replacements ∪ rd_replacement_approvals   # 已建（Q7=甲双表，2026-09-09 apply，真库 0 行）
+  notes: "双表已建；Java 侧全零未建模，投递 pending_expr 待定；14 问 Q6-Q8 已拍板"
 
 retirement_review:
   implemented: false
-  table: null                   # 待定（原型新表 vs 复用 deletion_requests，14 问 Q7-Q9）
-  notes: "域完全未建模"
+  table: product_retirements    # 已建（Q9-Q11=甲 新表 + products 扩 retired_at/retirement_locked，2026-09-09 apply，真库 0 行）
+  notes: "表已建（另扩 products 退役列）；Java 侧全零未建模，投递 pending_expr 待定；14 问 Q9-Q11 已拍板"
 
 
 receipt_review:
@@ -172,21 +176,22 @@ receipt_review:
   notes: 槽位随「算钱」层下线后保留但未实现（无代码聚合器）；数据源 receipt_ledgers 表仍存在，
         库内 28 行真实数据待 owner 决定是否同步从 WorkbenchDecisionBucket 移除（待裁决 D-7）。
 
-bonus_lock:
-  implemented: false
-  notes: 槽位随「算钱」层下线后保留但未实现（无代码聚合器）；待 owner 决定是否同步从
-        WorkbenchDecisionBucket 移除（待裁决 D-7）。
+# bonus_lock 已随奖金池域退役移出当前词汇表；保留历史依据，不再登记为现役槽位。
 
 capacity_approval:
   implemented: false
-  table: null                   # 待建（原型 multi_project_capacity_approvals，14 问 Q10-Q12）
-  notes: "域完全未建模；契约评审关联 BR-INC-13 是误判，实义为多项目备案"
+  table: multi_project_capacity_approvals   # 已建（2026-09-09 apply，真库 0 行）
+  notes: "表已建；Java 侧全零未建模，投递 pending_expr 待定；契约评审关联 BR-INC-13 是误判，实义为多项目备案；14 问 Q12-Q14 已拍板"
 
 change_implementation:
   implemented: false
-  notes: "域已建（变更请求表）但实施动作流程未贯通"
+  table: null                   # 数据源表未建（草案未 apply）
+  pending_tables: change_implementations ∪ change_implementation_evidence
+  notes: "域已建（变更请求表 requirement_changes）但实施动作流程未贯通；数据源 change_implementations / change_implementation_evidence 仍在草案态（20260925-wb171-draft-missing-tables.sql）"
 
 change_verify:
   implemented: false
-  notes: "域已建但验证动作流程未贯通"
+  table: null                   # 数据源表未建（草案未 apply）
+  pending_tables: change_implementations ∪ change_implementation_evidence
+  notes: "域已建但验证动作流程未贯通；数据源同上，双 PM 验证列随 change_implementations 草案（20260925-wb171-draft-missing-tables.sql）"
 

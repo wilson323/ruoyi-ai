@@ -50,7 +50,13 @@ public final class ProjectAgentOfficialSandbox {
                             catch (Exception error) { lifecycle.recordFailure(error); throw error; }
                         }
                         @Override protected java.io.InputStream doPersistWorkspace() throws Exception {
-                            try { return super.doPersistWorkspace(); }
+                            try {
+                                // SDK 2.0.3 returns already-materialised tar bytes. Waiting in
+                                // snapshot.persist is too late, and children must not wait for siblings.
+                                lifecycle.prepareArchive(dockerState.getSnapshot() == null
+                                    ? dockerState.getSessionId() : dockerState.getSnapshot().getId());
+                                return super.doPersistWorkspace();
+                            }
                             catch (Exception error) { lifecycle.recordFailure(error); throw error; }
                         }
                     };

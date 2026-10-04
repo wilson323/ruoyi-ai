@@ -45,6 +45,9 @@ public interface ISysOssService {
      */
     SysOssVo getById(Long ossId);
 
+    /** 保密需求附件仅内部已验证对象权限的服务调用，禁止输出 URL。 */
+    SysOssVo getPrivateById(Long ossId, String configKey);
+
     /**
      * 上传 MultipartFile 到对象存储服务，并保存文件信息到数据库
      *
@@ -52,6 +55,15 @@ public interface ISysOssService {
      * @return 上传成功后的 SysOssVo 对象，包含文件信息
      */
     SysOssVo upload(MultipartFile file);
+
+    /** 指定专用私有桶上传，禁止回落默认存储。 */
+    SysOssVo uploadPrivate(MultipartFile file, String configKey);
+
+    /** 回滚时不依赖可能已回滚的 sys_oss 行，直接删除刚上传的存储对象。 */
+    void cleanupUploadedObject(Long ossId, String configKey, String objectKey);
+
+    /** 私有附件下载前再次确认存储没有公开权限。 */
+    void downloadPrivate(Long ossId, String configKey, HttpServletResponse response) throws IOException;
 
     /**
      * 上传文件到对象存储服务，并保存文件信息到数据库

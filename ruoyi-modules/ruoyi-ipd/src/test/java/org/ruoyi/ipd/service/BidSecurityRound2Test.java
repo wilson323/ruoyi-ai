@@ -158,7 +158,7 @@ class BidSecurityRound2Test {
         BidInvitation out = service.adminAssign(99L, 123L, 1L);
 
         assertThat(out.getStatus()).isEqualTo("SELECTED");
-        verify(notificationService).publish(eq(123L),
+        verify(notificationService).publishAfterCommit(eq(123L),
             eq(NotificationService.Types.BID_WON),
             eq(NotificationService.KIND_ACTION),
             eq("bid_invitation"),
@@ -186,10 +186,10 @@ class BidSecurityRound2Test {
 
         service.adminAssign(99L, 123L, 1L);
 
-        verify(notificationService).publish(eq(123L),
+        verify(notificationService).publishAfterCommit(eq(123L),
             eq(NotificationService.Types.BID_WON), anyString(), anyString(), anyLong(),
             anyString(), anyString(), anyString());
-        verify(notificationService).publish(eq(456L),
+        verify(notificationService).publishAfterCommit(eq(456L),
             eq(NotificationService.Types.BID_LOST), anyString(), anyString(), anyLong(),
             anyString(), anyString(), anyString());
     }
@@ -244,4 +244,14 @@ class BidSecurityRound2Test {
         String escaped = BidInvitationService.escape("a\\b\"c");
         assertThat(escaped).isEqualTo("a\\\\b\\\"c");
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

@@ -373,4 +373,19 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> bare.getVisibleById(9L, actor))
             .isInstanceOf(IpdBusinessException.class).hasMessageContaining("无权访问该项目");
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+    void retiredProductCannotGainAnotherProjectOrFirstProjectPointer(boolean initiallyLocked) {
+        Product product = product50();
+        product.setRetirementLocked(initiallyLocked ? "1" : "0");
+        when(productMapper.selectById(50L)).thenReturn(product);
+        if (!initiallyLocked) when(productMapper.isRetirementLockedForUpdate(50L)).thenReturn(true);
+        assertThatThrownBy(() -> service.create(base("S", null, null), 1L, 7L))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("不能新建关联项目");
+        verify(projectMapper, never()).insert(any(Project.class));
+        verify(productMapper, never()).updateById(any(Product.class));
+        org.mockito.Mockito.verifyNoInteractions(auditLogService, projectBootstrapService);
+        assertThat(product.getProjectId()).isNull();
+    }
+
 }

@@ -36,31 +36,23 @@ echo "  DB: $DB_HOST:$DB_PORT/$DB_NAME"
 echo "=========================================="
 echo
 
-# ─── 1. HTTP 活体 ───
-echo "── 1. HTTP 活体 ──"
-# 注：IPD 未暴露 /actuator（生产安全考量），仅探 401 表示鉴权层活起来。
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BACKEND_URL/api/v1/auth/me")
-[ "$code" = 401 ] && green "  [PASS] backend 鉴权层活（/api/v1/auth/me → 401）" && PASS=$((PASS+1)) \
-  || { red "  [FAIL] backend 不可达 /api/v1/auth/me → $code"; FAIL=$((FAIL+1)); }
+# 真实 Person 会话由 IPD_GATE_TOKEN 环境传入（裸 token 或完整 Bearer 头均可）；不打印、不落盘，不把 401 当业务通过。
+export BACKEND_URL
+echo "── 1. 当前 Person 身份 ──"
+check "GET /api/v1/auth/me HTTP200 + code0" python3 scripts/lib/prod-http-probe.py /api/v1/auth/me
 
-echo
-
-# ─── 2. 关键端点 ───
-# 注：IPD 业务端点需登录，未登录返 401 也是「端点存在 + 鉴权健康」信寻——不视为 FAIL。
-echo "── 2. 关键端点活体（200 OR 401 均视为活体）──"
-check "GET /api/v1/workbench/summary" bash -c "code=\$(curl -s -o /dev/null -w '%{http_code}' $BACKEND_URL/api/v1/workbench/summary); [ \"\$code\" = 200 ] || [ \"\$code\" = 401 ]"
-check "GET /api/v1/projects" bash -c "code=\$(curl -s -o /dev/null -w '%{http_code}' $BACKEND_URL/api/v1/projects); [ \"\$code\" = 200 ] || [ \"\$code\" = 401 ]"
-check "GET /api/v1/audit-logs/verify" bash -c "code=\$(curl -s -o /dev/null -w '%{http_code}' $BACKEND_URL/api/v1/audit-logs/verify); [ \"\$code\" = 200 ] || [ \"\$code\" = 401 ]"
-
-echo
+echo "── 2. 业务接口与审计链 ──"
+check "工作台 HTTP200 + code0" python3 scripts/lib/prod-http-probe.py /api/v1/workbench/summary
+check "项目列表 HTTP200 + code0" python3 scripts/lib/prod-http-probe.py /api/v1/projects
+check "审计链真实验证 OK" python3 scripts/lib/prod-http-probe.py /api/v1/audit-logs/verify audit
 
 # ─── 3. DB 探针 ───
-echo "── 3. DB 探针（确认 150 表齐 + tenant.excludes 生效）──"
+echo "── 3. DB 连通与表数探针（不证明种子、约束或权限）──"
 MYSQL_CMD="/opt/homebrew/opt/mysql-client/bin/mysql"
 if [ -f .codex/ipd-dev/config/mysql-client.cnf ]; then
   TBL_CNT=$($MYSQL_CMD --defaults-extra-file=.codex/ipd-dev/config/mysql-client.cnf -N -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$DB_NAME';" 2>/dev/null)
 else
-  TBL_CNT=$($MYSQL_CMD -h "$DB_HOST" -P "$DB_PORT" -u "${IPD_DB_USER:-ipd_app}" -p"${IPD_DB_PASSWORD:-}" "$DB_NAME" -N -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$DB_NAME';" 2>/dev/null)
+  TBL_CNT=$(MYSQL_PWD="${IPD_DB_PASSWORD:-}" $MYSQL_CMD -h "$DB_HOST" -P "$DB_PORT" -u "${IPD_DB_USER:-ipd_app}"  "$DB_NAME" -N -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$DB_NAME';" 2>/dev/null)
 fi
 if [ -n "$TBL_CNT" ] && [ "$TBL_CNT" -ge 140 ]; then
   green "  [PASS] $DB_NAME 表数 = $TBL_CNT (>=140 期望)"
@@ -72,28 +64,14 @@ fi
 
 echo
 
-# ─── 4. 审计链探针 ───
-echo "── 4. 审计链探针（A 方案：verifyChain 只判 hash）──"
-if [ -f .codex/ipd-dev/config/mysql-client.cnf ]; then
-  HASH_BROKEN=$($MYSQL_CMD --defaults-extra-file=.codex/ipd-dev/config/mysql-client.cnf -N -e "SELECT COUNT(*) FROM $DB_NAME.audit_logs;" 2>/dev/null)
-  if [ -n "$HASH_BROKEN" ] && [ "$HASH_BROKEN" -ge 100 ]; then
-    green "  [PASS] audit_logs 行数 = $HASH_BROKEN (>=100 期望)"
-    PASS=$((PASS+1))
-  else
-    red "  [FAIL] audit_logs 行数 = ${HASH_BROKEN:-0}"
-    FAIL=$((FAIL+1))
-  fi
-fi
-
-echo
-
 # ─── 5. Redis 探针 ───
 echo "── 5. Redis 探针 ──"
 if docker exec $(docker-compose ps -q redis 2>/dev/null) redis-cli ping 2>/dev/null | grep -q PONG; then
   green "  [PASS] redis PONG"
   PASS=$((PASS+1))
 else
-  yellow "  [SKIP] redis 容器未起或无 ping（开发模式可接受）"
+  red "  [FAIL] redis 容器未起或无 ping，生产依赖未验证"
+  FAIL=$((FAIL+1))
 fi
 
 echo

@@ -192,6 +192,40 @@ class SubStageControllerTest {
             .contains("\"subStageCode\":\"CONCEPT-S1\"").contains("\"pendingBlockingCodes\"");
     }
 
+    @Test
+    @DisplayName("历史退役和未知映射不打断目录与事件，现役别名仍保留")
+    void retiredAndUnknownMappingsDoNotBreakGuideOrEvents() {
+        when(ipdPermission.requireInternal()).thenReturn(ACTOR);
+        when(subStageService.listAll()).thenReturn(List.of(
+            IpdSubStage.builder().id(1L).code("CONCEPT-S1").name("市场洞察")
+                .stageCode("CONCEPT").sortOrder(1).isGate("0").build()));
+        List<IpdActionSkillMap> maps = List.of(
+            guideMap("LC01", 1), guideMap("LC03", 2), guideMap("UNKNOWN", 3),
+            guideMap(null, 4), guideMap("C01", 5), guideMap("Z01", 6));
+        when(skillMapService.listAll()).thenReturn(maps);
+        when(guideOrchestrator.buildSequence(null, "CONCEPT-S1")).thenReturn(sequenceFixture());
+
+        List<ActionSkillView> actions = controller.list().getData().get(0).actions();
+        assertThat(actions).extracting(ActionSkillView::actionCode).containsExactly("C01", "Z01");
+        assertThat(actions.get(1).actionName())
+            .isEqualTo(org.ruoyi.ipd.seed.ActionCatalog.byCode("D11").name());
+        assertThat(maps).extracting(IpdActionSkillMap::getActionCode)
+            .containsExactly("LC01", "LC03", "UNKNOWN", null, "C01", "Z01");
+
+        List<Map<String, Object>> events = controller.guideEvents("CONCEPT-S1", null).getData();
+        assertThat(events.get(events.size() - 1).get("type")).isEqualTo("RUN_FINISHED");
+        String content = String.valueOf(events.stream()
+            .filter(e -> "TOOL_CALL_RESULT".equals(e.get("type"))).findFirst().orElseThrow()
+            .get("content"));
+        assertThat(content).contains("ipd_action_skill_map/C01", "ipd_action_skill_map/Z01")
+            .doesNotContain("LC01", "LC03", "UNKNOWN");
+    }
+
+    private static IpdActionSkillMap guideMap(String actionCode, int order) {
+        return IpdActionSkillMap.builder().actionCode(actionCode).subStageCode("CONCEPT-S1")
+            .sortOrder(order).skillNames(null).build();
+    }
+
     /** 编排器载荷夹具（话术/降级由 SubStageGuideOrchestratorTest 锁定，控制器只透传）。 */
     private static GuideSequenceView sequenceFixture() {
         GuideStepView step = new GuideStepView("C01", "市场机会与痛点调研", 1,

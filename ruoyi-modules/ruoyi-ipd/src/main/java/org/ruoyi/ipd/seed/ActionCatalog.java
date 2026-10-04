@@ -269,8 +269,9 @@ public final class ActionCatalog {
      *
      * <p><b>词表口径</b>：市场族沿用既有 {@code MARKET_RESEARCH}（而非 {@code MRD}）——真库
      * {@code ai_documents} 已有 C01 历史草稿用该值，改词会断掉 RAG Phase-2 按 docType 的过滤
-     * 连续性（{@code AiGenerationService} L143-146）；其余取 {@link org.ruoyi.ipd.domain.PromptType}
-     * 既有值域，使降级路径能直接复用 {@code PromptTemplates} 8 套成熟模板。
+     * 连续性（{@code AiGenerationService} L143-146）；成熟通用体裁复用 {@link org.ruoyi.ipd.domain.PromptType}；版本规划、
+     * 包装说明、销售物料等使用动作合同约定的具体交付物体裁。文档存储与审核沿用
+     * ai_documents 同一状态链，不能把物料核对报告冒充外部实物已完成。
      *
      * @param code 动作码
      * @return docType；**无自然归类返回 {@code null}** —— {@code AiGenerationService} L145-147
@@ -284,9 +285,42 @@ public final class ActionCatalog {
         }
         return switch (resolved) {
             case "C01", "C02", "C03", "C04", "C06" -> "MARKET_RESEARCH";
+            case "C07", "P12" -> "BRD";
+            case "C08" -> "CHARTER";
+            case "C09" -> "PROJECT_GRADE_ASSESSMENT";
+            case "C10" -> "IP_FTO_SEARCH_REPORT";
             case "P01" -> "PRD";
+            case "P02" -> "VERSION_ROADMAP";
+            case "C05" -> "TECHNICAL_FEASIBILITY_REPORT";
+            case "P03" -> "SYSTEM_ARCHITECTURE";
+            case "P04" -> "HARDWARE_DESIGN_PLAN";
+            case "P05" -> "SOFTWARE_DESIGN_PLAN";
+            case "P06" -> "SOLUTION_INTEGRATION_PLAN";
+            case "P07" -> "COMPONENT_SUPPLY_ASSESSMENT";
+            case "P08" -> "PROJECT_MILESTONE_PLAN";
+            case "P09" -> "RESOURCE_BUDGET_PLAN";
+            case "P11" -> "PROJECT_RISK_PLAN";
+            case "D01" -> "DETAILED_DESIGN";
+            case "V08" -> "AFTERSALES_REPAIR_PLAN";
             case "D04" -> "TEST_REPORT";
-            case "C11", "C12", "D06", "V06" -> "REVIEW";
+            case "C11", "C12", "D06", "V06", "P13", "D05", "L07" -> "REVIEW";
+            case "V03" -> "BETA_FEEDBACK_REPORT";
+            case "V07" -> "PACKAGING_USER_GUIDE";
+            case "V09" -> "PILOT_DELIVERY_REPORT";
+            case "V10" -> "DEMOGRAPHIC_VALIDATION_REPORT";
+            case "V12" -> "LOCALIZATION_VALIDATION_REPORT";
+            case "L01" -> "GTM_PLAN";
+            case "L02" -> "CHANNEL_PRICE_POLICY";
+            case "L03" -> "SALES_TOOLKIT";
+            case "L04" -> "CHANNEL_TRAINING_MATERIAL";
+            case "L06" -> "CATALOG_LISTING_RECORD";
+            case "L08" -> "RELEASE_NOTE";
+            case "LC02" -> "RETROSPECTIVE";
+            case "LC04" -> "PM_CONTRIBUTION_ASSESSMENT";
+            case "LC05" -> "CUSTOMER_QUALITY_FEEDBACK";
+            case "LC07" -> "LIFECYCLE_CHANGE_RECORD";
+            case "LC09" -> "PROJECT_ARCHIVE_PACKAGE";
+            case "K01", "K02", "K03", "K04" -> "KPI_EVIDENCE_REPORT";
             case "LC08" -> "RELEASE_NOTE";
             default -> null;
         };

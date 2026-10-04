@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
  * 长期记忆（官方 {@code LongTermMemory} SPI 自实现）的行为单测。
  *
  * <p>2026-10-02 owner 决策：作用域=项目+人（个人记忆），内容=LLM 抽取的可复用事实与偏好，
- * 权威性=非权威（AGENTS.md:77「记忆不得自动成为业务权威」）。
+ * 权威性=非权威（docs/ipd-系统说明/ADR/ADR-0077-harness官方化基线与coding链摘除证据-20261002.md §2 规则3「记忆不得自动成为业务权威」）。
  */
 @Tag("dev")
 @DisplayName("长期记忆：项目+人作用域 + 非权威标注 + 敏感内容拦截")

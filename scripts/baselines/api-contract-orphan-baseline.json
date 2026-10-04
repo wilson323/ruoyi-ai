@@ -1,7 +1,7 @@
 {
   "$schema_version": 1,
-  "generated_at": "2026-09-25T15:59:21.974Z",
-  "git_head": "025e5ac06cb1d55ca04a80923e65ada103243bf7",
+  "generated_at": "2026-10-04T12:12:55.660Z",
+  "git_head": "3f3faa1d44f26eff20f95d366894f4f953c2cdc9",
   "gen_cmd": "node scripts/check-api-contract-fe-be.mjs --update-baseline",
   "fe_root": "/Users/mac/Documents/ruoyi-ipd-web/apps/web-antd",
   "count": 5,
@@ -31,6 +31,12 @@
       "from": 6,
       "to": 5,
       "delta": -1
+    },
+    {
+      "at": "2026-10-04T12:12:55.660Z",
+      "from": 5,
+      "to": 5,
+      "delta": 0
     }
   ],
   "notice": "脚本独占写（node scripts/check-api-contract-fe-be.mjs --update-baseline）。人工编辑必被 sha256 自洽 + git HEAD 硬闸拦截。棘轮只减不增；新孤儿豁免一律走 docs/ipd-系统说明/api-internal-whitelist.json（卡号+reason+expire）。"

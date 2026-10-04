@@ -49,6 +49,13 @@ public class ProductService implements IProductService {
     private final ProjectMapper projectMapper;
     private final IAuditLogService auditLogService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProductRetirementService retirementService;
+
+    public void setProductRetirementService(ProductRetirementService retirementService) {
+        this.retirementService = retirementService;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public Product create(Product product, Long operatorId) {
         if (product.getSource() == null || !SOURCES.contains(product.getSource())) {
@@ -98,6 +105,7 @@ public class ProductService implements IProductService {
         Product product = require(productId);
         IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
             product.getGroupId());
+        requireWritable(product);
         if (patch.getProductName() != null && !patch.getProductName().isBlank()) {
             product.setProductName(patch.getProductName().trim());
         }
@@ -169,6 +177,7 @@ public class ProductService implements IProductService {
                 String model = item.getModelCode().trim();
                 Product existing = existingMap.get(model);
                 if (existing != null) {
+                    requireWritable(existing);
                     existing.setProductName(item.getProductName().trim());
                     if (item.getProductCode() != null && !item.getProductCode().isBlank()) {
                         existing.setProductCode(item.getProductCode().trim());
@@ -197,7 +206,7 @@ public class ProductService implements IProductService {
                     line.put("id", created.getId());
                 }
                 line.put("ok", true);
-            } catch (ServiceException ex) {
+            } catch (ServiceException | IpdBusinessException ex) {
                 line.put("ok", false);
                 line.put("error", ex.getMessage());
             }
@@ -219,6 +228,7 @@ public class ProductService implements IProductService {
         Product product = require(productId);
         IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
             product.getGroupId());
+        requireWritable(product);
         product.setStatus(status);
         productMapper.updateById(product);
         audit(productId, product.getProductName(), operatorId, "PRODUCT_STATUS_" + status);
@@ -242,6 +252,10 @@ public class ProductService implements IProductService {
         Product product = require(productId);
         IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
             product.getGroupId());
+        requireWritable(product);
+        if (retirementService != null && (retirementService.isOrderStopped(productId) || retirementService.isProductionStopped(productId))) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品订货或生产已截止，不能绑定新项目");
+        }
         if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
                 "游客「其他」占位产品不可关联项目");
@@ -312,6 +326,7 @@ public class ProductService implements IProductService {
         Product product = require(productId);
         IpdIdorGuard.assertSameGroupIpd(new IpdActor(operatorId, null, actorRole, actorGroupId),
             product.getGroupId());
+        requireWritable(product);
         Project project = projectMapper.selectById(projectId);
         if (project == null || "1".equals(project.getDelFlag())
             || !productId.equals(project.getProductId())) {
@@ -359,6 +374,14 @@ public class ProductService implements IProductService {
             qw.like(Product::getProductName, keyword);
         }
         return productMapper.selectList(qw.orderByDesc(Product::getId));
+    }
+
+    /** Readonly state is a business result, never set or cleared by an ordinary product operation. */
+    private void requireWritable(Product product) {
+        if ("1".equals(product.getRetirementLocked())
+            || productMapper.isRetirementLockedForUpdate(product.getId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品已退市并只读，不能修改或调整关联");
+        }
     }
 
     private Product require(Long id) {

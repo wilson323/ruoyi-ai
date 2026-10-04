@@ -165,7 +165,7 @@ class AiCardBlindSignContractTest {
         r.setGateId(gateId);
         r.setProjectId(PROJECT_ID);
         r.setReviewerType(reviewerType);
-        r.setReviewerId(id * 10);
+        r.setReviewerId("MARKET_PM".equals(reviewerType) ? MARKET.id() : 302L);
         r.setDueAt(new Date());
         r.setRound(1);
         r.setGateCode("G1");
@@ -268,6 +268,26 @@ class AiCardBlindSignContractTest {
             throw new IllegalStateException("fixture 解析失败", e);
         }
         throw new IllegalStateException("fixture 缺 scene: " + scene);
+    }
+
+    @Test
+    void sameRoleDifferentSignerStaysBlindInActualCardProjection() {
+        GateReview row = review(91L, GATE_ID, "MARKET_PM", "APPROVE", OTHER_OPINION);
+        row.setReviewerId(999L);
+        Map<String,Object> facts = new LinkedHashMap<>();
+        AiSuggestionService.projectGateFacts(Set.of("reviews"), List.of(row), List.of(), facts, MARKET, false);
+        Map<?,?> projected = (Map<?,?>) ((List<?>) facts.get("reviews")).get(0);
+        assertThat(projected.get("decision")).isNull();
+        assertThat(projected.get("opinion")).isNull();
+        assertThat(GateReviewService.isRowRevealed(row, MARKET, true)).isTrue();
+    }
+
+    @Test
+    void ownSignerIdentityRemainsVisibleAcrossRoleChanges() {
+        GateReview row = review(91L, GATE_ID, "RD_PM", "APPROVE", MY_OPINION);
+        row.setReviewerId(MARKET.id());
+        assertThat(GateReviewService.isRowRevealed(row, MARKET, false)).isTrue();
+        assertThat(GateReviewService.isRowRevealed(row, null, false)).isFalse();
     }
 
     // ---- ① 卡片 data 遮蔽契约（后端查询轴，rowView 同源） ----

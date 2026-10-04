@@ -309,8 +309,8 @@ public class ProjectController {
     @GetMapping("/{id}/gates")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<Gate>> listProjectGates(@PathVariable Long id) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(gateReviewService.listByProject(id));
+        IpdActor actor = ipdPermission.requireInternal();
+        return ApiV1Response.ok(gateReviewService.listByProject(id, actor));
     }
 
     /**

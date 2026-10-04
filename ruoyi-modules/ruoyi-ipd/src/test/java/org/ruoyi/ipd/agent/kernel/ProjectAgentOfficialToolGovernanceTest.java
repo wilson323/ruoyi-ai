@@ -136,10 +136,71 @@ class ProjectAgentOfficialToolGovernanceTest {
         when(nativeTool.checkPermissions(any(), any())).thenReturn(Mono.just(PermissionDecision.allow("authorized")));
         var sink = mock(ProjectAgentEventSink.class);
         var wrapper = new ProjectAgentOfficialToolGovernance.OwnedTool(nativeTool, sink);
-        var param = ToolCallParam.builder().input(Map.of("command", "private-input")).build();
+        var param = ToolCallParam.builder().input(Map.of("command", "git status")).build();
         assertThrows(IllegalStateException.class, () -> wrapper.callAsync(param).block());
         verify(nativeTool, never()).callAsync(any());
         verify(sink, never()).onStep(eq("TOOL_EXECUTION"), any());
+    }
+
+    @Test void executePermissionRejectsInjectionBeforeNativeAllow() {
+        var tool = nativeTool("execute");
+        when(tool.checkPermissions(any(), any())).thenReturn(Mono.just(PermissionDecision.allow("native allow")));
+        var wrapper = new ProjectAgentOfficialToolGovernance.OwnedTool(tool, mock(ProjectAgentEventSink.class));
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.DENY,
+            wrapper.checkPermissions(Map.of("command", "git status; printf injected"), null).block().getBehavior());
+        verify(tool, never()).checkPermissions(any(), any());
+        assertEquals(io.agentscope.core.permission.PermissionBehavior.ALLOW,
+            wrapper.checkPermissions(Map.of("command", "git status"), null).block().getBehavior());
+    }
+
+    @Test void officialAllowedExecutionCannotBypassCommandValidation() {
+        var tool = nativeTool("execute");
+        var param = approvedCall(tool, Map.of("command", "git status && printf injected"));
+        var guarded = param.getAgent().getToolkit().getTool("execute");
+        assertThrows(IllegalArgumentException.class, () -> guarded.callAsync(param).block());
+        verify(tool, never()).callAsync(any());
+        verify(tool, never()).checkPermissions(any(), any());
+    }
+
+    @Test void approvedExecuteDelegatesCanonicalLiteralArgsWithOriginalApprovalBinding() {
+        var tool = nativeTool("execute");
+        when(tool.callAsync(any())).thenReturn(Mono.just(ToolResultBlock.text("executed")));
+        var param = approvedCall(tool, Map.of("command", "git status 'file; printf injected'", "working_directory", "src"));
+        var guarded = param.getAgent().getToolkit().getTool("execute");
+        assertNotNull(guarded.callAsync(param).block());
+        var received = org.mockito.ArgumentCaptor.forClass(ToolCallParam.class);
+        verify(tool).callAsync(received.capture());
+        assertEquals("'git' 'status' 'file; printf injected'", received.getValue().getInput().get("command"));
+        assertEquals("src", received.getValue().getInput().get("working_directory"));
+        assertSame(param.getToolUseBlock(), received.getValue().getToolUseBlock());
+        assertEquals("git status 'file; printf injected'", param.getInput().get("command"));
+        assertThrows(IllegalStateException.class, () -> guarded.callAsync(param).block());
+    }
+
+    @Test void fileToolsReceiveTheirOriginalInputsWithoutCommandPolicyFiltering() {
+        var tool = nativeTool("write_file");
+        when(tool.callAsync(any())).thenReturn(Mono.just(ToolResultBlock.text("written")));
+        var original = Map.<String, Object>of("path", "notes.md", "content", "sh -c source; $literal", "command", "not a process");
+        var param = approvedCall(tool, original);
+        assertNotNull(param.getAgent().getToolkit().getTool("write_file").callAsync(param).block());
+        var received = org.mockito.ArgumentCaptor.forClass(ToolCallParam.class);
+        verify(tool).callAsync(received.capture());
+        assertSame(param, received.getValue());
+        assertEquals(original, received.getValue().getInput());
+    }
+
+    private static ToolCallParam approvedCall(ToolBase original, Map<String, Object> input) {
+        var toolkit = new Toolkit(); toolkit.registerAgentTool(original);
+        var agent = mock(Agent.class); when(agent.getToolkit()).thenReturn(toolkit);
+        var context = io.agentscope.core.agent.RuntimeContext.builder().userId("person-test").sessionId("run-test").build();
+        var call = io.agentscope.core.message.ToolUseBlock.builder().id("owned-tool-call").name(original.getName())
+            .input(input).content("original-approved-input").state(io.agentscope.core.message.ToolCallState.ALLOWED).build();
+        context.setAgentState(io.agentscope.core.state.AgentState.builder().userId("person-test").sessionId("run-test")
+            .addMessage(io.agentscope.core.message.Msg.builder().role(io.agentscope.core.message.MsgRole.ASSISTANT)
+                .content(List.of(call)).build()).build());
+        var governance = new ProjectAgentOfficialToolGovernance(mock(ProjectAgentEventSink.class));
+        governance.onActing(agent, context, new ActingInput(List.of(call)), ignored -> Flux.empty()).blockLast();
+        return ToolCallParam.builder().agent(agent).runtimeContext(context).toolUseBlock(call).input(input).build();
     }
 
     private static ToolBase nativeTool(String name) {

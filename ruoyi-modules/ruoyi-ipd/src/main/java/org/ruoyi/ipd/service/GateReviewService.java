@@ -133,11 +133,13 @@ public class GateReviewService implements IGateReviewService {
      * （真实空态，不造假数据）。前端 gates 页由此列表替代手输 Gate 编号。
      */
     public List<Gate> listByProject(Long projectId) {
-        if (projectId == null) {
-            throw new IpdBusinessException("项目 ID 不能为空");
-        }
+        throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "读取评审需要当前用户身份");
+    }
+
+    public List<Gate> listByProject(Long projectId, IpdActor actor) {
+        requireVisibleProject(projectId, actor);
         return gateMapper.selectList(new LambdaQueryWrapper<Gate>()
-            .eq(Gate::getProjectId, projectId)
+            .eq(Gate::getProjectId, projectId).apply("tenant_id = {0}", readTenant())
             .orderByDesc(Gate::getId));
     }
 
@@ -164,6 +166,12 @@ public class GateReviewService implements IGateReviewService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setProjectMapper(org.ruoyi.ipd.mapper.ProjectMapper projectMapper) {
         this.projectMapper = projectMapper;
+    }
+
+    private ProjectService projectVisibility;
+    @Autowired
+    public void setProjectVisibility(ProjectService projectVisibility) {
+        this.projectVisibility = projectVisibility;
     }
 
     /** 可注入时钟（仿 stateMachineGuard 模式；测试固定时刻消除真实时钟摇摆，生产零影响）。 */
@@ -260,10 +268,11 @@ public class GateReviewService implements IGateReviewService {
 
     /**
      * R232-P2-05：行级揭示判定（view() L263 {@code rowView(mine, true)} / L269 {@code rowView(other, revealed)}
-     * 同源规则）：己方行（{@code reviewerType == actor.role()}）恒揭示，对方行按 revealed。
+     * 同源规则）：本人签署行（{@code reviewerId == actor.id()}）恒揭示，对方行按 revealed。
      */
     public static boolean isRowRevealed(GateReview row, IpdActor actor, boolean revealed) {
-        return (actor != null && actor.role() != null && actor.role().equals(row.getReviewerType())) || revealed;
+        return revealed || (row != null && actor != null && actor.id() != null
+            && Objects.equals(actor.id(), row.getReviewerId()));
     }
 
     /**
@@ -280,10 +289,14 @@ public class GateReviewService implements IGateReviewService {
 
     /** 双签视图：终态或超管全揭示；在途仅见己方结论与"对方已提交"标志（AC-GATE-03/04）。 */
     public Map<String, Object> view(Long gateId, IpdActor actor) {
-        Gate gate = requireGate(gateId);
+        String tenantId = readTenant();
+        Gate gate = requireVisibleGate(gateId, actor);
         // R11 / A4：「己方/对方已提交」只统计已决行——decision=NULL 待签占位行不算已签、
         // 不触发 otherSubmitted、也不回显空结论（口径同 maybeEscalateAfterArbitration 对预落待裁行）。
-        List<GateReview> rows = roundRows(gateId, gate.getCurrentRound()).stream()
+        List<GateReview> rows = reviewMapper.selectList(new LambdaQueryWrapper<GateReview>()
+            .eq(GateReview::getGateId, gateId)
+            .eq(GateReview::getRound, gate.getCurrentRound())
+            .apply("tenant_id = {0}", tenantId)).stream()
             .filter(r -> r.getDecision() != null)
             .toList();
         // R232-P2-05：揭示开关并入 isRevealed 同源唯一入口（原 terminal/superAdmin/revealed 三布尔语义零变化）
@@ -306,12 +319,12 @@ public class GateReviewService implements IGateReviewService {
                 .toList());
         }
 
-        GateReview mine = rows.stream().filter(r -> actor.role().equals(r.getReviewerType()))
+        GateReview mine = rows.stream().filter(r -> Objects.equals(actor.id(), r.getReviewerId()))
             .findFirst().orElse(null);
         // 自己的结论对自己总可见；对方的仅在揭示后可见
         view.put("my", mine == null ? null : rowView(mine, true));
 
-        GateReview other = rows.stream().filter(r -> !actor.role().equals(r.getReviewerType()))
+        GateReview other = rows.stream().filter(r -> !Objects.equals(actor.id(), r.getReviewerId()))
             .findFirst().orElse(null);
         // AC-GATE-03：对方已提交但未揭示 ⇒ 只返回 otherSubmitted=true，不泄露结论/意见
         view.put("otherSubmitted", other != null);
@@ -373,6 +386,13 @@ public class GateReviewService implements IGateReviewService {
     }
 
     /** 双方=该 Gate 的市场/研发两位签署人；成员绑定缺失时退化通知已签方（AC-GATE-05）。 */
+    /**
+     * REJECTED 落终态后知会双方 PM（AC-GATE-05）。
+     *
+     * <p>调用链 settle → advance ← sign()/arbitrate()（均 {@code @Transactional}），本方法在宿主
+     * 事务内执行，故走 {@link NotificationService#publishAfterCommit}：延迟到业务提交后独立事务
+     * 发布，失败仅 WARN。否则业务回滚（如 CAS 未命中抛异常）时用户仍会收到「Gate 已驳回」的假通知。</p>
+     */
     private void notifyBothSides(Gate gate, List<GateReview> rows) {
         List<Long> receivers = new java.util.ArrayList<>();
         for (String role : List.of("MARKET_PM", "RD_PM")) {
@@ -387,7 +407,7 @@ public class GateReviewService implements IGateReviewService {
                 .forEach(m -> { if (!receivers.contains(m.getPersonId())) receivers.add(m.getPersonId()); });
         }
         for (Long receiver : receivers) {
-            notificationService.publish(receiver, NotificationService.Types.GATE_REJECTED,
+            notificationService.publishAfterCommit(receiver, NotificationService.Types.GATE_REJECTED,
                 NotificationService.KIND_ACTION, "gate", gate.getId(),
                 "Gate " + gate.getGateCode() + " 已驳回",
                 "Gate " + gate.getGateCode() + " 被否决驳回（第 " + gate.getCurrentRound() + " 轮），请查看评审详情",
@@ -404,6 +424,29 @@ public class GateReviewService implements IGateReviewService {
             m.put("opinion", r.getOpinion());
         }
         return m;
+    }
+
+    private static String readTenant() {
+        String tenantId = org.ruoyi.common.satoken.utils.LoginHelper.getTenantId();
+        return tenantId == null || tenantId.isBlank() ? "000000" : tenantId;
+    }
+
+    private void requireVisibleProject(Long projectId, IpdActor actor) {
+        if (actor == null || actor.id() == null || projectVisibility == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该评审");
+        }
+        Project project = projectVisibility.getVisibleById(projectId, actor);
+        if (project == null || !Objects.equals(readTenant(), project.getTenantId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该评审");
+        }
+    }
+
+    private Gate requireVisibleGate(Long gateId, IpdActor actor) {
+        Gate gate = gateMapper.selectOne(new LambdaQueryWrapper<Gate>()
+            .eq(Gate::getId, gateId).apply("tenant_id = {0}", readTenant()));
+        if (gate == null) throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该评审");
+        requireVisibleProject(gate.getProjectId(), actor);
+        return gate;
     }
 
     private Gate requireGate(Long gateId) {
@@ -564,9 +607,11 @@ public class GateReviewService implements IGateReviewService {
         guardSupport.registerPostCommit(gate.getStatus(), STATUS_PENDING, "reopen", actor.id(), gate.getId());
 
         Gate updated = requireGate(gateId);
+        // reopen 为 @Transactional：通知走 publishAfterCommit 延迟到提交后独立事务发送，
+        // 若 CAS 守卫/后续步骤把宿主事务打成回滚，用户不会收到「已重新发起评审」的假通知。
         if (newRound >= 3) {
             for (Person leader : collectLeaders(updated)) {
-                notificationService.publish(leader.getId(),
+                notificationService.publishAfterCommit(leader.getId(),
                     NotificationService.Types.GATE_ROUND_OBSERVER, NotificationService.KIND_ACTION,
                     "gate", gate.getId(),
                     "Gate " + gate.getGateCode() + " 第 " + newRound + " 轮评审请您列席",
@@ -576,7 +621,7 @@ public class GateReviewService implements IGateReviewService {
         }
         if (newRound >= 5) {
             for (Person admin : superAdmins()) {
-                notificationService.publish(admin.getId(),
+                notificationService.publishAfterCommit(admin.getId(),
                     NotificationService.Types.GATE_ADMIN_INTERVENE, NotificationService.KIND_ACTION,
                     "gate", gate.getId(),
                     "Gate " + gate.getGateCode() + " 第 " + newRound + " 轮评审请超管介入",
@@ -823,8 +868,9 @@ public class GateReviewService implements IGateReviewService {
                 .build();
             observerMapper.insert(row);
             invited++;
-            // 知会被邀请人
-            notificationService.publish(observerId,
+            // 知会被邀请人。inviteObservers 为 @Transactional，走 publishAfterCommit 延迟到提交后发送——
+            // 同批后续 observerId 校验失败会整体回滚，已入名单的人不应收到列席邀请。
+            notificationService.publishAfterCommit(observerId,
                 NotificationService.Types.GATE_OBSERVER_INVITED, NotificationService.KIND_ACTION,
                 "gate", gateId,
                 "Gate " + gate.getGateCode() + " 邀请您列席",
@@ -901,11 +947,11 @@ public class GateReviewService implements IGateReviewService {
      * 查 gate 全部列席人员 + 意见（MEDIUM-1.3）：仅 PRODUCT_LEADER/GROUP_LEADER/SUPER_ADMIN 可见。
      */
     public List<GateReviewObserver> listObservers(Long gateId, IpdActor actor) {
-        requireGate(gateId);
-        String role = actor.role();
+        String role = actor == null ? null : actor.role();
         if (!"GROUP_LEADER".equals(role) && !"SUPER_ADMIN".equals(role)) {
             throw new IpdBusinessException("仅组长/超管可查询列席人员名单");
         }
+        requireVisibleGate(gateId, actor);
         return observerMapper.selectList(new LambdaQueryWrapper<GateReviewObserver>()
             .eq(GateReviewObserver::getGateId, gateId)
             .orderByDesc(GateReviewObserver::getInvitedAt));
@@ -967,6 +1013,13 @@ public class GateReviewService implements IGateReviewService {
     /** 分歧自动开仲裁：审计开启 + 预落组长待裁行 + 邀请通知（AC-GATE-10 链起点）。
      * <p>工作台对偶（WB-17-1）：开仲裁即预落每位组长一条 decision=NULL 待裁行
      * （分配即落行，与 gate_reviews 预建占位行同构）；幂等由先查 + uk(gate_id, round, arbitrator_id) 兜底。 */
+    /**
+     * 双 PM 分歧 → 自动开组长仲裁（BR-GATE-06）；通知在册组长提交仲裁意见（AC-GATE-10）。
+     *
+     * <p>调用链 settle → advance ← sign()/arbitrate()（均 {@code @Transactional}），本方法在宿主
+     * 事务内执行，故走 {@link NotificationService#publishAfterCommit}：延迟提交后独立事务发送，
+     * 宿主回滚时仲裁邀请不发出（避免用户收到一条指向不存在仲裁单的待办）。</p>
+     */
     private void openArbitration(Gate gate, IpdActor actor) {
         audit(actor, gate, "GATE_ARBITRATION_OPEN",
             "双PM意见分歧，自动发起组长仲裁（BR-GATE-06）", "round", gate.getCurrentRound());
@@ -982,7 +1035,7 @@ public class GateReviewService implements IGateReviewService {
                     .arbitratorId(leader.getId())
                     .build()); // decision/opinion 留空 = 待裁（2026-09-08 ALTER 后可 NULL）
             }
-            notificationService.publish(leader.getId(),
+            notificationService.publishAfterCommit(leader.getId(),
                 NotificationService.Types.GATE_ARBITRATION_REQUEST, NotificationService.KIND_ACTION,
                 "gate", gate.getId(),
                 "Gate " + gate.getGateCode() + " 双PM意见分歧，请仲裁",
@@ -1072,7 +1125,8 @@ public class GateReviewService implements IGateReviewService {
             audit(actor, gate, "GATE_ARBITRATION_ESCALATED",
                 "两组长意见不一致，自动升级超管终裁（BR-GATE-06）", "round", gate.getCurrentRound());
             for (Person admin : superAdmins()) {
-                notificationService.publish(admin.getId(),
+                // 本方法经 arbitrate()（@Transactional）链路执行，走 publishAfterCommit 防回滚后误发终裁待办。
+                notificationService.publishAfterCommit(admin.getId(),
                     NotificationService.Types.GATE_FINAL_RULING_REQUEST, NotificationService.KIND_ACTION,
                     "gate", gate.getId(),
                     "Gate " + gate.getGateCode() + " 两组长仲裁不一致，请终裁",
@@ -1167,12 +1221,16 @@ public class GateReviewService implements IGateReviewService {
             .eq(Person::getPersonType, ROLE_SUPER_ADMIN));
     }
 
-    /** 知会双方 PM（弃权流转/仲裁/终裁结果；在册成员缺失时静默跳过）。 */
+    /** 知会双方 PM（弃权流转/仲裁/终裁结果；在册成员缺失时静默跳过）。
+     *  <p>三个调用点（scanTimeout / finalRuling / maybeEscalateAfterArbitration）都在
+     *  {@code @Transactional} 方法内（后者经 arbitrate() 进入），故走
+     *  {@link NotificationService#publishAfterCommit}：宿主回滚时结果知会不发出，避免「通知说已出结果、
+     *  库里却什么都没变」。personId 为 null 时 publishAfterCommit 内部 WARN 跳过（原实现靠外层 if 守）。</p> */
     private void notifyBothPms(Gate gate, String eventType, String title, String content) {
         for (String role : List.of("MARKET_PM", "RD_PM")) {
             Long personId = signerPersonId(gate, role);
             if (personId != null) {
-                notificationService.publish(personId, eventType, NotificationService.KIND_ACTION,
+                notificationService.publishAfterCommit(personId, eventType, NotificationService.KIND_ACTION,
                     "gate", gate.getId(), title, content, "/reviews/gate/" + gate.getId());
             }
         }

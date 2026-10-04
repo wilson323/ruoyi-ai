@@ -16,7 +16,7 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
  * <p>DDL: {@code docs/script/sql/update/20261002-ipd-agent-memory.sql}；
  * 租户按 {@code project_id} 隔离，登记进 {@code tenant.excludes}（记录走异步调度，无会话上下文）。
  *
- * <p><b>权威性红线</b>：本表<b>不是业务权威</b>。依据 AGENTS.md:77「记忆不得自动成为业务权威」：
+ * <p><b>权威性红线</b>：本表<b>不是业务权威</b>。依据 docs/ipd-系统说明/ADR/ADR-0077-harness官方化基线与coding链摘除证据-20261002.md §2 规则3「记忆不得自动成为业务权威」：
  * 召回文本一律显式标注为「非权威个人工作笔记」；IPD 的权限、动作审批、文档审核与 Gate 链路
  * <b>一律不查本表</b>。{@code status=PROMOTED} 只表示该条已并入权威知识库，
  * 它的作用是让召回文本能区分「已沉淀」与「仍是草稿」，而不是让记忆获得审批权。

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import java.util.List;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -143,4 +144,64 @@ class ProductServiceTest {
         service.changeStatus(3L, "INACTIVE", 1L, 1L, "MARKET_PM");
         assertThat(p.getStatus()).isEqualTo("INACTIVE");
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"update", "status", "bind", "unbind"})
+    void retiredReadonlyProductRejectsEveryOrdinaryWriteEvenForAdministrator(String operation) {
+        Product retired = product("PM_NEW", null, 9L);
+        retired.setId(3L); retired.setGroupId(1L); retired.setDelFlag("0");
+        retired.setRetirementLocked("1");
+        when(productMapper.selectById(3L)).thenReturn(retired);
+        Runnable write = switch (operation) {
+            case "update" -> () -> service.update(3L, new Product().setProductName("新名称"), 1L, 1L, "SUPER_ADMIN");
+            case "status" -> () -> service.changeStatus(3L, Product.ST_ON_SALE, 1L, 1L, "SUPER_ADMIN");
+            case "bind" -> () -> service.bindProject(3L, 10L, 1L, 1L, "SUPER_ADMIN");
+            default -> () -> service.unbindProject(3L, 9L, 1L, 1L, "SUPER_ADMIN");
+        };
+        assertThatThrownBy(write::run).isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class)
+            .hasMessageContaining("已退市并只读");
+        org.mockito.Mockito.verify(productMapper, org.mockito.Mockito.never()).updateById(any(Product.class));
+        org.mockito.Mockito.verify(productMapper, org.mockito.Mockito.never()).update(any(), any());
+        org.mockito.Mockito.verifyNoInteractions(projectMapper, auditLogService);
+        assertThat(retired.getProductName()).isEqualTo("人脸门禁 Pro");
+        assertThat(retired.getProjectId()).isEqualTo(9L);
+    }
+
+    @Test
+    void retirementThatBecameEffectiveAfterInitialReadIsDetectedBeforeMutation() {
+        Product stale = product("PM_NEW", null, null);
+        stale.setId(3L); stale.setGroupId(1L); stale.setDelFlag("0"); stale.setRetirementLocked("0");
+        when(productMapper.selectById(3L)).thenReturn(stale);
+        when(productMapper.isRetirementLockedForUpdate(3L)).thenReturn(true);
+        assertThatThrownBy(() -> service.update(3L, new Product().setProductName("不能写入"), 1L, 1L, "MARKET_PM"))
+            .hasMessageContaining("已退市并只读");
+        assertThat(stale.getProductName()).isEqualTo("人脸门禁 Pro");
+        org.mockito.Mockito.verifyNoInteractions(auditLogService);
+        org.mockito.Mockito.verify(productMapper, org.mockito.Mockito.never()).updateById(any(Product.class));
+    }
+
+    @Test
+    void batchImportReportsReadonlyRowWithoutReactivatingIt() {
+        Product retired = product("ADMIN_IMPORT", "retired-model", null);
+        retired.setId(3L); retired.setDelFlag("0"); retired.setStatus(Product.ST_INACTIVE);
+        retired.setRetirementLocked("1");
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(retired));
+        var report = service.batchImportOnSale(List.of(product("ADMIN_IMPORT", "retired-model", null)), 1L);
+        assertThat(report).singleElement().satisfies(row -> {
+            assertThat(row.get("ok")).isEqualTo(false);
+            assertThat(row.get("error").toString()).contains("已退市并只读");
+        });
+        assertThat(retired.getStatus()).isEqualTo(Product.ST_INACTIVE);
+        org.mockito.Mockito.verifyNoInteractions(auditLogService);
+        org.mockito.Mockito.verify(productMapper, org.mockito.Mockito.never()).updateById(any(Product.class));
+    }
+
+    @Test
+    void retiredHistoricalProductRemainsReadableWithoutWriteLock() {
+        Product retired = product("PM_NEW", null, 9L);
+        retired.setId(3L); retired.setRetirementLocked("1");
+        when(productMapper.selectById(3L)).thenReturn(retired);
+        assertThat(service.getById(3L)).isSameAs(retired);
+        org.mockito.Mockito.verify(productMapper, org.mockito.Mockito.never()).isRetirementLockedForUpdate(anyLong());
+    }
+
 }

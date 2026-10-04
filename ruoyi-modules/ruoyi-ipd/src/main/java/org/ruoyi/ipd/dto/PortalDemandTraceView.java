@@ -25,7 +25,7 @@ public record PortalDemandTraceView(
     String withdrawDeadlineAt,
     /** 状态推进节点（stage 取 8 态大写词表，occurredAt/memo 可空）。 */
     List<TimelineEntry> timeline,
-    /** 附件脱敏视图（仅文件名与大小）；当前游客提交通道无附件，恒空列表占位。 */
+    /** 附件脱敏视图（仅文件名与大小）；不返回内部存储编号、上传凭据或下载地址。 */
     List<AttachmentEntry> attachments
 ) {
 

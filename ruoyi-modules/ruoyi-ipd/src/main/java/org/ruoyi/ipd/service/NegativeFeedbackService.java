@@ -545,12 +545,14 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         return ids;
     }
 
-    /** 通知主责 / 连带 PM：EXECUTE 通知 */
+    /** 通知主责 / 连带 PM：EXECUTE 通知。
+     *  <p>调用方 {@code decide()} 为 {@code @Transactional}，走 {@link NotificationService#publishAfterCommit}：
+     *  负反馈认定若回滚，主责/连带 PM 不应收到「已执行/资格已取消」的 ACTION 待办。</p> */
     private void notifyExecuted(NegativeFeedback row) {
         if (notificationService == null) return;
         for (Long personId : Arrays.asList(row.getMainPersonId(), row.getRelatedPersonId())) {
             if (personId == null) continue;
-            notificationService.publish(personId,
+            notificationService.publishAfterCommit(personId,
                 NotificationService.Types.NEGATIVE_FEEDBACK_EXECUTED,
                 NotificationService.KIND_ACTION,
                 "negative_feedback", row.getId(),
@@ -563,12 +565,14 @@ public class NegativeFeedbackService implements INegativeFeedbackService {
         }
     }
 
-    /** 通知主责 / 连带 PM：LIFT 通知（FYI） */
+    /** 通知主责 / 连带 PM：LIFT 通知（FYI）。
+     *  <p>调用方 {@code lift()} 为 {@code @Transactional}，走 {@link NotificationService#publishAfterCommit}：
+     *  解除若回滚，不应先告诉 PM「津贴/奖金资格已恢复」。</p> */
     private void notifyLifted(NegativeFeedback row) {
         if (notificationService == null) return;
         for (Long personId : Arrays.asList(row.getMainPersonId(), row.getRelatedPersonId())) {
             if (personId == null) continue;
-            notificationService.publish(personId,
+            notificationService.publishAfterCommit(personId,
                 NotificationService.Types.NEGATIVE_FEEDBACK_LIFTED,
                 NotificationService.KIND_FYI,
                 "negative_feedback", row.getId(),

@@ -32,6 +32,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -79,6 +80,7 @@ class GateReviewObserverAcceptanceTest {
         TableInfoHelper.initTableInfo(assistant, Person.class);
         TableInfoHelper.initTableInfo(assistant, ProjectMember.class);
         TableInfoHelper.initTableInfo(assistant, GateReviewObserver.class);
+        TableInfoHelper.initTableInfo(assistant, Gate.class);
     }
 
     @BeforeEach
@@ -142,8 +144,14 @@ class GateReviewObserverAcceptanceTest {
 
         assertThat(count).isEqualTo(3);
         verify(observerMapper, times(3)).insert(any(GateReviewObserver.class));
-        verify(notificationService, times(3))
-            .publish(any(), any(), any(), any(), any(), any(), any(), any());
+        for (Long receiver : List.of(11L, 12L, 13L)) {
+            verify(notificationService).publishAfterCommit(eq(receiver),
+                eq(NotificationService.Types.GATE_OBSERVER_INVITED), eq(NotificationService.KIND_ACTION),
+                eq("gate"), eq(100L), eq("Gate G1 邀请您列席"),
+                eq("您被邀请作为 SALES 角色列席 Gate G1 评审（MEDIUM-1.3），请提交列席意见"),
+                eq("/reviews/gate/100"));
+        }
+        org.mockito.Mockito.verifyNoMoreInteractions(notificationService);
 
         ArgumentCaptor<AuditLog> auditCap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService, atLeastOnce()).append(auditCap.capture());
@@ -163,6 +171,7 @@ class GateReviewObserverAcceptanceTest {
 
         assertThat(count).isZero();
         verify(observerMapper, never()).insert(any(GateReviewObserver.class));
+        org.mockito.Mockito.verifyNoInteractions(notificationService);
         // 仍写一条 audit 记录（用于追溯"重复邀请"行为）
         verify(auditLogService, atLeastOnce()).append(any(AuditLog.class));
     }
@@ -207,7 +216,11 @@ class GateReviewObserverAcceptanceTest {
     @Test
     @DisplayName("MEDIUM-1.3-5：超管/组长查询 Gate 列席列表 → opinion 字段全揭示")
     void listObserversRevealsOpinion() {
-        when(gateMapper.selectById(100L)).thenReturn(pendingGate());
+        when(gateMapper.selectOne(any())).thenReturn(pendingGate());
+        ProjectService visibility = org.mockito.Mockito.mock(ProjectService.class);
+        service.setProjectVisibility(visibility);
+        when(visibility.getVisibleById(eq(1L), any())).thenReturn(
+            org.ruoyi.ipd.domain.Project.builder().id(1L).tenantId("000000").build());
         GateReviewObserver o1 = GateReviewObserver.builder()
             .id(1L).gateId(100L).observerId(11L).role("SALES")
             .invitedBy(1L).attended(1).opinion("客户群体扩展").build();
@@ -242,10 +255,19 @@ class GateReviewObserverAcceptanceTest {
     @Test
     @DisplayName("MEDIUM-1.3-补充：MARKET_PM 不能查 listObservers（仅组长/超管可见） → 403")
     void marketPmCannotListObservers() {
-        when(gateMapper.selectById(100L)).thenReturn(pendingGate());
         IpdActor pm = salesActor(11L);
         assertThatThrownBy(() -> service.listObservers(100L, pm))
             .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("组长/超管");
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

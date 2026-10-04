@@ -28,6 +28,39 @@ class ProjectAgentBackgroundMemoryLifecycleTest {
     @TempDir Path root;
     private static final String MEMORY = "memory/2026-10-03.md";
 
+    @Test void unregisteredArchiveCannotSilentlySkipRootSettlement() {
+        var owner = new ProjectAgentBackgroundMemoryLifecycle();
+        assertThrows(IllegalStateException.class, () -> owner.prepareArchive("unregistered"));
+        assertTrue(owner.failed());
+    }
+
+    @Test void rootAndChildCannotRegisterTheSameIsolatedArchive() {
+        var owner = new ProjectAgentBackgroundMemoryLifecycle();
+        Agent rootAgent = mock(Agent.class);
+        when(rootAgent.getName()).thenReturn(org.ruoyi.ipd.agent.ProjectAgentConstants.AGENT_ID);
+        owner.onAgent(rootAgent, callContext(), null, ignored -> Flux.<AgentEvent>empty()).blockLast();
+        Agent child = mock(Agent.class); when(child.getName()).thenReturn("general-purpose-subagent");
+        var failure = assertThrows(IllegalStateException.class,
+            () -> owner.onAgent(child, callContext(), null, ignored -> Flux.<AgentEvent>empty()).blockLast());
+        assertTrue(failure.getMessage().contains("archive identities overlap"));
+        assertTrue(owner.failed());
+    }
+
+    @Test void sharedChildCanBorrowTheRootAcquisitionWithItsOwnConversationSession() {
+        var owner = new ProjectAgentBackgroundMemoryLifecycle();
+        var parentContext = callContext();
+        Agent rootAgent = mock(Agent.class);
+        when(rootAgent.getName()).thenReturn(org.ruoyi.ipd.agent.ProjectAgentConstants.AGENT_ID);
+        owner.onAgent(rootAgent, parentContext, null, ignored -> Flux.<AgentEvent>empty()).blockLast();
+        var childContext = RuntimeContext.builder(parentContext).sessionId("different-child-conversation").build();
+        assertSame(parentContext.get(io.agentscope.harness.agent.sandbox.SandboxAcquireResult.class),
+            childContext.get(io.agentscope.harness.agent.sandbox.SandboxAcquireResult.class));
+        Agent child = mock(Agent.class); when(child.getName()).thenReturn("general-purpose-subagent");
+        owner.onAgent(child, childContext, null, ignored -> Flux.<AgentEvent>empty()).blockLast();
+        owner.prepareArchive("one");
+        assertFalse(owner.failed());
+    }
+
     @Test void requiredSessionRejectsEmptyArchiveEvenWhenNoUploadReachedHydrate() throws Exception {
         var owner = new ProjectAgentBackgroundMemoryLifecycle();
         var context = callContext(); Agent agent = mock(Agent.class); when(agent.getName()).thenReturn("root");

@@ -101,6 +101,8 @@ ruvector.db
 # 只指仓库根那个误建的嵌套空仓库；勿用无限定 ruoyi-ai/ —— 曾误吞 docs/docker/ruoyi-ai/** 交付件
 /ruoyi-ai/
 .agents/skills/
+.agents/skills-archive/
+*.code-workspace
 .repowise/
 .repowise-workspace.yaml
 # 工具产物（非业务代码，owner 2026-09-05 第4项裁决=ignore）：

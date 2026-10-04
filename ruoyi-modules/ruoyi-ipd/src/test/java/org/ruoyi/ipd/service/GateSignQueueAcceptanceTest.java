@@ -153,6 +153,11 @@ class GateSignQueueAcceptanceTest {
             arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
         // 归属断言 fail-closed：未装配 ProjectMapper 一律「无权操作」，故必须注入。
         service.setProjectMapper(projectMapper);
+        ProjectService visibility = org.mockito.Mockito.mock(ProjectService.class);
+        service.setProjectVisibility(visibility);
+        org.mockito.Mockito.lenient().when(visibility.getVisibleById(org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> Project.builder()
+                .id(inv.getArgument(0)).tenantId("000000").build());
         lenient().when(projectMapper.selectById(PROJECT_ID))
             .thenReturn(Project.builder().id(PROJECT_ID).mainGroupId(MARKET.groupId())
                 .status("ACTIVE").delFlag("0").build());
@@ -168,6 +173,7 @@ class GateSignQueueAcceptanceTest {
         gate.setStatus("PENDING");
         gate.setCurrentRound(1);
         gate.setStartedAt(new Date());
+        org.mockito.Mockito.lenient().when(gateMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> gate);
         gate.setSignDueAt(new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3)));
 
         reviewRows.clear();

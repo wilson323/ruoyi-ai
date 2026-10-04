@@ -23,6 +23,7 @@ echo "▶ R28.5 治理门禁：扫描 taskExecutor Bean 定义与 AsyncConfigure
 # 找所有 @Bean(name="taskExecutor") 出现的文件
 TASKEX_FILES=$(find . -type f -name "*.java" \
   -not -path "*/.codex/*" \
+  -not -path "*/.harness/*" \
   -not -path "*/.claude/worktrees/*" \
   -not -path "*/target/*" \
   -not -path "*/.git/*" \
@@ -35,6 +36,7 @@ TASKEX_COUNT=$(echo "$TASKEX_FILES" | grep -c . 2>/dev/null || true)
 # 找所有 implements AsyncConfigurer 出现的文件（排除注释行 // 开头）
 ASYNC_CFG_FILES=$(find . -type f -name "*.java" \
   -not -path "*/.codex/*" \
+  -not -path "*/.harness/*" \
   -not -path "*/.claude/worktrees/*" \
   -not -path "*/target/*" \
   -not -path "*/.git/*" \

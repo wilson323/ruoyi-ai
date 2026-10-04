@@ -126,13 +126,16 @@ public class HrSyncService {
         for (PendingHandover p : stale) {
             for (Long adminId : admins) {
                 try {
-                    notificationService.publish(adminId, PersonService.EVT_RESIGN_ESCALATION,
+                    // escalateStaleResignations 为 @Transactional：走 publishAfterCommit 延迟到扫描提交后发送，
+                    // 回滚时超管不会收到「离职冻结超期升级」的假待办。
+                    notificationService.publishAfterCommit(adminId, PersonService.EVT_RESIGN_ESCALATION,
                         NotificationService.KIND_ACTION, "persons", p.personId,
                         "离职冻结超期升级（" + p.name + "）",
                         "人员 " + p.name + "（" + p.employeeNo + "）离职冻结已达 "
                             + p.ageDays + " 天（阈值 " + thresholdDays + " 天），名下 "
                             + p.activeProjects + " 个项目仍待移交。请尽快处置。",
-                        "/ipd/admin/handovers/pending");
+                        // 前端超管移交页路由是 /ipd/admin/handover（无 /handovers/pending 子段）。
+                        "/ipd/admin/handover");
                 } catch (Exception e) {
                     // [SEC-LOG-PII] 2026-09-07 push 后台安全审查：personId 仅 debug 输出，warn 仅留异常类型
                     log.warn("P2-2.2 升级通知失败: kind={}", e.getClass().getSimpleName(), e);

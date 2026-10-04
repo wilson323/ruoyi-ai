@@ -8,7 +8,7 @@
 #   且本地与 CI 同一把尺子读数不同。口径全文见 AGENTS.md §「构建 / 测试」同名条目。
 #
 # 判定：scripts/**/*.{sh,py,mjs} 中出现「根递归扫描」（grep -r 以 . 或 $REPO_ROOT
-#   为目标 / find . / find "$REPO_ROOT" / rg .）但没有任何 .codex 排除痕迹 → FAIL。
+#   为目标 / find . / find "$REPO_ROOT" / rg .）但没有实际 .codex 和 .harness 排除选项 → FAIL。
 #   只扫指定子目录（docs/、ruoyi-modules/…）的脚本不受本门禁约束（它们天然扫不到归档）。
 #
 # 用法：
@@ -42,8 +42,9 @@ while IFS= read -r f; do
   # 「第 10 行有 find、第 80 行有个孤立的 .」误拼成命中（实测误报 10 个）。
   # 注意用 grep→grep 两级而非 awk 动态正则：实测 awk 对含 \{? 的正则解析与
   # grep -E 不一致（同一条 `find "$BACKEND_ROOT/docs" ...` awk 误判命中）。
-  if grep -E "$SCAN_CMD_RE" "$f" 2>/dev/null | grep -qE "$ROOT_TARGET_RE" \
-     && ! grep -q '\.codex' "$f" 2>/dev/null; then
+  if grep -v '^[[:space:]]*#' "$f" 2>/dev/null | grep -E "$SCAN_CMD_RE" | grep -qE "$ROOT_TARGET_RE" \
+     && { ! grep -v '^[[:space:]]*#' "$f" | grep -qE -- '(-path|-g|--glob|--exclude-dir)[^#]*\.codex' || \
+          ! grep -v '^[[:space:]]*#' "$f" | grep -qE -- '(-path|-g|--glob|--exclude-dir)[^#]*\.harness'; }; then
     printf '  FAIL  %s\n' "$f" >> "$BAD_TMP"
   fi
 done < <(git ls-files 'scripts/*.sh' 'scripts/*.py' 'scripts/*.mjs' \
@@ -55,7 +56,7 @@ echo "==========================================================================
 echo "[scan-scope] 根递归扫描排除门禁"
 echo "================================================================================"
 printf '受检脚本数              : %s\n' "$total"
-printf '根递归且无 .codex 排除   : %s\n' "${n_bad:-0}"
+printf '根递归且缺归档排除   : %s\n' "${n_bad:-0}"
 if [ "${n_bad:-0}" -gt 0 ]; then
   echo
   cat "$BAD_TMP"

@@ -268,8 +268,12 @@ class NegativeFeedbackServiceTest {
         assertThat(row.getDecidedBy()).isEqualTo(LEADER);
         assertThat(row.getDecisionComment()).isEqualTo("已确认");
         verify(auditLogService, times(1)).append(any());
-        verify(notificationService, times(2)).publish(anyLong(), anyString(), anyString(),
-            eq("negative_feedback"), any(), anyString(), anyString(), anyString());
+        for (Long receiver : List.of(MARKET_PM, RD_PM)) {
+            verify(notificationService).publishAfterCommit(eq(receiver),
+                eq(NotificationService.Types.NEGATIVE_FEEDBACK_EXECUTED), eq(NotificationService.KIND_ACTION),
+                eq("negative_feedback"), eq(1L), anyString(), anyString(), eq("/incentive/negative-feedback"));
+        }
+        org.mockito.Mockito.verifyNoMoreInteractions(notificationService);
     }
 
     /* ============================================================
@@ -291,8 +295,7 @@ class NegativeFeedbackServiceTest {
             leader);
 
         assertThat(row.getStatus()).isEqualTo("REJECTED");
-        verify(notificationService, never()).publish(anyLong(), anyString(), anyString(),
-            anyString(), any(), anyString(), anyString(), anyString());
+        org.mockito.Mockito.verifyNoInteractions(notificationService);
     }
 
     /* ============================================================
@@ -315,8 +318,13 @@ class NegativeFeedbackServiceTest {
         assertThat(row.getStatus()).isEqualTo("LIFTED");
         assertThat(row.getLiftedBy()).isEqualTo(LEADER);
         verify(auditLogService, times(1)).append(any());
-        verify(notificationService, times(2)).publish(anyLong(), anyString(), anyString(),
-            anyString(), any(), anyString(), anyString(), anyString());
+        for (Long receiver : List.of(MARKET_PM, RD_PM)) {
+            verify(notificationService).publishAfterCommit(eq(receiver),
+                eq(NotificationService.Types.NEGATIVE_FEEDBACK_LIFTED), eq(NotificationService.KIND_FYI),
+                eq("negative_feedback"), eq(1L), anyString(),
+                eq("项目负反馈已解除；津贴/奖金资格已恢复。"), eq("/incentive/negative-feedback"));
+        }
+        org.mockito.Mockito.verifyNoMoreInteractions(notificationService);
     }
 
     /* ============================================================
@@ -353,4 +361,14 @@ class NegativeFeedbackServiceTest {
         assertThatThrownBy(() -> NegativeFeedbackService.deriveRoleMapping("WHATEVER"))
             .isInstanceOf(IpdBusinessException.class);
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

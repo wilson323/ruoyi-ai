@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-03T19:56:14.847Z",
+  "updatedAt": "2026-10-04T06:58:52.856Z",
   "project": "/Users/mac/Documents/ruoyi-ai",
-  "command": "cd /Users/mac/Documents/ruoyi-ai\nbash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd -Dtest='ActionCatalogTest' -DfailIfNoTests=false 2>&1 | grep -E \"Tests run:|BUILD\" | head -3\necho\necho \"=== 工作树统计\"\ngit status --porcelain | awk '{print substr($0,1,2)}' | sort | uniq -c\necho \"未跟踪文件数: $(git ls-files --others --exclude-standard | wc -l | tr -d ' ')\"\necho\necho \"=== 新增的 SQL 清理草稿与删除的技能目录\"\nls -1 docs/script/sql/update/ | grep \"2026-10-03-ipd-retire\" || echo \"  未见草稿\"\nls -d ruoyi-modules/ruoy",
+  "command": "cd /Users/mac/Documents/ruoyi-ipd-web/apps/web-antd\n../../node_modules/.bin/vue-tsc --noEmit --skipLibCheck > /tmp/fe-tsc.log 2>&1\necho \"EXIT=$?\"\necho \"--- 与我改动相关的错误（workbench.ts / workbench.test.ts）---\"\ngrep -E \"api/ipd/workbench\" /tmp/fe-tsc.log | head -20\necho \"(以上为空 = 我改的两个文件无类型错)\"\necho \"--- 错误总数 ---\"\ngrep -cE \"error TS\" /tmp/fe-tsc.log\necho \"--- 前 10 条错误出处（判断是否他人在途文件）---\"\ngrep -E \"error TS\" /tmp/fe-tsc.log | head -10",
   "markers": [
-    "maven"
+    "tsc"
   ]
 }

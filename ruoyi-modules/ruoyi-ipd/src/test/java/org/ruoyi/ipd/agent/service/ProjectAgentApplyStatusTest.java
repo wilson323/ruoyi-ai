@@ -63,6 +63,7 @@ class ProjectAgentApplyStatusTest {
 
         ProjectAgentViews.ArtifactApply view = harness.service.applyArtifact(ACTOR, 9L, "art-1");
 
+        assertThat(harness.feedback.find("ARTIFACT_ADOPTION", 71L, ACTOR.id()).orElseThrow().getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(doc.getStatus()).isEqualTo(AiDocumentService.STATUS_GENERATED);
         assertThat(view.documentStatus()).isEqualTo(AiDocumentService.STATUS_GENERATED);
         assertThat(view.documentStatusLabel()).isEqualTo(AiDocumentService.LABEL_PENDING_REVIEW);
@@ -137,7 +138,7 @@ class ProjectAgentApplyStatusTest {
     @DisplayName("动作没有文档类型时拒绝定档，不把动作码写成 docType")
     void unmappedActionRejected() {
         Harness harness = new Harness();
-        harness.run.setActionCode("C05");
+        harness.run.setActionCode("P10");
         when(harness.artifacts.findLatestForUpdate(TENANT, 9L, "art-1"))
             .thenReturn(Optional.of(version(IpdAgentArtifactVersion.STATUS_DRAFT, null)));
 
@@ -318,6 +319,20 @@ class ProjectAgentApplyStatusTest {
     }
 
     @Test
+    void failedAttemptAssociationCreatesDocumentWithoutPretendingToReviseOldChain() {
+        Harness h = new Harness();
+        h.run.setConfigSnapshot("{\"previousRunId\":\"8\"}");
+        when(h.runs.findRun(8L)).thenReturn(Optional.of(IpdAgentRun.builder().id(8L).tenantId(TENANT)
+            .projectId(PROJECT_ID).personId(ACTOR.id()).actionCode("C02").status("FAILED").build()));
+        when(h.artifacts.findLatestForUpdate(TENANT,9L,"art-1")).thenReturn(Optional.of(version(IpdAgentArtifactVersion.STATUS_DRAFT,null)));
+        when(h.documents.createGeneratedAuthorized(eq(ACTOR),eq(PROJECT_ID),eq("MARKET_RESEARCH"),eq("产物"),eq("正文"),
+            isNull(),isNull(),isNull())).thenReturn(AiDocument.builder().id(8001L).status("GENERATED").build());
+        when(h.artifacts.markApplied(71L,8001L)).thenReturn(true);
+        assertThat(h.service.applyArtifact(ACTOR,9L,"art-1").documentId()).isEqualTo("8001");
+        verify(h.documents,never()).reviseGeneratedAuthorized(any(),any(),any(),any(),any(),any(),any(),any(),any(),any());
+    }
+
+    @Test
     void explicitReworkAppliesToOriginalChainAndNeverCreatesIndependentRoot() {
         Harness h = new Harness();
         h.run.setConfigSnapshot("{\"previousRunId\":\"8\",\"targetDocumentId\":\"8000\",\"baseVersionId\":\"8000\"}");
@@ -407,6 +422,31 @@ class ProjectAgentApplyStatusTest {
         }
     }
 
+    @Test
+    void replayRecordsAdoptionOnceAndFeedbackFailureRollsBack() {
+        Harness h = new Harness();
+        when(h.artifacts.findLatestForUpdate(TENANT, 9L, "art-1"))
+            .thenReturn(Optional.of(version("APPLIED", 8001L)));
+        when(h.documents.statusOf(8001L)).thenReturn(Optional.of("GENERATED"));
+        h.service.applyArtifact(ACTOR, 9L, "art-1");
+        h.service.applyArtifact(ACTOR, 9L, "art-1");
+        assertThat(h.feedback.size()).isEqualTo(1);
+        var failed = mock(AiFeedbackService.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("feedback unavailable"))
+            .when(failed).recordArtifactAdoption(any(), any(), any());
+        h.service.setAdoptionFeedback(failed);
+        var manager = mock(org.springframework.transaction.PlatformTransactionManager.class);
+        var status = new org.springframework.transaction.support.SimpleTransactionStatus();
+        when(manager.getTransaction(any())).thenReturn(status);
+        var proxy = new org.springframework.aop.framework.ProxyFactory(h.service);
+        proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(manager,
+            new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
+        assertThatThrownBy(() -> ((ProjectAgentRunService) proxy.getProxy()).applyArtifact(ACTOR, 9L, "art-1"))
+            .isInstanceOf(IllegalStateException.class);
+        verify(manager).rollback(status);
+        verify(manager, never()).commit(any());
+    }
+
     private static AiDocument document(long id, String status, String comment, long createdAt) {
         AiDocument row = AiDocument.builder()
             .id(id)
@@ -456,6 +496,7 @@ class ProjectAgentApplyStatusTest {
         final ArtifactVersionStore artifacts = mock(ArtifactVersionStore.class);
         final AiDocumentService documents = mock(AiDocumentService.class);
         final ProjectAgentRunExecutor executor = mock(ProjectAgentRunExecutor.class);
+        final org.ruoyi.ipd.agent.support.InMemoryAiFeedbackStore feedback = new org.ruoyi.ipd.agent.support.InMemoryAiFeedbackStore();
         final IpdAgentRun run;
         final ProjectAgentRunService service;
 
@@ -481,6 +522,7 @@ class ProjectAgentApplyStatusTest {
             service = new ProjectAgentRunService(true, access, org.ruoyi.ipd.agent.support.AgentTestFixtures.planner(), runs, artifacts,
                 documents, null, null, executor, new ObjectMapper(), () -> 0L,
                 Duration.ofSeconds(60));
+            service.setAdoptionFeedback(new AiFeedbackService(true, access, runs, artifacts, feedback, () -> 0L));
             try {
                 var root = java.nio.file.Files.createTempDirectory("ipd-apply-origin-").toRealPath();
                 var origin = new org.ruoyi.ipd.agent.servicebridge.ProjectAgentArtifactOrigin(runs,

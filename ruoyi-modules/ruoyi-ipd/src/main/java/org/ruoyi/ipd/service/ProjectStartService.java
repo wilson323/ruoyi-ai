@@ -29,6 +29,13 @@ public class ProjectStartService {
     private final IAuditLogService auditLogService;
     private final StateMachineGuard stateMachineGuard;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProductRetirementService retirementService;
+
+    public void setProductRetirementService(ProductRetirementService retirementService) {
+        this.retirementService = retirementService;
+    }
+
     /**
      * 批准开工。没有负责人时只有超管能批；已有负责人时超管不能代批。
      *
@@ -41,6 +48,14 @@ public class ProjectStartService {
         Project project = requirePending(projectId);
         ProductLine line = requireLine(project);
         assertApprover(line, actor);
+        if (project.getProductId() != null) {
+            if (productMapper.isRetirementLockedForUpdate(project.getProductId())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品已退市并只读，关联项目不能批准开工");
+            }
+            if (retirementService != null && (retirementService.isOrderStopped(project.getProductId()) || retirementService.isProductionStopped(project.getProductId()))) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品订货或生产已截止，关联项目不能批准开工");
+            }
+        }
         if (project.getProductId() == null) {
             Product created = new Product();
             created.setProductCode("INRD-" + project.getId());

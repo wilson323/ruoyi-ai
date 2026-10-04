@@ -124,8 +124,8 @@
     },
     {
       "name": "kpi-receipt-achievement-ipd",
-      "version": "1.0.0",
-      "sha256": "9d31fd393c2069742a8a1aa5d7d2585335ba24a2112cdbe3ad7466f95a59ef7f"
+      "version": "1.1.0",
+      "sha256": "1956141961c470110c06e6bf81f2d212b31065b0678da73e22e6821ea657f79a"
     },
     {
       "name": "kpi-scenario-coverage-ipd",
@@ -176,6 +176,11 @@
       "name": "product-prd-ipd",
       "version": "1.1.0",
       "sha256": "72b73d02172092814e0bc6c494f943932c7bbe27c851e1c02c9d78d21b85c47b"
+    },
+    {
+      "name": "project-archive-ipd",
+      "version": "1.0.0",
+      "sha256": "522dc2562d2af0d6d843964071e21dd6e95c719f8387e41f6ddbfef5cedc489f"
     },
     {
       "name": "project-grade-coefficient-ipd",
@@ -326,6 +331,288 @@
       "skills": [
         "market-opportunity-research-ipd",
         "competitor-analysis-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
+      ]
+    },
+    {
+      "code": "ipd-concept",
+      "version": "v1",
+      "name": "概念研究与立项材料",
+      "description": "依绑定动作技能整理交付物、已发生的事实和缺项；评审仅准备材料，登记与实物工作仅核对证据，负责人决定、批准、状态变更和外部操作仍走原业务入口。",
+      "stages": [
+        "CONCEPT"
+      ],
+      "actionCodes": [
+        "C03",
+        "C04",
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12"
+      ],
+      "skills": [
+        "target-customer-segment-ipd",
+        "regional-market-diff-ipd",
+        "product-concept-positioning-ipd",
+        "cost-pricing-margin-ipd",
+        "charter-baseline-ipd",
+        "project-grade-coefficient-ipd",
+        "ip-fto-precheck-ipd",
+        "gate-g1-charter-review-ipd",
+        "biometric-compliance-review-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
+      ]
+    },
+    {
+      "code": "ipd-plan",
+      "version": "v1",
+      "name": "需求计划与评审材料",
+      "description": "依绑定动作技能整理交付物、已发生的事实和缺项；评审仅准备材料，登记与实物工作仅核对证据，负责人决定、批准、状态变更和外部操作仍走原业务入口。",
+      "stages": [
+        "PLAN"
+      ],
+      "actionCodes": [
+        "P01",
+        "P02",
+        "P10",
+        "P12",
+        "P13"
+      ],
+      "skills": [
+        "product-prd-ipd",
+        "requirement-priority-roadmap-ipd",
+        "cert-reg-checklist-ipd",
+        "differentiation-value-pricing-ipd",
+        "gate-g2-diff-confirm-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
+      ]
+    },
+    {
+      "code": "ipd-launch",
+      "version": "v1",
+      "name": "发布材料与就绪核对",
+      "description": "依绑定动作技能整理交付物、已发生的事实和缺项；评审仅准备材料，登记与实物工作仅核对证据，负责人决定、批准、状态变更和外部操作仍走原业务入口。",
+      "stages": [
+        "LAUNCH"
+      ],
+      "actionCodes": [
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "L06",
+        "L07",
+        "L08"
+      ],
+      "skills": [
+        "gtm-launch-strategy-ipd",
+        "channel-price-policy-ipd",
+        "sales-toolkit-ipd",
+        "sales-channel-training-ipd",
+        "catalog-listing-ipd",
+        "gate-g4-gtm-readiness-ipd",
+        "launch-date-anchor-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
+      ]
+    },
+    {
+      "code": "ipd-lifecycle",
+      "version": "v1",
+      "name": "生命周期材料与归档核对",
+      "description": "依绑定动作技能整理交付物、已发生的事实和缺项；评审仅准备材料，登记与实物工作仅核对证据，负责人决定、批准、状态变更和外部操作仍走原业务入口。",
+      "stages": [
+        "LIFECYCLE"
+      ],
+      "actionCodes": [
+        "K01",
+        "K02",
+        "K03",
+        "K04",
+        "LC02",
+        "LC04",
+        "LC05",
+        "LC07",
+        "LC08",
+        "LC09"
+      ],
+      "skills": [
+        "kpi-receipt-achievement-ipd",
+        "kpi-channel-coverage-ipd",
+        "kpi-nps-survey-ipd",
+        "kpi-scenario-coverage-ipd",
+        "gate-g5-90day-review-ipd",
+        "dual-pm-contribution-ipd",
+        "customer-feedback-quality-ipd",
+        "lifecycle-status-maintain-ipd",
+        "eol-assessment-announce-ipd",
+        "project-archive-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
+      ]
+    },
+    {
+      "code": "ipd-dev",
+      "version": "v1",
+      "name": "开发评审与变更材料",
+      "description": "依绑定动作技能整理交付物、已发生的事实和缺项；评审仅准备材料，登记与实物工作仅核对证据，负责人决定、批准、状态变更和外部操作仍走原业务入口。",
+      "stages": [
+        "DEV"
+      ],
+      "actionCodes": [
+        "D05",
+        "D06",
+        "D11"
+      ],
+      "skills": [
+        "gate-g3-biweekly-review-ipd",
+        "requirement-change-assess-ipd",
+        "biocv-far-frr-register-ipd"
+      ],
+      "tools": [
+        "project_knowledge_search",
+        "FastGPT-mcp-693fdcafb24e7762a0dc0325",
+        "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
+        "FastGPT-mcp-693fdd09b24e7762a0dc0880",
+        "FastGPT-mcp-693fdcbeb24e7762a0dc0422",
+        "FastGPT-mcp-693fdc63b24e7762a0dbfe86",
+        "FastGPT-mcp-693fdceeb24e7762a0dc05de",
+        "FastGPT-mcp-693fdcfdb24e7762a0dc07e2",
+        "FastGPT-mcp-693fdcdcb24e7762a0dc054b",
+        "FastGPT-mcp-693fdca1b24e7762a0dc0247",
+        "FastGPT-mcp-693fdc8eb24e7762a0dc0169",
+        "FastGPT-mcp-69cce71396a40120630b055e",
+        "FastGPT-mcp-69cce77b96a40120630b0c3d",
+        "FastGPT-mcp-69cce8b996a40120630b1d80",
+        "FastGPT-mcp-69cce8e096a40120630b1e68",
+        "FastGPT-mcp-69cce8ff96a40120630b1f6d",
+        "FastGPT-mcp-69cce93796a40120630b2133",
+        "FastGPT-mcp-69cce91596a40120630b2017"
+      ]
+    },
+    {
+      "code": "ipd-valid",
+      "version": "v1",
+      "name": "验证材料与证据核对",
+      "description": "依绑定动作技能整理交付物、已发生的事实和缺项；评审仅准备材料，登记与实物工作仅核对证据，负责人决定、批准、状态变更和外部操作仍走原业务入口。",
+      "stages": [
+        "VALID"
+      ],
+      "actionCodes": [
+        "V02",
+        "V03",
+        "V06",
+        "V07",
+        "V09",
+        "V10",
+        "V11",
+        "V12"
+      ],
+      "skills": [
+        "cert-test-result-register-ipd",
+        "beta-trial-feedback-ipd",
+        "mass-production-readiness-ipd",
+        "packaging-docs-finalize-ipd",
+        "solution-pilot-delivery-ipd",
+        "cross-demographic-fit-verify-ipd",
+        "platform-sdk-compat-verify-ipd",
+        "overseas-localization-verify-ipd"
       ],
       "tools": [
         "project_knowledge_search",

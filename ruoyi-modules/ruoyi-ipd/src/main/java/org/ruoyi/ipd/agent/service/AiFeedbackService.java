@@ -116,6 +116,37 @@ public class AiFeedbackService {
             ProjectAgentViews.iso(now));
     }
 
+    /** 内部采纳事件；与可更新的点赞分开，首次事件不可覆盖，不授予知识晋升。 */
+    public void recordArtifactAdoption(IpdAgentRun run, IpdAgentArtifactVersion version, Long personId) {
+        if (!enabled || run == null || run.getId() == null || run.getProjectId() == null
+            || run.getTenantId() == null || personId == null || version == null || version.getId() == null
+            || !Objects.equals(run.getId(), version.getRunId())
+            || !Objects.equals(run.getTenantId(), version.getTenantId())
+            || !Objects.equals(run.getPersonId(), personId)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "采纳反馈来源不一致");
+        }
+        String type = "ARTIFACT_ADOPTION";
+        IpdAiFeedback existing = feedbackStore.find(type, version.getId(), personId).orElse(null);
+        if (existing == null) {
+            Date now = new Date(clock.getAsLong());
+            IpdAiFeedback row = IpdAiFeedback.builder().tenantId(run.getTenantId())
+                .projectId(run.getProjectId()).personId(personId).targetType(type).targetId(version.getId())
+                .rating("UP").reason("用户采纳该产物版本；不代表文档审核或知识晋升")
+                .version(0).delFlag("0").build();
+            row.setCreateTime(now);
+            row.setCreateBy(personId);
+            row.setUpdateBy(personId);
+            if (feedbackStore.insert(row)) return;
+            existing = feedbackStore.find(type, version.getId(), personId).orElse(null);
+        }
+        if (existing == null || !Objects.equals(existing.getTenantId(), run.getTenantId())
+            || !Objects.equals(existing.getProjectId(), run.getProjectId())
+            || !Objects.equals(existing.getPersonId(), personId)
+            || !"0".equals(existing.getDelFlag()) || !"UP".equals(existing.getRating())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "采纳反馈保存冲突，请重试");
+        }
+    }
+
     private ResolvedTarget resolveRunMessage(IpdActor actor, Long runId) {
         IpdAgentRun run = runStore.findRun(runId)
             .orElseThrow(() -> new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "反馈目标不存在"));

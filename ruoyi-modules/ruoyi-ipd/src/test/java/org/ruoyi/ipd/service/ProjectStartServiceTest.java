@@ -116,4 +116,19 @@ class ProjectStartServiceTest {
         line.setTenantId("000000");
         return line;
     }
+    @Test
+    void rightfulLeaderCannotApproveIterationAfterProductRetirementBecameEffective() {
+        Project project = pending(9L, 50L);
+        when(projectMapper.selectOne(any())).thenReturn(project);
+        when(projectMapper.findProductLineId(9L)).thenReturn(3L);
+        when(lineMapper.selectById(3L)).thenReturn(line(3L, 8L));
+        when(productMapper.isRetirementLockedForUpdate(50L)).thenReturn(true);
+        assertThatThrownBy(() -> service.approve(9L, new IpdActor(8L, "leader", "MARKET_PM", 1L)))
+            .isInstanceOf(IpdBusinessException.class).hasMessageContaining("关联项目不能批准开工");
+        verify(projectMapper, never()).updateById(any(Project.class));
+        verify(productMapper, never()).insert(any(org.ruoyi.ipd.domain.Product.class));
+        org.mockito.Mockito.verifyNoInteractions(projectBootstrapService, stateMachineGuard, auditLogService);
+        assertThat(project.getStatus()).isEqualTo("PENDING_START");
+    }
+
 }

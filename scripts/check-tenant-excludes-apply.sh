@@ -56,7 +56,7 @@ echo "[1/4] 解析父 application.yml tenant.excludes..."
 
 APP_YML="$BACKEND_ROOT/ruoyi-admin/src/main/resources/application.yml"
 if [ ! -f "$APP_YML" ]; then
-  APP_YML=$(find "$BACKEND_ROOT" -name 'application.yml' -path '*/resources/*' -not -path '*/target/*' 2>/dev/null | head -1)
+  APP_YML=$(find "$BACKEND_ROOT" -name 'application.yml' -path '*/resources/*' -not -path '*/target/*' -not -path '*/.codex/*' -not -path '*/.harness/*' 2>/dev/null | head -1)
 fi
 if [ ! -f "$APP_YML" ]; then
   echo "[tenant-excludes] ❌ 找不到 application.yml" >&2

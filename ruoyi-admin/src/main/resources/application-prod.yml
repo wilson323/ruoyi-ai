@@ -21,7 +21,7 @@ mcp:
 --- # 上传文件地址
 sys:
   upload:
-    path: D:\\DownLoad
+    path: ${SYS_UPLOAD_PATH:/app/upload}
 
 --- # snail-job 配置
 snail-job:
@@ -102,7 +102,7 @@ spring:
 --- # 上传文件地址
 sys:
   upload:
-    path: D:\\DownLoad
+    path: ${SYS_UPLOAD_PATH:/app/upload}
 
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring.data:

@@ -306,6 +306,7 @@ public class ProductLineSpaceService {
         }
         if (product.getProductLineId() != null && !lineId.equals(product.getProductLineId())) throw conflict();
         if (lineId.equals(product.getProductLineId())) return product;
+        requireProductWritable(product);
         int updated = productMapper.update(null, new LambdaUpdateWrapper<Product>()
             .eq(Product::getId, productId).isNull(Product::getProductLineId)
             .eq(Product::getTenantId, tenant())
@@ -326,6 +327,7 @@ public class ProductLineSpaceService {
         Product product = productMapper.selectOne(new LambdaQueryWrapper<Product>()
             .eq(Product::getId, productId).eq(Product::getTenantId, tenant()).last("FOR UPDATE"));
         if (product == null || !lineId.equals(product.getProductLineId())) throw conflict();
+        requireProductWritable(product);
         if (!Product.ST_INACTIVE.equals(product.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "仅停用产品可解除产品线归属");
         }
@@ -407,7 +409,7 @@ public class ProductLineSpaceService {
         requireMemberOrAdmin(actor, line);
         if (requirementMapper == null) return List.of();
         LambdaQueryWrapper<Requirement> query = new LambdaQueryWrapper<Requirement>()
-            .orderByDesc(Requirement::getId)
+            .apply("tenant_id = {0}", tenant()).orderByDesc(Requirement::getId)
             .last("LIMIT 200");
         if ("unspecified".equals(line.getLineCode())) {
             query.and(wrapper -> wrapper.eq(Requirement::getProductLineId, lineId)
@@ -416,6 +418,29 @@ public class ProductLineSpaceService {
             query.eq(Requirement::getProductLineId, lineId);
         }
         return requirementMapper.selectList(query);
+    }
+
+    /** 分拣回读复用空间成员边界，重试仅负责人或管理员可发起。 */
+    public Requirement requireTriageDemand(Long lineId, Long demandId, IpdActor actor, boolean retry) {
+        ProductLine line = requireActiveLine(lineId);
+        requireMemberOrAdmin(actor, line);
+        if (retry && !"SUPER_ADMIN".equals(actor.role()) && !Objects.equals(actor.id(), line.getLeaderPersonId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅产品线负责人可重试分拣");
+        }
+        Requirement demand = requirementMapper.selectOne(new LambdaQueryWrapper<Requirement>()
+            .eq(Requirement::getId, demandId).apply("tenant_id = {0}", tenant()));
+        if (demand == null || !(Objects.equals(lineId, demand.getProductLineId())
+            || ("unspecified".equals(line.getLineCode()) && demand.getProductLineId() == null))) {
+            throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "需求不在当前产品线空间");
+        }
+        return demand;
+    }
+
+    private void requireProductWritable(Product product) {
+        if ("1".equals(product.getRetirementLocked())
+            || productMapper.isRetirementLockedForUpdate(product.getId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品已退市并只读，不能调整产品线归属");
+        }
     }
 
     private ProductLine requireActiveLine(Long lineId) {

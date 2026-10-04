@@ -36,7 +36,7 @@ import java.util.UUID;
 
 /**
  * 小阶段引导接口 /api/v1/ipd/stage/sub-stages（Track A3/A4/A5 + C2 一次成型）。
- * <p>22 小阶段 + 每动作技能映射（69 归属经 ipd_action_skill_map 只读归并，内存 join 无 N+1）。
+ * <p>22 小阶段 + 每动作技能映射（现役动作归属经 ipd_action_skill_map 只读归并，内存 join 无 N+1）。
  * 响应一律 ApiV1Response code0/message 包络 + 字符串 ID（A0.3 契约）。
  * <p>guideEvents 为零新增端点语义的既有读端点（裁定 D-12）：STATE_DELTA 的 op.path=/subStageGuide，
  * value 增 guideSteps/advanceGate 两键（C2 编排器载荷，向后兼容）。
@@ -64,8 +64,14 @@ public class SubStageController {
 
     /** 目录 + 映射内存归并（包级可见，A4 事件下发复用）；调用方保证 listAll 已按序。 */
     static List<SubStageView> buildGuide(List<IpdSubStage> subStages, List<IpdActionSkillMap> maps) {
+        var activeCodes = ActionCatalog.ALL.stream().map(a -> a.code())
+            .collect(java.util.stream.Collectors.toSet());
         Map<String, List<IpdActionSkillMap>> bySub = new LinkedHashMap<>();
         for (IpdActionSkillMap m : maps) {
+            // 历史映射保留在库中；目录读投影仅收现役动作，仍兼容既有 Z 系别名。
+            if (!activeCodes.contains(ActionCatalog.resolveCode(m.getActionCode()))) {
+                continue;
+            }
             bySub.computeIfAbsent(m.getSubStageCode(), k -> new ArrayList<>()).add(m);
         }
         List<SubStageView> out = new ArrayList<>();

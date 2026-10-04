@@ -458,6 +458,12 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         });
         ProjectAgentOfficialToolGovernance officialGovernance = new ProjectAgentOfficialToolGovernance(sink,
             trustedScope, (actor, context) -> { subagentScope.lineage().requireKnown(actor, context); return true; }).childLineage(subagentScope.lineage());
+        officialGovernance.selectedSkillReads(skill -> {
+            var approved = selectedSkills.getSkill(skill.getName());
+            return approved != null && Objects.equals(approved.getSkillContent(), skill.getSkillContent())
+                && Objects.equals(approved.getMetadataValue("version"), skill.getMetadataValue("version"))
+                && Objects.equals(approved.getResources(), skill.getResources());
+        });
         var artifactProvider = artifactProviderFactory == null ? null : artifactProviderFactory.create(spec,
             trustedScope.toRuntimeContext(), sink, subagentScope.lineage()::requireKnown);
         if (artifactProvider != null) officialGovernance.executionClaims(artifactProvider.claims());

@@ -27,6 +27,7 @@ cd "$REPO_ROOT" || { echo "ERROR: cd repo root failed: $REPO_ROOT" >&2; exit 2; 
 # src/test 豁免理由见头部 O-6-1 修订说明（守卫测试自引用 ≠ 生产违规）
 EXCLUDES=(
   -path "*/.codex/*" -o
+  -path "*/.harness/*" -o
   -path "*/.claude/worktrees/*" -o
   -path "*/.worktrees/*" -o
   -path "*/target/*" -o

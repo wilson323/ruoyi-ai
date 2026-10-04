@@ -78,6 +78,13 @@ public class ProjectService implements IProjectService {
      * 旧 10 参构造器入口（不破坏既有兄弟测试）。 */
     @Autowired(required = false)
     private ProjectMemberMapper projectMemberMapper;
+
+    @Autowired(required = false)
+    private ProductRetirementService retirementService;
+
+    public void setProductRetirementService(ProductRetirementService retirementService) {
+        this.retirementService = retirementService;
+    }
     public void setProjectMemberMapper(ProjectMemberMapper projectMemberMapper) {
         this.projectMemberMapper = projectMemberMapper;
     }
@@ -303,6 +310,15 @@ public class ProjectService implements IProjectService {
         Long lineId = product != null && product.getProductLineId() != null
             ? product.getProductLineId() : productLineId;
         enforceProductLine(product, productLineId, lineId, operatorId, operatorRole);
+        if (product != null) {
+            if ("1".equals(product.getRetirementLocked())
+                || productMapper.isRetirementLockedForUpdate(product.getId())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品已退市并只读，不能新建关联项目");
+            }
+            if (retirementService != null && (retirementService.isOrderStopped(product.getId()) || retirementService.isProductionStopped(product.getId()))) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品订货或生产已截止，不能新建关联项目");
+            }
+        }
         project.setCode(nextCode());
         preCheckGuard(null, "PENDING_START", "create");
         project.setStatus("PENDING_START");

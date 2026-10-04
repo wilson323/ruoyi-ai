@@ -16,6 +16,18 @@ import java.util.List;
  * DOC-05 已确认的33项要素及14否决集合，仅 dev profile 新库初始化。
  * G1/G2/G3/G4/G5 的否决数为5/4/0/3/2；历史SQL及零填充编号不是当前权威。
  * 存量冲突只诊断，禁止覆盖、恢复历史或追加第二套33项。
+ *
+ * <p><b>预检的两种冲突（2026-10-04 起区分，此前一律整批中止）</b>：
+ * <ol>
+ *   <li><b>规范编号已存在但与DOC-05不一致</b>（含软删除行、同编号多行、字段漂移）：
+ *       逐行诊断并保留原值，<b>不中止整批</b>——该编号已被占用，补种不会产生第二套编号，
+ *       其余缺号要素仍按缺号补种。此前该情形会 `return` 整批中止，而中止只写一行 ERROR、
+ *       应用照常启动，于是「任一要素漂移 ⇒ 全部要素永远无法补种」成为单向锁死的静默失效。</li>
+ *   <li><b>旧编号仍启用</b>（G3-01 一类零填充编号，published + enabled + 未删）：
+ *       此时补种它的规范编号（G3-1）会并存两套编号，正是本类禁止的「追加第二套33项」，
+ *       故仍整批中止，须先由独立迁移把旧编号归档/停用。</li>
+ * </ol>
+ * 两种情形都不覆盖、不恢复历史、不追加重复行。
  */
 @Slf4j
 @Component
@@ -24,6 +36,10 @@ import java.util.List;
 public class IpdGateElementSeedInitializer implements ApplicationRunner {
 
     private final GateElementMapper gateElementMapper;
+
+    /** 零填充旧编号格式（G1-01 … G5-09）；用于识别需先迁移的旧种子编号。 */
+    private static final java.util.regex.Pattern LEGACY_SEED_CODE =
+        java.util.regex.Pattern.compile("^(G[1-5])-0([1-9])$");
 
     /** 要素定义：{gateCode, elementCode, elementName, passStandard, isVeto(Y/N), sortOrder} */
     private static final List<String[]> SEED_ELEMENTS = List.of(
@@ -62,6 +78,12 @@ public class IpdGateElementSeedInitializer implements ApplicationRunner {
         new String[]{"G5", "G5-7", "迭代与生命周期决策", "明确加速/迭代/扩区/限售/停产决议、责任人及后续动作", "Y", "33"}
     );
 
+    /** 零填充旧编号 → 规范编号（G3-01 → G3-1）；不是该格式时返回 null。 */
+    private static String legacyCanonicalCode(String elementCode) {
+        var matcher = LEGACY_SEED_CODE.matcher(elementCode);
+        return matcher.matches() ? matcher.group(1) + "-" + matcher.group(2) : null;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) {
@@ -69,24 +91,36 @@ public class IpdGateElementSeedInitializer implements ApplicationRunner {
         if (existing == null) throw new IllegalStateException("Gate seed preflight unavailable");
         var definitions = SEED_ELEMENTS.stream().collect(java.util.stream.Collectors.toMap(d -> d[1], d -> d));
         var seen = new java.util.HashSet<String>();
+        int drifted = 0;
         for (GateElement row : existing) {
             if (row == null || row.getElementCode() == null) throw new IllegalStateException("Gate seed preflight row unavailable");
             var def = definitions.get(row.getElementCode());
             if (def == null) {
-                String legacy = row.getElementCode().replaceFirst("^(G[1-5])-0([1-9])$", "$1-$2");
+                String legacy = legacyCanonicalCode(row.getElementCode());
                 // 超管合法自定义、draft和archived均不属于本次33项种子编号，不参与覆盖或阻断。
-                if (!definitions.containsKey(legacy)) continue;
+                if (legacy == null || !definitions.containsKey(legacy)) continue;
                 // 经独立迁移归档停用的旧种子保留历史，但不再与当前规范发布集合竞争。
                 if (!"published".equals(row.getStatus()) || !"1".equals(row.getEnabled())
                     || !"0".equals(row.getDelFlag())) continue;
-            }
-            if (def == null || !"0".equals(row.getDelFlag()) || !seen.add(row.getElementCode())
-                || !def[0].equals(row.getGateCode()) || !def[2].equals(row.getElementName())
-                || !def[3].equals(row.getPassStandard())
-                || !("Y".equals(def[4]) ? "1" : "0").equals(row.getIsVeto())) {
-                log.error("[GateElementSeed] status=CONFLICT operation=READ_ONLY seedWrite=BLOCKED elementCode={}；存量定义与DOC-05不一致，须保留历史并单独迁移", row == null ? "null" : row.getElementCode());
+                // 旧编号仍在启用：补种规范编号会并存两套编号（禁止的「追加第二套33项」），整批中止。
+                log.error("[GateElementSeed] status=CONFLICT operation=READ_ONLY seedWrite=BLOCKED elementCode={} canonicalCode={}；旧编号仍启用，补种规范编号会并存两套编号，须先单独迁移", row.getElementCode(), legacy);
                 return;
             }
+            // 规范编号已存在：登记为「已占用」，只诊断差异——绝不覆盖、绝不新增同编号第二行。
+            if (!seen.add(row.getElementCode())) {
+                drifted++;
+                log.error("[GateElementSeed] status=CONFLICT operation=READ_ONLY elementCode={}；同编号多行，保留原行不覆盖、不新增重复行（不影响其余缺号要素补种）", row.getElementCode());
+                continue;
+            }
+            if (!"0".equals(row.getDelFlag()) || !def[0].equals(row.getGateCode())
+                || !def[2].equals(row.getElementName()) || !def[3].equals(row.getPassStandard())
+                || !("Y".equals(def[4]) ? "1" : "0").equals(row.getIsVeto())) {
+                drifted++;
+                log.error("[GateElementSeed] status=CONFLICT operation=READ_ONLY elementCode={}；该行与DOC-05不一致，保留原值不覆盖（不影响其余缺号要素补种）", row.getElementCode());
+            }
+        }
+        if (drifted > 0) {
+            log.error("[GateElementSeed] status=CONFLICT operation=READ_ONLY rowsDrifted={}；上述存量行与DOC-05不一致，已保留原值不覆盖；本次只按缺号补种", drifted);
         }
         int inserted = 0;
         int skipped = 0;
@@ -114,6 +148,6 @@ public class IpdGateElementSeedInitializer implements ApplicationRunner {
             gateElementMapper.insert(e);
             inserted++;
         }
-        log.info("[GateElementSeed] 33 项要素种子初始化完成：新增 {} 项，跳过已存在 {} 项", inserted, skipped);
+        log.info("[GateElementSeed] 33 项要素种子初始化完成：新增 {} 项，已存在跳过 {} 项，存量差异保留 {} 项", inserted, skipped, drifted);
     }
 }

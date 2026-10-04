@@ -47,6 +47,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -133,6 +134,11 @@ class P254AcceptanceTest {
             personMapper, arbitrationMapper, observerMapper, systemConfigService, auditLogService, notificationService);
         // 归属断言 fail-closed：未装配 ProjectMapper 一律「无权操作」，故必须注入。
         service.setProjectMapper(projectMapper);
+        ProjectService visibility = org.mockito.Mockito.mock(ProjectService.class);
+        service.setProjectVisibility(visibility);
+        org.mockito.Mockito.lenient().when(visibility.getVisibleById(org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> Project.builder()
+                .id(inv.getArgument(0)).tenantId("000000").build());
         lenient().when(projectMapper.selectById(11L))
             .thenReturn(Project.builder().id(11L).mainGroupId(MARKET.groupId())
                 .status("ACTIVE").delFlag("0").build());
@@ -148,6 +154,7 @@ class P254AcceptanceTest {
         gate.setStatus("PENDING");
         gate.setCurrentRound(1);
         gate.setStartedAt(new Date());
+        org.mockito.Mockito.lenient().when(gateMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> gate);
         gate.setSignDueAt(new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3)));
         signedRows.clear();
         arbitrationRows.clear();
@@ -256,7 +263,7 @@ class P254AcceptanceTest {
         service.reopen(601L, MARKET);
         gate.setCurrentRound(3); // 模拟 DB 行副作用（reopen 走 wrapper，内存对象需手动同步）
 
-        verify(notificationService, times(2)).publish(anyLong(), eq("GATE_ROUND_OBSERVER"),
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), eq("GATE_ROUND_OBSERVER"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
         Map<String, Object> view = service.view(601L, MARKET);
         assertThat(view.get("observers")).asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST).hasSize(2);
@@ -276,9 +283,9 @@ class P254AcceptanceTest {
 
         service.reopen(601L, MARKET);
 
-        verify(notificationService, times(1)).publish(anyLong(), eq("GATE_ROUND_OBSERVER"),
+        verify(notificationService, times(1)).publishAfterCommit(anyLong(), eq("GATE_ROUND_OBSERVER"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
-        verify(notificationService, times(1)).publish(eq(303L), eq("GATE_ADMIN_INTERVENE"),
+        verify(notificationService, times(1)).publishAfterCommit(eq(303L), eq("GATE_ADMIN_INTERVENE"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
     }
 
@@ -300,7 +307,7 @@ class P254AcceptanceTest {
         });
         verify(gateMapper, times(1)).update(any(), any());
         assertThat(auditActions()).contains("GATE_ABSTAIN_TIMEOUT", "GATE_APPROVE");
-        verify(notificationService, times(2)).publish(anyLong(), eq("GATE_ABSTAINED"),
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), eq("GATE_ABSTAINED"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
     }
 
@@ -364,8 +371,7 @@ class P254AcceptanceTest {
         gate.setSignDueAt(new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(2)));
 
         assertThat(service.scanRemind(SUPER)).isZero();
-        verify(notificationService, never()).publishDaily(anyLong(), anyString(), anyString(),
-            anyString(), anyLong(), anyString(), anyString(), anyString(), any(Date.class));
+        verifyNoInteractions(notificationService);
     }
 
     // ---- AC-GATE-10 冲突仲裁与超管终裁 ----
@@ -387,7 +393,7 @@ class P254AcceptanceTest {
 
         assertThat(gate.getStatus()).isEqualTo("REJECTED");
         assertThat(auditActions()).contains("GATE_ARBITRATION_OPEN");
-        verify(notificationService, times(2)).publish(anyLong(), eq("GATE_ARBITRATION_REQUEST"),
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), eq("GATE_ARBITRATION_REQUEST"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
 
         service.arbitrate(601L, "APPROVE", "支持市场侧", LEADER_A);
@@ -395,13 +401,13 @@ class P254AcceptanceTest {
         assertThat(second.getDecision()).isEqualTo("REJECT");
 
         assertThat(auditActions()).contains("GATE_ARBITRATION_ESCALATED");
-        verify(notificationService, times(1)).publish(eq(303L), eq("GATE_FINAL_RULING_REQUEST"),
+        verify(notificationService, times(1)).publishAfterCommit(eq(303L), eq("GATE_FINAL_RULING_REQUEST"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
 
         GateArbitration ruling = service.finalRuling(601L, "REJECT", "维持驳回，补齐基准值后重发", SUPER);
         assertThat(ruling.getArbitratorType()).isEqualTo("SUPER_ADMIN");
         assertThat(auditActions()).contains("GATE_FINAL_RULING");
-        verify(notificationService, times(2)).publish(anyLong(), eq("GATE_FINAL_RULING_RESULT"),
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), eq("GATE_FINAL_RULING_RESULT"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
     }
 
@@ -422,7 +428,9 @@ class P254AcceptanceTest {
         assertThat(auditActions()).contains("GATE_ARBITRATION_SETTLED").doesNotContain("GATE_ARBITRATION_ESCALATED");
         verify(notificationService, never()).publish(anyLong(), eq("GATE_FINAL_RULING_REQUEST"),
             anyString(), anyString(), anyLong(), anyString(), anyString(), anyString());
-        verify(notificationService, times(2)).publish(anyLong(), eq("GATE_ARBITRATION_RESULT"),
+        verify(notificationService, never()).publishAfterCommit(anyLong(), eq("GATE_FINAL_RULING_REQUEST"),
+            anyString(), anyString(), anyLong(), anyString(), anyString(), anyString());
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), eq("GATE_ARBITRATION_RESULT"),
             eq("ACTION"), eq("gate"), eq(601L), anyString(), anyString(), anyString());
     }
 

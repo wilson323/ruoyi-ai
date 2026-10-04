@@ -113,3 +113,13 @@ bash scripts/mvn-locked.sh -o test -pl ruoyi-modules/ruoyi-ipd
 
 **判读测试数字的前提**：只有在无并发构建污染的窗口下跑出的全模块结果才作数。
 拿不到干净窗口时**如实写「未验证」**，不得把被污染的数字当通过或当失败。
+
+## 智能体平台中断（2026-10-04 实测，不是项目代码错）
+
+「Agent execution terminated due to error」「stream reading error: unexpected EOF」「request failed …streamGenerateContent: EOF」「429 model API overloaded」都是**模型服务/网络层**断流，不是 Java、mvn 或本仓代码报错。2026-10-04 两个会话的日志实证：中断发生在模型还没发出任何工具调用时，同一时段没有子智能体也没有 mvn——不得再归因到并发构建或项目代码。
+
+- **先读日志再下结论**：会话日志在 `~/.gemini/antigravity-ide/brain/<会话ID>/.system_generated/logs/transcript.jsonl`，沙箱里 `grep`/`tail` 会报 `Operation not permitted`，改用 `view_file` / `grep_search` 直接读文件，搜 `ERROR_MESSAGE` 拿真实错误码。没读到就写「未核实」，不列推测清单冒充原因。
+- **不要把十几 KB 的报告整段当提示词贴进来**：实测两次首条消息过大都在几秒内触发上下文压缩，压缩摘要又把原始日志转义嵌套进去，后续每次请求更重、更易断流。把报告存成仓内文件，提示词只写「读某文件第几节，做某一件事」。
+- **一次只派一件事**：「多个智能体并行 + 全部事项」拆成独立小任务分会话做。
+- **同一会话连续两次断流就换新会话**，不要在原会话反复重发（实测原会话 4 次重发 8 次全断，新会话正常）；会话中途别来回切模型/思考档位。
+- 平台层故障无法在本仓代码里根除；本仓能做的只有以上四条降低触发概率与误判。

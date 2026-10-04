@@ -77,6 +77,38 @@ class SubStageProgressServiceTest {
     }
 
     @Test
+    void actualGatePreventsCursorWriteUntilResponsiblePersonHasApproved() {
+        IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
+        org.ruoyi.ipd.mapper.StageActionMapper actions = mock(org.ruoyi.ipd.mapper.StageActionMapper.class);
+        var submitted = org.ruoyi.ipd.domain.StageAction.builder().projectId(1001L)
+            .actionCode("C01").isBlocking("1").status("DONE").build();
+        when(subStageService.listAll()).thenReturn(catalog());
+        when(maps.listAll()).thenReturn(List.of(org.ruoyi.ipd.domain.IpdActionSkillMap.builder()
+            .actionCode("C01").subStageCode("CONCEPT-S1").build()));
+        when(actions.selectList(any())).thenReturn(List.of(submitted));
+        service = new SubStageProgressService(projectMapper, subStageService,
+            new SubStageGateService(subStageService, maps, actions), auditLogService);
+        Project before = project("CONCEPT-S1", 1);
+        when(projectMapper.selectById(1001L)).thenReturn(before);
+
+        assertThatThrownBy(() -> service.advance(1001L, "CONCEPT-S2", 1L, 11L))
+            .isInstanceOfSatisfying(IpdBusinessException.class, e -> {
+                assertThat(e.getErrorCode()).isEqualTo(ApiV1ErrorCode.GATE_NOT_PASSED);
+                assertThat(e.getMessage()).contains("待产线负责人批准");
+            });
+        verify(projectMapper, never()).advanceSubStage(1001L, "000000", "CONCEPT", "CONCEPT-S1", "CONCEPT-S2", 1L, 11L);
+        verify(auditLogService, never()).append(any(AuditLog.class));
+
+        submitted.setConfirmedBy(9L);
+        when(projectMapper.selectById(1001L)).thenReturn(before, project("CONCEPT-S2", 2));
+        when(projectMapper.advanceSubStage(1001L, "000000", "CONCEPT", "CONCEPT-S1", "CONCEPT-S2", 1L, 11L))
+            .thenReturn(1);
+        assertThat(service.advance(1001L, "CONCEPT-S2", 1L, 11L).currentSubStageCode())
+            .isEqualTo("CONCEPT-S2");
+        verify(auditLogService).append(any(AuditLog.class));
+    }
+
+    @Test
     void repeatedTargetReturnsStoredStateWithoutAnotherWrite() {
         when(projectMapper.selectById(1001L)).thenReturn(project("CONCEPT-S2", 2));
         when(subStageService.listAll()).thenReturn(catalog());

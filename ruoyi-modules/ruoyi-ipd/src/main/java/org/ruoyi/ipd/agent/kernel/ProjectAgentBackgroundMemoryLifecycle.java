@@ -57,8 +57,8 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
     private final Map<String, Map<String, String>> uploads = new HashMap<>();
     private final Map<String, Map<String, Path>> sessions = new HashMap<>();
     /**
-     * 已登记但尚未收口的被委派子调用。归档固化在 {@code ProjectAgentVerifiedSnapshotSpec#persist}
-     * 里等它清空——那次固化就是 {@link #verifyArchive} 判生死的那一刻。
+     * 已登记但尚未收口的被委派子调用。根沙箱在 {@link #prepareArchive} 等它清空，
+     * 然后由 SDK 生成归档；不能等到 snapshot.persist 才等待已固化内容。
      *
      * <p>实证（runId 2106436968471633922 / 2106443323328794625）：子智能体跑了 65.3s / 47.7s，
      * 主运行在其结束前 1 秒就固化并核验了归档，{@code verifyArchive} 按设计拒绝
@@ -66,6 +66,8 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
      * 单纯调大 {@link #QUIESCE_BUDGET_SECONDS}（已实测 30→120）对本故障毫无作用。
      */
     private final java.util.Set<String> liveNestedSessions = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private record ArchiveCall(boolean root, io.agentscope.harness.agent.sandbox.SandboxAcquireResult acquired) { }
+    private final java.util.concurrent.ConcurrentMap<String, ArchiveCall> archiveCalls = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.atomic.AtomicLong callIds = new java.util.concurrent.atomic.AtomicLong();
     private volatile io.agentscope.harness.agent.workspace.WorkspaceManager workspace;
     private Throwable failure;
@@ -86,6 +88,20 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
             var error = new IllegalStateException("Official call session identity is missing");
             recordFailure(error); throw error;
         }
+        boolean root = org.ruoyi.ipd.agent.ProjectAgentConstants.AGENT_ID.equals(name);
+        if (id == null || id.isBlank()) {
+            var error = new IllegalStateException("Official archive identity is missing");
+            recordFailure(error); throw error;
+        }
+        var call = new ArchiveCall(root, acquired);
+        ArchiveCall previous = archiveCalls.putIfAbsent(id, call);
+        // SDK 2.0.3 shared subagents inherit the parent's exact acquisition through
+        // RuntimeContext.builder(parent). They borrow its filesystem, not its lifecycle.
+        if (previous != null && previous.root() != root && previous.acquired() != acquired) {
+            var error = new IllegalStateException("Root and child archive identities overlap");
+            recordFailure(error); throw error;
+        }
+        if (previous != null && root && !previous.root()) archiveCalls.replace(id, previous, call);
         Path source = workspace == null ? null : workspace.resolveSessionLogFile(context, name, session);
         // Official SessionTranscriptWriter supplies SessionTree a path WITHOUT the local namespace.
         // The local spool remains namespaced and must match the actual remote bytes.
@@ -134,6 +150,20 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
      */
     public void awaitNestedCallsSettled() {
         awaitNestedCallsSettled(NESTED_CALL_BUDGET_SECONDS);
+    }
+
+    /** Called before SDK tar generation; a child's archive must not wait for its siblings. */
+    void prepareArchive(String archiveId) {
+        ArchiveCall call = archiveId == null ? null : archiveCalls.get(archiveId);
+        if (call == null) {
+            var error = new IllegalStateException("Official archive call identity was not registered");
+            recordFailure(error); throw error;
+        }
+        if (call.root()) {
+            awaitNestedCallsSettled();
+            drain();
+        }
+        requireHealthy();
     }
 
     /** 测试与诊断用：显式指定等待预算（秒）。生产走 {@link #NESTED_CALL_BUDGET_SECONDS}。 */

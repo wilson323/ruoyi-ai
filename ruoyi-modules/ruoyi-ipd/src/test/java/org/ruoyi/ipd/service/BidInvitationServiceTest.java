@@ -100,7 +100,7 @@ class BidInvitationServiceTest {
 
         assertThat(expired).isEqualTo(2);
         // 通知两位发起人
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             org.mockito.ArgumentMatchers.eq(7L),
             org.mockito.ArgumentMatchers.eq(NotificationService.Types.BID_EXPIRED_NO_RESPONSE),
             org.mockito.ArgumentMatchers.anyString(),
@@ -110,7 +110,7 @@ class BidInvitationServiceTest {
             org.mockito.ArgumentMatchers.anyString(),
             org.mockito.ArgumentMatchers.anyString()
         );
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             org.mockito.ArgumentMatchers.eq(9L),
             org.mockito.ArgumentMatchers.eq(NotificationService.Types.BID_EXPIRED_NO_RESPONSE),
             org.mockito.ArgumentMatchers.anyString(),
@@ -132,4 +132,14 @@ class BidInvitationServiceTest {
         assertThat(expired).isZero();
         org.mockito.Mockito.verifyNoInteractions(notificationService);
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

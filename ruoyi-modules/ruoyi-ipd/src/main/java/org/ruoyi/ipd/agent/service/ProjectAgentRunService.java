@@ -61,6 +61,7 @@ public class ProjectAgentRunService {
     private final AgentRunStore store;
     private final ArtifactVersionStore artifactStore;
     private final AiDocumentService documentService;
+    private AiFeedbackService adoptionFeedback;
     private final ProjectMapper projectMapper;
     private final ProductMapper productMapper;
     private final ProjectAgentRunExecutor executor;
@@ -252,9 +253,13 @@ public class ProjectAgentRunService {
         this(enabled, access, planner, store, null, null, null, null, executor, mapper, clock, runTimeout);
     }
 
+    /** 定档必须装配采纳反馈，写入失败与文档一起回滚。 */
+    public void setAdoptionFeedback(AiFeedbackService feedback) {
+        this.adoptionFeedback = Objects.requireNonNull(feedback, "adoptionFeedback");
+    }
+
     /**
      * 注入模型目录。不改构造签名；未注入时定档的模型名传 null。
-     *
      * @param modelCatalog 已有模型目录，可为 null
      */
     public void setModelCatalog(ProjectAgentModelCatalog modelCatalog) {
@@ -377,7 +382,7 @@ public class ProjectAgentRunService {
     @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public ProjectAgentViews.ArtifactApply applyArtifact(IpdActor actor, Long runId, String artifactId) {
         requireEnabled();
-        if (artifactStore == null || documentService == null) {
+        if (artifactStore == null || documentService == null || adoptionFeedback == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物应用未装配");
         }
         if (artifactId == null || artifactId.isBlank()) {
@@ -421,6 +426,8 @@ public class ProjectAgentRunService {
         if (snapshot != null && snapshot.previousRunId() != null) {
             validateRework(actor, run.getProjectId(), run.getActionCode(), snapshot.previousRunId(),
                 snapshot.targetDocumentId(), snapshot.baseVersionId());
+        }
+        if (snapshot != null && snapshot.targetDocumentId() != null) {
             doc = documentService.reviseGeneratedAuthorized(actor, run.getProjectId(), docType,
                 reworkId(snapshot.targetDocumentId()), reworkId(snapshot.baseVersionId()),
                 current.getTitle(), current.getContent(), modelName(run), usage.promptTokens(), usage.completionTokens());
@@ -432,6 +439,7 @@ public class ProjectAgentRunService {
             // 抛出冲突让本事务回滚新建文档；下一次请求在新事务中回读实际关联。
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "产物应用冲突，请重试");
         }
+        adoptionFeedback.recordArtifactAdoption(run, current, actor.id());
         rememberDeliverable(run, current.getTitle(), doc.getId(), actor.id());
         return appliedView(run, current, doc.getId(), doc.getStatus(),
             ProjectAgentConstants.INDEX_STATUS_NOT_INDEXED);
@@ -447,6 +455,7 @@ public class ProjectAgentRunService {
      */
     private ProjectAgentViews.ArtifactApply replayApplied(IpdAgentRun run, IpdAgentArtifactVersion version,
                                                           Long operatorId) {
+        adoptionFeedback.recordArtifactAdoption(run, version, operatorId);
         rememberDeliverable(run, version.getTitle(), version.getDocumentId(), operatorId);
         return appliedView(run, version, version.getDocumentId(), readArchiveStatus(version.getDocumentId()),
             ProjectAgentConstants.INDEX_STATUS_NOT_INDEXED);
@@ -501,7 +510,7 @@ public class ProjectAgentRunService {
             snapshot.modelConfigId(), snapshot.skills().stream().map(ProjectAgentViews.SkillRef::name).toList(),
             snapshot.toolIds(), run.getActionCode(), "", run.getIdempotencyKey(), snapshot.productLineId(),
             snapshot.requirementId(), snapshot.previousRunId(), snapshot.targetDocumentId(), snapshot.baseVersionId());
-        RunPlan plan = planner.plan(frozen, run.getTenantId(), run.getProjectId(), actor.id(), snapshot.skills());
+        RunPlan plan = planner.plan(frozen, run.getTenantId(), run.getProjectId(), actor.id(), snapshot.skills(), snapshot.frozenPack());
         try {
             org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.requireUnchanged(
                 snapshot.modelFingerprint(), plan.modelConfigId(), plan.model(), plan.fallbackModelConfigId(), plan.fallbackModel());
@@ -1024,19 +1033,26 @@ public class ProjectAgentRunService {
         }
     }
 
-    /** 返工必须明确指向本人的已结束运行和其已定档文档，不能按标题/类型猜链。 */
+    /** 新尝试关联本人同项目同动作的失败运行；文档返工另外必须明确原文档与基准版本。 */
     private void validateRework(IpdActor actor, Long projectId, String actionCode,
                                 String previousRunId, String targetDocumentId, String baseVersionId) {
         if (previousRunId == null && targetDocumentId == null && baseVersionId == null) return;
         Long previousId = reworkId(previousRunId);
-        Long targetId = reworkId(targetDocumentId);
-        reworkId(baseVersionId);
         IpdAgentRun previous = requireOwnRun(actor, previousId);
         if (!Objects.equals(previous.getProjectId(), projectId)
             || !Objects.equals(previous.getActionCode(), actionCode)
             || !AgentRunStatus.valueOf(previous.getStatus()).isTerminal()) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "返工须关联本项目同一动作的已结束运行");
         }
+        if (targetDocumentId == null && baseVersionId == null) {
+            if (!AgentRunStatus.FAILED.name().equals(previous.getStatus())
+                && !AgentRunStatus.CANCELLED.name().equals(previous.getStatus())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "新尝试须关联本人同项目同动作的失败或已取消运行");
+            }
+            return;
+        }
+        Long targetId = reworkId(targetDocumentId);
+        reworkId(baseVersionId);
         if (artifactStore == null || artifactStore.listByRunIds(List.of(previousId)).stream().noneMatch(
             artifact -> IpdAgentArtifactVersion.STATUS_APPLIED.equals(artifact.getStatus())
                 && Objects.equals(targetId, artifact.getDocumentId()))) {
@@ -1253,7 +1269,7 @@ public class ProjectAgentRunService {
         ConfigSnapshot snapshot = frozenSnapshot(run);
         String requirementId = snapshot == null ? null : snapshot.requirementId();
         if (requirementId != null && successBody != null) {
-            executor.bindDemandOnReverify(Long.valueOf(requirementId), successBody);
+            executor.bindDemandOnReverify(Long.valueOf(requirementId), successBody, run.getTenantId());
         }
     }
 

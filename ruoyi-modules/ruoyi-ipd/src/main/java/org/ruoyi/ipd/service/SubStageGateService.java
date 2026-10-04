@@ -23,7 +23,7 @@ import java.util.Set;
  * 小阶段推进门禁（§2.8 不变量④，主计划 §0.1 业务规则）：
  * 目标小阶段之前的顺序小阶段中，is_blocking=1 的动作未完成即拒绝推进（40001 GATE_NOT_PASSED，fail-closed）。
  *
- * <p>已满足 = DONE/NA 或 history_mark=HISTORICAL_MISSING（历史缺失不伪造 DONE，门禁视为已满足——
+ * <p>已满足 = 已批准的 DONE/NA 或 history_mark=HISTORICAL_MISSING（历史缺失不伪造 DONE，门禁视为已满足——
  * 与 StageActionService 语义一致）；仅历史项目的实例缺行不拦。
  * <p>常驻小阶段（is_resident=1，KPI-S1）与未知码不可作为推进目标（10001 PARAM_INVALID）。
  * <p>本服务只读 stage_actions；项目游标由 SubStageProgressService 原子推进。
@@ -32,8 +32,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class SubStageGateService {
 
-    /** 已满足状态集：完成或豁免 */
-    static final Set<String> SETTLED_STATUSES = Set.of("DONE", "NA");
     /** 历史缺失标记（StageActions.history_mark 既有值） */
     static final String HISTORY_MISSING = "HISTORICAL_MISSING";
 
@@ -115,7 +113,8 @@ public class SubStageGateService {
             if (!"1".equals(row.getIsBlocking())) {
                 continue;
             }
-            if (SETTLED_STATUSES.contains(row.getStatus())) {
+            if ("NA".equals(row.getStatus())
+                || ("DONE".equals(row.getStatus()) && row.getConfirmedBy() != null)) {
                 continue;
             }
             if (HISTORY_MISSING.equals(row.getHistoryMark())) {
@@ -124,7 +123,8 @@ public class SubStageGateService {
                 }
                 continue;
             }
-            pending.add(m.getActionCode());
+            pending.add(m.getActionCode() + ("DONE".equals(row.getStatus())
+                ? "(待产线负责人批准)" : ""));
         }
         Collections.sort(pending);
         return pending;

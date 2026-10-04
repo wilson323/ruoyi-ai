@@ -55,6 +55,7 @@ public class ProjectAgentRunPlanner {
     }
 
     private final CapabilityManifest manifest;
+    private org.ruoyi.ipd.agent.catalog.ProjectAgentPackCatalog packCatalog;
     private final ProjectAgentSkillCatalog skillCatalog;
     private final ProjectAgentToolCatalog toolCatalog;
     private final ProjectAgentModelCatalog modelCatalog;
@@ -129,6 +130,13 @@ public class ProjectAgentRunPlanner {
         this.skillMapService = skillMapService;
     }
 
+    public ProjectAgentRunPlanner(CapabilityManifest manifest, ProjectAgentSkillCatalog skills,
+            ProjectAgentToolCatalog tools, ProjectAgentModelCatalog models,
+            IpdActionSkillMapService mappings, org.ruoyi.ipd.agent.catalog.ProjectAgentPackCatalog packs) {
+        this(manifest, skills, tools, models, mappings);
+        this.packCatalog = packs;
+    }
+
     /**
      * 测试兼容：无动作映射服务时不按 actionCode 自动绑技能。
      *
@@ -189,7 +197,19 @@ public class ProjectAgentRunPlanner {
     /** 恢复使用原摘要定位不可变发布版本；不能用最新技能替换原运行。 */
     public RunPlan plan(AgentRunCreateReq req, String tenantId, Long projectId, Long personId,
                         List<SkillRef> frozenSkills) {
-        PackEntry pack = manifest.pack(req.capabilityPackCode(), req.capabilityPackVersion())
+        return plan(req, tenantId, projectId, personId, frozenSkills, null);
+    }
+
+    public RunPlan plan(AgentRunCreateReq req, String tenantId, Long projectId, Long personId,
+                        List<SkillRef> frozenSkills, PackEntry frozenPack) {
+        if (frozenPack != null && (!java.util.Objects.equals(frozenPack.code(), req.capabilityPackCode())
+            || !java.util.Objects.equals(frozenPack.version(), req.capabilityPackVersion()))) {
+            throw conflict("原运行能力包冻结身份不一致");
+        }
+        // Historical runs predate database configuration: retain their original builtin pack, never today's override.
+        PackEntry pack = frozenPack != null ? frozenPack : (packCatalog == null || frozenSkills != null
+            ? manifest.pack(req.capabilityPackCode(), req.capabilityPackVersion())
+            : packCatalog.pack(tenantId, req.capabilityPackCode(), req.capabilityPackVersion()))
             .orElseThrow(() -> invalid("能力包不存在：" + req.capabilityPackCode() + "@" + req.capabilityPackVersion()));
         String actionCode = isBlank(req.actionCode()) ? null : req.actionCode().trim();
         if (actionCode != null && !pack.actionCodes().contains(actionCode)) {
@@ -213,6 +233,9 @@ public class ProjectAgentRunPlanner {
             actionBoundNames = List.of();
         }
         List<LoadedSkill> skills = loadSkills(pack, explicitNames, actionBoundNames, tenantId, projectId, personId, frozenSkills);
+        if (frozenSkills == null && actionCode != null && skillMapService != null && actionBoundNames.isEmpty()) {
+            throw conflict("该动作尚未配置执行技能，请先完成动作技能绑定");
+        }
         List<String> toolIds = distinct(req.toolIds());
         List<String> selectableToolIds = ProjectAgentToolCatalog.executionToolIds(pack.tools());
         for (String toolId : toolIds) {
@@ -235,6 +258,7 @@ public class ProjectAgentRunPlanner {
             req.previousRunId(), req.targetDocumentId(), req.baseVersionId(),
             org.ruoyi.ipd.agent.kernel.ProjectAgentAguiInput.digest(req.aguiInput()),
             req.requirementId(), req.productLineId())
+            .withFrozenPack(pack)
             .withExecutionToolIds(ProjectAgentToolCatalog.executionToolIds(toolIds))
             .withModelFingerprint(org.ruoyi.ipd.agent.model.ProjectAgentModelFingerprint.capture(modelConfigId, model, fallbackId, fallback))
             .withModelIdentityVersion(1, fallbackId == null ? null : fallbackId.toString())

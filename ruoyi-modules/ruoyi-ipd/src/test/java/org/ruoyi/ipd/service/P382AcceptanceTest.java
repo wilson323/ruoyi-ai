@@ -39,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import org.ruoyi.ipd.service.impl.DefaultStateMachineGuard;
 
@@ -404,8 +405,9 @@ class P382AcceptanceTest {
 
         // 关键校验：mapper.insert 一次也没调用（不写第二条记录）
         verify(mapper, never()).insert(any(NegativeFeedback.class));
-        // 关键校验：审计一次也没追加（避免脏审计）
+        // 关键校验：审计一次也没追加（避免脏审计），新旧通知入口均不得被调用。
         verify(auditLogService, never()).append(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -500,7 +502,7 @@ class P382AcceptanceTest {
         assertThat(lifted.getTriggerMonth()).isEqualTo("2026-09");
 
         // 7e) lift 后通知双PM（FYI：恢复津贴+奖金资格）
-        verify(notificationService, atLeastOnce()).publish(anyLong(), anyString(), anyString(),
+        verify(notificationService, atLeastOnce()).publishAfterCommit(anyLong(), anyString(), anyString(),
             eq("negative_feedback"), any(), anyString(), anyString(), anyString());
     }
 
@@ -616,7 +618,7 @@ class P382AcceptanceTest {
         assertThat(row.getStatus()).isEqualTo("EXECUTED");
         // 双 PM 通知：MARKET_PM 主 + RD_PM 连带（次数与人数一致）
         ArgumentCaptor<Long> personCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(notificationService, times(2)).publish(personCaptor.capture(),
+        verify(notificationService, times(2)).publishAfterCommit(personCaptor.capture(),
             anyString(), anyString(), anyString(), any(), anyString(), anyString(), anyString());
         List<Long> personIds = new ArrayList<>(personCaptor.getAllValues());
         assertThat(personIds).containsExactlyInAnyOrder(MARKET_PM_ID, RD_PM_ID);
@@ -645,7 +647,7 @@ class P382AcceptanceTest {
         assertThat(row.getStatus()).isEqualTo("EXECUTED");
         // BOTH 模式：循环 mainPersonId + relatedPersonId(null) → 实际只 publish MARKET_PM 一次（service 实现按 personId!=null 过滤）
         ArgumentCaptor<Long> personCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(notificationService, times(1)).publish(personCaptor.capture(),
+        verify(notificationService, times(1)).publishAfterCommit(personCaptor.capture(),
             anyString(), anyString(), anyString(), any(), anyString(), anyString(), anyString());
         List<Long> personIds = new ArrayList<>(personCaptor.getAllValues());
         // BOTH 模式下通知：只发给主记录人（MARKET_PM 作为回执人），连带方为 null 被跳过

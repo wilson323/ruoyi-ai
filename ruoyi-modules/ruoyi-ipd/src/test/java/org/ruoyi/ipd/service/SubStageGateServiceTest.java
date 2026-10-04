@@ -65,12 +65,13 @@ class SubStageGateServiceTest {
         return StageAction.builder().projectId(1001L).actionCode(code)
             .actionName(ActionCatalog.byCode(code).name())
             .ownerRole(ActionCatalog.byCode(code).ownerRole())
-            .depth(depth).status(status).historyMark(historyMark)
+            .depth(depth).status(status).confirmedBy("DONE".equals(status) ? 9002L : null)
+            .historyMark(historyMark)
             .isBlocking(isBlocking).isBioFeature(isBio).build();
     }
 
     @Test
-    @DisplayName("不变量④放行：前序阻断动作全清（DONE/NA）→ 不抛")
+    @DisplayName("不变量④放行：前序阻断动作全清（已批准DONE/NA）→ 不抛")
     void advanceAllowedWhenAllBlockingSettled() {
         when(subStageService.listAll()).thenReturn(catalog());
         when(skillMapService.listAll()).thenReturn(List.of(
@@ -82,6 +83,32 @@ class SubStageGateServiceTest {
 
         assertThatCode(() -> service.assertAdvanceAllowed(1001L, "CONCEPT-S2"))
             .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("完成只是提交：未经负责人批准，新建与存量项目均不能推进")
+    void submittedActionBlocksUntilApprovedAndResubmissionClearsAcceptance() {
+        when(subStageService.listAll()).thenReturn(catalog());
+        when(skillMapService.listAll()).thenReturn(List.of(map("C01", "CONCEPT-S1", 1)));
+        StageAction submitted = action("C01", "DEEP", "1", "DONE", null, "0");
+        submitted.setConfirmedBy(null);
+        when(stageActionMapper.selectList(any())).thenReturn(List.of(submitted));
+
+        for (boolean requireRows : List.of(false, true)) {
+            assertThatThrownBy(() -> service.assertAdvanceAllowed(1001L, "CONCEPT-S2", requireRows))
+                .isInstanceOfSatisfying(IpdBusinessException.class, ex -> {
+                    assertThat(ex.getErrorCode()).isEqualTo(ApiV1ErrorCode.GATE_NOT_PASSED);
+                    assertThat(ex.getMessage()).contains("C01(待产线负责人批准)");
+                });
+            submitted.setConfirmedBy(9002L);
+            assertThatCode(() -> service.assertAdvanceAllowed(1001L, "CONCEPT-S2", requireRows))
+                .doesNotThrowAnyException();
+            // 重新提交会清掉批准人；门禁必须重新等待批准，不能沿用此前 DONE。
+            submitted.setConfirmedBy(null);
+            assertThatThrownBy(() -> service.assertAdvanceAllowed(1001L, "CONCEPT-S2", requireRows))
+                .isInstanceOf(IpdBusinessException.class)
+                .hasMessageContaining("待产线负责人批准");
+        }
     }
 
     @Test

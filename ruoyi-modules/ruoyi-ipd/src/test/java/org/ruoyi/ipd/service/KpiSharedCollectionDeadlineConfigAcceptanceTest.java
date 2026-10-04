@@ -164,6 +164,7 @@ class KpiSharedCollectionDeadlineConfigAcceptanceTest {
         verify(notificationService, times(2)).publishDaily(
             any(), eq(Types.KPI_DUE_SOON), eq(NotificationService.KIND_FYI), any(),
             any(Long.class), any(), any(), any(), any());
+        verify(notificationService, never()).publishAfterCommit(any(), any(), any(), any(), any(Long.class), any(), any(), any());
         verify(notificationService, never()).publish(any(), any(), any(), any(), any(Long.class), any(), any(), any());
         verify(auditLogService, times(2)).append(any(AuditLog.class));
     }
@@ -183,8 +184,6 @@ class KpiSharedCollectionDeadlineConfigAcceptanceTest {
         when(productGroupMapper.selectById(11L)).thenReturn(group(11L, 901L));
         when(productGroupMapper.selectById(12L)).thenReturn(group(12L, 902L));
         when(kpiRecordMapper.selectCount(any())).thenReturn(0L);
-        when(notificationService.publish(any(), any(), any(), any(), any(Long.class), any(), any(), any()))
-            .thenReturn(NotificationEvent.builder().id(1L).build());
         // 9 月归集 → 次月截止 10/8 → 后 1 天 = 10/9
         LocalDate scanDate = LocalDate.of(2026, 10, 9);
 
@@ -193,7 +192,7 @@ class KpiSharedCollectionDeadlineConfigAcceptanceTest {
 
         assertThat(result.day1Reminders()).isEqualTo(2);
         assertThat(result.day3Escalations()).isZero();
-        verify(notificationService, times(2)).publish(
+        verify(notificationService, times(2)).publishAfterCommit(
             any(), eq("KPI_SHARED_DEADLINE_DAY1"), eq("ACTION"), any(),
             any(Long.class), any(), any(), any());
         verify(notificationService, never()).publishDaily(any(), any(), any(), any(), any(Long.class), any(), any(), any(), any());

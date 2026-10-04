@@ -402,7 +402,7 @@ class WorkbenchServiceTest {
     }
 
     @Test
-    @DisplayName("pendingType：17 类 key 预置 0，按投递 taskType 计数（设计 §5）")
+    @DisplayName("pendingType：退役后现役16类key预置0，按投递taskType计数")
     void summary_pendingType_countsByTaskTypeWithFullKeys() {
         IpdActor actor = new IpdActor(99L, "root", "SUPER_ADMIN", null);
         when(projectMapper.selectList(any(LambdaQueryWrapper.class)))
@@ -417,7 +417,11 @@ class WorkbenchServiceTest {
         Map<String, Object> stats = (Map<String, Object>) result.get("stats");
         @SuppressWarnings("unchecked")
         Map<String, Integer> pendingType = (Map<String, Integer>) stats.get("pendingType");
-        assertThat(pendingType).hasSize(17);
+        assertThat(pendingType).containsOnlyKeys(
+            "capacity_approval", "change_implementation", "change_verify", "closeout", "contribution_confirm",
+            "deletion_review", "handover", "key_gate", "key_gate_arbitration", "kpi_fill", "rd_replacement",
+            "receipt_review", "retirement_review", "stage_sign", "strategic_change", "waiver_review");
+        assertThat(pendingType).doesNotContainKey("bonus_lock");
         assertThat(pendingType.get("stage_sign")).isEqualTo(2);
         assertThat(pendingType.get("deletion_review")).isEqualTo(1);
         assertThat(pendingType.get("handover")).isZero();

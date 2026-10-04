@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
@@ -33,7 +32,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -115,14 +113,12 @@ class P323AcceptanceTest {
         peopleAndGroups();
         when(taskMapper.selectOne(any())).thenReturn(task(1L, 101L, "SELF",
             LocalDate.of(2026, 6, 30), LocalDate.of(2026, 6, 1)));
-        lenient().when(notificationService.publish(any(), anyString(), anyString(), anyString(), any(Long.class),
-            anyString(), anyString(), anyString())).thenReturn(NotificationEvent.builder().id(1L).build());
 
         ProjectScoreScheduleService.ScheduleScanResult result = service.scanLaunchedProjects(
             LocalDate.of(2026, 7, 2));
 
         assertThat(result.reminders()).isEqualTo(1);
-        verify(notificationService).publish(
+        verify(notificationService).publishAfterCommit(
             eq(101L), eq("PROJECT_SCORE_SELF_OVERDUE"), anyString(), anyString(), any(Long.class),
             anyString(), anyString(), nullable(String.class));
     }
@@ -137,6 +133,7 @@ class P323AcceptanceTest {
             LocalDate.of(2026, 7, 1));
 
         assertThat(result.createdTasks()).isZero();
+        org.mockito.Mockito.verifyNoInteractions(notificationService);
         verify(taskMapper, never()).insert(any(ProjectScoreTask.class));
     }
 

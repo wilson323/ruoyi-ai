@@ -226,6 +226,11 @@ public class PersonService {
     /**
      * P2-2.2：通知派发 — 本人 + 双方组长 + 全部超管。
      * 收件人去重：本人与 actor 同人时跳过本人；同组组长与对方组长同人时仅发一次。
+     *
+     * <p>调用方 {@code resign()} 为 {@code @Transactional}，故四处均走
+     * {@link NotificationService#publishAfterCommit}：通知延迟到「离职冻结」业务提交后由独立事务发送，
+     * 宿主回滚时本人/组长/超管都不会收到一条指向未生效冻结的待办。原 try/catch 保留作防御
+     * （publishAfterCommit 自身失败只 WARN，不再抛出）。</p>
      */
     private int publishResignNotifications(Person person, long pendingProjects, String reason, IpdActor operator) {
         int sent = 0;
@@ -240,9 +245,11 @@ public class PersonService {
         // 1) 本人 FYI（actor=本人时跳过，避免自收件箱冗余）
         if (!operator.id().equals(person.getId())) {
             try {
-                notificationService.publish(person.getId(), EVT_RESIGN_PENDING_HANDOVER,
+                notificationService.publishAfterCommit(person.getId(), EVT_RESIGN_PENDING_HANDOVER,
                     NotificationService.KIND_FYI, "persons", person.getId(),
-                    "账号已冻结（离职）", contentSelf, "/ipd/profile");
+                    // 落点用移交页：本人此刻是 HANDOVER_ONLY 范围（见上面 contentSelf「仅保留移交相关权限」），
+                    // 前端没有 /ipd/profile 这条路由，原先发的地址会落到 404 兜底页。
+                    "账号已冻结（离职）", contentSelf, "/ipd/handover");
                 sent++;
             } catch (Exception e) {
                 log.warn("P2-2.2 通知派发本人失败: personId={}", person.getId(), e);
@@ -260,10 +267,12 @@ public class PersonService {
                 .stream().map(Person::getId).toList();
             for (Long leaderId : groupLeaders) {
                 try {
-                    notificationService.publish(leaderId, EVT_RESIGN_PENDING_HANDOVER,
+                    notificationService.publishAfterCommit(leaderId, EVT_RESIGN_PENDING_HANDOVER,
                         kindLeader, "persons", person.getId(),
                         "组员离职待移交（" + person.getName() + "）",
-                        contentLeader, "/ipd/handovers/inbox");
+                        // 前端移交页路由是 /ipd/handover（单数、无 /inbox 子段）；
+                        // 原 /ipd/handovers/inbox 前端无此路由，点进去是 404 兜底页。
+                        contentLeader, "/ipd/handover");
                     sent++;
                 } catch (Exception e) {
                     log.warn("P2-2.2 通知本组组长失败: leaderId={}", leaderId, e);
@@ -284,11 +293,11 @@ public class PersonService {
             .map(Person::getId).toList();
         for (Long leaderId : counterpartLeaders) {
             try {
-                notificationService.publish(leaderId, EVT_RESIGN_PENDING_HANDOVER,
+                notificationService.publishAfterCommit(leaderId, EVT_RESIGN_PENDING_HANDOVER,
                     NotificationService.KIND_FYI, "persons", person.getId(),
                     "对方 PM 离职知会（" + person.getName() + "）",
                     counterpartRole + " 角色 " + person.getName() + " 离职冻结，对方侧项目移交请关注。",
-                    "/ipd/handovers/inbox");
+                    "/ipd/handover");
                 sent++;
             } catch (Exception e) {
                 log.warn("P2-2.2 通知对方组长失败: leaderId={}", leaderId, e);
@@ -304,12 +313,13 @@ public class PersonService {
             .stream().map(Person::getId).toList();
         for (Long adminId : admins) {
             try {
-                notificationService.publish(adminId, EVT_RESIGN_PENDING_HANDOVER,
+                notificationService.publishAfterCommit(adminId, EVT_RESIGN_PENDING_HANDOVER,
                     NotificationService.KIND_ACTION, "persons", person.getId(),
                     "离职冻结升级通知（" + person.getName() + "）",
                     "人员 " + person.getName() + " 已离职冻结，15 日倒计时开始。名下 "
                         + pendingProjects + " 个项目待移交。",
-                    "/ipd/admin/handovers/pending");
+                    // 前端超管移交页路由是 /ipd/admin/handover（无 /handovers/pending 子段）。
+                    "/ipd/admin/handover");
                 sent++;
             } catch (Exception e) {
                 log.warn("P2-2.2 通知超管失败: adminId={}", adminId, e);

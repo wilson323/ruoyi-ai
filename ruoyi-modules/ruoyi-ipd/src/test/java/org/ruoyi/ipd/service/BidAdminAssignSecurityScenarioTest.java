@@ -280,9 +280,19 @@ class BidAdminAssignSecurityScenarioTest {
 
         realService.adminAssign(1L, 200L, 999L);
 
-        verify(notificationService, times(2)).publish(anyLong(), anyString(), anyString(), anyString(), anyLong(), anyString(), anyString(), anyString());
-        verify(notificationService).publish(eq(200L), eq("BID_WON"), eq("ACTION"), eq("bid_invitation"), eq(1L), anyString(), anyString(), anyString());
-        verify(notificationService).publish(eq(301L), eq("BID_LOST"), eq("ACTION"), eq("bid_invitation"), eq(1L), anyString(), anyString(), anyString());
-        verify(notificationService, never()).publish(eq(200L), eq("BID_LOST"), anyString(), anyString(), anyLong(), anyString(), anyString(), anyString());
+        verify(notificationService, times(2)).publishAfterCommit(anyLong(), anyString(), anyString(), anyString(), anyLong(), anyString(), anyString(), anyString());
+        verify(notificationService).publishAfterCommit(eq(200L), eq("BID_WON"), eq("ACTION"), eq("bid_invitation"), eq(1L), anyString(), anyString(), anyString());
+        verify(notificationService).publishAfterCommit(eq(301L), eq("BID_LOST"), eq("ACTION"), eq("bid_invitation"), eq(1L), anyString(), anyString(), anyString());
+        verify(notificationService, never()).publishAfterCommit(eq(200L), eq("BID_LOST"), anyString(), anyString(), anyLong(), anyString(), anyString(), anyString());
     }
+    @org.junit.jupiter.api.AfterEach
+    void noImmediateNotificationPublication() {
+        org.mockito.Mockito.verify(notificationService, org.mockito.Mockito.never()).publish(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+
 }

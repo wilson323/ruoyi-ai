@@ -74,6 +74,14 @@ public class Product extends BaseEntity implements SoftDeletable {
     /** 状态 ACTIVE|INACTIVE */
     private String status;
 
+    /** 既有退市生效时间；普通产品编辑不能改变审批结果。 */
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private java.util.Date retiredAt;
+
+    /** 既有产品只读锁；只作用于该产品，不冻结同产品线其他产品。 */
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private String retirementLocked;
+
     /** 租户ID */
     private String tenantId;
 

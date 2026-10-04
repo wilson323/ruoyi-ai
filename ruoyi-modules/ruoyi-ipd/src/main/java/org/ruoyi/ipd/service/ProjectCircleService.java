@@ -193,11 +193,14 @@ public class ProjectCircleService implements IProjectCircleService {
                 .circleRole(normalized).addedBy(actor.id())
                 .build());
         }
-        notificationService.publish(userId, "CIRCLE_MEMBER_ADDED", "FYI",
+        // addMember 为 @Transactional：走 publishAfterCommit 延迟到加人落库提交后发送，回滚时不误发「你已加入协作圈」。
+        notificationService.publishAfterCommit(userId, "CIRCLE_MEMBER_ADDED", "FYI",
             "PROJECT_CIRCLE", project.getId(),
             "你已加入项目协作圈",
             actor.name() + " 邀请你参与 " + project.getName(),
-            "/ipd/circle?project=" + project.getId());
+            // 协作圈是项目详情的子路由（/ipd/projects/{projectId}/circle），
+            // 前端没有顶层 /ipd/circle，原地址会落到 404 兜底页。
+            "/ipd/projects/" + project.getId() + "/circle");
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("userId", userId);
         result.put("circleRole", normalized);
@@ -233,11 +236,14 @@ public class ProjectCircleService implements IProjectCircleService {
             .postId(postId).authorId(actor.id()).parentId(parentId).content(text).build();
         commentMapper.insert(comment);
         if (!Objects.equals(post.getAuthorId(), actor.id())) {
-            notificationService.publish(post.getAuthorId(), "CIRCLE_POST_REPLIED", "FYI",
+            // addComment 为 @Transactional：走 publishAfterCommit，评论插入回滚时不误发「收到新回复」。
+            notificationService.publishAfterCommit(post.getAuthorId(), "CIRCLE_POST_REPLIED", "FYI",
                 "PROJECT_CIRCLE_POST", post.getId(),
                 "项目协作圈收到新回复",
                 actor.name() + " 回复了你的动态",
-                "/ipd/circle?project=" + post.getProjectId() + "&post=" + post.getId());
+                // 同上：指向项目协作圈子路由。原 &post= 锚点一并去掉——
+                // 该页只读路由参数 projectId、不读查询参数，锚点本就无法生效。
+                "/ipd/projects/" + post.getProjectId() + "/circle");
         }
         return comment.getId();
     }

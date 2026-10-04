@@ -124,7 +124,7 @@ class P274AcceptanceTest {
         assertThat(result.reminded()).isEqualTo(1);
 
         ArgumentCaptor<String> eventTypeCap = ArgumentCaptor.forClass(String.class);
-        verify(notificationService, times(1)).publish(eq(900101L), eventTypeCap.capture(),
+        verify(notificationService, times(1)).publishAfterCommit(eq(900101L), eventTypeCap.capture(),
             eq(NotificationService.KIND_ACTION), eq("handover"), eq(1001L),
             org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
             org.mockito.ArgumentMatchers.anyString());
@@ -160,8 +160,9 @@ class P274AcceptanceTest {
 
         // toEscalate 0 命中 ⇒ escalated=0，不发升级 publish
         assertThat(result.escalated()).isEqualTo(0);
-        verify(notificationService, never()).publish(anyLong(), eq("HANDOVER_OVERDUE_ESCALATION"),
+        verify(notificationService, never()).publishAfterCommit(anyLong(), eq("HANDOVER_OVERDUE_ESCALATION"),
             any(), any(), any(), any(), any(), any());
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(Long.class), any(), any(), any());
         // toRemind 仍命中（reminder 不查 escalatedAt）⇒ reminded=1，发 publishDaily
         assertThat(result.reminded()).isEqualTo(1);
     }
@@ -175,9 +176,11 @@ class P274AcceptanceTest {
 
         assertThat(result.escalated()).isZero();
         assertThat(result.reminded()).isZero();
+        org.mockito.Mockito.verifyNoInteractions(notificationService);
         verify(handoverMapper, never()).selectList(any(LambdaQueryWrapper.class));
-        verify(notificationService, never()).publish(anyLong(), any(), any(), any(), any(),
+        verify(notificationService, never()).publishAfterCommit(anyLong(), any(), any(), any(), any(),
             any(), any(), any());
+        verify(notificationService, never()).publish(any(), any(), any(), any(), any(Long.class), any(), any(), any());
     }
 
     // ------------------- AC-HAND-02 每日提醒 -------------------

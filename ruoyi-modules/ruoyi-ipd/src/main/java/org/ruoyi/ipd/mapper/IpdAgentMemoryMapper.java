@@ -64,7 +64,7 @@ public interface IpdAgentMemoryMapper extends BaseMapperPlus<IpdAgentMemory, Ipd
                   @Param("personId") Long personId);
 
     /**
-     * 废弃。带 status 前置条件，不物理删除（保留「模型曾记过什么」的审计线索）。
+     * 废弃。按项目与本人定位，可使候选或已晋升条目失效；不物理删除，保留审计线索。
      */
     @Update("UPDATE ipd_agent_memory SET status = '2', update_time = NOW()"
         + " WHERE id = #{id} AND project_id = #{projectId} AND person_id = #{personId}")

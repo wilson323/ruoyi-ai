@@ -203,6 +203,44 @@ class ProjectAgentRunServiceLifecycleTest {
         assertThat(h.store.runCount()).isEqualTo(2);
     }
 
+    @Test
+    void failedNewAttemptKeepsPreviousReceiptAndItsOwnIdempotency() {
+        RunServiceHarness h = new RunServiceHarness(true, false, 4);
+        h.kernel.failWith = new IllegalStateException("failed original");
+        Long original = Long.valueOf(h.service.create(ACTOR, PROJECT_ID, c02("failed-original-01", MESSAGE)).runId());
+        int originalEvents = h.store.events(original).size();
+        h.kernel.failWith = null;
+        var base = c02("failed-next-01", MESSAGE);
+        var request = new org.ruoyi.ipd.agent.dto.AgentRunCreateReq(base.capabilityPackCode(), base.capabilityPackVersion(),
+            base.modelConfigId(), base.skillNames(), base.toolIds(), base.actionCode(), base.message(),
+            base.idempotencyKey(), base.productLineId(), base.requirementId(), String.valueOf(original), null, null);
+        var next = h.service.create(ACTOR, PROJECT_ID, request);
+        assertThat(next.runId()).isNotEqualTo(String.valueOf(original));
+        assertThat(h.service.create(ACTOR, PROJECT_ID, request).runId()).isEqualTo(next.runId());
+        assertThat(h.service.get(ACTOR, Long.valueOf(next.runId())).configSnapshot().previousRunId()).isEqualTo(String.valueOf(original));
+        assertThat(h.service.get(ACTOR, original).status()).isEqualTo("FAILED");
+        assertThat(h.store.events(original)).hasSize(originalEvents);
+        assertThat(h.store.runCount()).isEqualTo(2);
+        assertCode(() -> h.service.create(OTHER_ACTOR, PROJECT_ID, request), ApiV1ErrorCode.NOT_FOUND);
+    }
+
+    @Test
+    void successfulOrActiveRunCannotBeUsedAsFailedAttemptAssociation() {
+        for (boolean completed : new boolean[] {false, true}) {
+            RunServiceHarness h = new RunServiceHarness(true, false, 4);
+            var plain = new org.ruoyi.ipd.agent.dto.AgentRunCreateReq("market-research", "v1",
+                String.valueOf(AgentTestFixtures.MODEL_ID), List.of("competitor-analysis-ipd"),
+                List.of("project_knowledge_search"), null, MESSAGE, "successful-old-01");
+            Long original = Long.valueOf(h.service.create(ACTOR, PROJECT_ID, plain).runId());
+            if (completed) { h.kernel.last().sink().onText("普通回答"); h.kernel.last().sink().onComplete(); }
+            var next = new org.ruoyi.ipd.agent.dto.AgentRunCreateReq(plain.capabilityPackCode(), plain.capabilityPackVersion(),
+                plain.modelConfigId(), plain.skillNames(), plain.toolIds(), null, MESSAGE, "successful-next-01",
+                null, null, String.valueOf(original), null, null);
+            assertCode(() -> h.service.create(ACTOR, PROJECT_ID, next), ApiV1ErrorCode.STATE_CONFLICT);
+            assertThat(h.store.runCount()).isEqualTo(1);
+        }
+    }
+
     private static void assertCode(Runnable call, ApiV1ErrorCode code) {
         assertThatThrownBy(call::run).isInstanceOfSatisfying(IpdBusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(code));
@@ -301,7 +339,7 @@ class ProjectAgentRunServiceLifecycleTest {
         assertThat(svc.reverify(ACTOR, bound.getId()).status()).isEqualTo("SUCCEEDED");
         verify(trustedArtifacts).requireDocumentContent(org.mockito.ArgumentMatchers.eq(ACTOR),
             org.mockito.ArgumentMatchers.eq(bound.getId()), org.mockito.ArgumentMatchers.any());
-        verify(binder).apply(77L, answer, null);
+        verify(binder).apply(77L, answer, null, bound.getTenantId());
 
         // 无快照/无需求单的复检成功不触发回写。
         IpdAgentRun bare = verifyingRun("key-verify-bare");

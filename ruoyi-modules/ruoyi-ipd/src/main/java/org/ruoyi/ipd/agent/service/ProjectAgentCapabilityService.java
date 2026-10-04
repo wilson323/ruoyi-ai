@@ -27,6 +27,7 @@ public class ProjectAgentCapabilityService {
     private final boolean enabled;
     private final IpdCopilotAccess access;
     private final CapabilityManifest manifest;
+    private org.ruoyi.ipd.agent.catalog.ProjectAgentPackCatalog packCatalog;
     private final ProjectAgentSkillCatalog skillCatalog;
     private final ProjectAgentToolCatalog toolCatalog;
     private final ProjectAgentModelCatalog modelCatalog;
@@ -48,6 +49,13 @@ public class ProjectAgentCapabilityService {
         this.skillCatalog = Objects.requireNonNull(skillCatalog, "skillCatalog");
         this.toolCatalog = Objects.requireNonNull(toolCatalog, "toolCatalog");
         this.modelCatalog = Objects.requireNonNull(modelCatalog, "modelCatalog");
+    }
+
+    public ProjectAgentCapabilityService(boolean enabled, IpdCopilotAccess access, CapabilityManifest manifest,
+            ProjectAgentSkillCatalog skills, ProjectAgentToolCatalog tools, ProjectAgentModelCatalog models,
+            org.ruoyi.ipd.agent.catalog.ProjectAgentPackCatalog packs) {
+        this(enabled, access, manifest, skills, tools, models);
+        this.packCatalog = packs;
     }
 
     /**
@@ -72,7 +80,7 @@ public class ProjectAgentCapabilityService {
             .map(s -> new ProjectAgentViews.Skill(s.name(), s.version(), s.sha256(), s.available(), s.reason())).toList();
         var byName = scopedSkills.stream().collect(java.util.stream.Collectors.toMap(
             ProjectAgentSkillCatalog.SkillStatus::name, java.util.function.Function.identity()));
-        List<ProjectAgentViews.Pack> packs = manifest.packs().stream().map(p -> pack(p, anyModel, reviewed, byName)).toList();
+        List<ProjectAgentViews.Pack> packs = (packCatalog == null ? manifest.packs() : packCatalog.packs(tenantId)).stream().map(p -> pack(p, anyModel, reviewed, byName)).toList();
         return new ProjectAgentViews.Capabilities(packs, models);
     }
 

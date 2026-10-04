@@ -249,6 +249,22 @@ class AuditChainIntegritySchedulerTest {
             anyString(), anyString(), eq(ACTION_URL), eq(NOW));
     }
 
+    @Test
+    @DisplayName("通知一个收件人失败仍尝试其余收件人，并报告部分失败")
+    void failedRecipientDoesNotPreventRemainingNotifications() {
+        when(auditLogService.verifyChainAnchored()).thenReturn(anchorOk(List.of(9000L), List.of(), 10));
+        givenAdmins(Person.builder().id(1L).build(), Person.builder().id(2L).build());
+        org.mockito.Mockito.doThrow(new IllegalStateException("notification unavailable"))
+            .when(notificationService).publishDaily(eq(1L), anyString(), anyString(), anyString(),
+                anyLong(), anyString(), anyString(), anyString(), any(Date.class));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            scheduler(true, "").scanAndNotify(NOW))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("成功 1 人");
+        verify(notificationService).publishDaily(eq(2L), eq("AUDIT_CHAIN_BROKEN"),
+            eq(NotificationService.KIND_FYI), eq("audit_chain_verify"), eq(0L),
+            anyString(), anyString(), eq(ACTION_URL), eq(NOW));
+    }
+
     // ===== ⑥ 开关关闭 =====
 
     @Test

@@ -47,13 +47,13 @@ class ProjectAgentSkillCatalogTest {
     }
 
     @Test
-    @DisplayName("43项技能清单版本与真实frontmatter、原始SHA及加载版本逐项一致")
+    @DisplayName("44项已发布技能清单版本与真实frontmatter、原始SHA及加载版本逐项一致")
     void allManifestSkillsMatchShippedVersionsAndBytes() throws Exception {
         CapabilityManifest manifest = AgentTestFixtures.manifest();
         ProjectAgentSkillCatalog catalog = AgentTestFixtures.skillCatalog(manifest);
         // 2026-10-03：monthly-receipt-tracking-ipd（LC01）/ six-month-receipt-settlement-ipd（LC03）
         // 随回款台账 / 奖金池退役下线，清单由 45 → 43。
-        assertThat(manifest.skills()).hasSize(43);
+        assertThat(manifest.skills()).hasSize(44);
         for (CapabilityManifest.SkillEntry skill : manifest.skills()) {
             try (InputStream in = getClass().getClassLoader()
                     .getResourceAsStream("ipd-skills/" + skill.name() + "/SKILL.md")) {

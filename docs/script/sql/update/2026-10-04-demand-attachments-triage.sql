@@ -1,0 +1,23 @@
+-- 当前本地数据库迁移；只新增原需求字段，不新表，不改业务审批。
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'upload_token_hash');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN upload_token_hash VARCHAR(64) NULL COMMENT "游客附件上传凭据SHA256"', 'SELECT "upload_token_hash already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'attachments_json');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN attachments_json LONGTEXT NULL COMMENT "需求附件存储编号与完整性元数据"', 'SELECT "attachments_json already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_run_id');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN triage_run_id BIGINT NULL COMMENT "关联现有项目智能体分拣运行"', 'SELECT "triage_run_id already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_status');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN triage_status VARCHAR(32) NULL COMMENT "分拣状态"', 'SELECT "triage_status already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_error');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN triage_error VARCHAR(500) NULL COMMENT "安全的分拣失败说明"', 'SELECT "triage_error already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_attempt');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN triage_attempt INT NULL COMMENT "分拣尝试次数"', 'SELECT "triage_attempt already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SET @ipd_column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME = 'triage_person_id');
+SET @ipd_ddl = IF(@ipd_column_exists = 0, 'ALTER TABLE requirements ADD COLUMN triage_person_id BIGINT NULL COMMENT "原分拣真实成员用于幂等恢复不授权"', 'SELECT "triage_person_id already exists"');
+PREPARE ipd_stmt FROM @ipd_ddl; EXECUTE ipd_stmt; DEALLOCATE PREPARE ipd_stmt;
+SELECT COLUMN_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirements' AND COLUMN_NAME IN ('upload_token_hash','attachments_json','triage_run_id','triage_status','triage_error','triage_attempt','triage_person_id');

@@ -24,6 +24,21 @@ services:
       IPD_AIMODEL_ENCRYPT_KEY: ${IPD_AIMODEL_ENCRYPT_KEY:?set IPD_AIMODEL_ENCRYPT_KEY}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      # 向量库（RAG 检索存储）—— 2026-10-03 补缺件。
+      # 不补会怎样：父 application.yml 的默认值是 weaviate + 127.0.0.1:28080，
+      # 容器里的 127.0.0.1 指向后端**自己**。真正危险的不是「连不上」，
+      # 而是**启动期零校验**：WeaviateVectorStoreStrategy.getClient() 懒加载、不探连通性
+      # （已读源码确认），故部署当时一点异常都不报，故障推迟到第一次真用 RAG 才暴露。
+      # 届时：地址写错 → ServiceException「知识库向量查询不可用」（响亮）；
+      #       连得上但类/数据为空 → 返回空列表（静默）。两者排查半径都很大。
+      # 变量名来源（两条路径互相印证，非猜测）：
+      #   1) 父 application.yml 里逐字写着 ${VECTOR_STORE_WEAVIATE_HOST:127.0.0.1:28080}；
+      #   2) VectorStoreProperties 是 @ConfigurationProperties("vector-store")，
+      #      宽松绑定得到的环境变量名同为 VECTOR_STORE_WEAVIATE_HOST。
+      # 指向 compose 内网的服务名 + **容器端口 8080**（不是宿主映射端口 28080）。
+      VECTOR_STORE_TYPE: ${VECTOR_STORE_TYPE:-weaviate}
+      VECTOR_STORE_WEAVIATE_PROTOCOL: ${VECTOR_STORE_WEAVIATE_PROTOCOL:-http}
+      VECTOR_STORE_WEAVIATE_HOST: ${VECTOR_STORE_WEAVIATE_HOST:-weaviate:8080}
       # 关掉两个探不到真实服务的健康检查（2026-10-03 owner 拍板）：
       # 类路径里存在 mail / elasticsearch 依赖时 Spring 会自动装配对应检查项，
       # 分别去连占位地址 smtp.localhost:25 与 localhost:9200 —— 生产两者均未部署，
@@ -43,9 +58,26 @@ services:
       # （Spring 宽松绑定：环境变量 SYS_UPLOAD_PATH 优先级高于 yml 文件值）。
       # 原 yml 值是 Windows 路径 D:\DownLoad，在 Linux 容器上会静默建出畸形目录名。
       SYS_UPLOAD_PATH: /app/upload
+      # 生产首个账号引导（2026-10-03 owner 拍板：开）。
+      # 为什么必须有：登录只查 persons 表，而所有种子初始化器（IpdMockDataInitializer /
+      # IpdZkScenarioInitializer）都是 @Profile("dev")，也没有任何 SQL 往 persons 写行。
+      # 于是全新库 + prod 档启动后「公司里没有一个人能登录」，登录接口只回
+      # 「用户名或密码错误」—— 与密码打错在日志里长得一样。
+      # 行为：persons 为空时创建一行超管（username 默认 admin，与基座 sys_user 对齐，
+      # 菜单树靠这条映射取到）；persons 非空则整体跳过，重复启动不改写任何数据。
+      # 口令只从 IPD_INITIAL_PWD 来（代码内零口令字面量）；开着引导却在空库上没给口令时，
+      # 后端会拒绝启动并说明原因，而不是落一个默认口令账号。
+      # 重部署时（库非空）引导自动跳过，故口令可以不设 —— 用 :- 而非 :? ，避免卡住合法的重部署。
+      IPD_BOOTSTRAP_ENABLED: ${IPD_BOOTSTRAP_ENABLED:-true}
+      IPD_INITIAL_PWD: ${IPD_INITIAL_PWD:-}
       JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs"
     depends_on:
       redis:
+        condition: service_healthy
+      # 等向量库真正 ready 再起后端（不是只等容器起来）。weaviate 首次启动要建
+      # /var/lib/weaviate 的持久化目录，容器 Running ≠ 服务可连；只判 service_started
+      # 会让后端在竞态窗口里发起连接，可能把「暂时连不上」记成一次硬失败。
+      weaviate:
         condition: service_healthy
       # 命名卷首次挂载时由 Docker 以 root:root 创建挂载点，非 root 的 ipd 用户写不进去，
       # 故先由 upload-init 服务把卷目录 chown 给 ipd，再启动后端。
@@ -86,9 +118,52 @@ services:
       timeout: 3s
       retries: 5
 
+  # 向量库（Weaviate 1.30.0）—— 2026-10-03 新增。RAG 检索的存储端。
+  # 此前编排里没有任何向量库服务，后端只能回落 127.0.0.1:28080，产生上面 backend 段
+  # 描述的「启动期不报错、首次用 RAG 才炸」故障。
+  # 不映射到宿主端口（与 redis 一致）：backend 走 compose 内网按服务名直连
+  # weaviate:8080，既避免撞宿主已占用的 28080，也不把无鉴权的向量库暴露出去。
+  weaviate:
+    image: semitechnologies/weaviate:1.30.0
+    restart: unless-stopped
+    # 不写 command：镜像自带 CMD 已是 --host 0.0.0.0 --port 8080 --scheme http
+    # （docker image inspect 实测读出），重复声明只会日后与镜像漂移。
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      # 仅内网可达，故不开鉴权；因此**绝不可**把本服务映射到宿主或公网。
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      # 向量由后端算好后写入，weaviate 侧不需要向量化模型。
+      DEFAULT_VECTORIZER_MODULE: none
+      CLUSTER_HOSTNAME: node1
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    healthcheck:
+      # 只能用 wget：实测该镜像基于 alpine minirootfs 3.21.3（busybox），
+      # 镜像内存在 /usr/bin/wget 与 /bin/sh，**没有 curl**（不是猜的，是 docker export 列过文件表）。
+      # 探针打 weaviate 官方的 readiness 端点。
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/v1/.well-known/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
   frontend:
     image: ${IPD_FRONTEND_IMAGE:-ipd-frontend:latest}
     # 前端镜像由 ruoyi-ipd-web 仓 apps/web-antd/Dockerfile 构建（nginx 托管 + /api 反代）
+    # 构建段 —— 2026-10-03 补缺件（此前只有 image: 没有 build:，本机也没有 ipd-frontend:*，
+    # 于是 up -d 只能靠一个不存在的镜像名兜底）。
+    # 上下文必须是 **ruoyi-ipd-web 仓根**，不是 apps/web-antd：该 Dockerfile 要 COPY
+    # package.json / pnpm-workspace.yaml / turbo.json / .npmrc / internal / scripts /
+    # packages / apps/web-antd 一整个 pnpm workspace。
+    # 默认路径按「两仓同级 checkout」（本机即 ../ruoyi-ipd-web）；仓不在一起时
+    # 在 .env 设 IPD_FRONTEND_CONTEXT 指到前端仓根，或按 Runbook 三.2 手工构建后
+    # 只给 IPD_FRONTEND_IMAGE —— 镜像已存在时 compose 不会重建。
+    # 注意：context 指向不存在的目录时 `docker compose config` 仍返回 0（实测），
+    # 报错推迟到真正构建那一刻，故换机器部署请先确认此路径。
+    build:
+      context: ${IPD_FRONTEND_CONTEXT:-../ruoyi-ipd-web}
+      dockerfile: apps/web-antd/Dockerfile
     restart: unless-stopped
     ports:
       - "80:5666"
@@ -102,3 +177,5 @@ volumes:
   backend-logs:
   # 上传文件持久化卷（sys.upload.path / SYS_UPLOAD_PATH 指向的目录）
   ipd-upload:
+  # 向量库持久化卷 —— 不挂卷时容器重建会丢掉全部已入库的向量（知识库要重新灌一遍）
+  weaviate-data:

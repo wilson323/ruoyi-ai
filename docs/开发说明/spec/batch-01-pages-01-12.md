@@ -162,7 +162,7 @@ And 审计 entityType=user, action=password_change_failed
 | 🔴 `noOutputAlerts` | array | — | 60 天无产出提醒 | server | `[]` | BR-INC-11 |
 | `loading` / `nextAction` | — | — | — | local / boot | true / — | — |
 
-🔴 17 类 taskType：`stage_sign` / `key_gate` / `key_gate_arbitration` / `deletion_review` / `waiver_review` / `handover` / `rd_replacement` / `contribution_confirm` / `receipt_review` / `retirement_review` / `strategic_change` / `capacity_approval` / `kpi_fill` / `change_implementation` / `change_verify` / `bonus_lock` / `closeout`
+🔴 16 类 taskType：`stage_sign` / `key_gate` / `key_gate_arbitration` / `deletion_review` / `waiver_review` / `handover` / `rd_replacement` / `contribution_confirm` / `receipt_review` / `retirement_review` / `strategic_change` / `capacity_approval` / `kpi_fill` / `change_implementation` / `change_verify` / `closeout`
 
 ### 4. API 接口清单
 - `GET /api/workflow/tasks?bucket=`（现有）
@@ -177,7 +177,7 @@ And 审计 entityType=user, action=password_change_failed
 | 环节 | 内容 |
 |---|---|
 | ① 发起 | 登录后 `AppRoot` 触发 `/api/bootstrap` → `<WorkflowCenter>` 挂载 → 拉 `/api/workflow/tasks?bucket=pending` |
-| ② 处理 | 服务端按 user + role 聚合 17 类待办（stage_sign / key_gate / key_gate_arbitration / deletion_review / waiver_review / handover / rd_replacement / contribution_confirm / receipt_review / retirement_review / strategic_change / capacity_approval / kpi_fill / change_implementation / change_verify / bonus_lock / closeout） |
+| ② 处理 | 服务端按 user + role 聚合 16 类待办（stage_sign / key_gate / key_gate_arbitration / deletion_review / waiver_review / handover / rd_replacement / contribution_confirm / receipt_review / retirement_review / strategic_change / capacity_approval / kpi_fill / change_implementation / change_verify / closeout） |
 | ③ 审核 | 工作台本身不审批；点击任务卡进入业务详情（`<GenericTaskWorkspace>` / `<HandoffWorkbench>` / `<PerformanceV31Panel>` / `<CapacityApprovalPanel>`） |
 | ④ 结果 | `navigate(item.deep_link)`；状态变更后服务端再次推送新 task 至 pending 桶 |
 | ⑤ 记录 | bucket 切换写 `entityType=workflow, action=view_bucket`；任务点击写 `action=click_task` |

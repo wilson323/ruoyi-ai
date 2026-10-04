@@ -30,6 +30,7 @@ import java.util.List;
 public class ProductLineSpaceController {
     private final ProductLineSpaceService service;
     private final IpdPermission permission;
+    private final org.ruoyi.ipd.agent.service.DemandTriageRun triage;
 
     public record CreateRequest(String code, String name) { }
     public record RenameRequest(String name) { }
@@ -45,9 +46,9 @@ public class ProductLineSpaceController {
             return new MemberView(member.getPersonId(), member.getStatus(), member.getReviewedBy());
         }
     }
-    public record ProductView(Long id, String code, String name) {
+    public record ProductView(Long id, String code, String name, String status) {
         static ProductView from(Product product) {
-            return new ProductView(product.getId(), product.getProductCode(), product.getProductName());
+            return new ProductView(product.getId(), product.getProductCode(), product.getProductName(), product.getStatus());
         }
     }
     public record ProjectView(Long id, String code, String name, String currentStage, String status) {
@@ -161,8 +162,17 @@ public class ProductLineSpaceController {
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_LINE_LIST, type = IpdAuthSession.LOGIN_TYPE)
     public ApiV1Response<List<DemandView>> demands(@PathVariable Long lineId) {
         return ApiV1Response.ok(service.demands(lineId, permission.requireInternal()).stream()
-            .map(demand -> new DemandView(demand.getId(), demand.getTitle(), demand.getStatus())).toList());
+            .map(demand -> new DemandView(demand.getId(), demand.getTitle(), demand.getStatus(), triage.status(demand))).toList());
     }
 
-    public record DemandView(Long id, String title, String status) {}
+    @PostMapping("/{lineId}/demands/{demandId}/triage-retry")
+    @SaCheckPermission(value = IpdPermissionCode.OPERATION_PRODUCT_LINE_LIST, type = IpdAuthSession.LOGIN_TYPE)
+    public ApiV1Response<org.ruoyi.ipd.agent.service.DemandTriageRun.TriageStatus> retryTriage(
+            @PathVariable Long lineId, @PathVariable Long demandId) {
+        service.requireTriageDemand(lineId, demandId, permission.requireInternal(), true);
+        return ApiV1Response.ok(triage.retry(demandId));
+    }
+
+    public record DemandView(Long id, String title, String status,
+        org.ruoyi.ipd.agent.service.DemandTriageRun.TriageStatus triage) {}
 }
