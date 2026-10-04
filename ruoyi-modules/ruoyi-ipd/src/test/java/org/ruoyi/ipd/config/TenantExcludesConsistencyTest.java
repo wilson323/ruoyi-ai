@@ -26,16 +26,28 @@ class TenantExcludesConsistencyTest {
             "ruoyi-admin/src/main/resources/application.yml");
     private static final Path SQL_DIR = REPO_ROOT.resolve("docs/script/sql/update");
 
+    /**
+     * 表名标识符字符类，CREATE / DROP / excludes 三处共用。
+     *
+     * <p>2026-10-03 收口：原先这三条正则各自写死 {@code [a-z_]+}，**吞不下含数字的表名**。
+     * 后果是 {@code p0_escalation_chain} 在 DDL 侧与 excludes 侧**同时隐形**——
+     * 它既没被登记进 tenant.excludes，这道门禁也照样报绿（静默失败）。
+     * 实测 {@code docs/script/sql/update} 下 89 张建表里有 1 张含数字，即该盲区的实际暴露面。
+     * 三处同源后，两侧口径不会再各自漂移。
+     */
+    private static final String IDENT_CHARS = "a-zA-Z0-9_";
     private static final Pattern CREATE_TABLE_PAT = Pattern.compile(
-        "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?[`']?([a-z_]+)[`']?\\s*\\(",
+        "CREATE TABLE\\s+(?:IF NOT EXISTS\\s+)?[`']?([" + IDENT_CHARS + "]+)[`']?\\s*\\(",
         Pattern.CASE_INSENSITIVE);
     // Only this explicit module-retirement migration can narrow historical DDL coverage.
     private static final Path RETIREMENT_SQL = SQL_DIR.resolve("2026-10-02-workflow-modules-offline.sql");
     private static final Pattern DROP_TABLE_PAT = Pattern.compile(
-        "(?:^|;)\\s*DROP\\s+TABLE\\s+(?:IF\\s+EXISTS\\s+)?[`']?([a-z_]+)[`']?\\s*(?=;)",
+        "(?:^|;)\\s*DROP\\s+TABLE\\s+(?:IF\\s+EXISTS\\s+)?[`']?([" + IDENT_CHARS + "]+)[`']?\\s*(?=;)",
         Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
     private static final Pattern SQL_COMMENTS = Pattern.compile("/\\*.*?\\*/|--[^\\r\\n]*|#[^\\r\\n]*", Pattern.DOTALL);
-    private static final Pattern EXCLUDE_ITEM_PAT = Pattern.compile("^\s*-\s+([a-z_]+)\s*$");
+    /** excludes 条目：YAML 缩进空格后 {@code - 表名}。原为 {@code [a-z_]+} 且未开大小写折叠，与上面两处一同收口。 */
+    private static final Pattern EXCLUDE_ITEM_PAT = Pattern.compile(
+        "^\\s*-\\s+([" + IDENT_CHARS + "]+)\\s*$", Pattern.CASE_INSENSITIVE);
 
     private Set<String> ddlTables() throws IOException {
         Set<String> result = new HashSet<>();

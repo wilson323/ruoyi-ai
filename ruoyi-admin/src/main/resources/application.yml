@@ -450,6 +450,16 @@ tenant:
     # B1（2026-09-29）：产品线团队空间和成员表为单企业 IPD 业务表；独立的 Person/项目授权仍由业务层校验
     - product_lines
     - product_line_members
+    # R150 合入的两张表（p0_escalation_chain / permanent_delete_audit）随 2026-10-03 DDL 补件
+    # （20261003-ipd-p0-escalation-chain-and-permanent-delete-audit.sql，按活库 SHOW CREATE TABLE 回写）
+    # 首次进入「DDL 表必须登记」门禁的视野。两表均含 tenant_id 列（默认 000000）但单企业私有部署语义，
+    # 未登记则租户拦截器追加 WHERE tenant_id=?，非 000000 会话读不到数据：
+    #   · p0_escalation_chain —— P0 升级链，09:35 每日调度与 P0EscalationService 读写
+    #   · permanent_delete_audit —— 永久清除审计，超管删档留痕的唯一副本
+    # 之所以此前一直没被门禁报出：该门禁的表名正则原为 [a-z_]+，吞不下含数字的表名，
+    # p0_escalation_chain 在 DDL 侧与 excludes 侧同时隐形（已随 TenantExcludesConsistencyTest 一并收口）。
+    - p0_escalation_chain
+    - permanent_delete_audit
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:

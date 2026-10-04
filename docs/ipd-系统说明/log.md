@@ -15142,6 +15142,56 @@ P0-01 定为「容器化链路必然起不来」。**该句在 HEAD 上已不成
 脚本内已就地写入本结论（`resolve_service` docstring，14 行注释，行为零变化，
 `--list` 仍为 82，已实测核对）。
 
+> 命名提醒（避免和上一段混淆）：上一段的 **82** 是 `--list` 报的「待分类写端点数」；
+> 本段的 **82** 是 `scripts/ownership-gate-exempt.txt` 的**条目数**。两者数值相同纯属巧合，
+> 不是同一个量。下文凡说「豁免基线」一律指后者。
+
+## 2026-10-03 项目四个写口补归属守卫：用「在职成员」而不是「同组」
+
+### 改了什么
+`ProjectController` 的 `addCertItem` / `changeCertStatus` / `autoCreateGate` / `recordLaunchDate`
+四个写口原先只调 `requireInternal()`（仅证明已登录），项目 id 由路径变量指定 →
+任何持状态变更权限码的内部用户都能操作别人项目的认证项 / Gate / 上市日期。
+现补守卫3 `IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, id, projectMemberMapper, projectMapper)`。
+豁免基线 **82 → 78**；门禁删行前自动报「4 条豁免已失效」，删后 PASS。
+
+调用面已核实：这四个服务方法各自**只有控制器一个调用方**，守卫放控制器层即覆盖唯一生产路径，
+不必改服务签名（符合「不过度设计」）。
+
+### 关键取舍：不是「同组」
+- BR-ORG-06「编辑项目」一行是 普通PM「仅本人负责」/ 组长「仅本人名下」，**不含组维**。
+- BR-ORG-01：主组＝市场PM 组、协同组＝研发PM 组 → 研发PM 天然不在主组。
+- 认证清单法定责任人恰是研发PM（六阶段动作清单 P10 / V02，责任人列均写「研发PM」）。
+⇒ 用「同组」会把法定责任人 403 挡在门外：**功能被弄坏，表面却像修好了安全问题**。
+
+这也是本日一次**我自己犯过的错**的落地教训：我曾称「项目写操作＝两层守卫是本仓范式」并
+据此建议各簇照办，实为从一个实例（`ProjectService#advanceStage`）过度概括。实测
+`assertSameGroupIpd` 33 处、`requireProjectMemberOrSuperAdmin` 18 处，
+同一方法体两者都有的只有 2 个真实 service 文件；同 `ProjectService` 内
+`changeStatus`(:424) 与 `updateBaselines`(:460) 都只用一层。**本仓对项目写操作没有单一范式**。
+（智能体 A 反向纠正了我，其结论已独立复核成立。）
+
+### 自证
+- 新增 `ProjectControllerOwnershipGuardTest`（`@Tag("dev")`，8 例）：4 个接口「非成员 →
+  FORBIDDEN 且 `never()` 触达 service」；**2 条反向锁**「跨组但在职成员 → 必须放行」；
+  超管豁免且不查 Mapper；项目不存在 → FORBIDDEN 统一文案。
+- **变异自证（先证明变异生效再跑）**：
+  - 删掉全部 4 行守卫 → 守卫行数实测 4→0，套件 8 跑 **5 失败**（全落在 `assertForbidden:101`）+ 2 桩错。
+  - 守卫换成 `assertSameGroupIpd` → 套件红。
+  - 两次变异后均逐字节恢复（`diff -q` 核对）。
+- 定向回归 21 例全绿（新 8 + `Sec01AcceptanceTest` 13）。IPD 模块全量测试结果见提交。
+- 首次变异②**没生效**（我的 perl 条件写错、文件未改），据此得出的「仍然全绿」是**假结论**；
+  重做时加了「先打印变异前后守卫行数」这一步才证明变异真的生效。此为"先验尺子"的又一实例。
+
+### 连带改动
+`Sec01AcceptanceTest:106` 是唯一 `new ProjectController(...)` 处，构造器新增两个 Mapper 形参后
+补两个惰性 mock。已核实该类不调用被守卫的四个写口。
+
+### 未做（写明边界）
+- `ProjectController#syncCertItems` 的服务层守卫（`ProjectCertServiceImpl:132-134`）用的是
+  「同组」，**同样会挡住院PM 这个法定责任人** —— 属已上线代码的口径缺陷，改成哪种口径是业务裁决，未动。
+- `resubmitStart` 未动：经核实其规则是「创建人」而非组，属另一类。
+
 
 ## 2026-10-03 本地开发栈启动固化：`scripts/ipd-dev-up.sh`
 
@@ -15200,3 +15250,57 @@ P0-01 定为「容器化链路必然起不来」。**该句在 HEAD 上已不成
 - 三方启动的**开机自启 / 守护**未做。本脚本解决的是「一条命令问清现状并补齐」，
   不等于常驻守护；后端进程被停后仍需人工或外部调度拉起。
 
+
+---
+
+## 2026-10-03 归属守卫第二批（LandedScenario） + 租户排除表门禁的仪器盲区
+
+### 一、A5：LandedScenarioService 两个写口补归属守卫（守卫3）
+
+`record` / `importBatch` 原先**零对象级判定**——只做字段校验与查重，actor 仅落成
+`recorded_by`。任何内部用户可对任意项目登记落地场景。补 `requireProjectMemberOrSuperAdmin`
+（守卫3，在职项目成员；超管豁免）。批量口按**去重后的 projectId** 各校验一次并排在任何
+写入之前，避免 200 条上限下退化成最多 400 次查询。
+
+`LandedScenarioServiceTest` 17 例（新增 6 例归属：非成员 record / 非成员批量 →
+FORBIDDEN 且零写入、项目不存在 → FORBIDDEN、超管豁免且不查成员表、按去重 projectId
+只查一次、**反向锁**「跨组但在职成员必须放行」）。项目主组刻意设为 777002 与 actor 组 1
+不同——后来人若把守卫改成 `assertSameGroupIpd`「同组」，该放行用例会变红。
+
+变异自证：拿掉两处守卫调用（调用点 3→1，那 1 处是 javadoc 引用）→ **5 条归属用例变红**；
+还原后 17/17 绿。归属门禁：删 2 条已失效豁免，基线 78 → 76，PASS。
+
+### 二、租户排除表门禁（TenantExcludesConsistencyTest）两个方向的错，均已收口
+
+**引子**：本日 `55e93631`（补齐两张缺失表 DDL）使 `permanent_delete_audit` 进入该门禁视野并报红。
+
+**但报出的缺口只是两张里的一张、漏掉的那张才是关键**：该测试三条正则都写死 `[a-z_]+`——
+表名含数字**在 DDL 侧与 excludes 侧同时隐形**。实测 `docs/script/sql/update` 下 89 张建表里
+有 1 张含数字（`p0_escalation_chain`），它既没登记进 `tenant.excludes`，这道门禁也照样报绿。
+三处正则（CREATE / DROP / excludes 条目）已同源收口为 `IDENT_CHARS = a-zA-Z0-9_`，
+`EXCLUDE_ITEM_PAT` 同时补上大小写折叠。
+
+**改仪器前后各测一次（口径 = 门禁自己的调用方式）**：
+- 原样正则 → 报 `[permanent_delete_audit]`（1 张）
+- 修正正则 → 报 `[p0_escalation_chain, permanent_delete_audit]`（2 张）
+- 登记两表后 → `Tests run: 2, Failures: 0`
+
+**真实影响**：两表均含 `tenant_id` 列（默认 `000000`）但单企业私有部署语义。未登记则
+租户拦截器追加 `WHERE tenant_id=?`，非 `000000` 会话读不到数据——
+`p0_escalation_chain` 是 09:35 每日调度与 P0EscalationService 的读写对象，
+`permanent_delete_audit` 是超管删档留痕的唯一副本。已在 `application.yml` 的
+`# 多租户配置` 区块末尾登记（excludes 104 条），YAML 多文档解析通过。
+
+### 三、附带更正一处我自己的读数错误
+
+后台全量测试的任务通知报「exit code 0」，而任务输出文件里写的是 `EXIT=1 / BUILD FAILURE
+/ Tests run: 4213, Failures: 2`。**任务通知的退出码是包装脚本的，不是 Maven 的**——
+零/全绿先当坏再次生效。据 surefire 报告（518 份，仪器已用已知失败样本反验）确认真实失败
+2 条：本条门禁 1 条（已修）＋ `AuditChainIntegritySchedulerTest.deletedTailAlarms...` 1 条。
+
+后者**不属于本轮**：`AuditChainIntegrityScheduler` 这个类及其测试类都是**未跟踪文件**
+（`git ls-files --error-unmatch` 不认该路径，mtime 2026-10-03 16:20），系兄弟会话在途未提交的活。
+按本仓「不动兄弟会话 modified」的边界，未触碰，此处仅登记状态。
+
+另一处同类：`python3 gate.py | tail` 后的 `$?` 读到的是 `tail` 的 0，门禁真实退出码是 1。
+管道里量退出码必须用管道自身最后一条命令以外的口径。
