@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 配置信息Service业务层处理
@@ -71,7 +70,6 @@ public class ChatConfigServiceImpl implements IChatConfigService {
     }
 
     private LambdaQueryWrapper<ChatConfig> buildQueryWrapper(ChatConfigBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatConfig> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(ChatConfig::getId);
         lqw.eq(StringUtils.isNotBlank(bo.getCategory()), ChatConfig::getCategory, bo.getCategory());
