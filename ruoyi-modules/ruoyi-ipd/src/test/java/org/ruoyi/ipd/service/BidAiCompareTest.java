@@ -125,7 +125,7 @@ class BidAiCompareTest {
 
     private void stubHappyPath() {
         when(invitationMapper.selectById(1L)).thenReturn(invitation());
-        when(responseMapper.selectBatchIds(any()))
+        when(responseMapper.selectByIds(any()))
             .thenReturn(List.of(response(11L, 1L, "方案A"), response(12L, 1L, "方案B")));
         when(modelConfigService.currentEnabled()).thenReturn(modelConfig());
         when(modelConfigService.decryptApiKey(any())).thenReturn("sk-test");
@@ -226,7 +226,7 @@ class BidAiCompareTest {
     void foreignResponseRejected() {
         loginAs("GROUP_LEADER");
         when(invitationMapper.selectById(1L)).thenReturn(invitation());
-        when(responseMapper.selectBatchIds(any()))
+        when(responseMapper.selectByIds(any()))
             .thenReturn(List.of(response(11L, 1L, "方案A"), response(12L, 999L, "别单应标")));
         assertThatThrownBy(() -> controller.aiCompare(1L, new BidCompareReq(List.of(11L, 12L))))
             .isInstanceOfSatisfying(IpdBusinessException.class,

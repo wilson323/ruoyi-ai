@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Gate;
@@ -257,7 +256,7 @@ class P254AcceptanceTest {
             person(305L, "李组长", "GROUP_LEADER", 8L));
         // 调用序：reopen→collectLeaders(1)；view(round≥3)→collectLeaders(2)
         when(personMapper.selectList(any())).thenReturn(leaders, leaders);
-        when(personMapper.selectBatchIds(any())).thenReturn(
+        when(personMapper.selectByIds(any())).thenReturn(
             List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 8L)));
 
         service.reopen(601L, MARKET);
@@ -278,7 +277,7 @@ class P254AcceptanceTest {
         // 调用序：reopen→collectLeaders(1)；round≥5→superAdmins(2)
         when(personMapper.selectList(any())).thenReturn(leaders,
             List.of(person(303L, "系统管理员", "SUPER_ADMIN", null)));
-        when(personMapper.selectBatchIds(any())).thenReturn(
+        when(personMapper.selectByIds(any())).thenReturn(
             List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 8L)));
 
         service.reopen(601L, MARKET);
@@ -385,7 +384,7 @@ class P254AcceptanceTest {
         // settle→openArbitration(1)；arbitrateA：require(2)+maybe(3)；arbitrateB：require(4)+maybe(5)；escalate→superAdmins(6)
         when(personMapper.selectList(any())).thenReturn(leaders, leaders, leaders, leaders, leaders,
             List.of(person(303L, "系统管理员", "SUPER_ADMIN", null)));
-        when(personMapper.selectBatchIds(any())).thenReturn(
+        when(personMapper.selectByIds(any())).thenReturn(
             List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 8L)));
 
         service.sign(601L, "APPROVE", "同意立项", MARKET);
@@ -417,7 +416,7 @@ class P254AcceptanceTest {
         List<Person> leaders = List.of(person(304L, "王组长", "GROUP_LEADER", 7L),
             person(305L, "李组长", "GROUP_LEADER", 8L));
         when(personMapper.selectList(any())).thenReturn(leaders, leaders, leaders, leaders);
-        when(personMapper.selectBatchIds(any())).thenReturn(
+        when(personMapper.selectByIds(any())).thenReturn(
             List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 8L)));
         service.sign(601L, "APPROVE", null, MARKET);
         service.sign(601L, "REJECT", "证据不足", RD);
@@ -451,7 +450,7 @@ class P254AcceptanceTest {
         // 构造分歧后：同组长重复提交被拒（共享签名簿先清场，避免 601 行污染 602 的同轮查重）
         signedRows.clear();
         when(personMapper.selectList(any())).thenReturn(List.of(person(304L, "王组长", "GROUP_LEADER", 7L)));
-        when(personMapper.selectBatchIds(any())).thenReturn(
+        when(personMapper.selectByIds(any())).thenReturn(
             List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 7L)));
         Gate g2 = new Gate();
         g2.setId(602L);
@@ -475,7 +474,7 @@ class P254AcceptanceTest {
         List<Person> leaders = List.of(person(304L, "王组长", "GROUP_LEADER", 7L),
             person(305L, "李组长", "GROUP_LEADER", 8L));
         when(personMapper.selectList(any())).thenReturn(leaders);
-        when(personMapper.selectBatchIds(any())).thenReturn(
+        when(personMapper.selectByIds(any())).thenReturn(
             List.of(person(301L, "陈市场", "MARKET_PM", 7L), person(302L, "刘研发", "RD_PM", 8L)));
 
         service.sign(601L, "APPROVE", null, MARKET);

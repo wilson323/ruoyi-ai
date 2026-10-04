@@ -62,10 +62,10 @@ class ProjectScoreMyTasksTest {
         // 通用：我不领导任何组（部分用例覆盖）
         lenient().when(groupMapper.selectList(any())).thenReturn(List.of());
         // 通用：项目/人员字典
-        lenient().when(projectMapper.selectBatchIds(anyCollection())).thenReturn(List.of(
+        lenient().when(projectMapper.selectByIds(anyCollection())).thenReturn(List.of(
             Project.builder().id(PROJECT_1).code("PRJ-001").name("阿尔法").build(),
             Project.builder().id(PROJECT_2).code("PRJ-002").name("贝塔").build()));
-        lenient().when(personMapper.selectBatchIds(anyCollection())).thenReturn(List.of(
+        lenient().when(personMapper.selectByIds(anyCollection())).thenReturn(List.of(
             Person.builder().id(ME).name("我本人").build(),
             Person.builder().id(MEMBER_A).name("成员A").build()));
     }

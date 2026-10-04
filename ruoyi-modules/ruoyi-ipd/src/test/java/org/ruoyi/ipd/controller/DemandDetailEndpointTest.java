@@ -85,14 +85,14 @@ class DemandDetailEndpointTest {
         Product product = new Product();
         product.setId(7001L);
         product.setProductName("ZK-X100");
-        when(productMapper.selectBatchIds(anyList())).thenReturn(List.of(product));
+        when(productMapper.selectByIds(anyList())).thenReturn(List.of(product));
         Person marketPm = new Person();
         marketPm.setId(900103L);
         marketPm.setName("市场PM李");
         Person rdPm = new Person();
         rdPm.setId(900104L);
         rdPm.setName("研发PM王");
-        when(personMapper.selectBatchIds(anyList())).thenReturn(List.of(marketPm, rdPm));
+        when(personMapper.selectByIds(anyList())).thenReturn(List.of(marketPm, rdPm));
     }
 
     @Test
@@ -150,8 +150,8 @@ class DemandDetailEndpointTest {
             .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND))
             .hasMessageContaining("需求不存在");
-        verify(productMapper, never()).selectBatchIds(anyList());
-        verify(personMapper, never()).selectBatchIds(anyList());
+        verify(productMapper, never()).selectByIds(anyList());
+        verify(personMapper, never()).selectByIds(anyList());
     }
 
     @Test

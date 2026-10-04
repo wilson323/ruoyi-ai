@@ -29,7 +29,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -248,7 +247,7 @@ public class KpiSharedConfirmService {
         List<KpiSharedConfirm> rows = confirmMapper.selectList(wrapper);
 
         Date now = new Date();
-        // P-1 性能优化：去 N+1 → 1 次 selectBatchIds 预加载姓名映射
+        // P-1 性能优化：去 N+1 → 1 次 selectByIds 预加载姓名映射
         Map<Long, String> personNameMap = preLoadPersonNames(rows);
         List<KpiSharedConfirmView> views = new ArrayList<>(rows.size());
         for (KpiSharedConfirm row : rows) {
@@ -392,7 +391,7 @@ public class KpiSharedConfirmService {
      * <p>行为契约：
      * <ul>
      *   <li>rows 为空 / 全 personId 为 null → 返回空 Map，不触发 SQL</li>
-     *   <li>distinct personId 去重后调 {@code personMapper.selectBatchIds(...)} 一次</li>
+     *   <li>distinct personId 去重后调 {@code personMapper.selectByIds(...)} 一次</li>
      *   <li>Person 不存在或 name 为空 → name=null（与原 toView.computeIfAbsent 行为对齐）</li>
      *   <li>LinkedHashMap 保序，便于调试/日志稳定输出</li>
      * </ul>
@@ -415,7 +414,7 @@ public class KpiSharedConfirmService {
             return Map.of();
         }
         // 3. 一次性批量查询（IN 子句，单次往返）
-        List<Person> people = personMapper.selectBatchIds(personIds);
+        List<Person> people = personMapper.selectByIds(personIds);
         if (people == null || people.isEmpty()) {
             return Map.of();
         }

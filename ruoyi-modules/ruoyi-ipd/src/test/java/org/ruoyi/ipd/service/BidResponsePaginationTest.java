@@ -193,7 +193,7 @@ class BidResponsePaginationTest {
     void listByRdPmPaged_relatedProjectMember_exempted() {
         Page<BidResponse> expected = pagedPage(1, 20, 3);
         when(bidResponseMapper.selectList(any())).thenReturn(List.of(row(2001L, 1001L, RD_PM_A)));
-        when(bidInvitationMapper.selectBatchIds(any())).thenReturn(List.of(invitation(1001L, 100L, "PUBLIC", null)));
+        when(bidInvitationMapper.selectByIds(any())).thenReturn(List.of(invitation(1001L, 100L, "PUBLIC", null)));
         when(projectMemberMapper.selectCount(any())).thenReturn(1L);
         when(bidResponseMapper.selectPage(any(Page.class), any())).thenReturn(expected);
 

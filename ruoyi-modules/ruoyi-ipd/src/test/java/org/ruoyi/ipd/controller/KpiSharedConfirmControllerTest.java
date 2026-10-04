@@ -20,7 +20,6 @@ import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.KpiSharedConfirm;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.KpiSharedConfirmMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
@@ -191,8 +190,8 @@ class KpiSharedConfirmControllerTest {
             pendingRow(4L, "K04", new BigDecimal("0.05"), future, null, null, null, null));
         when(layer.projectMapper.selectById(PROJECT_ID)).thenReturn(project());
         when(layer.confirmMapper.selectList(any())).thenReturn(rows);
-        // P-1 去 N+1 后 listConfirms 走 selectBatchIds 批量预加载姓名，不再逐行 selectById（stub 随之对齐，断言不变）
-        when(layer.personMapper.selectBatchIds(List.of(99L))).thenReturn(List.of(person(99L, "归集组长")));
+        // P-1 去 N+1 后 listConfirms 走 selectByIds 批量预加载姓名，不再逐行 selectById（stub 随之对齐，断言不变）
+        when(layer.personMapper.selectByIds(List.of(99L))).thenReturn(List.of(person(99L, "归集组长")));
         IpdActor actor = actorSuperAdmin(0L);
 
         List<KpiSharedConfirmView> views =

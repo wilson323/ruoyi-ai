@@ -209,7 +209,7 @@ public class DemandController {
         if (ids.isEmpty()) {
             return Map.of();
         }
-        return productMapper.selectBatchIds(ids).stream()
+        return productMapper.selectByIds(ids).stream()
             .collect(java.util.stream.Collectors.toMap(Product::getId, Product::getProductName, (a, b) -> a));
     }
 
@@ -226,7 +226,7 @@ public class DemandController {
         if (ids.isEmpty()) {
             return Map.of();
         }
-        return personMapper.selectBatchIds(ids.stream().distinct().toList()).stream()
+        return personMapper.selectByIds(ids.stream().distinct().toList()).stream()
             .collect(java.util.stream.Collectors.toMap(Person::getId, Person::getName, (a, b) -> a));
     }
 

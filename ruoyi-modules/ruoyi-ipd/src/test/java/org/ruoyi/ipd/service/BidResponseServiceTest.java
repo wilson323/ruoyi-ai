@@ -139,7 +139,7 @@ class BidResponseServiceTest {
     @DisplayName("[W5-E-2.4-IDOR-2] 第三方查他人应标（非关联项目成员）→ FORBIDDEN（P0 #5 核心）")
     void listByRdPm_otherNonMember_forbidden() {
         when(bidResponseMapper.selectList(any())).thenReturn(List.of(row(2001L, 1001L, RD_PM_A)));
-        when(bidInvitationMapper.selectBatchIds(any())).thenReturn(List.of(invitation(1001L, 100L)));
+        when(bidInvitationMapper.selectByIds(any())).thenReturn(List.of(invitation(1001L, 100L)));
         when(projectMemberMapper.selectCount(any())).thenReturn(0L);
 
         assertThatThrownBy(() -> service.listByRdPm(OUTSIDER_ACTOR, RD_PM_A))
@@ -159,7 +159,7 @@ class BidResponseServiceTest {
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
         // 空行短路：不发起招标单/成员关系探测
-        verify(bidInvitationMapper, never()).selectBatchIds(any());
+        verify(bidInvitationMapper, never()).selectByIds(any());
         verify(projectMemberMapper, never()).selectCount(any());
     }
 
@@ -182,7 +182,7 @@ class BidResponseServiceTest {
     @DisplayName("[W5-E-2.4-IDOR-4] 关联项目在职成员查他人应标 → 豁免返回（M-2：锁定 in(project_id)+eq(person_id)+exit_date IS NULL 口径）")
     void listByRdPm_relatedProjectMember_exempted() {
         when(bidResponseMapper.selectList(any())).thenReturn(List.of(row(2001L, 1001L, RD_PM_A)));
-        when(bidInvitationMapper.selectBatchIds(any())).thenReturn(List.of(invitation(1001L, 100L)));
+        when(bidInvitationMapper.selectByIds(any())).thenReturn(List.of(invitation(1001L, 100L)));
         when(projectMemberMapper.selectCount(any())).thenReturn(1L);
 
         List<BidResponse> result = service.listByRdPm(MARKET_PM_ACTOR, RD_PM_A);

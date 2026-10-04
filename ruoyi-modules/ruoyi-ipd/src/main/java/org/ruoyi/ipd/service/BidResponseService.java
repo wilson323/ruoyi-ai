@@ -294,7 +294,7 @@ public class BidResponseService implements IBidResponseService {
         if (invitationIds.isEmpty()) {
             return false;
         }
-        List<Long> projectIds = bidInvitationMapper.selectBatchIds(invitationIds).stream()
+        List<Long> projectIds = bidInvitationMapper.selectByIds(invitationIds).stream()
             .filter(Objects::nonNull)
             .map(BidInvitation::getProjectId).filter(Objects::nonNull).distinct()
             .collect(Collectors.toList());

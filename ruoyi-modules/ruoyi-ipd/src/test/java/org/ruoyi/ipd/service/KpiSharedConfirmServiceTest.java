@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  * P-1 性能优化：KpiSharedConfirmService.listConfirms 去 N+1。
  *
- * <p>核心断言：personMapper.selectBatchIds 只调 1 次（按行集合去重 personId 后批量加载），
+ * <p>核心断言：personMapper.selectByIds 只调 1 次（按行集合去重 personId 后批量加载），
  * personMapper.selectById 0 次（旧实现逐行懒加载的 N+1 反向断言）。
  *
  * <p>纯 JVM 单测（MockitoExtension，无 Spring），用 {@code @MockitoSettings(strictness=LENIENT)}
@@ -113,10 +113,10 @@ class KpiSharedConfirmServiceTest {
         return p;
     }
 
-    /** BN-1：4 行同 personId=99 → selectBatchIds 1 次 + selectById 0 次。 */
+    /** BN-1：4 行同 personId=99 → selectByIds 1 次 + selectById 0 次。 */
     @Test
-    @DisplayName("P-1 BN-1 listConfirms 4行同personId=99 → selectBatchIds 1次 + selectById 0次")
-    void listConfirms_4rows_samePersonId_selectBatchIdsOnce() {
+    @DisplayName("P-1 BN-1 listConfirms 4行同personId=99 → selectByIds 1次 + selectById 0次")
+    void listConfirms_4rows_samePersonId_selectByIdsOnce() {
         when(projectMapper.selectById(200L)).thenReturn(sProject());
         Date future = new Date(System.currentTimeMillis() + 86_400_000L);
         when(confirmMapper.selectList(any())).thenReturn(List.of(
@@ -124,19 +124,19 @@ class KpiSharedConfirmServiceTest {
             sRow(99L, "PENDING", future),
             sRow(99L, "PENDING", future),
             sRow(99L, "PENDING", future)));
-        when(personMapper.selectBatchIds(anyList())).thenReturn(List.of(sPerson(99L, "归集组长")));
+        when(personMapper.selectByIds(anyList())).thenReturn(List.of(sPerson(99L, "归集组长")));
 
         List<KpiSharedConfirmView> views = service.listConfirms(admin(), 200L, "2026-09", null);
 
         assertThat(views).hasSize(4);
         assertThat(views).allSatisfy(v -> assertThat(v.personName()).isEqualTo("归集组长"));
-        verify(personMapper, times(1)).selectBatchIds(anyList());
+        verify(personMapper, times(1)).selectByIds(anyList());
         verify(personMapper, never()).selectById(any());
     }
 
-    /** BN-2：4 行不同 personId → selectBatchIds 1 次 + 参数去重 [99,100,200,300]。 */
+    /** BN-2：4 行不同 personId → selectByIds 1 次 + 参数去重 [99,100,200,300]。 */
     @Test
-    @DisplayName("P-1 BN-2 listConfirms 4行不同personId → selectBatchIds 1次 + 参数去重 4 id")
+    @DisplayName("P-1 BN-2 listConfirms 4行不同personId → selectByIds 1次 + 参数去重 4 id")
     void listConfirms_4rows_diffPersonIds_oneSelectBatchIds() {
         when(projectMapper.selectById(200L)).thenReturn(sProject());
         Date future = new Date(System.currentTimeMillis() + 86_400_000L);
@@ -145,7 +145,7 @@ class KpiSharedConfirmServiceTest {
             sRow(100L, "PENDING", future),
             sRow(200L, "PENDING", future),
             sRow(300L, "PENDING", future)));
-        when(personMapper.selectBatchIds(anyList())).thenReturn(List.of(
+        when(personMapper.selectByIds(anyList())).thenReturn(List.of(
             sPerson(99L, "A"), sPerson(100L, "B"),
             sPerson(200L, "C"), sPerson(300L, "D")));
 
@@ -157,28 +157,28 @@ class KpiSharedConfirmServiceTest {
         assertThat(views.get(2).personName()).isEqualTo("C");
         assertThat(views.get(3).personName()).isEqualTo("D");
         ArgumentCaptor<List<Long>> idCaptor = ArgumentCaptor.forClass(List.class);
-        verify(personMapper, times(1)).selectBatchIds(idCaptor.capture());
+        verify(personMapper, times(1)).selectByIds(idCaptor.capture());
         assertThat(idCaptor.getValue()).containsExactlyInAnyOrder(99L, 100L, 200L, 300L);
         verify(personMapper, never()).selectById(any());
     }
 
-    /** BN-3：空库 → selectBatchIds 0 次（不发起 SQL），selectById 0 次。 */
+    /** BN-3：空库 → selectByIds 0 次（不发起 SQL），selectById 0 次。 */
     @Test
-    @DisplayName("P-1 BN-3 listConfirms 空库 → selectBatchIds 0次 + selectById 0次")
-    void listConfirms_empty_selectBatchIdsZero() {
+    @DisplayName("P-1 BN-3 listConfirms 空库 → selectByIds 0次 + selectById 0次")
+    void listConfirms_empty_selectByIdsZero() {
         when(projectMapper.selectById(200L)).thenReturn(sProject());
         when(confirmMapper.selectList(any())).thenReturn(List.of());
 
         List<KpiSharedConfirmView> views = service.listConfirms(admin(), 200L, "2026-09", null);
 
         assertThat(views).isEmpty();
-        verify(personMapper, never()).selectBatchIds(anyList());
+        verify(personMapper, never()).selectByIds(anyList());
         verify(personMapper, never()).selectById(any());
     }
 
-    /** BN-4：行 personId=null → view.personName=null，null 被过滤不进 selectBatchIds 集合。 */
+    /** BN-4：行 personId=null → view.personName=null，null 被过滤不进 selectByIds 集合。 */
     @Test
-    @DisplayName("P-1 BN-4 listConfirms 行personId=null → view.personName=null + 不进 selectBatchIds 集合")
+    @DisplayName("P-1 BN-4 listConfirms 行personId=null → view.personName=null + 不进 selectByIds 集合")
     void listConfirms_nullPersonId_viewNameNull() {
         when(projectMapper.selectById(200L)).thenReturn(sProject());
         Date future = new Date(System.currentTimeMillis() + 86_400_000L);
@@ -188,30 +188,30 @@ class KpiSharedConfirmServiceTest {
 
         assertThat(views).hasSize(1);
         assertThat(views.get(0).personName()).isNull();
-        verify(personMapper, never()).selectBatchIds(anyList());
+        verify(personMapper, never()).selectByIds(anyList());
         verify(personMapper, never()).selectById(any());
     }
 
-    /** BN-5：personId 在 persons 表不存在 → selectBatchIds 返 [] → view.personName=null（不抛）。 */
+    /** BN-5：personId 在 persons 表不存在 → selectByIds 返 [] → view.personName=null（不抛）。 */
     @Test
-    @DisplayName("P-1 BN-5 listConfirms personId不存在 → selectBatchIds返[] → view.personName=null 不抛")
+    @DisplayName("P-1 BN-5 listConfirms personId不存在 → selectByIds返[] → view.personName=null 不抛")
     void listConfirms_personNotExist_viewNameNull() {
         when(projectMapper.selectById(200L)).thenReturn(sProject());
         Date future = new Date(System.currentTimeMillis() + 86_400_000L);
         when(confirmMapper.selectList(any())).thenReturn(List.of(sRow(999L, "PENDING", future)));
-        when(personMapper.selectBatchIds(anyList())).thenReturn(List.of());
+        when(personMapper.selectByIds(anyList())).thenReturn(List.of());
 
         List<KpiSharedConfirmView> views = service.listConfirms(admin(), 200L, "2026-09", null);
 
         assertThat(views).hasSize(1);
         assertThat(views.get(0).personName()).isNull();
-        verify(personMapper, times(1)).selectBatchIds(anyList());
+        verify(personMapper, times(1)).selectByIds(anyList());
         verify(personMapper, never()).selectById(any());
     }
 
-    /** BN-6：selectBatchIds 返多 Person 同 id → 4 view 共用末条姓名（LinkedHashMap.put 同 key 覆盖语义：末条赢）。 */
+    /** BN-6：selectByIds 返多 Person 同 id → 4 view 共用末条姓名（LinkedHashMap.put 同 key 覆盖语义：末条赢）。 */
     @Test
-    @DisplayName("P-1 BN-6 listConfirms selectBatchIds返多Person同id → 4view共用末条姓名（LinkedHashMap.put 覆盖语义）")
+    @DisplayName("P-1 BN-6 listConfirms selectByIds返多Person同id → 4view共用末条姓名（LinkedHashMap.put 覆盖语义）")
     void listConfirms_duplicatedPerson_returnedLastName() {
         when(projectMapper.selectById(200L)).thenReturn(sProject());
         Date future = new Date(System.currentTimeMillis() + 86_400_000L);
@@ -220,7 +220,7 @@ class KpiSharedConfirmServiceTest {
             sRow(99L, "PENDING", future),
             sRow(99L, "PENDING", future),
             sRow(99L, "PENDING", future)));
-        when(personMapper.selectBatchIds(anyList())).thenReturn(List.of(
+        when(personMapper.selectByIds(anyList())).thenReturn(List.of(
             sPerson(99L, "归集组长-FIRST"),
             sPerson(99L, "归集组长-LAST")));
 
@@ -228,9 +228,9 @@ class KpiSharedConfirmServiceTest {
 
         assertThat(views).hasSize(4);
         // Java Map.put 同 key 覆盖：末条赢（非首条）。这是标准语义，MyBatis-Plus
-        // selectBatchIds 也按此行为。如需首条赢，preLoadPersonNames 需改 .putIfAbsent。
+        // selectByIds 也按此行为。如需首条赢，preLoadPersonNames 需改 .putIfAbsent。
         assertThat(views).allSatisfy(v -> assertThat(v.personName()).isEqualTo("归集组长-LAST"));
-        verify(personMapper, times(1)).selectBatchIds(anyList());
+        verify(personMapper, times(1)).selectByIds(anyList());
     }
 
     /** BN-7：statusFilter=OVERDUE + 行 deadline 已过 → 仅 overdue 入 view，预加载仍按全部 rows 1 次。 */
@@ -243,13 +243,13 @@ class KpiSharedConfirmServiceTest {
         when(confirmMapper.selectList(any())).thenReturn(List.of(
             sRow(99L, "PENDING", past),   // overdue
             sRow(99L, "PENDING", future))); // 非 overdue
-        when(personMapper.selectBatchIds(anyList())).thenReturn(List.of(sPerson(99L, "归集组长")));
+        when(personMapper.selectByIds(anyList())).thenReturn(List.of(sPerson(99L, "归集组长")));
 
         List<KpiSharedConfirmView> views = service.listConfirms(admin(), 200L, "2026-09", "OVERDUE");
 
         assertThat(views).hasSize(1);
         assertThat(views.get(0).status()).isEqualTo("OVERDUE");
-        verify(personMapper, times(1)).selectBatchIds(anyList());
+        verify(personMapper, times(1)).selectByIds(anyList());
     }
 
     // ============ 归属守卫8（2026-10-03 收口）：确认端此前只有角色门，任意组长可签任意项目 ============
