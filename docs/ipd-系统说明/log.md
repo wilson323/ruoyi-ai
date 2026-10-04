@@ -15304,3 +15304,49 @@ FORBIDDEN 且零写入、项目不存在 → FORBIDDEN、超管豁免且不查�
 
 另一处同类：`python3 gate.py | tail` 后的 `$?` 读到的是 `tail` 的 0，门禁真实退出码是 1。
 管道里量退出码必须用管道自身最后一条命令以外的口径。
+
+---
+
+## 2026-10-03 共享 KPI 双签：确认端补归属守卫（守卫8 新建），归集端收口到同一真源
+
+### 病灶
+`SharedKpiController#confirm` → `KpiSharedConfirmService.confirm` 此前**只有角色门**
+（`GROUP_LEADER|SUPER_ADMIN`），**没有任何对象级归属判定**——租户内任意产品组长可签任意项目的
+共担 KPI。四条登记在 `scripts/ownership-gate-exempt.txt`，理由「能操作本组外数据，排期修（P4）」。
+
+### 关键事实（三条，均独立复核过 schema 与源码原文）
+1. `product_groups.leader_person_id` 是**标量列**（不是关联表）⇒ 一个产品组只有一个组长。
+2. `project_members.role` 的注释写死 `MARKET_PM|RD_PM` ⇒ **组长不在项目成员表里**。
+3. 双签的两位 = **主组组长 + 协同组组长**（BR-ORG-01：主组＝市场PM 所在组、协同组＝研发PM 所在组）。
+
+⇒ 两个候选守卫**都会把功能弄坏而不是修好安全问题**：
+`assertSameGroupIpd`（同组）只放行主组组长、挡掉协同组组长 → 双签永远签不完；
+`requireProjectMemberOrSuperAdmin`（在职成员）把两位责任人都拒掉 → 整个确认功能全废。
+
+### 处置
+新建**守卫 8** `IpdIdorGuard.requireProjectGroupAccess(actor, projectId, projectMapper,
+projectMemberMapper, personMapper)`：放行口径＝超管 ∪ 项目主组组长 ∪ 该项目任一**在职成员**
+所属组的组长。第二项覆盖协同组（研发PM 是主组之外的在职成员）。**不含角色门**，角色要求由调用方
+各自判（两处文案不同）。
+
+- 确认端接入：排在**状态判定之前**——未授权者不触达「已完成 / 待确认」这类状态信息。
+- 归集端收口：`KpiSharedCollectionService.requireProjectAccess` 原先手写同一规则，是本仓
+  「跨组写判定唯一真源」这条 javadoc 声明的**唯一手写副本**，已改为调用守卫8。取组谓词补上
+  `role IN (MARKET_PM, RD_PM)` 与 `exit_date IS NULL`，保证接管后归集路径行为逐字不变。
+- 豁免清单删 1 条，基线 76 → 75；门禁「结构发现断言入口」由 8 升 9（新守卫被识别为独立判据）。
+
+### 自证
+- 新增/改动测试：`IpdIdorGuardTest` 26 → 34（守卫8 八例：actor 缺失／projectId 空／项目不存在／
+  主组放行／**协同组放行（反向锁）**／外组拒绝／超管豁免不查库／查询谓词含 `exit_date`）；
+  `KpiSharedConfirmServiceTest` 7 → 11（外组拒绝且零写、**协同组放行反向锁**、主组放行、
+  未授权者不触达状态信息）。
+- 变异自证（先证明变异生效再跑）：两处调用点各 1 → 0 后，
+  `KpiSharedConfirmServiceTest` 2 例红 + `P312AcceptanceTest#collectSharedKpi_crossGroupRejected`
+  1 例红 —— 两处接线都是承重的（归集端那条同时证明「收口到守卫」不是空转）。
+- 定向回归 152 例全绿（含 `KpiSharedConfirmConcurrencyTest` 8 例：其 actor 原本是
+  `groupId = null` 的虚构组长，正是修正后不允许的状态，已改为双签的真实形态
+  「首签＝主组组长、第二签＝协同组组长」）。
+- 文案保留「产品组」三字：`P312AcceptanceTest` 按此断言，未改口径。
+
+### 未做（写明边界）
+- `SharedKpiController#scanDeadlines` 的豁免未动（低危：只影响本人数据或纯查询衍生）。

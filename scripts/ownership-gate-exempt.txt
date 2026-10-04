@@ -117,7 +117,6 @@ RequirementChangeController.java#submit	存量中危待修：能操作本组外�
 RolePermissionController.java#create	全局配置/登录/字典/扫描类，天然无归属概念
 RolePermissionController.java#delete	全局配置/登录/字典/扫描类，天然无归属概念
 RolePermissionController.java#reload	全局配置/登录/字典/扫描类，天然无归属概念
-SharedKpiController.java#confirm	存量中危待修：能操作本组外数据，排期修（P4）
 SharedKpiController.java#scanDeadlines	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
 SwitchingAcceptanceController.java#lock	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
 SwitchingAcceptanceController.java#run	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置

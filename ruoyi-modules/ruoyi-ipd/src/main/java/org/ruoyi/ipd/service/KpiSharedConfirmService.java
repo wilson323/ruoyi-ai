@@ -17,6 +17,7 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.vo.KpiSharedConfirmView;
 import org.ruoyi.ipd.vo.SharedKpiCollectView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -294,6 +295,14 @@ public class KpiSharedConfirmService {
         if (row == null || "1".equals(row.getDelFlag())) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "共担 KPI 确认记录不存在: " + confirmId);
         }
+        // 归属守卫（守卫8）：双签的两位是**主组组长 + 协同组组长**，而组长按定义不是项目成员
+        // （product_groups.leader_person_id 是标量列 ⇒ 一组一组长；project_members.role 注释只有
+        // MARKET_PM|RD_PM ⇒ 组长不在成员表里）。故守卫3 会把两位责任人都拒掉、
+        // 守卫6「同组」只放行主组组长——两者都会把双签弄成永远签不完，而不是修好安全问题。
+        // 守卫8（主组 ∪ 该在职成员所属组）才是这条流程的正确口径，与 K01-K04 归集端同源。
+        // 位置：排在状态判定之前，未授权者不触达「已完成 / 待确认」这类状态信息。
+        IpdIdorGuard.requireProjectGroupAccess(actor, row.getProjectId(),
+            projectMapper, projectMemberMapper, personMapper);
         if (ST_CONFIRMED.equals(row.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该共担 KPI 已完成双组长确认");
         }

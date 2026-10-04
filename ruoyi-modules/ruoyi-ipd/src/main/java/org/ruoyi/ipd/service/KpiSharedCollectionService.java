@@ -22,6 +22,7 @@ import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProductGroupMapper;
 import org.ruoyi.ipd.mapper.SwitchingAcceptanceMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermission;
 import org.ruoyi.ipd.vo.SharedKpiCollectView;
 import org.springframework.stereotype.Service;
@@ -616,12 +617,17 @@ public class KpiSharedCollectionService {
         return leaders;
     }
 
+    /**
+     * 截止提醒发布。调用链 notifyDay1/notifyDay3 → {@code scanMonthlyDeadlines()}（{@code @Transactional}），
+     * 故走 {@link NotificationService#publishAfterCommit}：宿主回滚时组长不会收到「KPI 截止日临近」
+     * 的假提醒（该提醒的幂等仍由 dedup_key 保证）。
+     */
     private void publishDeadline(Long receiverId, String eventType, Project project, YearMonth period,
                                 String title, String content) {
         if (notificationService == null) {
             return;
         }
-        notificationService.publish(receiverId, eventType, NotificationService.KIND_ACTION,
+        notificationService.publishAfterCommit(receiverId, eventType, NotificationService.KIND_ACTION,
             "KPI_SHARED_COLLECTION", project.getId(), title, content,
             "/kpi/shared?period=" + period);
         auditLogService.append(AuditLog.builder()
@@ -855,27 +861,13 @@ public class KpiSharedCollectionService {
     }
 
     private void requireProjectAccess(IpdActor actor, Project project) {
+        // 角色门留在本地：本路径的文案（K01-K04）与其它调用方不同。跨组判定交守卫8——
+        // 本仓 javadoc 明写「跨组写判定唯一真源」，此前这里是全仓唯一的手写副本，已收口。
         if (actor == null || !Set.of("GROUP_LEADER", "SUPER_ADMIN").contains(actor.role())) {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "K01-K04 仅产品组长可录入与复核");
         }
-        if ("SUPER_ADMIN".equals(actor.role())) {
-            return;
-        }
-        List<ProjectMember> members = activeMembers(project.getId());
-        Set<Long> memberGroupIds = new LinkedHashSet<>();
-        for (ProjectMember member : members) {
-            Person person = member.getPersonId() == null ? null : personMapper.selectById(member.getPersonId());
-            if (person != null) {
-                memberGroupIds.add(person.getGroupId());
-            }
-        }
-        if (project.getMainGroupId() != null && project.getMainGroupId().equals(actor.groupId())) {
-            return;
-        }
-        if (memberGroupIds.contains(actor.groupId())) {
-            return;
-        }
-        throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "不能跨产品组归集 KPI");
+        IpdIdorGuard.requireProjectGroupAccess(actor, project.getId(),
+            projectMapper, projectMemberMapper, personMapper);
     }
 
     private static void requireRequestedActorMatches(IpdActor requested, IpdActor authenticated) {

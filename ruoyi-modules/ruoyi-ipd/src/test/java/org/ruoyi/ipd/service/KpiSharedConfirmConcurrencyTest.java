@@ -17,11 +17,16 @@ import org.mockito.quality.Strictness;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.KpiSharedConfirm;
+import org.ruoyi.ipd.domain.Person;
+import org.ruoyi.ipd.domain.Project;
+import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.KpiSharedConfirmMapper;
 import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,6 +68,12 @@ class KpiSharedConfirmConcurrencyTest {
     private static final Long CONFIRM_ID = 55L;
     private static final Long FIRST_LEADER = 100L;
     private static final Long SECOND_LEADER = 200L;
+    private static final Long PROJECT_ID = 200L;
+    /** 项目主组（市场PM 所在组）——首签人所属。 */
+    private static final Long MAIN_GROUP_ID = 700L;
+    /** 协同组（研发PM 所在组）——第二签人所属。双签的两位必须来自不同产品组。 */
+    private static final Long COLLAB_GROUP_ID = 800L;
+    private static final Long RD_PERSON_ID = 900L;
 
     /** 新增并发冲突文案（逐字冻结，报告已列明） */
     private static final String FIRST_CAS_CONFLICT =
@@ -93,10 +104,23 @@ class KpiSharedConfirmConcurrencyTest {
             auditLogService, systemConfigService);
         service.setStateMachineGuard(stateMachineGuard);
         lenient().when(auditLogService.append(any(AuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
+        // 2026-10-03 归属守卫8 收口后，确认端要求签署人是**该项目所属产品组的组长**。
+        // 这里按双签的真实形态打桩：主组组长 + 协同组组长（协同组＝研发PM 所在组，而研发PM
+        // 是主组之外的在职成员——组长本人按 schema 不在 project_members 里）。
+        lenient().when(projectMapper.selectById(PROJECT_ID)).thenReturn(
+            Project.builder().id(PROJECT_ID).mainGroupId(MAIN_GROUP_ID).tenantId("000000").build());
+        lenient().when(projectMemberMapper.selectList(any())).thenReturn(List.of(
+            ProjectMember.builder().projectId(PROJECT_ID).personId(RD_PERSON_ID).role("RD_PM").build()));
+        Person rdPm = new Person();
+        rdPm.setId(RD_PERSON_ID);
+        rdPm.setGroupId(COLLAB_GROUP_ID);
+        lenient().when(personMapper.selectById(RD_PERSON_ID)).thenReturn(rdPm);
     }
 
+    /** 双签的两位：首签人＝主组组长，第二签人＝协同组组长（一组一组长，故必为不同产品组）。 */
     private IpdActor leader(long id) {
-        return new IpdActor(id, "组长" + id, "GROUP_LEADER", null);
+        long groupId = id == FIRST_LEADER ? MAIN_GROUP_ID : COLLAB_GROUP_ID;
+        return new IpdActor(id, "组长" + id, "GROUP_LEADER", groupId);
     }
 
     private KpiSharedConfirm pendingRow(Long firstConfirmedBy) {

@@ -1,5 +1,9 @@
 package org.ruoyi.ipd.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -55,6 +59,17 @@ class KpiSharedConfirmServiceTest {
     @Mock private ISystemConfigService systemConfigService;
 
     private KpiSharedConfirmService service;
+
+    /**
+     * 纯 JVM 单测无 MP 运行时，手动初始化 lambda 列缓存——{@code confirm()} 的 CAS 谓词
+     * （LambdaUpdateWrapper 上的 eq/isNull/set）需要列名解析，缺它报
+     * 「can not find lambda cache for this entity」。
+     */
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, KpiSharedConfirm.class);
+    }
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
@@ -235,5 +250,86 @@ class KpiSharedConfirmServiceTest {
         assertThat(views).hasSize(1);
         assertThat(views.get(0).status()).isEqualTo("OVERDUE");
         verify(personMapper, times(1)).selectBatchIds(anyList());
+    }
+
+    // ============ 归属守卫8（2026-10-03 收口）：确认端此前只有角色门，任意组长可签任意项目 ============
+
+    private static final Long MAIN_GROUP = 700L;
+    private static final Long COLLAB_GROUP = 800L;
+    private static final Long RD_PERSON = 900L;
+
+    /** 项目 200：主组 MAIN_GROUP + 一名在职研发PM（其所属组即协同组 COLLAB_GROUP）。 */
+    private void givenProjectWithCollaborativeMember() {
+        Project p = new Project();
+        p.setId(200L);
+        p.setMainGroupId(MAIN_GROUP);
+        p.setTenantId(null);
+        when(projectMapper.selectById(200L)).thenReturn(p);
+        org.ruoyi.ipd.domain.ProjectMember m = new org.ruoyi.ipd.domain.ProjectMember();
+        m.setProjectId(200L);
+        m.setPersonId(RD_PERSON);
+        m.setRole("RD_PM");
+        when(projectMemberMapper.selectList(any())).thenReturn(List.of(m));
+        Person rd = new Person();
+        rd.setId(RD_PERSON);
+        rd.setGroupId(COLLAB_GROUP);
+        when(personMapper.selectById(RD_PERSON)).thenReturn(rd);
+    }
+
+    private static IpdActor leader(long id, long groupId) {
+        return new IpdActor(id, "组长" + id, "GROUP_LEADER", groupId);
+    }
+
+    @Test
+    @DisplayName("归属8：外组组长签署 → FORBIDDEN 且零写（修复前只验角色，任意组长可签任意项目）")
+    void confirm_outsiderGroupLeader_forbiddenZeroWrite() {
+        givenProjectWithCollaborativeMember();
+        when(confirmMapper.selectById(55L)).thenReturn(sRow(99L, "PENDING", new Date()));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.confirm(leader(999L, 999L), 55L))
+            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class)
+            .hasMessageContaining("产品组")
+            .extracting(e -> ((org.ruoyi.ipd.common.IpdBusinessException) e).getErrorCode())
+            .isEqualTo(org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN);
+        verify(confirmMapper, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("归属8 反向锁：协同组组长（研发PM 所在组）→ 必须放行，否则双签永远签不完")
+    void confirm_collaborativeGroupLeader_allowed() {
+        givenProjectWithCollaborativeMember();
+        when(confirmMapper.selectById(55L)).thenReturn(sRow(99L, "PENDING", new Date()));
+        when(confirmMapper.update(any(), any())).thenReturn(1);
+
+        service.confirm(leader(12L, COLLAB_GROUP), 55L);
+
+        verify(confirmMapper, times(1)).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("归属8：主组组长 → 放行")
+    void confirm_mainGroupLeader_allowed() {
+        givenProjectWithCollaborativeMember();
+        when(confirmMapper.selectById(55L)).thenReturn(sRow(99L, "PENDING", new Date()));
+        when(confirmMapper.update(any(), any())).thenReturn(1);
+
+        service.confirm(leader(11L, MAIN_GROUP), 55L);
+
+        verify(confirmMapper, times(1)).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("归属8：未授权者不触达状态信息——外组组长看不到「已完成」这类状态冲突")
+    void confirm_outsider_deniedBeforeStatusCheck() {
+        givenProjectWithCollaborativeMember();
+        // 行已是已完成态：若无归属门，会先抛 STATE_CONFLICT 泄漏状态；有归属门则应先拒。
+        when(confirmMapper.selectById(55L)).thenReturn(sRow(99L, "CONFIRMED", new Date()));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.confirm(leader(999L, 999L), 55L))
+            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class)
+            .extracting(e -> ((org.ruoyi.ipd.common.IpdBusinessException) e).getErrorCode())
+            .isEqualTo(org.ruoyi.ipd.common.ApiV1ErrorCode.FORBIDDEN);
     }
 }

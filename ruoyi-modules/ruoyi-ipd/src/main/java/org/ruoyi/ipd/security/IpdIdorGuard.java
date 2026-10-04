@@ -4,10 +4,16 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 包级静态 IDOR 守卫——基于 W5-E-2.1~2.4 四大 P0 修复的成熟模式抽取（W5-E-Guard）。
@@ -132,6 +138,82 @@ public final class IpdIdorGuard {
         if (count == null || count == 0) {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "非项目成员，无权访问");
         }
+    }
+
+    /**
+     * 守卫 8：组长对本项目所属产品组的访问权（主组组长 ∪ 协同组组长）。
+     *
+     * <p>2026-10-03 收口。它服务的是这样一类动作：<b>责任人是组长，而组长按定义不是项目成员</b>。
+     * 实测两条数据模型事实（schema 快照原文）：
+     * <ul>
+     *   <li>{@code product_groups.leader_person_id} 是**标量列**（不是关联表）⇒ 一个产品组只有一个组长；</li>
+     *   <li>{@code project_members.role} 的注释写死 {@code MARKET_PM|RD_PM} ⇒ <b>组长不在项目成员表里</b>。</li>
+     * </ul>
+     * 因此守卫 3（在职项目成员）对这类动作会**把两位合法责任人都拒掉**，守卫 6（{@code assertSameGroupIpd}）
+     * 只放行主组组长、**挡掉协同组组长**——两者都会把功能弄坏，而不是修好安全问题。
+     *
+     * <p>放行口径（与 {@code KpiSharedCollectionService.requireProjectAccess} 同款，本方法即其唯一真源）：
+     * 超管，或「actor 所属组 = 项目主组」，或「actor 所属组 = 该项目任一**在职**成员所属组」。
+     * 第二条覆盖协同组：研发PM 是主组之外的在职成员，其所在组即协同组。
+     *
+     * <p>本守卫**不含角色门**——各调用方的角色要求不同（如 K01-K04 归集与双签确认都是
+     * {@code GROUP_LEADER|SUPER_ADMIN}，但表述不同），角色门由调用方自己先判。
+     *
+     * @param actor 服务端会话身份
+     * @param projectId 项目 ID
+     * @throws IpdBusinessException {@code PARAM_INVALID} projectId 为空；{@code UNAUTHORIZED} actor 缺失；
+     *                              {@code FORBIDDEN} 项目不存在、租户不一致、或不属于该项目主组/协同组
+     */
+    public static void requireProjectGroupAccess(IpdActor actor, Long projectId,
+            ProjectMapper projectMapper, ProjectMemberMapper projectMemberMapper, PersonMapper personMapper) {
+        requireAuthenticated(actor);
+        if (projectId == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "projectId 不能为空");
+        }
+        if (ROLE_SUPER_ADMIN.equals(actor.role())) {
+            return;
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            // 统一 FORBIDDEN 文案——不区分「项目不存在」与「无权限」，避免存在性 oracle
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目");
+        }
+        requireTenantMatch(currentTenantId(), project);
+        if (project.getMainGroupId() != null && project.getMainGroupId().equals(actor.groupId())) {
+            return;
+        }
+        if (memberGroupIds(project.getId(), projectMemberMapper, personMapper).contains(actor.groupId())) {
+            return;
+        }
+        // 文案保留「产品组」三字：AC-KPI-20 与既有验收测试按此断言
+        throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "不能跨产品组操作该项目数据");
+    }
+
+    /**
+     * 取该项目全部**在职**成员（{@code exit_date IS NULL}）所属的产品组集合。
+     *
+     * <p>与 {@code KpiSharedCollectionService.activeMembers} 同口径，含 {@code MARKET_PM|RD_PM} 角色过滤
+     * ——该过滤是 schema 注释写死的既有约定（{@code project_members.role} 注释「MARKET_PM|RD_PM（固定不可跨 B7）」），
+     * 补上它才能保证本守卫接管后归集路径行为逐字不变。角色非空的 member 才参与取组；
+     * person 缺失或 groupId 缺失的成员跳过（不把 null 放进集合，避免「无组 actor 因集合含 null 而被放行」）。
+     */
+    private static Set<Long> memberGroupIds(Long projectId, ProjectMemberMapper projectMemberMapper,
+            PersonMapper personMapper) {
+        List<ProjectMember> members = projectMemberMapper.selectList(Wrappers.<ProjectMember>lambdaQuery()
+            .eq(ProjectMember::getProjectId, projectId)
+            .isNull(ProjectMember::getExitDate)
+            .in(ProjectMember::getRole, List.of("MARKET_PM", "RD_PM")));
+        Set<Long> groupIds = new LinkedHashSet<>();
+        if (members == null) {
+            return groupIds;
+        }
+        for (ProjectMember member : members) {
+            Person person = member.getPersonId() == null ? null : personMapper.selectById(member.getPersonId());
+            if (person != null && person.getGroupId() != null) {
+                groupIds.add(person.getGroupId());
+            }
+        }
+        return groupIds;
     }
 
     /**

@@ -14,10 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectMember;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -59,6 +63,9 @@ class IpdIdorGuardTest {
 
     @Mock
     private ProjectMapper projectMapper;
+
+    @Mock
+    private PersonMapper personMapper;
 
     /** 纯 JVM 单测无 MP 运行时，手动初始化 lambda 列缓存（守卫 3 的成员查询需列名解析） */
     @BeforeAll
@@ -343,5 +350,125 @@ class IpdIdorGuardTest {
     void currentTenantId_noSaTokenContext_blank() {
         String tenant = IpdIdorGuard.currentTenantId();
         assertThat(tenant).isNullOrEmpty();
+    }
+
+    // ==================== 守卫 8：requireProjectGroupAccess（主组 ∪ 协同组，2026-10-03 新增） ====================
+
+    private static final Long MAIN_GROUP = 700L;
+    private static final Long COLLAB_GROUP = 800L;
+    private static final Long RD_PERSON = 900L;
+    private static final IpdActor ACTOR_MAIN_LEADER = new IpdActor(11L, "主组组长", "GROUP_LEADER", MAIN_GROUP);
+    private static final IpdActor ACTOR_COLLAB_LEADER = new IpdActor(12L, "协同组组长", "GROUP_LEADER", COLLAB_GROUP);
+    private static final IpdActor ACTOR_OUTSIDER_LEADER = new IpdActor(13L, "外组组长", "GROUP_LEADER", 999L);
+
+    /** 项目：主组 MAIN_GROUP，含一名在职研发PM（其所属组 = 协同组 COLLAB_GROUP）。 */
+    private void givenProjectWithCollaborativeMember() {
+        when(projectMapper.selectById(PROJECT_ID)).thenReturn(Project.builder()
+            .id(PROJECT_ID).mainGroupId(MAIN_GROUP).tenantId("000000").build());
+        when(projectMemberMapper.selectList(any())).thenReturn(List.of(
+            ProjectMember.builder().projectId(PROJECT_ID).personId(RD_PERSON).role("RD_PM").build()));
+        Person rdPm = new Person();
+        rdPm.setId(RD_PERSON);
+        rdPm.setGroupId(COLLAB_GROUP);
+        when(personMapper.selectById(RD_PERSON)).thenReturn(rdPm);
+    }
+
+    @Test
+    @DisplayName("G8-1 actor 为 null → UNAUTHORIZED（且不触碰任何 Mapper）")
+    void projectGroupAccess_nullActor_unauthorized() {
+        assertThatThrownBy(() -> IpdIdorGuard.requireProjectGroupAccess(
+            null, PROJECT_ID, projectMapper, projectMemberMapper, personMapper))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.UNAUTHORIZED);
+        verifyNoInteractions(projectMapper, projectMemberMapper, personMapper);
+    }
+
+    @Test
+    @DisplayName("G8-2 projectId 为 null → PARAM_INVALID")
+    void projectGroupAccess_nullProjectId_paramInvalid() {
+        assertThatThrownBy(() -> IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_MAIN_LEADER, null, projectMapper, projectMemberMapper, personMapper))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
+    }
+
+    @Test
+    @DisplayName("G8-3 项目不存在 → FORBIDDEN（与无权限同一文案，不泄漏存在性）且不查成员表")
+    void projectGroupAccess_projectMissing_forbidden() {
+        when(projectMapper.selectById(PROJECT_ID)).thenReturn(null);
+
+        assertThatThrownBy(() -> IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_MAIN_LEADER, PROJECT_ID, projectMapper, projectMemberMapper, personMapper))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("无权访问该项目")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        verifyNoInteractions(projectMemberMapper, personMapper);
+    }
+
+    @Test
+    @DisplayName("G8-4 主组组长 → 放行，且无需查成员表（短路在第一个条件）")
+    void projectGroupAccess_mainGroupLeader_passes() {
+        when(projectMapper.selectById(PROJECT_ID)).thenReturn(Project.builder()
+            .id(PROJECT_ID).mainGroupId(MAIN_GROUP).tenantId("000000").build());
+
+        assertThatCode(() -> IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_MAIN_LEADER, PROJECT_ID, projectMapper, projectMemberMapper, personMapper))
+            .doesNotThrowAnyException();
+        verifyNoInteractions(projectMemberMapper, personMapper);
+    }
+
+    @Test
+    @DisplayName("G8-5 反向锁：协同组组长（经「在职成员所属组」）→ 必须放行——组长按 schema 不是项目成员，用「同组」会把他挡掉")
+    void projectGroupAccess_collaborativeGroupLeader_passes() {
+        givenProjectWithCollaborativeMember();
+
+        assertThatCode(() -> IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_COLLAB_LEADER, PROJECT_ID, projectMapper, projectMemberMapper, personMapper))
+            .doesNotThrowAnyException();
+        verify(projectMemberMapper).selectList(any());
+    }
+
+    @Test
+    @DisplayName("G8-6 既非主组、也不对应任何在职成员所属组 → FORBIDDEN（文案保留「产品组」以维持 AC-KPI-20 断言）")
+    void projectGroupAccess_outsiderLeader_forbidden() {
+        givenProjectWithCollaborativeMember();
+
+        assertThatThrownBy(() -> IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_OUTSIDER_LEADER, PROJECT_ID, projectMapper, projectMemberMapper, personMapper))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("产品组")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("G8-7 超管豁免先于任何 DB 读（不查项目、不查成员）")
+    void projectGroupAccess_superAdmin_skipsDb() {
+        assertThatCode(() -> IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_ADMIN, PROJECT_ID, projectMapper, projectMemberMapper, personMapper))
+            .doesNotThrowAnyException();
+        verifyNoInteractions(projectMapper, projectMemberMapper, personMapper);
+    }
+
+    @Test
+    @DisplayName("G8-8 已离职成员（exit_date 非空）不参与取组——guard 的查询谓词必须带 isNull(exitDate)")
+    void projectGroupAccess_queryFiltersActiveMembersOnly() {
+        givenProjectWithCollaborativeMember();
+        ArgumentCaptor<LambdaQueryWrapper<ProjectMember>> captor = wrapperCaptor();
+
+        IpdIdorGuard.requireProjectGroupAccess(
+            ACTOR_COLLAB_LEADER, PROJECT_ID, projectMapper, projectMemberMapper, personMapper);
+
+        verify(projectMemberMapper).selectList(captor.capture());
+        String sql = captor.getValue().getSqlSegment();
+        assertThat(sql).contains("exit_date");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ArgumentCaptor<LambdaQueryWrapper<ProjectMember>> wrapperCaptor() {
+        return ArgumentCaptor.forClass(LambdaQueryWrapper.class);
     }
 }
