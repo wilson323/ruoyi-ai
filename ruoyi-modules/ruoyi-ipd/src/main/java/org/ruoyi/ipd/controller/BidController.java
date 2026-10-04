@@ -112,15 +112,18 @@ public class BidController {
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) String status) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(bidInvitationService.page(pageNo, pageSize, projectId, status));
+        IpdActor actor = ipdPermission.requireInternal();
+        // AC-TEAM-01：「其他研发PM 看不到该招标单」——列表按可见性过滤（发起人 ∪ 受邀人 ∪ 超管；PUBLIC 全员）。
+        return ApiV1Response.ok(bidInvitationService.page(actor, pageNo, pageSize, projectId, status));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_QUERY, type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/bid-invitations/{id}")
     public ApiV1Response<BidInvitation> getInvitation(@PathVariable Long id) {
-        ipdPermission.requireInternal();
-        return ApiV1Response.ok(IpdResources.requireOrNotFound(bidInvitationService.getById(id), id, "招标邀请"));
+        IpdActor actor = ipdPermission.requireInternal();
+        // 同上：详情也按可见性放行，否则「列表看不到、猜 id 却能读全文」。
+        return ApiV1Response.ok(IpdResources.requireOrNotFound(
+            bidInvitationService.getVisibleTo(id, actor), id, "招标邀请"));
     }
 
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)

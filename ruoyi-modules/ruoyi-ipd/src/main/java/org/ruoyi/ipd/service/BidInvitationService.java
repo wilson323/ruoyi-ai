@@ -14,6 +14,8 @@ import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.mapper.BidInvitationMapper;
 import org.ruoyi.ipd.mapper.BidResponseMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
+import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -369,12 +371,21 @@ public class BidInvitationService {
     /**
      * 分页查询招标单列表
      */
-    public IPage<BidInvitation> page(int pageNo, int pageSize, Long projectId, String status) {
+    public IPage<BidInvitation> page(IpdActor actor, int pageNo, int pageSize, Long projectId, String status) {
         Page<BidInvitation> page = new Page<>(pageNo, Math.min(pageSize, 200));
         LambdaQueryWrapper<BidInvitation> qw = new LambdaQueryWrapper<BidInvitation>()
             .eq(projectId != null, BidInvitation::getProjectId, projectId)
             .eq(status != null && !status.isBlank(), BidInvitation::getStatus, status)
             .orderByDesc(BidInvitation::getCreateTime);
+        IpdIdorGuard.requireAuthenticated(actor);
+        if (!isSuperAdmin(actor)) {
+            // 可见性谓词与 visibleTo(...) 同源，两处必须一起改（读详情走 visibleTo，列表走这里）。
+            // and(...) 包一层，避免 or 把上面的 projectId/status 过滤短路掉。
+            Long actorId = actor.id();
+            qw.and(w -> w.eq(BidInvitation::getCreateBy, actorId)
+                .or().eq(BidInvitation::getTargetPersonId, actorId)
+                .or().eq(BidInvitation::getMode, MODE_PUBLIC));
+        }
         return bidInvitationMapper.selectPage(page, qw);
     }
 
@@ -387,6 +398,45 @@ public class BidInvitationService {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + id);
         }
         return inv;
+    }
+
+    /**
+     * 按可见性取招标单详情（**读端点专用**，不动 {@link #getById}——后者还被 8 个写端点共用）。
+     *
+     * @throws IpdBusinessException {@code NOT_FOUND} 记录不存在；{@code UNAUTHORIZED} actor 缺失；
+     *                              {@code FORBIDDEN} 存在但本人无权看
+     */
+    public BidInvitation getVisibleTo(Long id, IpdActor actor) {
+        IpdIdorGuard.requireAuthenticated(actor);
+        BidInvitation inv = getById(id);
+        if (!visibleTo(inv, actor)) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权查看该招标单");
+        }
+        return inv;
+    }
+
+    /**
+     * 一对一邀标的可见性口径。
+     *
+     * <p>验收清单 AC-TEAM-01 原文：「市场PM 发起一对一邀标给研发PM A | A 收到通知；
+     * <b>其他研发PM 看不到该招标单</b>」。故可见＝发起人 ∪ 受邀人 ∪ 超管；PUBLIC 模式的招标单
+     * 本就是公开征集，全员可见。此前两个读端点只做「是不是内部人」，等于对定向邀标不设防。
+     */
+    private static boolean visibleTo(BidInvitation inv, IpdActor actor) {
+        if (isSuperAdmin(actor)) {
+            return true;
+        }
+        if (inv.getCreateBy() != null && inv.getCreateBy().equals(actor.id())) {
+            return true;
+        }
+        if (inv.getTargetPersonId() != null && inv.getTargetPersonId().equals(actor.id())) {
+            return true;
+        }
+        return MODE_PUBLIC.equals(inv.getMode());
+    }
+
+    private static boolean isSuperAdmin(IpdActor actor) {
+        return actor != null && ROLE_SUPER_ADMIN.equals(actor.role());
     }
 
     /**
@@ -598,6 +648,11 @@ public class BidInvitationService {
     /** entityType 词表与其他机器一致：小写下划线。 */
     private static final String BID_INVITATION_ENTITY_TYPE = "bid_invitation";
     private static final String BID_RESPONSE_ENTITY_TYPE = "bid_response";
+
+    /** 公开征集模式的招标单：全员可见（与 ONE_TO_ONE 定向邀标相对）。 */
+    private static final String MODE_PUBLIC = "PUBLIC";
+    /** 超管角色字面量（与 IpdIdorGuard / 四大 P0 修复同口径）。 */
+    private static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
 
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {

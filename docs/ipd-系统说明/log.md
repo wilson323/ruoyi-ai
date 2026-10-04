@@ -15350,3 +15350,46 @@ projectMemberMapper, personMapper)`：放行口径＝超管 ∪ 项目主组组�
 
 ### 未做（写明边界）
 - `SharedKpiController#scanDeadlines` 的豁免未动（低危：只影响本人数据或纯查询衍生）。
+
+---
+
+## 2026-10-03 招投标读取端点补可见性（AC-TEAM-01）——定向邀标此前对全员可读
+
+### 病灶
+`GET /bid-invitations`（列表）与 `GET /bid-invitations/{id}`（详情）只做 `requireInternal()`
+（是不是内部人），**没有任何对象级判定**；两者用的权限码 `ipd:project:list` / `ipd:project:query`
+在四角色目录里四个人人都有 ⇒ 「有权限调用」等于「所有人都能调用」。定向邀标单全文
+（金额、需求描述、受邀人）对任意内部用户可读。
+
+侧证：同 controller 的 8 个**写**端点早已用 `assertSameGroupIpd` 收口；同业务域的
+`BidResponseService.listByRdPmPaged` 也已按「本人 / 超管 / 关联项目在职成员」三分支隔离应标行
+——**只有这两个读端点漏了**。
+
+### 规则（有验收原文，不是工程判断）
+验收清单 AC-TEAM-01 原文：「市场PM 发起一对一邀标给研发PM A | A 收到通知；
+**其他研发PM 看不到该招标单**」。故可见＝发起人 ∪ 受邀人（`targetPersonId`）∪ 超管；
+PUBLIC 模式本就公开征集，全员可见。
+
+### 收口
+- `page(...)` 增加 actor 形参并加可见性谓词（`and(...)` 整体括起，避免 `or` 把
+  projectId / status 过滤短路）。该方法生产调用方只有读端点一个，改签名安全。
+- 新增 `getVisibleTo(id, actor)`：**不动 `getById`**——后者还被 8 个写端点经
+  `resolveInvitationGroup` 共用，改它会把写路径一起带偏。
+- 详情侧同样接入，堵掉「列表看不到、猜 id 却能读全文」。
+
+### 自证
+- 新增 `BidInvitationVisibilityTest`（10 例，独立新文件）：受邀人放行（**反向锁**）／
+  发起人放行／PUBLIC 放行／超管放行／无关同角色第三人 FORBIDDEN／不存在 NOT_FOUND／
+  列表谓词含 target_person_id+create_by+mode 且被 `AND (` 括起／超管不加谓词／
+  未认证 UNAUTHORIZED／project_id+status 过滤未被顶掉。
+- 变异自证（先证明变异生效再跑）：详情 `visibleTo` 恒真 → 第三人用例红；
+  列表谓词整块移除 → 谓词用例红。两处各打红一条，双向覆盖。
+- 定向回归 106 例（招投标全域）+ 控制器 `BidControllerOwnershipGuardTest` 10 例全绿；
+  归属门禁 PASS（豁免基线 75 不变——本改动是读端点，不在写端点口径内）。
+
+### 未做（写明边界）
+- `listResponsesPaged` 的「招标单级可见性」未动：它现有规则围绕**应标行**
+  （发起人 / PUBLIC / 本人），ONE_TO_ONE 下对陌生人返回空列表、不泄漏应标内容；
+  仅能靠 404 与 200+空 区分该 id 是否存在。是否要一并收口属口径选择，未动。
+- 兄弟会话在途的 `BidInvitationServiceTest`（通知发布 `publishAfterCommit` 改造）未触碰，
+  故可见性测试另建独立文件 `BidInvitationVisibilityTest`。
