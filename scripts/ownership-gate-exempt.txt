@@ -81,8 +81,6 @@ GateElementController.java#update	方法体已有 requireAdmin/requireSuperAdmin
 GatePrecheckController.java#arbitrationDivergences	存量中危待修：能操作本组外数据，排期修（P4）
 GatePrecheckController.java#precheck	存量中危待修：能操作本组外数据，排期修（P4）
 KpiRawRecordController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
-LandedScenarioController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
-LandedScenarioController.java#importBatch	存量中危待修：能操作本组外数据，排期修（P4）
 NegativeFeedbackController.java#create	存量中危待修：能操作本组外数据，排期修（P4）
 NegativeFeedbackController.java#decide	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
 NegativeFeedbackController.java#deleteById	存量低危待修：只影响本人数据或纯查询衍生，可豁免或后置
@@ -108,12 +106,8 @@ ProductLineSpaceController.java#review	存量中危待修：能操作本组外�
 ProductLineSpaceController.java#unassignProduct	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
 ProjectAgentController.java#feedback	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectAgentController.java#reverify	存量中危待修：能操作本组外数据，排期修（P4）
-ProjectController.java#addCertItem	存量中危待修：能操作本组外数据，排期修（P4）
-ProjectController.java#autoCreateGate	存量中危待修：能操作本组外数据，排期修（P4）
-ProjectController.java#changeCertStatus	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectController.java#legacyImport	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
 ProjectController.java#legacyImportBatch	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管
-ProjectController.java#recordLaunchDate	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectController.java#resubmitStart	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectController.java#syncCertItems	存量中危待修：能操作本组外数据，排期修（P4）
 ProjectScoreTaskController.java#scan	方法体已有 requireAdmin/requireSuperAdmin 门控，越权需先攻破超管

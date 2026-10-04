@@ -11,7 +11,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.LandedScenario;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.LandedScenarioMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
 import java.math.BigDecimal;
@@ -22,7 +25,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,16 +50,29 @@ class LandedScenarioServiceTest {
 
     @Mock
     private LandedScenarioMapper mapper;
+    @Mock
+    private ProjectMapper projectMapper;
+    @Mock
+    private ProjectMemberMapper projectMemberMapper;
 
     private LandedScenarioService service;
 
     private static final Long ACTOR_ID = 9100L;
     private static final Long PROJECT_ID = 200L;
-    private final IpdActor actor = new IpdActor(ACTOR_ID, "TestPM", "MARKET_PM", 1L);
+    /** actor 归属组，刻意与项目不同组：守卫3 认「在职成员」不认「同组」，跨组不该被挡。 */
+    private static final Long ACTOR_GROUP_ID = 1L;
+    private final IpdActor actor = new IpdActor(ACTOR_ID, "TestPM", "MARKET_PM", ACTOR_GROUP_ID);
 
     @BeforeEach
     void setup() {
-        service = new LandedScenarioService(mapper);
+        service = new LandedScenarioService(mapper, projectMapper, projectMemberMapper);
+        // 默认场景：actor 是 PROJECT_ID 的在职成员。用 lenient 是因为部分用例（如超限、
+        // projectId 为空）在守卫之前就抛错，走不到 Mapper —— 严格模式下那会算「未使用打桩」而失败。
+        // 项目主组刻意与 actor 归属组不同：若后来人把守卫改成「同组」，本文件的放行用例会变红。
+        lenient().when(projectMapper.selectById(PROJECT_ID))
+            .thenReturn(Project.builder().id(PROJECT_ID).tenantId("000000")
+                .mainGroupId(777002L).build());
+        lenient().when(projectMemberMapper.selectCount(any())).thenReturn(1L);
     }
 
     private LandedScenario sample(Long projectId, String code, String name) {
@@ -207,5 +225,86 @@ class LandedScenarioServiceTest {
             .isInstanceOf(IpdBusinessException.class)
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.PARAM_INVALID);
+    }
+
+    // ===== 归属守卫（2026-10-03 收口）：record / importBatch 原先零对象级判定 =====
+
+    @Test
+    @DisplayName("归属：非项目成员登记单条 → FORBIDDEN 且零写入")
+    void record_nonMember_forbidden() {
+        when(projectMemberMapper.selectCount(any())).thenReturn(0L);
+
+        assertThatThrownBy(() -> service.record(sample(PROJECT_ID, "SCN-NM", "非成员"), actor))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        verify(mapper, never()).insert(any(LandedScenario.class));
+    }
+
+    @Test
+    @DisplayName("归属：非项目成员批量导入 → FORBIDDEN 且零写入（守卫排在所有 insert 之前）")
+    void importBatch_nonMember_forbiddenBeforeAnyWrite() {
+        when(projectMemberMapper.selectCount(any())).thenReturn(0L);
+        List<LandedScenario> batch = List.of(
+            sample(PROJECT_ID, "B-NM-1", "场景1"),
+            sample(PROJECT_ID, "B-NM-2", "场景2"));
+
+        assertThatThrownBy(() -> service.importBatch(batch, actor))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        verify(mapper, never()).insert(any(LandedScenario.class));
+    }
+
+    @Test
+    @DisplayName("归属反向锁：跨组但在职成员 → 必须放行（守卫3 认在职成员，不认「同组」）")
+    void record_crossGroupActiveMember_allowed() {
+        // actor 组 1、项目主组 777002，两者不同组；在职成员判定为真即应放行。
+        // 这条是反向锁：把守卫换成 assertSameGroupIpd（同组）会让它变红。
+        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        LandedScenario saved = service.record(sample(PROJECT_ID, "SCN-XG", "跨组"), actor);
+
+        assertThat(saved.getRecordedBy()).isEqualTo(ACTOR_ID);
+        verify(projectMemberMapper).selectCount(any());
+    }
+
+    @Test
+    @DisplayName("归属：项目不存在 → FORBIDDEN（与无权限同一文案，不泄漏存在性）")
+    void record_projectMissing_forbidden() {
+        when(projectMapper.selectById(PROJECT_ID)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.record(sample(PROJECT_ID, "SCN-GONE", "无此项目"), actor))
+            .isInstanceOf(IpdBusinessException.class)
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        verify(mapper, never()).insert(any(LandedScenario.class));
+    }
+
+    @Test
+    @DisplayName("归属：超管豁免且不查成员表")
+    void record_superAdmin_skipsMemberLookup() {
+        IpdActor admin = new IpdActor(9001L, "Admin", "SUPER_ADMIN", null);
+        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        service.record(sample(PROJECT_ID, "SCN-SA", "超管"), admin);
+
+        verify(projectMemberMapper, never()).selectCount(any());
+        verify(projectMapper, never()).selectById(any());
+    }
+
+    @Test
+    @DisplayName("归属：批量导入按去重后的 projectId 各校验一次（不随条目数放大成 N 次查询）")
+    void importBatch_validatesEachDistinctProjectOnce() {
+        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        List<LandedScenario> batch = List.of(
+            sample(PROJECT_ID, "D-1", "场景1"),
+            sample(PROJECT_ID, "D-2", "场景2"),
+            sample(PROJECT_ID, "D-3", "场景3"));
+
+        service.importBatch(batch, actor);
+
+        // 3 条同项目 → 只查 1 次（逐条查就是 3 次）
+        verify(projectMemberMapper, times(1)).selectCount(any());
     }
 }

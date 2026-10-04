@@ -17,7 +17,10 @@ import org.ruoyi.ipd.dto.LegacyImportRowResult;
 import org.ruoyi.ipd.dto.ProjectCertListView;
 import org.ruoyi.ipd.dto.ProjectCertManualReq;
 import org.ruoyi.ipd.domain.Gate;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.ruoyi.ipd.security.IpdAuthSession;
 import org.ruoyi.ipd.security.IpdPermission;
@@ -66,6 +69,22 @@ public class ProjectController {
     private final GateReviewService gateReviewService;
     private final org.ruoyi.ipd.service.IStageActionService stageActionService;
     private final IpdPermission ipdPermission;
+    /**
+     * 项目归属守卫所需（守卫3 {@link IpdIdorGuard#requireProjectMemberOrSuperAdmin}）。
+     *
+     * <p>2026-10-03 归属收口：本控制器原有一组写口只调 {@code requireInternal()}（仅证明已登录），
+     * 项目 id 由客户端指定，任何持状态变更权限码的内部用户都能操作别人项目的认证项 / Gate /
+     * 上市日期。豁免登记见 {@code scripts/ownership-gate-exempt.txt}。
+     *
+     * <p><b>为什么是守卫3（在职项目成员）而不是守卫6（{@code assertSameGroupIpd} 同组）</b>：
+     * 业务规则 BR-ORG-06 三层权限矩阵（{@code docs/ipd-系统说明/外部资源/IPD系统_AI开发主Prompt_v3.md}）
+     * 「编辑项目」一行是普通PM「仅本人负责」/ 组长「仅本人名下」，<b>不含组维</b>；
+     * 而 BR-ORG-01 定义「主组＝市场PM 所在组、协同组＝研发PM 所在组」，即研发PM 天然不在主组。
+     * 若用「同组」，认证清单的法定责任人（研发PM，见六阶段动作清单 P10/V02）会被 403 挡在门外——
+     * 那是把功能弄坏、而表面像修好了安全问题。守卫3 放行协同组在职成员，与矩阵「本人负责」同向。
+     */
+    private final ProjectMapper projectMapper;
+    private final ProjectMemberMapper projectMemberMapper;
 
     /**
      * 查询项目列表（P1-9.2：含 scenarioDaysRemaining + critical 派生字段）。
@@ -253,6 +272,8 @@ public class ProjectController {
             @PathVariable Long id,
             @RequestBody LaunchDateRecordReq req) {
         IpdActor actor = ipdPermission.requireInternal();
+        // 归属守卫（守卫3）：见 projectMapper 字段处说明——用「同组」会挡住院PM 这个法定责任人。
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, id, projectMemberMapper, projectMapper);
         Date date = Date.from(req.launchDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
         return ApiV1Response.ok(launchDateChangeService.initialRecord(id, date, req.reason(), actor.id()));
     }
@@ -273,6 +294,8 @@ public class ProjectController {
             @PathVariable Long id,
             @RequestParam String gateCode) {
         IpdActor actor = ipdPermission.requireInternal();
+        // 归属守卫（守卫3）：G3/G4 主导方含研发PM，同样不得用「同组」。
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, id, projectMemberMapper, projectMapper);
         return ApiV1Response.ok(gateCreationService.autoCreateGate(id, gateCode, actor.id()));
     }
 
@@ -355,6 +378,8 @@ public class ProjectController {
     public ApiV1Response<ProjectCertItem> addCertItem(@PathVariable Long id,
                                                       @RequestBody ProjectCertManualReq req) {
         IpdActor actor = ipdPermission.requireInternal();
+        // 归属守卫（守卫3）：认证清单 P10/V02 责任人＝研发PM（在协同组），禁止用「同组」。
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, id, projectMemberMapper, projectMapper);
         return ApiV1Response.ok(projectCertService.addManual(id, req, actor.id()));
     }
 
@@ -372,6 +397,8 @@ public class ProjectController {
                                                            @PathVariable Long itemId,
                                                            @RequestParam String target) {
         IpdActor actor = ipdPermission.requireInternal();
+        // 归属守卫（守卫3）：同上，认证清单责任人为研发PM。
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, id, projectMemberMapper, projectMapper);
         return ApiV1Response.ok(projectCertService.changeStatus(id, itemId, target, actor.id()));
     }
 }

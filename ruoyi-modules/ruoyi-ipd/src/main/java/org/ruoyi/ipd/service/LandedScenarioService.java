@@ -8,7 +8,10 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.LandedScenario;
 import org.ruoyi.ipd.mapper.LandedScenarioMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
+import org.ruoyi.ipd.security.IpdIdorGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,12 +47,27 @@ public class LandedScenarioService implements ILandedScenarioService {
     public static final int BATCH_IMPORT_MAX = 200;
 
     private final LandedScenarioMapper landedScenarioMapper;
+    /**
+     * 归属守卫所需（守卫3 {@link IpdIdorGuard#requireProjectMemberOrSuperAdmin}）。
+     *
+     * <p>2026-10-03 归属收口：{@code record} / {@code importBatch} 原先零对象级判定——
+     * 只做字段校验与查重，actor 仅落成 {@code recorded_by}，任何内部用户可对任意项目登记落地场景。
+     *
+     * <p><b>为什么是守卫3（在职项目成员）而不是守卫6（{@code assertSameGroupIpd} 同组）</b>：
+     * BR-ORG-06 三层权限矩阵「编辑项目」一行是普通PM「仅本人负责」/ 组长「仅本人名下」，不含组维；
+     * BR-ORG-01 定义主组＝市场PM 组、协同组＝研发PM 组，研发PM 天然不在主组。
+     * 用「同组」会把协同组研发PM 挡在门外——那是把功能弄坏而不是修好安全问题。
+     */
+    private final ProjectMapper projectMapper;
+    private final ProjectMemberMapper projectMemberMapper;
 
     /**
      * 单条录入落地场景。
      */
     @Transactional(rollbackFor = Exception.class)
     public LandedScenario record(LandedScenario draft, IpdActor actor) {
+        // 归属守卫前置：先判归属再判参数，未授权者不触达字段级校验信息（也让守卫不可被参数异常绕过）。
+        IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, draft.getProjectId(), projectMemberMapper, projectMapper);
         validate(draft);
         KpiDuplicateCheck dup = (projectId, scenarioCode) -> landedScenarioMapper.selectOne(
             Wrappers.<LandedScenario>lambdaQuery()
@@ -81,6 +99,13 @@ public class LandedScenarioService implements ILandedScenarioService {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID,
                 "批量导入超过上限 " + BATCH_IMPORT_MAX + " 条（实际 " + items.size() + "）");
         }
+
+        // 归属守卫（守卫3）：按**去重后**的 projectId 各校验一次，且排在任何写入之前。
+        // 为什么不逐条校验：BATCH_IMPORT_MAX = 200，逐条 = 最多 400 次查询（N+1）。
+        // 为什么放在写入之前：本方法 @Transactional，但早失败比回滚更省。
+        items.stream().map(LandedScenario::getProjectId).distinct()
+            .forEach(pid -> IpdIdorGuard.requireProjectMemberOrSuperAdmin(
+                actor, pid, projectMemberMapper, projectMapper));
 
         // 同批次内先做内存级去重，再入库前做 DB 级去重
         java.util.Set<String> seenInBatch = new java.util.HashSet<>();

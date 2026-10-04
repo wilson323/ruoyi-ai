@@ -103,7 +103,12 @@ class Sec01AcceptanceTest {
     @BeforeEach
     void setUp() {
         ipdPermission = new IpdPermission(session, authService);
-        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, gateReviewService, stageActionService, ipdPermission);
+        // 2026-10-03：归属守卫收口后构造器新增两个 Mapper 形参（守卫3 requireProjectMemberOrSuperAdmin 所需）。
+        // 本类不调用被守卫的四个写口（addCertItem/changeCertStatus/autoCreateGate/recordLaunchDate），
+        // 故传入惰性 mock 即可；这四个写口的行为由 ProjectControllerOwnershipGuardTest 专门覆盖。
+        projectController = new ProjectController(projectService, gateEngine, projectCertService, legacyImportService, launchDateChangeService, gateCreationService, gateReviewService, stageActionService, ipdPermission,
+            org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMapper.class),
+            org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProjectMemberMapper.class));
         stageActionController = new StageActionController(stageActionService, ipdPermission,
             org.mockito.Mockito.mock(org.ruoyi.ipd.service.AiExecutionTrigger.class));
         certTemplateController = new CertTemplateController(certTemplateService, ipdPermission);
