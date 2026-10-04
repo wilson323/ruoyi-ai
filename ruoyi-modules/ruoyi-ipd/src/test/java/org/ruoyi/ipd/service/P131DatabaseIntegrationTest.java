@@ -565,7 +565,7 @@ class P131DatabaseIntegrationTest {
 
     private ProjectService projectCreationService(IAuditLogService audit, GateEngine gates, IProjectCertService certs) {
         ProjectService target = new ProjectService(projects, products, actions, kpis, audit, gates,
-            bootstrap, certs, NoopTransactionManager.INSTANCE, null);
+            NoopTransactionManager.INSTANCE, null);
         target.setStateMachineGuard(realGuard(audit));
         return proxy(target);
     }

@@ -48,7 +48,7 @@ class ProjectScoreScheduleCronTest {
 
     private ProjectScoreScheduleService service() {
         return new ProjectScoreScheduleService(projectMapper, memberMapper, personMapper,
-            groupMapper, taskMapper, notificationService, auditLogService, permission);
+            groupMapper, taskMapper, notificationService, auditLogService);
     }
 
     @Test

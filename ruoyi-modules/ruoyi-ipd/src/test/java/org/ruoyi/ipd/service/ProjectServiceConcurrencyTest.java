@@ -108,7 +108,7 @@ class ProjectServiceConcurrencyTest {
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper,
             auditLogService, gateEngine,
-            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
+            NoopTransactionManager.INSTANCE,
             null /* P2-6.2 */);
         // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
         DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
@@ -125,7 +125,7 @@ class ProjectServiceConcurrencyTest {
         AtomicInteger dbMaxSeq = new AtomicInteger(0);
         ProjectService racing = new ProjectService(racingMapper(dbMaxSeq), productMapper,
             stageActionMapper, kpiRecordMapper, auditLogService, gateEngine,
-            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
+            NoopTransactionManager.INSTANCE,
             null /* P2-6.2 */);
         // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
         DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
@@ -204,7 +204,6 @@ class ProjectServiceConcurrencyTest {
         assertThat(created.getCurrentStage()).isNull();
         assertThat(created.getStatus()).isEqualTo("PENDING_START");
         verify(projectMapper, times(2)).insert(any(Project.class));
-        verify(projectBootstrapService, never()).bootstrap(any(), any());
         verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 

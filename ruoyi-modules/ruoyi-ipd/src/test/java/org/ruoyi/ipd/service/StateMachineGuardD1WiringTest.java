@@ -91,8 +91,7 @@ class StateMachineGuardD1WiringTest {
 
     private ProjectService projectService(boolean withGuard) {
         ProjectService s = new ProjectService(projectMapper, productMapper, stageActionMapper,
-            kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService,
-            txManager, requirementChangeService);
+            kpiRecordMapper, auditLogService, gateEngine, txManager, requirementChangeService);
         if (withGuard) {
             s.setStateMachineGuard(guard);
         }

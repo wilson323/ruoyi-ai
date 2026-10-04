@@ -52,7 +52,7 @@ class P121AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
+        service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
         // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
         DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
         d1Guard.initRules();

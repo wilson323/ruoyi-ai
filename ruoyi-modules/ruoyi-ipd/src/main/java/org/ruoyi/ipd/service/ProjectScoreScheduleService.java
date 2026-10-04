@@ -17,7 +17,6 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreTaskMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -57,7 +56,6 @@ public class ProjectScoreScheduleService {
     private final ProjectScoreTaskMapper taskMapper;
     private final NotificationService notificationService;
     private final IAuditLogService auditLogService;
-    private final IpdPermission permission;
 
     public ProjectScoreScheduleService(ProjectMapper projectMapper,
                                        ProjectMemberMapper memberMapper,
@@ -65,8 +63,7 @@ public class ProjectScoreScheduleService {
                                        ProductGroupMapper groupMapper,
                                        ProjectScoreTaskMapper taskMapper,
                                        NotificationService notificationService,
-                                       IAuditLogService auditLogService,
-                                       IpdPermission permission) {
+                                       IAuditLogService auditLogService) {
         this.projectMapper = projectMapper;
         this.memberMapper = memberMapper;
         this.personMapper = personMapper;
@@ -74,7 +71,6 @@ public class ProjectScoreScheduleService {
         this.taskMapper = taskMapper;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
-        this.permission = permission;
     }
 
     /** 扫描所有已上市项目；不自动关闭 PENDING。 */

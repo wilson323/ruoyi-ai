@@ -58,7 +58,7 @@ class P323AcceptanceTest {
     void setUp() {
         service = new ProjectScoreScheduleService(
             projectMapper, memberMapper, personMapper, groupMapper, taskMapper,
-            notificationService, auditLogService, permission);
+            notificationService, auditLogService);
     }
 
     @Test

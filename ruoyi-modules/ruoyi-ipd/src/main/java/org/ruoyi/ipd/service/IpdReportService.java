@@ -19,7 +19,6 @@ import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdPermission;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,7 +72,6 @@ public class IpdReportService {
     private final ProjectMemberMapper projectMemberMapper;
     private final PersonMapper personMapper;
     private final IAuditLogService auditLogService;
-    private final IpdPermission ipdPermission;
 
     /**
      * P4-4.1 §1：项目绩效汇总列表（分页，单项目一行）。
@@ -313,14 +311,6 @@ public class IpdReportService {
         pm.eq(ProjectMember::getPersonId, actor.id());
         List<ProjectMember> members = projectMemberMapper.selectList(pm);
         return members.stream().map(ProjectMember::getProjectId).distinct().collect(Collectors.toList());
-    }
-
-    private void validateProjectVisible(Long projectId, IpdActor actor) {
-        if ("SUPER_ADMIN".equals(actor.role())) return;
-        List<Long> visible = resolveVisibleProjectIds(actor);
-        if (visible == null || !visible.contains(projectId)) {
-            throw new IpdBusinessException("项目不在当前操作人可见范围内");
-        }
     }
 
     private Map<Long, BigDecimal> sumAllowanceByProject(String month, List<Project> projects) {

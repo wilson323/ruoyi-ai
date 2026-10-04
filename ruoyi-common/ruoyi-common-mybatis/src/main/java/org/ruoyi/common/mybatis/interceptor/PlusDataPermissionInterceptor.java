@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
 import com.baomidou.mybatisplus.core.toolkit.PluginUtils;
 import com.baomidou.mybatisplus.extension.plugins.handler.MultiDataPermissionHandler;
 import com.baomidou.mybatisplus.extension.plugins.inner.BaseMultiTableInnerInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Table;

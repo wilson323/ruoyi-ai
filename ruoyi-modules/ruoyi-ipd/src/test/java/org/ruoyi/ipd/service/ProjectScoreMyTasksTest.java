@@ -58,7 +58,7 @@ class ProjectScoreMyTasksTest {
     @BeforeEach
     void setUp() {
         service = new ProjectScoreScheduleService(projectMapper, memberMapper, personMapper,
-            groupMapper, taskMapper, notificationService, auditLogService, permission);
+            groupMapper, taskMapper, notificationService, auditLogService);
         // 通用：我不领导任何组（部分用例覆盖）
         lenient().when(groupMapper.selectList(any())).thenReturn(List.of());
         // 通用：项目/人员字典

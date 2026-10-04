@@ -45,7 +45,7 @@ class P122AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
+        projectService = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper, auditLogService, gateEngine, NoopTransactionManager.INSTANCE, null /* P2-6.2 */);
         launchDateChangeService = new LaunchDateChangeService(
             launchDateChangeRequestMapper, projectMapper, auditLogService);
         // R24：装配真实守卫实例（已 initRules 注入 37 条规则，含 launch_date_change:INITIAL->PENDING_SECOND|propose）。

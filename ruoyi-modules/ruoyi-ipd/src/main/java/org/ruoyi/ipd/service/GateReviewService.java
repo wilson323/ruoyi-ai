@@ -26,12 +26,10 @@ import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.security.IpdIdorGuard;
-import org.ruoyi.ipd.service.StateMachineGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;

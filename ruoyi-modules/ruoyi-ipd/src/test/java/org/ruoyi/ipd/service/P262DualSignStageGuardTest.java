@@ -261,7 +261,6 @@ class P262DualSignStageGuardTest {
             org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProductMapper.class),
             stageActionMapper, kpiRecordMapper,
             auditLogService, gateEngine,
-            projectBootstrapService, projectCertService,
             NoopTransactionManager.INSTANCE,
             requirementChangeService);
         // 两个阶段门禁案例的操作人均为在职成员，保留原门禁与审计断言。
@@ -306,7 +305,6 @@ class P262DualSignStageGuardTest {
             org.mockito.Mockito.mock(org.ruoyi.ipd.mapper.ProductMapper.class),
             stageActionMapper, kpiRecordMapper,
             auditLogService, gateEngine,
-            projectBootstrapService, projectCertService,
             NoopTransactionManager.INSTANCE,
             requirementChangeService);
         // 两个阶段门禁案例的操作人均为在职成员，保留原门禁与审计断言。

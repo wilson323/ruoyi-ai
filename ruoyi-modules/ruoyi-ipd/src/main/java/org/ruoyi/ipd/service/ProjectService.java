@@ -90,8 +90,6 @@ public class ProjectService implements IProjectService {
     }
     private final IAuditLogService auditLogService;
     private final GateEngine gateEngine;
-    private final ProjectBootstrapService projectBootstrapService;
-    private final IProjectCertService projectCertService;
     private final PlatformTransactionManager transactionManager;
     /** P2-6.2：阶段门禁 —— 跳阶前查询未闭环需求变更单（含 DRAFT / PENDING_SIGN）。 */
     private final RequirementChangeService requirementChangeService;

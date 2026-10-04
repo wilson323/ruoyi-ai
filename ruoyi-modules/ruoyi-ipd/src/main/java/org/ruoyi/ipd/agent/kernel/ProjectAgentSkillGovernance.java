@@ -1,6 +1,5 @@
 package org.ruoyi.ipd.agent.kernel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.skill.AgentSkill;
 import io.agentscope.harness.agent.skill.curator.SkillCandidate;

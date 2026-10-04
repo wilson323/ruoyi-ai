@@ -64,7 +64,7 @@ class ProjectServiceTest {
     void setUp() {
         service = new ProjectService(projectMapper, productMapper, stageActionMapper, kpiRecordMapper,
             auditLogService, gateEngine,
-            projectBootstrapService, projectCertService, NoopTransactionManager.INSTANCE,
+            NoopTransactionManager.INSTANCE,
             null /* P2-6.2：未挂载需求变更单 service 时跳过 hasOpenChange 门禁 */);
         // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
         DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
@@ -127,7 +127,6 @@ class ProjectServiceTest {
         assertThat(created.getStatus()).isEqualTo("PENDING_START");
         assertThat(created.getLevelCoefficient()).isEqualByComparingTo("1.5");
         assertThat(product.getProjectId()).isEqualTo(created.getId());
-        verify(projectBootstrapService, never()).bootstrap(any(), any());
         verify(auditLogService).append(anyLong(), any(), any(), any(), any());
     }
 
@@ -165,7 +164,6 @@ class ProjectServiceTest {
 
         assertThat(created.getStatus()).isEqualTo("PENDING_START");
         assertThat(product.getProjectId()).isEqualTo(88L);
-        verify(projectBootstrapService, never()).bootstrap(any(), any());
     }
 
     @Test
@@ -362,8 +360,7 @@ class ProjectServiceTest {
     @DisplayName("AC-AUTH-09：projectMemberMapper 未注入（旧构造器形态）非超管一律拒，fail-closed")
     void getVisibleByIdFailsClosedWithoutMemberMapper() {
         ProjectService bare = new ProjectService(projectMapper, productMapper, stageActionMapper,
-            kpiRecordMapper, auditLogService, gateEngine, projectBootstrapService, projectCertService,
-            NoopTransactionManager.INSTANCE, null);
+            kpiRecordMapper, auditLogService, gateEngine, NoopTransactionManager.INSTANCE, null);
         // D-1 接线适配：注入真实守卫（种子规则 + fail-closed 迁移闸）
         DefaultStateMachineGuard d1Guard = new DefaultStateMachineGuard(null, null);
         d1Guard.initRules();
@@ -384,7 +381,7 @@ class ProjectServiceTest {
             .isInstanceOf(IpdBusinessException.class).hasMessageContaining("不能新建关联项目");
         verify(projectMapper, never()).insert(any(Project.class));
         verify(productMapper, never()).updateById(any(Product.class));
-        org.mockito.Mockito.verifyNoInteractions(auditLogService, projectBootstrapService);
+        org.mockito.Mockito.verifyNoInteractions(auditLogService);
         assertThat(product.getProjectId()).isNull();
     }
 
