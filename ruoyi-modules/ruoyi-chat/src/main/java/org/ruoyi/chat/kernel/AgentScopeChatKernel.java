@@ -221,10 +221,10 @@ public class AgentScopeChatKernel implements AutoCloseable {
         }
         try {
             Msg msg = Msg.builder().role(MsgRole.USER).textContent(userText).build();
-            AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink);
             KernelModelRequest effectiveModel = model;
             HarnessAgent selectedAgent = agent(projectId, userId, agentId, systemPrompt,
                     modelSelector.plan(effectiveModel, userId, sessionId));
+            AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink, framesFor(selectedAgent));
             return Flux.using(() -> TURN_GATE.acquire(scope.slotId()),
                     lease -> selectedAgent.streamEvents(msg, scope.toRuntimeContext()),
                     TurnLease::close)
@@ -282,9 +282,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
                 toolkit.registerAgentTool(org.ruoyi.chat.kernel.tool.KernelGovernedTool.wrap(delegate, governance));
             }
             HarnessAgent selectedAgent = buildAgent(projectId, userId, agentId, systemPrompt, plan, toolkit);
-            AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink,
-                new KernelEventFrames(policy, HarnessPermissionMode.FULL_ACCESS,
-                    org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER));
+            AgentEventSinkBridge bridge = new AgentEventSinkBridge(sink, framesFor(selectedAgent));
             Msg msg = Msg.builder().role(MsgRole.USER).textContent(userText).build();
             return Flux.using(() -> TURN_GATE.acquire(scope.slotId()),
                 lease -> {
@@ -389,6 +387,34 @@ public class AgentScopeChatKernel implements AutoCloseable {
      * 聊天内核现行 FULL_ACCESS + NEVER：官方能力直接放行并留痕（不再只读拒绝）。
      */
     static void governOfficialTools(Toolkit toolkit) {
+        var policy = officialPolicy(toolkit);
+        var governance = new org.ruoyi.chat.kernel.tool.KernelToolGovernance(policy,
+            HarnessPermissionMode.FULL_ACCESS,
+            org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER,
+            new org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger(),
+            new org.ruoyi.chat.kernel.tool.KernelToolCallTrace());
+        for (String name : List.copyOf(toolkit.getToolNames())) {
+            AgentTool delegate = toolkit.getTool(name);
+            if (delegate instanceof org.ruoyi.chat.kernel.tool.KernelGovernedTool) {
+                continue;
+            }
+            toolkit.removeTool(name);
+            toolkit.registerAgentTool(org.ruoyi.chat.kernel.tool.KernelGovernedTool.wrap(delegate, governance));
+        }
+    }
+
+    /** 事件帧与执行面同口径（FULL_ACCESS + NEVER），策略按该 Agent 当时的工具箱现算。 */
+    static KernelEventFrames framesFor(HarnessAgent agent) {
+        return new KernelEventFrames((java.util.function.Supplier<ToolPolicyEngine>) () -> officialPolicy(agent.getToolkit()),
+            HarnessPermissionMode.FULL_ACCESS,
+            org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER);
+    }
+
+    /**
+     * 按工具箱当前全部工具（含官方默认工具）登记策略表；执行面治理与事件帧共用，
+     * 避免官方工具在帧裁决里被当作未知工具而误报 denied。
+     */
+    static ToolPolicyEngine officialPolicy(Toolkit toolkit) {
         List<org.ruoyi.service.coding.harness.tool.ToolDescriptor> descriptors = new ArrayList<>();
         for (String name : toolkit.getToolNames()) {
             AgentTool tool = toolkit.getTool(name);
@@ -408,20 +434,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
                     readOnly, "官方默认工具"));
             }
         }
-        var policy = new ToolPolicyEngine(descriptors);
-        var governance = new org.ruoyi.chat.kernel.tool.KernelToolGovernance(policy,
-            HarnessPermissionMode.FULL_ACCESS,
-            org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy.NEVER,
-            new org.ruoyi.chat.kernel.tool.InMemoryKernelToolEffectLedger(),
-            new org.ruoyi.chat.kernel.tool.KernelToolCallTrace());
-        for (String name : List.copyOf(toolkit.getToolNames())) {
-            AgentTool delegate = toolkit.getTool(name);
-            if (delegate instanceof org.ruoyi.chat.kernel.tool.KernelGovernedTool) {
-                continue;
-            }
-            toolkit.removeTool(name);
-            toolkit.registerAgentTool(org.ruoyi.chat.kernel.tool.KernelGovernedTool.wrap(delegate, governance));
-        }
+        return new ToolPolicyEngine(descriptors);
     }
 
     private static org.ruoyi.service.coding.harness.tool.ToolDescriptor officialDescriptor(

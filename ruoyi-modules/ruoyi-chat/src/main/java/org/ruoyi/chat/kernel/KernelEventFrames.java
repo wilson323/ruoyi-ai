@@ -27,7 +27,7 @@ import org.ruoyi.service.coding.harness.tool.ToolPolicyEvaluation;
  */
 public final class KernelEventFrames {
 
-    private final ToolPolicyEngine toolPolicy;
+    private final java.util.function.Supplier<ToolPolicyEngine> toolPolicy;
     private final HarnessPermissionMode permissionMode;
     private final org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy;
 
@@ -37,6 +37,16 @@ public final class KernelEventFrames {
     }
 
     public KernelEventFrames(ToolPolicyEngine toolPolicy, HarnessPermissionMode permissionMode,
+                             org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy) {
+        this(constant(toolPolicy), permissionMode, approvalPolicy);
+    }
+
+    /**
+     * 策略延迟求值：官方默认工具在运行期才注册进工具箱，构建期快照会把它们当作未知工具
+     * 而误报 denied；每次裁决时按当时的工具箱重算。
+     */
+    public KernelEventFrames(java.util.function.Supplier<ToolPolicyEngine> toolPolicy,
+                             HarnessPermissionMode permissionMode,
                              org.ruoyi.service.coding.harness.model.HarnessApprovalPolicy approvalPolicy) {
         if (approvalPolicy == null) {
             throw new IllegalArgumentException("Approval policy is required");
@@ -50,6 +60,13 @@ public final class KernelEventFrames {
         }
         this.toolPolicy = toolPolicy;
         this.permissionMode = permissionMode;
+    }
+
+    private static java.util.function.Supplier<ToolPolicyEngine> constant(ToolPolicyEngine policy) {
+        if (policy == null) {
+            throw new IllegalArgumentException("Tool policy engine is required");
+        }
+        return () -> policy;
     }
 
     /** 单事件 → 帧回调。未知事件类型静默跳过（契约帧不扩）。 */
@@ -66,7 +83,7 @@ public final class KernelEventFrames {
         } else if (event instanceof ToolCallStartEvent toolCall) {
             String callId = isBlank(toolCall.getToolCallId()) ? "kernel-uncorrelated" : toolCall.getToolCallId();
             String toolName = isBlank(toolCall.getToolCallName()) ? "kernel-unknown" : toolCall.getToolCallName();
-            ToolPolicyEvaluation evaluation = toolPolicy.evaluate(
+            ToolPolicyEvaluation evaluation = toolPolicy.get().evaluate(
                 ToolInvocation.of(callId, toolName, Map.of()), permissionMode, approvalPolicy, null);
             sink.onMcpTool(toolName, statusOf(evaluation), evaluation.reason());
         }
