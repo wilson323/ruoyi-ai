@@ -1,9 +1,13 @@
 package org.ruoyi.common.sse.dto;
 
+import cn.hutool.json.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -108,9 +112,10 @@ public class SseEventDto implements Serializable {
     }
 
     private static String buildMcpJson(String toolName, String status, String result) {
-        return String.format("{\"toolName\":\"%s\",\"status\":\"%s\",\"result\":\"%s\"}",
-            toolName != null ? toolName.replace("\"", "\\\"") : "",
-            status != null ? status : "",
-            result != null ? result.replace("\"", "\\\"").replace("\n", "\\n") : "");
+        Map<String, String> payload = new LinkedHashMap<>();
+        payload.put("toolName", toolName != null ? toolName : "");
+        payload.put("status", status != null ? status : "");
+        payload.put("result", result != null ? result : "");
+        return JSONUtil.toJsonStr(payload);
     }
 }
