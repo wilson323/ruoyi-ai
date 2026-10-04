@@ -374,6 +374,7 @@ public class AgentScopeChatKernel implements AutoCloseable {
                     .build();
             capabilities.bind(built);
             // SDK build 注册的官方默认工具统一过治理包装（幂等）；acting 前还会再绑定后注册的工具。
+            warnIfWebSearchUnconfigured(built.getToolkit(), () -> System.getenv("TAVILY_API_KEY"));
             governOfficialTools(built.getToolkit());
             return built;
         } catch (Exception e) {
@@ -401,6 +402,19 @@ public class AgentScopeChatKernel implements AutoCloseable {
             toolkit.removeTool(name);
             toolkit.registerAgentTool(org.ruoyi.chat.kernel.tool.KernelGovernedTool.wrap(delegate, governance));
         }
+    }
+
+    /**
+     * 官方 web_search 依赖环境变量 TAVILY_API_KEY；未配置时调用会报错。
+     * 官方能力全量启用、不得裁剪：工具保持注册，仅告警提示部署方配置密钥。返回是否缺密钥。
+     */
+    static boolean warnIfWebSearchUnconfigured(Toolkit toolkit, Supplier<String> searchKey) {
+        String key = searchKey.get();
+        if ((key == null || key.isBlank()) && toolkit.getTool("web_search") != null) {
+            log.warn("kernel_chat operation=WEB_SEARCH status=KEY_MISSING reason=TAVILY_API_KEY_NOT_CONFIGURED tool=kept");
+            return true;
+        }
+        return false;
     }
 
     /** 事件帧与执行面同口径（FULL_ACCESS + NEVER），策略按该 Agent 当时的工具箱现算。 */

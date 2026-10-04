@@ -15759,3 +15759,10 @@ UPDATE gate_review_elements SET is_veto = '1' WHERE element_code = 'G2-6' AND is
 验证：聊天模块内核与聊天入口相关测试 105 个通过（比之前多的一个是新增端到端测试）。端到端测试断言：execute 被判放行；模型收到了沙箱里真实跑出来的输出。
 
 仍未做：未启动完整应用，未用真实模型和真实登录态走一遍聊天；web_fetch、web_search、write_file 没有各自的端到端用例，只有 execute 一条；沙箱仍是无网络。端到端测试依赖本机已有镜像 python:3.13-alpine，缺它会红。未推送。
+
+## 2026-10-04 09:44 聊天内核联网工具：公网地址守卫 + web_search 缺密钥告警
+
+- 新增 `PublicDestinationGuard`：聊天内核 `web_fetch` 只允许公网 http(s) 地址，拒绝回环/链路本地/内网/CGN/ULA/IPv4-mapped、带 userinfo、解析失败；治理层改判 DENY（code=`web_destination_blocked`），仍不审批。
+- `web_search`：保持注册（官方能力全量启用、禁止裁剪），缺 `TAVILY_API_KEY` 仅打警告日志。**偏离**此前“没密钥不暴露”的选择，原因：与“禁止禁用”及 `AgentScopeKernelBoundaryTest.officialDefaultToolsStayRegisteredUnderGovernance` 契约冲突。若业务负责人仍要不暴露，须同时修改该契约并确认。部署需配置 `TAVILY_API_KEY` 才可用。
+- 验证：聊天模块内核及入口测试 117 个通过（2026-10-04 09:44）。
+- 局限：DNS 重绑定存在检查与连接间时间窗；事件帧拿不到入参，对被守卫拒绝的 web_fetch 可能显示 allowed（执行面实际拒绝）；无真实网络/真实模型的端到端验证。

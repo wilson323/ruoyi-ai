@@ -91,6 +91,13 @@ public final class KernelToolGovernance {
         String argsSha = argumentsSha256(args);
         ToolPolicyEvaluation evaluation =
                 policy.evaluate(ToolInvocation.of(callId, toolName, args), permissionMode, approvalPolicy, null);
+        if (evaluation.decision() == PolicyDecision.ALLOW && "web_fetch".equals(toolName)) {
+            // 官方 web_fetch 无目标检查；放行不等于可访问内网/元数据地址（公网仍直接放行）。
+            String blocked = PublicDestinationGuard.blockReason(args.get("url"));
+            if (blocked != null) {
+                evaluation = new ToolPolicyEvaluation(PolicyDecision.DENY, "web_destination_blocked", blocked);
+            }
+        }
         KernelToolCallDecision decision = KernelToolCallDecision.of(
                 callId, toolName, argsSha,
                 evaluation.decision(), evaluation.code(), evaluation.reason(), System.currentTimeMillis());
