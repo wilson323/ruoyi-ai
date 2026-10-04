@@ -147,7 +147,16 @@ strip_ts_comments() {
   # awk 状态机：正确剥离 /* ... */（含跨行、同行起止）与 // 单行注释。
   # 旧 sed 版在「块注释起止在同一行」（如首行 /** ... */ 头注）时范围永不关闭，
   # 导致后续整文件被删——product-line.ts 等调用点丢抽的根因（2026-09-29 修）。
-  awk '
+  #
+  # 2026-10-03：强制 C locale（字节语义）。BWK awk（macOS 自带）在 UTF-8 locale 下
+  # 把 substr(line, i, 1) 按字节切，切到多字节字符中间时 %c/towc 转换失败并报
+  # `awk: towc: multibyte conversion failure`；脚本不会因此中止，照常给退出码，
+  # 但抽取结果与 Linux gawk/mawk（按字符切）不同——同一份代码本地与 CI 会得出
+  # 不同的孤儿端点集合（实测触发点：前端 ipd-guard.test.ts 里一行中文用例名含
+  # 「登录/改密//login 别名」）。C locale 下三者统一为字节语义；本判据只关心
+  # ASCII（[A-Za-z0-9] 与引号），中文字符的任一字节都不落在这个类里，
+  # 判定结果与"按字符切"一致，且跨 awk 实现稳定。
+  LC_ALL=C awk '
   {
     line = $0
     out = ""
@@ -169,11 +178,21 @@ strip_ts_comments() {
         while ((q = index(rest, "//")) > 0) {
           pos = off + q
           prev = pos > 1 ? substr(line, pos - 1, 1) : ""
-          if (prev != "" && (prev ~ /[A-Za-z0-9]/ || prev == "\047" || prev == "\140")) {  # 前接字母数字/引号的是 URL 或路径（https://）
+          # 2026-10-03：判据补上冒号。原判据只认 [A-Za-z0-9] 与引号，但 `https://` 的
+          # `//` 前一个字符是 `:`（本行注释早已写明「（https://）」），于是 URL 被当成
+          # 注释起点，`s = pos; break` 把整行截断——与 URL 同行书写的接口路径被整行丢弃。
+          # 实测：`const u = 'https://example.com/api/v1/project/list';` 抽取结果为空。
+          # 补 `:` 之后该端点可正常抽出；真注释（前接空白/行首/`;`）判定不受影响。
+          if (prev != "" && (prev ~ /[A-Za-z0-9]/ || prev == ":" || prev == "\047" || prev == "\140")) {  # 前接字母数字/冒号/引号的是 URL 或路径（https://）
             off = pos + 2; rest = substr(line, off + 1)
           } else { s = pos; break }
         }
-        if (s > 0 && (b == 0 || s < b)) { line = substr(line, 1, s - 1); break }
+        # 2026-10-03：截掉行注释时，注释**之前**的代码必须写进 out。
+        # 原实现只把前缀赋回 line 就 break，前缀从未进入 out，于是「代码 + 行尾注释」
+        # 这一整行等价于被丢弃——行尾注释在 TS 里极常见，凡与注释同行的接口路径
+        # 都抽不出来，直接表现为孤儿端点虚增。实测：
+        #   `const x = ipdGet('/api/v1/foo'); // 获取列表`  修复前抽取结果为空。
+        if (s > 0 && (b == 0 || s < b)) { out = out substr(line, 1, s - 1); line = ""; break }
         if (b == 0) { out = out line; line = "" }
         else {
           e = index(substr(line, b + 2), "*/")
