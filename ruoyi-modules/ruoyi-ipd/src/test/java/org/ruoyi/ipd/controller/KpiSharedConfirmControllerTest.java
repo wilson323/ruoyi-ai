@@ -458,6 +458,12 @@ class KpiSharedConfirmControllerTest {
                 org.mockito.Mockito.mock(org.ruoyi.ipd.service.StateMachineGuard.class));
             org.mockito.Mockito.lenient().when(confirmMapper.update(
                 org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any())).thenReturn(1);
+            // 2026-10-03 归属守卫8 收口：确认端要求签署人是该项目所属产品组的组长。
+            // 本装配器的 actor 统一由 actorGroupLeader(id) 构造（groupId=10L），故把项目主组设为 10L
+            // 走「主组放行」分支——无需再桩成员表（该分支在查成员之前短路）。
+            Project proj = project();
+            proj.setMainGroupId(10L);
+            org.mockito.Mockito.lenient().when(projectMapper.selectById(PROJECT_ID)).thenReturn(proj);
         }
     }
 
