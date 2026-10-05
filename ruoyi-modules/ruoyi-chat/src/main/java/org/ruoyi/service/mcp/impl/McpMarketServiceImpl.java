@@ -130,7 +130,7 @@ public class McpMarketServiceImpl implements IMcpMarketService {
         }
 
         // 删除市场
-        baseMapper.deleteBatchIds(ids);
+        baseMapper.deleteByIds(ids);
     }
 
     @Override
@@ -344,7 +344,6 @@ public class McpMarketServiceImpl implements IMcpMarketService {
     }
 
     private LambdaQueryWrapper<McpMarket> buildQueryWrapper(McpMarketBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<McpMarket> wrapper = selectPublicMarketColumns(Wrappers.lambdaQuery());
         wrapper.eq(StringUtils.hasText(bo.getStatus()), McpMarket::getStatus, bo.getStatus())
             .like(StringUtils.hasText(bo.getName()), McpMarket::getName, bo.getName())

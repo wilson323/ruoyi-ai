@@ -21,9 +21,12 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @TableName(value = "cert_templates", autoResultMap = true)
 public class CertTemplate extends BaseEntity implements SoftDeletable {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId
     private Long id;

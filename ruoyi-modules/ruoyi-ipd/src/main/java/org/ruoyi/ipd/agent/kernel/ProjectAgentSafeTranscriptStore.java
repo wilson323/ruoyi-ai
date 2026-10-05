@@ -139,7 +139,7 @@ public final class ProjectAgentSafeTranscriptStore implements TranscriptStore, M
         if (node.isTextual()) return TextNode.valueOf(redact(node.textValue()));
         if (node.isObject()) {
             ObjectNode safe = JSON.createObjectNode();
-            node.fields().forEachRemaining(entry -> safe.set(entry.getKey(), sanitizeNode(entry.getValue())));
+            node.properties().forEach(entry -> safe.set(entry.getKey(), sanitizeNode(entry.getValue())));
             return safe;
         }
         if (node.isArray()) {

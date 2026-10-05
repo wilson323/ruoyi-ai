@@ -20,6 +20,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "product_groups", autoResultMap = true)
 public class ProductGroup extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId
     private Long id;
 

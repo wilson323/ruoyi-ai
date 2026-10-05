@@ -60,8 +60,7 @@ public class ProjectAgentOfficialCollaborationRedis {
         if ((!tls && !"redis".equals(address.getScheme())) || address.getHost() == null
             || address.getPort() < 1 || address.getUserInfo() != null)
             throw new IllegalStateException("Active Redis address is unsupported");
-        if (tls && (!liveSingle.isSslEnableEndpointIdentification()
-            || liveSingle.getSslVerificationMode() != org.redisson.config.SslVerificationMode.STRICT))
+        if (tls && liveSingle.getSslVerificationMode() != org.redisson.config.SslVerificationMode.STRICT)
             throw new IllegalStateException("Redis TLS verification mode requires an equivalent official client configuration");
         return new Connection(address.getHost(), address.getPort(), liveSingle.getDatabase(),
             liveSingle.getUsername(), liveSingle.getPassword(), tls,

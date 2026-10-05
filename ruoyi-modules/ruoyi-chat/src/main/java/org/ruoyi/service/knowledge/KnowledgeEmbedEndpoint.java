@@ -2,7 +2,6 @@ package org.ruoyi.service.knowledge;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.agentscope.core.embedding.EmbeddingModel;
-import io.agentscope.core.embedding.ollama.OllamaTextEmbedding;
 import org.ruoyi.common.chat.embedding.BuiltinEmbeddingDefaults;
 import org.ruoyi.domain.bo.vector.StoreEmbeddingBo;
 import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;

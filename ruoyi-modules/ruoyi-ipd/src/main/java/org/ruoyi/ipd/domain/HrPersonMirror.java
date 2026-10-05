@@ -1,7 +1,6 @@
 package org.ruoyi.ipd.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -35,8 +34,7 @@ import java.util.Date;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "hr_person_mirror", autoResultMap = true)
-@AutoMapper(target = HrPersonMirror.class)
-public class HrPersonMirror extends BaseEntity implements Serializable {
+public class HrPersonMirror extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;

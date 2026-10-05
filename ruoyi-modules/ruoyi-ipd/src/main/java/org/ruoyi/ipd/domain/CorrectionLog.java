@@ -34,6 +34,8 @@ import java.util.Date;
 @TableName(value = "correction_logs", autoResultMap = true)
 public class CorrectionLog extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 更正留痕实体类型白名单（P3-2.2 + R-P3-2.2-POSTREVIEW）。
      * 命名一律大写下划线，与现存 {@code entity_type} 列字符串对齐；

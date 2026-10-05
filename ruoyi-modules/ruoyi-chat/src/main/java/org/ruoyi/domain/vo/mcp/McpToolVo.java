@@ -20,6 +20,8 @@ import java.util.Date;
 @AutoMapper(target = McpTool.class)
 public class McpToolVo implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 工具ID
      */

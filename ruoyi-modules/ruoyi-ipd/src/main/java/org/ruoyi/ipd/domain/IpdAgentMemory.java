@@ -32,6 +32,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "ipd_agent_memory", autoResultMap = true)
 public class IpdAgentMemory extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /** 候选：可召回，但召回文本带非权威标注。 */
     public static final String STATUS_CANDIDATE = "0";
     /** 已晋升并入权威知识库。 */

@@ -18,7 +18,6 @@ import org.ruoyi.domain.entity.chat.ChatProvider;
 import org.ruoyi.mapper.chat.ChatProviderMapper;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Collection;
 
 /**
@@ -72,7 +71,6 @@ public class ChatProviderServiceImpl implements IChatProviderService {
     }
 
     private LambdaQueryWrapper<ChatProvider> buildQueryWrapper(ChatProviderBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatProvider> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(ChatProvider::getSortOrder, ChatProvider::getId);
         lqw.like(StringUtils.isNotBlank(bo.getProviderName()), ChatProvider::getProviderName, bo.getProviderName());

@@ -139,7 +139,7 @@ public class AgentScopeMcpToolProviderService {
                 List<String> args = new ArrayList<>();
                 config.path("args").forEach(arg -> args.add(arg.asText()));
                 Map<String, String> environment = new LinkedHashMap<>();
-                config.path("env").fields().forEachRemaining(e -> environment.put(e.getKey(), e.getValue().asText()));
+                config.path("env").properties().forEach(e -> environment.put(e.getKey(), e.getValue().asText()));
                 environment.keySet().removeIf(ChildProcessSecretSanitizer.DEEPSEEK_API_KEY::equalsIgnoreCase);
                 environment.putAll(ChildProcessSecretSanitizer.emptyProviderSecretOverride());
                 transport = new StdioClientTransport(ServerParameters.builder(resolveCommand(command))
@@ -155,7 +155,7 @@ public class AgentScopeMcpToolProviderService {
                 if (uri.getRawQuery() != null) { endpoint += "?" + uri.getRawQuery(); }
                 String origin = new URI(uri.getScheme(), uri.getRawAuthority(), null, null, null).toString();
                 Map<String, String> headers = new LinkedHashMap<>();
-                config.path("headers").fields().forEachRemaining(e -> headers.put(e.getKey(), e.getValue().asText()));
+                config.path("headers").properties().forEach(e -> headers.put(e.getKey(), e.getValue().asText()));
                 if ("SSE".equalsIgnoreCase(config.path("transport").asText())) {
                     transport = HttpClientSseClientTransport.builder(origin).sseEndpoint(endpoint)
                         .customizeRequest(request -> headers.forEach(request::header)).build();

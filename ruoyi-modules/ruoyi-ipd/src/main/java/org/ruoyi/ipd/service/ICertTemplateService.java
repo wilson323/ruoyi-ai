@@ -1,18 +1,9 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.CertTemplate;
-import org.ruoyi.ipd.mapper.CertTemplateMapper;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * ICertTemplateService 接口（paiban-05 接口化，实现见 {@link CertTemplateService}）。

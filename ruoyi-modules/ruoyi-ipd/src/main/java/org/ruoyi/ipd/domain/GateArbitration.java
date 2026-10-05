@@ -24,6 +24,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "gate_arbitrations", autoResultMap = true)
 public class GateArbitration extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键（雪花算法）
      */

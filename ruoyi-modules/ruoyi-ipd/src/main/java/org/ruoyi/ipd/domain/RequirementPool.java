@@ -33,6 +33,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "requirement_pools", autoResultMap = true)
 public class RequirementPool extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 

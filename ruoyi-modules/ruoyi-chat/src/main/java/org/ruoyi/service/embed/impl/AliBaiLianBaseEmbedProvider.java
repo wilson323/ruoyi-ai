@@ -1,7 +1,6 @@
 package org.ruoyi.service.embed.impl;
 
 import io.agentscope.core.embedding.EmbeddingModel;
-import io.agentscope.core.embedding.dashscope.DashScopeTextEmbedding;
 import io.agentscope.core.message.ContentBlock;
 import reactor.core.publisher.Mono;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;

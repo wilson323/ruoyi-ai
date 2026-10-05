@@ -120,11 +120,13 @@ public final class ChatOfficialCapabilities implements SkillPromotionGate, Skill
             }
             var manager = Objects.requireNonNull(workspace, "Official chat workspace is not bound");
             var filesystem = Objects.requireNonNull(manager.getFilesystem());
-            var drafts = new WorkspaceSkillRepository(filesystem, "skills/_drafts", () -> context);
-            if (drafts.getSkill(candidate.name(), context) == null) {
-                throw new IllegalStateException("Official skill draft does not exist");
+            String draft;
+            try (var drafts = new WorkspaceSkillRepository(filesystem, "skills/_drafts", () -> context)) {
+                if (drafts.getSkill(candidate.name(), context) == null) {
+                    throw new IllegalStateException("Official skill draft does not exist");
+                }
+                draft = drafts.resolveSkillRoot(candidate.name());
             }
-            String draft = drafts.resolveSkillRoot(candidate.name());
             String receipt = draft + "/.owner-review.json";
             String content = JSON.writeValueAsString(Map.of("status", "PENDING_OWNER_APPROVAL",
                 "skillName", candidate.name(), "draftPath", draft,

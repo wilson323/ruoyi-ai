@@ -11,6 +11,8 @@ import org.ruoyi.domain.entity.shortdrama.ShortDramaStoryboard;
 @AutoMapper(target = ShortDramaStoryboard.class, reverseConvertGenerate = false)
 public class ShortDramaStoryboardBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     private Long id;
 
     private Long projectId;

@@ -4,7 +4,6 @@ import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.domain.bo.rerank.RerankRequest;
 import org.ruoyi.domain.bo.rerank.RerankResult;
 
-import java.util.List;
 
 /**
  * 重排序模型服务接口

@@ -15,11 +15,9 @@ import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import io.qdrant.client.grpc.JsonWithInt;
-import io.qdrant.client.grpc.Points.DenseVector;
 import io.qdrant.client.grpc.Points.Query;
 import io.qdrant.client.grpc.Points.QueryPoints;
 import io.qdrant.client.grpc.Points.ScoredPoint;
-import io.qdrant.client.grpc.Points.VectorInput;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.chat.service.chat.IChatModelService;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -38,7 +36,6 @@ import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 /**
  * Qdrant向量库策略实现

@@ -17,7 +17,6 @@ import org.ruoyi.service.knowledge.IKnowledgeGraphInstanceService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Collection;
 
 /**
@@ -71,7 +70,6 @@ public class KnowledgeGraphInstanceServiceImpl implements IKnowledgeGraphInstanc
     }
 
     private LambdaQueryWrapper<KnowledgeGraphInstance> buildQueryWrapper(KnowledgeGraphInstanceBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<KnowledgeGraphInstance> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(KnowledgeGraphInstance::getId);
         lqw.eq(StringUtils.isNotBlank(bo.getGraphUuid()), KnowledgeGraphInstance::getGraphUuid, bo.getGraphUuid());

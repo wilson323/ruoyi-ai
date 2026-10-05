@@ -14,12 +14,15 @@ import java.util.Date;
  * 完成校验由 StageActionService 按 depth + valueFields 强制，不信任前端。
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
 @TableName(value = "stage_actions", autoResultMap = true)
 public class StageAction extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

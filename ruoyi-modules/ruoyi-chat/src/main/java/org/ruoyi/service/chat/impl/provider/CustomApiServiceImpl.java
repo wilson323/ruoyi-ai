@@ -6,14 +6,12 @@ import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.common.chat.security.CustomApiCredentialPolicy;
 import org.ruoyi.enums.ChatModeType;
-import org.ruoyi.observability.MyChatModelListener;
 import org.ruoyi.service.chat.AbstractChatService;
 import org.ruoyi.service.chat.impl.provider.doubao.DoubaoStreamingChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.List;
 
 /**
  * 自定义 API 服务调用

@@ -24,6 +24,8 @@ import java.util.Date;
 @TableName(value = "kpi_shared_confirms", autoResultMap = true)
 public class KpiSharedConfirm extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键（雪花算法）
      */

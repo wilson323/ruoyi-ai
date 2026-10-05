@@ -20,6 +20,8 @@ import org.ruoyi.domain.entity.knowledge.KnowledgeFragment;
 @AutoMapper(target = KnowledgeFragment.class, reverseConvertGenerate = false)
 public class KnowledgeFragmentBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键
      */

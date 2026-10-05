@@ -13,7 +13,6 @@ import me.zhyd.oauth.model.AuthResponse;
 import me.zhyd.oauth.model.AuthUser;
 import me.zhyd.oauth.request.AuthRequest;
 import me.zhyd.oauth.utils.AuthStateUtils;
-import org.ruoyi.common.core.constant.SystemConstants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.RegisterBody;
 import org.ruoyi.common.core.domain.model.SocialLoginBody;
@@ -59,6 +58,7 @@ public class AuthController {
     private final ISysConfigService configService;
     private final ISysTenantService tenantService;
     private final ISysSocialService socialUserService;
+    @SuppressWarnings("unused")
     private final ISysClientService clientService;
 
 

@@ -14,6 +14,8 @@ import org.ruoyi.domain.entity.shortdrama.ShortDramaAudio;
 @AutoMapper(target = ShortDramaAudio.class, reverseConvertGenerate = false)
 public class ShortDramaAudioBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     private Long id;
 
     @NotNull(message = "项目ID不能为空")

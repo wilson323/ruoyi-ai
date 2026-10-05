@@ -41,6 +41,8 @@ import java.math.BigDecimal;
 @TableName(value = "kpi_functional_metrics", autoResultMap = true)
 public class KpiFunctionalMetric extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /** 主键（雪花算法） */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

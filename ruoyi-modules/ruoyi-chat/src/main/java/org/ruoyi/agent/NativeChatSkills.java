@@ -17,7 +17,9 @@ public final class NativeChatSkills {
     public static List<AgentSkill> available() {
         Path root = SkillsPathResolver.resolveSkillsPath();
         if (!Files.isDirectory(root)) { return List.of(); }
-        return new FileSystemSkillRepository(root, false, "chat-skills", true).getAllSkills();
+        try (FileSystemSkillRepository repository = new FileSystemSkillRepository(root, false, "chat-skills", true)) {
+            return repository.getAllSkills();
+        }
     }
 
     public static String selectedPrompt(List<String> names) {
@@ -27,19 +29,20 @@ public final class NativeChatSkills {
 
     static String selectedPrompt(Path root, List<String> names) {
         if (Files.isSymbolicLink(root)) { throw new IllegalArgumentException("技能目录来源无效"); }
-        FileSystemSkillRepository repository = new FileSystemSkillRepository(root, false, "chat-skills", true);
         StringBuilder prompt = new StringBuilder();
-        for (String name : names.stream().distinct().toList()) {
-            if (name == null || !name.matches("[A-Za-z0-9_-]+") || Files.isSymbolicLink(root.resolve(name))
-                || Files.isSymbolicLink(root.resolve(name).resolve("SKILL.md"))) {
-                throw new IllegalArgumentException("技能名称或来源无效");
+        try (FileSystemSkillRepository repository = new FileSystemSkillRepository(root, false, "chat-skills", true)) {
+            for (String name : names.stream().distinct().toList()) {
+                if (name == null || !name.matches("[A-Za-z0-9_-]+") || Files.isSymbolicLink(root.resolve(name))
+                    || Files.isSymbolicLink(root.resolve(name).resolve("SKILL.md"))) {
+                    throw new IllegalArgumentException("技能名称或来源无效");
+                }
+                AgentSkill skill = repository.getSkill(name);
+                if (skill == null || skill.getSkillContent() == null || skill.getSkillContent().isBlank()) {
+                    throw new IllegalStateException("选定技能不可用");
+                }
+                prompt.append("\n【本次选定技能：").append(skill.getName()).append("｜sha256：")
+                    .append(sha256(skill.getSkillContent())).append("】\n").append(skill.getSkillContent());
             }
-            AgentSkill skill = repository.getSkill(name);
-            if (skill == null || skill.getSkillContent() == null || skill.getSkillContent().isBlank()) {
-                throw new IllegalStateException("选定技能不可用");
-            }
-            prompt.append("\n【本次选定技能：").append(skill.getName()).append("｜sha256：")
-                .append(sha256(skill.getSkillContent())).append("】\n").append(skill.getSkillContent());
         }
         prompt.append("\n技能只提供任务规约；执行只能使用本次已登记工具。没有脚本或所需工具时明确说明不可执行，不得声称已生成文件。\n");
         return prompt.toString();

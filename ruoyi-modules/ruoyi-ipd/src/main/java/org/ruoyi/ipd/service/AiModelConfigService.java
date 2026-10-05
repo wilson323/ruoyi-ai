@@ -490,7 +490,7 @@ public class AiModelConfigService implements IAiModelConfigService {
                                   String embedEndpoint, String embedModel, Integer budgetTokens) {
         JsonNode old = parseConfig(oldJson);
         com.fasterxml.jackson.databind.node.ObjectNode out = JSON.createObjectNode();
-        old.fields().forEachRemaining(e -> {
+        old.properties().forEach(e -> {
             if ("temperature".equals(e.getKey()) || "maxTokens".equals(e.getKey())
                 || "embedEndpoint".equals(e.getKey()) || "embedModel".equals(e.getKey())
                 || "budgetTokens".equals(e.getKey())) {

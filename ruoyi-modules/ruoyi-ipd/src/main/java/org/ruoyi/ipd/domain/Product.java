@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,6 +25,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "products", autoResultMap = true)
 public class Product extends BaseEntity implements SoftDeletable {
+
+    private static final long serialVersionUID = 1L;
 
     public static final String SRC_ADMIN_IMPORT = "ADMIN_IMPORT";
     public static final String SRC_PM_NEW = "PM_NEW";

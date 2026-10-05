@@ -24,6 +24,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "product_lines", autoResultMap = true)
 public class ProductLine extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     private String lineCode;

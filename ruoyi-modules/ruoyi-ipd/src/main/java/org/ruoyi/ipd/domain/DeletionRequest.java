@@ -11,7 +11,10 @@ import java.util.Date;
  */
 @TableName(value = "deletion_requests", autoResultMap = true)
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class DeletionRequest extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     @TableField("entity_type")

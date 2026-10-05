@@ -29,6 +29,8 @@ import java.time.LocalDate;
 @TableName(value = "landed_scenarios", autoResultMap = true)
 public class LandedScenario extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /** 主键（雪花算法） */
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

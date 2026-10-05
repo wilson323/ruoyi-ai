@@ -38,6 +38,8 @@ import java.util.Date;
 @TableName(value = "p0_escalation_chain", autoResultMap = true)
 public class P0EscalationChain extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 

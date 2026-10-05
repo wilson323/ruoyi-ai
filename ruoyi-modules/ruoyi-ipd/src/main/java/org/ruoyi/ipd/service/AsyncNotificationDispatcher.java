@@ -95,6 +95,7 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean dispatchAsync(NotificationEvent event) {
         if (event == null || event.getId() == null) {
             throw new NotificationDispatchException("异步事件必须有 id（先 publish 落库）");

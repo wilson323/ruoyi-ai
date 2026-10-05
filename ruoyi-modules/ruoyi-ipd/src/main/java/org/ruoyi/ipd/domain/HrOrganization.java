@@ -1,7 +1,6 @@
 package org.ruoyi.ipd.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -34,8 +33,7 @@ import java.util.Date;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "hr_organizations", autoResultMap = true)
-@AutoMapper(target = HrOrganization.class)
-public class HrOrganization extends BaseEntity implements Serializable {
+public class HrOrganization extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;

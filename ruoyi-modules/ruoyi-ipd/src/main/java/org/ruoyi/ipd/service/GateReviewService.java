@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.approval.ApprovalGuardSupport;
 import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
@@ -37,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * P2-5.2 Gate 双签：G1/G5 盲签与 G2/3/4 领域签署（BR-GATE-03/04/08，AC-GATE-03/04/05）。
@@ -1190,7 +1188,7 @@ public class GateReviewService implements IGateReviewService {
             return List.of();
         }
         List<Long> pmIds = members.stream().map(ProjectMember::getPersonId).distinct().toList();
-        List<Person> pms = personMapper.selectBatchIds(pmIds);
+        List<Person> pms = personMapper.selectByIds(pmIds);
         if (pms == null || pms.isEmpty()) {
             return List.of();
         }

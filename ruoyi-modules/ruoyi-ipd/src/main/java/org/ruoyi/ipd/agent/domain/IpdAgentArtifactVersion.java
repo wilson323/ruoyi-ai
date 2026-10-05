@@ -26,6 +26,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "ipd_agent_artifact_version", autoResultMap = true)
 public class IpdAgentArtifactVersion extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /** 草稿：可 apply、可反馈。 */
     public static final String STATUS_DRAFT = "DRAFT";
     /** 已应用到项目文档。 */

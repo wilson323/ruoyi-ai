@@ -11,7 +11,6 @@ import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.json.utils.JsonUtils;
 import org.ruoyi.common.mybatis.core.page.PageQuery;
 import org.ruoyi.common.mybatis.core.page.TableDataInfo;
-import org.ruoyi.config.agent.SkillsPathResolver;
 import org.ruoyi.domain.entity.agent.Agent;
 import org.ruoyi.domain.bo.agent.AgentBo;
 import org.ruoyi.domain.entity.mcp.McpTool;

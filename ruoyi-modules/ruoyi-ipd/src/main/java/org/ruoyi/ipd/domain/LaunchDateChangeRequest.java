@@ -27,6 +27,8 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 public class LaunchDateChangeRequest extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     public static final String ST_PENDING_SECOND = "PENDING_SECOND";
     public static final String ST_CONFIRMED = "CONFIRMED";
     public static final String ST_REJECTED = "REJECTED";

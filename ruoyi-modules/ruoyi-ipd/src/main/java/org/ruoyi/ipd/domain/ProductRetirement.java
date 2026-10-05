@@ -7,6 +7,8 @@ import java.util.Date;
 /** Existing product retirement record. Historical two-level columns are preserved as evidence. */
 @Data @EqualsAndHashCode(callSuper=true) @TableName("product_retirements")
 public class ProductRetirement extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
  @TableId(type=IdType.ASSIGN_ID) private Long id;
  private Long productId; private Long proposerId; private String proposerRole; private String reason;
  private Integer readinessActiveProjects; private Integer readinessActiveReviews; private Integer readinessOpenIssues;

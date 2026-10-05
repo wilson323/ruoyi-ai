@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -19,12 +20,15 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
  * <p>skill_names 为 JSON 数组文本（存储列 json 强制合法）；NULL = §3 未定稿。
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
 @TableName(value = "ipd_action_skill_map", autoResultMap = true)
 public class IpdActionSkillMap extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

@@ -1,34 +1,10 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.NegativeFeedback;
-import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.domain.ProjectMember;
 import org.ruoyi.ipd.dto.NegativeFeedbackCreateReq;
 import org.ruoyi.ipd.dto.NegativeFeedbackDecisionReq;
-import org.ruoyi.ipd.dto.NegativeFeedbackView;
-import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdPermission;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * INegativeFeedbackService 接口（paiban-05 接口化，实现见 {@link NegativeFeedbackService}）。

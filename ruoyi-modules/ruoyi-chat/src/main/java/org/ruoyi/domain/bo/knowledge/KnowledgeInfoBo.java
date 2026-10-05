@@ -20,6 +20,8 @@ import org.ruoyi.domain.entity.knowledge.KnowledgeInfo;
 @AutoMapper(target = KnowledgeInfo.class, reverseConvertGenerate = false)
 public class KnowledgeInfoBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键
      */

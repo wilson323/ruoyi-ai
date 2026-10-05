@@ -1,14 +1,7 @@
 package org.ruoyi.ipd.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Arrays;
-import java.util.List;
-import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.ProjectScore;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * IProjectScoreService 接口（paiban-05 接口化，实现见 {@link ProjectScoreService}）。

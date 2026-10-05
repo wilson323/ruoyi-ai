@@ -2,7 +2,6 @@ package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

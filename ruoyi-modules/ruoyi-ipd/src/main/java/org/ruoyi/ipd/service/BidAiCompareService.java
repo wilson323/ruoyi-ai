@@ -108,7 +108,7 @@ public class BidAiCompareService {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "招标单不存在: " + invitationId);
         }
         Map<Long, BidResponse> byId = new LinkedHashMap<>();
-        for (BidResponse row : bidResponseMapper.selectBatchIds(ids)) {
+        for (BidResponse row : bidResponseMapper.selectByIds(ids)) {
             byId.put(row.getId(), row);
         }
         for (Long rid : ids) {
@@ -200,7 +200,7 @@ public class BidAiCompareService {
                     continue;
                 }
                 Map<String, String> cells = new LinkedHashMap<>();
-                node.path("cells").fields().forEachRemaining(e -> cells.put(e.getKey(), e.getValue().asText("")));
+                node.path("cells").properties().forEach(e -> cells.put(e.getKey(), e.getValue().asText("")));
                 rows.add(new DimensionRow(dim, cells, node.path("difference").asText("")));
                 seen.add(dim);
             }

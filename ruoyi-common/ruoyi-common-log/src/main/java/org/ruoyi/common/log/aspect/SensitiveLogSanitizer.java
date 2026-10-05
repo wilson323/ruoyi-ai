@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.ruoyi.common.web.utils.SafeRequestLogUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /** Recursively removes credential fields from operation-audit JSON. */
@@ -58,21 +58,22 @@ final class SensitiveLogSanitizer {
             return null;
         }
         if (node instanceof ObjectNode object) {
-            Iterator<Map.Entry<String, JsonNode>> fields = object.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
+            List<String> toRemove = new ArrayList<>();
+            object.properties().forEach(field -> {
                 if (sensitiveFields.contains(normalize(field.getKey()))) {
-                    fields.remove();
-                } else {
-                    JsonNode value = field.getValue();
-                    if (value != null && value.isTextual()) {
-                        object.set(field.getKey(), TextNode.valueOf(
-                            SafeRequestLogUtils.sanitizeText(value.textValue())));
-                    } else {
-                        object.set(field.getKey(), redact(value, sensitiveFields));
-                    }
+                    toRemove.add(field.getKey());
                 }
-            }
+            });
+            toRemove.forEach(object::remove);
+            object.properties().forEach(field -> {
+                JsonNode value = field.getValue();
+                if (value != null && value.isTextual()) {
+                    object.set(field.getKey(), TextNode.valueOf(
+                        SafeRequestLogUtils.sanitizeText(value.textValue())));
+                } else {
+                    object.set(field.getKey(), redact(value, sensitiveFields));
+                }
+            });
         } else if (node instanceof ArrayNode array) {
             for (int index = 0; index < array.size(); index++) {
                 JsonNode value = array.get(index);

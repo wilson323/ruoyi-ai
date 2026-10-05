@@ -16,7 +16,6 @@ import org.ruoyi.service.chat.IChatSessionService;
 import org.springframework.stereotype.Service;
 import org.ruoyi.domain.vo.chat.ChatSessionVo;
 import java.util.List;
-import java.util.Map;
 import java.util.Collection;
 
 /**
@@ -70,7 +69,6 @@ public class ChatSessionServiceImpl implements IChatSessionService {
     }
 
     private LambdaQueryWrapper<ChatSession> buildQueryWrapper(ChatSessionBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatSession> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(ChatSession::getId);
         lqw.eq(bo.getUserId() != null, ChatSession::getUserId, bo.getUserId());

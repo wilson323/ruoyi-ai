@@ -326,7 +326,7 @@ public final class ProjectAgentBackgroundMemoryLifecycle implements MiddlewareBa
         try (var tar = new TarArchiveInputStream(input)) {
             org.apache.commons.compress.archivers.tar.TarArchiveEntry entry;
             byte[] buffer = new byte[8192];
-            while ((entry = tar.getNextTarEntry()) != null) {
+            while ((entry = tar.getNextEntry()) != null) {
                 String name = entry.getName().replace('\\', '/');
                 while (name.startsWith("./")) name = name.substring(2);
                 if (name.startsWith("/workspace/")) name = name.substring("/workspace/".length());

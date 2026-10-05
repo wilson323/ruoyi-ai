@@ -8,7 +8,6 @@ import io.github.imfangs.dify.client.callback.ChatStreamCallback;
 import io.github.imfangs.dify.client.event.*;
 import io.github.imfangs.dify.client.enums.ResponseMode;
 import io.github.imfangs.dify.client.model.DifyConfig;
-import io.github.imfangs.dify.client.model.common.Metadata;
 import org.ruoyi.common.chat.domain.dto.request.ChatRequest;
 import org.ruoyi.common.chat.domain.vo.chat.ChatModelVo;
 import org.ruoyi.enums.ChatModeType;

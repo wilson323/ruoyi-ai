@@ -374,7 +374,7 @@ public class ProductLineSpaceService {
         java.util.LinkedHashMap<Long, Project> merged = new java.util.LinkedHashMap<>();
         List<Long> directIds = projectMapper.findIdsByProductLine(lineId);
         if (directIds != null && !directIds.isEmpty()) {
-            for (Project project : projectMapper.selectBatchIds(directIds)) {
+            for (Project project : projectMapper.selectByIds(directIds)) {
                 if (project.getId() != null) merged.put(project.getId(), project);
             }
         }

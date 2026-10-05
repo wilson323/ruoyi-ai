@@ -19,9 +19,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -233,11 +231,9 @@ public class DeepDirectExecutor implements AiActionExecutor {
         sb.append("- 来源: R221 对话填表（AI 直接执行，人确认后归集）\n\n");
         if (fields.isObject() && fields.size() > 0) {
             sb.append("## 登记值\n\n");
-            Iterator<Map.Entry<String, JsonNode>> it = fields.fields();
-            while (it.hasNext()) {
-                Map.Entry<String, JsonNode> e = it.next();
-                sb.append("- ").append(e.getKey()).append(": ").append(e.getValue().asText()).append('\n');
-            }
+            fields.properties().forEach(e ->
+                sb.append("- ").append(e.getKey()).append(": ").append(e.getValue().asText()).append('\n')
+            );
         } else {
             // 复审问题6 后不可达（execute 已前置 fail），保留原文兜底仅为防御，不再参与完成判定
             sb.append("## 原始载荷\n\n```\n").append(payload).append("\n```\n");

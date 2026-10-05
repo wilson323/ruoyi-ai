@@ -1,30 +1,8 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Product;
-import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.mapper.ProductMapper;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdIdorGuard;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * IProductService 接口（paiban-05 接口化，实现见 {@link ProductService}）。

@@ -23,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -304,7 +302,7 @@ public class ProjectCircleService implements IProjectCircleService {
         if (ids.isEmpty()) {
             return Map.of();
         }
-        return personMapper.selectBatchIds(ids).stream()
+        return personMapper.selectByIds(ids).stream()
             .collect(Collectors.toMap(Person::getId, p -> p, (a, b) -> a));
     }
 

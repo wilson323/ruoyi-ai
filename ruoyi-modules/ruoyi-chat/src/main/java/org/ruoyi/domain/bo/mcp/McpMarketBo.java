@@ -18,6 +18,8 @@ import org.ruoyi.domain.entity.mcp.McpMarket;
 @AutoMapper(target = McpMarket.class, reverseConvertGenerate = false)
 public class McpMarketBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 市场ID
      */

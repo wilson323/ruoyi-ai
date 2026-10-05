@@ -32,6 +32,8 @@ import java.util.Date;
 @TableName(value = "contributions", autoResultMap = true)
 public class Contribution extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /** 草稿（双 PM 任一方已保存自评） */
     public static final String ST_DRAFT = "DRAFT";
     /** 已提交（双 PM 自评均完成，等待产品组长确认） */

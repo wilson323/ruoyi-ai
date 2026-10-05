@@ -1,35 +1,8 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import org.ruoyi.ipd.domain.Person;
-import org.ruoyi.ipd.domain.ProductGroup;
-import org.ruoyi.ipd.domain.Project;
-import org.ruoyi.ipd.domain.ProjectCircleComment;
-import org.ruoyi.ipd.domain.ProjectCirclePost;
-import org.ruoyi.ipd.domain.ProjectFollower;
-import org.ruoyi.ipd.domain.ProjectMember;
-import org.ruoyi.ipd.mapper.PersonMapper;
-import org.ruoyi.ipd.mapper.ProductGroupMapper;
-import org.ruoyi.ipd.mapper.ProjectCircleCommentMapper;
-import org.ruoyi.ipd.mapper.ProjectCirclePostMapper;
-import org.ruoyi.ipd.mapper.ProjectFollowerMapper;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * IProjectCircleService 接口（paiban-05 接口化，实现见 {@link ProjectCircleService}）。

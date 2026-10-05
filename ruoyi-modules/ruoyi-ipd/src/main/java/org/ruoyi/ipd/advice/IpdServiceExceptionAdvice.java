@@ -1,7 +1,6 @@
 package org.ruoyi.ipd.advice;
 
 import cn.dev33.satoken.exception.NotLoginException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;

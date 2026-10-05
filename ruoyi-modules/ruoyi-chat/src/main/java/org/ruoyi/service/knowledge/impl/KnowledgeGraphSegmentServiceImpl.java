@@ -17,7 +17,6 @@ import org.ruoyi.service.knowledge.IKnowledgeGraphSegmentService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Collection;
 
 /**
@@ -71,7 +70,6 @@ public class KnowledgeGraphSegmentServiceImpl implements IKnowledgeGraphSegmentS
     }
 
     private LambdaQueryWrapper<KnowledgeGraphSegment> buildQueryWrapper(KnowledgeGraphSegmentBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<KnowledgeGraphSegment> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(KnowledgeGraphSegment::getId);
         lqw.eq(StringUtils.isNotBlank(bo.getUuid()), KnowledgeGraphSegment::getUuid, bo.getUuid());

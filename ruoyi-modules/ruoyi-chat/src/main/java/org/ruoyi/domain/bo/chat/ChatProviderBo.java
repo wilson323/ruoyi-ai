@@ -20,6 +20,8 @@ import jakarta.validation.constraints.*;
 @AutoMapper(target = ChatProvider.class, reverseConvertGenerate = false)
 public class ChatProviderBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键
      */

@@ -1,20 +1,8 @@
 package org.ruoyi.ipd.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.MissingNode;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocument;
-import org.ruoyi.ipd.domain.AiModelConfig;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AiGenerateReq;
-import org.ruoyi.ipd.mapper.AiDocumentMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.springframework.stereotype.Service;
 
 /**
  * IAiGenerationService 接口（paiban-05 接口化，实现见 {@link AiGenerationService}）。

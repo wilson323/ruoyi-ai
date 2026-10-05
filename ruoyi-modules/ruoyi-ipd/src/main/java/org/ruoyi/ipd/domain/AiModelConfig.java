@@ -15,9 +15,12 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @TableName(value = "ai_model_configs", autoResultMap = true)
 public class AiModelConfig extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

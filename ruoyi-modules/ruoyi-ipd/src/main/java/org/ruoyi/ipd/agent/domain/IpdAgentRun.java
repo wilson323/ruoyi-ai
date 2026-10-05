@@ -31,6 +31,8 @@ import java.util.Date;
 @TableName(value = "ipd_agent_run", autoResultMap = true)
 public class IpdAgentRun extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /** 服务端重读 Person 得到的可信租户（非请求参数）。 */

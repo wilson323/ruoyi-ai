@@ -19,6 +19,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "requirement_changes", autoResultMap = true)
 public class RequirementChange extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键（雪花算法）
      */

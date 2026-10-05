@@ -25,6 +25,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "project_cert_items", autoResultMap = true)
 public class ProjectCertItem extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId
     private Long id;
 

@@ -1,19 +1,8 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import java.util.Set;
-import lombok.RequiredArgsConstructor;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.GateElement;
-import org.ruoyi.ipd.mapper.AuditLogMapper;
-import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.ruoyi.ipd.security.IpdActor;
-import org.springframework.stereotype.Service;
 
 /**
  * IGateElementService 接口（paiban-05 接口化，实现见 {@link GateElementService}）。

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.NotificationEvent;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.ProductGroup;
 import org.ruoyi.ipd.domain.Project;
@@ -26,7 +25,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -340,10 +338,10 @@ public class ProjectScoreScheduleService {
 
         // 批量补齐项目名/被评人名，避免 N+1
         Set<Long> projectIds = pending.stream().map(ProjectScoreTask::getProjectId).collect(Collectors.toSet());
-        Map<Long, Project> projects = projectMapper.selectBatchIds(projectIds).stream()
+        Map<Long, Project> projects = projectMapper.selectByIds(projectIds).stream()
             .collect(Collectors.toMap(Project::getId, Function.identity()));
         Set<Long> personIds = pending.stream().map(ProjectScoreTask::getPersonId).collect(Collectors.toSet());
-        Map<Long, Person> persons = personMapper.selectBatchIds(personIds).stream()
+        Map<Long, Person> persons = personMapper.selectByIds(personIds).stream()
             .collect(Collectors.toMap(Person::getId, Function.identity()));
 
         return pending.stream()

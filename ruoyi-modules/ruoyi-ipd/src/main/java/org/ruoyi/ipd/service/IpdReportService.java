@@ -174,10 +174,10 @@ public class IpdReportService {
         Set<Long> personIds = list.stream().map(AllowanceLedger::getPersonId).collect(Collectors.toSet());
         Set<Long> projectIds = list.stream().map(AllowanceLedger::getProjectId).collect(Collectors.toSet());
         Map<Long, String> personName = personIds.isEmpty() ? Map.of()
-            : personMapper.selectBatchIds(personIds).stream()
+            : personMapper.selectByIds(personIds).stream()
                 .collect(Collectors.toMap(Person::getId, Person::getName, (a, b) -> a));
         Map<Long, Project> projectMap = projectIds.isEmpty() ? Map.of()
-            : projectMapper.selectBatchIds(projectIds).stream()
+            : projectMapper.selectByIds(projectIds).stream()
                 .collect(Collectors.toMap(Project::getId, p -> p, (a, b) -> a));
 
         List<Map<String, Object>> rows = new ArrayList<>(list.size());

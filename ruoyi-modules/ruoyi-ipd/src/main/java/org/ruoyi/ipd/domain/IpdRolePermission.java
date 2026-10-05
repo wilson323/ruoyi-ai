@@ -29,6 +29,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName("ipd_role_permission")
 public class IpdRolePermission extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /** GRANT：在 Java 默认集之外增授。 */
     public static final String EFFECT_GRANT = "GRANT";
     /** REVOKE：从 Java 默认集中收回。 */

@@ -14,9 +14,12 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @TableName(value = "gate_review_elements", autoResultMap = true)
 public class GateElement extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

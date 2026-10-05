@@ -1,26 +1,6 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import lombok.RequiredArgsConstructor;
-import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AllowanceLedger;
-import org.ruoyi.ipd.domain.AuditLog;
-import org.ruoyi.ipd.domain.Contribution;
-import org.ruoyi.ipd.domain.HandoverRecord;
-import org.ruoyi.ipd.domain.NegativeFeedback;
-import org.ruoyi.ipd.domain.ProjectScore;
-import org.ruoyi.ipd.domain.SwitchingAcceptance;
-import org.ruoyi.ipd.dto.SwitchingAcceptanceReport.CheckResult;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceReport;
 import org.ruoyi.ipd.dto.SwitchingAcceptanceUnlockReq;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
@@ -28,14 +8,7 @@ import org.ruoyi.ipd.mapper.ContributionMapper;
 import org.ruoyi.ipd.mapper.HandoverMapper;
 import org.ruoyi.ipd.mapper.NegativeFeedbackMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
-import org.ruoyi.ipd.mapper.SwitchingAcceptanceMapper;
-import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdPermission;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * ISwitchingAcceptanceService 接口（paiban-05 接口化，实现见 {@link SwitchingAcceptanceService}）。

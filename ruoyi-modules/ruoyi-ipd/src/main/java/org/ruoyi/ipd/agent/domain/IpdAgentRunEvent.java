@@ -24,6 +24,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "ipd_agent_run_event", autoResultMap = true)
 public class IpdAgentRunEvent extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     private String tenantId;

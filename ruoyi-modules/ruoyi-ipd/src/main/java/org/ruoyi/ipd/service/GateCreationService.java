@@ -8,7 +8,6 @@ import org.ruoyi.ipd.domain.Gate;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.security.IpdPermissionCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

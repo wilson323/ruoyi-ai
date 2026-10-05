@@ -32,7 +32,7 @@ import java.util.List;
  * @version 3.5.0
  */
 @Slf4j
-public class PlusDataPermissionInterceptor extends BaseMultiTableInnerInterceptor implements InnerInterceptor {
+public class PlusDataPermissionInterceptor extends BaseMultiTableInnerInterceptor {
 
     private final PlusDataPermissionHandler dataPermissionHandler = new PlusDataPermissionHandler();
 

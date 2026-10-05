@@ -26,7 +26,7 @@ final class AgentSqlValidator {
         Set<String> allowed = allowedTables.stream().map(String::trim)
             .map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
         try {
-            var statements = CCJSqlParserUtil.parseStatements(sql).getStatements();
+            var statements = CCJSqlParserUtil.parseStatements(sql);
             if (statements.size() != 1) {
                 throw new IllegalArgumentException("Error: Only a single SELECT is supported");
             }

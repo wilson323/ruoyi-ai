@@ -107,7 +107,6 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     }
 
     private LambdaQueryWrapper<KnowledgeInfo> buildQueryWrapper(KnowledgeInfoBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<KnowledgeInfo> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(KnowledgeInfo::getId);
         // S2 同构判据：可见范围 =「我的（userId 归属）OR 公开（share=1）」，与 KnowledgeAccessGate 检索判据一致。

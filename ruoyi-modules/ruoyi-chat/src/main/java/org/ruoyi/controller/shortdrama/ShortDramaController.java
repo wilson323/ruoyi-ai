@@ -1,6 +1,5 @@
 package org.ruoyi.controller.shortdrama;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;

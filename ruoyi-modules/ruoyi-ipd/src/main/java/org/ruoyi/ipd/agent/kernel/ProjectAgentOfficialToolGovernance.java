@@ -27,7 +27,6 @@ import java.net.URI;
 import java.net.InetAddress;
 import org.ruoyi.ipd.service.ai.EndpointUrlValidator;
 import java.util.function.Function;
-import org.ruoyi.chat.kernel.tool.KernelGovernedTool;
 import org.ruoyi.chat.kernel.KernelScopeKey;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

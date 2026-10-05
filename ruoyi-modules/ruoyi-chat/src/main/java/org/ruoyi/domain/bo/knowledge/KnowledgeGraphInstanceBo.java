@@ -20,6 +20,8 @@ import org.ruoyi.domain.entity.knowledge.KnowledgeGraphInstance;
 @AutoMapper(target = KnowledgeGraphInstance.class, reverseConvertGenerate = false)
 public class KnowledgeGraphInstanceBo extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键
      */

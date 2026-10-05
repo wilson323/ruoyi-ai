@@ -23,6 +23,8 @@ import java.util.Date;
 @TableName(value = "product_line_members", autoResultMap = true)
 public class ProductLineMember extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     private Long productLineId;

@@ -11,8 +11,10 @@ import java.util.Date;
  * <p>每次 {@link #update} 在事务内闭合当前开区间行 + 追加新行，溯源用。
  */
 @TableName(value = "ipd_business_config_versions", autoResultMap = true)
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data @EqualsAndHashCode(callSuper = true) @Builder @NoArgsConstructor @AllArgsConstructor
 public class IpdBusinessConfigVersion extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableLogic @TableField("del_flag")
     private String delFlag;

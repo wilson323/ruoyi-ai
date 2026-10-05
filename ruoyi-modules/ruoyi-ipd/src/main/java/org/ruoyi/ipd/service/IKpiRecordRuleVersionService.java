@@ -1,18 +1,8 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import java.util.Date;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.KpiRuleSnapshot;
-import org.ruoyi.ipd.mapper.KpiRuleSnapshotMapper;
-import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdPermission;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * IKpiRecordRuleVersionService 接口（paiban-05 接口化，实现见 {@link KpiRecordRuleVersionService}）。

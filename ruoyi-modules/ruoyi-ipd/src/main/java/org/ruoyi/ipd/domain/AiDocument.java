@@ -21,6 +21,8 @@ import java.util.Date;
 @TableName(value = "ai_documents", autoResultMap = true)
 public class AiDocument extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键（雪花算法）
      */

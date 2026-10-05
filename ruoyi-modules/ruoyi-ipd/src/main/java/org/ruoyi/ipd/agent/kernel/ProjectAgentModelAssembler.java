@@ -1,9 +1,6 @@
 package org.ruoyi.ipd.agent.kernel;
 
 import io.agentscope.core.model.Model;
-import io.agentscope.core.model.GenerateOptions;
-import io.agentscope.core.model.ExecutionConfig;
-import java.time.Duration;
 import io.agentscope.core.model.ModelCreationContext;
 import io.agentscope.core.model.ModelRegistry;
 import org.ruoyi.chat.kernel.KernelModelRequest;
@@ -11,7 +8,6 @@ import org.ruoyi.ipd.service.ai.AiGateway;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import java.util.Locale;
 import java.util.Objects;
 
 /**

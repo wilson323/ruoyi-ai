@@ -2,7 +2,6 @@ package org.ruoyi.ipd.agent.kernel;
 
 import io.agentscope.core.permission.PermissionBehavior;
 import io.agentscope.core.permission.PermissionContextState;
-import io.agentscope.core.permission.PermissionMode;
 import io.agentscope.core.permission.PermissionRule;
 import io.agentscope.harness.agent.tools.HarnessPlatformTools;
 import java.util.LinkedHashSet;

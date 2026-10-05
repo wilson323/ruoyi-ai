@@ -27,6 +27,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "ipd_ai_feedback", autoResultMap = true)
 public class IpdAiFeedback extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     private String tenantId;

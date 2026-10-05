@@ -6,22 +6,18 @@ import io.agentscope.harness.agent.skill.curator.SkillCandidate;
 import io.agentscope.harness.agent.skill.curator.SkillPromotionGate;
 import io.agentscope.harness.agent.skill.curator.SkillVisibilityFilter;
 import reactor.core.publisher.Mono;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import io.agentscope.harness.agent.workspace.WorkspaceManager;
 import io.agentscope.harness.agent.skill.WorkspaceSkillRepository;
 import org.ruoyi.chat.kernel.KernelScopeKey;
 import org.ruoyi.ipd.agent.ProjectAgentConstants;
-import java.security.MessageDigest;
 import java.time.Duration;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /** Official skill extension points: draft review receipt and immutable approved-run visibility. */
 final class ProjectAgentSkillGovernance implements SkillPromotionGate, SkillVisibilityFilter {
-    private static final ObjectMapper JSON = new ObjectMapper();
     private volatile WorkspaceManager manager;
     private volatile ProjectAgentEventSink sink;
     public void bindSink(ProjectAgentEventSink sink) { this.sink = Objects.requireNonNull(sink); }
@@ -49,10 +45,12 @@ final class ProjectAgentSkillGovernance implements SkillPromotionGate, SkillVisi
                 throw new IllegalArgumentException("Invalid skill review identity");
             }
             var filesystem = Objects.requireNonNull(official.getFilesystem(), "Official filesystem is required");
-            var drafts = new WorkspaceSkillRepository(filesystem, "skills/_drafts", () -> context);
-            AgentSkill actual = drafts.getSkill(candidate.name(), context);
-            if (actual == null) { throw new IllegalStateException("Official draft does not exist"); }
-            String draftPath = drafts.resolveSkillRoot(candidate.name());
+            String draftPath;
+            try (var drafts = new WorkspaceSkillRepository(filesystem, "skills/_drafts", () -> context)) {
+                AgentSkill actual = drafts.getSkill(candidate.name(), context);
+                if (actual == null) { throw new IllegalStateException("Official draft does not exist"); }
+                draftPath = drafts.resolveSkillRoot(candidate.name());
+            }
             var bundle = ProjectAgentSkillBundle.capture(filesystem, context, draftPath, candidate.name());
             var scan = io.agentscope.harness.agent.skill.curator.SkillSecurityScanner.scan(
                 bundle.skillName(), bundle.markdown(), bundle.textResources());

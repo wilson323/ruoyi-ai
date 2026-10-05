@@ -21,6 +21,8 @@ import java.util.Date;
 @TableName(value = "handover_records", autoResultMap = true)
 public class HandoverRecord extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键（雪花算法）
      */

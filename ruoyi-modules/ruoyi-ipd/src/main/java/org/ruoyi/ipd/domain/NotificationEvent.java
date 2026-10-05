@@ -30,6 +30,8 @@ import java.util.Date;
 @TableName(value = "notification_events", autoResultMap = true)
 public class NotificationEvent extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 

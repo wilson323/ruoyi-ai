@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * MCP 工具服务实现
@@ -163,7 +162,7 @@ public class McpToolServiceImpl implements IMcpToolService {
 
         // 撤销旧配置对应的运行连接
         deletableIds.forEach(id -> agentScopeMcpToolProviderService.refreshClient(id));
-        baseMapper.deleteBatchIds(deletableIds);
+        baseMapper.deleteByIds(deletableIds);
     }
 
     @Override
@@ -259,7 +258,6 @@ public class McpToolServiceImpl implements IMcpToolService {
     }
 
     private LambdaQueryWrapper<McpTool> buildQueryWrapper(McpToolBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<McpTool> wrapper = selectPublicColumns(Wrappers.lambdaQuery());
         wrapper.eq(StringUtils.hasText(bo.getType()), McpTool::getType, bo.getType())
             .eq(StringUtils.hasText(bo.getStatus()), McpTool::getStatus, bo.getStatus())

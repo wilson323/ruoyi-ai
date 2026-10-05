@@ -1,12 +1,18 @@
 package org.ruoyi.ipd.domain;
-import com.baomidou.mybatisplus.annotation.*;import lombok.*;import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.*;
+import org.ruoyi.common.mybatis.core.domain.BaseEntity;
+
 /**
  * IPD 系统参数（G-05：全部可配置参数，禁止硬编码）
  * 依据：开发说明书 D.0.7 全局系统参数键清单 + §8 涉钱参数
  */
 @TableName(value = "system_configs", autoResultMap = true)
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data @EqualsAndHashCode(callSuper = true) @Builder @NoArgsConstructor @AllArgsConstructor
 public class SystemConfig extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     /** 参数键（如 allowance.L3 / kpi.stopThreshold / gate.signDeadlineDays） */

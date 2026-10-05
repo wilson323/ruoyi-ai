@@ -22,6 +22,8 @@ import java.util.Date;
 @TableName(value = "gate_review_observers", autoResultMap = true)
 public class GateReviewObserver extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键（雪花算法）
      */

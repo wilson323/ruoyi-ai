@@ -17,7 +17,6 @@ import org.ruoyi.service.retrieval.KnowledgeRetrievalService;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 自定义检索器：适配 AgentScope Knowledge 只读接口

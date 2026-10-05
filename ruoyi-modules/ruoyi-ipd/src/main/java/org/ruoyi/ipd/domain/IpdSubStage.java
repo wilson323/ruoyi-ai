@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.ruoyi.common.mybatis.core.domain.BaseEntity;
@@ -19,12 +20,15 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
  * <p>tenant_id 列不在实体映射（表已登记 tenant.excludes，插入走 DDL 默认 '000000'；与 StageAction 同款）。
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
 @TableName(value = "ipd_sub_stage", autoResultMap = true)
 public class IpdSubStage extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

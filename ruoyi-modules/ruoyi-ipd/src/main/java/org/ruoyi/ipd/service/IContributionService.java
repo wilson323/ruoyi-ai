@@ -1,37 +1,11 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Set;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Contribution;
-import org.ruoyi.ipd.domain.ContributionVersion;
-import org.ruoyi.ipd.domain.ProductGroup;
-import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.dto.ContributionSaveReq;
 import org.ruoyi.ipd.dto.ContributionVersionView;
 import org.ruoyi.ipd.dto.ContributionView;
-import org.ruoyi.ipd.mapper.ContributionMapper;
-import org.ruoyi.ipd.mapper.ContributionVersionMapper;
-import org.ruoyi.ipd.mapper.ProductGroupMapper;
-import org.ruoyi.ipd.mapper.ProjectMapper;
-import org.ruoyi.ipd.security.IpdActor;
-import org.ruoyi.ipd.security.IpdPermission;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * IContributionService 接口（paiban-05 接口化，实现见 {@link ContributionService}）。

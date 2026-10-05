@@ -34,6 +34,8 @@ import java.util.Date;
 @TableName(value = "contribution_versions", autoResultMap = true)
 public class ContributionVersion extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 

@@ -30,6 +30,8 @@ import java.util.Date;
 @TableName(value = "kpi_rule_snapshots", autoResultMap = true)
 public class KpiRuleSnapshot extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 

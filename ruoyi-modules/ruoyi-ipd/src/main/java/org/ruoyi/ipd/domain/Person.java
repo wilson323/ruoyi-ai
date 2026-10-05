@@ -11,8 +11,9 @@ import java.util.Date;
  * 删除走 IDeletionRequestService + DeleteAuditService（P0-6.2，软删除）
  */
 @TableName(value = "persons", autoResultMap = true)
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data @EqualsAndHashCode(callSuper = true) @Builder @NoArgsConstructor @AllArgsConstructor
 public class Person extends BaseEntity implements SoftDeletable {
+    private static final long serialVersionUID = 1L;
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
     @TableField("name")

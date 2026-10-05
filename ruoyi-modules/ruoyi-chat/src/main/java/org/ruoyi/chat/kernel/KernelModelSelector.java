@@ -3,7 +3,6 @@ package org.ruoyi.chat.kernel;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.ModelCreationContext;
 import io.agentscope.core.model.ModelRegistry;
-import java.util.Locale;
 import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;

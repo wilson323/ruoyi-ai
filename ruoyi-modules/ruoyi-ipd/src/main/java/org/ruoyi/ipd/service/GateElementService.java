@@ -567,7 +567,7 @@ public class GateElementService implements IGateElementService {
         if (!node.isObject() || node.isEmpty()) {
             throw invalid("thresholdJson 必须为非空 JSON 对象");
         }
-        node.fields().forEachRemaining(entry -> {
+        node.properties().forEach(entry -> {
             String key = entry.getKey();
             JsonNode value = entry.getValue();
             if (key == null || key.isBlank()) {

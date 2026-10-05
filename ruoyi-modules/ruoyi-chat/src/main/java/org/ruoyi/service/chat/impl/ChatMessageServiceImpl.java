@@ -74,7 +74,6 @@ public class ChatMessageServiceImpl implements IChatMessageService {
     }
 
     private LambdaQueryWrapper<ChatMessage> buildQueryWrapper(ChatMessageBo bo) {
-        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<ChatMessage> lqw = Wrappers.lambdaQuery();
         lqw.orderByAsc(ChatMessage::getId);
         lqw.eq(bo.getSessionId() != null, ChatMessage::getSessionId, bo.getSessionId());

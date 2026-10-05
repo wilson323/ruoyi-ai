@@ -25,6 +25,8 @@ import java.util.Date;
 @TableName(value = "switching_acceptances", autoResultMap = true)
 public class SwitchingAcceptance extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     /** 月份 YYYY-MM */
     public static final int MAX_MONTH_LEN = 7;
 

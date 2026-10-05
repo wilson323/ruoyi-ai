@@ -42,6 +42,8 @@ import java.util.Date;
 @TableName(value = "permanent_delete_audit", autoResultMap = true)
 public class PermanentDeleteAudit extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 

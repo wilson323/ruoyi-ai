@@ -18,6 +18,8 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
 @TableName(value = "project_followers", autoResultMap = true)
 public class ProjectFollower extends BaseEntity implements SoftDeletable {
 
+    private static final long serialVersionUID = 1L;
+
     public static final String ROLE_FOLLOWER = "FOLLOWER";
     public static final String ROLE_COMMENTER = "COMMENTER";
     public static final String ROLE_CONTRIBUTOR = "CONTRIBUTOR";

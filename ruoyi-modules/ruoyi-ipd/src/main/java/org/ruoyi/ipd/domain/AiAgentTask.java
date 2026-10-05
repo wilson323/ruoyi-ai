@@ -28,6 +28,8 @@ import java.util.Date;
 @TableName(value = "ai_agent_tasks", autoResultMap = true)
 public class AiAgentTask extends BaseEntity {
 
+    private static final long serialVersionUID = 1L;
+
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_RUNNING = "RUNNING";
     public static final String STATUS_SUCCEEDED = "SUCCEEDED";

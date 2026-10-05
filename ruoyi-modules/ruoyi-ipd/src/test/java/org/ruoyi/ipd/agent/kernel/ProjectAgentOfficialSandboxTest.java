@@ -41,7 +41,7 @@ class ProjectAgentOfficialSandboxTest {
             try (var archive = sandbox.persistWorkspace()) { bytes = archive.readAllBytes(); }
             try (var archive = new org.apache.commons.compress.archivers.tar.TarArchiveInputStream(
                     new java.io.ByteArrayInputStream(bytes))) {
-                assertNotNull(archive.getNextTarEntry());
+                assertNotNull(archive.getNextEntry());
                 assertEquals("child-session-complete", new String(archive.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8),
                     "SDK must generate tar after the delegated call completes");
             }

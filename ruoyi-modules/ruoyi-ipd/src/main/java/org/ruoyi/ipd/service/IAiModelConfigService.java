@@ -1,26 +1,10 @@
 package org.ruoyi.ipd.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
-import org.ruoyi.common.encrypt.utils.EncryptUtils;
-import org.ruoyi.ipd.common.ApiV1ErrorCode;
-import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiModelConfig;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.dto.AiModelSaveReq;
 import org.ruoyi.ipd.dto.AiModelView;
-import org.ruoyi.ipd.mapper.AiModelConfigMapper;
 import org.ruoyi.ipd.service.ai.AiTestResult;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * IAiModelConfigService 接口（paiban-05 接口化，实现见 {@link AiModelConfigService}）。

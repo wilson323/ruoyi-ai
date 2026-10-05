@@ -4,7 +4,6 @@ import cn.dev33.satoken.stp.StpInterface;
 import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.PersonMapper;
 
-import java.util.Collections;
 import java.util.List;
 
 /**

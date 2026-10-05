@@ -13,8 +13,10 @@ import org.ruoyi.common.mybatis.core.domain.BaseEntity;
  * <p>作用域 GLOBAL|GROUP|PROJECT；缓存 TTL 默认 60s（0=不缓存）；版本号用于订阅与历史链。
  */
 @TableName(value = "ipd_business_config", autoResultMap = true)
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data @EqualsAndHashCode(callSuper = true) @Builder @NoArgsConstructor @AllArgsConstructor
 public class IpdBusinessConfig extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;

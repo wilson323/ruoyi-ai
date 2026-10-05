@@ -9,7 +9,6 @@ import org.ruoyi.service.chat.AbstractChatService;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.List;
 
 /** 自定义 Anthropic Messages 兼容接口。 */
 @Service

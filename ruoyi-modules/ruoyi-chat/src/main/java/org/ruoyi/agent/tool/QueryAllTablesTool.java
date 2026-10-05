@@ -8,7 +8,6 @@ import org.ruoyi.common.core.utils.SpringUtils;
 import org.springframework.stereotype.Component;
 
 import io.agentscope.core.tool.Tool;
-import io.agentscope.core.tool.ToolParam;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.mcp.service.core.BuiltinToolProvider;
 

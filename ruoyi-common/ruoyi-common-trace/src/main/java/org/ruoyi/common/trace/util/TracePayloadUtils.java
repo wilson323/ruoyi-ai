@@ -72,7 +72,6 @@ public final class TracePayloadUtils {
      * 将 JSON 字符串解析为 Map，用于前端展示结构化数据。
      * 解析失败时返回空 Map，不影响主流程。
      */
-    @SuppressWarnings("unchecked")
     public static Map<String, Object> parseJsonToMap(String json) {
         if (json == null || json.isBlank()) {
             return Collections.emptyMap();

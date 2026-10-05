@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,6 +29,8 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "projects", autoResultMap = true)
 public class Project extends BaseEntity implements SoftDeletable {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId
     private Long id;

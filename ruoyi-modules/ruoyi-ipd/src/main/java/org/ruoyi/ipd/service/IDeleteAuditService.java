@@ -1,21 +1,8 @@
 package org.ruoyi.ipd.service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
-import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.DeletionRequest;
-import org.ruoyi.ipd.domain.SoftDeletable;
-import org.ruoyi.ipd.mapper.DeletionRequestMapper;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * IDeleteAuditService 接口（paiban-05 接口化，实现见 {@link DeleteAuditService}）。
