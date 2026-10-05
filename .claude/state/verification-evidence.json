@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-04T06:58:52.856Z",
+  "updatedAt": "2026-10-05T12:00:28.386Z",
   "project": "/Users/mac/Documents/ruoyi-ai",
-  "command": "cd /Users/mac/Documents/ruoyi-ipd-web/apps/web-antd\n../../node_modules/.bin/vue-tsc --noEmit --skipLibCheck > /tmp/fe-tsc.log 2>&1\necho \"EXIT=$?\"\necho \"--- 与我改动相关的错误（workbench.ts / workbench.test.ts）---\"\ngrep -E \"api/ipd/workbench\" /tmp/fe-tsc.log | head -20\necho \"(以上为空 = 我改的两个文件无类型错)\"\necho \"--- 错误总数 ---\"\ngrep -cE \"error TS\" /tmp/fe-tsc.log\necho \"--- 前 10 条错误出处（判断是否他人在途文件）---\"\ngrep -E \"error TS\" /tmp/fe-tsc.log | head -10",
+  "command": "cd /Users/mac/Documents/ruoyi-ai\necho \"=== ① 后端测试真实结果（读日志，不信包装脚本）===\"\necho \"--- install ---\"; grep -E 'BUILD SUCCESS|BUILD FAILURE' /tmp/wt-install.log | tail -2\necho \"--- test (chat+ipd) ---\"; grep -E 'BUILD SUCCESS|BUILD FAILURE' /tmp/wt-test-big.log | tail -2\necho \"--- 汇总行 ---\"; grep -E '^\\[INFO\\] Tests run:.*Skipped: [0-9]+$' /tmp/wt-test-big.log | tail -5\necho \"--- 失败/错误 ---\"; grep -E 'Tests run:.*(Failures: [1-9]|Errors: [1-9])' /tmp/wt-test-big.log | head -10\necho \"--- 锁的释放码 ---\"; grep 'm",
   "markers": [
-    "tsc"
+    "maven"
   ]
 }
