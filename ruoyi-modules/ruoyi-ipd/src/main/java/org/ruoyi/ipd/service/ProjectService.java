@@ -304,6 +304,12 @@ public class ProjectService implements IProjectService {
             if (Product.SRC_GUEST_OTHER.equals(product.getSource())) {
                 throw new ServiceException("游客「其他」占位产品不可关联项目");
             }
+            if ("1".equals(product.getRetirementLocked())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品已退市并只读，不能新建关联项目");
+            }
+            if (retirementService != null && (retirementService.isOrderStopped(product.getId()) || retirementService.isProductionStopped(product.getId()))) {
+                throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "该产品订货或生产已截止，不能新建关联项目");
+            }
         }
         Long lineId = product != null && product.getProductLineId() != null
             ? product.getProductLineId() : productLineId;
@@ -784,7 +790,7 @@ public class ProjectService implements IProjectService {
         for (ProductLine line : led) {
             List<Long> ids = projectMapper.findIdsByProductLine(line.getId());
             if (ids != null && !ids.isEmpty()) {
-                for (Project row : projectMapper.selectBatchIds(ids)) {
+                for (Project row : projectMapper.selectByIds(ids)) {
                     if (row.getId() != null) {
                         merged.put(row.getId(), row);
                     }
