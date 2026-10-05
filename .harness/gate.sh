@@ -40,7 +40,7 @@ GATE_LABELS=(drift contract compile grant-sql frontend-drift r41-done failure-hi
 GATE_CMDS=(
     "scripts/check-doc-db-drift.sh --refined --json-only --whitelist scripts/check-doc-db-drift-whitelist.txt"
     "scripts/check-contract-tri-source.sh --json-only"
-    "mvn -pl ruoyi-modules/ruoyi-ipd -am -DskipTests -o compile"
+    "bash scripts/mvn-locked.sh -pl ruoyi-modules/ruoyi-ipd -DskipTests -o compile"
     "scripts/check-grant-sql.sh --json-only"
     "scripts/check-ipd-frontend-drift.sh"
     "python3 scripts/check-done-gate.py --all"

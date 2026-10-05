@@ -185,7 +185,7 @@ if [ "$MODE" = "full" ] || [ "$MODE" = "runtime" ]; then
     log "  执行: mvn -o -pl $MODULE_PATH test(无 -P profile,默认 local)"
 
     # 抓取汇总行 "Tests run: N, Failures: ..."
-    MVN_OUT=$(mvn -o -pl "$MODULE_PATH" test -Dtest='*Test' \
+    MVN_OUT=$(bash "$REPO_ROOT/scripts/mvn-locked.sh" -o -pl "$MODULE_PATH" test -Dtest='*Test' \
       2>&1 | tee /tmp/check-surefire-fake-green.mvn.log | tail -200 || true)
 
     # 解析 Tests run 总数(只取 surefire 汇总)

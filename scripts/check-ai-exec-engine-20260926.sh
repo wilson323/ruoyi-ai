@@ -36,7 +36,7 @@ MYSQL_CNF="${MYSQL_CNF:-$REPO_ROOT/.codex/ipd-dev/config/mysql-client.cnf}"
 DB_NAME="${DB_NAME:-ipd_dev}"
 API_BASE="${API_BASE:-http://127.0.0.1:16039}"
 APP_YML="$REPO_ROOT/ruoyi-admin/src/main/resources/application.yml"
-MVN="${MVN:-/Users/mac/tools/maven/bin/mvn}"
+MVN="${MVN:-bash $REPO_ROOT/scripts/mvn-locked.sh}"
 export JAVA_HOME="${JAVA_HOME:-/Users/mac/tools/jdk-17/Contents/Home}"
 
 RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; BOLD=$'\033[1m'; RESET=$'\033[0m'

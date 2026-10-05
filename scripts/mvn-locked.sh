@@ -19,6 +19,13 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOCK_DIR="${RUOYI_MVN_LOCK_DIR:-/tmp/ruoyi-maven-locks}"
 WAIT_SECONDS="${RUOYI_MVN_LOCK_WAIT:-2400}"
 
+# 确保 JDK 17 和 Maven 环境变量就绪（防精简 PATH 导致 command not found 或 Java 版本漂移）
+export JAVA_HOME="${JAVA_HOME:-/Users/mac/tools/jdk-17/Contents/Home}"
+if [ -d "/Users/mac/tools/maven/bin" ]; then
+  export PATH="/Users/mac/tools/maven/bin:$PATH"
+fi
+export PATH="$JAVA_HOME/bin:$PATH"
+
 mkdir -p "$LOCK_DIR"
 
 # reactor 的 -am/-amd 会触及依赖/依赖方，模块列表与阶段名都不能隔离 target。
