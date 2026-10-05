@@ -15766,3 +15766,17 @@ UPDATE gate_review_elements SET is_veto = '1' WHERE element_code = 'G2-6' AND is
 - `web_search`：保持注册（官方能力全量启用、禁止裁剪），缺 `TAVILY_API_KEY` 仅打警告日志。**偏离**此前“没密钥不暴露”的选择，原因：与“禁止禁用”及 `AgentScopeKernelBoundaryTest.officialDefaultToolsStayRegisteredUnderGovernance` 契约冲突。若业务负责人仍要不暴露，须同时修改该契约并确认。部署需配置 `TAVILY_API_KEY` 才可用。
 - 验证：聊天模块内核及入口测试 117 个通过（2026-10-04 09:44）。
 - 局限：DNS 重绑定存在检查与连接间时间窗；事件帧拿不到入参，对被守卫拒绝的 web_fetch 可能显示 allowed（执行面实际拒绝）；无真实网络/真实模型的端到端验证。
+
+## 2026-10-06 前端 E2E 真浏览器全量测试闭环：CORS 修复 + 4 缺陷修复 + 三件套全绿
+
+范围：ruoyi-ipd-web（正式前端）。用户要求“必须端到端真实浏览器访问操作来测试所有功能，必须全部闭环”。本轮四批共 12 组 E2E 子智能体真浏览器跑全量路由（先按运行时 router.getRoutes() 拿真实 16 条 admin 路由纠偏，剔除 3 处假阳性：共享浏览器多会话抢标签造成的“自动跳转”、`/ipd/performance→/ipd/kpi/functional` 为 ipd.ts 显式 redirect 设计、undefined base 为环境干扰）。
+
+1. **CORS 403 修复**：后端 `cors.allowed-origins` 默认空，浏览器 Origin 头经 vite 代理原样转发被 Spring Security 判跨域 403（curl 实证：无 Origin 200、带 Origin 403）。修法：`apps/web-antd/vite.config.mts` 的 `/api` proxy 加 configure 钩子 `proxyReq.removeHeader('origin')`，不动后端配置。验证：走代理登录（带 Origin）200 + 真 JWT。
+2. **KPI 原始数据录入页首屏 400**：后端 `GET /kpi/raw-records` 的 projectId 实测必填（缺参 400「缺少必需参数：projectId」，API 注释“可选”与后端不符）。修复 `raw-records.vue`：Phase 加 idle 引导态、未选项目不发请求、筛选 Select 加 `@change="reload"` 接入查询参数。浏览器复验：`GET /kpi/raw-records?projectId=2106098805312069634` 200×2，零 400。
+3. **共担 KPI 页契约陷阱**：手输业务编号（如 PRJ-2026-902）必 400。修复 `shared/index.vue`：项目改下拉 Select（value=后端数字 ID）。复验：下拉回填真实 ID、403「无权访问该项目」如实展示（leader 对 shared 均无权属业务权限口径，非缺陷；deadline-config 卡正常渲染）。
+4. **项目绩效评定页契约陷阱**：需手输数字项目/人员 ID 无从得知。修复 `project-score/index.vue`：任务表加「项目 ID（查询用）/人员 ID（查询用）/操作」三列 + `formatDueAt` 毫秒时间格式化 + `applyTask` 一键回填。复验：点「查询此任务」回填 9150001/900103 并渲染完整评分视图。
+5. **变更单详情 404**：后端 `GET /requirement-changes/{id}` 返 200 有数据，但 `/ipd/changes/{id}` 前端路由表无此形态。修复 `ipd.ts` 加别名路由 `changes/:changeId`（复用 change-detail 组件，对 projectId 参数容错）。复验：`/ipd/changes/2103710183455764482` 渲染完整详情（状态/快照/双签/状态机轨迹）。
+
+验证三件套（ruoyi-ipd-web）：`pnpm run check:type` 通过；`pnpm exec vitest run --config vitest.ipd.config.mts` 1962 passed 0 failed（配套改造 raw-records.test.ts 7 用例到新契约 + shared/index.test.ts 项目下拉 mock，沉淀 ant Select 测试模式：不能 emit 'change'（内部监听器读 e.composing 炸）、emit 'update:value' 后须 await Promise.resolve() 刷微任务、id 下传内部 input 定位不到外层须用 class 锚根 DOM）；`pnpm run build:antd` 通过。浏览器复验（ipd-leader 真登录）4/4 通过。
+
+如实记录的非缺陷：diff 专项无可测对象（全库仅 1 个 AI 文档且链长 v1，属数据缺口非功能缺陷）；/ipd/documents 实际是资料库/知识库；需求详情附件接口对 leader 403（待确认权限设计）；全局 WebSocket `ws://…/api/v1/resource/websocket` 握手 403 未深查（SSE 正常，通知实时推送不可用）。E2E 真实路由口径：登录 4 角色+工作台+时间轴、项目域 13/14（circle 权限待产品确认）、需求产品 8/9、投标变更、KPI、admin 16/16、激励/删除/AI/交接/门户 10/10。未提交未推送。
