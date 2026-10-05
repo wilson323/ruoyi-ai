@@ -14,6 +14,7 @@
 - 2026-10-02 最新用户目标优先：AgentScope 官方能力全量启用、禁止禁用、禁止降级，以 `/Users/mac/Documents/agentscope-java` 真实源码为参考确保完整应用。此指令覆盖 ADR-0077“按需关闭”及下文历史禁开口径；业务闸门（技能 owner 拍板、审批流、权限、文档审核、动作批准与 Gate）保留并经官方扩展点挂载。能力启用不授予具体业务操作权限；源码版本差异须现核，目标不等于运行验收，禁止静默回退或空实现。
 
 
+- 2026-10-06 最终分支铁律（owner 明令）：后续全部工作固定在当前分支收口，此为最终分支——本仓（后端 ruoyi-ai）为 `baseline/pre-teardown`，前端仓（ruoyi-ipd-web）为 `teardown/incentive-removal`。不新建分支、不切换分支、不向 `main` 或其他分支合并/变基作为「最终交付」；授权推送时只推各自同名远程分支（`origin/baseline/pre-teardown` / `origin/teardown/incentive-removal`）。本条落实 `CLAUDE.md` 推送铁律二的分支固定；推送授权铁律其余不变（仍不主动建议推送命令）。ZK-IPD 不是 git 仓库，无分支约束。
 - IPD 执行顺序和下一刀只认 `/Users/mac/.cursor/projects/Users-mac-Documents-ruoyi-ipd-web/canvases/ipd-execution-plan.canvas.tsx`；本地看板与镜像登记同一计划的事项、allowedPaths 和验收，分节仅作细化。冲突先核总画布，不从旧卡或分节另开执行轨。
 - 开始或接续任务先明确本次目标、所属仓库、允许路径和证据来源。用户对上一段话的纠正不是新的业务需求；无关设备、登录项、软件安全调查不推导 IPD 缺陷。现有 Work Buddy 产品资料引用只证明资料来源，不证明软件运行依赖或安全关系；CodeBuddy 等开发工具名称也不证明业务依赖。用户明确扩大任务范围时按本次目标处理。
 - 历史会话、记忆、画布和卡面只提供查证线索。PID、包版本、端口、数据库状态、已加载与验收结果必须现查；有时间戳也不代表当前仍有效。未回读用待验证，禁止用一个样本扩成全项目结论。

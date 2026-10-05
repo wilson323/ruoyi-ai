@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **铁律一 · 禁止推送到非私有分支。** 允许写入的推送目标**只有 owner 指定的私有仓**：`wilson323/ruoyi-ai`（后端）与 `wilson323/ruoyi-admin`（前端）。**除此之外的一切目标一律禁止写入**——包括 `upstream`（ageerle/ruoyi-ai，原作者仓）、任何 public 仓、以及任何非 owner 指定的远端或分支。判据落在**远端 URL** 上，不看分支名：`git remote -v` 里凡不是上述两个私有仓 URL 的，即为非私有目标。
 
-**铁律二 · 分支名由 owner 逐次指定。** AI 不得自行挑选、推断，或以"顺理成章""就是当前分支"为由选定推送分支。
+**铁律二 · 最终分支已由 owner 于 2026-10-06 固定，不得偏离。** 后端仓（ruoyi-ai）固定 `baseline/pre-teardown`，前端仓（ruoyi-ipd-web）固定 `teardown/incentive-removal`——后续所有工作与授权推送只落这两个分支及其同名远程分支；不新建分支、不切换分支、不向 `main` 或其他分支合并/变基作为"最终交付"。AI 仍不得自行挑选、推断，或以"顺理成章"为由选定任何其他分支。
 
 **铁律三 · AI 不得主动建议任何 git 推送命令**（包括"给你命令自己跑"的形式）；owner 说"自动推送"时也只报"本地有 N 笔未推"，命令等 owner 索要。
 
