@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-05T12:00:28.386Z",
+  "updatedAt": "2026-10-05T12:07:16.902Z",
   "project": "/Users/mac/Documents/ruoyi-ai",
-  "command": "cd /Users/mac/Documents/ruoyi-ai\necho \"=== ① 后端测试真实结果（读日志，不信包装脚本）===\"\necho \"--- install ---\"; grep -E 'BUILD SUCCESS|BUILD FAILURE' /tmp/wt-install.log | tail -2\necho \"--- test (chat+ipd) ---\"; grep -E 'BUILD SUCCESS|BUILD FAILURE' /tmp/wt-test-big.log | tail -2\necho \"--- 汇总行 ---\"; grep -E '^\\[INFO\\] Tests run:.*Skipped: [0-9]+$' /tmp/wt-test-big.log | tail -5\necho \"--- 失败/错误 ---\"; grep -E 'Tests run:.*(Failures: [1-9]|Errors: [1-9])' /tmp/wt-test-big.log | head -10\necho \"--- 锁的释放码 ---\"; grep 'm",
+  "command": "cd /Users/mac/Documents/ruoyi-ai\nbash scripts/mvn-locked.sh -o package -DskipTests 2>&1 | tail -6\necho \"--- jar 时间戳 ---\"\nls -la ruoyi-admin/target/ruoyi-admin.jar 2>/dev/null",
   "markers": [
     "maven"
   ]
