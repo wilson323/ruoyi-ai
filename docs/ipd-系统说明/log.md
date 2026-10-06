@@ -15843,3 +15843,11 @@ D 系列接手批次（6cb44b06/181e561）之后的本会话增量收尾。三�
 验证矩阵（全绿）：后端 mvn-locked 全模块 4421/0F/0E/26skip（14:56 窗口）；前端 vitest 191 文件 1969 全过（+1 D6 用例）、check:type 0 错误、build:antd 11/11（14:51-14:55 窗口）。运行态 16039 PID 7569（14:39:22 启动）加载 14:39 重打包的含本增量 jar（登录口 code 0）。浏览器复验（Playwright 真实链路）：首轮 6 项 4 PASS，V3/V6 修复后定向复验双 PASS——V6R 含边界流（UI 输 91 被 InputNumber 钳 90；fetch 绕 UI 直发 91 → 400/10001「slaDays must be 1..90」证明 @Min/@Max 生效，请求 traceId b54ffeb1…）。V3R 双浏览器实例交叉验证（browser-use + playwright），工作台全页四类动作裸码 0 命中。
 
 测试数据（按 R214 政策留库不清理）：变更单 #2107354680165171202（已驳回，意见「复验测试驳回」）/ #2107355318278193153；动作 #2106100150542798850 备注写入「f6浏览器复验备注-20261006」；招标单「V6R复验-公开征集招标单-SLA7」（id 2107362282429288450，slaDays=7）与「V6R复验-边界UI提交-SLA91」（实际载荷 90）。浏览器证据截图 10 张落 ruoyi-ipd-web/.harness/evals/（f6-verify-* 7 张 + v3r/v6r 3 张）。
+
+## 2026-10-06 D17：项目流程页「产物」按钮 404 修复（前端 ruoyi-ipd-web 4c0fd51）
+
+owner 报障：项目流程页点击「产物」按钮 404（报障 URL /ipd/ai-docs/2106100389345497089）。根因：flow.vue openAiDoc 拼跳转 /ipd/ai-docs/${docId}，但路由表实际注册名是 ai-assistant（ipd.ts path: 'ai-assistant'，组件目录名 ai-docs 与路由名不一致是历史雷源），/ipd/ai-docs 路径从未注册必 404。修复：统一为全站同形态深链 /ipd/ai-assistant?docId=&projectId=（与 todo-link、documents.vue、action-detail 等 6 处入口一致）。
+
+守门与对账：flow.test.ts 新增 D17 用例（owner 报障真实 docId 2106100389345497089 作 fixture，断言落点 ai-assistant + docId/projectId query 逐字符相等），复跑 14/14 绿（17:37 窗口）；全局路由对账 26 处跳转（22 router.push + 4 RouterLink :to）全部命中注册路径，此为唯一双轨残留。
+
+真浏览器复验（Playwright + 前端 15666 + 后端 16039，无 mock）：ipd-admin 登录 → 项目 2106098805312069634（PRJ-2026-902）流程页 → 关「项目 AI 工作界面」抽屉 → 点阶段动作表「产物」按钮 → URL 落 /ipd/ai-assistant?docId=2106100389345497089&projectId=2106098805312069634，版本链自动加载（v1 · C01 市场机会与痛点调研（AI 草稿）· 已审核 · MARKET_RESEARCH，sha256 与操作历史 2026-10-03 审核人 900103 正常回显），项目下拉自动选中报障项目，无 404。证据截图入库 ruoyi-ipd-web docs/evidence/d17-产物按钮深链-修复后落ai-assistant-版本链自动加载-20261006.png（4c0fd51 随源码提交）。
