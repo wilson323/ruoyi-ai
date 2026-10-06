@@ -15817,3 +15817,13 @@ DDL 验证：真库 apply 后 check-ddl-applied.sh EXIT=0；唯一键负向探�
 ## 2026-10-06 R25 接手登记：兄弟在途 D 系列缺陷修复批次整合提交
 
 用户指令「记得及时测试验证整合工作树并提交」。接手兄弟会话在盘未提交差异：后端 27 Java 文件（D14 驳回必填意见、DataIntegrityViolation 统一处理、recordFields 扩参及测试同步等）、前端 30 文件 + 新模块 impact-snapshot.ts（D10 四维预校验）+ 5 张 e2e 截图。处置：全部原样入库，零修改零还原，无撞号。验证：后端全模块 4418/0/0/26skip BUILD SUCCESS（14:07，mvn-locked 独占窗口）；前端 vitest 1968 全过、check:type 0、build:antd 0。详见看板镜像同日「接手登记」节。未推送（等 owner 索要）。
+
+## 2026-10-06 运行态回补验收：16039 已加载 D 系列批次（6cb44b06）——commit 面「未重载」标注作废
+
+用户指令「记得及时测试验证整合工作树并提交」收口的第 1 条缺口。现查证据链（均 2026-10-06）：
+- 进程：PID 7569 STARTED 14:39:22，命令行 `-jar ruoyi-admin/target/ruoyi-admin.jar`（--spring.profiles.active=ipd-local,dev）。
+- 包：jar mtime 14:39；内嵌 BOOT-INF/lib/ruoyi-ipd-3.1.0.jar mtime 14:35 > commit 6cb44b06 14:11:57。
+- 二进制指纹（Python 字节级，grep 二进制检测会假阴性）：运行包内 RequirementChangeService.class 含「驳回时请填写意见」「不能超过500字」；IpdServiceExceptionAdvice.class 含「数据完整性约束冲突」——D14/D16 均在加载包中。
+- 真 HTTP 负向回读（PUT /api/v1/requirement-changes/1/sign，ipd-market 会话，id=1 不存在故零副作用；超管返回 30001 与 SIGNER_ROLES={MARKET_PM,RD_PM} 设计一致）：空意见驳回 → 10001「驳回时请填写意见」；501 字意见 → 10001「意见不能超过500字」；对照 decision=NOPE → 10001「参数校验失败」（原有分支未误伤）；**边界对照 500 字整 → 越过新校验落 50001「资源不存在」**（校验不误杀合法长度）。
+- 口径修正：commit 6cb44b06 message 末注「运行态 16039 未重载本批次」自本条起作废——14:39 兄弟会话重启已加载本批，本次仅补验收未重启。D16 handler 行为面未单独 HTTP 触发（NOT NULL 违反难以安全构造），以包内二进制指纹 + 全模块 4418 绿为证据，如实标注 PARTIAL。
+- 记录时工作树另有兄弟在途 2 文件（CreateBidInvitationRequest + P231 测试），本条登记不卷入、未提交其差异。前端仓闭环验收报告+13 截图已提交 dbf081f（docs/evidence/，logs/ 被 ignore 故引用改仓内路径）。
