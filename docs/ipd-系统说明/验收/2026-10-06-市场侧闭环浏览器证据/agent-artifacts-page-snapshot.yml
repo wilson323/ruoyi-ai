@@ -1,0 +1,837 @@
+- generic [ref=f15e1]:
+  - generic [ref=f15e4]:
+    - complementary [ref=f15e5]:
+      - generic [ref=f15e6] [cursor=pointer]
+      - link "IPD 工作台 IPD 工作台" [ref=f15e11] [cursor=pointer]:
+        - /url: javascript:void 0
+        - img "IPD 工作台" [ref=f15e14]
+        - generic [ref=f15e15]: IPD 工作台
+      - menu [ref=f15e18]:
+        - listitem [ref=f15e19]:
+          - generic [ref=f15e20] [cursor=pointer]: IPD 工作台
+        - listitem [ref=f15e28]:
+          - generic [ref=f15e29] [cursor=pointer]: 对话管理
+          - list [ref=f15e35]:
+            - menuitem "知识管理" [ref=f15e36] [cursor=pointer]
+      - generic [ref=f15e45] [cursor=pointer]
+    - generic [ref=f15e49]:
+      - generic [ref=f15e50]:
+        - banner [ref=f15e51]:
+          - button [ref=f15e52] [cursor=pointer]
+          - button [ref=f15e54] [cursor=pointer]
+          - navigation "breadcrumb" [ref=f15e59]:
+            - list [ref=f15e60]:
+              - listitem [ref=f15e61]:
+                - link "我的项目" [ref=f15e62] [cursor=pointer]:
+                  - /url: javascript:void 0
+                - listitem [aria-hidden] [ref=f15e69]
+              - listitem [ref=f15e72]:
+                - link "IPD 流程" [disabled] [ref=f15e73]
+          - generic [ref=f15e76]:
+            - generic [ref=f15e78] [cursor=pointer]:
+              - generic [ref=f15e82]: 搜索
+              - generic [ref=f15e83]: ⌘ K
+            - button [ref=f15e86] [cursor=pointer]
+            - button "dark" [ref=f15e91] [cursor=pointer]
+            - button [ref=f15e100] [cursor=pointer]
+            - button [ref=f15e105] [cursor=pointer]
+            - button [ref=f15e111] [cursor=pointer]:
+              - button [ref=f15e113]
+            - button [ref=f15e117] [cursor=pointer]:
+              - img "ipd-market" [ref=f15e122]
+        - generic [ref=f15e124]:
+          - generic [ref=f15e125]: IPD 流程
+          - generic [ref=f15e141]:
+            - button [ref=f15e142] [cursor=pointer]
+            - generic [ref=f15e146] [cursor=pointer]
+      - main [ref=f15e153]:
+        - generic [ref=f15e155]:
+          - generic [ref=f15e156]:
+            - generic [ref=f15e157]:
+              - generic [ref=f15e158]: 项目
+              - combobox "项目" [ref=f15e159] [cursor=pointer]:
+                - option "QA同组非成员独立项目-7d37b33e5fd2 · PRJ-2026-902"
+                - option "LANE2-L2T220751-PRJ-P15 · PRJ-2026-284"
+                - option "LANE2-L2T220228-PRJ-P15 · PRJ-2026-283"
+                - option "LANE2-L2T220228-PRJ-P14 · PRJ-2026-282"
+                - option "LANE2-L2T214043-PRJ-P14 · PRJ-2026-278"
+                - option "P3验收种子-G5上市后项目 · PRJ-ACC-G5"
+                - option "熵基互联+智能锁联动 · ZK-IAT-LOCK" [selected]
+            - generic [ref=f15e160]:
+              - generic [ref=f15e161]:
+                - generic [ref=f15e162]: "1"
+                - strong [ref=f15e163]: 概念
+              - generic [ref=f15e165]:
+                - generic [ref=f15e166]: "2"
+                - strong [ref=f15e167]: 计划
+              - generic [ref=f15e169]:
+                - generic [ref=f15e170]: "3"
+                - strong [ref=f15e171]: 开发
+              - generic [ref=f15e173]:
+                - generic [ref=f15e174]: "4"
+                - strong [ref=f15e175]: 验证
+              - generic [ref=f15e177]:
+                - generic [ref=f15e178]: "5"
+                - strong [ref=f15e179]: 发布
+              - generic [ref=f15e181]:
+                - generic [ref=f15e182]: "6"
+                - strong [ref=f15e183]: 生命周期
+            - group "工作方式" [ref=f15e184]:
+              - button "传统模式" [ref=f15e185] [cursor=pointer]
+              - button "AI 模式" [pressed] [ref=f15e186] [cursor=pointer]
+            - generic [ref=f15e187]:
+              - text: 今天 2026/10/06
+              - generic [ref=f15e191]: 时区：Asia/Shanghai
+          - generic [ref=f15e193]:
+            - generic [ref=f15e195]:
+              - generic [ref=f15e196]:
+                - heading "熵基互联+智能锁联动" [level=1] [ref=f15e197]
+                - generic [ref=f15e198]: 项目编号：ZK-IAT-LOCK
+                - generic [ref=f15e199]: 当前阶段：概念
+                - generic [ref=f15e200]: 等级：A
+                - generic [ref=f15e201]: 上市日期：待补充
+              - generic [ref=f15e204]:
+                - button "AI 总结项目状态" [ref=f15e205] [cursor=pointer]
+                - generic [ref=f15e210]: AI 生成 · 需人工确认
+            - navigation "项目详情页签" [ref=f15e211]:
+              - button "概览" [ref=f15e212] [cursor=pointer]
+              - button "IPD 流程" [ref=f15e213] [cursor=pointer]
+              - button "Gate 评审" [ref=f15e214] [cursor=pointer]
+              - button "需求与变更" [ref=f15e215] [cursor=pointer]
+              - button "KPI 考核" [ref=f15e216] [cursor=pointer]
+              - button "文档与交付物" [ref=f15e217] [cursor=pointer]
+              - button "项目日志" [ref=f15e218] [cursor=pointer]
+              - button "协作圈" [ref=f15e219] [cursor=pointer]
+            - generic [ref=f15e220]:
+              - generic [ref=f15e221]:
+                - generic [ref=f15e222]: 阶段进度
+                - generic [ref=f15e225]:
+                  - generic [ref=f15e226]:
+                    - button "1 概念" [ref=f15e228] [cursor=pointer]:
+                      - generic [ref=f15e229]: "1"
+                      - generic [ref=f15e230]: 概念
+                    - button "2 计划" [ref=f15e233] [cursor=pointer]:
+                      - generic [ref=f15e234]: "2"
+                      - generic [ref=f15e235]: 计划
+                    - button "3 开发" [ref=f15e238] [cursor=pointer]:
+                      - generic [ref=f15e239]: "3"
+                      - generic [ref=f15e240]: 开发
+                    - button "4 验证" [ref=f15e243] [cursor=pointer]:
+                      - generic [ref=f15e244]: "4"
+                      - generic [ref=f15e245]: 验证
+                    - button "5 发布" [ref=f15e248] [cursor=pointer]:
+                      - generic [ref=f15e249]: "5"
+                      - generic [ref=f15e250]: 发布
+                    - button "6 生命周期" [ref=f15e253] [cursor=pointer]:
+                      - generic [ref=f15e254]: "6"
+                      - generic [ref=f15e255]: 生命周期
+                  - generic [ref=f15e257]:
+                    - text: 当前阶段：
+                    - generic [ref=f15e258]: 概念阶段
+                    - text: 动作完成 5/16（其中 3 项已完成、待批准）； 阻断性未完成 8 项
+                  - generic [ref=f15e259]:
+                    - heading "概念" [level=3] [ref=f15e260]
+                    - generic [ref=f15e261]:
+                      - generic [ref=f15e262]:
+                        - term [ref=f15e263]: 现在在哪个阶段
+                        - definition [ref=f15e264]: 概念阶段，小阶段尚未开始
+                      - generic [ref=f15e265]:
+                        - term [ref=f15e266]: AI 正在做什么
+                        - definition [ref=f15e267]: 销量预测与商业目标(四项基准值录入)：等待审批
+                      - generic [ref=f15e268]:
+                        - term [ref=f15e269]: 哪些成果等我审核
+                        - definition [ref=f15e270]: C02 产物：待审核
+                      - generic [ref=f15e271]:
+                        - term [ref=f15e272]: 哪些条件阻碍推进
+                        - definition [ref=f15e273]: Charter立项评审会：还没开始；生物特征数据合规审查：还没开始；竞品分析：还没开始；目标客户与细分市场定义：还没开始；产品概念与差异化定位：还没开始；成本/定价/毛利初步测算：还没开始；销量预测与商业目标(四项基准值录入)：还没开始；项目等级评定与差异化系数：还没开始
+                    - generic [ref=f15e274]:
+                      - generic [ref=f15e275]:
+                        - term [ref=f15e276]: 阶段目的
+                        - definition [ref=f15e277]: 验证市场机会与产品概念，形成商业计划并完成立项评审。
+                      - generic [ref=f15e278]:
+                        - term [ref=f15e279]: 必需成果
+                        - definition [ref=f15e280]: 应交付：市场调研报告、竞品分析报告、目标客户画像、区域市场差异清单、产品概念说明书、成本与定价测算表、商业计划书 Charter、项目等级评定记录、检索报告（强制）、会议纪要 + 评审材料、合规审查清单（强制）
+                      - generic [ref=f15e281]:
+                        - term [ref=f15e282]: AI 工作
+                        - definition [ref=f15e283]: 概念立项评审：AI 生成草稿；竞品分析：AI 生成草稿；目标客户与细分市场定义：AI 生成草稿；区域市场准入与需求差异调研：AI 生成草稿；技术可行性预研：AI 生成草稿；产品概念与差异化定位：AI 生成草稿；成本/定价/毛利初步测算：AI 直接执行；销量预测与商业目标(四项基准值录入)：AI 直接执行；项目等级评定与差异化系数：AI 直接执行；知识产权与合规预检(含专利FTO)：AI 直接执行；Charter立项评审会：人工评审 Gate；生物特征数据合规审查：AI 生成草稿；销量预测与商业目标(四项基准值录入)：等待审批
+                      - generic [ref=f15e284]:
+                        - term [ref=f15e285]: 我的职责
+                        - definition [ref=f15e286]: 责任角色 市场PM、市场与研发共担；竞品分析：阶段签署，未开始；目标客户与细分市场定义：阶段签署，未开始；产品概念与差异化定位：阶段签署，未开始；成本/定价/毛利初步测算：阶段签署，未开始；销量预测与商业目标(四项基准值录入)：阶段签署，未开始；项目等级评定与差异化系数：阶段签署，未开始；Charter立项评审会：阶段签署，未开始；生物特征数据合规审查：阶段签署，未开始
+                      - generic [ref=f15e287]:
+                        - term [ref=f15e288]: 通过条件
+                        - definition [ref=f15e289]: Charter立项评审会：还没开始；生物特征数据合规审查：还没开始
+                      - generic [ref=f15e290]:
+                        - term [ref=f15e291]: 当前缺口
+                        - definition [ref=f15e292]: Charter立项评审会：还没开始；生物特征数据合规审查：还没开始；竞品分析：未开始；目标客户与细分市场定义：未开始；产品概念与差异化定位：未开始；成本/定价/毛利初步测算：未开始；销量预测与商业目标(四项基准值录入)：未开始；项目等级评定与差异化系数：未开始；Charter立项评审会：未开始；生物特征数据合规审查：未开始
+                    - button "展开小阶段和动作" [ref=f15e293] [cursor=pointer]
+              - generic [ref=f15e295]:
+                - generic [ref=f15e296]: 阶段推进
+                - generic [ref=f15e299]:
+                  - generic [ref=f15e300]:
+                    - button "进入下一阶段" [ref=f15e302] [cursor=pointer]
+                    - button "提交阶段验收" [ref=f15e305] [cursor=pointer]
+                    - button "刷新门禁清单" [ref=f15e308] [cursor=pointer]
+                  - generic [ref=f15e310]:
+                    - generic [ref=f15e311]: 门禁清单（概念阶段 / 配置版本 A:C11,C12）
+                    - table [ref=f15e318]:
+                      - rowgroup [ref=f15e323]:
+                        - row [ref=f15e324]:
+                          - columnheader "门禁项" [ref=f15e325]
+                          - columnheader "动作状态" [ref=f15e326]
+                          - columnheader "门禁结果" [ref=f15e327]
+                          - columnheader "说明" [ref=f15e328]
+                      - rowgroup [ref=f15e329]:
+                        - row [ref=f15e330]:
+                          - cell [ref=f15e331]
+                          - cell "未开始" [ref=f15e332]
+                          - cell "未满足" [ref=f15e333]
+                          - cell "还没开始" [ref=f15e335]
+                        - row [ref=f15e336]:
+                          - cell [ref=f15e337]
+                          - cell "未开始" [ref=f15e338]
+                          - cell "未满足" [ref=f15e339]
+                          - cell "还没开始" [ref=f15e341]
+              - generic [ref=f15e342]:
+                - generic [ref=f15e343]: 小阶段游标
+                - generic [ref=f15e346]:
+                  - paragraph [ref=f15e347]: 当前小阶段：尚未开始；版本 0
+                  - generic [ref=f15e348]:
+                    - generic "目标小阶段" [ref=f15e350] [cursor=pointer]:
+                      - combobox [ref=f15e353]
+                    - generic [ref=f15e356]:
+                      - button "确认推进小阶段" [disabled]
+                    - button "刷新游标" [ref=f15e358] [cursor=pointer]
+                  - paragraph [ref=f15e360]: 选择仅为操作意图；服务端按项目成员、当前阶段、顺序、门禁和版本裁定。
+              - generic [ref=f15e363]:
+                - button "AI 时间线叙事" [ref=f15e364] [cursor=pointer]
+                - generic [ref=f15e369]: AI 生成 · 需人工确认
+              - generic [ref=f15e370]:
+                - generic [ref=f15e372]:
+                  - generic [ref=f15e373]: 阶段动作（全项目）
+                  - generic [ref=f15e375]:
+                    - button "刷新 AI 状态" [ref=f15e377] [cursor=pointer]
+                    - button "项目 SOP 快照" [ref=f15e380] [cursor=pointer]
+                - generic [ref=f15e382]:
+                  - generic [ref=f15e385]:
+                    - table [ref=f15e389]:
+                      - rowgroup [ref=f15e400]:
+                        - row [ref=f15e401]:
+                          - columnheader "编码" [ref=f15e402]
+                          - columnheader "动作名称" [ref=f15e403]
+                          - columnheader "AI 模式" [ref=f15e404]
+                          - columnheader "管理类型" [ref=f15e405]
+                          - columnheader "状态" [ref=f15e406]
+                          - columnheader "AI 任务" [ref=f15e407]
+                          - columnheader "责任角色" [ref=f15e408]
+                          - columnheader "截止日期" [ref=f15e409]
+                          - columnheader "操作" [ref=f15e410]
+                      - rowgroup [ref=f15e411]:
+                        - row [ref=f15e412]:
+                          - cell "C01" [ref=f15e413]
+                          - cell "概念立项评审" [ref=f15e414]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e415]:
+                            - generic [ref=f15e416]:
+                              - generic [ref=f15e417]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e418]
+                          - cell "已完成" [ref=f15e420]
+                          - cell "—" [ref=f15e422]
+                          - cell "市场与研发共担" [ref=f15e423]
+                          - cell "—" [ref=f15e424]
+                          - cell [ref=f15e425]:
+                            - button "查看详情" [ref=f15e426] [cursor=pointer]
+                        - row [ref=f15e428]:
+                          - cell "C02" [ref=f15e429]
+                          - cell "竞品分析" [ref=f15e430]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e431]:
+                            - generic [ref=f15e432]:
+                              - generic [ref=f15e433]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e434]
+                          - cell "未开始" [ref=f15e436]
+                          - cell "—" [ref=f15e438]
+                          - cell "市场PM" [ref=f15e439]
+                          - cell "—" [ref=f15e440]
+                          - cell [ref=f15e441]:
+                            - button "查看详情" [ref=f15e442] [cursor=pointer]
+                        - row [ref=f15e444]:
+                          - cell "C03" [ref=f15e445]
+                          - cell "目标客户与细分市场定义" [ref=f15e446]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e447]:
+                            - generic [ref=f15e448]:
+                              - generic [ref=f15e449]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e450]
+                          - cell "未开始" [ref=f15e452]
+                          - cell "—" [ref=f15e454]
+                          - cell "市场PM" [ref=f15e455]
+                          - cell "—" [ref=f15e456]
+                          - cell [ref=f15e457]:
+                            - button "查看详情" [ref=f15e458] [cursor=pointer]
+                        - row [ref=f15e460]:
+                          - cell "C04" [ref=f15e461]
+                          - cell "区域市场准入与需求差异调研" [ref=f15e462]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e463]:
+                            - generic [ref=f15e464]:
+                              - generic [ref=f15e465]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e466]
+                          - cell "不适用" [ref=f15e468]
+                          - cell "—" [ref=f15e470]
+                          - cell "市场PM" [ref=f15e471]
+                          - cell "—" [ref=f15e472]
+                          - cell [ref=f15e473]:
+                            - button "查看详情" [ref=f15e474] [cursor=pointer]
+                        - row [ref=f15e476]:
+                          - cell "C05" [ref=f15e477]
+                          - cell "技术可行性预研" [ref=f15e478]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e479]:
+                            - generic [ref=f15e480]:
+                              - generic [ref=f15e481]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "免交付物" [ref=f15e482]
+                          - cell "已完成" [ref=f15e484]
+                          - cell "—" [ref=f15e486]
+                          - cell "研发PM" [ref=f15e487]
+                          - cell "—" [ref=f15e488]
+                          - cell [ref=f15e489]:
+                            - button "查看详情" [ref=f15e490] [cursor=pointer]
+                        - row [ref=f15e492]:
+                          - cell "C06" [ref=f15e493]
+                          - cell "产品概念与差异化定位" [ref=f15e494]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e495]:
+                            - generic [ref=f15e496]:
+                              - generic [ref=f15e497]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e498]
+                          - cell "未开始" [ref=f15e500]
+                          - cell "—" [ref=f15e502]
+                          - cell "市场PM" [ref=f15e503]
+                          - cell "—" [ref=f15e504]
+                          - cell [ref=f15e505]:
+                            - button "查看详情" [ref=f15e506] [cursor=pointer]
+                        - row [ref=f15e508]:
+                          - cell "C07" [ref=f15e509]
+                          - cell "成本/定价/毛利初步测算" [ref=f15e510]
+                          - cell "AI 直接执行" [ref=f15e511]
+                          - cell "需交付物" [ref=f15e513]
+                          - cell "未开始" [ref=f15e515]
+                          - cell "—" [ref=f15e517]
+                          - cell "市场PM" [ref=f15e518]
+                          - cell "—" [ref=f15e519]
+                          - cell [ref=f15e520]:
+                            - button "查看详情" [ref=f15e521] [cursor=pointer]
+                        - row [ref=f15e523]:
+                          - cell "C08" [ref=f15e524]
+                          - cell "销量预测与商业目标(四项基准值录入)" [ref=f15e525]
+                          - cell "AI 直接执行" [ref=f15e526]
+                          - cell "需交付物" [ref=f15e528]
+                          - cell "未开始" [ref=f15e530]
+                          - cell "—" [ref=f15e532]
+                          - cell "市场PM" [ref=f15e533]
+                          - cell "—" [ref=f15e534]
+                          - cell [ref=f15e535]:
+                            - button "查看详情" [ref=f15e536] [cursor=pointer]
+                        - row [ref=f15e538]:
+                          - cell "C09" [ref=f15e539]
+                          - cell "项目等级评定与差异化系数" [ref=f15e540]
+                          - cell "AI 直接执行" [ref=f15e541]
+                          - cell "需交付物" [ref=f15e543]
+                          - cell "未开始" [ref=f15e545]
+                          - cell "—" [ref=f15e547]
+                          - cell "市场PM" [ref=f15e548]
+                          - cell "—" [ref=f15e549]
+                          - cell [ref=f15e550]:
+                            - button "查看详情" [ref=f15e551] [cursor=pointer]
+                        - row [ref=f15e553]:
+                          - cell "C10" [ref=f15e554]
+                          - cell "知识产权与合规预检(含专利FTO)" [ref=f15e555]
+                          - cell "AI 直接执行" [ref=f15e556]
+                          - cell "需交付物" [ref=f15e558]
+                          - cell "未开始" [ref=f15e560]
+                          - cell "—" [ref=f15e562]
+                          - cell "研发PM" [ref=f15e563]
+                          - cell "—" [ref=f15e564]
+                          - cell [ref=f15e565]:
+                            - button "查看详情" [ref=f15e566] [cursor=pointer]
+                        - row [ref=f15e568]:
+                          - cell "C11" [ref=f15e569]
+                          - cell "Charter立项评审会" [ref=f15e570]
+                          - cell "人工评审 Gate 需人工确认" [ref=f15e571]:
+                            - generic [ref=f15e572]:
+                              - generic [ref=f15e573]: 人工评审 Gate
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e574]
+                          - cell "未开始" [ref=f15e576]
+                          - cell "—" [ref=f15e578]
+                          - cell "市场与研发共担" [ref=f15e579]
+                          - cell "—" [ref=f15e580]
+                          - cell [ref=f15e581]:
+                            - button "查看详情" [ref=f15e582] [cursor=pointer]
+                        - row [ref=f15e584]:
+                          - cell "C12" [ref=f15e585]
+                          - cell "生物特征数据合规审查" [ref=f15e586]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e587]:
+                            - generic [ref=f15e588]:
+                              - generic [ref=f15e589]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e590]
+                          - cell "未开始" [ref=f15e592]
+                          - cell "—" [ref=f15e594]
+                          - cell "市场PM" [ref=f15e595]
+                          - cell "—" [ref=f15e596]
+                          - cell [ref=f15e597]:
+                            - button "查看详情" [ref=f15e598] [cursor=pointer]
+                        - row [ref=f15e600]:
+                          - cell "D01" [ref=f15e601]
+                          - cell "智能锁通信协议评审" [ref=f15e602]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e603]:
+                            - generic [ref=f15e604]:
+                              - generic [ref=f15e605]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e606]
+                          - cell "进行中" [ref=f15e608]
+                          - cell "—" [ref=f15e610]
+                          - cell "研发PM" [ref=f15e611]
+                          - cell "2026-10-08" [ref=f15e612]
+                          - cell [ref=f15e613]:
+                            - button "查看详情" [ref=f15e614] [cursor=pointer]
+                        - row [ref=f15e616]:
+                          - cell "D02" [ref=f15e617]
+                          - cell "联动场景用例设计" [ref=f15e618]
+                          - cell "AI 直接执行" [ref=f15e619]
+                          - cell "需交付物" [ref=f15e621]
+                          - cell "已完成" [ref=f15e623]
+                          - cell "已转人工 ⚠ 人工介入" [ref=f15e625]:
+                            - generic [ref=f15e626]: 已转人工
+                            - text: ⚠ 人工介入
+                          - cell "市场PM" [ref=f15e627]
+                          - cell "2026-10-11" [ref=f15e628]
+                          - cell [ref=f15e629]:
+                            - button "查看详情" [ref=f15e630] [cursor=pointer]
+                        - row [ref=f15e632]:
+                          - cell "D03" [ref=f15e633]
+                          - cell "固件联调计划" [ref=f15e634]
+                          - cell "AI 直接执行" [ref=f15e635]
+                          - cell "需交付物" [ref=f15e637]
+                          - cell "未开始" [ref=f15e639]
+                          - cell "—" [ref=f15e641]
+                          - cell "研发PM" [ref=f15e642]
+                          - cell "2026-09-29" [ref=f15e643]
+                          - cell [ref=f15e644]:
+                            - button "查看详情" [ref=f15e645] [cursor=pointer]
+                        - row [ref=f15e647]:
+                          - cell "P01" [ref=f15e648]
+                          - cell "项目计划评审" [ref=f15e649]
+                          - cell "AI 生成草稿 需人工确认" [ref=f15e650]:
+                            - generic [ref=f15e651]:
+                              - generic [ref=f15e652]: AI 生成草稿
+                              - text: 需人工确认
+                          - cell "需交付物" [ref=f15e653]
+                          - cell "已完成" [ref=f15e655]
+                          - cell "—" [ref=f15e657]
+                          - cell "市场与研发共担" [ref=f15e658]
+                          - cell "—" [ref=f15e659]
+                          - cell [ref=f15e660]:
+                            - button "查看详情" [ref=f15e661] [cursor=pointer]
+                    - list [ref=f15e663]:
+                      - listitem [ref=f15e664]: 共 16 条
+                      - listitem "上一页" [ref=f15e665]:
+                        - button [disabled] [ref=f15e666]:
+                          - img "left" [ref=f15e667]
+                      - listitem "1" [ref=f15e670] [cursor=pointer]
+                      - listitem "下一页" [ref=f15e672]:
+                        - button [disabled] [ref=f15e673]:
+                          - img "right" [ref=f15e674]
+                  - generic [ref=f15e677]:
+                    - text: 标注「需交付物」的动作完成时需上传交付物，「免交付物」的动作填写实际完成日期（可加备注）即可，均在动作详情页操作。
+                    - generic [ref=f15e678]:
+                      - text: AI 模式说明：
+                      - generic [ref=f15e679]: AI 直接执行
+                      - text: 全自动
+                      - generic [ref=f15e680]: AI 生成草稿
+                      - text: 草稿待人审
+                      - generic [ref=f15e681]: 人工评审 Gate
+                      - text: 否决项必须人判（AI 不代签）。
+          - button "项目 AI 工作界面" [ref=f15e682] [cursor=pointer]:
+            - generic [ref=f15e686]: 项目 AI
+  - generic [ref=f15e689]:
+    - generic [ref=f15e690]:
+      - generic [ref=f15e691]:
+        - button "Close" [ref=f15e692] [cursor=pointer]:
+          - img "close" [ref=f15e693]
+        - generic [ref=f15e696]: 项目 AI 工作界面
+      - button "缩小工作窗口" [ref=f15e698] [cursor=pointer]
+    - generic [ref=f15e703]:
+      - group "AI 工作方式" [ref=f15e704]:
+        - button "AI 副驾 当前页面咨询与建议" [ref=f15e705] [cursor=pointer]:
+          - strong [ref=f15e706]: AI 副驾
+          - generic [ref=f15e707]: 当前页面咨询与建议
+        - button "项目智能体 按项目执行与回读" [pressed] [ref=f15e708] [cursor=pointer]:
+          - strong [ref=f15e709]: 项目智能体
+          - generic [ref=f15e710]: 按项目执行与回读
+      - navigation "浏览阶段（不改变项目实际进度）" [ref=f15e711]:
+        - button "1 概念 当前进度" [pressed] [ref=f15e712] [cursor=pointer]:
+          - generic [ref=f15e713]: "1"
+          - generic [ref=f15e714]: 概念
+          - generic [ref=f15e715]: 当前进度
+        - button "2 计划" [ref=f15e716] [cursor=pointer]:
+          - generic [ref=f15e717]: "2"
+          - generic [ref=f15e718]: 计划
+        - button "3 开发" [ref=f15e719] [cursor=pointer]:
+          - generic [ref=f15e720]: "3"
+          - generic [ref=f15e721]: 开发
+        - button "4 验证" [ref=f15e722] [cursor=pointer]:
+          - generic [ref=f15e723]: "4"
+          - generic [ref=f15e724]: 验证
+        - button "5 发布" [ref=f15e725] [cursor=pointer]:
+          - generic [ref=f15e726]: "5"
+          - generic [ref=f15e727]: 发布
+        - button "6 生命周期" [ref=f15e728] [cursor=pointer]:
+          - generic [ref=f15e729]: "6"
+          - generic [ref=f15e730]: 生命周期
+      - complementary [ref=f15e731]:
+        - region [ref=f15e732]:
+          - heading "项目智能体" [level=3] [ref=f15e734]
+          - generic [ref=f15e735]:
+            - heading "历史" [level=4] [ref=f15e736]
+            - textbox "搜索历史运行" [ref=f15e738]:
+              - /placeholder: 搜索动作、状态或产物
+            - list [ref=f15e740]:
+              - listitem [ref=f15e741]:
+                - button "C02 失败 2026-10-06T04:56:43Z 无产物 69 字" [ref=f15e742] [cursor=pointer]:
+                  - generic [ref=f15e743]: C02
+                  - generic [ref=f15e744]: 失败
+                  - generic [ref=f15e745]: 2026-10-06T04:56:43Z
+                  - generic [ref=f15e746]: 无产物
+                  - generic [ref=f15e747]: 69 字
+              - listitem [ref=f15e748]:
+                - button "C02 失败 2026-10-06T04:43:38Z 无产物 45 字" [ref=f15e749] [cursor=pointer]:
+                  - generic [ref=f15e750]: C02
+                  - generic [ref=f15e751]: 失败
+                  - generic [ref=f15e752]: 2026-10-06T04:43:38Z
+                  - generic [ref=f15e753]: 无产物
+                  - generic [ref=f15e754]: 45 字
+              - listitem [ref=f15e755]:
+                - button "C08 等待审批 2026-10-04T09:36:15Z 无产物 105 字" [ref=f15e756] [cursor=pointer]:
+                  - generic [ref=f15e757]: C08
+                  - generic [ref=f15e758]: 等待审批
+                  - generic [ref=f15e759]: 2026-10-04T09:36:15Z
+                  - generic [ref=f15e760]: 无产物
+                  - generic [ref=f15e761]: 105 字
+              - listitem [ref=f15e762]:
+                - button "C01 失败 2026-10-03T18:59:53Z 无产物 161 字" [ref=f15e763] [cursor=pointer]:
+                  - generic [ref=f15e764]: C01
+                  - generic [ref=f15e765]: 失败
+                  - generic [ref=f15e766]: 2026-10-03T18:59:53Z
+                  - generic [ref=f15e767]: 无产物
+                  - generic [ref=f15e768]: 161 字
+              - listitem [ref=f15e769]:
+                - button "C01 失败 2026-10-03T18:58:27Z 无产物 161 字" [ref=f15e770] [cursor=pointer]:
+                  - generic [ref=f15e771]: C01
+                  - generic [ref=f15e772]: 失败
+                  - generic [ref=f15e773]: 2026-10-03T18:58:27Z
+                  - generic [ref=f15e774]: 无产物
+                  - generic [ref=f15e775]: 161 字
+              - listitem [ref=f15e776]:
+                - button "C01 失败 2026-10-03T18:56:39Z 无产物 161 字" [ref=f15e777] [cursor=pointer]:
+                  - generic [ref=f15e778]: C01
+                  - generic [ref=f15e779]: 失败
+                  - generic [ref=f15e780]: 2026-10-03T18:56:39Z
+                  - generic [ref=f15e781]: 无产物
+                  - generic [ref=f15e782]: 161 字
+              - listitem [ref=f15e783]:
+                - button "未绑定动作 失败 2026-10-03T18:13:18Z 无产物 161 字" [ref=f15e784] [cursor=pointer]:
+                  - generic [ref=f15e785]: 未绑定动作
+                  - generic [ref=f15e786]: 失败
+                  - generic [ref=f15e787]: 2026-10-03T18:13:18Z
+                  - generic [ref=f15e788]: 无产物
+                  - generic [ref=f15e789]: 161 字
+              - listitem [ref=f15e790]:
+                - button "C01 失败 2026-10-03T17:56:39Z 无产物 161 字" [ref=f15e791] [cursor=pointer]:
+                  - generic [ref=f15e792]: C01
+                  - generic [ref=f15e793]: 失败
+                  - generic [ref=f15e794]: 2026-10-03T17:56:39Z
+                  - generic [ref=f15e795]: 无产物
+                  - generic [ref=f15e796]: 161 字
+              - listitem [ref=f15e797]:
+                - button "C01 失败 2026-10-03T17:31:24Z 无产物 161 字" [ref=f15e798] [cursor=pointer]:
+                  - generic [ref=f15e799]: C01
+                  - generic [ref=f15e800]: 失败
+                  - generic [ref=f15e801]: 2026-10-03T17:31:24Z
+                  - generic [ref=f15e802]: 无产物
+                  - generic [ref=f15e803]: 161 字
+              - listitem [ref=f15e804]:
+                - button "未绑定动作 已完成 2026-10-03T17:22:04Z 无产物 77 字" [ref=f15e805] [cursor=pointer]:
+                  - generic [ref=f15e806]: 未绑定动作
+                  - generic [ref=f15e807]: 已完成
+                  - generic [ref=f15e808]: 2026-10-03T17:22:04Z
+                  - generic [ref=f15e809]: 无产物
+                  - generic [ref=f15e810]: 77 字
+              - listitem [ref=f15e811]:
+                - button "未绑定动作 已完成 2026-10-03T16:13:23Z 无产物 84 字" [ref=f15e812] [cursor=pointer]:
+                  - generic [ref=f15e813]: 未绑定动作
+                  - generic [ref=f15e814]: 已完成
+                  - generic [ref=f15e815]: 2026-10-03T16:13:23Z
+                  - generic [ref=f15e816]: 无产物
+                  - generic [ref=f15e817]: 84 字
+              - listitem [ref=f15e818]:
+                - button "未绑定动作 已完成 2026-10-03T15:45:53Z 无产物 141 字" [ref=f15e819] [cursor=pointer]:
+                  - generic [ref=f15e820]: 未绑定动作
+                  - generic [ref=f15e821]: 已完成
+                  - generic [ref=f15e822]: 2026-10-03T15:45:53Z
+                  - generic [ref=f15e823]: 无产物
+                  - generic [ref=f15e824]: 141 字
+              - listitem [ref=f15e825]:
+                - button "未绑定动作 已完成 2026-10-03T15:29:21Z 无产物 21 字" [ref=f15e826] [cursor=pointer]:
+                  - generic [ref=f15e827]: 未绑定动作
+                  - generic [ref=f15e828]: 已完成
+                  - generic [ref=f15e829]: 2026-10-03T15:29:21Z
+                  - generic [ref=f15e830]: 无产物
+                  - generic [ref=f15e831]: 21 字
+              - listitem [ref=f15e832]:
+                - button "C01 已完成 2026-10-03T09:30:35Z C01 产物 157 字" [ref=f15e833] [cursor=pointer]:
+                  - generic [ref=f15e834]: C01
+                  - generic [ref=f15e835]: 已完成
+                  - generic [ref=f15e836]: 2026-10-03T09:30:35Z
+                  - generic [ref=f15e837]: C01 产物
+                  - generic [ref=f15e838]: 157 字
+              - listitem [ref=f15e839]:
+                - button "C01 校验中 2026-10-03T08:28:21Z C01 产物 37 字" [ref=f15e840] [cursor=pointer]:
+                  - generic [ref=f15e841]: C01
+                  - generic [ref=f15e842]: 校验中
+                  - generic [ref=f15e843]: 2026-10-03T08:28:21Z
+                  - generic [ref=f15e844]: C01 产物
+                  - generic [ref=f15e845]: 37 字
+              - listitem [ref=f15e846]:
+                - button "C01 校验中 2026-10-03T08:13:04Z C01 产物 36 字" [ref=f15e847] [cursor=pointer]:
+                  - generic [ref=f15e848]: C01
+                  - generic [ref=f15e849]: 校验中
+                  - generic [ref=f15e850]: 2026-10-03T08:13:04Z
+                  - generic [ref=f15e851]: C01 产物
+                  - generic [ref=f15e852]: 36 字
+              - listitem [ref=f15e853]:
+                - button "C01 已完成 2026-10-03T08:06:01Z C01 产物 39 字" [ref=f15e854] [cursor=pointer]:
+                  - generic [ref=f15e855]: C01
+                  - generic [ref=f15e856]: 已完成
+                  - generic [ref=f15e857]: 2026-10-03T08:06:01Z
+                  - generic [ref=f15e858]: C01 产物
+                  - generic [ref=f15e859]: 39 字
+              - listitem [ref=f15e860]:
+                - button "C01 已完成 2026-10-03T07:48:30Z C01_market_research_draft.md、C01 产物 69 字" [ref=f15e861] [cursor=pointer]:
+                  - generic [ref=f15e862]: C01
+                  - generic [ref=f15e863]: 已完成
+                  - generic [ref=f15e864]: 2026-10-03T07:48:30Z
+                  - generic [ref=f15e865]: C01_market_research_draft.md、C01 产物
+                  - generic [ref=f15e866]: 69 字
+              - listitem [ref=f15e867]:
+                - button "C01 已完成 2026-10-03T07:39:32Z C01 产物 69 字" [ref=f15e868] [cursor=pointer]:
+                  - generic [ref=f15e869]: C01
+                  - generic [ref=f15e870]: 已完成
+                  - generic [ref=f15e871]: 2026-10-03T07:39:32Z
+                  - generic [ref=f15e872]: C01 产物
+                  - generic [ref=f15e873]: 69 字
+              - listitem [ref=f15e874]:
+                - button "C01 已完成 2026-10-03T07:33:42Z C01 产物 69 字" [ref=f15e875] [cursor=pointer]:
+                  - generic [ref=f15e876]: C01
+                  - generic [ref=f15e877]: 已完成
+                  - generic [ref=f15e878]: 2026-10-03T07:33:42Z
+                  - generic [ref=f15e879]: C01 产物
+                  - generic [ref=f15e880]: 69 字
+              - listitem [ref=f15e881]:
+                - button "C01 已完成 2026-10-03T07:26:37Z C01 产物 69 字" [ref=f15e882] [cursor=pointer]:
+                  - generic [ref=f15e883]: C01
+                  - generic [ref=f15e884]: 已完成
+                  - generic [ref=f15e885]: 2026-10-03T07:26:37Z
+                  - generic [ref=f15e886]: C01 产物
+                  - generic [ref=f15e887]: 69 字
+              - listitem [ref=f15e888]:
+                - button "C01 失败 2026-10-03T07:20:16Z 无产物 69 字" [ref=f15e889] [cursor=pointer]:
+                  - generic [ref=f15e890]: C01
+                  - generic [ref=f15e891]: 失败
+                  - generic [ref=f15e892]: 2026-10-03T07:20:16Z
+                  - generic [ref=f15e893]: 无产物
+                  - generic [ref=f15e894]: 69 字
+              - listitem [ref=f15e895]:
+                - button "C01 失败 2026-10-03T07:07:28Z 无产物 34 字" [ref=f15e896] [cursor=pointer]:
+                  - generic [ref=f15e897]: C01
+                  - generic [ref=f15e898]: 失败
+                  - generic [ref=f15e899]: 2026-10-03T07:07:28Z
+                  - generic [ref=f15e900]: 无产物
+                  - generic [ref=f15e901]: 34 字
+              - listitem [ref=f15e902]:
+                - button "C01 已完成 2026-10-03T06:37:48Z C01 产物 46 字" [ref=f15e903] [cursor=pointer]:
+                  - generic [ref=f15e904]: C01
+                  - generic [ref=f15e905]: 已完成
+                  - generic [ref=f15e906]: 2026-10-03T06:37:48Z
+                  - generic [ref=f15e907]: C01 产物
+                  - generic [ref=f15e908]: 46 字
+              - listitem [ref=f15e909]:
+                - button "C02 已完成 2026-10-02T09:12:23Z C02 产物 94 字" [ref=f15e910] [cursor=pointer]:
+                  - generic [ref=f15e911]: C02
+                  - generic [ref=f15e912]: 已完成
+                  - generic [ref=f15e913]: 2026-10-02T09:12:23Z
+                  - generic [ref=f15e914]: C02 产物
+                  - generic [ref=f15e915]: 94 字
+              - listitem [ref=f15e916]:
+                - button "C02 失败 2026-10-02T09:05:45Z 无产物 140 字" [ref=f15e917] [cursor=pointer]:
+                  - generic [ref=f15e918]: C02
+                  - generic [ref=f15e919]: 失败
+                  - generic [ref=f15e920]: 2026-10-02T09:05:45Z
+                  - generic [ref=f15e921]: 无产物
+                  - generic [ref=f15e922]: 140 字
+              - listitem [ref=f15e923]:
+                - button "C02 已完成 2026-10-02T09:04:52Z C02 产物 137 字" [ref=f15e924] [cursor=pointer]:
+                  - generic [ref=f15e925]: C02
+                  - generic [ref=f15e926]: 已完成
+                  - generic [ref=f15e927]: 2026-10-02T09:04:52Z
+                  - generic [ref=f15e928]: C02 产物
+                  - generic [ref=f15e929]: 137 字
+              - listitem [ref=f15e930]:
+                - button "C02 已完成 2026-10-02T08:40:13Z C02 产物 94 字" [ref=f15e931] [cursor=pointer]:
+                  - generic [ref=f15e932]: C02
+                  - generic [ref=f15e933]: 已完成
+                  - generic [ref=f15e934]: 2026-10-02T08:40:13Z
+                  - generic [ref=f15e935]: C02 产物
+                  - generic [ref=f15e936]: 94 字
+              - listitem [ref=f15e937]:
+                - button "C02 失败 2026-10-02T08:37:48Z 无产物 100 字" [ref=f15e938] [cursor=pointer]:
+                  - generic [ref=f15e939]: C02
+                  - generic [ref=f15e940]: 失败
+                  - generic [ref=f15e941]: 2026-10-02T08:37:48Z
+                  - generic [ref=f15e942]: 无产物
+                  - generic [ref=f15e943]: 100 字
+              - listitem [ref=f15e944]:
+                - button "C02 失败 2026-10-02T08:32:59Z 无产物 29 字" [ref=f15e945] [cursor=pointer]:
+                  - generic [ref=f15e946]: C02
+                  - generic [ref=f15e947]: 失败
+                  - generic [ref=f15e948]: 2026-10-02T08:32:59Z
+                  - generic [ref=f15e949]: 无产物
+                  - generic [ref=f15e950]: 29 字
+              - listitem [ref=f15e951]:
+                - button "C02 失败 2026-10-02T08:18:59Z 无产物 29 字" [ref=f15e952] [cursor=pointer]:
+                  - generic [ref=f15e953]: C02
+                  - generic [ref=f15e954]: 失败
+                  - generic [ref=f15e955]: 2026-10-02T08:18:59Z
+                  - generic [ref=f15e956]: 无产物
+                  - generic [ref=f15e957]: 29 字
+              - listitem [ref=f15e958]:
+                - button "C02 已取消 2026-10-02T07:49:07Z 无产物 21 字" [ref=f15e959] [cursor=pointer]:
+                  - generic [ref=f15e960]: C02
+                  - generic [ref=f15e961]: 已取消
+                  - generic [ref=f15e962]: 2026-10-02T07:49:07Z
+                  - generic [ref=f15e963]: 无产物
+                  - generic [ref=f15e964]: 21 字
+              - listitem [ref=f15e965]:
+                - button "C02 已取消 2026-10-02T07:47:58Z 无产物 15 字" [ref=f15e966] [cursor=pointer]:
+                  - generic [ref=f15e967]: C02
+                  - generic [ref=f15e968]: 已取消
+                  - generic [ref=f15e969]: 2026-10-02T07:47:58Z
+                  - generic [ref=f15e970]: 无产物
+                  - generic [ref=f15e971]: 15 字
+              - listitem [ref=f15e972]:
+                - button "C02 已完成 2026-10-02T03:59:26Z C02 产物 30 字" [ref=f15e973] [cursor=pointer]:
+                  - generic [ref=f15e974]: C02
+                  - generic [ref=f15e975]: 已完成
+                  - generic [ref=f15e976]: 2026-10-02T03:59:26Z
+                  - generic [ref=f15e977]: C02 产物
+                  - generic [ref=f15e978]: 30 字
+              - listitem [ref=f15e979]:
+                - button "C02 已完成 2026-10-02T03:10:55Z C02 产物 42 字" [ref=f15e980] [cursor=pointer]:
+                  - generic [ref=f15e981]: C02
+                  - generic [ref=f15e982]: 已完成
+                  - generic [ref=f15e983]: 2026-10-02T03:10:55Z
+                  - generic [ref=f15e984]: C02 产物
+                  - generic [ref=f15e985]: 42 字
+              - listitem [ref=f15e986]:
+                - button "C02 已完成 2026-10-02T02:57:50Z C02 产物 42 字" [ref=f15e987] [cursor=pointer]:
+                  - generic [ref=f15e988]: C02
+                  - generic [ref=f15e989]: 已完成
+                  - generic [ref=f15e990]: 2026-10-02T02:57:50Z
+                  - generic [ref=f15e991]: C02 产物
+                  - generic [ref=f15e992]: 42 字
+              - listitem [ref=f15e993]:
+                - button "C02 已完成 2026-10-02T00:48:55Z C02 产物 42 字" [ref=f15e994] [cursor=pointer]:
+                  - generic [ref=f15e995]: C02
+                  - generic [ref=f15e996]: 已完成
+                  - generic [ref=f15e997]: 2026-10-02T00:48:55Z
+                  - generic [ref=f15e998]: C02 产物
+                  - generic [ref=f15e999]: 42 字
+              - listitem [ref=f15e1000]:
+                - button "C02 已完成 2026-10-02T00:41:52Z C02 产物 42 字" [ref=f15e1001] [cursor=pointer]:
+                  - generic [ref=f15e1002]: C02
+                  - generic [ref=f15e1003]: 已完成
+                  - generic [ref=f15e1004]: 2026-10-02T00:41:52Z
+                  - generic [ref=f15e1005]: C02 产物
+                  - generic [ref=f15e1006]: 42 字
+              - listitem [ref=f15e1007]:
+                - button "C02 失败 2026-10-02T00:25:49Z 无产物 42 字" [ref=f15e1008] [cursor=pointer]:
+                  - generic [ref=f15e1009]: C02
+                  - generic [ref=f15e1010]: 失败
+                  - generic [ref=f15e1011]: 2026-10-02T00:25:49Z
+                  - generic [ref=f15e1012]: 无产物
+                  - generic [ref=f15e1013]: 42 字
+              - listitem [ref=f15e1014]:
+                - button "C02 失败 2026-10-01T23:21:52Z 无产物 43 字" [ref=f15e1015] [cursor=pointer]:
+                  - generic [ref=f15e1016]: C02
+                  - generic [ref=f15e1017]: 失败
+                  - generic [ref=f15e1018]: 2026-10-01T23:21:52Z
+                  - generic [ref=f15e1019]: 无产物
+                  - generic [ref=f15e1020]: 43 字
+              - listitem [ref=f15e1021]:
+                - button "C02 已完成 2026-10-01T23:03:44Z C02 产物 47 字" [ref=f15e1022] [cursor=pointer]:
+                  - generic [ref=f15e1023]: C02
+                  - generic [ref=f15e1024]: 已完成
+                  - generic [ref=f15e1025]: 2026-10-01T23:03:44Z
+                  - generic [ref=f15e1026]: C02 产物
+                  - generic [ref=f15e1027]: 47 字
+              - listitem [ref=f15e1028]:
+                - button "未绑定动作 已完成 2026-10-01T22:19:45Z 项目智能体产物 66 字" [ref=f15e1029] [cursor=pointer]:
+                  - generic [ref=f15e1030]: 未绑定动作
+                  - generic [ref=f15e1031]: 已完成
+                  - generic [ref=f15e1032]: 2026-10-01T22:19:45Z
+                  - generic [ref=f15e1033]: 项目智能体产物
+                  - generic [ref=f15e1034]: 66 字
+          - generic [ref=f15e1035]:
+            - heading "AI 产物" [level=4] [ref=f15e1036]
+            - paragraph [ref=f15e1037]: 本次运行还没有可定档产物。
+      - generic [ref=f15e1038]:
+        - generic [ref=f15e1039]:
+          - generic [ref=f15e1040]: 项目
+          - combobox "项目" [ref=f15e1041]:
+            - option "QA同组非成员独立项目-7d37b33e5fd2 · PRJ-2026-902"
+            - option "LANE2-L2T220751-PRJ-P15 · PRJ-2026-284"
+            - option "LANE2-L2T220228-PRJ-P15 · PRJ-2026-283"
+            - option "LANE2-L2T220228-PRJ-P14 · PRJ-2026-282"
+            - option "LANE2-L2T214043-PRJ-P14 · PRJ-2026-278"
+            - option "P3验收种子-G5上市后项目 · PRJ-ACC-G5"
+            - option "熵基互联+智能锁联动 · ZK-IAT-LOCK" [selected]
+        - alert [ref=f15e1042]:
+          - img "exclamation-circle" [ref=f15e1043]
+          - generic [ref=f15e1046]: AI 生成内容由大模型产出，未经审核、不做内容过滤，仅供参考（BR-AI-04）。
+        - generic [ref=f15e1048]: 当前项目：#9140005
+        - generic [ref=f15e1049]: 描述任务后发送，将按当前项目发起智能体运行。过程在中间回读，产物在左侧定档。
+        - generic [ref=f15e1051]:
+          - generic [ref=f15e1052]:
+            - generic [aria-hidden]: 说明要对照的阶段和文档
+            - textbox [ref=f15e1053]
+          - generic [ref=f15e1054]:
+            - button "选择能力包、模型、技能和工具" [ref=f15e1056] [cursor=pointer]
+            - button "开始语音输入" [ref=f15e1058] [cursor=pointer]:
+              - generic [ref=f15e1062]: 语音
+            - button "附件" [ref=f15e1063] [cursor=pointer]
+            - status
+            - button "发送" [ref=f15e1067] [cursor=pointer]
+      - complementary [ref=f15e1070]:
+        - generic [ref=f15e1071]: 正在浏览：概念阶段 仅切换视图，不推进项目
+        - generic [ref=f15e1072]:
+          - tablist "工作区分区" [ref=f15e1073]:
+            - tab "本次运行" [selected] [ref=f15e1074] [cursor=pointer]
+            - tab "步骤" [ref=f15e1075] [cursor=pointer]
+          - tabpanel [ref=f15e1077]:
+            - generic [ref=f15e1078]:
+              - heading "本次运行" [level=4] [ref=f15e1079]
+              - generic [ref=f15e1080]: 正文、工具和步骤按本次运行事件回读
+            - region "智能体运行时间线" [ref=f15e1083]:
+              - paragraph [ref=f15e1084]: 尚未发起运行，发起后这里按智能体的真实事件逐条展示。
+              - generic "当前产物正文"
