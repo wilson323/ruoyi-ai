@@ -54,6 +54,7 @@ class AiDocumentImportTest {
     private final AiDocumentMapper mapper = mock(AiDocumentMapper.class);
     private final AiDocumentService documents = new AiDocumentService(mapper);
     private final IpdCopilotAccess access = mock(IpdCopilotAccess.class);
+    private final ProjectService projectRead = mock(ProjectService.class);
     private final ResourceLoaderFactory loaderFactory = mock(ResourceLoaderFactory.class);
     private final IAuditLogService auditLogService = mock(IAuditLogService.class);
     private final AiDocumentImportService service =
@@ -61,7 +62,13 @@ class AiDocumentImportTest {
 
     AiDocumentImportTest() {
         documents.setProjectAccess(access);
-        when(access.requireVisible(ACTOR, 100L)).thenReturn("000000");
+        documents.setProjectReadAccess(projectRead);
+        // 2026-10-06 写口径对齐：租户取 copilot 口径，项目可见走 getVisibleById 读口径
+        when(access.requireVisible(ACTOR, null)).thenReturn("000000");
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setId(100L);
+        project.setTenantId("000000");
+        when(projectRead.getVisibleById(100L, ACTOR)).thenReturn(project);
     }
 
     /** 单元素链：v1 即 HEAD。 */
@@ -192,8 +199,8 @@ class AiDocumentImportTest {
     void invisibleProjectRejectedBeforeFileRead() throws Exception {
         AiDocument v1 = document(10L, 1, "GENERATED");
         when(mapper.selectChain(10L)).thenReturn(List.of(v1));
-        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
-            .when(access).requireVisible(ACTOR, 100L);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目"))
+            .when(projectRead).getVisibleById(100L, ACTOR);
 
         MockMultipartFile file = mock(MockMultipartFile.class);
         when(file.isEmpty()).thenReturn(false);

@@ -19,7 +19,14 @@ class AiDocumentGeneratedRevisionTest {
     private final IpdActor actor = new IpdActor(9L, "alice", "MARKET_PM", 1L);
     private AiDocument arrange() {
         service.setProjectAccess(access);
-        when(access.requireVisible(actor, 100L)).thenReturn("000000");
+        ProjectService projectRead = mock(ProjectService.class);
+        service.setProjectReadAccess(projectRead);
+        // 2026-10-06 写口径对齐：租户取 copilot 口径，项目可见走 getVisibleById 读口径
+        when(access.requireVisible(actor, null)).thenReturn("000000");
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setId(100L);
+        project.setTenantId("000000");
+        when(projectRead.getVisibleById(100L, actor)).thenReturn(project);
         AiDocument head = AiDocument.builder().id(10L).projectId(100L).docType("PRD")
             .versionNo(1).status("REJECTED").content("original").build();
         when(mapper.selectChain(10L)).thenReturn(List.of(head));

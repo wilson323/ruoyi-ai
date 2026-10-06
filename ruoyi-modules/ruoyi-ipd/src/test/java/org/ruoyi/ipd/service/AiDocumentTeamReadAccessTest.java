@@ -32,14 +32,18 @@ class AiDocumentTeamReadAccessTest {
         line.setLeaderPersonId(9L); line.setDelFlag("0");
         when(lines.selectById(7L)).thenReturn(line);
         when(memberAccess.requireVisible(leader, null)).thenReturn("000000");
-        when(memberAccess.requireVisible(leader, 100L))
-            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"));
         documents.setProjectAccess(memberAccess);
         documents.setProjectReadAccess(projectAccess);
     }
 
-    @Test void nonMemberLineLeaderCanReadButCannotWrite() {
+    @Test void nonMemberLineLeaderCanReadAndWriteDocumentChain() {
         assertThat(documents.requireProjectReadable(leader, 100L)).isEqualTo("000000");
+        // 2026-10-06 修复：写口径与读对齐（getVisibleById 含产线负责人），负责人可审文档
+        assertThat(documents.requireProjectVisible(leader, 100L)).isEqualTo("000000");
+    }
+    @Test void replacementLeaderImmediatelyRevokesWriteAccess() {
+        assertThat(documents.requireProjectVisible(leader, 100L)).isEqualTo("000000");
+        line.setLeaderPersonId(8L);
         assertThatThrownBy(() -> documents.requireProjectVisible(leader, 100L))
             .isInstanceOf(IpdBusinessException.class);
     }

@@ -71,6 +71,7 @@ class AiDocumentControllerAccessTest {
     @Test
     void indexRebuildRejectsForeignVersionAndUsesExistingReviewPermissionWithoutReviewing() throws Exception {
         when(mapper.selectChain(10L)).thenReturn(List.of(document(10L, 100L, null, 1, "REVIEWED")));
+        wireVisibleProject(100L);
         var embedding = mock(org.ruoyi.ipd.service.AiDocEmbeddingService.class);
         documents.setDocEmbeddingService(embedding);
         assertThatThrownBy(() -> controller.rebuildIndex(10L, 20L)).isInstanceOf(IpdBusinessException.class);
@@ -84,7 +85,9 @@ class AiDocumentControllerAccessTest {
     @Test
     void indexRebuildRejectsInvisibleProjectBeforeEmbedding() {
         when(mapper.selectChain(10L)).thenReturn(List.of(document(10L, 100L, null, 1, "REVIEWED")));
-        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND)).when(access).requireVisible(ACTOR, 100L);
+        wireVisibleProject(100L);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目"))
+            .when(projectRead).getVisibleById(100L, ACTOR);
         var embedding = mock(org.ruoyi.ipd.service.AiDocEmbeddingService.class);
         documents.setDocEmbeddingService(embedding);
         assertThatThrownBy(() -> controller.rebuildIndex(10L, 10L)).isInstanceOf(IpdBusinessException.class);
@@ -115,8 +118,9 @@ class AiDocumentControllerAccessTest {
 
     @Test
     void createRejectsInvisibleProjectBeforeInsert() {
-        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
-            .when(access).requireVisible(ACTOR, 77L);
+        wireVisibleProject(77L);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目"))
+            .when(projectRead).getVisibleById(77L, ACTOR);
 
         assertThatThrownBy(() -> controller.create(new AiDocumentController.CreateReq(
             77L, "PRD", "标题", "正文", "model", 10, 20)))
@@ -127,8 +131,9 @@ class AiDocumentControllerAccessTest {
 
     @Test
     void generateRejectsInvisibleProjectBeforeCallingModel() {
-        doThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"))
-            .when(access).requireVisible(ACTOR, 77L);
+        wireVisibleProject(77L);
+        doThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "无权访问该项目"))
+            .when(projectRead).getVisibleById(77L, ACTOR);
 
         assertThatThrownBy(() -> controller.generate(new AiGenerateReq(77L, "PRD", "标题", "输入资料")))
             .isInstanceOfSatisfying(IpdBusinessException.class,
@@ -142,7 +147,7 @@ class AiDocumentControllerAccessTest {
         AiDocument otherVersion = document(20L, 200L, null, 1, "GENERATED");
         when(mapper.selectChain(10L)).thenReturn(List.of(pathRoot));
         when(mapper.selectById(20L)).thenReturn(otherVersion);
-        when(access.requireVisible(ACTOR, 100L)).thenReturn("000000");
+        wireVisibleProject(100L);
 
         assertThatThrownBy(() -> controller.review(10L, 20L))
             .isInstanceOfSatisfying(IpdBusinessException.class,
@@ -156,7 +161,7 @@ class AiDocumentControllerAccessTest {
         when(mapper.selectChain(10L)).thenReturn(List.of(root));
         when(mapper.selectById(10L)).thenReturn(root);
         when(mapper.update(isNull(), any())).thenReturn(1);
-        when(access.requireVisible(ACTOR, 100L)).thenReturn("000000");
+        wireVisibleProject(100L);
 
         AiDocument reviewed = controller.review(10L, 10L).getData();
 
@@ -166,10 +171,26 @@ class AiDocumentControllerAccessTest {
     }
 
     @Test
+    void reviewAllowsLineLeaderWhoIsNotProjectMember() {
+        AiDocument root = document(10L, 100L, null, 1, "GENERATED");
+        when(mapper.selectChain(10L)).thenReturn(List.of(root));
+        when(mapper.selectById(10L)).thenReturn(root);
+        when(mapper.update(isNull(), any())).thenReturn(1);
+        // 产线负责人非项目成员：不再走 copilot 成员口径，按 getVisibleById 读口径放行（isProductLineLeader）
+        wireVisibleProject(100L);
+
+        AiDocument reviewed = controller.review(10L, 10L).getData();
+
+        assertThat(reviewed.getStatus()).isEqualTo("REVIEWED");
+        assertThat(reviewed.getReviewedBy()).isEqualTo(ACTOR.id());
+        verify(projectRead).getVisibleById(100L, ACTOR);
+    }
+
+    @Test
     void archiveAndRejectRejectVersionOutsidePathChainBeforeMutation() {
         AiDocument pathRoot = document(10L, 100L, null, 1, "REVIEWED");
         when(mapper.selectChain(10L)).thenReturn(List.of(pathRoot));
-        when(access.requireVisible(ACTOR, 100L)).thenReturn("000000");
+        wireVisibleProject(100L);
 
         assertThatThrownBy(() -> controller.archive(10L, 20L))
             .isInstanceOfSatisfying(IpdBusinessException.class,
@@ -196,6 +217,15 @@ class AiDocumentControllerAccessTest {
         assertThatThrownBy(() -> controller.diff(10L, 10L, 20L))
             .isInstanceOfSatisfying(IpdBusinessException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(ApiV1ErrorCode.STATE_CONFLICT));
+    }
+
+    /** 2026-10-06 写口径对齐后：可见性 stub = copilot 租户（requireVisible(null)）+ 读口径 getVisibleById 放行 */
+    private void wireVisibleProject(Long projectId) {
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setId(projectId);
+        project.setTenantId("000000");
+        when(access.requireVisible(ACTOR, null)).thenReturn("000000");
+        when(projectRead.getVisibleById(projectId, ACTOR)).thenReturn(project);
     }
 
     private static AiDocument document(Long id, Long projectId, Long parentId,

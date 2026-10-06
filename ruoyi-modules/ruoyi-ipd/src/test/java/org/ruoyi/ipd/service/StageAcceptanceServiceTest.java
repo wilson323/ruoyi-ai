@@ -139,17 +139,37 @@ class StageAcceptanceServiceTest {
 
 
     @Test
-    void nonMemberCannotSubmitExistingStageOrApproveAction() {
+    @DisplayName("产线负责人不是项目成员也能批准小阶段（2026-10-06 死锁修复）")
+    void lineLeaderWhoIsNotProjectMemberCanApprove() {
+        wireLine(9L);
+        when(memberMapper.selectCount(any())).thenReturn(0L);
+        when(actionMapper.selectOne(any())).thenReturn(submittedAction(8L));
+        StageAction saved = service.acceptAction(5L, new IpdActor(9L, "负责人", "GROUP_LEADER", 1L));
+        assertThat(saved.getConfirmedBy()).isEqualTo(9L);
+        verify(actionMapper).updateById(any(StageAction.class));
+    }
+
+    @Test
+    void nonMemberCannotSubmitStage() {
         wireLine(9L);
         when(memberMapper.selectCount(any())).thenReturn(0L);
         when(actionMapper.selectOne(any())).thenReturn(submittedAction(8L));
         assertThatThrownBy(() -> service.submitStage(100L, new IpdActor(9L, "负责人", "GROUP_LEADER", 1L)))
             .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class).hasMessageContaining("非项目成员");
-        assertThatThrownBy(() -> service.acceptAction(5L, new IpdActor(9L, "负责人", "GROUP_LEADER", 1L)))
-            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class).hasMessageContaining("非项目成员");
         org.mockito.Mockito.verify(stageMapper, org.mockito.Mockito.never()).updateById(any(ProjectStage.class));
-        org.mockito.Mockito.verify(actionMapper, org.mockito.Mockito.never()).updateById(any(StageAction.class));
         org.mockito.Mockito.verifyNoInteractions(gateEngine);
+    }
+
+    @Test
+    @DisplayName("非成员且非产线负责人的普通账号不能批准")
+    void nonMemberNonLeaderCannotApproveAction() {
+        wireLine(9L);
+        when(memberMapper.selectCount(any())).thenReturn(0L);
+        when(actionMapper.selectOne(any())).thenReturn(submittedAction(8L));
+        // actor=8L：既不是本线负责人(9L)也不是项目成员，也不应是提交人路径
+        assertThatThrownBy(() -> service.acceptAction(5L, new IpdActor(8L, "其他人", "MARKET_PM", 1L)))
+            .isInstanceOf(org.ruoyi.ipd.common.IpdBusinessException.class).hasMessageContaining("非项目成员");
+        org.mockito.Mockito.verify(actionMapper, org.mockito.Mockito.never()).updateById(any(StageAction.class));
     }
 
     private void wireLine(Long leaderId) {

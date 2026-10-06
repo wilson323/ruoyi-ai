@@ -161,15 +161,37 @@ public class AiDocumentService {
     /**
      * 校验 actor 对 projectId 可见；每次重读 Person，不做成员关系缓存。
      *
+     * <p>2026-10-06 修复：可见口径与读链路 {@link #requireProjectReadable} 对齐——
+     * 项目维度复用 {@link ProjectService#getVisibleById} 的完整判定（超管/产线负责人/
+     * 主组组长/在职成员）。此前委托 {@link IpdCopilotAccess#requireVisible} 的
+     * 「项目成员/超管」单一口径，而 AC-TEAM-10 使产线负责人永远无法成为项目成员，
+     * 导致负责人能读文档列表（getVisibleById 放行）却在人工审核 review/reject/archive
+     * 时被 50001「项目不可见」拒绝（E2E 实测：PRJ-2026-904 文档 2107440019210833922
+     * 待审核，产线负责人点击审核 404；与 StageAcceptanceService 验收死锁同根）。
+     * 防泄漏语义保留：不可见/不存在一律 NOT_FOUND「项目不可见」。</p>
+     *
      * @param actor 会话身份
      * @param projectId 目标项目
      * @return 可信租户 ID
      */
     public String requireProjectVisible(IpdActor actor, Long projectId) {
-        if (projectAccess == null) {
+        if (projectAccess == null || projectReadAccess == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT, "项目可见性守卫未装配");
         }
-        return projectAccess.requireVisible(actor, projectId);
+        String tenantId = projectAccess.requireVisible(actor, null);
+        try {
+            org.ruoyi.ipd.domain.Project project = projectReadAccess.getVisibleById(projectId, actor);
+            if (!java.util.Objects.equals(tenantId, project.getTenantId())) {
+                throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见");
+            }
+        } catch (org.ruoyi.ipd.common.IpdBusinessException e) {
+            // getVisibleById 对不存在/不可见统一抛 FORBIDDEN；转回写链路防泄漏口径 NOT_FOUND
+            if (e.getErrorCode() == ApiV1ErrorCode.FORBIDDEN) {
+                throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见");
+            }
+            throw e;
+        }
+        return tenantId;
     }
 
     private ProjectService projectReadAccess;

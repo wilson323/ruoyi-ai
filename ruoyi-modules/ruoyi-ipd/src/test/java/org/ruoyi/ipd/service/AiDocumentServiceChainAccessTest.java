@@ -32,7 +32,13 @@ class AiDocumentServiceChainAccessTest {
         IpdActor actor = new IpdActor(9L, "alice", "MARKET_PM", 1L);
         IpdCopilotAccess access = mock(IpdCopilotAccess.class);
         service.setProjectAccess(access);
-        when(access.requireVisible(actor, 100L)).thenReturn("000000")
+        ProjectService projectRead = mock(ProjectService.class);
+        service.setProjectReadAccess(projectRead);
+        when(access.requireVisible(actor, null)).thenReturn("000000");
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setId(100L);
+        project.setTenantId("000000");
+        when(projectRead.getVisibleById(100L, actor)).thenReturn(project)
             .thenThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN));
         AiDocEmbeddingService embedding = mock(AiDocEmbeddingService.class);
         service.setDocEmbeddingService(embedding);
@@ -102,9 +108,14 @@ class AiDocumentServiceChainAccessTest {
         IpdActor actor = new IpdActor(9L, "alice", "MARKET_PM", 1L);
         IpdCopilotAccess access = mock(IpdCopilotAccess.class);
         service.setProjectAccess(access);
-        when(access.requireVisible(actor, 100L))
-            .thenReturn("000000")
-            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "项目不可见"));
+        ProjectService projectRead = mock(ProjectService.class);
+        service.setProjectReadAccess(projectRead);
+        when(access.requireVisible(actor, null)).thenReturn("000000");
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setId(100L);
+        project.setTenantId("000000");
+        when(projectRead.getVisibleById(100L, actor)).thenReturn(project)
+            .thenThrow(new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN));
 
         service.requireProjectVisible(actor, 100L);
 

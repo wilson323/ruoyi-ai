@@ -220,16 +220,25 @@ public class StageAcceptanceService {
 
     /**
      * 没有产品线负责人时只有超管能批。有负责人时只有该人能批，提交人不能批自己的。
+     *
+     * <p>2026-10-06 修复：产线负责人按本类语义就是验收批准人，但组长无法成为项目成员
+     * （AC-TEAM-10 只允许双 PM 绑定），若先走「项目成员/超管」守卫会把负责人永久拦死，
+     * 形成无人能批的死锁（E2E 实测：PRJ-2026-904 C04 待产线负责人批准，负责人点击
+     * 403 非项目成员）。因此先按权威的 product_lines.leader_person_id 判定，负责人
+     * 本人绕过成员守卫，其余人仍需成员/超管身份。</p>
      */
     private void assertApprover(Project project, Long submitterId, IpdActor actor) {
         if (actor == null || actor.id() == null) {
             throw new ServiceException("未认证或凭证失效");
         }
-        requireProjectOperator(project, actor);
+        Long leaderId = lineLeaderId(project);
+        boolean actorIsLineLeader = leaderId != null && leaderId.equals(actor.id());
+        if (!actorIsLineLeader) {
+            requireProjectOperator(project, actor);
+        }
         if (submitterId != null && submitterId.equals(actor.id())) {
             throw new ServiceException("提交人不能批准自己提交的验收");
         }
-        Long leaderId = lineLeaderId(project);
         if (leaderId == null) {
             if (!"SUPER_ADMIN".equals(actor.role())) {
                 throw new ServiceException("该产品线没有负责人，只有超管能批准");
