@@ -113,7 +113,8 @@ public class ProjectAgentConfiguration {
                 io.agentscope.harness.agent.filesystem.remote.store.BaseStore collaborationStore,
             org.redisson.api.RedissonClient redisClient,
             @org.springframework.beans.factory.annotation.Qualifier(ProjectAgentOfficialCollaborationRedis.CLIENT_BEAN)
-                redis.clients.jedis.UnifiedJedis collaborationClient) {
+                redis.clients.jedis.UnifiedJedis collaborationClient,
+            org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer htmlRenderer) {
         var stateReady = cachedNativePrerequisite(() -> stateStore != null && redisClient != null
             && !redisClient.isShutdown() && !redisClient.isShuttingDown()
             && redisClient.getRedisNodes(org.redisson.api.redisnode.RedisNodes.SINGLE)
@@ -123,7 +124,26 @@ public class ProjectAgentConfiguration {
         var readiness = new org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolReadiness(nativeReadinessWorkspace(workspaceRoot),
             "python:3.13-alpine", () -> org.ruoyi.ipd.agent.kernel.ProjectAgentFoundationTools.nativeToolIds(),
             stateReady, () -> artifactProvider != null, collaborationReady);
-        return new ProjectAgentToolCatalog(manifest, readiness);
+        return new ProjectAgentToolCatalog(manifest, readiness, htmlRenderer::readiness);
+    }
+
+    /**
+     * HTML 页面渲染引擎（vendor am.mjs，宿主 node 执行；ipd.project-agent.html-render.*）。
+     * 引擎随 JAR 交付并按 ORIGIN.json 锁定 SHA-256，不一致 fail-closed。
+     */
+    @Bean
+    public org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer answerMeHtmlRenderer(
+            @Value("${ipd.project-agent.html-render.enabled:true}") boolean enabled,
+            @Value("${ipd.project-agent.html-render.node-bin:node}") String nodeBin,
+            @Value("${ipd.project-agent.html-render.timeout-seconds:60}") long timeoutSeconds,
+            @Value("${ipd.project-agent.html-render.max-output-bytes:2097152}") long maxOutputBytes,
+            @Value("${ipd.project-agent.html-render.draft-max-chars:65536}") int draftMaxChars,
+            @Value("${ipd.project-agent.workspace-root:${java.io.tmpdir}/ipd-project-agent-workspace}") Path workspaceRoot) {
+        return new org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer(
+            new org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer.Settings(enabled, nodeBin,
+                Duration.ofSeconds(Math.max(10, timeoutSeconds)), maxOutputBytes, draftMaxChars),
+            org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer::runProcess,
+            workspaceRoot.resolve(".am-engine"));
     }
 
     /** Only the trusted JVM temporary base may use the platform's system alias. Custom roots stay literal. */
@@ -242,6 +262,7 @@ public class ProjectAgentConfiguration {
             @org.springframework.beans.factory.annotation.Qualifier(ProjectAgentOfficialCollaborationRedis.STORE_BEAN)
                 io.agentscope.harness.agent.filesystem.remote.store.BaseStore collaborationStore,
             IpdCopilotAccess runtimeAccess, PersonMapper runtimePersons,
+            org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer answerMeHtmlRenderer,
             org.ruoyi.ipd.mapper.IpdAgentMemoryMapper memoryMapper,
             @org.springframework.beans.factory.annotation.Qualifier("agentScopeAuditHook") io.agentscope.core.hook.Hook auditHook) {
         configureFiniteShutdown(shutdownManager());
@@ -266,6 +287,7 @@ public class ProjectAgentConfiguration {
         // 长期记忆（官方 LongTermMemory SPI 自实现）：按项目+人分区，非业务权威
         kernel.setLongTermMemoryMapper(memoryMapper);
         kernel.setArtifactProviderFactory(artifactProvider);
+        kernel.setHtmlRenderer(answerMeHtmlRenderer);
         kernel.setCollaborationStore(collaborationStore);
         kernel.setRuntimeAccess(spec -> requireCurrentRuntimeAccess(runtimeAccess, runtimePersons, spec));
         return kernel;

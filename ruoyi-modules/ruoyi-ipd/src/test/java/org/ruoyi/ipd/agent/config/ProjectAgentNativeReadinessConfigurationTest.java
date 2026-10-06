@@ -43,9 +43,14 @@ class ProjectAgentNativeReadinessConfigurationTest {
         var state = org.mockito.Mockito.mock(io.agentscope.core.state.AgentStateStore.class);
         var collaboration = org.mockito.Mockito.mock(io.agentscope.harness.agent.filesystem.remote.store.BaseStore.class);
         var client = org.mockito.Mockito.mock(redis.clients.jedis.UnifiedJedis.class);
+        // 渲染引擎探针与 native 探针解耦：enabled=false 零进程调用，不影响本测试的 native 判定。
+        var disabledRenderer = new org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer(
+            new org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer.Settings(
+                false, "node", java.time.Duration.ofSeconds(30), 65_536, 65_536),
+            org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer::runProcess, temporary.resolve("am-engine"));
         var catalog = new ProjectAgentConfiguration().projectAgentToolCatalog(
             new org.ruoyi.ipd.agent.catalog.CapabilityManifest(1, java.util.List.of(), java.util.List.of(), java.util.List.of()),
-            temporary, state, null, collaboration, redis, client);
+            temporary, state, null, collaboration, redis, client, disabledRenderer);
         org.mockito.Mockito.verifyNoInteractions(nodes, client);
         assertThat(catalog.status("web_fetch").reason()).isEqualTo("运行状态存储不可用");
         assertThat(catalog.status("execute").available()).isFalse();

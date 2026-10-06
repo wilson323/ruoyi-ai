@@ -19,6 +19,9 @@ public final class ProjectAgentToolCatalog {
     /** 项目资料检索（只读）工具 ID。 */
     public static final String PROJECT_KNOWLEDGE_SEARCH = "project_knowledge_search";
 
+    /** HTML 页面渲染（写入范围仅产物草稿）工具 ID。 */
+    public static final String HTML_PAGE_RENDER = "render_html_page";
+
     /** 工具可用性投影。 */
     public record ToolStatus(String id, String name, boolean readOnly, boolean available, String reason) { }
 
@@ -33,6 +36,12 @@ public final class ProjectAgentToolCatalog {
         Map<String, ToolDescriptor> map = new HashMap<>();
         map.put(PROJECT_KNOWLEDGE_SEARCH, descriptor(PROJECT_KNOWLEDGE_SEARCH,
             "只读检索本项目已审核文档片段；项目范围由运行绑定，不接受模型传入"));
+        // WRITE 能力如实声明（渲染落产物草稿行）；治理裁决由 KernelGovernedTool 逐调用执行。
+        map.put(HTML_PAGE_RENDER, new ToolDescriptor(HTML_PAGE_RENDER,
+            EnumSet.of(ToolCapability.READ, ToolCapability.WRITE), true, 90_000L, 131_072L, 65_536L,
+            false,
+            "把 Markdown 草稿渲染为单文件 HTML 并登记为本次运行产物草稿（DRAFT）；"
+                + "写入范围仅限产物草稿链路，与官方 deliver_artifact 同源"));
         for (ProductLineMcpCatalog.Endpoint endpoint : ProductLineMcpCatalog.all()) {
             map.put(endpoint.serviceId(), descriptor(endpoint.serviceId(),
                 "只读查询产线「" + endpoint.lineName() + "」；服务标识 " + endpoint.serviceId()));
@@ -47,6 +56,7 @@ public final class ProjectAgentToolCatalog {
 
     private final CapabilityManifest manifest;
     private final ProjectAgentNativeToolCatalog.Provider nativeReadiness;
+    private final java.util.function.Supplier<ProjectAgentNativeToolCatalog.Readiness> htmlRenderReadiness;
 
     public static final String NATIVE_TOOLS_VERSION = ProjectAgentNativeToolCatalog.VERSION;
 
@@ -63,8 +73,19 @@ public final class ProjectAgentToolCatalog {
     }
 
     public ProjectAgentToolCatalog(CapabilityManifest manifest, ProjectAgentNativeToolCatalog.Provider nativeReadiness) {
+        this(manifest, nativeReadiness, () -> new ProjectAgentNativeToolCatalog.Readiness(false, "渲染引擎未装配"));
+    }
+
+    /**
+     * @param manifest 内置清单
+     * @param nativeReadiness 官方工具就绪投影
+     * @param htmlRenderReadiness HTML 渲染引擎就绪投影（node 可用性与引擎校验）
+     */
+    public ProjectAgentToolCatalog(CapabilityManifest manifest, ProjectAgentNativeToolCatalog.Provider nativeReadiness,
+            java.util.function.Supplier<ProjectAgentNativeToolCatalog.Readiness> htmlRenderReadiness) {
         this.manifest = java.util.Objects.requireNonNull(manifest);
         this.nativeReadiness = java.util.Objects.requireNonNull(nativeReadiness);
+        this.htmlRenderReadiness = java.util.Objects.requireNonNull(htmlRenderReadiness);
     }
 
     /**
@@ -104,6 +125,14 @@ public final class ProjectAgentToolCatalog {
             && !descriptor.hasCapability(ToolCapability.EXECUTE)
             && !descriptor.hasCapability(ToolCapability.NETWORK);
         if (!readOnly) {
+            // W1 对 render_html_page 定向放行：其 WRITE 范围仅限官方产物草稿交付链（与
+            // deliver_artifact 同源），授权仍由官方权限扩展 + 治理裁决逐调用执行；
+            // 目录登记不授予调用权限。其余写工具维持 W1 拒绝。
+            if (HTML_PAGE_RENDER.equals(toolId)) {
+                var readiness = htmlRenderReadiness.get();
+                if (readiness == null) readiness = new ProjectAgentNativeToolCatalog.Readiness(false, "渲染引擎未装配");
+                return new ToolStatus(toolId, entry.name(), false, readiness.available(), readiness.reason());
+            }
             return new ToolStatus(toolId, entry.name(), false, false, "W1 仅开放只读工具");
         }
         return new ToolStatus(toolId, entry.name(), true, true, null);

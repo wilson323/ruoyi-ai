@@ -1,0 +1,18 @@
+{
+  "repo": "https://github.com/QingYunA/answer-me-with-html",
+  "commit": "f3082c912c1637d7eff38e7a4c356545b756c75f",
+  "upstreamVersion": "0.4.12",
+  "fetchedAt": "2026-10-06",
+  "license": "MIT",
+  "files": {
+    "am.mjs": {
+      "source": "skills/answer-me-with-html/scripts/am.mjs",
+      "sha256": "f926b37c5ecb550731fcf1500578053bfcf9aa4436e04c57ac8a7e303eed4f91"
+    },
+    "LICENSE": {
+      "source": "LICENSE",
+      "sha256": "752a1a34b40ae8e64e86f546ec699a691aff573179e1f96997e82757b2ee5d3f"
+    }
+  },
+  "note": "Vendored verbatim. Upgrades must update this file and re-hash am.mjs; runtime self-update is forbidden."
+}

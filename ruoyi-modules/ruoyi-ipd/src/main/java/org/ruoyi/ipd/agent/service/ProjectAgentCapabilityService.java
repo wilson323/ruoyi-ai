@@ -94,7 +94,11 @@ public class ProjectAgentCapabilityService {
             .map(t -> new ProjectAgentViews.Tool(t.id(), t.name(), t.readOnly(), t.available(), t.reason()))
             .toList();
         String reason = unavailableReason(requiredSkills, tools.stream()
-            .filter(tool -> entry.tools().contains(tool.id())).toList(), anyModel);
+            .filter(tool -> entry.tools().contains(tool.id())
+                // render_html_page 为按需可选工具：不就绪只让该工具不可勾选（planner 勾选即拒、
+                // 目录行如实展示原因），不把整包拖成不可用；其余包内工具仍是必备。
+                && !ProjectAgentToolCatalog.HTML_PAGE_RENDER.equals(tool.id()))
+            .toList(), anyModel);
         var skills = new java.util.ArrayList<>(requiredSkills);
         skills.addAll(reviewed);
         return new ProjectAgentViews.Pack(entry.code(), entry.version(), entry.name(), entry.description(),

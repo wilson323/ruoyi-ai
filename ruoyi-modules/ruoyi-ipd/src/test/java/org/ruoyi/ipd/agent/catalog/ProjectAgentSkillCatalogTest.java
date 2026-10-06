@@ -53,7 +53,8 @@ class ProjectAgentSkillCatalogTest {
         ProjectAgentSkillCatalog catalog = AgentTestFixtures.skillCatalog(manifest);
         // 2026-10-03：monthly-receipt-tracking-ipd（LC01）/ six-month-receipt-settlement-ipd（LC03）
         // 随回款台账 / 奖金池退役下线，清单由 45 → 43。
-        assertThat(manifest.skills()).hasSize(44);
+        // 2026-10-06：新增 answer-me-with-html-ipd（HTML 页面渲染产物），清单 44 → 45。
+        assertThat(manifest.skills()).hasSize(45);
         for (CapabilityManifest.SkillEntry skill : manifest.skills()) {
             try (InputStream in = getClass().getClassLoader()
                     .getResourceAsStream("ipd-skills/" + skill.name() + "/SKILL.md")) {
@@ -103,12 +104,14 @@ class ProjectAgentSkillCatalogTest {
     }
 
     @Test
-    @DisplayName("清单：market-research@v1 精确映射 C01/C02 与两项真实技能，工具均已登记")
+    @DisplayName("清单：market-research@v1 精确映射 C01/C02 与三项真实技能，工具均已登记")
     void manifestDeclaresC01AndC02Pack() {
         CapabilityManifest manifest = AgentTestFixtures.manifest();
         CapabilityManifest.PackEntry pack = manifest.pack("market-research", "v1").orElseThrow();
         assertThat(pack.actionCodes()).containsExactly("C01", "C02");
-        assertThat(pack.skills()).containsExactly("market-opportunity-research-ipd", "competitor-analysis-ipd");
+        // 2026-10-06：answer-me-with-html-ipd 登记进全部能力包（创建运行按需勾选）。
+        assertThat(pack.skills()).containsExactly("market-opportunity-research-ipd",
+            "competitor-analysis-ipd", "answer-me-with-html-ipd");
         assertThat(pack.stages()).containsExactly("CONCEPT");
         assertThat(pack.skills()).allSatisfy(s -> assertThat(manifest.skill(s)).isPresent());
         assertThat(pack.tools()).allSatisfy(t -> assertThat(manifest.tool(t)).isPresent());

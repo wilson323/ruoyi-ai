@@ -72,6 +72,13 @@ class ProjectAgentShutdownConfigurationTest {
                 () -> mock(io.agentscope.harness.agent.filesystem.remote.store.BaseStore.class));
             context.registerBean("projectAgentStateStore", io.agentscope.core.state.AgentStateStore.class,
                 () -> mock(io.agentscope.core.state.AgentStateStore.class));
+            // 渲染引擎 bean：disabled 状态零进程调用，仅供 kernel 装配依赖注入。
+            context.registerBean(org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer.class,
+                () -> new org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer(
+                    new org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer.Settings(
+                        false, "node", java.time.Duration.ofSeconds(30), 65_536, 65_536),
+                    org.ruoyi.ipd.agent.kernel.AnswerMeHtmlRenderer::runProcess,
+                    workspace.resolve("am-engine")));
             context.registerBean("agentScopeAuditHook", io.agentscope.core.hook.Hook.class,
                 () -> mock(io.agentscope.core.hook.Hook.class));
             // 测试真实 Spring 内核装配，旧关闭属性不再删除官方能力。

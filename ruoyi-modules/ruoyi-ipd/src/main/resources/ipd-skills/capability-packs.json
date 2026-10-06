@@ -1,7 +1,12 @@
 {
   "manifestVersion": 1,
-  "comment": "项目智能体内置能力清单（随 JAR 交付）。2026-10-03：LC01「上市后销售与回款跟踪」/ LC03「上市后6个月终算」退役，其 Skill（monthly-receipt-tracking-ipd / six-month-receipt-settlement-ipd）已随之下线移除。skills[].sha256 = SKILL.md 原始字节 SHA-256，加载时校验；不一致即该 Skill 不可用。DB 表 ipd_capability_pack(+item) 的种子与本清单同源（W2 起 DB 可覆盖/扩展）。",
+  "comment": "项目智能体内置能力清单（随 JAR 交付）。2026-10-03：LC01「上市后销售与回款跟踪」/ LC03「上市后6个月终算」退役，其 Skill（monthly-receipt-tracking-ipd / six-month-receipt-settlement-ipd）已随之下线移除。2026-10-06：接入 answer-me-with-html（上游 QingYunA/answer-me-with-html @f3082c9，MIT，vendor 于 ipd-am/）：新增 Skill answer-me-with-html-ipd 与工具 render_html_page（宿主 node 渲染单文件 HTML，写入范围仅产物草稿链路），登记进全部 7 个能力包按需勾选。skills[].sha256 = SKILL.md 原始字节 SHA-256，加载时校验；不一致即该 Skill 不可用。DB 表 ipd_capability_pack(+item) 的种子与本清单同源（W2 起 DB 可覆盖/扩展）。",
   "skills": [
+    {
+      "name": "answer-me-with-html-ipd",
+      "version": "1.0.0",
+      "sha256": "0296e9c79afd781314ac460f73687bfa62abcad4dfd0a89a00a41c24d72359da"
+    },
     {
       "name": "beta-trial-feedback-ipd",
       "version": "1.1.0",
@@ -230,6 +235,11 @@
       "readOnly": true
     },
     {
+      "id": "render_html_page",
+      "name": "HTML 页面渲染",
+      "readOnly": false
+    },
+    {
       "id": "FastGPT-mcp-693fdcafb24e7762a0dc0325",
       "name": "停车设备知识库",
       "readOnly": true
@@ -330,10 +340,12 @@
       ],
       "skills": [
         "market-opportunity-research-ipd",
-        "competitor-analysis-ipd"
+        "competitor-analysis-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",
@@ -381,10 +393,12 @@
         "project-grade-coefficient-ipd",
         "ip-fto-precheck-ipd",
         "gate-g1-charter-review-ipd",
-        "biometric-compliance-review-ipd"
+        "biometric-compliance-review-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",
@@ -424,10 +438,12 @@
         "requirement-priority-roadmap-ipd",
         "cert-reg-checklist-ipd",
         "differentiation-value-pricing-ipd",
-        "gate-g2-diff-confirm-ipd"
+        "gate-g2-diff-confirm-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",
@@ -471,10 +487,12 @@
         "sales-channel-training-ipd",
         "catalog-listing-ipd",
         "gate-g4-gtm-readiness-ipd",
-        "launch-date-anchor-ipd"
+        "launch-date-anchor-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",
@@ -524,10 +542,12 @@
         "customer-feedback-quality-ipd",
         "lifecycle-status-maintain-ipd",
         "eol-assessment-announce-ipd",
-        "project-archive-ipd"
+        "project-archive-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",
@@ -563,10 +583,12 @@
       "skills": [
         "gate-g3-biweekly-review-ipd",
         "requirement-change-assess-ipd",
-        "biocv-far-frr-register-ipd"
+        "biocv-far-frr-register-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",
@@ -612,10 +634,12 @@
         "solution-pilot-delivery-ipd",
         "cross-demographic-fit-verify-ipd",
         "platform-sdk-compat-verify-ipd",
-        "overseas-localization-verify-ipd"
+        "overseas-localization-verify-ipd",
+        "answer-me-with-html-ipd"
       ],
       "tools": [
         "project_knowledge_search",
+        "render_html_page",
         "FastGPT-mcp-693fdcafb24e7762a0dc0325",
         "FastGPT-mcp-693fdccdb24e7762a0dc04b5",
         "FastGPT-mcp-693fdd09b24e7762a0dc0880",

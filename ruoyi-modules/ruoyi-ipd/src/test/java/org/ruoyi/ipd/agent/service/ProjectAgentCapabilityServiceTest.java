@@ -109,6 +109,24 @@ class ProjectAgentCapabilityServiceTest {
         });
     }
 
+    @Test
+    @DisplayName("渲染引擎未就绪：包仍可用（按需可选工具），render 工具行如实不可用")
+    void unavailableHtmlRendererDoesNotDisablePack() {
+        var manifest = AgentTestFixtures.manifest();
+        var tools = new ProjectAgentToolCatalog(manifest, id ->
+            new org.ruoyi.ipd.agent.catalog.ProjectAgentNativeToolCatalog.Readiness(true, null));
+        var service = new ProjectAgentCapabilityService(true, visibleAccess(), manifest,
+            AgentTestFixtures.skillCatalog(manifest), tools, AgentTestFixtures.modelCatalog());
+        var market = service.capabilities(ACTOR, PROJECT_ID).packs().stream()
+            .filter(pack -> "market-research".equals(pack.code())).findFirst().orElseThrow();
+        assertThat(market.available()).as("渲染工具不拖垮整包").isTrue();
+        assertThat(market.tools()).anySatisfy(tool -> {
+            assertThat(tool.id()).isEqualTo(ProjectAgentToolCatalog.HTML_PAGE_RENDER);
+            assertThat(tool.available()).isFalse();
+            assertThat(tool.reason()).isEqualTo("渲染引擎未装配");
+        });
+    }
+
     private static IpdCopilotAccess visibleAccess() {
         IpdCopilotAccess access = mock(IpdCopilotAccess.class);
         when(access.requireVisible(any(), eq(PROJECT_ID))).thenReturn(TENANT);

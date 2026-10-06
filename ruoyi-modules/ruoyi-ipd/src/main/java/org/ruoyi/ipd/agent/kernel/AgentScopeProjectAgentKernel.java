@@ -135,6 +135,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
     private java.util.function.Consumer<ProjectAgentRunSpec> runtimeAccess = spec -> { };
     private ProjectAgentArtifactProviderFactory artifactProviderFactory;
     private io.agentscope.harness.agent.filesystem.remote.store.BaseStore collaborationStore;
+    private AnswerMeHtmlRenderer htmlRenderer;
 
     public void setCollaborationStore(io.agentscope.harness.agent.filesystem.remote.store.BaseStore store) {
         collaborationStore = Objects.requireNonNull(store, "Official collaboration store is required");
@@ -198,6 +199,11 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
 
     public void setArtifactProviderFactory(ProjectAgentArtifactProviderFactory factory) {
         this.artifactProviderFactory = Objects.requireNonNull(factory, "artifactProviderFactory");
+    }
+
+    /** 生产配置绑定 HTML 渲染引擎；未绑定时勾选 render_html_page 的运行 fail-loud 拒建。 */
+    public void setHtmlRenderer(AnswerMeHtmlRenderer renderer) {
+        this.htmlRenderer = Objects.requireNonNull(renderer, "htmlRenderer");
     }
 
     /** Read-only original-run validation before the business approval consumer performs its CAS. */
@@ -425,11 +431,6 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         }
         sink.requireActiveOwnership();
         ProductLineMcpTool.bind(toolkit, governance, spec, lineNames, sink);
-        for (String name : List.copyOf(toolkit.getToolNames())) {
-            AgentTool original = toolkit.getTool(name);
-            toolkit.removeTool(name);
-            toolkit.registerAgentTool(new OwnershipGuardedTool(original, sink));
-        }
         ToolsConfig toolsConfig = new ToolsConfig();
         FrozenProjectAgentSkills selectedSkills = new FrozenProjectAgentSkills(spec.skills());
         ProjectAgentSkillGovernance skillGovernance = new ProjectAgentSkillGovernance(workspace, spec, selectedSkills);
@@ -464,6 +465,25 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         });
         var artifactProvider = artifactProviderFactory == null ? null : artifactProviderFactory.create(spec,
             trustedScope.toRuntimeContext(), sink, subagentScope.lineage()::requireKnown);
+        if (spec.toolIds().contains(ProjectAgentToolCatalog.HTML_PAGE_RENDER)) {
+            // 勾选即要求引擎与产物链全部就绪：fail-loud，不静默降级为不可用。
+            if (htmlRenderer == null) {
+                throw new IllegalStateException("HTML render engine is not assembled");
+            }
+            if (artifactProvider == null) {
+                throw new IllegalStateException("HTML render requires the artifact delivery chain");
+            }
+            // 交付链（ArtifactDeliveryTarget.deliver）按服务端执行声明门禁放行：渲染工具
+            // 必须在执行期持有与官方 deliver_artifact 同源的 Claim，否则交付被拒。
+            toolkit.registerAgentTool(KernelGovernedTool.wrap(
+                new ExecutionClaimBoundTool(new HtmlPageRenderTool(htmlRenderer, artifactProvider.target(),
+                    step -> sink.onStep("HTML_RENDERED", step)), artifactProvider.claims()), governance));
+        }
+        for (String name : List.copyOf(toolkit.getToolNames())) {
+            AgentTool original = toolkit.getTool(name);
+            toolkit.removeTool(name);
+            toolkit.registerAgentTool(new OwnershipGuardedTool(original, sink));
+        }
         if (artifactProvider != null) officialGovernance.executionClaims(artifactProvider.claims());
         var terminalCommitted = new java.util.concurrent.atomic.AtomicBoolean();
         boolean requiresCommittedReceipt = true;

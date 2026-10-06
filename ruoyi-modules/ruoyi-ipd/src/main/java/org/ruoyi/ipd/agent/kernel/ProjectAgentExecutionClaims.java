@@ -13,6 +13,8 @@ import reactor.util.context.ContextView;
 /** Server-only approved execution capability. No attribute/token is put into RuntimeContext or persisted state. */
 public final class ProjectAgentExecutionClaims implements AutoCloseable {
     public interface DeliveryPathNormalizer { String normalize(Agent actor, RuntimeContext runtime, String path); }
+    /** 除官方 deliver_artifact 外，唯一可交付产物的受治理工具（本地渲染工具，交付内容为引擎产物）。 */
+    public static final String RENDER_DELIVERY_TOOL = org.ruoyi.ipd.agent.catalog.ProjectAgentToolCatalog.HTML_PAGE_RENDER;
     public record Binding(String runId, String userId, long epoch) { }
     private enum Phase { ISSUED, RESERVED, COMMITTED, ABORTED, CLOSED }
     private static final Object REACTOR_KEY = new Object();
@@ -62,12 +64,21 @@ public final class ProjectAgentExecutionClaims implements AutoCloseable {
     }
     public void requireAuthorized(RuntimeContext runtime, Binding expected) {
         Claim claim = checked(runtime, expected);
-        if (!"deliver_artifact".equals(claim.toolName) || claim.toolCallId == null) throw denied();
+        if ((!"deliver_artifact".equals(claim.toolName) && !RENDER_DELIVERY_TOOL.equals(claim.toolName))
+                || claim.toolCallId == null) throw denied();
     }
     public void requireDelivery(RuntimeContext runtime, Binding expected,
             io.agentscope.harness.agent.artifact.ArtifactDeliveryRequest request) {
         requireAuthorized(runtime, expected);
         Claim claim = checked(runtime, expected);
+        if (RENDER_DELIVERY_TOOL.equals(claim.toolName)) {
+            // 渲染工具的交付内容由引擎在服务端生成：仅 fileName 与裁决入参一致即可，
+            // 不携带沙箱路径/描述/强制标记，字段形态与工具入参合同一一对应。
+            String name = claim.input.path("fileName").asText("");
+            if (request == null || request.filePath() != null || request.description() != null
+                    || request.force() || !Objects.equals(request.fileName(), name)) throw denied();
+            return;
+        }
         String name = claim.input.path("fileName").asText("");
         if (name.isBlank()) {
             String path = claim.normalizedPath.replace('\\', '/');
