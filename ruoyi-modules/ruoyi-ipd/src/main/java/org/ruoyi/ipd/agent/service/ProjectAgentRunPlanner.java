@@ -219,7 +219,7 @@ public class ProjectAgentRunPlanner {
         List<String> actionBoundNames;
         if (frozenSkills == null) {
             explicitNames = distinct(req.skillNames());
-            actionBoundNames = resolveActionBoundSkillNames(actionCode);
+            actionBoundNames = resolveActionBoundSkillNames(actionCode, projectId);
         } else {
             // 恢复只使用原运行的配置；当前动作映射仅决定新运行，不是业务授权依据。
             LinkedHashSet<String> names = new LinkedHashSet<>();
@@ -272,16 +272,18 @@ public class ProjectAgentRunPlanner {
     }
 
     /**
-     * 从动作映射表读取 skill_names（每次查库）；NULL/空 → 空列表。
+     * 解析动作绑定技能（项目级优先、全局回退；每次查库）：项目级绑定优先于全局默认，
+     * 无项目级绑定时回退全局默认；NULL/空 → 空列表。
      *
      * @param actionCode 动作编码
+     * @param projectId 项目 ID；null/≤0 时只查全局默认
      * @return 绑定名列表
      */
-    List<String> resolveActionBoundSkillNames(String actionCode) {
+    List<String> resolveActionBoundSkillNames(String actionCode, Long projectId) {
         if (actionCode == null || skillMapService == null) {
             return List.of();
         }
-        IpdActionSkillMap row = skillMapService.findByActionCode(actionCode);
+        IpdActionSkillMap row = skillMapService.resolve(actionCode, projectId);
         if (row == null) {
             return List.of();
         }

@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 按 actionCode 查库绑定 Skill：有绑定且 classpath 有 SKILL.md 则进入系统提示；
+ * 按 actionCode 查库绑定 Skill（项目级优先、全局回退）：有绑定且 classpath 有 SKILL.md 则进入系统提示；
  * 新绑定动作缺技能时拒绝空能力运行；历史冻结空技能不受新配置影响。
  */
 @Tag("dev")
@@ -38,7 +38,7 @@ class ProjectAgentRunPlannerActionSkillTest {
     void actionBoundSkillEntersPromptWhenFileExists(String actionCode, String skillName,
                                                    String firstKeyword, String secondKeyword) throws Exception {
         IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode(actionCode)).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve(actionCode, null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode(actionCode)
             .skillNames("[\"" + skillName + "\"]").sortOrder(1).build());
         ProjectAgentRunPlanner planner = planner(maps);
@@ -85,7 +85,7 @@ class ProjectAgentRunPlannerActionSkillTest {
     @Test
     void c01ExistingBindingIsFrozenWithoutInventingFacts() {
         IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C01")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C01", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C01").skillNames("[\"market-opportunity-research-ipd\"]").build());
         AgentRunCreateReq req = new AgentRunCreateReq("market-research", "v1",
             String.valueOf(AgentTestFixtures.MODEL_ID), List.of(), List.of("project_knowledge_search"),
@@ -121,7 +121,7 @@ class ProjectAgentRunPlannerActionSkillTest {
     @DisplayName("新绑定动作缺执行技能：拒绝空能力运行")
     void nullActionBindingRejectsEmptyCapabilityRun() {
         IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C02", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").subStageCode("CONCEPT-S2").skillNames(null).sortOrder(1).build());
         ProjectAgentRunPlanner planner = planner(maps);
 
@@ -135,7 +135,7 @@ class ProjectAgentRunPlannerActionSkillTest {
     @Test
     void unavailableActionBindingRejectsRun() {
         IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C02", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").skillNames("[\"missing-skill\"]").build());
         AgentRunCreateReq req = new AgentRunCreateReq("market-research", "v1",
             String.valueOf(AgentTestFixtures.MODEL_ID), List.of(), List.of("project_knowledge_search"),
@@ -150,12 +150,12 @@ class ProjectAgentRunPlannerActionSkillTest {
     })
     void recoveryUsesFrozenSkillsWithoutConsultingChangedActionMapping(String changedBinding) {
         var maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C02", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").skillNames("[\"competitor-analysis-ipd\"]").build());
         var planner = planner(maps);
         var req = AgentTestFixtures.c02("idem-frozen-map", "original");
         var original = planner.plan(req);
-        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C02", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").skillNames(changedBinding).build());
         org.mockito.Mockito.clearInvocations(maps);
         var recovered = planner.plan(req, AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID,
@@ -168,7 +168,7 @@ class ProjectAgentRunPlannerActionSkillTest {
     @Test
     void frozenEmptySkillsRemainEmptyEvenWhenMappingCannotBeRead() {
         var maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C02")).thenThrow(new IllegalStateException("map unavailable"));
+        when(maps.resolve("C02", null)).thenThrow(new IllegalStateException("map unavailable"));
         var plan = planner(maps).plan(AgentTestFixtures.c02("idem-empty-freeze", "original"),
             AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), List.of());
         assertThat(plan.skills()).isEmpty();
@@ -205,17 +205,17 @@ class ProjectAgentRunPlannerActionSkillTest {
     @Test
     void newRunsStillReadCurrentActionMappingAndRejectMissingBinding() {
         var maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C02", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").skillNames("[\"missing-new-binding\"]").build());
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> planner(maps).plan(
             AgentTestFixtures.c02("idem-current-new", "new"))).hasMessageContaining("Skill 不可用");
-        org.mockito.Mockito.verify(maps).findByActionCode("C02");
+        org.mockito.Mockito.verify(maps).resolve("C02", null);
     }
 
     @Test
     void frozenIdentityMustBeCompleteUniqueAndKeepCurrentToolAvailability() {
         var maps = mock(IpdActionSkillMapService.class);
-        when(maps.findByActionCode("C02")).thenReturn(IpdActionSkillMap.builder()
+        when(maps.resolve("C02", null)).thenReturn(IpdActionSkillMap.builder()
             .actionCode("C02").skillNames("[\"competitor-analysis-ipd\"]").build());
         var req = AgentTestFixtures.c02("idem-frozen-boundary", "original");
         var planner = planner(maps);
@@ -237,6 +237,33 @@ class ProjectAgentRunPlannerActionSkillTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> unavailable.plan(req,
             AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id(), frozen))
             .hasMessageContaining("工具不可用");
+    }
+
+    @Test
+    @DisplayName("项目级绑定优先：带 projectId 的运行解析项目级技能，不落全局默认")
+    void projectLevelBindingTakesPriorityOverGlobalDefault() {
+        IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
+        when(maps.resolve("C02", AgentTestFixtures.PROJECT_ID)).thenReturn(IpdActionSkillMap.builder()
+            .actionCode("C02").projectId(AgentTestFixtures.PROJECT_ID)
+            .skillNames("[\"" + SKILL + "\"]").sortOrder(1).build());
+        var plan = planner(maps).plan(AgentTestFixtures.c02("idem-project-binding-01", "项目级分析"),
+            AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id());
+        assertThat(plan.skills()).extracting(s -> s.name()).containsExactly(SKILL);
+        org.mockito.Mockito.verify(maps).resolve("C02", AgentTestFixtures.PROJECT_ID);
+        org.mockito.Mockito.verify(maps, org.mockito.Mockito.never()).resolve("C02", null);
+    }
+
+    @Test
+    @DisplayName("无项目级绑定时回退全局默认（优先级规则在服务层 resolve，planner 透传 projectId）")
+    void globalDefaultUsedWhenNoProjectLevelBinding() {
+        IpdActionSkillMapService maps = mock(IpdActionSkillMapService.class);
+        when(maps.resolve("C02", AgentTestFixtures.PROJECT_ID)).thenReturn(IpdActionSkillMap.builder()
+            .actionCode("C02").projectId(0L)
+            .skillNames("[\"" + SKILL + "\"]").sortOrder(1).build());
+        var plan = planner(maps).plan(AgentTestFixtures.c02("idem-global-fallback-01", "全局默认"),
+            AgentTestFixtures.TENANT, AgentTestFixtures.PROJECT_ID, AgentTestFixtures.ACTOR.id());
+        assertThat(plan.skills()).extracting(s -> s.name()).containsExactly(SKILL);
+        org.mockito.Mockito.verify(maps).resolve("C02", AgentTestFixtures.PROJECT_ID);
     }
 
     private static ProjectAgentRunPlanner planner(IpdActionSkillMapService maps) {
