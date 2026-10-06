@@ -77,10 +77,10 @@ public class StageActionController {
                                                    @RequestBody StageActionFieldsReq req) {
         IpdActor actor = ipdPermission.requireActionWriter(() -> stageActionService.getById(id));
         StageActionFieldsReq body = req == null
-            ? new StageActionFieldsReq(null, null, null, null, null, null) : req;
+            ? new StageActionFieldsReq(null, null, null, null, null, null, null) : req;
         return ApiV1Response.ok(stageActionService.recordFields(
             id, body.actualDoneAt(), body.farValue(), body.frrValue(),
-            body.certNo(), body.certPassedAt(), body.algoType(), String.valueOf(actor.id())));
+            body.certNo(), body.certPassedAt(), body.algoType(), body.remark(), String.valueOf(actor.id())));
     }
 
     /**

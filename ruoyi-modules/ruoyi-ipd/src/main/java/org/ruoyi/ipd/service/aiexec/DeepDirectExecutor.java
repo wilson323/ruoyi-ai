@@ -123,7 +123,7 @@ public class DeepDirectExecutor implements AiActionExecutor {
         Date actualDoneAt = date(fields, "actualDoneAt");
         Date now = Date.from(ctx.clock().instant());
         stageActionService.recordFields(id, actualDoneAt == null ? now : actualDoneAt,
-            farValue, frrValue, certNo, certPassedAt, null, "0");
+            farValue, frrValue, certNo, certPassedAt, null, null, "0");
 
         String fileName = def.code() + "-" + def.name() + "-归集-"
             + DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ctx.clock().getZone()).format(ctx.clock().instant())

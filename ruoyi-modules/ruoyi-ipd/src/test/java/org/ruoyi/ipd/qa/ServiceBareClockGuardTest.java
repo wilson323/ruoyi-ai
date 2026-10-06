@@ -53,6 +53,10 @@ class ServiceBareClockGuardTest {
      * 须登记本白名单并在 PR 描述注明理由。
      */
     private static final Set<String> LEGACY_WHITELIST = Set.of(
+        // AiDocumentImportService（2026-10-06 补登记，773337b2 漏登）：唯一一处 L112 审计日志
+        // createTime(new Date())，与白名单内 RequirementChangeService.audit() 同款「记录当下」形态，
+        // 属哨兵注释所述低风险默认值例外；理由随本卡 PR 描述注明。
+        "AiDocumentImportService",
         "AuditLogServiceImpl", "BaiduTester", "BidInvitationService",
         "BidResponseService", "BusinessConfigServiceImpl",
         "CertTemplateService", "ComplianceService",

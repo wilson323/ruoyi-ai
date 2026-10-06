@@ -210,7 +210,7 @@ class P144AcceptanceTest {
 
         assertThatThrownBy(() -> service.transit(4L, "DELAYED", null, "SYSTEM"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("轻管动作不支持延期状态");
+            .hasMessageContaining("不支持「已延期」");
         verify(actionMapper, never()).updateById(any(StageAction.class));
     }
 

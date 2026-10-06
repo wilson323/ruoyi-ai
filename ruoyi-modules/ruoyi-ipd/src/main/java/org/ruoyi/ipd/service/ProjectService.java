@@ -834,8 +834,12 @@ public class ProjectService implements IProjectService {
     }
 
     /**
-     * R149 B2：双 PM 维度 —— 取 actor 在职 MARKET_PM/RD_PM 角色对应的项目 ID 集合，
+     * R149 B2 / D1 修复：成员维度 —— 取 actor 在职成员（不限项目内角色）对应的项目 ID 集合，
      * 再按 ID 列表 + 关键字 + delFlag=0 过滤。actorId null 或 无在职项目 ⇒ 空列表。
+     * <p>D1（2026-10-06）：去掉 role=MARKET_PM/RD_PM 过滤——创建人非双 PM 时被绑 MEMBER，
+     * 此前看不到自己创建的待开工项目。详情口 getVisibleById 与写口 IpdIdorGuard 本就按在职
+     * 成员判、无角色过滤，列表不应比详情更窄；未开工项目的收窄由 filterListed→canSeeUnstarted
+     * 独立兜底，不受此处影响。
      */
     private List<Project> listByActorPm(String keyword, Long actorId) {
         if (actorId == null) {
@@ -844,7 +848,6 @@ public class ProjectService implements IProjectService {
         List<Long> pmProjectIds = projectMemberMapper.selectList(
             new LambdaQueryWrapper<ProjectMember>()
                 .eq(ProjectMember::getPersonId, actorId)
-                .in(ProjectMember::getRole, List.of("MARKET_PM", "RD_PM"))
                 .isNull(ProjectMember::getExitDate)
                 .eq(ProjectMember::getDelFlag, "0")
                 .select(ProjectMember::getProjectId))

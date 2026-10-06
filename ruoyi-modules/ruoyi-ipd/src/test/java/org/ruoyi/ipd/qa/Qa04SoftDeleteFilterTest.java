@@ -127,7 +127,7 @@ class Qa04SoftDeleteFilterTest {
 
         assertThatThrownBy(() -> service.transit(1L, "DONE", "回归", "42"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-03");
+            .hasMessageContaining("还没上传交付物");
     }
 
     @Test

@@ -92,7 +92,7 @@ class P143AcceptanceTest {
         assertThat(out.getStatus()).isEqualTo("IN_PROGRESS");
         assertThatThrownBy(() -> service.transit(1L, "DONE", "ok", "op"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-03");
+            .hasMessageContaining("还没上传交付物");
     }
 
     @Test
@@ -200,7 +200,7 @@ class P143AcceptanceTest {
         when(deliverableMapper.selectCount(any())).thenReturn(0L);
         assertThatThrownBy(() -> service.transit(1L, "DONE", "ok", "op"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-03");
+            .hasMessageContaining("还没上传交付物");
     }
 
     @Test
@@ -210,7 +210,7 @@ class P143AcceptanceTest {
         when(deliverableMapper.selectCount(any())).thenReturn(0L);
         assertThatThrownBy(() -> service.transit(1L, "DONE", "完成", "op"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("深管动作完成前必须上传至少 1 个未删交付物");
+            .hasMessageContaining("还没上传交付物");
         verify(auditLogService, never()).append(any(AuditLog.class));
     }
 
@@ -223,7 +223,7 @@ class P143AcceptanceTest {
             assertThatThrownBy(() -> service.transit(1L, "DONE", "完成", "op"))
                 .as("code=%s", code)
                 .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("BR-IPD-03");
+                .hasMessageContaining("还没上传交付物");
         }
         verify(auditLogService, never()).append(any(AuditLog.class));
     }

@@ -93,7 +93,7 @@ class AgentEvidenceExecutorTest {
         assertThat(req.getValue().prompt()).contains("【执行上下文】");
         // DEEP 完成判据：登记完成日 + 挂交付物，再 transit(DONE)
         verify(stageActionService).recordFields(eq(9101L), any(Date.class),
-            isNull(), isNull(), isNull(), isNull(), isNull(), eq("0"));
+            isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq("0"));
         verify(stageActionService).addDeliverable(eq(9101L), anyString(), eq(8901L), eq("0"));
         verify(stageActionService).transit(eq(9101L), eq("DONE"), any(String.class), eq("0"));
     }
@@ -165,7 +165,7 @@ class AgentEvidenceExecutorTest {
 
         assertThat(r.ok()).isFalse();
         assertThat(r.errorMsg()).contains("上传失败");
-        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(stageActionService, never()).addDeliverable(anyLong(), anyString(), anyLong(), anyString());
         verify(stageActionService, never()).transit(anyLong(), any(), any(), any());
     }

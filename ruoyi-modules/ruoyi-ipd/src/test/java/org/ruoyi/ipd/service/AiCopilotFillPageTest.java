@@ -33,9 +33,9 @@ class AiCopilotFillPageTest {
         raw.put("farValue", "0.001");
         raw.put("salary", "99999");
         raw.put("operatorRole", "SUPER_ADMIN");
-        // R230：remark 曾误列白名单，但 POST /stage-actions/{id}/fields 的 StageActionFieldsReq
-        // 结构性无 remark 参数——建议填 remark 会让用户「确认保存」后静默丢失，故已移出白名单。
-        // 本断言即该修复的守门：AI 一旦产出 remark，必须在 filterFillFields 层被丢弃。
+        // R230：remark 曾误列白名单造成「建议得出但存不下」。D4（2026-10-06）后端端点已支持
+        // remark（人工链路可存），但 AI 链路维持 R230 口径暂不放开——AI 产出 remark 仍在
+        // filterFillFields 层丢弃（本断言即该口径的守门）。
         raw.put("remark", "AI 建议的备注");
 
         Map<String, Object> kept = AiCopilotService.filterFillFields("stage-action-fields", raw);
@@ -46,9 +46,9 @@ class AiCopilotFillPageTest {
 
     @Test
     void stageActionWhitelistExcludesRemarkAndMatchesFieldsEndpoint() {
-        // R230 能力对称性守门：白名单必须与 StageActionFieldsReq 的 6 个可落库字段严格同构。
-        // 用 algoType（端点支持）做正向锚点、remark（端点不支持）做负向锚点，
-        // 防止将来任一侧单方面加字段再次造成「建议得出但存不下」的假成功。
+        // R230 能力对称性守门：白名单必须 ⊆ StageActionFieldsReq 可落库字段。
+        // D4（2026-10-06）后 Req 已含第 7 字段 remark（人工链路）；AI 链路维持不放开 remark
+        //（R230 口径），故白名单保持 6 字段、remark 仍为负向锚点。
         Set<String> allowed = AiCopilotService.FILL_FIELD_WHITELIST.get("stage-action-fields");
 
         assertThat(allowed).doesNotContain("remark");

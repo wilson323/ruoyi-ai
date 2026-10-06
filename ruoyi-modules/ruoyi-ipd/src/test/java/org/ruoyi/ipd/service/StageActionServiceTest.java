@@ -112,7 +112,7 @@ class StageActionServiceTest {
         when(deliverableMapper.selectCount(any())).thenReturn(0L);
         assertThatThrownBy(() -> service.transit(1L, "DONE", "test reason", "op"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-03");
+            .hasMessageContaining("还没上传交付物");
     }
 
     @Test
@@ -132,7 +132,7 @@ class StageActionServiceTest {
         seed("C05", "LIGHT");
         assertThatThrownBy(() -> service.transit(1L, "DONE", "test reason", "op"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-05");
+            .hasMessageContaining("实际完成日期");
     }
 
     @Test
@@ -141,7 +141,7 @@ class StageActionServiceTest {
         seed("C05", "LIGHT");
         assertThatThrownBy(() -> service.transit(1L, "DELAYED", null, "op"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("轻管动作不支持延期");
+            .hasMessageContaining("不支持「已延期」");
     }
 
     @Test

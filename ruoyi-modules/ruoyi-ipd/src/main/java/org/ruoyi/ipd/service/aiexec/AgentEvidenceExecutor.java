@@ -124,7 +124,7 @@ public class AgentEvidenceExecutor implements AiActionExecutor {
             return AiExecResult.fail(def.code() + " 执行证据上传失败（OSS 未返回 ossId）");
         }
         Date now = Date.from(ctx.clock().instant());
-        stageActionService.recordFields(id, now, null, null, null, null, null, "0");
+        stageActionService.recordFields(id, now, null, null, null, null, null, null, "0");
         stageActionService.addDeliverable(id, fileName, uploaded.getOssId(), "0");
         stageActionService.transit(id, "DONE", "R236 AI 直接执行（DEEP 证据）", "0");
         return aiDocId == null

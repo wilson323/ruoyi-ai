@@ -11,6 +11,7 @@ import org.ruoyi.ipd.service.IpdAuthInputException;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -106,6 +107,26 @@ public class IpdServiceExceptionAdvice {
             log.warn("[IPD] constraint violation: {}", msg);
             return ResponseEntity.status(ApiV1ErrorCode.PARAM_INVALID.getHttpStatus())
                 .body(ApiV1Response.fail(ApiV1ErrorCode.PARAM_INVALID, msg));
+        } finally {
+            endTrace(trace);
+        }
+    }
+
+    /**
+     * D16 修复（2026-10-06）：DataIntegrityViolationException 专属 handler。
+     * 修复前：审计护栏（AuditEventData.requireJson/requireAiTrail 白名单滞后登记制）与
+     * NOT NULL 约束违反抛出的该异常无专属 handler，落 Exception 兜底成 500/90001「系统内部错误」，
+     * 用户无法区分「数据约束冲突」与「系统故障」。现映射为 409 STATE_CONFLICT；
+     * 日志只取最具体成因消息，不回显用户输入值（与 handleTypeMismatch 同口径）。
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiV1Response<Void>> handleDataIntegrity(DataIntegrityViolationException e) {
+        TraceScope trace = beginTrace();
+        try {
+            String cause = e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : e.getMessage();
+            log.warn("[IPD] data integrity violation: {}", cause);
+            return ResponseEntity.status(ApiV1ErrorCode.STATE_CONFLICT.getHttpStatus())
+                .body(ApiV1Response.fail(ApiV1ErrorCode.STATE_CONFLICT, "数据完整性约束冲突，请检查填写内容或联系管理员"));
         } finally {
             endTrace(trace);
         }

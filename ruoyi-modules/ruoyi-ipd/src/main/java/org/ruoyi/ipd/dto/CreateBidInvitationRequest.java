@@ -1,5 +1,6 @@
 package org.ruoyi.ipd.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -46,6 +47,12 @@ public class CreateBidInvitationRequest {
     @Size(max = 4000)
     private String content;
 
+    /**
+     * D15 修复（2026-10-06）：/api/v1 的 @Primary ObjectMapper 手工构建、不读 spring.jackson.date-format，
+     * 此前前端传 "yyyy-MM-dd HH:mm:ss" 空格格式必炸 InvalidFormatException → 400/10001。
+     * 显式声明格式（与 {@link org.ruoyi.ipd.domain.BidInvitation} R8-P0-11 先例一致）。
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @NotNull
     @Future(message = "expireAt must be future")
     private Date expireAt;

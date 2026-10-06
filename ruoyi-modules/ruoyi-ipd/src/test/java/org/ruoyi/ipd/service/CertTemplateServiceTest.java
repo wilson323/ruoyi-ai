@@ -93,6 +93,6 @@ class CertTemplateServiceTest {
 
         assertThatThrownBy(() -> service.remove(1L, 1L))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("禁止直删");
+            .hasMessageContaining("不能直接删除");
     }
 }

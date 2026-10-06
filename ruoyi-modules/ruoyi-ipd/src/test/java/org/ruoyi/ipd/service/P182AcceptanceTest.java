@@ -99,7 +99,7 @@ class P182AcceptanceTest {
         StageAction a = seed("Z01", "LIGHT");
         Date day = new Date(1_700_000_000_000L);
         service.recordFields(1L, day, new BigDecimal("0.0001"), new BigDecimal("0.01"),
-            null, null, "FACE", "9");
+            null, null, "FACE", null, "9");
         assertThat(a.getActionCode()).isEqualTo("D11");
         assertThat(a.getFarValue()).isEqualByComparingTo("0.0001");
         assertThat(a.getFrrValue()).isEqualByComparingTo("0.01");
@@ -111,10 +111,10 @@ class P182AcceptanceTest {
     @DisplayName("算法分类非法拒绝；合法白名单归一大写")
     void algoTypeValidation() {
         StageAction a = seed("D11", "LIGHT");
-        assertThatThrownBy(() -> service.recordFields(1L, null, null, null, null, null, "IRIS", "9"))
+        assertThatThrownBy(() -> service.recordFields(1L, null, null, null, null, null, "IRIS", null, "9"))
             .isInstanceOf(IpdBusinessException.class)
             .hasMessageContaining("算法分类非法");
-        service.recordFields(1L, null, null, null, null, null, "fingerprint", "9");
+        service.recordFields(1L, null, null, null, null, null, "fingerprint", null, "9");
         assertThat(a.getAlgoType()).isEqualTo("FINGERPRINT");
     }
 
@@ -123,7 +123,7 @@ class P182AcceptanceTest {
     void v02CertPersist() {
         StageAction a = seed("V02", "LIGHT");
         Date passed = new Date(1_700_200_000_000L);
-        service.recordFields(1L, new Date(), null, null, "ANATEL-99", passed, null, "9");
+        service.recordFields(1L, new Date(), null, null, "ANATEL-99", passed, null, null, "9");
         assertThat(a.getCertNo()).isEqualTo("ANATEL-99");
         assertThat(a.getCertPassedAt()).isNotNull();
         assertThat(service.transit(1L, "DONE", "ok", "9").getStatus()).isEqualTo("DONE");

@@ -76,10 +76,10 @@ class P141AcceptanceTest {
         StageAction a = seed("C05", "LIGHT");
         assertThatThrownBy(() -> service.transit(1L, "DONE", "x", "9"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-05");
+            .hasMessageContaining("实际完成日期");
 
         Date day = new Date(1_700_000_000_000L);
-        StageAction recorded = service.recordFields(1L, day, null, null, null, null, null, "9");
+        StageAction recorded = service.recordFields(1L, day, null, null, null, null, null, null, "9");
         assertThat(recorded.getActualDoneAt()).isNotNull();
         assertThat(recorded.getStatus()).isEqualTo("IN_PROGRESS");
         assertThat(service.transit(1L, "DONE", "done", "9").getStatus()).isEqualTo("DONE");
@@ -92,11 +92,11 @@ class P141AcceptanceTest {
         StageAction a = seed("D11", "LIGHT");
         a.setActualDoneAt(new Date());
         assertThatThrownBy(() -> service.recordFields(1L, null,
-            new BigDecimal("1.5"), new BigDecimal("0.1"), null, null, null, "9"))
+            new BigDecimal("1.5"), new BigDecimal("0.1"), null, null, null, null, "9"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("FAR");
 
-        service.recordFields(1L, null, new BigDecimal("0.0001"), new BigDecimal("0.02"), null, null, null, "9");
+        service.recordFields(1L, null, new BigDecimal("0.0001"), new BigDecimal("0.02"), null, null, null, null, "9");
         assertThat(a.getFarValue()).isEqualByComparingTo("0.0001");
         assertThat(service.transit(1L, "DONE", "ok", "9").getStatus()).isEqualTo("DONE");
     }
@@ -105,14 +105,14 @@ class P141AcceptanceTest {
     @DisplayName("V02：证书号+通过日录入后可 DONE；C05 拒证书字段")
     void v02CertRecord() {
         StageAction c05 = seed("C05", "LIGHT");
-        assertThatThrownBy(() -> service.recordFields(1L, null, null, null, "X", new Date(), null, "9"))
+        assertThatThrownBy(() -> service.recordFields(1L, null, null, null, "X", new Date(), null, null, "9"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("不支持证书");
 
         StageAction v02 = seed("V02", "LIGHT");
         v02.setActualDoneAt(new Date());
         Date passed = new Date(1_700_100_000_000L);
-        service.recordFields(1L, null, null, null, "CE-2026-001", passed, null, "9");
+        service.recordFields(1L, null, null, null, "CE-2026-001", passed, null, null, "9");
         assertThat(v02.getCertNo()).isEqualTo("CE-2026-001");
         assertThat(service.transit(1L, "DONE", "ok", "9").getStatus()).isEqualTo("DONE");
     }
@@ -123,7 +123,7 @@ class P141AcceptanceTest {
         seed("C05", "LIGHT");
         when(projectMapper.selectById(100L)).thenReturn(
             Project.builder().id(100L).status("SUSPENDED").delFlag("0").build());
-        assertThatThrownBy(() -> service.recordFields(1L, new Date(), null, null, null, null, null, "9"))
+        assertThatThrownBy(() -> service.recordFields(1L, new Date(), null, null, null, null, null, null, "9"))
             .isInstanceOf(ServiceException.class)
             .hasMessageContaining("暂停");
     }

@@ -51,7 +51,7 @@ class DirectExecutorsTest {
 
         assertThat(r.ok()).isTrue();
         verify(stageActionService).recordFields(eq(9002L), any(Date.class),
-            isNull(), isNull(), isNull(), isNull(), isNull(), eq("0"));
+            isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq("0"));
         verify(stageActionService).transit(eq(9002L), eq("DONE"), any(String.class), eq("0"));
     }
 
@@ -109,7 +109,7 @@ class DirectExecutorsTest {
         assertThat(r.ok()).isFalse();
         assertThat(r.errorMsg()).contains("对话填表");
         verify(taskMapper, never()).selectOne(any());
-        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     /** 复审问题1：PASSIVE 但无自然人触发者（triggeredBy=null，非端点来源）同样禁止消费回捞载荷 */
@@ -136,7 +136,7 @@ class DirectExecutorsTest {
 
         assertThat(r.ok()).isFalse();
         assertThat(r.errorMsg()).contains("对话填表");
-        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(ossService, never()).upload(any(org.springframework.web.multipart.MultipartFile.class));
     }
 
@@ -151,7 +151,7 @@ class DirectExecutorsTest {
 
         assertThat(r.ok()).isFalse();
         assertThat(r.errorMsg()).contains("对话填表");
-        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     /** M3 红线：终态动作（DONE）重复触发必须 no-op，不得改写历史完成日 */
@@ -168,7 +168,7 @@ class DirectExecutorsTest {
 
         assertThat(r.ok()).isTrue();
         assertThat(r.summary()).contains("no-op");
-        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(ossService, never()).upload(any(org.springframework.web.multipart.MultipartFile.class));
     }
 
@@ -184,7 +184,7 @@ class DirectExecutorsTest {
 
         assertThat(r.ok()).isTrue();
         assertThat(r.summary()).contains("no-op");
-        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any());
+        verify(stageActionService, never()).recordFields(anyLong(), any(), any(), any(), any(), any(), any(), any(), any());
         verify(stageActionService, never()).transit(anyLong(), any(), any(), any());
     }
 

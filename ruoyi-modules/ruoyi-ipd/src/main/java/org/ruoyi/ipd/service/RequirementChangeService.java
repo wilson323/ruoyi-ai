@@ -189,6 +189,14 @@ public class RequirementChangeService implements IRequirementChangeService {
         if (decision == null || !DECISIONS.contains(decision)) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID);
         }
+        // D14 修复（2026-10-06）：对齐本仓 REJECT 链路约定（ProductRetirementService/AiDocumentService）——
+        // 驳回必填意见（防一键否决无痕）、意见 ≤500 字。
+        if ("REJECT".equals(decision) && (opinion == null || opinion.isBlank())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "驳回时请填写意见");
+        }
+        if (opinion != null && opinion.length() > 500) {
+            throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "意见不能超过500字");
+        }
         RequirementChange change = requireById(id);
         if (!STATUS_PENDING_SIGN.equals(change.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);

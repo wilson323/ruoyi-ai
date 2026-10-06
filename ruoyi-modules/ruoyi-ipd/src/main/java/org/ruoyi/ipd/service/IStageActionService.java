@@ -66,6 +66,7 @@ public interface IStageActionService {
     /** * @param certNo       证书编号 */
     /** * @param certPassedAt 证书通过日 */
     /** * @param algoType     算法分类（可空；传空串视为未提交） */
+    /** * @param remark       备注（D4 打通：可空表示不改；≤500 字，空白串视为清空） */
     /** * @param operator     操作者 Person id 字符串 */
     /** * @return 更新后实例 */
     StageAction recordFields(
@@ -76,6 +77,7 @@ public interface IStageActionService {
         String certNo,
         Date certPassedAt,
         String algoType,
+        String remark,
         String operator
     );
 

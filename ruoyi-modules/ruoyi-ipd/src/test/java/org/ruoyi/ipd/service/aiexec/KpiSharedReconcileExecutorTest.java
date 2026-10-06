@@ -102,7 +102,7 @@ class KpiSharedReconcileExecutorTest {
         // 台账挂触发动作做证据（actor=0 系统留痕），但绝不 transit——裁决权留真人
         verify(stageActionService).addDeliverable(eq(9001L), anyString(), eq(777L), eq("0"));
         verify(stageActionService, never()).transit(any(), anyString(), anyString(), anyString());
-        verify(stageActionService, never()).recordFields(any(), any(), any(), any(), any(), any(), any(), anyString());
+        verify(stageActionService, never()).recordFields(any(), any(), any(), any(), any(), any(), any(), any(), anyString());
         ArgumentCaptor<String> title = ArgumentCaptor.forClass(String.class);
         verify(notificationService).publishDaily(eq(9L),
             eq(NotificationService.Types.KPI_RECONCILE_LEDGER),

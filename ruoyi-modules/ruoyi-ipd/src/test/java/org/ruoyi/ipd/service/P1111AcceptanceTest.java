@@ -111,7 +111,7 @@ class P1111AcceptanceTest {
             StageAction.builder().actionCode("C12").actionName("合规").status("IN_PROGRESS").build()));
         assertThatThrownBy(() -> gateEngine.check(p, "CONCEPT"))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("BR-IPD-06")
+            .hasMessageContaining("还没完成，暂时不能进入下一阶段")
             .hasMessageContaining("C12");
     }
 

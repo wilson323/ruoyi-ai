@@ -150,7 +150,7 @@ public class StageActionService implements IStageActionService {
         boolean deep = "DEEP".equals(a.getDepth());
 
         if (!deep && DEEP_EXTRA_STATUSES.contains(target)) {
-            throw new ServiceException("轻管动作不支持延期状态（BR-IPD-05 三字段登记）: " + def.code());
+            throw new ServiceException("该动作不支持「已延期」状态: " + def.code());
         }
         Set<String> allowed = deep ? DEEP_ALLOWED : LIGHT_STATUSES;
         if (!allowed.contains(target)) {
@@ -168,6 +168,12 @@ public class StageActionService implements IStageActionService {
             throw new ServiceException("涉生物项目的 C12 生物特征数据合规审查不可取消（AC-PROD-13）");
         }
         if ("DONE".equals(target)) {
+            // D5 修复（2026-10-06）：深管未开始不得直跳完成（守卫表无 depth 维度，Service 层收口；
+            // 轻管跳阶契约 P143 不受影响——deep=false 不进此分支）。放在 validateCompletion 之前，
+            // 保证「还没开始」的状态错误优先于交付物错误报出。
+            if (deep && "NOT_STARTED".equals(a.getStatus())) {
+                throw new ServiceException("该动作还没开始，不能直接提交验收，请先切到「进行中」: " + def.code());
+            }
             validateCompletion(a, def, deep);
         }
 
@@ -220,12 +226,14 @@ public class StageActionService implements IStageActionService {
      * @param certNo       证书编号
      * @param certPassedAt 证书通过日
      * @param algoType     算法分类（可空；传空串视为未提交）
+     * @param remark       备注（D4 打通：可空表示不改；传值 ≤500 字，空白串视为清空）
      * @param operator     操作者 Person id 字符串
      * @return 更新后实例
      */
     @Transactional(rollbackFor = Exception.class)
     public StageAction recordFields(Long id, Date actualDoneAt, BigDecimal farValue, BigDecimal frrValue,
-                                    String certNo, Date certPassedAt, String algoType, String operator) {
+                                    String certNo, Date certPassedAt, String algoType, String remark,
+                                    String operator) {
         StageAction a = getById(id);
         assertProjectWritable(a.getProjectId());
         String before = fieldsSnapshot(a);
@@ -278,8 +286,17 @@ public class StageActionService implements IStageActionService {
                 throw new ServiceException(ex.getMessage());
             }
         }
+        if (remark != null) {
+            // D4 打通（2026-10-06）：备注此前无任何用户写入通道（仅历史导入写过），
+            // 前端却渲染了输入框——保存必 400 或静默丢失。null=不改；空白串=清空；≤500 字（DDL varchar(500)）。
+            if (remark.length() > 500) {
+                throw new ServiceException("备注最长 500 字: " + def.code());
+            }
+            a.setRemark(remark.isBlank() ? null : remark.trim());
+            touched = true;
+        }
         if (!touched) {
-            throw new ServiceException("未提交任何可写字段（actualDoneAt/FAR·FRR/证书/算法分类）");
+            throw new ServiceException("未提交任何可写字段（实际完成日期/FAR·FRR/证书/算法分类/备注）");
         }
         a.setUpdateBy(actorIdOf(operator));
         int n = stageActionMapper.updateById(a);
@@ -327,7 +344,8 @@ public class StageActionService implements IStageActionService {
             "frrValue", a.getFrrValue(),
             "certNo", a.getCertNo(),
             "certPassedAt", a.getCertPassedAt() == null ? null : a.getCertPassedAt().getTime(),
-            "algoType", a.getAlgoType());
+            "algoType", a.getAlgoType(),
+            "remark", a.getRemark());
     }
 
     private void validateCompletion(StageAction a, ActionDef def, boolean deep) {
@@ -337,18 +355,18 @@ public class StageActionService implements IStageActionService {
                     .eq(Deliverable::getActionId, a.getId())
                     .eq(Deliverable::getDelFlag, "0"));
             if (cnt == null || cnt == 0) {
-                throw new ServiceException("深管动作完成前必须上传至少 1 个未删交付物（BR-IPD-03）: " + def.code());
+                throw new ServiceException("该动作还没上传交付物，请先在详情页登记交付物再提交验收: " + def.code());
             }
         } else if (a.getActualDoneAt() == null) {
-            throw new ServiceException("轻管动作完成必须登记实际完成日期（BR-IPD-05）: " + def.code());
+            throw new ServiceException("请先填写实际完成日期，再标记完成: " + def.code());
         }
         String vf = def.valueFields() == null ? "" : def.valueFields();
         if (vf.contains("FAR") && (a.getFarValue() == null || a.getFrrValue() == null)) {
-            throw new ServiceException("BioCV 算法评测必须登记实测 FAR/FRR（动作清单 v3 例外二）: " + def.code());
+            throw new ServiceException("算法评测动作完成前必须登记实测误识率与拒识率（FAR/FRR）: " + def.code());
         }
         if (vf.contains("CERT_NO") && (a.getCertNo() == null || a.getCertNo().isBlank()
             || a.getCertPassedAt() == null)) {
-            throw new ServiceException("认证送检完成必须登记证书编号与通过日期（v3 例外一）: " + def.code());
+            throw new ServiceException("认证送检动作完成前必须登记证书编号与通过日期: " + def.code());
         }
     }
 

@@ -91,7 +91,7 @@ public class ProjectController {
      * <ul>
      *   <li>SUPER_ADMIN：全部</li>
      *   <li>GROUP_LEADER：本组（{@code projects.main_group_id = actor.groupId}）</li>
-     *   <li>MARKET_PM / RD_PM：本人负责的（{@code project_members} 在职 role=MARKET_PM/RD_PM）</li>
+     *   <li>MARKET_PM / RD_PM：本人在职参与的项目（{@code project_members} 在职，不限项目内角色；D1 修复后与详情口径对齐）</li>
      * </ul>
      * 提示横幅由前端维持（前端不改）；即使前端绕过横幅，本接口只返回授权范围。
      * 需 ipd:project:list 权限。

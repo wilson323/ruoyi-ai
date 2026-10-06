@@ -74,7 +74,7 @@ public class GateEngine {
             }
         }
         if (!unfinished.isEmpty()) {
-            throw new ServiceException("阶段门禁（BR-IPD-06）：阻断性动作未完成，禁止进入下一阶段 —— "
+            throw new ServiceException("以下必需动作还没完成，暂时不能进入下一阶段 —— "
                 + String.join("；", unfinished));
         }
     }

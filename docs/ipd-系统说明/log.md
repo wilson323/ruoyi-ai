@@ -15813,3 +15813,7 @@ owner 三项决策的第一刀落地。ipd_action_skill_map 加 project_id（BIG
 DDL 验证：真库 apply 后 check-ddl-applied.sh EXIT=0；唯一键负向探针 (C02,0) 重复插入 ERROR 1062 被拒、项目级行 (C02,9140005) 可插入。活体探针（运行态 16039，fat jar 12:39 重打包 PID 84213）：探针行 (999903, C02, 9140005, nonexistent-probe-skill) 修复前 90002 炸包目录；修复后 50002「Skill 不可用：nonexistent-probe-skill」——项目级绑定被 planner 正确采用且未登记技能被拒。探针行已删（0 残留）。
 
 运行态重载踩坑（已核）：重打包管线两次 BUILD SUCCESS 但 fat jar 未更新（mtime 停留 08:17、内嵌 ipd jar 旧、class 无 project_id=0）——判断依据必须二进制级验证 fat jar 内嵌 class，不能只看退出码；rm 旧 jar 强制重打后恢复（12:39:31，内嵌 3835807/class 10756 含修复）。
+
+## 2026-10-06 R25 接手登记：兄弟在途 D 系列缺陷修复批次整合提交
+
+用户指令「记得及时测试验证整合工作树并提交」。接手兄弟会话在盘未提交差异：后端 27 Java 文件（D14 驳回必填意见、DataIntegrityViolation 统一处理、recordFields 扩参及测试同步等）、前端 30 文件 + 新模块 impact-snapshot.ts（D10 四维预校验）+ 5 张 e2e 截图。处置：全部原样入库，零修改零还原，无撞号。验证：后端全模块 4418/0/0/26skip BUILD SUCCESS（14:07，mvn-locked 独占窗口）；前端 vitest 1968 全过、check:type 0、build:antd 0。详见看板镜像同日「接手登记」节。未推送（等 owner 索要）。

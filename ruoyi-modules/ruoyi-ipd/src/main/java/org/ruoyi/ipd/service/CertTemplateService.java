@@ -93,7 +93,7 @@ public class CertTemplateService implements ICertTemplateService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void remove(Long id, Long operatorId) {
-        throw new ServiceException("认证模板禁止直删，请提交删除审核（entityType=cert_templates, id=" + id + "）");
+        throw new ServiceException("认证模板不能直接删除，请在「删除申请」页提交删除审核");
     }
 
     private void audit(Long id, String name, Long operatorId, String action) {

@@ -44,7 +44,7 @@ public class LightDirectExecutor implements AiActionExecutor {
             return terminal;
         }
         Date now = Date.from(ctx.clock().instant());
-        stageActionService.recordFields(id, now, null, null, null, null, null, "0");
+        stageActionService.recordFields(id, now, null, null, null, null, null, null, "0");
         stageActionService.transit(id, "DONE", "R221 AI 直接执行（LIGHT）", "0");
         return AiExecResult.ok(task.getActionCode() + " AI 直接执行完成：登记完成日并流转 DONE");
     }

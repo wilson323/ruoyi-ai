@@ -13,6 +13,7 @@ import java.util.Date;
  * @param certNo       认证证书编号（V02 等 valueFields 含 CERT_NO）
  * @param certPassedAt 认证通过日期
  * @param algoType     算法分类 FINGERPRINT|FACE|PALM|VEIN|MULTI
+ * @param remark       备注（D4 打通：可空表示不改；≤500 字，空白串视为清空）
  */
 public record StageActionFieldsReq(
     Date actualDoneAt,
@@ -20,6 +21,7 @@ public record StageActionFieldsReq(
     BigDecimal frrValue,
     String certNo,
     Date certPassedAt,
-    String algoType
+    String algoType,
+    String remark
 ) {
 }
