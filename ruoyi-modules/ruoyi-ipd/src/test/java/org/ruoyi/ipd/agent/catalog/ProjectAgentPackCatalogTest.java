@@ -44,6 +44,21 @@ class ProjectAgentPackCatalogTest {
         when(jdbc.queryForList(contains("FROM ipd_action_skill_map"), eq("tenant-a"), eq("C02"))).thenReturn(List.of());
         assertThatThrownBy(() -> catalog.packs("tenant-a")).isInstanceOf(IllegalStateException.class).hasMessageContaining("未绑定执行技能");
     }
+    @Test void catalogConsistencyOnlyReadsGlobalDefaultBindingRows() {
+        // 2026-10-06 项目维度回归：包目录一致性 SQL 必须限定 project_id=0，
+        // 否则项目级绑定行会让 mappings.size()!=1 直接炸掉整租户包装配。
+        when(jdbc.queryForList(contains("FROM ipd_capability_pack WHERE"), eq("tenant-a"))).thenReturn(List.of(row("ACTIVE")));
+        var s = builtin.skill("competitor-analysis-ipd").orElseThrow();
+        when(jdbc.queryForList(contains("FROM ipd_capability_pack_item"), eq("tenant-a"), eq(1L)))
+            .thenReturn(List.of(Map.of("item_type", "SKILL", "item_ref", s.name(), "item_version", s.version(), "sha256", s.sha256())));
+        when(jdbc.queryForList(contains("FROM ipd_action_skill_map"), eq("tenant-a"), eq("C02")))
+            .thenReturn(List.of(Map.of("skill_names", "[\"competitor-analysis-ipd\"]")));
+        assertThat(catalog.pack("tenant-a", "market-research", "v1").orElseThrow().actionCodes()).containsExactly("C02");
+        verify(jdbc).queryForList(contains("ipd_action_skill_map"), eq("tenant-a"), eq("C02"));
+        org.mockito.Mockito.verify(jdbc).queryForList(
+            org.mockito.ArgumentMatchers.argThat((String sql) -> sql != null && sql.contains("ipd_action_skill_map") && sql.contains("project_id=0")),
+            eq("tenant-a"), eq("C02"));
+    }
     @Test void otherTenantKeepsBuiltinAndMissingTenantIsRejected() {
         when(jdbc.queryForList(contains("FROM ipd_capability_pack WHERE"), eq("tenant-b"))).thenReturn(List.of());
         assertThat(catalog.pack("tenant-b", "market-research", "v1").orElseThrow().actionCodes()).containsExactly("C01", "C02");

@@ -73,7 +73,9 @@ public final class ProjectAgentPackCatalog {
                 }
             }
             for (String action : actions) {
-                var mappings = jdbc.queryForList("SELECT skill_names FROM ipd_action_skill_map WHERE tenant_id=? AND action_code=? AND del_flag='0'", tenantId, action);
+                // 2026-10-06 项目维度后：包目录一致性只校验全局默认绑定（project_id=0），
+                // 保证目录装配不被项目级行干扰；项目级绑定在运行时由 planner 校验（resolve 项目级优先 + loadSkills ∈ 包技能）。
+                var mappings = jdbc.queryForList("SELECT skill_names FROM ipd_action_skill_map WHERE tenant_id=? AND action_code=? AND project_id=0 AND del_flag='0'", tenantId, action);
                 if (mappings.size() != 1 || mappings.get(0).get("skill_names") == null) {
                     throw new IllegalStateException("能力包动作未绑定执行技能：" + action);
                 }
