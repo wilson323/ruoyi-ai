@@ -15827,3 +15827,7 @@ DDL 验证：真库 apply 后 check-ddl-applied.sh EXIT=0；唯一键负向探�
 - 真 HTTP 负向回读（PUT /api/v1/requirement-changes/1/sign，ipd-market 会话，id=1 不存在故零副作用；超管返回 30001 与 SIGNER_ROLES={MARKET_PM,RD_PM} 设计一致）：空意见驳回 → 10001「驳回时请填写意见」；501 字意见 → 10001「意见不能超过500字」；对照 decision=NOPE → 10001「参数校验失败」（原有分支未误伤）；**边界对照 500 字整 → 越过新校验落 50001「资源不存在」**（校验不误杀合法长度）。
 - 口径修正：commit 6cb44b06 message 末注「运行态 16039 未重载本批次」自本条起作废——14:39 兄弟会话重启已加载本批，本次仅补验收未重启。D16 handler 行为面未单独 HTTP 触发（NOT NULL 违反难以安全构造），以包内二进制指纹 + 全模块 4418 绿为证据，如实标注 PARTIAL。
 - 记录时工作树另有兄弟在途 2 文件（CreateBidInvitationRequest + P231 测试），本条登记不卷入、未提交其差异。前端仓闭环验收报告+13 截图已提交 dbf081f（docs/evidence/，logs/ 被 ignore 故引用改仓内路径）。
+
+## 2026-10-06 AI-DOC-IMPORT + D 系列运行态验收闭环（R214 测试数据留库登记）
+
+用户选中「运行态未验收/未推送」两项遗留后执行。运行包核验：16039 进程 PID 7569（14:39:22 启动）加载 ruoyi-admin.jar（14:39 打包），javap 反编译内嵌 ruoyi-ipd-3.1.0.jar 确认 RequirementChangeService 含 D14 常量（sipush 500 + "意见不能超过500字"）、AiDocumentImport 4 个 class 在包内——即当前 HEAD 6cb44b06 的新包，无需重启。HTTP 端到端验收 9/9 全过（脚本 .codex/ipd-dev/evidence/verify-import-final-http-20261006.py，证据同目录 import-final-http-20261006.json，14:55 窗口）：导入终稿正例两轮（v4=2107363611792969730、v5=2107364042300526593，均 GENERATED，链 [1..5] 原版本全保留，项目 2103659612308828162 文档链 2106085620907540481）；反例链外基准/过期基准（乐观锁）/HEAD ARCHIVED 均 409+50002；D14 驳回无意见、意见501字均 400+10001，变更单 2107355318278193153 复扫仍 DRAFT 零写入。两行导入测试版本按 R214 政策留库不清理。首跑曾暴露脚本自身两处假设错误（versions 接口升序返回、baseVersionId 必须为当前链头否则 50002），修正后全绿；产品行为无误。
