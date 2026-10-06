@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -378,7 +380,13 @@ public class RequirementChangeService implements IRequirementChangeService {
         return count == null ? 0 : count.intValue();
     }
 
-    /** 详情：返回含影响快照的双签进度视图。 */
+    /** 详情时间格式（Date.toString() 会产生 "Tue Oct 06 07:09:00 CST 2026"，
+     * 前端按 CST 解析导致时区串味；统一 yyyy-MM-dd HH:mm:ss，前端 toTimeText 可直接解析）。 */
+    private static final DateTimeFormatter VIEW_TIME =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /** 详情：返回含影响快照的双签进度视图（2026-10-06 D12 修复：补 createBy，
+     * 前端「发起人」列此前恒空——手工 Map 挑字段时漏了 BaseEntity.createBy）。 */
     public Map<String, Object> detail(Long id) {
         RequirementChange change = requireById(id);
         Map<String, Object> view = new LinkedHashMap<>();
@@ -391,11 +399,17 @@ public class RequirementChangeService implements IRequirementChangeService {
         view.put("reason", change.getReason());
         view.put("status", change.getStatus());
         view.put("signatures", change.getSignatures());
-        view.put("createTime", change.getCreateTime() == null ? null
-            : change.getCreateTime().toString());
-        view.put("updateTime", change.getUpdateTime() == null ? null
-            : change.getUpdateTime().toString());
+        view.put("createBy", change.getCreateBy());
+        view.put("createTime", formatViewTime(change.getCreateTime()));
+        view.put("updateTime", formatViewTime(change.getUpdateTime()));
         return view;
+    }
+
+    private String formatViewTime(Date time) {
+        if (time == null) {
+            return null;
+        }
+        return VIEW_TIME.format(time.toInstant().atZone(ZoneId.systemDefault()));
     }
 
     /** 项目内变更单列表（按状态过滤供 P2-6.2 阶段门禁未闭环检测）。 */

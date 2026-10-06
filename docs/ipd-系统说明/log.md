@@ -15780,3 +15780,20 @@ UPDATE gate_review_elements SET is_veto = '1' WHERE element_code = 'G2-6' AND is
 验证三件套（ruoyi-ipd-web）：`pnpm run check:type` 通过；`pnpm exec vitest run --config vitest.ipd.config.mts` 1962 passed 0 failed（配套改造 raw-records.test.ts 7 用例到新契约 + shared/index.test.ts 项目下拉 mock，沉淀 ant Select 测试模式：不能 emit 'change'（内部监听器读 e.composing 炸）、emit 'update:value' 后须 await Promise.resolve() 刷微任务、id 下传内部 input 定位不到外层须用 class 锚根 DOM）；`pnpm run build:antd` 通过。浏览器复验（ipd-leader 真登录）4/4 通过。
 
 如实记录的非缺陷：diff 专项无可测对象（全库仅 1 个 AI 文档且链长 v1，属数据缺口非功能缺陷）；/ipd/documents 实际是资料库/知识库；需求详情附件接口对 leader 403（待确认权限设计）；全局 WebSocket `ws://…/api/v1/resource/websocket` 握手 403 未深查（SSE 正常，通知实时推送不可用）。E2E 真实路由口径：登录 4 角色+工作台+时间轴、项目域 13/14（circle 权限待产品确认）、需求产品 8/9、投标变更、KPI、admin 16/16、激励/删除/AI/交接/门户 10/10。未提交未推送。
+
+## 2026-10-06 业务场景测评缺陷修复：D9/D2/D11/D12/D13 五项闭环（前端 8 文件 + 后端 2 文件）
+
+范围：上一条 E2E 闭环之后，按用户「继续真实测试所有功能，必须结合实际业务场景测评」继续 4 批业务场景测评，共发现 16 项缺陷；本轮修复其中 5 项（1 BLOCKER + 4 低风险项），其余 11 项进汇总报告待产品拍板。
+
+1. **D9 BLOCKER（KPI 原始录入恒 400）**：前端 kpi.ts 发 `period`+`remark`，后端 `CreateKpiRawRecordReq` 要 `recordPeriod`（LocalDate）且无 remark → 恒 400「recordPeriod 不能为空」。更深的坑：前端本地回退枚举 8 项（REVENUE/NPS/缺陷数等）与后端 `KpiRawRecordService.KPI_TYPES` 白名单 8 项（WINDOW_HIT_RATE/REQUIREMENT_ACCURACY/SCENE_COMPETITIVENESS/PPM_DEFECT_RATE/RELEASE_FREQUENCY/CHANGE_LEAD_TIME/CHANGE_FAILURE_RATE/MTTR）完全不同，注释自称「同源口径」是假的。修复：字段名对齐 + 回退枚举换后端真 8 项中文 label + 导出 PCT_KPI_TYPES（上限 1.0 的 4 项）+ InputNumber min=0 + 删备注框。浏览器实测 POST 200 落库（id=2107259288429821953），重复提交被 409 幂等拦截。
+2. **D9 残留（期间列渲染空）**：后端 @Primary ObjectMapper 只配了 LocalDateTime 序列化器，LocalDate 走 JavaTimeModule 默认数组序列化（`[2026,10,1]`），前端按字符串契约渲染空。治本修复：`IpdPrimaryBeansConfig` 补 `LocalDateSerializer`（yyyy-MM-dd），三个实体字段（KpiRawRecord.recordPeriod / RecoveryWarning.warningDate / LandedScenario.landedDate）一并受益。HTTP 实测 `recordPeriod: "2026-10-01"`，浏览器期间列显示 2026-10-01。
+3. **D2（待开工状态显示「待补充」）**：前端 PROJECT_STATUS_MACHINE 只有 5 态，后端有 PENDING_START/START_REJECTED。补 7 态表 + 迁移。浏览器实测 ipd-leader 列表 PRJ-2026-903 显示「待开工」。
+4. **D11（变更单发起时间「待补充」+ 时区串味）**：后端列表 Date 序列化为 epoch 毫秒，前端 parseDate 只收 string → 恒 null。且详情走 `Date.toString()` 产生 "Tue Oct 06 07:09:00 CST 2026"，浏览器把 CST 解析成美中时区 → 详情 21:09 vs 列表 07:09 差 14 小时。修复：前端 parseDate 委托既有 toTimeText 兼容层；后端 detail() 时间统一 yyyy-MM-dd HH:mm:ss 格式化输出。浏览器实测详情发起时间 2026-10-06 07:09（与列表一致）。
+5. **D12（变更单详情发起人恒空）**：`RequirementChangeService.detail()` 手工挑 Map 字段漏了 `createBy`（库里 create_by=900102 完好）。修复补字段。浏览器实测发起人 #900102。
+6. **D13（变更单列表无下钻）**：需求变更列表 id 列加 RouterLink，编号可点进详情。
+
+验证：前端三件套 `pnpm run check:type` 0 错误、`pnpm exec vitest run --config vitest.ipd.config.mts` 191 文件/1964 测试全过（含 state-machines 2 个新断言 + raw-records mock 对齐真契约）、`pnpm run build:antd` 11/11；后端 `mvn -o test -pl ruoyi-modules/ruoyi-ipd -Dtest='RequirementChange*'` 19/19 绿 + fat-jar 重打包 + 16039 重载（新 PID 57251）+ HTTP 三点回读 + 真浏览器双引擎交叉复验 3/3 PASS。
+
+测试数据留库（R214 政策）：KPI 原始记录 id=2107259288429821953（项目 PRJ-2026-903=2107236552135442433 / WINDOW_HIT_RATE / 2026-10-01 / 0.85）；变更单 2107246706029527041（DRAFT，项目 2106098805312069634 / PRJ-2026-902）。
+
+残留与未修：kpi/shared/index.vue:301 存量 unhandled error（#79 用例触发，测试本身过，本轮未扩刀）；D1/D3/D4/D5/D6/D7/D8/D10/D14/D15/D16 共 11 项进测评汇总报告待拍板（含可见性规则、内部词暴露、投标日期 400/500 等）。

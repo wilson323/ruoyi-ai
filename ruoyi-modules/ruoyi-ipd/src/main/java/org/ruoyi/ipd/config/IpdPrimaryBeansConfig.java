@@ -21,6 +21,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -50,6 +51,10 @@ public class IpdPrimaryBeansConfig {
         ipdTimeModule.addSerializer(Long.class, ToStringSerializer.instance);
         ipdTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
         ipdTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
+        // LocalDate 缺省走 JavaTimeModule 时间戳数组（如 [2026,10,1]），前端按字符串契约
+        // 渲染为空（2026-10-06 D9 复验实测 KpiRawRecord.recordPeriod / RecoveryWarning.warningDate /
+        // LandedScenario.landedDate 三处实体字段均受影响），统一 yyyy-MM-dd 字符串。
+        ipdTimeModule.addSerializer(LocalDate.class, new LocalDateSerializer());
         objectMapper.registerModules(ipdTimeModule, new JavaTimeModule(), new Jdk8Module());
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         return objectMapper;
@@ -90,6 +95,18 @@ public class IpdPrimaryBeansConfig {
                 throws IOException {
             return LocalDateTime.parse(p.getValueAsString(),
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        }
+    }
+
+    /**
+     * LocalDate → yyyy-MM-dd（否则 JavaTimeModule 默认序列化为 [y,M,d] 数组）。
+     */
+    static class LocalDateSerializer extends JsonSerializer<LocalDate> {
+
+        @Override
+        public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider serializers)
+                throws IOException {
+            gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE));
         }
     }
 }
