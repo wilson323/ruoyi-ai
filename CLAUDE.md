@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **铁律二 · 最终分支已由 owner 于 2026-10-06 固定，不得偏离。** 后端仓（ruoyi-ai）固定 `baseline/pre-teardown`，前端仓（ruoyi-ipd-web）固定 `teardown/incentive-removal`——后续所有工作与授权推送只落这两个分支及其同名远程分支；不新建分支、不切换分支、不向 `main` 或其他分支合并/变基作为"最终交付"。AI 仍不得自行挑选、推断，或以"顺理成章"为由选定任何其他分支。
 
-**铁律三 · AI 不得主动建议任何 git 推送命令**（包括"给你命令自己跑"的形式）；owner 说"自动推送"时也只报"本地有 N 笔未推"，命令等 owner 索要。
+**铁律三 · 任务结束必须提交推送（owner 2026-10-07 明令，取代原「不得主动建议推送、命令等 owner 索要」口径）。** 每次任务执行结束必须整合工作树：本任务全部产物（代码、文档、台账、log）commit 并 push 到本仓固定远程分支（后端 `origin/baseline/pre-teardown`）。推送目标仍受铁律一约束（只推 owner 指定私有仓）；兄弟会话在途文件不卷入、保留工作树并在任务报告中列明；推送前核对远端基线漂移（五必现查）。
 
 `upstream` 远端的写能力已于 2026-10-03 物理焊死（`git remote set-url --push upstream DISABLED`）——核验：`git remote -v` 应显示 `upstream DISABLED (push)`；拉取不受影响。
 

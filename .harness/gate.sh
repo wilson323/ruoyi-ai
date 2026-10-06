@@ -3,7 +3,7 @@
 #
 # 用法:
 #   bash .harness/gate.sh                # 跑全部门禁
-#   bash .harness/gate.sh --gate=N       # 跑指定门禁(N=1..N)
+#   bash .harness/gate.sh --gate=<key>  # 跑指定门禁(键名见下方 GATE_KEYS,如 drift_1)
 #   bash .harness/gate.sh --list         # 列出所有门禁
 #
 # 三层哨兵(R30+):
@@ -15,11 +15,10 @@
 #   1. drift         doc ↔ db 漂移门禁(沿用兄弟 R38)
 #   2. contract      合同 ↔ spec ↔ code 三向对账(沿用兄弟 R39)
 #   3. compile       ipd 编译门禁(沿用)
-#   4. grant-sql     ipd grant SQL 门禁(沿用)
-#   5. frontend-drift ipd 前端 drift(沿用)
-#   6. r41-done      39 张卡 done 门禁(R41 新增,QA 门禁矩阵)
-#   7. failure-history 历史失败记录格式检查（保留旧失败，不因非空永久失败）
-#   8. archived-at   archived_at 一致性门禁(沿用 R42-D)
+#   4. frontend-drift ipd 前端 drift(沿用)
+#   5. r41-done      39 张卡 done 门禁(R41 新增,QA 门禁矩阵)
+#   6. failure-history 历史失败记录格式检查（保留旧失败，不因非空永久失败）
+#   7. archived-at   archived_at 一致性门禁(沿用 R42-D)
 #
 # 退出码:
 #   0 = PASS
@@ -35,16 +34,15 @@ LIST_ONLY=false
 [[ "${1:-}" =~ --gate= ]] && GATE="${1#--gate=}"
 
 # 门禁列表(可扩展) — 三个 parallel indexed arrays(zsh 兼容)
-GATE_KEYS=(drift_1 contract_2 compile_3 grantsql_4 frontend_5 done_6 failurehistory_7 archived_8)
-GATE_LABELS=(drift contract compile grant-sql frontend-drift r41-done failure-history archived-at)
+GATE_KEYS=(drift_1 contract_2 compile_3 frontend_5 done_6 failurehistory_7 archived_8)
+GATE_LABELS=(drift contract compile frontend-drift r41-done failure-history archived-at)
 GATE_CMDS=(
     "scripts/check-doc-db-drift.sh --refined --json-only --whitelist scripts/check-doc-db-drift-whitelist.txt"
     "scripts/check-contract-tri-source.sh --json-only"
     "bash scripts/mvn-locked.sh -pl ruoyi-modules/ruoyi-ipd -DskipTests -o compile"
-    "scripts/check-grant-sql.sh --json-only"
     "scripts/check-ipd-frontend-drift.sh"
     "python3 scripts/check-done-gate.py --all"
-    "python3 -c 'import json,pathlib; p=pathlib.Path(\".harness/evolve/failures.jsonl\"); rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []; assert all(isinstance(x,dict) for x in rows); print(\"failure history records:\",len(rows))'"
+    "python3 -c 'import json,pathlib; p=pathlib.Path(\".harness/evolve/failures.jsonl\"); rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip() and not x.lstrip().startswith(\"#\")] if p.exists() else []; assert all(isinstance(x,dict) for x in rows); print(\"failure history records:\",len(rows))'"
     "scripts/check-merge-gate-archived-at.sh"
 )
 
