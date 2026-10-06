@@ -2,6 +2,8 @@ package org.ruoyi.ipd.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -61,7 +63,10 @@ public class CreateBidInvitationRequest {
     @Pattern(regexp = "L[1-5]", message = "requiredLevel must be L1..L5")
     private String requiredLevel;
 
-    /** 公开招标 SLA 天数；区间 [1, 90]；ONE_TO_ONE 模式忽略。 */
-    @Size(min = 1, max = 90, message = "slaDays must be 1..90")
+    /** 公开招标 SLA 天数；区间 [1, 90]；ONE_TO_ONE 模式忽略。
+     *  D15 修复（2026-10-06 f6e 复验）：Integer 误用 @Size 会拋 HV000030 UnexpectedTypeException
+     *  （@Size 仅适用 String/集合/数组），导致创建口恒 500；数值区间一律 @Min/@Max。 */
+    @Min(value = 1, message = "slaDays must be 1..90")
+    @Max(value = 90, message = "slaDays must be 1..90")
     private Integer slaDays;
 }

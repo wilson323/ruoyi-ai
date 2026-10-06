@@ -374,4 +374,32 @@ class P231BidInvitationCreateAcceptanceTest {
         assertThat(leaderEx.getErrorCode()).isEqualTo(pmEx.getErrorCode()).isEqualTo(ApiV1ErrorCode.FORBIDDEN);
         assertThat(leaderEx.getMessage()).isEqualTo(pmEx.getMessage());
     }
+
+    /**
+     * D15 守门（2026-10-06 f6e 复验发现）：slaDays 是 Integer，误用 @Size 会在 bean validation
+     * 约束解析阶段抛 UnexpectedTypeException（HV000030）→ 创建口恒 500。单测直调 service
+     * 不触发 @Valid，故此前全绿而 HTTP 必炸 —— 本用例用真 Validator 堵「单测绿≠HTTP 闭环」缺口。
+     */
+    @Test
+    @DisplayName("D15 守门：slaDays 数值注解可直接校验（不再 HV000030），越界出违规")
+    void slaDaysBeanValidation_numericConstraints_noUnexpectedType() {
+        jakarta.validation.Validator beanValidator =
+            jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator();
+
+        CreateBidInvitationRequest req = baseRequest();
+        req.setMode("PUBLIC");
+        req.setSlaDays(7);
+        assertThat(beanValidator.validate(req))
+            .as("合法值 7：全 DTO 无违规（含 slaDays）").isEmpty();
+
+        req.setSlaDays(0);
+        assertThat(beanValidator.validate(req))
+            .extracting(v -> v.getPropertyPath().toString())
+            .contains("slaDays");
+
+        req.setSlaDays(91);
+        assertThat(beanValidator.validate(req))
+            .extracting(v -> v.getPropertyPath().toString())
+            .contains("slaDays");
+    }
 }

@@ -15831,3 +15831,15 @@ DDL 验证：真库 apply 后 check-ddl-applied.sh EXIT=0；唯一键负向探�
 ## 2026-10-06 AI-DOC-IMPORT + D 系列运行态验收闭环（R214 测试数据留库登记）
 
 用户选中「运行态未验收/未推送」两项遗留后执行。运行包核验：16039 进程 PID 7569（14:39:22 启动）加载 ruoyi-admin.jar（14:39 打包），javap 反编译内嵌 ruoyi-ipd-3.1.0.jar 确认 RequirementChangeService 含 D14 常量（sipush 500 + "意见不能超过500字"）、AiDocumentImport 4 个 class 在包内——即当前 HEAD 6cb44b06 的新包，无需重启。HTTP 端到端验收 9/9 全过（脚本 .codex/ipd-dev/evidence/verify-import-final-http-20261006.py，证据同目录 import-final-http-20261006.json，14:55 窗口）：导入终稿正例两轮（v4=2107363611792969730、v5=2107364042300526593，均 GENERATED，链 [1..5] 原版本全保留，项目 2103659612308828162 文档链 2106085620907540481）；反例链外基准/过期基准（乐观锁）/HEAD ARCHIVED 均 409+50002；D14 驳回无意见、意见501字均 400+10001，变更单 2107355318278193153 复扫仍 DRAFT 零写入。两行导入测试版本按 R214 政策留库不清理。首跑曾暴露脚本自身两处假设错误（versions 接口升序返回、baseVersionId 必须为当前链头否则 50002），修正后全绿；产品行为无误。
+
+## 2026-10-06 f 轮收尾：D15 根治（slaDays 注解）+ D6 补漏两处 + 哨兵白名单补登（R214 留库登记）
+
+D 系列接手批次（6cb44b06/181e561）之后的本会话增量收尾。三件事：
+
+1. **D15 根治**：浏览器复验发现 PUBLIC 招标创建口恒 500（traceId 4a2eefcb…），根因 CreateBidInvitationRequest.slaDays 是 Integer 却用 @Size（HV000030 UnexpectedTypeException，@Size 仅适用 String/集合/数组），单测直调 service 不触发 @Valid 故此前全绿——单测绿≠HTTP 闭环又一例。修复：@Min(1)/@Max(90) + P231 新增真 Validator 守门用例（slaDays=7 无违规、0/91 出违规、不再 HV000030）。
+2. **D6 补漏两处**：V3R 复验发现工作台「我的当前推进」泄漏 IN_PROGRESS 裸码（meta 行直渲染 actionStatus）与 CONCEPT 裸码（阶段徽标直渲染 currentStage）。修复：actionStatusLabel 映射（进行中/已完成等 5 态）+ STAGE_TEXT 映射（六阶段中文），配套 workbench 测试 2 断言（进行中白话 + 开发阶段徽标）。
+3. **哨兵白名单补登**：ServiceBareClockGuardTest 报 AiDocumentImportService 白名单外裸时钟——773337b2 新增服务漏登记（唯一一处 L112 审计日志 createTime(new Date())，与白名单内 RequirementChangeService.audit() 同款「记录当下」低风险形态），按哨兵注释预留路径补登白名单并在本段注明理由。
+
+验证矩阵（全绿）：后端 mvn-locked 全模块 4421/0F/0E/26skip（14:56 窗口）；前端 vitest 191 文件 1969 全过（+1 D6 用例）、check:type 0 错误、build:antd 11/11（14:51-14:55 窗口）。运行态 16039 PID 7569（14:39:22 启动）加载 14:39 重打包的含本增量 jar（登录口 code 0）。浏览器复验（Playwright 真实链路）：首轮 6 项 4 PASS，V3/V6 修复后定向复验双 PASS——V6R 含边界流（UI 输 91 被 InputNumber 钳 90；fetch 绕 UI 直发 91 → 400/10001「slaDays must be 1..90」证明 @Min/@Max 生效，请求 traceId b54ffeb1…）。V3R 双浏览器实例交叉验证（browser-use + playwright），工作台全页四类动作裸码 0 命中。
+
+测试数据（按 R214 政策留库不清理）：变更单 #2107354680165171202（已驳回，意见「复验测试驳回」）/ #2107355318278193153；动作 #2106100150542798850 备注写入「f6浏览器复验备注-20261006」；招标单「V6R复验-公开征集招标单-SLA7」（id 2107362282429288450，slaDays=7）与「V6R复验-边界UI提交-SLA91」（实际载荷 90）。浏览器证据截图 10 张落 ruoyi-ipd-web/.harness/evals/（f6-verify-* 7 张 + v3r/v6r 3 张）。
