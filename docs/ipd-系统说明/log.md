@@ -15797,3 +15797,19 @@ UPDATE gate_review_elements SET is_veto = '1' WHERE element_code = 'G2-6' AND is
 测试数据留库（R214 政策）：KPI 原始记录 id=2107259288429821953（项目 PRJ-2026-903=2107236552135442433 / WINDOW_HIT_RATE / 2026-10-01 / 0.85）；变更单 2107246706029527041（DRAFT，项目 2106098805312069634 / PRJ-2026-902）。
 
 残留与未修：kpi/shared/index.vue:301 存量 unhandled error（#79 用例触发，测试本身过，本轮未扩刀）；D1/D3/D4/D5/D6/D7/D8/D10/D14/D15/D16 共 11 项进测评汇总报告待拍板（含可见性规则、内部词暴露、投标日期 400/500 等）。
+
+## 2026-10-06 人工审计导入终稿（AI-DOC-IMPORT）：后端导入端点 + 页14 入口
+
+用户目标「人工审计AI产品传给下个节点需要有可以导入最终产物的功能」，经澄清选定「外部终稿导入替换 AI 产物」。实现：POST /api/v1/ai-documents/{id}/import（multipart，权限 ipd:ai-document:edit，复用 OPERATION_AI_DOCUMENT_REVISE）→ AiDocumentImportService 校验（标题≤200、文件非空≤20MB、扩展名白名单 docx/pdf/md/markdown/txt、项目可见性先于读文件、baseVersionId 在链上、HEAD ARCHIVED 拒绝、提取正文空白拒绝）→ 复用 AiDocumentService.revise 追加 v(n+1) GENERATED → 审计 AI_DOC_IMPORT。文本提取复用 ruoyi-chat ResourceLoaderFactory，未新增依赖；新建独立 Controller 保护 AiDocumentController 三参构造（兄弟测试零波及）。前端页14 documents.vue 新增「导入终稿」按钮+Modal（与「基于此版本人工改版」并排，50002 专属文案+自动刷链），api/ipd/ai-document.ts 新增 importAiDocumentFinalVersion（ipdUpload FormData，不手写 Content-Type）。
+
+证据：后端 AiDocumentImportTest 11/11 绿 + AiDocument* 回归 38/38 BUILD SUCCESS（bash scripts/mvn-locked.sh -o -pl ruoyi-modules/ruoyi-ipd）；前端 vitest（ai-document.test.ts 23 + documents.test.ts 7）30/30 绿，pnpm run check:type EXIT=0。状态：源码与测试已交付，运行态 16039 HTTP 验收与两仓提交按收口四步进行中（登记见看板镜像同名节 marker ai-doc-import）。
+
+## 2026-10-06 技能绑定项目维度落地 + 包目录隐藏读取方修复（市场侧闭环第一刀）
+
+owner 三项决策的第一刀落地。ipd_action_skill_map 加 project_id（BIGINT NOT NULL DEFAULT 0，哨兵 0=全局；uk_map_action_code→uk_map_action_project(action_code,project_id)），解析规则「项目级优先、无项目级回退全局」（绑定=skill_names 非空行，未定稿行不拦截回退）；IpdActionSkillMapService.resolve(actionCode, projectId) 单查选行，ProjectAgentRunPlanner 透传 projectId，目录读面（listAll/listBySubStage）限定 project_id=0。owner 拍板语义不变：表无 Java 写入者，绑定写入仍走 owner 审核 seed SQL。
+
+真跑发现的集成缺口（纯单测覆盖不到）：ProjectAgentPackCatalog.packs() 是 ipd_action_skill_map 的第二个读取方，其「每动作恰好 1 行非空绑定」目录一致性校验被项目级行炸掉（size=2 → 整租户包装配 90002）。修复：该 SQL 加 AND project_id=0（目录只校验全局默认绑定；项目级绑定由 planner 运行时校验）。commit 1b39d8f2（DDL+服务+planner+测试 25/25）+ d54f3dfd（PackCatalog 修复+回归用例，30/30）。
+
+DDL 验证：真库 apply 后 check-ddl-applied.sh EXIT=0；唯一键负向探针 (C02,0) 重复插入 ERROR 1062 被拒、项目级行 (C02,9140005) 可插入。活体探针（运行态 16039，fat jar 12:39 重打包 PID 84213）：探针行 (999903, C02, 9140005, nonexistent-probe-skill) 修复前 90002 炸包目录；修复后 50002「Skill 不可用：nonexistent-probe-skill」——项目级绑定被 planner 正确采用且未登记技能被拒。探针行已删（0 残留）。
+
+运行态重载踩坑（已核）：重打包管线两次 BUILD SUCCESS 但 fat jar 未更新（mtime 停留 08:17、内嵌 ipd jar 旧、class 无 project_id=0）——判断依据必须二进制级验证 fat jar 内嵌 class，不能只看退出码；rm 旧 jar 强制重打后恢复（12:39:31，内嵌 3835807/class 10756 含修复）。
