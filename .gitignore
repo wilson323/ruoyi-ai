@@ -137,6 +137,7 @@ agentdb.rvf.lock
 # R236: agent 运行时 scratch 与 IDE 缓存（不入库）；.superpowers/sdd 是 SDD plan workspace，按 skill 定义即 git-ignored scratch
 .superpowers/
 .qoder/
+.qoder-cn/
 
 # git worktree 隔离构建目录（多会话工地惯例）
 .worktrees/

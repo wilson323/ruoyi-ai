@@ -15851,3 +15851,34 @@ owner 报障：项目流程页点击「产物」按钮 404（报障 URL /ipd/ai-
 守门与对账：flow.test.ts 新增 D17 用例（owner 报障真实 docId 2106100389345497089 作 fixture，断言落点 ai-assistant + docId/projectId query 逐字符相等），复跑 14/14 绿（17:37 窗口）；全局路由对账 26 处跳转（22 router.push + 4 RouterLink :to）全部命中注册路径，此为唯一双轨残留。
 
 真浏览器复验（Playwright + 前端 15666 + 后端 16039，无 mock）：ipd-admin 登录 → 项目 2106098805312069634（PRJ-2026-902）流程页 → 关「项目 AI 工作界面」抽屉 → 点阶段动作表「产物」按钮 → URL 落 /ipd/ai-assistant?docId=2106100389345497089&projectId=2106098805312069634，版本链自动加载（v1 · C01 市场机会与痛点调研（AI 草稿）· 已审核 · MARKET_RESEARCH，sha256 与操作历史 2026-10-03 审核人 900103 正常回显），项目下拉自动选中报障项目，无 404。证据截图入库 ruoyi-ipd-web docs/evidence/d17-产物按钮深链-修复后落ai-assistant-版本链自动加载-20261006.png（4c0fd51 随源码提交）。
+
+## 2026-10-06 收口盘点补账：看板服务恢复 + D17 独立复核 + flaky 登记 + 测评汇总报告落盘
+
+本轮起因：owner 指令「系统性梳理分析还有哪些没有收口」→ 盘点后 owner 说「继续」，按既定刀口推进；期间 owner 插话「禁止看板内容导致飘移」——已遵守，看板卡面仅作环境恢复的验证副产物，未纳入执行范围、未据此另开执行轨（执行序仍只认总画布 ipd-execution-plan.canvas.tsx）。
+
+**①本地看板 502 根因定位并恢复（此前只知 502 不知因）**：`lsof -nP -iTCP:62250 -sTCP:LISTEN` → 监听者是 com.docker（PID 16254），即容器映射端口而非本机 nginx 直装。`docker ps -a` 实证：反代容器 `aip-vk-web`(nginx:1.28-alpine) Up 47 小时存活，后端容器 `ruoyi-ai-vibe-kanban`(ruoyi-ai/vibe-kanban-local:0.0.168) **Exited (0) 约 2 小时前**（退出码 0 正常退出，非崩溃）→ nginx 无上游 → 全路径 502。修复：`docker start ruoyi-ai-vibe-kanban`。验证：`/` → 200、`/api/v1/tasks` → 200、`/api/tasks` → 400（缺参正常响应）、`/api/projects` 返回 3 项目（ruoyi-ai = 01dcf15c-86bb-4c7b-957c-8fe44bddd10d，与既有记忆一致）。同时段退出未启动：`ruoyi-ai-minio`（Exited 0）——这是 20261004 全局查证报告记载「Minio 9000 拒连」的根因，本轮未启动（超范围，且附件类功能是否依赖它需先核后端配置）。Docker daemon 本身已恢复（unix socket `/_ping` → OK，20261004 记载的 `/_ping` HTTP 500 不再复现）。
+
+**②D17 独立复核（兄弟会话 4c0fd51 已自行提交推送，本轮补第三方证据）**：盘点时前端工作树 2 个 M 文件（detail/flow.vue + flow.test.ts）属兄弟在途；本轮推进期间兄弟已自行收口为 commit `4c0fd51`(17:38)，工作树转干净、未推送数 0。我方独立复核三项全绿：`turbo run typecheck --force` → **cache bypass, force executing**（关键：不加 --force 是 cache hit FULL TURBO 456ms，属假绿不采信）、25.9s、1 successful、0 cached、无 TS 诊断；`vitest run --config vitest.ipd.config.mts` 全量 → **EXIT=0，191 passed / 5 skipped (196)、1969+ tests 0 failed**；D17 单文件 flow.test.ts → 14/14。
+
+**③既存 flaky 登记（新发现，非本轮引入）**：`apps/web-antd/src/views/ipd/project/action-detail/index.test.ts:389` 用例「同实例切项目立即撤下旧动作，迟到列表不覆盖新项目」断言 `expect(api.listStageActions).toHaveBeenLastCalledWith('PRJ-2')`，三次实测：单文件跑 22/22 绿、全量并发第 1 次 **1 failed**（收到 'PRJ-1'）、全量并发第 2 次 EXIT=0 全绿 → 定性为跨文件并发调度时序不稳（flushPromises 后 watch 重拉未落地）。归属确证：该文件最后改动 `181e561`(10-06 14:12)、本轮无任何在途改动触碰它，而 `181e561` 提交信息自称「vitest 1968 passed/0 failed」→ **该 flaky 在入库时就已存在，只是那次窗口未触发**。影响：CI 会随机红。本轮未扩刀修（修它需改断言时序或引入确定性等待，风险高于收益），登记为独立工程债。方向建议：给 watch 重拉加确定性等待，或把「最后一次调用」断言改为「调用序列包含」断言。
+
+**④测评汇总报告落盘（补齐治理缺口——同一教训第二次发生）**：15799 行声称「D1/D3/D4/D5/D6/D7/D8/D10/D14/D15/D16 共 11 项进测评汇总报告待拍板」，但**那份汇总报告从未写入 验收/**（实测：验收/ 下 10 月无任何测评/缺陷/场景类文件，最近同类是 20260905 的 ABC依次执行-devTag全量验证+缺陷复评）；log.md 全文 grep「测评」仅 3 处（15784/15786/15799），后端 docs/ find `*测评*|*缺陷*|*场景*`（10-01 后）零命中，前端 docs/ 亦无。这正是 R25 复盘已回灌的「QA 守门报告必须落盘验收目录」**第二次发生**。已落盘 `验收/业务场景测评16项缺陷处置账与待拍板追证-20261006.md`：已修 10 项提交账（D2/D6/D9/D10/D11/D12/D13/D14/D15/D16，含 D9 前后端双源不同名与 D15「单测直调不触发 @Valid」两处方法论）+ 16 项外 D17 + 剩余 6 项（D1/D3/D4/D5/D7/D8）**如实声明原始描述在盘上不存在、拒绝编造**，改为按 log.md 三条主题线索现查当前代码状态。
+
+**⑤三条主题线索现查结论（带行号证据）**：(a)「内部词暴露」→ **当前无用户可见残留**：NOT_STARTED 5 处全在 action-detail/index.vue，100/109 行是 `{ label: '未开始', value: 'NOT_STARTED' }`（用户只见 label）、695/723/725 是 v-if 与 askTransit 参数；深管 4 处/轻管 3 处**全在 JSDoc 或行内注释**；模板文案 grep 零命中。(b)「可见性规则」→ **已实现按角色硬过滤**：ProjectController.list 透传 actor → ProjectService.listWithScenario(keyword, actor) → listProjectsForActor（组长本组 / MARKET_PM·RD_PM 本人负责 / 其他角色与 null actor 返空列表安全默认），详情腿 getVisibleById 含 canSeeUnstarted 未开工分支。(c)「投标日期 400/500」→ 500 根因（slaDays Integer 误用 @Size）已由 4d0e8d77 修，日期序列化由 c1d70fdc 治本（LocalDateSerializer yyyy-MM-dd）。
+
+**⑥越权怀疑被证据否证（如实修正，不留未确证怀疑误导 owner）**：因 IProjectService.java:116 单参 listWithScenario(String) 内部委派 actor=null 等价全量不过滤，怀疑生产路径误用会绕过角色过滤。全调用点扫描（排除 .git/.codex/.harness/target）：src/main 生产代码**只有 1 个调用点** ProjectController.java:103 走双参版正确传 actor；单参版定义在 ProjectService.java:662-663，**无任何生产代码调用**；其调用者全部是测试 P192AcceptanceTest.java:97/115/128/141/153 共 5 处（与 Javadoc 声明的历史测试兼容面一致）；ProjectControllerTest.java:90/108/130/148 另有 4 组断言守门 controller 原样透传 actor。**结论：不存在越权风险**。未确证范围：其余读腿（WebSocket 推送、导出、报表、跨模块 join）是否同套过滤未全量扫描。
+
+工程环境口径修正（本轮踩到，回灌）：**macOS 无 `timeout` 命令**（zsh: command not found），此前用它包装 pnpm/docker 导致整条命令静默失败、误判成「配置文件路径不存在」；应直接用工具自带超时参数或 `gtimeout`。**turbo cache hit 不采信**：验证类型检查必须 `--force`，否则 FULL TURBO 456ms 是回放旧日志。
+
+## 2026-10-06 D18：AI 文档归档链路（REVIEWED→ARCHIVED）实测闭环 + vite 代理双层故障根因（前端 ruoyi-ipd-web vite.config.mts）
+
+接续「继续真实测试所有功能」主线，补测 AI 文档状态机唯一未实测环节——归档（此前已测 待审核→退回→再审核）。文档 2106100389345497089（项目 2106098805312069634 / PRJ-2026-902，v1 · C01 市场机会与痛点调研（AI 草稿），已审核态）。
+
+**实测结果（四层证据，18:19:51-52 窗口）**：浏览器 POST `/api/v1/ai-documents/2106100389345497089/versions/2106100389345497089/archive` => 200；后端日志 request_completed status=200 elapsedMs=152 outcome=SUCCESS（traceId 506ab1e8…）；UI 版本链 v1 状态「已归档」、操作历史新增「归档：2026-10-06T18:19:52」、归档/退回按钮消失；DB ai_documents 行 status=ARCHIVED、archived_by=900101、archived_at=2026-10-06 18:19:52。至此状态机四态（GENERATED→REJECTED→REVIEWED→ARCHIVED）全部真浏览器实测。测试数据按 R214 留库。
+
+**故障与双层根因（首轮点归档两次均 ERR_ABORTED、无任何 UI 反馈）**：
+① 层 1——vite 进程被 IDE 调试 auto-attach SIGSTOP：旧 vite 58379 状态 TN、flags=0x4006（含 traced 位），kill -CONT 无效、TERM 无效、KILL 才退；端口仍监听但零响应，前端 15s AbortController 超时转 ERR_ABORTED。修复：重启命令改 `env -u VSCODE_INSPECTOR_OPTIONS -u NODE_OPTIONS nohup node ../../node_modules/vite/bin/vite.js --host 127.0.0.1`（cwd=apps/web-antd）清注入变量，新进程 RN 存活。
+② 层 2——vite.config.mts 当天为治 CORS 403 新加的 `configure(proxy)` 里 `proxyReq.removeHeader('origin')` 在 **vite 7 自研 proxy（非 http-proxy 库）**下挂死该代理所有 HTTP 请求（0 字节回复）：排除 ws 风暴（about:blank 断源仍挂）、注释 configure 段即恢复（0.9s）后，A/B/C 对照定稿——removeHeader 挂死；`setHeader('origin','http://127.0.0.1:16039')` 0.30s；空监听 0.72s。修复：改 setHeader 改写 Origin 为后端同源（Spring 判同源不触发 403，效果等价删除），配置内留「禁止改回 removeHeader」注释。vite 7.2.7 config.js L21391-21403 佐证 proxyReq 事件存在且参数为真 ClientRequest，但 removeHeader 行为异常。
+③ 后端全程健康：归档 POST 在旧窗口日志零记录（请求从未到后端），curl 直打 16039 秒回（401 为 curl/浏览器头差异，与本故障无关）。
+
+**登记**：前端仓 AGENTS.md 补两坑（auto-attach 需 env -u 启动；vite 7 代理禁用 removeHeader）；vite.config.mts 修复随源码提交（teardown/incentive-removal）。原配置备份 /tmp/vite.config.mts.bak、运行日志 /tmp/vite-15666.log。
