@@ -163,6 +163,29 @@ _WS = re.compile(r"[ \t]+")
 # `git , push`——逗号也在「非字母」里，故用 [^A-Za-z] 而不是单个空格。
 # 字母会断开匹配，所以 `git status && echo push` 这类普通命令不会误判。
 LOOSE = re.compile(r"git[^A-Za-z]{0,20}push(?![A-Za-z])")
+# 前缀包装命令：它们把真正的命令往后挪，`git` 就不在段首了。
+# 2026-10-07 安全审查实测漏放 11 条：env / nohup / xargs / time / eval /
+# sudo / command / exec / nice -n 10 / timeout 30 / stdbuf -oL 全部绕过。
+# 判定：从段首到第一个 git 之间的 token，必须**全部**是这些包装词、
+# 以 - 开头的选项、或纯数字/含 = 的选项值——出现任何别的词（echo、注释等）就不认。
+WRAPPERS = {"env", "nohup", "time", "command", "exec", "sudo", "doas", "xargs",
+            "eval", "nice", "ionice", "stdbuf", "timeout", "watch", "setsid",
+            "unbuffer", "script", "builtin", "coproc"}
+_ARGISH = re.compile(r"^-")
+_NUMISH = re.compile(r"^\d+$")
+
+def strip_wrappers(seg):
+    """剥掉段首的包装命令，返回 git 之前的 token 列表；不是包装则返回 None。"""
+    toks = seg.split()
+    for i, t in enumerate(toks):
+        base = os.path.basename(t)
+        if base == "git":
+            return toks[:i]
+        ok = (base in WRAPPERS) or bool(_ARGISH.match(t)) or bool(_NUMISH.match(t)) \
+             or (("=" in t) and not t.startswith("-"))
+        if not ok:
+            return None
+    return None
 def is_push(seg, loose=False):
     seg = seg.strip()
     if not seg:
@@ -171,6 +194,17 @@ def is_push(seg, loose=False):
         return True
     if PUSH_TIGHT.match(_WS.sub("", seg)):
         return True
+    # 包装命令前缀：env/nohup/xargs/time/sudo… 把 git 挤到段首之后。
+    # 连同 git 之后到 push 之前一起重拼，才能套回 PUSH_HEAD。
+    pre = strip_wrappers(seg)
+    if pre is not None:
+        toks = seg.split()
+        gi = next((i for i, t in enumerate(toks)
+                   if os.path.basename(t) == "git"), None)
+        if gi is not None:
+            tail = " ".join(toks[gi:])
+            if PUSH_HEAD.match(tail):
+                return True
     # 喂给解释器的脚本文本无法按 shell 语法判断「哪里才是命令位置」——
     # python 里可能是 subprocess.run(['git','push',...])，bash 脚本里可能在函数体内。
     # 这种场合一律放宽：文本中出现推送命令就算数，宁可误拦不可漏放。

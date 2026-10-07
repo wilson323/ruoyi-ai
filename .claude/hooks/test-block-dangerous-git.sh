@@ -115,6 +115,25 @@ run 0 "heredoc 正文里提到 push"               "bash -c \"cat <<'X'
 X\""
 
 echo
+echo "=== B4. 包装命令前缀：git 不在段首也必须拦住（2026-10-07 安全审查实测漏放 11 条）==="
+# env/nohup/xargs/time/eval/sudo/command/exec… 把真正的命令往后挪，
+# 「命令位置」判据因此全部失配。这组逐条钉死，并各配一条「正确目标应放行」的对照。
+run 2 "env 前缀"        "env git push origin main"
+run 2 "nohup 前缀"      "nohup git push origin main"
+run 2 "xargs 前缀"      "xargs git push origin main"
+run 2 "time 前缀"       "time git push origin main"
+run 2 "eval 前缀"       "eval git push origin main"
+run 2 "sudo 前缀"       "sudo git push origin main"
+run 2 "command 前缀"    "command git push origin main"
+run 2 "exec 前缀"       "exec git push origin main"
+run 2 "nice 带选项值"   "nice -n 10 git push origin main"
+run 2 "timeout 带秒数"  "timeout 30 git push origin main"
+run 2 "stdbuf 带选项"   "stdbuf -oL git push origin main"
+run 2 "包装前缀+公开仓" "env git push https://github.com/ageerle/ruoyi-ai.git main"
+run 0 "包装前缀+固定分支（对照，应放行）" "env git push origin baseline/pre-teardown"
+run 0 "echo 后跟推送字样（对照，应放行）" "echo git push origin main"
+
+echo
 echo "=== E. payload 本身非法时必须阻断（守卫失效不等于放行）==="
 # 守卫唯一的失效方式就是「解析不出命令」。若此时放行，任何畸形输入都能绕过。
 BAD=$(printf '%s' 'this is not json at all' | bash "$GUARD" >/dev/null 2>&1; echo $?)
