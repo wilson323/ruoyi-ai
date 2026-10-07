@@ -443,11 +443,11 @@ grep "BCP-014" docs/ipd-系统说明/BCP-Closure-Log.md | head -3  # ≥ 3 行
 
 SDK、Harness、知识/工具或多人协作改动先读 `docs/ipd-系统说明/AgentScope官方化-六计划总览-20261002.md` 对应P节，再按需读专项；它只细化总画布，不能取代总画布/唯一看板。先核六行缺口，按已认领allowedPaths实施。`ai-native-sdlc`负责工程方法，`agentscope-harness`用于本项目SDK装配合同；按改动选择api-contract/gen-test/db-migration，不照已退役技能模板或零测试默认写代码。宿主未实际执行hook时不能声称已被保护。工具、技能版本与调用链、正反例和当前2.0.3 API以真实证据为准。
 
-多Agent只读评审可并行，共享Java/计划文件主协调者串行集成、Maven target错峰。所有自研类必须实现SPI的名称门禁不采用；只检查已确证重复基础能力与生产双轨。版本化形成可审查差异和证据，提交/推送/发布仍需用户明确授权。Skill更新必须实际回归与镜像核验，不能由一次模型回答自动晋升全局。
+多Agent只读评审可并行，共享Java/计划文件主协调者串行集成、Maven target错峰。所有自研类必须实现SPI的名称门禁不采用；只检查已确证重复基础能力与生产双轨。版本化形成可审查差异和证据；提交/推送按推送铁律三执行（任务结束必须整合工作树提交推送），发布仍需用户明确授权。Skill更新必须实际回归与镜像核验，不能由一次模型回答自动晋升全局。
 
 ## Engineering feedback entry
 
-For engineering tasks, use the frontend project's `.harness/skills/ipd-engineering-feedback/SKILL.md` and `python3 /Users/mac/Documents/ruoyi-ipd-web/scripts/engineering_harness.py --root "$PWD" intake`. This repository's `.harness/verify.sh governance <existing-task-id>` reuses that runner. Failures produce reflection inputs; same-task regression can enable only fixed procedural checks. Java/runtime/business acceptance remains in the existing master plan. No automatic commit/push, permission changes or second product runtime.
+For engineering tasks, use the frontend project's `.harness/skills/ipd-engineering-feedback/SKILL.md` and `python3 /Users/mac/Documents/ruoyi-ipd-web/scripts/engineering_harness.py --root "$PWD" intake`. This repository's `.harness/verify.sh governance <existing-task-id>` reuses that runner. Failures produce reflection inputs; same-task regression can enable only fixed procedural checks. Java/runtime/business acceptance remains in the existing master plan. The runner itself does no automatic commit/push, permission changes or second product runtime (task-level commit/push follows the push iron rules).
 
 <!-- evolver-evolution-memory -->
 ## Evolution Memory (Evolver)
