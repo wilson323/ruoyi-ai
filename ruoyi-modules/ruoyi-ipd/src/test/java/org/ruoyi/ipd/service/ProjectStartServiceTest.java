@@ -13,6 +13,7 @@ import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.ProductLineMapper;
 import org.ruoyi.ipd.mapper.ProductMapper;
 import org.ruoyi.ipd.mapper.ProjectMapper;
+import org.ruoyi.ipd.mapper.ProjectMemberMapper;
 import org.ruoyi.ipd.security.IpdActor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +37,8 @@ class ProjectStartServiceTest {
     @Mock private IProjectCertService projectCertService;
     @Mock private IAuditLogService auditLogService;
     @Mock private StateMachineGuard stateMachineGuard;
+    /** 双PM 成对校验需要（2026-10-07 fail-closed 起，缺 mapper 会直接拒开工）。 */
+    @Mock private ProjectMemberMapper projectMemberMapper;
 
     private ProjectStartService service;
 
@@ -42,6 +46,11 @@ class ProjectStartServiceTest {
     void setUp() {
         service = new ProjectStartService(projectMapper, productMapper, lineMapper,
             projectBootstrapService, projectCertService, auditLogService, stateMachineGuard);
+        service.setProjectMemberMapper(projectMemberMapper);
+        // 本类三个用例验的是「无组长时超管可批 / 失败不引导 / 退市后组长不可批」，
+        // 与双PM 无关。但双PM 是 fail-closed 前置，不给齐会在被测规则之前就被拦下。
+        // 故统一桩成「双PM 在任」，让用例回到它本来的被测对象。
+        lenient().when(projectMemberMapper.selectCount(any())).thenReturn(1L);
     }
 
     @Test

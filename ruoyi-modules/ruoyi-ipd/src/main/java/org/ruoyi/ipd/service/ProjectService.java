@@ -130,6 +130,10 @@ public class ProjectService implements IProjectService {
     private static final BigDecimal DEFAULT_COEF_S = new BigDecimal("1.5");
     private static final BigDecimal DEFAULT_COEF_A = new BigDecimal("1.0");
     private static final BigDecimal DEFAULT_COEF_B = new BigDecimal("0.8");
+    /** B7 双PM 角色词表；与 {@code ProjectMemberServiceImpl.ROLES} 同集合。 */
+    private static final Set<String> PM_ROLES = Set.of("MARKET_PM", "RD_PM");
+    /** AC-TEAM-11 / BR-TEAM-09 项目数备案阈值配置键（种子=3）。 */
+    private static final String KEY_PROJECT_COUNT_THRESHOLD = "allowance.projectCountThreshold";
     /** P1-9.2：存量场景复核周期 14 天 */
     public static final int LEGACY_SCENARIO_DAYS = 14;
     /** P1-9.2：临界阈值（剩余 ≤ 3 天触发通知 MARKET_PM + PRODUCT_LEADER） */
@@ -391,7 +395,22 @@ public class ProjectService implements IProjectService {
 
     /**
      * 立项时写入一名在职成员。未指定人员则跳过。
-     * 生产环境同时注入人员和配置后，按该人当前等级锁定津贴，满足 locked_level / locked_amount 非空。
+     *
+     * <p>2026-10-07（P0-a）：此前的 {@code MARKET_PM}/{@code RD_PM} 分支<b>不走</b>
+     * {@link ProjectMemberServiceImpl#bindMember}，缺 4 项校验——B7 角色互斥（AC-TEAM-10）、
+     * 离职/禁用、项目数上限与超额备案（AC-TEAM-11 / BR-TEAM-09）、重复绑定。本方法补齐这 4 项，
+     * 口径逐字对齐 {@code ProjectMemberServiceImpl:82-126}（含 FOR UPDATE 计数）。
+     *
+     * <p>为何不直接调 {@code bindMember}：它第一行就是
+     * {@code IpdIdorGuard.assertSameGroupIpd(operator, project.getMainGroupId())}，
+     * 而 {@code create} 的入参里<b>没有操作人所属组</b>（{@code create} 只拿到 operatorId / operatorRole /
+     * {@code fallbackMainGroupId}，后者是缺省归属组、不是操作人组）。凭空造一个 actor 去满足该断言
+     * 等于凭空放宽跨组守卫，故在创建路径内就地实现同一套校验。此点已上报主协调待裁决。
+     *
+     * <p>{@code MEMBER} 分支（创建人自动回填，{@link #insertNewProject} 第 344-347 行）保持原语义：
+     * 它不是 PM 角色，不适用 B7 与备案规则。消费方核查见任务报告——该行被
+     * {@code WorkbenchService:353-358}（本人项目可见性）与 {@code AllowanceService:212-215 / 689-690}
+     * （<b>不按 role 过滤</b>，逐行累加 lockedAmount 出月度台账）真实消费，故不移除。
      *
      * @param projectId 项目
      * @param personId 人员，空则跳过
@@ -411,6 +430,24 @@ public class ProjectService implements IProjectService {
             .memberType("PRIMARY")
             .joinDate(now())
             .bonusEligible("1");
+        if (PM_ROLES.contains(role)) {
+            requireBindablePerson(personId, role);
+            assertNotAlreadyBound(projectId, personId, role);
+            long active = countActiveBindsForUpdate(personId);
+            int threshold = projectCountThreshold();
+            if (active >= threshold) {
+                throw new ServiceException("已达项目数上限 " + threshold + "，禁止再绑定（备案也不能超过上限）");
+            }
+            if (active == threshold - 1) {
+                // 创建接口无 approvalRef 入参（ProjectCreateReq 白名单未收该字段），
+                // 备案只能走 POST /{projectId}/members 的 BindRequest.approvalRef。
+                throw new IpdBusinessException(ApiV1ErrorCode.ROLE_LOCKED,
+                    "绑定第 " + threshold + " 个项目需先录入评级委员会审批备案记录（approvalRef）；"
+                        + "立项接口不接收该字段，请先建项目再经 POST /api/v1/projects/" + projectId
+                        + "/members 携带 approvalRef 绑定 " + role);
+            }
+            builder.memberType(active == 0L ? "PRIMARY" : "ADDITIONAL");
+        }
         if (personMapper != null && systemConfigService != null) {
             Person person = personMapper.selectById(personId);
             if (person == null || person.getLevel() == null || person.getLevel().isBlank()) {
@@ -423,6 +460,54 @@ public class ProjectService implements IProjectService {
             builder.lockedLevel(person.getLevel()).lockedAmount(BigDecimal.valueOf(amount));
         }
         projectMemberMapper.insert(builder.build());
+    }
+
+    /** B7 角色固定不可跨 + 离职/禁用拦截；口径同 {@code ProjectMemberServiceImpl:82-92}。 */
+    private Person requireBindablePerson(Long personId, String role) {
+        if (personMapper == null) {
+            throw new ServiceException("人员查询不可用，无法校验角色固定不可跨（B7），不能绑定 " + role);
+        }
+        Person person = personMapper.selectById(personId);
+        if (person == null) {
+            throw new ServiceException("人员不存在: " + personId);
+        }
+        if ("RESIGNED".equals(person.getEmploymentStatus()) || "DISABLED".equals(person.getAccountStatus())) {
+            throw new ServiceException("离职/禁用人员不可入组: " + person.getName());
+        }
+        if (!role.equals(person.getPersonType())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.ROLE_LOCKED,
+                "角色固定不可跨（B7）：人员类型 " + person.getPersonType() + " 不可绑定为 " + role);
+        }
+        return person;
+    }
+
+    /** 同项目+同人+同角色的在任重复绑定拒绝（重试不产生第二条）。 */
+    private void assertNotAlreadyBound(Long projectId, Long personId, String role) {
+        Long existing = projectMemberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getProjectId, projectId)
+            .eq(ProjectMember::getPersonId, personId)
+            .eq(ProjectMember::getRole, role)
+            .isNull(ProjectMember::getExitDate));
+        if (existing != null && existing > 0) {
+            throw new ServiceException("该成员已绑定此角色，重试不产生重复成员");
+        }
+    }
+
+    /** AC-TEAM-11 计数：FOR UPDATE 锁 person_id 索引，并发绑定在此串行化。 */
+    private long countActiveBindsForUpdate(Long personId) {
+        Long count = projectMemberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
+            .eq(ProjectMember::getPersonId, personId)
+            .isNull(ProjectMember::getExitDate)
+            .last("FOR UPDATE"));
+        return count == null ? 0L : count;
+    }
+
+    private int projectCountThreshold() {
+        if (systemConfigService == null) {
+            throw new ServiceException("项目数备案阈值配置不可用，无法校验项目数上限（AC-TEAM-11）");
+        }
+        int threshold = systemConfigService.getIntValue(KEY_PROJECT_COUNT_THRESHOLD, 3);
+        return threshold <= 0 ? 3 : threshold;
     }
 
 
