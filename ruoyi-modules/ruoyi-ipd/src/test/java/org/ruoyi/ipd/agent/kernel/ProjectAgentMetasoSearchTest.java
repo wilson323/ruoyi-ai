@@ -49,6 +49,23 @@ class ProjectAgentMetasoSearchTest {
     }
 
     @Test
+    void pageConfigWinsOverEnvironment() {
+        // 系统页面来源优先于环境变量：管理员在页面上配的必须是真正生效的那一份，
+        // 否则会出现「页面显示已改、后端还在用旧密钥」。
+        try {
+            ProjectAgentMetasoSearch.configure(() -> "  mk-from-admin-page  ");
+            assertThat(ProjectAgentMetasoSearch.resolveApiKey()).isEqualTo("mk-from-admin-page");
+
+            ProjectAgentMetasoSearch.configure(() -> "   ");
+            assertThat(ProjectAgentMetasoSearch.resolveApiKey())
+                    .as("页面来源为空时必须回落到环境变量，不能静默变成无密钥")
+                    .isEqualTo(ProjectAgentMetasoSearch.apiKeyFromEnvironment());
+        } finally {
+            ProjectAgentMetasoSearch.configure(null);
+        }
+    }
+
+    @Test
     void liveSearchReturnsRealResults() {
         String key = ProjectAgentMetasoSearch.apiKeyFromEnvironment();
         assumeTrue(key != null && !key.isBlank(), "未设置 METASO_MCP_API_KEY，跳过实网段");

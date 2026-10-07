@@ -43,6 +43,34 @@ public final class ProjectAgentMetasoSearch {
     /** 密钥只从环境变量读；不入库、不进仓、不进日志。 */
     public static final String API_KEY_ENV = "METASO_MCP_API_KEY";
 
+    /** 系统页面（MCP 工具配置）里登记这条工具时用的名字。 */
+    public static final String TOOL_NAME = "metaso_search";
+
+    /**
+     * 系统页面配置的读取入口。由 {@code ProjectAgentMetasoSearchConfig} 在启动时登记，
+     * 每次运行现取，所以管理员在页面上改完密钥下一次运行即生效，不必重启后端。
+     *
+     * <p>为空表示尚未接入系统页面配置，此时退回环境变量。两个来源都没有 → 不挂载。
+     */
+    private static volatile java.util.function.Supplier<String> configuredKey;
+
+    /** 由 Spring 装配时调用一次；传 null 表示撤销系统页面来源。 */
+    public static void configure(java.util.function.Supplier<String> supplier) {
+        configuredKey = supplier;
+    }
+
+    /** 实际使用的密钥：系统页面优先，环境变量兜底，都没有则 null。 */
+    public static String resolveApiKey() {
+        java.util.function.Supplier<String> supplier = configuredKey;
+        if (supplier != null) {
+            String fromPage = supplier.get();
+            if (fromPage != null && !fromPage.isBlank()) {
+                return fromPage.trim();
+            }
+        }
+        return apiKeyFromEnvironment();
+    }
+
     private ProjectAgentMetasoSearch() { }
 
     public static String apiKeyFromEnvironment() {
