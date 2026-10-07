@@ -4988,3 +4988,22 @@ GET /api/v1/auth/me → data.person.permissionCodes = 89 项
 - knowledge_fragment 仍 0 行（KB 门未过）；EHR 1005 / MinIO 解析 403 外部依赖未解。
 - C01-C12 深管交付物为验证占位文件名（测试数据，按 R214 留库）。
 
+### 六、C3 补充（同会话后续，续证）
+- **SEC 附件链双口复验全绿**：深管交付物 multipart 真实上传（deliverableId 2107913920495611906，zip 165B，download 回读 SHA 一致；txt 被格式白名单拒「doc/xls/ppt/pdf/img/zip，TS14」）；Gate 评审材料 multipart 上传（ossId 2107914056449781761）。
+- **F6 关卡自动创建已验证**：概念动作 DONE 后 G1 Gate 实例自动生成（id 2107911356735623170，status=PENDING，round=1）。
+- KB：向量库已切 Qdrant（配置进包生效）；knowledge_fragment 仍 0 行，等迁移脚本（migrate-weaviate-to-qdrant.py，兄弟在途）落地后复验。
+- MODEL：备用模型兜底切换验证需故障注入专窗，待办。
+
+### 七、第二次重载（D1/D2 + KB 修复进包，同会话）
+- 15:22 重打包 BUILD SUCCESS（基于 6d9cd65b + 兄弟在途 P5-KB 修复 3 文件 + AiDocumentController javadoc）；二进制验证：D1 finishDetachedAwaitTimeout=True / D2 releaseReservationOnce=True / 兄弟 getObjectContent=True（system+chat）/ qdrant 16334 保持。
+- 运行中发现并消除一次「运行中 jar 被替换」混包窗口（旧进程 61700 fd 同时持有 .prev-2 旧 inode 与新 jar）；15:24 kill → 15:25 起新 PID 28247（21.4s，ERROR=0，OSS 配置初始化成功）；冒烟：附件链三件套全绿（新 deliverableId 2107914876234833921）+ root 200。
+- 运行包口径：当前 16039 = 15:22 包，含 6d9cd65b 全部提交 + 兄弟 KB 在途修复（未提交，已登记）；旧包备份 prev-20261007（14:52）与 prev-2-20261007（15:1x）。
+- KB 独立佐证（本会话数据层直查）：Qdrant collection `LocalKnowledge2097275993856180226` points=309 / size=1024 / Cosine / green（与兄弟迁移声称 309/309 一致）；应用层检索复验受平台票过期限制（旧票 10-04 401），采用「兄弟 200 非空验证 + 我方数据层直查」组合证据，后续以带资料运行的知识来源命中为 KB 门终验。
+
+## 2026-10-07 向量迁移落地 + 检索卡点根因修复（P0-1/P0-2 收口）
+
+- **P0-1 勘误**：qdrant port=16334 本就是 gRPC 端口（QdrantVectorStoreStrategy:63-70 走 QdrantGrpcClient；容器 6334 映射一致），配置正确、无需修改；curl 探得 000 属「拿 HTTP 探 gRPC」。
+- **P0-2 迁移落地**：新增 `scripts/migrate-weaviate-to-qdrant.py`（幂等/--dry-run）实测执行——Weaviate LocalKnowledge2097275993856180226 → Qdrant 同名 collection **309/309**（回读 points_count=309），size=1024/Cosine，payload 键名按应用读取路径改写（text→text_segment、docId→doc_id，12 驼峰键原样），向量原值搬运（存量已单位化）。
+- **应用层检索静默 500 根因（实测定位并修复）**：`/system/fragment/retrieval` 对「模型非空」的库恒返回 code500「请求处理失败」，日志仅 `request_failure errorType=ServiceException`（message 被 GlobalExceptionHandler:76-88 安全脱敏，需逐段二分定位）。真因 = `selectModelByName`（ChatModelServiceImpl:61-70）内 `requireEnabled(provider_code)`（ChatProviderServiceImpl:88-94，bcff4fd9 引入）：chat_model 中 qwen3-embedding:0.6b 的 provider_code='openai' 在 chat_provider 无对应行 → 必抛「模型厂商未配置或已停用」。已补行（id=9000000000000000002，status=0，api_host=http://127.0.0.1:11434/v1，保留启用）；补行后应用层检索实测 **200 非空**（平台票→Gate→模型校验→Ollama 嵌入→Qdrant 命中，日志「开始知识库检索→执行测试搜索」完整，Top1 docId 9b1ae681）。
+- **状态与待决**：验证用临时知识库行 2 条（TMP-RAG-VERIFY / TMP-RAG-PROBE）已删除复原；kid=2097275993856180226 的 knowledge_info 父行仍缺（原「测试抽样主档」，log.md 曾登记「84条 catalog-sample 仍缺可证明出处」）——如需恢复该库可用，重建父行即可（链路已通、向量已在 Qdrant）。D1/D2 工作区兄弟在途修复未触碰；D3 能力包同步、D4 mcp.sse 删除待拍板。
+
