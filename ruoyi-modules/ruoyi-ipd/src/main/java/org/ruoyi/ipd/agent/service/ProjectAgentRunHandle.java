@@ -80,6 +80,10 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     private Runnable temporaryStateCleanup = () -> { };
     private Runnable terminalSuccessReceipt = () -> { };
     private Consumer<org.ruoyi.ipd.agent.kernel.ProjectAgentChildLineageRegistry.ChildApproval> childResumeGuard;
+    /** 并发额度归还钩子；正文重放不完整等提前释放路径与正常收口共用它。 */
+    private Runnable reservationReleaser = () -> { };
+    /** 额度只归还一次，避免提前释放后正常收口重复归还。 */
+    private boolean reservationReleased;
 
     /**
      * @param run 已进入 RUNNING 的运行
@@ -134,6 +138,30 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         this.epoch = epoch;
     }
 
+    /**
+     * 绑定并发额度归还钩子。正文重放不完整等提前释放路径与正常收口共用同一个一次性归还，
+     * 保证额度在所有路径（含收口返回 false 的分支）都被归还且只归还一次。
+     *
+     * @param releaser 归还动作，可空表示不归还
+     */
+    public synchronized void setReservationReleaser(Runnable releaser) {
+        this.reservationReleaser = releaser == null ? () -> { } : releaser;
+    }
+
+    /** 并发额度恰归还一次：正文重放不完整提前归还后，正常收口不再重复释放。 */
+    private synchronized void releaseReservationOnce() {
+        if (reservationReleased) {
+            return;
+        }
+        reservationReleased = true;
+        try {
+            reservationReleaser.run();
+        } catch (RuntimeException failure) {
+            log.warn("project_agent operation=RESERVATION_RELEASE status=FAILED runId={} errorType={}",
+                runId, failure.getClass().getName());
+        }
+    }
+
     /** 用量、需求等副作用也必须在原run行锁内验证epoch，不依赖本机closed状态。 */
     public synchronized void runOwned(Runnable action) {
         if (closed) throw new ProjectAgentRunOwnership.OwnershipLost();
@@ -168,6 +196,7 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
         try { onClosed.run(); } catch (RuntimeException failure) {
             log.warn("project_agent operation=OWNERSHIP_RELEASE status=FAILED runId={} errorType={}", runId, failure.getClass().getName());
         }
+        releaseReservationOnce();
     }
 
     /**
@@ -674,6 +703,8 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
                 return result.won();
             } catch (TextReplayIncomplete incomplete) {
                 // 不把恢复尾段作为合格产物；保留句柄、检查点和历史，允许原收口重试或取消。
+                // 本分支不会再持有内核订阅，必须显式归还并发额度，否则每次重放失败都永久泄漏一个槽位。
+                releaseReservationOnce();
                 log.error("project_agent operation=TEXT_REPLAY status=PENDING_RECOVERY runId={} errorType={}",
                     runId, incomplete.getClass().getName());
                 return false;
@@ -821,6 +852,7 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
             log.warn("project_agent operation=CLOSE_CALLBACK status=FAILED runId={} errorType={}",
                 runId, failure.getClass().getName());
         }
+        releaseReservationOnce();
     }
 
     private record FinishResult(boolean won, boolean terminal, AgentRunStatus status) { }

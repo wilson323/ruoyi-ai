@@ -4959,3 +4959,32 @@ GET /api/v1/auth/me → data.person.permissionCodes = 89 项
 - 前两轮：查「表是空的」→ 结论「从未导入过」
 - 本轮：查「为什么导不进去」→ 才发现是**权限根本进不去**
 **症状层能查到就停，是本仓最贵的一类错误。**
+
+## 2026-10-07 C2 端到端全链贯通（重载后首跑）+ 前端三件套全绿 + 审计 2 高危修复（本会话）
+
+**方式**：HTTP 全链实跑+只读取证；脚本 `.codex/ipd-dev/evidence/verify-c2-chain-20261007.py`（分段可重跑、幂等；状态与证据 JSON 同目录 c2-chain-state / c2-c02-run / c2-c02-events，.codex 已 gitignore）。项目 PRJ-2026-002（2107798557686599681，产品线 9190001 未指定、无负责人）。
+
+### 一、重载（C2 前置）已完成
+- 14:52 重打包（`bash scripts/mvn-locked.sh -o -DskipTests package -pl ruoyi-admin -am`，BUILD SUCCESS）；旧 jar 备份 `ruoyi-admin.jar.prev-20261007`；二进制验证：内嵌 application.yml `653: type: ${VECTOR_STORE_TYPE:qdrant}`（Qdrant 切换已进包）、内嵌 ruoyi-ipd-3.1.0.jar 14:51。
+- 14:54 重启 16039（新 PID 13264，启动 79.2s，ERROR=0）。HrSyncJob 1005 / MinIO 解析 403 等外部依赖问题保持如实记录。
+
+### 二、C2 链路实跑结果（新包+新基线项目，全部 HTTP 实证）
+1. 开工审批：leader 403 负例「没有负责人时只有系统管理员能批准」；双 PM 校验生效（缺 RD_PM 时 409「未完成双PM 组队」）；admin 批准后 status=TEAMING、**自动建在研产品 2107910556781187074**、67 动作实例初始化。
+2. 动作链：深管需交付物（「还没上传交付物」拦截）、轻管需完成日期（C05 先 fields 后 DONE）；概念 12 动作全部完结（11 DONE + C04 NA）。
+3. AI 链：C02 运行 2107911559152734209 → AWAIT_USER/PLAN_CONFIRM（「绑定动作不能代替用户确认计划和范围」）→ 计划确认路径（cancel + 新建确认正文运行、不带 actionCode）→ **2107911891152867330 实跑 SUCCEEDED**（MiniMax-M3：16 次模型调用/7 次工具/记忆 WRITTEN saved=16/沙箱归档）。模型输出「缺项清单+请求补料」2002 字——项目无竞品资料，按技能「无名单则停止比较只出缺项」正确行为、未编造；artifactArchives=[] 与该行为一致。
+4. 验收与推进：11 个 DONE 动作产线确认（confirmed_by 写入）→ 阶段验收提交 PENDING_ACCEPT → **advance-stage 成功 CONCEPT→PLAN**（GateEngine.check 放行）。
+5. C02 交付物登记 C02-competitor-draft-round1.md（缺项清单首轮）后 DONE。
+
+### 三、前端三件套（当下实跑，前端仓）
+- typecheck（子包直跑）EXIT=0；vitest 193 文件 1997 通过 37 跳过（含在途 2 个 mcp 测试）；build:antd ✓ 42.88s（dist 15:05）。期间处置：add-to-agent-dialog.vue:159 类型错误由兄弟会话修复；本会话插入的 import 已回退，零改动。
+
+### 四、智能体审计 2 高危修复（随本批提交）
+- D1 WAITING_APPROVAL 死状态：awaitUser 两种装配无条件挂整轮超时 + finishDetachedAwaitTimeout 派遣收口（ProjectAgentRunExecutor）。
+- D2 finish() 额度泄漏：reservationReleaser 一次性归还，TextReplayIncomplete 分支不再泄漏（ProjectAgentRunHandle）。
+- 定向 9/9 绿（自证能红 3 失败）；全模块 4591 测试 0 失败 0 错误 27 跳过。运行包尚未含此修复（下次重载生效）。
+
+### 五、如实记录（未完成/限制）
+- apply 定档链本轮无正向实跑（本项目无产物）；有产物场景下的 apply 需带资料复验。
+- knowledge_fragment 仍 0 行（KB 门未过）；EHR 1005 / MinIO 解析 403 外部依赖未解。
+- C01-C12 深管交付物为验证占位文件名（测试数据，按 R214 留库）。
+

@@ -6,6 +6,9 @@ import org.ruoyi.ipd.agent.domain.*;
 import org.ruoyi.ipd.agent.model.AgentRunStatus;
 import org.ruoyi.ipd.agent.store.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.ruoyi.ipd.agent.support.FakeProjectAgentKernel;
+import reactor.core.scheduler.Schedulers;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 /** Real RunHandle with controlled event-store faults; not a database acceptance test. */
@@ -20,4 +23,8 @@ class ProjectAgentRunHandleTextReplayTest {
  @Test void malformedTextPayloadCannotDropASectionAndCommitSuccess(){var s=store();when(s.listEvents(anyLong(),anyLong(),anyInt())).thenReturn(List.of(event(1,"{bad")));var h=handle(s);h.onText("tail");assertFalse(h.finish(AgentRunStatus.SUCCEEDED,null));verify(s,never()).transition(anyLong(),any(),any(),any(),any());}
  @Test void unflushedTailAndReplacementRemainIdempotent(){var s=store();when(s.listEvents(anyLong(),anyLong(),anyInt())).thenReturn(List.of(event(1,"{\"text\":\"old\"}"),event(2,"{\"text\":\"new\",\"replace\":true}")));var h=handle(s);h.onText("tail");h.restoreFlushedText();h.restoreFlushedText();assertEquals("newtail",h.assistantText());}
  @Test void cancellationDoesNotRequireUnreadableHistory(){var s=store();when(s.listEvents(anyLong(),anyLong(),anyInt())).thenThrow(new IllegalStateException("fixture read failure"));var h=handle(s);assertTrue(h.finish(AgentRunStatus.CANCELLED,null));assertTrue(h.isClosed());verify(s,never()).listEvents(anyLong(),anyLong(),anyInt());}
+ /** 审计 D2：正文重放不完整返回 false 时也必须归还并发额度，且只归还一次。 */
+ @Test void replayIncompleteReleasesReservationExactlyOnce(){var s=store();when(s.listEvents(anyLong(),anyLong(),anyInt())).thenThrow(new IllegalStateException("fixture read failure"));var h=handle(s);var releases=new AtomicInteger();h.setReservationReleaser(releases::incrementAndGet);h.onText("tail");assertFalse(h.finish(AgentRunStatus.SUCCEEDED,null));assertEquals(1,releases.get());assertFalse(h.isClosed());doReturn(List.of(event(1,"{\"text\":\"prior\"}"))).when(s).listEvents(anyLong(),anyLong(),anyInt());assertTrue(h.finish(AgentRunStatus.SUCCEEDED,null));assertEquals(1,releases.get());assertTrue(h.isClosed());}
+ /** 审计 D2：额度确实回到执行器，下一次运行能被接纳（修复前 4 次后子系统 RATE_LIMITED 至重启）。 */
+ @Test void releasedReservationAdmitsTheNextRun(){var s=store();when(s.listEvents(anyLong(),anyLong(),anyInt())).thenThrow(new IllegalStateException("fixture read failure"));var executor=new ProjectAgentRunExecutor(s,new FakeProjectAgentKernel(),new ObjectMapper(),Schedulers.immediate(),()->1000L,1);assertTrue(executor.tryReserve());assertFalse(executor.tryReserve());var h=handle(s);h.setReservationReleaser(executor::release);h.onText("tail");assertFalse(h.finish(AgentRunStatus.SUCCEEDED,null));assertTrue(executor.tryReserve());}
 }

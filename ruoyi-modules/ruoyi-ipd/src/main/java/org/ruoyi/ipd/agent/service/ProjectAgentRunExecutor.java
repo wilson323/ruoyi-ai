@@ -378,9 +378,11 @@ public class ProjectAgentRunExecutor {
             handles.remove(run.getId(), ownHandle.get());
             Disposable watcher = monitor.get();
             if (watcher != null) watcher.dispose();
-            try { if (acquired != null) acquired.close(); } finally { releaseReservation.run(); }
+            if (acquired != null) acquired.close();
         });
         ownHandle.set(handle);
+        // 额度归由句柄一次性释放：正文重放不完整提前归还后，正常收口不再重复释放。
+        handle.setReservationReleaser(releaseReservation);
         handle.setDocumentVerifier(row -> { if (documentVerifier == null) throw new IllegalStateException("Trusted document verification unavailable"); documentVerifier.accept(run, row); });
         handle.setFinishTransaction(finishTransaction);
         if (acquired != null) handle.setOwnership(acquired, run.getVersion());
@@ -530,10 +532,9 @@ public class ProjectAgentRunExecutor {
             }
             ProjectAgentRunHandle handle = handles.get(run.getId());
             if (handle == null) {
-                handle = new ProjectAgentRunHandle(current, store, artifactStore, mapper, clock, () -> {
-                    handles.remove(run.getId());
-                    releaseOnce.run();
-                });
+                handle = new ProjectAgentRunHandle(current, store, artifactStore, mapper, clock,
+                    () -> handles.remove(run.getId()));
+                handle.setReservationReleaser(releaseOnce);
                 handle.setDocumentVerifier(row -> { if (documentVerifier == null) throw new IllegalStateException("Trusted document verification unavailable"); documentVerifier.accept(current, row); });
                 handle.setFinishTransaction(finishTransaction);
                 handles.put(run.getId(), handle);
@@ -643,8 +644,9 @@ public class ProjectAgentRunExecutor {
             handles.remove(run.getId());
             Disposable watcher = monitor.get();
             if (watcher != null) watcher.dispose();
-            try { if (acquired != null) acquired.close(); } finally { releaseReservation.run(); }
+            if (acquired != null) acquired.close();
         });
+        handle.setReservationReleaser(releaseReservation);
         handle.setDocumentVerifier(row -> { if (documentVerifier == null) throw new IllegalStateException("Trusted document verification unavailable"); documentVerifier.accept(run, row); });
         handle.setFinishTransaction(finishTransaction);
         handle.setAguiInterruptHandler((pending, version) -> {
@@ -820,7 +822,10 @@ public class ProjectAgentRunExecutor {
         payload.put("reason", clarification ? "CLARIFICATION" : "PLAN_CONFIRM");
         handle.onStep("AWAIT_USER", payload);
         if (ownership != null) handle.pauseForApproval();
-        else scheduleAwaitTimeout(handle, run.getId(), spec);
+        // 等待审批也是 ACTIVE 状态：生产装配下 ownership 永不为 null，pauseForApproval 会释放原租约、
+        // 句柄与额度，但运行仍留在 WAITING_APPROVAL，必须挂整轮时限的超时收口，
+        // 否则用户不操作就永远停在该状态（审计 D1：事实死状态）。
+        scheduleAwaitTimeout(handle, run.getId(), spec);
     }
 
     /**
@@ -841,17 +846,46 @@ public class ProjectAgentRunExecutor {
         }
     }
 
-    /** 只在仍停在 WAITING_APPROVAL 时超时失败，避免盖掉取消或已经终态的运行。 */
+    /**
+     * 只在仍停在 WAITING_APPROVAL 时超时失败，避免盖掉取消或已经终态的运行。
+     * 句柄已被 pauseForApproval 释放时（生产装配）改走派遣收口，不能因为 isClosed 就放弃。
+     */
     private void finishIfStillWaiting(ProjectAgentRunHandle handle, Long runId) {
-        if (handle.isClosed()) {
-            return;
-        }
         Optional<IpdAgentRun> current = store.findRun(runId);
         if (current.isEmpty()
             || !AgentRunStatus.WAITING_APPROVAL.name().equals(current.get().getStatus())) {
             return;
         }
-        handle.finish(AgentRunStatus.FAILED, "RUN_TIMEOUT");
+        if (!handle.isClosed()) {
+            handle.finish(AgentRunStatus.FAILED, "RUN_TIMEOUT");
+            return;
+        }
+        finishDetachedAwaitTimeout(current.get());
+    }
+
+    /**
+     * 等待审批超时的派遣收口：原句柄已随 pauseForApproval 释放，这里按 runId 重新申请租约与 epoch，
+     * 精确 CAS WAITING_APPROVAL→FAILED 并写唯一终态事件，语义同 {@link #finishDetachedCancellation}。
+     * 其他实例正在恢复/取消（取不到租约）时放弃，交由当前持有者收口。
+     *
+     * @param run 按 runId 重新读出的运行行
+     * @return true 本次调用完成收口
+     */
+    boolean finishDetachedAwaitTimeout(IpdAgentRun run) {
+        if (!AgentRunStatus.WAITING_APPROVAL.name().equals(run.getStatus())
+            || handles.containsKey(run.getId())) {
+            return false;
+        }
+        ProjectAgentRunHandle handle;
+        try {
+            handle = claimDetachedHandle(run, EnumSet.of(AgentRunStatus.WAITING_APPROVAL), () -> { });
+        } catch (RuntimeException busy) {
+            log.warn("project_agent operation=AWAIT_TIMEOUT status=DEFERRED runId={} errorType={}",
+                run.getId(), busy.getClass().getName());
+            return false;
+        }
+        try { return handle.finish(AgentRunStatus.FAILED, "RUN_TIMEOUT"); }
+        finally { if (!handle.isClosed()) handle.abandonOwnership(); }
     }
 
     private void failPending(IpdAgentRun run, String errorCode) {
