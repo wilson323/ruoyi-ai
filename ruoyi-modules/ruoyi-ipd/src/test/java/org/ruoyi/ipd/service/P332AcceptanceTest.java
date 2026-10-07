@@ -69,30 +69,30 @@ class P332AcceptanceTest {
     // ==================== AC-INC-07/08: 60 天无产出判定 ====================
 
     @Test
-    @DisplayName("AC-INC-07: 附加项目最后活动 = 60 天前 ⇒ STOP_NO_OUTPUT_60_DAYS")
+    @DisplayName("AC-INC-07: 附加项目最后活动 = 60 天前 ⇒ REMIND_NO_OUTPUT_60_DAYS（2026-10-07 owner 翻案：仅提醒，不停发）")
     void additionalProject60DaysNoOutput() {
         // asOfDate = 2026-09-06, lastActivityDate = 2026-07-08 = 60 days ago
         Date asOf = parseDate("2026-09-06");
         Date last = parseDate("2026-07-08");
         assertThat(service.determineNoOutput60DaysStop(last, asOf, true))
-            .isEqualTo("STOP_NO_OUTPUT_60_DAYS");
+            .isEqualTo("REMIND_NO_OUTPUT_60_DAYS");
     }
 
     @Test
-    @DisplayName("AC-INC-07: 附加项目最后活动 = 90 天前 ⇒ STOP_NO_OUTPUT_60_DAYS")
+    @DisplayName("AC-INC-07: 附加项目最后活动 = 90 天前 ⇒ REMIND_NO_OUTPUT_60_DAYS（2026-10-07 owner 翻案：仅提醒，不停发）")
     void additionalProject90DaysNoOutput() {
         Date asOf = parseDate("2026-09-06");
         Date last = parseDate("2026-06-08");
         assertThat(service.determineNoOutput60DaysStop(last, asOf, true))
-            .isEqualTo("STOP_NO_OUTPUT_60_DAYS");
+            .isEqualTo("REMIND_NO_OUTPUT_60_DAYS");
     }
 
     @Test
-    @DisplayName("AC-INC-07: 附加项目从未活动（null）⇒ STOP_NO_OUTPUT_60_DAYS")
+    @DisplayName("AC-INC-07: 附加项目从未活动（null）⇒ REMIND_NO_OUTPUT_60_DAYS（2026-10-07 owner 翻案：仅提醒，不停发）")
     void additionalProjectNeverActive() {
         Date asOf = parseDate("2026-09-06");
         assertThat(service.determineNoOutput60DaysStop(null, asOf, true))
-            .isEqualTo("STOP_NO_OUTPUT_60_DAYS");
+            .isEqualTo("REMIND_NO_OUTPUT_60_DAYS");
     }
 
     @Test
@@ -146,13 +146,13 @@ class P332AcceptanceTest {
     }
 
     @Test
-    @DisplayName("三层合一: 绩效 = 60 但附加项目 60 天无产出 ⇒ STOP_NO_OUTPUT_60_DAYS")
+    @DisplayName("三层合一: 绩效 = 60 但附加项目 60 天无产出 ⇒ REMIND_NO_OUTPUT_60_DAYS（2026-10-07 owner 翻案：仅提醒，不停发）")
     void combined60DaysNoOutput() {
         Date asOf = parseDate("2026-09-06");
         Date last = parseDate("2026-07-08");
         String reason = service.determineStopReasonP332(
             new BigDecimal("60"), last, asOf, true);
-        assertThat(reason).isEqualTo("STOP_NO_OUTPUT_60_DAYS");
+        assertThat(reason).isEqualTo("REMIND_NO_OUTPUT_60_DAYS");
     }
 
     @Test
