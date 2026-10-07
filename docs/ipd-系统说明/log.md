@@ -15964,3 +15964,77 @@ owner 报障：项目流程页点击「产物」按钮 404（报障 URL /ipd/ai-
 **当日已执行**：F1+F2 前端修复（`08805fc`：三态词统一 CONDITIONAL + 关闭字段 evidence，vitest 38/38 + type 0）；Minio 恢复（`docker start ruoyi-ai-minio`，9000 live/ready=200）。
 
 **剩余**：按施工单汇总六刀执行；待 owner 拍板 7 项（建卡时点已消）；待技术定位 1 项（skill_map 10-04 写入源）。
+
+## 2026-10-07 修复队列六刀执行（①刀前端三件 + ①刀后端四件 + ②刀四项 + ④刀第1批 + ⑤刀预警）
+
+**执行方式**：派 8 路只读/写码智能体并行施工（文件清单互斥），主协调独占构建锁串行验证与提交。智能体一律禁跑 mvn、禁 git 写操作，避免抢锁与索引顶掉提交内容。
+
+### 交付（6 commit，全部 pre-commit 8 门禁 PASS）
+
+| commit | 内容 |
+|---|---|
+| 前端 `ecc3bf8` | F2-UI 遗留项关闭入口 + F5 G1-1 一手验证录入 + F-3 路由闸改 fail-closed |
+| 前端 `bd2a461` | 状态机守卫契约 JSON 同步（ruleCount 86→88，与后端 sha 一致） |
+| `6f7b4b70` | F3 评审判决不再被阶段推进绕过 |
+| `0a9e62bf` | G4 主导方改回市场 + F4 终裁结果强制落状态 |
+| `2f1d10e2` | F-2 安全：超管不再穿透删除初审 |
+| `97dac01a` | F6 关卡自动建卡链 + G2 要素种子生产不灌 + ⑤到期前预警 |
+| `b4870e4d` | ④津贴第 1 批：撤 3 翻案 + 封顶真削减 + 负反馈入金额 |
+| `dbca094f` | 四域孤儿表口径纠伪 + G5 三件 DDL 草案（DO NOT APPLY） |
+
+### 验证证据
+
+- 前端：4 个测试文件 46/46；**全量 1985 passed / 37 skipped / EXIT=0**；`check:type` EXIT=0。
+- 后端：**全模块 4527 测 / 0 失败 / 0 错误 / 26 跳过 / BUILD SUCCESS**。
+- 变异自证 4 处，全部确认「改坏→真红→已还原」：
+  ① ipd-guard fail-closed 谓词（2 红）② F2-UI 契约还原旧字段名（1 红）
+  ③ F5 isG1Customer 置 false（4 红） ④ F6-① 在途去重谓词（1 红，见下）。
+
+### 本轮抓到的三件「测试绿但没修好」的事（如实登记）
+
+1. **F6-① 生产代码根本没落盘**：施工智能体报告称已把「14 天冷却改在途去重」写进
+   `GateCreationService.java`，实测该文件与 HEAD **逐字节相同**（sha 均 6a83c90b…）。
+   而它改的测试 `inFlightPending_rejected` 断言消息含「在途」却全绿——因为
+   `GateG3RecreateScheduler` 调用的 `scanDevG3Recreate()` 当时根本不存在，模块一度编译不过。
+   **主协调已接手重写 F6-① 与 scanDevG3Recreate()。**
+2. **测试对 F6-① 不是承重的**：原有两条用例 mock 的是 `selectCount()` 的**返回值**，
+   看不见**查询谓词**。实测把谓词从 `eq(status,'PENDING')` 改成 `isNull(status)`
+   （等价于不拦）仍 25/25 全绿。已补 `AC#4c` 承重用例：捕获真实 `LambdaQueryWrapper`、
+   强制渲染 SQL 片段后检查参数表含 `PENDING`、且不含 `IS NULL`。补后同一变异确认变红。
+3. **「失败隔离」用例名不副实**：`failureInOneProject_doesNotAbortBatch` 靠在途去重
+   `continue` 掉，根本走不到 catch 分支——它测的是「在途静默跳过」而非失败隔离。
+   已改为真触发失败（`selectById` 返回 null）+ 同批放健康项目 702，断言 702 仍被建卡。
+   只让一个项目失败而没有健康项目的话，「整批都失败」也能蒙混过关，测不出隔离。
+
+### 顺带修掉的两个真 bug
+
+- `gate-detail/index.vue` 用了本文件**未定义**的 `message`（只导入了 `antMessage`），
+  4 处会直接运行时报错。
+- `gate-panel.vue` 的 `v-model` 绑在 `type="number"` 上会被 Vue 3 **自动转成 number**，
+  `draft.verifications.trim()` 抛 `trim is not a function` 致 G1-1 提交静默失败。
+  已加 `numText()` 统一取值。查证依据：runtime-dom `vModelText` 的
+  `castToNumber = number || props.type === 'number'`。
+
+### 前端在途接管结论
+
+15 个在途文件已被兄弟会话提交为 `032f3f1`（本会话开工时它们还在工作树）。
+只读评审结论：4 条自洽小任务，**全部原样入库、无需回退**；其做过的变异自证
+（timeline-model / auth 超时）确认测试能真变红。本会话 23:24 那次全量 1985 全绿
+恰好覆盖了这 15 个文件，等于顺带替兄弟会话验了绿。
+
+### 未决（需 owner 或后续处理）
+
+1. **`.claude/settings.json` 的安全闸门被清空（工具运行时文件，本轮未入库）**：
+   HEAD 上 9 个事件都挂了 hook，工作树里 9 个被清成空数组，**包含
+   `sensitive-field-guard.cjs`（拦截 `.env` / `application-prod.yml` / PEM 私钥写入）**。
+   兄弟会话与我独立判断都认为该由 owner 决定，故均未擅自修改或入库。
+   恢复命令：`git checkout HEAD -- .claude/settings.json`（但插件升级可能再次清空）。
+2. **P0-05 未修**：`IpdGateElementSeedInitializer` 硬编码 `vetoDualRequired("0")`，
+   14 个否决项以「无双签」进 published 态，绕过 `GateElementService:245` 的发布硬门禁。
+   本轮只让测试对齐现状，未改生产代码。
+3. **津贴三条待办**（已写入 commit b4870e4d 正文）：`AllowanceLedgerService.calcFinalAmount`
+   是并行的第二条算钱路径；非整数封顶差 1 分；负反馈 ×0 行进不了「待停发」列表。
+4. 仓库根有一份散置的 C04 区域市场准入调研交付便签，归属未明（与本仓代码零关系，是业务交付物），本轮未入库也未改名——建议移入 `docs/ipd-系统说明/` 或留在业务侧，不要长期躺在仓库根。
+5. **Gate 全链 E2E 未跑**：后端 16039 未启动（依赖已就绪：MySQL 13306 / IPD 专用
+   Redis 16379 均通），需先 `mvn package` 再起进程，属本轮剩余的执行项。
+6. 清污（③刀）、SOP 起草（⑤刀 S1）、Qa04 口令（⑥刀）均未动，分别等 owner 拍板或输入。
