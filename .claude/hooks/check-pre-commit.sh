@@ -584,6 +584,34 @@ else
     echo "[check-pre-commit] SKIP 门禁 12: scripts/find-thing.sh 不存在"
 fi
 
+# ---------------------------------------------------------------------------
+# 门禁 13: 配置层红线（2026-10-07）
+# owner 红线：只允许推 wilson323/ruoyi-ai 与 wilson323/ruoyi-admin，且只允许各自固定分支。
+#
+# 防线缺口（2026-10-07 实测得出）：铁律一此前**只有一道防线**——
+#   运行时 block-dangerous-git.sh（PreToolUse，单日拦 1189 次）。
+#   但 permissions.allow 由**宿主直接读**，不经过本仓任何守卫
+#   （实测 .claude/helpers/hook-handler.cjs 内无任何对 allow 的校验）。
+#   ⇒ 一旦有人往 allow 里塞了推送类放行项，运行时守卫会被**整体旁路**
+#     （allow 命中即免审，守卫根本不被调用），红线形同虚设。
+# 本门禁补上配置层那道，并自带 6 个样本自证（含推送 / 含上游远端 / 含 HEAD 必报红）。
+# 成本: 约 0.2s。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 13: 配置层红线"
+if [ -f scripts/check-no-nonprivate-allow.sh ]; then
+    if bash scripts/check-no-nonprivate-allow.sh >/tmp/_g13.log 2>&1; then
+        PASSED=$((PASSED + 1))
+        echo "[check-pre-commit] PASS 门禁 13: 配置层无推送放行、无非指定远端放行"
+    else
+        FAILED=$((FAILED + 1))
+        echo "[check-pre-commit] FAIL 门禁 13: 配置层红线被破坏" >&2
+        cat /tmp/_g13.log >&2
+    fi
+else
+    SKIPPED=$((SKIPPED + 1))
+    echo "[check-pre-commit] SKIP 门禁 13: scripts/check-no-nonprivate-allow.sh 不存在"
+fi
+
 echo "[check-pre-commit] 总结: passed=$PASSED failed=$FAILED skipped=$SKIPPED"
 [[ "$FAILED" -gt 0 ]] && exit 1
 exit 0
