@@ -207,6 +207,19 @@ sa-token:
 
 # IPD 模块配置（SEC-HIGH-2：INITIAL_PWD 挪 env 注入）
 ipd:
+  # ------------------------------------------------------------------
+  # 种子/基线数据（2026-10-07：确保上线安装后不是空库）
+  # ------------------------------------------------------------------
+  seed:
+    # ZK-IPD 基线场景（产品组/人员/产品/项目/阶段/动作，6组/13人/5项目）。
+    # 过去 IpdZkScenarioInitializer 挂 @Profile("dev")，生产装完是**空库**——
+    # 没有人员、没有产品组、没有任何项目，登录进去什么都不是。
+    # 改为全环境默认开启；要纯空库部署时显式关掉：ipd.seed.zk-scenario.enabled=false
+    zk-scenario:
+      enabled: true
+    # 要素种子（gate_review_elements 33 条）**故意不带开关**：它是 Gate 评审的业务前置，
+    # 缺了整套评审跑不起来；且实现是「仅当表空才写」，表非空时一行不写、绝不覆盖。
+
   # IPD 独立 WebSocket 端点（IpdWebSocketConfig；owner 裁决 2026-10-03：保留 IPD 独立键，
   # 不与平台 websocket.enabled 合并——两套 Sa-Token 鉴权域不同，合并会同时激活平台端点并冲突）。
   # 注意与 ipd.notification.websocket（通知投递渠道参数）是两码事：本段控制端点是否注册。

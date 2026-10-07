@@ -6,6 +6,7 @@ import org.ruoyi.ipd.domain.GateElement;
 import org.ruoyi.ipd.mapper.GateElementMapper;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@Order(10)
 @RequiredArgsConstructor
 public class IpdGateElementSeedInitializer implements ApplicationRunner {
 

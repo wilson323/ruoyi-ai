@@ -22,9 +22,9 @@ import org.ruoyi.ipd.service.ISystemConfigService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.util.Calendar;
@@ -44,13 +44,27 @@ import java.util.List;
  * </ul>
  *
  * <p>密码：BCrypt（cost 10）运行时生成，来源 {@code ipd.security.initial-password}（SEC-HIGH-2，源码无字面量），
- * 首登强制改密 must_change_pwd=1。仅 dev profile。
+ * 首登强制改密 must_change_pwd=1。
+ *
+ * <p><b>装配范围（2026-10-07 改）</b>：过去挂 {@code @Profile("dev")}，生产装完是空库；
+ * 现全环境装配，由 {@code ipd.seed.zk-scenario.enabled}（默认 true）控制。
  */
 @Slf4j
 @Component
-@Profile("dev")
+@Order(20)
 @RequiredArgsConstructor
 public class IpdZkScenarioInitializer implements ApplicationRunner {
+
+    /**
+     * ZK-IPD 基线场景是否随应用启动自动灌入。
+     *
+     * <p><b>2026-10-07 owner 要求「确保后续上线安装自动初始化好」</b>：过去本类挂
+     * {@code @Profile("dev")}，所以生产装完是<b>空库</b>——没有人员、没有产品组、
+     * 没有项目，登录进去什么都不是。改为默认开启，落到可配置开关上：
+     * 需要纯空库的部署可显式关掉。
+     */
+    @Value("${ipd.seed.zk-scenario.enabled:true}")
+    private boolean enabled;
 
     @Value("${ipd.security.initial-password}")
     private String runtimeInitialPwd;
@@ -63,12 +77,34 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
     private final StageActionMapper stageActionMapper;
     private final ProjectMemberMapper projectMemberMapper;
     private final ISystemConfigService systemConfigService;
+    /**
+     * 真事务边界。用 {@code TransactionTemplate} 而非把 {@code @Transactional} 挪到
+     * {@code seed()}：Spring 的事务靠代理生效，{@code run()} 内部自调用 seed() 不走代理，
+     * 注解会静默失效（2026-10-07 改版时踩到）。走 TransactionTemplate 还能让
+     * 「回滚」发生在事务内、「记 ERROR」发生在事务外——两者都成立。
+     */
+    private final TransactionTemplate transactionTemplate;
 
     private static final List<String> SIX_STAGES = List.of("CONCEPT", "PLAN", "DEV", "VALID", "LAUNCH", "LIFECYCLE");
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) {
+        if (!enabled) {
+            log.info("[IPD] ZK-IPD 基线场景初始化已按配置跳过（ipd.seed.zk-scenario.enabled=false）");
+            return;
+        }
+        // 种子失败绝不能拖垮应用启动：基线数据缺失应表现为「数据没灌上」，
+        // 而不是「服务起不来」。故整体兜住异常，只记 ERROR。
+        // 幂等由本类内部 exists/selectCount 保证，失败后下次启动会重试。
+        try {
+            transactionTemplate.executeWithoutResult(status -> seed());
+        } catch (Exception ex) {
+            log.error("[IPD] ZK-IPD 基线场景初始化失败（不影响应用启动；下次启动会因幂等重试）", ex);
+        }
+    }
+
+    /** 在 {@link #run} 传入的事务内执行。自身不加 {@code @Transactional}（自调用不走代理）。 */
+    private void seed() {
         Long gMarketHw = ensureGroup("时间安全管理产品组");
         Long gMarketSw = ensureGroup("云应用产品组");
         Long gMarketIt = ensureGroup("项目集成产品组");
