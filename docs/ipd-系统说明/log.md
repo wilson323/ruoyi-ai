@@ -17021,3 +17021,53 @@ knowledge_info 0 行 → 此处短路 → 空 block（无失败标记）
 `L65`（参数无效）与 `L130`（查了但确实没有）仍返回同一形状。严格说 L65 也该带标记，
 但 L130 是**正常业务结果**、L65 是**编程错误**，改动面比 L74 大；
 且 L74 修完后，三者已不再完全同形（L74 有标记）。**是否继续拆分由 owner 定。**
+
+## 2026-10-07 资料库闭环全链路取证：断点在「向量库失败连累 MySQL 入库」
+
+### 推翻了一处此前的错误定性
+**此前记为「知识库从未被导入过（表空）」——这是症状不是病因。**
+真实因果（下述代码为证）：**上传成功过，但每一条都在写向量库那步被掐断，因此切片一条也没存进 MySQL。**
+
+### 完整链路（代码层面五环全部实现，无断点）
+上传 `KnowledgeAttachController:114` → 建库 `KnowledgeInfoController:90` →
+解析 `KnowledgeAttachController:127`（`@Async`，前端 `autoParse` 默认 true，无需手动点）→
+切片 `KnowledgeAttachServiceImpl:239/283`（6 种分片器）→ 入库 `:338-360` → 检索 `ProjectKnowledgeRetriever:51`
+
+### 断点精确位置（`KnowledgeAttachServiceImpl.java`）
+```
+:339  vectorStoreService.storeEmbeddings(...)   ← 写向量库，向量库未起则此处抛异常
+:340-348  catch → 补偿删除 → :348 throw vectorError   ← 方法直接退出
+─────── 以下永不执行 ───────
+:360  knowledgeFragmentMapper.insertBatch(...)  ← MySQL 切片入库
+```
+⇒ **向量库写失败 ⇒ MySQL 切片也写不进去。** 两张表全 0 行是这条链的结果，不是缺种子数据
+（实测 `grep 'INSERT INTO knowledge_info'` 源码与 SQL 目录**零命中**，本就不该有种子）。
+
+### 为什么用户完全看不出来（静默失效最完整的一例）
+1. 解析是 **`@Async`**，上传接口在解析开始前就返回 **200**
+2. 外层 `catch`（`:366-371`）失败时**只置状态 FAILED + 写 error 日志，不抛异常**
+3. 用户看到「上传成功」；除非他主动去看附件状态，否则无从知道后台已失败
+
+**实测环境**：28080(Weaviate) **CLOSED**；19530(Milvus) CLOSED；6334(Qdrant) 端口在听但非 HTTP 服务；
+`application.yml:654` 配置为 `${VECTOR_STORE_TYPE:weaviate}` ⇒ **这条路当前 100% 走不通**。
+
+### 另一个被证伪的怀疑
+「AI 文档」与「资料库」**不是两套互不相通的系统**——
+`ProjectKnowledgeRetriever:51-78` **同时合并三个来源**：知识库向量 + 知识库正文 LIKE + 已审核文档向量。
+装配见 `ProjectAgentConfiguration:269-277`。
+但两者确实**落不同的表且无互相灌数代码**：资料库落 `knowledge_*`，AI 文档落 `ai_documents/ai_doc_embeddings`；
+在资料库菜单上传的不会进 `ai_documents`，反之亦然。
+
+### 最小可用路径（无需写代码，缺的是「启动 Weaviate」这一个动作）
+1. 起 Weaviate（28080）
+2. 资料库菜单 → 新建知识库（选 Weaviate + 嵌入模型）→ 上传文档 → **保持「自动解析」为开** → 等状态到「已完成」
+3. 此时 `knowledge_fragment` 才有切片行，智能体才检索得到
+
+### 待 owner 决策（两处）
+- **向量库不可用时，是否仍应把切片写进 MySQL**（文本检索那一路不依赖向量库，现在被向量库失败连累而一起写不进去）
+- **解析失败是否该在上传接口就返回失败**，而不是异步吞掉后让用户去猜
+
+### 附带取证（菜单权限码不一致）
+资料库菜单 `perms=ipd:doc:list`，但页面实际加载底座 `knowledge/info/index`、调 `/system/info/list`，
+需要 `system:info:list`。当前能进是因为相关角色同时被授予两个菜单，
+但那些角色 `status=0` 已停用，实际只有超管可用。**标为已取证，影响面待判断。**
