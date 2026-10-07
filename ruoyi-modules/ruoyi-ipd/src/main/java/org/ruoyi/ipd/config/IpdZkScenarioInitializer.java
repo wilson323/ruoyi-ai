@@ -126,7 +126,11 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         Long shangguanZhichang = ensurePerson("上官志昌", "RIT-L01", "GROUP_LEADER", gRdIt, "L4", "项目集成产品线组长");
         ensurePerson("方武略", "RIT-P01", "RD_PM", gRdIt, "L4", "研发PM（ZK-IPD 场景）");
 
-        // ---- 3 个已完结项目（原型 PROJECTS；ARCHIVED + 全阶段 DONE + DONE 动作）----
+        // ---- 3 个已完结项目（ARCHIVED + 全阶段 DONE + DONE 动作）----
+        // 出处：wss 原型 scenario.mjs 的 PROJECTS（ENT-AC-100 / ZK-IAT-ATT / VIS-RD-100），
+        // 路径 /Users/mac/Documents/wss/产品流程细化管理工具 2/server/scenario.mjs。
+        // 注意该源数据**不在本仓库内**，本类是其 Java 侧镜像；改动请两边同步。
+        // 逐条核对结论见 docs/ipd-系统说明/验收/wss-需求对照-20261006/110-系统基线数据来源台账.md。
         seedCompletedProject("ENT-AC-100", "入门级门禁产品", "HARDWARE", "A",
             new BigDecimal("8000000"), duanJinke, chengLong, gMarketHw);
         seedCompletedProject("ZK-IAT-ATT", "熵基互联考勤模块", "SOFTWARE", "S",
@@ -135,6 +139,10 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
             new BigDecimal("6000000"), chenBiqin, shangguanZhichang, gMarketIt);
 
         // ---- 2 个运行态项目（原 workbench 硬编码 demo；供待办/超期/责任过滤真实测试）----
+        // ⚠️ 这两个项目**不在 wss 的 scenario.mjs 里**（源数据只有上面 3 个已完结项目）。
+        //   它们是刻意补的：源数据 3 个项目全部走完生命周期，若没有在途项目，
+        //   待办列表 / 超期提醒 / 责任人过滤就永远只能测空集。
+        //   登记与待决见 110-系统基线数据来源台账.md §二。
         Project gateTest = seedActiveProject("ZK-GATE-TEST", "如门禁测试", "HARDWARE", "B",
             "PLAN", duanJinke, chengLong, gMarketHw, null);
         action(gateTest, "PLAN", "P01", "市场准入合规清单梳理", "MARKET_PM", "IN_PROGRESS", daysFromNow(-5));
