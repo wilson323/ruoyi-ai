@@ -51,7 +51,7 @@
 
 ## 自动化栈（Claude Code 运行时强制）
 
-- `.claude/hooks/block-dangerous-git.sh` 阻断 `git push` / `git reset --hard` / `git clean -f` / `git branch -D` / `git checkout .` / `git restore .`——push 被拦是预期行为，需要用户明确授权，不要绕过。
+- `.claude/hooks/block-dangerous-git.sh` 阻断 `git push` / `git reset --hard` / `git clean -f` / `git branch -D` / `git checkout .` / `git restore .`——push 按 2026-10-07 任务结束必推送规则执行（owner 已明令授权）；其余危险动作被拦为预期，不要绕过。
 - `.claude/helpers/sensitive-field-guard.cjs` 阻断写 `.env*` / `application-prod.yml` / PEM 私钥内容；警告 JWT secret、明文 password 字面量。
 - `.claude/helpers/ratchet-data-guard.cjs`（R212 卡 7b76b7cd）阻断 agent 直接编辑 `scripts/baselines/*.json`（baseline 只允许 `node scripts/check-api-contract-fe-be.mjs --update-baseline` 脚本独占写）与 `docs/ipd-系统说明/api-internal-whitelist.json`（白名单变更须挂看板卡人审）。
 - API 契约孤儿棘轮门禁（R212，2026-09-24 owner 拍板）：`node scripts/check-api-contract-fe-be.mjs` 默认 `ratchet=fail`，孤儿端点「只减不增」——存量分诊为白名单 25 条（内部/运维口，六条防伪校验）+ baseline 22 条老账（`scripts/baselines/`，sha256 自洽 + `git show HEAD` 硬闸防手工编辑）。**退出码位掩码**：`0` 通过 / `1` P0 孤儿路径（或 strict）/ `2` 环境或输入错（含白名单防伪失败、baseline 被改）/ `4` 新孤儿未白名单，可叠加（如 `6=2|4`）；既有 1/2 语义不变。已接入 `.claude/hooks/check-pre-commit.sh` 门禁 3（fast 模式也跑）。逃生阀 `--ratchet=off`。
@@ -73,7 +73,7 @@
 - 全局梳理 / 治理类任务：要用专业智能体与工具做蜂群并行，走「盘点 → 实施 → 验证 → 文档/看板同步」闭环，不要只给建议。
 - 执行中必须及时更新看板卡片状态（待办 / 进行中 / 阻塞 / 待审核 / 已完成）；证据不足时标 PARTIAL，不得提前标 done。
 - 选定方案后用「继续 / A / 指定卡号」直接落地推进，少停在方案对比。
-- 收口三步法扩为四步（R214 建议5，2026-09-24）：①核对本次差异 ②当前用户明确授权后才 commit+push，未授权保留未提交差异 ③核对工作树，保留其他在途修改 ④**验收完成即更新看板卡面**——补注记、翻状态，不许卡面滞后于事实（f42d37dd 类「假缺口」的根源就是第④步缺失）。
+- 收口三步法扩为四步（R214 建议5，2026-09-24）：①核对本次差异 ②按 2026-10-07 规则：任务结束必须整合工作树 commit+push 到固定分支（原「等明确授权」口径已废除） ③核对工作树，保留其他在途修改 ④**验收完成即更新看板卡面**——补注记、翻状态，不许卡面滞后于事实（f42d37dd 类「假缺口」的根源就是第④步缺失）。
 
 ## Learned Workspace Facts
 
