@@ -155,15 +155,6 @@
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c 'echo \"[Layer 1 提醒] 变更已落盘。请确认：① 证据已写入 plan.md ② 文档已同步 ③ 本单元已验证\" >&2; exit 0'"
-          }
-        ]
-      },
-      {
         "matcher": "Bash|Write|Edit|MultiEdit",
         "hooks": [
           {
@@ -179,6 +170,15 @@
             "type": "command",
             "command": "node -e 'const{spawnSync}=require('\\''child_process'\\'');const p=Buffer.from('\\''L1VzZXJzL21hYy9Eb2N1bWVudHMvcnVveWktYWkvLmNsYXVkZS9ob29rcy9ldm9sdmVyLXNpZ25hbC1kZXRlY3QuanM='\\'','\\''base64'\\'').toString('\\''utf8'\\'');const r=spawnSync(process.execPath,[p],{stdio:'\\''inherit'\\'',shell:false});if(r.error){console.error(r.error.message||String(r.error));process.exit(1)};process.exit(r.status==null?1:r.status)' evolver-signal-detect.js",
             "timeout": 2
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[Layer 1 提醒] 变更已落盘。请确认：① 证据已写入 plan.md ② 文档已同步 ③ 本单元已验证\" >&2; exit 0'"
           }
         ]
       }
@@ -260,20 +260,20 @@
         ]
       },
       {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c 'echo \"[Layer 1 收口清单] 说\\\"完成\\\"前逐条过：构建通过 / 检查通过 / 测试通过（真实执行有输出）/ 范围未越界 / 文档已同步 / 证据已入 plan.md / 遗留问题已列出 / 交接文件已写。依据 Skill session-finalization-gate。\" >&2; exit 0'"
-          }
-        ]
-      },
-      {
         "hooks": [
           {
             "type": "command",
             "command": "node -e 'const{spawnSync}=require('\\''child_process'\\'');const p=Buffer.from('\\''L1VzZXJzL21hYy9Eb2N1bWVudHMvcnVveWktYWkvLmNsYXVkZS9ob29rcy9ldm9sdmVyLXNlc3Npb24tZW5kLmpz'\\'','\\''base64'\\'').toString('\\''utf8'\\'');const r=spawnSync(process.execPath,[p],{stdio:'\\''inherit'\\'',shell:false});if(r.error){console.error(r.error.message||String(r.error));process.exit(1)};process.exit(r.status==null?1:r.status)' evolver-session-end.js",
             "timeout": 8
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[Layer 1 收口清单] 说\\\"完成\\\"前逐条过：构建通过 / 检查通过 / 测试通过（真实执行有输出）/ 范围未越界 / 文档已同步 / 证据已入 plan.md / 遗留问题已列出 / 交接文件已写。依据 Skill session-finalization-gate。\" >&2; exit 0'"
           }
         ]
       }
