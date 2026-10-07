@@ -37,8 +37,12 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 #    ⚠ 仍不是严格命令解析：形如 `alias gp='git push'; gp` 这类别名间接调用
 #    依旧判不出来。本守卫是「便宜的前置检查」，不是沙箱，别把它的放行当安全证明。
 # ---------------------------------------------------------------------------
-FLAT=$(printf '%s' "$COMMAND" | tr -d '\n\r\t"'\''`' | tr -s ' ')
-printf '%s' "$FLAT" | grep -qE '(^|[|;&(])[[:space:]]*git[[:space:]]+(-[^[:space:]]+[[:space:]]+)*push([[:space:]]|$)' || exit 0
+# 换行/制表符要**换成空格**而不是删掉——删掉会把 `git status\ngit push upstream`
+# 粘成 `git statusgit push upstream`，反而让第二条命令消失（2026-10-07 自测抓到的自伤 bug）。
+FLAT=$(printf '%s' "$COMMAND" | tr '\n\r\t' '   ' | tr -d '"\''`' | tr -s ' ')
+# 不要求 git 前面是分隔符：`bash -c "git push upstream"` 这类包裹必须照样识别，
+# 否则换个 shell 包一层就绕过去了（2026-10-07 自测抓到的绕过）。
+printf '%s' "$FLAT" | grep -qE 'git[[:space:]]+(-[^[:space:]]+[[:space:]]+)*push([[:space:]]|$)' || exit 0
 
 # ---------------------------------------------------------------------------
 # 2. 取出远端名：push 之后第一个不以 - 开头的 token；没有则取 origin。
@@ -70,12 +74,29 @@ if [ -z "$URL" ] && [ "$REMOTE" != "origin" ]; then
   URL=$(cd "$REPO_ROOT" 2>/dev/null && git remote get-url origin 2>/dev/null)
 fi
 
+# --- 精确比对 owner/repo，绝不用「包含」匹配 ---
+# 2026-10-07 自测抓到的洞：原来写 `case "$URL" in *wilson323/ruoyi-ai*)`，
+# 于是下面三个**公开仓**全部被误判成私有仓放行：
+#     github.com/attacker/wilson323/ruoyi-ai.git      （私有仓名塞进别人的路径）
+#     github.com/wilson323/ruoyi-ai-EVIL.git         （后缀拼接）
+#     https://evil@github.com/x/wilson323/ruoyi-ai    （用户名里带私有仓名）
+# 现在：剥掉 scheme、剥掉 userinfo（user:pass@）、剥掉 .git 与尾斜杠，
+# 只取路径最后两段作为 owner/repo，与允许清单做**整串相等**比较。
+SAFE_URL=$(printf '%s' "$URL" \
+  | sed -E 's#^[A-Za-z][A-Za-z0-9+.-]*://##; s#^[^/@]*@##; s#^([^/:]+):(.*)$#\1/\2#' \
+  | sed -E 's#\.git$##; s#/*$##')
+HOST=$(printf '%s' "$SAFE_URL" | cut -d/ -f1)
+OWNER_REPO=$(printf '%s' "$SAFE_URL" | cut -d/ -f2-)
+# 主机名也要锁：本仓两个目标都在 github.com 且路径正好是 owner/repo 两段。
+# 只取「最后两段」比对会漏掉嵌套路径（2026-10-07 自测抓到）：
+#     github.com/attacker/wilson323/ruoyi-ai   → 末两段恰好等于允许项 → 误放行
+# 锁死主机 + 要求路径整串相等，仿冒就没有落身之处。
 ALLOWED=0
-for owner_repo in "wilson323/ruoyi-ai" "wilson323/ruoyi-admin"; do
-  case "$URL" in
-    *"$owner_repo"*) ALLOWED=1 ;;
+if [ "$HOST" = "github.com" ]; then
+  case "$OWNER_REPO" in
+    wilson323/ruoyi-ai|wilson323/ruoyi-admin) ALLOWED=1 ;;
   esac
-done
+fi
 [ "$ALLOWED" = "1" ] && exit 0
 
 # ---------------------------------------------------------------------------
@@ -85,13 +106,22 @@ done
 {
   [ -n "$REPO_ROOT" ] && [ -d "$REPO_ROOT/.harness/audit" ] || exit 0
   HASH=$(printf '%s' "$COMMAND" | shasum -a 256 2>/dev/null | cut -d' ' -f1)
-  CTX=$(printf '%s' "$FLAT" | grep -oE '.{0,60}push.{0,60}' 2>/dev/null | head -1)
+  # 上下文片段同样会连着 URL 一起把 user:pass 带出来，必须一起洗掉。
+  # 2026-10-07 自测实测到：只洗 url 字段不够，remote 与 match_context 两个字段
+  # 都会把明文口令落进 .harness/audit/。三处都过一遍脱敏。
+  # 读标准输入，不是 $1：调用方式是 `printf '%s' "$X" | scrub`，
+  # 若函数体写 printf '%s' "$1" 则 $1 为空，输出整段变空串（日志会丢字段）。
+  # 2026-10-07 自测：这是脱敏第一版把 remote / match_context 洗成空的原因。
+  scrub() { sed -E 's#(://)?[^/@[:space:]]+:[^/@[:space:]]+@#\1***:***@#g'; }
+  CTX=$(printf '%s' "$FLAT" | grep -oE '.{0,60}push.{0,60}' 2>/dev/null | head -1 | scrub)
+  REMOTE_LOG=$(printf '%s' "$REMOTE" | scrub)
   SESSION=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+  # 绝不把带凭证的 URL（https://user:pass@…）原样落盘——用 SAFE_URL（已剥 userinfo）
   printf '{"ts":"%s","session":"%s","rule":"push-non-private","remote":"%s","url":"%s","cmd_sha256":"%s","cmd_len":%s,"match_context":"%s"}\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     "$(printf '%s' "$SESSION" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
-    "$(printf '%s' "$REMOTE" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
-    "$(printf '%s' "$URL" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
+    "$(printf '%s' "$REMOTE_LOG" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
+    "$(printf '%s' "$SAFE_URL" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
     "$HASH" "${#COMMAND}" \
     "$(printf '%s' "$CTX" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
     >> "$REPO_ROOT/.harness/audit/blocked-$(date -u +%Y-%m-%d).jsonl"
@@ -100,7 +130,7 @@ done
 {
   echo "BLOCKED: 拒绝推送到非私有仓库。"
   echo "  远端: $REMOTE"
-  echo "  URL : ${URL:-<解析不到>}"
+  echo "  目标: ${OWNER_REPO:-<解析不到>}"
   echo "  允许清单（owner 指定的私有仓）：wilson323/ruoyi-ai、wilson323/ruoyi-admin"
   echo "  处置：这是本项目铁律一——只允许推送到 owner 指定的私有仓。"
   echo "        确认目标确实是私有仓后，改用显式远端名重试（如 git push origin <branch>）。"
