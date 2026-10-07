@@ -79,7 +79,34 @@ FLAT=$(printf '%s' "$COMMAND" | tr '\n\r\t' '   ' | tr -d '\042\047\140' | tr -s
 # 2026-10-07 复核实测：`bash -c 'git -C <公开仓> push upstream main'` 旧版即 EXIT=0，
 # 而本文件原注释却声称「bash -c 这类包裹必须照样识别」——**声明与实况不符**。
 # 这里用八进制写引号字符，避免 tr 字符集写法歧义（'\047' 在部分写法下不生效）。
-JUDGE=$(printf '%s' "$COMMAND" | tr '\n\r\t' '   ' | tr '\042\047\140' '   ' | tr -s ' ')
+JUDGE=$(printf '%s' "$COMMAND" | python3 -c '
+import sys, re
+text = sys.stdin.read()
+# 剥掉 heredoc 正文。2026-10-07 自伤实录：写一条「推送守卫已加分支判据」的
+# commit message 时，message 里出现推送命令字样，被守卫当成真命令拦下，
+# 自己把自己锁在门外——规则文本长得像命令，就被当命令判了。
+# 只保留 `<<TAG` 之前的部分（那里才是真命令），正文直到 TAG 行整段丢弃。
+out, lines, i = [], text.split("\n"), 0
+while i < len(lines):
+    line = lines[i]
+    m = re.search(r"<<-?[ \t]*[\"\x27]?([A-Za-z_][A-Za-z0-9_]*)[\"\x27]?", line)
+    if m:
+        out.append(line[:m.start()])
+        tag = m.group(1)
+        i += 1
+        while i < len(lines) and lines[i].strip() != tag:
+            i += 1
+        i += 1
+        continue
+    out.append(line)
+    i += 1
+flat = " ".join(out)
+# 引号换成空格（不删）：删掉会把 git 与 push 粘成一个词反而漏判，
+# 且 shell -c 的内层命令要靠剥引号才暴露得出来。
+flat = flat.replace(chr(34), " ").replace(chr(39), " ").replace(chr(96), " ")
+flat = flat.replace("\t", " ")
+print(re.sub(r"[ ]{2,}", " ", flat).strip())
+')
 # 带值参数段（-C <目录> / -c k=v / --git-dir=<目录>）会让「git 与 push 之间只夹
 # 单 token -xxx」的判据失配。2026-10-07 实测：`git -C <公开仓> push upstream main`
 # 与 `git -c k=v push upstream main` 都在这里被放行。先剥掉再判。
@@ -88,6 +115,45 @@ STRIPPED=$(printf '%s' "$JUDGE" \
           -e 's#(^|[[:space:]])--git-dir=[^[:space:]]+##g' \
           -e 's#(^|[[:space:]])-c[[:space:]]+[^[:space:]]*=[^[:space:]]+##g' \
           -e 's#[[:space:]]+# #g' -e 's#^ ##' -e 's#[[:space:]]+$##')
+# 3a. 只认「命令位置」上的 git 推送命令。第二段自伤实录：echo 一段含推送命令的
+#     文字时，那串字只是被打印出来的文本，不是命令，却照样被判成推送而阻断。
+#     命令位置 = 字符串开头，或 ; && || | ( 之后；其余位置出现的一律不算。
+#     shell -c 包裹单独处理：剥引号后内层文本暴露，递归按同规则再判一次（深度封顶 2）。
+#     必须跑在 STRIPPED 之后：-C <目录> 这类带值参数不先剥掉，段首就不是 git。
+SEP=$(printf '\001')
+IS_PUSH=$(printf '%s' "$STRIPPED" | SEP="$SEP" python3 -c '
+import os, sys, re
+SEP = os.environ["SEP"]
+PUSH_HEAD = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^ ]* )*(?:[^ ]*/)?git( -[^ ]+)* push(?![A-Za-z])")
+PUSH_TIGHT = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^ ]*)*(?:[^/]*/)?git(-[^ ]+)*push(?![A-Za-z])")
+WRAPPER = re.compile(r"^(?:ba|z|k|da)?sh +-c +(.*)$")
+_WS = re.compile(r"[ \t]+")
+def is_push(seg):
+    seg = seg.strip()
+    if not seg:
+        return False
+    if PUSH_HEAD.match(seg):
+        return True
+    return bool(PUSH_TIGHT.match(_WS.sub("", seg)))
+def scan(text, depth=0):
+    try:
+        segs = re.sub(r"&&|\|\||;|\(|\)", SEP, text).split(SEP)
+    except Exception:
+        return False
+    for seg in segs:
+        seg = seg.strip()
+        if not seg:
+            continue
+        if is_push(seg):
+            return True
+        if depth < 2:
+            m = WRAPPER.match(seg)
+            if m and scan(m.group(1), depth + 1):
+                return True
+    return False
+print("1" if scan(sys.stdin.read()) else "0")
+') || { echo "BLOCKED: 守卫自身判据执行失败——无法判断是否推送，按铁律一不放行。" >&2; exit 2; }
+
 # sed 静默失败会让 STRIPPED 变空 → 判据全失配 → 守卫变成永放行（失败长得像成功）。
 # 2026-10-07 实测踩到过：`s# ##$##` 里 `#` 兼作分隔符与字面量，sed 报 bad flag
 # 并输出空串，而整条管道退出码仍是 0。这里自检一次形状，非空才允许继续。
@@ -96,11 +162,17 @@ if [ -z "$STRIPPED" ] && [ -n "$FLAT" ]; then
   exit 2
 fi
 RE_PUSH='git[[:space:]]+(-[^[:space:]]+[[:space:]]+)*push([[:space:]]|$)'
-# 两条判据取或：STRIPPED 抓「剥掉带值参数 + 穿透 shell 包裹」，
-# FLAT 抓 `git pu"sh"` 这类引号拼接绕过（它靠 tr -d 把引号粘起来才匹配）。
-printf '%s' "$STRIPPED" | grep -qE "$RE_PUSH" && PUSH_SEEN=1
-printf '%s' "$FLAT"     | grep -qE "$RE_PUSH" && PUSH_SEEN=1
-[ "${PUSH_SEEN:-0}" = "1" ] || exit 0
+# 判据取命令位置扫描结果（IS_PUSH，定义见 3a）。原来的「整段文本 grep」有两个问题，
+# 本轮实测各踩一次：
+#   ① 假阳性：echo / commit message 里出现的推送命令**字样**也被当成命令 → 阻断自己干活。
+#   ② 叠加分支判据后更糟：仓库对、分支不对，于是这条假阳性直接变成硬阻断。
+# 保留 RE_PUSH 仅供日志旁证，不再作为放行/阻断依据——依据必须是 IS_PUSH。
+case "$IS_PUSH" in
+  1) PUSH_SEEN=1 ;;
+  0) PUSH_SEEN=0 ;;
+  *) echo "BLOCKED: 守卫判据返回异常值（IS_PUSH=${IS_PUSH:-空}）——按铁律一不放行。" >&2; exit 2 ;;
+esac
+[ "$PUSH_SEEN" = "1" ] || exit 0
 # ---------------------------------------------------------------------------
 # 2. 取出远端名：push 之后第一个不以 - 开头的 token；没有则取 origin。
 #
@@ -199,11 +271,43 @@ if [ "$HOST" = "github.com" ]; then
     wilson323/ruoyi-ai|wilson323/ruoyi-admin) ALLOWED=1 ;;
   esac
 fi
+
+# ---------------------------------------------------------------------------
+# 3b. 分支维度（owner 2026-10-07 追加：这两个仓的**其他分支**同样禁止推送）。
+#     仓库对上了不代表分支也对得上：`git push origin main` 目标仓合法、写入分支不合法。
+#     这里要求「恰好一个 refspec，且逐字等于该仓的固定分支」，以下全部阻断：
+#       git push origin                              （无 refspec = 无法证明写哪里）
+#       git push origin HEAD                         （HEAD 不是固定分支名）
+#       git push origin main                         （非固定分支）
+#       git push origin baseline/pre-teardown:main   （会把固定分支的内容写进 main）
+#     宁可误杀也不放行：写错分支的代价（污染 main / 动别人的分支）远大于重敲一遍命令。
+# ---------------------------------------------------------------------------
+FIXED_BRANCH=""
+case "$OWNER_REPO" in
+  wilson323/ruoyi-ai)    FIXED_BRANCH="baseline/pre-teardown" ;;
+  wilson323/ruoyi-admin) FIXED_BRANCH="teardown/incentive-removal" ;;
+esac
+
+PUSH_TAIL=$(printf '%s' "$STRIPPED" \
+  | sed -nE 's/.*git[[:space:]]+(-[^[:space:]]+[[:space:]]+)*push[[:space:]]+//p')
+# 第 1 个非 flag token 是远端名/URL（上面 REMOTE 就是这么取的），其余才是 refspec。
+REFSPECS=$(printf '%s' "$PUSH_TAIL" \
+  | tr ' \t' '\n\n' \
+  | grep -vE '^(-|$)' \
+  | sed -n '2,$p' \
+  | sed 's/[[:space:]]*$//')
+REFSPEC_COUNT=$(printf '%s' "$REFSPECS" | grep -c . || true)
+BRANCH_OK=0
+if [ "$REFSPEC_COUNT" = "1" ] && [ "$REFSPECS" = "$FIXED_BRANCH" ]; then
+  BRANCH_OK=1
+fi
+
 # ALLOWED=0 的三种成因，日志/提示里要能区分，否则排查时看不出是哪一种漏网：
 #   UNRESOLVED=1 → -C/--git-dir 指向处不是可解析的 git 仓库，本守卫无从判断
 #   HOST 非 github.com → 目标在别的主机（自建 GitLab 等）
 #   两者皆非 → 是远端名/URL 明确解析出来了，但不在允许清单里
-[ "$ALLOWED" = "1" ] && exit 0
+# ALLOWED=1 但 BRANCH_OK=0 是**第四种**成因：仓库对、分支不对。
+[ "$ALLOWED" = "1" ] && [ "$BRANCH_OK" = "1" ] && exit 0
 
 # ---------------------------------------------------------------------------
 # 4. 拦非私有仓 + 留痕（只记 远端 + URL + 命中上下文 60 字符，不记命令全文，
@@ -234,7 +338,7 @@ fi
 } 2>/dev/null || true
 
 {
-  echo "BLOCKED: 拒绝推送到非私有仓库。"
+  echo "BLOCKED: 拒绝推送。"
   echo "  远端: $REMOTE"
   if [ -n "${UNRESOLVED:-}" ]; then
     echo "  目标: <无法确认> —— 命令里的 -C / --git-dir 指向处解析不出 git 仓库"
@@ -242,9 +346,18 @@ fi
   else
     echo "  目标: ${OWNER_REPO:-<解析不到>}"
   fi
-  echo "  允许清单（owner 指定的私有仓）：wilson323/ruoyi-ai、wilson323/ruoyi-admin"
-  echo "  处置：这是本项目铁律一——只允许推送到 owner 指定的私有仓。"
-  echo "        确认目标确实是私有仓后，改用显式远端名重试（如 git push origin <branch>）。"
+  if [ "$ALLOWED" = "1" ]; then
+    echo "  分支: 仓库在允许清单里，但分支不符。"
+    echo "        该仓固定分支: ${FIXED_BRANCH}"
+    echo "        实际 refspec: ${REFSPECS:-<无>}"
+    echo "  处置：owner 2026-10-07 明令——这两个仓的**其他分支**同样禁止推送；"
+    echo "        不新建、不切换、不向 main 或其他分支合并/变基作为最终交付。"
+    echo "        重试请写明固定分支：git push origin ${FIXED_BRANCH}"
+  else
+    echo "  允许清单（owner 指定的私有仓）：wilson323/ruoyi-ai、wilson323/ruoyi-admin"
+    echo "  处置：这是本项目铁律一——只允许推送到 owner 指定的私有仓。"
+    echo "        确认目标确实是私有仓后，改用显式远端名重试（如 git push origin <branch>）。"
+  fi
   echo "  留痕: .harness/audit/blocked-$(date -u +%Y-%m-%d).jsonl"
 } >&2
 

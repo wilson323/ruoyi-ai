@@ -51,11 +51,25 @@ run 2 "git -c k=v 形态"                      "git -c user.name=x push upstream
 
 echo
 echo "=== B. 必须放行的：推向 owner 指定私有仓（期望 EXIT=0，防误杀）==="
-run 0 "本仓 push origin 私有分支"             "git push origin baseline/pre-teardown"
+run 0 "本仓 push origin 固定分支"             "git push origin baseline/pre-teardown"
 run 0 "-C 指向本仓自身 + push origin"         "git -C $OWN push origin baseline/pre-teardown"
-run 0 "-C 靶子仓但推它的私有 origin"          "git -C $FAKE push origin main"
+run 0 "-C 靶子仓但推它的私有 origin + 固定分支" "git -C $FAKE push origin baseline/pre-teardown"
 run 0 "显式私有 URL（后端）"                  "git push https://github.com/wilson323/ruoyi-ai.git baseline/pre-teardown"
 run 0 "显式私有 URL（前端）"                  "git push https://github.com/wilson323/ruoyi-admin.git teardown/incentive-removal"
+
+echo
+echo "=== B2. 分支维度：仓库对但分支不合法，一律阻断（owner 2026-10-07 追加）==="
+# 这组是本轮新增的判据。仓库在允许清单里**不等于**可以往任意分支写；
+# main、前端仓的后端固定分支名、HEAD、以及不带 refspec 的裸 push 全部要拦。
+run 2 "推到 main"                             "git push origin main"
+run 2 "推到 HEAD（无法证明落到哪）"            "git push origin HEAD"
+run 2 "把固定分支的内容转发到 main"            "git push origin baseline/pre-teardown:main"
+run 2 "裸 push（无 refspec）"                  "git push origin"
+run 2 "分支名少打一个字母"                      "git push origin baseline/pre-teardow"
+run 2 "两个 refspec（其中一个必不合法）"        "git push origin baseline/pre-teardown extra"
+run 2 "前端仓推后端固定分支名"                 "git push https://github.com/wilson323/ruoyi-admin.git baseline/pre-teardown"
+run 2 "后端仓推前端固定分支名"                 "git push https://github.com/wilson323/ruoyi-ai.git teardown/incentive-removal"
+run 2 "仓库对但推 main（-C 形态）"            "git -C $FAKE push origin main"
 
 echo
 echo "=== C. 必须放行的：与推送无关（期望 EXIT=0）==="
@@ -64,8 +78,16 @@ run 0 "非 git 命令"                          "ls -la /tmp"
 run 0 "提到 remote 但非 push"                 "git remote -v"
 
 echo
-echo "=== D. 已知遗留局限（修前就有，当前仍误拦；显式登记，不是回归）==="
-run 2 "echo 字符串里提到 push（固有误报）"     "echo 'git push upstream main'"
+echo "=== D. 非命令位置出现的推送字样，不该当成命令（原固有误报，2026-10-07 已修）==="
+# 这条以前登记成「已知遗留局限 · 期望 EXIT=2」，因为守卫整段文本 grep，
+# 只要命令里出现推送命令**字样**就阻断——写规则文档、grep 校验脚本都被自己锁在门外。
+# 改为命令位置判定后，文字里的 git push 不再触发拦截，故期望值同步翻转。
+run 0 "echo 字符串里提到 push（已修的误报）"   "echo 'git push upstream main'"
+run 0 "grep 校验命令里提到 push"              "grep -rn 'git push origin main' .claude/"
+run 0 "注释行里提到 push"                     "git commit -m 'docs: 说明 git push 的分支判据'"
+run 0 "heredoc 正文里提到 push"               "bash -c \"cat <<'X'
+这里写 git push origin main 只是文档
+X\""
 
 echo
 echo "=== 汇总：PASS=$PASS  FAIL=$FAIL ==="
