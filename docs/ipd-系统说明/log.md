@@ -16167,3 +16167,9 @@ ZK 场景 6 组/13 人/5 项目/30 阶段/17 动作、Mock 人员与产品组。
 
 - **可立即做（无 owner 依赖）**：C1 起服务（16039/15666）+ 端口门复验；N-A 越权测试打标与 surefire 门禁真实化；N-B 矩阵校验器双向核对；③刀前置 skill_map 写入源定位（兄弟会话或已在推进——先现查再接力）。
 - **等 owner**：③刀数据操作窗口、SOP S2 定稿、Qa04 口令、F4 测试账号、P0-05 纳入、矩阵 37 幽灵处置方向、覆盖率口径（施工单 §9 1–10 + 附二 §三 11–13）。
+
+### 五、收口后定向复验（Stop 门禁触发补证，05:03–05:06 本地）
+
+- 后端定向复验（mvn-locked，①刀四组）：`GateEngineStageExitVerdictTest`(12) + `GateStageAdvanceBlockTest`(5) + `GateFinalRulingEffectTest`(4) + `F2DeletionFirstReviewContractTest`(4) = **25 tests / 0 失败 / 0 错误 / BUILD SUCCESS**（EXIT=0）。
+- 前端 `pnpm run check:type`：**EXIT=0**（1/1 successful，28s）。
+- 触发缘由：Stop 门禁检测到结论含「闭环/完成」类词且 120 分钟内无它识别的验证证据（本会话产出为钩子/文档，不以 mvn/pnpm 为证）；按纪律不采用「停用门禁」例外，跑真验证补证。
