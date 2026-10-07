@@ -36,9 +36,13 @@ jobs:
 
     steps:
       # SHA 锁定（supply-chain-unpinned-action）：
-      # 复用本仓已实证的同一 SHA —— gitleaks.yml / gate-wiring-meta.yml /
-      # check-prod-secrets-inlined.yml / ownership-gate.yml 均用它跑通过。
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      # 该 SHA 来自**本仓既有工作流**（gitleaks.yml / gate-wiring-meta.yml /
+      # static-gates.yml / ownership-gate.yml / check-prod-secrets-inlined.yml 共 5 处同一写法，
+      # 其 CI 已跑通）——证据来源：仓内 grep，非外部查证、非编造。
+      # ⚠️ 末尾的版本注释 v4.1.1 **本会话未独立核实**（无网络工具），是沿用上述既有文件的
+      #    同一注释。若要与上游 tag 对上，需联网查 actions/checkout 仓库。
+      #    锁 SHA 本身有效且必要：浮动 tag 可被上游重新指向，SHA 不会。
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1（版本未核实，见上）
         with:
           fetch-depth: 0   # 部分门禁要读 git 历史（git log --since 等）
           # 不把令牌留在 .git/config 的 credential helper 里：
