@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
+import org.ruoyi.ipd.mapper.PersonMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -50,6 +54,20 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
     @Autowired(required = false)
     public void setAllowanceService(AllowanceService allowanceService) {
         this.allowanceService = allowanceService;
+    }
+
+    /**
+     * A4-63 数据范围过滤的人员-组映射数据源（可选 setter 注入，同上，不破既有 1 参构造）。
+     *
+     * <p><b>缺失时的退化方向是「更严」不是「更松」</b>：退化为「只看自己」（见
+     * {@link #applyDataScope}），绝不退化成全量披露——安全过滤器缺数据源时默认放行，
+     * 是本仓反复出现过的失效形态。
+     */
+    private PersonMapper personMapper;
+
+    @Autowired(required = false)
+    public void setPersonMapper(PersonMapper personMapper) {
+        this.personMapper = personMapper;
     }
 
 
@@ -167,6 +185,58 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
         }
     }
 
+    /** 超管角色字面量（与 IpdIdorGuard.requireSuperAdmin 同名常量同值，本类不引 security 包常量以免循环依赖）。 */
+    private static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
+
+    /**
+     * A4-63：津贴台账数据范围过滤。
+     *
+     * <p><b>缺口</b>：{@link #list} / {@link #pendingStop} 修复 W5-E-2.3 的 IDOR 时只补了
+     * 「actor 非空」这一道，personId 为 null 时仍返回<b>该月全公司津贴明细</b>——
+     * 任意一个双 PM 都能拉到全公司所有人的津贴金额。四角色都挂在读码
+     * {@code ipd:kpi:query} 上，等于没有任何行级隔离。
+     *
+     * <p><b>口径</b>：超管全量（与 autoScan/requireAdmin 的既有口径一致）；
+     * 其余角色可见集合 = 「自己」∪「与自己同组的人（{@code persons.group_id}）」。
+     * 取组口径对齐 {@code IpdPermission.canAccessGroup}／{@code IpdPermissionCode} 注释里的
+     * 「本组/空组/跨组」语义：不按项目主组反查——津贴台账的行归属人是<b>津贴领取人</b>，
+     * 财务口径上「谁能看谁的工资」按人员所属组判定，与项目组是两套归属。
+     *
+     * <p><b>与调用方既有 personId 条件的关系</b>：本方法是 AND 追加，不是覆盖。
+     * 调用方按 personId 精确查时，跨组 personId 会落到空集（返回空列表而非 403）——
+     * 这是数据范围过滤的常规语义（不泄漏「该人是否存在」），与
+     * {@code KpiSharedCollectionService.listSharedKpis} 的单项目 403 口径不同，
+     * 因为本端点是<b>跨项目列表</b>，没有单一 projectId 可供鉴权。
+     *
+     * <p><b>退化方向</b>：{@code personMapper} 未装配 / {@code actor.groupId()} 为空
+     * ⇒ 一律收敛到「只看自己」。安全过滤器在数据源缺失时默认放行是本仓已知失效形态，
+     * 故此处显式取严。
+     */
+    private void applyDataScope(IpdActor actor, LambdaQueryWrapper<AllowanceLedger> q) {
+        if (ROLE_SUPER_ADMIN.equals(actor.role())) {
+            return; // 超管全量：不加任何 personId 约束
+        }
+        Set<Long> visible = new LinkedHashSet<>();
+        visible.add(actor.id()); // requireAuthenticated 已保证 actor.id() 非空 ⇒ visible 永不为空集
+        Long actorGroupId = actor.groupId();
+        if (actorGroupId == null) {
+            log.debug("津贴数据范围：actorId={} 无 groupId ⇒ 仅本人可见", actor.id());
+        } else if (personMapper == null) {
+            log.warn("津贴数据范围：PersonMapper 未装配 ⇒ 退化为仅本人可见（不放开为全量）");
+        } else {
+            List<Person> sameGroup = personMapper.selectList(
+                new LambdaQueryWrapper<Person>().eq(Person::getGroupId, actorGroupId));
+            if (sameGroup != null) {
+                for (Person p : sameGroup) {
+                    if (p != null && p.getId() != null) {
+                        visible.add(p.getId());
+                    }
+                }
+            }
+        }
+        q.in(AllowanceLedger::getPersonId, visible);
+    }
+
     /**
      * W4-D 件 2 §1：月度津贴快照列表（按 period 必填 + 可选 personId 过滤）。
      * 端点 GET /api/v1/allowance/ledger 配套服务方法。
@@ -175,6 +245,9 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
      * 消除「无 actor 可披露全公司津贴明细」IDOR 缺口。读操作范围保持宽松：
      * MARKET_PM / RD_PM / GROUP_LEADER / SUPER_ADMIN 四角色由 Controller
      * {@code @SaCheckPermission(OPERATION_KPI_QUERY)} + {@code requireInternal()} 双重守门（件 1.5）。
+     *
+     * <p>A4-63 数据范围过滤：非超管只看「自己 + 自己组」，见 {@link #applyDataScope}。
+     * 本方法此前只校验 actor 非空，personId 传 null 时返回该月<b>全公司</b>津贴明细。
      *
      * <p>排序：项目 ID 升序、人员 ID 升序；软删除（delFlag=0）由 MyBatis-Plus {@code @TableLogic} 自动过滤。
      * <p>DTO 字段对齐留作 W4-D' 单独任务；当前先以 AllowanceLedger 原样返回，前端 type 与后端 domain 字段名差异由前端适配层兜底。
@@ -192,6 +265,7 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
         if (personId != null) {
             q.eq(AllowanceLedger::getPersonId, personId);
         }
+        applyDataScope(actor, q);
         q.orderByAsc(AllowanceLedger::getProjectId, AllowanceLedger::getPersonId);
         List<AllowanceLedger> rows = allowanceLedgerMapper.selectList(q);
         return rows == null ? Collections.emptyList() : rows;
@@ -205,6 +279,9 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
      * 消除「无 actor 可披露全公司停发明细」IDOR 缺口。读操作范围与 {@link #list} 同款
      * （四角色由 Controller 双重守门，件 1.5）。
      *
+     * <p>A4-63 数据范围过滤：同 {@link #list}，非超管只看「自己 + 自己组」，
+     * 见 {@link #applyDataScope}。停发原因属薪酬敏感信息，跨组披露风险高于快照列表。
+     *
      * <p>判定：{@code stopReason} 非空即视为「待停发」（P3-3.2 触发：SCORE_BELOW_60 / NO_OUTPUT_60_DAYS）。
      * <p>不输出已经 freeze 的台账（{@code finalAmount=0} 且 {@code stopReason} 非空 ⇒ 已停发确认）。
      *
@@ -217,20 +294,37 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
         validateMonth(period);
         LambdaQueryWrapper<AllowanceLedger> q = new LambdaQueryWrapper<>();
         q.eq(AllowanceLedger::getMonth, period)
-            .isNotNull(AllowanceLedger::getStopReason)
-            .orderByAsc(AllowanceLedger::getProjectId, AllowanceLedger::getPersonId);
+            .isNotNull(AllowanceLedger::getStopReason);
+        applyDataScope(actor, q);
+        q.orderByAsc(AllowanceLedger::getProjectId, AllowanceLedger::getPersonId);
         List<AllowanceLedger> rows = allowanceLedgerMapper.selectList(q);
         return rows == null ? Collections.emptyList() : rows;
     }
 
     /**
-     * 确认待停发台账：终额置 0。已是 0 时原样返回。
+     * 确认待停发台账：终额置 0。<b>仅超管</b>。已是 0 时原样返回。
+     *
+     * <p>A4-60 收紧：原口径为 {@code GROUP_LEADER | SUPER_ADMIN}。收紧理由与
+     * {@code IpdRolePermissionCatalog} 的 {@code DELETION_FIRST_REVIEW} 拆集同款——
+     * 「把一笔钱减到 0」是终局性的资金动作，不应与「发现该停发」的日常职责同层；
+     * 双 PM 之外，组长在本仓其他域确有合法写权（负反馈认定、贡献度确认），
+     * 但那些都不直接改 final_amount。同时与本类 {@link #autoScan}（同属津贴资金域，
+     * 原本就是「仅超管」）对齐，两层口径一致。
+     *
+     * <p><b>行为变更</b>：产品组长调用本方法由 200 变 403 FORBIDDEN。
+     *
+     * <p><b>未完成部分（需 owner 批 allowlist 扩权后另卡接）</b>：本端点目前仍挂读码
+     * {@code ipd:kpi:query}（见 {@code AllowanceLedgerController#confirmStop}），
+     * 专用权限码 {@code ipd:allowance:confirm-stop} 需要同时改
+     * {@code IpdPermissionCode}（常量唯一真源）与 Controller 注解，
+     * 并登记进 {@code IpdRolePermissionCatalog.ADMIN_WRITE}。
+     * 在那之前，<b>实际生效的门禁是本方法体的超管判定，不是权限码</b>。
      */
     @Transactional(rollbackFor = Exception.class)
     public AllowanceLedger confirmStop(IpdActor actor, Long ledgerId) {
         requireAuthenticated(actor);
-        if (!"GROUP_LEADER".equals(actor.role()) && !"SUPER_ADMIN".equals(actor.role())) {
-            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅组长或超管可确认停发");
+        if (!ROLE_SUPER_ADMIN.equals(actor.role())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅超管可确认停发");
         }
         AllowanceLedger row = allowanceLedgerMapper.selectById(ledgerId);
         if (row == null || row.getStopReason() == null || row.getStopReason().isBlank()) {
@@ -262,7 +356,7 @@ public class AllowanceLedgerService implements IAllowanceLedgerService {
      */
     public Integer autoScan(IpdActor actor, String period) {
         requireAuthenticated(actor);
-        if (!"SUPER_ADMIN".equals(actor.role())) {
+        if (!ROLE_SUPER_ADMIN.equals(actor.role())) {
             throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅超管可执行月度扫描");
         }
         validateMonth(period);
