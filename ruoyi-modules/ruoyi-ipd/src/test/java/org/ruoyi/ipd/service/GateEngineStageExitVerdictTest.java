@@ -220,4 +220,50 @@ class GateEngineStageExitVerdictTest {
         mockOpenLeftover(0L);
         assertThat(engine.evaluateStageExitGate(100L, "CONCEPT").blocking()).isFalse();
     }
+
+    /**
+     * fail-closed 承重用例：查询故障时必须**拦停**，不得放行。
+     *
+     * <p>原实现把查询异常吞成「无记录 / 0 条」⇒ 被驳回的 Gate 在一次数据库抖动里静默失效，
+     * 阶段照推。本用例把 mapper 打成抛异常来锁住新行为——去掉 try/catch 就会红。
+     */
+    @Test
+    @DisplayName("查询故障时 fail-closed 拦停（不得把「查失败」当成「没问题」）")
+    void queryFailureBlocksInsteadOfPassing() {
+        engine.setGateMapper(gateMapper);
+        engine.setGateElementResultMapper(gateElementResultMapper);
+        when(gateMapper.selectList(any())).thenThrow(new RuntimeException("模拟数据库不可用"));
+
+        GateEngine.StageGateVerdict v = engine.evaluateStageExitGate(11L, "CONCEPT");
+
+        assertThat(v.blocking()).isTrue();
+        assertThat(v.message()).contains("查询失败");
+        // openLeftoverCount=-1 是「判不出来」的哨兵值，区别于真实的 0 条
+        assertThat(v.openLeftoverCount()).isEqualTo(-1);
+    }
+
+    @Test
+    @DisplayName("遗留项查询故障同样 fail-closed（Gate 通过但遗留项查不动 → 拦停）")
+    void leftoverQueryFailureBlocksEvenWhenGateApproved() {
+        engine.setGateMapper(gateMapper);
+        engine.setGateElementResultMapper(gateElementResultMapper);
+        Gate approved = new Gate();
+        approved.setId(801L);
+        approved.setStatus("APPROVED");
+        when(gateMapper.selectList(any())).thenReturn(List.of(approved));
+        when(gateElementResultMapper.selectCount(any())).thenThrow(new RuntimeException("模拟遗留项查询不可用"));
+
+        GateEngine.StageGateVerdict v = engine.evaluateStageExitGate(11L, "CONCEPT");
+
+        assertThat(v.blocking()).isTrue();
+        assertThat(v.message()).contains("遗留项查询失败");
+    }
+
+    @Test
+    @DisplayName("mapper 未装配仍放行（确定性「没有闸」≠ 故障，两条路径不可混淆）")
+    void mapperNotWiredStillPasses() {
+        GateEngine bare = new GateEngine(stageActionMapper, systemConfigService);   // 不注入 gateMapper
+        GateEngine.StageGateVerdict v = bare.evaluateStageExitGate(11L, "CONCEPT");
+        assertThat(v.blocking()).isFalse();
+    }
 }

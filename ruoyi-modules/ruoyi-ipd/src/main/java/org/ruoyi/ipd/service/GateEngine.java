@@ -162,7 +162,15 @@ public class GateEngine {
             return new StageGateVerdict(false, gateCode, null, 0,
                 "Gate " + gateCode + " 未查到评审记录（Gate 数据未装配），放行");
         }
-        Gate gate = latestGate(projectId, gateCode);
+        Gate gate;
+        try {
+            gate = latestGate(projectId, gateCode);
+        } catch (RuntimeException ex) {
+            // fail-closed：判不出来不等于没问题。宁可这次推进失败让人重试，
+            // 也不能让「被驳回的 Gate」在一次数据库抖动里被静默放行。
+            return new StageGateVerdict(true, gateCode, null, -1,
+                "Gate " + gateCode + " 状态查询失败，无法确认评审结论（fail-closed 拦停），请稍后重试");
+        }
         if (gate == null) {
             return new StageGateVerdict(false, gateCode, null, 0,
                 "Gate " + gateCode + " 尚无评审记录，放行");
@@ -172,7 +180,13 @@ public class GateEngine {
             return new StageGateVerdict(true, gateCode, status, 0,
                 "Gate " + gateCode + " 评审结论为 " + status + "，需先完成评审或重新发起评审才能推进阶段");
         }
-        int openLeft = countOpenLeftover(gate.getId());
+        int openLeft;
+        try {
+            openLeft = countOpenLeftover(gate.getId());
+        } catch (RuntimeException ex) {
+            return new StageGateVerdict(true, gateCode, status, -1,
+                "Gate " + gateCode + " 遗留项查询失败，无法确认是否已关闭（fail-closed 拦停），请稍后重试");
+        }
         if (openLeft > 0) {
             return new StageGateVerdict(true, gateCode, status, openLeft,
                 "Gate " + gateCode + " 还有 " + openLeft + " 项未关闭的评审遗留项，需先关闭遗留项才能推进阶段");
@@ -182,7 +196,16 @@ public class GateEngine {
                 + "，无未关闭遗留项，放行");
     }
 
-    /** 取该项目该 Gate 的最新一轮（按 id 倒序取首行）；查询异常一律按「无记录」处理。 */
+    /**
+     * 取该项目该 Gate 的最新一轮（按 id 倒序取首行）。
+     *
+     * <p><b>2026-10-07 改 fail-closed</b>：原实现在此 catch 住异常后「按无记录处理」，
+     * 等于**查询失败 = 当作没有 Gate = 放行**——被驳回的评审会在一次数据库抖动里静默失效。
+     * 门禁失败时应放行、还是失败时应拦，与「能否判定」是两件事：
+     * 「查不到」是判定结果（放行），「查失败」是**判不出来**（不该放行）。
+     * mapper 未装配（单测/裁剪部署）仍按放行处理，那是确定性的「没有闸」，不是故障。
+     */
+
     private Gate latestGate(Long projectId, String gateCode) {
         try {
             List<Gate> rows = gateMapper.selectList(new LambdaQueryWrapper<Gate>()
@@ -191,12 +214,13 @@ public class GateEngine {
                 .orderByDesc(Gate::getId));
             return (rows == null || rows.isEmpty()) ? null : rows.get(0);
         } catch (RuntimeException ex) {
-            log.warn("[gate-engine] 查询 Gate 失败，按无记录放行: projectId={}, gateCode={}", projectId, gateCode, ex);
-            return null;
+            // 不再吞成「无记录」：把故障原样抛给 evaluateStageExitGate，由它转成阻断判定。
+            log.error("[gate-engine] 查询 Gate 失败，判定不可用: projectId={}, gateCode={}", projectId, gateCode, ex);
+            throw ex;
         }
     }
 
-    /** 该 Gate 下 leftoverStatus=OPEN 的遗留项计数；查询异常一律按 0 处理。 */
+    /** 该 Gate 下 leftoverStatus=OPEN 的遗留项计数。查询异常不再吞成 0，理由同 {@link #latestGate}。 */
     private int countOpenLeftover(Long gateId) {
         if (gateId == null || gateElementResultMapper == null) {
             return 0;
@@ -207,8 +231,8 @@ public class GateEngine {
                 .eq(GateElementResult::getLeftoverStatus, LEFTOVER_STATUS_OPEN));
             return n == null ? 0 : n.intValue();
         } catch (RuntimeException ex) {
-            log.warn("[gate-engine] 查询遗留项失败，按 0 放行: gateId={}", gateId, ex);
-            return 0;
+            log.error("[gate-engine] 查询遗留项失败，判定不可用: gateId={}", gateId, ex);
+            throw ex;
         }
     }
 
