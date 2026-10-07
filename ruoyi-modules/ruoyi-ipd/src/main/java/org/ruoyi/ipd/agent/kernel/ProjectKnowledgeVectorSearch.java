@@ -82,10 +82,13 @@ public final class ProjectKnowledgeVectorSearch {
             //
             // 修法：让「没有可用知识库」带独立标记，与「查了没有」区分开。
             // 这样即使向量库仍不可用，日志与 AI 回答里也**会说出真实原因**。
+            //
+            // ⚠️ 该文本会进入 AI 上下文并被渲染给用户，**只说业务事实、不出现表名/实现细节**
+            //    （commit 安全审查 2026-10-07 指出；初版写了 "knowledge_info 无记录" 已删）。
             return new RetrievalContext(0, 0, "",
-                    "【无可用知识库】该项目尚未导入任何资料（knowledge_info 无记录），"
-                            + "本次未向量化库发起查询。若期望有资料，请先在「资料库」菜单上传并解析；"
-                            + "若已导入，则需检查向量库是否可用。");
+                    "【无可用知识库】该项目尚未导入任何资料，本次未发起检索。"
+                            + "若期望智能体能引用项目资料，请先在「资料库」中为该项目创建知识库并上传解析；"
+                            + "若资料已导入，则说明检索服务当前不可用，请联系管理员。");
         }
         StringBuilder hits = new StringBuilder();
         StringBuilder failures = new StringBuilder();
