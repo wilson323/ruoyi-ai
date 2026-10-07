@@ -399,8 +399,12 @@ tenant:
     # 同步调度线程无会话上下文，未登记则租户过滤吞空；登录体系仍走 persons 不双轨
     - hr_person_mirror
     # AUD-02-FIX / R11（2026-09-07/08）：审计链与业务参数表——ipd_business_config(+versions) 存业务参数
-    # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空；gate_review_observers /
-    # switching_acceptances 无 tenant_id 列，未登记则拦截器注入过滤直接 SQL 报错
+    # 真数据且 domain 带 tenant_id 字段，未登记则非 000000 会话读参数全空。
+    # gate_review_observers / switching_acceptances **原为「无 tenant_id 列，未登记则拦截器
+    # 注入过滤直接 SQL 报错」**；G5-① 已为其补 tenant_id 列（DDL 草案
+    # docs/script/sql/update/2026-10-07-ipd-gate-g5-three.sql，apply 后本理由即过期）。
+    # 但**排除本身保留**——本项目是单企业私有部署（无多租户语义），与 gates / gate_reviews
+    # 等 Gate 兄弟表口径一致。加列是补结构对齐，不是要开租户过滤；两件事不要混。
     - ipd_business_config
     - ipd_business_config_versions
     - gate_review_observers

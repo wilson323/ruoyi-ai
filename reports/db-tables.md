@@ -16,7 +16,7 @@
 |---|---|---|---|
 | products | 54 | ✅ Product.java | ProductController |
 | product_groups | 12 | ✅ ProductGroup.java | ProductGroupController |
-| product_retirements | 0 | ✅ ProductRetirement.java | （后端未交付） |
+| product_retirements | 0 | ✅ ProductRetirement.java | ProductRetirementController |
 | projects | 45 | ✅ Project.java | ProjectController |
 | project_stages | 246 | ✅ ProjectStage.java | ProjectController |
 | project_members | 21 | ✅ ProjectMember.java | ProjectMemberController |
@@ -43,7 +43,7 @@
 | gate_review_observers | 0 | ✅ GateReviewObserver.java | GateReviewController |
 | gate_element_results | 30 | ✅ GateElementResult.java | GateElementResultController |
 | gate_arbitrations | 3 | ✅ GateArbitration.java | GateReviewController |
-| gate_waivers | 0 | ✅ GateWaiver.java | （后端未交付） |
+| gate_waivers | 0 | ❌ 无 Entity（GateWaiver.java 不存在） | （无端点） |
 | ipd_business_config | 13 | ✅ IpdBusinessConfig.java | SystemConfigController |
 | ipd_business_config_versions | 0 | ✅ IpdBusinessConfigVersion.java | SystemConfigController |
 
@@ -106,16 +106,18 @@
 ### I. 待办 / 变更（2 张 — 0 行）
 | 表名 | 行数 | Entity | Controller |
 |---|---|---|---|
-| multi_project_capacity_approvals | 0 | ✅ MultiProjectCapacityApproval.java | （端点未交付） |
-| rd_replacements | 0 | ✅ RdReplacement.java | （端点未交付） |
-| rd_replacement_approvals | 0 | ✅ RdReplacementApproval.java | （端点未交付） |
+| multi_project_capacity_approvals | 0 | ❌ 无 Entity（MultiProjectCapacityApproval.java 不存在） | （无端点） |
+| rd_replacements | 0 | ❌ 无 Entity（RdReplacement.java 不存在） | （无端点） |
+| rd_replacement_approvals | 0 | ❌ 无 Entity（RdReplacementApproval.java 不存在） | （无端点） |
 
 ## 业务表统计
 - 业务表总数（@TableName 显式）：59 张
 - 业务表（隐式映射，如 demands/requirements 等）：约 6 张
 - 业务表中有数据的：~25 张
 - 业务表中 0 行的：~27 张（含 schema 已建但无数据）
-- 后端有 Entity 但缺端点的：~10 张（product_retirements / sop_template_instances / deliverable / bonus_allocations / kpi_rule_snapshots / requirement_pool / multi_project_capacity_approvals / rd_replacements / rd_replacement_approvals / correction_logs）
+- 后端有 Entity 但缺端点的：~9 张（sop_template_instances / deliverable / bonus_allocations / kpi_rule_snapshots / requirement_pool / correction_logs 等）
+- **零 Entity 的孤儿表（4 张）**：gate_waivers / rd_replacements / rd_replacement_approvals / multi_project_capacity_approvals —— 原台账给它们打了 ✅ Entity，实测 `find -name <X>.java` 全部 NOT FOUND；仅在 `application.yml` 的 `tenant.excludes` 与 `scripts/check-doc-drift.sh` 白名单里出现。**删留待 owner 拍板**，在拍板前不得据本行推断「后端已交付」。
+- **已完整交付但零行数**：product_retirements（Entity+Mapper+VO+Controller+Service 已齐，且被 ProductService / ProjectService / ProjectStartService / GuestDemandService / RequirementChangeService 五处消费，2 个测试类覆盖）——0 行只表示真库无数据，不表示未交付。
 
 ## RuoYi 系统表（sys_）
 ~32 张（sys_user/sys_role/sys_menu/sys_dept/sys_config/sys_oss/sys_oss_config/sys_social/sys_tenant/sys_tenant_package/sys_url/sys_post/sys_user_role/sys_role_menu/sys_role_dept/sys_user_post/sys_dict_type/sys_dict_data/sys_notice/sys_oper_log/sys_logininfor/sys_config 等）— RuoYi 底座自带，业务无关。
@@ -132,13 +134,13 @@
 27 张：
 - ai_doc_embeddings / ai_model_configs / audit_log_chain_heads
 - bonus_allocations / contribution_versions / correction_logs
-- gate_waivers / gate_review_observers
+- gate_waivers（❌ 无 Entity，孤儿表）/ gate_review_observers
 - ipd_business_config_versions / kpi_rule_snapshots
-- legacy_imports / multi_project_capacity_approvals
-- post_launch_reviews / product_retirements
+- legacy_imports / multi_project_capacity_approvals（❌ 无 Entity，孤儿表）
+- post_launch_reviews / product_retirements（✅ 已完整交付，0 行仅因真库无数据）
 - project_circle_comments / project_circle_posts / project_followers
 - project_score_records / project_score_tasks / project_scores
-- rd_replacement_approvals / rd_replacements
+- rd_replacement_approvals / rd_replacements（❌ 无 Entity，孤儿表）
 - receipt_ledger / requirement_changes / requirement_pool
 - sop_template_instances / switching_acceptance
 
