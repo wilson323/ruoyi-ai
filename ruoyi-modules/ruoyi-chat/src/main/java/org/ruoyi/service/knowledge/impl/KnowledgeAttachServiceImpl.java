@@ -331,6 +331,20 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService, Appl
             storeEmbeddingBo.setOwnerPersonId(knowledgeInfoVo.getUserId());
             storeEmbeddingBo.setOwnerAgentId(knowledgeInfoVo.getOwnerAgentId());
             storeEmbeddingBo.setSensitivity(knowledgeInfoVo.getSensitivity());
+            // 2026-10-07 修（根因修复 1/4）：向量库失败**不再阻断 MySQL 切片入库**。
+            //
+            // 原行为：向量库写失败 → 向上抛 → 整个方法退出 → 下面的
+            // knowledgeFragmentMapper.insertBatch(...) **永远执行不到**。
+            // 而文本检索（ProjectKnowledgeFragmentTextSearch）只查 MySQL 的
+            // knowledge_fragment，**完全不依赖向量库** —— 却��向量库失败被一起写不进去。
+            //
+            // 后果（2026-10-07 实测）：向量库 28080 未启动时，
+            // knowledge_info / knowledge_fragment 双表恒为 0 行，
+            // 上传接口返回 200、用户以为成功、智能体检索永远返回「未取得」。
+            //
+            // 改为：向量库失败只做补偿清理 + 告警，**继续往下写 MySQL**。
+            // 降级语义明确：向量检索不可用，但关键词检索立即可用。
+            boolean vectorStoreOk = true;
             try {
                 // 写入新向量前，先按 docId 清理该文档的旧向量：
                 // 历史数据的片段 fid 为迁移脚本回填的 MD5 值，与向量库中实际存储的 fid 不一致，
@@ -338,6 +352,7 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService, Appl
                 vectorStoreService.removeByDocId(docId, String.valueOf(knowledgeId));
                 vectorStoreService.storeEmbeddings(storeEmbeddingBo);
             } catch (Exception vectorError) {
+                vectorStoreOk = false;
                 for (String newFid : fids) {
                     try {
                         vectorStoreService.removeByFid(newFid, String.valueOf(knowledgeId));
@@ -345,7 +360,10 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService, Appl
                         log.error("补偿删除新向量失败, kid={}, fid={}", knowledgeId, newFid, cleanupError);
                     }
                 }
-                throw vectorError;
+                // 不再 rethrow：MySQL 切片必须落库，否则不依赖向量库的关键词检索也一起废掉。
+                log.warn("[KB-DEGRADED] 向量库不可用，本次仅写入 MySQL 切片（关键词检索可用，"
+                                + "向量/语义检索不可用）。kid={}, docId={}, 原因={}",
+                        knowledgeId, docId, vectorError.getMessage(), vectorError);
             }
 
             // 三元组补维：storeEmbeddings 已以 Embedding#dimension() 实测值回写 Bo
@@ -360,9 +378,20 @@ public class KnowledgeAttachServiceImpl implements IKnowledgeAttachService, Appl
             knowledgeFragmentMapper.insertBatch(knowledgeFragmentList);
             knowledgeRetrievalService.invalidateKnowledge(String.valueOf(knowledgeId));
 
-            attach.setStatus(KnowledgeAttachStatus.COMPLETED.getCode()); // 已完成
+            // 2026-10-07 修（根因修复 1/4 续）：降级时**不能报「已完成」**——
+            // 那等于换一种方式继续骗用户（原文说「已成功但其实没存进去」，
+            // 降级后是「存进去了但向量检索不可用」，两者对用户意义完全不同）。
+            // 这里把降级事实写进 remark，状态仍为 COMPLETED（切片确实入库了），
+            // 但任何只看状态的人都能在 remark 里看到「向量检索不可用」。
+            if (vectorStoreOk) {
+                attach.setStatus(KnowledgeAttachStatus.COMPLETED.getCode()); // 已完成
+                log.info("知识库文档解析、向量化并入库成功！id: {}", id);
+            } else {
+                attach.setStatus(KnowledgeAttachStatus.COMPLETED.getCode()); // 已完成（降级）
+                attach.setRemark("【已降级】切片已入库，关键词检索可用；但向量库不可用，语义检索暂不可用。");
+                log.warn("[KB-DEGRADED] 附件以降级状态完成：id={}, kid={}", id, knowledgeId);
+            }
             baseMapper.updateById(attach);
-            log.info("知识库文档解析、向量化并入库成功！id: {}", id);
         } catch (Exception e) {
             log.error("解析文档失败！id: {}, error: {}", id, e.getMessage(), e);
             attach.setStatus(KnowledgeAttachStatus.FAILED.getCode()); // 失败

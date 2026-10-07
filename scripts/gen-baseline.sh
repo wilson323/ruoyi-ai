@@ -67,11 +67,25 @@ probe "已退役码"   "$RETIRED" "grep -c '\"LC05\"' $AC"
 G2_6_VETO=$(grep 'G2-6' "$GATE" 2>/dev/null | grep -oE '"[YN]"' | head -1)
 G2_ALL=$(grep -cE 'new String\[\]\{"G[1-5]"' "$GATE" 2>/dev/null)
 
-MAIN_SRC=$(find . -name '*.java' -not -path './.codex/*' -not -path './.harness/*' \
-  -not -path '*/target/*' -not -path './.repowise/*' -path '*/src/main/java/*' 2>/dev/null | wc -l | tr -d ' ')
-TEST_SRC=$(find . -name '*.java' -not -path './.codex/*' -not -path './.harness/*' \
-  -not -path '*/target/*' -path '*/src/test/java/*' 2>/dev/null | wc -l | tr -d ' ')
-CTRL_IPD=$(find ruoyi-modules/ruoyi-ipd -name '*Controller.java' -not -path '*/target/*' -path '*/src/main/*' 2>/dev/null | wc -l | tr -d ' ')
+# 2026-10-07 修（根因修复 3/4）：文件计数改用 **HEAD 口径**，不扫工作树。
+#
+# 病根：原实现用 `find .`，统计的是**工作树**里此刻有多少文件。而工作树是个
+# **正在被其他会话持续改动的活靶**——实测：连续两次 `--check` 之间，另一个会话
+# 新增了 1 个源文件，基准值从 1641 漂到 1642，门禁随机报红。
+#
+# 这类失败比「数字错」更坏：**红的原因与被检代码无关**，会训练所有人忽略它
+# ——正是本仓反复记录的「门禁恒红 ⇒ 被习惯性忽略」。
+#
+# 为什么 HEAD 口径对：门禁要回答的是「**已入库代码**口径下的事实」；
+# 工作树里未提交的新增/删除都是尚未成为事实的中间态。
+# 注意：动作数/要素数仍读工作树的显式数据文件，不是文件计数，不受影响。
+count_java_at_head() { # <路径片段>
+  git ls-tree -r --name-only HEAD 2>/dev/null | grep -F "$1" | grep -c '\.java$'
+}
+MAIN_SRC=$(count_java_at_head 'src/main/java/')
+TEST_SRC=$(count_java_at_head 'src/test/java/')
+CTRL_IPD=$(git ls-tree -r --name-only HEAD -- ruoyi-modules/ruoyi-ipd 2>/dev/null \
+  | grep 'Controller\.java$' | grep -v '/target/' | wc -l | tr -d ' ')
 
 # ⚠️ 不要把 commit 号写进生成的文件内容（2026-10-07 实测教训）。
 #   第一次实现把 HEAD 写进了「生成时间戳」那一行，于是**别人提交一次、
