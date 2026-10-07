@@ -71,7 +71,21 @@ public final class ProjectKnowledgeVectorSearch {
             return failure(ex);
         }
         if (rows == null || rows.isEmpty()) {
-            return new RetrievalContext(0, 0, "");
+            // 2026-10-07 修：此处**从未向量化库发过请求**，却和「参数无效」(L65)、
+            // 「查了但库里确实没有」(L130) 返回**完全相同的空结果**；
+            // 而 L359 的 WeaviateVectorStoreStrategy 在真连不上时是会抛
+            // 「知识库向量查询不可用」的 —— **被这一层提前短路把报错吃掉了**。
+            //
+            // 后果：向量库没启动 / 知识库从未导入资料 / 代码真的报错了，
+            // 三者在下游**完全无法区分**，用户与 AI 只看到「未取得」。
+            // 本仓 CLAUDE.md 记载的「RAG 静默返回空」即由此而来。
+            //
+            // 修法：让「没有可用知识库」带独立标记，与「查了没有」区分开。
+            // 这样即使向量库仍不可用，日志与 AI 回答里也**会说出真实原因**。
+            return new RetrievalContext(0, 0, "",
+                    "【无可用知识库】该项目尚未导入任何资料（knowledge_info 无记录），"
+                            + "本次未向量化库发起查询。若期望有资料，请先在「资料库」菜单上传并解析；"
+                            + "若已导入，则需检查向量库是否可用。");
         }
         StringBuilder hits = new StringBuilder();
         StringBuilder failures = new StringBuilder();

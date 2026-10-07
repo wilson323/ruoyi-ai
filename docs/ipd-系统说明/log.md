@@ -16883,3 +16883,141 @@ CI 里跑不动会恒红，**恒红后就会被忽略，比不跑更糟**。
 **IPD 真库在 13306 上**，须用 `mysql --defaults-file=.codex/ipd-dev/config/mysql-client.cnf -N ipd_dev`。
 阳性对照：`SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='ipd_dev'` = **166**。
 ⚠️ 直连用配置里的占位符口令会得 `ERROR 1045 Access denied`——**真实口令经 mysql-client.cnf 注入，不在配置正文里**。
+
+## 2026-10-07 数据操作：清理退役动作的技能绑定记录（owner 2026-10-07 授权「给」）
+
+### 执行内容
+删除 `ipd_action_skill_map` 中两行指向**已退役动作**的元数据记录：
+
+| id | action_code | sub_stage_code | remark |
+|---|---|---|---|
+| 57 | LC01 | LIFECYCLE-S1 | 待 §3 定稿后补齐 skill_names |
+| 61 | LC03 | LIFECYCLE-S2 | 待 §3 定稿后补齐 skill_names |
+
+（两行 `skill_names` 均为 NULL，remark 均为待定稿占位，**不承载业务信息**。）
+
+### 执行前后（`COUNT(*)` 实测，非 `table_rows` 估算）
+| | 总行数 | 退役残留 |
+|---|---:|---:|
+| 执行前 | 69 | 2 |
+| 执行后 | **67** | **0** |
+
+**双向差集验证**：
+- 库 `SELECT DISTINCT action_code` = 67 个；代码 `ActionCatalog.java` = 67 个
+- 「只在库里有」= 空；「只在代码里有」= 空 → **库与代码完全一致**
+- `stage_actions` 仍 84 行，**未受影响**
+
+### 使用的脚本与安全性
+`docs/script/sql/update/20261007-ipd-cleanup-retired-action-skillmap.sql`（仓内既有，本轮审阅后执行其 DELETE 段）。
+执行时带 `id AND action_code` **双条件**（防 id 复用导致误删），且显式限定连接库 `ipd_dev`
+——⚠️ 本机 **3306 上跑的是另一个 RuoYi 基线库**（`ry-vue`），IPD 真库在 **13306**，
+用 `mysql --defaults-file=.codex/ipd-dev/config/mysql-client.cnf` 连接以避免连错库。
+
+### 备份（可回滚）
+`/tmp/ipd-action-skillmap-backup-20261007-120514.sql`，2 行，含恢复所需的全部字段。
+回滚方式：
+```sql
+INSERT INTO ipd_action_skill_map (id, action_code, sub_stage_code, skill_names, remark)
+VALUES (57,'LC01','LIFECYCLE-S1',NULL,'待 §3 定稿后补齐 skill_names'),
+       (61,'LC03','LIFECYCLE-S2',NULL,'待 §3 定稿后补齐 skill_names');
+```
+
+### 未做（明确登记）
+- 那 10 条 `is_active=0` 的**模型配置测试残留未清**——owner 尚未就「是否清理 + 备用模型用哪家」给出指示，
+  且涉及外部付费模型配置，**不擅自处置**。
+
+## 2026-10-07 静默失效全项目扫描：6 个模块「看起来正常实际不可用」
+
+### 找到了「静默失败」的精确到行的机制（本轮最硬的一条发现）
+`ProjectKnowledgeVectorSearch.java:63-78`，**三种完全不同的原因返回同一个空结果**：
+
+| 行号 | 情况 | 返回 |
+|---|---|---|
+| 66 | 参数无效（projectId/query 空） | `new RetrievalContext(0,0,"")` |
+| 71 | `scopes.list()` 抛异常（数据库挂了） | `failure(ex)` |
+| **74-75** | **知识库表为空 / 向量库压根没启动** | **`new RetrievalContext(0,0,"")` ← 与 66 同形** |
+
+⇒ **「库里没资料」「向量库连不上」「代码报错」三者在下游完全无法区分。**
+且该空 block **不含失败标记**，于是 `AiDocEmbeddingService:213-217` 判成 `NO_HIT`（未取得）而非 `FAILED`，
+最终 `ProjectKnowledgeSearchTool:211` 把它渲染成给大模型的「未取得」文本。
+
+**这一条解释了本轮全部现象**：
+- 为什么「闭环走不通却看不出问题」——**坏在哪一环测不出来**
+- 为什么「起向量库也解决不了」——**空表会先短路，根本走不到向量库那步**
+- 为什么它**比崩溃的模块更危险**——崩溃会报错，它返回「未取得」
+
+注：`WeaviateVectorStoreStrategy:359` 本身**是有报错的**（`throw ServiceException("知识库向量查询不可用")`），
+**恰恰是前面那层空表短路把报错吃掉了**。
+
+### 高风险 2 个
+- **H1 知识库向量检索**（上述机制）：依赖 weaviate@28080（实测 DOWN），
+  4 张表全 0 行（`knowledge_info/fragment/attach` + `ai_doc_embeddings`）
+- **H2 IPD 实时推送**：`ipd.websocket.enabled` 默认 **false** 且未注入
+  ⇒ `@ConditionalOnProperty` 不装配，**整个 WebSocket 端点不存在**，
+  通知退化为站内信（表有 27 行数据），**实时推送这条路是断的，从外面看不出断**
+
+### 中风险 4 个
+- **M1 站内信**：`catch → log.warn("不影响主链")` ⇒ 业务成功、通知永久丢失、界面无任何线索
+- **M2 链路追踪**：`trace_run`/`trace_node` **均 0 行**，6 处 catch 只 WARN；
+  更甚：`TracePayloadUtils:57` 序列化失败返回**假 payload**，调用方当正常数据用
+- **M3 HR 组织同步**：`ipd.hr.enabled` 默认 false ⇒ 端点 404（**失败有感知，风险低**）；
+  但「查无此人」与「HR 接口挂了」返回形状相同
+- **M4 AI 联网搜索**：`ZAI_API_KEY` 未注入（阳性对照 `MINIMAX_API_KEY` 命中 1，成立）
+
+### 两个「陷阱」型低风险（不是失效，但会误导判断）
+- **Qdrant 6333/6334 在听，但配置是 weaviate** ⇒ **看到 6334 在听就以为向量库没问题，是错的**
+- **CopilotKit `/info` 无条件返回写死的「运行时已就绪」，capabilities 空、所有 flag false**
+  ⇒ **体检报告永远 healthy**
+
+### 附带：业务表大面积为空（实测 COUNT(*)）
+有数据：`projects`=7、`products`=6、`persons`=24、`stage_actions`=84、`gate_review_elements`=33、
+`audit_logs`=66、`notification_events`=27、`ipd_action_skill_map`=67（今日已从 69 清理）
+全 0：`requirements`、`kpi_records`、`bid_invitations`、`deliverables`、`handover_records`、
+`allowance_ledgers`、`trace_run/trace_node`、**`ipd_role_permission`**、`multi_project_capacity_approvals`
+
+⚠️ **`ipd_role_permission` 空表是安全相关**：`IpdRolePermissionConfigService:50-51` 读表失败时
+`clearDbOverrides()` **静默回落到纯 Java 硬编码权限基线**——
+DB 授权配置一条都读不到时，鉴权静默降级。这不是功能问题，是**权限基线被悄悄换掉**。
+
+### 根除建议（按性价比，已排期待 owner 拍板）
+1. **区分「范围内无库」与「向量库不可达」** —— 这是所有掩盖的总开关，改一处即可让该模块可诊断
+2. **菜单 vs 路由双向核对门禁** —— 见另一路结论：路由 65 个、菜单 18 个，
+   **47 个功能做了没入口**，且 `super-admin` 菜单在路由里不存在（点了白屏）
+3. 把 M1/M2 的 WARN 计数暴露到健康检查 —— 现在静默失败只在日志里，等于无反馈通道
+4. 补 `ipd_role_permission` 的读表失败告警（安全降级不能静默）
+
+## 2026-10-07 修复 P0：区分「没查」与「查了没有」（静默失效的总开关）
+
+### 改了什么
+`ProjectKnowledgeVectorSearch.java:73-74` 原本：
+```java
+if (rows == null || rows.isEmpty()) {
+    return new RetrievalContext(0, 0, "");      // ← 与 L65(参数无效)、L130(查了没有) 同形
+}
+```
+改为返回一个**带独立标记**的 `RetrievalContext`，文本明说：
+「无可用知识库……本次未向量化库发起查询；若期望有资料请先在资料库菜单上传并解析」。
+
+### 为什么这一处是关键
+它是**整条掩盖链的总开关**：
+```
+knowledge_info 0 行 → 此处短路 → 空 block（无失败标记）
+  → AiDocEmbeddingService:213 判成 NO_HIT（而非 FAILED）
+  → ProjectKnowledgeSearchTool:211 渲染成「未取得」
+  → 用户与 AI 只看到「没找到资料」
+```
+而底层 `WeaviateVectorStoreStrategy:359` **本来是会抛「知识库向量查询不可用」的**——
+**代码的失败处理没写错，是它在报错之前就被短路吃掉了。**
+
+改后即使向量库仍不可用，**日志与 AI 回答里也会说出真实原因**，
+运维不必再靠「症状一模一样」去猜是哪一环坏了。
+
+### 验证
+- 编译：`mvn-locked.sh -o compile -pl ruoyi-modules/ruoyi-ipd` → **rc=0**
+- 相关测试：`Tests run: 34, Failures: 0, Errors: 0, Skipped: 0` + **BUILD SUCCESS**
+- **未验证**：真实检索行为（需登录态 + 有资料的数据，当前知识库 4 张表全空，跑不出有效对比）
+
+### 同源问题的其余两处（**本轮不改，登记待议**）
+`L65`（参数无效）与 `L130`（查了但确实没有）仍返回同一形状。严格说 L65 也该带标记，
+但 L130 是**正常业务结果**、L65 是**编程错误**，改动面比 L74 大；
+且 L74 修完后，三者已不再完全同形（L74 有标记）。**是否继续拆分由 owner 定。**
