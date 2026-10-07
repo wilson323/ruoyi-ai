@@ -112,6 +112,15 @@ public interface ProjectAgentEventSink {
     void onToolResult(String toolCallId, String toolName, String state);
 
     /**
+     * 带上工具结果原文。失败时页面要用这段说明，不能只显示「工具执行失败」。
+     *
+     * @param detail 结果原文，可空
+     */
+    default void onToolResult(String toolCallId, String toolName, String state, String detail) {
+        onToolResult(toolCallId, toolName, state);
+    }
+
+    /**
      * 检索来源（由只读工具在真实检索后上报）。
      *
      * @param source 来源摘要

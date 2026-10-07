@@ -36,6 +36,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -144,6 +145,25 @@ class AiSuggestionServiceTest {
     }
 
     @Test
+    @DisplayName("新建立项建议不要求已有项目：无 projectId 仍按素材起草，且不把别的项目行出成章程卡")
+    void createSuggestWithoutProject() {
+        enableModel();
+        when(aiGateway.chat(any(AiTestConfig.class), anyString(), anyInt(), any()))
+            .thenReturn(AiChatResult.ok("## 章程\n门禁", 10, 5, 100L));
+
+        AiSuggestResp resp = service.suggest(PM, new AiSuggestReq("project.create.suggest", null, null, "做一款门禁"));
+
+        assertFalse(resp.degraded());
+        assertEquals("## 章程\n门禁", resp.markdown());
+        assertNull(resp.card());
+        verify(projectMapper, never()).selectById(any());
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(aiGateway).chat(any(AiTestConfig.class), prompt.capture(), anyInt(), any());
+        assertTrue(prompt.getValue().contains("做一款门禁"), prompt.getValue());
+        assertFalse(prompt.getValue().contains("【业务上下文】"), prompt.getValue());
+    }
+
+    @Test
     @DisplayName("项目类场景缺 projectId → PARAM_INVALID；gate 缺 entityId → PARAM_INVALID")
     void entityParamsRequired() {
         assertThrows(IpdBusinessException.class,
@@ -201,6 +221,9 @@ class AiSuggestionServiceTest {
         assertFalse(resp.degraded());
         assertEquals("## 总结\n状态正常", resp.markdown());
         assertEquals("mock-mini", resp.aiModel());
+        ArgumentCaptor<AiTestConfig> modelCall = ArgumentCaptor.forClass(AiTestConfig.class);
+        verify(aiGateway).chat(modelCall.capture(), anyString(), anyInt(), any());
+        assertEquals(60_000, modelCall.getValue().timeoutMs());
 
         ArgumentCaptor<AuditLog> cap = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogService).append(cap.capture());

@@ -189,6 +189,36 @@ class ProjectAgentOfficialToolGovernanceTest {
         assertEquals(original, received.getValue().getInput());
     }
 
+    @Test void backgroundOffloadDoesNotCancelAnApprovedFileListing() {
+        var tool = nativeTool("list_files");
+        when(tool.callAsync(any())).thenReturn(Mono.just(ToolResultBlock.text("listed")));
+        var input = Map.<String, Object>of("path", "/workspace");
+        var param = approvedCall(tool, input);
+        var state = param.getRuntimeContext().getAgentState();
+        state.contextMutable().add(io.agentscope.core.message.Msg.builder()
+            .role(io.agentscope.core.message.MsgRole.TOOL)
+            .content(List.of(ToolResultBlock.text(
+                "<system-reminder>Tool 'list_files' is running in background (id=owned-tool-call) for over 30s.")
+                .withIdAndName("owned-tool-call", "list_files"))).build());
+        state.contextMutable().add(io.agentscope.core.message.Msg.builder()
+            .role(io.agentscope.core.message.MsgRole.ASSISTANT)
+            .content(List.of(io.agentscope.core.message.TextBlock.builder().text("继续").build())).build());
+        assertNotNull(param.getAgent().getToolkit().getTool("list_files").callAsync(param).block());
+        verify(tool).callAsync(any());
+    }
+
+    @Test void completedListingResultStillRejectsReplay() {
+        var tool = nativeTool("list_files");
+        var param = approvedCall(tool, Map.of("path", "/workspace"));
+        param.getRuntimeContext().getAgentState().contextMutable().add(io.agentscope.core.message.Msg.builder()
+            .role(io.agentscope.core.message.MsgRole.TOOL)
+            .content(List.of(ToolResultBlock.text("Error: already listed")
+                .withIdAndName("owned-tool-call", "list_files"))).build());
+        assertThrows(IllegalStateException.class,
+            () -> param.getAgent().getToolkit().getTool("list_files").callAsync(param).block());
+        verify(tool, never()).callAsync(any());
+    }
+
     private static ToolCallParam approvedCall(ToolBase original, Map<String, Object> input) {
         var toolkit = new Toolkit(); toolkit.registerAgentTool(original);
         var agent = mock(Agent.class); when(agent.getToolkit()).thenReturn(toolkit);

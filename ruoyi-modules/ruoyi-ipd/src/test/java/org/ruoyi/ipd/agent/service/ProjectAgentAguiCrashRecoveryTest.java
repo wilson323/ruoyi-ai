@@ -40,7 +40,7 @@ class ProjectAgentAguiCrashRecoveryTest {
         return new Pipeline(service,executor,kernel);
     }
     private long pause(Pipeline pipeline) {
-        long id=Long.parseLong(pipeline.service().create(ACTOR,PROJECT_ID,c02("crash-intent-fixture","请对本项目做竞品分析：功能、价格、渠道、技术路线")).runId());
+        long id=Long.parseLong(pipeline.service().create(ACTOR,PROJECT_ID,c02("crash-intent-fixture","按已确认计划执行\n1. 请对本项目做竞品分析：功能、价格、渠道、技术路线")).runId());
         tasks.remove(0).run();
         pipeline.kernel().last().sink().onAguiInterrupt(Map.of("reply:call",new AguiEvent.Interrupt("reply:call","tool_call","确认","call",null,null,
             Map.of("agentscope.interruptKind","permission_confirm","toolName","request_approval","toolInput",Map.of(),"replyId","reply"))),0);

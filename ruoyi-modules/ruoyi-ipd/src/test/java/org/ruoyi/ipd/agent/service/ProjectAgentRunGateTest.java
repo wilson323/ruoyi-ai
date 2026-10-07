@@ -102,20 +102,16 @@ class ProjectAgentRunGateTest {
     }
 
     @Test
-    @DisplayName("负例已绑定 C02：步骤来自技能步骤节后仍执行内核")
-    void boundStillRequestExecutesSkillSteps() {
+    @DisplayName("已绑定动作且需要计划时先等人确认，不直接跑内核")
+    void boundPlanWaitsBeforeKernel() {
         RunServiceHarness h = new RunServiceHarness(true, false, 4);
         String runId = h.service.create(ACTOR, PROJECT_ID,
             c02("gate-still-0001", "我还是要做竞品的功能和价格")).runId();
 
-        assertThat(h.kernel.executions).hasSize(1);
+        assertThat(h.kernel.executions).isEmpty();
         List<IpdAgentRunEvent> events = h.store.events(Long.valueOf(runId));
-        Map<String, Object> intent = payload(events.get(2));
-        assertThat(intent).containsEntry("kind", "INTENT").containsEntry("needsPlan", true);
-        List<String> steps = asStrings(intent.get("steps"));
-        assertThat(steps).hasSize(6).noneMatch(step -> step.contains("核对功能"));
-        assertThat(steps.get(0)).startsWith("检索「竞品」");
-        assertThat(h.kernel.last().spec().skills()).isNotEmpty();
+        assertThat(payload(events.get(events.size() - 1))).containsEntry("reason", "PLAN_CONFIRM");
+        assertThat(h.store.findRun(Long.valueOf(runId)).orElseThrow().getStatus()).isEqualTo("WAITING_APPROVAL");
     }
 
     @Test

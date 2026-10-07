@@ -9,6 +9,7 @@ import io.agentscope.core.model.ChatUsage;
 import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.event.ToolCallStartEvent;
 import io.agentscope.core.event.ToolResultEndEvent;
+import io.agentscope.core.event.ToolResultTextDeltaEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.message.ToolResultBlock;
@@ -532,7 +533,9 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
             .enableMetaTool(true)
             .enableAgentTracingLog(true)
             .enablePendingToolRecovery(true)
-            .asyncToolTimeout(Duration.ofSeconds(30))
+            // 本地嵌入经常超过 30 秒。到点后官方后台卸载会取消正在进行的嵌入请求，
+            // 项目资料检索就被记成失败。检索要等嵌入返回，不能在 30 秒被掐断。
+            .asyncToolTimeout(Duration.ofSeconds(120))
             .middleware(safeTranscript)
             .transcriptStore(safeTranscript)
             .middleware(subagentScope)
@@ -840,6 +843,7 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         private final Long runId;
         private final java.util.function.LongSupplier checkpointVersion;
         private final StringBuilder accumulated = new StringBuilder();
+        private final java.util.Map<String, StringBuilder> toolResultText = new java.util.HashMap<>();
 
         private EventBridge(ProjectAgentEventSink sink, Long runId) {
             this(sink, runId, null, () -> { throw new IllegalStateException("Checkpoint version source is required"); });
@@ -901,9 +905,16 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
                 sink.onText(text.getDelta());
             } else if (event instanceof ToolCallStartEvent call) {
                 sink.onToolCall(call.getToolCallId(), call.getToolCallName());
+            } else if (event instanceof ToolResultTextDeltaEvent delta) {
+                String id = delta.getToolCallId() == null ? "" : delta.getToolCallId();
+                toolResultText.computeIfAbsent(id, key -> new StringBuilder())
+                    .append(delta.getDelta() == null ? "" : delta.getDelta());
             } else if (event instanceof ToolResultEndEvent result) {
+                String id = result.getToolCallId() == null ? "" : result.getToolCallId();
+                StringBuilder text = toolResultText.remove(id);
                 sink.onToolResult(result.getToolCallId(), result.getToolCallName(),
-                    result.getState() == null ? null : result.getState().name());
+                    result.getState() == null ? null : result.getState().name(),
+                    text == null ? "" : text.toString());
             } else if (event instanceof ModelCallStartEvent) {
                 sink.onStep("MODEL_CALL", Map.of());
             } else if (event instanceof ModelCallEndEvent end) {

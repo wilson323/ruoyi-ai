@@ -43,7 +43,8 @@ import static org.ruoyi.ipd.agent.support.AgentTestFixtures.c02;
 @Tag("dev")
 class ProjectAgentRunServiceLifecycleTest {
 
-    private static final String MESSAGE = "竞品分析";
+    /** 已确认计划的正文：首行固定确认头，其后为步骤（与前端「开始执行」拼出的新运行同形）。 */
+    private static final String MESSAGE = "按已确认计划执行\n1. 竞品分析";
 
     @Test
     @DisplayName("详情：本人可见且 ID 为字符串、快照可回读；他人/冻结/开关关闭拒绝")

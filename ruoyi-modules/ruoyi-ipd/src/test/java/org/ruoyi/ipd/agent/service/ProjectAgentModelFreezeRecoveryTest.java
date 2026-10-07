@@ -30,7 +30,8 @@ class ProjectAgentModelFreezeRecoveryTest {
         return (AiModelConfigMapper) field((ProjectAgentModelCatalog) field(planner(h), "modelCatalog"), "mapper");
     }
     private Long pause(RunServiceHarness h, String key) {
-        Long id = Long.valueOf(h.service.create(ACTOR, PROJECT_ID, c02(key, "整理现有资料")).runId());
+        Long id = Long.valueOf(h.service.create(ACTOR, PROJECT_ID,
+            c02(key, "按已确认计划执行\n1. 整理现有资料")).runId());
         assertTrue(h.store.transition(id, Set.of(AgentRunStatus.RUNNING), AgentRunStatus.WAITING_APPROVAL, null, new java.util.Date()));
         return id;
     }

@@ -442,11 +442,19 @@ public final class ProjectAgentRunHandle implements ProjectAgentEventSink {
     /** {@inheritDoc} */
     @Override
     public void onToolResult(String toolCallId, String toolName, String state) {
+        onToolResult(toolCallId, toolName, state, null);
+    }
+
+    @Override
+    public void onToolResult(String toolCallId, String toolName, String state, String detail) {
         completion.noteTool(toolName);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("toolCallId", toolCallId);
         payload.put("toolName", toolName);
         payload.put("state", state);
+        if (detail != null && !detail.isBlank()) {
+            payload.put("summary", detail.length() > 500 ? detail.substring(0, 500) + "…" : detail);
+        }
         append(AgentEventType.TOOL_RESULT, payload);
     }
 

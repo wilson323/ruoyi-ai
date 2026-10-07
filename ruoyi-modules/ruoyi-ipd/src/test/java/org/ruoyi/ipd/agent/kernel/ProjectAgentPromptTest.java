@@ -47,6 +47,9 @@ class ProjectAgentPromptTest {
 
     private static final String SENTENCE = "阶段：发布。口令西瓜";
 
+    /** 已确认计划的正文：首行固定确认头，其后为步骤；SENTENCE 仍在正文里供「事实不取用户原话」断言。 */
+    private static final String CONFIRMED_SENTENCE = "按已确认计划执行\n" + SENTENCE;
+
     @Test
     @DisplayName("已选 MCP 回答进入来源约束，但不伪装原文或验收证据")
     void selectedMcpAnswerHasSeparateEvidenceRules() {
@@ -120,12 +123,12 @@ class ProjectAgentPromptTest {
         FakeProjectAgentKernel kernel = new FakeProjectAgentKernel();
         ProjectAgentRunService service = service(projects, products, kernel);
 
-        service.create(ACTOR, PROJECT_ID, c02("facts-db-01", SENTENCE));
+        service.create(ACTOR, PROJECT_ID, c02("facts-db-01", CONFIRMED_SENTENCE));
 
         ProjectAgentRunSpec submitted = kernel.last().spec();
         assertThat(submitted.projectFacts()).isEqualTo(
             "项目：熵基门禁迭代\n阶段：概念\n产品：熵基门禁\n当前动作：竞品分析\n");
-        assertThat(submitted.message()).isEqualTo(SENTENCE);
+        assertThat(submitted.message()).isEqualTo(CONFIRMED_SENTENCE);
         assertThat(submitted.projectFacts()).doesNotContain("西瓜").doesNotContain("发布");
     }
 
@@ -150,7 +153,7 @@ class ProjectAgentPromptTest {
         FakeProjectAgentKernel kernel = new FakeProjectAgentKernel();
         ProjectAgentRunService service = service(projects, mock(ProductMapper.class), kernel, store, documents);
 
-        service.create(ACTOR, PROJECT_ID, c02("facts-reject-01", SENTENCE));
+        service.create(ACTOR, PROJECT_ID, c02("facts-reject-01", CONFIRMED_SENTENCE));
 
         IpdAgentRunEvent started = store.events(kernel.last().spec().runId()).stream()
             .filter(event -> AgentEventType.RUN_STARTED.name().equals(event.getEventType()))
@@ -169,7 +172,7 @@ class ProjectAgentPromptTest {
         FakeProjectAgentKernel kernel = new FakeProjectAgentKernel();
         ProjectAgentRunService service = service(projects, mock(ProductMapper.class), kernel);
 
-        service.create(ACTOR, PROJECT_ID, c02("facts-miss-01", SENTENCE));
+        service.create(ACTOR, PROJECT_ID, c02("facts-miss-01", CONFIRMED_SENTENCE));
 
         assertThat(kernel.last().spec().projectFacts()).isEqualTo(
             "项目：未取得\n阶段：未取得\n产品：未取得\n当前动作：竞品分析\n");
@@ -180,10 +183,10 @@ class ProjectAgentPromptTest {
     void harnessWithoutMapperLeavesFactsEmpty() {
         RunServiceHarness harness = new RunServiceHarness(true, false, 4);
 
-        harness.service.create(ACTOR, PROJECT_ID, c02("facts-nomap-01", SENTENCE));
+        harness.service.create(ACTOR, PROJECT_ID, c02("facts-nomap-01", CONFIRMED_SENTENCE));
 
         assertThat(harness.kernel.last().spec().projectFacts()).isNull();
-        assertThat(harness.kernel.last().spec().message()).isEqualTo(SENTENCE);
+        assertThat(harness.kernel.last().spec().message()).isEqualTo(CONFIRMED_SENTENCE);
     }
 
     /**

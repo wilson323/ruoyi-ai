@@ -14,7 +14,7 @@ import static org.ruoyi.ipd.agent.support.AgentTestFixtures.*;
 @Tag("dev")
 class ProjectAgentAguiCreateIntegrationTest {
     private AgentRunCreateReq req(String key, RunAgentInput input) {
-        var old = c02(key, "请对本项目做竞品分析：功能、价格、渠道、技术路线");
+        var old = c02(key, "按已确认计划执行\n1. 请对本项目做竞品分析：功能、价格、渠道、技术路线");
         return new AgentRunCreateReq(old.capabilityPackCode(), old.capabilityPackVersion(), old.modelConfigId(),
             old.skillNames(), old.toolIds(), old.actionCode(), old.message(), old.idempotencyKey(),
             old.productLineId(), old.requirementId(), old.previousRunId(), old.targetDocumentId(), old.baseVersionId(), input);

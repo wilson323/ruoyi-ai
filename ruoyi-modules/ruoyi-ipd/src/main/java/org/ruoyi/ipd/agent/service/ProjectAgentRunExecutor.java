@@ -236,6 +236,9 @@ public class ProjectAgentRunExecutor {
             }
             public void onToolCall(String id, String name) { usage.onToolCall(id, name); }
             public void onToolResult(String id, String name, String state) { usage.onToolResult(id, name, state); }
+            public void onToolResult(String id, String name, String state, String detail) {
+                usage.onToolResult(id, name, state, detail);
+            }
             public void onSource(Map<String, Object> source) { usage.onSource(source); }
             public void onText(String text) { usage.onText(text); }
             public void onFinalText(String text) { usage.onFinalText(text); }
@@ -776,7 +779,9 @@ public class ProjectAgentRunExecutor {
     }
 
     /**
-     * 已确认且至少一条步骤时不再等待，即使没有绑定动作。只有确认开头、没有步骤时仍等待。
+     * 已确认计划（正文以「按已确认计划执行」开头且带步骤）不再等待。
+     * 需要澄清，或需要计划时，先停下来等人确认，即使已经绑定动作。
+     * 绑定动作不能代替用户确认计划和范围。
      *
      * @param decision 意图结论
      * @param actionCode 绑定动作，可空
@@ -784,15 +789,13 @@ public class ProjectAgentRunExecutor {
      * @return 是否应停在等待用户
      */
     static boolean shouldAwaitUser(ProjectAgentIntent.Decision decision, String actionCode, String message) {
-        boolean unbound = actionCode == null || actionCode.isBlank();
-        List<String> confirmed = unbound ? ProjectAgentIntent.confirmedSteps(message) : null;
+        List<String> confirmed = ProjectAgentIntent.confirmedSteps(message);
         if (confirmed != null && !confirmed.isEmpty()) {
             return false;
         }
         boolean clarification = decision.needsClarification()
             && decision.questions() != null && !decision.questions().isEmpty();
-        boolean freePlan = decision.needsPlan() && unbound;
-        return clarification || freePlan;
+        return clarification || decision.needsPlan();
     }
 
     /**

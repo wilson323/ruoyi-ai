@@ -260,22 +260,48 @@ public final class ProjectAgentOfficialToolGovernance implements MiddlewareBase 
                 || !getName().equals(requested.getName())
                 || !Objects.equals(binding.call().getInput(), requested.getInput())) return false;
             var context = state.getContext();
-            for (var message : context) {
-                if (message.getContentBlocks(ToolResultBlock.class).stream()
-                    .anyMatch(result -> requested.getId().equals(result.getId()))) return false;
-            }
+            if (hasCommittedResult(context, requested.getId())) return false;
             for (int index = context.size() - 1; index >= 0; index--) {
                 var message = context.get(index);
                 if (message.getRole() != MsgRole.ASSISTANT) continue;
-                boolean approved = message.getContentBlocks(ToolUseBlock.class).stream().anyMatch(actual ->
-                    requested.getId().equals(actual.getId()) && getName().equals(actual.getName())
-                    && actual.getState() == ToolCallState.ALLOWED
-                    && Objects.equals(actual.getInput(), param.getInput())
-                    && Objects.equals(actual.getInput(), requested.getInput())
-                    && Objects.equals(actual.getContent(), requested.getContent()));
+                boolean mentions = false;
+                boolean approved = false;
+                for (var actual : message.getContentBlocks(ToolUseBlock.class)) {
+                    if (!requested.getId().equals(actual.getId())) continue;
+                    mentions = true;
+                    approved = getName().equals(actual.getName())
+                        && actual.getState() == ToolCallState.ALLOWED
+                        && Objects.equals(actual.getInput(), param.getInput())
+                        && Objects.equals(actual.getInput(), requested.getInput())
+                        && Objects.equals(actual.getContent(), requested.getContent());
+                }
+                // 超时卸载会先开下一轮推理。新的助手消息里没有这次调用时，要继续找原来的批准记录。
+                if (!mentions) continue;
                 return approved && binding.consumed().compareAndSet(false, true);
             }
             return false;
+        }
+
+        /** 后台卸载占位不是执行结果。真正的结果仍拒绝重放。 */
+        private static boolean hasCommittedResult(Iterable<io.agentscope.core.message.Msg> context, String id) {
+            for (var message : context) {
+                for (var result : message.getContentBlocks(ToolResultBlock.class)) {
+                    if (!id.equals(result.getId()) || isOffloadNotice(result)) continue;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean isOffloadNotice(ToolResultBlock result) {
+            var output = result.getOutput();
+            if (output == null || output.isEmpty()) return false;
+            for (var block : output) {
+                if (!(block instanceof io.agentscope.core.message.TextBlock text)) return false;
+                String body = text.getText();
+                if (body == null || !body.startsWith("<system-reminder>Tool '")) return false;
+            }
+            return true;
         }
 
         private void bindCall(AgentState state, RuntimeContext runtime, Agent agent, ToolUseBlock call) {

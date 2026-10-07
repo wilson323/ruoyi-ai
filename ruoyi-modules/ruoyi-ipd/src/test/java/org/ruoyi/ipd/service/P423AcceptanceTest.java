@@ -560,8 +560,15 @@ class P423AcceptanceTest {
     private MockMvc mvc() {
         // HTTP授权入口必须装配权限守卫；这里仅授权该夹具项目，不放宽生产逻辑。
         IpdCopilotAccess access = mock(IpdCopilotAccess.class);
-        when(access.requireVisible(ACTOR, 77L)).thenReturn("000000");
+        when(access.requireVisible(ACTOR, null)).thenReturn("000000");
         documentService.setProjectAccess(access);
+        // 2026-10-06 requireProjectVisible 写口径对齐读口径（cb19998f）：可见性再走项目读链路校验租户。
+        ProjectService projectRead = mock(ProjectService.class);
+        org.ruoyi.ipd.domain.Project project = new org.ruoyi.ipd.domain.Project();
+        project.setId(77L);
+        project.setTenantId("000000");
+        when(projectRead.getVisibleById(77L, ACTOR)).thenReturn(project);
+        documentService.setProjectReadAccess(projectRead);
         IpdPermission permission = mock(IpdPermission.class);
         when(permission.requireInternal()).thenReturn(ACTOR);
         return MockMvcBuilders.standaloneSetup(

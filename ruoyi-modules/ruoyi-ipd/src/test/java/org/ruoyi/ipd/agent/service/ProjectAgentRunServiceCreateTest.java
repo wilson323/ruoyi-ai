@@ -35,7 +35,8 @@ import static org.ruoyi.ipd.agent.support.AgentTestFixtures.c02;
 @Tag("dev")
 class ProjectAgentRunServiceCreateTest {
 
-    private static final String MESSAGE = "请对本项目做竞品分析：功能、价格、渠道、技术路线";
+    /** 已确认计划的正文：首行固定确认头，其后为步骤（与前端「开始执行」拼出的新运行同形）。 */
+    private static final String MESSAGE = "按已确认计划执行\n1. 请对本项目做竞品分析：功能、价格、渠道、技术路线";
 
     @Test
     @DisplayName("成功：返回字符串 runId 与 PENDING；落库冻结快照；启动后 RUN_STARTED，再 SKILL_SELECTED，再 INTENT")

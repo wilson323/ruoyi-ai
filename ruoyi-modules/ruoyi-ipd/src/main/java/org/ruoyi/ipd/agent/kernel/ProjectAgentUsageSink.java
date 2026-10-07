@@ -135,6 +135,11 @@ public final class ProjectAgentUsageSink implements ProjectAgentEventSink {
     }
 
     @Override
+    public void onToolResult(String toolCallId, String toolName, String state, String detail) {
+        delegate.onToolResult(toolCallId, toolName, state, detail);
+    }
+
+    @Override
     public void onSource(Map<String, Object> source) {
         delegate.onSource(source);
     }

@@ -127,8 +127,8 @@ public class AiSuggestionService {
 
     /** 建议输出 maxTokens（markdown 草稿比 copilot 短答长，比文档生成短）。 */
     static final int MAX_TOKENS = 1200;
-    /** 建议调用超时（与 copilot 同档：同步交互 30s 上限）。 */
-    static final int SUGGEST_TIMEOUT_MS = 30_000;
+    /** 建议调用超时。立项页「AI 帮写」同步等模型，允许 60 秒；前端同一路径等待上限与此对齐。 */
+    static final int SUGGEST_TIMEOUT_MS = 60_000;
     /** prompt 总长上限（上下文渲染后截断，防极端数据撑爆）。 */
     static final int PROMPT_MAX = 30_000;
 
@@ -228,6 +228,11 @@ public class AiSuggestionService {
             loadHandoverForActor(actor, req.entityId()); // AI-P3：entityId=handoverId，仅限归属项目成员/移交双方/超管
         } else if (scene.equals("report.nl-query") || scene.equals("report.trend-analyze")) {
             assertProjectVisible(actor, req.projectId()); // 全局可空=跨项目报告导航/趋势；带项目则校验可见性
+        } else if (scene.equals("project.create.suggest")) {
+            // 新建项目还没有项目行。不要求 projectId；若调用方带了，只校验可见性，不拿别的项目冒充本次立项。
+            if (req.projectId() != null) {
+                assertProjectVisible(actor, req.projectId());
+            }
         } else {
             if (req.projectId() == null) {
                 throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "该场景 projectId 必填");
@@ -287,6 +292,9 @@ public class AiSuggestionService {
      */
     private AiSuggestResp.Card buildCard(IpdActor actor, AiSuggestReq req, String aiModel) {
         if (!STRUCTURED_SCENES.contains(req.scene())) {
+            return null;
+        }
+        if ("project.create.suggest".equals(req.scene()) && req.projectId() == null) {
             return null;
         }
         try {
