@@ -48,9 +48,11 @@ import java.util.concurrent.TimeUnit;
  *       "对方已提交"（AC-GATE-03，BR-GATE-03 并行签署）。</li>
  *   <li><b>G2/3/4 领域签署</b>：流程门禁但非双签否决（页24），由领域主导方单签终态；
  *       非主导方 PM 签署拒绝（非授权角色）。</li>
- *   <li><b>主导方按领域非先提交方</b>（owner 2026-09-05 决策，覆盖附录 D6 "先提交方"旧解）：
- *       BR-GATE-08 RACI——产品定位与场景（市场 A/R）⇒ G1 立项/G2 规划/G5 上市归市场；
- *       差异化创新（研发 A/R）⇒ G3 开发/G4 验证归研发（G4 否决项 G4-1/2/3 全研发交付侧）。</li>
+ *   <li><b>主导方按领域非先提交方</b>（owner 2026-09-05 决策，覆盖附录 D6 "先提交方"旧解；
+ *       G4 归属 2026-10-06 修正：上市验证的主导方是市场 PM，不是研发 PM）：
+ *       BR-GATE-08 RACI——产品定位与场景（市场 A/R）⇒ G1 立项/G2 规划/G4 上市验证/G5 上市归市场；
+ *       差异化创新（研发 A/R）⇒ G3 开发归研发。G4 的交付物（G4-1/2/3）由研发交付，
+ *       但**签署权归市场 PM**——交付方 ≠ 主导方。</li>
  * </ul>
  *
  * <p>超时弃权/期限提醒/仲裁归 P2-5.4；条件遗留项归 P2-5.3。
@@ -184,9 +186,16 @@ public class GateReviewService implements IGateReviewService {
         return "G1".equals(gateCode) || "G5".equals(gateCode);
     }
 
-    /** 领域主导方：G3/G4 研发（差异化创新 A/R），其余市场（产品定位与场景 A/R）。 */
+    /**
+     * 领域主导方：仅 G3 研发（差异化创新 A/R），其余含 G4 归市场（产品定位与场景 A/R）。
+     *
+     * <p>2026-10-06 修正（G4 刀）：原实现把 G4 也判给 RD_PM，导致上市验证 Gate 的单签权
+     * 落在研发 PM 手里，与「上市验证 = 市场侧确认能否上市」的权威口径相悖。
+     * G4 的要素交付仍由研发提供，但签署权归市场 PM——交付方 ≠ 主导方。
+     * 单一函数口径：view/requireAuthorized/scanTimeout/占位行 5 个消费点同源，勿在别处硬编码 G4。
+     */
     static String leadSideOf(String gateCode) {
-        return "G3".equals(gateCode) || "G4".equals(gateCode) ? "RD_PM" : "MARKET_PM";
+        return "G3".equals(gateCode) ? "RD_PM" : "MARKET_PM";
     }
 
     /**
@@ -767,8 +776,14 @@ public class GateReviewService implements IGateReviewService {
         return row;
     }
 
-    /** 超管终裁（AC-GATE-10 尾段）：仅两组长意见不一致（已升级）后可提交，
-     * 终裁结果写入项目审计日志永久归档。Gate 终态不因终裁翻转（变更须 reopen 新轮）。 */
+    /**
+     * 超管终裁（AC-GATE-10 尾段）：仅两组长意见不一致（已升级）后可提交，
+     * 终裁结果写入项目审计日志永久归档。
+     *
+     * <p><b>D19 终裁结果强制执行（2026-10-06 修正）</b>：旧口径是「Gate 终态不因终裁翻转」，
+     * 于是终裁 APPROVE 只写仲裁表与审计，Gate 仍停在 REJECTED，阶段推进无从收敛。
+     * 现终裁即落 Gate 终态：APPROVE⇒APPROVED，REJECT⇒REJECTED（自环幂等）。
+     */
     @Transactional(rollbackFor = Exception.class)
     public GateArbitration finalRuling(Long gateId, String decision, String opinion, IpdActor actor) {
         Gate gate = requireGate(gateId);
@@ -803,10 +818,48 @@ public class GateReviewService implements IGateReviewService {
         audit(actor, gate, "GATE_FINAL_RULING",
             "超管终裁（终裁结果写入项目审计日志永久归档，AC-GATE-10）",
             "decision", decision, "round", gate.getCurrentRound());
+        // D19 终裁结果强制执行：审计归档之后、通知之前落 Gate 终态——先落库再告知，
+        // 宿主事务回滚则通知（publishAfterCommit）不发出，不产生指向不存在终态的假通知。
+        applyFinalRuling(gate, decision, actor);
         notifyBothPms(gate, NotificationService.Types.GATE_FINAL_RULING_RESULT,
             "Gate " + gate.getGateCode() + " 超管终裁：" + ("APPROVE".equals(decision) ? "支持通过" : "支持驳回"),
             "第 " + gate.getCurrentRound() + " 轮双PM分歧经组长仲裁未决，超管终裁意见已归档审计日志");
         return row;
+    }
+
+    /**
+     * 终裁落状态（D19）：APPROVE ⇒ APPROVED，REJECT ⇒ REJECTED。
+     *
+     * <p>不复用 {@link #settle}：settle 前置要求起点是 PENDING（{@code requireFromState}），
+     * 而终裁的起点恒是 REJECTED（{@link #requireArbitratable} 已判过），两条链起点不同。
+     *
+     * <ul>
+     *   <li>起点恒为 REJECTED：{@code requireArbitratable} 已判，落到这里必是 REJECTED，
+     *       故 UPDATE 带 {@code .eq(status,'REJECTED')} 状态谓词做并发 CAS 收口；</li>
+     *   <li>终裁 REJECT 的目标态 == 当前态（REJECTED），属自环幂等：**跳过 UPDATE 不打库**，
+     *       只补审计，避免空转打库与无意义的 concludedAt 刷新；</li>
+     *   <li>状态机守卫 fail-closed：两条规则在 DefaultStateMachineGuard 显式登记
+     *       （isTerminalState 无 gate_review 通配，规则不登记即 preCheck 抛错）。</li>
+     * </ul>
+     */
+    private void applyFinalRuling(Gate gate, String decision, IpdActor actor) {
+        String target = "APPROVE".equals(decision) ? STATUS_APPROVED : STATUS_REJECTED;
+        // R24 接线：状态机守卫 preCheck（fail-closed）。守卫 null / 未登记迁移则抛业务异常。
+        guardSupport.preCheck(STATUS_REJECTED, target, "finalRuling");
+        if (!target.equals(gate.getStatus())) {
+            guardSupport.requireCasHit(gateMapper.update(null, new LambdaUpdateWrapper<Gate>()
+                .eq(Gate::getId, gate.getId())
+                .eq(Gate::getStatus, STATUS_REJECTED)
+                .set(Gate::getStatus, target)
+                .set(Gate::getConcludedAt, now())),
+                "Gate 状态已被并发变更，终裁落状态失败，当前：" + gate.getStatus());
+            gate.setStatus(target);
+        }
+        audit(actor, gate, "GATE_FINAL_RULING_APPLIED",
+            "终裁结果落 Gate 终态（D19 终裁强制执行）",
+            "status", target, "decision", decision, "round", gate.getCurrentRound());
+        // R24 接线：postCommit 跨域副作用（事务后）——本规则 crossDomain=false、仅作后续扩展点。
+        guardSupport.registerPostCommit(STATUS_REJECTED, target, "finalRuling", actor.id(), gate.getId());
     }
 
     // ==================== MEDIUM-1.3：Gate 列席人员邀请 ====================

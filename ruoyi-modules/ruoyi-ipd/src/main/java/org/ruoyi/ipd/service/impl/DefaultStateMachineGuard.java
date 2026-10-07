@@ -180,6 +180,22 @@ public class DefaultStateMachineGuard implements StateMachineGuard {
             .crossDomain(false)
             .description("弃权超时后重开")
             .build());
+        // ---- GateReview 终裁落状态（D19，2026-10-06）：起点恒 REJECTED（requireArbitratable 前置） ----
+        // isTerminalState 无 gate_review 条目 ⇒ 这两条必须显式登记，否则规则写了也不生效。
+        register(StateTransitionRule.builder()
+            .key("gate_review:REJECTED->APPROVED|finalRuling")
+            .entityType("gate_review")
+            .fromState("REJECTED").toState("APPROVED").trigger("finalRuling")
+            .crossDomain(false)
+            .description("超管终裁 APPROVE 翻转 Gate 为通过（D19 终裁结果强制执行）")
+            .build());
+        register(StateTransitionRule.builder()
+            .key("gate_review:REJECTED->REJECTED|finalRuling")
+            .entityType("gate_review")
+            .fromState("REJECTED").toState("REJECTED").trigger("finalRuling")
+            .crossDomain(false)
+            .description("超管终裁 REJECT 自环幂等（目标态==当前态，不打库）")
+            .build());
 
         // ---- LaunchDateChange 状态机：INITIAL→PENDING_SECOND→CONFIRMED/REJECTED（双签）----
         register(StateTransitionRule.builder()

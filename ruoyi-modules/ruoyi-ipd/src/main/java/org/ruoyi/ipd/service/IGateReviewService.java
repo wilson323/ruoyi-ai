@@ -50,7 +50,12 @@ public interface IGateReviewService {
     GateArbitration arbitrate(Long gateId, String decision, String opinion, IpdActor actor);
 
     /** 超管终裁（AC-GATE-10 尾段）：仅两组长意见不一致（已升级）后可提交， */
-    /** * 终裁结果写入项目审计日志永久归档。Gate 终态不因终裁翻转（变更须 reopen 新轮）。 */
+    /** * 终裁结果写入项目审计日志永久归档。 */
+    /** * <p><b>D19 终裁结果强制执行（2026-10-07 F4 口径反转）</b>：终裁 APPROVE ⇒ Gate 落 APPROVED、 */
+    /** * 终裁 REJECT ⇒ 落 REJECTED，不再是「只归档不改终态」。旧口径「Gate 终态不因终裁翻转 */
+    /** * （变更须 reopen 新轮）」已作废——那正是 F4 要修的断点：终裁只留痕不生效，等于终裁无效。 */
+    /** * 连带后果：终裁推翻过一次后该 Gate 无 reopen 路径（reopen 只收 REJECTED/ABSTAINED_TIMEOUT）， */
+    /** * 如需再议只能改数据——已登记为待 owner 拍板的设计后果，非本刀引入的缺陷。 */
     GateArbitration finalRuling(Long gateId, String decision, String opinion, IpdActor actor);
 
     /** * 邀请列席人员（MEDIUM-1.3）：仅超管/组长可邀请； */

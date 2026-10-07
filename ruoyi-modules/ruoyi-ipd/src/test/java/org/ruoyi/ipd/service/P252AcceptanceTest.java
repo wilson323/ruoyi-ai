@@ -239,15 +239,16 @@ class P252AcceptanceTest {
     }
 
     @Test
-    @DisplayName("G4 领域签署：研发主导（否决项 G4-1/2/3 均研发交付侧）；市场拒绝")
-    void domainSign_g4_rdLeads() {
+    @DisplayName("G4 领域签署：市场主导（2026-10-06 修正，旧口径研发主导）；研发拒绝")
+    void domainSign_g4_marketLeads() {
+        // 否决项 G4-1/2/3 由研发交付，但签署权归市场 PM——交付方 ≠ 主导方。
         gate.setGateCode("G4");
 
-        assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, MARKET))
+        assertThatThrownBy(() -> service.sign(501L, "APPROVE", null, RD))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("研发PM主导签署");
+            .hasMessageContaining("市场PM主导签署");
 
-        service.sign(501L, "APPROVE", null, RD);
+        service.sign(501L, "APPROVE", null, MARKET);
         assertThat(gate.getStatus()).isEqualTo("APPROVED");
     }
 

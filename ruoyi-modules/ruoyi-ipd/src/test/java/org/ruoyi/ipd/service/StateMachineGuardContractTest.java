@@ -35,8 +35,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
  *
  * <p>覆盖维度：
  * <ol>
- *   <li>哨兵：ruleCount()==89（增删规则必须同步改此处+对应表驱动行；R24线settleTimeout-APPROVED与R25线DRAFT直分合入后 37→38；R28线requirement_change接线4条 38→42；后补登至 50；R33 一期 kpi_shared_confirm 3条 50→53；D-1 批次 6 机 36 条 53→89）</li>
- *   <li>表驱动 89 条合法迁移全部放行（preCheck 不抛 + isAllowed=true；通配 *->CLOSED|close 展开为逐 from 语义行）</li>
+ *   <li>哨兵：ruleCount()==88（增删规则必须同步改此处+对应表驱动行；R24线settleTimeout-APPROVED与R25线DRAFT直分合入后 37→38；R28线requirement_change接线4条 38→42；后补登至 50；R33 一期 kpi_shared_confirm 3条 50→53；D-1 批次 6 机 36 条 53→89；「算钱」层下线 93→86；F4 终裁落状态 gate_review finalRuling 2 条 86→88）</li>
+ *   <li>表驱动 88 条合法迁移全部放行（preCheck 不抛 + isAllowed=true；通配 *->CLOSED|close 展开为逐 from 语义行）</li>
  *   <li>表驱动 22 条非法迁移全部拒绝（跳级/倒退/错误trigger/终态复活/跨机污染）</li>
  *   <li>横向契约：fail-closed / from=null→INITIAL（isAllowed 与 postCommit 双路径）/ 未登记 postCommit no-op</li>
  * </ol>
@@ -62,7 +62,7 @@ class StateMachineGuardContractTest {
     /* ====================== 0. 哨兵：规则数 ====================== */
 
     @Test
-    @DisplayName("哨兵：种子规则总数=86（93 − 奖金池4 + 系数变更3，随「算钱」层下线）")
+    @DisplayName("哨兵：种子规则总数=88（86 + F4 终裁落状态 gate_review finalRuling 2 条）")
     void sentinelRuleCount() {
         // 增删规则必须同步修改本断言与下方表驱动行——防止规则表与测试悄然漂移
         // 2026-09-09 双线合并：R24线 settleTimeout-APPROVED（gate 5→6）+ R25线 DRAFT直分已并
@@ -72,12 +72,14 @@ class StateMachineGuardContractTest {
         // D-1 批次（蜂群 SWARM-A）：6 台 36 条接线规则 53→89
         // 产品线开工合同：创建待开工/批准/拒绝/重新提交四边，89→93。
         // 「算钱」层下线：移除 bonus_pool 4 条 + coefficient_change 3 条，93→86。
+        // F4（2026-10-06）：gate_review REJECTED->APPROVED|finalRuling + REJECTED->REJECTED|finalRuling，86→88。
+        //   isTerminalState 无 gate_review 通配 ⇒ 这两条必须显式登记，规则表缺一条则 finalRuling fail-closed。
         assertThat(guard.ruleCount())
             .as("规则总数变化=契约变更，必须显式过本测试 + code review")
-            .isEqualTo(86);
+            .isEqualTo(88);
     }
 
-    /* ====================== 1. 表驱动：86 条规则合法迁移 ====================== */
+    /* ====================== 1. 表驱动：88 条规则合法迁移 ====================== */
 
     @ParameterizedTest(name = "[{index}] 合法 {0}")
     @CsvSource({
@@ -94,13 +96,15 @@ class StateMachineGuardContractTest {
         "deletion_request, ADMIN_REVIEW, REJECTED, adminReject",
         "deletion_request, LEADER_REVIEW, WITHDRAWN, withdraw",
         "deletion_request, LEADER_REVIEW, ADMIN_REVIEW, escalateOverdue",
-        // ---- gate_review（6，含 R24线 settleTimeout-APPROVED 补登）----
+        // ---- gate_review（8，含 R24线 settleTimeout-APPROVED 与 F4 终裁 2 条）----
         "gate_review, PENDING, APPROVED, sign",
         "gate_review, PENDING, REJECTED, sign",
         "gate_review, PENDING, ABSTAINED_TIMEOUT, settleTimeout",
         "gate_review, PENDING, APPROVED, settleTimeout",   // R24线补登：签署超时一方弃权按主导方意见执行
         "gate_review, REJECTED, PENDING, reopen",
         "gate_review, ABSTAINED_TIMEOUT, PENDING, reopen",
+        "gate_review, REJECTED, APPROVED, finalRuling",    // F4：超管终裁 APPROVE 翻转 Gate 为通过
+        "gate_review, REJECTED, REJECTED, finalRuling",    // F4：超管终裁 REJECT 自环幂等
         // ---- launch_date_change（3）----
         "launch_date_change, INITIAL, PENDING_SECOND, propose",
         "launch_date_change, PENDING_SECOND, CONFIRMED, secondSign",

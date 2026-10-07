@@ -284,8 +284,12 @@ public class ProjectController {
     }
 
     /**
-     * P1 / §5.3 HIGH-1.1：G3 评审自动创建入口 —— 独立端点 POST /api/v1/projects/{id}/gates?gateCode=。
-     * 每 14 天最多创建 1 次；写 GATE_AUTO_CREATE 审计。
+     * P1 / §5.3 HIGH-1.1：Gate 评审创建入口 —— 独立端点 POST /api/v1/projects/{id}/gates?gateCode=。
+     * <p><b>2026-10-07 F6 口径变更</b>：原「每 14 天最多创建 1 次」的时间冷却已废除——那把 G3
+     * 的双周复评周期误当成了禁建窗口，导致 G3 永远建不出来。改为**在途去重**：同 project+gateCode
+     * 已有 status='PENDING' 的行才拒建。写 GATE_AUTO_CREATE 审计。
+     * <p>本端点是手工入口；自动入口在动作流转到 DONE 时触发（owner 2026-10-07 拍板「本阶段
+     * 动作做完后建」，非阶段推进后立即建），二者共用 GateCreationService.autoCreateGate。
      */
     @PostMapping("/{id}/gates")
     @SaCheckPermission(value = IpdPermissionCode.OPERATION_MODULE_PROJECT_STATUS_CHANGE, type = IpdAuthSession.LOGIN_TYPE)
@@ -293,7 +297,7 @@ public class ProjectController {
             @PathVariable Long id,
             @RequestParam String gateCode) {
         IpdActor actor = ipdPermission.requireInternal();
-        // 归属守卫（守卫3）：G3/G4 主导方含研发PM，同样不得用「同组」。
+        // 归属守卫（守卫3）：G3 主导方含研发PM，同样不得用「同组」。G4 主导方已于 2026-10-07 改归市场 PM。
         IpdIdorGuard.requireProjectMemberOrSuperAdmin(actor, id, projectMemberMapper, projectMapper);
         return ApiV1Response.ok(gateCreationService.autoCreateGate(id, gateCode, actor.id()));
     }

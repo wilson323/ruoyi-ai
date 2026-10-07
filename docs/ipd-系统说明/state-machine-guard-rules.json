@@ -1,8 +1,8 @@
 {
   "meta" : {
-    "ruleCount" : 86,
+    "ruleCount" : 88,
     "source" : "DefaultStateMachineGuard.initRules（后端守卫规则表导出，补遗 §5-1）",
-    "version" : "sha256:8ec713361066feaf2cc9bb7beaba6bf093f79a52fc4f2d45b5017b04a56a5d84"
+    "version" : "sha256:d9a2e7372af25e59de043d73f6112a3912991ab9dcd240dfa1d780e998d98a85"
   },
   "rules" : [ {
     "crossDomain" : false,
@@ -170,8 +170,20 @@
     "crossDomain" : false,
     "entityType" : "gate_review",
     "fromState" : "REJECTED",
+    "toState" : "APPROVED",
+    "trigger" : "finalRuling"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "gate_review",
+    "fromState" : "REJECTED",
     "toState" : "PENDING",
     "trigger" : "reopen"
+  }, {
+    "crossDomain" : false,
+    "entityType" : "gate_review",
+    "fromState" : "REJECTED",
+    "toState" : "REJECTED",
+    "trigger" : "finalRuling"
   }, {
     "crossDomain" : false,
     "entityType" : "guest_demand",
