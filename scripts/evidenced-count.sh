@@ -169,6 +169,16 @@ esac
 
 printf 'EC_COUNT=%s\n'    "$COUNT"
 printf 'EC_KIND=%s\n'     "${KIND:-list}"
+# 2026-10-07 补：显式写出「抽样比例」。病根是「只看列表前几条就下结论」
+# （当天实测两次：Controller 121 vs 115 只看了 head -6；AC 幽灵数三次口径各不相同）。
+# 规则里其实早就写了「先打印样本首条」，但**规则靠注意力、会被进度压力压过去**——
+# 把抽样比例做成输出里**必须有**的一行，则「只看一条」在形式上就是残缺的。
+# 这不靠自觉，靠形式完整：数是 N 条时，样本那一条永远带着「它只代表 1/N」。
+if [ "${COUNT:-0}" -gt 0 ] 2>/dev/null; then
+  printf 'EC_SAMPLE_OF=%s  (样本 1 条 / 全部 %s 条；样本仅用于确认「形状对不对」，不得据此推断全体)\n' "$COUNT" "$COUNT"
+else
+  printf 'EC_SAMPLE_OF=0    (计数为 0：先确认口径，再下「不存在」的结论)\n'
+fi
 printf 'EC_ROOT=%s\n'     "$ROOT_ABS"
 printf 'EC_EXCLUDE=%s\n'  "$ARCHIVE_DIRS"
 printf 'EC_PATTERN=%s\n'  "${PATTERN:--}"

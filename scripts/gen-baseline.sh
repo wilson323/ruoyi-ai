@@ -67,23 +67,20 @@ probe "已退役码"   "$RETIRED" "grep -c '\"LC05\"' $AC"
 G2_6_VETO=$(grep 'G2-6' "$GATE" 2>/dev/null | grep -oE '"[YN]"' | head -1)
 G2_ALL=$(grep -cE 'new String\[\]\{"G[1-5]"' "$GATE" 2>/dev/null)
 
-# 2026-10-07 修（根因修复 3/4）：文件计数改用 **HEAD 口径**，不扫工作树。
+# 2026-10-07 修（根因修复 3/4，两次才对）：
+#   v1 工作树口径 → 兄弟会话一写代码数字就漂；
+#   v2 HEAD  口径 → 兄弟会话一提交，HEAD 就漂（实测连续失败 3 次）。
 #
-# 病根：原实现用 `find .`，统计的是**工作树**里此刻有多少文件。而工作树是个
-# **正在被其他会话持续改动的活靶**——实测：连续两次 `--check` 之间，另一个会话
-# 新增了 1 个源文件，基准值从 1641 漂到 1642，门禁随机报红。
+# **两次都错，说明「文件计数」本身不该进基准值。**
+# 文件数是「随提交走的事实」——它跟被描述的代码同生共死，
+# 跨提交比它必然对不上（无论比工作树还是比 HEAD）。
+# ⇒ 正解：**把计数移出基准值**。基准值只保留**不随提交变的事实**：
+#    有效动作 67 / 深管 40 / 轻管 27 / G2-6 非否决 / 要素 33 / 否决 14
+#    ——它们读自显式数据文件与代码常量，是真库口径下的既定事实。
 #
-# 这类失败比「数字错」更坏：**红的原因与被检代码无关**，会训练所有人忽略它
-# ——正是本仓反复记录的「门禁恒红 ⇒ 被习惯性忽略」。
-#
-# 为什么 HEAD 口径对：门禁要回答的是「**已入库代码**口径下的事实」；
-# 工作树里未提交的新增/删除都是尚未成为事实的中间态。
-# 注意：动作数/要素数仍读工作树的显式数据文件，不是文件计数，不受影响。
-count_java_at_head() { # <路径片段>
-  git ls-tree -r --name-only HEAD 2>/dev/null | grep -F "$1" | grep -c '\.java$'
-}
-MAIN_SRC=$(count_java_at_head 'src/main/java/')
-TEST_SRC=$(count_java_at_head 'src/test/java/')
+# 需要看「此刻仓库有多少文件」时，直接跑：
+#    bash scripts/evidenced-count.sh find . --name '*.java'
+# 它带 EC_COUNT / EC_SAMPLE_OF / EC_EXCLUDE，是一次性的现查，不需要落盘比对。
 CTRL_IPD=$(git ls-tree -r --name-only HEAD -- ruoyi-modules/ruoyi-ipd 2>/dev/null \
   | grep 'Controller\.java$' | grep -v '/target/' | wc -l | tr -d ' ')
 
@@ -112,9 +109,6 @@ cat <<EOF
 | \`new ActionDef(\` 总行数 | $ALL_DEF | ⚠️ 比 $TOTAL 多 $((ALL_DEF - TOTAL))，那是**非目录用途**，不要当动作数 |
 | G1~G5 要素总数 | $G2_ALL | \`IpdGateElementSeedInitializer.java\` |
 | G2-6 是否否决项 | \`${G2_6_VETO:-未知}\` | 同上，G2-6 行的 veto 列。**权威=非否决**，见 \`工程合同/DOC-05.md\` 决策 1 |
-| 主源码 java 文件 | $MAIN_SRC | 排掉 \`.codex/\` \`.harness/\` \`target/\` \`.repowise/\` |
-| 测试源码 java 文件 | $TEST_SRC | 同上，仅 \`src/test/java\` |
-| IPD 模块 Controller | $CTRL_IPD | \`find ruoyi-modules/ruoyi-ipd -name '*Controller.java'\` |
 
 ## 引用纪律
 
@@ -126,7 +120,20 @@ EOF
 
 if [ "${1:-}" = "--check" ]; then
   [ -f "$OUT" ] || { echo "FAIL: $OUT 不存在，先跑 gen-baseline.sh 生成" >&2; exit 1; }
+  # 2026-10-07 补：**存在 ≠ 有内容**。实测本文件曾被误删成 0 字节，
+  # 而旧实现只判 `-f`，于是 diff（空 vs 空）通过 → 报 PASS ⇒
+  # **门禁看着在、实际什么都不拦**。这是本仓反复记载的「空扫恒绿」形态，
+  # 今天在我自己写的脚本里又发生一次。
+  if [ ! -s "$OUT" ]; then
+    echo "FAIL: $OUT 存在但**为空**（0 字节）——拒绝把空当一致" >&2
+    echo "      处置: 跑 bash scripts/gen-baseline.sh 重新生成" >&2
+    exit 1
+  fi
   gen > /tmp/baseline-check.md
+  if [ ! -s /tmp/baseline-check.md ]; then
+    echo "FAIL: 生成结果为空——gen 函数本身坏了，拒绝判一致" >&2
+    exit 1
+  fi
   if diff -q "$OUT" /tmp/baseline-check.md >/dev/null 2>&1; then
     echo "PASS: 基准值与代码一致"
     exit 0
@@ -138,5 +145,18 @@ if [ "${1:-}" = "--check" ]; then
 fi
 
 mkdir -p "$(dirname "$OUT")"
-gen > "$OUT"
-echo "已生成 ${OUT}（HEAD ${STAMP}）"
+# set -o pipefail + set -e 之下 gen 失败会中断；但仍显式校验产物非空——
+# 2026-10-07 实测：变量被删导致 gen 报错，脚本**仍打印「已生成」并产出 0 字节文件**，
+# 而后续 --check 因只判「文件存在」而判 PASS ⇒ 一条坏数据静默存活。
+if ! gen > "$OUT" 2>/tmp/_gen-err.txt; then
+  echo "FAIL: 生成失败，已中止（未产出内容）" >&2
+  head -5 /tmp/_gen-err.txt >&2
+  rm -f "$OUT"
+  exit 1
+fi
+if [ ! -s "$OUT" ]; then
+  echo "FAIL: 生成的基准值为空，已删除半成品" >&2
+  rm -f "$OUT"
+  exit 1
+fi
+echo "已生成 ${OUT}（HEAD ${STAMP}，$(wc -c < "$OUT" | tr -d ' ') 字节）"
