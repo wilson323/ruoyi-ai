@@ -132,17 +132,17 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         // 注意该源数据**不在本仓库内**，本类是其 Java 侧镜像；改动请两边同步。
         // 逐条核对结论见 docs/ipd-系统说明/验收/wss-需求对照-20261006/110-系统基线数据来源台账.md。
         // 以下数值逐条取自原型 scenario.mjs 的 PROJECTS（A 级按系统规则不记差异化系数，见 seedActiveProject javadoc）：
-        //   ENT-AC-100 : targetSales 8,000,000 channels 30 nps 45 scenes 4 coeff(空, A级) launch 2024-10-15
+        //   ENT-AC-100 : targetSales 8,000,000 channels 30 nps 45 scenes 4 coeff 1.0(A级固定) launch 2024-10-15
         //   ZK-IAT-ATT  : targetSales 12,000,000 channels 60 nps 50 scenes 6 coeff 1.5   launch 2025-01-20
-        //   VIS-RD-100  : targetSales 6,000,000  channels 20 nps 45 scenes 5 coeff(空, A级) launch 2025-05-30
+        //   VIS-RD-100  : targetSales 6,000,000  channels 20 nps 45 scenes 5 coeff 1.0(A级固定) launch 2025-05-30
         seedCompletedProject("ENT-AC-100", "入门级门禁产品", "HARDWARE", "A",
-            new BigDecimal("8000000"), 30, 45, 4, null, "2024-10-15",
+            new BigDecimal("8000000"), 30, 45, 4, new BigDecimal("1.0"), "2024-10-15",
             duanJinke, chengLong, gMarketHw);
         seedCompletedProject("ZK-IAT-ATT", "熵基互联考勤模块", "SOFTWARE", "S",
             new BigDecimal("12000000"), 60, 50, 6, new BigDecimal("1.5"), "2025-01-20",
             huJiaolu, linLijie, gMarketSw);
         seedCompletedProject("VIS-RD-100", "访客机＋万傲瑞达", "SOLUTION", "A",
-            new BigDecimal("6000000"), 20, 45, 5, null, "2025-05-30",
+            new BigDecimal("6000000"), 20, 45, 5, new BigDecimal("1.0"), "2025-05-30",
             chenBiqin, shangguanZhichang, gMarketIt);
 
         // ---- 2 个运行态项目（原 workbench 硬编码 demo；供待办/超期/责任过滤真实测试）----
@@ -158,7 +158,7 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         // （系统模板类型词表 HARDWARE|SOFTWARE|SOLUTION，「软硬件一体/融合」对应 SOLUTION），
         // target_launch_date=2027-06-30。四基准原型未给，留空不臆造。
         Project gateTest = seedActiveProject("pm2008", "如门禁测试", "SOLUTION", "B",
-            "PLAN", duanJinke, chengLong, gMarketHw, null, null, null, null, null, "2027-06-30");
+            "PLAN", duanJinke, chengLong, gMarketHw, null, null, null, null, new BigDecimal("0.8"), "2027-06-30");
         action(gateTest, "PLAN", "P01", "市场准入合规清单梳理", "MARKET_PM", "IN_PROGRESS", daysFromNow(-5));
         action(gateTest, "PLAN", "P02", "渠道商对接名单确认", "MARKET_PM", "DELAYED", daysFromNow(-10));
         action(gateTest, "PLAN", "P03", "门禁协议对接联调", "RD_PM", "NOT_STARTED", daysFromNow(14));
@@ -168,7 +168,7 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
 
         // 原型库：PM00085「熵基互联+智能锁」product_type=软硬件融合 → SOLUTION，target_launch_date=2027-06-30。
         Project iatLock = seedActiveProject("PM00085", "熵基互联+智能锁", "SOLUTION", "A",
-            "DEV", huJiaolu, linLijie, gMarketSw, null, null, null, null, null, "2027-06-30");
+            "DEV", huJiaolu, linLijie, gMarketSw, null, null, null, null, new BigDecimal("1.0"), "2027-06-30");
         action(iatLock, "DEV", "D01", "智能锁通信协议评审", "RD_PM", "IN_PROGRESS", daysFromNow(7));
         action(iatLock, "DEV", "D02", "联动场景用例设计", "MARKET_PM", "NOT_STARTED", daysFromNow(10));
         action(iatLock, "DEV", "D03", "固件联调计划", "RD_PM", "NOT_STARTED", daysFromNow(-2));

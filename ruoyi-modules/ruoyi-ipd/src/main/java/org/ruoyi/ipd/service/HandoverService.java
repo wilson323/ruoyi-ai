@@ -345,6 +345,35 @@ public class HandoverService {
 
     // ---------- 内部 ----------
 
+    /**
+     * ZK-IPD §二.10：项目归档后全部业务域转只读。
+     *
+     * <p>移交的三个写动作（建单 / 接单 / 撤销）都直接改写项目成员绑定
+     * （{@code exitForHandover} + {@code bindMember}），是归档项目上危害最大的一类写，
+     * 原先只在 {@link ProjectService} 侧拦了状态迁出/四基准/阶段推进，移交链无判据。
+     *
+     * <p>守卫范式照抄 {@code ProjectService.updateBaselines} / {@code StageActionService
+     * .assertProjectWritable}：读项目行 → 命中 ARCHIVED 即抛 {@link ServiceException}。
+     * 三个调用点（{@link #createDraft} / {@link #doAccept} / {@link #rollback}）覆盖
+     * {@code initiate} / {@code initiateOnBehalf} / {@code accept} / {@code batchHandover} /
+     * {@code rollback} 全部公开写入口。
+     *
+     * <p>取不到项目行（不存在/已删）时不在此处判死：既有链路的「项目不存在」文案由各自的
+     * {@code requireFromState} / {@code assertSameGroupIpd} 逐条抛出，本方法只回答「是否已归档」。
+     *
+     * @param projectId 目标项目 ID
+     * @param action    动作名（进异常文案，如「发起移交」）
+     */
+    private void assertProjectNotArchived(Long projectId, String action) {
+        if (projectId == null) {
+            return;
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project != null && "ARCHIVED".equals(project.getStatus())) {
+            throw new ServiceException("项目已归档（ZK-IPD §二.10），资料只读，禁止" + action);
+        }
+    }
+
     private HandoverRecord createDraft(Long projectId, String role, Long fromId, Long toPersonId,
                                        String note, IpdActor operator) {
         if (!HANDOVER_ROLES.contains(role)) {
@@ -353,6 +382,7 @@ public class HandoverService {
         if (fromId.equals(toPersonId)) {
             throw new ServiceException("接手人不能与原负责人相同");
         }
+        assertProjectNotArchived(projectId, "发起移交");
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
             throw new ServiceException("项目不存在: " + projectId);
@@ -402,6 +432,9 @@ public class HandoverService {
 
     /** 原子转移：旧绑定退出 → 接手绑定（bindMember 全量校验）→ 记录完结 → 审计 → 全清禁用检查。 */
     private HandoverRecord doAccept(HandoverRecord rec, String approvalRef, IpdActor operator) {
+        // ZK-IPD §二.10 归档只读：接单会改成员绑定，归档项目上一律拒（覆盖 accept /
+        // initiateOnBehalf / batchHandover 三条入口的公共落点）
+        assertProjectNotArchived(rec.getProjectId(), "确认移交");
         int exited = projectMemberService.exitForHandover(
             rec.getProjectId(), rec.getFromPersonId(), rec.getHandoverRole());
         // R33 一期：CAS 命中判定收敛 requireCasHit（miss 仍抛 ServiceException 原文案，行为零变更）
@@ -459,6 +492,9 @@ public class HandoverService {
         if (rec == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND, "移交记录不存在: " + handoverId);
         }
+        // ZK-IPD §二.10 归档只读：撤销会回滚成员绑定（rebind 原负责人），归档项目上一律拒。
+        // 放在幂等/状态机判据之前，保证「已归档」这一事实对所有撤销尝试给同一答案。
+        assertProjectNotArchived(rec.getProjectId(), "撤销移交");
         // 幂等：已撤销直接拒（终态不再接受任何操作）
         if (ST_ROLLED_BACK.equals(rec.getStatus())) {
             throw new IpdBusinessException(ApiV1ErrorCode.HANDOVER_LOCKED,

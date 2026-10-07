@@ -9,9 +9,11 @@ import org.ruoyi.ipd.common.BusinessConfigKeys;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AllowanceLedger;
 import org.ruoyi.ipd.domain.KpiRecord;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.ProjectScore;
 import org.ruoyi.ipd.mapper.AllowanceLedgerMapper;
 import org.ruoyi.ipd.mapper.KpiRecordMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.mapper.ProjectScoreMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +102,23 @@ public class KpiRecordService {
     private StateMachineGuard stateMachineGuard;
 
     /**
+     * ZK-IPD §二.10 归档只读守卫用：读所属项目当前状态。
+     * 可选注入，兼容不挂载该依赖的旧单测；运行时（Spring）必定装配。
+     */
+    private ProjectMapper projectMapper;
+
+    /**
+     * Spring 注入 ProjectMapper（nullable 兼容旧单测）。
+     *
+     * <p>仅供 {@link #assertProjectNotArchived} 使用；未注入时该守卫静默跳过，
+     * 生产环境不存在此情形（ProjectMapper 是 ruoyi-ipd 必备 Bean）。
+     */
+    @Autowired(required = false)
+    public void setProjectMapper(ProjectMapper projectMapper) {
+        this.projectMapper = projectMapper;
+    }
+
+    /**
      * ROOT-R3-P0-2：Spring 注入 StateMachineGuard（nullable 兼容旧测试）。
      * 测试场景可通过此 setter 注入 mock；运行时由 Spring 装配。
      */
@@ -128,6 +147,33 @@ public class KpiRecordService {
                             ProjectScoreMapper projectScoreMapper,
                             AllowanceLedgerMapper allowanceLedgerMapper) {
         this(kpiRecordMapper, projectScoreMapper, allowanceLedgerMapper, null);
+    }
+
+    /**
+     * ZK-IPD §二.10：项目归档后全部业务域转只读——KPI 记录挂在项目上，
+     * 归档项目上不得再录新分、不得审批/驳回/归档已有分。
+     *
+     * <p>守卫范式照抄 {@code ProjectService.updateBaselines}：命中 ARCHIVED 即抛
+     * {@link IpdBusinessException}。两处豁免：
+     * <ul>
+     *   <li>{@code projectId} 为空（个人级 KPI，非项目数据）→ 不拦；</li>
+     *   <li>{@code projectMapper} 未注入（纯构造器单测）→ 不拦；生产必有。</li>
+     * </ul>
+     * 实际数据侧：真库 {@code kpi_records} 目前 0 行、{@code project_id} 尚未回填，
+     * 本守卫在数据起量后才生效，属前置防护而非既有数据修补。
+     *
+     * @param projectId KPI 记录所属项目（可空）
+     * @param action    动作名（进异常文案）
+     */
+    private void assertProjectNotArchived(Long projectId, String action) {
+        if (projectId == null || projectMapper == null) {
+            return;
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project != null && "ARCHIVED".equals(project.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目已归档（ZK-IPD §二.10），资料只读，禁止" + action);
+        }
     }
 
     /**
@@ -469,6 +515,7 @@ public class KpiRecordService {
         if (draft == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.PARAM_INVALID, "KPI 草稿不能为空");
         }
+        assertProjectNotArchived(draft.getProjectId(), "录入 KPI 草稿");
         String from = draft.getStatus(); // null for new draft
         preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_EDITING, "record");
         draft.setStatus(ST_EDITING);
@@ -486,6 +533,7 @@ public class KpiRecordService {
     @Transactional(rollbackFor = Exception.class)
     public KpiRecord approveKpi(Long recordId, IpdActor actor) {
         KpiRecord record = requireById(recordId);
+        assertProjectNotArchived(record.getProjectId(), "审批 KPI");
         String from = record.getStatus();
         preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_APPROVED, "approve");
         record.setStatus(ST_APPROVED);
@@ -503,6 +551,7 @@ public class KpiRecordService {
     @Transactional(rollbackFor = Exception.class)
     public KpiRecord rejectKpi(Long recordId, IpdActor actor) {
         KpiRecord record = requireById(recordId);
+        assertProjectNotArchived(record.getProjectId(), "驳回 KPI");
         String from = record.getStatus();
         preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_REJECTED, "reject");
         record.setStatus(ST_REJECTED);
@@ -520,6 +569,7 @@ public class KpiRecordService {
     @Transactional(rollbackFor = Exception.class)
     public KpiRecord archiveKpi(Long recordId, IpdActor actor) {
         KpiRecord record = requireById(recordId);
+        assertProjectNotArchived(record.getProjectId(), "归档 KPI");
         String from = record.getStatus();
         preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_ARCHIVED, "archive");
         record.setStatus(ST_ARCHIVED);

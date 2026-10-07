@@ -8,7 +8,9 @@ import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.AiDocument;
 import org.ruoyi.ipd.domain.AuditLog;
+import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.mapper.AiDocumentMapper;
+import org.ruoyi.ipd.mapper.ProjectMapper;
 import org.ruoyi.ipd.security.IpdActor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -201,6 +203,42 @@ public class AiDocumentService {
         this.projectReadAccess = projectReadAccess;
     }
 
+    /**
+     * ZK-IPD §二.10 归档只读守卫用：读所属项目当前状态。
+     * 可选注入，兼容只挂 {@code AiDocumentMapper} 的纯构造器单测；运行时（Spring）必定装配。
+     */
+    private ProjectMapper projectMapper;
+
+    @Autowired(required = false)
+    public void setProjectMapper(ProjectMapper projectMapper) {
+        this.projectMapper = projectMapper;
+    }
+
+    /**
+     * ZK-IPD §二.10：项目归档后全部业务域转只读——AI 文档挂在项目上，
+     * 归档项目上不得再生成新版本、返工、改版、送审、审过或归档。
+     *
+     * <p>守卫范式照抄 {@code ProjectService.updateBaselines}：读项目行 → 命中 ARCHIVED 即抛
+     * {@link IpdBusinessException}。两处豁免：{@code projectId} 为空、或 {@code projectMapper}
+     * 未注入（纯单测）时跳过；生产环境不存在后者。
+     *
+     * <p><b>刻意不拦 {@link #rebuildIndexAuthorized}</b>：它只重建检索缓存、不改任何业务行，
+     * 属读侧补偿。归档项目的历史文档仍需可被检索到，拦它会造成「归档即失忆」。
+     *
+     * @param projectId 文档所属项目（可空）
+     * @param action    动作名（进异常文案）
+     */
+    private void assertProjectNotArchived(Long projectId, String action) {
+        if (projectId == null || projectMapper == null) {
+            return;
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project != null && "ARCHIVED".equals(project.getStatus())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "项目已归档（ZK-IPD §二.10），资料只读，禁止" + action);
+        }
+    }
+
     /** 产物只读复用项目可见规则；真实 Person 和租户仍每次重新核验。 */
     public String requireProjectReadable(IpdActor actor, Long projectId) {
         if (projectAccess == null || projectReadAccess == null) {
@@ -258,6 +296,7 @@ public class AiDocumentService {
         requireArg(title != null && !title.isBlank(), "title 必填");
         requireArg(title.length() <= 200, "title 超长（≤200）");
         requireArg(content != null && !content.isBlank(), "content 必填（AI 原始输出不可为空）");
+        assertProjectNotArchived(projectId, "生成 AI 文档");
 
         AiDocument row = AiDocument.builder()
             .projectId(projectId).docType(docType).title(title).content(content)
@@ -308,6 +347,7 @@ public class AiDocumentService {
         requireArg(title != null && !title.isBlank() && title.length() <= 200, "标题必填且不超过200字");
         requireArg(content != null && !content.isBlank(), "返工正文必填");
         requireProjectVisible(actor, projectId);
+        assertProjectNotArchived(projectId, "返工 AI 文档");
         AiDocument head = lockedHead(documentId);
         if (!Objects.equals(head.getProjectId(), projectId) || !Objects.equals(head.getDocType(), docType)
             || !Objects.equals(head.getId(), baseVersionId) || STATUS_ARCHIVED.equals(head.getStatus())) {
@@ -341,11 +381,15 @@ public class AiDocumentService {
         requireArg(documentId != null, "documentId 必填");
         requireArg(baseVersionId != null, "baseVersionId 必填（声明基准版本）");
         requireArg(newContent != null && !newContent.isBlank(), "改版内容必填");
-
         AiDocument head = lockedHead(documentId);
         if (!baseVersionId.equals(head.getId())) {
             throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT);
         }
+        // 归档只读判定放在 lockedHead 之后：它已把行读出来，projectId 直接复用。
+        // 早先为「不白占行锁」在加锁前多查了一次 selectById，那次多余的读改变了
+        // selectById 的调用序列，令 4 个存量测试类的桩失效（第二次读拿到 null → 报「资源不存在」）。
+        // 少一次读、且不改变既有调用序列，比早占锁更划算。
+        assertProjectNotArchived(head.getProjectId(), "改版 AI 文档");
 
         AiDocument next = AiDocument.builder()
             .projectId(head.getProjectId()).docType(head.getDocType())
@@ -392,6 +436,7 @@ public class AiDocumentService {
         if (row == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
+        assertProjectNotArchived(row.getProjectId(), "审核 AI 文档");
         if (STATUS_REVIEWED.equals(row.getStatus())) {
             return row;
         }
@@ -457,6 +502,7 @@ public class AiDocumentService {
         if (row == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
+        assertProjectNotArchived(row.getProjectId(), "归档 AI 文档");
         // AC-AI-03：未审核（包括 GENERATED 初次/REJECTED 拒绝后未重审）→ 拒绝
         if (!STATUS_REVIEWED.equals(row.getStatus())) {
             throw new IpdBusinessException(
@@ -506,6 +552,7 @@ public class AiDocumentService {
         if (row == null) {
             throw new IpdBusinessException(ApiV1ErrorCode.NOT_FOUND);
         }
+        assertProjectNotArchived(row.getProjectId(), "拒绝 AI 文档");
         if (STATUS_REJECTED.equals(row.getStatus())) {
             return row; // 幂等：已拒绝不覆盖原 reviewComment / reviewedBy
         }

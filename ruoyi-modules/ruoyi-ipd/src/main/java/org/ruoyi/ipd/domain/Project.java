@@ -57,7 +57,16 @@ public class Project extends BaseEntity implements SoftDeletable {
     /** 项目级别 S|A|B */
     private String level;
 
-    /** 差异化系数（S 1.5–2.0 / B 0.6–0.8 / A 固定不录，v3 G1 特殊规则） */
+    /**
+     * 差异化系数：S 1.5–2.0 / B 0.6–0.8（区间制，V3.1）；**A 固定 1.0 不可改**。
+     *
+     * <p>依据：IPD系统_验收清单.md AC-INC-13（A 级默认 1.0，奖金池 = 目标×5%×1.0）、
+     * AC-INC-15b（A 级录非 1.0 须拒绝）、IPD系统_冲突裁决与最终待确认清单.md:131
+     * （S 1.5–2.0 / A 1.0 / B 0.6–0.8，V3.1 区间制）。
+     *
+     * <p>⚠️ 原文此处写「A 固定不录」，与上述三处权威口径相反，属笔误，2026-10-07 更正。
+     * 按错误注释灌基线会漏掉 A 级系数、奖金池基数随之算错——本轮实际发生过一次。
+     */
     private BigDecimal levelCoefficient;
 
     /** 系数定值理由（S/B 必填，写审计） */
@@ -128,11 +137,8 @@ public class Project extends BaseEntity implements SoftDeletable {
 
     /** 删除标志（删除走两级审核引擎） */
     /** [SEC-FIX-6ENTITY-LOGIC] 软删除标志（0正常 1已删；@TableLogic 守卫）。 */
-
     @TableLogic
-
     @TableField("del_flag")
-
     private String delFlag;
 
     /** 显式覆盖 Lombok @Accessors(chain=true) 的链式 setter，以满足 SoftDeletable.setDelFlag(void) 接口签名。 */
