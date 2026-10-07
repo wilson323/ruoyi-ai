@@ -7,7 +7,13 @@
 -- =====================================================================
 -- 2026-09-28-ipd-action-skill-map-seed.sql — 状态：待 owner apply（DDL 未 apply 前禁止执行）
 -- skill_names 一律 NULL：§3-pm-skills映射.md §3.2 已列每动作绑定候选，定稿后按行 UPDATE 为 JSON 数组
--- 正文 = §6.4.3 的 69 行 INSERT（skill_names 一律 NULL，remark='待 §3 定稿后补齐 skill_names'）；
+-- 正文 = §6.4.3 的 **67 行** INSERT（skill_names 一律 NULL，remark='待 §3 定稿后补齐 skill_names'）；
+--   ⚠️ 2026-10-07 ③刀清污：原为 69 行，删去 id=57(LC01) / id=61(LC03) 两行——
+--      LC01「上市后销售与回款跟踪」与 LC03「上市后6个月终算」已于 **2026-10-03** 退役
+--      （owner 决定移除「回款台账」「奖金池」两个功能块，对应 Service/Controller 已删除），
+--      两者已不在 ActionCatalog 中，本表的这两行是指向已退役动作的**孤儿引用**。
+--      保留会让「已退役动作仍有技能绑定」持续成立，也与现态 67 动作（深管 40 / 轻管 27）对不上。
+--      删除前已导出备份；重跑本脚本不会再把它们写回来。
 -- 与 §6.4.3 原稿差异（冲突裁定：以主计划 §2 现文为准，详见交付差异登记）：
 --   ① DEV 归属回正（主计划 §2.3 + ActionCatalog D-1 回正后口径）：
 --      DEV-S1=D01,D10；DEV-S2=D02,D03,D04,D07,D09,D11；DEV-S3=D06,D08,D05
@@ -70,11 +76,9 @@ INSERT INTO ipd_action_skill_map (id, action_code, sub_stage_code, skill_names, 
 (54, 'L06', 'LAUNCH-S3', NULL, 2, '待 §3 定稿后补齐 skill_names'),
 (55, 'L07', 'LAUNCH-S3', NULL, 3, '待 §3 定稿后补齐 skill_names'),
 (56, 'L08', 'LAUNCH-S3', NULL, 4, '待 §3 定稿后补齐 skill_names'),
-(57, 'LC01', 'LIFECYCLE-S1', NULL, 1, '待 §3 定稿后补齐 skill_names'),
 (58, 'LC05', 'LIFECYCLE-S1', NULL, 2, '待 §3 定稿后补齐 skill_names'),
 (59, 'LC06', 'LIFECYCLE-S1', NULL, 3, '待 §3 定稿后补齐 skill_names'),
 (60, 'LC02', 'LIFECYCLE-S2', NULL, 1, '待 §3 定稿后补齐 skill_names'),
-(61, 'LC03', 'LIFECYCLE-S2', NULL, 2, '待 §3 定稿后补齐 skill_names'),
 (62, 'LC04', 'LIFECYCLE-S2', NULL, 3, '待 §3 定稿后补齐 skill_names'),
 (63, 'LC07', 'LIFECYCLE-S3', NULL, 1, '待 §3 定稿后补齐 skill_names'),
 (64, 'LC08', 'LIFECYCLE-S3', NULL, 2, '待 §3 定稿后补齐 skill_names'),
