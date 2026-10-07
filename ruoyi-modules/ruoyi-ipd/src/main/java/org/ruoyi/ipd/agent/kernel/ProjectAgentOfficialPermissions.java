@@ -24,6 +24,14 @@ public final class ProjectAgentOfficialPermissions {
         "session_list", "session_history", "deliver_artifact", "get_pending_completion",
         ProjectAgentOutputContract.CLARIFICATION_TOOL, TODO_WRITE);
 
+    /**
+     * 联网搜索工具。查询词由调用方（模型）给出、目标端点在服务端写死，不接受 URL 入参，
+     * 因此没有 SSRF 面，与 web_fetch 的风险形态不同，放行不额外扩权。
+     * 密钥缺失时这三个工具根本不会注册进来，放行一条不存在的工具是空条目，无副作用。
+     */
+    private static final java.util.List<String> METASO_SEARCH_TOOLS =
+        org.ruoyi.ipd.agent.kernel.ProjectAgentMetasoSearch.TOOL_IDS;
+
     private ProjectAgentOfficialPermissions() { }
 
     public static PermissionContextState workspace() {
@@ -38,6 +46,7 @@ public final class ProjectAgentOfficialPermissions {
         existing.getDenyRules().forEach((tool, rules) -> rules.forEach(rule -> builder.addDenyRule(tool, rule)));
         existing.getAskRules().forEach((tool, rules) -> rules.forEach(rule -> builder.addAskRule(tool, rule)));
         Set<String> authorized = new LinkedHashSet<>(WORKSPACE_TOOLS);
+        authorized.addAll(METASO_SEARCH_TOOLS);
         authorized.addAll(HarnessPlatformTools.NAMES);
         for (String name : authorized) {
             if (!existing.getAllowRules().containsKey(name)) {

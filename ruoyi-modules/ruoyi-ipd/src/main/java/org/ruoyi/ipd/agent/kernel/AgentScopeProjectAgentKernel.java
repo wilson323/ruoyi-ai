@@ -432,6 +432,8 @@ public class AgentScopeProjectAgentKernel implements ProjectAgentKernel {
         }
         sink.requireActiveOwnership();
         ProductLineMcpTool.bind(toolkit, governance, spec, lineNames, sink);
+        // 联网搜索：调研与外部事实核查的基础能力。密钥缺失则不注册（不装空壳工具）。
+        ProjectAgentMetasoSearch.bind(toolkit, ProjectAgentMetasoSearch.apiKeyFromEnvironment());
         ToolsConfig toolsConfig = new ToolsConfig();
         FrozenProjectAgentSkills selectedSkills = new FrozenProjectAgentSkills(spec.skills());
         ProjectAgentSkillGovernance skillGovernance = new ProjectAgentSkillGovernance(workspace, spec, selectedSkills);

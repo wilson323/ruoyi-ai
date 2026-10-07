@@ -37,6 +37,14 @@ public final class ProjectAgentNativeToolReadiness implements ProjectAgentNative
     }
 
     @Override public ProjectAgentNativeToolCatalog.Readiness status(String id) {
+        // 秘塔搜索不是官方 2.0.3 内置工具，刻意不塞进 ProjectAgentNativeToolCatalog.IDS
+        // （那份清单声明自己是官方 profile 的精确镜像），在此单列。
+        if (org.ruoyi.ipd.agent.kernel.ProjectAgentMetasoSearch.TOOL_IDS.contains(id)) {
+            if (!configuredTools.get().contains(id)) return unavailable("联网搜索工具未注册");
+            // 注意不能用 searchKey：那是 TAVILY_API_KEY 的 supplier，与秘塔不是一回事。
+            String key = System.getenv(org.ruoyi.ipd.agent.kernel.ProjectAgentMetasoSearch.API_KEY_ENV);
+            return key == null || key.isBlank() ? unavailable("联网搜索服务尚未配置") : ready();
+        }
         if (!ProjectAgentNativeToolCatalog.IDS.contains(id)) return unavailable("工具不在官方能力目录中");
         Set<String> names = configuredTools.get();
         if (names == null || !names.contains(id)) return unavailable("工具未纳入官方装配清单");
