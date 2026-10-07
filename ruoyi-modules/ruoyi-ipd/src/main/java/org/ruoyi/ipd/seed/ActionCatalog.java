@@ -144,6 +144,31 @@ public final class ActionCatalog {
     }
 
     /**
+     * F3：阶段 → Gate 的逆向映射（{@link #stageOfGate} 的反函数）。
+     *
+     * <p>取目录里第一个挂了该 stage 的 Gate 动作的 gate 值。目录事实：
+     * CONCEPT→G1（C11）、PLAN→G2（P13）、DEV→G3（D05）、LAUNCH→G4（L07）、LIFECYCLE→G5（LC02）；
+     * <b>VALID 阶段没有任何动作挂 Gate</b>，故 {@code gateOfStage("VALID")} 返回 null。
+     *
+     * <p>空契约：{@code stage} 为 null/空白、或目录中该阶段无 Gate 动作时返回 null
+     * （调用方据此判定「本阶段无出口 Gate」，不得据此阻断推进）。
+     *
+     * @param stage 阶段编码 CONCEPT|PLAN|DEV|VALID|LAUNCH|LIFECYCLE
+     * @return Gate 编码 G1..G5；无则为 null
+     */
+    public static String gateOfStage(String stage) {
+        if (stage == null || stage.isBlank()) {
+            return null;
+        }
+        return ALL.stream()
+            .filter(a -> stage.equals(a.stage()))
+            .map(ActionDef::gate)
+            .filter(g -> g != null && !g.isBlank())
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
      * 按编码取目录定义；Z 系别名先归一再查（P1-8.2 / AC-IPD-17）。
      *
      * @param code 权威码或 Z01–Z05 别名

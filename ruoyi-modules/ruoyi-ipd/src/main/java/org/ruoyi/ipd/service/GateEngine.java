@@ -2,14 +2,20 @@ package org.ruoyi.ipd.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.domain.ActionDef;
+import org.ruoyi.ipd.domain.Gate;
+import org.ruoyi.ipd.domain.GateElementResult;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.domain.StageAction;
 import org.ruoyi.ipd.dto.GateChecklistItem;
 import org.ruoyi.ipd.dto.GateChecklistView;
+import org.ruoyi.ipd.mapper.GateElementResultMapper;
+import org.ruoyi.ipd.mapper.GateMapper;
 import org.ruoyi.ipd.mapper.StageActionMapper;
 import org.ruoyi.ipd.seed.ActionCatalog;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -34,6 +40,7 @@ import java.util.stream.Collectors;
  *   <li>B 级：ActionCatalog.B_LEVEL_BLOCKING_CODES（权威 10 项，不硬凑 14）</li>
  * </ul>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GateEngine {
@@ -43,6 +50,30 @@ public class GateEngine {
 
     private final StageActionMapper stageActionMapper;
     private final ISystemConfigService systemConfigService;
+
+    /**
+     * F3：Gate 评审判决查询用 mapper。
+     *
+     * <p><b>为何是可选注入</b>：{@code GateEngine} 现有 2 参构造被 {@code GateEngineTest} 等
+     * 兄弟测试直接 {@code new}，若改为必需注入会让这些测试全部编译/装配失败。故走
+     * {@code @Autowired(required=false)} + setter 两条路：生产由 Spring 注入，
+     * 未装配时 {@link #evaluateStageExitGate} 一律返回「不拦截」（存量零影响）。
+     */
+    @Autowired(required = false)
+    private GateMapper gateMapper;
+
+    @Autowired(required = false)
+    private GateElementResultMapper gateElementResultMapper;
+
+    /** 装配 Gate 实例 mapper（F3）。 */
+    public void setGateMapper(GateMapper gateMapper) {
+        this.gateMapper = gateMapper;
+    }
+
+    /** 装配 Gate 要素判定 mapper（F3）。 */
+    public void setGateElementResultMapper(GateElementResultMapper gateElementResultMapper) {
+        this.gateElementResultMapper = gateElementResultMapper;
+    }
 
     /**
      * 校验当前阶段门禁：未完成或未实例化的必做动作非空即拒绝。
@@ -76,6 +107,108 @@ public class GateEngine {
         if (!unfinished.isEmpty()) {
             throw new ServiceException("以下必需动作还没完成，暂时不能进入下一阶段 —— "
                 + String.join("；", unfinished));
+        }
+    }
+
+    /**
+     * F3：阶段出口 Gate 评审判决结果。
+     *
+     * @param blocking          true=不允许推进到下一阶段
+     * @param gateCode          阶段绑定的 Gate 码（G1..G5）；无绑定为 null
+     * @param gateStatus        该 Gate 最新一轮的 status；无行/未装配为 null
+     * @param openLeftoverCount 该 Gate 下 leftoverStatus=OPEN 的遗留项数
+     * @param message           中文拦截原因（放行时为说明文案）
+     */
+    public record StageGateVerdict(boolean blocking, String gateCode, String gateStatus,
+                                   int openLeftoverCount, String message) {
+    }
+
+    /** Gate 状态：评审否决 */
+    public static final String GATE_STATUS_REJECTED = "REJECTED";
+    /** Gate 状态：双签超时弃权（无放行依据） */
+    public static final String GATE_STATUS_ABSTAINED_TIMEOUT = "ABSTAINED_TIMEOUT";
+    /** 遗留项未关闭 */
+    public static final String LEFTOVER_STATUS_OPEN = "OPEN";
+
+    /**
+     * F3：阶段推进前的 Gate 评审判决——评审否决或存在未关闭遗留项时禁止推进阶段。
+     *
+     * <p><b>与 {@link #check} 的分工</b>：{@code check} 判的是「必做动作是否做完」（阶段内动作门禁），
+     * 本方法判的是「本阶段出口 Gate 评审的结论」（阶段间评审门禁）。{@code check} 有第三处调用方
+     * {@code StageAcceptanceService}，改它会连累，故独立成方法，只在 {@code ProjectService.advanceStage} 调用。
+     *
+     * <p><b>拦截条件（owner 拍板口径，不得放宽）</b>——仅两种：
+     * <ol>
+     *   <li>该 Gate 最新一轮 status ∈ {REJECTED, ABSTAINED_TIMEOUT}；</li>
+     *   <li>该 Gate 下存在 leftoverStatus=OPEN 的未关闭遗留项。</li>
+     * </ol>
+     * <b>PENDING 不拦</b>（评审尚未开始不是「被判失败」）。
+     *
+     * <p><b>放行条件（存量零影响）</b>：本阶段无 Gate 绑定（如 VALID 阶段目录里没有挂 Gate 的动作）、
+     * {@code gates} 表无该项目的 Gate 行、mapper 未装配（单测/裁剪部署）、projectId 为空——
+     * 一律返回不拦截。本仓 {@code gates} 表现 0 行，故上线对存量 300 项目无行为变化。
+     *
+     * @param projectId    项目 ID
+     * @param currentStage 当前（即将退出的）阶段编码
+     * @return 判定结果，永不为 null
+     */
+    public StageGateVerdict evaluateStageExitGate(Long projectId, String currentStage) {
+        String gateCode = ActionCatalog.gateOfStage(currentStage);
+        if (gateCode == null) {
+            return new StageGateVerdict(false, null, null, 0,
+                "阶段 " + currentStage + " 无出口 Gate 绑定，跳过评审判决");
+        }
+        if (projectId == null || gateMapper == null) {
+            return new StageGateVerdict(false, gateCode, null, 0,
+                "Gate " + gateCode + " 未查到评审记录（Gate 数据未装配），放行");
+        }
+        Gate gate = latestGate(projectId, gateCode);
+        if (gate == null) {
+            return new StageGateVerdict(false, gateCode, null, 0,
+                "Gate " + gateCode + " 尚无评审记录，放行");
+        }
+        String status = gate.getStatus();
+        if (GATE_STATUS_REJECTED.equals(status) || GATE_STATUS_ABSTAINED_TIMEOUT.equals(status)) {
+            return new StageGateVerdict(true, gateCode, status, 0,
+                "Gate " + gateCode + " 评审结论为 " + status + "，需先完成评审或重新发起评审才能推进阶段");
+        }
+        int openLeft = countOpenLeftover(gate.getId());
+        if (openLeft > 0) {
+            return new StageGateVerdict(true, gateCode, status, openLeft,
+                "Gate " + gateCode + " 还有 " + openLeft + " 项未关闭的评审遗留项，需先关闭遗留项才能推进阶段");
+        }
+        return new StageGateVerdict(false, gateCode, status, openLeft,
+            "Gate " + gateCode + " 评审结论为 " + (status == null ? "无状态" : status)
+                + "，无未关闭遗留项，放行");
+    }
+
+    /** 取该项目该 Gate 的最新一轮（按 id 倒序取首行）；查询异常一律按「无记录」处理。 */
+    private Gate latestGate(Long projectId, String gateCode) {
+        try {
+            List<Gate> rows = gateMapper.selectList(new LambdaQueryWrapper<Gate>()
+                .eq(Gate::getProjectId, projectId)
+                .eq(Gate::getGateCode, gateCode)
+                .orderByDesc(Gate::getId));
+            return (rows == null || rows.isEmpty()) ? null : rows.get(0);
+        } catch (RuntimeException ex) {
+            log.warn("[gate-engine] 查询 Gate 失败，按无记录放行: projectId={}, gateCode={}", projectId, gateCode, ex);
+            return null;
+        }
+    }
+
+    /** 该 Gate 下 leftoverStatus=OPEN 的遗留项计数；查询异常一律按 0 处理。 */
+    private int countOpenLeftover(Long gateId) {
+        if (gateId == null || gateElementResultMapper == null) {
+            return 0;
+        }
+        try {
+            Long n = gateElementResultMapper.selectCount(new LambdaQueryWrapper<GateElementResult>()
+                .eq(GateElementResult::getGateId, gateId)
+                .eq(GateElementResult::getLeftoverStatus, LEFTOVER_STATUS_OPEN));
+            return n == null ? 0 : n.intValue();
+        } catch (RuntimeException ex) {
+            log.warn("[gate-engine] 查询遗留项失败，按 0 放行: gateId={}", gateId, ex);
+            return 0;
         }
     }
 

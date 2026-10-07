@@ -568,6 +568,14 @@ public class ProjectService implements IProjectService {
             stageAcceptanceService.assertBigStageApprovable(project, operatorId, actorRole);
         }
         gateEngine.check(project, prior);
+        // F3：阶段出口 Gate 评审判决——评审否决(REJECTED/ABSTAINED_TIMEOUT) 或存在未关闭
+        // 遗留项(leftover_status=OPEN) 时禁止推进。PENDING 不拦；无 Gate 行 / 无 Gate 绑定 /
+        // mapper 未装配一律放行（存量零影响）。审计先落库再抛异常，主事务回滚不影响可见性。
+        GateEngine.StageGateVerdict gateVerdict = gateEngine.evaluateStageExitGate(projectId, prior);
+        if (gateVerdict != null && gateVerdict.blocking()) {
+            auditStageGateBlocked(projectId, project.getName(), operatorId, prior, next, gateVerdict);
+            throw new IpdBusinessException(ApiV1ErrorCode.GATE_NOT_PASSED, gateVerdict.message());
+        }
         if ("LAUNCH".equals(next) && project.getLaunchDate() == null) {
             throw new ServiceException("进入 LAUNCH 前必须录入上市日期（后置指标起算原点）");
         }
@@ -1136,6 +1144,34 @@ public class ProjectService implements IProjectService {
                 "currentStage", prior,
                 "attemptedNext", attemptedNext,
                 "openChangeCount", openCount))
+            .createTime(now()).build());
+    }
+
+    /**
+     * F3：阶段出口 Gate 评审判决拦截审计。
+     *
+     * <p>范式照抄 {@link #auditStageGuardBlocked}：审计写入走 REQUIRES_NEW 通道，须在
+     * {@code IpdBusinessException} 抛出之前落库，主事务回滚不影响审计可见性。
+     *
+     * <p>字段约定：
+     * <ul>
+     *   <li>action = {@code STAGE_GATE_BLOCKED}（区别于 P2-6.2 的 STAGE_GUARD_BLOCKED 与成功审计 PROJECT_STAGE_*）</li>
+     *   <li>reason = 项目名；beforeData = { currentStage, attemptedNext, gateCode, gateStatus, openLeftoverCount }</li>
+     *   <li>afterData = null（拒绝路径无新值写入）</li>
+     * </ul>
+     */
+    private void auditStageGateBlocked(Long id, String name, Long operatorId,
+                                      String prior, String attemptedNext,
+                                      GateEngine.StageGateVerdict verdict) {
+        auditLogService.append(AuditLog.builder()
+            .operatorId(operatorId).action("STAGE_GATE_BLOCKED")
+            .entityType("projects").entityId(id).reason(name)
+            .beforeData(AuditEventData.json(
+                "currentStage", prior,
+                "attemptedNext", attemptedNext,
+                "gateCode", verdict.gateCode(),
+                "gateStatus", verdict.gateStatus(),
+                "openLeftoverCount", verdict.openLeftoverCount()))
             .createTime(now()).build());
     }
 
