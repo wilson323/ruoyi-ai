@@ -119,7 +119,10 @@ class ProjectDualPmGuardTest {
 
         assertThatThrownBy(() -> projectService.create(base(), OPERATOR, GROUP, PM_MARKET, null))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("approvalRef");
+            .hasMessageContaining("达到项目数备案阈值")
+            // 内部字段名与内部路由都不该出现在面向业务操作方的异常文案里
+            .hasMessageNotContaining("approvalRef")
+            .hasMessageNotContaining("/api/v1/");
 
         verify(projectMemberMapper, never()).insert(any(ProjectMember.class));
     }
@@ -280,5 +283,49 @@ class ProjectDualPmGuardTest {
 
         assertThatThrownBy(() -> startService.approve(9L, superAdmin()))
             .hasMessageContaining("校验不可用");
+    }
+
+    /**
+     * 承重用例：津贴基准锁定所需依赖未装配时**必须拒**，不能静默跳过。
+     *
+     * <p>原实现在 {@code personMapper != null && systemConfigService != null} 才写
+     * lockedLevel/lockedAmount，缺依赖时安静地不写，只靠 DB 的 NOT NULL 报错——
+     * 「业务该拦的」退化成「数据库报了个看不懂的列非空错」，且与同批 ProjectStartService
+     * 的 fail-closed 口径不一致。
+     */
+    @Test
+    @DisplayName("津贴锁定依赖未装配时 fail-closed 拒绝（不静默跳过靠 DB NOT NULL 兜底）")
+    void bindRejectsWhenAllowanceLockingDepsMissing() {
+        stubCreateScaffolding();
+        projectService.setSystemConfigService(null);      // 模拟 Spring 未装配
+        // 走 MEMBER 分支（创建人自动回填）：PM 角色分支会先跑项目数阈值校验并先抛，
+        // 那样测不到津贴锁定这道。MEMBER 不是 PM 角色，不触发 B7/备案，直接落到津贴锁定。
+        // 且不必桩 personMapper —— 依赖缺失判定发生在查人之前就会抛。
+
+        assertThatThrownBy(() -> projectService.create(
+            base(), 900101L, null, null, null, null, "SUPER_ADMIN"))
+            .hasMessageContaining("津贴基准锁定不可用");
+    }
+
+    /**
+     * 承重用例：异常文案里**不得**出现内部路由与雪花 id。
+     *
+     * <p>业务异常是给操作方看的，把 {@code POST /api/v1/projects/{id}/members} 这类
+     * 内部路由和雪花 id 拼进去既是信息泄露，也会随接口改名而失实。
+     */
+    @Test
+    @DisplayName("备案阈值异常文案不含内部路由与雪花 id")
+    void thresholdMessageLeaksNoInternalRouteOrId() {
+        stubCreateScaffolding();
+        when(personMapper.selectById(900103L)).thenReturn(person(900103L, "MARKET_PM"));
+        // 第一次=重复绑定检查(0)，第二次=项目数 FOR UPDATE 计数(=threshold-1 ⇒ 需备案)
+        when(projectMemberMapper.selectCount(any())).thenReturn(0L, 2L);
+        lenient().when(systemConfigService.getIntValue(any(), any(Integer.class))).thenReturn(3);
+
+        assertThatThrownBy(() -> projectService.create(
+            base(), 900101L, null, 900103L, null, null, "SUPER_ADMIN"))
+            .hasMessageContaining("备案")
+            .hasMessageNotContaining("/api/v1/")
+            .hasMessageNotContaining("POST ");
     }
 }

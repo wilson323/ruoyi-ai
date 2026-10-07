@@ -439,16 +439,24 @@ public class ProjectService implements IProjectService {
                 throw new ServiceException("已达项目数上限 " + threshold + "，禁止再绑定（备案也不能超过上限）");
             }
             if (active == threshold - 1) {
-                // 创建接口无 approvalRef 入参（ProjectCreateReq 白名单未收该字段），
-                // 备案只能走 POST /{projectId}/members 的 BindRequest.approvalRef。
+                // 归档办法：立项接口无 approvalRef 入参（ProjectCreateReq 白名单未收该字段），
+                // 备案只能在 POST /{projectId}/members 携带 approvalRef 绑定。
+                // 该路径与 projectId **不进异常消息**——异常文案是给业务操作方看的，
+                // 把内部路由与雪花 id 拼进去既是信息泄露，也会随接口改名而失实。
                 throw new IpdBusinessException(ApiV1ErrorCode.ROLE_LOCKED,
-                    "绑定第 " + threshold + " 个项目需先录入评级委员会审批备案记录（approvalRef）；"
-                        + "立项接口不接收该字段，请先建项目再经 POST /api/v1/projects/" + projectId
-                        + "/members 携带 approvalRef 绑定 " + role);
+                    "达到项目数备案阈值，绑定本项目需先录入评级委员会审批备案编号；"
+                        + "立项时不能提供该编号，请先建项目，再通过项目成员入口补录备案后绑定 " + role);
             }
             builder.memberType(active == 0L ? "PRIMARY" : "ADDITIONAL");
         }
-        if (personMapper != null && systemConfigService != null) {
+        // fail-closed（2026-10-07 补）：这段原先被 `personMapper != null && systemConfigService != null`
+        // 整块包着——依赖未装配时**静默跳过津贴锁定**，只靠 locked_level/locked_amount 的 NOT NULL
+        // 在 DB 层兜住。后果是「业务该拦的」变成「数据库报了个看不懂的列非空错」，且与同批
+        // ProjectStartService 的 fail-closed 口径不一致。改为显式判、显式拒。
+        if (personMapper == null || systemConfigService == null) {
+            throw new ServiceException("津贴基准锁定不可用（人员/系统配置访问未装配），不能绑定成员");
+        }
+        {
             Person person = personMapper.selectById(personId);
             if (person == null || person.getLevel() == null || person.getLevel().isBlank()) {
                 throw new ServiceException("该人员等级未同步（L1-L5），无法锁定津贴基准");

@@ -12,6 +12,7 @@ import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.ApiV1ErrorCode;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import org.ruoyi.ipd.domain.Product;
+import org.ruoyi.ipd.domain.Person;
 import org.ruoyi.ipd.domain.Project;
 import org.ruoyi.ipd.security.IpdActor;
 import org.ruoyi.ipd.mapper.ProductMapper;
@@ -53,6 +54,8 @@ class ProjectServiceTest {
     private org.ruoyi.ipd.mapper.KpiRecordMapper kpiRecordMapper;
     @Mock
     private org.ruoyi.ipd.mapper.ProjectMemberMapper projectMemberMapper;
+    @org.mockito.Mock private org.ruoyi.ipd.mapper.PersonMapper personMapper;
+    @org.mockito.Mock private org.ruoyi.ipd.service.ISystemConfigService systemConfigService;
 
     private ProjectService service;
 
@@ -68,6 +71,19 @@ class ProjectServiceTest {
         service.setStateMachineGuard(d1Guard);
         service.setProjectMemberMapper(projectMemberMapper);
         lenient().when(projectMemberMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+        // 2026-10-07：绑定成员时会按人员等级锁津贴基准，缺 personMapper/systemConfigService
+        // 一律 fail-closed 拒绝（此前是静默跳过，只靠 DB 的 locked_level NOT NULL 兜住——
+        // 意味着「跳过」在真实库里根本插不进去，这三条用例过去是绿的，只因 mapper 是假的）。
+        service.setPersonMapper(personMapper);
+        service.setSystemConfigService(systemConfigService);
+        lenient().when(personMapper.selectById(any())).thenAnswer(inv -> {
+            Person p = new Person();
+            p.setId(inv.getArgument(0));
+            p.setName("PM"); p.setPersonType("MARKET_PM"); p.setLevel("L3");
+            p.setEmploymentStatus("ACTIVE"); p.setAccountStatus("ENABLED");
+            return p;
+        });
+        lenient().when(systemConfigService.getIntValue(any(), any(Integer.class))).thenReturn(2000);
     }
 
     private Project base(String level, String coefficient, String reason) {
