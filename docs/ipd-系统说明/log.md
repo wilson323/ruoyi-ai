@@ -16833,3 +16833,53 @@ CI 里跑不动会恒红，**恒红后就会被忽略，比不跑更糟**。
 文档内已把该条显式标为未取证，并要求部署方自行跑那三条 SQL 完成验证。
 
 **这一条正是今天全天治的病：宁可标「未取证」，不编一个像样的结论。**
+
+## 2026-10-07 C3 上线门六道复验 + C5 四方一致性（并行两路）｜结论：**3 过 3 未过**
+
+### C3 六道门（3 过 / 3 未过，无「未取证」项）
+| 门 | 结论 | 关键证据 |
+|---|---|---|
+| PORT | **过** | 16039 java / 15666 node 在听；`/api/v1/auth/me` 401（活着未登录）；**带 basic auth 后 health：db=UP(MySQL) redis=UP(5.0.14)**，但整体 status=DOWN/HTTP 503，DOWN 项为 elasticsearch / mail / neo4j |
+| G2 | **过** | `IpdGateElementSeedInitializer:55` G2-6 的 isVeto 列 = `"N"`；库侧 G1~G5 = 7/5、6/4、5/0、8/3、7/2，合计 **33 要素 / 14 否决**，与 `DOC-05` 一致 |
+| MODEL | **未过** | `ai_model_configs` 11 条**仅 1 条激活**（MiniMax-M3，外部付费 API），其余 10 条是 mock/probe 残留；**无本地或备份模型兜底** |
+| KB | **未过** | **weaviate 28080 无进程**（curl exit=7，阳性对照打 16039 得 401 证明手段有效）；`knowledge_info` / `knowledge_fragment` **两表 0 行**。这正是 CLAUDE.md 记载的失败形态：**RAG 静默返回空、页面看着正常但检索永远空** |
+| SEC | **未过** | 未登录 401 正确且不泄漏端点存在性（缺文件字段同样 401）；但**上传真链无证据**——401 只证明门锁着，未证明钥匙能开门 |
+| ENTRY | **过** | 登录链活（错口令 400+traceId）、前端代理正确指向 16039、`/actuator*` 均 401 basic auth 保护 |
+
+### 三条「未过」的处置建议（均需 owner 决策，本轮不擅自处置）
+1. **KB**：起 weaviate（`docker compose up -d`）+ 灌知识库数据。**优先级最高**——
+   当前状态是「RAG 静默空返回」，故障形态最隐蔽。
+2. **MODEL**：补一个兜底模型，或接受「外部 API 单点」并登记为已接受风险。
+3. **SEC**：需测试账号跑一次真实上传→落库→回读。**本轮不做**（产生真实附件数据，属副作用）。
+4. **ENTRY 附带发现**：Swagger UI 与 `/v3/api-docs` **无鉴权 200 可读**。dev profile 合理，**上线生产前必须收掉**。
+5. **PORT 附带发现**：`/actuator/health` 需 basic auth（凭据在 `.codex/ipd-dev/config/application-ipd-local.yml` 的 `spring.boot.admin.client`）。
+   **C1 判据「db=UP」成立，但整体 health 是 503 DOWN**（ES/mail/neo4j 三项 DOWN）——
+   这三项是可选还是硬依赖，**口径需 owner 确认**。
+
+### C5 四方一致性：1 处真不一致 + 2 处口径差异 + 1 处基准值缺口
+**真不一致（库↔代码）**：`ipd_action_skill_map` 里 **LC01(id=57) / LC03(id=61) 两行仍在**，
+库里 69 个动作码 vs 代码目录 67 个。代码 67 是对的。
+**这不是未知问题**——仓里已有 `docs/script/sql/update/20261007-ipd-cleanup-retired-action-skillmap.sql`
+（注释明写这个差异与期望值），**只是还没在真库上跑过**。
+⚠️ 实测 `ipd_app` 对该表**无 DELETE 权限**（ERROR 1142），故不能指望应用启动自动清——
+设计上就是「元数据只读、无 Java 写入者」，**必须由有 DELETE 权限的账号执行该迁移**。
+影响面有限：LC01/LC03 在 `stage_actions` 的项目实例数 = 0，只影响技能绑定与计数对账。
+**属数据操作窗口，需 owner 拍板，本轮未执行。**
+
+**口径差异（不是错，但必须写明否则下次又当漂移）**：
+- `stage_actions` 去重 69 = 目录 67 + **A01/A02**（来自 `IpdZkScenarioInitializer:194-195` 的场景演示数据，
+  不是动作目录条目）。**不同口径不可相加。**
+- Gate 要素：代码里 `isVeto="Y"` 的字面量有 15 处，但**其中 1 处是第 99 行的比较字面量**，不是数据行；
+  真数据行 15 → 落库 14（因 G2-6 被 DOC-05 决策 1 覆盖）。**这是个容易数错的点。**
+
+### 本轮抓到我自己的一处错
+我今日多次引用的「664 个测试文件」**是错的，实测 665**。
+根源：`664` 来自门禁输出（它扫的是「含 @Test 的文件」），`665` 是全部测试源文件数——
+**两个口径被我混用，还写进了部署文档**。
+已改为在部署文档里**只引用 `治理/基准值.md`、不复述数字**（本节 log 两处为变更记录，按「不改历史」原则保留并在此更正）。
+
+### 库连接口径更正（供后续复用）
+`127.0.0.1:3306` 上跑的是**另一个 RuoYi 基线库**（`ry-vue`，24 张 sys_* 表，**ipd% 表 0 张**）。
+**IPD 真库在 13306 上**，须用 `mysql --defaults-file=.codex/ipd-dev/config/mysql-client.cnf -N ipd_dev`。
+阳性对照：`SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='ipd_dev'` = **166**。
+⚠️ 直连用配置里的占位符口令会得 `ERROR 1045 Access denied`——**真实口令经 mysql-client.cnf 注入，不在配置正文里**。
