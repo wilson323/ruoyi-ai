@@ -21,6 +21,7 @@ import org.ruoyi.common.process.ChildProcessSecretSanitizer;
 import org.ruoyi.domain.entity.mcp.McpTool;
 import org.ruoyi.enums.McpToolStatus;
 import org.ruoyi.mapper.mcp.McpToolMapper;
+import org.ruoyi.mcp.transport.JsonRpcHttpClientTransport;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -156,7 +157,13 @@ public class AgentScopeMcpToolProviderService {
                 String origin = new URI(uri.getScheme(), uri.getRawAuthority(), null, null, null).toString();
                 Map<String, String> headers = new LinkedHashMap<>();
                 config.path("headers").properties().forEach(e -> headers.put(e.getKey(), e.getValue().asText()));
-                if ("SSE".equalsIgnoreCase(config.path("transport").asText())) {
+                String transportKind = config.path("transport").asText("");
+                if ("JSON_RPC".equalsIgnoreCase(transportKind)) {
+                    // 无状态 JSON-RPC-over-POST 服务端：对 GET 返回 405 text/html，
+                    // SDK 自带的两种传输层都会在 POST 前先建 GET 推送通道从而失败。
+                    transport = JsonRpcHttpClientTransport.builder(URI.create(url))
+                        .headers(headers).requestTimeout(TIMEOUT).build();
+                } else if ("SSE".equalsIgnoreCase(transportKind)) {
                     transport = HttpClientSseClientTransport.builder(origin).sseEndpoint(endpoint)
                         .customizeRequest(request -> headers.forEach(request::header)).build();
                 } else {
