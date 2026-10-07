@@ -89,6 +89,8 @@ public class NotificationService implements INotificationService {
         public static final String DEL_REJECTED = "DEL_REJECTED";
         public static final String DEL_REVIEW_OVERDUE = "DEL_REVIEW_OVERDUE";
         public static final String ACTION_OVERDUE = "ACTION_OVERDUE";
+        /** ⑤刀：阶段动作到期前预警（dueDate 恰为 N 天后的开放态动作，与 ACTION_OVERDUE 互补） */
+        public static final String ACTION_DUE_SOON = "ACTION_DUE_SOON";
         /** P2-3.3 AC-TEAM-08 招标到期无人应标提示给市场 PM */
         public static final String BID_EXPIRED_NO_RESPONSE = "BID_EXPIRED_NO_RESPONSE";
         /** P2-5.4 AC-GATE-07 第 3 轮起双方产品组长自动列席 */

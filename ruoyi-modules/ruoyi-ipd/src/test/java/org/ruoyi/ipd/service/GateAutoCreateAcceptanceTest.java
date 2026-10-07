@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.ruoyi.common.core.exception.ServiceException;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.when;
  *   <li>合法 gateCode（G1/G2/G3/G4/G5）⇒ 创建成功 + 写 GATE_AUTO_CREATE 审计</li>
  *   <li>非法 gateCode（XYZ/空/null）⇒ 拒</li>
  *   <li>ARCHIVED/SUSPENDED 项目 ⇒ 拒</li>
- *   <li>最近 14 天已创建同 gateCode ⇒ 拒</li>
+ *   <li>F6-① 在途去重：同项目同 gateCode 已存在 PENDING 行 ⇒ 拒（不再是 14 天时间冷却）</li>
  *   <li>项目不存在 ⇒ 拒</li>
  * </ol>
  */
@@ -105,13 +106,62 @@ class GateAutoCreateAcceptanceTest {
     }
 
     @Test
-    @DisplayName("AC#4 14 天冷却：最近 14 天已有同 gateCode ⇒ 拒")
-    void cooldown_rejected() {
+    @DisplayName("AC#4 F6-① 在途去重：同项目同 gateCode 已有 PENDING 轮次 ⇒ 拒")
+    void inFlightPending_rejected() {
         when(projectMapper.selectById(700L)).thenReturn(activeProject(700L));
         when(gateMapper.selectCount(any())).thenReturn(1L);
         assertThatThrownBy(() -> service.autoCreateGate(700L, "G3", 999L))
             .isInstanceOf(ServiceException.class)
-            .hasMessageContaining("14");
+            .hasMessageContaining("在途");
+        verify(gateMapper, never()).insert(any(Gate.class));
+    }
+
+    /**
+     * F6-① 的**承重测试**。
+     *
+     * <p>为什么必须单独加这一条：上面两条用例 mock 的是 {@code gateMapper.selectCount()} 的
+     * **返回值**，看不见**查询谓词**。实测把生产谓词从 {@code eq(status,'PENDING')} 改成
+     * {@code isNull(status)}（等价于「不按在途拦」），这两条用例依然全绿——绿灯证明不了
+     * 「在途去重真的按 PENDING 过滤」，只证明「count&gt;0 时会抛异常」。
+     *
+     * <p>本条改为捕获真实的 {@code LambdaQueryWrapper}，渲染 SQL 片段并检查参数表，
+     * 把谓词本身钉住：改谓词就会红。
+     */
+    @Test
+    @DisplayName("AC#4c F6-① 承重：在途去重的查询谓词必须按 status='PENDING' 过滤（承重，非烟雾）")
+    void inFlightQueryFiltersByPendingStatus() {
+        when(projectMapper.selectById(700L)).thenReturn(activeProject(700L));
+        when(gateMapper.selectCount(any())).thenReturn(0L);
+
+        org.mockito.ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Gate>> captor =
+            org.mockito.ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class);
+        service.autoCreateGate(700L, "G3", 999L);
+        verify(gateMapper).selectCount(captor.capture());
+
+        com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> w = captor.getValue();
+        // 必须先渲染 SQL 片段：eq() 把值包在惰性 Supplier 里，不渲染就永远不写进参数表。
+        String sqlSegment = w.getSqlSegment();
+        java.util.Collection<Object> params = w.getParamNameValuePairs().values();
+
+        assertThat(sqlSegment).contains("project_id").contains("gate_code").contains("status");
+        assertThat(params).contains("G3");
+        // 这条是 F6-① 的核心：必须带 PENDING 状态过滤。缺了它，「同项目同 Gate 已有在途轮次」
+        // 就拦不住，会重复建卡。
+        assertThat(params).contains(GateCreationService.STATUS_PENDING);
+        // 反向确认：谓词不是 isNull(status)（那是「没有状态」的另一套含义，等于不拦）
+        assertThat(sqlSegment).doesNotContain("IS NULL");
+    }
+
+    @Test
+    @DisplayName("AC#4b F6-① 语义反转：无在途 PENDING 即建成功（不再受 14 天时间冷却约束）")
+    void noInFlight_creates_evenIfLastOneWasLongAgo() {
+        // F6-① 之前的口径：14 天内建过同 gateCode 就拒。本用例锁死新语义——
+        // 上一次建卡无论多久以前，只要当前没有 PENDING 在途，就允许再建（G3 双周复评的正解）。
+        when(projectMapper.selectById(700L)).thenReturn(activeProject(700L));
+        when(gateMapper.selectCount(any())).thenReturn(0L);
+        Gate g = service.autoCreateGate(700L, "G3", 999L);
+        assertThat(g.getStatus()).isEqualTo("PENDING");
+        verify(gateMapper, times(1)).insert(any(Gate.class));
     }
 
     @Test

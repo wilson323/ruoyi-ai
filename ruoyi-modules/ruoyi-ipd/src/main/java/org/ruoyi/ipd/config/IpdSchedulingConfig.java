@@ -19,9 +19,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * P0EscalationScanScheduler 09:35（P0 升级链阈值检查，R215-GAP-B4）/
  * GuestDemandOverdueScheduler 09:40（AC-PROD-09 待指派超5工作日提醒组长，R218 卡2 接线补齐 2026-09-25）/
  * BidInvitationExpireScheduler 09:45（AC-TEAM-08 邀标到期自动过期，R219 卡④ 接线补齐 2026-09-26）/
- * StageActionOverdueScheduler 09:50（ACTION_OVERDUE 逐日逾期提醒，R219 卡④）/
+ * StageActionOverdueScheduler 09:50（ACTION_OVERDUE 逐日逾期提醒，R219 卡④；⑤刀 2026-10-06 把 ACTION_DUE_SOON 到期前预警并入同一方法，未新增时刻）/
  * AiProactiveScanScheduler 09:55（R221 AI 主动执行扫描：7 日内到期 AI 档动作建 SCHEDULE 任务，2026-09-26）/
  * AuditAnomalyScanScheduler 10:05（AI-P3 #7 审计异常检测：回看 24h 只读扫 audit_logs，命中 FYI 超管，2026-09-27）/
+ * GateG3RecreateScheduler 10:10（F6-③ G3 双周开发复评扫描：DEV 阶段且距上次 G3 满复评周期即补建，
+ * 间隔可配 gate.g3.recreate_interval_days；避开 09:00~09:55 晨间窗口与 10:05 审计异常扫描，
+ * 亦不与每月 1 日 10:00 津贴台账撞时刻；2026-10-06 登记）/
  * AllowanceMonthlyLedgerScheduler 每月 1 日 10:00（上自然月台账全量生成，R219 卡④）/
  * NotificationOutboxScanner 每 30s 轮询（常驻间隔任务，非整点，与上述无时刻冲突；
  * 间隔可配 ipd.notification.dispatch.interval-ms）；

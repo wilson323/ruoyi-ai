@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.ipd.common.IpdBusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.ipd.domain.ActionDef;
 import org.ruoyi.ipd.domain.AuditLog;
 import org.ruoyi.ipd.domain.Deliverable;
@@ -51,6 +52,7 @@ import java.util.Set;
  * - 乐观锁：@Version；并发同 id 仅 1 成功
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class StageActionService implements IStageActionService {
 
@@ -95,8 +97,38 @@ public class StageActionService implements IStageActionService {
      */
     private StateMachineGuard stateMachineGuard;
 
+    /**
+     * F6-②：关卡自动建卡依赖（owner 2026-10-07 拍板「本阶段动作做完后建」）。
+     * setter 注入、{@code required=false}：缺失时本服务照常流转动作，只是不再自动建卡——
+     * 建卡是副链，绝不允许因为它没装配而卡死业务动作。
+     */
+    private GateCreationService gateCreationService;
+
+    /** 可注入时钟（与 GateCreationService 同模式）：到期预警按自然日判窗，测试固定时刻消除时钟摇摆。 */
+    private java.time.Clock clock = java.time.Clock.systemDefaultZone();
+
+    @Autowired(required = false)
+    public void setGateCreationService(GateCreationService gateCreationService) {
+        this.gateCreationService = gateCreationService;
+    }
+
+    @Autowired(required = false)
+    public void setClock(java.time.Clock clock) {
+        this.clock = (clock == null) ? java.time.Clock.systemDefaultZone() : clock;
+    }
+
+    private java.time.LocalDate today() {
+        return java.time.LocalDate.now(clock);
+    }
+
     /** entityType 词表与其他 9 台机器一致：小写下划线。 */
     private static final String STAGE_ACTION_ENTITY_TYPE = "stage_action";
+
+    /** ⑤刀：默认提前几天预警（可由调度器显式传参覆盖）。 */
+    public static final int DEFAULT_DUE_SOON_DAYS = 3;
+
+    /** 每日提醒只扫这一批上限，避免脏数据把单次扫描拉成全表。 */
+    private static final int DAILY_SCAN_LIMIT = 500;
 
     @Autowired(required = false)
     public void setStateMachineGuard(StateMachineGuard stateMachineGuard) {
@@ -212,7 +244,60 @@ public class StageActionService implements IStageActionService {
         // R28 补遗 §5-2 接线：postCommit（事务提交后）。stage_action 全边 crossDomain=false，
         // postCommit 语义为 no-op 留扩展点；from 用变更前快照（防 setStatus 后读到新态的 ghost 迁移老 bug）。
         registerPostCommit(fromBefore, target, guardTrigger, actorIdOf(operator), a.getId());
+        // F6-②：本阶段动作做完后建关卡（owner 2026-10-07 拍板）。见 autoCreateGateForDoneAction 的 javadoc。
+        if ("DONE".equals(target)) {
+            autoCreateGateForDoneAction(a, def, actorIdOf(operator));
+        }
         return a;
+    }
+
+    /**
+     * F6-②：动作流转到 DONE 时按 {@code ActionDef.gate()} 自动建对应 Gate 评审。
+     *
+     * <p>映射（C11→G1 / P13→G2 / D05→G3 / L07→G4 / LC02→G5）取自 {@link ActionCatalog} 的
+     * {@code ActionDef.gate()} 字段——目录里只有这 5 个动作带 gate 码，本类不重复维护字面量表。
+     *
+     * <p><b>建卡失败绝不回滚动作流转</b>（本方法最重要的约束）：一个建卡失败不该把用户刚提交的
+     * 业务动作打回去——那等于用一条提醒性副链卡死主链。因此本方法在<b>动作事务提交之后</b>才执行：
+     * <ul>
+     *   <li>事务活跃 → 注册 afterCommit 回调，在提交后于新事务里建卡；</li>
+     *   <li>无事务上下文（如单测直调）→ 就地执行，异常一律吞掉并记 WARN。</li>
+     * </ul>
+     * 提交后执行同时规避了一个更隐蔽的坑：{@code GateCreationService.autoCreateGate} 自身带
+     * {@code @Transactional(rollbackFor=Exception.class)}，若在动作事务内调用，一旦它抛异常，
+     * Spring 会把外层事务标记为 rollback-only，最终以 {@code UnexpectedRollbackException}
+     * 在提交点炸掉——即使调用方 catch 住了也一样。
+     *
+     * <p>幂等：靠 {@code GateCreationService} 的在途去重（同项目同 gateCode 已有 PENDING 就拒），
+     * 本方法自身不做额外判重——重复触发（动作重复 DONE / 扫描与动作撞车）都收敛到同一道闸。
+     */
+    private void autoCreateGateForDoneAction(StageAction a, ActionDef def, Long operatorId) {
+        if (gateCreationService == null || def == null) {
+            return;
+        }
+        String gateCode = def.gate();
+        if (gateCode == null || gateCode.isBlank() || a.getProjectId() == null) {
+            return; // 该动作不挂关卡
+        }
+        Runnable task = () -> {
+            try {
+                gateCreationService.autoCreateGate(a.getProjectId(), gateCode, operatorId);
+            } catch (Exception ex) {
+                // 预期内的「已有在途轮次」也走这条路径：只记 WARN，不炸任何东西
+                log.warn("[F6-②] 动作完成自动建关卡失败（不影响动作状态）projectId={} actionCode={} gateCode={} : {}",
+                    a.getProjectId(), def.code(), gateCode, ex.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
     }
 
     /**
@@ -714,6 +799,62 @@ public class StageActionService implements IStageActionService {
             String actionUrl = a.getProjectId() == null ? null : "/projects/" + a.getProjectId();
             for (Long receiverId : receivers) {
                 notificationService.publishDailyAfterCommit(receiverId, NotificationService.Types.ACTION_OVERDUE,
+                    NotificationService.KIND_ACTION, "stage_action", a.getId(), title, content, actionUrl, now);
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    /**
+     * ⑤刀：动作<b>到期前</b>预警（与 {@link #notifyOverdueActions()} 的逾期提醒互补）。
+     *
+     * <p><b>窗口语义是「恰为 N 天后」而不是「N 天内」</b>：只处理 {@code dueDate} 落在
+     * {@code 今天 + daysBefore} 那一个自然日的动作。今天到期的不算（N=0 需显式传 0），
+     * N-1 天到期的昨天就该由逾期提醒接手，N+1 天到期的还太早——都不在本方法职责内。
+     * 按自然日（LocalDate）比对而非毫秒差，避免「差 1 分钟就不算 N 天后」这种时区/时钟毛刺。
+     *
+     * <p>状态过滤：仅 {@code NOT_STARTED / IN_PROGRESS / DELAYED}；已 DONE / NA 的动作
+     * 不该再收到「快到期了」。
+     *
+     * <p>收件人与发送：复用既有的 {@link #resolveOverdueReceivers} 映射（MARKET_PM/RD_PM/BOTH→
+     * 在职成员；GROUP_LEADER→主组组长）与
+     * {@link NotificationService#publishDailyAfterCommit}（dedupKey 含自然日，同日重复触发不重发）。
+     *
+     * @param daysBefore 提前天数；{@code null} 取 {@value #DEFAULT_DUE_SOON_DAYS}，非正数直接返回 0
+     * @return 实际发布的通知条数
+     */
+    public int notifyDueSoonActions(int daysBefore) {
+        if (notificationService == null || projectMemberMapper == null || productGroupMapper == null) {
+            return 0;
+        }
+        int days = daysBefore <= 0 ? DEFAULT_DUE_SOON_DAYS : daysBefore;
+        java.time.LocalDate targetDate = today().plusDays(days);
+        List<StageAction> dueSoon = stageActionMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<StageAction>()
+                .isNotNull(StageAction::getDueDate)
+                // LocalDate.atStartOfDay() 只收 ZoneId，不收 Clock——clock.getZone() 才是本类时钟的时区。
+                .ge(StageAction::getDueDate, Date.from(targetDate.atStartOfDay(clock.getZone()).toInstant()))
+                .lt(StageAction::getDueDate, Date.from(targetDate.plusDays(1).atStartOfDay(clock.getZone()).toInstant()))
+                .in(StageAction::getStatus, "NOT_STARTED", "IN_PROGRESS", "DELAYED")
+                .last("LIMIT " + DAILY_SCAN_LIMIT));
+
+        int sent = 0;
+        Map<Long, Project> projectCache = new HashMap<>();
+        Map<Long, List<ProjectMember>> memberCache = new HashMap<>();
+        Date now = new Date();
+        for (StageAction a : dueSoon) {
+            Set<Long> receivers = resolveOverdueReceivers(a, projectCache, memberCache);
+            if (receivers.isEmpty()) {
+                continue;
+            }
+            String actionName = a.getActionName() == null ? a.getActionCode() : a.getActionName();
+            String title = "动作即将到期: " + actionName;
+            String content = "项目 " + a.getProjectId() + " 的阶段动作「" + actionName + "」将在 "
+                + new java.text.SimpleDateFormat("yyyy-MM-dd").format(a.getDueDate()) + " 到期，还有 " + days + " 天，请及时推进。";
+            String actionUrl = a.getProjectId() == null ? null : "/projects/" + a.getProjectId();
+            for (Long receiverId : receivers) {
+                notificationService.publishDailyAfterCommit(receiverId, NotificationService.Types.ACTION_DUE_SOON,
                     NotificationService.KIND_ACTION, "stage_action", a.getId(), title, content, actionUrl, now);
                 sent++;
             }

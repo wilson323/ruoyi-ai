@@ -400,8 +400,8 @@ class R219SchedulerWiringTest {
     }
 
     @Test
-    @DisplayName("R219-④g NO_OUTPUT 腿：ADDITIONAL 成员四类信号全空 → STOP_NO_OUTPUT_60_DAYS 且实发 0（AC-INC-07）")
-    void generateAppliesNoOutputStopForAdditionalMember() {
+    @DisplayName("R219-④g[2026-10-07 翻案] NO_OUTPUT 腿：ADDITIONAL 成员四类信号全空 → 照常发 2000、不写停发标记（AC-INC-07 原为停发，owner 拍板改为仅提醒）")
+    void generateAppliesNoOutputReminderForAdditionalMember() {
         AllowanceService svc = ledgerService(true);
         when(allowanceMemberMapper.selectList(any())).thenReturn(List.of(
             bound(1L, 10L, "2000", "ADDITIONAL")));
@@ -411,8 +411,9 @@ class R219SchedulerWiringTest {
         assertThat(svc.generateMonthlyLedgers("2026-08")).isEqualTo(1);
         var captor = org.mockito.ArgumentCaptor.forClass(AllowanceLedger.class);
         verify(ledgerMapper).insert(captor.capture());
-        assertThat(captor.getValue().getStopReason()).isEqualTo("STOP_NO_OUTPUT_60_DAYS");
-        assertThat(captor.getValue().getFinalAmount()).isEqualByComparingTo("0");
+        assertThat(captor.getValue().getStopReason()).as("无产出仅提醒，不得污染台账停发语义").isNull();
+        assertThat(captor.getValue().getStopStartDate()).as("无产出不写停发起始日").isNull();
+        assertThat(captor.getValue().getFinalAmount()).as("无产出照常发放").isEqualByComparingTo("2000");
     }
 
     @Test

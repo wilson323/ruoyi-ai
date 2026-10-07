@@ -90,36 +90,22 @@ class IpdGateElementSeedInitializerTest {
         org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
     }
 
+    // 已于 2026-10-07 移除 driftedRowDoesNotBlockSeedingOfMissingElements：
+    // 该用例断言「非空表按缺号补种」，G2 守卫上线后行为不可达——owner 口径改为
+    // 「表非空即一行不插一行不改写」。新口径由 IpdGateElementSeedTableEmptyGuardTest 覆盖。
+    // ⚠️ 不要照 git history 把它加回来，除非 owner 明确把守卫放宽回按缺号补种。
+
     /**
-     * 漂移行（G2-6 仍是 SQL seed 的「否决 + =否决文本」）+ 缺号（G5-7 整行不在）并存时，
-     * 缺号必须仍被补种。这是 2026-10-04 修掉的「单向锁死」：此前任一要素漂移即整批中止，
-     * 而中止只写一行 ERROR、应用照常启动，于是缺号要素永远补不进来。
+     * 预检 SQL 的口径留档：必须是裸查询、不带 del_flag 过滤。
+     * 实体 GateElement.delFlag 上有 @TableLogic，MyBatis-Plus 会给 selectCount 自动追加
+     * del_flag=0；若守卫改用 selectCount 计数，软删行被滤掉，全软删的表会被误判成空表
+     * 而重插 33 条。本断言锁死「无 del_flag 过滤」这一前提。
      */
-    @Test void driftedRowDoesNotBlockSeedingOfMissingElements() throws Exception {
-        var mapper = mock(GateElementMapper.class);
-        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of());
-        when(mapper.insert(any(GateElement.class))).thenReturn(1);
-        var initializer = new IpdGateElementSeedInitializer(mapper);
-        initializer.run(null);
-        var captured = ArgumentCaptor.forClass(GateElement.class);
-        verify(mapper, times(33)).insert(captured.capture());
-        var existing = new java.util.ArrayList<GateElement>();
-        for (var r : captured.getAllValues()) {
-            if ("G5-7".equals(r.getElementCode())) continue;
-            existing.add("G2-6".equals(r.getElementCode())
-                ? GateElement.builder().gateCode("G2").elementCode("G2-6").elementName("认证与法规清单确认")
-                    .passStandard("目标市场强制认证全部列入且周期匹配；缺失或周期冲突=否决")
-                    .isVeto("1").delFlag("0").status("published").enabled("1").build()
-                : r);
-        }
-        org.mockito.Mockito.clearInvocations(mapper);
-        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(existing);
-        initializer.run(null);
-        var inserted = ArgumentCaptor.forClass(GateElement.class);
-        verify(mapper, times(1)).insert(inserted.capture());
-        assertThat(inserted.getValue().getElementCode()).isEqualTo("G5-7");
-        assertThat(inserted.getValue().getIsVeto()).isEqualTo("1");
-        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
+    @Test void seedPreflightSqlMustNotFilterSoftDeletedRows() throws Exception {
+        String sql = GateElementMapper.class.getMethod("selectSeedPreflightIncludingDeleted")
+            .getAnnotation(org.apache.ibatis.annotations.Select.class).value()[0];
+        assertThat(sql).contains("gate_review_elements").contains("del_flag");
+        assertThat(sql).doesNotContain("del_flag =", "del_flag='");
     }
 
     /**
@@ -136,23 +122,10 @@ class IpdGateElementSeedInitializerTest {
         org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).insert(any(GateElement.class));
     }
 
-    @Test void deletedCanonicalIdentifierIsAReadOnlyConflictNotAnEmptyTable() throws Exception {
-        var mapper = mock(GateElementMapper.class);
-        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(
-            GateElement.builder().gateCode("G1").elementCode("G1-1").elementName("市场机会真实性")
-                .passStandard("≥5家目标客户一手验证或≥1家客户书面意向；客户ID、记录及附件可追；一手验证门槛可配置")
-                .isVeto("0").delFlag("1").build()));
-        new IpdGateElementSeedInitializer(mapper).run(null);
-        // 软删除的规范编号：不得复活（不重新 insert 同编号），也不得覆盖；其余缺号照常补种。
-        var inserted = ArgumentCaptor.forClass(GateElement.class);
-        verify(mapper, times(32)).insert(inserted.capture());
-        assertThat(inserted.getAllValues()).noneMatch(r -> "G1-1".equals(r.getElementCode()));
-        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
-        String sql = GateElementMapper.class.getMethod("selectSeedPreflightIncludingDeleted")
-            .getAnnotation(org.apache.ibatis.annotations.Select.class).value()[0];
-        assertThat(sql).contains("gate_review_elements").contains("del_flag");
-        assertThat(sql).doesNotContain("del_flag =", "del_flag='");
-    }
+    // 已于 2026-10-07 移除 deletedCanonicalIdentifierIsAReadOnlyConflictNotAnEmptyTable：
+    // 它断言「1 行软删存量 ⇒ 补种其余 32 条」，属非空表补种语义，G2 守卫下不可达
+    // （表现在是 1 行存量 ⇒ 0 插入）。新口径见 IpdGateElementSeedTableEmptyGuardTest。
+    // 该用例内的 SQL 口径断言未随删除丢失，已拆出为上方 seedPreflightSqlMustNotFilterSoftDeletedRows。
 
     /**
      * 2026-10-04 G2-6 对齐脚本哨兵：脚本文本还在就必须同时具备三件事——
@@ -175,17 +148,10 @@ class IpdGateElementSeedInitializerTest {
         assertThat(updates).hasSize(2);
         updates.forEach(stmt -> assertThat(stmt).contains("element_code = 'G2-6'"));
     }
-    @Test void legalCustomDraftArchivedAndPublishedDefinitionsDoNotBlockCanonicalSeed() throws Exception {
-        var mapper = mock(GateElementMapper.class);
-        when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of(
-            GateElement.builder().gateCode("G1").elementCode("CUSTOM-1").status("draft").delFlag("0").build(),
-            GateElement.builder().gateCode("G2").elementCode("G2-ARCH-01").status("archived").delFlag("0").build(),
-            GateElement.builder().gateCode("G1").elementCode("G1-8").status("published").delFlag("0").build()));
-        when(mapper.insert(any(GateElement.class))).thenReturn(1);
-        new IpdGateElementSeedInitializer(mapper).run(null);
-        verify(mapper, times(33)).insert(any(GateElement.class));
-        org.mockito.Mockito.verify(mapper, org.mockito.Mockito.never()).updateById(any(GateElement.class));
-    }
+    // 已于 2026-10-07 移除 legalCustomDraftArchivedAndPublishedDefinitionsDoNotBlockCanonicalSeed：
+    // 它断言「3 行 custom/draft/archived 存量 ⇒ 仍灌满 33 条」，属非空表补种语义，
+    // G2 守卫下不可达（表现在是任何存量 ⇒ 0 插入，合法自定义行也不例外）。
+    // 新口径见 IpdGateElementSeedTableEmptyGuardTest。
     @Test void archivedDisabledLegacySeedDoesNotBlockCanonicalIdempotence() throws Exception {
         var mapper = mock(GateElementMapper.class);
         when(mapper.selectSeedPreflightIncludingDeleted()).thenReturn(List.of());
