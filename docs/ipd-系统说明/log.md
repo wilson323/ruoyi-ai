@@ -16044,3 +16044,47 @@ owner 报障：项目流程页点击「产物」按钮 404（报障 URL /ipd/ai-
 8. **归属更正**（防后续误读）：F6-① 在途去重与 F6-③ `scanDevG3Recreate()` 的实现由主协调接手重写；
    施工智能体贡献的是整条自动建卡链接线（StageActionService）、新建 `GateG3RecreateScheduler`、
    以及三处缝合（`@Value` 配置绑定、去重复声明、测试桩对齐）。   验收凭据取主协调自己的实跑读数，不取智能体报告。
+
+## 2026-10-07 安全闸门修复 + Gate 全链 E2E 验收（真实运行态）
+
+### 一、安全闸门修复（`0aa83bc3`）
+
+`.claude/settings.json` 10 处 hook 挂载被插件（claude-flow/ruflo 升级）清空，含
+`sensitive-field-guard.cjs`（拦截 .env / 生产 yml / PEM 私钥）与 `block-dangerous-git.sh`。
+**不是整文件回滚**——逐事件比对 HEAD 与工作树，只补被清空/被删的部分，保留插件在用的
+evolver 条目（UserPromptSubmit / Stop / SessionStart）原样。补后 10 个事件条目数与 HEAD 完全一致。
+
+功能验收（实跑，非只看配置）：sensitive-field-guard 7/7、block-dangerous-git 6/6、
+hook-handler 调度器 4 事件可执行。**变异自证：闸门确实在拦，不是配置摆样子。**
+
+### 二、Gate 全链 E2E（详见 `E2E-Gate全链验收-20261007.md`）
+
+后端打包后以 `ipd-local,dev` 起在 16039，HTTP 真调 + 真库回读。**6 项通过，1 项未跑到**：
+
+- ✅ **F3** 阶段推进被拦：HTTP 400 / code 40001 `GATE_NOT_PASSED`，`current_stage` 未变，
+  `STAGE_GATE_BLOCKED` 审计落库
+- ✅ **F5** G1-1 门槛：不填拒 / 3 家拒 / 5 家过 / 书面意向 1 家过（4 组正反例）
+- ✅ **F6-①** 重复建卡被「已有在途轮次未决」拒（取代原 14 天冷却）
+- ✅ **F6-②** C11 转 DONE 后自动新建 G1 + `GATE_AUTO_CREATE` 审计
+- ✅ **F-2** 超管权限码里查不到 `ipd:deletion-request:leader`，组长有
+- ✅ **F-3** 四个角色 permissionCodes 各 54~89 条且全含 `ipd:` 前缀 ⇒ fail-closed 不会误伤
+- ⚠️ **F4** 终裁落状态：**HTTP 路径未跑到**。终裁需两位同组组长意见相左，本项目所在组
+  900001 只有 1 位在职组长（ipd-leader2 已软删且密码不同），单组长时仲裁走
+  `GATE_ARBITRATION_SETTLED` 结算分支而非升级分支。**没有为跑通而新建账号**——
+  新建可登录账号是带安全影响的副作用，须 owner 同意。F4 的证据仍在：4 个单测 + 状态机
+  2 条新规则 + 契约 JSON 已重导出（86→88，前后端 sha 一致）。
+
+### 三、跑 E2E 时自己踩的三个坑（记录下来别再犯）
+
+1. **`permissionCodes` 在 `data.person` 下，不在 `data` 下**。我按 `data.permissionCodes` 读，
+   四角色全读出 0 条，一度误判「后端从未下发权限码」并准备上报 fail-closed 会锁死全站——
+   差点把一个不存在的 P0 报给 owner。**先打印响应原文再下结论。**
+2. **`sys_oss` 没有 `del_flag` 列**。我按惯例加了 `WHERE del_flag='0'`，查出 0 行，
+   一度以为表是空的；实际有 7 行，还含两条 E2E 专用夹具（990001 评审材料 / 990002 会议纪要）。
+3. **双签分歧必须「先 APPROVE 后 REJECT」**。我先让市场签 REJECT，Gate 立即终态，
+   研发再也签不上，分歧根本构造不出来——`hasPmConflict` 要当轮同时存在两种决定。
+
+### 四、E2E 遗留数据（详见 E2E 文档 §7）
+
+宿主项目 `2103706308766117889` 上留下 2 张 G1、要素判定、签署、仲裁、12 条阶段动作、
+交付物、审计若干。要清请说一声，按编号精确物理删，**不 TRUNCATE**。
