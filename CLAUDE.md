@@ -192,7 +192,7 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 |---|---|---|---|
 | `sensitive-field-guard.cjs` | PreToolUse | Write / Edit / MultiEdit | **阻断** `.env*` / `application-prod.yml` / 含 PEM 私钥内容；**警告** JWT secret / 明文 password 字面量 |
 | `pom-edit-hint.cjs` | PostToolUse | Write / Edit / MultiEdit 命中 `**/pom.xml` | **不阻断**，stderr 提示 4 类同步项（annotation processor、grpc 版本、flatten 插件、surefire groups） |
-| `block-dangerous-git.sh` | PreToolUse | Bash | **阻断** `git push` / `git push --force` / `git reset --hard` / `git clean -f[d]` / `git branch -D` / `git checkout .` / `git restore .`（来自 mattpocock-skills `git-guardrails-claude-code`） |
+| `block-dangerous-git.sh` | PreToolUse | Bash | **只拦推向非私有库**（判据=远端 URL 精确比对 owner/repo + 锁死 `github.com` 主机名，对抗探针 8/8 全拦、正常用例 20/20 不误伤）；**私有仓 push 放行**——按 §推送铁律三执行，无需摘 hook。**其余命令一律放行**（含会丢弃工作区的 `reset --hard` / `clean -f[d]` / `branch -D` / `checkout .` / `restore .`；owner 2026-10-07 明确「不用拦，只要管住非私有库」，**被放行不是门禁失效**） |
 
 调试命令：
 

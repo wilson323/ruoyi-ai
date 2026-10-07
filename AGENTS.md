@@ -51,7 +51,10 @@
 
 ## 自动化栈（Claude Code 运行时强制）
 
-- `.claude/hooks/block-dangerous-git.sh` 阻断 `git push` / `git reset --hard` / `git clean -f` / `git branch -D` / `git checkout .` / `git restore .`——push 按 2026-10-07 任务结束必推送规则执行（owner 已明令授权）；其余危险动作被拦为预期，不要绕过。
+- `.claude/hooks/block-dangerous-git.sh` **只拦「推送到非私有仓」**（owner 2026-10-07 口径：「严格限制不推送到非私有库即可」「不用拦，只要管住非私有库」）。判据是**远端 URL 精确比对 `owner/repo` 且锁死 `github.com` 主机名**——只取路径末两段比对会漏掉 `attacker/wilson323/ruoyi-ai` 这类仿冒。**私有仓 push（`wilson323/ruoyi-ai`、`wilson323/ruoyi-admin`）放行**，按 §任务结束必提交推送规则直接执行，无需摘 hook、无需人工代跑。**其余命令一律放行**（包括会丢弃工作区的 `reset --hard` / `clean -f[d]` / `branch -D` / `checkout .` / `restore .`——owner 已明确解除破坏性 git 防护，**被放行不是门禁失效**）。
+  - 实测：对抗探针 8/8 全拦（仿冒仓 3 + shell 包裹 / 换行 / 括号 / 反引号绕过 5），正常用例 20/20 不误伤。
+  - **一处「看起来像放行」不是漏洞**：`git push <未配置的远端名> <分支>` 守卫会放行——因为解析不出该远端、回落查 `origin`（私有）即判通过。但这**安全**：git 自身会先报 `fatal: '<name>' does not appear to be a git repository` 并拒绝，**无任何数据流出**（2026-10-07 实测确认）。真正的非私有推送只有两种形态（远端已配置但指向非私有、或直推 URL），两者守卫都拦。
+  - 留痕落 `.harness/audit/blocked-<日期>.jsonl`；`remote` / `url` / `match_context` 三处均已脱敏，不落明文口令。
 - `.claude/helpers/sensitive-field-guard.cjs` 阻断写 `.env*` / `application-prod.yml` / PEM 私钥内容；警告 JWT secret、明文 password 字面量。
 - `.claude/helpers/ratchet-data-guard.cjs`（R212 卡 7b76b7cd）阻断 agent 直接编辑 `scripts/baselines/*.json`（baseline 只允许 `node scripts/check-api-contract-fe-be.mjs --update-baseline` 脚本独占写）与 `docs/ipd-系统说明/api-internal-whitelist.json`（白名单变更须挂看板卡人审）。
 - API 契约孤儿棘轮门禁（R212，2026-09-24 owner 拍板）：`node scripts/check-api-contract-fe-be.mjs` 默认 `ratchet=fail`，孤儿端点「只减不增」——存量分诊为白名单 25 条（内部/运维口，六条防伪校验）+ baseline 22 条老账（`scripts/baselines/`，sha256 自洽 + `git show HEAD` 硬闸防手工编辑）。**退出码位掩码**：`0` 通过 / `1` P0 孤儿路径（或 strict）/ `2` 环境或输入错（含白名单防伪失败、baseline 被改）/ `4` 新孤儿未白名单，可叠加（如 `6=2|4`）；既有 1/2 语义不变。已接入 `.claude/hooks/check-pre-commit.sh` 门禁 3（fast 模式也跑）。逃生阀 `--ratchet=off`。
