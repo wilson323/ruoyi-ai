@@ -98,6 +98,12 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
         if (existing != null && existing > 0) {
             throw new ServiceException("该成员已绑定此角色，重试不产生重复成员");
         }
+        // 注（2026-10-07）：曾在此加过「同项目同角色已有他人在任 ⇒ 拒绝」的角色超编校验，
+        // 已撤除——需求原文（主 Prompt v3:228/496/615）只规定「双PM 绑定」与
+        // 「角色固定不可跨（市场PM 不可兼任研发PM）」，**没有**「一个项目一个角色只能一名在任成员」
+        // 这条规则。加它会打红 P242/P272 三个编码真实批量移交场景的验收用例，
+        // 且属于凭空发明业务规则。同一人重复入组已由既有检查 + DB 唯一键
+        // uk_pm_active_bind(project_id, person_id, role) 双保险覆盖，无需代码侧再加一层。
         // P2-4.2 超额备案审核（AC-TEAM-11）：FOR UPDATE 锁 person_id 索引，并发绑定在此串行化
         Long activeCount = memberMapper.selectCount(new LambdaQueryWrapper<ProjectMember>()
             .eq(ProjectMember::getPersonId, personId)
