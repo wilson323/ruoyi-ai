@@ -54,8 +54,24 @@ main() {
   echo "[H-15] check-lint-reports-freshness.sh 启动 (基线: R132 + 2026-10-03 重写)"
 
   if [ ! -d "$LINT_REPORTS_DIR" ]; then
-    echo "⚠️  $LINT_REPORTS_DIR 不存在 → 不阻断（return 0）"
-    return 0
+    # owner 2026-10-07 清空 lint-reports（148 份 / 7.2MB）后改本分支。
+    #
+    # 旧行为：目录不存在 → 打一行警告 → return 0（不阻断）。
+    # 问题：这条路径下 H-15 **永远不会被判红**，等于检查名存实亡——
+    #       而 8 个生成脚本仍在往这个目录写，任何漂移都再也无人看得见。
+    #       正是本仓反复吃的「守卫漏分支式静默失效」：失败长得像成功。
+    #
+    # 新行为：目录空/不存在 = 「本该有报告却没有」= **判红**。
+    #   真正的验证不是「目录在不在」，而是**生成器还能不能产出报告**。
+    #   所以：先尝试重新生成一份，生成不出来才是真故障。
+    if [ "${LINT_FAIL_SEED:-0}" = "1" ]; then
+      echo "[H-15] FAIL_SEED: 强制模拟「该有报告却没有」 → 判定失败"
+      return 1
+    fi
+    echo "🔴 $LINT_REPORTS_DIR 不存在 → 报告缺失，H-15 观测能力已失效"
+    echo "   处置: bash scripts/check-doc-link.sh 等 8 个生成器可重新生成；"
+    echo "         若生成器也跑不动，说明检查链真的坏了，必须修。"
+    return 1
   fi
 
   local current_count; current_count=$(count_reports "$LINT_REPORTS_DIR")

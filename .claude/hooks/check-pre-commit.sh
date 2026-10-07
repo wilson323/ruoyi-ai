@@ -424,6 +424,40 @@ case "$MODE" in
         ;;
 esac
 
+# ---------------------------------------------------------------------------
+# 门禁 5:基准值与代码一致性(2026-10-07 owner「需求整合在一起禁止散落」落地)
+#
+# 为什么必须有这道门禁:本仓的数字漂了几个月,根子是**数字被手写进文档**。
+# 实测「69 个动作」散落 83 份文件、正确的「67」只有 12 份 —— 因为没有东西会检查它。
+# 本门禁让两种情况立刻报红:
+#   a) 有人手改 docs/ipd-系统说明/治理/基准值.md
+#   b) 代码变了(如 ActionCatalog 增删动作)但基准值没跟
+# 已变异验证:手改 67->69 报红 / 改 ActionCatalog 报红 / 尺子失效拒绝产出(exit 3)。
+# 正确处置:跑 `bash scripts/gen-baseline.sh` 重新生成,**不许手改**基准值.md。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 5: 基准值与代码一致性"
+if [ -f scripts/gen-baseline.sh ]; then
+    base_out="$(bash scripts/gen-baseline.sh --check 2>&1)"
+    base_rc=$?
+    if [ "$base_rc" = "0" ]; then
+        PASSED=$((PASSED + 1))
+        echo "[check-pre-commit] PASS 门禁 5: 基准值与代码一致"
+    elif [ "$base_rc" = "3" ]; then
+        # 尺子自身失效 -> 拒绝判绿(宁可误伤不可假绿)
+        FAILED=$((FAILED + 1))
+        echo "[check-pre-commit] FAIL 门禁 5: 计数尺子失效,拒绝产出基准值" >&2
+        printf '%s\n' "$base_out" | head -5 >&2
+    else
+        FAILED=$((FAILED + 1))
+        echo "[check-pre-commit] FAIL 门禁 5: 基准值与代码不一致" >&2
+        echo "              处置: 跑 bash scripts/gen-baseline.sh 重新生成,不要手改" >&2
+        printf '%s\n' "$base_out" | head -12 >&2
+    fi
+else
+    SKIPPED=$((SKIPPED + 1))
+    echo "[check-pre-commit] SKIP 门禁 5: scripts/gen-baseline.sh 不存在"
+fi
+
 echo "[check-pre-commit] 总结: passed=$PASSED failed=$FAILED skipped=$SKIPPED"
 [[ "$FAILED" -gt 0 ]] && exit 1
 exit 0

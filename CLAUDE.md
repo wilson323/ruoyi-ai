@@ -192,11 +192,27 @@ Compose ports: MySQL `13306`, Redis `26379`, Weaviate `28080`, MinIO `29000`/`29
 |---|---|---|---|
 | `sensitive-field-guard.cjs` | PreToolUse | Write / Edit / MultiEdit | **阻断** `.env*` / `application-prod.yml` / 含 PEM 私钥内容；**警告** JWT secret / 明文 password 字面量 |
 | `pom-edit-hint.cjs` | PostToolUse | Write / Edit / MultiEdit 命中 `**/pom.xml` | **不阻断**，stderr 提示 4 类同步项（annotation processor、grpc 版本、flatten 插件、surefire groups） |
-| `block-dangerous-git.sh` | PreToolUse | Bash | **只拦推向非私有库**（判据=远端 URL 精确比对 owner/repo + 锁死 `github.com` 主机名，对抗探针 8/8 全拦、正常用例 20/20 不误伤）；**私有仓 push 放行**——按 §推送铁律三执行，无需摘 hook。**其余命令一律放行**（含会丢弃工作区的 `reset --hard` / `clean -f[d]` / `branch -D` / `checkout .` / `restore .`；owner 2026-10-07 明确「不用拦，只要管住非私有库」，**被放行不是门禁失效**） |
+| `block-dangerous-git.sh` | PreToolUse | Bash | **只拦推向非私有库**（按远端 URL 判定，不看分支名；`git -C <其他仓>` 绕过已封堵，测试 22/22）。私有仓 push 放行，按 §推送铁律三执行。其余命令一律放行（`reset --hard` / `clean -f` / `branch -D` 等）——**被放行不是门禁失效** |
+| `output-shape-guard.cjs` | PostToolUse | Bash | **只告警不阻断**：上一步命令若「退出码是 0 但输出形状异常」（sed 报错、脚本崩、静默降级、该有输出却是空），强制提示。**它自己坏了会放行**，不会阻断你干活。需重启会话生效 |
+
+### 三件让错误没法发生的工具（2026-10-07）
+
+**不是纪律，是机制——它们让没验证过的读数拿不出交付形态。**
+
+| 工具 | 一句话 | 跑法 |
+|---|---|---|
+| `scripts/evidenced-count.sh` | 数东西时强制说清「在哪数的、排除了什么、样例长啥样」；**数到 0 必须声明原因**，数不出数直接报错 | `bash scripts/evidenced-count.sh find . --name '*.java'` |
+| `.claude/helpers/output-shape-guard.cjs` | 上一步工具输出形状不对就提醒（见上表，已挂 PostToolUse） | 看到它报警，先停下来核对 |
+| `scripts/check-hook-wiring-live.sh` | 列出所有守卫，并提醒「配置里写了 ≠ 真的会跑」 | `bash scripts/check-hook-wiring-live.sh` |
+
+**判据**：把证据删掉，数字就不该还能被单独引用；做不到就是没改到。
 
 调试命令：
 
 ```bash
+# 改动 block-dangerous-git.sh 后必跑：22 条对抗用例
+bash .claude/hooks/test-block-dangerous-git.sh
+
 # 手动测试 hook（模拟 stdin payload）
 echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/.env","content":"x"}}' \
   | node .claude/helpers/sensitive-field-guard.cjs

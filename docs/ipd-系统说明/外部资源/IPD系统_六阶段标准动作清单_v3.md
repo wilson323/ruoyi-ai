@@ -1,8 +1,16 @@
 ---
-source: file:///Users/mac/Documents/ZK-IPD/产品流程细化管理工具/IPD系统_六阶段标准动作清单_v3.md
+# ⚠️ 2026-10-07 勘误（路径更正）
+# 原 source 指向 /Users/mac/Documents/ZK-IPD/产品流程细化管理工具/…，
+# 该目录已随 ZK-IPD 归档作废（目录下有 _ARCHIVED_NOTICE.md）。
+# 有效参照源为 /Users/mac/Documents/wss/产品流程细化管理工具/（owner 2026-10-07 确认）。
+# 实测两份内容完全一致（均 24208 bytes），故改指 wss 不影响本文件内容。
+# 另注：**上游源文件本身仍是 v3 原文**，`grep -c 'LC01\|LC03'` = 3，
+# 即退役只在 ruoyi-ai 本仓副本做了标注，上游未同步。
+# 引用本文件时请以本文件「v4 退役标注」节为准，不要拿上游原文中的 69 条当现态。
+source: file:///Users/mac/Documents/wss/产品流程细化管理工具/IPD系统_六阶段标准动作清单_v3.md
 collected: 2026-09-04
 published: 2026-09-03 11:14 (file mtime)
-topic: IPD v3 69 动作 seed 数据源
+topic: IPD v3 69 动作 seed 数据源（现态 67 = 深管 40 / 轻管 27，LC01/LC03 已退役）
 original_size:    24208 bytes /      298 行
 source_path: IPD系统_六阶段标准动作清单_v3.md
 ---

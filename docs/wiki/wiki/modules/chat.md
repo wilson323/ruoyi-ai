@@ -26,20 +26,33 @@ raw:
 
 模块结构：
 
+> 2026-10-07 勘误：本模块的 Java 代码**不集中在 `org.ruoyi.chat/` 下**。除 `org.ruoyi.chat.*` 外，其余包与 `chat/` 平级，都直接挂在 `org.ruoyi/` 之下（`ChatController` 的真实路径是 `org/ruoyi/controller/chat/ChatController.java`，不在 `org.ruoyi/chat/` 下）。下面的树已按实测目录结构改写。
+
 ```
-org.ruoyi.chat/
-├── controller/
-│   ├── chat/        # 主聊天 controller（ChatController / ChatSessionController / ChatMessageController）
-│   ├── agent/       # Agent 注册 controller
-│   └── mcp/         # MCP 工具市场 controller
-├── service/         # 343 个业务 service（按 model/chat/agent/video/embed 等分子包）
-├── factory/         # 5 个 factory（Chat / Rerank / VectorStore / Embedding / ResourceLoader）
-├── domain/          # 85 个 entity / bo / vo / dto
-├── mapper/          # MyBatis-Plus mapper
-├── config/          # Spring 配置（VectorStoreProperties / McpSseConfig / SkillsPathResolver / SystemToolInitializer）
-├── argtrace/        # RAG 链路追踪（最近从 chat.* 移到 argtrace.*，参见 commit 9d439d1d）
-├── observability/   # 可观测性
-└── websocket/           # WebSocket 处理
+org/ruoyi/                        # 模块源码根，共 15 个顶级包
+├── chat/                        # 仅 3 个子包：kernel（22 个 java）/ poc（2）/ service（0）
+│   ├── kernel/                  # AgentScope 内核实现
+│   ├── poc/                     # 概念验证
+│   └── service/                 # 当前无 java 文件
+├── controller/                  # REST 层，共 6 个子包
+│   ├── chat/        # 主聊天 controller（ChatController / ChatSessionController / ChatMessageController 等 7 个）
+│   ├── agent/       # Agent 注册 controller（AgentController）
+│   ├── mcp/         # MCP 工具市场 controller（McpMarketController / McpToolController）
+│   ├── coding/      # 编码工作区
+│   ├── knowledge/   # 知识库
+│   └── shortdrama/  # 短剧
+├── service/         # 150 个 .java（按 agent/chat/embed/video/vector 等 14 个子包划分；含接口 29 + *ServiceImpl 37 + Facade 等）
+├── factory/         # 5 个 factory（ChatServiceFactory / RerankModelFactory / VectorStoreStrategyFactory / EmbeddingModelFactory / ResourceLoaderFactory）
+├── domain/          # 90 个 .java（entity 18 / dto 4 及其余 bo、vo，按 agent/chat/knowledge/mcp/shortdrama 分子包）
+├── mapper/          # MyBatis-Plus mapper，20 个 .java（agent/chat/knowledge/mcp/shortdrama）
+├── config/          # Spring 配置，5 个 .java（VectorStoreProperties / McpSseConfig / KnowledgeRetrievalAccessFilterProperties + agent/ mcp/ 子包）
+├── agent/           # Agent 装配（config / domain / manager / tool）
+├── argtrace/        # RAG 链路追踪（最近从 chat.* 移到 argtrace.*，参见 commit 9d439d1d），2 个 .java
+├── observability/   # 可观测性（4 个 .java）
+├── mcp/             # MCP 工具与服务（service / tools）
+├── websocket/       # WebSocket 处理（chat）
+├── common/          # process
+├── constant/  enums/
 ```
 
 ## 入口 — ChatController
