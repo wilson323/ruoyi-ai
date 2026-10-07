@@ -131,20 +131,34 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         // 路径 /Users/mac/Documents/wss/产品流程细化管理工具 2/server/scenario.mjs。
         // 注意该源数据**不在本仓库内**，本类是其 Java 侧镜像；改动请两边同步。
         // 逐条核对结论见 docs/ipd-系统说明/验收/wss-需求对照-20261006/110-系统基线数据来源台账.md。
+        // 以下数值逐条取自原型 scenario.mjs 的 PROJECTS（A 级按系统规则不记差异化系数，见 seedActiveProject javadoc）：
+        //   ENT-AC-100 : targetSales 8,000,000 channels 30 nps 45 scenes 4 coeff(空, A级) launch 2024-10-15
+        //   ZK-IAT-ATT  : targetSales 12,000,000 channels 60 nps 50 scenes 6 coeff 1.5   launch 2025-01-20
+        //   VIS-RD-100  : targetSales 6,000,000  channels 20 nps 45 scenes 5 coeff(空, A级) launch 2025-05-30
         seedCompletedProject("ENT-AC-100", "入门级门禁产品", "HARDWARE", "A",
-            new BigDecimal("8000000"), duanJinke, chengLong, gMarketHw);
+            new BigDecimal("8000000"), 30, 45, 4, null, "2024-10-15",
+            duanJinke, chengLong, gMarketHw);
         seedCompletedProject("ZK-IAT-ATT", "熵基互联考勤模块", "SOFTWARE", "S",
-            new BigDecimal("12000000"), huJiaolu, linLijie, gMarketSw);
+            new BigDecimal("12000000"), 60, 50, 6, new BigDecimal("1.5"), "2025-01-20",
+            huJiaolu, linLijie, gMarketSw);
         seedCompletedProject("VIS-RD-100", "访客机＋万傲瑞达", "SOLUTION", "A",
-            new BigDecimal("6000000"), chenBiqin, shangguanZhichang, gMarketIt);
+            new BigDecimal("6000000"), 20, 45, 5, null, "2025-05-30",
+            chenBiqin, shangguanZhichang, gMarketIt);
 
         // ---- 2 个运行态项目（原 workbench 硬编码 demo；供待办/超期/责任过滤真实测试）----
-        // ⚠️ 这两个项目**不在 wss 的 scenario.mjs 里**（源数据只有上面 3 个已完结项目）。
-        //   它们是刻意补的：源数据 3 个项目全部走完生命周期，若没有在途项目，
-        //   待办列表 / 超期提醒 / 责任人过滤就永远只能测空集。
-        //   登记与待决见 110-系统基线数据来源台账.md §二。
-        Project gateTest = seedActiveProject("ZK-GATE-TEST", "如门禁测试", "HARDWARE", "B",
-            "PLAN", duanJinke, chengLong, gMarketHw, null);
+        // 这两个在途项目在**原型真实数据库里也存在**（data/ipd.sqlite 的 projects 表共 5 行），
+        // 只是编码与 scenario.mjs 的 PROJECTS 常量不同——常量只声明 3 个已完结项目，
+        // 两个在途项目是原型库里的既有数据。2026-10-07 已按原型真实库的编码对齐：
+        //   原型 pm2008  如门禁测试        → 系统 pm2008   （原误写 ZK-GATE-TEST）
+        //   原型 PM00085 熵基互联+智能锁  → 系统 PM00085  （原误写 ZK-IAT-LOCK，名称也多了「联动」二字）
+        // ⚠️ 教训：核对基线数据要看**原型真实数据库**，不能只看 scenario.mjs 的种子常量——
+        //   我先前只读常量就下了「这两个项目不在 wss 里」的错误结论。
+        //   逐条核对见 docs/ipd-系统说明/验收/wss-需求对照-20261006/110-系统基线数据来源台账.md。
+        // 原型库 data/ipd.sqlite：pm2008「如门禁测试」product_type=软硬件融合 → 系统 SOLUTION
+        // （系统模板类型词表 HARDWARE|SOFTWARE|SOLUTION，「软硬件一体/融合」对应 SOLUTION），
+        // target_launch_date=2027-06-30。四基准原型未给，留空不臆造。
+        Project gateTest = seedActiveProject("pm2008", "如门禁测试", "SOLUTION", "B",
+            "PLAN", duanJinke, chengLong, gMarketHw, null, null, null, null, null, "2027-06-30");
         action(gateTest, "PLAN", "P01", "市场准入合规清单梳理", "MARKET_PM", "IN_PROGRESS", daysFromNow(-5));
         action(gateTest, "PLAN", "P02", "渠道商对接名单确认", "MARKET_PM", "DELAYED", daysFromNow(-10));
         action(gateTest, "PLAN", "P03", "门禁协议对接联调", "RD_PM", "NOT_STARTED", daysFromNow(14));
@@ -152,8 +166,9 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
         action(gateTest, "CONCEPT", "C01", "概念立项评审", "BOTH", "DONE", null);
         action(gateTest, "CONCEPT", "C02", "目标市场与竞品分析", "MARKET_PM", "DONE", null);
 
-        Project iatLock = seedActiveProject("ZK-IAT-LOCK", "熵基互联+智能锁联动", "SOFTWARE", "A",
-            "DEV", huJiaolu, linLijie, gMarketSw, null);
+        // 原型库：PM00085「熵基互联+智能锁」product_type=软硬件融合 → SOLUTION，target_launch_date=2027-06-30。
+        Project iatLock = seedActiveProject("PM00085", "熵基互联+智能锁", "SOLUTION", "A",
+            "DEV", huJiaolu, linLijie, gMarketSw, null, null, null, null, null, "2027-06-30");
         action(iatLock, "DEV", "D01", "智能锁通信协议评审", "RD_PM", "IN_PROGRESS", daysFromNow(7));
         action(iatLock, "DEV", "D02", "联动场景用例设计", "MARKET_PM", "NOT_STARTED", daysFromNow(10));
         action(iatLock, "DEV", "D03", "固件联调计划", "RD_PM", "NOT_STARTED", daysFromNow(-2));
@@ -165,12 +180,15 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
 
     /** 已完结项目：ARCHIVED + 六阶段 DONE + 每阶段 2 个 DONE 动作（completed 统计可测）。 */
     private void seedCompletedProject(String code, String name, String templateType, String level,
-                                      BigDecimal targetSales, Long marketPmId, Long rdPmId, Long mainGroupId) {
-        Project project = seedActiveProject(code, name, templateType, level, "LIFECYCLE", marketPmId, rdPmId, mainGroupId, targetSales);
+                                      BigDecimal targetSales, Integer targetChannels, Integer targetNps,
+                                      Integer targetScenes, BigDecimal levelCoefficient, String launchDate,
+                                      Long marketPmId, Long rdPmId, Long mainGroupId) {
+        Project project = seedActiveProject(code, name, templateType, level, "LIFECYCLE", marketPmId, rdPmId,
+                mainGroupId, targetSales, targetChannels, targetNps, targetScenes, levelCoefficient, launchDate);
         project.setStatus("ARCHIVED");
         project.setLifecycleStatus("ARCHIVED");
-        // 治理豁免：ZK 场景种数据，demo 性质不入业务守卫；登记 LaunchDateDualSignGuardAcceptanceTest 白名单
-        project.setLaunchDate(daysFromNow(-180));
+        // 上市日期已按原型 launch 落库（见调用处）；这里不再用 daysFromNow(-180) 覆盖——
+        // 原来那行会把三个项目都写成同一个「今天减 180 天」，使四基准与上市日期对不上原型。
         projectMapper.updateById(project);
         for (String stage : SIX_STAGES) {
             action(project, stage, "A01", stageNameOf(stage) + "阶段评审", "BOTH", "DONE", null);
@@ -182,6 +200,34 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
     private Project seedActiveProject(String code, String name, String templateType, String level,
                                       String currentStage, Long marketPmId, Long rdPmId, Long mainGroupId,
                                       BigDecimal targetSales) {
+        return seedActiveProject(code, name, templateType, level, currentStage, marketPmId, rdPmId,
+                mainGroupId, targetSales, null, null, null, null, null);
+    }
+
+    /**
+     * 写入项目并带上原型的业务基准值。
+     *
+     * <p><b>字段映射按语义对齐，不照抄</b>（原型 scenario.mjs 与系统 Project 结构不同，
+     * 同名字段只有 6 个）：</p>
+     * <pre>
+     * 原型 targetSales/targetChannels/targetNps/targetScenarios
+     *   → 系统 targetSalesAmount / targetChannelCount / targetNps / targetSceneCount  （四基准，直接对应）
+     * 原型 strategic: "A"|"S"
+     *   → 系统 level: S|A|B                                                          （直接对应）
+     * 原型 launch
+     *   → 系统 launchDate                                                          （直接对应）
+     * </pre>
+     *
+     * <p><b>唯一不能照抄的是津贴系数</b>：原型 {@code allowanceCoeff} 是「津贴系数」，
+     * 系统 {@code levelCoefficient} 是「<b>差异化系数</b>」——两者不是同一概念。
+     * 且系统规则明写「S 记 1.5–2.0 / B 记 0.6–0.8 / <b>A 固定不录</b>」，
+     * 原型那两个 A 级项目写的 {@code allowanceCoeff: 1} 照抄过来就是违规。
+     * 故只对 S 级传系数，A 级一律留空。
+     */
+    private Project seedActiveProject(String code, String name, String templateType, String level,
+                                      String currentStage, Long marketPmId, Long rdPmId, Long mainGroupId,
+                                      BigDecimal targetSales, Integer targetChannels, Integer targetNps,
+                                      Integer targetScenes, BigDecimal levelCoefficient, String launchDate) {
         Project exist = projectMapper.selectOne(new LambdaQueryWrapper<Project>()
             .eq(Project::getCode, code).last("limit 1"));
         if (exist != null) {
@@ -193,7 +239,15 @@ public class IpdZkScenarioInitializer implements ApplicationRunner {
             .productId(product.getId())
             .templateType(templateType)
             .level(level)
-            .targetSalesAmount(targetSales != null ? targetSales : BigDecimal.ZERO)
+            // 原型未给销售目标的在途项目**保持 null**，不要强转 0：
+            // targetSalesAmount 是「立项目标销售额（奖金池基数）」，0 表示「目标就是 0」，
+            // null 表示「尚未设定」——两者语义不同，混同会让奖金池基数被当成 0 参与计算。
+            .targetSalesAmount(targetSales)
+            .targetChannelCount(targetChannels)
+            .targetNps(targetNps)
+            .targetSceneCount(targetScenes)
+            .levelCoefficient(levelCoefficient)
+            .launchDate(launchDate == null ? null : java.sql.Date.valueOf(launchDate))
             .currentStage(currentStage)
             .source("NEW")
             .status("ACTIVE")
