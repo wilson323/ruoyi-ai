@@ -407,10 +407,13 @@ public class ProjectService implements IProjectService {
      * {@code fallbackMainGroupId}，后者是缺省归属组、不是操作人组）。凭空造一个 actor 去满足该断言
      * 等于凭空放宽跨组守卫，故在创建路径内就地实现同一套校验。此点已上报主协调待裁决。
      *
-     * <p>{@code MEMBER} 分支（创建人自动回填，{@link #insertNewProject} 第 344-347 行）保持原语义：
-     * 它不是 PM 角色，不适用 B7 与备案规则。消费方核查见任务报告——该行被
-     * {@code WorkbenchService:353-358}（本人项目可见性）与 {@code AllowanceService:212-215 / 689-690}
-     * （<b>不按 role 过滤</b>，逐行累加 lockedAmount 出月度台账）真实消费，故不移除。
+     * <p>{@code MEMBER} 分支（创建人自动回填）保持原语义：它不是 PM 角色，<b>不适用 B7 角色词表与
+     * 备案规则</b>。但「人员在册 + 账号启用 + 在职」这三条对<b>所有</b>角色生效（含 MEMBER）——
+     * 2026-10-07 补：原实现只在 {@code PM_ROLES.contains(role)} 分支里调
+     * {@code requireBindablePerson}，MEMBER 完全绕过，于是任意 personId（含 SUPER_ADMIN、
+     * 含已离职/不存在的人）都能被写成 MEMBER 行。MEMBER 行被
+     * {@code AllowanceService:216-224 / 699-702}（按 person 取数累加津贴）真实消费，是津贴污染的源头。
+     * 角色词表（B7）仍只管 PM——MEMBER 本就是非 PM 角色。
      *
      * @param projectId 项目
      * @param personId 人员，空则跳过
@@ -423,6 +426,8 @@ public class ProjectService implements IProjectService {
         if (projectMemberMapper == null) {
             throw new ServiceException("项目成员写入不可用，无法绑定 " + role);
         }
+        // 2026-10-07：在册 + 在职 + 账号启用对**所有**角色生效，MEMBER 不再绕过。
+        Person person = requireExistingActivePerson(personId, role);
         ProjectMember.ProjectMemberBuilder builder = ProjectMember.builder()
             .projectId(projectId)
             .personId(personId)
@@ -431,7 +436,7 @@ public class ProjectService implements IProjectService {
             .joinDate(now())
             .bonusEligible("1");
         if (PM_ROLES.contains(role)) {
-            requireBindablePerson(personId, role);
+            assertPersonTypeMatchesRole(person, role);
             assertNotAlreadyBound(projectId, personId, role);
             long active = countActiveBindsForUpdate(personId);
             int threshold = projectCountThreshold();
@@ -453,12 +458,12 @@ public class ProjectService implements IProjectService {
         // 整块包着——依赖未装配时**静默跳过津贴锁定**，只靠 locked_level/locked_amount 的 NOT NULL
         // 在 DB 层兜住。后果是「业务该拦的」变成「数据库报了个看不懂的列非空错」，且与同批
         // ProjectStartService 的 fail-closed 口径不一致。改为显式判、显式拒。
-        if (personMapper == null || systemConfigService == null) {
-            throw new ServiceException("津贴基准锁定不可用（人员/系统配置访问未装配），不能绑定成员");
+        // personMapper 已由上面的 requireExistingActivePerson 保证非空（未装配会先抛）。
+        if (systemConfigService == null) {
+            throw new ServiceException("津贴基准锁定不可用（系统配置访问未装配），不能绑定成员");
         }
         {
-            Person person = personMapper.selectById(personId);
-            if (person == null || person.getLevel() == null || person.getLevel().isBlank()) {
+            if (person.getLevel() == null || person.getLevel().isBlank()) {
                 throw new ServiceException("该人员等级未同步（L1-L5），无法锁定津贴基准");
             }
             int amount = systemConfigService.getIntValue("allowance." + person.getLevel(), -1);
@@ -470,10 +475,17 @@ public class ProjectService implements IProjectService {
         projectMemberMapper.insert(builder.build());
     }
 
-    /** B7 角色固定不可跨 + 离职/禁用拦截；口径同 {@code ProjectMemberServiceImpl:82-92}。 */
-    private Person requireBindablePerson(Long personId, String role) {
+    /**
+     * 人员在册 + 账号启用 + 在职：对**所有**绑定角色（含 MEMBER）生效。
+     *
+     * <p>2026-10-07 从 {@code requireBindablePerson} 拆出。原先这段只在
+     * {@code PM_ROLES.contains(role)} 分支里跑，MEMBER 分支完全绕过——任意 personId
+     * （含不存在的人、含已离职/禁用的人）都能被写成 MEMBER 行。MEMBER 行是津贴按 person_id
+     * 累加的取数源，绕过校验 = 污染入口。
+     */
+    private Person requireExistingActivePerson(Long personId, String role) {
         if (personMapper == null) {
-            throw new ServiceException("人员查询不可用，无法校验角色固定不可跨（B7），不能绑定 " + role);
+            throw new ServiceException("人员查询不可用，无法校验人员在册与在职状态，不能绑定 " + role);
         }
         Person person = personMapper.selectById(personId);
         if (person == null) {
@@ -482,11 +494,15 @@ public class ProjectService implements IProjectService {
         if ("RESIGNED".equals(person.getEmploymentStatus()) || "DISABLED".equals(person.getAccountStatus())) {
             throw new ServiceException("离职/禁用人员不可入组: " + person.getName());
         }
+        return person;
+    }
+
+    /** B7 角色固定不可跨；口径同 {@code ProjectMemberServiceImpl:82-92}。**只对 PM 角色生效**。 */
+    private void assertPersonTypeMatchesRole(Person person, String role) {
         if (!role.equals(person.getPersonType())) {
             throw new IpdBusinessException(ApiV1ErrorCode.ROLE_LOCKED,
                 "角色固定不可跨（B7）：人员类型 " + person.getPersonType() + " 不可绑定为 " + role);
         }
-        return person;
     }
 
     /** 同项目+同人+同角色的在任重复绑定拒绝（重试不产生第二条）。 */

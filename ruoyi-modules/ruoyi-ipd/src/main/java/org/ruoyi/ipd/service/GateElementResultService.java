@@ -49,6 +49,9 @@ public class GateElementResultService implements IGateElementResultService {
 
     private static final Set<String> RESULTS = Set.of("PASS", "CONDITIONAL", "FAIL");
 
+    private static final org.slf4j.Logger log =
+        org.slf4j.LoggerFactory.getLogger(GateElementResultService.class);
+
     private final GateMapper gateMapper;
     private final GateElementMapper elementMapper;
     private final GateElementResultMapper resultMapper;
@@ -216,7 +219,7 @@ public class GateElementResultService implements IGateElementResultService {
     /** AC-GATE-1a~1d：G1-1 通过阈值由服务端按可配置参数裁决（≥N 家一手验证 或 ≥1 家书面意向）。
      * <p>1d：参数改为 3 后 3 家即可通过——阈值即时生效，非硬编码。 */
     private void verifyCustomerEvidence(GateElement element, Integer verifications, Integer writtenIntents) {
-        int required = resolveMinCustomerVerifications();
+        int required = resolveMinCustomerVerifications(element.getElementCode());
         int actual = verifications == null ? 0 : verifications;
         int intents = writtenIntents == null ? 0 : writtenIntents;
         if (actual < required && intents < 1) {
@@ -227,13 +230,18 @@ public class GateElementResultService implements IGateElementResultService {
 
     /**
      * ROOT-R1 P0-7：读取 G1-1 客户一手验证阈值。优先 IBusinessConfigService，回退 ISystemConfigService。
+     *
+     * <p>2026-10-07 补可观测性：原先 catch 块<b>无任何日志</b>就 fall through 到默认 5，
+     * G1-1 的通过阈值被静默改动且事后无从查证。这是「查失败被当查不到」的典型形态——
+     * 放宽阈值本身是既有业务兜底，本轮不改方向，只让它<b>留痕</b>。
      */
-    private int resolveMinCustomerVerifications() {
+    private int resolveMinCustomerVerifications(String elementCode) {
         if (businessConfigService != null) {
             try {
                 return businessConfigService.getInt(MIN_VERIFICATION_KEY);
             } catch (Exception ex) {
-                // fall through
+                log.warn("[IPD] G1-1 阈值读取失败，降级到系统默认 5：element={} key={} cause={}",
+                    elementCode, MIN_VERIFICATION_KEY, ex.toString());
             }
         }
         return systemConfigService.getIntValue(MIN_VERIFICATION_KEY, 5);

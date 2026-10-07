@@ -280,14 +280,20 @@ public class KpiSharedReconcileService {
 
     /**
      * 对账结果接收人（产品组长）：项目在职双 PM 所属组的 leader + 主产品组 leader。
-     * 口径与 KpiSharedCollectionService#leadersForProject 一致（同包私有不可达，此处独立实现并在测试锁双口径）。
+     *
+     * <p>2026-10-07 校正：原 javadoc 自称「口径与 KpiSharedCollectionService#leadersForProject 一致」，
+     * 实际<b>不一致</b>——{@code KpiSharedCollectionService:831-836} 有
+     * {@code .in(role, [MARKET_PM, RD_PM])}，此处没有。缺 role 过滤时 MEMBER 行的
+     * {@code person.groupId} 会把该组 leader 错误拉进对账接收人。本处补 role 过滤后两侧口径才真的一致。
+     * 依据：{@code KpiSharedCollectionService#activeMembers}（同包私有不可达，此处独立实现）。
      */
     public Set<Long> leadersOf(Long projectId) {
         Set<Long> leaders = new LinkedHashSet<>();
         List<ProjectMember> members = projectMemberMapper.selectList(
             Wrappers.<ProjectMember>lambdaQuery()
                 .eq(ProjectMember::getProjectId, projectId)
-                .isNull(ProjectMember::getExitDate));
+                .isNull(ProjectMember::getExitDate)
+                .in(ProjectMember::getRole, List.of("MARKET_PM", "RD_PM")));
         for (ProjectMember member : members) {
             Person pm = member.getPersonId() == null ? null : personMapper.selectById(member.getPersonId());
             if (pm == null || pm.getGroupId() == null) {

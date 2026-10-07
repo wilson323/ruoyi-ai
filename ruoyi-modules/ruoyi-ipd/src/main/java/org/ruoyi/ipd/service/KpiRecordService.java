@@ -519,9 +519,15 @@ public class KpiRecordService {
         String from = draft.getStatus(); // null for new draft
         preCheckGuard(KPI_RECORD_ENTITY_TYPE, from, ST_EDITING, "record");
         draft.setStatus(ST_EDITING);
-        if (kpiRecordMapper != null) {
-            kpiRecordMapper.insert(draft);
+        // fail-closed（2026-10-07 补）：原先是 `if (kpiRecordMapper != null) insert`，
+        // 跳过时 draft 不落库、draft.getId() 为 null，但方法照常返回 draft 并登记 postCommit——
+        // 调用方拿到一个「已保存」的假象。真库 kpi_records.person_id/kpi_type/period 三列
+        // NOT NULL 无默认值，这段在真库永远走不通，只有 mock 测试能触发：失败长得像成功。
+        if (kpiRecordMapper == null) {
+            throw new IpdBusinessException(ApiV1ErrorCode.STATE_CONFLICT,
+                "KPI 记录写入不可用（KpiRecordMapper 未装配），不能录入 KPI 草稿");
         }
+        kpiRecordMapper.insert(draft);
         registerPostCommit(KPI_RECORD_ENTITY_TYPE, from, ST_EDITING, "record",
             actor != null ? actor.id() : null, draft.getId());
         return draft;

@@ -300,7 +300,10 @@ public class IpdReportService {
             Set<Long> pids = sameGroup.stream()
                 .map(Person::getId)
                 .flatMap(pid -> projectMemberMapper.selectList(
-                    new LambdaQueryWrapper<ProjectMember>().eq(ProjectMember::getPersonId, pid)
+                    // 2026-10-07 补：已退出成员（exitDate 非空）不该再把项目算进「本组可见」
+                    new LambdaQueryWrapper<ProjectMember>()
+                        .eq(ProjectMember::getPersonId, pid)
+                        .isNull(ProjectMember::getExitDate)
                 ).stream())
                 .map(ProjectMember::getProjectId)
                 .collect(Collectors.toSet());
@@ -308,7 +311,9 @@ public class IpdReportService {
         }
         // MARKET_PM / RD_PM：自身参与的项目
         LambdaQueryWrapper<ProjectMember> pm = new LambdaQueryWrapper<>();
-        pm.eq(ProjectMember::getPersonId, actor.id());
+        // role 不收窄：participant 域语义是「我参与的项目」，含所有角色；
+        // exitDate 必须收窄：已退出成员不算仍在参与。
+        pm.eq(ProjectMember::getPersonId, actor.id()).isNull(ProjectMember::getExitDate);
         List<ProjectMember> members = projectMemberMapper.selectList(pm);
         return members.stream().map(ProjectMember::getProjectId).distinct().collect(Collectors.toList());
     }

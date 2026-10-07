@@ -300,7 +300,9 @@ class ProjectDualPmGuardTest {
         projectService.setSystemConfigService(null);      // 模拟 Spring 未装配
         // 走 MEMBER 分支（创建人自动回填）：PM 角色分支会先跑项目数阈值校验并先抛，
         // 那样测不到津贴锁定这道。MEMBER 不是 PM 角色，不触发 B7/备案，直接落到津贴锁定。
-        // 且不必桩 personMapper —— 依赖缺失判定发生在查人之前就会抛。
+        // personMapper 必须桩上：2026-10-07 起「在册 + 在职 + 账号启用」对所有角色（含 MEMBER）
+        // 都生效，缺这一步会先抛「人员不存在」，测不到津贴锁定这道。
+        when(personMapper.selectById(900101L)).thenReturn(person(900101L, "SUPER_ADMIN"));
 
         assertThatThrownBy(() -> projectService.create(
             base(), 900101L, null, null, null, null, "SUPER_ADMIN"))
