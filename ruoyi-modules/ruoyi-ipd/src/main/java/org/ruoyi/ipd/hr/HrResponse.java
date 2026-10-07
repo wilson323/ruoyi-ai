@@ -10,7 +10,8 @@ import java.util.List;
  * <p>本期只解析 HR §3.2.1.8（人员）/ §3.2.2.8（组织）出参示例；
  * BANKLIST / COSTCENTER / JOBTITLE 不接（用户 2026-09-21 明确排除）。
  *
- * <p>DTO 字段命名对齐 HR 文档大写驼峰；下游 Service 层做 HR→persons 字段映射。
+ * <p>DTO 字段命名对齐 HR 文档的大写下划线键名（如 PERNR / BASIC_INFO / INPUT_TYP）；
+ * 由 Jackson @JsonProperty 显式锚定，序列化与反序列化共用同一契约。
  */
 public class HrResponse<T> {
 
@@ -158,34 +159,54 @@ public class HrResponse<T> {
     }
 
     // ───── 入参 body 构造器（HR §3.2.1 / §3.2.2 DATA 段） ─────
+    //
+    // 2026-10-07 修复：HEAD/BODY/INPUT_TYP 等键名必须为大写下划线（对齐官方 demo
+    // DataUtil 与 ehr-probe.mjs 实测口径）；序列化路径为 JsonUtil（Jackson），
+    // @JsonProperty 注解在此生效（此前 Hutool 序列化不识别 Jackson 注解，输出小驼峰）。
 
     public static class SyncBody {
+        @com.fasterxml.jackson.annotation.JsonProperty("HEAD")
         public Head head = new Head();
+        @com.fasterxml.jackson.annotation.JsonProperty("BODY")
         public List<SyncInputRow> body = new ArrayList<>();
 
         public static class Head {
+            @com.fasterxml.jackson.annotation.JsonProperty("INTF_ID")
             public String intfId = "";
+            @com.fasterxml.jackson.annotation.JsonProperty("SRC_SYSTEM")
             public String srcSystem = "";
+            @com.fasterxml.jackson.annotation.JsonProperty("DEST_SYSTEM")
             public String destSystem = "";
+            @com.fasterxml.jackson.annotation.JsonProperty("SRC_MSGID")
             public String srcMsgid = "";
+            @com.fasterxml.jackson.annotation.JsonProperty("BACKUP1")
             public String backup1 = "";
+            @com.fasterxml.jackson.annotation.JsonProperty("BACKUP2")
             public String backup2 = "";
         }
 
         public static class SyncInputRow {
+            @com.fasterxml.jackson.annotation.JsonProperty("INPUT_TYP")
             public String inputTyp;   // ALL | NEW
+            @com.fasterxml.jackson.annotation.JsonProperty("BEGDA")
             public String begda;      // yyyyMMdd
+            @com.fasterxml.jackson.annotation.JsonProperty("ENDDA")
             public String endda;      // yyyyMMdd
             public SyncInputRow() { }
             public SyncInputRow(String t, String b, String e) { inputTyp=t; begda=b; endda=e; }
         }
 
-        public static SyncBody full() {
+        /**
+         * 全量（INPUT_TYP=ALL）。BEGDA/ENDDA 传查询当天：与 ehr-probe.mjs（2026-09-29
+         * 真连实测口径）一致；官方 demo 的固定日期为样例值，不作运行口径。
+         */
+        public static SyncBody full(String todayYyyyMmDd) {
             SyncBody sb = new SyncBody();
-            sb.body.add(new SyncInputRow("ALL", "20230612", "20230612"));
+            sb.body.add(new SyncInputRow("ALL", todayYyyyMmDd, todayYyyyMmDd));
             return sb;
         }
 
+        /** 增量（INPUT_TYP=NEW + BEGDA/ENDDA=当天 yyyyMMdd，每日 0 点增量口径）。 */
         public static SyncBody incremental(String todayYyyyMmDd) {
             SyncBody sb = new SyncBody();
             sb.body.add(new SyncInputRow("NEW", todayYyyyMmDd, todayYyyyMmDd));
@@ -193,18 +214,18 @@ public class HrResponse<T> {
         }
 
         /** 单人同步入参（R149-v1 syncOne/upsertOne 用；HR §3.2.1 入参 pernr 作为查询字段）。 */
-        public static SyncBody single(String pernr) {
+        public static SyncBody single(String pernr, String todayYyyyMmDd) {
             SyncBody sb = new SyncBody();
             sb.head.backup1 = pernr;
-            sb.body.add(new SyncInputRow("ALL", "20230612", "20230612"));
+            sb.body.add(new SyncInputRow("ALL", todayYyyyMmDd, todayYyyyMmDd));
             return sb;
         }
 
         /** 单点组织同步入参（R149-v1 org 单点回填；HR §3.2.2 入参 orgeh 作为查询字段）。 */
-        public static SyncBody org(String orgeh) {
+        public static SyncBody org(String orgeh, String todayYyyyMmDd) {
             SyncBody sb = new SyncBody();
             sb.head.backup2 = orgeh;
-            sb.body.add(new SyncInputRow("ALL", "20230612", "20230612"));
+            sb.body.add(new SyncInputRow("ALL", todayYyyyMmDd, todayYyyyMmDd));
             return sb;
         }
     }

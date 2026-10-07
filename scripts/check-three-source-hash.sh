@@ -5,10 +5,12 @@
 #
 # R157-B7 实装(2026-09-21) — R142 §3.3 三源对账升级建议落地:
 #   撞号预防 + 三源对账升级(log.md / BCP-Registry §六 / BCP-Closure-Log §四)
-#   检测逻辑(R179 修复后语义):
+#   检测逻辑(R179 修复 + 2026-10-07 归档扩展后语义):
 #     1. 从三个文档分别提取关键对账字段(R 段标题 / 闭环数 / 5 钻覆盖率 / commit hash)
-#     2. 子集校验: Registry ⊆ log.md 且 Closure ⊆ log.md(登记可溯源)
-#        注: R157-B7 原版要求三源提取集合完全相等,但 log.md 是全量日志、
+#     2. 子集校验: Registry ⊆ log 事件源 且 Closure ⊆ log 事件源(登记可溯源)
+#        注: log 事件源 = log.md + log-R历史归档-*.md(2026-10-07 整理轮:历史段归档后
+#        主文件只留近期,R137/R186 等登记段在归档文件中仍需可溯源)
+#        注: R157-B7 原版要求三源提取集合完全相等,但 log 事件源是全量日志、
 #        ### R 段天然超集,真实数据恒 FAIL(2026-09-22 R179-P0 实测修复)
 #     3. 子集违例 -> FAIL: 列出孤儿登记行 + exit 1
 #     4. 全部可溯源或无冲突 -> PASS + exit 0
@@ -34,6 +36,10 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # R179 修复:支持 *_OVERRIDE 环境变量覆盖(门禁自测需要,见 "自证能红" 段)
 LOG_FILE="${LOG_FILE_OVERRIDE:-${REPO_ROOT}/docs/ipd-系统说明/log.md}"
+# R227-LOGARCHIVE(2026-10-07):log.md 历史归档纳入 log 事件源——
+# 整理归档后 Registry/Closure 登记(R137/R138/R141/R186 等段)仍在归档文件中,
+# 子集校验必须合并扫描「主文件 + log-R历史归档-*.md」。
+LOG_ARCHIVE_GLOB="$(dirname "$LOG_FILE")/log-R历史归档-*.md"
 REGISTRY_FILE="${REGISTRY_FILE_OVERRIDE:-${REPO_ROOT}/docs/ipd-系统说明/BCP-Registry.md}"
 CLOSURE_FILE="${CLOSURE_FILE_OVERRIDE:-${REPO_ROOT}/docs/ipd-系统说明/BCP-Closure-Log.md}"
 
@@ -75,7 +81,15 @@ extract_three_source() {
   } | sort -u > "$out"
 }
 
-extract_three_source "$LOG_FILE"      "$TMPDIR_HASH/log.txt"
+# log 事件源 = 主文件 + 历史归档(log-R历史归档-*.md)合并去重
+{
+  extract_three_source "$LOG_FILE" /dev/stdout
+  for f in $LOG_ARCHIVE_GLOB; do
+    if [ -f "$f" ]; then
+      extract_three_source "$f" /dev/stdout
+    fi
+  done
+} | sort -u > "$TMPDIR_HASH/log.txt"
 extract_three_source "$REGISTRY_FILE" "$TMPDIR_HASH/registry.txt"
 extract_three_source "$CLOSURE_FILE"  "$TMPDIR_HASH/closure.txt"
 
@@ -84,37 +98,38 @@ REG_HASH="$(sha256sum "$TMPDIR_HASH/registry.txt" | awk '{print $1}')"
 CLO_HASH="$(sha256sum "$TMPDIR_HASH/closure.txt"  | awk '{print $1}')"
 
 # R179 修复:判定语义从「三源提取集合完全相等」改为「子集校验」。
-# 根因(R179-P0 阻塞复盘,2026-09-22):log.md 是全量日志,### R 段天然是
+# 根因(R179-P0 阻塞复盘,2026-09-22):log 是全量日志,### R 段天然是
 # Registry §六 / Closure §四 的超集;原「三源 hash 相等」语义在真实数据上
 # 恒 FAIL(实测 log.md vs Registry 差 150 行,误报 BCP-014)。
-# 正确契约:Registry 与 Closure 的每一条登记都必须能在 log.md 中找到
-# (登记可溯源);log.md 允许包含更多内容(全量日志职责所在)。
+# 正确契约:Registry 与 Closure 的每一条登记都必须能在 log 事件源
+# (log.md + log-R历史归档-*.md)中找到(登记可溯源);log 事件源允许
+# 包含更多内容(全量日志职责所在)。
 registry_only="$(comm -13 "$TMPDIR_HASH/log.txt" "$TMPDIR_HASH/registry.txt")"
 closure_only="$(comm -13 "$TMPDIR_HASH/log.txt" "$TMPDIR_HASH/closure.txt")"
 
 if [ -z "$registry_only" ] && [ -z "$closure_only" ]; then
-  echo "PASS: 三源子集校验一致 (Registry⊆log.md ∧ Closure⊆log.md)"
-  echo "  log.md      -> $LOG_HASH"
-  echo "  Registry    -> $REG_HASH (⊆ log.md)"
-  echo "  Closure-Log -> $CLO_HASH (⊆ log.md)"
+  echo "PASS: 三源子集校验一致 (Registry⊆log事件源 ∧ Closure⊆log事件源)"
+  echo "  log 事件源  -> $LOG_HASH (log.md + log-R历史归档-*.md)"
+  echo "  Registry    -> $REG_HASH (⊆ log 事件源)"
+  echo "  Closure-Log -> $CLO_HASH (⊆ log 事件源)"
   exit 0
 fi
 
-# 子集违例 -> FAIL: Registry / Closure 存在 log.md 找不到的孤儿登记
+# 子集违例 -> FAIL: Registry / Closure 存在 log 事件源找不到的孤儿登记
 first_diff_bcp="$(printf '%s\n%s' "$registry_only" "$closure_only" | grep -oE "BCP-[0-9]{3}" | head -1 || true)"
 if [ -z "$first_diff_bcp" ]; then
   first_diff_bcp="(未定位)"
 fi
 
 echo "FAIL: 三源子集校验不一致(孤儿登记)"
-echo "  BCP=$first_diff_bcp 的登记在 log.md 中无对应记录:"
-echo "  log.md=$LOG_HASH / Registry=$REG_HASH / Closure=$CLO_HASH"
+echo "  BCP=$first_diff_bcp 的登记在 log 事件源中无对应记录:"
+echo "  log 事件源=$LOG_HASH / Registry=$REG_HASH / Closure=$CLO_HASH"
 if [ -n "$registry_only" ]; then
-  echo "  Registry 独有(不在 log.md)行:"
+  echo "  Registry 独有(不在 log 事件源)行:"
   printf '%s\n' "$registry_only" | head -10 | sed 's/^/    /'
 fi
 if [ -n "$closure_only" ]; then
-  echo "  Closure 独有(不在 log.md)行:"
+  echo "  Closure 独有(不在 log 事件源)行:"
   printf '%s\n' "$closure_only" | head -10 | sed 's/^/    /'
 fi
 exit 1

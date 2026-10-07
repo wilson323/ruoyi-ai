@@ -557,6 +557,33 @@ else
   echo "[check-pre-commit] SKIP 门禁 11: 校验器不存在"
 fi
 
+# ---------------------------------------------------------------------------
+# 门禁 12: 名字查询工具自证（2026-10-07）
+# 病根: 本仓最常见的错误是「先写下表名/列名/文件路径/类名，再去查」。
+#   2026-10-07 当天实测翻车 3 次:
+#     ① 猜表名 ipd_project → 14 个表全「不存在」(真实无 ipd_ 前缀)
+#     ② 猜列名 endpoint_url → 查表返回空 (真实列名 api_host)
+#     ③ 猜文件在 ruoyi-ipd → 文件不存在 (真实在 ruoyi-chat)
+#   根因不是态度: **猜的成本是 0, 查的成本是一条命令** ⇒ 不查永远是局部最优。
+#   改成本结构: 提供 find-thing.sh 作为「查名字」的唯一入口(查不到即退出非 0),
+#   本门禁确保该入口**一直可用**——否则它会静默腐化，而没人发现。
+# 成本: 约 3s(5 个用例)。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 12: 名字查询入口自证"
+if [ -f scripts/find-thing.sh ]; then
+    if bash scripts/find-thing.sh --self-test >/tmp/_g12.log 2>&1; then
+        PASSED=$((PASSED + 1))
+        echo "[check-pre-commit] PASS 门禁 12: find-thing.sh 入口可用且能拦下猜错的名字"
+    else
+        FAILED=$((FAILED + 1))
+        echo "[check-pre-commit] FAIL 门禁 12: find-thing.sh 自证不通过" >&2
+        tail -8 /tmp/_g12.log >&2
+    fi
+else
+    SKIPPED=$((SKIPPED + 1))
+    echo "[check-pre-commit] SKIP 门禁 12: scripts/find-thing.sh 不存在"
+fi
+
 echo "[check-pre-commit] 总结: passed=$PASSED failed=$FAILED skipped=$SKIPPED"
 [[ "$FAILED" -gt 0 ]] && exit 1
 exit 0

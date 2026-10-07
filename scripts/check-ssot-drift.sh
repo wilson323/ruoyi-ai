@@ -19,6 +19,13 @@ set -eo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG="$REPO/docs/ipd-系统说明/log.md"
+# R227-LOGARCHIVE(2026-10-07): log 事件源 = 主文件 + 历史归档(log-R历史归档-*.md)
+# 整理归档后「最新 R 段」与「BCP CLOSED」字样可能在归档文件中,合并扫描。
+LOG_ARCHIVES=()
+for _f in "$REPO"/docs/ipd-系统说明/log-R历史归档-*.md; do
+  [ -f "$_f" ] && LOG_ARCHIVES+=("$_f")
+done
+unset _f
 MIRROR="$REPO/docs/ipd-系统说明/开发计划-看板镜像.md"
 REG="$REPO/docs/ipd-系统说明/BCP-Registry.md"
 
@@ -31,14 +38,18 @@ if [[ "${SSOT_FAIL_SEED:-0}" == "1" ]]; then
   exit 1
 fi
 
-# 2) hash 必现查：log.md HEAD vs git rev-parse HEAD
-LOG_HASH=$(grep -m1 "^## 2026-09-20 R1" "$LOG" 2>/dev/null | head -1 || echo "")
+# 2) hash 必现查：log.md HEAD vs git rev-parse HEAD（主文件优先,空则回退归档；-h 免多文件前缀）
+LOG_HASH=$(grep -h -m1 "^## 2026-09-20 R1" "$LOG" 2>/dev/null | head -1 || echo "")
+if [[ -z "$LOG_HASH" ]]; then
+  LOG_HASH=$(grep -h -m1 "^## 2026-09-20 R1" "${LOG_ARCHIVES[@]}" 2>/dev/null | head -1 || echo "")
+fi
 GIT_HASH=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo "")
-echo "[hash] log.md 最新 R 段: ${LOG_HASH:0:60}"
+echo "[hash] log 事件源最新 R 段: ${LOG_HASH:0:60}"
 echo "[hash] git HEAD:        $GIT_HASH"
 
 # 3) 三源闭环数提取（R137 SOP 进化：grep 模式 [56] → [0-9]+ 支持任意数字闭环数）
-LOG_CLOSED=$(grep -oE "[0-9]+ BCP CLOSED" "$LOG" 2>/dev/null | tail -1 || echo "")
+# 全源取最后一处: 归档在前、主文件在后——tail -1 优先取主文件(最新)命中；-h 免多文件前缀
+LOG_CLOSED=$(grep -h -oE "[0-9]+ BCP CLOSED" "${LOG_ARCHIVES[@]}" "$LOG" 2>/dev/null | tail -1 || echo "")
 MIRROR_CLOSED=$(grep -oE "[0-9]+ BCP CLOSED" "$MIRROR" 2>/dev/null | tail -1 || echo "")
 REG_METRIC=$(grep -E "闭环数 / BCP 数" "$REG" | head -1 | awk -F'|' '{print $3}' | tr -d ' ' || echo "")
 

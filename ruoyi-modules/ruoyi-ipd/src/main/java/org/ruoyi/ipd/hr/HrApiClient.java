@@ -45,13 +45,38 @@ public class HrApiClient {
     private final HrTokenClient tokenClient;
 
     public List<HrResponse.PersonRow> fetchUserInfo(HrResponse.SyncBody body) {
-        JsonNode root = callWithRetry("zkteco.ehr.getUserInfo", body);
+        JsonNode root = requireOk(callWithRetry("zkteco.ehr.getUserInfo", body), "zkteco.ehr.getUserInfo");
         return parseBodyArray(root.path("data").path("BODY"), HrResponse.PersonRow.class);
     }
 
     public List<HrResponse.OrgRow> fetchOrganizationInfo(HrResponse.SyncBody body) {
-        JsonNode root = callWithRetry("zkteco.ehr.getOrganizationInfo", body);
+        JsonNode root = requireOk(callWithRetry("zkteco.ehr.getOrganizationInfo", body),
+            "zkteco.ehr.getOrganizationInfo");
         return parseBodyArray(root.path("data").path("BODY"), HrResponse.OrgRow.class);
+    }
+
+    /**
+     * code≠0 显式失败（2026-10-07 修复）。
+     *
+     * <p>此前非 0 业务码（1002 签名错 / 1003 时间戳 / 1005 IP 限制 / 9999 等）直接落到
+     * {@code parseBodyArray(data.BODY)}——BODY 缺失被当成空列表，形成「空同步假成功」
+     * （last-run 记 ok=true、看板零异常）。本方法将非 0 码统一上抛为失败：
+     * 1006/1007（token 失效）已在 {@link #callWithRetry} 内 refresh+重试一次，重试后仍失败
+     * 按 TRANSIENT 上抛（对齐 HrApiException 类注释）；其余业务码按 PERMANENT 上抛。
+     *
+     * <p>package-private 供单测直接验证（HrRequestContractTest）。
+     */
+    static JsonNode requireOk(JsonNode root, String method) {
+        int code = root.path("code").asInt(-1);
+        if (code == 0) {
+            return root;
+        }
+        String msg = root.path("msg").asText("");
+        String raw = root.toString();
+        int kind = (code == 1006 || code == 1007) ? HrApiException.TRANSIENT : HrApiException.PERMANENT;
+        throw new HrApiException(kind, String.valueOf(code),
+            "HR 业务错误 method=" + method + " code=" + code + " msg=" + msg,
+            raw.substring(0, Math.min(500, raw.length())));
     }
 
     private JsonNode callWithRetry(String method, HrResponse.SyncBody body) {
@@ -67,10 +92,8 @@ public class HrApiClient {
 
     private JsonNode send(String method, HrResponse.SyncBody body, String token) {
         long ts = System.currentTimeMillis();
-        Map<String, Object> dataWrapper = new HashMap<>();
         Map<String, Object> data = new HashMap<>();
         data.put("DATA", body);
-        dataWrapper.put("data", data);
 
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("appId", nvl(props.getAppId()));

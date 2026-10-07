@@ -80,15 +80,19 @@ public class RealHrSyncAdapter implements PersonSyncService.SyncProcessor {
 
     /** HR 全量同步：调真源拿全公司人员 + 组织 → 过滤后全表 upsert（persons + hr_person_mirror）。 */
     public SyncStats syncAll(String triggerBy) {
-        return sync(triggerBy, SyncBody.full());
+        return sync(triggerBy, SyncBody.full(today()));
     }
 
     /**
      * HR 增量同步（2026-09-29 xlsx：每日凌晨 0 点增量）：INPUT_TYP=NEW + BEGDA/ENDDA=当天。
      */
     public SyncStats syncIncremental(String triggerBy) {
-        String today = new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
-        return sync(triggerBy, SyncBody.incremental(today));
+        return sync(triggerBy, SyncBody.incremental(today()));
+    }
+
+    /** 查询日期口径（yyyyMMdd）：与 ehr-probe.mjs / 增量调度共用同一当天口径。 */
+    private static String today() {
+        return new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
     }
 
     /** 同步主链路：拉人员 + 组织 → 员工类型过滤 → persons + hr_person_mirror + hr_organizations 落库。 */
@@ -133,7 +137,7 @@ public class RealHrSyncAdapter implements PersonSyncService.SyncProcessor {
     /** 单人同步：按 PERNR 调一次，员工类型过滤后按 employeeNo 幂等 upsert persons + mirror。 */
     public SyncStats syncOne(String employeeNo, String triggerBy) {
         long start = System.currentTimeMillis();
-        SyncBody body = SyncBody.single(employeeNo);
+        SyncBody body = SyncBody.single(employeeNo, today());
         log.info("R149-v1 syncOne start: employeeNo={} triggerBy={}", employeeNo, triggerBy);
         List<PersonRow> rows = hrApiClient.fetchUserInfo(body);
         if (rows.isEmpty()) {
@@ -156,7 +160,7 @@ public class RealHrSyncAdapter implements PersonSyncService.SyncProcessor {
 
     /** 公开 upsert：被 controller/job 调（无需 SyncJob 包装）；非正式工直接跳过不建号。 */
     public UpsertResult upsertOne(String employeeNo, String triggerBy) {
-        SyncBody body = SyncBody.single(employeeNo);
+        SyncBody body = SyncBody.single(employeeNo, today());
         List<PersonRow> rows = hrApiClient.fetchUserInfo(body);
         if (rows.isEmpty()) {
             throw new HrApiException(HrApiException.PERMANENT, "HR-EMPTY",

@@ -86,9 +86,10 @@ class HrApiClientTest {
     @Test
     @DisplayName("SyncBody.full() 与 incremental() 构造正确")
     void syncBodyBuilds() {
-        HrResponse.SyncBody full = HrResponse.SyncBody.full();
+        HrResponse.SyncBody full = HrResponse.SyncBody.full("20261007");
         assertThat(full.body).hasSize(1);
         assertThat(full.body.get(0).inputTyp).isEqualTo("ALL");
+        assertThat(full.body.get(0).begda).isEqualTo("20261007");
 
         HrResponse.SyncBody inc = HrResponse.SyncBody.incremental("20260921");
         assertThat(inc.body).hasSize(1);

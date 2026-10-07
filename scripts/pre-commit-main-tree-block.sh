@@ -67,8 +67,8 @@ if [ "$GIT_DIR_ABS" = "$GIT_COMMON_ABS" ]; then
       AGENTS.md|CLAUDE.md|README*.md|.gitmessage|.gitignore|.editorconfig|.gitattributes)
         # governance docs — allowed
         ;;
-      docs/ipd-系统说明/log.md|docs/ipd-系统说明/开发计划-看板镜像.md)
-        # SSOT board mirror — only main coordinator allowed (manual SKIP env)
+      docs/ipd-系统说明/log.md|docs/ipd-系统说明/log-R历史归档-*.md|docs/ipd-系统说明/开发计划-看板镜像.md)
+        # SSOT board mirror + log 历史归档 — only main coordinator allowed (manual SKIP env)
         GOVERNANCE_ONLY=0
         ;;
       *)
