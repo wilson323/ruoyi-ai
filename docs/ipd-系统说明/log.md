@@ -16125,3 +16125,45 @@ ZK 场景 6 组/13 人/5 项目/30 阶段/17 动作、Mock 人员与产品组。
 - 重复启动：守卫与幂等都正确跳过，不重复灌、不覆盖已有数据 ✅
 - 关闭开关：`--ipd.seed.zk-scenario.enabled=false` → 日志「已按配置跳过」，projects=0，要素种子不受影响仍为 33 ✅
 - 全模块 4527 测 / 0 失败 / 0 错误 ✅
+
+## 2026-10-07 全项目反思梳理 + 在途收口（第二阶段）
+
+**触发**：owner「重新梳理分析深度思考反思项目现状及后续直到生产交付完整执行计划」。**工程入口**：harness intake 已跑（root=ruoyi-ai，无新增失败；2 条 10-03 旧 STALE_INPUT 反思仍挂）。
+
+### 一、现查基线（04:39–04:50 实跑，非推演）
+
+- 两仓：前端 `teardown/incentive-removal` 工作树干净、HEAD=`bd2a461`=origin；后端 `baseline/pre-teardown` 有在途（见二）。
+- 运行态：16039/15666 **未在听**（java 64316 / node 57118 均已不在；curl HTTP=000 双证）；MySQL 13306 / Redis 16379 / Minio 9000（docker）/ 看板 62250 在听。
+- 看板实时：570 卡，未终结 30（inprogress 12 / todo 8 / inreview 10）。
+- 工程门禁：`check-pre-commit.sh` 全量实跑首轮抓出 2 真问题——①《AI偏差》文档引用未入库 `C04-delivery-note.md`（悬空引用门禁 0）；②`evidenced-count.sh:65` `$MODE（` 吞字节（门禁 4）。修复后 **9/9 PASS**。
+
+### 二、在途收口（R25 三步法：评审 → 登记 → 入库）
+
+**本会话收口提交 `b1e7c722`（9 文件；门禁 9/9 PASS；随本节同批推送固定分支）**：
+
+| 文件 | 处置 | 验证 |
+|---|---|---|
+| `.claude/hooks/block-dangerous-git.sh`（+123/-12） | 原样入库：-C/--git-dir 换目录绕过修复 + 空值自检 + 已知局限登记 | 见下行测试集 |
+| `.claude/hooks/test-block-dangerous-git.sh`（新） | 原样入库：22 用例（13拦+5放行+3无关+1已知局限） | **实跑 PASS=22 FAIL=0** |
+| `scripts/evidenced-count.sh`（新） | 入库（吞字节修复后） | 门禁 4 复跑 0 违例 |
+| 《AI偏差-根因分析与根除方案》（新） | 入库；抽查复验属实：守卫 22/22、GateReviewVisibilityTest @Tag=0、`.claude/CLAUDE.md` 已换真索引（6403 文件） | — |
+| 《今日自我偏差复盘》（新） | 入库（兄弟会话其后有续改，未卷入） | — |
+| 《测试覆盖率-20261007》（新） | 入库（projects 45%/kpi 56% 低于 60% → §9 增补-12） | — |
+| `120-SOP三段式规范草案`（新） | 入库（S1 草案，S2 门未过不得开发） | — |
+| `121-技术栈口径重定义台账`（新） | 入库 | — |
+| `C04-delivery-note.md`（新入库） | 解悬空引用；保留原位置，去留待 owner | 门禁 0 复跑 PASS |
+
+- 兄弟会话同批：`6e5312d3`（施工单执行回执，已推送）；**在途不卷入**：`AllowanceLedgerService.java` + 同名新测试、产出形状自检新件、hook 接线存活检查脚本、`.claude/settings.json`、`CLAUDE.md`、《今日自我偏差复盘》续改；工具运行时状态不接管。
+- repowise 装载件（`.claude/hooks/post-commit`，31 行非阻塞自动同步脚本）随收口入库——原未跟踪，且 log 历史行含同名子串会被门禁 0 永久误伤，入库即闭合。
+- 未跑 `.harness/verify.sh governance`（该守卫修复无对应事项编号）；守卫回归以其专属 22 用例套件为凭。
+
+### 三、计划刷新（与本节同批提交）
+
+- 施工单：追加「附二：全项目反思梳理与生产交付计划」（N-A~N-F 施工要点 / 在途快照 / §9 增补 11–13 / Phase C 收口 C1~C5）。
+- 新会话执行提示词 → v2（执行后基线 + Phase A/B/C + 门禁/在途要点）。
+- 总画布：RUNNING 表刷新（16039/15666 未在听、Minio 在听）、CUT_ACTION 追加晚刷新（b1e7c722、N 项并入）、Stats=「修复队列③」、SEC/G2/AC 行校正；`canvas-runtime-verify.mjs` **1/1 通过**；`check-ipd-plan-context.py` **PASS**。
+
+### 四、当前可执行批次与阻塞（下一步）
+
+- **可立即做（无 owner 依赖）**：C1 起服务（16039/15666）+ 端口门复验；N-A 越权测试打标与 surefire 门禁真实化；N-B 矩阵校验器双向核对；③刀前置 skill_map 写入源定位（兄弟会话或已在推进——先现查再接力）。
+- **等 owner**：③刀数据操作窗口、SOP S2 定稿、Qa04 口令、F4 测试账号、P0-05 纳入、矩阵 37 幽灵处置方向、覆盖率口径（施工单 §9 1–10 + 附二 §三 11–13）。
