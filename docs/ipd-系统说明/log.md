@@ -4882,3 +4882,41 @@ diff -q "$OUT" /tmp/baseline-check.md   # 空 vs 空 → 无差异 → PASS
 ### 本次放行的内容
 `permissions.allow` 新增 `Bash(git add:*)`、`Bash(git commit:*)`（owner 确认是 settings.json 后要求）。
 **`git push` 未放行**——owner 那次「要」被打断，未落盘，仍需明示。
+
+## 2026-10-07 向量库实况与切换（owner 选 B：Qdrant 顶上）
+
+### 先纠正一处此前的错误陈述
+**「配置里 Qdrant 端口写 6334、可能是照抄模板没改」——我猜错了。**
+代码走的是 `QdrantVectorStoreStrategy:65` 的 `QdrantGrpcClient`，而 Qdrant 的 **gRPC 端口就是 6334**
+（6333 是 HTTP/REST）。配置是对的；错的是我拿 HTTP 请求去探 6334，得到 `HTTP=000` 就判定它不通。
+——**又一次「拿错仪器下结论」。**
+
+### 「当初的架构决策」到底是什么（查证结论）
+| 来源 | 记载 | 性质 |
+|---|---|---|
+| `治理/生产部署Runbook-20260909.md:101` | 编排内**已内置 `weaviate` 服务**，后端直连 `weaviate:8080` | **部署决策 = Weaviate** |
+| `生产就绪ABCD并行任务计划-20260929.md:68` | 「盘点现有 **Weaviate 默认链**，可选 Milvus/Qdrant」 | Weaviate 是现有默认，另两个是可选 |
+| `ADR-0075:146` | 「向量后端拍板（Milvus/**Weaviate**/适配）」 | 该处 Milvus 指 AgentScope SDK 自带 `MilvusStore`，**不是本仓三选一决策** |
+| `开发说明书.md:50` | 「MySQL 8.0 + Redis + 向量库（Milvus/Weaviate/Qdrant）」 | 规格层能力清单，非部署决策 |
+
+⇒ **当初的部署决策是 Weaviate**；但它在本机拉不到镜像（连不上镜像站），与「让它今天就跑起来」冲突。
+owner 选 **B（Qdrant 顶上）**。
+
+### 做了什么
+1. **起 IPD 专用 Qdrant 容器**：`ipd-qdrant`，用**本机已有镜像** `qdrant/qdrant:v1.16.2`（**零外网**）
+   - 端口映射 `16333→6333`（HTTP）/ `16334→6334`（gRPC），**避开另一个项目的 6333/6334**
+   - 独立数据卷 `ipd-qdrant-storage`
+   - 健康检查 `healthz check passed`，`/collections` 返回 `{"result":{"collections":[]},"status":"ok"}`
+   - **未触碰** `weknora-personal-qdrant-1`（属另一个项目）
+2. **切换配置**（`application.yml`，恰好 2 行）：
+   `type: ${VECTOR_STORE_TYPE:weaviate}` → `:qdrant`
+   `port: ${VECTOR_STORE_QDRANT_PORT:6334}` → `:16334`
+   - **运行时那份配置（`.codex/ipd-dev/config/application-ipd-local.yml`）没有 `vector-store` 段**（实测匹配数 0），
+     所以只改父配置即生效，无需动运行时文件。
+   - 回滚：`cp /tmp/app.yml.before-qdrant ruoyi-admin/src/main/resources/application.yml`（备份在 /tmp）
+
+### 未验证 / 待办
+- **未重启后端**（重启会打断正在使用 16039 的人）。配置改动**要重启才生效**——
+  **这与今天「守卫配好了但没接线」是同一类问题，不能当已完成**。
+- 重启后需验：① 启动日志的「向量库不可达」告警**应当消失**（`IpdProdAdminBootstrap.collectDisabledCapabilities`）；
+  ② 资料上传后 `knowledge_fragment` 应出现切片行（此前因向量库失败被连累而写不进）。

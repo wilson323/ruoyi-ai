@@ -650,7 +650,7 @@ vector-store:
   # 也没有任何向量库变量 —— 生产容器内 RAG 会静默连 localhost 并返回空检索结果
   # （CLAUDE.md 已记载该失败模式：RAG 查询静默返回空）。本地默认值保持不变，
   # 所以开发机行为零变化；生产只需注入 VECTOR_STORE_* 即可。
-  type: ${VECTOR_STORE_TYPE:weaviate}
+  type: ${VECTOR_STORE_TYPE:qdrant}
   # Weaviate配置
   weaviate:
     protocol: ${VECTOR_STORE_WEAVIATE_PROTOCOL:http}
@@ -663,7 +663,7 @@ vector-store:
   # Qdrant配置
   qdrant:
     host: ${VECTOR_STORE_QDRANT_HOST:localhost}
-    port: ${VECTOR_STORE_QDRANT_PORT:6334}
+    port: ${VECTOR_STORE_QDRANT_PORT:16334}
     collectionname: LocalKnowledge
     api-key:
     use-tls: false
