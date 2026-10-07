@@ -61,7 +61,19 @@ set -u
 
 INPUT=$(cat)
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
-[ -z "$COMMAND" ] && exit 0
+# jq 解析失败时 COMMAND 为空。**空 ≠ 无推送**：本守卫唯一的失效方式就是
+# 「解析不出来」——把它当放行，等于任何畸形输入都能绕过（2026-10-07 实测：
+# 测试集用 printf 拼 JSON，多行命令会拼出非法 JSON，jq 静默失败，
+# 四条「必须拦住」的绕过用例全部变成放行，而用例本身还报「不符合预期」——
+# 差点被当成守卫失效，实为测试集自造了非法输入）。
+# 故：输入非空却取不出命令 = 判据失效 = 按铁律一不放行。
+if [ -z "$COMMAND" ]; then
+  if [ -n "$(printf '%s' "$INPUT" | tr -d '[:space:]')" ]; then
+    echo "BLOCKED: 守卫无法解析输入（payload 非法 JSON 或缺 tool_input.command）——按铁律一不放行。" >&2
+    exit 2
+  fi
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # 1. 是不是 git push？
@@ -80,21 +92,35 @@ FLAT=$(printf '%s' "$COMMAND" | tr '\n\r\t' '   ' | tr -d '\042\047\140' | tr -s
 # 而本文件原注释却声称「bash -c 这类包裹必须照样识别」——**声明与实况不符**。
 # 这里用八进制写引号字符，避免 tr 字符集写法歧义（'\047' 在部分写法下不生效）。
 JUDGE=$(printf '%s' "$COMMAND" | python3 -c '
-import sys, re
+import os, sys, re
 text = sys.stdin.read()
 # 剥掉 heredoc 正文。2026-10-07 自伤实录：写一条「推送守卫已加分支判据」的
 # commit message 时，message 里出现推送命令字样，被守卫当成真命令拦下，
 # 自己把自己锁在门外——规则文本长得像命令，就被当命令判了。
 # 只保留 `<<TAG` 之前的部分（那里才是真命令），正文直到 TAG 行整段丢弃。
+INTERPRETERS = ("sh", "bash", "zsh", "dash", "ksh", "python", "python3", "node", "perl", "ruby")
 out, lines, i = [], text.split("\n"), 0
 while i < len(lines):
     line = lines[i]
     m = re.search(r"<<-?[ \t]*[\"\x27]?([A-Za-z_][A-Za-z0-9_]*)[\"\x27]?", line)
     if m:
-        out.append(line[:m.start()])
+        head = line[:m.start()]
+        # heredoc 有两种截然不同的用法，不能一刀切丢弃正文：
+        #   cat <<X ... X          —— 正文是**数据**（写文件、拼提交信息），
+        #                              里面出现推送命令只是文字，判成命令会把自己锁在门外；
+        #   bash <<X ... X         —— 正文是**要被解释执行的脚本**，
+        #                              丢弃它等于给绕过开一扇门。
+        # 判据看 `<<` 前面那个命令词：命中解释器就保留正文，其余按数据丢弃。
+        toks = re.findall(r"[A-Za-z0-9_./-]+", head)
+        as_script = bool(toks) and os.path.basename(toks[-1]) in INTERPRETERS
+        out.append(head)
         tag = m.group(1)
         i += 1
-        while i < len(lines) and lines[i].strip() != tag:
+        while i < len(lines):
+            if lines[i].strip() == tag:
+                break
+            if as_script:
+                out.append(lines[i])
             i += 1
         i += 1
         continue
@@ -127,15 +153,40 @@ SEP = os.environ["SEP"]
 PUSH_HEAD = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^ ]* )*(?:[^ ]*/)?git( -[^ ]+)* push(?![A-Za-z])")
 PUSH_TIGHT = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^ ]*)*(?:[^/]*/)?git(-[^ ]+)*push(?![A-Za-z])")
 WRAPPER = re.compile(r"^(?:ba|z|k|da)?sh +-c +(.*)$")
+# `bash <脚本>` / `sh <脚本>`：解释器后紧跟脚本文本（heredoc 展开后就在这里），
+# 不是 -c 形式，WRAPPER 接不住，必须单独把剩余部分再递归判一次。
+INTERP = re.compile(r"^(?:[\w./-]*/)?(?:ba|z|k|da)?sh\b(?! +-)(.*)$")
+INTERP_ALT = re.compile(r"^(?:[\w./-]*/)?(?:python3?|node|perl|ruby)\b(.*)$")
 _WS = re.compile(r"[ \t]+")
-def is_push(seg):
+# 放宽判据：git 与 push 之间只允许夹非字母（空格/逗号/括号等）。
+# 引号被抹平成空格后，python 里 subprocess.run(['git','push',...]) 会变成
+# `git , push`——逗号也在「非字母」里，故用 [^A-Za-z] 而不是单个空格。
+# 字母会断开匹配，所以 `git status && echo push` 这类普通命令不会误判。
+LOOSE = re.compile(r"git[^A-Za-z]{0,20}push(?![A-Za-z])")
+def is_push(seg, loose=False):
     seg = seg.strip()
     if not seg:
         return False
     if PUSH_HEAD.match(seg):
         return True
-    return bool(PUSH_TIGHT.match(_WS.sub("", seg)))
-def scan(text, depth=0):
+    if PUSH_TIGHT.match(_WS.sub("", seg)):
+        return True
+    # 喂给解释器的脚本文本无法按 shell 语法判断「哪里才是命令位置」——
+    # python 里可能是 subprocess.run(['git','push',...])，bash 脚本里可能在函数体内。
+    # 这种场合一律放宽：文本中出现推送命令就算数，宁可误拦不可漏放。
+    if loose:
+        return bool(LOOSE.search(seg))
+    return False
+INTERP_ANY = re.compile(r"(?:^|[\s;&|(])(?:[\w./-]*/)?(?:ba|z|k|da)?sh\b"
+                        r"|(?:^|[\s;&|(])(?:[\w./-]*/)?(?:python3?|node|perl|ruby)\b")
+def scan(text, depth=0, loose=False):
+    # 命令里出现任何解释器，整段文本改用放宽判定。
+    # 理由：解释器脚本内部无法按 shell 语法切出「命令位置」——
+    # python 里是 subprocess.run(['git','push',...])，bash 脚本里可能在函数体内。
+    # 先按分隔符切段会把它们切散（'git' 与 'push' 被引号拆开、跨 ; 分在两段），
+    # 于是逐段判必然漏。整段放宽是唯一可靠的近似，宁可误拦不可漏放。
+    if INTERP_ANY.search(text) and LOOSE.search(text):
+        return True
     try:
         segs = re.sub(r"&&|\|\||;|\(|\)", SEP, text).split(SEP)
     except Exception:
@@ -144,12 +195,16 @@ def scan(text, depth=0):
         seg = seg.strip()
         if not seg:
             continue
-        if is_push(seg):
+        if is_push(seg, loose):
             return True
         if depth < 2:
             m = WRAPPER.match(seg)
-            if m and scan(m.group(1), depth + 1):
+            if m and scan(m.group(1), depth + 1, True):
                 return True
+            for pat in (INTERP, INTERP_ALT):
+                m2 = pat.match(seg)
+                if m2 and scan(m2.group(1), depth + 1, True):
+                    return True
     return False
 print("1" if scan(sys.stdin.read()) else "0")
 ') || { echo "BLOCKED: 守卫自身判据执行失败——无法判断是否推送，按铁律一不放行。" >&2; exit 2; }
