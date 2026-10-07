@@ -15,10 +15,29 @@
 #   bash scripts/gen-baseline.sh --check    # 只比对，不写盘；不一致则退出 1（供 pre-commit 用）
 #
 set -u
+
+OUT="docs/ipd-系统说明/治理/基准值.md"
+
+# ---- 自证：--check 能红（改内容不一致即非 0）+ 尺子失效拒绝产出 ----
+if [ "${1:-}" = "--self-test" ]; then
+  P=0; F=0
+  # ① 尺子有效时正常产出
+  bash "$0" >/dev/null 2>&1; [ $? = 0 ] && P=$((P+1)) || F=$((F+1))
+  # ② --check 在一致时应通过
+  bash "$0" --check >/dev/null 2>&1; [ $? = 0 ] && P=$((P+1)) || F=$((F+1))
+  # ③ 篡改基准值文件后 --check 必须报红
+  BK="$(mktemp)"; cp "$OUT" "$BK"
+  printf '
+<!-- 篡改 -->
+' >> "$OUT"
+  bash "$0" --check >/dev/null 2>&1; [ $? != 0 ] && P=$((P+1)) || F=$((F+1))
+  cp "$BK" "$OUT"; rm -f "$BK"
+  echo "self-test: PASS=$P FAIL=$F"
+  [ "$F" = 0 ] && exit 0 || exit 1
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 
-OUT="docs/ipd-系统说明/治理/基准值.md"
 AC="ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/seed/ActionCatalog.java"
 GATE="ruoyi-modules/ruoyi-ipd/src/main/java/org/ruoyi/ipd/config/IpdGateElementSeedInitializer.java"
 

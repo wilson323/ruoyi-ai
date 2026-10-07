@@ -402,4 +402,37 @@ class AllowanceServiceTest {
             .lockedLevel("L3").lockedAmount(new BigDecimal(amount))
             .joinDate(new Date(0L)).exitDate(null).memberType(memberType).build();
     }
+
+    /**
+     * 承重用例：月度津贴取数**必须按 role 收窄到双PM**。
+     *
+     * <p>主 Prompt v3:526「月度津贴从双PM 补入次月起按评级固定额发放」、
+     * :697「跟随新接手PM」、:941 BR-INC-12「调离双PM 项目→从退出次月停发」——
+     * 三处都把发放对象限定为双PM。而 role 实际可写入 MEMBER（创建人自动回填），
+     * 原先取数不按 role 过滤 ⇒ 超管等非 PM 身份被逐行累加 lockedAmount 领 PM 津贴。
+     *
+     * <p><b>为什么断言查询条件而不是断言返回值</b>：给 mapper 桩返回值时，
+     * 「服务传了什么条件去查」和「数据库回了什么行」是两回事——桩一律按你给的返回，
+     * 生产代码里删掉 {@code .in(ProjectMember::getRole, PM_ROLES)} 这条用例照样绿。
+     * （本轮已因此犯错两次：F6-① 的在途去重、此处。）
+     * 故捕获真实 {@code LambdaQueryWrapper}，渲染 SQL 片段后检查参数表里有双PM 角色。
+     */
+    @Test
+    @DisplayName("月度津贴取数按 role 收窄到双PM（断言查询条件，不靠 mock 返回值）")
+    void allowanceQueryFiltersToDualPmRoles() {
+        when(configService.getIntValue(any(), any(Integer.class))).thenReturn(2);
+        when(memberMapper.selectList(any())).thenReturn(java.util.List.of());
+
+        org.mockito.ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper> captor =
+            org.mockito.ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class);
+        svc.calculateMonthlyAllowance(10L, "2026-10");
+        org.mockito.Mockito.verify(memberMapper).selectList(captor.capture());
+
+        com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?> w = captor.getValue();
+        String sql = w.getSqlSegment();                       // 必须先渲染，否则参数表恒空
+        java.util.Collection<Object> params = w.getParamNameValuePairs().values();
+
+        org.assertj.core.api.Assertions.assertThat(sql).contains("role");
+        org.assertj.core.api.Assertions.assertThat(params).contains("MARKET_PM", "RD_PM");
+    }
 }

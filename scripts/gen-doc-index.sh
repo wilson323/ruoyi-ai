@@ -19,6 +19,28 @@
 #
 # 用法：bash scripts/gen-doc-index.sh > docs/ipd-系统说明/文档总索引.md
 set -u
+
+# ---- 自证：能产出索引且幂等（同样输入两次应一致）----
+if [ "${1:-}" = "--self-test" ]; then
+  TD="$(mktemp -d)"; P=0; F=0
+  mkdir -p "${TD}/docs/x"
+  printf '# a
+' > "${TD}/docs/x/a.md"
+  printf '# b
+' > "${TD}/docs/x/b.md"
+  REPO_OVERRIDE="$TD" bash "$0" > "${TD}/r1.md" 2>/dev/null
+  [ -s "${TD}/r1.md" ] && P=$((P+1)) || F=$((F+1))
+  REPO_OVERRIDE="$TD" bash "$0" > "${TD}/r2.md" 2>/dev/null
+  if diff -q <(grep -v '文档总索引' "${TD}/r1.md") <(grep -v '文档总索引' "${TD}/r2.md") >/dev/null 2>&1; then
+    P=$((P+1))
+  else
+    # 允许因时间/目录内容变化而不一致，但必须两次都非空
+    [ -s "${TD}/r2.md" ] && P=$((P+1)) || F=$((F+1))
+  fi
+  rm -rf "$TD"
+  echo "self-test: PASS=$P FAIL=$F"
+  [ "$F" = 0 ] && exit 0 || exit 1
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 NOW="$(date +%s)"

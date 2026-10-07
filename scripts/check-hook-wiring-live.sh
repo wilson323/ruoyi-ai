@@ -19,6 +19,16 @@
 # 退出码：0 = 接线完整；1 = 有守卫声明了但查不到执行证据；2 = 脚本自身故障
 
 set -u
+
+# ---- 自证：能列出接线清单且清单非空 ----
+if [ "${1:-}" = "--self-test" ]; then
+  P=0; F=0
+  out="$(bash "$0" 2>&1)"
+  printf '%s' "$out" | grep -q '钩子总数' && P=$((P+1)) || F=$((F+1))
+  printf '%s' "$out" | grep -q '配置里有' && P=$((P+1)) || F=$((F+1))
+  echo "self-test: PASS=$P FAIL=$F"
+  [ "$F" = 0 ] && exit 0 || exit 1
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SETTINGS="$ROOT/.claude/settings.json"
 

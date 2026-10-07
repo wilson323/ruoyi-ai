@@ -25,6 +25,24 @@
 
 set -u
 
+# ---- 自证：零值必须声明 + 空计数必须拒绝（mktemp 内，仓库零写入）----
+if [ "${1:-}" = "--self-test" ]; then
+  TD="$(mktemp -d)"; P=0; F=0
+  mkdir -p "${TD}/pkg"; : > "${TD}/pkg/a.txt"
+  # ① 计数有值时通过
+  bash "$0" find "$TD/pkg" --name '*.txt' >/dev/null 2>&1
+  [ $? = 0 ] && P=$((P+1)) || F=$((F+1))
+  # ② 数到 0 且未声明 -> 必须非 0（这是「零先当坏」的语法化）
+  bash "$0" find "$TD/pkg" --name '*.nope' >/dev/null 2>&1
+  [ $? != 0 ] && P=$((P+1)) || F=$((F+1))
+  # ③ 数到 0 且已声明 -> 必须通过
+  EC_EXPECT_ZERO="自证用例" bash "$0" find "$TD/pkg" --name '*.nope' >/dev/null 2>&1
+  [ $? = 0 ] && P=$((P+1)) || F=$((F+1))
+  rm -rf "$TD"
+  echo "self-test: PASS=$P FAIL=$F"
+  [ "$F" = 0 ] && exit 0 || exit 1
+fi
+
 # 本仓归档目录：历史工作树副本，含 19000+ 个 .java，是现役源码的 15 倍。
 # 全仓计数必须排掉它们，否则会把归档里的旧实现当现役代码。
 ARCHIVE_DIRS=".codex,.harness,target,node_modules,.git,.repowise"

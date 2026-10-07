@@ -116,14 +116,20 @@ class GateInputsTest(unittest.TestCase):
         self.assertEqual(self.run_gate("check-doc-code-sync.sh"), 1, self.last_output)
 
     def test_java_gates_clean_missing_seed_and_actual_violation(self):
-        specs = [("surefire-groups-coverage", "SGC", "class MissingTagTest {}\n"),
+        specs = [# 2026-10-07 修正：原夹具写作 `class MissingTagTest {}`，**里面没有任何 @Test 方法**。
+        # 而 check-surefire-groups-coverage.sh 的判据是「含 @Test 但缺 @Tag("dev") 即违规」，
+        # 空类不含 @Test → 放行是**正确行为**，于是本断言永远期望一个不可能成立的返回码，
+        # 表现为门禁 8 长期红（12 tests / 1 failure）。
+        # 这是**夹具写错**，不是门禁坏了；改夹具不改判据。
+        ("surefire-groups-coverage", "SGC",
+         "import org.junit.jupiter.api.Test;\nclass MissingTagTest { @Test void t(){} }\n"),
                  ("test-assertion-history", "TAH", 'assertTrue("现状保留");\n'),
                  ("mock-data-realism", "MDR", "when(foo).thenReturn(99999);\n"),
                  ("assertion-line-drift", "ALD", "assertEquals(foo, bar, 999);\n")]
         for name, seed, bad in specs:
             with self.subTest(name=name):
                 file = self.tests / "ExampleTest.java"
-                file.write_text('@Tag("dev") class ExampleTest {}\n')
+                file.write_text('import org.junit.jupiter.api.Tag;\nimport org.junit.jupiter.api.Test;\n@Tag("dev") class ExampleTest { @Test void t(){} }\n')
                 # Existing repository supplies read-only git history; input remains the fixture.
                 args = {"REPO": str(REPO)} if seed == "TAH" else {}
                 self.assertEqual(self.run_gate(f"check-{name}.sh", **args), 0, self.last_output)

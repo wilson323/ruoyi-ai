@@ -1,0 +1,343 @@
+#!/usr/bin/env bash
+# check-no-hardcoded-baseline.sh
+#
+# 目的：拦住「文档里手写死关键基准数字」这个行为。
+#
+# 背景（2026-10-07 实测）：
+#   「69 个动作」散落在 83 份文件里，而正确的「67」只有 12 份。
+#   2026-10-03 owner 拆除 LC01/LC03 后动作数 69→67，83 份里大部分没跟着改。
+#   根因不是没人生成，是**数字是手写的**：改了源（代码 / gen-baseline.sh），
+#   手抄的那几十份不会自己变。
+#
+# 已有补救与其盲区：
+#   - scripts/gen-baseline.sh 从代码生成 docs/ipd-系统说明/治理/基准值.md（权威源）
+#   - pre-commit 门禁 5 检查「基准值文件本身 vs 代码」
+#   - 但门禁 5 **只管基准值文件自己**，管不住其它文档里的手抄副本 —— 那才是漏的地方。
+#   本脚本补的就是这个洞。
+#
+# 设计原则：**宁可放过，不可误伤。**
+#   误伤一次，人就会开始习惯性忽略这个检查，那时它比没有更糟。
+#   所以排除清单和「需求原文」豁免都偏向放过。
+#
+# 退出码：
+#   0 = 无违规
+#   1 = 有违规
+#   2 = 脚本自身出错（含：阳性对照失败 = 检查器失效）
+#
+# 用法：
+#   bash scripts/check-no-hardcoded-baseline.sh              # 扫本仓
+#   bash scripts/check-no-hardcoded-baseline.sh --root DIR   # 扫别处（自检用）
+#   bash scripts/check-no-hardcoded-baseline.sh --self-test  # 自证能红（仓库零写入）
+
+set -u
+
+# ---------------------------------------------------------------- 权威源指引
+SRC_DOC="docs/ipd-系统说明/治理/基准值.md"
+
+# ---------------------------------------------------------------- 规则表
+# 用 4 个平行数组，不要用 "|" 分隔的字符串：
+# 正则本身含 "|"（如 (6[79]|42)），IFS='|' read 会把正则从第一个 "|" 截断，
+# 变成语法不完整的模式，grep 报 "parentheses not balanced" 而静默 0 命中。
+# （这个坑是被脚本自带的阳性对照抓出来的，不是猜的。）
+RULE_IDS=(R1 R2 R3 R4 R5)
+RULE_VALS=(
+  "有效动作 67（深管 40 + 轻管 27）；69/42/38 是退役前的旧值"
+  "深管 40（旧值 42）"
+  "轻管 27"
+  "G1~G5 要素 33"
+  "Gate 否决项 14"
+)
+RULE_DESCS=(动作总数 深管动作数 轻管动作数 Gate要素总数 Gate否决项数)
+# 口径说明（2026-10-07 定）：
+#   本检查治的是「把基准数字手抄进几十份文档，改一处漏一片」。
+#   因此**手抄的 67/40/27/33/14 与旧值 69/42/38 同样拦**——
+#   只要正文复述了数字，它就是下一个漂移点；正确写法是引用 基准值.md。
+#   （曾一度只拦旧值，但那会让 R1 与 R2~R5 口径不一致：
+#     R2~R5 仍拦正确的 40/27/33/14，211 处里 134 处来自它们。
+#     半拦半不拦比全拦更难解释，故统一。）
+RULE_RES=(
+  '(6[79]|42|38)[[:space:]]*(个|条|项|位)?[[:space:]]*动作'
+  '(深管[^0-9，。|]{0,8}(40|42)|(40|42)[^0-9，。|]{0,4}深管)'
+  '(轻管[^0-9，。|]{0,8}27|27[^0-9，。|]{0,4}轻管)'
+  '33[[:space:]]*(个|条|项)?[[:space:]]*要素'
+  '14[[:space:]]*(个|条|项)?[[:space:]]*否决'
+)
+RULE_N=${#RULE_RES[@]}
+
+# ---------------------------------------------------------------- 豁免词
+# 命中本行出现以下任一词，视为「在引用需求原文 / 历史快照，不是声明现役口径」→ 放过。
+# 判据来自实测坑：「§6 六阶段 × 69 动作域：深 42/轻 27…与需求逐项精确吻合」
+# 这句在引用 v3 需求原文，69 是对的，拦它是误伤。
+EXEMPT_PAT='需求原文|需求侧|原始需求|原文摘录|v3[[:space:]]*(版|稿|原文|需求)|按需求|与需求|逐项精确吻合|原型[^0-9]{0,6}拍板|D1[[:space:]]*拍板|历史快照|当时为|退役前|曾经|此前记作|此前为|原记作|已退役|见基准值|基准值\.md|治理/基准值|勘误|已同步|历史留痕|仅历史'
+
+# ---------------------------------------------------------------- 排除清单
+# 直接写在 is_excluded 的 case 里，不走 eval。
+# （曾试过把 case 存进变量再 eval：变量里的换行会让 case 语句提前结束、
+#   bash 报 "syntax error near unexpected token" 而排除静默失效 —— 排除一旦失效
+#   就会全量误伤，所以这里不冒这个险。）
+EXCLUDE_REASON_TABLE='
+  */治理/基准值.md)            基准值文件本身就是源，不是抄的
+  */外部资源/*)                需求方原文，改它会失准锚点
+  */wiki/raw/*)                原始快照，verbatim 不得改
+  */验收/*)                    历史验收证据，记录的是当时事实
+  */archive/*|*archive*/*)     历史归档快照
+  */开发说明/*)                G-04 产品圣经，业务决策禁改
+  */log.md)                    流水台账，历史记录性质
+  *target*|*node_modules*)      构建产物与依赖目录，不是文档
+  *.codex/*|*.harness/*)       历史工作树副本（含归档全仓，会把旧实现当现役）
+  *.repowise/*)                索引缓存
+'
+
+# ---------------------------------------------------------------- 参数
+ROOT=""
+MODE="scan"
+for arg in "$@"; do
+  case "$arg" in
+    --self-test) MODE="self-test" ;;
+    --root) shift; ROOT="${1:-}" ;;
+    --root=*) ROOT="${arg#--root=}" ;;
+    -h|--help) sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "未知参数: $arg" >&2; exit 2 ;;
+  esac
+  shift 2>/dev/null || true
+done
+
+if [ -z "$ROOT" ]; then
+  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+[ -d "$ROOT" ] || { echo "根目录不存在: $ROOT" >&2; exit 2; }
+
+# ---------------------------------------------------------------- 工具函数
+
+# 判断某文件是否被排除。排除时把理由写进全局 EXC_REASON。
+EXC_REASON=""
+is_excluded() {
+  EXC_REASON=""
+  local rel="$1"
+  case "$rel" in
+    */治理/基准值.md)            EXC_REASON="基准值文件本身就是源，不是抄的" ;;
+    */外部资源/*)                EXC_REASON="需求方原文，改它会失准锚点" ;;
+    */wiki/raw/*)                EXC_REASON="原始快照，verbatim 不得改" ;;
+    */验收/*)                    EXC_REASON="历史验收证据，记录的是当时事实" ;;
+    */archive/*|*archive*/*)     EXC_REASON="历史归档快照" ;;
+    */开发说明/*)                EXC_REASON="G-04 产品圣经，业务决策禁改" ;;
+    */log.md)                    EXC_REASON="流水台账，历史记录性质" ;;
+    *target*|*node_modules*)      EXC_REASON="构建产物与依赖目录，不是文档" ;;
+    *.codex/*|*.harness/*)       EXC_REASON="历史工作树副本（含归档全仓，会把旧实现当现役）" ;;
+    *.repowise/*)                EXC_REASON="索引缓存" ;;
+  esac
+  [ -n "$EXC_REASON" ]
+}
+
+# ---------------------------------------------------------------- 扫描主体
+VIOLATIONS=0
+SKIPPED_FILES=0
+
+scan_one() {
+  local rel="$1"
+  is_excluded "$rel" && { SKIPPED_FILES=$((SKIPPED_FILES+1)); return 0; }
+
+  local line_no line matched_rule matched_id matched_val matched_desc
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    # 豁免：这一行在引用需求原文 / 历史口径 → 放过
+    if printf '%s' "$line" | grep -qE "$EXEMPT_PAT"; then
+      continue
+    fi
+    line_no="${line%%:*}"
+    body="${line#*:}"
+
+    local i
+    for (( i=0; i<RULE_N; i++ )); do
+      if printf '%s' "$body" | grep -qE "${RULE_RES[$i]}"; then
+        VIOLATIONS=$((VIOLATIONS+1))
+        # 原文片段：截断到 100 列，避免刷屏
+        snippet="$(printf '%s' "$body" | sed 's/^[[:space:]]*//' | cut -c1-100)"
+        printf '%s:%s\n' "$rel" "$line_no"
+        printf '  原文: %s\n' "$snippet"
+        printf '  问题: 手写了「%s」的%s [%s]\n' "${RULE_VALS[$i]}" "${RULE_DESCS[$i]}" "${RULE_IDS[$i]}"
+        printf '  正确值见: %s\n\n' "$SRC_DOC"
+        break   # 一行只报第一条规则，避免同一行刷多条
+      fi
+    done
+  done < <(grep -nE "$SCAN_RE" "$rel" 2>/dev/null)
+}
+
+# 把所有规则正则合成一个大正则，只对命中的文件跑一次 grep（性能）
+build_scan_re() {
+  local out="" re i
+  for (( i=0; i<RULE_N; i++ )); do
+    re="${RULE_RES[$i]}"
+    out="${out:+$out|}($re)"
+  done
+  printf '%s' "$out"
+}
+SCAN_RE="$(build_scan_re)"
+
+# ---------------------------------------------------------------- 阳性对照
+# 需求 5：扫遍全库一个违规都没抓到时，先证明「它确实能抓到东西」，别直接报 PASS。
+# 静默失败长得像成功，比失败更危险。
+POSITIVE_CONTROL='六阶段 69 动作'
+positive_control() {
+  local probe matched=0 i
+  probe="$POSITIVE_CONTROL"
+  for (( i=0; i<RULE_N; i++ )); do
+    if printf '%s' "$probe" | grep -qE "${RULE_RES[$i]}"; then matched=1; break; fi
+  done
+  [ "$matched" = "1" ]
+}
+
+run_scan() {
+  cd "$ROOT" || exit 2
+  local f rel
+  while IFS= read -r f; do
+    rel="${f#$ROOT/}"
+    scan_one "$rel"
+  done < <(find . \
+             \( -name target -o -name node_modules -o -name .git \
+                -o -name .codex -o -name .harness -o -name .repowise \) -prune -o \
+             -type f \( -name '*.md' -o -name '*.txt' \) -print 2>/dev/null | sed 's|^\./||')
+  # 用 return 而非 exit：run_scan 在自检里被调用，exit 会把整个自检带跑。
+  return $([ "$VIOLATIONS" -gt 0 ] && echo 1 || echo 0)
+}
+
+emit_summary() {
+  # 注意用 printf '%s\n' 而不是 printf '---- 汇总 ----\n'：
+  # 格式串以 "--" 开头时，bash 内建 printf 会把它当成选项而报 invalid option。
+  printf '%s\n' '---- 汇总 ----'
+  printf '违规 %s 处，排除 %s 份文件\n' "$VIOLATIONS" "$SKIPPED_FILES"
+  if [ "$VIOLATIONS" -gt 0 ]; then
+    printf '结论: FAIL —— 这些手抄数字改一次就要同步几十份文档，是漂移的来源。\n'
+    printf '正确值一律以 %s 为准，不要在正文里复述数字。\n' "$SRC_DOC"
+  else
+    printf '结论: PASS\n'
+  fi
+}
+
+# ---------------------------------------------------------------- 主流程
+if [ "$MODE" = "self-test" ]; then
+  # ============================ 自证能红 ============================
+  # 全部在 mktemp 目录里做，仓库零写入。
+  TD="$(mktemp -d)" || { echo "mktemp 失败" >&2; exit 2; }
+  trap 'rm -rf "$TD"' EXIT
+  FAILURES=0
+  t() { # t <期望: PASS|FAIL> <说明>
+    local want="$1" desc="$2" got="$3"
+    if [ "$got" = "$want" ]; then
+      printf '  [OK]   %s（期望 %s，实得 %s）\n' "$desc" "$want" "$got"
+    else
+      printf '  [FAIL] %s（期望 %s，实得 %s）\n' "$desc" "$want" "$got"
+      FAILURES=$((FAILURES+1))
+    fi
+  }
+
+  echo "==== check-no-hardcoded-baseline.sh --self-test ===="
+  echo "临时目录: ${TD}（结束即删，仓库零写入）"
+
+  # --- 用例 1：阳性对照，检查器本身抓得到东西 ---
+  echo
+  echo "[1] 阳性对照（检查器自身是否有效）"
+  if positive_control; then
+    echo "  [OK]   检查器能匹配已知样例「${POSITIVE_CONTROL}」—— 规则集非空且可命中"
+  else
+    echo "  [FAIL] 检查器连已知样例都抓不到，规则集已失效，本次结果不可信"
+    FAILURES=$((FAILURES+1))
+  fi
+
+  # --- 用例 2：违规文件必须 FAIL ---
+  echo
+  echo "[2] 含违规的临时仓库 → 必须 FAIL（退出 1）"
+  mkdir -p "$TD/bad/docs"
+  # 每条违规单独一行：一行只报第一条规则，所以计数才对得上
+  printf '# 现状\n本系统共 69 个动作。\nGate 含 33 项要素。\n其中 14 项否决项硬阻断。\n' > "$TD/bad/docs/坏例子.md"
+  VIOLATIONS=0; SKIPPED_FILES=0
+  ROOT="$TD/bad" run_scan > "$TD/out_bad.txt" 2>&1
+  rc_bad=$?
+  t "1" "违规仓库退出码" "$([ "$rc_bad" -eq 1 ] && echo 1 || echo "非1($rc_bad)")"
+  t "3" "违规条数（3 行违规）" "$VIOLATIONS"
+  echo "  ---- 实际输出 ----"
+  sed 's/^/  | /' "$TD/out_bad.txt"
+  echo "  ----------------"
+
+  # --- 用例 3：干净文件必须 PASS ---
+  # 注意这里连「67」也不能写：67 同样是手抄的现役数字，一样该被拦。
+  # 正确写法是引用而不复述。
+  echo
+  echo "[3] 干净的临时仓库 → 必须 PASS（退出 0）"
+  mkdir -p "$TD/good/docs"
+  printf '# 说明\n动作数量请以基准值.md 为准，本文档不复述数字。\n定义见 ActionCatalog.java，要素见 IpdGateElementSeedInitializer.java。\n' > "$TD/good/docs/干净例子.md"
+  VIOLATIONS=0; SKIPPED_FILES=0
+  ROOT="$TD/good" run_scan > "$TD/out_good.txt" 2>&1
+  rc_good=$?
+  t "0" "干净仓库退出码" "$rc_good"
+  t "0" "干净仓库违规数" "$VIOLATIONS"
+
+  # --- 用例 4：需求原文豁免必须放过 ---
+  echo
+  echo "[4] 「需求原文」引用必须放过（防误伤）"
+  mkdir -p "$TD/exempt/docs"
+  printf '# 核对\n§6 六阶段 × 69 动作域：深 42/轻 27…与需求逐项精确吻合。\n' > "$TD/exempt/docs/引用原文.md"
+  VIOLATIONS=0; SKIPPED_FILES=0
+  ROOT="$TD/exempt" run_scan > /dev/null 2>&1
+  t "0" "引用需求原文的行不算违规" "$VIOLATIONS"
+
+  # --- 用例 5：排除清单必须放过 ---
+  echo
+  echo "[5] 排除清单必须放过（防误伤）"
+  mkdir -p "$TD/exc/docs/ipd-系统说明/外部资源" "$TD/exc/docs/ipd-系统说明/开发说明" "$TD/exc/docs/wiki/raw" "$TD/exc/docs/ipd-系统说明/治理"
+  printf '# 需求\n69 个动作。\n' > "$TD/exc/docs/ipd-系统说明/外部资源/req.md"
+  printf '# 圣经\n69 个动作。\n'      > "$TD/exc/docs/ipd-系统说明/开发说明/bible.md"
+  printf '# 快照\n69 个动作。\n'      > "$TD/exc/docs/wiki/raw/snap.md"
+  printf '# 基准\n69 个动作。\n'      > "$TD/exc/docs/ipd-系统说明/治理/基准值.md"
+  VIOLATIONS=0; SKIPPED_FILES=0
+  ROOT="$TD/exc" run_scan > /dev/null 2>&1
+  t "0" "四类排除目录内的违规全部放过" "$VIOLATIONS"
+
+  # --- 用例 6：变异自证 —— 把规则改坏，检查器必须转红 ---
+  echo
+  echo "[6] 变异自证（故意破坏规则，检查器必须失效）"
+  # 5 条规则全部换成永不匹配的模式。只换一条不够 ——
+  # 剩下的规则仍会命中「33 要素」「14 否决」那两行，测不出规则失效。
+  SAVED_RES=("${RULE_RES[@]}")
+  i=0
+  for (( i=0; i<RULE_N; i++ )); do RULE_RES[$i]='ZZZ_NEVER_MATCH_ZZZ'; done
+  VIOLATIONS=0; SKIPPED_FILES=0
+  SCAN_RE="$(build_scan_re)"
+  ROOT="$TD/bad" run_scan > /dev/null 2>&1
+  t "0" "全部规则被换成永不匹配的模式后应抓不到（证明违规数确实来自规则而非噪声）" "$VIOLATIONS"
+  RULE_RES=("${SAVED_RES[@]}")
+  SCAN_RE="$(build_scan_re)"
+
+  # --- 汇总 ---
+  echo
+  if [ "$FAILURES" -eq 0 ]; then
+    echo "==== SELF-TEST PASS（6/6 组断言全过，含能红与变异能红）===="
+    exit 0
+  else
+    echo "==== SELF-TEST FAIL（$FAILURES 条断言未过）===="
+    exit 1
+  fi
+fi
+
+# ============================ 正常扫描 ============================
+echo "==== 文档手写基准数字检查 ===="
+echo "根目录: $ROOT"
+echo "权威源: $SRC_DOC"
+echo
+
+if ! positive_control; then
+  echo "阳性对照失败：检查器连已知样例都抓不到，规则集已失效。"
+  echo "拒绝输出 PASS —— 退出 2。" >&2
+  exit 2
+fi
+
+run_scan
+
+if [ "$VIOLATIONS" -eq 0 ]; then
+  echo "（阳性对照已通过：检查器能匹配「${POSITIVE_CONTROL}」，本次 0 违规是真 0）"
+fi
+
+echo
+emit_summary
+
+[ "$VIOLATIONS" -gt 0 ] && exit 1 || exit 0

@@ -458,6 +458,105 @@ else
     echo "[check-pre-commit] SKIP 门禁 5: scripts/gen-baseline.sh 不存在"
 fi
 
+# ---------------------------------------------------------------------------
+# 门禁 6: 治理件接线自检(2026-10-07)
+# 病根: 治理件写出来了但没人保证它带自证、挂了提交路径。
+#   2026-10-07 实测: 那天产出 7 件治理工具, 事后盘点「有自证 0 件、接线 1 件」——
+#   全靠「我手动跑过一次」算数, 而那天已实证「人手记得跑」不够(同类错误一天犯四次)。
+#   形状 = 守卫写对了、也挂上了, 但没被调用; 这次更前一步: 连自证都没有。
+# 成本: 约 0.2s, 每次提交都跑。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 6: 治理件接线自检"
+if [ -f scripts/check-governance-wiring.sh ]; then
+    gw_out="$(bash scripts/check-governance-wiring.sh 2>&1)"
+    gw_rc=$?
+    if [ "$gw_rc" = "0" ]; then
+        PASSED=$((PASSED + 1))
+        echo "[check-pre-commit] PASS 门禁 6: 治理件全部自带自证且已接线"
+    else
+        FAILED=$((FAILED + 1))
+        echo "[check-pre-commit] FAIL 门禁 6: 有治理件缺自证或未接线" >&2
+        printf '%s\n' "$gw_out" | grep -E '治理件  [0-9]+ 件|自证=否|接线=否' | head -8 >&2
+        echo "              处置: 补 --self-test, 或挂进本门禁; 未自证的工具只能靠人手记得跑" >&2
+    fi
+else
+    SKIPPED=$((SKIPPED + 1))
+    echo "[check-pre-commit] SKIP 门禁 6: scripts/check-governance-wiring.sh 不存在"
+fi
+
+# ---------------------------------------------------------------------------
+# 门禁 9: 守卫与形状守卫的测试集(2026-10-07)
+# 为什么必须进提交路径: 这两件是「闸门本身」的验收。
+#   改 block-dangerous-git.sh 不跑它的 22 条用例 = 闸门可能已经常开而无人知道
+#   (2026-10-07 实测: 它曾有 git -C 绕过洞, 单看配置合法、脚本存在, 跑起来才暴露)。
+#   output-shape-guard 同理, 它自己坏了必须被发现, 但它坏了不能阻断提交。
+# 成本: 合计约 1.5s。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 9: 守卫测试集"
+for _gt in ".claude/hooks/test-block-dangerous-git.sh" ".claude/helpers/test-output-shape-guard.sh"; do
+  if [ -f "$_gt" ]; then
+    if bash "$_gt" >/tmp/_gate9.log 2>&1; then
+      PASSED=$((PASSED + 1))
+      echo "[check-pre-commit] PASS 门禁 9: $(basename "$_gt")"
+    else
+      FAILED=$((FAILED + 1))
+      echo "[check-pre-commit] FAIL 门禁 9: $(basename "$_gt")" >&2
+      tail -6 /tmp/_gate9.log >&2
+    fi
+  else
+    SKIPPED=$((SKIPPED + 1))
+    echo "[check-pre-commit] SKIP 门禁 9: $_gt 不存在"
+  fi
+done
+
+# ---------------------------------------------------------------------------
+# 门禁 10: 基准值一致性（依赖 evidenced-count 的口径，2026-10-07）
+# 为什么放在这里: 门禁 5 验的是「基准值文件 vs 代码」；
+#   本道验的是「这个数字能不能被交付出去」——数到 0 必须显式声明，
+#   数不出数直接拒绝。这治的是「错读数被当成结论交付」这一形态。
+# 依赖: scripts/evidenced-count.sh（无它则 SKIP，不误伤）。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 10: 读数自证器可用性"
+if [ -f scripts/evidenced-count.sh ]; then
+  ec_out="$(bash scripts/evidenced-count.sh --self-test 2>&1)"
+  ec_rc=$?
+  if [ "$ec_rc" = "0" ]; then
+    PASSED=$((PASSED + 1))
+    echo "[check-pre-commit] PASS 门禁 10: 读数自证器自证通过"
+  else
+    FAILED=$((FAILED + 1))
+    echo "[check-pre-commit] FAIL 门禁 10: 读数自证器自证不通过" >&2
+    printf '%s\n' "$ec_out" | tail -5 >&2
+  fi
+else
+  SKIPPED=$((SKIPPED + 1))
+  echo "[check-pre-commit] SKIP 门禁 10: scripts/evidenced-count.sh 不存在"
+fi
+
+# ---------------------------------------------------------------------------
+# 门禁 11: 验收矩阵校验器自证(2026-10-07)
+# 为什么必须进提交路径: 它的第一版自证「直接调纯函数、自称覆盖接线」,
+#   实测把接线改回裸调用它照样 PASS —— 测了但没测到点上, 提供假安全感(作者自述)。
+#   T6 改为跑真实 main() 路径后才真的能红。
+#   不接进提交路径, 那种接线回归只能等人手工发现。
+# ---------------------------------------------------------------------------
+echo "[check-pre-commit] -> 门禁 11: 验收矩阵校验器自证"
+if [ -f .claude/helpers/acceptance-matrix-validate.cjs ]; then
+  mx_out="$(node .claude/helpers/acceptance-matrix-validate.cjs --self-test 2>&1)"
+  mx_rc=$?
+  if [ "$mx_rc" = "0" ] && printf '%s' "$mx_out" | grep -q '结果：'; then
+    PASSED=$((PASSED + 1))
+    echo "[check-pre-commit] PASS 门禁 11: 验收矩阵校验器自证通过"
+  else
+    FAILED=$((FAILED + 1))
+    echo "[check-pre-commit] FAIL 门禁 11: 验收矩阵校验器自证不通过" >&2
+    printf '%s\n' "$mx_out" | tail -8 >&2
+  fi
+else
+  SKIPPED=$((SKIPPED + 1))
+  echo "[check-pre-commit] SKIP 门禁 11: 校验器不存在"
+fi
+
 echo "[check-pre-commit] 总结: passed=$PASSED failed=$FAILED skipped=$SKIPPED"
 [[ "$FAILED" -gt 0 ]] && exit 1
 exit 0
