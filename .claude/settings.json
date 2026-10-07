@@ -6,6 +6,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/hooks/block-dangerous-git.sh\" ] || D=\"${HOME}\"; exec \"$D/.claude/hooks/block-dangerous-git.sh\"'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/hook-handler.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/hook-handler.cjs\" pre-bash'",
             "timeout": 5000
           }
@@ -32,16 +41,6 @@
           {
             "type": "command",
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/ipd-frontend-drift-guard.cjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/ipd-frontend-drift-guard.cjs\" < /dev/stdin'",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/hooks/block-dangerous-git.sh\" ] || D=\"${HOME}\"; exec \"$D/.claude/hooks/block-dangerous-git.sh\"'",
             "timeout": 5000
           }
         ]

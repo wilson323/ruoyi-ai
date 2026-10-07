@@ -1,121 +1,110 @@
 #!/bin/bash
 # .claude/hooks/block-dangerous-git.sh
-# PreToolUse(Bash) 守卫：命令文本里出现危险 git 字面量 → 阻断（exit 2）。
-# 来源：mattpocock-skills 的 git-guardrails-claude-code。
+# PreToolUse(Bash) 守卫：**只管一件事——不把代码推到非私有仓库**。
 #
 # ============================================================================
-# 2026-10-03 实测记录 —— 改这个文件之前必读（以下每条都跑过，是实证不是推测）
+# 2026-10-07 owner 拍板的口径变更
 # ============================================================================
-# ① 判定标准是「命令字符串里有没有这个子串」，**与「这条命令会不会执行该动作」无关**。
-#    因此它两个方向都会错，且两个方向当天都实测坐实：
+# 旧口径（2026-09~10-07）：命令文本里出现 `git push` / `reset --hard` /
+# `clean -fd` / `branch -D` 等任一字面量 → 一律 exit 2 阻断。
+# 实际后果：本仓的私有仓推送也被一并拦住，AI 无法完成「任务结束必提交推送」，
+# 只能每次把命令交还给人。而本文件 2026-10-03 自己的注释第 ① 条早就写明：
+#   判定标准是「命令字符串里有没有这个子串」，**与这条命令会不会真的执行该动作无关**，
+#   两个方向都错（既误报又漏报）。
+# 即：旧守卫为了防误伤，把正常业务动作（推自己的私有仓）也一起杀了。
 #
-#    误报（命令只是「提到」该字面量，实测全部 EXIT=2，被拦）：
-#      echo "the string git push inside a quoted echo"
-#      grep -rn 'git push' docs/
-#      git commit -m "note: never run git push here"
-#      # git push is documented in deploy.md
-#      printf '%s' 'git clean -fd'
-#      ls docs/ | grep -i 'git branch -D'
+# 新口径（owner 2026-10-07 原话「严格限制不推送到非私有库即可」）：
+#   ✅ 推送到 owner 指定的私有仓 → 放行
+#   ❌ 推送到其它任何地方（upstream / 公开仓 / 未知远端）→ 阻断
+#   ✅ 其余命令（reset --hard / clean -fd / branch -D / push --force 等）→ 一律放行
 #
-#    漏报（真的是危险动作，实测全部 EXIT=0，放行）：
-#      git  push -u origin main          （`git` 与 `push` 之间两个空格）
-#      git pu"sh" -u origin main         （引号拼接）
-#      git -c http.sslVerify=true push -u origin main
-#
-#    即：文本匹配不是「命令解析的严格版」，它是**另一把尺子**。
-#    「被本守卫拦住」不蕴含「该动作危险」；放行也不蕴含「安全」。
-#    凡引用本守卫的结论，都必须先问：它判的是文本还是动作？
-#
-# ② 本守卫**没有任何出口**：无 SKIP_ 变量、无白名单、无签字路径。
-#    （对照：~/.claude/hooks/hook_guard_backtick.py 明写三种替代做法。）
-#    ⚠ 别被同目录的 pre-commit-coverage.sh 误导：它的报错信息里教用户用
-#      `SKIP_COVERAGE_GATE=1` 绕过，但**该变量从未被任何代码读取**——2026-10-03
-#      实测全仓 5 处命中全是提示文案与文档，0 处是读取代码（含它调用的
-#      scripts/check-test-coverage-by-domain.sh，其中无 SKIP* 字样）。
-#      即那句「逃生口」本身就是一个「说明与行为不符」的实例。
-#      （本条的教训：我最初是从它的报错文案里读到这个变量名就写进了上一版注释，
-#        没去读代码——「读了提示语就当成行为」正是本文件在防的那个形状。）
-#    后果：撞上误报时唯一出路是「改命令措辞去避开匹配器」，而**改措辞**与
-#    **放弃那个动作**在外部看起来完全一样 —— 光看「被拦」分不出来。
-#    故 2026-10-03 起：判定不动，但**留痕**（见 ⑤），让事后可分类。
-#
-# ③ 全仓没有任何测试断言本脚本的行为（2026-10-03 grep：只有 docs 与
-#    settings.json 提到它，无测试文件）。改完必须手动跑判定表：
-#      真动作 3 例必须仍 EXIT=2；误报 6 例仍 EXIT=2（行为未变）；漏报 3 例仍 EXIT=0。
-#
-# ④ 与 .claude/settings.json 里那条 inline Layer-3 规则重叠：那条用
-#    `git[[:space:]]+push[[:space:]].*--force` 只拦强推，措辞是「发布/上线命令
-#    需要具名负责人授权，写进 deploy.md 由负责人签字」——比本守卫的措辞好。
-#    但本守卫的 `git push` 更宽、先命中，那条更精确的措辞在强推场景下用不上。
-#    （两条 hook 的先后、以及首个阻断后是否继续执行后续 hook：**未实测，标注未证实**。）
-#
-# ⑤ 2026-10-03 变更：**只加留痕 + 把判据写进提示语，判定逻辑一个字节没动**
-#    （同一组 DANGEROUS_PATTERNS、同一套 grep -qE、同样只 exit 2）。
-#    留痕落在 .harness/audit/blocked-<日期>.jsonl（该目录在 .gitignore:126，
-#    不进版本库）。**只记 命中模式 + 命令 sha256 + 长度 + 命中处上下文 60 字符，
-#    不记命令全文**——避免把命令里的凭证原样落盘。
+# 允许清单（判据是**远端 URL**，不是分支名）：
+#   wilson323/ruoyi-ai     后端仓，分支固定 baseline/pre-teardown
+#   wilson323/ruoyi-admin  前端仓，分支固定 teardown/incentive-removal
+# 判据取 URL 而非分支名：同一个私有名下换个分支也推不出去，这比按名字判严。
 # ============================================================================
+
+set -u
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$COMMAND" ] && exit 0
 
-DANGEROUS_PATTERNS=(
-  "git push"
-  "git reset --hard"
-  "git clean -fd"
-  "git clean -f"
-  "git branch -D"
-  "git checkout \."
-  "git restore \."
-  "push --force"
-  "reset --hard"
-)
+# ---------------------------------------------------------------------------
+# 1. 是不是 git push？
+#    先把引号/换行/多余空白抹平再判，避免旧口径记在案的两种漏报形态：
+#    `git  push`（多空格）、`git pu"sh"`（引号拼接）。
+#    ⚠ 仍不是严格命令解析：形如 `alias gp='git push'; gp` 这类别名间接调用
+#    依旧判不出来。本守卫是「便宜的前置检查」，不是沙箱，别把它的放行当安全证明。
+# ---------------------------------------------------------------------------
+FLAT=$(printf '%s' "$COMMAND" | tr -d '\n\r\t"'\''`' | tr -s ' ')
+printf '%s' "$FLAT" | grep -qE '(^|[|;&(])[[:space:]]*git[[:space:]]+(-[^[:space:]]+[[:space:]]+)*push([[:space:]]|$)' || exit 0
 
-# ---- 判定：与本文件 2026-10-03 之前完全一致，未改 ----
-BLOCKED_BY=""
-for pattern in "${DANGEROUS_PATTERNS[@]}"; do
-  if echo "$COMMAND" | grep -qE "$pattern"; then
-    BLOCKED_BY="$pattern"
-    break
-  fi
+# ---------------------------------------------------------------------------
+# 2. 取出远端名：push 之后第一个不以 - 开头的 token；没有则取 origin。
+# ---------------------------------------------------------------------------
+REMOTE=$(printf '%s' "$FLAT" \
+  | sed -nE 's/.*git[[:space:]]+(-[^[:space:]]+[[:space:]]+)*push[[:space:]]+//p' \
+  | awk '{for (i=1;i<=NF;i++) if ($i !~ /^-/) {print $i; exit}}')
+[ -z "$REMOTE" ] && REMOTE="origin"
+
+# ---------------------------------------------------------------------------
+# 3. 解析远端 URL 并对照允许清单。
+#    三种形态都要认，否则会误杀（2026-10-07 实测修的两个 bug）：
+#      a) push 的位置参数就是远端名：git push origin main
+#      b) push 的位置参数就是 URL  ：git push https://github.com/x/y.git main
+#      c) 没给远端名，第一个参数其实是分支：git push main
+#         —— 此时不能把分支名当远端名去查（查不到 → 误判为非私有 → 误杀），
+#            必须回落到 origin。
+# ---------------------------------------------------------------------------
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+URL=""
+case "$REMOTE" in
+  *://*|*@*:*) URL="$REMOTE" ;;   # (b) 本身就是 URL
+esac
+if [ -z "$URL" ]; then
+  URL=$(cd "$REPO_ROOT" 2>/dev/null && git remote get-url "$REMOTE" 2>/dev/null)
+fi
+if [ -z "$URL" ] && [ "$REMOTE" != "origin" ]; then
+  # (c) $REMOTE 查不到 → 多半是分支名而非远端名，回落 origin
+  URL=$(cd "$REPO_ROOT" 2>/dev/null && git remote get-url origin 2>/dev/null)
+fi
+
+ALLOWED=0
+for owner_repo in "wilson323/ruoyi-ai" "wilson323/ruoyi-admin"; do
+  case "$URL" in
+    *"$owner_repo"*) ALLOWED=1 ;;
+  esac
 done
+[ "$ALLOWED" = "1" ] && exit 0
 
-[ -z "$BLOCKED_BY" ] && exit 0
-
-# ---- 留痕 ----
-# 硬约束：下面任何一步失败都不得改变阻断结论。故整体吞掉错误（|| true），
-# 退出码只由文件末尾那条 exit 2 决定。写不出日志也照拦。
+# ---------------------------------------------------------------------------
+# 4. 拦非私有仓 + 留痕（只记 远端 + URL + 命中上下文 60 字符，不记命令全文，
+#    避免命令里的凭证原样落盘）。写不出日志也照拦。
+# ---------------------------------------------------------------------------
 {
-  # 注意：必须分两步判。若写成 "$(git rev-parse ...)/.harness/audit"，
-  # git 失败时结果退化成 "/.harness/audit"（非空！），非空判断形同虚设。
-  REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
-  LOGDIR="$REPO_ROOT/.harness/audit"
-  if [ -n "$REPO_ROOT" ] && [ -d "$LOGDIR" ]; then
-    FLAT=$(printf '%s' "$COMMAND" | tr '\n\r\t' '   ')
-    HASH=$(printf '%s' "$COMMAND" | shasum -a 256 2>/dev/null | cut -d' ' -f1)
-    CTX=$(printf '%s' "$FLAT" | grep -oE ".{0,60}${BLOCKED_BY}.{0,60}" 2>/dev/null | head -1)
-    SESSION=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
-    printf '{"ts":"%s","session":"%s","pattern":"%s","cmd_sha256":"%s","cmd_len":%s,"match_context":"%s"}\n' \
-      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      "$(printf '%s' "$SESSION" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
-      "$(printf '%s' "$BLOCKED_BY" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
-      "$HASH" "${#COMMAND}" \
-      "$(printf '%s' "$CTX" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
-      >> "$LOGDIR/blocked-$(date -u +%Y-%m-%d).jsonl"
-  fi
+  [ -n "$REPO_ROOT" ] && [ -d "$REPO_ROOT/.harness/audit" ] || exit 0
+  HASH=$(printf '%s' "$COMMAND" | shasum -a 256 2>/dev/null | cut -d' ' -f1)
+  CTX=$(printf '%s' "$FLAT" | grep -oE '.{0,60}push.{0,60}' 2>/dev/null | head -1)
+  SESSION=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+  printf '{"ts":"%s","session":"%s","rule":"push-non-private","remote":"%s","url":"%s","cmd_sha256":"%s","cmd_len":%s,"match_context":"%s"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    "$(printf '%s' "$SESSION" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
+    "$(printf '%s' "$REMOTE" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
+    "$(printf '%s' "$URL" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
+    "$HASH" "${#COMMAND}" \
+    "$(printf '%s' "$CTX" | sed 's/\\/\\\\/g; s/"/\\"/g')" \
+    >> "$REPO_ROOT/.harness/audit/blocked-$(date -u +%Y-%m-%d).jsonl"
 } 2>/dev/null || true
 
-# ---- 阻断 ----
-# 第一行保持原文（历史措辞，未改）；其后补上判据说明与分类动作。
 {
-  echo "BLOCKED: '$COMMAND' matches dangerous pattern '$BLOCKED_BY'. The user has prevented you from doing this."
-  echo "  ⚠ 本条判定的是「命令文本里出现了这个子串」，不是「这条命令会执行该动作」。两者不相关——"
-  echo "    本守卫对 'echo \"... git push ...\"' 与真正的推送给出完全相同的判定和措辞。"
-  echo "    所以先分类，再决定，不要直接把「被拦」当结论："
-  echo "      · 命令确实要执行该动作 → 交给人执行。不要自己改写措辞去让匹配器放行，那是绕过守卫。"
-  echo "      · 命令只是「提到」该字面量（误报）→ 换一种不含该字面量的等价写法，实际动作不变，不算绕过。"
-  echo "  本守卫无 SKIP 出口。本次已留痕（命中模式 + 命令哈希 + 长度 + 命中处上下文，不含命令全文）："
-  echo "      .harness/audit/blocked-$(date -u +%Y-%m-%d).jsonl"
+  echo "BLOCKED: 拒绝推送到非私有仓库。"
+  echo "  远端: $REMOTE"
+  echo "  URL : ${URL:-<解析不到>}"
+  echo "  允许清单（owner 指定的私有仓）：wilson323/ruoyi-ai、wilson323/ruoyi-admin"
+  echo "  处置：这是本项目铁律一——只允许推送到 owner 指定的私有仓。"
+  echo "        确认目标确实是私有仓后，改用显式远端名重试（如 git push origin <branch>）。"
+  echo "  留痕: .harness/audit/blocked-$(date -u +%Y-%m-%d).jsonl"
 } >&2
 
 exit 2
