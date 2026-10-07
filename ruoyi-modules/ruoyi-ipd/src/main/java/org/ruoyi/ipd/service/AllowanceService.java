@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 /**
@@ -58,6 +59,9 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class AllowanceService implements IAllowanceService {
+
+    /** 津贴发放对象＝双PM 角色（主 Prompt v3:526/697/941）。与 ProjectMemberServiceImpl.ROLES 同集合。 */
+    private static final Set<String> PM_ROLES = Set.of("MARKET_PM", "RD_PM");
 
     private final AllowanceLedgerMapper allowanceLedgerMapper;
     private final ProjectMemberMapper projectMemberMapper;
@@ -212,6 +216,11 @@ public class AllowanceService implements IAllowanceService {
         List<ProjectMember> members = projectMemberMapper.selectList(
             new LambdaQueryWrapper<ProjectMember>()
                 .eq(ProjectMember::getPersonId, personId)
+                // 2026-10-07：津贴只发给双PM（主 Prompt v3:526「从双PM 补入次月起按评级固定额发放」、
+                // :697「跟随新接手PM」、:941 BR-INC-12「调离双PM 项目→从退出次月停发」）。
+                // 原先不按 role 过滤 ⇒ 创建人被自动回填的 role='MEMBER' 行也会逐行累加 lockedAmount，
+                // 等于「非 PM 角色在领 PM 津贴」（真库与界面均可复现：超管 900101 被记 L3/2000）。
+                .in(ProjectMember::getRole, PM_ROLES)
                 .isNull(ProjectMember::getExitDate)); // 排除已退出（2026-09-09 owner 拍板：当月退出当月不发，当前在职过滤与此口径一致）
         if (members == null || members.isEmpty()) {
             return BigDecimal.ZERO;
@@ -686,8 +695,11 @@ public class AllowanceService implements IAllowanceService {
         if (month == null || !month.matches("\\d{4}-\\d{2}")) {
             throw new IpdBusinessException("month 格式应为 yyyy-MM: " + month);
         }
+        // 同上：只取双PM 角色，MEMBER 等非 PM 身份不进津贴台账。
         List<ProjectMember> candidates = projectMemberMapper.selectList(
-            new LambdaQueryWrapper<ProjectMember>().isNull(ProjectMember::getExitDate));
+            new LambdaQueryWrapper<ProjectMember>()
+                .in(ProjectMember::getRole, PM_ROLES)
+                .isNull(ProjectMember::getExitDate));
         if (candidates == null || candidates.isEmpty()) {
             return 0;
         }
