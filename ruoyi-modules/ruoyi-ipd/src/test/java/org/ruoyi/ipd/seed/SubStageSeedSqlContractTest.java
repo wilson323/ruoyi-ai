@@ -147,15 +147,13 @@ class SubStageSeedSqlContractTest {
                 .doesNotContain(r.actionCode());
         }
         Set<String> catalogCodes = ActionCatalog.ALL.stream().map(ActionDef::code).collect(java.util.stream.Collectors.toSet());
-        Set<String> expected = new HashSet<>(catalogCodes);
-        expected.addAll(RETIRED_ACTION_CODES);
         // 既不多（新增动作未进 seed / 多建行）也不少（目录动作在 seed 缺行）
-        assertThat(mapCodes).containsExactlyInAnyOrderElementsOf(expected);
-        assertThat(rows).hasSize(catalogCodes.size() + RETIRED_ACTION_CODES.size());
-        // 已退役码确实只来自登记表，防止把「未知多行」混进已知差异
-        Set<String> extraInSeed = new HashSet<>(mapCodes);
-        extraInSeed.removeAll(catalogCodes);
-        assertThat(extraInSeed).containsExactlyInAnyOrderElementsOf(RETIRED_ACTION_CODES);
+        assertThat(mapCodes).containsExactlyInAnyOrderElementsOf(catalogCodes);
+        assertThat(rows).hasSize(catalogCodes.size());
+        // 2026-10-07 ③刀清污：LC01/LC03 已于 2026-10-03 退役（回款台账/奖金池两域拆除），
+        // 映射种子里的两行孤儿引用已删除。契约随之反转——由「预期种子里含退役码」
+        // 改为「**退役码不得再出现**」，否则重跑旧种子会静默复活。
+        assertThat(mapCodes).doesNotContainAnyElementsOf(RETIRED_ACTION_CODES);
     }
 
     @Test
