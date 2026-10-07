@@ -21,6 +21,13 @@ on:
     branches:
       - baseline/pre-teardown
 
+# 最小权限：本 workflow 只读代码、跑静态自检，不写回仓库、不发评论、不发布。
+# 不显式声明时会继承仓库/组织的默认 GITHUB_TOKEN 权限（可能是 write），
+# 而本 workflow 执行的脚本来自**被检出的提交内容**（同源 PR 可改这些脚本），
+# 因此必须把令牌降到只读，否则「跑不可信代码」就等于「给了写权限」。
+permissions:
+  contents: read
+
 jobs:
   governance-selfcheck:
     name: 治理件自检（零外部依赖）
@@ -28,9 +35,15 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      # SHA 锁定（supply-chain-unpinned-action）：
+      # 复用本仓已实证的同一 SHA —— gitleaks.yml / gate-wiring-meta.yml /
+      # check-prod-secrets-inlined.yml / ownership-gate.yml 均用它跑通过。
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0   # 部分门禁要读 git 历史（git log --since 等）
+          # 不把令牌留在 .git/config 的 credential helper 里：
+          # 后续步骤执行的是仓库内脚本（PR 可控），留着凭证等于把令牌交出去。
+          persist-credentials: false
 
       - name: 断言这些门禁脚本确实存在于本次提交里
         # 防的是「本地有、CI 没跑」这类静默失效：脚本缺失时直接红，而不是静默跳过
@@ -64,8 +77,13 @@ jobs:
         run: bash .claude/hooks/test-block-dangerous-git.sh
 
       - name: 输出形状守卫的对抗用例（15 条）
+        # 直接跑即可：test-output-shape-guard.sh 末行是 `exit "$fail"`，失败会正确传成非 0 退出。
+        # 证据（2026-10-07 实测，非推断）：把 output-shape-guard.cjs 改成永远静默后，
+        # 该脚本 EXIT=1；还原后 EXIT=0。
+        # （2026-10-07 曾在此加过一层「读汇总行判断」的断言，依据是「脚本没有 exit 1」——
+        #  该前提经实跑证伪，已撤掉：那层不仅多余，还把通过条件绑到一行人类可读文本的格式上，
+        #  比原本更脆。）
         run: bash .claude/helpers/test-output-shape-guard.sh
-
       - name: 读数自证器自证
         run: bash scripts/evidenced-count.sh --self-test
 
