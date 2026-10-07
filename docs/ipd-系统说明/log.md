@@ -16679,3 +16679,67 @@ owner 指出：不要总说错了，要反思根源并根除。
   很容易被当成「这条老测试本来就红」而长期忽略。
 - 漏认 `TEST_BASE` ⇒ 扫空 ⇒ 放行 ⇒ 与「全部合规」**输出完全一样**。
 两者形状与今天全天治的病完全一致：**失败长得像成功**。
+
+## 2026-10-07 提交归属错乱登记（`79ac0497`）——**内容完整，仅提交信息被顶掉**
+
+### 事实
+主协调执行 `git add <15 个治理文件>` 后 `git commit`，
+**实际落地的提交信息是兄弟会话的**「fix(ipd,津贴): 非双PM 身份不再计津贴——取数按 role 收窄到 MARKET_PM/RD_PM」。
+
+`79ac0497` 的实际内容 = **主协调的 15 个治理文件 + 兄弟的 `AllowanceServiceTest.java`(+35)**。
+
+### 影响评估（已逐条核验）
+- **代码没丢**：15 个治理文件全部在这笔提交里（逐条 `git show --name-only` 核对，16 = 15 + 兄弟那 1 个）
+- **提交信息错**：任何人看 `git log` 会以为这些治理件是为「津贴双PM」服务的
+- **兄弟的文件被混入**：它的 `AllowanceServiceTest.java` 挂在主协调的提交下，它自己提交时会发现已入库
+
+### 根因
+**多会话共享工作树，`git add` 之后 `git commit` 之前，兄弟会话改写了 git index。**
+这正是记忆 `shared-worktree-commit-only` 记的失效形态（「提交内容被静默换成别人的文件」），
+今天首次由主协调本人撞上——**该记忆记的是「会发生」，今天是它第一次真的发生。**
+
+### 处置：登记不改历史
+**不改历史的理由**：兄弟会话同期仍在提交，改写历史存在把它的工作搞乱的风险；
+而登记的成本为零、效果相同（后来者读 log.md 即可知道真相）。
+`git commit --amend` 属改写历史类操作，须 owner 明示才做。
+
+### 防复发（已落地）
+`check-governance-wiring.sh` + 门禁 6 守住「治理件必须自带自证且接入提交路径」；
+但**它管不了 git index 被并发改写**——后者是本仓结构性风险，
+本轮只能登记，根治需引入 worktree 隔离或提交前的 index 快照校验，**不在本轮范围**。
+
+## 2026-10-07 CI 缺口补齐：治理件自检进 workflow（实测发现 CI 从不跑门禁链）
+
+### 实测发现的缺口
+`grep -rl 'check-pre-commit' .github/workflows/` → **0 命中**。
+本仓 CI 有 **19 个 workflow**（其中 8 个 push 触发），覆盖 a11y/密钥/编译/漂移/契约，
+**但无一个调用本地那条 15 道门禁链**。
+
+⇒ **本地提交会跑、CI 从不跑**。任何人绕过本地提交（web 编辑、别的机器、force）
+就能让全部门禁失效，**且没有任何信号**。
+形状与本仓反复吃到的「守卫写对了、挂上了，但没被调用；失败长得像成功」完全一致——
+只是这次不是某一条守卫，而是**整条链**。
+
+### 处置：新增 `.github/workflows/governance-selfcheck.yml`
+只跑**纯静态、零外部依赖**的自检（CI 里跑得动的）：
+1. 断言 12 个治理件确实存在于本次提交里（缺失直接红，而非静默跳过）
+2. `check-governance-wiring.sh` — 治理件自带自证且接入提交路径
+3. `test-block-dangerous-git.sh`（22 条对抗用例）
+4. `test-output-shape-guard.sh`（15 条）
+5. `evidenced-count.sh --self-test`
+6. `acceptance-matrix-validate.cjs --self-test`（含真实接线断言 T6）
+7. `test-audit-gate-inputs.py`（门禁链自身能否自证）
+8. `gen-baseline.sh --check`
+
+**刻意不跑**需要真库/前端仓的门禁（doc↔db 漂移、三向对账、API 契约棘轮）——
+CI 里跑不动会恒红，**恒红后就会被忽略，比不跑更糟**。
+
+### 本地已逐步实跑该 workflow 的每一步（不交自己没跑过的 CI 文件）
+12 个在位断言 ✅ / 接线自检 0 ✅ / 守卫 22 条 0 ✅ / 形状 15 条 0 ✅ /
+自证器 0 ✅ / 校验器 0 ✅ / 门禁自证 0 ✅ / 基准值 --check 0 ✅。
+**过程中抓到自己的一个错**：把 `scripts/check-surefire-groups-coverage.sh` 写成在
+`.claude/hooks/` 下（实际在 `scripts/`），被「12 个在位」断言当场抓出。已修。
+
+### 安全性
+该 workflow 未把任何 `${{ github.event.* }}` 拼进 `run:`（无不可信输入注入面），
+未使用 `pull_request_target`，只用 `pull_request` + `push`。

@@ -1,0 +1,79 @@
+name: governance-selfcheck
+
+# 治理件自检 —— 把「本地 pre-commit 的门禁链」里**不需要数据库/构建**的那部分搬进 CI。
+#
+# 为什么必须进 CI（2026-10-07 实测）：
+#   `.claude/hooks/check-pre-commit.sh` 有 15 道门禁，但**CI 的 19 个 workflow
+#   无一调用它**（实测 `grep -rl check-pre-commit .github/workflows/` = 0 命中）。
+#   ⇒ 本地提交会跑、CI 从不跑 ⇒ 任何人绕过本地提交（比如 web 编辑、force、别的机器）
+#   就能让门禁完全失效，而**没有任何信号**。
+#   这与本仓反复吃到的「守卫写对了、挂上了，但没被调用；失败长得像成功」同形。
+#
+# 为什么只跑这几项：门禁链里的 doc↔db 漂移、三向对账、API 契约棘轮需要真库与前端仓，
+#   CI 里跑不动（会恒红 ⇒ 恒红后就会被忽略，比不跑更糟）。
+#   这里只跑**纯静态、零外部依赖**的自检，CI 才有能力真正执行。
+
+on:
+  push:
+    branches:
+      - baseline/pre-teardown
+  pull_request:
+    branches:
+      - baseline/pre-teardown
+
+jobs:
+  governance-selfcheck:
+    name: 治理件自检（零外部依赖）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 部分门禁要读 git 历史（git log --since 等）
+
+      - name: 断言这些门禁脚本确实存在于本次提交里
+        # 防的是「本地有、CI 没跑」这类静默失效：脚本缺失时直接红，而不是静默跳过
+        run: |
+          set -euo pipefail
+          MISSING=0
+          for f in \
+            .claude/hooks/check-pre-commit.sh \
+            scripts/check-surefire-groups-coverage.sh \
+            .claude/hooks/test-block-dangerous-git.sh \
+            .claude/helpers/acceptance-matrix-validate.cjs \
+            .claude/helpers/output-shape-guard.cjs \
+            .claude/helpers/test-output-shape-guard.sh \
+            scripts/evidenced-count.sh \
+            scripts/gen-baseline.sh \
+            scripts/gen-doc-index.sh \
+            scripts/check-hook-wiring-live.sh \
+            scripts/check-governance-wiring.sh \
+            scripts/test-audit-gate-inputs.py
+          do
+            if [ ! -f "$f" ]; then echo "::error::治理件缺失: $f"; MISSING=1; fi
+          done
+          [ "$MISSING" = "0" ] || { echo "::error::有治理件缺失，门禁将静默失效"; exit 1; }
+          echo "12 个治理件全部在位"
+
+      - name: 治理件接线自检
+        # 每个治理件是否自带自证、是否接入提交路径
+        run: bash scripts/check-governance-wiring.sh
+
+      - name: 推送守卫的对抗用例（22 条）
+        run: bash .claude/hooks/test-block-dangerous-git.sh
+
+      - name: 输出形状守卫的对抗用例（15 条）
+        run: bash .claude/helpers/test-output-shape-guard.sh
+
+      - name: 读数自证器自证
+        run: bash scripts/evidenced-count.sh --self-test
+
+      - name: 验收矩阵校验器自证（含真实接线断言）
+        run: node .claude/helpers/acceptance-matrix-validate.cjs --self-test
+
+      - name: 门禁链自身能否自证（门禁 8）
+        run: python3 scripts/test-audit-gate-inputs.py
+
+      - name: 基准值与代码一致（需 git 历史，故放在此处）
+        run: bash scripts/gen-baseline.sh --check
