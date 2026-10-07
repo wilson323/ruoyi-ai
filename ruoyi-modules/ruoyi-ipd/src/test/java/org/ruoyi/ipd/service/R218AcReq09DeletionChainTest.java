@@ -134,10 +134,17 @@ class R218AcReq09DeletionChainTest {
     @Test
     @DisplayName("AC-REQ-09-③ 双层链复用：requirements 申请走既有 leaderDecision→adminDecision（超管终审委托原子软删执行器）")
     void dualChainReusedForRequirements() {
+        // F-2：初审角色收窄为 GROUP_LEADER，超管不得兼任初审（初审/终审须为两人）；
+        // 因此本条链的初审人改为目标所属组（20 组）组长，并 stub 需求→产品上溯的 resolveScope。
+        service.setRequirementMapper(requirementMapper);
+        Requirement requirement = Requirement.builder().id(REAL_REQ_ID).productId(1001L).status("SUBMITTED").build();
+        when(requirementMapper.selectById(REAL_REQ_ID)).thenReturn(requirement);
+        Product product = Product.builder().id(1001L).productName("ZK 控制器").productCode("ZK-01").groupId(20L).build();
+        when(productMapper.selectById(1001L)).thenReturn(product);
+
         DeletionRequest leaderReview = savedReq(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date());
         when(deletionRequestMapper.selectById(9L)).thenReturn(leaderReview);
-        // 超管可兼任初审（既有链语义，勿另起炉灶）
-        DeletionRequest afterLeader = service.leaderDecision(ACTOR_ADMIN, 9L, true, "组长初审通过");
+        DeletionRequest afterLeader = service.leaderDecision(ACTOR_LEADER_SAME_GROUP, 9L, true, "组长初审通过");
         assertThat(afterLeader.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
 
         DeletionRequest executed = savedReq(9L, DeletionRequestServiceImpl.ST_DELETED, new Date());

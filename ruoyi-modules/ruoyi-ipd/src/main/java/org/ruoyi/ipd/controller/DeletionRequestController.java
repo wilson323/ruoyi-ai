@@ -1,6 +1,7 @@
 package org.ruoyi.ipd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import cn.dev33.satoken.exception.NotPermissionException;
@@ -61,7 +62,10 @@ public class DeletionRequestController {
     }
 
     /**
-     * 组长初审。
+     * 组长初审（F-2：仅 GROUP_LEADER，超管不豁免）。
+     *
+     * <p>初审与终审分离：超管持有 ADMIN 码但不再持有 LEADER 码，注解层即拒，
+     * 方法体再由 {@code requireGroupLeader()} 兜一道。
      *
      * @param id      申请 ID
      * @param approve true=通过进超管；false=驳回
@@ -74,7 +78,8 @@ public class DeletionRequestController {
                                                          @RequestParam boolean approve,
                                                          @RequestParam(required = false) String opinion) {
         // W5-E-2.2：actor 传入 service，service 层做组长角色 + 目标所属组匹配校验（防冒充组长）
-        IpdActor actor = ipdPermission.requireLeaderOrAdmin();
+        // F-2：初审仅组长，超管不再走 requireLeaderOrAdmin（初审/终审角色分离）
+        IpdActor actor = ipdPermission.requireGroupLeader();
         return ApiV1Response.ok(deletionRequestService.leaderDecision(actor, id, approve, opinion));
     }
 
@@ -215,7 +220,13 @@ public class DeletionRequestController {
      *
      * @return 待当前人审核的删除申请列表
      */
-    @SaCheckPermission(value = IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER, type = IpdAuthSession.LOGIN_TYPE)
+    // F-2 连带面：初审码已从 SUPER_ADMIN 收回，若此处仍只挂 LEADER 码，超管访问终审队列会被误伤 403。
+    // 本端点是「只读分流视图」而非审核动作本身，超管仍需可用（只返回 ADMIN_REVIEW 段），
+    // 因此改为 LEADER 或 ADMIN 任一码即放行；真正的初审动作由 leaderDecision 的 requireGroupLeader 卡。
+    @SaCheckPermission(
+        value = {IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER, IpdPermissionCode.OPERATION_DELETION_REQUEST_ADMIN},
+        mode = SaMode.OR,
+        type = IpdAuthSession.LOGIN_TYPE)
     @GetMapping("/review-queue")
     public ApiV1Response<List<DeletionRequest>> reviewQueue() {
         IpdActor actor = ipdPermission.requireInternal();

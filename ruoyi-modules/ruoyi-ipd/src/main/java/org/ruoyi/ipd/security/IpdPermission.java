@@ -240,6 +240,19 @@ public class IpdPermission {
         return requireRoles("GROUP_LEADER", "SUPER_ADMIN");
     }
 
+    /**
+     * 仅产品组长（F-2 删除初审专用）。
+     *
+     * <p>与 {@link #requireLeaderOrAdmin()} 的区别：初审环节必须与终审/决策分离，
+     * 超管<b>不</b>豁免，否则同一人可自提自审自批，双层审核形同虚设。
+     * 该方法为 F-2 新增，不改动 {@code requireLeaderOrAdmin} 的既有语义（9 处调用者）。
+     *
+     * @return 当前操作人（角色恒为 GROUP_LEADER）
+     */
+    public IpdActor requireGroupLeader() {
+        return requireRoles("GROUP_LEADER");
+    }
+
     private static IpdPermissionException denied() {
         return new IpdPermissionException(403, ApiV1ErrorCode.FORBIDDEN);
     }

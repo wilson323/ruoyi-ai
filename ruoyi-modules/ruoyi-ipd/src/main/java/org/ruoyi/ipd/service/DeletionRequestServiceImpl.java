@@ -271,26 +271,28 @@ public class DeletionRequestServiceImpl implements IDeletionRequestService {
 
     /**
      * 组长初审：APPROVE → 超管终审；REJECT → 终态。
-     * <p>W5-E-2.2（P0 #2）IDOR 修复：仅目标所属组组长（GROUP_LEADER 且 groupId 匹配）或
-     * SUPER_ADMIN 可初审（修复前任何人可冒充组长审批）；leaderId 改为服务端权威取
-     * {@code actor.id()}，状态机/期限/审计业务逻辑零改。
+     * <p>W5-E-2.2（P0 #2）IDOR 修复：仅目标所属组组长（GROUP_LEADER 且 groupId 匹配）可初审
+     * （修复前任何人可冒充组长审批）；leaderId 改为服务端权威取 {@code actor.id()}，
+     * 状态机/期限/审计业务逻辑零改。
+     * <p>F-2（2026-10-06）：<b>超管不再可初审</b>。修复前本方法放行 GROUP_LEADER 与 SUPER_ADMIN
+     * 且对超管豁免组匹配，等于初审与终审由同一人闭环，双层审核（AC-DEL-02 / AC-REQ-09）失效。
+     * 现在初审角色唯一为 GROUP_LEADER，组匹配检查对所有调用者一律生效（不再有超管豁免分支）。
      */
     @Transactional(rollbackFor = Exception.class)
     public DeletionRequest leaderDecision(IpdActor actor, Long requestId, boolean approve, String opinion) {
         // W5-E-2.2 件 1.1/1.3：actor 入口校验 + 组长角色校验（防冒充组长）
+        // F-2：角色收窄为「仅产品组长」，超管在此被拒（初审/终审角色分离）
         requireAuthenticated(actor);
-        if (!"GROUP_LEADER".equals(actor.role()) && !"SUPER_ADMIN".equals(actor.role())) {
-            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅组长或超管可初审删除申请");
+        if (!"GROUP_LEADER".equals(actor.role())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅产品组长可初审删除申请");
         }
         Long leaderId = actor.id(); // 服务端权威身份
         DeletionRequest request = getOrThrow(requestId);
         requireStatus(request, ST_LEADER_REVIEW);
-        // 组长还须是目标所属组组长（超管豁免；目标组不可解析时 fail-closed 拒绝）
-        if (!"SUPER_ADMIN".equals(actor.role())) {
-            TargetScope scope = resolveScope(request.getEntityType(), request.getEntityId());
-            if (scope.groupId() == null || !scope.groupId().equals(actor.groupId())) {
-                throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅目标所属组组长可初审删除申请");
-            }
+        // F-2：组长须是目标所属组组长（不再存在超管豁免分支；目标组不可解析时 fail-closed 拒绝）
+        TargetScope scope = resolveScope(request.getEntityType(), request.getEntityId());
+        if (scope.groupId() == null || !scope.groupId().equals(actor.groupId())) {
+            throw new IpdBusinessException(ApiV1ErrorCode.FORBIDDEN, "仅目标所属组组长可初审删除申请");
         }
         request.setLeaderId(leaderId);
         request.setLeaderDecision(approve ? "APPROVE" : "REJECT");

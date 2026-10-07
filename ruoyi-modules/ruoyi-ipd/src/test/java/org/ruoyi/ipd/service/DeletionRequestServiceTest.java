@@ -418,11 +418,11 @@ class DeletionRequestServiceTest {
     }
 
     @Test
-    @DisplayName("IDOR-L2：leaderDecision 非组长非超管（MARKET_PM）→ FORBIDDEN，角色校验先于任何 DB 读（防冒充组长）")
+    @DisplayName("IDOR-L2：leaderDecision 非组长（MARKET_PM）→ FORBIDDEN，角色校验先于任何 DB 读（防冒充组长）")
     void leaderDecisionNonLeaderForbidden() {
         assertThatThrownBy(() -> service.leaderDecision(ACTOR_PM_OUTSIDER, 9L, true, "同意"))
             .isInstanceOf(IpdBusinessException.class)
-            .hasMessageContaining("仅组长或超管可初审删除申请")
+            .hasMessageContaining("仅产品组长可初审删除申请")
             .extracting(e -> ((IpdBusinessException) e).getErrorCode())
             .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
         verify(deletionRequestMapper, never()).selectById(any());
@@ -447,15 +447,24 @@ class DeletionRequestServiceTest {
         verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
+    /**
+     * F-2 反转：超管<b>不再</b>可对删除申请做初审。
+     * 修复前超管既是初审人又是终审人（并豁免组匹配），双层审核被同人闭环。
+     * 现在超管在角色校验处即被拒，且零 DB 读写（连目标行都不读）。
+     */
     @Test
-    @DisplayName("IDOR-L4：leaderDecision SUPER_ADMIN 跳过组匹配直批 → ADMIN_REVIEW（无需目标行 stub）")
-    void leaderDecisionSuperAdminSkipsGroupCheck() {
-        DeletionRequest request = saved(9L, DeletionRequestServiceImpl.ST_LEADER_REVIEW, new Date(), null);
-        when(deletionRequestMapper.selectById(9L)).thenReturn(request);
-        DeletionRequest after = service.leaderDecision(ACTOR_ADMIN, 9L, true, "超管直批");
-        assertThat(after.getStatus()).isEqualTo(DeletionRequestServiceImpl.ST_ADMIN_REVIEW);
-        assertThat(after.getLeaderId()).isEqualTo(2L);
-        verifyNoInteractions(projectMapper);
+    @DisplayName("IDOR-L4（F-2 反转）：leaderDecision SUPER_ADMIN → FORBIDDEN，零读写（初审/终审角色分离）")
+    void leaderDecisionSuperAdminForbidden() {
+        assertThatThrownBy(() -> service.leaderDecision(ACTOR_ADMIN, 9L, true, "超管直批"))
+            .isInstanceOf(IpdBusinessException.class)
+            .hasMessageContaining("仅产品组长可初审删除申请")
+            .extracting(e -> ((IpdBusinessException) e).getErrorCode())
+            .isEqualTo(ApiV1ErrorCode.FORBIDDEN);
+        verify(deletionRequestMapper, never()).selectById(any());
+        verify(deletionRequestMapper, never()).updateById(any(DeletionRequest.class));
+        verify(deleteAuditService, never()).approveAndExecute(any(), any());
+        verify(auditLogService, never()).append(any(AuditLog.class));
+        verify(auditLogService, never()).append(nullable(Long.class), any(), any(), any(), any());
     }
 
     @Test

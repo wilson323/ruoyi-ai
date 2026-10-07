@@ -125,9 +125,22 @@ public final class IpdRolePermissionCatalog {
         IpdPermissionCode.OPERATION_RECOVERY_CHECK_90D
     );
 
-    /** 组长初审删除申请。 */
-    private static final Set<String> DELETION_LEADER = unique(
-        IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER,
+    /**
+     * F-2（2026-10-06）：删除初审权限码，<b>仅授予 GROUP_LEADER</b>。
+     *
+     * <p>修复前该码与下面 {@link #LEADER_SHARED} 打包成同一个 {@code DELETION_LEADER} 集合，
+     * 而 {@code SUPER_ADMIN} merge 了该集合 ⇒ 超管能对删除申请做初审。初审必须与终审/决策分离，
+     * 否则同一人可自提自审自批，绕过「组长初审 + 超管终审」双层审核（AC-DEL-02 / AC-REQ-09）。
+     *
+     * <p>拆集后语义边界清晰：初审归组长，终审（{@code OPERATION_DELETION_REQUEST_ADMIN}）
+     * 仍在 {@link #ADMIN_WRITE} 归超管，两者互斥不重叠。
+     */
+    private static final Set<String> DELETION_FIRST_REVIEW = unique(
+        IpdPermissionCode.OPERATION_DELETION_REQUEST_LEADER
+    );
+
+    /** 组长与超管共有的其余权限码（贡献度确认 / 负反馈认定 / 合规写 / P0 升级读）。 */
+    private static final Set<String> LEADER_SHARED = unique(
         // P3-6.2：产品组长确认贡献度（仅 GROUP_LEADER）
         IpdPermissionCode.OPERATION_CONTRIBUTION_CONFIRM,
         // P3-8.2：负反馈认定/解除（仅 GROUP_LEADER / SUPER_ADMIN）
@@ -201,8 +214,9 @@ public final class IpdRolePermissionCatalog {
     // （freeze/distribute 授予 GROUP_LEADER + SUPER_ADMIN）已随四码一并删除。
 
     private static final Map<String, Set<String>> BY_ROLE = Map.of(
-        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, ADMIN_WRITE, KPI_CONFIG_WRITE, RECOVERY_LEADER_WRITE),
-        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_LEADER, RECOVERY_LEADER_WRITE),
+        // F-2：SUPER_ADMIN 不含 DELETION_FIRST_REVIEW（初审归组长，超管只终审/决策）
+        "SUPER_ADMIN", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, LEADER_SHARED, ADMIN_WRITE, KPI_CONFIG_WRITE, RECOVERY_LEADER_WRITE),
+        "GROUP_LEADER", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, DELETION_FIRST_REVIEW, LEADER_SHARED, RECOVERY_LEADER_WRITE),
         "MARKET_PM", merge(READ_SET, BUSINESS_WRITE, PROJECT_CREATE, KPI_CONFIG_WRITE),
         "RD_PM", merge(READ_SET, BUSINESS_WRITE, KPI_CONFIG_WRITE)
     );
